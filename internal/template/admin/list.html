@@ -1,0 +1,89 @@
+{{- /* admin/list.html: 管理后台文章列表。
+   独立 layout，不套 base.html 三列布局（后台不需要侧边栏 widget）。
+   引用 main.css 复用深色模式变量（--card/--text/--theme 等），表单样式自写（Stellar 无现成表单样式）。
+   siteblur 黑遮罩坑同样需覆写（见 CLAUDE.md）。main.js 不引用，但保留 ctx 注入以备扩展。
+*/ -}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Page.Title}} - {{.Site.Title}} 管理后台</title>
+  <link rel="stylesheet" href="/assets/css/main.css?v=demo3">
+  <style>
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
+    .admin-header a { color: var(--text-p3); font-size: 14px; text-decoration: none; }
+    .admin-header a:hover { color: var(--text-p1); }
+    .admin-actions a.btn-new { display: inline-block; padding: 8px 18px; border-radius: 8px; background: var(--theme); color: #fff; font-size: 14px; text-decoration: none; }
+    .admin-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--bg-a3, rgba(128,128,128,.12)); }
+    .admin-table th { color: var(--text-p3); font-weight: 500; background: var(--bg-a2, rgba(128,128,128,.06)); }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table td.title a { color: var(--text-p1); text-decoration: none; font-weight: 500; }
+    .admin-table td.title a:hover { color: var(--theme); }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+    .badge.published { background: rgba(61,197,80,.16); color: #3DC550; }
+    .badge.draft { background: rgba(250,100,0,.16); color: #FA6400; }
+    .row-actions a { color: var(--text-p3); font-size: 13px; text-decoration: none; margin-right: 12px; }
+    .row-actions a:hover { color: var(--theme); }
+    .row-actions a.danger:hover { color: #F44336; }
+    .empty { text-align: center; padding: 48px 0; color: var(--text-p3); font-size: 14px; }
+    .link-btn { background: none; border: none; color: var(--text-p3); font-size: 13px; cursor: pointer; padding: 0; margin-right: 12px; }
+    .link-btn:hover { color: var(--theme); }
+    .link-btn.danger:hover { color: #F44336; }
+  </style>
+</head>
+<body>
+  <div class="sitebg"><div class="siteblur"></div></div>
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <h1>文章管理</h1>
+      <div class="admin-actions">
+        <a href="/post/hello">查看前台</a>
+        <a href="/admin/new" class="btn-new">+ 新建文章</a>
+      </div>
+    </div>
+
+    {{if .Admin.Posts}}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>标题</th>
+          <th>Slug</th>
+          <th>状态</th>
+          <th>日期</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Admin.Posts}}
+        <tr>
+          <td class="title"><a href="/post/{{.Slug}}">{{if .Title}}{{.Title}}{{else}}(无标题){{end}}</a></td>
+          <td>{{.Slug}}</td>
+          <td><span class="badge {{.Status}}">{{.Status}}</span></td>
+          <td>{{.Date}}</td>
+          <td class="row-actions">
+            <a href="/admin/edit/{{.Slug}}">编辑</a>
+            <form method="post" action="/admin/delete/{{.Slug}}" style="display:inline" onsubmit="return confirm('确认删除 {{.Slug}}？');">
+              <button type="submit" class="link-btn danger">删除</button>
+            </form>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <div class="empty">
+      还没有文章。<a href="/admin/new">新建第一篇</a>，或用 <code>-seed</code> 启动导入 content/posts。
+    </div>
+    {{end}}
+  </div>
+
+  <script>
+    const ctx = { date_suffix: { just:'刚刚', min:'分钟前', hour:'小时前', day:'天前' }, root:'/', tag_plugins:{chat:{}}, search:{service:'local_search',local_search:{path:'/search.json'}}, copycode:{default_text:'复制',success_text:'复制成功',toast:'已复制'} };
+  </script>
+</body>
+</html>

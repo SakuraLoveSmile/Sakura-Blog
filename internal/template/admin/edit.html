@@ -1,0 +1,117 @@
+{{- /* admin/edit.html: 管理后台新建/编辑文章表单 + Markdown 编辑器。
+   独立 layout，引用 main.css 复用深色模式变量，表单样式自写。
+   EasyMDE 通过 CDN 引入（easymde.min.css + easymde.min.js），挂载到 #content textarea，内置分屏实时预览。
+   保存 POST /admin/save，服务端用 goldmark 渲染 content_html 存 DB。
+*/ -}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Page.Title}} - {{.Site.Title}} 管理后台</title>
+  <link rel="stylesheet" href="/assets/css/main.css?v=demo3">
+  <!-- EasyMDE 编辑器样式 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.css">
+  <style>
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
+    .admin-header a { color: var(--text-p3); font-size: 14px; text-decoration: none; }
+    .admin-header a:hover { color: var(--text-p1); }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-p3); margin-bottom: 6px; font-weight: 500; }
+    .form-group input[type=text], .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 12px; font-size: 14px; color: var(--text-p1);
+      background: var(--card); border: 1px solid var(--bg-a3, rgba(128,128,128,.2)); border-radius: 8px; outline: none;
+      box-sizing: border-box;
+    }
+    .form-group input[type=text]:focus, .form-group select:focus {
+      border-color: var(--theme);
+    }
+    .form-row { display: flex; gap: 16px; }
+    .form-row .form-group { flex: 1; }
+    .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 24px; }
+    .btn-submit { padding: 10px 24px; border-radius: 8px; border: none; background: var(--theme); color: #fff; font-size: 14px; cursor: pointer; }
+    .btn-cancel { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--bg-a3, rgba(128,128,128,.2)); background: transparent; color: var(--text-p2); font-size: 14px; text-decoration: none; }
+    .save-error { color: #F44336; font-size: 13px; }
+
+    /* EasyMDE 深色模式适配：编辑器容器跟随主题变量 */
+    .EasyMDEContainer .editor-toolbar { background: var(--card); border-color: var(--bg-a3, rgba(128,128,128,.2)); }
+    .EasyMDEContainer .CodeMirror { background: var(--bg-a1, rgba(128,128,128,.04)); color: var(--text-p1); border-color: var(--bg-a3, rgba(128,128,128,.2)); }
+    .EasyMDEContainer .editor-preview { background: var(--card); color: var(--text-p1); }
+    .EasyMDEContainer .editor-toolbar button { color: var(--text-p3); }
+    .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--theme); }
+  </style>
+</head>
+<body>
+  <div class="sitebg"><div class="siteblur"></div></div>
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <h1>{{if .Admin.IsEdit}}编辑文章{{else}}新建文章{{end}}</h1>
+      <a href="/admin">← 返回列表</a>
+    </div>
+
+    {{if .Admin.SaveError}}<p class="save-error">{{.Admin.SaveError}}</p>{{end}}
+
+    <form method="post" action="/admin/save" id="post-form">
+      {{if .Admin.IsEdit}}<input type="hidden" name="orig_slug" value="{{.Admin.EditPost.Slug}}">{{end}}
+
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label for="title">标题</label>
+          <input type="text" id="title" name="title" value="{{.Admin.EditPost.Title}}" placeholder="文章标题">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" name="slug" value="{{.Admin.EditPost.Slug}}" placeholder="url-friendly-slug">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="excerpt">摘要</label>
+        <input type="text" id="excerpt" name="excerpt" value="{{.Admin.EditPost.Excerpt}}" placeholder="一句话摘要（可选）">
+      </div>
+
+      <div class="form-group">
+        <label for="content">正文（Markdown）</label>
+        <textarea id="content" name="content" rows="20">{{.Admin.EditPost.ContentMD}}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label for="status">状态</label>
+          <select id="status" name="status">
+            <option value="draft"{{if eq .Admin.EditPost.Status "draft"}} selected{{end}}>draft（草稿）</option>
+            <option value="published"{{if eq .Admin.EditPost.Status "published"}} selected{{end}}>published（已发布）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-submit">保存</button>
+        <a href="/admin" class="btn-cancel">取消</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const ctx = { date_suffix: { just:'刚刚', min:'分钟前', hour:'小时前', day:'天前' }, root:'/', tag_plugins:{chat:{}}, search:{service:'local_search',local_search:{path:'/search.json'}}, copycode:{default_text:'复制',success_text:'复制成功',toast:'已复制'} };
+  </script>
+  <!-- EasyMDE：挂载到 #content，开启分栏预览与常用工具栏 -->
+  <script src="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.js"></script>
+  <script>
+    const easyMDE = new EasyMDE({
+      element: document.getElementById('content'),
+      spellChecker: false,
+      autofocus: false,
+      status: false,
+      forceSync: true, // 提交时自动同步编辑器内容回 textarea
+      renderingConfig: { codeSyntaxHighlighting: false },
+      toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'image', 'code', 'table', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+      sideBySideFullscreen: false
+    });
+  </script>
+</body>
+</html>
