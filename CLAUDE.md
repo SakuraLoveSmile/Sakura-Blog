@@ -62,6 +62,20 @@ Stylus `define()` 接收 JS 原生值自动转换，但类型必须精确，否�
 - `comments.service`（设为 `"artalk"` 才会编译 artalk 评论样式）
 - `comments.custom_css`（数组，如 `["artalk"]`）
 
+### 站点背景图（深色模式层次感）
+
+`style.site.background-image` 默认空（`_config.yml` 注释掉），此时深色背景是纯色 `hsla(210 8% 12%)`，显得"平"。原版 demo 站启用了背景图，靠 `.sitebg`（背景图层）+ `.siteblur`（`--bg-a75` 半透明遮罩 + blur 模糊）叠加出层次感。
+
+要还原原版观感，在 `config.json` 的 `style.site.background-image` 设值（如 `url(...site-bg1.webp)`）。编译后 `body>.sitebg` 会有 `background-image`，`.siteblur` 自动叠遮罩（深色黑遮罩、亮色白遮罩）。
+
+### CSS 缓存坑
+
+http.server 不禁缓存，修改 .styl 重新编译后浏览器可能仍用旧 CSS。preview.html 的 `<link>` 加版本戳（`?v=demo1`），开发时手动改版本号强制刷新；或浏览器 DevTools 禁用缓存。
+
+### 菜单图标机制
+
+Stellar 菜单项的 `icon` 字段（iconify 格式，如 `solar:documents-bold-duotone`）经 icon helper 在服务端内联成 `<svg>`（SVG 定义在 `resource/hexo-theme-stellar/_data/icons.yml`）。菜单项结构 `<a class="nav-item"><img src="https://api.iconify.design/solar:xxx.svg"></a>`，`menu.styl` 对 `img/svg` 设 `height:28px`，普通项 `filter: grayscale(0.5) brightness(0.8) opacity(0.5)`，active/hover 还原原色。Go 侧可用内联 SVG 或 iconify CDN img。
+
 ## Stellar HTML 结构规范（关键）
 
 ### class 名和嵌套层级必须严格对齐 Stellar EJS 模板

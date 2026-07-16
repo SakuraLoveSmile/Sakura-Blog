@@ -66,6 +66,7 @@
     },
     "error_page": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg",
     "site": {
+      "background-image": "url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.14/image/site-bg1@small.webp)",
       "blur-px": "100px",
       "blur-bg": "var(--bg-a75)",
       "blur-sat": "300%"
