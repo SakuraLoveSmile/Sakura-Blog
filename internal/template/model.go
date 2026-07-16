@@ -7,6 +7,27 @@ type ViewData struct {
 	Site    *Site
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
+
+	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
+	Admin *AdminData
+}
+
+// AdminData 后台模板渲染数据。
+type AdminData struct {
+	Posts     []*AdminPostRow // 列表页
+	EditPost  *AdminPostRow   // 编辑页（新建时为空对象）
+	SaveError string          // 保存失败提示
+	IsEdit    bool            // true=编辑现有，false=新建
+}
+
+// AdminPostRow 后台列表/编辑表单用的文章行数据。
+type AdminPostRow struct {
+	Slug      string
+	Title     string
+	Excerpt   string
+	ContentMD string
+	Status    string
+	Date      string // 列表展示用（created_at 或文件 date）
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。

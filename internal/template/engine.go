@@ -40,6 +40,8 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 	}
 
 	for _, f := range files {
+		// 模板名取文件基名（去 .html）。各子目录文件名已保证不冲突
+		// （layout/base、partial/head、admin/list 等基名唯一）。
 		name := strings.TrimSuffix(filepath.Base(f), ".html")
 		b, err := os.ReadFile(f)
 		if err != nil {
