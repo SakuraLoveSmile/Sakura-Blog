@@ -1,0 +1,35 @@
+# 参考资源（Stellar 主题克隆，不入版本控制）
+resource/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# 数据库
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 构建产物
+dist/
+tmp/
