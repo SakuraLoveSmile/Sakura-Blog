@@ -21,6 +21,7 @@
 ### worktree 操作注意
 
 - **git 命令必须在某个 worktree 子目录内执行**（main/dev/release），根目录是 bare 仓库，执行 `git status`/`git add`/`git commit` 会报 `fatal: this operation must be run in a work tree`
+- **注意：bash 每次调用的 cwd 可能不保留**，容易在根目录误执行 git 命令。提交时用 `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && git ...` 显式切目录，或用 `git -C <worktree路径> ...`
 - 若 worktree 的 `.git` 文件丢失（`git worktree list` 显示 `prunable`），而 `.bare/worktrees/<name>/` 元数据还在，可重建：`echo "gitdir: /Users/sakurasep/Documents/Code/Project/Blog/.bare/worktrees/<name>" > <子目录>/.git`
 - `resource/` 通过相对路径引用：从 `dev/` 出发是 `../resource/hexo-theme-stellar/...`
 
