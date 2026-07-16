@@ -1,0 +1,26 @@
+{{- /* head.html: 对应 Stellar layout/_partial/head.ejs */}}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
+  <meta name="description" content="{{if .Page.Excerpt}}{{.Page.Excerpt}}{{else}}{{.Site.Description}}{{end}}">
+
+  {{- /* Stellar 主 CSS（编译产物）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=demo2">
+
+  {{- /* highlightjs 主题（代码块高亮），与 preview.html 一致 */}}
+  <link rel="stylesheet" href="https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css">
+
+  {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
+  <style>
+    .demo-toggle {
+      position: fixed; top: 12px; right: 12px; z-index: 9999;
+      padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      font-size: 14px;
+    }
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+</head>

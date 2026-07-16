@@ -1,0 +1,91 @@
+{{- /* sidebar.html: 对应 Stellar _partial/sidebar/index_leftbar.ejs
+   结构：logo + nav-area(menu) + widgets + footer(social)
+   严格对齐 preview.html 已验证的 class 嵌套，CSS 选择器绑定这些 class 名。
+*/ -}}
+
+{{- /* logo 区：对应 _partial/sidebar/logo.ejs
+   a.avatar(48x48) > div.bg + img.avatar(44x44)
+   a.title > div.main + div.sub.cap */}}
+<header class="header">
+  <div class="logo-wrap">
+    <a class="avatar" href="/">
+      <div class="bg" style="opacity:0;background-image:url({{.Site.Avatar}});"></div>
+      <img class="avatar" src="{{.Site.Avatar}}">
+    </a>
+    <a class="title" href="/">
+      <div class="main">{{.Site.LogoTitle}}</div>
+      <div class="sub cap">{{.Site.LogoSub}}</div>
+    </a>
+  </div>
+</header>
+
+{{- /* 菜单：对应 _partial/sidebar/menu.ejs
+   .nav-area > nav.menu.dis-select > a.nav-item
+   每项 inline style="color:#xxx" 控制 SVG fill=currentColor 的主题色
+   active 项靠 item.ID == Page.MenuID 判定 */}}
+<div class="nav-area">
+  <nav class="menu dis-select">
+    {{range .Site.Menubar.Items}}
+    <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}" title="{{.Title}}" href="{{url_for .URL}}"{{if .Theme}} style="color:{{.Theme}}"{{end}}>
+      {{if .Icon}}{{icon .Icon}}{{else}}<span>{{.Title}}</span>{{end}}
+    </a>
+    {{end}}
+  </nav>
+</div>
+
+{{- /* widgets 区：对应 _partial/widgets/
+   .widgets > widget.widget-wrapper */}}
+<div class="widgets">
+
+  {{- /* author 卡片：对应 widgets/author.ejs */}}
+  <widget class="widget-wrapper user-card author">
+    <div class="widget-body">
+      <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
+      <p class="username">{{.Site.LogoTitle}}</p>
+      <p class="bio">{{.Site.Description}}</p>
+      <a class="follow" href="/">
+        {{icon "solar:documents-bold-duotone"}}
+        全部文章
+      </a>
+    </div>
+  </widget>
+
+  {{- /* 近期发布：对应 widgets/recent.ejs（post-list）*/}}
+  <widget class="widget-wrapper recent post-list">
+    <div class="widget-header dis-select">
+      <span class="name">近期发布</span>
+      <a class="cap-action" id="rss" title="Subscribe" href="#">
+        {{icon "default:rss"}}
+      </a>
+    </div>
+    <div class="widget-body fs14">
+      {{range .Site.RecentPosts}}
+      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+      {{end}}
+    </div>
+  </widget>
+
+  {{- /* 标签云：对应 widgets/tagcloud.ejs */}}
+  <widget class="widget-wrapper tagcloud">
+    <div class="widget-header dis-select">
+      <span class="name">标签</span>
+    </div>
+    <div class="widget-body fs14">
+      {{range .Site.Tags}}
+      <a class="tag" href="#">{{.}}</a>
+      {{end}}
+    </div>
+  </widget>
+</div>
+
+{{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv
+   .footer.dis-select > .social-wrap > a.social */}}
+<footer class="footer dis-select">
+  <div class="social-wrap">
+    {{range .Site.Footer.Social}}
+    <a class="social" title="{{.Title}}" href="{{url_for .URL}}" target="_blank" rel="external nofollow noopener noreferrer">
+      {{if .IconKey}}{{icon .IconKey}}{{else}}{{safe .Icon}}{{end}}
+    </a>
+    {{end}}
+  </div>
+</footer>

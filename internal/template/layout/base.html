@@ -1,0 +1,56 @@
+{{- /* base.html: 主布局骨架，对应 Stellar layout/layout.ejs
+   渲染入口：{{template "base" .}}，文章正文通过 {{template "content" .}} 嵌入。
+*/ -}}
+<!DOCTYPE html>
+<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}">
+{{template "head" .}}
+<body>
+  {{- /* 深色模式切换按钮（demo 用，对应 preview.html 的 demo-toggle）*/}}
+  <button class="demo-toggle" onclick="toggleTheme()">切换主题</button>
+
+  {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
+  <div class="sitebg"><div class="siteblur"></div></div>
+
+  <div id="l_cover"></div>
+
+  {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
+  <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
+    <aside class="l_left">
+      <div class="sidebg"></div>
+      <div class="leftbar-container">
+        {{template "sidebar" .}}
+      </div>
+    </aside>
+
+    <div class="l_main" id="main">
+      {{template "content" .}}
+      <div class="main-mask" onclick="sidebar.dismiss()"></div>
+    </div>
+
+    <aside class="l_right"></aside>
+  </div>
+
+  {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
+  <script>
+    const ctx = {
+      date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' },
+      root: '/',
+      tag_plugins: { chat: {} },
+      search: { service: 'local_search', local_search: { path: '/search.json' } },
+      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
+    };
+    const def = { avatar: '', cover: '', loading: '' };
+    const deps = { jquery: '', marked: '', lazyload: '' };
+
+    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）*/}}
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
+        ? html.dataset.theme
+        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+    }
+  </script>
+  <script src="{{url_for "/assets/js/main.js"}}" defer></script>
+</body>
+</html>
