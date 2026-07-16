@@ -1,0 +1,105 @@
+{
+  "style": {
+    "prefers_theme": "auto",
+    "smooth_scroll": true,
+    "font-size": {
+      "root": "16px",
+      "body": "17px",
+      "code": "85%",
+      "codeblock": "0.8125rem"
+    },
+    "font-family": {
+      "body": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+      "code": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif",
+      "codeblock": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
+    },
+    "text-align": "left",
+    "prefix": {
+      "h2": "https://api.iconify.design/ci:heading-h2.svg"
+    },
+    "header_prefix": {
+      "h2": "#",
+      "h3": "=",
+      "h4": "|",
+      "h5": ":"
+    },
+    "border-radius": {
+      "card-l": "24px",
+      "card": "16px",
+      "card-s": "12px",
+      "bar": "8px",
+      "image-l": "24px",
+      "image": "16px",
+      "image-s": "8px"
+    },
+    "color": {
+      "theme": "hsl(192 98% 55%)",
+      "accent": "hsl(14 100% 57%)",
+      "link": "hsl(207 90% 54%)"
+    },
+    "animated_avatar": {
+      "animate": "auto",
+      "background": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp"
+    },
+    "codeblock": {
+      "scrollbar": "4px",
+      "highlightjs_theme": "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css"
+    },
+    "loading": {
+      "loading": "正在加载",
+      "error": "加载失败，请稍后重试。"
+    },
+    "gradient": {
+      "start": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))"
+    },
+    "leftbar": {
+      "background-color-light": "var(--card)",
+      "background-color-dark": "var(--card)",
+      "background-image": "url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg)",
+      "blur-px": "100px",
+      "blur-bg": "var(--bg-a60)",
+      "background-opacity": 0.8
+    },
+    "paginator": {
+      "prev": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/f049bbd4e88ec.svg",
+      "next": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/064b95430caf4.svg"
+    },
+    "error_page": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg",
+    "site": {
+      "blur-px": "100px",
+      "blur-bg": "var(--bg-a75)",
+      "blur-sat": "300%"
+    }
+  },
+  "article": {
+    "type": "tech",
+    "cover_ratio": 2,
+    "banner_ratio": 2.5,
+    "auto_excerpt": 128
+  },
+  "menubar": {
+    "columns": 4
+  },
+  "comments": {
+    "service": "artalk",
+    "lazyload": false,
+    "custom_css": ["artalk"]
+  },
+  "plugins": {
+    "preload": { "enable": true },
+    "pjax": { "enable": false },
+    "fancybox": { "enable": true },
+    "swiper": { "enable": true },
+    "scrollreveal": { "enable": false },
+    "tianli_gpt": { "enable": false },
+    "katex": { "enable": false },
+    "mermaid": { "style_optimization": false },
+    "copycode": { "enable": true },
+    "lazyload": { "transition": "none" }
+  },
+  "tag_plugins": {
+    "checkbox": { "interactive": false },
+    "okr": { "border": false },
+    "note": { "border": true }
+  }
+}

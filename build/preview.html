@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Stellar CSS 编译验证 - Demo 1</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <!-- highlightjs 主题（代码块高亮） -->
+  <link rel="stylesheet" href="https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css">
+  <style>
+    /* demo 专用辅助样式，非 Stellar 产物 */
+    .demo-toggle {
+      position: fixed; top: 12px; right: 12px; z-index: 9999;
+      padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <button class="demo-toggle" onclick="toggleTheme()">切换主题</button>
+
+  <div class="sitebg"><div class="siteblur"></div></div>
+
+  <div id="l_cover"></div>
+
+  <div class="l_body content" id="start" layout="post" type="tech">
+    <aside class="l_left">
+      <div class="sidebg"></div>
+      <div class="leftbar-container">
+        <div class="logo" id="logo">
+          <div class="avatar-wrap"><img class="avatar" src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"></div>
+          <a class="title" href="/">Stellar Demo</a>
+          <span class="subtitle">CSS 编译验证</span>
+        </div>
+        <nav class="menu">
+          <div class="menu-item active"><a href="/"><span>首页</span></a></div>
+          <div class="menu-item"><a href="#"><span>归档</span></a></div>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="l_main" id="main">
+      <article class="md-text content">
+        <h1>Demo 1：Stellar CSS 编译验证</h1>
+        <p>这是一个静态验证页，套用从 Stellar Stylus 源码编译出的 CSS。如果你能看到三列布局、圆角卡片、正确的字体和配色，说明 <code>hexo-config</code> shim 编译链路打通了。</p>
+
+        <h2>布局结构</h2>
+        <p>当前页面包含 <code>.l_left</code>（左栏 logo+菜单）、<code>.l_main</code>（主内容）、<code>.l_right</code>（右栏，本页留空）三列，对应 Stellar 的 <code>layout.ejs</code> 骨架。</p>
+
+        <h2>代码块</h2>
+        <pre><code class="language-go">func main() {
+    r := gin.Default()
+    r.GET("/post/:slug", postHandler)
+    r.Run(":8080")
+}</code></pre>
+
+        <blockquote>这是引用块，验证 <code>blockquote</code> 样式。</blockquote>
+
+        <h2>列表与文本</h2>
+        <ul>
+          <li>普通列表项一</li>
+          <li>普通列表项二</li>
+        </ul>
+        <p><a href="#">超链接</a>、<strong>加粗</strong>、<em>斜体</em>、<code>行内代码</code> 样式验证。</p>
+
+        <div class="note">note 标签插件样式验证（蓝色提示框）</div>
+      </article>
+    </div>
+
+    <aside class="l_right"></aside>
+  </div>
+
+  <script>
+    // ctx mock: 复现 Stellar defines.ejs 注入的全局对象
+    const ctx = {
+      date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' },
+      root: '/',
+      tag_plugins: { chat: {} },
+      search: { service: 'local_search', local_search: { path: '/search.json' } },
+      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
+    };
+
+    // 主题切换
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.dataset.theme;
+      if (cur === 'dark') {
+        delete html.dataset.theme;
+      } else {
+        html.dataset.theme = 'dark';
+      }
+    }
+  </script>
+  <script src="../assets/js/main.js" defer></script>
+</body>
+</html>
