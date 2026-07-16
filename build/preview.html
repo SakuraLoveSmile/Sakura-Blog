@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Stellar CSS 编译验证 - Demo 1</title>
-  <link rel="stylesheet" href="../assets/css/main.css?v=demo1">
+  <link rel="stylesheet" href="../assets/css/main.css?v=demo1-2">
   <!-- highlightjs 主题（代码块高亮） -->
   <link rel="stylesheet" href="https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css">
   <style>
@@ -15,6 +15,8 @@
       background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
       font-size: 14px;
     }
+    /* 无站点背景图时，siteblur 的黑遮罩会把纯色背景压暗，关掉它让 --background 原色透出 */
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   </style>
 </head>
 <body>
