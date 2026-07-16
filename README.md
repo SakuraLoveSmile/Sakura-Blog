@@ -4,15 +4,18 @@
 
 ## 仓库结构
 
-本仓库采用单仓库 + git worktree 工作流，三分支对应三份工作树：
+本仓库采用 bare 仓库 + git worktree 工作流，根目录是 bare 仓库容器，三分支分别 checkout 到独立子目录：
 
 | 分支 | 工作树路径 | 用途 |
 |------|-----------|------|
-| `main` | `.`（根目录） | 主分支，稳定版本 |
+| `main` | `main/` | 主分支，稳定版本 |
 | `dev` | `dev/` | 日常开发 |
 | `release` | `release/` | 发布版本 |
 
-`resource/` 目录存放参考资源（hexo-theme-stellar 主题克隆），已 gitignore，不入版本控制。
+- `.bare/`：bare 仓库（git 核心），根目录的 `.git` 文件指向它
+- `resource/`：参考资源（hexo-theme-stellar 主题克隆），已 gitignore，不入版本控制
+
+在任一工作树目录内执行 git 命令即可操作对应分支。
 
 ## 技术栈
 
