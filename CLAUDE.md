@@ -222,16 +222,57 @@ icons.yml 是 flat map 格式（`key: <svg...>`），但 value 含 `<>`/`"`/`#` 
 
 base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body > l_left(sidebg+leftbar-container) / l_main / l_right` 骨架，class 名和嵌套层级一字不差（CSS 选择器绑定）。sidebar.html 的 logo 区用 `header > .logo-wrap > a.avatar + a.title`，菜单用 `.nav-area > nav.menu.dis-select > a.nav-item`（不是 `.menu-item`）。menu 项的 active 态靠 `{{if eq .ID $.Page.MenuID}} active{{end}}`。
 
+## Demo 3 新增坑点（管理后台 + SQLite）
+
+### modernc.org/sqlite driver name 是 "sqlite" 不是 "sqlite3"
+
+纯 Go 驱动免 CGO，但注册到 `database/sql` 的 driver name 是 **`"sqlite"`**（不是 `"sqlite3"`，后者是 mattn/go-sqlite3 的 CGO 驱动名）。`sql.Open("sqlite", "file:path.db?_pragma=...")`。用 side-effect import `import _ "modernc.org/sqlite"` 自动注册。
+
+- DSN 用 `file:` 前缀 + `_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)` 启用 WAL 与忙等待
+- `db.SetMaxOpenConns(1)` 避免 SQLite 写并发 `database is locked`（WAL 模式下读可并发，写仍串行）
+- WAL 模式生成 `*.db-shm`/`*.db-wal` 旁路文件，gitignore 必须补这两条（原来只有 `*.db-journal`）
+
+### 模板名取文件基名，各子目录文件名不能冲突
+
+`engine.go` 用 `filepath.WalkDir` 递归加载所有 .html，模板名取 `filepath.Base` 去扩展名（如 `admin/list.html` -> `"list"`，不是 `"admin/list"`）。所以 `internal/template/` 下各子目录文件名必须全局唯一：`layout/base`、`partial/head`、`admin/list`、`admin/edit` 基名不冲突即可。handler 调 `engine.Render("list", ...)` 用基名。
+
+### Go html/template 模板注释 `{{- /* ... */}}` 在 style 块内易触发解析错误
+
+`{{- /* 注释 */}}` 语法本身合法，但写在 `<style>` 块内、注释文本含 `*/` 或与 CSS 注释 `/* */` 混排时，解析器可能报 `comment ends before closing delimiter`。**对策**：`<style>` 块内的注释用 CSS 原生 `/* ... */`，不要用 Go 模板注释；模板注释只用于 HTML 区域。
+
+### EasyMDE 编辑器提交表单需 forceSync，否则内容不随 form submit
+
+EasyMDE 把原生 `<textarea>` 隐藏，用 CodeMirror 替代。表单 submit 时 CodeMirror 的内容不会自动回写到 textarea，导致 POST 收到空 content。**坑**：手动加 `form.addEventListener('submit', ()=>easyMDE.value(easyMDE.value()))` 监听器，若监听器内异常会**阻断默认提交**（表现为点击保存无 POST、停在原页）。
+
+**正确**：初始化时设 `forceSync: true`，EasyMDE 内部会在 form submit 时自动同步，不要自己加 submit 监听器。
+
+### EasyMDE 深色模式需手动适配
+
+EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 main.css 无表单/编辑器样式可复用（`button.styl` 只有 `<a>` 伪按钮，`input.styl` 只有 reset）。需在模板 `<style>` 内用 Stellar 变量覆写：`.EasyMDEContainer .CodeMirror { background: var(--card); color: var(--text-p1) }` 等。admin 表单所有样式（input/textarea/select/button/table）都要自写。
+
+### admin 页面独立 layout，不套 base.html
+
+后台不需要前台三列布局 + 侧边栏 widget，套 base.html 会被三列布局挤压表单区域。admin/list.html、admin/edit.html 各自完整 HTML 骨架，仅引用 `main.css` 复用深色模式 CSS 变量（`--card`/`--text-p1`/`--theme`/`--bg-a*`）。siteblur 黑遮罩坑同样需覆写（与前台 preview.html 同款 `body>.sitebg .siteblur { background-color: transparent !important }`）。
+
+### /post/:slug DB 优先 + 文件回退的实现
+
+`store.GetPublishedBySlug` 返回 `(nil, nil)` 表示 DB 无记录（不是 error）。handler 先查 DB：`if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil { 走 DB }`，否则回退 `post.Service.Load(slug)` 文件渲染。注意 `os.IsNotExist` 能穿透 `fmt.Errorf("...: %w", err)` 的 `%w` 包裹，正确识别文件不存在。
+
+### seed 用 UPSERT 保证幂等
+
+`-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。
+
 ## 工具链
 
-- Go 1.25.5（Gin + goldmark）
+- Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
 - Node 22 + stylus 0.62.0（CSS 编译）
-- SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO）
+- SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
+- Go 服务：`go run cmd/server/main.go -root /Users/sakurasep/Documents/Code/Project/Blog/dev`，`-seed` 可选（导入 content/posts/*.md 到 DB）
 
 ## Demo 进度
 
 - [x] Demo 0：bare 仓库 + worktree 初始化
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
-- [ ] Demo 3：管理后台（SQLite + 文章 CRUD + Markdown 编辑器）
+- [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
