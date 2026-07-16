@@ -148,15 +148,13 @@
       copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
     };
 
-    // 主题切换
+    // 主题切换：在 light/dark 显式切换。初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化。
     function toggleTheme() {
       const html = document.documentElement;
-      const cur = html.dataset.theme;
-      if (cur === 'dark') {
-        delete html.dataset.theme;
-      } else {
-        html.dataset.theme = 'dark';
-      }
+      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
+        ? html.dataset.theme
+        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
     }
   </script>
   <script src="../assets/js/main.js" defer></script>
