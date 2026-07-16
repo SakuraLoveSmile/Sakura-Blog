@@ -191,6 +191,37 @@ const ctx = {
 ```
 Go 模板需在页面注入等价的 `ctx` 对象，否则 JS 报 ReferenceError。
 
+## Demo 2 新增坑点（Go 服务端渲染）
+
+### go run 工作目录不可靠，必须用 -root 参数定位 dev 路径
+
+`go run cmd/server/main.go` 把源码编译到临时目录再运行，`os.Executable()` 返回临时二进制路径而非 dev/。而 `os.Getwd()`/`filepath.Abs(".")` 取决于调用方 cwd：
+
+- 在 dev/ 下直接 `go run` 时 cwd 正确
+- 但 preview 工具/Bash 工具的 cwd 不稳定（可能落在项目根 Blog/ 而非 dev/），此时 `filepath.Join(root, "..", "resource", ...)` 会解析成 `Blog/../resource/...` = `Project/resource/...`（少了 Blog 层），`icons.yml` 报 `no such file or directory`，服务起不来表现为 HTTP 000
+
+**修复**：main.go 加 `-root` flag 接收 dev 绝对路径，launch.json 显式传 `-root /Users/sakurasep/Documents/Code/Project/Blog/dev`。preview 启动要留 ~10s（go run 首次编译 Gin 依赖较慢，3s 测试窗口会误判"卡住"）。
+
+### template.HTML 类型不需要 safe 函数转义
+
+Go `html/template` 默认对 `{{.Field}}` 做 HTML 转义。goldmark 输出的 HTML 想原样输出，常见做法是 `template.HTML(p.HTML)` 标记为安全类型。**坑**：在模板里再套 `{{safe .Content}}` 会报 `wrong type for value; expected string; got template.HTML`--`safe` 函数签名是 `func(string) template.HTML`，接收不了已是 `template.HTML` 的值。
+
+**正确**：`Content` 字段类型直接用 `template.HTML`，模板里 `{{.Content}}` 直接输出即可（`template.HTML` 类型的值不会被转义）。只有普通 string 想 inline 原始 HTML 时才用 `safe`。
+
+### icons.yml 图标集合有限，部分 iconify key 不存在
+
+`resource/hexo-theme-stellar/_data/icons.yml` 不是全量 iconify 集合，仅含 Stellar 预置的 6 个 solar duotone + 14 个 default 图标（共约 35 个）。`solar:calendar-bold-duotone` 这类 key 查不到，菜单项会渲染成空的 `<span class="icon-missing">`。
+
+**对策**：菜单图标 key 必须先确认在 icons.yml 中存在；归档菜单用 `default:calendar` 替代不存在的 `solar:calendar-bold-duotone`。IconRegistry 的 `Get` 对未命中 key 返回占位 span，方便排查。
+
+### icons.yml 非 YAML，用正则按行解析
+
+icons.yml 是 flat map 格式（`key: <svg...>`），但 value 含 `<>`/`"`/`#` 等 YAML 特殊字符，`yaml.Unmarshal` 会失败或错切。用正则 `^([a-zA-Z0-9:_-]+):\s*(.+)$` 逐行匹配 key 与 svg 原文，scanner 单行最长 ~3.4KB，默认 64KB buffer 够用。
+
+### Go 模板对齐 Stellar EJS 结构
+
+base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body > l_left(sidebg+leftbar-container) / l_main / l_right` 骨架，class 名和嵌套层级一字不差（CSS 选择器绑定）。sidebar.html 的 logo 区用 `header > .logo-wrap > a.avatar + a.title`，菜单用 `.nav-area > nav.menu.dis-select > a.nav-item`（不是 `.menu-item`）。menu 项的 active 态靠 `{{if eq .ID $.Page.MenuID}} active{{end}}`。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark）
@@ -202,5 +233,5 @@ Go 模板需在页面注入等价的 `ctx` 对象，否则 JS 报 ReferenceError
 
 - [x] Demo 0：bare 仓库 + worktree 初始化
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
-- [ ] Demo 2：Go 服务端渲染（Gin + html/template + goldmark）
+- [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
 - [ ] Demo 3：管理后台（SQLite + 文章 CRUD + Markdown 编辑器）
