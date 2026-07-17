@@ -32,8 +32,9 @@ func DefaultSite() *tmpl.Site {
 		Subtitle:    "Go 服务端渲染",
 		Description: "用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客，验证服务端渲染链路。",
 		Avatar:      "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+		AvatarBG:    "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp",
 		LogoTitle:   "Stellar Demo",
-		LogoSub:     "Go SSR 验证",
+		LogoSub:     "Go SSR 验证|Stellar 主题",
 		Menubar: tmpl.Menubar{
 			Columns: 2,
 			Items: []tmpl.MenuItem{

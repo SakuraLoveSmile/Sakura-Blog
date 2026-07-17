@@ -9,12 +9,20 @@
 <header class="header">
   <div class="logo-wrap">
     <a class="avatar" href="/">
-      <div class="bg" style="opacity:0;background-image:url({{.Site.Avatar}});"></div>
+      {{- /* div.bg 用专用旋转背景图（原版 style.animated_avatar.background 彩虹图），hover 时 spin 旋转；勿用头像自身 */}}
+      <div class="bg" style="opacity:0;background-image:url({{.Site.AvatarBG}});"></div>
       <img class="avatar" src="{{.Site.Avatar}}">
     </a>
     <a class="title" href="/">
       <div class="main">{{.Site.LogoTitle}}</div>
+      {{- /* logo_sub 含 | 时拆 normal/hover 两层，hover 标题时向上滚动切换（对齐原版 logo.ejs layoutTitle）；不含 | 时单层 */}}
+      {{if contains .Site.LogoSub "|"}}
+      {{$parts := split .Site.LogoSub "|"}}
+      <div class="sub normal cap">{{trim (index $parts 0)}}</div>
+      <div class="sub hover cap" style="opacity:0">{{join (slice $parts 1) "|"}}</div>
+      {{else}}
       <div class="sub cap">{{.Site.LogoSub}}</div>
+      {{end}}
     </a>
   </div>
 </header>

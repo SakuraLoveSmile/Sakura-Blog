@@ -94,14 +94,15 @@ type AdminPostRow struct {
 // Site 对齐 Stellar theme + config 的站点级配置。
 // yaml tag 供 config/site.yml 加载（goccy/go-yaml），snake_case 精确映射。
 type Site struct {
-	Title       string       `yaml:"title"`
-	Subtitle    string       `yaml:"subtitle"`
-	Description string       `yaml:"description"`
-	Avatar      string       `yaml:"avatar"` // logo 头像 URL
-	LogoTitle   string       `yaml:"logo_title"`
-	LogoSub     string       `yaml:"logo_sub"`
-	Menubar Menubar `yaml:"menubar"`
-	Footer  Footer  `yaml:"footer"`
+	Title       string  `yaml:"title"`
+	Subtitle    string  `yaml:"subtitle"`
+	Description string  `yaml:"description"`
+	Avatar      string  `yaml:"avatar"`    // logo 头像 URL
+	AvatarBG    string  `yaml:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
+	LogoTitle   string  `yaml:"logo_title"`
+	LogoSub     string  `yaml:"logo_sub"`
+	Menubar     Menubar `yaml:"menubar"`
+	Footer      Footer  `yaml:"footer"`
 }
 
 // Menubar 对齐 _config.yml menubar.items。

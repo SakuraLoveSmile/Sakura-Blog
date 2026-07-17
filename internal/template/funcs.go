@@ -66,6 +66,11 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 		// join: 辅助函数，拼接字符串切片。
 		"join": strings.Join,
 
+		// contains/split/trim: 字符串处理，logo_sub 按 | 拆 normal/hover 两段用（对齐原版 logo.ejs 的 sub.split('|')）。
+		"contains": strings.Contains,
+		"split":    strings.Split,
+		"trim":     strings.TrimSpace,
+
 		// add/sub: 整数加减，分页器页码运算用（Go template 无内置算术）。
 		"add": func(a, b int) int { return a + b },
 		"sub": func(a, b int) int { return a - b },
