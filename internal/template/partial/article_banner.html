@@ -21,6 +21,12 @@
           <span class="text created">发布于：<time datetime="{{.Page.CreatedTime.Format "2006-01-02T15:04:05Z07:00"}}">{{.Page.Date}}</time></span>
           <span class="sep updated"></span>
           <span class="text updated">更新于：<time datetime="{{.Page.UpdatedTime.Format "2006-01-02T15:04:05Z07:00"}}">{{if .Page.Updated}}{{.Page.Updated}}{{else}}{{.Page.Date}}{{end}}</time></span>
+          {{- /* 阅读量：对齐 dateinfo.ejs 的 span 结构，Views>0 时在更新日期后追加。
+                文件回退路径无 store 数据 Views=0 不渲染；DB 路径 Views 含本次访问。*/}}
+          {{if gt .Page.Views 0}}
+          <span class="sep"></span>
+          <span class="text views">阅读：{{.Page.Views}}</span>
+          {{end}}
         </div>
       </div>
     </div>

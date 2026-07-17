@@ -31,6 +31,7 @@ type Post struct {
 	Status      string // draft / published
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Views       int64 // 阅读量，article_banner #post-meta 展示
 
 	// Tags/Categories 不在 posts 表列里（走 post_tags/post_categories 关联表），
 	// 不入 postColumns。由 FillTagsCategories 或独立查询填充，零值为空切片。
@@ -86,6 +87,7 @@ func (s *Store) createTables() error {
 		content_md   TEXT NOT NULL DEFAULT '',
 		content_html TEXT NOT NULL DEFAULT '',
 		status       TEXT NOT NULL DEFAULT 'draft',
+		views        INTEGER NOT NULL DEFAULT 0,
 		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
@@ -115,6 +117,10 @@ func (s *Store) createTables() error {
 	// 老库迁移：CREATE TABLE IF NOT EXISTS 不改已存在表结构，需补 cover 列。
 	if err := s.ensureColumn("posts", "cover", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate cover column: %w", err)
+	}
+	// 老库迁移：views 列（文章访问统计），幂等。
+	if err := s.ensureColumn("posts", "views", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return fmt.Errorf("migrate views column: %w", err)
 	}
 	// FTS5 全文索引：external content 表，索引挂在 posts 行上避免数据重复。
 	// 配 INSERT/UPDATE/DELETE 触发器同步索引，否则索引与 posts 表脱节。
@@ -289,11 +295,12 @@ func escapeLike(s string) string {
 }
 
 // postColumns 是 posts 表的查询列，统一顺序，避免 Scan 错位。
-const postColumns = `id, slug, title, excerpt, cover, content_md, content_html, status, created_at, updated_at`
+// views 在 updated_at 之后，Scan 时对应 Post.Views。
+const postColumns = `id, slug, title, excerpt, cover, content_md, content_html, status, created_at, updated_at, views`
 
 // postColumnsPrefixed 是带 p. 前缀的查询列，用于 JOIN posts_fts 时消除列名歧义
 // （title/content_md/content_html 在 posts 与 posts_fts 两表都存在）。
-const postColumnsPrefixed = `p.id, p.slug, p.title, p.excerpt, p.cover, p.content_md, p.content_html, p.status, p.created_at, p.updated_at`
+const postColumnsPrefixed = `p.id, p.slug, p.title, p.excerpt, p.cover, p.content_md, p.content_html, p.status, p.created_at, p.updated_at, p.views`
 
 // List 返回全部文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
@@ -361,7 +368,7 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	}
 	row := s.db.QueryRow(q, args...)
 	p := &Post{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &p.Views)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -390,7 +397,7 @@ func (s *Store) GetPrevNext(p *Post) (prev, next *Post, err error) {
 		WHERE status = ? AND id != ? AND created_at > ?
 		ORDER BY created_at ASC LIMIT 1`, postColumns),
 		StatusPublished, p.ID, p.CreatedAt).
-		Scan(&prev.ID, &prev.Slug, &prev.Title, &prev.Excerpt, &prev.Cover, &prev.ContentMD, &prev.ContentHTML, &prev.Status, &prev.CreatedAt, &prev.UpdatedAt)
+		Scan(&prev.ID, &prev.Slug, &prev.Title, &prev.Excerpt, &prev.Cover, &prev.ContentMD, &prev.ContentHTML, &prev.Status, &prev.CreatedAt, &prev.UpdatedAt, &prev.Views)
 	if err == sql.ErrNoRows {
 		prev = nil
 	} else if err != nil {
@@ -403,7 +410,7 @@ func (s *Store) GetPrevNext(p *Post) (prev, next *Post, err error) {
 		WHERE status = ? AND id != ? AND created_at < ?
 		ORDER BY created_at DESC LIMIT 1`, postColumns),
 		StatusPublished, p.ID, p.CreatedAt).
-		Scan(&next.ID, &next.Slug, &next.Title, &next.Excerpt, &next.Cover, &next.ContentMD, &next.ContentHTML, &next.Status, &next.CreatedAt, &next.UpdatedAt)
+		Scan(&next.ID, &next.Slug, &next.Title, &next.Excerpt, &next.Cover, &next.ContentMD, &next.ContentHTML, &next.Status, &next.CreatedAt, &next.UpdatedAt, &next.Views)
 	if err == sql.ErrNoRows {
 		next = nil
 		return prev, nil, nil
@@ -412,6 +419,17 @@ func (s *Store) GetPrevNext(p *Post) (prev, next *Post, err error) {
 		return nil, nil, fmt.Errorf("get next of %s: %w", p.Slug, err)
 	}
 	return prev, next, nil
+}
+
+// IncrViews 按 slug 自增文章阅读量。文章不存在时静默返回 nil（不报错，避免 /post/:slug
+// 渲染流程因计数失败中断）。同步写：SQLite WAL + SetMaxOpenConns(1) 下写串行排队，
+// 本地/低并发场景够用；高并发需改异步队列（本期不做）。
+func (s *Store) IncrViews(slug string) error {
+	_, err := s.db.Exec(`UPDATE posts SET views = views + 1 WHERE slug = ?`, slug)
+	if err != nil {
+		return fmt.Errorf("incr views %s: %w", slug, err)
+	}
+	return nil
 }
 func (s *Store) Create(p *Post) (int64, error) {
 	if p.Status == "" {
@@ -482,7 +500,7 @@ func scanPosts(rows *sql.Rows) ([]*Post, error) {
 	var out []*Post
 	for rows.Next() {
 		p := &Post{}
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &p.Views); err != nil {
 			return nil, fmt.Errorf("scan post: %w", err)
 		}
 		out = append(out, p)
