@@ -10,7 +10,7 @@ logo_title: Stellar Demo
 logo_sub: Go SSR 验证
 
 menubar:
-  columns: 4
+  columns: 2
   items:
     - id: post
       title: 博客
@@ -22,16 +22,6 @@ menubar:
       url: /archives/
       icon: default:calendar
       theme: "#3DC550"
-    - id: explore
-      title: 探索
-      url: /explore/
-      icon: solar:planet-bold-duotone
-      theme: "#FA6400"
-    - id: social
-      title: 社交
-      url: /friends/
-      icon: solar:chat-square-like-bold-duotone
-      theme: "#F44336"
 
 footer:
   social:
@@ -47,17 +37,3 @@ footer:
     - title: Comments
       url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
-
-recent_posts:
-  - title: Demo 2：Go 服务端渲染验证
-    url: /post/hello
-  - title: Demo 1：Stellar CSS 编译验证
-    url: '#'
-  - title: 用 shim 方案脱离 Hexo 编译 Stylus
-    url: '#'
-  - title: 深色模式与菜单图标机制
-    url: '#'
-  - title: Artalk 评论集成方案
-    url: '#'
-
-tags: [CSS, Stellar, Go, Gin, Hexo, SQLite]

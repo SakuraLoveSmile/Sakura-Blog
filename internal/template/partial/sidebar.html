@@ -50,7 +50,7 @@
     </div>
   </widget>
 
-  {{- /* 近期发布：对应 widgets/recent.ejs（post-list）*/}}
+  {{- /* 近期发布：对应 widgets/recent.ejs（post-list）。数据来自 DB 最新 5 篇（fillSidebar 填充）*/}}
   <widget class="widget-wrapper recent post-list">
     <div class="widget-header dis-select">
       <span class="name">近期发布</span>
@@ -59,20 +59,20 @@
       </a>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.RecentPosts}}
+      {{range .Recent}}
       <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
       {{end}}
     </div>
   </widget>
 
-  {{- /* 标签云：对应 widgets/tagcloud.ejs */}}
+  {{- /* 标签云：对应 widgets/tagcloud.ejs。数据来自 DB 计数降序前 20（fillSidebar 填充）*/}}
   <widget class="widget-wrapper tagcloud">
     <div class="widget-header dis-select">
       <span class="name">标签</span>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.Tags}}
-      <a class="tag" href="#">{{.}}</a>
+      {{range .TagCloud}}
+      <a class="tag" href="{{url_for (printf "/tags/%s" .Name)}}">{{.Name}}</a>
       {{end}}
     </div>
   </widget>

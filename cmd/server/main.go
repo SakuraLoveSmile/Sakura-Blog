@@ -90,6 +90,32 @@ func main() {
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}
 
+	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20），所有前台页面渲染前调用。
+	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
+	fillSidebar := func(data *tmpl.ViewData) {
+		if posts, err := st.ListPublishedPaged(1, 5); err == nil {
+			for _, p := range posts {
+				data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
+			}
+		}
+		if counts, err := st.CountByTag(); err == nil {
+			items := make([]*tmpl.TagItem, 0, len(counts))
+			for name, n := range counts {
+				items = append(items, &tmpl.TagItem{Name: name, Count: n})
+			}
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Count != items[j].Count {
+					return items[i].Count > items[j].Count
+				}
+				return items[i].Name < items[j].Name
+			})
+			if len(items) > 20 {
+				items = items[:20]
+			}
+			data.TagCloud = items
+		}
+	}
+
 	r := gin.Default()
 
 	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
@@ -128,6 +154,7 @@ func main() {
 				},
 				Content: template.HTML(p.ContentHTML),
 			}
+			fillSidebar(data)
 			html, err := engine.Render("base", data)
 			if err != nil {
 				c.String(http.StatusInternalServerError, "render: %v", err)
@@ -149,8 +176,8 @@ func main() {
 		}
 
 		data := &tmpl.ViewData{
-			Site: site,
-			Page: &tmpl.Page{
+			Site:    site,
+			Page:    &tmpl.Page{
 				Title:   p.Title,
 				Slug:    p.Slug,
 				Layout:  "post",
@@ -163,6 +190,7 @@ func main() {
 			Content: template.HTML(p.HTML),
 		}
 
+		fillSidebar(data)
 		html, err := engine.Render("base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
@@ -211,6 +239,7 @@ func main() {
 			Posts:     cards,
 			Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 		}
+		fillSidebar(data)
 		html, err := engine.Render("base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
@@ -235,6 +264,7 @@ func main() {
 
 	// renderBase：渲染 base 布局并写响应（归档/分类/标签页共用）。
 	renderBase := func(c *gin.Context, data *tmpl.ViewData) {
+		fillSidebar(data)
 		html, err := engine.Render("base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)

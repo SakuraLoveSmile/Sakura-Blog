@@ -35,12 +35,10 @@ func DefaultSite() *tmpl.Site {
 		LogoTitle:   "Stellar Demo",
 		LogoSub:     "Go SSR 验证",
 		Menubar: tmpl.Menubar{
-			Columns: 4,
+			Columns: 2,
 			Items: []tmpl.MenuItem{
 				{ID: "post", Title: "博客", URL: "/", Icon: "solar:documents-bold-duotone", Theme: "#1BCDFC"},
 				{ID: "archive", Title: "归档", URL: "/archives/", Icon: "default:calendar", Theme: "#3DC550"},
-				{ID: "explore", Title: "探索", URL: "/explore/", Icon: "solar:planet-bold-duotone", Theme: "#FA6400"},
-				{ID: "social", Title: "社交", URL: "/friends/", Icon: "solar:chat-square-like-bold-duotone", Theme: "#F44336"},
 			},
 		},
 		Footer: tmpl.Footer{
@@ -51,13 +49,5 @@ func DefaultSite() *tmpl.Site {
 				{Title: "Comments", URL: "#", Icon: `<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">`},
 			},
 		},
-		RecentPosts: []tmpl.RecentPost{
-			{Title: "Demo 2：Go 服务端渲染验证", URL: "/post/hello"},
-			{Title: "Demo 1：Stellar CSS 编译验证", URL: "#"},
-			{Title: "用 shim 方案脱离 Hexo 编译 Stylus", URL: "#"},
-			{Title: "深色模式与菜单图标机制", URL: "#"},
-			{Title: "Artalk 评论集成方案", URL: "#"},
-		},
-		Tags: []string{"CSS", "Stellar", "Go", "Gin", "Hexo", "SQLite"},
 	}
 }

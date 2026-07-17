@@ -20,6 +20,10 @@ type ViewData struct {
 	Cats     []*CatItem     // 分类索引页
 	TagItems []*TagItem     // 标签索引页
 
+	// 侧边栏动态数据（所有前台页面渲染前由 fillSidebar 填充）。
+	Recent   []*RecentPost // 近期发布 widget（最新 5 篇 published）
+	TagCloud []*TagItem    // 标签云 widget（按文章数降序前 20）
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
@@ -95,10 +99,8 @@ type Site struct {
 	Avatar      string       `yaml:"avatar"` // logo 头像 URL
 	LogoTitle   string       `yaml:"logo_title"`
 	LogoSub     string       `yaml:"logo_sub"`
-	Menubar     Menubar      `yaml:"menubar"`
-	Footer      Footer       `yaml:"footer"`
-	RecentPosts []RecentPost `yaml:"recent_posts"`
-	Tags        []string     `yaml:"tags"`
+	Menubar Menubar `yaml:"menubar"`
+	Footer  Footer  `yaml:"footer"`
 }
 
 // Menubar 对齐 _config.yml menubar.items。
