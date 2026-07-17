@@ -227,6 +227,27 @@ func main() {
 				Content: template.HTML(p.ContentHTML),
 			}
 			data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+			// 上下篇导航
+			if prev, err := st.GetPrevPost(slug); err == nil && prev != nil {
+				data.PrevPost = &tmpl.AdjacentPost{Slug: prev.Slug, Title: prev.Title}
+			}
+			if next, err := st.GetNextPost(slug); err == nil && next != nil {
+				data.NextPost = &tmpl.AdjacentPost{Slug: next.Slug, Title: next.Title}
+			}
+			// 相关文章（按标签匹配，最多 4 篇）
+			if related, err := st.ListRelatedByTags(slug, p.Tags, 4); err == nil && len(related) > 0 {
+				cards := make([]*tmpl.PostCard, 0, len(related))
+				for _, rp := range related {
+					cards = append(cards, &tmpl.PostCard{
+						Slug:    rp.Slug,
+						Title:   rp.Title,
+						Excerpt: rp.Excerpt,
+						Cover:   rp.Cover,
+						Date:    rp.CreatedAt,
+					})
+				}
+				data.RelatedPosts = cards
+			}
 			fillSidebar(data)
 			fillComments(data, "/post/"+slug)
 			html, err := engine.Render("layout/base", data)

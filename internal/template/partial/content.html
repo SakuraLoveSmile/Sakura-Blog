@@ -5,3 +5,30 @@
 <article class="md-text content">
   {{.Content}}
 </article>
+
+{{if or .PrevPost .NextPost}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    {{if .PrevPost}}<div class="item" id="prev">
+      <div class="note">较新文章</div>
+      <a href="/post/{{.PrevPost.Slug}}">{{.PrevPost.Title}}</a>
+    </div>{{end}}
+    {{if .NextPost}}<div class="item" id="next">
+      <div class="note">较早文章</div>
+      <a href="/post/{{.NextPost.Slug}}">{{.NextPost.Title}}</a>
+    </div>{{end}}
+  </section>
+</div>
+{{end}}
+
+{{if .RelatedPosts}}
+<div class="related-wrap" id="related-posts">
+  <section class="header"><div class="title cap theme">您可能感兴趣的文章</div></section>
+  <section class="body"><div class="related-posts">
+    {{range .RelatedPosts}}<a class="item" href="/post/{{.Slug}}">
+      <span class="title">{{.Title}}</span>
+      <span class="excerpt">{{.Excerpt}}</span>
+    </a>{{end}}
+  </div></section>
+</div>
+{{end}}

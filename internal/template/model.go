@@ -32,8 +32,19 @@ type ViewData struct {
 	// 最新评论 widget（fillSidebar 填充，comments.enabled 时）。
 	LatestComments []*LatestComment
 
+	// 文章页上下篇导航与相关文章。
+	PrevPost     *AdjacentPost // 上一篇（时间更早），nil 则不渲染
+	NextPost     *AdjacentPost // 下一篇（时间更晚），nil 则不渲染
+	RelatedPosts []*PostCard   // 相关文章（按标签匹配，最多 4 篇）
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
+}
+
+// AdjacentPost 文章页上下篇导航数据。
+type AdjacentPost struct {
+	Slug  string
+	Title string
 }
 
 // ArchiveYear 归档页按年份分组的文章列表，对齐 Stellar archive.ejs。

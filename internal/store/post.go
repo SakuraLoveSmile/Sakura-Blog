@@ -297,6 +297,80 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	return p, nil
 }
 
+// GetPrevPost 按 created_at 查前一篇已发布文章（时间更早的最近一篇）。
+func (s *Store) GetPrevPost(slug string) (*Post, error) {
+	q := `SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
+		FROM posts WHERE status = ? AND substr(created_at, 1, 19) < (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?)
+		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT 1`
+	row := s.db.QueryRow(q, StatusPublished, slug)
+	p := &Post{}
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get prev post for %s: %w", slug, err)
+	}
+	return p, nil
+}
+
+// GetNextPost 按 created_at 查后一篇已发布文章（时间更晚的最近一篇）。
+func (s *Store) GetNextPost(slug string) (*Post, error) {
+	q := `SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
+		FROM posts WHERE status = ? AND substr(created_at, 1, 19) > (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?)
+		ORDER BY substr(created_at, 1, 19) ASC, id ASC LIMIT 1`
+	row := s.db.QueryRow(q, StatusPublished, slug)
+	p := &Post{}
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get next post for %s: %w", slug, err)
+	}
+	return p, nil
+}
+
+// ListRelatedByTags 按标签匹配相关文章，排除自身，最多 limit 篇。
+func (s *Store) ListRelatedByTags(slug string, tags string, limit int) ([]*Post, error) {
+	tagList := strings.Split(tags, ",")
+	var validTags []string
+	for _, t := range tagList {
+		if t = strings.TrimSpace(t); t != "" {
+			validTags = append(validTags, t)
+		}
+	}
+	if len(validTags) == 0 {
+		return nil, nil
+	}
+
+	seen := map[string]bool{}
+	var result []*Post
+	for _, tag := range validTags {
+		rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
+			FROM posts WHERE status = ? AND slug != ? AND (',' || tags || ',') LIKE ? ORDER BY datetime(created_at) DESC`,
+			StatusPublished, slug, "%,"+tag+",%")
+		if err != nil {
+			return nil, fmt.Errorf("query related posts by tag %s: %w", tag, err)
+		}
+		posts, err := scanPosts(rows)
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range posts {
+			if !seen[p.Slug] {
+				seen[p.Slug] = true
+				result = append(result, p)
+				if len(result) >= limit {
+					return result, nil
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
 // Create 新建文章，返回新记录 id。slug 冲突时返回错误。
 func (s *Store) Create(p *Post) (int64, error) {
 	if p.Status == "" {
