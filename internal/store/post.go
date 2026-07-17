@@ -159,6 +159,19 @@ func (s *Store) ListPublishedPaged(page, size int) ([]*Post, error) {
 	return scanPosts(rows)
 }
 
+// ListPublishedRecent 返回最新 limit 篇已发布文章，用于侧边栏近期发布 widget。
+func (s *Store) ListPublishedRecent(limit int) ([]*Post, error) {
+	if limit < 1 {
+		limit = 5
+	}
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts WHERE status = ? ORDER BY datetime(created_at) DESC LIMIT ?`, postColumns), StatusPublished, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list recent published: %w", err)
+	}
+	defer rows.Close()
+	return scanPosts(rows)
+}
+
 // CountPublished 返回已发布文章总数，用于首页分页计算。
 func (s *Store) CountPublished() (int, error) {
 	var n int
