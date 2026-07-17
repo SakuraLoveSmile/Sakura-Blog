@@ -371,7 +371,48 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	return p, nil
 }
 
-// Create 新建文章，返回新记录 id。slug 冲突时返回错误。
+// GetPrevNext 查当前文章的上下篇（已发布），按 created_at 语义对齐 Stellar read_next.ejs：
+//
+//	prev = 较新文章（created_at 严格大于当前的那篇里最近的一篇）
+//	next = 较早文章（created_at 严格小于当前的那篇里最旧的一篇）
+//
+// 两者都过滤 status=published 并排除当前 id。无相邻时对应返回 nil（非 error）。
+// 只 2 篇文章时：新篇 prev=nil、next=旧篇；旧篇 prev=新篇、next=nil。
+//
+// 注意：不用 datetime() 函数包裹，直接字符串比较。created_at 列存的是 modernc/sqlite
+// 对 time.Time 序列化的 "2026-07-16 00:00:00 +0000 UTC" 格式，datetime() 解析这种带
+// "+0000 UTC" 后缀的字符串会返回 NULL，导致 < NULL 永不命中。该格式年月日时分秒对齐、
+// 字典序等价时间序，且参数 p.CreatedAt 走同一条 driver 序列化路径，格式必然一致。
+func (s *Store) GetPrevNext(p *Post) (prev, next *Post, err error) {
+	// prev：created_at > 当前，按 created_at 升序取第一条（最近的那篇）
+	prev = &Post{}
+	err = s.db.QueryRow(fmt.Sprintf(`SELECT %s FROM posts
+		WHERE status = ? AND id != ? AND created_at > ?
+		ORDER BY created_at ASC LIMIT 1`, postColumns),
+		StatusPublished, p.ID, p.CreatedAt).
+		Scan(&prev.ID, &prev.Slug, &prev.Title, &prev.Excerpt, &prev.Cover, &prev.ContentMD, &prev.ContentHTML, &prev.Status, &prev.CreatedAt, &prev.UpdatedAt)
+	if err == sql.ErrNoRows {
+		prev = nil
+	} else if err != nil {
+		return nil, nil, fmt.Errorf("get prev of %s: %w", p.Slug, err)
+	}
+
+	// next：created_at < 当前，按 created_at 降序取第一条（最旧的那篇相邻）
+	next = &Post{}
+	err = s.db.QueryRow(fmt.Sprintf(`SELECT %s FROM posts
+		WHERE status = ? AND id != ? AND created_at < ?
+		ORDER BY created_at DESC LIMIT 1`, postColumns),
+		StatusPublished, p.ID, p.CreatedAt).
+		Scan(&next.ID, &next.Slug, &next.Title, &next.Excerpt, &next.Cover, &next.ContentMD, &next.ContentHTML, &next.Status, &next.CreatedAt, &next.UpdatedAt)
+	if err == sql.ErrNoRows {
+		next = nil
+		return prev, nil, nil
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("get next of %s: %w", p.Slug, err)
+	}
+	return prev, next, nil
+}
 func (s *Store) Create(p *Post) (int64, error) {
 	if p.Status == "" {
 		p.Status = StatusDraft

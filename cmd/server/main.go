@@ -105,21 +105,47 @@ func main() {
 
 		// 优先查 DB
 		if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil {
+			// 填标签/分类（关联表查询），用于面包屑分类段 + footer 标签/分类段
+			if err := st.FillTagsCategories([]*store.Post{p}); err != nil {
+				log.Printf("fill tags/categories for %s: %v", slug, err)
+			}
+			// 查上下篇：prev=较新，next=较旧（对齐 Stellar read_next.ejs 语义）
+			var readNext *tmpl.ReadNext
+			prev, next, err := st.GetPrevNext(p)
+			if err != nil {
+				log.Printf("get prev/next for %s: %v", slug, err)
+			} else if prev != nil || next != nil {
+				readNext = &tmpl.ReadNext{}
+				if prev != nil {
+					readNext.Prev = toCard(prev)
+				}
+				if next != nil {
+					readNext.Next = toCard(next)
+				}
+			}
+
 			toc, htmlWithIDs := post.ExtractTOC(p.ContentHTML)
 			data := &tmpl.ViewData{
 				Site: site,
 				Page: &tmpl.Page{
-					Title:   p.Title,
-					Slug:    p.Slug,
-					Layout:  "post",
-					Type:    "tech",
-					Lang:    "zh-CN",
-					MenuID:  "post",
-					Date:    p.CreatedAt.Format("2006-01-02"),
-					Excerpt: p.Excerpt,
+					Title:       p.Title,
+					Slug:        p.Slug,
+					Layout:      "post",
+					Type:        "tech",
+					Lang:        "zh-CN",
+					MenuID:      "post",
+					Date:        p.CreatedAt.Format("2006-01-02"),
+					Updated:     p.UpdatedAt.Format("2006-01-02"),
+					Excerpt:     p.Excerpt,
+					Cover:       p.Cover,
+					Tags:        p.Tags,
+					Categories:  p.Categories,
+					CreatedTime: p.CreatedAt,
+					UpdatedTime: p.UpdatedAt,
 				},
-				Content: template.HTML(htmlWithIDs),
-				TOCHTML: template.HTML(post.BuildTOCHTML(toc)),
+				Content:  template.HTML(htmlWithIDs),
+				TOCHTML:  template.HTML(post.BuildTOCHTML(toc)),
+				ReadNext: readNext,
 			}
 			html, err := engine.Render("base", data)
 			if err != nil {
@@ -141,18 +167,28 @@ func main() {
 			return
 		}
 
+		// 文件回退路径无 store 数据：Cover/Tags/Categories/ReadNext 留零值（不渲染对应区块）。
+		// CreatedTime/UpdatedTime 从 frontmatter date 字符串解析，保证 <time datetime> 正确；
+		// 解析失败则用零值，模板 Page.Updated 为空时已 fallback 到 Page.Date 显示。
+		var createdTime time.Time
+		if t, perr := time.Parse("2006-01-02", p.Date); perr == nil {
+			createdTime = t
+		}
+
 		toc, htmlWithIDs := post.ExtractTOC(p.HTML)
 		data := &tmpl.ViewData{
 			Site: site,
 			Page: &tmpl.Page{
-				Title:   p.Title,
-				Slug:    p.Slug,
-				Layout:  "post",
-				Type:    "tech",
-				Lang:    "zh-CN",
-				MenuID:  "post",
-				Date:    p.Date,
-				Excerpt: p.Excerpt,
+				Title:       p.Title,
+				Slug:        p.Slug,
+				Layout:      "post",
+				Type:        "tech",
+				Lang:        "zh-CN",
+				MenuID:      "post",
+				Date:        p.Date,
+				Excerpt:     p.Excerpt,
+				CreatedTime: createdTime,
+				UpdatedTime: createdTime,
 			},
 			Content: template.HTML(htmlWithIDs),
 			TOCHTML: template.HTML(post.BuildTOCHTML(toc)),
@@ -240,19 +276,25 @@ const pageSize = 10
 func toCards(posts []*store.Post) []*tmpl.PostCard {
 	cards := make([]*tmpl.PostCard, 0, len(posts))
 	for _, p := range posts {
-		excerpt := p.Excerpt
-		if excerpt == "" {
-			excerpt = post.ExcerptFromHTML(p.ContentHTML, 120)
-		}
-		cards = append(cards, &tmpl.PostCard{
-			Slug:    p.Slug,
-			Title:   p.Title,
-			Excerpt: excerpt,
-			Cover:   p.Cover,
-			Date:    p.CreatedAt,
-		})
+		cards = append(cards, toCard(p))
 	}
 	return cards
+}
+
+// toCard 把单篇 store.Post 转成 PostCard 视图模型。
+// read_next 上下篇导航复用此函数（只需 Slug/Title，其余字段保留默认零值）。
+func toCard(p *store.Post) *tmpl.PostCard {
+	excerpt := p.Excerpt
+	if excerpt == "" {
+		excerpt = post.ExcerptFromHTML(p.ContentHTML, 120)
+	}
+	return &tmpl.PostCard{
+		Slug:    p.Slug,
+		Title:   p.Title,
+		Excerpt: excerpt,
+		Cover:   p.Cover,
+		Date:    p.CreatedAt,
+	}
 }
 
 // buildPaginator 构造分页器，Go 侧预生成每页 URL，避免模板拼接 query 被转义破坏。

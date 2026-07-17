@@ -11,7 +11,11 @@
   {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
   <div class="sitebg"><div class="siteblur"></div></div>
 
-  <div id="l_cover"></div>
+  <div id="l_cover">
+    {{- /* 封面图：仅文章页（Layout=="post"）且 Page.Cover 非空时渲染，对齐 Stellar post_cover.ejs。
+          其他页 #l_cover 保持空，不影响布局。*/}}
+    {{if eq .Page.Layout "post"}}{{template "post_cover" .}}{{end}}
+  </div>
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
   <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">

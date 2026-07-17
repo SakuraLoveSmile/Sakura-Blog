@@ -33,6 +33,11 @@ type ViewData struct {
 	// <a class="toc-link">...</a><ol class="toc-child">...</ol></li></ol>，H3 缩进靠 toc-child 嵌套。
 	TOCHTML template.HTML
 
+	// ReadNext 文章详情页的上下篇导航（Layout=="post" 时填充）。
+	// nil 或 Prev/Next 都为 nil 时不渲染 read_next 块。结构对齐 Stellar read_next.ejs：
+	// Prev=较新文章（created_at 更大），Next=较早文章（created_at 更小）。
+	ReadNext *ReadNext
+
 	// SearchQuery 站内搜索页的查询词（Layout=="search" 时回显到搜索框与标题）。
 	SearchQuery string
 
@@ -41,12 +46,21 @@ type ViewData struct {
 }
 
 // PostCard 首页文章卡片视图模型，对齐 Stellar post_card.ejs 的默认卡片结构。
+// ReadNext 也复用此结构承载上下篇（Slug/Title 足够，Excerpt/Cover/Date 在 read_next 不展示）。
 type PostCard struct {
 	Slug    string
 	Title   string
 	Excerpt string
 	Cover   string // 封面图 URL，空则不渲染 .post-cover
 	Date    time.Time
+}
+
+// ReadNext 文章详情页的上下篇导航视图模型，对齐 Stellar read_next.ejs。
+// Prev=较新文章（时间更新的那篇），Next=较早文章（时间更旧的那篇）。
+// Prev/Next 为 nil 时不渲染对应栏；两者都为 nil 时整个 read_next 块不渲染。
+type ReadNext struct {
+	Prev *PostCard
+	Next *PostCard
 }
 
 // Paginator 分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
@@ -174,7 +188,14 @@ type Page struct {
 	Lang    string
 	MenuID  string // 当前高亮的菜单 id
 	Author  string
-	Date    string // 原始日期字符串
+	Date    string // 原始日期字符串（展示用，如 2026-07-16）
 	Updated string
 	Excerpt string
+
+	// 文章详情页扩展字段（Layout=="post" 用，对齐 Stellar page 对象）。
+	Cover        string    // 封面图 URL，空则不渲染 .l_cover.post（对齐 post_cover.ejs 的 banner 判定）
+	Tags         []string  // 标签列表，footer 标签段 + 面包屑用
+	Categories   []string  // 分类列表，面包屑分类段用
+	CreatedTime  time.Time // 创建时间，<time datetime> 与 read_next 查询用
+	UpdatedTime  time.Time // 更新时间，<time datetime> 用
 }

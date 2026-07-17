@@ -306,6 +306,47 @@ atom.xml/sitemap.xml 用 `text/template`（别名 `textTemplate` 避免与 `html
 
 Atom 规范要求 `<id>` 是 permanent identifier，slug 变更后不应变。用 `baseURL + "/post/" + slug` 作 id 会在改 slug 时被订阅器当新文章重复推送。**对策**：`fmt.Sprintf("tag:%s,2026:post/%d", host, p.ID)`，用稳定的 post.ID，host 从 siteURL 解析。
 
+## 第五阶段踩坑（文章详情页完善：banner/footer/read-next/cover）
+
+### datetime() 解析 Go time.String() 格式失败，比较查询要用字符串直比
+
+modernc.org/sqlite 把 `time.Time` 参数序列化成 Go 默认 String 格式 `"2026-07-16 00:00:00 +0000 UTC"`（带 `+0000 UTC` 后缀）存入 DATETIME 列。SQLite `datetime()` 函数**无法解析这种带后缀的格式**，返回 NULL。
+
+- `ORDER BY datetime(created_at) DESC` 碰巧能工作：`datetime()` 解析 Go 格式前半段 `2026-07-16 00:00:00` 成功，忽略 `+0000 UTC`，排序正常（现有 `ListPublishedPaged`/`searchLike` 依赖此行为）
+- **但 `WHERE datetime(created_at) < datetime(?)` 会失败**：右侧 `datetime(?)` 对 Go 格式整体返回 NULL，`< NULL` 永不成立，`GetPrevNext` 两个查询都返回 nil，read_next 不渲染
+
+**对策**：`GetPrevNext` 不用 `datetime()` 包裹，直接字符串比较 `created_at > ?` / `created_at < ?`，`ORDER BY created_at`。Go 格式年月日时分秒对齐、字典序等价时间序，且参数 `p.CreatedAt` 走同一条 driver 序列化路径，存储与查询格式必然一致。已验证 hello（2026-07-16）next=css-compile（2026-07-15）、css-compile prev=hello 正确。
+
+### 文章页结构对齐 page.ejs layoutDiv 顺序
+
+`content.html` 必须按 `page.ejs` 的 `layoutDiv()` 顺序组装：`article_banner` → `<article class="md-text content">` → `article_footer` → `read_next`。Stellar CSS 有 `article.md-text.content+.related-wrap`（2970 行）相邻选择器，顺序错位会导致 read-next 样式失效。
+
+### article_banner 结构严格对齐 article_banner.ejs + dateinfo.ejs + breadcrumb/blog.ejs
+
+普通文章分支（无 banner url、无 author）输出：
+```
+.article.banner.top > .content > (.top.bread-nav.footnote > .left > (#breadcrumb + #post-meta)) + (.bottom.only-title > .text-area > h1.text.title)
+```
+- `#breadcrumb`：`<a class="cap breadcrumb" href="/">主页</a><span class="sep"></span><a class="cap breadcrumb" href="/">文章</a>` + 每个分类 `<span class="sep"></span><a class="cap breadcrumb" href="/categories/名">名</a>`。`btn.home=主页`、`btn.blog=文章`（zh-CN.yml）
+- `#post-meta`（dateinfo.ejs 普通分支）：`<span class="text created">发布于：<time datetime="RFC3339">日期</time></span><span class="sep updated"></span><span class="text updated">更新于：<time>日期</time></span>`。注意第一个 sep 是 `class="sep updated"`（CSS 2545 行专门样式化），不是 `class="sep"`。`meta.created=发布于`、`meta.updated=更新于`
+- **`<time>` 显示文本被 main.js relativeDate 改写成「1 天前」**：这是 Stellar 原版行为，不是 bug。`datetime` 属性仍是正确的 RFC3339，语义正确
+
+### read_next 语义：prev=较新(newer)，next=较旧(older)
+
+对齐 `read_next.ejs`：`prev = page.prev` 配 `title_prev = __('meta.newer')`「较新文章」，`next = page.next` 配 `title_next = __('meta.older')`「较早文章」。**整个 `.related-wrap#read-next` 只在 prev 或 next 至少一个非 nil 时渲染**（`if (prev || next)` 守卫）。每个 `.item` 始终输出占 grid 位（`#prev`/`#next` 两列等宽 240.5px），内容仅在对应非 nil 时渲染。hello 最新→prev 空栏、next=css-compile；css-compile 最旧→prev=hello、next 空栏。
+
+### article_footer 原版无 tags/categories section
+
+原版 `article_footer.ejs` 只渲染 references/license/share/contributors，**无 tags/categories section 的 CSS**。本期按用户决策加 `#tags`/`#categories` section，复用 `.article-footer .body p a`（2386 行 `font-weight: unset`）的链接样式，结构 `<div class="body"><p><a>标签名</a> <a>...</a></p></div>`。`.article-footer:empty{display:none}`（2367 行）保证全空时不占位（但只要有 license section 就非空）。
+
+### post_cover 用内联 style 替代 data-bg
+
+原版 `post_cover.ejs` 用 `<div class="lazy img bg" data-bg="url">` + lazyload JS 把 `data-bg` 转成 `background-image`。本期无 lazyload JS，改用内联 `style="background-image:url('...')"`。`Page.Cover` 为空时不渲染（对齐原版 `page.banner==undefined && !auto_banner` 返回空）。base.html 的 `#l_cover` 仅 `Layout=="post"` 时调 `post_cover` partial，其他页保持空不回归。
+
+### 文件回退路径 CreatedTime 从 Date 字符串解析
+
+文件回退路径（`posts.Load`）返回的 `post.Post` 只有 `Date` 字符串（frontmatter `2026-07-15`），无 `time.Time`。用 `time.Parse("2006-01-02", p.Date)` 解析填 `CreatedTime`/`UpdatedTime`，保证 `<time datetime>` 正确；解析失败用零值，模板 `Page.Updated` 为空时已 fallback 到 `Page.Date` 显示。该路径无 store 数据，`Cover/Tags/Categories/ReadNext` 留零值（不渲染对应区块），是向后兼容的次要路径。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
@@ -321,3 +362,4 @@ Atom 规范要求 `<id>` 是 permanent identifier，slug 变更后不应变。�
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
 - [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
 - [x] Demo 4：站内搜索 + RSS + sitemap + 文章 TOC（FTS5 trigram + LIKE 降级 / atom.xml permanent ID / sitemap.xml / goldmark heading id 注入 + 嵌套 toc widget，preview 验证通过）
+- [x] Demo 5：文章详情页完善（对齐 Stellar page.ejs：article_banner 标题区 + 面包屑 + dateinfo / article_footer license+标签+分类 / read_next 上下篇 / post_cover 封面图，preview 验证通过）

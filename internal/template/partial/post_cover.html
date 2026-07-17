@@ -1,0 +1,11 @@
+{{- /* post_cover.html: 文章详情页封面图，对应 Stellar _partial/cover/post_cover.ejs
+   原版用 .lazy.img.bg[data-bg=url] + lazyload JS 把 data-bg 转成 background-image。
+   本期无 lazyload JS，改用内联 style="background-image:url(...)" 直接渲染。
+   Page.Cover 为空时不渲染（对齐原版 page.banner==undefined && !auto_banner 返回空）。*/ -}}
+{{if .Page.Cover}}
+<div class="l_cover post">
+  <div class="cover">
+    <div class="lazy img bg" style="background-image:url('{{.Page.Cover}}')"></div>
+  </div>
+</div>
+{{end}}

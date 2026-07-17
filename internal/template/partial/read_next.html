@@ -1,0 +1,24 @@
+{{- /* read_next.html: 文章详情页上下篇导航，对应 Stellar _partial/main/article/read_next.ejs
+   语义严格对齐原版：Prev=较新文章(newer)，Next=较早文章(older)。
+   ReadNext 为 nil 或 Prev/Next 都为 nil 时不渲染整个 .related-wrap。
+   每个 .item 始终输出（占 grid 位），内容仅在对应 prev/next 非空时渲染。*/ -}}
+{{if .ReadNext}}
+{{if or .ReadNext.Prev .ReadNext.Next}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    <div class="item" id="prev">
+      {{if .ReadNext.Prev}}
+      <div class="note">较新文章</div>
+      <a href="{{url_for (printf "/post/%s" .ReadNext.Prev.Slug)}}">{{.ReadNext.Prev.Title}}</a>
+      {{end}}
+    </div>
+    <div class="item" id="next">
+      {{if .ReadNext.Next}}
+      <div class="note">较早文章</div>
+      <a href="{{url_for (printf "/post/%s" .ReadNext.Next.Slug)}}">{{.ReadNext.Next.Title}}</a>
+      {{end}}
+    </div>
+  </section>
+</div>
+{{end}}
+{{end}}
