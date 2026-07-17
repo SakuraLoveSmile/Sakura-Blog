@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -64,7 +65,15 @@ func main() {
 	defer st.Close()
 	log.Printf("sqlite ready: %s", dbPath)
 
-	site := config.DefaultSite()
+	// 站点配置：优先读 config/site.yml，缺失或解析失败回退 DefaultSite。
+	configPath := filepath.Join(root, "config", "site.yml")
+	site, err := config.LoadSite(configPath)
+	if err != nil {
+		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
+		site = config.DefaultSite()
+	} else {
+		log.Printf("site config loaded from %s", configPath)
+	}
 
 	// admin handler（含 seed 能力）
 	adminHandler := admin.New(st, posts, engine, site)
@@ -149,9 +158,20 @@ func main() {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 	})
 
-	// 首页兜底：重定向到示例文章，方便验证
+	// 首页：渲染文章列表（navbar + post-list + paginator），对齐 Stellar layout/index.ejs。
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/post/hello")
+		renderHome(c, st, engine, site, 1)
+	})
+
+	// 分页：/page/N 走同一首页渲染逻辑。
+	r.GET("/page/:num", func(c *gin.Context) {
+		numStr := c.Param("num")
+		page, err := strconv.Atoi(numStr)
+		if err != nil || page < 1 {
+			c.String(http.StatusNotFound, "page not found: %s", numStr)
+			return
+		}
+		renderHome(c, st, engine, site, page)
 	})
 
 	addr := ":8080"
@@ -159,4 +179,67 @@ func main() {
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("run: %v", err)
 	}
+}
+
+// pageSize 首页每页文章数，对齐 Hexo index_generator per_page 默认值。
+const pageSize = 10
+
+// renderHome 渲染首页文章列表（Layout=="index"）。
+// page 从 1 开始；越界（page > totalPages）回 404。文章数据走 store DB 查询。
+func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site, page int) {
+	total, err := st.CountPublished()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count posts: %v", err)
+		return
+	}
+	totalPages := (total + pageSize - 1) / pageSize
+	if totalPages == 0 {
+		totalPages = 1 // 无文章时仍渲染空列表页（分页器 Total=1 不显示）
+	}
+	if page > totalPages {
+		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
+		return
+	}
+
+	posts, err := st.ListPublishedPaged(page, pageSize)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list posts: %v", err)
+		return
+	}
+
+	cards := make([]*tmpl.PostCard, 0, len(posts))
+	for _, p := range posts {
+		cards = append(cards, &tmpl.PostCard{
+			Slug:    p.Slug,
+			Title:   p.Title,
+			Excerpt: p.Excerpt,
+			Cover:   p.Cover,
+			Date:    p.CreatedAt,
+		})
+	}
+
+	pages := make([]int, totalPages)
+	for i := range pages {
+		pages[i] = i + 1
+	}
+
+	data := &tmpl.ViewData{
+		Site: site,
+		Page: &tmpl.Page{
+			Title:  site.Title,
+			Layout: "index",
+			Type:   "tech",
+			Lang:   "zh-CN",
+			MenuID: "post",
+		},
+		Posts:     cards,
+		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+	}
+
+	html, err := engine.Render("base", data)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "render: %v", err)
+		return
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }

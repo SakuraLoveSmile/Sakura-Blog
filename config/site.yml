@@ -1,0 +1,68 @@
+# 站点配置 - Stellar Demo
+# 对齐 internal/config/site.go 的 DefaultSite()，供 main.go 启动时加载。
+# 修改后重启服务生效（无需重新编译，yaml 运行时读取）。
+
+title: Stellar Demo
+subtitle: Go 服务端渲染
+description: 用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客，验证服务端渲染链路。
+avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+logo_title: Stellar Demo
+logo_sub: Go SSR 验证
+
+# 顶部菜单：每项 theme 是高亮色（inline color，控制 SVG fill=currentColor）
+# 图标 key 对应 resource/hexo-theme-stellar/_data/icons.yml
+menubar:
+  columns: 4
+  items:
+    - id: post
+      title: 博客
+      url: /
+      icon: solar:documents-bold-duotone
+      theme: "#1BCDFC"
+    - id: archive
+      title: 归档
+      url: /archives/
+      icon: default:calendar
+      theme: "#3DC550"
+    - id: explore
+      title: 探索
+      url: /explore/
+      icon: solar:planet-bold-duotone
+      theme: "#FA6400"
+    - id: social
+      title: 社交
+      url: /friends/
+      icon: solar:chat-square-like-bold-duotone
+      theme: "#F44336"
+
+# 侧边栏底部社交图标：icon 是 raw HTML，单引号包裹避免 yaml 解析问题
+footer:
+  social:
+    - title: GitHub
+      url: https://github.com/
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/08a41b181ce68.svg">'
+    - title: Music
+      url: "#"
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3845874.svg">'
+    - title: Unsplash
+      url: "#"
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3616429.svg">'
+    - title: Comments
+      url: "#"
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
+
+# 近期发布 widget
+recent_posts:
+  - title: "Demo 2：Go 服务端渲染验证"
+    url: /post/hello
+  - title: "Demo 1：Stellar CSS 编译验证"
+    url: "#"
+  - title: "用 shim 方案脱离 Hexo 编译 Stylus"
+    url: "#"
+  - title: "深色模式与菜单图标机制"
+    url: "#"
+  - title: "Artalk 评论集成方案"
+    url: "#"
+
+# 标签云
+tags: [CSS, Stellar, Go, Gin, Hexo, SQLite]

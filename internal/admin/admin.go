@@ -81,6 +81,7 @@ func (h *Handler) editForm(c *gin.Context) {
 		row.Slug = p.Slug
 		row.Title = p.Title
 		row.Excerpt = p.Excerpt
+		row.Cover = p.Cover
 		row.ContentMD = p.ContentMD
 		row.Status = p.Status
 		isEdit = true
@@ -98,12 +99,13 @@ func (h *Handler) save(c *gin.Context) {
 	slug := strings.TrimSpace(c.PostForm("slug"))
 	title := strings.TrimSpace(c.PostForm("title"))
 	excerpt := strings.TrimSpace(c.PostForm("excerpt"))
+	cover := strings.TrimSpace(c.PostForm("cover"))
 	contentMD := c.PostForm("content")
 	status := c.PostForm("status")
 	origSlug := c.PostForm("orig_slug") // 编辑时的原 slug
 
 	if slug == "" {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, contentMD, status, "slug 不能为空")
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 不能为空")
 		return
 	}
 	if status != store.StatusDraft && status != store.StatusPublished {
@@ -113,7 +115,7 @@ func (h *Handler) save(c *gin.Context) {
 	// 服务端渲染 Markdown 为 HTML（复用 post.Service 的 goldmark 实例）
 	contentHTML, err := h.posts.Render(contentMD)
 	if err != nil {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, contentMD, status, "Markdown 渲染失败: "+err.Error())
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -121,7 +123,7 @@ func (h *Handler) save(c *gin.Context) {
 	if origSlug != "" && origSlug != slug {
 		if _, err := h.store.GetBySlug(slug); err == nil {
 			// 新 slug 已被占用
-			h.renderSaveError(c, origSlug, slug, title, excerpt, contentMD, status, "slug 已被其他文章占用: "+slug)
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 已被其他文章占用: "+slug)
 			return
 		}
 	}
@@ -130,6 +132,7 @@ func (h *Handler) save(c *gin.Context) {
 		Slug:        slug,
 		Title:       title,
 		Excerpt:     excerpt,
+		Cover:       cover,
 		ContentMD:   contentMD,
 		ContentHTML: contentHTML,
 		Status:      status,
@@ -139,12 +142,12 @@ func (h *Handler) save(c *gin.Context) {
 		// 更新（用 orig_slug 定位）
 		p.Slug = slug
 		if err := h.updateWithRename(origSlug, p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, contentMD, status, "保存失败: "+err.Error())
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "保存失败: "+err.Error())
 			return
 		}
 	} else {
 		if _, err := h.store.Create(p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, contentMD, status, "创建失败: "+err.Error())
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "创建失败: "+err.Error())
 			return
 		}
 	}
@@ -183,11 +186,12 @@ func (h *Handler) delete(c *gin.Context) {
 }
 
 // renderSaveError 保存失败时回显表单数据并提示错误。
-func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, contentMD, status, errMsg string) {
+func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, contentMD, status, errMsg string) {
 	row := &tmpl.AdminPostRow{
 		Slug:      slug,
 		Title:     title,
 		Excerpt:   excerpt,
+		Cover:     cover,
 		ContentMD: contentMD,
 		Status:    status,
 	}
@@ -232,6 +236,7 @@ func (h *Handler) Seed() error {
 			Slug:        slug,
 			Title:       title,
 			Excerpt:     meta.Excerpt,
+			Cover:       meta.Cover,
 			ContentMD:   body,
 			ContentHTML: html,
 			Status:      store.StatusPublished,
