@@ -138,6 +138,20 @@ func main() {
 		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
 	}
 
+	// fillSEO：填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
+	fillSEO := func(data *tmpl.ViewData, c *gin.Context) {
+		baseURL := ""
+		if site.URL != "" {
+			baseURL = site.URL
+		} else {
+			baseURL = "http://" + c.Request.Host
+		}
+		data.Page.CanonicalURL = baseURL + c.Request.URL.Path
+		if data.Page.Description == "" {
+			data.Page.Description = site.Description
+		}
+	}
+
 	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 最新评论 5 条），所有前台页面渲染前调用。
 	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
 	fillSidebar := func(data *tmpl.ViewData) {
@@ -272,8 +286,19 @@ func main() {
 				}
 				data.RelatedPosts = cards
 			}
+			// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
+			desc := p.Excerpt
+			if desc == "" {
+				d := stripHTML(p.ContentHTML)
+				if len(d) > 150 {
+					d = d[:150]
+				}
+				desc = d
+			}
+			data.Page.Description = desc
 			fillSidebar(data)
 			fillComments(data, "/post/"+slug)
+			fillSEO(data, c)
 			html, err := engine.Render("layout/base", data)
 			if err != nil {
 				c.String(http.StatusInternalServerError, "render: %v", err)
@@ -310,8 +335,18 @@ func main() {
 		}
 
 		data.TOC = tmpl.ExtractTOC(p.HTML)
+		desc := p.Excerpt
+		if desc == "" {
+			d := stripHTML(p.HTML)
+			if len(d) > 150 {
+				d = d[:150]
+			}
+			desc = d
+		}
+		data.Page.Description = desc
 		fillSidebar(data)
 		fillComments(data, "/post/"+slug)
+		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
@@ -386,6 +421,7 @@ func main() {
 			Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 		}
 		fillSidebar(data)
+		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
@@ -411,6 +447,7 @@ func main() {
 	// renderBase：渲染 base 布局并写响应（归档/分类/标签页共用）。
 	renderBase := func(c *gin.Context, data *tmpl.ViewData) {
 		fillSidebar(data)
+		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
@@ -597,6 +634,55 @@ func main() {
 			return
 		}
 		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
+	})
+
+	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、静态索引页。
+	r.GET("/sitemap.xml", func(c *gin.Context) {
+		baseURL := ""
+		if site.URL != "" {
+			baseURL = site.URL
+		} else {
+			baseURL = "http://" + c.Request.Host
+		}
+
+		type SitemapURL struct {
+			Loc      string `xml:"loc"`
+			LastMod  string `xml:"lastmod,omitempty"`
+			Priority string `xml:"priority,omitempty"`
+		}
+		type Sitemap struct {
+			XMLName xml.Name     `xml:"urlset"`
+			XMLNS   string       `xml:"xmlns,attr"`
+			URLs    []SitemapURL `xml:"url"`
+		}
+
+		sm := Sitemap{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+		// 首页
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/", Priority: "1.0"})
+
+		// 所有已发布文章
+		posts, err := st.ListPublished()
+		if err == nil {
+			for _, p := range posts {
+				sm.URLs = append(sm.URLs, SitemapURL{
+					Loc:     baseURL + "/post/" + p.Slug,
+					LastMod: p.UpdatedAt.Format("2006-01-02"),
+				})
+			}
+		}
+
+		// 静态页面
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/archives"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/categories"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/tags"})
+
+		output, err := xml.MarshalIndent(sm, "", "  ")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "marshal sitemap: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/xml; charset=utf-8", append([]byte(xml.Header), output...))
 	})
 
 	addr := ":8081" // qoder worktree 固定 8081，与 dev 的 8080 区分

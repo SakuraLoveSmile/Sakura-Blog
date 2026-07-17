@@ -139,6 +139,7 @@ type Site struct {
 	Title       string         `yaml:"title"`
 	Subtitle    string         `yaml:"subtitle"`
 	Description string         `yaml:"description"`
+	URL         string         `yaml:"url"`          // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
 	Avatar      string         `yaml:"avatar"`    // logo 头像 URL
 	AvatarBG    string         `yaml:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
 	LogoTitle   string         `yaml:"logo_title"`
@@ -233,16 +234,18 @@ type LatestComment struct {
 
 // Page 对齐 Hexo page 对象，文章页用。
 type Page struct {
-	Title    string
-	Slug     string
-	Layout   string // post / page / index / archive / categories / tags
-	Type     string // tech / story
-	Lang     string
-	MenuID   string // 当前高亮的菜单 id
-	Author   string
-	Date     string // 原始日期字符串
-	Updated  string
-	Excerpt  string
-	Category string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
-	Tag      string // 标签文章列表页的当前标签名
+	Title        string
+	Slug         string
+	Layout       string // post / page / index / archive / categories / tags
+	Type         string // tech / story
+	Lang         string
+	MenuID       string // 当前高亮的菜单 id
+	Author       string
+	Date         string // 原始日期字符串
+	Updated      string
+	Excerpt      string
+	Category     string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
+	Tag          string // 标签文章列表页的当前标签名
+	CanonicalURL string // 当前页面完整 URL（用于 canonical 和 og:url）
+	Description  string // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 }
