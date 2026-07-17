@@ -5,9 +5,6 @@
 <html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
 <body>
-  {{- /* 深色模式切换按钮（demo 用，对应 preview.html 的 demo-toggle）*/}}
-  <button class="demo-toggle" onclick="toggleTheme()">切换主题</button>
-
   {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
   <div class="sitebg"><div class="siteblur"></div></div>
 
@@ -28,8 +25,8 @@
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
-    {{- /* l_right：文章页挂 TOC widget（rightbar.html），其余页面为空 */}}
-    <aside class="l_right">{{if eq .Page.Layout "post"}}{{template "rightbar" .}}{{end}}</aside>
+    {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
+    <aside class="l_right">{{template "rightbar" .}}</aside>
 
     {{- /* float-panel menubtn：移动端侧栏开关（对齐 menubtn.ejs：rightbar-toggle 在前、leftbar-toggle 在后）。
        必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。 */}}

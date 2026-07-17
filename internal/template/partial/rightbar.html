@@ -1,9 +1,22 @@
-{{- /* rightbar.html: 文章页右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs + widgets/toc.ejs
-   仅实现 TOC widget（l_right 其余 widget 本 demo 用不到）。
-   结构对齐 toc.ejs layoutDiv：widget(collapse) > widget-header(name + cap-action) + widget-body(toc) + widget-footer(回到顶部)。
-   .TOC 为空（文章无 h2/h3）时整个 widgets 容器不输出，保持 l_right 为空。*/ -}}
-{{if .TOC}}
+{{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
+   author 卡片（所有页面）+ TOC widget（仅文章页有 h2/h3 时）。
+   author 结构对应 widgets/author.ejs；TOC 结构对齐 toc.ejs layoutDiv：
+   widget(collapse) > widget-header(name + cap-action) + widget-body(toc) + widget-footer(回到顶部)。
+   user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效；
+   TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。*/ -}}
 <div class="widgets">
+  <widget class="widget-wrapper user-card author">
+    <div class="widget-body">
+      <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
+      <p class="username">{{.Site.LogoTitle}}</p>
+      <p class="bio">{{.Site.Description}}</p>
+      <a class="follow" href="/">
+        {{icon "solar:documents-bold-duotone"}}
+        全部文章
+      </a>
+    </div>
+  </widget>
+  {{if .TOC}}
   <widget class="widget-wrapper toc" id="data-toc" collapse="false">
     <div class="widget-header dis-select">
       <span class="name">本文目录</span>
@@ -19,5 +32,5 @@
       </a>
     </div>
   </widget>
+  {{end}}
 </div>
-{{end}}

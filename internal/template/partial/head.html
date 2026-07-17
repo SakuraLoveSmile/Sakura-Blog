@@ -24,13 +24,23 @@
 
   {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
   <style>
-    .demo-toggle {
-      position: fixed; top: 12px; right: 12px; z-index: 9999;
-      padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      font-size: 14px;
-    }
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+
+  {{- /* 主题切换按钮（sidebar footer）：太阳/月亮图标随当前主题显隐。
+     无 data-theme 时跟随系统，用 prefers-color-scheme + :not([data-theme="light"]) 兜底，
+     与 main.css 的 :root:not([data-theme]) 媒体查询模式一致。 */}}
+  <style>
+    .theme-toggle { cursor: pointer; }
+    .theme-toggle .icon-moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+    @media screen and (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: none; }
+      :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
+    }
+    .theme-toggle svg { transition: transform 0.3s ease; }
+    .theme-toggle:hover svg { transform: rotate(30deg); }
   </style>
 
   {{- /* PJAX 样式：main.css 编译时未含 _plugins/pjax.styl，此处按原版 styl 手工补等价产物
