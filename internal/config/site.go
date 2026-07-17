@@ -35,6 +35,8 @@ func DefaultSite() *tmpl.Site {
 		Avatar:      "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
 		LogoTitle:   "Stellar Demo",
 		LogoSub:     "Go SSR 验证",
+		URL:         "http://localhost:8080",
+		Author:      "Stellar Demo",
 		Menubar: tmpl.Menubar{
 			Columns: 4,
 			Items: []tmpl.MenuItem{

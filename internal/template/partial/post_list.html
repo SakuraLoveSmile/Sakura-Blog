@@ -1,9 +1,21 @@
-{{- /* post_list.html: 单标签/单分类的文章列表，复用首页卡片结构。
+{{- /* post_list.html: 单标签/单分类/搜索结果的文章列表，复用首页卡片结构。
    对齐 Stellar archive.ejs 中 is_tag()/is_category() 时 partial('index') 的行为。
-   navbar + post-list(post-card) + paginator，与 index.html 一致，仅 Layout="list"。
-   NavTabs.TagName/CategoryName 控制顶部 tab 显示 "标签:xxx" / "分类:xxx"。*/}}
+   navbar + (search-box) + post-list(post-card) + paginator，Layout="list"。
+   NavTabs.TagName/CategoryName 控制顶部 tab 显示 "标签:xxx" / "分类:xxx"。
+   SearchQuery 非空时顶部渲染搜索框（复用 .search-wrapper 样式），GET 表单提交到 /search。*/}}
 {{template "navbar" .}}
+
+{{if eq .Page.Layout "list"}}
+{{if or .SearchQuery (eq .NavTabs.Active "search")}}
+<form class="search-form search-box-inline" action="/search" method="get" role="search">
+  <a class="search-button" tabindex="-1" aria-hidden="true">{{icon "default:search"}}</a>
+  <input type="text" class="search-input" name="q" value="{{.SearchQuery}}" placeholder="搜索文章…" autofocus>
+</form>
+{{end}}
+{{end}}
+
 <div class="post-list post">
   {{range .Posts}}{{template "post_card" .}}{{end}}
 </div>
+
 {{template "paginator" .}}

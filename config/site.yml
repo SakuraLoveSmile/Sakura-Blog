@@ -9,6 +9,11 @@ avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442
 logo_title: Stellar Demo
 logo_sub: Go SSR 验证
 
+# 站点根 URL：RSS feed / sitemap 构建绝对链接用。部署时改成实际域名。
+url: http://localhost:8080
+# 作者名：RSS feed 的 <author><name>
+author: Stellar Demo
+
 # 顶部菜单：每项 theme 是高亮色（inline color，控制 SVG fill=currentColor）
 # 图标 key 对应 resource/hexo-theme-stellar/_data/icons.yml
 menubar:

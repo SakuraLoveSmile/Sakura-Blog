@@ -1,7 +1,7 @@
 {{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs。
    作用域：. 是 *ViewData，读取 $.NavTabs。NavTabs 为 nil 时不渲染（文章详情页无 navbar）。
-   近期发布 tab 始终显示。分类/标签/归档 tab 由 ShowCategories/ShowTags/ShowArchive 控制显示。
-   active 态：Active 字段为 "home"/"tags"/"categories"/"archive" 时对应 tab active；
+   近期发布 tab 始终显示。分类/标签/归档/搜索 tab 由对应 Show* 字段控制显示。
+   active 态：Active 字段为 "home"/"tags"/"categories"/"archive"/"search" 时对应 tab active；
    TagName/CategoryName 非空时对应 tab 显示 "标签:Name"/"分类:Name" 且 active。*/}}
 {{if .NavTabs}}
 {{$n := .NavTabs}}
@@ -23,6 +23,9 @@
         {{if $n.ShowArchive}}
         <a {{if eq $n.Active "archive"}}class="active"{{end}} href="/archives">归档</a>
         {{end}}
+        <a class="nav-search{{if eq $n.Active "search"}} active{{end}}" href="/search" title="搜索">
+          {{icon "default:search"}}
+        </a>
       </nav>
     </div>
   </div>

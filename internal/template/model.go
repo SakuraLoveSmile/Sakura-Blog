@@ -28,6 +28,14 @@ type ViewData struct {
 	// Archive 按年归档（Layout=="archive" 时渲染）。
 	Archive []ArchiveGroup
 
+	// TOCHTML 文章详情页右侧目录的嵌套 HTML（Layout=="post" 且文章有 H2/H3 时填充）。
+	// 空值不渲染 toc widget。结构对齐 Stellar toc helper：<ol class="toc"><li class="toc-item">
+	// <a class="toc-link">...</a><ol class="toc-child">...</ol></li></ol>，H3 缩进靠 toc-child 嵌套。
+	TOCHTML template.HTML
+
+	// SearchQuery 站内搜索页的查询词（Layout=="search" 时回显到搜索框与标题）。
+	SearchQuery string
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
@@ -69,13 +77,13 @@ type ArchiveGroup struct {
 
 // NavTabs 共享 navbar 的 tab 状态，对齐 Stellar nav_tabs_blog.ejs。
 // ShowTags/ShowCategories/ShowArchive 控制对应 tab 是否显示（无标签则不显示标签 tab）。
-// Active 指明哪个 tab 高亮："home"/"tags"/"categories"/"archive"/"tag:name"/"category:name"。
+// Active 指明哪个 tab 高亮："home"/"tags"/"categories"/"archive"/"search"/"tag:name"/"category:name"。
 // TagName/CategoryName 非空时对应 tab 文本变成 "标签:Name" 形式并 active。
 type NavTabs struct {
 	ShowTags       bool
 	ShowCategories bool
 	ShowArchive    bool
-	Active         string // home / tags / categories / archive
+	Active         string // home / tags / categories / archive / search
 	TagName        string // 非空 -> 标签 tab 显示 "标签:TagName" 且 active
 	CategoryName   string // 非空 -> 分类 tab 显示 "分类:CategoryName" 且 active
 }
@@ -110,6 +118,8 @@ type Site struct {
 	Avatar      string       `yaml:"avatar"` // logo 头像 URL
 	LogoTitle   string       `yaml:"logo_title"`
 	LogoSub     string       `yaml:"logo_sub"`
+	URL         string       `yaml:"url"`   // 站点根 URL，如 https://example.com（RSS/sitemap 构建绝对链接）
+	Author      string       `yaml:"author"` // 作者名，RSS feed 的 <author><name>
 	Menubar     Menubar      `yaml:"menubar"`
 	Footer      Footer       `yaml:"footer"`
 	RecentPosts []RecentPost `yaml:"recent_posts"`

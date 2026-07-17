@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
 )
@@ -115,6 +116,15 @@ func (s *Store) createTables() error {
 	if err := s.ensureColumn("posts", "cover", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate cover column: %w", err)
 	}
+	// FTS5 全文索引：external content 表，索引挂在 posts 行上避免数据重复。
+	// 配 INSERT/UPDATE/DELETE 触发器同步索引，否则索引与 posts 表脱节。
+	if err := s.createFTS(); err != nil {
+		return fmt.Errorf("create fts: %w", err)
+	}
+	// 老库迁移：FTS 表后建，已存在的 posts 行不会自动入索引，补一次全量重建。
+	if err := s.rebuildFTS(); err != nil {
+		return fmt.Errorf("rebuild fts: %w", err)
+	}
 	return nil
 }
 
@@ -143,8 +153,137 @@ func (s *Store) ensureColumn(table, name, colDef string) error {
 	return nil
 }
 
+// createFTS 建 FTS5 虚拟表与同步触发器。external content 表索引 posts 的
+// title/content_md/content_html，rowid 对齐 posts.id。幂等：虚拟表与触发器均 IF NOT EXISTS。
+// tokenizer 用 trigram：按 3 字符滑窗切分，对英文和 3+ 字中文查询子串匹配友好
+// （unicode61 把整段 CJK 当一个 token，中文几乎搜不到）。
+func (s *Store) createFTS() error {
+	const ddl = `CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
+		title, content_md, content_html,
+		content='posts', content_rowid='id',
+		tokenize='trigram'
+	);
+	CREATE TRIGGER IF NOT EXISTS posts_fts_ai AFTER INSERT ON posts BEGIN
+		INSERT INTO posts_fts(rowid, title, content_md, content_html)
+		VALUES (new.id, new.title, new.content_md, new.content_html);
+	END;
+	CREATE TRIGGER IF NOT EXISTS posts_fts_ad AFTER DELETE ON posts BEGIN
+		INSERT INTO posts_fts(posts_fts, rowid, title, content_md, content_html)
+		VALUES ('delete', old.id, old.title, old.content_md, old.content_html);
+	END;
+	CREATE TRIGGER IF NOT EXISTS posts_fts_au AFTER UPDATE ON posts BEGIN
+		INSERT INTO posts_fts(posts_fts, rowid, title, content_md, content_html)
+		VALUES ('delete', old.id, old.title, old.content_md, old.content_html);
+		INSERT INTO posts_fts(rowid, title, content_md, content_html)
+		VALUES (new.id, new.title, new.content_md, new.content_html);
+	END;`
+	if _, err := s.db.Exec(ddl); err != nil {
+		return fmt.Errorf("create fts tables: %w", err)
+	}
+	return nil
+}
+
+// rebuildFTS 全量重建 FTS 索引。老库 FTS 表后建时已存在 posts 行不入索引，调一次 'rebuild' 命令补齐。
+// 对空表是 no-op，对已同步表也只是重写一遍，幂等安全。
+func (s *Store) rebuildFTS() error {
+	if _, err := s.db.Exec(`INSERT INTO posts_fts(posts_fts) VALUES('rebuild')`); err != nil {
+		return fmt.Errorf("rebuild fts: %w", err)
+	}
+	return nil
+}
+
+// Search 全文搜索已发布文章，支持分页，返回 (posts, total, error)。
+// 查询策略按长度分流：
+//   - >=3 字符：走 FTS5 trigram，按 BM25 rank 升序（相关度高的在前）
+//   - <3 字符：trigram 按 3-gram 切分，短查询匹配不到任何 gram，降级走 LIKE
+//     在 title/content_md 上模糊匹配，保证 "Go"/"CSS" 等短词可搜
+//
+// FTS5 MATCH 用双引号包裹整串做短语匹配，规避用户输入含 " * : 等特殊字符的语法错。
+func (s *Store) Search(q string, page, size int) ([]*Post, int, error) {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return nil, 0, nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	offset := (page - 1) * size
+
+	if utf8.RuneCountInString(q) < 3 {
+		return s.searchLike(q, page, size, offset)
+	}
+	return s.searchFTS(q, page, size, offset)
+}
+
+// searchFTS FTS5 全文搜索，按 BM25 rank 排序。q 已保证 >=3 字符。
+func (s *Store) searchFTS(q string, page, size, offset int) ([]*Post, int, error) {
+	phrase := `"` + strings.ReplaceAll(q, `"`, `""`) + `"`
+
+	var total int
+	if err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM posts_fts f JOIN posts p ON p.id = f.rowid
+		 WHERE posts_fts MATCH ? AND p.status = ?`, phrase, StatusPublished,
+	).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count search %q: %w", q, err)
+	}
+	if total == 0 {
+		return nil, 0, nil
+	}
+
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts_fts f
+		JOIN posts p ON p.id = f.rowid
+		WHERE posts_fts MATCH ? AND p.status = ?
+		ORDER BY rank LIMIT ? OFFSET ?`, postColumnsPrefixed), phrase, StatusPublished, size, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("search %q: %w", q, err)
+	}
+	defer rows.Close()
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return posts, total, nil
+}
+
+// searchLike LIKE 降级搜索，用于 <3 字符查询（trigram 盲区）。
+// 在 title/content_md 上模糊匹配，按 created_at 倒序（无相关度概念，用时间兜底）。
+func (s *Store) searchLike(q string, page, size, offset int) ([]*Post, int, error) {
+	like := "%" + q + "%"
+	var total int
+	if err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM posts WHERE status = ? AND (title LIKE ? OR content_md LIKE ?)`,
+		StatusPublished, like, like,
+	).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count like search %q: %w", q, err)
+	}
+	if total == 0 {
+		return nil, 0, nil
+	}
+
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts
+		WHERE status = ? AND (title LIKE ? OR content_md LIKE ?)
+		ORDER BY datetime(created_at) DESC LIMIT ? OFFSET ?`, postColumns),
+		StatusPublished, like, like, size, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("like search %q: %w", q, err)
+	}
+	defer rows.Close()
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return posts, total, nil
+}
+
 // postColumns 是 posts 表的查询列，统一顺序，避免 Scan 错位。
 const postColumns = `id, slug, title, excerpt, cover, content_md, content_html, status, created_at, updated_at`
+
+// postColumnsPrefixed 是带 p. 前缀的查询列，用于 JOIN posts_fts 时消除列名歧义
+// （title/content_md/content_html 在 posts 与 posts_fts 两表都存在）。
+const postColumnsPrefixed = `p.id, p.slug, p.title, p.excerpt, p.cover, p.content_md, p.content_html, p.status, p.created_at, p.updated_at`
 
 // List 返回全部文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {

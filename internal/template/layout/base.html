@@ -33,7 +33,23 @@
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
-    <aside class="l_right"></aside>
+    <aside class="l_right">
+      {{- /* TOC 目录：仅文章页且文章有 H2/H3 时渲染，对齐 Stellar widgets/toc.ejs。
+            TOCHTML 已是嵌套 <ol class="toc"> 结构，H3 缩进靠 toc-child 嵌套（main.css 已支持）。
+            TOCHTML 为空时不渲染。*/}}
+      {{if .TOCHTML}}
+      <div class="widgets">
+        <widget class="widget-wrapper toc" id="data-toc" collapse="auto">
+          <div class="widget-header dis-select">
+            <span class="name">目录</span>
+          </div>
+          <div class="widget-body">
+            {{.TOCHTML}}
+          </div>
+        </widget>
+      </div>
+      {{end}}
+    </aside>
   </div>
 
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
