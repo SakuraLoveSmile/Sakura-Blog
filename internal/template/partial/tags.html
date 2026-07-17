@@ -1,0 +1,13 @@
+{{- /* tags.html: 标签云，对齐 Stellar layout/tags.ejs。
+   .navbar.top > ... nav.post（共享 navbar）+ .post-list > article#tags > a.tag > span.name。
+   Layout=="tags" 时由 base.html 调用 {{template "tags" .}}。*/}}
+{{template "navbar" .}}
+<div class="post-list">
+  <article id="tags">
+    {{range .Tags}}
+    <a class="tag" href="/tags/{{.Name}}">
+      <span class="name">{{.Name}}</span>
+    </a>
+    {{end}}
+  </article>
+</div>

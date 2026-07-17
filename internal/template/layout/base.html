@@ -23,8 +23,13 @@
     </aside>
 
     <div class="l_main" id="main">
-      {{- /* 按 Layout 分派内容模板：首页走 index（navbar+post-list+paginator），其余走 content（文章正文）*/}}
-      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}
+      {{- /* 按 Layout 分派内容模板：首页/标签云/分类云/归档/列表 各走独立 partial，文章走 content */}}
+      {{if eq .Page.Layout "index"}}{{template "index" .}}
+      {{else if eq .Page.Layout "tags"}}{{template "tags" .}}
+      {{else if eq .Page.Layout "categories"}}{{template "categories" .}}
+      {{else if eq .Page.Layout "archive"}}{{template "archive" .}}
+      {{else if eq .Page.Layout "list"}}{{template "post_list" .}}
+      {{else}}{{template "content" .}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 

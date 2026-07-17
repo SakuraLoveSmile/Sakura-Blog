@@ -1,0 +1,30 @@
+{{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs。
+   作用域：. 是 *ViewData，读取 $.NavTabs。NavTabs 为 nil 时不渲染（文章详情页无 navbar）。
+   近期发布 tab 始终显示。分类/标签/归档 tab 由 ShowCategories/ShowTags/ShowArchive 控制显示。
+   active 态：Active 字段为 "home"/"tags"/"categories"/"archive" 时对应 tab active；
+   TagName/CategoryName 非空时对应 tab 显示 "标签:Name"/"分类:Name" 且 active。*/}}
+{{if .NavTabs}}
+{{$n := .NavTabs}}
+<div class="navbar top">
+  <div class="navbar-blur">
+    <div class="navbar-container">
+      <nav class="post">
+        <a {{if eq $n.Active "home"}}class="active"{{end}} href="/">近期发布</a>
+        {{if $n.ShowCategories}}
+        <a {{if or $n.CategoryName (eq $n.Active "categories")}}class="active"{{end}} href="/categories">
+          {{if $n.CategoryName}}分类:{{$n.CategoryName}}{{else}}分类{{end}}
+        </a>
+        {{end}}
+        {{if $n.ShowTags}}
+        <a {{if or $n.TagName (eq $n.Active "tags")}}class="active"{{end}} href="/tags">
+          {{if $n.TagName}}标签:{{$n.TagName}}{{else}}标签{{end}}
+        </a>
+        {{end}}
+        {{if $n.ShowArchive}}
+        <a {{if eq $n.Active "archive"}}class="active"{{end}} href="/archives">归档</a>
+        {{end}}
+      </nav>
+    </div>
+  </div>
+</div>
+{{end}}

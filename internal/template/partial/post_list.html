@@ -1,0 +1,9 @@
+{{- /* post_list.html: 单标签/单分类的文章列表，复用首页卡片结构。
+   对齐 Stellar archive.ejs 中 is_tag()/is_category() 时 partial('index') 的行为。
+   navbar + post-list(post-card) + paginator，与 index.html 一致，仅 Layout="list"。
+   NavTabs.TagName/CategoryName 控制顶部 tab 显示 "标签:xxx" / "分类:xxx"。*/}}
+{{template "navbar" .}}
+<div class="post-list post">
+  {{range .Posts}}{{template "post_card" .}}{{end}}
+</div>
+{{template "paginator" .}}

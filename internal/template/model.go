@@ -11,12 +11,22 @@ type ViewData struct {
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
 
-	// Posts 首页文章卡片列表（Layout=="index" 时由 index.html 渲染）。
+	// Posts 首页/单标签/单分类文章卡片列表（Layout=="index" 或 "list" 时渲染）。
 	// 文章页不读此字段，零值即可。
 	Posts []*PostCard
 
-	// Paginator 首页分页器数据。nil 或 Total<=1 时不渲染分页器。
+	// Paginator 分页器数据。nil 或 Total<=1 时不渲染。
 	Paginator *Paginator
+
+	// NavTabs 共享 navbar 的 tab 状态。nil 时不渲染 navbar（如文章详情页）。
+	NavTabs *NavTabs
+
+	// Tags 标签云（Layout=="tags" 时渲染）。
+	Tags []TagItem
+	// Categories 分类云（Layout=="categories" 时渲染）。
+	Categories []CategoryItem
+	// Archive 按年归档（Layout=="archive" 时渲染）。
+	Archive []ArchiveGroup
 
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
@@ -31,11 +41,43 @@ type PostCard struct {
 	Date    time.Time
 }
 
-// Paginator 首页分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
+// Paginator 分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
 type Paginator struct {
-	Current int   // 当前页码（从 1 开始）
-	Total   int   // 总页数
-	Pages   []int // 页码序列，如 [1,2,3]
+	Current  int   // 当前页码（从 1 开始）
+	Total    int   // 总页数
+	Pages    []int // 页码序列，如 [1,2,3]
+	BaseURL  string // 分页 URL 前缀：首页留空走 /page/N；列表页如 "/tags/Go" 走 /tags/Go?page=N
+}
+
+// TagItem 标签云页的单个标签。
+type TagItem struct {
+	Name  string
+	Count int
+}
+
+// CategoryItem 分类云页的单个分类。本期平铺无父子层级。
+type CategoryItem struct {
+	Name  string
+	Count int
+}
+
+// ArchiveGroup 归档页的年份分组，Posts 按 created_at 倒序。
+type ArchiveGroup struct {
+	Year  int
+	Posts []*PostCard
+}
+
+// NavTabs 共享 navbar 的 tab 状态，对齐 Stellar nav_tabs_blog.ejs。
+// ShowTags/ShowCategories/ShowArchive 控制对应 tab 是否显示（无标签则不显示标签 tab）。
+// Active 指明哪个 tab 高亮："home"/"tags"/"categories"/"archive"/"tag:name"/"category:name"。
+// TagName/CategoryName 非空时对应 tab 文本变成 "标签:Name" 形式并 active。
+type NavTabs struct {
+	ShowTags       bool
+	ShowCategories bool
+	ShowArchive    bool
+	Active         string // home / tags / categories / archive
+	TagName        string // 非空 -> 标签 tab 显示 "标签:TagName" 且 active
+	CategoryName   string // 非空 -> 分类 tab 显示 "分类:CategoryName" 且 active
 }
 
 // AdminData 后台模板渲染数据。
@@ -48,13 +90,15 @@ type AdminData struct {
 
 // AdminPostRow 后台列表/编辑表单用的文章行数据。
 type AdminPostRow struct {
-	Slug      string
-	Title     string
-	Excerpt   string
-	Cover     string
-	ContentMD string
-	Status    string
-	Date      string // 列表展示用（created_at 或文件 date）
+	Slug       string
+	Title      string
+	Excerpt    string
+	Cover      string
+	ContentMD  string
+	Status     string
+	Date       string // 列表展示用（created_at 或文件 date）
+	Tags       []string
+	Categories []string
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。

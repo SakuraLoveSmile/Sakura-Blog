@@ -1,0 +1,23 @@
+{{- /* paginator.html: 分页器，对齐 Stellar _partial/main/post_list/paginator.ejs。
+   作用域：. 是 *ViewData，读取 $.Paginator。
+   仅 Total>1 时渲染。BaseURL 为空 -> 首页风格 /page/N（第1页是 /，第2页 prev 指向 /）；
+   BaseURL 非空 -> 列表页风格 /tags/Go?page=N（第1页是 BaseURL 自身）。
+   前后翻页 a.extend.prev/next 文本空，靠 CSS 画箭头。*/}}
+{{if .Paginator}}
+{{if gt .Paginator.Total 1}}
+{{$base := .Paginator.BaseURL}}
+<div class="paginator-wrap dis-select">
+  <nav class="paginator">
+    {{if gt .Paginator.Current 1}}
+    <a class="extend prev" rel="prev" href="{{if eq $base ""}}{{if eq .Paginator.Current 2}}/{{else}}/page/{{sub .Paginator.Current 1}}{{end}}{{else}}{{$base}}{{if eq .Paginator.Current 2}}{{else}}?page={{sub .Paginator.Current 1}}{{end}}{{end}}"></a>
+    {{end}}
+    {{range .Paginator.Pages}}
+    <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq $base ""}}{{if eq . 1}}/{{else}}/page/{{.}}{{end}}{{else}}{{$base}}{{if eq . 1}}{{else}}?page={{.}}{{end}}{{end}}">{{.}}</a>
+    {{end}}
+    {{if lt .Paginator.Current .Paginator.Total}}
+    <a class="extend next" rel="next" href="{{if eq $base ""}}/page/{{add .Paginator.Current 1}}{{else}}{{$base}}?page={{add .Paginator.Current 1}}{{end}}"></a>
+    {{end}}
+  </nav>
+</div>
+{{end}}
+{{end}}

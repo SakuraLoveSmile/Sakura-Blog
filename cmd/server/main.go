@@ -174,6 +174,35 @@ func main() {
 		renderHome(c, st, engine, site, page)
 	})
 
+	// 标签云：/tags
+	r.GET("/tags", func(c *gin.Context) {
+		renderTagsCloud(c, st, engine, site)
+	})
+
+	// 单标签文章列表：/tags/:name
+	r.GET("/tags/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		page, _ := strconv.Atoi(c.Query("page"))
+		renderListByRelation(c, st, engine, site, name, true, page)
+	})
+
+	// 分类云：/categories
+	r.GET("/categories", func(c *gin.Context) {
+		renderCategoriesCloud(c, st, engine, site)
+	})
+
+	// 单分类文章列表：/categories/:name
+	r.GET("/categories/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		page, _ := strconv.Atoi(c.Query("page"))
+		renderListByRelation(c, st, engine, site, name, false, page)
+	})
+
+	// 归档：/archives 按年分组
+	r.GET("/archives", func(c *gin.Context) {
+		renderArchive(c, st, engine, site)
+	})
+
 	addr := ":8080"
 	fmt.Printf("Stellar Demo 3 server listening on http://localhost%s\n", addr)
 	if err := r.Run(addr); err != nil {
@@ -181,8 +210,37 @@ func main() {
 	}
 }
 
-// pageSize 首页每页文章数，对齐 Hexo index_generator per_page 默认值。
+// pageSize 首页/列表页每页文章数，对齐 Hexo index_generator per_page 默认值。
 const pageSize = 10
+
+// toCards 把 store.Post 列表转成 PostCard 视图模型。
+// 空 excerpt 自动从 ContentHTML 提取（复用 post.ExcerptFromHTML）。
+func toCards(posts []*store.Post) []*tmpl.PostCard {
+	cards := make([]*tmpl.PostCard, 0, len(posts))
+	for _, p := range posts {
+		excerpt := p.Excerpt
+		if excerpt == "" {
+			excerpt = post.ExcerptFromHTML(p.ContentHTML, 120)
+		}
+		cards = append(cards, &tmpl.PostCard{
+			Slug:    p.Slug,
+			Title:   p.Title,
+			Excerpt: excerpt,
+			Cover:   p.Cover,
+			Date:    p.CreatedAt,
+		})
+	}
+	return cards
+}
+
+// buildPaginator 构造分页器。baseURL 留空走首页 /page/N 风格，非空走列表页 ?page=N 风格。
+func buildPaginator(page, total int, baseURL string) *tmpl.Paginator {
+	pages := make([]int, total)
+	for i := range pages {
+		pages[i] = i + 1
+	}
+	return &tmpl.Paginator{Current: page, Total: total, Pages: pages, BaseURL: baseURL}
+}
 
 // renderHome 渲染首页文章列表（Layout=="index"）。
 // page 从 1 开始；越界（page > totalPages）回 404。文章数据走 store DB 查询。
@@ -207,26 +265,6 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 		return
 	}
 
-	cards := make([]*tmpl.PostCard, 0, len(posts))
-	for _, p := range posts {
-		excerpt := p.Excerpt
-		if excerpt == "" {
-			excerpt = post.ExcerptFromHTML(p.ContentHTML, 120) // 空 excerpt 从正文提取前 120 rune
-		}
-		cards = append(cards, &tmpl.PostCard{
-			Slug:    p.Slug,
-			Title:   p.Title,
-			Excerpt: excerpt,
-			Cover:   p.Cover,
-			Date:    p.CreatedAt,
-		})
-	}
-
-	pages := make([]int, totalPages)
-	for i := range pages {
-		pages[i] = i + 1
-	}
-
 	data := &tmpl.ViewData{
 		Site: site,
 		Page: &tmpl.Page{
@@ -236,10 +274,136 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 			Lang:   "zh-CN",
 			MenuID: "post",
 		},
-		Posts:     cards,
-		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+		Posts:     toCards(posts),
+		Paginator: buildPaginator(page, totalPages, ""),
+		NavTabs:   &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "home"},
+	}
+	renderView(c, engine, data)
+}
+
+// renderTagsCloud 渲染标签云（Layout=="tags"）。
+func renderTagsCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
+	tags, err := st.ListTags()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list tags: %v", err)
+		return
+	}
+	items := make([]tmpl.TagItem, 0, len(tags))
+	for _, t := range tags {
+		items = append(items, tmpl.TagItem{Name: t.Name, Count: t.Count})
+	}
+	data := &tmpl.ViewData{
+		Site: site,
+		Page: &tmpl.Page{Title: "标签", Layout: "tags", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Tags:    items,
+		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "tags"},
+	}
+	renderView(c, engine, data)
+}
+
+// renderCategoriesCloud 渲染分类云（Layout=="categories"）。
+func renderCategoriesCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
+	cats, err := st.ListCategories()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list categories: %v", err)
+		return
+	}
+	items := make([]tmpl.CategoryItem, 0, len(cats))
+	for _, ct := range cats {
+		items = append(items, tmpl.CategoryItem{Name: ct.Name, Count: ct.Count})
+	}
+	data := &tmpl.ViewData{
+		Site: site,
+		Page: &tmpl.Page{Title: "分类", Layout: "categories", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Categories: items,
+		NavTabs:    &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "categories"},
+	}
+	renderView(c, engine, data)
+}
+
+// renderListByRelation 渲染单标签/单分类的文章列表（Layout=="list"）。
+// isTag=true 走标签查询，false 走分类查询。name 是标签/分类名。
+func renderListByRelation(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site, name string, isTag bool, page int) {
+	if page < 1 {
+		page = 1
+	}
+	var (
+		posts     []*store.Post
+		total     int
+		err       error
+		baseURL   string
+		labelType string
+	)
+	if isTag {
+		total, err = st.CountByTag(name)
+		baseURL = "/tags/" + name
+		labelType = "标签"
+	} else {
+		total, err = st.CountByCategory(name)
+		baseURL = "/categories/" + name
+		labelType = "分类"
+	}
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count: %v", err)
+		return
+	}
+	if total == 0 {
+		c.String(http.StatusNotFound, "%s not found: %s", labelType, name)
+		return
+	}
+	totalPages := (total + pageSize - 1) / pageSize
+	if page > totalPages {
+		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
+		return
+	}
+	if isTag {
+		posts, err = st.ListByTag(name, page, pageSize)
+	} else {
+		posts, err = st.ListByCategory(name, page, pageSize)
+	}
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list: %v", err)
+		return
 	}
 
+	nav := &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true}
+	if isTag {
+		nav.TagName = name
+	} else {
+		nav.CategoryName = name
+	}
+	data := &tmpl.ViewData{
+		Site: site,
+		Page: &tmpl.Page{Title: labelType + ":" + name, Layout: "list", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Posts:     toCards(posts),
+		Paginator: buildPaginator(page, totalPages, baseURL),
+		NavTabs:   nav,
+	}
+	renderView(c, engine, data)
+}
+
+// renderArchive 渲染按年归档（Layout=="archive"）。
+func renderArchive(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
+	groups, err := st.Archive()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "archive: %v", err)
+		return
+	}
+	archive := make([]tmpl.ArchiveGroup, 0, len(groups))
+	for _, g := range groups {
+		archive = append(archive, tmpl.ArchiveGroup{Year: g.Year, Posts: toCards(g.Posts)})
+	}
+	data := &tmpl.ViewData{
+		Site: site,
+		Page: &tmpl.Page{Title: "归档", Layout: "archive", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Archive: archive,
+		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "archive"},
+	}
+	renderView(c, engine, data)
+}
+
+// renderView 渲染 base 模板并写入响应。
+func renderView(c *gin.Context, engine *tmpl.Engine, data *tmpl.ViewData) {
 	html, err := engine.Render("base", data)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "render: %v", err)

@@ -1,0 +1,16 @@
+{{- /* categories.html: 分类云，对齐 Stellar layout/categories.ejs（平铺无父子层级）。
+   .post-list > article#cats > a.cat > span.name + span.badge(数量)。
+   分类图标用 default:category（icons.yml 已确认存在）。*/}}
+{{template "navbar" .}}
+<div class="post-list">
+  <article id="cats">
+    {{range .Categories}}
+    <div>
+      <a class="cat" href="/categories/{{.Name}}">
+        <span class="name">{{icon "default:category"}}{{.Name}}</span>
+        <span class="badge">({{.Count}})</span>
+      </a>
+    </div>
+    {{end}}
+  </article>
+</div>
