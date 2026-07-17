@@ -378,13 +378,65 @@ Stellar 原版右下角悬浮面板 `.float-panel`（main.css 1355 行）是 `po
 - **Gin `r.NoRoute()`** 渲染 base 布局 + error_page partial，`Page.Layout="404"` 触发 base.html 内容分派，响应 **HTTP 404 状态码**（利于 SEO，`c.Data(http.StatusNotFound, ...)`）
 - base.html 分派加 `{{else if eq .Page.Layout "404"}}{{template "error_page" .}}`，放在 list 分支后、content 兜底前
 
+## 第七阶段踩坑（评论系统/访问统计/部署就绪）
+
+### Artalk 评论：page_key 用稳定路径，SDK 原生 script defer 加载
+
+原版 `comments/layout.ejs` 按 `theme.comments.service` 分派，artalk 分支输出 `.related-wrap.md-text#comments > section.header.cmt-title + section.body.cmt-body.artalk > div.artalk#artalk_container`。Go 侧对齐：
+
+- `Site` 加 `Comments{Service, CommentTitle, Artalk{Server,Site,CSS,JS}}`，`{{if .Site.Comments.Service}}` 守卫，service 空（默认）不渲染评论区，零依赖本地验证
+- `content.html` 在 `read_next` 后加 `{{template "comments" .}}`（对齐 page.ejs layoutDiv：article_footer -> read_next -> comments）
+- SDK 加载**不用原版 utils.css/utils.js 动态注入**，改原生 `<link>` + `<script defer onload="initArtalk()">`，CSS/JS 默认走 unpkg CDN（artalk@2.9），site.yml 可覆盖
+- **page_key 用 `/post/{slug}` 稳定路径**（不用完整 URL）：改域名后评论不丢失。Artalk `Artalk.init({pageKey, pageTitle, server, site, darkMode})`
+- **darkMode 同步**：`MutationObserver` 监听 `documentElement[data-theme]`，主题切换时调 `artalk.setDarkMode(dark)`（try/catch 容错）
+- Artalk 后端独立部署（官方单二进制 `artalk server`，默认 :23366），不纳入 docker-compose
+
+### 访问统计：os.IsNotExist 对 fmt.Errorf %w 包裹返回 false（重要）
+
+文件回退路径 `posts.Load` 不存在时返回 `fmt.Errorf("read post %s: %w", slug, pathError)`。**坑**：`os.IsNotExist(err)` 对这种 `%w` 包裹的 `*os.PathError` **返回 false**（`os.IsNotExist` 不递归解包），导致 `/post/notexist` 误返 500 而非 404。
+
+- 实测：`os.IsNotExist(wrapped)` = false，`errors.Is(wrapped, os.ErrNotExist)` = true，`errors.Is(wrapped, fs.ErrNotExist)` = true
+- **对策**：改用 `errors.Is(err, fs.ErrNotExist)`（CLAUDE.md 早期记录"os.IsNotExist 能穿透 %w"是错的，以此处为准）
+- `IncrViews` 同步写：`UPDATE posts SET views = views + 1 WHERE slug = ?`，失败仅记日志不中断渲染。`p.Views` 是 incr 前值，展示用 `p.Views+1` 含本次访问
+
+### posts 表加 views 列的 Scan 同步
+
+`postColumns`/`postColumnsPrefixed` 加 `views` 列后，**所有 Scan 调用点都要同步加 `&p.Views`**：`scanPosts`、`getBySlug`、`GetPrevNext` 两个 QueryRow（prev/next）。漏一处会导致 `sql: Scan error on column index X: converting NULL to int64 is unsupported` 或列错位。`ensureColumn("posts", "views", "INTEGER NOT NULL DEFAULT 0")` 幂等迁移老库。
+
+### go:embed：embed 路径不能跨包，assets 需在包目录内
+
+`//go:embed` 指令路径不能含 `..`，只能嵌入当前 .go 文件所在包目录的子树。故：
+
+- **icons.yml**：复制到 `internal/template/data/icons.yml`，`//go:embed data/icons.yml` 嵌入。`LoadIconsEmbed()` 从 `[]byte` 解析，`LoadIcons(path)` 保留给 `-dev` 模式磁盘读。`//go:embed` 对 `[]byte`/`string` 类型需 `import _ "embed"`（blank import，不能 import "embed" 否则 unused）
+- **模板 .html**：`internal/template/` 包内 `//go:embed partial layout admin` 三个目录。`NewEngineFromEmbed(reg)` 从 `embed.FS` 读，`NewEngine(root, reg)` 保留磁盘读（`-dev` 模式）
+- **assets/**：项目根的 `assets/` 不在任何 Go 包目录下，无法直接 embed。对策：在 `assets/` 内建 `embed.go`（`package assets`），`//go:embed all:css all:js all:img` 嵌入 css/js/img（不含 embed.go 自身），main 包 `import "blog/assets"` 拿 `assets.FS`，`fs.Sub(assets.FS, ".")` 挂 `r.StaticFS("/assets", http.FS(sub))`
+
+### 双模式资源加载：-dev 磁盘 vs 默认 embed
+
+`main.go` 加 `-dev` flag 区分：默认（部署）icons/templates/assets 全走 embed，单二进制无外部依赖；`-dev`（本地调试）从磁盘读 resource/icons.yml + internal/template + assets/，改 CSS/模板后 `go run` 立即生效（无需重编译 embed）。launch.json 的 `blog-dev` 配 `-dev`，`blog-embed` 配置不传 `-dev` 验证部署形态。
+
+### app.yml 配置外置 + 环境变量覆盖优先级
+
+新建 `config/app.yml`（`App{ListenAddr, DBPath, Root, SeedOnStart, TrustedProxy}`）独立于 site.yml。环境变量覆盖优先级：**环境变量 > app.yml > 代码默认值**。`BLOG_LISTEN`/`BLOG_DB`/`BLOG_ROOT`/`BLOG_SEED`/`BLOG_TRUSTED_PROXY`。root 解析优先级：`-root flag > BLOG_ROOT > app.yml.root > cwd`。`ResolveApp` 把 DBPath 相对路径按 root 绝对化（SQLite 父目录创建需要）。
+
+### Dockerfile 多阶段 + embed 单二进制
+
+builder 用 `golang:1.25-alpine` 编译（`CGO_ENABLED=0` 静态编译，modernc/sqlite 免 CGO），runtime 用 `alpine:3.20` + ca-certificates + tzdata。assets/templates/icons 已 embed 进二进制，runtime 只 COPY 二进制 + config/ + content/（DB 用挂载卷）。`-ldflags="-s -w"` 去符号表减体积（25M）。`.dockerignore` 排除 node_modules/resource/data/*.db。docker-compose 仅博客 app 服务 + 持久化卷，Artalk 外置。
+
+### preview port 必须与 app.yml listen_addr 一致
+
+preview_start 用 launch.json 的 `port` 探测应用就绪。**坑**：app.yml `listen_addr: ":8080"` 固定，若 launch.json `port: 8081` 探测，应用监听 8080 而 preview 等 8081，curl 返 HTTP 000 误判服务没起来。**对策**：launch.json 各配置的 `port` 与 app.yml `listen_addr` 保持一致（都用 8080），同一时刻只启动一个配置避免端口冲突。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
 - Node 22 + stylus 0.62.0（CSS 编译）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run cmd/server/main.go -root /Users/sakurasep/Documents/Code/Project/Blog/dev`，`-seed` 可选（导入 content/posts/*.md 到 DB）
+- Go 服务（开发）：`go run cmd/server/main.go -root <dev路径> -dev`（`-dev` 从磁盘读资源，改 CSS/模板立即生效）
+- Go 服务（部署形态）：`go run cmd/server/main.go -root <dev路径>`（默认走 go:embed，单二进制无外部依赖），`-seed` 可选（导入 content/posts/*.md 到 DB）
+- 配置：`config/app.yml`（监听/DB/seed/代理，环境变量 `BLOG_*` 覆盖）+ `config/site.yml`（站点内容，含 comments 段）
+- Docker：`docker build -t stellar-blog .` + `docker compose up -d`（Artalk 评论系统外置二进制部署）
 
 ## Demo 进度
 
@@ -395,3 +447,4 @@ Stellar 原版右下角悬浮面板 `.float-panel`（main.css 1355 行）是 `po
 - [x] Demo 4：站内搜索 + RSS + sitemap + 文章 TOC（FTS5 trigram + LIKE 降级 / atom.xml permanent ID / sitemap.xml / goldmark heading id 注入 + 嵌套 toc widget，preview 验证通过）
 - [x] Demo 5：文章详情页完善（对齐 Stellar page.ejs：article_banner 标题区 + 面包屑 + dateinfo / article_footer license+标签+分类 / read_next 上下篇 / post_cover 封面图，preview 验证通过）
 - [x] Demo 6：UI 优化（右下角太阳/月亮主题切换按钮 + author 卡片移右栏 + 404 页面本地图片，preview 验证通过）
+- [x] Demo 7：评论系统 + 访问统计 + 部署就绪（Artalk 集成配置+模板+SDK / views 列+IncrViews+#post-meta 阅读量 / go:embed 单二进制 + app.yml 外置 + Dockerfile + docker-compose，preview 验证通过）

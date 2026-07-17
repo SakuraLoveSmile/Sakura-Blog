@@ -1,0 +1,33 @@
+# 构建上下文排除项，减小镜像构建上下文体积、避免脏文件进镜像
+node_modules/
+.git/
+.gitignore
+
+# 参考资源（Stellar 主题克隆，已 gitignore，不进镜像）
+resource/
+
+# 本地数据库与 WAL 旁路文件（容器用挂载卷）
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-*
+
+# 构建产物
+dist/
+tmp/
+out/
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Claude/IDE 工具配置
+.claude/
+.qoder/
+.trae/
+CLAUDE.md

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/assets"
 	"blog/internal/admin"
 	"blog/internal/config"
 	"blog/internal/post"
@@ -23,67 +26,116 @@ import (
 	tmpl "blog/internal/template"
 )
 
-// dev 根目录定位策略：
-//   - 优先 -root 参数（绝对路径）
-//   - 否则用进程 cwd（要求在 dev/ 下启动，如 go run cmd/server/main.go）
+// 资源加载策略：
+//   - 默认（部署）：icons/templates/assets 全部走 go:embed，单二进制无外部依赖。
+//   - -dev 模式（本地调试）：从磁盘读 resource/icons.yml、internal/template、assets/，
+//     便于改 CSS/模板后 go run 立即生效（无需重编译 embed）。
+//   - root 用于定位 site.yml 与 DB；embed 模式下 root 仅作 config/data 目录基准。
+//
 // 不能依赖 os.Executable()：go run 编译到临时目录，二进制路径不在 dev/。
 func main() {
-	var root string
-	var seed bool
-	flag.StringVar(&root, "root", "", "dev 工作目录绝对路径（默认用 cwd）")
+	var (
+		root       string
+		seed       bool
+		devMode    bool
+		iconsPath  string
+		configPath string
+	)
+	flag.StringVar(&root, "root", "", "工作根目录（定位 config/site.yml 与 DB；空则用 cwd 或 app.yml）")
 	flag.BoolVar(&seed, "seed", false, "启动时把 content/posts/*.md 导入 SQLite（按 slug UPSERT）")
+	flag.BoolVar(&devMode, "dev", false, "开发模式：从磁盘读 icons/templates/assets（默认走 go:embed）")
+	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 ../resource/.../icons.yml）")
+	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/config/app.yml）")
 	flag.Parse()
 
-	if root == "" {
-		var err error
-		root, err = os.Getwd()
+	// 应用配置：先粗读 app.yml 拿 root（环境变量 BLOG_ROOT 可覆盖），再 ResolveApp 绝对化。
+	// root 解析优先级：-root flag > BLOG_ROOT > app.yml.root > cwd。
+	bootstrapRoot := root
+	if bootstrapRoot == "" {
+		bootstrapRoot = os.Getenv("BLOG_ROOT")
+	}
+	if bootstrapRoot == "" {
+		bootstrapRoot, _ = os.Getwd()
+	}
+	bootstrapRoot, _ = filepath.Abs(bootstrapRoot)
+
+	appCfgPath := configPath
+	if appCfgPath == "" {
+		appCfgPath = filepath.Join(bootstrapRoot, "config", "app.yml")
+	}
+	app, err := config.LoadApp(appCfgPath)
+	if err != nil {
+		log.Fatalf("load app config: %v", err)
+	}
+	// -root flag 优先于 app.yml 的 root（命令行显式指定胜出）
+	if root != "" {
+		app.Root = root
+	}
+	app = config.ResolveApp(app)
+	if devMode && iconsPath == "" {
+		// 开发模式默认从 resource/ 读 icons.yml（dev/ 出发是 ../resource/...）
+		iconsPath = filepath.Join(app.Root, "..", "resource", "hexo-theme-stellar", "_data", "icons.yml")
+	}
+
+	// icons 加载：-dev 模式从磁盘读，否则走 embed。
+	var reg *tmpl.IconRegistry
+	if devMode {
+		reg, err = tmpl.LoadIcons(iconsPath)
 		if err != nil {
-			log.Fatalf("getwd: %v", err)
+			log.Fatalf("load icons (dev): %v", err)
 		}
-	}
-	root, _ = filepath.Abs(root)
-
-	// icons.yml 在 resource/ 下（从 dev/ 出发是 ../resource/...，已 gitignore）
-	iconsPath := filepath.Join(root, "..", "resource", "hexo-theme-stellar", "_data", "icons.yml")
-	reg, err := tmpl.LoadIcons(iconsPath)
-	if err != nil {
-		log.Fatalf("load icons: %v", err)
-	}
-	log.Printf("loaded %d icons from %s", reg.Len(), iconsPath)
-
-	// 模板引擎：加载 internal/template 下所有 .html（含 admin/ 子目录，WalkDir 递归）
-	engine, err := tmpl.NewEngine(filepath.Join(root, "internal", "template"), reg)
-	if err != nil {
-		log.Fatalf("load templates: %v", err)
+		log.Printf("loaded %d icons from %s (dev)", reg.Len(), iconsPath)
+	} else {
+		reg, err = tmpl.LoadIconsEmbed()
+		if err != nil {
+			log.Fatalf("load icons (embed): %v", err)
+		}
+		log.Printf("loaded %d icons from embed", reg.Len())
 	}
 
-	// 文章服务：content/posts/*.md（文件回退用）
-	posts := post.NewService(filepath.Join(root, "content", "posts"))
+	// 模板引擎：-dev 模式从磁盘读（改模板立即生效），否则走 embed。
+	var engine *tmpl.Engine
+	if devMode {
+		engine, err = tmpl.NewEngine(filepath.Join(app.Root, "internal", "template"), reg)
+		if err != nil {
+			log.Fatalf("load templates (dev): %v", err)
+		}
+		log.Printf("templates loaded from disk (dev)")
+	} else {
+		engine, err = tmpl.NewEngineFromEmbed(reg)
+		if err != nil {
+			log.Fatalf("load templates (embed): %v", err)
+		}
+		log.Printf("templates loaded from embed")
+	}
 
-	// SQLite 持久化：data/blog.db（走 -root 解析，不依赖 cwd）
-	dbPath := filepath.Join(root, "data", "blog.db")
-	st, err := store.New(dbPath)
+	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。embed 模式下 content 仍需磁盘，
+	// 故按 root 定位；部署时 content/ 可选（有 DB 即可），不存在不报错。
+	posts := post.NewService(filepath.Join(app.Root, "content", "posts"))
+
+	// SQLite 持久化：DBPath 已在 ResolveApp 绝对化。
+	st, err := store.New(app.DBPath)
 	if err != nil {
 		log.Fatalf("open store: %v", err)
 	}
 	defer st.Close()
-	log.Printf("sqlite ready: %s", dbPath)
+	log.Printf("sqlite ready: %s", app.DBPath)
 
 	// 站点配置：优先读 config/site.yml，缺失或解析失败回退 DefaultSite。
-	configPath := filepath.Join(root, "config", "site.yml")
-	site, err := config.LoadSite(configPath)
+	siteConfigPath := filepath.Join(app.Root, "config", "site.yml")
+	site, err := config.LoadSite(siteConfigPath)
 	if err != nil {
 		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
 		site = config.DefaultSite()
 	} else {
-		log.Printf("site config loaded from %s", configPath)
+		log.Printf("site config loaded from %s", siteConfigPath)
 	}
 
 	// admin handler（含 seed 能力）
 	adminHandler := admin.New(st, posts, engine, site)
 
-	// -seed：把 content/posts/*.md 导入 DB 后继续启动
-	if seed {
+	// seed：-seed flag 或 app.yml seed_on_start 任一为真即执行。
+	if seed || app.SeedOnStart {
 		n, _ := adminHandler.SeedCount()
 		if err := adminHandler.Seed(); err != nil {
 			log.Fatalf("seed: %v", err)
@@ -91,10 +143,34 @@ func main() {
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}
 
+	// release 模式：关掉 Gin 调试日志（生产噪音），开发期可用 -dev 保留 debug。
+	if !devMode {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.Default()
 
-	// 静态文件：assets/css、assets/js 映射到 /assets
-	r.Static("/assets", filepath.Join(root, "assets"))
+	// 反向代理头：设了 trusted_proxy 才信任 X-Forwarded-For，还原客户端真实 IP。
+	if app.TrustedProxy != "" {
+		proxies := strings.Split(app.TrustedProxy, ",")
+		for i := range proxies {
+			proxies[i] = strings.TrimSpace(proxies[i])
+		}
+		if err := r.SetTrustedProxies(proxies); err != nil {
+			log.Printf("set trusted proxies: %v", err)
+		}
+		r.ForwardedByClientIP = true
+	}
+
+	// 静态文件 /assets：-dev 模式从磁盘读（改 CSS 立即生效），否则走 embed.FS。
+	if devMode {
+		r.Static("/assets", filepath.Join(app.Root, "assets"))
+	} else {
+		sub, err := fs.Sub(assets.FS, ".")
+		if err != nil {
+			log.Fatalf("assets sub fs: %v", err)
+		}
+		r.StaticFS("/assets", http.FS(sub))
+	}
 
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
@@ -105,6 +181,11 @@ func main() {
 
 		// 优先查 DB
 		if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil {
+			// 阅读量自增：每次访问 /post/:slug 计数 +1。失败仅记日志，不中断渲染。
+			// p.Views 是 incr 前的值，展示用 p.Views+1 含本次访问（与 DB 最终值一致）。
+			if err := st.IncrViews(slug); err != nil {
+				log.Printf("incr views for %s: %v", slug, err)
+			}
 			// 填标签/分类（关联表查询），用于面包屑分类段 + footer 标签/分类段
 			if err := st.FillTagsCategories([]*store.Post{p}); err != nil {
 				log.Printf("fill tags/categories for %s: %v", slug, err)
@@ -142,6 +223,7 @@ func main() {
 					Categories:  p.Categories,
 					CreatedTime: p.CreatedAt,
 					UpdatedTime: p.UpdatedAt,
+					Views:       p.Views + 1,
 				},
 				Content:  template.HTML(htmlWithIDs),
 				TOCHTML:  template.HTML(post.BuildTOCHTML(toc)),
@@ -159,7 +241,9 @@ func main() {
 		// 回退：文件渲染（Demo 2 链路）
 		p, err := posts.Load(slug)
 		if err != nil {
-			if os.IsNotExist(err) {
+			// 用 errors.Is 而非 os.IsNotExist：Load 的错误经 fmt.Errorf %w 包裹，
+			// os.IsNotExist 不递归解包会漏判（实测返回 false），errors.Is 能穿透。
+			if errors.Is(err, fs.ErrNotExist) {
 				c.String(http.StatusNotFound, "post not found: %s", slug)
 				return
 			}
@@ -284,8 +368,8 @@ func main() {
 		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
 	})
 
-	addr := ":8080"
-	fmt.Printf("Stellar Demo 3 server listening on http://localhost%s\n", addr)
+	addr := app.ListenAddr
+	fmt.Printf("Stellar blog server listening on http://localhost%s\n", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("run: %v", err)
 	}
@@ -317,6 +401,7 @@ func toCard(p *store.Post) *tmpl.PostCard {
 		Excerpt: excerpt,
 		Cover:   p.Cover,
 		Date:    p.CreatedAt,
+		Views:   p.Views,
 	}
 }
 
@@ -421,8 +506,8 @@ func renderTagsCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine, site 
 		items = append(items, tmpl.TagItem{Name: t.Name, Count: t.Count})
 	}
 	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{Title: "标签", Layout: "tags", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Site:    site,
+		Page:    &tmpl.Page{Title: "标签", Layout: "tags", Type: "tech", Lang: "zh-CN", MenuID: "post"},
 		Tags:    items,
 		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "tags"},
 	}
@@ -441,8 +526,8 @@ func renderCategoriesCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine,
 		items = append(items, tmpl.CategoryItem{Name: ct.Name, Count: ct.Count})
 	}
 	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{Title: "分类", Layout: "categories", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Site:       site,
+		Page:       &tmpl.Page{Title: "分类", Layout: "categories", Type: "tech", Lang: "zh-CN", MenuID: "post"},
 		Categories: items,
 		NavTabs:    &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "categories"},
 	}
@@ -501,8 +586,8 @@ func renderListByRelation(c *gin.Context, st *store.Store, engine *tmpl.Engine, 
 		nav.CategoryName = name
 	}
 	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{Title: labelType + ":" + name, Layout: "list", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Site:      site,
+		Page:      &tmpl.Page{Title: labelType + ":" + name, Layout: "list", Type: "tech", Lang: "zh-CN", MenuID: "post"},
 		Posts:     toCards(posts),
 		Paginator: buildPaginator(page, totalPages, baseURL, ""),
 		NavTabs:   nav,
@@ -522,8 +607,8 @@ func renderArchive(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *t
 		archive = append(archive, tmpl.ArchiveGroup{Year: g.Year, Posts: toCards(g.Posts)})
 	}
 	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{Title: "归档", Layout: "archive", Type: "tech", Lang: "zh-CN", MenuID: "post"},
+		Site:    site,
+		Page:    &tmpl.Page{Title: "归档", Layout: "archive", Type: "tech", Lang: "zh-CN", MenuID: "post"},
 		Archive: archive,
 		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "archive"},
 	}

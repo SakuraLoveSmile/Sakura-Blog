@@ -2,12 +2,20 @@ package template
 
 import (
 	"bufio"
+	_ "embed"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 )
+
+// iconsYML 是编译期嵌入的 Stellar icons.yml（从 resource/ 复制，避免部署时依赖 gitignore 的 resource/）。
+// 路径相对本包：data/icons.yml。
+//
+//go:embed data/icons.yml
+var iconsYML []byte
 
 // IconRegistry 从 Stellar _data/icons.yml 加载的内联 SVG 集合。
 // icons.yml 格式为 flat map：每行 "key: <svg...>"，非标准 YAML（value 含大量特殊字符），
@@ -20,15 +28,25 @@ type IconRegistry struct {
 var iconLineRe = regexp.MustCompile(`^([a-zA-Z0-9:_-]+):\s*(.+)$`)
 
 // LoadIcons 从指定路径加载 icons.yml，返回 IconRegistry。
+// 保留给开发期从 resource/ 读取（go run 时 -root 定位）；正式部署用 LoadIconsEmbed。
 func LoadIcons(path string) (*IconRegistry, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open icons.yml: %w", err)
 	}
 	defer f.Close()
+	return parseIcons(f)
+}
 
+// LoadIconsEmbed 从 go:embed 嵌入的 icons.yml 加载。部署时无需外部 resource/ 目录。
+func LoadIconsEmbed() (*IconRegistry, error) {
+	return parseIcons(strings.NewReader(string(iconsYML)))
+}
+
+// parseIcons 从任意 reader 解析 icons.yml，逻辑与原 LoadIcons 一致。
+func parseIcons(r io.Reader) (*IconRegistry, error) {
 	reg := &IconRegistry{icon: make(map[string]string)}
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(r)
 	// 单行 SVG 最长 ~3.4KB，默认 buffer 64KB 足够
 	for sc.Scan() {
 		line := sc.Text()

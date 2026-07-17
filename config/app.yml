@@ -1,0 +1,22 @@
+# 应用配置 - 监听地址/数据库/部署参数
+# 独立于 site.yml（站点内容配置）。所有字段支持环境变量覆盖：
+#   BLOG_LISTEN / BLOG_DB / BLOG_ROOT / BLOG_SEED / BLOG_TRUSTED_PROXY
+# 优先级：环境变量 > 本文件 > 代码默认值
+
+# HTTP 监听地址。生产环境配合反向代理用 :8080，反代监听 80/443。
+listen_addr: ":8080"
+
+# SQLite 文件路径。相对路径按 root 解析，绝对路径原样使用。
+db_path: data/blog.db
+
+# 工作根目录：定位 site.yml 与 DB。空则用进程 cwd。
+# Docker 部署时留空（容器内固定路径），本地 go run 传 -root 或设 BLOG_ROOT。
+root:
+
+# 启动时把 content/posts/*.md 导入 DB（按 slug UPSERT，幂等）。
+# 等价于 -seed flag。生产环境首次启动设 true，之后设 false。
+seed_on_start: false
+
+# 反向代理可信 IP/CIDR（逗号分隔）。设了才信任 X-Forwarded-For 还原客户端 IP。
+# 例：nginx 同机部署填 127.0.0.1/32；空则不信任代理头（仅本机直连场景）。
+trusted_proxy:
