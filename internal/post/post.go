@@ -8,6 +8,7 @@ import (
 
 	"github.com/yuin/goldmark"
 	mdparser "github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // Post 文章渲染结果。
@@ -40,16 +41,33 @@ type Service struct {
 // AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
 func NewService(mdDir string) *Service {
 	return &Service{
-		mdDir:  mdDir,
-		md:     goldmark.New(goldmark.WithParserOptions(mdparser.WithAutoHeadingID())),
+		mdDir: mdDir,
+		md: goldmark.New(
+			goldmark.WithParserOptions(mdparser.WithAutoHeadingID()),
+			goldmark.WithRendererOptions(html.WithUnsafe()),
+		),
 		parser: newParser(),
 	}
 }
 
 // Render 把 Markdown 正文渲染成 HTML。抽成公共函数，供文件加载与 admin 保存/seed 复用同一 goldmark 实例。
+// 渲染流程：先预处理 shortcodes（note/folding → HTML），再 goldmark 渲染整篇。
 func (s *Service) Render(body string) (string, error) {
+	// renderMD 闭包：用同一 goldmark 实例渲染子片段（folding body 等）
+	renderMD := func(md string) string {
+		var sb strings.Builder
+		if err := s.md.Convert([]byte(md), &sb); err != nil {
+			return md
+		}
+		return sb.String()
+	}
+
+	// 1. 预处理 shortcodes
+	processed := processShortcodes(body, renderMD)
+
+	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder
-	if err := s.md.Convert([]byte(body), &sb); err != nil {
+	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err
 	}
 	return sb.String(), nil
