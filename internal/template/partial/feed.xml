@@ -1,0 +1,22 @@
+{{- /* feed.xml: RSS 2.0 订阅输出，供 /feed.xml 路由使用。 */ -}}
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>{{.Site.Title}}</title>
+    <link>{{.SiteURL}}</link>
+    <description>{{.Site.Description}}</description>
+    <language>{{.Language}}</language>
+    <lastBuildDate>{{.LastBuildDate}}</lastBuildDate>
+    <atom:link href="{{.FeedURL}}" rel="self" type="application/rss+xml"/>
+    {{range .Items}}
+    <item>
+      <title>{{.Title}}</title>
+      <link>{{.Link}}</link>
+      <guid isPermaLink="true">{{.Link}}</guid>
+      <pubDate>{{.PubDate}}</pubDate>
+      <description>{{.Description}}</description>
+      <content:encoded>{{.Content}}</content:encoded>
+    </item>
+    {{end}}
+  </channel>
+</rss>

@@ -9,7 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/admin"
@@ -86,6 +89,11 @@ func main() {
 			log.Fatalf("seed: %v", err)
 		}
 		log.Printf("seed: imported %d posts from content/posts", n)
+	}
+
+	// 生成代码高亮 CSS（chroma monokai），供 head.html 引用。
+	if err := writeChromaCSS(filepath.Join(root, "assets", "css", "chroma.css")); err != nil {
+		log.Printf("write chroma css: %v", err)
 	}
 
 	r := gin.Default()
@@ -207,18 +215,20 @@ func main() {
 			})
 		}
 
+		tags, _ := st.ListTags()
 		data := &tmpl.ViewData{
-		Site:          site,
-		ArchiveGroups: groups,
-		RecentPosts:   loadRecentPosts(st, 5),
-		Page: &tmpl.Page{
-			Title:  "归档",
-			Layout: "archive",
-			Type:   "tech",
-			Lang:   "zh-CN",
-			MenuID: "archive",
-		},
-	}
+			Site:          site,
+			ArchiveGroups: groups,
+			RecentPosts:   loadRecentPosts(st, 5),
+			Tags:          tags,
+			Page: &tmpl.Page{
+				Title:  "归档",
+				Layout: "archive",
+				Type:   "tech",
+				Lang:   "zh-CN",
+				MenuID: "archive",
+			},
+		}
 
 		html, err := engine.Render("base", data)
 		if err != nil {
@@ -226,6 +236,58 @@ func main() {
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	})
+
+	// RSS 订阅：输出最新 20 篇已发布文章。
+	r.GET("/feed.xml", func(c *gin.Context) {
+		posts, err := st.ListPublishedRecent(20)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		items := make([]*tmpl.FeedItem, 0, len(posts))
+		for _, p := range posts {
+			items = append(items, &tmpl.FeedItem{
+				Title:       p.Title,
+				Link:        "/post/" + p.Slug,
+				PubDate:     p.CreatedAt.Format(time.RFC1123),
+				Description: p.Excerpt,
+				Content:     p.ContentHTML,
+			})
+		}
+		data := &tmpl.FeedData{
+			Site:          site,
+			SiteURL:       "/",
+			FeedURL:       "/feed.xml",
+			Language:      "zh-CN",
+			LastBuildDate: time.Now().Format(time.RFC1123),
+			Items:         items,
+		}
+		html, err := engine.Render("feed", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", []byte(html))
+	})
+
+	// 本地搜索索引：输出所有已发布文章的标题/摘要/链接/正文（供 ctx.search.local_search 使用）。
+	r.GET("/search.json", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		docs := make([]*searchDoc, 0, len(posts))
+		for _, p := range posts {
+			docs = append(docs, &searchDoc{
+				Title:   p.Title,
+				URL:     "/post/" + p.Slug,
+				Excerpt: p.Excerpt,
+				Content: p.ContentHTML,
+			})
+		}
+		c.JSON(http.StatusOK, docs)
 	})
 
 	addr := ":8082"
@@ -237,6 +299,35 @@ func main() {
 
 // pageSize 首页每页文章数，对齐 Hexo index_generator per_page 默认值。
 const pageSize = 10
+
+// writeChromaCSS 把指定 style 的 chroma CSS 写到 path，用于代码块高亮。
+func writeChromaCSS(path string) error {
+	style := styles.Get("monokai")
+	if style == nil {
+		style = styles.Fallback
+	}
+	formatter := html.New(html.WithClasses(true))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := formatter.WriteCSS(f, style); err != nil {
+		return err
+	}
+	return nil
+}
+
+// searchDoc 是 /search.json 输出的单条搜索索引。
+type searchDoc struct {
+	Title   string `json:"title"`
+	URL     string `json:"url"`
+	Excerpt string `json:"excerpt"`
+	Content string `json:"content"`
+}
 
 // renderHome 渲染首页文章列表（Layout=="index"）。
 // page 从 1 开始；越界（page > totalPages）回 404。文章数据走 store DB 查询。
@@ -277,9 +368,11 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 		pages[i] = i + 1
 	}
 
+	tags, _ := st.ListTags()
 	data := &tmpl.ViewData{
 		Site:        site,
 		RecentPosts: loadRecentPosts(st, 5),
+		Tags:        tags,
 		Page: &tmpl.Page{
 			Title:  site.Title,
 			Layout: "index",

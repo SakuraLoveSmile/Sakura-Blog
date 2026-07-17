@@ -26,7 +26,7 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(path, ".html") {
+		if d.IsDir() || !(strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".xml")) {
 			return nil
 		}
 		files = append(files, path)
@@ -36,13 +36,13 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 		return nil, fmt.Errorf("walk template dir: %w", err)
 	}
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no html templates found under %s", root)
+		return nil, fmt.Errorf("no html/xml templates found under %s", root)
 	}
 
 	for _, f := range files {
-		// 模板名取文件基名（去 .html）。各子目录文件名已保证不冲突
-		// （layout/base、partial/head、admin/list 等基名唯一）。
-		name := strings.TrimSuffix(filepath.Base(f), ".html")
+		// 模板名取文件基名（去 .html/.xml）。各子目录文件名已保证不冲突
+		// （layout/base、partial/head、admin/list、feed 等基名唯一）。
+		name := strings.TrimSuffix(strings.TrimSuffix(filepath.Base(f), ".html"), ".xml")
 		b, err := os.ReadFile(f)
 		if err != nil {
 			return nil, fmt.Errorf("read %s: %w", f, err)
@@ -55,7 +55,8 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 }
 
 // Render 渲染指定模板名（如 "base"），返回 HTML 字符串。
-func (e *Engine) Render(name string, data *ViewData) (string, error) {
+// data 可以是 *ViewData、*FeedData 等任意模板上下文。
+func (e *Engine) Render(name string, data interface{}) (string, error) {
 	t := e.tpl.Lookup(name)
 	if t == nil {
 		return "", fmt.Errorf("template %q not found", name)
@@ -68,7 +69,7 @@ func (e *Engine) Render(name string, data *ViewData) (string, error) {
 }
 
 // RenderBytes 同 Render，返回字节切片（给 Gin 直接写响应）。
-func (e *Engine) RenderBytes(name string, data *ViewData) ([]byte, error) {
+func (e *Engine) RenderBytes(name string, data interface{}) ([]byte, error) {
 	t := e.tpl.Lookup(name)
 	if t == nil {
 		return nil, fmt.Errorf("template %q not found", name)

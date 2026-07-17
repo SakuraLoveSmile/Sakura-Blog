@@ -82,6 +82,25 @@ type AdminPostRow struct {
 	Date      string // 列表展示用（created_at 或文件 date）
 }
 
+// FeedData RSS /feed.xml 渲染数据。
+type FeedData struct {
+	Site          *Site
+	SiteURL       string
+	FeedURL       string
+	Language      string
+	LastBuildDate string
+	Items         []*FeedItem
+}
+
+// FeedItem RSS 单篇文章项。
+type FeedItem struct {
+	Title       string
+	Link        string
+	PubDate     string
+	Description string
+	Content     string
+}
+
 // Site 对齐 Stellar theme + config 的站点级配置。
 // yaml tag 用于从 config/site.yml 解析（goccy/go-yaml）。
 type Site struct {
