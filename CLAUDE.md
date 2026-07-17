@@ -268,6 +268,44 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 
 main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调，demo 未加载 jQuery）与 `window.canonical`（原版 defines.ejs 注入）。缺失时 `init.toc`/`init.sidebar` 抛 `utils is not defined` 中断 `initPage()`（连带 relativeDate 失效），`canonicalCheck` 抛 `Cannot read properties of undefined (reading 'originalHost')`。**对策**：base.html 内联脚本（main.js 引用之前）注入 `const utils = { jq: (fn) => { if (window.jQuery) fn(); } };` 最小 shim；`canonicalCheck` 的 `const canonical = window.canonical;` 后加 `if (!canonical) return;` 守卫。
 
+## 第三阶段踩坑（搜索/RSS/sitemap/TOC）
+
+### FTS5 trigram tokenizer 对 <3 字符查询返回空，需 LIKE 降级
+
+modernc.org/sqlite 支持 FTS5。tokenizer 选 `trigram`（3 字符滑窗）而非 `unicode61`：unicode61 把整段 CJK 当一个 token，中文几乎搜不到；trigram 对 3+ 字中文和英文友好。**坑**：trigram 按 3-gram 切分，2 字符查询（如 "Go"/"CSS"）匹配不到任何 gram 返回 0。**对策**：`Search` 按 `utf8.RuneCountInString(q)` 分流，<3 走 LIKE（title/content_md 模糊匹配），>=3 走 FTS5 BM25 排序。注意用 rune count 不是 byte count（中文 2 字 = 6 byte 但 2 rune）。
+
+### FTS5 external content 表 JOIN 列名歧义
+
+`posts_fts` 与 `posts` 都有 `title/content_md/content_html` 列，`SELECT postColumns FROM posts_fts f JOIN posts p` 无前缀报 `ambiguous column name`。**对策**：新增 `postColumnsPrefixed`（带 `p.` 前缀）专给 JOIN 用，`listByRelation` 因用 `WHERE p.id IN (子查询)` 外层单表不受影响。
+
+### FTS5 MATCH 特殊字符用双引号包裹 phrase
+
+用户输入含 `*` `:` `OR` `"` 等 FTS5 语法字符会报错。**对策**：`phrase := "\"" + strings.ReplaceAll(q, `"`, `""`) + "\""`，双引号包裹整串做短语匹配，内部 `"` 转义为 `""`。LIKE 降级路径另需 `ESCAPE '\'` 转义 `%` `_` `\`，避免搜 `%` 误匹配全部。
+
+### html/template 在 href 里对 query 做 URL 转义会破坏 = 号
+
+paginator 早期方案在模板里拼 `{{$base}}?{{$query}}&page=N`，`{{$query}}`（值 `q=golang`）被 html/template 当 URL 上下文转义，`=` 编码成 `%3d`，浏览器把 `q%3dgolang` 当成无值 key，`q` 参数丢失。**对策**：不在模板拼 query，Go 侧 `buildPaginator` 预生成 `PageURLs/PrevURL/NextURL` 完整 URL，模板只 `{{index $.Paginator.PageURLs $i}}` 输出。`&` 在 HTML 属性里写成 `&amp;` 是正确的（浏览器解析回 `&`）。
+
+### 搜索分页 baseURL 不能含 query string
+
+`buildPaginator` 的 baseURL 若是 `/search?q=golang`，paginator 拼 `/search?q=golang?page=2`，第二个 `?` 不是分隔符，`page` 丢失、`q` 变成 `golang?page=2`。**对策**：baseURL 保持纯路径 `/search`，query 单独传 `baseQuery` 参数，`pageURL` 函数按 `baseURL?baseQuery&page=N` 拼接（baseQuery 为空退化为 `?page=N`）。
+
+### goldmark 不生成 heading id，正则后处理注入
+
+goldmark v1.8.4 默认输出 `<h2>text</h2>` 无 id。需正则 `<h([23])>(.*?)</h[23]>` 匹配后注入 id。**坑**：RE2 不支持反向引用 `\1`，`</h\1>` 报 `invalid escape sequence`，改 `</h[23]>` 宽松匹配（goldmark 保证开闭一致）。**转义坑**：标题含 `< > & "` 时，id 和 TOC 文本必须转义--id 经 `idSafeRE` 剔除 `[^\p{L}\p{N}-]`，TOC 文本输出前 `htmlEscape`。`stripTags` 须先剥离标签再 `decodeEntities`，否则解码出的 `<` `>` 会被误当标签剥离（字面量 `&lt;C&gt;` 丢失）。
+
+### TOC 嵌套 HTML 状态机：H3 无前置 H2 作顶层项
+
+`BuildTOCHTML` 用 `liOpen`/`childOpen` 双状态机生成 `<ol class="toc"><li>...<ol class="toc-child"><li>...</li></ol></li></ol>`。**坑**：连续 H3 无前置 H2 时，若直接开 toc-child 会产生无父 li 的悬空 ol，标签不配平。**对策**：H3 在 `!childOpen && !liOpen`（无前置 H2）时作顶层 li，不开 toc-child。
+
+### text/template 渲染 XML 不自动转义，文本节点手动 xmlEscape
+
+atom.xml/sitemap.xml 用 `text/template`（别名 `textTemplate` 避免与 `html/template` 冲突）。**坑**：text/template 不像 html/template 自动转义，所有文本节点（含 `<link href>`/`<id>`/`<loc>`）必须显式 `xmlEscape`（`&` `<` `>`）。漏写 link/id 会在 slug 含 `&` 或 site.URL 含 query 时生成非法 XML，整个 feed 解析失败。正文 HTML 用 CDATA 包裹，内部 `]]>` 需替换为 `]]]]><![CDATA[>` 避免提前闭合。
+
+### Atom entry <id> 用 tag: 永久 ID 而非 URL
+
+Atom 规范要求 `<id>` 是 permanent identifier，slug 变更后不应变。用 `baseURL + "/post/" + slug` 作 id 会在改 slug 时被订阅器当新文章重复推送。**对策**：`fmt.Sprintf("tag:%s,2026:post/%d", host, p.ID)`，用稳定的 post.ID，host 从 siteURL 解析。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
@@ -282,3 +320,4 @@ main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQue
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
 - [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
+- [x] Demo 4：站内搜索 + RSS + sitemap + 文章 TOC（FTS5 trigram + LIKE 降级 / atom.xml permanent ID / sitemap.xml / goldmark heading id 注入 + 嵌套 toc widget，preview 验证通过）
