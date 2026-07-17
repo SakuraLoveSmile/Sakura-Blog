@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// TOCItem 文章目录单项。Level 是 heading 级别（2/3），ID 是锚点 id，Title 是标题文本。
+// TOCItem 文章目录单项。Level 是 heading 级别（2/3），ID 是锚点 id，Title 是标题纯文本。
 type TOCItem struct {
 	Level int
 	ID    string
@@ -22,12 +22,16 @@ var (
 	headingTagRE = regexp.MustCompile(`<[^>]*>`)
 	// spaceFoldRE 折叠连续空白。
 	spaceFoldRE = regexp.MustCompile(`\s+`)
+	// idSafeRE 锚点 id 只保留字母、数字、中文、连字符，其余剔除，避免破坏 HTML 属性
+	// （标题含 " & < > 等字符时 slugify 后仍可能残留，需在此兜底）。
+	idSafeRE = regexp.MustCompile(`[^\p{L}\p{N}-]+`)
 )
 
 // ExtractTOC 从 goldmark 渲染后的 HTML 提取 H2/H3 目录，并给这些 heading 注入 id 锚点。
 // 返回 (toc, htmlWithIDs)。无 H2/H3 时 toc 为 nil，html 原样返回。
 //
-// id 生成：取标题纯文本，折叠空白替换为 -，转小写；重复标题追加 -2/-3 后缀去重。
+// title 经 stripTags + 实体解码得到纯文本，用于 TOC 显示与 id 生成。
+// id 由 slugifyHeading 生成并经 idSafeRE 兜底剔除不安全字符；重复标题追加 -2/-3 后缀去重。
 // 中文标题直接用原文做 id，浏览器原生支持 #中文 锚点（URL 里自动 percent-encode）。
 func ExtractTOC(html string) ([]TOCItem, string) {
 	if !headingRE.MatchString(html) {
@@ -44,7 +48,7 @@ func ExtractTOC(html string) ([]TOCItem, string) {
 		if sub[1] == "3" {
 			level = 3
 		}
-		title := stripTags(sub[2])
+		title := plainText(sub[2])
 		id := slugifyHeading(title)
 
 		// 去重：同 id 已存在则追加 -2/-3
@@ -76,13 +80,8 @@ func ExtractTOC(html string) ([]TOCItem, string) {
 //	  </li>
 //	</ol>
 //
-// H2 为顶层项，H3 作为其 toc-child 子项。状态机追踪三件事：
-//   - liOpen：当前是否有一个未闭合的 <li>（H2 或 H3 的）
-//   - childOpen：当前是否处于 H3 的 toc-child 内
-//
-// 遇到 H2：若有 childOpen 先 </li></ol> 闭合上个 H3 li + toc-child；若 liOpen 则 </li> 闭合上个 H2 li；再开新 H2 li。
-// 遇到 H3：若非 childOpen 则开 toc-child（此时上个 H2 li 仍开着，作为其子列表）；若已 childOpen 则 </li> 闭合上个 H3 li；再开新 H3 li。
-// 末尾按状态依次闭合。
+// H2 为顶层项，H3 作为其 toc-child 子项。Title 输出前做 HTML 转义，防止标题含 < & " 等破坏 HTML。
+// 状态机：liOpen 追踪当前是否有未闭合 <li>，childOpen 追踪是否处于 toc-child 内。
 func BuildTOCHTML(toc []TOCItem) string {
 	if len(toc) == 0 {
 		return ""
@@ -104,18 +103,19 @@ func BuildTOCHTML(toc []TOCItem) string {
 			if liOpen {
 				sb.WriteString(`</li>`)
 			}
-			fmt.Fprintf(&sb, `<li class="toc-item"><a class="toc-link" href="#%s">%s</a>`, it.ID, it.Title)
+			fmt.Fprintf(&sb, `<li class="toc-item"><a class="toc-link" href="#%s">%s</a>`, it.ID, htmlEscape(it.Title))
 			liOpen = true
 		case 3:
-			if !childOpen {
-				// 进入 H3 子列表：上个 H2 li 仍开着，在其内开 toc-child
+			if childOpen {
+				// 已在 toc-child 内：闭合上一个 H3 li，开新的
+				sb.WriteString(`</li>`)
+			} else if liOpen {
+				// 上个 H2 li 仍开着，在其内开 toc-child
 				sb.WriteString(`<ol class="toc-child">`)
 				childOpen = true
-			} else {
-				// 闭合上一个 H3 li
-				sb.WriteString(`</li>`)
 			}
-			fmt.Fprintf(&sb, `<li class="toc-item"><a class="toc-link" href="#%s">%s</a>`, it.ID, it.Title)
+			// 否则（无前置 H2）：H3 直接作顶层项，不开 toc-child
+			fmt.Fprintf(&sb, `<li class="toc-item"><a class="toc-link" href="#%s">%s</a>`, it.ID, htmlEscape(it.Title))
 			liOpen = true
 		}
 	}
@@ -130,20 +130,35 @@ func BuildTOCHTML(toc []TOCItem) string {
 	return sb.String()
 }
 
-// stripTags 剥离 HTML 标签，保留纯文本（标题里的 <code> 等）。
-func stripTags(s string) string {
-	return headingTagRE.ReplaceAllString(s, "")
+// plainText 把标题 HTML 片段转成纯文本：剥离标签后解码 HTML 实体。
+// 顺序必须是先剥离标签再解码，否则解码出的 < > 会被误当标签剥离。
+func plainText(s string) string {
+	s = headingTagRE.ReplaceAllString(s, "")
+	return decodeEntities(s)
 }
 
-// slugifyHeading 把标题文本转成锚点 id：折叠空白为 -，转小写，去首尾 -。
-// 中文保留原字符（不转拼音），仅处理空白与大小写。
+// slugifyHeading 把标题文本转成锚点 id：折叠空白为 -，转小写，剔除非安全字符，去首尾 -。
+// 中文保留原字符（不转拼音）。idSafeRE 兜底剔除 " & < 等会破坏 HTML 属性的字符。
 func slugifyHeading(s string) string {
 	s = strings.TrimSpace(s)
 	s = spaceFoldRE.ReplaceAllString(s, "-")
 	s = strings.ToLower(s)
+	s = idSafeRE.ReplaceAllString(s, "")
 	s = strings.Trim(s, "-")
 	if s == "" {
 		return "heading"
 	}
 	return s
+}
+
+// htmlEscape 转义 HTML 文本节点（& < > " '），供 TOC 链接文本安全输出。
+func htmlEscape(s string) string {
+	r := strings.NewReplacer(
+		`&`, "&amp;",
+		`<`, "&lt;",
+		`>`, "&gt;",
+		`"`, "&#34;",
+		`'`, "&#39;",
+	)
+	return r.Replace(s)
 }

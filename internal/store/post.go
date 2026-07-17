@@ -250,13 +250,12 @@ func (s *Store) searchFTS(q string, page, size, offset int) ([]*Post, int, error
 
 // searchLike LIKE 降级搜索，用于 <3 字符查询（trigram 盲区）。
 // 在 title/content_md 上模糊匹配，按 created_at 倒序（无相关度概念，用时间兜底）。
+// q 中的 SQL LIKE 通配符（% _ \）用 ESCAPE '\' 转义，避免搜 "%" 误匹配全部。
 func (s *Store) searchLike(q string, page, size, offset int) ([]*Post, int, error) {
-	like := "%" + q + "%"
+	like := "%" + escapeLike(q) + "%"
+	const totalQ = `SELECT COUNT(*) FROM posts WHERE status = ? AND (title LIKE ? ESCAPE '\' OR content_md LIKE ? ESCAPE '\')`
 	var total int
-	if err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM posts WHERE status = ? AND (title LIKE ? OR content_md LIKE ?)`,
-		StatusPublished, like, like,
-	).Scan(&total); err != nil {
+	if err := s.db.QueryRow(totalQ, StatusPublished, like, like).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count like search %q: %w", q, err)
 	}
 	if total == 0 {
@@ -264,7 +263,7 @@ func (s *Store) searchLike(q string, page, size, offset int) ([]*Post, int, erro
 	}
 
 	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts
-		WHERE status = ? AND (title LIKE ? OR content_md LIKE ?)
+		WHERE status = ? AND (title LIKE ? ESCAPE '\' OR content_md LIKE ? ESCAPE '\')
 		ORDER BY datetime(created_at) DESC LIMIT ? OFFSET ?`, postColumns),
 		StatusPublished, like, like, size, offset)
 	if err != nil {
@@ -276,6 +275,17 @@ func (s *Store) searchLike(q string, page, size, offset int) ([]*Post, int, erro
 		return nil, 0, err
 	}
 	return posts, total, nil
+}
+
+// escapeLike 转义 SQL LIKE 通配符（% _ \），配合 ESCAPE '\' 使用。
+// 用户搜 "%折扣%" 时把 % 转义成 \% 当字面量，而非"任意字符"通配符。
+func escapeLike(s string) string {
+	r := strings.NewReplacer(
+		`\`, `\\`,
+		`%`, `\%`,
+		`_`, `\_`,
+	)
+	return r.Replace(s)
 }
 
 // postColumns 是 posts 表的查询列，统一顺序，避免 Scan 错位。

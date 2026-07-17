@@ -50,11 +50,15 @@ type PostCard struct {
 }
 
 // Paginator 分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
+// PrevURL/NextURL 为空表示无上一页/下一页；PageURLs[i] 是第 i+1 页的完整 URL（Go 侧预生成，
+// 避免在模板里拼接 query 时被 html/template 的 URL 转义破坏，如 ?q=a&b 的 = 被编码成 %3d）。
 type Paginator struct {
-	Current  int   // 当前页码（从 1 开始）
-	Total    int   // 总页数
-	Pages    []int // 页码序列，如 [1,2,3]
-	BaseURL  string // 分页 URL 前缀：首页留空走 /page/N；列表页如 "/tags/Go" 走 /tags/Go?page=N
+	Current   int      // 当前页码（从 1 开始）
+	Total     int      // 总页数
+	Pages     []int    // 页码序列，如 [1,2,3]，仅用于 range 计数
+	PageURLs  []string // 每页完整 URL，下标对齐 Pages（Pages[i] -> PageURLs[i]）
+	PrevURL   string   // 上一页 URL，空表示无
+	NextURL   string   // 下一页 URL，空表示无
 }
 
 // TagItem 标签云页的单个标签。

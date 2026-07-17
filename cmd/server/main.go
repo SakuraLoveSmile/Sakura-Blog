@@ -255,13 +255,54 @@ func toCards(posts []*store.Post) []*tmpl.PostCard {
 	return cards
 }
 
-// buildPaginator 构造分页器。baseURL 留空走首页 /page/N 风格，非空走列表页 ?page=N 风格。
-func buildPaginator(page, total int, baseURL string) *tmpl.Paginator {
+// buildPaginator 构造分页器，Go 侧预生成每页 URL，避免模板拼接 query 被转义破坏。
+//   - baseURL 空：首页 /page/N 风格（第1页是 /）
+//   - baseURL 非空 + baseQuery 空：列表页 baseURL?page=N（第1页是 baseURL）
+//   - baseURL 非空 + baseQuery 非空：搜索页 baseURL?baseQuery&page=N（第1页是 baseURL?baseQuery）
+func buildPaginator(page, total int, baseURL, baseQuery string) *tmpl.Paginator {
 	pages := make([]int, total)
+	pageURLs := make([]string, total)
 	for i := range pages {
-		pages[i] = i + 1
+		n := i + 1
+		pages[i] = n
+		pageURLs[i] = pageURL(baseURL, baseQuery, n)
 	}
-	return &tmpl.Paginator{Current: page, Total: total, Pages: pages, BaseURL: baseURL}
+	var prev, next string
+	if page > 1 {
+		prev = pageURL(baseURL, baseQuery, page-1)
+	}
+	if page < total {
+		next = pageURL(baseURL, baseQuery, page+1)
+	}
+	return &tmpl.Paginator{Current: page, Total: total, Pages: pages, PageURLs: pageURLs, PrevURL: prev, NextURL: next}
+}
+
+// pageURL 生成第 n 页的完整 URL，分三种风格（见 buildPaginator 注释）。
+func pageURL(baseURL, baseQuery string, n int) string {
+	if baseURL == "" {
+		// 首页：第1页是 /，其余 /page/N
+		if n == 1 {
+			return "/"
+		}
+		return fmt.Sprintf("/page/%d", n)
+	}
+	// 列表/搜索页
+	var b strings.Builder
+	b.WriteString(baseURL)
+	if n == 1 {
+		if baseQuery != "" {
+			b.WriteString("?")
+			b.WriteString(baseQuery)
+		}
+		return b.String()
+	}
+	b.WriteString("?")
+	if baseQuery != "" {
+		b.WriteString(baseQuery)
+		b.WriteString("&")
+	}
+	fmt.Fprintf(&b, "page=%d", n)
+	return b.String()
 }
 
 // renderHome 渲染首页文章列表（Layout=="index"）。
@@ -297,7 +338,7 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 			MenuID: "post",
 		},
 		Posts:     toCards(posts),
-		Paginator: buildPaginator(page, totalPages, ""),
+		Paginator: buildPaginator(page, totalPages, "", ""),
 		NavTabs:   &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "home"},
 	}
 	renderView(c, engine, data)
@@ -398,7 +439,7 @@ func renderListByRelation(c *gin.Context, st *store.Store, engine *tmpl.Engine, 
 		Site: site,
 		Page: &tmpl.Page{Title: labelType + ":" + name, Layout: "list", Type: "tech", Lang: "zh-CN", MenuID: "post"},
 		Posts:     toCards(posts),
-		Paginator: buildPaginator(page, totalPages, baseURL),
+		Paginator: buildPaginator(page, totalPages, baseURL, ""),
 		NavTabs:   nav,
 	}
 	renderView(c, engine, data)
@@ -446,7 +487,7 @@ func renderSearch(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tm
 	if totalPages == 0 {
 		totalPages = 1 // 无结果仍渲染空列表页
 	}
-	if q != "" && page > totalPages {
+	if page > totalPages {
 		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
 		return
 	}
@@ -465,7 +506,7 @@ func renderSearch(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tm
 			MenuID: "post",
 		},
 		Posts:       toCards(posts),
-		Paginator:   buildPaginator(page, totalPages, "/search?q="+url.QueryEscape(q)),
+		Paginator:   buildPaginator(page, totalPages, "/search", "q="+url.QueryEscape(q)),
 		NavTabs:     &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "search"},
 		SearchQuery: q,
 	}
@@ -487,17 +528,18 @@ const feedMaxEntries = 20
 
 // feedEntry Atom feed 的单篇文章条目。
 type feedEntry struct {
-	Title   string
-	Slug    string
-	Link    string // 文章绝对 URL
-	Summary string // 摘要纯文本
-	Content string // 正文 HTML（CDATA 包裹）
+	Title     string
+	ID        string // 永久标识，用 tag: 格式（tag:host,year:post/id），slug 变更后仍稳定
+	Link      string // 文章绝对 URL
+	Summary   string // 摘要纯文本
+	Content   string // 正文 HTML（CDATA 包裹，已转义内部 ]]>）
 	Published string // RFC3339
 	Updated   string // RFC3339
 }
 
 // renderAtom 输出 Atom 1.0 feed（/atom.xml）。取最近 feedMaxEntries 篇已发布文章。
-// 用 text/template 渲染，文本字段走 xmlEscape 手动转义，正文 HTML 用 CDATA 包裹避免双重转义。
+// 用 text/template 渲染，文本字段走 xmlEscape 手动转义，正文 HTML 用 CDATA 包裹，
+// 并把正文内的 ]]> 替换为 ]]]]><![CDATA[> 避免 CDATA 段提前闭合。
 func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
 	posts, err := st.ListPublished()
 	if err != nil {
@@ -506,6 +548,7 @@ func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
 	}
 
 	baseURL := strings.TrimRight(siteURL(site), "/")
+	host := feedHost(siteURL(site))
 	entries := make([]feedEntry, 0, feedMaxEntries)
 	for i, p := range posts {
 		if i >= feedMaxEntries {
@@ -517,10 +560,10 @@ func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
 		}
 		entries = append(entries, feedEntry{
 			Title:     p.Title,
-			Slug:      p.Slug,
+			ID:        fmt.Sprintf("tag:%s,2026:post/%d", host, p.ID),
 			Link:      baseURL + "/post/" + p.Slug,
 			Summary:   excerpt,
-			Content:   p.ContentHTML,
+			Content:   strings.ReplaceAll(p.ContentHTML, "]]>", "]]]]><![CDATA[>"),
 			Published: p.CreatedAt.UTC().Format(time.RFC3339),
 			Updated:   p.UpdatedAt.UTC().Format(time.RFC3339),
 		})
@@ -529,11 +572,13 @@ func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
 	data := struct {
 		Site    *tmpl.Site
 		BaseURL string
+		FeedID  string // feed 级永久 ID，tag:host,year 格式
 		Updated string // feed 级更新时间，取首篇 updated 或当前时间
 		Entries []feedEntry
 	}{
 		Site:    site,
 		BaseURL: baseURL,
+		FeedID:  fmt.Sprintf("tag:%s,2026", host),
 		Updated: feedUpdated(entries),
 		Entries: entries,
 	}
@@ -546,26 +591,26 @@ func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
 	c.Data(http.StatusOK, "application/atom+xml; charset=utf-8", []byte(sb.String()))
 }
 
-// atomTpl Atom 1.0 模板。text/template 不自动转义，文本字段显式调 xmlEscape；
-// 正文 HTML 用 CDATA 包裹（CDATA 内的 ]]> 极罕见，不额外处理）。
+// atomTpl Atom 1.0 模板。text/template 不自动转义，所有文本节点（含 URL/IRI）显式调 xmlEscape，
+// 防止 site.URL 带 query 或 slug 含 & 时生成非法 XML；正文 HTML 用 CDATA 包裹（内部 ]]> 已在 renderAtom 转义）。
 var atomTpl = textTemplate.Must(textTemplate.New("atom").Funcs(textTemplate.FuncMap{
 	"xmlEscape": xmlEscape,
 }).Parse(`<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>{{xmlEscape .Site.Title}}</title>
   <subtitle>{{xmlEscape .Site.Subtitle}}</subtitle>
-  <link href="{{.BaseURL}}/atom.xml" rel="self"/>
-  <link href="{{.BaseURL}}/"/>
+  <link href="{{xmlEscape .BaseURL}}/atom.xml" rel="self"/>
+  <link href="{{xmlEscape .BaseURL}}/"/>
   <updated>{{.Updated}}</updated>
-  <id>{{.BaseURL}}/</id>
+  <id>{{xmlEscape .FeedID}}/</id>
   <author>
     <name>{{xmlEscape .Site.Author}}</name>
   </author>
   {{range .Entries}}
   <entry>
     <title>{{xmlEscape .Title}}</title>
-    <link href="{{.Link}}"/>
-    <id>{{.Link}}</id>
+    <link href="{{xmlEscape .Link}}"/>
+    <id>{{xmlEscape .ID}}</id>
     <published>{{.Published}}</published>
     <updated>{{.Updated}}</updated>
     <summary>{{xmlEscape .Summary}}</summary>
@@ -637,6 +682,16 @@ func siteURL(site *tmpl.Site) string {
 		return site.URL
 	}
 	return "http://localhost:8080"
+}
+
+// feedHost 从站点 URL 提取 host（用于生成 tag: scheme 的永久 ID）。
+// 解析失败回退到 localhost，保证 feed 始终有合法 host。
+func feedHost(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Host == "" {
+		return "localhost"
+	}
+	return u.Host
 }
 
 // feedUpdated 取首篇 entry 的 updated 作为 feed 级更新时间，无文章用当前时间。
