@@ -1,7 +1,6 @@
 {{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
-   author 卡片（所有页面）+ TOC widget（仅文章页有 h2/h3 时）。
-   author 结构对应 widgets/author.ejs；TOC 结构对齐 toc.ejs layoutDiv：
-   widget(collapse) > widget-header(name + cap-action) + widget-body(toc) + widget-footer(回到顶部)。
+   组件顺序：author 卡片 → 近期发布 → 标签云 → TOC（仅文章页有 h2/h3 时，末位 sticky 吸顶，
+   对齐原版 post.rightbar: ghrepo, toc 中 toc 末位 sticky 的结构）。
    user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效；
    TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。*/ -}}
 <div class="widgets">
@@ -14,6 +13,33 @@
         {{icon "solar:documents-bold-duotone"}}
         全部文章
       </a>
+    </div>
+  </widget>
+
+  {{- /* 近期发布：对应 widgets/recent.ejs（post-list）。数据来自 DB 最新 5 篇（fillSidebar 填充）*/}}
+  <widget class="widget-wrapper recent post-list">
+    <div class="widget-header dis-select">
+      <span class="name">近期发布</span>
+      <a class="cap-action" id="rss" title="Subscribe" href="#">
+        {{icon "default:rss"}}
+      </a>
+    </div>
+    <div class="widget-body fs14">
+      {{range .Recent}}
+      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+      {{end}}
+    </div>
+  </widget>
+
+  {{- /* 标签云：对应 widgets/tagcloud.ejs。数据来自 DB 计数降序前 20（fillSidebar 填充）*/}}
+  <widget class="widget-wrapper tagcloud">
+    <div class="widget-header dis-select">
+      <span class="name">标签</span>
+    </div>
+    <div class="widget-body fs14">
+      {{range .TagCloud}}
+      <a class="tag" href="{{url_for (printf "/tags/%s" .Name)}}">{{.Name}}</a>
+      {{end}}
     </div>
   </widget>
   {{if .TOC}}
