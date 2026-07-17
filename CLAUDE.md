@@ -262,13 +262,35 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 
 `-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。
 
+## Step 1 新增坑点（首页 + 配置文件化）
+
+### SQLite 加列必须手写 ALTER 迁移
+
+`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加新列。加 `cover` 列时需用 `PRAGMA table_info(posts)` 遍历列名，缺失才执行 `ALTER TABLE posts ADD COLUMN cover TEXT NOT NULL DEFAULT ''`。SQLite 的 `ADD COLUMN` 要求默认值必须是常量（`DEFAULT ''` 合法，`DEFAULT CURRENT_TIMESTAMP` 非法）。
+
+### Go template 无内置算术，分页器需注册 add/sub func
+
+分页器的 prev/next 页码运算（`Current-1`/`Current+1`）在模板里做不了，需在 FuncMap 注册 `add`/`sub`（签名 `func(a, b int) int`）。模板里 `{{sub .Paginator.Current 1}}` 调用。
+
+### base.html 按 Layout 分派 content 模板
+
+`l_main` 里原来是无条件 `{{template "content" .}}`，首页改为 `{{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}`。新增 `partial/index.html` 的基名 `index` 不与现有 `base/head/sidebar/content/list/edit` 冲突，可直接注册。
+
+### goccy/go-yaml 是 gin 间接依赖，yaml 值注意引号
+
+`goccy/go-yaml` 已在 go.sum（gin 间接依赖），直接 import 后 `go mod tidy` 自动去掉 `// indirect` 标记。写 site.yml 注意：`#` 开头的值（如主题色 `#1BCDFC`）必须加引号（否则当注释）；raw HTML（如 social icon 的 `<img src>`）用单引号包裹，避免 `:`/`<` 触发解析问题。
+
+### qoder worktree 端口固定 8081
+
+qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 可同时起服务互不影响。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
 - Node 22 + stylus 0.62.0（CSS 编译）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run cmd/server/main.go -root /Users/sakurasep/Documents/Code/Project/Blog/dev`，`-seed` 可选（导入 content/posts/*.md 到 DB）
+- Go 服务：`go run cmd/server/main.go -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081
 
 ## Demo 进度
 
@@ -276,3 +298,4 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
 - [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
+- [x] Step 1：首页 + 文章列表（`/` 渲染文章卡片列表 + `/page/:num` 分页 + cover 封面（含老库 ALTER 迁移）+ config/site.yml 配置文件化（DefaultSite 保留 fallback），preview 验证通过）
