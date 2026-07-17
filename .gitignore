@@ -37,3 +37,6 @@ npm-debug.log*
 # 构建产物
 dist/
 tmp/
+
+# 运行时生成
+assets/css/chroma.css
