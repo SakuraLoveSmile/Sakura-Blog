@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
@@ -29,6 +30,11 @@ type Post struct {
 	Status      string // draft / published
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+
+	// Tags/Categories 不在 posts 表列里（走 post_tags/post_categories 关联表），
+	// 不入 postColumns。由 FillTagsCategories 或独立查询填充，零值为空切片。
+	Tags       []string
+	Categories []string
 }
 
 // Store 文章数据访问对象，持 *sql.DB 连接。
@@ -83,7 +89,25 @@ func (s *Store) createTables() error {
 		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
-	CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);`
+	CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);
+	CREATE TABLE IF NOT EXISTS tags (
+		id   INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE
+	);
+	CREATE TABLE IF NOT EXISTS categories (
+		id   INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL UNIQUE
+	);
+	CREATE TABLE IF NOT EXISTS post_tags (
+		post_id INTEGER NOT NULL,
+		tag_id  INTEGER NOT NULL,
+		PRIMARY KEY (post_id, tag_id)
+	);
+	CREATE TABLE IF NOT EXISTS post_categories (
+		post_id     INTEGER NOT NULL,
+		category_id INTEGER NOT NULL,
+		PRIMARY KEY (post_id, category_id)
+	);`
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create tables: %w", err)
 	}
@@ -277,4 +301,243 @@ func scanPosts(rows *sql.Rows) ([]*Post, error) {
 		return nil, fmt.Errorf("iterate posts: %w", err)
 	}
 	return out, nil
+}
+
+// TagCount 标签云用：标签名 + 关联文章数。
+type TagCount struct {
+	Name  string
+	Count int
+}
+
+// CategoryCount 分类云用：分类名 + 关联文章数。
+type CategoryCount struct {
+	Name  string
+	Count int
+}
+
+// ArchiveYear 归档页用：某年 + 该年文章列表（按 created_at 倒序）。
+type ArchiveYear struct {
+	Year  int
+	Posts []*Post
+}
+
+// SetTags 用事务替换 postID 的全部 tag 关联：删旧 + 插新（含 tags 表 upsert）。
+// 显式事务，不依赖 SQLite foreign_keys pragma。空 tags 则仅清空关联。
+func (s *Store) SetTags(postID int64, tags []string) error {
+	return s.setRelations(postID, tags, "tags", "post_tags", "tag_id")
+}
+
+// SetCategories 用事务替换 postID 的全部 category 关联。同 SetTags。
+func (s *Store) SetCategories(postID int64, cats []string) error {
+	return s.setRelations(postID, cats, "categories", "post_categories", "category_id")
+}
+
+// setRelations 是 SetTags/SetCategories 的共用实现。
+// table=tags|categories，relTable=post_tags|post_categories，relCol=tag_id|category_id。
+func (s *Store) setRelations(postID int64, names []string, table, relTable, relCol string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() // 已提交时 Rollback 是 no-op
+
+	if _, err := tx.Exec(fmt.Sprintf(`DELETE FROM %s WHERE post_id = ?`, relTable), postID); err != nil {
+		return fmt.Errorf("delete old %s: %w", relTable, err)
+	}
+
+	seen := map[string]bool{}
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		var id int64
+		if err := tx.QueryRow(fmt.Sprintf(`INSERT INTO %s(name) VALUES(?) ON CONFLICT(name) DO UPDATE SET name=excluded.name RETURNING id`, table), name).Scan(&id); err != nil {
+			return fmt.Errorf("upsert %s %q: %w", table, name, err)
+		}
+		if _, err := tx.Exec(fmt.Sprintf(`INSERT INTO %s(post_id, %s) VALUES(?, ?) ON CONFLICT DO NOTHING`, relTable, relCol), postID, id); err != nil {
+			return fmt.Errorf("insert %s: %w", relTable, err)
+		}
+	}
+	return tx.Commit()
+}
+
+// FillTagsCategories 批量填充 posts 的 Tags/Categories，避免 N+1。
+// 各发一次 JOIN 查询拿全部关联，内存按 post_id 分组。
+func (s *Store) FillTagsCategories(posts []*Post) error {
+	if len(posts) == 0 {
+		return nil
+	}
+	ids := make([]interface{}, len(posts))
+	idToPost := make(map[int64]*Post, len(posts))
+	for i, p := range posts {
+		ids[i] = p.ID
+		idToPost[p.ID] = p
+		p.Tags = nil
+		p.Categories = nil
+	}
+	placeholders := strings.Repeat("?,", len(ids))
+	placeholders = placeholders[:len(placeholders)-1]
+
+	q := fmt.Sprintf(`SELECT pt.post_id, t.name FROM post_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id IN (%s)`, placeholders)
+	rows, err := s.db.Query(q, ids...)
+	if err != nil {
+		return fmt.Errorf("query post_tags: %w", err)
+	}
+	for rows.Next() {
+		var pid int64
+		var name string
+		if err := rows.Scan(&pid, &name); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan post_tags: %w", err)
+		}
+		if p := idToPost[pid]; p != nil {
+			p.Tags = append(p.Tags, name)
+		}
+	}
+	rows.Close()
+
+	q = fmt.Sprintf(`SELECT pc.post_id, c.name FROM post_categories pc JOIN categories c ON c.id = pc.category_id WHERE pc.post_id IN (%s)`, placeholders)
+	rows, err = s.db.Query(q, ids...)
+	if err != nil {
+		return fmt.Errorf("query post_categories: %w", err)
+	}
+	for rows.Next() {
+		var pid int64
+		var name string
+		if err := rows.Scan(&pid, &name); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan post_categories: %w", err)
+		}
+		if p := idToPost[pid]; p != nil {
+			p.Categories = append(p.Categories, name)
+		}
+	}
+	rows.Close()
+	return nil
+}
+
+// ListTags 返回所有标签及文章数，按文章数倒序、名称升序。标签云用。
+func (s *Store) ListTags() ([]TagCount, error) {
+	rows, err := s.db.Query(`SELECT t.name, COUNT(pt.post_id) AS c
+		FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id
+		GROUP BY t.id ORDER BY c DESC, t.name ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("list tags: %w", err)
+	}
+	defer rows.Close()
+	var out []TagCount
+	for rows.Next() {
+		var tc TagCount
+		if err := rows.Scan(&tc.Name, &tc.Count); err != nil {
+			return nil, fmt.Errorf("scan tags: %w", err)
+		}
+		out = append(out, tc)
+	}
+	return out, rows.Err()
+}
+
+// ListCategories 返回所有分类及文章数，按名称升序。本期平铺无父子。
+func (s *Store) ListCategories() ([]CategoryCount, error) {
+	rows, err := s.db.Query(`SELECT c.name, COUNT(pc.post_id) AS c
+		FROM categories c LEFT JOIN post_categories pc ON pc.category_id = c.id
+		GROUP BY c.id ORDER BY c.name ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("list categories: %w", err)
+	}
+	defer rows.Close()
+	var out []CategoryCount
+	for rows.Next() {
+		var cc CategoryCount
+		if err := rows.Scan(&cc.Name, &cc.Count); err != nil {
+			return nil, fmt.Errorf("scan categories: %w", err)
+		}
+		out = append(out, cc)
+	}
+	return out, rows.Err()
+}
+
+// listByRelation 是 ListByTag/ListByCategory 的共用实现。
+// table=tags|categories，relTable=post_tags|post_categories，relCol=tag_id|category_id。
+// 只返回已发布文章，按 created_at 倒序，支持分页。
+func (s *Store) listByRelation(name string, page, size int, table, relTable, relCol string) ([]*Post, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	offset := (page - 1) * size
+	q := fmt.Sprintf(`SELECT %s FROM posts p
+		WHERE p.status = ? AND p.id IN (
+			SELECT pt.post_id FROM %s pt JOIN %s r ON r.id = pt.%s WHERE r.name = ?
+		)
+		ORDER BY datetime(p.created_at) DESC LIMIT ? OFFSET ?`, postColumns, relTable, table, relCol)
+	rows, err := s.db.Query(q, StatusPublished, name, size, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list by %s %q: %w", table, name, err)
+	}
+	defer rows.Close()
+	return scanPosts(rows)
+}
+
+// countByRelation 是 CountByTag/CountByCategory 的共用实现。
+func (s *Store) countByRelation(name string, table, relTable, relCol string) (int, error) {
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM posts p
+		WHERE p.status = ? AND p.id IN (
+			SELECT pt.post_id FROM %s pt JOIN %s r ON r.id = pt.%s WHERE r.name = ?
+		)`, relTable, table, relCol)
+	var n int
+	err := s.db.QueryRow(q, StatusPublished, name).Scan(&n)
+	if err != nil {
+		return 0, fmt.Errorf("count by %s %q: %w", table, name, err)
+	}
+	return n, nil
+}
+
+// ListByTag 返回含指定 tag 的已发布文章，按 created_at 倒序，支持分页。
+func (s *Store) ListByTag(tag string, page, size int) ([]*Post, error) {
+	return s.listByRelation(tag, page, size, "tags", "post_tags", "tag_id")
+}
+
+// CountByTag 返回含指定 tag 的已发布文章数。
+func (s *Store) CountByTag(tag string) (int, error) {
+	return s.countByRelation(tag, "tags", "post_tags", "tag_id")
+}
+
+// ListByCategory 返回含指定 category 的已发布文章，按 created_at 倒序，支持分页。
+func (s *Store) ListByCategory(cat string, page, size int) ([]*Post, error) {
+	return s.listByRelation(cat, page, size, "categories", "post_categories", "category_id")
+}
+
+// CountByCategory 返回含指定 category 的已发布文章数。
+func (s *Store) CountByCategory(cat string) (int, error) {
+	return s.countByRelation(cat, "categories", "post_categories", "category_id")
+}
+
+// Archive 返回全量已发布文章，按年分组，年内按 created_at 倒序。
+func (s *Store) Archive() ([]ArchiveYear, error) {
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts WHERE status = ? ORDER BY datetime(created_at) DESC`, postColumns), StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("archive: %w", err)
+	}
+	defer rows.Close()
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, err
+	}
+	var groups []ArchiveYear
+	yearIdx := map[int]int{}
+	for _, p := range posts {
+		y := p.CreatedAt.Year()
+		idx, ok := yearIdx[y]
+		if !ok {
+			yearIdx[y] = len(groups)
+			groups = append(groups, ArchiveYear{Year: y})
+			idx = len(groups) - 1
+		}
+		groups[idx].Posts = append(groups[idx].Posts, p)
+	}
+	return groups, nil
 }
