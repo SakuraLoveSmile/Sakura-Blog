@@ -3,6 +3,7 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -78,12 +79,19 @@ func (h *Handler) editForm(c *gin.Context) {
 			c.String(http.StatusNotFound, "post not found: %s", slug)
 			return
 		}
+		// 填充 tags/categories 关联（单篇查询，直接 Fill）
+		if err := h.store.FillTagsCategories([]*store.Post{p}); err != nil {
+			c.String(http.StatusInternalServerError, "load post tags: %v", err)
+			return
+		}
 		row.Slug = p.Slug
 		row.Title = p.Title
 		row.Excerpt = p.Excerpt
 		row.Cover = p.Cover
 		row.ContentMD = p.ContentMD
 		row.Status = p.Status
+		row.Tags = p.Tags
+		row.Categories = p.Categories
 		isEdit = true
 	}
 	data := &tmpl.ViewData{
@@ -103,9 +111,11 @@ func (h *Handler) save(c *gin.Context) {
 	contentMD := c.PostForm("content")
 	status := c.PostForm("status")
 	origSlug := c.PostForm("orig_slug") // 编辑时的原 slug
+	tags := splitList(c.PostForm("tags"))
+	cats := splitList(c.PostForm("categories"))
 
 	if slug == "" {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 不能为空")
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "slug 不能为空")
 		return
 	}
 	if status != store.StatusDraft && status != store.StatusPublished {
@@ -115,7 +125,7 @@ func (h *Handler) save(c *gin.Context) {
 	// 服务端渲染 Markdown 为 HTML（复用 post.Service 的 goldmark 实例）
 	contentHTML, err := h.posts.Render(contentMD)
 	if err != nil {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "Markdown 渲染失败: "+err.Error())
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -123,7 +133,7 @@ func (h *Handler) save(c *gin.Context) {
 	if origSlug != "" && origSlug != slug {
 		if _, err := h.store.GetBySlug(slug); err == nil {
 			// 新 slug 已被占用
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 已被其他文章占用: "+slug)
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "slug 已被其他文章占用: "+slug)
 			return
 		}
 	}
@@ -141,13 +151,21 @@ func (h *Handler) save(c *gin.Context) {
 	if origSlug != "" {
 		// 更新（用 orig_slug 定位）
 		p.Slug = slug
-		if err := h.updateWithRename(origSlug, p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "保存失败: "+err.Error())
+		if err := h.updateWithRename(origSlug, p, tags, cats); err != nil {
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "保存失败: "+err.Error())
 			return
 		}
 	} else {
 		if _, err := h.store.Create(p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "创建失败: "+err.Error())
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "创建失败: "+err.Error())
+			return
+		}
+		if err := h.store.SetTags(p.ID, tags); err != nil {
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "保存标签失败: "+err.Error())
+			return
+		}
+		if err := h.store.SetCategories(p.ID, cats); err != nil {
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, tags, cats, "保存分类失败: "+err.Error())
 			return
 		}
 	}
@@ -155,24 +173,33 @@ func (h *Handler) save(c *gin.Context) {
 }
 
 // updateWithRename 处理 slug 变更：若 orig != new，先删旧记录再 Create 新记录（保留 created_at）。
-func (h *Handler) updateWithRename(origSlug string, p *store.Post) error {
+// 更新完内容后同步 tags/categories 关联。
+func (h *Handler) updateWithRename(origSlug string, p *store.Post, tags, cats []string) error {
 	if origSlug == p.Slug {
-		return h.store.Update(origSlug, p)
+		if err := h.store.Update(origSlug, p); err != nil {
+			return err
+		}
+	} else {
+		existing, err := h.store.GetBySlug(origSlug)
+		if err != nil {
+			return err
+		}
+		if existing == nil {
+			return h.store.Upsert(p)
+		}
+		// 保留原 created_at
+		if err := h.store.Delete(origSlug); err != nil {
+			return err
+		}
+		p.CreatedAt = existing.CreatedAt
+		if _, err := h.store.Create(p); err != nil {
+			return err
+		}
 	}
-	existing, err := h.store.GetBySlug(origSlug)
-	if err != nil {
+	if err := h.store.SetTags(p.ID, tags); err != nil {
 		return err
 	}
-	if existing == nil {
-		return h.store.Upsert(p)
-	}
-	// 保留原 created_at
-	if err := h.store.Delete(origSlug); err != nil {
-		return err
-	}
-	p.CreatedAt = existing.CreatedAt
-	_, err = h.store.Create(p)
-	return err
+	return h.store.SetCategories(p.ID, cats)
 }
 
 // delete 删除文章。
@@ -186,7 +213,7 @@ func (h *Handler) delete(c *gin.Context) {
 }
 
 // renderSaveError 保存失败时回显表单数据并提示错误。
-func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, contentMD, status, errMsg string) {
+func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, contentMD, status string, tags, cats []string, errMsg string) {
 	row := &tmpl.AdminPostRow{
 		Slug:      slug,
 		Title:     title,
@@ -194,6 +221,8 @@ func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt
 		Cover:     cover,
 		ContentMD: contentMD,
 		Status:    status,
+		Tags:      tags,
+		Categories: cats,
 	}
 	data := &tmpl.ViewData{
 		Site: h.site,
@@ -245,6 +274,12 @@ func (h *Handler) Seed() error {
 		if err := h.store.Upsert(p); err != nil {
 			return err
 		}
+		if err := h.store.SetTags(p.ID, meta.Tags); err != nil {
+			return fmt.Errorf("seed set tags %s: %w", slug, err)
+		}
+		if err := h.store.SetCategories(p.ID, meta.Categories); err != nil {
+			return fmt.Errorf("seed set categories %s: %w", slug, err)
+		}
 	}
 	return nil
 }
@@ -273,4 +308,17 @@ func ternary(cond bool, a, b string) string {
 		return a
 	}
 	return b
+}
+
+// splitList 把表单的逗号分隔字符串切成去空后的切片。admin 表单 tags/categories 用。
+func splitList(s string) []string {
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
