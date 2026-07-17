@@ -9,8 +9,17 @@
 {{- /* 2. post-list：对应 index.ejs 的 layout_post_list
    .post-list.post > .post-card-wrap > a.post-card.post > article.md-text */}}
 <div class="post-list post">
-  {{range .Posts}}
-  {{template "post_card" .}}
+  {{if .Posts}}
+    {{range .Posts}}
+    {{template "post_card" .}}
+    {{end}}
+  {{else}}
+    <div class="post-card-wrap">
+      <article class="md-text">
+        <h2 class="post-title">暂无文章</h2>
+        <div class="excerpt"><p>还没有发布任何文章，去后台写第一篇吧。</p></div>
+      </article>
+    </div>
   {{end}}
 </div>
 

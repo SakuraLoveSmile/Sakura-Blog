@@ -59,8 +59,14 @@
       </a>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.RecentPosts}}
-      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+      {{if .RecentPosts}}
+        {{range .RecentPosts}}
+        <a class="item title" href="/post/{{.Slug}}"><span class="title">{{.Title}}</span></a>
+        {{end}}
+      {{else}}
+        {{range .Site.RecentPosts}}
+        <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+        {{end}}
       {{end}}
     </div>
   </widget>

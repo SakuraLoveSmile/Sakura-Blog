@@ -43,14 +43,26 @@
     const def = { avatar: '', cover: '', loading: '' };
     const deps = { jquery: '', marked: '', lazyload: '' };
 
-    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）*/}}
-    function toggleTheme() {
-      const html = document.documentElement;
-      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
-        ? html.dataset.theme
-        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+    {{- /* 主题切换：优先读 localStorage，其次按系统偏好；切换时持久化，避免刷新失效。*/}}
+    function applyTheme(theme) {
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.dataset.theme = theme;
+      }
     }
+    function getPreferredTheme() {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark') {
+        return stored;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.dataset.theme || getPreferredTheme();
+      const next = cur === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem('theme', next);
+    }
+    applyTheme(getPreferredTheme());
   </script>
   <script src="{{url_for "/assets/js/main.js"}}?v=demo4" defer></script>
 </body>

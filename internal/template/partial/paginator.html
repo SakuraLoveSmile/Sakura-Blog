@@ -8,8 +8,12 @@
     {{if gt .Paginator.Current 1}}
     <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/{{else}}/page/{{sub .Paginator.Current 1}}{{end}}"></a>
     {{end}}
-    {{range .Paginator.Pages}}
+    {{range .Paginator.VisiblePages}}
+    {{if eq . 0}}
+    <span class="page-number">...</span>
+    {{else}}
     <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/{{else}}/page/{{.}}{{end}}">{{.}}</a>
+    {{end}}
     {{end}}
     {{if lt .Paginator.Current .Paginator.Total}}
     <a class="extend next" rel="next" href="/page/{{add .Paginator.Current 1}}"></a>
