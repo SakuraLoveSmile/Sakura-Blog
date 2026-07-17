@@ -53,6 +53,7 @@
         <tr>
           <th>标题</th>
           <th>Slug</th>
+          <th>分类</th>
           <th>状态</th>
           <th>日期</th>
           <th>操作</th>
@@ -63,6 +64,7 @@
         <tr>
           <td class="title"><a href="/post/{{.Slug}}">{{if .Title}}{{.Title}}{{else}}(无标题){{end}}</a></td>
           <td>{{.Slug}}</td>
+          <td>{{if .Category}}{{.Category}}{{else}}-{{end}}</td>
           <td><span class="badge {{.Status}}">{{.Status}}</span></td>
           <td>{{.Date}}</td>
           <td class="row-actions">

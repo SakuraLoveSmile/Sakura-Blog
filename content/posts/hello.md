@@ -2,6 +2,8 @@
 title: Demo 2：Go 服务端渲染验证
 date: 2026-07-16
 excerpt: 用 Gin + html/template + goldmark 组合出完整文章页，验证从 Markdown 到 Stellar 风格文章页的端到端链路。
+categories: 技术
+tags: [Go, Stellar]
 ---
 
 ## 这是什么

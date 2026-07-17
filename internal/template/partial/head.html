@@ -4,6 +4,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
   <meta name="theme-color" content="#f9fafb">
+
+  {{- /* 主题初始化：CSS 加载前读 localStorage 用户选择并设置 data-theme，避免闪烁；
+     无记录时不设值，由 CSS 媒体查询跟随系统偏好（与 toggleTheme 配合） */}}
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
   <meta name="description" content="{{if .Page.Excerpt}}{{.Page.Excerpt}}{{else}}{{.Site.Description}}{{end}}">
 

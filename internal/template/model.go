@@ -15,8 +15,38 @@ type ViewData struct {
 	Posts     []*PostCard // 文章卡片列表
 	Paginator *Paginator  // 分页器数据（nil 或 Total<=1 则不渲染）
 
+	// 归档与分类/标签页（Layout=archive/categories/tags 时使用）。
+	Archives []*ArchiveYear // 归档页年份分组
+	Cats     []*CatItem     // 分类索引页
+	TagItems []*TagItem     // 标签索引页
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
+}
+
+// ArchiveYear 归档页按年份分组的文章列表，对齐 Stellar archive.ejs。
+type ArchiveYear struct {
+	Year  string
+	Posts []*ArchiveItem
+}
+
+// ArchiveItem 归档列表单项（time(MM-DD) + 标题 + 链接）。
+type ArchiveItem struct {
+	Slug  string
+	Title string
+	Date  time.Time
+}
+
+// CatItem 分类索引页单项（名称 + 文章数 badge）。
+type CatItem struct {
+	Name  string
+	Count int
+}
+
+// TagItem 标签索引页单项。
+type TagItem struct {
+	Name  string
+	Count int
 }
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
@@ -49,6 +79,8 @@ type AdminPostRow struct {
 	Title     string
 	Excerpt   string
 	Cover     string // 封面图 URL（编辑表单回显用）
+	Category  string // 分类（编辑表单回显用）
+	Tags      string // 标签，逗号分隔（编辑表单回显用）
 	ContentMD string
 	Status    string
 	Date      string // 列表展示用（created_at 或文件 date）
@@ -106,14 +138,16 @@ type RecentPost struct {
 
 // Page 对齐 Hexo page 对象，文章页用。
 type Page struct {
-	Title   string
-	Slug    string
-	Layout  string // post / page / index
-	Type    string // tech / story
-	Lang    string
-	MenuID  string // 当前高亮的菜单 id
-	Author  string
-	Date    string // 原始日期字符串
-	Updated string
-	Excerpt string
+	Title    string
+	Slug     string
+	Layout   string // post / page / index / archive / categories / tags
+	Type     string // tech / story
+	Lang     string
+	MenuID   string // 当前高亮的菜单 id
+	Author   string
+	Date     string // 原始日期字符串
+	Updated  string
+	Excerpt  string
+	Category string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
+	Tag      string // 标签文章列表页的当前标签名
 }

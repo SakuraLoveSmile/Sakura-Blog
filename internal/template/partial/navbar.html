@@ -1,0 +1,33 @@
+{{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs
+   被 index / archive / categories / tags 页面共用（{{template "navbar" .}}）。
+   tab 顺序：近期发布 → 分类 → 标签 → 归档。
+   active 规则：
+   - 近期发布：首页（Layout=index 且无 Category/Tag 上下文）
+   - 分类：分类索引页（Layout=categories）显示"分类"；分类文章列表页（Page.Category 非空）显示"分类：xxx"
+   - 标签：同理（Layout=tags / Page.Tag）
+   - 归档：Layout=archive
+*/ -}}
+<div class="navbar top">
+  <div class="navbar-blur">
+    <div class="navbar-container">
+      <nav class="post">
+        <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">近期发布</a>
+        {{- if .Page.Category}}
+        <a class="active" href="/categories/">分类：{{.Page.Category}}</a>
+        {{- else if eq .Page.Layout "categories"}}
+        <a class="active" href="/categories/">分类</a>
+        {{- else}}
+        <a href="/categories/">分类</a>
+        {{- end}}
+        {{- if .Page.Tag}}
+        <a class="active" href="/tags/">标签：{{.Page.Tag}}</a>
+        {{- else if eq .Page.Layout "tags"}}
+        <a class="active" href="/tags/">标签</a>
+        {{- else}}
+        <a href="/tags/">标签</a>
+        {{- end}}
+        <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">归档</a>
+      </nav>
+    </div>
+  </div>
+</div>

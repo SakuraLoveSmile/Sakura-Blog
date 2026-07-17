@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -219,6 +220,153 @@ func main() {
 			return
 		}
 		renderHome(c, n)
+	})
+
+	// renderBase：渲染 base 布局并写响应（归档/分类/标签页共用）。
+	renderBase := func(c *gin.Context, data *tmpl.ViewData) {
+		html, err := engine.Render("base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// toCards：store.Post 列表转首页卡片视图模型。
+	toCards := func(posts []*store.Post) []*tmpl.PostCard {
+		cards := make([]*tmpl.PostCard, 0, len(posts))
+		for _, p := range posts {
+			cards = append(cards, &tmpl.PostCard{
+				Slug:    p.Slug,
+				Title:   p.Title,
+				Excerpt: p.Excerpt,
+				Cover:   p.Cover,
+				Date:    p.CreatedAt,
+			})
+		}
+		return cards
+	}
+
+	// 归档页：按年份分组的文章列表（对齐 Stellar archive.ejs）
+	r.GET("/archives", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		// ListPublished 已按 created_at DESC，年份分组天然降序
+		var years []*tmpl.ArchiveYear
+		byYear := map[string]*tmpl.ArchiveYear{}
+		for _, p := range posts {
+			y := p.CreatedAt.Format("2006")
+			ay, ok := byYear[y]
+			if !ok {
+				ay = &tmpl.ArchiveYear{Year: y}
+				byYear[y] = ay
+				years = append(years, ay)
+			}
+			title := p.Title
+			if title == "" {
+				title = p.CreatedAt.Format("2006-01-02") // 无标题用日期（对齐 Stellar 行为）
+			}
+			ay.Posts = append(ay.Posts, &tmpl.ArchiveItem{Slug: p.Slug, Title: title, Date: p.CreatedAt})
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:     site,
+			Page:     &tmpl.Page{Title: "归档", Layout: "archive", MenuID: "archive", Lang: "zh-CN"},
+			Archives: years,
+		})
+	})
+
+	// 分类索引页：所有分类 + 文章数（对齐 Stellar categories.ejs）
+	r.GET("/categories", func(c *gin.Context) {
+		counts, err := st.CountByCategory()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count categories: %v", err)
+			return
+		}
+		cats := make([]*tmpl.CatItem, 0, len(counts))
+		for name, n := range counts {
+			cats = append(cats, &tmpl.CatItem{Name: name, Count: n})
+		}
+		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
+		renderBase(c, &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "分类", Layout: "categories", MenuID: "post", Lang: "zh-CN"},
+			Cats: cats,
+		})
+	})
+
+	// 分类文章列表页：复用首页卡片（对齐 Stellar archive.ejs 的 partial('index') 行为）
+	r.GET("/categories/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		counts, err := st.CountByCategory()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count categories: %v", err)
+			return
+		}
+		if _, ok := counts[name]; !ok {
+			c.String(http.StatusNotFound, "category not found: %s", name)
+			return
+		}
+		posts, err := st.ListByCategory(name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:  site,
+			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name},
+			Posts: toCards(posts),
+		})
+	})
+
+	// 标签索引页：标签云（按文章数 DESC）
+	r.GET("/tags", func(c *gin.Context) {
+		counts, err := st.CountByTag()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			return
+		}
+		items := make([]*tmpl.TagItem, 0, len(counts))
+		for name, n := range counts {
+			items = append(items, &tmpl.TagItem{Name: name, Count: n})
+		}
+		sort.Slice(items, func(i, j int) bool {
+			if items[i].Count != items[j].Count {
+				return items[i].Count > items[j].Count
+			}
+			return items[i].Name < items[j].Name
+		})
+		renderBase(c, &tmpl.ViewData{
+			Site:     site,
+			Page:     &tmpl.Page{Title: "标签", Layout: "tags", MenuID: "post", Lang: "zh-CN"},
+			TagItems: items,
+		})
+	})
+
+	// 标签文章列表页：复用首页卡片
+	r.GET("/tags/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		counts, err := st.CountByTag()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			return
+		}
+		if _, ok := counts[name]; !ok {
+			c.String(http.StatusNotFound, "tag not found: %s", name)
+			return
+		}
+		posts, err := st.ListByTag(name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:  site,
+			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name},
+			Posts: toCards(posts),
+		})
 	})
 
 	addr := ":8081" // qoder worktree 固定 8081，与 dev 的 8080 区分

@@ -23,8 +23,8 @@
     </aside>
 
     <div class="l_main" id="main">
-      {{- /* content 分派：首页走 index 模板（navbar+post-list+paginator），其余走 content（文章页） */}}
-      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}
+      {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post） */}}
+      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else if eq .Page.Layout "archive"}}{{template "archive" .}}{{else if eq .Page.Layout "categories"}}{{template "categories" .}}{{else if eq .Page.Layout "tags"}}{{template "tags" .}}{{else}}{{template "content" .}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
@@ -43,14 +43,21 @@
     const def = { avatar: '', cover: '', loading: '' };
     const deps = { jquery: '', marked: '', lazyload: '' };
 
-    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）*/}}
+    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）。
+       切换后写入 localStorage，与 head.html 的主题初始化脚本配合实现持久化。 */}}
     function toggleTheme() {
       const html = document.documentElement;
       const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
         ? html.dataset.theme
         : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      html.dataset.theme = next;
+      localStorage.setItem('theme', next);
     }
+
+    {{- /* utils 最小 shim：Stellar 原版 utils.jq 是 jQuery 就绪回调；本 demo 未加载 jQuery，
+       shim 成有 jQuery 才执行，避免 main.js 的 init.toc/init.sidebar 抛 utils is not defined。 */}}
+    const utils = { jq: (fn) => { if (window.jQuery) fn(); } };
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
 </body>

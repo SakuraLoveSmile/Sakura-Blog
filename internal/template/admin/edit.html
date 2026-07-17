@@ -79,6 +79,17 @@
         <input type="text" id="cover" name="cover" value="{{.Admin.EditPost.Cover}}" placeholder="https://...（可选，首页卡片封面）">
       </div>
 
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label for="category">分类</label>
+          <input type="text" id="category" name="category" value="{{.Admin.EditPost.Category}}" placeholder="单分类（可选）">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label for="tags">标签</label>
+          <input type="text" id="tags" name="tags" value="{{.Admin.EditPost.Tags}}" placeholder="多个标签用英文逗号分隔，如 Go,Gin（可选）">
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="content">正文（Markdown）</label>
         <textarea id="content" name="content" rows="20">{{.Admin.EditPost.ContentMD}}</textarea>

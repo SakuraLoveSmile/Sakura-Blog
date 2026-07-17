@@ -48,11 +48,12 @@ func (h *Handler) list(c *gin.Context) {
 	rows := make([]*tmpl.AdminPostRow, 0, len(posts))
 	for _, p := range posts {
 		rows = append(rows, &tmpl.AdminPostRow{
-			Slug:    p.Slug,
-			Title:   p.Title,
-			Excerpt: p.Excerpt,
-			Status:  p.Status,
-			Date:    p.CreatedAt.Format("2006-01-02 15:04"),
+			Slug:     p.Slug,
+			Title:    p.Title,
+			Excerpt:  p.Excerpt,
+			Category: p.Category,
+			Status:   p.Status,
+			Date:     p.CreatedAt.Format("2006-01-02 15:04"),
 		})
 	}
 	data := &tmpl.ViewData{
@@ -82,6 +83,8 @@ func (h *Handler) editForm(c *gin.Context) {
 		row.Title = p.Title
 		row.Excerpt = p.Excerpt
 		row.Cover = p.Cover
+		row.Category = p.Category
+		row.Tags = p.Tags
 		row.ContentMD = p.ContentMD
 		row.Status = p.Status
 		isEdit = true
@@ -100,12 +103,14 @@ func (h *Handler) save(c *gin.Context) {
 	title := strings.TrimSpace(c.PostForm("title"))
 	excerpt := strings.TrimSpace(c.PostForm("excerpt"))
 	cover := strings.TrimSpace(c.PostForm("cover"))
+	category := strings.TrimSpace(c.PostForm("category"))
+	tags := normalizeTags(c.PostForm("tags"))
 	contentMD := c.PostForm("content")
 	status := c.PostForm("status")
 	origSlug := c.PostForm("orig_slug") // 编辑时的原 slug
 
 	if slug == "" {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 不能为空")
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "slug 不能为空")
 		return
 	}
 	if status != store.StatusDraft && status != store.StatusPublished {
@@ -115,7 +120,7 @@ func (h *Handler) save(c *gin.Context) {
 	// 服务端渲染 Markdown 为 HTML（复用 post.Service 的 goldmark 实例）
 	contentHTML, err := h.posts.Render(contentMD)
 	if err != nil {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "Markdown 渲染失败: "+err.Error())
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -123,7 +128,7 @@ func (h *Handler) save(c *gin.Context) {
 	if origSlug != "" && origSlug != slug {
 		if _, err := h.store.GetBySlug(slug); err == nil {
 			// 新 slug 已被占用
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "slug 已被其他文章占用: "+slug)
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "slug 已被其他文章占用: "+slug)
 			return
 		}
 	}
@@ -133,6 +138,8 @@ func (h *Handler) save(c *gin.Context) {
 		Title:       title,
 		Excerpt:     excerpt,
 		Cover:       cover,
+		Category:    category,
+		Tags:        tags,
 		ContentMD:   contentMD,
 		ContentHTML: contentHTML,
 		Status:      status,
@@ -142,12 +149,12 @@ func (h *Handler) save(c *gin.Context) {
 		// 更新（用 orig_slug 定位）
 		p.Slug = slug
 		if err := h.updateWithRename(origSlug, p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "保存失败: "+err.Error())
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "保存失败: "+err.Error())
 			return
 		}
 	} else {
 		if _, err := h.store.Create(p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, contentMD, status, "创建失败: "+err.Error())
+			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "创建失败: "+err.Error())
 			return
 		}
 	}
@@ -185,13 +192,32 @@ func (h *Handler) delete(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin")
 }
 
+// normalizeTags 规范化标签输入：逗号拆分、逐项 trim、去空去重（保留首次出现顺序），
+// 重新以 "," 连接。与 parser.parseList 语义一致，保证存储值规范，
+// 使 ListByTag 的逗号包裹 LIKE 与 CountByTag 的拆分计数行为一致。
+func normalizeTags(raw string) string {
+	seen := map[string]bool{}
+	var out []string
+	for _, t := range strings.Split(raw, ",") {
+		t = strings.TrimSpace(t)
+		if t == "" || seen[t] {
+			continue
+		}
+		seen[t] = true
+		out = append(out, t)
+	}
+	return strings.Join(out, ",")
+}
+
 // renderSaveError 保存失败时回显表单数据并提示错误。
-func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, contentMD, status, errMsg string) {
+func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, errMsg string) {
 	row := &tmpl.AdminPostRow{
 		Slug:      slug,
 		Title:     title,
 		Excerpt:   excerpt,
 		Cover:     cover,
+		Category:  category,
+		Tags:      tags,
 		ContentMD: contentMD,
 		Status:    status,
 	}
@@ -237,6 +263,8 @@ func (h *Handler) Seed() error {
 			Title:       title,
 			Excerpt:     meta.Excerpt,
 			Cover:       meta.Cover,
+			Category:    meta.Category,
+			Tags:        strings.Join(meta.Tags, ","),
 			ContentMD:   body,
 			ContentHTML: html,
 			Status:      store.StatusPublished,

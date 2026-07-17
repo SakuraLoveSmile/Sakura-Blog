@@ -20,10 +20,12 @@ type Post struct {
 
 // FileMeta 从 Markdown frontmatter 解析出的元数据，供 seed 导入跨包使用。
 type FileMeta struct {
-	Title   string
-	Date    string
-	Excerpt string
-	Cover   string
+	Title    string
+	Date     string
+	Excerpt  string
+	Cover    string
+	Category string
+	Tags     []string
 }
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
@@ -63,7 +65,7 @@ func (s *Service) ParseFile(slug string) (FileMeta, string, error) {
 		return FileMeta{}, "", fmt.Errorf("read post %s: %w", slug, err)
 	}
 	meta, body := s.parser.Parse(src)
-	return FileMeta{Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover}, body, nil
+	return FileMeta{Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Tags: meta.Tags}, body, nil
 }
 
 // Load 读取并渲染指定 slug 的文章。文件路径：mdDir/slug.md。

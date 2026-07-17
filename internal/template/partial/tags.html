@@ -1,0 +1,14 @@
+{{- /* tags.html: 标签索引页，对齐 Stellar layout/tags.ejs
+   navbar + div.post-list > article#tags > a.tag（标签云，按计数 DESC 由 handler 排序）
+   由 base.html 按 .Page.Layout == "tags" 分派渲染。
+*/ -}}
+{{template "navbar" .}}
+<div class="post-list">
+  <article id="tags">
+    {{range .TagItems}}
+    <a class="tag" href="/tags/{{.Name}}">
+      <span class="name">{{.Name}}</span>
+    </a>
+    {{end}}
+  </article>
+</div>
