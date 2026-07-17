@@ -327,7 +327,7 @@ TOC 依赖标题带 id：`goldmark.New(goldmark.WithParserOptions(parser.WithAut
 
 ### TOC 嵌套结构对齐 Stellar hexo toc helper
 
-CSS 的折叠选择器是 `a.toc-link + ol`（子列表必须紧跟在父级链接后面、嵌在父级 `<li>` 内）。ExtractTOC 用状态机（openH2/openH3）生成该结构；无 h2 前置的 h3 提升为顶层项。main.css 已含 `.widget-wrapper.toc` 与 `.toc-item` 嵌套样式，无需补 CSS。
+CSS 的折叠选择器是 `a.toc-link + ol`（子列表必须紧跟在父级链接后面、嵌在父级 `<li>` 内），**层级缩进选择器是 `.toc-child .toc-link`（padding-left 1.5rem 起逐级加深）**——hexo toc helper 输出的子列表是 `<ol class="toc-child">` 不是裸 `<ol>`，ExtractTOC 少写 class 会导致 h3 不缩进。ExtractTOC 用状态机（openH2/openH3）生成该结构；无 h2 前置的 h3 提升为顶层项。widget 结构对齐 widgets/toc.ejs：`collapse="false"` 属性（_data/widgets.yml 默认配置，CSS 只响应 true/auto）、widget-header 的 cap-action（`sidebar.toggleTOC()` 切 #data-toc 的 collapse class，折叠动画是 `grid-template-rows: 0fr` 不是 display:none）、widget-footer「回到顶部」（`util.scrollTop()`）。标题文案用语言包原文「本文目录」（meta.toc）。
 
 ### PJAX 与 DOM 引用的相处方式
 
@@ -339,7 +339,7 @@ pjax.js 对 `.l_body` 只做属性同步 + 子节点局部替换（换 `.l_main`
 - TOC 锚点点击被 pjax.js 的 handleHashLink 优先拦截平滑滚动，不会触发整页导航；
 - **前台不得出现会被 PJAX 抓取的 /admin 链接**：后续若加需 `data-pjax="false"`（当前前台无 admin 链接）。
 
-main.css 缺 `.pjax-loading`/`.pjax-loaded` 与 `.error-page` 样式，在 head.html 补了小 `<style>` 块（顶部进度条 + 交换淡入 + 404 居中），块内只用 CSS 注释。
+main.css 已含 `.error-page` 全套样式（_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f），**不要重复自定义**；404 结构对齐 layout/404.ejs（h1 里是 img#error 图片 + p.what/p.why 语言包文案 + `<br><br>` + a#back「返回主页」）。main.css **缺** `.pjax-loading`/`.pjax-loaded`（_plugins/pjax.styl 未被编译入口包含），在 head.html 按原版 styl 手工补等价产物（page-loading-bar 居中图标 + l_main/#l_cover 的 opacity 0.4/translateY(8px) 过渡 + pjax-fade-in + prefers-reduced-motion），并在 body 闭合前加 `<div class="page-loading-bar">`（对齐 layout.ejs）。
 
 ### 本地搜索：/search.json no-store 与去 jQuery 移植
 
@@ -350,6 +350,10 @@ main.css 缺 `.pjax-loading`/`.pjax-loaded` 与 `.error-page` 样式，在 head.
 ### 自定义 404：NoRoute + render404 统一出口
 
 `r.NoRoute(render404)` 接管未匹配路径，post/page/category/tag 四处未命中也从 `c.String(404)` 改为 render404（HTTP 404 + base 布局 Layout=404 + fillSidebar）。模板分派在 base.html 按 `.Page.Layout == "404"` 走 error404 partial。
+
+### 对照原版先行：补样式前先查 main.css 是否已含
+
+Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮、72px 标题），与原版冲突被覆盖顺序污染。**教训**：补样式/结构前先 grep main.css 编译产物与原版 styl/ejs 三处对照（`_components/pages/error.styl`、`_plugins/pjax.styl`、`layout/404.ejs`、`widgets/toc.ejs`、`_partial/menubtn.ejs`），确认缺失再补，且补的内容必须是原版编译产物而非自创。同类遗漏还有：float-panel 的 rightbar-toggle 按钮（menubtn.ejs 有两个按钮）、sidebar.rightbar/toggleTOC 方法（scripts/sidebar.ejs 四方法全量）。
 
 ## 工具链
 
