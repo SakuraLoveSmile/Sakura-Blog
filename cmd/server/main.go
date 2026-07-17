@@ -117,6 +117,21 @@ func main() {
 		}
 	}
 
+	// render404：渲染自定义 404 页（HTTP 404 + base 布局 Layout=404），NoRoute 与各路由未命中共用。
+	render404 := func(c *gin.Context) {
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "页面不存在", Layout: "404", Lang: "zh-CN"},
+		}
+		fillSidebar(data)
+		html, err := engine.Render("base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	}
+
 	r := gin.Default()
 
 	// 搜索索引用的纯文本提取：去标签 + 压缩空白。
@@ -142,6 +157,9 @@ func main() {
 
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
+
+	// 未匹配路由一律走自定义 404 页
+	r.NoRoute(render404)
 
 	// 文章路由 /post/:slug：DB 优先（published），未命中回退文件渲染（向后兼容 Demo 2）
 	r.GET("/post/:slug", func(c *gin.Context) {
@@ -178,7 +196,7 @@ func main() {
 		p, err := posts.Load(slug)
 		if err != nil {
 			if os.IsNotExist(err) {
-				c.String(http.StatusNotFound, "post not found: %s", slug)
+				render404(c)
 				return
 			}
 			c.String(http.StatusInternalServerError, "load post: %v", err)
@@ -292,7 +310,7 @@ func main() {
 	r.GET("/page/:num", func(c *gin.Context) {
 		n, err := strconv.Atoi(c.Param("num"))
 		if err != nil || n < 1 {
-			c.String(http.StatusNotFound, "page not found: %s", c.Param("num"))
+			render404(c)
 			return
 		}
 		renderHome(c, n)
@@ -383,7 +401,7 @@ func main() {
 			return
 		}
 		if _, ok := counts[name]; !ok {
-			c.String(http.StatusNotFound, "category not found: %s", name)
+			render404(c)
 			return
 		}
 		posts, err := st.ListByCategory(name)
@@ -431,7 +449,7 @@ func main() {
 			return
 		}
 		if _, ok := counts[name]; !ok {
-			c.String(http.StatusNotFound, "tag not found: %s", name)
+			render404(c)
 			return
 		}
 		posts, err := st.ListByTag(name)

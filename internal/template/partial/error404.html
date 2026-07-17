@@ -1,0 +1,8 @@
+{{- /* error404.html: 自定义 404 页，由 base.html 按 .Page.Layout == "404" 分派渲染。
+   样式在 head.html 的自定义 <style> 块（.error-page），md-text 继承文章排版基线。*/ -}}
+<article class="md-text error-page">
+  <h1>404</h1>
+  <p class="what"><strong>页面不存在或已移除</strong></p>
+  <p class="why">你访问的地址可能有误，或该页面已被作者删除。<br>可以返回首页，或使用左侧搜索找到想要的内容。</p>
+  <a class="button" id="back" href="/">返回首页</a>
+</article>
