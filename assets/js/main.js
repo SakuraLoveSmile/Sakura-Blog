@@ -202,6 +202,8 @@ const init = {
 
   canonicalCheck: () => {
     const canonical = window.canonical;
+    // 本 demo 未注入 canonical 配置，直接跳过（Stellar 原版由 defines.ejs 注入）
+    if (!canonical) return;
     function originStatusCheck() {
       return new Promise((resolve) => {
         if (window.canonical.originalHost === window.location.hostname) {

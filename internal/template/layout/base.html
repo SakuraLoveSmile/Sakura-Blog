@@ -56,6 +56,10 @@
         : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
     }
+
+    {{- /* utils 最小 shim：Stellar 原版 utils.jq 是 jQuery 就绪回调；本 demo 未加载 jQuery，
+       shim 成有 jQuery 才执行，避免 main.js 的 init.toc/init.sidebar 抛 utils is not defined。 */}}
+    const utils = { jq: (fn) => { if (window.jQuery) fn(); } };
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
 </body>
