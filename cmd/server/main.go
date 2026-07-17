@@ -261,6 +261,29 @@ func main() {
 	// sitemap：/sitemap.xml
 	r.GET("/sitemap.xml", func(c *gin.Context) { renderSitemap(c, st, site) })
 
+	// 404 页面：所有未匹配路由走 Stellar 风格错误页（对齐 layout/404.ejs）。
+	// 渲染 base 布局 + error_page partial，Page.Layout="404" 触发 base.html 分派。
+	r.NoRoute(func(c *gin.Context) {
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{
+				Title:  "404",
+				Slug:   "404",
+				Layout: "404",
+				Type:   "tech",
+				Lang:   "zh-CN",
+				MenuID: "post",
+			},
+			NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "home"},
+		}
+		html, err := engine.Render("base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render 404: %v", err)
+			return
+		}
+		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	})
+
 	addr := ":8080"
 	fmt.Printf("Stellar Demo 3 server listening on http://localhost%s\n", addr)
 	if err := r.Run(addr); err != nil {

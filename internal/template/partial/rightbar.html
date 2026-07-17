@@ -1,0 +1,32 @@
+{{- /* rightbar.html: 右侧边栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
+   装配顺序：author 卡片（所有页面）+ TOC 目录（仅文章页且有 H2/H3）。
+   原版 rightbar 按 site_tree 配置走 widget 列表，本期简化为固定 author + 可选 TOC。
+   两者共用 .widgets 容器，对齐 Stellar .l_right .widgets 结构。*/ -}}
+<div class="widgets">
+  {{- /* author 卡片：对应 widgets/author.ejs（从左栏移来，所有页面右栏显示）*/}}
+  <widget class="widget-wrapper user-card author">
+    <div class="widget-body">
+      <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
+      <p class="username">{{.Site.LogoTitle}}</p>
+      <p class="bio">{{.Site.Description}}</p>
+      <a class="follow" href="/">
+        {{icon "solar:documents-bold-duotone"}}
+        全部文章
+      </a>
+    </div>
+  </widget>
+
+  {{- /* TOC 目录：仅文章页且文章有 H2/H3 时渲染，对齐 Stellar widgets/toc.ejs。
+        TOCHTML 已是嵌套 <ol class="toc"> 结构，H3 缩进靠 toc-child 嵌套（main.css 已支持）。
+        TOCHTML 为空时不渲染。*/}}
+  {{if .TOCHTML}}
+  <widget class="widget-wrapper toc" id="data-toc" collapse="auto">
+    <div class="widget-header dis-select">
+      <span class="name">目录</span>
+    </div>
+    <div class="widget-body">
+      {{.TOCHTML}}
+    </div>
+  </widget>
+  {{end}}
+</div>

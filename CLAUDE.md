@@ -347,6 +347,37 @@ modernc.org/sqlite 把 `time.Time` 参数序列化成 Go 默认 String 格式 `"
 
 文件回退路径（`posts.Load`）返回的 `post.Post` 只有 `Date` 字符串（frontmatter `2026-07-15`），无 `time.Time`。用 `time.Parse("2006-01-02", p.Date)` 解析填 `CreatedTime`/`UpdatedTime`，保证 `<time datetime>` 正确；解析失败用零值，模板 `Page.Updated` 为空时已 fallback 到 `Page.Date` 显示。该路径无 store 数据，`Cover/Tags/Categories/ReadNext` 留零值（不渲染对应区块），是向后兼容的次要路径。
 
+## UI 优化踩坑（主题切换按钮/author 移右栏/404 页面）
+
+### 主题切换按钮：自建 fixed 悬浮，不复用 .float-panel
+
+Stellar 原版右下角悬浮面板 `.float-panel`（main.css 1355 行）是 `position: sticky` + `grid-column-end: span 3`，绑定 l_body 网格，结构复杂（需配 nav a 等）。本期用户要「右下角太阳/月亮两态按钮」，自建 `.theme-toggle` 用 `position: fixed; right/bottom: 1.5rem` 更简单，样式用 Stellar CSS 变量（`var(--card)`/`var(--text-p1)`/`var(--block-border)`）。
+
+- **两态切换**（非原版三态 light->dark->auto）：用户决策。light 显月亮、dark 显太阳，CSS 按 `[data-theme]` 控制图标显隐，JS 只切 `data-theme`
+- **图标用内联 SVG**（非 icons.yml）：icons.yml 只有 `default:theme`（太阳），无 moon。直接内联 solar 风格 sun/moon SVG path，`fill="currentColor"` 跟随 `color`
+- **持久化**：localStorage key 对齐原版 `Stellar.theme`，启动时 IIFE 先恢复 + 按系统 prefers-color-scheme 兜底，避免刷新闪烁
+- **CSS 兜底显隐**：`:root:not([data-theme="dark"]) .icon-moon{display:block}` + `@media (prefers-color-scheme: dark)` 处理无 data-theme 的初始态，与 JS 初始化双保险
+
+### author 卡片从左栏移到右栏
+
+原版 `widgets/author.ejs` 不在任何默认 rightbar 里（`home.rightbar` 空、`post.rightbar=ghrepo,toc`），需手动配置。dev 之前把 author 塞在左栏 `sidebar.html` 的 widgets 里，导致左栏拥挤、右栏空。本期按用户决策移到右栏所有页面显示：
+
+- 新建 `partial/rightbar.html` 装配 `.widgets` 容器：author（所有页面）+ TOC（仅文章页 `{{if .TOCHTML}}`）
+- `sidebar.html` 删除 author 块，左栏保留 search/recent/tagcloud
+- `base.html` 的 `l_right` 从内联 TOC 逻辑改为 `{{template "rightbar" .}}` 统一装配
+- 文章页右栏 author + TOC 共存（author 在上，TOC 在下），复用原版 `.l_right .widgets .widget-wrapper.toc:first-child`（7896 行）等样式
+
+### 404 页面：本地图片 + NoRoute handler
+
+原版 `404.ejs` 用 `theme.style.error_page` 图片（cdn-x placeholder 外链）。按用户决策下载存本地 `assets/img/404.svg`，不依赖外链：
+
+- 图片 URL：`https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg`，node https 下载 3786 字节
+- 结构对齐 404.ejs：`<article class="md-text error-page"><h1><img id="error" src="/assets/img/404.svg"></h1><p class="what">...</p><p class="why">...</p><a class="button" id="back" href="/">返回主页</a></article>`
+- 文案对齐 zh-CN.yml：`what=很抱歉，您访问的页面不存在`、`why=可能是输入地址有误或该地址已被删除`、`action=返回主页`
+- CSS 已在 main.css 编译（`.md-text.error-page` 全套，8656 行），无需新增
+- **Gin `r.NoRoute()`** 渲染 base 布局 + error_page partial，`Page.Layout="404"` 触发 base.html 内容分派，响应 **HTTP 404 状态码**（利于 SEO，`c.Data(http.StatusNotFound, ...)`）
+- base.html 分派加 `{{else if eq .Page.Layout "404"}}{{template "error_page" .}}`，放在 list 分支后、content 兜底前
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
@@ -363,3 +394,4 @@ modernc.org/sqlite 把 `time.Time` 参数序列化成 Go 默认 String 格式 `"
 - [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
 - [x] Demo 4：站内搜索 + RSS + sitemap + 文章 TOC（FTS5 trigram + LIKE 降级 / atom.xml permanent ID / sitemap.xml / goldmark heading id 注入 + 嵌套 toc widget，preview 验证通过）
 - [x] Demo 5：文章详情页完善（对齐 Stellar page.ejs：article_banner 标题区 + 面包屑 + dateinfo / article_footer license+标签+分类 / read_next 上下篇 / post_cover 封面图，preview 验证通过）
+- [x] Demo 6：UI 优化（右下角太阳/月亮主题切换按钮 + author 卡片移右栏 + 404 页面本地图片，preview 验证通过）

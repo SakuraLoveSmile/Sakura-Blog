@@ -49,18 +49,7 @@
     </form>
   </div>
 
-  {{- /* author 卡片：对应 widgets/author.ejs */}}
-  <widget class="widget-wrapper user-card author">
-    <div class="widget-body">
-      <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
-      <p class="username">{{.Site.LogoTitle}}</p>
-      <p class="bio">{{.Site.Description}}</p>
-      <a class="follow" href="/">
-        {{icon "solar:documents-bold-duotone"}}
-        全部文章
-      </a>
-    </div>
-  </widget>
+  {{- /* author 卡片已移至右栏（rightbar.html），左栏不再渲染，腾出空间给搜索/近期发布/标签云。*/}}
 
   {{- /* 近期发布：对应 widgets/recent.ejs（post-list）*/}}
   <widget class="widget-wrapper recent post-list">

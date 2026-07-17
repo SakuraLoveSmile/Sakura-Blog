@@ -5,8 +5,30 @@
 <html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}">
 {{template "head" .}}
 <body>
-  {{- /* 深色模式切换按钮（demo 用，对应 preview.html 的 demo-toggle）*/}}
-  <button class="demo-toggle" onclick="toggleTheme()">切换主题</button>
+  {{- /* 主题切换按钮：右下角悬浮，太阳/月亮两态。对齐用户需求（日间太阳、夜间月亮）。
+        不复用 Stellar .float-panel（其 sticky+grid 网格逻辑复杂），自建 .theme-toggle fixed 悬浮。
+        CSS 在 base.html 内联 <style>（Stellar main.css 无此自定义组件），用 Stellar CSS 变量配色。*/}}
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题" title="切换主题">
+    {{- /* 月亮：light 模式下显示（提示点击进入夜间）*/}}
+    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M21.53 15.05a9.01 9.01 0 0 1-9.06 9.06c-4.98 0-9.06-4.08-9.06-9.06c0-4.98 4.08-9.06 9.06-9.06c.71 0 1.4.08 2.06.23a.75.75 0 0 1 .47 1.13a6.75 6.75 0 0 0 5.64 10.47c.6 0 1.18-.08 1.74-.22a.75.75 0 0 1 .91.97Z"/></svg>
+    {{- /* 太阳：dark 模式下显示（提示点击进入日间）*/}}
+    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.5a5.5 5.5 0 1 1 0-11a5.5 5.5 0 0 1 0 11m0-2a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7M11 4.75a1 1 0 0 1 2 0V6a1 1 0 1 1-2 0zM11 18a1 1 0 0 1 2 0v1.25a1 1 0 1 1-2 0zM4.75 11a1 1 0 0 1 0 2H6a1 1 0 1 1 0-2zM18 11a1 1 0 0 1 0 2h1.25a1 1 0 1 1 0-2zM6.7 6.7a1 1 0 0 1 1.4 0l.9.9a1 1 0 1 1-1.4 1.4l-.9-.9a1 1 0 0 1 0-1.4m8.3 8.3a1 1 0 0 1 1.4 0l.9.9a1 1 0 0 1-1.4 1.4l-.9-.9a1 1 0 0 1 0-1.4m.9-7.4a1 1 0 0 1 0 1.4l-.9.9a1 1 0 1 1-1.4-1.4l.9-.9a1 1 0 0 1 1.4 0M7.6 16.4a1 1 0 0 1 0 1.4l-.9.9a1 1 0 0 1-1.4-1.4l.9-.9a1 1 0 0 1 1.4 0"/></svg>
+  </button>
+  <style>
+    .theme-toggle{position:fixed;right:1.5rem;bottom:1.5rem;z-index:999999;width:44px;height:44px;border-radius:50%;border:1px solid var(--block-border);background:var(--card);color:var(--text-p1);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);transition:transform .2s ease,box-shadow .2s ease;padding:0}
+    .theme-toggle:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08)}
+    .theme-toggle:active{transform:translateY(0)}
+    .theme-toggle svg{display:none}
+    {{- /* 无 data-theme 时按系统偏好判定（CSS 兜底，JS 启动时也会设）*/}}
+    :root:not([data-theme="dark"]) .theme-toggle .icon-moon{display:block}
+    :root:not([data-theme="dark"]) .theme-toggle .icon-sun{display:none}
+    :root[data-theme="dark"] .theme-toggle .icon-moon{display:none}
+    :root[data-theme="dark"] .theme-toggle .icon-sun{display:block}
+    @media (prefers-color-scheme: dark){
+      :root:not([data-theme]) .theme-toggle .icon-moon{display:none}
+      :root:not([data-theme]) .theme-toggle .icon-sun{display:block}
+    }
+  </style>
 
   {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
   <div class="sitebg"><div class="siteblur"></div></div>
@@ -27,32 +49,21 @@
     </aside>
 
     <div class="l_main" id="main">
-      {{- /* 按 Layout 分派内容模板：首页/标签云/分类云/归档/列表 各走独立 partial，文章走 content */}}
+      {{- /* 按 Layout 分派内容模板：首页/标签云/分类云/归档/列表/404 各走独立 partial，文章走 content */}}
       {{if eq .Page.Layout "index"}}{{template "index" .}}
       {{else if eq .Page.Layout "tags"}}{{template "tags" .}}
       {{else if eq .Page.Layout "categories"}}{{template "categories" .}}
       {{else if eq .Page.Layout "archive"}}{{template "archive" .}}
       {{else if eq .Page.Layout "list"}}{{template "post_list" .}}
+      {{else if eq .Page.Layout "404"}}{{template "error_page" .}}
       {{else}}{{template "content" .}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
     <aside class="l_right">
-      {{- /* TOC 目录：仅文章页且文章有 H2/H3 时渲染，对齐 Stellar widgets/toc.ejs。
-            TOCHTML 已是嵌套 <ol class="toc"> 结构，H3 缩进靠 toc-child 嵌套（main.css 已支持）。
-            TOCHTML 为空时不渲染。*/}}
-      {{if .TOCHTML}}
-      <div class="widgets">
-        <widget class="widget-wrapper toc" id="data-toc" collapse="auto">
-          <div class="widget-header dis-select">
-            <span class="name">目录</span>
-          </div>
-          <div class="widget-body">
-            {{.TOCHTML}}
-          </div>
-        </widget>
-      </div>
-      {{end}}
+      {{- /* 右侧边栏：author 卡片（所有页面）+ TOC（仅文章页有 H2/H3）。
+            对齐 Stellar index_rightbar.ejs 的 .widgets 容器，统一在 rightbar partial 装配。*/}}
+      {{template "rightbar" .}}
     </aside>
   </div>
 
@@ -68,13 +79,26 @@
     const def = { avatar: '', cover: '', loading: '' };
     const deps = { jquery: '', marked: '', lazyload: '' };
 
-    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）*/}}
+    {{- /* 主题切换：两态 light/dark，持久化到 localStorage（key 对齐 Stellar 原版 Stellar.theme）。
+          启动时优先读 localStorage，无则按系统 prefers-color-scheme 判定，避免闪烁。
+          CSS 按 [data-theme] 控制按钮图标显隐（月亮/太阳），JS 只负责切 data-theme。*/}}
+    (function initTheme() {
+      const html = document.documentElement;
+      const stored = window.localStorage.getItem('Stellar.theme');
+      if (stored === 'light' || stored === 'dark') {
+        html.dataset.theme = stored;
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        html.dataset.theme = 'dark';
+      } else {
+        html.dataset.theme = 'light';
+      }
+    })();
     function toggleTheme() {
       const html = document.documentElement;
-      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
-        ? html.dataset.theme
-        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+      const cur = html.dataset.theme === 'dark' ? 'dark' : 'light';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      html.dataset.theme = next;
+      window.localStorage.setItem('Stellar.theme', next);
     }
 
     {{- /* utils 最小 shim：Stellar 原版 utils.jq 是 jQuery 就绪回调；本 demo 未加载 jQuery，

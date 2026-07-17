@@ -1,0 +1,11 @@
+{{- /* error_page.html: 404 错误页，对应 Stellar layout/404.ejs
+   结构严格对齐 404.ejs：<article class="md-text error-page"> 内 img#error + p.what + p.why + a#back。
+   404 图片存本地 assets/img/404.svg（从原版 cdn-x placeholder 下载），不依赖外链。
+   CSS 在 main.css 已编译（.md-text.error-page 全套，8656 行）。文案对齐 zh-CN.yml。*/ -}}
+<article class="md-text error-page">
+  <h1><img id="error" src="{{url_for "/assets/img/404.svg"}}" alt="404"></h1>
+  <p class="what"><strong>很抱歉，您访问的页面不存在</strong></p>
+  <p class="why">可能是输入地址有误或该地址已被删除</p>
+  <br><br>
+  <a class="button" id="back" href="{{url_for "/"}}">返回主页</a>
+</article>
