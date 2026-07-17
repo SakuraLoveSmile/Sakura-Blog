@@ -209,10 +209,14 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 
 	cards := make([]*tmpl.PostCard, 0, len(posts))
 	for _, p := range posts {
+		excerpt := p.Excerpt
+		if excerpt == "" {
+			excerpt = post.ExcerptFromHTML(p.ContentHTML, 120) // 空 excerpt 从正文提取前 120 rune
+		}
 		cards = append(cards, &tmpl.PostCard{
 			Slug:    p.Slug,
 			Title:   p.Title,
-			Excerpt: p.Excerpt,
+			Excerpt: excerpt,
 			Cover:   p.Cover,
 			Date:    p.CreatedAt,
 		})
