@@ -22,7 +22,8 @@ type tocEntry struct {
 }
 
 // ExtractTOC 从渲染后的文章 HTML 提取 h2/h3 生成嵌套目录，对齐 Stellar hexo toc helper
-// 的输出结构（子级 <ol> 嵌在父级 <li> 内、紧跟 a.toc-link，CSS 的 a.toc-link+ol 选择器依赖此结构）。
+// 的输出结构（子级 <ol class="toc-child"> 嵌在父级 <li> 内、紧跟 a.toc-link，
+// CSS 的 .toc-child 缩进与 a.toc-link+ol 折叠选择器都依赖此结构）。
 // 无标题时返回空串，调用方据此不渲染 TOC widget。
 func ExtractTOC(contentHTML string) template.HTML {
 	matches := tocHeadingRe.FindAllStringSubmatch(contentHTML, -1)
@@ -66,7 +67,7 @@ func ExtractTOC(contentHTML string) template.HTML {
 			continue
 		}
 		if !openH3 {
-			sb.WriteString(`<ol>`)
+			sb.WriteString(`<ol class="toc-child">`)
 			openH3 = true
 		} else {
 			sb.WriteString(`</li>`)

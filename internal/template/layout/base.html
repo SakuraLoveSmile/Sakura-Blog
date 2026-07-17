@@ -31,12 +31,16 @@
     {{- /* l_right：文章页挂 TOC widget（rightbar.html），其余页面为空 */}}
     <aside class="l_right">{{if eq .Page.Layout "post"}}{{template "rightbar" .}}{{end}}</aside>
 
-    {{- /* float-panel menubtn：移动端左侧栏开关（对齐 menubtn.ejs，只保留 leftbar-toggle）。
-       必须在 l_body 内：.l_body[leftbar] .float-panel 的激活态样式依赖该嵌套。 */}}
+    {{- /* float-panel menubtn：移动端侧栏开关（对齐 menubtn.ejs：rightbar-toggle 在前、leftbar-toggle 在后）。
+       必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。 */}}
     <div class="float-panel">
+      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
       <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
     </div>
   </div>
+
+  {{- /* PJAX 加载指示图标：对齐 layout.ejs，body 闭合前；body.pjax-loading 时 display:flex（样式在 head.html）*/}}
+  <div class="page-loading-bar"><img src="https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"></div>
 
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
   <script>

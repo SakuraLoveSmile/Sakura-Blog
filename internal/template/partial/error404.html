@@ -1,8 +1,12 @@
-{{- /* error404.html: 自定义 404 页，由 base.html 按 .Page.Layout == "404" 分派渲染。
-   样式在 head.html 的自定义 <style> 块（.error-page），md-text 继承文章排版基线。*/ -}}
+{{- /* error404.html: 自定义 404 页，对应 Stellar layout/404.ejs，由 base.html 按 .Page.Layout == "404" 分派渲染。
+   结构与文案对齐原版（zh-CN 语言包 page.error.*）；样式由 main.css 的 .md-text.error-page 提供
+   （_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f）。*/ -}}
 <article class="md-text error-page">
-  <h1>404</h1>
-  <p class="what"><strong>页面不存在或已移除</strong></p>
-  <p class="why">你访问的地址可能有误，或该页面已被作者删除。<br>可以返回首页，或使用左侧搜索找到想要的内容。</p>
-  <a class="button" id="back" href="/">返回首页</a>
+  <h1><img id="error" src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg" alt="404"></h1>
+  <p class="what">
+    <strong>很抱歉，您访问的页面不存在</strong>
+  </p>
+  <p class="why">可能是输入地址有误或该地址已被删除</p>
+  <br><br>
+  <a class="button" id="back" href="/">返回主页</a>
 </article>

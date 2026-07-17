@@ -93,11 +93,13 @@ const hud = {
 
 const l_body = document.querySelector('.l_body');
 
-// sidebar：移动端左侧栏开关（对齐 Stellar scripts/sidebar.ejs）。
-// l_right 恒为空，rightbar/toggleTOC 不实现，只保留 leftbar + dismiss。
+// sidebar：侧栏开关（对齐 Stellar scripts/sidebar.ejs，四个方法全量实现）。
+// rightbar 用于移动端右栏（TOC）开关；toggleTOC 切换 #data-toc 的 collapse class（手风琴）。
 const sidebar = {
   leftbar: () => { if (l_body) { l_body.toggleAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
+  rightbar: () => { if (l_body) { l_body.toggleAttribute('rightbar'); l_body.removeAttribute('leftbar'); } },
   dismiss: () => { if (l_body) { l_body.removeAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
+  toggleTOC: () => { const el = document.querySelector('#data-toc'); if (el) el.classList.toggle('collapse'); },
 }
 
 // TOC scroll-spy 共享状态：segs/root 每次 init.toc 刷新，scroll 监听器只注册一次，
