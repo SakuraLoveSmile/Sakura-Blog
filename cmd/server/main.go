@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,6 +22,7 @@ import (
 // dev 根目录定位策略：
 //   - 优先 -root 参数（绝对路径）
 //   - 否则用进程 cwd（要求在 dev/ 下启动，如 go run cmd/server/main.go）
+//
 // 不能依赖 os.Executable()：go run 编译到临时目录，二进制路径不在 dev/。
 func main() {
 	var root string
@@ -64,7 +66,15 @@ func main() {
 	defer st.Close()
 	log.Printf("sqlite ready: %s", dbPath)
 
-	site := config.DefaultSite()
+	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
+	configPath := filepath.Join(root, "config", "site.yml")
+	site, err := config.LoadSite(configPath)
+	if err != nil {
+		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
+		site = config.DefaultSite()
+	} else {
+		log.Printf("loaded site config: %s", configPath)
+	}
 
 	// admin handler（含 seed 能力）
 	adminHandler := admin.New(st, posts, engine, site)
@@ -149,12 +159,69 @@ func main() {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 	})
 
-	// 首页兜底：重定向到示例文章，方便验证
+	// 首页渲染：/ 与 /page/:num 共用。page 从 1 开始，超出末页回退到最后一页。
+	renderHome := func(c *gin.Context, page int) {
+		const pageSize = 10
+		total, err := st.CountPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count posts: %v", err)
+			return
+		}
+		totalPages := (total + pageSize - 1) / pageSize
+		if page < 1 {
+			page = 1
+		}
+		if totalPages > 0 && page > totalPages {
+			page = totalPages
+		}
+		posts, err := st.ListPublishedPaged(page, pageSize)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		cards := make([]*tmpl.PostCard, 0, len(posts))
+		for _, p := range posts {
+			cards = append(cards, &tmpl.PostCard{
+				Slug:    p.Slug,
+				Title:   p.Title,
+				Excerpt: p.Excerpt,
+				Cover:   p.Cover,
+				Date:    p.CreatedAt,
+			})
+		}
+		pages := make([]int, totalPages)
+		for i := range pages {
+			pages[i] = i + 1
+		}
+		data := &tmpl.ViewData{
+			Site:      site,
+			Page:      &tmpl.Page{Title: site.Title, Layout: "index", MenuID: "post", Lang: "zh-CN"},
+			Posts:     cards,
+			Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+		}
+		html, err := engine.Render("base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// 首页：文章列表（对齐 Stellar layout/index.ejs）
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/post/hello")
+		renderHome(c, 1)
+	})
+	// 首页分页：/page/N，非数字或 <1 返回 404
+	r.GET("/page/:num", func(c *gin.Context) {
+		n, err := strconv.Atoi(c.Param("num"))
+		if err != nil || n < 1 {
+			c.String(http.StatusNotFound, "page not found: %s", c.Param("num"))
+			return
+		}
+		renderHome(c, n)
 	})
 
-	addr := ":8080"
+	addr := ":8081" // qoder worktree 固定 8081，与 dev 的 8080 区分
 	fmt.Printf("Stellar Demo 3 server listening on http://localhost%s\n", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("run: %v", err)

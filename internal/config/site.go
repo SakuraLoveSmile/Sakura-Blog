@@ -1,8 +1,27 @@
 package config
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/goccy/go-yaml"
+
 	tmpl "blog/internal/template"
 )
+
+// LoadSite 从 yaml 文件加载站点配置（如 config/site.yml）。
+// 失败时调用方应 fallback 到 DefaultSite()，保证 demo 不因配置问题起不来。
+func LoadSite(path string) (*tmpl.Site, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read site config %s: %w", path, err)
+	}
+	s := &tmpl.Site{}
+	if err := yaml.Unmarshal(b, s); err != nil {
+		return nil, fmt.Errorf("parse site config %s: %w", path, err)
+	}
+	return s, nil
+}
 
 // DefaultSite 构造 Demo 2 用的站点配置。
 // 菜单配色和图标对齐 preview.html 已验证的值（青/绿/橙/红 + solar duotone）。

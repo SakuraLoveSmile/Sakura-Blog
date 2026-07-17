@@ -23,7 +23,8 @@
     </aside>
 
     <div class="l_main" id="main">
-      {{template "content" .}}
+      {{- /* content 分派：首页走 index 模板（navbar+post-list+paginator），其余走 content（文章页） */}}
+      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 

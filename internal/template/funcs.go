@@ -66,6 +66,10 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 		// join: 辅助函数，拼接字符串切片。
 		"join": strings.Join,
 
+		// add/sub: 整数加减，分页器页码运算用（Go template 无内置算术）。
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
+
 		// safe: 把字符串标记为 HTML，用于注入 goldmark 渲染后的文章正文。
 		"safe": func(s string) template.HTML {
 			return template.HTML(s)

@@ -1,0 +1,63 @@
+# 站点配置，对应 internal/config/site.go 的 DefaultSite()。
+# 启动时由 config.LoadSite 加载；文件缺失/解析失败时 fallback 到 DefaultSite()。
+# 注意：# 开头的值（如主题色）必须加引号；raw HTML（如 social icon）用单引号包裹。
+
+title: Stellar Demo
+subtitle: Go 服务端渲染
+description: 用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客，验证服务端渲染链路。
+avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+logo_title: Stellar Demo
+logo_sub: Go SSR 验证
+
+menubar:
+  columns: 4
+  items:
+    - id: post
+      title: 博客
+      url: /
+      icon: solar:documents-bold-duotone
+      theme: "#1BCDFC"
+    - id: archive
+      title: 归档
+      url: /archives/
+      icon: default:calendar
+      theme: "#3DC550"
+    - id: explore
+      title: 探索
+      url: /explore/
+      icon: solar:planet-bold-duotone
+      theme: "#FA6400"
+    - id: social
+      title: 社交
+      url: /friends/
+      icon: solar:chat-square-like-bold-duotone
+      theme: "#F44336"
+
+footer:
+  social:
+    - title: GitHub
+      url: https://github.com/
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/08a41b181ce68.svg">'
+    - title: Music
+      url: '#'
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3845874.svg">'
+    - title: Unsplash
+      url: '#'
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3616429.svg">'
+    - title: Comments
+      url: '#'
+      icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
+
+recent_posts:
+  - title: Demo 2：Go 服务端渲染验证
+    url: /post/hello
+  - title: Demo 1：Stellar CSS 编译验证
+    url: '#'
+  - title: 用 shim 方案脱离 Hexo 编译 Stylus
+    url: '#'
+  - title: 深色模式与菜单图标机制
+    url: '#'
+  - title: Artalk 评论集成方案
+    url: '#'
+
+tags: [CSS, Stellar, Go, Gin, Hexo, SQLite]
