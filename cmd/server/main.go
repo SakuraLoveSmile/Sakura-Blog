@@ -164,7 +164,7 @@ func main() {
 		renderHome(c, st, engine, site, 1)
 	})
 
-	// 分页：/page/N 走同一首页渲染逻辑。
+	// 分页：/page/N 走同一首页渲染逻辑；/page/1 301 到 /。
 	r.GET("/page/:num", func(c *gin.Context) {
 		numStr := c.Param("num")
 		page, err := strconv.Atoi(numStr)
@@ -172,7 +172,16 @@ func main() {
 			c.String(http.StatusNotFound, "page not found: %s", numStr)
 			return
 		}
+		if page == 1 {
+			c.Redirect(http.StatusMovedPermanently, "/")
+			return
+		}
 		renderHome(c, st, engine, site, page)
+	})
+
+	// 归档页：/archives 301 到带斜杠版本，保持 URL 规范。
+	r.GET("/archives", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/archives/")
 	})
 
 	// 归档页：按年份分组列出所有已发布文章。
@@ -199,16 +208,17 @@ func main() {
 		}
 
 		data := &tmpl.ViewData{
-			Site:          site,
-			ArchiveGroups: groups,
-			Page: &tmpl.Page{
-				Title:  "归档",
-				Layout: "archive",
-				Type:   "tech",
-				Lang:   "zh-CN",
-				MenuID: "archive",
-			},
-		}
+		Site:          site,
+		ArchiveGroups: groups,
+		RecentPosts:   loadRecentPosts(st, 5),
+		Page: &tmpl.Page{
+			Title:  "归档",
+			Layout: "archive",
+			Type:   "tech",
+			Lang:   "zh-CN",
+			MenuID: "archive",
+		},
+	}
 
 		html, err := engine.Render("base", data)
 		if err != nil {
@@ -268,7 +278,8 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 	}
 
 	data := &tmpl.ViewData{
-		Site: site,
+		Site:        site,
+		RecentPosts: loadRecentPosts(st, 5),
 		Page: &tmpl.Page{
 			Title:  site.Title,
 			Layout: "index",
@@ -276,8 +287,13 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 			Lang:   "zh-CN",
 			MenuID: "post",
 		},
-		Posts:     cards,
-		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+		Posts: cards,
+		Paginator: &tmpl.Paginator{
+			Current:      page,
+			Total:        totalPages,
+			Pages:        pages,
+			VisiblePages: truncatePages(page, totalPages),
+		},
 	}
 
 	html, err := engine.Render("base", data)
@@ -286,4 +302,44 @@ func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl
 		return
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+// truncatePages 截断页码序列，避免总页数过多时全量渲染。
+// 返回值中 0 表示省略号占位。规则：
+//   - 总页数 <= 7 时显示全部
+//   - 当前页靠近开头：1 2 3 4 5 ... Total
+//   - 当前页靠近末尾：1 ... Total-4 Total-3 Total-2 Total-1 Total
+//   - 中间：1 ... Current-1 Current Current+1 ... Total
+func truncatePages(current, total int) []int {
+	if total <= 7 {
+		out := make([]int, total)
+		for i := range out {
+			out[i] = i + 1
+		}
+		return out
+	}
+	if current <= 4 {
+		return []int{1, 2, 3, 4, 5, 0, total}
+	}
+	if current >= total-3 {
+		return []int{1, 0, total - 4, total - 3, total - 2, total - 1, total}
+	}
+	return []int{1, 0, current - 1, current, current + 1, 0, total}
+}
+
+// loadRecentPosts 从 DB 读取最新 limit 篇已发布文章，转为 PostCard 供侧边栏使用。
+// 查询失败时返回空切片，避免影响页面整体渲染。
+func loadRecentPosts(st *store.Store, limit int) []*tmpl.PostCard {
+	posts, err := st.ListPublishedRecent(limit)
+	if err != nil {
+		return nil
+	}
+	cards := make([]*tmpl.PostCard, 0, len(posts))
+	for _, p := range posts {
+		cards = append(cards, &tmpl.PostCard{
+			Slug:  p.Slug,
+			Title: p.Title,
+		})
+	}
+	return cards
 }
