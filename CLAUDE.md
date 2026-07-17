@@ -314,6 +314,43 @@ base.html 的 main-mask `onclick="sidebar.dismiss()"` 依赖 main.js 的 sidebar
 
 **坑**：float-panel menubtn 必须放在 `l_body` 内部（Stellar layout.ejs 在 l_right `</aside>` 之后、l_body 闭合之前），因为激活态样式是 `.l_body[leftbar] .float-panel button.leftbar-toggle`，放外面选中不到。按钮 class `mobile-only leftbar-toggle mobile` + 内联 `style="display:none"`：桌面靠内联样式隐藏，移动端（≤667px）`.mobile-only` 的 `display:block !important` 显示。图标用 `{{icon "default:leftbar"}}`（icons.yml 已确认存在）。main.css 是 Stellar 编译产物，`[leftbar]` attribute、`.float-panel`、`.main-mask` 样式均已包含，无需覆写。
 
+## Step 3 新增坑点（侧边栏动态化 + TOC + 搜索 + PJAX + 404）
+
+### goldmark AutoHeadingID：id 生成规则与 re-seed 必要性
+
+TOC 依赖标题带 id：`goldmark.New(goldmark.WithParserOptions(parser.WithAutoHeadingID()))`。两个坑：
+
+1. **id 只保留 ASCII**：中文标题生成的 id 会丢非 ASCII 字符（如 `Markdown 元素验证` → `markdown-`，纯中文标题 → `heading-N` 序号兜底）。功能正常但 id 不美观，TOC 提取必须从渲染后 HTML 正则读 id（与标题同源），不能自己从文本推算。
+2. **ContentHTML 是预渲染缓存**：posts 表存的是 goldmark 输出，开启 AutoHeadingID 后老数据没有 id，必须 `-seed` 重导（或 admin 重新保存）才生效。
+
+另一个编译坑：post 包内已有 frontmatter `parser` 类型（parser.go），与 `github.com/yuin/goldmark/parser` 包名冲突，import 需别名 `mdparser`。
+
+### TOC 嵌套结构对齐 Stellar hexo toc helper
+
+CSS 的折叠选择器是 `a.toc-link + ol`（子列表必须紧跟在父级链接后面、嵌在父级 `<li>` 内）。ExtractTOC 用状态机（openH2/openH3）生成该结构；无 h2 前置的 h3 提升为顶层项。main.css 已含 `.widget-wrapper.toc` 与 `.toc-item` 嵌套样式，无需补 CSS。
+
+### PJAX 与 DOM 引用的相处方式
+
+pjax.js 对 `.l_body` 只做属性同步 + 子节点局部替换（换 `.l_main`、就地更新 `.l_left`/`.l_right`），因此：
+
+- main.js 顶层缓存的 `l_body` 引用**不失效**，`sidebar.leftbar/dismiss` 导航后仍可用；
+- 导航时属性同步会清掉 `leftbar` attribute，移动端侧栏自动收起，无需手动处理；
+- 侧栏/TOC 节点会被替换成**新节点**，事件绑定要么委托到 document（init.sidebar 的 TOC 点击收侧栏），要么把绑定标记挂在 DOM 节点上（`_searchInitialized`/`_localSearchBound`/`tocState.bound`），`pjax:complete` 重跑 init 时新节点重新绑、旧节点不叠加；
+- TOC 锚点点击被 pjax.js 的 handleHashLink 优先拦截平滑滚动，不会触发整页导航；
+- **前台不得出现会被 PJAX 抓取的 /admin 链接**：后续若加需 `data-pjax="false"`（当前前台无 admin 链接）。
+
+main.css 缺 `.pjax-loading`/`.pjax-loaded` 与 `.error-page` 样式，在 head.html 补了小 `<style>` 块（顶部进度条 + 交换淡入 + 404 居中），块内只用 CSS 注释。
+
+### 本地搜索：/search.json no-store 与去 jQuery 移植
+
+- 索引端点每次实时查 DB（demo 数据量小），响应头 `Cache-Control: no-store`——admin 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。
+- local-search.js 从 Stellar 移植去 jQuery：`utils.jq` 入口改 `DOMContentLoaded + pjax:complete`，`$(...)`→querySelector，`.focus/.keydown`→addEventListener，`.attr`→getAttribute，`toggleClass`→classList.toggle。核心 searchFunc（关键词组合/高亮/排序）与 localStorage 缓存 `search_cache_v1` 原样保留。
+- 初始化挂在 input 的 **focus 事件**上（对齐原版）。注意 headless/失焦窗口里 `el.focus()` 只设 activeElement 不派生 focus 事件，自动化验证时需直接调 searchFunc；真实用户点击输入框无此问题。
+
+### 自定义 404：NoRoute + render404 统一出口
+
+`r.NoRoute(render404)` 接管未匹配路径，post/page/category/tag 四处未命中也从 `c.String(404)` 改为 render404（HTTP 404 + base 布局 Layout=404 + fillSidebar）。模板分派在 base.html 按 `.Page.Layout == "404"` 走 error404 partial。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
@@ -331,3 +368,4 @@ base.html 的 main-mask `onclick="sidebar.dismiss()"` 依赖 main.js 的 sidebar
 - [x] Step 1：首页 + 文章列表（`/` 渲染文章卡片列表 + `/page/:num` 分页 + cover 封面（含老库 ALTER 迁移）+ config/site.yml 配置文件化（DefaultSite 保留 fallback），preview 验证通过）
 - [x] Step 2：归档 + 分类/标签（`/archives` 年份分组 + `/categories` `/tags` 索引页（badge 计数）+ `/categories/:name` `/tags/:name` 文章列表（复用首页卡片）+ posts 表加 category/tags 两列（migrateColumns 泛化）+ navbar 抽共用 partial 四 tab + 主题持久化 + JS shim 修控制台错误，preview 验证通过）
 - [x] Step 2 收尾：移动端 sidebar（main.js sidebar 对象 leftbar/dismiss + base.html float-panel menubtn）+ /assets no-cache 协商缓存中间件（curl 304 与移动/桌面视口浏览器验证通过）
+- [x] Step 3：侧边栏动态化（recent/tags 从 DB 实时生成 + 菜单死链清理）+ 文章页 TOC 右栏（AutoHeadingID + ExtractTOC 嵌套 + 原生 scroll-spy）+ 本地搜索（/search.json no-store + 去 jQuery local-search.js）+ PJAX 无刷新导航（pjax.js 接入 + 加载指示样式）+ 自定义 404（NoRoute/render404 统一出口），浏览器全项验证通过（__mark 跨导航存活、scroll-spy 高亮、搜索高亮/noresult、404 双主题截图、控制台零错误）
