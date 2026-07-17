@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,6 +119,14 @@ func main() {
 
 	r := gin.Default()
 
+	// 搜索索引用的纯文本提取：去标签 + 压缩空白。
+	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
+	whitespaceRe := regexp.MustCompile(`\s+`)
+	stripHTML := func(s string) string {
+		s = htmlTagRe.ReplaceAllString(s, " ")
+		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
+	}
+
 	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
 	// http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。
 	// 必须注册在 r.Static 之前，否则静态路由先命中拿不到头。
@@ -199,6 +208,31 @@ func main() {
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	})
+
+	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
+	// no-store：索引需实时反映 admin 改动，禁止浏览器/CDN 缓存。
+	r.GET("/search.json", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		type searchItem struct {
+			Title   string `json:"title"`
+			Content string `json:"content"`
+			Path    string `json:"path"`
+		}
+		items := make([]searchItem, 0, len(posts))
+		for _, p := range posts {
+			items = append(items, searchItem{
+				Title:   p.Title,
+				Content: stripHTML(p.ContentHTML),
+				Path:    "/post/" + p.Slug,
+			})
+		}
+		c.Header("Cache-Control", "no-store")
+		c.JSON(http.StatusOK, items)
 	})
 
 	// 首页渲染：/ 与 /page/:num 共用。page 从 1 开始，超出末页回退到最后一页。

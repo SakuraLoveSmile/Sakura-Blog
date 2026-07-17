@@ -33,6 +33,20 @@
   </nav>
 </div>
 
+{{- /* 搜索框：对应 _partial/sidebar/search.ejs（无 wiki 维度，filter/placeholder 取默认）
+   .search-wrapper#search-wrapper > form.search-form(a.search-button + input#search-input) + #search-result + .search-no-result
+   交互在 assets/js/search/local-search.js（去 jQuery 移植版）*/}}
+<div class="search-wrapper" id="search-wrapper">
+  <form class="search-form">
+    <a class="search-button" onclick="document.getElementById('search-input').focus();">
+      {{icon "default:search"}}
+    </a>
+    <input type="text" class="search-input" id="search-input" placeholder="站内搜索">
+  </form>
+  <div id="search-result"></div>
+  <div class="search-no-result">没有找到内容！</div>
+</div>
+
 {{- /* widgets 区：对应 _partial/widgets/
    .widgets > widget.widget-wrapper */}}
 <div class="widgets">

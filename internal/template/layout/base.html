@@ -44,7 +44,7 @@
       date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' },
       root: '/',
       tag_plugins: { chat: {} },
-      search: { service: 'local_search', local_search: { path: '/search.json' } },
+      search: { service: 'local_search', path: '/search.json', local_search: { path: '/search.json' } },
       copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
     };
     const def = { avatar: '', cover: '', loading: '' };
@@ -67,5 +67,6 @@
     const utils = { jq: (fn) => { if (window.jQuery) fn(); } };
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
+  <script src="{{url_for "/assets/js/search/local-search.js"}}" defer></script>
 </body>
 </html>
