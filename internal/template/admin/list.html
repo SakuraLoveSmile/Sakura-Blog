@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="/assets/css/main.css?v=demo3">
   <style>
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
+    /* sitebg 是 position:fixed 全屏层，无定位的 .admin-wrap 会被它盖住导致按钮点不到。
+       给 admin-wrap 提层浮到 sitebg 之上。 */
+    .admin-wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
     .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
     .admin-header a { color: var(--text-p3); font-size: 14px; text-decoration: none; }
