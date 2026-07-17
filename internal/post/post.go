@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	mdparser "github.com/yuin/goldmark/parser"
 )
 
 // Post 文章渲染结果。
@@ -36,10 +37,11 @@ type Service struct {
 }
 
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
+// AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
 func NewService(mdDir string) *Service {
 	return &Service{
 		mdDir:  mdDir,
-		md:     goldmark.New(),
+		md:     goldmark.New(goldmark.WithParserOptions(mdparser.WithAutoHeadingID())),
 		parser: newParser(),
 	}
 }

@@ -28,7 +28,8 @@
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
-    <aside class="l_right"></aside>
+    {{- /* l_right：文章页挂 TOC widget（rightbar.html），其余页面为空 */}}
+    <aside class="l_right">{{if eq .Page.Layout "post"}}{{template "rightbar" .}}{{end}}</aside>
 
     {{- /* float-panel menubtn：移动端左侧栏开关（对齐 menubtn.ejs，只保留 leftbar-toggle）。
        必须在 l_body 内：.l_body[leftbar] .float-panel 的激活态样式依赖该嵌套。 */}}

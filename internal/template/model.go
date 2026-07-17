@@ -10,6 +10,7 @@ type ViewData struct {
 	Site    *Site
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
+	TOC     template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
 
 	// 首页文章列表（Layout=index 时使用）。
 	Posts     []*PostCard // 文章卡片列表

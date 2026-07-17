@@ -1,0 +1,15 @@
+{{- /* rightbar.html: 文章页右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs + widgets/toc.ejs
+   仅实现 TOC widget（l_right 其余 widget 本 demo 用不到）。
+   .TOC 为空（文章无 h2/h3）时整个 widgets 容器不输出，保持 l_right 为空。*/ -}}
+{{if .TOC}}
+<div class="widgets">
+  <widget class="widget-wrapper toc" id="data-toc">
+    <div class="widget-header dis-select">
+      <span class="name">目录</span>
+    </div>
+    <div class="widget-body">
+      {{.TOC}}
+    </div>
+  </widget>
+</div>
+{{end}}

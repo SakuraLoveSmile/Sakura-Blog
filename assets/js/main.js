@@ -100,72 +100,70 @@ const sidebar = {
   dismiss: () => { if (l_body) { l_body.removeAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
 }
 
+// TOC scroll-spy 共享状态：segs/root 每次 init.toc 刷新，scroll 监听器只注册一次，
+// PJAX 导航后重复 init 不叠加绑定（Stellar 原版依赖 jQuery，本 demo 未加载，原生重写）。
+const tocState = { segs: [], root: null, bound: false };
+
+function activeTOC() {
+  const root = tocState.root;
+  if (!root) return;
+  const scrollOffset = 32;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  let topSeg = null;
+  let topSegTop = -Infinity;
+  for (const seg of tocState.segs) {
+    const docTop = seg.getBoundingClientRect().top + scrollTop;
+    if (docTop > scrollTop + scrollOffset) continue;
+    if (docTop >= topSegTop) { topSeg = seg; topSegTop = docTop; }
+  }
+  const links = root.querySelectorAll('a.toc-link');
+  links.forEach(l => l.classList.remove('active'));
+  if (!topSeg) return;
+  // 不用属性选择器拼 id（避免特殊字符转义问题），直接比对 getAttribute
+  for (const l of links) {
+    if (l.getAttribute('href') === '#' + topSeg.id) { l.classList.add('active'); break; }
+  }
+}
+
+function scrollTOC() {
+  const e0 = document.querySelector('#data-toc .toc');
+  const e1 = document.querySelector('#data-toc a.toc-link.active');
+  if (e0 == null || e1 == null) {
+    return;
+  }
+  const offsetBottom = e1.getBoundingClientRect().bottom - e0.getBoundingClientRect().bottom + 100;
+  const offsetTop = e1.getBoundingClientRect().top - e0.getBoundingClientRect().top - 64;
+  if (offsetTop < 0) {
+    e0.scrollBy({ top: offsetTop, behavior: "smooth" });
+  } else if (offsetBottom > 0) {
+    e0.scrollBy({ top: offsetBottom, behavior: "smooth" });
+  }
+}
+
 const init = {
   toc: () => {
-    utils.jq(() => {
-      const scrollOffset = 32;
-      var segs = [];
-      $("article.md-text :header").each(function (idx, node) {
-        segs.push(node);
-      });
-      function activeTOC() {
-        var scrollTop = $(this).scrollTop();
-        var topSeg = null;
-        for (var idx in segs) {
-          var seg = $(segs[idx]);
-          if (seg.offset().top > scrollTop + scrollOffset) {
-            continue;
-          }
-          if (!topSeg) {
-            topSeg = seg;
-          } else if (seg.offset().top >= topSeg.offset().top) {
-            topSeg = seg;
-          }
-        }
-        if (topSeg) {
-          $("#data-toc a.toc-link").removeClass("active");
-          var link = "#" + topSeg.attr("id");
-          if (link != '#undefined') {
-            const highlightItem = $('#data-toc a.toc-link[href="' + encodeURI(link) + '"]');
-            if (highlightItem.length > 0) {
-              highlightItem.addClass("active");
-            }
-          } else {
-            $('#data-toc a.toc-link:first').addClass("active");
-          }
-        }
-      }
-      function scrollTOC() {
-        const e0 = document.querySelector('#data-toc .toc');
-        const e1 = document.querySelector('#data-toc .toc a.toc-link.active');
-        if (e0 == null || e1 == null) {
-          return;
-        }
-        const offsetBottom = e1.getBoundingClientRect().bottom - e0.getBoundingClientRect().bottom + 100;
-        const offsetTop = e1.getBoundingClientRect().top - e0.getBoundingClientRect().top - 64;
-        if (offsetTop < 0) {
-          e0.scrollBy({ top: offsetTop, behavior: "smooth" });
-        } else if (offsetBottom > 0) {
-          e0.scrollBy({ top: offsetBottom, behavior: "smooth" });
-        }
-      }
-
-      var timeout = null;
+    // 每次 init 重新收集标题与 TOC 根节点（PJAX 后 DOM 已替换）
+    tocState.segs = Array.from(document.querySelectorAll('article.md-text h2[id], article.md-text h3[id]'));
+    tocState.root = document.getElementById('data-toc');
+    if (!tocState.bound) {
+      tocState.bound = true;
+      let timeout = null;
       window.addEventListener('scroll', function () {
         activeTOC();
         if (timeout !== null) clearTimeout(timeout);
-        timeout = setTimeout(function () {
-          scrollTOC();
-        }.bind(this), 50);
+        timeout = setTimeout(scrollTOC, 50);
       });
-    })
+    }
+    activeTOC(); // 初始高亮
   },
   sidebar: () => {
-    utils.jq(() => {
-      $("#data-toc a.toc-link").click(function (e) {
-        sidebar.dismiss();
-      });
-    })
+    // 移动端点 TOC 链接收起左侧栏。事件委托绑一次即可（TOC 节点 PJAX 后会被替换，委托到 document 不受影响）
+    if (tocState.sidebarBound) return;
+    tocState.sidebarBound = true;
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest && e.target.closest('#data-toc a.toc-link');
+      if (link) sidebar.dismiss();
+    });
   },
   relativeDate: (selector) => {
     selector.forEach(item => {

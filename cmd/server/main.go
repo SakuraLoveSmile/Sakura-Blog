@@ -154,6 +154,7 @@ func main() {
 				},
 				Content: template.HTML(p.ContentHTML),
 			}
+			data.TOC = tmpl.ExtractTOC(p.ContentHTML)
 			fillSidebar(data)
 			html, err := engine.Render("base", data)
 			if err != nil {
@@ -190,6 +191,7 @@ func main() {
 			Content: template.HTML(p.HTML),
 		}
 
+		data.TOC = tmpl.ExtractTOC(p.HTML)
 		fillSidebar(data)
 		html, err := engine.Render("base", data)
 		if err != nil {
