@@ -262,6 +262,12 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 
 `-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。
 
+## 控制台错误修复（canonical 守卫 + utils shim）
+
+### Stellar JS 外部依赖缺失需 shim/守卫
+
+main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调，demo 未加载 jQuery）与 `window.canonical`（原版 defines.ejs 注入）。缺失时 `init.toc`/`init.sidebar` 抛 `utils is not defined` 中断 `initPage()`（连带 relativeDate 失效），`canonicalCheck` 抛 `Cannot read properties of undefined (reading 'originalHost')`。**对策**：base.html 内联脚本（main.js 引用之前）注入 `const utils = { jq: (fn) => { if (window.jQuery) fn(); } };` 最小 shim；`canonicalCheck` 的 `const canonical = window.canonical;` 后加 `if (!canonical) return;` 守卫。
+
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
