@@ -68,5 +68,8 @@
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
   <script src="{{url_for "/assets/js/search/local-search.js"}}" defer></script>
+  {{- /* PJAX 无刷新导航：放最后，劫持站内链接点击与前进后退；交换 .l_main 并就地更新左右栏。
+     前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。 */}}
+  <script src="{{url_for "/assets/js/plugins/pjax.js"}}" defer></script>
 </body>
 </html>

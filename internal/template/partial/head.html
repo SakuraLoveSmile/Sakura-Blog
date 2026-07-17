@@ -32,4 +32,35 @@
     }
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   </style>
+
+  {{- /* PJAX 加载指示 + 404 页样式：main.css 未含 .pjax-loading/.error-page，在此补少量自定义规则。
+     只用 CSS 注释（模板注释会出现在渲染产物里）。pjax.js 在 body 上挂 pjax-loading/pjax-loaded。 */}}
+  <style>
+    /* PJAX：顶部进度条 + 等待光标 */
+    body.pjax-loading { cursor: progress; }
+    body.pjax-loading::before {
+      content: ''; position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 99999;
+      background: var(--theme); transform-origin: left;
+      animation: pjax-progress 1s ease-in-out infinite;
+    }
+    @keyframes pjax-progress {
+      0% { transform: scaleX(0); opacity: 1; }
+      60% { transform: scaleX(.7); opacity: 1; }
+      100% { transform: scaleX(1); opacity: 0; }
+    }
+    /* PJAX：交换完成后主栏淡入（与 pjax.js 400ms 移除类的时机一致） */
+    body.pjax-loaded .l_main { animation: pjax-fadein .4s ease; }
+    @keyframes pjax-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 自定义 404 页 */
+    .error-page { text-align: center; padding: 64px 24px; }
+    .error-page h1 { font-size: 72px; margin: 0 0 8px; color: var(--text); }
+    .error-page .what { font-size: 18px; margin: 0 0 16px; color: var(--text-p1); }
+    .error-page .why { color: var(--text-p3); margin: 0 0 32px; }
+    .error-page a.button {
+      display: inline-block; padding: 10px 28px; border-radius: 8px;
+      background: var(--theme); color: #fff; text-decoration: none; font-weight: 500;
+    }
+    .error-page a.button:hover { opacity: .85; }
+  </style>
 </head>
