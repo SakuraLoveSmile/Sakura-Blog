@@ -1,0 +1,20 @@
+{{- /* post_card.html: 文章卡片，对应 Stellar _partial/main/post_list/post_card.ejs
+   上下文是当前 PostCard 对象（.Slug/.Title/.Excerpt/.Cover/.Date）。
+*/ -}}
+<div class="post-card-wrap">
+  <a class="post-card post" href="/post/{{.Slug}}">
+    <article class="md-text">
+      {{if .Cover}}
+      <div class="post-cover"><img src="{{.Cover}}"/></div>
+      {{end}}
+      <h2 class="post-title">{{.Title}}</h2>
+      <div class="excerpt"><p>{{.Excerpt}}</p></div>
+      <div class="meta cap">
+        <span class="cap" id="post-meta">
+          {{icon "default:calendar"}}
+          <time datetime="{{date .Date "2006-01-02T15:04:05Z07:00"}}">{{date .Date "2006-01-02"}}</time>
+        </span>
+      </div>
+    </article>
+  </a>
+</div>

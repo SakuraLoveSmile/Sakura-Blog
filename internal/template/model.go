@@ -1,6 +1,9 @@
 package template
 
-import "html/template"
+import (
+	"html/template"
+	"time"
+)
 
 // ViewData 贯穿所有模板的渲染上下文，对齐 Stellar layout.ejs 的 page/theme/config 三层。
 type ViewData struct {
@@ -8,8 +11,31 @@ type ViewData struct {
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
 
+	// Posts 首页文章卡片列表（Layout=="index" 时由 index.html 渲染）。
+	// 文章页不读此字段，零值即可。
+	Posts []*PostCard
+
+	// Paginator 首页分页器数据。nil 或 Total<=1 时不渲染分页器。
+	Paginator *Paginator
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
+}
+
+// PostCard 首页文章卡片视图模型，对齐 Stellar post_card.ejs 的默认卡片结构。
+type PostCard struct {
+	Slug    string
+	Title   string
+	Excerpt string
+	Cover   string // 封面图 URL，空则不渲染 .post-cover
+	Date    time.Time
+}
+
+// Paginator 首页分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
+type Paginator struct {
+	Current int   // 当前页码（从 1 开始）
+	Total   int   // 总页数
+	Pages   []int // 页码序列，如 [1,2,3]
 }
 
 // AdminData 后台模板渲染数据。
@@ -25,58 +51,60 @@ type AdminPostRow struct {
 	Slug      string
 	Title     string
 	Excerpt   string
+	Cover     string
 	ContentMD string
 	Status    string
 	Date      string // 列表展示用（created_at 或文件 date）
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。
+// yaml tag 用于从 config/site.yml 解析（goccy/go-yaml）。
 type Site struct {
-	Title       string
-	Subtitle    string
-	Description string
-	Avatar      string // logo 头像 URL
-	LogoTitle   string
-	LogoSub     string
-	Menubar     Menubar
-	Footer      Footer
-	RecentPosts []RecentPost
-	Tags        []string
+	Title       string       `yaml:"title"`
+	Subtitle    string       `yaml:"subtitle"`
+	Description string       `yaml:"description"`
+	Avatar      string       `yaml:"avatar"` // logo 头像 URL
+	LogoTitle   string       `yaml:"logo_title"`
+	LogoSub     string       `yaml:"logo_sub"`
+	Menubar     Menubar      `yaml:"menubar"`
+	Footer      Footer       `yaml:"footer"`
+	RecentPosts []RecentPost `yaml:"recent_posts"`
+	Tags        []string     `yaml:"tags"`
 }
 
 // Menubar 对齐 _config.yml menubar.items。
 type Menubar struct {
-	Columns int
-	Items   []MenuItem
+	Columns int        `yaml:"columns"`
+	Items   []MenuItem `yaml:"items"`
 }
 
 // MenuItem 对齐 menubar 单项。Theme 是 inline color，控制 SVG 的 currentColor。
 type MenuItem struct {
-	ID    string
-	Title string
-	URL   string
-	Icon  string // iconify key，如 solar:documents-bold-duotone
-	Theme string // 高亮色，如 #1BCDFC
+	ID    string `yaml:"id"`
+	Title string `yaml:"title"`
+	URL   string `yaml:"url"`
+	Icon  string `yaml:"icon"`  // iconify key，如 solar:documents-bold-duotone
+	Theme string `yaml:"theme"` // 高亮色，如 #1BCDFC
 }
 
 // Footer 对齐 theme.footer.social。
 type Footer struct {
-	Social []SocialItem
+	Social []SocialItem `yaml:"social"`
 }
 
 // SocialItem 侧边栏底部社交图标。
 // IconKey 非空时走 icon helper（内联 SVG），否则用 Icon 原样输出（如 <img src>）。
 type SocialItem struct {
-	Title   string
-	URL     string
-	Icon    string // raw HTML，如 <img src="...">
-	IconKey string // icons.yml 的 key，如 solar:xxx
+	Title   string `yaml:"title"`
+	URL     string `yaml:"url"`
+	Icon    string `yaml:"icon"`     // raw HTML，如 <img src="...">
+	IconKey string `yaml:"icon_key"` // icons.yml 的 key，如 solar:xxx
 }
 
 // RecentPost 近期发布 widget 的一项。
 type RecentPost struct {
-	Title string
-	URL   string
+	Title string `yaml:"title"`
+	URL   string `yaml:"url"`
 }
 
 // Page 对齐 Hexo page 对象，文章页用。

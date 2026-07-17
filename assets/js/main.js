@@ -89,6 +89,16 @@ const hud = {
 
 }
 
+// utils 兼容 shim：main.js 中 init.toc/sidebar 使用 utils.jq()，但当前未引入 jQuery。
+// 提供 utils 命名空间避免 ReferenceError；若后续加载 jQuery 则正常回调。
+const utils = {
+  jq: (fn) => {
+    if (typeof jQuery !== 'undefined') {
+      jQuery(fn);
+    }
+  }
+};
+
 // defines
 
 const l_body = document.querySelector('.l_body');
@@ -202,6 +212,8 @@ const init = {
 
   canonicalCheck: () => {
     const canonical = window.canonical;
+    // 未配置 canonical 对象时跳过，避免个人博客场景下报错
+    if (!canonical) return;
     function originStatusCheck() {
       return new Promise((resolve) => {
         if (window.canonical.originalHost === window.location.hostname) {

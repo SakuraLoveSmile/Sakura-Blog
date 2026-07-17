@@ -9,6 +9,7 @@ type frontMatter struct {
 	Title   string
 	Date    string
 	Excerpt string
+	Cover   string
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -65,6 +66,8 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Date = val
 		case "excerpt", "description":
 			fm.Excerpt = val
+		case "cover":
+			fm.Cover = val
 		}
 	}
 
