@@ -34,8 +34,20 @@
 </div>
 
 {{- /* widgets 区：对应 _partial/widgets/
-   .widgets > widget.widget-wrapper */}}
+   .widgets > widget.widget-wrapper
+   search widget 放在 widgets 最前（对齐 Stellar leftbar 顺序），复用 .search-wrapper 样式。
+   GET 表单提交到 /search，SearchQuery 回显当前查询词。*/}}
 <div class="widgets">
+
+  {{- /* 搜索框：对应 _partial/sidebar/search.ejs
+     .search-wrapper > .search-form > .search-button + .search-input
+     default:search 图标带 width=200，原版 .search-button svg {height:1rem} 已覆盖 */}}
+  <div class="search-wrapper">
+    <form class="search-form" action="/search" method="get" role="search">
+      <a class="search-button" tabindex="-1" aria-hidden="true">{{icon "default:search"}}</a>
+      <input type="text" class="search-input" name="q" value="{{.SearchQuery}}" placeholder="搜索文章…">
+    </form>
+  </div>
 
   {{- /* author 卡片：对应 widgets/author.ejs */}}
   <widget class="widget-wrapper user-card author">
