@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"html/template"
@@ -12,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -22,6 +24,28 @@ import (
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
+
+// RSS 2.0 结构体（encoding/xml 标准库）
+type RSS struct {
+	XMLName xml.Name `xml:"rss"`
+	Version string   `xml:"version,attr"`
+	Channel Channel  `xml:"channel"`
+}
+
+type Channel struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	Items       []Item `xml:"item"`
+}
+
+type Item struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
+	Guid        string `xml:"guid"`
+}
 
 // dev 根目录定位策略：
 //   - 优先 -root 参数（绝对路径）
@@ -530,6 +554,49 @@ func main() {
 			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name},
 			Posts: toCards(posts),
 		})
+	})
+
+	// RSS 2.0 订阅输出：/rss.xml，最新 20 篇 published 文章。
+	r.GET("/rss.xml", func(c *gin.Context) {
+		posts, err := st.ListPublishedPaged(1, 20)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		siteURL := "http://" + c.Request.Host
+		items := make([]Item, 0, len(posts))
+		for _, p := range posts {
+			desc := p.Excerpt
+			if desc == "" {
+				desc = stripHTML(p.ContentHTML)
+				if len(desc) > 200 {
+					desc = desc[:200]
+				}
+			}
+			link := siteURL + "/post/" + p.Slug
+			items = append(items, Item{
+				Title:       p.Title,
+				Link:        link,
+				Description: desc,
+				PubDate:     p.CreatedAt.Format(time.RFC1123Z),
+				Guid:        link,
+			})
+		}
+		rss := RSS{
+			Version: "2.0",
+			Channel: Channel{
+				Title:       site.Title,
+				Link:        siteURL,
+				Description: site.Description,
+				Items:       items,
+			},
+		}
+		output, err := xml.MarshalIndent(rss, "", "  ")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "marshal rss: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
 	})
 
 	addr := ":8081" // qoder worktree 固定 8081，与 dev 的 8080 区分
