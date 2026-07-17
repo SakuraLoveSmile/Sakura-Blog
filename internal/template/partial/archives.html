@@ -1,0 +1,23 @@
+{{- /* archives.html: 归档页主内容，对齐 Stellar layout/archive.ejs */ -}}
+{{template "nav_tabs_blog" .}}
+<div class="post-list archives">
+  {{if .ArchiveGroups}}
+    {{range .ArchiveGroups}}
+    <article id="archive">
+      <div class="archive-header h4">{{.Year}}</div>
+      {{range .Items}}
+      <div class="archive-list">
+        <a class="post fs14" href="/post/{{.Slug}}">
+          <time>{{date .Date "01-02"}}</time>
+          <span>{{.Title}}</span>
+        </a>
+      </div>
+      {{end}}
+    </article>
+    {{end}}
+  {{else}}
+    <article id="archive">
+      <div class="archive-header h4">暂无文章</div>
+    </article>
+  {{end}}
+</div>

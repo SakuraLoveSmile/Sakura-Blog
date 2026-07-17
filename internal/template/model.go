@@ -15,6 +15,9 @@ type ViewData struct {
 	// 文章页不读此字段，零值即可。
 	Posts []*PostCard
 
+	// ArchiveGroups 归档页按年份分组的文章列表（Layout=="archive" 时由 archives.html 渲染）。
+	ArchiveGroups []*ArchiveGroup
+
 	// Paginator 首页分页器数据。nil 或 Total<=1 时不渲染分页器。
 	Paginator *Paginator
 
@@ -29,6 +32,19 @@ type PostCard struct {
 	Excerpt string
 	Cover   string // 封面图 URL，空则不渲染 .post-cover
 	Date    time.Time
+}
+
+// ArchiveItem 归档页单篇文章视图项。
+type ArchiveItem struct {
+	Slug  string
+	Title string
+	Date  time.Time
+}
+
+// ArchiveGroup 归档页按年份分组。
+type ArchiveGroup struct {
+	Year  int
+	Items []*ArchiveItem
 }
 
 // Paginator 首页分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。

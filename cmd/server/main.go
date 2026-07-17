@@ -175,6 +175,49 @@ func main() {
 		renderHome(c, st, engine, site, page)
 	})
 
+	// 归档页：按年份分组列出所有已发布文章。
+	r.GET("/archives/", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+
+		groups := make([]*tmpl.ArchiveGroup, 0)
+		var current *tmpl.ArchiveGroup
+		for _, p := range posts {
+			year := p.CreatedAt.Year()
+			if current == nil || current.Year != year {
+				current = &tmpl.ArchiveGroup{Year: year}
+				groups = append(groups, current)
+			}
+			current.Items = append(current.Items, &tmpl.ArchiveItem{
+				Slug:  p.Slug,
+				Title: p.Title,
+				Date:  p.CreatedAt,
+			})
+		}
+
+		data := &tmpl.ViewData{
+			Site:          site,
+			ArchiveGroups: groups,
+			Page: &tmpl.Page{
+				Title:  "归档",
+				Layout: "archive",
+				Type:   "tech",
+				Lang:   "zh-CN",
+				MenuID: "archive",
+			},
+		}
+
+		html, err := engine.Render("base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	})
+
 	addr := ":8082"
 	fmt.Printf("Stellar Demo 3 server listening on http://localhost%s\n", addr)
 	if err := r.Run(addr); err != nil {

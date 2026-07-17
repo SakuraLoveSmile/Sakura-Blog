@@ -14,7 +14,7 @@
   <div id="l_cover"></div>
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
-  <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
+  <div class="l_body {{if eq .Page.Layout "index"}}index{{else if eq .Page.Layout "archive"}}index{{else}}content{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
     <aside class="l_left">
       <div class="sidebg"></div>
       <div class="leftbar-container">
@@ -24,7 +24,7 @@
 
     <div class="l_main" id="main">
       {{- /* 按 Layout 分派内容模板：首页走 index（navbar+post-list+paginator），其余走 content（文章正文）*/}}
-      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}
+      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else if eq .Page.Layout "archive"}}{{template "archives" .}}{{else}}{{template "content" .}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 

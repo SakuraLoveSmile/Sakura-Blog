@@ -1,0 +1,13 @@
+{{- /* nav_tabs_blog.html: 博客顶部 tab 栏，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs。
+   当前 Demo 阶段只包含"近期发布"与"归档"两个 tab，后续可按 Page.Layout 扩展。
+*/ -}}
+<div class="navbar top">
+  <div class="navbar-blur">
+    <div class="navbar-container">
+      <nav class="post">
+        <a {{if eq .Page.Layout "index"}}class="active"{{end}} href="/">近期发布</a>
+        <a {{if eq .Page.Layout "archive"}}class="active"{{end}} href="/archives/">归档</a>
+      </nav>
+    </div>
+  </div>
+</div>
