@@ -2,17 +2,20 @@ package post
 
 import (
 	"strings"
+
+	"github.com/goccy/go-yaml"
 )
 
 // frontMatter 文章元数据，从 Markdown 文件头部的 YAML frontmatter 解析。
 type frontMatter struct {
-	Title   string
-	Date    string
-	Excerpt string
-	Cover   string
+	Title   string   `yaml:"title"`
+	Date    string   `yaml:"date"`
+	Excerpt string   `yaml:"excerpt"`
+	Cover   string   `yaml:"cover"`
+	Tags    []string `yaml:"tags"`
 }
 
-// parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
+// parser 轻量的 frontmatter 解析器。
 type parser struct{}
 
 func newParser() parser { return parser{} }
@@ -49,27 +52,9 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 		return fm, s
 	}
 
-	// 解析 frontmatter 行
-	for i := 1; i < end; i++ {
-		line := lines[i]
-		idx := strings.Index(line, ":")
-		if idx == -1 {
-			continue
-		}
-		key := strings.TrimSpace(line[:idx])
-		val := strings.TrimSpace(line[idx+1:])
-		val = strings.Trim(val, `"'`)
-		switch key {
-		case "title":
-			fm.Title = val
-		case "date":
-			fm.Date = val
-		case "excerpt", "description":
-			fm.Excerpt = val
-		case "cover":
-			fm.Cover = val
-		}
-	}
+	// 用 YAML 解析 frontmatter 块
+	fmText := strings.Join(lines[1:end], "\n")
+	_ = yaml.Unmarshal([]byte(fmText), &fm)
 
 	body := strings.Join(lines[end+1:], "\n")
 	return fm, strings.TrimPrefix(body, "\n")

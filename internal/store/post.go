@@ -3,9 +3,12 @@ package store
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
@@ -24,6 +27,7 @@ type Post struct {
 	Title       string
 	Excerpt     string
 	Cover       string // 封面图 URL，空则列表卡片不渲染 .post-cover
+	Tags        []string
 	ContentMD   string // Markdown 原文
 	ContentHTML string // goldmark 预渲染缓存
 	Status      string // draft / published
@@ -87,9 +91,12 @@ func (s *Store) createTables() error {
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create tables: %w", err)
 	}
-	// 老库迁移：CREATE TABLE IF NOT EXISTS 不改已存在表结构，需补 cover 列。
+	// 老库迁移：CREATE TABLE IF NOT EXISTS 不改已存在表结构，需补 cover/tags 列。
 	if err := s.ensureColumn("posts", "cover", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migrate cover column: %w", err)
+	}
+	if err := s.ensureColumn("posts", "tags", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return fmt.Errorf("migrate tags column: %w", err)
 	}
 	return nil
 }
@@ -120,7 +127,7 @@ func (s *Store) ensureColumn(table, name, colDef string) error {
 }
 
 // postColumns 是 posts 表的查询列，统一顺序，避免 Scan 错位。
-const postColumns = `id, slug, title, excerpt, cover, content_md, content_html, status, created_at, updated_at`
+const postColumns = `id, slug, title, excerpt, cover, tags, content_md, content_html, status, created_at, updated_at`
 
 // List 返回全部文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
@@ -200,8 +207,7 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 		args = append(args, StatusPublished)
 	}
 	row := s.db.QueryRow(q, args...)
-	p := &Post{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	p, err := scanPost(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -221,9 +227,9 @@ func (s *Store) Create(p *Post) (int64, error) {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, content_md, content_html, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt)
+	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, tags, content_md, content_html, status, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.Title, p.Excerpt, p.Cover, tagsJSON(p.Tags), p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
@@ -235,12 +241,12 @@ func (s *Store) Create(p *Post) (int64, error) {
 	return id, nil
 }
 
-// Update 按 slug 更新文章字段（title/excerpt/cover/content_md/content_html/status），刷新 updated_at。
+// Update 按 slug 更新文章字段（title/excerpt/cover/tags/content_md/content_html/status），刷新 updated_at。
 func (s *Store) Update(slug string, p *Post) error {
 	p.UpdatedAt = time.Now()
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, content_md=?, content_html=?, status=?, updated_at=?
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, slug)
+		p.Title, p.Excerpt, p.Cover, tagsJSON(p.Tags), p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -280,9 +286,9 @@ func (s *Store) Upsert(p *Post) error {
 func scanPosts(rows *sql.Rows) ([]*Post, error) {
 	var out []*Post
 	for rows.Next() {
-		p := &Post{}
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("scan post: %w", err)
+		p, err := scanPost(rows)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, p)
 	}
@@ -290,4 +296,69 @@ func scanPosts(rows *sql.Rows) ([]*Post, error) {
 		return nil, fmt.Errorf("iterate posts: %w", err)
 	}
 	return out, nil
+}
+
+// scanPost 扫描单行到 *Post，并解析 tags JSON。
+func scanPost(scanner interface {
+	Scan(dest ...interface{}) error
+}) (*Post, error) {
+	p := &Post{}
+	var tagsJSON string
+	if err := scanner.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &tagsJSON, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		return nil, fmt.Errorf("scan post: %w", err)
+	}
+	p.Tags = parseTagsJSON(tagsJSON)
+	return p, nil
+}
+
+// parseTagsJSON 把 JSON 数组字符串解析为 []string，失败返回空切片。
+func parseTagsJSON(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(s), &tags); err != nil {
+		return nil
+	}
+	return tags
+}
+
+// tagsJSON 把 []string 序列化为 JSON 数组字符串，失败返回空数组 "[]"。
+func tagsJSON(tags []string) string {
+	if len(tags) == 0 {
+		return "[]"
+	}
+	b, err := json.Marshal(tags)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
+
+// ListTags 返回所有已发布文章的标签集合，按字母序排列并去重。
+func (s *Store) ListTags() ([]string, error) {
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT %s FROM posts WHERE status = ? ORDER BY datetime(created_at) DESC`, postColumns), StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("list tags: %w", err)
+	}
+	defer rows.Close()
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{})
+	for _, p := range posts {
+		for _, t := range p.Tags {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				seen[t] = struct{}{}
+			}
+		}
+	}
+	tags := make([]string, 0, len(seen))
+	for t := range seen {
+		tags = append(tags, t)
+	}
+	sort.Strings(tags)
+	return tags, nil
 }

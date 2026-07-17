@@ -16,10 +16,10 @@ import (
 
 // Handler 管理后台请求处理器，持有 store、post service、模板引擎、站点配置。
 type Handler struct {
-	store   *store.Store
-	posts   *post.Service
-	engine  *tmpl.Engine
-	site    *tmpl.Site
+	store  *store.Store
+	posts  *post.Service
+	engine *tmpl.Engine
+	site   *tmpl.Site
 }
 
 // New 创建 admin handler。
@@ -30,11 +30,11 @@ func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *tmpl.Si
 // Register 把 admin 路由挂到 r 上。
 func (h *Handler) Register(r *gin.Engine) {
 	g := r.Group("/admin")
-	g.GET("", h.list)           // 文章列表
+	g.GET("", h.list) // 文章列表
 	g.GET("/", h.list)
-	g.GET("/new", h.editForm)   // 新建表单
-	g.GET("/edit/:slug", h.editForm) // 编辑表单
-	g.POST("/save", h.save)     // 创建/更新
+	g.GET("/new", h.editForm)         // 新建表单
+	g.GET("/edit/:slug", h.editForm)  // 编辑表单
+	g.POST("/save", h.save)           // 创建/更新
 	g.POST("/delete/:slug", h.delete) // 删除
 }
 
@@ -56,8 +56,8 @@ func (h *Handler) list(c *gin.Context) {
 		})
 	}
 	data := &tmpl.ViewData{
-		Site: h.site,
-		Page: &tmpl.Page{Title: "文章管理", MenuID: "admin"},
+		Site:  h.site,
+		Page:  &tmpl.Page{Title: "文章管理", MenuID: "admin"},
 		Admin: &tmpl.AdminData{Posts: rows},
 	}
 	h.render(c, "list", data)
@@ -87,8 +87,8 @@ func (h *Handler) editForm(c *gin.Context) {
 		isEdit = true
 	}
 	data := &tmpl.ViewData{
-		Site: h.site,
-		Page: &tmpl.Page{Title: ternary(isEdit, "编辑文章", "新建文章"), MenuID: "admin"},
+		Site:  h.site,
+		Page:  &tmpl.Page{Title: ternary(isEdit, "编辑文章", "新建文章"), MenuID: "admin"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: isEdit},
 	}
 	h.render(c, "edit", data)
@@ -196,8 +196,8 @@ func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt
 		Status:    status,
 	}
 	data := &tmpl.ViewData{
-		Site: h.site,
-		Page: &tmpl.Page{Title: "编辑文章", MenuID: "admin"},
+		Site:  h.site,
+		Page:  &tmpl.Page{Title: "编辑文章", MenuID: "admin"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: origSlug != "", SaveError: errMsg},
 	}
 	h.render(c, "edit", data)
@@ -237,6 +237,7 @@ func (h *Handler) Seed() error {
 			Title:       title,
 			Excerpt:     meta.Excerpt,
 			Cover:       meta.Cover,
+			Tags:        meta.Tags,
 			ContentMD:   body,
 			ContentHTML: html,
 			Status:      store.StatusPublished,

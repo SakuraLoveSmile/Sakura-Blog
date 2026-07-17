@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
 )
 
 // Post 文章渲染结果。
@@ -24,6 +25,7 @@ type FileMeta struct {
 	Date    string
 	Excerpt string
 	Cover   string
+	Tags    []string
 }
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
@@ -36,8 +38,17 @@ type Service struct {
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
 func NewService(mdDir string) *Service {
 	return &Service{
-		mdDir:  mdDir,
-		md:     goldmark.New(),
+		mdDir: mdDir,
+		md: goldmark.New(
+			goldmark.WithExtensions(
+				highlighting.NewHighlighting(
+					highlighting.WithStyle("monokai"),
+					highlighting.WithFormatOptions(
+					// 可在此扩展行号、行高亮等选项
+					),
+				),
+			),
+		),
 		parser: newParser(),
 	}
 }
@@ -63,7 +74,13 @@ func (s *Service) ParseFile(slug string) (FileMeta, string, error) {
 		return FileMeta{}, "", fmt.Errorf("read post %s: %w", slug, err)
 	}
 	meta, body := s.parser.Parse(src)
-	return FileMeta{Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover}, body, nil
+	return FileMeta{
+		Title:   meta.Title,
+		Date:    meta.Date,
+		Excerpt: meta.Excerpt,
+		Cover:   meta.Cover,
+		Tags:    meta.Tags,
+	}, body, nil
 }
 
 // Load 读取并渲染指定 slug 的文章。文件路径：mdDir/slug.md。

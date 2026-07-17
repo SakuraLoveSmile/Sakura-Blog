@@ -71,13 +71,15 @@
     </div>
   </widget>
 
-  {{- /* 标签云：对应 widgets/tagcloud.ejs */}}
+  {{- /* 标签云：对应 widgets/tagcloud.ejs，优先读取动态 Tags */}}
   <widget class="widget-wrapper tagcloud">
     <div class="widget-header dis-select">
       <span class="name">标签</span>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.Tags}}
+      {{$tags := .Tags}}
+      {{if not $tags}}{{$tags = .Site.Tags}}{{end}}
+      {{range $tags}}
       <a class="tag" href="#">{{.}}</a>
       {{end}}
     </div>

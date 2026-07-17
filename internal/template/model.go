@@ -24,6 +24,9 @@ type ViewData struct {
 	// RecentPosts 侧边栏"近期发布"widget 数据。非空时优先于 Site.RecentPosts。
 	RecentPosts []*PostCard
 
+	// Tags 侧边栏标签云数据。非空时优先于 Site.Tags。
+	Tags []string
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
