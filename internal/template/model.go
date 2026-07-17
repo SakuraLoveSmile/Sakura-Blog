@@ -21,6 +21,9 @@ type ViewData struct {
 	// Paginator 首页分页器数据。nil 或 Total<=1 时不渲染分页器。
 	Paginator *Paginator
 
+	// RecentPosts 侧边栏"近期发布"widget 数据。非空时优先于 Site.RecentPosts。
+	RecentPosts []*PostCard
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
@@ -52,6 +55,9 @@ type Paginator struct {
 	Current int   // 当前页码（从 1 开始）
 	Total   int   // 总页数
 	Pages   []int // 页码序列，如 [1,2,3]
+	// VisiblePages 截断后实际显示的页码序列，0 表示省略号占位。
+	// 避免总页数很多时一次性渲染全部页码。
+	VisiblePages []int
 }
 
 // AdminData 后台模板渲染数据。
