@@ -53,6 +53,7 @@ type PostCard struct {
 	Excerpt string
 	Cover   string // 封面图 URL，空则不渲染 .post-cover
 	Date    time.Time
+	Views   int64 // 阅读量，列表卡片 #post-meta 可选展示（0 不渲染）
 }
 
 // ReadNext 文章详情页的上下篇导航视图模型，对齐 Stellar read_next.ejs。
@@ -67,12 +68,12 @@ type ReadNext struct {
 // PrevURL/NextURL 为空表示无上一页/下一页；PageURLs[i] 是第 i+1 页的完整 URL（Go 侧预生成，
 // 避免在模板里拼接 query 时被 html/template 的 URL 转义破坏，如 ?q=a&b 的 = 被编码成 %3d）。
 type Paginator struct {
-	Current   int      // 当前页码（从 1 开始）
-	Total     int      // 总页数
-	Pages     []int    // 页码序列，如 [1,2,3]，仅用于 range 计数
-	PageURLs  []string // 每页完整 URL，下标对齐 Pages（Pages[i] -> PageURLs[i]）
-	PrevURL   string   // 上一页 URL，空表示无
-	NextURL   string   // 下一页 URL，空表示无
+	Current  int      // 当前页码（从 1 开始）
+	Total    int      // 总页数
+	Pages    []int    // 页码序列，如 [1,2,3]，仅用于 range 计数
+	PageURLs []string // 每页完整 URL，下标对齐 Pages（Pages[i] -> PageURLs[i]）
+	PrevURL  string   // 上一页 URL，空表示无
+	NextURL  string   // 下一页 URL，空表示无
 }
 
 // TagItem 标签云页的单个标签。
@@ -136,12 +137,33 @@ type Site struct {
 	Avatar      string       `yaml:"avatar"` // logo 头像 URL
 	LogoTitle   string       `yaml:"logo_title"`
 	LogoSub     string       `yaml:"logo_sub"`
-	URL         string       `yaml:"url"`   // 站点根 URL，如 https://example.com（RSS/sitemap 构建绝对链接）
+	URL         string       `yaml:"url"`    // 站点根 URL，如 https://example.com（RSS/sitemap 构建绝对链接）
 	Author      string       `yaml:"author"` // 作者名，RSS feed 的 <author><name>
 	Menubar     Menubar      `yaml:"menubar"`
 	Footer      Footer       `yaml:"footer"`
 	RecentPosts []RecentPost `yaml:"recent_posts"`
 	Tags        []string     `yaml:"tags"`
+	Comments    Comments     `yaml:"comments"`
+}
+
+// Comments 评论系统配置，对齐 Stellar theme.comments。
+// Service 为空时不渲染评论区（本地开发可空）。非空时按 service 分派，
+// 当前仅实现 artalk（Demo 1 的 config.json 已设 comments.service="artalk"，
+// artalk 容器样式已编译进 main.css）。
+type Comments struct {
+	Service      string       `yaml:"service"`       // artalk / giscus / waline / ...，空则不渲染
+	CommentTitle string       `yaml:"comment_title"` // 评论区标题，空则用默认文案
+	Artalk       ArtalkConfig `yaml:"artalk"`
+}
+
+// ArtalkConfig 对齐 Stellar theme.comments.artalk。
+// Server 是 Artalk 服务端 URL（必填，否则 SDK 无法加载）；Site 是 Artalk 站点名。
+// CSS/JS 默认用官方 CDN（unpkg artalk@2.9），可按需覆盖。
+type ArtalkConfig struct {
+	Server string `yaml:"server"` // Artalk 后端地址，如 https://artalk.example.com
+	Site   string `yaml:"site"`   // Artalk 站点名称，留空则由服务端默认
+	CSS    string `yaml:"css"`    // Artalk SDK CSS URL，空用默认 CDN
+	JS     string `yaml:"js"`     // Artalk SDK JS URL，空用默认 CDN
 }
 
 // Menubar 对齐 _config.yml menubar.items。
@@ -193,9 +215,10 @@ type Page struct {
 	Excerpt string
 
 	// 文章详情页扩展字段（Layout=="post" 用，对齐 Stellar page 对象）。
-	Cover        string    // 封面图 URL，空则不渲染 .l_cover.post（对齐 post_cover.ejs 的 banner 判定）
-	Tags         []string  // 标签列表，footer 标签段 + 面包屑用
-	Categories   []string  // 分类列表，面包屑分类段用
-	CreatedTime  time.Time // 创建时间，<time datetime> 与 read_next 查询用
-	UpdatedTime  time.Time // 更新时间，<time datetime> 用
+	Cover       string    // 封面图 URL，空则不渲染 .l_cover.post（对齐 post_cover.ejs 的 banner 判定）
+	Tags        []string  // 标签列表，footer 标签段 + 面包屑用
+	Categories  []string  // 分类列表，面包屑分类段用
+	CreatedTime time.Time // 创建时间，<time datetime> 与 read_next 查询用
+	UpdatedTime time.Time // 更新时间，<time datetime> 用
+	Views       int64     // 阅读量，article_banner #post-meta 展示（0 不渲染阅读量段）
 }

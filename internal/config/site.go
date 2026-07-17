@@ -62,5 +62,8 @@ func DefaultSite() *tmpl.Site {
 			{Title: "Artalk 评论集成方案", URL: "#"},
 		},
 		Tags: []string{"CSS", "Stellar", "Go", "Gin", "Hexo", "SQLite"},
+		Comments: tmpl.Comments{
+			CommentTitle: "快来参与讨论吧~",
+		},
 	}
 }

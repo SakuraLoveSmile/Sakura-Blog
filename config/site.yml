@@ -71,3 +71,16 @@ recent_posts:
 
 # 标签云
 tags: [CSS, Stellar, Go, Gin, Hexo, SQLite]
+
+# 评论系统：对齐 Stellar theme.comments。service 留空则不渲染评论区（本地开发默认空）。
+# 设为 artalk 后，文章页底部加载 Artalk SDK。artalk.server 是 Artalk 后端地址，必填。
+# Artalk 后端独立部署（官方单二进制，详见 https://artalk.docs.errorly.dev/guide/deploy.html）。
+# 本地试用：下载 artalk 二进制 -> artalk server -> 访问 :23366 控制台建站点 -> 填 server。
+comments:
+  service: # artalk / giscus / waline / ...（留空=不启用评论）
+  comment_title: 快来参与讨论吧~
+  artalk:
+    server: # Artalk 后端地址，如 http://localhost:23366
+    site: # Artalk 站点名称
+    css: # Artalk SDK CSS，空用默认 https://unpkg.com/artalk@2.9/dist/artalk.css
+    js: # Artalk SDK JS，空用默认 https://unpkg.com/artalk@2.9/dist/artalk.js

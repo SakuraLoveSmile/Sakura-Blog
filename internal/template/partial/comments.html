@@ -1,0 +1,47 @@
+{{- /* comments.html: 评论区，对应 Stellar _partial/comments/layout.ejs + artalk/layout.ejs。
+   渲染条件：Site.Comments.Service 非空（对齐原版 loadComment 判定 theme.comments.service.length > 0）。
+   结构对齐原版：.related-wrap.md-text#comments > section.header.cmt-title + section.body.cmt-body.{service}。
+   artalk 分支：div.artalk#artalk_container（原版 id 为 artalk_container，CSS .cmt-body.artalk .artalk 已编译）。
+   page_key 用稳定路径 /post/{slug}（不用完整 URL），改域名后评论不丢失。
+   SDK 加载：CSS/JS 默认走 unpkg CDN（artalk@2.9），可在 site.yml 覆盖；JS defer 后 onload 调 Artalk.init。
+   darkMode 跟随 [data-theme="dark"]，主题切换时同步通知 Artalk。*/ -}}
+{{if .Site.Comments.Service}}
+{{$c := .Site.Comments}}
+<div class="related-wrap md-text" id="comments">
+  <section class="header cmt-title cap theme">
+    {{if $c.CommentTitle}}{{$c.CommentTitle}}{{else}}快来参与讨论吧~{{end}}
+  </section>
+  <section class="body cmt-body {{$c.Service}}">
+    {{if eq $c.Service "artalk"}}
+    {{$a := $c.Artalk}}
+    {{- /* CSS：site.yml 覆盖或默认 unpkg CDN。href 上下文由 html/template 自动转义。*/}}
+    <link rel="stylesheet" href="{{if $a.CSS}}{{$a.CSS}}{{else}}https://unpkg.com/artalk@2.9/dist/artalk.css{{end}}">
+    {{- /* 容器：id=artalk_container 对齐原版，data-page-key 用稳定路径避免改域名丢评论 */}}
+    <div class="artalk" id="artalk_container" data-page-key="/post/{{.Page.Slug}}" data-page-title="{{.Page.Title}}" data-server="{{$a.Server}}" data-site="{{$a.Site}}"></div>
+    {{- /* SDK：defer 保证 DOM 就绪，onload 调 Artalk.init。server 为空时 init 报错但不影响页面其余部分。*/}}
+    <script defer src="{{if $a.JS}}{{$a.JS}}{{else}}https://unpkg.com/artalk@2.9/dist/artalk.js{{end}}" onload="initArtalk()"></script>
+    <script>
+    function initArtalk() {
+      var el = document.getElementById('artalk_container');
+      if (!el || !window.Artalk) return;
+      var darkMode = document.documentElement.dataset.theme === 'dark';
+      var artalk = Artalk.init({
+        el: '#artalk_container',
+        pageKey: el.getAttribute('data-page-key'),
+        pageTitle: el.getAttribute('data-page-title'),
+        server: el.getAttribute('data-server'),
+        site: el.getAttribute('data-site'),
+        darkMode: darkMode
+      });
+      {{- /* 主题切换时同步 Artalk 深色模式（toggleTheme 在 base.html 定义，此处只监听 data-theme 变化）*/}}
+      var observer = new MutationObserver(function () {
+        var dark = document.documentElement.dataset.theme === 'dark';
+        try { artalk.setDarkMode(dark); } catch (e) {}
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+    </script>
+    {{end}}
+  </section>
+</div>
+{{end}}
