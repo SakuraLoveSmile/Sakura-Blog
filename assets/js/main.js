@@ -93,6 +93,12 @@ const hud = {
 
 const l_body = document.querySelector('.l_body');
 
+// sidebar：移动端左侧栏开关（对齐 Stellar scripts/sidebar.ejs）。
+// l_right 恒为空，rightbar/toggleTOC 不实现，只保留 leftbar + dismiss。
+const sidebar = {
+  leftbar: () => { if (l_body) { l_body.toggleAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
+  dismiss: () => { if (l_body) { l_body.removeAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
+}
 
 const init = {
   toc: () => {

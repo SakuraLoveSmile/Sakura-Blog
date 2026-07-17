@@ -29,6 +29,12 @@
     </div>
 
     <aside class="l_right"></aside>
+
+    {{- /* float-panel menubtn：移动端左侧栏开关（对齐 menubtn.ejs，只保留 leftbar-toggle）。
+       必须在 l_body 内：.l_body[leftbar] .float-panel 的激活态样式依赖该嵌套。 */}}
+    <div class="float-panel">
+      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
+    </div>
   </div>
 
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}

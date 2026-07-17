@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -90,6 +91,16 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
+	// http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。
+	// 必须注册在 r.Static 之前，否则静态路由先命中拿不到头。
+	r.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.Next()
+	})
 
 	// 静态文件：assets/css、assets/js 映射到 /assets
 	r.Static("/assets", filepath.Join(root, "assets"))
