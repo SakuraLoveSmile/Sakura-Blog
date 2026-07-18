@@ -200,12 +200,18 @@ func main() {
 		}
 	}
 
-	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 最新评论 5 条），所有前台页面渲染前调用。
+	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 热门 top5 + 站点统计 + 最新评论 5 条），所有前台页面渲染前调用。
 	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
+	const popularLimit = 5
 	fillSidebar := func(data *tmpl.ViewData) {
 		if posts, err := st.ListPublishedPaged(1, 5); err == nil {
 			for _, p := range posts {
 				data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
+			}
+		}
+		if popular, err := st.ListPopular(popularLimit); err == nil && len(popular) > 0 {
+			for _, p := range popular {
+				data.Popular = append(data.Popular, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
 			}
 		}
 		if site.Comments.Enabled {
@@ -234,7 +240,38 @@ func main() {
 			if len(items) > 20 {
 				items = items[:20]
 			}
+			if len(items) > 0 {
+				minC, maxC := items[len(items)-1].Count, items[0].Count
+				for _, item := range items {
+					item.Size = tmpl.TagCloudFontSize(item.Count, minC, maxC)
+				}
+			}
 			data.TagCloud = items
+		}
+		var stats tmpl.SiteStats
+		statsOK := true
+		if n, err := st.CountPosts(); err == nil {
+			stats.Posts = n
+		} else {
+			statsOK = false
+		}
+		if counts, err := st.CountByTag(); err == nil {
+			stats.Tags = len(counts)
+		} else {
+			statsOK = false
+		}
+		if n, err := st.CountComments(store.CommentApproved); err == nil {
+			stats.Comments = n
+		} else {
+			statsOK = false
+		}
+		if v, err := st.SumViews(); err == nil {
+			stats.Views = v
+		} else {
+			statsOK = false
+		}
+		if statsOK {
+			data.SiteStats = &stats
 		}
 	}
 

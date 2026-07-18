@@ -22,8 +22,10 @@ type ViewData struct {
 	TagItems []*TagItem     // 标签索引页
 
 	// 侧边栏动态数据（所有前台页面渲染前由 fillSidebar 填充）。
-	Recent   []*RecentPost // 近期发布 widget（最新 5 篇 published）
-	TagCloud []*TagItem    // 标签云 widget（按文章数降序前 20）
+	Recent    []*RecentPost // 近期发布 widget（最新 5 篇 published）
+	TagCloud  []*TagItem    // 标签云 widget（按文章数降序前 20）
+	Popular   []*RecentPost // 热门文章 widget（按阅读量降序 top 5）
+	SiteStats *SiteStats    // 站点统计 widget（nil 时隐藏）
 
 	// 评论区（Layout=post 且 comments.enabled 时填充）。
 	Comments     []*CommentItem // 评论树（顶级 + Children 两层）
@@ -70,6 +72,7 @@ type CatItem struct {
 type TagItem struct {
 	Name  string
 	Count int
+	Size  int // 标签云字号（px），0 表示默认
 }
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
