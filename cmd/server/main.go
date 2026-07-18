@@ -305,6 +305,37 @@ func main() {
 		r.StaticFS("/assets", http.FS(sub))
 	}
 
+	// PWA 根作用域路由：SW 必须从 /sw.js 提供才能控制全站；manifest/图标映射到 embed 或磁盘。
+	serveAsset := func(assetPath, contentType string, extraHeaders map[string]string) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			var data []byte
+			var err error
+			if devMode {
+				data, err = os.ReadFile(filepath.Join(app.Root, "assets", assetPath))
+			} else {
+				data, err = assets.FS.ReadFile(assetPath)
+			}
+			if err != nil {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			if contentType != "" {
+				c.Header("Content-Type", contentType)
+			}
+			for k, v := range extraHeaders {
+				c.Header(k, v)
+			}
+			c.Data(http.StatusOK, contentType, data)
+		}
+	}
+	r.GET("/sw.js", serveAsset("js/sw.js", "application/javascript", map[string]string{
+		"Service-Worker-Allowed": "/",
+		"Cache-Control":          "no-cache",
+	}))
+	r.GET("/manifest.webmanifest", serveAsset("manifest.webmanifest", "application/manifest+json", nil))
+	r.GET("/favicon.ico", serveAsset("img/favicon.ico", "image/x-icon", nil))
+	r.GET("/apple-touch-icon.png", serveAsset("img/apple-touch-icon.png", "image/png", nil))
+
 	// 上传附件静态托管（运行时数据，不走 go:embed）
 	r.Static("/uploads", app.UploadDir)
 
