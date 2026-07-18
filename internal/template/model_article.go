@@ -1,0 +1,29 @@
+package template
+
+// ArticleConfig 文章页脚配置（site.yml article 段）。
+type ArticleConfig struct {
+	Copyright CopyrightConfig `yaml:"copyright"`
+	Reward    RewardConfig    `yaml:"reward"`
+	Share     ShareConfig     `yaml:"share"`
+}
+
+// CopyrightConfig 版权声明块。
+type CopyrightConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	License    string `yaml:"license"`
+	LicenseURL string `yaml:"license_url"`
+}
+
+// RewardConfig 打赏块（懒展开收款码）。
+type RewardConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Wechat  string `yaml:"wechat"`
+	Alipay  string `yaml:"alipay"`
+	Text    string `yaml:"text"`
+}
+
+// ShareConfig 社交分享块。
+type ShareConfig struct {
+	Enabled   bool     `yaml:"enabled"`
+	Platforms []string `yaml:"platforms"`
+}

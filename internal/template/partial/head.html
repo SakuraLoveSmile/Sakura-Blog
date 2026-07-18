@@ -41,6 +41,9 @@
   {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}">
 
+  {{- /* 文章页脚补充样式（打赏 / 文字分享按钮；.article-footer 主体在 main.css）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}">
+
   {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
   <style>
     html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }
