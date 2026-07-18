@@ -1,0 +1,108 @@
+{{- /* admin/dashboard.html: 仪表盘（指标卡 + 快捷入口 + 最近评论） */ -}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+{{template "admin/head" .}}
+<body class="admin-body">
+  <div class="sitebg"><div class="siteblur"></div></div>
+  <div class="admin-shell" id="admin-shell">
+    <div class="admin-overlay" id="admin-overlay"></div>
+    {{template "admin/sidebar" .}}
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="打开菜单">
+            <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
+          </button>
+          <h1>仪表盘</h1>
+        </div>
+        <div class="admin-topbar-actions">
+          <a href="/admin/new" class="admin-btn admin-btn-primary">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+            新建文章
+          </a>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="admin-stat-grid">
+          <div class="admin-stat-card">
+            <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+            <div class="label">文章</div>
+            <div class="value">{{.Admin.Dashboard.PostTotal}}</div>
+            <div class="sub">已发布 {{.Admin.Dashboard.PostPublished}}</div>
+          </div>
+          <div class="admin-stat-card">
+            <iconify-icon icon="solar:chat-round-line-bold-duotone"></iconify-icon>
+            <div class="label">评论</div>
+            <div class="value">{{.Admin.Dashboard.CommentTotal}}</div>
+            <div class="sub">待审核 {{.Admin.Dashboard.CommentPending}}</div>
+          </div>
+          <div class="admin-stat-card">
+            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+            <div class="label">总浏览量</div>
+            <div class="value">{{.Admin.Dashboard.ViewTotal}}</div>
+          </div>
+          <div class="admin-stat-card">
+            <iconify-icon icon="solar:gallery-bold-duotone"></iconify-icon>
+            <div class="label">附件</div>
+            <div class="value">{{.Admin.Dashboard.AttachmentTotal}}</div>
+          </div>
+        </div>
+
+        <h2 class="admin-section-title">快捷入口</h2>
+        <div class="admin-quick-grid">
+          <a href="/admin/new" class="admin-quick-link">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+            <span>新建文章</span>
+          </a>
+          <a href="/admin/comments" class="admin-quick-link">
+            <iconify-icon icon="solar:chat-round-line-bold-duotone"></iconify-icon>
+            <span>评论管理</span>
+          </a>
+          <a href="/admin/media" class="admin-quick-link">
+            <iconify-icon icon="solar:gallery-bold-duotone"></iconify-icon>
+            <span>附件管理</span>
+          </a>
+          <a href="/" target="_blank" rel="noopener" class="admin-quick-link">
+            <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
+            <span>查看站点</span>
+          </a>
+        </div>
+
+        <h2 class="admin-section-title">最近评论</h2>
+        {{if .Admin.Dashboard.RecentComments}}
+          {{range .Admin.Dashboard.RecentComments}}
+          <div class="admin-cmt-card">
+            <img class="avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
+            <div class="body">
+              <div class="admin-cmt-head">
+                <span class="nick">{{.Nick}}</span>
+                <span class="email">{{.Email}}</span>
+                {{if .IsAdmin}}<span class="admin-badge admin">{{$.Site.Comments.AdminBadge}}</span>{{end}}
+                <span class="time">{{.Date}}</span>
+              </div>
+              <div class="admin-cmt-excerpt">{{.Excerpt}}</div>
+              <div class="admin-cmt-foot">
+                <a href="{{.PageKey}}#comment-{{.ID}}" target="_blank" rel="noopener">{{.PageKey}}</a>
+              </div>
+            </div>
+          </div>
+          {{end}}
+        {{else}}
+          <div class="admin-empty">暂无评论</div>
+        {{end}}
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var shell = document.getElementById('admin-shell');
+      var toggle = document.getElementById('admin-menu-toggle');
+      var overlay = document.getElementById('admin-overlay');
+      if (!shell || !toggle) return;
+      function closeSidebar() { shell.classList.remove('is-sidebar-open'); }
+      toggle.addEventListener('click', function () { shell.classList.toggle('is-sidebar-open'); });
+      if (overlay) overlay.addEventListener('click', closeSidebar);
+    })();
+  </script>
+</body>
+</html>

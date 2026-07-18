@@ -108,7 +108,7 @@ func (h *Handler) list(c *gin.Context) {
 	}
 	data := &tmpl.AdminMediaData{
 		Site:        h.site,
-		Page:        &tmpl.Page{Title: "附件管理", MenuID: "admin"},
+		Page:        &tmpl.Page{Title: "附件管理", MenuID: "media"},
 		Items:       rows,
 		CurrentPage: page,
 		Pages:       pages,
