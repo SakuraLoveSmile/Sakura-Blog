@@ -2,7 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -11,6 +13,9 @@ const (
 	CommentApproved = "approved"
 	CommentPending  = "pending"
 )
+
+// ErrCommentNotFound 评论不存在（点赞等写操作用）。
+var ErrCommentNotFound = errors.New("comment not found")
 
 // Comment 评论持久化记录，对齐 comments 表字段。
 // 两层嵌套模型（参考 Artalk）：parent_id 指向被回复评论，root_id 指向所属顶级评论；
@@ -29,14 +34,72 @@ type Comment struct {
 	IsAdmin     bool   // 博主回复标识（is_admin 列 0/1）
 	IP          string
 	UA          string
+	Likes       int64 // 点赞计数（IP 去重后累加）
 	CreatedAt   time.Time
 }
 
 // commentCols comments 表全列，各查询共用，保证与 scanComments 的扫描顺序一致。
-const commentCols = `id, page_key, nick, email, link, content_md, content_html, parent_id, root_id, status, is_admin, ip, ua, created_at`
+const commentCols = `id, page_key, nick, email, link, content_md, content_html, parent_id, root_id, status, is_admin, ip, ua, likes, created_at`
+
+// 评论点赞 schema 迁移：不碰 post.go createTables，在首次评论读写时懒执行。
+var (
+	commentReactionsOnce sync.Once
+	commentReactionsErr  error
+)
+
+// ensureCommentReactions 为 comments 补 likes 列，并建 comment_likes 去重表。
+func (s *Store) ensureCommentReactions() error {
+	commentReactionsOnce.Do(func() {
+		// 老库迁移：CREATE TABLE IF NOT EXISTS 不会给已存在的表加列。
+		rows, err := s.db.Query(`PRAGMA table_info(comments)`)
+		if err != nil {
+			commentReactionsErr = fmt.Errorf("pragma table_info(comments): %w", err)
+			return
+		}
+		hasLikes := false
+		for rows.Next() {
+			var cid, notnull, pk int
+			var name, ctype string
+			var dflt sql.NullString
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				rows.Close()
+				commentReactionsErr = fmt.Errorf("scan table_info(comments): %w", err)
+				return
+			}
+			if name == "likes" {
+				hasLikes = true
+			}
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			commentReactionsErr = fmt.Errorf("iterate table_info(comments): %w", err)
+			return
+		}
+		if !hasLikes {
+			if _, err := s.db.Exec(`ALTER TABLE comments ADD COLUMN likes INTEGER NOT NULL DEFAULT 0`); err != nil {
+				commentReactionsErr = fmt.Errorf("alter comments add likes: %w", err)
+				return
+			}
+		}
+		const likesDDL = `CREATE TABLE IF NOT EXISTS comment_likes (
+			comment_id INTEGER NOT NULL,
+			ip_hash    TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(comment_id, ip_hash)
+		)`
+		if _, err := s.db.Exec(likesDDL); err != nil {
+			commentReactionsErr = fmt.Errorf("create comment_likes table: %w", err)
+			return
+		}
+	})
+	return commentReactionsErr
+}
 
 // ListCommentsByPage 返回指定页面的已发布评论，按时间正序（先发的在前，评论区展示序）。
 func (s *Store) ListCommentsByPage(pageKey string) ([]*Comment, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
 	rows, err := s.db.Query(`SELECT `+commentCols+` FROM comments
 		WHERE page_key = ? AND status = ? ORDER BY datetime(created_at) ASC, id ASC`, pageKey, CommentApproved)
 	if err != nil {
@@ -48,6 +111,9 @@ func (s *Store) ListCommentsByPage(pageKey string) ([]*Comment, error) {
 
 // ListRecentComments 返回最新 n 条已发布评论（侧边栏 widget 用），按时间倒序。
 func (s *Store) ListRecentComments(n int) ([]*Comment, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
 	if n < 1 {
 		n = 5
 	}
@@ -62,6 +128,9 @@ func (s *Store) ListRecentComments(n int) ([]*Comment, error) {
 
 // ListComments 管理页分页查询，按时间倒序。status 为空查全部，否则按状态过滤。page 从 1 开始。
 func (s *Store) ListComments(status string, page, size int) ([]*Comment, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
 	if page < 1 {
 		page = 1
 	}
@@ -111,10 +180,13 @@ func (s *Store) CountCommentsByPage(pageKey string) (int, error) {
 
 // GetComment 按 id 查单条评论。未找到返回 nil, nil。
 func (s *Store) GetComment(id int64) (*Comment, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
 	row := s.db.QueryRow(`SELECT `+commentCols+` FROM comments WHERE id = ?`, id)
 	c := &Comment{}
 	var isAdmin int
-	err := row.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.CreatedAt)
+	err := row.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.Likes, &c.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -123,6 +195,76 @@ func (s *Store) GetComment(id int64) (*Comment, error) {
 	}
 	c.IsAdmin = isAdmin != 0
 	return c, nil
+}
+
+// LikeComment 对评论点赞（按 ipHash 去重）。插入成功则 likes+1 并 liked=true；
+// 重复点赞返回当前计数、liked=false。评论不存在返回 ErrCommentNotFound。
+func (s *Store) LikeComment(id int64, ipHash string) (liked bool, likes int64, err error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return false, 0, err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, 0, fmt.Errorf("begin like comment %d: %w", id, err)
+	}
+	defer tx.Rollback()
+
+	err = tx.QueryRow(`SELECT likes FROM comments WHERE id = ?`, id).Scan(&likes)
+	if err == sql.ErrNoRows {
+		return false, 0, ErrCommentNotFound
+	}
+	if err != nil {
+		return false, 0, fmt.Errorf("select comment %d likes: %w", id, err)
+	}
+
+	res, err := tx.Exec(`INSERT OR IGNORE INTO comment_likes (comment_id, ip_hash, created_at) VALUES (?, ?, ?)`,
+		id, ipHash, time.Now())
+	if err != nil {
+		return false, 0, fmt.Errorf("insert comment_likes %d: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, 0, fmt.Errorf("comment_likes rows affected: %w", err)
+	}
+	if n == 0 {
+		// 已点过：不增不减，返回当前计数
+		if err := tx.Commit(); err != nil {
+			return false, 0, fmt.Errorf("commit like comment %d: %w", id, err)
+		}
+		return false, likes, nil
+	}
+
+	if _, err := tx.Exec(`UPDATE comments SET likes = likes + 1 WHERE id = ?`, id); err != nil {
+		return false, 0, fmt.Errorf("incr comment %d likes: %w", id, err)
+	}
+	if err := tx.QueryRow(`SELECT likes FROM comments WHERE id = ?`, id).Scan(&likes); err != nil {
+		return false, 0, fmt.Errorf("reload comment %d likes: %w", id, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, 0, fmt.Errorf("commit like comment %d: %w", id, err)
+	}
+	return true, likes, nil
+}
+
+// HasCommentLike 判断该 ipHash 是否已对评论点过赞。评论不存在返回 ErrCommentNotFound。
+func (s *Store) HasCommentLike(id int64, ipHash string) (bool, int64, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return false, 0, err
+	}
+	var likes int64
+	err := s.db.QueryRow(`SELECT likes FROM comments WHERE id = ?`, id).Scan(&likes)
+	if err == sql.ErrNoRows {
+		return false, 0, ErrCommentNotFound
+	}
+	if err != nil {
+		return false, 0, fmt.Errorf("select comment %d likes: %w", id, err)
+	}
+	var n int
+	err = s.db.QueryRow(`SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND ip_hash = ?`, id, ipHash).Scan(&n)
+	if err != nil {
+		return false, 0, fmt.Errorf("count comment_likes %d: %w", id, err)
+	}
+	return n > 0, likes, nil
 }
 
 // CreateComment 新建评论，返回新记录 id，c.ID 同步回填。
@@ -180,7 +322,7 @@ func scanComments(rows *sql.Rows) ([]*Comment, error) {
 	for rows.Next() {
 		c := &Comment{}
 		var isAdmin int
-		if err := rows.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.Likes, &c.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan comment: %w", err)
 		}
 		c.IsAdmin = isAdmin != 0

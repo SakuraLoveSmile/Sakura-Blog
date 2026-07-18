@@ -212,6 +212,15 @@
 .cmt-body.native .cmt-reply-btn:hover {
   color: var(--theme);
 }
+.cmt-body.native .cmt-actions .cmt-like-btn {
+  margin-left: 12px;
+}
+.cmt-body.native .cmt-like-btn.is-liked,
+.cmt-body.native .cmt-like-btn:disabled {
+  opacity: .55;
+  cursor: default;
+  pointer-events: none;
+}
 
 /* 子评论缩进一层：左侧竖线 + 小一号头像 */
 .cmt-body.native .cmt-children {

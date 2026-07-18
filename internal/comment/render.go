@@ -65,6 +65,7 @@ func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig) *tmpl.CommentItem {
 		Avatar:      AvatarURL(cfg.GravatarMirror, c.Email),
 		TimeAgo:     TimeAgo(c.CreatedAt),
 		Date:        c.CreatedAt.Format("2006-01-02 15:04"),
+		Likes:       c.Likes,
 	}
 }
 

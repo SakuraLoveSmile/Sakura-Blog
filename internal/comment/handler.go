@@ -3,7 +3,11 @@
 package comment
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +25,7 @@ const (
 	maxContentLen = 2000             // 内容最大字符数（rune）
 	maxLinkLen    = 200              // 网站链接最大字符数
 	rateLimit     = 60 * time.Second // IP 限流：同 IP 60 秒 1 条
+	ipHashSalt    = "blog-comment-like-v1"
 )
 
 // Handler 评论公开 API 处理器。
@@ -48,6 +53,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	g := r.Group("/api/comments")
 	g.GET("", h.list)
 	g.POST("", h.create)
+	g.POST("/:id/like", h.like)
 }
 
 // list GET /api/comments?page_key= → 评论树 JSON（顶级 + children 两层，仅已发布）。
@@ -63,6 +69,49 @@ func (h *Handler) list(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": ToViewItems(comments, h.cfg)})
+}
+
+// like POST /api/comments/:id/like → IP 去重点赞，返回 {ok, likes, liked}。
+func (h *Handler) like(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "非法评论 id"})
+		return
+	}
+
+	ip := c.ClientIP()
+	sum := sha256.Sum256([]byte(ip + ipHashSalt))
+	ipHash := hex.EncodeToString(sum[:])
+
+	// 复用 allow(ip)：限流窗口内仍允许「已赞过」回读（liked:false），避免挡住重复点赞约定。
+	if !h.allow(ip) {
+		has, likes, err := h.store.HasCommentLike(id, ipHash)
+		if errors.Is(err, store.ErrCommentNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "评论不存在"})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "点赞失败"})
+			return
+		}
+		if has {
+			c.JSON(http.StatusOK, gin.H{"ok": true, "likes": likes, "liked": false})
+			return
+		}
+		c.JSON(http.StatusTooManyRequests, gin.H{"ok": false, "error": "操作太频繁，请稍后再试"})
+		return
+	}
+
+	liked, likes, err := h.store.LikeComment(id, ipHash)
+	if errors.Is(err, store.ErrCommentNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "评论不存在"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "点赞失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "likes": likes, "liked": liked})
 }
 
 // createReq 评论提交体。Website 是蜜罐字段：表单中隐藏，正常用户留空，机器人填了即丢弃。

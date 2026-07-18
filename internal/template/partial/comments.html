@@ -45,6 +45,7 @@
           <div class="cmt-content">{{.ContentHTML}}</div>
           <div class="cmt-actions">
             <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
+            <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="点赞">赞 <span class="cmt-like-count">{{.Likes}}</span></button>
           </div>
           {{- /* 子评论缩进一层（左侧竖线），与顶级评论行结构一致 */}}
           {{if .Children}}
@@ -61,6 +62,7 @@
                 <div class="cmt-content">{{.ContentHTML}}</div>
                 <div class="cmt-actions">
                   <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
+                  <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="点赞">赞 <span class="cmt-like-count">{{.Likes}}</span></button>
                 </div>
               </div>
             </div>
@@ -73,3 +75,52 @@
     </div>
   </section>
 </div>
+<script>
+(function () {
+  /* 评论点赞：document 事件委托，PJAX 换页不丢；guard 防脚本重复执行导致多重绑定 */
+  function onLikeClick(e) {
+    var btn = e.target.closest && e.target.closest('.cmt-like-btn');
+    if (!btn || btn.disabled || btn.getAttribute('data-liked') === '1') return;
+    e.preventDefault();
+    var id = btn.getAttribute('data-id');
+    if (!id) return;
+    var countEl = btn.querySelector('.cmt-like-count');
+    var prev = countEl ? parseInt(countEl.textContent, 10) || 0 : 0;
+    btn.disabled = true;
+    if (countEl) countEl.textContent = String(prev + 1);
+    fetch('/api/comments/' + id + '/like', { method: 'POST' })
+      .then(function (r) {
+        return r.json().then(function (data) { return { status: r.status, data: data }; });
+      })
+      .then(function (res) {
+        if (!res.data || !res.data.ok) {
+          if (countEl) countEl.textContent = String(prev);
+          btn.disabled = false;
+          return;
+        }
+        if (countEl && typeof res.data.likes === 'number') {
+          countEl.textContent = String(res.data.likes);
+        }
+        if (res.data.liked) {
+          btn.setAttribute('data-liked', '1');
+          btn.classList.add('is-liked');
+        } else {
+          btn.setAttribute('data-liked', '1');
+          btn.classList.add('is-liked');
+          btn.disabled = true;
+        }
+      })
+      .catch(function () {
+        if (countEl) countEl.textContent = String(prev);
+        btn.disabled = false;
+      });
+  }
+  function bind() {
+    if (window.__cmtLikeBound) return;
+    window.__cmtLikeBound = true;
+    document.addEventListener('click', onLikeClick);
+  }
+  bind();
+  document.addEventListener('pjax:complete', bind);
+})();
+</script>
