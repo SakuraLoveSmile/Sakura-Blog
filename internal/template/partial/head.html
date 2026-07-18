@@ -16,6 +16,8 @@
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
   <meta name="description" content="{{if .Page.Excerpt}}{{.Page.Excerpt}}{{else}}{{.Site.Description}}{{end}}">
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
+  <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
   {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
   {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
   <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
