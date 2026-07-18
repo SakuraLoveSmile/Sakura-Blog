@@ -40,3 +40,23 @@ footer:
     - title: Comments
       url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
+
+# 管理后台
+admin:
+  password: ''            # /admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
+
+# 评论系统（自建，参考 Artalk 架构 + Halo 设计语言）
+comments:
+  enabled: true           # 总开关：false 时文章页不渲染评论区、/api/comments 关闭
+  title: 评论             # 评论区标题
+  moderation: false       # true=先审后发（新评论 pending，管理页通过后公开）；false=直接发布
+  admin_email: ''         # 博主邮箱：新评论通知收件人 + 博主身份匹配（该邮箱评论带博主徽章）
+  admin_badge: 博主       # 博主徽章文案
+  gravatar_mirror: https://weavatar.com/avatar  # Gravatar 镜像基址（头像 = {mirror}/{md5(email)}）
+  # 邮件通知（net/smtp）。smtp_host 留空则通知整体关闭；发送失败仅记日志，不影响评论提交
+  notify:
+    smtp_host: ''
+    smtp_port: 465
+    username: ''
+    password: ''
+    from: ''              # 发件人地址，留空用 username

@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/admin"
+	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/post"
 	"blog/internal/store"
@@ -79,8 +80,22 @@ func main() {
 		log.Printf("loaded site config: %s", configPath)
 	}
 
+	// 评论配置兜底：site.yml 缺字段时补默认值（Enabled 以配置为准，不强制开启）
+	if site.Comments.GravatarMirror == "" {
+		site.Comments.GravatarMirror = "https://weavatar.com/avatar"
+	}
+	if site.Comments.AdminBadge == "" {
+		site.Comments.AdminBadge = "博主"
+	}
+	if site.Comments.Title == "" {
+		site.Comments.Title = "评论"
+	}
+
+	// 评论 handler：公开 API 注册 + admin 回复通知复用（Enabled=false 时不注册路由，仅供 admin 用）
+	commentHandler := comment.New(st, &site.Comments, site.Title)
+
 	// admin handler（含 seed 能力）
-	adminHandler := admin.New(st, posts, engine, site)
+	adminHandler := admin.New(st, posts, engine, site, commentHandler)
 
 	// -seed：把 content/posts/*.md 导入 DB 后继续启动
 	if seed {
@@ -91,12 +106,32 @@ func main() {
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}
 
-	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20），所有前台页面渲染前调用。
+	// 搜索索引与 widget 摘要共用的纯文本提取：去标签 + 压缩空白。
+	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
+	whitespaceRe := regexp.MustCompile(`\s+`)
+	stripHTML := func(s string) string {
+		s = htmlTagRe.ReplaceAllString(s, " ")
+		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
+	}
+
+	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 最新评论 5 条），所有前台页面渲染前调用。
 	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
 	fillSidebar := func(data *tmpl.ViewData) {
 		if posts, err := st.ListPublishedPaged(1, 5); err == nil {
 			for _, p := range posts {
 				data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
+			}
+		}
+		if site.Comments.Enabled {
+			if comments, err := st.ListRecentComments(5); err == nil {
+				for _, cm := range comments {
+					data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
+						Nick:    cm.Nick,
+						Excerpt: truncateText(stripHTML(cm.ContentHTML), 40),
+						URL:     cm.PageKey + "#comment-" + strconv.FormatInt(cm.ID, 10),
+						TimeAgo: comment.TimeAgo(cm.CreatedAt),
+					})
+				}
 			}
 		}
 		if counts, err := st.CountByTag(); err == nil {
@@ -117,6 +152,19 @@ func main() {
 		}
 	}
 
+	// fillComments：文章页评论区 SSR 注入（评论树 + 计数）。查询失败留空，评论区降级为空列表。
+	fillComments := func(data *tmpl.ViewData, pageKey string) {
+		if !site.Comments.Enabled {
+			return
+		}
+		if comments, err := st.ListCommentsByPage(pageKey); err == nil {
+			data.Comments = comment.ToViewItems(comments, &site.Comments)
+		}
+		if n, err := st.CountCommentsByPage(pageKey); err == nil {
+			data.CommentCount = n
+		}
+	}
+
 	// render404：渲染自定义 404 页（HTTP 404 + base 布局 Layout=404），NoRoute 与各路由未命中共用。
 	render404 := func(c *gin.Context) {
 		data := &tmpl.ViewData{
@@ -124,7 +172,7 @@ func main() {
 			Page: &tmpl.Page{Title: "页面不存在", Layout: "404", Lang: "zh-CN"},
 		}
 		fillSidebar(data)
-		html, err := engine.Render("base", data)
+		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
 			return
@@ -133,14 +181,6 @@ func main() {
 	}
 
 	r := gin.Default()
-
-	// 搜索索引用的纯文本提取：去标签 + 压缩空白。
-	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
-	whitespaceRe := regexp.MustCompile(`\s+`)
-	stripHTML := func(s string) string {
-		s = htmlTagRe.ReplaceAllString(s, " ")
-		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
-	}
 
 	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
 	// http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。
@@ -157,6 +197,11 @@ func main() {
 
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
+
+	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
+	if site.Comments.Enabled {
+		commentHandler.Register(r)
+	}
 
 	// 未匹配路由一律走自定义 404 页
 	r.NoRoute(render404)
@@ -183,7 +228,8 @@ func main() {
 			}
 			data.TOC = tmpl.ExtractTOC(p.ContentHTML)
 			fillSidebar(data)
-			html, err := engine.Render("base", data)
+			fillComments(data, "/post/"+slug)
+			html, err := engine.Render("layout/base", data)
 			if err != nil {
 				c.String(http.StatusInternalServerError, "render: %v", err)
 				return
@@ -204,8 +250,8 @@ func main() {
 		}
 
 		data := &tmpl.ViewData{
-			Site:    site,
-			Page:    &tmpl.Page{
+			Site: site,
+			Page: &tmpl.Page{
 				Title:   p.Title,
 				Slug:    p.Slug,
 				Layout:  "post",
@@ -220,7 +266,8 @@ func main() {
 
 		data.TOC = tmpl.ExtractTOC(p.HTML)
 		fillSidebar(data)
-		html, err := engine.Render("base", data)
+		fillComments(data, "/post/"+slug)
+		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
 			return
@@ -294,7 +341,7 @@ func main() {
 			Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 		}
 		fillSidebar(data)
-		html, err := engine.Render("base", data)
+		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
 			return
@@ -319,7 +366,7 @@ func main() {
 	// renderBase：渲染 base 布局并写响应（归档/分类/标签页共用）。
 	renderBase := func(c *gin.Context, data *tmpl.ViewData) {
 		fillSidebar(data)
-		html, err := engine.Render("base", data)
+		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
 			return
@@ -469,4 +516,13 @@ func main() {
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("run: %v", err)
 	}
+}
+
+// truncateText 按 rune 截断字符串，超长加省略号（widget 摘要用）。
+func truncateText(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }

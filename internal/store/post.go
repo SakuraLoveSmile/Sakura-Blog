@@ -93,12 +93,35 @@ func (s *Store) createTables() error {
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create tables: %w", err)
 	}
+	// comments 表：自建评论系统（参考 Artalk 的 page_key 定位 + 两层嵌套模型）。
+	// parent_id/root_id 0=顶级评论；status: approved/pending；is_admin: 0/1。
+	const commentDDL = `CREATE TABLE IF NOT EXISTS comments (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		page_key     TEXT NOT NULL DEFAULT '',
+		nick         TEXT NOT NULL DEFAULT '',
+		email        TEXT NOT NULL DEFAULT '',
+		link         TEXT NOT NULL DEFAULT '',
+		content_md   TEXT NOT NULL DEFAULT '',
+		content_html TEXT NOT NULL DEFAULT '',
+		parent_id    INTEGER NOT NULL DEFAULT 0,
+		root_id      INTEGER NOT NULL DEFAULT 0,
+		status       TEXT NOT NULL DEFAULT 'pending',
+		is_admin     INTEGER NOT NULL DEFAULT 0,
+		ip           TEXT NOT NULL DEFAULT '',
+		ua           TEXT NOT NULL DEFAULT '',
+		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_comments_page ON comments(page_key, status);
+	CREATE INDEX IF NOT EXISTS idx_comments_root ON comments(root_id);`
+	if _, err := s.db.Exec(commentDDL); err != nil {
+		return fmt.Errorf("create comments table: %w", err)
+	}
 	// 老库迁移：CREATE TABLE IF NOT EXISTS 不会给已存在的表加列，需检测后 ALTER。
 	return s.migrateColumns()
 }
 
 // migrateColumns 检测 posts 表缺失的列并 ALTER TABLE 补上（兼容老库）。
-// SQLite 的 ADD COLUMN 要求默认值是常量（DEFAULT '' 合法）。
+// SQLite 的 ADD COLUMN 要求默认值是常量（DEFAULT ” 合法）。
 func (s *Store) migrateColumns() error {
 	want := map[string]string{
 		"cover":    `ALTER TABLE posts ADD COLUMN cover TEXT NOT NULL DEFAULT ''`,

@@ -2,7 +2,7 @@
    navbar + div.post-list > article#cats > a.cat（名称 + 文章数 badge）
    由 base.html 按 .Page.Layout == "categories" 分派渲染。
 */ -}}
-{{template "navbar" .}}
+{{template "partial/navbar" .}}
 <div class="post-list">
   <article id="cats">
     {{range .Cats}}

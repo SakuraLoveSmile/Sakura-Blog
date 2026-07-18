@@ -2,7 +2,7 @@
    navbar + div.post-list > article#tags > a.tag（标签云，按计数 DESC 由 handler 排序）
    由 base.html 按 .Page.Layout == "tags" 分派渲染。
 */ -}}
-{{template "navbar" .}}
+{{template "partial/navbar" .}}
 <div class="post-list">
   <article id="tags">
     {{range .TagItems}}

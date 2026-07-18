@@ -1,9 +1,9 @@
 {{- /* base.html: 主布局骨架，对应 Stellar layout/layout.ejs
-   渲染入口：{{template "base" .}}，文章正文通过 {{template "content" .}} 嵌入。
+   渲染入口：{{template "layout/base" .}}，文章正文通过 {{template "partial/content" .}} 嵌入。
 */ -}}
 <!DOCTYPE html>
 <html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}">
-{{template "head" .}}
+{{template "partial/head" .}}
 <body>
   {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
   <div class="sitebg"><div class="siteblur"></div></div>
@@ -15,18 +15,19 @@
     <aside class="l_left">
       <div class="sidebg"></div>
       <div class="leftbar-container">
-        {{template "sidebar" .}}
+        {{template "partial/sidebar" .}}
       </div>
     </aside>
 
     <div class="l_main" id="main">
-      {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post） */}}
-      {{if eq .Page.Layout "index"}}{{template "index" .}}{{else if eq .Page.Layout "archive"}}{{template "archive" .}}{{else if eq .Page.Layout "categories"}}{{template "categories" .}}{{else if eq .Page.Layout "tags"}}{{template "tags" .}}{{else if eq .Page.Layout "404"}}{{template "error404" .}}{{else}}{{template "content" .}}{{end}}
+      {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
+         文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
     {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
-    <aside class="l_right">{{template "rightbar" .}}</aside>
+    <aside class="l_right">{{template "partial/rightbar" .}}</aside>
 
     {{- /* float-panel FAB speed dial：主按钮点击后子按钮向上展开（grid 0fr→1fr，同 TOC collapse 技术）。
        子按钮：主题切换（所有尺寸）+ rightbar-toggle（≤1180px 显示）+ leftbar-toggle（≤667px 显示），
@@ -78,6 +79,8 @@
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
   <script src="{{url_for "/assets/js/search/local-search.js"}}" defer></script>
+  {{- /* 自建评论区交互：全站加载（PJAX 换页不重执行 script，事件委托 + 存在性检查，非文章页零副作用） */}}
+  <script src="{{url_for "/assets/js/comments.js"}}" defer></script>
   {{- /* PJAX 无刷新导航：放最后，劫持站内链接点击与前进后退；交换 .l_main 并就地更新左右栏。
      前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。 */}}
   <script src="{{url_for "/assets/js/plugins/pjax.js"}}" defer></script>

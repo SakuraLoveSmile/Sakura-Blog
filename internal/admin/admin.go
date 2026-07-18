@@ -4,38 +4,53 @@ package admin
 
 import (
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/comment"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
 
-// Handler 管理后台请求处理器，持有 store、post service、模板引擎、站点配置。
+// Handler 管理后台请求处理器，持有 store、post service、模板引擎、站点配置、评论 handler。
 type Handler struct {
-	store  *store.Store
-	posts  *post.Service
-	engine *tmpl.Engine
-	site   *tmpl.Site
+	store        *store.Store
+	posts        *post.Service
+	engine       *tmpl.Engine
+	site         *tmpl.Site
+	comments     *comment.Handler // 管理员回复时复用其通知管道（被回复者邮件通知）
+	loginLimiter *ipLimiter       // 登录失败 IP 限流（防爆破）
 }
 
-// New 创建 admin handler。
-func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *tmpl.Site) *Handler {
-	return &Handler{store: s, posts: posts, engine: engine, site: site}
+// New 创建 admin handler。comments 可为 nil（评论功能关闭时管理员回复不触发通知）。
+func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *tmpl.Site, comments *comment.Handler) *Handler {
+	return &Handler{store: s, posts: posts, engine: engine, site: site, comments: comments, loginLimiter: newIPLimiter()}
 }
 
-// Register 把 admin 路由挂到 r 上。
+// Register 把 admin 路由挂到 r 上。登录/登出公开，其余走 authRequired 密码 gate。
 func (h *Handler) Register(r *gin.Engine) {
 	g := r.Group("/admin")
-	g.GET("", h.list) // 文章列表
-	g.GET("/", h.list)
-	g.GET("/new", h.editForm)         // 新建表单
-	g.GET("/edit/:slug", h.editForm)  // 编辑表单
-	g.POST("/save", h.save)           // 创建/更新
-	g.POST("/delete/:slug", h.delete) // 删除
+	g.GET("/login", h.loginForm) // 登录页
+	g.POST("/login", h.login)    // 登录提交
+	g.POST("/logout", h.logout)  // 退出登录
+
+	authed := g.Group("", h.authRequired())
+	authed.GET("", h.list) // 文章列表
+	authed.GET("/", h.list)
+	authed.GET("/new", h.editForm)         // 新建表单
+	authed.GET("/edit/:slug", h.editForm)  // 编辑表单
+	authed.POST("/save", h.save)           // 创建/更新
+	authed.POST("/delete/:slug", h.delete) // 删除
+
+	authed.GET("/comments", h.commentList)                 // 评论管理（筛选 + 分页）
+	authed.POST("/comments/:id/approve", h.commentApprove) // 审核通过
+	authed.POST("/comments/:id/delete", h.commentDelete)   // 删除（级联子评论）
+	authed.POST("/comments/reply", h.commentReply)         // 管理员回复
 }
 
 // list 渲染文章列表页。
@@ -61,7 +76,7 @@ func (h *Handler) list(c *gin.Context) {
 		Page:  &tmpl.Page{Title: "文章管理", MenuID: "admin"},
 		Admin: &tmpl.AdminData{Posts: rows},
 	}
-	h.render(c, "list", data)
+	h.render(c, "admin/list", data)
 }
 
 // editForm 渲染新建/编辑表单。:slug 存在为编辑，否则为新建。
@@ -94,7 +109,7 @@ func (h *Handler) editForm(c *gin.Context) {
 		Page:  &tmpl.Page{Title: ternary(isEdit, "编辑文章", "新建文章"), MenuID: "admin"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: isEdit},
 	}
-	h.render(c, "edit", data)
+	h.render(c, "admin/edit", data)
 }
 
 // save 处理表单提交：slug 存在则更新，否则创建。服务端用 goldmark 渲染 content_html。
@@ -192,6 +207,171 @@ func (h *Handler) delete(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin")
 }
 
+// commentList 评论管理页：状态筛选（all/pending/approved）+ 分页（20 条/页）。
+func (h *Handler) commentList(c *gin.Context) {
+	filter := c.DefaultQuery("status", "all")
+	status := ""
+	switch filter {
+	case store.CommentPending, store.CommentApproved:
+		status = filter
+	default:
+		filter = "all"
+	}
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	const size = 20
+	total, err := h.store.CountComments(status)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count comments: %v", err)
+		return
+	}
+	totalPages := (total + size - 1) / size
+	if totalPages > 0 && page > totalPages {
+		page = totalPages
+	}
+	comments, err := h.store.ListComments(status, page, size)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list comments: %v", err)
+		return
+	}
+	rows := make([]*tmpl.AdminCommentRow, 0, len(comments))
+	for _, cm := range comments {
+		row := &tmpl.AdminCommentRow{
+			ID:      cm.ID,
+			PageKey: cm.PageKey,
+			Nick:    cm.Nick,
+			Email:   cm.Email,
+			Excerpt: truncateText(stripHTML(cm.ContentHTML), 80),
+			Status:  cm.Status,
+			IsAdmin: cm.IsAdmin,
+			Avatar:  comment.AvatarURL(h.site.Comments.GravatarMirror, cm.Email),
+			Date:    cm.CreatedAt.Format("2006-01-02 15:04"),
+		}
+		// 被回复者昵称（子评论时）：逐条查询，20 条/页 SQLite 无压力
+		if cm.ParentID != 0 {
+			if parent, err := h.store.GetComment(cm.ParentID); err == nil && parent != nil {
+				row.ReplyNick = parent.Nick
+			}
+		}
+		rows = append(rows, row)
+	}
+	pages := make([]int, totalPages)
+	for i := range pages {
+		pages[i] = i + 1
+	}
+	data := &tmpl.ViewData{
+		Site: h.site,
+		Page: &tmpl.Page{Title: "评论管理", MenuID: "admin"},
+		Admin: &tmpl.AdminData{
+			Comments:      rows,
+			CommentFilter: filter,
+			CommentPage:   page,
+			CommentPages:  pages,
+		},
+	}
+	h.render(c, "admin/comments", data)
+}
+
+// commentApprove 审核通过（pending → approved）。
+func (h *Handler) commentApprove(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "invalid comment id")
+		return
+	}
+	if err := h.store.UpdateCommentStatus(id, store.CommentApproved); err != nil {
+		c.String(http.StatusInternalServerError, "approve: %v", err)
+		return
+	}
+	c.Redirect(http.StatusFound, "/admin/comments")
+}
+
+// commentDelete 删除评论（级联删除其所有子评论）。
+func (h *Handler) commentDelete(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "invalid comment id")
+		return
+	}
+	if err := h.store.DeleteCommentCascade(id); err != nil {
+		c.String(http.StatusInternalServerError, "delete: %v", err)
+		return
+	}
+	c.Redirect(http.StatusFound, "/admin/comments")
+}
+
+// commentReply 管理员以博主身份回复：is_admin=1、直接 approved、触发被回复者邮件通知。
+func (h *Handler) commentReply(c *gin.Context) {
+	parentID, _ := strconv.ParseInt(c.PostForm("parent_id"), 10, 64)
+	content := strings.TrimSpace(c.PostForm("content"))
+	if parentID == 0 || content == "" {
+		c.String(http.StatusBadRequest, "parent_id 与 content 必填")
+		return
+	}
+	parent, err := h.store.GetComment(parentID)
+	if err != nil || parent == nil {
+		c.String(http.StatusBadRequest, "被回复的评论不存在")
+		return
+	}
+	// 两层嵌套：回复子评论时挂到同一根下
+	rootID := parent.ID
+	if parent.RootID != 0 {
+		rootID = parent.RootID
+	}
+	html, err := comment.Render(content)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "render: %v", err)
+		return
+	}
+	nick := h.site.Comments.AdminBadge
+	if nick == "" {
+		nick = "博主"
+	}
+	cm := &store.Comment{
+		PageKey:     parent.PageKey,
+		Nick:        nick,
+		Email:       h.site.Comments.AdminEmail,
+		ContentMD:   content,
+		ContentHTML: html,
+		ParentID:    parentID,
+		RootID:      rootID,
+		Status:      store.CommentApproved,
+		IsAdmin:     true,
+		IP:          c.ClientIP(),
+		UA:          c.Request.UserAgent(),
+	}
+	if _, err := h.store.CreateComment(cm); err != nil {
+		c.String(http.StatusInternalServerError, "reply: %v", err)
+		return
+	}
+	// 触发被回复者通知（comment.Handler 内部规则：approved、有邮箱、非自回、非博主）
+	if h.comments != nil {
+		h.comments.NotifyReply(cm, parent)
+	}
+	c.Redirect(http.StatusFound, "/admin/comments")
+}
+
+// stripHTML / truncateText：评论摘要纯文本提取（与 main.go 搜索索引同款逻辑）。
+var (
+	htmlTagRe    = regexp.MustCompile(`<[^>]+>`)
+	whitespaceRe = regexp.MustCompile(`\s+`)
+)
+
+func stripHTML(s string) string {
+	s = htmlTagRe.ReplaceAllString(s, " ")
+	return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
+}
+
+func truncateText(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
+}
+
 // normalizeTags 规范化标签输入：逗号拆分、逐项 trim、去空去重（保留首次出现顺序），
 // 重新以 "," 连接。与 parser.parseList 语义一致，保证存储值规范，
 // 使 ListByTag 的逗号包裹 LIKE 与 CountByTag 的拆分计数行为一致。
@@ -226,7 +406,7 @@ func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt
 		Page:  &tmpl.Page{Title: "编辑文章", MenuID: "admin"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: origSlug != "", SaveError: errMsg},
 	}
-	h.render(c, "edit", data)
+	h.render(c, "admin/edit", data)
 }
 
 // render 渲染指定 admin 模板并写入响应。

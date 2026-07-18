@@ -23,6 +23,9 @@
   {{- /* Stellar 主 CSS（编译产物）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=demo2">
 
+  {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}">
+
   {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
   <style>
     html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }

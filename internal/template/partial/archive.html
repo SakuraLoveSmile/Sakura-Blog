@@ -2,7 +2,7 @@
    navbar + div.post-list.archives（按年份分组：archive-header 年份 + archive-list 文章行）
    由 base.html 按 .Page.Layout == "archive" 分派渲染。
 */ -}}
-{{template "navbar" .}}
+{{template "partial/navbar" .}}
 <div class="post-list archives">
   {{range .Archives}}
   <article id="archive">

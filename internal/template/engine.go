@@ -9,8 +9,11 @@ import (
 	"strings"
 )
 
-// Engine 模板渲染引擎。把 layout/ 和 partial/ 下所有 .html 解析进同一个
-// template.Template 集合，模板名取文件基名（去 .html），供 {{template "name"}} 嵌套。
+// Engine 模板渲染引擎。把各子目录下所有 .html 解析进同一个
+// template.Template 集合，模板名取相对 root 的路径（去 .html，分隔符 /），
+// 如 layout/base、partial/comments、admin/comments，供 {{template "name"}} 嵌套。
+// 注意：必须用路径前缀命名——不同子目录允许同名文件（如前台与管理页评论区），
+// 若只用基名会互相覆盖（曾为 admin/comments 被 partial/comments 覆盖的 bug）。
 type Engine struct {
 	tpl *template.Template
 }
@@ -40,9 +43,12 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 	}
 
 	for _, f := range files {
-		// 模板名取文件基名（去 .html）。各子目录文件名已保证不冲突
-		// （layout/base、partial/head、admin/list 等基名唯一）。
-		name := strings.TrimSuffix(filepath.Base(f), ".html")
+		// 模板名取相对 root 的路径（去 .html，分隔符统一 /），子目录做前缀防冲突。
+		rel, err := filepath.Rel(root, f)
+		if err != nil {
+			return nil, fmt.Errorf("rel path %s: %w", f, err)
+		}
+		name := strings.TrimSuffix(filepath.ToSlash(rel), ".html")
 		b, err := os.ReadFile(f)
 		if err != nil {
 			return nil, fmt.Errorf("read %s: %w", f, err)

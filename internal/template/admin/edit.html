@@ -13,12 +13,16 @@
   <!-- EasyMDE 编辑器样式 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.css">
   <style>
+    body>.sitebg { pointer-events: none !important; } /* 全屏 fixed 遮罩层会拦截所有点击，admin 页无交互职责直接禁事件 */
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
     .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
     .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
     .admin-header a { color: var(--text-p3); font-size: 14px; text-decoration: none; }
     .admin-header a:hover { color: var(--text-p1); }
+    .admin-header form { display: inline; margin-left: 16px; }
+    .admin-header form button { background: none; border: none; padding: 0; color: var(--text-p3); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .admin-header form button:hover { color: var(--text-p1); }
 
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-p3); margin-bottom: 6px; font-weight: 500; }
@@ -50,7 +54,11 @@
   <div class="admin-wrap">
     <div class="admin-header">
       <h1>{{if .Admin.IsEdit}}编辑文章{{else}}新建文章{{end}}</h1>
-      <a href="/admin">← 返回列表</a>
+      <div>
+        <a href="/admin/comments" style="margin-right:16px">评论管理</a>
+        <a href="/admin">← 返回列表</a>
+        <form method="post" action="/admin/logout"><button type="submit">退出</button></form>
+      </div>
     </div>
 
     {{if .Admin.SaveError}}<p class="save-error">{{.Admin.SaveError}}</p>{{end}}

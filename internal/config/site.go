@@ -50,5 +50,12 @@ func DefaultSite() *tmpl.Site {
 				{Title: "Comments", URL: "#", Icon: `<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">`},
 			},
 		},
+		Comments: tmpl.CommentsConfig{
+			Enabled:        true,
+			Title:          "评论",
+			Moderation:     false, // 默认直接发布；true=先审后发
+			AdminBadge:     "博主",
+			GravatarMirror: "https://weavatar.com/avatar",
+		},
 	}
 }

@@ -1,0 +1,258 @@
+/* comments.css: 自建评论区样式（Halo 设计语言，颜色全部映射 Stellar 变量，深色模式零额外代码）。
+   圆角阶梯：输入框/按钮 8px、badge 等小元素 4px；边框走 --block-border（近 Halo #EAECF0）。
+   外壳 .cmt-title/.cmt-body 样式由 main.css 提供，此处只负责 .cmt-body.native 内部。 */
+
+/* ===== 编辑器（Halo：编辑器在上） ===== */
+.cmt-body.native .cmt-editor {
+  margin-bottom: 20px;
+}
+.cmt-body.native .cmt-reply-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-a2, rgba(128, 128, 128, .08));
+  font-size: 13px;
+  color: var(--text-p2);
+}
+.cmt-body.native .cmt-reply-tip b {
+  color: var(--text-p1);
+}
+.cmt-body.native .cmt-reply-cancel {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-p3);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.cmt-body.native .cmt-reply-cancel:hover {
+  color: var(--theme);
+}
+.cmt-body.native .cmt-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--block-border, rgba(128, 128, 128, .25));
+  border-radius: 8px;
+  background: var(--card, #fff);
+  color: var(--text-p1);
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 88px;
+  transition: border-color .2s;
+}
+.cmt-body.native .cmt-textarea:focus {
+  outline: none;
+  border-color: var(--theme);
+}
+.cmt-body.native .cmt-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.cmt-body.native .cmt-input {
+  padding: 8px 12px;
+  border: 1px solid var(--block-border, rgba(128, 128, 128, .25));
+  border-radius: 8px;
+  background: var(--card, #fff);
+  color: var(--text-p1);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color .2s;
+}
+.cmt-body.native .cmt-input:focus {
+  outline: none;
+  border-color: var(--theme);
+}
+/* 蜜罐字段：视觉隐藏但留在 DOM（display:none 易被机器人识别跳过） */
+.cmt-body.native .cmt-hp {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.cmt-body.native .cmt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.cmt-body.native .cmt-tip {
+  font-size: 12px;
+  color: var(--text-p3);
+}
+.cmt-body.native .cmt-submit {
+  flex-shrink: 0;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 8px;
+  background: var(--theme);
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.cmt-body.native .cmt-submit:hover {
+  opacity: .85;
+}
+.cmt-body.native .cmt-submit:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+/* ===== 列表 ===== */
+.cmt-body.native .cmt-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-p1);
+  margin-bottom: 4px;
+}
+.cmt-body.native .cmt-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--block-border, rgba(128, 128, 128, .15));
+}
+.cmt-body.native .cmt-list > .cmt-item:last-child {
+  border-bottom: none;
+}
+.cmt-body.native .cmt-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bg-a2, rgba(128, 128, 128, .1));
+}
+.cmt-body.native .cmt-main {
+  flex: 1;
+  min-width: 0;
+}
+.cmt-body.native .cmt-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cmt-body.native .cmt-nick {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-p1);
+  text-decoration: none;
+}
+.cmt-body.native a.cmt-nick:hover {
+  color: var(--theme);
+}
+.cmt-body.native .cmt-badge {
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--theme);
+  background: var(--bg-a2, rgba(128, 128, 128, .12));
+  background: color-mix(in srgb, var(--theme) 12%, transparent);
+}
+.cmt-body.native .cmt-time {
+  font-size: 12px;
+  color: var(--text-p3);
+}
+.cmt-body.native .cmt-content {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-p1);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.cmt-body.native .cmt-content p {
+  margin: 0 0 8px;
+}
+.cmt-body.native .cmt-content p:last-child {
+  margin-bottom: 0;
+}
+.cmt-body.native .cmt-content pre {
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+}
+.cmt-body.native .cmt-content code {
+  font-size: 13px;
+}
+.cmt-body.native .cmt-content img {
+  max-width: 100%;
+}
+.cmt-body.native .cmt-content blockquote {
+  margin: 0;
+  padding: 0 12px;
+  border-left: 3px solid var(--block-border, rgba(128, 128, 128, .3));
+  color: var(--text-p2);
+}
+.cmt-body.native .cmt-actions {
+  margin-top: 6px;
+}
+.cmt-body.native .cmt-reply-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text-p3);
+  font-family: inherit;
+  cursor: pointer;
+}
+.cmt-body.native .cmt-reply-btn:hover {
+  color: var(--theme);
+}
+
+/* 子评论缩进一层：左侧竖线 + 小一号头像 */
+.cmt-body.native .cmt-children {
+  margin-top: 8px;
+  padding-left: 16px;
+  border-left: 2px solid var(--block-border, rgba(128, 128, 128, .15));
+}
+.cmt-body.native .cmt-children .cmt-item {
+  padding: 12px 0 4px;
+  border-bottom: none;
+}
+.cmt-body.native .cmt-children .cmt-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+/* 提交反馈浮层 */
+.cmt-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  z-index: 9999;
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: var(--card, #fff);
+  color: var(--text-p1);
+  font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .16);
+  opacity: 0;
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+}
+.cmt-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* 移动端：三列输入变单列 */
+@media screen and (max-width: 667px) {
+  .cmt-body.native .cmt-inputs {
+    grid-template-columns: 1fr;
+  }
+}

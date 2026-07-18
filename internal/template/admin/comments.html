@@ -1,0 +1,156 @@
+{{- /* admin/comments.html: 评论管理页（Halo Console 风格）。
+   独立 layout 不套 base.html；引用 main.css 复用深色变量，样式自写（对齐 admin/list.html 先例）。
+   卡片式列表行：圆头像 + 昵称/邮箱 + 内容摘要 + 所在文章链接 + 状态 pill + 时间 + 操作（通过/回复/删除）。
+   顶部状态筛选（全部/待审核/已发布）+ 底部 20 条/页分页。批量操作（checkbox）归后续阶段。*/ -}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Page.Title}} - {{.Site.Title}} 管理后台</title>
+  <link rel="stylesheet" href="/assets/css/main.css?v=demo3">
+  <style>
+    body>.sitebg { pointer-events: none !important; } /* 全屏 fixed 遮罩层会拦截所有点击，admin 页无交互职责直接禁事件 */
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
+    .admin-header nav a { color: var(--text-p3); font-size: 14px; text-decoration: none; margin-left: 16px; }
+    .admin-header nav a:hover { color: var(--text-p1); }
+    .admin-header nav form { display: inline; margin-left: 16px; }
+    .admin-header nav form button { background: none; border: none; padding: 0; color: var(--text-p3); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .admin-header nav form button:hover { color: var(--text-p1); }
+
+    /* 筛选 tabs */
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .filter-tabs a { padding: 6px 16px; border-radius: 8px; font-size: 13px; color: var(--text-p2); text-decoration: none; background: var(--bg-a2, rgba(128,128,128,.08)); }
+    .filter-tabs a:hover { color: var(--text-p1); }
+    .filter-tabs a.active { background: var(--theme); color: #fff; }
+
+    /* 卡片式列表行（Halo 语言：卡片底 8px 圆角 + 细边框） */
+    .cmt-card { display: flex; gap: 12px; padding: 16px; margin-bottom: 12px; background: var(--card); border: 1px solid var(--bg-a3, rgba(128,128,128,.12)); border-radius: 8px; }
+    .cmt-card .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: var(--bg-a2, rgba(128,128,128,.1)); }
+    .cmt-card .body { flex: 1; min-width: 0; }
+    .cmt-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .cmt-head .nick { font-size: 14px; font-weight: 600; color: var(--text-p1); }
+    .cmt-head .email { font-size: 12px; color: var(--text-p3); }
+    .cmt-head .time { font-size: 12px; color: var(--text-p3); margin-left: auto; }
+    .pill { padding: 1px 8px; border-radius: 4px; font-size: 12px; }
+    .pill.approved { background: rgba(61,197,80,.16); color: #3DC550; }
+    .pill.pending { background: rgba(250,100,0,.16); color: #FA6400; }
+    .pill.admin { background: var(--bg-a2, rgba(128,128,128,.12)); background: color-mix(in srgb, var(--theme) 12%, transparent); color: var(--theme); }
+    .cmt-excerpt { margin-top: 6px; font-size: 14px; line-height: 1.6; color: var(--text-p1); word-wrap: break-word; }
+    .cmt-foot { margin-top: 6px; font-size: 12px; color: var(--text-p3); display: flex; gap: 12px; flex-wrap: wrap; }
+    .cmt-foot a { color: var(--text-p3); text-decoration: none; }
+    .cmt-foot a:hover { color: var(--theme); }
+    .cmt-ops { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; align-items: flex-end; }
+    .cmt-ops form { margin: 0; }
+    .cmt-ops button { background: none; border: none; padding: 0; font-size: 13px; color: var(--text-p3); cursor: pointer; font-family: inherit; }
+    .cmt-ops button:hover { color: var(--theme); }
+    .cmt-ops .danger:hover { color: #F44336; }
+
+    /* 内联回复表单（点击"回复"展开） */
+    .reply-form { margin: -4px 0 12px 52px; padding: 12px; background: var(--card); border: 1px solid var(--bg-a3, rgba(128,128,128,.12)); border-radius: 8px; }
+    .reply-form textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--bg-a3, rgba(128,128,128,.2)); border-radius: 8px; background: var(--bg-a1, rgba(128,128,128,.04)); color: var(--text-p1); font-size: 14px; font-family: inherit; resize: vertical; }
+    .reply-form textarea:focus { outline: none; border-color: var(--theme); }
+    .reply-form .ops { margin-top: 8px; display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
+    .reply-form button[type=submit] { padding: 6px 18px; border: none; border-radius: 8px; background: var(--theme); color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .reply-form .cancel { background: none; border: none; color: var(--text-p3); font-size: 13px; cursor: pointer; font-family: inherit; }
+
+    /* 分页 */
+    .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 20px; }
+    .pagination a { min-width: 32px; text-align: center; padding: 6px 10px; border-radius: 8px; font-size: 13px; color: var(--text-p2); text-decoration: none; background: var(--card); border: 1px solid var(--bg-a3, rgba(128,128,128,.12)); box-sizing: border-box; }
+    .pagination a.active { background: var(--theme); color: #fff; border-color: var(--theme); }
+
+    .empty { text-align: center; padding: 48px 0; color: var(--text-p3); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="sitebg"><div class="siteblur"></div></div>
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <h1>评论管理</h1>
+      <nav>
+        <a href="/admin">文章管理</a>
+        <a href="/" target="_blank">查看前台</a>
+        <form method="post" action="/admin/logout"><button type="submit">退出</button></form>
+      </nav>
+    </div>
+
+    <div class="filter-tabs">
+      <a href="/admin/comments?status=all" class="{{if eq .Admin.CommentFilter "all"}}active{{end}}">全部</a>
+      <a href="/admin/comments?status=pending" class="{{if eq .Admin.CommentFilter "pending"}}active{{end}}">待审核</a>
+      <a href="/admin/comments?status=approved" class="{{if eq .Admin.CommentFilter "approved"}}active{{end}}">已发布</a>
+    </div>
+
+    {{if .Admin.Comments}}
+      {{range .Admin.Comments}}
+      <div class="cmt-card">
+        <img class="avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
+        <div class="body">
+          <div class="cmt-head">
+            <span class="nick">{{.Nick}}</span>
+            <span class="email">{{.Email}}</span>
+            {{if .IsAdmin}}<span class="pill admin">{{$.Site.Comments.AdminBadge}}</span>{{end}}
+            <span class="pill {{.Status}}">{{if eq .Status "pending"}}待审核{{else}}已发布{{end}}</span>
+            <span class="time">{{.Date}}</span>
+          </div>
+          <div class="cmt-excerpt">{{.Excerpt}}</div>
+          <div class="cmt-foot">
+            <a href="{{.PageKey}}#comment-{{.ID}}" target="_blank" rel="noopener">{{.PageKey}}</a>
+            {{if .ReplyNick}}<span>回复 @{{.ReplyNick}}</span>{{end}}
+          </div>
+        </div>
+        <div class="cmt-ops">
+          {{if eq .Status "pending"}}
+          <form method="post" action="/admin/comments/{{.ID}}/approve"><button type="submit">通过</button></form>
+          {{end}}
+          <button type="button" class="reply-toggle" data-id="{{.ID}}">回复</button>
+          <form method="post" action="/admin/comments/{{.ID}}/delete" onsubmit="return confirm('确认删除该评论？其子评论将一并删除');"><button type="submit" class="danger">删除</button></form>
+        </div>
+      </div>
+      <div class="reply-form" id="reply-form-{{.ID}}" style="display:none">
+        <form method="post" action="/admin/comments/reply">
+          <input type="hidden" name="parent_id" value="{{.ID}}">
+          <textarea name="content" rows="3" placeholder="以博主身份回复 @{{.Nick}}，支持 Markdown" required></textarea>
+          <div class="ops">
+            <button type="button" class="cancel" data-id="{{.ID}}">取消</button>
+            <button type="submit">发送回复</button>
+          </div>
+        </form>
+      </div>
+      {{end}}
+    {{else}}
+      <div class="empty">暂无评论{{if eq .Admin.CommentFilter "pending"}}待审核{{end}}</div>
+    {{end}}
+
+    {{if .Admin.CommentPages}}
+    <div class="pagination">
+      {{range .Admin.CommentPages}}
+      <a href="/admin/comments?status={{$.Admin.CommentFilter}}&page={{.}}" class="{{if eq . $.Admin.CommentPage}}active{{end}}">{{.}}</a>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+
+  <script>
+    // 内联回复表单展开/收起（事件委托）
+    document.addEventListener('click', function (e) {
+      var toggle = e.target.closest('.reply-toggle');
+      if (toggle) {
+        var form = document.getElementById('reply-form-' + toggle.getAttribute('data-id'));
+        if (form) {
+          form.style.display = form.style.display === 'none' ? '' : 'none';
+          if (form.style.display !== 'none') form.querySelector('textarea').focus();
+        }
+        return;
+      }
+      var cancel = e.target.closest('.reply-form .cancel');
+      if (cancel) {
+        var form = document.getElementById('reply-form-' + cancel.getAttribute('data-id'));
+        if (form) form.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
