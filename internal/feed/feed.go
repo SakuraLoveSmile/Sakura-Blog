@@ -55,6 +55,13 @@ func (h *Handler) postURL(base, slug string) string {
 	return base + "/post/" + slug
 }
 
+func feedBody(p *store.Post) string {
+	if p.IsPasswordProtected() {
+		return "<p>本文受密码保护</p>"
+	}
+	return p.ContentHTML
+}
+
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
 func (h *Handler) atom(c *gin.Context) {
 	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
@@ -88,7 +95,7 @@ func (h *Handler) atom(c *gin.Context) {
 			ID:        link,
 			Updated:   upd,
 			Published: pub,
-			Content:   atomContent{Type: "html", Body: p.ContentHTML},
+			Content:   atomContent{Type: "html", Body: feedBody(p)},
 		})
 	}
 
@@ -130,7 +137,7 @@ func (h *Handler) jsonFeed(c *gin.Context) {
 			URL:           link,
 			Title:         p.Title,
 			DatePublished: p.CreatedAt.UTC().Format(time.RFC3339),
-			ContentHTML:   p.ContentHTML,
+			ContentHTML:   feedBody(p),
 		})
 	}
 
@@ -201,7 +208,7 @@ func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*s
 		items = append(items, rssItem{
 			Title:       p.Title,
 			Link:        link,
-			Description: p.ContentHTML,
+			Description: feedBody(p),
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			Guid:        link,
 		})

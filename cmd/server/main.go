@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -388,6 +389,42 @@ func main() {
 	}
 	mediaHandler.Register(r, admin.AuthMiddleware(site))
 
+	// 文章密码解锁
+	r.POST("/post/:slug/unlock", func(c *gin.Context) {
+		slug := c.Param("slug")
+		p, err := st.GetPublishedBySlug(slug)
+		if err != nil || p == nil || !p.IsPasswordProtected() {
+			c.Redirect(http.StatusFound, "/post/"+slug)
+			return
+		}
+		input := c.PostForm("password")
+		if subtle.ConstantTimeCompare([]byte(input), []byte(p.Password)) != 1 {
+			data := &tmpl.ViewData{
+				Site: site,
+				Page: &tmpl.Page{
+					Title:       p.Title,
+					Slug:        p.Slug,
+					Layout:      "post-password",
+					Lang:        "zh-CN",
+					MenuID:      "post",
+					Description: "密码错误，请重试",
+				},
+			}
+			fillSidebar(data)
+			fillSEO(data, c)
+			html, err := engine.Render("layout/base", data)
+			if err != nil {
+				c.String(http.StatusInternalServerError, "render: %v", err)
+				return
+			}
+			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+			return
+		}
+		expiry := time.Now().Add(postPWCookieTTL).Unix()
+		c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", false, true)
+		c.Redirect(http.StatusFound, "/post/"+slug)
+	})
+
 	// 独立页面 /pages/:slug + /admin/pages CMS
 	pageHandler, err := page.New(st, posts, engine, site)
 	if err != nil {
@@ -421,6 +458,31 @@ func main() {
 
 		// 优先查 DB
 		if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil {
+			// 密码门：未解锁则渲染口令表单（不增加阅读量、不泄漏正文）
+			if p.IsPasswordProtected() {
+				cookie, _ := c.Cookie(postPWCookieName(slug))
+				if !validPostPWCookie(cookie, slug, p.Password) {
+					data := &tmpl.ViewData{
+						Site: site,
+						Page: &tmpl.Page{
+							Title:  p.Title,
+							Slug:   p.Slug,
+							Layout: "post-password",
+							Lang:   "zh-CN",
+							MenuID: "post",
+						},
+					}
+					fillSidebar(data)
+					fillSEO(data, c)
+					html, err := engine.Render("layout/base", data)
+					if err != nil {
+						c.String(http.StatusInternalServerError, "render: %v", err)
+						return
+					}
+					c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+					return
+				}
+			}
 			// 阅读量自增：每次访问 /post/:slug 计数 +1。失败仅记日志，不中断渲染。
 			if err := st.IncrViews(slug); err != nil {
 				log.Printf("incr views for %s: %v", slug, err)
@@ -462,6 +524,7 @@ func main() {
 						Excerpt: rp.Excerpt,
 						Cover:   rp.Cover,
 						Date:    rp.CreatedAt,
+						Pinned:  rp.Pinned,
 					})
 				}
 				data.RelatedPosts = cards
@@ -550,9 +613,13 @@ func main() {
 		}
 		items := make([]searchItem, 0, len(posts))
 		for _, p := range posts {
+			content := stripHTML(p.ContentHTML)
+			if p.IsPasswordProtected() {
+				content = "" // 受保护文章不泄漏正文
+			}
 			items = append(items, searchItem{
 				Title:   p.Title,
-				Content: stripHTML(p.ContentHTML),
+				Content: content,
 				Path:    "/post/" + p.Slug,
 			})
 		}
@@ -588,6 +655,7 @@ func main() {
 				Excerpt: p.Excerpt,
 				Cover:   p.Cover,
 				Date:    p.CreatedAt,
+				Pinned:  p.Pinned,
 			})
 		}
 		pages := make([]int, totalPages)
@@ -646,6 +714,7 @@ func main() {
 				Excerpt: p.Excerpt,
 				Cover:   p.Cover,
 				Date:    p.CreatedAt,
+				Pinned:  p.Pinned,
 			})
 		}
 		return cards
@@ -795,7 +864,9 @@ func main() {
 		items := make([]Item, 0, len(posts))
 		for _, p := range posts {
 			desc := p.Excerpt
-			if desc == "" {
+			if p.IsPasswordProtected() {
+				desc = "本文受密码保护"
+			} else if desc == "" {
 				desc = stripHTML(p.ContentHTML)
 				if len(desc) > 200 {
 					desc = desc[:200]

@@ -32,6 +32,42 @@ type Post struct {
 	Status      string // draft / published
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	Pinned      bool      // 置顶
+	Password    string    // 阅读口令，空=无保护
+	PublishAt   time.Time // 定时发布（零值=立即）；未到点不公开
+}
+
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at"
+
+// publishedWhere 已发布且定时已到。占位符绑定 StatusPublished。
+const publishedWhere = "status = ? AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
+
+const publishedOrder = "ORDER BY pinned DESC, datetime(created_at) DESC"
+
+func formatPublishAt(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func parsePublishAt(s string) time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02 15:04:05", "2006-01-02T15:04"} {
+		if t, err := time.ParseInLocation(layout, s, time.UTC); err == nil {
+			return t.UTC()
+		}
+	}
+	return time.Time{}
+}
+
+// IsPasswordProtected 是否需要阅读口令。
+func (p *Post) IsPasswordProtected() bool {
+	return p != nil && strings.TrimSpace(p.Password) != ""
 }
 
 // Store 文章数据访问对象，持 *sql.DB 连接。
@@ -124,10 +160,13 @@ func (s *Store) createTables() error {
 // SQLite 的 ADD COLUMN 要求默认值是常量（DEFAULT ” 合法）。
 func (s *Store) migrateColumns() error {
 	want := map[string]string{
-		"cover":    `ALTER TABLE posts ADD COLUMN cover TEXT NOT NULL DEFAULT ''`,
-		"category": `ALTER TABLE posts ADD COLUMN category TEXT NOT NULL DEFAULT ''`,
-		"tags":     `ALTER TABLE posts ADD COLUMN tags TEXT NOT NULL DEFAULT ''`,
-		"views":    `ALTER TABLE posts ADD COLUMN views INTEGER NOT NULL DEFAULT 0`,
+		"cover":      `ALTER TABLE posts ADD COLUMN cover TEXT NOT NULL DEFAULT ''`,
+		"category":   `ALTER TABLE posts ADD COLUMN category TEXT NOT NULL DEFAULT ''`,
+		"tags":       `ALTER TABLE posts ADD COLUMN tags TEXT NOT NULL DEFAULT ''`,
+		"views":      `ALTER TABLE posts ADD COLUMN views INTEGER NOT NULL DEFAULT 0`,
+		"pinned":     `ALTER TABLE posts ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0`,
+		"password":   `ALTER TABLE posts ADD COLUMN password TEXT NOT NULL DEFAULT ''`,
+		"publish_at": `ALTER TABLE posts ADD COLUMN publish_at TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -157,8 +196,7 @@ func (s *Store) migrateColumns() error {
 
 // List 返回全部文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
-	rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts ORDER BY datetime(created_at) DESC`)
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts ORDER BY pinned DESC, datetime(created_at) DESC")
 	if err != nil {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
@@ -168,8 +206,7 @@ func (s *Store) List() ([]*Post, error) {
 
 // ListPublished 返回已发布文章，按 created_at 倒序。
 func (s *Store) ListPublished() ([]*Post, error) {
-	rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? ORDER BY datetime(created_at) DESC`, StatusPublished)
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder, StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("list published posts: %w", err)
 	}
@@ -185,8 +222,7 @@ func (s *Store) ListPublishedPaged(page, size int) ([]*Post, error) {
 	if size < 1 {
 		size = 10
 	}
-	rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? ORDER BY datetime(created_at) DESC LIMIT ? OFFSET ?`,
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder+" LIMIT ? OFFSET ?",
 		StatusPublished, size, (page-1)*size)
 	if err != nil {
 		return nil, fmt.Errorf("list published posts paged: %w", err)
@@ -198,7 +234,7 @@ func (s *Store) ListPublishedPaged(page, size int) ([]*Post, error) {
 // CountPublished 返回已发布文章总数（分页器用）。
 func (s *Store) CountPublished() (int, error) {
 	var n int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM posts WHERE status = ?`, StatusPublished).Scan(&n); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE "+publishedWhere, StatusPublished).Scan(&n); err != nil {
 		return 0, fmt.Errorf("count published posts: %w", err)
 	}
 	return n, nil
@@ -206,8 +242,7 @@ func (s *Store) CountPublished() (int, error) {
 
 // ListByCategory 返回指定分类的已发布文章，按 created_at 倒序。
 func (s *Store) ListByCategory(name string) ([]*Post, error) {
-	rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? AND category = ? ORDER BY datetime(created_at) DESC`, StatusPublished, name)
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND category = ? "+publishedOrder, StatusPublished, name)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by category %s: %w", name, err)
 	}
@@ -218,8 +253,7 @@ func (s *Store) ListByCategory(name string) ([]*Post, error) {
 // ListByTag 返回包含指定标签的已发布文章，按 created_at 倒序。
 // tags 逗号分隔存储，用逗号包裹 LIKE 防子串误匹配（如 Go 匹配到 Golang）。
 func (s *Store) ListByTag(name string) ([]*Post, error) {
-	rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? AND (',' || tags || ',') LIKE ? ORDER BY datetime(created_at) DESC`,
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND (',' || tags || ',') LIKE ? "+publishedOrder,
 		StatusPublished, "%,"+name+",%")
 	if err != nil {
 		return nil, fmt.Errorf("list posts by tag %s: %w", name, err)
@@ -230,7 +264,7 @@ func (s *Store) ListByTag(name string) ([]*Post, error) {
 
 // CountByCategory 统计各分类的已发布文章数（空分类除外）。
 func (s *Store) CountByCategory() (map[string]int, error) {
-	rows, err := s.db.Query(`SELECT category, COUNT(*) FROM posts WHERE status = ? AND category != '' GROUP BY category`, StatusPublished)
+	rows, err := s.db.Query("SELECT category, COUNT(*) FROM posts WHERE "+publishedWhere+" AND category != '' GROUP BY category", StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("count by category: %w", err)
 	}
@@ -249,7 +283,7 @@ func (s *Store) CountByCategory() (map[string]int, error) {
 
 // CountByTag 统计各标签的已发布文章数。tags 逗号分隔存储，内存拆分计数（跳过空值）。
 func (s *Store) CountByTag() (map[string]int, error) {
-	rows, err := s.db.Query(`SELECT tags FROM posts WHERE status = ? AND tags != ''`, StatusPublished)
+	rows, err := s.db.Query("SELECT tags FROM posts WHERE "+publishedWhere+" AND tags != ''", StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("query tags: %w", err)
 	}
@@ -280,15 +314,15 @@ func (s *Store) GetPublishedBySlug(slug string) (*Post, error) {
 }
 
 func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
-	q := `SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at FROM posts WHERE slug = ?`
+	q := "SELECT "+postCols+" FROM posts WHERE slug = ?"
 	args := []interface{}{slug}
 	if publishedOnly {
-		q += ` AND status = ?`
+		q += " AND "+publishedWhere
+		// publishedWhere 以 status=? 开头，需再绑 StatusPublished
 		args = append(args, StatusPublished)
 	}
 	row := s.db.QueryRow(q, args...)
-	p := &Post{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	p, err := scanOne(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -300,12 +334,9 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 
 // GetPrevPost 按 created_at 查前一篇已发布文章（时间更早的最近一篇）。
 func (s *Store) GetPrevPost(slug string) (*Post, error) {
-	q := `SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? AND substr(created_at, 1, 19) < (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?)
-		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT 1`
+	q := "SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND substr(created_at, 1, 19) < (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?) ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT 1"
 	row := s.db.QueryRow(q, StatusPublished, slug)
-	p := &Post{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	p, err := scanOne(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -317,12 +348,9 @@ func (s *Store) GetPrevPost(slug string) (*Post, error) {
 
 // GetNextPost 按 created_at 查后一篇已发布文章（时间更晚的最近一篇）。
 func (s *Store) GetNextPost(slug string) (*Post, error) {
-	q := `SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-		FROM posts WHERE status = ? AND substr(created_at, 1, 19) > (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?)
-		ORDER BY substr(created_at, 1, 19) ASC, id ASC LIMIT 1`
+	q := "SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND substr(created_at, 1, 19) > (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?) ORDER BY substr(created_at, 1, 19) ASC, id ASC LIMIT 1"
 	row := s.db.QueryRow(q, StatusPublished, slug)
-	p := &Post{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	p, err := scanOne(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -348,8 +376,7 @@ func (s *Store) ListRelatedByTags(slug string, tags string, limit int) ([]*Post,
 	seen := map[string]bool{}
 	var result []*Post
 	for _, tag := range validTags {
-		rows, err := s.db.Query(`SELECT id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at
-			FROM posts WHERE status = ? AND slug != ? AND (',' || tags || ',') LIKE ? ORDER BY datetime(created_at) DESC`,
+		rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND slug != ? AND (',' || tags || ',') LIKE ? "+publishedOrder,
 			StatusPublished, slug, "%,"+tag+",%")
 		if err != nil {
 			return nil, fmt.Errorf("query related posts by tag %s: %w", tag, err)
@@ -382,9 +409,13 @@ func (s *Store) Create(p *Post) (int64, error) {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt)
+	pinned := 0
+	if p.Pinned {
+		pinned = 1
+	}
+	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt))
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
@@ -399,9 +430,13 @@ func (s *Store) Create(p *Post) (int64, error) {
 // Update 按 slug 更新文章字段（title/excerpt/cover/category/tags/content_md/content_html/status），刷新 updated_at。
 func (s *Store) Update(slug string, p *Post) error {
 	p.UpdatedAt = time.Now()
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?
+	pinned := 0
+	if p.Pinned {
+		pinned = 1
+	}
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, slug)
+		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -468,12 +503,30 @@ func (s *Store) Upsert(p *Post) error {
 	return s.Update(p.Slug, p)
 }
 
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanOne(row rowScanner) (*Post, error) {
+	p := &Post{}
+	var pinned int
+	var password, publishAt string
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt)
+	if err != nil {
+		return nil, err
+	}
+	p.Pinned = pinned != 0
+	p.Password = password
+	p.PublishAt = parsePublishAt(publishAt)
+	return p, nil
+}
+
 // scanPosts 批量扫描 rows 到 []*Post。
 func scanPosts(rows *sql.Rows) ([]*Post, error) {
 	var out []*Post
 	for rows.Next() {
-		p := &Post{}
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		p, err := scanOne(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scan post: %w", err)
 		}
 		out = append(out, p)

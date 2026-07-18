@@ -70,6 +70,24 @@
                 <option value="published"{{if eq .Admin.EditPost.Status "published"}} selected{{end}}>published（已发布）</option>
               </select>
             </div>
+            <div class="admin-form-group" style="flex:1">
+              <label for="publish_at">定时发布</label>
+              <input type="datetime-local" id="publish_at" name="publish_at" value="{{.Admin.EditPost.PublishAt}}">
+              <span class="hint" style="font-size:12px;opacity:.7">留空=立即公开（需 status=published）</span>
+            </div>
+          </div>
+
+          <div class="admin-form-row">
+            <div class="admin-form-group" style="flex:1">
+              <label for="password">阅读密码</label>
+              <input type="text" id="password" name="password" value="{{.Admin.EditPost.Password}}" placeholder="留空=不加密" autocomplete="off">
+            </div>
+            <div class="admin-form-group" style="flex:1;display:flex;align-items:flex-end;padding-bottom:8px">
+              <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+                <input type="checkbox" name="pinned" value="1"{{if .Admin.EditPost.Pinned}} checked{{end}}>
+                置顶文章
+              </label>
+            </div>
           </div>
 
           <div class="admin-form-actions">
