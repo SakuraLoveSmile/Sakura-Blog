@@ -1,0 +1,81 @@
+/* post-footer.css: 文章页脚补充样式（main.css 已有 .article-footer / #share，此处补打赏与文字分享按钮） */
+
+.article-footer .social-wrap button.social {
+  border: none;
+  background: none;
+  padding: 6px;
+  border-radius: 32px;
+  line-height: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  filter: grayscale(100%);
+  transition: box-shadow 0.2s ease-out, background 0.2s ease-out, transform 0.2s ease-out;
+}
+.article-footer .social-wrap button.social:hover {
+  filter: unset;
+  background: var(--bg-a100);
+}
+.article-footer .social-wrap .share-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.article-footer #reward .reward-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--block-border);
+  border-radius: 8px;
+  background: var(--block);
+  color: var(--text-p1);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s ease-out, border-color 0.2s ease-out, color 0.2s ease-out;
+}
+.article-footer #reward .reward-toggle:hover {
+  border-color: var(--theme);
+  color: var(--theme);
+  background: var(--theme-a20);
+}
+.article-footer #reward .reward-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.article-footer #reward .reward-codes[hidden] {
+  display: none;
+}
+.article-footer #reward .reward-item {
+  margin: 0;
+  text-align: center;
+}
+.article-footer #reward .reward-item img {
+  display: block;
+  width: 128px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--block-border);
+  background: #fff;
+}
+.article-footer #reward .reward-item figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-p3);
+}
+
+@media screen and (max-width: 667px) {
+  .article-footer #reward .reward-codes {
+    justify-content: center;
+  }
+}

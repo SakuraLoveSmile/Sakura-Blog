@@ -58,6 +58,21 @@ func DefaultSite() *tmpl.Site {
 			AdminBadge:     "博主",
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
+		Article: tmpl.ArticleConfig{
+			Copyright: tmpl.CopyrightConfig{
+				Enabled:    true,
+				License:    "署名-非商业性使用-相同方式共享 4.0 国际",
+				LicenseURL: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+			},
+			Share: tmpl.ShareConfig{
+				Enabled:   true,
+				Platforms: []string{"weibo", "x", "qq", "link"},
+			},
+			Reward: tmpl.RewardConfig{
+				Enabled: false,
+				Text:    "打赏",
+			},
+		},
 		Links: nil, // 友链由 site.yml links 段驱动；缺省为空，/links 显示「暂无友链」
 	}
 }

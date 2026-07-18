@@ -155,6 +155,7 @@ type Site struct {
 	Comments    CommentsConfig `yaml:"comments"`
 	Admin       AdminConfig    `yaml:"admin"`
 	Links       []LinkGroup    `yaml:"links"` // 友链分组（site.yml links 段）
+	Article     ArticleConfig  `yaml:"article"`
 }
 
 // AdminConfig 管理后台配置（site.yml admin 段）。
