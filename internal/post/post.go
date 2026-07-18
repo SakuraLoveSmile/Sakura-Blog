@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -39,10 +41,20 @@ type Service struct {
 
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
 // AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
+// 代码块经 Chroma 服务端高亮（CSS class 模式，class 前缀 chroma，无行号）。
 func NewService(mdDir string) *Service {
 	return &Service{
 		mdDir: mdDir,
 		md: goldmark.New(
+			goldmark.WithExtensions(
+				highlighting.NewHighlighting(
+					highlighting.WithGuessLanguage(true),
+					highlighting.WithFormatOptions(
+						chromahtml.WithClasses(true),
+						chromahtml.WithLineNumbers(false),
+					),
+				),
+			),
 			goldmark.WithParserOptions(mdparser.WithAutoHeadingID()),
 			goldmark.WithRendererOptions(html.WithUnsafe()),
 		),
