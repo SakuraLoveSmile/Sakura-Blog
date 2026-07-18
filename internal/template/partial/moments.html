@@ -1,0 +1,69 @@
+{{- /* moments.html: 瞬间/说说时间流，对齐 Stellar tag-plugin.timeline + timenode 卡片结构
+   由 base.html 按 .Page.Layout == "moments" 分派渲染。
+*/ -}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">首页</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/moments">瞬间</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+
+<article class="md-text content">
+  {{- if .Moments}}
+  <div class="tag-plugin timeline">
+    {{- range .Moments}}
+    <div class="timenode">
+      <div class="header">
+        <div class="user-info">
+          <img src="{{$.Site.Avatar}}" alt="">
+          <span>{{if $.Site.LogoTitle}}{{$.Site.LogoTitle}}{{else}}{{$.Site.Title}}{{end}}</span>
+        </div>
+        <span title="{{.Date}}">{{.TimeAgo}}</span>
+      </div>
+      <div class="body">
+        {{- if .ContentHTML}}{{.ContentHTML}}{{end}}
+        {{- if .Images}}
+        <p>
+          {{- range .Images}}
+          <img src="{{.}}" alt="" loading="lazy">
+          {{- end}}
+        </p>
+        {{- end}}
+      </div>
+    </div>
+    {{- end}}
+  </div>
+
+  {{- if .Paginator}}
+  {{- if gt .Paginator.Total 1}}
+  <div class="paginator-wrap dis-select">
+    <nav class="paginator">
+      {{- if gt .Paginator.Current 1}}
+      <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/moments{{else}}/moments?page={{sub .Paginator.Current 1}}{{end}}"></a>
+      {{- end}}
+      {{- range .Paginator.Pages}}
+      <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/moments{{else}}/moments?page={{.}}{{end}}">{{.}}</a>
+      {{- end}}
+      {{- if lt .Paginator.Current .Paginator.Total}}
+      <a class="extend next" rel="next" href="/moments?page={{add .Paginator.Current 1}}"></a>
+      {{- end}}
+    </nav>
+  </div>
+  {{- end}}
+  {{- end}}
+  {{- else}}
+  <p class="cap" style="text-align:center;padding:2rem 0;color:var(--text-p3);">还没有瞬间，敬请期待。</p>
+  {{- end}}
+</article>

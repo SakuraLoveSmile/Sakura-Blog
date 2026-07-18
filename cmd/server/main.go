@@ -24,6 +24,7 @@ import (
 	"blog/internal/config"
 	"blog/internal/feed"
 	"blog/internal/media"
+	"blog/internal/moment"
 	"blog/internal/page"
 	"blog/internal/post"
 	"blog/internal/store"
@@ -399,6 +400,12 @@ func main() {
 	})
 	pageHandler.Register(r)
 	pageHandler.RegisterAdmin(r, admin.AuthMiddleware(site))
+
+	momentHandler, err := moment.New(st, posts, engine, site, fillSidebar, fillSEO)
+	if err != nil {
+		log.Fatalf("init moments: %v", err)
+	}
+	momentHandler.Register(r, admin.AuthMiddleware(site))
 
 	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
 	if site.Comments.Enabled {
