@@ -1,0 +1,172 @@
+/* Spec 06: 仅补 main.css 缺失的 tag-plugin 样式（tabs/timeline/gallery/button/checkbox 已在 main.css） */
+
+.md-text .mermaid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  margin: var(--gap-p) 0;
+}
+
+.md-text .mermaid span,
+.md-text .mermaid text {
+  font-family: inherit;
+}
+
+.md-text .mermaid .edgeLabel {
+  padding: 4px;
+  background-color: var(--background) !important;
+}
+
+.md-text .mermaid rect.basic.label-container {
+  stroke: var(--block-border) !important;
+  fill: var(--block) !important;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .md-text .mermaid {
+    fill: #ccc !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .error-icon {
+    fill: #a44141 !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .error-text {
+    fill: #ddd !important;
+    stroke: #ddd !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .marker {
+    fill: lightgrey !important;
+    stroke: lightgrey !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .marker.cross {
+    stroke: lightgrey !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .label {
+    color: #ccc !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .cluster-label text {
+    fill: #F9FFFE !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .cluster-label span {
+    color: #F9FFFE !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .label text,
+  :root:not([data-theme="light"]) .md-text .mermaid span {
+    fill: #ccc !important;
+    color: #ccc !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .node rect,
+  :root:not([data-theme="light"]) .md-text .mermaid .node circle,
+  :root:not([data-theme="light"]) .md-text .mermaid .node ellipse,
+  :root:not([data-theme="light"]) .md-text .mermaid .node polygon,
+  :root:not([data-theme="light"]) .md-text .mermaid .node path {
+    fill: #1f2020 !important;
+    stroke: #81B1DB !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .arrowheadPath {
+    fill: lightgrey !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .edgePath .path {
+    stroke: lightgrey !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .flowchart-link {
+    stroke: lightgrey !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .edgeLabel {
+    background-color: hsl(0, 0%, 34.4117647059%) !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .edgeLabel rect {
+    background-color: hsl(0, 0%, 34.4117647059%) !important;
+    fill: hsl(0, 0%, 34.4117647059%) !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .cluster rect {
+    fill: hsl(180, 1.5873015873%, 28.3529411765%) !important;
+    stroke: rgba(255, 255, 255, 0.25) !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .cluster text {
+    fill: #F9FFFE !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .cluster span {
+    color: #F9FFFE !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid div.mermaidTooltip {
+    background: hsl(20, 1.5873015873%, 12.3529411765%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  }
+  :root:not([data-theme="light"]) .md-text .mermaid .flowchartTitleText {
+    fill: #ccc;
+  }
+}
+
+:root[data-theme="dark"] .md-text .mermaid {
+  fill: #ccc !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .error-icon {
+  fill: #a44141 !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .error-text {
+  fill: #ddd !important;
+  stroke: #ddd !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .marker {
+  fill: lightgrey !important;
+  stroke: lightgrey !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .marker.cross {
+  stroke: lightgrey !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .label {
+  color: #ccc !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .cluster-label text {
+  fill: #F9FFFE !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .cluster-label span {
+  color: #F9FFFE !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .label text,
+:root[data-theme="dark"] .md-text .mermaid span {
+  fill: #ccc !important;
+  color: #ccc !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .node rect,
+:root[data-theme="dark"] .md-text .mermaid .node circle,
+:root[data-theme="dark"] .md-text .mermaid .node ellipse,
+:root[data-theme="dark"] .md-text .mermaid .node polygon,
+:root[data-theme="dark"] .md-text .mermaid .node path {
+  fill: #1f2020 !important;
+  stroke: #81B1DB !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .arrowheadPath {
+  fill: lightgrey !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .edgePath .path {
+  stroke: lightgrey !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .flowchart-link {
+  stroke: lightgrey !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .edgeLabel {
+  background-color: hsl(0, 0%, 34.4117647059%) !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .edgeLabel rect {
+  background-color: hsl(0, 0%, 34.4117647059%) !important;
+  fill: hsl(0, 0%, 34.4117647059%) !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .cluster rect {
+  fill: hsl(180, 1.5873015873%, 28.3529411765%) !important;
+  stroke: rgba(255, 255, 255, 0.25) !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .cluster text {
+  fill: #F9FFFE !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .cluster span {
+  color: #F9FFFE !important;
+}
+:root[data-theme="dark"] .md-text .mermaid div.mermaidTooltip {
+  background: hsl(20, 1.5873015873%, 12.3529411765%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+:root[data-theme="dark"] .md-text .mermaid .flowchartTitleText {
+  fill: #ccc;
+}
