@@ -22,6 +22,7 @@ import (
 	"blog/internal/admin"
 	"blog/internal/comment"
 	"blog/internal/config"
+	"blog/internal/media"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -303,8 +304,18 @@ func main() {
 		r.StaticFS("/assets", http.FS(sub))
 	}
 
+	// 上传附件静态托管（运行时数据，不走 go:embed）
+	r.Static("/uploads", app.UploadDir)
+
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
+
+	// 附件/图床管理 /admin/media（复用 admin HMAC cookie 鉴权）
+	mediaHandler, err := media.New(st, engine, site, app.UploadDir, app.MaxUploadMB)
+	if err != nil {
+		log.Fatalf("init media: %v", err)
+	}
+	mediaHandler.Register(r, admin.AuthMiddleware(site))
 
 	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
 	if site.Comments.Enabled {

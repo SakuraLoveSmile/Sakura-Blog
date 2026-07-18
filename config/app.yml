@@ -20,3 +20,9 @@ seed_on_start: false
 # 反向代理可信 IP/CIDR（逗号分隔）。设了才信任 X-Forwarded-For 还原客户端 IP。
 # 例：nginx 同机部署填 127.0.0.1/32；空则不信任代理头（仅本机直连场景）。
 trusted_proxy:
+
+# 附件/图床上传根目录。相对路径按 root 解析；对外 URL 前缀固定 /uploads/。
+upload_dir: data/uploads
+
+# 单文件上传上限（MB）。超过则拒绝，不写盘不入库。
+max_upload_mb: 5

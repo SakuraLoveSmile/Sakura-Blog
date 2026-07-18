@@ -24,11 +24,11 @@ const (
 	loginRateLimit = 10 * time.Second   // 同 IP 登录失败最小间隔（防爆破）
 )
 
-// authRequired /admin 路由组中间件：密码未配置直接放行；否则校验签名 cookie，
-// 缺失/无效/过期一律 303 跳登录页（登录后回跳 from 参数记录的原始地址）。
-func (h *Handler) authRequired() gin.HandlerFunc {
+// AuthMiddleware 导出的 /admin 鉴权中间件，供 media 等独立包复用。
+// 密码未配置直接放行；否则校验 HMAC 签名 cookie，缺失/无效/过期 303 跳登录页。
+func AuthMiddleware(site *tmpl.Site) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		password := h.site.Admin.Password
+		password := site.Admin.Password
 		if password == "" {
 			c.Next()
 			return
@@ -41,6 +41,11 @@ func (h *Handler) authRequired() gin.HandlerFunc {
 		c.Redirect(http.StatusSeeOther, "/admin/login?from="+from)
 		c.Abort()
 	}
+}
+
+// authRequired /admin 路由组中间件，内部复用 AuthMiddleware。
+func (h *Handler) authRequired() gin.HandlerFunc {
+	return AuthMiddleware(h.site)
 }
 
 // loginForm GET /admin/login：渲染登录页。已登录直接回 /admin；密码未配置提示无需登录。

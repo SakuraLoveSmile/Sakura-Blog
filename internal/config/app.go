@@ -18,13 +18,17 @@ type App struct {
 	Root         string `yaml:"root"`          // 工作根目录，定位 site.yml 与 DB；空则用 cwd
 	SeedOnStart  bool   `yaml:"seed_on_start"` // 启动时把 content/posts/*.md 导入 DB（-seed flag 等价）
 	TrustedProxy string `yaml:"trusted_proxy"` // 反向代理可信 IP/CIDR，空则不设（仅本机）
+	UploadDir    string `yaml:"upload_dir"`    // 附件上传根目录，默认 data/uploads（相对 root）
+	MaxUploadMB  int    `yaml:"max_upload_mb"` // 单文件上传上限（MB），默认 5
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
 func DefaultApp() *App {
 	return &App{
-		ListenAddr: ":8080",
-		DBPath:     "data/blog.db",
+		ListenAddr:  ":8080",
+		DBPath:      "data/blog.db",
+		UploadDir:   "data/uploads",
+		MaxUploadMB: 5,
 	}
 }
 
@@ -78,6 +82,17 @@ func ResolveApp(app *App) *App {
 	// DBPath 绝对化：相对路径按 root 解析
 	if !filepath.IsAbs(app.DBPath) {
 		app.DBPath = filepath.Join(root, app.DBPath)
+	}
+
+	// UploadDir 默认值 + 绝对化
+	if app.UploadDir == "" {
+		app.UploadDir = "data/uploads"
+	}
+	if !filepath.IsAbs(app.UploadDir) {
+		app.UploadDir = filepath.Join(root, app.UploadDir)
+	}
+	if app.MaxUploadMB <= 0 {
+		app.MaxUploadMB = 5
 	}
 	return app
 }
