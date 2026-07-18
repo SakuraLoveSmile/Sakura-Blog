@@ -44,6 +44,33 @@
   {{- /* 文章页脚补充样式（打赏 / 文字分享按钮；.article-footer 主体在 main.css）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}">
 
+  {{- /* Spec 06: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}">
+
+  {{- /* Mermaid 图表：CDN + 主题跟随 data-theme，PJAX 后重扫 */}}
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    (function () {
+      function mermaidTheme() {
+        var t = document.documentElement.dataset.theme;
+        if (t === 'dark') return 'dark';
+        if (t === 'light') return 'default';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
+      }
+      function runMermaid() {
+        if (typeof mermaid === 'undefined') return;
+        mermaid.initialize({ startOnLoad: false, theme: mermaidTheme() });
+        mermaid.run({ querySelector: '.md-text .mermaid, .mermaid' });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runMermaid);
+      } else {
+        runMermaid();
+      }
+      document.addEventListener('pjax:complete', runMermaid);
+    })();
+  </script>
+
   {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
   <style>
     html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }
