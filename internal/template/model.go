@@ -221,6 +221,7 @@ type CommentItem struct {
 	Avatar      string         `json:"avatar"`   // Gravatar URL（{mirror}/{md5(email)}）
 	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
 	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）
+	Likes       int64          `json:"likes"`    // 点赞数（IP 去重）
 	Children    []*CommentItem `json:"children,omitempty"`
 }
 
