@@ -22,6 +22,7 @@ import (
 	"blog/internal/admin"
 	"blog/internal/comment"
 	"blog/internal/config"
+	"blog/internal/feed"
 	"blog/internal/media"
 	"blog/internal/post"
 	"blog/internal/store"
@@ -690,6 +691,9 @@ func main() {
 			Posts: toCards(posts),
 		})
 	})
+
+	// Atom / JSON Feed / 分类标签 RSS / robots.txt
+	feed.New(st, site).Register(r)
 
 	// RSS 2.0 订阅输出：/rss.xml，最新 20 篇 published 文章。
 	r.GET("/rss.xml", func(c *gin.Context) {
