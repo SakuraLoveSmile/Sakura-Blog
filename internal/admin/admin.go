@@ -40,8 +40,10 @@ func (h *Handler) Register(r *gin.Engine) {
 	g.POST("/logout", h.logout)  // 退出登录
 
 	authed := g.Group("", h.authRequired())
-	authed.GET("", h.list) // 文章列表
-	authed.GET("/", h.list)
+	authed.GET("", h.dashboardRedirect)
+	authed.GET("/", h.dashboardRedirect)
+	authed.GET("/dashboard", h.dashboard)
+	authed.GET("/posts", h.list)
 	authed.GET("/new", h.editForm)         // 新建表单
 	authed.GET("/edit/:slug", h.editForm)  // 编辑表单
 	authed.POST("/save", h.save)           // 创建/更新
@@ -51,6 +53,80 @@ func (h *Handler) Register(r *gin.Engine) {
 	authed.POST("/comments/:id/approve", h.commentApprove) // 审核通过
 	authed.POST("/comments/:id/delete", h.commentDelete)   // 删除（级联子评论）
 	authed.POST("/comments/reply", h.commentReply)         // 管理员回复
+}
+
+// dashboardRedirect 将 /admin 根路径重定向到仪表盘。
+func (h *Handler) dashboardRedirect(c *gin.Context) {
+	c.Redirect(http.StatusFound, "/admin/dashboard")
+}
+
+// dashboard 渲染仪表盘：指标卡 + 快捷入口 + 最近评论。
+func (h *Handler) dashboard(c *gin.Context) {
+	posts, err := h.store.List()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list posts: %v", err)
+		return
+	}
+	published, err := h.store.CountPublished()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count published: %v", err)
+		return
+	}
+	commentTotal, err := h.store.CountComments("")
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count comments: %v", err)
+		return
+	}
+	commentPending, err := h.store.CountComments(store.CommentPending)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count pending comments: %v", err)
+		return
+	}
+	viewTotal, err := h.store.SumViews()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "sum views: %v", err)
+		return
+	}
+	attachmentTotal, err := h.store.CountAttachments()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "count attachments: %v", err)
+		return
+	}
+	recent, err := h.store.ListRecentComments(5)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "list recent comments: %v", err)
+		return
+	}
+	rows := make([]*tmpl.AdminCommentRow, 0, len(recent))
+	for _, cm := range recent {
+		rows = append(rows, &tmpl.AdminCommentRow{
+			ID:      cm.ID,
+			PageKey: cm.PageKey,
+			Nick:    cm.Nick,
+			Email:   cm.Email,
+			Excerpt: truncateText(stripHTML(cm.ContentHTML), 80),
+			Status:  cm.Status,
+			IsAdmin: cm.IsAdmin,
+			Avatar:  comment.AvatarURL(h.site.Comments.GravatarMirror, cm.Email),
+			Date:    cm.CreatedAt.Format("2006-01-02 15:04"),
+		})
+	}
+	data := &tmpl.ViewData{
+		Site: h.site,
+		Page: &tmpl.Page{Title: "仪表盘", MenuID: "dashboard"},
+		Admin: &tmpl.AdminData{
+			Dashboard: &tmpl.AdminDashboard{
+				PostTotal:       len(posts),
+				PostPublished:   published,
+				CommentTotal:    commentTotal,
+				CommentPending:  commentPending,
+				ViewTotal:       viewTotal,
+				AttachmentTotal: attachmentTotal,
+				RecentComments:  rows,
+			},
+		},
+	}
+	h.render(c, "admin/dashboard", data)
 }
 
 // list 渲染文章列表页。
@@ -73,7 +149,7 @@ func (h *Handler) list(c *gin.Context) {
 	}
 	data := &tmpl.ViewData{
 		Site:  h.site,
-		Page:  &tmpl.Page{Title: "文章管理", MenuID: "admin"},
+		Page:  &tmpl.Page{Title: "文章管理", MenuID: "posts"},
 		Admin: &tmpl.AdminData{Posts: rows},
 	}
 	h.render(c, "admin/list", data)
@@ -106,7 +182,7 @@ func (h *Handler) editForm(c *gin.Context) {
 	}
 	data := &tmpl.ViewData{
 		Site:  h.site,
-		Page:  &tmpl.Page{Title: ternary(isEdit, "编辑文章", "新建文章"), MenuID: "admin"},
+		Page:  &tmpl.Page{Title: ternary(isEdit, "编辑文章", "新建文章"), MenuID: "posts"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: isEdit},
 	}
 	h.render(c, "admin/edit", data)
@@ -173,7 +249,7 @@ func (h *Handler) save(c *gin.Context) {
 			return
 		}
 	}
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/posts")
 }
 
 // updateWithRename 处理 slug 变更：若 orig != new，先删旧记录再 Create 新记录（保留 created_at）。
@@ -204,7 +280,7 @@ func (h *Handler) delete(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "delete: %v", err)
 		return
 	}
-	c.Redirect(http.StatusFound, "/admin")
+	c.Redirect(http.StatusFound, "/admin/posts")
 }
 
 // commentList 评论管理页：状态筛选（all/pending/approved）+ 分页（20 条/页）。
@@ -263,7 +339,7 @@ func (h *Handler) commentList(c *gin.Context) {
 	}
 	data := &tmpl.ViewData{
 		Site: h.site,
-		Page: &tmpl.Page{Title: "评论管理", MenuID: "admin"},
+		Page: &tmpl.Page{Title: "评论管理", MenuID: "comments"},
 		Admin: &tmpl.AdminData{
 			Comments:      rows,
 			CommentFilter: filter,
@@ -403,7 +479,7 @@ func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt
 	}
 	data := &tmpl.ViewData{
 		Site:  h.site,
-		Page:  &tmpl.Page{Title: "编辑文章", MenuID: "admin"},
+		Page:  &tmpl.Page{Title: "编辑文章", MenuID: "posts"},
 		Admin: &tmpl.AdminData{EditPost: row, IsEdit: origSlug != "", SaveError: errMsg},
 	}
 	h.render(c, "admin/edit", data)

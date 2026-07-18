@@ -104,6 +104,9 @@ type AdminData struct {
 	// 登录页（/admin/login）。
 	LoginError string // 登录失败提示（密码错误）
 	LoginFrom  string // 登录成功后的回跳地址（authRequired 跳转时带入的原始路径）
+
+	// 仪表盘（/admin/dashboard）。
+	Dashboard *AdminDashboard
 }
 
 // AdminCommentRow 评论管理页列表行数据。

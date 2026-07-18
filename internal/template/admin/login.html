@@ -1,44 +1,17 @@
-{{- /* admin/login.html: 管理后台登录页（密码 gate）。
-   独立 layout 不套 base.html；引用 main.css 复用深色变量，居中卡片表单（对齐 admin/edit.html 先例）。
-   POST /admin/login，from 隐藏域记录回跳地址（authRequired 302 时带入）。*/ -}}
+{{- /* admin/login.html: 管理后台登录页（无侧栏，统一 admin 变量） */ -}}
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Page.Title}} - {{.Site.Title}} 管理后台</title>
-  <link rel="stylesheet" href="/assets/css/main.css?v=demo3">
-  <style>
-    body>.sitebg { pointer-events: none !important; } /* 全屏 fixed 遮罩层会拦截所有点击，admin 页无交互职责直接禁事件 */
-    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
-    .login-card { width: 100%; max-width: 360px; padding: 32px; background: var(--card); border: 1px solid var(--bg-a3, rgba(128,128,128,.12)); border-radius: 12px; }
-    .login-card h1 { font-size: 20px; font-weight: 600; color: var(--text-p1); margin: 0 0 4px; }
-    .login-card .sub { font-size: 13px; color: var(--text-p3); margin: 0 0 24px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; color: var(--text-p3); margin-bottom: 6px; font-weight: 500; }
-    .form-group input[type=password] {
-      width: 100%; padding: 10px 12px; font-size: 14px; color: var(--text-p1);
-      background: var(--bg-a1, rgba(128,128,128,.04)); border: 1px solid var(--bg-a3, rgba(128,128,128,.2)); border-radius: 8px; outline: none;
-      box-sizing: border-box;
-    }
-    .form-group input[type=password]:focus { border-color: var(--theme); }
-    .btn-login { width: 100%; padding: 10px 0; border: none; border-radius: 8px; background: var(--theme); color: #fff; font-size: 14px; cursor: pointer; font-family: inherit; }
-    .login-error { color: #F44336; font-size: 13px; margin: 0 0 16px; }
-    .back-home { display: block; text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-p3); text-decoration: none; }
-    .back-home:hover { color: var(--text-p1); }
-  </style>
-</head>
-<body>
+{{template "admin/head" .}}
+<body class="admin-body">
   <div class="sitebg"><div class="siteblur"></div></div>
-  <div class="login-wrap">
-    <div class="login-card">
+  <div class="admin-login-wrap">
+    <div class="admin-login-card">
       <h1>{{.Site.Title}}</h1>
       <p class="sub">管理后台登录</p>
-      {{if .Admin.LoginError}}<p class="login-error">{{.Admin.LoginError}}</p>{{end}}
+      {{if .Admin.LoginError}}<p class="admin-msg-error">{{.Admin.LoginError}}</p>{{end}}
       <form method="post" action="/admin/login">
         <input type="hidden" name="from" value="{{.Admin.LoginFrom}}">
-        <div class="form-group">
+        <div class="admin-form-group">
           <label for="password">密码</label>
           <input type="password" id="password" name="password" autofocus required>
         </div>

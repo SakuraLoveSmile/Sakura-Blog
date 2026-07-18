@@ -430,6 +430,15 @@ func (s *Store) IncrViews(slug string) error {
 	return nil
 }
 
+// SumViews 返回全部文章阅读量之和。
+func (s *Store) SumViews() (int64, error) {
+	var total int64
+	if err := s.db.QueryRow(`SELECT COALESCE(SUM(views), 0) FROM posts`).Scan(&total); err != nil {
+		return 0, fmt.Errorf("sum views: %w", err)
+	}
+	return total, nil
+}
+
 // GetViews 返回指定 slug 文章的当前阅读量。文章不存在返回 0（不报错）。
 func (s *Store) GetViews(slug string) (int64, error) {
 	var views int64

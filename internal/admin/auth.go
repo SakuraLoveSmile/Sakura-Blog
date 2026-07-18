@@ -51,7 +51,7 @@ func (h *Handler) authRequired() gin.HandlerFunc {
 // loginForm GET /admin/login：渲染登录页。已登录直接回 /admin；密码未配置提示无需登录。
 func (h *Handler) loginForm(c *gin.Context) {
 	if h.site.Admin.Password == "" {
-		c.Redirect(http.StatusSeeOther, "/admin")
+		c.Redirect(http.StatusSeeOther, "/admin/dashboard")
 		return
 	}
 	if cookie, err := c.Cookie(authCookieName); err == nil && validAuthCookie(cookie, h.site.Admin.Password) {
@@ -66,7 +66,7 @@ func (h *Handler) loginForm(c *gin.Context) {
 func (h *Handler) login(c *gin.Context) {
 	password := h.site.Admin.Password
 	if password == "" {
-		c.Redirect(http.StatusSeeOther, "/admin")
+		c.Redirect(http.StatusSeeOther, "/admin/dashboard")
 		return
 	}
 	from := c.PostForm("from")
@@ -91,7 +91,7 @@ func (h *Handler) login(c *gin.Context) {
 func (h *Handler) logout(c *gin.Context) {
 	c.SetCookie(authCookieName, "", -1, "/admin", "", false, true)
 	if h.site.Admin.Password == "" {
-		c.Redirect(http.StatusSeeOther, "/admin")
+		c.Redirect(http.StatusSeeOther, "/admin/dashboard")
 		return
 	}
 	c.Redirect(http.StatusSeeOther, "/admin/login")
@@ -137,7 +137,7 @@ func validAuthCookie(value, password string) bool {
 // safeFrom 过滤回跳地址：只允许站内 /admin 开头路径，防开放重定向。
 func safeFrom(from string) string {
 	if !strings.HasPrefix(from, "/admin") || strings.HasPrefix(from, "//") {
-		return "/admin"
+		return "/admin/dashboard"
 	}
 	return from
 }
