@@ -15,7 +15,7 @@ func (s *Store) ListPopular(limit int) ([]PopularPost, error) {
 		limit = 5
 	}
 	rows, err := s.db.Query(
-		`SELECT slug, title, views FROM posts WHERE status = ? ORDER BY views DESC, datetime(created_at) DESC LIMIT ?`,
+		"SELECT slug, title, views FROM posts WHERE "+publishedWhere+" ORDER BY views DESC, datetime(created_at) DESC LIMIT ?",
 		StatusPublished, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list popular posts: %w", err)

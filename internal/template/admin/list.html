@@ -42,7 +42,7 @@
                 <td class="title"><a href="/post/{{.Slug}}">{{if .Title}}{{.Title}}{{else}}(无标题){{end}}</a></td>
                 <td>{{.Slug}}</td>
                 <td>{{if .Category}}{{.Category}}{{else}}-{{end}}</td>
-                <td><span class="admin-badge {{.Status}}">{{.Status}}</span></td>
+                <td><span class="admin-badge {{.Status}}">{{.Status}}</span>{{if .Pinned}} <span class="admin-badge" style="background:var(--theme);color:#fff">置顶</span>{{end}}</td>
                 <td>{{.Date}}</td>
                 <td>
                   <a href="/admin/edit/{{.Slug}}" class="admin-link-btn">编辑</a>

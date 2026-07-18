@@ -145,6 +145,7 @@ func (h *Handler) list(c *gin.Context) {
 			Category: p.Category,
 			Status:   p.Status,
 			Date:     p.CreatedAt.Format("2006-01-02 15:04"),
+			Pinned:   p.Pinned,
 		})
 	}
 	data := &tmpl.ViewData{
@@ -178,6 +179,11 @@ func (h *Handler) editForm(c *gin.Context) {
 		row.Tags = p.Tags
 		row.ContentMD = p.ContentMD
 		row.Status = p.Status
+		row.Pinned = p.Pinned
+		row.Password = p.Password
+		if !p.PublishAt.IsZero() {
+			row.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
+		}
 		isEdit = true
 	}
 	data := &tmpl.ViewData{
@@ -199,9 +205,17 @@ func (h *Handler) save(c *gin.Context) {
 	contentMD := c.PostForm("content")
 	status := c.PostForm("status")
 	origSlug := c.PostForm("orig_slug") // 编辑时的原 slug
+	pinned := c.PostForm("pinned") == "1" || c.PostForm("pinned") == "on"
+	password := strings.TrimSpace(c.PostForm("password"))
+	publishAtStr := strings.TrimSpace(c.PostForm("publish_at"))
+	publishAt := parseFormPublishAt(publishAtStr)
+
+	formRow := func(msg string) {
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, pinned, password, publishAtStr, msg)
+	}
 
 	if slug == "" {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "slug 不能为空")
+		formRow("slug 不能为空")
 		return
 	}
 	if status != store.StatusDraft && status != store.StatusPublished {
@@ -211,15 +225,14 @@ func (h *Handler) save(c *gin.Context) {
 	// 服务端渲染 Markdown 为 HTML（复用 post.Service 的 goldmark 实例）
 	contentHTML, err := h.posts.Render(contentMD)
 	if err != nil {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "Markdown 渲染失败: "+err.Error())
+		formRow("Markdown 渲染失败: " + err.Error())
 		return
 	}
 
 	// 编辑模式：orig_slug 非空且 slug 变了，需先删旧再建新（slug 是唯一键）
 	if origSlug != "" && origSlug != slug {
-		if _, err := h.store.GetBySlug(slug); err == nil {
-			// 新 slug 已被占用
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "slug 已被其他文章占用: "+slug)
+		if existing, err := h.store.GetBySlug(slug); err == nil && existing != nil {
+			formRow("slug 已被其他文章占用: " + slug)
 			return
 		}
 	}
@@ -234,18 +247,20 @@ func (h *Handler) save(c *gin.Context) {
 		ContentMD:   contentMD,
 		ContentHTML: contentHTML,
 		Status:      status,
+		Pinned:      pinned,
+		Password:    password,
+		PublishAt:   publishAt,
 	}
 
 	if origSlug != "" {
-		// 更新（用 orig_slug 定位）
 		p.Slug = slug
 		if err := h.updateWithRename(origSlug, p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "保存失败: "+err.Error())
+			formRow("保存失败: " + err.Error())
 			return
 		}
 	} else {
 		if _, err := h.store.Create(p); err != nil {
-			h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, "创建失败: "+err.Error())
+			formRow("创建失败: " + err.Error())
 			return
 		}
 	}
@@ -466,7 +481,20 @@ func normalizeTags(raw string) string {
 }
 
 // renderSaveError 保存失败时回显表单数据并提示错误。
-func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, errMsg string) {
+func parseFormPublishAt(s string) time.Time {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02 15:04", time.RFC3339, "2006-01-02T15:04:05Z"} {
+		if tm, err := time.ParseInLocation(layout, s, time.Local); err == nil {
+			return tm.UTC()
+		}
+	}
+	return time.Time{}
+}
+
+func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status string, pinned bool, password, publishAt, errMsg string) {
 	row := &tmpl.AdminPostRow{
 		Slug:      slug,
 		Title:     title,
@@ -476,6 +504,9 @@ func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt
 		Tags:      tags,
 		ContentMD: contentMD,
 		Status:    status,
+		Pinned:    pinned,
+		Password:  password,
+		PublishAt: publishAt,
 	}
 	data := &tmpl.ViewData{
 		Site:  h.site,

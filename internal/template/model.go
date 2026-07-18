@@ -85,6 +85,7 @@ type PostCard struct {
 	Excerpt string
 	Cover   string    // 封面图 URL，空则不渲染 .post-cover
 	Date    time.Time // 用于 <time> 标签与格式化
+	Pinned  bool      // 置顶角标
 }
 
 // Paginator 分页器数据，对齐 Stellar _partial/main/post_list/paginator.ejs。
@@ -140,6 +141,9 @@ type AdminPostRow struct {
 	ContentMD string
 	Status    string
 	Date      string // 列表展示用（created_at 或文件 date）
+	Pinned    bool
+	Password  string
+	PublishAt string // 表单用 datetime-local / RFC3339 文本
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。

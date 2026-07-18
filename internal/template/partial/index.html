@@ -16,7 +16,7 @@
         {{if .Cover}}
         <div class="post-cover"><img src="{{.Cover}}"/></div>
         {{end}}
-        <h2 class="post-title">{{.Title}}</h2>
+        <h2 class="post-title">{{if .Pinned}}<span class="badge" style="margin-right:.35em;vertical-align:middle">置顶</span>{{end}}{{.Title}}</h2>
         <div class="excerpt"><p>{{.Excerpt}}</p></div>
         <div class="meta cap">
           <span class="cap" id="post-meta">
