@@ -39,6 +39,9 @@ type ViewData struct {
 	NextPost     *AdjacentPost // 下一篇（时间更晚），nil 则不渲染
 	RelatedPosts []*PostCard   // 相关文章（按标签匹配，最多 4 篇）
 
+	// 瞬间时间流（Layout=moments 时使用）。
+	Moments []*MomentItem
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }

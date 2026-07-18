@@ -31,6 +31,11 @@ menubar:
       url: /links
       icon: solar:chat-square-like-bold-duotone
       theme: "#FA7D23"
+    - id: moments
+      title: 瞬间
+      url: /moments
+      icon: solar:chat-square-like-bold-duotone
+      theme: "#FF6B9D"
 
 # 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
 links:
