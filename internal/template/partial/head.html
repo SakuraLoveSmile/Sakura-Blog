@@ -18,6 +18,9 @@
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
   <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
   <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
   {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
   <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
@@ -99,4 +102,15 @@
       @keyframes pjax-fade-simple { 0% { opacity: 0; } 100% { opacity: 1; } }
     }
   </style>
+
+  {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
 </head>

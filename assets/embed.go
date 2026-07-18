@@ -7,5 +7,5 @@ import "embed"
 // FS 嵌入的静态资源文件系统，供 main.go 用 http.FS 挂到 /assets 路由。
 // 用 all: 前缀包含下划线/点开头的文件（如字体子集）。
 //
-//go:embed all:css all:js all:fonts
+//go:embed all:css all:js all:fonts all:img manifest.webmanifest
 var FS embed.FS
