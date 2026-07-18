@@ -40,6 +40,7 @@ func DefaultSite() *tmpl.Site {
 			Items: []tmpl.MenuItem{
 				{ID: "post", Title: "博客", URL: "/", Icon: "solar:documents-bold-duotone", Theme: "#1BCDFC"},
 				{ID: "archive", Title: "归档", URL: "/archives/", Icon: "default:calendar", Theme: "#3DC550"},
+				{ID: "links", Title: "友链", URL: "/links", Icon: "solar:chat-square-like-bold-duotone", Theme: "#FA7D23"},
 			},
 		},
 		Footer: tmpl.Footer{
@@ -57,5 +58,6 @@ func DefaultSite() *tmpl.Site {
 			AdminBadge:     "博主",
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
+		Links: nil, // 友链由 site.yml links 段驱动；缺省为空，/links 显示「暂无友链」
 	}
 }
