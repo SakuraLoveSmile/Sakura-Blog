@@ -29,7 +29,7 @@ func DefaultApp() *App {
 }
 
 // LoadApp 从 app.yml 加载应用配置，缺失文件返回 DefaultApp（不报错，便于零配置启动）。
-// 解析失败才报错。环境变量在 resolveAppEnv 中覆盖 yaml 值。
+// 解析失败才报错。环境变量在 ResolveApp 中覆盖 yaml 值。
 func LoadApp(path string) (*App, error) {
 	app := DefaultApp()
 	b, err := os.ReadFile(path)

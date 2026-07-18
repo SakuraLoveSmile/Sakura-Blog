@@ -1,12 +1,51 @@
-{{- /* index.html: 首页文章列表，对齐 Stellar layout/index.ejs。
-   三段：navbar(顶部tab) + post-list(文章卡片) + paginator(分页)。
-   由 base.html 在 Page.Layout=="index" 时通过 {{template "index" .}} 嵌入 l_main。
-   navbar/post_card/paginator 已抽成独立 partial 共享。*/}}
+{{- /* index.html: 首页文章列表，对齐 Stellar layout/index.ejs
+   三段：navbar(顶部tab) + post-list(文章卡片) + paginator(分页器)
+   由 base.html 按 .Page.Layout == "index" 分派渲染。
+   分类/标签文章列表页也复用本模板（Page.Category/Page.Tag 非空，navbar 显示对应 tab）。
+*/ -}}
 
-{{template "navbar" .}}
+{{- /* 1. navbar：抽成共用 partial（navbar.html），对齐 nav_tabs_blog.ejs */}}
+{{template "partial/navbar" .}}
 
+{{- /* 2. post-list：对应 index.ejs 的 layout_post_list + post_card.ejs 的 div_default */}}
 <div class="post-list post">
-  {{range .Posts}}{{template "post_card" .}}{{end}}
+  {{range .Posts}}
+  <div class="post-card-wrap">
+    <a class="post-card post" href="/post/{{.Slug}}">
+      <article class="md-text">
+        {{if .Cover}}
+        <div class="post-cover"><img src="{{.Cover}}"/></div>
+        {{end}}
+        <h2 class="post-title">{{.Title}}</h2>
+        <div class="excerpt"><p>{{.Excerpt}}</p></div>
+        <div class="meta cap">
+          <span class="cap" id="post-meta">
+            {{icon "default:calendar"}}
+            <time datetime="{{date .Date "2006-01-02T15:04:05Z07:00"}}">{{date .Date "2006-01-02"}}</time>
+          </span>
+        </div>
+      </article>
+    </a>
+  </div>
+  {{end}}
 </div>
 
-{{template "paginator" .}}
+{{- /* 3. paginator：对应 _partial/main/post_list/paginator.ejs，仅总页数>1 时渲染
+   页码 1 链接到 /，其余到 /page/N；prev 在第 2 页时指回 / */}}
+{{if .Paginator}}
+{{if gt .Paginator.Total 1}}
+<div class="paginator-wrap dis-select">
+  <nav class="paginator">
+    {{if gt .Paginator.Current 1}}
+    <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/{{else}}/page/{{sub .Paginator.Current 1}}{{end}}"></a>
+    {{end}}
+    {{range .Paginator.Pages}}
+    <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/{{else}}/page/{{.}}{{end}}">{{.}}</a>
+    {{end}}
+    {{if lt .Paginator.Current .Paginator.Total}}
+    <a class="extend next" rel="next" href="/page/{{add .Paginator.Current 1}}"></a>
+    {{end}}
+  </nav>
+</div>
+{{end}}
+{{end}}

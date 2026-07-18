@@ -10,101 +10,82 @@ type ViewData struct {
 	Site    *Site
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
+	TOC     template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
 
-	// Posts 首页/单标签/单分类文章卡片列表（Layout=="index" 或 "list" 时渲染）。
-	// 文章页不读此字段，零值即可。
-	Posts []*PostCard
+	// 首页文章列表（Layout=index 时使用）。
+	Posts     []*PostCard // 文章卡片列表
+	Paginator *Paginator  // 分页器数据（nil 或 Total<=1 则不渲染）
 
-	// Paginator 分页器数据。nil 或 Total<=1 时不渲染。
-	Paginator *Paginator
+	// 归档与分类/标签页（Layout=archive/categories/tags 时使用）。
+	Archives []*ArchiveYear // 归档页年份分组
+	Cats     []*CatItem     // 分类索引页
+	TagItems []*TagItem     // 标签索引页
 
-	// NavTabs 共享 navbar 的 tab 状态。nil 时不渲染 navbar（如文章详情页）。
-	NavTabs *NavTabs
+	// 侧边栏动态数据（所有前台页面渲染前由 fillSidebar 填充）。
+	Recent   []*RecentPost // 近期发布 widget（最新 5 篇 published）
+	TagCloud []*TagItem    // 标签云 widget（按文章数降序前 20）
 
-	// Tags 标签云（Layout=="tags" 时渲染）。
-	Tags []TagItem
-	// Categories 分类云（Layout=="categories" 时渲染）。
-	Categories []CategoryItem
-	// Archive 按年归档（Layout=="archive" 时渲染）。
-	Archive []ArchiveGroup
+	// 评论区（Layout=post 且 comments.enabled 时填充）。
+	Comments     []*CommentItem // 评论树（顶级 + Children 两层）
+	CommentCount int            // 已发布评论总数（"N 条评论"计数）
 
-	// TOCHTML 文章详情页右侧目录的嵌套 HTML（Layout=="post" 且文章有 H2/H3 时填充）。
-	// 空值不渲染 toc widget。结构对齐 Stellar toc helper：<ol class="toc"><li class="toc-item">
-	// <a class="toc-link">...</a><ol class="toc-child">...</ol></li></ol>，H3 缩进靠 toc-child 嵌套。
-	TOCHTML template.HTML
+	// 最新评论 widget（fillSidebar 填充，comments.enabled 时）。
+	LatestComments []*LatestComment
 
-	// ReadNext 文章详情页的上下篇导航（Layout=="post" 时填充）。
-	// nil 或 Prev/Next 都为 nil 时不渲染 read_next 块。结构对齐 Stellar read_next.ejs：
-	// Prev=较新文章（created_at 更大），Next=较早文章（created_at 更小）。
-	ReadNext *ReadNext
-
-	// SearchQuery 站内搜索页的查询词（Layout=="search" 时回显到搜索框与标题）。
-	SearchQuery string
+	// 文章页上下篇导航与相关文章。
+	PrevPost     *AdjacentPost // 上一篇（时间更早），nil 则不渲染
+	NextPost     *AdjacentPost // 下一篇（时间更晚），nil 则不渲染
+	RelatedPosts []*PostCard   // 相关文章（按标签匹配，最多 4 篇）
 
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
 
-// PostCard 首页文章卡片视图模型，对齐 Stellar post_card.ejs 的默认卡片结构。
-// ReadNext 也复用此结构承载上下篇（Slug/Title 足够，Excerpt/Cover/Date 在 read_next 不展示）。
-type PostCard struct {
-	Slug    string
-	Title   string
-	Excerpt string
-	Cover   string // 封面图 URL，空则不渲染 .post-cover
-	Date    time.Time
-	Views   int64 // 阅读量，列表卡片 #post-meta 可选展示（0 不渲染）
+// AdjacentPost 文章页上下篇导航数据。
+type AdjacentPost struct {
+	Slug  string
+	Title string
 }
 
-// ReadNext 文章详情页的上下篇导航视图模型，对齐 Stellar read_next.ejs。
-// Prev=较新文章（时间更新的那篇），Next=较早文章（时间更旧的那篇）。
-// Prev/Next 为 nil 时不渲染对应栏；两者都为 nil 时整个 read_next 块不渲染。
-type ReadNext struct {
-	Prev *PostCard
-	Next *PostCard
+// ArchiveYear 归档页按年份分组的文章列表，对齐 Stellar archive.ejs。
+type ArchiveYear struct {
+	Year  string
+	Posts []*ArchiveItem
 }
 
-// Paginator 分页器数据，对齐 Stellar paginator.ejs（Hexo 内置 paginator helper）。
-// PrevURL/NextURL 为空表示无上一页/下一页；PageURLs[i] 是第 i+1 页的完整 URL（Go 侧预生成，
-// 避免在模板里拼接 query 时被 html/template 的 URL 转义破坏，如 ?q=a&b 的 = 被编码成 %3d）。
-type Paginator struct {
-	Current  int      // 当前页码（从 1 开始）
-	Total    int      // 总页数
-	Pages    []int    // 页码序列，如 [1,2,3]，仅用于 range 计数
-	PageURLs []string // 每页完整 URL，下标对齐 Pages（Pages[i] -> PageURLs[i]）
-	PrevURL  string   // 上一页 URL，空表示无
-	NextURL  string   // 下一页 URL，空表示无
+// ArchiveItem 归档列表单项（time(MM-DD) + 标题 + 链接）。
+type ArchiveItem struct {
+	Slug  string
+	Title string
+	Date  time.Time
 }
 
-// TagItem 标签云页的单个标签。
+// CatItem 分类索引页单项（名称 + 文章数 badge）。
+type CatItem struct {
+	Name  string
+	Count int
+}
+
+// TagItem 标签索引页单项。
 type TagItem struct {
 	Name  string
 	Count int
 }
 
-// CategoryItem 分类云页的单个分类。本期平铺无父子层级。
-type CategoryItem struct {
-	Name  string
-	Count int
+// PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
+type PostCard struct {
+	Slug    string
+	Title   string
+	Excerpt string
+	Cover   string    // 封面图 URL，空则不渲染 .post-cover
+	Date    time.Time // 用于 <time> 标签与格式化
 }
 
-// ArchiveGroup 归档页的年份分组，Posts 按 created_at 倒序。
-type ArchiveGroup struct {
-	Year  int
-	Posts []*PostCard
-}
-
-// NavTabs 共享 navbar 的 tab 状态，对齐 Stellar nav_tabs_blog.ejs。
-// ShowTags/ShowCategories/ShowArchive 控制对应 tab 是否显示（无标签则不显示标签 tab）。
-// Active 指明哪个 tab 高亮："home"/"tags"/"categories"/"archive"/"search"/"tag:name"/"category:name"。
-// TagName/CategoryName 非空时对应 tab 文本变成 "标签:Name" 形式并 active。
-type NavTabs struct {
-	ShowTags       bool
-	ShowCategories bool
-	ShowArchive    bool
-	Active         string // home / tags / categories / archive / search
-	TagName        string // 非空 -> 标签 tab 显示 "标签:TagName" 且 active
-	CategoryName   string // 非空 -> 分类 tab 显示 "分类:CategoryName" 且 active
+// Paginator 分页器数据，对齐 Stellar _partial/main/post_list/paginator.ejs。
+type Paginator struct {
+	Current int
+	Total   int   // 总页数
+	Pages   []int // 页码序列 [1..Total]
 }
 
 // AdminData 后台模板渲染数据。
@@ -113,57 +94,85 @@ type AdminData struct {
 	EditPost  *AdminPostRow   // 编辑页（新建时为空对象）
 	SaveError string          // 保存失败提示
 	IsEdit    bool            // true=编辑现有，false=新建
+
+	// 评论管理页（/admin/comments）。
+	Comments      []*AdminCommentRow // 评论列表
+	CommentFilter string             // 当前筛选：all / pending / approved
+	CommentPage   int                // 当前页码（从 1 开始）
+	CommentPages  []int              // 页码序列（分页器用）
+
+	// 登录页（/admin/login）。
+	LoginError string // 登录失败提示（密码错误）
+	LoginFrom  string // 登录成功后的回跳地址（authRequired 跳转时带入的原始路径）
+}
+
+// AdminCommentRow 评论管理页列表行数据。
+type AdminCommentRow struct {
+	ID        int64
+	PageKey   string // 所在页面（文章链接）
+	Nick      string
+	Email     string
+	Excerpt   string // 内容纯文本摘要（截断展示）
+	Status    string // approved / pending
+	IsAdmin   bool
+	Avatar    string // Gravatar URL
+	Date      string // 列表展示用
+	ReplyNick string // 被回复者昵称（子评论时）
 }
 
 // AdminPostRow 后台列表/编辑表单用的文章行数据。
 type AdminPostRow struct {
-	Slug       string
-	Title      string
-	Excerpt    string
-	Cover      string
-	ContentMD  string
-	Status     string
-	Date       string // 列表展示用（created_at 或文件 date）
-	Tags       []string
-	Categories []string
+	Slug      string
+	Title     string
+	Excerpt   string
+	Cover     string // 封面图 URL（编辑表单回显用）
+	Category  string // 分类（编辑表单回显用）
+	Tags      string // 标签，逗号分隔（编辑表单回显用）
+	ContentMD string
+	Status    string
+	Date      string // 列表展示用（created_at 或文件 date）
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。
-// yaml tag 用于从 config/site.yml 解析（goccy/go-yaml）。
+// yaml tag 供 config/site.yml 加载（goccy/go-yaml），snake_case 精确映射。
 type Site struct {
-	Title       string       `yaml:"title"`
-	Subtitle    string       `yaml:"subtitle"`
-	Description string       `yaml:"description"`
-	Avatar      string       `yaml:"avatar"` // logo 头像 URL
-	LogoTitle   string       `yaml:"logo_title"`
-	LogoSub     string       `yaml:"logo_sub"`
-	URL         string       `yaml:"url"`    // 站点根 URL，如 https://example.com（RSS/sitemap 构建绝对链接）
-	Author      string       `yaml:"author"` // 作者名，RSS feed 的 <author><name>
-	Menubar     Menubar      `yaml:"menubar"`
-	Footer      Footer       `yaml:"footer"`
-	RecentPosts []RecentPost `yaml:"recent_posts"`
-	Tags        []string     `yaml:"tags"`
-	Comments    Comments     `yaml:"comments"`
+	Title       string         `yaml:"title"`
+	Subtitle    string         `yaml:"subtitle"`
+	Description string         `yaml:"description"`
+	URL         string         `yaml:"url"`          // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
+	Avatar      string         `yaml:"avatar"`    // logo 头像 URL
+	AvatarBG    string         `yaml:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
+	LogoTitle   string         `yaml:"logo_title"`
+	LogoSub     string         `yaml:"logo_sub"`
+	Menubar     Menubar        `yaml:"menubar"`
+	Footer      Footer         `yaml:"footer"`
+	Comments    CommentsConfig `yaml:"comments"`
+	Admin       AdminConfig    `yaml:"admin"`
 }
 
-// Comments 评论系统配置，对齐 Stellar theme.comments。
-// Service 为空时不渲染评论区（本地开发可空）。非空时按 service 分派，
-// 当前仅实现 artalk（Demo 1 的 config.json 已设 comments.service="artalk"，
-// artalk 容器样式已编译进 main.css）。
-type Comments struct {
-	Service      string       `yaml:"service"`       // artalk / giscus / waline / ...，空则不渲染
-	CommentTitle string       `yaml:"comment_title"` // 评论区标题，空则用默认文案
-	Artalk       ArtalkConfig `yaml:"artalk"`
+// AdminConfig 管理后台配置（site.yml admin 段）。
+type AdminConfig struct {
+	Password string `yaml:"password"` // /admin 访问密码；留空则不做密码 gate（本地开发用）
 }
 
-// ArtalkConfig 对齐 Stellar theme.comments.artalk。
-// Server 是 Artalk 服务端 URL（必填，否则 SDK 无法加载）；Site 是 Artalk 站点名。
-// CSS/JS 默认用官方 CDN（unpkg artalk@2.9），可按需覆盖。
-type ArtalkConfig struct {
-	Server string `yaml:"server"` // Artalk 后端地址，如 https://artalk.example.com
-	Site   string `yaml:"site"`   // Artalk 站点名称，留空则由服务端默认
-	CSS    string `yaml:"css"`    // Artalk SDK CSS URL，空用默认 CDN
-	JS     string `yaml:"js"`     // Artalk SDK JS URL，空用默认 CDN
+// CommentsConfig 评论系统配置（site.yml comments 段）。
+type CommentsConfig struct {
+	Enabled        bool         `yaml:"enabled"`         // 总开关：false 时文章页不渲染评论区、API 关闭
+	Title          string       `yaml:"title"`           // 评论区标题
+	Moderation     bool         `yaml:"moderation"`      // true=先审后发（新评论 pending）
+	AdminEmail     string       `yaml:"admin_email"`     // 博主邮箱：新评论通知收件人 + 博主身份匹配
+	AdminBadge     string       `yaml:"admin_badge"`     // 博主徽章文案
+	GravatarMirror string       `yaml:"gravatar_mirror"` // Gravatar 镜像基址（头像 = {mirror}/{md5(email)}）
+	Notify         NotifyConfig `yaml:"notify"`          // 邮件通知；smtp_host 为空则整体关闭
+}
+
+// NotifyConfig 邮件通知配置（net/smtp + PlainAuth）。
+type NotifyConfig struct {
+	SMTPHost string `yaml:"smtp_host"`
+	SMTPPort int    `yaml:"smtp_port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	From     string `yaml:"from"` // 发件人地址，空则用 username
 }
 
 // Menubar 对齐 _config.yml menubar.items。
@@ -201,24 +210,43 @@ type RecentPost struct {
 	URL   string `yaml:"url"`
 }
 
+// CommentItem 前台评论区单条评论视图模型（含两层嵌套的子评论）。
+// json tag 供 /api/comments 响应序列化（前端无刷新插入用）。
+type CommentItem struct {
+	ID          int64          `json:"id"`
+	Nick        string         `json:"nick"`
+	Link        string         `json:"link"`         // 个人网站，非空时昵称带链
+	ContentHTML template.HTML  `json:"content_html"` // 已消毒的服务端渲染 HTML，直接输出
+	IsAdmin     bool           `json:"is_admin"`
+	Avatar      string         `json:"avatar"`   // Gravatar URL（{mirror}/{md5(email)}）
+	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
+	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）
+	Children    []*CommentItem `json:"children,omitempty"`
+}
+
+// LatestComment 侧边栏"最新评论"widget 单项。
+type LatestComment struct {
+	Nick    string
+	Excerpt string // 内容纯文本摘要（截断）
+	URL     string // page_key + #comment-{id} 锚点
+	TimeAgo string
+}
+
 // Page 对齐 Hexo page 对象，文章页用。
 type Page struct {
-	Title   string
-	Slug    string
-	Layout  string // post / page / index
-	Type    string // tech / story
-	Lang    string
-	MenuID  string // 当前高亮的菜单 id
-	Author  string
-	Date    string // 原始日期字符串（展示用，如 2026-07-16）
-	Updated string
-	Excerpt string
-
-	// 文章详情页扩展字段（Layout=="post" 用，对齐 Stellar page 对象）。
-	Cover       string    // 封面图 URL，空则不渲染 .l_cover.post（对齐 post_cover.ejs 的 banner 判定）
-	Tags        []string  // 标签列表，footer 标签段 + 面包屑用
-	Categories  []string  // 分类列表，面包屑分类段用
-	CreatedTime time.Time // 创建时间，<time datetime> 与 read_next 查询用
-	UpdatedTime time.Time // 更新时间，<time datetime> 用
-	Views       int64     // 阅读量，article_banner #post-meta 展示（0 不渲染阅读量段）
+	Title        string
+	Slug         string
+	Layout       string // post / page / index / archive / categories / tags
+	Type         string // tech / story
+	Lang         string
+	MenuID       string // 当前高亮的菜单 id
+	Author       string
+	Date         string // 原始日期字符串
+	Updated      string
+	Excerpt      string
+	Views        int64  // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
+	Category     string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
+	Tag          string // 标签文章列表页的当前标签名
+	CanonicalURL string // 当前页面完整 URL（用于 canonical 和 og:url）
+	Description  string // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 }

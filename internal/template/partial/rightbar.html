@@ -1,9 +1,22 @@
-{{- /* rightbar.html: 右侧边栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
-   装配顺序：author 卡片（所有页面）+ TOC 目录（仅文章页且有 H2/H3）。
-   原版 rightbar 按 site_tree 配置走 widget 列表，本期简化为固定 author + 可选 TOC。
-   两者共用 .widgets 容器，对齐 Stellar .l_right .widgets 结构。*/ -}}
+{{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
+   组件顺序对齐 xaoxuu.com 右栏：markdown 欢迎语 → author 卡片 → TOC（仅文章页有 h2/h3 时，末位 sticky 吸顶）。
+   他的「近期动态」timeline 组件依赖外部 memos 服务（ds-memos），本 demo 无此数据源故未复刻。
+   user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效；
+   TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。*/ -}}
 <div class="widgets">
-  {{- /* author 卡片：对应 widgets/author.ejs（从左栏移来，所有页面右栏显示）*/}}
+  {{- /* 欢迎语：对应 widgets/markdown.ejs，对齐 xaoxuu.com 右栏第一个组件（欢迎，旅行者：）*/}}
+  <widget class="widget-wrapper markdown">
+    <div class="widget-header dis-select">
+      <span class="name">欢迎，旅行者：</span>
+    </div>
+    <div class="widget-body fs14">
+      <p>这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。</p>
+      <blockquote>
+        <p>左侧可以搜索文章，右下角可以切换深浅色主题。</p>
+      </blockquote>
+    </div>
+  </widget>
+
   <widget class="widget-wrapper user-card author">
     <div class="widget-body">
       <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
@@ -16,16 +29,20 @@
     </div>
   </widget>
 
-  {{- /* TOC 目录：仅文章页且文章有 H2/H3 时渲染，对齐 Stellar widgets/toc.ejs。
-        TOCHTML 已是嵌套 <ol class="toc"> 结构，H3 缩进靠 toc-child 嵌套（main.css 已支持）。
-        TOCHTML 为空时不渲染。*/}}
-  {{if .TOCHTML}}
-  <widget class="widget-wrapper toc" id="data-toc" collapse="auto">
+  {{if .TOC}}
+  <widget class="widget-wrapper toc" id="data-toc" collapse="false">
     <div class="widget-header dis-select">
-      <span class="name">目录</span>
+      <span class="name">本文目录</span>
+      <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
     </div>
     <div class="widget-body">
-      {{.TOCHTML}}
+      {{.TOC}}
+    </div>
+    <div class="widget-footer">
+      <a class="top" onclick="util.scrollTop()">
+        {{icon "default:upup"}}
+        <span>回到顶部</span>
+      </a>
     </div>
   </widget>
   {{end}}

@@ -1,31 +1,33 @@
-{{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs。
-   作用域：. 是 *ViewData，读取 $.NavTabs。NavTabs 为 nil 时不渲染（文章详情页无 navbar）。
-   近期发布 tab 始终显示。分类/标签/归档 tab 由对应 Show* 字段控制显示。
-   active 态：Active 字段为 "home"/"tags"/"categories"/"archive" 时对应 tab active；
-   TagName/CategoryName 非空时对应 tab 显示 "标签:Name"/"分类:Name" 且 active。
-   注意：Stellar 原版 navbar 无搜索 tab，搜索入口在 sidebar 的 search widget。*/}}
-{{if .NavTabs}}
-{{$n := .NavTabs}}
+{{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs
+   被 index / archive / categories / tags 页面共用（{{template "partial/navbar" .}}）。
+   tab 顺序：近期发布 → 分类 → 标签 → 归档。
+   active 规则：
+   - 近期发布：首页（Layout=index 且无 Category/Tag 上下文）
+   - 分类：分类索引页（Layout=categories）显示"分类"；分类文章列表页（Page.Category 非空）显示"分类：xxx"
+   - 标签：同理（Layout=tags / Page.Tag）
+   - 归档：Layout=archive
+*/ -}}
 <div class="navbar top">
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="post">
-        <a {{if eq $n.Active "home"}}class="active"{{end}} href="/">近期发布</a>
-        {{if $n.ShowCategories}}
-        <a {{if or $n.CategoryName (eq $n.Active "categories")}}class="active"{{end}} href="/categories">
-          {{if $n.CategoryName}}分类:{{$n.CategoryName}}{{else}}分类{{end}}
-        </a>
-        {{end}}
-        {{if $n.ShowTags}}
-        <a {{if or $n.TagName (eq $n.Active "tags")}}class="active"{{end}} href="/tags">
-          {{if $n.TagName}}标签:{{$n.TagName}}{{else}}标签{{end}}
-        </a>
-        {{end}}
-        {{if $n.ShowArchive}}
-        <a {{if eq $n.Active "archive"}}class="active"{{end}} href="/archives">归档</a>
-        {{end}}
+        <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">近期发布</a>
+        {{- if .Page.Category}}
+        <a class="active" href="/categories/">分类：{{.Page.Category}}</a>
+        {{- else if eq .Page.Layout "categories"}}
+        <a class="active" href="/categories/">分类</a>
+        {{- else}}
+        <a href="/categories/">分类</a>
+        {{- end}}
+        {{- if .Page.Tag}}
+        <a class="active" href="/tags/">标签：{{.Page.Tag}}</a>
+        {{- else if eq .Page.Layout "tags"}}
+        <a class="active" href="/tags/">标签</a>
+        {{- else}}
+        <a href="/tags/">标签</a>
+        {{- end}}
+        <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">归档</a>
       </nav>
     </div>
   </div>
 </div>
-{{end}}

@@ -1,12 +1,71 @@
-{{- /* content.html: 文章详情页正文区，对应 Stellar page.ejs 的 layoutDiv() 顺序：
-   article_banner → <article class="md-text content"> → article_footer → read_next。
+{{- /* content.html: 文章页正文，对应 Stellar _partial/main/article/
    goldmark 输出的 HTML 包裹在 <article class="md-text content"> 内，
    Stellar 的 .md-text 选择器会应用文章样式（标题/代码块/引用/列表等）。
-   Content 已是 template.HTML 类型，直接输出不会转义，无需 safe。*/ -}}
-{{template "article_banner" .}}
+   Content 已是 template.HTML 类型，直接输出不会转义，无需 safe。*/}}
+
+{{- /* 文章头部 banner：对齐 Stellar _partial/main/navbar/article_banner.ejs。
+   面包屑（首页 / 博客）+ 发布日期 + 阅读量（Page.Views，已含本次访问）+ 大标题。
+   仅文章页（Page.Title 非空）渲染；复用主题现成 .article.banner / .bread-nav / #post-meta / .text.title 样式。*/}}
+{{if .Page.Title}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">首页</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/">博客</a>
+        </div>
+        <div class="flex-row" id="post-meta">
+          {{- if .Page.Date}}
+          <span class="text created">
+            {{icon "default:calendar"}}
+            <time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>
+          </span>
+          {{- end}}
+          {{- if gt .Page.Views 0}}
+          <span class="sep"></span>
+          <span class="text views">{{.Page.Views}} 次阅读</span>
+          {{- end}}
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+
 <article class="md-text content">
   {{.Content}}
 </article>
-{{template "article_footer" .}}
-{{template "read_next" .}}
-{{template "comments" .}}
+
+{{if or .PrevPost .NextPost}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    {{if .PrevPost}}<div class="item" id="prev">
+      <div class="note">较新文章</div>
+      <a href="/post/{{.PrevPost.Slug}}">{{.PrevPost.Title}}</a>
+    </div>{{end}}
+    {{if .NextPost}}<div class="item" id="next">
+      <div class="note">较早文章</div>
+      <a href="/post/{{.NextPost.Slug}}">{{.NextPost.Title}}</a>
+    </div>{{end}}
+  </section>
+</div>
+{{end}}
+
+{{if .RelatedPosts}}
+<div class="related-wrap" id="related-posts">
+  <section class="header"><div class="title cap theme">您可能感兴趣的文章</div></section>
+  <section class="body"><div class="related-posts">
+    {{range .RelatedPosts}}<a class="item" href="/post/{{.Slug}}">
+      <span class="title">{{.Title}}</span>
+      <span class="excerpt">{{.Excerpt}}</span>
+    </a>{{end}}
+  </div></section>
+</div>
+{{end}}

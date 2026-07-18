@@ -3,7 +3,7 @@ node_modules/
 .git/
 .gitignore
 
-# 参考资源（Stellar 主题克隆，已 gitignore，不进镜像）
+# 参考资源（Stellar 主题克隆，已 gitignore，不进镜像；icons.yml 已 go:embed 进二进制）
 resource/
 
 # 本地数据库与 WAL 旁路文件（容器用挂载卷）

@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/blog ./
 # ---- runtime ----
 FROM alpine:3.20
 
-# ca-certificates：Artalk/RSS 外链 HTTPS 需要；tzdata：时间戳本地化。
+# ca-certificates：Gravatar 头像镜像/RSS 外链 HTTPS 需要；tzdata：时间戳本地化。
 RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /app

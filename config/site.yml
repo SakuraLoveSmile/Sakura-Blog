@@ -1,23 +1,20 @@
-# 站点配置 - Stellar Demo
-# 对齐 internal/config/site.go 的 DefaultSite()，供 main.go 启动时加载。
-# 修改后重启服务生效（无需重新编译，yaml 运行时读取）。
+# 站点配置，对应 internal/config/site.go 的 DefaultSite()。
+# 启动时由 config.LoadSite 加载；文件缺失/解析失败时 fallback 到 DefaultSite()。
+# 注意：# 开头的值（如主题色）必须加引号；raw HTML（如 social icon）用单引号包裹。
 
 title: Stellar Demo
 subtitle: Go 服务端渲染
 description: 用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客，验证服务端渲染链路。
+url: ""
 avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+# 头像 hover 旋转背景图，对应原版 style.animated_avatar.background（animate: auto）
+avatar_bg: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp
 logo_title: Stellar Demo
-logo_sub: Go SSR 验证
+# 含 | 时拆 normal/hover 两段，鼠标 hover 标题时向上滚动切换（原版 logo.ejs 机制）
+logo_sub: Go SSR 验证|Stellar 主题
 
-# 站点根 URL：RSS feed / sitemap 构建绝对链接用。部署时改成实际域名。
-url: http://localhost:8080
-# 作者名：RSS feed 的 <author><name>
-author: Stellar Demo
-
-# 顶部菜单：每项 theme 是高亮色（inline color，控制 SVG fill=currentColor）
-# 图标 key 对应 resource/hexo-theme-stellar/_data/icons.yml
 menubar:
-  columns: 4
+  columns: 2
   items:
     - id: post
       title: 博客
@@ -29,58 +26,38 @@ menubar:
       url: /archives/
       icon: default:calendar
       theme: "#3DC550"
-    - id: explore
-      title: 探索
-      url: /explore/
-      icon: solar:planet-bold-duotone
-      theme: "#FA6400"
-    - id: social
-      title: 社交
-      url: /friends/
-      icon: solar:chat-square-like-bold-duotone
-      theme: "#F44336"
 
-# 侧边栏底部社交图标：icon 是 raw HTML，单引号包裹避免 yaml 解析问题
 footer:
   social:
     - title: GitHub
       url: https://github.com/
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/08a41b181ce68.svg">'
     - title: Music
-      url: "#"
+      url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3845874.svg">'
     - title: Unsplash
-      url: "#"
+      url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3616429.svg">'
     - title: Comments
-      url: "#"
+      url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
 
-# 近期发布 widget
-recent_posts:
-  - title: "Demo 2：Go 服务端渲染验证"
-    url: /post/hello
-  - title: "Demo 1：Stellar CSS 编译验证"
-    url: "#"
-  - title: "用 shim 方案脱离 Hexo 编译 Stylus"
-    url: "#"
-  - title: "深色模式与菜单图标机制"
-    url: "#"
-  - title: "Artalk 评论集成方案"
-    url: "#"
+# 管理后台
+admin:
+  password: ''            # /admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
 
-# 标签云
-tags: [CSS, Stellar, Go, Gin, Hexo, SQLite]
-
-# 评论系统：对齐 Stellar theme.comments。service 留空则不渲染评论区（本地开发默认空）。
-# 设为 artalk 后，文章页底部加载 Artalk SDK。artalk.server 是 Artalk 后端地址，必填。
-# Artalk 后端独立部署（官方单二进制，详见 https://artalk.docs.errorly.dev/guide/deploy.html）。
-# 本地试用：下载 artalk 二进制 -> artalk server -> 访问 :23366 控制台建站点 -> 填 server。
+# 评论系统（自建，参考 Artalk 架构 + Halo 设计语言）
 comments:
-  service: # artalk / giscus / waline / ...（留空=不启用评论）
-  comment_title: 快来参与讨论吧~
-  artalk:
-    server: # Artalk 后端地址，如 http://localhost:23366
-    site: # Artalk 站点名称
-    css: # Artalk SDK CSS，空用默认 https://unpkg.com/artalk@2.9/dist/artalk.css
-    js: # Artalk SDK JS，空用默认 https://unpkg.com/artalk@2.9/dist/artalk.js
+  enabled: true           # 总开关：false 时文章页不渲染评论区、/api/comments 关闭
+  title: 评论             # 评论区标题
+  moderation: false       # true=先审后发（新评论 pending，管理页通过后公开）；false=直接发布
+  admin_email: ''         # 博主邮箱：新评论通知收件人 + 博主身份匹配（该邮箱评论带博主徽章）
+  admin_badge: 博主       # 博主徽章文案
+  gravatar_mirror: https://weavatar.com/avatar  # Gravatar 镜像基址（头像 = {mirror}/{md5(email)}）
+  # 邮件通知（net/smtp）。smtp_host 留空则通知整体关闭；发送失败仅记日志，不影响评论提交
+  notify:
+    smtp_host: ''
+    smtp_port: 465
+    username: ''
+    password: ''
+    from: ''              # 发件人地址，留空用 username

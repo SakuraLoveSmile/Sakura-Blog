@@ -1,47 +1,75 @@
-{{- /* comments.html: 评论区，对应 Stellar _partial/comments/layout.ejs + artalk/layout.ejs。
-   渲染条件：Site.Comments.Service 非空（对齐原版 loadComment 判定 theme.comments.service.length > 0）。
-   结构对齐原版：.related-wrap.md-text#comments > section.header.cmt-title + section.body.cmt-body.{service}。
-   artalk 分支：div.artalk#artalk_container（原版 id 为 artalk_container，CSS .cmt-body.artalk .artalk 已编译）。
-   page_key 用稳定路径 /post/{slug}（不用完整 URL），改域名后评论不丢失。
-   SDK 加载：CSS/JS 默认走 unpkg CDN（artalk@2.9），可在 site.yml 覆盖；JS defer 后 onload 调 Artalk.init。
-   darkMode 跟随 [data-theme="dark"]，主题切换时同步通知 Artalk。*/ -}}
-{{if .Site.Comments.Service}}
-{{$c := .Site.Comments}}
+{{- /* comments.html: 自建评论区（参考 Artalk 架构 + Halo 设计语言）。
+   外壳对齐 Stellar _partial/comments/layout.ejs：.related-wrap.md-text#comments > .cmt-title + .cmt-body.{service}；
+   内部为 Halo 结构：编辑器在上（textarea + 三列身份信息 + footer），列表在下（评论行 + 子评论缩进一层）。
+   样式在 assets/css/comments.css，交互在 assets/js/comments.js（事件委托，PJAX 兼容）。
+   两层嵌套模型：子评论与"回复子评论的评论"平级展示（root 的 Children），模板只需两层循环。*/ -}}
 <div class="related-wrap md-text" id="comments">
   <section class="header cmt-title cap theme">
-    {{if $c.CommentTitle}}{{$c.CommentTitle}}{{else}}快来参与讨论吧~{{end}}
+    <span>{{.Site.Comments.Title}}</span>
   </section>
-  <section class="body cmt-body {{$c.Service}}">
-    {{if eq $c.Service "artalk"}}
-    {{$a := $c.Artalk}}
-    {{- /* CSS：site.yml 覆盖或默认 unpkg CDN。href 上下文由 html/template 自动转义。*/}}
-    <link rel="stylesheet" href="{{if $a.CSS}}{{$a.CSS}}{{else}}https://unpkg.com/artalk@2.9/dist/artalk.css{{end}}">
-    {{- /* 容器：id=artalk_container 对齐原版，data-page-key 用稳定路径避免改域名丢评论 */}}
-    <div class="artalk" id="artalk_container" data-page-key="/post/{{.Page.Slug}}" data-page-title="{{.Page.Title}}" data-server="{{$a.Server}}" data-site="{{$a.Site}}"></div>
-    {{- /* SDK：defer 保证 DOM 就绪，onload 调 Artalk.init。server 为空时 init 报错但不影响页面其余部分。*/}}
-    <script defer src="{{if $a.JS}}{{$a.JS}}{{else}}https://unpkg.com/artalk@2.9/dist/artalk.js{{end}}" onload="initArtalk()"></script>
-    <script>
-    function initArtalk() {
-      var el = document.getElementById('artalk_container');
-      if (!el || !window.Artalk) return;
-      var darkMode = document.documentElement.dataset.theme === 'dark';
-      var artalk = Artalk.init({
-        el: '#artalk_container',
-        pageKey: el.getAttribute('data-page-key'),
-        pageTitle: el.getAttribute('data-page-title'),
-        server: el.getAttribute('data-server'),
-        site: el.getAttribute('data-site'),
-        darkMode: darkMode
-      });
-      {{- /* 主题切换时同步 Artalk 深色模式（toggleTheme 在 base.html 定义，此处只监听 data-theme 变化）*/}}
-      var observer = new MutationObserver(function () {
-        var dark = document.documentElement.dataset.theme === 'dark';
-        try { artalk.setDarkMode(dark); } catch (e) {}
-      });
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    }
-    </script>
-    {{end}}
+  <section class="body cmt-body native" id="cmt-body"
+    data-page-key="/post/{{.Page.Slug}}"
+    data-admin-badge="{{.Site.Comments.AdminBadge}}">
+
+    {{- /* 编辑器：Halo 编辑器在上布局。reply-tip 回复提示条默认隐藏；website 为蜜罐隐藏字段（机器人可见） */}}
+    <div class="cmt-editor" id="cmt-editor">
+      <div class="cmt-reply-tip" id="cmt-reply-tip" style="display:none">
+        <span>回复 <b id="cmt-reply-nick"></b></span>
+        <button type="button" class="cmt-reply-cancel" id="cmt-reply-cancel">取消</button>
+      </div>
+      <textarea class="cmt-textarea" id="cmt-content" placeholder="编写评论，支持 Markdown" rows="4" maxlength="2000"></textarea>
+      <div class="cmt-inputs">
+        <input type="text" class="cmt-input" id="cmt-nick" placeholder="昵称 *" maxlength="32" autocomplete="nickname">
+        <input type="email" class="cmt-input" id="cmt-email" placeholder="邮箱 *" maxlength="254" autocomplete="email">
+        <input type="text" class="cmt-input" id="cmt-link" placeholder="网站（选填）" maxlength="200" autocomplete="url">
+      </div>
+      <input type="text" class="cmt-hp" id="cmt-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="cmt-footer">
+        <span class="cmt-tip">邮箱仅用于头像与回复通知，不会公开</span>
+        <button type="button" class="cmt-submit" id="cmt-submit">发布评论</button>
+      </div>
+    </div>
+
+    {{- /* 列表：N 条评论计数 + 评论行（圆头像 + 加粗昵称 + 博主徽章 + 相对时间 + 内容 + 回复按钮） */}}
+    <div class="cmt-count" id="cmt-count">{{if .CommentCount}}{{.CommentCount}} 条评论{{else}}暂无评论{{end}}</div>
+    <div class="cmt-list" id="cmt-list">
+      {{range .Comments}}
+      <div class="cmt-item" id="comment-{{.ID}}" data-id="{{.ID}}">
+        <img class="cmt-avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
+        <div class="cmt-main">
+          <div class="cmt-meta">
+            {{if .Link}}<a class="cmt-nick" href="{{.Link}}" target="_blank" rel="external nofollow noopener noreferrer">{{.Nick}}</a>{{else}}<span class="cmt-nick">{{.Nick}}</span>{{end}}
+            {{if .IsAdmin}}<span class="cmt-badge">{{$.Site.Comments.AdminBadge}}</span>{{end}}
+            <span class="cmt-time" title="{{.Date}}">{{.TimeAgo}}</span>
+          </div>
+          <div class="cmt-content">{{.ContentHTML}}</div>
+          <div class="cmt-actions">
+            <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
+          </div>
+          {{- /* 子评论缩进一层（左侧竖线），与顶级评论行结构一致 */}}
+          {{if .Children}}
+          <div class="cmt-children">
+            {{range .Children}}
+            <div class="cmt-item" id="comment-{{.ID}}" data-id="{{.ID}}">
+              <img class="cmt-avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
+              <div class="cmt-main">
+                <div class="cmt-meta">
+                  {{if .Link}}<a class="cmt-nick" href="{{.Link}}" target="_blank" rel="external nofollow noopener noreferrer">{{.Nick}}</a>{{else}}<span class="cmt-nick">{{.Nick}}</span>{{end}}
+                  {{if .IsAdmin}}<span class="cmt-badge">{{$.Site.Comments.AdminBadge}}</span>{{end}}
+                  <span class="cmt-time" title="{{.Date}}">{{.TimeAgo}}</span>
+                </div>
+                <div class="cmt-content">{{.ContentHTML}}</div>
+                <div class="cmt-actions">
+                  <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
+                </div>
+              </div>
+            </div>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
   </section>
 </div>
-{{end}}

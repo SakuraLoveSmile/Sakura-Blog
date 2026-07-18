@@ -1,38 +1,60 @@
 package main
 
 import (
-	"errors"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
-	textTemplate "text/template" // XML 渲染用（atom.xml / sitemap.xml，别名避免与 html/template 冲突）
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"blog/assets"
 	"blog/internal/admin"
+	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
 
+// RSS 2.0 结构体（encoding/xml 标准库）
+type RSS struct {
+	XMLName xml.Name `xml:"rss"`
+	Version string   `xml:"version,attr"`
+	Channel Channel  `xml:"channel"`
+}
+
+type Channel struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	Items       []Item `xml:"item"`
+}
+
+type Item struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
+	Guid        string `xml:"guid"`
+}
+
 // 资源加载策略：
 //   - 默认（部署）：icons/templates/assets 全部走 go:embed，单二进制无外部依赖。
-//   - -dev 模式（本地调试）：从磁盘读 resource/icons.yml、internal/template、assets/，
-//     便于改 CSS/模板后 go run 立即生效（无需重编译 embed）。
-//   - root 用于定位 site.yml 与 DB；embed 模式下 root 仅作 config/data 目录基准。
+//   - -dev 模式（本地调试）：从磁盘读 icons.yml、internal/template、assets/，改样式/模板即时生效。
+//   - root 用于定位 config（app.yml/site.yml）、DB 与 content；embed 模式下仅作目录基准。
 //
-// 不能依赖 os.Executable()：go run 编译到临时目录，二进制路径不在 dev/。
+// 不能依赖 os.Executable()：go run 编译到临时目录，二进制路径不在源码目录。
 func main() {
 	var (
 		root       string
@@ -41,15 +63,15 @@ func main() {
 		iconsPath  string
 		configPath string
 	)
-	flag.StringVar(&root, "root", "", "工作根目录（定位 config/site.yml 与 DB；空则用 cwd 或 app.yml）")
+	flag.StringVar(&root, "root", "", "工作根目录（定位 config/DB/content；空则用 cwd 或 app.yml）")
 	flag.BoolVar(&seed, "seed", false, "启动时把 content/posts/*.md 导入 SQLite（按 slug UPSERT）")
 	flag.BoolVar(&devMode, "dev", false, "开发模式：从磁盘读 icons/templates/assets（默认走 go:embed）")
 	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 ../resource/.../icons.yml）")
 	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/config/app.yml）")
 	flag.Parse()
 
-	// 应用配置：先粗读 app.yml 拿 root（环境变量 BLOG_ROOT 可覆盖），再 ResolveApp 绝对化。
-	// root 解析优先级：-root flag > BLOG_ROOT > app.yml.root > cwd。
+	// 应用配置：先算 bootstrap root（-root > BLOG_ROOT > cwd），据此定位 app.yml，
+	// 再 ResolveApp 应用环境变量覆盖与路径绝对化。
 	bootstrapRoot := root
 	if bootstrapRoot == "" {
 		bootstrapRoot = os.Getenv("BLOG_ROOT")
@@ -67,19 +89,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("load app config: %v", err)
 	}
-	// -root flag 优先于 app.yml 的 root（命令行显式指定胜出）
 	if root != "" {
-		app.Root = root
+		app.Root = root // -root flag 优先于 app.yml
 	}
 	app = config.ResolveApp(app)
-	if devMode && iconsPath == "" {
-		// 开发模式默认从 resource/ 读 icons.yml（dev/ 出发是 ../resource/...）
-		iconsPath = filepath.Join(app.Root, "..", "resource", "hexo-theme-stellar", "_data", "icons.yml")
-	}
 
-	// icons 加载：-dev 模式从磁盘读，否则走 embed。
+	// icons 加载：-dev 从磁盘读（默认 ../resource/.../icons.yml），否则走 embed。
 	var reg *tmpl.IconRegistry
 	if devMode {
+		if iconsPath == "" {
+			iconsPath = filepath.Join(app.Root, "..", "resource", "hexo-theme-stellar", "_data", "icons.yml")
+		}
 		reg, err = tmpl.LoadIcons(iconsPath)
 		if err != nil {
 			log.Fatalf("load icons (dev): %v", err)
@@ -93,7 +113,7 @@ func main() {
 		log.Printf("loaded %d icons from embed", reg.Len())
 	}
 
-	// 模板引擎：-dev 模式从磁盘读（改模板立即生效），否则走 embed。
+	// 模板引擎：-dev 从磁盘读（改模板即时生效），否则走 embed。命名均为路径化（layout/base 等）。
 	var engine *tmpl.Engine
 	if devMode {
 		engine, err = tmpl.NewEngine(filepath.Join(app.Root, "internal", "template"), reg)
@@ -109,8 +129,7 @@ func main() {
 		log.Printf("templates loaded from embed")
 	}
 
-	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。embed 模式下 content 仍需磁盘，
-	// 故按 root 定位；部署时 content/ 可选（有 DB 即可），不存在不报错。
+	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。按 root 定位，部署时可选。
 	posts := post.NewService(filepath.Join(app.Root, "content", "posts"))
 
 	// SQLite 持久化：DBPath 已在 ResolveApp 绝对化。
@@ -121,20 +140,34 @@ func main() {
 	defer st.Close()
 	log.Printf("sqlite ready: %s", app.DBPath)
 
-	// 站点配置：优先读 config/site.yml，缺失或解析失败回退 DefaultSite。
+	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
 	siteConfigPath := filepath.Join(app.Root, "config", "site.yml")
 	site, err := config.LoadSite(siteConfigPath)
 	if err != nil {
 		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
 		site = config.DefaultSite()
 	} else {
-		log.Printf("site config loaded from %s", siteConfigPath)
+		log.Printf("loaded site config: %s", siteConfigPath)
 	}
 
-	// admin handler（含 seed 能力）
-	adminHandler := admin.New(st, posts, engine, site)
+	// 评论配置兜底：site.yml 缺字段时补默认值（Enabled 以配置为准，不强制开启）
+	if site.Comments.GravatarMirror == "" {
+		site.Comments.GravatarMirror = "https://weavatar.com/avatar"
+	}
+	if site.Comments.AdminBadge == "" {
+		site.Comments.AdminBadge = "博主"
+	}
+	if site.Comments.Title == "" {
+		site.Comments.Title = "评论"
+	}
 
-	// seed：-seed flag 或 app.yml seed_on_start 任一为真即执行。
+	// 评论 handler：公开 API 注册 + admin 回复通知复用（Enabled=false 时不注册路由，仅供 admin 用）
+	commentHandler := comment.New(st, &site.Comments, site.Title)
+
+	// admin handler（含 seed 能力）
+	adminHandler := admin.New(st, posts, engine, site, commentHandler)
+
+	// seed：-seed flag 或 app.yml seed_on_start / BLOG_SEED 任一为真即执行导入。
 	if seed || app.SeedOnStart {
 		n, _ := adminHandler.SeedCount()
 		if err := adminHandler.Seed(); err != nil {
@@ -143,7 +176,95 @@ func main() {
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}
 
-	// release 模式：关掉 Gin 调试日志（生产噪音），开发期可用 -dev 保留 debug。
+	// 搜索索引与 widget 摘要共用的纯文本提取：去标签 + 压缩空白。
+	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
+	whitespaceRe := regexp.MustCompile(`\s+`)
+	stripHTML := func(s string) string {
+		s = htmlTagRe.ReplaceAllString(s, " ")
+		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
+	}
+
+	// fillSEO：填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
+	fillSEO := func(data *tmpl.ViewData, c *gin.Context) {
+		baseURL := ""
+		if site.URL != "" {
+			baseURL = site.URL
+		} else {
+			baseURL = "http://" + c.Request.Host
+		}
+		data.Page.CanonicalURL = baseURL + c.Request.URL.Path
+		if data.Page.Description == "" {
+			data.Page.Description = site.Description
+		}
+	}
+
+	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 最新评论 5 条），所有前台页面渲染前调用。
+	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
+	fillSidebar := func(data *tmpl.ViewData) {
+		if posts, err := st.ListPublishedPaged(1, 5); err == nil {
+			for _, p := range posts {
+				data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
+			}
+		}
+		if site.Comments.Enabled {
+			if comments, err := st.ListRecentComments(5); err == nil {
+				for _, cm := range comments {
+					data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
+						Nick:    cm.Nick,
+						Excerpt: truncateText(stripHTML(cm.ContentHTML), 40),
+						URL:     cm.PageKey + "#comment-" + strconv.FormatInt(cm.ID, 10),
+						TimeAgo: comment.TimeAgo(cm.CreatedAt),
+					})
+				}
+			}
+		}
+		if counts, err := st.CountByTag(); err == nil {
+			items := make([]*tmpl.TagItem, 0, len(counts))
+			for name, n := range counts {
+				items = append(items, &tmpl.TagItem{Name: name, Count: n})
+			}
+			sort.Slice(items, func(i, j int) bool {
+				if items[i].Count != items[j].Count {
+					return items[i].Count > items[j].Count
+				}
+				return items[i].Name < items[j].Name
+			})
+			if len(items) > 20 {
+				items = items[:20]
+			}
+			data.TagCloud = items
+		}
+	}
+
+	// fillComments：文章页评论区 SSR 注入（评论树 + 计数）。查询失败留空，评论区降级为空列表。
+	fillComments := func(data *tmpl.ViewData, pageKey string) {
+		if !site.Comments.Enabled {
+			return
+		}
+		if comments, err := st.ListCommentsByPage(pageKey); err == nil {
+			data.Comments = comment.ToViewItems(comments, &site.Comments)
+		}
+		if n, err := st.CountCommentsByPage(pageKey); err == nil {
+			data.CommentCount = n
+		}
+	}
+
+	// render404：渲染自定义 404 页（HTTP 404 + base 布局 Layout=404），NoRoute 与各路由未命中共用。
+	render404 := func(c *gin.Context) {
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "页面不存在", Layout: "404", Lang: "zh-CN"},
+		}
+		fillSidebar(data)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// release 模式：关掉 Gin 调试日志（生产噪音），-dev 保留 debug。
 	if !devMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -161,7 +282,17 @@ func main() {
 		r.ForwardedByClientIP = true
 	}
 
-	// 静态文件 /assets：-dev 模式从磁盘读（改 CSS 立即生效），否则走 embed.FS。
+	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
+	// http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。
+	// 必须注册在静态路由之前，否则静态路由先命中拿不到头。
+	r.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.Next()
+	})
+
+	// 静态文件 /assets：-dev 从磁盘读（改 CSS 即时生效），否则走 embed.FS（css/js/fonts）。
 	if devMode {
 		r.Static("/assets", filepath.Join(app.Root, "assets"))
 	} else {
@@ -175,6 +306,14 @@ func main() {
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
 
+	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
+	if site.Comments.Enabled {
+		commentHandler.Register(r)
+	}
+
+	// 未匹配路由一律走自定义 404 页
+	r.NoRoute(render404)
+
 	// 文章路由 /post/:slug：DB 优先（published），未命中回退文件渲染（向后兼容 Demo 2）
 	r.GET("/post/:slug", func(c *gin.Context) {
 		slug := c.Param("slug")
@@ -182,54 +321,64 @@ func main() {
 		// 优先查 DB
 		if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil {
 			// 阅读量自增：每次访问 /post/:slug 计数 +1。失败仅记日志，不中断渲染。
-			// p.Views 是 incr 前的值，展示用 p.Views+1 含本次访问（与 DB 最终值一致）。
 			if err := st.IncrViews(slug); err != nil {
 				log.Printf("incr views for %s: %v", slug, err)
 			}
-			// 填标签/分类（关联表查询），用于面包屑分类段 + footer 标签/分类段
-			if err := st.FillTagsCategories([]*store.Post{p}); err != nil {
-				log.Printf("fill tags/categories for %s: %v", slug, err)
-			}
-			// 查上下篇：prev=较新，next=较旧（对齐 Stellar read_next.ejs 语义）
-			var readNext *tmpl.ReadNext
-			prev, next, err := st.GetPrevNext(p)
+			views, err := st.GetViews(slug)
 			if err != nil {
-				log.Printf("get prev/next for %s: %v", slug, err)
-			} else if prev != nil || next != nil {
-				readNext = &tmpl.ReadNext{}
-				if prev != nil {
-					readNext.Prev = toCard(prev)
-				}
-				if next != nil {
-					readNext.Next = toCard(next)
-				}
+				log.Printf("get views for %s: %v", slug, err)
 			}
-
-			toc, htmlWithIDs := post.ExtractTOC(p.ContentHTML)
 			data := &tmpl.ViewData{
 				Site: site,
 				Page: &tmpl.Page{
-					Title:       p.Title,
-					Slug:        p.Slug,
-					Layout:      "post",
-					Type:        "tech",
-					Lang:        "zh-CN",
-					MenuID:      "post",
-					Date:        p.CreatedAt.Format("2006-01-02"),
-					Updated:     p.UpdatedAt.Format("2006-01-02"),
-					Excerpt:     p.Excerpt,
-					Cover:       p.Cover,
-					Tags:        p.Tags,
-					Categories:  p.Categories,
-					CreatedTime: p.CreatedAt,
-					UpdatedTime: p.UpdatedAt,
-					Views:       p.Views + 1,
+					Title:   p.Title,
+					Slug:    p.Slug,
+					Layout:  "post",
+					Type:    "tech",
+					Lang:    "zh-CN",
+					MenuID:  "post",
+					Date:    p.CreatedAt.Format("2006-01-02"),
+					Excerpt: p.Excerpt,
+					Views:   views,
 				},
-				Content:  template.HTML(htmlWithIDs),
-				TOCHTML:  template.HTML(post.BuildTOCHTML(toc)),
-				ReadNext: readNext,
+				Content: template.HTML(p.ContentHTML),
 			}
-			html, err := engine.Render("base", data)
+			data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+			// 上下篇导航
+			if prev, err := st.GetPrevPost(slug); err == nil && prev != nil {
+				data.PrevPost = &tmpl.AdjacentPost{Slug: prev.Slug, Title: prev.Title}
+			}
+			if next, err := st.GetNextPost(slug); err == nil && next != nil {
+				data.NextPost = &tmpl.AdjacentPost{Slug: next.Slug, Title: next.Title}
+			}
+			// 相关文章（按标签匹配，最多 4 篇）
+			if related, err := st.ListRelatedByTags(slug, p.Tags, 4); err == nil && len(related) > 0 {
+				cards := make([]*tmpl.PostCard, 0, len(related))
+				for _, rp := range related {
+					cards = append(cards, &tmpl.PostCard{
+						Slug:    rp.Slug,
+						Title:   rp.Title,
+						Excerpt: rp.Excerpt,
+						Cover:   rp.Cover,
+						Date:    rp.CreatedAt,
+					})
+				}
+				data.RelatedPosts = cards
+			}
+			// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
+			desc := p.Excerpt
+			if desc == "" {
+				d := stripHTML(p.ContentHTML)
+				if len(d) > 150 {
+					d = d[:150]
+				}
+				desc = d
+			}
+			data.Page.Description = desc
+			fillSidebar(data)
+			fillComments(data, "/post/"+slug)
+			fillSEO(data, c)
+			html, err := engine.Render("layout/base", data)
 			if err != nil {
 				c.String(http.StatusInternalServerError, "render: %v", err)
 				return
@@ -241,44 +390,43 @@ func main() {
 		// 回退：文件渲染（Demo 2 链路）
 		p, err := posts.Load(slug)
 		if err != nil {
-			// 用 errors.Is 而非 os.IsNotExist：Load 的错误经 fmt.Errorf %w 包裹，
-			// os.IsNotExist 不递归解包会漏判（实测返回 false），errors.Is 能穿透。
-			if errors.Is(err, fs.ErrNotExist) {
-				c.String(http.StatusNotFound, "post not found: %s", slug)
+			if os.IsNotExist(err) {
+				render404(c)
 				return
 			}
 			c.String(http.StatusInternalServerError, "load post: %v", err)
 			return
 		}
 
-		// 文件回退路径无 store 数据：Cover/Tags/Categories/ReadNext 留零值（不渲染对应区块）。
-		// CreatedTime/UpdatedTime 从 frontmatter date 字符串解析，保证 <time datetime> 正确；
-		// 解析失败则用零值，模板 Page.Updated 为空时已 fallback 到 Page.Date 显示。
-		var createdTime time.Time
-		if t, perr := time.Parse("2006-01-02", p.Date); perr == nil {
-			createdTime = t
-		}
-
-		toc, htmlWithIDs := post.ExtractTOC(p.HTML)
 		data := &tmpl.ViewData{
 			Site: site,
 			Page: &tmpl.Page{
-				Title:       p.Title,
-				Slug:        p.Slug,
-				Layout:      "post",
-				Type:        "tech",
-				Lang:        "zh-CN",
-				MenuID:      "post",
-				Date:        p.Date,
-				Excerpt:     p.Excerpt,
-				CreatedTime: createdTime,
-				UpdatedTime: createdTime,
+				Title:   p.Title,
+				Slug:    p.Slug,
+				Layout:  "post",
+				Type:    "tech",
+				Lang:    "zh-CN",
+				MenuID:  "post",
+				Date:    p.Date,
+				Excerpt: p.Excerpt,
 			},
-			Content: template.HTML(htmlWithIDs),
-			TOCHTML: template.HTML(post.BuildTOCHTML(toc)),
+			Content: template.HTML(p.HTML),
 		}
 
-		html, err := engine.Render("base", data)
+		data.TOC = tmpl.ExtractTOC(p.HTML)
+		desc := p.Excerpt
+		if desc == "" {
+			d := stripHTML(p.HTML)
+			if len(d) > 150 {
+				d = d[:150]
+			}
+			desc = d
+		}
+		data.Page.Description = desc
+		fillSidebar(data)
+		fillComments(data, "/post/"+slug)
+		fillSEO(data, c)
+		html, err := engine.Render("layout/base", data)
 		if err != nil {
 			c.String(http.StatusInternalServerError, "render: %v", err)
 			return
@@ -286,86 +434,334 @@ func main() {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 	})
 
-	// 首页：渲染文章列表（navbar + post-list + paginator），对齐 Stellar layout/index.ejs。
-	r.GET("/", func(c *gin.Context) {
-		renderHome(c, st, engine, site, 1)
-	})
-
-	// 分页：/page/N 走同一首页渲染逻辑。
-	r.GET("/page/:num", func(c *gin.Context) {
-		numStr := c.Param("num")
-		page, err := strconv.Atoi(numStr)
-		if err != nil || page < 1 {
-			c.String(http.StatusNotFound, "page not found: %s", numStr)
+	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
+	// no-store：索引需实时反映 admin 改动，禁止浏览器/CDN 缓存。
+	r.GET("/search.json", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
 			return
 		}
-		renderHome(c, st, engine, site, page)
+		type searchItem struct {
+			Title   string `json:"title"`
+			Content string `json:"content"`
+			Path    string `json:"path"`
+		}
+		items := make([]searchItem, 0, len(posts))
+		for _, p := range posts {
+			items = append(items, searchItem{
+				Title:   p.Title,
+				Content: stripHTML(p.ContentHTML),
+				Path:    "/post/" + p.Slug,
+			})
+		}
+		c.Header("Cache-Control", "no-store")
+		c.JSON(http.StatusOK, items)
 	})
 
-	// 标签云：/tags
-	r.GET("/tags", func(c *gin.Context) {
-		renderTagsCloud(c, st, engine, site)
+	// 首页渲染：/ 与 /page/:num 共用。page 从 1 开始，超出末页回退到最后一页。
+	renderHome := func(c *gin.Context, page int) {
+		const pageSize = 10
+		total, err := st.CountPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count posts: %v", err)
+			return
+		}
+		totalPages := (total + pageSize - 1) / pageSize
+		if page < 1 {
+			page = 1
+		}
+		if totalPages > 0 && page > totalPages {
+			page = totalPages
+		}
+		posts, err := st.ListPublishedPaged(page, pageSize)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		cards := make([]*tmpl.PostCard, 0, len(posts))
+		for _, p := range posts {
+			cards = append(cards, &tmpl.PostCard{
+				Slug:    p.Slug,
+				Title:   p.Title,
+				Excerpt: p.Excerpt,
+				Cover:   p.Cover,
+				Date:    p.CreatedAt,
+			})
+		}
+		pages := make([]int, totalPages)
+		for i := range pages {
+			pages[i] = i + 1
+		}
+		data := &tmpl.ViewData{
+			Site:      site,
+			Page:      &tmpl.Page{Title: site.Title, Layout: "index", MenuID: "post", Lang: "zh-CN"},
+			Posts:     cards,
+			Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+		}
+		fillSidebar(data)
+		fillSEO(data, c)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// 首页：文章列表（对齐 Stellar layout/index.ejs）
+	r.GET("/", func(c *gin.Context) {
+		renderHome(c, 1)
+	})
+	// 首页分页：/page/N，非数字或 <1 返回 404
+	r.GET("/page/:num", func(c *gin.Context) {
+		n, err := strconv.Atoi(c.Param("num"))
+		if err != nil || n < 1 {
+			render404(c)
+			return
+		}
+		renderHome(c, n)
 	})
 
-	// 单标签文章列表：/tags/:name
-	r.GET("/tags/:name", func(c *gin.Context) {
-		name := c.Param("name")
-		page, _ := strconv.Atoi(c.Query("page"))
-		renderListByRelation(c, st, engine, site, name, true, page)
+	// renderBase：渲染 base 布局并写响应（归档/分类/标签页共用）。
+	renderBase := func(c *gin.Context, data *tmpl.ViewData) {
+		fillSidebar(data)
+		fillSEO(data, c)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "render: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// toCards：store.Post 列表转首页卡片视图模型。
+	toCards := func(posts []*store.Post) []*tmpl.PostCard {
+		cards := make([]*tmpl.PostCard, 0, len(posts))
+		for _, p := range posts {
+			cards = append(cards, &tmpl.PostCard{
+				Slug:    p.Slug,
+				Title:   p.Title,
+				Excerpt: p.Excerpt,
+				Cover:   p.Cover,
+				Date:    p.CreatedAt,
+			})
+		}
+		return cards
+	}
+
+	// 归档页：按年份分组的文章列表（对齐 Stellar archive.ejs）
+	r.GET("/archives", func(c *gin.Context) {
+		posts, err := st.ListPublished()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		// ListPublished 已按 created_at DESC，年份分组天然降序
+		var years []*tmpl.ArchiveYear
+		byYear := map[string]*tmpl.ArchiveYear{}
+		for _, p := range posts {
+			y := p.CreatedAt.Format("2006")
+			ay, ok := byYear[y]
+			if !ok {
+				ay = &tmpl.ArchiveYear{Year: y}
+				byYear[y] = ay
+				years = append(years, ay)
+			}
+			title := p.Title
+			if title == "" {
+				title = p.CreatedAt.Format("2006-01-02") // 无标题用日期（对齐 Stellar 行为）
+			}
+			ay.Posts = append(ay.Posts, &tmpl.ArchiveItem{Slug: p.Slug, Title: title, Date: p.CreatedAt})
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:     site,
+			Page:     &tmpl.Page{Title: "归档", Layout: "archive", MenuID: "archive", Lang: "zh-CN"},
+			Archives: years,
+		})
 	})
 
-	// 分类云：/categories
+	// 分类索引页：所有分类 + 文章数（对齐 Stellar categories.ejs）
 	r.GET("/categories", func(c *gin.Context) {
-		renderCategoriesCloud(c, st, engine, site)
+		counts, err := st.CountByCategory()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count categories: %v", err)
+			return
+		}
+		cats := make([]*tmpl.CatItem, 0, len(counts))
+		for name, n := range counts {
+			cats = append(cats, &tmpl.CatItem{Name: name, Count: n})
+		}
+		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
+		renderBase(c, &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "分类", Layout: "categories", MenuID: "post", Lang: "zh-CN"},
+			Cats: cats,
+		})
 	})
 
-	// 单分类文章列表：/categories/:name
+	// 分类文章列表页：复用首页卡片（对齐 Stellar archive.ejs 的 partial('index') 行为）
 	r.GET("/categories/:name", func(c *gin.Context) {
 		name := c.Param("name")
-		page, _ := strconv.Atoi(c.Query("page"))
-		renderListByRelation(c, st, engine, site, name, false, page)
-	})
-
-	// 归档：/archives 按年分组
-	r.GET("/archives", func(c *gin.Context) {
-		renderArchive(c, st, engine, site)
-	})
-
-	// 站内搜索：/search?q=xxx&page=N
-	r.GET("/search", func(c *gin.Context) {
-		q := c.Query("q")
-		page, _ := strconv.Atoi(c.Query("page"))
-		renderSearch(c, st, engine, site, q, page)
-	})
-
-	// RSS feed：/atom.xml（/feed.xml 别名）
-	r.GET("/atom.xml", func(c *gin.Context) { renderAtom(c, st, site) })
-	r.GET("/feed.xml", func(c *gin.Context) { renderAtom(c, st, site) })
-
-	// sitemap：/sitemap.xml
-	r.GET("/sitemap.xml", func(c *gin.Context) { renderSitemap(c, st, site) })
-
-	// 404 页面：所有未匹配路由走 Stellar 风格错误页（对齐 layout/404.ejs）。
-	// 渲染 base 布局 + error_page partial，Page.Layout="404" 触发 base.html 分派。
-	r.NoRoute(func(c *gin.Context) {
-		data := &tmpl.ViewData{
-			Site: site,
-			Page: &tmpl.Page{
-				Title:  "404",
-				Slug:   "404",
-				Layout: "404",
-				Type:   "tech",
-				Lang:   "zh-CN",
-				MenuID: "post",
-			},
-			NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "home"},
-		}
-		html, err := engine.Render("base", data)
+		counts, err := st.CountByCategory()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "render 404: %v", err)
+			c.String(http.StatusInternalServerError, "count categories: %v", err)
 			return
 		}
-		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+		if _, ok := counts[name]; !ok {
+			render404(c)
+			return
+		}
+		posts, err := st.ListByCategory(name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:  site,
+			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name},
+			Posts: toCards(posts),
+		})
+	})
+
+	// 标签索引页：标签云（按文章数 DESC）
+	r.GET("/tags", func(c *gin.Context) {
+		counts, err := st.CountByTag()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			return
+		}
+		items := make([]*tmpl.TagItem, 0, len(counts))
+		for name, n := range counts {
+			items = append(items, &tmpl.TagItem{Name: name, Count: n})
+		}
+		sort.Slice(items, func(i, j int) bool {
+			if items[i].Count != items[j].Count {
+				return items[i].Count > items[j].Count
+			}
+			return items[i].Name < items[j].Name
+		})
+		renderBase(c, &tmpl.ViewData{
+			Site:     site,
+			Page:     &tmpl.Page{Title: "标签", Layout: "tags", MenuID: "post", Lang: "zh-CN"},
+			TagItems: items,
+		})
+	})
+
+	// 标签文章列表页：复用首页卡片
+	r.GET("/tags/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		counts, err := st.CountByTag()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			return
+		}
+		if _, ok := counts[name]; !ok {
+			render404(c)
+			return
+		}
+		posts, err := st.ListByTag(name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:  site,
+			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name},
+			Posts: toCards(posts),
+		})
+	})
+
+	// RSS 2.0 订阅输出：/rss.xml，最新 20 篇 published 文章。
+	r.GET("/rss.xml", func(c *gin.Context) {
+		posts, err := st.ListPublishedPaged(1, 20)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		siteURL := "http://" + c.Request.Host
+		items := make([]Item, 0, len(posts))
+		for _, p := range posts {
+			desc := p.Excerpt
+			if desc == "" {
+				desc = stripHTML(p.ContentHTML)
+				if len(desc) > 200 {
+					desc = desc[:200]
+				}
+			}
+			link := siteURL + "/post/" + p.Slug
+			items = append(items, Item{
+				Title:       p.Title,
+				Link:        link,
+				Description: desc,
+				PubDate:     p.CreatedAt.Format(time.RFC1123Z),
+				Guid:        link,
+			})
+		}
+		rss := RSS{
+			Version: "2.0",
+			Channel: Channel{
+				Title:       site.Title,
+				Link:        siteURL,
+				Description: site.Description,
+				Items:       items,
+			},
+		}
+		output, err := xml.MarshalIndent(rss, "", "  ")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "marshal rss: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
+	})
+
+	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、静态索引页。
+	r.GET("/sitemap.xml", func(c *gin.Context) {
+		baseURL := ""
+		if site.URL != "" {
+			baseURL = site.URL
+		} else {
+			baseURL = "http://" + c.Request.Host
+		}
+
+		type SitemapURL struct {
+			Loc      string `xml:"loc"`
+			LastMod  string `xml:"lastmod,omitempty"`
+			Priority string `xml:"priority,omitempty"`
+		}
+		type Sitemap struct {
+			XMLName xml.Name     `xml:"urlset"`
+			XMLNS   string       `xml:"xmlns,attr"`
+			URLs    []SitemapURL `xml:"url"`
+		}
+
+		sm := Sitemap{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+		// 首页
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/", Priority: "1.0"})
+
+		// 所有已发布文章
+		posts, err := st.ListPublished()
+		if err == nil {
+			for _, p := range posts {
+				sm.URLs = append(sm.URLs, SitemapURL{
+					Loc:     baseURL + "/post/" + p.Slug,
+					LastMod: p.UpdatedAt.Format("2006-01-02"),
+				})
+			}
+		}
+
+		// 静态页面
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/archives"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/categories"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/tags"})
+
+		output, err := xml.MarshalIndent(sm, "", "  ")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "marshal sitemap: %v", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/xml; charset=utf-8", append([]byte(xml.Header), output...))
 	})
 
 	addr := app.ListenAddr
@@ -375,479 +771,11 @@ func main() {
 	}
 }
 
-// pageSize 首页/列表页每页文章数，对齐 Hexo index_generator per_page 默认值。
-const pageSize = 10
-
-// toCards 把 store.Post 列表转成 PostCard 视图模型。
-// 空 excerpt 自动从 ContentHTML 提取（复用 post.ExcerptFromHTML）。
-func toCards(posts []*store.Post) []*tmpl.PostCard {
-	cards := make([]*tmpl.PostCard, 0, len(posts))
-	for _, p := range posts {
-		cards = append(cards, toCard(p))
+// truncateText 按 rune 截断字符串，超长加省略号（widget 摘要用）。
+func truncateText(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
 	}
-	return cards
-}
-
-// toCard 把单篇 store.Post 转成 PostCard 视图模型。
-// read_next 上下篇导航复用此函数（只需 Slug/Title，其余字段保留默认零值）。
-func toCard(p *store.Post) *tmpl.PostCard {
-	excerpt := p.Excerpt
-	if excerpt == "" {
-		excerpt = post.ExcerptFromHTML(p.ContentHTML, 120)
-	}
-	return &tmpl.PostCard{
-		Slug:    p.Slug,
-		Title:   p.Title,
-		Excerpt: excerpt,
-		Cover:   p.Cover,
-		Date:    p.CreatedAt,
-		Views:   p.Views,
-	}
-}
-
-// buildPaginator 构造分页器，Go 侧预生成每页 URL，避免模板拼接 query 被转义破坏。
-//   - baseURL 空：首页 /page/N 风格（第1页是 /）
-//   - baseURL 非空 + baseQuery 空：列表页 baseURL?page=N（第1页是 baseURL）
-//   - baseURL 非空 + baseQuery 非空：搜索页 baseURL?baseQuery&page=N（第1页是 baseURL?baseQuery）
-func buildPaginator(page, total int, baseURL, baseQuery string) *tmpl.Paginator {
-	pages := make([]int, total)
-	pageURLs := make([]string, total)
-	for i := range pages {
-		n := i + 1
-		pages[i] = n
-		pageURLs[i] = pageURL(baseURL, baseQuery, n)
-	}
-	var prev, next string
-	if page > 1 {
-		prev = pageURL(baseURL, baseQuery, page-1)
-	}
-	if page < total {
-		next = pageURL(baseURL, baseQuery, page+1)
-	}
-	return &tmpl.Paginator{Current: page, Total: total, Pages: pages, PageURLs: pageURLs, PrevURL: prev, NextURL: next}
-}
-
-// pageURL 生成第 n 页的完整 URL，分三种风格（见 buildPaginator 注释）。
-func pageURL(baseURL, baseQuery string, n int) string {
-	if baseURL == "" {
-		// 首页：第1页是 /，其余 /page/N
-		if n == 1 {
-			return "/"
-		}
-		return fmt.Sprintf("/page/%d", n)
-	}
-	// 列表/搜索页
-	var b strings.Builder
-	b.WriteString(baseURL)
-	if n == 1 {
-		if baseQuery != "" {
-			b.WriteString("?")
-			b.WriteString(baseQuery)
-		}
-		return b.String()
-	}
-	b.WriteString("?")
-	if baseQuery != "" {
-		b.WriteString(baseQuery)
-		b.WriteString("&")
-	}
-	fmt.Fprintf(&b, "page=%d", n)
-	return b.String()
-}
-
-// renderHome 渲染首页文章列表（Layout=="index"）。
-// page 从 1 开始；越界（page > totalPages）回 404。文章数据走 store DB 查询。
-func renderHome(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site, page int) {
-	total, err := st.CountPublished()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "count posts: %v", err)
-		return
-	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1 // 无文章时仍渲染空列表页（分页器 Total=1 不显示）
-	}
-	if page > totalPages {
-		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
-		return
-	}
-
-	posts, err := st.ListPublishedPaged(page, pageSize)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts: %v", err)
-		return
-	}
-
-	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{
-			Title:  site.Title,
-			Layout: "index",
-			Type:   "tech",
-			Lang:   "zh-CN",
-			MenuID: "post",
-		},
-		Posts:     toCards(posts),
-		Paginator: buildPaginator(page, totalPages, "", ""),
-		NavTabs:   &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "home"},
-	}
-	renderView(c, engine, data)
-}
-
-// renderTagsCloud 渲染标签云（Layout=="tags"）。
-func renderTagsCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
-	tags, err := st.ListTags()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list tags: %v", err)
-		return
-	}
-	items := make([]tmpl.TagItem, 0, len(tags))
-	for _, t := range tags {
-		items = append(items, tmpl.TagItem{Name: t.Name, Count: t.Count})
-	}
-	data := &tmpl.ViewData{
-		Site:    site,
-		Page:    &tmpl.Page{Title: "标签", Layout: "tags", Type: "tech", Lang: "zh-CN", MenuID: "post"},
-		Tags:    items,
-		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "tags"},
-	}
-	renderView(c, engine, data)
-}
-
-// renderCategoriesCloud 渲染分类云（Layout=="categories"）。
-func renderCategoriesCloud(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
-	cats, err := st.ListCategories()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list categories: %v", err)
-		return
-	}
-	items := make([]tmpl.CategoryItem, 0, len(cats))
-	for _, ct := range cats {
-		items = append(items, tmpl.CategoryItem{Name: ct.Name, Count: ct.Count})
-	}
-	data := &tmpl.ViewData{
-		Site:       site,
-		Page:       &tmpl.Page{Title: "分类", Layout: "categories", Type: "tech", Lang: "zh-CN", MenuID: "post"},
-		Categories: items,
-		NavTabs:    &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "categories"},
-	}
-	renderView(c, engine, data)
-}
-
-// renderListByRelation 渲染单标签/单分类的文章列表（Layout=="list"）。
-// isTag=true 走标签查询，false 走分类查询。name 是标签/分类名。
-func renderListByRelation(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site, name string, isTag bool, page int) {
-	if page < 1 {
-		page = 1
-	}
-	var (
-		posts     []*store.Post
-		total     int
-		err       error
-		baseURL   string
-		labelType string
-	)
-	if isTag {
-		total, err = st.CountByTag(name)
-		baseURL = "/tags/" + name
-		labelType = "标签"
-	} else {
-		total, err = st.CountByCategory(name)
-		baseURL = "/categories/" + name
-		labelType = "分类"
-	}
-	if err != nil {
-		c.String(http.StatusInternalServerError, "count: %v", err)
-		return
-	}
-	if total == 0 {
-		c.String(http.StatusNotFound, "%s not found: %s", labelType, name)
-		return
-	}
-	totalPages := (total + pageSize - 1) / pageSize
-	if page > totalPages {
-		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
-		return
-	}
-	if isTag {
-		posts, err = st.ListByTag(name, page, pageSize)
-	} else {
-		posts, err = st.ListByCategory(name, page, pageSize)
-	}
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list: %v", err)
-		return
-	}
-
-	nav := &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true}
-	if isTag {
-		nav.TagName = name
-	} else {
-		nav.CategoryName = name
-	}
-	data := &tmpl.ViewData{
-		Site:      site,
-		Page:      &tmpl.Page{Title: labelType + ":" + name, Layout: "list", Type: "tech", Lang: "zh-CN", MenuID: "post"},
-		Posts:     toCards(posts),
-		Paginator: buildPaginator(page, totalPages, baseURL, ""),
-		NavTabs:   nav,
-	}
-	renderView(c, engine, data)
-}
-
-// renderArchive 渲染按年归档（Layout=="archive"）。
-func renderArchive(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site) {
-	groups, err := st.Archive()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "archive: %v", err)
-		return
-	}
-	archive := make([]tmpl.ArchiveGroup, 0, len(groups))
-	for _, g := range groups {
-		archive = append(archive, tmpl.ArchiveGroup{Year: g.Year, Posts: toCards(g.Posts)})
-	}
-	data := &tmpl.ViewData{
-		Site:    site,
-		Page:    &tmpl.Page{Title: "归档", Layout: "archive", Type: "tech", Lang: "zh-CN", MenuID: "post"},
-		Archive: archive,
-		NavTabs: &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "archive"},
-	}
-	renderView(c, engine, data)
-}
-
-// renderSearch 渲染站内搜索结果页（Layout=="list"，复用 post_card + paginator）。
-// q 为空时渲染空结果页（不报错，引导用户输入）。baseURL 带 q 参数，分页器 ?page=N 不丢查询词。
-func renderSearch(c *gin.Context, st *store.Store, engine *tmpl.Engine, site *tmpl.Site, q string, page int) {
-	q = strings.TrimSpace(q)
-	if page < 1 {
-		page = 1
-	}
-
-	posts, total := []*store.Post{}, 0
-	if q != "" {
-		var err error
-		posts, total, err = st.Search(q, page, pageSize)
-		if err != nil {
-			c.String(http.StatusInternalServerError, "search: %v", err)
-			return
-		}
-	}
-
-	totalPages := (total + pageSize - 1) / pageSize
-	if totalPages == 0 {
-		totalPages = 1 // 无结果仍渲染空列表页
-	}
-	if page > totalPages {
-		c.String(http.StatusNotFound, "page %d not found (total %d)", page, totalPages)
-		return
-	}
-
-	title := "搜索"
-	if q != "" {
-		title = "搜索: " + q
-	}
-	data := &tmpl.ViewData{
-		Site: site,
-		Page: &tmpl.Page{
-			Title:  title,
-			Layout: "list",
-			Type:   "tech",
-			Lang:   "zh-CN",
-			MenuID: "post",
-		},
-		Posts:       toCards(posts),
-		Paginator:   buildPaginator(page, totalPages, "/search", "q="+url.QueryEscape(q)),
-		NavTabs:     &tmpl.NavTabs{ShowTags: true, ShowCategories: true, ShowArchive: true, Active: "search"},
-		SearchQuery: q,
-	}
-	renderView(c, engine, data)
-}
-
-// renderView 渲染 base 模板并写入响应。
-func renderView(c *gin.Context, engine *tmpl.Engine, data *tmpl.ViewData) {
-	html, err := engine.Render("base", data)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "render: %v", err)
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
-}
-
-// feedMaxEntries RSS feed 最多输出的文章数。
-const feedMaxEntries = 20
-
-// feedEntry Atom feed 的单篇文章条目。
-type feedEntry struct {
-	Title     string
-	ID        string // 永久标识，用 tag: 格式（tag:host,year:post/id），slug 变更后仍稳定
-	Link      string // 文章绝对 URL
-	Summary   string // 摘要纯文本
-	Content   string // 正文 HTML（CDATA 包裹，已转义内部 ]]>）
-	Published string // RFC3339
-	Updated   string // RFC3339
-}
-
-// renderAtom 输出 Atom 1.0 feed（/atom.xml）。取最近 feedMaxEntries 篇已发布文章。
-// 用 text/template 渲染，文本字段走 xmlEscape 手动转义，正文 HTML 用 CDATA 包裹，
-// 并把正文内的 ]]> 替换为 ]]]]><![CDATA[> 避免 CDATA 段提前闭合。
-func renderAtom(c *gin.Context, st *store.Store, site *tmpl.Site) {
-	posts, err := st.ListPublished()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts for feed: %v", err)
-		return
-	}
-
-	baseURL := strings.TrimRight(siteURL(site), "/")
-	host := feedHost(siteURL(site))
-	entries := make([]feedEntry, 0, feedMaxEntries)
-	for i, p := range posts {
-		if i >= feedMaxEntries {
-			break
-		}
-		excerpt := p.Excerpt
-		if excerpt == "" {
-			excerpt = post.ExcerptFromHTML(p.ContentHTML, 200)
-		}
-		entries = append(entries, feedEntry{
-			Title:     p.Title,
-			ID:        fmt.Sprintf("tag:%s,2026:post/%d", host, p.ID),
-			Link:      baseURL + "/post/" + p.Slug,
-			Summary:   excerpt,
-			Content:   strings.ReplaceAll(p.ContentHTML, "]]>", "]]]]><![CDATA[>"),
-			Published: p.CreatedAt.UTC().Format(time.RFC3339),
-			Updated:   p.UpdatedAt.UTC().Format(time.RFC3339),
-		})
-	}
-
-	data := struct {
-		Site    *tmpl.Site
-		BaseURL string
-		FeedID  string // feed 级永久 ID，tag:host,year 格式
-		Updated string // feed 级更新时间，取首篇 updated 或当前时间
-		Entries []feedEntry
-	}{
-		Site:    site,
-		BaseURL: baseURL,
-		FeedID:  fmt.Sprintf("tag:%s,2026", host),
-		Updated: feedUpdated(entries),
-		Entries: entries,
-	}
-
-	var sb strings.Builder
-	if err := atomTpl.Execute(&sb, data); err != nil {
-		c.String(http.StatusInternalServerError, "render atom: %v", err)
-		return
-	}
-	c.Data(http.StatusOK, "application/atom+xml; charset=utf-8", []byte(sb.String()))
-}
-
-// atomTpl Atom 1.0 模板。text/template 不自动转义，所有文本节点（含 URL/IRI）显式调 xmlEscape，
-// 防止 site.URL 带 query 或 slug 含 & 时生成非法 XML；正文 HTML 用 CDATA 包裹（内部 ]]> 已在 renderAtom 转义）。
-var atomTpl = textTemplate.Must(textTemplate.New("atom").Funcs(textTemplate.FuncMap{
-	"xmlEscape": xmlEscape,
-}).Parse(`<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-  <title>{{xmlEscape .Site.Title}}</title>
-  <subtitle>{{xmlEscape .Site.Subtitle}}</subtitle>
-  <link href="{{xmlEscape .BaseURL}}/atom.xml" rel="self"/>
-  <link href="{{xmlEscape .BaseURL}}/"/>
-  <updated>{{.Updated}}</updated>
-  <id>{{xmlEscape .FeedID}}/</id>
-  <author>
-    <name>{{xmlEscape .Site.Author}}</name>
-  </author>
-  {{range .Entries}}
-  <entry>
-    <title>{{xmlEscape .Title}}</title>
-    <link href="{{xmlEscape .Link}}"/>
-    <id>{{xmlEscape .ID}}</id>
-    <published>{{.Published}}</published>
-    <updated>{{.Updated}}</updated>
-    <summary>{{xmlEscape .Summary}}</summary>
-    <content type="html"><![CDATA[{{.Content}}]]></content>
-  </entry>
-  {{end}}
-</feed>
-`))
-
-// renderSitemap 输出 sitemap.xml。含首页/标签/分类/归档 + 全部已发布文章（lastmod=updated_at）。
-func renderSitemap(c *gin.Context, st *store.Store, site *tmpl.Site) {
-	posts, err := st.ListPublished()
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts for sitemap: %v", err)
-		return
-	}
-	baseURL := strings.TrimRight(siteURL(site), "/")
-
-	type sitemapURL struct {
-		Loc     string
-		Lastmod string // 留空则不输出 <lastmod>
-	}
-	urls := []sitemapURL{
-		{Loc: baseURL + "/"},
-		{Loc: baseURL + "/tags"},
-		{Loc: baseURL + "/categories"},
-		{Loc: baseURL + "/archives"},
-	}
-	for _, p := range posts {
-		lastmod := p.UpdatedAt.UTC().Format("2006-01-02")
-		urls = append(urls, sitemapURL{Loc: baseURL + "/post/" + p.Slug, Lastmod: lastmod})
-	}
-
-	var sb strings.Builder
-	if err := sitemapTpl.Execute(&sb, struct {
-		URLs []sitemapURL
-	}{urls}); err != nil {
-		c.String(http.StatusInternalServerError, "render sitemap: %v", err)
-		return
-	}
-	c.Data(http.StatusOK, "application/xml; charset=utf-8", []byte(sb.String()))
-}
-
-var sitemapTpl = textTemplate.Must(textTemplate.New("sitemap").Funcs(textTemplate.FuncMap{
-	"xmlEscape": xmlEscape,
-}).Parse(`<?xml version="1.0" encoding="utf-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{{range .URLs}}  <url>
-    <loc>{{xmlEscape .Loc}}</loc>{{if .Lastmod}}
-    <lastmod>{{.Lastmod}}</lastmod>{{end}}
-  </url>
-{{end}}</urlset>
-`))
-
-// xmlEscape 转义 XML 文本节点（& < >）。text/template 不自动转义，手动处理。
-// ' 和 " 在文本节点无需转义，仅转义 & < > 三种。
-func xmlEscape(s string) string {
-	r := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-	)
-	return r.Replace(s)
-}
-
-// siteURL 返回站点根 URL，配置缺失时回退到 localhost。
-func siteURL(site *tmpl.Site) string {
-	if site.URL != "" {
-		return site.URL
-	}
-	return "http://localhost:8080"
-}
-
-// feedHost 从站点 URL 提取 host（用于生成 tag: scheme 的永久 ID）。
-// 解析失败回退到 localhost，保证 feed 始终有合法 host。
-func feedHost(rawURL string) string {
-	u, err := url.Parse(rawURL)
-	if err != nil || u.Host == "" {
-		return "localhost"
-	}
-	return u.Host
-}
-
-// feedUpdated 取首篇 entry 的 updated 作为 feed 级更新时间，无文章用当前时间。
-func feedUpdated(entries []feedEntry) string {
-	if len(entries) > 0 && entries[0].Updated != "" {
-		return entries[0].Updated
-	}
-	return time.Now().UTC().Format(time.RFC3339)
+	return string(r[:n]) + "…"
 }

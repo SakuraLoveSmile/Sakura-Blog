@@ -9,12 +9,20 @@
 <header class="header">
   <div class="logo-wrap">
     <a class="avatar" href="/">
-      <div class="bg" style="opacity:0;background-image:url({{.Site.Avatar}});"></div>
+      {{- /* div.bg 用专用旋转背景图（原版 style.animated_avatar.background 彩虹图），hover 时 spin 旋转；勿用头像自身 */}}
+      <div class="bg" style="opacity:0;background-image:url({{.Site.AvatarBG}});"></div>
       <img class="avatar" src="{{.Site.Avatar}}">
     </a>
     <a class="title" href="/">
       <div class="main">{{.Site.LogoTitle}}</div>
+      {{- /* logo_sub 含 | 时拆 normal/hover 两层，hover 标题时向上滚动切换（对齐原版 logo.ejs layoutTitle）；不含 | 时单层 */}}
+      {{if contains .Site.LogoSub "|"}}
+      {{$parts := split .Site.LogoSub "|"}}
+      <div class="sub normal cap">{{trim (index $parts 0)}}</div>
+      <div class="sub hover cap" style="opacity:0">{{join (slice $parts 1) "|"}}</div>
+      {{else}}
       <div class="sub cap">{{.Site.LogoSub}}</div>
+      {{end}}
     </a>
   </div>
 </header>
@@ -34,49 +42,62 @@
 </div>
 
 {{- /* widgets 区：对应 _partial/widgets/
-   .widgets > widget.widget-wrapper
-   search widget 放在 widgets 最前（对齐 Stellar leftbar 顺序），复用 .search-wrapper 样式。
-   GET 表单提交到 /search，SearchQuery 回显当前查询词。*/}}
+   .widgets > widget.widget-wrapper */}}
 <div class="widgets">
 
-  {{- /* 搜索框：对应 _partial/sidebar/search.ejs
-     .search-wrapper > .search-form > .search-button + .search-input
-     default:search 图标带 width=200，原版 .search-button svg {height:1rem} 已覆盖 */}}
-  <div class="search-wrapper">
-    <form class="search-form" action="/search" method="get" role="search">
-      <a class="search-button" tabindex="-1" aria-hidden="true">{{icon "default:search"}}</a>
-      <input type="text" class="search-input" name="q" value="{{.SearchQuery}}" placeholder="搜索文章…">
+  {{- /* 搜索框：对应 _partial/sidebar/search.ejs（无 wiki 维度，filter/placeholder 取默认）
+     对齐 index_leftbar.ejs layoutWidgets：搜索框在 .widgets 容器内第一个，而非独立层级。
+     .search-wrapper#search-wrapper > form.search-form(a.search-button + input#search-input) + #search-result + .search-no-result
+     交互在 assets/js/search/local-search.js（去 jQuery 移植版）*/}}
+  <div class="search-wrapper" id="search-wrapper">
+    <form class="search-form">
+      <a class="search-button" onclick="document.getElementById('search-input').focus();">
+        {{icon "default:search"}}
+      </a>
+      <input type="text" class="search-input" id="search-input" placeholder="站内搜索">
     </form>
+    <div id="search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
   </div>
 
-  {{- /* author 卡片已移至右栏（rightbar.html），左栏不再渲染，腾出空间给搜索/近期发布/标签云。*/}}
-
-  {{- /* 近期发布：对应 widgets/recent.ejs（post-list）*/}}
+  {{- /* 最近更新：对应 widgets/recent.ejs（post-list），对齐 xaoxuu.com 左栏组件。数据来自 DB 最新 5 篇（fillSidebar 填充）*/}}
   <widget class="widget-wrapper recent post-list">
     <div class="widget-header dis-select">
-      <span class="name">近期发布</span>
-      <a class="cap-action" id="rss" title="Subscribe" href="#">
+      <span class="name">最近更新</span>
+      <a class="cap-action" id="rss" title="Subscribe" href="/rss.xml">
         {{icon "default:rss"}}
       </a>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.RecentPosts}}
+      {{range .Recent}}
       <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
       {{end}}
     </div>
   </widget>
 
-  {{- /* 标签云：对应 widgets/tagcloud.ejs */}}
-  <widget class="widget-wrapper tagcloud">
+  {{- /* 最新评论：结构对齐 widgets/timeline.ejs（widget-wrapper.timeline > widget-body > tag-plugin.timeline），
+     timenode 结构对齐 artalk_latest_comment.js：.header(.user-info+time) + a.body。
+     样式 main.css 已有（timenode 规则），零新增 CSS。数据来自 fillSidebar 的 ListRecentComments(5) */}}
+  {{if .LatestComments}}
+  <widget class="widget-wrapper timeline">
     <div class="widget-header dis-select">
-      <span class="name">标签</span>
+      <span class="name">最新评论</span>
     </div>
     <div class="widget-body fs14">
-      {{range .Site.Tags}}
-      <a class="tag" href="#">{{.}}</a>
-      {{end}}
+      <div class="tag-plugin timeline">
+        {{range .LatestComments}}
+        <div class="timenode">
+          <div class="header">
+            <div class="user-info"><span>{{.Nick}}</span></div>
+            <span>{{.TimeAgo}}</span>
+          </div>
+          <a class="body" href="{{.URL}}">{{.Excerpt}}</a>
+        </div>
+        {{end}}
+      </div>
     </div>
   </widget>
+  {{end}}
 </div>
 
 {{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv

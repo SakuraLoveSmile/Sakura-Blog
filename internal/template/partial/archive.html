@@ -1,9 +1,10 @@
-{{- /* archive.html: 按年归档，对齐 Stellar layout/archive.ejs。
-   .post-list.archives > article#archive > .archive-header.h4(年份) > .archive-list > a.post > time(MM-DD) + span(标题)。
-   年内按 created_at 倒序。归档不分页（Stellar 原版亦不分页）。*/}}
-{{template "navbar" .}}
+{{- /* archive.html: 归档页，对齐 Stellar layout/archive.ejs 的 layoutArchiveList
+   navbar + div.post-list.archives（按年份分组：archive-header 年份 + archive-list 文章行）
+   由 base.html 按 .Page.Layout == "archive" 分派渲染。
+*/ -}}
+{{template "partial/navbar" .}}
 <div class="post-list archives">
-  {{range .Archive}}
+  {{range .Archives}}
   <article id="archive">
     <div class="archive-header h4">{{.Year}}</div>
     {{range .Posts}}

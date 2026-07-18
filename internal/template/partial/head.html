@@ -4,23 +4,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
   <meta name="theme-color" content="#f9fafb">
+
+  {{- /* 主题初始化：CSS 加载前读 localStorage 用户选择并设置 data-theme，避免闪烁；
+     无记录时不设值，由 CSS 媒体查询跟随系统偏好（与 toggleTheme 配合） */}}
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
   <meta name="description" content="{{if .Page.Excerpt}}{{.Page.Excerpt}}{{else}}{{.Site.Description}}{{end}}">
+  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
+  {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
+  {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
+  <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
+  <meta property="og:description" content="{{.Page.Description}}">
+  <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
+  {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+
+  {{- /* 霞鹜文楷屏幕版字体（本地化，参考 xaoxuu.com）：unicode-range 分片按需加载，
+     woff2 分片在 /assets/fonts/lxgw/files/（97 片共 4.9MB，浏览器只下载用到的分片）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/fonts/lxgw/lxgwwenkaiscreen.css"}}">
 
   {{- /* Stellar 主 CSS（编译产物）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=demo2">
+
+  {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}">
+
+  {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
+  <style>
+    html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  </style>
 
   {{- /* highlightjs 主题（代码块高亮），与 preview.html 一致 */}}
   <link rel="stylesheet" href="https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css">
 
   {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
   <style>
-    .demo-toggle {
-      position: fixed; top: 12px; right: 12px; z-index: 9999;
-      padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      font-size: 14px;
-    }
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+
+  {{- /* FAB speed dial（右下角 float-panel）：主按钮点击后子按钮向上展开。
+     展开用 grid-template-rows 0fr→1fr（与原版 TOC collapse 同技术），子按钮带 stagger 动画；
+     主题按钮太阳/月亮图标随当前主题显隐，无 data-theme 时用 prefers-color-scheme + :not([data-theme="light"]) 兜底，
+     与 main.css 的 :root:not([data-theme]) 媒体查询模式一致。 */}}
+  <style>
+    .theme-toggle .icon-moon { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+    @media screen and (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: none; }
+      :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
+    }
+    .fab button { justify-content: center; align-items: center; }
+    .fab .fab-items { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
+    .fab .fab-items-inner { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+    .fab.open .fab-items { grid-template-rows: 1fr; }
+    .fab .fab-item { opacity: 0; transform: translateY(12px) scale(0.6); transition: opacity 0.2s ease, transform 0.25s ease; }
+    .fab.open .fab-item { opacity: 1; transform: none; }
+    .fab.open .fab-item:nth-child(1) { transition-delay: 0.12s; }
+    .fab.open .fab-item:nth-child(2) { transition-delay: 0.08s; }
+    .fab.open .fab-item:nth-child(3) { transition-delay: 0.04s; }
+    .fab .fab-main svg { transition: transform 0.3s ease; }
+    .fab.open .fab-main svg { transform: rotate(45deg); }
+  </style>
+
+  {{- /* PJAX 样式：main.css 编译时未含 _plugins/pjax.styl，此处按原版 styl 手工补等价产物
+     （translate-distance=8px、duration=0.4s，与 pjax.js 400ms 移除 pjax-loaded 的时机一致）。
+     .error-page 样式 main.css 已含（_components/pages/error.styl），无需重复定义。 */}}
+  <style>
+    /* 顶部居中 loading 图标（body.pjax-loading 时显示） */
+    .page-loading-bar { position: fixed; top: 0; left: calc(50% - 16px); width: 32px; height: 32px; display: none; flex-direction: column; align-items: center; }
+    .page-loading-bar img { height: 100%; }
+    body.pjax-loading .page-loading-bar { display: flex; }
+    /* 主内容过渡基态 */
+    .l_body .l_main, #l_cover { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes pjax-fade-in {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    /* loading：内容淡出并轻微下移 */
+    body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { opacity: 0.4; transform: translateY(8px); pointer-events: none; }
+    /* loaded：内容上移淡入 */
+    body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    /* 减少动态偏好 */
+    @media (prefers-reduced-motion: reduce) {
+      .l_body .l_main, #l_cover { transition: opacity 0.4s ease; }
+      body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { transform: none; }
+      body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-simple 0.4s ease forwards; }
+      @keyframes pjax-fade-simple { 0% { opacity: 0; } 100% { opacity: 1; } }
+    }
   </style>
 </head>

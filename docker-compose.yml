@@ -1,6 +1,6 @@
 # docker-compose：博客 app 服务 + 持久化卷。
-# Artalk 评论系统按用户决策外置部署（官方单二进制，不纳入本 compose），
-# 部署方式见 config/site.yml 的 comments 段注释或 https://artalk.docs.errorly.dev/。
+# 评论系统为自建（数据存 SQLite，无需外部评论服务）；后台登录密码在 config/site.yml
+# 的 admin.password 配置（留空则 /admin 免登录，仅本机调试用，公网部署务必设置）。
 #
 # 启动：docker compose up -d
 # 首次启动导入文章：BLOG_SEED=true docker compose up -d（导一次后改回 false 重启）
@@ -15,7 +15,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # SQLite 数据持久化（DB + WAL 旁路文件）
+      # SQLite 数据持久化（DB + WAL 旁路文件；文章与评论均存于此）
       - blog-data:/app/data
       # 站点配置可运行时覆盖（不改镜像）
       - ./config/site.yml:/app/config/site.yml:ro

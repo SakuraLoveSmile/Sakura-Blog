@@ -13,14 +13,16 @@
   <!-- EasyMDE 编辑器样式 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.20.0/dist/easymde.min.css">
   <style>
+    body>.sitebg { pointer-events: none !important; } /* 全屏 fixed 遮罩层会拦截所有点击，admin 页无交互职责直接禁事件 */
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-    /* sitebg 是 position:fixed 全屏层，无定位的 .admin-wrap 会被它盖住导致按钮点不到。
-       给 admin-wrap 提层浮到 sitebg 之上。 */
-    .admin-wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; color: var(--text-p1); }
     .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .admin-header h1 { font-size: 24px; font-weight: 600; color: var(--text-p1); margin: 0; }
     .admin-header a { color: var(--text-p3); font-size: 14px; text-decoration: none; }
     .admin-header a:hover { color: var(--text-p1); }
+    .admin-header form { display: inline; margin-left: 16px; }
+    .admin-header form button { background: none; border: none; padding: 0; color: var(--text-p3); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .admin-header form button:hover { color: var(--text-p1); }
 
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-p3); margin-bottom: 6px; font-weight: 500; }
@@ -42,10 +44,7 @@
     /* EasyMDE 深色模式适配：编辑器容器跟随主题变量 */
     .EasyMDEContainer .editor-toolbar { background: var(--card); border-color: var(--bg-a3, rgba(128,128,128,.2)); }
     .EasyMDEContainer .CodeMirror { background: var(--bg-a1, rgba(128,128,128,.04)); color: var(--text-p1); border-color: var(--bg-a3, rgba(128,128,128,.2)); }
-    /* CodeMirror 默认随内容无限撑高（长文把保存按钮推到万 px 外点不到），限高内部滚动 */
-    .EasyMDEContainer .CodeMirror-scroll { max-height: 520px !important; overflow: auto !important; height: auto !important; }
-    .EasyMDEContainer .editor-preview { background: var(--card); color: var(--text-p1); max-height: 520px; overflow: auto; }
-    .EasyMDEContainer .editor-side-by-side { max-height: 520px; overflow: auto; }
+    .EasyMDEContainer .editor-preview { background: var(--card); color: var(--text-p1); }
     .EasyMDEContainer .editor-toolbar button { color: var(--text-p3); }
     .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--theme); }
   </style>
@@ -55,7 +54,11 @@
   <div class="admin-wrap">
     <div class="admin-header">
       <h1>{{if .Admin.IsEdit}}编辑文章{{else}}新建文章{{end}}</h1>
-      <a href="/admin">← 返回列表</a>
+      <div>
+        <a href="/admin/comments" style="margin-right:16px">评论管理</a>
+        <a href="/admin">← 返回列表</a>
+        <form method="post" action="/admin/logout"><button type="submit">退出</button></form>
+      </div>
     </div>
 
     {{if .Admin.SaveError}}<p class="save-error">{{.Admin.SaveError}}</p>{{end}}
@@ -81,17 +84,17 @@
 
       <div class="form-group">
         <label for="cover">封面图 URL</label>
-        <input type="text" id="cover" name="cover" value="{{.Admin.EditPost.Cover}}" placeholder="https://... （可选，留空则列表卡片不显示封面）">
+        <input type="text" id="cover" name="cover" value="{{.Admin.EditPost.Cover}}" placeholder="https://...（可选，首页卡片封面）">
       </div>
 
       <div class="form-row">
         <div class="form-group" style="flex:1">
-          <label for="tags">标签</label>
-          <input type="text" id="tags" name="tags" value="{{join .Admin.EditPost.Tags ", "}}" placeholder="逗号分隔，如 Go, Gin">
+          <label for="category">分类</label>
+          <input type="text" id="category" name="category" value="{{.Admin.EditPost.Category}}" placeholder="单分类（可选）">
         </div>
-        <div class="form-group" style="flex:1">
-          <label for="categories">分类</label>
-          <input type="text" id="categories" name="categories" value="{{join .Admin.EditPost.Categories ", "}}" placeholder="逗号分隔，如 技术">
+        <div class="form-group" style="flex:2">
+          <label for="tags">标签</label>
+          <input type="text" id="tags" name="tags" value="{{.Admin.EditPost.Tags}}" placeholder="多个标签用英文逗号分隔，如 Go,Gin（可选）">
         </div>
       </div>
 

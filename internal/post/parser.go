@@ -2,18 +2,16 @@ package post
 
 import (
 	"strings"
-
-	"github.com/goccy/go-yaml"
 )
 
 // frontMatter 文章元数据，从 Markdown 文件头部的 YAML frontmatter 解析。
 type frontMatter struct {
-	Title      string
-	Date       string
-	Excerpt    string
-	Cover      string
-	Tags       []string
-	Categories []string
+	Title    string
+	Date     string
+	Excerpt  string
+	Cover    string
+	Category string
+	Tags     []string
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -72,10 +70,10 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Excerpt = val
 		case "cover":
 			fm.Cover = val
+		case "category", "categories":
+			fm.Category = val
 		case "tags":
-			fm.Tags = parseList(val, lines, &i, end)
-		case "categories":
-			fm.Categories = parseList(val, lines, &i, end)
+			fm.Tags = parseList(val)
 		}
 	}
 
@@ -83,49 +81,22 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 	return fm, strings.TrimPrefix(body, "\n")
 }
 
-// parseList 解析 front-matter 的列表字段（tags/categories）。
-// 支持两种写法：
-//  1. 行内：tags: [Go, Gin] 或 tags: Go,Gin（val 非空）
-//  2. 块式：tags:\n  - Go\n  - Gin（val 为空，后续行以 - 或 * 开头）
-// i 指向当前行，块式时向前推进 i 跳过已消费的列表项行。end 是 front-matter 结束行号。
-func parseList(val string, lines []string, i *int, end int) []string {
+// parseList 解析行内列表值，支持 `[Go, Gin]` 与 `Go, Gin` 两种写法。
+// 逐个 trim 空白与引号，去空去重。多行 YAML 列表（- item）不支持（轻量 parser 的既定边界）。
+func parseList(val string) []string {
 	val = strings.TrimSpace(val)
-	if val != "" {
-		// 行内列表：尝试 YAML 解析 [a,b]；失败则按逗号切分
-		var arr []string
-		if err := yaml.Unmarshal([]byte(val), &arr); err == nil {
-			return cleanList(arr)
-		}
-		return cleanList(strings.Split(val, ","))
-	}
-	// 块式：收集后续以 - 或 * 开头的行
+	val = strings.TrimPrefix(val, "[")
+	val = strings.TrimSuffix(val, "]")
+	seen := map[string]bool{}
 	var out []string
-	for j := *i + 1; j < end; j++ {
-		s := strings.TrimSpace(lines[j])
-		if s == "" {
+	for _, item := range strings.Split(val, ",") {
+		item = strings.TrimSpace(item)
+		item = strings.Trim(item, `"'`)
+		if item == "" || seen[item] {
 			continue
 		}
-		if !strings.HasPrefix(s, "-") && !strings.HasPrefix(s, "*") {
-			break // 不是列表项，停止
-		}
-		item := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(s, "-"), "*"))
-		item = strings.Trim(item, `"'`)
-		if item != "" {
-			out = append(out, item)
-		}
-		*i = j // 推进外层循环游标
-	}
-	return out
-}
-
-// cleanList 去空白和空项。
-func cleanList(items []string) []string {
-	out := make([]string, 0, len(items))
-	for _, it := range items {
-		it = strings.TrimSpace(strings.Trim(it, `"'`))
-		if it != "" {
-			out = append(out, it)
-		}
+		seen[item] = true
+		out = append(out, item)
 	}
 	return out
 }

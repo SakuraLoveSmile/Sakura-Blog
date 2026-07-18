@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-// iconsYML 是编译期嵌入的 Stellar icons.yml（从 resource/ 复制，避免部署时依赖 gitignore 的 resource/）。
+// iconsYML 是编译期嵌入的 Stellar icons.yml（从 resource/ 复制到 data/，避免部署时依赖 gitignore 的 resource/）。
 // 路径相对本包：data/icons.yml。
 //
 //go:embed data/icons.yml
@@ -28,7 +28,7 @@ type IconRegistry struct {
 var iconLineRe = regexp.MustCompile(`^([a-zA-Z0-9:_-]+):\s*(.+)$`)
 
 // LoadIcons 从指定路径加载 icons.yml，返回 IconRegistry。
-// 保留给开发期从 resource/ 读取（go run 时 -root 定位）；正式部署用 LoadIconsEmbed。
+// 保留给开发期从 resource/ 读取（go run -dev 时定位）；正式部署用 LoadIconsEmbed。
 func LoadIcons(path string) (*IconRegistry, error) {
 	f, err := os.Open(path)
 	if err != nil {

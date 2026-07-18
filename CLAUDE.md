@@ -262,170 +262,98 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 
 `-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。
 
-## 控制台错误修复（canonical 守卫 + utils shim）
+## Step 1 新增坑点（首页 + 配置文件化）
+
+### SQLite 加列必须手写 ALTER 迁移
+
+`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加新列。加 `cover` 列时需用 `PRAGMA table_info(posts)` 遍历列名，缺失才执行 `ALTER TABLE posts ADD COLUMN cover TEXT NOT NULL DEFAULT ''`。SQLite 的 `ADD COLUMN` 要求默认值必须是常量（`DEFAULT ''` 合法，`DEFAULT CURRENT_TIMESTAMP` 非法）。
+
+### Go template 无内置算术，分页器需注册 add/sub func
+
+分页器的 prev/next 页码运算（`Current-1`/`Current+1`）在模板里做不了，需在 FuncMap 注册 `add`/`sub`（签名 `func(a, b int) int`）。模板里 `{{sub .Paginator.Current 1}}` 调用。
+
+### base.html 按 Layout 分派 content 模板
+
+`l_main` 里原来是无条件 `{{template "content" .}}`，首页改为 `{{if eq .Page.Layout "index"}}{{template "index" .}}{{else}}{{template "content" .}}{{end}}`。新增 `partial/index.html` 的基名 `index` 不与现有 `base/head/sidebar/content/list/edit` 冲突，可直接注册。
+
+### goccy/go-yaml 是 gin 间接依赖，yaml 值注意引号
+
+`goccy/go-yaml` 已在 go.sum（gin 间接依赖），直接 import 后 `go mod tidy` 自动去掉 `// indirect` 标记。写 site.yml 注意：`#` 开头的值（如主题色 `#1BCDFC`）必须加引号（否则当注释）；raw HTML（如 social icon 的 `<img src>`）用单引号包裹，避免 `:`/`<` 触发解析问题。
+
+### qoder worktree 端口固定 8081
+
+qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 可同时起服务互不影响。
+
+## Step 2 新增坑点（归档 + 分类/标签）
+
+### tags 逗号分隔存储的匹配一致性
+
+tags 以逗号分隔存单列（如 `Go,Stellar`）。查询用逗号包裹 LIKE 防子串误匹配：`(',' || tags || ',') LIKE '%,Go,%'`（防 Go 匹配到 Golang）。**坑**：admin 表单输入若直接存原始值（如 `Go, 测试, Go` 带空格/重复），LIKE 的 `%,测试,%` 匹配不到 `, 测试,`（多空格），而 CountByTag 内存拆分有 TrimSpace 又能数到——两个口径不一致。**对策**：admin save 入口用 `normalizeTags` 规范化（逗号拆分、逐项 trim、去空去重、`,` 重连），与 parser.parseList 语义对齐，保证存储值规范。
+
+### 迁移泛化：migrateColumns 用 map 驱动
+
+Step 1 的 migrateCoverColumn 泛化为 `migrateColumns`：`map[列名]ALTER语句` + `PRAGMA table_info(posts)` 检测缺列逐个 ADD COLUMN。以后加列只需往 map 加条目，不用新写迁移函数。
+
+### 主题持久化：localStorage + head 内联脚本防闪烁
+
+toggleTheme 原来只改 `data-theme` 不持久化，导航后被打回系统偏好。**修法**：toggleTheme 写 `localStorage.setItem('theme', next)`；head.html 在 CSS 加载前的内联脚本读 localStorage 设 `document.documentElement.dataset.theme`（防闪烁）；无记录时不设值，让 `prefers-color-scheme` 媒体查询兜底。
 
 ### Stellar JS 外部依赖缺失需 shim/守卫
 
-main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调，demo 未加载 jQuery）与 `window.canonical`（原版 defines.ejs 注入）。缺失时 `init.toc`/`init.sidebar` 抛 `utils is not defined` 中断 `initPage()`（连带 relativeDate 失效），`canonicalCheck` 抛 `Cannot read properties of undefined (reading 'originalHost')`。**对策**：base.html 内联脚本（main.js 引用之前）注入 `const utils = { jq: (fn) => { if (window.jQuery) fn(); } };` 最小 shim；`canonicalCheck` 的 `const canonical = window.canonical;` 后加 `if (!canonical) return;` 守卫。
+main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调，demo 未加载 jQuery）与 `window.canonical`（原版 defines.ejs 注入）。缺失时 `init.toc` 抛 `utils is not defined` 中断 `initPage()`（连带 relativeDate 失效），`canonicalCheck` 抛 `originalHost of undefined`。**对策**：base.html 注入 `utils = { jq: (fn) => { if (window.jQuery) fn(); } }` 最小 shim；`canonicalCheck` 开头加 `if (!canonical) return;` 守卫。`sidebar.dismiss` 原本也未实现（移动端 main-mask 点击报错），已在 Step 2 收尾补齐（见下节）。
 
-## 第三阶段踩坑（搜索/RSS/sitemap/TOC）
+### 静态资源缓存：/assets 加 no-cache 协商缓存（已修复）
 
-### FTS5 trigram tokenizer 对 <3 字符查询返回空，需 LIKE 降级
+Go 服务原来未给 /assets 设缓存头，浏览器启发式缓存 main.js，普通刷新（甚至 Cmd+Shift+R）都可能拿到旧版。**修复（Step 2 收尾）**：gin 中间件对 `/assets/` 前缀路径设 `Cache-Control: no-cache`，注册在 `r.Static` 之前。no-cache 不是禁缓存而是协商缓存：浏览器每次发条件请求，gin Static 底层 http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。验证：`curl -I` 看响应头，带 If-Modified-Since 请求应得 304。
 
-modernc.org/sqlite 支持 FTS5。tokenizer 选 `trigram`（3 字符滑窗）而非 `unicode61`：unicode61 把整段 CJK 当一个 token，中文几乎搜不到；trigram 对 3+ 字中文和英文友好。**坑**：trigram 按 3-gram 切分，2 字符查询（如 "Go"/"CSS"）匹配不到任何 gram 返回 0。**对策**：`Search` 按 `utf8.RuneCountInString(q)` 分流，<3 走 LIKE（title/content_md 模糊匹配），>=3 走 FTS5 BM25 排序。注意用 rune count 不是 byte count（中文 2 字 = 6 byte 但 2 rune）。
+## Step 2 收尾修复（移动端 sidebar + 缓存头）
 
-### FTS5 external content 表 JOIN 列名歧义
+### 移动端 sidebar：sidebar 对象 + float-panel menubtn
 
-`posts_fts` 与 `posts` 都有 `title/content_md/content_html` 列，`SELECT postColumns FROM posts_fts f JOIN posts p` 无前缀报 `ambiguous column name`。**对策**：新增 `postColumnsPrefixed`（带 `p.` 前缀）专给 JOIN 用，`listByRelation` 因用 `WHERE p.id IN (子查询)` 外层单表不受影响。
+base.html 的 main-mask `onclick="sidebar.dismiss()"` 依赖 main.js 的 sidebar 对象，缺失时移动端点遮罩抛 `sidebar is not defined`。实现对齐 Stellar `scripts/sidebar.ejs`：`leftbar` toggle l_body 的 `leftbar` attribute，`dismiss` 移除。l_right 恒空，rightbar/toggleTOC 不实现。main.js 顶层 `const sidebar` 虽不是 window 属性，但全局词法绑定对内联 onclick 可见，无需挂 window。
 
-### FTS5 MATCH 特殊字符用双引号包裹 phrase
+**坑**：float-panel menubtn 必须放在 `l_body` 内部（Stellar layout.ejs 在 l_right `</aside>` 之后、l_body 闭合之前），因为激活态样式是 `.l_body[leftbar] .float-panel button.leftbar-toggle`，放外面选中不到。按钮 class `mobile-only leftbar-toggle mobile` + 内联 `style="display:none"`：桌面靠内联样式隐藏，移动端（≤667px）`.mobile-only` 的 `display:block !important` 显示。图标用 `{{icon "default:leftbar"}}`（icons.yml 已确认存在）。main.css 是 Stellar 编译产物，`[leftbar]` attribute、`.float-panel`、`.main-mask` 样式均已包含，无需覆写。
 
-用户输入含 `*` `:` `OR` `"` 等 FTS5 语法字符会报错。**对策**：`phrase := "\"" + strings.ReplaceAll(q, `"`, `""`) + "\""`，双引号包裹整串做短语匹配，内部 `"` 转义为 `""`。LIKE 降级路径另需 `ESCAPE '\'` 转义 `%` `_` `\`，避免搜 `%` 误匹配全部。
+## Step 3 新增坑点（侧边栏动态化 + TOC + 搜索 + PJAX + 404）
 
-### html/template 在 href 里对 query 做 URL 转义会破坏 = 号
+### goldmark AutoHeadingID：id 生成规则与 re-seed 必要性
 
-paginator 早期方案在模板里拼 `{{$base}}?{{$query}}&page=N`，`{{$query}}`（值 `q=golang`）被 html/template 当 URL 上下文转义，`=` 编码成 `%3d`，浏览器把 `q%3dgolang` 当成无值 key，`q` 参数丢失。**对策**：不在模板拼 query，Go 侧 `buildPaginator` 预生成 `PageURLs/PrevURL/NextURL` 完整 URL，模板只 `{{index $.Paginator.PageURLs $i}}` 输出。`&` 在 HTML 属性里写成 `&amp;` 是正确的（浏览器解析回 `&`）。
+TOC 依赖标题带 id：`goldmark.New(goldmark.WithParserOptions(parser.WithAutoHeadingID()))`。两个坑：
 
-### 搜索分页 baseURL 不能含 query string
+1. **id 只保留 ASCII**：中文标题生成的 id 会丢非 ASCII 字符（如 `Markdown 元素验证` → `markdown-`，纯中文标题 → `heading-N` 序号兜底）。功能正常但 id 不美观，TOC 提取必须从渲染后 HTML 正则读 id（与标题同源），不能自己从文本推算。
+2. **ContentHTML 是预渲染缓存**：posts 表存的是 goldmark 输出，开启 AutoHeadingID 后老数据没有 id，必须 `-seed` 重导（或 admin 重新保存）才生效。
 
-`buildPaginator` 的 baseURL 若是 `/search?q=golang`，paginator 拼 `/search?q=golang?page=2`，第二个 `?` 不是分隔符，`page` 丢失、`q` 变成 `golang?page=2`。**对策**：baseURL 保持纯路径 `/search`，query 单独传 `baseQuery` 参数，`pageURL` 函数按 `baseURL?baseQuery&page=N` 拼接（baseQuery 为空退化为 `?page=N`）。
+另一个编译坑：post 包内已有 frontmatter `parser` 类型（parser.go），与 `github.com/yuin/goldmark/parser` 包名冲突，import 需别名 `mdparser`。
 
-### goldmark 不生成 heading id，正则后处理注入
+### TOC 嵌套结构对齐 Stellar hexo toc helper
 
-goldmark v1.8.4 默认输出 `<h2>text</h2>` 无 id。需正则 `<h([23])>(.*?)</h[23]>` 匹配后注入 id。**坑**：RE2 不支持反向引用 `\1`，`</h\1>` 报 `invalid escape sequence`，改 `</h[23]>` 宽松匹配（goldmark 保证开闭一致）。**转义坑**：标题含 `< > & "` 时，id 和 TOC 文本必须转义--id 经 `idSafeRE` 剔除 `[^\p{L}\p{N}-]`，TOC 文本输出前 `htmlEscape`。`stripTags` 须先剥离标签再 `decodeEntities`，否则解码出的 `<` `>` 会被误当标签剥离（字面量 `&lt;C&gt;` 丢失）。
+CSS 的折叠选择器是 `a.toc-link + ol`（子列表必须紧跟在父级链接后面、嵌在父级 `<li>` 内），**层级缩进选择器是 `.toc-child .toc-link`（padding-left 1.5rem 起逐级加深）**——hexo toc helper 输出的子列表是 `<ol class="toc-child">` 不是裸 `<ol>`，ExtractTOC 少写 class 会导致 h3 不缩进。ExtractTOC 用状态机（openH2/openH3）生成该结构；无 h2 前置的 h3 提升为顶层项。widget 结构对齐 widgets/toc.ejs：`collapse="false"` 属性（_data/widgets.yml 默认配置，CSS 只响应 true/auto）、widget-header 的 cap-action（`sidebar.toggleTOC()` 切 #data-toc 的 collapse class，折叠动画是 `grid-template-rows: 0fr` 不是 display:none）、widget-footer「回到顶部」（`util.scrollTop()`）。标题文案用语言包原文「本文目录」（meta.toc）。
 
-### TOC 嵌套 HTML 状态机：H3 无前置 H2 作顶层项
+### PJAX 与 DOM 引用的相处方式
 
-`BuildTOCHTML` 用 `liOpen`/`childOpen` 双状态机生成 `<ol class="toc"><li>...<ol class="toc-child"><li>...</li></ol></li></ol>`。**坑**：连续 H3 无前置 H2 时，若直接开 toc-child 会产生无父 li 的悬空 ol，标签不配平。**对策**：H3 在 `!childOpen && !liOpen`（无前置 H2）时作顶层 li，不开 toc-child。
+pjax.js 对 `.l_body` 只做属性同步 + 子节点局部替换（换 `.l_main`、就地更新 `.l_left`/`.l_right`），因此：
 
-### text/template 渲染 XML 不自动转义，文本节点手动 xmlEscape
+- main.js 顶层缓存的 `l_body` 引用**不失效**，`sidebar.leftbar/dismiss` 导航后仍可用；
+- 导航时属性同步会清掉 `leftbar` attribute，移动端侧栏自动收起，无需手动处理；
+- 侧栏/TOC 节点会被替换成**新节点**，事件绑定要么委托到 document（init.sidebar 的 TOC 点击收侧栏），要么把绑定标记挂在 DOM 节点上（`_searchInitialized`/`_localSearchBound`/`tocState.bound`），`pjax:complete` 重跑 init 时新节点重新绑、旧节点不叠加；
+- TOC 锚点点击被 pjax.js 的 handleHashLink 优先拦截平滑滚动，不会触发整页导航；
+- **前台不得出现会被 PJAX 抓取的 /admin 链接**：后续若加需 `data-pjax="false"`（当前前台无 admin 链接）。
 
-atom.xml/sitemap.xml 用 `text/template`（别名 `textTemplate` 避免与 `html/template` 冲突）。**坑**：text/template 不像 html/template 自动转义，所有文本节点（含 `<link href>`/`<id>`/`<loc>`）必须显式 `xmlEscape`（`&` `<` `>`）。漏写 link/id 会在 slug 含 `&` 或 site.URL 含 query 时生成非法 XML，整个 feed 解析失败。正文 HTML 用 CDATA 包裹，内部 `]]>` 需替换为 `]]]]><![CDATA[>` 避免提前闭合。
+main.css 已含 `.error-page` 全套样式（_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f），**不要重复自定义**；404 结构对齐 layout/404.ejs（h1 里是 img#error 图片 + p.what/p.why 语言包文案 + `<br><br>` + a#back「返回主页」）。main.css **缺** `.pjax-loading`/`.pjax-loaded`（_plugins/pjax.styl 未被编译入口包含），在 head.html 按原版 styl 手工补等价产物（page-loading-bar 居中图标 + l_main/#l_cover 的 opacity 0.4/translateY(8px) 过渡 + pjax-fade-in + prefers-reduced-motion），并在 body 闭合前加 `<div class="page-loading-bar">`（对齐 layout.ejs）。
 
-### Atom entry <id> 用 tag: 永久 ID 而非 URL
+### 本地搜索：/search.json no-store 与去 jQuery 移植
 
-Atom 规范要求 `<id>` 是 permanent identifier，slug 变更后不应变。用 `baseURL + "/post/" + slug` 作 id 会在改 slug 时被订阅器当新文章重复推送。**对策**：`fmt.Sprintf("tag:%s,2026:post/%d", host, p.ID)`，用稳定的 post.ID，host 从 siteURL 解析。
+- 索引端点每次实时查 DB（demo 数据量小），响应头 `Cache-Control: no-store`——admin 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。
+- local-search.js 从 Stellar 移植去 jQuery：`utils.jq` 入口改 `DOMContentLoaded + pjax:complete`，`$(...)`→querySelector，`.focus/.keydown`→addEventListener，`.attr`→getAttribute，`toggleClass`→classList.toggle。核心 searchFunc（关键词组合/高亮/排序）与 localStorage 缓存 `search_cache_v1` 原样保留。
+- 初始化挂在 input 的 **focus 事件**上（对齐原版）。注意 headless/失焦窗口里 `el.focus()` 只设 activeElement 不派生 focus 事件，自动化验证时需直接调 searchFunc；真实用户点击输入框无此问题。
 
-## 第五阶段踩坑（文章详情页完善：banner/footer/read-next/cover）
+### 自定义 404：NoRoute + render404 统一出口
 
-### datetime() 解析 Go time.String() 格式失败，比较查询要用字符串直比
+`r.NoRoute(render404)` 接管未匹配路径，post/page/category/tag 四处未命中也从 `c.String(404)` 改为 render404（HTTP 404 + base 布局 Layout=404 + fillSidebar）。模板分派在 base.html 按 `.Page.Layout == "404"` 走 error404 partial。
 
-modernc.org/sqlite 把 `time.Time` 参数序列化成 Go 默认 String 格式 `"2026-07-16 00:00:00 +0000 UTC"`（带 `+0000 UTC` 后缀）存入 DATETIME 列。SQLite `datetime()` 函数**无法解析这种带后缀的格式**，返回 NULL。
+### 对照原版先行：补样式前先查 main.css 是否已含
 
-- `ORDER BY datetime(created_at) DESC` 碰巧能工作：`datetime()` 解析 Go 格式前半段 `2026-07-16 00:00:00` 成功，忽略 `+0000 UTC`，排序正常（现有 `ListPublishedPaged`/`searchLike` 依赖此行为）
-- **但 `WHERE datetime(created_at) < datetime(?)` 会失败**：右侧 `datetime(?)` 对 Go 格式整体返回 NULL，`< NULL` 永不成立，`GetPrevNext` 两个查询都返回 nil，read_next 不渲染
-
-**对策**：`GetPrevNext` 不用 `datetime()` 包裹，直接字符串比较 `created_at > ?` / `created_at < ?`，`ORDER BY created_at`。Go 格式年月日时分秒对齐、字典序等价时间序，且参数 `p.CreatedAt` 走同一条 driver 序列化路径，存储与查询格式必然一致。已验证 hello（2026-07-16）next=css-compile（2026-07-15）、css-compile prev=hello 正确。
-
-### 文章页结构对齐 page.ejs layoutDiv 顺序
-
-`content.html` 必须按 `page.ejs` 的 `layoutDiv()` 顺序组装：`article_banner` → `<article class="md-text content">` → `article_footer` → `read_next`。Stellar CSS 有 `article.md-text.content+.related-wrap`（2970 行）相邻选择器，顺序错位会导致 read-next 样式失效。
-
-### article_banner 结构严格对齐 article_banner.ejs + dateinfo.ejs + breadcrumb/blog.ejs
-
-普通文章分支（无 banner url、无 author）输出：
-```
-.article.banner.top > .content > (.top.bread-nav.footnote > .left > (#breadcrumb + #post-meta)) + (.bottom.only-title > .text-area > h1.text.title)
-```
-- `#breadcrumb`：`<a class="cap breadcrumb" href="/">主页</a><span class="sep"></span><a class="cap breadcrumb" href="/">文章</a>` + 每个分类 `<span class="sep"></span><a class="cap breadcrumb" href="/categories/名">名</a>`。`btn.home=主页`、`btn.blog=文章`（zh-CN.yml）
-- `#post-meta`（dateinfo.ejs 普通分支）：`<span class="text created">发布于：<time datetime="RFC3339">日期</time></span><span class="sep updated"></span><span class="text updated">更新于：<time>日期</time></span>`。注意第一个 sep 是 `class="sep updated"`（CSS 2545 行专门样式化），不是 `class="sep"`。`meta.created=发布于`、`meta.updated=更新于`
-- **`<time>` 显示文本被 main.js relativeDate 改写成「1 天前」**：这是 Stellar 原版行为，不是 bug。`datetime` 属性仍是正确的 RFC3339，语义正确
-
-### read_next 语义：prev=较新(newer)，next=较旧(older)
-
-对齐 `read_next.ejs`：`prev = page.prev` 配 `title_prev = __('meta.newer')`「较新文章」，`next = page.next` 配 `title_next = __('meta.older')`「较早文章」。**整个 `.related-wrap#read-next` 只在 prev 或 next 至少一个非 nil 时渲染**（`if (prev || next)` 守卫）。每个 `.item` 始终输出占 grid 位（`#prev`/`#next` 两列等宽 240.5px），内容仅在对应非 nil 时渲染。hello 最新→prev 空栏、next=css-compile；css-compile 最旧→prev=hello、next 空栏。
-
-### article_footer 原版无 tags/categories section
-
-原版 `article_footer.ejs` 只渲染 references/license/share/contributors，**无 tags/categories section 的 CSS**。本期按用户决策加 `#tags`/`#categories` section，复用 `.article-footer .body p a`（2386 行 `font-weight: unset`）的链接样式，结构 `<div class="body"><p><a>标签名</a> <a>...</a></p></div>`。`.article-footer:empty{display:none}`（2367 行）保证全空时不占位（但只要有 license section 就非空）。
-
-### post_cover 用内联 style 替代 data-bg
-
-原版 `post_cover.ejs` 用 `<div class="lazy img bg" data-bg="url">` + lazyload JS 把 `data-bg` 转成 `background-image`。本期无 lazyload JS，改用内联 `style="background-image:url('...')"`。`Page.Cover` 为空时不渲染（对齐原版 `page.banner==undefined && !auto_banner` 返回空）。base.html 的 `#l_cover` 仅 `Layout=="post"` 时调 `post_cover` partial，其他页保持空不回归。
-
-### 文件回退路径 CreatedTime 从 Date 字符串解析
-
-文件回退路径（`posts.Load`）返回的 `post.Post` 只有 `Date` 字符串（frontmatter `2026-07-15`），无 `time.Time`。用 `time.Parse("2006-01-02", p.Date)` 解析填 `CreatedTime`/`UpdatedTime`，保证 `<time datetime>` 正确；解析失败用零值，模板 `Page.Updated` 为空时已 fallback 到 `Page.Date` 显示。该路径无 store 数据，`Cover/Tags/Categories/ReadNext` 留零值（不渲染对应区块），是向后兼容的次要路径。
-
-## UI 优化踩坑（主题切换按钮/author 移右栏/404 页面）
-
-### 主题切换按钮：自建 fixed 悬浮，不复用 .float-panel
-
-Stellar 原版右下角悬浮面板 `.float-panel`（main.css 1355 行）是 `position: sticky` + `grid-column-end: span 3`，绑定 l_body 网格，结构复杂（需配 nav a 等）。本期用户要「右下角太阳/月亮两态按钮」，自建 `.theme-toggle` 用 `position: fixed; right/bottom: 1.5rem` 更简单，样式用 Stellar CSS 变量（`var(--card)`/`var(--text-p1)`/`var(--block-border)`）。
-
-- **两态切换**（非原版三态 light->dark->auto）：用户决策。light 显月亮、dark 显太阳，CSS 按 `[data-theme]` 控制图标显隐，JS 只切 `data-theme`
-- **图标用内联 SVG**（非 icons.yml）：icons.yml 只有 `default:theme`（太阳），无 moon。直接内联 solar 风格 sun/moon SVG path，`fill="currentColor"` 跟随 `color`
-- **持久化**：localStorage key 对齐原版 `Stellar.theme`，启动时 IIFE 先恢复 + 按系统 prefers-color-scheme 兜底，避免刷新闪烁
-- **CSS 兜底显隐**：`:root:not([data-theme="dark"]) .icon-moon{display:block}` + `@media (prefers-color-scheme: dark)` 处理无 data-theme 的初始态，与 JS 初始化双保险
-
-### author 卡片从左栏移到右栏
-
-原版 `widgets/author.ejs` 不在任何默认 rightbar 里（`home.rightbar` 空、`post.rightbar=ghrepo,toc`），需手动配置。dev 之前把 author 塞在左栏 `sidebar.html` 的 widgets 里，导致左栏拥挤、右栏空。本期按用户决策移到右栏所有页面显示：
-
-- 新建 `partial/rightbar.html` 装配 `.widgets` 容器：author（所有页面）+ TOC（仅文章页 `{{if .TOCHTML}}`）
-- `sidebar.html` 删除 author 块，左栏保留 search/recent/tagcloud
-- `base.html` 的 `l_right` 从内联 TOC 逻辑改为 `{{template "rightbar" .}}` 统一装配
-- 文章页右栏 author + TOC 共存（author 在上，TOC 在下），复用原版 `.l_right .widgets .widget-wrapper.toc:first-child`（7896 行）等样式
-
-### 404 页面：本地图片 + NoRoute handler
-
-原版 `404.ejs` 用 `theme.style.error_page` 图片（cdn-x placeholder 外链）。按用户决策下载存本地 `assets/img/404.svg`，不依赖外链：
-
-- 图片 URL：`https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg`，node https 下载 3786 字节
-- 结构对齐 404.ejs：`<article class="md-text error-page"><h1><img id="error" src="/assets/img/404.svg"></h1><p class="what">...</p><p class="why">...</p><a class="button" id="back" href="/">返回主页</a></article>`
-- 文案对齐 zh-CN.yml：`what=很抱歉，您访问的页面不存在`、`why=可能是输入地址有误或该地址已被删除`、`action=返回主页`
-- CSS 已在 main.css 编译（`.md-text.error-page` 全套，8656 行），无需新增
-- **Gin `r.NoRoute()`** 渲染 base 布局 + error_page partial，`Page.Layout="404"` 触发 base.html 内容分派，响应 **HTTP 404 状态码**（利于 SEO，`c.Data(http.StatusNotFound, ...)`）
-- base.html 分派加 `{{else if eq .Page.Layout "404"}}{{template "error_page" .}}`，放在 list 分支后、content 兜底前
-
-## 第七阶段踩坑（评论系统/访问统计/部署就绪）
-
-### Artalk 评论：page_key 用稳定路径，SDK 原生 script defer 加载
-
-原版 `comments/layout.ejs` 按 `theme.comments.service` 分派，artalk 分支输出 `.related-wrap.md-text#comments > section.header.cmt-title + section.body.cmt-body.artalk > div.artalk#artalk_container`。Go 侧对齐：
-
-- `Site` 加 `Comments{Service, CommentTitle, Artalk{Server,Site,CSS,JS}}`，`{{if .Site.Comments.Service}}` 守卫，service 空（默认）不渲染评论区，零依赖本地验证
-- `content.html` 在 `read_next` 后加 `{{template "comments" .}}`（对齐 page.ejs layoutDiv：article_footer -> read_next -> comments）
-- SDK 加载**不用原版 utils.css/utils.js 动态注入**，改原生 `<link>` + `<script defer onload="initArtalk()">`，CSS/JS 默认走 unpkg CDN（artalk@2.9），site.yml 可覆盖
-- **page_key 用 `/post/{slug}` 稳定路径**（不用完整 URL）：改域名后评论不丢失。Artalk `Artalk.init({pageKey, pageTitle, server, site, darkMode})`
-- **darkMode 同步**：`MutationObserver` 监听 `documentElement[data-theme]`，主题切换时调 `artalk.setDarkMode(dark)`（try/catch 容错）
-- Artalk 后端独立部署（官方单二进制 `artalk server`，默认 :23366），不纳入 docker-compose
-
-### 访问统计：os.IsNotExist 对 fmt.Errorf %w 包裹返回 false（重要）
-
-文件回退路径 `posts.Load` 不存在时返回 `fmt.Errorf("read post %s: %w", slug, pathError)`。**坑**：`os.IsNotExist(err)` 对这种 `%w` 包裹的 `*os.PathError` **返回 false**（`os.IsNotExist` 不递归解包），导致 `/post/notexist` 误返 500 而非 404。
-
-- 实测：`os.IsNotExist(wrapped)` = false，`errors.Is(wrapped, os.ErrNotExist)` = true，`errors.Is(wrapped, fs.ErrNotExist)` = true
-- **对策**：改用 `errors.Is(err, fs.ErrNotExist)`（CLAUDE.md 早期记录"os.IsNotExist 能穿透 %w"是错的，以此处为准）
-- `IncrViews` 同步写：`UPDATE posts SET views = views + 1 WHERE slug = ?`，失败仅记日志不中断渲染。`p.Views` 是 incr 前值，展示用 `p.Views+1` 含本次访问
-
-### posts 表加 views 列的 Scan 同步
-
-`postColumns`/`postColumnsPrefixed` 加 `views` 列后，**所有 Scan 调用点都要同步加 `&p.Views`**：`scanPosts`、`getBySlug`、`GetPrevNext` 两个 QueryRow（prev/next）。漏一处会导致 `sql: Scan error on column index X: converting NULL to int64 is unsupported` 或列错位。`ensureColumn("posts", "views", "INTEGER NOT NULL DEFAULT 0")` 幂等迁移老库。
-
-### go:embed：embed 路径不能跨包，assets 需在包目录内
-
-`//go:embed` 指令路径不能含 `..`，只能嵌入当前 .go 文件所在包目录的子树。故：
-
-- **icons.yml**：复制到 `internal/template/data/icons.yml`，`//go:embed data/icons.yml` 嵌入。`LoadIconsEmbed()` 从 `[]byte` 解析，`LoadIcons(path)` 保留给 `-dev` 模式磁盘读。`//go:embed` 对 `[]byte`/`string` 类型需 `import _ "embed"`（blank import，不能 import "embed" 否则 unused）
-- **模板 .html**：`internal/template/` 包内 `//go:embed partial layout admin` 三个目录。`NewEngineFromEmbed(reg)` 从 `embed.FS` 读，`NewEngine(root, reg)` 保留磁盘读（`-dev` 模式）
-- **assets/**：项目根的 `assets/` 不在任何 Go 包目录下，无法直接 embed。对策：在 `assets/` 内建 `embed.go`（`package assets`），`//go:embed all:css all:js all:img` 嵌入 css/js/img（不含 embed.go 自身），main 包 `import "blog/assets"` 拿 `assets.FS`，`fs.Sub(assets.FS, ".")` 挂 `r.StaticFS("/assets", http.FS(sub))`
-
-### 双模式资源加载：-dev 磁盘 vs 默认 embed
-
-`main.go` 加 `-dev` flag 区分：默认（部署）icons/templates/assets 全走 embed，单二进制无外部依赖；`-dev`（本地调试）从磁盘读 resource/icons.yml + internal/template + assets/，改 CSS/模板后 `go run` 立即生效（无需重编译 embed）。launch.json 的 `blog-dev` 配 `-dev`，`blog-embed` 配置不传 `-dev` 验证部署形态。
-
-### app.yml 配置外置 + 环境变量覆盖优先级
-
-新建 `config/app.yml`（`App{ListenAddr, DBPath, Root, SeedOnStart, TrustedProxy}`）独立于 site.yml。环境变量覆盖优先级：**环境变量 > app.yml > 代码默认值**。`BLOG_LISTEN`/`BLOG_DB`/`BLOG_ROOT`/`BLOG_SEED`/`BLOG_TRUSTED_PROXY`。root 解析优先级：`-root flag > BLOG_ROOT > app.yml.root > cwd`。`ResolveApp` 把 DBPath 相对路径按 root 绝对化（SQLite 父目录创建需要）。
-
-### Dockerfile 多阶段 + embed 单二进制
-
-builder 用 `golang:1.25-alpine` 编译（`CGO_ENABLED=0` 静态编译，modernc/sqlite 免 CGO），runtime 用 `alpine:3.20` + ca-certificates + tzdata。assets/templates/icons 已 embed 进二进制，runtime 只 COPY 二进制 + config/ + content/（DB 用挂载卷）。`-ldflags="-s -w"` 去符号表减体积（25M）。`.dockerignore` 排除 node_modules/resource/data/*.db。docker-compose 仅博客 app 服务 + 持久化卷，Artalk 外置。
-
-### preview port 必须与 app.yml listen_addr 一致
-
-preview_start 用 launch.json 的 `port` 探测应用就绪。**坑**：app.yml `listen_addr: ":8080"` 固定，若 launch.json `port: 8081` 探测，应用监听 8080 而 preview 等 8081，curl 返 HTTP 000 误判服务没起来。**对策**：launch.json 各配置的 `port` 与 app.yml `listen_addr` 保持一致（都用 8080），同一时刻只启动一个配置避免端口冲突。
+Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮、72px 标题），与原版冲突被覆盖顺序污染。**教训**：补样式/结构前先 grep main.css 编译产物与原版 styl/ejs 三处对照（`_components/pages/error.styl`、`_plugins/pjax.styl`、`layout/404.ejs`、`widgets/toc.ejs`、`_partial/menubtn.ejs`），确认缺失再补，且补的内容必须是原版编译产物而非自创。同类遗漏还有：float-panel 的 rightbar-toggle 按钮（menubtn.ejs 有两个按钮）、sidebar.rightbar/toggleTOC 方法（scripts/sidebar.ejs 四方法全量）。
 
 ## 工具链
 
@@ -433,10 +361,7 @@ preview_start 用 launch.json 的 `port` 探测应用就绪。**坑**：app.yml 
 - Node 22 + stylus 0.62.0（CSS 编译）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务（开发）：`go run cmd/server/main.go -root <dev路径> -dev`（`-dev` 从磁盘读资源，改 CSS/模板立即生效）
-- Go 服务（部署形态）：`go run cmd/server/main.go -root <dev路径>`（默认走 go:embed，单二进制无外部依赖），`-seed` 可选（导入 content/posts/*.md 到 DB）
-- 配置：`config/app.yml`（监听/DB/seed/代理，环境变量 `BLOG_*` 覆盖）+ `config/site.yml`（站点内容，含 comments 段）
-- Docker：`docker build -t stellar-blog .` + `docker compose up -d`（Artalk 评论系统外置二进制部署）
+- Go 服务：`go run cmd/server/main.go -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081
 
 ## Demo 进度
 
@@ -444,7 +369,7 @@ preview_start 用 launch.json 的 `port` 探测应用就绪。**坑**：app.yml 
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
 - [x] Demo 3：管理后台（SQLite + 文章 CRUD + EasyMDE 编辑器，/admin 路由 + DB 优先/文件回退 + -seed 导入，preview 验证通过）
-- [x] Demo 4：站内搜索 + RSS + sitemap + 文章 TOC（FTS5 trigram + LIKE 降级 / atom.xml permanent ID / sitemap.xml / goldmark heading id 注入 + 嵌套 toc widget，preview 验证通过）
-- [x] Demo 5：文章详情页完善（对齐 Stellar page.ejs：article_banner 标题区 + 面包屑 + dateinfo / article_footer license+标签+分类 / read_next 上下篇 / post_cover 封面图，preview 验证通过）
-- [x] Demo 6：UI 优化（右下角太阳/月亮主题切换按钮 + author 卡片移右栏 + 404 页面本地图片，preview 验证通过）
-- [x] Demo 7：评论系统 + 访问统计 + 部署就绪（Artalk 集成配置+模板+SDK / views 列+IncrViews+#post-meta 阅读量 / go:embed 单二进制 + app.yml 外置 + Dockerfile + docker-compose，preview 验证通过）
+- [x] Step 1：首页 + 文章列表（`/` 渲染文章卡片列表 + `/page/:num` 分页 + cover 封面（含老库 ALTER 迁移）+ config/site.yml 配置文件化（DefaultSite 保留 fallback），preview 验证通过）
+- [x] Step 2：归档 + 分类/标签（`/archives` 年份分组 + `/categories` `/tags` 索引页（badge 计数）+ `/categories/:name` `/tags/:name` 文章列表（复用首页卡片）+ posts 表加 category/tags 两列（migrateColumns 泛化）+ navbar 抽共用 partial 四 tab + 主题持久化 + JS shim 修控制台错误，preview 验证通过）
+- [x] Step 2 收尾：移动端 sidebar（main.js sidebar 对象 leftbar/dismiss + base.html float-panel menubtn）+ /assets no-cache 协商缓存中间件（curl 304 与移动/桌面视口浏览器验证通过）
+- [x] Step 3：侧边栏动态化（recent/tags 从 DB 实时生成 + 菜单死链清理）+ 文章页 TOC 右栏（AutoHeadingID + ExtractTOC 嵌套 + 原生 scroll-spy）+ 本地搜索（/search.json no-store + 去 jQuery local-search.js）+ PJAX 无刷新导航（pjax.js 接入 + 加载指示样式）+ 自定义 404（NoRoute/render404 统一出口），浏览器全项验证通过（__mark 跨导航存活、scroll-spy 高亮、搜索高亮/noresult、404 双主题截图、控制台零错误）
