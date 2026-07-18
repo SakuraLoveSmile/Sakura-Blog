@@ -1,0 +1,88 @@
+/* reading.css: 阅读进度条 + 图片灯箱（全部映射 Stellar 主题变量） */
+
+#reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 0;
+  height: 3px;
+  pointer-events: none;
+  background: var(--theme);
+  box-shadow: 0 0 8px var(--theme-a30);
+  transition: width 0.12s linear;
+}
+
+#reading-progress[hidden] {
+  display: block;
+  width: 0 !important;
+  visibility: hidden;
+}
+
+article.md-text.content img {
+  cursor: zoom-in;
+}
+
+.reading-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.reading-lightbox[hidden] {
+  display: none;
+}
+
+.reading-lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: var(--bg-a75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: zoom-out;
+}
+
+.reading-lightbox__stage {
+  position: relative;
+  z-index: 1;
+  max-width: min(96vw, 1200px);
+  max-height: 92vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reading-lightbox__img {
+  display: block;
+  max-width: 100%;
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px var(--bg-a50);
+  background: var(--card);
+  object-fit: contain;
+}
+
+body.reading-lightbox-open {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #reading-progress {
+    transition: none;
+  }
+
+  .reading-lightbox__backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
