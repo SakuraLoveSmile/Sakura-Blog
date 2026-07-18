@@ -25,7 +25,7 @@
     <div class="l_main" id="main">
       {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
          文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
-      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 

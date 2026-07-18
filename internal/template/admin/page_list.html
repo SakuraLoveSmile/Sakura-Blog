@@ -1,0 +1,76 @@
+{{- /* admin/page_list.html: 独立页面管理列表 */ -}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+{{template "admin/head" .}}
+<body class="admin-body">
+  <div class="sitebg"><div class="siteblur"></div></div>
+  <div class="admin-shell" id="admin-shell">
+    <div class="admin-overlay" id="admin-overlay"></div>
+    {{template "admin/sidebar" .}}
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <button type="button" class="admin-menu-toggle" id="admin-menu-toggle" aria-label="打开菜单">
+            <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
+          </button>
+          <h1>页面管理</h1>
+        </div>
+        <div class="admin-topbar-actions">
+          <a href="/admin/pages/new" class="admin-btn admin-btn-primary">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+            新建页面
+          </a>
+        </div>
+      </header>
+      <div class="admin-content">
+        {{if .Items}}
+        <div class="admin-card admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>标题</th>
+                <th>Slug</th>
+                <th>状态</th>
+                <th>更新</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Items}}
+              <tr>
+                <td class="title"><a href="/pages/{{.Slug}}">{{if .Title}}{{.Title}}{{else}}(无标题){{end}}</a></td>
+                <td>{{.Slug}}</td>
+                <td><span class="admin-badge {{.Status}}">{{.Status}}</span></td>
+                <td>{{.Date}}</td>
+                <td>
+                  <a href="/admin/pages/edit/{{.Slug}}" class="admin-link-btn">编辑</a>
+                  <form method="post" action="/admin/pages/delete/{{.Slug}}" style="display:inline" onsubmit="return confirm('确认删除 {{.Slug}}？');">
+                    <button type="submit" class="admin-link-btn danger">删除</button>
+                  </form>
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="admin-empty">
+          还没有独立页面。<a href="/admin/pages/new">新建第一个</a>。
+        </div>
+        {{end}}
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var shell = document.getElementById('admin-shell');
+      var toggle = document.getElementById('admin-menu-toggle');
+      var overlay = document.getElementById('admin-overlay');
+      if (!shell || !toggle) return;
+      function closeSidebar() { shell.classList.remove('is-sidebar-open'); }
+      toggle.addEventListener('click', function () { shell.classList.toggle('is-sidebar-open'); });
+      if (overlay) overlay.addEventListener('click', closeSidebar);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{{- /* partial/page.html: 独立页面正文，对齐 Stellar 普通页 layout（.md-text） */ -}}
+{{if .Page.Title}}
+<div class="article banner top">
+  <div class="content">
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+<article class="md-text content">
+  {{.Content}}
+</article>
