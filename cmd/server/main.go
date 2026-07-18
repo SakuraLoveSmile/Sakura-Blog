@@ -24,6 +24,7 @@ import (
 	"blog/internal/config"
 	"blog/internal/feed"
 	"blog/internal/media"
+	"blog/internal/page"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -385,6 +386,19 @@ func main() {
 		log.Fatalf("init media: %v", err)
 	}
 	mediaHandler.Register(r, admin.AuthMiddleware(site))
+
+	// 独立页面 /pages/:slug + /admin/pages CMS
+	pageHandler, err := page.New(st, posts, engine, site)
+	if err != nil {
+		log.Fatalf("init page: %v", err)
+	}
+	pageHandler.SetRender404(render404)
+	pageHandler.SetFillExtra(func(data *tmpl.ViewData, c *gin.Context) {
+		fillSidebar(data)
+		fillSEO(data, c)
+	})
+	pageHandler.Register(r)
+	pageHandler.RegisterAdmin(r, admin.AuthMiddleware(site))
 
 	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
 	if site.Comments.Enabled {
