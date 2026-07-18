@@ -550,6 +550,14 @@ func main() {
 		return cards
 	}
 
+	// 友链页：site.yml links 配置驱动（对齐 Stellar sites 卡片布局）
+	r.GET("/links", func(c *gin.Context) {
+		renderBase(c, &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "友链", Layout: "links", MenuID: "links", Lang: "zh-CN"},
+		})
+	})
+
 	// 归档页：按年份分组的文章列表（对齐 Stellar archive.ejs）
 	r.GET("/archives", func(c *gin.Context) {
 		posts, err := st.ListPublished()

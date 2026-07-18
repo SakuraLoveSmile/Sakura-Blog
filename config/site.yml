@@ -26,6 +26,30 @@ menubar:
       url: /archives/
       icon: default:calendar
       theme: "#3DC550"
+    - id: links
+      title: 友链
+      url: /links
+      icon: solar:chat-square-like-bold-duotone
+      theme: "#FA7D23"
+
+# 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
+links:
+  - title: 我的朋友
+    items:
+      - name: xaoxuu
+        url: "https://xaoxuu.com/"
+        avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
+        desc: Stellar 主题作者
+      - name: Hexo
+        url: "https://hexo.io/"
+        avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
+        desc: 快速、简洁且高效的博客框架
+  - title: 推荐站点
+    items:
+      - name: Go
+        url: "https://go.dev/"
+        avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg"
+        desc: The Go Programming Language
 
 footer:
   social:
