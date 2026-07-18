@@ -67,6 +67,7 @@ func NewService(mdDir string) *Service {
 func (s *Service) Render(body string) (string, error) {
 	// renderMD 闭包：用同一 goldmark 实例渲染子片段（folding body 等）
 	renderMD := func(md string) string {
+		md = protectMathDelimiters(md)
 		var sb strings.Builder
 		if err := s.md.Convert([]byte(md), &sb); err != nil {
 			return md
@@ -74,8 +75,8 @@ func (s *Service) Render(body string) (string, error) {
 		return sb.String()
 	}
 
-	// 1. 预处理 shortcodes
-	processed := processShortcodes(body, renderMD)
+	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
+	processed := processShortcodes(protectMathDelimiters(body), renderMD)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

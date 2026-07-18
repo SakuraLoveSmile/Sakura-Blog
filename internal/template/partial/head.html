@@ -38,6 +38,29 @@
   {{- /* Chroma 代码高亮令牌色（亮/暗），容器样式复用 main.css */}}
   <link rel="stylesheet" href="/assets/css/highlight.css">
 
+  {{- /* KaTeX 数学公式（Spec 07）：前端 auto-render，goldmark 侧仅保护定界符 */}}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var delimiters = [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false }
+      ];
+      function renderBlogMath() {
+        if (typeof renderMathInElement !== 'function') return;
+        document.querySelectorAll('.md-text').forEach(function (el) {
+          renderMathInElement(el, { delimiters: delimiters, throwOnError: false });
+        });
+      }
+      document.addEventListener('DOMContentLoaded', renderBlogMath);
+      document.addEventListener('pjax:complete', renderBlogMath);
+    })();
+  </script>
+
   {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}">
 
