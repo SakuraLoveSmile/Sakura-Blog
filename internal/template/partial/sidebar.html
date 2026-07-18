@@ -98,6 +98,34 @@
     </div>
   </widget>
   {{end}}
+
+  {{- /* 标签云：对应 widgets/tagcloud.ejs，按文章数映射字号。数据来自 fillSidebar 的 CountByTag */}}
+  {{if .TagCloud}}
+  <widget class="widget-wrapper tagcloud">
+    <div class="widget-header dis-select">
+      <span class="name">标签</span>
+    </div>
+    <div class="widget-body fs14">
+      {{range .TagCloud}}
+      <a class="tag" href="/tags/{{.Name}}" style="font-size: {{if .Size}}{{.Size}}{{else}}14{{end}}px">{{.Name}}</a>
+      {{end}}
+    </div>
+  </widget>
+  {{end}}
+
+  {{- /* 热门文章：按阅读量降序 top 5，结构对齐 widgets/recent.ejs（post-list） */}}
+  {{if .Popular}}
+  <widget class="widget-wrapper popular post-list">
+    <div class="widget-header dis-select">
+      <span class="name">热门文章</span>
+    </div>
+    <div class="widget-body fs14">
+      {{range .Popular}}
+      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+      {{end}}
+    </div>
+  </widget>
+  {{end}}
 </div>
 
 {{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv

@@ -29,6 +29,21 @@
     </div>
   </widget>
 
+  {{- /* 站点统计：文章/标签/评论/总阅读量，查询失败时 SiteStats 为 nil 不渲染 */}}
+  {{if .SiteStats}}
+  <widget class="widget-wrapper markdown site-stats">
+    <div class="widget-header dis-select">
+      <span class="name">站点统计</span>
+    </div>
+    <div class="widget-body fs14">
+      <p>文章 <strong>{{.SiteStats.Posts}}</strong></p>
+      <p>标签 <strong>{{.SiteStats.Tags}}</strong></p>
+      <p>评论 <strong>{{.SiteStats.Comments}}</strong></p>
+      <p>阅读量 <strong>{{.SiteStats.Views}}</strong></p>
+    </div>
+  </widget>
+  {{end}}
+
   {{if .TOC}}
   <widget class="widget-wrapper toc" id="data-toc" collapse="false">
     <div class="widget-header dis-select">
