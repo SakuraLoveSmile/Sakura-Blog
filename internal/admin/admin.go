@@ -176,6 +176,7 @@ func (h *Handler) editForm(c *gin.Context) {
 		row.Excerpt = p.Excerpt
 		row.Cover = p.Cover
 		row.Category = p.Category
+		row.Topic = p.Topic
 		row.Tags = p.Tags
 		row.ContentMD = p.ContentMD
 		row.Status = p.Status
@@ -183,6 +184,12 @@ func (h *Handler) editForm(c *gin.Context) {
 		row.Password = p.Password
 		if !p.PublishAt.IsZero() {
 			row.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
+		}
+		if pd := store.DecodePoster(p.Poster); pd != nil {
+			row.PosterHeadline = pd.Headline
+			row.PosterTopic = pd.Topic
+			row.PosterCaption = pd.Caption
+			row.PosterColor = pd.Color
 		}
 		isEdit = true
 	}
@@ -201,6 +208,7 @@ func (h *Handler) save(c *gin.Context) {
 	excerpt := strings.TrimSpace(c.PostForm("excerpt"))
 	cover := strings.TrimSpace(c.PostForm("cover"))
 	category := strings.TrimSpace(c.PostForm("category"))
+	topic := strings.TrimSpace(c.PostForm("topic"))
 	tags := normalizeTags(c.PostForm("tags"))
 	contentMD := c.PostForm("content")
 	status := c.PostForm("status")
@@ -209,9 +217,16 @@ func (h *Handler) save(c *gin.Context) {
 	password := strings.TrimSpace(c.PostForm("password"))
 	publishAtStr := strings.TrimSpace(c.PostForm("publish_at"))
 	publishAt := parseFormPublishAt(publishAtStr)
+	// 海报封面（对齐原版 post.poster 平铺字段）
+	poster := store.PosterData{
+		Headline: strings.TrimSpace(c.PostForm("poster_headline")),
+		Topic:    strings.TrimSpace(c.PostForm("poster_topic")),
+		Caption:  strings.TrimSpace(c.PostForm("poster_caption")),
+		Color:    strings.TrimSpace(c.PostForm("poster_color")),
+	}
 
 	formRow := func(msg string) {
-		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status, pinned, password, publishAtStr, msg)
+		h.renderSaveError(c, origSlug, slug, title, excerpt, cover, category, topic, tags, contentMD, status, pinned, password, publishAtStr, poster, msg)
 	}
 
 	if slug == "" {
@@ -243,6 +258,7 @@ func (h *Handler) save(c *gin.Context) {
 		Excerpt:     excerpt,
 		Cover:       cover,
 		Category:    category,
+		Topic:       topic,
 		Tags:        tags,
 		ContentMD:   contentMD,
 		ContentHTML: contentHTML,
@@ -250,6 +266,7 @@ func (h *Handler) save(c *gin.Context) {
 		Pinned:      pinned,
 		Password:    password,
 		PublishAt:   publishAt,
+		Poster:      store.EncodePoster(poster),
 	}
 
 	if origSlug != "" {
@@ -279,11 +296,17 @@ func (h *Handler) updateWithRename(origSlug string, p *store.Post) error {
 	if existing == nil {
 		return h.store.Upsert(p)
 	}
-	// 保留原 created_at
+	// 保留原 created_at、references、poster（admin 表单无 references 输入，poster 为空时保留原值）
 	if err := h.store.Delete(origSlug); err != nil {
 		return err
 	}
 	p.CreatedAt = existing.CreatedAt
+	if p.References == "" {
+		p.References = existing.References
+	}
+	if p.Poster == "" {
+		p.Poster = existing.Poster
+	}
 	_, err = h.store.Create(p)
 	return err
 }
@@ -494,19 +517,24 @@ func parseFormPublishAt(s string) time.Time {
 	return time.Time{}
 }
 
-func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, category, tags, contentMD, status string, pinned bool, password, publishAt, errMsg string) {
+func (h *Handler) renderSaveError(c *gin.Context, origSlug, slug, title, excerpt, cover, category, topic, tags, contentMD, status string, pinned bool, password, publishAt string, poster store.PosterData, errMsg string) {
 	row := &tmpl.AdminPostRow{
-		Slug:      slug,
-		Title:     title,
-		Excerpt:   excerpt,
-		Cover:     cover,
-		Category:  category,
-		Tags:      tags,
-		ContentMD: contentMD,
-		Status:    status,
-		Pinned:    pinned,
-		Password:  password,
-		PublishAt: publishAt,
+		Slug:           slug,
+		Title:          title,
+		Excerpt:        excerpt,
+		Cover:          cover,
+		Category:       category,
+		Topic:          topic,
+		Tags:           tags,
+		ContentMD:      contentMD,
+		Status:         status,
+		Pinned:         pinned,
+		Password:       password,
+		PublishAt:      publishAt,
+		PosterHeadline: poster.Headline,
+		PosterTopic:    poster.Topic,
+		PosterCaption:  poster.Caption,
+		PosterColor:    poster.Color,
 	}
 	data := &tmpl.ViewData{
 		Site:  h.site,
@@ -551,11 +579,19 @@ func (h *Handler) Seed() error {
 			Excerpt:     meta.Excerpt,
 			Cover:       meta.Cover,
 			Category:    meta.Category,
+			Topic:       meta.Topic,
 			Tags:        strings.Join(meta.Tags, ","),
 			ContentMD:   body,
 			ContentHTML: html,
 			Status:      store.StatusPublished,
 			CreatedAt:   parseSeedDate(meta.Date),
+			Poster: store.EncodePoster(store.PosterData{
+				Headline: meta.PosterHeadline,
+				Topic:    meta.PosterTopic,
+				Caption:  meta.PosterCaption,
+				Color:    meta.PosterColor,
+			}),
+			References: store.EncodeReferences(meta.References),
 		}
 		if err := h.store.Upsert(p); err != nil {
 			return err

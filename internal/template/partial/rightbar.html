@@ -4,7 +4,11 @@
    user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效；
    TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。*/ -}}
 <div class="widgets">
-  {{- /* 欢迎语：对应 widgets/markdown.ejs，对齐 xaoxuu.com 右栏第一个组件（欢迎，旅行者：）*/}}
+  {{- /* 欢迎语：对应 widgets/markdown.ejs，对齐 xaoxuu.com 右栏第一个组件（欢迎，旅行者：）
+     末段 linklist 对齐原版 markdown.ejs 的 item.linklist → components/linklist.ejs：
+     .linklist.{align}（columns 规则：默认按链接数；columns==1 且多项时 left，否则 center）
+     > a.link > .flex > icon?+span（columns<=2 才显示文字，规则见 model.go LinkListConfig）。
+     数据来自 site.yml rightbar.welcome_linklist，未配置则不渲染。*/}}
   <widget class="widget-wrapper markdown">
     <div class="widget-header dis-select">
       <span class="name">欢迎，旅行者：</span>
@@ -14,6 +18,16 @@
       <blockquote>
         <p>左侧可以搜索文章，右下角可以切换深浅色主题。</p>
       </blockquote>
+      {{if .Site.Rightbar.WelcomeLinklist.Items}}
+      {{$ll := .Site.Rightbar.WelcomeLinklist}}
+      <div class="linklist {{$ll.AlignClass}}" style="grid-template-columns:repeat({{$ll.EffectiveColumns}},1fr);">
+        {{range $ll.Items}}
+        <a class="link" title="{{.Title}}" href="{{url_for .URL}}">
+          <div class="flex">{{if .Icon}}{{icon .Icon}}{{end}}{{if $ll.ShowText}}<span>{{.Title}}</span>{{end}}</div>
+        </a>
+        {{end}}
+      </div>
+      {{end}}
     </div>
   </widget>
 
@@ -40,6 +54,31 @@
       <p>标签 <strong>{{.SiteStats.Tags}}</strong></p>
       <p>评论 <strong>{{.SiteStats.Comments}}</strong></p>
       <p>阅读量 <strong>{{.SiteStats.Views}}</strong></p>
+    </div>
+  </widget>
+  {{end}}
+
+  {{- /* 最新评论：从 sidebar.html（左栏）迁移到此处（右栏），位于站点统计之下、本文目录之上。
+     结构对齐 widgets/timeline.ejs（widget-wrapper.timeline > widget-body > tag-plugin.timeline），
+     timenode 结构对齐 artalk_latest_comment.js：.header(.user-info+time) + a.body。
+     样式 main.css 已有（timenode 规则），零新增 CSS。数据来自 fillSidebar 的 ListRecentComments(5) */}}
+  {{if .LatestComments}}
+  <widget class="widget-wrapper timeline">
+    <div class="widget-header dis-select">
+      <span class="name">最新评论</span>
+    </div>
+    <div class="widget-body fs14">
+      <div class="tag-plugin timeline">
+        {{range .LatestComments}}
+        <div class="timenode">
+          <div class="header">
+            <div class="user-info"><span>{{.Nick}}</span></div>
+            <span>{{.TimeAgo}}</span>
+          </div>
+          <a class="body" href="{{.URL}}">{{.Excerpt}}</a>
+        </div>
+        {{end}}
+      </div>
     </div>
   </widget>
   {{end}}

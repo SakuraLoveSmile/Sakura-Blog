@@ -11,6 +11,7 @@
     (function () {
       var t = localStorage.getItem('theme');
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      else if (t === 'auto') document.documentElement.removeAttribute('data-theme');
     })();
   </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
@@ -27,6 +28,10 @@
   <meta property="og:description" content="{{.Page.Description}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+
+  {{- /* jQuery 3.7（对齐原版 theme.dependencies.jquery）：defer 保证先于 body 末尾的 main.js 等执行，
+     供 utils.jq 与依赖 jQuery 的插件使用 */}}
+  <script defer src="https://gcore.jsdelivr.net/npm/jquery@3.7/dist/jquery.min.js"></script>
 
   {{- /* 霞鹜文楷屏幕版字体（本地化，参考 xaoxuu.com）：unicode-range 分片按需加载，
      woff2 分片在 /assets/fonts/lxgw/files/（97 片共 4.9MB，浏览器只下载用到的分片）*/}}
@@ -107,10 +112,8 @@
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   </style>
 
-  {{- /* FAB speed dial（右下角 float-panel）：主按钮点击后子按钮向上展开。
-     展开用 grid-template-rows 0fr→1fr（与原版 TOC collapse 同技术），子按钮带 stagger 动画；
-     主题按钮太阳/月亮图标随当前主题显隐，无 data-theme 时用 prefers-color-scheme + :not([data-theme="light"]) 兜底，
-     与 main.css 的 :root:not([data-theme]) 媒体查询模式一致。 */}}
+  {{- /* 主题切换按钮（左栏 footer social）：sun/moon 图标随主题显隐。
+     无 data-theme 时用 prefers-color-scheme + :not([data-theme="light"]) 兜底，与 main.css 媒体查询模式一致。 */}}
   <style>
     .theme-toggle .icon-moon { display: none; }
     :root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
@@ -119,45 +122,10 @@
       :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: none; }
       :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
     }
-    .fab button { justify-content: center; align-items: center; }
-    .fab .fab-items { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
-    .fab .fab-items-inner { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-    .fab.open .fab-items { grid-template-rows: 1fr; }
-    .fab .fab-item { opacity: 0; transform: translateY(12px) scale(0.6); transition: opacity 0.2s ease, transform 0.25s ease; }
-    .fab.open .fab-item { opacity: 1; transform: none; }
-    .fab.open .fab-item:nth-child(1) { transition-delay: 0.12s; }
-    .fab.open .fab-item:nth-child(2) { transition-delay: 0.08s; }
-    .fab.open .fab-item:nth-child(3) { transition-delay: 0.04s; }
-    .fab .fab-main svg { transition: transform 0.3s ease; }
-    .fab.open .fab-main svg { transform: rotate(45deg); }
   </style>
 
-  {{- /* PJAX 样式：main.css 编译时未含 _plugins/pjax.styl，此处按原版 styl 手工补等价产物
-     （translate-distance=8px、duration=0.4s，与 pjax.js 400ms 移除 pjax-loaded 的时机一致）。
-     .error-page 样式 main.css 已含（_components/pages/error.styl），无需重复定义。 */}}
-  <style>
-    /* 顶部居中 loading 图标（body.pjax-loading 时显示） */
-    .page-loading-bar { position: fixed; top: 0; left: calc(50% - 16px); width: 32px; height: 32px; display: none; flex-direction: column; align-items: center; }
-    .page-loading-bar img { height: 100%; }
-    body.pjax-loading .page-loading-bar { display: flex; }
-    /* 主内容过渡基态 */
-    .l_body .l_main, #l_cover { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-    @keyframes pjax-fade-in {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    /* loading：内容淡出并轻微下移 */
-    body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { opacity: 0.4; transform: translateY(8px); pointer-events: none; }
-    /* loaded：内容上移淡入 */
-    body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    /* 减少动态偏好 */
-    @media (prefers-reduced-motion: reduce) {
-      .l_body .l_main, #l_cover { transition: opacity 0.4s ease; }
-      body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { transform: none; }
-      body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-simple 0.4s ease forwards; }
-      @keyframes pjax-fade-simple { 0% { opacity: 0; } 100% { opacity: 1; } }
-    }
-  </style>
+  {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/pjax-transitions.css"}}">
 
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>

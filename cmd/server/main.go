@@ -251,6 +251,10 @@ func main() {
 			}
 			data.TagCloud = items
 		}
+		// 专栏存在性：navbar「专栏」tab 显示条件（对齐原版 theme.topic.publish_list 非空）
+		if topics, err := st.CountByTopic(); err == nil && len(topics) > 0 {
+			data.HasTopics = true
+		}
 		var stats tmpl.SiteStats
 		statsOK := true
 		if n, err := st.CountPosts(); err == nil {
@@ -304,6 +308,26 @@ func main() {
 			return
 		}
 		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// toCard：store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
+	// 分类配色查 site.yml article.category_color（对齐原版 category_color helper）；
+	// 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
+	toCard := func(p *store.Post) *tmpl.PostCard {
+		card := &tmpl.PostCard{
+			Slug:          p.Slug,
+			Title:         p.Title,
+			Excerpt:       p.Excerpt,
+			Cover:         p.Cover,
+			Date:          p.CreatedAt,
+			Pinned:        p.Pinned,
+			Category:      p.Category,
+			CategoryStyle: tmpl.CategoryColorStyle(p.Category, site.Article.CategoryColor),
+		}
+		if pd := store.DecodePoster(p.Poster); pd != nil {
+			card.Poster = &tmpl.PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
+		}
+		return card
 	}
 
 	// release 模式：关掉 Gin 调试日志（生产噪音），-dev 保留 debug。
@@ -494,19 +518,31 @@ func main() {
 			data := &tmpl.ViewData{
 				Site: site,
 				Page: &tmpl.Page{
-					Title:   p.Title,
-					Slug:    p.Slug,
-					Layout:  "post",
-					Type:    "tech",
-					Lang:    "zh-CN",
-					MenuID:  "post",
-					Date:    p.CreatedAt.Format("2006-01-02"),
-					Excerpt: p.Excerpt,
-					Views:   views,
+					Title:      p.Title,
+					Slug:       p.Slug,
+					Layout:     "post",
+					Type:       "tech",
+					Lang:       "zh-CN",
+					MenuID:     "post",
+					Date:       p.CreatedAt.Format("2006-01-02"),
+					Excerpt:    p.Excerpt,
+					Views:      views,
+					Topic:      p.Topic,
+					References: store.DecodeReferences(p.References),
 				},
 				Content: template.HTML(p.ContentHTML),
 			}
 			data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+			// 左栏「专栏：xxx」系列文章 widget（对齐 widgets/related.ejs relatedPostsInTopic）
+			if p.Topic != "" {
+				if series, err := st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
+					ts := &tmpl.TopicSeries{Name: p.Topic}
+					for _, sp := range series {
+						ts.Posts = append(ts.Posts, &tmpl.TopicSeriesPost{Slug: sp.Slug, Title: sp.Title, Active: sp.Slug == slug})
+					}
+					data.TopicSeries = ts
+				}
+			}
 			// 上下篇导航
 			if prev, err := st.GetPrevPost(slug); err == nil && prev != nil {
 				data.PrevPost = &tmpl.AdjacentPost{Slug: prev.Slug, Title: prev.Title}
@@ -518,14 +554,7 @@ func main() {
 			if related, err := st.ListRelatedByTags(slug, p.Tags, 4); err == nil && len(related) > 0 {
 				cards := make([]*tmpl.PostCard, 0, len(related))
 				for _, rp := range related {
-					cards = append(cards, &tmpl.PostCard{
-						Slug:    rp.Slug,
-						Title:   rp.Title,
-						Excerpt: rp.Excerpt,
-						Cover:   rp.Cover,
-						Date:    rp.CreatedAt,
-						Pinned:  rp.Pinned,
-					})
+					cards = append(cards, toCard(rp))
 				}
 				data.RelatedPosts = cards
 			}
@@ -565,14 +594,15 @@ func main() {
 		data := &tmpl.ViewData{
 			Site: site,
 			Page: &tmpl.Page{
-				Title:   p.Title,
-				Slug:    p.Slug,
-				Layout:  "post",
-				Type:    "tech",
-				Lang:    "zh-CN",
-				MenuID:  "post",
-				Date:    p.Date,
-				Excerpt: p.Excerpt,
+				Title:      p.Title,
+				Slug:       p.Slug,
+				Layout:     "post",
+				Type:       "tech",
+				Lang:       "zh-CN",
+				MenuID:     "post",
+				Date:       p.Date,
+				Excerpt:    p.Excerpt,
+				References: p.References,
 			},
 			Content: template.HTML(p.HTML),
 		}
@@ -649,14 +679,7 @@ func main() {
 		}
 		cards := make([]*tmpl.PostCard, 0, len(posts))
 		for _, p := range posts {
-			cards = append(cards, &tmpl.PostCard{
-				Slug:    p.Slug,
-				Title:   p.Title,
-				Excerpt: p.Excerpt,
-				Cover:   p.Cover,
-				Date:    p.CreatedAt,
-				Pinned:  p.Pinned,
-			})
+			cards = append(cards, toCard(p))
 		}
 		pages := make([]int, totalPages)
 		for i := range pages {
@@ -708,14 +731,7 @@ func main() {
 	toCards := func(posts []*store.Post) []*tmpl.PostCard {
 		cards := make([]*tmpl.PostCard, 0, len(posts))
 		for _, p := range posts {
-			cards = append(cards, &tmpl.PostCard{
-				Slug:    p.Slug,
-				Title:   p.Title,
-				Excerpt: p.Excerpt,
-				Cover:   p.Cover,
-				Date:    p.CreatedAt,
-				Pinned:  p.Pinned,
-			})
+			cards = append(cards, toCard(p))
 		}
 		return cards
 	}
@@ -798,6 +814,57 @@ func main() {
 		renderBase(c, &tmpl.ViewData{
 			Site:  site,
 			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name},
+			Posts: toCards(posts),
+		})
+	})
+
+	// 专栏索引页：专栏卡片列表（对齐 Stellar index_topic.ejs，图标缺省用主题 default.topic 占位图）
+	r.GET("/topic", func(c *gin.Context) {
+		counts, err := st.CountByTopic()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count topics: %v", err)
+			return
+		}
+		if len(counts) == 0 {
+			render404(c)
+			return
+		}
+		topics := make([]*tmpl.TopicItem, 0, len(counts))
+		for name, n := range counts {
+			topics = append(topics, &tmpl.TopicItem{
+				Name:  name,
+				Count: n,
+				Icon:  "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/10433048.png",
+			})
+		}
+		sort.Slice(topics, func(i, j int) bool { return topics[i].Name < topics[j].Name })
+		renderBase(c, &tmpl.ViewData{
+			Site:   site,
+			Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
+			Topics: topics,
+		})
+	})
+
+	// 专栏文章列表页：复用首页卡片（对齐原版 topic 文章列表）
+	r.GET("/topic/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		counts, err := st.CountByTopic()
+		if err != nil {
+			c.String(http.StatusInternalServerError, "count topics: %v", err)
+			return
+		}
+		if _, ok := counts[name]; !ok {
+			render404(c)
+			return
+		}
+		posts, err := st.ListByTopic(name)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			return
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:  site,
+			Page:  &tmpl.Page{Title: "专栏：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Topic: name},
 			Posts: toCards(posts),
 		})
 	})
@@ -938,6 +1005,8 @@ func main() {
 		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/archives"})
 		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/categories"})
 		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/tags"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/links"})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/moments"})
 
 		output, err := xml.MarshalIndent(sm, "", "  ")
 		if err != nil {

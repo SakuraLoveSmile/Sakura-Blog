@@ -144,8 +144,8 @@ function scrollTOC() {
 
 const init = {
   toc: () => {
-    // 每次 init 重新收集标题与 TOC 根节点（PJAX 后 DOM 已替换）
-    tocState.segs = Array.from(document.querySelectorAll('article.md-text h2[id], article.md-text h3[id]'));
+    // 每次 init 重新收集 h1-h6 标题与 TOC 根节点（PJAX 后 DOM 已替换）
+    tocState.segs = Array.from(document.querySelectorAll('article.md-text h1[id], article.md-text h2[id], article.md-text h3[id], article.md-text h4[id], article.md-text h5[id], article.md-text h6[id]'));
     tocState.root = document.getElementById('data-toc');
     if (!tocState.bound) {
       tocState.bound = true;
@@ -307,6 +307,13 @@ stellar.initPage = function () {
   init.sidebar();
   init.relativeDate(document.querySelectorAll('#post-meta time'));
   init.registerTabsTag();
+
+  // wrapLazyloadImages：将 goldmark 输出的 img 转为 lazy-load 形式
+  if (typeof window.wrapLazyloadImages === 'function') {
+    document.querySelectorAll('.md-text.content').forEach(function (el) {
+      window.wrapLazyloadImages(el);
+    });
+  }
   
   // Reinitialize comments after PJAX navigation
   if (stellar.initComments) {

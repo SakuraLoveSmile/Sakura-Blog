@@ -1,0 +1,23 @@
+/* PJAX 过渡样式：main.css 编译时未含 _plugins/pjax.styl，此处按原版 styl 手工补等价产物 */
+
+/* 顶部居中 loading 图标（body.pjax-loading 时显示） */
+.page-loading-bar { position: fixed; top: 0; left: calc(50% - 16px); width: 32px; height: 32px; display: none; flex-direction: column; align-items: center; }
+.page-loading-bar img { height: 100%; }
+body.pjax-loading .page-loading-bar { display: flex; }
+/* 主内容过渡基态 */
+.l_body .l_main, #l_cover { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes pjax-fade-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+/* loading：内容淡出并轻微下移 */
+body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { opacity: 0.4; transform: translateY(8px); pointer-events: none; }
+/* loaded：内容上移淡入 */
+body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* 减少动态偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .l_body .l_main, #l_cover { transition: opacity 0.4s ease; }
+  body.pjax-loading .l_body .l_main, body.pjax-loading #l_cover { transform: none; }
+  body.pjax-loaded .l_body .l_main, body.pjax-loaded #l_cover { animation: pjax-fade-simple 0.4s ease forwards; }
+  @keyframes pjax-fade-simple { 0% { opacity: 0; } 100% { opacity: 1; } }
+}

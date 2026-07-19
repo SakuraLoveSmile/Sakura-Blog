@@ -362,8 +362,30 @@
       background: var(--admin-surface-2);
     }
 
+    .admin-btn-danger {
+      background: transparent;
+      color: var(--admin-danger);
+      border: 1px solid var(--admin-danger);
+    }
+
     .admin-btn-danger:hover {
       color: var(--admin-danger);
+    }
+
+    button.danger {
+      background: none;
+      border: 1px solid var(--admin-border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      color: var(--admin-text-sub);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: color .2s, border-color .2s;
+    }
+    button.danger:hover {
+      color: var(--admin-danger);
+      border-color: var(--admin-danger);
     }
 
     .admin-card {
@@ -558,6 +580,34 @@
     .admin-form-group textarea:focus,
     .admin-form-group select:focus {
       border-color: var(--admin-accent);
+    }
+
+    .admin-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .admin-field > span {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--admin-text-sub);
+    }
+    .admin-field textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--admin-border);
+      border-radius: 8px;
+      background: var(--admin-surface);
+      color: var(--admin-text);
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .admin-field textarea:focus {
+      outline: none;
+      border-color: var(--admin-primary);
     }
 
     .admin-form-row {
@@ -1003,6 +1053,37 @@
     .EasyMDEContainer .editor-toolbar button { color: var(--admin-text-sub); }
     .EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--admin-accent); }
 
+    /* 主题切换按钮 */
+    .admin-theme-toggle {
+      padding: 8px 16px;
+      margin-top: auto;
+    }
+    .admin-theme-toggle button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--admin-surface-2);
+      color: var(--admin-text);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: background .2s;
+    }
+    .admin-theme-toggle button:hover {
+      background: var(--admin-active-bg);
+    }
+    .admin-theme-toggle .theme-icon-dark { display: none; }
+    :root[data-theme="dark"] .admin-theme-toggle .theme-icon-light { display: none; }
+    :root[data-theme="dark"] .admin-theme-toggle .theme-icon-dark { display: inline; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .admin-theme-toggle .theme-icon-light { display: none; }
+      :root:not([data-theme="light"]) .admin-theme-toggle .theme-icon-dark { display: inline; }
+    }
+
     @media (max-width: 768px) {
       .admin-side {
         transform: translateX(-100%);
@@ -1042,5 +1123,20 @@
       }
     }
   </style>
+  <script>
+  function toggleAdminTheme() {
+    var html = document.documentElement;
+    var cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
+      ? html.dataset.theme
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    html.dataset.theme = next;
+    localStorage.setItem('admin-theme', next);
+  }
+  (function() {
+    var saved = localStorage.getItem('admin-theme');
+    if (saved) document.documentElement.dataset.theme = saved;
+  })();
+  </script>
 </head>
 {{end}}

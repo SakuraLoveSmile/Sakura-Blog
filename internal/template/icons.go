@@ -25,7 +25,8 @@ type IconRegistry struct {
 	icon map[string]string
 }
 
-var iconLineRe = regexp.MustCompile(`^([a-zA-Z0-9:_-]+):\s*(.+)$`)
+// key 字符集含点号：原版存在 default:bookmark.active 这类带 . 的 key。
+var iconLineRe = regexp.MustCompile(`^([a-zA-Z0-9:._-]+):\s*(.+)$`)
 
 // LoadIcons 从指定路径加载 icons.yml，返回 IconRegistry。
 // 保留给开发期从 resource/ 读取（go run -dev 时定位）；正式部署用 LoadIconsEmbed。

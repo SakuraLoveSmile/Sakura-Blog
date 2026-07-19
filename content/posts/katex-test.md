@@ -3,6 +3,7 @@ title: KaTeX 数学公式测试
 date: 2026-07-19
 excerpt: 验证行内/块级 $、$$、\\(\\)、\\[\\] 四种定界符及价格文本不误渲染。
 categories: 技术
+topic: 服务端渲染
 tags: [KaTeX, Markdown]
 ---
 

@@ -23,6 +23,7 @@
   fill: var(--block) !important;
 }
 
+/* Mermaid 暗色适配 - 块1：系统暗色偏好（prefers-color-scheme）且未手动设为浅色 */
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .md-text .mermaid {
     fill: #ccc !important;
@@ -98,6 +99,7 @@
   }
 }
 
+/* Mermaid 暗色适配 - 块2：手动切换为暗色模式（覆盖系统浅色偏好） */
 :root[data-theme="dark"] .md-text .mermaid {
   fill: #ccc !important;
 }

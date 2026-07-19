@@ -25,40 +25,26 @@
     <div class="l_main" id="main">
       {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
          文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
-      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{template "partial/footer" .}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
 
     {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
     <aside class="l_right">{{template "partial/rightbar" .}}</aside>
 
-    {{- /* float-panel FAB speed dial：主按钮点击后子按钮向上展开（grid 0fr→1fr，同 TOC collapse 技术）。
-       子按钮：主题切换（所有尺寸）+ rightbar-toggle（≤1180px 显示）+ leftbar-toggle（≤667px 显示），
-       后两者保留 menubtn.ejs 的内联 display:none + laptop-only/mobile-only class，媒体查询自动接管。
-       必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。 */}}
-    <div class="float-panel fab" id="fab">
-      <div class="fab-items">
-        <div class="fab-items-inner">
-          {{- /* 按钮内容必须单行无空白：flex 容器内空白文本节点会成为匿名 flex item 挤压图标位置 */}}
-          <button type="button" class="fab-item theme-toggle" title="切换主题" onclick="toggleTheme()"><svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg><svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg></button>
-          <button type="button" style="display:none" class="fab-item laptop-only rightbar-toggle mobile" title="目录" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
-          <button type="button" style="display:none" class="fab-item mobile-only leftbar-toggle mobile" title="菜单" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
-        </div>
-      </div>
-      <button type="button" class="fab-main" title="快捷操作" onclick="document.getElementById('fab').classList.toggle('open')"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+    {{- /* float-panel：对齐原版 _partial/menubtn.ejs（sticky 面板，仅含右栏/左栏 toggle 两个按钮，
+       小屏由 laptop-only/mobile-only + 内联 display:none 媒体查询接管）。
+       必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。
+       主题切换已迁至左栏 footer 的 social 按钮（对齐原版机制），不再放此处。 */}}
+    <div class="float-panel">
+      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" title="目录" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
+      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" title="菜单" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
     </div>
   </div>
 
   {{- /* PJAX 加载指示图标：对齐 layout.ejs，body 闭合前；body.pjax-loading 时 display:flex（样式在 head.html）*/}}
   <div class="page-loading-bar"><img src="https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"></div>
-
-  {{- /* 图片灯箱：正文 img 点击放大，ESC / 遮罩关闭（reading.js）*/}}
-  <div id="reading-lightbox" class="reading-lightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
-    <button type="button" class="reading-lightbox__backdrop" aria-label="关闭预览"></button>
-    <div class="reading-lightbox__stage">
-      <img class="reading-lightbox__img" alt="">
-    </div>
-  </div>
 
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
   <script>
@@ -67,26 +53,260 @@
       root: '/',
       tag_plugins: { chat: {} },
       search: { service: 'local_search', path: '/search.json', local_search: { path: '/search.json' } },
-      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
+      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' },
+      {{- /* fancybox 配置：对齐 _config.yml plugins.fancybox。selector 说明：
+         wrapLazyloadImages 将 p>img 转为 div.lazy-box>img.lazy，故选择器直接匹配转换后的结构，
+         避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}
+      fancybox: {
+        selector: 'div.lazy-box>img.lazy',
+        css: 'https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css',
+        js: 'https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js'
+      }
     };
     const def = { avatar: '', cover: '', loading: '' };
-    const deps = { jquery: '', marked: '', lazyload: '' };
+    const deps = {
+      jquery: 'https://gcore.jsdelivr.net/npm/jquery@3.7/dist/jquery.min.js',
+      marked: '',
+      lazyload: 'https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js'
+    };
 
     {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）。
        切换后写入 localStorage，与 head.html 的主题初始化脚本配合实现持久化。 */}}
     function toggleTheme() {
       const html = document.documentElement;
-      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
-        ? html.dataset.theme
-        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      const next = cur === 'dark' ? 'light' : 'dark';
-      html.dataset.theme = next;
+      const cur = html.dataset.theme;
+      let next;
+      switch (cur) {
+        case 'light': next = 'dark'; break;
+        case 'dark': next = 'auto'; break;
+        default: next = 'light'; // auto (无 data-theme) 或其他情况 → light
+      }
+      if (next === 'auto') {
+        html.removeAttribute('data-theme');
+      } else {
+        html.dataset.theme = next;
+      }
       localStorage.setItem('theme', next);
     }
 
-    {{- /* utils 最小 shim：Stellar 原版 utils.jq 是 jQuery 就绪回调；本 demo 未加载 jQuery，
-       shim 成有 jQuery 才执行，避免 main.js 的 init.toc/init.sidebar 抛 utils is not defined。 */}}
-    const utils = { jq: (fn) => { if (window.jQuery) fn(); } };
+    {{- /* utils：对齐原版 scripts/utils.ejs 的 css/js/jq 三个加载辅助（插件按需懒加载 CDN 资源）。
+       css/js 带去重缓存；jq 懒加载 jQuery 并把回调注册到 pjax:complete（对齐原版语义）。 */}}
+    const utils = {
+      _loadedStyles: new Set(),
+      css: (href) => {
+        if (utils._loadedStyles.has(href)) return null;
+        const ss = document.createElement('link');
+        ss.rel = 'stylesheet';
+        ss.href = href;
+        utils._loadedStyles.add(href);
+        document.head.appendChild(ss);
+        return ss;
+      },
+      _loadedScripts: new Set(),
+      js: (src, opt) => new Promise((resolve, reject) => {
+        if (src.startsWith('/')) src = ctx.root + src.substring(1);
+        if (utils._loadedScripts.has(src)) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = src;
+        if (opt) { for (let key of Object.keys(opt)) script[key] = opt[key]; } else { script.async = true; }
+        script.onerror = reject;
+        script.onload = () => { utils._loadedScripts.add(src); resolve(); };
+        document.head.appendChild(script);
+      }),
+      jq: (fn, pjax = true) => {
+        if (typeof jQuery === 'undefined') {
+          utils.js(deps.jquery).then(fn);
+        } else {
+          fn();
+        }
+        if (pjax && !fn._pjax_registered) {
+          document.addEventListener('pjax:complete', fn);
+          fn._pjax_registered = true;
+        }
+      },
+      _loadedElements: new WeakSet(),
+      onLoading: (el) => {
+        if (el) {
+          if ($(el).find('.loading-wrap').length === 0) {
+            $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+          }
+        }
+      },
+      onLoadSuccess: (el) => {
+        if (el) {
+          $(el).find('.loading-wrap').remove();
+        }
+      },
+      onLoadFailure: (el) => {
+        if (el) {
+          $(el).find('.loading-wrap svg').remove();
+          $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+          $(el).find('.loading-wrap').addClass('error');
+        }
+      },
+      request: (el, url, callback, onFailure) => {
+        if (el && utils._loadedElements.has(el)) {
+          return;
+        }
+        const maxRetry = 3;
+        let retryCount = 0;
+        return new Promise((resolve, reject) => {
+          const load = () => {
+            utils.onLoading?.(el);
+            let timedOut = false;
+            const timeout = setTimeout(() => {
+              timedOut = true;
+              console.warn('[request] 超时:', url);
+              if (++retryCount >= maxRetry) {
+                utils.onLoadFailure?.(el);
+                onFailure?.();
+                reject('请求超时');
+              } else {
+                setTimeout(load, 1000);
+              }
+            }, 5000);
+            fetch(url).then(resp => {
+              if (timedOut) return;
+              clearTimeout(timeout);
+              if (!resp.ok) throw new Error('响应失败');
+              return resp;
+            }).then(data => {
+              if (timedOut) return;
+              if (el) utils._loadedElements.add(el);
+              utils.onLoadSuccess?.(el);
+              callback(data);
+              resolve(data);
+            }).catch(err => {
+              clearTimeout(timeout);
+              console.warn('[request] 错误:', err);
+              if (++retryCount >= maxRetry) {
+                utils.onLoadFailure?.(el);
+                onFailure?.();
+                reject(err);
+              } else {
+                setTimeout(load, 1000);
+              }
+            });
+          };
+          load();
+        });
+      },
+      requestWithoutLoading: (url, options = {}, maxRetry = 2, timeout = 5000) => {
+        return new Promise((resolve, reject) => {
+          let retryCount = 0;
+          const tryRequest = () => {
+            let timedOut = false;
+            const timer = setTimeout(() => {
+              timedOut = true;
+              if (++retryCount > maxRetry) reject('timeout');
+              else tryRequest();
+            }, timeout);
+            fetch(url, options)
+              .then(resp => {
+                if (timedOut) return;
+                clearTimeout(timer);
+                if (!resp.ok) throw new Error('bad response');
+                resolve(resp);
+              })
+              .catch(err => {
+                if (timedOut) return;
+                clearTimeout(timer);
+                if (++retryCount > maxRetry) reject(err);
+                else setTimeout(tryRequest, 500);
+              });
+          };
+          tryRequest();
+        });
+      },
+      requestAnimationFrame: (fn) => {
+        if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame;
+        }
+        window.requestAnimationFrame(fn);
+      },
+      dark: {},
+    };
+  </script>
+  {{- /* lazyload：对齐 _plugins/lazyload.ejs。CDN 异步加载 vanilla-lazyload@19.1，
+     全局 window.lazyLoadOptions 让库自初始化；wrapLazyloadImages() 在客户端将
+     goldmark 输出的 img[src] 转为 .lazy-box > img.lazy[data-src]。
+     PJAX 钩子已在 pjax.js 第 468 行预留 lazyLoadInstance.update()。 */}}
+  <script async src="https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"></script>
+  <script>
+    window.lazyLoadOptions = {
+      elements_selector: ".lazy",
+      callback_loaded: (el) => {
+        el.classList.add('loaded');
+        const wrapper = el.closest('.lazy-box');
+        const icon = wrapper?.querySelector('.lazy-icon');
+        if (icon) icon.remove();
+      }
+    };
+    window.addEventListener("LazyLoad::Initialized", function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    }, false);
+    document.addEventListener('DOMContentLoaded', function () {
+      window.lazyLoadInstance?.update();
+    });
+
+    window.wrapLazyloadImages = (container) => {
+      if (typeof container === 'string') {
+        container = document.querySelector(container);
+      }
+      if (!container) return;
+      const images = container.querySelectorAll('img');
+      images.forEach((img) => {
+        if (img.classList.contains('lazy')) return;
+        const src = img.getAttribute('src');
+        if (!src) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'lazy-box';
+        const newImg = img.cloneNode();
+        newImg.removeAttribute('src');
+        newImg.setAttribute('data-src', src);
+        newImg.classList.add('lazy');
+        const icon = document.createElement('div');
+        icon.className = 'lazy-icon';
+        if (def.loading) {
+          icon.style.backgroundImage = `url("${def.loading}")`;
+        }
+        wrapper.appendChild(newImg);
+        wrapper.appendChild(icon);
+        img.replaceWith(wrapper);
+      });
+      if (window.lazyLoadInstance?.update) {
+        window.lazyLoadInstance.update();
+      }
+    }
+  </script>
+  {{- /* fancybox：对齐 _plugins/fancybox.ejs。绑定 ctx.fancybox.selector（div.lazy-box>img.lazy，
+     即 wrapLazyloadImages 转换后的图片结构）。懒加载：页面存在匹配图才拉取 CDN；
+     bind 一次即事件委托覆盖后续 DOM，PJAX 换页后重新检测。 */}}
+  <script>
+    (function () {
+      var bound = false;
+      function fullSelector() {
+        return ctx.fancybox.selector;
+      }
+      function tryInit() {
+        if (bound) return;
+        if (document.querySelectorAll(fullSelector()).length === 0) return;
+        utils.css(ctx.fancybox.css);
+        utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+          if (bound) return;
+          bound = true;
+          Fancybox.bind(fullSelector(), {
+            hideScrollbar: false,
+            Thumbs: { autoStart: false },
+            caption: function (fancybox, slide) {
+              return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null;
+            }
+          });
+        });
+      }
+      document.addEventListener('DOMContentLoaded', tryInit);
+      document.addEventListener('pjax:complete', tryInit);
+    })();
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>
   <script src="{{url_for "/assets/js/search/local-search.js"}}" defer></script>
@@ -96,5 +316,11 @@
   {{- /* PJAX 无刷新导航：放最后，劫持站内链接点击与前进后退；交换 .l_main 并就地更新左右栏。
      前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。 */}}
   <script src="{{url_for "/assets/js/plugins/pjax.js"}}" defer></script>
+  {{- /* flying-pages 预取（对齐 _plugins/preload.ejs）：hover 意图预取页面，与 PJAX 互补加速。
+     ignoreKeywords 加 /admin：后台页面不预取（原版默认为空，此处为安全增强）。 */}}
+  <script>
+    window.FPConfig = { delay: 0, ignoreKeywords: ['/admin'], maxRPS: 5, hoverDelay: 25 };
+  </script>
+  <script defer src="https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script>
 </body>
 </html>

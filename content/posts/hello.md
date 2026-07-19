@@ -3,7 +3,11 @@ title: Demo 2：Go 服务端渲染验证
 date: 2026-07-16
 excerpt: 用 Gin + html/template + goldmark 组合出完整文章页，验证从 Markdown 到 Stellar 风格文章页的端到端链路。
 categories: 技术
+topic: 服务端渲染
 tags: [Go, Stellar]
+cover: https://picsum.photos/seed/stellar-demo/1280/640
+poster_headline: Go 服务端渲染验证
+poster_caption: Gin + goldmark + html/template
 ---
 
 ## 这是什么
@@ -64,7 +68,7 @@ func main() {
 
 ### 图片
 
-![占位图](https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/common/wallhaven-rdgw7w.webp)
+![占位图](https://picsum.photos/seed/stellar-demo/1280/640)
 
 ## 下一步
 

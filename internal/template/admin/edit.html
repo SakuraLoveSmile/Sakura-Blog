@@ -46,10 +46,37 @@
             <input type="text" id="cover" name="cover" value="{{.Admin.EditPost.Cover}}" placeholder="https://...（可选，首页卡片封面）">
           </div>
 
+          {{- /* 海报封面：对齐原版 post.poster。headline 与封面图同时填写时，首页卡片渲染为 photo 封面大卡 */}}
+          <div class="admin-form-row">
+            <div class="admin-form-group" style="flex:2">
+              <label for="poster_headline">海报标题</label>
+              <input type="text" id="poster_headline" name="poster_headline" value="{{.Admin.EditPost.PosterHeadline}}" placeholder="可选，填写后首页显示封面大卡">
+            </div>
+            <div class="admin-form-group" style="flex:1">
+              <label for="poster_topic">海报专栏</label>
+              <input type="text" id="poster_topic" name="poster_topic" value="{{.Admin.EditPost.PosterTopic}}" placeholder="可选，文字吸顶显示">
+            </div>
+          </div>
+
+          <div class="admin-form-row">
+            <div class="admin-form-group" style="flex:2">
+              <label for="poster_caption">海报副标题</label>
+              <input type="text" id="poster_caption" name="poster_caption" value="{{.Admin.EditPost.PosterCaption}}" placeholder="可选">
+            </div>
+            <div class="admin-form-group" style="flex:1">
+              <label for="poster_color">海报文字颜色</label>
+              <input type="text" id="poster_color" name="poster_color" value="{{.Admin.EditPost.PosterColor}}" placeholder="可选，如 #fff">
+            </div>
+          </div>
+
           <div class="admin-form-row">
             <div class="admin-form-group" style="flex:1">
               <label for="category">分类</label>
               <input type="text" id="category" name="category" value="{{.Admin.EditPost.Category}}" placeholder="单分类（可选）">
+            </div>
+            <div class="admin-form-group" style="flex:1">
+              <label for="topic">专栏</label>
+              <input type="text" id="topic" name="topic" value="{{.Admin.EditPost.Topic}}" placeholder="可选，同专栏文章在文章页左栏成系列展示">
             </div>
             <div class="admin-form-group" style="flex:2">
               <label for="tags">标签</label>

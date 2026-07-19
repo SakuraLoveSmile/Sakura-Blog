@@ -1,0 +1,22 @@
+{{- /* topics.html: 专栏索引页，对齐 Stellar layout/index_topic.ejs + topic_card.ejs
+   navbar + div.post-list.wiki.topic（topic 卡片：preview 图标 + 名称 + 文章数）。
+   由 base.html 按 .Page.Layout == "topics" 分派渲染。
+*/ -}}
+{{template "partial/navbar" .}}
+<div class="post-list wiki topic">
+  {{range .Topics}}
+  <div class="post-card-wrap">
+    <a class="post-card wiki topic" href="/topic/{{.Name}}">
+      <article class="md-text">
+        <div class="preview"><img src="{{.Icon}}"/></div>
+        <div class="excerpt">
+          <h2 class="post-title">{{.Name}}</h2>
+          <p>共 {{.Count}} 篇文章</p>
+        </div>
+      </article>
+    </a>
+  </div>
+  {{else}}
+  <p class="cap" style="text-align:center;padding:2rem 0;color:var(--text-p3);">还没有专栏。</p>
+  {{end}}
+</div>

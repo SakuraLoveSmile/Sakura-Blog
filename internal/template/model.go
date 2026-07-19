@@ -2,6 +2,7 @@ package template
 
 import (
 	"html/template"
+	"strings"
 	"time"
 )
 
@@ -38,6 +39,11 @@ type ViewData struct {
 	PrevPost     *AdjacentPost // 上一篇（时间更早），nil 则不渲染
 	NextPost     *AdjacentPost // 下一篇（时间更晚），nil 则不渲染
 	RelatedPosts []*PostCard   // 相关文章（按标签匹配，最多 4 篇）
+
+	// 专栏体系（对齐原版 topic）：
+	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
+	Topics      []*TopicItem // /topic 索引页的专栏卡片列表
+	HasTopics   bool         // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
 
 	// 瞬间时间流（Layout=moments 时使用）。
 	Moments []*MomentItem
@@ -80,12 +86,49 @@ type TagItem struct {
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
 type PostCard struct {
-	Slug    string
-	Title   string
-	Excerpt string
-	Cover   string    // 封面图 URL，空则不渲染 .post-cover
-	Date    time.Time // 用于 <time> 标签与格式化
-	Pinned  bool      // 置顶角标
+	Slug          string
+	Title         string
+	Excerpt       string
+	Cover         string       // 封面图 URL，空则不渲染 .post-cover
+	Date          time.Time    // 用于 <time> 标签与格式化
+	Pinned        bool         // 置顶（meta 行 pin 图标，对齐 post_card.ejs 的 span.pin）
+	Category      string       // 单分类（meta 行分类面包屑，空不渲染）
+	CategoryStyle template.CSS // 分类配色 style 内容（CategoryColorStyle 生成；CSS 类型绕过 html/template 的 ZgotmplZ 过滤）
+	Poster        *PosterCard  // 海报数据（非 nil 且有 Cover 时渲染 photo 封面大卡）
+}
+
+// PosterCard 海报封面数据，对齐原版 post.poster（headline/topic/caption/color）。
+// 外层 a.post-card.photo > div.cover > div.cover-info，样式在 main.css 已有。
+type PosterCard struct {
+	Headline string // 海报主标题（photo 卡触发字段，空则无海报）
+	Topic    string // 专栏/系列名（非空时 cover-info 吸顶 position=top，否则沉底 bottom）
+	Caption  string // 副标题
+	Color    string // 文字颜色（如 #fff），空用默认白
+}
+
+// CategoryColorStyle 对齐原版 scripts/helpers/category_color.js：
+// 返回 style 属性内容（--text-p2:色值;--theme-block:同色系透明底色），未配置返回空。
+// 色值补 # 前缀；#fff（3 位）底色后缀 2、#ffffff（6 位）后缀 20，与原版一致。
+// 返回 template.CSS：style 属性上下文中普通字符串会被 html/template 过滤为 ZgotmplZ。
+func CategoryColorStyle(cat string, colors map[string]string) template.CSS {
+	if cat == "" || len(colors) == 0 {
+		return ""
+	}
+	color := colors[cat]
+	if color == "" {
+		return ""
+	}
+	textColor := color
+	if !strings.HasPrefix(textColor, "#") {
+		textColor = "#" + textColor
+	}
+	bgColor := textColor
+	if len(textColor) == 4 { // #fff
+		bgColor += "2"
+	} else if len(textColor) == 7 { // #ffffff
+		bgColor += "20"
+	}
+	return template.CSS("--text-p2:" + textColor + ";--theme-block:" + bgColor)
 }
 
 // Paginator 分页器数据，对齐 Stellar _partial/main/post_list/paginator.ejs。
@@ -137,6 +180,7 @@ type AdminPostRow struct {
 	Excerpt   string
 	Cover     string // 封面图 URL（编辑表单回显用）
 	Category  string // 分类（编辑表单回显用）
+	Topic     string // 专栏（编辑表单回显用）
 	Tags      string // 标签，逗号分隔（编辑表单回显用）
 	ContentMD string
 	Status    string
@@ -144,6 +188,11 @@ type AdminPostRow struct {
 	Pinned    bool
 	Password  string
 	PublishAt string // 表单用 datetime-local / RFC3339 文本
+	// 海报封面（对齐原版 post.poster，编辑表单回显/保存用）
+	PosterHeadline string
+	PosterTopic    string
+	PosterCaption  string
+	PosterColor    string
 }
 
 // Site 对齐 Stellar theme + config 的站点级配置。
@@ -152,12 +201,13 @@ type Site struct {
 	Title       string         `yaml:"title"`
 	Subtitle    string         `yaml:"subtitle"`
 	Description string         `yaml:"description"`
-	URL         string         `yaml:"url"`          // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
+	URL         string         `yaml:"url"`       // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
 	Avatar      string         `yaml:"avatar"`    // logo 头像 URL
 	AvatarBG    string         `yaml:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
 	LogoTitle   string         `yaml:"logo_title"`
 	LogoSub     string         `yaml:"logo_sub"`
 	Menubar     Menubar        `yaml:"menubar"`
+	Rightbar    RightbarConfig `yaml:"rightbar"`
 	Footer      Footer         `yaml:"footer"`
 	Comments    CommentsConfig `yaml:"comments"`
 	Admin       AdminConfig    `yaml:"admin"`
@@ -205,9 +255,78 @@ type MenuItem struct {
 	Theme string `yaml:"theme"` // 高亮色，如 #1BCDFC
 }
 
-// Footer 对齐 theme.footer.social。
+// RightbarConfig 右栏配置（site.yml rightbar 段）。
+type RightbarConfig struct {
+	// WelcomeLinklist 欢迎语 markdown widget 内的链接列表，对齐原版 markdown.ejs 的 item.linklist。
+	WelcomeLinklist LinkListConfig `yaml:"welcome_linklist"`
+}
+
+// LinkListConfig 链接列表（对齐原版 widgets/components/linklist.ejs）。
+type LinkListConfig struct {
+	Columns int            `yaml:"columns"` // 列数，0=按链接数
+	Items   []LinkListItem `yaml:"items"`
+}
+
+// LinkListItem 链接列表单项（icon 为 icons.yml key，可空）。
+// 命名区别于友链 model_links.go 的 LinkItem（Name/Avatar/Desc 字段组不同）。
+type LinkListItem struct {
+	Title string `yaml:"title"`
+	URL   string `yaml:"url"`
+	Icon  string `yaml:"icon"`
+}
+
+// EffectiveColumns 对齐原版 columns || links.length。
+func (l LinkListConfig) EffectiveColumns() int {
+	if l.Columns > 0 {
+		return l.Columns
+	}
+	return len(l.Items)
+}
+
+// AlignClass 对齐原版：columns==1 且链接数>1 时左对齐（left），否则居中（center）。
+func (l LinkListConfig) AlignClass() string {
+	if l.EffectiveColumns() == 1 && len(l.Items) > 1 {
+		return "left"
+	}
+	return "center"
+}
+
+// ShowText 对齐原版 link.ejs：columns<=2 时才显示文字（否则纯图标）。
+func (l LinkListConfig) ShowText() bool {
+	return l.EffectiveColumns() <= 2
+}
+
+// Footer 对齐 theme.footer（social + sitemap）。
 type Footer struct {
-	Social []SocialItem `yaml:"social"`
+	Social  []SocialItem   `yaml:"social"`
+	Sitemap []SitemapGroup `yaml:"sitemap"` // 页脚站点地图多列（对齐原版 footer.ejs sitemap）
+}
+
+// SitemapGroup 页脚站点地图分组（组标题 + 链接列表），对齐 theme.footer.sitemap。
+type SitemapGroup struct {
+	Title string        `yaml:"title"`
+	Items []SitemapItem `yaml:"items"`
+}
+
+// SitemapItem 页脚站点地图链接项。
+type SitemapItem struct {
+	Title string `yaml:"title"`
+	URL   string `yaml:"url"`
+}
+
+// SitemapColumns 计算 sitemap 栏数，对齐原版 footer.ejs：6 组→3 栏，7-8 组→4 栏，其余 min(len,5)。
+func (f *Footer) SitemapColumns() int {
+	n := len(f.Sitemap)
+	switch {
+	case n == 6:
+		return 3
+	case n == 7 || n == 8:
+		return 4
+	case n > 5:
+		return 5
+	default:
+		return n
+	}
 }
 
 // SocialItem 侧边栏底部社交图标。
@@ -248,6 +367,26 @@ type LatestComment struct {
 	TimeAgo string
 }
 
+// TopicSeries 文章页左栏同专栏系列文章列表。
+type TopicSeries struct {
+	Name  string
+	Posts []*TopicSeriesPost
+}
+
+// TopicSeriesPost 系列列表单项（Active=当前文章，渲染 active class + bookmark 图标）。
+type TopicSeriesPost struct {
+	Slug   string
+	Title  string
+	Active bool
+}
+
+// TopicItem /topic 索引页专栏卡片（名称 + 文章数 + 图标）。
+type TopicItem struct {
+	Name  string
+	Count int
+	Icon  string // 卡片图标（缺省用主题 default.topic 占位图）
+}
+
 // Page 对齐 Hexo page 对象，文章页用。
 type Page struct {
 	Title        string
@@ -263,6 +402,8 @@ type Page struct {
 	Views        int64  // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
 	Category     string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
 	Tag          string // 标签文章列表页的当前标签名
+	Topic        string // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
 	CanonicalURL string // 当前页面完整 URL（用于 canonical 和 og:url）
 	Description  string // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
+	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 }

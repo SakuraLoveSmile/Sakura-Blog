@@ -37,3 +37,7 @@ npm-debug.log*
 # 构建产物
 dist/
 tmp/
+server
+
+# 运行时数据
+data/

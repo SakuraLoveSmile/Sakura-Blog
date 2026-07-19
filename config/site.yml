@@ -37,6 +37,18 @@ menubar:
       icon: solar:chat-square-like-bold-duotone
       theme: "#FF6B9D"
 
+# 右栏（site.yml rightbar 段）
+rightbar:
+  # 欢迎语卡片内的链接列表（对齐原版 markdown widget 的 linklist）。columns 留空=按链接数
+  welcome_linklist:
+    items:
+      - title: 查看归档
+        url: /archives/
+        icon: default:calendar
+      - title: 传送到瞬间
+        url: /moments
+        icon: solar:chat-square-like-bold-duotone
+
 # 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
 links:
   - title: 我的朋友
@@ -70,16 +82,52 @@ footer:
     - title: Comments
       url: '#'
       icon: '<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">'
+  # 页脚站点地图（对齐原版 theme.footer.sitemap）：分组渲染为多列，栏数规则 6→3 / 7-8→4 / 其余 min(组数,5)
+  sitemap:
+    - title: 博客
+      items:
+        - title: 近期发布
+          url: /
+        - title: 分类
+          url: /categories/
+        - title: 标签
+          url: /tags/
+        - title: 归档
+          url: /archives/
+    - title: 页面
+      items:
+        - title: 友链
+          url: /links
+        - title: 瞬间
+          url: /moments
+    - title: 订阅
+      items:
+        - title: RSS
+          url: /rss.xml
+        - title: Atom
+          url: /atom.xml
+        - title: JSON Feed
+          url: /feed.json
+    - title: 关于
+      items:
+        - title: Stellar 主题
+          url: https://github.com/xaoxuu/hexo-theme-stellar
+        - title: 管理后台
+          url: /admin
 
 # 文章页脚（版权声明 / 分享 / 打赏）
 article:
+  # 分类配色表（对齐原版 theme.article.category_color）：首页卡片分类 meta 的文字与底色
+  category_color:
+    技术: '#1BCDFC'
+    测试: '#FA7D23'
   copyright:
     enabled: true
     license: 署名-非商业性使用-相同方式共享 4.0 国际
     license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
   share:
     enabled: true
-    platforms: [weibo, x, qq, link]
+    platforms: [wechat, weibo, email, link]
   reward:
     enabled: false
     text: 打赏

@@ -11,7 +11,15 @@ type frontMatter struct {
 	Excerpt  string
 	Cover    string
 	Category string
+	Topic    string // 专栏名（对齐原版 frontmatter topic 字段）
 	Tags     []string
+	// 海报封面（对齐原版 post.poster；轻量 parser 不支持嵌套，用平铺 key）
+	PosterHeadline string
+	PosterTopic    string
+	PosterCaption  string
+	PosterColor    string
+	// 参考文献（对齐原版 article_footer.ejs page.references）
+	References []string
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -72,8 +80,20 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Cover = val
 		case "category", "categories":
 			fm.Category = val
+		case "topic":
+			fm.Topic = val
 		case "tags":
 			fm.Tags = parseList(val)
+		case "poster_headline":
+			fm.PosterHeadline = val
+		case "poster_topic":
+			fm.PosterTopic = val
+		case "poster_caption":
+			fm.PosterCaption = val
+		case "poster_color":
+			fm.PosterColor = val
+		case "references":
+			fm.References = parseList(val)
 		}
 	}
 

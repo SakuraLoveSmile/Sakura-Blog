@@ -26,6 +26,16 @@
         {{- else}}
         <a href="/tags/">标签</a>
         {{- end}}
+        {{- /* 专栏 tab：对齐 nav_tabs_blog.ejs，theme.topic.publish_list 非空才显示（本地 HasTopics=DB 存在专栏文章）*/}}
+        {{- if .HasTopics}}
+        {{- if .Page.Topic}}
+        <a class="active" href="/topic/">专栏：{{.Page.Topic}}</a>
+        {{- else if eq .Page.Layout "topics"}}
+        <a class="active" href="/topic/">专栏</a>
+        {{- else}}
+        <a href="/topic/">专栏</a>
+        {{- end}}
+        {{- end}}
         <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">归档</a>
       </nav>
     </div>

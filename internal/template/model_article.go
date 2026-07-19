@@ -5,6 +5,9 @@ type ArticleConfig struct {
 	Copyright CopyrightConfig `yaml:"copyright"`
 	Reward    RewardConfig    `yaml:"reward"`
 	Share     ShareConfig     `yaml:"share"`
+	// CategoryColor 分类配色表（分类名→色值），对齐原版 theme.article.category_color，
+	// 首页卡片分类 meta 的 --text-p2/--theme-block 配色来源。
+	CategoryColor map[string]string `yaml:"category_color"`
 }
 
 // CopyrightConfig 版权声明块。

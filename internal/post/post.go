@@ -15,11 +15,12 @@ import (
 
 // Post 文章渲染结果。
 type Post struct {
-	Slug    string
-	Title   string
-	HTML    string // goldmark 渲染后的正文 HTML
-	Excerpt string
-	Date    string
+	Slug       string
+	Title      string
+	HTML       string // goldmark 渲染后的正文 HTML
+	Excerpt    string
+	Date       string
+	References []string // 参考文献列表（frontmatter references 字段）
 }
 
 // FileMeta 从 Markdown frontmatter 解析出的元数据，供 seed 导入跨包使用。
@@ -29,7 +30,15 @@ type FileMeta struct {
 	Excerpt  string
 	Cover    string
 	Category string
+	Topic    string // 专栏名
 	Tags     []string
+	// 海报封面（poster_headline 等平铺 key，对齐原版 post.poster）
+	PosterHeadline string
+	PosterTopic    string
+	PosterCaption  string
+	PosterColor    string
+	// 参考文献（对齐原版 article_footer.ejs page.references）
+	References []string
 }
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
@@ -98,7 +107,11 @@ func (s *Service) ParseFile(slug string) (FileMeta, string, error) {
 		return FileMeta{}, "", fmt.Errorf("read post %s: %w", slug, err)
 	}
 	meta, body := s.parser.Parse(src)
-	return FileMeta{Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Tags: meta.Tags}, body, nil
+	return FileMeta{
+		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
+		PosterHeadline: meta.PosterHeadline, PosterTopic: meta.PosterTopic, PosterCaption: meta.PosterCaption, PosterColor: meta.PosterColor,
+		References: meta.References,
+	}, body, nil
 }
 
 // Load 读取并渲染指定 slug 的文章。文件路径：mdDir/slug.md。
@@ -118,11 +131,12 @@ func (s *Service) Load(slug string) (*Post, error) {
 		title = slug
 	}
 	return &Post{
-		Slug:    slug,
-		Title:   title,
-		HTML:    html,
-		Excerpt: meta.Excerpt,
-		Date:    meta.Date,
+		Slug:       slug,
+		Title:      title,
+		HTML:       html,
+		Excerpt:    meta.Excerpt,
+		Date:       meta.Date,
+		References: meta.References,
 	}, nil
 }
 

@@ -41,6 +41,16 @@ func DefaultSite() *tmpl.Site {
 				{ID: "post", Title: "博客", URL: "/", Icon: "solar:documents-bold-duotone", Theme: "#1BCDFC"},
 				{ID: "archive", Title: "归档", URL: "/archives/", Icon: "default:calendar", Theme: "#3DC550"},
 				{ID: "links", Title: "友链", URL: "/links", Icon: "solar:chat-square-like-bold-duotone", Theme: "#FA7D23"},
+				{ID: "moments", Title: "瞬间", URL: "/moments", Icon: "solar:chat-square-like-bold-duotone", Theme: "#FF6B9D"},
+			},
+		},
+		Rightbar: tmpl.RightbarConfig{
+			// 欢迎语卡片链接列表（对齐原版 markdown widget 的 linklist）
+			WelcomeLinklist: tmpl.LinkListConfig{
+				Items: []tmpl.LinkListItem{
+					{Title: "查看归档", URL: "/archives/", Icon: "default:calendar"},
+					{Title: "传送到瞬间", URL: "/moments", Icon: "solar:chat-square-like-bold-duotone"},
+				},
 			},
 		},
 		Footer: tmpl.Footer{
@@ -49,6 +59,23 @@ func DefaultSite() *tmpl.Site {
 				{Title: "Music", URL: "#", Icon: `<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3845874.svg">`},
 				{Title: "Unsplash", URL: "#", Icon: `<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3616429.svg">`},
 				{Title: "Comments", URL: "#", Icon: `<img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg">`},
+			},
+			// 页脚站点地图（对齐原版 theme.footer.sitemap 多列）
+			Sitemap: []tmpl.SitemapGroup{
+				{Title: "博客", Items: []tmpl.SitemapItem{
+					{Title: "近期发布", URL: "/"},
+					{Title: "分类", URL: "/categories/"},
+					{Title: "标签", URL: "/tags/"},
+					{Title: "归档", URL: "/archives/"},
+				}},
+				{Title: "页面", Items: []tmpl.SitemapItem{
+					{Title: "友链", URL: "/links"},
+					{Title: "瞬间", URL: "/moments"},
+				}},
+				{Title: "订阅", Items: []tmpl.SitemapItem{
+					{Title: "RSS", URL: "/rss.xml"},
+					{Title: "Atom", URL: "/atom.xml"},
+				}},
 			},
 		},
 		Comments: tmpl.CommentsConfig{
@@ -59,6 +86,7 @@ func DefaultSite() *tmpl.Site {
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
 		Article: tmpl.ArticleConfig{
+			CategoryColor: map[string]string{"技术": "#1BCDFC"}, // 对齐原版 theme.article.category_color
 			Copyright: tmpl.CopyrightConfig{
 				Enabled:    true,
 				License:    "署名-非商业性使用-相同方式共享 4.0 国际",
@@ -66,7 +94,7 @@ func DefaultSite() *tmpl.Site {
 			},
 			Share: tmpl.ShareConfig{
 				Enabled:   true,
-				Platforms: []string{"weibo", "x", "qq", "link"},
+				Platforms: []string{"wechat", "weibo", "email", "link"},
 			},
 			Reward: tmpl.RewardConfig{
 				Enabled: false,
