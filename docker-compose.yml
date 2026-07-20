@@ -26,6 +26,9 @@ services:
       BLOG_DB: "/app/data/blog.db"
       BLOG_ROOT: "/app"
       BLOG_SEED: "false"
+      # 自动备份（每 24h 全量备份到 /app/data/backups/，留存最近 N 份）
+      BLOG_AUTO_BACKUP: "true"
+      BLOG_BACKUP_KEEP: "7"
       # 反向代理（nginx 同机）：BLOG_TRUSTED_PROXY=127.0.0.1/32
       # 时区
       TZ: Asia/Shanghai
