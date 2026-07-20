@@ -106,6 +106,12 @@ export const momentApi = {
   delete: (id: number) => http.delete(`/moments/${id}`),
 };
 
+// --- 笔记页（content/notes.md 原文读写，前台 /notes 上半部分） ---
+export const notesApi = {
+  get: () => http.get("/notes-content"),
+  update: (content: string) => http.put("/notes-content", { content }),
+};
+
 // --- Settings ---
 export const settingsApi = {
   all: () => http.get("/settings"),
