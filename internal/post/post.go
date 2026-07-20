@@ -40,6 +40,9 @@ type FileMeta struct {
 	PosterColor    string
 	// 参考文献（对齐原版 article_footer.ejs page.references）
 	References []string
+	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
+	Status string // draft / published，空=由导入方决定
+	Pinned bool   // 置顶
 }
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
@@ -105,6 +108,19 @@ func (s *Service) Render(body string) (string, error) {
 	return sb.String(), nil
 }
 
+// ParseBytes 解析 Markdown 原文（含可选 frontmatter），返回元数据与正文。
+// 供备份导入等内存数据源复用，与 ParseFile 共享同一轻量 parser。
+func (s *Service) ParseBytes(src []byte) (FileMeta, string) {
+	meta, body := s.parser.Parse(src)
+	return FileMeta{
+		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
+		PosterHeadline: meta.PosterHeadline, PosterTopic: meta.PosterTopic, PosterCaption: meta.PosterCaption, PosterColor: meta.PosterColor,
+		References: meta.References,
+		Status:     meta.Status,
+		Pinned:     meta.Pinned,
+	}, body
+}
+
 // ParseFile 读 md 文件并分离 frontmatter 与正文，供 seed 导入复用。
 // 返回 (meta, body, error)。
 func (s *Service) ParseFile(slug string) (FileMeta, string, error) {
@@ -116,12 +132,8 @@ func (s *Service) ParseFile(slug string) (FileMeta, string, error) {
 	if err != nil {
 		return FileMeta{}, "", fmt.Errorf("read post %s: %w", slug, err)
 	}
-	meta, body := s.parser.Parse(src)
-	return FileMeta{
-		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
-		PosterHeadline: meta.PosterHeadline, PosterTopic: meta.PosterTopic, PosterCaption: meta.PosterCaption, PosterColor: meta.PosterColor,
-		References: meta.References,
-	}, body, nil
+	meta, body := s.ParseBytes(src)
+	return meta, body, nil
 }
 
 // Load 读取并渲染指定 slug 的文章。文件路径：mdDir/slug.md。

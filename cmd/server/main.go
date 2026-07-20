@@ -23,6 +23,7 @@ import (
 	"blog/assets"
 	"blog/console"
 	"blog/internal/api"
+	backuppkg "blog/internal/backup"
 	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/feed"
@@ -414,12 +415,28 @@ func main() {
 	// 上传附件静态托管（运行时数据，不走 go:embed）
 	r.Static("/uploads", app.UploadDir)
 
+	// 备份服务：全量备份（DB 快照 + uploads + site.yml）与文章 Markdown 导出/导入。
+	// 自动备份目录跟随 DB 所在 data 目录（data/backups）。
+	backupSvc := backuppkg.New(backuppkg.Config{
+		Store:     st,
+		Posts:     posts,
+		UploadDir: app.UploadDir,
+		SitePath:  siteConfigPath,
+		BackupDir: filepath.Join(filepath.Dir(app.DBPath), "backups"),
+		Keep:      app.BackupKeep,
+		Auto:      app.AutoBackup,
+	})
+	if app.AutoBackup {
+		backupSvc.StartAuto(24 * time.Hour)
+	}
+
 	// REST API 层（/api/v1），供 Vue Console SPA 调用
 	apiHandler := api.New(api.Config{
 		Store:       st,
 		Posts:       posts,
 		Site:        site,
 		Comments:    commentHandler,
+		Backups:     backupSvc,
 		UploadDir:   app.UploadDir,
 		MaxUploadMB: app.MaxUploadMB,
 	})

@@ -20,6 +20,9 @@ type frontMatter struct {
 	PosterColor    string
 	// 参考文献（对齐原版 article_footer.ejs page.references）
 	References []string
+	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
+	Status string // draft / published，空=由导入方决定
+	Pinned bool   // 置顶
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -94,6 +97,10 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.PosterColor = val
 		case "references":
 			fm.References = parseList(val)
+		case "status":
+			fm.Status = val
+		case "pinned":
+			fm.Pinned = val == "true" || val == "1"
 		}
 	}
 

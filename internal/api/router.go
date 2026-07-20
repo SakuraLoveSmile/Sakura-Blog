@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/backup"
 	"blog/internal/comment"
 	"blog/internal/post"
 	"blog/internal/store"
@@ -31,6 +32,7 @@ type Handler struct {
 	posts     *post.Service
 	site      *tmpl.Site
 	comments  *comment.Handler
+	backups   *backup.Service
 	uploadDir string
 	maxUpload int64 // 单文件上限字节
 
@@ -44,6 +46,7 @@ type Config struct {
 	Posts       *post.Service
 	Site        *tmpl.Site
 	Comments    *comment.Handler
+	Backups     *backup.Service
 	UploadDir   string
 	MaxUploadMB int
 }
@@ -59,6 +62,7 @@ func New(cfg Config) *Handler {
 		posts:     cfg.Posts,
 		site:      cfg.Site,
 		comments:  cfg.Comments,
+		backups:   cfg.Backups,
 		uploadDir: cfg.UploadDir,
 		maxUpload: int64(maxMB) << 20,
 	}
@@ -136,6 +140,12 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/tags/merge", h.mergeTags)
 		authed.PUT("/tags/:name", h.renameTag)
 		authed.DELETE("/tags/:name", h.deleteTag)
+
+		// 备份与导出（下载走 cookie 认证，Console 直接 <a href> 触发）
+		authed.GET("/backup/export", h.exportBackup)
+		authed.GET("/backup/export/markdown", h.exportPostsMarkdown)
+		authed.POST("/backup/import/markdown", h.importPostsMarkdown)
+		authed.GET("/backup/status", h.backupStatus)
 	}
 }
 

@@ -20,6 +20,8 @@ type App struct {
 	TrustedProxy string `yaml:"trusted_proxy"` // 反向代理可信 IP/CIDR，空则不设（仅本机）
 	UploadDir    string `yaml:"upload_dir"`    // 附件上传根目录，默认 data/uploads（相对 root）
 	MaxUploadMB  int    `yaml:"max_upload_mb"` // 单文件上传上限（MB），默认 5
+	AutoBackup   bool   `yaml:"auto_backup"`   // 每 24h 自动全量备份到 data/backups/，默认开启
+	BackupKeep   int    `yaml:"backup_keep"`   // 自动备份留存份数，默认 7
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
@@ -29,6 +31,8 @@ func DefaultApp() *App {
 		DBPath:      "data/blog.db",
 		UploadDir:   "data/uploads",
 		MaxUploadMB: 5,
+		AutoBackup:  true,
+		BackupKeep:  7,
 	}
 }
 
@@ -70,6 +74,16 @@ func ResolveApp(app *App) *App {
 	if v := os.Getenv("BLOG_TRUSTED_PROXY"); v != "" {
 		app.TrustedProxy = v
 	}
+	if v := os.Getenv("BLOG_AUTO_BACKUP"); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			app.AutoBackup = b
+		}
+	}
+	if v := os.Getenv("BLOG_BACKUP_KEEP"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			app.BackupKeep = n
+		}
+	}
 
 	// root 绝对化：空则用 cwd
 	root := app.Root
@@ -93,6 +107,9 @@ func ResolveApp(app *App) *App {
 	}
 	if app.MaxUploadMB <= 0 {
 		app.MaxUploadMB = 5
+	}
+	if app.BackupKeep <= 0 {
+		app.BackupKeep = 7
 	}
 	return app
 }

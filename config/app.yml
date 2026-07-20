@@ -26,3 +26,10 @@ upload_dir: data/uploads
 
 # 单文件上传上限（MB）。超过则拒绝，不写盘不入库。
 max_upload_mb: 5
+
+# 每日自动备份：每 24h 生成全量备份 zip 到 data/backups/（DB 快照 + 附件 + site.yml）。
+# 环境变量 BLOG_AUTO_BACKUP / BLOG_BACKUP_KEEP 可覆盖。
+auto_backup: true
+
+# 自动备份留存份数，超出按时间从旧到新清理。
+backup_keep: 7
