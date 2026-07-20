@@ -29,6 +29,9 @@ export const useThemeStore = defineStore("theme", () => {
       mode.value === "dark" ||
       (mode.value === "system" && systemPrefersDark());
     document.documentElement.classList.toggle("dark", dark);
+    // 同步 data-theme：站点 highlight.css（Chroma 令牌色）的暗色选择器是
+    // :root[data-theme="dark"]，编辑器预览复用该样式需要此桥接。
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
   }
 
   /** 切换主题模式并持久化。 */

@@ -66,6 +66,11 @@ export const attachmentApi = {
   delete: (id: number) => http.delete(`/attachments/${id}`),
 };
 
+// --- Markdown 预览 ---
+export const previewApi = {
+  render: (markdown: string) => http.post("/preview/markdown", { markdown }),
+};
+
 // --- Pages ---
 export const pageApi = {
   list: () => http.get("/pages"),

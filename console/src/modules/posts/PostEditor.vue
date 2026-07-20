@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { postApi } from "@/api";
+import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -27,6 +29,8 @@ const form = ref({
 const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
+const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
+const coverPickerOpen = ref(false);
 
 onMounted(async () => {
   if (!isEdit.value) return;
@@ -63,6 +67,7 @@ async function handleSave() {
     } else {
       await postApi.create(form.value);
     }
+    editorRef.value?.clearDraft();
     router.push("/posts");
   } catch (e: any) {
     error.value = e.response?.data?.error || "保存失败";
@@ -100,12 +105,12 @@ async function handleSave() {
           placeholder="文章标题"
           class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
         />
-        <textarea
+        <MarkdownEditor
+          ref="editorRef"
           v-model="form.content_md"
-          placeholder="Markdown 内容..."
-          rows="24"
-          class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
-        ></textarea>
+          :storage-key="'post:' + (slug || 'new')"
+          @save="handleSave"
+        />
       </div>
 
       <!-- Settings sidebar -->
@@ -157,7 +162,11 @@ async function handleSave() {
           </div>
           <div>
             <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">封面 URL</label>
-            <input v-model="form.cover" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <div class="flex gap-1.5">
+              <input v-model="form.cover" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+              <button type="button" @click="coverPickerOpen = true" title="从图床选择"
+                class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">选择</button>
+            </div>
           </div>
           <div>
             <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">阅读密码</label>
@@ -166,5 +175,7 @@ async function handleSave() {
         </div>
       </div>
     </div>
+
+    <AttachmentPickerModal :open="coverPickerOpen" @select="(url: string) => { form.cover = url; coverPickerOpen = false; }" @close="coverPickerOpen = false" />
   </div>
 </template>

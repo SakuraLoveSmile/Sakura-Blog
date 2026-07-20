@@ -1,0 +1,138 @@
+/* Markdown 预览排版（编辑器预览面板专用，scoped 于 .md-preview）。
+ * 代码高亮令牌色由站点 /assets/css/highlight.css 提供（编辑器挂载时动态引入），
+ * 其容器背景依赖 --block / --gap-p 变量，在此按亮/暗补齐定义。
+ * 暗色跟随 console 的 .dark 类（挂在 <html> 上）。 */
+
+.md-preview {
+  --block: #f6f8fa;
+  --gap-p: 1rem;
+  color: #1f2937;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  word-break: break-word;
+}
+.dark .md-preview {
+  --block: #161b22;
+  color: #f3f4f6;
+}
+
+.md-preview h1,
+.md-preview h2,
+.md-preview h3,
+.md-preview h4,
+.md-preview h5,
+.md-preview h6 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1.5em 0 0.6em;
+}
+.md-preview h1:first-child,
+.md-preview h2:first-child,
+.md-preview h3:first-child,
+.md-preview p:first-child {
+  margin-top: 0;
+}
+.md-preview h1 { font-size: 1.5rem; }
+.md-preview h2 {
+  font-size: 1.3rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dark .md-preview h2 { border-bottom-color: #374151; }
+.md-preview h3 { font-size: 1.15rem; }
+.md-preview h4 { font-size: 1rem; }
+
+.md-preview p { margin: 0.8em 0; }
+
+.md-preview a {
+  color: #4f46e5;
+  text-decoration: none;
+}
+.md-preview a:hover { text-decoration: underline; }
+.dark .md-preview a { color: #818cf8; }
+
+.md-preview ul,
+.md-preview ol {
+  margin: 0.8em 0;
+  padding-left: 1.5em;
+}
+.md-preview ul { list-style: disc; }
+.md-preview ol { list-style: decimal; }
+.md-preview li { margin: 0.25em 0; }
+.md-preview li > ul,
+.md-preview li > ol { margin: 0.25em 0; }
+
+.md-preview blockquote {
+  margin: 0.8em 0;
+  padding: 0.25em 1em;
+  border-left: 4px solid #e5e7eb;
+  color: #6b7280;
+}
+.dark .md-preview blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+.md-preview code {
+  font-family: Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+}
+/* 行内代码（非 chroma 代码块内） */
+.md-preview :not(pre) > code {
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #4338ca;
+}
+.dark .md-preview :not(pre) > code {
+  background: rgba(129, 140, 248, 0.12);
+  color: #a5b4fc;
+}
+/* 无语言代码块（goldmark 未走 chroma 时的裸 pre） */
+.md-preview pre:not(.chroma) {
+  margin: var(--gap-p) 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--block);
+  overflow: auto;
+}
+
+.md-preview table {
+  margin: 0.8em 0;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+}
+.md-preview th,
+.md-preview td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4em 0.8em;
+  text-align: left;
+}
+.md-preview th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+.dark .md-preview th,
+.dark .md-preview td { border-color: #374151; }
+.dark .md-preview th { background: rgba(55, 65, 81, 0.5); }
+
+.md-preview img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5em 0;
+}
+
+.md-preview hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+.dark .md-preview hr { border-top-color: #374151; }
+
+/* KaTeX 块级公式横向滚动，避免长公式撑破面板 */
+.md-preview .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}

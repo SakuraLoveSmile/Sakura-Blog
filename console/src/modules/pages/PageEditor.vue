@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi } from "@/api";
+import MarkdownEditor from "@/components/MarkdownEditor.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -12,6 +13,7 @@ const isNew = computed(() => slugParam.value === "new");
 const form = ref({ slug: "", title: "", content_md: "", status: "draft" });
 const saving = ref(false);
 const error = ref("");
+const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 
 onMounted(async () => {
   if (isNew.value) return;
@@ -32,6 +34,7 @@ async function handleSave() {
     } else {
       await pageApi.update(slugParam.value, form.value);
     }
+    editorRef.value?.clearDraft();
     router.push("/pages");
   } catch (e: any) {
     error.value = e.response?.data?.error || "保存失败";
@@ -56,7 +59,7 @@ async function handleSave() {
 
     <p v-if="error" class="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-500/10">{{ error }}</p>
 
-    <div class="max-w-3xl space-y-4">
+    <div class="max-w-5xl space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标题</label>
@@ -76,8 +79,12 @@ async function handleSave() {
       </div>
       <div>
         <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">内容（Markdown）</label>
-        <textarea v-model="form.content_md" rows="20"
-          class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
+        <MarkdownEditor
+          ref="editorRef"
+          v-model="form.content_md"
+          :storage-key="'page:' + (isNew ? 'new' : slugParam)"
+          @save="handleSave"
+        />
       </div>
     </div>
   </div>
