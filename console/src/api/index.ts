@@ -24,6 +24,8 @@ export const authApi = {
   login: (password: string) => http.post("/auth/login", { password }),
   logout: () => http.post("/auth/logout"),
   check: () => http.get("/auth/check"),
+  changePassword: (current: string, newPassword: string) =>
+    http.put("/auth/password", { current, new: newPassword }),
 };
 
 // --- Dashboard ---
