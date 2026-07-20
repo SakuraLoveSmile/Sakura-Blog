@@ -44,12 +44,12 @@ onMounted(loadMoments);
 
 <template>
   <div class="p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-6">瞬间</h2>
+    <h2 class="text-xl font-semibold text-gray-800 mb-6 dark:text-gray-100">瞬间</h2>
 
     <!-- Publish box -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 dark:bg-gray-800 dark:border-gray-700">
       <textarea v-model="newContent" rows="3" placeholder="记录此刻想法...（支持 Markdown）"
-        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
       <div class="flex justify-end mt-3">
         <button @click="handlePublish" :disabled="publishing || !newContent.trim()"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
@@ -61,24 +61,24 @@ onMounted(loadMoments);
 
     <!-- Moment list -->
     <div class="space-y-3">
-      <div v-for="m in moments" :key="m.id" class="bg-white rounded-xl border border-gray-200 p-4">
+      <div v-for="m in moments" :key="m.id" class="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-800 dark:border-gray-700">
         <div class="flex items-start justify-between">
           <div class="flex-1">
-            <p class="text-xs text-gray-400 mb-1">{{ m.created_at?.slice(0, 16).replace("T", " ") }}</p>
-            <div class="text-sm text-gray-700 prose prose-sm" v-html="m.content"></div>
+            <p class="text-xs text-gray-400 mb-1 dark:text-gray-500">{{ m.created_at?.slice(0, 16).replace("T", " ") }}</p>
+            <div class="text-sm text-gray-700 prose prose-sm dark:text-gray-300" v-html="m.content"></div>
           </div>
-          <button @click="handleDelete(m.id)" class="text-red-400 hover:text-red-600 ml-4">
+          <button @click="handleDelete(m.id)" class="text-red-400 hover:text-red-600 ml-4 dark:hover:text-red-300">
             <Icon icon="ri:delete-bin-line" />
           </button>
         </div>
       </div>
-      <p v-if="moments.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400">暂无瞬间</p>
+      <p v-if="moments.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">暂无瞬间</p>
     </div>
 
     <!-- Pagination -->
     <div v-if="total > 20" class="flex justify-center gap-2 mt-4">
       <button v-for="n in Math.ceil(total / 20)" :key="n" @click="page = n; loadMoments()"
-        :class="['w-8 h-8 text-sm rounded-lg', page === n ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100']">{{ n }}</button>
+        :class="['w-8 h-8 text-sm rounded-lg', page === n ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">{{ n }}</button>
     </div>
   </div>
 </template>

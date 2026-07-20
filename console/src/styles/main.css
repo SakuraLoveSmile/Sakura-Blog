@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+/* 深色模式：基于挂在 <html> 上的 .dark 类切换（支持亮/暗/跟随系统三段式），
+   而非仅依赖 prefers-color-scheme 媒体查询。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  /* 深色模式下让原生控件（复选框、下拉、日期选择器、滚动条等）跟随深色外观 */
+  .dark {
+    color-scheme: dark;
+  }
+}

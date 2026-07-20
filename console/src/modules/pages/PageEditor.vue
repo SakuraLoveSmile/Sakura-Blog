@@ -44,9 +44,9 @@ async function handleSave() {
 <template>
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800">{{ isNew ? "新建页面" : "编辑页面" }}</h2>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ isNew ? "新建页面" : "编辑页面" }}</h2>
       <div class="flex gap-2">
-        <router-link to="/pages" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">取消</router-link>
+        <router-link to="/pages" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">取消</router-link>
         <button @click="handleSave" :disabled="saving"
           class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
           {{ saving ? "保存中..." : "保存" }}
@@ -54,30 +54,30 @@ async function handleSave() {
       </div>
     </div>
 
-    <p v-if="error" class="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ error }}</p>
+    <p v-if="error" class="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-500/10">{{ error }}</p>
 
     <div class="max-w-3xl space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs text-gray-500 mb-1">标题</label>
-          <input v-model="form.title" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标题</label>
+          <input v-model="form.title" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Slug</label>
-          <input v-model="form.slug" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Slug</label>
+          <input v-model="form.slug" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
         </div>
       </div>
       <div>
-        <label class="block text-xs text-gray-500 mb-1">状态</label>
-        <select v-model="form.status" class="w-40 px-3 py-2 text-sm border border-gray-200 rounded-lg">
+        <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">状态</label>
+        <select v-model="form.status" class="w-40 px-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
           <option value="draft">草稿</option>
           <option value="published">发布</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs text-gray-500 mb-1">内容（Markdown）</label>
+        <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">内容（Markdown）</label>
         <textarea v-model="form.content_md" rows="20"
-          class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
       </div>
     </div>
   </div>

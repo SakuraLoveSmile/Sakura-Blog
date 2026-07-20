@@ -115,51 +115,51 @@ onMounted(load);
 <template>
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800">分类 / 标签</h2>
-      <span v-if="message" :class="['text-sm px-3 py-1.5 rounded-lg', isError ? 'text-red-600 bg-red-50' : 'text-green-700 bg-green-50']">{{ message }}</span>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">分类 / 标签</h2>
+      <span v-if="message" :class="['text-sm px-3 py-1.5 rounded-lg', isError ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-500/10']">{{ message }}</span>
     </div>
 
-    <div v-if="loading" class="text-sm text-gray-400 py-12 text-center">加载中...</div>
+    <div v-if="loading" class="text-sm text-gray-400 py-12 text-center dark:text-gray-500">加载中...</div>
 
     <div v-else class="grid grid-cols-2 gap-6">
       <!-- 分类 -->
       <div>
-        <h3 class="text-sm font-medium text-gray-500 mb-2">分类</h3>
-        <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-50">
+        <h3 class="text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">分类</h3>
+        <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:divide-gray-700">
           <div v-for="c in categories" :key="c.name" class="flex items-center gap-2 px-4 py-2.5">
-            <span class="flex-1 text-sm text-gray-800">{{ c.name }}</span>
-            <span class="text-xs text-gray-400">{{ c.count }} 篇</span>
-            <button @click="renameCategory(c.name)" class="text-indigo-600 hover:text-indigo-800 text-xs">重命名</button>
-            <button @click="deleteCategory(c.name)" class="text-red-500 hover:text-red-700 text-xs">删除</button>
+            <span class="flex-1 text-sm text-gray-800 dark:text-gray-100">{{ c.name }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ c.count }} 篇</span>
+            <button @click="renameCategory(c.name)" class="text-indigo-600 hover:text-indigo-800 text-xs dark:text-indigo-400 dark:hover:text-indigo-300">重命名</button>
+            <button @click="deleteCategory(c.name)" class="text-red-500 hover:text-red-700 text-xs dark:text-red-400 dark:hover:text-red-300">删除</button>
           </div>
-          <p v-if="categories.length === 0" class="py-8 text-center text-sm text-gray-400">暂无分类</p>
+          <p v-if="categories.length === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">暂无分类</p>
         </div>
       </div>
 
       <!-- 标签 -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-medium text-gray-500">标签</h3>
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">标签</h3>
           <div class="flex items-center gap-2">
             <template v-if="mergeMode">
-              <input v-model="mergeTarget" placeholder="合并到（目标标签）" class="px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-              <button @click="confirmMerge" class="text-xs text-indigo-600 hover:text-indigo-800">确认合并</button>
-              <button @click="cancelMerge" class="text-xs text-gray-400 hover:text-gray-600">取消</button>
+              <input v-model="mergeTarget" placeholder="合并到（目标标签）" class="px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+              <button @click="confirmMerge" class="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">确认合并</button>
+              <button @click="cancelMerge" class="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">取消</button>
             </template>
-            <button v-else @click="startMerge" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800"><Icon icon="ri:git-merge-line" /> 合并标签</button>
+            <button v-else @click="startMerge" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"><Icon icon="ri:git-merge-line" /> 合并标签</button>
           </div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-50">
+        <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:divide-gray-700">
           <div v-for="t in tags" :key="t.name" class="flex items-center gap-2 px-4 py-2.5">
             <input v-if="mergeMode" type="checkbox" :checked="selected.has(t.name)" @change="toggleSelect(t.name)" />
-            <span class="flex-1 text-sm text-gray-800">{{ t.name }}</span>
-            <span class="text-xs text-gray-400">{{ t.count }} 篇</span>
+            <span class="flex-1 text-sm text-gray-800 dark:text-gray-100">{{ t.name }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ t.count }} 篇</span>
             <template v-if="!mergeMode">
-              <button @click="renameTag(t.name)" class="text-indigo-600 hover:text-indigo-800 text-xs">重命名</button>
-              <button @click="deleteTag(t.name)" class="text-red-500 hover:text-red-700 text-xs">删除</button>
+              <button @click="renameTag(t.name)" class="text-indigo-600 hover:text-indigo-800 text-xs dark:text-indigo-400 dark:hover:text-indigo-300">重命名</button>
+              <button @click="deleteTag(t.name)" class="text-red-500 hover:text-red-700 text-xs dark:text-red-400 dark:hover:text-red-300">删除</button>
             </template>
           </div>
-          <p v-if="tags.length === 0" class="py-8 text-center text-sm text-gray-400">暂无标签</p>
+          <p v-if="tags.length === 0" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">暂无标签</p>
         </div>
       </div>
     </div>

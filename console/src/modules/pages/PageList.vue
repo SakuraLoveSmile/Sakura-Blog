@@ -30,7 +30,7 @@ onMounted(loadPages);
 <template>
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800">页面管理</h2>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">页面管理</h2>
       <router-link to="/pages/edit/new"
         class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
         <Icon icon="ri:add-line" />
@@ -38,35 +38,35 @@ onMounted(loadPages);
       </router-link>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
+        <thead class="bg-gray-50 border-b border-gray-200 dark:bg-gray-700/50 dark:border-gray-700">
           <tr>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">标题</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 w-24">Slug</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 w-20">状态</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 w-36">更新时间</th>
-            <th class="text-right px-4 py-3 font-medium text-gray-600 w-28">操作</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">标题</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 w-24 dark:text-gray-400">Slug</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 w-20 dark:text-gray-400">状态</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 w-36 dark:text-gray-400">更新时间</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600 w-28 dark:text-gray-400">操作</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
-          <tr v-for="p in pages" :key="p.slug" class="hover:bg-gray-50/50">
-            <td class="px-4 py-3 font-medium text-gray-800">{{ p.title || p.slug }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ p.slug }}</td>
+        <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
+          <tr v-for="p in pages" :key="p.slug" class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
+            <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{{ p.title || p.slug }}</td>
+            <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ p.slug }}</td>
             <td class="px-4 py-3">
-              <span :class="['px-2 py-0.5 rounded text-xs font-medium', p.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700']">
+              <span :class="['px-2 py-0.5 rounded text-xs font-medium', p.status === 'published' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400']">
                 {{ p.status === "published" ? "已发布" : "草稿" }}
               </span>
             </td>
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ p.updated_at?.slice(0, 10) }}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs dark:text-gray-500">{{ p.updated_at?.slice(0, 10) }}</td>
             <td class="px-4 py-3 text-right">
-              <button @click="router.push(`/pages/edit/${p.slug}`)" class="text-indigo-600 hover:text-indigo-800 text-xs mr-3">编辑</button>
-              <button @click="handleDelete(p.slug)" class="text-red-500 hover:text-red-700 text-xs">删除</button>
+              <button @click="router.push(`/pages/edit/${p.slug}`)" class="text-indigo-600 hover:text-indigo-800 text-xs mr-3 dark:text-indigo-400 dark:hover:text-indigo-300">编辑</button>
+              <button @click="handleDelete(p.slug)" class="text-red-500 hover:text-red-700 text-xs dark:text-red-400 dark:hover:text-red-300">删除</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p v-if="pages.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400">暂无页面</p>
+      <p v-if="pages.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">暂无页面</p>
     </div>
   </div>
 </template>
