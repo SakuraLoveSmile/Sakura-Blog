@@ -71,6 +71,21 @@ export const previewApi = {
   render: (markdown: string) => http.post("/preview/markdown", { markdown }),
 };
 
+// --- 备份与导出 ---
+// 下载接口走 cookie 认证，直接 <a href> 触发浏览器下载，不走 axios。
+export const backupExportUrl = "/api/v1/backup/export";
+export const backupExportMarkdownUrl = "/api/v1/backup/export/markdown";
+export const backupApi = {
+  status: () => http.get("/backup/status"),
+  importMarkdown: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return http.post("/backup/import/markdown", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+};
+
 // --- Pages ---
 export const pageApi = {
   list: () => http.get("/pages"),
