@@ -20,16 +20,15 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/assets"
-	"blog/internal/admin"
 	"blog/internal/api"
 	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/feed"
 	"blog/internal/friends"
-	"blog/internal/media"
 	"blog/internal/moment"
 	"blog/internal/page"
 	"blog/internal/post"
+	seedpkg "blog/internal/seed"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -179,16 +178,13 @@ func main() {
 	}
 	log.Printf("site config synced from db (settings/links)")
 
-	// 评论 handler：公开 API 注册 + admin 回复通知复用（Enabled=false 时不注册路由，仅供 admin 用）
+	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
-
-	// admin handler（含 seed 能力）
-	adminHandler := admin.New(st, posts, engine, site, commentHandler)
 
 	// seed：-seed flag 或 app.yml seed_on_start / BLOG_SEED 任一为真即执行导入。
 	if seed || app.SeedOnStart {
-		n, _ := adminHandler.SeedCount()
-		if err := adminHandler.Seed(); err != nil {
+		n, _ := seedpkg.Count(posts)
+		if err := seedpkg.Import(st, posts); err != nil {
 			log.Fatalf("seed: %v", err)
 		}
 		log.Printf("seed: imported %d posts from content/posts", n)
@@ -453,15 +449,7 @@ func main() {
 		log.Printf("console SPA loaded from %s", consoleDir)
 	}
 
-	// 管理后台路由组 /admin
-	adminHandler.Register(r)
-
-	// 附件/图床管理 /admin/media（复用 admin HMAC cookie 鉴权）
-	mediaHandler, err := media.New(st, engine, site, app.UploadDir, app.MaxUploadMB)
-	if err != nil {
-		log.Fatalf("init media: %v", err)
-	}
-	mediaHandler.Register(r, admin.AuthMiddleware(site))
+	// 管理后台已统一到 Vue Console（/console/ + /api/v1）；服务端渲染后台 /admin 与 /admin/media 已退役。
 
 	// 文章密码解锁
 	r.POST("/post/:slug/unlock", func(c *gin.Context) {
@@ -499,7 +487,7 @@ func main() {
 		c.Redirect(http.StatusFound, "/post/"+slug)
 	})
 
-	// 独立页面 /pages/:slug + /admin/pages CMS
+	// 独立页面前台 /pages/:slug（后台管理已迁移到 Vue Console + /api/v1）
 	pageHandler, err := page.New(st, posts, engine, site)
 	if err != nil {
 		log.Fatalf("init page: %v", err)
@@ -510,13 +498,12 @@ func main() {
 		fillSEO(data, c)
 	})
 	pageHandler.Register(r)
-	pageHandler.RegisterAdmin(r, admin.AuthMiddleware(site))
 
 	momentHandler, err := moment.New(st, posts, engine, site, fillSidebar, fillSEO)
 	if err != nil {
 		log.Fatalf("init moments: %v", err)
 	}
-	momentHandler.Register(r, admin.AuthMiddleware(site))
+	momentHandler.Register(r)
 
 	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
 	if site.Comments.Enabled {

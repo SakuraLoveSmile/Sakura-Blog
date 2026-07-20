@@ -19,9 +19,10 @@ type Engine struct {
 	tpl *template.Template
 }
 
-// templateFS 嵌入 layout/partial/admin 三目录的 .html 模板，部署时无需外部文件。
+// templateFS 嵌入 layout/partial 两目录的 .html 模板，部署时无需外部文件。
+// （原服务端渲染后台 admin/ 模板已随后台退役删除，管理界面统一到 Vue Console。）
 //
-//go:embed layout partial admin
+//go:embed layout partial
 var templateFS embed.FS
 
 // tplEntry 单个模板文件的名字（路径化，去 .html）与内容。
@@ -67,7 +68,7 @@ func NewEngine(root string, reg *IconRegistry) (*Engine, error) {
 // 去掉 .html 后缀即为路径化模板名（layout/base）。
 func NewEngineFromEmbed(reg *IconRegistry) (*Engine, error) {
 	var entries []tplEntry
-	for _, dir := range []string{"layout", "partial", "admin"} {
+	for _, dir := range []string{"layout", "partial"} {
 		err := fs.WalkDir(templateFS, dir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err

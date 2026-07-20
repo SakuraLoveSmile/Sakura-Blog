@@ -155,7 +155,7 @@ footer:
         - title: Stellar 主题
           url: https://github.com/xaoxuu/hexo-theme-stellar
         - title: 管理后台
-          url: /admin
+          url: /console/
 
 # 文章页脚（版权声明 / 分享 / 打赏）
 article:

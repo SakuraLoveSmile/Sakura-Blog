@@ -237,7 +237,7 @@ func (h *Handler) robots(c *gin.Context) {
 	body := strings.Join([]string{
 		"User-agent: *",
 		"Allow: /",
-		"Disallow: /admin",
+		"Disallow: /console",
 		"Sitemap: " + base + "/sitemap.xml",
 		"",
 	}, "\n")

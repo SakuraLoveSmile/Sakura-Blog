@@ -53,16 +53,10 @@ func New(
 	}, nil
 }
 
-// Register 挂前台 /moments 与后台 /admin/moments 路由。
-func (h *Handler) Register(r *gin.Engine, authMW gin.HandlerFunc) {
+// Register 挂前台 /moments 路由（后台管理已迁移到 Vue Console + /api/v1）。
+func (h *Handler) Register(r *gin.Engine) {
 	r.GET("/moments", h.listPublic)
 	r.GET("/moments/", h.listPublic)
-
-	g := r.Group("/admin/moments", authMW)
-	g.GET("", h.adminList)
-	g.GET("/", h.adminList)
-	g.POST("/create", h.create)
-	g.POST("/delete/:id", h.delete)
 }
 
 // listPublic GET /moments：时间流 + 分页（20/页）。

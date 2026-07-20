@@ -1,0 +1,76 @@
+// Package seed 把 content/posts/*.md 导入 SQLite（按 slug UPSERT，幂等）。
+// 从原 internal/admin 抽出，供 -seed / seed_on_start 使用，不再依赖已退役的后台包。
+package seed
+
+import (
+	"strings"
+	"time"
+
+	"blog/internal/post"
+	"blog/internal/store"
+)
+
+// Count 返回待导入文章数（仅日志用）。
+func Count(posts *post.Service) (int, error) {
+	slugs, err := posts.ListSlugs()
+	if err != nil {
+		return 0, err
+	}
+	return len(slugs), nil
+}
+
+// Import 扫描 content/posts/*.md，按 slug UPSERT 到 store（幂等）。
+func Import(st *store.Store, posts *post.Service) error {
+	slugs, err := posts.ListSlugs()
+	if err != nil {
+		return err
+	}
+	for _, slug := range slugs {
+		meta, body, err := posts.ParseFile(slug)
+		if err != nil {
+			return err
+		}
+		html, err := posts.Render(body)
+		if err != nil {
+			return err
+		}
+		title := meta.Title
+		if title == "" {
+			title = slug
+		}
+		p := &store.Post{
+			Slug:        slug,
+			Title:       title,
+			Excerpt:     meta.Excerpt,
+			Cover:       meta.Cover,
+			Category:    meta.Category,
+			Topic:       meta.Topic,
+			Tags:        strings.Join(meta.Tags, ","),
+			ContentMD:   body,
+			ContentHTML: html,
+			Status:      store.StatusPublished,
+			CreatedAt:   parseSeedDate(meta.Date),
+			Poster: store.EncodePoster(store.PosterData{
+				Headline: meta.PosterHeadline,
+				Topic:    meta.PosterTopic,
+				Caption:  meta.PosterCaption,
+				Color:    meta.PosterColor,
+			}),
+			References: store.EncodeReferences(meta.References),
+		}
+		if err := st.Upsert(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// parseSeedDate 把 frontmatter 的 date 字段解析成 time.Time，失败用当前时间。
+func parseSeedDate(s string) time.Time {
+	for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02", time.RFC3339} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Now()
+}

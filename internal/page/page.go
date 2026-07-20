@@ -1,4 +1,4 @@
-// Package page 独立页面：前台 /pages/:slug 与后台 /admin/pages CRUD。
+// Package page 独立页面：前台 /pages/:slug 渲染（后台管理已迁移到 Vue Console + /api/v1）。
 package page
 
 import (
