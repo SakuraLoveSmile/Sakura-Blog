@@ -205,83 +205,83 @@ type AdminPostRow struct {
 // Site 对齐 Stellar theme + config 的站点级配置。
 // yaml tag 供 config/site.yml 加载（goccy/go-yaml），snake_case 精确映射。
 type Site struct {
-	Title       string         `yaml:"title"`
-	Subtitle    string         `yaml:"subtitle"`
-	Description string         `yaml:"description"`
-	URL         string         `yaml:"url"`       // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
-	Avatar      string         `yaml:"avatar"`    // logo 头像 URL
-	AvatarBG    string         `yaml:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
-	LogoTitle   string         `yaml:"logo_title"`
-	LogoSub     string         `yaml:"logo_sub"`
-	Menubar     Menubar        `yaml:"menubar"`
-	Rightbar    RightbarConfig `yaml:"rightbar"`
-	Footer      Footer         `yaml:"footer"`
-	Comments    CommentsConfig `yaml:"comments"`
-	Admin       AdminConfig    `yaml:"admin"`
-	Links       []LinkGroup    `yaml:"links"` // 友链分组（site.yml links 段）
-	Friends     FriendsConfig  `yaml:"friends"` // 友链动态聚合配置（site.yml friends 段）
-	Wiki        []WikiProject  `yaml:"wiki"`  // 文库项目（site.yml wiki 段，/wiki 页）
-	Article     ArticleConfig  `yaml:"article"`
+	Title       string         `yaml:"title" json:"title"`
+	Subtitle    string         `yaml:"subtitle" json:"subtitle"`
+	Description string         `yaml:"description" json:"description"`
+	URL         string         `yaml:"url" json:"url"`             // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
+	Avatar      string         `yaml:"avatar" json:"avatar"`       // logo 头像 URL
+	AvatarBG    string         `yaml:"avatar_bg" json:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
+	LogoTitle   string         `yaml:"logo_title" json:"logo_title"`
+	LogoSub     string         `yaml:"logo_sub" json:"logo_sub"`
+	Menubar     Menubar        `yaml:"menubar" json:"menubar"`
+	Rightbar    RightbarConfig `yaml:"rightbar" json:"rightbar"`
+	Footer      Footer         `yaml:"footer" json:"footer"`
+	Comments    CommentsConfig `yaml:"comments" json:"comments"`
+	Admin       AdminConfig    `yaml:"admin" json:"-"`
+	Links       []LinkGroup    `yaml:"links" json:"links"`     // 友链分组（site.yml links 段）
+	Friends     FriendsConfig  `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
+	Wiki        []WikiProject  `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
+	Article     ArticleConfig  `yaml:"article" json:"article"`
 }
 
 // AdminConfig 管理后台配置（site.yml admin 段）。
 type AdminConfig struct {
-	Password string `yaml:"password"` // /admin 访问密码；留空则不做密码 gate（本地开发用）
+	Password string `yaml:"password" json:"password"` // /admin 访问密码；留空则不做密码 gate（本地开发用）
 }
 
 // CommentsConfig 评论系统配置（site.yml comments 段）。
 type CommentsConfig struct {
-	Enabled        bool         `yaml:"enabled"`         // 总开关：false 时文章页不渲染评论区、API 关闭
-	Title          string       `yaml:"title"`           // 评论区标题
-	Moderation     bool         `yaml:"moderation"`      // true=先审后发（新评论 pending）
-	AdminEmail     string       `yaml:"admin_email"`     // 博主邮箱：新评论通知收件人 + 博主身份匹配
-	AdminBadge     string       `yaml:"admin_badge"`     // 博主徽章文案
-	GravatarMirror string       `yaml:"gravatar_mirror"` // Gravatar 镜像基址（头像 = {mirror}/{md5(email)}）
-	Notify         NotifyConfig `yaml:"notify"`          // 邮件通知；smtp_host 为空则整体关闭
+	Enabled        bool         `yaml:"enabled" json:"enabled"`                 // 总开关：false 时文章页不渲染评论区、API 关闭
+	Title          string       `yaml:"title" json:"title"`                     // 评论区标题
+	Moderation     bool         `yaml:"moderation" json:"moderation"`           // true=先审后发（新评论 pending）
+	AdminEmail     string       `yaml:"admin_email" json:"admin_email"`         // 博主邮箱：新评论通知收件人 + 博主身份匹配
+	AdminBadge     string       `yaml:"admin_badge" json:"admin_badge"`         // 博主徽章文案
+	GravatarMirror string       `yaml:"gravatar_mirror" json:"gravatar_mirror"` // Gravatar 镜像基址（头像 = {mirror}/{md5(email)}）
+	Notify         NotifyConfig `yaml:"notify" json:"notify"`                   // 邮件通知；smtp_host 为空则整体关闭
 }
 
 // NotifyConfig 邮件通知配置（net/smtp + PlainAuth）。
 type NotifyConfig struct {
-	SMTPHost string `yaml:"smtp_host"`
-	SMTPPort int    `yaml:"smtp_port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	From     string `yaml:"from"` // 发件人地址，空则用 username
+	SMTPHost string `yaml:"smtp_host" json:"smtp_host"`
+	SMTPPort int    `yaml:"smtp_port" json:"smtp_port"`
+	Username string `yaml:"username" json:"username"`
+	Password string `yaml:"password" json:"password"`
+	From     string `yaml:"from" json:"from"` // 发件人地址，空则用 username
 }
 
 // Menubar 对齐 _config.yml menubar.items。
 type Menubar struct {
-	Columns int        `yaml:"columns"`
-	Items   []MenuItem `yaml:"items"`
+	Columns int        `yaml:"columns" json:"columns"`
+	Items   []MenuItem `yaml:"items" json:"items"`
 }
 
 // MenuItem 对齐 menubar 单项。Theme 是 inline color，控制 SVG 的 currentColor。
 type MenuItem struct {
-	ID    string `yaml:"id"`
-	Title string `yaml:"title"`
-	URL   string `yaml:"url"`
-	Icon  string `yaml:"icon"`  // iconify key，如 solar:documents-bold-duotone
-	Theme string `yaml:"theme"` // 高亮色，如 #1BCDFC
+	ID    string `yaml:"id" json:"id"`
+	Title string `yaml:"title" json:"title"`
+	URL   string `yaml:"url" json:"url"`
+	Icon  string `yaml:"icon" json:"icon"`   // iconify key，如 solar:documents-bold-duotone
+	Theme string `yaml:"theme" json:"theme"` // 高亮色，如 #1BCDFC
 }
 
 // RightbarConfig 右栏配置（site.yml rightbar 段）。
 type RightbarConfig struct {
 	// WelcomeLinklist 欢迎语 markdown widget 内的链接列表，对齐原版 markdown.ejs 的 item.linklist。
-	WelcomeLinklist LinkListConfig `yaml:"welcome_linklist"`
+	WelcomeLinklist LinkListConfig `yaml:"welcome_linklist" json:"welcome_linklist"`
 }
 
 // LinkListConfig 链接列表（对齐原版 widgets/components/linklist.ejs）。
 type LinkListConfig struct {
-	Columns int            `yaml:"columns"` // 列数，0=按链接数
-	Items   []LinkListItem `yaml:"items"`
+	Columns int            `yaml:"columns" json:"columns"` // 列数，0=按链接数
+	Items   []LinkListItem `yaml:"items" json:"items"`
 }
 
 // LinkListItem 链接列表单项（icon 为 icons.yml key，可空）。
 // 命名区别于友链 model_links.go 的 LinkItem（Name/Avatar/Desc 字段组不同）。
 type LinkListItem struct {
-	Title string `yaml:"title"`
-	URL   string `yaml:"url"`
-	Icon  string `yaml:"icon"`
+	Title string `yaml:"title" json:"title"`
+	URL   string `yaml:"url" json:"url"`
+	Icon  string `yaml:"icon" json:"icon"`
 }
 
 // EffectiveColumns 对齐原版 columns || links.length。
@@ -307,20 +307,20 @@ func (l LinkListConfig) ShowText() bool {
 
 // Footer 对齐 theme.footer（social + sitemap）。
 type Footer struct {
-	Social  []SocialItem   `yaml:"social"`
-	Sitemap []SitemapGroup `yaml:"sitemap"` // 页脚站点地图多列（对齐原版 footer.ejs sitemap）
+	Social  []SocialItem   `yaml:"social" json:"social"`
+	Sitemap []SitemapGroup `yaml:"sitemap" json:"sitemap"` // 页脚站点地图多列（对齐原版 footer.ejs sitemap）
 }
 
 // SitemapGroup 页脚站点地图分组（组标题 + 链接列表），对齐 theme.footer.sitemap。
 type SitemapGroup struct {
-	Title string        `yaml:"title"`
-	Items []SitemapItem `yaml:"items"`
+	Title string        `yaml:"title" json:"title"`
+	Items []SitemapItem `yaml:"items" json:"items"`
 }
 
 // SitemapItem 页脚站点地图链接项。
 type SitemapItem struct {
-	Title string `yaml:"title"`
-	URL   string `yaml:"url"`
+	Title string `yaml:"title" json:"title"`
+	URL   string `yaml:"url" json:"url"`
 }
 
 // SitemapColumns 计算 sitemap 栏数，对齐原版 footer.ejs：6 组→3 栏，7-8 组→4 栏，其余 min(len,5)。
@@ -341,10 +341,10 @@ func (f *Footer) SitemapColumns() int {
 // SocialItem 侧边栏底部社交图标。
 // IconKey 非空时走 icon helper（内联 SVG），否则用 Icon 原样输出（如 <img src>）。
 type SocialItem struct {
-	Title   string `yaml:"title"`
-	URL     string `yaml:"url"`
-	Icon    string `yaml:"icon"`     // raw HTML，如 <img src="...">
-	IconKey string `yaml:"icon_key"` // icons.yml 的 key，如 solar:xxx
+	Title   string `yaml:"title" json:"title"`
+	URL     string `yaml:"url" json:"url"`
+	Icon    string `yaml:"icon" json:"icon"`         // raw HTML，如 <img src="...">
+	IconKey string `yaml:"icon_key" json:"icon_key"` // icons.yml 的 key，如 solar:xxx
 }
 
 // RecentPost 近期发布 widget 的一项。

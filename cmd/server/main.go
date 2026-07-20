@@ -169,6 +169,16 @@ func main() {
 		site.Comments.Title = "评论"
 	}
 
+	// 站点配置迁移到 DB：Bootstrap 首次把 site.yml 导入 settings/links 表（空表才导），
+	// 之后 RebuildSite 以 DB 为准回填 site（含 console 在线修改）。site.Admin 不入 DB，保留 site.yml 值。
+	if err := config.Bootstrap(st, site); err != nil {
+		log.Fatalf("bootstrap settings: %v", err)
+	}
+	if err := config.RebuildSite(st, site); err != nil {
+		log.Fatalf("rebuild site from db: %v", err)
+	}
+	log.Printf("site config synced from db (settings/links)")
+
 	// 评论 handler：公开 API 注册 + admin 回复通知复用（Enabled=false 时不注册路由，仅供 admin 用）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
 
@@ -422,6 +432,8 @@ func main() {
 	friendsAgg := friends.New(site)
 	friendsAgg.Start()
 	friendsAgg.Register(r)
+	// 友链在 console 增删改后，触发聚合器即时重建缓存，使 /friends 页即时反映。
+	apiHandler.SetOnLinksChanged(friendsAgg.Refresh)
 
 	// Vue Console SPA 静态托管（/console/）：生产模式从 console/dist 读取，SPA fallback 到 index.html
 	consoleDir := filepath.Join(app.Root, "console", "dist")

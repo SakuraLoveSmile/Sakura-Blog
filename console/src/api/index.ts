@@ -83,3 +83,34 @@ export const momentApi = {
   create: (data: Record<string, unknown>) => http.post("/moments", data),
   delete: (id: number) => http.delete(`/moments/${id}`),
 };
+
+// --- Settings ---
+export const settingsApi = {
+  all: () => http.get("/settings"),
+  updateSection: (section: string, data: unknown) =>
+    http.put(`/settings/${section}`, data),
+};
+
+// --- Friends / Links ---
+export const linkApi = {
+  list: () => http.get("/links"),
+  create: (data: Record<string, unknown>) => http.post("/links", data),
+  update: (id: number, data: Record<string, unknown>) =>
+    http.put(`/links/${id}`, data),
+  delete: (id: number) => http.delete(`/links/${id}`),
+};
+
+// --- Taxonomy (categories / tags) ---
+export const taxonomyApi = {
+  categories: () => http.get("/categories"),
+  renameCategory: (name: string, newName: string) =>
+    http.put(`/categories/${encodeURIComponent(name)}`, { name: newName }),
+  deleteCategory: (name: string) =>
+    http.delete(`/categories/${encodeURIComponent(name)}`),
+  tags: () => http.get("/tags"),
+  renameTag: (name: string, newName: string) =>
+    http.put(`/tags/${encodeURIComponent(name)}`, { name: newName }),
+  deleteTag: (name: string) => http.delete(`/tags/${encodeURIComponent(name)}`),
+  mergeTags: (sources: string[], target: string) =>
+    http.post("/tags/merge", { sources, target }),
+};

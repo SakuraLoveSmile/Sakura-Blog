@@ -60,6 +60,21 @@ const router = createRouter({
           name: "Moments",
           component: () => import("@/modules/moments/MomentList.vue"),
         },
+        {
+          path: "taxonomy",
+          name: "Taxonomy",
+          component: () => import("@/modules/taxonomy/TaxonomyList.vue"),
+        },
+        {
+          path: "friends",
+          name: "Friends",
+          component: () => import("@/modules/friends/FriendList.vue"),
+        },
+        {
+          path: "settings",
+          name: "Settings",
+          component: () => import("@/modules/settings/SettingsView.vue"),
+        },
       ],
     },
   ],

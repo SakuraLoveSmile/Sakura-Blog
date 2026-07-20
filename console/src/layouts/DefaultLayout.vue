@@ -13,6 +13,9 @@ const navItems = [
   { path: "/attachments", label: "附件", icon: "ri:image-2-line" },
   { path: "/pages", label: "页面", icon: "ri:pages-line" },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line" },
+  { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line" },
+  { path: "/friends", label: "友链", icon: "ri:links-line" },
+  { path: "/settings", label: "设置", icon: "ri:settings-3-line" },
 ];
 
 async function handleLogout() {

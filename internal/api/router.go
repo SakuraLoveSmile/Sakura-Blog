@@ -33,6 +33,9 @@ type Handler struct {
 	comments  *comment.Handler
 	uploadDir string
 	maxUpload int64 // 单文件上限字节
+
+	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
+	onLinksChanged func()
 }
 
 // Config API Handler 初始化参数。
@@ -59,6 +62,11 @@ func New(cfg Config) *Handler {
 		uploadDir: cfg.UploadDir,
 		maxUpload: int64(maxMB) << 20,
 	}
+}
+
+// SetOnLinksChanged 注册友链变更回调（如 friends 聚合器的 Refresh），友链增删改后调用以即时刷新 /friends。
+func (h *Handler) SetOnLinksChanged(fn func()) {
+	h.onLinksChanged = fn
 }
 
 // Register 把 /api/v1 路由组挂到 r 上。
@@ -106,6 +114,25 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/moments", h.listMoments)
 		authed.POST("/moments", h.createMoment)
 		authed.DELETE("/moments/:id", h.deleteMoment)
+
+		// 站点设置（分段）
+		authed.GET("/settings", h.getSettings)
+		authed.PUT("/settings/:section", h.updateSection)
+
+		// 友链
+		authed.GET("/links", h.listLinks)
+		authed.POST("/links", h.createLink)
+		authed.PUT("/links/:id", h.updateLink)
+		authed.DELETE("/links/:id", h.deleteLink)
+
+		// 分类 / 标签
+		authed.GET("/categories", h.listCategories)
+		authed.PUT("/categories/:name", h.renameCategory)
+		authed.DELETE("/categories/:name", h.deleteCategory)
+		authed.GET("/tags", h.listTags)
+		authed.POST("/tags/merge", h.mergeTags)
+		authed.PUT("/tags/:name", h.renameTag)
+		authed.DELETE("/tags/:name", h.deleteTag)
 	}
 }
 

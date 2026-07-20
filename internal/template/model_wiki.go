@@ -5,14 +5,14 @@ import "html/template"
 // WikiProject 文库项目卡片，对应 site.yml wiki 段的一项。
 // 对齐 Stellar index_wiki 布局的 wiki_card：图标 + 标签 + 标题 + 描述，点击跳到 URL。
 type WikiProject struct {
-	ID          string   `yaml:"id"`
-	Name        string   `yaml:"name"`
-	Title       string   `yaml:"title"`
-	Description string   `yaml:"description"`
-	Icon        string   `yaml:"icon"` // 项目 Logo 图片 URL
-	Tags        []string `yaml:"tags"`
-	URL         string   `yaml:"url"`  // 首页/文档链接（站内文章、独立页面或外链）
-	Sort        int      `yaml:"sort"` // 越大越靠前
+	ID          string   `yaml:"id" json:"id"`
+	Name        string   `yaml:"name" json:"name"`
+	Title       string   `yaml:"title" json:"title"`
+	Description string   `yaml:"description" json:"description"`
+	Icon        string   `yaml:"icon" json:"icon"` // 项目 Logo 图片 URL
+	Tags        []string `yaml:"tags" json:"tags"`
+	URL         string   `yaml:"url" json:"url"`   // 首页/文档链接（站内文章、独立页面或外链）
+	Sort        int      `yaml:"sort" json:"sort"` // 越大越靠前
 }
 
 // DisplayTitle 优先 Title，其次 Name，最后 ID。

@@ -127,6 +127,11 @@ func (a *Aggregator) Register(r *gin.Engine) {
 	r.GET("/api/friends", a.handleAggregated)
 }
 
+// Refresh 立即异步重建友链缓存（供友链在 console 变更后即时反映到 /friends，不阻塞调用方）。
+func (a *Aggregator) Refresh() {
+	go a.refresh()
+}
+
 func (a *Aggregator) handleAggregated(c *gin.Context) {
 	a.mu.RLock()
 	content := make([]Friend, len(a.cache))
