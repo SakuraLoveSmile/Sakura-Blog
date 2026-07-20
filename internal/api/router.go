@@ -98,6 +98,9 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.DELETE("/comments/:id", h.deleteComment)
 		authed.POST("/comments/reply", h.replyComment)
 
+		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
+		authed.POST("/preview/markdown", h.previewMarkdown)
+
 		// 附件
 		authed.GET("/attachments", h.listAttachments)
 		authed.POST("/attachments/upload", h.uploadAttachment)

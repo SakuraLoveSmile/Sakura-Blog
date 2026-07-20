@@ -9,6 +9,7 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
+	"github.com/yuin/goldmark/extension"
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -62,6 +63,9 @@ func NewService(mdDir string) *Service {
 		mdDir: mdDir,
 		md: goldmark.New(
 			goldmark.WithExtensions(
+				// GFM 表格与删除线（编辑器工具栏提供对应语法，渲染侧同步支持）
+				extension.Table,
+				extension.Strikethrough,
 				highlighting.NewHighlighting(
 					highlighting.WithGuessLanguage(true),
 					highlighting.WithFormatOptions(
