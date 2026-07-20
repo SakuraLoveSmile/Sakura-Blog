@@ -1,5 +1,6 @@
 # 构建上下文排除项，减小镜像构建上下文体积、避免脏文件进镜像
 node_modules/
+console/node_modules/
 .git/
 .gitignore
 
@@ -15,8 +16,9 @@ data/
 *.sqlite
 *.sqlite-*
 
-# 构建产物
+# 构建产物（console dist 由容器内 node 阶段新鲜构建，不用本地产物）
 dist/
+console/dist/
 tmp/
 out/
 

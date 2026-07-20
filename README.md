@@ -1,6 +1,6 @@
 # Stellar 博客项目
 
-个人博客项目：Go (Gin) 后端 + Go html/template 服务端渲染 + 从 Stellar Hexo 主题提取的 CSS + 自建管理后台。
+个人博客项目：Go (Gin) 后端 + Go html/template 服务端渲染前台 + Vue 3 Console SPA 管理后台（`/console/`）+ 从 Stellar Hexo 主题提取的 CSS。
 
 ## 仓库结构
 
@@ -20,9 +20,29 @@
 ## 技术栈
 
 - 后端：Go + Gin
-- 模板：Go html/template（服务端渲染）
+- 模板：Go html/template（前台服务端渲染）
+- 后台：Vue 3 + Vite + Pinia + Tailwind（Console SPA，经 `/api/v1` 与后端通信）
 - 样式：从 Stellar Stylus 源码编译提取的 CSS
 - 数据库：SQLite
-- 评论：Artalk
+- 评论：自建评论系统
+
+## 构建与运行
+
+单二进制发布：前台模板、静态资源、icons 与 **console 构建产物**均已 `go:embed` 进二进制。
+
+```bash
+# 1. 先构建 Console SPA（go:embed 编译期要求 console/dist 存在且非空）
+cd console && npm ci && npm run build && cd ..
+
+# 2. 再编译 Go 二进制
+go build -o blog ./cmd/server
+
+# 3. 运行（默认 embed 模式；-dev 从磁盘读模板/资源/console dist，改样式即时生效）
+./blog -seed   # -seed 首次启动导入 content/posts/*.md
+```
+
+> 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `console/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败。Docker 构建已在多阶段（node → go）固化该顺序。
+
+Docker 部署：`docker build -t blog .`（node 阶段构建 console → go 阶段编译 embed 二进制）。
 
 详见 [Demo 验证阶段计划](../.claude/plans/stellar-toasty-panda.md)。

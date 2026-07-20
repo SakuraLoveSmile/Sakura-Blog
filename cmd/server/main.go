@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/assets"
+	"blog/console"
 	"blog/internal/api"
 	"blog/internal/comment"
 	"blog/internal/config"
@@ -431,22 +433,59 @@ func main() {
 	// 友链在 console 增删改后，触发聚合器即时重建缓存，使 /friends 页即时反映。
 	apiHandler.SetOnLinksChanged(friendsAgg.Refresh)
 
-	// Vue Console SPA 静态托管（/console/）：生产模式从 console/dist 读取，SPA fallback 到 index.html
-	consoleDir := filepath.Join(app.Root, "console", "dist")
+	// Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 console/dist 读。
+	// 只注册 /console/assets/* 与根级静态文件；其余 /console 路径（含 /console/ 本身与 SPA 前端路由）
+	// 落到 NoRoute 返回 index.html，保证前端路由刷新不 404。
 	var consoleIndex []byte
-	if info, err := os.Stat(consoleDir); err == nil && info.IsDir() {
-		r.Static("/console/assets", filepath.Join(consoleDir, "assets"))
-		// 根级静态文件（favicon.svg 等）
-		if entries, err := os.ReadDir(consoleDir); err == nil {
-			for _, e := range entries {
-				if !e.IsDir() && e.Name() != "index.html" {
-					name := e.Name()
-					r.StaticFile("/console/"+name, filepath.Join(consoleDir, name))
+	if devMode {
+		consoleDir := filepath.Join(app.Root, "console", "dist")
+		if info, err := os.Stat(consoleDir); err == nil && info.IsDir() {
+			r.Static("/console/assets", filepath.Join(consoleDir, "assets"))
+			// 根级静态文件（favicon.svg 等）
+			if entries, err := os.ReadDir(consoleDir); err == nil {
+				for _, e := range entries {
+					if !e.IsDir() && e.Name() != "index.html" {
+						name := e.Name()
+						r.StaticFile("/console/"+name, filepath.Join(consoleDir, name))
+					}
 				}
 			}
+			consoleIndex, _ = os.ReadFile(filepath.Join(consoleDir, "index.html"))
+			log.Printf("console SPA loaded from %s (dev)", consoleDir)
+		} else {
+			log.Printf("console dist not found: %s (dev), /console/ unavailable", consoleDir)
 		}
-		consoleIndex, _ = os.ReadFile(filepath.Join(consoleDir, "index.html"))
-		log.Printf("console SPA loaded from %s", consoleDir)
+	} else {
+		// embed 模式：console.DistFS（all:dist）
+		assetsSub, err := fs.Sub(console.DistFS, "dist/assets")
+		if err != nil {
+			log.Fatalf("console assets sub fs: %v", err)
+		}
+		r.StaticFS("/console/assets", http.FS(assetsSub))
+		// 根级静态文件（favicon.svg / icons.svg 等）
+		entries, err := console.DistFS.ReadDir("dist")
+		if err != nil {
+			log.Fatalf("read console dist (embed): %v", err)
+		}
+		for _, e := range entries {
+			if e.IsDir() || e.Name() == "index.html" {
+				continue
+			}
+			name := e.Name()
+			r.GET("/console/"+name, func(c *gin.Context) {
+				data, err := console.DistFS.ReadFile("dist/" + name)
+				if err != nil {
+					c.Status(http.StatusNotFound)
+					return
+				}
+				c.Data(http.StatusOK, consoleContentType(name), data)
+			})
+		}
+		consoleIndex, err = console.DistFS.ReadFile("dist/index.html")
+		if err != nil {
+			log.Fatalf("read console index.html (embed): %v", err)
+		}
+		log.Printf("console SPA loaded from embed")
 	}
 
 	// 管理后台已统一到 Vue Console（/console/ + /api/v1）；服务端渲染后台 /admin 与 /admin/media 已退役。
@@ -1146,4 +1185,29 @@ func truncateText(s string, n int) string {
 		return s
 	}
 	return string(r[:n]) + "…"
+}
+
+// consoleContentType 按扩展名推断 console 根级静态文件的 Content-Type。
+// 常见类型显式返回（不依赖运行环境 mime 数据库，alpine 精简镜像也能正确），
+// 其余 fallback 到 mime.TypeByExtension，再不行用 octet-stream。
+func consoleContentType(name string) string {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".svg":
+		return "image/svg+xml"
+	case ".js":
+		return "application/javascript"
+	case ".css":
+		return "text/css; charset=utf-8"
+	case ".png":
+		return "image/png"
+	case ".ico":
+		return "image/x-icon"
+	case ".html":
+		return "text/html; charset=utf-8"
+	default:
+		if ct := mime.TypeByExtension(filepath.Ext(name)); ct != "" {
+			return ct
+		}
+		return "application/octet-stream"
+	}
 }
