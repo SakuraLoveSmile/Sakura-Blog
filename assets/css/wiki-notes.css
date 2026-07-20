@@ -1,0 +1,83 @@
+/* wiki-notes.css: 文库列表页卡片的内部布局。
+   .post-card 基座（背景/圆角/阴影）与容器 .post-list / .post-card-wrap 间距复用 main.css 通用规则，
+   此处仅补文库卡片特有的「图标 + 文本」横向布局（移植自 Stellar list.styl .post-card.wiki 段），全部走主题变量。
+   笔记卡片复用 .post-card.post（与首页一致），无需额外样式。 */
+
+.post-list .post-card.wiki article {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+}
+
+.post-list .post-card.wiki article .preview {
+  display: flex;
+  align-items: center;
+  margin: 1rem 3rem;
+}
+
+.post-list .post-card.wiki article .preview img {
+  width: 96px;
+  max-height: 96px;
+  object-fit: contain;
+  transition: all 0.75s ease-out;
+}
+
+.post-list .post-card.wiki article .excerpt {
+  flex: 1;
+  min-width: 280px;
+  margin: 1rem 0.5rem;
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+@media screen and (min-width: 950px) {
+  .post-list .post-card.wiki article .excerpt {
+    margin-right: 2rem;
+  }
+}
+
+.post-list .post-card.wiki article .excerpt .caps {
+  line-height: 1;
+  margin-bottom: 0.75rem;
+}
+
+.post-list .post-card.wiki article .excerpt .cap {
+  background: var(--block);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.post-list .post-card.wiki article .excerpt .cap + .cap {
+  margin-left: 4px;
+}
+
+.post-list .post-card.wiki article .excerpt .post-title {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.post-list .post-card.wiki article .excerpt p:last-child {
+  margin-bottom: 0;
+  color: var(--text-p3);
+}
+
+/* 文库/笔记无数据时的空状态 */
+.wiki-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-p3);
+}
+
+/* 笔记(手记)时间流：标题与标签（复用 moments 的 .tag-plugin.timeline .timenode 结构） */
+.tag-plugin.timeline .timenode .body .note-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-p1);
+}
+
+.tag-plugin.timeline .timenode .body .note-tags {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}

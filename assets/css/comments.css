@@ -59,6 +59,9 @@
   margin-top: 8px;
 }
 .cmt-body.native .cmt-input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--block-border, rgba(128, 128, 128, .25));
   border-radius: 8px;

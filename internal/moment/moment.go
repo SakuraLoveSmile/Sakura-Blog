@@ -132,6 +132,25 @@ func (h *Handler) listPublic(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
+// RecentItems 返回最新 limit 条 moments 的视图模型，供其它页面（如 /notes 近期动态）内联复用。
+func (h *Handler) RecentItems(limit int) []*tmpl.MomentItem {
+	moments, err := h.store.ListMoments(1, limit)
+	if err != nil {
+		return nil
+	}
+	items := make([]*tmpl.MomentItem, 0, len(moments))
+	for _, m := range moments {
+		items = append(items, &tmpl.MomentItem{
+			ID:          m.ID,
+			ContentHTML: template.HTML(m.ContentHTML),
+			Images:      parseImages(m.Images),
+			TimeAgo:     comment.TimeAgo(m.CreatedAt),
+			Date:        m.CreatedAt.Format("2006-01-02 15:04"),
+		})
+	}
+	return items
+}
+
 func parseImages(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return nil

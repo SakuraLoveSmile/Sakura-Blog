@@ -39,17 +39,17 @@ func DefaultSite() *tmpl.Site {
 			Columns: 2,
 			Items: []tmpl.MenuItem{
 				{ID: "post", Title: "博客", URL: "/", Icon: "solar:documents-bold-duotone", Theme: "#1BCDFC"},
-				{ID: "archive", Title: "归档", URL: "/archives/", Icon: "default:calendar", Theme: "#3DC550"},
-				{ID: "links", Title: "友链", URL: "/links", Icon: "solar:chat-square-like-bold-duotone", Theme: "#FA7D23"},
-				{ID: "moments", Title: "瞬间", URL: "/moments", Icon: "solar:chat-square-like-bold-duotone", Theme: "#FF6B9D"},
+				{ID: "wiki", Title: "文库", URL: "/wiki", Icon: "solar:notebook-bookmark-bold-duotone", Theme: "#3DC550"},
+				{ID: "notes", Title: "笔记", URL: "/notes", Icon: "default:edit", Theme: "#FA7D23"},
+				{ID: "friends", Title: "友链", URL: "/friends", Icon: "solar:planet-bold-duotone", Theme: "#FF6B9D"},
 			},
 		},
 		Rightbar: tmpl.RightbarConfig{
 			// 欢迎语卡片链接列表（对齐原版 markdown widget 的 linklist）
 			WelcomeLinklist: tmpl.LinkListConfig{
 				Items: []tmpl.LinkListItem{
-					{Title: "查看归档", URL: "/archives/", Icon: "default:calendar"},
-					{Title: "传送到瞬间", URL: "/moments", Icon: "solar:chat-square-like-bold-duotone"},
+					{Title: "查看文库", URL: "/wiki", Icon: "solar:notebook-bookmark-bold-duotone"},
+					{Title: "传送到笔记", URL: "/notes", Icon: "default:edit"},
 				},
 			},
 		},
@@ -69,7 +69,9 @@ func DefaultSite() *tmpl.Site {
 					{Title: "归档", URL: "/archives/"},
 				}},
 				{Title: "页面", Items: []tmpl.SitemapItem{
-					{Title: "友链", URL: "/links"},
+					{Title: "文库", URL: "/wiki"},
+					{Title: "笔记", URL: "/notes"},
+					{Title: "友链", URL: "/friends"},
 					{Title: "瞬间", URL: "/moments"},
 				}},
 				{Title: "订阅", Items: []tmpl.SitemapItem{

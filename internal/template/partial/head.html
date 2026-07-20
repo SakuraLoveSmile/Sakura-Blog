@@ -67,10 +67,13 @@
   </script>
 
   {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}">
+  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v=demo3">
 
   {{- /* 文章页脚补充样式（打赏 / 文字分享按钮；.article-footer 主体在 main.css）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}">
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v=demo3">
+
+  {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo4">
 
   {{- /* Spec 06: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}">
@@ -100,7 +103,7 @@
   </script>
 
 {{- /* 阅读体验：进度条 + 图片灯箱（Spec 08）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/reading.css"}}">
+  <link rel="stylesheet" href="{{url_for "/assets/css/reading.css"}}?v=demo3">
 
   {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
   <style>

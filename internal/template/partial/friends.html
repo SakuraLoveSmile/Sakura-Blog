@@ -1,0 +1,31 @@
+{{- /* friends.html: 友链页（友链卡片 + RSS 动态聚合），对齐 Stellar {% friends posts:true %}
+   banner（标题）+ ds-friends_and_posts 数据容器，前端 friends_and_posts.js 从 data-api 异步渲染。
+   数据由后端 internal/friends 聚合器提供（/api/friends-aggregated）。
+   由 base.html 按 .Page.Layout == "friends" 分派渲染。
+*/ -}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">首页</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/friends">友链</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+
+<article class="md-text content">
+  <div class="tag-plugin users-posts-wrap">
+    <div class="data-service ds-friends_and_posts" data-api="/api/friends-aggregated">
+      <div class="grid-box"></div>
+    </div>
+  </div>
+</article>

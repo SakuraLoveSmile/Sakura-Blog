@@ -1,0 +1,39 @@
+{{- /* wiki.html: 文库落地页，对齐 Stellar layout/index_wiki.ejs + wiki_card.ejs
+   顶部 nav tabs（全部 + 各标签）+ .post-list.wiki 项目卡片。
+   由 base.html 按 .Page.Layout == "wiki" 分派渲染；.Page.Tag 非空时为标签过滤页。
+*/ -}}
+<div class="navbar top">
+  <div class="navbar-blur">
+    <div class="navbar-container">
+      <nav class="wiki">
+        <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">全部</a>
+        {{- range .WikiTags}}
+        <a {{if eq $.Page.Tag .}}class="active" {{end}}href="/wiki/tags/{{.}}">{{.}}</a>
+        {{- end}}
+      </nav>
+    </div>
+  </div>
+</div>
+
+<div class="post-list wiki">
+  {{- range .WikiProjects}}
+  <div class="post-card-wrap">
+    <a class="post-card wiki" {{if .URL}}href="{{.URL}}"{{end}}>
+      <article class="md-text">
+        <div class="preview"><img src="{{.Icon}}" alt="{{.DisplayTitle}}" loading="lazy"/></div>
+        <div class="excerpt">
+          {{- if .Tags}}
+          <div class="caps">
+            {{- range .Tags}}<span class="cap breadcrumb">{{.}}</span>{{end}}
+          </div>
+          {{- end}}
+          <h2 class="post-title">{{.DisplayTitle}}</h2>
+          {{if .Description}}<p>{{.Description}}</p>{{end}}
+        </div>
+      </article>
+    </a>
+  </div>
+  {{- else}}
+  <p class="wiki-empty">暂无文库项目</p>
+  {{- end}}
+</div>

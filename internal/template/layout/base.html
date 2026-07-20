@@ -25,7 +25,7 @@
     <div class="l_main" id="main">
       {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
          文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
-      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "wiki"}}{{template "partial/wiki" .}}{{else if eq .Page.Layout "notes"}}{{template "partial/notes" .}}{{else if eq .Page.Layout "friends"}}{{template "partial/friends" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
       {{template "partial/footer" .}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
@@ -284,28 +284,72 @@
      bind 一次即事件委托覆盖后续 DOM，PJAX 换页后重新检测。 */}}
   <script>
     (function () {
-      var bound = false;
+      var bound = false, loading = null;
       function fullSelector() {
         return ctx.fancybox.selector;
+      }
+      function doBind() {
+        if (bound || typeof Fancybox === 'undefined') return;
+        bound = true;
+        Fancybox.bind(fullSelector(), {
+          hideScrollbar: false,
+          Thumbs: { autoStart: false },
+          caption: function (fancybox, slide) {
+            return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null;
+          }
+        });
+      }
+      function loadFancybox() {
+        if (bound) return Promise.resolve();
+        if (loading) return loading;
+        utils.css(ctx.fancybox.css);
+        loading = utils.js(ctx.fancybox.js, { defer: true }).then(doBind);
+        return loading;
       }
       function tryInit() {
         if (bound) return;
         if (document.querySelectorAll(fullSelector()).length === 0) return;
-        utils.css(ctx.fancybox.css);
-        utils.js(ctx.fancybox.js, { defer: true }).then(function () {
-          if (bound) return;
-          bound = true;
-          Fancybox.bind(fullSelector(), {
-            hideScrollbar: false,
-            Thumbs: { autoStart: false },
-            caption: function (fancybox, slide) {
-              return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null;
-            }
-          });
-        });
+        loadFancybox();
       }
+      {{- /* 捕获阶段拦截：fancybox 尚未就绪时点击正文图片也能触发（消除 CDN 加载窗口内的“首击无效”），
+         就绪后本监听 no-op，交回 fancybox 自身的事件委托。 */}}
+      document.addEventListener('click', function (e) {
+        if (bound || !e.target.closest) return;
+        var img = e.target.closest(fullSelector());
+        if (!img) return;
+        e.preventDefault();
+        loadFancybox().then(function () {
+          if (typeof Fancybox !== 'undefined' && Fancybox.show) {
+            Fancybox.show([{ src: img.getAttribute('data-src') || img.getAttribute('src'), type: 'image', caption: img.alt || '' }]);
+          }
+        });
+      }, true);
       document.addEventListener('DOMContentLoaded', tryInit);
       document.addEventListener('pjax:complete', tryInit);
+    })();
+  </script>
+  <script>
+    {{- /* 数据服务懒加载（对齐 Stellar data_services 机制的极简版）：
+       页面存在 .ds-friends_and_posts / .ds-friends 时按需拉取对应 service 脚本，
+       service 内部用 utils.jq 事件委托，PJAX 换页后重新检测。 */}}
+    (function () {
+      var services = [
+        { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}' },
+        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}' }
+      ];
+      var loaded = {};
+      function scan() {
+        for (var i = 0; i < services.length; i++) {
+          var s = services[i];
+          if (loaded[s.cls]) continue;
+          if (document.getElementsByClassName(s.cls).length > 0) {
+            loaded[s.cls] = true;
+            utils.js(s.js, { defer: true });
+          }
+        }
+      }
+      document.addEventListener('DOMContentLoaded', scan);
+      document.addEventListener('pjax:complete', scan);
     })();
   </script>
   <script src="{{url_for "/assets/js/main.js"}}" defer></script>

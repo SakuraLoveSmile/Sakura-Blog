@@ -33,6 +33,15 @@ var reButton = regexp.MustCompile(`{%\s*button\s+(.*?)\s*%}`)
 // checkbox 标签正则：{% checkbox ... %}
 var reCheckbox = regexp.MustCompile(`{%\s*checkbox\s+(.*?)\s*%}`)
 
+// quot 标签正则（单行）：{% quot ... %}
+var reQuot = regexp.MustCompile(`{%\s*quot\s+(.*?)\s*%}`)
+
+// okr 标签正则（块级）：{% okr ... %} body {% endokr %}
+var reOKR = regexp.MustCompile(`(?s){%\s*okr\s+(.*?)\s*%}(.*?){%\s*endokr\s*%}`)
+
+// okr 内部 KR 分隔符：<!-- okr krN ... -->
+var reOKRItem = regexp.MustCompile(`<!--\s*okr\s+(.*?)\s*-->`)
+
 var (
 	reTabSplit  = regexp.MustCompile(`<!--\s*tab (.*?)\s*-->`)
 	reNodeSplit = regexp.MustCompile(`<!--\s*node (.*?)\s*-->`)
@@ -44,7 +53,7 @@ var (
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string) string {
+func processShortcodes(md string, renderMD func(string) string, iconFunc func(string) string) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -116,6 +125,15 @@ func processShortcodes(md string, renderMD func(string) string) string {
 		return renderTabs(argsStr, body, renderMD)
 	})
 
+	// 5.5 okr（块级，KR 用 <!-- okr krN --> 分隔，note 需渲染 Markdown）
+	md = reOKR.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reOKR.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderOKR(parts[1], parts[2], renderMD)
+	})
+
 	// 6. button（单行）
 	md = reButton.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reButton.FindStringSubmatch(match)
@@ -163,6 +181,15 @@ func processShortcodes(md string, renderMD func(string) string) string {
 		fmt.Fprintf(&sb, `<div class="body">%s</div>`, content)
 		sb.WriteString(`</div>`)
 		return sb.String()
+	})
+
+	// 9. quot（单行，小标题，需 iconFunc 渲染前缀图标）
+	md = reQuot.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reQuot.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderQuot(parts[1], iconFunc)
 	})
 
 	return md
@@ -509,4 +536,167 @@ func splitArgs(s string) []string {
 		tokens = append(tokens, cur.String())
 	}
 	return tokens
+}
+
+// okrStatus okr 状态 → 配色 + 文案。
+type okrStatus struct {
+	color string
+	label string
+}
+
+// okrStatusMap 内置状态映射，对齐 Stellar tag_plugins.okr.status 默认值。
+var okrStatusMap = map[string]okrStatus{
+	"in_track":   {"blue", "正常"},
+	"at_risk":    {"yellow", "风险"},
+	"off_track":  {"red", "滞后"},
+	"finished":   {"green", "完成"},
+	"unfinished": {"gray", "未完成"},
+}
+
+// parseOKRMeta 解析 "o1 percent:50 status:in_track color:blue"：首 token 为 index，其余为命名参数。
+func parseOKRMeta(s string) (index string, percent int, hasPercent bool, status, color string) {
+	for i, tok := range splitArgs(s) {
+		if i == 0 {
+			index = tok
+			continue
+		}
+		switch {
+		case strings.HasPrefix(tok, "percent:"):
+			if n, err := strconv.Atoi(strings.TrimPrefix(tok, "percent:")); err == nil {
+				percent = n
+				hasPercent = true
+			}
+		case strings.HasPrefix(tok, "status:"):
+			status = strings.TrimPrefix(tok, "status:")
+		case strings.HasPrefix(tok, "color:"):
+			color = strings.TrimPrefix(tok, "color:")
+		}
+	}
+	return
+}
+
+// okrSplitTitleNote 首行非空为 title，其余为 note。
+func okrSplitTitleNote(s string) (title, note string) {
+	var lines []string
+	for _, ln := range strings.Split(strings.TrimSpace(s), "\n") {
+		if strings.TrimSpace(ln) != "" {
+			lines = append(lines, strings.TrimSpace(ln))
+		}
+	}
+	if len(lines) == 0 {
+		return "", ""
+	}
+	return lines[0], strings.Join(lines[1:], "\n")
+}
+
+// okrResolveStatus 给定 status/percent 解析出配色与文案；status 缺省时按 percent 推断。
+func okrResolveStatus(status string, percent int) okrStatus {
+	if st, ok := okrStatusMap[status]; ok {
+		return st
+	}
+	if percent >= 100 {
+		return okrStatusMap["finished"]
+	}
+	return okrStatusMap["in_track"]
+}
+
+// okrLayoutItem 生成单个 okr-item（o 或 kr），对齐 Stellar okr.js 的 layoutItem。
+func okrLayoutItem(typ, index, title, note string, st okrStatus, percent int, renderMD func(string) string) string {
+	noteHTML := strings.TrimSpace(renderMD(note))
+	var sb strings.Builder
+	fmt.Fprintf(&sb, `<div class="okr-item %s" id="okr-%s">`, typ, strings.ToLower(index))
+	fmt.Fprintf(&sb, `<div class="okr-left"><span class="title">%s</span></div>`, strings.ToUpper(index))
+	fmt.Fprintf(&sb, `<div class="okr-center"><span class="title">%s</span><div class="note">%s</div></div>`, title, noteHTML)
+	fmt.Fprintf(&sb, `<div class="okr-right colorful" color="%s"><div class="labels"><span class="status label">%s</span><span class="status percent">%d%%</span></div><div class="progress"><div class="fill" style="width:%d%%;"></div></div></div>`, st.color, st.label, percent, percent)
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderOKR 渲染 {% okr %}...{% endokr %} 为 .tag-plugin.colorful.okr。
+func renderOKR(oArgs, content string, renderMD func(string) string) string {
+	oIndex, oPercent, oHasPercent, oStatus, oColor := parseOKRMeta(oArgs)
+
+	type krItem struct{ meta, body string }
+	var krs []krItem
+	oBody := content
+	if locs := reOKRItem.FindAllStringSubmatchIndex(content, -1); len(locs) > 0 {
+		oBody = content[:locs[0][0]]
+		for i, loc := range locs {
+			meta := content[loc[2]:loc[3]]
+			bodyStart := loc[1]
+			bodyEnd := len(content)
+			if i+1 < len(locs) {
+				bodyEnd = locs[i+1][0]
+			}
+			krs = append(krs, krItem{meta: meta, body: content[bodyStart:bodyEnd]})
+		}
+	}
+
+	var krHTML strings.Builder
+	sum, cnt := 0, 0
+	for _, kr := range krs {
+		ki, kp, _, ks, _ := parseOKRMeta(kr.meta)
+		kt, kn := okrSplitTitleNote(kr.body)
+		sum += kp
+		cnt++
+		krHTML.WriteString(okrLayoutItem("kr", ki, kt, kn, okrResolveStatus(ks, kp), kp, renderMD))
+	}
+	if !oHasPercent && cnt > 0 {
+		oPercent = sum / cnt
+	}
+	oTitle, oNote := okrSplitTitleNote(oBody)
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin colorful okr"`)
+	if oColor != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, oColor)
+	}
+	sb.WriteString(`>`)
+	sb.WriteString(okrLayoutItem("o", oIndex, oTitle, oNote, okrResolveStatus(oStatus, oPercent), oPercent, renderMD))
+	sb.WriteString(krHTML.String())
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderQuot 渲染 {% quot el:h2 icon:hashtag text:... %} 为 .tag-plugin.quot 小标题。
+func renderQuot(argsStr string, iconFunc func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"el", "icon", "prefix", "suffix", "text"}, nil)
+	el := named["el"]
+	if el == "" {
+		el = "p"
+	}
+	text := named["text"]
+	if text == "" {
+		text = strings.Join(positional, " ")
+	}
+	// 前缀图标：prefix > icon 预设 > 默认 hashtag
+	prefixKey := named["prefix"]
+	if prefixKey == "" {
+		if ic := named["icon"]; ic == "" || ic == "default" || ic == "hashtag" {
+			prefixKey = "solar:hashtag-square-bold"
+		} else {
+			prefixKey = ic
+		}
+	}
+	suffixKey := named["suffix"]
+
+	iconHTML := func(key string) string {
+		if key == "" || iconFunc == nil {
+			return `<span class="empty"></span>`
+		}
+		return iconFunc(key)
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, `<div class="tag-plugin quot %s">`, el)
+	if strings.Contains(el, "h") {
+		fmt.Fprintf(&sb, `<%s class="content" id="%s">`, el, text)
+	} else {
+		fmt.Fprintf(&sb, `<%s class="content">`, el)
+	}
+	sb.WriteString(iconHTML(prefixKey))
+	fmt.Fprintf(&sb, `<span class="text">%s</span>`, text)
+	sb.WriteString(iconHTML(suffixKey))
+	fmt.Fprintf(&sb, `</%s></div>`, el)
+	return sb.String()
 }

@@ -48,6 +48,13 @@ type ViewData struct {
 	// 瞬间时间流（Layout=moments 时使用）。
 	Moments []*MomentItem
 
+	// 文库（Layout=wiki 时使用）：WikiProjects 为按 tag 过滤/排序后的项目，WikiTags 为顶部 tab 全量标签。
+	WikiProjects []*WikiProject
+	WikiTags     []string
+
+	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
+	NotesContentHTML template.HTML
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
@@ -212,6 +219,8 @@ type Site struct {
 	Comments    CommentsConfig `yaml:"comments"`
 	Admin       AdminConfig    `yaml:"admin"`
 	Links       []LinkGroup    `yaml:"links"` // 友链分组（site.yml links 段）
+	Friends     FriendsConfig  `yaml:"friends"` // 友链动态聚合配置（site.yml friends 段）
+	Wiki        []WikiProject  `yaml:"wiki"`  // 文库项目（site.yml wiki 段，/wiki 页）
 	Article     ArticleConfig  `yaml:"article"`
 }
 

@@ -1,0 +1,59 @@
+{{- /* notes.html: 笔记(手记)页，对齐 xaoxuu.com/notes/ 的两段式结构：
+   上段「手记正文」= content/notes.md 渲染的 HTML（含 quot 小标题 + okr 目标块 + 段落）；
+   下段「近期动态」= 本站 moments 最新若干条，服务端渲染为 .tag-plugin.timeline（timenode 结构同 moments.html）。
+   由 base.html 按 .Page.Layout == "notes" 分派渲染。
+*/ -}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">首页</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/notes">笔记</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+
+<article class="md-text content">
+  {{- /* 上段：手记正文（notes.md 渲染，含 quot/okr 等 tag-plugin） */}}
+  {{if .NotesContentHTML}}{{.NotesContentHTML}}{{end}}
+
+  {{- /* 下段：近期动态（本站 moments 时间流，timenode 结构对齐 moments.html） */}}
+  {{- if .Moments}}
+  <div class="tag-plugin timeline">
+    {{- range .Moments}}
+    <div class="timenode">
+      <div class="header">
+        <div class="user-info">
+          <img src="{{$.Site.Avatar}}" alt="">
+          <span>{{if $.Site.LogoTitle}}{{$.Site.LogoTitle}}{{else}}{{$.Site.Title}}{{end}}</span>
+        </div>
+        <span title="{{.Date}}">{{.TimeAgo}}</span>
+      </div>
+      <div class="body">
+        {{- if .ContentHTML}}{{.ContentHTML}}{{end}}
+        {{- if .Images}}
+        <p>
+          {{- range .Images}}
+          <img src="{{.}}" alt="" loading="lazy">
+          {{- end}}
+        </p>
+        {{- end}}
+      </div>
+    </div>
+    {{- end}}
+  </div>
+  {{- end}}
+
+  {{- if and (not .NotesContentHTML) (not .Moments)}}
+  <p class="wiki-empty">暂无内容</p>
+  {{- end}}
+</article>

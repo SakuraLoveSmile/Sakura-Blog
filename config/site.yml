@@ -21,20 +21,20 @@ menubar:
       url: /
       icon: solar:documents-bold-duotone
       theme: "#1BCDFC"
-    - id: archive
-      title: 归档
-      url: /archives/
-      icon: default:calendar
+    - id: wiki
+      title: 文库
+      url: /wiki
+      icon: solar:notebook-bookmark-bold-duotone
       theme: "#3DC550"
-    - id: links
-      title: 友链
-      url: /links
-      icon: solar:chat-square-like-bold-duotone
+    - id: notes
+      title: 笔记
+      url: /notes
+      icon: default:edit
       theme: "#FA7D23"
-    - id: moments
-      title: 瞬间
-      url: /moments
-      icon: solar:chat-square-like-bold-duotone
+    - id: friends
+      title: 友链
+      url: /friends
+      icon: solar:planet-bold-duotone
       theme: "#FF6B9D"
 
 # 右栏（site.yml rightbar 段）
@@ -42,14 +42,43 @@ rightbar:
   # 欢迎语卡片内的链接列表（对齐原版 markdown widget 的 linklist）。columns 留空=按链接数
   welcome_linklist:
     items:
-      - title: 查看归档
-        url: /archives/
-        icon: default:calendar
-      - title: 传送到瞬间
-        url: /moments
-        icon: solar:chat-square-like-bold-duotone
+      - title: 查看文库
+        url: /wiki
+        icon: solar:notebook-bookmark-bold-duotone
+      - title: 传送到笔记
+        url: /notes
+        icon: default:edit
+
+# 文库项目（配置驱动，不入库）。每个项目一张卡片，点击跳到 url（站内文章/页面或外链）。
+wiki:
+  - id: stellar
+    title: Stellar 主题文档
+    description: Hexo Stellar 主题的使用文档与配置说明。
+    icon: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+    tags: [主题, 前端]
+    url: https://xaoxuu.com/wiki/stellar/
+    sort: 100
+  - id: go-blog
+    title: Go 博客重构笔记
+    description: 用 Go(Gin)+html/template+goldmark 复刻 Stellar 的实现记录。
+    icon: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg
+    tags: [后端, Go]
+    url: /archives/
+    sort: 90
+  - id: frontend
+    title: 前端拾遗
+    description: CSS 变量、PJAX、懒加载等前端细节整理。
+    icon: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+    tags: [前端]
+    url: /categories/
+    sort: 80
+
+# 友链动态聚合（/friends 页）。refresh_interval：后端抓取友链 RSS 的刷新间隔（分钟），缺省 60。
+friends:
+  refresh_interval: 60
 
 # 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
+# rss 非空时，/friends 页后端会定时抓取该友链 RSS/Atom 最新文章并聚合展示；label/color 为分类标签与配色（16 进制不带 #）。
 links:
   - title: 我的朋友
     items:
@@ -57,16 +86,25 @@ links:
         url: "https://xaoxuu.com/"
         avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
         desc: Stellar 主题作者
+        rss: "https://xaoxuu.com/atom.xml"
+        label: 主题
+        color: FF6B9D
       - name: Hexo
         url: "https://hexo.io/"
         avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
         desc: 快速、简洁且高效的博客框架
+        rss: "https://hexo.io/atom.xml"
+        label: 框架
+        color: 1BCDFC
   - title: 推荐站点
     items:
       - name: Go
         url: "https://go.dev/"
         avatar: "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg"
         desc: The Go Programming Language
+        rss: "https://go.dev/blog/feed.atom"
+        label: 语言
+        color: 3DC550
 
 footer:
   social:
@@ -96,8 +134,12 @@ footer:
           url: /archives/
     - title: 页面
       items:
+        - title: 文库
+          url: /wiki
+        - title: 笔记
+          url: /notes
         - title: 友链
-          url: /links
+          url: /friends
         - title: 瞬间
           url: /moments
     - title: 订阅

@@ -16,6 +16,12 @@
   filter: unset;
   background: var(--bg-a100);
 }
+/* icon 助手输出 32px SVG，收敛到 20px 以适配 32px 网格单元（20 + 6*2 padding），避免裁剪 */
+.article-footer .social-wrap a.social svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
 .article-footer .social-wrap .share-label {
   display: inline-flex;
   align-items: center;

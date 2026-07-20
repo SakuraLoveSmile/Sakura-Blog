@@ -43,9 +43,15 @@ type FileMeta struct {
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
 type Service struct {
-	mdDir  string
-	md     goldmark.Markdown
-	parser parser
+	mdDir    string
+	md       goldmark.Markdown
+	parser   parser
+	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
+}
+
+// SetIconFunc 注入图标渲染函数（key → 内联 SVG）。未设置时 quot 等图标降级为空占位。
+func (s *Service) SetIconFunc(f func(string) string) {
+	s.iconFunc = f
 }
 
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
@@ -85,7 +91,7 @@ func (s *Service) Render(body string) (string, error) {
 	}
 
 	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
-	processed := processShortcodes(protectMathDelimiters(body), renderMD)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.iconFunc)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder
