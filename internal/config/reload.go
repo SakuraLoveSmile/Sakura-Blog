@@ -19,6 +19,10 @@ const (
 	SectionArticle  = "article"  // 文章页脚
 	SectionWiki     = "wiki"     // 文库项目
 	SectionFriends  = "friends"  // 友链动态聚合
+
+	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
+	// 仅由 SaveAdminPassword 专用接口读写。
+	SectionAdmin = "admin"
 )
 
 // siteMu 保护 RebuildSite 对共享 *tmpl.Site 的就地写入（写者之间互斥）。
@@ -38,6 +42,11 @@ type siteBasic struct {
 	LogoSub     string `json:"logo_sub"`
 }
 
+// adminSection 对应 settings 表 "admin" 段（管理密码，明文存储与 site.yml 现状同安全等级）。
+type adminSection struct {
+	Password string `json:"password"`
+}
+
 // Bootstrap 首次启动导入：settings/links 表为空时，把 site（DefaultSite 合并 site.yml）写入 DB。
 // 幂等——非空表跳过，二次启动不重复导入。
 func Bootstrap(st *store.Store, site *tmpl.Site) error {
@@ -54,6 +63,21 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 	}
 	if n == 0 {
 		if err := writeSiteSections(st, site); err != nil {
+			return err
+		}
+	}
+
+	// admin 段单独兼容导入：旧库升级时 settings 非空但无 admin 段，site.yml 有密码则补导一次。
+	settings, err := st.AllSettings()
+	if err != nil {
+		return err
+	}
+	if _, ok := settings[SectionAdmin]; !ok && site.Admin.Password != "" {
+		b, err := json.Marshal(adminSection{Password: site.Admin.Password})
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionAdmin, string(b)); err != nil {
 			return err
 		}
 	}
@@ -132,7 +156,7 @@ func writeSiteLinks(st *store.Store, groups []tmpl.LinkGroup) error {
 }
 
 // RebuildSite 从 DB 重新加载 settings/links，就地更新共享 *site 的字段（写锁保护）。
-// 保留 site.Admin（密码来自 site.yml，不入 DB）。设置/友链保存后调用以实现热更新。
+// admin 段非空时覆盖 site.Admin.Password（site.yml 仅作首次导入的初始值）。设置/友链保存后调用以实现热更新。
 func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	settings, err := st.AllSettings()
 	if err != nil {
@@ -152,6 +176,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	var article tmpl.ArticleConfig
 	var wiki []tmpl.WikiProject
 	var friends tmpl.FriendsConfig
+	var admin adminSection
+	adminSet := false
 
 	unmarshal := func(section string, dst any) {
 		if v, ok := settings[section]; ok && v != "" {
@@ -166,6 +192,11 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	unmarshal(SectionArticle, &article)
 	unmarshal(SectionWiki, &wiki)
 	unmarshal(SectionFriends, &friends)
+	if v, ok := settings[SectionAdmin]; ok && v != "" {
+		if json.Unmarshal([]byte(v), &admin) == nil {
+			adminSet = true
+		}
+	}
 
 	groups := LinksToGroups(links)
 
@@ -187,6 +218,9 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.Wiki = wiki
 	site.Friends = friends
 	site.Links = groups
+	if adminSet {
+		site.Admin.Password = admin.Password
+	}
 	return nil
 }
 
@@ -289,4 +323,18 @@ func applyCommentDefaults(cc *tmpl.CommentsConfig) {
 	if cc.Title == "" {
 		cc.Title = "评论"
 	}
+}
+
+// SaveAdminPassword 保存管理密码到 settings 表 admin 段并热更新。
+// 空密码合法（=关闭登录 gate，与 site.yml 留空语义一致）。
+// 找回手段：sqlite3 data/blog.db "DELETE FROM settings WHERE section='admin'" 后重启，回落 site.yml。
+func SaveAdminPassword(st *store.Store, site *tmpl.Site, password string) error {
+	b, err := json.Marshal(adminSection{Password: password})
+	if err != nil {
+		return err
+	}
+	if err := st.PutSetting(SectionAdmin, string(b)); err != nil {
+		return err
+	}
+	return RebuildSite(st, site)
 }

@@ -171,8 +171,8 @@ func main() {
 		site.Comments.Title = "评论"
 	}
 
-	// 站点配置迁移到 DB：Bootstrap 首次把 site.yml 导入 settings/links 表（空表才导），
-	// 之后 RebuildSite 以 DB 为准回填 site（含 console 在线修改）。site.Admin 不入 DB，保留 site.yml 值。
+	// 站点配置迁移到 DB：Bootstrap 首次把 site.yml 导入 settings/links 表（空表才导，admin 段单独兼容补导），
+	// 之后 RebuildSite 以 DB 为准回填 site（含 console 在线修改）。密码入库后 site.yml 仅作初始值。
 	if err := config.Bootstrap(st, site); err != nil {
 		log.Fatalf("bootstrap settings: %v", err)
 	}
@@ -438,6 +438,7 @@ func main() {
 		Comments:    commentHandler,
 		Backups:     backupSvc,
 		UploadDir:   app.UploadDir,
+		NotesPath:   filepath.Join(app.Root, "content", "notes.md"),
 		MaxUploadMB: app.MaxUploadMB,
 	})
 	apiHandler.Register(r)

@@ -34,6 +34,7 @@ type Handler struct {
 	comments  *comment.Handler
 	backups   *backup.Service
 	uploadDir string
+	notesPath string // content/notes.md 路径（笔记页正文）
 	maxUpload int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
@@ -48,6 +49,7 @@ type Config struct {
 	Comments    *comment.Handler
 	Backups     *backup.Service
 	UploadDir   string
+	NotesPath   string
 	MaxUploadMB int
 }
 
@@ -64,6 +66,7 @@ func New(cfg Config) *Handler {
 		comments:  cfg.Comments,
 		backups:   cfg.Backups,
 		uploadDir: cfg.UploadDir,
+		notesPath: cfg.NotesPath,
 		maxUpload: int64(maxMB) << 20,
 	}
 }
@@ -125,6 +128,13 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 站点设置（分段）
 		authed.GET("/settings", h.getSettings)
 		authed.PUT("/settings/:section", h.updateSection)
+
+		// 管理密码修改（入库，保存后旧 cookie 自动失效）
+		authed.PUT("/auth/password", h.changePassword)
+
+		// 笔记页正文（content/notes.md，前台 /notes 上半部分）
+		authed.GET("/notes-content", h.getNotesContent)
+		authed.PUT("/notes-content", h.putNotesContent)
 
 		// 友链
 		authed.GET("/links", h.listLinks)
