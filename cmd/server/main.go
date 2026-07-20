@@ -21,9 +21,11 @@ import (
 
 	"blog/assets"
 	"blog/internal/admin"
+	"blog/internal/api"
 	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/feed"
+	"blog/internal/friends"
 	"blog/internal/media"
 	"blog/internal/moment"
 	"blog/internal/page"
@@ -136,6 +138,7 @@ func main() {
 
 	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。按 root 定位，部署时可选。
 	posts := post.NewService(filepath.Join(app.Root, "content", "posts"))
+	posts.SetIconFunc(reg.Get) // 供 quot 等 shortcode 渲染内联 SVG（复用模板 icon 同一套图标）
 
 	// SQLite 持久化：DBPath 已在 ResolveApp 绝对化。
 	st, err := store.New(app.DBPath)
@@ -403,6 +406,41 @@ func main() {
 	// 上传附件静态托管（运行时数据，不走 go:embed）
 	r.Static("/uploads", app.UploadDir)
 
+	// REST API 层（/api/v1），供 Vue Console SPA 调用
+	apiHandler := api.New(api.Config{
+		Store:       st,
+		Posts:       posts,
+		Site:        site,
+		Comments:    commentHandler,
+		UploadDir:   app.UploadDir,
+		MaxUploadMB: app.MaxUploadMB,
+	})
+	apiHandler.Register(r)
+
+	// 友链动态聚合：后台定时抓取配置友链（site.yml links 带 rss）的 RSS/Atom 最新文章，
+	// /api/friends-aggregated 供 /friends 页的 ds-friends_and_posts 组件异步渲染。
+	friendsAgg := friends.New(site)
+	friendsAgg.Start()
+	friendsAgg.Register(r)
+
+	// Vue Console SPA 静态托管（/console/）：生产模式从 console/dist 读取，SPA fallback 到 index.html
+	consoleDir := filepath.Join(app.Root, "console", "dist")
+	var consoleIndex []byte
+	if info, err := os.Stat(consoleDir); err == nil && info.IsDir() {
+		r.Static("/console/assets", filepath.Join(consoleDir, "assets"))
+		// 根级静态文件（favicon.svg 等）
+		if entries, err := os.ReadDir(consoleDir); err == nil {
+			for _, e := range entries {
+				if !e.IsDir() && e.Name() != "index.html" {
+					name := e.Name()
+					r.StaticFile("/console/"+name, filepath.Join(consoleDir, name))
+				}
+			}
+		}
+		consoleIndex, _ = os.ReadFile(filepath.Join(consoleDir, "index.html"))
+		log.Printf("console SPA loaded from %s", consoleDir)
+	}
+
 	// 管理后台路由组 /admin
 	adminHandler.Register(r)
 
@@ -473,8 +511,14 @@ func main() {
 		commentHandler.Register(r)
 	}
 
-	// 未匹配路由一律走自定义 404 页
-	r.NoRoute(render404)
+	// 未匹配路由：/console/* 走 SPA fallback，其余走自定义 404 页
+	r.NoRoute(func(c *gin.Context) {
+		if consoleIndex != nil && strings.HasPrefix(c.Request.URL.Path, "/console") {
+			c.Data(http.StatusOK, "text/html; charset=utf-8", consoleIndex)
+			return
+		}
+		render404(c)
+	})
 
 	// 文章路由 /post/:slug：DB 优先（published），未命中回退文件渲染（向后兼容 Demo 2）
 	r.GET("/post/:slug", func(c *gin.Context) {
@@ -740,7 +784,80 @@ func main() {
 	r.GET("/links", func(c *gin.Context) {
 		renderBase(c, &tmpl.ViewData{
 			Site: site,
-			Page: &tmpl.Page{Title: "友链", Layout: "links", MenuID: "links", Lang: "zh-CN"},
+			Page: &tmpl.Page{Title: "友链", Layout: "links", MenuID: "friends", Lang: "zh-CN"},
+		})
+	})
+
+	// 文库 /wiki（+ /wiki/tags/:tag 标签过滤），对齐 Stellar index_wiki。配置驱动（site.yml wiki 段）。
+	wikiHandler := func(c *gin.Context) {
+		tag := c.Param("tag")
+		// 收集全量标签（顶部 tab，保留首见顺序）
+		var tags []string
+		tagSeen := map[string]bool{}
+		for i := range site.Wiki {
+			for _, t := range site.Wiki[i].Tags {
+				if !tagSeen[t] {
+					tagSeen[t] = true
+					tags = append(tags, t)
+				}
+			}
+		}
+		if tag != "" && !tagSeen[tag] {
+			render404(c)
+			return
+		}
+		// 项目（可按 tag 过滤），按 Sort 降序
+		projects := make([]*tmpl.WikiProject, 0, len(site.Wiki))
+		for i := range site.Wiki {
+			w := &site.Wiki[i]
+			if tag != "" {
+				matched := false
+				for _, t := range w.Tags {
+					if t == tag {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					continue
+				}
+			}
+			projects = append(projects, w)
+		}
+		sort.SliceStable(projects, func(i, j int) bool { return projects[i].Sort > projects[j].Sort })
+		renderBase(c, &tmpl.ViewData{
+			Site:         site,
+			Page:         &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN", Tag: tag},
+			WikiProjects: projects,
+			WikiTags:     tags,
+		})
+	}
+	r.GET("/wiki", wikiHandler)
+	r.GET("/wiki/", wikiHandler)
+	r.GET("/wiki/tags/:tag", wikiHandler)
+
+	// 笔记(手记) /notes，对齐 xaoxuu.com/notes/：上段 content/notes.md 手记正文（quot/okr 等 shortcode），下段本站 moments 近期动态。
+	notesMDPath := filepath.Join(app.Root, "content", "notes.md")
+	r.GET("/notes", func(c *gin.Context) {
+		var contentHTML template.HTML
+		if raw, err := os.ReadFile(notesMDPath); err == nil {
+			if rendered, err := posts.Render(string(raw)); err == nil {
+				contentHTML = template.HTML(rendered)
+			}
+		}
+		renderBase(c, &tmpl.ViewData{
+			Site:             site,
+			Page:             &tmpl.Page{Title: "笔记", Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
+			NotesContentHTML: contentHTML,
+			Moments:          momentHandler.RecentItems(5),
+		})
+	})
+
+	// 友链 /friends（友链卡片 + RSS 动态聚合），数据由 friendsAgg 的 /api/friends-aggregated 提供。
+	r.GET("/friends", func(c *gin.Context) {
+		renderBase(c, &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "友链", Layout: "friends", MenuID: "friends", Lang: "zh-CN"},
 		})
 	})
 
