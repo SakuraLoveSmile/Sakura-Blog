@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io/fs"
 	"log"
@@ -426,6 +427,9 @@ func main() {
 		c.Next()
 	})
 
+	// 访问埋点中间件（Spec 24）：仅记录内容页 GET，排除静态/API/后台/机器人。
+	r.Use(trackPageView(st))
+
 	// 静态文件 /assets：-dev 从磁盘读（改 CSS 即时生效），否则走 embed.FS（css/js/fonts）。
 	if devMode {
 		r.Static("/assets", filepath.Join(app.Root, "assets"))
@@ -525,6 +529,11 @@ func main() {
 	// 文章版本历史（Spec 22）：revisions 表（端点随 api.Handler 注册）。
 	if err := st.EnsureRevisionsTable(); err != nil {
 		log.Fatalf("ensure revisions table: %v", err)
+	}
+
+	// 访问统计明细表（Spec 24）：page_views 表 + 索引。
+	if err := st.EnsurePageViewsTable(); err != nil {
+		log.Fatalf("ensure page_views table: %v", err)
 	}
 
 	// Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 console/dist 读。
@@ -1356,5 +1365,60 @@ func consoleContentType(name string) string {
 			return ct
 		}
 		return "application/octet-stream"
+	}
+}
+
+// --- 访问埋点（Spec 24） ---
+
+// botUASubstrings 常见爬虫/机器人 UA 关键词（小写匹配）。
+var botUASubstrings = []string{
+	"bot", "crawl", "spider", "slurp", "mediapartners",
+	"curl", "wget", "python-requests", "go-http-client",
+	"java/", "scrapy", "httpclient", "feedfetcher",
+}
+
+// trackPageView 返回 Gin 中间件：仅记录内容页 GET 请求的访问明细。
+// 白名单制：只记 /、/post/*、/notes、/friends、/moments、/archives 等内容路径。
+func trackPageView(st *store.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.Next()
+			return
+		}
+		p := c.Request.URL.Path
+		// 排除非内容路径
+		if strings.HasPrefix(p, "/assets") || strings.HasPrefix(p, "/api") ||
+			strings.HasPrefix(p, "/console") || strings.HasPrefix(p, "/sw.js") ||
+			p == "/manifest.webmanifest" || p == "/favicon.svg" ||
+			p == "/search.json" || p == "/atom.xml" || p == "/rss.xml" ||
+			p == "/robots.txt" {
+			c.Next()
+			return
+		}
+		// 白名单：仅记录内容页
+		isContent := p == "/" || p == "/notes" || p == "/friends" ||
+			p == "/moments" || p == "/archives" ||
+			strings.HasPrefix(p, "/post/") || strings.HasPrefix(p, "/page/") ||
+			strings.HasPrefix(p, "/category/") || strings.HasPrefix(p, "/tags/")
+		if !isContent {
+			c.Next()
+			return
+		}
+		// 过滤机器人 UA
+		ua := strings.ToLower(c.Request.UserAgent())
+		for _, kw := range botUASubstrings {
+			if strings.Contains(ua, kw) {
+				c.Next()
+				return
+			}
+		}
+		// ua_hash = fnv32(UA + IP)，不存明文，隐私友好
+		h := fnv.New32a()
+		h.Write([]byte(c.Request.UserAgent() + c.ClientIP()))
+		uaHash := fmt.Sprintf("%x", h.Sum32())
+
+		referrer := c.Request.Referer()
+		_ = st.RecordView(p, referrer, uaHash)
+		c.Next()
 	}
 }

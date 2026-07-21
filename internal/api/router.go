@@ -92,6 +92,11 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/dashboard/stats", h.dashboardStats)
 		authed.GET("/dashboard/recent-comments", h.dashboardRecentComments)
 
+		// 访问统计（Spec 24）
+		authed.GET("/stats/trend", h.statsTrend)
+		authed.GET("/stats/popular", h.statsPopular)
+		authed.GET("/stats/referrers", h.statsReferrers)
+
 		// 文章
 		authed.GET("/posts", h.listPosts)
 		authed.GET("/posts/:slug", h.getPost)

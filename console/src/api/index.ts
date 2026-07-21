@@ -34,6 +34,14 @@ export const dashboardApi = {
   recentComments: () => http.get("/dashboard/recent-comments"),
 };
 
+// --- Stats (Spec 24) ---
+export const statsApi = {
+  trend: (days: number = 7) => http.get("/stats/trend", { params: { days } }),
+  popular: (days: number = 7, limit: number = 10) =>
+    http.get("/stats/popular", { params: { days, limit } }),
+  referrers: (days: number = 7) => http.get("/stats/referrers", { params: { days } }),
+};
+
 // --- Posts ---
 export const postApi = {
   list: (params?: Record<string, unknown>) => http.get("/posts", { params }),
