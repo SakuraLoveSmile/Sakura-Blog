@@ -28,6 +28,12 @@
   <meta property="og:description" content="{{.Page.Description}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+  {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
+  {{if and (eq .Page.Layout "post") .Page.Slug}}
+  <meta property="og:image" content="/og/{{.Page.Slug}}.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="/og/{{.Page.Slug}}.png">
+  {{end}}
 
   {{- /* jQuery 3.7（对齐原版 theme.dependencies.jquery）：defer 保证先于 body 末尾的 main.js 等执行，
      供 utils.jq 与依赖 jQuery 的插件使用 */}}

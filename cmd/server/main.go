@@ -31,6 +31,7 @@ import (
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
 	"blog/internal/moment"
+	"blog/internal/og"
 	"blog/internal/page"
 	"blog/internal/post"
 	seedpkg "blog/internal/seed"
@@ -168,33 +169,6 @@ func main() {
 		log.Printf("search: ensure fts failed (%v), server search disabled", err)
 		searchIdx = nil
 	} else {
-		// syncPost 单篇同步：仅已发布且到点且未删除的文章入索引；受保护文章正文置空。
-		// 定时文章到点后无写事件，下次编辑/重启时才入索引（边界可接受）。
-		syncPost := func(slug string) {
-			p, err := st.GetBySlug(slug)
-			if err != nil || p == nil {
-				return
-			}
-			if p.Status != store.StatusPublished || p.DeletedAt != "" || (!p.PublishAt.IsZero() && p.PublishAt.After(time.Now())) {
-				_ = searchIdx.Unindex(slug)
-				return
-			}
-			content := stripHTML(p.ContentHTML)
-			if p.IsPasswordProtected() {
-				content = "" // 受保护文章不泄漏正文（对齐 /search.json 口径）
-			}
-			if err := searchIdx.IndexPost(p.Slug, p.Title, content); err != nil {
-				log.Printf("search: index %s failed: %v", slug, err)
-			}
-		}
-		st.SetPostWriteHook(func(op, slug string) {
-			switch op {
-			case "delete", "purge":
-				_ = searchIdx.Unindex(slug)
-			default: // create / update / restore
-				syncPost(slug)
-			}
-		})
 		// 空表回填：旧库首次启用 FTS 时全量建索引（幂等，非空不重建）。
 		if n, err := searchIdx.Count(); err == nil && n == 0 {
 			if published, err := st.ListPublished(); err == nil && len(published) > 0 {
@@ -214,6 +188,51 @@ func main() {
 			}
 		}
 	}
+
+	// OG 社交分享图生成器（Spec 27）：字体从 assets/fonts/ 加载，缓存到 data/ogcache/。
+	ogCacheDir := filepath.Join(filepath.Dir(app.DBPath), "ogcache")
+	var ogFontPath string
+	if devMode {
+		ogFontPath = filepath.Join(app.Root, "assets", "fonts", "LXGWWenKai-Regular.ttf")
+	} else {
+		// embed 模式：从 embed FS 读出字体写入缓存目录供 gg 加载
+		if data, err := assets.FS.ReadFile("fonts/LXGWWenKai-Regular.ttf"); err == nil {
+			_ = os.MkdirAll(ogCacheDir, 0o755)
+			ogFontPath = filepath.Join(ogCacheDir, ".font.ttf")
+			_ = os.WriteFile(ogFontPath, data, 0o644)
+		}
+	}
+	ogGen := og.New(ogFontPath, ogCacheDir)
+
+	// store 写路径统一回调：搜索索引同步 + OG 缓存失效。
+	st.SetPostWriteHook(func(op, slug string) {
+		// OG 缓存失效（所有写操作均失效）
+		ogGen.Invalidate(slug)
+		// 搜索索引同步
+		if searchIdx == nil {
+			return
+		}
+		switch op {
+		case "delete", "purge":
+			_ = searchIdx.Unindex(slug)
+		default: // create / update / restore
+			p, err := st.GetBySlug(slug)
+			if err != nil || p == nil {
+				return
+			}
+			if p.Status != store.StatusPublished || p.DeletedAt != "" || (!p.PublishAt.IsZero() && p.PublishAt.After(time.Now())) {
+				_ = searchIdx.Unindex(slug)
+				return
+			}
+			content := stripHTML(p.ContentHTML)
+			if p.IsPasswordProtected() {
+				content = ""
+			}
+			if err := searchIdx.IndexPost(p.Slug, p.Title, content); err != nil {
+				log.Printf("search: index %s failed: %v", slug, err)
+			}
+		}
+	})
 
 	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
 	siteConfigPath := filepath.Join(app.Root, "config", "site.yml")
@@ -838,6 +857,33 @@ func main() {
 		}
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{"items": items})
+	})
+
+	// OG 社交分享图（Spec 27）：/og/:slug.png，磁盘缓存 + 写时失效。
+	r.GET("/og/:slug", func(c *gin.Context) {
+		slug := c.Param("slug")
+		slug = strings.TrimSuffix(slug, ".png")
+		if slug == "" {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		p, err := st.GetBySlug(slug)
+		if err != nil || p == nil || p.Status != store.StatusPublished {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		data, err := ogGen.GetOrGenerate(slug, og.PostInfo{
+			Title:     p.Title,
+			Date:      p.CreatedAt,
+			SiteTitle: site.Title,
+		})
+		if err != nil {
+			log.Printf("og: generate %s failed: %v", slug, err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Header("Cache-Control", "public, max-age=86400")
+		c.Data(http.StatusOK, "image/png", data)
 	})
 
 	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
