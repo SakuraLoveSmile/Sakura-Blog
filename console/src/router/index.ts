@@ -76,6 +76,11 @@ const router = createRouter({
           component: () => import("@/modules/friends/FriendList.vue"),
         },
         {
+          path: "plugins",
+          name: "Plugins",
+          component: () => import("@/modules/plugins/PluginLibrary.vue"),
+        },
+        {
           path: "settings",
           name: "Settings",
           component: () => import("@/modules/settings/SettingsView.vue"),

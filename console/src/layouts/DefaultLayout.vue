@@ -24,6 +24,7 @@ const navItems = [
   { path: "/notes-page", label: "笔记页", icon: "ri:booklet-line" },
   { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line" },
   { path: "/friends", label: "友链", icon: "ri:links-line" },
+  { path: "/plugins", label: "插件", icon: "ri:puzzle-line" },
   { path: "/settings", label: "设置", icon: "ri:settings-3-line" },
   { path: "/backup", label: "备份", icon: "ri:archive-line" },
 ];
