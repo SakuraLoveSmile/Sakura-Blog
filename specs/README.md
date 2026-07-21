@@ -4,19 +4,17 @@
 
 ## 已完成（合入 dev）
 
-01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · **20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5）** —— 详见各目录 spec，均已 merge（后台其后演进为 Vue Console，见 dev 分支提交历史）。
+01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · 20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5） · **23 Console 插件库 · 24 访问统计 · 25 FTS5 搜索 · 26 评论通知配置化 · 27 OG 社交分享图（Wave 6）** —— 详见各目录 spec，均已 merge。
 
-## 待办 · Wave 6（Wave 5 合入后启动）
+## 历史批次 · Wave 6（已完成，存档）
 
-| # | Spec | 分支 | 主模块（独占） |
-|---|------|------|---------------|
-| 23 | [Console 插件库](23-plugin-library/spec.md) | `feature/plugin-library` | 新 `console/src/modules/plugins/`（静态元数据 + iframe 预览） |
-| 24 | [访问统计分析](24-analytics/spec.md) | `feature/analytics` | 新 `store/pageview.go` + 埋点中间件 + Console 仪表盘图表 |
-| 25 | [站内搜索增强（FTS5）](25-search-fts/spec.md) | `feature/search-fts` | 新 `internal/search/` 包 + `/api/search` + 前端搜索适配 |
-| 26 | [评论邮件通知](26-comment-notify/spec.md) | `feature/comment-notify` | ⚠️ 核心已实现（`comment/notify.go`）；本期仅 Console SMTP 配置 tab + 单测补强 |
-| 27 | [归档页 + OG 图](27-archives-og/spec.md) | `feature/archives-og` | ⚠️ 归档页已实现；本期仅新 `internal/og/` 包（OG 图生成）+ head meta |
-
-**Wave 6 冲突矩阵**：唯一热点 `cmd/server/main.go`（24 中间件 / 25 路由 / 27 路由，均 append 式）；26 只挂 comment 包内钩子；23 纯 Console 前端零交集。**合并顺序：25 → 24 → 27 → 26**，23 随时可合。
+| # | Spec | 主模块（独占） |
+|---|------|---------------|
+| 23 | [Console 插件库](23-plugin-library/spec.md) | 新 `console/src/modules/plugins/`（静态元数据 + iframe 预览） |
+| 24 | [访问统计分析](24-analytics/spec.md) | 新 `store/pageview.go` + 埋点中间件 + Console 仪表盘图表 |
+| 25 | [站内搜索增强（FTS5）](25-search-fts/spec.md) | 新 `internal/search/` 包 + `/api/search` + 前端搜索适配 |
+| 26 | [评论邮件通知](26-comment-notify/spec.md) | notify seam 单测 + Console SMTP 配置 tab + password 脱敏 + 测试发信 |
+| 27 | [归档页 + OG 图](27-archives-og/spec.md) | 新 `internal/og/` 包（OG 图生成）+ head meta |
 
 ## 历史批次 · Wave 5（已完成，存档）
 
