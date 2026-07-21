@@ -302,6 +302,14 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 	if cc, ok := dst.(*tmpl.CommentsConfig); ok {
 		applyCommentDefaults(cc) // 评论段补运行时默认（镜像/徽章/标题不为空）
 	}
+	// menubar 服务端兖底校验：items 内 title/url 不得为空
+	if mb, ok := dst.(*tmpl.Menubar); ok {
+		for i, item := range mb.Items {
+			if item.Title == "" || item.URL == "" {
+				return fmt.Errorf("menubar item[%d]: title 和 url 不得为空", i)
+			}
+		}
+	}
 	norm, err := json.Marshal(dst)
 	if err != nil {
 		return err
