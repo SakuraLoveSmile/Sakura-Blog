@@ -143,6 +143,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 站点设置（分段）
 		authed.GET("/settings", h.getSettings)
 		authed.PUT("/settings/:section", h.updateSection)
+		authed.POST("/settings/notify/test", h.testNotify)
 
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)

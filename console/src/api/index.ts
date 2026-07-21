@@ -137,6 +137,7 @@ export const settingsApi = {
   all: () => http.get("/settings"),
   updateSection: (section: string, data: unknown) =>
     http.put(`/settings/${section}`, data),
+  testNotify: () => http.post("/settings/notify/test"),
 };
 
 // --- Friends / Links ---

@@ -96,7 +96,7 @@ async function save(section: string, payload?: unknown) {
   }
 }
 
-// 高级 JSON tab：裸编辑兜底，保存后同步回结构化表单
+// 高级 JSON tab：裸编辑兖底，保存后同步回结构化表单
 async function saveJson(section: string) {
   savingKey.value = "json:" + section;
   message.value = "";
@@ -116,6 +116,30 @@ async function saveJson(section: string) {
     message.value = e?.response?.data?.error || e?.message || "保存失败（检查 JSON 格式）";
   } finally {
     savingKey.value = "";
+  }
+}
+
+// 测试发信（Spec 26）
+const testing = ref(false);
+const testResult = ref("");
+const testOk = ref(false);
+async function testMail() {
+  testing.value = true;
+  testResult.value = "";
+  try {
+    const { data: res } = await settingsApi.testNotify();
+    if (res.ok) {
+      testOk.value = true;
+      testResult.value = "测试邮件已发送，请查收";
+    } else {
+      testOk.value = false;
+      testResult.value = res.error || "发送失败";
+    }
+  } catch (e: any) {
+    testOk.value = false;
+    testResult.value = e?.response?.data?.error || e?.message || "请求失败";
+  } finally {
+    testing.value = false;
   }
 }
 
@@ -360,6 +384,10 @@ onMounted(load);
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">发件人（留空用用户名）</label><input v-model="data.comments.notify.from" :class="inputCls" /></div>
         </div>
         <button @click="save('comments')" :disabled="savingKey === 'comments'" :class="btnCls">保存评论设置</button>
+        <button @click="testMail" :disabled="testing" class="ml-2 px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+          {{ testing ? '发送中...' : '发送测试邮件' }}
+        </button>
+        <span v-if="testResult" :class="['text-xs ml-2', testOk ? 'text-green-600' : 'text-red-500']">{{ testResult }}</span>
       </div>
 
       <!-- 文章 -->
