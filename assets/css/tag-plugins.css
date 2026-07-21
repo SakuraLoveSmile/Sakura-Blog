@@ -172,3 +172,322 @@
 :root[data-theme="dark"] .md-text .mermaid .flowchartTitleText {
   fill: #ccc;
 }
+
+/* ---------- Spec 21: ghrepo/ghuser 卡片（.tag-plugin.ghcard 基础在 main.css，此处补内部结构） ---------- */
+.tag-plugin.ghcard .ghrepo-card,
+.tag-plugin.ghcard .ghuser-card {
+  display: block;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--block-border);
+  transition: box-shadow 0.2s ease-out, transform 0.2s ease-out;
+  line-height: 1.5;
+  min-width: 240px;
+  max-width: 400px;
+}
+.tag-plugin.ghcard a.ghcard:hover .ghrepo-card,
+.tag-plugin.ghcard a.ghcard:hover .ghuser-card {
+  box-shadow: 0 12px 20px -4px rgba(0,0,0,0.15);
+  transform: translate3d(0, -2px, 0);
+}
+.tag-plugin.ghcard .repo-header,
+.tag-plugin.ghcard .user-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tag-plugin.ghcard .repo-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+.tag-plugin.ghcard .user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.tag-plugin.ghcard .repo-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-p1);
+}
+.tag-plugin.ghcard .user-info {
+  display: flex;
+  flex-direction: column;
+}
+.tag-plugin.ghcard .user-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-p1);
+}
+.tag-plugin.ghcard .user-login {
+  font-size: 0.8125rem;
+  color: var(--text-p3);
+}
+.tag-plugin.ghcard .repo-desc,
+.tag-plugin.ghcard .user-bio {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-p2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tag-plugin.ghcard .repo-stats,
+.tag-plugin.ghcard .user-stats {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-p3);
+}
+.tag-plugin.ghcard .repo-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-plugin.ghcard .lang-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ---------- Spec 20: swiper 轮播（对齐 _plugins/swiper.styl） ---------- */
+:root {
+  --swiper-theme-color: var(--theme) !important;
+}
+.swiper {
+  width: 100%;
+  border-radius: 4px;
+  --gap-p: 2rem;
+}
+.swiper:not(.swiper-initialized) {
+  display: none;
+}
+div.swiper-slide {
+  text-align: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  align-self: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  width: 50%;
+}
+div.swiper-slide img {
+  border-radius: 4px;
+}
+.swiper[width='max'] .swiper-slide {
+  width: 100%;
+}
+.swiper[width='min'] .swiper-slide {
+  width: 25%;
+}
+.swiper[effect='cards'] .swiper-slide {
+  max-width: 75%;
+}
+.swiper-button-prev,
+.swiper-button-next {
+  padding: 1rem 0.25rem;
+  margin-top: -2rem !important;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.2s ease-out;
+  --swiper-theme-color: var(--text) !important;
+}
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  color: var(--swiper-theme-color);
+}
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+  background: white !important;
+  --swiper-theme-color: var(--accent) !important;
+}
+.swiper-button-prev:after {
+  transform: translateX(-1px);
+}
+.swiper-button-next:after {
+  transform: translateX(1px);
+}
+
+/* ---------- Spec 20: rating 评分（对齐 tag-plugins/rating.styl） ---------- */
+.tag-plugin.ds-rating {
+  text-align: center;
+}
+.tag-plugin.ds-rating .header {
+  margin: .5rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.tag-plugin.ds-rating .body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tag-plugin.ds-rating .body button {
+  color: var(--theme);
+  font-size: 1rem;
+  padding: 0;
+  border-radius: 4px;
+  display: flex;
+  opacity: 0.2;
+  transition: all 0.2s ease-out;
+}
+.tag-plugin.ds-rating .body button svg {
+  font-size: 1.5em;
+  margin: 4px;
+}
+.tag-plugin.ds-rating .body button img {
+  margin: 4px;
+}
+.tag-plugin.ds-rating .body button:hover,
+.tag-plugin.ds-rating .body button.hover,
+.tag-plugin.ds-rating .body button.preview {
+  opacity: 1;
+}
+.tag-plugin.ds-rating .body span {
+  line-height: 1;
+  font-size: 1em;
+  margin: 4px;
+}
+.tag-plugin.ds-rating .footer {
+  margin: .5rem;
+  color: var(--text-p3);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+.tag-plugin.ds-rating.rated {
+  pointer-events: none;
+}
+
+/* ---------- Spec 20: swiper 轮播（对齐 _plugins/swiper.styl） ---------- */
+:root {
+  --swiper-theme-color: var(--theme) !important;
+}
+.swiper {
+  width: 100%;
+  border-radius: 4px;
+  --gap-p: 2rem;
+}
+.swiper:not(.swiper-initialized) {
+  display: none;
+}
+div.swiper-slide {
+  text-align: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  align-self: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  width: 50%;
+}
+div.swiper-slide img {
+  border-radius: 4px;
+}
+.swiper[width='max'] .swiper-slide {
+  width: 100%;
+}
+.swiper[width='min'] .swiper-slide {
+  width: 25%;
+}
+.swiper[effect='cards'] .swiper-slide {
+  max-width: 75%;
+}
+.swiper-button-prev,
+.swiper-button-next {
+  padding: 1rem 0.25rem;
+  margin-top: -2rem !important;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.2s ease-out;
+  --swiper-theme-color: var(--text) !important;
+}
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  color: var(--swiper-theme-color);
+}
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+  background: white !important;
+  --swiper-theme-color: var(--accent) !important;
+}
+.swiper-button-prev:after {
+  transform: translateX(-1px);
+}
+.swiper-button-next:after {
+  transform: translateX(1px);
+}
+
+/* ---------- Spec 20: rating 评分（对齐 tag-plugins/rating.styl） ---------- */
+.tag-plugin.ds-rating {
+  text-align: center;
+}
+.tag-plugin.ds-rating .header {
+  margin: .5rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.tag-plugin.ds-rating .body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tag-plugin.ds-rating .body button {
+  color: var(--theme);
+  font-size: 1rem;
+  padding: 0;
+  border-radius: 4px;
+  display: flex;
+  opacity: 0.2;
+  transition: all 0.2s ease-out;
+}
+.tag-plugin.ds-rating .body button svg {
+  font-size: 1.5em;
+  margin: 4px;
+}
+.tag-plugin.ds-rating .body button img {
+  margin: 4px;
+}
+.tag-plugin.ds-rating .body button:hover,
+.tag-plugin.ds-rating .body button.hover,
+.tag-plugin.ds-rating .body button.preview {
+  opacity: 1;
+}
+.tag-plugin.ds-rating .body span {
+  line-height: 1;
+  font-size: 1em;
+  margin: 4px;
+}
+.tag-plugin.ds-rating .footer {
+  margin: .5rem;
+  color: var(--text-p3);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+.tag-plugin.ds-rating.rated {
+  pointer-events: none;
+}

@@ -50,27 +50,16 @@ function setupHoverEffect(el) {
   });
 }
 
-function calculateAverage(rating = {}) {
-  const validScores = Object.entries(rating).filter(([k]) => !isNaN(Number(k)));
-  const total = validScores.reduce((sum, [k, c]) => sum + Number(k) * c, 0);
-  const votes = validScores.reduce((sum, [, c]) => sum + c, 0);
-  return votes > 0 ? (total / votes).toFixed(1) : '0.0';
-}
-
 async function loadRating(el) {
   const id = el.dataset.id;
   const api = el.dataset.api;
   if (!id || !api) return;
 
   try {
-    const res = await fetch(`${api}/info?id=${encodeURIComponent(id)}`);
+    const res = await fetch(`${api}?id=${encodeURIComponent(id)}`);
     const data = await res.json();
-    const rating = data.rating || {};
-    const avg = calculateAverage(rating);
-
-    // 计算评分人数
-    const validScores = Object.entries(rating).filter(([k]) => !isNaN(Number(k)));
-    const totalVotes = validScores.reduce((sum, [, c]) => sum + c, 0);
+    const avg = Number(data.avg || 0);
+    const totalVotes = Number(data.count || 0);
 
     // 设置平均分
     let avgEl = el.querySelector('.avg');
@@ -79,7 +68,7 @@ async function loadRating(el) {
       avgEl.className = 'avg';
       el.appendChild(avgEl);
     }
-    avgEl.textContent = `(${avg})`;
+    avgEl.textContent = `(${avg.toFixed(1)})`;
 
     // 设置评分人数
     let countEl = el.querySelector('.count');
@@ -105,8 +94,10 @@ async function submitRating(el, value) {
   el.classList.add('rated');
 
   try {
-    await fetch(`${api}/update?id=${encodeURIComponent(id)}&value=${value}`, {
-      method: 'POST'
+    await fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, score: parseInt(value) })
     });
     loadRating(el);
   } catch (e) {
@@ -140,3 +131,5 @@ if (document.readyState === 'loading') {
 } else {
   initRatings();
 }
+// PJAX 换页后重新扫描初始化（base.html 的 services scan 只加载本脚本一次）
+document.addEventListener('pjax:complete', initRatings);

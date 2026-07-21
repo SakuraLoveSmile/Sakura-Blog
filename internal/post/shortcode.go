@@ -42,18 +42,86 @@ var reOKR = regexp.MustCompile(`(?s){%\s*okr\s+(.*?)\s*%}(.*?){%\s*endokr\s*%}`)
 // okr 内部 KR 分隔符：<!-- okr krN ... -->
 var reOKRItem = regexp.MustCompile(`<!--\s*okr\s+(.*?)\s*-->`)
 
-var (
-	reTabSplit  = regexp.MustCompile(`<!--\s*tab (.*?)\s*-->`)
-	reNodeSplit = regexp.MustCompile(`<!--\s*node (.*?)\s*-->`)
-	reGalleryMD = regexp.MustCompile(`!\[(.*?)\]\((.*?)\)`)
+// folders 标签正则（块级）：{% folders [color] %} body {% endfolders %}
+var reFolders = regexp.MustCompile(`(?s){%\s*folders\s*(.*?)\s*%}(.*?){%\s*endfolders\s*%}`)
 
-	tabIndexCounter uint64
-	galleryIndex    uint64
+// grid 标签正则（块级）：{% grid ... %} body {% endgrid %}
+var reGrid = regexp.MustCompile(`(?s){%\s*grid\s*(.*?)\s*%}(.*?){%\s*endgrid\s*%}`)
+
+// box 标签正则（块级）：{% box ... %} body {% endbox %}
+var reBox = regexp.MustCompile(`(?s){%\s*box\s+(.*?)\s*%}(.*?){%\s*endbox\s*%}`)
+
+// link 标签正则（单行）：{% link url [title] [desc:...] [icon:...] %}
+var reLink = regexp.MustCompile(`{%\s*link\s+(.*?)\s*%}`)
+
+// image 标签正则（单行）：{% image src [alt] [width:...] [bg:...] [download:...] [fancybox:...] [ratio] %}
+var reImage = regexp.MustCompile(`{%\s*image\s+(.*?)\s*%}`)
+
+// mark 标签正则（单行）：{% mark text [color:...] %}
+var reMark = regexp.MustCompile(`{%\s*mark\s+(.*?)\s*%}`)
+
+// emoji 标签正则（单行）：{% emoji [source] name [height:...] %}
+var reEmoji = regexp.MustCompile(`{%\s*emoji\s+(.*?)\s*%}`)
+
+// icon 标签正则（单行）：{% icon key [color:...] [style:...] %}
+var reIcon = regexp.MustCompile(`{%\s*icon\s+(.*?)\s*%}`)
+
+// hashtag 标签正则（单行）：{% hashtag text [href] [color:...] %}
+var reHashtag = regexp.MustCompile(`{%\s*hashtag\s+(.*?)\s*%}`)
+
+// ghrepo 标签正则（单行）：{% ghrepo user/repo %}
+var reGHRepo = regexp.MustCompile(`{%\s*ghrepo\s+(.*?)\s*%}`)
+
+// ghuser 标签正则（单行）：{% ghuser username %}
+var reGHUser = regexp.MustCompile(`{%\s*ghuser\s+(.*?)\s*%}`)
+
+// video 标签正则（单行）：{% video src %}
+var reVideo = regexp.MustCompile(`{%\s*video\s+(.*?)\s*%}`)
+
+// audio 标签正则（单行）：{% audio src %}
+var reAudio = regexp.MustCompile(`{%\s*audio\s+(.*?)\s*%}`)
+
+// copy 标签正则（单行）：{% copy text %}
+var reCopy = regexp.MustCompile(`{%\s*copy\s+(.*?)\s*%}`)
+
+// rating 标签正则（单行）：{% rating id %}
+var reRating = regexp.MustCompile(`{%\s*rating\s+(.*?)\s*%}`)
+
+// ghcard 标签正则（单行）：{% ghcard user/repo %}
+var reGHCard = regexp.MustCompile(`{%\s*ghcard\s+(.*?)\s*%}`)
+
+// poetry 标签正则（块级）：{% poetry ... %} body {% endpoetry %}
+var rePoetry = regexp.MustCompile(`(?s){%\s*poetry\s*(.*?)\s*%}(.*?){%\s*endpoetry\s*%}`)
+
+// swiper 标签正则（块级）：{% swiper ... %} body {% endswiper %}
+var reSwiper = regexp.MustCompile(`(?s){%\s*swiper\s*(.*?)\s*%}(.*?){%\s*endswiper\s*%}`)
+
+// chat 标签正则（块级）：{% chat ... %} body {% endchat %}
+var reChat = regexp.MustCompile(`(?s){%\s*chat\s+(.*?)\s*%}(.*?){%\s*endchat\s*%}`)
+
+var (
+	reTabSplit    = regexp.MustCompile(`<!--\s*tab (.*?)\s*-->`)
+	reNodeSplit   = regexp.MustCompile(`<!--\s*node (.*?)\s*-->`)
+	reFolderSplit = regexp.MustCompile(`<!--\s*folder (.*?)\s*-->`)
+	reCellSplit   = regexp.MustCompile(`<!--\s*cell(.*?)-->`)
+	reGalleryMD   = regexp.MustCompile(`!\[(.*?)\]\((.*?)\)`)
+
+	// swiper 从渲染后的 Markdown 中提取 img 标签
+	reSwiperImg = regexp.MustCompile(`(?i)<img(.*?)src="(.*?)"(.*?)>`)
+	// chat 注释单元格：<!-- chattip ... --> / <!-- chatcell ... -->
+	reChatComment = regexp.MustCompile(`(?s)<!--\s*(.*?)\s*-->`)
+	// chat 单元格参数：user:/md:/tag:/quote:
+	reChatParam = regexp.MustCompile(`(?:^|\s)(user|md|tag|quote):`)
+
+	tabIndexCounter  uint64
+	galleryIndex     uint64
+	hashtagColorIdx  uint64
+	copyIndex        uint64
 )
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, iconFunc func(string) string) string {
+func processShortcodes(md string, renderMD func(string) string, iconFunc func(string) string, ghClient GHClient) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -134,6 +202,33 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderOKR(parts[1], parts[2], renderMD)
 	})
 
+	// 5.6 folders（块级，<!-- folder title --> 分隔）
+	md = reFolders.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reFolders.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderFolders(parts[1], parts[2], renderMD)
+	})
+
+	// 5.7 grid（块级，<!-- cell --> 分隔）
+	md = reGrid.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reGrid.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderGrid(parts[1], parts[2], renderMD)
+	})
+
+	// 5.8 box（块级）
+	md = reBox.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reBox.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderBox(parts[1], parts[2], renderMD)
+	})
+
 	// 6. button（单行）
 	md = reButton.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reButton.FindStringSubmatch(match)
@@ -190,6 +285,174 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 			return match
 		}
 		return renderQuot(parts[1], iconFunc)
+	})
+
+	// 10. link（单行，链接卡片）
+	md = reLink.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reLink.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderLink(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 11. image（单行，增强图片）
+	md = reImage.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reImage.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderImage(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 12. mark（单行，荧光标记）
+	md = reMark.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reMark.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderMark(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 13. emoji（单行，表情图）
+	md = reEmoji.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reEmoji.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderEmoji(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 14. icon（单行，内联图标）
+	md = reIcon.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reIcon.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderIcon(parts[1], iconFunc)
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 15. hashtag（单行，话题标签）
+	md = reHashtag.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reHashtag.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderHashtag(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 16. ghrepo（单行，GitHub 仓库卡片）
+	md = reGHRepo.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reGHRepo.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderGHRepo(parts[1], ghClient)
+	})
+
+	// 17. ghuser（单行，GitHub 用户卡片）
+	md = reGHUser.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reGHUser.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderGHUser(parts[1], ghClient)
+	})
+
+	// 18. video（单行，视频播放器）
+	md = reVideo.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reVideo.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderVideo(parts[1])
+	})
+
+	// 19. audio（单行，音频播放器）
+	md = reAudio.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reAudio.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderAudio(parts[1])
+	})
+
+	// 20. copy（单行，复制按钮）
+	md = reCopy.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reCopy.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderCopy(parts[1])
+	})
+
+	// 21. rating（单行，评分组件）
+	md = reRating.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reRating.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderRating(parts[1], iconFunc)
+	})
+
+	// 22. ghcard（单行，github-readme-stats 卡片）
+	md = reGHCard.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reGHCard.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderGHCard(parts[1])
+	})
+
+	// 23. poetry（块级，诗词）
+	md = rePoetry.ReplaceAllStringFunc(md, func(match string) string {
+		parts := rePoetry.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderPoetry(parts[1], strings.TrimSpace(parts[2]), renderMD)
+	})
+
+	// 24. swiper（块级，图片轮播）
+	md = reSwiper.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reSwiper.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderSwiper(parts[1], strings.TrimSpace(parts[2]), renderMD)
+	})
+
+	// 25. chat（块级，聊天消息）
+	md = reChat.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reChat.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderChat(parts[1], parts[2], renderMD)
 	})
 
 	return md
@@ -698,5 +961,840 @@ func renderQuot(argsStr string, iconFunc func(string) string) string {
 	fmt.Fprintf(&sb, `<span class="text">%s</span>`, text)
 	sb.WriteString(iconHTML(suffixKey))
 	fmt.Fprintf(&sb, `</%s></div>`, el)
+	return sb.String()
+}
+
+// ---------- Spec 16: 标签插件二期（link/image/folders/grid/box/mark/emoji/icon/hashtag） ----------
+
+// renderLink 渲染 {% link url [title] [desc:...] [icon:...] %} 为 .tag-plugin.link 卡片。
+func renderLink(argsStr string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"icon", "desc"}, []string{"url", "title"})
+	url := named["url"]
+	if url == "" {
+		return "", false
+	}
+	title := named["title"]
+	if title == "" {
+		title = url
+	}
+	desc := named["desc"]
+	icon := named["icon"]
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin link dis-select">`)
+	if desc != "" && desc != "false" {
+		// rich 模式（上下结构）
+		sb.WriteString(`<a class="link-card rich" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		if strings.Contains(url, "://") {
+			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
+		}
+		sb.WriteString(`>`)
+		sb.WriteString(`<div class="top">`)
+		sb.WriteString(`<div class="lazy img" data-bg="` + html.EscapeString(icon) + `"></div>`)
+		sb.WriteString(`<span class="cap link footnote">` + html.EscapeString(url) + `</span>`)
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="bottom">`)
+		sb.WriteString(`<span class="title">` + html.EscapeString(title) + `</span>`)
+		sb.WriteString(`<span class="cap desc footnote">` + html.EscapeString(desc) + `</span>`)
+		sb.WriteString(`</div>`)
+	} else {
+		// plain 模式（左右结构）
+		sb.WriteString(`<a class="link-card plain" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		if strings.Contains(url, "://") {
+			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
+		}
+		sb.WriteString(`>`)
+		sb.WriteString(`<div class="left">`)
+		sb.WriteString(`<span class="title">` + html.EscapeString(title) + `</span>`)
+		sb.WriteString(`<span class="cap link footnote">` + html.EscapeString(url) + `</span>`)
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="right">`)
+		if icon != "" {
+			sb.WriteString(`<div class="lazy img" data-bg="` + html.EscapeString(icon) + `"></div>`)
+		} else {
+			sb.WriteString(`<div class="lazy img" data-bg=""></div>`)
+		}
+		sb.WriteString(`</div>`)
+	}
+	sb.WriteString(`</a></div>`)
+	return sb.String(), true
+}
+
+// renderImage 渲染 {% image src [alt] [width:...] [bg:...] [download:...] [fancybox:...] [ratio] %}。
+func renderImage(argsStr string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"width", "height", "bg", "download", "padding", "fancybox", "ratio"}, []string{"src", "alt"})
+	src := named["src"]
+	if src == "" {
+		return "", false
+	}
+	alt := named["alt"]
+
+	var style strings.Builder
+	if w := named["width"]; w != "" {
+		style.WriteString("width:" + w + ";")
+	}
+	if h := named["height"]; h != "" {
+		style.WriteString("height:" + h + ";")
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin image">`)
+	// image-bg
+	sb.WriteString(`<div class="image-bg"`)
+	bgStyle := ""
+	if bg := named["bg"]; bg != "" {
+		bgStyle += "background:" + bg + ";"
+	}
+	if p := named["padding"]; p != "" {
+		bgStyle += "padding:" + p + ";"
+	}
+	if r := named["ratio"]; r != "" {
+		bgStyle += "aspect-ratio:" + r + ";"
+		if style.Len() > 0 {
+			bgStyle += style.String()
+		}
+	} else if style.Len() > 0 {
+		bgStyle += "width:100%;"
+	}
+	if bgStyle != "" {
+		sb.WriteString(` style="` + bgStyle + `"`)
+	}
+	sb.WriteString(`>`)
+	// img
+	sb.WriteString(`<img class="lazy" src="` + html.EscapeString(src) + `" data-src="` + html.EscapeString(src) + `"`)
+	if alt != "" {
+		sb.WriteString(` alt="` + html.EscapeString(alt) + `"`)
+	}
+	if named["ratio"] == "" && style.Len() > 0 {
+		sb.WriteString(` style="` + style.String() + `"`)
+	}
+	sb.WriteString(`/>`)
+	// download
+	if dl := named["download"]; dl != "" && dl != "false" {
+		href := dl
+		if dl == "true" {
+			href = src
+		}
+		sb.WriteString(`<a class="image-download blur" style="opacity:0" target="_blank"`)
+		if alt != "" {
+			sb.WriteString(` download="` + html.EscapeString(alt) + `"`)
+		}
+		sb.WriteString(` href="` + html.EscapeString(href) + `"><svg class="icon" style="width: 1em; height: 1em;vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M561.00682908 685.55838913a111.03077546 111.03077546 0 0 1-106.8895062 0L256.23182837 487.72885783a55.96309219 55.96309219 0 0 1 79.13181253-79.18777574L450.70357448 523.88101491V181.55477937a55.96309219 55.96309219 0 0 1 111.92618438 0v344.06109173l117.07478902-117.07478901a55.96309219 55.96309219 0 0 1 79.13181252 79.18777574zM282.81429711 797.1487951h447.70473912a55.96309219 55.96309219 0 0 1 0 111.92618438H282.81429711a55.96309219 55.96309219 0 0 1 0-111.92618438z"></path></svg></a>`)
+	}
+	sb.WriteString(`</div>`)
+	// caption
+	if alt != "" {
+		sb.WriteString(`<div class="image-meta"><span class="image-caption center">` + html.EscapeString(alt) + `</span></div>`)
+	}
+	sb.WriteString(`</div>`)
+	return sb.String(), true
+}
+
+// renderFolders 渲染 {% folders [color] %}...{% endfolders %}。
+func renderFolders(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"color"}, nil)
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin colorful folders"`)
+	if c := named["color"]; c != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, c)
+	}
+	sb.WriteString(`>`)
+
+	pairs := splitByMarker(reFolderSplit, body)
+	for i, pair := range pairs {
+		fmt.Fprintf(&sb, `<details class="folder" index="%d">`, i)
+		fmt.Fprintf(&sb, `<summary>%s</summary>`, strings.TrimSpace(renderMD(pair.header)))
+		rendered := strings.TrimSpace(renderMD(pair.body))
+		fmt.Fprintf(&sb, `<div class="body">%s</div></details>`, rendered)
+	}
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderGrid 渲染 {% grid [bg:...] [w:...] [c:...] [gap:...] [br:...] %}...{% endgrid %}。
+func renderGrid(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"bg", "w", "c", "gap", "br"}, nil)
+	w := named["w"]
+	c := named["c"]
+	if w == "" && c == "" {
+		w = "240px"
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin grid"`)
+	if bg := named["bg"]; bg != "" {
+		fmt.Fprintf(&sb, ` bg="%s"`, bg)
+	}
+	sb.WriteString(` style="`)
+	if w != "" {
+		fmt.Fprintf(&sb, `grid-template-columns: repeat(auto-fill, minmax(%s, 1fr));`, w)
+	} else if c != "" {
+		fmt.Fprintf(&sb, `grid-template-columns: repeat(%s, 1fr);`, c)
+	}
+	if gap := named["gap"]; gap != "" {
+		fmt.Fprintf(&sb, `grid-gap:%s;`, gap)
+	}
+	sb.WriteString(`">`)
+
+	// 切分 cells
+	cells := reCellSplit.Split(body, -1)
+	for _, cell := range cells {
+		cell = strings.TrimSpace(cell)
+		if cell == "" {
+			continue
+		}
+		sb.WriteString(`<div class="cell"`)
+		if br := named["br"]; br != "" {
+			fmt.Fprintf(&sb, ` style="border-radius:%s;"`, br)
+		}
+		sb.WriteString(`>`)
+		sb.WriteString(strings.TrimSpace(renderMD(cell)))
+		sb.WriteString(`</div>`)
+	}
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderBox 渲染 {% box [color:...] [child:...] title %} body {% endbox %}。
+func renderBox(argsStr, body string, renderMD func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"color", "child"}, []string{"title"})
+	title := named["title"]
+	if title == "" && len(positional) > 0 {
+		title = strings.Join(positional, " ")
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin colorful note"`)
+	if c := named["color"]; c != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, c)
+	}
+	if ch := named["child"]; ch != "" {
+		fmt.Fprintf(&sb, ` child="%s"`, ch)
+	}
+	sb.WriteString(`>`)
+	if title != "" {
+		fmt.Fprintf(&sb, `<div class="title"><strong>%s</strong></div>`, strings.TrimSpace(renderMD(title)))
+	}
+	rendered := strings.TrimSpace(renderMD(body))
+	fmt.Fprintf(&sb, `<div class="body">%s</div></div>`, rendered)
+	return sb.String()
+}
+
+// renderMark 渲染 {% mark text [color:...] %}。
+func renderMark(argsStr string) (string, bool) {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"color"}, []string{"text"})
+	text := named["text"]
+	if text == "" {
+		text = strings.Join(positional, " ")
+	}
+	if text == "" {
+		return "", false
+	}
+	color := named["color"]
+	if color == "" {
+		color = "yellow"
+	}
+	return fmt.Sprintf(`<mark class="tag-plugin colorful mark" color="%s">%s</mark>`, color, text), true
+}
+
+// emojiSources 内置 emoji CDN 映射，对齐原版 _config.yml tag_plugins.emoji。
+var emojiSources = map[string]string{
+	"default": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif",
+	"twemoji": "https://gcore.jsdelivr.net/gh/twitter/twemoji/assets/svg/{name}.svg",
+}
+
+// renderEmoji 渲染 {% emoji [source] name [height:...] %}。
+func renderEmoji(argsStr string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"height"}, []string{"source", "name"})
+	source := named["source"]
+	name := named["name"]
+	height := named["height"]
+
+	if source == "" {
+		return "", false
+	}
+	// 省略 source 时，第一个位置参数实际是 name，用默认源
+	if name == "" {
+		name = source
+		source = "default"
+	}
+	tpl, ok := emojiSources[source]
+	if !ok {
+		return "", false
+	}
+	url := strings.Replace(tpl, "{name}", name, 1)
+
+	var sb strings.Builder
+	sb.WriteString(`<span class="tag-plugin emoji">`)
+	sb.WriteString(`<img no-lazy="" class="inline" src="` + html.EscapeString(url) + `"`)
+	if height != "" {
+		sb.WriteString(` style="height:` + height + `"`)
+	}
+	sb.WriteString(`/>`)
+	sb.WriteString(`</span>`)
+	return sb.String(), true
+}
+
+// renderIcon 渲染 {% icon key [color:...] [style:...] %}。
+func renderIcon(argsStr string, iconFunc func(string) string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"color", "style"}, []string{"key", "text"})
+	key := named["key"]
+	if key == "" {
+		return "", false
+	}
+	color := named["color"]
+	if color == "" {
+		color = "blue"
+	}
+	text := named["text"]
+
+	var sb strings.Builder
+	if text != "" {
+		sb.WriteString(`<div class="tag-plugin icon-wrap">`)
+	}
+	fmt.Fprintf(&sb, `<span class="tag-plugin icon colorful" color="%s">`, color)
+	if iconFunc != nil {
+		sb.WriteString(iconFunc(key))
+	}
+	sb.WriteString(`</span>`)
+	if text != "" {
+		fmt.Fprintf(&sb, `<span class="text">%s</span></div>`, text)
+	}
+	return sb.String(), true
+}
+
+// hashtagColors 话题标签循环色板，对齐原版 hashtag.js。
+var hashtagColors = []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple"}
+
+// hashtagSVG 话题标签图标，对齐原版 hashtag.js 内联 SVG。
+const hashtagSVG = `<svg t="1701408144765" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="200" height="200"><path d="M426.6 64.8c34.8 5.8 58.4 38.8 52.6 73.6l-19.6 117.6h190.2l23-138.6c5.8-34.8 38.8-58.4 73.6-52.6s58.4 38.8 52.6 73.6l-19.4 117.6H896c35.4 0 64 28.6 64 64s-28.6 64-64 64h-137.8l-42.6 256H832c35.4 0 64 28.6 64 64s-28.6 64-64 64h-137.8l-23 138.6c-5.8 34.8-38.8 58.4-73.6 52.6s-58.4-38.8-52.6-73.6l19.6-117.4h-190.4l-23 138.6c-5.8 34.8-38.8 58.4-73.6 52.6s-58.4-38.8-52.6-73.6l19.4-117.8H128c-35.4 0-64-28.6-64-64s28.6-64 64-64h137.8l42.6-256H192c-35.4 0-64-28.6-64-64s28.6-64 64-64h137.8l23-138.6c5.8-34.8 38.8-58.4 73.6-52.6z m11.6 319.2l-42.6 256h190.2l42.6-256h-190.2z"></path></svg>`
+
+// renderHashtag 渲染 {% hashtag text [href] [color:...] %}。
+func renderHashtag(argsStr string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"color"}, []string{"text", "href"})
+	text := named["text"]
+	if text == "" {
+		return "", false
+	}
+	href := named["href"]
+	color := named["color"]
+	if color == "" {
+		idx := atomic.AddUint64(&hashtagColorIdx, 1) - 1
+		color = hashtagColors[idx%uint64(len(hashtagColors))]
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<a class="tag-plugin colorful hashtag"`)
+	fmt.Fprintf(&sb, ` color="%s"`, color)
+	if href != "" {
+		fmt.Fprintf(&sb, ` href="%s"`, html.EscapeString(href))
+	}
+	sb.WriteString(`>`)
+	sb.WriteString(hashtagSVG)
+	fmt.Fprintf(&sb, `<span>%s</span>`, text)
+	sb.WriteString(`</a>`)
+	return sb.String(), true
+}
+
+// ---------- Spec 21: GitHub widgets（ghrepo/ghuser 卡片） ----------
+
+// languageColors 常见编程语言色点颜色，对齐 GitHub linguist。
+var languageColors = map[string]string{
+	"Go": "#00ADD8", "Python": "#3572A5", "JavaScript": "#F1E05A", "TypeScript": "#3178C6",
+	"Java": "#B07219", "C": "#555555", "C++": "#F34B7D", "C#": "#178600",
+	"Rust": "#DEA584", "Ruby": "#701516", "PHP": "#4F5D95", "Swift": "#F05138",
+	"Kotlin": "#A97BFF", "Dart": "#00B4AB", "Shell": "#89E051", "HTML": "#E34C26",
+	"CSS": "#563D7C", "Vue": "#41B883", "Lua": "#000080", "Zig": "#EC915C",
+}
+
+// renderGHRepo 渲染 {% ghrepo user/repo %} 为静态仓库卡片。API 失败时降级为纯链接。
+func renderGHRepo(argsStr string, ghClient GHClient) string {
+	repoPath := strings.TrimSpace(argsStr)
+	if repoPath == "" {
+		return ""
+	}
+	// 支持 "user/repo" 或完整 URL
+	repoPath = strings.TrimPrefix(repoPath, "https://github.com/")
+	parts := strings.SplitN(repoPath, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Sprintf(`<a href="https://github.com/%s">%s</a>`, html.EscapeString(repoPath), html.EscapeString(repoPath))
+	}
+	owner, repo := parts[0], parts[1]
+	fullURL := "https://github.com/" + owner + "/" + repo
+
+	if ghClient == nil {
+		return ghRepoFallback(fullURL, owner+"/"+repo)
+	}
+	info, err := ghClient.GetRepo(owner, repo)
+	if err != nil {
+		return ghRepoFallback(fullURL, owner+"/"+repo)
+	}
+
+	langDot := ""
+	if info.Language != "" {
+		color := languageColors[info.Language]
+		if color == "" {
+			color = "#8b8b8b"
+		}
+		langDot = fmt.Sprintf(`<span class="lang-dot" style="background:%s"></span><span>%s</span>`, color, html.EscapeString(info.Language))
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin ghcard"><a class="ghcard" href="` + html.EscapeString(fullURL) + `" target="_blank" rel="external nofollow noopener noreferrer">`)
+	sb.WriteString(`<div class="ghrepo-card">`)
+	// 头部：头像 + 全名
+	sb.WriteString(`<div class="repo-header">`)
+	if info.OwnerAvatar != "" {
+		sb.WriteString(`<img class="repo-avatar" src="` + html.EscapeString(info.OwnerAvatar) + `&s=40" alt=""/>`)
+	}
+	sb.WriteString(`<span class="repo-name">` + html.EscapeString(info.FullName) + `</span>`)
+	sb.WriteString(`</div>`)
+	// 描述
+	if info.Description != "" {
+		sb.WriteString(`<div class="repo-desc">` + html.EscapeString(info.Description) + `</div>`)
+	}
+	// 统计
+	sb.WriteString(`<div class="repo-stats">`)
+	sb.WriteString(fmt.Sprintf(`<span>⭐ %d</span>`, info.Stars))
+	sb.WriteString(fmt.Sprintf(`<span>🍴 %d</span>`, info.Forks))
+	if langDot != "" {
+		sb.WriteString(`<span class="repo-lang">` + langDot + `</span>`)
+	}
+	if info.License != "" {
+		sb.WriteString(`<span>📄 ` + html.EscapeString(info.License) + `</span>`)
+	}
+	sb.WriteString(`</div>`)
+	sb.WriteString(`</div></a></div>`)
+	return sb.String()
+}
+
+// ghRepoFallback API 失败时的纯链接降级。
+func ghRepoFallback(url, name string) string {
+	return fmt.Sprintf(`<div class="tag-plugin ghcard"><a class="ghcard" href="%s" target="_blank" rel="external nofollow noopener noreferrer"><div class="ghrepo-card"><div class="repo-header"><span class="repo-name">%s</span></div></div></a></div>`,
+		html.EscapeString(url), html.EscapeString(name))
+}
+
+// renderGHUser 渲染 {% ghuser username %} 为静态用户卡片。API 失败时降级为纯链接。
+func renderGHUser(argsStr string, ghClient GHClient) string {
+	username := strings.TrimSpace(argsStr)
+	if username == "" {
+		return ""
+	}
+	username = strings.TrimPrefix(username, "https://github.com/")
+	username = strings.TrimPrefix(username, "@")
+	fullURL := "https://github.com/" + username
+
+	if ghClient == nil {
+		return ghUserFallback(fullURL, username)
+	}
+	info, err := ghClient.GetUser(username)
+	if err != nil {
+		return ghUserFallback(fullURL, username)
+	}
+
+	displayName := info.Name
+	if displayName == "" {
+		displayName = info.Login
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin ghcard"><a class="ghcard" href="` + html.EscapeString(fullURL) + `" target="_blank" rel="external nofollow noopener noreferrer">`)
+	sb.WriteString(`<div class="ghuser-card">`)
+	// 头像 + 名称
+	sb.WriteString(`<div class="user-header">`)
+	if info.AvatarURL != "" {
+		sb.WriteString(`<img class="user-avatar" src="` + html.EscapeString(info.AvatarURL) + `&s=64" alt=""/>`)
+	}
+	sb.WriteString(`<div class="user-info">`)
+	sb.WriteString(`<span class="user-name">` + html.EscapeString(displayName) + `</span>`)
+	sb.WriteString(`<span class="user-login">@` + html.EscapeString(info.Login) + `</span>`)
+	sb.WriteString(`</div></div>`)
+	// Bio
+	if info.Bio != "" {
+		sb.WriteString(`<div class="user-bio">` + html.EscapeString(info.Bio) + `</div>`)
+	}
+	// 统计
+	sb.WriteString(`<div class="user-stats">`)
+	sb.WriteString(fmt.Sprintf(`<span>%d followers</span>`, info.Followers))
+	sb.WriteString(fmt.Sprintf(`<span>%d repos</span>`, info.Repos))
+	sb.WriteString(`</div>`)
+	sb.WriteString(`</div></a></div>`)
+	return sb.String()
+}
+
+// ghUserFallback API 失败时的纯链接降级。
+func ghUserFallback(url, username string) string {
+	return fmt.Sprintf(`<div class="tag-plugin ghcard"><a class="ghcard" href="%s" target="_blank" rel="external nofollow noopener noreferrer"><div class="ghuser-card"><div class="user-header"><div class="user-info"><span class="user-name">@%s</span></div></div></div></a></div>`,
+		html.EscapeString(url), html.EscapeString(username))
+}
+
+// ---------- Spec 20: 标签插件三期（video/audio/copy/poetry/rating/swiper/chat/ghcard） ----------
+
+// renderVideo 渲染 {% video src %}，支持 bilibili/youtube 嵌入与本地视频。
+func renderVideo(argsStr string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"type", "bilibili", "youtube", "ratio", "width", "autoplay"}, []string{"src"})
+	width := named["width"]
+	if width == "" {
+		width = "100%"
+	}
+	ratio := named["ratio"]
+	if ratio == "" {
+		ratio = "1.7777777777777777" // 16/9
+	}
+	if bv := named["bilibili"]; bv != "" {
+		autoplay := named["autoplay"]
+		if autoplay == "" {
+			autoplay = "false"
+		}
+		return fmt.Sprintf(`<div class="tag-plugin video-player" style="aspect-ratio:%s;max-width:%s;"><iframe src="https://player.bilibili.com/player.html?bvid=%s&autoplay=%s" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe></div>`,
+			ratio, width, html.EscapeString(bv), autoplay)
+	}
+	if yt := named["youtube"]; yt != "" {
+		autoplay := "0"
+		if named["autoplay"] == "true" || named["autoplay"] == "1" {
+			autoplay = "1&mute=1"
+		}
+		return fmt.Sprintf(`<div class="tag-plugin video-player" style="aspect-ratio:%s;max-width:%s;"><iframe style="border:none" src="https://www.youtube.com/embed/%s?rel=0&disablekb=1&playsinline=1&autoplay=%s" picture-in-picture="true" allowfullscreen="true"></iframe></div>`,
+			ratio, width, html.EscapeString(yt), autoplay)
+	}
+	typ := named["type"]
+	if typ == "" {
+		typ = "video/mp4"
+	}
+	return fmt.Sprintf(`<div class="tag-plugin video-player" style="max-width:%s;"><video controls preload playsinline webkit-playsinline><source src="%s" type="%s">Your browser does not support the video tag.</video></div>`,
+		width, html.EscapeString(named["src"]), typ)
+}
+
+// renderAudio 渲染 {% audio src %}，支持网易云外链与本地音频。
+func renderAudio(argsStr string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"type", "netease", "autoplay"}, []string{"src"})
+	if netease := named["netease"]; netease != "" {
+		typ := named["type"]
+		if typ == "" {
+			typ = "2"
+		}
+		auto := "0"
+		if named["autoplay"] == "true" {
+			auto = "1"
+		}
+		return fmt.Sprintf(`<div class="tag-plugin audio"><iframe src="//music.163.com/outchain/player?type=%s&id=%s&auto=%s&height=32" frameborder="no" border="0" marginwidth="0" marginheight="0" width=288px height=52></iframe></div>`,
+			typ, html.EscapeString(netease), auto)
+	}
+	typ := named["type"]
+	if typ == "" {
+		typ = "audio/mp3"
+	}
+	return fmt.Sprintf(`<div class="tag-plugin audio"><audio controls preload><source src="%s" type="%s">Your browser does not support the audio tag.</audio></div>`,
+		html.EscapeString(named["src"]), typ)
+}
+
+// renderCopy 渲染 {% copy text %} / {% copy git user/repo %} 为复制按钮。
+func renderCopy(argsStr string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"git", "prefix"}, []string{"text"})
+	text := named["text"]
+	if text == "" {
+		return ""
+	}
+	if git := named["git"]; git != "" {
+		text = strings.TrimPrefix(text, "/")
+		switch git {
+		case "ssh":
+			text = "git@github.com:" + text + ".git"
+		case "gh":
+			text = "gh repo clone " + text
+		default:
+			text = "https://github.com/" + text + ".git"
+		}
+	}
+	id := fmt.Sprintf("copy_%d", atomic.AddUint64(&copyIndex, 1))
+	const toast = "复制成功"
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin copy">`)
+	if prefix := named["prefix"]; prefix != "" {
+		sb.WriteString(`<span>` + html.EscapeString(prefix) + `</span>`)
+	}
+	sb.WriteString(fmt.Sprintf(`<input class="copy-area" id="%s" value="%s">`, id, html.EscapeString(text)))
+	sb.WriteString(fmt.Sprintf(`<button class="copy-btn" onclick="util.copy(&quot;%s&quot;,&quot;%s&quot;)">`, id, toast))
+	sb.WriteString(`<svg class="icon copy-btn" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M5.75 1a.75.75 0 00-.75.75v3c0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75v-3a.75.75 0 00-.75-.75h-4.5zm.75 3V2.5h3V4h-3zm-2.874-.467a.75.75 0 00-.752-1.298A1.75 1.75 0 002 3.75v9.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0014 13.25v-9.5a1.75 1.75 0 00-.874-1.515.75.75 0 10-.752 1.298.25.25 0 01.126.217v9.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-9.5a.25.25 0 01.126-.217z"></path></svg>`)
+	sb.WriteString(`</button></div>`)
+	return sb.String()
+}
+
+// renderRating 渲染 {% rating id %} 为评分组件，对接本地 /api/rating 数据服务。
+func renderRating(argsStr string, iconFunc func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"id", "icon"}, []string{"title"})
+	id := named["id"]
+	if id == "" {
+		id = "default"
+	}
+	iconKey := named["icon"]
+	if iconKey == "" {
+		iconKey = "rating:star"
+	}
+	star := ""
+	if iconFunc != nil {
+		star = iconFunc(iconKey)
+	}
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf(`<div class="tag-plugin ds-rating" data-api="/api/rating" data-id="%s">`, html.EscapeString(id)))
+	if title := named["title"]; title != "" {
+		sb.WriteString(`<div class="header"><span>` + html.EscapeString(title) + `</span></div>`)
+	}
+	sb.WriteString(`<div class="body">`)
+	for i := 1; i <= 5; i++ {
+		sb.WriteString(fmt.Sprintf(`<button class="star" data-value="%d">%s</button>`, i, star))
+	}
+	sb.WriteString(`<span class="avg">(0.0)</span></div>`)
+	sb.WriteString(`<div class="footer"><span class="count">0</span><span class="suffix">人已评分</span></div>`)
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderGHCard 渲染 {% ghcard user/repo %} / {% ghcard user %}，经本地 /api/gh/card 代理。
+func renderGHCard(argsStr string) string {
+	params := []string{"show_owner", "theme", "title_color", "text_color", "icon_color", "bg_color", "hide_border", "cache_seconds", "locale"}
+	named, _ := parseNamedPositionalArgs(argsStr, params, []string{"repo"})
+	path := named["repo"]
+	if path == "" {
+		return ""
+	}
+	var query string
+	if strings.Contains(path, "/") {
+		ps := strings.SplitN(path, "/", 2)
+		query = "username=" + ps[0] + "&repo=" + ps[1]
+	} else {
+		query = "username=" + path
+	}
+	for _, k := range params {
+		if v := named[k]; v != "" {
+			query += "&" + k + "=" + v
+		}
+	}
+	if !strings.Contains(query, "show_owner=") {
+		query += "&show_owner=true"
+	}
+	return `<div class="tag-plugin ghcard"><a class="ghcard" rel="external nofollow noopener noreferrer" href="https://github.com/` + html.EscapeString(path) + `"><img src="/api/gh/card?` + html.EscapeString(query) + `"/></a></div>`
+}
+
+// renderPoetry 渲染 {% poetry [title] [author:] [date:] [footer:] %} body {% endpoetry %}。
+func renderPoetry(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"author", "date", "footer"}, []string{"title"})
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin poetry"><div class="content">`)
+	if title := named["title"]; title != "" {
+		sb.WriteString(`<div class="title">` + html.EscapeString(title) + `</div>`)
+	}
+	if named["author"] != "" || named["date"] != "" {
+		sb.WriteString(`<div class="meta">`)
+		if a := named["author"]; a != "" {
+			sb.WriteString(`<span>` + html.EscapeString(a) + `</span>`)
+		}
+		if d := named["date"]; d != "" {
+			sb.WriteString(`<span>` + html.EscapeString(d) + `</span>`)
+		}
+		sb.WriteString(`</div>`)
+	}
+	rendered := strings.ReplaceAll(renderMD(body), "\n", "")
+	sb.WriteString(`<div class="body">` + rendered + `</div>`)
+	if footer := named["footer"]; footer != "" {
+		sb.WriteString(`<div class="footer">` + html.EscapeString(footer) + `</div>`)
+	}
+	sb.WriteString(`</div></div>`)
+	return sb.String()
+}
+
+// renderSwiper 渲染 {% swiper [width:] [effect:] %} imgs {% endswiper %} 为图片轮播。
+func renderSwiper(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"width", "effect"}, nil)
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin swiper fancybox" id="swiper-api"`)
+	if w := named["width"]; w != "" {
+		sb.WriteString(` width="` + html.EscapeString(w) + `"`)
+	}
+	if e := named["effect"]; e != "" {
+		sb.WriteString(` effect="` + html.EscapeString(e) + `"`)
+	}
+	sb.WriteString(`><div class="swiper-wrapper">`)
+	for _, img := range reSwiperImg.FindAllString(renderMD(body), -1) {
+		img = strings.Replace(img, "<img src", "<img no-lazy src", 1)
+		sb.WriteString(`<div class="swiper-slide">` + img + `</div>`)
+	}
+	sb.WriteString(`</div><div class="swiper-pagination"></div><div class="swiper-button-prev blur"></div><div class="swiper-button-next blur"></div></div>`)
+	return sb.String()
+}
+
+// chatUser 聊天参与者（从 body 顶部 YAML 块解析）。
+type chatUser struct {
+	Name           string
+	Avatar         string
+	LabelText      string
+	LabelTextColor string
+	LabelBgColor   string
+}
+
+// chatCell 聊天单元格（chattip 时间提示 / chatcell 消息）。
+type chatCell struct {
+	kind   string // chattip | chatcell
+	text   string // chattip 文本
+	params map[string]string
+}
+
+// parseChatUsers 解析 body 顶部（首个 <!-- 注释之前）的简易 YAML 用户块。
+func parseChatUsers(body string) map[string]chatUser {
+	users := make(map[string]chatUser)
+	yamlBlock := body
+	if idx := strings.Index(body, "<!--"); idx >= 0 {
+		yamlBlock = body[:idx]
+	}
+	var cur string
+	inLabel := false
+	for _, line := range strings.Split(yamlBlock, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+		if indent == 0 && strings.HasSuffix(trimmed, ":") {
+			cur = strings.TrimSuffix(trimmed, ":")
+			users[cur] = chatUser{}
+			inLabel = false
+			continue
+		}
+		if cur == "" {
+			continue
+		}
+		kv := strings.SplitN(trimmed, ":", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(kv[0])
+		val := strings.TrimSpace(kv[1])
+		u := users[cur]
+		if indent >= 4 && inLabel {
+			switch key {
+			case "text":
+				u.LabelText = val
+			case "textColor":
+				u.LabelTextColor = val
+			case "bgColor":
+				u.LabelBgColor = val
+			}
+		} else if indent >= 2 {
+			if key == "label" && val == "" {
+				inLabel = true
+			} else {
+				inLabel = false
+				switch key {
+				case "name":
+					u.Name = val
+				case "avatar":
+					u.Avatar = val
+				}
+			}
+		}
+		users[cur] = u
+	}
+	return users
+}
+
+// parseChatCells 按顺序提取 <!-- chattip ... --> / <!-- chatcell ... --> 单元格。
+func parseChatCells(body string) []chatCell {
+	var cells []chatCell
+	for _, m := range reChatComment.FindAllStringSubmatch(body, -1) {
+		content := strings.TrimSpace(m[1])
+		switch {
+		case strings.HasPrefix(content, "chattip "):
+			cells = append(cells, chatCell{kind: "chattip", text: strings.TrimSpace(strings.TrimPrefix(content, "chattip "))})
+		case strings.HasPrefix(content, "chatcell "):
+			cells = append(cells, chatCell{kind: "chatcell", params: parseChatCellParams(strings.TrimPrefix(content, "chatcell "))})
+		}
+	}
+	return cells
+}
+
+// parseChatCellParams 解析 chatcell 的 key:value 参数（值可含空格，遇下一个 key 截断）。
+func parseChatCellParams(s string) map[string]string {
+	params := make(map[string]string)
+	locs := reChatParam.FindAllStringSubmatchIndex(s, -1)
+	for i, loc := range locs {
+		key := s[loc[2]:loc[3]]
+		valStart := loc[1]
+		valEnd := len(s)
+		if i+1 < len(locs) {
+			valEnd = locs[i+1][0]
+		}
+		params[key] = strings.TrimSpace(s[valStart:valEnd])
+	}
+	return params
+}
+
+// renderChat 渲染 {% chat device [style:] [title:] [scene:] [me:] %}（文字消息 + 时间提示子集）。
+func renderChat(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"style", "title", "scene", "me", "labelColorStyle"}, []string{"device"})
+	style := named["style"]
+	if style == "" {
+		style = "qq"
+	}
+	scene := named["scene"]
+	if scene == "" {
+		scene = "group"
+	}
+	me := named["me"]
+	users := parseChatUsers(body)
+	cells := parseChatCells(body)
+
+	msgCount := 0
+	for _, c := range cells {
+		if c.kind == "chatcell" {
+			msgCount++
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin chat ` + html.EscapeString(named["device"]) + ` ` + style + ` ` + scene + `">`)
+	// 导航栏
+	sb.WriteString(`<div class="chat-navbar"><div class="left-items">`)
+	sb.WriteString(`<div class="back-btn"><svg t="1725176176548" class="icon back" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="992" width="200" height="200"><path d="M347.008 574.379a85.547 85.547 0 0 1 0-124.758l285.483-267.477a42.39 42.39 0 0 1 60.074 2.07c16.022 17.237 15.104 44.223-2.069 60.309L405.013 512l285.483 267.477c17.173 16.086 18.09 43.094 2.07 60.31a42.39 42.39 0 0 1-60.075 2.069L347.008 574.379z" p-id="993"></path></svg></div>`)
+	sb.WriteString(fmt.Sprintf(`<div class="news-num">%d</div>`, msgCount))
+	sb.WriteString(`<div class="title">` + html.EscapeString(named["title"]) + `</div>`)
+	sb.WriteString(`</div><div class="right-items"><div class="more-btn"><svg t="1725176222076" class="icon more" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1146" width="200" height="200"><path d="M106.667 170.667A42.667 42.667 0 0 1 149.333 128h725.334a42.667 42.667 0 1 1 0 85.333H149.333a42.667 42.667 0 0 1-42.666-42.666z m0 341.333a42.667 42.667 0 0 1 42.666-42.667h725.334a42.667 42.667 0 1 1 0 85.334H149.333A42.667 42.667 0 0 1 106.667 512z m0 341.333a42.667 42.667 0 0 1 42.666-42.666h725.334a42.667 42.667 0 1 1 0 85.333H149.333a42.667 42.667 0 0 1-42.666-42.667z" p-id="1147"></path></svg></div></div></div>`)
+	// 消息区
+	sb.WriteString(`<div class="content">`)
+	for _, c := range cells {
+		if c.kind == "chattip" {
+			sb.WriteString(`<div class="chattip">` + html.EscapeString(c.text) + `</div>`)
+			continue
+		}
+		u := users[c.params["user"]]
+		sb.WriteString(`<div class="chatcell`)
+		if me != "" && me == c.params["user"] {
+			sb.WriteString(` right`)
+		}
+		sb.WriteString(`">`)
+		sb.WriteString(`<div class="user-avatar"><img lazy src="` + html.EscapeString(u.Avatar) + `"></div>`)
+		sb.WriteString(`<div class="user-main"><div class="header">`)
+		if u.LabelText != "" {
+			textColor := u.LabelTextColor
+			if textColor == "" {
+				textColor = "white"
+			}
+			bgColor := u.LabelBgColor
+			if bgColor == "" {
+				bgColor = "#2196f3"
+			}
+			sb.WriteString(`<span class="label hand-color" style="color:` + textColor + `;background:` + bgColor + `;">` + html.EscapeString(u.LabelText) + `</span>`)
+		}
+		sb.WriteString(`<span class="name">` + html.EscapeString(u.Name) + `</span></div>`)
+		rendered := strings.ReplaceAll(renderMD(c.params["md"]), "\n", "")
+		sb.WriteString(`<div class="talk md">` + rendered + `</div>`)
+		sb.WriteString(`</div></div>`)
+	}
+	sb.WriteString(`</div>`)
+	// 底部输入栏（qq 样式）
+	if style == "qq" {
+		sb.WriteString(`<div class="bottom"><div class="input"><div class="input-text"></div><div class="submit-btn">发送</div></div></div>`)
+	}
+	sb.WriteString(`</div>`)
 	return sb.String()
 }

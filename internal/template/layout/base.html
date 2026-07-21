@@ -335,7 +335,9 @@
     (function () {
       var services = [
         { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}' },
-        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}' }
+        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}' },
+        { cls: 'ds-rating', js: '{{url_for "/assets/js/services/rating.js"}}' },
+        { cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}' }
       ];
       var loaded = {};
       function scan() {
