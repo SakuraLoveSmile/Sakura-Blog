@@ -40,6 +40,7 @@ tmp/
 .tmp/
 .cache/
 server
+/blog
 
 # 运行时数据
 data/
