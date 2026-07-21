@@ -1,9 +1,12 @@
-// local-search.js: 本地搜索，移植自 Stellar source/js/search/local-search.js（去 jQuery）。
+// local-search.js: 站内搜索，移植自 Stellar source/js/search/local-search.js（去 jQuery）。
+// Spec 25：优先请求服务端 /api/search（FTS5 bm25 + snippet 高亮），
+// 失败/不可用时降级回 /search.json 本地匹配（原有逻辑保留）。
 // 数据：GET ctx.search.path（/search.json），localStorage 缓存 search_cache_v1。
 // 入口：DOMContentLoaded + pjax:complete —— PJAX 就地更新 l_left 后搜索框是新节点，需重新绑定。
 // 绑定标记挂在 DOM 节点上（_searchInitialized/_localSearchBound/_searchObserved），重复 init 不叠加。
 var searchCache = null;
 var searchCacheKey = 'search_cache_v1';
+var serverSearchOK = true; // /api/search 失败一次后本会话内不再重试，直接走本地降级
 
 var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
   var $input = document.getElementById(searchId);
@@ -32,19 +35,43 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
 
     var $resultContent = document.getElementById(contentId);
     var $wrapper = document.getElementById(wrapperId);
+    var searchSeq = 0; // 丢弃过时响应，避免乱序覆盖
 
-    $input.addEventListener("input", function() {
+    // 服务端搜索结果渲染：DOM 结构/类名与本地匹配完全一致（snippet 已含 .search-keyword 高亮）
+    function renderServerResults(items) {
+      $resultContent.innerHTML = '';
+      if (!items.length) return;
+      const ul = document.createElement('ul');
+      ul.className = 'search-result-list';
+      items.forEach(function(item) {
+        if (filter && !item.path.includes(filter)) return;
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = item.path;
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'search-result-title';
+        titleSpan.textContent = item.title?.trim() || 'Untitled';
+        a.appendChild(titleSpan);
+        if (item.snippet) {
+          const para = document.createElement('p');
+          para.className = 'search-result-content';
+          para.innerHTML = item.snippet;
+          a.appendChild(para);
+        }
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      if (ul.children.length) $resultContent.appendChild(ul);
+    }
+
+    // 本地全文匹配（原逻辑，作 /api/search 不可用时的降级路径）
+    function localSearch(value) {
       var resultList = [];
-      var keywords = getAllCombinations(this.value.trim().toLowerCase().split(" "))
+      var keywords = getAllCombinations(value.toLowerCase().split(" "))
         .sort(function(a,b) { return b.split(" ").length - a.split(" ").length; });
       $resultContent.innerHTML = "";
-      if (this.value.trim().length <= 0) {
-        $wrapper.setAttribute('searching', 'false');
-        return;
-      }
-      $wrapper.setAttribute('searching', 'true');
 
-      datas.forEach(function(data) {
+      (datas || searchCache || []).forEach(function(data) {
         if (!data.content?.trim().length) return;
         if (filter && !data.path.includes(filter)) return;
 
@@ -117,10 +144,42 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         $resultContent.innerHTML = '';
         $resultContent.appendChild(ul);
       }
+    }
+
+    $input.addEventListener("input", function() {
+      var value = this.value.trim();
+      $resultContent.innerHTML = "";
+      if (value.length <= 0) {
+        $wrapper.setAttribute('searching', 'false');
+        return;
+      }
+      $wrapper.setAttribute('searching', 'true');
+
+      if (serverSearchOK) {
+        var seq = ++searchSeq;
+        fetch('/api/search?q=' + encodeURIComponent(value) + '&limit=20')
+          .then(function(res) {
+            if (!res.ok) throw new Error('search api ' + res.status);
+            return res.json();
+          })
+          .then(function(json) {
+            if (seq !== searchSeq) return; // 过时响应丢弃
+            renderServerResults(json.items || []);
+          })
+          .catch(function() {
+            serverSearchOK = false; // 降级后本会话内不再请求服务端
+            localSearch(value);
+          });
+      } else {
+        localSearch(value);
+      }
     });
   }
 
-  if (!searchCache) {
+  if (serverSearchOK || searchCache) {
+    // 服务端搜索可用时无需等本地索引，立即绑定（datas 可为 null，降级时兜底 searchCache）
+    initSearch(searchCache);
+  } else {
     $input._searchInitialized = 'pending';
     // 数据还没准备好，延迟初始化
     const timer = setInterval(() => {
@@ -129,8 +188,6 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         initSearch(searchCache);
       }
     }, 100);
-  } else {
-    initSearch(searchCache);
   }
 };
 

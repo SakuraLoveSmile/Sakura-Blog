@@ -137,6 +137,21 @@ func (p *Post) IsPasswordProtected() bool {
 // Store 文章数据访问对象，持 *sql.DB 连接。
 type Store struct {
 	db *sql.DB
+	// postWriteHook 文章写路径回调（Spec 25 FTS 同步用），op 取 create/update/delete/restore/purge。
+	// 写操作成功后同步调用；回调内部自行容错，不影响主流程。
+	postWriteHook func(op, slug string)
+}
+
+// SetPostWriteHook 注册文章写路径回调（main.go 装配）。
+func (s *Store) SetPostWriteHook(h func(op, slug string)) {
+	s.postWriteHook = h
+}
+
+// firePostWrite 触发写路径回调（未注册则静默）。
+func (s *Store) firePostWrite(op, slug string) {
+	if s.postWriteHook != nil {
+		s.postWriteHook(op, slug)
+	}
 }
 
 // New 打开 SQLite 连接并建表。dbPath 是 .db 文件绝对路径，父目录自动创建。
@@ -521,6 +536,7 @@ func (s *Store) Create(p *Post) (int64, error) {
 		return 0, fmt.Errorf("last insert id: %w", err)
 	}
 	p.ID = id
+	s.firePostWrite("create", p.Slug)
 	return id, nil
 }
 
@@ -541,6 +557,7 @@ func (s *Store) Update(slug string, p *Post) error {
 	if n == 0 {
 		return fmt.Errorf("update post %s: no rows affected", slug)
 	}
+	s.firePostWrite("update", slug)
 	return nil
 }
 
@@ -551,6 +568,7 @@ func (s *Store) Delete(slug string) error {
 	if err != nil {
 		return fmt.Errorf("soft delete post %s: %w", slug, err)
 	}
+	s.firePostWrite("delete", slug)
 	return nil
 }
 
@@ -570,6 +588,7 @@ func (s *Store) RestorePost(slug string) error {
 	if err != nil {
 		return fmt.Errorf("restore post %s: %w", slug, err)
 	}
+	s.firePostWrite("restore", slug)
 	return nil
 }
 
@@ -579,6 +598,7 @@ func (s *Store) PurgePost(slug string) error {
 	if err != nil {
 		return fmt.Errorf("purge post %s: %w", slug, err)
 	}
+	s.firePostWrite("purge", slug)
 	return nil
 }
 

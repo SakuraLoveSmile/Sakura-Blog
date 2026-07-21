@@ -33,6 +33,7 @@ import (
 	"blog/internal/page"
 	"blog/internal/post"
 	seedpkg "blog/internal/seed"
+	"blog/internal/search"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -151,6 +152,68 @@ func main() {
 	defer st.Close()
 	log.Printf("sqlite ready: %s", app.DBPath)
 
+	// 搜索索引与 widget 摘要共用的纯文本提取：去标签 + 压缩空白。
+	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
+	whitespaceRe := regexp.MustCompile(`\s+`)
+	stripHTML := func(s string) string {
+		s = htmlTagRe.ReplaceAllString(s, " ")
+		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
+	}
+
+	// FTS5 全文索引（Spec 25）：建表 + 挂 store 写路径回调同步；失败仅记日志，
+	// 搜索降级回 /search.json 前端匹配，不阻断启动。在 seed 前装配，保证导入也能同步。
+	searchIdx := search.New(st.DB())
+	if err := searchIdx.Ensure(); err != nil {
+		log.Printf("search: ensure fts failed (%v), server search disabled", err)
+		searchIdx = nil
+	} else {
+		// syncPost 单篇同步：仅已发布且到点且未删除的文章入索引；受保护文章正文置空。
+		// 定时文章到点后无写事件，下次编辑/重启时才入索引（边界可接受）。
+		syncPost := func(slug string) {
+			p, err := st.GetBySlug(slug)
+			if err != nil || p == nil {
+				return
+			}
+			if p.Status != store.StatusPublished || p.DeletedAt != "" || (!p.PublishAt.IsZero() && p.PublishAt.After(time.Now())) {
+				_ = searchIdx.Unindex(slug)
+				return
+			}
+			content := stripHTML(p.ContentHTML)
+			if p.IsPasswordProtected() {
+				content = "" // 受保护文章不泄漏正文（对齐 /search.json 口径）
+			}
+			if err := searchIdx.IndexPost(p.Slug, p.Title, content); err != nil {
+				log.Printf("search: index %s failed: %v", slug, err)
+			}
+		}
+		st.SetPostWriteHook(func(op, slug string) {
+			switch op {
+			case "delete", "purge":
+				_ = searchIdx.Unindex(slug)
+			default: // create / update / restore
+				syncPost(slug)
+			}
+		})
+		// 空表回填：旧库首次启用 FTS 时全量建索引（幂等，非空不重建）。
+		if n, err := searchIdx.Count(); err == nil && n == 0 {
+			if published, err := st.ListPublished(); err == nil && len(published) > 0 {
+				items := make([]search.Item, 0, len(published))
+				for _, p := range published {
+					content := stripHTML(p.ContentHTML)
+					if p.IsPasswordProtected() {
+						content = ""
+					}
+					items = append(items, search.Item{Slug: p.Slug, Title: p.Title, Content: content})
+				}
+				if err := searchIdx.Rebuild(items); err != nil {
+					log.Printf("search: rebuild failed: %v", err)
+				} else {
+					log.Printf("search: fts index backfilled, %d posts", len(items))
+				}
+			}
+		}
+	}
+
 	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
 	siteConfigPath := filepath.Join(app.Root, "config", "site.yml")
 	site, err := config.LoadSite(siteConfigPath)
@@ -192,14 +255,6 @@ func main() {
 			log.Fatalf("seed: %v", err)
 		}
 		log.Printf("seed: imported %d posts from content/posts", n)
-	}
-
-	// 搜索索引与 widget 摘要共用的纯文本提取：去标签 + 压缩空白。
-	htmlTagRe := regexp.MustCompile(`<[^>]+>`)
-	whitespaceRe := regexp.MustCompile(`\s+`)
-	stripHTML := func(s string) string {
-		s = htmlTagRe.ReplaceAllString(s, " ")
-		return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
 	}
 
 	// fillSEO：填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
@@ -747,6 +802,33 @@ func main() {
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	})
+
+	// 服务端全文搜索（Spec 25）：FTS5 bm25 排序 + snippet 高亮。
+	// 前端 local-search.js 优先走此端点，失败降级回 /search.json 本地匹配。
+	r.GET("/api/search", func(c *gin.Context) {
+		if searchIdx == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "server search disabled"})
+			return
+		}
+		q := strings.TrimSpace(c.Query("q"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+		results, err := searchIdx.Search(q, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		type apiItem struct {
+			Title   string `json:"title"`
+			Path    string `json:"path"`
+			Snippet string `json:"snippet"`
+		}
+		items := make([]apiItem, 0, len(results))
+		for _, res := range results {
+			items = append(items, apiItem{Title: res.Title, Path: "/post/" + res.Slug, Snippet: res.Snippet})
+		}
+		c.Header("Cache-Control", "no-store")
+		c.JSON(http.StatusOK, gin.H{"items": items})
 	})
 
 	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
