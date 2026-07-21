@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { postApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
+import RevisionPanel from "./RevisionPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -31,32 +32,57 @@ const saving = ref(false);
 const error = ref("");
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const coverPickerOpen = ref(false);
+const revisionOpen = ref(false);
+
+// 当前正文字数（非空白 rune），供版本面板计算字数变化。
+const currentWordCount = computed(() => {
+  const s = form.value.content_md || "";
+  let n = 0;
+  for (const ch of s) {
+    if (!/\s/.test(ch)) n++;
+  }
+  return n;
+});
+
+async function loadPost() {
+  const { data } = await postApi.get(slug.value);
+  form.value = {
+    slug: data.slug,
+    title: data.title,
+    excerpt: data.excerpt,
+    cover: data.cover,
+    category: data.category,
+    topic: data.topic,
+    tags: data.tags,
+    content_md: data.content_md,
+    status: data.status,
+    pinned: data.pinned,
+    password: data.password,
+    publish_at: data.publish_at || "",
+  };
+}
 
 onMounted(async () => {
   if (!isEdit.value) return;
   loading.value = true;
   try {
-    const { data } = await postApi.get(slug.value);
-    form.value = {
-      slug: data.slug,
-      title: data.title,
-      excerpt: data.excerpt,
-      cover: data.cover,
-      category: data.category,
-      topic: data.topic,
-      tags: data.tags,
-      content_md: data.content_md,
-      status: data.status,
-      pinned: data.pinned,
-      password: data.password,
-      publish_at: data.publish_at || "",
-    };
+    await loadPost();
   } catch (e: any) {
     error.value = "加载失败";
   } finally {
     loading.value = false;
   }
 });
+
+// 回滚成功后重新拉取文章内容到编辑器。
+async function handleRestored() {
+  try {
+    await loadPost();
+    editorRef.value?.clearDraft();
+  } catch (e: any) {
+    error.value = "回滚后重载失败";
+  }
+}
 
 async function handleSave() {
   saving.value = true;
@@ -84,6 +110,11 @@ async function handleSave() {
         {{ isEdit ? "编辑文章" : "新建文章" }}
       </h2>
       <div class="flex gap-2">
+        <button
+          v-if="isEdit"
+          @click="revisionOpen = true"
+          class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+        >版本历史</button>
         <router-link to="/posts" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">取消</router-link>
         <button
           @click="handleSave"
@@ -177,5 +208,14 @@ async function handleSave() {
     </div>
 
     <AttachmentPickerModal :open="coverPickerOpen" @select="(url: string) => { form.cover = url; coverPickerOpen = false; }" @close="coverPickerOpen = false" />
+
+    <RevisionPanel
+      :open="revisionOpen"
+      :slug="slug"
+      :current-content="form.content_md"
+      :current-word-count="currentWordCount"
+      @close="revisionOpen = false"
+      @restored="handleRestored"
+    />
   </div>
 </template>

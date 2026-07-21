@@ -28,6 +28,7 @@ import (
 	"blog/internal/config"
 	"blog/internal/feed"
 	"blog/internal/friends"
+	ghpkg "blog/internal/github"
 	"blog/internal/moment"
 	"blog/internal/page"
 	"blog/internal/post"
@@ -450,6 +451,26 @@ func main() {
 	friendsAgg.Register(r)
 	// 友链在 console 增删改后，触发聚合器即时重建缓存，使 /friends 页即时反映。
 	apiHandler.SetOnLinksChanged(friendsAgg.Refresh)
+
+	// GitHub 代理缓存（Spec 21）：/api/gh/card + /api/gh/repo 公开端点。
+	ghClient := ghpkg.New(ghpkg.Config{
+		Token:    app.GitHubToken,
+		CardHost: app.GHCardHost,
+		CacheDir: filepath.Join(filepath.Dir(app.DBPath), "ghcache"),
+	})
+	ghpkg.NewHandler(ghClient).Register(r)
+	posts.SetGHClient(&ghAdapter{ghClient}) // 供 ghrepo/ghuser shortcode 渲染时同步取数
+
+	// 评分数据服务（Spec 20）：/api/rating 公开端点。
+	if err := st.EnsureRatingsTable(); err != nil {
+		log.Fatalf("ensure ratings table: %v", err)
+	}
+	store.NewRatingHandler(st).Register(r)
+
+	// 文章版本历史（Spec 22）：revisions 表（端点随 api.Handler 注册）。
+	if err := st.EnsureRevisionsTable(); err != nil {
+		log.Fatalf("ensure revisions table: %v", err)
+	}
 
 	// Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 console/dist 读。
 	// 只注册 /console/assets/* 与根级静态文件；其余 /console 路径（含 /console/ 本身与 SPA 前端路由）
@@ -1203,6 +1224,32 @@ func truncateText(s string, n int) string {
 		return s
 	}
 	return string(r[:n]) + "…"
+}
+
+// ghAdapter 将 github.Client 适配为 post.GHClient 接口（解耦循环依赖）。
+type ghAdapter struct{ c *ghpkg.Client }
+
+func (a *ghAdapter) GetRepo(owner, repo string) (*post.GHRepoInfo, error) {
+	info, err := a.c.GetRepo(owner, repo)
+	if err != nil {
+		return nil, err
+	}
+	return &post.GHRepoInfo{
+		Name: info.Name, FullName: info.FullName, Description: info.Description,
+		Stars: info.Stars, Forks: info.Forks, Language: info.Language,
+		License: info.License, OwnerAvatar: info.OwnerAvatar, OwnerLogin: info.OwnerLogin, HTMLURL: info.HTMLURL,
+	}, nil
+}
+
+func (a *ghAdapter) GetUser(username string) (*post.GHUserInfo, error) {
+	info, err := a.c.GetUser(username)
+	if err != nil {
+		return nil, err
+	}
+	return &post.GHUserInfo{
+		Login: info.Login, Name: info.Name, Bio: info.Bio, AvatarURL: info.AvatarURL,
+		Followers: info.Followers, Following: info.Following, Repos: info.Repos, HTMLURL: info.HTMLURL,
+	}, nil
 }
 
 // consoleContentType 按扩展名推断 console 根级静态文件的 Content-Type。

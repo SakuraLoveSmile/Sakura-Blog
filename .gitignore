@@ -39,7 +39,7 @@ dist/
 tmp/
 .tmp/
 .cache/
-server
+/server
 /blog
 
 # 运行时数据

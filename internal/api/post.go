@@ -78,7 +78,18 @@ func (h *Handler) listPosts(c *gin.Context) {
 		size = 20
 	}
 
-	// 获取全部文章后在内存筛选（SQLite 单文件博客数据量有限，无需复杂 SQL）
+	// 回收站专用列表
+	if status == "trashed" {
+		posts, err := h.store.ListTrashed()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"items": posts, "total": len(posts)})
+		return
+	}
+
+	// 获取全部未删除文章后在内存筛选（SQLite 单文件博客数据量有限，无需复杂 SQL）
 	posts, err := h.store.List()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -214,11 +225,23 @@ func (h *Handler) updatePost(c *gin.Context) {
 	p := reqToPost(&req, contentHTML)
 	p.Slug = newSlug
 
-	// slug 变更：先删旧再建新（保留 created_at）
-	if newSlug != slug {
-		if err := h.store.Delete(slug); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
-			return
+	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		return
+	}
+
+	views, _ := h.store.GetViews(newSlug)
+	c.JSON(http.StatusOK, toPostJSON(p, views))
+}
+
+// savePostWithSnapshot 保存文章并在成功后把「保存前」的旧版本写入 revisions（Spec 22）。
+// existing 为保存前查出的旧记录；p 为新内容（p.Slug 已设）；newSlug 为目标 slug。
+// 内容无变化（content_md + title 均相同）时不产生空版本。
+func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) error {
+	if newSlug != existing.Slug {
+		// slug 变更：先删旧再建新（保留 created_at）
+		if err := h.store.Delete(existing.Slug); err != nil {
+			return err
 		}
 		p.CreatedAt = existing.CreatedAt
 		if p.References == "" {
@@ -228,27 +251,64 @@ func (h *Handler) updatePost(c *gin.Context) {
 			p.Poster = existing.Poster
 		}
 		if _, err := h.store.Create(p); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
-			return
+			return err
 		}
+		// 同步迁移版本归属
+		h.store.UpdateRevisionSlug(existing.Slug, newSlug)
 	} else {
-		if err := h.store.Update(slug, p); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
-			return
+		if err := h.store.Update(existing.Slug, p); err != nil {
+			return err
 		}
 	}
-
-	views, _ := h.store.GetViews(newSlug)
-	c.JSON(http.StatusOK, toPostJSON(p, views))
+	h.snapshotRevision(existing, p)
+	return nil
 }
 
-// deletePost DELETE /api/v1/posts/:slug：删除文章。
+// snapshotRevision 把保存前的旧版本写入 revisions；内容无变化则跳过。
+func (h *Handler) snapshotRevision(old, neu *store.Post) {
+	if old.ContentMD == neu.ContentMD && old.Title == neu.Title {
+		return
+	}
+	h.store.CreateRevision(&store.Revision{
+		PostSlug:  neu.Slug,
+		Title:     old.Title,
+		Excerpt:   old.Excerpt,
+		ContentMD: old.ContentMD,
+		Tags:      old.Tags,
+		Category:  old.Category,
+		Status:    old.Status,
+	})
+}
+
+// deletePost DELETE /api/v1/posts/:slug：软删除文章（移入回收站）。
 func (h *Handler) deletePost(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.Delete(slug); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// restorePost POST /api/v1/posts/:slug/restore：从回收站恢复文章。
+func (h *Handler) restorePost(c *gin.Context) {
+	slug := c.Param("slug")
+	if err := h.store.RestorePost(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// purgePost DELETE /api/v1/posts/:slug/purge：彻底删除文章（物理删除）。
+func (h *Handler) purgePost(c *gin.Context) {
+	slug := c.Param("slug")
+	if err := h.store.PurgePost(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// 连带清理版本快照（Spec 22）
+	h.store.DeleteRevisionsByPost(slug)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

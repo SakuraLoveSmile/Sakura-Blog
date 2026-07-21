@@ -98,6 +98,13 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/posts", h.createPost)
 		authed.PUT("/posts/:slug", h.updatePost)
 		authed.DELETE("/posts/:slug", h.deletePost)
+		authed.POST("/posts/:slug/restore", h.restorePost)
+		authed.DELETE("/posts/:slug/purge", h.purgePost)
+
+		// 文章版本历史（Spec 22）
+		authed.GET("/posts/:slug/revisions", h.listRevisions)
+		authed.GET("/revisions/:id", h.getRevision)
+		authed.POST("/revisions/:id/restore", h.restoreRevision)
 
 		// 评论
 		authed.GET("/comments", h.listComments)
@@ -111,6 +118,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 附件
 		authed.GET("/attachments", h.listAttachments)
 		authed.POST("/attachments/upload", h.uploadAttachment)
+		authed.GET("/attachments/:id/refs", h.attachmentRefs)
 		authed.DELETE("/attachments/:id", h.deleteAttachment)
 
 		// 页面
@@ -119,6 +127,8 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/pages", h.createPage)
 		authed.PUT("/pages/:slug", h.updatePage)
 		authed.DELETE("/pages/:slug", h.deletePage)
+		authed.POST("/pages/:slug/restore", h.restorePage)
+		authed.DELETE("/pages/:slug/purge", h.purgePage)
 
 		// 瞬间
 		authed.GET("/moments", h.listMoments)

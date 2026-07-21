@@ -42,6 +42,15 @@ export const postApi = {
   update: (slug: string, data: Record<string, unknown>) =>
     http.put(`/posts/${slug}`, data),
   delete: (slug: string) => http.delete(`/posts/${slug}`),
+  restore: (slug: string) => http.post(`/posts/${slug}/restore`),
+  purge: (slug: string) => http.delete(`/posts/${slug}/purge`),
+};
+
+// --- Post Revisions (Spec 22) ---
+export const revisionApi = {
+  list: (slug: string) => http.get(`/posts/${slug}/revisions`),
+  get: (id: number) => http.get(`/revisions/${id}`),
+  restore: (id: number) => http.post(`/revisions/${id}/restore`),
 };
 
 // --- Comments ---
@@ -65,6 +74,7 @@ export const attachmentApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  refs: (id: number) => http.get(`/attachments/${id}/refs`),
   delete: (id: number) => http.delete(`/attachments/${id}`),
 };
 
@@ -90,12 +100,14 @@ export const backupApi = {
 
 // --- Pages ---
 export const pageApi = {
-  list: () => http.get("/pages"),
+  list: (params?: Record<string, unknown>) => http.get("/pages", { params }),
   get: (slug: string) => http.get(`/pages/${slug}`),
   create: (data: Record<string, unknown>) => http.post("/pages", data),
   update: (slug: string, data: Record<string, unknown>) =>
     http.put(`/pages/${slug}`, data),
   delete: (slug: string) => http.delete(`/pages/${slug}`),
+  restore: (slug: string) => http.post(`/pages/${slug}/restore`),
+  purge: (slug: string) => http.delete(`/pages/${slug}/purge`),
 };
 
 // --- Moments ---
