@@ -11,10 +11,10 @@
 | # | Spec | 分支 | 主模块（独占） |
 |---|------|------|---------------|
 | 23 | [Console 插件库](23-plugin-library/spec.md) | `feature/plugin-library` | 新 `console/src/modules/plugins/`（静态元数据 + iframe 预览） |
-| 24 | [访问统计分析](24-analytics/spec.md) | `feature/analytics` | 新 `store/stats.go` + 埋点中间件 + Console 仪表盘图表 |
+| 24 | [访问统计分析](24-analytics/spec.md) | `feature/analytics` | 新 `store/pageview.go` + 埋点中间件 + Console 仪表盘图表 |
 | 25 | [站内搜索增强（FTS5）](25-search-fts/spec.md) | `feature/search-fts` | 新 `internal/search/` 包 + `/api/search` + 前端搜索适配 |
-| 26 | [评论邮件通知](26-comment-notify/spec.md) | `feature/comment-notify` | 新 `internal/notify/` 包（SMTP）+ comment 保存挂钩 |
-| 27 | [归档页 + OG 图](27-archives-og/spec.md) | `feature/archives-og` | 前台 `/archives` 路由与模板 + 新 `internal/og/` 包 |
+| 26 | [评论邮件通知](26-comment-notify/spec.md) | `feature/comment-notify` | ⚠️ 核心已实现（`comment/notify.go`）；本期仅 Console SMTP 配置 tab + 单测补强 |
+| 27 | [归档页 + OG 图](27-archives-og/spec.md) | `feature/archives-og` | ⚠️ 归档页已实现；本期仅新 `internal/og/` 包（OG 图生成）+ head meta |
 
 **Wave 6 冲突矩阵**：唯一热点 `cmd/server/main.go`（24 中间件 / 25 路由 / 27 路由，均 append 式）；26 只挂 comment 包内钩子；23 纯 Console 前端零交集。**合并顺序：25 → 24 → 27 → 26**，23 随时可合。
 
