@@ -4,9 +4,42 @@
 
 ## 已完成（合入 dev）
 
-01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 —— 详见各目录 spec，均已 merge。
+01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · **20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5）** —— 详见各目录 spec，均已 merge（后台其后演进为 Vue Console，见 dev 分支提交历史）。
 
-## 待办 · 夜间 8 小时并行批次
+## 待办 · Wave 6（Wave 5 合入后启动）
+
+| # | Spec | 分支 | 主模块（独占） |
+|---|------|------|---------------|
+| 23 | [Console 插件库](23-plugin-library/spec.md) | `feature/plugin-library` | 新 `console/src/modules/plugins/`（静态元数据 + iframe 预览） |
+| 24 | [访问统计分析](24-analytics/spec.md) | `feature/analytics` | 新 `store/stats.go` + 埋点中间件 + Console 仪表盘图表 |
+| 25 | [站内搜索增强（FTS5）](25-search-fts/spec.md) | `feature/search-fts` | 新 `internal/search/` 包 + `/api/search` + 前端搜索适配 |
+| 26 | [评论邮件通知](26-comment-notify/spec.md) | `feature/comment-notify` | 新 `internal/notify/` 包（SMTP）+ comment 保存挂钩 |
+| 27 | [归档页 + OG 图](27-archives-og/spec.md) | `feature/archives-og` | 前台 `/archives` 路由与模板 + 新 `internal/og/` 包 |
+
+**Wave 6 冲突矩阵**：唯一热点 `cmd/server/main.go`（24 中间件 / 25 路由 / 27 路由，均 append 式）；26 只挂 comment 包内钩子；23 纯 Console 前端零交集。**合并顺序：25 → 24 → 27 → 26**，23 随时可合。
+
+## 历史批次 · Wave 5（已完成，存档）
+
+| # | Spec | 分支 | 主模块（独占） |
+|---|------|------|---------------|
+| 20 | [标签插件三期](20-tag-plugins-3/spec.md) | `feature/tag-plugins-3` | `internal/post/shortcode.go` + `tag-plugins.css` + 新 `store/rating.go` |
+| 21 | [GitHub widgets](21-gh-widgets/spec.md) | `feature/gh-widgets` | 新 `internal/github/` 包 + `main.go` 路由 |
+| 22 | [文章版本历史](22-post-revisions/spec.md) | `feature/post-revisions` | 新 `store/revision.go` + `api/revision.go` + Console `RevisionPanel` |
+
+**Wave 5 冲突矩阵**：唯一热点是 `internal/post/shortcode.go`（20 加 8 插件、21 加 2 插件 + processShortcodes +1 注入参数）。**合并顺序：21 → 20 → 22**（21 先定 processShortcodes 签名，20 rebase 后追加；22 与两者零文件交集，随时可合）。22 依赖 17 已合（post 表迁移模式稳定）。20 的 ghcard 消费 21 的 `/api/gh/card` 代理端点。
+
+## 历史批次 · Wave 4（已完成，存档）
+
+| # | Spec | 分支 | 主模块（独占） |
+|---|------|------|---------------|
+| 16 | [标签插件二期](16-tag-plugins-2/spec.md) | `feature/tag-plugins-2` | `internal/post/shortcode.go` + `tag-plugins.css` |
+| 17 | [回收站](17-trash/spec.md) | `feature/trash` | `store/post.go`+`page.go`（+列）+ api + console 列表 |
+| 18 | [菜单可视化管理](18-menu-settings/spec.md) | `feature/menu-settings` | console settings 菜单 tab（新 `MenubarEditor.vue`） |
+| 19 | [附件增强](19-attachment-plus/spec.md) | `feature/attachment-plus` | `api/attachment*.go` + `store/attachment.go` + console 附件库 |
+
+Wave 4 四个 spec 无共享文件热点（17 动 `store/post.go`，其余不碰），任意顺序合并；Spec 22（版本历史）依赖 17 先合。
+
+## 历史批次 · 夜间 8 小时并行批次（已完成，存档）
 
 按**波次**编排：Wave 1 可**立即全部并行**；Wave 2/3 依赖前置（admin 外壳 / post 表结构），前置合并后再并行。
 
