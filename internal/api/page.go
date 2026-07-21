@@ -33,6 +33,21 @@ func toPageJSON(p *store.Page) *pageJSON {
 
 // listPages GET /api/v1/pages：页面列表。
 func (h *Handler) listPages(c *gin.Context) {
+	// 回收站专用列表
+	if c.Query("status") == "trashed" {
+		pages, err := h.store.ListTrashedPages()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		items := make([]*pageJSON, 0, len(pages))
+		for _, p := range pages {
+			items = append(items, toPageJSON(p))
+		}
+		c.JSON(http.StatusOK, gin.H{"items": items, "total": len(items)})
+		return
+	}
+
 	pages, err := h.store.ListPages()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -171,6 +186,26 @@ func (h *Handler) updatePage(c *gin.Context) {
 func (h *Handler) deletePage(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.DeletePage(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// restorePage POST /api/v1/pages/:slug/restore：从回收站恢复页面。
+func (h *Handler) restorePage(c *gin.Context) {
+	slug := c.Param("slug")
+	if err := h.store.RestorePage(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// purgePage DELETE /api/v1/pages/:slug/purge：彻底删除页面。
+func (h *Handler) purgePage(c *gin.Context) {
+	slug := c.Param("slug")
+	if err := h.store.PurgePage(slug); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

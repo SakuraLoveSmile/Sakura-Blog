@@ -39,6 +39,7 @@ type Post struct {
 	Poster      string    // 海报封面 JSON（PosterData），空=无海报；与 cover 同时存在时首页渲染 photo 大卡
 	Topic       string    // 专栏名，空=普通文章；非空时文章页左栏显示同专栏系列列表，/navbar 出现「专栏」tab
 	References  string    // 参考文献 JSON（[]string），空=无参考文献；文章页脚渲染用
+	DeletedAt   string    // 软删除时间 RFC3339，空串=未删除
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -100,11 +101,11 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\""
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", deleted_at"
 
-// publishedWhere 已发布且定时已到。占位符绑定 StatusPublished。
-const publishedWhere = "status = ? AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
+// publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
+const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
 
 const publishedOrder = "ORDER BY pinned DESC, datetime(created_at) DESC"
 
@@ -233,6 +234,7 @@ func (s *Store) migrateColumns() error {
 		"poster":     `ALTER TABLE posts ADD COLUMN poster TEXT NOT NULL DEFAULT ''`,
 		"topic":      `ALTER TABLE posts ADD COLUMN topic TEXT NOT NULL DEFAULT ''`,
 		"references": `ALTER TABLE posts ADD COLUMN "references" TEXT NOT NULL DEFAULT ''`,
+		"deleted_at": `ALTER TABLE posts ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -260,9 +262,9 @@ func (s *Store) migrateColumns() error {
 	return nil
 }
 
-// List 返回全部文章，按 created_at 倒序（最新在前）。
+// List 返回全部未删除文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
-	rows, err := s.db.Query("SELECT " + postCols + " FROM posts ORDER BY pinned DESC, datetime(created_at) DESC")
+	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at = '' ORDER BY pinned DESC, datetime(created_at) DESC")
 	if err != nil {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
@@ -542,11 +544,40 @@ func (s *Store) Update(slug string, p *Post) error {
 	return nil
 }
 
-// Delete 按 slug 删除文章。不存在不报错。
+// Delete 软删除：标记 deleted_at，文章进入回收站。不存在不报错。
 func (s *Store) Delete(slug string) error {
-	_, err := s.db.Exec(`DELETE FROM posts WHERE slug=?`, slug)
+	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	_, err := s.db.Exec(`UPDATE posts SET deleted_at = ? WHERE slug = ? AND deleted_at = ''`, now, slug)
 	if err != nil {
-		return fmt.Errorf("delete post %s: %w", slug, err)
+		return fmt.Errorf("soft delete post %s: %w", slug, err)
+	}
+	return nil
+}
+
+// ListTrashed 返回回收站中的文章（deleted_at 非空），按删除时间倒序。
+func (s *Store) ListTrashed() ([]*Post, error) {
+	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at != '' ORDER BY datetime(deleted_at) DESC")
+	if err != nil {
+		return nil, fmt.Errorf("list trashed posts: %w", err)
+	}
+	defer rows.Close()
+	return scanPosts(rows)
+}
+
+// RestorePost 从回收站恢复文章（清空 deleted_at）。
+func (s *Store) RestorePost(slug string) error {
+	_, err := s.db.Exec(`UPDATE posts SET deleted_at = '' WHERE slug = ? AND deleted_at != ''`, slug)
+	if err != nil {
+		return fmt.Errorf("restore post %s: %w", slug, err)
+	}
+	return nil
+}
+
+// PurgePost 彻底删除文章（物理删除记录）。
+func (s *Store) PurgePost(slug string) error {
+	_, err := s.db.Exec(`DELETE FROM posts WHERE slug = ? AND deleted_at != ''`, slug)
+	if err != nil {
+		return fmt.Errorf("purge post %s: %w", slug, err)
 	}
 	return nil
 }
@@ -605,14 +636,15 @@ type rowScanner interface {
 func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
-	var password, publishAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References)
+	var password, publishAt, deletedAt string
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &deletedAt)
 	if err != nil {
 		return nil, err
 	}
 	p.Pinned = pinned != 0
 	p.Password = password
 	p.PublishAt = parsePublishAt(publishAt)
+	p.DeletedAt = deletedAt
 	return p, nil
 }
 

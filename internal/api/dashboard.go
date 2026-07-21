@@ -35,7 +35,7 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	attachmentTotal, err := h.store.CountAttachments()
+	attachmentTotal, err := h.store.CountAttachments("", "")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

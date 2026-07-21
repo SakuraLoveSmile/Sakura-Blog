@@ -35,6 +35,9 @@ type attachmentJSON struct {
 	Mime      string `json:"mime"`
 	Size      int64  `json:"size"`
 	CreatedAt string `json:"created_at"`
+	ThumbURL  string `json:"thumb_url"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
 }
 
 func toAttachmentJSON(a *store.Attachment) *attachmentJSON {
@@ -45,13 +48,18 @@ func toAttachmentJSON(a *store.Attachment) *attachmentJSON {
 		Mime:      a.Mime,
 		Size:      a.Size,
 		CreatedAt: a.CreatedAt.Format(time.RFC3339),
+		ThumbURL:  a.ThumbURL,
+		Width:     a.Width,
+		Height:    a.Height,
 	}
 }
 
-// listAttachments GET /api/v1/attachments：附件列表（分页）。
+// listAttachments GET /api/v1/attachments：附件列表（分页 + 搜索筛选）。
 func (h *Handler) listAttachments(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "24"))
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	kind := c.Query("kind") // "" | "image" | "other"
 	if page < 1 {
 		page = 1
 	}
@@ -59,12 +67,12 @@ func (h *Handler) listAttachments(c *gin.Context) {
 		size = 24
 	}
 
-	total, err := h.store.CountAttachments()
+	total, err := h.store.CountAttachments(keyword, kind)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	attachments, err := h.store.ListAttachments(page, size)
+	attachments, err := h.store.ListAttachments(page, size, keyword, kind)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,7 +91,7 @@ func (h *Handler) listAttachments(c *gin.Context) {
 	})
 }
 
-// uploadAttachment POST /api/v1/attachments/upload：上传文件。
+// uploadAttachment POST /api/v1/attachments/upload：上传文件（图片自动优化 + 缩略图）。
 func (h *Handler) uploadAttachment(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -104,10 +112,44 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		return
 	}
 
-	// 生成随机文件名，按年月分目录
+	// 读取全部数据用于图像优化
+	srcData, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取文件失败"})
+		return
+	}
+
+	// 图像优化管线
 	now := time.Now()
 	subDir := now.Format("2006/01")
-	randName := randomHex(8) + ext
+	var mainData []byte
+	var outMime string
+	var outExt string
+	var imgW, imgH int
+	var thumbData []byte
+
+	if strings.HasPrefix(mime, "image/") {
+		res, optErr := optimizeImage(srcData, mime)
+		if optErr == nil && res != nil {
+			mainData = res.MainData
+			outMime = res.OutMime
+			outExt = res.OutExt
+			imgW = res.Width
+			imgH = res.Height
+			thumbData = res.ThumbData
+		} else {
+			mainData = srcData
+			outMime = mime
+			outExt = ext
+		}
+	} else {
+		mainData = srcData
+		outMime = mime
+		outExt = ext
+	}
+
+	// 生成随机文件名
+	randName := randomHex(8) + outExt
 	relPath := filepath.Join(subDir, randName)
 	absPath := filepath.Join(h.uploadDir, relPath)
 
@@ -116,30 +158,42 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		return
 	}
 
-	dst, err := os.Create(absPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文件失败"})
-		return
-	}
-	defer dst.Close()
-
-	written, err := io.Copy(dst, file)
-	if err != nil {
-		os.Remove(absPath)
+	// 写入主图
+	if err := os.WriteFile(absPath, mainData, 0o644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "写入文件失败"})
 		return
 	}
 
 	url := "/uploads/" + filepath.ToSlash(relPath)
+
+	// 写入缩略图
+	var thumbPath, thumbURL string
+	if len(thumbData) > 0 {
+		thumbName := "thumb_" + randName
+		thumbRel := filepath.Join(subDir, thumbName)
+		thumbAbs := filepath.Join(h.uploadDir, thumbRel)
+		if err := os.WriteFile(thumbAbs, thumbData, 0o644); err == nil {
+			thumbPath = filepath.ToSlash(thumbRel)
+			thumbURL = "/uploads/" + thumbPath
+		}
+	}
+
 	att := &store.Attachment{
-		Filename: header.Filename,
-		Path:     filepath.ToSlash(relPath),
-		URL:      url,
-		Mime:     mime,
-		Size:     written,
+		Filename:  header.Filename,
+		Path:      filepath.ToSlash(relPath),
+		URL:       url,
+		Mime:      outMime,
+		Size:      int64(len(mainData)),
+		ThumbPath: thumbPath,
+		ThumbURL:  thumbURL,
+		Width:     imgW,
+		Height:    imgH,
 	}
 	if _, err := h.store.CreateAttachment(att); err != nil {
 		os.Remove(absPath)
+		if thumbPath != "" {
+			os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(thumbPath)))
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存记录失败"})
 		return
 	}
@@ -147,7 +201,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 	c.JSON(http.StatusCreated, toAttachmentJSON(att))
 }
 
-// deleteAttachment DELETE /api/v1/attachments/:id：删除附件。
+// deleteAttachment DELETE /api/v1/attachments/:id：删除附件（连带缩略图）。
 func (h *Handler) deleteAttachment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -170,12 +224,79 @@ func (h *Handler) deleteAttachment(c *gin.Context) {
 	if att.Path != "" {
 		os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(att.Path)))
 	}
+	// 连带删除缩略图
+	if att.ThumbPath != "" {
+		os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(att.ThumbPath)))
+	}
 
 	if err := h.store.DeleteAttachment(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// attachmentRef 引用来源信息。
+type attachmentRef struct {
+	Type  string `json:"type"`  // "post" | "page"
+	Slug  string `json:"slug"`
+	Title string `json:"title"`
+}
+
+// attachmentRefs GET /api/v1/attachments/:id/refs：查询附件被哪些文章/页面引用。
+func (h *Handler) attachmentRefs(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的附件 ID"})
+		return
+	}
+	att, err := h.store.GetAttachment(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if att == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "附件不存在"})
+		return
+	}
+
+	refs := h.scanAttachmentRefs(att.URL)
+	c.JSON(http.StatusOK, gin.H{"refs": refs, "count": len(refs)})
+}
+
+// scanAttachmentRefs 在 posts + pages 的 content 中扫描 URL 引用。
+func (h *Handler) scanAttachmentRefs(url string) []attachmentRef {
+	var refs []attachmentRef
+	pattern := "%" + url + "%"
+
+	// 扫描文章
+	rows, err := h.store.DB().Query(`SELECT slug, title FROM posts WHERE content LIKE ? AND deleted_at = ''`, pattern)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var slug, title string
+			if rows.Scan(&slug, &title) == nil {
+				refs = append(refs, attachmentRef{Type: "post", Slug: slug, Title: title})
+			}
+		}
+	}
+
+	// 扫描页面
+	rows2, err2 := h.store.DB().Query(`SELECT slug, title FROM pages WHERE content LIKE ? AND deleted_at = ''`, pattern)
+	if err2 == nil {
+		defer rows2.Close()
+		for rows2.Next() {
+			var slug, title string
+			if rows2.Scan(&slug, &title) == nil {
+				refs = append(refs, attachmentRef{Type: "page", Slug: slug, Title: title})
+			}
+		}
+	}
+
+	if refs == nil {
+		refs = []attachmentRef{}
+	}
+	return refs
 }
 
 func randomHex(n int) string {

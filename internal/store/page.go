@@ -16,9 +16,10 @@ type Page struct {
 	Status      string // draft / published
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	DeletedAt   string // 软删除时间 RFC3339，空串=未删除
 }
 
-const pageCols = `id, slug, title, content_md, content_html, status, created_at, updated_at`
+const pageCols = `id, slug, title, content_md, content_html, status, created_at, updated_at, deleted_at`
 
 // EnsurePagesTable 独立建 pages 表（不走 post.go createTables，避免与其它 spec 冲突）。
 func (s *Store) EnsurePagesTable() error {
@@ -30,19 +31,22 @@ func (s *Store) EnsurePagesTable() error {
 		content_html TEXT NOT NULL DEFAULT '',
 		status       TEXT NOT NULL DEFAULT 'draft',
 		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		deleted_at   TEXT NOT NULL DEFAULT ''
 	);
 	CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
 	CREATE INDEX IF NOT EXISTS idx_pages_created ON pages(created_at);`
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create pages table: %w", err)
 	}
+	// 幂等迁移：旧库可能缺 deleted_at 列
+	s.db.Exec(`ALTER TABLE pages ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`)
 	return nil
 }
 
-// ListPages 列出全部页面（按更新时间倒序）。
+// ListPages 列出全部未删除页面（按更新时间倒序）。
 func (s *Store) ListPages() ([]*Page, error) {
-	rows, err := s.db.Query(`SELECT ` + pageCols + ` FROM pages ORDER BY datetime(updated_at) DESC, id DESC`)
+	rows, err := s.db.Query(`SELECT ` + pageCols + ` FROM pages WHERE deleted_at = '' ORDER BY datetime(updated_at) DESC, id DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("list pages: %w", err)
 	}
@@ -61,7 +65,7 @@ func (s *Store) GetPublished(slug string) (*Page, error) {
 }
 
 func (s *Store) getPageBySlug(slug string, publishedOnly bool) (*Page, error) {
-	q := `SELECT ` + pageCols + ` FROM pages WHERE slug = ?`
+	q := `SELECT ` + pageCols + ` FROM pages WHERE slug = ? AND deleted_at = ''`
 	args := []interface{}{slug}
 	if publishedOnly {
 		q += ` AND status = ?`
@@ -69,13 +73,15 @@ func (s *Store) getPageBySlug(slug string, publishedOnly bool) (*Page, error) {
 	}
 	row := s.db.QueryRow(q, args...)
 	p := &Page{}
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt)
+	var deletedAt string
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &deletedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("get page by slug %s: %w", slug, err)
 	}
+	p.DeletedAt = deletedAt
 	return p, nil
 }
 
@@ -119,11 +125,40 @@ func (s *Store) UpdatePage(slug string, p *Page) error {
 	return nil
 }
 
-// DeletePage 按 slug 删除页面。不存在不报错。
+// DeletePage 软删除：标记 deleted_at，页面进入回收站。不存在不报错。
 func (s *Store) DeletePage(slug string) error {
-	_, err := s.db.Exec(`DELETE FROM pages WHERE slug=?`, slug)
+	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	_, err := s.db.Exec(`UPDATE pages SET deleted_at = ? WHERE slug = ? AND deleted_at = ''`, now, slug)
 	if err != nil {
-		return fmt.Errorf("delete page %s: %w", slug, err)
+		return fmt.Errorf("soft delete page %s: %w", slug, err)
+	}
+	return nil
+}
+
+// ListTrashedPages 返回回收站中的页面，按删除时间倒序。
+func (s *Store) ListTrashedPages() ([]*Page, error) {
+	rows, err := s.db.Query(`SELECT ` + pageCols + ` FROM pages WHERE deleted_at != '' ORDER BY datetime(deleted_at) DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("list trashed pages: %w", err)
+	}
+	defer rows.Close()
+	return scanPages(rows)
+}
+
+// RestorePage 从回收站恢复页面。
+func (s *Store) RestorePage(slug string) error {
+	_, err := s.db.Exec(`UPDATE pages SET deleted_at = '' WHERE slug = ? AND deleted_at != ''`, slug)
+	if err != nil {
+		return fmt.Errorf("restore page %s: %w", slug, err)
+	}
+	return nil
+}
+
+// PurgePage 彻底删除页面（物理删除）。
+func (s *Store) PurgePage(slug string) error {
+	_, err := s.db.Exec(`DELETE FROM pages WHERE slug = ? AND deleted_at != ''`, slug)
+	if err != nil {
+		return fmt.Errorf("purge page %s: %w", slug, err)
 	}
 	return nil
 }
@@ -132,7 +167,7 @@ func scanPages(rows *sql.Rows) ([]*Page, error) {
 	var out []*Page
 	for rows.Next() {
 		p := &Page{}
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt); err != nil {
 			return nil, fmt.Errorf("scan page: %w", err)
 		}
 		out = append(out, p)

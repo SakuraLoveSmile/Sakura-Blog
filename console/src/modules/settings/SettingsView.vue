@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { settingsApi, authApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/vue";
+import MenubarEditor from "./MenubarEditor.vue";
 
 // 全部段结构化编辑；「高级·JSON」保留 8 段 JSON 兜底（一般无需使用）。
 const tabs = [
@@ -134,9 +135,6 @@ function togglePlatform(p: string) {
   if (i >= 0) arr.splice(i, 1);
   else arr.push(p);
 }
-function addMenuItem() {
-  data.value.menubar.items.push({ id: "", title: "", url: "", icon: "", theme: "" });
-}
 function addRightbarLink() {
   data.value.rightbar.welcome_linklist.items.push({ title: "", url: "", icon: "" });
 }
@@ -242,19 +240,12 @@ onMounted(load);
 
       <!-- 菜单 -->
       <div v-show="active === 'menubar'" class="space-y-4">
-        <div class="w-40"><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">菜单列数</label><input v-model.number="data.menubar.columns" type="number" min="1" :class="inputCls" /></div>
-        <div class="space-y-2">
-          <div v-for="(it, i) in data.menubar.items" :key="i" class="grid grid-cols-12 gap-2 items-center">
-            <input v-model="it.id" placeholder="id" :class="inputCls" class="col-span-2" />
-            <input v-model="it.title" placeholder="标题" :class="inputCls" class="col-span-2" />
-            <input v-model="it.url" placeholder="/url" :class="inputCls" class="col-span-3" />
-            <input v-model="it.icon" placeholder="icon key" :class="inputCls" class="col-span-3" />
-            <input v-model="it.theme" placeholder="#色值" :class="inputCls" class="col-span-1" />
-            <button @click="removeAt(data.menubar.items, Number(i))" class="col-span-1 text-red-500 hover:text-red-700"><Icon icon="ri:delete-bin-line" /></button>
-          </div>
-        </div>
-        <button @click="addMenuItem" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加菜单项</button>
-        <div><button @click="save('menubar')" :disabled="savingKey === 'menubar'" :class="btnCls">保存菜单</button></div>
+        <MenubarEditor
+          :items="data.menubar.items"
+          :columns="data.menubar.columns"
+          @update:columns="data.menubar.columns = $event"
+          @save="save('menubar')"
+        />
       </div>
 
       <!-- 右栏 -->

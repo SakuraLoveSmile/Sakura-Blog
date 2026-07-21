@@ -15,9 +15,13 @@ type Attachment struct {
 	Mime      string
 	Size      int64
 	CreatedAt time.Time
+	ThumbPath string // 缩略图相对路径，空=无
+	ThumbURL  string // 缩略图对外 URL，空=无
+	Width     int    // 图片宽度（px），0=非图片/未知
+	Height    int    // 图片高度（px）
 }
 
-const attachmentCols = `id, filename, path, url, mime, size, created_at`
+const attachmentCols = `id, filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height`
 
 // EnsureAttachmentsTable 独立建 attachments 表（不走 post.go createTables，避免与其它 spec 冲突）。
 func (s *Store) EnsureAttachmentsTable() error {
@@ -28,11 +32,24 @@ func (s *Store) EnsureAttachmentsTable() error {
 		url        TEXT NOT NULL DEFAULT '',
 		mime       TEXT NOT NULL DEFAULT '',
 		size       INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		thumb_path TEXT NOT NULL DEFAULT '',
+		thumb_url  TEXT NOT NULL DEFAULT '',
+		width      INTEGER NOT NULL DEFAULT 0,
+		height     INTEGER NOT NULL DEFAULT 0
 	);
 	CREATE INDEX IF NOT EXISTS idx_attachments_created ON attachments(created_at);`
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create attachments table: %w", err)
+	}
+	// 幂等迁移：旧库可能缺新列
+	for _, alter := range []string{
+		`ALTER TABLE attachments ADD COLUMN thumb_path TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE attachments ADD COLUMN thumb_url TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE attachments ADD COLUMN width INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE attachments ADD COLUMN height INTEGER NOT NULL DEFAULT 0`,
+	} {
+		s.db.Exec(alter)
 	}
 	return nil
 }
@@ -42,9 +59,9 @@ func (s *Store) CreateAttachment(a *Attachment) (int64, error) {
 	if a.CreatedAt.IsZero() {
 		a.CreatedAt = time.Now()
 	}
-	res, err := s.db.Exec(`INSERT INTO attachments (filename, path, url, mime, size, created_at)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt)
+	res, err := s.db.Exec(`INSERT INTO attachments (filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt, a.ThumbPath, a.ThumbURL, a.Width, a.Height)
 	if err != nil {
 		return 0, fmt.Errorf("create attachment: %w", err)
 	}
@@ -57,7 +74,8 @@ func (s *Store) CreateAttachment(a *Attachment) (int64, error) {
 }
 
 // ListAttachments 分页列出附件（按创建时间倒序）。page 从 1 开始。
-func (s *Store) ListAttachments(page, size int) ([]*Attachment, error) {
+// keyword 模糊匹配 filename；kind 为 "image" 时仅返回 image/* 类型，"other" 返回非图片。
+func (s *Store) ListAttachments(page, size int, keyword, kind string) ([]*Attachment, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -65,8 +83,22 @@ func (s *Store) ListAttachments(page, size int) ([]*Attachment, error) {
 		size = 24
 	}
 	offset := (page - 1) * size
-	rows, err := s.db.Query(`SELECT `+attachmentCols+` FROM attachments
-		ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`, size, offset)
+
+	where := "WHERE 1=1"
+	var args []any
+	if keyword != "" {
+		where += " AND filename LIKE ?"
+		args = append(args, "%"+keyword+"%")
+	}
+	switch kind {
+	case "image":
+		where += " AND mime LIKE 'image/%'"
+	case "other":
+		where += " AND mime NOT LIKE 'image/%'"
+	}
+
+	rows, err := s.db.Query(`SELECT `+attachmentCols+` FROM attachments `+where+`
+		ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`, append(args, size, offset)...)
 	if err != nil {
 		return nil, fmt.Errorf("list attachments: %w", err)
 	}
@@ -74,10 +106,22 @@ func (s *Store) ListAttachments(page, size int) ([]*Attachment, error) {
 	return scanAttachments(rows)
 }
 
-// CountAttachments 返回附件总数。
-func (s *Store) CountAttachments() (int, error) {
+// CountAttachments 返回附件总数（支持 keyword/kind 筛选）。
+func (s *Store) CountAttachments(keyword, kind string) (int, error) {
+	where := "WHERE 1=1"
+	var args []any
+	if keyword != "" {
+		where += " AND filename LIKE ?"
+		args = append(args, "%"+keyword+"%")
+	}
+	switch kind {
+	case "image":
+		where += " AND mime LIKE 'image/%'"
+	case "other":
+		where += " AND mime NOT LIKE 'image/%'"
+	}
 	var n int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM attachments`).Scan(&n)
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM attachments `+where, args...).Scan(&n)
 	if err != nil {
 		return 0, fmt.Errorf("count attachments: %w", err)
 	}
@@ -88,7 +132,7 @@ func (s *Store) CountAttachments() (int, error) {
 func (s *Store) GetAttachment(id int64) (*Attachment, error) {
 	row := s.db.QueryRow(`SELECT `+attachmentCols+` FROM attachments WHERE id = ?`, id)
 	a := &Attachment{}
-	err := row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt)
+	err := row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -115,7 +159,7 @@ func scanAttachments(rows *sql.Rows) ([]*Attachment, error) {
 	var out []*Attachment
 	for rows.Next() {
 		a := &Attachment{}
-		if err := rows.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height); err != nil {
 			return nil, fmt.Errorf("scan attachment: %w", err)
 		}
 		out = append(out, a)
@@ -124,4 +168,9 @@ func scanAttachments(rows *sql.Rows) ([]*Attachment, error) {
 		return nil, fmt.Errorf("iterate attachments: %w", err)
 	}
 	return out, nil
+}
+
+// DB 暴露底层 *sql.DB（用于 api 层引用扫描等跨表查询）。
+func (s *Store) DB() *sql.DB {
+	return s.db
 }
