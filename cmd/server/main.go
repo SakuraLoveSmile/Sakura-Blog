@@ -79,7 +79,7 @@ func main() {
 	flag.StringVar(&root, "root", "", "工作根目录（定位 config/DB/content；空则用 cwd 或 app.yml）")
 	flag.BoolVar(&seed, "seed", false, "启动时把 content/posts/*.md 导入 SQLite（按 slug UPSERT）")
 	flag.BoolVar(&devMode, "dev", false, "开发模式：从磁盘读 icons/templates/assets（默认走 go:embed）")
-	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 ../resource/.../icons.yml）")
+	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 <root>/internal/template/data/icons.yml）")
 	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/config/app.yml）")
 	flag.Parse()
 
@@ -107,11 +107,12 @@ func main() {
 	}
 	app = config.ResolveApp(app)
 
-	// icons 加载：-dev 从磁盘读（默认 ../resource/.../icons.yml），否则走 embed。
+	// icons 加载：-dev 从磁盘读规范副本（internal/template/data/icons.yml，与 embed 同源、已内联 share:* SVG），
+	// 否则走 embed。上游 resource/.../icons.yml 的 share:* 仍是裸 URL，会导致分享图标显示为 URL 文本，故不作默认。
 	var reg *tmpl.IconRegistry
 	if devMode {
 		if iconsPath == "" {
-			iconsPath = filepath.Join(app.Root, "..", "resource", "hexo-theme-stellar", "_data", "icons.yml")
+			iconsPath = filepath.Join(app.Root, "internal", "template", "data", "icons.yml")
 		}
 		reg, err = tmpl.LoadIcons(iconsPath)
 		if err != nil {
