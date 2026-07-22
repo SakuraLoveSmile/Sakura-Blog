@@ -268,6 +268,15 @@ func main() {
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
 
+	// GitHub 代理缓存（Spec 21）：内存 + 磁盘双缓存客户端，供 ghrepo/ghuser/ghcard 同步取数。
+	// 必须在 seed 之前注入 posts：否则 seed 渲染时 ghClient 为 nil，卡片会降级为纯链接并存入 content_html。
+	ghClient := ghpkg.New(ghpkg.Config{
+		Token:    app.GitHubToken,
+		CardHost: app.GHCardHost,
+		CacheDir: filepath.Join(filepath.Dir(app.DBPath), "ghcache"),
+	})
+	posts.SetGHClient(&ghAdapter{ghClient})
+
 	// seed：-seed flag 或 app.yml seed_on_start / BLOG_SEED 任一为真即执行导入。
 	if seed || app.SeedOnStart {
 		n, _ := seedpkg.Count(posts)
@@ -530,14 +539,8 @@ func main() {
 	// 友链在 console 增删改后，触发聚合器即时重建缓存，使 /friends 页即时反映。
 	apiHandler.SetOnLinksChanged(friendsAgg.Refresh)
 
-	// GitHub 代理缓存（Spec 21）：/api/gh/card + /api/gh/repo 公开端点。
-	ghClient := ghpkg.New(ghpkg.Config{
-		Token:    app.GitHubToken,
-		CardHost: app.GHCardHost,
-		CacheDir: filepath.Join(filepath.Dir(app.DBPath), "ghcache"),
-	})
+	// GitHub 代理端点（Spec 21）：/api/gh/card + /api/gh/repo（ghClient 已在 seed 前构造并注入 posts）。
 	ghpkg.NewHandler(ghClient).Register(r)
-	posts.SetGHClient(&ghAdapter{ghClient}) // 供 ghrepo/ghuser shortcode 渲染时同步取数
 
 	// 评分数据服务（Spec 20）：/api/rating 公开端点。
 	if err := st.EnsureRatingsTable(); err != nil {
