@@ -81,8 +81,8 @@
   {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo4">
 
-  {{- /* Spec 06: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}">
+  {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=demo6">
 
   {{- /* Mermaid 图表：CDN + 主题跟随 data-theme，PJAX 后重扫 */}}
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
