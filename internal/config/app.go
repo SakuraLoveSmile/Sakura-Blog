@@ -57,7 +57,7 @@ func LoadApp(path string) (*App, error) {
 }
 
 // ResolveApp 应用环境变量覆盖 + 路径解析。返回处理后的 App。
-// 环境变量：BLOG_LISTEN / BLOG_DB / BLOG_ROOT / BLOG_SEED / BLOG_TRUSTED_PROXY。
+// 环境变量：BLOG_LISTEN / BLOG_DB / BLOG_ROOT / BLOG_SEED / BLOG_TRUSTED_PROXY / BLOG_GITHUB_TOKEN。
 // DBPath 若是相对路径，按 root 解析成绝对路径（便于 SQLite 父目录创建）。
 func ResolveApp(app *App) *App {
 	if v := os.Getenv("BLOG_LISTEN"); v != "" {
@@ -86,6 +86,9 @@ func ResolveApp(app *App) *App {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			app.BackupKeep = n
 		}
+	}
+	if v := os.Getenv("BLOG_GITHUB_TOKEN"); v != "" {
+		app.GitHubToken = v
 	}
 
 	// root 绝对化：空则用 cwd

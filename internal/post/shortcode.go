@@ -419,13 +419,13 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderRating(parts[1], iconFunc)
 	})
 
-	// 22. ghcard（单行，github-readme-stats 卡片）
+	// 22. ghcard（单行，GitHub 卡片；复用原生 ghrepo/ghuser 渲染，自托管无第三方依赖）
 	md = reGHCard.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reGHCard.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
 		}
-		return renderGHCard(parts[1])
+		return renderGHCard(parts[1], ghClient)
 	})
 
 	// 23. poetry（块级，诗词）
@@ -1551,30 +1551,21 @@ func renderRating(argsStr string, iconFunc func(string) string) string {
 	return sb.String()
 }
 
-// renderGHCard 渲染 {% ghcard user/repo %} / {% ghcard user %}，经本地 /api/gh/card 代理。
-func renderGHCard(argsStr string) string {
+// renderGHCard 渲染 {% ghcard user/repo %} / {% ghcard user %}。
+// 复用原生 GitHub API 卡片渲染（renderGHRepo/renderGHUser）：自托管、带内存/磁盘缓存与降级，
+// 不再依赖第三方 github-readme-stats 实例（其公共实例常被暂停导致裂图）。
+// github-readme-stats 专有的主题/配色参数（theme/*_color 等）在原生卡片下无意义，解析后忽略。
+func renderGHCard(argsStr string, ghClient GHClient) string {
 	params := []string{"show_owner", "theme", "title_color", "text_color", "icon_color", "bg_color", "hide_border", "cache_seconds", "locale"}
 	named, _ := parseNamedPositionalArgs(argsStr, params, []string{"repo"})
 	path := named["repo"]
 	if path == "" {
 		return ""
 	}
-	var query string
 	if strings.Contains(path, "/") {
-		ps := strings.SplitN(path, "/", 2)
-		query = "username=" + ps[0] + "&repo=" + ps[1]
-	} else {
-		query = "username=" + path
+		return renderGHRepo(path, ghClient)
 	}
-	for _, k := range params {
-		if v := named[k]; v != "" {
-			query += "&" + k + "=" + v
-		}
-	}
-	if !strings.Contains(query, "show_owner=") {
-		query += "&show_owner=true"
-	}
-	return `<div class="tag-plugin ghcard"><a class="ghcard" rel="external nofollow noopener noreferrer" href="https://github.com/` + html.EscapeString(path) + `"><img src="/api/gh/card?` + html.EscapeString(query) + `"/></a></div>`
+	return renderGHUser(path, ghClient)
 }
 
 // renderPoetry 渲染 {% poetry [title] [author:] [date:] [footer:] %} body {% endpoetry %}。

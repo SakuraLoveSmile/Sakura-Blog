@@ -34,8 +34,10 @@ auto_backup: true
 # 自动备份留存份数，超出按时间从旧到新清理。
 backup_keep: 7
 
-# GitHub 集成（Spec 21: ghcard/ghrepo/ghuser 代理缓存）
-# PAT 可选，空则匿名访问（60 req/h，单人博客够用）。
+# GitHub 集成（ghcard/ghrepo/ghuser 卡片，直连 api.github.com 自托管渲染）
+# PAT 只需只读权限；空则匿名访问（60 req/h，易被共享 IP 限流 403）。
+# 安全提示：本文件受 git 跟踪，不要将真实 PAT 写在这里。
+# 推荐用环境变量注入：export BLOG_GITHUB_TOKEN=ghp_xxx（优先级高于本文件）。
 github_token:
-# github-readme-stats 服务主机，默认官方 vercel 实例。
+# github-readme-stats 服务主机（仅保留供 /api/gh/card 代理端点；ghcard 已改用原生渲染，不再依赖它）。
 gh_card_host: github-readme-stats.vercel.app
