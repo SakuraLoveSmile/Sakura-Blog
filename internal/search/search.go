@@ -47,6 +47,14 @@ func New(db *sql.DB) *Index {
 // slug/title_raw UNINDEXED 存原始值，避免结果反解切分空格。
 // 若存在旧版不兼容结构（历史实验表）则丢弃重建，重建后 Count=0 触发启动回填。
 func (ix *Index) Ensure() error {
+	// 清理历史遗留的基于触发器的 FTS 同步（早期实验方案，引用 content_md/content_html 列）。
+	// 现方案改用显式 IndexPost/Unindex（postWriteHook 调用）；遗留触发器会因
+	// 新表结构（title/content/slug/title_raw）无 content_md 列而在 posts 增删改时报错，必须先删除。
+	for _, trg := range []string{"posts_fts_ai", "posts_fts_ad", "posts_fts_au"} {
+		if _, err := ix.db.Exec(`DROP TRIGGER IF EXISTS ` + trg); err != nil {
+			return fmt.Errorf("drop legacy fts trigger %s: %w", trg, err)
+		}
+	}
 	var existing string
 	err := ix.db.QueryRow(`SELECT sql FROM sqlite_master WHERE type='table' AND name='posts_fts'`).Scan(&existing)
 	if err == nil && !strings.Contains(existing, "title_raw") {
