@@ -23,7 +23,6 @@ type App struct {
 	AutoBackup   bool   `yaml:"auto_backup"`   // 每 24h 自动全量备份到 data/backups/，默认开启
 	BackupKeep   int    `yaml:"backup_keep"`   // 自动备份留存份数，默认 7
 	GitHubToken  string `yaml:"github_token"`  // GitHub PAT（可选），空则匿名 60 req/h
-	GHCardHost   string `yaml:"gh_card_host"`  // github-readme-stats 主机，默认 github-readme-stats.vercel.app
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
@@ -35,7 +34,6 @@ func DefaultApp() *App {
 		MaxUploadMB: 5,
 		AutoBackup: true,
 		BackupKeep: 7,
-		GHCardHost: "github-readme-stats.vercel.app",
 	}
 }
 

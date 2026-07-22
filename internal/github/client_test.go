@@ -5,13 +5,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 )
 
-// newTestClient 构造指向 TLS 测试上游的 Client：cardHost 与 apiBase 均注入测试服务器，
+// newTestClient 构造指向 TLS 测试上游的 Client：apiBase 注入测试服务器，
 // http.Client 信任测试证书，磁盘缓存落到临时目录。
 func newTestClient(t *testing.T, upstream http.HandlerFunc) *Client {
 	t.Helper()
@@ -19,24 +18,24 @@ func newTestClient(t *testing.T, upstream http.HandlerFunc) *Client {
 	t.Cleanup(srv.Close)
 	c := New(Config{CacheDir: t.TempDir()})
 	c.http = srv.Client()
-	c.cardHost = strings.TrimPrefix(srv.URL, "https://")
 	c.apiBase = srv.URL
 	return c
 }
 
-// TestCardSVGMemoryCache 同一实例二次请求命中内存缓存，上游仅被调用一次。
-func TestCardSVGMemoryCache(t *testing.T) {
+// TestMemoryCache 同一实例二次请求命中内存缓存，上游仅被调用一次。
+func TestMemoryCache(t *testing.T) {
 	var hits int32
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&hits, 1)
-		w.Write([]byte("<svg>ok</svg>"))
+		w.Write([]byte("payload"))
 	})
-	b1, err := c.GetCardSVG("username=x")
-	if err != nil || string(b1) != "<svg>ok</svg>" {
+	url := c.apiBase + "/data"
+	b1, err := c.get(url, time.Hour)
+	if err != nil || string(b1) != "payload" {
 		t.Fatalf("first call: %v %q", err, b1)
 	}
-	b2, err := c.GetCardSVG("username=x")
-	if err != nil || string(b2) != "<svg>ok</svg>" {
+	b2, err := c.get(url, time.Hour)
+	if err != nil || string(b2) != "payload" {
 		t.Fatalf("second call: %v %q", err, b2)
 	}
 	if got := atomic.LoadInt32(&hits); got != 1 {
@@ -44,29 +43,27 @@ func TestCardSVGMemoryCache(t *testing.T) {
 	}
 }
 
-// TestCardSVGDiskPersist 新实例内存为空，但磁盘缓存仍命中，避免二次回源。
-func TestCardSVGDiskPersist(t *testing.T) {
+// TestDiskPersist 新实例内存为空，但磁盘缓存仍命中，避免二次回源。
+func TestDiskPersist(t *testing.T) {
 	var hits int32
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&hits, 1)
-		w.Write([]byte("<svg>disk</svg>"))
+		w.Write([]byte("disk"))
 	}))
 	defer srv.Close()
 	dir := t.TempDir()
-	host := strings.TrimPrefix(srv.URL, "https://")
+	url := srv.URL + "/data"
 
 	c1 := New(Config{CacheDir: dir})
 	c1.http = srv.Client()
-	c1.cardHost = host
-	if _, err := c1.GetCardSVG("username=y"); err != nil {
+	if _, err := c1.get(url, time.Hour); err != nil {
 		t.Fatal(err)
 	}
 
 	c2 := New(Config{CacheDir: dir})
 	c2.http = srv.Client()
-	c2.cardHost = host
-	b, err := c2.GetCardSVG("username=y")
-	if err != nil || string(b) != "<svg>disk</svg>" {
+	b, err := c2.get(url, time.Hour)
+	if err != nil || string(b) != "disk" {
 		t.Fatalf("disk hit failed: %v %q", err, b)
 	}
 	if got := atomic.LoadInt32(&hits); got != 1 {
@@ -82,21 +79,19 @@ func TestStaleWhileError(t *testing.T) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte("<svg>fresh</svg>"))
+		w.Write([]byte("fresh"))
 	}))
 	defer srv.Close()
 	dir := t.TempDir()
-	host := strings.TrimPrefix(srv.URL, "https://")
+	url := srv.URL + "/data"
 
 	c := New(Config{CacheDir: dir})
 	c.http = srv.Client()
-	c.cardHost = host
-	if _, err := c.GetCardSVG("username=z"); err != nil {
+	if _, err := c.get(url, 24*time.Hour); err != nil {
 		t.Fatal(err)
 	}
 
 	// 磁盘缓存 modtime 回拨 25h，超过 24h TTL 触发回源。
-	url := "https://" + host + "/api?username=z"
 	diskPath := filepath.Join(dir, cacheKey(url)+".json")
 	old := time.Now().Add(-25 * time.Hour)
 	if err := os.Chtimes(diskPath, old, old); err != nil {
@@ -106,12 +101,11 @@ func TestStaleWhileError(t *testing.T) {
 	atomic.StoreInt32(&fail, 1)
 	c2 := New(Config{CacheDir: dir}) // 新实例避免命中内存
 	c2.http = srv.Client()
-	c2.cardHost = host
-	b, err := c2.GetCardSVG("username=z")
+	b, err := c2.get(url, 24*time.Hour)
 	if err != nil {
 		t.Fatalf("stale fallback should not error: %v", err)
 	}
-	if string(b) != "<svg>fresh</svg>" {
+	if string(b) != "fresh" {
 		t.Fatalf("expected stale data, got %q", b)
 	}
 }
@@ -121,7 +115,7 @@ func TestNoCacheUpstreamError(t *testing.T) {
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
-	if _, err := c.GetCardSVG("username=nobody"); err == nil {
+	if _, err := c.get(c.apiBase+"/missing", time.Hour); err == nil {
 		t.Fatal("expected error when upstream 404 and no cache")
 	}
 }

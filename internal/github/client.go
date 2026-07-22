@@ -9,15 +9,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
 
 // Client GitHub REST 代理客户端，内存 + 磁盘双层缓存，stale-while-error 降级。
+// 仅直连 api.github.com（自托管渲染），不依赖任何第三方服务主机。
 type Client struct {
 	token   string // 可选 PAT，空则匿名（60 req/h）
-	cardHost string // github-readme-stats 主机，默认 github-readme-stats.vercel.app
 	apiBase  string // GitHub REST API 基址，默认 https://api.github.com（测试可注入）
 	cacheDir string // 磁盘缓存目录 data/ghcache/
 	http     *http.Client
@@ -34,16 +33,11 @@ type memEntry struct {
 // Config 构造 Client 所需配置。
 type Config struct {
 	Token    string // GitHub PAT（可选）
-	CardHost string // github-readme-stats host，空则默认
 	CacheDir string // 磁盘缓存目录（绝对路径）
 }
 
 // New 创建 GitHub 数据客户端。
 func New(cfg Config) *Client {
-	host := cfg.CardHost
-	if host == "" {
-		host = "github-readme-stats.vercel.app"
-	}
 	cacheDir := cfg.CacheDir
 	if cacheDir == "" {
 		cacheDir = "data/ghcache"
@@ -51,7 +45,6 @@ func New(cfg Config) *Client {
 	_ = os.MkdirAll(cacheDir, 0o755)
 	return &Client{
 		token:    cfg.Token,
-		cardHost: host,
 		apiBase:  "https://api.github.com",
 		cacheDir: cacheDir,
 		http:     &http.Client{Timeout: 15 * time.Second},
@@ -132,18 +125,6 @@ func (c *Client) GetUser(username string) (*UserInfo, error) {
 		Repos:     raw.Repos,
 		HTMLURL:   raw.HTMLURL,
 	}, nil
-}
-
-// GetCardSVG 获取 github-readme-stats SVG 卡片，缓存 TTL 24h。
-// params 为原始 query 参数（username/repo/theme 等），透传给上游。
-// 含 repo= 参数时走 /api/pin（仓库卡），否则走 /api（用户卡）。
-func (c *Client) GetCardSVG(params string) ([]byte, error) {
-	path := "/api"
-	if strings.Contains(params, "repo=") {
-		path = "/api/pin"
-	}
-	url := fmt.Sprintf("https://%s%s?%s", c.cardHost, path, params)
-	return c.get(url, 24*time.Hour)
 }
 
 // get 通用缓存拉取：内存 → 磁盘 → 上游。上游失败时 stale-while-error。

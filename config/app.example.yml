@@ -40,5 +40,3 @@ backup_keep: 7
 # PAT 只需只读权限；空则匿名访问（60 req/h，易被共享 IP 限流 403）。
 # app.yml 不受 git 跟踪，可直接在此填写 PAT；亦可用环境变量 BLOG_GITHUB_TOKEN 注入（优先级更高）。
 github_token:
-# github-readme-stats 服务主机（仅保留供 /api/gh/card 代理端点；ghcard 已改用原生渲染，不再依赖它）。
-gh_card_host: github-readme-stats.vercel.app

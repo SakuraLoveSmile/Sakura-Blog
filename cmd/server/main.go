@@ -273,7 +273,6 @@ func main() {
 	// 必须在 seed 之前注入 posts：否则 seed 渲染时 ghClient 为 nil，卡片会降级为纯链接并存入 content_html。
 	ghClient := ghpkg.New(ghpkg.Config{
 		Token:    app.GitHubToken,
-		CardHost: app.GHCardHost,
 		CacheDir: filepath.Join(filepath.Dir(app.DBPath), "ghcache"),
 	})
 	posts.SetGHClient(&ghAdapter{ghClient})
@@ -540,7 +539,7 @@ func main() {
 	// 友链在 console 增删改后，触发聚合器即时重建缓存，使 /friends 页即时反映。
 	apiHandler.SetOnLinksChanged(friendsAgg.Refresh)
 
-	// GitHub 代理端点（Spec 21）：/api/gh/card + /api/gh/repo（ghClient 已在 seed 前构造并注入 posts）。
+	// GitHub 代理端点（Spec 21）：/api/gh/repo（直连 api.github.com；ghClient 已在 seed 前构造并注入 posts）。
 	ghpkg.NewHandler(ghClient).Register(r)
 
 	// 评分数据服务（Spec 20）：/api/rating 公开端点。
