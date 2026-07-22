@@ -1,4 +1,6 @@
-# 站点配置，对应 internal/config/site.go 的 DefaultSite()。
+# 站点配置模板，对应 internal/config/site.go 的 DefaultSite()。
+# 复制为 site.yml 后填值：cp config/site.example.yml config/site.yml
+# site.yml 含密钥（admin 密码 / SMTP 密码）、不受 git 跟踪；本 example 仅跟踪结构与安全默认值。
 # 启动时由 config.LoadSite 加载；文件缺失/解析失败时 fallback 到 DefaultSite()。
 # 注意：# 开头的值（如主题色）必须加引号；raw HTML（如 social icon）用单引号包裹。
 
@@ -178,7 +180,7 @@ article:
 
 # 管理后台
 admin:
-  password: ''            # /admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
+  password: ''            # 【密钥】/admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
 
 # 评论系统（自建，参考 Artalk 架构 + Halo 设计语言）
 comments:
@@ -193,5 +195,5 @@ comments:
     smtp_host: ''
     smtp_port: 465
     username: ''
-    password: ''
+    password: ''          # 【密钥】SMTP 发信密码/授权码
     from: ''              # 发件人地址，留空用 username
