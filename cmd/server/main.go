@@ -530,6 +530,15 @@ func main() {
 	// P2-18：multipart 内存上限——跟随 max_upload_mb，防止超大表单解析撑爆内存（超出部分落临时文件）。
 	r.MaxMultipartMemory = int64(app.MaxUploadMB+1) << 20
 
+	// HEAD 改写为 GET：Gin 注册 GET 路由不会自动响应 HEAD（curl -I/监控探测/CDN 健康检查会 404）。
+	// net/http 对 HEAD 请求自动抑制响应体，仅回 header；代价是 HEAD 走完整 handler（量小可接受）。
+	r.Use(func(c *gin.Context) {
+		if c.Request.Method == http.MethodHead {
+			c.Request.Method = http.MethodGet
+		}
+		c.Next()
+	})
+
 	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
