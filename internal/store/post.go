@@ -204,7 +204,8 @@ func (s *Store) createTables() error {
 		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
-	CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);`
+	CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);
+	CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category);`
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create tables: %w", err)
 	}
@@ -273,6 +274,11 @@ func (s *Store) migrateColumns() error {
 		if _, err := s.db.Exec(alter); err != nil {
 			return fmt.Errorf("alter table add %s: %w", col, err)
 		}
+	}
+	// P2-16：(status, publish_at) 复合索引加速 publishedWhere 过滤（文章上千后有感）。
+	// 依赖迁移列 publish_at，须在列补齐后创建，故不放初始 DDL。
+	if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_posts_status_publish ON posts(status, publish_at)`); err != nil {
+		return fmt.Errorf("create idx_posts_status_publish: %w", err)
 	}
 	return nil
 }

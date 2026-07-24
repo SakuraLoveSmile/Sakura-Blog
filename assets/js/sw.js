@@ -1,10 +1,12 @@
 /* Service Worker: static cache-first, pages network-first with offline fallback. */
-const CACHE_VERSION = 'blog-v1';
+const CACHE_VERSION = 'blog-v2';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE = CACHE_VERSION + '-pages';
 
 const STATIC_PREFIX = '/assets/';
 const BYPASS_PREFIXES = ['/admin', '/api/'];
+// P2-12：离线兜底页（install 时预缓存），离线且无缓存时返回而非白屏。
+const OFFLINE_URL = '/assets/offline.html';
 
 function shouldBypass(request) {
   if (request.method !== 'GET') {
@@ -30,7 +32,11 @@ function isHTMLRequest(request) {
 
 self.addEventListener('install', function (event) {
   self.skipWaiting();
-  event.waitUntil(Promise.resolve());
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then(function (cache) {
+      return cache.add(OFFLINE_URL);
+    })
+  );
 });
 
 self.addEventListener('activate', function (event) {
@@ -98,7 +104,8 @@ function networkFirst(request, cacheName) {
           if (cached) {
             return cached;
           }
-          throw new Error('Offline and no cached page');
+          // P2-12：离线且无页面缓存时回退到预缓存的离线兜底页，避免白屏。
+          return caches.match(OFFLINE_URL);
         });
       });
   });

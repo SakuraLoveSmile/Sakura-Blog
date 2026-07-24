@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -313,8 +314,35 @@ func main() {
 
 	// fillSidebar：填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 热门 top5 + 站点统计 + 最新评论 5 条），所有前台页面渲染前调用。
 	// 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
+	// P2-13：结果缓存 45s（TTL 内新文章/评论稍晚出现在侧栏，可接受）；CountByTag 合并为单次调用（原标签云与统计各查一次）。
+	// 快照切片在请求间共享底层数组，模板渲染只读，无数据竞争。
 	const popularLimit = 5
+	type sidebarSnapshot struct {
+		recent         []*tmpl.RecentPost
+		popular        []*tmpl.RecentPost
+		latestComments []*tmpl.LatestComment
+		tagCloud       []*tmpl.TagItem
+		hasTopics      bool
+		siteStats      *tmpl.SiteStats
+	}
+	var (
+		sidebarMu     sync.Mutex
+		sidebarCached *sidebarSnapshot
+		sidebarExpiry time.Time
+	)
+	const sidebarTTL = 45 * time.Second
 	fillSidebar := func(data *tmpl.ViewData) {
+		sidebarMu.Lock()
+		defer sidebarMu.Unlock()
+		if sidebarCached != nil && time.Now().Before(sidebarExpiry) {
+			data.Recent = sidebarCached.recent
+			data.Popular = sidebarCached.popular
+			data.LatestComments = sidebarCached.latestComments
+			data.TagCloud = sidebarCached.tagCloud
+			data.HasTopics = sidebarCached.hasTopics
+			data.SiteStats = sidebarCached.siteStats
+			return
+		}
 		if posts, err := st.ListPublishedPaged(1, 5); err == nil {
 			for _, p := range posts {
 				data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
@@ -337,9 +365,11 @@ func main() {
 				}
 			}
 		}
-		if counts, err := st.CountByTag(); err == nil {
-			items := make([]*tmpl.TagItem, 0, len(counts))
-			for name, n := range counts {
+		// 标签计数单次查询：标签云与站点统计共用（P2-13 去重）。
+		tagCounts, tagErr := st.CountByTag()
+		if tagErr == nil {
+			items := make([]*tmpl.TagItem, 0, len(tagCounts))
+			for name, n := range tagCounts {
 				items = append(items, &tmpl.TagItem{Name: name, Count: n})
 			}
 			sort.Slice(items, func(i, j int) bool {
@@ -370,8 +400,8 @@ func main() {
 		} else {
 			statsOK = false
 		}
-		if counts, err := st.CountByTag(); err == nil {
-			stats.Tags = len(counts)
+		if tagErr == nil {
+			stats.Tags = len(tagCounts)
 		} else {
 			statsOK = false
 		}
@@ -388,6 +418,15 @@ func main() {
 		if statsOK {
 			data.SiteStats = &stats
 		}
+		sidebarCached = &sidebarSnapshot{
+			recent:         data.Recent,
+			popular:        data.Popular,
+			latestComments: data.LatestComments,
+			tagCloud:       data.TagCloud,
+			hasTopics:      data.HasTopics,
+			siteStats:      data.SiteStats,
+		}
+		sidebarExpiry = time.Now().Add(sidebarTTL)
 	}
 
 	// fillComments：文章页评论区 SSR 注入（评论树 + 计数）。查询失败留空，评论区降级为空列表。
@@ -484,6 +523,15 @@ func main() {
 
 	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
+
+	// P2-14：安全响应头——nosniff 防 MIME 嗅探、SAMEORIGIN 防点击劫持、Referrer-Policy 控制来源泄漏。
+	// 不加全局 CSP：前台存在内联脚本/样式（原版 Stellar 结构），严格 CSP 会破坏渲染；/uploads 的 SVG 已单独 CSP 防护（P1-11）。
+	r.Use(func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "SAMEORIGIN")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Next()
+	})
 
 	// P1-7：/assets 长缓存——带 ?v= 版本号的 css/js/字体改 immutable 长缓存，破缓存靠 ?v= bump。
 	// sw.js/manifest 不在 /assets/ 路径下，不受影响。
