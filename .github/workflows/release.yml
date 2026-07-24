@@ -1,0 +1,56 @@
+name: Release Build
+
+# release 分支推送 / 打 tag / 手动触发均可构建。
+# 产物：Linux amd64 单二进制（go:embed 全部资源），服务器下载即可运行。
+on:
+  push:
+    branches: [release]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Console SPA（go:embed 编译期要求 console/dist 非空）----
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+
+      - name: Build console
+        run: cd console && npm ci && npm run build
+
+      # ---- Go 交叉编译（sqlite 纯 Go 实现，CGO 可关）----
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Linux binary
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o blog-linux-amd64 ./cmd/server
+          sha256sum blog-linux-amd64 > blog-linux-amd64.sha256
+
+      # 产物 1：Actions Artifacts（每次构建，保留 30 天）
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blog-linux-amd64
+          path: |
+            blog-linux-amd64
+            blog-linux-amd64.sha256
+          retention-days: 30
+
+      # 产物 2：GitHub Release（打 tag 时，服务器可直链下载）
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            blog-linux-amd64
+            blog-linux-amd64.sha256
+          generate_release_notes: true
