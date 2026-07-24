@@ -11,6 +11,24 @@ export interface PluginParam {
   default?: string;
 }
 
+/**
+ * 结构化参数表单字段（Spec 29）。
+ * 供 PluginParamForm.vue 渲染输入并拼装 shortcode：
+ * - role=positional：位置参数，按字段顺序拼在标签名后
+ * - role=named：命名参数，拼为 key:value（值非空才拼）
+ * - role=flag：布尔开关，true 时仅拼 key（如 checked/open/download）
+ * - role=content：正文，块级插件放入 {% name %}…{% endname %} 之间
+ */
+export interface PluginFormField {
+  key: string;
+  label: string;
+  type: "text" | "select" | "color" | "textarea" | "flag";
+  role: "positional" | "named" | "content" | "flag";
+  options?: string[];
+  default?: string;
+  placeholder?: string;
+}
+
 export interface PluginMeta {
   /** 标签名（不含 {% %}） */
   name: string;
@@ -26,6 +44,8 @@ export interface PluginMeta {
   params: PluginParam[];
   /** 可运行示例（直接送 preview/markdown 渲染） */
   example: string;
+  /** 可选：结构化参数表单 schema（Spec 29）。未定义时编辑器/插件库回退到可编辑示例文本 */
+  form?: PluginFormField[];
 }
 
 export const PLUGIN_CATEGORIES: PluginCategory[] = [
@@ -50,6 +70,11 @@ export const plugins: PluginMeta[] = [
       { name: "标题", desc: "可选，第二个位置参数起为正文", default: "—" },
     ],
     example: "{% note color:green 提示 这是一条成功提示，支持 **Markdown** 行内语法。 %}",
+    form: [
+      { key: "color", label: "配色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "blue" },
+      { key: "title", label: "标题（可选）", type: "text", role: "positional", placeholder: "提示" },
+      { key: "content", label: "内容", type: "textarea", role: "content", default: "这是一条提示，支持 **Markdown** 行内语法。" },
+    ],
   },
   {
     name: "quot",
@@ -64,6 +89,11 @@ export const plugins: PluginMeta[] = [
       { name: "text", desc: "标题文本（也可用位置参数）", default: "—" },
     ],
     example: "{% quot el:h2 text:这是一个小标题 %}",
+    form: [
+      { key: "el", label: "标签", type: "select", role: "named", options: ["p", "h2", "h3", "h4"], default: "p" },
+      { key: "icon", label: "图标 key", type: "text", role: "named", default: "hashtag" },
+      { key: "text", label: "标题文本", type: "text", role: "named", default: "这是一个小标题" },
+    ],
   },
   {
     name: "mark",
@@ -74,6 +104,10 @@ export const plugins: PluginMeta[] = [
     signature: "{% mark 文本 [color:颜色] %}",
     params: [{ name: "color", desc: "高亮颜色", default: "yellow" }],
     example: "这里有一段 {% mark 重点内容 color:cyan %} 需要高亮。",
+    form: [
+      { key: "text", label: "文本", type: "text", role: "positional", default: "重点内容" },
+      { key: "color", label: "颜色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "yellow" },
+    ],
   },
   {
     name: "button",
@@ -87,6 +121,12 @@ export const plugins: PluginMeta[] = [
       { name: "size", desc: "尺寸：small/large", default: "—" },
     ],
     example: "{% button 访问主页 https://example.com color:purple %}",
+    form: [
+      { key: "text", label: "按钮文本", type: "text", role: "positional", default: "访问主页" },
+      { key: "url", label: "链接", type: "text", role: "positional", default: "https://example.com" },
+      { key: "color", label: "配色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "blue" },
+      { key: "size", label: "尺寸", type: "select", role: "named", options: ["", "small", "large"] },
+    ],
   },
   {
     name: "checkbox",
@@ -100,6 +140,11 @@ export const plugins: PluginMeta[] = [
       { name: "color", desc: "配色", default: "blue" },
     ],
     example: "{% checkbox checked 已完成的任务 color:green %}\n{% checkbox 待办的任务 %}",
+    form: [
+      { key: "text", label: "文本", type: "text", role: "positional", default: "已完成的任务" },
+      { key: "checked", label: "默认勾选", type: "flag", role: "flag", default: "true" },
+      { key: "color", label: "配色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "green" },
+    ],
   },
   {
     name: "hashtag",
@@ -113,6 +158,11 @@ export const plugins: PluginMeta[] = [
       { name: "color", desc: "缺省时按红橙黄绿青蓝紫循环", default: "循环" },
     ],
     example: "{% hashtag 日常 %} {% hashtag 技术 color:blue %} {% hashtag 随笔 %}",
+    form: [
+      { key: "text", label: "文本", type: "text", role: "positional", default: "日常" },
+      { key: "href", label: "链接（可选）", type: "text", role: "positional" },
+      { key: "color", label: "颜色（留空循环）", type: "select", role: "named", options: ["", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"] },
+    ],
   },
   {
     name: "emoji",
@@ -139,6 +189,11 @@ export const plugins: PluginMeta[] = [
       { name: "color", desc: "图标颜色", default: "blue" },
     ],
     example: "{% icon solar:star-bold color:orange %} 收藏 {% icon solar:heart-bold color:red %} 喜欢",
+    form: [
+      { key: "key", label: "图标 key", type: "text", role: "positional", default: "solar:star-bold" },
+      { key: "color", label: "颜色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "orange" },
+      { key: "text", label: "附文本（可选）", type: "text", role: "positional" },
+    ],
   },
 
   // ==================== 布局容器 ====================
@@ -154,6 +209,12 @@ export const plugins: PluginMeta[] = [
       { name: "open", desc: "true 时默认展开", default: "false" },
     ],
     example: "{% folding color:cyan open:true 点击查看详情 %}\n这里是折叠内容，支持 **Markdown**。\n{% endfolding %}",
+    form: [
+      { key: "color", label: "配色", type: "select", role: "named", options: ["", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"] },
+      { key: "open", label: "默认展开", type: "flag", role: "flag", default: "true" },
+      { key: "title", label: "标题", type: "text", role: "positional", default: "点击查看详情" },
+      { key: "content", label: "正文", type: "textarea", role: "content", default: "这里是折叠内容，支持 **Markdown**。" },
+    ],
   },
   {
     name: "tabs",
@@ -191,6 +252,12 @@ export const plugins: PluginMeta[] = [
       { name: "ratio", desc: "宽高比", default: "origin" },
     ],
     example: "{% gallery %}\n![](https://picsum.photos/400/300?1)\n![](https://picsum.photos/400/300?2)\n![](https://picsum.photos/400/300?3)\n{% endgallery %}",
+    form: [
+      { key: "layout", label: "布局", type: "select", role: "named", options: ["grid", "flow"], default: "grid" },
+      { key: "size", label: "尺寸模式", type: "text", role: "named", default: "mix" },
+      { key: "ratio", label: "宽高比", type: "text", role: "named", default: "origin" },
+      { key: "content", label: "图片（每行一个 Markdown 图片）", type: "textarea", role: "content", default: "![](https://picsum.photos/400/300?1)\n![](https://picsum.photos/400/300?2)\n![](https://picsum.photos/400/300?3)" },
+    ],
   },
   {
     name: "folders",
@@ -229,6 +296,12 @@ export const plugins: PluginMeta[] = [
       { name: "child", desc: "子元素配色", default: "—" },
     ],
     example: "{% box color:green 卡片标题 %}\n卡片正文，支持 **Markdown**。\n{% endbox %}",
+    form: [
+      { key: "color", label: "外框配色", type: "select", role: "named", options: ["", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"] },
+      { key: "child", label: "子元素配色", type: "select", role: "named", options: ["", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"] },
+      { key: "title", label: "标题", type: "text", role: "positional", default: "卡片标题" },
+      { key: "content", label: "正文", type: "textarea", role: "content", default: "卡片正文，支持 **Markdown**。" },
+    ],
   },
   {
     name: "poetry",
@@ -260,6 +333,14 @@ export const plugins: PluginMeta[] = [
       { name: "ratio", desc: "宽高比（如 16/9）", default: "—" },
     ],
     example: "{% image https://picsum.photos/600/360 风景图 width:80% download:true %}",
+    form: [
+      { key: "src", label: "图片地址", type: "text", role: "positional", default: "https://picsum.photos/600/360" },
+      { key: "alt", label: "替代文本", type: "text", role: "positional", default: "风景图" },
+      { key: "width", label: "宽度", type: "text", role: "named", default: "80%" },
+      { key: "bg", label: "背景色", type: "text", role: "named" },
+      { key: "download", label: "显示下载按钮", type: "flag", role: "flag" },
+      { key: "ratio", label: "宽高比（如 16/9）", type: "text", role: "named" },
+    ],
   },
   {
     name: "link",
@@ -273,6 +354,12 @@ export const plugins: PluginMeta[] = [
       { name: "icon", desc: "图标/缩略图 URL", default: "—" },
     ],
     example: "{% link https://example.com 示例站点 desc:一个示例链接卡片 %}",
+    form: [
+      { key: "url", label: "链接", type: "text", role: "positional", default: "https://example.com" },
+      { key: "title", label: "标题", type: "text", role: "positional", default: "示例站点" },
+      { key: "desc", label: "描述（提供则用 rich 布局）", type: "text", role: "named", default: "一个示例链接卡片" },
+      { key: "icon", label: "图标/缩略图 URL", type: "text", role: "named" },
+    ],
   },
   {
     name: "video",
@@ -289,6 +376,13 @@ export const plugins: PluginMeta[] = [
       { name: "autoplay", desc: "自动播放", default: "false" },
     ],
     example: "{% video https://www.w3schools.com/html/mov_bbb.mp4 %}",
+    form: [
+      { key: "src", label: "视频地址", type: "text", role: "positional", default: "https://www.w3schools.com/html/mov_bbb.mp4" },
+      { key: "bilibili", label: "B 站 BV 号（可选）", type: "text", role: "named" },
+      { key: "ratio", label: "宽高比", type: "text", role: "named", default: "16/9" },
+      { key: "width", label: "最大宽度", type: "text", role: "named", default: "100%" },
+      { key: "autoplay", label: "自动播放", type: "flag", role: "flag" },
+    ],
   },
   {
     name: "audio",
@@ -303,6 +397,11 @@ export const plugins: PluginMeta[] = [
       { name: "autoplay", desc: "自动播放", default: "false" },
     ],
     example: "{% audio https://www.w3schools.com/html/horse.mp3 %}",
+    form: [
+      { key: "src", label: "音频地址", type: "text", role: "positional", default: "https://www.w3schools.com/html/horse.mp3" },
+      { key: "netease", label: "网易云歌曲 ID（可选）", type: "text", role: "named" },
+      { key: "autoplay", label: "自动播放", type: "flag", role: "flag" },
+    ],
   },
   {
     name: "swiper",
@@ -329,6 +428,10 @@ export const plugins: PluginMeta[] = [
       { name: "prefix", desc: "前缀标签文本", default: "—" },
     ],
     example: "{% copy npm install stellar-theme %}\n{% copy git:user/repo %}",
+    form: [
+      { key: "text", label: "复制文本", type: "text", role: "positional", default: "npm install stellar-theme" },
+      { key: "git", label: "git 仓库（user/repo，可选）", type: "text", role: "named" },
+    ],
   },
   {
     name: "rating",
@@ -342,6 +445,10 @@ export const plugins: PluginMeta[] = [
       { name: "title", desc: "标题（位置参数）", default: "—" },
     ],
     example: "{% rating demo-post 给这篇文章打分 %}",
+    form: [
+      { key: "id", label: "评分对象 ID", type: "text", role: "positional", default: "demo-post" },
+      { key: "title", label: "标题", type: "text", role: "positional", default: "给这篇文章打分" },
+    ],
   },
 
   // ==================== 数据图表 ====================
@@ -398,6 +505,11 @@ export const plugins: PluginMeta[] = [
       { name: "title_color", desc: "标题颜色", default: "—" },
     ],
     example: "{% ghcard anuraghazra/github-readme-stats %}",
+    form: [
+      { key: "repo", label: "user/repo 或 user", type: "text", role: "positional", default: "anuraghazra/github-readme-stats" },
+      { key: "theme", label: "主题", type: "text", role: "named" },
+      { key: "show_owner", label: "显示仓库所有者", type: "flag", role: "flag", default: "true" },
+    ],
   },
   {
     name: "ghrepo",

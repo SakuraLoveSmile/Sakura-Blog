@@ -8,6 +8,7 @@ import {
   type PluginMeta,
   type PluginCategory,
 } from "./plugins-data";
+import PluginParamForm from "./PluginParamForm.vue";
 
 // Console 插件库（Spec 23）：29 个标签插件的分类速查 + 实时渲染预览 + 一键复制。
 // 预览复用后端 POST /api/v1/preview/markdown 渲染管线，
@@ -48,6 +49,11 @@ function selectPlugin(p: PluginMeta) {
   selected.value = p;
   example.value = p.example;
   schedulePreview(true);
+}
+
+// 结构化参数表单产出 shortcode（Spec 29）：同步驱动示例/预览/复制
+function onFormCode(code: string) {
+  example.value = code;
 }
 
 // ---------- 实时预览（防抖 500ms，走后端 goldmark + shortcode 管线） ----------
@@ -267,6 +273,16 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- 结构化参数表单（Spec 29，有 form schema 的插件） -->
+        <div v-if="selected.form" class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 dark:bg-gray-700/40 dark:border-gray-700">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">参数设置（自动拼装 shortcode）</span>
+          </div>
+          <div class="p-4">
+            <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+          </div>
         </div>
 
         <!-- 示例编辑 + 复制 -->

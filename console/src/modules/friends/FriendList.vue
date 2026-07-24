@@ -110,9 +110,9 @@ onMounted(load);
             <img v-if="l.avatar" :src="l.avatar" class="w-9 h-9 rounded-full object-cover bg-gray-100 dark:bg-gray-700" />
             <div v-else class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-300 dark:bg-gray-700 dark:text-gray-600"><Icon icon="ri:link" /></div>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <a :href="l.url" target="_blank" class="text-sm font-medium text-gray-800 hover:text-indigo-600 truncate dark:text-gray-100 dark:hover:text-indigo-400">{{ l.name }}</a>
-                <span v-if="l.label" class="px-1.5 py-0.5 rounded text-[10px] font-medium text-white" :style="{ backgroundColor: l.color ? '#' + l.color : '#9ca3af' }">{{ l.label }}</span>
+              <div class="flex items-center gap-2 min-w-0">
+                <a :href="l.url" target="_blank" class="min-w-0 text-sm font-medium text-gray-800 hover:text-indigo-600 truncate dark:text-gray-100 dark:hover:text-indigo-400">{{ l.name }}</a>
+                <span v-if="l.label" class="shrink-0 whitespace-nowrap leading-none self-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white" :style="{ backgroundColor: l.color ? '#' + l.color : '#9ca3af' }">{{ l.label }}</span>
               </div>
               <p class="text-xs text-gray-400 truncate dark:text-gray-500">{{ l.description }}</p>
             </div>

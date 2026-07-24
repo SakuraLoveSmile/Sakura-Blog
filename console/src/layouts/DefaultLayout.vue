@@ -40,7 +40,7 @@ async function handleLogout() {
     <!-- Sidebar -->
     <aside class="w-56 bg-white border-r border-gray-200 flex flex-col dark:bg-gray-800 dark:border-gray-700">
       <div class="h-14 flex items-center px-5 border-b border-gray-100 dark:border-gray-700">
-        <h1 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Stellar Console</h1>
+        <h1 class="text-lg font-semibold text-gray-800 dark:text-gray-100">管理后台</h1>
       </div>
       <nav class="flex-1 py-4 space-y-1 px-3">
         <router-link

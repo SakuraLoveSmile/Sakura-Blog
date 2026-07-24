@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { postApi } from "@/api";
+import { postApi, taxonomyApi, previewApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
+import CollapsibleSection from "@/components/CollapsibleSection.vue";
+import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
 import RevisionPanel from "./RevisionPanel.vue";
+import {
+  plugins,
+  PLUGIN_CATEGORIES,
+  type PluginMeta,
+  type PluginCategory,
+} from "@/modules/plugins/plugins-data";
 
 const route = useRoute();
 const router = useRouter();
@@ -44,6 +52,106 @@ const currentWordCount = computed(() => {
   return n;
 });
 
+// ---------- 分类/标签可选项（Spec 29 P0-4） ----------
+const categories = ref<string[]>([]);
+const tags = ref<string[]>([]);
+
+async function loadTaxonomy() {
+  try {
+    const [cRes, tRes] = await Promise.all([
+      taxonomyApi.categories(),
+      taxonomyApi.tags(),
+    ]);
+    categories.value = (cRes.data.items || []).map((i: any) => i.name);
+    tags.value = (tRes.data.items || []).map((i: any) => i.name);
+  } catch {
+    /* 静默：可选项缺失不阻塞编辑 */
+  }
+}
+
+function pickCategory(name: string) {
+  form.value.category = name;
+}
+
+// 点标签 chip：按逗号拆分去重后追加
+function pickTag(name: string) {
+  const list = form.value.tags
+    .split(/[,，]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!list.includes(name)) list.push(name);
+  form.value.tags = list.join(",");
+}
+
+// ---------- 标签插件面板（Spec 29 P1-8） ----------
+const pluginCat = ref<PluginCategory | "全部">("全部");
+const pluginList = computed(() =>
+  pluginCat.value === "全部"
+    ? plugins
+    : plugins.filter((p) => p.category === pluginCat.value)
+);
+const selectedPlugin = ref<PluginMeta | null>(null);
+const pluginCode = ref("");
+const pluginPreviewHtml = ref("");
+const pluginRendering = ref(false);
+let pluginTimer: ReturnType<typeof setTimeout> | undefined;
+
+function selectPlugin(p: PluginMeta) {
+  selectedPlugin.value = p;
+  // 有 form schema：由 PluginParamForm 初始化后立即产出 shortcode；否则回退示例文本
+  pluginCode.value = p.form ? "" : p.example;
+  schedulePluginPreview(true);
+}
+
+function onPluginCode(code: string) {
+  pluginCode.value = code;
+  schedulePluginPreview();
+}
+
+async function refreshPluginPreview() {
+  if (!pluginCode.value) {
+    pluginPreviewHtml.value = "";
+    return;
+  }
+  pluginRendering.value = true;
+  try {
+    const { data } = await previewApi.render(pluginCode.value);
+    pluginPreviewHtml.value = data.html;
+  } catch {
+    pluginPreviewHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
+  } finally {
+    pluginRendering.value = false;
+  }
+}
+
+function schedulePluginPreview(immediate = false) {
+  clearTimeout(pluginTimer);
+  pluginTimer = setTimeout(refreshPluginPreview, immediate ? 0 : 400);
+}
+
+const pluginSrcdoc = computed(() => {
+  const dark = document.documentElement.dataset.theme === "dark";
+  return `<!DOCTYPE html>
+<html data-theme="${dark ? "dark" : "light"}">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="/assets/css/tag-plugins.css">
+<link rel="stylesheet" href="/assets/css/highlight.css">
+<style>html,body{margin:0;padding:0;}body{padding:16px;background:${dark ? "#1c1c1e" : "#fff"};}.md-text{max-width:100%;}</style>
+</head>
+<body><article class="md-text content">${pluginPreviewHtml.value}</article></body>
+</html>`;
+});
+
+function insertPlugin() {
+  if (!pluginCode.value) return;
+  editorRef.value?.insertBlock("\n" + pluginCode.value + "\n");
+}
+
+onBeforeUnmount(() => clearTimeout(pluginTimer));
+
+// ---------- 加载 / 保存 ----------
 async function loadPost() {
   const { data } = await postApi.get(slug.value);
   form.value = {
@@ -63,6 +171,7 @@ async function loadPost() {
 }
 
 onMounted(async () => {
+  loadTaxonomy();
   if (!isEdit.value) return;
   loading.value = true;
   try {
@@ -101,6 +210,12 @@ async function handleSave() {
     saving.value = false;
   }
 }
+
+const fieldCls =
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+const labelCls = "block text-xs text-gray-500 mb-1 dark:text-gray-400";
+const chipCls =
+  "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-700 transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300";
 </script>
 
 <template>
@@ -146,15 +261,15 @@ async function handleSave() {
 
       <!-- Settings sidebar -->
       <div class="space-y-4">
-        <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <h3 class="text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">发布设置</h3>
+        <CollapsibleSection title="发布设置" icon="ri:settings-3-line">
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Slug</label>
-            <input v-model="form.slug" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <label :class="labelCls">别名 (Slug)</label>
+            <input v-model="form.slug" :class="fieldCls" />
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">用于文章 URL，留空自动生成</p>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">状态</label>
-            <select v-model="form.status" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+            <label :class="labelCls">状态</label>
+            <select v-model="form.status" :class="fieldCls">
               <option value="draft">草稿</option>
               <option value="published">发布</option>
             </select>
@@ -164,46 +279,129 @@ async function handleSave() {
             <label for="pinned" class="text-sm text-gray-600 dark:text-gray-400">置顶</label>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">定时发布</label>
-            <input v-model="form.publish_at" type="datetime-local" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100" />
+            <label :class="labelCls">定时发布</label>
+            <input v-model="form.publish_at" type="datetime-local" :class="fieldCls" />
           </div>
-        </div>
+        </CollapsibleSection>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <h3 class="text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">分类与标签</h3>
+        <CollapsibleSection title="分类与标签" icon="ri:price-tag-3-line">
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">分类</label>
-            <input v-model="form.category" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <label :class="labelCls">分类</label>
+            <input v-model="form.category" :class="fieldCls" />
+            <div v-if="categories.length" class="flex flex-wrap gap-1 mt-1.5">
+              <button
+                v-for="c in categories"
+                :key="c"
+                type="button"
+                @click="pickCategory(c)"
+                :class="[chipCls, form.category === c && '!bg-indigo-100 !text-indigo-700 dark:!bg-indigo-500/25 dark:!text-indigo-300']"
+              >{{ c }}</button>
+            </div>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">专栏</label>
-            <input v-model="form.topic" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <label :class="labelCls">专栏</label>
+            <input v-model="form.topic" :class="fieldCls" />
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标签（逗号分隔）</label>
-            <input v-model="form.tags" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <label :class="labelCls">标签（逗号分隔）</label>
+            <input v-model="form.tags" :class="fieldCls" />
+            <div v-if="tags.length" class="flex flex-wrap gap-1 mt-1.5">
+              <button
+                v-for="t in tags"
+                :key="t"
+                type="button"
+                @click="pickTag(t)"
+                :class="chipCls"
+              >{{ t }}</button>
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <h3 class="text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">其他</h3>
+        <CollapsibleSection title="其他" icon="ri:more-line">
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">摘要</label>
-            <textarea v-model="form.excerpt" rows="3" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
+            <label :class="labelCls">摘要</label>
+            <textarea v-model="form.excerpt" rows="3" :class="fieldCls + ' resize-y'"></textarea>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">封面 URL</label>
+            <label :class="labelCls">封面 URL</label>
             <div class="flex gap-1.5">
-              <input v-model="form.cover" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+              <input v-model="form.cover" :class="fieldCls + ' flex-1 min-w-0'" />
               <button type="button" @click="coverPickerOpen = true" title="从图床选择"
                 class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">选择</button>
             </div>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">阅读密码</label>
-            <input v-model="form.password" type="password" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+            <label :class="labelCls">阅读密码</label>
+            <input v-model="form.password" type="password" :class="fieldCls" />
           </div>
-        </div>
+        </CollapsibleSection>
+
+        <!-- 标签插件面板（Spec 29） -->
+        <CollapsibleSection title="标签插件" icon="ri:puzzle-line" :default-open="false">
+          <div class="flex flex-wrap gap-1 mb-2">
+            <button
+              type="button"
+              @click="pluginCat = '全部'"
+              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === '全部' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
+            >全部</button>
+            <button
+              v-for="c in PLUGIN_CATEGORIES"
+              :key="c"
+              type="button"
+              @click="pluginCat = c"
+              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === c ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
+            >{{ c }}</button>
+          </div>
+          <select
+            :value="selectedPlugin?.name"
+            @change="selectPlugin(plugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
+            :class="fieldCls"
+          >
+            <option :value="undefined" disabled>选择插件…</option>
+            <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>
+          </select>
+
+          <div v-if="selectedPlugin" class="mt-3 space-y-3">
+            <PluginParamForm
+              v-if="selectedPlugin.form"
+              :plugin="selectedPlugin"
+              :model-value="pluginCode"
+              @update:model-value="onPluginCode"
+            />
+            <div v-else>
+              <label :class="labelCls">示例（可编辑）</label>
+              <textarea
+                v-model="pluginCode"
+                @input="schedulePluginPreview()"
+                rows="4"
+                spellcheck="false"
+                :class="fieldCls + ' resize-y font-mono text-xs leading-relaxed'"
+              ></textarea>
+            </div>
+
+            <div>
+              <label :class="labelCls">预览<span v-if="pluginRendering" class="ml-1 text-gray-400">渲染中…</span></label>
+              <div class="rounded-lg border border-gray-200 overflow-hidden dark:border-gray-700">
+                <iframe
+                  v-if="pluginPreviewHtml"
+                  :srcdoc="pluginSrcdoc"
+                  class="w-full border-0 bg-white"
+                  style="height: 200px"
+                  sandbox="allow-same-origin allow-scripts"
+                ></iframe>
+                <p v-else class="px-3 py-4 text-center text-xs text-gray-400">填写参数后预览</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              @click="insertPlugin"
+              :disabled="!pluginCode"
+              class="w-full px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >插入到正文</button>
+          </div>
+          <p v-else class="text-xs text-gray-400 dark:text-gray-500">选择插件后可编辑参数并插入正文。</p>
+        </CollapsibleSection>
       </div>
     </div>
 

@@ -165,8 +165,6 @@ onBeforeUnmount(() => {
   clearTimeout(draftTimer);
 });
 
-defineExpose({ clearDraft });
-
 // ---------- 工具栏动作（基于选区包裹/插入，操作后恢复焦点与选区） ----------
 
 function updateValue(next: string, selStart: number, selEnd: number) {
@@ -216,6 +214,9 @@ function insertBlock(text: string) {
   const next = value.slice(0, start) + text + value.slice(end);
   updateValue(next, start + text.length, start + text.length);
 }
+
+// 对外暴露：草稿清理 + 光标处插入（供标签插件面板一键插入 shortcode，Spec 29）
+defineExpose({ clearDraft, insertBlock });
 
 const tableTemplate =
   "\n| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |\n";

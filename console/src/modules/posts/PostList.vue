@@ -84,7 +84,7 @@ onMounted(loadPosts);
           <tr>
             <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">标题</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600 w-24 dark:text-gray-400">分类</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 w-20 dark:text-gray-400">状态</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 w-24 dark:text-gray-400">状态</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600 w-36 dark:text-gray-400">日期</th>
             <th class="text-right px-4 py-3 font-medium text-gray-600 w-28 dark:text-gray-400">操作</th>
           </tr>
@@ -99,7 +99,7 @@ onMounted(loadPosts);
             </td>
             <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ p.category || "-" }}</td>
             <td class="px-4 py-3">
-              <span :class="['px-2 py-0.5 rounded text-xs font-medium', p.status === 'published' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400']">
+              <span :class="['inline-block whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium', p.status === 'published' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400']">
                 {{ p.status === "published" ? "已发布" : "草稿" }}
               </span>
             </td>
