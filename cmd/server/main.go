@@ -275,8 +275,14 @@ func main() {
 	if !devMode && site.URL == "" {
 		log.Printf("⚠️  WARNING: site.url is empty in release mode; canonical/OG/sitemap/feed URLs will fallback to http://<request-host>. Set url: https://your-domain in config/site.yml for production.")
 	}
-	// Cookie Secure 标志：由 site.URL 协议推导（https → true），避免新增配置项。
-	cookieSecure := strings.HasPrefix(site.URL, "https://")
+	// Cookie Secure 标志：site.URL 为 https 且当前请求经 HTTPS 到达（直连 TLS 或反代 X-Forwarded-Proto）时置真。
+	// 按请求判定而非启动时定死：http://IP:port 调试访问不签 Secure，避免浏览器拒存 cookie 导致解锁态丢失。
+	cookieSecureFor := func(c *gin.Context) bool {
+		if !strings.HasPrefix(site.URL, "https://") {
+			return false
+		}
+		return c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+	}
 
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
@@ -746,7 +752,7 @@ func main() {
 		}
 		expiry := time.Now().Add(postPWCookieTTL).Unix()
 		c.SetSameSite(http.SameSiteLaxMode)
-		c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", cookieSecure, true)
+		c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", cookieSecureFor(c), true)
 		c.Redirect(http.StatusFound, "/post/"+slug)
 	})
 

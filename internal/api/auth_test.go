@@ -1,8 +1,13 @@
 package api
 
 import (
+	"crypto/tls"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	tmpl "blog/internal/template"
 )
@@ -79,19 +84,37 @@ func TestLoginFailWindowReset(t *testing.T) {
 }
 
 func TestCookieSecure(t *testing.T) {
-	cases := []struct {
-		url  string
-		want bool
-	}{
-		{"https://blog.example.com", true},
-		{"http://blog.example.com", false},
-		{"", false},
-		{"http://localhost:8080", false},
+	// 构造带指定 TLS/X-Forwarded-Proto 状态的 gin.Context。
+	ctxOf := func(useTLS bool, xfp string) *gin.Context {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+		if useTLS {
+			req.TLS = &tls.ConnectionState{}
+		}
+		if xfp != "" {
+			req.Header.Set("X-Forwarded-Proto", xfp)
+		}
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Request = req
+		return c
 	}
-	for _, c := range cases {
-		h := New(Config{Site: &tmpl.Site{URL: c.url}})
-		if got := h.cookieSecure(); got != c.want {
-			t.Fatalf("cookieSecure(%q) = %v, want %v", c.url, got, c.want)
+
+	cases := []struct {
+		name   string
+		siteURL string
+		ctx    *gin.Context
+		want   bool
+	}{
+		{"https站点+TLS直连", "https://blog.example.com", ctxOf(true, ""), true},
+		{"https站点+反代XFP", "https://blog.example.com", ctxOf(false, "https"), true},
+		{"https站点+http IP调试", "https://blog.example.com", ctxOf(false, ""), false}, // 核心回归：http 调试不签 Secure
+		{"https站点+XFP http", "https://blog.example.com", ctxOf(false, "http"), false},
+		{"http站点+TLS", "http://blog.example.com", ctxOf(true, ""), false},
+		{"空站点+TLS", "", ctxOf(true, ""), false},
+	}
+	for _, tc := range cases {
+		h := New(Config{Site: &tmpl.Site{URL: tc.siteURL}})
+		if got := h.cookieSecure(tc.ctx); got != tc.want {
+			t.Fatalf("%s: cookieSecure = %v, want %v", tc.name, got, tc.want)
 		}
 	}
 }

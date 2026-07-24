@@ -53,14 +53,14 @@ func (h *Handler) login(c *gin.Context) {
 	expiry := time.Now().Add(authCookieTTL).Unix()
 	value := strconv.FormatInt(expiry, 10) + "." + signAuthCookie(expiry, password)
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(authCookieName, value, int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(), true)
+	c.SetCookie(authCookieName, value, int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 // logout POST /api/v1/auth/logout：清 cookie。
 func (h *Handler) logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(), true)
+	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -99,13 +99,19 @@ func (h *Handler) changePassword(c *gin.Context) {
 	}
 	// 旧 cookie 已因签名 key 变化失效，顺手清掉客户端残留
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(), true)
+	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true, "passwordRequired": req.New != ""})
 }
 
-// cookieSecure 由 site.URL 协议推导：https → true，http/空 → false（本地开发不被 Secure 挡住）。
-func (h *Handler) cookieSecure() bool {
-	return strings.HasPrefix(h.site.URL, "https://")
+// cookieSecure 由 site.URL 与当前请求共同推导：site.url 为 https 且请求经 HTTPS 到达
+// （直连 TLS 或反代 X-Forwarded-Proto=https）时为 true。
+// 按请求判定而非启动时定死：http://IP:port 调试访问签非 Secure，
+// 避免浏览器拒存 Secure cookie 导致登录态刷新即失。
+func (h *Handler) cookieSecure(c *gin.Context) bool {
+	if !strings.HasPrefix(h.site.URL, "https://") {
+		return false
+	}
+	return c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 }
 
 // loginBlocked 检查 IP 是否因连续失败超阈而被限流。顺便清理过期条目防 map 膨胀。
