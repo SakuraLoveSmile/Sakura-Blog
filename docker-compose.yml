@@ -5,6 +5,10 @@
 # 启动：docker compose up -d
 # 首次启动导入文章：BLOG_SEED=true docker compose up -d（导一次后改回 false 重启）
 # 升级：docker compose build && docker compose up -d
+#
+# ⚠️ 容器以非 root 用户 app（uid 10001）运行。若启动报 "unable to open database file"，
+# 说明数据卷属主是 root（旧卷或手动迁移数据后），执行一次：
+#   docker run --rm -v <项目名>_blog-data:/data alpine chown -R 10001:10001 /data
 
 services:
   blog:
