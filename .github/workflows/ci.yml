@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev, release]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # console/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
+      # vet/test/编译验证不需要真实前端产物，占位文件即可。
+      - name: Stub console/dist for go:embed
+        run: mkdir -p console/dist && echo '<!doctype html>' > console/dist/index.html
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build -o blog ./cmd/server
+
+  console:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+
+      - name: Install & build (vue-tsc + vite)
+        run: cd console && npm ci && npm run build

@@ -31,6 +31,10 @@
 单二进制发布：前台模板、静态资源、icons 与 **console 构建产物**均已 `go:embed` 进二进制。
 
 ```bash
+# 一键构建（Makefile 已固化顺序：先 console 后 go）
+make build
+
+# 或手动分步：
 # 1. 先构建 Console SPA（go:embed 编译期要求 console/dist 存在且非空）
 cd console && npm ci && npm run build && cd ..
 
@@ -40,6 +44,8 @@ go build -o blog ./cmd/server
 # 3. 运行（默认 embed 模式；-dev 从磁盘读模板/资源/console dist，改样式即时生效）
 ./blog -seed   # -seed 首次启动导入 content/posts/*.md
 ```
+
+常用任务：`make build`（完整构建）· `make test`（vet+测试）· `make dev`（开发模式）· `make docker`（镜像）。
 
 > 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `console/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败。Docker 构建已在多阶段（node → go）固化该顺序。
 
