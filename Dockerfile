@@ -17,6 +17,11 @@ RUN npm run build
 # ---- builder ----
 FROM golang:1.25-alpine AS builder
 
+# Go 模块代理：默认走国内镜像 goproxy.cn（proxy.golang.org 在国内不可达）。
+# 海外构建可覆盖：docker build --build-arg GOPROXY=https://proxy.golang.org,direct .
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
+
 WORKDIR /src
 
 # 先拷依赖清单，利用 Docker 层缓存（go.mod 未变则跳过依赖下载）
