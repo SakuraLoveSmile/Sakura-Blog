@@ -53,7 +53,12 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 		"icon": func(key string) template.HTML {
 			v := reg.Get(key)
 			if strings.HasPrefix(v, "/") || strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
-				return template.HTML(`<img src="` + v + `">`)
+				// P2-20：img 补 alt（取 key 末段，如 share:wechat → wechat），屏幕阅读器可辨识。
+				alt := key
+				if i := strings.LastIndex(key, ":"); i >= 0 {
+					alt = key[i+1:]
+				}
+				return template.HTML(`<img src="` + v + `" alt="` + alt + `">`)
 			}
 			return template.HTML(v)
 		},

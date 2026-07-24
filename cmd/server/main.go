@@ -521,6 +521,9 @@ func main() {
 		r.ForwardedByClientIP = true
 	}
 
+	// P2-18：multipart 内存上限——跟随 max_upload_mb，防止超大表单解析撑爆内存（超出部分落临时文件）。
+	r.MaxMultipartMemory = int64(app.MaxUploadMB+1) << 20
+
 	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
