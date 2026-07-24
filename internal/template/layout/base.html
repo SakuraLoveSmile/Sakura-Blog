@@ -25,7 +25,7 @@
     <div class="l_main" id="main">
       {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
          文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
-      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "wiki"}}{{template "partial/wiki" .}}{{else if eq .Page.Layout "notes"}}{{template "partial/notes" .}}{{else if eq .Page.Layout "friends"}}{{template "partial/friends" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "links"}}{{template "partial/links" .}}{{else if eq .Page.Layout "wiki"}}{{template "partial/wiki" .}}{{else if eq .Page.Layout "notes"}}{{template "partial/notes" .}}{{else if eq .Page.Layout "friends"}}{{template "partial/friends" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else if eq .Page.Layout "500"}}{{template "partial/error500" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
       {{template "partial/footer" .}}
       <div class="main-mask" onclick="sidebar.dismiss()"></div>
     </div>
@@ -59,15 +59,15 @@
          避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}
       fancybox: {
         selector: 'div.lazy-box>img.lazy',
-        css: 'https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css',
-        js: 'https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js'
+        css: '/assets/vendor/fancybox/fancybox.css',
+        js: '/assets/vendor/fancybox/fancybox.umd.js'
       }
     };
     const def = { avatar: '', cover: '', loading: '' };
     const deps = {
-      jquery: 'https://gcore.jsdelivr.net/npm/jquery@3.7/dist/jquery.min.js',
+      jquery: '/assets/js/vendor/jquery.min.js',
       marked: '',
-      lazyload: 'https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js'
+      lazyload: '/assets/js/vendor/lazyload.min.js'
     };
 
     {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）。
@@ -231,7 +231,7 @@
      全局 window.lazyLoadOptions 让库自初始化；wrapLazyloadImages() 在客户端将
      goldmark 输出的 img[src] 转为 .lazy-box > img.lazy[data-src]。
      PJAX 钩子已在 pjax.js 第 468 行预留 lazyLoadInstance.update()。 */}}
-  <script async src="https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"></script>
+  <script async src="/assets/js/vendor/lazyload.min.js"></script>
   <script>
     window.lazyLoadOptions = {
       elements_selector: ".lazy",

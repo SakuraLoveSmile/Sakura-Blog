@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,10 +36,17 @@ type Handler struct {
 	backups   *backup.Service
 	uploadDir string
 	notesPath string // content/notes.md 路径（笔记页正文）
-	maxUpload int64 // 单文件上限字节
+	maxUpload int64  // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
 	onLinksChanged func()
+
+	// 登录限流（P0-4）
+	loginMu    sync.Mutex
+	loginFails map[string]struct {
+		n int
+		t time.Time
+	}
 }
 
 // Config API Handler 初始化参数。
@@ -60,14 +68,18 @@ func New(cfg Config) *Handler {
 		maxMB = 5
 	}
 	return &Handler{
-		store:     cfg.Store,
-		posts:     cfg.Posts,
-		site:      cfg.Site,
-		comments:  cfg.Comments,
-		backups:   cfg.Backups,
-		uploadDir: cfg.UploadDir,
-		notesPath: cfg.NotesPath,
-		maxUpload: int64(maxMB) << 20,
+		store:      cfg.Store,
+		posts:      cfg.Posts,
+		site:       cfg.Site,
+		comments:   cfg.Comments,
+		backups:    cfg.Backups,
+		uploadDir:  cfg.UploadDir,
+		notesPath:  cfg.NotesPath,
+		maxUpload:  int64(maxMB) << 20,
+		loginFails: make(map[string]struct {
+			n int
+			t time.Time
+		}),
 	}
 }
 

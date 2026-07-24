@@ -33,11 +33,35 @@
   <meta property="og:image" content="/og/{{.Page.Slug}}.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="/og/{{.Page.Slug}}.png">
+  {{- /* P1-10：JSON-LD 结构化数据（BlogPosting schema），依赖 site.URL 生成绝对 URL */}}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{.Page.Title}}",
+    {{if .Page.Date}}"datePublished": "{{.Page.Date}}",{{end}}
+    {{if .Page.Updated}}"dateModified": "{{.Page.Updated}}",{{end}}
+    "image": "{{if .Site.URL}}{{.Site.URL}}{{end}}/og/{{.Page.Slug}}.png",
+    "author": {
+      "@type": "Person",
+      "name": "{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.Title}}{{end}}"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "{{.Site.Title}}"
+    },
+    {{if .Page.CanonicalURL}}"mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{.Page.CanonicalURL}}"
+    },{{end}}
+    "description": "{{.Page.Description}}"
+  }
+  </script>
   {{end}}
 
-  {{- /* jQuery 3.7（对齐原版 theme.dependencies.jquery）：defer 保证先于 body 末尾的 main.js 等执行，
+  {{- /* jQuery 3.7（P1-6 本地化）：defer 保证先于 body 末尾的 main.js 等执行，
      供 utils.jq 与依赖 jQuery 的插件使用 */}}
-  <script defer src="https://gcore.jsdelivr.net/npm/jquery@3.7/dist/jquery.min.js"></script>
+  <script defer src="{{url_for "/assets/js/vendor/jquery.min.js"}}"></script>
 
   {{- /* 霞鹜文楷屏幕版字体（本地化，参考 xaoxuu.com）：unicode-range 分片按需加载，
      woff2 分片在 /assets/fonts/lxgw/files/（97 片共 4.9MB，浏览器只下载用到的分片）*/}}
@@ -75,8 +99,8 @@
   {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v=demo3">
 
-  {{- /* 文章页脚补充样式（打赏 / 文字分享按钮；.article-footer 主体在 main.css）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v=demo3">
+  {{- /* 文章页脚补充样式（仅打赏 #reward；分享图标与 .article-footer 主体均在 main.css）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v=demo6">
 
   {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo4">
@@ -119,6 +143,13 @@
   {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
   <style>
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+
+  {{- /* 导航栏 backdrop-filter 首帧合成延迟修复：提前建立合成层，避免刷新时未过滤态（白底）闪现一帧导致变亮。
+     main.css 为 Stylus 编译产物，故覆盖样式放此处内联。 */}}
+  <style>
+    .navbar-blur:before,
+    .navbar-blur:after { transform: translateZ(0); will-change: backdrop-filter; }
   </style>
 
   {{- /* 主题切换按钮（左栏 footer social）：sun/moon 图标随主题显隐。

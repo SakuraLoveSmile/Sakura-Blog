@@ -1,0 +1,11 @@
+{{- /* error500.html: 自定义 500 页（P1-8），由 base.html 按 .Page.Layout == "500" 分派渲染。
+   结构对齐 error404.html；不暴露内部错误细节，仅展示友好提示。*/ -}}
+<article class="md-text error-page">
+  <h1 style="font-size:4rem;font-weight:700;color:#fdb62f;">500</h1>
+  <p class="what">
+    <strong>很抱歉，服务器遇到了内部错误</strong>
+  </p>
+  <p class="why">请稍后再试，或返回主页继续浏览</p>
+  <br><br>
+  <a class="button" id="back" href="/">返回主页</a>
+</article>

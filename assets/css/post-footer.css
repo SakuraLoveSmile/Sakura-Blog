@@ -1,37 +1,9 @@
-/* post-footer.css: 文章页脚补充样式（main.css 已有 .article-footer / #share，此处补打赏与文字分享按钮） */
-
-.article-footer .social-wrap a.social {
-  border: none;
-  background: none;
-  padding: 6px;
-  border-radius: 32px;
-  line-height: 0;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  filter: grayscale(100%);
-  transition: box-shadow 0.2s ease-out, background 0.2s ease-out, transform 0.2s ease-out;
-}
-.article-footer .social-wrap a.social:hover {
-  filter: unset;
-  background: var(--bg-a100);
-}
-/* icon 助手输出 32px SVG，收敛到 20px 以适配 32px 网格单元（20 + 6*2 padding），避免裁剪 */
-.article-footer .social-wrap a.social svg {
-  display: block;
-  width: 20px;
-  height: 20px;
-}
-.article-footer .social-wrap .share-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-}
+/* post-footer.css: 文章页脚补充样式。
+   分享图标（#share .social-wrap）完全由 main.css 原版规则处理：
+   - .article-footer .social-wrap：32px 网格、a.social padding:0 / border-radius:4px
+   - .social-wrap .social：filter grayscale(100%) 默认灰度，:hover filter unset 变彩色
+   - 全局 img{max-width:100%} 将彩色品牌图标约束到网格单元宽
+   此处仅补充 main.css 未含的打赏（#reward）块样式。 */
 
 .article-footer #reward .reward-toggle {
   display: inline-flex;

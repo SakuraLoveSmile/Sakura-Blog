@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/xml"
 	"flag"
@@ -12,13 +13,16 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 
 	"blog/assets"
@@ -34,8 +38,8 @@ import (
 	"blog/internal/og"
 	"blog/internal/page"
 	"blog/internal/post"
-	seedpkg "blog/internal/seed"
 	"blog/internal/search"
+	seedpkg "blog/internal/seed"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -266,6 +270,13 @@ func main() {
 	}
 	log.Printf("site config synced from db (settings/links)")
 
+	// P0-2：生产模式 site.url 校验——release 下空 URL 会导致 canonical/OG/sitemap 回退 http，显著告警提醒配置。
+	if !devMode && site.URL == "" {
+		log.Printf("⚠️  WARNING: site.url is empty in release mode; canonical/OG/sitemap/feed URLs will fallback to http://<request-host>. Set url: https://your-domain in config/site.yml for production.")
+	}
+	// Cookie Secure 标志：由 site.URL 协议推导（https → true），避免新增配置项。
+	cookieSecure := strings.HasPrefix(site.URL, "https://")
+
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
 
@@ -401,10 +412,25 @@ func main() {
 		fillSidebar(data)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "render: %v", err)
+			c.String(http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(html))
+	}
+
+	// render500：渲染自定义 500 页（P1-8），不暴露内部错误细节。
+	render500 := func(c *gin.Context) {
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{Title: "服务器错误", Layout: "500", Lang: "zh-CN"},
+		}
+		fillSidebar(data)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(html))
 	}
 
 	// toCard：store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
@@ -431,7 +457,18 @@ func main() {
 	if !devMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	r := gin.Default()
+	// P1-8：自定义 500——gin.New() + Logger + CustomRecovery，panic 时渲染友好错误页而非裸文本。
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.CustomRecovery(func(c *gin.Context, err interface{}) {
+		log.Printf("panic recovered: %v", err)
+		if c.Writer.Written() {
+			c.Abort()
+			return
+		}
+		render500(c)
+		c.Abort()
+	}))
 
 	// 反向代理头：设了 trusted_proxy 才信任 X-Forwarded-For，还原客户端真实 IP。
 	if app.TrustedProxy != "" {
@@ -445,12 +482,14 @@ func main() {
 		r.ForwardedByClientIP = true
 	}
 
-	// /assets 协商缓存：no-cache 让浏览器每次发条件请求，gin Static 底层
-	// http.ServeContent 支持 If-Modified-Since 返回 304，既保证新鲜又省流量。
-	// 必须注册在静态路由之前，否则静态路由先命中拿不到头。
+	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
+
+	// P1-7：/assets 长缓存——带 ?v= 版本号的 css/js/字体改 immutable 长缓存，破缓存靠 ?v= bump。
+	// sw.js/manifest 不在 /assets/ 路径下，不受影响。
 	r.Use(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
-			c.Header("Cache-Control", "no-cache")
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
 		c.Next()
 	})
@@ -501,7 +540,14 @@ func main() {
 	r.GET("/apple-touch-icon.png", serveAsset("img/apple-touch-icon.png", "image/png", nil))
 
 	// 上传附件静态托管（运行时数据，不走 go:embed）
-	r.Static("/uploads", app.UploadDir)
+	// P1-11：SVG 防护——对 .svg 响应加 CSP sandbox，禁止内嵌脚本执行。
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		if strings.HasSuffix(strings.ToLower(fp), ".svg") {
+			c.Header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+		}
+		c.File(filepath.Join(app.UploadDir, filepath.Clean(fp)))
+	})
 
 	// 备份服务：全量备份（DB 快照 + uploads + site.yml）与文章 Markdown 导出/导入。
 	// 自动备份目录跟随 DB 所在 data 目录（data/backups）。
@@ -640,14 +686,16 @@ func main() {
 			fillSEO(data, c)
 			html, err := engine.Render("layout/base", data)
 			if err != nil {
-				c.String(http.StatusInternalServerError, "render: %v", err)
+				log.Printf("render: %v", err)
+				render500(c)
 				return
 			}
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 			return
 		}
 		expiry := time.Now().Add(postPWCookieTTL).Unix()
-		c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", false, true)
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", cookieSecure, true)
 		c.Redirect(http.StatusFound, "/post/"+slug)
 	})
 
@@ -707,7 +755,8 @@ func main() {
 					fillSEO(data, c)
 					html, err := engine.Render("layout/base", data)
 					if err != nil {
-						c.String(http.StatusInternalServerError, "render: %v", err)
+						log.Printf("render: %v", err)
+						render500(c)
 						return
 					}
 					c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
@@ -780,7 +829,8 @@ func main() {
 			fillSEO(data, c)
 			html, err := engine.Render("layout/base", data)
 			if err != nil {
-				c.String(http.StatusInternalServerError, "render: %v", err)
+				log.Printf("render: %v", err)
+				render500(c)
 				return
 			}
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
@@ -794,7 +844,8 @@ func main() {
 				render404(c)
 				return
 			}
-			c.String(http.StatusInternalServerError, "load post: %v", err)
+			log.Printf("load post: %v", err)
+			render500(c)
 			return
 		}
 
@@ -829,7 +880,8 @@ func main() {
 		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "render: %v", err)
+			log.Printf("render: %v", err)
+			render500(c)
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
@@ -894,7 +946,8 @@ func main() {
 	r.GET("/search.json", func(c *gin.Context) {
 		posts, err := st.ListPublished()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		type searchItem struct {
@@ -923,7 +976,8 @@ func main() {
 		const pageSize = 10
 		total, err := st.CountPublished()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count posts: %v", err)
+			log.Printf("count posts: %v", err)
+			render500(c)
 			return
 		}
 		totalPages := (total + pageSize - 1) / pageSize
@@ -935,7 +989,8 @@ func main() {
 		}
 		posts, err := st.ListPublishedPaged(page, pageSize)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		cards := make([]*tmpl.PostCard, 0, len(posts))
@@ -956,7 +1011,8 @@ func main() {
 		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "render: %v", err)
+			log.Printf("render: %v", err)
+			render500(c)
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
@@ -982,7 +1038,8 @@ func main() {
 		fillSEO(data, c)
 		html, err := engine.Render("layout/base", data)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "render: %v", err)
+			log.Printf("render: %v", err)
+			render500(c)
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
@@ -1082,7 +1139,8 @@ func main() {
 	r.GET("/archives", func(c *gin.Context) {
 		posts, err := st.ListPublished()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		// ListPublished 已按 created_at DESC，年份分组天然降序
@@ -1113,7 +1171,8 @@ func main() {
 	r.GET("/categories", func(c *gin.Context) {
 		counts, err := st.CountByCategory()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count categories: %v", err)
+			log.Printf("count categories: %v", err)
+			render500(c)
 			return
 		}
 		cats := make([]*tmpl.CatItem, 0, len(counts))
@@ -1133,7 +1192,8 @@ func main() {
 		name := c.Param("name")
 		counts, err := st.CountByCategory()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count categories: %v", err)
+			log.Printf("count categories: %v", err)
+			render500(c)
 			return
 		}
 		if _, ok := counts[name]; !ok {
@@ -1142,7 +1202,8 @@ func main() {
 		}
 		posts, err := st.ListByCategory(name)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		renderBase(c, &tmpl.ViewData{
@@ -1156,7 +1217,8 @@ func main() {
 	r.GET("/topic", func(c *gin.Context) {
 		counts, err := st.CountByTopic()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count topics: %v", err)
+			log.Printf("count topics: %v", err)
+			render500(c)
 			return
 		}
 		if len(counts) == 0 {
@@ -1184,7 +1246,8 @@ func main() {
 		name := c.Param("name")
 		counts, err := st.CountByTopic()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count topics: %v", err)
+			log.Printf("count topics: %v", err)
+			render500(c)
 			return
 		}
 		if _, ok := counts[name]; !ok {
@@ -1193,7 +1256,8 @@ func main() {
 		}
 		posts, err := st.ListByTopic(name)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		renderBase(c, &tmpl.ViewData{
@@ -1207,7 +1271,8 @@ func main() {
 	r.GET("/tags", func(c *gin.Context) {
 		counts, err := st.CountByTag()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			log.Printf("count tags: %v", err)
+			render500(c)
 			return
 		}
 		items := make([]*tmpl.TagItem, 0, len(counts))
@@ -1232,7 +1297,8 @@ func main() {
 		name := c.Param("name")
 		counts, err := st.CountByTag()
 		if err != nil {
-			c.String(http.StatusInternalServerError, "count tags: %v", err)
+			log.Printf("count tags: %v", err)
+			render500(c)
 			return
 		}
 		if _, ok := counts[name]; !ok {
@@ -1241,7 +1307,8 @@ func main() {
 		}
 		posts, err := st.ListByTag(name)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		renderBase(c, &tmpl.ViewData{
@@ -1258,7 +1325,8 @@ func main() {
 	r.GET("/rss.xml", func(c *gin.Context) {
 		posts, err := st.ListPublishedPaged(1, 20)
 		if err != nil {
-			c.String(http.StatusInternalServerError, "list posts: %v", err)
+			log.Printf("list posts: %v", err)
+			render500(c)
 			return
 		}
 		siteURL := "http://" + c.Request.Host
@@ -1293,7 +1361,8 @@ func main() {
 		}
 		output, err := xml.MarshalIndent(rss, "", "  ")
 		if err != nil {
-			c.String(http.StatusInternalServerError, "marshal rss: %v", err)
+			log.Printf("marshal rss: %v", err)
+			render500(c)
 			return
 		}
 		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
@@ -1344,17 +1413,38 @@ func main() {
 
 		output, err := xml.MarshalIndent(sm, "", "  ")
 		if err != nil {
-			c.String(http.StatusInternalServerError, "marshal sitemap: %v", err)
+			log.Printf("marshal sitemap: %v", err)
+			render500(c)
 			return
 		}
 		c.Data(http.StatusOK, "application/xml; charset=utf-8", append([]byte(xml.Header), output...))
 	})
 
+	// P0-1：优雅退出——显式 http.Server + 信号监听，SIGINT/SIGTERM 时 drain 进行中请求后关闭 DB。
 	addr := app.ListenAddr
-	fmt.Printf("Stellar blog server listening on http://localhost%s\n", addr)
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("run: %v", err)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
 	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		fmt.Printf("Stellar blog server listening on http://localhost%s\n", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("shutting down gracefully (timeout 30s)...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v", err)
+	}
+	log.Println("server stopped")
 }
 
 // truncateText 按 rune 截断字符串，超长加省略号（widget 摘要用）。

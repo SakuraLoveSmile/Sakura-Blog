@@ -40,6 +40,9 @@ FROM alpine:3.20
 # ca-certificates：Gravatar 头像镜像/RSS 外链 HTTPS 需要；tzdata：时间戳本地化。
 RUN apk add --no-cache ca-certificates tzdata
 
+# P1-9：非 root 运行——创建专用用户，限制容器内权限。
+RUN adduser -D -u 10001 app
+
 WORKDIR /app
 
 # 二进制
@@ -50,6 +53,7 @@ COPY config/ /app/config/
 COPY content/ /app/content/
 
 # 数据卷：SQLite + WAL 旁路文件持久化
+RUN mkdir -p /app/data && chown -R app:app /app/data
 VOLUME ["/app/data"]
 
 ENV BLOG_LISTEN=":8080" \
@@ -57,7 +61,13 @@ ENV BLOG_LISTEN=":8080" \
     BLOG_ROOT="/app" \
     TZ=Asia/Shanghai
 
+USER app
+
 EXPOSE 8080
+
+# P1-9：HEALTHCHECK——容器编排器可据此判断服务存活。
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -qO- http://localhost:8080/ > /dev/null 2>&1 || exit 1
 
 # 默认不 seed（BLOG_SEED=true 首次启动时开启导入）
 ENTRYPOINT ["/app/blog"]

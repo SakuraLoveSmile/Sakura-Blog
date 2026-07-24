@@ -7,6 +7,9 @@
 title: Stellar Demo
 subtitle: Go 服务端渲染
 description: 用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客，验证服务端渲染链路。
+# ❗ 生产必填：canonical/OG/sitemap/feed/JSON-LD 均依赖此基址生成绝对 URL。
+# 空值时 release 模式启动会告警，并回退 http://<request-host>（搜索引擎可能收录为 http）。
+# 示例：url: https://blog.example.com
 url: ""
 avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
 # 头像 hover 旋转背景图，对应原版 style.animated_avatar.background（animate: auto）

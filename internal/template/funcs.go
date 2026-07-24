@@ -47,10 +47,15 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 			return tt.Format(layout)
 		},
 
-		// icon: 对齐 Stellar icon helper，返回内联 SVG（template.HTML 跳过转义）。
-		// 颜色靠父元素 color + SVG path 的 fill="currentColor" 继承，不能用 <img src>。
+		// icon: 对齐原版 Stellar icon helper（scripts/events/lib/utils.js 的 hexo.utils.icon）。
+		// 值为 URL（以 / 、http://、https:// 开头，如原版 share:* 彩色品牌图标）时渲染为 <img src>；
+		// 否则返回内联 SVG（颜色靠父元素 color + path fill="currentColor" 继承）。template.HTML 跳过转义。
 		"icon": func(key string) template.HTML {
-			return template.HTML(reg.Get(key))
+			v := reg.Get(key)
+			if strings.HasPrefix(v, "/") || strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return template.HTML(`<img src="` + v + `">`)
+			}
+			return template.HTML(v)
 		},
 
 		// __: i18n，Demo 阶段直接返回原串。
