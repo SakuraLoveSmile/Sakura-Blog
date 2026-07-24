@@ -107,7 +107,9 @@ const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, c
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
 
-const publishedOrder = "ORDER BY pinned DESC, datetime(created_at) DESC"
+// publishedOrder 排序用 substr 而非 datetime()：驱动把 time.Time 序列化为 "2006-01-02 15:04:05 -0700 MST"
+// 格式，SQLite datetime() 无法解析（返回 NULL 导致排序失效）；前 19 位字典序对同表同时区数据即时间序。
+const publishedOrder = "ORDER BY pinned DESC, substr(created_at, 1, 19) DESC"
 
 func formatPublishAt(t time.Time) string {
 	if t.IsZero() {
@@ -285,7 +287,7 @@ func (s *Store) migrateColumns() error {
 
 // List 返回全部未删除文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
-	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at = '' ORDER BY pinned DESC, datetime(created_at) DESC")
+	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at = '' ORDER BY pinned DESC, substr(created_at, 1, 19) DESC")
 	if err != nil {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
@@ -522,7 +524,8 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if p.Status == "" {
 		p.Status = StatusDraft
 	}
-	now := time.Now()
+	// UTC 写入：与 seed 导入数据时区一致，保证 substr 字典序排序在同表内等价于时间序。
+	now := time.Now().UTC()
 	if p.CreatedAt.IsZero() {
 		p.CreatedAt = now
 	}

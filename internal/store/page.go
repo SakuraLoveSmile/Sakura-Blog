@@ -46,7 +46,7 @@ func (s *Store) EnsurePagesTable() error {
 
 // ListPages 列出全部未删除页面（按更新时间倒序）。
 func (s *Store) ListPages() ([]*Page, error) {
-	rows, err := s.db.Query(`SELECT ` + pageCols + ` FROM pages WHERE deleted_at = '' ORDER BY datetime(updated_at) DESC, id DESC`)
+	rows, err := s.db.Query(`SELECT ` + pageCols + ` FROM pages WHERE deleted_at = '' ORDER BY substr(updated_at, 1, 19) DESC, id DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("list pages: %w", err)
 	}
@@ -90,7 +90,7 @@ func (s *Store) CreatePage(p *Page) (int64, error) {
 	if p.Status == "" {
 		p.Status = StatusDraft
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	if p.CreatedAt.IsZero() {
 		p.CreatedAt = now
 	}
@@ -111,7 +111,7 @@ func (s *Store) CreatePage(p *Page) (int64, error) {
 
 // UpdatePage 按 slug 更新页面字段，刷新 updated_at。
 func (s *Store) UpdatePage(slug string, p *Page) error {
-	p.UpdatedAt = time.Now()
+	p.UpdatedAt = time.Now().UTC()
 	res, err := s.db.Exec(`UPDATE pages SET slug=?, title=?, content_md=?, content_html=?, status=?, updated_at=?
 		WHERE slug=?`,
 		p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, slug)

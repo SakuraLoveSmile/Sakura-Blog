@@ -84,7 +84,7 @@ func (s *Store) CreateRevision(r *Revision) (int64, error) {
 // ListRevisions 按时间倒序列出某文章的版本元数据（不含 content_md）。
 func (s *Store) ListRevisions(slug string) ([]*RevisionMeta, error) {
 	rows, err := s.db.Query(`SELECT id, post_slug, title, excerpt, tags, category, status, word_count, created_at
-		FROM revisions WHERE post_slug = ? ORDER BY datetime(created_at) DESC, id DESC`, slug)
+		FROM revisions WHERE post_slug = ? ORDER BY substr(created_at, 1, 19) DESC, id DESC`, slug)
 	if err != nil {
 		return nil, fmt.Errorf("list revisions: %w", err)
 	}
@@ -121,7 +121,7 @@ func (s *Store) GetRevision(id int64) (*Revision, error) {
 // pruneRevisions 裁剪某文章版本到 maxRevisionsPerPost 条（保留最新，删最旧）。
 func (s *Store) pruneRevisions(slug string) {
 	s.db.Exec(`DELETE FROM revisions WHERE post_slug = ? AND id NOT IN (
-		SELECT id FROM revisions WHERE post_slug = ? ORDER BY datetime(created_at) DESC, id DESC LIMIT ?
+		SELECT id FROM revisions WHERE post_slug = ? ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ?
 	)`, slug, slug, maxRevisionsPerPost)
 }
 

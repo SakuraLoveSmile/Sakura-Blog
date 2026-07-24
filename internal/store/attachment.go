@@ -98,7 +98,7 @@ func (s *Store) ListAttachments(page, size int, keyword, kind string) ([]*Attach
 	}
 
 	rows, err := s.db.Query(`SELECT `+attachmentCols+` FROM attachments `+where+`
-		ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`, append(args, size, offset)...)
+		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`, append(args, size, offset)...)
 	if err != nil {
 		return nil, fmt.Errorf("list attachments: %w", err)
 	}

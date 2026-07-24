@@ -101,7 +101,7 @@ func (s *Store) ListCommentsByPage(pageKey string) ([]*Comment, error) {
 		return nil, err
 	}
 	rows, err := s.db.Query(`SELECT `+commentCols+` FROM comments
-		WHERE page_key = ? AND status = ? ORDER BY datetime(created_at) ASC, id ASC`, pageKey, CommentApproved)
+		WHERE page_key = ? AND status = ? ORDER BY substr(created_at, 1, 19) ASC, id ASC`, pageKey, CommentApproved)
 	if err != nil {
 		return nil, fmt.Errorf("list comments by page %s: %w", pageKey, err)
 	}
@@ -118,7 +118,7 @@ func (s *Store) ListRecentComments(n int) ([]*Comment, error) {
 		n = 5
 	}
 	rows, err := s.db.Query(`SELECT `+commentCols+` FROM comments
-		WHERE status = ? ORDER BY datetime(created_at) DESC, id DESC LIMIT ?`, CommentApproved, n)
+		WHERE status = ? ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ?`, CommentApproved, n)
 	if err != nil {
 		return nil, fmt.Errorf("list recent comments: %w", err)
 	}
@@ -143,7 +143,7 @@ func (s *Store) ListComments(status string, page, size int) ([]*Comment, error) 
 		q += ` WHERE status = ?`
 		args = append(args, status)
 	}
-	q += ` ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`
+	q += ` ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`
 	args = append(args, size, (page-1)*size)
 	rows, err := s.db.Query(q, args...)
 	if err != nil {

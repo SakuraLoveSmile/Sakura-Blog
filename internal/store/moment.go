@@ -62,7 +62,7 @@ func (s *Store) ListMoments(page, size int) ([]*Moment, error) {
 	}
 	offset := (page - 1) * size
 	rows, err := s.db.Query(`SELECT `+momentCols+` FROM moments
-		ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`, size, offset)
+		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`, size, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list moments: %w", err)
 	}
