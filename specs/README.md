@@ -4,7 +4,16 @@
 
 ## 已完成（合入 dev）
 
-01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · 20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5） · **23 Console 插件库 · 24 访问统计 · 25 FTS5 搜索 · 26 评论通知配置化 · 27 OG 社交分享图（Wave 6）** —— 详见各目录 spec，均已 merge。
+01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · 20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5） · **23 Console 插件库 · 24 访问统计 · 25 FTS5 搜索 · 26 评论通知配置化 · 27 OG 社交分享图（Wave 6）** · **28 上线前加固 · 29 Console UX+写作面板（Wave 7）** —— 详见各目录 spec，均已 merge。
+
+## 历史批次 · Wave 7（已完成，存档）
+
+| # | Spec | 主模块（独占） |
+|---|------|---------------|
+| 28 | [上线前加固](28-launch-hardening/spec.md) | `cmd/server/main.go`（优雅退出/中间件）+ `api/auth.go`（Cookie/限流）+ `head.html`（依赖本地化/JSON-LD）+ `Dockerfile` |
+| 29 | [Console UX 打磨 + 标签插件写作面板](29-console-ux-plugins/spec.md) | `console/src/`（PostEditor/PluginLibrary/MarkdownEditor + 列表布局，纯前端） |
+
+P0（优雅退出 · site.url 校验 · Cookie 安全 · 登录限流）+ P1（gzip · 依赖本地化 · 长缓存 · 自定义 500 · Docker 非 root · JSON-LD · SVG 防护）已全量落地并冒烟验证通过；P2（PWA 离线兜底 · fillSidebar 缓存 · 安全响应头 · search.json 瘦身 · DB 索引 · 图片尺寸上限 · 请求体上限/slog · font-display · a11y）留待上线后迭代，见 28 spec P2 表。
 
 ## 历史批次 · Wave 6（已完成，存档）
 
