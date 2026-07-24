@@ -4,6 +4,7 @@
 
 # 运行时数据（DB / 上传 / 备份）—— 不进镜像，走 volume 挂载
 data/
+blog-data/
 
 # 密钥配置——不进镜像层（防推送镜像泄漏）；运行时 volume 挂载或环境变量注入。
 # 缺失时代码回退默认值（LoadApp/DefaultSite），example 模板保留。

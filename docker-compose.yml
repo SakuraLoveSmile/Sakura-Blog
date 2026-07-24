@@ -7,8 +7,8 @@
 # 升级：docker compose build && docker compose up -d
 #
 # ⚠️ 容器以非 root 用户 app（uid 10001）运行。若启动报 "unable to open database file"，
-# 说明数据卷属主是 root（旧卷或手动迁移数据后），执行一次：
-#   docker run --rm -v <项目名>_blog-data:/data alpine chown -R 10001:10001 /data
+# 说明 ./blog-data 属主是 root（Docker 自动创建或手动迁移数据后），执行一次：
+#   chown -R 10001:10001 ./blog-data
 
 services:
   blog:
@@ -19,8 +19,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # SQLite 数据持久化（DB + WAL 旁路文件；文章与评论均存于此）
-      - blog-data:/app/data
+      # SQLite 数据持久化（DB + WAL 旁路文件；文章与评论均存于此）。
+      # bind mount 到宿主机 ./blog-data，备份/迁移直接操作该目录。
+      - ./blog-data:/app/data
       # 站点配置可运行时覆盖（不改镜像）
       - ./config/site.yml:/app/config/site.yml:ro
       # 文章种子（content/posts/*.md），改后 BLOG_SEED=true 重导
@@ -42,6 +43,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-
-volumes:
-  blog-data:
