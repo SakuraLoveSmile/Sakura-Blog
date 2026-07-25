@@ -5,6 +5,7 @@ import { settingsApi, authApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
+import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 
 // 全部段结构化编辑；「高级·JSON」保留 8 段 JSON 兜底（一般无需使用）。
 const tabs = [
@@ -31,6 +32,20 @@ const loading = ref(true);
 const savingKey = ref("");
 const message = ref("");
 const isError = ref(false);
+
+// 头像选择器：复用附件选择弹窗，选中后回填 URL
+const showAvatarPicker = ref(false);
+const showAvatarBgPicker = ref(false);
+
+/** 头像 URL 选中回调 */
+function handleAvatarSelect(url: string) {
+  data.value.site.avatar = url;
+}
+
+/** 头像悬停背景图 URL 选中回调 */
+function handleAvatarBgSelect(url: string) {
+  data.value.site.avatar_bg = url;
+}
 
 function ensureDefaults(d: Record<string, any>) {
   d.site = d.site || {};
@@ -251,9 +266,59 @@ onMounted(load);
         </div>
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">站点描述</label><textarea v-model="data.site.description" rows="2" :class="inputCls"></textarea></div>
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">站点 URL（canonical/OG/sitemap 用）</label><input v-model="data.site.url" :class="inputCls" placeholder="https://example.com" /></div>
-        <div class="grid grid-cols-2 gap-4">
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像 URL</label><input v-model="data.site.avatar" :class="inputCls" /></div>
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像悬停背景图</label><input v-model="data.site.avatar_bg" :class="inputCls" /></div>
+        <!-- 头像设置 -->
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像 URL</label>
+              <div class="flex gap-2">
+                <input v-model="data.site.avatar" :class="inputCls" placeholder="输入图片 URL" />
+                <button @click="showAvatarPicker = true"
+                  class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                  <Icon icon="ri:image-upload-line" /> 从附件选择
+                </button>
+              </div>
+            </div>
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像悬停背景图</label>
+              <div class="flex gap-2">
+                <input v-model="data.site.avatar_bg" :class="inputCls" placeholder="输入图片 URL" />
+                <button @click="showAvatarBgPicker = true"
+                  class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                  <Icon icon="ri:image-upload-line" /> 从附件选择
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 头像实时预览 -->
+          <div v-if="data.site.avatar || data.site.avatar_bg" class="border border-gray-200 rounded-xl p-4 dark:border-gray-700">
+            <p class="text-xs font-medium text-gray-600 mb-3 dark:text-gray-400">实时预览</p>
+            <div class="flex flex-wrap gap-6 items-center">
+              <!-- 导航栏头像 (32x32) -->
+              <div v-if="data.site.avatar" class="text-center">
+                <p class="text-[10px] text-gray-500 mb-2">导航栏头像 (32×32)</p>
+                <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                  <img :src="data.site.avatar" class="w-full h-full object-cover" alt="" />
+                </div>
+              </div>
+
+              <!-- 社交分享卡片头像 (128x128) -->
+              <div v-if="data.site.avatar" class="text-center">
+                <p class="text-[10px] text-gray-500 mb-2">分享卡片 (128×128)</p>
+                <div class="w-32 h-32 rounded-full overflow-hidden border border-gray-200 shadow-sm">
+                  <img :src="data.site.avatar" class="w-full h-full object-cover" alt="" />
+                </div>
+              </div>
+
+              <!-- 悬停效果预览 -->
+              <div v-if="data.site.avatar && data.site.avatar_bg" class="text-center">
+                <p class="text-[10px] text-gray-500 mb-2">悬停效果</p>
+                <div class="group relative w-24 h-24 rounded-full overflow-hidden transition-transform duration-300 cursor-pointer border-2 border-transparent hover:border-indigo-500">
+                  <img :src="data.site.avatar_bg" class="absolute inset-0 w-full h-full object-cover" alt="" />
+                  <img :src="data.site.avatar" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Logo 主标题</label><input v-model="data.site.logo_title" :class="inputCls" /></div>
@@ -442,6 +507,20 @@ onMounted(load);
           <button @click="saveJson(s)" :disabled="savingKey === 'json:' + s" :class="btnCls">保存 {{ s }}</button>
         </div>
       </div>
+
+      <!-- 头像选择器 -->
+      <AttachmentPickerModal
+        :open="showAvatarPicker"
+        @select="handleAvatarSelect"
+        @close="showAvatarPicker = false"
+      />
+
+      <!-- 头像背景选择器 -->
+      <AttachmentPickerModal
+        :open="showAvatarBgPicker"
+        @select="handleAvatarBgSelect"
+        @close="showAvatarBgPicker = false"
+      />
     </div>
   </div>
 </template>
