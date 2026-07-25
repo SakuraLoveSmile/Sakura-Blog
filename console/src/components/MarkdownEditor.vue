@@ -3,7 +3,6 @@ import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi, attachmentApi } from "@/api";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
-import "@/styles/markdown-preview.css";
 
 // 可复用 Markdown 编辑器：工具栏 + 分屏实时预览（后端 goldmark 渲染）
 // + 图片粘贴/拖拽直传 + 快捷键 + localStorage 草稿保护。
@@ -17,11 +16,10 @@ const emit = defineEmits<{
 }>();
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
-const previewRef = ref<HTMLElement | null>(null);
+const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 type ViewMode = "edit" | "split" | "preview";
 const mode = ref<ViewMode>("edit");
-const previewHtml = ref("");
 const rendering = ref(false);
 const pickerOpen = ref(false);
 const draftBanner = ref(false);
@@ -29,41 +27,9 @@ const uploadError = ref("");
 
 const draftKey = () => (props.storageKey ? `draft:${props.storageKey}` : "");
 
-// ---------- 站点渲染资源按需加载（highlight.css / KaTeX），模块级只加载一次 ----------
-
-let assetsLoaded = false;
-function loadPreviewAssets() {
-  if (assetsLoaded) return;
-  assetsLoaded = true;
-  const addCss = (href: string) => {
-    if (document.querySelector(`link[href="${href}"]`)) return;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    document.head.appendChild(link);
-  };
-  const addScript = (src: string, onload?: () => void) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      onload?.();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = src;
-    s.defer = true;
-    if (onload) s.onload = onload;
-    document.head.appendChild(s);
-  };
-  // Chroma 令牌色（暗色靠 html[data-theme=dark]，theme store 已桥接）
-  addCss("/assets/css/highlight.css");
-  // KaTeX：与前台 head.html 同版本同 CDN，auto-render 就绪后补渲染当前预览
-  addCss("https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css");
-  addScript("https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js", () => {
-    addScript(
-      "https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js",
-      () => renderMath()
-    );
-  });
-}
+// ---------- iframe 沙箱预览：引入前台全量样式（main.css/tag-plugins.css/highlight.css），
+// 与 PluginLibrary.vue 的 srcdoc 预览同模式；标签插件/代码高亮/KaTeX 与前台完全一致，
+// 且样式与 Console UI 完全隔离。srcdoc 只加载一次，内容更新直接写 .md-text，避免闪烁。 ----------
 
 // KaTeX 定界符与前台 head.html 保持一致
 const mathDelimiters = [
@@ -73,11 +39,66 @@ const mathDelimiters = [
   { left: "\\(", right: "\\)", display: false },
 ];
 
-function renderMath() {
-  const fn = (window as any).renderMathInElement;
-  if (typeof fn !== "function" || !previewRef.value) return;
-  fn(previewRef.value, { delimiters: mathDelimiters, throwOnError: false });
+// 初始主题跟随 Console（theme store 已桥接到 html[data-theme]）
+const previewSrcdoc = `<!DOCTYPE html>
+<html data-theme="${document.documentElement.dataset.theme || "light"}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="/assets/css/tag-plugins.css">
+<link rel="stylesheet" href="/assets/css/highlight.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"><\/script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"><\/script>
+<style>
+  html,body{margin:0;padding:0;}
+  body{padding:16px 20px;background:#fff;}
+  html[data-theme="dark"] body{background:#1c1c1e;}
+  .md-text{max-width:100%;}
+</style>
+</head>
+<body><article class="md-text content"></article></body>
+</html>`;
+
+let iframeReady = false;
+let pendingHtml: string | null = null;
+
+function onIframeLoad() {
+  iframeReady = true;
+  if (pendingHtml !== null) {
+    applyPreview(pendingHtml);
+    pendingHtml = null;
+  }
 }
+
+// 把渲染结果写入 iframe 内的 .md-text 容器，并补渲染 KaTeX 公式
+function applyPreview(html: string) {
+  if (!iframeReady) {
+    pendingHtml = html;
+    return;
+  }
+  const doc = iframeRef.value?.contentDocument;
+  const container = doc?.querySelector(".md-text");
+  if (!container) return;
+  container.innerHTML = html;
+  const win = iframeRef.value?.contentWindow as any;
+  if (typeof win?.renderMathInElement === "function") {
+    win.renderMathInElement(container, { delimiters: mathDelimiters, throwOnError: false });
+  }
+}
+
+// Console 亮/暗切换时同步到 iframe（main.css/highlight.css 暗色选择器为 :root[data-theme=dark]）
+const themeObserver = new MutationObserver(() => {
+  const doc = iframeRef.value?.contentDocument;
+  if (doc) {
+    doc.documentElement.dataset.theme = document.documentElement.dataset.theme || "light";
+  }
+});
+onMounted(() => {
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+});
+onBeforeUnmount(() => themeObserver.disconnect());
 
 // ---------- 实时预览（防抖 600ms，走后端 goldmark 管线） ----------
 
@@ -87,11 +108,9 @@ async function refreshPreview() {
   rendering.value = true;
   try {
     const { data } = await previewApi.render(props.modelValue);
-    previewHtml.value = data.html;
-    await nextTick();
-    renderMath();
+    applyPreview(data.html);
   } catch {
-    previewHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
+    applyPreview('<p style="color:#ef4444">预览渲染失败</p>');
   } finally {
     rendering.value = false;
   }
@@ -106,7 +125,6 @@ function schedulePreview(immediate = false) {
 function setMode(next: ViewMode) {
   mode.value = next;
   if (next !== "edit") {
-    loadPreviewAssets();
     schedulePreview(true);
   }
 }
@@ -416,13 +434,19 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
 
       <div
         v-show="mode !== 'edit'"
-        class="relative min-h-[560px] max-h-[75vh] overflow-y-auto px-5 py-4"
+        class="relative min-h-[560px]"
       >
         <span
           v-if="rendering"
-          class="absolute top-2 right-3 text-[11px] text-gray-400 dark:text-gray-500"
+          class="absolute top-2 right-3 z-10 text-[11px] text-gray-400 dark:text-gray-500"
         >渲染中...</span>
-        <div ref="previewRef" class="md-preview" v-html="previewHtml"></div>
+        <iframe
+          ref="iframeRef"
+          :srcdoc="previewSrcdoc"
+          @load="onIframeLoad"
+          class="w-full min-h-[560px] h-[75vh] border-0 block"
+          title="预览"
+        ></iframe>
       </div>
     </div>
 

@@ -1,19 +1,22 @@
-# docker-compose：博客 app 服务 + 持久化卷。
+# docker-compose：博客 app 服务 + Watchtower 自动更新 + 持久化卷。
 # 评论系统为自建（数据存 SQLite，无需外部评论服务）；后台登录密码在 config/site.yml
 # 的 admin.password 配置（留空则 /admin 免登录，仅本机调试用，公网部署务必设置）。
 #
 # 启动：docker compose up -d
 # 首次启动导入文章：BLOG_SEED=true docker compose up -d（导一次后改回 false 重启）
-# 升级：docker compose build && docker compose up -d
+# 升级：自动（Watchtower 轮询 GHCR 新镜像）或手动 docker compose pull && docker compose up -d
 #
 # ⚠️ 容器以非 root 用户 app（uid 10001）运行。若启动报 "unable to open database file"，
 # 说明 ./blog-data 属主是 root（Docker 自动创建或手动迁移数据后），执行一次：
 #   chown -R 10001:10001 ./blog-data
+#
+# ⚠️ 自动更新需要 GHCR 认证（私有仓库）：
+#   服务器上执行一次 docker login ghcr.io（用 PAT，权限 read:packages），
+#   Watchtower 会自动读取 ~/.docker/config.json 中的凭据。
 
 services:
   blog:
-    build: .
-    image: stellar-blog:latest
+    image: ghcr.io/sakuralovesmile/sakura-blog:latest
     container_name: stellar-blog
     restart: unless-stopped
     ports:
@@ -43,3 +46,22 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # Watchtower：轮询 GHCR 镜像更新，发现新版自动拉取并重建 blog 容器。
+  # 仅监控带 com.centurylinklabs.watchtower.enable=true 标签的容器。
+  watchtower:
+    image: containrrr/watchtower
+    container_name: stellar-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # 读取宿主机 docker login 凭据（私有 GHCR 拉取需要）
+      - ${HOME}/.docker/config.json:/config.json:ro
+    environment:
+      WATCHTOWER_POLL_INTERVAL: "300"          # 每 5 分钟检查一次
+      WATCHTOWER_LABEL_ENABLE: "true"          # 仅更新带标签的容器
+      WATCHTOWER_CLEANUP: "true"               # 更新后删除旧镜像
+      WATCHTOWER_INCLUDE_STOPPED: "false"
+      TZ: Asia/Shanghai

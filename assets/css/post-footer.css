@@ -1,6 +1,6 @@
 /* post-footer.css: 文章页脚补充样式。
    分享图标（#share .social-wrap）完全由 main.css 原版规则处理：
-   - .article-footer .social-wrap：32px 网格、a.social padding:0 / border-radius:4px
+   - .article-footer .social-wrap：20px 网格、a.social padding:0 / border-radius:4px
    - .social-wrap .social：filter grayscale(100%) 默认灰度，:hover filter unset 变彩色
    - 全局 img{max-width:100%} 将彩色品牌图标约束到网格单元宽
    此处仅补充 main.css 未含的打赏（#reward）块样式。 */
