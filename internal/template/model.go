@@ -213,6 +213,8 @@ type Site struct {
 	AvatarBG    string         `yaml:"avatar_bg" json:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
 	LogoTitle   string         `yaml:"logo_title" json:"logo_title"`
 	LogoSub     string         `yaml:"logo_sub" json:"logo_sub"`
+	FaviconURL  string         `yaml:"favicon_url" json:"favicon_url"`           // Favicon URL，留空回退 /favicon.ico
+	AppleIcon   string         `yaml:"apple_touch_icon" json:"apple_touch_icon"` // Apple Touch Icon URL，留空回退 /apple-touch-icon.png
 	Menubar     Menubar        `yaml:"menubar" json:"menubar"`
 	Rightbar    RightbarConfig `yaml:"rightbar" json:"rightbar"`
 	Footer      Footer         `yaml:"footer" json:"footer"`
@@ -268,6 +270,8 @@ type MenuItem struct {
 type RightbarConfig struct {
 	// WelcomeLinklist 欢迎语 markdown widget 内的链接列表，对齐原版 markdown.ejs 的 item.linklist。
 	WelcomeLinklist LinkListConfig `yaml:"welcome_linklist" json:"welcome_linklist"`
+	// Intro 欢迎语正文（Spec Task 5），留空时模板显示默认文案。纯文本，换行由模板 pre-wrap 保留。
+	Intro string `yaml:"intro" json:"intro"`
 }
 
 // LinkListConfig 链接列表（对齐原版 widgets/components/linklist.ejs）。
@@ -408,11 +412,11 @@ type Page struct {
 	Date         string // 原始日期字符串
 	Updated      string
 	Excerpt      string
-	Views        int64  // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
-	Category     string // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
-	Tag          string // 标签文章列表页的当前标签名
-	Topic        string // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
-	CanonicalURL string // 当前页面完整 URL（用于 canonical 和 og:url）
-	Description  string // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
+	Views        int64    // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
+	Category     string   // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
+	Tag          string   // 标签文章列表页的当前标签名
+	Topic        string   // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
+	CanonicalURL string   // 当前页面完整 URL（用于 canonical 和 og:url）
+	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 }

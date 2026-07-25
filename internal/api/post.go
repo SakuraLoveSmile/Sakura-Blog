@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +12,39 @@ import (
 
 	"blog/internal/store"
 )
+
+// slug 生成用预编译正则（避免每次调用重新编译）。
+var (
+	reSpace       = regexp.MustCompile(`\s+`)            // 空白转连字符
+	reNonSlugChar = regexp.MustCompile(`[^\p{L}\p{N}-]`) // 移除非 Unicode 字母/数字/连字符
+	reMultiDash   = regexp.MustCompile(`-{2,}`)          // 折叠多个连字符
+)
+
+// generateSlug 从标题生成 URL 友好的 slug。
+// 英文标题：转小写、空格转连字符、移除非字母数字；
+// 中文标题：保留 Unicode 字母（\p{L} 含中文）和数字；生成结果为空时用时间戳兜底。
+func generateSlug(title string) string {
+	s := strings.ToLower(strings.TrimSpace(title))
+	s = reSpace.ReplaceAllString(s, "-")
+	s = reNonSlugChar.ReplaceAllString(s, "")
+	s = reMultiDash.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	if s == "" {
+		s = fmt.Sprintf("post-%d", time.Now().Unix())
+	}
+	return s
+}
+
+// ensureUniqueSlug 检查 slug 是否冲突，冲突时追加 -2/-3 后缀直到唯一。
+func (h *Handler) ensureUniqueSlug(slug string) string {
+	base := slug
+	for n := 2; ; n++ {
+		if existing, _ := h.store.GetBySlug(slug); existing == nil {
+			return slug
+		}
+		slug = fmt.Sprintf("%s-%d", base, n)
+	}
+}
 
 // postJSON 文章 API 响应模型。
 type postJSON struct {
@@ -160,14 +195,13 @@ func (h *Handler) createPost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
 		return
 	}
-	if strings.TrimSpace(req.Slug) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slug 不能为空"})
-		return
-	}
-
-	// 检查 slug 唯一
-	if existing, _ := h.store.GetBySlug(req.Slug); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在: " + req.Slug})
+	// 空 slug 时从标题自动生成（Spec Task 6），并确保唯一；用户指定 slug 则检查冲突
+	slugVal := strings.TrimSpace(req.Slug)
+	if slugVal == "" {
+		slugVal = h.ensureUniqueSlug(generateSlug(req.Title))
+		req.Slug = slugVal
+	} else if existing, _ := h.store.GetBySlug(slugVal); existing != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在: " + slugVal})
 		return
 	}
 
