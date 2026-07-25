@@ -1,0 +1,7 @@
+# timer 触发时执行更新脚本
+[Unit]
+Description=Stellar Blog update runner
+
+[Service]
+Type=oneshot
+ExecStart=/opt/blog/update.sh

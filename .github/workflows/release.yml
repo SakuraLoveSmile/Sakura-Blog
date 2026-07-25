@@ -1,24 +1,19 @@
 name: Release Build
 
 # release 分支推送 / 打 tag / 手动触发均可构建。
-# 产物 1：Linux amd64 单二进制（go:embed 全部资源），服务器下载即可运行。
-# 产物 2：Docker 镜像推送至 GHCR（私有包），配合 Watchtower 实现服务器自动更新。
+# 产物：Linux amd64 单二进制（go:embed 全部资源）+ GitHub Release。
+# 服务器通过 deploy/update.sh 定时检查 Release 并自动下载更新。
 on:
   push:
     branches: [release]
     tags: ['v*']
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
-  # ---- Job 1：编译 Linux 二进制 + GitHub Release ----
-  build-binary:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # 创建 Release + 生成 release notes 需要
+      contents: write   # 创建 Release + 生成 release notes
     steps:
       - uses: actions/checkout@v4
 
@@ -53,7 +48,7 @@ jobs:
             blog-linux-amd64.sha256
           retention-days: 30
 
-      # GitHub Release（打 tag 时，服务器可直链下载）
+      # GitHub Release（打 tag 时，服务器 update.sh 从此下载）
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -62,43 +57,3 @@ jobs:
             blog-linux-amd64
             blog-linux-amd64.sha256
           generate_release_notes: true
-
-  # ---- Job 2：构建 Docker 镜像并推送 GHCR（私有仓库自动继承私有包） ----
-  build-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=branch
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
