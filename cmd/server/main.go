@@ -670,6 +670,11 @@ func main() {
 		log.Fatalf("ensure page_views table: %v", err)
 	}
 
+	// 附件管理（Attachment Library）：attachments 表。
+	if err := st.EnsureAttachmentsTable(); err != nil {
+		log.Fatalf("ensure attachments table: %v", err)
+	}
+
 	// Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 console/dist 读。
 	// 只注册 /console/assets/* 与根级静态文件；其余 /console 路径（含 /console/ 本身与 SPA 前端路由）
 	// 落到 NoRoute 返回 index.html，保证前端路由刷新不 404。
