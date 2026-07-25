@@ -42,6 +42,10 @@ tmp/
 /server
 /blog
 
+# CI 交叉编译产物（release.yml 在 Actions 内构建，本地不应提交）
+blog-linux-amd64
+blog-linux-amd64.sha256
+
 # 运行时数据
 data/
 blog-data/

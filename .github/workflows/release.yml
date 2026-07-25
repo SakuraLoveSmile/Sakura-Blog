@@ -57,3 +57,4 @@ jobs:
             blog-linux-amd64
             blog-linux-amd64.sha256
           generate_release_notes: true
+          fail_on_missing_files: true  # 如果没有二进制文件则失败
