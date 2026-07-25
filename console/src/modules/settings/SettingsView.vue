@@ -47,6 +47,20 @@ function handleAvatarBgSelect(url: string) {
   data.value.site.avatar_bg = url;
 }
 
+// Favicon / Apple Touch Icon 选择器（Spec Task 9）
+const showFaviconPicker = ref(false);
+const showAppleIconPicker = ref(false);
+
+/** Favicon URL 选中回调 */
+function handleFaviconSelect(url: string) {
+  data.value.site.favicon_url = url;
+}
+
+/** Apple Touch Icon URL 选中回调 */
+function handleAppleIconSelect(url: string) {
+  data.value.site.apple_touch_icon = url;
+}
+
 function ensureDefaults(d: Record<string, any>) {
   d.site = d.site || {};
   d.menubar = d.menubar || {};
@@ -324,6 +338,31 @@ onMounted(load);
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Logo 主标题</label><input v-model="data.site.logo_title" :class="inputCls" /></div>
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Logo 副标题（含 | 拆滚动）</label><input v-model="data.site.logo_sub" :class="inputCls" /></div>
         </div>
+        <!-- Favicon / Apple Touch Icon 设置（Spec Task 9） -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Favicon</label>
+            <div class="flex gap-2 items-center">
+              <img :src="data.site.favicon_url || '/favicon.ico'" class="w-6 h-6 rounded shrink-0" alt="" />
+              <input v-model="data.site.favicon_url" :class="inputCls" placeholder="留空用默认 /favicon.ico" />
+              <button @click="showFaviconPicker = true"
+                class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                <Icon icon="ri:image-upload-line" />
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Apple Touch Icon</label>
+            <div class="flex gap-2 items-center">
+              <img :src="data.site.apple_touch_icon || '/apple-touch-icon.png'" class="w-8 h-8 rounded-lg shrink-0" alt="" />
+              <input v-model="data.site.apple_touch_icon" :class="inputCls" placeholder="留空用默认" />
+              <button @click="showAppleIconPicker = true"
+                class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                <Icon icon="ri:image-upload-line" />
+              </button>
+            </div>
+          </div>
+        </div>
         <button @click="save('site')" :disabled="savingKey === 'site'" :class="btnCls">保存站点信息</button>
       </div>
 
@@ -339,6 +378,10 @@ onMounted(load);
 
       <!-- 右栏 -->
       <div v-show="active === 'rightbar'" class="space-y-4">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">欢迎语正文（留空用默认文案，Spec Task 5）</label>
+          <textarea v-model="data.rightbar.intro" rows="3" :class="inputCls" placeholder="输入右栏欢迎语正文，换行会保留显示"></textarea>
+        </div>
         <p class="text-xs text-gray-400 dark:text-gray-500">首页右栏「欢迎语」组件内的链接列表（welcome_linklist）。</p>
         <div class="w-40"><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">列数（0=自动）</label><input v-model.number="data.rightbar.welcome_linklist.columns" type="number" min="0" :class="inputCls" /></div>
         <div class="space-y-2">
@@ -520,6 +563,20 @@ onMounted(load);
         :open="showAvatarBgPicker"
         @select="handleAvatarBgSelect"
         @close="showAvatarBgPicker = false"
+      />
+
+      <!-- Favicon 选择器 -->
+      <AttachmentPickerModal
+        :open="showFaviconPicker"
+        @select="handleFaviconSelect"
+        @close="showFaviconPicker = false"
+      />
+
+      <!-- Apple Touch Icon 选择器 -->
+      <AttachmentPickerModal
+        :open="showAppleIconPicker"
+        @select="handleAppleIconSelect"
+        @close="showAppleIconPicker = false"
       />
     </div>
   </div>

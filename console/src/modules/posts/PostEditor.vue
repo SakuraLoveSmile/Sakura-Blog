@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { postApi, taxonomyApi, previewApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
@@ -41,6 +41,32 @@ const error = ref("");
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
+
+// Slug 自动生成：新建文章时标题变化自动推导 slug，用户手动编辑后停止覆盖（Spec Task 6）
+const slugManuallyEdited = ref(false);
+
+/** 从标题推导 URL 友好的 slug（与后端 generateSlug 对齐：保留 Unicode 字母/数字） */
+function autoSlug(title: string): string {
+  let s = (title || "").trim().toLowerCase();
+  s = s.replace(/\s+/g, "-");
+  s = s.replace(/[^\p{L}\p{N}-]/gu, "");
+  s = s.replace(/-{2,}/g, "-");
+  s = s.replace(/^-+|-+$/g, "");
+  return s;
+}
+
+// 标题变化时自动填充 slug（仅新建模式 + 用户未手动编辑）
+watch(() => form.value.title, (newTitle) => {
+  if (!isEdit.value && !slugManuallyEdited.value) {
+    form.value.slug = autoSlug(newTitle);
+  }
+});
+
+/** 从 picsum.photos 获取随机封面图（Spec Task 4，source.unsplash.com 已停用的替代方案） */
+function fetchRandomCover() {
+  // picsum.photos 免费无需 API Key，时间戳参数确保每次获取不同图片
+  form.value.cover = `https://picsum.photos/1200/675?random=${Date.now()}`;
+}
 
 // 当前正文字数（非空白 rune），供版本面板计算字数变化。
 const currentWordCount = computed(() => {
@@ -264,8 +290,8 @@ const chipCls =
         <CollapsibleSection title="发布设置" icon="ri:settings-3-line">
           <div>
             <label :class="labelCls">别名 (Slug)</label>
-            <input v-model="form.slug" :class="fieldCls" />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">用于文章 URL，留空自动生成</p>
+            <input v-model="form.slug" :class="fieldCls" @input="slugManuallyEdited = true" />
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">用于文章 URL，留空保存时从标题自动生成</p>
           </div>
           <div>
             <label :class="labelCls">状态</label>
@@ -328,6 +354,8 @@ const chipCls =
               <input v-model="form.cover" :class="fieldCls + ' flex-1 min-w-0'" />
               <button type="button" @click="coverPickerOpen = true" title="从图床选择"
                 class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">选择</button>
+              <button type="button" @click="fetchRandomCover" title="随机封面图（picsum.photos）"
+                class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">随机</button>
             </div>
           </div>
           <div>
