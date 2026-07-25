@@ -13,19 +13,42 @@ REPO="SakuraLoveSmile/Sakura-Blog"
 INSTALL_DIR="/opt/blog"
 BINARY_NAME="blog"
 SERVICE_NAME="blog"
-# GitHub 文件下载代理（国内加速，留空则直连）
-PROXY="https://ghfast.top/"
-# GitHub API（通常可直连，不行再加代理）
+# GitHub API（私有仓库需 Token 认证）
 API_BASE="https://api.github.com"
+# 私有仓库 Release 下载需要 PAT（权限 repo 或 read:packages）
+# 建议写入 /opt/blog/.token 文件（chmod 600），避免明文在脚本中
+TOKEN_FILE="${INSTALL_DIR}/.token"
 # 日志
 LOG_FILE="/opt/blog/data/update.log"
 
 # ---------- 函数 ----------
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 
+# 读取 Token
+get_token() {
+  if [[ -f "$TOKEN_FILE" ]]; then
+    cat "$TOKEN_FILE"
+  elif [[ -n "${BLOG_GH_TOKEN:-}" ]]; then
+    echo "$BLOG_GH_TOKEN"
+  else
+    echo ""
+  fi
+}
+
+TOKEN=$(get_token)
+AUTH_HEADER=""
+if [[ -n "$TOKEN" ]]; then
+  AUTH_HEADER="Authorization: token ${TOKEN}"
+fi
+
 get_latest_tag() {
-  curl -sfL "${API_BASE}/repos/${REPO}/releases/latest" \
-    | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4
+  if [[ -n "$AUTH_HEADER" ]]; then
+    curl -sfL -H "$AUTH_HEADER" "${API_BASE}/repos/${REPO}/releases/latest" \
+      | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4
+  else
+    curl -sfL "${API_BASE}/repos/${REPO}/releases/latest" \
+      | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4
+  fi
 }
 
 get_current_version() {
@@ -38,10 +61,11 @@ get_current_version() {
 
 download_file() {
   local url="$1" dest="$2"
-  if [[ -n "$PROXY" ]]; then
-    curl -fSL --retry 3 --connect-timeout 15 -o "$dest" "${PROXY}${url}"
+  if [[ -n "$AUTH_HEADER" ]]; then
+    curl -fSL --retry 3 --connect-timeout 30 -H "$AUTH_HEADER" \
+      -H "Accept: application/octet-stream" -o "$dest" "$url"
   else
-    curl -fSL --retry 3 --connect-timeout 15 -o "$dest" "$url"
+    curl -fSL --retry 3 --connect-timeout 30 -o "$dest" "$url"
   fi
 }
 
