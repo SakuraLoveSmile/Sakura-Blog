@@ -20,8 +20,8 @@
   <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
   <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" href="{{if .Site.FaviconURL}}{{.Site.FaviconURL}}{{else}}/favicon.ico{{end}}" sizes="any">
+  <link rel="apple-touch-icon" href="{{if .Site.AppleIcon}}{{.Site.AppleIcon}}{{else}}/apple-touch-icon.png{{end}}">
   {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
   {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
   <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
@@ -143,6 +143,16 @@
   {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
   <style>
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+
+  {{- /* 侧栏纯色背景：移除 sidebg 背景图模糊 + mask 淡出，改 var(--card) 纯色（Spec Task 2）*/}}
+  <style>
+    .l_left .sidebg { display: none; }
+    .l_left .leftbar-container { background: var(--card); }
+    .l_left .leftbar-container >.widgets { mask: none; -webkit-mask: none; }
+    @media screen and (min-width: 667px) {
+      .l_left .leftbar-container:before { display: none; }
+    }
   </style>
 
   {{- /* 导航栏 backdrop-filter 首帧合成延迟修复：提前建立合成层，避免刷新时未过滤态（白底）闪现一帧导致变亮。

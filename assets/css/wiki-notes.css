@@ -3,6 +3,21 @@
    此处仅补文库卡片特有的「图标 + 文本」横向布局（移植自 Stellar list.styl .post-card.wiki 段），全部走主题变量。
    笔记卡片复用 .post-card.post（与首页一致），无需额外样式。 */
 
+/* Spec Task 3: 文库卡片响应式网格布局（宽屏自适应多列）+ hover 动效增强 */
+.post-list.wiki {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1rem;
+}
+
+.post-list .post-card.wiki {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.post-list .post-card.wiki:hover {
+  transform: translateY(-4px);
+}
+
 .post-list .post-card.wiki article {
   display: flex;
   flex-wrap: wrap;
@@ -22,6 +37,11 @@
   max-height: 96px;
   object-fit: contain;
   transition: all 0.75s ease-out;
+}
+
+/* hover 时图标轻微缩放，增强交互反馈 */
+.post-list .post-card.wiki:hover article .preview img {
+  transform: scale(1.08);
 }
 
 .post-list .post-card.wiki article .excerpt {

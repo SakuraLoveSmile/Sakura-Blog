@@ -14,10 +14,10 @@
       <span class="name">欢迎，旅行者：</span>
     </div>
     <div class="widget-body fs14">
-      <p>这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。</p>
+      {{if .Site.Rightbar.Intro}}<div style="white-space:pre-wrap">{{.Site.Rightbar.Intro}}</div>{{else}}<p>这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。</p>
       <blockquote>
         <p>左侧可以搜索文章，右下角可以切换深浅色主题。</p>
-      </blockquote>
+      </blockquote>{{end}}
       {{if .Site.Rightbar.WelcomeLinklist.Items}}
       {{$ll := .Site.Rightbar.WelcomeLinklist}}
       <div class="linklist {{$ll.AlignClass}}" style="grid-template-columns:repeat({{$ll.EffectiveColumns}},1fr);">
