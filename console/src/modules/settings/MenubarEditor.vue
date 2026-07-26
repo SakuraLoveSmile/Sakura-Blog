@@ -21,11 +21,11 @@ const emit = defineEmits<{
 }>();
 
 const inputCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
 const btnCls =
-  "px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50";
+  "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
 const addBtnCls =
-  "inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300";
+  "inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors dark:text-primary dark:hover:text-primary/80";
 
 // 拖拽状态
 const dragIndex = ref<number | null>(null);
@@ -166,7 +166,7 @@ function isIconify(key: string) {
           <div class="flex items-center gap-1">
             <input
               type="color"
-              :value="it.theme || '#6366f1'"
+              :value="it.theme || '#4ccba0'"
               @input="it.theme = ($event.target as HTMLInputElement).value"
               class="w-7 h-7 rounded border border-gray-200 dark:border-gray-600 cursor-pointer p-0.5"
             />

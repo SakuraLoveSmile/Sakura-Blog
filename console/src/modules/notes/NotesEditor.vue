@@ -3,13 +3,12 @@ import { ref, onMounted } from "vue";
 import { notesApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import { Icon } from "@iconify/vue";
+import { VPageHeader, VButton, VLoading, Toast } from "@/components/ui";
 
 // 笔记页编辑器：content/notes.md 原文读写，渲染于前台 /notes 页上半部分。
 const content = ref("");
 const loading = ref(true);
 const saving = ref(false);
-const message = ref("");
-const isError = ref(false);
 
 async function load() {
   loading.value = true;
@@ -23,37 +22,48 @@ async function load() {
 
 async function save() {
   saving.value = true;
-  message.value = "";
-  isError.value = false;
   try {
     await notesApi.update(content.value);
-    message.value = "已保存，前台 /notes 已生效";
+    Toast.success("已保存，前台 /notes 已生效");
   } catch (e: any) {
-    isError.value = true;
-    message.value = e?.response?.data?.error || e?.message || "保存失败";
+    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
   } finally {
     saving.value = false;
   }
+}
+
+function openPreview() {
+  window.open("/notes", "_blank");
 }
 
 onMounted(load);
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">笔记页</h2>
-        <p class="text-xs text-gray-400 mt-1 dark:text-gray-500">此内容渲染于前台 /notes 页上半部分（支持 Markdown 与站点 shortcode），下半部分为最近瞬间。</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <span v-if="message" :class="['text-sm px-3 py-1.5 rounded-lg', isError ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-500/10']">{{ message }}</span>
-        <a href="/notes" target="_blank" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"><Icon icon="ri:external-link-line" /> 前台预览</a>
-        <button @click="save" :disabled="saving || loading" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">保存</button>
-      </div>
-    </div>
+  <div>
+    <VPageHeader title="笔记页">
+      <template #icon>
+        <Icon icon="ri:booklet-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #subtitle>
+        此内容渲染于前台 /notes 页上半部分（支持 Markdown 与站点 shortcode），下半部分为最近瞬间。
+      </template>
+      <template #actions>
+        <div class="flex items-center gap-2">
+          <VButton size="sm" @click="openPreview">
+            <template #icon>
+              <Icon icon="ri:external-link-line" class="h-full w-full" />
+            </template>
+            前台预览
+          </VButton>
+          <VButton type="secondary" :loading="saving" :disabled="loading" @click="save">保存</VButton>
+        </div>
+      </template>
+    </VPageHeader>
 
-    <div v-if="loading" class="text-sm text-gray-400 py-12 text-center dark:text-gray-500">加载中...</div>
-    <MarkdownEditor v-else v-model="content" storage-key="notes-page" @save="save" />
+    <div class="m-0 md:m-4">
+      <VLoading v-if="loading" />
+      <MarkdownEditor v-else v-model="content" storage-key="notes-page" @save="save" />
+    </div>
   </div>
 </template>

@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import { Icon } from "@iconify/vue";
+import { VPageHeader, VButton, VCard, Toast } from "@/components/ui";
 
 const route = useRoute();
 const router = useRouter();
@@ -12,8 +14,10 @@ const isNew = computed(() => slugParam.value === "new");
 
 const form = ref({ slug: "", title: "", content_md: "", status: "draft" });
 const saving = ref(false);
-const error = ref("");
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
+
+const inputCls =
+  "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
 
 onMounted(async () => {
   if (isNew.value) return;
@@ -21,13 +25,12 @@ onMounted(async () => {
     const { data } = await pageApi.get(slugParam.value);
     form.value = { slug: data.slug, title: data.title, content_md: data.content_md, status: data.status };
   } catch {
-    error.value = "加载失败";
+    Toast.error("加载失败");
   }
 });
 
 async function handleSave() {
   saving.value = true;
-  error.value = "";
   try {
     if (isNew.value) {
       await pageApi.create(form.value);
@@ -35,9 +38,10 @@ async function handleSave() {
       await pageApi.update(slugParam.value, form.value);
     }
     editorRef.value?.clearDraft();
+    Toast.success("保存成功");
     router.push("/pages");
   } catch (e: any) {
-    error.value = e.response?.data?.error || "保存失败";
+    Toast.error(e.response?.data?.error || "保存失败");
   } finally {
     saving.value = false;
   }
@@ -45,47 +49,55 @@ async function handleSave() {
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ isNew ? "新建页面" : "编辑页面" }}</h2>
-      <div class="flex gap-2">
-        <router-link to="/pages" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">取消</router-link>
-        <button @click="handleSave" :disabled="saving"
-          class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-          {{ saving ? "保存中..." : "保存" }}
-        </button>
-      </div>
-    </div>
-
-    <p v-if="error" class="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-500/10">{{ error }}</p>
-
-    <div class="max-w-5xl space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标题</label>
-          <input v-model="form.title" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+  <div>
+    <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
+      <template #icon>
+        <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #actions>
+        <div class="flex items-center gap-2">
+          <VButton @click="router.push('/pages')">取消</VButton>
+          <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
         </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Slug</label>
-          <input v-model="form.slug" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500" />
+      </template>
+    </VPageHeader>
+
+    <div class="m-0 max-w-5xl space-y-4 md:m-4">
+      <VCard>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">标题</label>
+            <input v-model="form.title" :class="inputCls" style="border-radius: 4px" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Slug</label>
+            <input v-model="form.slug" :class="inputCls" style="border-radius: 4px" />
+          </div>
         </div>
-      </div>
-      <div>
-        <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">状态</label>
-        <select v-model="form.status" class="w-40 px-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
-          <option value="draft">草稿</option>
-          <option value="published">发布</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">内容（Markdown）</label>
+        <div class="mt-4">
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">状态</label>
+          <select
+            v-model="form.status"
+            class="w-40 border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            style="border-radius: 4px"
+          >
+            <option value="draft">草稿</option>
+            <option value="published">发布</option>
+          </select>
+        </div>
+      </VCard>
+
+      <VCard>
+        <template #header>
+          <span class="text-base font-bold text-gray-900 dark:text-gray-100">内容（Markdown）</span>
+        </template>
         <MarkdownEditor
           ref="editorRef"
           v-model="form.content_md"
           :storage-key="'page:' + (isNew ? 'new' : slugParam)"
           @save="handleSave"
         />
-      </div>
+      </VCard>
     </div>
   </div>
 </template>

@@ -1,4 +1,13 @@
 @import "tailwindcss";
+@import "./custom-theme.css";
+@plugin "tailwindcss-animated";
+
+/* Halo 设计令牌（来自 halo-dev/console tailwind.config.js） */
+@theme {
+  --color-primary: #4ccba0;
+  --color-secondary: #0e1731;
+  --radius-base: 4px;
+}
 
 /* 深色模式：基于挂在 <html> 上的 .dark 类切换（支持亮/暗/跟随系统三段式），
    而非仅依赖 prefers-color-scheme 媒体查询。 */

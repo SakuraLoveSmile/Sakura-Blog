@@ -2,18 +2,32 @@
 import { ref, onMounted } from "vue";
 import { momentApi } from "@/api";
 import { Icon } from "@iconify/vue";
+import {
+  VPageHeader,
+  VCard,
+  VButton,
+  VEntity,
+  VEntityField,
+  VEmpty,
+  VLoading,
+  VPagination,
+  Dialog,
+  Toast,
+} from "@/components/ui";
 
 const moments = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
+const size = ref(20);
 const loading = ref(false);
 const newContent = ref("");
 const publishing = ref(false);
+const menuOpenId = ref<number | null>(null);
 
 async function loadMoments() {
   loading.value = true;
   try {
-    const { data } = await momentApi.list({ page: page.value, size: 20 });
+    const { data } = await momentApi.list({ page: page.value, size: size.value });
     moments.value = data.items || [];
     total.value = data.total || 0;
   } catch {} finally {
@@ -27,58 +41,140 @@ async function handlePublish() {
   try {
     await momentApi.create({ content_md: newContent.value });
     newContent.value = "";
-    loadMoments();
+    await loadMoments();
+    Toast.success("发布成功");
   } catch {} finally {
     publishing.value = false;
   }
 }
 
-async function handleDelete(id: number) {
-  if (!confirm("确定删除该瞬间？")) return;
-  await momentApi.delete(id);
-  loadMoments();
+function handleDelete(m: any) {
+  menuOpenId.value = null;
+  Dialog.warning({
+    title: "确定要删除该瞬间吗？",
+    description: "该操作不可恢复",
+    confirmType: "danger",
+    onConfirm: async () => {
+      await momentApi.delete(m.id);
+      await loadMoments();
+      Toast.success("删除成功");
+    },
+  });
+}
+
+function formatTime(s: string): string {
+  if (!s) return "";
+  return s.slice(0, 16).replace("T", " ");
+}
+
+function closeMenus() {
+  menuOpenId.value = null;
 }
 
 onMounted(loadMoments);
 </script>
 
 <template>
-  <div class="p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-6 dark:text-gray-100">瞬间</h2>
+  <div @click="closeMenus">
+    <VPageHeader title="瞬间">
+      <template #icon>
+        <Icon icon="ri:quill-pen-line" class="mr-2 self-center text-xl" />
+      </template>
+    </VPageHeader>
 
-    <!-- Publish box -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 dark:bg-gray-800 dark:border-gray-700">
-      <textarea v-model="newContent" rows="3" placeholder="记录此刻想法...（支持 Markdown）"
-        class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
-      <div class="flex justify-end mt-3">
-        <button @click="handlePublish" :disabled="publishing || !newContent.trim()"
-          class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-          <Icon icon="ri:send-plane-fill" />
-          {{ publishing ? "发布中..." : "发布" }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Moment list -->
-    <div class="space-y-3">
-      <div v-for="m in moments" :key="m.id" class="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-800 dark:border-gray-700">
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs text-gray-400 mb-1 dark:text-gray-500">{{ m.created_at?.slice(0, 16).replace("T", " ") }}</p>
-            <div class="text-sm text-gray-700 prose prose-sm dark:text-gray-300" v-html="m.content"></div>
+    <div class="m-0 space-y-4 md:m-4">
+      <!-- Publish box -->
+      <VCard>
+        <template #header>
+          <span class="text-base font-bold text-gray-900 dark:text-gray-100">发布瞬间</span>
+        </template>
+        <textarea
+          v-model="newContent"
+          rows="3"
+          placeholder="记录此刻想法...（支持 Markdown）"
+          class="w-full resize-y border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+          style="border-radius: 4px"
+        ></textarea>
+        <template #footer>
+          <div class="flex justify-end">
+            <VButton type="secondary" :loading="publishing" :disabled="!newContent.trim()" @click="handlePublish">
+              <template #icon>
+                <Icon icon="ri:send-plane-fill" class="h-full w-full" />
+              </template>
+              发布
+            </VButton>
           </div>
-          <button @click="handleDelete(m.id)" class="text-red-400 hover:text-red-600 ml-4 dark:hover:text-red-300">
-            <Icon icon="ri:delete-bin-line" />
-          </button>
-        </div>
-      </div>
-      <p v-if="moments.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">暂无瞬间</p>
-    </div>
+        </template>
+      </VCard>
 
-    <!-- Pagination -->
-    <div v-if="total > 20" class="flex justify-center gap-2 mt-4">
-      <button v-for="n in Math.ceil(total / 20)" :key="n" @click="page = n; loadMoments()"
-        :class="['w-8 h-8 text-sm rounded-lg', page === n ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">{{ n }}</button>
+      <!-- Moment list -->
+      <VCard :body-class="['!p-0']">
+        <VLoading v-if="loading" />
+
+        <Transition v-else-if="!moments.length" appear name="fade">
+          <VEmpty message="发布第一条瞬间吧" title="当前没有瞬间">
+            <template #actions>
+              <VButton @click="loadMoments">刷新</VButton>
+            </template>
+          </VEmpty>
+        </Transition>
+
+        <Transition v-else appear name="fade">
+          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
+            <li v-for="m in moments" :key="m.id">
+              <VEntity>
+                <template #start>
+                  <VEntityField width="40rem">
+                    <template #description>
+                      <div class="flex flex-col gap-1.5">
+                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatTime(m.created_at) }}</span>
+                        <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="m.content"></div>
+                      </div>
+                    </template>
+                  </VEntityField>
+                </template>
+                <template #dropdownItems>
+                  <div class="relative">
+                    <div
+                      class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200/60 hover:text-blue-600"
+                      @click.stop="menuOpenId = menuOpenId === m.id ? null : m.id"
+                    >
+                      <Icon icon="ri:more-fill" />
+                    </div>
+                    <Transition name="fade">
+                      <div
+                        v-if="menuOpenId === m.id"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                        style="border-radius: 4px"
+                        @click.stop
+                      >
+                        <VButton block type="danger" size="sm" @click="handleDelete(m)">删除</VButton>
+                      </div>
+                    </Transition>
+                  </div>
+                </template>
+              </VEntity>
+            </li>
+          </ul>
+        </Transition>
+
+        <template #footer>
+          <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadMoments" />
+          </div>
+        </template>
+      </VCard>
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

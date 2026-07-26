@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { VButton } from "@/components/ui";
 
 const router = useRouter();
 const route = useRoute();
@@ -12,14 +13,18 @@ const error = ref("");
 const loading = ref(false);
 
 async function handleLogin() {
-  error.value = "";
+  if (!password.value) {
+    error.value = "请输入密码";
+    return;
+  }
   loading.value = true;
+  error.value = "";
   try {
     await auth.login(password.value);
-    const from = (route.query.from as string) || "/dashboard";
-    router.push(from);
-  } catch (e: any) {
-    error.value = e.response?.data?.error || "登录失败";
+    const redirect = (route.query.redirect as string) || "/dashboard";
+    router.push(redirect);
+  } catch {
+    error.value = "密码错误，请重试";
   } finally {
     loading.value = false;
   }
@@ -27,39 +32,63 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-    <div class="w-full max-w-sm">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 dark:bg-gray-800 dark:border-gray-700">
-        <h1 class="text-2xl font-bold text-center text-gray-800 mb-2 dark:text-gray-100">
-          管理后台
-        </h1>
-        <p class="text-sm text-gray-500 text-center mb-8 dark:text-gray-400">Stellar 博客控制台</p>
-
-        <form @submit.prevent="handleLogin" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-              密码
-            </label>
-            <input
-              v-model="password"
-              type="password"
-              placeholder="请输入管理密码"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
-              autofocus
-            />
-          </div>
-
-          <p v-if="error" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
-
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full py-2 px-4 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            {{ loading ? "登录中..." : "登录" }}
-          </button>
-        </form>
+  <!-- Halo 登录风格：浅灰背景 + 居中窄卡片 -->
+  <div class="flex h-screen flex-col items-center justify-center bg-white/50 dark:bg-gray-900">
+    <div class="flex w-72 flex-col items-stretch justify-center">
+      <!-- Logo -->
+      <div class="mb-8 flex justify-center">
+        <a href="/" target="_blank" title="访问首页" class="flex items-center gap-2.5">
+          <img src="/favicon.svg" alt="Logo" class="h-10 w-10 select-none" />
+          <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">Console</span>
+        </a>
       </div>
+
+      <!-- 表单 -->
+      <form class="flex flex-col gap-3" @submit.prevent="handleLogin">
+        <div>
+          <input
+            v-model="password"
+            type="password"
+            placeholder="请输入管理密码"
+            autocomplete="current-password"
+            autofocus
+            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            style="border-radius: 4px"
+          />
+        </div>
+
+        <Transition name="shake-fade">
+          <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
+        </Transition>
+
+        <VButton type="secondary" block :loading="loading" @click="handleLogin">
+          登录
+        </VButton>
+      </form>
     </div>
   </div>
 </template>
+
+<style scoped>
+.shake-fade-enter-active {
+  animation: shake 0.4s ease;
+}
+.shake-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.shake-fade-leave-to {
+  opacity: 0;
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+</style>

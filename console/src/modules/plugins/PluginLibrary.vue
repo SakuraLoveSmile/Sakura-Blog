@@ -2,6 +2,7 @@
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi } from "@/api";
+import { VPageHeader } from "@/components/ui";
 import {
   plugins,
   PLUGIN_CATEGORIES,
@@ -135,15 +136,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 <template>
   <div class="h-full flex flex-col">
     <!-- 页头 -->
-    <header class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-        <Icon icon="ri:puzzle-line" class="text-xl text-indigo-500" />
-        插件库
-      </h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+    <VPageHeader title="插件库">
+      <template #icon>
+        <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #subtitle>
         {{ plugins.length }} 个标签插件 · 语法速查 + 实时渲染预览，与前台样式完全一致
-      </p>
-    </header>
+      </template>
+    </VPageHeader>
 
     <div class="flex-1 flex overflow-hidden">
       <!-- 左侧：分类 + 搜索 + 列表 -->
@@ -154,7 +154,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <input
               v-model="search"
               placeholder="搜索插件..."
-              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
           </div>
           <div class="flex flex-wrap gap-1">
@@ -163,7 +163,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'px-2 py-0.5 text-xs rounded-full transition-colors',
                 activeCategory === '全部'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-secondary text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300',
               ]"
             >全部 {{ categoryCount['全部'] }}</button>
@@ -174,7 +174,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'px-2 py-0.5 text-xs rounded-full transition-colors',
                 activeCategory === c
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-secondary text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300',
               ]"
             >{{ c }} {{ categoryCount[c] }}</button>
@@ -189,7 +189,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             :class="[
               'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
               selected.name === p.name
-                ? 'bg-indigo-50 dark:bg-indigo-500/15'
+                ? 'bg-primary/10 dark:bg-primary/10'
                 : 'hover:bg-gray-50 dark:hover:bg-gray-700/50',
             ]"
           >
@@ -205,7 +205,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'text-sm truncate',
                 selected.name === p.name
-                  ? 'text-indigo-700 font-medium dark:text-indigo-400'
+                  ? 'text-secondary font-medium dark:text-primary'
                   : 'text-gray-700 dark:text-gray-300',
               ]"
             >{{ p.title }}</span>
@@ -224,7 +224,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">{{ selected.title }}</h3>
             <code class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-mono dark:bg-gray-700 dark:text-gray-300">{% {{ selected.name }} %}</code>
-            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">{{ selected.category }}</span>
+            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-secondary dark:bg-primary/10 dark:text-primary">{{ selected.category }}</span>
             <span
               :class="[
                 'text-[11px] px-1.5 py-0.5 rounded-full',
@@ -243,7 +243,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400">语法</span>
             <button
               @click="copyText('syntax', selected.signature)"
-              class="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+              class="flex items-center gap-1 text-xs text-secondary hover:text-primary dark:text-primary"
             >
               <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
               {{ copied === "syntax" ? "已复制" : "复制语法" }}
@@ -267,7 +267,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             </thead>
             <tbody>
               <tr v-for="param in selected.params" :key="param.name" class="border-b border-gray-50 last:border-0 dark:border-gray-700/50">
-                <td class="px-4 py-2"><code class="text-xs font-mono text-indigo-600 dark:text-indigo-400">{{ param.name }}</code></td>
+                <td class="px-4 py-2"><code class="text-xs font-mono text-secondary dark:text-primary">{{ param.name }}</code></td>
                 <td class="px-4 py-2 text-gray-600 dark:text-gray-300">{{ param.desc }}</td>
                 <td class="px-4 py-2 text-gray-400 font-mono text-xs">{{ param.default }}</td>
               </tr>
@@ -291,7 +291,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <span class="text-xs font-medium text-gray-500 dark:text-gray-400">示例（可编辑，实时预览）</span>
             <button
               @click="copyText('example', example)"
-              class="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+              class="flex items-center gap-1 text-xs text-secondary hover:text-primary dark:text-primary"
             >
               <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
               {{ copied === "example" ? "已复制" : "复制示例" }}
@@ -325,7 +325,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                 :title="'暗色预览'"
                 :class="[
                   'p-1 rounded-md text-sm transition-colors',
-                  previewTheme === 'dark' ? 'bg-white text-indigo-500 shadow-sm dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400',
+                  previewTheme === 'dark' ? 'bg-white text-primary shadow-sm dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400',
                 ]"
               ><Icon icon="ri:moon-line" /></button>
             </div>

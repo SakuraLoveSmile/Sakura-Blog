@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { revisionApi } from "@/api";
+import { VButton, Dialog, Toast } from "@/components/ui";
 
 // 文章版本历史面板（Spec 22）：列表 → 选中查看与当前内容的逐行 diff → 一键回滚。
 const props = defineProps<{
@@ -72,18 +73,26 @@ async function selectRevision(m: RevisionMeta) {
 
 async function handleRestore() {
   if (!selected.value) return;
-  if (!window.confirm("确认回滚到该版本？当前内容会先存为新快照，可随时再回滚。")) return;
-  restoring.value = true;
-  error.value = "";
-  try {
-    await revisionApi.restore(selected.value.id);
-    emit("restored");
-    emit("close");
-  } catch (e: any) {
-    error.value = e.response?.data?.error || "回滚失败";
-  } finally {
-    restoring.value = false;
-  }
+  const target = selected.value;
+  Dialog.warning({
+    title: "确认回滚到该版本？",
+    description: "当前内容会先存为新快照，可随时再回滚。",
+    confirmType: "danger",
+    onConfirm: async () => {
+      restoring.value = true;
+      error.value = "";
+      try {
+        await revisionApi.restore(target.id);
+        Toast.success("已回滚");
+        emit("restored");
+        emit("close");
+      } catch (e: any) {
+        error.value = e.response?.data?.error || "回滚失败";
+      } finally {
+        restoring.value = false;
+      }
+    },
+  });
 }
 
 function fmtTime(s: string): string {
@@ -174,7 +183,7 @@ function computeDiff(oldStr: string, newStr: string): DiffLine[] {
             :key="m.id"
             @click="selectRevision(m)"
             class="w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/40"
-            :class="{ 'bg-indigo-50 dark:bg-indigo-500/10': selected?.id === m.id }"
+            :class="{ 'bg-primary/10 dark:bg-primary/10': selected?.id === m.id }"
           >
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium text-gray-700 truncate dark:text-gray-200">{{ m.title || "（无标题）" }}</span>
@@ -194,11 +203,7 @@ function computeDiff(oldStr: string, newStr: string): DiffLine[] {
           <div v-else>
             <div class="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               <span class="text-xs text-gray-500 dark:text-gray-400">对比当前内容（<span class="text-green-600 dark:text-green-400">新增</span> / <span class="text-red-600 dark:text-red-400">删除</span>）</span>
-              <button
-                @click="handleRestore"
-                :disabled="restoring"
-                class="px-3 py-1 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-              >{{ restoring ? "回滚中..." : "回滚到此版本" }}</button>
+              <VButton type="danger" size="sm" :loading="restoring" @click="handleRestore">回滚到此版本</VButton>
             </div>
             <pre class="text-xs leading-5 font-mono"><template v-for="(line, idx) in diffLines" :key="idx"><span
               class="block px-4 whitespace-pre-wrap break-words"

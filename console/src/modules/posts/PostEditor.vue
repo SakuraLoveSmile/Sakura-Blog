@@ -7,6 +7,8 @@ import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import CollapsibleSection from "@/components/CollapsibleSection.vue";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
 import RevisionPanel from "./RevisionPanel.vue";
+import { Icon } from "@iconify/vue";
+import { VPageHeader, VButton, Toast } from "@/components/ui";
 import {
   plugins,
   PLUGIN_CATEGORIES,
@@ -37,7 +39,6 @@ const form = ref({
 
 const loading = ref(false);
 const saving = ref(false);
-const error = ref("");
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
@@ -203,7 +204,7 @@ onMounted(async () => {
   try {
     await loadPost();
   } catch (e: any) {
-    error.value = "加载失败";
+    Toast.error("加载失败");
   } finally {
     loading.value = false;
   }
@@ -215,13 +216,12 @@ async function handleRestored() {
     await loadPost();
     editorRef.value?.clearDraft();
   } catch (e: any) {
-    error.value = "回滚后重载失败";
+    Toast.error("回滚后重载失败");
   }
 }
 
 async function handleSave() {
   saving.value = true;
-  error.value = "";
   try {
     if (isEdit.value) {
       await postApi.update(slug.value, form.value);
@@ -229,53 +229,45 @@ async function handleSave() {
       await postApi.create(form.value);
     }
     editorRef.value?.clearDraft();
+    Toast.success("保存成功");
     router.push("/posts");
   } catch (e: any) {
-    error.value = e.response?.data?.error || "保存失败";
+    Toast.error(e.response?.data?.error || "保存失败");
   } finally {
     saving.value = false;
   }
 }
 
 const fieldCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
 const labelCls = "block text-xs text-gray-500 mb-1 dark:text-gray-400";
 const chipCls =
-  "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-700 transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-300";
+  "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-primary/15 hover:text-secondary transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary/20 dark:hover:text-primary";
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
-        {{ isEdit ? "编辑文章" : "新建文章" }}
-      </h2>
-      <div class="flex gap-2">
-        <button
-          v-if="isEdit"
-          @click="revisionOpen = true"
-          class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-        >版本历史</button>
-        <router-link to="/posts" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">取消</router-link>
-        <button
-          @click="handleSave"
-          :disabled="saving"
-          class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {{ saving ? "保存中..." : "保存" }}
-        </button>
-      </div>
-    </div>
+  <div>
+    <VPageHeader :title="isEdit ? '编辑文章' : '新建文章'">
+      <template #icon>
+        <Icon icon="ri:book-read-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #actions>
+        <div class="flex items-center gap-2">
+          <VButton v-if="isEdit" size="sm" @click="revisionOpen = true">版本历史</VButton>
+          <VButton @click="router.push('/posts')">取消</VButton>
+          <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
+        </div>
+      </template>
+    </VPageHeader>
 
-    <p v-if="error" class="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-500/10">{{ error }}</p>
-
+    <div class="m-0 md:m-4">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Editor main -->
       <div class="lg:col-span-2 space-y-4">
         <input
           v-model="form.title"
           placeholder="文章标题"
-          class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
+          class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
         />
         <MarkdownEditor
           ref="editorRef"
@@ -320,7 +312,7 @@ const chipCls =
                 :key="c"
                 type="button"
                 @click="pickCategory(c)"
-                :class="[chipCls, form.category === c && '!bg-indigo-100 !text-indigo-700 dark:!bg-indigo-500/25 dark:!text-indigo-300']"
+                :class="[chipCls, form.category === c && '!bg-primary/20 !text-secondary dark:!bg-primary/25 dark:!text-primary']"
               >{{ c }}</button>
             </div>
           </div>
@@ -370,14 +362,14 @@ const chipCls =
             <button
               type="button"
               @click="pluginCat = '全部'"
-              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === '全部' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
+              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === '全部' ? 'bg-secondary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
             >全部</button>
             <button
               v-for="c in PLUGIN_CATEGORIES"
               :key="c"
               type="button"
               @click="pluginCat = c"
-              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === c ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
+              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === c ? 'bg-secondary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
             >{{ c }}</button>
           </div>
           <select
@@ -421,16 +413,17 @@ const chipCls =
               </div>
             </div>
 
-            <button
-              type="button"
-              @click="insertPlugin"
+            <VButton
+              type="secondary"
+              block
               :disabled="!pluginCode"
-              class="w-full px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >插入到正文</button>
+              @click="insertPlugin"
+            >插入到正文</VButton>
           </div>
           <p v-else class="text-xs text-gray-400 dark:text-gray-500">选择插件后可编辑参数并插入正文。</p>
         </CollapsibleSection>
       </div>
+    </div>
     </div>
 
     <AttachmentPickerModal :open="coverPickerOpen" @select="(url: string) => { form.cover = url; coverPickerOpen = false; }" @close="coverPickerOpen = false" />

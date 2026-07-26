@@ -1,109 +1,290 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { commentApi } from "@/api";
+import { Icon } from "@iconify/vue";
+import {
+  VPageHeader,
+  VCard,
+  VButton,
+  VEntity,
+  VEntityField,
+  VEmpty,
+  VLoading,
+  VPagination,
+  VStatusDot,
+  VModal,
+  FilterDropdown,
+  FilterTag,
+  Dialog,
+  Toast,
+} from "@/components/ui";
 
 const comments = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
-const statusFilter = ref("");
+const size = ref(20);
 const loading = ref(false);
+const isFetching = ref(false);
+
+const selectedStatus = ref<string | undefined>(undefined);
+const statusItems = [
+  { label: "全部", value: undefined },
+  { label: "待审核", value: "pending" },
+  { label: "已通过", value: "approved" },
+];
+
+const menuOpenId = ref<number | null>(null);
+const replyVisible = ref(false);
 const replyTarget = ref<any>(null);
 const replyContent = ref("");
 
+const hasFilters = computed(() => selectedStatus.value !== undefined);
+const statusLabel = computed(() => statusItems.find((i) => i.value === selectedStatus.value)?.label || "");
+
 async function loadComments() {
   loading.value = true;
+  isFetching.value = true;
   try {
-    const params: Record<string, unknown> = { page: page.value, size: 20 };
-    if (statusFilter.value) params.status = statusFilter.value;
+    const params: Record<string, unknown> = { page: page.value, size: size.value };
+    if (selectedStatus.value) params.status = selectedStatus.value;
     const { data } = await commentApi.list(params);
     comments.value = data.items || [];
     total.value = data.total || 0;
   } catch {} finally {
     loading.value = false;
+    isFetching.value = false;
   }
 }
 
-async function handleApprove(id: number) {
-  await commentApi.approve(id);
+function refetch() {
   loadComments();
 }
 
-async function handleDelete(id: number) {
-  if (!confirm("确定删除该评论？")) return;
-  await commentApi.delete(id);
+function handleFilterChange() {
+  page.value = 1;
   loadComments();
+}
+
+function handleClearFilters() {
+  selectedStatus.value = undefined;
+  page.value = 1;
+  loadComments();
+}
+
+function handleApprove(cm: any) {
+  menuOpenId.value = null;
+  Dialog.warning({
+    title: "确定要通过该评论吗？",
+    confirmType: "secondary",
+    onConfirm: async () => {
+      await commentApi.approve(cm.id);
+      await loadComments();
+      Toast.success("已通过");
+    },
+  });
+}
+
+function handleDelete(cm: any) {
+  menuOpenId.value = null;
+  Dialog.warning({
+    title: "确定要删除该评论吗？",
+    description: "该操作不可恢复",
+    confirmType: "danger",
+    onConfirm: async () => {
+      await commentApi.delete(cm.id);
+      await loadComments();
+      Toast.success("删除成功");
+    },
+  });
+}
+
+function openReply(cm: any) {
+  menuOpenId.value = null;
+  replyTarget.value = cm;
+  replyContent.value = "";
+  replyVisible.value = true;
 }
 
 async function handleReply() {
   if (!replyTarget.value || !replyContent.value.trim()) return;
   await commentApi.reply({ parent_id: replyTarget.value.id, content: replyContent.value });
+  replyVisible.value = false;
   replyTarget.value = null;
   replyContent.value = "";
-  loadComments();
+  await loadComments();
+  Toast.success("回复成功");
+}
+
+function closeMenus() {
+  menuOpenId.value = null;
 }
 
 onMounted(loadComments);
 </script>
 
 <template>
-  <div class="p-6">
-    <h2 class="text-xl font-semibold text-gray-800 mb-6 dark:text-gray-100">评论管理</h2>
+  <div @click="closeMenus">
+    <VPageHeader title="评论">
+      <template #icon>
+        <Icon icon="ri:chat-3-line" class="mr-2 self-center text-xl" />
+      </template>
+    </VPageHeader>
 
-    <!-- Filter tabs -->
-    <div class="flex gap-2 mb-4">
-      <button @click="statusFilter = ''; page = 1; loadComments()"
-        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', !statusFilter ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">全部</button>
-      <button @click="statusFilter = 'pending'; page = 1; loadComments()"
-        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', statusFilter === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">待审核</button>
-      <button @click="statusFilter = 'approved'; page = 1; loadComments()"
-        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', statusFilter === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">已通过</button>
-    </div>
-
-    <!-- Comment list -->
-    <div class="space-y-3">
-      <div v-for="cm in comments" :key="cm.id" class="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-800 dark:border-gray-700">
-        <div class="flex items-start gap-3">
-          <img :src="cm.avatar" class="w-9 h-9 rounded-full mt-0.5" />
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-medium text-sm text-gray-800 dark:text-gray-100">{{ cm.nick }}</span>
-              <span v-if="cm.is_admin" class="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-xs rounded dark:bg-indigo-500/15 dark:text-indigo-400">博主</span>
-              <span :class="['px-1.5 py-0.5 text-xs rounded', cm.status === 'approved' ? 'bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400']">
-                {{ cm.status === "approved" ? "已通过" : "待审核" }}
-              </span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{ cm.date }}</span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{ cm.page_key }}</span>
-            </div>
-            <p v-if="cm.reply_nick" class="text-xs text-gray-400 mt-0.5 dark:text-gray-500">回复 @{{ cm.reply_nick }}</p>
-            <p class="text-sm text-gray-600 mt-1 dark:text-gray-400">{{ cm.content }}</p>
-            <div class="flex gap-3 mt-2">
-              <button v-if="cm.status === 'pending'" @click="handleApprove(cm.id)" class="text-xs text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">通过</button>
-              <button @click="replyTarget = cm" class="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">回复</button>
-              <button @click="handleDelete(cm.id)" class="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">删除</button>
+    <div class="m-0 md:m-4">
+      <VCard :body-class="['!p-0']">
+        <template #header>
+          <div class="block w-full bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
+            <div class="relative flex flex-col items-start sm:flex-row sm:items-center">
+              <div class="flex w-full flex-1 items-center sm:w-auto">
+                <div class="flex items-center gap-2">
+                  <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
+                    状态：{{ statusLabel }}
+                  </FilterTag>
+                  <button
+                    v-if="hasFilters"
+                    class="text-xs text-gray-400 underline hover:text-gray-600 dark:hover:text-gray-300"
+                    @click="handleClearFilters"
+                  >
+                    清除筛选
+                  </button>
+                </div>
+              </div>
+              <div class="mt-4 flex sm:mt-0">
+                <div class="flex items-center gap-6">
+                  <FilterDropdown v-model="selectedStatus" :items="statusItems" label="状态" @change="handleFilterChange" />
+                  <div class="group cursor-pointer rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600" @click="refetch()">
+                    <Icon
+                      icon="ri:refresh-line"
+                      :class="{ 'animate-spin text-gray-900 dark:text-gray-100': isFetching }"
+                      class="h-4 w-4 text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <p v-if="comments.length === 0 && !loading" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">暂无评论</p>
-    </div>
+        </template>
 
-    <!-- Pagination -->
-    <div v-if="total > 20" class="flex justify-center gap-2 mt-4">
-      <button v-for="n in Math.ceil(total / 20)" :key="n" @click="page = n; loadComments()"
-        :class="['w-8 h-8 text-sm rounded-lg', page === n ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">{{ n }}</button>
+        <VLoading v-if="loading" />
+
+        <Transition v-else-if="!comments.length" appear name="fade">
+          <VEmpty message="你可以尝试刷新或者查看评论筛选" title="当前没有评论">
+            <template #actions>
+              <VButton @click="refetch">刷新</VButton>
+            </template>
+          </VEmpty>
+        </Transition>
+
+        <Transition v-else appear name="fade">
+          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
+            <li v-for="cm in comments" :key="cm.id">
+              <VEntity>
+                <template #start>
+                  <VEntityField width="30rem">
+                    <template #title>
+                      <div class="flex items-center gap-2">
+                        <img :src="cm.avatar" class="h-8 w-8 shrink-0 rounded-full" alt="" />
+                        <span class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ cm.nick }}</span>
+                        <span
+                          v-if="cm.is_admin"
+                          class="rounded bg-secondary/10 px-1.5 py-0.5 text-xs text-secondary dark:bg-primary/15 dark:text-primary"
+                          style="border-radius: 4px"
+                        >
+                          博主
+                        </span>
+                      </div>
+                    </template>
+                    <template #description>
+                      <div class="flex flex-col gap-1">
+                        <p v-if="cm.reply_nick" class="text-xs text-gray-400 dark:text-gray-500">回复 @{{ cm.reply_nick }}</p>
+                        <p class="line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{{ cm.content }}</p>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span class="text-xs text-gray-400 dark:text-gray-500">{{ cm.date }}</span>
+                          <span v-if="cm.page_key" class="text-xs text-gray-400 dark:text-gray-500">{{ cm.page_key }}</span>
+                        </div>
+                      </div>
+                    </template>
+                  </VEntityField>
+                </template>
+                <template #end>
+                  <VEntityField v-if="cm.status === 'approved'">
+                    <template #description>
+                      <VStatusDot state="success" text="已通过" />
+                    </template>
+                  </VEntityField>
+                  <VEntityField v-else>
+                    <template #description>
+                      <VStatusDot state="warning" text="待审核" />
+                    </template>
+                  </VEntityField>
+                </template>
+                <template #dropdownItems>
+                  <div class="relative">
+                    <div
+                      class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200/60 hover:text-blue-600"
+                      @click.stop="menuOpenId = menuOpenId === cm.id ? null : cm.id"
+                    >
+                      <Icon icon="ri:more-fill" />
+                    </div>
+                    <Transition name="fade">
+                      <div
+                        v-if="menuOpenId === cm.id"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                        style="border-radius: 4px"
+                        @click.stop
+                      >
+                        <VButton v-if="cm.status === 'pending'" block type="secondary" size="sm" @click="handleApprove(cm)">
+                          通过
+                        </VButton>
+                        <div v-if="cm.status === 'pending'" class="mt-2">
+                          <VButton block size="sm" @click="openReply(cm)">回复</VButton>
+                        </div>
+                        <div class="mt-2">
+                          <VButton block type="danger" size="sm" @click="handleDelete(cm)">删除</VButton>
+                        </div>
+                      </div>
+                    </Transition>
+                  </div>
+                </template>
+              </VEntity>
+            </li>
+          </ul>
+        </Transition>
+
+        <template #footer>
+          <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadComments" />
+          </div>
+        </template>
+      </VCard>
     </div>
 
     <!-- Reply modal -->
-    <div v-if="replyTarget" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="replyTarget = null">
-      <div class="bg-white rounded-xl p-6 w-full max-w-md dark:bg-gray-800">
-        <h3 class="text-sm font-medium text-gray-700 mb-3 dark:text-gray-300">回复 @{{ replyTarget.nick }}</h3>
-        <textarea v-model="replyContent" rows="4" placeholder="回复内容..."
-          class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
-        <div class="flex justify-end gap-2 mt-4">
-          <button @click="replyTarget = null" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">取消</button>
-          <button @click="handleReply" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">发送</button>
+    <VModal v-model:visible="replyVisible" :title="`回复 @${replyTarget?.nick || ''}`" :width="480">
+      <textarea
+        v-model="replyContent"
+        rows="4"
+        placeholder="回复内容..."
+        class="w-full resize-y border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+        style="border-radius: 4px"
+      ></textarea>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="replyVisible = false">取消</VButton>
+          <VButton type="secondary" @click="handleReply">发送</VButton>
         </div>
-      </div>
-    </div>
+      </template>
+    </VModal>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

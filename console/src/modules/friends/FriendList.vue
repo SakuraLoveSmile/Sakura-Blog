@@ -2,6 +2,18 @@
 import { ref, onMounted, computed } from "vue";
 import { linkApi } from "@/api";
 import { Icon } from "@iconify/vue";
+import {
+  VPageHeader,
+  VCard,
+  VButton,
+  VEntity,
+  VEntityField,
+  VEmpty,
+  VLoading,
+  VModal,
+  Dialog,
+  Toast,
+} from "@/components/ui";
 
 interface LinkRow {
   id: number;
@@ -22,6 +34,7 @@ const showModal = ref(false);
 const saving = ref(false);
 const error = ref("");
 const editing = ref<Partial<LinkRow>>({});
+const menuOpenId = ref<number | null>(null);
 
 // 按 group_title 分组展示（保留服务端返回顺序）
 const grouped = computed(() => {
@@ -54,6 +67,7 @@ function openCreate() {
   showModal.value = true;
 }
 function openEdit(l: LinkRow) {
+  menuOpenId.value = null;
   editing.value = { ...l };
   error.value = "";
   showModal.value = true;
@@ -70,7 +84,8 @@ async function handleSave() {
       await linkApi.create(payload);
     }
     showModal.value = false;
-    load();
+    await load();
+    Toast.success("保存成功");
   } catch (e: any) {
     error.value = e?.response?.data?.error || "保存失败";
   } finally {
@@ -78,76 +93,199 @@ async function handleSave() {
   }
 }
 
-async function handleDelete(l: LinkRow) {
-  if (!confirm(`确定删除友链「${l.name}」？`)) return;
-  await linkApi.delete(l.id);
-  load();
+function handleDelete(l: LinkRow) {
+  menuOpenId.value = null;
+  Dialog.warning({
+    title: `确定删除友链「${l.name}」？`,
+    confirmType: "danger",
+    onConfirm: async () => {
+      await linkApi.delete(l.id);
+      await load();
+      Toast.success("删除成功");
+    },
+  });
 }
 
 const inputCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+
+function closeMenus() {
+  menuOpenId.value = null;
+}
 
 onMounted(load);
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">友链管理</h2>
-      <button @click="openCreate" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-        <Icon icon="ri:add-line" /> 新增友链
-      </button>
+  <div @click="closeMenus">
+    <VPageHeader title="友链">
+      <template #icon>
+        <Icon icon="ri:links-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #actions>
+        <VButton type="secondary" @click="openCreate">
+          <template #icon>
+            <Icon icon="ri:add-circle-line" class="h-full w-full" />
+          </template>
+          新增
+        </VButton>
+      </template>
+    </VPageHeader>
+
+    <div class="m-0 space-y-4 md:m-4">
+      <VLoading v-if="loading" />
+
+      <VEmpty v-else-if="links.length === 0" message="点击右上角新增第一条友链" title="当前没有友链">
+        <template #actions>
+          <VButton type="primary" @click="openCreate">
+            <template #icon>
+              <Icon icon="ri:add-circle-line" class="h-full w-full" />
+            </template>
+            新增友链
+          </VButton>
+        </template>
+      </VEmpty>
+
+      <template v-else>
+        <VCard v-for="g in grouped" :key="g.title" :body-class="['!p-0']">
+          <template #header>
+            <span class="text-base font-bold text-gray-900 dark:text-gray-100">{{ g.title }}</span>
+          </template>
+          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
+            <li v-for="l in g.items" :key="l.id">
+              <VEntity>
+                <template #start>
+                  <VEntityField width="30rem">
+                    <template #title>
+                      <div class="flex items-center gap-2">
+                        <img
+                          v-if="l.avatar"
+                          :src="l.avatar"
+                          class="h-8 w-8 shrink-0 rounded-full bg-gray-100 object-cover dark:bg-gray-700"
+                          alt=""
+                        />
+                        <span
+                          v-else
+                          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-300 dark:bg-gray-700 dark:text-gray-600"
+                        >
+                          <Icon icon="ri:link" />
+                        </span>
+                        <a
+                          :href="l.url"
+                          target="_blank"
+                          class="truncate text-sm font-medium text-gray-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400"
+                        >
+                          {{ l.name }}
+                        </a>
+                        <span
+                          v-if="l.label"
+                          class="shrink-0 self-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none text-white"
+                          style="border-radius: 4px"
+                          :style="{ backgroundColor: l.color ? '#' + l.color : '#9ca3af' }"
+                        >
+                          {{ l.label }}
+                        </span>
+                      </div>
+                    </template>
+                    <template #description>
+                      <span class="truncate text-xs text-gray-400 dark:text-gray-500">{{ l.description }}</span>
+                    </template>
+                  </VEntityField>
+                </template>
+                <template #dropdownItems>
+                  <div class="relative">
+                    <div
+                      class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200/60 hover:text-blue-600"
+                      @click.stop="menuOpenId = menuOpenId === l.id ? null : l.id"
+                    >
+                      <Icon icon="ri:more-fill" />
+                    </div>
+                    <Transition name="fade">
+                      <div
+                        v-if="menuOpenId === l.id"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                        style="border-radius: 4px"
+                        @click.stop
+                      >
+                        <VButton block type="secondary" size="sm" @click="openEdit(l)">编辑</VButton>
+                        <div class="mt-2">
+                          <VButton block type="danger" size="sm" @click="handleDelete(l)">删除</VButton>
+                        </div>
+                      </div>
+                    </Transition>
+                  </div>
+                </template>
+              </VEntity>
+            </li>
+          </ul>
+        </VCard>
+      </template>
     </div>
 
-    <div v-if="loading" class="text-sm text-gray-400 py-12 text-center dark:text-gray-500">加载中...</div>
-    <p v-else-if="links.length === 0" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">暂无友链</p>
-
-    <div v-else class="space-y-6">
-      <div v-for="g in grouped" :key="g.title">
-        <h3 class="text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">{{ g.title }}</h3>
-        <div class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:divide-gray-700">
-          <div v-for="l in g.items" :key="l.id" class="flex items-center gap-3 px-4 py-3">
-            <img v-if="l.avatar" :src="l.avatar" class="w-9 h-9 rounded-full object-cover bg-gray-100 dark:bg-gray-700" />
-            <div v-else class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-300 dark:bg-gray-700 dark:text-gray-600"><Icon icon="ri:link" /></div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 min-w-0">
-                <a :href="l.url" target="_blank" class="min-w-0 text-sm font-medium text-gray-800 hover:text-indigo-600 truncate dark:text-gray-100 dark:hover:text-indigo-400">{{ l.name }}</a>
-                <span v-if="l.label" class="shrink-0 whitespace-nowrap leading-none self-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white" :style="{ backgroundColor: l.color ? '#' + l.color : '#9ca3af' }">{{ l.label }}</span>
-              </div>
-              <p class="text-xs text-gray-400 truncate dark:text-gray-500">{{ l.description }}</p>
-            </div>
-            <button @click="openEdit(l)" class="text-indigo-600 hover:text-indigo-800 text-xs dark:text-indigo-400 dark:hover:text-indigo-300">编辑</button>
-            <button @click="handleDelete(l)" class="text-red-500 hover:text-red-700 text-xs dark:text-red-400 dark:hover:text-red-300">删除</button>
+    <!-- Edit/Create modal -->
+    <VModal v-model:visible="showModal" :title="editing.id ? '编辑友链' : '新增友链'" :width="560">
+      <p v-if="error" class="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400" style="border-radius: 4px">
+        {{ error }}
+      </p>
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">分组</label>
+            <input v-model="editing.group_title" :class="inputCls" style="border-radius: 4px" placeholder="我的朋友" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">名称 *</label>
+            <input v-model="editing.name" :class="inputCls" style="border-radius: 4px" />
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">链接 *</label>
+          <input v-model="editing.url" :class="inputCls" style="border-radius: 4px" placeholder="https://" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">头像 URL</label>
+          <input v-model="editing.avatar" :class="inputCls" style="border-radius: 4px" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">描述</label>
+          <input v-model="editing.description" :class="inputCls" style="border-radius: 4px" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">RSS/Atom（动态聚合用）</label>
+          <input v-model="editing.rss" :class="inputCls" style="border-radius: 4px" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">标签</label>
+            <input v-model="editing.label" :class="inputCls" style="border-radius: 4px" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">配色（不带 #）</label>
+            <input v-model="editing.color" :class="inputCls" style="border-radius: 4px" placeholder="1BCDFC" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">排序（大在前）</label>
+            <input v-model.number="editing.sort" type="number" :class="inputCls" style="border-radius: 4px" />
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50" @click.self="showModal = false">
-      <div class="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto dark:bg-gray-800">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4 dark:text-gray-100">{{ editing.id ? "编辑友链" : "新增友链" }}</h3>
-        <p v-if="error" class="mb-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg dark:text-red-400 dark:bg-red-500/10">{{ error }}</p>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">分组</label><input v-model="editing.group_title" :class="inputCls" placeholder="我的朋友" /></div>
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">名称 *</label><input v-model="editing.name" :class="inputCls" /></div>
-          </div>
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">链接 *</label><input v-model="editing.url" :class="inputCls" placeholder="https://" /></div>
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像 URL</label><input v-model="editing.avatar" :class="inputCls" /></div>
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">描述</label><input v-model="editing.description" :class="inputCls" /></div>
-          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">RSS/Atom（动态聚合用）</label><input v-model="editing.rss" :class="inputCls" /></div>
-          <div class="grid grid-cols-3 gap-3">
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标签</label><input v-model="editing.label" :class="inputCls" /></div>
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">配色（不带 #）</label><input v-model="editing.color" :class="inputCls" placeholder="1BCDFC" /></div>
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">排序（大在前）</label><input v-model.number="editing.sort" type="number" :class="inputCls" /></div>
-          </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="showModal = false">取消</VButton>
+          <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
         </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="showModal = false" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">取消</button>
-          <button @click="handleSave" :disabled="saving" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50">{{ saving ? "保存中..." : "保存" }}</button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </VModal>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
+import { VPageHeader, Dialog, Toast } from "@/components/ui";
 
 // 全部段结构化编辑；「高级·JSON」保留 8 段 JSON 兜底（一般无需使用）。
 const tabs = [
@@ -30,8 +31,6 @@ const data = ref<Record<string, any>>({});
 const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
 const savingKey = ref("");
-const message = ref("");
-const isError = ref(false);
 
 // 头像选择器：复用附件选择弹窗，选中后回填 URL
 const showAvatarPicker = ref(false);
@@ -110,16 +109,13 @@ async function load() {
 
 async function save(section: string, payload?: unknown) {
   savingKey.value = section;
-  message.value = "";
-  isError.value = false;
   try {
     const body = payload !== undefined ? payload : data.value[section];
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
-    message.value = "已保存，前台已生效";
+    Toast.success("已保存，前台已生效");
   } catch (e: any) {
-    isError.value = true;
-    message.value = e?.response?.data?.error || e?.message || "保存失败";
+    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
   } finally {
     savingKey.value = "";
   }
@@ -128,8 +124,6 @@ async function save(section: string, payload?: unknown) {
 // 高级 JSON tab：裸编辑兖底，保存后同步回结构化表单
 async function saveJson(section: string) {
   savingKey.value = "json:" + section;
-  message.value = "";
-  isError.value = false;
   try {
     const payload = JSON.parse(rawText.value[section]);
     await settingsApi.updateSection(section, payload);
@@ -139,10 +133,9 @@ async function saveJson(section: string) {
       data.value[section] = payload;
       ensureDefaults(data.value);
     }
-    message.value = "已保存，前台已生效";
+    Toast.success("已保存，前台已生效");
   } catch (e: any) {
-    isError.value = true;
-    message.value = e?.response?.data?.error || e?.message || "保存失败（检查 JSON 格式）";
+    Toast.error(e?.response?.data?.error || e?.message || "保存失败（检查 JSON 格式）");
   } finally {
     savingKey.value = "";
   }
@@ -222,14 +215,24 @@ async function savePassword() {
     return;
   }
   if (pwdNew.value === "") {
-    if (!confirm("新密码为空将关闭 Console 登录验证，任何人都可访问管理后台。确定继续？")) return;
+    Dialog.warning({
+      title: "新密码为空将关闭 Console 登录验证",
+      description: "任何人都可访问管理后台。确定继续？",
+      confirmType: "danger",
+      onConfirm: () => doChangePassword(),
+    });
+    return;
   }
+  doChangePassword();
+}
+
+async function doChangePassword() {
   savingPwd.value = true;
   try {
     const { data: res } = await authApi.changePassword(pwdCurrent.value, pwdNew.value);
     pwdCurrent.value = pwdNew.value = pwdConfirm.value = "";
     if (res.passwordRequired) {
-      alert("密码已修改，请使用新密码重新登录");
+      Toast.success("密码已修改，请使用新密码重新登录");
       auth.authenticated = false;
       router.push("/login");
     } else {
@@ -245,26 +248,28 @@ async function savePassword() {
 }
 
 const inputCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
 const btnCls =
-  "px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50";
+  "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
 const rowBtnCls = "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-30";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300";
+const addBtnCls = "inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors dark:text-primary dark:hover:text-primary/80";
 
 onMounted(load);
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">站点设置</h2>
-      <span v-if="message" :class="['text-sm px-3 py-1.5 rounded-lg', isError ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-500/10']">{{ message }}</span>
-    </div>
+  <div>
+    <VPageHeader title="站点设置">
+      <template #icon>
+        <Icon icon="ri:settings-3-line" class="mr-2 self-center text-xl" />
+      </template>
+    </VPageHeader>
 
+    <div class="m-0 md:m-4">
     <!-- Tabs -->
     <div class="flex gap-1 border-b border-gray-200 mb-6 dark:border-gray-700 flex-wrap">
       <button v-for="t in tabs" :key="t.key" @click="active = t.key"
-        :class="['px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors', active === t.key ? 'border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200']">
+        :class="['px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors', active === t.key ? 'border-secondary text-secondary dark:border-primary dark:text-primary' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200']">
         {{ t.label }}
       </button>
     </div>
@@ -287,7 +292,7 @@ onMounted(load);
               <div class="flex gap-2">
                 <input v-model="data.site.avatar" :class="inputCls" placeholder="输入图片 URL" />
                 <button @click="showAvatarPicker = true"
-                  class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                  class="shrink-0 px-3 py-2 text-sm bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
                   <Icon icon="ri:image-upload-line" /> 从附件选择
                 </button>
               </div>
@@ -296,7 +301,7 @@ onMounted(load);
               <div class="flex gap-2">
                 <input v-model="data.site.avatar_bg" :class="inputCls" placeholder="输入图片 URL" />
                 <button @click="showAvatarBgPicker = true"
-                  class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                  class="shrink-0 px-3 py-2 text-sm bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
                   <Icon icon="ri:image-upload-line" /> 从附件选择
                 </button>
               </div>
@@ -326,7 +331,7 @@ onMounted(load);
               <!-- 悬停效果预览 -->
               <div v-if="data.site.avatar && data.site.avatar_bg" class="text-center">
                 <p class="text-[10px] text-gray-500 mb-2">悬停效果</p>
-                <div class="group relative w-24 h-24 rounded-full overflow-hidden transition-transform duration-300 cursor-pointer border-2 border-transparent hover:border-indigo-500">
+                <div class="group relative w-24 h-24 rounded-full overflow-hidden transition-transform duration-300 cursor-pointer border-2 border-transparent hover:border-primary">
                   <img :src="data.site.avatar_bg" class="absolute inset-0 w-full h-full object-cover" alt="" />
                   <img :src="data.site.avatar" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" alt="" />
                 </div>
@@ -346,7 +351,7 @@ onMounted(load);
               <img :src="data.site.favicon_url || '/favicon.ico'" class="w-6 h-6 rounded shrink-0" alt="" />
               <input v-model="data.site.favicon_url" :class="inputCls" placeholder="留空用默认 /favicon.ico" />
               <button @click="showFaviconPicker = true"
-                class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                class="shrink-0 px-3 py-2 bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
                 <Icon icon="ri:image-upload-line" />
               </button>
             </div>
@@ -357,7 +362,7 @@ onMounted(load);
               <img :src="data.site.apple_touch_icon || '/apple-touch-icon.png'" class="w-8 h-8 rounded-lg shrink-0" alt="" />
               <input v-model="data.site.apple_touch_icon" :class="inputCls" placeholder="留空用默认" />
               <button @click="showAppleIconPicker = true"
-                class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400">
+                class="shrink-0 px-3 py-2 bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
                 <Icon icon="ri:image-upload-line" />
               </button>
             </div>
@@ -382,7 +387,7 @@ onMounted(load);
           <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">欢迎语正文（留空用默认文案，Spec Task 5）</label>
           <textarea v-model="data.rightbar.intro" rows="3" :class="inputCls" placeholder="输入右栏欢迎语正文，换行会保留显示"></textarea>
         </div>
-        <p class="text-xs text-gray-400 dark:text-gray-500">首页右栏「欢迎语」组件内的链接列表（welcome_linklist）。</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500">首页右栏「欢迎语」 组件内的链接列表（welcome_linklist）。</p>
         <div class="w-40"><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">列数（0=自动）</label><input v-model.number="data.rightbar.welcome_linklist.columns" type="number" min="0" :class="inputCls" /></div>
         <div class="space-y-2">
           <div v-for="(it, i) in data.rightbar.welcome_linklist.items" :key="i" class="grid grid-cols-12 gap-2 items-center">
@@ -546,7 +551,7 @@ onMounted(load);
         <p class="text-xs text-gray-400 dark:text-gray-500">全部段 JSON 兜底编辑，一般无需使用（结构化表单已覆盖）。</p>
         <div v-for="s in allSections" :key="s" class="space-y-2">
           <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">{{ s }}</label>
-          <textarea v-model="rawText[s]" rows="8" class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
+          <textarea v-model="rawText[s]" rows="8" class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-xl resize-y focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"></textarea>
           <button @click="saveJson(s)" :disabled="savingKey === 'json:' + s" :class="btnCls">保存 {{ s }}</button>
         </div>
       </div>
@@ -578,6 +583,7 @@ onMounted(load);
         @select="handleAppleIconSelect"
         @close="showAppleIconPicker = false"
       />
+    </div>
     </div>
   </div>
 </template>
