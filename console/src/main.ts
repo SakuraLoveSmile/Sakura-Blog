@@ -17,7 +17,8 @@ import {
   PointElement, // Chart.js v4: 点元素
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler, // 趋势图 fill: true 渐变填充依赖
 } from "chart.js";
 
 const app = createApp(App);
@@ -39,7 +40,8 @@ Chart.register(
   PointElement, // Chart.js v4: 点元素
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler // 趋势图 fill: true 渐变填充依赖
 );
 
 // 初始化主题：与 index.html 内联防闪烁脚本保持一致，同步 store 状态并应用 .dark 类。

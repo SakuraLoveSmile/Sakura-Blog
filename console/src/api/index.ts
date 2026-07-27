@@ -29,9 +29,16 @@ export const authApi = {
 };
 
 // --- Dashboard ---
+export interface DashboardLayoutItem {
+  type: string;
+}
+
 export const dashboardApi = {
   stats: () => http.get("/dashboard/stats"),
   recentComments: () => http.get("/dashboard/recent-comments"),
+  getLayout: () => http.get("/dashboard/layout"),
+  saveLayout: (items: DashboardLayoutItem[]) =>
+    http.put("/dashboard/layout", { items }),
 };
 
 // --- Stats (Spec 24) ---
