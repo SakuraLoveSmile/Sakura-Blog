@@ -2,16 +2,51 @@
 @import "./custom-theme.css";
 @plugin "tailwindcss-animated";
 
-/* Halo 设计令牌（来自 halo-dev/console tailwind.config.js） */
+/* 设计令牌：浅色模式（保持绿色主色 #4ccba0，参考 shadcn/Halo 语义化分层） */
 @theme {
   --color-primary: #4ccba0;
+  --color-primary-foreground: #ffffff;
   --color-secondary: #0e1731;
+  --color-background: #f6f8fb;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e6e9ef;
+  --color-input: #e6e9ef;
+  --color-ring: #4ccba0;
+  --color-chart-1: #4ccba0;
+  --color-chart-2: #5b8def;
+  --color-chart-grid: #eef1f6;
+  --color-state-success: #16a34a;
+  --color-state-warning: #d97706;
+  --color-state-error: #dc2626;
   --radius-base: 4px;
 }
 
 /* 深色模式：基于挂在 <html> 上的 .dark 类切换（支持亮/暗/跟随系统三段式），
    而非仅依赖 prefers-color-scheme 媒体查询。 */
 @custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-background: #0b0e14;
+  --color-foreground: #e7ebf3;
+  --color-card: #141821;
+  --color-card-foreground: #e7ebf3;
+  --color-popover: #1a1f2b;
+  --color-popover-foreground: #e7ebf3;
+  --color-muted: #1a1f2b;
+  --color-muted-foreground: #94a3b8;
+  --color-border: #252b39;
+  --color-input: #252b39;
+  --color-chart-grid: #1f2533;
+  --color-state-success: #22c55e;
+  --color-state-warning: #f59e0b;
+  --color-state-error: #ef4444;
+}
 
 @layer base {
   /* 深色模式下让原生控件（复选框、下拉、日期选择器、滚动条等）跟随深色外观 */

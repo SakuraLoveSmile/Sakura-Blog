@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { dashboardApi, statsApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VCard } from "@/components/ui";
+import { Chart } from "chart.js";
 
 const stats = ref({
   post_total: 0,
@@ -31,58 +32,258 @@ const quickActions = [
 // --- 访问统计 ---
 const trendDays = ref(7);
 const trend = ref<{ date: string; pv: number; uv: number }[]>([]);
-const popular = ref<{ path: string; title: string; pv: number; uv: number }[]>([]);
 
-const chartW = 600;
-const chartH = 160;
-const padX = 40;
-const padY = 20;
+// Chart.js refs
+const trendCanvas = ref<HTMLCanvasElement | null>(null);
+const hourlyCanvas = ref<HTMLCanvasElement | null>(null);
+const metricTab = ref<'pv' | 'uv' | 'both'>('both');
 
-function polylinePoints(key: "pv" | "uv") {
-  const data = trend.value;
-  if (!data.length) return "";
-  const maxV = Math.max(...data.map((d) => Math.max(d.pv, d.uv)), 1);
-  const stepX = (chartW - padX * 2) / Math.max(data.length - 1, 1);
-  return data
-    .map((d, i) => {
-      const x = padX + i * stepX;
-      const y = chartH - padY - ((d[key] / maxV) * (chartH - padY * 2));
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-}
-
-const pvPoints = computed(() => polylinePoints("pv"));
-const uvPoints = computed(() => polylinePoints("uv"));
-const maxVal = computed(() => Math.max(...trend.value.map((d) => Math.max(d.pv, d.uv)), 1));
-
-const xLabels = computed(() => {
-  const data = trend.value;
-  if (!data.length) return [];
-  const step = Math.max(1, Math.floor(data.length / 6));
-  const stepX = (chartW - padX * 2) / Math.max(data.length - 1, 1);
-  return data
-    .filter((_, i) => i % step === 0 || i === data.length - 1)
-    .map((d) => ({
-      x: padX + data.indexOf(d) * stepX,
-      label: d.date.slice(5),
-    }));
+/** 趋势图日期范围文字（如 "2026-06-27 至 2026-07-26"） */
+const trendDateRange = computed(() => {
+  if (!trend.value.length) return '';
+  return `${trend.value[0].date} 至 ${trend.value[trend.value.length - 1].date}`;
 });
+const hourlyDist = ref<number[]>(Array(24).fill(0));
+let trendChartInstance: Chart | null = null;
 
 async function loadStats() {
   try {
     const { data } = await statsApi.trend(trendDays.value);
     trend.value = data.trend || [];
-  } catch {}
+    console.log('[Dashboard] Trend data loaded:', trend.value.length, 'days');
+  } catch (err) {
+    console.error('[Dashboard] Failed to load trend data:', err);
+    trend.value = Array(7).fill({ date: '', pv: 0, uv: 0 }); // 兜底数据
+  }
+  
+  // 加载时段分布数据（如果后端已实现）
   try {
-    const { data } = await statsApi.popular(trendDays.value, 10);
-    popular.value = data.items || [];
-  } catch {}
+    const res = await fetch(`/api/v1/stats/hourly?days=${trendDays.value}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const response = await res.json();
+    console.log('[Dashboard] Hourly response:', response);
+    hourlyDist.value = Array.isArray(response) ? 
+      response : 
+      (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
+  } catch (err) {
+    console.warn('[Dashboard] Failed to load hourly data, using defaults:', err);
+    hourlyDist.value = Array(24).fill(0); // 失败则使用默认数据
+  }
+  
+  console.log('[Dashboard] Initializing charts...');
+  console.log('  - trend.value length:', trend.value.length);
+  console.log('  - hourlyDist length:', hourlyDist.value.length);
+  
+  // 数据加载成功后再初始化图表
+  initTrendChart();
+  initHourlyChart();
 }
 
-function switchDays(d: number) {
-  trendDays.value = d;
-  loadStats();
+// 初始化主趋势折线图
+function initTrendChart() {
+  // 如果没有数据，不初始化图表
+  if (!trend.value || trend.value.length === 0) {
+    console.warn('[Chart.js] Trend chart skipped: no data');
+    return;
+  }
+  const canvas = trendCanvas.value;
+  if (!canvas) {
+    console.error('[Chart.js] Trend chart skipped: canvas not found');
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  const cs = getComputedStyle(document.documentElement);
+  const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#4ccba0';
+  const c2 = cs.getPropertyValue('--color-chart-2').trim() || '#5b8def';
+  const gridColor = cs.getPropertyValue('--color-chart-grid').trim() || '#eef1f6';
+  const mutedColor = cs.getPropertyValue('--color-muted-foreground').trim() || '#64748b';
+  const cardBg = cs.getPropertyValue('--color-card').trim() || '#ffffff';
+  const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#0f172a';
+  const borderColor = cs.getPropertyValue('--color-border').trim() || '#e6e9ef';
+  
+  // PV 渐变色填充 - hex alpha（1F = 12% 透明度）
+  const gradient = ctx!.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, c1 + '1F');
+  gradient.addColorStop(1, c1 + '00');
+
+  trendChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: trend.value.map(d => d.date.slice(5)),
+      datasets: [
+        {
+          label: 'PV',
+          data: trend.value.map(d => d.pv),
+          borderColor: c1,
+          backgroundColor: gradient,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: c1,
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2
+        },
+        {
+          label: 'UV',
+          data: trend.value.map(d => d.uv),
+          borderColor: c2,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: c2,
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2,
+          hidden: metricTab.value !== 'both'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 0, // 禁用动画避免重绘
+      },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cardBg,
+          titleColor: fgColor,
+          bodyColor: mutedColor,
+          borderColor: borderColor,
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+          displayColors: true,
+          boxPadding: 4
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: gridColor },
+          ticks: {
+            color: mutedColor,
+            font: { size: 11 },
+            maxRotation: 0,
+            maxTicksLimit: 7,
+            callback: (_, index) => {
+              const step = Math.max(1, Math.ceil(trend.value.length / 7));
+              return index % step === 0 ? trend.value[index]?.date.slice(5) : '';
+            }
+          }
+        },
+        y: {
+          beginAtZero: false,
+          grid: { color: gridColor },
+          border: { display: false },
+          ticks: {
+            color: mutedColor,
+            font: { size: 11 }
+          }
+        }
+      }
+    }
+  });
+}
+
+// 初始化时段分布柱状图
+function initHourlyChart() {
+  const canvas = hourlyCanvas.value;
+  if (!canvas) {
+    console.error('[Chart.js] Hourly chart skipped: canvas not found');
+    return;
+  }
+
+  const cs = getComputedStyle(document.documentElement);
+  const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#4ccba0';
+  const primaryColor = cs.getPropertyValue('--color-primary').trim() || '#4ccba0';
+  const gridColor = cs.getPropertyValue('--color-chart-grid').trim() || '#eef1f6';
+  const mutedColor = cs.getPropertyValue('--color-muted-foreground').trim() || '#64748b';
+  const cardBg = cs.getPropertyValue('--color-card').trim() || '#ffffff';
+  const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#0f172a';
+  const borderColor = cs.getPropertyValue('--color-border').trim() || '#e6e9ef';
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const values = hourlyDist.value;
+
+  // 高峰时段高亮 (10-12 点、20-22 点) 用 primary 色，其余用 chart-1
+  const bgColors = hours.map(h => 
+    (h >= 10 && h <= 12) || (h >= 20 && h <= 22) 
+      ? primaryColor 
+      : c1
+  );
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: hours.map(h => `${h.toString().padStart(2, '0')}:00`),
+      datasets: [{
+        label: '访问量',
+        data: values,
+        backgroundColor: bgColors,
+        borderRadius: 3,
+        barPercentage: 0.75,
+        categoryPercentage: 0.85
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 0, // 禁用动画避免重绘
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cardBg,
+          titleColor: fgColor,
+          bodyColor: mutedColor,
+          borderColor: borderColor,
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: (items: any[]) => items[0].label,
+            label: (item: any) => '访问量: ' + item.parsed.y
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: gridColor },
+          ticks: {
+            color: mutedColor,
+            font: { size: 10 },
+            callback: (_, index) => index % 4 === 0 ? `${hours[index]}:00` : ''
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: gridColor },
+          border: { display: false },
+          ticks: { color: mutedColor, font: { size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+// 指标切换
+function switchMetric(key: 'pv' | 'uv' | 'both') {
+  metricTab.value = key;
+  if (trendChartInstance) {
+    trendChartInstance.data.datasets[0].hidden = key === 'uv';
+    trendChartInstance.data.datasets[1].hidden = key === 'pv';
+    trendChartInstance.update();
+  }
 }
 
 onMounted(async () => {
@@ -94,7 +295,9 @@ onMounted(async () => {
     const { data } = await dashboardApi.recentComments();
     recentComments.value = data.items || [];
   } catch {}
-  loadStats();
+  
+  // 数据加载完成后自动初始化图表
+  await loadStats();
 });
 </script>
 
@@ -160,12 +363,12 @@ onMounted(async () => {
           <div v-if="recentComments.length" class="divide-y divide-gray-50 dark:divide-gray-700">
             <div v-for="c in recentComments.slice(0, 6)" :key="c.id" class="flex items-start gap-3 py-2.5">
               <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                {{ (c.author || "?")[0] }}
+                {{ (c.nick || "?")[0] }}
               </span>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span class="text-xs font-medium text-gray-800 dark:text-gray-200">{{ c.author }}</span>
-                  <span class="text-[10px] text-gray-400">{{ c.created_at?.slice(0, 10) }}</span>
+                  <span class="text-xs font-medium text-gray-800 dark:text-gray-200">{{ c.nick }}</span>
+                  <span class="text-[10px] text-gray-400">{{ c.date?.slice(0, 10) }}</span>
                 </div>
                 <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ c.content }}</p>
               </div>
@@ -177,82 +380,69 @@ onMounted(async () => {
         <!-- 访问趋势 -->
         <VCard>
           <template #header>
-            <div class="flex w-full items-center justify-between px-4 py-3">
-              <span class="text-base font-bold text-gray-800 dark:text-gray-100">访问趋势</span>
-              <div class="flex gap-1">
+            <div class="flex w-full flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <span class="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <Icon icon="ri:line-chart-line" class="text-lg" />
+                  访问趋势
+                </span>
+                <p v-if="trendDateRange" class="mt-0.5 text-xs text-muted-foreground">{{ trendDateRange }}</p>
+              </div>
+              <div class="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
                 <button
-                  v-for="d in [7, 30]"
-                  :key="d"
-                  :class="[
-                    'rounded px-2 py-1 text-xs transition-colors',
-                    trendDays === d
-                      ? 'bg-secondary text-white'
-                      : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
+                  v-for="{ key, label } in [
+                    { key: 'pv', label: 'PV' },
+                    { key: 'uv', label: 'UV' },
+                    { key: 'both', label: '同时' }
                   ]"
-                  style="border-radius: 4px"
-                  @click="switchDays(d)"
+                  :key="label"
+                  :class="[
+                    'rounded-[6px] px-3 py-1.5 text-xs font-medium transition-all',
+                    metricTab === key 
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  ]"
+                  @click="switchMetric(key)"
                 >
-                  {{ d }} 天
+                  {{ label }}
                 </button>
               </div>
             </div>
           </template>
-          <svg v-if="trend.length" :viewBox="`0 0 ${chartW} ${chartH}`" class="w-full">
-            <line
-              v-for="frac in [0, 0.5, 1]"
-              :key="frac"
-              :x1="padX"
-              :x2="chartW - padX"
-              :y1="chartH - padY - frac * (chartH - padY * 2)"
-              :y2="chartH - padY - frac * (chartH - padY * 2)"
-              stroke="#e5e7eb"
-              stroke-dasharray="4 4"
-              stroke-width="1"
-            />
-            <text
-              v-for="frac in [0, 0.5, 1]"
-              :key="'t' + frac"
-              :x="padX - 6"
-              :y="chartH - padY - frac * (chartH - padY * 2) + 3"
-              fill="#9ca3af"
-              font-size="9"
-              text-anchor="end"
-            >
-              {{ Math.round(maxVal * frac) }}
-            </text>
-            <polyline :points="pvPoints" fill="none" stroke="#4ccba0" stroke-width="2" />
-            <polyline :points="uvPoints" fill="none" stroke="#0ea5e9" stroke-width="2" />
-            <text v-for="lb in xLabels" :key="lb.x" :x="lb.x" :y="chartH - 4" fill="#9ca3af" font-size="9" text-anchor="middle">
-              {{ lb.label }}
-            </text>
-          </svg>
-          <p v-else class="py-8 text-center text-xs text-gray-400">暂无数据</p>
-          <div class="mt-2 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-            <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full" style="background: #4ccba0"></span>PV</span>
-            <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full" style="background: #0ea5e9"></span>UV</span>
+          <div class="p-4">
+            <!-- 图例（图表上方） -->
+            <div class="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
+                PV 页面浏览量
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <span class="h-2.5 w-2.5 rounded-full bg-chart-2"></span>
+                UV 独立访客
+              </span>
+            </div>
+            <div class="mt-3 h-[260px] w-full">
+              <canvas ref="trendCanvas"></canvas>
+            </div>
+          </div>
+        </VCard>
+
+        <!-- 时段分布 -->
+        <VCard>
+          <template #header>
+            <div class="flex w-full items-center justify-between px-4 py-3">
+              <span class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                访问时段分布
+              </span>
+            </div>
+          </template>
+          <div class="p-4">
+            <div class="h-[260px] w-full">
+              <canvas ref="hourlyCanvas"></canvas>
+            </div>
           </div>
         </VCard>
       </div>
-
-      <!-- 热门文章 -->
-      <VCard title="热门文章">
-        <div v-if="popular.length" class="divide-y divide-gray-50 dark:divide-gray-700">
-          <div v-for="(p, i) in popular" :key="p.path" class="flex items-center gap-3 py-2.5">
-            <span
-              :class="[
-                'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold',
-                i < 3 ? 'bg-secondary text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
-              ]"
-              style="border-radius: 4px"
-            >
-              {{ i + 1 }}
-            </span>
-            <span class="min-w-0 flex-1 truncate text-xs text-gray-700 dark:text-gray-300">{{ p.title || p.path }}</span>
-            <span class="flex-shrink-0 text-[10px] tabular-nums text-gray-400">PV {{ p.pv }}</span>
-          </div>
-        </div>
-        <p v-else class="py-8 text-center text-xs text-gray-400">暂无数据</p>
-      </VCard>
     </div>
   </div>
 </template>
