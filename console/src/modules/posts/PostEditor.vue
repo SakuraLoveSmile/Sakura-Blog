@@ -43,6 +43,12 @@ const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
 
+// 全屏模式：覆盖侧边栏，编辑器占满视口
+const fullscreen = ref(false);
+function toggleFullscreen() {
+  fullscreen.value = !fullscreen.value;
+}
+
 // Slug 自动生成：新建文章时标题变化自动推导 slug，用户手动编辑后停止覆盖（Spec Task 6）
 const slugManuallyEdited = ref(false);
 
@@ -246,13 +252,18 @@ const chipCls =
 </script>
 
 <template>
-  <div>
+  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-gray-50 dark:bg-gray-900': fullscreen }">
     <VPageHeader :title="isEdit ? '编辑文章' : '新建文章'">
       <template #icon>
         <Icon icon="ri:book-read-line" class="mr-2 self-center text-xl" />
       </template>
       <template #actions>
         <div class="flex items-center gap-2">
+          <VButton size="sm" :title="fullscreen ? '退出全屏' : '全屏编辑'" @click="toggleFullscreen">
+            <template #icon>
+              <Icon :icon="fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="h-full w-full" />
+            </template>
+          </VButton>
           <VButton v-if="isEdit" size="sm" @click="revisionOpen = true">版本历史</VButton>
           <VButton @click="router.push('/posts')">取消</VButton>
           <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
@@ -261,9 +272,9 @@ const chipCls =
     </VPageHeader>
 
     <div class="m-0 md:m-4">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-6" :class="fullscreen ? 'lg:grid-cols-1' : 'lg:grid-cols-3'">
       <!-- Editor main -->
-      <div class="lg:col-span-2 space-y-4">
+      <div :class="['space-y-4', fullscreen ? '' : 'lg:col-span-2']">
         <input
           v-model="form.title"
           placeholder="文章标题"
@@ -277,8 +288,8 @@ const chipCls =
         />
       </div>
 
-      <!-- Settings sidebar -->
-      <div class="space-y-4">
+      <!-- Settings sidebar（全屏时隐藏） -->
+      <div v-show="!fullscreen" class="space-y-4">
         <CollapsibleSection title="发布设置" icon="ri:settings-3-line">
           <div>
             <label :class="labelCls">别名 (Slug)</label>

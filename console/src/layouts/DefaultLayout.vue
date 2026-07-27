@@ -18,6 +18,9 @@ const searchQuery = ref("");
 
 const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
 
+// 页脚控制：编辑器等全屏页面通过路由 meta.hideFooter 隐藏
+const showFooter = computed(() => !route.meta.hideFooter);
+
 const themeOptions: { value: ThemeMode; icon: string; label: string }[] = [
   { value: "light", icon: "ri:sun-line", label: "亮色" },
   { value: "dark", icon: "ri:moon-line", label: "暗色" },
@@ -210,6 +213,13 @@ function closeProfileDropdown() {
     <!-- Main content -->
     <main class="content w-full overflow-y-auto pb-16 md:ml-64 md:pb-0">
       <router-view />
+      <!-- 页脚（对齐 Halo：Powered by ...） -->
+      <footer
+        v-if="showFooter"
+        class="border-t border-gray-100 px-4 py-3 text-center text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500"
+      >
+        Powered by <a href="/" target="_blank" class="font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400">Stellar Blog</a>
+      </footer>
     </main>
 
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary） -->

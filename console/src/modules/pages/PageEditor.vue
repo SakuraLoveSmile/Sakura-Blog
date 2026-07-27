@@ -16,6 +16,12 @@ const form = ref({ slug: "", title: "", content_md: "", status: "draft" });
 const saving = ref(false);
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 
+// 全屏模式：覆盖侧边栏，编辑器占满视口
+const fullscreen = ref(false);
+function toggleFullscreen() {
+  fullscreen.value = !fullscreen.value;
+}
+
 const inputCls =
   "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
 
@@ -49,21 +55,26 @@ async function handleSave() {
 </script>
 
 <template>
-  <div>
+  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-gray-50 dark:bg-gray-900': fullscreen }">
     <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
       <template #icon>
         <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
       </template>
       <template #actions>
         <div class="flex items-center gap-2">
+          <VButton size="sm" :title="fullscreen ? '退出全屏' : '全屏编辑'" @click="toggleFullscreen">
+            <template #icon>
+              <Icon :icon="fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="h-full w-full" />
+            </template>
+          </VButton>
           <VButton @click="router.push('/pages')">取消</VButton>
           <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
         </div>
       </template>
     </VPageHeader>
 
-    <div class="m-0 max-w-5xl space-y-4 md:m-4">
-      <VCard>
+    <div :class="['m-0 space-y-4 md:m-4', fullscreen ? '' : 'max-w-5xl']">
+      <VCard v-show="!fullscreen">
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">标题</label>

@@ -29,11 +29,13 @@ const router = createRouter({
           path: "posts/new",
           name: "PostNew",
           component: () => import("@/modules/posts/PostEditor.vue"),
+          meta: { hideFooter: true },
         },
         {
           path: "posts/edit/:slug",
           name: "PostEdit",
           component: () => import("@/modules/posts/PostEditor.vue"),
+          meta: { hideFooter: true },
         },
         {
           path: "comments",
@@ -54,6 +56,7 @@ const router = createRouter({
           path: "pages/edit/:slug",
           name: "PageEdit",
           component: () => import("@/modules/pages/PageEditor.vue"),
+          meta: { hideFooter: true },
         },
         {
           path: "moments",
