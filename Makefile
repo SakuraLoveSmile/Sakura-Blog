@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test run dev clean docker
+.PHONY: all build console go-build test console-test run dev clean docker
 
 all: build
 
@@ -18,10 +18,14 @@ console:
 go-build:
 	go build -o $(BINARY) ./cmd/server
 
-## test: 静态检查 + 全部测试
-test:
+## test: 静态检查 + 全部测试（Go vet/test + 前端 vue-tsc 类型检查）
+test: console-test
 	go vet ./...
 	go test ./...
+
+## console-test: 前端最小机械验证（vue-tsc 类型检查，需已安装 console/node_modules）
+console-test:
+	cd console && npm run test
 
 ## run: embed 模式构建并运行（首次加 -seed 导入文章）
 run: build
