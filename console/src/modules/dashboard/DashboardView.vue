@@ -134,9 +134,7 @@ async function saveQuickActions() {
 const trendDays = ref(7);
 const trend = ref<{ date: string; pv: number; uv: number }[]>([]);
 
-// Chart.js refs
-const trendCanvas = ref<HTMLCanvasElement | null>(null);
-const hourlyCanvas = ref<HTMLCanvasElement | null>(null);
+// Chart.js canvas 通过固定 id 获取（widget 处于 v-for 内，避开模板 ref 被收集成数组的问题）
 const metricTab = ref<'pv' | 'uv' | 'both'>('both');
 
 /** 趋势图日期范围文字（如 "2026-06-27 至 2026-07-26"） */
@@ -155,7 +153,6 @@ async function loadStats() {
   try {
     const { data } = await statsApi.trend(trendDays.value);
     trend.value = data.trend || [];
-    console.log('[Dashboard] Trend data loaded:', trend.value.length, 'days');
   } catch (err) {
     console.error('[Dashboard] Failed to load trend data:', err);
     trend.value = Array(7).fill({ date: '', pv: 0, uv: 0 }); // 兜底数据
@@ -166,7 +163,6 @@ async function loadStats() {
     const res = await fetch(`/api/v1/stats/hourly?days=${trendDays.value}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     const response = await res.json();
-    console.log('[Dashboard] Hourly response:', response);
     hourlyDist.value = Array.isArray(response)
       ? response
       : (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
@@ -175,13 +171,9 @@ async function loadStats() {
     hourlyDist.value = Array(24).fill(0); // 失败则使用默认数据
   }
 
-  console.log('[Dashboard] Initializing charts...');
-  console.log('  - trend.value length:', trend.value.length);
-  console.log('  - hourlyDist length:', hourlyDist.value.length);
-
-  // 数据加载成功后再初始化图表
+  // 数据加载成功后再初始化图表（nextTick 确保 widget canvas 已渲染到 DOM）
   dataLoaded.value = true;
-  initCharts();
+  nextTick(initCharts);
 }
 
 /** 销毁旧图表实例并根据启用状态重新初始化 */
@@ -197,9 +189,21 @@ function initCharts() {
   }
   // 数据未就绪时只销毁不初始化
   if (!dataLoaded.value) return;
-  // 仅在对应组件启用时初始化对应图表
-  if (enabledWidgets.value.includes('visit-trend')) initTrendChart();
-  if (enabledWidgets.value.includes('hourly-dist')) initHourlyChart();
+  // 仅在对应组件启用时初始化对应图表；各自 try/catch，互不影响
+  if (enabledWidgets.value.includes('visit-trend')) {
+    try {
+      initTrendChart();
+    } catch (err) {
+      console.warn('[Chart.js] Trend chart init failed:', err);
+    }
+  }
+  if (enabledWidgets.value.includes('hourly-dist')) {
+    try {
+      initHourlyChart();
+    } catch (err) {
+      console.warn('[Chart.js] Hourly chart init failed:', err);
+    }
+  }
 }
 
 // 监听启用组件变化，DOM 更新后重新初始化图表
@@ -214,9 +218,10 @@ function initTrendChart() {
     console.warn('[Chart.js] Trend chart skipped: no data');
     return;
   }
-  const canvas = trendCanvas.value;
+  // 用 id 取 canvas：widget 处于 v-for 内，模板 ref 会被 Vue 收集成数组，直接取 id 更稳妥
+  const canvas = document.getElementById('dash-trend-canvas') as HTMLCanvasElement | null;
   if (!canvas) {
-    console.error('[Chart.js] Trend chart skipped: canvas not found');
+    console.warn('[Chart.js] Trend chart skipped: canvas not found');
     return;
   }
 
@@ -323,9 +328,9 @@ function initTrendChart() {
 
 // 初始化时段分布柱状图
 function initHourlyChart() {
-  const canvas = hourlyCanvas.value;
+  const canvas = document.getElementById('dash-hourly-canvas') as HTMLCanvasElement | null;
   if (!canvas) {
-    console.error('[Chart.js] Hourly chart skipped: canvas not found');
+    console.warn('[Chart.js] Hourly chart skipped: canvas not found');
     return;
   }
 
@@ -646,7 +651,7 @@ onMounted(async () => {
                   </span>
                 </div>
                 <div class="mt-3 h-[260px] w-full">
-                  <canvas ref="trendCanvas"></canvas>
+                  <canvas id="dash-trend-canvas"></canvas>
                 </div>
               </div>
             </VCard>
@@ -662,7 +667,7 @@ onMounted(async () => {
               </template>
               <div class="p-4">
                 <div class="h-[260px] w-full">
-                  <canvas ref="hourlyCanvas"></canvas>
+                  <canvas id="dash-hourly-canvas"></canvas>
                 </div>
               </div>
             </VCard>

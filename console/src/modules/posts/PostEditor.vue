@@ -8,7 +8,7 @@ import CollapsibleSection from "@/components/CollapsibleSection.vue";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
 import RevisionPanel from "./RevisionPanel.vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VButton, Toast } from "@/components/ui";
+import { VPageHeader, VButton, Toast, Dialog } from "@/components/ui";
 import {
   plugins,
   PLUGIN_CATEGORIES,
@@ -39,9 +39,29 @@ const form = ref({
 
 const loading = ref(false);
 const saving = ref(false);
+const publishing = ref(false);
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
+
+// 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
+const originalStatus = ref("draft");
+const hasDraft = ref(false);
+const isPublishedPost = computed(() => isEdit.value && originalStatus.value === "published");
+
+// 编辑器模式（页头下拉与工具栏三态按钮双向同步）
+type EditorMode = "edit" | "split" | "preview";
+const editorMode = ref<EditorMode>("split");
+const editorModeItems: { value: EditorMode; label: string }[] = [
+  { value: "edit", label: "仅编辑" },
+  { value: "split", label: "即时渲染" },
+  { value: "preview", label: "仅预览" },
+];
+function onEditorModeSelect(e: Event) {
+  const v = (e.target as HTMLSelectElement).value as EditorMode;
+  editorMode.value = v;
+  editorRef.value?.setMode(v);
+}
 
 // 全屏模式：覆盖侧边栏，编辑器占满视口
 const fullscreen = ref(false);
@@ -69,10 +89,11 @@ watch(() => form.value.title, (newTitle) => {
   }
 });
 
-/** 从 picsum.photos 获取随机封面图（Spec Task 4，source.unsplash.com 已停用的替代方案） */
+/** 随机封面图：picsum seed 模式，保存后 URL 固定图片不再变化（source.unsplash.com 已停用） */
 function fetchRandomCover() {
-  // picsum.photos 免费无需 API Key，时间戳参数确保每次获取不同图片
-  form.value.cover = `https://picsum.photos/1200/675?random=${Date.now()}`;
+  // picsum.photos 免费无需 API Key；seed 模式同一 URL 永远返回同一张图
+  const seed = Math.random().toString(36).slice(2, 10);
+  form.value.cover = `https://picsum.photos/seed/${seed}/1200/675`;
 }
 
 // 当前正文字数（非空白 rune），供版本面板计算字数变化。
@@ -184,27 +205,32 @@ function insertPlugin() {
 
 onBeforeUnmount(() => clearTimeout(pluginTimer));
 
-// ---------- 加载 / 保存 ----------
+// ---------- 加载 / 保存 / 发布 ----------
 async function loadPost() {
   const { data } = await postApi.get(slug.value);
+  originalStatus.value = data.status;
+  hasDraft.value = !!data.has_draft;
+  // 有草稿头时优先载入草稿内容（线上内容不受影响）
+  const src = data.has_draft && data.draft ? { ...data, ...data.draft } : data;
   form.value = {
-    slug: data.slug,
-    title: data.title,
-    excerpt: data.excerpt,
-    cover: data.cover,
-    category: data.category,
-    topic: data.topic,
-    tags: data.tags,
-    content_md: data.content_md,
+    slug: src.slug || data.slug,
+    title: src.title,
+    excerpt: src.excerpt,
+    cover: src.cover,
+    category: src.category,
+    topic: src.topic,
+    tags: src.tags,
+    content_md: src.content_md,
     status: data.status,
-    pinned: data.pinned,
-    password: data.password,
-    publish_at: data.publish_at || "",
+    pinned: src.pinned,
+    password: src.password,
+    publish_at: src.publish_at || "",
   };
 }
 
 onMounted(async () => {
   loadTaxonomy();
+  editorMode.value = (editorRef.value?.getMode?.() as EditorMode) || "split";
   if (!isEdit.value) return;
   loading.value = true;
   try {
@@ -226,22 +252,71 @@ async function handleRestored() {
   }
 }
 
+/** 保存：已发布文章 → 存草稿头（线上不变，列表出小绿点）；草稿/新建 → 直接保存为草稿 */
 async function handleSave() {
   saving.value = true;
   try {
-    if (isEdit.value) {
-      await postApi.update(slug.value, form.value);
+    if (isPublishedPost.value) {
+      await postApi.saveDraft(slug.value, { ...form.value, status: "published" });
+      hasDraft.value = true;
+      editorRef.value?.clearDraft();
+      Toast.success("内容已保存，但还未发布");
+    } else if (isEdit.value) {
+      await postApi.update(slug.value, { ...form.value, status: "draft" });
+      editorRef.value?.clearDraft();
+      Toast.success("保存成功");
     } else {
-      await postApi.create(form.value);
+      const { data } = await postApi.create({ ...form.value, status: "draft" });
+      editorRef.value?.clearDraft();
+      Toast.success("保存成功");
+      // 转入编辑模式，后续保存走更新
+      router.replace(`/posts/edit/${data.slug}`);
+      originalStatus.value = "draft";
     }
-    editorRef.value?.clearDraft();
-    Toast.success("保存成功");
-    router.push("/posts");
   } catch (e: any) {
     Toast.error(e.response?.data?.error || "保存失败");
   } finally {
     saving.value = false;
   }
+}
+
+/** 发布：应用草稿头并上线（新建/草稿文章直接以发布状态保存） */
+async function handlePublish() {
+  publishing.value = true;
+  try {
+    if (isEdit.value) {
+      await postApi.publish(slug.value, form.value);
+    } else {
+      await postApi.create({ ...form.value, status: "published" });
+    }
+    editorRef.value?.clearDraft();
+    Toast.success("发布成功");
+    router.push("/posts");
+  } catch (e: any) {
+    Toast.error(e.response?.data?.error || "发布失败");
+  } finally {
+    publishing.value = false;
+  }
+}
+
+/** 放弃草稿头，回到线上内容 */
+function handleDiscardDraft() {
+  Dialog.warning({
+    title: "确定要放弃未发布的草稿吗？",
+    description: "将丢弃已保存的草稿内容，恢复为线上发布版本",
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await postApi.discardDraft(slug.value);
+        hasDraft.value = false;
+        await loadPost();
+        editorRef.value?.clearDraft();
+        Toast.success("已放弃草稿");
+      } catch (e: any) {
+        Toast.error(e.response?.data?.error || "操作失败");
+      }
+    },
+  });
 }
 
 const fieldCls =
@@ -259,17 +334,63 @@ const chipCls =
       </template>
       <template #actions>
         <div class="flex items-center gap-2">
+          <!-- 编辑器模式切换（与工具栏三态按钮同步） -->
+          <div class="group flex cursor-pointer items-center gap-1.5 rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <Icon icon="ri:edit-box-line" class="text-base text-gray-600 dark:text-gray-400" />
+            <select
+              :value="editorMode"
+              @change="onEditorModeSelect"
+              class="cursor-pointer select-none whitespace-nowrap border-0 bg-transparent text-sm text-gray-600 outline-none group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-gray-100"
+              title="切换编辑器模式"
+            >
+              <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
           <VButton size="sm" :title="fullscreen ? '退出全屏' : '全屏编辑'" @click="toggleFullscreen">
             <template #icon>
               <Icon :icon="fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="h-full w-full" />
             </template>
           </VButton>
-          <VButton v-if="isEdit" size="sm" @click="revisionOpen = true">版本历史</VButton>
+          <VButton v-if="isEdit" size="sm" @click="revisionOpen = true">
+            <template #icon>
+              <Icon icon="ri:history-line" class="h-full w-full" />
+            </template>
+            版本历史
+          </VButton>
           <VButton @click="router.push('/posts')">取消</VButton>
-          <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
+          <VButton :loading="saving" @click="handleSave">
+            <template #icon>
+              <Icon icon="ri:save-line" class="h-full w-full" />
+            </template>
+            保存
+          </VButton>
+          <VButton type="secondary" :loading="publishing" @click="handlePublish">
+            <template #icon>
+              <Icon icon="ri:send-plane-fill" class="h-full w-full" />
+            </template>
+            发布
+          </VButton>
         </div>
       </template>
     </VPageHeader>
+
+    <!-- 草稿头条幅：已发布文章存在已保存未发布的内容 -->
+    <div
+      v-if="hasDraft && isPublishedPost"
+      class="mx-0 mt-4 flex items-center justify-between gap-3 border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 md:mx-4 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400"
+      style="border-radius: 4px"
+    >
+      <span class="flex items-center gap-2">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+        当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。
+      </span>
+      <button
+        class="shrink-0 text-xs text-green-700 underline hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+        @click="handleDiscardDraft"
+      >
+        放弃草稿
+      </button>
+    </div>
 
     <div class="m-0 md:m-4">
     <div class="grid grid-cols-1 gap-6" :class="fullscreen ? 'lg:grid-cols-1' : 'lg:grid-cols-3'">
@@ -285,6 +406,7 @@ const chipCls =
           v-model="form.content_md"
           :storage-key="'post:' + (slug || 'new')"
           @save="handleSave"
+          @mode-change="(m: any) => (editorMode = m)"
         />
       </div>
 
@@ -295,13 +417,6 @@ const chipCls =
             <label :class="labelCls">别名 (Slug)</label>
             <input v-model="form.slug" :class="fieldCls" @input="slugManuallyEdited = true" />
             <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">用于文章 URL，留空保存时从标题自动生成</p>
-          </div>
-          <div>
-            <label :class="labelCls">状态</label>
-            <select v-model="form.status" :class="fieldCls">
-              <option value="draft">草稿</option>
-              <option value="published">发布</option>
-            </select>
           </div>
           <div class="flex items-center gap-2">
             <input type="checkbox" v-model="form.pinned" id="pinned" class="rounded" />

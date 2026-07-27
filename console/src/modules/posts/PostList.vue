@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
-import { postApi, shareApi } from "@/api";
+import { postApi, shareApi, taxonomyApi, settingsApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
@@ -44,6 +44,8 @@ watch(keyword, () => {
 // 筛选条件
 const selectedStatus = ref<string | undefined>(undefined);
 const selectedSort = ref<string | undefined>(undefined);
+const selectedCategory = ref<string | undefined>(undefined);
+const selectedTag = ref<string | undefined>(undefined);
 
 const statusItems = [
   { label: "全部", value: undefined },
@@ -56,12 +58,44 @@ const sortItems = [
   { label: "默认", value: undefined },
   { label: "较近创建", value: "newest" },
   { label: "较早创建", value: "oldest" },
+  { label: "较近更新", value: "updated" },
 ];
 
-// 响应式查询参数：page/size/status/keyword 变化自动重取
+// 分类/标签筛选项（taxonomy API）+ 站长头像（站点设置，作者列展示）
+const categoryItems = ref<{ label: string; value: string | undefined }[]>([{ label: "全部", value: undefined }]);
+const tagItems = ref<{ label: string; value: string | undefined }[]>([{ label: "全部", value: undefined }]);
+const ownerAvatar = ref("");
+const ownerName = ref("");
+
+onMounted(async () => {
+  try {
+    const [cRes, tRes] = await Promise.all([taxonomyApi.categories(), taxonomyApi.tags()]);
+    categoryItems.value = [
+      { label: "全部", value: undefined },
+      ...(cRes.data.items || []).map((i: any) => ({ label: i.name, value: i.name })),
+    ];
+    tagItems.value = [
+      { label: "全部", value: undefined },
+      ...(tRes.data.items || []).map((i: any) => ({ label: i.name, value: i.name })),
+    ];
+  } catch {
+    /* 静默：筛选项缺失不阻塞列表 */
+  }
+  try {
+    const { data } = await settingsApi.all();
+    ownerAvatar.value = data?.site?.avatar || "";
+    ownerName.value = data?.site?.title || "站长";
+  } catch {
+    /* 静默 */
+  }
+});
+
+// 响应式查询参数：page/size/status/category/tag/keyword 变化自动重取
 const queryParams = computed(() => {
   const params: Record<string, unknown> = { page: page.value, size: size.value };
   if (selectedStatus.value) params.status = selectedStatus.value;
+  if (selectedCategory.value) params.category = selectedCategory.value;
+  if (selectedTag.value) params.tag = selectedTag.value;
   if (debouncedKeyword.value.trim()) params.search = debouncedKeyword.value.trim();
   return params;
 });
@@ -78,6 +112,8 @@ const posts = computed(() => {
     items.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } else if (selectedSort.value === "oldest") {
     items.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  } else if (selectedSort.value === "updated") {
+    items.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }
   return items;
 });
@@ -89,7 +125,12 @@ const selectedSlugs = ref<string[]>([]);
 const menuOpenSlug = ref<string | null>(null);
 
 const hasFilters = computed(
-  () => selectedStatus.value !== undefined || selectedSort.value !== undefined || keyword.value !== ""
+  () =>
+    selectedStatus.value !== undefined ||
+    selectedSort.value !== undefined ||
+    selectedCategory.value !== undefined ||
+    selectedTag.value !== undefined ||
+    keyword.value !== ""
 );
 
 watch(selectedSlugs, (val) => {
@@ -121,6 +162,8 @@ function handleFilterChange() {
 function handleClearFilters() {
   selectedStatus.value = undefined;
   selectedSort.value = undefined;
+  selectedCategory.value = undefined;
+  selectedTag.value = undefined;
   keyword.value = "";
   debouncedKeyword.value = "";
   page.value = 1;
@@ -306,6 +349,12 @@ function closeMenus() {
                   <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
                     状态：{{ statusLabel }}
                   </FilterTag>
+                  <FilterTag v-if="selectedCategory !== undefined" @close="selectedCategory = undefined; handleFilterChange()">
+                    分类：{{ selectedCategory }}
+                  </FilterTag>
+                  <FilterTag v-if="selectedTag !== undefined" @close="selectedTag = undefined; handleFilterChange()">
+                    标签：{{ selectedTag }}
+                  </FilterTag>
                   <FilterTag v-if="selectedSort !== undefined" @close="selectedSort = undefined; handleFilterChange()">
                     排序：{{ sortLabel }}
                   </FilterTag>
@@ -326,6 +375,8 @@ function closeMenus() {
               <div class="mt-4 flex sm:mt-0">
                 <div class="flex items-center gap-6">
                   <FilterDropdown v-model="selectedStatus" :items="statusItems" label="状态" @change="handleFilterChange" />
+                  <FilterDropdown v-model="selectedCategory" :items="categoryItems" label="分类" @change="handleFilterChange" />
+                  <FilterDropdown v-model="selectedTag" :items="tagItems" label="标签" @change="handleFilterChange" />
                   <FilterDropdown v-model="selectedSort" :items="sortItems" label="排序" @change="handleFilterChange" />
                   <div class="group cursor-pointer rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600" @click="refetch()">
                     <Icon
@@ -390,6 +441,18 @@ function closeMenus() {
                         >
                           {{ post.title || post.slug }}
                         </span>
+                        <!-- 小绿点：已保存但未发布的草稿头（对齐 Halo） -->
+                        <span
+                          v-if="post.has_draft && post.status === 'published'"
+                          class="group/dot relative flex shrink-0 items-center"
+                        >
+                          <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                          <span
+                            class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg group-hover/dot:block"
+                          >
+                            当前有内容已保存，但还未发布。
+                          </span>
+                        </span>
                         <span
                           class="hidden cursor-pointer text-gray-600 transition-all hover:text-gray-900 group-hover:inline-block dark:text-gray-400 dark:hover:text-gray-200"
                           title="在前台打开"
@@ -423,6 +486,23 @@ function closeMenus() {
                   </VEntityField>
                 </template>
                 <template #end>
+                  <!-- 作者头像（单作者：站长，对齐 Halo 作者列） -->
+                  <VEntityField v-if="ownerAvatar">
+                    <template #description>
+                      <span class="group/avatar relative flex items-center">
+                        <img
+                          :src="ownerAvatar"
+                          :alt="ownerName"
+                          class="h-6 w-6 rounded-full border border-gray-100 object-cover dark:border-gray-700"
+                        />
+                        <span
+                          class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg group-hover/avatar:block"
+                        >
+                          {{ ownerName }}
+                        </span>
+                      </span>
+                    </template>
+                  </VEntityField>
                   <VEntityField v-if="post.status === 'draft'">
                     <template #description>
                       <VStatusDot state="warning" text="未发布" />

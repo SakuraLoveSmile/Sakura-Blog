@@ -162,7 +162,7 @@ onMounted(load);
       <!-- 分类 -->
       <VCard :body-class="['!p-0']">
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex w-full items-center justify-between px-4 py-3">
             <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
               <Icon icon="ri:folder-3-line" />
               分类
@@ -213,7 +213,7 @@ onMounted(load);
       <!-- 标签 -->
       <VCard :body-class="['!p-0']">
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex w-full items-center justify-between px-4 py-3">
             <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
               <Icon icon="ri:price-tag-3-line" />
               标签

@@ -15,6 +15,7 @@ import {
   BarElement,
   LineElement,
   PointElement, // Chart.js v4: 点元素
+  Filler, // Chart.js v4: 面积填充插件（line 数据集 fill:true 依赖）
   Title,
   Tooltip,
   Legend
@@ -37,6 +38,7 @@ Chart.register(
   BarElement,
   LineElement,
   PointElement, // Chart.js v4: 点元素
+  Filler, // Chart.js v4: 面积填充插件（趋势图 PV fill:true 依赖）
   Title,
   Tooltip,
   Legend

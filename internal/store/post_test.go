@@ -59,6 +59,46 @@ func TestPostUpdate(t *testing.T) {
 	}
 }
 
+func TestPostDraftHead(t *testing.T) {
+	s := newTestStore(t)
+	s.Create(pubPost("d", "线上版"))
+
+	// 保存草稿：不影响线上内容
+	if err := s.SaveDraft("d", `{"title":"草稿版"}`); err != nil {
+		t.Fatalf("save draft: %v", err)
+	}
+	got, _ := s.GetBySlug("d")
+	if got.DraftJSON != `{"title":"草稿版"}` {
+		t.Fatalf("draft_json = %q", got.DraftJSON)
+	}
+	if got.Title != "线上版" {
+		t.Fatalf("draft 不应影响线上 title，got %q", got.Title)
+	}
+
+	// Update 不应清掉草稿列
+	if err := s.Update("d", &Post{Title: "线上版v2", Status: StatusPublished}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	got, _ = s.GetBySlug("d")
+	if got.DraftJSON == "" {
+		t.Fatal("update 不应清空 draft_json")
+	}
+
+	// 清空草稿
+	if err := s.ClearDraft("d"); err != nil {
+		t.Fatalf("clear draft: %v", err)
+	}
+	got, _ = s.GetBySlug("d")
+	if got.DraftJSON != "" {
+		t.Fatalf("draft_json 应为空，got %q", got.DraftJSON)
+	}
+
+	// 不存在的文章保存草稿报错
+	if err := s.SaveDraft("ghost", "{}"); err == nil {
+		t.Fatal("expected error saving draft for non-existent slug")
+	}
+}
+
 func TestListPublishedFilters(t *testing.T) {
 	s := newTestStore(t)
 	s.Create(pubPost("pub", "已发布"))
