@@ -55,6 +55,12 @@ export const postApi = {
   delete: (slug: string) => http.delete(`/posts/${slug}`),
   restore: (slug: string) => http.post(`/posts/${slug}/restore`),
   purge: (slug: string) => http.delete(`/posts/${slug}/purge`),
+  // 草稿头（已保存未发布，列表小绿点）
+  saveDraft: (slug: string, data: Record<string, unknown>) =>
+    http.put(`/posts/${slug}/draft`, data),
+  publish: (slug: string, data: Record<string, unknown>) =>
+    http.post(`/posts/${slug}/publish`, data),
+  discardDraft: (slug: string) => http.delete(`/posts/${slug}/draft`),
 };
 
 // --- Post Revisions (Spec 22) ---

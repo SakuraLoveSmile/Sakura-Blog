@@ -121,6 +121,11 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/posts/:slug/restore", h.restorePost)
 		authed.DELETE("/posts/:slug/purge", h.purgePost)
 
+		// 文章草稿头（已保存未发布，列表小绿点）
+		authed.PUT("/posts/:slug/draft", h.savePostDraft)
+		authed.DELETE("/posts/:slug/draft", h.discardPostDraft)
+		authed.POST("/posts/:slug/publish", h.publishPost)
+
 		// 文章版本历史（Spec 22）
 		authed.GET("/posts/:slug/revisions", h.listRevisions)
 		authed.GET("/revisions/:id", h.getRevision)

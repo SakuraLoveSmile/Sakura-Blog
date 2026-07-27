@@ -40,6 +40,7 @@ type Post struct {
 	Topic       string    // 专栏名，空=普通文章；非空时文章页左栏显示同专栏系列列表，/navbar 出现「专栏」tab
 	References  string    // 参考文献 JSON（[]string），空=无参考文献；文章页脚渲染用
 	DeletedAt   string    // 软删除时间 RFC3339，空串=未删除
+	DraftJSON   string    // 草稿头 JSON（整份编辑表单），空=无未发布草稿；仅已发布文章使用
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -101,8 +102,8 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", deleted_at"
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", deleted_at, draft_json"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -253,6 +254,7 @@ func (s *Store) migrateColumns() error {
 		"topic":      `ALTER TABLE posts ADD COLUMN topic TEXT NOT NULL DEFAULT ''`,
 		"references": `ALTER TABLE posts ADD COLUMN "references" TEXT NOT NULL DEFAULT ''`,
 		"deleted_at": `ALTER TABLE posts ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`,
+		"draft_json": `ALTER TABLE posts ADD COLUMN draft_json TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -550,6 +552,7 @@ func (s *Store) Create(p *Post) (int64, error) {
 }
 
 // Update 按 slug 更新文章字段（title/excerpt/cover/category/tags/content_md/content_html/status/poster），刷新 updated_at。
+// draft_json 不在更新列中（ADD COLUMN 默认值兼容），由 SaveDraft/ClearDraft 单独维护。
 func (s *Store) Update(slug string, p *Post) error {
 	p.UpdatedAt = time.Now()
 	pinned := 0
@@ -567,6 +570,26 @@ func (s *Store) Update(slug string, p *Post) error {
 		return fmt.Errorf("update post %s: no rows affected", slug)
 	}
 	s.firePostWrite("update", slug)
+	return nil
+}
+
+// SaveDraft 写入草稿头 JSON（不碰线上内容/updated_at）。文章不存在返回错误。
+func (s *Store) SaveDraft(slug, draftJSON string) error {
+	res, err := s.db.Exec(`UPDATE posts SET draft_json = ? WHERE slug = ? AND deleted_at = ''`, draftJSON, slug)
+	if err != nil {
+		return fmt.Errorf("save draft for %s: %w", slug, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("save draft for %s: no rows affected", slug)
+	}
+	return nil
+}
+
+// ClearDraft 清空草稿头（发布应用或放弃草稿后调用）。文章不存在静默。
+func (s *Store) ClearDraft(slug string) error {
+	if _, err := s.db.Exec(`UPDATE posts SET draft_json = '' WHERE slug = ?`, slug); err != nil {
+		return fmt.Errorf("clear draft for %s: %w", slug, err)
+	}
 	return nil
 }
 
@@ -666,7 +689,7 @@ func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &deletedAt)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &deletedAt, &p.DraftJSON)
 	if err != nil {
 		return nil, err
 	}
