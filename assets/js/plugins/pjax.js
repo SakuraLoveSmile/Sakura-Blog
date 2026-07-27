@@ -631,7 +631,12 @@
     window.stellar = window.stellar || {};
     window.stellar.pjax = {
       navigate: navigate,
-      config: config
+      config: config,
+      // 纯逻辑内部函数，供 scripts/test/pjax-navigation.test.mjs 机械校验，浏览器运行不依赖
+      _internal: {
+        shouldHandleLink: shouldHandleLink,
+        decodeHashId: decodeHashId
+      }
     };
 
     console.log('Stellar PJAX initialized');

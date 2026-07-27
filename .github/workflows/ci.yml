@@ -43,3 +43,29 @@ jobs:
 
       - name: Install & build (vue-tsc + vite)
         run: cd console && npm ci && npm run build
+
+  # 与发布产物同构的组合构建验证（对齐 release.yml：真实 console 产物 + go build）。
+  # go job 用 stub dist 只验证编译；此 job 保证合入主线前 embed 真实前端产物可构建。
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Console SPA（go:embed 编译期要求 console/dist 非空）----
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: console/package-lock.json
+
+      - name: Build console
+        run: cd console && npm ci && npm run build
+
+      # ---- Go 编译（与 release.yml 同构，CGO 可关）----
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binary (embed real console dist)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./cmd/server
