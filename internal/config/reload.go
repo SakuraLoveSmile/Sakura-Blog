@@ -365,16 +365,19 @@ func SaveAdminPassword(st *store.Store, site *tmpl.Site, password string) error 
 	return RebuildSite(st, site)
 }
 
-// defaultDashboardConfig 返回仪表盘默认配置（全部组件启用、默认顺序）。
+// defaultDashboardConfig 返回仪表盘默认配置（全部部件启用、默认顺序）。
+// ID 与 Console 部件注册表（console/src/modules/dashboard/widgets/registry.ts）一致。
 func defaultDashboardConfig() dashboardConfig {
 	return dashboardConfig{
 		Widgets: []dashboardWidget{
-			{ID: "stats-cards", Enabled: true},
-			{ID: "pending-alert", Enabled: true},
+			{ID: "stat-posts", Enabled: true},
+			{ID: "stat-comments", Enabled: true},
+			{ID: "stat-views", Enabled: true},
+			{ID: "stat-attachments", Enabled: true},
 			{ID: "quick-actions", Enabled: true},
 			{ID: "recent-comments", Enabled: true},
-			{ID: "visit-trend", Enabled: true},
-			{ID: "hourly-dist", Enabled: true},
+			{ID: "trend-chart", Enabled: true},
+			{ID: "hourly-chart", Enabled: true},
 		},
 	}
 }

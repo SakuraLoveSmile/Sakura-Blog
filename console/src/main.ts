@@ -18,7 +18,7 @@ import {
   Filler, // Chart.js v4: 面积填充插件（line 数据集 fill:true 依赖）
   Title,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
 
 const app = createApp(App);
