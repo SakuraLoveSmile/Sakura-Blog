@@ -15,10 +15,10 @@ import {
   BarElement,
   LineElement,
   PointElement, // Chart.js v4: 点元素
+  Filler, // Chart.js v4: 面积填充插件（line 数据集 fill:true 依赖）
   Title,
   Tooltip,
   Legend,
-  Filler, // 趋势图 fill: true 渐变填充依赖
 } from "chart.js";
 
 const app = createApp(App);
@@ -38,10 +38,10 @@ Chart.register(
   BarElement,
   LineElement,
   PointElement, // Chart.js v4: 点元素
+  Filler, // Chart.js v4: 面积填充插件（趋势图 PV fill:true 依赖）
   Title,
   Tooltip,
-  Legend,
-  Filler // 趋势图 fill: true 渐变填充依赖
+  Legend
 );
 
 // 初始化主题：与 index.html 内联防闪烁脚本保持一致，同步 store 状态并应用 .dark 类。

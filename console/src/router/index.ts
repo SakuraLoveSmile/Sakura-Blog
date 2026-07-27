@@ -43,7 +43,7 @@ const router = createRouter({
           meta: { hideFooter: true },
         },
         {
-          path: "shares",
+          path: "posts/shares",
           name: "Shares",
           component: () => import("@/modules/shares/ShareList.vue"),
         },

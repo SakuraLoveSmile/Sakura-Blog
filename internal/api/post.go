@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -64,6 +65,9 @@ type postJSON struct {
 	CreatedAt string   `json:"created_at"`
 	UpdatedAt string   `json:"updated_at"`
 	Views     int64    `json:"views"`
+	HasDraft  bool     `json:"has_draft"`
+	// Draft 草稿头内容（整份编辑表单 JSON），仅详情接口且有草稿时返回。
+	Draft     json.RawMessage `json:"draft,omitempty"`
 }
 
 type posterJ struct {
@@ -89,6 +93,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		CreatedAt: p.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: p.UpdatedAt.Format(time.RFC3339),
 		Views:     views,
+		HasDraft:  strings.TrimSpace(p.DraftJSON) != "",
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -185,7 +190,11 @@ func (h *Handler) getPost(c *gin.Context) {
 		return
 	}
 	views, _ := h.store.GetViews(slug)
-	c.JSON(http.StatusOK, toPostJSON(p, views))
+	pj := toPostJSON(p, views)
+	if pj.HasDraft {
+		pj.Draft = json.RawMessage(p.DraftJSON)
+	}
+	c.JSON(http.StatusOK, pj)
 }
 
 // createPost POST /api/v1/posts：创建文章。
@@ -212,6 +221,10 @@ func (h *Handler) createPost(c *gin.Context) {
 	}
 
 	p := reqToPost(&req, contentHTML)
+	// 默认封面兜底：无封面时按 slug 生成稳定的 picsum seed 图
+	if p.Cover == "" {
+		p.Cover = defaultCover(req.Slug)
+	}
 	if _, err := h.store.Create(p); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
 		return
@@ -258,6 +271,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 
 	p := reqToPost(&req, contentHTML)
 	p.Slug = newSlug
+	// 发布路径默认封面兜底
+	if p.Status == store.StatusPublished && p.Cover == "" {
+		p.Cover = defaultCover(newSlug)
+	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
@@ -266,6 +283,111 @@ func (h *Handler) updatePost(c *gin.Context) {
 
 	views, _ := h.store.GetViews(newSlug)
 	c.JSON(http.StatusOK, toPostJSON(p, views))
+}
+
+// defaultCover 默认封面 URL：picsum.photos seed 模式，同 slug 永远返回同一张图。
+// source.unsplash.com 已停用；picsum 图源为 Unsplash 授权图片，免 Key 免费商用。
+func defaultCover(slug string) string {
+	return fmt.Sprintf("https://picsum.photos/seed/%s/1200/675", slug)
+}
+
+// savePostDraft PUT /api/v1/posts/:slug/draft：保存草稿头（整份编辑表单）。
+// 不渲染、不产 revision、不影响线上内容；列表小绿点据此显示。
+func (h *Handler) savePostDraft(c *gin.Context) {
+	slug := c.Param("slug")
+	existing, err := h.store.GetBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		return
+	}
+
+	var req postRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		return
+	}
+	b, err := json.Marshal(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "草稿序列化失败: " + err.Error()})
+		return
+	}
+	if err := h.store.SaveDraft(slug, string(b)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存草稿失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "has_draft": true})
+}
+
+// publishPost POST /api/v1/posts/:slug/publish：应用草稿并发布。
+// 请求体与 updatePost 相同（整份表单）；强制 status=published，成功后清空草稿头。
+func (h *Handler) publishPost(c *gin.Context) {
+	slug := c.Param("slug")
+	existing, err := h.store.GetBySlug(slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		return
+	}
+
+	var req postRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		return
+	}
+	req.Status = store.StatusPublished
+
+	newSlug := strings.TrimSpace(req.Slug)
+	if newSlug == "" {
+		newSlug = slug
+	}
+	if newSlug != slug {
+		if other, _ := h.store.GetBySlug(newSlug); other != nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用: " + newSlug})
+			return
+		}
+	}
+
+	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败: " + err.Error()})
+		return
+	}
+
+	p := reqToPost(&req, contentHTML)
+	p.Slug = newSlug
+	if p.Cover == "" {
+		p.Cover = defaultCover(newSlug)
+	}
+
+	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败: " + err.Error()})
+		return
+	}
+	// 草稿已应用，清空草稿头（slug 变更时新记录本就无草稿，兼顾清理旧 slug）
+	h.store.ClearDraft(newSlug)
+	if newSlug != slug {
+		h.store.ClearDraft(slug)
+	}
+
+	views, _ := h.store.GetViews(newSlug)
+	c.JSON(http.StatusOK, toPostJSON(p, views))
+}
+
+// discardPostDraft DELETE /api/v1/posts/:slug/draft：放弃草稿头。
+func (h *Handler) discardPostDraft(c *gin.Context) {
+	slug := c.Param("slug")
+	if err := h.store.ClearDraft(slug); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 // savePostWithSnapshot 保存文章并在成功后把「保存前」的旧版本写入 revisions（Spec 22）。

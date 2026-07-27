@@ -13,13 +13,20 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
+  (e: "modeChange", mode: ViewMode): void;
 }>();
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 type ViewMode = "edit" | "split" | "preview";
-const mode = ref<ViewMode>("edit");
+// 默认即时渲染分屏（左 MD 右实时预览），选择持久化到 localStorage
+const MODE_KEY = "md-editor:mode";
+function loadMode(): ViewMode {
+  const saved = localStorage.getItem(MODE_KEY);
+  return saved === "edit" || saved === "split" || saved === "preview" ? saved : "split";
+}
+const mode = ref<ViewMode>(loadMode());
 const rendering = ref(false);
 const pickerOpen = ref(false);
 const draftBanner = ref(false);
@@ -53,6 +60,8 @@ const previewSrcdoc = `<!DOCTYPE html>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"><\/script>
 <style>
   html,body{margin:0;padding:0;}
+  /* 关闭 Stellar main.css 的平滑滚动，使分屏同步滚动即时跟随而非动画滞后 */
+  html{scroll-behavior:auto !important;}
   body{padding:16px 20px;background:#fff;}
   html[data-theme="dark"] body{background:#1c1c1e;}
   .md-text{max-width:100%;}
@@ -70,6 +79,7 @@ function onIframeLoad() {
     applyPreview(pendingHtml);
     pendingHtml = null;
   }
+  bindPreviewScroll();
 }
 
 // 把渲染结果写入 iframe 内的 .md-text 容器，并补渲染 KaTeX 公式
@@ -97,10 +107,12 @@ const themeObserver = new MutationObserver(() => {
 });
 onMounted(() => {
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  // 默认分屏/预览模式时首次挂载即渲染
+  if (mode.value !== "edit") schedulePreview(true);
 });
 onBeforeUnmount(() => themeObserver.disconnect());
 
-// ---------- 实时预览（防抖 600ms，走后端 goldmark 管线） ----------
+// ---------- 实时预览（防抖 400ms，走后端 goldmark 管线，Stellar 标签插件真实呈现） ----------
 
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -119,14 +131,60 @@ async function refreshPreview() {
 function schedulePreview(immediate = false) {
   if (mode.value === "edit") return;
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(refreshPreview, immediate ? 0 : 600);
+  previewTimer = setTimeout(refreshPreview, immediate ? 0 : 400);
 }
 
 function setMode(next: ViewMode) {
   mode.value = next;
+  localStorage.setItem(MODE_KEY, next);
+  emit("modeChange", next);
   if (next !== "edit") {
     schedulePreview(true);
   }
+}
+
+// ---------- 编辑区 ↔ 预览区按比例同步滚动（分屏模式） ----------
+
+let syncingScroll = false;
+let syncReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+
+function syncScrollRatio(from: HTMLElement, to: HTMLElement) {
+  const fromMax = from.scrollHeight - from.clientHeight;
+  const toMax = to.scrollHeight - to.clientHeight;
+  if (fromMax <= 0 || toMax <= 0) return;
+  to.scrollTop = (from.scrollTop / fromMax) * toMax;
+}
+
+// 同步完成后用 setTimeout 短延时释放守卫标志（而非 requestAnimationFrame：
+// rAF 在后台标签/非渲染场景会被节流甚至不触发，会把 syncingScroll 永久卡在 true）。
+function releaseSyncGuard() {
+  clearTimeout(syncReleaseTimer);
+  syncReleaseTimer = setTimeout(() => (syncingScroll = false), 60);
+}
+
+function onEditorScroll() {
+  if (mode.value !== "split" || syncingScroll) return;
+  const ta = textareaRef.value;
+  const doc = iframeRef.value?.contentDocument;
+  if (!ta || !doc?.scrollingElement) return;
+  syncingScroll = true;
+  syncScrollRatio(ta, doc.scrollingElement as HTMLElement);
+  releaseSyncGuard();
+}
+
+function onPreviewScroll() {
+  if (mode.value !== "split" || syncingScroll) return;
+  const ta = textareaRef.value;
+  const doc = iframeRef.value?.contentDocument;
+  if (!ta || !doc?.scrollingElement) return;
+  syncingScroll = true;
+  syncScrollRatio(doc.scrollingElement as HTMLElement, ta);
+  releaseSyncGuard();
+}
+
+// iframe 加载完成后绑定预览侧滚动监听（srcdoc 只加载一次）
+function bindPreviewScroll() {
+  iframeRef.value?.contentWindow?.addEventListener("scroll", onPreviewScroll);
 }
 
 watch(
@@ -181,6 +239,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(previewTimer);
   clearTimeout(draftTimer);
+  clearTimeout(syncReleaseTimer);
 });
 
 // ---------- 工具栏动作（基于选区包裹/插入，操作后恢复焦点与选区） ----------
@@ -233,8 +292,8 @@ function insertBlock(text: string) {
   updateValue(next, start + text.length, start + text.length);
 }
 
-// 对外暴露：草稿清理 + 光标处插入（供标签插件面板一键插入 shortcode，Spec 29）
-defineExpose({ clearDraft, insertBlock });
+// 对外暴露：草稿清理 + 光标处插入（供标签插件面板一键插入 shortcode，Spec 29）+ 模式切换（页头下拉同步）
+defineExpose({ clearDraft, insertBlock, setMode, getMode: () => mode.value });
 
 const tableTemplate =
   "\n| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |\n";
@@ -335,7 +394,7 @@ function onKeydown(e: KeyboardEvent) {
 
 const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
   { value: "edit", icon: "ri:edit-2-line", title: "仅编辑" },
-  { value: "split", icon: "ri:layout-column-line", title: "分屏预览" },
+  { value: "split", icon: "ri:layout-column-line", title: "即时渲染（分屏预览）" },
   { value: "preview", icon: "ri:eye-line", title: "仅预览" },
 ];
 </script>
@@ -425,6 +484,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
         @keydown="onKeydown"
         @paste="onPaste"
         @drop="onDrop"
+        @scroll="onEditorScroll"
         placeholder="Markdown 内容...（支持粘贴/拖拽图片直接上传）"
         :class="[
           'w-full px-4 py-3 text-sm font-mono leading-relaxed border-0 focus:outline-none focus:ring-0 resize-y min-h-[560px] bg-transparent dark:text-gray-100 dark:placeholder-gray-500',

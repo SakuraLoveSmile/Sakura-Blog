@@ -97,7 +97,7 @@ function shareTypeLabel(shareType: string): string {
 
 <template>
   <div>
-    <VPageHeader title="文章分享链接">
+    <VPageHeader title="分享链接">
       <template #icon>
         <Icon icon="ri:share-forward-line" class="mr-2 self-center text-xl" />
       </template>

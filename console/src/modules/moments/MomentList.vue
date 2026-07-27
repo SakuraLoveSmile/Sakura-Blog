@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { momentApi } from "@/api";
+import { momentApi, settingsApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
@@ -36,6 +36,35 @@ const { data: queryData, isLoading, refetch } = useQuery({
 const moments = computed(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
 
+// 站长头像（发布框与列表项展示）
+const ownerAvatar = ref("");
+onMounted(async () => {
+  try {
+    const { data } = await settingsApi.all();
+    ownerAvatar.value = data?.site?.avatar || "";
+  } catch {
+    /* 静默 */
+  }
+});
+
+// 发布框状态：聚焦后展开工具条；字数统计（非空白 rune）
+const composerFocused = ref(false);
+const charCount = computed(() => {
+  let n = 0;
+  for (const ch of newContent.value) {
+    if (!/\s/.test(ch)) n++;
+  }
+  return n;
+});
+
+// Cmd/Ctrl+Enter 快捷发布
+function onComposerKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    e.preventDefault();
+    handlePublish();
+  }
+}
+
 async function handlePublish() {
   if (!newContent.value.trim()) return;
   publishing.value = true;
@@ -68,6 +97,22 @@ function formatTime(s: string): string {
   return s.slice(0, 16).replace("T", " ");
 }
 
+// 相对时间：列表项展示用（超过 30 天回退绝对时间）
+function formatRelative(s: string): string {
+  if (!s) return "";
+  const t = new Date(s).getTime();
+  if (isNaN(t)) return formatTime(s);
+  const diff = Date.now() - t;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min} 分钟前`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour} 小时前`;
+  const day = Math.floor(hour / 24);
+  if (day <= 30) return `${day} 天前`;
+  return formatTime(s);
+}
+
 function closeMenus() {
   menuOpenId.value = null;
 }
@@ -82,28 +127,52 @@ function closeMenus() {
     </VPageHeader>
 
     <div class="m-0 space-y-4 md:m-4">
-      <!-- Publish box -->
-      <VCard>
-        <template #header>
-          <span class="text-base font-bold text-gray-900 dark:text-gray-100">发布瞬间</span>
-        </template>
-        <textarea
-          v-model="newContent"
-          rows="3"
-          placeholder="记录此刻想法...（支持 Markdown）"
-          class="w-full resize-y border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-          style="border-radius: 4px"
-        ></textarea>
-        <template #footer>
-          <div class="flex justify-end">
-            <VButton type="secondary" :loading="publishing" :disabled="!newContent.trim()" @click="handlePublish">
-              <template #icon>
-                <Icon icon="ri:send-plane-fill" class="h-full w-full" />
-              </template>
-              发布
-            </VButton>
+      <!-- 发布框（Halo Moments 风格：头像 + 无边框输入 + 底部工具条） -->
+      <VCard :body-class="['!p-4']">
+        <div class="flex gap-3">
+          <img
+            v-if="ownerAvatar"
+            :src="ownerAvatar"
+            alt=""
+            class="h-9 w-9 shrink-0 rounded-full border border-gray-100 object-cover dark:border-gray-700"
+          />
+          <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <Icon icon="ri:user-3-line" class="text-lg text-primary" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <textarea
+              v-model="newContent"
+              :rows="composerFocused || newContent ? 4 : 2"
+              placeholder="分享此刻的想法…"
+              class="w-full resize-none border-0 bg-transparent px-0 py-1.5 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 dark:text-gray-100 dark:placeholder-gray-500"
+              @focus="composerFocused = true"
+              @blur="composerFocused = false"
+              @keydown="onComposerKeydown"
+            ></textarea>
+            <div class="flex items-center justify-between border-t border-gray-100 pt-2.5 dark:border-gray-700">
+              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+                <Icon icon="ri:markdown-line" class="text-base" title="支持 Markdown 语法" />
+                <span v-if="charCount" class="text-xs tabular-nums">{{ charCount }} 字</span>
+                <span v-else class="text-xs">支持 Markdown</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="hidden text-xs text-gray-300 sm:inline dark:text-gray-600">⌘ + Enter 发布</span>
+                <VButton
+                  type="secondary"
+                  size="sm"
+                  :loading="publishing"
+                  :disabled="!newContent.trim()"
+                  @click="handlePublish"
+                >
+                  <template #icon>
+                    <Icon icon="ri:send-plane-fill" class="h-full w-full" />
+                  </template>
+                  发布
+                </VButton>
+              </div>
+            </div>
           </div>
-        </template>
+        </div>
       </VCard>
 
       <!-- Moment list -->
@@ -124,9 +193,19 @@ function closeMenus() {
                 <template #start>
                   <VEntityField max-width="40rem">
                     <template #description>
-                      <div class="flex flex-col gap-1.5">
-                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatTime(m.created_at) }}</span>
-                        <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="m.content"></div>
+                      <div class="flex gap-3">
+                        <img
+                          v-if="ownerAvatar"
+                          :src="ownerAvatar"
+                          alt=""
+                          class="mt-0.5 h-7 w-7 shrink-0 rounded-full border border-gray-100 object-cover dark:border-gray-700"
+                        />
+                        <div class="flex min-w-0 flex-col gap-1.5">
+                          <span class="text-xs text-gray-400 dark:text-gray-500" :title="formatTime(m.created_at)">
+                            {{ formatRelative(m.created_at) }}
+                          </span>
+                          <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="m.content"></div>
+                        </div>
                       </div>
                     </template>
                   </VEntityField>
