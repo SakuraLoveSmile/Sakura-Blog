@@ -2,6 +2,7 @@
 export { default as VButton } from "./VButton.vue";
 export { default as VCard } from "./VCard.vue";
 export { default as VPageHeader } from "./VPageHeader.vue";
+export { default as VEntityContainer } from "./VEntityContainer.vue";
 export { default as VEntity } from "./VEntity.vue";
 export { default as VEntityField } from "./VEntityField.vue";
 export { default as VSpace } from "./VSpace.vue";

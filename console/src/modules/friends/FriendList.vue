@@ -8,6 +8,7 @@ import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -148,11 +149,10 @@ function closeMenus() {
           <template #header>
             <span class="text-base font-bold text-gray-900 dark:text-gray-100">{{ g.title }}</span>
           </template>
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="l in g.items" :key="l.id">
-              <VEntity>
+          <VEntityContainer>
+              <VEntity v-for="l in g.items" :key="l.id">
                 <template #start>
-                  <VEntityField width="30rem">
+                  <VEntityField max-width="30rem">
                     <template #title>
                       <div class="flex items-center gap-2">
                         <img
@@ -213,8 +213,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </VCard>
       </template>
     </div>

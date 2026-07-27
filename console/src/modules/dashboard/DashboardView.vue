@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { dashboardApi, type DashboardLayoutItem } from "@/api";
+import type { DashboardLayoutItem } from "@/api";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VSpace, Toast } from "@/components/ui";
-import { getWidget, sizeClass, defaultLayout } from "./widgets/registry";
+import { getWidget, sizeClass } from "./widgets/registry";
+import { loadDashboardLayout, saveDashboardLayout } from "./widgets/layout";
 import { useDashboardStats } from "./widgets/useDashboardStats";
 import { useDashboardEditorStore } from "@/stores/dashboard-editor";
 
@@ -24,14 +25,7 @@ const loaded = ref(false);
 const items = computed(() => (editor.editing ? editor.draft : layout.value));
 
 onMounted(async () => {
-  try {
-    const { data } = await dashboardApi.getLayout();
-    // 过滤掉注册表中不存在的部件类型（前后端版本不一致时兜底）
-    layout.value = (data.items || []).filter((it: DashboardLayoutItem) => getWidget(it.type));
-    if (!layout.value.length && !editor.editing) layout.value = [...defaultLayout];
-  } catch {
-    layout.value = [...defaultLayout];
-  }
+  layout.value = await loadDashboardLayout();
   loaded.value = true;
 });
 
@@ -49,7 +43,7 @@ function cancelEditing() {
 async function saveLayout() {
   saving.value = true;
   try {
-    await dashboardApi.saveLayout(editor.draft);
+    await saveDashboardLayout(editor.draft);
     layout.value = editor.finish();
     Toast.success("仪表盘布局已保存");
   } catch (e: any) {

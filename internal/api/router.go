@@ -103,8 +103,8 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 仪表盘
 		authed.GET("/dashboard/stats", h.dashboardStats)
 		authed.GET("/dashboard/recent-comments", h.dashboardRecentComments)
-		authed.GET("/dashboard/layout", h.getDashboardLayout)
-		authed.PUT("/dashboard/layout", h.putDashboardLayout)
+		authed.GET("/dashboard/quick-actions", h.quickActions)
+		authed.PUT("/dashboard/quick-actions", h.saveQuickActions)
 
 		// 访问统计（Spec 24）
 		authed.GET("/stats/trend", h.statsTrend)
@@ -172,6 +172,12 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/links", h.createLink)
 		authed.PUT("/links/:id", h.updateLink)
 		authed.DELETE("/links/:id", h.deleteLink)
+
+		// 文章分享链接
+		authed.GET("/shares", h.listShares)
+		authed.GET("/posts/:slug/shares", h.listPostShares)
+		authed.POST("/posts/:slug/shares", h.createShare)
+		authed.DELETE("/shares/:id", h.deleteShare)
 
 		// 分类 / 标签
 		authed.GET("/categories", h.listCategories)

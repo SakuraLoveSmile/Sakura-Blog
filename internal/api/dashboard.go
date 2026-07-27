@@ -10,6 +10,15 @@ import (
 	"blog/internal/store"
 )
 
+// quickActionsSection settings 表中存储快捷操作的段名。
+const quickActionsSection = "dashboard_quick_actions"
+
+// defaultQuickActions 未配置时展示的默认快捷操作 key 列表。
+var defaultQuickActions = []string{"write_post", "review_comments", "upload_attachment", "settings"}
+
+// maxQuickActions 用户最多可选的快捷操作数量。
+const maxQuickActions = 8
+
 // dashboardStats GET /api/v1/dashboard/stats：仪表盘统计数据。
 func (h *Handler) dashboardStats(c *gin.Context) {
 	postTotal, err := h.store.List()
@@ -68,75 +77,62 @@ func (h *Handler) dashboardRecentComments(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
-// dashboardLayoutSection settings 表中仪表盘布局的 section 名。
-// 不在 config.KnownSections() 内：不出现在站点设置、不触发站点热更新。
-const dashboardLayoutSection = "dashboard_layout"
-
-// dashboardLayoutItem 布局元素：仅记录部件类型，尺寸由前端注册表决定。
-type dashboardLayoutItem struct {
-	Type string `json:"type"`
-}
-
-// defaultDashboardLayout 默认布局（与部件化前的页面顺序一致）。
-var defaultDashboardLayout = []dashboardLayoutItem{
-	{Type: "stat-posts"},
-	{Type: "stat-comments"},
-	{Type: "stat-views"},
-	{Type: "stat-attachments"},
-	{Type: "quick-actions"},
-	{Type: "recent-comments"},
-	{Type: "trend-chart"},
-	{Type: "hourly-chart"},
-}
-
-// getDashboardLayout GET /api/v1/dashboard/layout：读取仪表盘布局，未保存过时返回默认布局。
-func (h *Handler) getDashboardLayout(c *gin.Context) {
-	raw, err := h.store.GetSetting(dashboardLayoutSection)
+// quickActions GET /api/v1/dashboard/quick-actions：读取用户自定义的快捷操作 key 列表。
+// 未配置时返回默认列表。前端根据 key 映射到完整的操作信息（label/icon/route）。
+func (h *Handler) quickActions(c *gin.Context) {
+	raw, err := h.store.GetSetting(quickActionsSection)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if raw == "" {
-		c.JSON(http.StatusOK, gin.H{"items": defaultDashboardLayout})
+		c.JSON(http.StatusOK, gin.H{"items": defaultQuickActions})
 		return
 	}
-	var items []dashboardLayoutItem
+	var items []string
 	if err := json.Unmarshal([]byte(raw), &items); err != nil {
-		// 存量数据损坏时兜底默认布局
-		c.JSON(http.StatusOK, gin.H{"items": defaultDashboardLayout})
+		c.JSON(http.StatusOK, gin.H{"items": defaultQuickActions})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
-// putDashboardLayout PUT /api/v1/dashboard/layout：校验并保存仪表盘布局。
-func (h *Handler) putDashboardLayout(c *gin.Context) {
-	raw, err := io.ReadAll(c.Request.Body)
+// saveQuickActions PUT /api/v1/dashboard/quick-actions：保存用户选择的快捷操作 key 列表。
+// 限制：最多 maxQuickActions 项，自动去重去空。
+func (h *Handler) saveQuickActions(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
 		return
 	}
-	var body struct {
-		Items []dashboardLayoutItem `json:"items"`
+	var req struct {
+		Items []string `json:"items"`
 	}
-	if err := json.Unmarshal(raw, &body); err != nil || body.Items == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "布局格式错误"})
+	if err := json.Unmarshal(body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 JSON"})
 		return
 	}
-	for _, it := range body.Items {
-		if it.Type == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "部件 type 不能为空"})
-			return
+	// 去空 + 去重，限制最大数量
+	seen := make(map[string]bool)
+	items := make([]string, 0, len(req.Items))
+	for _, k := range req.Items {
+		if k == "" || seen[k] {
+			continue
+		}
+		seen[k] = true
+		items = append(items, k)
+		if len(items) >= maxQuickActions {
+			break
 		}
 	}
-	val, err := json.Marshal(body.Items)
+	data, err := json.Marshal(items)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.store.PutSetting(dashboardLayoutSection, string(val)); err != nil {
+	if err := h.store.PutSetting(quickActionsSection, string(data)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "items": items})
 }

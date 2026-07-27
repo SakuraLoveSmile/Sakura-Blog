@@ -682,6 +682,11 @@ func main() {
 		log.Fatalf("ensure attachments table: %v", err)
 	}
 
+	// 文章分享链接：shared_posts 表（前台 /preview/shared-posts/:token 预览用）。
+	if err := st.EnsureSharedPostsTable(); err != nil {
+		log.Fatalf("ensure shared_posts table: %v", err)
+	}
+
 	// Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 console/dist 读。
 	// 只注册 /console/assets/* 与根级静态文件；其余 /console 路径（含 /console/ 本身与 SPA 前端路由）
 	// 落到 NoRoute 返回 index.html，保证前端路由刷新不 404。
@@ -799,6 +804,73 @@ func main() {
 	if site.Comments.Enabled {
 		commentHandler.Register(r)
 	}
+
+	// 文章分享链接预览：/preview/shared-posts/:token
+	// 无需认证，通过唯一 token 访问文章内容（已发布版或草稿版），支持有效期。
+	// 注册在 NoRoute 之前，避免被 404 拦截；前台无此链接，不会触发 PJAX。
+	r.GET("/preview/shared-posts/:token", func(c *gin.Context) {
+		token := c.Param("token")
+		sp, err := st.GetShareByToken(token)
+		if err != nil {
+			log.Printf("get share by token: %v", err)
+			render404(c)
+			return
+		}
+		if sp == nil {
+			render404(c)
+			return
+		}
+		// 过期检查：ExpiresAt 非空且已过期则 404
+		if sp.ExpiresAt != "" {
+			if expiresAt, perr := time.Parse(time.RFC3339, sp.ExpiresAt); perr == nil && time.Now().After(expiresAt) {
+				render404(c)
+				return
+			}
+		}
+		// 根据 ShareType 加载文章：published 走已发布查询，draft 走任意状态查询（获取草稿内容）
+		var p *store.Post
+		if sp.ShareType == "draft" {
+			p, err = st.GetBySlug(sp.PostSlug)
+		} else {
+			p, err = st.GetPublishedBySlug(sp.PostSlug)
+		}
+		if err != nil {
+			log.Printf("load post for share: %v", err)
+			render500(c)
+			return
+		}
+		if p == nil {
+			render404(c)
+			return
+		}
+		// 预览提示条（内联样式，不依赖外部 CSS）
+		notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">这是一篇通过分享链接预览的文章</div>`)
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{
+				Title:   p.Title,
+				Slug:    p.Slug,
+				Layout:  "post",
+				Type:    "tech",
+				Lang:    "zh-CN",
+				MenuID:  "post",
+				Date:    p.CreatedAt.Format("2006-01-02"),
+				Excerpt: p.Excerpt,
+				Topic:   p.Topic,
+			},
+			Content: notice + template.HTML(p.ContentHTML),
+		}
+		data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+		fillSidebar(data)
+		fillSEO(data, c)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			log.Printf("render share preview: %v", err)
+			render500(c)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	})
 
 	// 未匹配路由：/console/* 走 SPA fallback，其余走自定义 404 页
 	r.NoRoute(func(c *gin.Context) {

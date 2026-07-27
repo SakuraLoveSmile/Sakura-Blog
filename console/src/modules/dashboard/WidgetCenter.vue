@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { dashboardApi, type DashboardLayoutItem } from "@/api";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, VCard, VTag } from "@/components/ui";
-import { widgetRegistry, getWidget, sizeLabel } from "./widgets/registry";
+import { widgetRegistry, sizeLabel } from "./widgets/registry";
+import { loadDashboardLayout } from "./widgets/layout";
 import { useDashboardEditorStore } from "@/stores/dashboard-editor";
 
 const router = useRouter();
@@ -14,13 +14,7 @@ const editor = useDashboardEditorStore();
 // 保证添加行为可用且返回仪表盘后处于编辑态。
 onMounted(async () => {
   if (editor.editing) return;
-  try {
-    const { data } = await dashboardApi.getLayout();
-    const items = (data.items || []).filter((it: DashboardLayoutItem) => getWidget(it.type));
-    editor.start(items);
-  } catch {
-    editor.start([]);
-  }
+  editor.start(await loadDashboardLayout());
 });
 
 function backToDashboard() {

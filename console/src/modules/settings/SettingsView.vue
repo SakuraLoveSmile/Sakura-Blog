@@ -20,7 +20,7 @@ const tabs = [
   { key: "security", label: "安全" },
   { key: "advanced", label: "高级·JSON" },
 ];
-const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends"];
+const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "dashboard"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const router = useRouter();

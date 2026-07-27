@@ -2,13 +2,14 @@
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
-import { postApi } from "@/api";
+import { postApi, shareApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -17,6 +18,7 @@ import {
   VStatusDot,
   FilterDropdown,
   FilterTag,
+  VModal,
   Dialog,
   Toast,
 } from "@/components/ui";
@@ -187,6 +189,53 @@ function handlePurge(post: any) {
   });
 }
 
+// --- 创建分享链接 ---
+const showShareModal = ref(false);
+const shareCreating = ref(false);
+const shareForm = ref({ share_type: "published", expires_at: "" });
+const shareTargetSlug = ref("");
+const shareResultUrl = ref("");
+
+/** 打开创建分享链接弹窗 */
+function handleCreateShare(post: any) {
+  menuOpenSlug.value = null;
+  shareTargetSlug.value = post.slug;
+  shareForm.value = { share_type: "published", expires_at: "" };
+  shareResultUrl.value = "";
+  showShareModal.value = true;
+}
+
+/** 提交创建分享链接请求 */
+async function handleShareCreate() {
+  shareCreating.value = true;
+  try {
+    const { data } = await shareApi.create(shareTargetSlug.value, {
+      share_type: shareForm.value.share_type,
+      expires_at: shareForm.value.expires_at,
+    });
+    shareResultUrl.value = window.location.origin + data.url;
+    queryClient.invalidateQueries({ queryKey: ["shares"] });
+    Toast.success("分享链接创建成功");
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "创建失败");
+  } finally {
+    shareCreating.value = false;
+  }
+}
+
+/** 复制生成的分享链接到剪贴板 */
+async function handleCopyShareUrl() {
+  try {
+    await navigator.clipboard.writeText(shareResultUrl.value);
+    Toast.success("链接已复制到剪贴板");
+  } catch {
+    Toast.error("复制失败，请手动复制");
+  }
+}
+
+const inputCls =
+  "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+
 // Helpers
 function parseTags(tags: string): string[] {
   if (!tags) return [];
@@ -313,9 +362,8 @@ function closeMenus() {
 
         <!-- Entity list -->
         <Transition v-else appear name="fade">
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="post in posts" :key="post.slug">
-              <VEntity :is-selected="checkSelection(post.slug)">
+          <VEntityContainer>
+              <VEntity v-for="post in posts" :key="post.slug" :is-selected="checkSelection(post.slug)">
                 <template #checkbox>
                   <input
                     :checked="checkSelection(post.slug)"
@@ -325,7 +373,14 @@ function closeMenus() {
                   />
                 </template>
                 <template #start>
-                  <VEntityField :title="post.title || post.slug" width="27rem">
+                  <VEntityField v-if="post.cover">
+                    <template #description>
+                      <div class="w-20 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
+                        <img class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
+                      </div>
+                    </template>
+                  </VEntityField>
+                  <VEntityField :title="post.title || post.slug" max-width="30rem">
                     <template #title>
                       <div class="flex items-center gap-1.5">
                         <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="shrink-0 text-xs text-red-400" />
@@ -422,6 +477,9 @@ function closeMenus() {
                             编辑
                           </VButton>
                           <div class="mt-2">
+                            <VButton block type="secondary" size="sm" @click="handleCreateShare(post)">创建分享链接</VButton>
+                          </div>
+                          <div class="mt-2">
                             <VButton block type="danger" size="sm" @click="handleDelete(post)">删除</VButton>
                           </div>
                         </template>
@@ -430,8 +488,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </Transition>
 
         <!-- Footer: pagination -->
@@ -442,6 +499,49 @@ function closeMenus() {
         </template>
       </VCard>
     </div>
+
+    <!-- 创建分享链接弹窗 -->
+    <VModal
+      v-model:visible="showShareModal"
+      :title="shareResultUrl ? '分享链接已创建' : '创建分享链接'"
+      :width="520"
+    >
+      <!-- 表单状态 -->
+      <div v-if="!shareResultUrl" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">分享类型</label>
+          <select v-model="shareForm.share_type" :class="inputCls" style="border-radius: 4px">
+            <option value="published">已发布版本</option>
+            <option value="draft">草稿版本</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">过期时间（可选）</label>
+          <input v-model="shareForm.expires_at" type="datetime-local" :class="inputCls" style="border-radius: 4px" />
+        </div>
+      </div>
+      <!-- 结果状态：展示生成的链接 -->
+      <div v-else class="space-y-3">
+        <p class="text-sm text-gray-600 dark:text-gray-400">分享链接已生成，可复制或直接打开：</p>
+        <div
+          class="flex items-center gap-2 border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
+          style="border-radius: 4px"
+        >
+          <span class="flex-1 truncate text-sm text-blue-600 dark:text-blue-400">{{ shareResultUrl }}</span>
+          <VButton size="sm" type="secondary" @click="handleCopyShareUrl">复制</VButton>
+        </div>
+        <a :href="shareResultUrl" target="_blank" class="inline-block text-xs text-blue-600 hover:underline dark:text-blue-400">
+          在新标签页打开 →
+        </a>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton v-if="!shareResultUrl" @click="showShareModal = false">取消</VButton>
+          <VButton v-if="!shareResultUrl" type="secondary" :loading="shareCreating" @click="handleShareCreate">创建</VButton>
+          <VButton v-else type="secondary" @click="showShareModal = false">完成</VButton>
+        </div>
+      </template>
+    </VModal>
   </div>
 </template>
 

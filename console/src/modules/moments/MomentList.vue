@@ -8,6 +8,7 @@ import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -118,11 +119,10 @@ function closeMenus() {
         </Transition>
 
         <Transition v-else appear name="fade">
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="m in moments" :key="m.id">
-              <VEntity>
+          <VEntityContainer>
+              <VEntity v-for="m in moments" :key="m.id">
                 <template #start>
-                  <VEntityField width="40rem">
+                  <VEntityField max-width="40rem">
                     <template #description>
                       <div class="flex flex-col gap-1.5">
                         <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatTime(m.created_at) }}</span>
@@ -152,8 +152,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </Transition>
 
         <template #footer>

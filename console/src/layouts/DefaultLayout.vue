@@ -41,6 +41,7 @@ const navGroups = ["", "内容", "互动", "媒体", "系统"];
 const navItems: NavItem[] = [
   { path: "/dashboard", label: "仪表盘", icon: "ri:dashboard-3-line", group: "", mobile: true },
   { path: "/posts", label: "文章", icon: "ri:book-read-line", group: "内容", mobile: true },
+  { path: "/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" },
   { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
   { path: "/notes-page", label: "笔记页", icon: "ri:booklet-line", group: "内容" },

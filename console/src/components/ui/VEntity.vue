@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 // Halo VEntity 复刻（packages/components/src/components/entity/Entity.vue）
+// 每行固定两个 td：entity-start-wrapper（主体信息）+ entity-end-wrapper（辅助信息 + 操作菜单）
 const props = withDefaults(
   defineProps<{
     isSelected?: boolean;
@@ -13,37 +14,35 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
 </script>
 
 <template>
-  <div :class="classes" class="entity-wrapper group">
-    <div v-show="isSelected" class="entity-selected-indicator"></div>
-    <slot name="prepend" />
-    <div class="entity-body">
-      <div v-if="$slots.checkbox" class="entity-checkbox">
-        <slot name="checkbox" />
-      </div>
+  <tr :class="classes" class="entity-wrapper group">
+    <td class="entity-start-wrapper">
+      <div v-show="isSelected" class="entity-selected-indicator"></div>
+      <slot name="prepend" />
       <div class="entity-start">
+        <div v-if="$slots.checkbox" class="entity-checkbox">
+          <slot name="checkbox" />
+        </div>
         <slot name="start" />
       </div>
+    </td>
+    <td class="entity-end-wrapper">
       <div class="entity-end">
         <slot name="end" />
+        <div v-if="$slots.dropdownItems" class="entity-dropdown">
+          <slot name="dropdownItems" />
+        </div>
       </div>
-      <div v-if="$slots.dropdownItems" class="entity-dropdown">
-        <slot name="dropdownItems" />
-      </div>
-    </div>
-    <div v-if="$slots.footer">
-      <slot name="footer" />
-    </div>
-  </div>
+    </td>
+  </tr>
+  <tr v-if="$slots.footer">
+    <td colspan="2"><slot name="footer" /></td>
+  </tr>
 </template>
 
 <style scoped>
 .entity-wrapper {
   position: relative;
-  display: block;
-  cursor: pointer;
-  padding: 12px 16px;
   transition: all 0.15s ease;
-  width: 100%;
 }
 .entity-wrapper:hover {
   background: #f9fafb;
@@ -58,6 +57,13 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
   background: rgb(55 65 81 / 0.5);
 }
 
+.entity-start-wrapper,
+.entity-end-wrapper {
+  position: relative;
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
 .entity-selected-indicator {
   position: absolute;
   top: 0;
@@ -65,14 +71,6 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
   left: 0;
   width: 2px;
   background: #4ccba0;
-}
-
-.entity-body {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
 }
 
 .entity-checkbox {
@@ -88,7 +86,6 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
 
 .entity-start {
   display: flex;
-  flex: 1;
   align-items: center;
   gap: 1rem;
   min-width: 0;
@@ -96,20 +93,12 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
 
 .entity-end {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1rem;
-}
-@media (min-width: 640px) {
-  .entity-end {
-    flex-direction: row;
-    align-items: center;
-    gap: 1.5rem;
-  }
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5rem;
 }
 
 .entity-dropdown {
-  margin-left: 1rem;
   display: inline-flex;
   align-items: center;
 }

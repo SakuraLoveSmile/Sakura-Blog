@@ -36,9 +36,9 @@ export interface DashboardLayoutItem {
 export const dashboardApi = {
   stats: () => http.get("/dashboard/stats"),
   recentComments: () => http.get("/dashboard/recent-comments"),
-  getLayout: () => http.get("/dashboard/layout"),
-  saveLayout: (items: DashboardLayoutItem[]) =>
-    http.put("/dashboard/layout", { items }),
+  quickActions: () => http.get("/dashboard/quick-actions"),
+  saveQuickActions: (items: string[]) =>
+    http.put("/dashboard/quick-actions", { items }),
 };
 
 // --- Stats (Spec 24) ---
@@ -169,4 +169,13 @@ export const taxonomyApi = {
   deleteTag: (name: string) => http.delete(`/tags/${encodeURIComponent(name)}`),
   mergeTags: (sources: string[], target: string) =>
     http.post("/tags/merge", { sources, target }),
+};
+
+// --- Shares (文章分享链接) ---
+export const shareApi = {
+  list: (params?: Record<string, unknown>) => http.get("/shares", { params }),
+  listByPost: (slug: string) => http.get(`/posts/${slug}/shares`),
+  create: (slug: string, data: { share_type: string; expires_at: string }) =>
+    http.post(`/posts/${slug}/shares`, data),
+  delete: (id: number) => http.delete(`/shares/${id}`),
 };
