@@ -7,11 +7,12 @@ defineProps<{
   description?: string;
   route?: RouteLocationRaw;
   width?: string;
+  maxWidth?: string;
 }>();
 </script>
 
 <template>
-  <div :style="{ width: width }" class="entity-field-wrapper">
+  <div :style="{ width: width, maxWidth: maxWidth }" class="entity-field-wrapper">
     <div v-if="title || $slots.title" class="entity-field-title-body">
       <slot name="title">
         <router-link v-if="route" :to="route" class="entity-field-title hover:text-blue-600 dark:hover:text-blue-400">
@@ -35,6 +36,7 @@ defineProps<{
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  max-width: 20rem;
 }
 
 .entity-field-title-body {

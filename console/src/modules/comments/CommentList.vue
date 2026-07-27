@@ -8,6 +8,7 @@ import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -168,11 +169,10 @@ function closeMenus() {
         </Transition>
 
         <Transition v-else appear name="fade">
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="cm in comments" :key="cm.id">
-              <VEntity>
+          <VEntityContainer>
+              <VEntity v-for="cm in comments" :key="cm.id">
                 <template #start>
-                  <VEntityField width="30rem">
+                  <VEntityField max-width="30rem">
                     <template #title>
                       <div class="flex items-center gap-2">
                         <img :src="cm.avatar" class="h-8 w-8 shrink-0 rounded-full" alt="" />
@@ -239,8 +239,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </Transition>
 
         <template #footer>

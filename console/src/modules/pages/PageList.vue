@@ -9,6 +9,7 @@ import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -292,9 +293,8 @@ function closeMenus() {
         </Transition>
 
         <Transition v-else appear name="fade">
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="p in pages" :key="p.slug">
-              <VEntity :is-selected="checkSelection(p.slug)">
+          <VEntityContainer>
+              <VEntity v-for="p in pages" :key="p.slug" :is-selected="checkSelection(p.slug)">
                 <template #checkbox>
                   <input
                     :checked="checkSelection(p.slug)"
@@ -304,7 +304,7 @@ function closeMenus() {
                   />
                 </template>
                 <template #start>
-                  <VEntityField :title="p.title || p.slug" width="27rem">
+                  <VEntityField :title="p.title || p.slug" max-width="30rem">
                     <template #title>
                       <div class="flex items-center gap-1.5">
                         <span
@@ -381,8 +381,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </Transition>
 
         <template #footer>

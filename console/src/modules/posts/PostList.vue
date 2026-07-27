@@ -9,6 +9,7 @@ import {
   VPageHeader,
   VCard,
   VButton,
+  VEntityContainer,
   VEntity,
   VEntityField,
   VEmpty,
@@ -313,9 +314,8 @@ function closeMenus() {
 
         <!-- Entity list -->
         <Transition v-else appear name="fade">
-          <ul class="box-border h-full w-full divide-y divide-gray-100 dark:divide-gray-700" role="list">
-            <li v-for="post in posts" :key="post.slug">
-              <VEntity :is-selected="checkSelection(post.slug)">
+          <VEntityContainer>
+              <VEntity v-for="post in posts" :key="post.slug" :is-selected="checkSelection(post.slug)">
                 <template #checkbox>
                   <input
                     :checked="checkSelection(post.slug)"
@@ -325,7 +325,14 @@ function closeMenus() {
                   />
                 </template>
                 <template #start>
-                  <VEntityField :title="post.title || post.slug" width="27rem">
+                  <VEntityField v-if="post.cover">
+                    <template #description>
+                      <div class="w-20 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
+                        <img class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
+                      </div>
+                    </template>
+                  </VEntityField>
+                  <VEntityField :title="post.title || post.slug" max-width="30rem">
                     <template #title>
                       <div class="flex items-center gap-1.5">
                         <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="shrink-0 text-xs text-red-400" />
@@ -430,8 +437,7 @@ function closeMenus() {
                   </div>
                 </template>
               </VEntity>
-            </li>
-          </ul>
+          </VEntityContainer>
         </Transition>
 
         <!-- Footer: pagination -->
