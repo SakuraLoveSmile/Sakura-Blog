@@ -548,6 +548,13 @@ func main() {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "SAMEORIGIN")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		
+		// P3-1: Console SPA 防缓存——强制浏览器每次重新加载，确保修改即时生效
+		if len(c.Request.URL.Path) >= 8 && c.Request.URL.Path[:8] == "/console" {
+			c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
+		}
 		c.Next()
 	})
 
