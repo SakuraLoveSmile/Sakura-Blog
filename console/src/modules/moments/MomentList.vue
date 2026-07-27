@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed } from "vue";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { momentApi } from "@/api";
+import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
@@ -15,25 +17,23 @@ import {
   Toast,
 } from "@/components/ui";
 
-const moments = ref<any[]>([]);
-const total = ref(0);
+const queryClient = useQueryClient();
+
 const page = ref(1);
 const size = ref(20);
-const loading = ref(false);
 const newContent = ref("");
 const publishing = ref(false);
 const menuOpenId = ref<number | null>(null);
 
-async function loadMoments() {
-  loading.value = true;
-  try {
-    const { data } = await momentApi.list({ page: page.value, size: size.value });
-    moments.value = data.items || [];
-    total.value = data.total || 0;
-  } catch {} finally {
-    loading.value = false;
-  }
-}
+const queryParams = computed(() => ({ page: page.value, size: size.value }));
+
+const { data: queryData, isLoading, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.moments(queryParams.value)),
+  queryFn: () => momentApi.list(queryParams.value).then(({ data }) => data),
+});
+
+const moments = computed(() => queryData.value?.items || []);
+const total = computed(() => queryData.value?.total || 0);
 
 async function handlePublish() {
   if (!newContent.value.trim()) return;
@@ -41,7 +41,7 @@ async function handlePublish() {
   try {
     await momentApi.create({ content_md: newContent.value });
     newContent.value = "";
-    await loadMoments();
+    queryClient.invalidateQueries({ queryKey: ["moments"] });
     Toast.success("发布成功");
   } catch {} finally {
     publishing.value = false;
@@ -56,7 +56,7 @@ function handleDelete(m: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await momentApi.delete(m.id);
-      await loadMoments();
+      queryClient.invalidateQueries({ queryKey: ["moments"] });
       Toast.success("删除成功");
     },
   });
@@ -70,8 +70,6 @@ function formatTime(s: string): string {
 function closeMenus() {
   menuOpenId.value = null;
 }
-
-onMounted(loadMoments);
 </script>
 
 <template>
@@ -109,12 +107,12 @@ onMounted(loadMoments);
 
       <!-- Moment list -->
       <VCard :body-class="['!p-0']">
-        <VLoading v-if="loading" />
+        <VLoading v-if="isLoading" />
 
         <Transition v-else-if="!moments.length" appear name="fade">
           <VEmpty message="发布第一条瞬间吧" title="当前没有瞬间">
             <template #actions>
-              <VButton @click="loadMoments">刷新</VButton>
+              <VButton @click="refetch">刷新</VButton>
             </template>
           </VEmpty>
         </Transition>
@@ -160,7 +158,7 @@ onMounted(loadMoments);
 
         <template #footer>
           <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadMoments" />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
           </div>
         </template>
       </VCard>

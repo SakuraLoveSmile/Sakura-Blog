@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { queryKeys } from "@/api/query-client";
 import { linkApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import {
@@ -28,8 +30,15 @@ interface LinkRow {
   sort: number;
 }
 
-const links = ref<LinkRow[]>([]);
-const loading = ref(false);
+const queryClient = useQueryClient();
+
+const { data: queryData, isLoading } = useQuery({
+  queryKey: queryKeys.friends(),
+  queryFn: () => linkApi.list().then(({ data }) => data),
+});
+
+const links = computed<LinkRow[]>(() => queryData.value?.items || []);
+
 const showModal = ref(false);
 const saving = ref(false);
 const error = ref("");
@@ -50,16 +59,6 @@ const grouped = computed(() => {
   }
   return order.map((title) => ({ title, items: map[title] }));
 });
-
-async function load() {
-  loading.value = true;
-  try {
-    const { data } = await linkApi.list();
-    links.value = data.items || [];
-  } finally {
-    loading.value = false;
-  }
-}
 
 function openCreate() {
   editing.value = { group_title: "", name: "", url: "", avatar: "", description: "", rss: "", label: "", color: "", sort: 0 };
@@ -84,7 +83,7 @@ async function handleSave() {
       await linkApi.create(payload);
     }
     showModal.value = false;
-    await load();
+    queryClient.invalidateQueries({ queryKey: ["friends"] });
     Toast.success("保存成功");
   } catch (e: any) {
     error.value = e?.response?.data?.error || "保存失败";
@@ -100,7 +99,7 @@ function handleDelete(l: LinkRow) {
     confirmType: "danger",
     onConfirm: async () => {
       await linkApi.delete(l.id);
-      await load();
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
       Toast.success("删除成功");
     },
   });
@@ -112,8 +111,6 @@ const inputCls =
 function closeMenus() {
   menuOpenId.value = null;
 }
-
-onMounted(load);
 </script>
 
 <template>
@@ -133,7 +130,7 @@ onMounted(load);
     </VPageHeader>
 
     <div class="m-0 space-y-4 md:m-4">
-      <VLoading v-if="loading" />
+      <VLoading v-if="isLoading" />
 
       <VEmpty v-else-if="links.length === 0" message="点击右上角新增第一条友链" title="当前没有友链">
         <template #actions>

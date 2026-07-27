@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.1",
+    "@tanstack/vue-query": "^5.101.4",
     "axios": "^1.18.1",
     "chart.js": "^4.5.1",
     "pinia": "^4.0.2",

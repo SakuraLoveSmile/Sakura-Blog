@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { postApi } from "@/api";
+import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
@@ -20,15 +22,24 @@ import {
 } from "@/components/ui";
 
 const router = useRouter();
-const posts = ref<any[]>([]);
-const total = ref(0);
+const queryClient = useQueryClient();
+
 const page = ref(1);
 const size = ref(20);
-const loading = ref(false);
-const isFetching = ref(false);
 
-// Filters
+// 搜索关键词（debounce 300ms，避免每次按键都触发请求）
 const keyword = ref("");
+const debouncedKeyword = ref("");
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(keyword, () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debouncedKeyword.value = keyword.value;
+    page.value = 1;
+  }, 300);
+});
+
+// 筛选条件
 const selectedStatus = ref<string | undefined>(undefined);
 const selectedSort = ref<string | undefined>(undefined);
 
@@ -36,6 +47,7 @@ const statusItems = [
   { label: "全部", value: undefined },
   { label: "已发布", value: "published" },
   { label: "草稿", value: "draft" },
+  { label: "回收站", value: "trashed" },
 ];
 
 const sortItems = [
@@ -44,7 +56,32 @@ const sortItems = [
   { label: "较早创建", value: "oldest" },
 ];
 
-// Selection
+// 响应式查询参数：page/size/status/keyword 变化自动重取
+const queryParams = computed(() => {
+  const params: Record<string, unknown> = { page: page.value, size: size.value };
+  if (selectedStatus.value) params.status = selectedStatus.value;
+  if (debouncedKeyword.value.trim()) params.search = debouncedKeyword.value.trim();
+  return params;
+});
+
+const { data: queryData, isLoading, isFetching, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.posts(queryParams.value)),
+  queryFn: () => postApi.list(queryParams.value).then(({ data }) => data),
+});
+
+// 客户端排序（排序变化不触发网络请求）
+const posts = computed(() => {
+  const items = [...(queryData.value?.items || [])];
+  if (selectedSort.value === "newest") {
+    items.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else if (selectedSort.value === "oldest") {
+    items.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+  return items;
+});
+const total = computed(() => queryData.value?.total || 0);
+
+// 批量选择
 const checkedAll = ref(false);
 const selectedSlugs = ref<string[]>([]);
 const menuOpenSlug = ref<string | null>(null);
@@ -53,51 +90,14 @@ const hasFilters = computed(
   () => selectedStatus.value !== undefined || selectedSort.value !== undefined || keyword.value !== ""
 );
 
-// Debounced keyword search
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-watch(keyword, () => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    page.value = 1;
-    loadPosts();
-  }, 300);
+watch(selectedSlugs, (val) => {
+  checkedAll.value = val.length === posts.value.length && val.length > 0;
 });
 
-async function loadPosts() {
-  loading.value = true;
-  isFetching.value = true;
-  try {
-    const params: Record<string, unknown> = { page: page.value, size: size.value };
-    if (selectedStatus.value) params.status = selectedStatus.value;
-    if (keyword.value.trim()) params.search = keyword.value.trim();
-    const { data } = await postApi.list(params);
-    let items = data.items || [];
-    if (selectedSort.value === "newest") {
-      items = [...items].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (selectedSort.value === "oldest") {
-      items = [...items].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    }
-    posts.value = items;
-    total.value = data.total || 0;
-  } catch {} finally {
-    loading.value = false;
-    isFetching.value = false;
-  }
-}
-
-function refetch() {
-  loadPosts();
-}
-
-// Selection
 function handleCheckAllChange(e: Event) {
   const { checked } = e.target as HTMLInputElement;
   selectedSlugs.value = checked ? posts.value.map((p) => p.slug) : [];
 }
-
-watch(selectedSlugs, (val) => {
-  checkedAll.value = val.length === posts.value.length && val.length > 0;
-});
 
 function checkSelection(slug: string) {
   return selectedSlugs.value.includes(slug);
@@ -111,35 +111,39 @@ function toggleSelection(slug: string) {
   }
 }
 
-// Filter handlers
+// 筛选变化时重置到第一页
 function handleFilterChange() {
   page.value = 1;
-  loadPosts();
 }
 
 function handleClearFilters() {
   selectedStatus.value = undefined;
   selectedSort.value = undefined;
   keyword.value = "";
+  debouncedKeyword.value = "";
   page.value = 1;
-  loadPosts();
 }
 
 const statusLabel = computed(() => statusItems.find((i) => i.value === selectedStatus.value)?.label || "");
 const sortLabel = computed(() => sortItems.find((i) => i.value === selectedSort.value)?.label || "");
+const isTrashed = computed(() => selectedStatus.value === "trashed");
 
-// Actions
+// Mutations：操作成功后自动失效文章列表缓存
+const deleteMutation = useMutation({
+  mutationFn: (slug: string) => postApi.delete(slug),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+    Toast.success("删除成功");
+  },
+});
+
 function handleDelete(post: any) {
   menuOpenSlug.value = null;
   Dialog.warning({
     title: "确定要删除该文章吗？",
     description: "该操作会将文章放入回收站，后续可以从回收站恢复",
     confirmType: "danger",
-    onConfirm: async () => {
-      await postApi.delete(post.slug);
-      await loadPosts();
-      Toast.success("删除成功");
-    },
+    onConfirm: () => deleteMutation.mutate(post.slug),
   });
 }
 
@@ -151,7 +155,7 @@ function handleDeleteInBatch() {
     onConfirm: async () => {
       await Promise.all(selectedSlugs.value.map((slug) => postApi.delete(slug)));
       selectedSlugs.value = [];
-      await loadPosts();
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
       Toast.success("删除成功");
     },
   });
@@ -163,7 +167,7 @@ function handleRestore(post: any) {
     title: "确定要恢复该文章吗？",
     onConfirm: async () => {
       await postApi.restore(post.slug);
-      await loadPosts();
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
       Toast.success("恢复成功");
     },
   });
@@ -177,7 +181,7 @@ function handlePurge(post: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await postApi.purge(post.slug);
-      await loadPosts();
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
       Toast.success("已彻底删除");
     },
   });
@@ -198,13 +202,9 @@ function openPost(slug: string) {
   window.open(`/posts/${slug}`, "_blank");
 }
 
-const isTrashed = computed(() => selectedStatus.value === "trashed");
-
 function closeMenus() {
   menuOpenSlug.value = null;
 }
-
-onMounted(loadPosts);
 </script>
 
 <template>
@@ -218,7 +218,7 @@ onMounted(loadPosts);
         <div class="flex items-center gap-2">
           <VButton size="sm" @click="router.push('/taxonomy')">分类</VButton>
           <VButton size="sm" @click="router.push('/taxonomy')">标签</VButton>
-          <VButton size="sm" @click="selectedStatus = 'trashed'; page = 1; loadPosts()">回收站</VButton>
+          <VButton size="sm" @click="selectedStatus = 'trashed'; page = 1">回收站</VButton>
           <VButton type="secondary" @click="router.push('/posts/new')">
             <template #icon>
               <Icon icon="ri:add-circle-line" class="h-full w-full" />
@@ -292,7 +292,7 @@ onMounted(loadPosts);
         </template>
 
         <!-- Loading -->
-        <VLoading v-if="loading" />
+        <VLoading v-if="isLoading" />
 
         <!-- Empty -->
         <Transition v-else-if="!posts.length" appear name="fade">
@@ -437,7 +437,7 @@ onMounted(loadPosts);
         <!-- Footer: pagination -->
         <template #footer>
           <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadPosts" />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
           </div>
         </template>
       </VCard>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { pageApi } from "@/api";
+import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
@@ -20,15 +22,24 @@ import {
 } from "@/components/ui";
 
 const router = useRouter();
-const pages = ref<any[]>([]);
-const total = ref(0);
+const queryClient = useQueryClient();
+
 const page = ref(1);
 const size = ref(20);
-const loading = ref(false);
-const isFetching = ref(false);
+
+// 搜索关键词（debounce 300ms）
+const keyword = ref("");
+const debouncedKeyword = ref("");
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(keyword, () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debouncedKeyword.value = keyword.value;
+    page.value = 1;
+  }, 300);
+});
 
 // Filters
-const keyword = ref("");
 const selectedStatus = ref<string | undefined>(undefined);
 const selectedSort = ref<string | undefined>(undefined);
 
@@ -45,6 +56,30 @@ const sortItems = [
   { label: "较早更新", value: "oldest" },
 ];
 
+const queryParams = computed(() => {
+  const params: Record<string, unknown> = { page: page.value, size: size.value };
+  if (selectedStatus.value) params.status = selectedStatus.value;
+  if (debouncedKeyword.value.trim()) params.search = debouncedKeyword.value.trim();
+  return params;
+});
+
+const { data: queryData, isLoading, isFetching, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.pages(queryParams.value)),
+  queryFn: () => pageApi.list(queryParams.value).then(({ data }) => data),
+});
+
+// 客户端排序（排序变化不触发网络请求）
+const pages = computed(() => {
+  const items = [...(queryData.value?.items || [])];
+  if (selectedSort.value === "newest") {
+    items.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  } else if (selectedSort.value === "oldest") {
+    items.sort((a: any, b: any) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+  }
+  return items;
+});
+const total = computed(() => queryData.value?.total || 0);
+
 // Selection
 const checkedAll = ref(false);
 const selectedSlugs = ref<string[]>([]);
@@ -53,41 +88,6 @@ const menuOpenSlug = ref<string | null>(null);
 const hasFilters = computed(
   () => selectedStatus.value !== undefined || selectedSort.value !== undefined || keyword.value !== ""
 );
-
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-watch(keyword, () => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    page.value = 1;
-    loadPages();
-  }, 300);
-});
-
-async function loadPages() {
-  loading.value = true;
-  isFetching.value = true;
-  try {
-    const params: Record<string, unknown> = { page: page.value, size: size.value };
-    if (selectedStatus.value) params.status = selectedStatus.value;
-    if (keyword.value.trim()) params.search = keyword.value.trim();
-    const { data } = await pageApi.list(params);
-    let items = data.items || [];
-    if (selectedSort.value === "newest") {
-      items = [...items].sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-    } else if (selectedSort.value === "oldest") {
-      items = [...items].sort((a: any, b: any) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
-    }
-    pages.value = items;
-    total.value = data.total || 0;
-  } catch {} finally {
-    loading.value = false;
-    isFetching.value = false;
-  }
-}
-
-function refetch() {
-  loadPages();
-}
 
 // Selection
 function handleCheckAllChange(e: Event) {
@@ -111,18 +111,17 @@ function toggleSelection(slug: string) {
   }
 }
 
-// Filter handlers
+// 筛选变化时重置到第一页
 function handleFilterChange() {
   page.value = 1;
-  loadPages();
 }
 
 function handleClearFilters() {
   selectedStatus.value = undefined;
   selectedSort.value = undefined;
   keyword.value = "";
+  debouncedKeyword.value = "";
   page.value = 1;
-  loadPages();
 }
 
 const statusLabel = computed(() => statusItems.find((i) => i.value === selectedStatus.value)?.label || "");
@@ -139,7 +138,7 @@ function handleDelete(item: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await pageApi.delete(item.slug);
-      await loadPages();
+      queryClient.invalidateQueries({ queryKey: ["pages"] });
       Toast.success("删除成功");
     },
   });
@@ -153,7 +152,7 @@ function handleDeleteInBatch() {
     onConfirm: async () => {
       await Promise.all(selectedSlugs.value.map((slug) => pageApi.delete(slug)));
       selectedSlugs.value = [];
-      await loadPages();
+      queryClient.invalidateQueries({ queryKey: ["pages"] });
       Toast.success("删除成功");
     },
   });
@@ -165,7 +164,7 @@ function handleRestore(item: any) {
     title: "确定要恢复该页面吗？",
     onConfirm: async () => {
       await pageApi.restore(item.slug);
-      await loadPages();
+      queryClient.invalidateQueries({ queryKey: ["pages"] });
       Toast.success("恢复成功");
     },
   });
@@ -179,7 +178,7 @@ function handlePurge(item: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await pageApi.purge(item.slug);
-      await loadPages();
+      queryClient.invalidateQueries({ queryKey: ["pages"] });
       Toast.success("已彻底删除");
     },
   });
@@ -197,8 +196,6 @@ function openPage(slug: string) {
 function closeMenus() {
   menuOpenSlug.value = null;
 }
-
-onMounted(loadPages);
 </script>
 
 <template>
@@ -276,7 +273,7 @@ onMounted(loadPages);
           </div>
         </template>
 
-        <VLoading v-if="loading" />
+        <VLoading v-if="isLoading" />
 
         <Transition v-else-if="!pages.length" appear name="fade">
           <VEmpty message="你可以尝试刷新或者新建页面" title="当前没有页面">
@@ -390,7 +387,7 @@ onMounted(loadPages);
 
         <template #footer>
           <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadPages" />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
           </div>
         </template>
       </VCard>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { commentApi } from "@/api";
+import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VPageHeader,
@@ -19,12 +21,10 @@ import {
   Toast,
 } from "@/components/ui";
 
-const comments = ref<any[]>([]);
-const total = ref(0);
+const queryClient = useQueryClient();
+
 const page = ref(1);
 const size = ref(20);
-const loading = ref(false);
-const isFetching = ref(false);
 
 const selectedStatus = ref<string | undefined>(undefined);
 const statusItems = [
@@ -41,34 +41,28 @@ const replyContent = ref("");
 const hasFilters = computed(() => selectedStatus.value !== undefined);
 const statusLabel = computed(() => statusItems.find((i) => i.value === selectedStatus.value)?.label || "");
 
-async function loadComments() {
-  loading.value = true;
-  isFetching.value = true;
-  try {
-    const params: Record<string, unknown> = { page: page.value, size: size.value };
-    if (selectedStatus.value) params.status = selectedStatus.value;
-    const { data } = await commentApi.list(params);
-    comments.value = data.items || [];
-    total.value = data.total || 0;
-  } catch {} finally {
-    loading.value = false;
-    isFetching.value = false;
-  }
-}
+// 响应式查询参数：page/size/status 变化自动重取
+const queryParams = computed(() => {
+  const params: Record<string, unknown> = { page: page.value, size: size.value };
+  if (selectedStatus.value) params.status = selectedStatus.value;
+  return params;
+});
 
-function refetch() {
-  loadComments();
-}
+const { data: queryData, isLoading, isFetching, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.comments(queryParams.value)),
+  queryFn: () => commentApi.list(queryParams.value).then(({ data }) => data),
+});
+
+const comments = computed(() => queryData.value?.items || []);
+const total = computed(() => queryData.value?.total || 0);
 
 function handleFilterChange() {
   page.value = 1;
-  loadComments();
 }
 
 function handleClearFilters() {
   selectedStatus.value = undefined;
   page.value = 1;
-  loadComments();
 }
 
 function handleApprove(cm: any) {
@@ -78,7 +72,7 @@ function handleApprove(cm: any) {
     confirmType: "secondary",
     onConfirm: async () => {
       await commentApi.approve(cm.id);
-      await loadComments();
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
       Toast.success("已通过");
     },
   });
@@ -92,7 +86,7 @@ function handleDelete(cm: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await commentApi.delete(cm.id);
-      await loadComments();
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
       Toast.success("删除成功");
     },
   });
@@ -111,15 +105,13 @@ async function handleReply() {
   replyVisible.value = false;
   replyTarget.value = null;
   replyContent.value = "";
-  await loadComments();
+  queryClient.invalidateQueries({ queryKey: ["comments"] });
   Toast.success("回复成功");
 }
 
 function closeMenus() {
   menuOpenId.value = null;
 }
-
-onMounted(loadComments);
 </script>
 
 <template>
@@ -165,7 +157,7 @@ onMounted(loadComments);
           </div>
         </template>
 
-        <VLoading v-if="loading" />
+        <VLoading v-if="isLoading" />
 
         <Transition v-else-if="!comments.length" appear name="fade">
           <VEmpty message="你可以尝试刷新或者查看评论筛选" title="当前没有评论">
@@ -253,7 +245,7 @@ onMounted(loadComments);
 
         <template #footer>
           <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" @change="loadComments" />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
           </div>
         </template>
       </VCard>

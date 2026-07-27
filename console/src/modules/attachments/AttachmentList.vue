@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { queryKeys } from "@/api/query-client";
 import { attachmentApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import {
@@ -15,15 +17,14 @@ import {
   Toast,
 } from "@/components/ui";
 
-const attachments = ref<any[]>([]);
-const total = ref(0);
+const queryClient = useQueryClient();
+
+// 搜索关键词（debounce 300ms）
+const keyword = ref("");
+const debouncedKeyword = ref("");
 const page = ref(1);
 const size = ref(24);
-const loading = ref(false);
 const uploading = ref(false);
-
-// 搜索与筛选
-const keyword = ref("");
 const kindFilter = ref<string | undefined>(undefined);
 const kindItems = [
   { label: "全部", value: undefined },
@@ -35,28 +36,28 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 watch(keyword, () => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
+    debouncedKeyword.value = keyword.value;
     page.value = 1;
-    loadAttachments();
   }, 300);
 });
 
-async function loadAttachments() {
-  loading.value = true;
-  try {
-    const params: Record<string, unknown> = { page: page.value, size: size.value };
-    if (keyword.value.trim()) params.keyword = keyword.value.trim();
-    if (kindFilter.value) params.kind = kindFilter.value;
-    const { data } = await attachmentApi.list(params);
-    attachments.value = data.items || [];
-    total.value = data.total || 0;
-  } catch {} finally {
-    loading.value = false;
-  }
-}
+const queryParams = computed(() => {
+  const params: Record<string, unknown> = { page: page.value, size: size.value };
+  if (debouncedKeyword.value.trim()) params.keyword = debouncedKeyword.value.trim();
+  if (kindFilter.value) params.kind = kindFilter.value;
+  return params;
+});
+
+const { data: queryData, isLoading, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.attachments(queryParams.value)),
+  queryFn: () => attachmentApi.list(queryParams.value).then(({ data }) => data),
+});
+
+const attachments = computed(() => queryData.value?.items || []);
+const total = computed(() => queryData.value?.total || 0);
 
 function handleFilterChange() {
   page.value = 1;
-  loadAttachments();
 }
 
 async function handleUpload(e: Event) {
@@ -65,7 +66,7 @@ async function handleUpload(e: Event) {
   uploading.value = true;
   try {
     await attachmentApi.upload(input.files[0]);
-    await loadAttachments();
+    queryClient.invalidateQueries({ queryKey: ["attachments"] });
     Toast.success("上传成功");
   } catch {} finally {
     uploading.value = false;
@@ -118,7 +119,7 @@ async function confirmDelete() {
   deleteVisible.value = false;
   if (detailItem.value?.id === target.id) detailVisible.value = false;
   deleteTarget.value = null;
-  await loadAttachments();
+  queryClient.invalidateQueries({ queryKey: ["attachments"] });
   Toast.success("删除成功");
 }
 
@@ -135,8 +136,6 @@ const kindLabel = ref("");
 watch(kindFilter, (v) => {
   kindLabel.value = kindItems.find((i) => i.value === v)?.label || "";
 });
-
-onMounted(loadAttachments);
 </script>
 
 <template>
@@ -183,10 +182,10 @@ onMounted(loadAttachments);
               <div class="mt-4 flex sm:mt-0">
                 <div class="flex items-center gap-6">
                   <FilterDropdown v-model="kindFilter" :items="kindItems" label="类型" @change="handleFilterChange" />
-                  <div class="group cursor-pointer rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600" @click="loadAttachments()">
+                  <div class="group cursor-pointer rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600" @click="refetch()">
                     <Icon
                       icon="ri:refresh-line"
-                      :class="{ 'animate-spin text-gray-900 dark:text-gray-100': loading }"
+                      :class="{ 'animate-spin text-gray-900 dark:text-gray-100': isLoading }"
                       class="h-4 w-4 text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100"
                     />
                   </div>
@@ -196,12 +195,12 @@ onMounted(loadAttachments);
           </div>
         </template>
 
-        <VLoading v-if="loading" />
+        <VLoading v-if="isLoading" />
 
         <Transition v-else-if="!attachments.length" appear name="fade">
           <VEmpty message="你可以尝试刷新或者上传附件" title="当前没有附件">
             <template #actions>
-              <VButton @click="loadAttachments">刷新</VButton>
+              <VButton @click="refetch">刷新</VButton>
             </template>
           </VEmpty>
         </Transition>
@@ -252,7 +251,7 @@ onMounted(loadAttachments);
 
         <template #footer>
           <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[24, 48, 96]" @change="loadAttachments" />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[24, 48, 96]" />
           </div>
         </template>
       </VCard>
