@@ -33,6 +33,7 @@ interface NavItem {
   icon: string;
   group: string;
   mobile?: boolean;
+  children?: NavItem[]; // 缩进子菜单项（如「文章」下的「分享链接」）
 }
 
 const navGroups = ["", "内容", "互动", "媒体", "系统"];
@@ -40,8 +41,14 @@ const navGroups = ["", "内容", "互动", "媒体", "系统"];
 // 对齐 Halo：仪表盘无分组标签，内容/互动/媒体/系统分组
 const navItems: NavItem[] = [
   { path: "/dashboard", label: "仪表盘", icon: "ri:dashboard-3-line", group: "", mobile: true },
-  { path: "/posts", label: "文章", icon: "ri:book-read-line", group: "内容", mobile: true },
-  { path: "/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" },
+  {
+    path: "/posts",
+    label: "文章",
+    icon: "ri:book-read-line",
+    group: "内容",
+    mobile: true,
+    children: [{ path: "/posts/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" }],
+  },
   { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
   { path: "/notes-page", label: "笔记页", icon: "ri:booklet-line", group: "内容" },
@@ -56,10 +63,15 @@ const navItems: NavItem[] = [
 
 const minimenus = navItems.filter((i) => i.mobile);
 
+// 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
+const flatNavItems = computed<NavItem[]>(() =>
+  navItems.flatMap((i) => (i.children ? [i, ...i.children] : [i]))
+);
+
 const searchResults = computed(() => {
-  if (!searchQuery.value.trim()) return navItems;
+  if (!searchQuery.value.trim()) return flatNavItems.value;
   const q = searchQuery.value.toLowerCase();
-  return navItems.filter((item) => item.label.toLowerCase().includes(q));
+  return flatNavItems.value.filter((item) => item.label.toLowerCase().includes(q));
 });
 
 function openSearch() {
@@ -141,7 +153,28 @@ function closeProfileDropdown() {
                   <Icon :icon="item.icon" width="20" height="20" />
                 </span>
                 <span class="menu-title flex-1 self-center">{{ item.label }}</span>
+                <span
+                  v-if="item.children?.length"
+                  class="self-center text-gray-400 transition-transform dark:text-gray-500"
+                  :class="{ '-rotate-90': !route.path.startsWith(item.path) }"
+                >
+                  <Icon icon="ri:arrow-down-s-line" />
+                </span>
               </div>
+              <ul v-if="item.children?.length && route.path.startsWith(item.path)" class="mt-1 space-y-1">
+                <li v-for="child in item.children" :key="child.path" class="menu-item">
+                  <div
+                    :class="{ active: route.path.startsWith(child.path) }"
+                    class="menu-subitem"
+                    @click="navigateTo(child.path)"
+                  >
+                    <span class="menu-icon mr-3 self-center">
+                      <Icon :icon="child.icon" width="18" height="18" />
+                    </span>
+                    <span class="menu-title flex-1 self-center">{{ child.label }}</span>
+                  </div>
+                </li>
+              </ul>
             </li>
           </template>
         </ul>
@@ -270,7 +303,28 @@ function closeProfileDropdown() {
                       <Icon :icon="item.icon" width="20" height="20" />
                     </span>
                     <span class="menu-title flex-1 self-center">{{ item.label }}</span>
+                    <span
+                      v-if="item.children?.length"
+                      class="self-center text-gray-400 transition-transform dark:text-gray-500"
+                      :class="{ '-rotate-90': !route.path.startsWith(item.path) }"
+                    >
+                      <Icon icon="ri:arrow-down-s-line" />
+                    </span>
                   </div>
+                  <ul v-if="item.children?.length && route.path.startsWith(item.path)" class="mt-1 space-y-1">
+                    <li v-for="child in item.children" :key="child.path" class="menu-item">
+                      <div
+                        :class="{ active: route.path.startsWith(child.path) }"
+                        class="menu-subitem"
+                        @click="navigateTo(child.path)"
+                      >
+                        <span class="menu-icon mr-3 self-center">
+                          <Icon :icon="child.icon" width="18" height="18" />
+                        </span>
+                        <span class="menu-title flex-1 self-center">{{ child.label }}</span>
+                      </div>
+                    </li>
+                  </ul>
                 </li>
               </template>
             </ul>
@@ -370,6 +424,31 @@ function closeProfileDropdown() {
 }
 .dark .menu-item-title.active::after {
   background: #4ccba0;
+}
+
+/* 缩进子菜单项（如「文章」下的「分享链接」），与 menu-item-title 同色/hover/active 规则 */
+.menu-subitem {
+  transition: all 0.15s ease;
+  font-size: 0.9rem;
+  display: flex;
+  user-select: none;
+  position: relative;
+  padding: 0.4rem 0.5rem 0.4rem 2.25rem;
+  font-weight: 400;
+  border-radius: 4px;
+  color: #374151;
+}
+.dark .menu-subitem {
+  color: #d1d5db;
+}
+.menu-subitem:hover,
+.menu-subitem.active {
+  background: #f3f4f6;
+  font-weight: 500;
+}
+.dark .menu-subitem:hover,
+.dark .menu-subitem.active {
+  background: #374151;
 }
 
 /* 底部用户资料区（对齐 Halo 70px） */
