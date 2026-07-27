@@ -163,3 +163,12 @@ export const taxonomyApi = {
   mergeTags: (sources: string[], target: string) =>
     http.post("/tags/merge", { sources, target }),
 };
+
+// --- Shares (文章分享链接) ---
+export const shareApi = {
+  list: (params?: Record<string, unknown>) => http.get("/shares", { params }),
+  listByPost: (slug: string) => http.get(`/posts/${slug}/shares`),
+  create: (slug: string, data: { share_type: string; expires_at: string }) =>
+    http.post(`/posts/${slug}/shares`, data),
+  delete: (id: number) => http.delete(`/shares/${id}`),
+};
