@@ -1,9 +1,45 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { dashboardApi, statsApi } from "@/api";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { dashboardApi, statsApi, settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VCard } from "@/components/ui";
+import { VPageHeader, VCard, VModal, VSwitch, Toast } from "@/components/ui";
 import { Chart } from "chart.js";
+
+// --- 仪表盘组件清单定义 ---
+/** 全部组件清单（id 与显示名称），顺序即默认顺序 */
+const WIDGET_DEFS = [
+  { id: "stats-cards", label: "统计卡片" },
+  { id: "pending-alert", label: "待审核提醒" },
+  { id: "quick-actions", label: "快捷操作" },
+  { id: "recent-comments", label: "最近评论" },
+  { id: "visit-trend", label: "访问趋势" },
+  { id: "hourly-dist", label: "访问时段分布" },
+];
+/** 默认配置：全部启用，按 WIDGET_DEFS 顺序 */
+const DEFAULT_WIDGETS = WIDGET_DEFS.map((w) => ({ id: w.id, enabled: true }));
+
+// --- 当前 dashboard 配置 ---
+const dashboardConfig = ref<{ id: string; enabled: boolean }[]>([]);
+
+/** 启用的组件 id 列表（按配置顺序过滤 enabled） */
+const enabledWidgets = computed(() =>
+  dashboardConfig.value.filter((w) => w.enabled).map((w) => w.id)
+);
+
+/** 除 stats-cards 外的组件按顺序两两配对（用于双栏布局），落单单独一行。
+ *  pending-alert 仅在有待审核评论时参与布局，避免空槽位导致双栏错位。 */
+const enabledWidgetRows = computed(() => {
+  const others = enabledWidgets.value.filter((id) => {
+    if (id === "stats-cards") return false;
+    if (id === "pending-alert" && stats.value.comment_pending <= 0) return false;
+    return true;
+  });
+  const rows: string[][] = [];
+  for (let i = 0; i < others.length; i += 2) {
+    rows.push(others.slice(i, i + 2));
+  }
+  return rows;
+});
 
 const stats = ref({
   post_total: 0,
@@ -45,6 +81,10 @@ const trendDateRange = computed(() => {
 });
 const hourlyDist = ref<number[]>(Array(24).fill(0));
 let trendChartInstance: Chart | null = null;
+let hourlyChartInstance: Chart | null = null;
+
+/** 数据是否已加载完成（避免配置变更时在数据未就绪状态下初始化图表） */
+const dataLoaded = ref(false);
 
 async function loadStats() {
   try {
@@ -55,29 +95,52 @@ async function loadStats() {
     console.error('[Dashboard] Failed to load trend data:', err);
     trend.value = Array(7).fill({ date: '', pv: 0, uv: 0 }); // 兜底数据
   }
-  
+
   // 加载时段分布数据（如果后端已实现）
   try {
     const res = await fetch(`/api/v1/stats/hourly?days=${trendDays.value}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     const response = await res.json();
     console.log('[Dashboard] Hourly response:', response);
-    hourlyDist.value = Array.isArray(response) ? 
-      response : 
-      (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
+    hourlyDist.value = Array.isArray(response)
+      ? response
+      : (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
   } catch (err) {
     console.warn('[Dashboard] Failed to load hourly data, using defaults:', err);
     hourlyDist.value = Array(24).fill(0); // 失败则使用默认数据
   }
-  
+
   console.log('[Dashboard] Initializing charts...');
   console.log('  - trend.value length:', trend.value.length);
   console.log('  - hourlyDist length:', hourlyDist.value.length);
-  
+
   // 数据加载成功后再初始化图表
-  initTrendChart();
-  initHourlyChart();
+  dataLoaded.value = true;
+  initCharts();
 }
+
+/** 销毁旧图表实例并根据启用状态重新初始化 */
+function initCharts() {
+  // 先销毁旧实例，避免 canvas 残留导致 Chart.js 重复挂载报错
+  if (trendChartInstance) {
+    trendChartInstance.destroy();
+    trendChartInstance = null;
+  }
+  if (hourlyChartInstance) {
+    hourlyChartInstance.destroy();
+    hourlyChartInstance = null;
+  }
+  // 数据未就绪时只销毁不初始化
+  if (!dataLoaded.value) return;
+  // 仅在对应组件启用时初始化对应图表
+  if (enabledWidgets.value.includes('visit-trend')) initTrendChart();
+  if (enabledWidgets.value.includes('hourly-dist')) initHourlyChart();
+}
+
+// 监听启用组件变化，DOM 更新后重新初始化图表
+watch(enabledWidgets, () => {
+  nextTick(() => initCharts());
+});
 
 // 初始化主趋势折线图
 function initTrendChart() {
@@ -101,7 +164,7 @@ function initTrendChart() {
   const cardBg = cs.getPropertyValue('--color-card').trim() || '#ffffff';
   const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#0f172a';
   const borderColor = cs.getPropertyValue('--color-border').trim() || '#e6e9ef';
-  
+
   // PV 渐变色填充 - hex alpha（1F = 12% 透明度）
   const gradient = ctx!.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, c1 + '1F');
@@ -214,13 +277,13 @@ function initHourlyChart() {
   const values = hourlyDist.value;
 
   // 高峰时段高亮 (10-12 点、20-22 点) 用 primary 色，其余用 chart-1
-  const bgColors = hours.map(h => 
-    (h >= 10 && h <= 12) || (h >= 20 && h <= 22) 
-      ? primaryColor 
+  const bgColors = hours.map(h =>
+    (h >= 10 && h <= 12) || (h >= 20 && h <= 22)
+      ? primaryColor
       : c1
   );
 
-  new Chart(canvas, {
+  hourlyChartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: hours.map(h => `${h.toString().padStart(2, '0')}:00`),
@@ -286,7 +349,78 @@ function switchMetric(key: 'pv' | 'uv' | 'both') {
   }
 }
 
+// --- 自定义编辑面板 ---
+const showCustomize = ref(false);
+/** 编辑中的临时配置副本，取消/关闭不污染原配置 */
+const editingConfig = ref<{ id: string; enabled: boolean }[]>([]);
+const savingConfig = ref(false);
+
+/** 打开自定义面板，深拷贝当前配置到编辑副本 */
+function openCustomize() {
+  editingConfig.value = dashboardConfig.value.map((w) => ({ ...w }));
+  showCustomize.value = true;
+}
+
+/** 编辑面板内上移/下移组件 */
+function moveWidget(i: number, dir: -1 | 1) {
+  const j = i + dir;
+  if (j < 0 || j >= editingConfig.value.length) return;
+  [editingConfig.value[i], editingConfig.value[j]] = [
+    editingConfig.value[j],
+    editingConfig.value[i],
+  ];
+}
+
+/** 保存自定义配置到后端，成功后更新当前配置并关闭面板 */
+async function saveCustomize() {
+  savingConfig.value = true;
+  try {
+    await settingsApi.updateSection('dashboard', { widgets: editingConfig.value });
+    dashboardConfig.value = editingConfig.value.map((w) => ({ ...w }));
+    showCustomize.value = false;
+    Toast.success('已保存');
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || '保存失败');
+  } finally {
+    savingConfig.value = false;
+  }
+}
+
+/** 重置为默认全启用顺序并持久化到后端 */
+async function resetCustomize() {
+  savingConfig.value = true;
+  try {
+    const defaults = DEFAULT_WIDGETS.map((w) => ({ ...w }));
+    await settingsApi.updateSection('dashboard', { widgets: defaults });
+    editingConfig.value = defaults.map((w) => ({ ...w }));
+    dashboardConfig.value = defaults.map((w) => ({ ...w }));
+    Toast.success('已重置为默认配置');
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || '重置失败');
+  } finally {
+    savingConfig.value = false;
+  }
+}
+
+/** 根据 id 查找组件显示名称 */
+function widgetLabel(id: string) {
+  return WIDGET_DEFS.find((d) => d.id === id)?.label || id;
+}
+
 onMounted(async () => {
+  // 先读取 dashboard 配置段，缺失或 widgets 为空时回落默认全启用顺序
+  try {
+    const { data } = await settingsApi.all();
+    const widgets = data?.dashboard?.widgets;
+    if (Array.isArray(widgets) && widgets.length > 0) {
+      dashboardConfig.value = widgets;
+    } else {
+      dashboardConfig.value = DEFAULT_WIDGETS.map((w) => ({ ...w }));
+    }
+  } catch {
+    dashboardConfig.value = DEFAULT_WIDGETS.map((w) => ({ ...w }));
+  }
+
   try {
     const { data } = await dashboardApi.stats();
     stats.value = data;
@@ -295,7 +429,7 @@ onMounted(async () => {
     const { data } = await dashboardApi.recentComments();
     recentComments.value = data.items || [];
   } catch {}
-  
+
   // 数据加载完成后自动初始化图表
   await loadStats();
 });
@@ -308,11 +442,20 @@ onMounted(async () => {
       <template #icon>
         <Icon icon="ri:dashboard-3-line" class="mr-2 self-center text-xl" />
       </template>
+      <template #actions>
+        <button
+          @click="openCustomize"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <Icon icon="ri:settings-3-line" class="text-base" />
+          自定义
+        </button>
+      </template>
     </VPageHeader>
 
     <div class="m-0 space-y-4 p-4 md:m-4 md:p-0">
-      <!-- 统计卡片网格 -->
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <!-- 统计卡片网格（启用时全宽 4 列置顶渲染） -->
+      <div v-if="enabledWidgets.includes('stats-cards')" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <VCard v-for="card in cards" :key="card.key">
           <div class="flex items-center gap-3">
             <span class="flex h-10 w-10 items-center justify-center rounded bg-gray-100 dark:bg-gray-700" style="border-radius: 4px">
@@ -328,121 +471,182 @@ onMounted(async () => {
         </VCard>
       </div>
 
-      <!-- 待审核提醒 -->
-      <router-link
-        v-if="stats.comment_pending > 0"
-        to="/comments"
-        class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-        style="border-radius: 4px"
-      >
-        <Icon icon="ri:error-warning-line" class="text-base" />
-        有 {{ stats.comment_pending }} 条评论待审核
-        <Icon icon="ri:arrow-right-line" class="ml-auto" />
-      </router-link>
+      <!-- 其余启用的组件按顺序两两配对双栏，落单单独全宽 -->
+      <template v-for="(row, ri) in enabledWidgetRows" :key="ri">
+        <div :class="row.length === 2 ? 'grid gap-4 lg:grid-cols-2' : ''">
+          <template v-for="wid in row" :key="wid">
+            <!-- 待审核提醒（仍受 comment_pending > 0 条件控制） -->
+            <router-link
+              v-if="wid === 'pending-alert' && stats.comment_pending > 0"
+              to="/comments"
+              class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
+              style="border-radius: 4px"
+            >
+              <Icon icon="ri:error-warning-line" class="text-base" />
+              有 {{ stats.comment_pending }} 条评论待审核
+              <Icon icon="ri:arrow-right-line" class="ml-auto" />
+            </router-link>
 
-      <!-- 快捷操作 -->
-      <VCard title="快捷操作">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <router-link
-            v-for="action in quickActions"
-            :key="action.to"
-            :to="action.to"
-            class="flex flex-col items-center gap-2 rounded border border-gray-100 py-4 text-gray-600 transition-all hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/50"
-            style="border-radius: 4px"
-          >
-            <Icon :icon="action.icon" class="text-2xl" />
-            <span class="text-xs">{{ action.label }}</span>
-          </router-link>
-        </div>
-      </VCard>
-
-      <!-- 双栏：评论 + 趋势 -->
-      <div class="grid gap-4 lg:grid-cols-2">
-        <!-- 最近评论 -->
-        <VCard title="最近评论">
-          <div v-if="recentComments.length" class="divide-y divide-gray-50 dark:divide-gray-700">
-            <div v-for="c in recentComments.slice(0, 6)" :key="c.id" class="flex items-start gap-3 py-2.5">
-              <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                {{ (c.nick || "?")[0] }}
-              </span>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-medium text-gray-800 dark:text-gray-200">{{ c.nick }}</span>
-                  <span class="text-[10px] text-gray-400">{{ c.date?.slice(0, 10) }}</span>
-                </div>
-                <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ c.content }}</p>
-              </div>
-            </div>
-          </div>
-          <p v-else class="py-8 text-center text-xs text-gray-400">暂无评论</p>
-        </VCard>
-
-        <!-- 访问趋势 -->
-        <VCard>
-          <template #header>
-            <div class="flex w-full flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <span class="flex items-center gap-2 text-base font-semibold text-foreground">
-                  <Icon icon="ri:line-chart-line" class="text-lg" />
-                  访问趋势
-                </span>
-                <p v-if="trendDateRange" class="mt-0.5 text-xs text-muted-foreground">{{ trendDateRange }}</p>
-              </div>
-              <div class="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
-                <button
-                  v-for="{ key, label } in [
-                    { key: 'pv', label: 'PV' },
-                    { key: 'uv', label: 'UV' },
-                    { key: 'both', label: '同时' }
-                  ]"
-                  :key="label"
-                  :class="[
-                    'rounded-[6px] px-3 py-1.5 text-xs font-medium transition-all',
-                    metricTab === key 
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
-                  ]"
-                  @click="switchMetric(key)"
+            <!-- 快捷操作 -->
+            <VCard v-else-if="wid === 'quick-actions'" title="快捷操作">
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <router-link
+                  v-for="action in quickActions"
+                  :key="action.to"
+                  :to="action.to"
+                  class="flex flex-col items-center gap-2 rounded border border-gray-100 py-4 text-gray-600 transition-all hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                  style="border-radius: 4px"
                 >
-                  {{ label }}
-                </button>
+                  <Icon :icon="action.icon" class="text-2xl" />
+                  <span class="text-xs">{{ action.label }}</span>
+                </router-link>
               </div>
-            </div>
-          </template>
-          <div class="p-4">
-            <!-- 图例（图表上方） -->
-            <div class="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-              <span class="inline-flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
-                PV 页面浏览量
-              </span>
-              <span class="inline-flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-chart-2"></span>
-                UV 独立访客
-              </span>
-            </div>
-            <div class="mt-3 h-[260px] w-full">
-              <canvas ref="trendCanvas"></canvas>
-            </div>
-          </div>
-        </VCard>
+            </VCard>
 
-        <!-- 时段分布 -->
-        <VCard>
-          <template #header>
-            <div class="flex w-full items-center justify-between px-4 py-3">
-              <span class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                访问时段分布
-              </span>
-            </div>
+            <!-- 最近评论 -->
+            <VCard v-else-if="wid === 'recent-comments'" title="最近评论">
+              <div v-if="recentComments.length" class="divide-y divide-gray-50 dark:divide-gray-700">
+                <div v-for="c in recentComments.slice(0, 6)" :key="c.id" class="flex items-start gap-3 py-2.5">
+                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {{ (c.nick || "?")[0] }}
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-medium text-gray-800 dark:text-gray-200">{{ c.nick }}</span>
+                      <span class="text-[10px] text-gray-400">{{ c.date?.slice(0, 10) }}</span>
+                    </div>
+                    <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ c.content }}</p>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="py-8 text-center text-xs text-gray-400">暂无评论</p>
+            </VCard>
+
+            <!-- 访问趋势 -->
+            <VCard v-else-if="wid === 'visit-trend'">
+              <template #header>
+                <div class="flex w-full flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <span class="flex items-center gap-2 text-base font-semibold text-foreground">
+                      <Icon icon="ri:line-chart-line" class="text-lg" />
+                      访问趋势
+                    </span>
+                    <p v-if="trendDateRange" class="mt-0.5 text-xs text-muted-foreground">{{ trendDateRange }}</p>
+                  </div>
+                  <div class="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
+                    <button
+                      v-for="{ key, label } in [
+                        { key: 'pv', label: 'PV' },
+                        { key: 'uv', label: 'UV' },
+                        { key: 'both', label: '同时' }
+                      ]"
+                      :key="label"
+                      :class="[
+                        'rounded-[6px] px-3 py-1.5 text-xs font-medium transition-all',
+                        metricTab === key
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground',
+                      ]"
+                      @click="switchMetric(key)"
+                    >
+                      {{ label }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <div class="p-4">
+                <!-- 图例（图表上方） -->
+                <div class="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
+                    PV 页面浏览量
+                  </span>
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-full bg-chart-2"></span>
+                    UV 独立访客
+                  </span>
+                </div>
+                <div class="mt-3 h-[260px] w-full">
+                  <canvas ref="trendCanvas"></canvas>
+                </div>
+              </div>
+            </VCard>
+
+            <!-- 时段分布 -->
+            <VCard v-else-if="wid === 'hourly-dist'">
+              <template #header>
+                <div class="flex w-full items-center justify-between px-4 py-3">
+                  <span class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    访问时段分布
+                  </span>
+                </div>
+              </template>
+              <div class="p-4">
+                <div class="h-[260px] w-full">
+                  <canvas ref="hourlyCanvas"></canvas>
+                </div>
+              </div>
+            </VCard>
           </template>
-          <div class="p-4">
-            <div class="h-[260px] w-full">
-              <canvas ref="hourlyCanvas"></canvas>
-            </div>
-          </div>
-        </VCard>
-      </div>
+        </div>
+      </template>
     </div>
+
+    <!-- 自定义仪表盘 Modal -->
+    <VModal :visible="showCustomize" @update:visible="showCustomize = $event" title="自定义仪表盘" :width="480">
+      <div class="space-y-2">
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">勾选启用组件，上下箭头调整显示顺序。</p>
+        <div
+          v-for="(w, i) in editingConfig"
+          :key="w.id"
+          class="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-2.5 dark:border-gray-700"
+        >
+          <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">{{ widgetLabel(w.id) }}</span>
+          <VSwitch :modelValue="w.enabled" @update:modelValue="w.enabled = $event" />
+          <div class="flex items-center gap-0.5">
+            <button
+              @click="moveWidget(i, -1)"
+              :disabled="i === 0"
+              class="text-gray-400 hover:text-gray-600 disabled:opacity-30 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <Icon icon="ri:arrow-up-s-line" class="text-lg" />
+            </button>
+            <button
+              @click="moveWidget(i, 1)"
+              :disabled="i === editingConfig.length - 1"
+              class="text-gray-400 hover:text-gray-600 disabled:opacity-30 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <Icon icon="ri:arrow-down-s-line" class="text-lg" />
+            </button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex items-center justify-between">
+          <button
+            @click="resetCustomize"
+            :disabled="savingConfig"
+            class="px-3 py-1.5 text-sm text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            重置默认
+          </button>
+          <div class="flex items-center gap-2">
+            <button
+              @click="showCustomize = false"
+              class="px-3 py-1.5 text-sm text-gray-600 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+            >
+              取消
+            </button>
+            <button
+              @click="saveCustomize"
+              :disabled="savingConfig"
+              class="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {{ savingConfig ? '保存中...' : '保存' }}
+            </button>
+          </div>
+        </div>
+      </template>
+    </VModal>
   </div>
 </template>

@@ -11,14 +11,15 @@ import (
 
 // 站点配置分段名（settings 表的 section 主键）。
 const (
-	SectionSite     = "site"     // 基础信息（标题/副标题/头像/logo）
-	SectionMenubar  = "menubar"  // 菜单栏
-	SectionRightbar = "rightbar" // 右栏
-	SectionFooter   = "footer"   // 页脚
-	SectionComments = "comments" // 评论系统
-	SectionArticle  = "article"  // 文章页脚
-	SectionWiki     = "wiki"     // 文库项目
-	SectionFriends  = "friends"  // 友链动态聚合
+	SectionSite      = "site"      // 基础信息（标题/副标题/头像/logo）
+	SectionMenubar   = "menubar"   // 菜单栏
+	SectionRightbar  = "rightbar"  // 右栏
+	SectionFooter    = "footer"    // 页脚
+	SectionComments  = "comments"  // 评论系统
+	SectionArticle   = "article"   // 文章页脚
+	SectionWiki      = "wiki"      // 文库项目
+	SectionFriends   = "friends"   // 友链动态聚合
+	SectionDashboard = "dashboard" // 仪表盘组件自定义（仅 Console 消费）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -45,6 +46,17 @@ type siteBasic struct {
 // adminSection 对应 settings 表 "admin" 段（管理密码，明文存储与 site.yml 现状同安全等级）。
 type adminSection struct {
 	Password string `json:"password"`
+}
+
+// dashboardWidget 对应 settings 表 "dashboard" 段的单个组件配置。
+type dashboardWidget struct {
+	ID      string `json:"id"`
+	Enabled bool   `json:"enabled"`
+}
+
+// dashboardConfig 对应 settings 表 "dashboard" 段（仪表盘组件开关与排序）。
+type dashboardConfig struct {
+	Widgets []dashboardWidget `json:"widgets"`
 }
 
 // Bootstrap 首次启动导入：settings/links 表为空时，把 site（DefaultSite 合并 site.yml）写入 DB。
@@ -129,6 +141,9 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 	if err := put(SectionFriends, site.Friends); err != nil {
+		return err
+	}
+	if err := put(SectionDashboard, defaultDashboardConfig()); err != nil {
 		return err
 	}
 	return nil
@@ -253,6 +268,7 @@ func KnownSections() []string {
 	return []string{
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
+		SectionDashboard,
 	}
 }
 
@@ -293,6 +309,8 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &[]tmpl.WikiProject{}
 	case SectionFriends:
 		dst = &tmpl.FriendsConfig{}
+	case SectionDashboard:
+		dst = &dashboardConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}
@@ -345,4 +363,18 @@ func SaveAdminPassword(st *store.Store, site *tmpl.Site, password string) error 
 		return err
 	}
 	return RebuildSite(st, site)
+}
+
+// defaultDashboardConfig 返回仪表盘默认配置（全部组件启用、默认顺序）。
+func defaultDashboardConfig() dashboardConfig {
+	return dashboardConfig{
+		Widgets: []dashboardWidget{
+			{ID: "stats-cards", Enabled: true},
+			{ID: "pending-alert", Enabled: true},
+			{ID: "quick-actions", Enabled: true},
+			{ID: "recent-comments", Enabled: true},
+			{ID: "visit-trend", Enabled: true},
+			{ID: "hourly-dist", Enabled: true},
+		},
+	}
 }
