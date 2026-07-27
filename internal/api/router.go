@@ -173,6 +173,12 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/links/:id", h.updateLink)
 		authed.DELETE("/links/:id", h.deleteLink)
 
+		// 文章分享链接
+		authed.GET("/shares", h.listShares)
+		authed.GET("/posts/:slug/shares", h.listPostShares)
+		authed.POST("/posts/:slug/shares", h.createShare)
+		authed.DELETE("/shares/:id", h.deleteShare)
+
 		// 分类 / 标签
 		authed.GET("/categories", h.listCategories)
 		authed.PUT("/categories/:name", h.renameCategory)

@@ -30,6 +30,7 @@ export const queryKeys = {
   attachments: (params?: Record<string, unknown>) => ["attachments", params] as const,
   moments: (params?: Record<string, unknown>) => ["moments", params] as const,
   friends: () => ["friends"] as const,
+  shares: (params?: Record<string, unknown>) => ["shares", params] as const,
   categories: () => ["categories"] as const,
   tags: () => ["tags"] as const,
   dashboard: {
