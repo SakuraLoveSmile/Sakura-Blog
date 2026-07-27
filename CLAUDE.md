@@ -282,7 +282,7 @@ EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 ma
 
 ### qoder worktree 端口固定 8081
 
-qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 可同时起服务互不影响。
+qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 可同时起服务互不影响（端口约定的 canonical 来源见 `AGENTS.md` 的「端口约定」一节）。
 
 ## Step 2 新增坑点（归档 + 分类/标签）
 
@@ -361,7 +361,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - Node 22 + stylus 0.62.0（CSS 编译）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run cmd/server/main.go -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081
+- Go 服务：`go run cmd/server/main.go -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
 
 ## Demo 进度
 
