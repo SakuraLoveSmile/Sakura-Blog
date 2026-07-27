@@ -32,6 +32,9 @@ export const authApi = {
 export const dashboardApi = {
   stats: () => http.get("/dashboard/stats"),
   recentComments: () => http.get("/dashboard/recent-comments"),
+  quickActions: () => http.get("/dashboard/quick-actions"),
+  saveQuickActions: (items: string[]) =>
+    http.put("/dashboard/quick-actions", { items }),
 };
 
 // --- Stats (Spec 24) ---
