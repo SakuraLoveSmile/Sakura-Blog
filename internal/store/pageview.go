@@ -12,6 +12,12 @@ type DailyStat struct {
 	UV   int    `json:"uv"`
 }
 
+// HourlyStat 单小时访问量。
+type HourlyStat struct {
+	Hour  int  `json:"hour"`  // 0-23
+	Count int  `json:"count"` // 访问次数
+}
+
 // PopularStat 区间内按 PV 排序的热门路径。
 type PopularStat struct {
 	Path  string `json:"path"`
@@ -186,4 +192,46 @@ func (s *Store) PrunePageViews(keepDays int) (int64, error) {
 		return 0, fmt.Errorf("prune page_views: %w", err)
 	}
 	return res.RowsAffected()
+}
+
+// HourlyVisits 返回近 days 天内各小时段的访问计数（按 hour 聚合）。
+func (s *Store) HourlyVisits(days int) ([]HourlyStat, error) {
+	if days <= 0 {
+		days = 7
+	}
+	since := time.Now().AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+	rows, err := s.db.Query(`
+		SELECT CAST(strftime('%H', created_at) AS INTEGER) AS h,
+		       COUNT(*) AS cnt
+		FROM page_views
+		WHERE date(created_at) >= ?
+		GROUP BY h ORDER BY h`, since)
+	if err != nil {
+		return nil, fmt.Errorf("hourly query: %w", err)
+	}
+	defer rows.Close()
+
+	// 先收集有数据的小时
+	m := make(map[int]int, 24)
+	for rows.Next() {
+		var h, cnt int
+		if err := rows.Scan(&h, &cnt); err != nil {
+			return nil, fmt.Errorf("scan hourly: %w", err)
+		}
+		m[h] = cnt
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate hourly: %w", err)
+	}
+
+	// 补零：生成完整 24 小时序列
+	out := make([]HourlyStat, 0, 24)
+	for h := 0; h < 24; h++ {
+		count, ok := m[h]
+		if !ok {
+			count = 0
+		}
+		out = append(out, HourlyStat{Hour: h, Count: count})
+	}
+	return out, nil
 }

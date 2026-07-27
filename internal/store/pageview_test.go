@@ -176,3 +176,225 @@ func TestTrendZeroFill(t *testing.T) {
 		t.Errorf("first date = %s, want %s", trend[0].Date, expected)
 	}
 }
+
+func TestHourlyZeroFill(t *testing.T) {
+	s := newTestStorePV(t)
+
+	// 无任何数据时，24 小时全零
+	hours, err := s.HourlyVisits(7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hours) != 24 {
+		t.Fatalf("expect 24, got %d", len(hours))
+	}
+	for i, h := range hours {
+		// 验证小时序号连续（0-23）且计数为零
+		if h.Hour != i {
+			t.Errorf("hour[%d].Hour = %d, want %d", i, h.Hour, i)
+		}
+		if h.Count != 0 {
+			t.Errorf("hour %d not zero: %+v", i, h)
+		}
+	}
+}
+
+func TestHourlyCrossDayBoundary(t *testing.T) {
+	s := newTestStorePV(t)
+
+	insert := func(ts string) {
+		t.Helper()
+		_, err := s.db.Exec(`INSERT INTO page_views(path, referrer, ua_hash, created_at) VALUES (?, '', ?, ?)`,
+			"/post/hello", "ua_abc", ts)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	today := time.Now().Format("2006-01-02")
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	// 跨天边界：今天 00 点两次 + 23 点一次，昨天 23 点一次（与今天 23 点合并入同一小时桶）
+	insert(today + " 00:15:00")
+	insert(today + " 00:45:00")
+	insert(today + " 23:30:00")
+	insert(yesterday + " 23:10:00")
+	// 窗口之外（8 天前）不应计入 days=7
+	old := time.Now().AddDate(0, 0, -8).Format("2006-01-02")
+	insert(old + " 00:00:00")
+
+	hours, err := s.HourlyVisits(7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hours) != 24 {
+		t.Fatalf("expect 24, got %d", len(hours))
+	}
+	if hours[0].Count != 2 {
+		t.Errorf("hour 0 count = %d, want 2 (窗口外记录不应计入)", hours[0].Count)
+	}
+	if hours[23].Count != 2 {
+		t.Errorf("hour 23 count = %d, want 2 (昨天+今天跨天合并)", hours[23].Count)
+	}
+	// 其余小时补零
+	for i := 1; i < 23; i++ {
+		if hours[i].Count != 0 {
+			t.Errorf("hour %d should be zero, got %d", i, hours[i].Count)
+		}
+	}
+}
+
+func TestHourlyLocalTimezone(t *testing.T) {
+	s := newTestStorePV(t)
+
+	// RecordView 默认按 localtime 落库，聚合小时应与 Go 本地时区一致
+	before := time.Now().Hour()
+	if err := s.RecordView("/post/hello", "", "ua_abc"); err != nil {
+		t.Fatal(err)
+	}
+	after := time.Now().Hour()
+
+	hours, err := s.HourlyVisits(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := -1
+	for _, h := range hours {
+		if h.Count > 0 {
+			got = h.Hour
+			break
+		}
+	}
+	// 允许恰好跨小时边界执行的情形
+	if got != before && got != after {
+		t.Errorf("local hour bucket = %d, want %d or %d", got, before, after)
+	}
+}
+
+func TestHourlyTimezoneNaiveAggregation(t *testing.T) {
+	s := newTestStorePV(t)
+
+	insert := func(ts string) {
+		t.Helper()
+		_, err := s.db.Exec(`INSERT INTO page_views(path, referrer, ua_hash, created_at) VALUES (?, '', ?, ?)`,
+			"/post/hello", "ua_abc", ts)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// 同一时刻（今天本地正午）分别按 UTC / 东京 / 纽约时区格式化落库，
+	// 聚合应按字面小时入桶，不做任何时区换算
+	now := time.Now()
+	noon := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local)
+	expected := make(map[int]int, 4)
+	for _, name := range []string{"UTC", "Asia/Tokyo", "America/New_York"} {
+		loc, err := time.LoadLocation(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		zoned := noon.In(loc)
+		insert(zoned.Format("2006-01-02 15:04:05"))
+		expected[zoned.Hour()]++
+	}
+
+	// days=7 窗口下，字面日期最多偏移 ±1 天，三条记录均应计入
+	hours, err := s.HourlyVisits(7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hours) != 24 {
+		t.Fatalf("expect 24, got %d", len(hours))
+	}
+	for i, h := range hours {
+		if h.Count != expected[i] {
+			t.Errorf("hour %d count = %d, want %d (应按字面小时入桶)", i, h.Count, expected[i])
+		}
+	}
+}
+
+func TestHourlyTimezoneWindowBoundary(t *testing.T) {
+	s := newTestStorePV(t)
+
+	insert := func(ts string) {
+		t.Helper()
+		_, err := s.db.Exec(`INSERT INTO page_views(path, referrer, ua_hash, created_at) VALUES (?, '', ?, ?)`,
+			"/post/hello", "ua_abc", ts)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// 今天本地 00:30 这一时刻按 UTC 格式化：若本地时区在 UTC 以东，
+	// 字面日期会回退到昨天，被 days=1 窗口过滤；days=2 则必然计入
+	now := time.Now()
+	early := time.Date(now.Year(), now.Month(), now.Day(), 0, 30, 0, 0, time.Local)
+	utc := early.In(time.UTC)
+	insert(utc.Format("2006-01-02 15:04:05"))
+
+	want1 := 0
+	if utc.Format("2006-01-02") >= now.Format("2006-01-02") {
+		want1 = 1
+	}
+	hours1, err := s.HourlyVisits(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hours1[utc.Hour()].Count != want1 {
+		t.Errorf("days=1 hour %d count = %d, want %d (按字面日期过滤)", utc.Hour(), hours1[utc.Hour()].Count, want1)
+	}
+
+	hours2, err := s.HourlyVisits(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hours2[utc.Hour()].Count != 1 {
+		t.Errorf("days=2 hour %d count = %d, want 1 (字面日期最多回退一天)", utc.Hour(), hours2[utc.Hour()].Count)
+	}
+}
+
+func TestHourlyDaysParamBoundary(t *testing.T) {
+	s := newTestStorePV(t)
+
+	insert := func(ts string) {
+		t.Helper()
+		_, err := s.db.Exec(`INSERT INTO page_views(path, referrer, ua_hash, created_at) VALUES (?, '', ?, ?)`,
+			"/post/hello", "ua_abc", ts)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	today := time.Now().Format("2006-01-02")
+	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	// 窗口边界：昨天 23:59:59 在 days=1 时排除、days=2 时计入；今天 00:00:00 始终计入
+	insert(yesterday + " 23:59:59")
+	insert(today + " 00:00:00")
+
+	hours1, err := s.HourlyVisits(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hours1[0].Count != 1 || hours1[23].Count != 0 {
+		t.Errorf("days=1: hour0=%d hour23=%d, want 1,0", hours1[0].Count, hours1[23].Count)
+	}
+
+	hours2, err := s.HourlyVisits(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hours2[0].Count != 1 || hours2[23].Count != 1 {
+		t.Errorf("days=2: hour0=%d hour23=%d, want 1,1", hours2[0].Count, hours2[23].Count)
+	}
+
+	// days<=0 回退默认 7 天：6 天前计入，7 天前排除
+	insert(time.Now().AddDate(0, 0, -6).Format("2006-01-02") + " 05:00:00")
+	insert(time.Now().AddDate(0, 0, -7).Format("2006-01-02") + " 06:00:00")
+
+	hours0, err := s.HourlyVisits(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hours0[5].Count != 1 || hours0[6].Count != 0 {
+		t.Errorf("days=0(默认7): hour5=%d hour6=%d, want 1,0", hours0[5].Count, hours0[6].Count)
+	}
+}

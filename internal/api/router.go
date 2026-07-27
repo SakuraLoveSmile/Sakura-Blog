@@ -108,6 +108,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/stats/trend", h.statsTrend)
 		authed.GET("/stats/popular", h.statsPopular)
 		authed.GET("/stats/referrers", h.statsReferrers)
+		authed.GET("/stats/hourly", h.statsHourly)
 
 		// 文章
 		authed.GET("/posts", h.listPosts)
