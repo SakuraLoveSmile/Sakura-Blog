@@ -193,6 +193,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/comments/:id/approve", h.approveComment)
 		authed.DELETE("/comments/:id", h.deleteComment)
 		authed.POST("/comments/reply", h.replyComment)
+		authed.POST("/comments/batch", h.batchComments)
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		authed.POST("/preview/markdown", h.previewMarkdown)

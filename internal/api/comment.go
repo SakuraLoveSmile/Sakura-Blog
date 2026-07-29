@@ -121,6 +121,49 @@ func (h *Handler) deleteComment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+// maxBatchCommentIDs 单次批量操作的 ids 上限。
+const maxBatchCommentIDs = 100
+
+// batchComments POST /api/v1/comments/batch：批量通过/删除。
+// 事务内执行（store 批量方法内部保证原子性），返回 {succeeded, failed}；
+// 混入不存在的 id 时其余照常成功，failed 计入未命中数。
+// 注意：批量通过不触发邮件通知（通知仅在单条回复路径 replyComment）。
+func (h *Handler) batchComments(c *gin.Context) {
+	var req struct {
+		IDs    []int64 `json:"ids"`
+		Action string  `json:"action"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		return
+	}
+	if len(req.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ids 必填"})
+		return
+	}
+	if len(req.IDs) > maxBatchCommentIDs {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "单次最多操作 100 条"})
+		return
+	}
+
+	var succeeded int
+	var err error
+	switch req.Action {
+	case "approve":
+		succeeded, err = h.store.ApproveComments(req.IDs)
+	case "delete":
+		succeeded, err = h.store.DeleteComments(req.IDs)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "action 仅支持 approve / delete"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"succeeded": succeeded, "failed": len(req.IDs) - succeeded})
+}
+
 // replyComment POST /api/v1/comments/reply：管理员回复。
 func (h *Handler) replyComment(c *gin.Context) {
 	var req struct {
