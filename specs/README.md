@@ -2,6 +2,71 @@
 
 每个子目录是一个**可并行开发**的功能 spec，遵循根目录 [`AGENTS.md`](../AGENTS.md)：**一个 agent = 一个 feature 分支 = 一个 worktree，从 dev 拉出，做完合回 dev**。
 
+## 当前批次 · Wave 8（差距对齐，可立即并行）
+
+来源：前端 vs 原版 Stellar + 控制台 vs Halo 2.x 的全面差距调研（2026-07）。
+
+### 前端簇（对齐 Stellar）
+
+| # | Spec | 主模块（独占） | 优先级 |
+|---|------|---------------|--------|
+| 30 | [标签插件四期（vote/friends/sites/radio+行内）](30-tag-plugins-4/spec.md) | `shortcode.go` + 新 `store/vote.go` | P0（JS 服务已带，低成本高收益） |
+| 31 | [标签插件五期（展示类 11 件收官）](31-tag-plugins-5/spec.md) | `shortcode.go` + `tag-plugins.css` | P1 |
+| 32 | [文章页脚与文首增强](32-article-footer-plus/spec.md) | `content.html` + 新 `store/related.go` | P0 |
+| 33 | [widgets 配置化编排 + gh widgets](33-widgets-config/spec.md) | `sidebar/rightbar.html` → `partial/widgets/` + `web.go` | P1（**35/47 前置**） |
+| 34 | [外观样式可配置化](34-style-config/spec.md) | `site.go` style 段 + `head.html` 变量注入 | P1（**47 前置**） |
+| 36 | [体验增强（preload/scrollreveal/heti）](36-js-enhance/spec.md) | `assets/js/plugins/` + `assets/vendor/` | P2 |
+| 37 | [前端杂项（hero/nav_tabs/文案收敛）](37-frontend-misc/spec.md) | `index.html` + `navbar.html` + 新 `lang.go` | P2 |
+
+### 控制台簇（对齐 Halo）
+
+| # | Spec | 主模块（独占） | 优先级 |
+|---|------|---------------|--------|
+| 39 | [Console 全局搜索接 FTS](39-console-search/spec.md) | `DefaultLayout.vue` + 新 `api/search.go` | P0（后端 API 已有） |
+| 40 | [评论批量操作](40-comment-batch/spec.md) | `CommentList.vue` + `api/comment.go` | P0 |
+| 41 | [备份整站恢复](41-backup-restore/spec.md) | `internal/backup/` + `BackupView.vue` | P1 |
+| 42 | [SEO 设置 + 代码注入](42-seo-codeinject/spec.md) | `settings` +2 Tab + `head.html` 消费点 | P1 |
+| 43 | [瞬间增强（九宫格+可见性）](43-moments-plus/spec.md) | `store/moment.go` + `MomentList.vue` | P2 |
+| 44 | [附件分组](44-attachment-groups/spec.md) | `store/attachment.go` + `AttachmentList.vue` | P2 |
+| 46 | [版本行级 Diff 视图](46-revision-diff/spec.md) | 新 `diff.ts`(+test) + `RevisionDiff.vue`（纯前端） | P1 |
+
+### Wave 9（依赖 Wave 8 或需串行的大工程）
+
+| # | Spec | 前置 | 优先级 |
+|---|------|------|--------|
+| 35 | [Wiki 文档体系 + 笔记本体系](35-wiki-notes/spec.md) | **33 先合**（tree/tagtree 走 widget 机制） | P1（大） |
+| 38 | [多作者体系](38-multi-author/spec.md) | 33 先合（author widget） | P2 |
+| 45 | [用户账户体系（用户名+资料+2FA）](45-users-account/spec.md) | 建议 Wave 8 全合后单独进行（动鉴权主链路） | P1（大） |
+| 47 | [Console 外观设置（style/widgets 可视化）](47-console-appearance/spec.md) | **34 + 33 先合** | P2 |
+
+### Wave 8 冲突矩阵（共享文件热点）
+
+| 共享文件 | 竞争者 | 处置 |
+|---------|--------|------|
+| `internal/post/shortcode.go` | 30 / 31 | **合并顺序 30 → 31**（31 开工前 rebase） |
+| `config/site.go` + `site.yml` | 32 / 34 / 36 / 37 | 各加独立段（append 式），建议顺序 34 → 32 → 36 → 37；配置键一致性测试每合一个跑一次 |
+| `partial/head.html` | 32 / 34 / 36 / 42 | append 式单行/单段冲突，按上述顺序串行 merge |
+| `internal/api/router.go` | 30 / 39 / 40 / 41 / 42 / 44 | 各 +1~2 行挂载，冲突秒解 |
+| `console/src/api/index.ts` | 39 / 40 / 42 / 43 / 44 | 各加独立 api 对象，append 式 |
+| `SettingsView.vue` | 42 / 47(Wave9) | 42 先落，47 后续 rebase |
+| `middleware.go` | 36（+1 行埋点跳过） | 独占无冲突 |
+
+**纯前端零冲突快道**：39（除 api 一行）/ 46 与其余全部零交集，随时可合。
+
+### 明确不做 / 暂缓项（差距清单的正式处置，不出 spec）
+
+| 项 | 处置 | 理由 |
+|---|------|------|
+| 多主题安装/切换 | **不做** | 模板/CSS 走 go:embed，运行时换主题与单二进制架构冲突；主题设置面板由 Spec 47 承接 |
+| 运行时插件系统 / 应用市场 | **不做** | 同上，动态加载与单体架构冲突；标签插件速查库（Spec 23）已覆盖写作侧需求 |
+| 多存储策略（S3/OSS） | **不做** | 见 Spec 44 技术决策；外置存储走反代层 |
+| 多用户 + RBAC | **暂缓** | Spec 45 表结构预留，真实多人需求出现再立 spec |
+| 站内通知中心 | **暂缓** | 单管理员场景价值待定，邮件通知（Spec 26）已覆盖评论场景 |
+| 完整 i18n 多语言切换 | **暂缓** | Spec 37 做文案表收敛留口 |
+| tianli_gpt AI 摘要 / MathJax / algolia | **不做** | 见 Spec 36/34 技术决策（外部付费依赖 / KaTeX、FTS 路线已定） |
+
+> 调研勘误记录：一度误报「页脚 sitemap 链接的 /atom.xml 与 /feed.json 未注册会 404」——实际 `internal/feed` 包的 `Register` 已注册两路由，无此 bug。
+
 ## 已完成（合入 dev）
 
 01 代码高亮 · 02 友链 · 03 附件图床 · 04 评论点赞 · 05 前端清理+后台 Halo 化 · 06 标签插件 · 07 KaTeX · 08 阅读体验 · 09 文章页脚 · 10 侧边栏 widget · 11 Feed · 12 PWA · 13 Pages · 14 Moments · 15 文章增强 · 16 标签插件二期 · 17 回收站 · 18 菜单可视化 · 19 附件增强（Wave 4） · 20 标签插件三期 · 21 GitHub widgets · 22 文章版本历史（Wave 5） · **23 Console 插件库 · 24 访问统计 · 25 FTS5 搜索 · 26 评论通知配置化 · 27 OG 社交分享图（Wave 6）** · **28 上线前加固 · 29 Console UX+写作面板（Wave 7）** —— 详见各目录 spec，均已 merge。
