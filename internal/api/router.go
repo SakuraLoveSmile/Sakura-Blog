@@ -154,6 +154,9 @@ func (h *Handler) Register(r *gin.Engine) {
 	// 需认证路由
 	authed := v1.Group("", h.apiAuth())
 	{
+		// 管理端全局搜索（Spec 39，Console ⌘K）
+		authed.GET("/search", h.adminSearch)
+
 		// 仪表盘
 		authed.GET("/dashboard/stats", h.dashboardStats)
 		authed.GET("/dashboard/recent-comments", h.dashboardRecentComments)
