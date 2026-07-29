@@ -43,6 +43,7 @@ func Import(st *store.Store, posts *post.Service) error {
 			Title:       title,
 			Excerpt:     meta.Excerpt,
 			Cover:       meta.Cover,
+			Banner:      meta.Banner,
 			Category:    meta.Category,
 			Topic:       meta.Topic,
 			Tags:        strings.Join(meta.Tags, ","),

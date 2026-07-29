@@ -10,6 +10,7 @@ type frontMatter struct {
 	Date     string
 	Excerpt  string
 	Cover    string
+	Banner   string // 文首横幅图 URL（对齐原版 frontmatter banner 字段）
 	Category string
 	Topic    string // 专栏名（对齐原版 frontmatter topic 字段）
 	Tags     []string
@@ -81,6 +82,8 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Excerpt = val
 		case "cover":
 			fm.Cover = val
+		case "banner":
+			fm.Banner = val
 		case "category", "categories":
 			fm.Category = val
 		case "topic":

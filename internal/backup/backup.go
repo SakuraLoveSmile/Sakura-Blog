@@ -176,6 +176,7 @@ func marshalPost(p *store.Post) string {
 	b.WriteString("date: " + p.CreatedAt.Format("2006-01-02 15:04:05") + "\n")
 	writeKV("excerpt", p.Excerpt)
 	writeKV("cover", p.Cover)
+	writeKV("banner", p.Banner)
 	writeKV("category", p.Category)
 	writeKV("topic", p.Topic)
 	if p.Tags != "" {
@@ -270,6 +271,7 @@ func (s *Service) importOne(base string, data []byte, res *ImportResult) {
 		Title:       title,
 		Excerpt:     meta.Excerpt,
 		Cover:       meta.Cover,
+		Banner:      meta.Banner,
 		Category:    meta.Category,
 		Topic:       meta.Topic,
 		Tags:        strings.Join(meta.Tags, ","),

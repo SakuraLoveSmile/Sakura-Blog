@@ -30,6 +30,7 @@ type FileMeta struct {
 	Date     string
 	Excerpt  string
 	Cover    string
+	Banner   string // 文首横幅图 URL
 	Category string
 	Topic    string // 专栏名
 	Tags     []string
@@ -151,7 +152,7 @@ func (s *Service) Render(body string) (string, error) {
 func (s *Service) ParseBytes(src []byte) (FileMeta, string) {
 	meta, body := s.parser.Parse(src)
 	return FileMeta{
-		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
+		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Banner: meta.Banner, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
 		PosterHeadline: meta.PosterHeadline, PosterTopic: meta.PosterTopic, PosterCaption: meta.PosterCaption, PosterColor: meta.PosterColor,
 		References: meta.References,
 		Status:     meta.Status,
