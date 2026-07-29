@@ -111,3 +111,5 @@ if (document.readyState === 'loading') {
 } else {
   initVotes();
 }
+// PJAX 换页后重新扫描初始化（base.html 的 services scan 只加载本脚本一次，对齐 rating.js）
+document.addEventListener('pjax:complete', initVotes);

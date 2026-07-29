@@ -30,8 +30,8 @@ var reMermaid = regexp.MustCompile(`(?s){%\s*mermaid\s*%}(.*?){%\s*endmermaid\s*
 // button 标签正则：{% button ... %}
 var reButton = regexp.MustCompile(`{%\s*button\s+(.*?)\s*%}`)
 
-// checkbox 标签正则：{% checkbox ... %}
-var reCheckbox = regexp.MustCompile(`{%\s*checkbox\s+(.*?)\s*%}`)
+// checkbox/radio 标签正则：{% checkbox ... %} / {% radio ... %}（同一渲染入口，radio 为 input 类型变体）
+var reCheckbox = regexp.MustCompile(`{%\s*(checkbox|radio)\s+(.*?)\s*%}`)
 
 // quot 标签正则（单行）：{% quot ... %}
 var reQuot = regexp.MustCompile(`{%\s*quot\s+(.*?)\s*%}`)
@@ -98,6 +98,24 @@ var reSwiper = regexp.MustCompile(`(?s){%\s*swiper\s*(.*?)\s*%}(.*?){%\s*endswip
 
 // chat 标签正则（块级）：{% chat ... %} body {% endchat %}
 var reChat = regexp.MustCompile(`(?s){%\s*chat\s+(.*?)\s*%}(.*?){%\s*endchat\s*%}`)
+
+// vote 标签正则（单行）：{% vote [id:x] [yes:icon] [no:icon] [title] %}
+var reVote = regexp.MustCompile(`{%\s*vote\s*(.*?)\s*%}`)
+
+// friends 标签正则（单行）：{% friends [api:url] %}
+var reFriends = regexp.MustCompile(`{%\s*friends\s*(.*?)\s*%}`)
+
+// sites 标签正则（单行）：{% sites api:url %}
+var reSites = regexp.MustCompile(`{%\s*sites\s*(.*?)\s*%}`)
+
+// 行内修饰标签（对齐原版 inline-labels.js）：{% u text %} 等简单包裹标签
+var reInlineLabel = regexp.MustCompile(`{%\s*(u|emp|wavy|del|kbd|psw|blur)\s+(.*?)\s*%}`)
+
+// sup/sub 行内标签：{% sup [color:x] text %} / {% sub [color:x] text %}
+var reSupSub = regexp.MustCompile(`{%\s*(sup|sub)\s+(.*?)\s*%}`)
+
+// 代码区段（围栏代码块 + 行内代码）：行内标签替换时跳过，避免误伤示例代码
+var reCodeSegment = regexp.MustCompile("(?s)```.*?```|~~~.*?~~~|`[^`\n]+`")
 
 var (
 	reTabSplit    = regexp.MustCompile(`<!--\s*tab (.*?)\s*-->`)
@@ -242,13 +260,13 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return el
 	})
 
-	// 7. checkbox（单行）
+	// 7. checkbox / radio（单行）
 	md = reCheckbox.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reCheckbox.FindStringSubmatch(match)
-		if len(parts) < 2 {
+		if len(parts) < 3 {
 			return match
 		}
-		el, ok := renderCheckbox(parts[1])
+		el, ok := renderCheckbox(parts[1], parts[2])
 		if !ok {
 			return match
 		}
@@ -455,6 +473,40 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderChat(parts[1], parts[2], renderMD)
 	})
 
+	// 26. vote（单行，投票组件，对接本地 /api/vote 数据服务）
+	md = reVote.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reVote.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderVote(parts[1], iconFunc)
+	})
+
+	// 27. friends（单行，友链卡片流，缺省指向本地 /api/friends 聚合端点）
+	md = reFriends.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reFriends.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderFriends(parts[1])
+	})
+
+	// 28. sites（单行，站点卡片流，api 必填透传，参数缺失原样输出）
+	md = reSites.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reSites.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		el, ok := renderSites(parts[1])
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 29. 行内修饰标签（u/emp/wavy/del/kbd/psw/blur/sup/sub），跳过代码块与行内代码
+	md = replaceOutsideCode(md, renderInlineLabels)
+
 	return md
 }
 
@@ -629,10 +681,10 @@ func renderButton(argsStr string) (string, bool) {
 	return sb.String(), true
 }
 
-func renderCheckbox(argsStr string) (string, bool) {
-	named, positional := parseNamedPositionalArgs(argsStr, []string{"color", "checked", "symbol"}, []string{"text"})
-	text := named["text"]
+func renderCheckbox(typ, argsStr string) (string, bool) {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"color", "checked", "symbol"}, nil)
 	checked := named["checked"] == "true"
+	// 位置参数中的裸 checked 标记先剔除，剩余 token 拼回文本（{% radio checked 文本 %}）
 	var textParts []string
 	for _, tok := range positional {
 		if tok == "checked" {
@@ -641,9 +693,7 @@ func renderCheckbox(argsStr string) (string, bool) {
 		}
 		textParts = append(textParts, tok)
 	}
-	if text == "" && len(textParts) > 0 {
-		text = strings.Join(textParts, " ")
-	}
+	text := strings.Join(textParts, " ")
 	if text == "" {
 		return "", false
 	}
@@ -657,7 +707,8 @@ func renderCheckbox(argsStr string) (string, bool) {
 		fmt.Fprintf(&sb, ` symbol="%s"`, symbol)
 	}
 	sb.WriteString(`>`)
-	sb.WriteString(`<input type="checkbox"`)
+	// 对齐原版 checkbox.js：checkbox/radio 共用同一结构，仅 input type 不同
+	fmt.Fprintf(&sb, `<input type="%s"`, typ)
 	if checked {
 		sb.WriteString(` checked="true"`)
 	}
@@ -1787,5 +1838,125 @@ func renderChat(argsStr, body string, renderMD func(string) string) string {
 		sb.WriteString(`<div class="bottom"><div class="input"><div class="input-text"></div><div class="submit-btn">发送</div></div></div>`)
 	}
 	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// ---------- Spec 30: 标签插件四期（vote/friends/sites/radio + 行内标签） ----------
+
+// renderVote 渲染 {% vote [id:x] [yes:icon] [no:icon] [title] %}，对接本地 /api/vote 数据服务。
+// 输出结构对齐原版 vote.js：.tag-plugin.ds-vote > .header? + .body > .vote-up/.vote-down。
+func renderVote(argsStr string, iconFunc func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"id", "yes", "no"}, []string{"title"})
+	id := named["id"]
+	if id == "" {
+		id = "default"
+	}
+	title := named["title"]
+	if title == "" && len(positional) > 0 {
+		title = strings.Join(positional, " ")
+	}
+	iconHTML := func(key, def string) string {
+		if key == "" {
+			key = def
+		}
+		if iconFunc == nil {
+			return ""
+		}
+		return iconFunc(key)
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, `<div class="tag-plugin ds-vote" data-api="/api/vote" data-id="%s">`, html.EscapeString(id))
+	if title != "" {
+		fmt.Fprintf(&sb, `<div class="header"><span>%s</span></div>`, html.EscapeString(title))
+	}
+	sb.WriteString(`<div class="body">`)
+	fmt.Fprintf(&sb, `<button class="vote-up">%s <span class="up">0</span></button>`, iconHTML(named["yes"], "vote:thumbsup"))
+	fmt.Fprintf(&sb, `<button class="vote-down">%s <span class="down">0</span></button>`, iconHTML(named["no"], "vote:thumbsdown"))
+	sb.WriteString(`</div></div>`)
+	return sb.String()
+}
+
+// renderFriends 渲染 {% friends [api:url] %}，容器交给 services/friends.js 异步渲染。
+// 结构对齐原版 friends.js：.tag-plugin.users-wrap > .data-service.ds-friends > .grid-box。
+// 缺省 data-api 指向本地友链聚合端点 /api/friends（JSON 形状 {content:[{title,url,html_url,avatar_url,labels}]}
+// 与 friends.js 期望字段一致，无需适配层）。
+func renderFriends(argsStr string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"api"}, nil)
+	api := named["api"]
+	if api == "" {
+		api = "/api/friends"
+	}
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin users-wrap">`)
+	fmt.Fprintf(&sb, `<div class="data-service ds-friends" data-api="%s"><div class="grid-box"></div></div>`, html.EscapeString(api))
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderSites 渲染 {% sites api:url %}，容器交给 services/sites.js 异步渲染。
+// 结构对齐原版 sites.js：.tag-plugin.sites-wrap > .data-service.ds-sites > .grid-box。
+// 无本地站点库，api 参数必填透传（原版即外部 API 驱动），缺失时原样输出。
+func renderSites(argsStr string) (string, bool) {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"api"}, nil)
+	api := named["api"]
+	if api == "" {
+		return "", false
+	}
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin sites-wrap">`)
+	fmt.Fprintf(&sb, `<div class="data-service ds-sites" data-api="%s"><div class="grid-box"></div></div>`, html.EscapeString(api))
+	sb.WriteString(`</div>`)
+	return sb.String(), true
+}
+
+// renderInlineLabels 渲染行内修饰标签（对齐原版 inline-labels.js）：
+// {% u/emp/wavy/del/kbd/psw/blur text %} → <tag>text</tag>；
+// {% sup/sub [color:x] text %} → <sup class="tag-plugin colorful sup" color="x">text</sup>。
+func renderInlineLabels(md string) string {
+	md = reInlineLabel.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reInlineLabel.FindStringSubmatch(match)
+		if len(parts) < 3 || strings.TrimSpace(parts[2]) == "" {
+			return match
+		}
+		tag := parts[1]
+		return fmt.Sprintf(`<%s>%s</%s>`, tag, parts[2], tag)
+	})
+	md = reSupSub.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reSupSub.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		tag := parts[1]
+		named, positional := parseNamedPositionalArgs(parts[2], []string{"color"}, nil)
+		text := strings.Join(positional, " ")
+		if text == "" {
+			return match
+		}
+		var sb strings.Builder
+		fmt.Fprintf(&sb, `<%s class="tag-plugin colorful %s"`, tag, tag)
+		if c := named["color"]; c != "" {
+			fmt.Fprintf(&sb, ` color="%s"`, c)
+		}
+		fmt.Fprintf(&sb, `>%s</%s>`, text, tag)
+		return sb.String()
+	})
+	return md
+}
+
+// replaceOutsideCode 对代码区段（围栏代码块/行内代码）之外的文本应用替换函数，代码原样保留。
+func replaceOutsideCode(md string, fn func(string) string) string {
+	locs := reCodeSegment.FindAllStringIndex(md, -1)
+	if len(locs) == 0 {
+		return fn(md)
+	}
+	var sb strings.Builder
+	last := 0
+	for _, loc := range locs {
+		sb.WriteString(fn(md[last:loc[0]]))
+		sb.WriteString(md[loc[0]:loc[1]])
+		last = loc[1]
+	}
+	sb.WriteString(fn(md[last:]))
 	return sb.String()
 }
