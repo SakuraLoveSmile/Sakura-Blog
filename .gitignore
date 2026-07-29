@@ -31,6 +31,9 @@ npm-debug.log*
 # 编辑器
 .vscode/
 .idea/
+
+# AI 工具本地产物（harness 报告等），不入库
+.qoder/
 *.swp
 *.swo
 

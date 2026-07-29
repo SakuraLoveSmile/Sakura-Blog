@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"strings"
 	"time"
+
+	"blog/internal/store"
 )
 
 // ViewData 贯穿所有模板的渲染上下文，对齐 Stellar layout.ejs 的 page/theme/config 三层。
@@ -102,6 +104,26 @@ type PostCard struct {
 	Category      string       // 单分类（meta 行分类面包屑，空不渲染）
 	CategoryStyle template.CSS // 分类配色 style 内容（CategoryColorStyle 生成；CSS 类型绕过 html/template 的 ZgotmplZ 过滤）
 	Poster        *PosterCard  // 海报数据（非 nil 且有 Cover 时渲染 photo 封面大卡）
+}
+
+// NewPostCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
+// 分类配色查 site.yml article.category_color（对齐原版 category_color helper）；
+// 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
+func NewPostCard(p *store.Post, categoryColors map[string]string) *PostCard {
+	card := &PostCard{
+		Slug:          p.Slug,
+		Title:         p.Title,
+		Excerpt:       p.Excerpt,
+		Cover:         p.Cover,
+		Date:          p.CreatedAt,
+		Pinned:        p.Pinned,
+		Category:      p.Category,
+		CategoryStyle: CategoryColorStyle(p.Category, categoryColors),
+	}
+	if pd := store.DecodePoster(p.Poster); pd != nil {
+		card.Poster = &PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
+	}
+	return card
 }
 
 // PosterCard 海报封面数据，对齐原版 post.poster（headline/topic/caption/color）。

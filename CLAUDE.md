@@ -2,6 +2,8 @@
 
 本项目为自建个人博客：Go (Gin) 后端 + Go html/template 服务端渲染 + 从 Stellar Hexo 主题提取的 CSS + 自建管理后台。
 
+> 本文档是与提供方无关的工程坑点知识的 canonical 来源，适用于所有 agent（Qoder / Claude / Trae 等）；按模块的路由入口见 `AGENTS.md` 的「工程坑点知识路由」一节。多 Agent 并行开发流程（分支模型、合并门槛、端口约定、提交规范）以 `AGENTS.md` 为准。
+
 ## 仓库工作流
 
 ### 目录结构（bare 仓库 + git worktree）
@@ -27,9 +29,7 @@
 
 ### 提交规范
 
-- 中文提交信息，格式：`类型: 简短描述`
-- 类型：feat / fix / refactor / docs / chore
-- 代码文件内容、错误信息、文件路径保持英文；注释用中文
+提交规范的 canonical 来源见 `AGENTS.md` 的「提交规范」一节，本文档不另行定义。
 
 ## Stellar CSS 剥离规范
 

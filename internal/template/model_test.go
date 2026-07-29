@@ -1,0 +1,242 @@
+package template
+
+import (
+	"html/template"
+	"testing"
+	"time"
+
+	"blog/internal/store"
+)
+
+// TestNewPostCard 以 store.Post 为输入，断言文章卡片视图模型字段输出
+// （首页/分类标签列表/相关文章共用的核心构建路径）。
+func TestNewPostCard(t *testing.T) {
+	date := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	colors := map[string]string{"技术": "1BCDFC"}
+
+	tests := []struct {
+		name       string
+		post       *store.Post
+		colors     map[string]string
+		wantStyle  template.CSS
+		wantPoster *PosterCard
+	}{
+		{
+			name: "常规字段直传+分类配色命中",
+			post: &store.Post{
+				Slug: "hello", Title: "你好", Excerpt: "摘要", Cover: "/img/c.png",
+				CreatedAt: date, Pinned: true, Category: "技术",
+			},
+			colors:    colors,
+			wantStyle: "--text-p2:#1BCDFC;--theme-block:#1BCDFC20",
+		},
+		{
+			name:      "分类未配置配色时 style 为空",
+			post:      &store.Post{Slug: "a", Category: "随笔", CreatedAt: date},
+			colors:    colors,
+			wantStyle: "",
+		},
+		{
+			name:   "合法海报 JSON 解码为 PosterCard",
+			post:   &store.Post{Slug: "p", CreatedAt: date, Poster: `{"headline":"主标题","topic":"专栏","caption":"副题","color":"#fff"}`},
+			colors: nil,
+			wantPoster: &PosterCard{
+				Headline: "主标题", Topic: "专栏", Caption: "副题", Color: "#fff",
+			},
+		},
+		{
+			name:   "海报缺 headline 时不渲染 photo 卡",
+			post:   &store.Post{Slug: "p2", CreatedAt: date, Poster: `{"topic":"专栏"}`},
+			colors: nil,
+		},
+		{
+			name:   "海报 JSON 非法时静默降级",
+			post:   &store.Post{Slug: "p3", CreatedAt: date, Poster: `{bad json`},
+			colors: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			card := NewPostCard(tt.post, tt.colors)
+			if card.Slug != tt.post.Slug || card.Title != tt.post.Title ||
+				card.Excerpt != tt.post.Excerpt || card.Cover != tt.post.Cover ||
+				card.Category != tt.post.Category || card.Pinned != tt.post.Pinned {
+				t.Errorf("字段直传不一致: got %+v", card)
+			}
+			if !card.Date.Equal(tt.post.CreatedAt) {
+				t.Errorf("Date = %v, want %v", card.Date, tt.post.CreatedAt)
+			}
+			if card.CategoryStyle != tt.wantStyle {
+				t.Errorf("CategoryStyle = %q, want %q", card.CategoryStyle, tt.wantStyle)
+			}
+			if tt.wantPoster == nil {
+				if card.Poster != nil {
+					t.Errorf("Poster = %+v, want nil", card.Poster)
+				}
+			} else if card.Poster == nil || *card.Poster != *tt.wantPoster {
+				t.Errorf("Poster = %+v, want %+v", card.Poster, tt.wantPoster)
+			}
+		})
+	}
+}
+
+// TestCategoryColorStyle 对齐原版 category_color helper 的补 # 前缀与底色后缀规则。
+func TestCategoryColorStyle(t *testing.T) {
+	tests := []struct {
+		name   string
+		cat    string
+		colors map[string]string
+		want   template.CSS
+	}{
+		{"分类为空", "", map[string]string{"Go": "#fff"}, ""},
+		{"配色表为空", "Go", nil, ""},
+		{"分类未命中", "Go", map[string]string{"Rust": "#fff"}, ""},
+		{"无前缀色值补 #，6 位底色后缀 20", "Go", map[string]string{"Go": "1BCDFC"}, "--text-p2:#1BCDFC;--theme-block:#1BCDFC20"},
+		{"3 位色值底色后缀 2", "Go", map[string]string{"Go": "#fff"}, "--text-p2:#fff;--theme-block:#fff2"},
+		{"6 位带前缀色值底色后缀 20", "Go", map[string]string{"Go": "#ffffff"}, "--text-p2:#ffffff;--theme-block:#ffffff20"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CategoryColorStyle(tt.cat, tt.colors); got != tt.want {
+				t.Errorf("CategoryColorStyle(%q) = %q, want %q", tt.cat, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLinkListConfig 对齐原版 linklist.ejs 的列数/对齐/文字显隐三条派生规则。
+func TestLinkListConfig(t *testing.T) {
+	items := func(n int) []LinkListItem {
+		s := make([]LinkListItem, n)
+		return s
+	}
+	tests := []struct {
+		name      string
+		cfg       LinkListConfig
+		wantCols  int
+		wantAlign string
+		wantText  bool
+	}{
+		{"未配置列数按链接数", LinkListConfig{Items: items(3)}, 3, "center", false},
+		{"显式列数优先", LinkListConfig{Columns: 2, Items: items(5)}, 2, "center", true},
+		{"单列多链接左对齐", LinkListConfig{Columns: 1, Items: items(3)}, 1, "left", true},
+		{"单列单链接居中", LinkListConfig{Columns: 1, Items: items(1)}, 1, "center", true},
+		{"空列表", LinkListConfig{}, 0, "center", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.EffectiveColumns(); got != tt.wantCols {
+				t.Errorf("EffectiveColumns() = %d, want %d", got, tt.wantCols)
+			}
+			if got := tt.cfg.AlignClass(); got != tt.wantAlign {
+				t.Errorf("AlignClass() = %q, want %q", got, tt.wantAlign)
+			}
+			if got := tt.cfg.ShowText(); got != tt.wantText {
+				t.Errorf("ShowText() = %v, want %v", got, tt.wantText)
+			}
+		})
+	}
+}
+
+// TestFooterSitemapColumns 对齐原版 footer.ejs：6 组→3 栏，7-8 组→4 栏，其余 min(len,5)。
+func TestFooterSitemapColumns(t *testing.T) {
+	tests := []struct {
+		groups int
+		want   int
+	}{
+		{0, 0}, {1, 1}, {5, 5}, {6, 3}, {7, 4}, {8, 4}, {9, 5}, {12, 5},
+	}
+	for _, tt := range tests {
+		f := &Footer{Sitemap: make([]SitemapGroup, tt.groups)}
+		if got := f.SitemapColumns(); got != tt.want {
+			t.Errorf("SitemapColumns(%d 组) = %d, want %d", tt.groups, got, tt.want)
+		}
+	}
+}
+
+// TestTagCloudFontSize 标签云字号映射（12–22px）。
+func TestTagCloudFontSize(t *testing.T) {
+	tests := []struct {
+		name            string
+		count, min, max int
+		want            int
+	}{
+		{"count 非正取下限", 0, 1, 10, 12},
+		{"max<=min 取中间值", 5, 5, 5, 17},
+		{"最小计数取下限", 1, 1, 11, 12},
+		{"最大计数取上限", 11, 1, 11, 22},
+		{"中间计数线性插值", 6, 1, 11, 17},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := TagCloudFontSize(tt.count, tt.min, tt.max); got != tt.want {
+				t.Errorf("TagCloudFontSize(%d,%d,%d) = %d, want %d", tt.count, tt.min, tt.max, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestWikiProjectDisplayTitle 标题回退链：Title → Name → ID。
+func TestWikiProjectDisplayTitle(t *testing.T) {
+	tests := []struct {
+		name string
+		w    WikiProject
+		want string
+	}{
+		{"优先 Title", WikiProject{ID: "id", Name: "name", Title: "title"}, "title"},
+		{"次选 Name", WikiProject{ID: "id", Name: "name"}, "name"},
+		{"兜底 ID", WikiProject{ID: "id"}, "id"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.w.DisplayTitle(); got != tt.want {
+				t.Errorf("DisplayTitle() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestExtractTOC 从 goldmark 渲染 HTML 提取嵌套目录（子级 ol.toc-child 嵌在父级 li 内）。
+func TestExtractTOC(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+		want string
+	}{
+		{"无标题返回空串", `<p>正文</p>`, ""},
+		{
+			"同级标题平铺",
+			`<h2 id="a">甲</h2><p>x</p><h2 id="b">乙</h2>`,
+			`<ol class="toc">` +
+				`<li class="toc-item toc-level-2"><a class="toc-link" href="#a"><span class="toc-text">甲</span></a></li>` +
+				`<li class="toc-item toc-level-2"><a class="toc-link" href="#b"><span class="toc-text">乙</span></a></li>` +
+				`</ol>`,
+		},
+		{
+			"子级嵌套后回到父级",
+			`<h2 id="a">甲</h2><h3 id="b">乙</h3><h2 id="c">丙</h2>`,
+			`<ol class="toc">` +
+				`<li class="toc-item toc-level-2"><a class="toc-link" href="#a"><span class="toc-text">甲</span></a>` +
+				`<ol class="toc-child">` +
+				`<li class="toc-item toc-level-3"><a class="toc-link" href="#b"><span class="toc-text">乙</span></a></li>` +
+				`</ol></li>` +
+				`<li class="toc-item toc-level-2"><a class="toc-link" href="#c"><span class="toc-text">丙</span></a></li>` +
+				`</ol>`,
+		},
+		{
+			"剥离行内标签并还原实体",
+			`<h2 id="x"><code>foo</code> &amp; bar</h2>`,
+			`<ol class="toc">` +
+				`<li class="toc-item toc-level-2"><a class="toc-link" href="#x"><span class="toc-text">foo &amp; bar</span></a></li>` +
+				`</ol>`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := string(ExtractTOC(tt.html)); got != tt.want {
+				t.Errorf("ExtractTOC() =\n%s\nwant\n%s", got, tt.want)
+			}
+		})
+	}
+}

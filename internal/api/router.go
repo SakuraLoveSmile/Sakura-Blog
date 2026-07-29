@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +18,8 @@ import (
 
 	"blog/internal/backup"
 	"blog/internal/comment"
+	"blog/internal/friends"
+	ghpkg "blog/internal/github"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -86,6 +89,53 @@ func New(cfg Config) *Handler {
 // SetOnLinksChanged 注册友链变更回调（如 friends 聚合器的 Refresh），友链增删改后调用以即时刷新 /friends。
 func (h *Handler) SetOnLinksChanged(fn func()) {
 	h.onLinksChanged = fn
+}
+
+// MountDeps API 侧装配依赖：Config 之外附带公共 API 端点的可选组件。
+type MountDeps struct {
+	Config
+	Friends *friends.Aggregator // 友链动态聚合（/api/friends-aggregated），可空
+	GH      *ghpkg.Client       // GitHub 代理缓存客户端（/api/gh/*），可空
+}
+
+// Mount 承接 main 的 API 侧装配：建表 → /api/v1 路由组 → 友链聚合/GitHub 代理/评分公开端点。
+// 组件生命周期（如 friends 聚合器的 Start）仍由调用方管理；返回 Handler 供上层继续挂回调。
+func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
+	st := d.Store
+	ensures := []struct {
+		name string
+		fn   func() error
+	}{
+		{"ratings", st.EnsureRatingsTable},           // 评分数据服务（Spec 20）
+		{"revisions", st.EnsureRevisionsTable},       // 文章版本历史（Spec 22）
+		{"page_views", st.EnsurePageViewsTable},      // 访问统计明细（Spec 24）
+		{"attachments", st.EnsureAttachmentsTable},   // 附件管理
+		{"shared_posts", st.EnsureSharedPostsTable},  // 文章分享链接
+	}
+	for _, e := range ensures {
+		if err := e.fn(); err != nil {
+			return nil, fmt.Errorf("ensure %s table: %w", e.name, err)
+		}
+	}
+
+	h := New(d.Config)
+	h.Register(r)
+
+	// 友链动态聚合：/api/friends-aggregated 供 /friends 页异步渲染；
+	// 友链在 console 增删改后触发聚合器即时重建缓存。
+	if d.Friends != nil {
+		d.Friends.Register(r)
+		h.SetOnLinksChanged(d.Friends.Refresh)
+	}
+
+	// GitHub 代理端点（Spec 21）：/api/gh/repo（直连 api.github.com）。
+	if d.GH != nil {
+		ghpkg.NewHandler(d.GH).Register(r)
+	}
+
+	// 评分公开端点（Spec 20）：/api/rating。
+	store.NewRatingHandler(st).Register(r)
+	return h, nil
 }
 
 // Register 把 /api/v1 路由组挂到 r 上。

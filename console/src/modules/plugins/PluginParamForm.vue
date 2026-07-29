@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import type { PluginMeta } from "./plugins-data";
+import { buildShortcode } from "./shortcode";
 
 // 标签插件结构化参数表单（Spec 29）。
 // 入参一个具备 form schema 的插件，按字段 role 拼装 shortcode 并经 v-model 产出。
-// 拼装规则：positional 按字段顺序拼在标签名后；named 拼 key:value（值非空才拼）；
-// flag 为真时仅拼 key；content 作正文，块级插件包在 {% name %}…{% endname %} 之间。
+// 拼装纯逻辑在 ./shortcode.ts（便于 node:test 行为测试），本组件只管表单状态与产出。
 const props = defineProps<{
   plugin: PluginMeta;
   modelValue: string;
@@ -20,35 +20,8 @@ function initValues() {
   values.value = v;
 }
 
-function build(): string {
-  const form = props.plugin.form || [];
-  const positional: string[] = [];
-  const named: string[] = [];
-  let content = "";
-  for (const f of form) {
-    const raw = (values.value[f.key] ?? "").trim();
-    if (f.role === "content") {
-      content = values.value[f.key] ?? "";
-    } else if (f.role === "flag") {
-      if (raw === "true") named.push(f.key);
-    } else if (f.role === "named") {
-      if (raw) named.push(`${f.key}:${raw}`);
-    } else {
-      if (raw) positional.push(raw);
-    }
-  }
-  const head = [props.plugin.name, ...positional, ...named].join(" ");
-  if (props.plugin.type === "block") {
-    const body = content.trim() ? `\n${content.trim()}\n` : " ";
-    return `{% ${head} %}${body}{% end${props.plugin.name} %}`;
-  }
-  // inline 单标签插件（如 note）：正文作为最后一个位置参数拼入标签内
-  const inline = content.trim() ? `${head} ${content.trim()}` : head;
-  return `{% ${inline} %}`;
-}
-
 function refresh() {
-  emit("update:modelValue", build());
+  emit("update:modelValue", buildShortcode(props.plugin, values.value));
 }
 
 watch(

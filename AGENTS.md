@@ -42,24 +42,33 @@ git -C .bare worktree add ../feat-font -b feature/font
 | B | 前端样式 | `assets/css/`、`internal/template/partial/` |
 | C | 后台管理 | `internal/admin/`、`admin/*.html` |
 
+#### UI 类任务开工约定（验收边界）
+
+UI/样式类任务（控制台界面、前台样式、编辑器视觉等）开工前必须先固定**单一验收边界**，未固定前不动手改代码：
+
+- **参照图唯一**：开工前确定唯一参照（设计稿 / 原版 Stellar 截图 / 基线截图），路径或来源写进任务描述；后续所有反馈只与该参照对比，中途不得更换参照或以口述追加新方向。
+- **可逐项核对的验收清单**：把目标拆成清单，每项是一个可观察的完成判据（例："导航栏滚动时保持固定且无背景模糊"），完成时逐项对照勾选，而不是靠多轮截图来回纠偏。
+- **大范围整改必须拆分**：涉及多个页面/组件的 UI 整改，必须拆分为逐项可验收的子任务，每个子任务对应一个明确的完成判据；禁止在单个任务里承载多个验收目标（如"重构编辑框 + 修批注 + 全局样式意见"混在一起）。
+- **中途新增按新子任务处理**：清单固定后新出现的诉求另开子任务，不追加进进行中的任务。
+
 ### 3. 合并前检查（必做）
 
-feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自己的 feature worktree 内执行：
+feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自己的 feature worktree 内执行机械化合并封装：
 
 ```bash
-# 在 feature worktree 根目录执行完整测试
-make test
+# 在 feature worktree 根目录执行（默认 dev worktree 在 ../dev，可用 DEV_WORKTREE= 覆盖）
+make merge-check
 ```
 
-- `make test` 必须通过（console 测试 + `go vet` + `go test`），失败则先修复，禁止带红合并。
-- 检查结果需记录留痕：在合并说明或任务汇报中写明 `make test` 的执行结果（通过/失败及处理）。
+- `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
+- `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
 
 ### 4. 先完成先合
 
 ```bash
-# agent A 完成后（已通过合并前检查），在 dev worktree 里合并
-git -C /path/to/dev merge feature/comment
+# agent A 完成后，在 feature worktree 里执行机械化合并封装（test 通过才会合入 dev）
+make merge-check
 
 # 删掉用完的分支
 git -C /path/to/dev branch -d feature/comment
@@ -89,8 +98,28 @@ git -C .bare worktree remove ../feat-comment
 | 多个 agent 各自从同一祖先独立重写整套代码 | 无法 merge，只能人工策展式整合 |
 | 两个 agent 写同一个分支 | 提交冲突、互相覆盖 |
 | feature 分支长期不合并 | 与 dev 分叉越来越大，合并越来越难 |
-| 未跑 `make test` 就把 feature 合回 dev | 破坏 dev 主线，阻塞其他 agent 的 rebase |
+| 未通过 `make merge-check` 就把 feature 合回 dev | 破坏 dev 主线，阻塞其他 agent 的 rebase |
 | agent 基于过时的 dev 快照开分支 | 合并时大量冲突 |
+| UI 任务无参照图/验收清单就开工 | 多轮截图纠偏返工，方向偏差只能事后发现 |
+| 不查坑点知识就修改对应模块 | 重踩已验证过的坑（编译链路、模板结构、SQLite 等），浪费排查轮次 |
+
+## 工程坑点知识路由
+
+> 与提供方无关的工程坑点知识（已验证的编译链路、模板结构、图标机制、SQLite、PJAX 等坑点）的 canonical 来源是 [CLAUDE.md](CLAUDE.md)，本节只做路由、不复制内容，与「端口约定」「提交规范」的 canonical+回指治理模式一致。该知识适用于所有 agent（Qoder / Claude / Trae 等），不限于 Claude。
+
+任一 agent 动手修改对应模块前，必须先查阅 `CLAUDE.md` 相应章节：
+
+| 改动范围 | `CLAUDE.md` 必读章节 |
+|---------|-------------------|
+| bare 仓库 / worktree 操作 | 「仓库工作流」（worktree 操作注意、cwd 不保留坑） |
+| CSS / Stylus 编译、图标与深色模式 | 「Stellar CSS 剥离规范」（shim 注入、返回值类型、siteblur 遮罩、图标颜色） |
+| 前台 HTML / Go 模板结构 | 「Stellar HTML 结构规范（关键）」（class 名与嵌套必须对齐 Stellar EJS） |
+| Go 服务端渲染 | 「Demo 2 新增坑点」（-root 参数、template.HTML、icons.yml 解析） |
+| 管理后台 / SQLite | 「Demo 3 新增坑点」（driver name、模板基名唯一、EasyMDE） |
+| DB 迁移 / 配置文件 | 「Step 1 新增坑点」（ALTER 迁移、yaml 引号） |
+| 归档 / 标签 / 缓存头 / JS shim | 「Step 2 新增坑点」「Step 2 收尾修复」（tags 匹配一致性、no-cache、移动端 sidebar） |
+| TOC / 搜索 / PJAX / 404 | 「Step 3 新增坑点」（AutoHeadingID、PJAX DOM 引用、对照原版先行） |
+| 工具链版本 | 「工具链」（Go / Node / stylus / SQLite 驱动版本与启动方式） |
 
 ## 端口约定
 
@@ -103,6 +132,8 @@ git -C .bare worktree remove ../feat-comment
 - 其他 feature 分支: `8082` / `8083` / ...
 
 ## 提交规范
+
+> 本节为提交规范的 canonical 来源，其他文档（如 CLAUDE.md）仅引用本节，不另行定义。
 
 - 中文提交信息，格式：`类型: 简短描述`
 - 类型：`feat` / `fix` / `refactor` / `docs` / `chore`
