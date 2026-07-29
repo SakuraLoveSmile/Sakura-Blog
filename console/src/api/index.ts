@@ -82,6 +82,8 @@ export const commentApi = {
   delete: (id: number) => http.delete(`/comments/${id}`),
   reply: (data: { parent_id: number; content: string }) =>
     http.post("/comments/reply", data),
+  batch: (data: { ids: number[]; action: "approve" | "delete" }) =>
+    http.post("/comments/batch", data),
 };
 
 // --- Attachments ---

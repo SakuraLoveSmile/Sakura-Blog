@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { commentApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -56,6 +56,67 @@ const { data: queryData, isLoading, isFetching, refetch } = useQuery({
 
 const comments = computed(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
+
+// 批量选择（对齐 PostList 既有模式）
+const checkedAll = ref(false);
+const selectedIds = ref<number[]>([]);
+
+watch(selectedIds, (val) => {
+  checkedAll.value = val.length === comments.value.length && val.length > 0;
+});
+
+// 翻页/筛选变化后清空选中，全选只作用于当前筛选结果当前页
+watch(queryParams, () => {
+  selectedIds.value = [];
+});
+
+function handleCheckAllChange(e: Event) {
+  const { checked } = e.target as HTMLInputElement;
+  selectedIds.value = checked ? comments.value.map((cm: any) => cm.id) : [];
+}
+
+function checkSelection(id: number) {
+  return selectedIds.value.includes(id);
+}
+
+function toggleSelection(id: number) {
+  if (checkSelection(id)) {
+    selectedIds.value = selectedIds.value.filter((i) => i !== id);
+  } else {
+    selectedIds.value = [...selectedIds.value, id];
+  }
+}
+
+// 批量通过：不触发邮件通知（后端批量端点不接 notify）
+async function handleApproveInBatch() {
+  try {
+    const { data } = await commentApi.batch({ ids: selectedIds.value, action: "approve" });
+    selectedIds.value = [];
+    queryClient.invalidateQueries({ queryKey: ["comments"] });
+    Toast.success(`批量通过完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "批量通过失败");
+  }
+}
+
+function handleDeleteInBatch() {
+  const count = selectedIds.value.length;
+  Dialog.warning({
+    title: `确定要删除选中的 ${count} 条评论吗？`,
+    description: "该操作不可恢复",
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        const { data } = await commentApi.batch({ ids: selectedIds.value, action: "delete" });
+        selectedIds.value = [];
+        queryClient.invalidateQueries({ queryKey: ["comments"] });
+        Toast.success(`批量删除完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "批量删除失败");
+      }
+    },
+  });
+}
 
 function handleFilterChange() {
   page.value = 1;
@@ -128,8 +189,17 @@ function closeMenus() {
         <template #header>
           <div class="block w-full bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
             <div class="relative flex flex-col items-start sm:flex-row sm:items-center">
+              <div class="mr-4 hidden items-center sm:flex">
+                <input
+                  :checked="checkedAll"
+                  class="h-4 w-4 rounded border-gray-300 text-primary"
+                  type="checkbox"
+                  @change="handleCheckAllChange"
+                />
+              </div>
               <div class="flex w-full flex-1 items-center sm:w-auto">
-                <div class="flex items-center gap-2">
+                <!-- Normal mode -->
+                <div v-if="!selectedIds.length" class="flex items-center gap-2">
                   <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
                     状态：{{ statusLabel }}
                   </FilterTag>
@@ -140,6 +210,12 @@ function closeMenus() {
                   >
                     清除筛选
                   </button>
+                </div>
+                <!-- Batch mode -->
+                <div v-else class="flex items-center gap-3">
+                  <VButton type="secondary" size="sm" @click="handleApproveInBatch">批量通过</VButton>
+                  <VButton type="danger" size="sm" @click="handleDeleteInBatch">批量删除</VButton>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">已选择 {{ selectedIds.length }} 项</span>
                 </div>
               </div>
               <div class="mt-4 flex sm:mt-0">
@@ -170,7 +246,15 @@ function closeMenus() {
 
         <Transition v-else appear name="fade">
           <VEntityContainer>
-              <VEntity v-for="cm in comments" :key="cm.id">
+              <VEntity v-for="cm in comments" :key="cm.id" :is-selected="checkSelection(cm.id)">
+                <template #checkbox>
+                  <input
+                    :checked="checkSelection(cm.id)"
+                    class="h-4 w-4 rounded border-gray-300 text-primary"
+                    type="checkbox"
+                    @change="toggleSelection(cm.id)"
+                  />
+                </template>
                 <template #start>
                   <VEntityField max-width="30rem">
                     <template #title>
