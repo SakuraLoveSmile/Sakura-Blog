@@ -177,6 +177,21 @@ export const taxonomyApi = {
     http.post("/tags/merge", { sources, target }),
 };
 
+// --- 管理端全局搜索（Spec 39，⌘K 弹窗）---
+export interface SearchResultItem {
+  id: number;
+  type: "post" | "page";
+  slug: string;
+  title: string;
+  status: "published" | "draft" | "trashed";
+  snippet: string;
+}
+
+export const searchApi = {
+  query: (q: string, limit: number = 20) =>
+    http.get<{ items: SearchResultItem[] }>("/search", { params: { q, limit } }),
+};
+
 // --- Shares (文章分享链接) ---
 export const shareApi = {
   list: (params?: Record<string, unknown>) => http.get("/shares", { params }),

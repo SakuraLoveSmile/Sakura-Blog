@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { pageApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui";
 
 const router = useRouter();
+const route = useRoute();
 const queryClient = useQueryClient();
 
 const page = ref(1);
@@ -41,7 +42,23 @@ watch(keyword, () => {
 });
 
 // Filters
-const selectedStatus = ref<string | undefined>(undefined);
+// 状态筛选支持 ?status= 查询参数预置（Spec 39：⌘K 搜索回收站项跳转带筛选）
+const validStatuses = ["published", "draft", "trashed"];
+function statusFromQuery(): string | undefined {
+  const s = route.query.status;
+  return typeof s === "string" && validStatuses.includes(s) ? s : undefined;
+}
+const selectedStatus = ref<string | undefined>(statusFromQuery());
+watch(
+  () => route.query.status,
+  () => {
+    const s = statusFromQuery();
+    if (s && s !== selectedStatus.value) {
+      selectedStatus.value = s;
+      page.value = 1;
+    }
+  }
+);
 const selectedSort = ref<string | undefined>(undefined);
 
 const statusItems = [

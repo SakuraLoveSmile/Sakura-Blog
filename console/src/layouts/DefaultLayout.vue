@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore, type ThemeMode } from "@/stores/theme";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
+import { searchApi, type SearchResultItem } from "@/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -74,9 +75,103 @@ const searchResults = computed(() => {
   return flatNavItems.value.filter((item) => item.label.toLowerCase().includes(q));
 });
 
+// --- 内容搜索（Spec 39：⌘K 接入后端 /api/v1/search，含草稿/回收站）---
+const contentResults = ref<SearchResultItem[]>([]);
+const contentSearching = ref(false);
+const contentSearchFailed = ref(false); // 接口异常时静默降级为仅菜单搜索
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+let searchSeq = 0; // 丢弃乱序响应（慢请求覆盖新结果）
+const activeIndex = ref(0); // ↑↓ 统一导航的当前选中项（菜单区+内容区平铺索引）
+
+// 内容结果区是否启用：输入 ≥2 字符且未降级
+const contentActive = computed(() => searchQuery.value.trim().length >= 2 && !contentSearchFailed.value);
+const postResults = computed(() => contentResults.value.filter((i) => i.type === "post"));
+const pageResults = computed(() => contentResults.value.filter((i) => i.type === "page"));
+
+watch(searchQuery, () => {
+  activeIndex.value = 0;
+  if (searchDebounce) clearTimeout(searchDebounce);
+  const q = searchQuery.value.trim();
+  if (q.length < 2) {
+    searchSeq++;
+    contentResults.value = [];
+    contentSearching.value = false;
+    contentSearchFailed.value = false;
+    return;
+  }
+  contentSearching.value = true;
+  searchDebounce = setTimeout(async () => {
+    const seq = ++searchSeq;
+    try {
+      const { data } = await searchApi.query(q);
+      if (seq !== searchSeq) return;
+      contentResults.value = data.items || [];
+      contentSearchFailed.value = false;
+    } catch {
+      if (seq !== searchSeq) return;
+      contentResults.value = [];
+      contentSearchFailed.value = true;
+    } finally {
+      if (seq === searchSeq) contentSearching.value = false;
+    }
+  }, 300);
+});
+
+// --- 统一键盘导航：菜单区 + 文章组 + 页面组拼成平铺列表，↑↓ 跨区移动 ---
+type SearchEntry = { kind: "menu"; item: NavItem } | { kind: "content"; item: SearchResultItem };
+
+const searchEntries = computed<SearchEntry[]>(() => [
+  ...searchResults.value.map((item): SearchEntry => ({ kind: "menu", item })),
+  ...(contentActive.value
+    ? [...postResults.value, ...pageResults.value].map((item): SearchEntry => ({ kind: "content", item }))
+    : []),
+]);
+
+// 分组渲染时各区在平铺列表中的起始偏移
+const postOffset = computed(() => searchResults.value.length);
+const pageOffset = computed(() => postOffset.value + postResults.value.length);
+
+function moveActive(delta: number) {
+  const n = searchEntries.value.length;
+  if (!n) return;
+  activeIndex.value = (activeIndex.value + delta + n) % n;
+  nextTick(() => {
+    document.querySelector(`[data-search-index="${activeIndex.value}"]`)?.scrollIntoView({ block: "nearest" });
+  });
+}
+
+function confirmActive() {
+  const entry = searchEntries.value[activeIndex.value];
+  if (!entry) return;
+  if (entry.kind === "menu") {
+    navigateTo(entry.item.path);
+  } else {
+    openContentResult(entry.item);
+  }
+}
+
+// 内容结果跳转：文章/页面 → Console 编辑器；回收站项 → 对应列表页带筛选参数
+function openContentResult(item: SearchResultItem) {
+  searchOpen.value = false;
+  if (item.status === "trashed") {
+    router.push({ path: item.type === "post" ? "/posts" : "/pages", query: { status: "trashed" } });
+    return;
+  }
+  router.push(item.type === "post" ? `/posts/edit/${item.slug}` : `/pages/edit/${item.slug}`);
+}
+
+const statusBadges: Record<string, { label: string; cls: string }> = {
+  draft: { label: "草稿", cls: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300" },
+  trashed: { label: "回收站", cls: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300" },
+};
+
 function openSearch() {
   searchOpen.value = true;
   searchQuery.value = "";
+  activeIndex.value = 0;
+  contentResults.value = [];
+  contentSearching.value = false;
+  contentSearchFailed.value = false;
 }
 
 function navigateTo(path: string) {
@@ -92,6 +187,19 @@ function onKeydown(e: KeyboardEvent) {
     searchOpen.value ? (searchOpen.value = false) : openSearch();
   }
   if (key === "Escape") searchOpen.value = false;
+  // 搜索弹窗内：↑↓ 在菜单区与内容结果区间统一导航，回车打开选中项
+  if (searchOpen.value) {
+    if (key === "ArrowDown") {
+      e.preventDefault();
+      moveActive(1);
+    } else if (key === "ArrowUp") {
+      e.preventDefault();
+      moveActive(-1);
+    } else if (key === "Enter") {
+      e.preventDefault();
+      confirmActive();
+    }
+  }
 }
 
 onMounted(() => document.addEventListener("keydown", onKeydown));
@@ -346,24 +454,88 @@ function closeProfileDropdown() {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="搜索菜单..."
+              placeholder="搜索菜单、文章、页面..."
               class="flex-1 bg-transparent text-sm text-gray-800 outline-none placeholder-gray-400 dark:text-gray-100"
               autofocus
             />
             <kbd class="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400 dark:border-gray-600">ESC</kbd>
           </div>
-          <div class="max-h-64 overflow-y-auto py-2">
-            <button
-              v-for="item in searchResults"
-              :key="item.path"
-              class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-              @click="navigateTo(item.path)"
-            >
-              <Icon :icon="item.icon" class="text-base text-gray-400" />
-              <span>{{ item.label }}</span>
-              <span class="ml-auto text-[10px] text-gray-400">{{ item.group || "概览" }}</span>
-            </button>
-            <p v-if="searchResults.length === 0" class="px-4 py-6 text-center text-sm text-gray-400">无匹配结果</p>
+          <div class="max-h-80 overflow-y-auto py-2">
+            <!-- 菜单区 -->
+            <template v-if="searchResults.length">
+              <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">菜单</p>
+              <button
+                v-for="(item, i) in searchResults"
+                :key="item.path"
+                :data-search-index="i"
+                :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === i }"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                @click="navigateTo(item.path)"
+                @mouseenter="activeIndex = i"
+              >
+                <Icon :icon="item.icon" class="text-base text-gray-400" />
+                <span>{{ item.label }}</span>
+                <span class="ml-auto text-[10px] text-gray-400">{{ item.group || "概览" }}</span>
+              </button>
+            </template>
+
+            <!-- 内容结果区（≥2 字符启用；接口异常时静默降级为仅菜单搜索） -->
+            <template v-if="contentActive">
+              <template v-if="postResults.length">
+                <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">文章</p>
+                <button
+                  v-for="(item, i) in postResults"
+                  :key="'post-' + item.id"
+                  :data-search-index="postOffset + i"
+                  :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === postOffset + i }"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                  @click="openContentResult(item)"
+                  @mouseenter="activeIndex = postOffset + i"
+                >
+                  <Icon icon="ri:book-read-line" class="mt-0.5 text-base text-gray-400" />
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center gap-2">
+                      <span class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</span>
+                      <span
+                        v-if="statusBadges[item.status]"
+                        :class="statusBadges[item.status].cls"
+                        class="shrink-0 rounded px-1.5 py-0.5 text-[10px]"
+                      >{{ statusBadges[item.status].label }}</span>
+                    </span>
+                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-gray-400 dark:text-gray-500" v-html="item.snippet" />
+                  </span>
+                </button>
+              </template>
+              <template v-if="pageResults.length">
+                <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">页面</p>
+                <button
+                  v-for="(item, i) in pageResults"
+                  :key="'page-' + item.id"
+                  :data-search-index="pageOffset + i"
+                  :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === pageOffset + i }"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                  @click="openContentResult(item)"
+                  @mouseenter="activeIndex = pageOffset + i"
+                >
+                  <Icon icon="ri:pages-line" class="mt-0.5 text-base text-gray-400" />
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center gap-2">
+                      <span class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</span>
+                      <span
+                        v-if="statusBadges[item.status]"
+                        :class="statusBadges[item.status].cls"
+                        class="shrink-0 rounded px-1.5 py-0.5 text-[10px]"
+                      >{{ statusBadges[item.status].label }}</span>
+                    </span>
+                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-gray-400 dark:text-gray-500" v-html="item.snippet" />
+                  </span>
+                </button>
+              </template>
+              <p v-if="contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-gray-400">搜索中…</p>
+              <p v-else-if="!contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-gray-400">无匹配内容</p>
+            </template>
+
+            <p v-if="searchResults.length === 0 && !contentActive" class="px-4 py-6 text-center text-sm text-gray-400">无匹配结果</p>
           </div>
         </div>
       </div>
@@ -484,6 +656,16 @@ function closeProfileDropdown() {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* 搜索 snippet 命中词高亮（v-html 内容需 :deep），亮/暗主题均保证对比度 */
+.search-snippet :deep(mark) {
+  background: transparent;
+  color: #10b981;
+  font-weight: 600;
+}
+.dark .search-snippet :deep(mark) {
+  color: #4ccba0;
 }
 
 .fade-enter-active,
