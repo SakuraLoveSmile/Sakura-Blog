@@ -107,6 +107,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		fn   func() error
 	}{
 		{"ratings", st.EnsureRatingsTable},           // 评分数据服务（Spec 20）
+		{"votes", st.EnsureVotesTable},               // 投票数据服务（Spec 30）
 		{"revisions", st.EnsureRevisionsTable},       // 文章版本历史（Spec 22）
 		{"page_views", st.EnsurePageViewsTable},      // 访问统计明细（Spec 24）
 		{"attachments", st.EnsureAttachmentsTable},   // 附件管理
@@ -135,6 +136,9 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 
 	// 评分公开端点（Spec 20）：/api/rating。
 	store.NewRatingHandler(st).Register(r)
+
+	// 投票公开端点（Spec 30）：/api/vote/info、/api/vote/update。
+	store.NewVoteHandler(st).Register(r)
 	return h, nil
 }
 

@@ -52,6 +52,8 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 		"GET /api/v1/attachments",
 		"GET /api/v1/shares",
 		"GET /api/rating", // 评分公开端点随 Mount 注册
+		"GET /api/vote/info",     // 投票公开端点随 Mount 注册（Spec 30）
+		"POST /api/vote/update",
 	} {
 		if !routes[want] {
 			t.Errorf("route %q not registered", want)
