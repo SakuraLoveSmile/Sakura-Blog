@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sync"
+	"strings"
 	"time"
 )
 
@@ -42,18 +42,15 @@ type Comment struct {
 const commentCols = `id, page_key, nick, email, link, content_md, content_html, parent_id, root_id, status, is_admin, ip, ua, likes, created_at`
 
 // 评论点赞 schema 迁移：不碰 post.go createTables，在首次评论读写时懒执行。
-var (
-	commentReactionsOnce sync.Once
-	commentReactionsErr  error
-)
+// 迁移状态（sync.Once + err）挂在 Store 实例上，见 post.go 的 Store 定义。
 
 // ensureCommentReactions 为 comments 补 likes 列，并建 comment_likes 去重表。
 func (s *Store) ensureCommentReactions() error {
-	commentReactionsOnce.Do(func() {
+	s.commentReactionsOnce.Do(func() {
 		// 老库迁移：CREATE TABLE IF NOT EXISTS 不会给已存在的表加列。
 		rows, err := s.db.Query(`PRAGMA table_info(comments)`)
 		if err != nil {
-			commentReactionsErr = fmt.Errorf("pragma table_info(comments): %w", err)
+			s.commentReactionsErr = fmt.Errorf("pragma table_info(comments): %w", err)
 			return
 		}
 		hasLikes := false
@@ -63,7 +60,7 @@ func (s *Store) ensureCommentReactions() error {
 			var dflt sql.NullString
 			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
 				rows.Close()
-				commentReactionsErr = fmt.Errorf("scan table_info(comments): %w", err)
+				s.commentReactionsErr = fmt.Errorf("scan table_info(comments): %w", err)
 				return
 			}
 			if name == "likes" {
@@ -72,12 +69,12 @@ func (s *Store) ensureCommentReactions() error {
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {
-			commentReactionsErr = fmt.Errorf("iterate table_info(comments): %w", err)
+			s.commentReactionsErr = fmt.Errorf("iterate table_info(comments): %w", err)
 			return
 		}
 		if !hasLikes {
 			if _, err := s.db.Exec(`ALTER TABLE comments ADD COLUMN likes INTEGER NOT NULL DEFAULT 0`); err != nil {
-				commentReactionsErr = fmt.Errorf("alter comments add likes: %w", err)
+				s.commentReactionsErr = fmt.Errorf("alter comments add likes: %w", err)
 				return
 			}
 		}
@@ -88,11 +85,11 @@ func (s *Store) ensureCommentReactions() error {
 			UNIQUE(comment_id, ip_hash)
 		)`
 		if _, err := s.db.Exec(likesDDL); err != nil {
-			commentReactionsErr = fmt.Errorf("create comment_likes table: %w", err)
+			s.commentReactionsErr = fmt.Errorf("create comment_likes table: %w", err)
 			return
 		}
 	})
-	return commentReactionsErr
+	return s.commentReactionsErr
 }
 
 // ListCommentsByPage 返回指定页面的已发布评论，按时间正序（先发的在前，评论区展示序）。
@@ -314,6 +311,63 @@ func (s *Store) DeleteCommentCascade(id int64) error {
 		return fmt.Errorf("delete comment %d cascade: %w", id, err)
 	}
 	return nil
+}
+
+// idPlaceholders 构造 IN 子句占位符与参数列表（"?,?,..." + args）。
+func idPlaceholders(ids []int64) (string, []interface{}) {
+	ph := strings.TrimSuffix(strings.Repeat("?,", len(ids)), ",")
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	return ph, args
+}
+
+// ApproveComments 批量审核通过，单 SQL IN 实现。
+// 返回实际更新的条数（不存在的 id 不计入）；空 ids 直接返回 0。
+func (s *Store) ApproveComments(ids []int64) (int, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	ph, args := idPlaceholders(ids)
+	res, err := s.db.Exec(`UPDATE comments SET status = ? WHERE id IN (`+ph+`)`,
+		append([]interface{}{CommentApproved}, args...)...)
+	if err != nil {
+		return 0, fmt.Errorf("approve comments batch: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("approve comments rows affected: %w", err)
+	}
+	return int(n), nil
+}
+
+// DeleteComments 批量删除（级联子评论），事务内先按 id 统计命中数再单 SQL IN 删除。
+// 返回请求 ids 中实际删除的条数（级联删掉的子评论不计入）；空 ids 直接返回 0。
+func (s *Store) DeleteComments(ids []int64) (int, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	ph, args := idPlaceholders(ids)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("begin delete comments batch: %w", err)
+	}
+	defer tx.Rollback()
+
+	var n int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM comments WHERE id IN (`+ph+`)`, args...).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count comments batch: %w", err)
+	}
+	// 两层嵌套下子评论不会再有子级：id 命中或 root_id 命中即覆盖级联
+	if _, err := tx.Exec(`DELETE FROM comments WHERE id IN (`+ph+`) OR root_id IN (`+ph+`)`,
+		append(append([]interface{}{}, args...), args...)...); err != nil {
+		return 0, fmt.Errorf("delete comments batch: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit delete comments batch: %w", err)
+	}
+	return n, nil
 }
 
 // scanComments 批量扫描 rows 到 []*Comment。is_admin 是 INTEGER 0/1，转 bool。

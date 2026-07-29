@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
@@ -144,6 +145,10 @@ type Store struct {
 	// postWriteHook 文章写路径回调（Spec 25 FTS 同步用），op 取 create/update/delete/restore/purge。
 	// 写操作成功后同步调用；回调内部自行容错，不影响主流程。
 	postWriteHook func(op, slug string)
+
+	// 评论点赞 schema 懒迁移状态（逐 Store 实例，避免包级 Once 在多库实例下漏迁移）。
+	commentReactionsOnce sync.Once
+	commentReactionsErr  error
 }
 
 // SetPostWriteHook 注册文章写路径回调（main.go 装配）。
