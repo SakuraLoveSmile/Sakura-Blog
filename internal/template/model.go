@@ -37,10 +37,14 @@ type ViewData struct {
 	// 最新评论 widget（fillSidebar 填充，comments.enabled 时）。
 	LatestComments []*LatestComment
 
-	// 文章页上下篇导航与相关文章。
-	PrevPost     *AdjacentPost // 上一篇（时间更早），nil 则不渲染
-	NextPost     *AdjacentPost // 下一篇（时间更晚），nil 则不渲染
-	RelatedPosts []*PostCard   // 相关文章（按标签匹配，最多 4 篇）
+	// 文章页上下篇导航与相关文章（对齐原版 read_next.ejs：prev=较新文章，next=较早文章）。
+	PrevPost     *AdjacentPost // 较新文章（时间更晚的邻篇），nil 则不渲染
+	NextPost     *AdjacentPost // 较早文章（时间更早的邻篇），nil 则不渲染
+	RelatedPosts []*PostCard   // 相关文章（按标签匹配，上限 site.yml article.related_posts）
+
+	// 文章页首尾增强（Spec 32）。
+	EditPage    *EditPageLink // 「编辑本文」+贡献者段（edit_this_page 映射命中时非 nil）
+	ExpiredDays int           // 距最后更新天数，>0 时文首渲染过期提醒
 
 	// 专栏体系（对齐原版 topic）：
 	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
@@ -441,4 +445,5 @@ type Page struct {
 	CanonicalURL string   // 当前页面完整 URL（用于 canonical 和 og:url）
 	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
+	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
 }

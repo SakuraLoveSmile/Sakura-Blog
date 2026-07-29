@@ -102,6 +102,12 @@ func DefaultSite() *tmpl.Site {
 				Enabled: false,
 				Text:    "打赏",
 			},
+			// Spec 32 文章页首尾增强缺省值（与 site.example.yml 同步）
+			ReadNext:     true,
+			RelatedPosts: 5,
+			ExpireDays:   180,
+			BannerRatio:  2.5,
+			EditThisPage: nil, // 缺省不配映射；配置后文章页出现贡献者/编辑本文段
 		},
 		Links: nil, // 友链由 site.yml links 段驱动；缺省为空，/links 显示「暂无友链」
 	}

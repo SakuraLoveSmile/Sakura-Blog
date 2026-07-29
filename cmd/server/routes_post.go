@@ -76,10 +76,12 @@ func (s *webServer) handlePost(c *gin.Context) {
 				Lang:       "zh-CN",
 				MenuID:     "post",
 				Date:       p.CreatedAt.Format("2006-01-02"),
+				Updated:    p.UpdatedAt.Format("2006-01-02"),
 				Excerpt:    p.Excerpt,
 				Views:      views,
 				Topic:      p.Topic,
 				References: store.DecodeReferences(p.References),
+				Banner:     p.Banner,
 			},
 			Content: template.HTML(p.ContentHTML),
 		}
@@ -94,17 +96,26 @@ func (s *webServer) handlePost(c *gin.Context) {
 				data.TopicSeries = ts
 			}
 		}
-		// 上下篇导航
-		if prev, err := s.st.GetPrevPost(slug); err == nil && prev != nil {
-			data.PrevPost = &tmpl.AdjacentPost{Slug: prev.Slug, Title: prev.Title}
+		// read_next 邻篇导航（site.yml article.read_next 可关）：同分类优先，无同分类邻篇回退全局时间序；
+		// 对齐原版 read_next.ejs：prev=较新文章，next=较早文章；排除加密/未发布文章。
+		if s.site.Article.ReadNext {
+			if newer, err := s.st.GetAdjacentPost(slug, p.Category, true); err == nil && newer != nil {
+				data.PrevPost = &tmpl.AdjacentPost{Slug: newer.Slug, Title: newer.Title}
+			}
+			if older, err := s.st.GetAdjacentPost(slug, p.Category, false); err == nil && older != nil {
+				data.NextPost = &tmpl.AdjacentPost{Slug: older.Slug, Title: older.Title}
+			}
 		}
-		if next, err := s.st.GetNextPost(slug); err == nil && next != nil {
-			data.NextPost = &tmpl.AdjacentPost{Slug: next.Slug, Title: next.Title}
+		// 相关文章：共同标签数 desc + 时间 desc，上限 site.yml article.related_posts（0=关）
+		if n := s.site.Article.RelatedPosts; n > 0 {
+			if related, err := s.st.ListRelatedPosts(slug, p.Tags, n); err == nil && len(related) > 0 {
+				data.RelatedPosts = s.toCards(related)
+			}
 		}
-		// 相关文章（按标签匹配，最多 4 篇）
-		if related, err := s.st.ListRelatedByTags(slug, p.Tags, 4); err == nil && len(related) > 0 {
-			data.RelatedPosts = s.toCards(related)
-		}
+		// 贡献者/编辑本文：source 固定为 posts/{slug}.md，按 edit_this_page 映射生成链接
+		data.EditPage = tmpl.ResolveEditPage("posts/"+slug+".md", s.site.Article.EditThisPage)
+		// 过期提醒：距最后更新超阈值（缺省 180 天）时文首渲染提醒块
+		data.ExpiredDays = tmpl.ExpiredDays(data.Page.Date, data.Page.Updated, s.site.Article.ExpireAfterDays(), time.Now())
 		// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
 		desc := p.Excerpt
 		if desc == "" {

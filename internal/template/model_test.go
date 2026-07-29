@@ -240,3 +240,78 @@ func TestExtractTOC(t *testing.T) {
 		})
 	}
 }
+
+// TestExpireAfterDays 过期提醒阈值：未配置（<=0）回退缺省 180 天（Spec 32）。
+func TestExpireAfterDays(t *testing.T) {
+	if got := (ArticleConfig{}).ExpireAfterDays(); got != 180 {
+		t.Errorf("缺省阈值 = %d, want 180", got)
+	}
+	if got := (ArticleConfig{ExpireDays: 30}).ExpireAfterDays(); got != 30 {
+		t.Errorf("配置阈值 = %d, want 30", got)
+	}
+}
+
+// TestExpiredDays 过期天数计算：updated 优先、created 回退、未超阈值/解析失败返回 0。
+func TestExpiredDays(t *testing.T) {
+	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name             string
+		created, updated string
+		threshold, want  int
+	}{
+		{"超阈值用 updated", "2024-01-01", "2025-07-01", 180, 365},
+		{"updated 空回退 created", "2025-07-01", "", 180, 365},
+		{"未超阈值不提醒", "2024-01-01", "2026-06-01", 180, 0},
+		{"带时分秒格式", "", "2025-07-01 12:00:00", 180, 365},
+		{"日期为空返回 0", "", "", 180, 0},
+		{"解析失败返回 0", "not-a-date", "", 180, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExpiredDays(tt.created, tt.updated, tt.threshold, now); got != tt.want {
+				t.Errorf("ExpiredDays(%q, %q, %d) = %d, want %d", tt.created, tt.updated, tt.threshold, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestResolveEditPage 「编辑本文」链接推导：前缀替换 + commits API 规则（对齐原版 contributors.ejs）。
+func TestResolveEditPage(t *testing.T) {
+	mapping := map[string]string{
+		"posts/": "https://github.com/alice/blog/blob/main/content/posts/",
+	}
+	got := ResolveEditPage("posts/hello.md", mapping)
+	if got == nil {
+		t.Fatal("命中前缀应返回非 nil")
+	}
+	if want := "https://github.com/alice/blog/blob/main/content/posts/hello.md"; got.EditURL != want {
+		t.Errorf("EditURL = %s, want %s", got.EditURL, want)
+	}
+	if want := "https://api.github.com/repos/alice/blog/commits?path=content/posts/hello.md"; got.APIURL != want {
+		t.Errorf("APIURL = %s, want %s", got.APIURL, want)
+	}
+
+	// 非 github/main 结构：保留编辑按钮但不推导 API
+	got = ResolveEditPage("posts/a.md", map[string]string{"posts/": "https://gitee.com/alice/blog/blob/master/posts/"})
+	if got == nil || got.APIURL != "" {
+		t.Errorf("非 github/main 结构应仅保留编辑链接: %+v", got)
+	}
+
+	// 无匹配前缀 / 空输入
+	if ResolveEditPage("pages/about.md", mapping) != nil {
+		t.Error("未命中前缀应返回 nil")
+	}
+	if ResolveEditPage("", mapping) != nil || ResolveEditPage("posts/a.md", nil) != nil {
+		t.Error("空输入应返回 nil")
+	}
+
+	// 多前缀按最长前缀匹配（结果确定性）
+	multi := map[string]string{
+		"posts/":      "https://github.com/alice/blog/blob/main/short/",
+		"posts/deep/": "https://github.com/alice/blog/blob/main/deep/",
+	}
+	got = ResolveEditPage("posts/deep/x.md", multi)
+	if got == nil || got.EditURL != "https://github.com/alice/blog/blob/main/deep/x.md" {
+		t.Errorf("多前缀应取最长匹配: %+v", got)
+	}
+}
