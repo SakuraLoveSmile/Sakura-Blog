@@ -180,6 +180,18 @@ article:
     text: 打赏
     wechat: ''
     alipay: ''
+  # 下一篇导航（read_next）：同分类邻篇优先，无同分类邻篇回退全局时间序；false 关闭
+  read_next: true
+  # 相关文章数上限（共同标签数 desc + 时间 desc）；0 关闭
+  related_posts: 5
+  # 过期提醒阈值（天）：距最后更新超过该天数时文首显示提醒；0 用缺省 180
+  expire_days: 180
+  # 文首横幅（front matter banner:）宽高比；0 用主题默认 2.5
+  banner_ratio: 2.5
+  # 「编辑本文」路径映射：源路径前缀 → 仓库 blob URL 前缀（对齐原版 contributors.ejs map）。
+  # 配置后文章页脚出现贡献者列表与编辑按钮；缺省注释关闭。
+  # edit_this_page:
+  #   posts/: https://github.com/your-name/your-repo/blob/main/content/posts/
 
 # 管理后台
 admin:

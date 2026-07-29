@@ -6,6 +6,7 @@ categories: 技术
 topic: 服务端渲染
 tags: [Go, Stellar]
 cover: https://picsum.photos/seed/stellar-demo/1280/640
+banner: https://picsum.photos/seed/stellar-banner/1600/640
 poster_headline: Go 服务端渲染验证
 poster_caption: Gin + goldmark + html/template
 ---

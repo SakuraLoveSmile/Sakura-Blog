@@ -5,9 +5,12 @@
 
 {{- /* 文章头部 banner：对齐 Stellar _partial/main/navbar/article_banner.ejs。
    面包屑（首页 / 博客）+ 发布日期 + 阅读量（Page.Views，已含本次访问）+ 大标题。
+   front matter banner 非空时渲染横幅图（img.lazy.bg，对齐原版 banner.url 分支），
+   宽高比由 --banner-ratio 变量钩子控制（site.yml article.banner_ratio，post-footer.css 覆盖 main.css 编译期固定值）。
    仅文章页（Page.Title 非空）渲染；复用主题现成 .article.banner / .bread-nav / #post-meta / .text.title 样式。*/}}
 {{if .Page.Title}}
-<div class="article banner top">
+<div class="article banner top"{{if and .Page.Banner .Site.Article.BannerRatio}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
+  {{if .Page.Banner}}<img class="lazy bg" data-src="{{.Page.Banner}}">{{end}}
   <div class="content">
     <div class="top bread-nav footnote">
       <div class="left">
@@ -45,12 +48,19 @@
 {{end}}
 
 <article class="md-text content">
+  {{- /* 过期提醒（Spec 32 增量）：距最后更新超阈值（site.yml article.expire_days，缺省 180 天）时
+     文首渲染提醒块，复用 note 标签插件的 tag-plugin colorful note 结构与样式（shortcode.go 同款）。*/}}
+  {{if gt .ExpiredDays 0}}
+  <div class="tag-plugin colorful note" color="warning">
+    <div class="body">本文最后更新于 {{.ExpiredDays}} 天前，其中的信息可能已经过时，请谨慎参考。</div>
+  </div>
+  {{end}}
   {{.Content}}
 </article>
 
 {{- /* 文章页脚：版权声明 / 分享 / 打赏（site.yml article 段驱动，全关时不渲染）。
    对齐 Stellar article_footer.ejs + main.css .article-footer 样式。*/}}
-{{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .Site.Article.Share.Enabled .Site.Article.Reward.Enabled)}}
+{{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .EditPage .Site.Article.Share.Enabled .Site.Article.Reward.Enabled)}}
 <div class="article-footer" id="post-footer" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
   {{if .Page.References}}
   <section id="references">
@@ -74,6 +84,27 @@
       {{end}}
       {{if .Page.CanonicalURL}}<p>原文链接：<a href="{{.Page.CanonicalURL}}">{{.Page.CanonicalURL}}</a></p>{{end}}
     </div>
+  </section>
+  {{end}}
+
+  {{- /* 贡献者 + 编辑本文：对齐原版 contributors.ejs（文案 meta.contributors/btn.edit）。
+     edit_this_page 映射命中时渲染；ds-contributors 由 base.html 数据服务扫描按需加载
+     services/contributors.js，拉 commits API 渲染头像列表（API 不可推导时仅保留编辑按钮）。*/}}
+  {{if .EditPage}}
+  <section id="contributors">
+    <div class="header">
+      <span>本文贡献者</span>
+      <span class="spacer"></span>
+      <a class="edit" href="{{.EditPage.EditURL}}">
+        {{icon "default:edit"}}
+        <span>编辑本文</span>
+      </a>
+    </div>
+    {{if .EditPage.APIURL}}
+    <div class="body">
+      <div class="ds-contributors users-wrap" api-type="commits" data-api="{{.EditPage.APIURL}}"><div class="grid-box"></div></div>
+    </div>
+    {{end}}
   </section>
   {{end}}
 
