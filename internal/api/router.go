@@ -256,6 +256,8 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/backup/export/markdown", h.exportPostsMarkdown)
 		authed.POST("/backup/import/markdown", h.importPostsMarkdown)
 		authed.GET("/backup/status", h.backupStatus)
+		authed.POST("/backup/restore", h.restoreBackup)
+		authed.POST("/backup/restore-snapshot", h.restoreSnapshot)
 	}
 }
 

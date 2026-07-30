@@ -119,6 +119,16 @@ export const backupApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  // 整站恢复（Spec 41）：上传全量备份 zip / 从服务器留存备份还原
+  restore: (file: File, strict: boolean) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("strict", strict ? "true" : "false");
+    return http.post("/backup/restore", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  restoreSnapshot: (name: string) => http.post("/backup/restore-snapshot", { name }),
 };
 
 // --- Pages ---

@@ -11,6 +11,56 @@ import (
 // maxImportSize Markdown 导入上限（zip 含多篇文章，比单附件上限放宽到 50MB）。
 const maxImportSize = 50 << 20
 
+// maxRestoreSize 全量备份包上传上限（含 uploads，放宽到 500MB）。
+const maxRestoreSize = 500 << 20
+
+// restoreBackup POST /api/v1/backup/restore：上传全量备份 zip 一键还原（Spec 41）。
+// 表单字段 file=zip，strict=true 时先清空 uploads 再解包。
+func (h *Handler) restoreBackup(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少上传文件（字段 file）"})
+		return
+	}
+	defer file.Close()
+	if header.Size > maxRestoreSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "备份包超过 500MB 上限"})
+		return
+	}
+	data, err := io.ReadAll(io.LimitReader(file, maxRestoreSize+1))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取上传文件失败"})
+		return
+	}
+	if len(data) > maxRestoreSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "备份包超过 500MB 上限"})
+		return
+	}
+	strict := c.PostForm("strict") == "true"
+	if err := h.backups.Restore(data, strict); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "恢复失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"restored": true})
+}
+
+// restoreSnapshot POST /api/v1/backup/restore-snapshot：从服务器 backups 目录内的备份恢复。
+// name 白名单校验在 backup.Service 内（禁止路径穿越，仅目录内 .zip/.db）。
+func (h *Handler) restoreSnapshot(c *gin.Context) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少备份文件名（name）"})
+		return
+	}
+	if err := h.backups.RestoreSnapshot(req.Name); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "恢复失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"restored": true})
+}
+
 // exportBackup GET /api/v1/backup/export：全量备份 zip 流式下载（DB 快照 + uploads + site.yml）。
 func (h *Handler) exportBackup(c *gin.Context) {
 	name := "blog-backup-" + time.Now().Format("20060102-150405") + ".zip"
