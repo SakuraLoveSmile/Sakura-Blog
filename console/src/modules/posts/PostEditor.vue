@@ -35,6 +35,8 @@ const form = ref({
   pinned: false,
   password: "",
   publish_at: "",
+  meta_description: "",
+  meta_keywords: "",
 });
 
 const loading = ref(false);
@@ -225,6 +227,8 @@ async function loadPost() {
     pinned: src.pinned,
     password: src.password,
     publish_at: src.publish_at || "",
+    meta_description: src.meta_description || "",
+    meta_keywords: src.meta_keywords || "",
   };
 }
 
@@ -479,6 +483,20 @@ const chipCls =
           <div>
             <label :class="labelCls">阅读密码</label>
             <input v-model="form.password" type="password" :class="fieldCls" />
+          </div>
+        </CollapsibleSection>
+
+        <!-- 文章级 SEO（Spec 42）：留空回退站点默认/摘要 -->
+        <CollapsibleSection title="SEO" icon="ri:search-eye-line" :default-open="false">
+          <div>
+            <label :class="labelCls">Meta Description</label>
+            <textarea v-model="form.meta_description" rows="3" :class="fieldCls + ' resize-y'"></textarea>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">留空时依次回退：站点默认 description → 文章摘要</p>
+          </div>
+          <div>
+            <label :class="labelCls">Meta Keywords（逗号分隔）</label>
+            <input v-model="form.meta_keywords" :class="fieldCls" />
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">留空时使用站点默认 keywords</p>
           </div>
         </CollapsibleSection>
 

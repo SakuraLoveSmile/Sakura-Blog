@@ -17,10 +17,12 @@ const tabs = [
   { key: "wiki", label: "文库" },
   { key: "comments", label: "评论" },
   { key: "article", label: "文章" },
+  { key: "seo", label: "SEO" },
+  { key: "inject", label: "代码注入" },
   { key: "security", label: "安全" },
   { key: "advanced", label: "高级·JSON" },
 ];
-const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "dashboard"];
+const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const router = useRouter();
@@ -80,6 +82,8 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.share.platforms = d.article.share.platforms || [];
   d.friends = d.friends || {};
   d.friends.refresh_interval = d.friends.refresh_interval || 0;
+  d.seo = d.seo || {};
+  d.inject = d.inject || {};
   // wiki 段是数组；行内编辑用 _tagsText 字符串代理 tags 数组（逗号分隔）
   d.wiki = (d.wiki || []).map((w: any) => ({ ...w, _tagsText: (w.tags || []).join(", ") }));
   return d;
@@ -532,6 +536,38 @@ onMounted(load);
           <div class="w-56"><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">刷新间隔（分钟，≤0 用默认 60）</label><input v-model.number="data.friends.refresh_interval" type="number" :class="inputCls" /></div>
           <button @click="save('friends')" :disabled="savingKey === 'friends'" :class="btnCls">保存 RSS 设置</button>
         </div>
+      </div>
+
+      <!-- SEO（Spec 42） -->
+      <div v-show="active === 'seo'" class="space-y-4">
+        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">默认 Meta Description（文章未单独设置时使用）</label><textarea v-model="data.seo.default_description" rows="2" :class="inputCls"></textarea></div>
+        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">默认 Meta Keywords（逗号分隔）</label><input v-model="data.seo.default_keywords" :class="inputCls" placeholder="博客, Go, 前端" /></div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">robots.txt 附加规则（原样追加到默认规则之后）</label>
+          <textarea v-model="data.seo.robots_extra" rows="4" :class="inputCls + ' font-mono text-xs'" placeholder="User-agent: GPTBot&#10;Disallow: /"></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"><input type="checkbox" v-model="data.seo.no_index" /> 禁止搜索引擎收录（全站输出 noindex meta，请谨慎开启）</label>
+        <p class="text-xs text-gray-400 dark:text-gray-500 pt-2">站点验证（留空不输出对应 meta 标签）</p>
+        <div class="grid grid-cols-3 gap-4">
+          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Google 验证码</label><input v-model="data.seo.google_verification" :class="inputCls" /></div>
+          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Bing 验证码</label><input v-model="data.seo.bing_verification" :class="inputCls" /></div>
+          <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">百度验证码</label><input v-model="data.seo.baidu_verification" :class="inputCls" /></div>
+        </div>
+        <button @click="save('seo')" :disabled="savingKey === 'seo'" :class="btnCls">保存 SEO 设置</button>
+      </div>
+
+      <!-- 代码注入（Spec 42） -->
+      <div v-show="active === 'inject'" class="space-y-4">
+        <p class="text-xs text-red-500 dark:text-red-400">⚠ 注入内容将不经转义原样输出到前台所有页面，可执行任意脚本。请只粘贴你完全信任的代码（统计、字体、自定义样式等），错误或恶意代码可能导致页面故障与安全风险，由此产生的后果由站长自行承担。</p>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头部注入（输出在 &lt;/head&gt; 之前）</label>
+          <textarea v-model="data.inject.inject_head" rows="6" :class="inputCls + ' font-mono text-xs'" placeholder="<script>...</script> 或 <link ...>"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">页脚注入（输出在 &lt;/body&gt; 之前）</label>
+          <textarea v-model="data.inject.inject_footer" rows="6" :class="inputCls + ' font-mono text-xs'" placeholder="<script>...</script>"></textarea>
+        </div>
+        <button @click="save('inject')" :disabled="savingKey === 'inject'" :class="btnCls">保存代码注入</button>
       </div>
 
       <!-- 安全 -->

@@ -50,6 +50,7 @@ export const statsApi = {
 };
 
 // --- Posts ---
+// 请求/响应为弱类型透传；Spec 42 新增字段 meta_description / meta_keywords（文章级 SEO）。
 export const postApi = {
   list: (params?: Record<string, unknown>) => http.get("/posts", { params }),
   get: (slug: string) => http.get(`/posts/${slug}`),
@@ -171,6 +172,7 @@ export const notesApi = {
 };
 
 // --- Settings ---
+// 段名与后端 KnownSections 对齐；Spec 42 新增 seo（站点级 SEO）与 inject（ 代码注入 inject_head/inject_footer）两段。
 export const settingsApi = {
   all: () => http.get("/settings"),
   updateSection: (section: string, data: unknown) =>
