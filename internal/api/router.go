@@ -201,8 +201,15 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 附件
 		authed.GET("/attachments", h.listAttachments)
 		authed.POST("/attachments/upload", h.uploadAttachment)
+		authed.POST("/attachments/move", h.moveAttachments)
 		authed.GET("/attachments/:id/refs", h.attachmentRefs)
 		authed.DELETE("/attachments/:id", h.deleteAttachment)
+
+		// 附件分组（Spec 44）
+		authed.GET("/attachment-groups", h.listAttachmentGroups)
+		authed.POST("/attachment-groups", h.createAttachmentGroup)
+		authed.PUT("/attachment-groups/:id", h.updateAttachmentGroup)
+		authed.DELETE("/attachment-groups/:id", h.deleteAttachmentGroup)
 
 		// 页面
 		authed.GET("/pages", h.listPages)

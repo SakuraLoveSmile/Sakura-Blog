@@ -38,6 +38,7 @@ type attachmentJSON struct {
 	ThumbURL  string `json:"thumb_url"`
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
+	GroupID   int64  `json:"group_id"`
 }
 
 func toAttachmentJSON(a *store.Attachment) *attachmentJSON {
@@ -51,6 +52,7 @@ func toAttachmentJSON(a *store.Attachment) *attachmentJSON {
 		ThumbURL:  a.ThumbURL,
 		Width:     a.Width,
 		Height:    a.Height,
+		GroupID:   a.GroupID,
 	}
 }
 
@@ -60,6 +62,7 @@ func (h *Handler) listAttachments(c *gin.Context) {
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "24"))
 	keyword := strings.TrimSpace(c.Query("keyword"))
 	kind := c.Query("kind") // "" | "image" | "other"
+	groupID := parseGroupParam(c.Query("group"))
 	if page < 1 {
 		page = 1
 	}
@@ -67,12 +70,12 @@ func (h *Handler) listAttachments(c *gin.Context) {
 		size = 24
 	}
 
-	total, err := h.store.CountAttachments(keyword, kind)
+	total, err := h.store.CountAttachments(keyword, kind, groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	attachments, err := h.store.ListAttachments(page, size, keyword, kind)
+	attachments, err := h.store.ListAttachments(page, size, keyword, kind, groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -188,6 +191,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		ThumbURL:  thumbURL,
 		Width:     imgW,
 		Height:    imgH,
+		GroupID:   uploadGroupID(c, h.store),
 	}
 	if _, err := h.store.CreateAttachment(att); err != nil {
 		os.Remove(absPath)
@@ -303,4 +307,161 @@ func randomHex(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// parseGroupParam 解析列表 group 查询参数：空字符串=不按组筛选（返回 nil）；
+// "0"=仅未分组；其余数字=指定组。非法值当作不筛选。
+func parseGroupParam(raw string) *int64 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || v < 0 {
+		return nil
+	}
+	return &v
+}
+
+// uploadGroupID 从上传表单取目标分组；缺省/非法/不存在的组均归为未分组。
+func uploadGroupID(c *gin.Context, st *store.Store) int64 {
+	raw := strings.TrimSpace(c.PostForm("group_id"))
+	if raw == "" {
+		return store.UngroupedGroupID
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || v <= 0 {
+		return store.UngroupedGroupID
+	}
+	if ok, _ := st.AttachmentGroupExists(v); !ok {
+		return store.UngroupedGroupID
+	}
+	return v
+}
+
+// --- 分组端点（Spec 44） ---
+
+// attachmentGroupJSON 分组 API 响应模型。
+type attachmentGroupJSON struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Order int    `json:"order"`
+	Count int    `json:"count"`
+}
+
+// listAttachmentGroups GET /api/v1/attachment-groups：列出全部分组（含组内附件数）。
+func (h *Handler) listAttachmentGroups(c *gin.Context) {
+	groups, err := h.store.ListAttachmentGroups()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	items := make([]*attachmentGroupJSON, 0, len(groups))
+	for _, g := range groups {
+		items = append(items, &attachmentGroupJSON{ID: g.ID, Name: g.Name, Order: g.Order, Count: g.Count})
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// createAttachmentGroup POST /api/v1/attachment-groups：新建分组。
+func (h *Handler) createAttachmentGroup(c *gin.Context) {
+	var body struct {
+		Name  string `json:"name"`
+		Order int    `json:"order"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		return
+	}
+	name := strings.TrimSpace(body.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "分组名称不能为空"})
+		return
+	}
+	g := &store.AttachmentGroup{Name: name, Order: body.Order}
+	if _, err := h.store.CreateAttachmentGroup(g); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, &attachmentGroupJSON{ID: g.ID, Name: g.Name, Order: g.Order})
+}
+
+// updateAttachmentGroup PUT /api/v1/attachment-groups/:id：重命名/调排序。
+func (h *Handler) updateAttachmentGroup(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的分组 ID"})
+		return
+	}
+	var body struct {
+		Name  string `json:"name"`
+		Order int    `json:"order"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		return
+	}
+	name := strings.TrimSpace(body.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "分组名称不能为空"})
+		return
+	}
+	if err := h.store.UpdateAttachmentGroup(id, name, body.Order); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "分组不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// deleteAttachmentGroup DELETE /api/v1/attachment-groups/:id：删组（组内附件归未分组）。
+func (h *Handler) deleteAttachmentGroup(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的分组 ID"})
+		return
+	}
+	if err := h.store.DeleteAttachmentGroup(id); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "分组不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// moveAttachments POST /api/v1/attachments/move：批量移动附件到目标分组（group_id=0 为未分组）。
+func (h *Handler) moveAttachments(c *gin.Context) {
+	var body struct {
+		IDs     []int64 `json:"ids"`
+		GroupID int64   `json:"group_id"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		return
+	}
+	if len(body.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "未选择附件"})
+		return
+	}
+	if len(body.IDs) > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "单次最多移动 200 项"})
+		return
+	}
+	if body.GroupID < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的目标分组"})
+		return
+	}
+	ok, err := h.store.AttachmentGroupExists(body.GroupID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "目标分组不存在"})
+		return
+	}
+	moved, err := h.store.MoveAttachments(body.IDs, body.GroupID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"moved": moved})
 }
