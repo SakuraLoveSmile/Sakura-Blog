@@ -1,0 +1,34 @@
+{{- /* widgets/ghrepo.html: GitHub 仓库卡，结构对照原版 widgets/ghrepo.ejs（widget-wrapper.ghrepo >
+   widget-body > .items.data-service.ds-ghinfo > a.repo > repo-name/repo-desc/grid）。
+   repo 参数（user/name）未配置不渲染（对齐原版 repo==undefined 返回空）。
+   data-api 指向本地代理 /api/gh/widget/repo（GitHub 形状键，ghinfo.js 按元素 id 回填；断网时占位符保留不破版）。
+   latest-tag 子卡对照原版 /repos/x/tags index=0 机制，走 /api/gh/widget/tags 代理。*/ -}}
+{{$repo := .Str "repo" ""}}
+{{if $repo}}
+<widget class="widget-wrapper ghrepo">
+  <div class="widget-body">
+    <div class="items data-service ds-ghinfo" data-api="/api/gh/widget/repo?repo={{$repo}}">
+      <a class="repo" href="https://github.com/{{$repo}}" target="_blank" rel="external nofollow noopener noreferrer">
+        <div class="repo-name flex-row">
+          {{icon "github:repo"}}{{$repo}}
+        </div>
+        <div class="repo-desc"><span type="text" id="description">&nbsp;</span></div>
+        <div class="grid">
+          <div class="flex-row">
+            {{icon "github:star"}}
+            <span type="text" id="stargazers_count"></span>
+          </div>
+          <div class="flex-row">
+            {{icon "github:fork"}}
+            <span type="text" id="forks_count"></span>
+          </div>
+          <div class="flex-row data-service ds-ghinfo" index="0" data-api="/api/gh/widget/tags?repo={{$repo}}">
+            {{icon "github:tag"}}
+            <span type="text" id="latest-tag-name">0</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</widget>
+{{end}}

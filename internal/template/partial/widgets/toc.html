@@ -1,14 +1,16 @@
 {{- /* widgets/toc.html: 本文目录，对应 widgets/toc.ejs（layoutDiv：body + widget-footer 回到顶部）。
+   上下文为 WidgetInstance（Spec 33）：TOC HTML 直读 .V.TOC（生成参数 list_number/min_depth/max_depth
+   在 ExtractTOC 调用点消费 library toc 参数）；collapse 参数透传为 widget 属性（auto/true/false，main.css 消费）。
    TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。
    原版 widgets.yml 的 edit_this_page 在 toc.ejs 中未实现（死配置），本项目由 Spec 32 文章页脚承接，此处不做 */ -}}
-{{if .TOC}}
-<widget class="widget-wrapper toc" id="data-toc" collapse="false">
+{{if .V.TOC}}
+<widget class="widget-wrapper toc" id="data-toc" collapse="{{.Str "collapse" "false"}}">
   <div class="widget-header dis-select">
-    <span class="name">本文目录</span>
+    <span class="name">{{.Str "title" "本文目录"}}</span>
     <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
   </div>
   <div class="widget-body">
-    {{.TOC}}
+    {{.V.TOC}}
   </div>
   <div class="widget-footer">
     <a class="top" onclick="util.scrollTop()">

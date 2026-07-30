@@ -1,14 +1,18 @@
 {{- /* widgets/recent.html: 最近更新，对应 widgets/recent.ejs（post-list），对齐 xaoxuu.com 左栏组件。
-   数据来自 DB 最新 5 篇（fillSidebar 填充）*/ -}}
+   上下文为 WidgetInstance（Spec 33）：.Data 为按 limit 截断的文章列表（fillSidebar 填充）；
+   rss 参数对齐原版 item.rss（缺省 /rss.xml，显式配空串隐藏按钮）。*/ -}}
 <widget class="widget-wrapper recent post-list">
   <div class="widget-header dis-select">
-    <span class="name">最近更新</span>
-    <a class="cap-action" id="rss" title="Subscribe" href="/rss.xml">
+    <span class="name">{{.Str "title" "最近更新"}}</span>
+    {{$rss := .Str "rss" "/rss.xml"}}
+    {{if $rss}}
+    <a class="cap-action" id="rss" title="Subscribe" href="{{$rss}}">
       {{icon "default:rss"}}
     </a>
+    {{end}}
   </div>
   <div class="widget-body fs14">
-    {{range .Recent}}
+    {{range .Data}}
     <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
     {{end}}
   </div>

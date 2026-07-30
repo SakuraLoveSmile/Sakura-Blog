@@ -6,6 +6,7 @@ import "embed"
 
 // FS 嵌入的静态资源文件系统，供 main.go 用 http.FS 挂到 /assets 路由。
 // 用 all: 前缀包含下划线/点开头的文件（如字体子集）。
+// vendor：本地化的第三方库（fancybox 等，Spec 28 依赖本地化），此前漏嵌导致非 -dev 模式 404。
 //
-//go:embed all:css all:js all:fonts all:img manifest.webmanifest offline.html
+//go:embed all:css all:js all:fonts all:img all:vendor manifest.webmanifest offline.html
 var FS embed.FS

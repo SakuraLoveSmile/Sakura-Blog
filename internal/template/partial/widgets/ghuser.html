@@ -1,0 +1,44 @@
+{{- /* widgets/ghuser.html: GitHub 用户卡，结构对照原版 widgets/ghuser.ejs（widget-wrapper.user-card.ghuser >
+   header(gh-url，header 参数开启时) + widget-body.ds-ghinfo(avatar/username/bio/buttons/follow)）。
+   username 未配置不渲染；follow 缺省 true（对齐原版 item.follow==null → true）。
+   data-api 指向本地代理 /api/gh/widget/user（GitHub 形状键，ghinfo.js 按元素 id 回填）。*/ -}}
+{{$u := .Str "username" ""}}
+{{if $u}}
+<widget class="widget-wrapper user-card ghuser">
+  {{if .Bool "header" false}}
+  <div class="widget-header">
+    <a class="gh-url" href="https://github.com/{{$u}}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .999c-6.074 0-11 5.05-11 11.278c0 4.983 3.152 9.21 7.523 10.702c.55.104.727-.246.727-.543v-2.1c-3.06.683-3.697-1.33-3.697-1.33c-.5-1.304-1.222-1.65-1.222-1.65c-.998-.7.076-.686.076-.686c1.105.08 1.686 1.163 1.686 1.163c.98 1.724 2.573 1.226 3.201.937c.098-.728.383-1.226.698-1.508c-2.442-.286-5.01-1.253-5.01-5.574c0-1.232.429-2.237 1.132-3.027c-.114-.285-.49-1.432.107-2.985c0 0 .924-.303 3.026 1.156c.877-.25 1.818-.375 2.753-.38c.935.005 1.876.13 2.755.38c2.1-1.459 3.023-1.156 3.023-1.156c.598 1.554.222 2.701.108 2.985c.706.79 1.132 1.796 1.132 3.027c0 4.332-2.573 5.286-5.022 5.565c.394.35.754 1.036.754 2.088v3.095c0 .3.176.652.734.542C19.852 21.484 23 17.258 23 12.277C23 6.048 18.075.999 12 .999"/></svg>
+      <span>github/{{$u}}</span>
+    </a>
+  </div>
+  {{end}}
+  <div class="widget-body data-service ds-ghinfo" data-api="/api/gh/widget/user?username={{$u}}">
+    {{if .Bool "avatar" true}}
+    <div class="avatar"><img no-lazy type="img" id="avatar_url" src=""></div>
+    {{end}}
+    <p class="username" type="text" id="name">&nbsp;</p>
+    <p class="bio" type="text" id="bio">&nbsp;</p>
+    <div class="buttons">
+      <a class="btn" href="https://github.com/{{$u}}?tab=followers">
+        <span class="title" type="text" id="followers">0</span>
+        <span class="desc">followers</span>
+      </a>
+      <a class="btn" href="https://github.com/{{$u}}?tab=following">
+        <span class="title" type="text" id="following">0</span>
+        <span class="desc">following</span>
+      </a>
+      <a class="btn" href="https://github.com/{{$u}}?tab=repositories">
+        <span class="title" type="text" id="public_repos">0</span>
+        <span class="desc">repos</span>
+      </a>
+    </div>
+    {{if .Bool "follow" true}}
+    <a class="follow" href="https://github.com/{{$u}}">
+      {{icon "github:logo"}}
+      Follow
+    </a>
+    {{end}}
+  </div>
+</widget>
+{{end}}

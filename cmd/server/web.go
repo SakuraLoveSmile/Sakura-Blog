@@ -43,11 +43,14 @@ func truncateText(s string, n int) string {
 
 // sidebarSnapshot 侧边栏 45s 快照缓存（P2-13）。
 // 快照切片在请求间共享底层数组，模板渲染只读，无数据竞争。
+// Spec 33：tagCounts 存原始计数，标签云按 widget 参数在装配期构建（纯内存运算，不重查库）；
+// recent/popular/latestComments 按配置最大 limit 查询，实例装配时截断。
 type sidebarSnapshot struct {
 	recent         []*tmpl.RecentPost
 	popular        []*tmpl.RecentPost
 	latestComments []*tmpl.LatestComment
 	tagCloud       []*tmpl.TagItem
+	tagCounts      map[string]int
 	hasTopics      bool
 	siteStats      *tmpl.SiteStats
 }
@@ -139,12 +142,13 @@ func (s *webServer) invalidateSidebarCache() {
 	s.sidebarExpiry = time.Time{}
 }
 
-// fillSidebar 填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 热门 top5 + 站点统计 + 最新评论 5 条），所有前台页面渲染前调用。
+// fillSidebar 填充侧边栏动态数据（近期发布 + 标签云 + 热门 + 站点统计 + 最新评论），所有前台页面渲染前调用。
 // 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
 // P2-13：结果缓存 45s（TTL 内新文章/评论稍晚出现在侧栏，可接受）；CountByTag 合并为单次调用（原标签云与统计各查一次）。
+// Spec 33：末尾 assembleWidgets 按页面类型装配左右栏实例序列（纯配置查表 + 内存截断，
+// 不产生新查询，因此缓存 key 无需页面类型维度）45s 内重复请求仍不重查库。
 func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 	s.sidebarMu.Lock()
-	defer s.sidebarMu.Unlock()
 	if s.sidebarCached != nil && time.Now().Before(s.sidebarExpiry) {
 		data.Recent = s.sidebarCached.recent
 		data.Popular = s.sidebarCached.popular
@@ -152,20 +156,23 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		data.TagCloud = s.sidebarCached.tagCloud
 		data.HasTopics = s.sidebarCached.hasTopics
 		data.SiteStats = s.sidebarCached.siteStats
+		tagCounts := s.sidebarCached.tagCounts
+		s.sidebarMu.Unlock()
+		s.assembleWidgets(data, tagCounts)
 		return
 	}
-	if posts, err := s.st.ListPublishedPaged(1, 5); err == nil {
+	if posts, err := s.st.ListPublishedPaged(1, s.widgetMaxLimit("recent", 5)); err == nil {
 		for _, p := range posts {
 			data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
 		}
 	}
-	if popular, err := s.st.ListPopular(popularLimit); err == nil && len(popular) > 0 {
+	if popular, err := s.st.ListPopular(s.widgetMaxLimit("popular", popularLimit)); err == nil && len(popular) > 0 {
 		for _, p := range popular {
 			data.Popular = append(data.Popular, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
 		}
 	}
 	if s.site.Comments.Enabled {
-		if comments, err := s.st.ListRecentComments(5); err == nil {
+		if comments, err := s.st.ListRecentComments(s.widgetMaxLimit("latest_comment", 5)); err == nil {
 			for _, cm := range comments {
 				data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
 					Nick:    cm.Nick,
@@ -215,10 +222,74 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		popular:        data.Popular,
 		latestComments: data.LatestComments,
 		tagCloud:       data.TagCloud,
+		tagCounts:      tagCounts,
 		hasTopics:      data.HasTopics,
 		siteStats:      data.SiteStats,
 	}
 	s.sidebarExpiry = time.Now().Add(sidebarTTL)
+	s.sidebarMu.Unlock()
+	s.assembleWidgets(data, tagCounts)
+}
+
+// widgetMaxLimit 扫描用户 library 中指定 layout 的 limit 参数，返回与 fallback 的最大值（查询上限）；
+// 实例装配时再按各自 limit 截断，保证同 layout 多实例不同 limit 均有足量数据。
+func (s *webServer) widgetMaxLimit(layout string, fallback int) int {
+	max := fallback
+	for _, def := range s.site.Widgets.Library {
+		if def.Layout() != layout {
+			continue
+		}
+		if n := def.Int("limit", fallback); n > max {
+			max = n
+		}
+	}
+	return max
+}
+
+// assembleWidgets 按页面类型解析左右栏组件序列并逐个装配数据（Spec 33）。
+// 数据全部来自 fillSidebar 已填充的字段/快照（内存截断与重排），不产生新查询。
+func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]int) {
+	if data.Page == nil {
+		return
+	}
+	cfg := s.site.Widgets
+	bars := cfg.BarsFor(tmpl.PageTypeOf(data.Page.Layout))
+	data.LeftbarWidgets = cfg.BuildBar(bars.Leftbar, data)
+	data.RightbarWidgets = cfg.BuildBar(bars.Rightbar, data)
+	for _, w := range append(append([]*tmpl.WidgetInstance{}, data.LeftbarWidgets...), data.RightbarWidgets...) {
+		switch w.Layout {
+		case "recent":
+			w.Data = truncateRecent(data.Recent, w.Int("limit", 5))
+		case "popular":
+			w.Data = truncateRecent(data.Popular, w.Int("limit", popularLimit))
+		case "latest_comment":
+			if n := w.Int("limit", 5); n < len(data.LatestComments) {
+				w.Data = data.LatestComments[:n]
+			} else {
+				w.Data = data.LatestComments
+			}
+		case "tagcloud":
+			w.Data = tmpl.BuildTagCloud(tagCounts, tmpl.TagCloudOptionsFrom(w.Params))
+		}
+	}
+}
+
+// tocOptions library toc 参数 → TOC 生成选项（Spec 33 参数补齐：list_number/min_depth/max_depth）。
+func (s *webServer) tocOptions() tmpl.TOCOptions {
+	def := s.site.Widgets.Lookup("toc")
+	return tmpl.TOCOptions{
+		ListNumber: def.Bool("list_number", false),
+		MinDepth:   def.Int("min_depth", 1),
+		MaxDepth:   def.Int("max_depth", 6),
+	}
+}
+
+// truncateRecent 按 limit 截断文章列表（共享底层数组，只读安全）。
+func truncateRecent(list []*tmpl.RecentPost, limit int) []*tmpl.RecentPost {
+	if limit > 0 && limit < len(list) {
+		return list[:limit]
+	}
+	return list
 }
 
 // buildTagCloud 标签计数转标签云条目：按数量降序（同量按名升序）取前 limit 个并标注字号。

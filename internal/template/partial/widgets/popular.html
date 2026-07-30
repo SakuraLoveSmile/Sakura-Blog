@@ -1,11 +1,12 @@
-{{- /* widgets/popular.html: 热门文章，按阅读量降序 top 5，结构对齐 widgets/recent.ejs（post-list） */ -}}
-{{if .Popular}}
+{{- /* widgets/popular.html: 热门文章（本项目自创，注册进 library 保留），按阅读量降序，结构对齐 widgets/recent.ejs（post-list）。
+   上下文为 WidgetInstance（Spec 33）：.Data 为按 limit 截断的列表。*/ -}}
+{{if .Data}}
 <widget class="widget-wrapper popular post-list">
   <div class="widget-header dis-select">
-    <span class="name">热门文章</span>
+    <span class="name">{{.Str "title" "热门文章"}}</span>
   </div>
   <div class="widget-body fs14">
-    {{range .Popular}}
+    {{range .Data}}
     <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
     {{end}}
   </div>

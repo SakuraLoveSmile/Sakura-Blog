@@ -20,7 +20,8 @@ utils.jq(() => {
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
-        const query = new URL(api).search;
+        // 基准补 location.origin：本地 /api/gh 代理的相对路径也能解析（绝对 URL 时 base 被忽略，行为不变）
+        const query = new URL(api, location.origin).search;
         const arr = data.content || data;
         var users = [];
         const filter = el.getAttribute('user');

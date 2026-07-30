@@ -127,6 +127,18 @@ func (c *Client) GetUser(username string) (*UserInfo, error) {
 	}, nil
 }
 
+// GetTagsRaw 仓库 tags 列表原样 JSON（Spec 33 ghrepo widget 的 latest-tag 子卡，ds-ghinfo 按 GitHub 形状数组 index=0 回填），
+// 缓存 TTL 6h，与仓库元数据同档。
+func (c *Client) GetTagsRaw(owner, repo string) ([]byte, error) {
+	return c.get(fmt.Sprintf("%s/repos/%s/%s/tags?per_page=5", c.apiBase, owner, repo), 6*time.Hour)
+}
+
+// GetIssuesRaw 仓库 issues 列表原样 JSON（Spec 33 ghissues widget，ds-timeline 消费 GitHub 形状字段）。
+// query 为调用方用 url.Values 编码好的查询串（per_page/labels）；issues 时效性高于元数据，TTL 30min。
+func (c *Client) GetIssuesRaw(owner, repo, query string) ([]byte, error) {
+	return c.get(fmt.Sprintf("%s/repos/%s/%s/issues?%s", c.apiBase, owner, repo, query), 30*time.Minute)
+}
+
 // get 通用缓存拉取：内存 → 磁盘 → 上游。上游失败时 stale-while-error。
 func (c *Client) get(url string, ttl time.Duration) ([]byte, error) {
 	key := cacheKey(url)

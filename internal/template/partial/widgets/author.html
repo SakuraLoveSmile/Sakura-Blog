@@ -1,10 +1,10 @@
-{{- /* widgets/author.html: 作者卡片，对应 widgets/author.ejs（user-card）。
+{{- /* widgets/author.html: 作者卡片，对应 widgets/author.ejs（user-card）。上下文为 WidgetInstance（Spec 33）。
    user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效 */ -}}
 <widget class="widget-wrapper user-card author">
   <div class="widget-body">
-    <div class="avatar"><img type="img" src="{{.Site.Avatar}}"></div>
-    <p class="username">{{.Site.LogoTitle}}</p>
-    <p class="bio">{{.Site.Description}}</p>
+    <div class="avatar"><img type="img" src="{{.V.Site.Avatar}}"></div>
+    <p class="username">{{.V.Site.LogoTitle}}</p>
+    <p class="bio">{{.V.Site.Description}}</p>
     <a class="follow" href="/">
       {{icon "solar:documents-bold-duotone"}}
       全部文章

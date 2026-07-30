@@ -1,5 +1,5 @@
 /* Service Worker: static cache-first, pages network-first with offline fallback. */
-const CACHE_VERSION = 'blog-v2';
+const CACHE_VERSION = 'blog-v3';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE = CACHE_VERSION + '-pages';
 

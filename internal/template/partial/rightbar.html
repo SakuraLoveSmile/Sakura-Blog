@@ -1,10 +1,6 @@
-{{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs
-   组件顺序对齐 xaoxuu.com 右栏：markdown 欢迎语 → author 卡片 → 站点统计 → 最新评论 → TOC（仅文章页有 h2/h3 时，末位 sticky 吸顶）。
-   各段已拆到 partial/widgets/*.html（Spec 33），此处保持硬编码序列不变（纯拆分安全点）。*/ -}}
+{{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs。
+   Spec 33：按 ViewData.RightbarWidgets 序列分派渲染（site.yml widgets 段驱动），
+   缺省序列 = 改造前硬编码顺序：markdown 欢迎语 → author 卡片 → 站点统计 → 最新评论 → TOC（末位 sticky 吸顶）。*/ -}}
 <div class="widgets">
-  {{template "partial/widgets/markdown" .}}
-  {{template "partial/widgets/author" .}}
-  {{template "partial/widgets/siteinfo" .}}
-  {{template "partial/widgets/latest_comment" .}}
-  {{template "partial/widgets/toc" .}}
+  {{range .RightbarWidgets}}{{template "partial/widgets/dispatch" .}}{{end}}
 </div>

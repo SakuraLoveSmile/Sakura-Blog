@@ -1,12 +1,15 @@
-{{- /* widgets/tagcloud.html: 标签云，对应 widgets/tagcloud.ejs，按文章数映射字号。数据来自 fillSidebar 的 CountByTag */ -}}
-{{if .TagCloud}}
+{{- /* widgets/tagcloud.html: 标签云，对应 widgets/tagcloud.ejs，按文章数映射字号。
+   上下文为 WidgetInstance（Spec 33）：.Data 为按参数（amount/orderby/order/color 渐变）构建的条目；
+   show_count 对齐 hexo tagcloud helper 的 <span class="count">输出；color 开启时输出插值 color style。*/ -}}
+{{if .Data}}
 <widget class="widget-wrapper tagcloud">
   <div class="widget-header dis-select">
-    <span class="name">标签</span>
+    <span class="name">{{.Str "title" "标签"}}</span>
   </div>
+  {{$sc := .Bool "show_count" false}}
   <div class="widget-body fs14">
-    {{range .TagCloud}}
-    <a class="tag" href="/tags/{{.Name}}" style="font-size: {{if .Size}}{{.Size}}{{else}}14{{end}}px">{{.Name}}</a>
+    {{range .Data}}
+    <a class="tag" href="/tags/{{.Name}}" style="font-size: {{if .Size}}{{.Size}}{{else}}14{{end}}px{{if .Color}};color:{{.Color}}{{end}}">{{.Name}}{{if $sc}}<span class="count">{{.Count}}</span>{{end}}</a>
     {{end}}
   </div>
 </widget>

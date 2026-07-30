@@ -1,12 +1,13 @@
 {{- /* widgets/related.html: 专栏系列，对齐 widgets/related.ejs relatedPostsInTopic
-   （仅文章页且文章有 topic 时渲染，位置在「最近更新」上方，对齐 xaoxuu.com 文章页左栏）*/ -}}
-{{if .TopicSeries}}
+   （仅文章页且文章有 topic 时渲染，位置在「最近更新」上方，对齐 xaoxuu.com 文章页左栏）。
+   上下文为 WidgetInstance（Spec 33），数据直读 .V.TopicSeries。*/ -}}
+{{if .V.TopicSeries}}
 <widget class="widget-wrapper related post-list">
   <div class="widget-header dis-select">
-    <span class="name">专栏：{{.TopicSeries.Name}}</span>
+    <span class="name">专栏：{{.V.TopicSeries.Name}}</span>
   </div>
   <div class="widget-body">
-    {{range .TopicSeries.Posts}}
+    {{range .V.TopicSeries.Posts}}
     <a class="item{{if .Active}} active{{end}}" href="/post/{{.Slug}}"><span class="title">{{.Title}}</span>{{if .Active}}{{icon "default:bookmark.active"}}{{end}}</a>
     {{end}}
   </div>

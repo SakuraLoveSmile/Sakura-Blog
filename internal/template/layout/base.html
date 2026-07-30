@@ -66,7 +66,8 @@
     const def = { avatar: '', cover: '', loading: '' };
     const deps = {
       jquery: '/assets/js/vendor/jquery.min.js',
-      marked: '',
+      {{- /* marked：对齐原版 _config.yml dependencies.marked（timeline/mdrender 渲染 md 正文用，懒加载） */}}
+      marked: 'https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js',
       lazyload: '/assets/js/vendor/lazyload.min.js'
     };
 
@@ -330,8 +331,9 @@
   </script>
   <script>
     {{- /* 数据服务懒加载（对齐 Stellar data_services 机制的极简版）：
-       页面存在 .ds-friends_and_posts / .ds-friends 时按需拉取对应 service 脚本，
-       service 内部用 utils.jq 事件委托，PJAX 换页后重新检测。 */}}
+       页面存在 .ds-* 元素时按需拉取对应 service 脚本，
+       service 内部用 utils.jq 事件委托，PJAX 换页后重新检测。
+       deps 字段对齐原版 services.ejs：先加载依赖（如 marked）再加载 service（Spec 33：timeline/mdrender 需 marked）。 */}}
     (function () {
       var services = [
         { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}' },
@@ -339,8 +341,10 @@
         { cls: 'ds-rating', js: '{{url_for "/assets/js/services/rating.js"}}' },
         { cls: 'ds-vote', js: '{{url_for "/assets/js/services/vote.js"}}' },
         { cls: 'ds-sites', js: '{{url_for "/assets/js/services/sites.js"}}' },
-        { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}' },
+        { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}', deps: ['marked'] },
         { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}' },
+        { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}' },
+        { cls: 'ds-timeline', js: '{{url_for "/assets/js/services/timeline.js"}}', deps: ['marked'] },
         { cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}' }
       ];
       var loaded = {};
@@ -350,7 +354,14 @@
           if (loaded[s.cls]) continue;
           if (document.getElementsByClassName(s.cls).length > 0) {
             loaded[s.cls] = true;
-            utils.js(s.js, { defer: true });
+            (function (s) {
+              var loadService = function () { utils.js(s.js, { defer: true }); };
+              if (s.deps && s.deps.length) {
+                Promise.all(s.deps.map(function (d) { return utils.js(deps[d]); })).then(loadService);
+              } else {
+                loadService();
+              }
+            })(s);
           }
         }
       }

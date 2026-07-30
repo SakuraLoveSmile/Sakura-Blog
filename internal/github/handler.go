@@ -2,6 +2,8 @@ package github
 
 import (
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,10 +19,15 @@ func NewHandler(c *Client) *Handler {
 }
 
 // Register 注册公开路由到 gin engine。
-// 仅保留直连 api.github.com 的仓库元数据端点；ghcard/ghrepo/ghuser 均由原生渲染器
-// 同步取数（GetRepo/GetUser），不再提供依赖第三方 github-readme-stats 的 SVG 卡片端点。
+// /api/gh/repo：裁剪元数据端点（保留）；ghcard 短码由原生渲染器同步取数（GetRepo/GetUser）。
+// /api/gh/widget/*：Spec 33 侧栏 widget 专用代理，输出 GitHub 形状键
+// （services/ghinfo.js 按元素 id 回填、timeline.js 消费原始字段），前端不直连 api.github.com。
 func (h *Handler) Register(r *gin.Engine) {
 	r.GET("/api/gh/repo", h.repoInfo)
+	r.GET("/api/gh/widget/repo", h.widgetRepo)
+	r.GET("/api/gh/widget/user", h.widgetUser)
+	r.GET("/api/gh/widget/tags", h.widgetTags)
+	r.GET("/api/gh/widget/issues", h.widgetIssues)
 }
 
 // repoInfo 返回仓库裁剪元数据 JSON。
@@ -53,4 +60,112 @@ func splitRepo(s string) (string, string) {
 		}
 	}
 	return "", ""
+}
+
+// repoParam 解析并校验 repo 查询参数，非法时写 400 并返回 ok=false。
+func repoParam(c *gin.Context) (owner, name string, ok bool) {
+	repo := c.Query("repo")
+	if repo == "" {
+		c.String(http.StatusBadRequest, "missing repo param (user/name)")
+		return "", "", false
+	}
+	owner, name = splitRepo(repo)
+	if owner == "" || name == "" {
+		c.String(http.StatusBadRequest, "invalid repo format, expected user/name")
+		return "", "", false
+	}
+	return owner, name, true
+}
+
+// widgetRepo GitHub 形状仓库元数据（ghrepo widget，ds-ghinfo 按 id 回填 description/stargazers_count/forks_count）。
+// GET /api/gh/widget/repo?repo=user/name
+func (h *Handler) widgetRepo(c *gin.Context) {
+	owner, name, ok := repoParam(c)
+	if !ok {
+		return
+	}
+	info, err := h.client.GetRepo(owner, name)
+	if err != nil {
+		c.String(http.StatusBadGateway, "github repo fetch failed: %v", err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=21600")
+	c.JSON(http.StatusOK, gin.H{
+		"description":      info.Description,
+		"stargazers_count": info.Stars,
+		"forks_count":      info.Forks,
+		"html_url":         info.HTMLURL,
+	})
+}
+
+// widgetUser GitHub 形状用户信息（ghuser widget，ds-ghinfo 按 id 回填 name/bio/avatar_url/followers/following/public_repos）。
+// GET /api/gh/widget/user?username=xxx
+func (h *Handler) widgetUser(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		c.String(http.StatusBadRequest, "missing username param")
+		return
+	}
+	info, err := h.client.GetUser(username)
+	if err != nil {
+		c.String(http.StatusBadGateway, "github user fetch failed: %v", err)
+		return
+	}
+	name := info.Name
+	if name == "" {
+		name = info.Login
+	}
+	c.Header("Cache-Control", "public, max-age=21600")
+	c.JSON(http.StatusOK, gin.H{
+		"name":         name,
+		"bio":          info.Bio,
+		"avatar_url":   info.AvatarURL,
+		"followers":    info.Followers,
+		"following":    info.Following,
+		"public_repos": info.Repos,
+		"html_url":     info.HTMLURL,
+	})
+}
+
+// widgetTags 仓库 tags 原样透传（ghrepo widget latest-tag 子卡，ds-ghinfo index=0 取 name）。
+// GET /api/gh/widget/tags?repo=user/name
+func (h *Handler) widgetTags(c *gin.Context) {
+	owner, name, ok := repoParam(c)
+	if !ok {
+		return
+	}
+	data, err := h.client.GetTagsRaw(owner, name)
+	if err != nil {
+		c.String(http.StatusBadGateway, "github tags fetch failed: %v", err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=21600")
+	c.Data(http.StatusOK, "application/json; charset=utf-8", data)
+}
+
+// widgetIssues 仓库 issues 原样透传（ghissues widget，ds-timeline 渲染）。
+// GET /api/gh/widget/issues?repo=user/name&per_page=3&labels=a,b
+func (h *Handler) widgetIssues(c *gin.Context) {
+	owner, name, ok := repoParam(c)
+	if !ok {
+		return
+	}
+	perPage, err := strconv.Atoi(c.DefaultQuery("per_page", "3"))
+	if err != nil || perPage < 1 {
+		perPage = 3
+	} else if perPage > 30 {
+		perPage = 30
+	}
+	q := url.Values{}
+	q.Set("per_page", strconv.Itoa(perPage))
+	if labels := c.Query("labels"); labels != "" {
+		q.Set("labels", labels)
+	}
+	data, err := h.client.GetIssuesRaw(owner, name, q.Encode())
+	if err != nil {
+		c.String(http.StatusBadGateway, "github issues fetch failed: %v", err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=1800")
+	c.Data(http.StatusOK, "application/json; charset=utf-8", data)
 }

@@ -1,0 +1,17 @@
+{{- /* widgets/dispatch.html: widget 分派器（Spec 33）。上下文为 WidgetInstance，
+   按 Layout 选择具体 widget 模板（Go html/template 不支持动态模板名，eq 链对齐 base.html 的 content 分派模式）。
+   未知 layout 静默跳过（对齐原版 layoutWidgets 忽略无效项）。*/ -}}
+{{if eq .Layout "recent"}}{{template "partial/widgets/recent" .}}
+{{- else if eq .Layout "tagcloud"}}{{template "partial/widgets/tagcloud" .}}
+{{- else if eq .Layout "popular"}}{{template "partial/widgets/popular" .}}
+{{- else if eq .Layout "related"}}{{template "partial/widgets/related" .}}
+{{- else if eq .Layout "markdown"}}{{template "partial/widgets/markdown" .}}
+{{- else if eq .Layout "author"}}{{template "partial/widgets/author" .}}
+{{- else if eq .Layout "siteinfo"}}{{template "partial/widgets/siteinfo" .}}
+{{- else if eq .Layout "latest_comment"}}{{template "partial/widgets/latest_comment" .}}
+{{- else if eq .Layout "toc"}}{{template "partial/widgets/toc" .}}
+{{- else if eq .Layout "ghrepo"}}{{template "partial/widgets/ghrepo" .}}
+{{- else if eq .Layout "ghuser"}}{{template "partial/widgets/ghuser" .}}
+{{- else if eq .Layout "ghissues"}}{{template "partial/widgets/ghissues" .}}
+{{- else if eq .Layout "timeline"}}{{template "partial/widgets/timeline" .}}
+{{- end}}

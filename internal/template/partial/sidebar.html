@@ -43,13 +43,11 @@
 
 {{- /* widgets 区：对应 _partial/widgets/
    .widgets > widget.widget-wrapper
-   各段已拆到 partial/widgets/*.html（Spec 33），此处保持硬编码序列不变（纯拆分安全点） */}}
+   Spec 33：搜索框固定首位（对齐原版 index_leftbar.ejs，search 不属于可配置序列），
+   其后按 ViewData.LeftbarWidgets 序列分派渲染（site.yml widgets 段驱动，缺省 = 改造前硬编码序列） */}}
 <div class="widgets">
   {{template "partial/widgets/search" .}}
-  {{template "partial/widgets/related" .}}
-  {{template "partial/widgets/recent" .}}
-  {{template "partial/widgets/tagcloud" .}}
-  {{template "partial/widgets/popular" .}}
+  {{range .LeftbarWidgets}}{{template "partial/widgets/dispatch" .}}{{end}}
 </div>
 
 {{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv

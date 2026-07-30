@@ -30,6 +30,11 @@ type ViewData struct {
 	Popular   []*RecentPost // 热门文章 widget（按阅读量降序 top 5）
 	SiteStats *SiteStats    // 站点统计 widget（nil 时隐藏）
 
+	// widgets 序列化编排（Spec 33）：按页面类型解析的左右栏实例序列，
+	// 由 assembleWidgets 在 fillSidebar 后装配；sidebar/rightbar 模板 range 分派渲染。
+	LeftbarWidgets  []*WidgetInstance
+	RightbarWidgets []*WidgetInstance
+
 	// 评论区（Layout=post 且 comments.enabled 时填充）。
 	Comments     []*CommentItem // 评论树（顶级 + Children 两层）
 	CommentCount int            // 已发布评论总数（"N 条评论"计数）
@@ -94,7 +99,8 @@ type CatItem struct {
 type TagItem struct {
 	Name  string
 	Count int
-	Size  int // 标签云字号（px），0 表示默认
+	Size  int    // 标签云字号（px），0 表示默认
+	Color string // 标签云渐变色（tagcloud color 参数开启时插值生成），空不输出 color style
 }
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
@@ -252,6 +258,9 @@ type Site struct {
 	Article     ArticleConfig  `yaml:"article" json:"article"`
 	SEO         SEOConfig      `yaml:"seo" json:"seo"`  // 站点级 SEO 配置（Spec 42）
 	Inject      InjectConfig   `yaml:"-" json:"inject"` // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
+	// Widgets 侧边栏组件配置化编排（Spec 33）：仅 site.yml 驱动（技术决策：Console 可视化编辑留待 Spec 47），
+	// 不入 settings 表，RebuildSite 热更新不触碰。
+	Widgets WidgetsConfig `yaml:"widgets" json:"-"`
 }
 
 // SEOConfig 站点级 SEO 配置（site.yml seo 段 / settings 表 seo 段，Spec 42）。

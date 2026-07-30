@@ -197,6 +197,27 @@ article:
 admin:
   password: ''            # 【密钥】/admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
 
+# 侧边栏组件配置化编排（Spec 33，形状对照原版 _data/widgets.yml + site_tree）。
+# 不写本段 = 内置缺省布局（与未配置化前渲染结果一致）：
+#   leftbar:  related, recent, tagcloud, popular（搜索框固定首位，不参与编排）
+#   rightbar: welcome, author, siteinfo, latest_comment, toc
+# library：组件库（组件名 → layout + 参数），同名组件浅合并覆盖内置缺省参数；
+# pages：页面类型 → 左右栏组件序列，类型枚举 index/post/page/archive/categories/tags/topic/wiki/friends/notes/moments，
+# 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline。
+# widgets:
+#   library:
+#     recent: {layout: recent, limit: 10}                 # 最近更新（rss: '' 可隐藏订阅按钮）
+#     toc: {layout: toc, list_number: false, min_depth: 1, max_depth: 6, collapse: 'false'}
+#     tagcloud: {layout: tagcloud, amount: 20, orderby: count, order: -1, show_count: false, color: false, start_color: '#999', end_color: '#1BCDFC'}
+#     intro: {layout: markdown, title: 公告, content: 任意文本}  # 通用 markdown 组件
+#     ghrepo: {layout: ghrepo, repo: xaoxuu/hexo-theme-stellar} # GitHub 仓库卡（走本地 /api/gh 代理）
+#     ghuser: {layout: ghuser, username: xaoxuu, avatar: true}  # GitHub 用户卡
+#     ghissues: {layout: ghissues, repo: xaoxuu/hexo-theme-stellar, title: Recent Issues, limit: 3, labels: ''}
+#     timeline: {layout: timeline, title: 近期动态, api: 'https://api.github.com/repos/xaoxuu/hexo-theme-stellar/issues', user: '', limit: 10}
+#   pages:
+#     post: {leftbar: [related, recent], rightbar: [ghrepo, toc]}
+#     index: {leftbar: [recent, tagcloud], rightbar: [welcome, author, siteinfo, latest_comment]}
+
 # SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
 # 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。
 seo:

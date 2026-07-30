@@ -88,7 +88,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			},
 			Content: template.HTML(p.ContentHTML),
 		}
-		data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 		// 左栏「专栏：xxx」系列文章 widget（对齐 widgets/related.ejs relatedPostsInTopic）
 		if p.Topic != "" {
 			if series, err := s.st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
@@ -170,7 +170,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		Content: template.HTML(p.HTML),
 	}
 
-	data.TOC = tmpl.ExtractTOC(p.HTML)
+	data.TOC = tmpl.ExtractTOCWith(p.HTML, s.tocOptions())
 	desc := p.Excerpt
 	if desc == "" {
 		d := stripHTML(p.HTML)
@@ -283,7 +283,7 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 		},
 		Content: notice + template.HTML(p.ContentHTML),
 	}
-	data.TOC = tmpl.ExtractTOC(p.ContentHTML)
+	data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 	s.fillSidebar(data)
 	s.fillSEO(data, c)
 	html, err := s.engine.Render("layout/base", data)
