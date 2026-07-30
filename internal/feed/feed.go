@@ -234,13 +234,18 @@ func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*s
 // robots GET /robots.txt
 func (h *Handler) robots(c *gin.Context) {
 	base := h.baseURL(c)
-	body := strings.Join([]string{
+	lines := []string{
 		"User-agent: *",
 		"Allow: /",
 		"Disallow: /console",
 		"Sitemap: " + base + "/sitemap.xml",
-		"",
-	}, "\n")
+	}
+	// Spec 42：站点级 SEO 配置的 robots 附加规则，多行原样追加（热更新：h.site 指针字段即最新值）
+	if extra := strings.TrimSpace(h.site.SEO.RobotsExtra); extra != "" {
+		lines = append(lines, "", extra)
+	}
+	lines = append(lines, "")
+	body := strings.Join(lines, "\n")
 	c.Header("Cache-Control", "max-age="+strconv.Itoa(robotsCacheAge))
 	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(body))
 }
