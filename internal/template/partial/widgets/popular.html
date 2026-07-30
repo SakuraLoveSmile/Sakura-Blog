@@ -1,0 +1,13 @@
+{{- /* widgets/popular.html: 热门文章，按阅读量降序 top 5，结构对齐 widgets/recent.ejs（post-list） */ -}}
+{{if .Popular}}
+<widget class="widget-wrapper popular post-list">
+  <div class="widget-header dis-select">
+    <span class="name">热门文章</span>
+  </div>
+  <div class="widget-body fs14">
+    {{range .Popular}}
+    <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+    {{end}}
+  </div>
+</widget>
+{{end}}

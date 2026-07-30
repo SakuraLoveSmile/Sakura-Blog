@@ -1,0 +1,24 @@
+{{- /* widgets/latest_comment.html: 最新评论（本地数据 timeline 实例）。
+   结构对齐 widgets/timeline.ejs（widget-wrapper.timeline > widget-body > tag-plugin.timeline），
+   timenode 结构对齐 artalk_latest_comment.js：.header(.user-info+time) + a.body。
+   样式 main.css 已有（timenode 规则），零新增 CSS。数据来自 fillSidebar 的 ListRecentComments(5) */ -}}
+{{if .LatestComments}}
+<widget class="widget-wrapper timeline">
+  <div class="widget-header dis-select">
+    <span class="name">最新评论</span>
+  </div>
+  <div class="widget-body fs14">
+    <div class="tag-plugin timeline">
+      {{range .LatestComments}}
+      <div class="timenode">
+        <div class="header">
+          <div class="user-info"><span>{{.Nick}}</span></div>
+          <span>{{.TimeAgo}}</span>
+        </div>
+        <a class="body" href="{{.URL}}">{{.Excerpt}}</a>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</widget>
+{{end}}

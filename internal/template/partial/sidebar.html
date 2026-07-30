@@ -42,80 +42,14 @@
 </div>
 
 {{- /* widgets 区：对应 _partial/widgets/
-   .widgets > widget.widget-wrapper */}}
+   .widgets > widget.widget-wrapper
+   各段已拆到 partial/widgets/*.html（Spec 33），此处保持硬编码序列不变（纯拆分安全点） */}}
 <div class="widgets">
-
-  {{- /* 搜索框：对应 _partial/sidebar/search.ejs（无 wiki 维度，filter/placeholder 取默认）
-     对齐 index_leftbar.ejs layoutWidgets：搜索框在 .widgets 容器内第一个，而非独立层级。
-     .search-wrapper#search-wrapper > form.search-form(a.search-button + input#search-input) + #search-result + .search-no-result
-     交互在 assets/js/search/local-search.js（去 jQuery 移植版）*/}}
-  <div class="search-wrapper" id="search-wrapper">
-    <form class="search-form">
-      <a class="search-button" onclick="document.getElementById('search-input').focus();">
-        {{icon "default:search"}}
-      </a>
-      <input type="text" class="search-input" id="search-input" placeholder="站内搜索">
-    </form>
-    <div id="search-result"></div>
-    <div class="search-no-result">没有找到内容！</div>
-  </div>
-
-  {{- /* 专栏系列：对齐 widgets/related.ejs relatedPostsInTopic（仅文章页且文章有 topic 时渲染，位置在「最近更新」上方，对齐 xaoxuu.com 文章页左栏）*/}}
-  {{if .TopicSeries}}
-  <widget class="widget-wrapper related post-list">
-    <div class="widget-header dis-select">
-      <span class="name">专栏：{{.TopicSeries.Name}}</span>
-    </div>
-    <div class="widget-body">
-      {{range .TopicSeries.Posts}}
-      <a class="item{{if .Active}} active{{end}}" href="/post/{{.Slug}}"><span class="title">{{.Title}}</span>{{if .Active}}{{icon "default:bookmark.active"}}{{end}}</a>
-      {{end}}
-    </div>
-  </widget>
-  {{end}}
-
-  {{- /* 最近更新：对应 widgets/recent.ejs（post-list），对齐 xaoxuu.com 左栏组件。数据来自 DB 最新 5 篇（fillSidebar 填充）*/}}
-  <widget class="widget-wrapper recent post-list">
-    <div class="widget-header dis-select">
-      <span class="name">最近更新</span>
-      <a class="cap-action" id="rss" title="Subscribe" href="/rss.xml">
-        {{icon "default:rss"}}
-      </a>
-    </div>
-    <div class="widget-body fs14">
-      {{range .Recent}}
-      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
-      {{end}}
-    </div>
-  </widget>
-
-  {{- /* 标签云：对应 widgets/tagcloud.ejs，按文章数映射字号。数据来自 fillSidebar 的 CountByTag */}}
-  {{if .TagCloud}}
-  <widget class="widget-wrapper tagcloud">
-    <div class="widget-header dis-select">
-      <span class="name">标签</span>
-    </div>
-    <div class="widget-body fs14">
-      {{range .TagCloud}}
-      <a class="tag" href="/tags/{{.Name}}" style="font-size: {{if .Size}}{{.Size}}{{else}}14{{end}}px">{{.Name}}</a>
-      {{end}}
-    </div>
-  </widget>
-  {{end}}
-
-  {{- /* 热门文章：按阅读量降序 top 5，结构对齐 widgets/recent.ejs（post-list） */}}
-  {{if .Popular}}
-  <widget class="widget-wrapper popular post-list">
-    <div class="widget-header dis-select">
-      <span class="name">热门文章</span>
-    </div>
-    <div class="widget-body fs14">
-      {{range .Popular}}
-      <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
-      {{end}}
-    </div>
-  </widget>
-  {{end}}
+  {{template "partial/widgets/search" .}}
+  {{template "partial/widgets/related" .}}
+  {{template "partial/widgets/recent" .}}
+  {{template "partial/widgets/tagcloud" .}}
+  {{template "partial/widgets/popular" .}}
 </div>
 
 {{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv

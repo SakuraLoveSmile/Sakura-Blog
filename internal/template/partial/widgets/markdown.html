@@ -1,0 +1,26 @@
+{{- /* widgets/markdown.html: 欢迎语，对应 widgets/markdown.ejs，对齐 xaoxuu.com 右栏第一个组件（欢迎，旅行者：）
+   末段 linklist 对齐原版 markdown.ejs 的 item.linklist → components/linklist.ejs：
+   .linklist.{align}（columns 规则：默认按链接数；columns==1 且多项时 left，否则 center）
+   > a.link > .flex > icon?+span（columns<=2 才显示文字，规则见 model.go LinkListConfig）。
+   数据来自 site.yml rightbar.welcome_linklist，未配置则不渲染。*/ -}}
+<widget class="widget-wrapper markdown">
+  <div class="widget-header dis-select">
+    <span class="name">欢迎，旅行者：</span>
+  </div>
+  <div class="widget-body fs14">
+    {{if .Site.Rightbar.Intro}}<div style="white-space:pre-wrap">{{.Site.Rightbar.Intro}}</div>{{else}}<p>这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。</p>
+    <blockquote>
+      <p>左侧可以搜索文章，右下角可以切换深浅色主题。</p>
+    </blockquote>{{end}}
+    {{if .Site.Rightbar.WelcomeLinklist.Items}}
+    {{$ll := .Site.Rightbar.WelcomeLinklist}}
+    <div class="linklist {{$ll.AlignClass}}" style="grid-template-columns:repeat({{$ll.EffectiveColumns}},1fr);">
+      {{range $ll.Items}}
+      <a class="link" title="{{.Title}}" href="{{url_for .URL}}">
+        <div class="flex">{{if .Icon}}{{icon .Icon}}{{end}}{{if $ll.ShowText}}<span>{{.Title}}</span>{{end}}</div>
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</widget>

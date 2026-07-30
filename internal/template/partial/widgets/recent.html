@@ -1,0 +1,15 @@
+{{- /* widgets/recent.html: 最近更新，对应 widgets/recent.ejs（post-list），对齐 xaoxuu.com 左栏组件。
+   数据来自 DB 最新 5 篇（fillSidebar 填充）*/ -}}
+<widget class="widget-wrapper recent post-list">
+  <div class="widget-header dis-select">
+    <span class="name">最近更新</span>
+    <a class="cap-action" id="rss" title="Subscribe" href="/rss.xml">
+      {{icon "default:rss"}}
+    </a>
+  </div>
+  <div class="widget-body fs14">
+    {{range .Recent}}
+    <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
+    {{end}}
+  </div>
+</widget>

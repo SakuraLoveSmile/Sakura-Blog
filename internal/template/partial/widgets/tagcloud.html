@@ -1,0 +1,13 @@
+{{- /* widgets/tagcloud.html: 标签云，对应 widgets/tagcloud.ejs，按文章数映射字号。数据来自 fillSidebar 的 CountByTag */ -}}
+{{if .TagCloud}}
+<widget class="widget-wrapper tagcloud">
+  <div class="widget-header dis-select">
+    <span class="name">标签</span>
+  </div>
+  <div class="widget-body fs14">
+    {{range .TagCloud}}
+    <a class="tag" href="/tags/{{.Name}}" style="font-size: {{if .Size}}{{.Size}}{{else}}14{{end}}px">{{.Name}}</a>
+    {{end}}
+  </div>
+</widget>
+{{end}}

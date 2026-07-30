@@ -1,0 +1,20 @@
+{{- /* widgets/toc.html: 本文目录，对应 widgets/toc.ejs（layoutDiv：body + widget-footer 回到顶部）。
+   TOC 非 first-child 时 main.css 另有 top/padding 规则（7896-7901），布局兼容。
+   原版 widgets.yml 的 edit_this_page 在 toc.ejs 中未实现（死配置），本项目由 Spec 32 文章页脚承接，此处不做 */ -}}
+{{if .TOC}}
+<widget class="widget-wrapper toc" id="data-toc" collapse="false">
+  <div class="widget-header dis-select">
+    <span class="name">本文目录</span>
+    <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
+  </div>
+  <div class="widget-body">
+    {{.TOC}}
+  </div>
+  <div class="widget-footer">
+    <a class="top" onclick="util.scrollTop()">
+      {{icon "default:upup"}}
+      <span>回到顶部</span>
+    </a>
+  </div>
+</widget>
+{{end}}
