@@ -65,7 +65,7 @@ func (h *Handler) listPublic(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
-	total, err := h.store.CountMoments()
+	total, err := h.store.CountPublicMoments()
 	if err != nil {
 		c.String(http.StatusInternalServerError, "count moments: %v", err)
 		return
@@ -74,7 +74,7 @@ func (h *Handler) listPublic(c *gin.Context) {
 	if totalPages > 0 && page > totalPages {
 		page = totalPages
 	}
-	moments, err := h.store.ListMoments(page, pageSize)
+	moments, err := h.store.ListPublicMoments(page, pageSize)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "list moments: %v", err)
 		return
@@ -85,7 +85,7 @@ func (h *Handler) listPublic(c *gin.Context) {
 		items = append(items, &tmpl.MomentItem{
 			ID:          m.ID,
 			ContentHTML: template.HTML(m.ContentHTML),
-			Images:      parseImages(m.Images),
+			Images:      store.DecodeMomentImages(m.Images),
 			TimeAgo:     comment.TimeAgo(m.CreatedAt),
 			Date:        m.CreatedAt.Format("2006-01-02 15:04"),
 		})
@@ -126,9 +126,9 @@ func (h *Handler) listPublic(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
-// RecentItems 返回最新 limit 条 moments 的视图模型，供其它页面（如 /notes 近期动态）内联复用。
+// RecentItems 返回最新 limit 条公开 moments 的视图模型，供其它页面（如 /notes 近期动态）内联复用。
 func (h *Handler) RecentItems(limit int) []*tmpl.MomentItem {
-	moments, err := h.store.ListMoments(1, limit)
+	moments, err := h.store.ListPublicMoments(1, limit)
 	if err != nil {
 		return nil
 	}
@@ -137,32 +137,12 @@ func (h *Handler) RecentItems(limit int) []*tmpl.MomentItem {
 		items = append(items, &tmpl.MomentItem{
 			ID:          m.ID,
 			ContentHTML: template.HTML(m.ContentHTML),
-			Images:      parseImages(m.Images),
+			Images:      store.DecodeMomentImages(m.Images),
 			TimeAgo:     comment.TimeAgo(m.CreatedAt),
 			Date:        m.CreatedAt.Format("2006-01-02 15:04"),
 		})
 	}
 	return items
-}
-
-func parseImages(raw string) []string {
-	if strings.TrimSpace(raw) == "" {
-		return nil
-	}
-	parts := strings.FieldsFunc(raw, func(r rune) bool {
-		return r == ',' || r == '\n' || r == '\r'
-	})
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
-		}
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
 }
 
 func joinImages(urls []string) string {

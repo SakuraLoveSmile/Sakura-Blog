@@ -1,0 +1,16 @@
+{{- /* moment_gallery.html: 瞬间图片九宫格，复用 Stellar main.css .tag-plugin.gallery.grid-box 类结构
+   （对齐 internal/post/shortcode.go renderGallery 输出：div.grid-cell.lazy-box > img.lazy + lazy-icon + image-meta）。
+   size/ratio 由 MomentItem.GridSize/GridRatio 按图片数自适应（1 / 2-4 / 5-9 三档）。
+   data-fancybox 以 moment-{ID} 分组，走 base.html 既有 fancybox 委托（selector: div.lazy-box>img.lazy）。
+   img.lazy + data-src 走既有 vanilla-lazyload 管线，无需 wrapLazyloadImages 转换。
+   入参 . = *MomentItem。
+*/ -}}
+<div class="tag-plugin gallery grid-box" size="{{.GridSize}}" ratio="{{.GridRatio}}">
+  {{- range .Images}}
+  <div class="grid-cell lazy-box">
+    <img class="lazy" data-fancybox="moment-{{$.ID}}" data-src="{{.}}" alt=""/>
+    <div class="lazy-icon"></div>
+    <div class="image-meta"></div>
+  </div>
+  {{- end}}
+</div>

@@ -35,11 +35,7 @@
       <div class="body">
         {{- if .ContentHTML}}{{.ContentHTML}}{{end}}
         {{- if .Images}}
-        <p>
-          {{- range .Images}}
-          <img src="{{.}}" alt="" loading="lazy">
-          {{- end}}
-        </p>
+        {{template "partial/moment_gallery" .}}
         {{- end}}
       </div>
     </div>
