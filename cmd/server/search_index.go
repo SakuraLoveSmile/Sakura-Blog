@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"blog/internal/og"
@@ -39,6 +42,32 @@ func setupSearchIndex(st *store.Store) *search.Index {
 	return searchIdx
 }
 
+// rebuildSearchIndex FTS 全量重建（整站恢复后用，Spec 41）：不同于 setupSearchIndex 的空表回填，
+// 无条件重建全部已发布文章的索引（密码文章正文不入索引，与回填同策略）。
+func rebuildSearchIndex(st *store.Store, searchIdx *search.Index) {
+	if searchIdx == nil {
+		return
+	}
+	published, err := st.ListPublished()
+	if err != nil {
+		log.Printf("search: rebuild list failed: %v", err)
+		return
+	}
+	items := make([]search.Item, 0, len(published))
+	for _, p := range published {
+		content := stripHTML(p.ContentHTML)
+		if p.IsPasswordProtected() {
+			content = ""
+		}
+		items = append(items, search.Item{Slug: p.Slug, Title: p.Title, Content: content})
+	}
+	if err := searchIdx.Rebuild(items); err != nil {
+		log.Printf("search: rebuild after restore failed: %v", err)
+		return
+	}
+	log.Printf("search: fts index rebuilt after restore, %d posts", len(items))
+}
+
 // newPostWriteHook store 写路径统一回调：搜索索引同步 + OG 缓存失效。
 // searchIdx 可空（FTS 装配失败降级），此时只做 OG 失效。
 func newPostWriteHook(st *store.Store, searchIdx *search.Index, ogGen *og.Generator) func(op, slug string) {
@@ -69,5 +98,19 @@ func newPostWriteHook(st *store.Store, searchIdx *search.Index, ogGen *og.Genera
 				log.Printf("search: index %s failed: %v", slug, err)
 			}
 		}
+	}
+}
+
+// clearOGCache 清空 OG 分享图缓存目录（整站恢复后用，Spec 41）：只删 .png，保留 embed 模式落盘的字体文件。
+func clearOGCache(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".png") {
+			continue
+		}
+		_ = os.Remove(filepath.Join(dir, e.Name()))
 	}
 }

@@ -134,6 +134,11 @@ func (s *webServer) baseURL(c *gin.Context) string {
 	return "http://" + c.Request.Host
 }
 
+// invalidateSidebarCache 侧边栏快照立即失效（整站恢复后用，Spec 41）；平时靠 45s TTL 自然过期。
+func (s *webServer) invalidateSidebarCache() {
+	s.sidebarExpiry = time.Time{}
+}
+
 // fillSidebar 填充侧边栏动态数据（近期发布 5 篇 + 标签云前 20 + 热门 top5 + 站点统计 + 最新评论 5 条），所有前台页面渲染前调用。
 // 查询失败时留空，widget 降级为空列表，不影响主内容渲染。
 // P2-13：结果缓存 45s（TTL 内新文章/评论稍晚出现在侧栏，可接受）；CountByTag 合并为单次调用（原标签云与统计各查一次）。

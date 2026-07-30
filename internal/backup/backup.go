@@ -1,5 +1,5 @@
 // Package backup 数据备份与导出：SQLite 快照 + uploads 打包、文章 Markdown 导出/导入、每日自动备份留存。
-// 全量恢复（整库替换）不提供在线接口：停服 → 解包覆盖 data/ → 重启。
+// 全量恢复见 restore.go（Spec 41）：zip 包/本地快照在线一键还原，恢复前自动兜底快照。
 package backup
 
 import (
@@ -28,6 +28,8 @@ type Service struct {
 	backupDir string // 自动备份输出目录（data/backups）
 	keep      int    // 自动备份留存份数
 	auto      bool   // 自动备份是否开启（status API 展示用）
+	// restoreHook 恢复完成回调（Spec 41）：main.go 装配 FTS 重建/配置热更新/缓存清理。
+	restoreHook func()
 }
 
 // Config 备份服务初始化参数。

@@ -26,6 +26,45 @@ const importResult = ref<{
   skipped: string[];
 } | null>(null);
 
+// 整站恢复（Spec 41）：上传 zip / 服务器快照，双重确认（输入 RESTORE）
+const restoring = ref(false);
+const restoreConfirmText = ref("");
+const pendingRestore = ref<{ kind: "upload" | "snapshot"; file?: File; name?: string } | null>(null);
+const restoreStrict = ref(false);
+
+function pickRestoreFile(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files?.length) return;
+  pendingRestore.value = { kind: "upload", file: input.files[0] };
+  restoreConfirmText.value = "";
+  input.value = "";
+}
+
+function pickRestoreSnapshot(name: string) {
+  pendingRestore.value = { kind: "snapshot", name };
+  restoreConfirmText.value = "";
+}
+
+async function executeRestore() {
+  const p = pendingRestore.value;
+  if (!p || restoreConfirmText.value !== "RESTORE") return;
+  restoring.value = true;
+  try {
+    if (p.kind === "upload" && p.file) {
+      await backupApi.restore(p.file, restoreStrict.value);
+    } else if (p.kind === "snapshot" && p.name) {
+      await backupApi.restoreSnapshot(p.name);
+    }
+    Toast.success("恢复完成，前台与搜索索引已同步");
+    pendingRestore.value = null;
+    loadStatus();
+  } catch (err: any) {
+    Toast.error(err.response?.data?.error || "恢复失败");
+  } finally {
+    restoring.value = false;
+  }
+}
+
 async function loadStatus() {
   loading.value = true;
   try {
@@ -119,6 +158,7 @@ onMounted(loadStatus);
                 <th class="py-1.5 font-medium">文件名</th>
                 <th class="py-1.5 font-medium">大小</th>
                 <th class="py-1.5 font-medium">时间</th>
+                <th class="py-1.5"></th>
               </tr>
             </thead>
             <tbody>
@@ -126,6 +166,13 @@ onMounted(loadStatus);
                 <td class="py-1.5 font-mono text-xs">{{ b.name }}</td>
                 <td class="py-1.5 text-xs">{{ formatSize(b.size) }}</td>
                 <td class="py-1.5 text-xs">{{ formatTime(b.mod_time) }}</td>
+                <td class="py-1.5 text-right">
+                  <button
+                    class="text-xs text-red-500 hover:text-red-600 hover:underline dark:text-red-400"
+                    :disabled="restoring"
+                    @click="pickRestoreSnapshot(b.name)"
+                  >恢复</button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -196,14 +243,76 @@ onMounted(loadStatus);
         </div>
       </VCard>
 
+      <!-- 整站恢复（Spec 41） -->
+      <VCard>
+        <template #header>
+          <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
+            <Icon icon="ri:restart-line" class="text-red-500" />
+            从备份恢复
+          </span>
+        </template>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              上传全量备份 zip（blog-backup-*.zip）一键还原数据库、附件与站点配置；也可在上方列表对服务器留存的备份直接点「恢复」。
+            </p>
+            <p class="mt-1 text-xs text-red-500 dark:text-red-400">
+              恢复会覆盖当前全部数据（执行前自动留存 .pre-restore 兜底快照）。
+            </p>
+            <label class="mt-2 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <input v-model="restoreStrict" type="checkbox" class="h-3.5 w-3.5" />
+              严格模式：先清空附件目录再解包（默认保留包外既有附件）
+            </label>
+          </div>
+          <label class="shrink-0 cursor-pointer">
+            <VButton type="danger" :loading="restoring" @click.prevent>
+              <template #icon>
+                <Icon icon="ri:upload-cloud-2-line" class="h-full w-full" />
+              </template>
+              选择备份包
+            </VButton>
+            <input type="file" accept=".zip" class="hidden" :disabled="restoring" @change="pickRestoreFile" />
+          </label>
+        </div>
+
+        <!-- 双重确认：输入 RESTORE 才可执行 -->
+        <div
+          v-if="pendingRestore"
+          class="mt-4 rounded border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10"
+          style="border-radius: 4px"
+        >
+          <p class="text-xs font-medium text-red-700 dark:text-red-300">
+            即将恢复：{{ pendingRestore.kind === "upload" ? pendingRestore.file?.name : pendingRestore.name }}
+          </p>
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">该操作覆盖当前数据，请输入 <b>RESTORE</b> 确认：</p>
+          <div class="mt-2 flex items-center gap-2">
+            <input
+              v-model="restoreConfirmText"
+              type="text"
+              placeholder="RESTORE"
+              class="w-40 rounded border border-red-300 bg-white px-2 py-1 text-xs font-mono dark:border-red-500/40 dark:bg-gray-800 dark:text-gray-200"
+              style="border-radius: 4px"
+            />
+            <VButton
+              type="danger"
+              size="sm"
+              :disabled="restoreConfirmText !== 'RESTORE'"
+              :loading="restoring"
+              @click="executeRestore"
+            >执行恢复</VButton>
+            <VButton size="sm" @click="pendingRestore = null">取消</VButton>
+          </div>
+        </div>
+      </VCard>
+
       <!-- 全量恢复说明 -->
       <div class="rounded border border-dashed border-gray-300 p-5 dark:border-gray-600" style="border-radius: 4px">
         <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
           <Icon icon="ri:tools-line" />
-          如何全量恢复？
+          离线恢复（备选）
         </h3>
         <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-          出于安全考虑不提供在线恢复。手动步骤：停止服务 → 解开备份 zip，将 blog.db 覆盖到 data/blog.db、uploads/ 覆盖到
+          服务无法启动时的手动步骤：停止服务 → 解开备份 zip，将 blog.db 覆盖到 data/blog.db、uploads/ 覆盖到
           data/uploads/（如有需要将 site.yml 放回 config/）→ 重新启动服务。
         </p>
       </div>

@@ -245,6 +245,17 @@ func main() {
 		backupSvc.StartAuto(24 * time.Hour)
 	}
 
+	// 整站恢复后置链路（Spec 41）：设置/文章已随库恢复，需同步内存态与衍生缓存——
+	// 站点配置热更新、FTS 全量重建、侧边栏快照失效、OG 缓存清空。
+	backupSvc.SetRestoreHook(func() {
+		if err := config.RebuildSite(st, site); err != nil {
+			log.Printf("restore: rebuild site config: %v", err)
+		}
+		rebuildSearchIndex(st, searchIdx)
+		ws.invalidateSidebarCache()
+		clearOGCache(ogCacheDir)
+	})
+
 	// 友链动态聚合：后台定时抓取配置友链（site.yml links 带 rss）的 RSS/Atom 最新文章。
 	friendsAgg := friends.New(site)
 	friendsAgg.Start()
