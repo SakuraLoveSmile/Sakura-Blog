@@ -242,7 +242,7 @@ func (h *Handler) deleteAttachment(c *gin.Context) {
 
 // attachmentRef 引用来源信息。
 type attachmentRef struct {
-	Type  string `json:"type"`  // "post" | "page"
+	Type  string `json:"type"`  // "post" | "page" | "moment"
 	Slug  string `json:"slug"`
 	Title string `json:"title"`
 }
@@ -297,10 +297,39 @@ func (h *Handler) scanAttachmentRefs(url string) []attachmentRef {
 		}
 	}
 
+	// 扫描瞬间（Spec 43：images 列存 uploads 相对路径 JSON 数组，直接 LIKE 匹配 URL）
+	rows3, err3 := h.store.DB().Query(`SELECT id, content_md FROM moments WHERE images LIKE ?`, pattern)
+	if err3 == nil {
+		defer rows3.Close()
+		for rows3.Next() {
+			var id int64
+			var contentMD string
+			if rows3.Scan(&id, &contentMD) == nil {
+				refs = append(refs, attachmentRef{Type: "moment", Slug: strconv.FormatInt(id, 10), Title: momentRefTitle(id, contentMD)})
+			}
+		}
+	}
+
 	if refs == nil {
 		refs = []attachmentRef{}
 	}
 	return refs
+}
+
+// momentRefTitle 为瞬间引用生成可读标题：取正文首行缩略，空则回落 “瞬间 #id”。
+func momentRefTitle(id int64, contentMD string) string {
+	text := strings.TrimSpace(contentMD)
+	if i := strings.IndexAny(text, "\r\n"); i >= 0 {
+		text = strings.TrimSpace(text[:i])
+	}
+	if text == "" {
+		return "瞬间 #" + strconv.FormatInt(id, 10)
+	}
+	r := []rune(text)
+	if len(r) > 20 {
+		text = string(r[:20]) + "…"
+	}
+	return "瞬间：" + text
 }
 
 func randomHex(n int) string {

@@ -223,6 +223,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 瞬间
 		authed.GET("/moments", h.listMoments)
 		authed.POST("/moments", h.createMoment)
+		authed.PUT("/moments/:id", h.updateMoment)
 		authed.DELETE("/moments/:id", h.deleteMoment)
 
 		// 站点设置（分段）

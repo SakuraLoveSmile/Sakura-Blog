@@ -13,20 +13,26 @@ import (
 
 // momentJSON 瞬间 API 响应模型。
 type momentJSON struct {
-	ID        int64  `json:"id"`
-	ContentMD string `json:"content_md"`
-	Content   string `json:"content"`
-	Images    string `json:"images"`
-	CreatedAt string `json:"created_at"`
+	ID         int64    `json:"id"`
+	ContentMD  string   `json:"content_md"`
+	Content    string   `json:"content"`
+	Images     []string `json:"images"`
+	Visibility string   `json:"visibility"`
+	CreatedAt  string   `json:"created_at"`
 }
 
 func toMomentJSON(m *store.Moment) *momentJSON {
+	imgs := store.DecodeMomentImages(m.Images)
+	if imgs == nil {
+		imgs = []string{}
+	}
 	return &momentJSON{
-		ID:        m.ID,
-		ContentMD: m.ContentMD,
-		Content:   m.ContentHTML,
-		Images:    m.Images,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		ID:         m.ID,
+		ContentMD:  m.ContentMD,
+		Content:    m.ContentHTML,
+		Images:     imgs,
+		Visibility: m.Visibility,
+		CreatedAt:  m.CreatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -68,14 +74,16 @@ func (h *Handler) listMoments(c *gin.Context) {
 // createMoment POST /api/v1/moments：发布瞬间。
 func (h *Handler) createMoment(c *gin.Context) {
 	var req struct {
-		ContentMD string `json:"content_md"`
-		Images    string `json:"images"`
+		ContentMD  string   `json:"content_md"`
+		Images     []string `json:"images"`
+		Visibility string   `json:"visibility"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
 		return
 	}
-	if strings.TrimSpace(req.ContentMD) == "" {
+	// 内容或图片至少其一（纯图瞬间允许）
+	if strings.TrimSpace(req.ContentMD) == "" && store.EncodeMomentImages(req.Images) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
 		return
 	}
@@ -89,13 +97,59 @@ func (h *Handler) createMoment(c *gin.Context) {
 	m := &store.Moment{
 		ContentMD:   req.ContentMD,
 		ContentHTML: contentHTML,
-		Images:      strings.TrimSpace(req.Images),
+		Images:      store.EncodeMomentImages(req.Images),
+		Visibility:  req.Visibility,
 	}
 	if _, err := h.store.CreateMoment(m); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败: " + err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, toMomentJSON(m))
+}
+
+// updateMoment PUT /api/v1/moments/:id：编辑瞬间（正文/图片/可见性）。
+func (h *Handler) updateMoment(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 ID"})
+		return
+	}
+	var req struct {
+		ContentMD  string   `json:"content_md"`
+		Images     []string `json:"images"`
+		Visibility string   `json:"visibility"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		return
+	}
+	if strings.TrimSpace(req.ContentMD) == "" && store.EncodeMomentImages(req.Images) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
+		return
+	}
+	existing, err := h.store.GetMoment(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "瞬间不存在"})
+		return
+	}
+	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		return
+	}
+	existing.ContentMD = req.ContentMD
+	existing.ContentHTML = contentHTML
+	existing.Images = store.EncodeMomentImages(req.Images)
+	existing.Visibility = req.Visibility
+	if err := h.store.UpdateMoment(existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, toMomentJSON(existing))
 }
 
 // deleteMoment DELETE /api/v1/moments/:id：删除瞬间。
