@@ -114,3 +114,110 @@ func TestInlineLabelsSkipCode(t *testing.T) {
 		t.Errorf("inline code should stay raw: %s", out)
 	}
 }
+
+// --- Spec 31 展示类标签测试（输出结构对照原版 scripts/tags/lib）---
+
+func TestAboutTag(t *testing.T) {
+	out := runShortcodes("{% about avatar:/a.png height:80px %}**hi**{% endabout %}")
+	for _, want := range []string{`class="tag-plugin about"`, `about-header`, `src="/a.png"`, `height="80px"`, `about-body fs14`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("about output missing %q: %s", want, out)
+		}
+	}
+}
+
+func TestBlockquoteTag(t *testing.T) {
+	out := runShortcodes("{% blockquote indent:true %}text{% endblockquote %}")
+	if !strings.Contains(out, `class="tag-plugin blockquote" indent="true"`) {
+		t.Fatalf("blockquote output wrong: %s", out)
+	}
+}
+
+func TestNavbarTag(t *testing.T) {
+	out := runShortcodes("{% navbar active:/about/ [Home](/) [About](/about/) %}")
+	for _, want := range []string{`class="tag-plugin navbar"`, `<a class="link" href="/">Home</a>`, `<a class="link active" href="/about/">About</a>`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("navbar output missing %q: %s", want, out)
+		}
+	}
+}
+
+func TestBannerTagExtractsNavbar(t *testing.T) {
+	src := "{% banner 标题 副标题 bg:/bg.png link:https://x.com %}\n{% navbar [Home](/) %}\n{% endbanner %}"
+	out := runShortcodes(src)
+	for _, want := range []string{`class="tag-plugin banner"`, `data-src="/bg.png"`, `tag-plugin navbar`, `<div class="text title">标题</div>`, `<div class="text subtitle">副标题</div>`, `<a class="banner-link" href="https://x.com"></a>`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("banner output missing %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, "window.history.back") {
+		t.Fatalf("banner with link should not render back button: %s", out)
+	}
+}
+
+func TestFrameTag(t *testing.T) {
+	out := runShortcodes("{% frame iphone11 img:/p.png 示例 %}")
+	for _, want := range []string{`class="tag-plugin img-wrap"`, `id="iphone11"`, `class="img" src="/p.png"`, `image-caption`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("frame output missing %q: %s", want, out)
+		}
+	}
+	raw := "{% frame img:/p.png %}"
+	if got := runShortcodes(raw); got != raw {
+		t.Fatalf("frame without device should stay raw, got %s", got)
+	}
+}
+
+func TestMDTag(t *testing.T) {
+	out := runShortcodes("{% md /notes/a.md %}")
+	if !strings.Contains(out, `class="data-service ds-mdrender" src="/notes/a.md"`) || !strings.Contains(out, `id="md_`) {
+		t.Fatalf("md output wrong: %s", out)
+	}
+}
+
+func TestTOCTag(t *testing.T) {
+	// wiki 参数命中：本项目 wiki 树未建（Spec 35），对齐原版 proj 缺失行为输出空
+	if got := runShortcodes("{% toc wiki:stellar %}"); got != "" {
+		t.Fatalf("toc with wiki should render empty, got %q", got)
+	}
+	out := runShortcodes("{% toc 目录 open:true %}")
+	for _, want := range []string{`class="tag-plugin toc"`, `<details class="toc" open>`, `<summary>目录</summary>`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("toc output missing %q: %s", want, out)
+		}
+	}
+}
+
+func TestAlbumsPostersTag(t *testing.T) {
+	out := runShortcodes("{% albums repo:owner/repo size:m %}")
+	for _, want := range []string{`class="tag-plugin albums-wrap"`, `ds-friends`, `data-api="https://raw.githubusercontent.com/owner/repo/output/v2/data.json"`, `size="m"`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("albums output missing %q: %s", want, out)
+		}
+	}
+	out2 := runShortcodes("{% posters api:https://e.com/d.json %}")
+	for _, want := range []string{`class="tag-plugin posters-wrap"`, `data-api="https://e.com/d.json"`, `size="xs"`} {
+		if !strings.Contains(out2, want) {
+			t.Fatalf("posters output missing %q: %s", want, out2)
+		}
+	}
+}
+
+func TestReelTag(t *testing.T) {
+	out := runShortcodes("{% reel 标题 author:作者 date:2026 footer:完 %}正文{% endreel %}")
+	for _, want := range []string{`class="tag-plugin reel"`, `<div class="title">标题</div>`, `<div class="meta"><span>作者</span></div>`, `<div class="date">2026</div>`, `<div class="footer">完</div>`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("reel output missing %q: %s", want, out)
+		}
+	}
+}
+
+func TestPaperTag(t *testing.T) {
+	src := "{% paper style:underline title:标题 author:作者 %}\n<!-- section 第一节 -->\n甲\n<!-- paragraph -->\n乙\n<!-- line right -->\n丙\n{% endpaper %}"
+	out := runShortcodes(src)
+	for _, want := range []string{`class="tag-plugin paper"`, `class="content underline"`, `<div class="section-title">第一节</div>`, `class="paragraph"`, `class="line right"`, `<span class="author">作者</span>`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("paper output missing %q: %s", want, out)
+		}
+	}
+}
