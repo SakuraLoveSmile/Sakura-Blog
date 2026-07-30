@@ -315,3 +315,96 @@ func TestResolveEditPage(t *testing.T) {
 		t.Errorf("多前缀应取最长匹配: %+v", got)
 	}
 }
+
+// TestMetaDescriptionPriority 断言 Spec 42 的 meta description 输出优先级：
+// 文章级 Page.MetaDescription → 站点级 seo.default_description → 现状回退（Page.Excerpt → Site.Description）。
+func TestMetaDescriptionPriority(t *testing.T) {
+	tests := []struct {
+		name string
+		data *ViewData
+		want string
+	}{
+		{
+			name: "文章级最优先，覆盖站点级与摘要",
+			data: &ViewData{
+				Site: &Site{Description: "站点描述", SEO: SEOConfig{DefaultDescription: "站点默认desc"}},
+				Page: &Page{MetaDescription: "文章级desc", Excerpt: "文章摘要"},
+			},
+			want: "文章级desc",
+		},
+		{
+			name: "文章级未配置回退站点级默认",
+			data: &ViewData{
+				Site: &Site{Description: "站点描述", SEO: SEOConfig{DefaultDescription: "站点默认desc"}},
+				Page: &Page{Excerpt: "文章摘要"},
+			},
+			want: "站点默认desc",
+		},
+		{
+			name: "站点级未配置回退现状 Excerpt",
+			data: &ViewData{
+				Site: &Site{Description: "站点描述"},
+				Page: &Page{Excerpt: "文章摘要"},
+			},
+			want: "文章摘要",
+		},
+		{
+			name: "全部未配置回退 Site.Description",
+			data: &ViewData{
+				Site: &Site{Description: "站点描述"},
+				Page: &Page{},
+			},
+			want: "站点描述",
+		},
+		{
+			name: "Page 为 nil 不 panic",
+			data: &ViewData{Site: &Site{Description: "站点描述"}},
+			want: "站点描述",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.data.MetaDescription(); got != tt.want {
+				t.Errorf("MetaDescription() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestMetaKeywordsPriority 断言 keywords 优先级：文章级 → 站点级默认；均空返回空串（模板不输出该 meta）。
+func TestMetaKeywordsPriority(t *testing.T) {
+	tests := []struct {
+		name string
+		data *ViewData
+		want string
+	}{
+		{
+			name: "文章级覆盖站点级",
+			data: &ViewData{
+				Site: &Site{SEO: SEOConfig{DefaultKeywords: "go,blog"}},
+				Page: &Page{MetaKeywords: "gin,sqlite"},
+			},
+			want: "gin,sqlite",
+		},
+		{
+			name: "文章级空回退站点级",
+			data: &ViewData{
+				Site: &Site{SEO: SEOConfig{DefaultKeywords: "go,blog"}},
+				Page: &Page{},
+			},
+			want: "go,blog",
+		},
+		{
+			name: "均空返回空串",
+			data: &ViewData{Site: &Site{}, Page: &Page{}},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.data.MetaKeywords(); got != tt.want {
+				t.Errorf("MetaKeywords() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

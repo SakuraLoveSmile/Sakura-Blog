@@ -15,7 +15,14 @@
     })();
   </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
-  <meta name="description" content="{{if .Page.Excerpt}}{{.Page.Excerpt}}{{else}}{{.Site.Description}}{{end}}">
+  {{- /* Spec 42：description/keywords 优先级见 ViewData.MetaDescription/MetaKeywords（文章级 → 站点级 → 现状回退） */}}
+  <meta name="description" content="{{.MetaDescription}}">
+  {{with .MetaKeywords}}<meta name="keywords" content="{{.}}">{{end}}
+  {{- /* Spec 42：收录开关关闭时全站 noindex（建站期防收录）+ 三家站长验证 meta */}}
+  {{if .Site.SEO.NoIndex}}<meta name="robots" content="noindex">{{end}}
+  {{with .Site.SEO.GoogleVerification}}<meta name="google-site-verification" content="{{.}}">{{end}}
+  {{with .Site.SEO.BingVerification}}<meta name="msvalidate.01" content="{{.}}">{{end}}
+  {{with .Site.SEO.BaiduVerification}}<meta name="baidu-site-verification" content="{{.}}">{{end}}
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
   <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
   <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
@@ -187,4 +194,6 @@
       });
     }
   </script>
+  {{- /* Spec 42：代码注入 head 片段（template.HTML 原样输出，不经 bluemonday） */}}
+  {{.Site.Inject.Head}}
 </head>

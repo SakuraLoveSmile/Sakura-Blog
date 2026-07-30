@@ -372,5 +372,7 @@
     window.FPConfig = { delay: 0, ignoreKeywords: ['/admin'], maxRPS: 5, hoverDelay: 25 };
   </script>
   <script defer src="https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script>
+  {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
+  {{.Site.Inject.Footer}}
 </body>
 </html>
