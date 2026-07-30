@@ -82,6 +82,9 @@ func (s *webServer) handlePost(c *gin.Context) {
 				Topic:      p.Topic,
 				References: store.DecodeReferences(p.References),
 				Banner:     p.Banner,
+				// 文章级 SEO（Spec 42）：非空时优先输出 meta（优先级见 ViewData.MetaDescription）
+				MetaDescription: p.MetaDescription,
+				MetaKeywords:    p.MetaKeywords,
 			},
 			Content: template.HTML(p.ContentHTML),
 		}

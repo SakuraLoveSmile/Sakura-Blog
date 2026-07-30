@@ -62,12 +62,15 @@ type postJSON struct {
 	Password  string   `json:"password"`
 	PublishAt string   `json:"publish_at"`
 	Poster    *posterJ `json:"poster,omitempty"`
-	CreatedAt string   `json:"created_at"`
-	UpdatedAt string   `json:"updated_at"`
-	Views     int64    `json:"views"`
-	HasDraft  bool     `json:"has_draft"`
+	// 文章级 SEO（Spec 42）
+	MetaDescription string `json:"meta_description"`
+	MetaKeywords    string `json:"meta_keywords"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+	Views           int64  `json:"views"`
+	HasDraft        bool   `json:"has_draft"`
 	// Draft 草稿头内容（整份编辑表单 JSON），仅详情接口且有草稿时返回。
-	Draft     json.RawMessage `json:"draft,omitempty"`
+	Draft json.RawMessage `json:"draft,omitempty"`
 }
 
 type posterJ struct {
@@ -79,21 +82,23 @@ type posterJ struct {
 
 func toPostJSON(p *store.Post, views int64) *postJSON {
 	pj := &postJSON{
-		Slug:      p.Slug,
-		Title:     p.Title,
-		Excerpt:   p.Excerpt,
-		Cover:     p.Cover,
-		Category:  p.Category,
-		Topic:     p.Topic,
-		Tags:      p.Tags,
-		ContentMD: p.ContentMD,
-		Status:    p.Status,
-		Pinned:    p.Pinned,
-		Password:  p.Password,
-		CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt.Format(time.RFC3339),
-		Views:     views,
-		HasDraft:  strings.TrimSpace(p.DraftJSON) != "",
+		Slug:            p.Slug,
+		Title:           p.Title,
+		Excerpt:         p.Excerpt,
+		Cover:           p.Cover,
+		Category:        p.Category,
+		Topic:           p.Topic,
+		Tags:            p.Tags,
+		ContentMD:       p.ContentMD,
+		Status:          p.Status,
+		Pinned:          p.Pinned,
+		Password:        p.Password,
+		MetaDescription: p.MetaDescription,
+		MetaKeywords:    p.MetaKeywords,
+		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
+		Views:           views,
+		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -489,6 +494,9 @@ type postRequest struct {
 		Caption  string `json:"caption"`
 		Color    string `json:"color"`
 	} `json:"poster"`
+	// 文章级 SEO（Spec 42）
+	MetaDescription string `json:"meta_description"`
+	MetaKeywords    string `json:"meta_keywords"`
 }
 
 func reqToPost(req *postRequest, contentHTML string) *store.Post {
@@ -510,6 +518,9 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		Pinned:      req.Pinned,
 		Password:    strings.TrimSpace(req.Password),
 		PublishAt:   parsePublishAt(req.PublishAt),
+		// 文章级 SEO（Spec 42）：空串=未配置，回退站点级/现状链
+		MetaDescription: strings.TrimSpace(req.MetaDescription),
+		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
 	}
 	if req.Poster != nil {
 		p.Poster = store.EncodePoster(store.PosterData{
