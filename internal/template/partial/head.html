@@ -6,12 +6,15 @@
   <meta name="theme-color" content="#f9fafb">
 
   {{- /* 主题初始化：CSS 加载前读 localStorage 用户选择并设置 data-theme，避免闪烁；
-     无记录时不设值，由 CSS 媒体查询跟随系统偏好（与 toggleTheme 配合） */}}
+     无记录时按 style.prefers_theme 缺省偏好（light/dark 直接设值；auto 跟随系统，不设值）。 */}}
   <script>
     (function () {
       var t = localStorage.getItem('theme');
-      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-      else if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+      if (t === 'light' || t === 'dark') { document.documentElement.dataset.theme = t; return; }
+      if (t === 'auto') { document.documentElement.removeAttribute('data-theme'); return; }
+      {{- /* 无 localStorage 记录：套用站点缺省偏好（Spec 34 style.prefers_theme） */}}
+      var pref = '{{.Site.Style.EffectivePrefersTheme}}';
+      if (pref === 'light' || pref === 'dark') document.documentElement.dataset.theme = pref;
     })();
   </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
@@ -184,6 +187,7 @@
   {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}
   <link rel="stylesheet" href="{{url_for "/assets/css/pjax-transitions.css"}}">
 
+  {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>
     if ('serviceWorker' in navigator) {

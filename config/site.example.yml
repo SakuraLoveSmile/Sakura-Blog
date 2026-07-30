@@ -218,6 +218,44 @@ admin:
 #     post: {leftbar: [related, recent], rightbar: [ghrepo, toc]}
 #     index: {leftbar: [recent, tagcloud], rightbar: [welcome, author, siteinfo, latest_comment]}
 
+# 外观样式可配置化（Spec 34，键名对照原版 _config.yml style 段）。
+# 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号走 :root 变量，
+# 字体族/背景/header_prefix/分页箍头走选择器覆盖；圆角因编译产物无变量、不支持（技术决策）。
+# style:
+#   prefers_theme: auto        # auto/light/dark：首访无 localStorage 时缺省明暗
+#   smooth_scroll: true        # false 关闭平滑滚动
+#   text_align: left           # 正文段落对齐
+#   color:
+#     theme: 'hsl(192 98% 55%)' # 主题色（hsl()/hex，解析为 --hue/--sat/--light）
+#     accent: '#ff5724'         # 强调色
+#     link: 'hsl(207 90% 54%)'  # 超链接色
+#   font_size:
+#     root: 16px               # 根字号
+#     body: 17px               # 正文字号
+#   font_family:
+#     body: 'LXGW WenKai Screen, system-ui, sans-serif'
+#     code: 'Menlo, Monaco, Consolas, monospace'
+#     codeblock: 'Menlo, Monaco, Consolas, monospace'
+#   leftbar:                    # 侧栏背景（缺省纯色；配 background_image 切图片模糊）
+#     background_color_light: 'var(--card)'
+#     background_color_dark: 'var(--card)'
+#     background_image: 'https://.../sidebar-bg.jpg'
+#     blur_px: 100px
+#     background_opacity: '0.8'
+#   site:                       # 全站背景（配 background_image 后启用毛玻璃）
+#     background_image: 'https://.../site-bg.webp'
+#     blur_px: 100px
+#     blur_sat: 300%
+#     blur_bg: 'var(--bg-a75)'
+#   codeblock:
+#     scrollbar: 4px            # 代码块滚动条宽度
+#   paginator:                  # 分页箍头图
+#     prev: 'https://.../arrow-prev.svg'
+#     next: 'https://.../arrow-next.svg'
+#   header_prefix:              # 技术文章各级标题前缀符号
+#     h2: '#'
+#     h3: '='
+
 # SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
 # 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。
 seo:

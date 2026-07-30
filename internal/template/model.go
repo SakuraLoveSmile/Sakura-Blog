@@ -258,6 +258,7 @@ type Site struct {
 	Article     ArticleConfig  `yaml:"article" json:"article"`
 	SEO         SEOConfig      `yaml:"seo" json:"seo"`  // 站点级 SEO 配置（Spec 42）
 	Inject      InjectConfig   `yaml:"-" json:"inject"` // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
+	Style       StyleConfig    `yaml:"style" json:"-"`  // 外观样式可配置化（Spec 34）：仅 site.yml 驱动（Console 可视化留待 Spec 47），不入 settings 表
 	// Widgets 侧边栏组件配置化编排（Spec 33）：仅 site.yml 驱动（技术决策：Console 可视化编辑留待 Spec 47），
 	// 不入 settings 表，RebuildSite 热更新不触碰。
 	Widgets WidgetsConfig `yaml:"widgets" json:"-"`
