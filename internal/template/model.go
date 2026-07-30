@@ -250,6 +250,26 @@ type Site struct {
 	Friends     FriendsConfig  `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
 	Wiki        []WikiProject  `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
 	Article     ArticleConfig  `yaml:"article" json:"article"`
+	SEO         SEOConfig      `yaml:"seo" json:"seo"`  // 站点级 SEO 配置（Spec 42）
+	Inject      InjectConfig   `yaml:"-" json:"inject"` // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
+}
+
+// SEOConfig 站点级 SEO 配置（site.yml seo 段 / settings 表 seo 段，Spec 42）。
+type SEOConfig struct {
+	DefaultDescription string `yaml:"default_description" json:"default_description"` // 默认 meta description（文章级未配置时的回退值）
+	DefaultKeywords    string `yaml:"default_keywords" json:"default_keywords"`       // 默认 meta keywords，逗号分隔
+	RobotsExtra        string `yaml:"robots_extra" json:"robots_extra"`               // robots.txt 附加规则（多行原样追加）
+	NoIndex            bool   `yaml:"no_index" json:"no_index"`                       // true=全站输出 noindex meta（零值=允许收录，旧库升级安全）
+	GoogleVerification string `yaml:"google_verification" json:"google_verification"` // google-site-verification 验证码
+	BingVerification   string `yaml:"bing_verification" json:"bing_verification"`     // msvalidate.01 验证码
+	BaiduVerification  string `yaml:"baidu_verification" json:"baidu_verification"`   // baidu-site-verification 验证码
+}
+
+// InjectConfig 代码注入配置（仅 settings 表 inject 段，Spec 42）。
+// template.HTML 类型直接原样输出不转义（注入本意即执行脚本，不经 bluemonday）。
+type InjectConfig struct {
+	Head   template.HTML `json:"inject_head"`   // </head> 前原样输出
+	Footer template.HTML `json:"inject_footer"` // </body> 前原样输出
 }
 
 // AdminConfig 管理后台配置（site.yml admin 段）。
@@ -446,4 +466,37 @@ type Page struct {
 	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
+
+	// 文章级 SEO（Spec 42）：非空时优先于站点级默认值输出 meta。
+	MetaDescription string // 自定义 meta description（覆盖自动摘要）
+	MetaKeywords    string // 自定义 meta keywords，逗号分隔
+}
+
+// MetaDescription 计算 head.html 的 meta description 输出（Spec 42 优先级）：
+// 文章级 Page.MetaDescription → 站点级 seo.default_description → 现状回退（Page.Excerpt → Site.Description）。
+func (d *ViewData) MetaDescription() string {
+	if d.Page != nil && d.Page.MetaDescription != "" {
+		return d.Page.MetaDescription
+	}
+	if d.Site != nil && d.Site.SEO.DefaultDescription != "" {
+		return d.Site.SEO.DefaultDescription
+	}
+	if d.Page != nil && d.Page.Excerpt != "" {
+		return d.Page.Excerpt
+	}
+	if d.Site != nil {
+		return d.Site.Description
+	}
+	return ""
+}
+
+// MetaKeywords 计算 meta keywords 输出：文章级 → 站点级默认；均空则不输出该 meta。
+func (d *ViewData) MetaKeywords() string {
+	if d.Page != nil && d.Page.MetaKeywords != "" {
+		return d.Page.MetaKeywords
+	}
+	if d.Site != nil {
+		return d.Site.SEO.DefaultKeywords
+	}
+	return ""
 }

@@ -197,6 +197,17 @@ article:
 admin:
   password: ''            # 【密钥】/admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
 
+# SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
+# 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。
+seo:
+  default_description: ''   # 默认 meta description（文章级未配置时的回退值；再回退站点 description）
+  default_keywords: ''      # 默认 meta keywords，逗号分隔
+  robots_extra: ''          # robots.txt 附加规则（多行原样追加，如 "Disallow: /draft"）
+  no_index: false           # true=全站输出 noindex meta（建站期防收录）
+  google_verification: ''   # google-site-verification 验证码
+  bing_verification: ''     # msvalidate.01 验证码
+  baidu_verification: ''    # baidu-site-verification 验证码
+
 # 评论系统（自建，参考 Artalk 架构 + Halo 设计语言）
 comments:
   enabled: true           # 总开关：false 时文章页不渲染评论区、/api/comments 关闭

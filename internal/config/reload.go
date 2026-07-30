@@ -19,6 +19,8 @@ const (
 	SectionArticle   = "article"   // 文章页脚
 	SectionWiki      = "wiki"      // 文库项目
 	SectionFriends   = "friends"   // 友链动态聚合
+	SectionSEO       = "seo"       // 站点级 SEO（Spec 42）
+	SectionInject    = "inject"    // 代码注入（Spec 42，仅入库不入 site.yml）
 	SectionDashboard = "dashboard" // 仪表盘组件自定义（仅 Console 消费）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
@@ -94,6 +96,27 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		}
 	}
 
+	// seo/inject 段兼容导入（Spec 42）：旧库升级时 settings 非空但缺段，补导一次，
+	// 避免 RebuildSite 用零值覆盖 site.yml 加载的 seo 配置。
+	if _, ok := settings[SectionSEO]; !ok {
+		b, err := json.Marshal(site.SEO)
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionSEO, string(b)); err != nil {
+			return err
+		}
+	}
+	if _, ok := settings[SectionInject]; !ok {
+		b, err := json.Marshal(site.Inject)
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionInject, string(b)); err != nil {
+			return err
+		}
+	}
+
 	nl, err := st.CountLinks()
 	if err != nil {
 		return err
@@ -141,6 +164,12 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 	if err := put(SectionFriends, site.Friends); err != nil {
+		return err
+	}
+	if err := put(SectionSEO, site.SEO); err != nil {
+		return err
+	}
+	if err := put(SectionInject, site.Inject); err != nil {
 		return err
 	}
 	if err := put(SectionDashboard, defaultDashboardConfig()); err != nil {
@@ -191,6 +220,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	var article tmpl.ArticleConfig
 	var wiki []tmpl.WikiProject
 	var friends tmpl.FriendsConfig
+	var seo tmpl.SEOConfig
+	var inject tmpl.InjectConfig
 	var admin adminSection
 	adminSet := false
 
@@ -207,6 +238,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	unmarshal(SectionArticle, &article)
 	unmarshal(SectionWiki, &wiki)
 	unmarshal(SectionFriends, &friends)
+	unmarshal(SectionSEO, &seo)
+	unmarshal(SectionInject, &inject)
 	if v, ok := settings[SectionAdmin]; ok && v != "" {
 		if json.Unmarshal([]byte(v), &admin) == nil {
 			adminSet = true
@@ -232,6 +265,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.Article = article
 	site.Wiki = wiki
 	site.Friends = friends
+	site.SEO = seo
+	site.Inject = inject
 	site.Links = groups
 	if adminSet {
 		site.Admin.Password = admin.Password
@@ -268,7 +303,7 @@ func KnownSections() []string {
 	return []string{
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
-		SectionDashboard,
+		SectionSEO, SectionInject, SectionDashboard,
 	}
 }
 
@@ -309,6 +344,10 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &[]tmpl.WikiProject{}
 	case SectionFriends:
 		dst = &tmpl.FriendsConfig{}
+	case SectionSEO:
+		dst = &tmpl.SEOConfig{}
+	case SectionInject:
+		dst = &tmpl.InjectConfig{}
 	case SectionDashboard:
 		dst = &dashboardConfig{}
 	default:
