@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { momentApi, settingsApi } from "@/api";
+import { momentApi, settingsApi, attachmentApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
+import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import {
   VPageHeader,
   VCard,
@@ -20,11 +21,29 @@ import {
 
 const queryClient = useQueryClient();
 
+const MAX_IMAGES = 9;
+
 const page = ref(1);
 const size = ref(20);
-const newContent = ref("");
-const publishing = ref(false);
 const menuOpenId = ref<number | null>(null);
+
+// 发布框状态
+const newContent = ref("");
+const newImages = ref<string[]>([]);
+const newVisibility = ref<"public" | "private">("public");
+const publishing = ref(false);
+const uploadError = ref("");
+
+// 编辑弹窗状态
+const editingId = ref<number | null>(null);
+const editContent = ref("");
+const editImages = ref<string[]>([]);
+const editVisibility = ref<"public" | "private">("public");
+const savingEdit = ref(false);
+
+// 图床选择弹窗：target 决定回填到发布框还是编辑框
+const pickerOpen = ref(false);
+const pickerTarget = ref<"new" | "edit">("new");
 
 const queryParams = computed(() => ({ page: page.value, size: size.value }));
 
@@ -47,7 +66,7 @@ onMounted(async () => {
   }
 });
 
-// 发布框状态：聚焦后展开工具条；字数统计（非空白 rune）
+// 发布框：聚焦后展开；字数统计（非空白 rune）
 const composerFocused = ref(false);
 const charCount = computed(() => {
   let n = 0;
@@ -57,6 +76,10 @@ const charCount = computed(() => {
   return n;
 });
 
+const canPublish = computed(
+  () => !!newContent.value.trim() || newImages.value.length > 0
+);
+
 // Cmd/Ctrl+Enter 快捷发布
 function onComposerKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -65,17 +88,145 @@ function onComposerKeydown(e: KeyboardEvent) {
   }
 }
 
+// --- 选图 / 上传 / 预览（发布框与编辑框共用工具函数） ---
+
+function targetImages(target: "new" | "edit") {
+  return target === "new" ? newImages : editImages;
+}
+
+function addImage(target: "new" | "edit", url: string) {
+  const box = targetImages(target);
+  if (!url || box.value.includes(url)) return;
+  if (box.value.length >= MAX_IMAGES) {
+    Toast.warning(`单条最多 ${MAX_IMAGES} 张图片`);
+    return;
+  }
+  box.value = [...box.value, url];
+}
+
+function removeImage(target: "new" | "edit", idx: number) {
+  const box = targetImages(target);
+  box.value = box.value.filter((_, i) => i !== idx);
+}
+
+function openPicker(target: "new" | "edit") {
+  pickerTarget.value = target;
+  pickerOpen.value = true;
+}
+
+function onPickerSelect(url: string) {
+  addImage(pickerTarget.value, url);
+  pickerOpen.value = false;
+}
+
+// 粘贴直传：参照 MarkdownEditor.onPaste，取剪贴板图片文件上传后回填 URL
+async function uploadFile(target: "new" | "edit", file: File) {
+  uploadError.value = "";
+  const box = targetImages(target);
+  if (box.value.length >= MAX_IMAGES) {
+    Toast.warning(`单条最多 ${MAX_IMAGES} 张图片`);
+    return;
+  }
+  try {
+    const { data } = await attachmentApi.upload(file);
+    addImage(target, data.url);
+  } catch (e: any) {
+    uploadError.value = e.response?.data?.error || `图片 ${file.name} 上传失败`;
+  }
+}
+
+function onPaste(target: "new" | "edit", e: ClipboardEvent) {
+  const files = Array.from(e.clipboardData?.files || []).filter((f) =>
+    f.type.startsWith("image/")
+  );
+  if (files.length === 0) return;
+  e.preventDefault();
+  files.forEach((f) => uploadFile(target, f));
+}
+
+// 隐藏 file input（本地选择直传）
+const newFileInput = ref<HTMLInputElement | null>(null);
+const editFileInput = ref<HTMLInputElement | null>(null);
+function onPickFiles(target: "new" | "edit", e: Event) {
+  const input = e.target as HTMLInputElement;
+  for (const file of Array.from(input.files || [])) {
+    if (file.type.startsWith("image/")) uploadFile(target, file);
+  }
+  input.value = "";
+}
+
 async function handlePublish() {
-  if (!newContent.value.trim()) return;
+  if (!canPublish.value) return;
   publishing.value = true;
   try {
-    await momentApi.create({ content_md: newContent.value });
+    await momentApi.create({
+      content_md: newContent.value,
+      images: newImages.value,
+      visibility: newVisibility.value,
+    });
     newContent.value = "";
+    newImages.value = [];
+    newVisibility.value = "public";
     queryClient.invalidateQueries({ queryKey: ["moments"] });
     Toast.success("发布成功");
-  } catch {} finally {
+  } catch {
+  } finally {
     publishing.value = false;
   }
+}
+
+// --- 编辑 ---
+
+function startEdit(m: any) {
+  menuOpenId.value = null;
+  editingId.value = m.id;
+  editContent.value = m.content_md || "";
+  editImages.value = Array.isArray(m.images) ? [...m.images] : [];
+  editVisibility.value = m.visibility === "private" ? "private" : "public";
+}
+
+function cancelEdit() {
+  editingId.value = null;
+  editContent.value = "";
+  editImages.value = [];
+  savingEdit.value = false;
+}
+
+async function saveEdit() {
+  if (editingId.value == null) return;
+  if (!editContent.value.trim() && editImages.value.length === 0) {
+    Toast.warning("内容不能为空");
+    return;
+  }
+  savingEdit.value = true;
+  try {
+    await momentApi.update(editingId.value, {
+      content_md: editContent.value,
+      images: editImages.value,
+      visibility: editVisibility.value,
+    });
+    queryClient.invalidateQueries({ queryKey: ["moments"] });
+    Toast.success("已保存");
+    cancelEdit();
+  } catch {
+  } finally {
+    savingEdit.value = false;
+  }
+}
+
+// 列表快捷切换可见性（不进编辑框）
+async function toggleVisibility(m: any) {
+  menuOpenId.value = null;
+  const next = m.visibility === "private" ? "public" : "private";
+  try {
+    await momentApi.update(m.id, {
+      content_md: m.content_md,
+      images: Array.isArray(m.images) ? m.images : [],
+      visibility: next,
+    });
+    queryClient.invalidateQueries({ queryKey: ["moments"] });
+    Toast.success(next === "private" ? "已设为私密" : "已设为公开");
+  } catch {}
 }
 
 function handleDelete(m: any) {
@@ -143,17 +294,64 @@ function closeMenus() {
             <textarea
               v-model="newContent"
               :rows="composerFocused || newContent ? 4 : 2"
-              placeholder="分享此刻的想法…"
+              placeholder="分享此刻的想法…（可粘贴图片直传）"
               class="w-full resize-none border-0 bg-transparent px-0 py-1.5 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 dark:text-gray-100 dark:placeholder-gray-500"
               @focus="composerFocused = true"
               @blur="composerFocused = false"
               @keydown="onComposerKeydown"
+              @paste="onPaste('new', $event)"
             ></textarea>
-            <div class="flex items-center justify-between border-t border-gray-100 pt-2.5 dark:border-gray-700">
-              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500">
-                <Icon icon="ri:markdown-line" class="text-base" title="支持 Markdown 语法" />
+
+            <!-- 已选图片九宫格预览 -->
+            <div v-if="newImages.length" class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              <div
+                v-for="(url, i) in newImages"
+                :key="url"
+                class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600"
+              >
+                <img :src="url" alt="" class="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  @click.stop="removeImage('new', i)"
+                >
+                  <Icon icon="ri:close-line" class="text-sm" />
+                </button>
+              </div>
+            </div>
+
+            <p v-if="uploadError" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ uploadError }}</p>
+
+            <div class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2.5 dark:border-gray-700">
+              <div class="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+                <button
+                  type="button"
+                  class="flex items-center gap-1 rounded p-1 transition-colors hover:text-primary"
+                  title="从图床选择图片"
+                  @click.stop="openPicker('new')"
+                >
+                  <Icon icon="ri:image-add-line" class="text-base" />
+                </button>
+                <button
+                  type="button"
+                  class="flex items-center gap-1 rounded p-1 transition-colors hover:text-primary"
+                  title="上传本地图片"
+                  @click.stop="newFileInput?.click()"
+                >
+                  <Icon icon="ri:upload-2-line" class="text-base" />
+                </button>
+                <input ref="newFileInput" type="file" accept="image/*" multiple class="hidden" @change="onPickFiles('new', $event)" />
+                <button
+                  type="button"
+                  class="flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors hover:text-primary"
+                  :class="newVisibility === 'private' ? 'text-amber-500' : ''"
+                  :title="newVisibility === 'private' ? '仅自己可见，点击设为公开' : '所有人可见，点击设为私密'"
+                  @click.stop="newVisibility = newVisibility === 'private' ? 'public' : 'private'"
+                >
+                  <Icon :icon="newVisibility === 'private' ? 'ri:lock-line' : 'ri:earth-line'" class="text-base" />
+                  <span>{{ newVisibility === "private" ? "私密" : "公开" }}</span>
+                </button>
                 <span v-if="charCount" class="text-xs tabular-nums">{{ charCount }} 字</span>
-                <span v-else class="text-xs">支持 Markdown</span>
               </div>
               <div class="flex items-center gap-3">
                 <span class="hidden text-xs text-gray-300 sm:inline dark:text-gray-600">⌘ + Enter 发布</span>
@@ -161,7 +359,7 @@ function closeMenus() {
                   type="secondary"
                   size="sm"
                   :loading="publishing"
-                  :disabled="!newContent.trim()"
+                  :disabled="!canPublish"
                   @click="handlePublish"
                 >
                   <template #icon>
@@ -201,10 +399,32 @@ function closeMenus() {
                           class="mt-0.5 h-7 w-7 shrink-0 rounded-full border border-gray-100 object-cover dark:border-gray-700"
                         />
                         <div class="flex min-w-0 flex-col gap-1.5">
-                          <span class="text-xs text-gray-400 dark:text-gray-500" :title="formatTime(m.created_at)">
+                          <span class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500" :title="formatTime(m.created_at)">
                             {{ formatRelative(m.created_at) }}
+                            <span
+                              v-if="m.visibility === 'private'"
+                              class="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+                              title="私密：仅后台可见，前台不展示"
+                            >
+                              <Icon icon="ri:lock-line" class="text-[11px]" />私密
+                            </span>
                           </span>
-                          <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="m.content"></div>
+                          <div
+                            v-if="m.content"
+                            class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300"
+                            v-html="m.content"
+                          ></div>
+                          <!-- 缩略图行 -->
+                          <div v-if="m.images && m.images.length" class="mt-1 flex flex-wrap gap-1.5">
+                            <img
+                              v-for="url in m.images"
+                              :key="url"
+                              :src="url"
+                              alt=""
+                              loading="lazy"
+                              class="h-16 w-16 rounded border border-gray-100 object-cover dark:border-gray-700"
+                            />
+                          </div>
                         </div>
                       </div>
                     </template>
@@ -221,10 +441,14 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenId === m.id"
-                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                        class="absolute right-0 top-full z-30 mt-1 w-36 space-y-1 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         style="border-radius: 4px"
                         @click.stop
                       >
+                        <VButton block size="sm" @click="startEdit(m)">编辑</VButton>
+                        <VButton block size="sm" @click="toggleVisibility(m)">
+                          {{ m.visibility === "private" ? "设为公开" : "设为私密" }}
+                        </VButton>
                         <VButton block type="danger" size="sm" @click="handleDelete(m)">删除</VButton>
                       </div>
                     </Transition>
@@ -241,6 +465,74 @@ function closeMenus() {
         </template>
       </VCard>
     </div>
+
+    <!-- 编辑弹窗 -->
+    <div
+      v-if="editingId !== null"
+      class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      @click.self="cancelEdit"
+    >
+      <div class="flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl dark:bg-gray-800">
+        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-gray-700">
+          <h3 class="text-sm font-medium text-gray-800 dark:text-gray-100">编辑瞬间</h3>
+          <button @click="cancelEdit" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <Icon icon="ri:close-line" class="text-xl" />
+          </button>
+        </div>
+        <div class="flex-1 space-y-3 overflow-y-auto p-5">
+          <textarea
+            v-model="editContent"
+            rows="4"
+            placeholder="分享此刻的想法…（可粘贴图片直传）"
+            class="w-full resize-none rounded-lg border border-gray-200 bg-transparent p-2.5 text-sm text-gray-900 outline-none focus:border-primary dark:border-gray-600 dark:text-gray-100"
+            @paste="onPaste('edit', $event)"
+          ></textarea>
+
+          <div v-if="editImages.length" class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            <div
+              v-for="(url, i) in editImages"
+              :key="url"
+              class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600"
+            >
+              <img :src="url" alt="" class="h-full w-full object-cover" />
+              <button
+                type="button"
+                class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                @click.stop="removeImage('edit', i)"
+              >
+                <Icon icon="ri:close-line" class="text-sm" />
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+            <button type="button" class="flex items-center gap-1 rounded p-1 hover:text-primary" title="从图床选择图片" @click.stop="openPicker('edit')">
+              <Icon icon="ri:image-add-line" class="text-base" />
+            </button>
+            <button type="button" class="flex items-center gap-1 rounded p-1 hover:text-primary" title="上传本地图片" @click.stop="editFileInput?.click()">
+              <Icon icon="ri:upload-2-line" class="text-base" />
+            </button>
+            <input ref="editFileInput" type="file" accept="image/*" multiple class="hidden" @change="onPickFiles('edit', $event)" />
+            <button
+              type="button"
+              class="flex items-center gap-1 rounded px-1.5 py-1 text-xs hover:text-primary"
+              :class="editVisibility === 'private' ? 'text-amber-500' : ''"
+              @click.stop="editVisibility = editVisibility === 'private' ? 'public' : 'private'"
+            >
+              <Icon :icon="editVisibility === 'private' ? 'ri:lock-line' : 'ri:earth-line'" class="text-base" />
+              <span>{{ editVisibility === "private" ? "私密" : "公开" }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-gray-100 px-5 py-3 dark:border-gray-700">
+          <VButton size="sm" @click="cancelEdit">取消</VButton>
+          <VButton type="secondary" size="sm" :loading="savingEdit" @click="saveEdit">保存</VButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图床选择弹窗（发布框 / 编辑框共用） -->
+    <AttachmentPickerModal :open="pickerOpen" @select="onPickerSelect" @close="pickerOpen = false" />
   </div>
 </template>
 

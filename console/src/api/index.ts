@@ -162,6 +162,7 @@ export const momentApi = {
   list: (params?: Record<string, unknown>) =>
     http.get("/moments", { params }),
   create: (data: Record<string, unknown>) => http.post("/moments", data),
+  update: (id: number, data: Record<string, unknown>) => http.put(`/moments/${id}`, data),
   delete: (id: number) => http.delete(`/moments/${id}`),
 };
 
