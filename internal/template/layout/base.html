@@ -11,7 +11,7 @@
   {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
   <div class="sitebg"><div class="siteblur"></div></div>
 
-  <div id="l_cover"></div>
+  <div id="l_cover">{{template "partial/cover" .}}</div>
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
   <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
@@ -38,8 +38,8 @@
        必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。
        主题切换已迁至左栏 footer 的 social 按钮（对齐原版机制），不再放此处。 */}}
     <div class="float-panel">
-      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" title="目录" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
-      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" title="菜单" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
+      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" title="{{lang "btn.toc"}}" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
+      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" title="{{lang "btn.menu"}}" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
     </div>
   </div>
 
@@ -49,11 +49,11 @@
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
   <script>
     const ctx = {
-      date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' },
+      date_suffix: { just: '{{lang "date_suffix.just"}}', min: '{{lang "date_suffix.min"}}', hour: '{{lang "date_suffix.hour"}}', day: '{{lang "date_suffix.day"}}' },
       root: '/',
       tag_plugins: { chat: {} },
       search: { service: 'local_search', path: '/search.json', local_search: { path: '/search.json' } },
-      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' },
+      copycode: { default_text: '{{lang "js.copy"}}', success_text: '{{lang "js.copy_success"}}', toast: '{{lang "js.copied"}}' },
       {{- /* fancybox 配置：对齐 _config.yml plugins.fancybox。selector 说明：
          wrapLazyloadImages 将 p>img 转为 div.lazy-box>img.lazy，故选择器直接匹配转换后的结构，
          避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}

@@ -8,9 +8,9 @@
     <div class="top bread-nav footnote">
       <div class="left">
         <div class="flex-row" id="breadcrumb">
-          <a class="cap breadcrumb" href="/">首页</a>
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
           <span class="sep"></span>
-          <a class="cap breadcrumb" href="/notes">笔记</a>
+          <a class="cap breadcrumb" href="/notes">{{- lang "breadcrumb.notes" -}}</a>
         </div>
       </div>
     </div>
@@ -50,6 +50,6 @@
   {{- end}}
 
   {{- if and (not .NotesContentHTML) (not .Moments)}}
-  <p class="wiki-empty">暂无内容</p>
+  <p class="wiki-empty">{{- lang "notes.empty" -}}</p>
   {{- end}}
 </article>

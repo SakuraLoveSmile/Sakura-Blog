@@ -6,7 +6,7 @@
 {{if .V.TOC}}
 <widget class="widget-wrapper toc" id="data-toc" collapse="{{.Str "collapse" "false"}}">
   <div class="widget-header dis-select">
-    <span class="name">{{.Str "title" "本文目录"}}</span>
+    <span class="name">{{.Str "title" (lang "widget.toc")}}</span>
     <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
   </div>
   <div class="widget-body">
@@ -15,7 +15,7 @@
   <div class="widget-footer">
     <a class="top" onclick="util.scrollTop()">
       {{icon "default:upup"}}
-      <span>回到顶部</span>
+      <span>{{- lang "btn.top" -}}</span>
     </a>
   </div>
 </widget>

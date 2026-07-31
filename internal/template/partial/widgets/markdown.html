@@ -14,9 +14,9 @@
   {{end}}
   <div class="widget-body fs14">
     {{$content := .Str "content" ""}}
-    {{if $content}}<div style="white-space:pre-wrap">{{$content}}</div>{{else if .V.Site.Rightbar.Intro}}<div style="white-space:pre-wrap">{{.V.Site.Rightbar.Intro}}</div>{{else}}<p>这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。</p>
+    {{if $content}}<div style="white-space:pre-wrap">{{$content}}</div>{{else if .V.Site.Rightbar.Intro}}<div style="white-space:pre-wrap">{{.V.Site.Rightbar.Intro}}</div>{{else}}<p>{{- lang "widget.welcome" -}}</p>
     <blockquote>
-      <p>左侧可以搜索文章，右下角可以切换深浅色主题。</p>
+      <p>{{- lang "widget.welcome_hint" -}}</p>
     </blockquote>{{end}}
     {{if and (eq .Name "welcome") .V.Site.Rightbar.WelcomeLinklist.Items}}
     {{$ll := .V.Site.Rightbar.WelcomeLinklist}}

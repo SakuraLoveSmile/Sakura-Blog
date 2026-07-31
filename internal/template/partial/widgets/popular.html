@@ -3,7 +3,7 @@
 {{if .Data}}
 <widget class="widget-wrapper popular post-list">
   <div class="widget-header dis-select">
-    <span class="name">{{.Str "title" "热门文章"}}</span>
+    <span class="name">{{.Str "title" (lang "widget.popular")}}</span>
   </div>
   <div class="widget-body fs14">
     {{range .Data}}

@@ -262,6 +262,33 @@ type Site struct {
 	// Widgets 侧边栏组件配置化编排（Spec 33）：仅 site.yml 驱动（技术决策：Console 可视化编辑留待 Spec 47），
 	// 不入 settings 表，RebuildSite 热更新不触碰。
 	Widgets WidgetsConfig `yaml:"widgets" json:"-"`
+	// 导航栏额外标签页（site.yml nav_tabs 段），追加在固定 tab（归档）之后。
+	NavTabs []NavTabItem `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
+	// 首页 Hero cover 区配置（site.yml cover 段），仅首页第一页且 title 非空时渲染。
+	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
+}
+
+// NavTabItem 导航栏额外标签页单项（site.yml nav_tabs 段）。
+type NavTabItem struct {
+	Title    string `yaml:"title" json:"title"`
+	URL      string `yaml:"url" json:"url"`
+	External bool   `yaml:"external,omitempty" json:"external,omitempty"` // true 时 target="_blank"
+}
+
+// CoverConfig 首页 Hero cover 区配置（site.yml cover 段）。
+// 对齐 Stellar wiki_cover.ejs 的 HTML 结构与 class 名。
+type CoverConfig struct {
+	Title       string         `yaml:"title" json:"title"`
+	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
+	Scheme      string         `yaml:"scheme,omitempty" json:"scheme,omitempty"`
+	Features    []CoverFeature `yaml:"features,omitempty" json:"features,omitempty"`
+}
+
+// CoverFeature cover 区功能按钮单项。
+type CoverFeature struct {
+	Title string `yaml:"title" json:"title"`
+	URL   string `yaml:"url" json:"url"`
+	Icon  string `yaml:"icon,omitempty" json:"icon,omitempty"`
 }
 
 // SEOConfig 站点级 SEO 配置（site.yml seo 段 / settings 表 seo 段，Spec 42）。

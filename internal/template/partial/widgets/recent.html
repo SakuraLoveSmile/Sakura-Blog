@@ -3,7 +3,7 @@
    rss 参数对齐原版 item.rss（缺省 /rss.xml，显式配空串隐藏按钮）。*/ -}}
 <widget class="widget-wrapper recent post-list">
   <div class="widget-header dis-select">
-    <span class="name">{{.Str "title" "最近更新"}}</span>
+    <span class="name">{{.Str "title" (lang "widget.recent")}}</span>
     {{$rss := .Str "rss" "/rss.xml"}}
     {{if $rss}}
     <a class="cap-action" id="rss" title="Subscribe" href="{{$rss}}">

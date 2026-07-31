@@ -3,13 +3,13 @@
 {{if .V.SiteStats}}
 <widget class="widget-wrapper markdown site-stats">
   <div class="widget-header dis-select">
-    <span class="name">{{.Str "title" "站点统计"}}</span>
+    <span class="name">{{.Str "title" (lang "widget.siteinfo")}}</span>
   </div>
   <div class="widget-body fs14">
-    <p>文章 <strong>{{.V.SiteStats.Posts}}</strong></p>
-    <p>标签 <strong>{{.V.SiteStats.Tags}}</strong></p>
-    <p>评论 <strong>{{.V.SiteStats.Comments}}</strong></p>
-    <p>阅读量 <strong>{{.V.SiteStats.Views}}</strong></p>
+    <p>{{- lang "widget.posts" -}} <strong>{{.V.SiteStats.Posts}}</strong></p>
+    <p>{{- lang "widget.tags" -}} <strong>{{.V.SiteStats.Tags}}</strong></p>
+    <p>{{- lang "widget.comments" -}} <strong>{{.V.SiteStats.Comments}}</strong></p>
+    <p>{{- lang "widget.views" -}} <strong>{{.V.SiteStats.Views}}</strong></p>
   </div>
 </widget>
 {{end}}

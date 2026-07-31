@@ -7,8 +7,8 @@
     <a class="search-button" onclick="document.getElementById('search-input').focus();">
       {{icon "default:search"}}
     </a>
-    <input type="text" class="search-input" id="search-input" placeholder="站内搜索">
+    <input type="text" class="search-input" id="search-input" placeholder="{{lang "search.search"}}">
   </form>
   <div id="search-result"></div>
-  <div class="search-no-result">没有找到内容！</div>
+  <div class="search-no-result">{{- lang "search.no_result" -}}</div>
 </div>

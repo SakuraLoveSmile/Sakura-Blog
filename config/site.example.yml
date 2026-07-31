@@ -111,6 +111,25 @@ links:
         label: 语言
         color: 3DC550
 
+# 导航栏额外标签页：追加在固定 tab（归档）之后，支持外链。
+# nav_tabs:
+#   - title: 友链
+#     url: /friends/
+#   - title: GitHub
+#     url: https://github.com/example
+#     external: true
+
+# 首页 Hero cover 区：仅首页第一页且 title 非空时渲染，对齐 Stellar wiki_cover.ejs。
+# cover:
+#   title: Welcome
+#   description: 这是一个示例描述
+#   features:
+#     - title: 开始阅读
+#       url: /archives/
+#     - title: GitHub
+#       url: https://github.com/example
+#       icon: github:logo
+
 footer:
   social:
     - title: GitHub

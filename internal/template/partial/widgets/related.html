@@ -4,7 +4,7 @@
 {{if .V.TopicSeries}}
 <widget class="widget-wrapper related post-list">
   <div class="widget-header dis-select">
-    <span class="name">专栏：{{.V.TopicSeries.Name}}</span>
+    <span class="name">{{- lang "widget.related" .V.TopicSeries.Name -}}</span>
   </div>
   <div class="widget-body">
     {{range .V.TopicSeries.Posts}}

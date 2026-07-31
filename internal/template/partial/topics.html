@@ -11,12 +11,12 @@
         <div class="preview"><img src="{{.Icon}}"/></div>
         <div class="excerpt">
           <h2 class="post-title">{{.Name}}</h2>
-          <p>共 {{.Count}} 篇文章</p>
+          <p>{{- lang "topic.post_count" .Count -}}</p>
         </div>
       </article>
     </a>
   </div>
   {{else}}
-  <p class="cap" style="text-align:center;padding:2rem 0;color:var(--text-p3);">还没有专栏。</p>
+  <p class="cap" style="text-align:center;padding:2rem 0;color:var(--text-p3);">{{- lang "topic.empty" -}}</p>
   {{end}}
 </div>

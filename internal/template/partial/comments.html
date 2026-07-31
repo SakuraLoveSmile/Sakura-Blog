@@ -14,24 +14,24 @@
     {{- /* 编辑器：Halo 编辑器在上布局。reply-tip 回复提示条默认隐藏；website 为蜜罐隐藏字段（机器人可见） */}}
     <div class="cmt-editor" id="cmt-editor">
       <div class="cmt-reply-tip" id="cmt-reply-tip" style="display:none">
-        <span>回复 <b id="cmt-reply-nick"></b></span>
-        <button type="button" class="cmt-reply-cancel" id="cmt-reply-cancel">取消</button>
+        <span>{{- lang "comment.reply" -}} <b id="cmt-reply-nick"></b></span>
+        <button type="button" class="cmt-reply-cancel" id="cmt-reply-cancel">{{- lang "comment.cancel" -}}</button>
       </div>
-      <textarea class="cmt-textarea" id="cmt-content" placeholder="编写评论，支持 Markdown" rows="4" maxlength="2000"></textarea>
+      <textarea class="cmt-textarea" id="cmt-content" placeholder="{{lang "comment.placeholder"}}" rows="4" maxlength="2000"></textarea>
       <div class="cmt-inputs">
-        <input type="text" class="cmt-input" id="cmt-nick" placeholder="昵称 *" maxlength="32" autocomplete="nickname">
-        <input type="email" class="cmt-input" id="cmt-email" placeholder="邮箱 *" maxlength="254" autocomplete="email">
-        <input type="text" class="cmt-input" id="cmt-link" placeholder="网站（选填）" maxlength="200" autocomplete="url">
+        <input type="text" class="cmt-input" id="cmt-nick" placeholder="{{lang "comment.nickname"}} *" maxlength="32" autocomplete="nickname">
+        <input type="email" class="cmt-input" id="cmt-email" placeholder="{{lang "comment.email"}} *" maxlength="254" autocomplete="email">
+        <input type="text" class="cmt-input" id="cmt-link" placeholder="{{lang "comment.website_opt"}}" maxlength="200" autocomplete="url">
       </div>
       <input type="text" class="cmt-hp" id="cmt-website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="cmt-footer">
-        <span class="cmt-tip">邮箱仅用于头像与回复通知，不会公开</span>
-        <button type="button" class="cmt-submit" id="cmt-submit">发布评论</button>
+        <span class="cmt-tip">{{- lang "comment.email_hint" -}}</span>
+        <button type="button" class="cmt-submit" id="cmt-submit">{{- lang "comment.submit" -}}</button>
       </div>
     </div>
 
     {{- /* 列表：N 条评论计数 + 评论行（圆头像 + 加粗昵称 + 博主徽章 + 相对时间 + 内容 + 回复按钮） */}}
-    <div class="cmt-count" id="cmt-count">{{if .CommentCount}}{{.CommentCount}} 条评论{{else}}暂无评论{{end}}</div>
+    <div class="cmt-count" id="cmt-count">{{if .CommentCount}}{{lang "comment.count" .CommentCount}}{{else}}{{lang "comment.no_comment"}}{{end}}</div>
     <div class="cmt-list" id="cmt-list">
       {{range .Comments}}
       <div class="cmt-item" id="comment-{{.ID}}" data-id="{{.ID}}">
@@ -44,8 +44,8 @@
           </div>
           <div class="cmt-content">{{.ContentHTML}}</div>
           <div class="cmt-actions">
-            <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
-            <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="点赞">赞 <span class="cmt-like-count">{{.Likes}}</span></button>
+            <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">{{- lang "comment.reply_to" -}}</button>
+            <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="{{lang "comment.like"}}">{{- lang "comment.like" -}} <span class="cmt-like-count">{{.Likes}}</span></button>
           </div>
           {{- /* 子评论缩进一层（左侧竖线），与顶级评论行结构一致 */}}
           {{if .Children}}
@@ -61,8 +61,8 @@
                 </div>
                 <div class="cmt-content">{{.ContentHTML}}</div>
                 <div class="cmt-actions">
-                  <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">回复</button>
-                  <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="点赞">赞 <span class="cmt-like-count">{{.Likes}}</span></button>
+                  <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">{{- lang "comment.reply_to" -}}</button>
+                  <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="{{lang "comment.like"}}">{{- lang "comment.like" -}} <span class="cmt-like-count">{{.Likes}}</span></button>
                 </div>
               </div>
             </div>

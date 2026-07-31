@@ -4,7 +4,7 @@
 {{if .Data}}
 <widget class="widget-wrapper tagcloud">
   <div class="widget-header dis-select">
-    <span class="name">{{.Str "title" "标签"}}</span>
+    <span class="name">{{.Str "title" (lang "widget.tagcloud")}}</span>
   </div>
   {{$sc := .Bool "show_count" false}}
   <div class="widget-body fs14">

@@ -8,9 +8,9 @@
     <div class="top bread-nav footnote">
       <div class="left">
         <div class="flex-row" id="breadcrumb">
-          <a class="cap breadcrumb" href="/">首页</a>
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
           <span class="sep"></span>
-          <a class="cap breadcrumb" href="/links">友链</a>
+          <a class="cap breadcrumb" href="/links">{{- lang "breadcrumb.links" -}}</a>
         </div>
       </div>
     </div>
@@ -51,6 +51,6 @@
   </div>
   {{- end}}
   {{- else}}
-  <p>暂无友链</p>
+  <p>{{- lang "friend.empty" -}}</p>
   {{- end}}
 </article>

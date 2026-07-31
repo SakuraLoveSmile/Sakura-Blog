@@ -63,9 +63,15 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 			return template.HTML(v)
 		},
 
-		// __: i18n，Demo 阶段直接返回原串。
-		"__": func(key string) string {
-			return key
+		// __: i18n 兼容别名，委托给 Lang。
+		"__": func(key string, args ...interface{}) string {
+			return Lang(key, args...)
+		},
+
+		// lang: i18n 文案查询，键名对齐原版 Stellar zh-CN.yml。
+		// 模板中用法：{{lang "btn.recent_publish"}}、{{lang "nav.category" .Page.Category}}
+		"lang": func(key string, args ...interface{}) string {
+			return Lang(key, args...)
 		},
 
 		// partial: 占位，Go 模板用 {{template "name"}} 直接嵌入，此函数仅做兼容。

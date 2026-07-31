@@ -6,7 +6,7 @@
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="wiki">
-        <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">全部</a>
+        <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">{{- lang "btn.all" -}}</a>
         {{- range .WikiTags}}
         <a {{if eq $.Page.Tag .}}class="active" {{end}}href="/wiki/tags/{{.}}">{{.}}</a>
         {{- end}}
@@ -34,6 +34,6 @@
     </a>
   </div>
   {{- else}}
-  <p class="wiki-empty">暂无文库项目</p>
+  <p class="wiki-empty">{{- lang "wiki.empty" -}}</p>
   {{- end}}
 </div>

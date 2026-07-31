@@ -15,25 +15,25 @@
     <div class="top bread-nav footnote">
       <div class="left">
         <div class="flex-row" id="breadcrumb">
-          <a class="cap breadcrumb" href="/">首页</a>
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
           {{- /* 面包屑对齐原版 breadcrumb/blog.ejs：专栏文章 首页/专栏/{专栏名}，普通文章 首页/博客 */}}
           {{if .Page.Topic}}
           <span class="sep"></span>
-          <a class="cap breadcrumb" id="menu" href="/topic/">专栏</a>
+          <a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a>
           <span class="sep"></span>
           <a class="cap breadcrumb" id="proj" href="/topic/{{.Page.Topic}}">{{.Page.Topic}}</a>
           {{else}}
           <span class="sep"></span>
-          <a class="cap breadcrumb" href="/">博客</a>
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
           {{end}}
         </div>
         <div class="flex-row" id="post-meta">
           {{- if .Page.Date}}
-          <span class="text created">发布于：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time></span>
+          <span class="text created">{{- lang "meta.created" -}}：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time></span>
           {{- end}}
           {{- if and .Page.Updated (ne .Page.Updated .Page.Date)}}
           <span class="sep updated"></span>
-          <span class="text updated">更新于：<time datetime="{{date .Page.Updated "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Updated "2006-01-02"}}</time></span>
+          <span class="text updated">{{- lang "meta.updated" -}}：<time datetime="{{date .Page.Updated "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Updated "2006-01-02"}}</time></span>
           {{- end}}
         </div>
       </div>
@@ -52,7 +52,7 @@
      文首渲染提醒块，复用 note 标签插件的 tag-plugin colorful note 结构与样式（shortcode.go 同款）。*/}}
   {{if gt .ExpiredDays 0}}
   <div class="tag-plugin colorful note" color="warning">
-    <div class="body">本文最后更新于 {{.ExpiredDays}} 天前，其中的信息可能已经过时，请谨慎参考。</div>
+    <div class="body">{{- lang "article.expire" .ExpiredDays -}}</div>
   </div>
   {{end}}
   {{.Content}}
@@ -64,7 +64,7 @@
 <div class="article-footer" id="post-footer" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
   {{if .Page.References}}
   <section id="references">
-    <div class="header"><span>参考文献</span></div>
+    <div class="header"><span>{{- lang "meta.references" -}}</span></div>
     <div class="body">
       <ul>
         {{range .Page.References}}<li class="post-title">{{.}}</li>{{end}}
@@ -74,15 +74,15 @@
   {{end}}
   {{if .Site.Article.Copyright.Enabled}}
   <section id="license">
-    <div class="header"><span>版权声明</span></div>
+    <div class="header"><span>{{- lang "article.copyright" -}}</span></div>
     <div class="body">
-      <p>作者：{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.Title}}{{end}}</p>
-      {{if .Page.Date}}<p>发布于：{{.Page.Date}}</p>{{end}}
-      {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<p>更新于：{{.Page.Updated}}</p>{{end}}
+      <p>{{- lang "article.author" -}}：{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.Title}}{{end}}</p>
+      {{if .Page.Date}}<p>{{- lang "meta.created" -}}：{{.Page.Date}}</p>{{end}}
+      {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<p>{{- lang "meta.updated" -}}：{{.Page.Updated}}</p>{{end}}
       {{if .Site.Article.Copyright.License}}
-      <p>许可协议：<a href="{{.Site.Article.Copyright.LicenseURL}}" target="_blank" rel="external noopener noreferrer">{{.Site.Article.Copyright.License}}</a></p>
+      <p>{{- lang "meta.license" -}}：<a href="{{.Site.Article.Copyright.LicenseURL}}" target="_blank" rel="external noopener noreferrer">{{.Site.Article.Copyright.License}}</a></p>
       {{end}}
-      {{if .Page.CanonicalURL}}<p>原文链接：<a href="{{.Page.CanonicalURL}}">{{.Page.CanonicalURL}}</a></p>{{end}}
+      {{if .Page.CanonicalURL}}<p>{{- lang "article.original_link" -}}：<a href="{{.Page.CanonicalURL}}">{{.Page.CanonicalURL}}</a></p>{{end}}
     </div>
   </section>
   {{end}}
@@ -93,11 +93,11 @@
   {{if .EditPage}}
   <section id="contributors">
     <div class="header">
-      <span>本文贡献者</span>
+      <span>{{- lang "meta.contributors" -}}</span>
       <span class="spacer"></span>
       <a class="edit" href="{{.EditPage.EditURL}}">
         {{icon "default:edit"}}
-        <span>编辑本文</span>
+        <span>{{- lang "btn.edit" -}}</span>
       </a>
     </div>
     {{if .EditPage.APIURL}}
@@ -110,24 +110,24 @@
 
   {{if .Site.Article.Share.Enabled}}
   <section id="share">
-    <div class="header"><span>分享文章</span></div>
+    <div class="header"><span>{{- lang "meta.share" -}}</span></div>
     <div class="body">
       <div class="link"><input class="copy-area" readonly="true" id="copy-link" value="{{.Page.CanonicalURL}}" aria-hidden="true" tabindex="-1" /></div>
       <div class="social-wrap dis-select">
         {{- range .Site.Article.Share.Platforms}}
         {{- if eq . "wechat"}}
-        <a class="social share-item wechat" onclick="util.toggle('qrcode-wechat')" title="微信分享">{{icon "share:wechat"}}</a>
+        <a class="social share-item wechat" onclick="util.toggle('qrcode-wechat')" title="{{lang "share.wechat"}}">{{icon "share:wechat"}}</a>
         {{- else if eq . "weibo"}}
-        <a class="social share-item weibo" target="_blank" rel="external nofollow noopener noreferrer" data-platform="weibo" title="分享到微博">{{icon "share:weibo"}}</a>
+        <a class="social share-item weibo" target="_blank" rel="external nofollow noopener noreferrer" data-platform="weibo" title="{{lang "share.weibo"}}">{{icon "share:weibo"}}</a>
         {{- else if eq . "email"}}
-        <a class="social share-item email" data-platform="email" title="邮件分享">{{icon "share:email"}}</a>
+        <a class="social share-item email" data-platform="email" title="{{lang "share.email"}}">{{icon "share:email"}}</a>
         {{- else if eq . "link"}}
-        <a class="social share-item link" onclick="util.copy('copy-link', '复制成功')" title="复制链接">{{icon "share:link"}}</a>
+        <a class="social share-item link" onclick="util.copy('copy-link', '{{lang "message.copied"}}')" title="{{lang "share.copy_link"}}">{{icon "share:link"}}</a>
         {{- end}}
         {{- end}}
       </div>
       <div class="qrcode" id="qrcode-wechat" style="opacity:0;height:0">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data={{.Page.CanonicalURL | urlquery}}" alt="微信二维码"/>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data={{.Page.CanonicalURL | urlquery}}" alt="{{lang "share.wechat_qrcode"}}"/>
       </div>
     </div>
   </section>
@@ -135,20 +135,20 @@
 
   {{if .Site.Article.Reward.Enabled}}
   <section id="reward">
-    <div class="header"><span>打赏</span></div>
+    <div class="header"><span>{{- lang "article.reward" -}}</span></div>
     <div class="body">
-      <button type="button" class="reward-toggle" id="reward-toggle">{{if .Site.Article.Reward.Text}}{{.Site.Article.Reward.Text}}{{else}}打赏{{end}}</button>
+      <button type="button" class="reward-toggle" id="reward-toggle">{{if .Site.Article.Reward.Text}}{{.Site.Article.Reward.Text}}{{else}}{{lang "article.reward_default"}}{{end}}</button>
       <div class="reward-codes" id="reward-codes" hidden>
         {{if .Site.Article.Reward.Wechat}}
         <figure class="reward-item">
-          <img src="{{.Site.Article.Reward.Wechat}}" alt="微信收款码" loading="lazy">
-          <figcaption>微信</figcaption>
+          <img src="{{.Site.Article.Reward.Wechat}}" alt="{{lang "share.wechat_pay"}}" loading="lazy">
+          <figcaption>{{- lang "share.wechat_pay" -}}</figcaption>
         </figure>
         {{end}}
         {{if .Site.Article.Reward.Alipay}}
         <figure class="reward-item">
-          <img src="{{.Site.Article.Reward.Alipay}}" alt="支付宝收款码" loading="lazy">
-          <figcaption>支付宝</figcaption>
+          <img src="{{.Site.Article.Reward.Alipay}}" alt="{{lang "share.alipay_qrcode"}}" loading="lazy">
+          <figcaption>{{- lang "share.alipay" -}}</figcaption>
         </figure>
         {{end}}
       </div>
@@ -158,6 +158,7 @@
 </div>
 <script>
 (function () {
+  var _langPromptCopy = '{{lang "share.prompt_copy"}}';
   function postUrl() {
     var footer = document.getElementById('post-footer');
     return (footer && footer.getAttribute('data-url')) || location.href;
@@ -185,11 +186,11 @@
     var text = postUrl();
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function () {
-        window.prompt('复制链接', text);
+        window.prompt(_langPromptCopy, text);
       });
       return;
     }
-    window.prompt('复制链接', text);
+    window.prompt(_langPromptCopy, text);
   }
   function onClick(e) {
     var shareBtn = e.target.closest && e.target.closest('#post-footer .share-item');
@@ -228,11 +229,11 @@
 <div class="related-wrap" id="read-next">
   <section class="body">
     {{if .PrevPost}}<div class="item" id="prev">
-      <div class="note">较新文章</div>
+      <div class="note">{{- lang "meta.newer" -}}</div>
       <a href="/post/{{.PrevPost.Slug}}">{{.PrevPost.Title}}</a>
     </div>{{end}}
     {{if .NextPost}}<div class="item" id="next">
-      <div class="note">较早文章</div>
+      <div class="note">{{- lang "meta.older" -}}</div>
       <a href="/post/{{.NextPost.Slug}}">{{.NextPost.Title}}</a>
     </div>{{end}}
   </section>
@@ -241,7 +242,7 @@
 
 {{if .RelatedPosts}}
 <div class="related-wrap" id="related-posts">
-  <section class="header"><div class="title cap theme">您可能感兴趣的文章</div></section>
+  <section class="header"><div class="title cap theme">{{- lang "meta.related_posts" -}}</div></section>
   <section class="body"><div class="related-posts">
     {{range .RelatedPosts}}<a class="item" href="/post/{{.Slug}}">
       <span class="title">{{.Title}}</span>

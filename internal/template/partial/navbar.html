@@ -11,32 +11,36 @@
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="post">
-        <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">近期发布</a>
+        <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">{{- lang "btn.recent_publish" -}}</a>
         {{- if .Page.Category}}
-        <a class="active" href="/categories/">分类：{{.Page.Category}}</a>
+        <a class="active" href="/categories/">{{- lang "nav.category" .Page.Category -}}</a>
         {{- else if eq .Page.Layout "categories"}}
-        <a class="active" href="/categories/">分类</a>
+        <a class="active" href="/categories/">{{- lang "btn.categories" -}}</a>
         {{- else}}
-        <a href="/categories/">分类</a>
+        <a href="/categories/">{{- lang "btn.categories" -}}</a>
         {{- end}}
         {{- if .Page.Tag}}
-        <a class="active" href="/tags/">标签：{{.Page.Tag}}</a>
+        <a class="active" href="/tags/">{{- lang "nav.tag" .Page.Tag -}}</a>
         {{- else if eq .Page.Layout "tags"}}
-        <a class="active" href="/tags/">标签</a>
+        <a class="active" href="/tags/">{{- lang "btn.tags" -}}</a>
         {{- else}}
-        <a href="/tags/">标签</a>
+        <a href="/tags/">{{- lang "btn.tags" -}}</a>
         {{- end}}
         {{- /* 专栏 tab：对齐 nav_tabs_blog.ejs，theme.topic.publish_list 非空才显示（本地 HasTopics=DB 存在专栏文章）*/}}
         {{- if .HasTopics}}
         {{- if .Page.Topic}}
-        <a class="active" href="/topic/">专栏：{{.Page.Topic}}</a>
+        <a class="active" href="/topic/">{{- lang "nav.topic" .Page.Topic -}}</a>
         {{- else if eq .Page.Layout "topics"}}
-        <a class="active" href="/topic/">专栏</a>
+        <a class="active" href="/topic/">{{- lang "btn.topic" -}}</a>
         {{- else}}
-        <a href="/topic/">专栏</a>
+        <a href="/topic/">{{- lang "btn.topic" -}}</a>
         {{- end}}
         {{- end}}
-        <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">归档</a>
+        <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">{{- lang "btn.archives" -}}</a>
+        {{- /* 可配置导航标签页：site.yml nav_tabs 段，追加在固定 tab 之后 */}}
+        {{- range .Site.NavTabs}}
+        <a class="tab" href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}>{{.Title}}</a>
+        {{- end}}
       </nav>
     </div>
   </div>
