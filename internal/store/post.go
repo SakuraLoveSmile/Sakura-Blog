@@ -47,6 +47,9 @@ type Post struct {
 	// 文章级 SEO（Spec 42）：非空时覆盖站点级默认 meta 输出。
 	MetaDescription string // 自定义 meta description，空=用自动摘要/站点默认
 	MetaKeywords    string // 自定义 meta keywords，逗号分隔，空=用站点默认
+
+	// 多作者体系（Spec 38）：作者 ID，空串=无作者（回退站长）。
+	Author string
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -108,8 +111,8 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords"
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -269,6 +272,8 @@ func (s *Store) migrateColumns() error {
 		// Spec 42 文章级 SEO 两列（幂等 ALTER，常量默认值）
 		"meta_description": `ALTER TABLE posts ADD COLUMN meta_description TEXT NOT NULL DEFAULT ''`,
 		"meta_keywords":    `ALTER TABLE posts ADD COLUMN meta_keywords TEXT NOT NULL DEFAULT ''`,
+		// Spec 38 多作者体系
+		"author": `ALTER TABLE posts ADD COLUMN author TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -550,9 +555,9 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, "references", banner, meta_description, meta_keywords)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.References, p.Banner, p.MetaDescription, p.MetaKeywords)
+	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, "references", banner, meta_description, meta_keywords, author)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
@@ -573,9 +578,9 @@ func (s *Store) Update(slug string, p *Post) error {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, slug, slug, p.MetaDescription, p.MetaKeywords, slug)
+		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -703,7 +708,7 @@ func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author)
 	if err != nil {
 		return nil, err
 	}

@@ -75,6 +75,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 				Type:       "tech",
 				Lang:       "zh-CN",
 				MenuID:     "post",
+				Author:     p.Author,
 				Date:       p.CreatedAt.Format("2006-01-02"),
 				Updated:    p.UpdatedAt.Format("2006-01-02"),
 				Excerpt:    p.Excerpt,

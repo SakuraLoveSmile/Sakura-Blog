@@ -126,11 +126,27 @@ type WidgetInstance struct {
 	V      *ViewData // 根渲染上下文（Site/TOC/TopicSeries 等直读）
 }
 
+// AuthorWidgetData author widget 装配数据（Spec 38 多作者体系）。
+// assembleWidgets 从 Page.Author 查找 Site.Authors 命中时设置，模板据此显示对应作者卡片。
+type AuthorWidgetData struct {
+	ID     string    // 作者 ID（用于 /author/{id}/ 链接）
+	Author AuthorDef // 作者定义（name/avatar/description）
+	Path   string    // 作者页路径（/author/{id}/）
+}
+
 // Str/Int/Bool 参数访问便捷透传（模板里写 .Str "title" "默认"）。
 func (w *WidgetInstance) Str(key, fallback string) string  { return w.Params.Str(key, fallback) }
 func (w *WidgetInstance) Int(key string, fallback int) int { return w.Params.Int(key, fallback) }
 func (w *WidgetInstance) Bool(key string, fallback bool) bool {
 	return w.Params.Bool(key, fallback)
+}
+
+// AuthorData 返回 author widget 的装配数据（nil 表示走站长兜底卡片）。
+func (w *WidgetInstance) AuthorData() *AuthorWidgetData {
+	if d, ok := w.Data.(*AuthorWidgetData); ok {
+		return d
+	}
+	return nil
 }
 
 // DefaultWidgetLibrary 内置组件库（缺省参数 = 改造前硬编码行为）。
@@ -205,6 +221,8 @@ func PageTypeOf(layout string) string {
 		return layout
 	case "topics":
 		return "topic"
+	case "author":
+		return "author"
 	default:
 		return "index"
 	}

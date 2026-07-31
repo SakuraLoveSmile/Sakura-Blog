@@ -44,6 +44,7 @@ type FileMeta struct {
 	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
 	Status string // draft / published，空=由导入方决定
 	Pinned bool   // 置顶
+	Author string // 作者 ID（Spec 38 多作者体系）
 }
 
 // Service 文章服务，从 markdown 目录加载并渲染文章。
@@ -157,6 +158,7 @@ func (s *Service) ParseBytes(src []byte) (FileMeta, string) {
 		References: meta.References,
 		Status:     meta.Status,
 		Pinned:     meta.Pinned,
+		Author:     meta.Author,
 	}, body
 }
 

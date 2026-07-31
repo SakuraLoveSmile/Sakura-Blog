@@ -71,6 +71,8 @@ type postJSON struct {
 	HasDraft        bool   `json:"has_draft"`
 	// Draft 草稿头内容（整份编辑表单 JSON），仅详情接口且有草稿时返回。
 	Draft json.RawMessage `json:"draft,omitempty"`
+	// 多作者体系（Spec 38）：作者 ID
+	Author string `json:"author"`
 }
 
 type posterJ struct {
@@ -99,6 +101,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
 		Views:           views,
 		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
+		Author:          p.Author,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -497,6 +500,8 @@ type postRequest struct {
 	// 文章级 SEO（Spec 42）
 	MetaDescription string `json:"meta_description"`
 	MetaKeywords    string `json:"meta_keywords"`
+	// 多作者体系（Spec 38）：作者 ID
+	Author string `json:"author"`
 }
 
 func reqToPost(req *postRequest, contentHTML string) *store.Post {
@@ -521,6 +526,8 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		// 文章级 SEO（Spec 42）：空串=未配置，回退站点级/现状链
 		MetaDescription: strings.TrimSpace(req.MetaDescription),
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
+		// 多作者体系（Spec 38）
+		Author: strings.TrimSpace(req.Author),
 	}
 	if req.Poster != nil {
 		p.Poster = store.EncodePoster(store.PosterData{

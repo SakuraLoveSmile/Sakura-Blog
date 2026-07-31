@@ -66,6 +66,9 @@ type ViewData struct {
 	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
 	NotesContentHTML template.HTML
 
+	// 作者页（Layout=author 时使用）：AuthorProfile 为当前作者定义，Posts/Paginator 复用首页字段。
+	AuthorProfile *AuthorDef
+
 	// Admin 后台专用字段。前台模板不读这些字段，零值即可。
 	Admin *AdminData
 }
@@ -266,6 +269,17 @@ type Site struct {
 	NavTabs []NavTabItem `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
 	// 首页 Hero cover 区配置（site.yml cover 段），仅首页第一页且 title 非空时渲染。
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
+	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
+	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
+}
+
+// AuthorDef 描述一位作者（来自 site.yml authors 段）。
+type AuthorDef struct {
+	Name        string `yaml:"name" json:"name"`
+	Avatar      string `yaml:"avatar,omitempty" json:"avatar,omitempty"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	URL         string `yaml:"url,omitempty" json:"url,omitempty"`
+	Hidden      bool   `yaml:"hidden,omitempty" json:"hidden,omitempty"`
 }
 
 // NavTabItem 导航栏额外标签页单项（site.yml nav_tabs 段）。

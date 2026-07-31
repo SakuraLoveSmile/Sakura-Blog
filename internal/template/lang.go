@@ -151,6 +151,10 @@ var zhCN = map[string]string{
 	"widget.welcome":      "这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。",
 	"widget.welcome_hint": "左侧可以搜索文章，右下角可以切换深浅色主题。",
 
+	// 作者页（Spec 38 多作者体系）
+	"author.page_title": "作者：%s",
+	"author.all_posts":  "全部文章",
+
 	// 相关 widget
 	"widget.related": "专栏：%s",
 

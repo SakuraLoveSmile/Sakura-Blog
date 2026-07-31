@@ -58,6 +58,7 @@ func Import(st *store.Store, posts *post.Service) error {
 				Color:    meta.PosterColor,
 			}),
 			References: store.EncodeReferences(meta.References),
+			Author:     meta.Author,
 		}
 		if err := st.Upsert(p); err != nil {
 			return err

@@ -270,6 +270,18 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			}
 		case "tagcloud":
 			w.Data = tmpl.BuildTagCloud(tagCounts, tmpl.TagCloudOptionsFrom(w.Params))
+		case "author":
+			// Spec 38：当前文章有 author 且在 Site.Authors 中命中时，装配作者卡片数据；
+			// 否则不设 Data，模板走站长兜底（零配置回归）。
+			if data.Page != nil && data.Page.Author != "" {
+				if author, ok := s.site.Authors[data.Page.Author]; ok {
+					w.Data = &tmpl.AuthorWidgetData{
+						ID:     data.Page.Author,
+						Author: author,
+						Path:   "/author/" + data.Page.Author + "/",
+					}
+				}
+			}
 		}
 	}
 }

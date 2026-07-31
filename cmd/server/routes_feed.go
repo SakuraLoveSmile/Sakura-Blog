@@ -34,10 +34,26 @@ type Item struct {
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
 	Guid        string `xml:"guid"`
+	// 多作者体系（Spec 38 Wave 6）：RSS author 字段
+	Author string `xml:"author,omitempty"`
+}
+
+// resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
+func (s *webServer) resolveAuthor(postAuthor string) string {
+	if postAuthor != "" {
+		if a, ok := s.site.Authors[postAuthor]; ok && a.Name != "" {
+			return a.Name
+		}
+	}
+	if s.site.Title != "" {
+		return s.site.Title
+	}
+	return ""
 }
 
 // rssItemsFromPosts 文章转 RSS item：密码文章隐藏正文，无摘要截断正文前 200 字节。
-func rssItemsFromPosts(posts []*store.Post, siteURL string) []Item {
+// resolveAuthor 将 post.Author 键解析为可读作者名。
+func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(string) string) []Item {
 	items := make([]Item, 0, len(posts))
 	for _, p := range posts {
 		desc := p.Excerpt
@@ -56,6 +72,7 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string) []Item {
 			Description: desc,
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			Guid:        link,
+			Author:      resolveAuthor(p.Author),
 		})
 	}
 	return items
@@ -81,7 +98,7 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 				Title:       s.site.Title,
 				Link:        siteURL,
 				Description: s.site.Description,
-				Items:       rssItemsFromPosts(posts, siteURL),
+				Items:       rssItemsFromPosts(posts, siteURL, s.resolveAuthor),
 			},
 		}
 		output, err := xml.MarshalIndent(rss, "", "  ")

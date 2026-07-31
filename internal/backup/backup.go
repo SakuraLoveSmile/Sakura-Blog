@@ -191,6 +191,7 @@ func marshalPost(p *store.Post) string {
 		writeKV("poster_color", poster.Color)
 	}
 	writeList("references", store.DecodeReferences(p.References))
+	writeKV("author", p.Author)
 	b.WriteString("status: " + p.Status + "\n")
 	if p.Pinned {
 		b.WriteString("pinned: true\n")
@@ -289,6 +290,7 @@ func (s *Service) importOne(base string, data []byte, res *ImportResult) {
 			Color:    meta.PosterColor,
 		}),
 		References: store.EncodeReferences(meta.References),
+		Author:     meta.Author,
 	}
 	if err := s.store.Upsert(p); err != nil {
 		res.Skipped = append(res.Skipped, base+": 写入失败")

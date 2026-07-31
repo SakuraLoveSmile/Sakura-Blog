@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { postApi, taxonomyApi, previewApi } from "@/api";
+import { postApi, taxonomyApi, previewApi, settingsApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import CollapsibleSection from "@/components/CollapsibleSection.vue";
@@ -37,6 +37,7 @@ const form = ref({
   publish_at: "",
   meta_description: "",
   meta_keywords: "",
+  author: "",
 });
 
 const loading = ref(false);
@@ -107,6 +108,21 @@ const currentWordCount = computed(() => {
   }
   return n;
 });
+
+// ---------- 作者可选项（Spec 38 Wave 5） ----------
+// authors 为空 map 时 Object.keys 长度为 0，不渲染控件
+const authorOptions = ref<Record<string, { name: string }>>({});
+
+async function loadAuthors() {
+  try {
+    const { data } = await settingsApi.all();
+    if (data.authors && typeof data.authors === "object") {
+      authorOptions.value = data.authors;
+    }
+  } catch {
+    /* 静默：作者列表缺失不阻塞编辑 */
+  }
+}
 
 // ---------- 分类/标签可选项（Spec 29 P0-4） ----------
 const categories = ref<string[]>([]);
@@ -229,11 +245,13 @@ async function loadPost() {
     publish_at: src.publish_at || "",
     meta_description: src.meta_description || "",
     meta_keywords: src.meta_keywords || "",
+    author: src.author || "",
   };
 }
 
 onMounted(async () => {
   loadTaxonomy();
+  loadAuthors();
   editorMode.value = (editorRef.value?.getMode?.() as EditorMode) || "split";
   if (!isEdit.value) return;
   loading.value = true;
@@ -425,6 +443,14 @@ const chipCls =
           <div class="flex items-center gap-2">
             <input type="checkbox" v-model="form.pinned" id="pinned" class="rounded" />
             <label for="pinned" class="text-sm text-gray-600 dark:text-gray-400">置顶</label>
+          </div>
+          <!-- 作者选择（Spec 38 Wave 5）：authors 为空时不渲染 -->
+          <div v-if="Object.keys(authorOptions).length">
+            <label :class="labelCls">作者</label>
+            <select v-model="form.author" :class="fieldCls">
+              <option value="">默认（站长）</option>
+              <option v-for="(info, id) in authorOptions" :key="id" :value="id">{{ info.name }}</option>
+            </select>
           </div>
           <div>
             <label :class="labelCls">定时发布</label>

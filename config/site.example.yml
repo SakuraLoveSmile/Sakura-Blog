@@ -111,6 +111,14 @@ links:
         label: 语言
         color: 3DC550
 
+# 多作者体系（Spec 38）：key 为作者 ID，文章 front matter 中 author: <id> 引用。
+# authors 为空时全站行为不变（回退站长）。
+authors:
+  sakura:
+    name: Sakura
+    avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
+    description: 博客作者
+
 # 导航栏额外标签页：追加在固定 tab（归档）之后，支持外链。
 # nav_tabs:
 #   - title: 友链

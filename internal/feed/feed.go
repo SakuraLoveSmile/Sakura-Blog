@@ -62,6 +62,19 @@ func feedBody(p *store.Post) string {
 	return p.ContentHTML
 }
 
+// resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
+func (h *Handler) resolveAuthor(postAuthor string) string {
+	if postAuthor != "" {
+		if a, ok := h.site.Authors[postAuthor]; ok && a.Name != "" {
+			return a.Name
+		}
+	}
+	if h.site.Title != "" {
+		return h.site.Title
+	}
+	return ""
+}
+
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
 func (h *Handler) atom(c *gin.Context) {
 	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
@@ -89,6 +102,7 @@ func (h *Handler) atom(c *gin.Context) {
 		if p.UpdatedAt.IsZero() {
 			upd = pub
 		}
+		authorName := h.resolveAuthor(p.Author)
 		entries = append(entries, atomEntry{
 			Title:     p.Title,
 			Link:      atomLink{Href: link},
@@ -96,6 +110,7 @@ func (h *Handler) atom(c *gin.Context) {
 			Updated:   upd,
 			Published: pub,
 			Content:   atomContent{Type: "html", Body: feedBody(p)},
+			Author:    &atomAuthor{Name: authorName},
 		})
 	}
 
@@ -138,6 +153,7 @@ func (h *Handler) jsonFeed(c *gin.Context) {
 			Title:         p.Title,
 			DatePublished: p.CreatedAt.UTC().Format(time.RFC3339),
 			ContentHTML:   feedBody(p),
+			Author:        h.resolveAuthor(p.Author),
 		})
 	}
 
@@ -211,6 +227,7 @@ func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*s
 			Description: feedBody(p),
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			Guid:        link,
+			Author:      h.resolveAuthor(p.Author),
 		})
 	}
 	rss := rssFeed{
@@ -274,6 +291,12 @@ type atomEntry struct {
 	Updated   string      `xml:"updated"`
 	Published string      `xml:"published"`
 	Content   atomContent `xml:"content"`
+	// 多作者体系（Spec 38 Wave 6）：Atom author 子元素
+	Author *atomAuthor `xml:"author,omitempty"`
+}
+
+type atomAuthor struct {
+	Name string `xml:"name,omitempty"`
 }
 
 type atomContent struct {
@@ -298,6 +321,8 @@ type jsonFeedItem struct {
 	Title         string `json:"title"`
 	DatePublished string `json:"date_published"`
 	ContentHTML   string `json:"content_html"`
+	// 多作者体系（Spec 38 Wave 6）：JSON Feed author 字段
+	Author string `json:"author,omitempty"`
 }
 
 // --- RSS 2.0（分类/标签 feed）---
@@ -321,4 +346,6 @@ type rssItem struct {
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
 	Guid        string `xml:"guid"`
+	// 多作者体系（Spec 38 Wave 6）：RSS author 字段
+	Author string `xml:"author,omitempty"`
 }
