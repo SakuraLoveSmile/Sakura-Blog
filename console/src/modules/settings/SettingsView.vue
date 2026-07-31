@@ -5,6 +5,8 @@ import { settingsApi, authApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
+import AppearanceTab from "./AppearanceTab.vue";
+import WidgetsTab from "./WidgetsTab.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { VPageHeader, Dialog, Toast } from "@/components/ui";
 
@@ -20,9 +22,11 @@ const tabs = [
   { key: "seo", label: "SEO" },
   { key: "inject", label: "代码注入" },
   { key: "security", label: "安全" },
+  { key: "appearance", label: "外观" },
+  { key: "widgets", label: "组件编排" },
   { key: "advanced", label: "高级·JSON" },
 ];
-const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard"];
+const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const router = useRouter();
@@ -86,6 +90,19 @@ function ensureDefaults(d: Record<string, any>) {
   d.inject = d.inject || {};
   // wiki 段是数组；行内编辑用 _tagsText 字符串代理 tags 数组（逗号分隔）
   d.wiki = (d.wiki || []).map((w: any) => ({ ...w, _tagsText: (w.tags || []).join(", ") }));
+  // style 段默认值（Spec 47）
+  d.style = d.style || {};
+  d.style.color = d.style.color || {};
+  d.style.font_size = d.style.font_size || {};
+  d.style.font_family = d.style.font_family || {};
+  d.style.leftbar = d.style.leftbar || {};
+  d.style.site = d.style.site || {};
+  d.style.codeblock = d.style.codeblock || {};
+  d.style.header_prefix = d.style.header_prefix || {};
+  // widgets 段默认值（Spec 47）
+  d.widgets = d.widgets || {};
+  d.widgets.library = d.widgets.library || {};
+  d.widgets.pages = d.widgets.pages || {};
   return d;
 }
 
@@ -591,6 +608,9 @@ onMounted(load);
           <button @click="saveJson(s)" :disabled="savingKey === 'json:' + s" :class="btnCls">保存 {{ s }}</button>
         </div>
       </div>
+
+      <AppearanceTab v-show="active === 'appearance'" :data="data" :saving="savingKey" @save="save" />
+      <WidgetsTab v-show="active === 'widgets'" :data="data" :saving="savingKey" @save="save" />
 
       <!-- 头像选择器 -->
       <AttachmentPickerModal

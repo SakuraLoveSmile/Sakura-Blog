@@ -22,6 +22,8 @@ const (
 	SectionSEO       = "seo"       // 站点级 SEO（Spec 42）
 	SectionInject    = "inject"    // 代码注入（Spec 42，仅入库不入 site.yml）
 	SectionDashboard = "dashboard" // 仪表盘组件自定义（仅 Console 消费）
+	SectionStyle     = "style"     // 外观样式（Spec 34/47）
+	SectionWidgets   = "widgets"   // 侧边栏组件编排（Spec 33/47）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -116,6 +118,14 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 			return err
 		}
 	}
+	if _, ok := settings[SectionStyle]; !ok {
+		b, _ := json.Marshal(site.Style)
+		st.PutSetting(SectionStyle, string(b))
+	}
+	if _, ok := settings[SectionWidgets]; !ok {
+		b, _ := json.Marshal(site.Widgets)
+		st.PutSetting(SectionWidgets, string(b))
+	}
 
 	nl, err := st.CountLinks()
 	if err != nil {
@@ -175,6 +185,12 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionDashboard, defaultDashboardConfig()); err != nil {
 		return err
 	}
+	if err := put(SectionStyle, site.Style); err != nil {
+		return err
+	}
+	if err := put(SectionWidgets, site.Widgets); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -222,6 +238,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	var friends tmpl.FriendsConfig
 	var seo tmpl.SEOConfig
 	var inject tmpl.InjectConfig
+	var style tmpl.StyleConfig
+	var widgets tmpl.WidgetsConfig
 	var admin adminSection
 	adminSet := false
 
@@ -240,6 +258,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	unmarshal(SectionFriends, &friends)
 	unmarshal(SectionSEO, &seo)
 	unmarshal(SectionInject, &inject)
+	unmarshal(SectionStyle, &style)
+	unmarshal(SectionWidgets, &widgets)
 	if v, ok := settings[SectionAdmin]; ok && v != "" {
 		if json.Unmarshal([]byte(v), &admin) == nil {
 			adminSet = true
@@ -267,6 +287,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.Friends = friends
 	site.SEO = seo
 	site.Inject = inject
+	site.Style = style
+	site.Widgets = widgets
 	site.Links = groups
 	if adminSet {
 		site.Admin.Password = admin.Password
@@ -304,6 +326,7 @@ func KnownSections() []string {
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
 		SectionSEO, SectionInject, SectionDashboard,
+		SectionStyle, SectionWidgets,
 	}
 }
 
@@ -350,6 +373,10 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &tmpl.InjectConfig{}
 	case SectionDashboard:
 		dst = &dashboardConfig{}
+	case SectionStyle:
+		dst = &tmpl.StyleConfig{}
+	case SectionWidgets:
+		dst = &tmpl.WidgetsConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}
