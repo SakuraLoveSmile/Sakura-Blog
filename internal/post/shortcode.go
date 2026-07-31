@@ -114,6 +114,13 @@ var reInlineLabel = regexp.MustCompile(`{%\s*(u|emp|wavy|del|kbd|psw|blur)\s+(.*
 // sup/sub 行内标签：{% sup [color:x] text %} / {% sub [color:x] text %}
 var reSupSub = regexp.MustCompile(`{%\s*(sup|sub)\s+(.*?)\s*%}`)
 
+// [[text]] 快捷下划线语法（对齐原版 inline-labels.js）：渲染为 <u class="p tag-plugin">text</u>
+// 需排除 [[alt](url)] 这类与 Markdown 链接嵌套冲突的场景
+var reShortcutUnderline = regexp.MustCompile(`\[\[([^\]]+)\]\]`)
+
+// {color|text} 快捷颜色文字语法：渲染为 <span class="tag-plugin" style="color:color">text</span>
+var reShortcutColor = regexp.MustCompile(`\{([a-zA-Z#][a-zA-Z0-9#]*)\|([^\}]+)\}`)
+
 // --- Spec 31 展示类标签（对照原版 scripts/tags/lib）---
 
 // about 标签（块级）：{% about [avatar:x] [height:x] [border:x] [back:x] %} body {% endabout %}
@@ -546,6 +553,41 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 
 	// 29. 行内修饰标签（u/emp/wavy/del/kbd/psw/blur/sup/sub），跳过代码块与行内代码
 	md = replaceOutsideCode(md, renderInlineLabels)
+
+	// 29.5 [[text]] 快捷下划线语法，跳过代码块与行内代码
+	md = replaceOutsideCode(md, func(s string) string {
+		return reShortcutUnderline.ReplaceAllStringFunc(s, func(match string) string {
+			parts := reShortcutUnderline.FindStringSubmatch(match)
+			if len(parts) < 2 {
+				return match
+			}
+			text := strings.TrimSpace(parts[1])
+			if text == "" {
+				return match
+			}
+			// 排除与 Markdown 链接/图片嵌套冲突：若原文以 "](" 结尾则不替换
+			if strings.HasSuffix(match, "](") {
+				return match
+			}
+			return fmt.Sprintf(`<u class="p tag-plugin">%s</u>`, text)
+		})
+	})
+
+	// 29.6 {color|text} 快捷颜色文字语法，跳过代码块与行内代码
+	md = replaceOutsideCode(md, func(s string) string {
+		return reShortcutColor.ReplaceAllStringFunc(s, func(match string) string {
+			parts := reShortcutColor.FindStringSubmatch(match)
+			if len(parts) < 3 {
+				return match
+			}
+			color := strings.TrimSpace(parts[1])
+			text := strings.TrimSpace(parts[2])
+			if color == "" || text == "" {
+				return match
+			}
+			return fmt.Sprintf(`<span class="tag-plugin" style="color:%s">%s</span>`, html.EscapeString(color), text)
+		})
+	})
 
 	// --- Spec 31 展示类 11 件（块级先、行内后；navbar 必须先于 banner，banner 从 body 提取已展开的 navbar 行）---
 
