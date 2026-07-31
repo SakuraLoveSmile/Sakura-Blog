@@ -177,6 +177,7 @@ function openSearch() {
 function navigateTo(path: string) {
   searchOpen.value = false;
   moreMenuVisible.value = false;
+  profileDropdownOpen.value = false;
   router.push(path);
 }
 
@@ -292,18 +293,24 @@ function closeProfileDropdown() {
       <div class="profile-placeholder">
         <div class="current-profile">
           <div class="profile-avatar">
-            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15">
+            <img
+              v-if="auth.user.avatar"
+              :src="auth.user.avatar"
+              alt="avatar"
+              class="h-9 w-9 rounded-full object-cover"
+            />
+            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15">
               <Icon icon="ri:user-3-line" class="text-lg text-primary" />
             </span>
           </div>
           <div class="profile-name">
-            <div class="flex text-sm font-medium text-gray-900 dark:text-gray-100">管理员</div>
+            <div class="flex text-sm font-medium text-gray-900 dark:text-gray-100">{{ auth.user.display_name || "管理员" }}</div>
             <div class="flex">
               <VTag>
                 <template #leftIcon>
                   <Icon icon="ri:user-settings-line" class="text-xs" />
                 </template>
-                超级管理员
+                {{ auth.user.username || "超级管理员" }}
               </VTag>
             </div>
           </div>
@@ -338,6 +345,13 @@ function closeProfileDropdown() {
                     <Icon :icon="opt.icon" />
                   </button>
                 </div>
+                <button
+                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  @click="navigateTo('/profile')"
+                >
+                  <Icon icon="ri:user-settings-line" />
+                  个人资料
+                </button>
                 <button
                   class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                   @click="handleLogout"

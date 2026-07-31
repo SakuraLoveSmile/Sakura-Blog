@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"blog/internal/store"
@@ -136,6 +137,37 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 			return err
 		}
 	}
+
+	// Spec 45: 迁移 admin 密码到 users 表
+	if err := st.EnsureUsersTable(); err != nil {
+		log.Printf("[warn] EnsureUsersTable: %v", err)
+	}
+	users, _ := st.ListUsers()
+	if len(users) == 0 {
+		settings, _ := st.AllSettings()
+		if adminJSON, ok := settings[SectionAdmin]; ok && adminJSON != "" {
+			var adminCfg struct {
+				Password string `json:"password"`
+			}
+			if json.Unmarshal([]byte(adminJSON), &adminCfg) == nil && adminCfg.Password != "" {
+				hash, err := store.HashPassword(adminCfg.Password)
+				if err == nil {
+					admin := &store.User{
+						Username:     "admin",
+						PasswordHash: hash,
+						DisplayName:  "管理员",
+						AuthSecret:   store.GenerateAuthSecret(),
+					}
+					if err := st.CreateUser(admin); err != nil {
+						log.Printf("[warn] migrate admin user: %v", err)
+					} else {
+						log.Printf("[info] Spec 45: migrated admin password to users table (user: admin)")
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

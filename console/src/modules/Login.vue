@@ -2,15 +2,25 @@
 import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { authApi } from "@/api";
 import { VButton } from "@/components/ui";
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
+// 第一步：用户名 + 密码
+const username = ref("");
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
+
+// 第二步：TOTP 验证码（require_2fa 时进入）
+const step = ref<1 | 2>(1);
+const pendingToken = ref("");
+const code = ref("");
+const codeError = ref("");
+const codeLoading = ref(false);
 
 async function handleLogin() {
   if (!password.value) {
@@ -20,14 +30,48 @@ async function handleLogin() {
   loading.value = true;
   error.value = "";
   try {
-    await auth.login(password.value);
+    const data = await auth.login(username.value.trim(), password.value);
+    if (data.require_2fa && data.token) {
+      // 进入第二步：TOTP 验证
+      pendingToken.value = data.token;
+      step.value = 2;
+      return;
+    }
+    // 旧格式（无 require_2fa）或直接 ok：登录成功
     const redirect = (route.query.redirect as string) || "/dashboard";
     router.push(redirect);
-  } catch {
-    error.value = "密码错误，请重试";
+  } catch (e: any) {
+    error.value = e?.response?.data?.error || "用户名或密码错误，请重试";
   } finally {
     loading.value = false;
   }
+}
+
+async function handleVerify2FA() {
+  if (!/^\d{6}$/.test(code.value.trim())) {
+    codeError.value = "请输入 6 位验证码";
+    return;
+  }
+  codeLoading.value = true;
+  codeError.value = "";
+  try {
+    await authApi.verify2FA(pendingToken.value, code.value.trim());
+    // 刷新登录态与用户资料后跳转
+    await auth.checkAuth();
+    const redirect = (route.query.redirect as string) || "/dashboard";
+    router.push(redirect);
+  } catch (e: any) {
+    codeError.value = e?.response?.data?.error || "验证码错误，请重试";
+  } finally {
+    codeLoading.value = false;
+  }
+}
+
+function backToStep1() {
+  step.value = 1;
+  code.value = "";
+  codeError.value = "";
+  pendingToken.value = "";
 }
 </script>
 
@@ -43,16 +87,26 @@ async function handleLogin() {
         </a>
       </div>
 
-      <!-- 表单 -->
-      <form class="flex flex-col gap-3" @submit.prevent="handleLogin">
+      <!-- 第一步：用户名 + 密码 -->
+      <form v-if="step === 1" class="flex flex-col gap-3" @submit.prevent="handleLogin">
+        <div>
+          <input
+            v-model="username"
+            type="text"
+            placeholder="用户名"
+            autocomplete="username"
+            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+            style="border-radius: 4px"
+          />
+        </div>
         <div>
           <input
             v-model="password"
             type="password"
             placeholder="请输入管理密码"
             autocomplete="current-password"
-            autofocus
-            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            :autofocus="!username"
+            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
             style="border-radius: 4px"
           />
         </div>
@@ -64,6 +118,40 @@ async function handleLogin() {
         <VButton type="secondary" block :loading="loading" @click="handleLogin">
           登录
         </VButton>
+      </form>
+
+      <!-- 第二步：TOTP 验证码 -->
+      <form v-else class="flex flex-col gap-3" @submit.prevent="handleVerify2FA">
+        <p class="text-sm text-gray-600 dark:text-gray-300">请输入认证器 App 中的 6 位验证码</p>
+        <div>
+          <input
+            v-model="code"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="6"
+            placeholder="6 位验证码"
+            autocomplete="one-time-code"
+            autofocus
+            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-center text-lg tracking-[0.5em] text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+            style="border-radius: 4px"
+          />
+        </div>
+
+        <Transition name="shake-fade">
+          <p v-if="codeError" class="text-xs text-red-600 dark:text-red-400">{{ codeError }}</p>
+        </Transition>
+
+        <VButton type="secondary" block :loading="codeLoading" @click="handleVerify2FA">
+          验证并登录
+        </VButton>
+        <button
+          type="button"
+          class="text-xs text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          @click="backToStep1"
+        >
+          返回重新输入
+        </button>
       </form>
     </div>
   </div>

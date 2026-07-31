@@ -99,6 +99,12 @@ const router = createRouter({
           component: () => import("@/modules/settings/SettingsView.vue"),
         },
         {
+          path: "profile",
+          name: "Profile",
+          component: () => import("@/modules/profile/ProfileView.vue"),
+          meta: { requiresAuth: true },
+        },
+        {
           path: "backup",
           name: "Backup",
           component: () => import("@/modules/backup/BackupView.vue"),

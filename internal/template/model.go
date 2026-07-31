@@ -259,8 +259,8 @@ type Site struct {
 	Friends     FriendsConfig  `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
 	Wiki        []WikiProject  `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
 	Article     ArticleConfig  `yaml:"article" json:"article"`
-	SEO         SEOConfig      `yaml:"seo" json:"seo"`  // 站点级 SEO 配置（Spec 42）
-	Inject      InjectConfig   `yaml:"-" json:"inject"` // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
+	SEO         SEOConfig      `yaml:"seo" json:"seo"`         // 站点级 SEO 配置（Spec 42）
+	Inject      InjectConfig   `yaml:"-" json:"inject"`        // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
 	Style       StyleConfig    `yaml:"style"   json:"style"`   // 外观样式可配置化（Spec 34/47）
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
 	// 导航栏额外标签页（site.yml nav_tabs 段），追加在固定 tab（归档）之后。

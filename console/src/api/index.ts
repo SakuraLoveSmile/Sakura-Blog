@@ -20,12 +20,46 @@ http.interceptors.response.use(
 export default http;
 
 // --- Auth ---
+// Spec 45：username 用户表认证 + TOTP 2FA；username 为空时后端回退旧版 admin 密码认证。
 export const authApi = {
-  login: (password: string) => http.post("/auth/login", { password }),
+  login: (username: string, password: string) =>
+    http.post("/auth/login", { username, password }),
+  // 两步登录第二步：验证 TOTP code 后下发签名 cookie
+  verify2FA: (token: string, code: string) =>
+    http.post("/auth/2fa", { token, code }),
   logout: () => http.post("/auth/logout"),
   check: () => http.get("/auth/check"),
   changePassword: (current: string, newPassword: string) =>
     http.put("/auth/password", { current, new: newPassword }),
+};
+
+// --- Profile（Spec 45 用户资料） ---
+export interface UserProfile {
+  id?: number;
+  username: string;
+  display_name: string;
+  email: string;
+  avatar: string;
+  has_2fa: boolean;
+}
+
+export const profileApi = {
+  get: () => http.get<UserProfile>("/profile"),
+  update: (data: { display_name: string; email: string; avatar: string }) =>
+    http.put("/profile", data),
+  // --- 2FA 管理（Spec 45：TOTP 开启/关闭/恢复码） ---
+  setup2FA() {
+    return http.post("/profile/2fa/setup");
+  },
+  confirm2FA(data: { secret: string; code: string; recovery_codes: string[] }) {
+    return http.post("/profile/2fa/confirm", data);
+  },
+  disable2FA(code: string) {
+    return http.post("/profile/2fa/disable", { code });
+  },
+  getRecoveryCodes() {
+    return http.get("/profile/2fa/recovery-codes");
+  },
 };
 
 // --- Dashboard ---

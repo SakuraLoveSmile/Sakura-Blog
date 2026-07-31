@@ -150,6 +150,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	v1.POST("/auth/login", h.login)
 	v1.POST("/auth/logout", h.logout)
 	v1.GET("/auth/check", h.authCheck)
+	v1.POST("/auth/2fa", h.handle2FA)
 
 	// 需认证路由
 	authed := v1.Group("", h.apiAuth())
@@ -234,6 +235,16 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)
 
+		// 用户资料（Spec 45）
+		authed.GET("/profile", h.handleGetProfile)
+		authed.PUT("/profile", h.handleUpdateProfile)
+
+		// 2FA 管理（Spec 45）
+		authed.POST("/profile/2fa/setup", h.handle2FASetup)
+		authed.POST("/profile/2fa/confirm", h.handle2FAConfirm)
+		authed.POST("/profile/2fa/disable", h.handle2FADisable)
+		authed.GET("/profile/2fa/recovery-codes", h.handle2FARecoveryCodes)
+
 		// 笔记页正文（content/notes.md，前台 /notes 上半部分）
 		authed.GET("/notes-content", h.getNotesContent)
 		authed.PUT("/notes-content", h.putNotesContent)
@@ -270,6 +281,7 @@ func (h *Handler) Register(r *gin.Engine) {
 }
 
 // apiAuth API 鉴权中间件：密码未配置直接放行；否则校验 HMAC cookie，失败返回 401 JSON。
+// 从 cookie 解析 userID 并注入 context（userID=0 代表旧版 admin 用户）。
 func (h *Handler) apiAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		password := h.site.Admin.Password
@@ -277,31 +289,73 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		if cookie, err := c.Cookie(authCookieName); err == nil && validAuthCookie(cookie, password) {
-			c.Next()
-			return
+		if cookie, err := c.Cookie(authCookieName); err == nil {
+			if userID, ok := h.validAuthCookie(cookie); ok {
+				c.Set("userID", userID)
+				c.Next()
+				return
+			}
 		}
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "未登录或登录已过期"})
 	}
 }
 
-// --- HMAC cookie 签名/验证（与 admin/auth.go 逻辑一致） ---
+// --- HMAC cookie 签名/验证（Spec 45: 迁移至 users 表 bcrypt + auth_secret 签名 key） ---
 
-func signAuthCookie(expiry int64, password string) string {
-	mac := hmac.New(sha256.New, []byte(password))
-	mac.Write([]byte(strconv.FormatInt(expiry, 10)))
-	return hex.EncodeToString(mac.Sum(nil))
+// signAuthCookie 使用 auth_secret 签名 cookie：<expiry>.<userID>.<hmac-sha256(auth_secret, expiry.userID)>
+func signAuthCookie(expiry int64, userID int64, authSecret string) string {
+	msg := fmt.Sprintf("%d.%d", expiry, userID)
+	mac := hmac.New(sha256.New, []byte(authSecret))
+	mac.Write([]byte(msg))
+	sig := hex.EncodeToString(mac.Sum(nil))
+	return fmt.Sprintf("%s.%s", msg, sig)
 }
 
-func validAuthCookie(value, password string) bool {
-	i := strings.IndexByte(value, '.')
-	if i <= 0 {
-		return false
+// validAuthCookie 解析并验证 cookie。
+// 先尝试新格式（3 段：expiry.userID.sig），查 users 表获取 auth_secret 验证签名；
+// 新格式失败时回退旧格式（2 段：expiry.sig，签名 key = admin password），返回 userID=0 表示旧版 admin。
+func (h *Handler) validAuthCookie(value string) (int64, bool) {
+	parts := strings.Split(value, ".")
+	if len(parts) == 3 {
+		// 新格式: expiry.userID.sig
+		expiry, err := strconv.ParseInt(parts[0], 10, 64)
+		if err != nil || time.Now().Unix() > expiry {
+			return 0, false
+		}
+		userID, err := strconv.ParseInt(parts[1], 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		user, _ := h.store.GetUserByID(userID)
+		if user == nil {
+			return 0, false
+		}
+		msg := fmt.Sprintf("%d.%d", expiry, userID)
+		mac := hmac.New(sha256.New, []byte(user.AuthSecret))
+		mac.Write([]byte(msg))
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expected)) == 1 {
+			return userID, true
+		}
+		return 0, false
 	}
-	expiry, err := strconv.ParseInt(value[:i], 10, 64)
-	if err != nil || time.Now().Unix() > expiry {
-		return false
+
+	// 旧格式: expiry.sig（签名 key = admin password）
+	if len(parts) == 2 {
+		password := h.site.Admin.Password
+		if password == "" {
+			return 0, false
+		}
+		expiry, err := strconv.ParseInt(parts[0], 10, 64)
+		if err != nil || time.Now().Unix() > expiry {
+			return 0, false
+		}
+		mac := hmac.New(sha256.New, []byte(password))
+		mac.Write([]byte(parts[0]))
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if subtle.ConstantTimeCompare([]byte(parts[1]), []byte(expected)) == 1 {
+			return 0, true // userID=0 代表旧版 admin
+		}
 	}
-	expected := signAuthCookie(expiry, password)
-	return subtle.ConstantTimeCompare([]byte(value[i+1:]), []byte(expected)) == 1
+	return 0, false
 }

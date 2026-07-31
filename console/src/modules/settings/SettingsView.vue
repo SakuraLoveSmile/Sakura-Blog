@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { settingsApi, authApi } from "@/api";
-import { useAuthStore } from "@/stores/auth";
+import { settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
 import AppearanceTab from "./AppearanceTab.vue";
 import WidgetsTab from "./WidgetsTab.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
-import { VPageHeader, Dialog, Toast } from "@/components/ui";
+import { VPageHeader, Toast } from "@/components/ui";
 
 // 全部段结构化编辑；「高级·JSON」保留 8 段 JSON 兜底（一般无需使用）。
 const tabs = [
@@ -28,9 +26,6 @@ const tabs = [
 ];
 const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
-
-const router = useRouter();
-const auth = useAuthStore();
 
 const active = ref("site");
 const data = ref<Record<string, any>>({});
@@ -217,55 +212,6 @@ function addSitemapItem(g: any) {
 }
 function addWikiProject() {
   data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", sort: 0, _tagsText: "" });
-}
-
-// 安全 tab：修改管理密码
-const pwdCurrent = ref("");
-const pwdNew = ref("");
-const pwdConfirm = ref("");
-const savingPwd = ref(false);
-const pwdMsg = ref("");
-const pwdErr = ref(false);
-
-async function savePassword() {
-  pwdMsg.value = "";
-  pwdErr.value = false;
-  if (pwdNew.value !== pwdConfirm.value) {
-    pwdErr.value = true;
-    pwdMsg.value = "两次输入的新密码不一致";
-    return;
-  }
-  if (pwdNew.value === "") {
-    Dialog.warning({
-      title: "新密码为空将关闭 Console 登录验证",
-      description: "任何人都可访问管理后台。确定继续？",
-      confirmType: "danger",
-      onConfirm: () => doChangePassword(),
-    });
-    return;
-  }
-  doChangePassword();
-}
-
-async function doChangePassword() {
-  savingPwd.value = true;
-  try {
-    const { data: res } = await authApi.changePassword(pwdCurrent.value, pwdNew.value);
-    pwdCurrent.value = pwdNew.value = pwdConfirm.value = "";
-    if (res.passwordRequired) {
-      Toast.success("密码已修改，请使用新密码重新登录");
-      auth.authenticated = false;
-      router.push("/login");
-    } else {
-      auth.passwordRequired = false;
-      pwdMsg.value = "已关闭登录验证（新密码为空）";
-    }
-  } catch (e: any) {
-    pwdErr.value = true;
-    pwdMsg.value = e?.response?.data?.error || "修改失败";
-  } finally {
-    savingPwd.value = false;
-  }
 }
 
 const inputCls =
@@ -589,14 +535,13 @@ onMounted(load);
 
       <!-- 安全 -->
       <div v-show="active === 'security'" class="space-y-4 max-w-md">
-        <p class="text-xs text-gray-400 dark:text-gray-500">修改 Console 管理密码。修改后所有已登录会话失效，需用新密码重新登录。</p>
-        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">当前密码</label><input v-model="pwdCurrent" type="password" autocomplete="current-password" :class="inputCls" /></div>
-        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">新密码</label><input v-model="pwdNew" type="password" autocomplete="new-password" :class="inputCls" /></div>
-        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">确认新密码</label><input v-model="pwdConfirm" type="password" autocomplete="new-password" :class="inputCls" /></div>
-        <p v-if="pwdNew === '' && pwdConfirm === ''" class="text-xs text-red-500 dark:text-red-400">⚠ 新密码留空 = 关闭登录验证，任何人都可访问管理后台，请谨慎。</p>
-        <span v-if="pwdMsg" :class="['block text-sm', pwdErr ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400']">{{ pwdMsg }}</span>
-        <button @click="savePassword" :disabled="savingPwd" :class="btnCls">修改密码</button>
-        <p class="text-xs text-gray-400 dark:text-gray-500 pt-2">忘记密码：删除数据库 settings 表 admin 段后重启，回落 site.yml 初始密码。</p>
+        <div class="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
+          <p class="text-sm text-yellow-800 dark:text-yellow-200">
+            密码管理已迁移至
+            <router-link to="/profile" class="font-medium text-blue-600 hover:underline dark:text-blue-400">个人资料页</router-link>
+          </p>
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500">忘记密码：删除数据库 settings 表 admin 段后重启，回落 site.yml 初始密码。</p>
       </div>
 
       <!-- 高级 JSON -->
