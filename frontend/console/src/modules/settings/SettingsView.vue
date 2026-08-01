@@ -597,6 +597,5 @@ onMounted(load);
         @close="showAppleIconPicker = false"
       />
     </div>
-    </div>
   </div>
 </template>
