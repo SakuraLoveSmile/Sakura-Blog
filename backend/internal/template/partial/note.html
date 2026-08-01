@@ -1,0 +1,52 @@
+{{- /* note.html: 笔记详情页（Spec 35b），对齐原版 note 页：
+   面包屑（首页/笔记本/{name}/{title}）+ 大标题 + 标签 + 正文 + 上下篇导航。
+   由 base.html 按 .Page.Layout == "note" 分派渲染；
+   上下篇为同笔记本内按 updated_at DESC 相邻的笔记（Prev=较新，Next=较旧，对齐 wiki_doc）；
+   标签点击跳 /notebooks/{name}?tag={tag} 过滤。
+   leftbar tagtree widget 由 widgets 编排注入（见 partial/widgets/tagtree.html）。*/ -}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/notebooks">{{- lang "breadcrumb.notebook" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/notebooks/{{.NoteDetail.NotebookName}}">{{.NoteDetail.NotebookName}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="/note/{{.NoteDetail.ID}}">{{.NoteDetail.Title}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.NoteDetail.Title}}</span></h1>
+        {{- if .NoteDetail.Tags}}
+        <div class="caps">
+          {{- range (split .NoteDetail.Tags ",")}}
+          {{- if (trim .)}}<a class="cap breadcrumb" href="/notebooks/{{$.NoteDetail.NotebookName}}?tag={{trim .}}">{{trim .}}</a>{{end}}
+          {{- end}}
+        </div>
+        {{- end}}
+      </div>
+    </div>
+  </div>
+</div>
+<article class="md-text content">
+  {{.NoteDetail.ContentHTML}}
+</article>
+{{if or .NoteDetail.PrevNote .NoteDetail.NextNote}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    {{if .NoteDetail.PrevNote}}<div class="item" id="prev">
+      <div class="note">{{- lang "meta.newer" -}}</div>
+      <a href="/note/{{.NoteDetail.PrevNote.ID}}">{{.NoteDetail.PrevNote.Title}}</a>
+    </div>{{end}}
+    {{if .NoteDetail.NextNote}}<div class="item" id="next">
+      <div class="note">{{- lang "meta.older" -}}</div>
+      <a href="/note/{{.NoteDetail.NextNote.ID}}">{{.NoteDetail.NextNote.Title}}</a>
+    </div>{{end}}
+  </section>
+</div>
+{{end}}

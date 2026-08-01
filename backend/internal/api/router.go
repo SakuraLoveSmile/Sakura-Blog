@@ -113,6 +113,8 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"attachments", st.EnsureAttachmentsTable},  // 附件管理
 		{"shared_posts", st.EnsureSharedPostsTable}, // 文章分享链接
 		{"wikidocs", st.EnsureWikidocsTable},        // wiki 文档（Spec 35）
+		{"notebooks", st.EnsureNotebooksTable},      // 笔记本（Spec 35b）
+		{"notes", st.EnsureNotesTable},              // 笔记（Spec 35b）
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -231,6 +233,22 @@ func (h *Handler) Register(r *gin.Engine) {
 			wiki.PUT("/:project/docs/:slug", h.updateWikidoc)
 			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
 		}
+
+		// 笔记本 / 笔记（Spec 35b）
+		notebooks := authed.Group("/notebooks")
+		{
+			notebooks.GET("", h.listNotebooks)
+			notebooks.POST("", h.createNotebook)
+			notebooks.GET("/:id", h.getNotebook)
+			notebooks.PUT("/:id", h.updateNotebook)
+			notebooks.DELETE("/:id", h.deleteNotebook)
+			notebooks.GET("/:id/notes", h.listNotes)
+			notebooks.POST("/:id/notes", h.createNote)
+		}
+		authed.GET("/notes/:id", h.getNote)
+		authed.PUT("/notes/:id", h.updateNote)
+		authed.DELETE("/notes/:id", h.deleteNote)
+		authed.GET("/note-tags", h.noteTags)
 
 		// 瞬间
 		authed.GET("/moments", h.listMoments)

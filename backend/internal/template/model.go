@@ -76,6 +76,20 @@ type ViewData struct {
 	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
 	NotesContentHTML template.HTML
 
+	// 笔记本体系（Spec 35b）：Notebooks 为列表页卡片（Layout=notebooks）；
+	// NotebookDetail/Notes/NotesTotal/NotesPage/NotesPerPage 为笔记本详情页（Layout=notebook）的当前笔记本与分页笔记列表；
+	// NoteDetail 为笔记详情（Layout=note）；NotebookTags 为当前笔记本标签聚合、
+	// TagTreeData 供 leftbar tagtree widget 注入（数据仅本页有，不进侧栏快照）。
+	Notebooks      []NotebookView
+	NotebookDetail *store.Notebook
+	Notes          []store.Note
+	NoteDetail     *NoteView
+	NotesTotal     int
+	NotesPage      int
+	NotesPerPage   int
+	NotebookTags   []TagCount
+	TagTreeData    *TagTreeWidgetData
+
 	// 作者页（Layout=author 时使用）：AuthorProfile 为当前作者定义，Posts/Paginator 复用首页字段。
 	AuthorProfile *AuthorDef
 

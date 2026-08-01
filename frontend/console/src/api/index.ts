@@ -277,3 +277,31 @@ export const wikiApi = {
   deleteDoc: (project: string, slug: string) =>
     http.delete(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
 };
+
+// --- Notebooks（Spec 35b 笔记本/笔记管理） ---
+// 后端响应格式：列表 {items,total}；笔记列表 {notes,total,page,per_page}；note-tags {tags}。
+// Notebook: id/name(唯一, URL slug)/description/cover/order/created_at；Note: id/notebook_id/title/content/content_html/tags(逗号分隔)/created_at/updated_at。
+export const notebookApi = {
+  listNotebooks: () => http.get("/notebooks"),
+  getNotebook: (id: number) => http.get(`/notebooks/${id}`),
+  createNotebook: (data: {
+    name: string;
+    description?: string;
+    cover?: string;
+    order?: number;
+  }) => http.post("/notebooks", data),
+  updateNotebook: (
+    id: number,
+    data: { name?: string; description?: string; cover?: string; order?: number }
+  ) => http.put(`/notebooks/${id}`, data),
+  deleteNotebook: (id: number) => http.delete(`/notebooks/${id}`),
+  listNotes: (notebookId: number, params?: Record<string, unknown>) =>
+    http.get(`/notebooks/${notebookId}/notes`, { params }),
+  createNote: (notebookId: number, data: { title: string; content?: string; tags?: string }) =>
+    http.post(`/notebooks/${notebookId}/notes`, data),
+  getNote: (id: number) => http.get(`/notes/${id}`),
+  updateNote: (id: number, data: Record<string, unknown>) =>
+    http.put(`/notes/${id}`, data),
+  deleteNote: (id: number) => http.delete(`/notes/${id}`),
+  getTags: () => http.get("/note-tags"),
+};

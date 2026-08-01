@@ -1,0 +1,67 @@
+{{- /* notebook.html: 笔记本详情页（Spec 35b）：面包屑（首页/笔记本/{name}）+ 标题/描述 + 笔记列表 + 分页器。
+   由 base.html 按 .Page.Layout == "notebook" 分派渲染；
+   笔记列表按 updated_at DESC（store 保证），?tag= 过滤与分页由 handleNotebook 处理；
+   分页器手写（对齐 author.html 模式），?tag= 过滤时保留参数。
+   leftbar tagtree widget 由 widgets 编排注入（见 partial/widgets/tagtree.html）。*/ -}}
+{{- $base := printf "/notebooks/%s" .NotebookDetail.Name -}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/notebooks">{{- lang "breadcrumb.notebook" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="{{$base}}">{{.NotebookDetail.Name}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.NotebookDetail.Name}}</span></h1>
+        {{- if .NotebookDetail.Description}}<p class="description">{{.NotebookDetail.Description}}</p>{{end}}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{- /* 笔记列表：复用 .post-list.wiki 卡片网格（标题 + 更新时间 + 标签），点击跳 /note/{id} */}}
+<div class="post-list wiki">
+  {{- range .Notes}}
+  <div class="post-card-wrap">
+    <a class="post-card wiki" href="/note/{{.ID}}">
+      <article class="md-text">
+        <div class="excerpt">
+          <h2 class="post-title">{{.Title}}</h2>
+          <p>
+            <time datetime="{{date .UpdatedAt "2006-01-02T15:04:05Z07:00"}}">{{date .UpdatedAt "2006年1月2日"}}</time>
+            {{- range (split .Tags ",")}}
+            {{- if (trim .)}}<span class="cap breadcrumb">{{trim .}}</span>{{end}}
+            {{- end}}
+          </p>
+        </div>
+      </article>
+    </a>
+  </div>
+  {{- else}}
+  <p class="wiki-empty">{{- lang "notebook.note_empty" -}}</p>
+  {{- end}}
+</div>
+
+{{- /* 分页器：仅总页数>1 时渲染；tag 过滤时保留 ?tag= 参数 */}}
+{{if and .Paginator (gt .Paginator.Total 1)}}
+<div class="paginator-wrap dis-select">
+  <nav class="paginator">
+{{if gt .Paginator.Current 1}}
+<a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}{{if .Page.Tag}}{{$base}}?tag={{.Page.Tag}}{{else}}{{$base}}{{end}}{{else}}{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{sub .Paginator.Current 1}}{{end}}"></a>
+    {{end}}
+{{range .Paginator.Pages}}
+<a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}{{if $.Page.Tag}}{{$base}}?tag={{$.Page.Tag}}{{else}}{{$base}}{{end}}{{else}}{{$base}}?{{if $.Page.Tag}}tag={{$.Page.Tag}}&{{end}}page={{.}}{{end}}">{{.}}</a>
+    {{end}}
+{{if lt .Paginator.Current .Paginator.Total}}
+<a class="extend next" rel="next" href="{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{add .Paginator.Current 1}}"></a>
+    {{end}}
+  </nav>
+</div>
+{{end}}

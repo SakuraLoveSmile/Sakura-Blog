@@ -52,6 +52,7 @@ const navItems: NavItem[] = [
   },
   { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
   { path: "/wiki", label: "文库", icon: "ri:book-2-line", group: "内容" },
+  { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
   { path: "/notes-page", label: "笔记页", icon: "ri:booklet-line", group: "内容" },
   { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },

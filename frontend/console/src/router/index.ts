@@ -75,6 +75,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: "notebooks",
+          name: "Notebooks",
+          component: () => import("@/modules/notebooks/NotebooksView.vue"),
+          meta: { requiresAuth: true },
+        },
+        {
           path: "moments",
           name: "Moments",
           component: () => import("@/modules/moments/MomentList.vue"),

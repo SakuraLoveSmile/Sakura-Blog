@@ -90,3 +90,51 @@ func TestSitemapIncludesWikidocs(t *testing.T) {
 		t.Errorf("sitemap must not include draft docs")
 	}
 }
+
+// TestSitemapIncludesNotebooksAndNotes sitemap 收录笔记本与笔记（Spec 35b）：
+// /notebooks/{name} 条目 + 各笔记本下全部笔记 /note/{id} 条目（含 lastmod/changefreq/priority）。
+func TestSitemapIncludesNotebooksAndNotes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	if err := st.EnsureNotebooksTable(); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.EnsureNotesTable(); err != nil {
+		t.Fatal(err)
+	}
+	// 一个笔记本 + 一条笔记
+	nb := &store.Notebook{Name: "go", Description: "Go 学习笔记"}
+	if err := st.CreateNotebook(nb); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateNote(&store.Note{NotebookID: nb.ID, Title: "第一章", Content: "# Hello", ContentHTML: "<h1>Hello</h1>"}); err != nil {
+		t.Fatal(err)
+	}
+	// 第二个笔记本（无笔记）：也应收录 notebook 条目
+	if err := st.CreateNotebook(&store.Notebook{Name: "js", Description: "JS 笔记"}); err != nil {
+		t.Fatal(err)
+	}
+
+	r := gin.New()
+	ws.registerFeedRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("sitemap = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		"<loc>http://example.com/notebooks/go</loc>",
+		"<loc>http://example.com/notebooks/js</loc>",
+		"<loc>http://example.com/note/1</loc>",
+		"<changefreq>weekly</changefreq>",
+		"<priority>0.6</priority>",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("sitemap missing %q", want)
+		}
+	}
+	if !strings.Contains(body, "<lastmod>") {
+		t.Errorf("sitemap note entry missing lastmod")
+	}
+}

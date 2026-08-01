@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -33,6 +34,12 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 且 handleWikiDoc 对 project=tags 做防御式 404，语义不冲突。
 	r.GET("/wiki/:project", s.handleWikiProject)
 	r.GET("/wiki/:project/:slug", s.handleWikiDoc)
+
+	// 笔记本体系（Spec 35b）：/notebooks 列表、/notebooks/:name 笔记列表（分页 + ?tag= 过滤）、
+	// /note/:id 笔记页。与 /notes（手记单页）共存：/note/* 静态段不冲突。
+	r.GET("/notebooks", s.handleNotebooks)
+	r.GET("/notebooks/:name", s.handleNotebook)
+	r.GET("/note/:id", s.handleNote)
 
 	// 笔记(手记) /notes，对齐 xaoxuu.com/notes/：上段 content/notes.md 手记正文（quot/okr 等 shortcode），下段本站 moments 近期动态。
 	r.GET("/notes", func(c *gin.Context) {
@@ -404,6 +411,260 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiNextDoc: next,
 		WikiDocTree: wikiTreeNodes(tree),
 	})
+}
+
+
+// handleNotebooks 笔记本列表页（Spec 35b）：卡片网格（封面/名称/描述 + 笔记数），
+// 对齐 wiki.html 的 post-list wiki 网格样式。
+func (s *webServer) handleNotebooks(c *gin.Context) {
+	notebooks, err := s.st.ListNotebooks()
+	if err != nil {
+		log.Printf("list notebooks: %v", err)
+		s.render500(c)
+		return
+	}
+	views := make([]tmpl.NotebookView, 0, len(notebooks))
+	for _, nb := range notebooks {
+		// 笔记数：LIMIT 0 仅取 COUNT（ListNotesByNotebook 的 total 不受 LIMIT/OFFSET 影响）
+		_, total, err := s.st.ListNotesByNotebook(nb.ID, 0, 1)
+		if err != nil {
+			log.Printf("count notes of notebook %d: %v", nb.ID, err)
+			s.render500(c)
+			return
+		}
+		views = append(views, tmpl.NotebookView{Notebook: *nb, NoteCount: total})
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site:      s.site,
+		Page:      &tmpl.Page{Title: tmpl.Lang("notebook.title"), Layout: "notebooks", Lang: "zh-CN"},
+		Notebooks: views,
+	})
+}
+
+// handleNotebook 笔记本详情页（Spec 35b）：笔记列表（updated_at DESC）+ 分页 + ?tag= 过滤。
+// leftbar tagtree widget 数据由 TagTreeData 注入（见 assembleWidgets 的 case "tagtree"）。
+func (s *webServer) handleNotebook(c *gin.Context) {
+	name := c.Param("name")
+	nb, err := s.st.GetNotebookByName(name)
+	if err != nil {
+		log.Printf("get notebook %q: %v", name, err)
+		s.render500(c)
+		return
+	}
+	if nb == nil {
+		s.render404(c)
+		return
+	}
+	// 标签聚合（tagtree 数据源）；未知 tag 过滤参数与 wiki 标签页一致走 404
+	tag := c.Query("tag")
+	tagCounts, err := s.st.CountNoteTagsByNotebook(nb.ID)
+	if err != nil {
+		log.Printf("count note tags of notebook %d: %v", nb.ID, err)
+		s.render500(c)
+		return
+	}
+	tags := tagCountItems(tagCounts)
+	if tag != "" {
+		matched := false
+		for _, t := range tags {
+			if t.Name == tag {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			s.render404(c)
+			return
+		}
+	}
+	// 分页参数
+	page, _ := strconv.Atoi(c.Query("page"))
+	if page < 1 {
+		page = 1
+	}
+	const perPage = 20
+	var notes []*store.Note
+	var total int
+	if tag != "" {
+		// tag 过滤：全量取回内存过滤（笔记本规模小；LIMIT -1 = SQLite 无上限）
+		all, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
+		if err != nil {
+			log.Printf("list notes of notebook %d: %v", nb.ID, err)
+			s.render500(c)
+			return
+		}
+		for _, n := range all {
+			if noteHasTag(n.Tags, tag) {
+				notes = append(notes, n)
+			}
+		}
+		total = len(notes)
+	} else {
+		// 先取总数（LIMIT 0 仅 COUNT）再 clamp 页，对齐 handleAuthor 语义
+		_, total, err = s.st.ListNotesByNotebook(nb.ID, 0, 1)
+		if err != nil {
+			log.Printf("count notes of notebook %d: %v", nb.ID, err)
+			s.render500(c)
+			return
+		}
+	}
+	totalPages := (total + perPage - 1) / perPage
+	if totalPages > 0 && page > totalPages {
+		page = totalPages
+	}
+	if tag != "" {
+		// 内存分页切片
+		start := (page - 1) * perPage
+		if start > len(notes) {
+			start = len(notes)
+		}
+		end := start + perPage
+		if end > len(notes) {
+			end = len(notes)
+		}
+		notes = notes[start:end]
+	} else {
+		notes, _, err = s.st.ListNotesByNotebook(nb.ID, perPage, (page-1)*perPage)
+		if err != nil {
+			log.Printf("list notes of notebook %d: %v", nb.ID, err)
+			s.render500(c)
+			return
+		}
+	}
+	pages := make([]int, totalPages)
+	for i := range pages {
+		pages[i] = i + 1
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site,
+		Page: &tmpl.Page{Title: nb.Name, Layout: "notebook", Lang: "zh-CN", Tag: tag},
+		NotebookDetail: nb,
+		Notes:          noteValues(notes),
+		NotesTotal:     total,
+		NotesPage:      page,
+		NotesPerPage:   perPage,
+		Paginator:      &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
+		NotebookTags:   tags,
+		TagTreeData:    &tmpl.TagTreeWidgetData{Tags: tags, ActiveTag: tag, NotebookName: nb.Name},
+	})
+}
+
+// handleNote 笔记详情页（Spec 35b）：面包屑（首页/笔记本/{name}/{title}）+ 正文 + 上下篇。
+// 上下篇为同笔记本内按 updated_at DESC 相邻的笔记；正文优先已渲染 ContentHTML，为空时渲染 Markdown。
+func (s *webServer) handleNote(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		s.render404(c)
+		return
+	}
+	note, err := s.st.GetNote(id)
+	if err != nil {
+		log.Printf("get note %d: %v", id, err)
+		s.render500(c)
+		return
+	}
+	if note == nil {
+		s.render404(c)
+		return
+	}
+	nb, err := s.st.GetNotebook(note.NotebookID)
+	if err != nil {
+		log.Printf("get notebook %d: %v", note.NotebookID, err)
+		s.render500(c)
+		return
+	}
+	if nb == nil {
+		s.render404(c)
+		return
+	}
+	// 正文：优先 ContentHTML，为空时渲染 Markdown 原文
+	contentHTML := template.HTML(note.ContentHTML)
+	if contentHTML == "" && note.Content != "" {
+		if rendered, err := s.posts.Render(note.Content); err == nil {
+			contentHTML = template.HTML(rendered)
+		}
+	}
+	// 上下篇：同笔记本内按 updated_at DESC 相邻（LIMIT -1 = SQLite 无上限）
+	all, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
+	if err != nil {
+		log.Printf("list notes of notebook %d: %v", nb.ID, err)
+		s.render500(c)
+		return
+	}
+	var prev, next *tmpl.NoteNav
+	for i, n := range all {
+		if n.ID != note.ID {
+			continue
+		}
+		if i > 0 {
+			prev = &tmpl.NoteNav{ID: all[i-1].ID, Title: all[i-1].Title}
+		}
+		if i+1 < len(all) {
+			next = &tmpl.NoteNav{ID: all[i+1].ID, Title: all[i+1].Title}
+		}
+		break
+	}
+	// tagtree 数据源：所属笔记本标签聚合
+	tagCounts, err := s.st.CountNoteTagsByNotebook(nb.ID)
+	if err != nil {
+		log.Printf("count note tags of notebook %d: %v", nb.ID, err)
+		s.render500(c)
+		return
+	}
+	tags := tagCountItems(tagCounts)
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site,
+		Page: &tmpl.Page{
+			Title:       note.Title,
+			Layout:      "note",
+			Lang:        "zh-CN",
+			Description: truncateText(stripHTML(string(contentHTML)), 150),
+		},
+		NoteDetail: &tmpl.NoteView{
+			Note:          *note,
+			ContentHTML:   contentHTML,
+			NotebookName:  nb.Name,
+			NotebookTitle: nb.Name,
+			PrevNote:      prev,
+			NextNote:      next,
+		},
+		NotebookTags: tags,
+		TagTreeData:  &tmpl.TagTreeWidgetData{Tags: tags, NotebookName: nb.Name},
+	})
+}
+
+// noteValues store.Note 指针列表 → 值列表（ViewData.Notes 用，模板直接 range）。
+func noteValues(notes []*store.Note) []store.Note {
+	out := make([]store.Note, 0, len(notes))
+	for _, n := range notes {
+		out = append(out, *n)
+	}
+	return out
+}
+
+// noteHasTag 判断笔记标签 CSV 是否包含指定标签（精确匹配，去空白）。
+func noteHasTag(tags, name string) bool {
+	for _, t := range strings.Split(tags, ",") {
+		if strings.TrimSpace(t) == name {
+			return true
+		}
+	}
+	return false
+}
+
+// tagCountItems 标签计数 map → 排序的 TagCount 列表（数量降序，同量按名升序）。
+func tagCountItems(counts map[string]int) []tmpl.TagCount {
+	items := make([]tmpl.TagCount, 0, len(counts))
+	for name, n := range counts {
+		items = append(items, tmpl.TagCount{Name: name, Count: n})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Count != items[j].Count {
+			return items[i].Count > items[j].Count
+		}
+		return items[i].Name < items[j].Name
+	})
+	return items
 }
 
 // wikiProjectByID 按 ID 查 site.yml wiki 段项目（配置驱动，未配置返回 nil）。

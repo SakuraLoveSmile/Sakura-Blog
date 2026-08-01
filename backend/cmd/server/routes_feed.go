@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -159,6 +160,32 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 					ChangeFreq: "weekly",
 					Priority:   "0.6",
 				})
+			}
+		}
+
+		// 笔记本与笔记（Spec 35b）：遍历全部笔记本收录 /notebooks/{name}，及其下全部笔记 /note/{id}。
+		// 笔记无草稿/发布状态概念（notes 表无 status 列），全部收录。
+		notebooks, err := s.st.ListNotebooks()
+		if err == nil {
+			for _, nb := range notebooks {
+				sm.URLs = append(sm.URLs, SitemapURL{
+					Loc:        baseURL + "/notebooks/" + nb.Name,
+					ChangeFreq: "weekly",
+					Priority:   "0.6",
+				})
+				notes, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
+				if err != nil {
+					log.Printf("sitemap: list notes of notebook %d: %v", nb.ID, err)
+					continue
+				}
+				for _, n := range notes {
+					sm.URLs = append(sm.URLs, SitemapURL{
+						Loc:        baseURL + "/note/" + strconv.FormatInt(n.ID, 10),
+						LastMod:    n.UpdatedAt.Format("2006-01-02"),
+						ChangeFreq: "weekly",
+						Priority:   "0.6",
+					})
+				}
 			}
 		}
 

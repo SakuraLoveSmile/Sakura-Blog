@@ -171,6 +171,9 @@ func DefaultWidgetLibrary() map[string]WidgetDef {
 		// Spec 35a：tree 为 wiki 文档页项目文档树（数据由 assembleWidgets 仅在本页注入，
 		// 其余页面 Data 为空、模板不输出；缺省仅在 wiki-doc 页面类型左栏启用）
 		"tree": {"layout": "tree"},
+		// Spec 35b：tagtree 为笔记本标签树（数据由 assembleWidgets 仅在本页注入，
+		// 其余页面 Data 为空、模板不输出；缺省仅在 notebooks/notebook/note 页面类型左栏启用）
+		"tagtree": {"layout": "tagtree"},
 	}
 }
 
@@ -190,9 +193,10 @@ func (w WidgetsConfig) Lookup(name string) WidgetDef {
 	return def.merge(w.Library[name])
 }
 
-// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → wiki-doc 缺省 → 内置缺省。
-// wiki-doc（Spec 35a）零配置时左栏首项挂 tree（项目文档树），其余沿用 index 缺省；
-// 用户显式配置 pages 时尊重配置（tree 组件名可在任意页面类型的 leftbar 中启用）。
+// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → wiki-doc 缺省 → 笔记本缺省 → 内置缺省。
+// wiki-doc（Spec 35a）零配置时左栏首项挂 tree（项目文档树）；
+// notebooks/notebook/note（Spec 35b）零配置时左栏首项挂 tagtree（笔记本标签树）；
+// 其余沿用 index 缺省；用户显式配置 pages 时尊重配置（tree/tagtree 组件名可在任意页面类型的 leftbar 中启用）。
 func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 	if b, ok := w.Pages[pageType]; ok {
 		return b
@@ -200,14 +204,20 @@ func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 	if b, ok := w.Pages["index"]; ok {
 		return b
 	}
+	def := DefaultPageBars()
 	if pageType == "wiki-doc" {
-		def := DefaultPageBars()
 		return PageBars{
 			Leftbar:  append([]string{"tree"}, def.Leftbar...),
 			Rightbar: def.Rightbar,
 		}
 	}
-	return DefaultPageBars()
+	if pageType == "notebooks" || pageType == "notebook" || pageType == "note" {
+		return PageBars{
+			Leftbar:  append([]string{"tagtree"}, def.Leftbar...),
+			Rightbar: def.Rightbar,
+		}
+	}
+	return def
 }
 
 // BuildBar 组件名序列 → 实例列表；layout 为空的名字跳过（对齐原版 layoutWidgets 忽略无效项）。
@@ -229,7 +239,9 @@ func (w WidgetsConfig) BuildBar(names []string, v *ViewData) []*WidgetInstance {
 // post-password/404/500 等异常页与列表页同用 index 布局）。
 func PageTypeOf(layout string) string {
 	switch layout {
-	case "post", "page", "archive", "categories", "tags", "wiki", "friends", "notes", "moments", "index":
+	case "post", "page", "archive", "categories", "tags", "wiki", "friends", "notes", "moments", "index",
+		"notebooks", "notebook", "note":
+		// Spec 35b：笔记本三层页面为独立类型（BarsFor 零配置时左栏挂 tagtree）
 		return layout
 	case "topics":
 		return "topic"
