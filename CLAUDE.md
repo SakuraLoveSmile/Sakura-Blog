@@ -37,9 +37,9 @@
 
 Stellar 的 Stylus 源码用 `hexo-config()` 读取 Hexo 配置，脱离 Hexo 编译会报 undefined。本项目用 **shim 注入方案**，不改任何 .styl 源文件：
 
-- `build/stylus/config.json`：从 `_config.yml` 提取 `style`/`article`/`menubar`/`comments`/`plugins`/`tag_plugins` 六段配置
-- `build/stylus/shim.js`：用 Stylus JS API 的 `define('hexo-config', fn)` 注入函数，按点路径从 config.json 取值
-- `build/stylus/compile.js`：编译 `resource/hexo-theme-stellar/source/css/main.styl` → `assets/css/main.css`
+- `frontend/build/stylus/config.json`：从 `_config.yml` 提取 `style`/`article`/`menubar`/`comments`/`plugins`/`tag_plugins` 六段配置
+- `frontend/build/stylus/shim.js`：用 Stylus JS API 的 `define('hexo-config', fn)` 注入函数，按点路径从 config.json 取值
+- `frontend/build/stylus/compile.js`：编译 `resource/hexo-theme-stellar/source/css/main.styl` → `frontend/assets/css/main.css`
 - stylus 版本锁定 `0.62.0`（与 hexo-renderer-stylus@3.0.1 依赖的 `^0.62.0` 一致）
 
 ### shim 返回值类型（关键）
@@ -234,7 +234,7 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 
 ### 模板名取文件基名，各子目录文件名不能冲突
 
-`engine.go` 用 `filepath.WalkDir` 递归加载所有 .html，模板名取 `filepath.Base` 去扩展名（如 `admin/list.html` -> `"list"`，不是 `"admin/list"`）。所以 `internal/template/` 下各子目录文件名必须全局唯一：`layout/base`、`partial/head`、`admin/list`、`admin/edit` 基名不冲突即可。handler 调 `engine.Render("list", ...)` 用基名。
+`engine.go` 用 `filepath.WalkDir` 递归加载所有 .html，模板名取 `filepath.Base` 去扩展名（如 `admin/list.html` -> `"list"`，不是 `"admin/list"`）。所以 `backend/internal/template/` 下各子目录文件名必须全局唯一：`layout/base`、`partial/head`、`admin/list`、`admin/edit` 基名不冲突即可。handler 调 `engine.Render("list", ...)` 用基名。
 
 ### Go html/template 模板注释 `{{- /* ... */}}` 在 style 块内易触发解析错误
 
@@ -361,7 +361,8 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - Node 22 + stylus 0.62.0（CSS 编译）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run cmd/server/main.go -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
+- Go 服务：`go run ./backend/cmd/server/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
+- Go workspace：`go.work` 在 worktree 根关联 `backend`（module blog）与 `frontend`（module blog/frontend）两 module。**所有 go 命令必须在 worktree 根执行**（`go run ./backend/cmd/server/`、`go vet ./backend/... ./frontend/...`），单独进入子目录会因 import 解析失败报错；`./...` 模式不匹配 use 的 module，须显式写包路径。
 
 ## Demo 进度
 

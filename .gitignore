@@ -57,5 +57,5 @@ blog-data/
 
 # 本地配置（含密钥：GitHub PAT / admin 密码 / SMTP 密码），不入库。
 # 版本控制仅跟踪 *.example.yml 模板；首次部署复制 example 为正式文件再填值。
-config/app.yml
-config/site.yml
+backend/config/app.yml
+backend/config/site.yml

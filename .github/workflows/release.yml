@@ -17,25 +17,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ---- Console SPA（go:embed 编译期要求 console/dist 非空）----
+      # ---- Console SPA（go:embed 编译期要求 frontend/console/dist 非空）----
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: console/package-lock.json
+          cache-dependency-path: frontend/console/package-lock.json
 
       - name: Build console
-        run: cd console && npm ci && npm run build
+        run: cd frontend/console && npm ci && npm run build
 
       # ---- Go 交叉编译（sqlite 纯 Go 实现，CGO 可关）----
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: backend/go.mod
           cache: true
 
       - name: Build Linux binary
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o blog-linux-amd64 ./cmd/server
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o blog-linux-amd64 ./backend/cmd/server
           sha256sum blog-linux-amd64 > blog-linux-amd64.sha256
 
       # 产物：Actions Artifacts（每次构建，保留 30 天）

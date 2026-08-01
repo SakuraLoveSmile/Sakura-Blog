@@ -39,7 +39,7 @@ git -C .bare worktree add ../feat-font -b feature/font
 | Agent | 任务 | 主要改动范围 |
 |-------|------|-------------|
 | A | 评论系统 | `internal/comment/`、`admin/comments.html` |
-| B | 前端样式 | `assets/css/`、`internal/template/partial/` |
+| B | 前端样式 | `frontend/assets/css/`、`internal/template/partial/` |
 | C | 后台管理 | `internal/admin/`、`admin/*.html` |
 
 #### UI 类任务开工约定（验收边界）

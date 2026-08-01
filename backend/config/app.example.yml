@@ -1,0 +1,42 @@
+# 应用配置模板 - 监听地址/数据库/部署参数
+# 复制为 app.yml 后填值：cp config/app.example.yml config/app.yml
+# app.yml 含密钥、不受 git 跟踪；本 example 仅跟踪结构与安全默认值。
+# 所有字段支持环境变量覆盖：
+#   BLOG_LISTEN / BLOG_DB / BLOG_ROOT / BLOG_SEED / BLOG_TRUSTED_PROXY / BLOG_GITHUB_TOKEN
+# 优先级：环境变量 > app.yml > 代码默认值
+
+# HTTP 监听地址。生产环境配合反向代理用 :8080，反代监听 80/443。
+listen_addr: ":8080"
+
+# SQLite 文件路径。相对路径按 root 解析，绝对路径原样使用。
+db_path: data/blog.db
+
+# 工作根目录：定位 site.yml 与 DB。空则用进程 cwd。
+# 生产部署时留空（由部署环境设置 root），本地 go run 传 -root 或设 BLOG_ROOT。
+root:
+
+# 启动时把 content/posts/*.md 导入 DB（按 slug UPSERT，幂等）。
+# 等价于 -seed flag。生产环境首次启动设 true，之后设 false。
+seed_on_start: false
+
+# 反向代理可信 IP/CIDR（逗号分隔）。设了才信任 X-Forwarded-For 还原客户端 IP。
+# 例：nginx 同机部署填 127.0.0.1/32；空则不信任代理头（仅本机直连场景）。
+trusted_proxy:
+
+# 附件/图床上传根目录。相对路径按 root 解析；对外 URL 前缀固定 /uploads/。
+upload_dir: data/uploads
+
+# 单文件上传上限（MB）。超过则拒绝，不写盘不入库。
+max_upload_mb: 5
+
+# 每日自动备份：每 24h 生成全量备份 zip 到 data/backups/（DB 快照 + 附件 + site.yml）。
+# 环境变量 BLOG_AUTO_BACKUP / BLOG_BACKUP_KEEP 可覆盖。
+auto_backup: true
+
+# 自动备份留存份数，超出按时间从旧到新清理。
+backup_keep: 7
+
+# GitHub 集成（ghcard/ghrepo/ghuser 卡片，直连 api.github.com 自托管渲染）
+# PAT 只需只读权限；空则匿名访问（60 req/h，易被共享 IP 限流 403）。
+# app.yml 不受 git 跟踪，可直接在此填写 PAT；亦可用环境变量 BLOG_GITHUB_TOKEN 注入（优先级更高）。
+github_token:
