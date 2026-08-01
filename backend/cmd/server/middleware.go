@@ -131,6 +131,11 @@ func trackPageView(st *store.Store) gin.HandlerFunc {
 			c.Next()
 			return
 		}
+		// flying-pages 预取请求不计数（Spec 36）
+		if c.GetHeader("X-Preload") != "" {
+			c.Next()
+			return
+		}
 		// 过滤机器人 UA
 		ua := strings.ToLower(c.Request.UserAgent())
 		for _, kw := range botUASubstrings {

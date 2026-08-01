@@ -1,6 +1,7 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"strings"
@@ -99,6 +100,15 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 		// htmlAttr: 把字符串标记为 HTML attribute 值。
 		"htmlAttr": func(s string) template.HTMLAttr {
 			return template.HTMLAttr(s)
+		},
+
+		// jsonify: 将值序列化为 JSON（用于在 <script> 中安全嵌入配置对象）。
+		"jsonify": func(v interface{}) template.JS {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return template.JS("null")
+			}
+			return template.JS(string(b))
 		},
 
 		// dict: 构造键值 map（模板内传参用，如 widgets/tree 的 tree_node 递归调用）。

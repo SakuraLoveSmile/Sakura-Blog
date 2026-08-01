@@ -293,6 +293,51 @@ type Site struct {
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
 	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
 	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
+	// 前端体验增强插件（Spec 36）：site.yml plugins 段。纯文件配置，不入库、不进 settings 表。
+	// 缺省全关，opt-in 启用；各插件 Enable 为 false 时前端不加载对应脚本。
+	Plugins PluginsConfig `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+}
+
+// PluginsConfig 前端体验增强插件配置（Spec 36）。缺省全关，opt-in 启用。
+// 各子配置均为指针：nil 表示未配置该插件（缺省关闭），非 nil 时按字段生效。
+type PluginsConfig struct {
+	Preload      *PreloadConfig      `yaml:"preload,omitempty" json:"preload,omitempty"`
+	ScrollReveal *ScrollRevealConfig `yaml:"scrollreveal,omitempty" json:"scrollreveal,omitempty"`
+	Heti         *HetiConfig         `yaml:"heti,omitempty" json:"heti,omitempty"`
+	Fancybox     *FancyboxConfig     `yaml:"fancybox,omitempty" json:"fancybox,omitempty"`
+	Pjax         *PjaxConfig         `yaml:"pjax,omitempty" json:"pjax,omitempty"`
+}
+
+// PreloadConfig 页面资源预加载（如 Flying Pages）。Service 为第三方库名，空用内置缺省。
+type PreloadConfig struct {
+	Enable  bool   `yaml:"enable" json:"enable"`
+	Service string `yaml:"service,omitempty" json:"service,omitempty"`
+}
+
+// ScrollRevealConfig 滚动渐现动画配置。
+type ScrollRevealConfig struct {
+	Enable   bool   `yaml:"enable" json:"enable"`
+	Distance string `yaml:"distance,omitempty" json:"distance,omitempty"`
+	Duration int    `yaml:"duration,omitempty" json:"duration,omitempty"`
+	Interval int    `yaml:"interval,omitempty" json:"interval,omitempty"`
+}
+
+// HetiConfig 中文排版优化（赫蹏）。
+type HetiConfig struct {
+	Enable bool `yaml:"enable" json:"enable"`
+}
+
+// FancyboxConfig 图片灯箱配置。Selector 为空用内置缺省选择器。
+type FancyboxConfig struct {
+	Selector string `yaml:"selector,omitempty" json:"selector,omitempty"`
+}
+
+// PjaxConfig 无刷新导航配置。
+type PjaxConfig struct {
+	Enable    bool     `yaml:"enable" json:"enable"`
+	Selectors []string `yaml:"selectors,omitempty" json:"selectors,omitempty"`
+	Timeout   int      `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	CacheBust bool     `yaml:"cache_bust,omitempty" json:"cache_bust,omitempty"`
 }
 
 // AuthorDef 描述一位作者（来自 site.yml authors 段）。

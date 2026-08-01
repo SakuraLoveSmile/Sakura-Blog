@@ -309,3 +309,42 @@ comments:
     username: ''
     password: ''          # 【密钥】SMTP 发信密码/授权码
     from: ''              # 发件人地址，留空用 username
+
+# 前端体验增强配置（Spec 36）。缺省全关，opt-in 启用；纯文件配置，不入库、不进 settings 表。
+# 完整示例（各插件 enable 置 true 后按需启用）：
+# plugins:
+#   preload:
+#     enable: true
+#     service: flying_pages
+#   scrollreveal:
+#     enable: true
+#     distance: 60px
+#     duration: 600
+#     interval: 100
+#   heti:
+#     enable: true
+#   fancybox:
+#     selector: 'div.lazy-box>img.lazy'
+#   pjax:
+#     enable: true
+#     selectors: ['title', '#l_cover', '.l_body']
+#     timeout: 10000
+#     cache_bust: false
+plugins:
+  preload:
+    enable: false
+    service: ''            # 预加载服务，如 flying_pages
+  scrollreveal:
+    enable: false
+    distance: 60px
+    duration: 600
+    interval: 100
+  heti:
+    enable: false
+  fancybox:
+    selector: 'div.lazy-box>img.lazy'
+  pjax:
+    enable: false
+    selectors: ['title', '#l_cover', '.l_body']
+    timeout: 10000
+    cache_bust: false

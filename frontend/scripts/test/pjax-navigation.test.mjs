@@ -23,6 +23,7 @@ function loadPjax() {
     history: { replaceState: noop, pushState: noop },
     location,
     addEventListener: noop, // window.addEventListener（sandbox 即 window）
+    StellarPjaxConfig: undefined, // 测试中不覆盖，使用 defaultConfig
   };
   sandbox.window = sandbox;
   sandbox.window.location = location;

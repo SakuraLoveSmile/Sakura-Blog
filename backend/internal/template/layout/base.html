@@ -47,6 +47,10 @@
   <div class="page-loading-bar"><img src="https://api.iconify.design/eos-icons:three-dots-loading.svg?color=%231cd0fd"></div>
 
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
+  {{- $fbSelector := "div.lazy-box>img.lazy" -}}
+  {{- if and .Site.Plugins.Fancybox .Site.Plugins.Fancybox.Selector -}}
+    {{- $fbSelector = .Site.Plugins.Fancybox.Selector -}}
+  {{- end -}}
   <script>
     const ctx = {
       date_suffix: { just: '{{lang "date_suffix.just"}}', min: '{{lang "date_suffix.min"}}', hour: '{{lang "date_suffix.hour"}}', day: '{{lang "date_suffix.day"}}' },
@@ -58,7 +62,7 @@
          wrapLazyloadImages 将 p>img 转为 div.lazy-box>img.lazy，故选择器直接匹配转换后的结构，
          避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}
       fancybox: {
-        selector: 'div.lazy-box>img.lazy',
+        selector: '{{ $fbSelector }}',
         css: '/assets/vendor/fancybox/fancybox.css',
         js: '/assets/vendor/fancybox/fancybox.umd.js'
       }
@@ -374,15 +378,48 @@
   {{- /* 自建评论区交互：全站加载（PJAX 换页不重执行 script，事件委托 + 存在性检查，非文章页零副作用） */}}
   <script src="{{url_for "/assets/js/comments.js"}}" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}" defer></script>
+  {{- /* PJAX 配置注入（Spec 36）：条件化注入，需 site.yml plugins.pjax.enable=true */}}
+  {{- if and .Site.Plugins.Pjax .Site.Plugins.Pjax.Enable -}}
+  <script>
+  window.StellarPjaxConfig = {
+    selectors: {{ .Site.Plugins.Pjax.Selectors | jsonify }},
+    timeout: {{ .Site.Plugins.Pjax.Timeout }},
+    cacheBust: {{ .Site.Plugins.Pjax.CacheBust }}
+  };
+  </script>
+  {{- end -}}
   {{- /* PJAX 无刷新导航：放最后，劫持站内链接点击与前进后退；交换 .l_main 并就地更新左右栏。
      前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。 */}}
   <script src="{{url_for "/assets/js/plugins/pjax.js"}}" defer></script>
-  {{- /* flying-pages 预取（对齐 _plugins/preload.ejs）：hover 意图预取页面，与 PJAX 互补加速。
-     ignoreKeywords 加 /admin：后台页面不预取（原版默认为空，此处为安全增强）。 */}}
+  {{- /* flying-pages 预取（Spec 36）：条件化注入，需 site.yml plugins.preload.enable=true */}}
+  {{- if and .Site.Plugins.Preload .Site.Plugins.Preload.Enable -}}
   <script>
-    window.FPConfig = { delay: 0, ignoreKeywords: ['/admin'], maxRPS: 5, hoverDelay: 25 };
+    window.FPConfig = {
+      delay: 0,
+      ignoreKeywords: ['/console', '/api'],
+      maxRPS: 5,
+      hoverDelay: 25
+    };
   </script>
-  <script defer src="https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script>
+  <script defer src="{{url_for "/assets/vendor/flying-pages.min.js"}}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof flyingPages === 'function') flyingPages();
+    });
+  </script>
+  <script defer src="{{url_for "/assets/js/plugins/preload.js"}}"></script>
+  {{- end -}}
+  {{- /* scrollreveal 滚动渐现（Spec 36）：条件化注入，需 site.yml plugins.scrollreveal.enable=true */}}
+  {{- if and .Site.Plugins.ScrollReveal .Site.Plugins.ScrollReveal.Enable -}}
+  <script defer src="{{url_for "/assets/vendor/scrollreveal.min.js"}}"></script>
+  <script defer src="{{url_for "/assets/js/plugins/scrollreveal-init.js"}}"></script>
+  {{- end -}}
+  {{- /* heti 中文排版优化（Spec 36）：条件化注入，需 site.yml plugins.heti.enable=true */}}
+  {{- if and .Site.Plugins.Heti .Site.Plugins.Heti.Enable -}}
+  <link rel="stylesheet" href="{{url_for "/assets/vendor/heti.min.css"}}">
+  <script defer src="{{url_for "/assets/vendor/heti-addon.min.js"}}"></script>
+  <script defer src="{{url_for "/assets/js/plugins/heti-init.js"}}"></script>
+  {{- end -}}
   {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
   {{.Site.Inject.Footer}}
 </body>
