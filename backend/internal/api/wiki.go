@@ -1,0 +1,194 @@
+package api
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+
+	"blog/internal/store"
+)
+
+// listWikidocs GET /api/v1/wiki/:project/docs：文档列表（含树结构）。
+func (h *Handler) listWikidocs(c *gin.Context) {
+	projectID := c.Param("project")
+	docs, err := h.store.ListWikidocs(projectID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	tree, err := h.store.BuildDocTree(projectID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if docs == nil {
+		docs = []*store.WikiDoc{}
+	}
+	if tree == nil {
+		tree = []store.TreeNode{}
+	}
+	c.JSON(http.StatusOK, gin.H{"docs": docs, "tree": tree})
+}
+
+// getWikidoc GET /api/v1/wiki/:project/docs/:slug：单文档详情。
+func (h *Handler) getWikidoc(c *gin.Context) {
+	projectID := c.Param("project")
+	slug := c.Param("slug")
+	doc, err := h.store.GetWikidocBySlug(projectID, slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if doc == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, doc)
+}
+
+// createWikidoc POST /api/v1/wiki/:project/docs：创建文档。
+func (h *Handler) createWikidoc(c *gin.Context) {
+	projectID := c.Param("project")
+	if strings.TrimSpace(projectID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project 不能为空"})
+		return
+	}
+
+	var req struct {
+		Slug      string `json:"slug"`
+		Title     string `json:"title"`
+		Order     int    `json:"order"`
+		Parent    int64  `json:"parent"`
+		ContentMD string `json:"content_md"`
+		Status    string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		return
+	}
+	slug := strings.TrimSpace(req.Slug)
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug 不能为空"})
+		return
+	}
+
+	if existing, _ := h.store.GetWikidocBySlug(projectID, slug); existing != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在"})
+		return
+	}
+
+	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		return
+	}
+
+	status := req.Status
+	if status != store.StatusDraft && status != store.StatusPublished {
+		status = store.StatusDraft
+	}
+
+	doc := &store.WikiDoc{
+		ProjectID:   projectID,
+		Slug:        slug,
+		Title:       strings.TrimSpace(req.Title),
+		Order:       req.Order,
+		Parent:      req.Parent,
+		ContentMD:   req.ContentMD,
+		ContentHTML: contentHTML,
+		Status:      status,
+	}
+	if err := h.store.CreateWikidoc(doc); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": doc.ID})
+}
+
+// updateWikidoc PUT /api/v1/wiki/:project/docs/:slug：更新文档。
+func (h *Handler) updateWikidoc(c *gin.Context) {
+	projectID := c.Param("project")
+	slug := c.Param("slug")
+	existing, err := h.store.GetWikidocBySlug(projectID, slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		return
+	}
+
+	var req struct {
+		Slug      string `json:"slug"`
+		Title     string `json:"title"`
+		Order     int    `json:"order"`
+		Parent    int64  `json:"parent"`
+		ContentMD string `json:"content_md"`
+		Status    string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		return
+	}
+
+	newSlug := strings.TrimSpace(req.Slug)
+	if newSlug == "" {
+		newSlug = slug
+	}
+	if newSlug != slug {
+		if other, _ := h.store.GetWikidocBySlug(projectID, newSlug); other != nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
+			return
+		}
+	}
+
+	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		return
+	}
+
+	status := req.Status
+	if status != store.StatusDraft && status != store.StatusPublished {
+		status = existing.Status
+	}
+
+	doc := &store.WikiDoc{
+		ID:          existing.ID,
+		ProjectID:   projectID,
+		Slug:        newSlug,
+		Title:       strings.TrimSpace(req.Title),
+		Order:       req.Order,
+		Parent:      req.Parent,
+		ContentMD:   req.ContentMD,
+		ContentHTML: contentHTML,
+		Status:      status,
+	}
+	if err := h.store.UpdateWikidoc(doc); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// deleteWikidoc DELETE /api/v1/wiki/:project/docs/:slug：删除文档。
+func (h *Handler) deleteWikidoc(c *gin.Context) {
+	projectID := c.Param("project")
+	slug := c.Param("slug")
+	doc, err := h.store.GetWikidocBySlug(projectID, slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if doc == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		return
+	}
+	if err := h.store.DeleteWikidoc(doc.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}

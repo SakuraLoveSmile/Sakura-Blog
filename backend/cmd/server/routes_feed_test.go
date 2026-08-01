@@ -1,9 +1,13 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"blog/internal/store"
 )
@@ -45,5 +49,44 @@ func TestRSSItemsFromPosts(t *testing.T) {
 	}
 	if items[1].Author != "默认站点" {
 		t.Errorf("unknown author fallback: got %q, want %q", items[1].Author, "默认站点")
+	}
+}
+
+// TestSitemapIncludesWikidocs sitemap 收录 wiki 已发布文档（Spec 35a）：
+// 完整 URL（含 site URL 前缀）+ lastmod/changefreq/priority，draft 不收录。
+func TestSitemapIncludesWikidocs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	// published 文档
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	// draft 文档不应被收录
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "secret", Title: "草稿", Status: store.StatusDraft}); err != nil {
+		t.Fatal(err)
+	}
+
+	r := gin.New()
+	ws.registerFeedRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("sitemap = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		"<loc>http://example.com/wiki/stellar/intro</loc>",
+		"<changefreq>weekly</changefreq>",
+		"<priority>0.6</priority>",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("sitemap missing %q", want)
+		}
+	}
+	if !strings.Contains(body, "<lastmod>") {
+		t.Errorf("sitemap wiki entry missing lastmod")
+	}
+	if strings.Contains(body, "/wiki/stellar/secret") {
+		t.Errorf("sitemap must not include draft docs")
 	}
 }

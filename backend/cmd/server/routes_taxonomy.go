@@ -3,12 +3,14 @@ package main
 import (
 	"html/template"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
 
@@ -26,6 +28,11 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	r.GET("/wiki", s.handleWiki)
 	r.GET("/wiki/", s.handleWiki)
 	r.GET("/wiki/tags/:tag", s.handleWiki)
+	// Spec 35a：wiki 文档三级路由（/wiki/:project 项目首页=首篇文档重定向；/wiki/:project/:slug 文档页）。
+	// 注册在 /wiki/tags/:tag 之后：Gin 静态段优先，/wiki/tags/* 仍命中标签过滤页，
+	// 且 handleWikiDoc 对 project=tags 做防御式 404，语义不冲突。
+	r.GET("/wiki/:project", s.handleWikiProject)
+	r.GET("/wiki/:project/:slug", s.handleWikiDoc)
 
 	// 笔记(手记) /notes，对齐 xaoxuu.com/notes/：上段 content/notes.md 手记正文（quot/okr 等 shortcode），下段本站 moments 近期动态。
 	r.GET("/notes", func(c *gin.Context) {
@@ -281,6 +288,150 @@ func (s *webServer) handleWiki(c *gin.Context) {
 		WikiProjects: projects,
 		WikiTags:     tags,
 	})
+}
+
+// handleWikiProject 项目首页（Spec 35a）：重定向到该项目第一篇已发布文档（/wiki/:project/:slug）。
+// 无已发布文档时渲染文库布局空态（复用 wiki.html 的 wiki.empty 提示）。
+func (s *webServer) handleWikiProject(c *gin.Context) {
+	projectID := c.Param("project")
+	// 路由安全：/wiki/tags 与 /wiki/tags/:tag 已由 handleWiki 处理，防御式拦截避免语义混淆。
+	if projectID == "tags" {
+		s.render404(c)
+		return
+	}
+	// 项目存在性校验（配置驱动：site.yml wiki 段未配置的项目不可访问）
+	if s.wikiProjectByID(projectID) == nil {
+		s.render404(c)
+		return
+	}
+	docs, err := s.st.ListWikidocs(projectID)
+	if err != nil {
+		log.Printf("list wikidocs %s: %v", projectID, err)
+		s.render500(c)
+		return
+	}
+	// 第一个已发布文档 → 项目首页即文档页
+	for _, d := range docs {
+		if d.Status == store.StatusPublished {
+			c.Redirect(http.StatusFound, "/wiki/"+projectID+"/"+d.Slug)
+			return
+		}
+	}
+	// 无已发布文档：渲染项目首页空态（复用 wiki 布局）
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site,
+		Page: &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN"},
+	})
+}
+
+// handleWikiDoc 文档页（Spec 35a）：渲染 wiki 文档（wiki 维度面包屑 + 正文 + 上下篇），
+// leftbar tree widget 经 assembleWidgets 注入（数据仅本页有，不进侧栏快照）。
+func (s *webServer) handleWikiDoc(c *gin.Context) {
+	projectID := c.Param("project")
+	slug := c.Param("slug")
+	// 路由安全：/wiki/tags/:tag 已注册（静态段优先），本路由不会收到 project=tags；
+	// 防御式校验避免与标签过滤页语义冲突。
+	if projectID == "tags" {
+		s.render404(c)
+		return
+	}
+	project := s.wikiProjectByID(projectID)
+	if project == nil {
+		s.render404(c)
+		return
+	}
+	docs, err := s.st.ListWikidocs(projectID)
+	if err != nil {
+		log.Printf("list wikidocs %s: %v", projectID, err)
+		s.render500(c)
+		return
+	}
+	// 当前文档：仅已发布可访问（draft 走 404）；published 序列按 doc_order,id 升序
+	// （ListWikidocs 保证），同列表内相邻即上下篇。
+	var cur *store.WikiDoc
+	var published []*store.WikiDoc
+	for _, d := range docs {
+		if d.Status != store.StatusPublished {
+			continue
+		}
+		published = append(published, d)
+		if d.Slug == slug {
+			cur = d
+		}
+	}
+	if cur == nil {
+		s.render404(c)
+		return
+	}
+	var prev, next *tmpl.WikiDocNav
+	for i, d := range published {
+		if d.Slug != slug {
+			continue
+		}
+		if i > 0 {
+			prev = &tmpl.WikiDocNav{Slug: published[i-1].Slug, Title: published[i-1].Title}
+		}
+		if i+1 < len(published) {
+			next = &tmpl.WikiDocNav{Slug: published[i+1].Slug, Title: published[i+1].Title}
+		}
+		break
+	}
+	// 文档树（leftbar tree widget）：过滤未发布节点（draft 不可见）
+	tree, err := s.st.BuildDocTree(projectID)
+	if err != nil {
+		log.Printf("build doc tree %s: %v", projectID, err)
+		s.render500(c)
+		return
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site,
+		Page: &tmpl.Page{
+			Title:       cur.Title,
+			Layout:      "wiki-doc",
+			MenuID:      "wiki",
+			Lang:        "zh-CN",
+			Slug:        slug,
+			Description: truncateText(stripHTML(cur.ContentHTML), 150),
+		},
+		WikiProjectID:   projectID,
+		WikiProjectName: project.DisplayTitle(),
+		WikiDoc: &tmpl.WikiDocView{
+			Slug:        cur.Slug,
+			Title:       cur.Title,
+			ContentHTML: template.HTML(cur.ContentHTML),
+		},
+		WikiPrevDoc: prev,
+		WikiNextDoc: next,
+		WikiDocTree: wikiTreeNodes(tree),
+	})
+}
+
+// wikiProjectByID 按 ID 查 site.yml wiki 段项目（配置驱动，未配置返回 nil）。
+func (s *webServer) wikiProjectByID(id string) *tmpl.WikiProject {
+	for i := range s.site.Wiki {
+		if s.site.Wiki[i].ID == id {
+			return &s.site.Wiki[i]
+		}
+	}
+	return nil
+}
+
+// wikiTreeNodes store.TreeNode → 模板树节点（跳过未发布文档；draft 节点及其子树不可见）。
+func wikiTreeNodes(nodes []store.TreeNode) []tmpl.WikiTreeNode {
+	out := make([]tmpl.WikiTreeNode, 0, len(nodes))
+	for _, n := range nodes {
+		if n.Doc == nil || n.Doc.Status != store.StatusPublished {
+			continue
+		}
+		out = append(out, tmpl.WikiTreeNode{
+			Doc: &tmpl.WikiDocView{
+				Slug:  n.Doc.Slug,
+				Title: n.Doc.Title,
+			},
+			Children: wikiTreeNodes(n.Children),
+		})
+	}
+	return out
 }
 
 // handleAuthor 作者文章列表页（Spec 38 多作者体系）。

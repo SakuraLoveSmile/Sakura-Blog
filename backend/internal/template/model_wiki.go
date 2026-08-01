@@ -26,6 +26,35 @@ func (w *WikiProject) DisplayTitle() string {
 	return w.ID
 }
 
+// WikiDocView wiki 文档页当前文档视图（Layout=wiki-doc 时使用，Spec 35a）。
+// ContentHTML 为已渲染正文，template.HTML 类型直接输出不转义（对齐 ViewData.Content）。
+type WikiDocView struct {
+	Slug        string
+	Title       string
+	ContentHTML template.HTML
+}
+
+// WikiDocNav wiki 文档页上下篇导航项（同 project 内按 doc_order 相邻的已发布文档）。
+type WikiDocNav struct {
+	Slug  string
+	Title string
+}
+
+// WikiTreeNode wiki 文档树节点（leftbar tree widget 用，递归 ≤3 层，对齐 store.BuildDocTree 限制）。
+type WikiTreeNode struct {
+	Doc      *WikiDocView
+	Children []WikiTreeNode
+}
+
+// WikiTreeWidgetData tree widget 装配数据（assembleWidgets 注入，仅 wiki 文档页；
+// 其余页面 Data 留空，模板不输出，不进侧栏快照）。
+type WikiTreeWidgetData struct {
+	ProjectID   string
+	ProjectName string
+	CurrentSlug string // 当前文档 slug（树高亮）
+	Tree        []WikiTreeNode
+}
+
 // Note 笔记(手记)条目，对应 site.yml notes 段的一项。
 // 对齐 xaoxuu.com/notes/ 的手记风格：时间流内联展示短内容（非文章卡片跳转）。
 type Note struct {

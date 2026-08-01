@@ -100,5 +100,21 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 		"htmlAttr": func(s string) template.HTMLAttr {
 			return template.HTMLAttr(s)
 		},
+
+		// dict: 构造键值 map（模板内传参用，如 widgets/tree 的 tree_node 递归调用）。
+		"dict": func(values ...interface{}) (map[string]interface{}, error) {
+			if len(values)%2 != 0 {
+				return nil, fmt.Errorf("dict: odd number of arguments")
+			}
+			m := make(map[string]interface{}, len(values)/2)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict: key %v is not a string", values[i])
+				}
+				m[key] = values[i+1]
+			}
+			return m, nil
+		},
 	}
 }

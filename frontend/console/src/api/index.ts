@@ -262,3 +262,18 @@ export const shareApi = {
     http.post(`/posts/${slug}/shares`, data),
   delete: (id: number) => http.delete(`/shares/${id}`),
 };
+
+// --- Wiki Docs（Spec 35a 文库文档管理；项目来自 settings wiki 段） ---
+// 文档字段：slug / title / order / parent(父文档 ID, 0=顶级) / content_md / status(published|draft)。
+export const wikiApi = {
+  listDocs: (project: string) =>
+    http.get(`/wiki/${encodeURIComponent(project)}/docs`),
+  getDoc: (project: string, slug: string) =>
+    http.get(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
+  createDoc: (project: string, data: Record<string, unknown>) =>
+    http.post(`/wiki/${encodeURIComponent(project)}/docs`, data),
+  updateDoc: (project: string, slug: string, data: Record<string, unknown>) =>
+    http.put(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`, data),
+  deleteDoc: (project: string, slug: string) =>
+    http.delete(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
+};

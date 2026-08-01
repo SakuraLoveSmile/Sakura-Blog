@@ -1,0 +1,33 @@
+{{- /* widgets/tree.html: 项目文档树（Spec 35a），对应原版 widgets/tree.ejs。
+   上下文为 WidgetInstance（Spec 33）：.Data 为 *WikiTreeWidgetData，
+   仅 wiki 文档页由 assembleWidgets 注入（其余页面 Data 留空，本模板不输出）；
+   tree_node 递归渲染项目内文档树（≤3 层，对齐 store.BuildDocTree 限制），当前文档高亮。
+   dict 传参（node/currentSlug/projectID）由 funcs.go 的 dict helper 提供。*/ -}}
+{{if .Data}}
+<widget class="widget-wrapper tree" id="data-tree">
+  <div class="widget-header dis-select">
+    <span class="name">{{.Data.ProjectName}}</span>
+    <a class="cap-action" href="/wiki/{{.Data.ProjectID}}">{{lang "btn.all"}}</a>
+  </div>
+  <div class="widget-body">
+    <ul class="tree-list">
+      {{range .Data.Tree}}
+      {{template "tree_node" (dict "node" . "currentSlug" $.Data.CurrentSlug "projectID" $.Data.ProjectID)}}
+      {{end}}
+    </ul>
+  </div>
+</widget>
+{{end}}
+
+{{define "tree_node"}}
+<li class="tree-item{{if eq .node.Doc.Slug .currentSlug}} active{{end}}">
+  <a class="tree-link" href="/wiki/{{.projectID}}/{{.node.Doc.Slug}}">{{.node.Doc.Title}}</a>
+  {{if .node.Children}}
+  <ul class="tree-children">
+    {{range .node.Children}}
+    {{template "tree_node" (dict "node" . "currentSlug" $.currentSlug "projectID" $.projectID)}}
+    {{end}}
+  </ul>
+  {{end}}
+</li>
+{{end}}

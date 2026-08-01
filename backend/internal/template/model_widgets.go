@@ -168,6 +168,9 @@ func DefaultWidgetLibrary() map[string]WidgetDef {
 		"ghuser":   {"layout": "ghuser", "avatar": true},
 		"ghissues": {"layout": "ghissues", "limit": 3},
 		"timeline": {"layout": "timeline", "title": "近期动态"},
+		// Spec 35a：tree 为 wiki 文档页项目文档树（数据由 assembleWidgets 仅在本页注入，
+		// 其余页面 Data 为空、模板不输出；缺省仅在 wiki-doc 页面类型左栏启用）
+		"tree": {"layout": "tree"},
 	}
 }
 
@@ -187,13 +190,22 @@ func (w WidgetsConfig) Lookup(name string) WidgetDef {
 	return def.merge(w.Library[name])
 }
 
-// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → 内置缺省。
+// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → wiki-doc 缺省 → 内置缺省。
+// wiki-doc（Spec 35a）零配置时左栏首项挂 tree（项目文档树），其余沿用 index 缺省；
+// 用户显式配置 pages 时尊重配置（tree 组件名可在任意页面类型的 leftbar 中启用）。
 func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 	if b, ok := w.Pages[pageType]; ok {
 		return b
 	}
 	if b, ok := w.Pages["index"]; ok {
 		return b
+	}
+	if pageType == "wiki-doc" {
+		def := DefaultPageBars()
+		return PageBars{
+			Leftbar:  append([]string{"tree"}, def.Leftbar...),
+			Rightbar: def.Rightbar,
+		}
 	}
 	return DefaultPageBars()
 }
@@ -223,6 +235,9 @@ func PageTypeOf(layout string) string {
 		return "topic"
 	case "author":
 		return "author"
+	case "wiki-doc":
+		// Spec 35a：wiki 文档页独立类型（BarsFor 零配置时左栏挂 tree）
+		return "wiki-doc"
 	default:
 		return "index"
 	}

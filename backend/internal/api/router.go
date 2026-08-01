@@ -112,6 +112,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"page_views", st.EnsurePageViewsTable},     // 访问统计明细（Spec 24）
 		{"attachments", st.EnsureAttachmentsTable},  // 附件管理
 		{"shared_posts", st.EnsureSharedPostsTable}, // 文章分享链接
+		{"wikidocs", st.EnsureWikidocsTable},        // wiki 文档（Spec 35）
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -220,6 +221,16 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.DELETE("/pages/:slug", h.deletePage)
 		authed.POST("/pages/:slug/restore", h.restorePage)
 		authed.DELETE("/pages/:slug/purge", h.purgePage)
+
+		// wiki 文档（Spec 35）
+		wiki := authed.Group("/wiki")
+		{
+			wiki.GET("/:project/docs", h.listWikidocs)
+			wiki.GET("/:project/docs/:slug", h.getWikidoc)
+			wiki.POST("/:project/docs", h.createWikidoc)
+			wiki.PUT("/:project/docs/:slug", h.updateWikidoc)
+			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
+		}
 
 		// 瞬间
 		authed.GET("/moments", h.listMoments)

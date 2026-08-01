@@ -69,6 +69,12 @@ const router = createRouter({
           meta: { hideFooter: true },
         },
         {
+          path: "wiki",
+          name: "Wiki",
+          component: () => import("@/modules/wiki/WikiDocsView.vue"),
+          meta: { requiresAuth: true },
+        },
+        {
           path: "moments",
           name: "Moments",
           component: () => import("@/modules/moments/MomentList.vue"),

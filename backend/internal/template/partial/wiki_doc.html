@@ -1,0 +1,47 @@
+{{- /* wiki_doc.html: wiki 文档页（Spec 35a），对齐原版 wiki 文档布局：
+   面包屑（首页 / 文库 / 项目 / 文档）+ 大标题 + 正文 + 上下篇导航。
+   由 base.html 按 .Page.Layout == "wiki-doc" 分派渲染；
+   leftbar tree widget 由 widgets 编排注入（见 partial/widgets/tree.html），不在本模板内。*/ -}}
+{{if .WikiDoc.Title}}
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/wiki">{{- lang "breadcrumb.wiki" -}}</a>
+          {{if .WikiProjectName}}
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/wiki/{{.WikiProjectID}}">{{.WikiProjectName}}</a>
+          {{end}}
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="/wiki/{{.WikiProjectID}}/{{.WikiDoc.Slug}}">{{.WikiDoc.Title}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.WikiDoc.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+<article class="md-text content">
+  {{.WikiDoc.ContentHTML}}
+</article>
+{{if or .WikiPrevDoc .WikiNextDoc}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    {{if .WikiPrevDoc}}<div class="item" id="prev">
+      <div class="note">{{- lang "meta.newer" -}}</div>
+      <a href="/wiki/{{.WikiProjectID}}/{{.WikiPrevDoc.Slug}}">{{.WikiPrevDoc.Title}}</a>
+    </div>{{end}}
+    {{if .WikiNextDoc}}<div class="item" id="next">
+      <div class="note">{{- lang "meta.older" -}}</div>
+      <a href="/wiki/{{.WikiProjectID}}/{{.WikiNextDoc.Slug}}">{{.WikiNextDoc.Title}}</a>
+    </div>{{end}}
+  </section>
+</div>
+{{end}}

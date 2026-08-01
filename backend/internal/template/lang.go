@@ -87,6 +87,7 @@ var zhCN = map[string]string{
 	"breadcrumb.moments": "瞬间",
 	"breadcrumb.friends": "友链",
 	"breadcrumb.links":   "友链",
+	"breadcrumb.wiki":    "文库",
 
 	// 文章页
 	"article.expire":         "本文最后更新于 %d 天前，其中的信息可能已经过时，请谨慎参考。",

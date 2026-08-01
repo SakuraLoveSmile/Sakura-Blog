@@ -282,6 +282,21 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 					}
 				}
 			}
+		case "tree":
+			// Spec 35a：wiki 文档页注入项目文档树（数据仅本页有，不进侧栏快照；
+			// 其余页面 Data 留空，模板不输出，零配置降级）。
+			if data.WikiDocTree != nil {
+				curSlug := ""
+				if data.WikiDoc != nil {
+					curSlug = data.WikiDoc.Slug
+				}
+				w.Data = &tmpl.WikiTreeWidgetData{
+					ProjectID:   data.WikiProjectID,
+					ProjectName: data.WikiProjectName,
+					CurrentSlug: curSlug,
+					Tree:        data.WikiDocTree,
+				}
+			}
 		}
 	}
 }

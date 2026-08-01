@@ -63,6 +63,16 @@ type ViewData struct {
 	WikiProjects []*WikiProject
 	WikiTags     []string
 
+	// wiki 文档页（Layout=wiki-doc 时使用，Spec 35a）：
+	// WikiProjectID/Name 为面包屑与 tree widget 的项目上下文；WikiDoc 为当前文档；
+	// WikiPrevDoc/WikiNextDoc 为同 project 内按 doc_order 的上下篇；WikiDocTree 供 leftbar tree widget 注入。
+	WikiProjectID   string         // 项目 ID（面包屑/树链接）
+	WikiProjectName string         // 项目显示名（DisplayTitle）
+	WikiDoc         *WikiDocView   // 当前文档（nil 时不渲染文档区）
+	WikiPrevDoc     *WikiDocNav    // 上一篇（nil 不渲染）
+	WikiNextDoc     *WikiDocNav    // 下一篇（nil 不渲染）
+	WikiDocTree     []WikiTreeNode // 项目文档树（仅 wiki 文档页注入，不进侧栏快照）
+
 	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
 	NotesContentHTML template.HTML
 

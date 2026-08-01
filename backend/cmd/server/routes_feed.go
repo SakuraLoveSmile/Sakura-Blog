@@ -110,14 +110,15 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 		c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
 	})
 
-	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、静态索引页。
+	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、wiki 已发布文档、静态索引页。
 	r.GET("/sitemap.xml", func(c *gin.Context) {
 		baseURL := s.baseURL(c)
 
 		type SitemapURL struct {
-			Loc      string `xml:"loc"`
-			LastMod  string `xml:"lastmod,omitempty"`
-			Priority string `xml:"priority,omitempty"`
+			Loc        string `xml:"loc"`
+			LastMod    string `xml:"lastmod,omitempty"`
+			ChangeFreq string `xml:"changefreq,omitempty"`
+			Priority   string `xml:"priority,omitempty"`
 		}
 		type Sitemap struct {
 			XMLName xml.Name     `xml:"urlset"`
@@ -137,6 +138,26 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 				sm.URLs = append(sm.URLs, SitemapURL{
 					Loc:     baseURL + "/post/" + p.Slug,
 					LastMod: p.UpdatedAt.Format("2006-01-02"),
+				})
+			}
+		}
+
+		// wiki 已发布文档（Spec 35a）：遍历 site.yml wiki 段项目，收录每个项目的 published 文档。
+		for _, project := range s.site.Wiki {
+			docs, err := s.st.ListWikidocs(project.ID)
+			if err != nil {
+				log.Printf("sitemap: list wikidocs %s: %v", project.ID, err)
+				continue
+			}
+			for _, doc := range docs {
+				if doc.Status != store.StatusPublished {
+					continue
+				}
+				sm.URLs = append(sm.URLs, SitemapURL{
+					Loc:        baseURL + "/wiki/" + project.ID + "/" + doc.Slug,
+					LastMod:    doc.UpdatedAt.Format("2006-01-02"),
+					ChangeFreq: "weekly",
+					Priority:   "0.6",
 				})
 			}
 		}
