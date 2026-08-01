@@ -287,6 +287,8 @@ type Site struct {
 	Inject      InjectConfig   `yaml:"-" json:"inject"`        // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
 	Style       StyleConfig    `yaml:"style"   json:"style"`   // 外观样式可配置化（Spec 34/47）
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
+	// Verifications 搜索引擎站长验证码（google/bing/baidu），由 SEO 模块运行时填充，前台 head 注入 meta。
+	Verifications map[string]string `yaml:"-" json:"-"`
 	// 导航栏额外标签页（site.yml nav_tabs 段），追加在固定 tab（归档）之后。
 	NavTabs []NavTabItem `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
 	// 首页 Hero cover 区配置（site.yml cover 段），仅首页第一页且 title 非空时渲染。

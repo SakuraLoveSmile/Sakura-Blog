@@ -251,8 +251,7 @@ function closeMenus() {
                     v-model="keyword"
                     placeholder="输入关键词搜索"
                     type="text"
-                    class="w-48 border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    style="border-radius: 4px"
+                    class="w-48 rounded-base border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                   />
                   <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
                   <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
@@ -375,8 +374,7 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenSlug === p.slug"
-                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                        style="border-radius: 4px"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         @click.stop
                       >
                         <template v-if="isTrashed">

@@ -441,8 +441,7 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenId === m.id"
-                        class="absolute right-0 top-full z-30 mt-1 w-36 space-y-1 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                        style="border-radius: 4px"
+                        class="absolute right-0 top-full z-30 mt-1 w-36 space-y-1 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         @click.stop
                       >
                         <VButton block size="sm" @click="startEdit(m)">编辑</VButton>

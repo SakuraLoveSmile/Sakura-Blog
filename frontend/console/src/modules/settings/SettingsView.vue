@@ -19,12 +19,13 @@ const tabs = [
   { key: "article", label: "文章" },
   { key: "seo", label: "SEO" },
   { key: "inject", label: "代码注入" },
+  { key: "ai", label: "AI" },
   { key: "security", label: "安全" },
   { key: "appearance", label: "外观" },
   { key: "widgets", label: "组件编排" },
   { key: "advanced", label: "高级·JSON" },
 ];
-const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets"];
+const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets", "ai"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const active = ref("site");
@@ -83,6 +84,7 @@ function ensureDefaults(d: Record<string, any>) {
   d.friends.refresh_interval = d.friends.refresh_interval || 0;
   d.seo = d.seo || {};
   d.inject = d.inject || {};
+  d.ai = d.ai || {};
   // wiki 段是数组；行内编辑用 _tagsText 字符串代理 tags 数组（逗号分隔）
   d.wiki = (d.wiki || []).map((w: any) => ({ ...w, _tagsText: (w.tags || []).join(", ") }));
   // style 段默认值（Spec 47）
@@ -258,18 +260,18 @@ onMounted(load);
             <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像 URL</label>
               <div class="flex gap-2">
                 <input v-model="data.site.avatar" :class="inputCls" placeholder="输入图片 URL" />
-                <button @click="showAvatarPicker = true"
+                <button @click="showAvatarPicker = true" title="从附件选择"
                   class="shrink-0 px-3 py-2 text-sm bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
-                  <Icon icon="ri:image-upload-line" /> 从附件选择
+                  <Icon icon="ri:image-upload-line" />
                 </button>
               </div>
             </div>
             <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">头像悬停背景图</label>
               <div class="flex gap-2">
                 <input v-model="data.site.avatar_bg" :class="inputCls" placeholder="输入图片 URL" />
-                <button @click="showAvatarBgPicker = true"
+                <button @click="showAvatarBgPicker = true" title="从附件选择"
                   class="shrink-0 px-3 py-2 text-sm bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 dark:bg-primary/15 dark:text-primary">
-                  <Icon icon="ri:image-upload-line" /> 从附件选择
+                  <Icon icon="ri:image-upload-line" />
                 </button>
               </div>
             </div>
@@ -531,6 +533,16 @@ onMounted(load);
           <textarea v-model="data.inject.inject_footer" rows="6" :class="inputCls + ' font-mono text-xs'" placeholder="<script>...</script>"></textarea>
         </div>
         <button @click="save('inject')" :disabled="savingKey === 'inject'" :class="btnCls">保存代码注入</button>
+      </div>
+
+      <!-- AI 属性生成 -->
+      <div v-show="active === 'ai'" class="space-y-4 max-w-md">
+        <p class="text-xs text-gray-400 dark:text-gray-500">编辑器「AI 属性生成」使用的 OpenAI 兼容接口（DeepSeek / 通义 / Ollama 等均可）。</p>
+        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">API 地址（如 https://api.deepseek.com/v1）</label><input v-model="data.ai.base_url" placeholder="https://api.openai.com/v1" :class="inputCls" /></div>
+        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">API Key（本地模型可留空；已保存时显示 ****，留空保存不覆盖）</label><input v-model="data.ai.api_key" type="password" autocomplete="off" :class="inputCls" /></div>
+        <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">模型名（如 deepseek-chat / gpt-4o-mini）</label><input v-model="data.ai.model" :class="inputCls" /></div>
+        <button @click="save('ai')" :disabled="savingKey === 'ai'" :class="btnCls">保存 AI 设置</button>
+      </div>
       </div>
 
       <!-- 安全 -->

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -137,4 +139,62 @@ func (h *Handler) afterLinksChanged() {
 	if h.onLinksChanged != nil {
 		h.onLinksChanged()
 	}
+}
+
+// linkCheckHTTPClient 连通性检测专用 client（短超时，不跟随过多重定向）。
+var linkCheckHTTPClient = &http.Client{Timeout: 8 * time.Second}
+
+// checkLinks POST /api/v1/links/check：并发检测各友链 URL 可达性，返回每条 {id, ok, status}。
+// status：HTTP 状态码；网络错误/超时为 0。
+func (h *Handler) checkLinks(c *gin.Context) {
+	links, err := h.store.ListLinks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	type result struct {
+		ID     int64 `json:"id"`
+		OK     bool  `json:"ok"`
+		Status int   `json:"status"`
+	}
+	results := make([]result, len(links))
+	var wg sync.WaitGroup
+	for i, l := range links {
+		if l.URL == "" {
+			results[i] = result{ID: l.ID, OK: false}
+			continue
+		}
+		wg.Add(1)
+		go func(idx int, id int64, url string) {
+			defer wg.Done()
+			ok, status := probeURL(url)
+			results[idx] = result{ID: id, OK: ok, Status: status}
+		}(i, l.ID, l.URL)
+	}
+	wg.Wait()
+	c.JSON(http.StatusOK, gin.H{"items": results})
+}
+
+// probeURL HEAD 探测（失败回退 GET），返回 (可达, HTTP 状态码)；2xx/3xx 视为可达，网络错误状态码为 0。
+func probeURL(url string) (bool, int) {
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		return false, 0
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; StellarBlog/1.0)")
+	resp, err := linkCheckHTTPClient.Do(req)
+	if err != nil {
+		// 部分站点不支持 HEAD，回退 GET
+		req2, e2 := http.NewRequest(http.MethodGet, url, nil)
+		if e2 != nil {
+			return false, 0
+		}
+		req2.Header.Set("User-Agent", "Mozilla/5.0 (compatible; StellarBlog/1.0)")
+		resp, err = linkCheckHTTPClient.Do(req2)
+		if err != nil {
+			return false, 0
+		}
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode >= 200 && resp.StatusCode < 400, resp.StatusCode
 }

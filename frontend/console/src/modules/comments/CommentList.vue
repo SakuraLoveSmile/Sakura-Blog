@@ -263,8 +263,7 @@ function closeMenus() {
                         <span class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ cm.nick }}</span>
                         <span
                           v-if="cm.is_admin"
-                          class="rounded bg-secondary/10 px-1.5 py-0.5 text-xs text-secondary dark:bg-primary/15 dark:text-primary"
-                          style="border-radius: 4px"
+                          class="rounded-base bg-secondary/10 px-1.5 py-0.5 text-xs text-secondary dark:bg-primary/15 dark:text-primary"
                         >
                           博主
                         </span>
@@ -305,8 +304,7 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenId === cm.id"
-                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                        style="border-radius: 4px"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         @click.stop
                       >
                         <VButton v-if="cm.status === 'pending'" block type="secondary" size="sm" @click="handleApprove(cm)">
@@ -340,8 +338,7 @@ function closeMenus() {
         v-model="replyContent"
         rows="4"
         placeholder="回复内容..."
-        class="w-full resize-y border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-        style="border-radius: 4px"
+        class="w-full resize-y rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
       ></textarea>
       <template #footer>
         <div class="flex justify-end gap-2">

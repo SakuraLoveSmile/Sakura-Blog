@@ -294,7 +294,7 @@ async function handleCopyShareUrl() {
 }
 
 const inputCls =
-  "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
 
 // Helpers
 function parseTags(tags: string): string[] {
@@ -359,8 +359,7 @@ function closeMenus() {
                     v-model="keyword"
                     placeholder="输入关键词搜索"
                     type="text"
-                    class="w-48 border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    style="border-radius: 4px"
+                    class="w-48 rounded-base border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                   />
                   <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
                   <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
@@ -492,8 +491,7 @@ function closeMenus() {
                           <span
                             v-for="tag in parseTags(post.tags)"
                             :key="tag"
-                            class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-                            style="border-radius: 4px"
+                            class="rounded-base bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400"
                           >
                             {{ tag }}
                           </span>
@@ -559,8 +557,7 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenSlug === post.slug"
-                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                        style="border-radius: 4px"
+                        class="absolute right-0 top-full z-30 mt-1 w-32 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         @click.stop
                       >
                         <template v-if="isTrashed">
@@ -607,22 +604,21 @@ function closeMenus() {
       <div v-if="!shareResultUrl" class="space-y-4">
         <div>
           <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">分享类型</label>
-          <select v-model="shareForm.share_type" :class="inputCls" style="border-radius: 4px">
+          <select v-model="shareForm.share_type" :class="inputCls">
             <option value="published">已发布版本</option>
             <option value="draft">草稿版本</option>
           </select>
         </div>
         <div>
           <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">过期时间（可选）</label>
-          <input v-model="shareForm.expires_at" type="datetime-local" :class="inputCls" style="border-radius: 4px" />
+          <input v-model="shareForm.expires_at" type="datetime-local" :class="inputCls" />
         </div>
       </div>
       <!-- 结果状态：展示生成的链接 -->
       <div v-else class="space-y-3">
         <p class="text-sm text-gray-600 dark:text-gray-400">分享链接已生成，可复制或直接打开：</p>
         <div
-          class="flex items-center gap-2 border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
-          style="border-radius: 4px"
+          class="flex items-center gap-2 rounded-base border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
         >
           <span class="flex-1 truncate text-sm text-blue-600 dark:text-blue-400">{{ shareResultUrl }}</span>
           <VButton size="sm" type="secondary" @click="handleCopyShareUrl">复制</VButton>

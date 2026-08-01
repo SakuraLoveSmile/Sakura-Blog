@@ -95,8 +95,7 @@ async function saveQuickActions() {
         v-for="action in quickActions"
         :key="action.to"
         :to="action.to"
-        class="flex flex-col items-center gap-2 rounded border border-gray-100 py-4 text-gray-600 transition-all hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/50"
-        style="border-radius: 4px"
+        class="flex flex-col items-center gap-2 rounded-base border border-gray-100 py-4 text-gray-600 transition-all hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/50"
       >
         <Icon :icon="action.icon" class="text-2xl" />
         <span class="text-xs">{{ action.label }}</span>
@@ -115,13 +114,12 @@ async function saveQuickActions() {
         <button
           v-for="a in availableActions"
           :key="a.key"
-          class="flex flex-col items-center gap-1.5 rounded border py-3 transition-all"
+          class="flex flex-col items-center gap-1.5 rounded-base border py-3 transition-all"
           :class="
             editKeys.includes(a.key)
               ? 'border-primary/60 bg-primary/5 text-gray-800 dark:text-gray-100'
               : 'border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50'
           "
-          style="border-radius: 4px"
           @click="toggleAction(a.key)"
         >
           <Icon :icon="a.icon" class="text-xl" />

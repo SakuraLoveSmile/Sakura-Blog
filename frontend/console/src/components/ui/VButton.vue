@@ -83,7 +83,7 @@ function handleClick() {
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: 4px;
+  border-radius: var(--radius-base);
   transition: all 0.15s ease;
   background: transparent;
 }
@@ -93,36 +93,39 @@ function handleClick() {
 .btn:active {
   opacity: 1;
 }
+
+/* 默认按钮 hover 改背景加深而非透明度，避免白底上发灰看不清（令牌随亮/暗切换） */
+.btn-default:hover {
+  opacity: 1;
+  background: var(--color-muted);
+  border-color: var(--color-muted-foreground);
+}
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-default {
-  border: 1px solid #d9d9d9;
-  color: #374151;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+  background: var(--color-card);
 }
-.dark .btn-default {
-  border-color: #4b5563;
-  color: #d1d5db;
-  background: #1f2937;
-}
+/* 图标跟随文字颜色，与文案对比度一致，避免近黑色在浅色按钮上突兀 */
 .btn-default .btn-icon {
-  color: #0e1731;
+  color: currentColor;
 }
 
 .btn-primary {
-  color: #fff !important;
-  background: #4ccba0 !important;
+  color: var(--color-primary-foreground) !important;
+  background: var(--color-primary) !important;
 }
 .btn-secondary {
   color: #fff !important;
-  background: #0e1731 !important;
+  background: var(--color-secondary) !important;
 }
 .btn-danger {
   color: #fff !important;
-  background: #d71d1d !important;
+  background: var(--color-state-error) !important;
 }
 
 .btn-block {

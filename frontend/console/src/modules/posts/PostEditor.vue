@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { postApi, taxonomyApi, previewApi, settingsApi } from "@/api";
+import { postApi, taxonomyApi, previewApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import RichTextEditor from "@/components/RichTextEditor.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
-import CollapsibleSection from "@/components/CollapsibleSection.vue";
-import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
+import EditorToolbar from "./EditorToolbar.vue";
+import EditorSidebar from "./EditorSidebar.vue";
+import AiGenerateModal from "./AiGenerateModal.vue";
 import RevisionPanel from "./RevisionPanel.vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, Toast, Dialog } from "@/components/ui";
-import {
-  plugins,
-  PLUGIN_CATEGORIES,
-  type PluginMeta,
-  type PluginCategory,
-} from "@/modules/plugins/plugins-data";
 
+// 文章编辑器：Halo 式三栏布局——顶部全宽工具栏 + 左侧主编辑区 + 右侧大纲/详情面板。
+// 双编辑器模式：默认富文本所见即得（TipTap），可切 Markdown 分屏兑底；
+// 两者绑定同一份 form.content_md，切换即天然同步。
 const route = useRoute();
 const router = useRouter();
 
@@ -44,8 +43,23 @@ const loading = ref(false);
 const saving = ref(false);
 const publishing = ref(false);
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
+const richRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
+const aiOpen = ref(false);
+
+// 编辑器种类：富文本（默认）/ Markdown 分屏，选择持久化
+const KIND_KEY = "post-editor:kind";
+type EditorKind = "rich" | "markdown";
+function loadKind(): EditorKind {
+  return localStorage.getItem(KIND_KEY) === "markdown" ? "markdown" : "rich";
+}
+const editorKind = ref<EditorKind>(loadKind());
+function onEditorKindSelect(e: Event) {
+  const v = (e.target as HTMLSelectElement).value as EditorKind;
+  editorKind.value = v;
+  localStorage.setItem(KIND_KEY, v);
+}
 
 // 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
 const originalStatus = ref("draft");
@@ -62,14 +76,45 @@ const editorModeItems: { value: EditorMode; label: string }[] = [
 ];
 function onEditorModeSelect(e: Event) {
   const v = (e.target as HTMLSelectElement).value as EditorMode;
-  editorMode.value = v;
-  editorRef.value?.setMode(v);
+  setEditorMode(v);
+}
+function setEditorMode(m: EditorMode) {
+  editorMode.value = m;
+  editorRef.value?.setMode(m);
+}
+
+// 工具栏格式按钮激活态（仅富文本模式有；Markdown 模式不高亮）
+const toolbarActive = computed<Record<string, boolean>>(() =>
+  editorKind.value === "rich" ? (richRef.value?.activeStates ?? {}) : {}
+);
+
+// 发布前预览：当前表单 POST 拿临时 token → 新标签页打开前台草稿渲染
+const previewing = ref(false);
+async function handlePreview() {
+  if (previewing.value) return;
+  previewing.value = true;
+  try {
+    const { data } = await previewApi.createPostPreview({ ...form.value });
+    window.open(`/preview/draft/${data.token}`, "_blank");
+  } catch (e: any) {
+    Toast.error(e.response?.data?.error || "预览生成失败");
+  } finally {
+    previewing.value = false;
+  }
 }
 
 // 全屏模式：覆盖侧边栏，编辑器占满视口
 const fullscreen = ref(false);
 function toggleFullscreen() {
   fullscreen.value = !fullscreen.value;
+}
+
+// 右侧面板开关（批注：设置参数合并成大组件、可从右侧收起），状态持久化
+const SIDEBAR_KEY = "post-editor:sidebar-open";
+const sidebarOpen = ref(localStorage.getItem(SIDEBAR_KEY) !== "0");
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value;
+  localStorage.setItem(SIDEBAR_KEY, sidebarOpen.value ? "1" : "0");
 }
 
 // Slug 自动生成：新建文章时标题变化自动推导 slug，用户手动编辑后停止覆盖（Spec Task 6）
@@ -92,13 +137,6 @@ watch(() => form.value.title, (newTitle) => {
   }
 });
 
-/** 随机封面图：picsum seed 模式，保存后 URL 固定图片不再变化（source.unsplash.com 已停用） */
-function fetchRandomCover() {
-  // picsum.photos 免费无需 API Key；seed 模式同一 URL 永远返回同一张图
-  const seed = Math.random().toString(36).slice(2, 10);
-  form.value.cover = `https://picsum.photos/seed/${seed}/1200/675`;
-}
-
 // 当前正文字数（非空白 rune），供版本面板计算字数变化。
 const currentWordCount = computed(() => {
   const s = form.value.content_md || "";
@@ -108,21 +146,6 @@ const currentWordCount = computed(() => {
   }
   return n;
 });
-
-// ---------- 作者可选项（Spec 38 Wave 5） ----------
-// authors 为空 map 时 Object.keys 长度为 0，不渲染控件
-const authorOptions = ref<Record<string, { name: string }>>({});
-
-async function loadAuthors() {
-  try {
-    const { data } = await settingsApi.all();
-    if (data.authors && typeof data.authors === "object") {
-      authorOptions.value = data.authors;
-    }
-  } catch {
-    /* 静默：作者列表缺失不阻塞编辑 */
-  }
-}
 
 // ---------- 分类/标签可选项（Spec 29 P0-4） ----------
 const categories = ref<string[]>([]);
@@ -141,87 +164,74 @@ async function loadTaxonomy() {
   }
 }
 
-function pickCategory(name: string) {
-  form.value.category = name;
-}
+// ---------- 工具栏 → 编辑器动作路由（按当前编辑器种类分发） ----------
 
-// 点标签 chip：按逗号拆分去重后追加
-function pickTag(name: string) {
-  const list = form.value.tags
-    .split(/[,，]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!list.includes(name)) list.push(name);
-  form.value.tags = list.join(",");
-}
+// Markdown 模式的 format(id) 映射表（与 EditorToolbar formatTools id 一致）
+const tableTemplate = "\n| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |\n";
+const mdFormatMap: Record<string, () => void> = {
+  bold: () => editorRef.value?.wrapSelection("**", "**", "加粗文本"),
+  italic: () => editorRef.value?.wrapSelection("*", "*", "斜体文本"),
+  strike: () => editorRef.value?.wrapSelection("~~", "~~", "删除线"),
+  heading: () => editorRef.value?.prefixLines("## ", false),
+  link: () => editorRef.value?.wrapSelection("[", "](url)", "链接文字"),
+  quote: () => editorRef.value?.prefixLines("> ", false),
+  code: () => editorRef.value?.wrapSelection("`", "`", "code"),
+  codeblock: () => editorRef.value?.wrapSelection("\n```\n", "\n```\n", "code"),
+  ul: () => editorRef.value?.prefixLines("- ", false),
+  ol: () => editorRef.value?.prefixLines("", true),
+  table: () => editorRef.value?.insertBlock(tableTemplate),
+};
 
-// ---------- 标签插件面板（Spec 29 P1-8） ----------
-const pluginCat = ref<PluginCategory | "全部">("全部");
-const pluginList = computed(() =>
-  pluginCat.value === "全部"
-    ? plugins
-    : plugins.filter((p) => p.category === pluginCat.value)
-);
-const selectedPlugin = ref<PluginMeta | null>(null);
-const pluginCode = ref("");
-const pluginPreviewHtml = ref("");
-const pluginRendering = ref(false);
-let pluginTimer: ReturnType<typeof setTimeout> | undefined;
-
-function selectPlugin(p: PluginMeta) {
-  selectedPlugin.value = p;
-  // 有 form schema：由 PluginParamForm 初始化后立即产出 shortcode；否则回退示例文本
-  pluginCode.value = p.form ? "" : p.example;
-  schedulePluginPreview(true);
-}
-
-function onPluginCode(code: string) {
-  pluginCode.value = code;
-  schedulePluginPreview();
-}
-
-async function refreshPluginPreview() {
-  if (!pluginCode.value) {
-    pluginPreviewHtml.value = "";
-    return;
-  }
-  pluginRendering.value = true;
-  try {
-    const { data } = await previewApi.render(pluginCode.value);
-    pluginPreviewHtml.value = data.html;
-  } catch {
-    pluginPreviewHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
-  } finally {
-    pluginRendering.value = false;
+function onFormat(id: string) {
+  if (editorKind.value === "rich") {
+    richRef.value?.applyFormat(id);
+  } else {
+    mdFormatMap[id]?.();
   }
 }
 
-function schedulePluginPreview(immediate = false) {
-  clearTimeout(pluginTimer);
-  pluginTimer = setTimeout(refreshPluginPreview, immediate ? 0 : 400);
+function onInsert(text: string) {
+  if (editorKind.value === "rich") {
+    richRef.value?.insertMarkdown(text);
+  } else {
+    editorRef.value?.insertBlock(text);
+  }
 }
 
-const pluginSrcdoc = computed(() => {
-  const dark = document.documentElement.dataset.theme === "dark";
-  return `<!DOCTYPE html>
-<html data-theme="${dark ? "dark" : "light"}">
-<head>
-<meta charset="utf-8">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<style>html,body{margin:0;padding:0;}body{padding:16px;background:${dark ? "#1c1c1e" : "#fff"};}.md-text{max-width:100%;}</style>
-</head>
-<body><article class="md-text content">${pluginPreviewHtml.value}</article></body>
-</html>`;
-});
-
-function insertPlugin() {
-  if (!pluginCode.value) return;
-  editorRef.value?.insertBlock("\n" + pluginCode.value + "\n");
+function onUpload() {
+  (editorKind.value === "rich" ? richRef.value : editorRef.value)?.openImageUpload();
 }
 
-onBeforeUnmount(() => clearTimeout(pluginTimer));
+function onPick() {
+  (editorKind.value === "rich" ? richRef.value : editorRef.value)?.openImagePicker();
+}
+
+/** 清除当前编辑器的本地草稿（同一 storageKey，两实例任一清除即可） */
+function clearActiveDraft() {
+  (editorKind.value === "rich" ? richRef.value : editorRef.value)?.clearDraft();
+}
+
+// 大纲点击跳转：富文本按标题序号定位节点，Markdown 按行号滚动
+function onJump(line: number, index: number) {
+  if (editorKind.value === "rich") {
+    richRef.value?.scrollToHeading(index);
+  } else {
+    editorRef.value?.scrollToLine(line);
+  }
+}
+
+// AI 属性生成结果回填（tags 为逗号串）
+function applyAi(values: Record<string, string>) {
+  if (values.title !== undefined) form.value.title = values.title;
+  if (values.slug !== undefined) {
+    form.value.slug = values.slug;
+    slugManuallyEdited.value = true;
+  }
+  if (values.category !== undefined) form.value.category = values.category;
+  if (values.tags !== undefined) form.value.tags = values.tags;
+  if (values.excerpt !== undefined) form.value.excerpt = values.excerpt;
+  Toast.success("已应用 AI 生成结果，记得保存");
+}
 
 // ---------- 加载 / 保存 / 发布 ----------
 async function loadPost() {
@@ -251,7 +261,6 @@ async function loadPost() {
 
 onMounted(async () => {
   loadTaxonomy();
-  loadAuthors();
   editorMode.value = (editorRef.value?.getMode?.() as EditorMode) || "split";
   if (!isEdit.value) return;
   loading.value = true;
@@ -268,7 +277,7 @@ onMounted(async () => {
 async function handleRestored() {
   try {
     await loadPost();
-    editorRef.value?.clearDraft();
+    clearActiveDraft();
   } catch (e: any) {
     Toast.error("回滚后重载失败");
   }
@@ -281,15 +290,15 @@ async function handleSave() {
     if (isPublishedPost.value) {
       await postApi.saveDraft(slug.value, { ...form.value, status: "published" });
       hasDraft.value = true;
-      editorRef.value?.clearDraft();
+      clearActiveDraft();
       Toast.success("内容已保存，但还未发布");
     } else if (isEdit.value) {
       await postApi.update(slug.value, { ...form.value, status: "draft" });
-      editorRef.value?.clearDraft();
+      clearActiveDraft();
       Toast.success("保存成功");
     } else {
       const { data } = await postApi.create({ ...form.value, status: "draft" });
-      editorRef.value?.clearDraft();
+      clearActiveDraft();
       Toast.success("保存成功");
       // 转入编辑模式，后续保存走更新
       router.replace(`/posts/edit/${data.slug}`);
@@ -311,7 +320,7 @@ async function handlePublish() {
     } else {
       await postApi.create({ ...form.value, status: "published" });
     }
-    editorRef.value?.clearDraft();
+    clearActiveDraft();
     Toast.success("发布成功");
     router.push("/posts");
   } catch (e: any) {
@@ -332,7 +341,7 @@ function handleDiscardDraft() {
         await postApi.discardDraft(slug.value);
         hasDraft.value = false;
         await loadPost();
-        editorRef.value?.clearDraft();
+        clearActiveDraft();
         Toast.success("已放弃草稿");
       } catch (e: any) {
         Toast.error(e.response?.data?.error || "操作失败");
@@ -340,12 +349,6 @@ function handleDiscardDraft() {
     },
   });
 }
-
-const fieldCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
-const labelCls = "block text-xs text-gray-500 mb-1 dark:text-gray-400";
-const chipCls =
-  "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-primary/15 hover:text-secondary transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary/20 dark:hover:text-primary";
 </script>
 
 <template>
@@ -356,29 +359,32 @@ const chipCls =
       </template>
       <template #actions>
         <div class="flex items-center gap-2">
-          <!-- 编辑器模式切换（与工具栏三态按钮同步） -->
-          <div class="group flex cursor-pointer items-center gap-1.5 rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700">
-            <Icon icon="ri:edit-box-line" class="text-base text-gray-600 dark:text-gray-400" />
+          <!-- 编辑器选择（富文本/Markdown）：Halo 风轻量胶囊下拉 -->
+          <div class="relative flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 transition-colors hover:border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+            <Icon icon="ri:edit-box-line" class="text-base text-gray-400" />
+            <select
+              :value="editorKind"
+              @change="onEditorKindSelect"
+              class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+              title="切换编辑器"
+            >
+              <option value="rich">富文本编辑器</option>
+              <option value="markdown">Markdown 编辑器</option>
+            </select>
+            <Icon icon="ri:arrow-down-s-line" class="pointer-events-none absolute right-1.5 text-base text-gray-400" />
+          </div>
+          <!-- Markdown 模式下的视图三态切换（与工具栏同步） -->
+          <div v-if="editorKind === 'markdown'" class="relative flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
             <select
               :value="editorMode"
               @change="onEditorModeSelect"
-              class="cursor-pointer select-none whitespace-nowrap border-0 bg-transparent text-sm text-gray-600 outline-none group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-gray-100"
-              title="切换编辑器模式"
+              class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+              title="切换视图模式"
             >
               <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
             </select>
+            <Icon icon="ri:arrow-down-s-line" class="pointer-events-none absolute right-1.5 text-base text-gray-400" />
           </div>
-          <VButton size="sm" :title="fullscreen ? '退出全屏' : '全屏编辑'" @click="toggleFullscreen">
-            <template #icon>
-              <Icon :icon="fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="h-full w-full" />
-            </template>
-          </VButton>
-          <VButton v-if="isEdit" size="sm" @click="revisionOpen = true">
-            <template #icon>
-              <Icon icon="ri:history-line" class="h-full w-full" />
-            </template>
-            版本历史
-          </VButton>
           <VButton @click="router.push('/posts')">取消</VButton>
           <VButton :loading="saving" @click="handleSave">
             <template #icon>
@@ -399,8 +405,7 @@ const chipCls =
     <!-- 草稿头条幅：已发布文章存在已保存未发布的内容 -->
     <div
       v-if="hasDraft && isPublishedPost"
-      class="mx-0 mt-4 flex items-center justify-between gap-3 border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 md:mx-4 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400"
-      style="border-radius: 4px"
+      class="mx-0 mt-4 flex items-center justify-between gap-3 rounded-base border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800 md:mx-4 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400"
     >
       <span class="flex items-center gap-2">
         <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
@@ -414,189 +419,82 @@ const chipCls =
       </button>
     </div>
 
-    <div class="m-0 md:m-4">
-    <div class="grid grid-cols-1 gap-6" :class="fullscreen ? 'lg:grid-cols-1' : 'lg:grid-cols-3'">
-      <!-- Editor main -->
-      <div :class="['space-y-4', fullscreen ? '' : 'lg:col-span-2']">
-        <input
-          v-model="form.title"
-          placeholder="文章标题"
-          class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
-        />
-        <MarkdownEditor
-          ref="editorRef"
-          v-model="form.content_md"
-          :storage-key="'post:' + (slug || 'new')"
-          @save="handleSave"
-          @mode-change="(m: any) => (editorMode = m)"
-        />
+    <div class="m-0 space-y-4 md:m-4">
+      <!-- 顶部全宽工具栏（Halo 式） -->
+      <EditorToolbar
+        :kind="editorKind"
+        :mode="editorMode"
+        :sidebar-open="sidebarOpen"
+        :is-edit="isEdit"
+        :fullscreen="fullscreen"
+        :active-states="toolbarActive"
+        @format="onFormat"
+        @insert="onInsert"
+        @upload="onUpload"
+        @pick="onPick"
+        @update:mode="setEditorMode"
+        @toggle-sidebar="toggleSidebar"
+        @open-ai="aiOpen = true"
+        @preview="handlePreview"
+        @toggle-fullscreen="toggleFullscreen"
+        @open-revision="revisionOpen = true"
+      />
+
+      <!-- 主编辑区 + 右侧面板 -->
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div class="min-w-0 flex-1 space-y-4">
+          <input
+            v-model="form.title"
+            placeholder="文章标题"
+            class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
+          />
+          <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
+          <RichTextEditor
+            v-if="editorKind === 'rich'"
+            ref="richRef"
+            v-model="form.content_md"
+            :storage-key="'post:' + (slug || 'new')"
+            @save="handleSave"
+          />
+          <MarkdownEditor
+            v-else
+            ref="editorRef"
+            v-model="form.content_md"
+            :toolbar="false"
+            :storage-key="'post:' + (slug || 'new')"
+            @save="handleSave"
+            @mode-change="(m: any) => (editorMode = m)"
+          />
+        </div>
+
+        <!-- 右侧大纲/详情面板（工具栏按钮控制收起） -->
+        <div
+          v-show="sidebarOpen"
+          class="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-80 xl:w-96"
+        >
+          <EditorSidebar
+            :form="form"
+            :categories="categories"
+            :tags="tags"
+            @jump="onJump"
+            @insert="onInsert"
+            @open-cover-picker="coverPickerOpen = true"
+            @slug-edited="slugManuallyEdited = true"
+          />
+        </div>
       </div>
-
-      <!-- Settings sidebar（全屏时隐藏） -->
-      <div v-show="!fullscreen" class="space-y-4">
-        <CollapsibleSection title="发布设置" icon="ri:settings-3-line">
-          <div>
-            <label :class="labelCls">别名 (Slug)</label>
-            <input v-model="form.slug" :class="fieldCls" @input="slugManuallyEdited = true" />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">用于文章 URL，留空保存时从标题自动生成</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="checkbox" v-model="form.pinned" id="pinned" class="rounded" />
-            <label for="pinned" class="text-sm text-gray-600 dark:text-gray-400">置顶</label>
-          </div>
-          <!-- 作者选择（Spec 38 Wave 5）：authors 为空时不渲染 -->
-          <div v-if="Object.keys(authorOptions).length">
-            <label :class="labelCls">作者</label>
-            <select v-model="form.author" :class="fieldCls">
-              <option value="">默认（站长）</option>
-              <option v-for="(info, id) in authorOptions" :key="id" :value="id">{{ info.name }}</option>
-            </select>
-          </div>
-          <div>
-            <label :class="labelCls">定时发布</label>
-            <input v-model="form.publish_at" type="datetime-local" :class="fieldCls" />
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="分类与标签" icon="ri:price-tag-3-line">
-          <div>
-            <label :class="labelCls">分类</label>
-            <input v-model="form.category" :class="fieldCls" />
-            <div v-if="categories.length" class="flex flex-wrap gap-1 mt-1.5">
-              <button
-                v-for="c in categories"
-                :key="c"
-                type="button"
-                @click="pickCategory(c)"
-                :class="[chipCls, form.category === c && '!bg-primary/20 !text-secondary dark:!bg-primary/25 dark:!text-primary']"
-              >{{ c }}</button>
-            </div>
-          </div>
-          <div>
-            <label :class="labelCls">专栏</label>
-            <input v-model="form.topic" :class="fieldCls" />
-          </div>
-          <div>
-            <label :class="labelCls">标签（逗号分隔）</label>
-            <input v-model="form.tags" :class="fieldCls" />
-            <div v-if="tags.length" class="flex flex-wrap gap-1 mt-1.5">
-              <button
-                v-for="t in tags"
-                :key="t"
-                type="button"
-                @click="pickTag(t)"
-                :class="chipCls"
-              >{{ t }}</button>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="其他" icon="ri:more-line">
-          <div>
-            <label :class="labelCls">摘要</label>
-            <textarea v-model="form.excerpt" rows="3" :class="fieldCls + ' resize-y'"></textarea>
-          </div>
-          <div>
-            <label :class="labelCls">封面 URL</label>
-            <div class="flex gap-1.5">
-              <input v-model="form.cover" :class="fieldCls + ' flex-1 min-w-0'" />
-              <button type="button" @click="coverPickerOpen = true" title="从图床选择"
-                class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">选择</button>
-              <button type="button" @click="fetchRandomCover" title="随机封面图（picsum.photos）"
-                class="shrink-0 px-2.5 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">随机</button>
-            </div>
-          </div>
-          <div>
-            <label :class="labelCls">阅读密码</label>
-            <input v-model="form.password" type="password" :class="fieldCls" />
-          </div>
-        </CollapsibleSection>
-
-        <!-- 文章级 SEO（Spec 42）：留空回退站点默认/摘要 -->
-        <CollapsibleSection title="SEO" icon="ri:search-eye-line" :default-open="false">
-          <div>
-            <label :class="labelCls">Meta Description</label>
-            <textarea v-model="form.meta_description" rows="3" :class="fieldCls + ' resize-y'"></textarea>
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">留空时依次回退：站点默认 description → 文章摘要</p>
-          </div>
-          <div>
-            <label :class="labelCls">Meta Keywords（逗号分隔）</label>
-            <input v-model="form.meta_keywords" :class="fieldCls" />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">留空时使用站点默认 keywords</p>
-          </div>
-        </CollapsibleSection>
-
-        <!-- 标签插件面板（Spec 29） -->
-        <CollapsibleSection title="标签插件" icon="ri:puzzle-line" :default-open="false">
-          <div class="flex flex-wrap gap-1 mb-2">
-            <button
-              type="button"
-              @click="pluginCat = '全部'"
-              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === '全部' ? 'bg-secondary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
-            >全部</button>
-            <button
-              v-for="c in PLUGIN_CATEGORIES"
-              :key="c"
-              type="button"
-              @click="pluginCat = c"
-              :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === c ? 'bg-secondary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300']"
-            >{{ c }}</button>
-          </div>
-          <select
-            :value="selectedPlugin?.name"
-            @change="selectPlugin(plugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
-            :class="fieldCls"
-          >
-            <option :value="undefined" disabled>选择插件…</option>
-            <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>
-          </select>
-
-          <div v-if="selectedPlugin" class="mt-3 space-y-3">
-            <PluginParamForm
-              v-if="selectedPlugin.form"
-              :plugin="selectedPlugin"
-              :model-value="pluginCode"
-              @update:model-value="onPluginCode"
-            />
-            <div v-else>
-              <label :class="labelCls">示例（可编辑）</label>
-              <textarea
-                v-model="pluginCode"
-                @input="schedulePluginPreview()"
-                rows="4"
-                spellcheck="false"
-                :class="fieldCls + ' resize-y font-mono text-xs leading-relaxed'"
-              ></textarea>
-            </div>
-
-            <div>
-              <label :class="labelCls">预览<span v-if="pluginRendering" class="ml-1 text-gray-400">渲染中…</span></label>
-              <div class="rounded-lg border border-gray-200 overflow-hidden dark:border-gray-700">
-                <iframe
-                  v-if="pluginPreviewHtml"
-                  :srcdoc="pluginSrcdoc"
-                  class="w-full border-0 bg-white"
-                  style="height: 200px"
-                  sandbox="allow-same-origin allow-scripts"
-                ></iframe>
-                <p v-else class="px-3 py-4 text-center text-xs text-gray-400">填写参数后预览</p>
-              </div>
-            </div>
-
-            <VButton
-              type="secondary"
-              block
-              :disabled="!pluginCode"
-              @click="insertPlugin"
-            >插入到正文</VButton>
-          </div>
-          <p v-else class="text-xs text-gray-400 dark:text-gray-500">选择插件后可编辑参数并插入正文。</p>
-        </CollapsibleSection>
-      </div>
-    </div>
     </div>
 
     <AttachmentPickerModal :open="coverPickerOpen" @select="(url: string) => { form.cover = url; coverPickerOpen = false; }" @close="coverPickerOpen = false" />
+
+    <AiGenerateModal
+      :open="aiOpen"
+      :form="form"
+      :categories="categories"
+      :tags="tags"
+      @close="aiOpen = false"
+      @apply="applyAi"
+    />
 
     <RevisionPanel
       :open="revisionOpen"

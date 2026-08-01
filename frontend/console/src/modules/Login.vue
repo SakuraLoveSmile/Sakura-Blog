@@ -95,8 +95,7 @@ function backToStep1() {
             type="text"
             placeholder="用户名"
             autocomplete="username"
-            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-            style="border-radius: 4px"
+            class="w-full rounded-base border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
           />
         </div>
         <div>
@@ -106,8 +105,7 @@ function backToStep1() {
             placeholder="请输入管理密码"
             autocomplete="current-password"
             :autofocus="!username"
-            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-            style="border-radius: 4px"
+            class="w-full rounded-base border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
           />
         </div>
 
@@ -133,8 +131,7 @@ function backToStep1() {
             placeholder="6 位验证码"
             autocomplete="one-time-code"
             autofocus
-            class="w-full border border-gray-300 bg-white px-3 py-2.5 text-center text-lg tracking-[0.5em] text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-            style="border-radius: 4px"
+            class="w-full rounded-base border border-gray-300 bg-white px-3 py-2.5 text-center text-lg tracking-[0.5em] text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
           />
         </div>
 

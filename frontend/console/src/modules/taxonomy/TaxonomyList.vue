@@ -184,8 +184,7 @@ onMounted(load);
               v-model="catColors[c.name]"
               placeholder="#RRGGBB"
               maxlength="7"
-              class="w-20 border border-gray-200 px-2 py-1 font-mono text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              style="border-radius: 4px"
+              class="w-20 rounded-base border border-gray-200 px-2 py-1 font-mono text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
             />
             <span class="text-xs text-gray-400 dark:text-gray-500">{{ c.count }} 篇</span>
             <button
@@ -223,8 +222,7 @@ onMounted(load);
                 <input
                   v-model="mergeTarget"
                   placeholder="合并到（目标标签）"
-                  class="border border-gray-200 px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                  style="border-radius: 4px"
+                  class="rounded-base border border-gray-200 px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
                 />
                 <VButton size="sm" type="secondary" @click="confirmMerge">确认合并</VButton>
                 <VButton size="sm" @click="cancelMerge">取消</VButton>

@@ -11,7 +11,7 @@ import (
 )
 
 // getSettings GET /api/v1/settings：返回全部可编辑分段的原始 JSON。
-// 敏感字段脱敏：comments.notify.password 非空时返回 "****"。
+// 敏感字段脱敏：comments.notify.password / ai.api_key 非空时返回 "****"。
 // 额外注入 site.yml 的 authors 段（非 settings 表），供 Console 文章编辑下拉使用。
 func (h *Handler) getSettings(c *gin.Context) {
 	secs, err := config.LoadSectionsJSON(h.store)
@@ -39,6 +39,18 @@ func (h *Handler) getSettings(c *gin.Context) {
 			}
 		}
 	}
+	// 脱敏 ai.api_key
+	if raw, ok := secs["ai"]; ok {
+		var ai map[string]any
+		if json.Unmarshal(raw, &ai) == nil {
+			if key, _ := ai["api_key"].(string); key != "" {
+				ai["api_key"] = "****"
+				if b, err := json.Marshal(ai); err == nil {
+					secs["ai"] = json.RawMessage(b)
+				}
+			}
+		}
+	}
 	c.JSON(http.StatusOK, secs)
 }
 
@@ -54,6 +66,10 @@ func (h *Handler) updateSection(c *gin.Context) {
 	// comments 段 password 保留逻辑
 	if section == "comments" {
 		raw = h.preservePassword(raw)
+	}
+	// ai 段 api_key 保留逻辑（脱敏回写不覆盖原 Key）
+	if section == "ai" {
+		raw = h.preserveAIKey(raw)
 	}
 	if err := config.SaveSection(h.store, h.site, section, raw); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -90,6 +106,33 @@ func (h *Handler) preservePassword(raw []byte) []byte {
 		return raw
 	}
 	notify["password"] = storedNotify["password"]
+	if b, err := json.Marshal(incoming); err == nil {
+		return b
+	}
+	return raw
+}
+
+// preserveAIKey 若提交的 ai.api_key 为空或 "****"，从已存配置中恢复原 Key。
+func (h *Handler) preserveAIKey(raw []byte) []byte {
+	var incoming map[string]any
+	if json.Unmarshal(raw, &incoming) != nil {
+		return raw
+	}
+	key, _ := incoming["api_key"].(string)
+	if key != "" && key != "****" {
+		return raw // 用户填了新 Key，直接用
+	}
+	existing, err := h.store.GetSetting("ai")
+	if err != nil || existing == "" {
+		return raw
+	}
+	var stored map[string]any
+	if json.Unmarshal([]byte(existing), &stored) != nil {
+		return raw
+	}
+	if key == "****" || key == "" {
+		incoming["api_key"] = stored["api_key"]
+	}
 	if b, err := json.Marshal(incoming); err == nil {
 		return b
 	}

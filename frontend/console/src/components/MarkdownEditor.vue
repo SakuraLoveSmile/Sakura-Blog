@@ -3,13 +3,20 @@ import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi, attachmentApi } from "@/api";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
+import { useLocalDraft } from "@/composables/useLocalDraft";
 
 // 可复用 Markdown 编辑器：工具栏 + 分屏实时预览（后端 goldmark 渲染）
 // + 图片粘贴/拖拽直传 + 快捷键 + localStorage 草稿保护。
-const props = defineProps<{
-  modelValue: string;
-  storageKey?: string;
-}>();
+// toolbar=false 时隐藏内置工具栏，由宿主页面通过 expose 的动作自建工具栏（如 PostEditor）。
+// 注意：Boolean prop 缺省会被 Vue 转为 false，必须用 withDefaults 默认 true 保证老调用方不受影响。
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    storageKey?: string;
+    toolbar?: boolean;
+  }>(),
+  { storageKey: undefined, toolbar: true }
+);
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
@@ -29,10 +36,14 @@ function loadMode(): ViewMode {
 const mode = ref<ViewMode>(loadMode());
 const rendering = ref(false);
 const pickerOpen = ref(false);
-const draftBanner = ref(false);
 const uploadError = ref("");
 
-const draftKey = () => (props.storageKey ? `draft:${props.storageKey}` : "");
+// 本地草稿保护（与 RichTextEditor 共用同一 storageKey 草稿）
+const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft } = useLocalDraft({
+  storageKey: props.storageKey,
+  getValue: () => props.modelValue,
+  setValue: (v) => emit("update:modelValue", v),
+});
 
 // ---------- iframe 沙箱预览：引入前台全量样式（main.css/tag-plugins.css/highlight.css），
 // 与 PluginLibrary.vue 的 srcdoc 预览同模式；标签插件/代码高亮/KaTeX 与前台完全一致，
@@ -195,50 +206,10 @@ watch(
   }
 );
 
-// ---------- 本地草稿保护（防抖 2s 落 localStorage） ----------
-
-let draftTimer: ReturnType<typeof setTimeout> | undefined;
-
-function scheduleDraft() {
-  const key = draftKey();
-  if (!key) return;
-  clearTimeout(draftTimer);
-  draftTimer = setTimeout(() => {
-    localStorage.setItem(key, props.modelValue);
-  }, 2000);
-}
-
-function clearDraft() {
-  clearTimeout(draftTimer);
-  const key = draftKey();
-  if (key) localStorage.removeItem(key);
-}
-
-function restoreDraft() {
-  const key = draftKey();
-  if (!key) return;
-  const draft = localStorage.getItem(key);
-  if (draft !== null) emit("update:modelValue", draft);
-  draftBanner.value = false;
-}
-
-function discardDraft() {
-  clearDraft();
-  draftBanner.value = false;
-}
-
-onMounted(() => {
-  const key = draftKey();
-  if (!key) return;
-  const draft = localStorage.getItem(key);
-  if (draft !== null && draft !== "" && draft !== props.modelValue) {
-    draftBanner.value = true;
-  }
-});
+// ---------- 本地草稿保护（逻辑已抽到 useLocalDraft composable） ----------
 
 onBeforeUnmount(() => {
   clearTimeout(previewTimer);
-  clearTimeout(draftTimer);
   clearTimeout(syncReleaseTimer);
 });
 
@@ -292,13 +263,52 @@ function insertBlock(text: string) {
   updateValue(next, start + text.length, start + text.length);
 }
 
-// 对外暴露：草稿清理 + 光标处插入（供标签插件面板一键插入 shortcode，Spec 29）+ 模式切换（页头下拉同步）
-defineExpose({ clearDraft, insertBlock, setMode, getMode: () => mode.value });
+// 按行号滚动定位（供右侧大纲面板点击跳转）：光标置于行首，编辑区按行比例滚动，
+// 预览区在分屏模式下由 scroll 事件自动同步；仅预览模式直接按比例滚 iframe。
+function scrollToLine(line: number) {
+  const lines = props.modelValue.split("\n");
+  const total = Math.max(lines.length, 1);
+  const ratio = Math.min(line / total, 1);
+  if (mode.value !== "preview") {
+    const ta = textareaRef.value;
+    if (!ta) return;
+    let offset = 0;
+    for (let i = 0; i < line && i < lines.length; i++) offset += lines[i].length + 1;
+    ta.focus();
+    ta.setSelectionRange(offset, offset);
+    ta.scrollTop = ratio * (ta.scrollHeight - ta.clientHeight);
+  } else {
+    const el = iframeRef.value?.contentDocument?.scrollingElement as HTMLElement | null;
+    if (el) el.scrollTop = ratio * (el.scrollHeight - el.clientHeight);
+  }
+}
+
+function openImageUpload() {
+  fileInputRef.value?.click();
+}
+
+function openImagePicker() {
+  pickerOpen.value = true;
+}
+
+// 对外暴露：草稿清理 + 选区动作/插入 + 模式切换 + 滚动定位，供 PostEditor 外置工具栏与大纲面板调用
+defineExpose({
+  clearDraft,
+  insertBlock,
+  wrapSelection,
+  prefixLines,
+  setMode,
+  getMode: () => mode.value,
+  scrollToLine,
+  openImageUpload,
+  openImagePicker,
+});
 
 const tableTemplate =
   "\n| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |\n";
 
-const toolbar = [
+// 内置工具栏动作定义（命名避开 toolbar prop）
+const toolbarActions = [
   { icon: "ri:bold", title: "加粗 (Cmd/Ctrl+B)", action: () => wrapSelection("**", "**", "加粗文本") },
   { icon: "ri:italic", title: "斜体 (Cmd/Ctrl+I)", action: () => wrapSelection("*", "*", "斜体文本") },
   { icon: "ri:strikethrough", title: "删除线", action: () => wrapSelection("~~", "~~", "删除线") },
@@ -415,10 +425,10 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
       </span>
     </div>
 
-    <!-- 工具栏 -->
-    <div class="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 flex-wrap dark:border-gray-600">
+    <!-- 工具栏（toolbar=false 时由宿主页面外置） -->
+    <div v-if="toolbar" class="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 flex-wrap dark:border-gray-600">
       <button
-        v-for="tool in toolbar"
+        v-for="tool in toolbarActions"
         :key="tool.icon"
         type="button"
         :title="tool.title"

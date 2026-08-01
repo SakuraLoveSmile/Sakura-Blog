@@ -23,7 +23,7 @@ function toggleFullscreen() {
 }
 
 const inputCls =
-  "w-full border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
 
 onMounted(async () => {
   if (isNew.value) return;
@@ -78,19 +78,18 @@ async function handleSave() {
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">标题</label>
-            <input v-model="form.title" :class="inputCls" style="border-radius: 4px" />
+            <input v-model="form.title" :class="inputCls" />
           </div>
           <div>
             <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Slug</label>
-            <input v-model="form.slug" :class="inputCls" style="border-radius: 4px" />
+            <input v-model="form.slug" :class="inputCls" />
           </div>
         </div>
         <div class="mt-4">
           <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">状态</label>
           <select
             v-model="form.status"
-            class="w-40 border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            style="border-radius: 4px"
+            class="w-40 rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
           >
             <option value="draft">草稿</option>
             <option value="published">发布</option>

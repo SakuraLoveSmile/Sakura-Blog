@@ -152,6 +152,21 @@ export const attachmentGroupApi = {
 // --- Markdown 预览 ---
 export const previewApi = {
   render: (markdown: string) => http.post("/preview/markdown", { markdown }),
+  /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
+  createPostPreview: (form: Record<string, unknown>) =>
+    http.post("/preview/post", form),
+};
+
+// --- AI 属性生成（OpenAI 兼容代理，配置在 设置 → AI） ---
+export interface AiGeneratePayload {
+  fields: string[];
+  title: string;
+  content: string;
+  categories: string[];
+  tags: string[];
+}
+export const aiApi = {
+  generate: (payload: AiGeneratePayload) => http.post("/ai/generate", payload),
 };
 
 // --- 备份与导出 ---
@@ -222,6 +237,21 @@ export const linkApi = {
   update: (id: number, data: Record<string, unknown>) =>
     http.put(`/links/${id}`, data),
   delete: (id: number) => http.delete(`/links/${id}`),
+  /** 并发检测各友链可达性，返回 items: [{id, ok, status}]（status 为 HTTP 状态码，0=无法访问） */
+  check: () => http.post("/links/check"),
+};
+
+// --- 友链 RSS 订阅阅读器 ---
+export const subscriptionApi = {
+  sources: () => http.get("/subscriptions"),
+  articles: (params: { feed?: string; filter?: string; page?: number }) =>
+    http.get("/subscriptions/articles", { params }),
+  markRead: (id: number, read: boolean) => http.post("/subscriptions/read", { id, read }),
+  markAllRead: (feed?: string) =>
+    http.post("/subscriptions/read-all", null, { params: feed ? { feed } : {} }),
+  toggleFlag: (id: number, flag: "favorite" | "later", value: boolean) =>
+    http.post("/subscriptions/flag", { id, flag, value }),
+  refresh: () => http.post("/subscriptions/refresh"),
 };
 
 // --- Taxonomy (categories / tags) ---
@@ -304,4 +334,29 @@ export const notebookApi = {
     http.put(`/notes/${id}`, data),
   deleteNote: (id: number) => http.delete(`/notes/${id}`),
   getTags: () => http.get("/note-tags"),
+};
+
+// --- 功能模块（manifest + 启停） ---
+export const moduleApi = {
+  /** 全部模块 meta + 启停状态 */
+  list: () => http.get("/modules"),
+  /** 启用/禁用模块 */
+  toggle: (id: string, enabled: boolean) => http.put(`/modules/${id}`, { enabled }),
+};
+
+// --- SEO 工具集模块 ---
+export const seoApi = {
+  getSettings: () => http.get("/seo/settings"),
+  saveSettings: (data: Record<string, unknown>) => http.put("/seo/settings", data),
+  overview: () => http.get("/seo/overview"),
+  analyze: (url: string) => http.post("/seo/analyze", { url }),
+  crawlerAnalysis: (range: string) => http.get("/seo/crawlers/analysis", { params: { range } }),
+  crawlerLogs: (params: { page?: number; size?: number; engine?: string }) =>
+    http.get("/seo/crawlers/logs", { params }),
+  trafficAnalysis: (range: string) => http.get("/seo/traffic/analysis", { params: { range } }),
+  trafficLanding: (range: string) => http.get("/seo/traffic/landing", { params: { range } }),
+  pushManual: (urls: string[]) => http.post("/seo/push", { urls }),
+  pushLogs: (params?: { page?: number; size?: number; engine?: string; status?: string }) =>
+    http.get("/seo/push/logs", { params }),
+  clearPushLogs: () => http.delete("/seo/push/logs"),
 };

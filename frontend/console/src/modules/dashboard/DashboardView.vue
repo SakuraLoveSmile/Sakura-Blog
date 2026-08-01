@@ -117,8 +117,7 @@ function onDragEnd() {
       <!-- 编辑态提示 -->
       <div
         v-if="editor.editing"
-        class="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400"
-        style="border-radius: 4px"
+        class="flex items-center gap-2 rounded-base border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400"
       >
         <Icon icon="ri:drag-move-2-line" class="text-base" />
         编辑模式：拖拽部件调整顺序，点击右上角按钮移除部件，完成后记得保存
@@ -128,8 +127,7 @@ function onDragEnd() {
       <router-link
         v-if="!editor.editing && stats.comment_pending > 0"
         to="/comments"
-        class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
-        style="border-radius: 4px"
+        class="flex items-center gap-2 rounded-base border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400"
       >
         <Icon icon="ri:error-warning-line" class="text-base" />
         有 {{ stats.comment_pending }} 条评论待审核
@@ -177,8 +175,7 @@ function onDragEnd() {
       <!-- 空布局占位 -->
       <div
         v-if="(loaded || editor.editing) && !items.length"
-        class="flex flex-col items-center gap-3 rounded border border-dashed border-gray-300 py-16 text-gray-400 dark:border-gray-600"
-        style="border-radius: 4px"
+        class="flex flex-col items-center gap-3 rounded-base border border-dashed border-gray-300 py-16 text-gray-400 dark:border-gray-600"
       >
         <Icon icon="ri:layout-grid-line" class="text-3xl" />
         <p class="text-sm">仪表盘暂无部件</p>

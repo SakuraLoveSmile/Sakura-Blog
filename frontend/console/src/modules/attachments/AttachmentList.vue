@@ -381,8 +381,7 @@ watch(kindFilter, (v) => {
                       v-model="keyword"
                       placeholder="搜索文件名..."
                       type="text"
-                      class="w-48 border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      style="border-radius: 4px"
+                      class="w-48 rounded-base border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                     />
                     <FilterTag v-if="activeGroup !== undefined" @close="selectGroup(undefined)">
                       分组：{{ activeGroupName }}
@@ -431,9 +430,8 @@ watch(kindFilter, (v) => {
               <div
                 v-for="att in attachments"
                 :key="att.id"
-                class="group relative cursor-pointer overflow-hidden rounded border bg-white transition-shadow hover:shadow-md dark:bg-gray-800"
+                class="group relative cursor-pointer overflow-hidden rounded-base border bg-white transition-shadow hover:shadow-md dark:bg-gray-800"
                 :class="checkSelection(att.id) ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 dark:border-gray-700'"
-                style="border-radius: 4px"
                 @click="openDetail(att)"
               >
                 <!-- 选择框 -->
@@ -492,8 +490,7 @@ watch(kindFilter, (v) => {
         v-model="groupModalName"
         placeholder="分组名称"
         type="text"
-        class="w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-        style="border-radius: 4px"
+        class="w-full rounded-base border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
         @keyup.enter="submitGroup"
       />
       <template #footer>
@@ -531,7 +528,7 @@ watch(kindFilter, (v) => {
     <!-- 详情弹窗 -->
     <VModal v-model:visible="detailVisible" :title="detailItem?.filename" :width="560">
       <template v-if="detailItem">
-        <div class="mb-4 overflow-hidden rounded bg-gray-50 dark:bg-gray-700/50" style="border-radius: 4px">
+        <div class="mb-4 overflow-hidden rounded-base bg-gray-50 dark:bg-gray-700/50">
           <img
             v-if="isImage(detailItem.mime)"
             :src="detailItem.url"
@@ -565,8 +562,7 @@ watch(kindFilter, (v) => {
         <div class="mb-4">
           <label class="mb-1 block text-xs text-gray-400 dark:text-gray-500">引用 URL</label>
           <code
-            class="block select-all break-all rounded bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300"
-            style="border-radius: 4px"
+            class="block select-all break-all rounded-base bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300"
           >{{ detailItem.url }}</code>
         </div>
 
@@ -582,8 +578,7 @@ watch(kindFilter, (v) => {
               <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-gray-400" />
               <span class="text-gray-600 dark:text-gray-300">{{ r.title || r.slug }}</span>
               <span
-                class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400 dark:bg-gray-700 dark:text-gray-500"
-                style="border-radius: 4px"
+                class="rounded-base bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400 dark:bg-gray-700 dark:text-gray-500"
               >{{ r.type === "post" ? "文章" : "页面" }}</span>
             </div>
           </div>
@@ -600,8 +595,7 @@ watch(kindFilter, (v) => {
         <div v-if="deleteRefsLoading" class="mb-3 text-xs text-gray-400">检查引用中...</div>
         <div
           v-else-if="deleteRefs.length > 0"
-          class="mb-3 rounded border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10"
-          style="border-radius: 4px"
+          class="mb-3 rounded-base border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10"
         >
           <p class="mb-1.5 text-xs font-medium text-red-600 dark:text-red-400">
             <Icon icon="ri:alert-line" class="mr-1 inline" />该附件被 {{ deleteRefs.length }} 处引用，删除后将导致裂图：

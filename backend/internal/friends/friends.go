@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	maxPostsPerFeed = 3
+	maxPostsPerFeed = 20
 	fetchTimeout    = 10 * time.Second
 	defaultInterval = time.Hour
 )
@@ -29,6 +29,7 @@ type Post struct {
 	Title     string `json:"title"`
 	Link      string `json:"link"`
 	Published string `json:"published"`
+	Summary   string `json:"summary"` // 摘要（订阅阅读器用）
 }
 
 // Label 友链分类标签（对齐 friends_and_posts.js 的 label.{name,color,hue,saturation,lightness}）。
@@ -61,6 +62,9 @@ type Aggregator struct {
 	client   *http.Client
 	interval time.Duration
 
+	// onArticles 每个友链抓取到文章后的回调（供落库持久化，由 main.go 装配），可空。
+	onArticles func(friendTitle, friendURL string, posts []Post)
+
 	mu    sync.RWMutex
 	cache []Friend
 }
@@ -78,6 +82,11 @@ func New(site *tmpl.Site) *Aggregator {
 	}
 	a.cache = a.buildBase()
 	return a
+}
+
+// SetOnArticles 注册抓取回调（将文章落库）；在 Start 前调用。
+func (a *Aggregator) SetOnArticles(f func(friendTitle, friendURL string, posts []Post)) {
+	a.onArticles = f
 }
 
 // buildBase 从 site.Links 构建友链基础列表（不含抓取到的文章）。
@@ -166,6 +175,10 @@ func (a *Aggregator) refresh() {
 			if t, ok := parseTime(posts[0].Published); ok {
 				fr.latest = t
 			}
+			// 落库持久化（订阅阅读器）：保留已读/收藏/稍后状态
+			if a.onArticles != nil {
+				a.onArticles(fr.Title, fr.URL, posts)
+			}
 		}(f)
 	}
 	wg.Wait()
@@ -203,6 +216,7 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 			Title:     strings.TrimSpace(it.Title),
 			Link:      strings.TrimSpace(it.Link),
 			Published: formatDate(firstNonEmpty(it.PubDate, it.Date)),
+			Summary:   summarize(it.Description),
 		})
 	}
 	// Atom
@@ -212,6 +226,7 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 			Link:  atomLink(e.Links),
 			// 优先 published（原始发布时间），回退 updated（部分生成器如 Hexo 的 updated 为构建时间，全条目相同）
 			Published: formatDate(firstNonEmpty(e.Published, e.Updated)),
+			Summary:   summarize(firstNonEmpty(e.Summary, e.Content)),
 		})
 	}
 	if len(posts) > maxPostsPerFeed {
@@ -225,10 +240,11 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 type feedXML struct {
 	Channel struct {
 		Items []struct {
-			Title   string `xml:"title"`
-			Link    string `xml:"link"`
-			PubDate string `xml:"pubDate"`
-			Date    string `xml:"date"` // dc:date
+			Title       string `xml:"title"`
+			Link        string `xml:"link"`
+			PubDate     string `xml:"pubDate"`
+			Date        string `xml:"date"` // dc:date
+			Description string `xml:"description"`
 		} `xml:"item"`
 	} `xml:"channel"`
 	Entries []struct {
@@ -239,7 +255,34 @@ type feedXML struct {
 		} `xml:"link"`
 		Updated   string `xml:"updated"`
 		Published string `xml:"published"`
+		Summary   string `xml:"summary"`
+		Content   string `xml:"content"`
 	} `xml:"entry"`
+}
+
+// summarize 去 HTML 标签并截断为纯文本摘要（订阅阅读器列表用，上限 ~140 rune）。
+func summarize(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	var b strings.Builder
+	inTag := false
+	for _, r := range raw {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			b.WriteRune(r)
+		}
+	}
+	text := strings.Join(strings.Fields(b.String()), " ")
+	runes := []rune(text)
+	if len(runes) > 140 {
+		return string(runes[:140]) + "…"
+	}
+	return text
 }
 
 // atomLink 取 rel="alternate" 或首个无 rel 的链接 href。

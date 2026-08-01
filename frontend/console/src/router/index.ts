@@ -101,9 +101,32 @@ const router = createRouter({
           component: () => import("@/modules/friends/FriendList.vue"),
         },
         {
+          path: "subscriptions",
+          name: "Subscriptions",
+          component: () => import("@/modules/subscriptions/SubscriptionList.vue"),
+        },
+        {
           path: "plugins",
           name: "Plugins",
           component: () => import("@/modules/plugins/PluginLibrary.vue"),
+        },
+        {
+          path: "modules",
+          name: "Modules",
+          component: () => import("@/modules/modules/ModulesView.vue"),
+        },
+        {
+          path: "seo",
+          component: () => import("@/modules/seo/SeoLayout.vue"),
+          children: [
+            { path: "", redirect: "/seo/overview" },
+            { path: "overview", name: "SeoOverview", component: () => import("@/modules/seo/SeoOverview.vue") },
+            { path: "analysis", name: "SeoAnalysis", component: () => import("@/modules/seo/SeoAnalysis.vue") },
+            { path: "push", name: "SeoPush", component: () => import("@/modules/seo/SeoPush.vue") },
+            { path: "crawlers", name: "SeoCrawlers", component: () => import("@/modules/seo/SeoCrawlers.vue") },
+            { path: "traffic", name: "SeoTraffic", component: () => import("@/modules/seo/SeoTraffic.vue") },
+            { path: "settings", name: "SeoSettings", component: () => import("@/modules/seo/SeoSettings.vue") },
+          ],
         },
         {
           path: "settings",

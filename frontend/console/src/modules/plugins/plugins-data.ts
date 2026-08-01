@@ -188,10 +188,10 @@ export const plugins: PluginMeta[] = [
       { name: "key", desc: "Iconify 图标 key", default: "—" },
       { name: "color", desc: "图标颜色", default: "blue" },
     ],
-    example: "{% icon solar:star-bold color:orange %} 收藏 {% icon solar:heart-bold color:red %} 喜欢",
+    example: "{% icon solar:planet-bold-duotone color:blue %} 星球 {% icon solar:chat-square-like-bold-duotone color:red %} 点赞",
     form: [
-      { key: "key", label: "图标 key", type: "text", role: "positional", default: "solar:star-bold" },
-      { key: "color", label: "颜色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "orange" },
+      { key: "key", label: "图标 key", type: "text", role: "positional", default: "solar:planet-bold-duotone" },
+      { key: "color", label: "颜色", type: "select", role: "named", options: ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"], default: "blue" },
       { key: "text", label: "附文本（可选）", type: "text", role: "positional" },
     ],
   },

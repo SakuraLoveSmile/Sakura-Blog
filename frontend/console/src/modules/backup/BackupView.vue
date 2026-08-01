@@ -233,8 +233,7 @@ onMounted(loadStatus);
 
         <div
           v-if="importResult"
-          class="mt-4 rounded bg-green-50 p-3 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-400"
-          style="border-radius: 4px"
+          class="mt-4 rounded-base bg-green-50 p-3 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-400"
         >
           成功导入 {{ importResult.imported }} 篇：{{ importResult.slugs.join("、") }}
           <template v-if="importResult.skipped.length">
@@ -306,7 +305,7 @@ onMounted(loadStatus);
       </VCard>
 
       <!-- 全量恢复说明 -->
-      <div class="rounded border border-dashed border-gray-300 p-5 dark:border-gray-600" style="border-radius: 4px">
+      <div class="rounded-base border border-dashed border-gray-300 p-5 dark:border-gray-600">
         <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
           <Icon icon="ri:tools-line" />
           离线恢复（备选）

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"blog/internal/config"
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
+	"blog/internal/module"
+	_ "blog/internal/module/seo" // blank import：触发 SEO 模块 init() 自注册
 	"blog/internal/moment"
 	"blog/internal/og"
 	"blog/internal/page"
@@ -256,8 +259,45 @@ func main() {
 		clearOGCache(ogCacheDir)
 	})
 
+	// 功能模块框架：DB 启停状态表 + 注册表 + 管理器。各模块经 blank import 在 init() 自注册。
+	if err := st.EnsureModuleStatesTable(); err != nil {
+		log.Fatalf("ensure module_states table: %v", err)
+	}
+	moduleMgr, err := module.NewManager(st)
+	if err != nil {
+		log.Fatalf("init module manager: %v", err)
+	}
+	moduleDeps := module.Deps{Store: st, Posts: posts, Site: site, Modules: moduleMgr}
+	for _, m := range module.All() {
+		if err := m.Migrate(moduleDeps); err != nil {
+			log.Fatalf("module %s migrate: %v", m.Meta().ID, err)
+		}
+		m.RegisterPublic(r, moduleDeps)
+	}
+	log.Printf("modules: %d registered", len(module.All()))
+
 	// 友链动态聚合：后台定时抓取配置友链（site.yml links 带 rss）的 RSS/Atom 最新文章。
 	friendsAgg := friends.New(site)
+	// 订阅阅读器：友链 RSS 抓取后落库（feed_articles 表），保留已读/收藏/稍后状态。
+	if err := st.EnsureFeedArticlesTable(); err != nil {
+		log.Fatalf("ensure feed_articles table: %v", err)
+	}
+	friendsAgg.SetOnArticles(func(friendTitle, friendURL string, articles []friends.Post) {
+		for _, p := range articles {
+			if p.Title == "error" || p.Title == "empty" || p.Link == "" {
+				continue
+			}
+			_ = st.UpsertFeedArticle(&store.FeedArticle{
+				FriendTitle: friendTitle,
+				FriendURL:   friendURL,
+				Title:       p.Title,
+				Link:        p.Link,
+				Summary:     p.Summary,
+				Published:   p.Published,
+				GUID:        p.Link,
+			})
+		}
+	})
 	friendsAgg.Start()
 
 	// API 侧装配（/api/v1 + 友链聚合/GitHub 代理/评分端点 + 相关表），见 internal/api.Mount。
@@ -268,6 +308,7 @@ func main() {
 			Site:        site,
 			Comments:    commentHandler,
 			Backups:     backupSvc,
+			Modules:     moduleMgr,
 			UploadDir:   app.UploadDir,
 			NotesPath:   filepath.Join(app.Root, "content", "notes.md"),
 			MaxUploadMB: app.MaxUploadMB,
@@ -324,6 +365,52 @@ func main() {
 			return
 		}
 		ws.render404(c)
+	})
+
+	// 发布前预览：/preview/draft/:token。从 api 内存 TTL 快照取当前表单，用前台模板渲染（含 Stellar 主题/侧栏）。
+	// 支持未保存新文章；token 不可猜，服务重启后失效。
+	r.GET("/preview/draft/:token", func(c *gin.Context) {
+		pv, ok := api.GetPostPreview(c.Param("token"))
+		if !ok {
+			ws.render404(c)
+			return
+		}
+		contentHTML, err := posts.Render(pv.ContentMD)
+		if err != nil {
+			log.Printf("render draft preview: %v", err)
+			ws.render500(c)
+			return
+		}
+		title := pv.Title
+		if strings.TrimSpace(title) == "" {
+			title = "预览"
+		}
+		notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
+		data := &tmpl.ViewData{
+			Site: site,
+			Page: &tmpl.Page{
+				Title:   title,
+				Slug:    pv.Slug,
+				Layout:  "post",
+				Type:    "tech",
+				Lang:    "zh-CN",
+				MenuID:  "post",
+				Date:    pv.CreatedAt.Format("2006-01-02"),
+				Excerpt: pv.Excerpt,
+				Topic:   pv.Topic,
+			},
+			Content: notice + template.HTML(contentHTML),
+		}
+		data.TOC = tmpl.ExtractTOC(contentHTML)
+		ws.fillSidebar(data)
+		ws.fillSEO(data, c)
+		html, err := engine.Render("layout/base", data)
+		if err != nil {
+			log.Printf("render draft preview: %v", err)
+			ws.render500(c)
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 	})
 
 	// P0-1：优雅退出——显式 http.Server + 信号监听，SIGINT/SIGTERM 时 drain 进行中请求后关闭 DB。

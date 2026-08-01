@@ -385,6 +385,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 
 	views, _ := h.store.GetViews(newSlug)
+	h.notifySEOPublished(newSlug)
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 

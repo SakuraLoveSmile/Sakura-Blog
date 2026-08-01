@@ -38,6 +38,10 @@
   <meta property="og:description" content="{{.Page.Description}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+  {{- /* 搜索引擎站长验证（SEO 模块）：验证码由 SEO 设置填充 .Site.Verifications */}}
+  {{with index .Site.Verifications "google"}}{{if .}}<meta name="google-site-verification" content="{{.}}">{{end}}{{end}}
+  {{with index .Site.Verifications "bing"}}{{if .}}<meta name="msvalidate.01" content="{{.}}">{{end}}{{end}}
+  {{with index .Site.Verifications "baidu"}}{{if .}}<meta name="baidu-site-verification" content="{{.}}">{{end}}{{end}}
   {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
   {{if and (eq .Page.Layout "post") .Page.Slug}}
   <meta property="og:image" content="/og/{{.Page.Slug}}.png">

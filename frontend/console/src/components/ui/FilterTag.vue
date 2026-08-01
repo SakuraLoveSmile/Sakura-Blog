@@ -9,8 +9,7 @@ defineEmits<{
 
 <template>
   <div
-    class="inline-flex items-center gap-1 rounded bg-gray-200 px-2 py-1 text-xs text-gray-600 dark:bg-gray-600 dark:text-gray-300"
-    style="border-radius: 4px"
+    class="inline-flex items-center gap-1 rounded-base bg-gray-200 px-2 py-1 text-xs text-gray-600 dark:bg-gray-600 dark:text-gray-300"
   >
     <slot />
     <button

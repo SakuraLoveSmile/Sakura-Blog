@@ -41,8 +41,7 @@ function backToDashboard() {
     <div class="m-0 space-y-4 p-4 md:m-4 md:p-0">
       <!-- 说明条 -->
       <div
-        class="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400"
-        style="border-radius: 4px"
+        class="flex items-center gap-2 rounded-base border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400"
       >
         <Icon icon="ri:information-line" class="text-base" />
         点击「添加」把部件加入仪表盘布局，可连续添加多个，完成后返回仪表盘保存

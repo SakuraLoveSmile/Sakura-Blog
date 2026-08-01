@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore, type ThemeMode } from "@/stores/theme";
+import { useModulesStore } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
 import { searchApi, type SearchResultItem } from "@/api";
@@ -11,11 +12,20 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 const theme = useThemeStore();
+const modulesStore = useModulesStore();
 
 const moreMenuVisible = ref(false);
 const profileDropdownOpen = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref("");
+
+// 侧边栏收起状态（批注：左侧边栏希望可以收起来），收起后仅图标模式，状态持久化
+const SIDEBAR_KEY = "console:sidebar-collapsed";
+const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === "1");
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+  localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.value ? "1" : "0");
+}
 
 const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
 
@@ -50,25 +60,36 @@ const navItems: NavItem[] = [
     mobile: true,
     children: [{ path: "/posts/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" }],
   },
-  { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
+  { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true, children: [{ path: "/notes-page", label: "笔记页", icon: "ri:booklet-line", group: "内容" }] },
   { path: "/wiki", label: "文库", icon: "ri:book-2-line", group: "内容" },
   { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
-  { path: "/notes-page", label: "笔记页", icon: "ri:booklet-line", group: "内容" },
   { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
   { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
+  { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
   { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
   { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
   { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统" },
+  { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统" },
   { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统" },
   { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统" },
 ];
+
+// 合并静态导航与已启用模块贡献的菜单项（后者按 path 去重，避免与静态项重复）。
+const allNavItems = computed<NavItem[]>(() => {
+  const paths = new Set(navItems.map((i) => i.path));
+  const dynamic: NavItem[] = modulesStore
+    .enabledNav()
+    .filter((n) => !paths.has(n.path))
+    .map((n) => ({ path: n.path, label: n.label, icon: n.icon, group: n.group }));
+  return [...navItems, ...dynamic];
+});
 
 const minimenus = navItems.filter((i) => i.mobile);
 
 // 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
 const flatNavItems = computed<NavItem[]>(() =>
-  navItems.flatMap((i) => (i.children ? [i, ...i.children] : [i]))
+  allNavItems.value.flatMap((i) => (i.children ? [i, ...i.children] : [i]))
 );
 
 const searchResults = computed(() => {
@@ -183,6 +204,12 @@ function navigateTo(path: string) {
   router.push(path);
 }
 
+// 菜单项激活/展开判定：当前路径匹配该项或其任一子项（子项路径未必以父路径开头，如笔记页在页面下）
+function isNavActive(item: NavItem): boolean {
+  if (route.path.startsWith(item.path)) return true;
+  return !!item.children?.some((c) => route.path.startsWith(c.path));
+}
+
 function onKeydown(e: KeyboardEvent) {
   const { key, ctrlKey, metaKey } = e;
   if (key === "k" && ((ctrlKey && !isMac) || metaKey)) {
@@ -205,7 +232,11 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener("keydown", onKeydown));
+onMounted(() => {
+  document.addEventListener("keydown", onKeydown);
+  // 拉取功能模块 manifest（驱动动态菜单）；已加载则不重复拉
+  if (!modulesStore.loaded) modulesStore.fetch();
+});
 onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 
 function handleLogout() {
@@ -226,53 +257,63 @@ function closeProfileDropdown() {
 
 <template>
   <div class="flex h-screen bg-gray-50 dark:bg-gray-900" @click="closeProfileDropdown">
-    <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-white） -->
-    <aside class="navbar fixed inset-y-0 left-0 z-[999] hidden h-full w-64 flex-col overflow-y-auto bg-white shadow-sm md:flex dark:bg-gray-800">
+    <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-white；支持收起为仅图标的 w-16） -->
+    <aside
+      :class="sidebarCollapsed ? 'w-16' : 'w-64'"
+      class="navbar fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto bg-white shadow-sm transition-[width] duration-200 md:flex dark:bg-gray-800"
+    >
       <!-- Logo -->
       <div class="flex justify-center pb-7 pt-5">
         <a href="/" target="_blank" title="访问首页" class="flex items-center gap-2 transition-all hover:brightness-125">
           <img src="/favicon.svg" alt="Logo" class="h-8 w-8 cursor-pointer select-none" />
-          <span class="text-lg font-bold text-gray-900 dark:text-gray-100">Console</span>
+          <span v-if="!sidebarCollapsed" class="text-lg font-bold text-gray-900 dark:text-gray-100">Console</span>
         </a>
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <!-- 搜索框（对齐 Halo：bg-gray-100 rounded p-2） -->
+        <!-- 搜索框（对齐 Halo：bg-gray-100 rounded p-2；收起时仅图标） -->
         <div class="px-3">
           <div
-            class="flex cursor-pointer items-center rounded bg-gray-100 p-2 text-gray-400 transition-all hover:text-gray-900 dark:bg-gray-700 dark:hover:text-gray-100"
-            style="border-radius: 4px"
+            class="flex cursor-pointer items-center rounded-base bg-gray-100 p-2 text-gray-400 transition-all hover:text-gray-900 dark:bg-gray-700 dark:hover:text-gray-100"
+            :class="{ 'justify-center': sidebarCollapsed }"
+            :title="sidebarCollapsed ? '搜索' : ''"
             @click="openSearch"
           >
-            <span class="mr-3"><Icon icon="ri:search-line" /></span>
-            <span class="flex-1 select-none text-base font-normal">搜索</span>
-            <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
+            <span :class="{ 'mr-3': !sidebarCollapsed }"><Icon icon="ri:search-line" /></span>
+            <template v-if="!sidebarCollapsed">
+              <span class="flex-1 select-none text-base font-normal">搜索</span>
+              <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
+            </template>
           </div>
         </div>
 
-        <!-- 分组菜单（对齐 VMenu/VMenuItem/VMenuLabel） -->
+        <!-- 分组菜单（对齐 VMenu/VMenuItem/VMenuLabel；收起时分组标题改分割线） -->
         <ul class="menu-list space-y-1 p-3">
           <template v-for="group in navGroups" :key="group">
-            <li v-if="group" class="menu-label">{{ group }}</li>
-            <li v-for="item in navItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
+            <li v-if="group && !sidebarCollapsed" class="menu-label">{{ group }}</li>
+            <li v-else-if="group" class="mx-1 my-2 border-t border-gray-100 dark:border-gray-700"></li>
+            <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
               <div
-                :class="{ active: route.path.startsWith(item.path) }"
+                :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
                 class="menu-item-title"
+                :title="sidebarCollapsed ? item.label : ''"
                 @click="navigateTo(item.path)"
               >
-                <span class="menu-icon mr-3 self-center">
+                <span class="menu-icon self-center" :class="{ 'mr-3': !sidebarCollapsed }">
                   <Icon :icon="item.icon" width="20" height="20" />
                 </span>
-                <span class="menu-title flex-1 self-center">{{ item.label }}</span>
-                <span
-                  v-if="item.children?.length"
-                  class="self-center text-gray-400 transition-transform dark:text-gray-500"
-                  :class="{ '-rotate-90': !route.path.startsWith(item.path) }"
-                >
-                  <Icon icon="ri:arrow-down-s-line" />
-                </span>
+                <template v-if="!sidebarCollapsed">
+                  <span class="menu-title flex-1 self-center">{{ item.label }}</span>
+                  <span
+                    v-if="item.children?.length"
+                    class="self-center text-gray-400 transition-transform dark:text-gray-500"
+                    :class="{ '-rotate-90': !isNavActive(item) }"
+                  >
+                    <Icon icon="ri:arrow-down-s-line" />
+                  </span>
+                </template>
               </div>
-              <ul v-if="item.children?.length && route.path.startsWith(item.path)" class="mt-1 space-y-1">
+              <ul v-if="!sidebarCollapsed && item.children?.length && isNavActive(item)" class="mt-1 space-y-1">
                 <li v-for="child in item.children" :key="child.path" class="menu-item">
                   <div
                     :class="{ active: route.path.startsWith(child.path) }"
@@ -291,9 +332,24 @@ function closeProfileDropdown() {
         </ul>
       </div>
 
-      <!-- 底部用户资料区（对齐 Halo profile 70px） -->
+      <!-- 收起/展开切换 -->
+      <div class="px-3 pb-1">
+        <button
+          class="flex w-full items-center rounded-base p-2 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+          :class="{ 'justify-center': sidebarCollapsed }"
+          :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+          @click="toggleSidebar"
+        >
+          <span :class="{ 'mr-3': !sidebarCollapsed }">
+            <Icon :icon="sidebarCollapsed ? 'ri:menu-unfold-line' : 'ri:menu-fold-line'" width="20" height="20" />
+          </span>
+          <span v-if="!sidebarCollapsed" class="select-none text-sm">收起侧边栏</span>
+        </button>
+      </div>
+
+      <!-- 底部用户资料区（对齐 Halo profile 70px；收起时仅头像） -->
       <div class="profile-placeholder">
-        <div class="current-profile">
+        <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center' : 'w-64'">
           <div class="profile-avatar">
             <img
               v-if="auth.user.avatar"
@@ -305,7 +361,7 @@ function closeProfileDropdown() {
               <Icon icon="ri:user-3-line" class="text-lg text-primary" />
             </span>
           </div>
-          <div class="profile-name">
+          <div v-if="!sidebarCollapsed" class="profile-name">
             <div class="flex text-sm font-medium text-gray-900 dark:text-gray-100">{{ auth.user.display_name || "管理员" }}</div>
             <div class="flex">
               <VTag>
@@ -316,7 +372,7 @@ function closeProfileDropdown() {
               </VTag>
             </div>
           </div>
-          <div class="relative self-center">
+          <div v-if="!sidebarCollapsed" class="relative self-center">
             <div
               class="cursor-pointer rounded p-1 transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
@@ -326,8 +382,7 @@ function closeProfileDropdown() {
             <Transition name="dropdown">
               <div
                 v-if="profileDropdownOpen"
-                class="absolute bottom-full right-0 z-30 mb-2 w-48 rounded border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                style="border-radius: 4px"
+                class="absolute bottom-full right-0 z-30 mb-2 w-48 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                 @click.stop
               >
                 <!-- 主题切换 -->
@@ -369,7 +424,7 @@ function closeProfileDropdown() {
     </aside>
 
     <!-- Main content -->
-    <main class="content w-full overflow-y-auto pb-16 md:ml-64 md:pb-0">
+    <main class="content w-full overflow-y-auto pb-16 md:pb-0" :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'">
       <router-view />
       <!-- 页脚（对齐 Halo：Powered by ...） -->
       <footer
@@ -417,9 +472,9 @@ function closeProfileDropdown() {
             <ul class="menu-list space-y-1 p-3">
               <template v-for="group in navGroups" :key="group">
                 <li v-if="group" class="menu-label">{{ group }}</li>
-                <li v-for="item in navItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
+                <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
                   <div
-                    :class="{ active: route.path.startsWith(item.path) }"
+                    :class="{ active: isNavActive(item) }"
                     class="menu-item-title"
                     @click="navigateTo(item.path)"
                   >
@@ -430,12 +485,12 @@ function closeProfileDropdown() {
                     <span
                       v-if="item.children?.length"
                       class="self-center text-gray-400 transition-transform dark:text-gray-500"
-                      :class="{ '-rotate-90': !route.path.startsWith(item.path) }"
+                      :class="{ '-rotate-90': !isNavActive(item) }"
                     >
                       <Icon icon="ri:arrow-down-s-line" />
                     </span>
                   </div>
-                  <ul v-if="item.children?.length && route.path.startsWith(item.path)" class="mt-1 space-y-1">
+                  <ul v-if="item.children?.length && isNavActive(item)" class="mt-1 space-y-1">
                     <li v-for="child in item.children" :key="child.path" class="menu-item">
                       <div
                         :class="{ active: route.path.startsWith(child.path) }"
@@ -462,8 +517,7 @@ function closeProfileDropdown() {
       <div v-if="searchOpen" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh]" @click.self="searchOpen = false">
         <div class="absolute inset-0 bg-gray-500/75" @click="searchOpen = false" />
         <div
-          class="relative mx-4 w-full max-w-md overflow-hidden rounded border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
-          style="border-radius: 4px"
+          class="relative mx-4 w-full max-w-md overflow-hidden rounded-base border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
         >
           <div class="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-700">
             <Icon icon="ri:search-line" class="text-gray-400" />
@@ -650,7 +704,6 @@ function closeProfileDropdown() {
   left: 0;
   bottom: 0;
   display: flex;
-  width: 16rem;
   gap: 0.75rem;
   background: #fff;
   padding: 0.75rem;

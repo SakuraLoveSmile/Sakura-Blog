@@ -25,6 +25,7 @@ const (
 	SectionDashboard = "dashboard" // 仪表盘组件自定义（仅 Console 消费）
 	SectionStyle     = "style"     // 外观样式（Spec 34/47）
 	SectionWidgets   = "widgets"   // 侧边栏组件编排（Spec 33/47）
+	SectionAI        = "ai"        // AI 属性生成（OpenAI 兼容接口配置，仅 Console/后端代理消费）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -51,6 +52,26 @@ type siteBasic struct {
 // adminSection 对应 settings 表 "admin" 段（管理密码，明文存储与 site.yml 现状同安全等级）。
 type adminSection struct {
 	Password string `json:"password"`
+}
+
+// AIConfig 对应 settings 表 "ai" 段：OpenAI 兼容接口配置，供 AI 属性生成代理使用。
+type AIConfig struct {
+	BaseURL string `json:"base_url"`
+	APIKey  string `json:"api_key"`
+	Model   string `json:"model"`
+}
+
+// LoadAI 从 settings 读取 AI 配置（未配置时返回零值）。
+func LoadAI(st *store.Store) (AIConfig, error) {
+	var cfg AIConfig
+	v, err := st.GetSetting(SectionAI)
+	if err != nil || v == "" {
+		return cfg, err
+	}
+	if err := json.Unmarshal([]byte(v), &cfg); err != nil {
+		return AIConfig{}, err
+	}
+	return cfg, nil
 }
 
 // dashboardWidget 对应 settings 表 "dashboard" 段的单个组件配置。
@@ -358,7 +379,7 @@ func KnownSections() []string {
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
 		SectionSEO, SectionInject, SectionDashboard,
-		SectionStyle, SectionWidgets,
+		SectionStyle, SectionWidgets, SectionAI,
 	}
 }
 
@@ -409,6 +430,8 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &tmpl.StyleConfig{}
 	case SectionWidgets:
 		dst = &tmpl.WidgetsConfig{}
+	case SectionAI:
+		dst = &AIConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}

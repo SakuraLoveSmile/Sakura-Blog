@@ -17,7 +17,7 @@ const value = computed(() => stats.value[props.statKey] ?? 0);
 <template>
   <VCard>
     <div class="flex items-center gap-3">
-      <span class="flex h-10 w-10 items-center justify-center rounded bg-gray-100 dark:bg-gray-700" style="border-radius: 4px">
+      <span class="flex h-10 w-10 items-center justify-center rounded-base bg-gray-100 dark:bg-gray-700">
         <Icon :icon="icon" class="text-xl text-gray-600 dark:text-gray-300" />
       </span>
       <div>

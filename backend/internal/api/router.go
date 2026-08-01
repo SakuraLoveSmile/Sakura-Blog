@@ -20,6 +20,7 @@ import (
 	"blog/internal/comment"
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
+	"blog/internal/module"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -37,6 +38,7 @@ type Handler struct {
 	site      *tmpl.Site
 	comments  *comment.Handler
 	backups   *backup.Service
+	modules   *module.Manager
 	uploadDir string
 	notesPath string // content/notes.md 路径（笔记页正文）
 	maxUpload int64  // 单文件上限字节
@@ -59,6 +61,7 @@ type Config struct {
 	Site        *tmpl.Site
 	Comments    *comment.Handler
 	Backups     *backup.Service
+	Modules     *module.Manager
 	UploadDir   string
 	NotesPath   string
 	MaxUploadMB int
@@ -76,6 +79,7 @@ func New(cfg Config) *Handler {
 		site:      cfg.Site,
 		comments:  cfg.Comments,
 		backups:   cfg.Backups,
+		modules:   cfg.Modules,
 		uploadDir: cfg.UploadDir,
 		notesPath: cfg.NotesPath,
 		maxUpload: int64(maxMB) << 20,
@@ -201,6 +205,11 @@ func (h *Handler) Register(r *gin.Engine) {
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		authed.POST("/preview/markdown", h.previewMarkdown)
+		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
+		authed.POST("/preview/post", h.createPostPreview)
+
+		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）
+		authed.POST("/ai/generate", h.aiGenerate)
 
 		// 附件
 		authed.GET("/attachments", h.listAttachments)
@@ -261,6 +270,10 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/settings/:section", h.updateSection)
 		authed.POST("/settings/notify/test", h.testNotify)
 
+		// 功能模块管理（manifest + 启停开关）
+		authed.GET("/modules", h.listModules)
+		authed.PUT("/modules/:id", h.toggleModule)
+
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)
 
@@ -283,6 +296,15 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/links", h.createLink)
 		authed.PUT("/links/:id", h.updateLink)
 		authed.DELETE("/links/:id", h.deleteLink)
+		authed.POST("/links/check", h.checkLinks)
+
+		// 友链 RSS 订阅阅读器
+		authed.GET("/subscriptions", h.listSubscriptions)
+		authed.GET("/subscriptions/articles", h.listSubscriptionArticles)
+		authed.POST("/subscriptions/read", h.markSubscriptionRead)
+		authed.POST("/subscriptions/read-all", h.markAllSubscriptionRead)
+		authed.POST("/subscriptions/flag", h.toggleSubscriptionFlag)
+		authed.POST("/subscriptions/refresh", h.refreshSubscriptions)
 
 		// 文章分享链接
 		authed.GET("/shares", h.listShares)
@@ -306,6 +328,17 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/backup/status", h.backupStatus)
 		authed.POST("/backup/restore", h.restoreBackup)
 		authed.POST("/backup/restore-snapshot", h.restoreSnapshot)
+
+		// 功能模块后台 API：每个已注册模块套自己的 Gate 中间件（禁用即 403），
+		// 在认证组下注册，运行时开关只影响可用性，无需重注册路由。
+		if h.modules != nil {
+			deps := module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}
+			for _, m := range module.All() {
+				id := m.Meta().ID
+				grp := authed.Group("", h.modules.Gate(id))
+				m.RegisterRoutes(grp, deps)
+			}
+		}
 	}
 }
 
