@@ -221,3 +221,44 @@ func TestPaperTag(t *testing.T) {
 		}
 	}
 }
+
+// --- Spec 51 装饰标签测试（poetry / folders）---
+
+func TestPoetryTag(t *testing.T) {
+	out := runShortcodes("{% poetry 静夜思 author:李白 date:唐 footer:录自《唐诗三百首》 %}床前明月光\n疑是地上霜{% endpoetry %}")
+	for _, want := range []string{
+		`class="tag-plugin poetry"`,
+		`<div class="title">静夜思</div>`,
+		`<div class="meta"><span>李白</span><span>唐</span></div>`,
+		`<div class="body">床前明月光疑是地上霜</div>`,
+		`<div class="footer">录自《唐诗三百首》</div>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("poetry output missing %q: %s", want, out)
+		}
+	}
+	// 无参数时 title/meta 不输出，卡片骨架仍在
+	bare := runShortcodes("{% poetry %}正文{% endpoetry %}")
+	if !strings.Contains(bare, `class="tag-plugin poetry"`) || strings.Contains(bare, "<div class=\"title\">") {
+		t.Fatalf("poetry bare output wrong: %s", bare)
+	}
+}
+
+func TestFoldersTag(t *testing.T) {
+	src := "{% folders color:blue %}\n<!-- folder 第一章 -->\n甲。\n<!-- folder 第二章 -->\n乙。\n{% endfolders %}"
+	out := runShortcodes(src)
+	for _, want := range []string{
+		`class="tag-plugin colorful folders"`,
+		`color="blue"`,
+		`<details class="folder" index="0">`,
+		`<summary>第一章</summary>`,
+		`<div class="body">甲。</div>`,
+		`<details class="folder" index="1">`,
+		`<summary>第二章</summary>`,
+		`<div class="body">乙。</div>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("folders output missing %q: %s", want, out)
+		}
+	}
+}

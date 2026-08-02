@@ -1,9 +1,9 @@
 ---
-title: "排版核心验证（行号/grid/hashtag/blockquote + Spec 49 展示容器）"
+title: "排版核心验证（行号/grid/hashtag/blockquote + Spec 49 展示容器 + Spec 51 装饰标签）"
 date: 2026-08-02 16:00:00
 category: "测试"
 tags: [标签插件, 排版, 测试]
-excerpt: "Spec 48：代码块行号、grid 网格、hashtag 标签、blockquote 引用；Spec 49：swiper/banner/quot/chat/navbar/frame 展示容器。"
+excerpt: "Spec 48：代码块行号、grid 网格、hashtag 标签、blockquote 引用；Spec 49：swiper/banner/quot/chat/navbar/frame 展示容器；Spec 51：poetry/paper/reel 文艺卡片、psw/emp/wavy/blur/sub 行内装饰、folders/albums/posters 数据容器。"
 status: draft
 ---
 
@@ -316,3 +316,103 @@ bob:
 {% frame device:macbook %}
 ![screenshot](https://picsum.photos/800/500)
 {% endframe %}
+
+## Poetry 诗词卡片（Spec 51）
+
+### 全参数诗词卡
+
+{% poetry 静夜思 author:李白 date:唐 footer:录自《唐诗三百首》 %}
+床前明月光，
+疑是地上霜。
+举头望明月，
+低头思故乡。
+{% endpoetry %}
+
+### 极简诗词卡（无标题/元信息）
+
+{% poetry %}
+落霞与孤鹜齐飞，
+秋水共长天一色。
+{% endpoetry %}
+
+## Paper 纸张卡片（Spec 51）
+
+### 基础信纸（paragraph/line 标记）
+
+{% paper title:一封家书 author:张三 date:2026-07-01 %}
+<!-- paragraph -->
+见字如面，近来可好？
+<!-- paragraph -->
+家中一切安好，勿念。
+<!-- line right -->
+此致敬礼
+{% endpaper %}
+
+### 带 section 分节与 style:underline
+
+{% paper style:underline title:学习笔记 author:李四 %}
+<!-- section 第一章 -->
+Go 语言并发模型基于 goroutine 与 channel。
+<!-- section 第二章 -->
+SQLite 用 WAL 模式提升并发读写性能。
+{% endpaper %}
+
+## Reel 卷轴卡片（Spec 51）
+
+{% reel 观影手记 author:阿甘 date:2026-07 footer:完 %}
+第 1 帧：开场长镜头扫过小镇。
+第 2 帧：主角踏上旅程。
+第 3 帧：主题曲响起。
+{% endreel %}
+
+## 行内装饰标签（Spec 51）
+
+### psw 密码遮罩（悬停显示）
+
+这里藏着 {% psw 密码内容 %}，鼠标悬停即可显示明文。
+
+### emp 着重强调（下划线+粗体）
+
+这段话里 {% emp 重点强调 %} 一下，其余保持普通样式。
+
+### wavy 波浪线
+
+这里用 {% wavy 波浪线 %} 标注可疑内容。
+
+### blur 模糊（悬停清晰）
+
+剧透警告：{% blur 结局大反转 %}，不想被剧透请别悬停。
+
+### sub/sup 上下角标
+
+化学式 H{% sub 2 %}O，面积 m{% sup 2 %}，彩色下标 X{% sub color:red 1 %}。
+
+## Folders 折叠文件夹组（Spec 51）
+
+### 双组折叠（color 配色）
+
+{% folders color:blue %}
+<!-- folder 第一章：环境搭建 -->
+安装 Go 工具链与 SQLite 驱动。
+<!-- folder 第二章：核心逻辑 -->
+实现 shortcode 正则解析与渲染。
+{% endfolders %}
+
+### 无配色折叠（默认样式）
+
+{% folders %}
+<!-- folder 归档 2025 -->
+去年写的读书笔记。
+<!-- folder 归档 2026 -->
+今年的技术文章。
+{% endfolders %}
+
+## Albums / Posters 卡片（Spec 51）
+
+### albums 专辑卡片（repo 数据源 + size:m）
+
+{% albums repo:user/repo size:m %}
+
+### posters 海报卡片（api 数据源 + size:s）
+
+{% posters api:https://example.com/posters.json size:s %}

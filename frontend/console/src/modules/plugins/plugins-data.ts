@@ -2,7 +2,7 @@
 // 数据源对照 internal/post/shortcode.go 现有实现逐一核对，纯前端静态数据。
 // 插件变更频率低，与 shortcode.go 同步靠人工维护。
 
-export type PluginCategory = "提示标注" | "布局容器" | "媒体播放" | "数据图表" | "GitHub";
+export type PluginCategory = "提示标注" | "布局容器" | "文艺装饰" | "媒体播放" | "数据图表" | "GitHub";
 export type PluginType = "inline" | "block";
 
 export interface PluginParam {
@@ -51,6 +51,7 @@ export interface PluginMeta {
 export const PLUGIN_CATEGORIES: PluginCategory[] = [
   "提示标注",
   "布局容器",
+  "文艺装饰",
   "媒体播放",
   "数据图表",
   "GitHub",
@@ -376,7 +377,7 @@ export const plugins: PluginMeta[] = [
   {
     name: "poetry",
     title: "诗词 Poetry",
-    category: "布局容器",
+    category: "文艺装饰",
     type: "block",
     desc: "居中排版的诗词区块，含标题/作者/日期/页脚。",
     signature: "{% poetry [标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endpoetry %}",
@@ -386,6 +387,96 @@ export const plugins: PluginMeta[] = [
       { name: "footer", desc: "页脚注", default: "—" },
     ],
     example: "{% poetry 静夜思 author:李白 %}\n床前明月光，\n疑是地上霜。\n举头望明月，\n低头思故乡。\n{% endpoetry %}",
+  },
+  {
+    name: "paper",
+    title: "纸张 Paper",
+    category: "文艺装饰",
+    type: "block",
+    desc: "信纸排版卡片，正文可用 <!-- paragraph/section/line --> 标记分段。",
+    signature: "{% paper [style:underline] [title:标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endpaper %}",
+    params: [
+      { name: "style", desc: "标题下划线装饰：underline", default: "—" },
+      { name: "title", desc: "标题", default: "—" },
+      { name: "author", desc: "作者（页脚区）", default: "—" },
+      { name: "date", desc: "日期（页脚区）", default: "—" },
+      { name: "footer", desc: "页脚注", default: "—" },
+    ],
+    example: "{% paper title:一封家书 author:张三 %}\n<!-- paragraph -->\n见字如面。\n<!-- line right -->\n勿念。\n{% endpaper %}",
+  },
+  {
+    name: "reel",
+    title: "卷轴 Reel",
+    category: "文艺装饰",
+    type: "block",
+    desc: "胶片卷轴式卡片，正文按行排列，含标题/作者/日期/页脚。",
+    signature: "{% reel [标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endreel %}",
+    params: [
+      { name: "author", desc: "作者", default: "—" },
+      { name: "date", desc: "日期", default: "—" },
+      { name: "footer", desc: "页脚注", default: "—" },
+    ],
+    example: "{% reel 观影手记 author:阿甘 date:2026-07 %}\n第 1 帧：开场长镜头。\n第 2 帧：主角登场。\n{% endreel %}",
+  },
+  {
+    name: "psw",
+    title: "密码遮罩 Psw",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内密码遮罩，默认模糊隐藏，悬停显示明文。",
+    signature: "{% psw 隐藏文本 %}",
+    params: [],
+    example: "这里是 {% psw 密码内容 %} 遮罩文本。",
+  },
+  {
+    name: "emp",
+    title: "着重强调 Emp",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内着重强调：下划线 + 粗体。",
+    signature: "{% emp 着重文本 %}",
+    params: [],
+    example: "这段话里 {% emp 重点强调 %} 一下。",
+  },
+  {
+    name: "wavy",
+    title: "波浪线 Wavy",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内波浪线装饰文本。",
+    signature: "{% wavy 波浪文本 %}",
+    params: [],
+    example: "这里用 {% wavy 波浪线 %} 标注。",
+  },
+  {
+    name: "blur",
+    title: "模糊 Blur",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内模糊文本，悬停变清晰。",
+    signature: "{% blur 模糊文本 %}",
+    params: [],
+    example: "剧透警告：{% blur 结局大反转 %}。",
+  },
+  {
+    name: "sub",
+    title: "下角标 Sub",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内下标文本，可选彩色。",
+    signature: "{% sub [color:颜色] 下标文本 %}",
+    params: [{ name: "color", desc: "配色：red/orange/yellow/green/cyan/blue/purple/gray", default: "—" }],
+    example: "化学式 H{% sub 2 %}O 与上标 m{% sup 2 %}。",
+  },
+  {
+    name: "sup",
+    title: "上角标 Sup",
+    category: "文艺装饰",
+    type: "inline",
+    desc: "行内上标文本，可选彩色（与 sub 配对）。",
+    signature: "{% sup [color:颜色] 上标文本 %}",
+    params: [{ name: "color", desc: "配色：red/orange/yellow/green/cyan/blue/purple/gray", default: "—" }],
+    example: "面积 m{% sup 2 %}。",
   },
 
   // ==================== 媒体播放 ====================
@@ -490,6 +581,34 @@ export const plugins: PluginMeta[] = [
       { key: "effect", label: "切换效果", type: "select", role: "named", options: ["slide", "fade", "coverflow", "cards"], default: "slide" },
       { key: "content", label: "轮播图片（每行一张 Markdown 图片）", type: "textarea", role: "content", default: "![](https://picsum.photos/600/340?1)\n![](https://picsum.photos/600/340?2)" },
     ],
+  },
+  {
+    name: "albums",
+    title: "专辑卡片 Albums",
+    category: "媒体播放",
+    type: "inline",
+    desc: "方形网格专辑卡片，支持 repo/api 数据服务与 size 尺寸档位。",
+    signature: "{% albums [repo:owner/repo] [api:数据URL] [size:s/m/l/xl/mix] %}",
+    params: [
+      { name: "repo", desc: "GitHub 仓库，自动拼 raw data.json 地址", default: "—" },
+      { name: "api", desc: "数据服务 URL（friends 兼容格式）", default: "—" },
+      { name: "size", desc: "卡片尺寸：s/m/l/xl/mix", default: "s" },
+    ],
+    example: "{% albums api:https://example.com/data.json size:m %}",
+  },
+  {
+    name: "posters",
+    title: "海报卡片 Posters",
+    category: "媒体播放",
+    type: "inline",
+    desc: "竖版海报网格卡片，支持 repo/api 数据服务与 size 尺寸档位。",
+    signature: "{% posters [repo:owner/repo] [api:数据URL] [size:xs/s/m/l/xl/mix] %}",
+    params: [
+      { name: "repo", desc: "GitHub 仓库，自动拼 raw data.json 地址", default: "—" },
+      { name: "api", desc: "数据服务 URL（friends 兼容格式）", default: "—" },
+      { name: "size", desc: "卡片尺寸：xs/s/m/l/xl/mix", default: "xs" },
+    ],
+    example: "{% posters api:https://example.com/posters.json size:s %}",
   },
   {
     name: "copy",
