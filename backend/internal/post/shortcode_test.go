@@ -145,7 +145,7 @@ func TestNavbarTag(t *testing.T) {
 func TestBannerTagExtractsNavbar(t *testing.T) {
 	src := "{% banner 标题 副标题 bg:/bg.png link:https://x.com %}\n{% navbar [Home](/) %}\n{% endbanner %}"
 	out := runShortcodes(src)
-	for _, want := range []string{`class="tag-plugin banner"`, `data-src="/bg.png"`, `tag-plugin navbar`, `<div class="text title">标题</div>`, `<div class="text subtitle">副标题</div>`, `<a class="banner-link" href="https://x.com"></a>`} {
+	for _, want := range []string{`class="tag-plugin banner"`, `style="background-image:url(/bg.png)"`, `tag-plugin navbar`, `<div class="title">标题</div>`, `<div class="subtitle">副标题</div>`, `<a class="banner-link" href="https://x.com">`} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("banner output missing %q: %s", want, out)
 		}

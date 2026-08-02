@@ -375,3 +375,191 @@ div.swiper-slide img {
 .tag-plugin.ds-rating.rated {
   pointer-events: none;
 }
+
+/* ---------- Spec 48: grid 网格容器（对齐 grid.js） ---------- */
+/* 样式在 main.css:5122-5177，此处无需重复定义 */
+
+/* ---------- Spec 48: hashtag 彩色标签（对齐 hashtag.js） ---------- */
+/* 样式在 main.css:5178-5200，此处无需重复定义 */
+
+/* ---------- Spec 48: blockquote 增强引用（对齐 blockquote.js） ---------- */
+/* 样式在 main.css:6174-6182（基础定位）+ 8506-8567（内容区样式），此处无需重复定义 */
+
+/* ---------- Spec 49: banner 横幅容器 ---------- */
+/* 背景图铺满 + 暗色遮罩保证文字可读，内容区居中展示头像/标题/副标题/正文 */
+.tag-plugin.banner {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--card);
+  min-height: 180px;
+  padding: 2rem;
+  margin: 1rem 0;
+}
+.tag-plugin.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+.tag-plugin.banner .banner-link {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+.tag-plugin.banner .banner-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  text-align: center;
+}
+.tag-plugin.banner .banner-content .avatar img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  margin: 0 0 0.35rem;
+}
+.tag-plugin.banner .banner-content .title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.tag-plugin.banner .banner-content .subtitle {
+  font-size: 0.9375rem;
+  opacity: 0.85;
+}
+.tag-plugin.banner .banner-content .body.fs14 {
+  margin-top: 0.5rem;
+}
+.tag-plugin.banner .banner-content .body.fs14 p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.875rem;
+}
+
+/* ---------- Spec 49: navbar 文章内导航（覆盖 main.css:5763 旧单行规则） ---------- */
+/* 旧规则：a+a margin-left 1rem、a:after 下划线动画；新块级导航改为圆角标签风格 */
+.tag-plugin.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.tag-plugin.navbar .nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.875rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--text-p2);
+  background: var(--block);
+  border: 1px solid var(--block-border);
+}
+.tag-plugin.navbar .nav-link:after {
+  content: none;
+}
+.tag-plugin.navbar .nav-link + .nav-link {
+  margin-left: 0;
+}
+.tag-plugin.navbar .nav-link.active {
+  color: var(--theme);
+  background: var(--theme-a30);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+/* ---------- Spec 49: frame 设备框架（纯 CSS 设备壳） ---------- */
+.tag-plugin.frame .frame-device {
+  position: relative;
+  background: #0b0b0d;
+  border-radius: 36px;
+  padding: 10px;
+  box-shadow: 0 0 0 2px #2a2a2e, 0 20px 40px -12px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.tag-plugin.frame .frame-notch {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32%;
+  height: 18px;
+  background: #0b0b0d;
+  border-radius: 999px;
+  z-index: 2;
+}
+.tag-plugin.frame .frame-content {
+  width: 100%;
+  height: 100%;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #111;
+}
+.tag-plugin.frame .frame-content img,
+.tag-plugin.frame .frame-content video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+}
+.tag-plugin.frame .frame-device.iphone {
+  aspect-ratio: 9/19.5;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.tag-plugin.frame .frame-device.ipad {
+  aspect-ratio: 4/3;
+  border-radius: 24px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.tag-plugin.frame .frame-device.macbook {
+  aspect-ratio: 16/10;
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.tag-plugin.frame .frame-device.macbook::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8%;
+  background: linear-gradient(180deg, #2a2a2e 0%, #1b1b1f 100%);
+  border-radius: 0 0 12px 12px;
+}
+.tag-plugin.frame .frame-device.macbook .frame-notch {
+  display: none;
+}
+
+/* ---------- Spec 49: chat 群聊模式与多媒体占位 ---------- */
+/* scene:group 时 shortcode 不输出 right 类（全部左对齐），此处仅补占位样式 */
+.tag-plugin.chat .chatcell.unsupported {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 90px;
+  padding: 0.5em 1em;
+  margin: 0.5em 0;
+  font-size: 0.75rem;
+  color: var(--text-p3);
+  background: var(--block);
+  border: 1px dashed var(--block-border);
+  border-radius: 8px;
+}
+
+/* ---------- Spec 49: swiper 宽度容器语义 ---------- */
+/* width:max → 内联 style max-width:800px；width:min → max-width:100%；容器居中 */
+.tag-plugin.swiper[style*='max-width'] {
+  margin-inline: auto;
+}

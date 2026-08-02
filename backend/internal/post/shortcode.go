@@ -138,6 +138,14 @@ var reNavbarTag = regexp.MustCompile(`{%\s*navbar\s+(.*?)\s*%}`)
 // frame 标签（单行）：{% frame device [img:src] [video:url] [focus:top/bottom] [alt] %}
 var reFrameTag = regexp.MustCompile(`{%\s*frame\s+(.*?)\s*%}`)
 
+// --- Spec 49 展示容器 6 件套（块级语法，banner 改造 + navbar/frame 新增块级形式）---
+
+// navbar 块级标签：{% navbar [active:文本] %} 链接列表（每行 [text](url)） {% endnavbar %}
+var reNavbarBlock = regexp.MustCompile(`(?s){%\s*navbar\s*(.*?)\s*%}(.*?){%\s*endnavbar\s*%}`)
+
+// frame 块级标签：{% frame [device:iphone/ipad/macbook] [width:宽度] %} 图片/视频 {% endframe %}
+var reFrameBlock = regexp.MustCompile(`(?s){%\s*frame\s+(.*?)\s*%}(.*?){%\s*endframe\s*%}`)
+
 // md 标签（单行，客户端 ds-mdrender 拉取渲染，对齐原版 md.js）：{% md src %}
 var reMDTag = regexp.MustCompile(`{%\s*md\s+(.*?)\s*%}`)
 
@@ -172,6 +180,10 @@ var (
 
 	// swiper 从渲染后的 Markdown 中提取 img 标签
 	reSwiperImg = regexp.MustCompile(`(?i)<img(.*?)src="(.*?)"(.*?)>`)
+	// navbar 块级内部链接：行内 [text](url) 格式
+	reNavbarLink = regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+	// frame 块级从渲染后的 Markdown 中提取媒体标签（img/video/iframe）
+	reFrameMedia = regexp.MustCompile(`(?is)<(?:img|video|iframe)\b[^>]*>`)
 	// chat 注释单元格：<!-- chattip ... --> / <!-- chatcell ... -->
 	reChatComment = regexp.MustCompile(`(?s)<!--\s*(.*?)\s*-->`)
 	// chat 单元格参数：user:/md:/tag:/quote:
@@ -511,6 +523,15 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderSwiper(parts[1], strings.TrimSpace(parts[2]), renderMD)
 	})
 
+	// 24.5 banner（块级，Spec 49 横幅容器；注册于 swiper 之后、chat 之前）
+	md = reBannerTag.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reBannerTag.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderBanner(parts[1], parts[2], renderMD)
+	})
+
 	// 25. chat（块级，聊天消息）
 	md = reChat.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reChat.FindStringSubmatch(match)
@@ -627,7 +648,16 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderPaper(parts[1], parts[2], renderMD)
 	})
 
-	// 34. navbar（单行，必须先于 banner 处理）
+	// 33.5 navbar 块级（Spec 49 文章内导航；必须先于单行 navbar 处理，避免开放标签被单行正则吞掉）
+	md = reNavbarBlock.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reNavbarBlock.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderNavbarBlock(parts[1], parts[2])
+	})
+
+	// 34. navbar 单行（Spec 31 兼容语法，行内 [text](url) 列表）
 	md = reNavbarTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reNavbarTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
@@ -640,16 +670,7 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return el
 	})
 
-	// 35. banner（块级，body 内的 navbar 已展开为 div 行）
-	md = reBannerTag.ReplaceAllStringFunc(md, func(match string) string {
-		parts := reBannerTag.FindStringSubmatch(match)
-		if len(parts) < 3 {
-			return match
-		}
-		return renderBanner(parts[1], parts[2])
-	})
-
-	// 36. albums / posters（单行，数据走 ds-friends 服务填充 gallery）
+	// 35. albums / posters（单行，数据走 ds-friends 服务填充 gallery）
 	md = reAlbumsTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reAlbumsTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
@@ -665,7 +686,20 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		return renderAlbumsPosters("posters", parts[1])
 	})
 
-	// 37. frame（单行，设备边框；参数不全时原样输出容错）
+	// 37. frame 块级（Spec 49 设备框架；必须先于单行 frame 处理，避免开放标签被单行正则吞掉）
+	md = reFrameBlock.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reFrameBlock.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		el, ok := renderFrameBlock(parts[1], parts[2], renderMD)
+		if !ok {
+			return match
+		}
+		return el
+	})
+
+	// 37.5 frame 单行（Spec 31 兼容语法，设备边框；参数不全时原样输出容错）
 	md = reFrameTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reFrameTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
@@ -1847,6 +1881,13 @@ func renderSwiper(argsStr, body string, renderMD func(string) string) string {
 	sb.WriteString(`<div class="tag-plugin swiper fancybox" id="swiper-api"`)
 	if w := named["width"]; w != "" {
 		sb.WriteString(` width="` + html.EscapeString(w) + `"`)
+		// Spec 49：width 语义解析——max→容器 max-width 像素值（800px），min→容器 max-width 百分比（配合 slide 25% 迷你轮播）
+		switch w {
+		case "max":
+			sb.WriteString(` style="max-width:800px"`)
+		case "min":
+			sb.WriteString(` style="max-width:100%"`)
+		}
 	}
 	if e := named["effect"]; e != "" {
 		sb.WriteString(` effect="` + html.EscapeString(e) + `"`)
@@ -2002,9 +2043,15 @@ func renderChat(argsStr, body string, renderMD func(string) string) string {
 			sb.WriteString(`<div class="chattip">` + html.EscapeString(c.text) + `</div>`)
 			continue
 		}
+		// Spec 49：多媒体 cell（type:image/voice/video/file/link）仅输出类型占位，不渲染实际内容防破版
+		if t := c.params["type"]; t != "" {
+			fmt.Fprintf(&sb, `<div class="chatcell unsupported">[%s]</div>`, html.EscapeString(t))
+			continue
+		}
 		u := users[c.params["user"]]
 		sb.WriteString(`<div class="chatcell`)
-		if me != "" && me == c.params["user"] {
+		// Spec 49：scene=group 群聊模式全部左对齐（不输出 right 类）
+		if scene != "group" && me != "" && me == c.params["user"] {
 			sb.WriteString(` right`)
 		}
 		sb.WriteString(`">`)
@@ -2306,52 +2353,68 @@ func renderNavbar(argsStr string) (string, bool) {
 	return sb.String(), true
 }
 
+// renderNavbarBlock 渲染 Spec 49 块级文章内导航：{% navbar [active:文本] %} 每行 [text](url) {% endnavbar %}。
+// active 与链接文本匹配（区别于单行版 renderNavbar 的 active 匹配 href）；非链接行忽略，不 panic 不吞正文。
+func renderNavbarBlock(argsStr, body string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"active"}, nil)
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin navbar">`)
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		m := reNavbarLink.FindStringSubmatch(line)
+		if len(m) < 3 {
+			continue
+		}
+		text, href := m[1], m[2]
+		if text == named["active"] {
+			fmt.Fprintf(&sb, `<a class="nav-link active" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text))
+		} else {
+			fmt.Fprintf(&sb, `<a class="nav-link" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text))
+		}
+	}
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
 // renderBanner 对齐 banner.js：bg 图 + top（返回键/navbar 行）+ bottom（avatar/标题区）+ 可选整卡链接。
 // body 内嵌的 navbar 标签由管线先行展开，这里按原版逻辑提取含 "tag-plugin navbar" 的行。
-func renderBanner(argsStr, body string) string {
-	named, positional := parseNamedPositionalArgs(argsStr, []string{"bg", "avatar", "link"}, nil)
-	title, subtitle := "", ""
-	if len(positional) > 0 {
+func renderBanner(argsStr, body string, renderMD func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"bg", "avatar", "link", "title", "subtitle"}, nil)
+	title := named["title"]
+	subtitle := named["subtitle"]
+	// 兼容 Spec 31 旧语法：title/subtitle 位置参数
+	if title == "" && len(positional) > 0 {
 		title = positional[0]
 	}
-	if len(positional) > 1 {
+	if subtitle == "" && len(positional) > 1 {
 		subtitle = strings.Join(positional[1:], " ")
 	}
 	var sb strings.Builder
-	sb.WriteString(`<div class="tag-plugin banner">`)
-	fmt.Fprintf(&sb, `<img class="lazy bg" data-src="%s">`, html.EscapeString(named["bg"]))
-	sb.WriteString(`<div class="content">`)
-	sb.WriteString(`<div class="top">`)
+	sb.WriteString(`<div class="tag-plugin banner"`)
+	if bg := named["bg"]; bg != "" {
+		fmt.Fprintf(&sb, ` style="background-image:url(%s)"`, html.EscapeString(bg))
+	}
+	sb.WriteString(`>`)
+	if link := named["link"]; link != "" {
+		fmt.Fprintf(&sb, `<a class="banner-link" href="%s">`, html.EscapeString(link))
+	}
+	sb.WriteString(`<div class="banner-content">`)
+	if avatar := named["avatar"]; avatar != "" {
+		fmt.Fprintf(&sb, `<div class="avatar"><img src="%s"></div>`, html.EscapeString(avatar))
+	}
+	if title != "" {
+		fmt.Fprintf(&sb, `<div class="title">%s</div>`, html.EscapeString(title))
+	}
+	if subtitle != "" {
+		fmt.Fprintf(&sb, `<div class="subtitle">%s</div>`, html.EscapeString(subtitle))
+	}
+	fmt.Fprintf(&sb, `<div class="body fs14">%s</div>`, strings.ReplaceAll(renderMD(body), "\n", ""))
+	sb.WriteString(`</div>`)
 	if named["link"] != "" {
-		sb.WriteString(`<div></div>`)
-	} else {
-		sb.WriteString(`<button class="back cap" onclick="window.history.back()">` + backArrowSVG + `</button>`)
-	}
-	for _, row := range strings.Split(body, "\n") {
-		if strings.Contains(row, "tag-plugin navbar") {
-			sb.WriteString(strings.TrimSpace(row))
-			break
-		}
-	}
-	sb.WriteString(`</div>`)
-	sb.WriteString(`<div class="bottom">`)
-	if a := named["avatar"]; a != "" {
-		fmt.Fprintf(&sb, `<img class="avatar" src="%s">`, html.EscapeString(a))
-	}
-	if title != "" || subtitle != "" {
-		sb.WriteString(`<div class="text-area">`)
-		if title != "" {
-			fmt.Fprintf(&sb, `<div class="text title">%s</div>`, title)
-		}
-		if subtitle != "" {
-			fmt.Fprintf(&sb, `<div class="text subtitle">%s</div>`, subtitle)
-		}
-		sb.WriteString(`</div>`)
-	}
-	sb.WriteString(`</div>`)
-	sb.WriteString(`</div>`)
-	if l := named["link"]; l != "" {
-		fmt.Fprintf(&sb, `<a class="banner-link" href="%s"></a>`, html.EscapeString(l))
+		sb.WriteString(`</a>`)
 	}
 	sb.WriteString(`</div>`)
 	return sb.String()
@@ -2435,6 +2498,34 @@ func renderFrame(argsStr string) (string, bool) {
 		}
 		sb.WriteString(`</div>`)
 	}
+	return sb.String(), true
+}
+
+// renderFrameBlock 渲染 Spec 49 块级设备框架：{% frame [device:iphone/ipad/macbook] [width:宽度] %} 媒体 {% endframe %}。
+// body 渲染后提取 <img>/<video>/<iframe> 嵌入纯 CSS 设备壳；device 缺失或 body 无媒体时原样输出容错。
+func renderFrameBlock(argsStr, body string, renderMD func(string) string) (string, bool) {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"device", "width"}, nil)
+	device := named["device"]
+	if device == "" && len(positional) > 0 {
+		device = positional[0]
+	}
+	if device == "" {
+		return "", false
+	}
+	media := reFrameMedia.FindString(renderMD(body))
+	if media == "" {
+		return "", false
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, `<div class="tag-plugin frame" device="%s"`, html.EscapeString(device))
+	if w := named["width"]; w != "" {
+		fmt.Fprintf(&sb, ` style="max-width:%s"`, html.EscapeString(w))
+	}
+	sb.WriteString(`>`)
+	fmt.Fprintf(&sb, `<div class="frame-device %s">`, html.EscapeString(device))
+	sb.WriteString(`<div class="frame-notch"></div>`)
+	sb.WriteString(`<div class="frame-content">` + media + `</div>`)
+	sb.WriteString(`</div></div>`)
 	return sb.String(), true
 }
 

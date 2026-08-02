@@ -12,7 +12,7 @@ function initSwiper() {
   utils.js(SWIPER_JS, { defer: true }).then(function () {
     if (typeof Swiper === 'undefined') return;
     const effect = swiper_api.getAttribute('effect') || '';
-    new Swiper('.swiper#swiper-api', {
+    const options = {
       slidesPerView: 'auto',
       spaceBetween: 8,
       centeredSlides: true,
@@ -26,7 +26,25 @@ function initSwiper() {
         nextEl: '.swiper-button-next',
         prevEl: '.swiper-button-prev',
       },
-    });
+    };
+    // Spec 49：coverflow/cards 效果参数透传（对齐 Swiper 10.3 文档，值与原版一致硬编码）
+    if (effect === 'coverflow') {
+      options.coverflowEffect = {
+        rotate: 50,
+        stretch: 0,
+        depth: 100,
+        modifier: 1,
+        slideShadows: true,
+      };
+    }
+    if (effect === 'cards') {
+      options.cardsEffect = {
+        perSlideOffset: 8,
+        perSlideRotate: 2,
+        slideShadows: true,
+      };
+    }
+    new Swiper('.swiper#swiper-api', options);
   });
 }
 
