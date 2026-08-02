@@ -122,6 +122,7 @@ var zhCN = map[string]string{
 	"comment.submit":      "发布评论",
 	"comment.count":       "%d 条评论",
 	"comment.no_comment":  "暂无评论",
+	"comment.loading":     "加载评论中…", // Spec 50 评论区懒加载占位
 	"comment.reply_to":    "回复",
 	"comment.like":        "赞",
 

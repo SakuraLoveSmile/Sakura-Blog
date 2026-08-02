@@ -20,9 +20,36 @@
 {{- /* 2. navbar：复用首页导航（对齐 nav_tabs_blog.ejs） */}}
 {{template "partial/navbar" .}}
 
-{{- /* 3. post-list：复用首页文章卡片结构（对齐 index.html 的 post-card 渲染） */}}
+{{- /* 3. post-list：复用首页文章卡片结构（对齐 index.html 的 post-card 渲染）。
+   Spec 50：site.yml article.type=story 时同步切 story 布局（与 index.html 同分支）*/}}
 <div class="post-list post">
   {{range .Posts}}
+  {{if eq $.Site.Article.EffectiveType "story"}}
+  <div class="post-card-wrap story">
+    <a class="post-card post story" href="/post/{{.Slug}}">
+      {{if .Cover}}
+      <div class="story-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>
+      {{end}}
+      <article class="md-text">
+        <h2 class="post-title">{{.Title}}</h2>
+        <div class="excerpt"><p>{{.Excerpt}}</p></div>
+        <div class="meta cap">
+          <span class="cap" id="post-meta">
+            {{icon "default:calendar"}}
+            <time datetime="{{date .Date "2006-01-02T15:04:05Z07:00"}}">{{date .Date "2006年1月2日"}}</time>
+          </span>
+          {{if .Category}}
+          <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
+            {{icon "default:category"}}
+            <span>{{.Category}}</span>
+          </span>
+          {{end}}
+          {{if .Pinned}}<span class="pin">{{icon "default:pin"}}</span>{{end}}
+        </div>
+      </article>
+    </a>
+  </div>
+  {{else}}
   <div class="post-card-wrap">
     {{if and .Cover .Poster}}
     <a class="post-card post photo" href="/post/{{.Slug}}">
@@ -60,6 +87,7 @@
     </a>
     {{end}}
   </div>
+  {{end}}
   {{end}}
 </div>
 

@@ -120,10 +120,12 @@ func (s *webServer) cookieSecureFor(c *gin.Context) bool {
 	return c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 }
 
-// fillSEO 填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
+// fillSEO 填充 CanonicalURL/Path 和 Description，所有前台页面渲染前调用。
+// Path 供 navbar 自定义 tab（nav_tabs items）的 active_rules 高亮匹配用（Spec 50）。
 func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
 	baseURL := s.baseURL(c)
 	data.Page.CanonicalURL = baseURL + c.Request.URL.Path
+	data.Page.Path = c.Request.URL.Path
 	if data.Page.Description == "" {
 		data.Page.Description = s.site.Description
 	}

@@ -104,12 +104,14 @@ func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 
 // TestStyleInjectCSSBackgrounds leftbar 图片模式 / 全站背景毛玻璃。
 func TestStyleInjectCSSBackgrounds(t *testing.T) {
-	// leftbar 图片模式：重启 sidebg
+	// leftbar 图片模式：重启 sidebg + 恢复 head.html 纯色块关掉的 mask 淡出与玻璃高光（Spec 50）
 	img := StyleConfig{Leftbar: StyleLeftbar{BackgroundImage: "/bg.jpg", BlurPx: "80px", BackgroundOpacity: "0.7"}}
 	c1 := string(img.InjectCSS())
 	for _, want := range []string{
 		".l_left .sidebg{display:block;background-image:url(/bg.jpg);--blur-px:80px;--background-opacity:0.7;}",
 		".l_left .leftbar-container{background:transparent;}",
+		".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}",
+		"@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}",
 	} {
 		if !strings.Contains(c1, want) {
 			t.Errorf("leftbar 图片模式缺 %q\n完整: %s", want, c1)

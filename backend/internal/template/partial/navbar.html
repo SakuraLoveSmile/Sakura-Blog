@@ -11,6 +11,12 @@
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="post">
+        {{- /* Spec 50: nav_tabs.enable_custom=true 时固定 tab 完全由 nav_tabs.items 定义（不再硬编码）*/}}
+        {{- if .Site.NavTabs.EnableCustom}}
+        {{- range .Site.NavTabs.Items}}
+        <a class="tab{{if .IsActive $.Page}} active{{end}}" href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}>{{if .Icon}}{{icon .Icon}}{{end}}{{.Title}}</a>
+        {{- end}}
+        {{- else}}
         <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">{{- lang "btn.recent_publish" -}}</a>
         {{- if .Page.Category}}
         <a class="active" href="/categories/">{{- lang "nav.category" .Page.Category -}}</a>
@@ -37,9 +43,10 @@
         {{- end}}
         {{- end}}
         <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">{{- lang "btn.archives" -}}</a>
-        {{- /* 可配置导航标签页：site.yml nav_tabs 段，追加在固定 tab 之后 */}}
-        {{- range .Site.NavTabs}}
-        <a class="tab" href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}>{{.Title}}</a>
+        {{- /* 可配置导航标签页：site.yml nav_tabs 段（旧形状追加在固定 tab 之后；items 支持 icon/active_rules 高亮）*/}}
+        {{- range .Site.NavTabs.Items}}
+        <a class="tab{{if .IsActive $.Page}} active{{end}}" href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}>{{if .Icon}}{{icon .Icon}}{{end}}{{.Title}}</a>
+        {{- end}}
         {{- end}}
       </nav>
     </div>

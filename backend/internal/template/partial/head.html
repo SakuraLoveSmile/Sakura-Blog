@@ -122,6 +122,9 @@
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=demo6">
 
+  {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
+  {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v=demo50">{{end}}
+
   {{- /* Mermaid 图表：CDN + 主题跟随 data-theme，PJAX 后重扫 */}}
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>

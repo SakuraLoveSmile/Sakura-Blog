@@ -173,9 +173,12 @@ func (s StyleConfig) leftbarCSS() string {
 	if l.BackgroundImage != "" {
 		blur := firstNonEmpty(l.BlurPx, "100px")
 		opacity := firstNonEmpty(l.BackgroundOpacity, "0.8")
-		// 重新显示 sidebg 并设图片；恢复 head.html 关掉的 mask/glass（回到原版图片模糊模式）
+		// 重新显示 sidebg 并设图片；恢复 head.html 纯色块（Spec Task 2）关掉的 mask 淡出与玻璃高光，
+		// 回到原版图片模糊模式（Spec 50 侧栏背景图验证修复）。
 		fmt.Fprintf(&b, ".l_left .sidebg{display:block;background-image:url(%s);--blur-px:%s;--background-opacity:%s;}", l.BackgroundImage, blur, opacity)
 		b.WriteString(".l_left .leftbar-container{background:transparent;}")
+		b.WriteString(".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}")
+		b.WriteString("@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}")
 	} else if l.BackgroundColorLight != "" || l.BackgroundColorDark != "" {
 		if l.BackgroundColorLight != "" {
 			fmt.Fprintf(&b, ".l_left .leftbar-container{background:%s;}", l.BackgroundColorLight)

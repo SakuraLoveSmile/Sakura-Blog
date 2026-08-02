@@ -2,8 +2,12 @@ package template
 
 import (
 	"html/template"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 
 	"blog/internal/store"
 )
@@ -289,8 +293,10 @@ type Site struct {
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
 	// Verifications 搜索引擎站长验证码（google/bing/baidu），由 SEO 模块运行时填充，前台 head 注入 meta。
 	Verifications map[string]string `yaml:"-" json:"-"`
-	// 导航栏额外标签页（site.yml nav_tabs 段），追加在固定 tab（归档）之后。
-	NavTabs []NavTabItem `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
+	// 导航栏标签页（site.yml nav_tabs 段，Spec 50 增强）：
+	// 旧形状 [{title,url,external}] 追加在固定 tab 之后；新形状 {enable_custom,items}
+	// 的 enable_custom=true 时固定 tab 完全由 items 定义。零值=空列表+false=现状。
+	NavTabs NavTabsConfig `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
 	// 首页 Hero cover 区配置（site.yml cover 段），仅首页第一页且 title 非空时渲染。
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
 	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
@@ -351,11 +357,70 @@ type AuthorDef struct {
 	Hidden      bool   `yaml:"hidden,omitempty" json:"hidden,omitempty"`
 }
 
-// NavTabItem 导航栏额外标签页单项（site.yml nav_tabs 段）。
+// NavTabItem 导航栏标签页单项（site.yml nav_tabs 段）。
+// Icon 为 icons.yml key（可选，空则不渲染图标）；ActiveRules 为高亮规则列表（可选，
+// 支持路径前缀与正则，任一命中即高亮；未配置时按 URL 精确匹配），Spec 50 增强。
 type NavTabItem struct {
-	Title    string `yaml:"title" json:"title"`
-	URL      string `yaml:"url" json:"url"`
-	External bool   `yaml:"external,omitempty" json:"external,omitempty"` // true 时 target="_blank"
+	Title       string   `yaml:"title" json:"title"`
+	URL         string   `yaml:"url" json:"url"`
+	External    bool     `yaml:"external,omitempty" json:"external,omitempty"` // true 时 target="_blank"
+	Icon        string   `yaml:"icon,omitempty" json:"icon,omitempty"`         // icons.yml key，空不渲染
+	ActiveRules []string `yaml:"active_rules,omitempty" json:"active_rules,omitempty"` // 高亮规则（路径前缀/正则）
+}
+
+// NavTabsConfig 导航选项卡配置（site.yml nav_tabs 段，Spec 50 增强）。
+// 兼容两种 YAML 形状：
+//   - 旧形状（向后兼容）：nav_tabs: [{title, url, external}] → 追加到固定 tab 之后；
+//   - 新形状：nav_tabs: {enable_custom: true, items: [...]} → enable_custom=true 时
+//     导航栏完全由 items 定义（不再渲染固定 tab）；缺省 false 保持现有固定 tab + 追加 items。
+type NavTabsConfig struct {
+	EnableCustom bool          `yaml:"enable_custom" json:"enable_custom"`
+	Items        []NavTabItem `yaml:"items" json:"items"`
+}
+
+// UnmarshalYAML 兼容旧（sequence）与新（mapping）两种 YAML 形状。
+func (c *NavTabsConfig) UnmarshalYAML(node ast.Node) error {
+	b, err := node.MarshalYAML()
+	if err != nil {
+		return err
+	}
+	if node.Type() == ast.SequenceType {
+		return yaml.Unmarshal(b, &c.Items)
+	}
+	var raw struct {
+		EnableCustom bool          `yaml:"enable_custom"`
+		Items        []NavTabItem `yaml:"items"`
+	}
+	if err := yaml.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	c.EnableCustom = raw.EnableCustom
+	c.Items = raw.Items
+	return nil
+}
+
+// IsActive 判断当前页面是否命中该 tab 的高亮规则（Spec 50）。
+// 规则优先级：ActiveRules 任一命中（先按路径前缀，再按正则）→ 高亮；
+// 未配置规则时回退 URL 精确匹配（对齐固定 tab 的 active 语义）。
+func (t NavTabItem) IsActive(page *Page) bool {
+	if page == nil || page.Path == "" {
+		return false
+	}
+	if len(t.ActiveRules) > 0 {
+		for _, r := range t.ActiveRules {
+			if r == "" {
+				continue
+			}
+			if strings.HasPrefix(page.Path, r) {
+				return true
+			}
+			if re, err := regexp.Compile(r); err == nil && re.MatchString(page.Path) {
+				return true
+			}
+		}
+		return false
+	}
+	return page.Path == t.URL
 }
 
 // CoverConfig 首页 Hero cover 区配置（site.yml cover 段）。
@@ -583,6 +648,7 @@ type Page struct {
 	Tag          string   // 标签文章列表页的当前标签名
 	Topic        string   // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
 	CanonicalURL string   // 当前页面完整 URL（用于 canonical 和 og:url）
+	Path         string   // 当前请求路径（不含查询串；navbar 自定义 tab 高亮匹配用，fillSEO 填充）
 	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）

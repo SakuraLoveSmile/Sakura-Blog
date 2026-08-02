@@ -104,7 +104,7 @@
     $('cmt-content').focus();
   }
 
-  /* ===== 评论 DOM 构建（结构与 SSR 模板 comments.html 保持一致） ===== */
+  /* ===== 评论 DOM 构建（结构与 SSR 模板 comments.html 保持一致；children 递归 + like 按钮，Spec 50 懒加载复用） ===== */
   function buildItem(cm) {
     var item = document.createElement('div');
     item.className = 'cmt-item';
@@ -125,8 +125,15 @@
         '<div class="cmt-content">' + cm.content_html + '</div>' + // 服务端已消毒，直接插入
         '<div class="cmt-actions">' +
           '<button type="button" class="cmt-reply-btn" data-id="' + cm.id + '" data-nick="' + esc(cm.nick) + '">回复</button>' +
+          '<button type="button" class="cmt-reply-btn cmt-like-btn" data-id="' + cm.id + '" aria-label="赞">赞 <span class="cmt-like-count">' + (cm.likes || 0) + '</span></button>' +
         '</div>' +
       '</div>';
+    if (cm.children && cm.children.length) {
+      var children = document.createElement('div');
+      children.className = 'cmt-children';
+      cm.children.forEach(function (child) { children.appendChild(buildItem(child)); });
+      item.querySelector('.cmt-main').appendChild(children);
+    }
     return item;
   }
 
@@ -243,6 +250,68 @@
       submit();
     }
   });
+
+  /* ===== Spec 50 评论区懒加载 =====
+     首屏不请求评论数据：IntersectionObserver 监听 .cmt-body（rootMargin 200px），
+     进入视口才 fetch /api/comments 渲染列表；不支持 IO 时保底立即加载；
+     PJAX 换页后 DOM 重建（data-lazy 重新出现）重新监听；data-loaded 防重复。 */
+  function renderCommentList(comments) {
+    var list = $('cmt-list');
+    if (!list) return;
+    var lazy = $('cmt-lazy');
+    if (lazy) lazy.remove();
+    list.textContent = '';
+    (comments || []).forEach(function (cm) { list.appendChild(buildItem(cm)); });
+  }
+
+  function loadComments() {
+    var b = cmtBody();
+    if (!b || b.getAttribute('data-loaded') === '1') return;
+    b.setAttribute('data-loaded', '1');
+    fetch('/api/comments?page_key=' + encodeURIComponent(currentPageKey()))
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res && res.ok) {
+          renderCommentList(res.comments);
+        } else {
+          // 失败：移除占位（避免永久“加载中”），PJAX 换页或下次进入时可重试
+          b.removeAttribute('data-loaded');
+          var lazy = $('cmt-lazy');
+          if (lazy) lazy.remove();
+        }
+      })
+      .catch(function () {
+        b.removeAttribute('data-loaded');
+        var lazy = $('cmt-lazy');
+        if (lazy) lazy.remove();
+      });
+  }
+
+  function initLazyComments() {
+    var b = cmtBody();
+    if (!b || b.getAttribute('data-lazy') !== '1' || b.getAttribute('data-loaded') === '1') return;
+    if (!('IntersectionObserver' in window)) {
+      loadComments(); // 老浏览器保底：立即加载
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          io.disconnect();
+          loadComments();
+        }
+      });
+    }, { rootMargin: '200px' });
+    io.observe(b);
+  }
+
+  // 首屏（DOMContentLoaded 兜底 readyState）+ PJAX 换页后重新监听
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLazyComments);
+  } else {
+    initLazyComments();
+  }
+  document.addEventListener('pjax:complete', initLazyComments);
 
   // 身份回填：首屏 + PJAX 换页后（新 DOM 需重新回填）
   document.addEventListener('DOMContentLoaded', loadIdentity);

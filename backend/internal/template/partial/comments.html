@@ -9,7 +9,9 @@
   </section>
   <section class="body cmt-body native" id="cmt-body"
     data-page-key="/post/{{.Page.Slug}}"
-    data-admin-badge="{{.Site.Comments.AdminBadge}}">
+    data-admin-badge="{{.Site.Comments.AdminBadge}}"
+    {{- /* Spec 50 评论区懒加载：data-lazy=1 时前端 IntersectionObserver 进入视口（rootMargin 200px）才 fetch 评论列表 */}}
+    data-lazy="1">
 
     {{- /* 编辑器：Halo 编辑器在上布局。reply-tip 回复提示条默认隐藏；website 为蜜罐隐藏字段（机器人可见） */}}
     <div class="cmt-editor" id="cmt-editor">
@@ -30,48 +32,14 @@
       </div>
     </div>
 
-    {{- /* 列表：N 条评论计数 + 评论行（圆头像 + 加粗昵称 + 博主徽章 + 相对时间 + 内容 + 回复按钮） */}}
+    {{- /* 列表：N 条评论计数（SSR）+ 评论列表容器（Spec 50 懒加载：容器 SSR 但列表由 JS fetch /api/comments 渲染） */}}
     <div class="cmt-count" id="cmt-count">{{if .CommentCount}}{{lang "comment.count" .CommentCount}}{{else}}{{lang "comment.no_comment"}}{{end}}</div>
     <div class="cmt-list" id="cmt-list">
-      {{range .Comments}}
-      <div class="cmt-item" id="comment-{{.ID}}" data-id="{{.ID}}">
-        <img class="cmt-avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
-        <div class="cmt-main">
-          <div class="cmt-meta">
-            {{if .Link}}<a class="cmt-nick" href="{{.Link}}" target="_blank" rel="external nofollow noopener noreferrer">{{.Nick}}</a>{{else}}<span class="cmt-nick">{{.Nick}}</span>{{end}}
-            {{if .IsAdmin}}<span class="cmt-badge">{{$.Site.Comments.AdminBadge}}</span>{{end}}
-            <span class="cmt-time" title="{{.Date}}">{{.TimeAgo}}</span>
-          </div>
-          <div class="cmt-content">{{.ContentHTML}}</div>
-          <div class="cmt-actions">
-            <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">{{- lang "comment.reply_to" -}}</button>
-            <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="{{lang "comment.like"}}">{{- lang "comment.like" -}} <span class="cmt-like-count">{{.Likes}}</span></button>
-          </div>
-          {{- /* 子评论缩进一层（左侧竖线），与顶级评论行结构一致 */}}
-          {{if .Children}}
-          <div class="cmt-children">
-            {{range .Children}}
-            <div class="cmt-item" id="comment-{{.ID}}" data-id="{{.ID}}">
-              <img class="cmt-avatar" src="{{.Avatar}}" alt="{{.Nick}}" loading="lazy">
-              <div class="cmt-main">
-                <div class="cmt-meta">
-                  {{if .Link}}<a class="cmt-nick" href="{{.Link}}" target="_blank" rel="external nofollow noopener noreferrer">{{.Nick}}</a>{{else}}<span class="cmt-nick">{{.Nick}}</span>{{end}}
-                  {{if .IsAdmin}}<span class="cmt-badge">{{$.Site.Comments.AdminBadge}}</span>{{end}}
-                  <span class="cmt-time" title="{{.Date}}">{{.TimeAgo}}</span>
-                </div>
-                <div class="cmt-content">{{.ContentHTML}}</div>
-                <div class="cmt-actions">
-                  <button type="button" class="cmt-reply-btn" data-id="{{.ID}}" data-nick="{{.Nick}}">{{- lang "comment.reply_to" -}}</button>
-                  <button type="button" class="cmt-reply-btn cmt-like-btn" data-id="{{.ID}}" aria-label="{{lang "comment.like"}}">{{- lang "comment.like" -}} <span class="cmt-like-count">{{.Likes}}</span></button>
-                </div>
-              </div>
-            </div>
-            {{end}}
-          </div>
-          {{end}}
-        </div>
+      {{- /* 懒加载占位：svg.loading 复用 main.css 旋转图标；进入视口后由 comments.js 替换为评论列表 */}}
+      <div class="cmt-lazy" id="cmt-lazy">
+        <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
+        <span>{{- lang "comment.loading" -}}</span>
       </div>
-      {{end}}
     </div>
   </section>
 </div>

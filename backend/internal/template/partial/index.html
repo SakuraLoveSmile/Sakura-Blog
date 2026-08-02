@@ -11,9 +11,39 @@
    卡片两模式对齐原版：
    - photo 大卡（Cover + Poster.Headline 同时存在）：a.post-card.post.photo > div.cover > div.cover-info
      position 规则同原版 div_photo()：有 topic 吸顶(top)，否则沉底(bottom)
-   - 默认文字卡：div_default()，meta 行 = 日期（中文格式，对齐 config.date_format）+ 分类 + pin 置顶图标 */}}
+   - 默认文字卡：div_default()，meta 行 = 日期（中文格式，对齐 config.date_format）+ 分类 + pin 置顶图标
+   Spec 50：site.yml article.type=story 时切换 story 布局（大间距图文卡），tech 保持现状 */}}
 <div class="post-list post">
   {{range .Posts}}
+  {{if eq $.Site.Article.EffectiveType "story"}}
+  {{- /* story 布局：大间距卡片，封面宽比例（story-cover 16/9），宽标题，meta 行尾对齐（样式在 assets/css/story.css）*/}}
+  <div class="post-card-wrap story">
+    <a class="post-card post story" href="/post/{{.Slug}}">
+      {{if .Cover}}
+      <div class="story-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>
+      {{end}}
+      <article class="md-text">
+        <h2 class="post-title">{{.Title}}</h2>
+        <div class="excerpt"><p>{{.Excerpt}}</p></div>
+        <div class="meta cap">
+          <span class="cap" id="post-meta">
+            {{icon "default:calendar"}}
+            <time datetime="{{date .Date "2006-01-02T15:04:05Z07:00"}}">{{date .Date "2006年1月2日"}}</time>
+          </span>
+          {{- /* 分类：对齐 post_card.ejs 的 span.cap.breadcrumb + category_color 配色（site.yml article.category_color）*/}}
+          {{if .Category}}
+          <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
+            {{icon "default:category"}}
+            <span>{{.Category}}</span>
+          </span>
+          {{end}}
+          {{- /* 置顶：对齐 post_card.ejs 的 span.pin（pin 图标），替代自创文字徽章 */}}
+          {{if .Pinned}}<span class="pin">{{icon "default:pin"}}</span>{{end}}
+        </div>
+      </article>
+    </a>
+  </div>
+  {{else}}
   <div class="post-card-wrap">
     {{if and .Cover .Poster}}
     <a class="post-card post photo" href="/post/{{.Slug}}">
@@ -53,6 +83,7 @@
     </a>
     {{end}}
   </div>
+  {{end}}
   {{end}}
 </div>
 

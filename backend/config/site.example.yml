@@ -119,13 +119,23 @@ authors:
     avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
     description: 博客作者
 
-# 导航栏额外标签页：追加在固定 tab（归档）之后，支持外链。
+# 导航栏标签页（Spec 50）：两种形状——
+#   旧形状（向后兼容，缺省追加）：nav_tabs: [{title, url, external}]，追加在固定 tab（归档）之后；
+#   新形状：nav_tabs: {enable_custom: true, items: [...]}，enable_custom=true 时导航栏
+#   完全由 items 定义（不再渲染固定 tab）。items 支持 icon（icons.yml key）与
+#   active_rules（路径前缀/正则列表，任一命中即高亮；缺省按 url 精确匹配）。
 # nav_tabs:
-#   - title: 友链
-#     url: /friends/
-#   - title: GitHub
-#     url: https://github.com/example
-#     external: true
+#   enable_custom: false
+#   items:
+#     - title: 友链
+#       url: /friends/
+#       icon: solar:planet-bold-duotone
+#     - title: GitHub
+#       url: https://github.com/example
+#       external: true
+#     - title: 技术
+#       url: /categories/技术/
+#       active_rules: ['/categories/技术/']
 
 # 首页 Hero cover 区：仅首页第一页且 title 非空时渲染，对齐 Stellar wiki_cover.ejs。
 # cover:
@@ -191,6 +201,8 @@ footer:
 
 # 文章页脚（版权声明 / 分享 / 打赏）
 article:
+  # 文章列表卡片布局（Spec 50）：tech=紧凑（缺省，零配置现状）/ story=图文大间距（自动加载 story.css）
+  type: tech
   # 分类配色表（对齐原版 theme.article.category_color）：首页卡片分类 meta 的文字与底色
   category_color:
     技术: '#1BCDFC'
@@ -230,7 +242,8 @@ admin:
 #   rightbar: welcome, author, siteinfo, latest_comment, toc
 # library：组件库（组件名 → layout + 参数），同名组件浅合并覆盖内置缺省参数；
 # pages：页面类型 → 左右栏组件序列，类型枚举 index/post/page/archive/categories/tags/topic/wiki/friends/notes/moments，
-# 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline。
+# 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline/linklist。
+#     links: {layout: linklist, title: 快速链接, columns: 2, items: [{title: 主页, url: /, icon: solar:home-bold}]}  # Spec 50 独立 linklist widget
 # widgets:
 #   library:
 #     recent: {layout: recent, limit: 10}                 # 最近更新（rss: '' 可隐藏订阅按钮）
