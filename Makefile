@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test merge-check run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps merge-check run dev clean
 
 all: build
 
@@ -24,8 +24,17 @@ test: console-test assets-test
 	go vet ./backend/... ./frontend/...
 	go test ./backend/... ./frontend/...
 
-## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，需已安装 frontend/console/node_modules）
-console-test:
+## console-deps: 自举 console 前端依赖（node_modules 缺失时 npm ci 按需安装，命中 npm 全局缓存，不重复全量下载）
+console-deps:
+	@if [ ! -d frontend/console/node_modules ]; then \
+		echo "console-deps: node_modules 缺失，执行 npm ci 安装依赖（依赖 npm 全局缓存，通常较快）"; \
+		cd frontend/console && npm ci; \
+	else \
+		echo "console-deps: node_modules 已存在，跳过安装"; \
+	fi
+
+## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）
+console-test: console-deps
 	cd frontend/console && npm run test
 
 ## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 frontend/scripts/test/*.test.mjs）
