@@ -60,6 +60,13 @@ func Import(st *store.Store, posts *post.Service) error {
 			References: store.EncodeReferences(meta.References),
 			Author:     meta.Author,
 		}
+		// Spec 52：topic 文本非空时按 name 关联独立 topics 表（迁移已建表；同名未建行时
+		// topic_id 保持 0，由启动迁移兜底回填）。
+		if t := strings.TrimSpace(meta.Topic); t != "" {
+			if tp, err := st.GetTopicByName(t); err == nil && tp != nil {
+				p.TopicID = tp.ID
+			}
+		}
 		if err := st.Upsert(p); err != nil {
 			return err
 		}

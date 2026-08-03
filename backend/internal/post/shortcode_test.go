@@ -145,7 +145,7 @@ func TestNavbarTag(t *testing.T) {
 func TestBannerTagExtractsNavbar(t *testing.T) {
 	src := "{% banner 标题 副标题 bg:/bg.png link:https://x.com %}\n{% navbar [Home](/) %}\n{% endbanner %}"
 	out := runShortcodes(src)
-	for _, want := range []string{`class="tag-plugin banner"`, `data-src="/bg.png"`, `tag-plugin navbar`, `<div class="text title">标题</div>`, `<div class="text subtitle">副标题</div>`, `<a class="banner-link" href="https://x.com"></a>`} {
+	for _, want := range []string{`class="tag-plugin banner"`, `style="background-image:url(/bg.png)"`, `tag-plugin navbar`, `<div class="title">标题</div>`, `<div class="subtitle">副标题</div>`, `<a class="banner-link" href="https://x.com">`} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("banner output missing %q: %s", want, out)
 		}
@@ -218,6 +218,47 @@ func TestPaperTag(t *testing.T) {
 	for _, want := range []string{`class="tag-plugin paper"`, `class="content underline"`, `<div class="section-title">第一节</div>`, `class="paragraph"`, `class="line right"`, `<span class="author">作者</span>`} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("paper output missing %q: %s", want, out)
+		}
+	}
+}
+
+// --- Spec 51 装饰标签测试（poetry / folders）---
+
+func TestPoetryTag(t *testing.T) {
+	out := runShortcodes("{% poetry 静夜思 author:李白 date:唐 footer:录自《唐诗三百首》 %}床前明月光\n疑是地上霜{% endpoetry %}")
+	for _, want := range []string{
+		`class="tag-plugin poetry"`,
+		`<div class="title">静夜思</div>`,
+		`<div class="meta"><span>李白</span><span>唐</span></div>`,
+		`<div class="body">床前明月光疑是地上霜</div>`,
+		`<div class="footer">录自《唐诗三百首》</div>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("poetry output missing %q: %s", want, out)
+		}
+	}
+	// 无参数时 title/meta 不输出，卡片骨架仍在
+	bare := runShortcodes("{% poetry %}正文{% endpoetry %}")
+	if !strings.Contains(bare, `class="tag-plugin poetry"`) || strings.Contains(bare, "<div class=\"title\">") {
+		t.Fatalf("poetry bare output wrong: %s", bare)
+	}
+}
+
+func TestFoldersTag(t *testing.T) {
+	src := "{% folders color:blue %}\n<!-- folder 第一章 -->\n甲。\n<!-- folder 第二章 -->\n乙。\n{% endfolders %}"
+	out := runShortcodes(src)
+	for _, want := range []string{
+		`class="tag-plugin colorful folders"`,
+		`color="blue"`,
+		`<details class="folder" index="0">`,
+		`<summary>第一章</summary>`,
+		`<div class="body">甲。</div>`,
+		`<details class="folder" index="1">`,
+		`<summary>第二章</summary>`,
+		`<div class="body">乙。</div>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("folders output missing %q: %s", want, out)
 		}
 	}
 }

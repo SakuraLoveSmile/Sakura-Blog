@@ -149,6 +149,70 @@ func (w *WidgetInstance) AuthorData() *AuthorWidgetData {
 	return nil
 }
 
+// ---------- linklist（Spec 50 独立 widget）----------
+
+// LinkListItems 从 widget 参数 items 解析链接列表（yaml 解出的 []any → []LinkListItem）。
+// 键缺失/类型不符返回 nil（模板据此不渲染，零配置降级）。
+func (w *WidgetInstance) LinkListItems() []LinkListItem {
+	raw, ok := w.Params["items"]
+	if !ok || raw == nil {
+		return nil
+	}
+	list, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	items := make([]LinkListItem, 0, len(list))
+	for _, it := range list {
+		m, ok := it.(map[string]any)
+		if !ok {
+			continue
+		}
+		items = append(items, LinkListItem{
+			Title: widgetStr(m["title"]),
+			URL:   widgetStr(m["url"]),
+			Icon:  widgetStr(m["icon"]),
+		})
+	}
+	return items
+}
+
+// LinkListColumns 返回 linklist widget 列数（columns 参数，缺省 1，<1 归一为 1）。
+// 列数规则（对齐原版 linklist.ejs 的 columns 语义，区别于 welcome 实例的"按链接数"）：
+// 1=竖排列表（图标+文字），2=两列网格（图标+文字），>=3=多列网格（仅图标）。
+func (w *WidgetInstance) LinkListColumns() int {
+	n := w.Int("columns", 1)
+	if n < 1 {
+		return 1
+	}
+	return n
+}
+
+// LinkListShowText columns<=2 时才显示文字（>2 纯图标，title 做 tooltip）。
+func (w *WidgetInstance) LinkListShowText() bool {
+	return w.LinkListColumns() <= 2
+}
+
+// LinkListAlignClass 对齐原版：columns==1 且链接数>1 时左对齐（left），否则居中（center）。
+func (w *WidgetInstance) LinkListAlignClass() string {
+	if w.LinkListColumns() == 1 && len(w.LinkListItems()) > 1 {
+		return "left"
+	}
+	return "center"
+}
+
+// widgetStr map 值转字符串（yaml 解出的字段可能是 nil/string/数值）。
+func widgetStr(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case nil:
+		return ""
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
 // DefaultWidgetLibrary 内置组件库（缺省参数 = 改造前硬编码行为）。
 // welcome/siteinfo/popular/latest_comment 为本项目自创组件（技术决策：保留注册进 library）；
 // 其余名称与参数形状对照原版 _data/widgets.yml。

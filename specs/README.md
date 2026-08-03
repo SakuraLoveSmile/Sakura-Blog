@@ -2,6 +2,28 @@
 
 每个子目录是一个**可并行开发**的功能 spec，遵循根目录 [`AGENTS.md`](../AGENTS.md)：**一个 agent = 一个 feature 分支 = 一个 worktree，从 dev 拉出，做完合回 dev**。
 
+## 最新批次 · Wave 10（排版/装饰收官 + 内容系统，依赖 Wave 8 已合能力）
+
+来源：前端 vs 原版 Stellar 排版与标签插件差距收官（代码行号 / grid / 展示容器 / 装饰标签）+ 阅读体验配置 + 内容系统扩展（2026-08）。
+
+| # | Spec | 主题 | 优先级 | 主模块 |
+|---|------|------|--------|--------|
+| 48 | [排版核心补齐（代码行号 + grid/hashtag/blockquote）](48-typography-essentials/spec.md) | 排版核心补齐（代码行号 + grid/hashtag/blockquote） | 高 | `shortcode.go` + `tag-plugins.css` + Chroma 配置 |
+| 49 | [展示容器插件（swiper/banner/quot/chat/navbar/frame）](49-tag-plugins-display/spec.md) | 展示容器插件（swiper/banner/quot/chat/navbar/frame） | 中 | `shortcode.go` + `tag-plugins.css` |
+| 50 | [阅读体验与配置（linklist/story/nav_tabs/背景图/评论懒加载）](50-reading-ux-config/spec.md) | 阅读体验与配置（linklist/story/nav_tabs/背景图/评论懒加载） | 中 | widgets + navbar + `site.yml` + `comments.js` |
+| 51 | [装饰标签插件（poetry/paper/reel/blur/psw/emp/wavy/sub/folders/albums/posters）](51-tag-plugins-decorative/spec.md) | 装饰标签插件（poetry/paper/reel/blur/psw/emp/wavy/sub/folders/albums/posters） | 低 | `shortcode.go` + `tag-plugins.css` |
+| 52 | [内容系统（专栏 Topic + 圆角渐变配置）](52-content-systems/spec.md) | 内容系统（专栏 Topic + 圆角渐变配置） | 低 | `store/topic` + API + Console + `site.yml` |
+
+### Wave 10 冲突矩阵（共享文件热点）
+
+| 共享文件 | 竞争者 | 处置 |
+|---------|--------|------|
+| `internal/post/shortcode.go` | 48 / 49 / 51 | **合并顺序 48 → 49 → 51**（48 先定行号与 grid/blockquote 块级基座，49 rebase 后追加，51 最后；全部 append 式，每合一个其余 `git rebase dev`） |
+| `assets/css/tag-plugins.css` | 48 / 49 / 51 | 与 shortcode.go 同顺序串行 merge，append 式单段冲突秒解 |
+| `config/site.yml` + `site.go` | 50 / 52 | 各加独立段（50 动 nav_tabs/style 消费点，52 动 topics 段 + style 圆角渐变组），append 式无冲突 |
+
+**50 / 52 与 48/49/51 零文件交集，可随时并行**；48 依赖 01（Chroma 行号）/06/16/20/30 已合，49 依赖 06/16/20/30/31 已合，50 依赖 33/34 已合，51 依赖 31 已合。
+
 ## 当前批次 · Wave 8（差距对齐，可立即并行）
 
 来源：前端 vs 原版 Stellar + 控制台 vs Halo 2.x 的全面差距调研（2026-07）。

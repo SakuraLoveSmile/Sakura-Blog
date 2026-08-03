@@ -123,13 +123,23 @@ authors:
     avatar: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg
     description: 博客作者
 
-# 导航栏额外标签页：追加在固定 tab（归档）之后，支持外链。
+# 导航栏标签页（Spec 50）：两种形状——
+#   旧形状（向后兼容，缺省追加）：nav_tabs: [{title, url, external}]，追加在固定 tab（归档）之后；
+#   新形状：nav_tabs: {enable_custom: true, items: [...]}，enable_custom=true 时导航栏
+#   完全由 items 定义（不再渲染固定 tab）。items 支持 icon（icons.yml key）与
+#   active_rules（路径前缀/正则列表，任一命中即高亮；缺省按 url 精确匹配）。
 # nav_tabs:
-#   - title: 友链
-#     url: /friends/
-#   - title: GitHub
-#     url: https://github.com/example
-#     external: true
+#   enable_custom: false
+#   items:
+#     - title: 友链
+#       url: /friends/
+#       icon: solar:planet-bold-duotone
+#     - title: GitHub
+#       url: https://github.com/example
+#       external: true
+#     - title: 技术
+#       url: /categories/技术/
+#       active_rules: ['/categories/技术/']
 
 # 首页 Hero cover 区：仅首页第一页且 title 非空时渲染，对齐 Stellar wiki_cover.ejs。
 # cover:
@@ -195,6 +205,8 @@ footer:
 
 # 文章页脚（版权声明 / 分享 / 打赏）
 article:
+  # 文章列表卡片布局（Spec 50）：tech=紧凑（缺省，零配置现状）/ story=图文大间距（自动加载 story.css）
+  type: tech
   # 分类配色表（对齐原版 theme.article.category_color）：首页卡片分类 meta 的文字与底色
   category_color:
     技术: '#1BCDFC'
@@ -234,7 +246,8 @@ admin:
 #   rightbar: welcome, author, siteinfo, latest_comment, toc
 # library：组件库（组件名 → layout + 参数），同名组件浅合并覆盖内置缺省参数；
 # pages：页面类型 → 左右栏组件序列，类型枚举 index/post/page/archive/categories/tags/topic/wiki/friends/notes/moments，
-# 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline。
+# 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline/linklist。
+#     links: {layout: linklist, title: 快速链接, columns: 2, items: [{title: 主页, url: /, icon: solar:home-bold}]}  # Spec 50 独立 linklist widget
 # widgets:
 #   library:
 #     recent: {layout: recent, limit: 10}                 # 最近更新（rss: '' 可隐藏订阅按钮）
@@ -249,9 +262,9 @@ admin:
 #     post: {leftbar: [related, recent], rightbar: [ghrepo, toc]}
 #     index: {leftbar: [recent, tagcloud], rightbar: [welcome, author, siteinfo, latest_comment]}
 
-# 外观样式可配置化（Spec 34，键名对照原版 _config.yml style 段）。
-# 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号走 :root 变量，
-# 字体族/背景/header_prefix/分页箍头走选择器覆盖；圆角因编译产物无变量、不支持（技术决策）。
+# 外观样式可配置化（Spec 34/52，键名对照原版 _config.yml style 段）。
+# 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号/圆角/渐变走 :root 变量，
+# 字体族/背景/header_prefix/分页箍头走选择器覆盖。
 # style:
 #   prefers_theme: auto        # auto/light/dark：首访无 localStorage 时缺省明暗
 #   smooth_scroll: true        # false 关闭平滑滚动
@@ -286,6 +299,14 @@ admin:
 #   header_prefix:              # 技术文章各级标题前缀符号
 #     h2: '#'
 #     h3: '='
+#   border_radius:              # 圆角四档（Spec 52）：注入 --radius-*，消费点 var(--radius-*, 原值) fallback
+#     card: 16px               # 卡片容器（post-card/article 等，现状 16px/8px 各处）
+#     block: 8px               # 块级元素（note/block 等，现状 8px/4px 各处）
+#     navbar: 100px            # 导航栏/菜单容器（现状 100px/8px）
+#     image: 8px               # 图片（现状 8px/16px，含 .img 类）
+#   gradient:                   # 渐变两组（Spec 52）：注入 --gradient-*，任意 CSS gradient 值
+#     button: 'linear-gradient(135deg, #ff8a5c, #ff5724)'
+#     searchbar: 'linear-gradient(135deg, #ff8a5c, #ff5724)'
 
 # SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
 # 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。

@@ -122,6 +122,9 @@
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=demo6">
 
+  {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
+  {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v=demo50">{{end}}
+
   {{- /* Mermaid 图表：CDN + 主题跟随 data-theme，PJAX 后重扫 */}}
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
@@ -197,6 +200,7 @@
   {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}
   <link rel="stylesheet" href="{{url_for "/assets/css/pjax-transitions.css"}}">
 
+  {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
   {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>

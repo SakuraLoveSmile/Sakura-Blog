@@ -9,15 +9,13 @@ import (
 // ArticleConfig 文章配置（site.yml article 段）。
 // Spec 50 新增 Type 字段：文章列表页布局模式（tech 紧凑 / story 图文大间距）。
 type ArticleConfig struct {
-	Copyright CopyrightConfig `yaml:"copyright" json:"copyright"`
-	Reward    RewardConfig    `yaml:"reward" json:"reward"`
-	Share     ShareConfig     `yaml:"share" json:"share"`
-	// CategoryColor 分类配色表（分类名→色值），对齐原版 theme.article.category_color，
-	// 首页卡片分类 meta 的 --text-p2/--theme-block 配色来源。
+	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
+	// 零配置时前端回退 tech，与现状逐像素一致。
+	Type          string            `yaml:"type" json:"type"`
+	Copyright     CopyrightConfig   `yaml:"copyright" json:"copyright"`
+	Reward        RewardConfig      `yaml:"reward" json:"reward"`
+	Share         ShareConfig       `yaml:"share" json:"share"`
 	CategoryColor map[string]string `yaml:"category_color" json:"category_color"`
-
-	// Spec 50 文章列表布局模式：tech（紧凑）/ story（图文大间距），缺省 tech。
-	Type string `yaml:"type" json:"type"`
 
 	// Spec 32 文章页首尾增强：
 	ReadNext     bool    `yaml:"read_next" json:"read_next"`         // read_next 下一篇卡片开关
@@ -59,6 +57,14 @@ func (a ArticleConfig) ExpireAfterDays() int {
 		return a.ExpireDays
 	}
 	return defaultExpireDays
+}
+
+// EffectiveType 规范化文章列表卡片布局（tech/story），非法或空值回退 tech（零配置回归）。
+func (a ArticleConfig) EffectiveType() string {
+	if a.Type == "story" {
+		return "story"
+	}
+	return "tech"
 }
 
 // ExpiredDays 计算距最后更新的天数；未超过阈值返回 0（不提醒）。

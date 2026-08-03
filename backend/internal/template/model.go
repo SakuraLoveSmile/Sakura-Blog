@@ -52,9 +52,9 @@ type ViewData struct {
 	ExpiredDays int           // 距最后更新天数，>0 时文首渲染过期提醒
 
 	// 专栏体系（对齐原版 topic）：
-	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
-	Topics      []*TopicItem // /topic 索引页的专栏卡片列表
-	HasTopics   bool         // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
+	TopicSeries *TopicSeries      // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
+	Topics      []*TopicItem      // /topic 索引页的专栏卡片列表
+	HasTopics   bool              // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
 
 	// 瞬间时间流（Layout=moments 时使用）。
 	Moments []*MomentItem

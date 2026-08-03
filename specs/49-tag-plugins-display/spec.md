@@ -40,7 +40,7 @@ Spec 06/16/20/30/31 已落地 40+ 标签插件，覆盖提示标注、布局容�
     <div class="tag-plugin banner"{% if bg %} style="background-image:url({{bg}})"{% endif %}>
       {% if link %}<a class="banner-link" href="{{link}}">{% endif %}
         <div class="banner-content">
-          {% if avatar %}<div class="avatar"><img src="{{avatar}}"></div>{% endif %}
+          {% if avatar %}<div class="avatar"><img src="{{avatar}}">{% endif %}
           {% if title %}<div class="title">{{title}}</div>{% endif %}
           {% if subtitle %}<div class="subtitle">{{subtitle}}</div>{% endif %}
           <div class="body fs14">{{renderMD(body)}}</div>

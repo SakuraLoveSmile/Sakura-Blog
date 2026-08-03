@@ -254,6 +254,12 @@ func (h *Handler) Register(r *gin.Engine) {
 			notebooks.GET("/:id/notes", h.listNotes)
 			notebooks.POST("/:id/notes", h.createNote)
 		}
+
+		// 专栏（Spec 52）
+		authed.GET("/topics", h.listTopics)
+		authed.POST("/topics", h.createTopic)
+		authed.PUT("/topics/:id", h.updateTopic)
+		authed.DELETE("/topics/:id", h.deleteTopic)
 		authed.GET("/notes/:id", h.getNote)
 		authed.PUT("/notes/:id", h.updateNote)
 		authed.DELETE("/notes/:id", h.deleteNote)

@@ -1,0 +1,26 @@
+{{- /* topic_header.html: 专栏头（Spec 52）：面包屑 + 名称 + 文章数。
+  数据源 .Page.Topic（专栏名，由 handleTopicDetail 填充）+ .Posts（文章卡片列表）；被 topic.html 引用。
+  结构对齐 notebook.html 的 banner 模式。*/ -}}
+{{- if .Page.Topic}}
+<div class="article banner top topic-banner">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/topic">{{- lang "breadcrumb.topic" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="/topic">{{.Page.Topic}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Topic}}</span></h1>
+        <p class="description">{{- lang "topic.post_count" (len .Posts) -}}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{- end}}

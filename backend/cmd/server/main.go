@@ -130,6 +130,15 @@ func main() {
 	defer st.Close()
 	log.Printf("sqlite ready: %s", app.DBPath)
 
+	// Spec 52 专栏迁移：建 topics 表 + posts 表加 topic_id 列 + 存量 topic 文本回填（幂等）。
+	// 必须在任何 postCols 查询（setupSearchIndex 等）之前执行：postCols 已含 topic_id 列。
+	if err := st.EnsureTopicsTable(); err != nil {
+		log.Fatalf("ensure topics table: %v", err)
+	}
+	if err := st.MigrateTopicBackfill(); err != nil {
+		log.Fatalf("migrate topic backfill: %v", err)
+	}
+
 	// FTS5 全文索引（Spec 25）：在 seed 前装配，保证导入也能同步。
 	searchIdx := setupSearchIndex(st)
 
@@ -203,6 +212,11 @@ func main() {
 		n, _ := seedpkg.Count(posts)
 		if err := seedpkg.Import(st, posts); err != nil {
 			log.Fatalf("seed: %v", err)
+		}
+		// seed 新导入的 topic 文本可能未在启动迁移时建行（当时 posts 表还是旧数据），
+		// 此处兜底再跑一次回填（幂等：仅处理 topic 非空且 topic_id=0 的文章）。
+		if err := st.MigrateTopicBackfill(); err != nil {
+			log.Fatalf("migrate topic backfill after seed: %v", err)
 		}
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}

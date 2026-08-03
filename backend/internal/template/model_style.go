@@ -7,27 +7,46 @@ import (
 	"strings"
 )
 
-// ---------- Spec 34: 外观样式可配置化 ----------
+// ---------- Spec 34/52: 外观样式可配置化 ----------
 //
 // 对齐原版 Stellar _config.yml 的 style 段。实现策略（依据 main.css 编译产物特征）：
 //   - 颜色（theme 经 --hue/--sat/--light 分量、accent、link+link-a20）与正文字号(--fsp)是 :root 变量 → 直接注入覆盖；
 //   - 字体族/根字号/leftbar 背景/全站背景/header_prefix/分页箭头/代码块滚动条是编译期字面量 → 选择器级 style 覆盖；
-//   - 圆角在 main.css 中为数百处混用字面量、无变量可注入 → 标记「不支持」（spec 技术决策），不硬造。
+//   - 圆角/渐变（Spec 52）：border_radius 四档 + gradient 两组注入 :root 变量（--radius-*/--gradient-*），
+//     消费点（main.css）一律 var(--radius-*, 原硬编码值) fallback 形式，未配置不注入 → 零配置零差异。
 // 全部字段缺省为空 → InjectCSS 输出空串 → 零配置时与现状逐像素一致（回归底线）。
 
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
-	PrefersTheme string           `yaml:"prefers_theme" json:"prefers_theme"` // auto/light/dark：首访无 localStorage 记录时的缺省明暗（空=auto 跟随系统）
-	SmoothScroll *bool            `yaml:"smooth_scroll" json:"smooth_scroll"` // 平滑滚动（缺省 nil=现状 smooth；显式 false 关闭）
-	TextAlign    string           `yaml:"text_align" json:"text_align"`       // 正文段落对齐（left/justify 等，空=现状 left）
-	Color        StyleColor       `yaml:"color" json:"color"`
-	FontSize     StyleFontSize    `yaml:"font_size" json:"font_size"`
-	FontFamily   StyleFontFamily  `yaml:"font_family" json:"font_family"`
-	Leftbar      StyleLeftbar     `yaml:"leftbar" json:"leftbar"`
-	Site         StyleSite        `yaml:"site" json:"site"`
-	Codeblock    StyleCodeblock   `yaml:"codeblock" json:"codeblock"`
-	Paginator    StylePaginator   `yaml:"paginator" json:"paginator"`
+	PrefersTheme string            `yaml:"prefers_theme" json:"prefers_theme"` // auto/light/dark：首访无 localStorage 记录时的缺省明暗（空=auto 跟随系统）
+	SmoothScroll *bool             `yaml:"smooth_scroll" json:"smooth_scroll"` // 平滑滚动（缺省 nil=现状 smooth；显式 false 关闭）
+	TextAlign    string            `yaml:"text_align" json:"text_align"`       // 正文段落对齐（left/justify 等，空=现状 left）
+	Color        StyleColor        `yaml:"color" json:"color"`
+	FontSize     StyleFontSize     `yaml:"font_size" json:"font_size"`
+	FontFamily   StyleFontFamily   `yaml:"font_family" json:"font_family"`
+	Leftbar      StyleLeftbar      `yaml:"leftbar" json:"leftbar"`
+	Site         StyleSite         `yaml:"site" json:"site"`
+	Codeblock    StyleCodeblock    `yaml:"codeblock" json:"codeblock"`
+	Paginator    StylePaginator    `yaml:"paginator" json:"paginator"`
 	HeaderPrefix map[string]string `yaml:"header_prefix" json:"header_prefix"` // 技术文章各级标题前缀符号，如 {h2: '#', h3: '='}
+	BorderRadius StyleBorderRadius `yaml:"border_radius" json:"border_radius"` // 圆角四档（Spec 52）：注入 --radius-* 变量
+	Gradient     StyleGradient     `yaml:"gradient" json:"gradient"`         // 渐变两组（Spec 52）：注入 --gradient-* 变量
+}
+
+// StyleBorderRadius 圆角组（Spec 52）：注入 :root 变量 --radius-card/block/navbar/image。
+// 缺省空 = 不注入，消费点回退 main.css 原硬编码值（var(--radius-*, 原值)）。
+type StyleBorderRadius struct {
+	Card    string `yaml:"card" json:"card"`    // 卡片容器（post-card/article 等，现状 16px/8px 各处）
+	Block   string `yaml:"block" json:"block"`  // 块级元素（note/block 等，现状 8px/4px 各处）
+	Navbar  string `yaml:"navbar" json:"navbar"` // 导航栏/菜单容器（现状 100px/8px）
+	Image   string `yaml:"image" json:"image"`  // 图片（现状 8px/16px，含 .img 类）
+}
+
+// StyleGradient 渐变组（Spec 52）：注入 :root 变量 --gradient-button/searchbar。
+// 值为任意 CSS gradient 表达式（linear-gradient(...) 等）；缺省空 = 不注入。
+type StyleGradient struct {
+	Button    string `yaml:"button" json:"button"`    // 按钮背景渐变
+	Searchbar string `yaml:"searchbar" json:"searchbar"` // 搜索栏渐变
 }
 
 // StyleColor 主题色组（缺省空=main.css 内置值：theme hsl(192 98% 55%)/accent #ff5724/link hsl(207 90% 54%)）。
@@ -110,6 +129,26 @@ func (s StyleConfig) InjectCSS() template.CSS {
 		fmt.Fprintf(&root, "--fsp:%s;--gap-p:calc(%s + 4px);--gap-p-compact:calc(%s * 0.75);",
 			s.FontSize.Body, s.FontSize.Body, s.FontSize.Body)
 	}
+	// 圆角四档（Spec 52）：仅显式配置时输出，未配置不定义变量（消费点 var(--radius-*, 原值) fallback）
+	if s.BorderRadius.Card != "" {
+		fmt.Fprintf(&root, "--radius-card:%s;", s.BorderRadius.Card)
+	}
+	if s.BorderRadius.Block != "" {
+		fmt.Fprintf(&root, "--radius-block:%s;", s.BorderRadius.Block)
+	}
+	if s.BorderRadius.Navbar != "" {
+		fmt.Fprintf(&root, "--radius-navbar:%s;", s.BorderRadius.Navbar)
+	}
+	if s.BorderRadius.Image != "" {
+		fmt.Fprintf(&root, "--radius-image:%s;", s.BorderRadius.Image)
+	}
+	// 渐变两组（Spec 52）：仅显式配置时输出
+	if s.Gradient.Button != "" {
+		fmt.Fprintf(&root, "--gradient-button:%s;", s.Gradient.Button)
+	}
+	if s.Gradient.Searchbar != "" {
+		fmt.Fprintf(&root, "--gradient-searchbar:%s;", s.Gradient.Searchbar)
+	}
 	if root.Len() > 0 {
 		b.WriteString(":root{")
 		b.WriteString(root.String())
@@ -173,9 +212,12 @@ func (s StyleConfig) leftbarCSS() string {
 	if l.BackgroundImage != "" {
 		blur := firstNonEmpty(l.BlurPx, "100px")
 		opacity := firstNonEmpty(l.BackgroundOpacity, "0.8")
-		// 重新显示 sidebg 并设图片；恢复 head.html 关掉的 mask/glass（回到原版图片模糊模式）
+		// 重新显示 sidebg 并设图片；恢复 head.html 纯色块（Spec Task 2）关掉的 mask 淡出与玻璃高光，
+		// 回到原版图片模糊模式（Spec 50 侧栏背景图验证修复）。
 		fmt.Fprintf(&b, ".l_left .sidebg{display:block;background-image:url(%s);--blur-px:%s;--background-opacity:%s;}", l.BackgroundImage, blur, opacity)
 		b.WriteString(".l_left .leftbar-container{background:transparent;}")
+		b.WriteString(".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}")
+		b.WriteString("@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}")
 	} else if l.BackgroundColorLight != "" || l.BackgroundColorDark != "" {
 		if l.BackgroundColorLight != "" {
 			fmt.Fprintf(&b, ".l_left .leftbar-container{background:%s;}", l.BackgroundColorLight)

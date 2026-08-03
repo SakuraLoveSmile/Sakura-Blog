@@ -1,14 +1,16 @@
-{{- /* topics.html: 专栏索引页，对齐 Stellar layout/index_topic.ejs + topic_card.ejs
+{{- /* topics.html: 专栏索引页（Spec 52），对齐 Stellar layout/index_topic.ejs + topic_card.ejs
    navbar + div.post-list.wiki.topic（topic 卡片：preview 图标 + 名称 + 文章数）。
-   由 base.html 按 .Page.Layout == "topics" 分派渲染。
-*/ -}}
+   由 base.html 按 .Page.Layout == "topics" 分派渲染；
+   数据 .Topics（TopicItem：Name/Count/Icon），点击跳 /topic/{name}（后端按 name 兑底 301 到 slug 路径）。*/ -}}
 {{template "partial/navbar" .}}
 <div class="post-list wiki topic">
   {{range .Topics}}
   <div class="post-card-wrap">
     <a class="post-card wiki topic" href="/topic/{{.Name}}">
       <article class="md-text">
-        <div class="preview"><img src="{{.Icon}}"/></div>
+        {{if .Icon}}
+        <div class="preview"><img src="{{.Icon}}" alt="{{.Name}}" loading="lazy"/></div>
+        {{end}}
         <div class="excerpt">
           <h2 class="post-title">{{.Name}}</h2>
           <p>{{- lang "topic.post_count" .Count -}}</p>

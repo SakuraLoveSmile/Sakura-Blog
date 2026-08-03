@@ -264,6 +264,26 @@
   transform: translate(-50%, 0);
 }
 
+/* Spec 50 评论区懒加载占位：旋转图标（svg.loading 基础样式在 main.css）+ 提示文本居中；
+   列表数据由 comments.js 进入视口后 fetch 渲染，占位随之移除 */
+.cmt-lazy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 12px 0;
+  color: var(--text-p3);
+  font-size: 13px;
+}
+.cmt-lazy svg.loading {
+  position: static;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  z-index: auto;
+}
+
 /* 移动端：三列输入变单列 */
 @media screen and (max-width: 667px) {
   .cmt-body.native .cmt-inputs {
