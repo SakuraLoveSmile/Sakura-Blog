@@ -13,11 +13,6 @@
   </div>
   <div class="widget-body is-static">
     <div class="tag-card">
-      <div class="tag-mode-switch" role="group" aria-label="{{lang "widget.tagcloud"}}">
-        <button type="button" data-mode="dynamic">{{lang "tags.dynamic"}}</button>
-        <button type="button" class="active" data-mode="static">{{lang "tags.static"}}</button>
-      </div>
-
       {{- /* 动态云容器：SSR 留空并隐藏，tagcloud.js 从静态云读数据填充 3x3 tile */}}
       <div class="tag-cloud" hidden>
         <div class="tag-cloud-inner"></div>
@@ -36,8 +31,10 @@
           <strong>{{len .Data}}</strong>
           <span>{{lang "tags.stat_unit"}}</span>
         </div>
-        <div class="tag-hint" data-hint-drag="{{lang "tags.hint_drag"}}" data-hint-sorted="{{lang "tags.hint_sorted"}}">
-          <span>{{lang "tags.hint_sorted"}}</span>
+        {{- /* 模式切换：右下角小文字操作（取代原拖拽提示位置） */}}
+        <div class="tag-mode-switch" role="group" aria-label="{{lang "widget.tagcloud"}}">
+          <button type="button" data-mode="dynamic">{{lang "tags.dynamic"}}</button>
+          <button type="button" class="active" data-mode="static">{{lang "tags.static"}}</button>
         </div>
       </div>
     </div>

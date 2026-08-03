@@ -8,22 +8,22 @@
 
 .widget-wrapper.tagcloud .widget-body {
   padding: 0 16px;
+  /* 覆盖 main.css 自带原版基座（bg-a50 深色面板 + 12px 圆角）：重设计后云直接浮在侧栏面上 */
+  background: transparent;
+  border-radius: 0;
+}
+.widget-wrapper.tagcloud .widget-body a {
+  /* 覆盖 main.css 原版 a 规则的行高，静态云节奏由 .tag-cloud-static 控制 */
+  line-height: inherit;
 }
 
-/* ── 交互卡片 ── */
+/* ── 内容容器：黑色舞台（保留设计稿的深色云区基座，但用站点背景色取代 main.css 的
+   bg-a50 半透明黑——后者叠在侧栏灰上发闷；纯黑舞台上灰度标签与边缘渐隐更通透） ── */
 .widget-wrapper.tagcloud .tag-card {
   position: relative;
-  background: var(--card);
-  border: 1px solid var(--block-border);
-  border-radius: 14px;
-  padding: 16px 14px 12px;
-  overflow: hidden;
-  opacity: 0;
-  animation: tc-card-in 0.5s ease-out 0.1s forwards;
-}
-@keyframes tc-card-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  background: var(--background);
+  border-radius: 12px;
+  padding: 10px 10px 6px;
 }
 
 /* ── 动态云容器：边缘渐隐 + 抓取光标 ── */
@@ -35,7 +35,7 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 10px;
+  border-radius: 12px;
   /* 触屏纵向滚动不被拖拽劫持；横向拖拽交给 JS */
   touch-action: pan-y;
   /* 双向边缘渐隐：标签滑出边界时柔和淡出 */
@@ -111,46 +111,41 @@
   100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
 }
 
-/* ── 模式切换（窄栏紧凑版） ── */
-.widget-wrapper.tagcloud .tag-mode-switch {
+/* ── 模式切换：footer 右下角小文字操作，无底色无胶囊，仅以颜色深浅表达状态 ── */
+.widget-wrapper.tagcloud .tag-footer .tag-mode-switch {
   display: inline-flex;
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 5;
-  background: var(--block);
-  border-radius: 8px;
-  padding: 2px;
+  align-items: baseline;
+  gap: 10px;
 }
-.widget-wrapper.tagcloud .tag-mode-switch button {
+.widget-wrapper.tagcloud .tag-footer .tag-mode-switch button {
   border: none;
   background: transparent;
-  padding: 3px 9px;
+  padding: 0;
   font-size: 0.6875rem;
   font-family: inherit;
   line-height: 1.4;
-  color: var(--text-p3);
+  color: var(--text-p4);
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease-out;
 }
-.widget-wrapper.tagcloud .tag-mode-switch button.active {
-  background: var(--card);
-  color: var(--text);
+.widget-wrapper.tagcloud .tag-footer .tag-mode-switch button:hover {
+  color: var(--text-p2);
+}
+.widget-wrapper.tagcloud .tag-footer .tag-mode-switch button.active {
+  color: var(--text-p1);
   font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* ── 静态云（SSR 兜底，默认可见） ── */
+/* ── 静态云（SSR 兜底，默认可见；窄栏收紧行高避免撑高侧栏） ── */
 .widget-wrapper.tagcloud .tag-cloud-static {
-  padding: 10px 0 4px;
-  line-height: 2.1;
+  padding: 10px 0 0;
+  line-height: 1.9;
   text-align: center;
 }
 .widget-wrapper.tagcloud .tag-cloud-static .tag-static {
   display: inline-block;
   text-decoration: none;
-  margin: 0 7px;
+  margin: 0 6px;
   cursor: pointer;
   transition: color 0.2s ease;
 }
@@ -179,36 +174,13 @@
   font-weight: 600;
   font-size: 0.8125rem;
 }
-.widget-wrapper.tagcloud .tag-footer .tag-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-p4);
-  font-size: 0.625rem;
-}
-.widget-wrapper.tagcloud .tag-footer .tag-hint .dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--text-p3);
-  animation: tc-pulse 2s ease-in-out infinite;
-}
-@keyframes tc-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
 
-/* ── 减弱动效：关闭入场/涟漪/脉冲，标签直接可见（漂移/惯性由 JS 侧同步禁用） ── */
+/* ── 减弱动效：标签直接可见，涟漪关闭（漂移/惯性由 JS 侧同步禁用） ── */
 @media (prefers-reduced-motion: reduce) {
-  .widget-wrapper.tagcloud .tag-card {
-    animation: none;
-    opacity: 1;
-  }
   .widget-wrapper.tagcloud .tag-cloud .tag {
     animation: none;
     opacity: var(--tag-o, 1);
     transform: translate(-50%, -50%);
   }
   .widget-wrapper.tagcloud .ripple { animation: none; opacity: 0; }
-  .widget-wrapper.tagcloud .tag-footer .tag-hint .dot { animation: none; opacity: 0.6; }
 }

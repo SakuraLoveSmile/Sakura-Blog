@@ -2,21 +2,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
-  <meta name="theme-color" content="#f9fafb">
+  <meta name="theme-color" content="#000">
 
-  {{- /* 主题初始化：CSS 加载前读 localStorage 用户选择并设置 data-theme，避免闪烁；
-     无记录时按 style.prefers_theme 缺省偏好（light/dark 直接设值；auto 跟随系统，不设值）。 */}}
-  <script>
-    (function () {
-      var t = localStorage.getItem('theme');
-      if (t === 'light' || t === 'dark') { document.documentElement.dataset.theme = t; return; }
-      if (t === 'auto') { document.documentElement.removeAttribute('data-theme'); return; }
-      {{- /* 无 localStorage 记录：套用站点缺省偏好（Spec 34 style.prefers_theme） */}}
-      var pref = '{{.Site.Style.EffectivePrefersTheme}}';
-      if (pref === 'light' || pref === 'dark') document.documentElement.dataset.theme = pref;
-    })();
-  </script>
   <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
   {{- /* Spec 42：description/keywords 优先级见 ViewData.MetaDescription/MetaKeywords（文章级 → 站点级 → 现状回退） */}}
   <meta name="description" content="{{.MetaDescription}}">
@@ -82,10 +69,10 @@
   <link rel="stylesheet" href="{{url_for "/assets/fonts/lxgw/lxgwwenkaiscreen.css"}}">
 
   {{- /* Stellar 主 CSS（编译产物）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=demo2">
+  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=dark1">
 
-  {{- /* Chroma 代码高亮令牌色（亮/暗），容器样式复用 main.css */}}
-  <link rel="stylesheet" href="/assets/css/highlight.css">
+  {{- /* Chroma 代码高亮令牌色（深色），容器样式复用 main.css */}}
+  <link rel="stylesheet" href="/assets/css/highlight.css?v=dark1">
 
   {{- /* KaTeX 数学公式（Spec 07）：前端 auto-render，goldmark 侧仅保护定界符 */}}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" crossorigin="anonymous">
@@ -120,27 +107,21 @@
   <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo9">
 
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=demo6">
+  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=dark1">
 
   {{- /* 标签云 widget 重设计（tagcloud.design）：双模式拖拽云卡片样式 */}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v=cloud4">
+  <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v=cloud9">
 
   {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
   {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v=demo50">{{end}}
 
-  {{- /* Mermaid 图表：CDN + 主题跟随 data-theme，PJAX 后重扫 */}}
+  {{- /* Mermaid 图表：CDN + 固定深色主题，PJAX 后重扫 */}}
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
     (function () {
-      function mermaidTheme() {
-        var t = document.documentElement.dataset.theme;
-        if (t === 'dark') return 'dark';
-        if (t === 'light') return 'default';
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
-      }
       function runMermaid() {
         if (typeof mermaid === 'undefined') return;
-        mermaid.initialize({ startOnLoad: false, theme: mermaidTheme() });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
         mermaid.run({ querySelector: '.md-text .mermaid, .mermaid' });
       }
       if (document.readyState === 'loading') {
@@ -186,18 +167,6 @@
   <style>
     .navbar-blur:before,
     .navbar-blur:after { transform: translateZ(0); will-change: backdrop-filter; }
-  </style>
-
-  {{- /* 主题切换按钮（左栏 footer social）：sun/moon 图标随主题显隐。
-     无 data-theme 时用 prefers-color-scheme + :not([data-theme="light"]) 兜底，与 main.css 媒体查询模式一致。 */}}
-  <style>
-    .theme-toggle .icon-moon { display: none; }
-    :root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
-    :root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
-    @media screen and (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: none; }
-      :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
-    }
   </style>
 
   {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}

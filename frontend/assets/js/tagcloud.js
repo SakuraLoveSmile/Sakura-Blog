@@ -25,8 +25,7 @@
     var inner = cloud && cloud.querySelector('.tag-cloud-inner');
     var staticCloud = root.querySelector('.tag-cloud-static');
     var modeSwitch = root.querySelector('.tag-mode-switch');
-    var hint = root.querySelector('.tag-hint');
-    if (!cloud || !inner || !staticCloud || !modeSwitch || !hint) return null;
+    if (!cloud || !inner || !staticCloud || !modeSwitch) return null;
 
     // ── 数据：从 SSR 静态云读 name/href/title/level（唯一数据源）──
     var tags = [];
@@ -48,10 +47,11 @@
     var hasDragged = false, suppressClick = false, suppressTimer = 0;
     var rafId = 0, stopped = false, mode = 'static';
 
-    // 在一个 tile 内铺标签：6 列 x 4 行错位网格 + 确定性小偏移（sin 种子，各 tile 内容一致才可无缝循环）。
-    // 槽位有限（24）时按洗牌序循环取标签，保证所有标签都进入动态云（多出的标签次轮出现）。
-    function fillTile(tileEl, list) {
-      var cols = 6, rows = 4, slots = cols * rows;
+    // 在一个 tile 内铺标签：错位网格 + 确定性小偏移（sin 种子，各 tile 内容一致才可无缝循环）。
+    // 窄侧栏（<280px）用 4x5 网格避免标签拥挤，宽容器用设计稿的 6x4；
+    // 槽位不足时按洗牌序循环取标签，保证所有标签都进入动态云。
+    function fillTile(tileEl, list, cols, rows) {
+      var slots = cols * rows;
       for (var i = 0; i < slots; i++) {
         var item = list[i % list.length];
         var row = Math.floor(i / cols);
@@ -76,6 +76,8 @@
       cloudWidth = cloud.offsetWidth;
       cloudHeight = cloud.offsetHeight;
       inner.textContent = '';
+      var narrow = cloudWidth > 0 && cloudWidth < 280;
+      var cols = narrow ? 4 : 6, rows = narrow ? 5 : 4;
       var list = shuffle(tags);
       for (var ty = 0; ty < 3; ty++) {
         for (var tx = 0; tx < 3; tx++) {
@@ -83,7 +85,7 @@
           tile.className = 'tag-tile';
           tile.style.left = (tx * 33.333) + '%';
           tile.style.top = (ty * 33.333) + '%';
-          fillTile(tile, list);
+          fillTile(tile, list, cols, rows);
           inner.appendChild(tile);
         }
       }
@@ -215,18 +217,10 @@
         cloud.setAttribute('hidden', '');
         staticCloud.removeAttribute('hidden');
         autoDrift = false;
-        hint.textContent = hint.dataset.hintSorted;
       } else {
         staticCloud.setAttribute('hidden', '');
         cloud.removeAttribute('hidden');
         autoDrift = !reduced;
-        hint.textContent = '';
-        var dot = document.createElement('span');
-        dot.className = 'dot';
-        var txt = document.createElement('span');
-        txt.textContent = hint.dataset.hintDrag;
-        hint.appendChild(dot);
-        hint.appendChild(txt);
       }
       root.classList.toggle('is-static', m === 'static');
     }
@@ -254,16 +248,28 @@
       window.removeEventListener('resize', onResize);
     }
 
-    buildTiles();
+    cloud.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    cloud.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onEnd);
+    cloud.addEventListener('click', onClickCapture, true);
+    cloud.addEventListener('mouseenter', onEnter);
+    cloud.addEventListener('mouseleave', onLeave);
     modeSwitch.addEventListener('click', onModeClick);
+    window.addEventListener('resize', onResize);
+
+    // 先切动态模式使云容器可见（hidden 时 offsetWidth=0，窄栏网格判据会失效），再铺 tile
+    switchMode('dynamic');
+    buildTiles();
     rafId = requestAnimationFrame(animate);
-    switchMode('dynamic'); // 设计稿默认动态模式；静态保留为无 JS 兜底
 
     return { stop: stop };
   }
 
   function init() {
-    var roots = document.querySelectorAll('.widget-wrapper.tagcloud .widget-body');
+    var roots = document.querySelectorAll('.widget-wrapper.tagcloud');
     if (!roots.length) return;
     instances.forEach(function (it) { it.stop(); });
     instances = [];

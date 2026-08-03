@@ -2,7 +2,7 @@
    渲染入口：{{template "layout/base" .}}，文章正文通过 {{template "partial/content" .}} 嵌入。
 */ -}}
 <!DOCTYPE html>
-<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}">
+<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" data-theme="dark">
 {{template "partial/head" .}}
 <body>
   {{- /* 阅读进度条：仅文章页由 reading.js 显示并更新宽度 */}}
@@ -74,25 +74,6 @@
       marked: 'https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js',
       lazyload: '/assets/js/vendor/lazyload.min.js'
     };
-
-    {{- /* 主题切换：初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化（Demo 1 修过的坑）。
-       切换后写入 localStorage，与 head.html 的主题初始化脚本配合实现持久化。 */}}
-    function toggleTheme() {
-      const html = document.documentElement;
-      const cur = html.dataset.theme;
-      let next;
-      switch (cur) {
-        case 'light': next = 'dark'; break;
-        case 'dark': next = 'auto'; break;
-        default: next = 'light'; // auto (无 data-theme) 或其他情况 → light
-      }
-      if (next === 'auto') {
-        html.removeAttribute('data-theme');
-      } else {
-        html.dataset.theme = next;
-      }
-      localStorage.setItem('theme', next);
-    }
 
     {{- /* utils：对齐原版 scripts/utils.ejs 的 css/js/jq 三个加载辅助（插件按需懒加载 CDN 资源）。
        css/js 带去重缓存；jq 懒加载 jQuery 并把回调注册到 pjax:complete（对齐原版语义）。 */}}
@@ -379,7 +360,7 @@
   <script src="{{url_for "/assets/js/comments.js"}}" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}" defer></script>
   {{- /* 标签云 widget 交互：拖拽无缝循环云/模式切换（.widget-wrapper.tagcloud 存在性检查 + pjax:complete 重初始化，多实例支持） */}}
-  <script src="{{url_for "/assets/js/tagcloud.js"}}?v=tc3" defer></script>
+  <script src="{{url_for "/assets/js/tagcloud.js"}}?v=tc6" defer></script>
   {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}
   <script src="{{url_for "/assets/js/ai-summary.js"}}" defer></script>
   {{- /* PJAX 配置注入（Spec 36）：条件化注入，需 site.yml plugins.pjax.enable=true */}}

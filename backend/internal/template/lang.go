@@ -58,8 +58,6 @@ var zhCN = map[string]string{
 	"tags.stat_pre":    "共",
 	"tags.stat_unit":   "个标签",
 	"tags.post_count":  "%d 篇文章",
-	"tags.hint_drag":   "拖拽探索 · 无限循环",
-	"tags.hint_sorted": "按热度排序",
 
 	// ── page 组（对齐 zh-CN.yml page.*）────────────────────────
 	"page.error.what":   "很抱歉，您访问的页面不存在",
@@ -171,7 +169,7 @@ var zhCN = map[string]string{
 
 	// 欢迎语缺省（markdown widget fallback）
 	"widget.welcome":      "这里是用 Go 重建的 Stellar 风格博客，欢迎随处逛逛。",
-	"widget.welcome_hint": "左侧可以搜索文章，右下角可以切换深浅色主题。",
+	"widget.welcome_hint": "左侧可以搜索文章，欢迎常来看看。",
 
 	// 作者页（Spec 38 多作者体系）
 	"author.page_title": "作者：%s",
@@ -188,9 +186,6 @@ var zhCN = map[string]string{
 	"password.unlocking": "解锁中...",
 	"password.error":     "密码错误，请重试",
 	"password.net_error": "网络错误，请检查连接后重试",
-
-	// 主题切换
-	"theme.toggle": "切换主题",
 
 	// AI 文章摘要（Spec 53）
 	"ai.summary.title":       "AI 摘要",
