@@ -473,6 +473,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 			Slug:        cur.Slug,
 			Title:       cur.Title,
 			ContentHTML: template.HTML(cur.ContentHTML),
+			Updated:     cur.UpdatedAt.Format("2006-01-02"), // Spec 53 Part C：wiki dateinfo
 		},
 		WikiPrevDoc: prev,
 		WikiNextDoc: next,

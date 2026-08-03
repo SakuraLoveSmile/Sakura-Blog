@@ -27,7 +27,7 @@ const emit = defineEmits<{
   (e: "apply", values: Record<string, string>): void;
 }>();
 
-type FieldKey = "title" | "slug" | "category" | "tags" | "excerpt";
+type FieldKey = "title" | "slug" | "category" | "tags" | "excerpt" | "summary";
 
 const fieldDefs: { key: FieldKey; label: string; kind: "input" | "select" | "textarea" }[] = [
   { key: "title", label: "标题", kind: "input" },
@@ -35,10 +35,11 @@ const fieldDefs: { key: FieldKey; label: string; kind: "input" | "select" | "tex
   { key: "category", label: "分类目录", kind: "select" },
   { key: "tags", label: "标签", kind: "input" },
   { key: "excerpt", label: "摘要", kind: "textarea" },
+  { key: "summary", label: "AI 摘要（前台导读）", kind: "textarea" },
 ];
 
-const checked = ref<Record<FieldKey, boolean>>({ title: true, slug: true, category: true, tags: true, excerpt: true });
-const values = ref<Record<FieldKey, string>>({ title: "", slug: "", category: "", tags: "", excerpt: "" });
+const checked = ref<Record<FieldKey, boolean>>({ title: true, slug: true, category: true, tags: true, excerpt: true, summary: false });
+const values = ref<Record<FieldKey, string>>({ title: "", slug: "", category: "", tags: "", excerpt: "", summary: "" });
 const loadingFields = ref<Set<FieldKey>>(new Set());
 const batchLoading = ref(false);
 
@@ -53,6 +54,7 @@ watch(
       category: props.form.category,
       tags: props.form.tags,
       excerpt: props.form.excerpt,
+      summary: "",
     };
   }
 );

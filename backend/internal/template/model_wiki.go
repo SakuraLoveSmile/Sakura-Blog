@@ -35,6 +35,7 @@ type WikiDocView struct {
 	Slug        string
 	Title       string
 	ContentHTML template.HTML
+	Updated     string // 更新日期（Spec 53 Part C：对齐原版 dateinfo.ejs wiki 分支，仅显示更新于）
 }
 
 // WikiDocNav wiki 文档页上下篇导航项（同 project 内按 doc_order 相邻的已发布文档）。

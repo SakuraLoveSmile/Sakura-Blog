@@ -3,10 +3,14 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +29,7 @@ var aiAllowedFields = map[string]bool{
 	"category": true,
 	"tags":     true,
 	"excerpt":  true,
+	"summary":  true, // Spec 53 AI 文章摘要
 }
 
 type aiGenerateReq struct {
@@ -42,6 +47,7 @@ type aiResult struct {
 	Category string   `json:"category,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 	Excerpt  string   `json:"excerpt,omitempty"`
+	Summary  string   `json:"summary,omitempty"` // Spec 53 AI 文章摘要
 }
 
 // aiGenerate POST /api/v1/ai/generate：按请求字段生成文章属性。
@@ -97,6 +103,7 @@ var aiFieldSpecs = map[string]string{
 	"category": `"category": 一个最贴切的分类名`,
 	"tags":     `"tags": 3-5 个标签组成的字符串数组`,
 	"excerpt":  `"excerpt": 100 字以内的中文摘要，概括文章核心内容`,
+	"summary":  `"summary": 120-200 字的中文导读摘要，面向读者概括全文亮点与结论，语气自然流畅，不同于 excerpt 的列表摘要`,
 }
 
 // aiContentLimit 送入模型的正文长度上限（rune），控制 token 消耗。
@@ -228,4 +235,122 @@ func parseAIContent(content string) (aiResult, error) {
 		return res, err
 	}
 	return res, nil
+}
+
+// --- Spec 53 读者自助生成：临时接入自己的 OpenAI 兼容 API ---
+
+// aiGuestReq 读者自助生成请求：端点/Key/模型均由读者提供，服务端不存。
+type aiGuestReq struct {
+	Endpoint string `json:"endpoint"` // OpenAI 兼容 base_url
+	APIKey   string `json:"api_key"`
+	Model    string `json:"model"`
+	Content  string `json:"content"` // 文章正文（前端截断后传入）
+}
+
+const (
+	aiGuestContentLimit = 40000 // 送入模型的正文 rune 上限
+	aiGuestResultLimit  = 2000  // 返回摘要的 rune 上限
+)
+
+// aiSummaryGuest POST /api/v1/ai/summary/guest：用读者自己的 API 生成摘要（公开端点）。
+// 安全基线：https-only + 私网段拒绝（SSRF）+ per-IP 限流；api_key 仅透传不落不落日志。
+func (h *Handler) aiSummaryGuest(c *gin.Context) {
+	cfg, err := config.LoadAI(h.store)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !cfg.UserAPIOn() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "本站未开启读者自助生成"})
+		return
+	}
+	if !aiGuestRateAllow(c.ClientIP()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请求过于频繁，请稍后再试"})
+		return
+	}
+	var req aiGuestReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		return
+	}
+	if strings.TrimSpace(req.Endpoint) == "" || strings.TrimSpace(req.Model) == "" || strings.TrimSpace(req.Content) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "接口地址、模型与正文均必填"})
+		return
+	}
+	if err := validateGuestAIEndpoint(req.Endpoint); err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, errPrivateHost) {
+			status = http.StatusForbidden // SSRF 私网段：403
+		}
+		c.JSON(status, gin.H{"error": "接口地址不可用：" + err.Error()})
+		return
+	}
+	content := req.Content
+	if runes := []rune(content); len(runes) > aiGuestContentLimit {
+		content = string(runes[:aiGuestContentLimit])
+	}
+	guest := config.AIConfig{BaseURL: req.Endpoint, APIKey: req.APIKey, Model: req.Model}
+	text, err := callChatCompletion(guest,
+		"你是博客文章摘要助手。根据用户提供的文章正文生成一段导读摘要。只输出摘要文本本身，不要任何解释、标题或 Markdown 标记。",
+		"请为下面的文章生成 120-200 字的中文导读摘要，概括全文亮点与结论：\n"+content)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "AI 调用失败: " + err.Error()})
+		return
+	}
+	summary := strings.TrimSpace(text)
+	if runes := []rune(summary); len(runes) > aiGuestResultLimit {
+		summary = string(runes[:aiGuestResultLimit])
+	}
+	c.JSON(http.StatusOK, gin.H{"summary": summary})
+}
+
+// validateGuestAIEndpoint 校验读者提供的端点：仅 https，且域名解析后不得落在私网/环回/链路本地段（SSRF 防护）。
+// 私网命中返回 errPrivateHost（handler 映射 403），其余格式问题 400。
+func validateGuestAIEndpoint(endpoint string) error {
+	u, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || u.Host == "" {
+		return errors.New("地址格式错误")
+	}
+	if u.Scheme != "https" {
+		return errors.New("仅支持 https 地址")
+	}
+	ips, err := net.LookupIP(u.Hostname())
+	if err != nil || len(ips) == 0 {
+		return errors.New("域名无法解析")
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+			return errPrivateHost
+		}
+	}
+	return nil
+}
+
+// errPrivateHost SSRF 私网段哨兵错误（映射 403）。
+var errPrivateHost = errors.New("禁止访问内网地址")
+
+// aiGuest 限流：per-IP 滑动窗口 10 次/分钟（内存 map，与 router 登录限流同模式）。
+var (
+	aiGuestMu   sync.Mutex
+	aiGuestHits = map[string][]time.Time{}
+)
+
+func aiGuestRateAllow(ip string) bool {
+	const limit = 10
+	window := time.Minute
+	now := time.Now()
+	aiGuestMu.Lock()
+	defer aiGuestMu.Unlock()
+	kept := aiGuestHits[ip][:0]
+	for _, t := range aiGuestHits[ip] {
+		if now.Sub(t) < window {
+			kept = append(kept, t)
+		}
+	}
+	if len(kept) >= limit {
+		aiGuestHits[ip] = kept
+		return false
+	}
+	aiGuestHits[ip] = append(kept, now)
+	return true
 }

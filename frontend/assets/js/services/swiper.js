@@ -1,7 +1,9 @@
 // swiper.js | 对齐原版 layout/_plugins/swiper.ejs
-// 页面存在 #swiper-api 时按需加载 swiper CDN 并初始化；PJAX 换页后重新检测。
-const SWIPER_CSS = 'https://unpkg.com/swiper@10.3/swiper-bundle.min.css';
-const SWIPER_JS = 'https://unpkg.com/swiper@10.3/swiper-bundle.min.js';
+// 页面存在 #swiper-api 时按需加载 swiper 并初始化；PJAX 换页后重新检测。
+// Spec 53 Part B：依赖本地化（对齐 Spec 28 原则，替代 unpkg CDN），版本锁定 10.3.1，
+// 文件在 assets/vendor/swiper/，随 embed.go 内嵌分发。
+const SWIPER_CSS = '/assets/vendor/swiper/swiper-bundle.min.css';
+const SWIPER_JS = '/assets/vendor/swiper/swiper-bundle.min.js';
 
 function initSwiper() {
   const swiper_api = document.getElementById('swiper-api');

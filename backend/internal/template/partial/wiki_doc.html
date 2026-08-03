@@ -18,6 +18,12 @@
           <span class="sep"></span>
           <a class="cap breadcrumb" id="current" href="/wiki/{{.WikiProjectID}}/{{.WikiDoc.Slug}}">{{.WikiDoc.Title}}</a>
         </div>
+        {{- /* Spec 53 Part C：wiki dateinfo（对齐原版 dateinfo.ejs wiki 分支，仅显示更新于）*/}}
+        {{- if .WikiDoc.Updated}}
+        <div class="flex-row" id="post-meta">
+          <span class="text created">{{- lang "meta.updated" -}}：<time datetime="{{.WikiDoc.Updated}}">{{.WikiDoc.Updated}}</time></span>
+        </div>
+        {{- end}}
       </div>
     </div>
     <div class="bottom only-title">

@@ -601,6 +601,7 @@ type Page struct {
 	Lang         string
 	MenuID       string // 当前高亮的菜单 id
 	Author       string
+	AuthorName   string // 多作者命中 Site.Authors 时的展示名（Spec 53：banner 作者链接用）
 	Date         string // 原始日期字符串
 	Updated      string
 	Excerpt      string
@@ -616,6 +617,12 @@ type Page struct {
 	// 文章级 SEO（Spec 42）：非空时优先于站点级默认值输出 meta。
 	MetaDescription string // 自定义 meta description（覆盖自动摘要）
 	MetaKeywords    string // 自定义 meta keywords，逗号分隔
+
+	// AI 文章摘要（Spec 53）：AISummary 为后台预生成的导读摘要（空=无）；
+	// AISummaryOn/AIUserAPIOn 来自 settings ai 段开关，控制前台摘要块与自助面板渲染。
+	AISummary   string
+	AISummaryOn bool
+	AIUserAPIOn bool
 }
 
 // MetaDescription 计算 head.html 的 meta description 输出（Spec 42 优先级）：

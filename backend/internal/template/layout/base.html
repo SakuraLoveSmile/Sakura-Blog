@@ -378,6 +378,8 @@
   {{- /* 自建评论区交互：全站加载（PJAX 换页不重执行 script，事件委托 + 存在性检查，非文章页零副作用） */}}
   <script src="{{url_for "/assets/js/comments.js"}}" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}" defer></script>
+  {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}
+  <script src="{{url_for "/assets/js/ai-summary.js"}}" defer></script>
   {{- /* PJAX 配置注入（Spec 36）：条件化注入，需 site.yml plugins.pjax.enable=true */}}
   {{- if and .Site.Plugins.Pjax .Site.Plugins.Pjax.Enable -}}
   <script>
