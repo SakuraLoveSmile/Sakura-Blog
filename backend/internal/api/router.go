@@ -159,6 +159,9 @@ func (h *Handler) Register(r *gin.Engine) {
 	v1.GET("/auth/check", h.authCheck)
 	v1.POST("/auth/2fa", h.handle2FA)
 
+	// AI 摘要读者自助生成（Spec 53，公开端点：读者临时接入自己的 API，限流/SSRF 防护在 handler 内）
+	v1.POST("/ai/summary/guest", h.aiSummaryGuest)
+
 	// 需认证路由
 	authed := v1.Group("", h.apiAuth())
 	{
@@ -190,6 +193,9 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/posts/:slug/draft", h.savePostDraft)
 		authed.DELETE("/posts/:slug/draft", h.discardPostDraft)
 		authed.POST("/posts/:slug/publish", h.publishPost)
+
+		// AI 文章摘要（Spec 53）：保存/清空预生成摘要
+		authed.PUT("/posts/:slug/ai-summary", h.updateAISummary)
 
 		// 文章版本历史（Spec 22）
 		authed.GET("/posts/:slug/revisions", h.listRevisions)

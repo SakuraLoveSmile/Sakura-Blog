@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/config"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -88,6 +89,16 @@ func (s *webServer) handlePost(c *gin.Context) {
 				MetaKeywords:    p.MetaKeywords,
 			},
 			Content: template.HTML(p.ContentHTML),
+		}
+		// AI 文章摘要（Spec 53）：预生成摘要 + settings ai 段双开关（未配置默认开）
+		if aiCfg, err := config.LoadAI(s.st); err == nil && aiCfg.SummaryOn() {
+			data.Page.AISummary = p.AISummary
+			data.Page.AISummaryOn = true
+			data.Page.AIUserAPIOn = aiCfg.UserAPIOn()
+		}
+		// 多作者命中时装配展示名（Spec 53 Part A：banner 作者链接）
+		if a, ok := s.site.Authors[p.Author]; ok {
+			data.Page.AuthorName = a.Name
 		}
 		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 		// 左栏「专栏：xxx」系列文章 widget（对齐 widgets/related.ejs relatedPostsInTopic）

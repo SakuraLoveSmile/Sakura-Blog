@@ -192,6 +192,21 @@ var zhCN = map[string]string{
 	// 主题切换
 	"theme.toggle": "切换主题",
 
+	// AI 文章摘要（Spec 53）
+	"ai.summary.title":       "AI 摘要",
+	"ai.summary.open":        "用你自己的 API 生成 AI 摘要",
+	"ai.summary.endpoint":    "接口地址（OpenAI 兼容 base_url）",
+	"ai.summary.model":       "模型名称",
+	"ai.summary.key":         "API Key",
+	"ai.summary.remember":    "记住接口与模型（不含 Key）",
+	"ai.summary.generate":    "生成摘要",
+	"ai.summary.required":    "请填写接口地址与模型",
+	"ai.summary.generating":  "生成中…",
+	"ai.summary.privacy":     "Key 仅随本次请求透传，不会被本站保存",
+	"ai.summary.done":        "摘要已生成（仅本次会话展示）",
+	"ai.summary.error":       "生成失败：%s",
+	"ai.summary.bad_gateway": "上游接口调用失败，请检查地址/Key/模型",
+
 	// JS ctx 注入（base.html 的 ctx 对象）
 	"js.copy":         "复制",
 	"js.copy_success": "复制成功",

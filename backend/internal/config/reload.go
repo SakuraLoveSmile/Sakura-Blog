@@ -59,7 +59,16 @@ type AIConfig struct {
 	BaseURL string `json:"base_url"`
 	APIKey  string `json:"api_key"`
 	Model   string `json:"model"`
+	// Spec 53 AI 摘要开关（nil=未配置，默认开启，兼容旧配置）。
+	SummaryEnabled *bool `json:"summary_enabled,omitempty"`
+	AllowUserAPI   *bool `json:"allow_user_api,omitempty"`
 }
+
+// SummaryOn 前台是否展示 AI 摘要（未配置=开）。
+func (c AIConfig) SummaryOn() bool { return c.SummaryEnabled == nil || *c.SummaryEnabled }
+
+// UserAPIOn 是否允许读者临时接入自己的 API 生成摘要（未配置=开）。
+func (c AIConfig) UserAPIOn() bool { return c.AllowUserAPI == nil || *c.AllowUserAPI }
 
 // LoadAI 从 settings 读取 AI 配置（未配置时返回零值）。
 func LoadAI(st *store.Store) (AIConfig, error) {

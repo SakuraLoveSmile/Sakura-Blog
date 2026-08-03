@@ -380,6 +380,8 @@
   <script src="{{url_for "/assets/js/reading.js"}}" defer></script>
   {{- /* 标签云 widget 交互：拖拽无缝循环云/模式切换（.widget-wrapper.tagcloud 存在性检查 + pjax:complete 重初始化，多实例支持） */}}
   <script src="{{url_for "/assets/js/tagcloud.js"}}?v=tc3" defer></script>
+  {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}
+  <script src="{{url_for "/assets/js/ai-summary.js"}}" defer></script>
   {{- /* PJAX 配置注入（Spec 36）：条件化注入，需 site.yml plugins.pjax.enable=true */}}
   {{- if and .Site.Plugins.Pjax .Site.Plugins.Pjax.Enable -}}
   <script>

@@ -51,6 +51,9 @@ type Post struct {
 
 	// 多作者体系（Spec 38）：作者 ID，空串=无作者（回退站长）。
 	Author string
+
+	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无摘要；前台文章顶部展示。
+	AISummary string
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -112,8 +115,8 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author"
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列 + Spec 53 ai_summary 列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -277,6 +280,8 @@ func (s *Store) migrateColumns() error {
 		"meta_keywords":    `ALTER TABLE posts ADD COLUMN meta_keywords TEXT NOT NULL DEFAULT ''`,
 		// Spec 38 多作者体系
 		"author": `ALTER TABLE posts ADD COLUMN author TEXT NOT NULL DEFAULT ''`,
+		// Spec 53 AI 文章摘要
+		"ai_summary": `ALTER TABLE posts ADD COLUMN ai_summary TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -569,9 +574,9 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, "references", banner, meta_description, meta_keywords, author)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author)
+	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, "references", banner, meta_description, meta_keywords, author, ai_summary)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
@@ -588,15 +593,17 @@ func (s *Store) Create(p *Post) (int64, error) {
 // draft_json 不在更新列中（ADD COLUMN 默认值兼容），由 SaveDraft/ClearDraft 单独维护。
 // topic_id 直接写 p.TopicID（Spec 52）：调用方负责传正确的关联值——API 层在 savePostWithSnapshot 中
 // 保留 existing.TopicID（请求体不携带 topic_id），seed 导入显式按专栏名解析；0 表示解除关联。
+// ai_summary 走 COALESCE 保留（Spec 53）：常规保存不清空摘要，由 SetAISummary 专门维护，
+// 避免 seed/Upsert 等不携带该字段的写路径误清。
 func (s *Store) Update(slug string, p *Post) error {
 	p.UpdatedAt = time.Now()
 	pinned := 0
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?, ai_summary=COALESCE((SELECT ai_summary FROM posts WHERE slug=?), '')
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug)
+		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug, slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -624,6 +631,18 @@ func (s *Store) SaveDraft(slug, draftJSON string) error {
 func (s *Store) ClearDraft(slug string) error {
 	if _, err := s.db.Exec(`UPDATE posts SET draft_json = '' WHERE slug = ?`, slug); err != nil {
 		return fmt.Errorf("clear draft for %s: %w", slug, err)
+	}
+	return nil
+}
+
+// SetAISummary 写入 AI 摘要（Spec 53）：传空串即清空。文章不存在返回错误。
+func (s *Store) SetAISummary(slug, summary string) error {
+	res, err := s.db.Exec(`UPDATE posts SET ai_summary = ? WHERE slug = ? AND deleted_at = ''`, summary, slug)
+	if err != nil {
+		return fmt.Errorf("set ai summary for %s: %w", slug, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("set ai summary for %s: no rows affected", slug)
 	}
 	return nil
 }
@@ -724,7 +743,7 @@ func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary)
 	if err != nil {
 		return nil, err
 	}

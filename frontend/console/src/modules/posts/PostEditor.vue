@@ -64,6 +64,8 @@ function onEditorKindSelect(e: Event) {
 // 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
 const originalStatus = ref("draft");
 const hasDraft = ref(false);
+// AI 文章摘要（Spec 53）：独立于主表单保存链路，EditorSidebar 面板与 AiGenerateModal 共用此状态
+const aiSummary = ref("");
 const isPublishedPost = computed(() => isEdit.value && originalStatus.value === "published");
 
 // 编辑器模式（页头下拉与工具栏三态按钮双向同步）
@@ -220,8 +222,8 @@ function onJump(line: number, index: number) {
   }
 }
 
-// AI 属性生成结果回填（tags 为逗号串）
-function applyAi(values: Record<string, string>) {
+// AI 属性生成结果回填（tags 为逗号串；summary 走独立端点直接落库）
+async function applyAi(values: Record<string, string>) {
   if (values.title !== undefined) form.value.title = values.title;
   if (values.slug !== undefined) {
     form.value.slug = values.slug;
@@ -230,6 +232,16 @@ function applyAi(values: Record<string, string>) {
   if (values.category !== undefined) form.value.category = values.category;
   if (values.tags !== undefined) form.value.tags = values.tags;
   if (values.excerpt !== undefined) form.value.excerpt = values.excerpt;
+  if (values.summary !== undefined) {
+    aiSummary.value = values.summary;
+    if (slug.value) {
+      try {
+        await postApi.updateAISummary(slug.value, values.summary);
+      } catch {
+        Toast.warning("AI 摘要已回填但落库失败，请在侧栏重试");
+      }
+    }
+  }
   Toast.success("已应用 AI 生成结果，记得保存");
 }
 
@@ -257,6 +269,7 @@ async function loadPost() {
     meta_keywords: src.meta_keywords || "",
     author: src.author || "",
   };
+  aiSummary.value = data.ai_summary || ""; // Spec 53：AI 摘要随文章详情载入
 }
 
 onMounted(async () => {
@@ -476,10 +489,12 @@ function handleDiscardDraft() {
             :form="form"
             :categories="categories"
             :tags="tags"
+            :ai-summary="aiSummary"
             @jump="onJump"
             @insert="onInsert"
             @open-cover-picker="coverPickerOpen = true"
             @slug-edited="slugManuallyEdited = true"
+            @update:ai-summary="aiSummary = $event"
           />
         </div>
       </div>

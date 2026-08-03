@@ -90,6 +90,10 @@ function ensureDefaults(d: Record<string, any>) {
   d.seo = d.seo || {};
   d.inject = d.inject || {};
   d.ai = d.ai || {};
+  // Spec 53 AI 摘要开关：未配置缺省为开（与后端 AIConfig.SummaryOn/UserAPIOn 语义一致），
+  // 避免未勾选的 checkbox 保存出 false 导致功能静默关闭
+  d.ai.summary_enabled = d.ai.summary_enabled ?? true;
+  d.ai.allow_user_api = d.ai.allow_user_api ?? true;
   // wiki 段是数组；行内编辑用 _tagsText 字符串代理 tags 数组（逗号分隔）
   // 兼容 tags 为字符串/缺失/项目为 null 等脏数据，避免 .join 抛错导致整页黑屏
   const rawWiki = Array.isArray(d.wiki) ? d.wiki : [];
@@ -676,6 +680,18 @@ onMounted(() => {
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">API 地址（如 https://api.deepseek.com/v1）</label><input v-model="data.ai.base_url" placeholder="https://api.openai.com/v1" :class="inputCls" /></div>
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">API Key（本地模型可留空；已保存时显示 ****，留空保存不覆盖）</label><input v-model="data.ai.api_key" type="password" autocomplete="off" :class="inputCls" /></div>
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">模型名（如 deepseek-chat / gpt-4o-mini）</label><input v-model="data.ai.model" :class="inputCls" /></div>
+        <!-- Spec 53 AI 文章摘要开关 -->
+        <div class="space-y-2 border-t border-gray-100 pt-3 dark:border-gray-700">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">AI 文章摘要</p>
+          <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input v-model="data.ai.summary_enabled" type="checkbox" class="rounded" />
+            前台展示 AI 摘要（关闭后文章页不渲染摘要块）
+          </label>
+          <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input v-model="data.ai.allow_user_api" type="checkbox" class="rounded" />
+            允许读者临时接入自己的 API 生成摘要（Key 不落本站）
+          </label>
+        </div>
         <button @click="save('ai')" :disabled="savingKey === 'ai'" :class="btnCls">保存 AI 设置</button>
       </div>
 

@@ -28,8 +28,14 @@
           {{end}}
         </div>
         <div class="flex-row" id="post-meta">
+          {{- /* Spec 53 Part A：多作者命中时首位渲染作者链接（对齐原版 dateinfo.ejs：
+             有作者时创建时间不带「发布于：」前缀），链接到 /author/{id}/ 作者页。*/}}
+          {{- if and .Page.Author .Page.AuthorName}}
+          <a class="author" href="/author/{{.Page.Author}}/">{{.Page.AuthorName}}</a>
+          <span class="sep"></span>
+          {{- end}}
           {{- if .Page.Date}}
-          <span class="text created">{{- lang "meta.created" -}}：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time></span>
+          <span class="text created">{{if and .Page.Author .Page.AuthorName}}<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{else}}{{- lang "meta.created" -}}：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{end}}</span>
           {{- end}}
           {{- if and .Page.Updated (ne .Page.Updated .Page.Date)}}
           <span class="sep updated"></span>
@@ -48,6 +54,28 @@
 {{end}}
 
 <article class="md-text content">
+  {{- /* AI 文章摘要（Spec 53）：后台预生成摘要直接展示；无摘要且开读者自助时渲染生成面板
+     （交互在 assets/js/ai-summary.js，POST /api/v1/ai/summary/guest 透传读者自己的 API）。
+     复用 tag-plugin colorful note 结构与样式，位置在过期提醒之前。*/}}
+  {{if and .Page.Title .Page.AISummaryOn}}
+  <div class="tag-plugin colorful note ai-summary" id="ai-summary" color="blue"{{if .Page.AIUserAPIOn}} data-user-api="1"{{end}} data-generating-msg="{{lang "ai.summary.generating"}}" data-done-msg="{{lang "ai.summary.done"}}" data-required-msg="{{lang "ai.summary.required"}}">
+    <div class="title">{{- lang "ai.summary.title" -}}</div>
+    <div class="body">{{if .Page.AISummary}}<p>{{.Page.AISummary}}</p>{{end}}</div>
+    {{if and (not .Page.AISummary) .Page.AIUserAPIOn}}
+    <div class="ai-summary-panel">
+      <button type="button" class="ai-summary-open">{{- lang "ai.summary.open" -}}</button>
+      <div class="ai-summary-form" hidden>
+        <input type="url" class="ai-summary-endpoint" placeholder="{{lang "ai.summary.endpoint"}}" autocomplete="off">
+        <input type="text" class="ai-summary-model" placeholder="{{lang "ai.summary.model"}}" autocomplete="off">
+        <input type="password" class="ai-summary-key" placeholder="{{lang "ai.summary.key"}}" autocomplete="off">
+        <label class="ai-summary-remember"><input type="checkbox" class="ai-summary-remember-check">{{lang "ai.summary.remember"}}</label>
+        <button type="button" class="ai-summary-generate">{{- lang "ai.summary.generate" -}}</button>
+        <p class="cap ai-summary-privacy">{{- lang "ai.summary.privacy" -}}</p>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
   {{- /* 过期提醒（Spec 32 增量）：距最后更新超阈值（site.yml article.expire_days，缺省 180 天）时
      文首渲染提醒块，复用 note 标签插件的 tag-plugin colorful note 结构与样式（shortcode.go 同款）。*/}}
   {{if gt .ExpiredDays 0}}

@@ -94,6 +94,9 @@ export const postApi = {
   delete: (slug: string) => http.delete(`/posts/${slug}`),
   restore: (slug: string) => http.post(`/posts/${slug}/restore`),
   purge: (slug: string) => http.delete(`/posts/${slug}/purge`),
+  // AI 文章摘要（Spec 53）：保存/清空预生成摘要（独立于主保存链路）
+  updateAISummary: (slug: string, summary: string) =>
+    http.put(`/posts/${slug}/ai-summary`, { summary }),
   // 草稿头（已保存未发布，列表小绿点）
   saveDraft: (slug: string, data: Record<string, unknown>) =>
     http.put(`/posts/${slug}/draft`, data),

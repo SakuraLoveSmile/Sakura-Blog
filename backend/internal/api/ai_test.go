@@ -131,3 +131,45 @@ func TestCallChatCompletionNonJSONResponse(t *testing.T) {
 		t.Fatal("non-JSON response should error")
 	}
 }
+
+// --- Spec 53 读者自助生成：SSRF 校验 + 限流 ---
+
+func TestValidateGuestAIEndpoint(t *testing.T) {
+	cases := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{"http scheme rejected", "http://api.example.com/v1", true},
+		{"loopback rejected", "https://127.0.0.1/v1", true},
+		{"private 10.x rejected", "https://10.1.2.3/v1", true},
+		{"private 192.168 rejected", "https://192.168.1.10/v1", true},
+		{"link-local rejected", "https://169.254.1.1/v1", true},
+		{"empty host rejected", "https:///v1", true},
+		{"bad url rejected", "://bad", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := validateGuestAIEndpoint(c.url)
+			if c.wantErr && err == nil {
+				t.Fatalf("%s: expected error, got nil", c.url)
+			}
+			if !c.wantErr && err != nil {
+				t.Fatalf("%s: unexpected error: %v", c.url, err)
+			}
+		})
+	}
+}
+
+func TestAIGuestRateAllow(t *testing.T) {
+	// 包级限流 map：用测试专属 IP 避免与其他用例互相影响
+	ip := "203.0.113.99"
+	for i := 0; i < 10; i++ {
+		if !aiGuestRateAllow(ip) {
+			t.Fatalf("request %d should be allowed", i+1)
+		}
+	}
+	if aiGuestRateAllow(ip) {
+		t.Fatal("11th request within window should be rejected")
+	}
+}

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
-import { previewApi, settingsApi } from "@/api";
+import { previewApi, settingsApi, postApi, aiApi } from "@/api";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
-import { VButton } from "@/components/ui";
+import { VButton, Toast } from "@/components/ui";
 import {
   plugins,
   PLUGIN_CATEGORIES,
@@ -35,6 +35,7 @@ const props = defineProps<{
   form: PostForm;
   categories: string[];
   tags: string[];
+  aiSummary: string; // Spec 53：AI 摘要由 PostEditor 持有（与 AiGenerateModal 回填共用一份状态）
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +43,7 @@ const emit = defineEmits<{
   (e: "insert", code: string): void;
   (e: "openCoverPicker"): void;
   (e: "slugEdited"): void;
+  (e: "update:aiSummary", value: string): void;
 }>();
 
 const activeTab = ref<"outline" | "detail">("outline");
@@ -183,6 +185,78 @@ function insertPlugin() {
 
 onBeforeUnmount(() => clearTimeout(pluginTimer));
 
+// ---------- AI 摘要（Spec 53）：textarea 手动编辑 + AI 生成，保存走独立端点 ----------
+const aiSaving = ref(false);
+const aiGenerating = ref(false);
+
+async function saveAiSummary() {
+  if (!props.form.slug) {
+    Toast.warning("请先保存文章（生成 slug）后再保存摘要");
+    return;
+  }
+  aiSaving.value = true;
+  try {
+    await postApi.updateAISummary(props.form.slug, props.aiSummary.trim());
+    Toast.success("AI 摘要已保存");
+  } catch {
+    Toast.error("AI 摘要保存失败");
+  } finally {
+    aiSaving.value = false;
+  }
+}
+
+// 清空：直接传空串落库（不依赖 props 回写时序）
+async function clearAiSummary() {
+  if (!props.form.slug) {
+    emit("update:aiSummary", "");
+    return;
+  }
+  aiSaving.value = true;
+  try {
+    await postApi.updateAISummary(props.form.slug, "");
+    emit("update:aiSummary", "");
+    Toast.success("AI 摘要已清空");
+  } catch {
+    Toast.error("AI 摘要清空失败");
+  } finally {
+    aiSaving.value = false;
+  }
+}
+
+async function generateAiSummary() {
+  if (!props.form.title && !props.form.content_md) {
+    Toast.warning("标题与正文均为空，无法生成");
+    return;
+  }
+  aiGenerating.value = true;
+  try {
+    const { data } = await aiApi.generate({
+      fields: ["summary"],
+      title: props.form.title,
+      content: props.form.content_md,
+      categories: [],
+      tags: [],
+    });
+    if (data.summary) {
+      emit("update:aiSummary", data.summary);
+      // 已有 slug 时直接落库，免去再点一次保存
+      if (props.form.slug) {
+        await postApi.updateAISummary(props.form.slug, data.summary);
+        Toast.success("AI 摘要已生成并保存");
+      } else {
+        Toast.success("AI 摘要已生成，保存文章后可落库");
+      }
+    } else {
+      Toast.error("生成结果为空，请重试");
+    }
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+    Toast.error(msg || "AI 生成失败，请检查 设置 → AI 配置");
+  } finally {
+    aiGenerating.value = false;
+  }
+}
+
 const fieldCls =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
 const labelCls = "block text-xs text-gray-500 mb-1 dark:text-gray-400";
@@ -302,6 +376,39 @@ const chipCls =
         <div>
           <label :class="labelCls">摘要</label>
           <textarea v-model="form.excerpt" rows="3" :class="fieldCls + ' resize-y'"></textarea>
+        </div>
+        <!-- AI 文章摘要（Spec 53）：前台文章顶部导读；手动编辑或 AI 生成，独立端点保存 -->
+        <div>
+          <label :class="labelCls">AI 摘要（前台导读）</label>
+          <textarea
+            :value="aiSummary"
+            rows="4"
+            :class="fieldCls + ' resize-y'"
+            placeholder="后台预生成的导读摘要，前台文章顶部展示；可手动编辑或用 AI 生成"
+            @input="emit('update:aiSummary', ($event.target as HTMLTextAreaElement).value)"
+          ></textarea>
+          <div class="mt-1.5 flex items-center gap-1.5">
+            <button
+              type="button"
+              class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+              :disabled="aiGenerating"
+              @click="generateAiSummary"
+            >{{ aiGenerating ? "生成中…" : "AI 生成" }}</button>
+            <button
+              type="button"
+              class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+              :disabled="aiSaving"
+              @click="saveAiSummary"
+            >{{ aiSaving ? "保存中…" : "保存摘要" }}</button>
+            <button
+              v-if="aiSummary"
+              type="button"
+              class="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-400 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+              :disabled="aiSaving"
+              @click="clearAiSummary"
+            >清空</button>
+          </div>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">AI 未配置时生成不可用（设置 → AI）；读者也可在前台用自己的 API 临时生成</p>
         </div>
         <div>
           <label :class="labelCls">封面 URL</label>

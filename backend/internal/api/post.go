@@ -69,6 +69,8 @@ type postJSON struct {
 	UpdatedAt       string `json:"updated_at"`
 	Views           int64  `json:"views"`
 	HasDraft        bool   `json:"has_draft"`
+	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无
+	AISummary string `json:"ai_summary"`
 	// Draft 草稿头内容（整份编辑表单 JSON），仅详情接口且有草稿时返回。
 	Draft json.RawMessage `json:"draft,omitempty"`
 	// 多作者体系（Spec 38）：作者 ID
@@ -102,6 +104,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		Views:           views,
 		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
 		Author:          p.Author,
+		AISummary:       p.AISummary,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -418,6 +421,9 @@ func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) 
 		if p.Poster == "" {
 			p.Poster = existing.Poster
 		}
+		if p.AISummary == "" {
+			p.AISummary = existing.AISummary
+		}
 		if _, err := h.store.Create(p); err != nil {
 			return err
 		}
@@ -478,6 +484,32 @@ func (h *Handler) purgePost(c *gin.Context) {
 	// 连带清理版本快照（Spec 22）
 	h.store.DeleteRevisionsByPost(slug)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// updateAISummary PUT /api/v1/posts/:slug/ai-summary：保存/清空 AI 摘要（Spec 53）。
+// 请求体 {"summary": "..."}；传空串即清空。独立于主保存链路，避免常规保存误清。
+func (h *Handler) updateAISummary(c *gin.Context) {
+	slug := c.Param("slug")
+	var req struct {
+		Summary string `json:"summary"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		return
+	}
+	summary := strings.TrimSpace(req.Summary)
+	if runes := []rune(summary); len(runes) > 2000 {
+		summary = string(runes[:2000])
+	}
+	if err := h.store.SetAISummary(slug, summary); err != nil {
+		if strings.Contains(err.Error(), "no rows affected") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "ai_summary": summary})
 }
 
 // --- 辅助 ---
