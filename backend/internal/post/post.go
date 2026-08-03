@@ -100,7 +100,7 @@ func (s *Service) SetGHClient(c GHClient) {
 
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
 // AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
-// 代码块经 Chroma 服务端高亮（CSS class 模式，class 前缀 chroma，无行号）。
+// 代码块经 Chroma 服务端高亮（CSS class 模式，class 前缀 chroma，table 行号）。
 func NewService(mdDir string) *Service {
 	return &Service{
 		mdDir: mdDir,
@@ -113,7 +113,8 @@ func NewService(mdDir string) *Service {
 					highlighting.WithGuessLanguage(true),
 					highlighting.WithFormatOptions(
 						chromahtml.WithClasses(true),
-						chromahtml.WithLineNumbers(false),
+						chromahtml.WithLineNumbers(true),
+						chromahtml.LineNumbersInTable(true),
 					),
 				),
 			),

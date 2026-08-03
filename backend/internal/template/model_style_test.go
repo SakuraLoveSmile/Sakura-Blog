@@ -8,19 +8,19 @@ import (
 // TestParseHSL 颜色解析：hsl/hsla/hex → HSL 分量（表驱动）。
 func TestParseHSL(t *testing.T) {
 	cases := []struct {
-		in            string
+		in                  string
 		wantH, wantS, wantL float64
-		wantOK        bool
+		wantOK              bool
 	}{
 		{"hsl(192 98% 55%)", 192, 98, 55, true},
 		{"hsl(192, 98%, 55%)", 192, 98, 55, true},
 		{"hsla(207deg 90% 54% / 1)", 207, 90, 54, true},
-		{"#ffffff", 0, 0, 100, true}, // 纯白：灰阶 h/s=0 l=100
-		{"#000000", 0, 0, 0, true},   // 纯黑
+		{"#ffffff", 0, 0, 100, true},  // 纯白：灰阶 h/s=0 l=100
+		{"#000000", 0, 0, 0, true},    // 纯黑
 		{"#ff0000", 0, 100, 50, true}, // 纯红
 		{"", 0, 0, 0, false},
-		{"red", 0, 0, 0, false},       // 颜色关键字不支持
-		{"#12", 0, 0, 0, false},       // 非法 hex
+		{"red", 0, 0, 0, false}, // 颜色关键字不支持
+		{"#12", 0, 0, 0, false}, // 非法 hex
 	}
 	for _, c := range cases {
 		h, s, l, ok := parseHSL(c.in)
@@ -55,9 +55,9 @@ func TestStyleInjectCSSColors(t *testing.T) {
 	css := string(s.InjectCSS())
 	for _, want := range []string{
 		"--hue:14deg", "--sat:100%", "--light:57%", // theme 分量
-		"--accent:#ff0000;",                          // accent 原样
-		"--link:hsla(207deg 90% 54% / 1)",            // link 全色
-		"--link-a20:hsla(207deg 90% 54% / 0.2)",      // link a20 派生
+		"--accent:#ff0000;",                     // accent 原样
+		"--link:hsla(207deg 90% 54% / 1)",       // link 全色
+		"--link-a20:hsla(207deg 90% 54% / 0.2)", // link a20 派生
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("颜色注入缺 %q\n完整: %s", want, css)
@@ -72,18 +72,18 @@ func TestStyleInjectCSSColors(t *testing.T) {
 func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 	no := false
 	s := StyleConfig{
-		FontSize:   StyleFontSize{Root: "18px", Body: "16px"},
-		FontFamily: StyleFontFamily{Body: "Arial", Code: "Menlo", Codeblock: "Consolas"},
-		TextAlign:  "justify",
+		FontSize:     StyleFontSize{Root: "18px", Body: "16px"},
+		FontFamily:   StyleFontFamily{Body: "Arial", Code: "Menlo", Codeblock: "Consolas"},
+		TextAlign:    "justify",
 		SmoothScroll: &no,
-		Codeblock:  StyleCodeblock{Scrollbar: "6px"},
-		Paginator:  StylePaginator{Prev: "/p.svg", Next: "/n.svg"},
+		Codeblock:    StyleCodeblock{Scrollbar: "6px"},
+		Paginator:    StylePaginator{Prev: "/p.svg", Next: "/n.svg"},
 		HeaderPrefix: map[string]string{"h2": "#", "h3": "="},
 	}
 	css := string(s.InjectCSS())
 	for _, want := range []string{
-		"--fsp:16px;",                                   // 正文字号
-		"--gap-p:calc(16px + 4px)",                      // gap 跟随
+		"--fsp:16px;",                                    // 正文字号
+		"--gap-p:calc(16px + 4px)",                       // gap 跟随
 		"html{font-size:18px;}",                          // 根字号
 		"html{font-family:Arial;}",                       // body 字体
 		"code{font-family:Menlo;}",                       // code 字体
@@ -136,6 +136,30 @@ func TestStyleInjectCSSBackgrounds(t *testing.T) {
 	// 未配全站背景图 → 不输出 sitebg（保持 head.html 透明兜底）
 	if strings.Contains(string(color.InjectCSS()), "body>.sitebg{") {
 		t.Errorf("未配背景图不应输出 sitebg")
+	}
+}
+
+// TestStyleInjectCSSRadiusGradient 圆角/渐变组注入（Spec 52）：仅显式配置时输出 :root 变量。
+func TestStyleInjectCSSRadiusGradient(t *testing.T) {
+	s := StyleConfig{
+		BorderRadius: StyleBorderRadius{Card: "12px", Block: "6px", Navbar: "24px", Image: "4px"},
+		Gradient:     StyleGradient{Button: "linear-gradient(135deg, #ff8a5c, #ff5724)", Searchbar: "linear-gradient(90deg, #f00, #00f)"},
+	}
+	css := string(s.InjectCSS())
+	for _, want := range []string{
+		"--radius-card:12px;",
+		"--radius-block:6px;",
+		"--radius-navbar:24px;",
+		"--radius-image:4px;",
+		"--gradient-button:linear-gradient(135deg, #ff8a5c, #ff5724);",
+		"--gradient-searchbar:linear-gradient(90deg, #f00, #00f);",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("圆角/渐变注入缺 %q\n完整: %s", want, css)
+		}
+	}
+	if !strings.HasPrefix(css, ":root{") {
+		t.Errorf("圆角/渐变变量应在 :root 块内，got %s", css)
 	}
 }
 

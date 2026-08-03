@@ -143,59 +143,16 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		})
 	})
 
-	// 专栏索引页：专栏卡片列表（对齐 Stellar index_topic.ejs，图标缺省用主题 default.topic 占位图）
-	r.GET("/topic", func(c *gin.Context) {
-		counts, err := s.st.CountByTopic()
-		if err != nil {
-			log.Printf("count topics: %v", err)
-			s.render500(c)
-			return
-		}
-		if len(counts) == 0 {
-			s.render404(c)
-			return
-		}
-		topics := make([]*tmpl.TopicItem, 0, len(counts))
-		for name, n := range counts {
-			topics = append(topics, &tmpl.TopicItem{
-				Name:  name,
-				Count: n,
-				Icon:  "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/10433048.png",
-			})
-		}
-		sort.Slice(topics, func(i, j int) bool { return topics[i].Name < topics[j].Name })
-		s.renderBase(c, &tmpl.ViewData{
-			Site:   s.site,
-			Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
-			Topics: topics,
-		})
-	})
+	// 专栏索引页（Spec 52）：专栏卡片按时间线性排列（sort DESC + 创建时间线性，替代现状名称排序），
+	// 卡片含图标 + 名称 + 文章数 + 描述；空态渲染空文案（替代现状 404）。
+	// /topics 为别名路由（任务约定路径），与 /topic 渲染同一页面。
+	r.GET("/topic", s.handleTopicIndex)
+	r.GET("/topics", s.handleTopicIndex)
 
-	// 专栏文章列表页：复用首页卡片（对齐原版 topic 文章列表）
-	r.GET("/topic/:name", func(c *gin.Context) {
-		name := c.Param("name")
-		counts, err := s.st.CountByTopic()
-		if err != nil {
-			log.Printf("count topics: %v", err)
-			s.render500(c)
-			return
-		}
-		if _, ok := counts[name]; !ok {
-			s.render404(c)
-			return
-		}
-		posts, err := s.st.ListByTopic(name)
-		if err != nil {
-			log.Printf("list posts: %v", err)
-			s.render500(c)
-			return
-		}
-		s.renderBase(c, &tmpl.ViewData{
-			Site:  s.site,
-			Page:  &tmpl.Page{Title: "专栏：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Topic: name},
-			Posts: s.toCards(posts),
-		})
-	})
+	// 专栏文章列表页（Spec 52）：/topic/:slug 沉浸式专栏页（专栏头 + 文章卡片流）；
+	// /topic/:name 兼容旧路径 301 到 slug 路径（gin 不允许同前缀注册两个不同参数名，
+	// 旧名兼容在 handleTopicDetail 内按 name 兑底处理）。
+	r.GET("/topic/:slug", s.handleTopicDetail)
 
 	// 标签索引页：标签云（按文章数 DESC）
 	r.GET("/tags", func(c *gin.Context) {
@@ -251,6 +208,105 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 作者文章列表页（Spec 38 多作者体系）：/author/:id，对齐 Stellar author.ejs 的“全部文章”链接。
 	r.GET("/author/:id", s.handleAuthor)
 }
+
+// handleTopicIndex 专栏索引页（Spec 52）：ListTopics 时间线性排序 + 每项已发布文章数。
+// 卡片链接走 slug；图标缺省用主题 default.topic 占位图（与现状一致，零配置逐像素不变）。
+func (s *webServer) handleTopicIndex(c *gin.Context) {
+	topics, err := s.st.ListTopics()
+	if err != nil {
+		log.Printf("list topics: %v", err)
+		s.render500(c)
+		return
+	}
+	items := make([]*tmpl.TopicItem, 0, len(topics))
+	for _, t := range topics {
+		n, err := s.st.CountByTopicID(t.ID)
+		if err != nil {
+			log.Printf("count posts of topic %d: %v", t.ID, err)
+			s.render500(c)
+			return
+		}
+		icon := t.Icon
+		if icon == "" {
+			icon = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/10433048.png"
+		}
+		items = append(items, &tmpl.TopicItem{
+			Name:        t.Name,
+			Slug:        t.Slug,
+			Description: t.Description,
+			Icon:        icon,
+			Cover:       t.Cover,
+			Count:       n,
+			CreatedAt:   t.CreatedAt,
+		})
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site:   s.site,
+		Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
+		Topics: items,
+	})
+}
+
+// handleTopicDetail 专栏详情页（Spec 52）：专栏头（封面 + 名称 + 描述 + 文章数）+ 文章卡片流。
+// 数据走独立 topics 表（slug 定位 + topic_id 关联文章），替代现状按 topic 文本查询。
+func (s *webServer) handleTopicDetail(c *gin.Context) {
+	slug := c.Param("slug")
+	t, err := s.st.GetTopicBySlug(slug)
+	if err != nil {
+		log.Printf("get topic %q: %v", slug, err)
+		s.render500(c)
+		return
+	}
+	// /topic/:name 旧路径兼容（Spec 52）：slug 未命中时按 name 查，命中则 301 到 slug 路径。
+	if t == nil {
+		legacy, err := s.st.GetTopicByName(slug)
+		if err != nil {
+			log.Printf("get topic by name %q: %v", slug, err)
+			s.render500(c)
+			return
+		}
+		if legacy != nil {
+			c.Redirect(http.StatusMovedPermanently, "/topic/"+legacy.Slug)
+			return
+		}
+		s.render404(c)
+		return
+	}
+	posts, err := s.st.ListPostsByTopicID(t.ID)
+	if err != nil {
+		log.Printf("list posts of topic %d: %v", t.ID, err)
+		s.render500(c)
+		return
+	}
+	count, err := s.st.CountByTopicID(t.ID)
+	if err != nil {
+		log.Printf("count posts of topic %d: %v", t.ID, err)
+		s.render500(c)
+		return
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site,
+		Page: &tmpl.Page{
+			Title:  tmpl.Lang("nav.topic", t.Name),
+			Layout: "topic",
+			MenuID: "post",
+			Lang:   "zh-CN",
+			Topic:  t.Name,
+		},
+		TopicDetail: &tmpl.TopicDetailView{
+			Name:        t.Name,
+			Slug:        t.Slug,
+			Description: t.Description,
+			Icon:        t.Icon,
+			Cover:       t.Cover,
+			Count:       count,
+		},
+		Posts: s.toCards(posts),
+	})
+}
+
+// handleTopicLegacyRedirect /topic/:name 旧路径兼容（Spec 52）：按 name 命中 topics 表后 301 到 slug 路径。
+// 已并入 handleTopicDetail（gin 不允许同前缀两个不同参数名路由），本函数保留供参考。
 
 // handleWiki 文库页：全量标签 tab + 可选 tag 过滤 + Sort 降序项目列表。
 func (s *webServer) handleWiki(c *gin.Context) {

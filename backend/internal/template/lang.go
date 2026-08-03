@@ -80,14 +80,14 @@ var zhCN = map[string]string{
 	"nav.topic":    "专栏：%s",
 
 	// 面包屑
-	"breadcrumb.home":    "首页",
-	"breadcrumb.blog":    "博客",
-	"breadcrumb.topic":   "专栏",
-	"breadcrumb.notes":   "笔记",
-	"breadcrumb.moments": "瞬间",
-	"breadcrumb.friends": "友链",
-	"breadcrumb.links":   "友链",
-	"breadcrumb.wiki":    "文库",
+	"breadcrumb.home":     "首页",
+	"breadcrumb.blog":     "博客",
+	"breadcrumb.topic":    "专栏",
+	"breadcrumb.notes":    "笔记",
+	"breadcrumb.moments":  "瞬间",
+	"breadcrumb.friends":  "友链",
+	"breadcrumb.links":    "友链",
+	"breadcrumb.wiki":     "文库",
 	"breadcrumb.notebook": "笔记本",
 	"breadcrumb.note":     "笔记",
 
@@ -135,6 +135,7 @@ var zhCN = map[string]string{
 	"moments.empty":    "还没有瞬间，敬请期待。",
 	"topic.empty":      "还没有专栏。",
 	"topic.post_count": "共 %d 篇文章",
+	"topic.post_empty": "该专栏下暂无文章。",
 	"friend.empty":     "暂无友链",
 	"wiki.empty":       "暂无文库项目",
 

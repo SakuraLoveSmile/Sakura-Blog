@@ -194,6 +194,7 @@
   {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}
   <link rel="stylesheet" href="{{url_for "/assets/css/pjax-transitions.css"}}">
 
+  {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
   {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>

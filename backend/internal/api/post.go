@@ -403,6 +403,9 @@ func (h *Handler) discardPostDraft(c *gin.Context) {
 // existing 为保存前查出的旧记录；p 为新内容（p.Slug 已设）；newSlug 为目标 slug。
 // 内容无变化（content_md + title 均相同）时不产生空版本。
 func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) error {
+	// Spec 52：请求体不携带 topic_id（postRequest 无该字段），更新/重建时保留原专栏关联；
+	// 关联变更由专门入口负责（届时放开）。
+	p.TopicID = existing.TopicID
 	if newSlug != existing.Slug {
 		// slug 变更：先删旧再建新（保留 created_at）
 		if err := h.store.Delete(existing.Slug); err != nil {

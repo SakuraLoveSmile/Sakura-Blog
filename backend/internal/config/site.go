@@ -89,7 +89,7 @@ func DefaultSite() *tmpl.Site {
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
 		Article: tmpl.ArticleConfig{
-			Type:         "tech", // 文章列表卡片布局：tech（紧凑）/story（图文大间距），Spec 50
+			Type:          "tech",                             // 文章列表卡片布局：tech（紧凑）/story（图文大间距），Spec 50
 			CategoryColor: map[string]string{"技术": "#1BCDFC"}, // 对齐原版 theme.article.category_color
 			Copyright: tmpl.CopyrightConfig{
 				Enabled:    true,

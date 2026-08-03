@@ -56,9 +56,10 @@ type ViewData struct {
 	ExpiredDays int           // 距最后更新天数，>0 时文首渲染过期提醒
 
 	// 专栏体系（对齐原版 topic）：
-	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
-	Topics      []*TopicItem // /topic 索引页的专栏卡片列表
-	HasTopics   bool         // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
+	TopicSeries *TopicSeries      // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
+	Topics      []*TopicItem      // /topic 索引页的专栏卡片列表
+	TopicDetail *TopicDetailView  // /topic/:slug 专栏详情页的专栏头（Spec 52，nil 不渲染）
+	HasTopics   bool              // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
 
 	// 瞬间时间流（Layout=moments 时使用）。
 	Moments []*MomentItem
@@ -363,8 +364,8 @@ type AuthorDef struct {
 type NavTabItem struct {
 	Title       string   `yaml:"title" json:"title"`
 	URL         string   `yaml:"url" json:"url"`
-	External    bool     `yaml:"external,omitempty" json:"external,omitempty"` // true 时 target="_blank"
-	Icon        string   `yaml:"icon,omitempty" json:"icon,omitempty"`         // icons.yml key，空不渲染
+	External    bool     `yaml:"external,omitempty" json:"external,omitempty"`         // true 时 target="_blank"
+	Icon        string   `yaml:"icon,omitempty" json:"icon,omitempty"`                 // icons.yml key，空不渲染
 	ActiveRules []string `yaml:"active_rules,omitempty" json:"active_rules,omitempty"` // 高亮规则（路径前缀/正则）
 }
 
@@ -374,7 +375,7 @@ type NavTabItem struct {
 //   - 新形状：nav_tabs: {enable_custom: true, items: [...]} → enable_custom=true 时
 //     导航栏完全由 items 定义（不再渲染固定 tab）；缺省 false 保持现有固定 tab + 追加 items。
 type NavTabsConfig struct {
-	EnableCustom bool          `yaml:"enable_custom" json:"enable_custom"`
+	EnableCustom bool         `yaml:"enable_custom" json:"enable_custom"`
 	Items        []NavTabItem `yaml:"items" json:"items"`
 }
 
@@ -388,7 +389,7 @@ func (c *NavTabsConfig) UnmarshalYAML(node ast.Node) error {
 		return yaml.Unmarshal(b, &c.Items)
 	}
 	var raw struct {
-		EnableCustom bool          `yaml:"enable_custom"`
+		EnableCustom bool         `yaml:"enable_custom"`
 		Items        []NavTabItem `yaml:"items"`
 	}
 	if err := yaml.Unmarshal(b, &raw); err != nil {
@@ -624,11 +625,27 @@ type TopicSeriesPost struct {
 	Active bool
 }
 
-// TopicItem /topic 索引页专栏卡片（名称 + 文章数 + 图标）。
+// TopicItem /topic 索引页专栏卡片（Spec 52：slug/描述/封面/创建时间 + 文章数）。
+// Slug 为卡片链接（/topic/{slug}）；Count 为已发布文章数；Icon 缺省用主题 default.topic 占位图。
 type TopicItem struct {
-	Name  string
-	Count int
-	Icon  string // 卡片图标（缺省用主题 default.topic 占位图）
+	Name        string
+	Slug        string
+	Description string
+	Icon        string // 卡片图标（缺省用主题 default.topic 占位图）
+	Cover       string // 封面大图（卡片背景，可空）
+	Count       int
+	CreatedAt   time.Time
+}
+
+// TopicDetailView /topic/:slug 专栏详情页的专栏头数据（Spec 52）。
+// 沉浸式专栏页：封面大图 + 名称 + 描述 + 文章数，正文为文章卡片流。
+type TopicDetailView struct {
+	Name        string
+	Slug        string
+	Description string
+	Icon        string
+	Cover       string
+	Count       int // 已发布文章数
 }
 
 // Page 对齐 Hexo page 对象，文章页用。

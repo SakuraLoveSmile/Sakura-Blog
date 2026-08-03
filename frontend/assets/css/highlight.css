@@ -18,6 +18,68 @@ pre.chroma code {
   padding: 0;
 }
 
+/* ---------- Spec 48: Chroma table 行号模式 ---------- */
+/* 外层 div.chroma 容器（table 模式） */
+div.chroma {
+  margin: var(--gap-p) 0;
+  border-radius: 16px;
+  overflow: auto;
+  background: var(--block);
+  font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;
+  box-sizing: border-box;
+}
+div.chroma table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+}
+div.chroma table td {
+  padding: 0;
+  vertical-align: top;
+}
+div.chroma .lntd:first-child {
+  padding: 1rem 0 1rem 1rem;
+  width: 3.5em;
+  min-width: 3.5em;
+  background: var(--block);
+  -webkit-user-select: none;
+  user-select: none;
+  border-right: 1px solid var(--block-border);
+}
+div.chroma .lntd:first-child pre {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  text-align: right;
+  color: var(--text-p3);
+  font-size: inherit;
+  line-height: inherit;
+}
+div.chroma .lntd:last-child {
+  padding: 1rem;
+  width: 100%;
+}
+div.chroma .lntd:last-child pre {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+div.chroma table pre.chroma {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+div.chroma .lnt {
+  display: block;
+  padding: 0 0.5em 0 0;
+  color: var(--text-p3);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
 /* —— 亮色（默认）—— */
 :root .chroma .err { color: #f6f8fa; } /* Error */
 :root .chroma .k { color: #cf222e; } /* Keyword */

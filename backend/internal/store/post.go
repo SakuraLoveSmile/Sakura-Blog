@@ -39,6 +39,7 @@ type Post struct {
 	PublishAt   time.Time // 定时发布（零值=立即）；未到点不公开
 	Poster      string    // 海报封面 JSON（PosterData），空=无海报；与 cover 同时存在时首页渲染 photo 大卡
 	Topic       string    // 专栏名，空=普通文章；非空时文章页左栏显示同专栏系列列表，/navbar 出现「专栏」tab
+	TopicID     int64     // 专栏 ID（Spec 52 独立 topics 表外键）：新代码统一走 topic_id，topic 文本仅作迁移源与兼容查询
 	References  string    // 参考文献 JSON（[]string），空=无参考文献；文章页脚渲染用
 	Banner      string    // 文首横幅图 URL（front matter banner），空=无横幅；文章页顶部渲染用
 	DeletedAt   string    // 软删除时间 RFC3339，空串=未删除
@@ -111,8 +112,8 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author"
+// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列）。
+const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -265,6 +266,8 @@ func (s *Store) migrateColumns() error {
 		"publish_at": `ALTER TABLE posts ADD COLUMN publish_at TEXT NOT NULL DEFAULT ''`,
 		"poster":     `ALTER TABLE posts ADD COLUMN poster TEXT NOT NULL DEFAULT ''`,
 		"topic":      `ALTER TABLE posts ADD COLUMN topic TEXT NOT NULL DEFAULT ''`,
+		// Spec 52 专栏关联列（与 topics 表同步迁移；对齐 Spec 52「走现有 migrate 模式」决策）
+		"topic_id": `ALTER TABLE posts ADD COLUMN topic_id INTEGER NOT NULL DEFAULT 0`,
 		"references": `ALTER TABLE posts ADD COLUMN "references" TEXT NOT NULL DEFAULT ''`,
 		"banner":     `ALTER TABLE posts ADD COLUMN banner TEXT NOT NULL DEFAULT ''`,
 		"deleted_at": `ALTER TABLE posts ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`,
@@ -398,6 +401,17 @@ func (s *Store) ListByTopic(name string) ([]*Post, error) {
 	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND topic = ? "+publishedOrder, StatusPublished, name)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by topic %s: %w", name, err)
+	}
+	defer rows.Close()
+	return scanPosts(rows)
+}
+
+// ListPostsByTopicID 返回指定专栏 ID 的已发布文章（Spec 52），按发布时间倒序（对齐 publishedOrder）。
+// 新代码统一走 topic_id 关联，替代按 topic 文本查询的 ListByTopic。
+func (s *Store) ListPostsByTopicID(topicID int64) ([]*Post, error) {
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND topic_id = ? "+publishedOrder, StatusPublished, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("list posts by topic id %d: %w", topicID, err)
 	}
 	defer rows.Close()
 	return scanPosts(rows)
@@ -555,9 +569,9 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, "references", banner, meta_description, meta_keywords, author)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author)
+	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, "references", banner, meta_description, meta_keywords, author)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
@@ -572,15 +586,17 @@ func (s *Store) Create(p *Post) (int64, error) {
 
 // Update 按 slug 更新文章字段（title/excerpt/cover/category/tags/content_md/content_html/status/poster），刷新 updated_at。
 // draft_json 不在更新列中（ADD COLUMN 默认值兼容），由 SaveDraft/ClearDraft 单独维护。
+// topic_id 直接写 p.TopicID（Spec 52）：调用方负责传正确的关联值——API 层在 savePostWithSnapshot 中
+// 保留 existing.TopicID（请求体不携带 topic_id），seed 导入显式按专栏名解析；0 表示解除关联。
 func (s *Store) Update(slug string, p *Post) error {
 	p.UpdatedAt = time.Now()
 	pinned := 0
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug)
+		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -708,7 +724,7 @@ func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author)
 	if err != nil {
 		return nil, err
 	}

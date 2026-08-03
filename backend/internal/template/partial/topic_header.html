@@ -1,0 +1,31 @@
+{{- /* topic_header.html: 专栏头（Spec 52）：封面大图 + 面包屑 + 名称 + 描述 + 文章数。
+  数据源 .TopicDetail（TopicDetailView，由 handleTopicDetail 填充）；被 topic.html 引用。
+  结构对齐 notebook.html 的 banner 模式，封面大图在 banner 上方铺满。*/ -}}
+{{- $t := .TopicDetail -}}
+{{- if $t}}
+<div class="article banner top topic-banner">
+  {{- if $t.Cover}}
+  <div class="topic-cover"><img src="{{$t.Cover}}" alt="{{$t.Name}}" loading="lazy"/></div>
+  {{- end}}
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/topics">{{- lang "breadcrumb.topic" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="/topic/{{$t.Slug}}">{{$t.Name}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{$t.Name}}</span></h1>
+        {{- if $t.Description}}<p class="description">{{$t.Description}}</p>{{end}}
+        <p class="description">{{- lang "topic.post_count" $t.Count -}}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{- end}}

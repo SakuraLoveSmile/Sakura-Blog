@@ -10,10 +10,10 @@ import (
 type ArticleConfig struct {
 	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
 	// 零配置时 EffectiveType 回退 tech，与现状逐像素一致。
-	Type         string           `yaml:"type" json:"type"`
-	Copyright    CopyrightConfig  `yaml:"copyright" json:"copyright"`
-	Reward       RewardConfig     `yaml:"reward" json:"reward"`
-	Share        ShareConfig      `yaml:"share" json:"share"`
+	Type          string            `yaml:"type" json:"type"`
+	Copyright     CopyrightConfig   `yaml:"copyright" json:"copyright"`
+	Reward        RewardConfig      `yaml:"reward" json:"reward"`
+	Share         ShareConfig       `yaml:"share" json:"share"`
 	CategoryColor map[string]string `yaml:"category_color" json:"category_color"`
 
 	// Spec 32 文章页首尾增强：
