@@ -44,6 +44,8 @@ tmp/
 .cache/
 /server
 /blog
+# go build ./backend/cmd/server 会在 backend/ 下生成同名二进制（曾误入库，68MB）
+backend/server
 # go build ./cmd/... 会在包目录下生成同名二进制
 /cmd/blog
 
