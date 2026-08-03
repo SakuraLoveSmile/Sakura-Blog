@@ -2,6 +2,7 @@ package template
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -380,6 +381,9 @@ func BuildTagCloud(tagCounts map[string]int, opt TagCloudOptions) []*TagItem {
 	if len(items) == 0 {
 		return items
 	}
+	// 热度层级（tagcloud.design 移植）：此刻 items 为 count DESC，按入选排名百分比分档，
+	// 与后续展示重排无关（层级表达热度，不随 orderby 变化）。
+	tagCloudLevels(items)
 	minC, maxC := items[len(items)-1].Count, items[0].Count
 
 	// 展示排序
@@ -409,8 +413,42 @@ func BuildTagCloud(tagCounts map[string]int, opt TagCloudOptions) []*TagItem {
 		if opt.Color {
 			item.Color = interpolateColor(opt.StartColor, opt.EndColor, ratioOf(item.Count, minC, maxC))
 		}
+		// 散落装饰：垂直偏移按标签名哈希确定性生成（同名跨渲染稳定），
+		// 与计数无关，纯视觉打散行列感；模板经 --tc-dy 消费。
+		item.Dy = int(tagHash(item.Name)>>3%9) - 4
 	}
 	return items
+}
+
+// tagHash 标签名 → 稳定哈希（djb2），用于标签云色系号与散落偏移的确定性分配。
+func tagHash(s string) uint32 {
+	h := uint32(5381)
+	for i := 0; i < len(s); i++ {
+		h = h*33 + uint32(s[i])
+	}
+	return h
+}
+
+// tagCloudLevels 热度层级映射（对照 tagcloud.design 五档字号）：
+// 条目须已按 count DESC 排序，按排名百分比分档 —— 前 8% xl / 25% lg / 55% md / 85% sm / 其余 xs，
+// 少量标签时也保证至少一档 xl（热门标签突出，对齐设计稿视觉层级）。
+func tagCloudLevels(items []*TagItem) {
+	n := len(items)
+	if n == 0 {
+		return
+	}
+	bounds := []float64{0.08, 0.25, 0.55, 0.85}
+	levels := []string{"xl", "lg", "md", "sm", "xs"}
+	for i, it := range items {
+		li := len(levels) - 1
+		for b, bound := range bounds {
+			if i < int(math.Ceil(float64(n)*bound)) {
+				li = b
+				break
+			}
+		}
+		it.Level = levels[li]
+	}
 }
 
 // ratioOf count 在 [min,max] 区间的归一化比例（max<=min 时取中值 0.5）。

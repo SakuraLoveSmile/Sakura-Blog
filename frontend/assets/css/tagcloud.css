@@ -1,0 +1,214 @@
+/* 标签云 widget 重设计（参照 resource/design/tagcloud.design，窄侧边栏适配）：
+   - widget-body 内为交互卡片：右上角动态/静态模式切换；
+   - 动态模式：3x3 平铺无缝循环拖拽云，边缘渐隐遮罩，自动漂移 + 拖拽惯性（交互在 assets/js/tagcloud.js）；
+   - 静态模式：SSR 静态云（JS 不可用时默认可见）；
+   - 热度以五档灰度层级表达（tag-xl~tag-xs：字号 + 颜色深浅），颜色映射 Stellar 主题变量，
+     亮/暗模式自动兼容；
+   - prefers-reduced-motion：关闭入场/漂移/脉冲动效，标签直接可见。 */
+
+.widget-wrapper.tagcloud .widget-body {
+  padding: 0 16px;
+}
+
+/* ── 交互卡片 ── */
+.widget-wrapper.tagcloud .tag-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--block-border);
+  border-radius: 14px;
+  padding: 16px 14px 12px;
+  overflow: hidden;
+  opacity: 0;
+  animation: tc-card-in 0.5s ease-out 0.1s forwards;
+}
+@keyframes tc-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 动态云容器：边缘渐隐 + 抓取光标 ── */
+.widget-wrapper.tagcloud .tag-cloud {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  cursor: grab;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 10px;
+  /* 触屏纵向滚动不被拖拽劫持；横向拖拽交给 JS */
+  touch-action: pan-y;
+  /* 双向边缘渐隐：标签滑出边界时柔和淡出 */
+  -webkit-mask: linear-gradient(to right, transparent, black 10%, black 90%, transparent),
+                linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(to right, transparent, black 10%, black 90%, transparent),
+        linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  mask-composite: intersect;
+}
+.widget-wrapper.tagcloud .tag-cloud.grabbing {
+  cursor: grabbing;
+}
+
+/* 3x3 平铺画布：整体平移实现无缝循环（JS 维护 transform） */
+.widget-wrapper.tagcloud .tag-cloud-inner {
+  position: absolute;
+  width: 300%;
+  height: 300%;
+  top: -100%;
+  left: -100%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* 单个 tile（视口的 1/3 x 1/3，9 份内容保证任意方向平移不断档） */
+.widget-wrapper.tagcloud .tag-tile {
+  position: absolute;
+  width: 33.333%;
+  height: 33.333%;
+}
+
+/* ── 标签（动态/静态共用层级字号） ── */
+.widget-wrapper.tagcloud .tag-cloud .tag {
+  position: absolute;
+  text-decoration: none;
+  color: var(--text-p2);
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+  animation: tc-tag-in 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) var(--delay, 0.2s) forwards;
+  transition: color 0.2s ease;
+}
+@keyframes tc-tag-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  to { opacity: var(--tag-o, 1); transform: translate(-50%, -50%) scale(1); }
+}
+.widget-wrapper.tagcloud .tag-cloud .tag:hover {
+  color: var(--text);
+}
+
+/* 热度层级：字号 + 颜色深浅共同表达（纯灰度，对齐设计稿；窄栏字号收敛一档） */
+.widget-wrapper.tagcloud .tag-xl { font-size: 1.375rem; font-weight: 700; color: var(--text-p1); letter-spacing: -0.01em; }
+.widget-wrapper.tagcloud .tag-lg { font-size: 1.125rem; font-weight: 600; color: var(--text-p1); letter-spacing: -0.01em; }
+.widget-wrapper.tagcloud .tag-md { font-size: 0.9375rem; font-weight: 500; color: var(--text-p2); }
+.widget-wrapper.tagcloud .tag-sm { font-size: 0.8125rem; font-weight: 400; color: var(--text-p3); }
+.widget-wrapper.tagcloud .tag-xs { font-size: 0.75rem; font-weight: 400; color: var(--text-p3); opacity: 0.75; --tag-o: 0.75; }
+
+/* 点击涟漪 */
+.widget-wrapper.tagcloud .ripple {
+  position: absolute;
+  border: 1px solid var(--text-p3);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  animation: tc-ripple 0.6s ease-out forwards;
+  z-index: 10;
+}
+@keyframes tc-ripple {
+  0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
+}
+
+/* ── 模式切换（窄栏紧凑版） ── */
+.widget-wrapper.tagcloud .tag-mode-switch {
+  display: inline-flex;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  background: var(--block);
+  border-radius: 8px;
+  padding: 2px;
+}
+.widget-wrapper.tagcloud .tag-mode-switch button {
+  border: none;
+  background: transparent;
+  padding: 3px 9px;
+  font-size: 0.6875rem;
+  font-family: inherit;
+  line-height: 1.4;
+  color: var(--text-p3);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.widget-wrapper.tagcloud .tag-mode-switch button.active {
+  background: var(--card);
+  color: var(--text);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 静态云（SSR 兜底，默认可见） ── */
+.widget-wrapper.tagcloud .tag-cloud-static {
+  padding: 10px 0 4px;
+  line-height: 2.1;
+  text-align: center;
+}
+.widget-wrapper.tagcloud .tag-cloud-static .tag-static {
+  display: inline-block;
+  text-decoration: none;
+  margin: 0 7px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.widget-wrapper.tagcloud .tag-cloud-static .tag-static:hover {
+  color: var(--text);
+}
+
+/* ── 底部信息（紧凑版） ── */
+.widget-wrapper.tagcloud .tag-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--block-border);
+  font-size: 0.6875rem;
+  color: var(--text-p3);
+}
+.widget-wrapper.tagcloud .tag-footer .tag-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.widget-wrapper.tagcloud .tag-footer .tag-stat strong {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+.widget-wrapper.tagcloud .tag-footer .tag-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-p4);
+  font-size: 0.625rem;
+}
+.widget-wrapper.tagcloud .tag-footer .tag-hint .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-p3);
+  animation: tc-pulse 2s ease-in-out infinite;
+}
+@keyframes tc-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ── 减弱动效：关闭入场/涟漪/脉冲，标签直接可见（漂移/惯性由 JS 侧同步禁用） ── */
+@media (prefers-reduced-motion: reduce) {
+  .widget-wrapper.tagcloud .tag-card {
+    animation: none;
+    opacity: 1;
+  }
+  .widget-wrapper.tagcloud .tag-cloud .tag {
+    animation: none;
+    opacity: var(--tag-o, 1);
+    transform: translate(-50%, -50%);
+  }
+  .widget-wrapper.tagcloud .ripple { animation: none; opacity: 0; }
+  .widget-wrapper.tagcloud .tag-footer .tag-hint .dot { animation: none; opacity: 0.6; }
+}

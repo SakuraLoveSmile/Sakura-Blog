@@ -52,6 +52,15 @@ var zhCN = map[string]string{
 	"date_suffix.day":   "天前",
 	"date_suffix.month": "个月前",
 
+	// ── 标签云 widget（tagcloud.design 移植：动态/静态双模式拖拽云）────────
+	"tags.dynamic":     "动态",
+	"tags.static":      "静态",
+	"tags.stat_pre":    "共",
+	"tags.stat_unit":   "个标签",
+	"tags.post_count":  "%d 篇文章",
+	"tags.hint_drag":   "拖拽探索 · 无限循环",
+	"tags.hint_sorted": "按热度排序",
+
 	// ── page 组（对齐 zh-CN.yml page.*）────────────────────────
 	"page.error.what":   "很抱歉，您访问的页面不存在",
 	"page.error.why":    "可能是输入地址有误或该地址已被删除",

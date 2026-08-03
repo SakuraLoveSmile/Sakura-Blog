@@ -378,6 +378,8 @@
   {{- /* 自建评论区交互：全站加载（PJAX 换页不重执行 script，事件委托 + 存在性检查，非文章页零副作用） */}}
   <script src="{{url_for "/assets/js/comments.js"}}" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}" defer></script>
+  {{- /* 标签云 widget 交互：拖拽无缝循环云/模式切换（.widget-wrapper.tagcloud 存在性检查 + pjax:complete 重初始化，多实例支持） */}}
+  <script src="{{url_for "/assets/js/tagcloud.js"}}?v=tc3" defer></script>
   {{- /* PJAX 配置注入（Spec 36）：条件化注入，需 site.yml plugins.pjax.enable=true */}}
   {{- if and .Site.Plugins.Pjax .Site.Plugins.Pjax.Enable -}}
   <script>

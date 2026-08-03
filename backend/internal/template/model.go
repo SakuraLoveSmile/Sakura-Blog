@@ -143,6 +143,8 @@ type TagItem struct {
 	Count int
 	Size  int    // 标签云字号（px），0 表示默认
 	Color string // 标签云渐变色（tagcloud color 参数开启时插值生成），空不输出 color style
+	Dy    int    // 标签云垂直散落偏移 px（标签名哈希确定性生成，模板输出 --tc-dy）
+	Level string // 标签云热度层级（xl/lg/md/sm/xs，按入选排名百分比分档，tagcloud.design 移植）
 }
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。

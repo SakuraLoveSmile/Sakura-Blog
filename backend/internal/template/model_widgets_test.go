@@ -193,6 +193,72 @@ func TestBuildTagCloudDefault(t *testing.T) {
 	}
 }
 
+// TestTagCloudLevels 热度层级分档（tagcloud.design 移植）：少量标签保证至少一档 xl；
+// 20 个标签按排名百分比 8/25/55/85 分档 xl/lg/md/sm/xs；层级不随 orderby 变化（表达热度）。
+func TestTagCloudLevels(t *testing.T) {
+	// 4 个标签：xl 界 ceil(4*0.08)=1 → 榜首 xl，其余落 md/sm
+	small := BuildTagCloud(map[string]int{"a": 1, "b": 5, "c": 3, "d": 5}, DefaultTagCloudOptions())
+	if small[0].Level != "xl" {
+		t.Errorf("榜首层级 = %q, want xl", small[0].Level)
+	}
+	for _, it := range small {
+		if it.Level == "" {
+			t.Errorf("标签 %s 缺层级", it.Name)
+		}
+	}
+	// 20 个标签：xl=ceil(1.6)=2 / lg 到 ceil(5)=5 / md 到 ceil(11)=11 / sm 到 ceil(17)=17 / 其余 xs
+	counts := make(map[string]int, 20)
+	for i := 0; i < 20; i++ {
+		counts[string(rune('a'+i))] = i + 1
+	}
+	items := BuildTagCloud(counts, DefaultTagCloudOptions())
+	wantLevels := map[string]int{"xl": 2, "lg": 3, "md": 6, "sm": 6, "xs": 3}
+	got := map[string]int{}
+	for _, it := range items {
+		got[it.Level]++
+	}
+	for lv, n := range wantLevels {
+		if got[lv] != n {
+			t.Errorf("层级 %s 数量 = %d, want %d（全部：%v）", lv, got[lv], n, got)
+		}
+	}
+	// orderby=name 重排后层级不变（按名查热度档）
+	byName := BuildTagCloud(counts, TagCloudOptions{Amount: 20, MinFont: 12, MaxFont: 22, OrderBy: "name", Order: 1})
+	levelOf := map[string]string{}
+	for _, it := range items {
+		levelOf[it.Name] = it.Level
+	}
+	for _, it := range byName {
+		if it.Level != levelOf[it.Name] {
+			t.Errorf("orderby=name 后 %s 层级 = %q, want %q", it.Name, it.Level, levelOf[it.Name])
+		}
+	}
+}
+
+// TestBuildTagCloudDecor 云朵散落装饰：垂直偏移按标签名哈希确定性生成，范围合法且具备多样性。
+func TestBuildTagCloudDecor(t *testing.T) {
+	counts := map[string]int{"a": 1, "b": 5, "c": 3, "d": 5, "e": 2, "f": 1, "g": 4, "h": 2}
+	first := BuildTagCloud(counts, DefaultTagCloudOptions())
+	second := BuildTagCloud(counts, DefaultTagCloudOptions())
+	if len(first) != len(second) {
+		t.Fatalf("两次构建条目数不一致：%d vs %d", len(first), len(second))
+	}
+	seen := map[int]bool{}
+	for i, it := range first {
+		if it.Dy < -4 || it.Dy > 4 {
+			t.Errorf("%s Dy=%d 超出 -4–4", it.Name, it.Dy)
+		}
+		// 确定性：同名条目两次构建偏移一致
+		if it.Name != second[i].Name || it.Dy != second[i].Dy {
+			t.Errorf("%s 偏移不确定：%d vs %d", it.Name, it.Dy, second[i].Dy)
+		}
+		seen[it.Dy] = true
+	}
+	if len(seen) < 2 {
+		t.Errorf("偏移缺乏多样性：%v", seen)
+	}
+}
+
 // TestBuildTagCloudParams orderby/order/color 参数逐项生效。
 func TestBuildTagCloudParams(t *testing.T) {
 	counts := map[string]int{"a": 1, "b": 5, "c": 3}
