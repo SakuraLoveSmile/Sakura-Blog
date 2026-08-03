@@ -2,7 +2,17 @@
 
 每个子目录是一个**可并行开发**的功能 spec，遵循根目录 [`AGENTS.md`](../AGENTS.md)：**一个 agent = 一个 feature 分支 = 一个 worktree，从 dev 拉出，做完合回 dev**。
 
-## 最新批次 · Wave 10（排版/装饰收官 + 内容系统，依赖 Wave 8 已合能力）
+## 最新批次 · Wave 11（前端收官收尾，依赖 Wave 10 已合）
+
+来源：前端 vs 原版 Stellar 收官调研（2026-08，对齐度 ~95% 后的小缺口）+ 站长新增 AI 摘要需求。
+
+| # | Spec | 主题 | 优先级 | 主模块 |
+|---|------|------|--------|--------|
+| 53 | [前端收尾（作者链接 / swiper 本地化 / wiki 时间）+ AI 文章摘要](53-frontend-finale/spec.md) | Part A 文章头部作者链接 · Part B swiper 本地化 · Part C wiki dateinfo + canonical 处置 · Part D AI 摘要（后台预生成存库 + 读者临时接入自己的 API 透传生成） | 高 | `internal/api/ai.go` + `store/post.go` + `partial/content.html` + 新 `assets/js/ai-summary.js` + Console posts/settings |
+
+**零冲突**：Spec 53 独占全部改动文件，与任何未合分支无共享热点；复用现有 AI 管线（`config.LoadAI` / `callChatCompletion` / settings `ai` 段 / `/ai/generate`）。
+
+## 历史批次 · Wave 10（已完成，存档）
 
 来源：前端 vs 原版 Stellar 排版与标签插件差距收官（代码行号 / grid / 展示容器 / 装饰标签）+ 阅读体验配置 + 内容系统扩展（2026-08）。
 
@@ -85,7 +95,8 @@
 | 多用户 + RBAC | **暂缓** | Spec 45 表结构预留，真实多人需求出现再立 spec |
 | 站内通知中心 | **暂缓** | 单管理员场景价值待定，邮件通知（Spec 26）已覆盖评论场景 |
 | 完整 i18n 多语言切换 | **暂缓** | Spec 37 做文案表收敛留口 |
-| tianli_gpt AI 摘要 / MathJax / algolia | **不做** | 见 Spec 36/34 技术决策（外部付费依赖 / KaTeX、FTS 路线已定） |
+| tianli_gpt 外部依赖 / MathJax / algolia | **不做** | 见 Spec 36/34 技术决策（外部付费依赖 / KaTeX、FTS 路线已定）；AI 摘要需求改由 Spec 53 用自建 AI 管线承接（原「不做 AI 摘要」决策作废） |
+| canonical 源站保护（克隆站警告） | **不做** | Spec 53 正式处置：单站部署无价值；main.js 既有代码无配置即 no-op，零风险保留 |
 
 > 调研勘误记录：一度误报「页脚 sitemap 链接的 /atom.xml 与 /feed.json 未注册会 404」——实际 `internal/feed` 包的 `Register` 已注册两路由，无此 bug。
 
