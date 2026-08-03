@@ -259,7 +259,13 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 	for _, w := range append(append([]*tmpl.WidgetInstance{}, data.LeftbarWidgets...), data.RightbarWidgets...) {
 		switch w.Layout {
 		case "recent":
-			w.Data = truncateRecent(data.Recent, w.Int("limit", 5))
+			// wiki 文档页优先当前项目最近更新（handleWikiDoc 已按 UpdatedAt 降序截断 5），
+			// 其余页面走全局 Recent（快照缓存）。
+			if data.WikiRecentDocs != nil {
+				w.Data = truncateRecent(data.WikiRecentDocs, w.Int("limit", 5))
+			} else {
+				w.Data = truncateRecent(data.Recent, w.Int("limit", 5))
+			}
 		case "popular":
 			w.Data = truncateRecent(data.Popular, w.Int("limit", popularLimit))
 		case "latest_comment":
@@ -290,12 +296,78 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 				if data.WikiDoc != nil {
 					curSlug = data.WikiDoc.Slug
 				}
+				// 项目 icon：header 展示项目 Logo + 项目名（主题感）
+				icon := ""
+				if project := s.wikiProjectByID(data.WikiProjectID); project != nil {
+					icon = project.Icon
+				}
 				w.Data = &tmpl.WikiTreeWidgetData{
 					ProjectID:   data.WikiProjectID,
 					ProjectName: data.WikiProjectName,
+					ProjectIcon: icon,
 					CurrentSlug: curSlug,
 					Tree:        data.WikiDocTree,
 				}
+			}
+		case "wiki_related":
+			// 同 tag 项目推荐（仅 wiki 文档页）：与当前项目有 tag 交集、排除自身、
+			// 按 Sort 降序截断 limit（默认 5）；无候选时 Data 留空模板不输出。
+			if data.WikiProjectID == "" {
+				break
+			}
+			cur := s.wikiProjectByID(data.WikiProjectID)
+			if cur == nil {
+				break
+			}
+			var projects []*tmpl.WikiProject
+			for i := range s.site.Wiki {
+				p := s.site.Wiki[i]
+				if p.ID == cur.ID {
+					continue
+				}
+				if !hasCommonTag(p.Tags, cur.Tags) {
+					continue
+				}
+				projects = append(projects, &p)
+			}
+			if len(projects) == 0 {
+				break
+			}
+			sort.SliceStable(projects, func(i, j int) bool { return projects[i].Sort > projects[j].Sort })
+			if n := w.Int("limit", 5); n > 0 && n < len(projects) {
+				projects = projects[:n]
+			}
+			w.Data = projects
+			// header 显示"更多：{标签名}"：取当前项目第一个命中的共同标签（首个即优先级最高）
+			tagName := ""
+			for _, t := range cur.Tags {
+				found := false
+				for _, p := range projects {
+					if hasTag(p.Tags, t) {
+						tagName = t
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if tagName != "" {
+				w.Params["title"] = "更多：" + tagName
+			}
+		case "ghrepo":
+			// GitHub 仓库卡（仅 wiki 文档页且当前项目配置 repo 时生效）：
+			// 从 site.yml wiki 段取 Repo，用户 library 显式配了 repo 时优先用户配置。
+			if data.WikiProjectID == "" {
+				break
+			}
+			project := s.wikiProjectByID(data.WikiProjectID)
+			if project == nil || project.Repo == "" {
+				break
+			}
+			if w.Params.Str("repo", "") == "" {
+				w.Params["repo"] = project.Repo
 			}
 		case "tagtree":
 			// Spec 35b：笔记本相关页注入标签树（数据仅本页有，不进侧栏快照；
@@ -303,6 +375,9 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if data.TagTreeData != nil {
 				w.Data = data.TagTreeData
 			}
+		case "linklist":
+			// Spec 50：linklist widget 数据，从 widget params 的 items 解析。
+			w.Data = parseLinkListItems(w.Params)
 		}
 	}
 }
@@ -349,8 +424,43 @@ func buildTagCloud(tagCounts map[string]int, limit int) []*tmpl.TagItem {
 	return items
 }
 
+// parseLinkListItems 从 widget params 解析 items 为 []LinkListItem（Spec 50）。
+// items 由 yaml 解析为 []any，每项为 map[string]any{title, url, icon}。
+func parseLinkListItems(params tmpl.WidgetDef) []tmpl.LinkListItem {
+	raw, ok := params["items"]
+	if !ok {
+		return nil
+	}
+	rawSlice, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]tmpl.LinkListItem, 0, len(rawSlice))
+	for _, r := range rawSlice {
+		m, ok := r.(map[string]any)
+		if !ok {
+			continue
+		}
+		item := tmpl.LinkListItem{
+			Title: toString(m["title"]),
+			URL:   toString(m["url"]),
+			Icon:  toString(m["icon"]),
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+// toString 类型安全转字符串，nil 或非 string 返回空。
+func toString(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
 // fillComments 文章页评论区 SSR 注入（评论树 + 计数）。查询失败留空，评论区降级为空列表。
+// CommentPageKey 统一在此设置（模板 data-page-key 优先用它，文章页兜底 /post/{slug}）。
 func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
+	data.CommentPageKey = pageKey
 	if !s.site.Comments.Enabled {
 		return
 	}

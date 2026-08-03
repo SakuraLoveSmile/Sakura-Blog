@@ -55,7 +55,7 @@ func (s *webServer) renderHome(c *gin.Context, page int) {
 	}
 	data := &tmpl.ViewData{
 		Site:      s.site,
-		Page:      &tmpl.Page{Title: s.site.Title, Layout: "index", MenuID: "post", Lang: "zh-CN"},
+		Page:      &tmpl.Page{Title: s.site.Title, Layout: "index", MenuID: "post", Lang: "zh-CN", Type: s.site.Article.Type},
 		Posts:     s.toCards(posts),
 		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 	}

@@ -136,6 +136,7 @@ var zhCN = map[string]string{
 	"topic.post_count": "共 %d 篇文章",
 	"friend.empty":     "暂无友链",
 	"wiki.empty":       "暂无文库项目",
+	"wiki.no_docs":     "该项目暂无文档",
 
 	// 笔记本（Spec 35b）
 	"notebook.title":      "笔记本",

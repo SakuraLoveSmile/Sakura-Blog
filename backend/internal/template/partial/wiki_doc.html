@@ -45,3 +45,4 @@
   </section>
 </div>
 {{end}}
+{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}

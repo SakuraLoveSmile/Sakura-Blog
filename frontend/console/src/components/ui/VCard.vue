@@ -44,6 +44,8 @@ defineProps<{
 .card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
   border-bottom: 1px solid #eaecf0;
 }
 .dark .card-header {
@@ -51,10 +53,8 @@ defineProps<{
 }
 
 .card-header-title {
-  align-self: center;
   font-size: 1rem;
   font-weight: 700;
-  padding: 12px 16px;
   color: #1f2937;
 }
 .dark .card-header-title {
@@ -62,8 +62,6 @@ defineProps<{
 }
 
 .card-header-actions {
-  align-self: center;
-  padding-right: 16px;
 }
 
 .card-body {

@@ -117,7 +117,7 @@
   <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v=demo6">
 
   {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo4">
+  <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v=demo9">
 
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=demo6">
@@ -154,12 +154,17 @@
     html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }
   </style>
 
-  {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）*/}}
+  {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）
+     Spec 50：有背景图时跳过此覆盖，由 model_style.go 的 siteCSS() 生成毛玻璃效果 */}}
+  {{- if not .Site.Style.Site.BackgroundImage}}
   <style>
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   </style>
+  {{- end}}
 
-  {{- /* 侧栏纯色背景：移除 sidebg 背景图模糊 + mask 淡出，改 var(--card) 纯色（Spec Task 2）*/}}
+  {{- /* 侧栏纯色背景：移除 sidebg 背景图模糊 + mask 淡出，改 var(--card) 纯色（Spec Task 2）
+     Spec 50：有侧栏背景图时跳过此覆盖，由 model_style.go 的 leftbarCSS() 恢复图片模糊模式 */}}
+  {{- if not .Site.Style.Leftbar.BackgroundImage}}
   <style>
     .l_left .sidebg { display: none; }
     .l_left .leftbar-container { background: var(--card); }
@@ -168,6 +173,7 @@
       .l_left .leftbar-container:before { display: none; }
     }
   </style>
+  {{- end}}
 
   {{- /* 导航栏 backdrop-filter 首帧合成延迟修复：提前建立合成层，避免刷新时未过滤态（白底）闪现一帧导致变亮。
      main.css 为 Stylus 编译产物，故覆盖样式放此处内联。 */}}

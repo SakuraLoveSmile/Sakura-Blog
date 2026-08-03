@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
-// tocHeadingRe 匹配 goldmark 渲染的 h1-h6（AutoHeadingID 开启后必带 id，输出单行）。
+// tocHeadingRe 匹配渲染后的 h1-h6（AutoHeadingID 开启后必带 id，输出单行）。
+// id 前允许有其他属性（quot 等 shortcode 输出 <h2 class="content" id="..."> 的属性顺序），
 // RE2 不支持反向引用，闭合标签用 </h[1-6]>（标题不嵌套，安全）。
-var tocHeadingRe = regexp.MustCompile(`<h([1-6]) id="([^"]+)">(.*?)</h[1-6]>`)
+var tocHeadingRe = regexp.MustCompile(`<h([1-6])\b([^>]*)id="([^"]+)"([^>]*)>(.*?)</h[1-6]>`)
 
 // htmlTagRe 剥离标题内的行内标签（code/em/a 等），TOC 只保留纯文本。
 var htmlTagRe = regexp.MustCompile(`<[^>]+>`)
@@ -54,7 +55,7 @@ func ExtractTOCWith(contentHTML string, opt TOCOptions) template.HTML {
 	matches := tocHeadingRe.FindAllStringSubmatch(contentHTML, -1)
 	entries := make([]tocEntry, 0, len(matches))
 	for _, m := range matches {
-		text := htmlTagRe.ReplaceAllString(m[3], "")
+		text := htmlTagRe.ReplaceAllString(m[5], "")
 		text = strings.TrimSpace(html.UnescapeString(text))
 		if text == "" {
 			continue
@@ -63,7 +64,7 @@ func ExtractTOCWith(contentHTML string, opt TOCOptions) template.HTML {
 		if level < opt.MinDepth || level > opt.MaxDepth {
 			continue
 		}
-		entries = append(entries, tocEntry{level: level, id: m[2], text: text})
+		entries = append(entries, tocEntry{level: level, id: m[3], text: text})
 	}
 	if len(entries) == 0 {
 		return ""

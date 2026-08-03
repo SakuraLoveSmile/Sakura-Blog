@@ -3,7 +3,8 @@
    - fetch 提交：approved 无刷新插入列表，pending 提示待审核
    - 回复按钮：编辑器单实例内联移动到被回复评论下（Halo/Artalk 同款交互）
    - localStorage 记忆 nick/email/link；Cmd/Ctrl+Enter 提交
-   - 状态与 page_key 绑定：PJAX 换页后回复状态自动失效，防挂错父评论 */
+   - 状态与 page_key 绑定：PJAX 换页后回复状态自动失效，防挂错父评论
+   - Spec 50：评论区懒加载（IntersectionObserver 监听 .cmt-lazy 容器） */
 (function () {
   'use strict';
 
@@ -11,6 +12,9 @@
 
   // 当前回复状态：pageKey 用于换页失效判定，parentId 0=顶级
   var replyState = { pageKey: '', parentId: 0 };
+
+  // Spec 50：懒加载状态
+  var lazyLoaded = false;
 
   function $(id) { return document.getElementById(id); }
   function cmtBody() { return $('cmt-body'); }
@@ -56,6 +60,7 @@
   }
 
   function loadIdentity() {
+    if (!lazyLoaded) return; // 懒加载未触发时跳过
     var nickEl = $('cmt-nick');
     if (!nickEl) return; // 非文章页
     try {
@@ -244,10 +249,41 @@
     }
   });
 
-  // 身份回填：首屏 + PJAX 换页后（新 DOM 需重新回填）
-  document.addEventListener('DOMContentLoaded', loadIdentity);
+  /* ===== Spec 50：评论区懒加载初始化 ===== */
+  function initLazyComments() {
+    var container = document.querySelector('.cmt-lazy');
+    if (!container) {
+      // 无懒加载容器（如非文章页），静默跳过
+      return;
+    }
+    if (lazyLoaded || !container.hasAttribute('data-lazy')) {
+      // 已加载或已由其他路径触发，直接初始化
+      loadIdentity();
+      return;
+    }
+    if (typeof window.IntersectionObserver === 'undefined') {
+      // 退化兼容：不支持 IntersectionObserver 时立即加载
+      container.removeAttribute('data-lazy');
+      lazyLoaded = true;
+      loadIdentity();
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        container.removeAttribute('data-lazy');
+        lazyLoaded = true;
+        loadIdentity();
+      });
+    }, { rootMargin: '200px' });
+    observer.observe(container);
+  }
+
+  document.addEventListener('DOMContentLoaded', initLazyComments);
   document.addEventListener('pjax:complete', function () {
     replyState = { pageKey: '', parentId: 0 };
-    loadIdentity();
+    lazyLoaded = false;
+    initLazyComments();
   });
 })();

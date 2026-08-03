@@ -7,9 +7,9 @@
   <section class="header cmt-title cap theme">
     <span>{{.Site.Comments.Title}}</span>
   </section>
-  <section class="body cmt-body native" id="cmt-body"
-    data-page-key="/post/{{.Page.Slug}}"
-    data-admin-badge="{{.Site.Comments.AdminBadge}}">
+  <section class="body cmt-body native cmt-lazy" id="cmt-body"
+    data-page-key="{{if .CommentPageKey}}{{.CommentPageKey}}{{else}}/post/{{.Page.Slug}}{{end}}"
+    data-admin-badge="{{.Site.Comments.AdminBadge}}" data-lazy>
 
     {{- /* 编辑器：Halo 编辑器在上布局。reply-tip 回复提示条默认隐藏；website 为蜜罐隐藏字段（机器人可见） */}}
     <div class="cmt-editor" id="cmt-editor">

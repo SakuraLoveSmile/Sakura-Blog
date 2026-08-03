@@ -4,9 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"regexp"
 	"strings"
 	"time"
 )
+
+// wikiTagColors 文库卡片标签颜色表：标签名 → 文字色（对齐原版 category_color helper 的按名查色机制）。
+// 原版 _config.yml 的 article.category_color 是「标签名 → hex 色」，helper 把色值写进 inline style：
+//
+//	--text-p2 为文字色，--theme-block 为文字色追加 alpha（#fff → #fff2、#ffffff → #ffffff20）作半透明底。
+//
+// 颜色值沿用既有配色（红/绿/蓝/橙），未命中返回空串保持默认灰色。
+var wikiTagColors = map[string]string{
+	"NEW":  "#e74c3c",
+	"前端":   "#e74c3c",
+	"开源项目": "#27ae60",
+	"iOS":  "#3498db",
+	"后端":   "#3498db",
+	"主题":   "#e67e22",
+}
 
 // FuncMap 对齐 Stellar EJS 用到的 helper。
 // Go html/template 对返回值做 HTML 转义，SVG/icon/partial 需返回 template.HTML 跳过转义。
@@ -102,6 +118,24 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 			return template.HTMLAttr(s)
 		},
 
+		// tagColorStyle: 文库卡片标签颜色 inline style（对齐原版 scripts/helpers/category_color.js）。
+		// 命中颜色表 → 输出 style="--text-p2:<文字色>;--theme-block:<文字色+alpha>"
+		// （.cap 的 color: var(--text-p2) 消费文字色，background: var(--theme-block) 消费半透明底）；
+		// 未命中返回空串，模板不输出 style 属性，保持默认灰色。返回值用 template.HTMLAttr 跳过转义。
+		"tagColorStyle": func(name string) template.HTMLAttr {
+			color, ok := wikiTagColors[name]
+			if !ok {
+				return ""
+			}
+			bgColor := color
+			if len(color) == 4 { // #fff → #fff2
+				bgColor += "2"
+			} else if len(color) == 7 { // #ffffff → #ffffff20
+				bgColor += "20"
+			}
+			return template.HTMLAttr(`style="--text-p2:` + color + `;--theme-block:` + bgColor + `"`)
+		},
+
 		// jsonify: 将值序列化为 JSON（用于在 <script> 中安全嵌入配置对象）。
 		"jsonify": func(v interface{}) template.JS {
 			b, err := json.Marshal(v)
@@ -125,6 +159,12 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 				m[key] = values[i+1]
 			}
 			return m, nil
+		},
+
+		// reMatch: 正则匹配（Spec 50 导航栏 active_rules 用）。pattern 非法时返回 false。
+		"reMatch": func(pattern, s string) bool {
+			ok, err := regexp.MatchString(pattern, s)
+			return err == nil && ok
 		},
 	}
 }

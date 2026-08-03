@@ -22,9 +22,10 @@ type WikiDoc struct {
 }
 
 // TreeNode 文档树节点（用于 BuildDocTree 返回）。
+// children 不加 omitempty：叶子节点也必须输出 []，保证 API 消费方（Console 树拍平等）可安全遍历。
 type TreeNode struct {
 	Doc      *WikiDoc   `json:"doc"`
-	Children []TreeNode `json:"children,omitempty"`
+	Children []TreeNode `json:"children"`
 }
 
 // wikidocCols 统一 SELECT 列清单。列名用 doc_order 而非 order（SQL 保留字）。
@@ -140,8 +141,13 @@ func (s *Store) UpdateWikidoc(doc *WikiDoc) error {
 	return nil
 }
 
-// DeleteWikidoc 硬删除文档（wiki 文档无需软删除）。不存在不报错。
+// DeleteWikidoc 硬删除文档（wiki 文档无需软删除）。删除前把子文档 parent 批量置 0 升为顶级，
+// 避免子文档成为指向已删除 ID 的孤儿节点从树中消失。不存在不报错。
 func (s *Store) DeleteWikidoc(id int64) error {
+	// 删除前：子文档升为顶级
+	if _, err := s.db.Exec(`UPDATE wikidocs SET parent = 0 WHERE parent = ?`, id); err != nil {
+		return fmt.Errorf("reset children parent: %w", err)
+	}
 	if _, err := s.db.Exec(`DELETE FROM wikidocs WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("delete wikidoc %d: %w", id, err)
 	}
@@ -155,7 +161,12 @@ func (s *Store) BuildDocTree(projectID string) ([]TreeNode, error) {
 	if err != nil {
 		return nil, err
 	}
+	return BuildDocTreeFromDocs(docs), nil
+}
 
+// BuildDocTreeFromDocs 从已加载的文档列表构建文档树（纯内存，≤3 层递归）。
+// 用于避免 handleWikiDoc 中重复 ListWikidocs 查询；孤儿与超深节点截断规则同 BuildDocTree。
+func BuildDocTreeFromDocs(docs []*WikiDoc) []TreeNode {
 	// 按 parent 分组
 	children := make(map[int64][]*WikiDoc)
 	var roots []*WikiDoc
@@ -188,7 +199,7 @@ func (s *Store) BuildDocTree(projectID string) ([]TreeNode, error) {
 		return nodes
 	}
 
-	return build(0, 0), nil
+	return build(0, 0)
 }
 
 // scanWikidoc 单行扫描；行顺序对齐 wikidocCols。

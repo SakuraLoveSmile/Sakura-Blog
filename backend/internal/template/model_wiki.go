@@ -13,6 +13,9 @@ type WikiProject struct {
 	Tags        []string `yaml:"tags" json:"tags"`
 	URL         string   `yaml:"url" json:"url"`   // 首页/文档链接（站内文章、独立页面或外链）
 	Sort        int      `yaml:"sort" json:"sort"` // 越大越靠前
+	Repo        string   `yaml:"repo" json:"repo"` // GitHub 仓库（owner/name 格式），非空时 wiki 文档页右栏渲染 ghrepo 卡片
+	// HasDocs 运行时标记：是否有已发布的本地文档（请求时由 handler 填充，不参与配置解析/JSON 输出）。
+	HasDocs bool `yaml:"-" json:"-"`
 }
 
 // DisplayTitle 优先 Title，其次 Name，最后 ID。
@@ -51,6 +54,7 @@ type WikiTreeNode struct {
 type WikiTreeWidgetData struct {
 	ProjectID   string
 	ProjectName string
+	ProjectIcon string // 项目 Logo 图片 URL（WikiProject.Icon），header 展示项目主题感
 	CurrentSlug string // 当前文档 slug（树高亮）
 	Tree        []WikiTreeNode
 }

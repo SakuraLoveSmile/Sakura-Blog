@@ -1,92 +1,18 @@
-/* wiki-notes.css: 文库列表页卡片的内部布局。
-   .post-card 基座（背景/圆角/阴影）与容器 .post-list / .post-card-wrap 间距复用 main.css 通用规则，
-   此处仅补文库卡片特有的「图标 + 文本」横向布局（移植自 Stellar list.styl .post-card.wiki 段），全部走主题变量。
-   笔记卡片复用 .post-card.post（与首页一致），无需额外样式。 */
-
-/* Spec Task 3: 文库卡片响应式网格布局（宽屏自适应多列）+ hover 动效增强 */
-.post-list.wiki {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 1rem;
-}
-
-.post-list .post-card.wiki {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.post-list .post-card.wiki:hover {
-  transform: translateY(-4px);
-}
-
-.post-list .post-card.wiki article {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 0.5rem;
-}
-
-.post-list .post-card.wiki article .preview {
-  display: flex;
-  align-items: center;
-  margin: 1rem 3rem;
-}
-
-.post-list .post-card.wiki article .preview img {
-  width: 96px;
-  max-height: 96px;
-  object-fit: contain;
-  transition: all 0.75s ease-out;
-}
-
-/* hover 时图标轻微缩放，增强交互反馈 */
-.post-list .post-card.wiki:hover article .preview img {
-  transform: scale(1.08);
-}
-
-.post-list .post-card.wiki article .excerpt {
-  flex: 1;
-  min-width: 280px;
-  margin: 1rem 0.5rem;
-  overflow: hidden;
-  word-wrap: break-word;
-}
-
-@media screen and (min-width: 950px) {
-  .post-list .post-card.wiki article .excerpt {
-    margin-right: 2rem;
-  }
-}
-
-.post-list .post-card.wiki article .excerpt .caps {
-  line-height: 1;
-  margin-bottom: 0.75rem;
-}
-
-.post-list .post-card.wiki article .excerpt .cap {
-  background: var(--block);
-  padding: 2px 4px;
-  border-radius: 2px;
-}
-
-.post-list .post-card.wiki article .excerpt .cap + .cap {
-  margin-left: 4px;
-}
-
-.post-list .post-card.wiki article .excerpt .post-title {
-  margin: 0.25rem 0 0.5rem;
-}
-
-.post-list .post-card.wiki article .excerpt p:last-child {
-  margin-bottom: 0;
-  color: var(--text-p3);
-}
+/* wiki-notes.css: 文库列表页补充样式。
+   .post-card 基座（背景/圆角/阴影/hover）、.post-list 间距、.post-card.wiki 内部布局
+   （flex 图标+文本、96px 图标、标签胶囊 --theme-block 半透明底、标题/描述颜色）
+   全部复用 main.css 中 Stellar list.styl 的原版编译产物，此处仅保留文库特有的零散补充。 */
 
 /* 文库/笔记无数据时的空状态 */
 .wiki-empty {
   padding: 3rem 1rem;
   text-align: center;
   color: var(--text-p3);
+}
+
+/* 文库空卡片（无本地文档且无外链）：无 href 默认不是手型，补回可点击外观 */
+a[data-wiki-empty] {
+  cursor: pointer;
 }
 
 /* 笔记(手记)时间流：标题与标签（复用 moments 的 .tag-plugin.timeline .timenode 结构） */

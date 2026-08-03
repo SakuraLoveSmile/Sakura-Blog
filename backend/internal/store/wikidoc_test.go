@@ -285,3 +285,62 @@ func TestBuildDocTree(t *testing.T) {
 		t.Fatalf("other tree mismatch: %+v", other)
 	}
 }
+
+// TestWikidocDeletePromotesChildren 删除父文档时，其直接子文档 parent 批量置 0 升为顶级。
+func TestWikidocDeletePromotesChildren(t *testing.T) {
+	s := newWikidocStore(t)
+	a := mkWikidoc(t, s, "wiki", "a", 1, 0)
+	a1 := mkWikidoc(t, s, "wiki", "a1", 1, a.ID)
+	a2 := mkWikidoc(t, s, "wiki", "a2", 2, a.ID)
+	a1x := mkWikidoc(t, s, "wiki", "a1x", 1, a1.ID) // 孙子文档，parent 指向 a1 不受影响
+	b := mkWikidoc(t, s, "wiki", "b", 2, 0)         // 无关顶级文档
+
+	if err := s.DeleteWikidoc(a.ID); err != nil {
+		t.Fatalf("delete parent: %v", err)
+	}
+
+	// 被删文档本身不存在
+	gone, err := s.GetWikidocByID(a.ID)
+	if err != nil || gone != nil {
+		t.Fatalf("deleted doc should be gone: doc=%v err=%v", gone, err)
+	}
+	// 直接子文档升为顶级
+	c1, err := s.GetWikidocByID(a1.ID)
+	if err != nil || c1 == nil {
+		t.Fatalf("child a1 should remain: %v", err)
+	}
+	if c1.Parent != 0 {
+		t.Fatalf("child a1 parent want 0 (promoted), got %d", c1.Parent)
+	}
+	c2, err := s.GetWikidocByID(a2.ID)
+	if err != nil || c2 == nil {
+		t.Fatalf("child a2 should remain: %v", err)
+	}
+	if c2.Parent != 0 {
+		t.Fatalf("child a2 parent want 0 (promoted), got %d", c2.Parent)
+	}
+	// 孙子文档的 parent 链不受影响（仍指向 a1）
+	g, err := s.GetWikidocByID(a1x.ID)
+	if err != nil || g == nil {
+		t.Fatalf("grandchild a1x should remain: %v", err)
+	}
+	if g.Parent != a1.ID {
+		t.Fatalf("grandchild a1x parent want %d, got %d", a1.ID, g.Parent)
+	}
+	// 无关文档不受影响
+	bgot, err := s.GetWikidocByID(b.ID)
+	if err != nil || bgot == nil || bgot.Parent != 0 {
+		t.Fatalf("unrelated doc b should be intact: doc=%v err=%v", bgot, err)
+	}
+	// 删除后树中 a1/a2 为顶级
+	tree, err := s.BuildDocTree("wiki")
+	if err != nil {
+		t.Fatalf("build tree: %v", err)
+	}
+	if len(tree) != 3 {
+		t.Fatalf("want 3 roots after delete, got %d", len(tree))
+	}
+	if findNode(tree, "a1") == nil || findNode(tree, "a2") == nil {
+		t.Fatal("promoted children should appear as roots")
+	}
+}

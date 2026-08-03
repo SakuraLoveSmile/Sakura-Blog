@@ -1,4 +1,5 @@
-{{- /* widgets/search.html: 搜索框，对应 Stellar _partial/sidebar/search.ejs（无 wiki 维度，filter/placeholder 取默认）
+{{- /* widgets/search.html: 搜索框，对应 Stellar _partial/sidebar/search.ejs（wiki 文档页带项目维度：
+   data-filter 限定当前项目 + placeholder 显示项目名；其余页面走默认全站搜索）
    对齐 index_leftbar.ejs layoutWidgets：搜索框在 .widgets 容器内第一个，而非独立层级。
    .search-wrapper#search-wrapper > form.search-form(a.search-button + input#search-input) + #search-result + .search-no-result
    交互在 assets/js/search/local-search.js（去 jQuery 移植版）*/ -}}
@@ -7,7 +8,7 @@
     <a class="search-button" onclick="document.getElementById('search-input').focus();">
       {{icon "default:search"}}
     </a>
-    <input type="text" class="search-input" id="search-input" placeholder="{{lang "search.search"}}">
+    <input type="text" class="search-input" id="search-input" placeholder="{{if .SearchPlaceholder}}{{.SearchPlaceholder}}{{else}}{{lang "search.search"}}{{end}}"{{if .SearchFilter}} data-filter="{{.SearchFilter}}"{{end}}>
   </form>
   <div id="search-result"></div>
   <div class="search-no-result">{{- lang "search.no_result" -}}</div>

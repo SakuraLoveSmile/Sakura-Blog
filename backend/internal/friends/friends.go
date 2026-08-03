@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	maxPostsPerFeed = 20
 	fetchTimeout    = 10 * time.Second
 	defaultInterval = time.Hour
 )
@@ -229,10 +228,18 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 			Summary:   summarize(firstNonEmpty(e.Summary, e.Content)),
 		})
 	}
-	if len(posts) > maxPostsPerFeed {
-		posts = posts[:maxPostsPerFeed]
+	if len(posts) > a.maxPostsPerFeed() {
+		posts = posts[:a.maxPostsPerFeed()]
 	}
 	return posts, nil
+}
+
+// maxPostsPerFeed 返回每个友链展示的最新文章数上限（site.yml friends.posts_per_link，<=0 用默认 20）。
+func (a *Aggregator) maxPostsPerFeed() int {
+	if n := a.site.Friends.MaxPostsPerFeed; n > 0 {
+		return n
+	}
+	return 20
 }
 
 // feedXML 同时兼容 RSS2.0(<rss><channel><item>) 与 Atom(<feed><entry>)。

@@ -82,6 +82,12 @@ func TestWidgetsConfigDefaults(t *testing.T) {
 		assertSeq(t, pt+" leftbar", b.Leftbar, wantLeft)
 	}
 
+	// wiki 文档页（Spec 35a）：左栏挂 tree + wiki_related + recent（对齐原版不追加 related/tagcloud/popular），
+	// 右栏对齐原版 site_tree.wiki.rightbar（ghrepo, toc）
+	wikiDoc := cfg.BarsFor("wiki-doc")
+	assertSeq(t, "wiki-doc leftbar", wikiDoc.Leftbar, []string{"tree", "wiki_related", "recent"})
+	assertSeq(t, "wiki-doc rightbar", wikiDoc.Rightbar, []string{"ghrepo", "toc"})
+
 	// 缺省库组件全部可解析出 layout
 	for _, name := range append(append([]string{}, wantLeft...), wantRight...) {
 		if cfg.Lookup(name).Layout() == "" {

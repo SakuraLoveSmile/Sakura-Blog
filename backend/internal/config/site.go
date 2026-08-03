@@ -88,6 +88,7 @@ func DefaultSite() *tmpl.Site {
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
 		Article: tmpl.ArticleConfig{
+			Type:          "tech",
 			CategoryColor: map[string]string{"技术": "#1BCDFC"}, // 对齐原版 theme.article.category_color
 			Copyright: tmpl.CopyrightConfig{
 				Enabled:    true,

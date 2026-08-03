@@ -66,12 +66,27 @@ type ViewData struct {
 	// wiki 文档页（Layout=wiki-doc 时使用，Spec 35a）：
 	// WikiProjectID/Name 为面包屑与 tree widget 的项目上下文；WikiDoc 为当前文档；
 	// WikiPrevDoc/WikiNextDoc 为同 project 内按 doc_order 的上下篇；WikiDocTree 供 leftbar tree widget 注入。
-	WikiProjectID   string         // 项目 ID（面包屑/树链接）
-	WikiProjectName string         // 项目显示名（DisplayTitle）
-	WikiDoc         *WikiDocView   // 当前文档（nil 时不渲染文档区）
-	WikiPrevDoc     *WikiDocNav    // 上一篇（nil 不渲染）
-	WikiNextDoc     *WikiDocNav    // 下一篇（nil 不渲染）
-	WikiDocTree     []WikiTreeNode // 项目文档树（仅 wiki 文档页注入，不进侧栏快照）
+	WikiProjectID   string // 项目 ID（面包屑/树链接）
+	WikiProjectName string // 项目显示名（DisplayTitle）
+	// WikiProjectIcon/Description 为 sidebar 项目化 header 数据（handleWikiDoc 填充，
+	// 仅 wiki 文档页使用）：icon 显示项目 Logo，description 作副标题。
+	WikiProjectIcon        string         // 项目 Logo 图片 URL（WikiProject.Icon）
+	WikiProjectDescription string         // 项目描述（WikiProject.Description）
+	WikiDoc                *WikiDocView   // 当前文档（nil 时不渲染文档区）
+	WikiPrevDoc            *WikiDocNav    // 上一篇（nil 不渲染）
+	WikiNextDoc            *WikiDocNav    // 下一篇（nil 不渲染）
+	WikiDocTree            []WikiTreeNode // 项目文档树（仅 wiki 文档页注入，不进侧栏快照）
+	// CommentPageKey 评论区 page_key（fillComments 统一设置，模板 data-page-key 优先用它；
+	// 为空时 comments.html 兜底回退 /post/{slug}，文章页零回归）。
+	CommentPageKey string
+
+	// 搜索框项目化（wiki 文档页左侧栏）：SearchFilter 限定当前项目（data-filter 前缀过滤），
+	// SearchPlaceholder 动态 placeholder 文案；其余页面为空走默认（全站搜索）。
+	SearchFilter      string
+	SearchPlaceholder string
+	// WikiRecentDocs wiki 文档页"最近更新"widget 数据源（当前项目已发布文档按 UpdatedAt 降序，
+	// 复用 RecentPost 结构，模板零改动）；非 wiki 文档页为 nil，走全局 Recent。
+	WikiRecentDocs []*RecentPost
 
 	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
 	NotesContentHTML template.HTML
@@ -289,8 +304,9 @@ type Site struct {
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
 	// Verifications 搜索引擎站长验证码（google/bing/baidu），由 SEO 模块运行时填充，前台 head 注入 meta。
 	Verifications map[string]string `yaml:"-" json:"-"`
-	// 导航栏额外标签页（site.yml nav_tabs 段），追加在固定 tab（归档）之后。
-	NavTabs []NavTabItem `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
+	// NavTabs 导航栏标签页配置（Spec 50）。
+	// EnableCustom 为 true 时完全由配置驱动，false 时保持当前固定 tab + 可配额外项。
+	NavTabs NavTabsConfig `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
 	// 首页 Hero cover 区配置（site.yml cover 段），仅首页第一页且 title 非空时渲染。
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
 	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
@@ -351,11 +367,21 @@ type AuthorDef struct {
 	Hidden      bool   `yaml:"hidden,omitempty" json:"hidden,omitempty"`
 }
 
-// NavTabItem 导航栏额外标签页单项（site.yml nav_tabs 段）。
+// NavTabsConfig 导航栏标签页配置（Spec 50）。
+// EnableCustom 为 true 时完全由配置驱动，false 时保持当前固定 tab + 可配额外项（向后兼容）。
+type NavTabsConfig struct {
+	EnableCustom bool         `yaml:"enable_custom,omitempty" json:"enable_custom,omitempty"`
+	Items        []NavTabItem `yaml:"items,omitempty" json:"items,omitempty"`
+}
+
+// NavTabItem 导航栏标签页单项（site.yml nav_tabs 段）。
+// Spec 50 增强：Icon 为图标 key（可选），ActiveRules 为路径匹配规则（可选，缺省按 URL 精确匹配）。
 type NavTabItem struct {
-	Title    string `yaml:"title" json:"title"`
-	URL      string `yaml:"url" json:"url"`
-	External bool   `yaml:"external,omitempty" json:"external,omitempty"` // true 时 target="_blank"
+	Title       string `yaml:"title" json:"title"`
+	URL         string `yaml:"url" json:"url"`
+	External    bool   `yaml:"external,omitempty" json:"external,omitempty"`         // true 时 target="_blank"
+	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty"`                 // 图标 key（可选），如 solar:home-bold
+	ActiveRules string `yaml:"active_rules,omitempty" json:"active_rules,omitempty"` // 路径匹配正则（可选），缺省按 URL 精确匹配
 }
 
 // CoverConfig 首页 Hero cover 区配置（site.yml cover 段）。

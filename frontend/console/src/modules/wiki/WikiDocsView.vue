@@ -49,11 +49,13 @@ const flatTree = ref<FlatNode[]>([]);
 const docsLoading = ref(false);
 
 // 树拍平（preorder + 层级缩进），供左侧列表渲染
+// 后端 TreeNode.Children 带 omitempty，叶子节点不输出 children 字段（为 undefined），此处必须容错。
 function flatten(nodes: TreeNode[], depth = 0): FlatNode[] {
   const out: FlatNode[] = [];
   for (const n of nodes) {
-    out.push({ doc: n.doc, depth, hasChildren: n.children.length > 0 });
-    if (n.children.length) out.push(...flatten(n.children, depth + 1));
+    const children = n.children || [];
+    out.push({ doc: n.doc, depth, hasChildren: children.length > 0 });
+    if (children.length) out.push(...flatten(children, depth + 1));
   }
   return out;
 }
@@ -77,8 +79,26 @@ const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 
 const hasCurrent = computed(() => currentId.value > 0 || !!originalSlug.value);
 
-// 父文档可选项（排除自己）
-const parentOptions = computed(() => docs.value.filter((d) => d.id !== currentId.value));
+// 递归收集某文档的全部后代 ID（编辑时不可选，否则会产生循环引用）
+function collectDescendantIds(pid: number, acc = new Set<number>()): Set<number> {
+  for (const d of docs.value) {
+    if (d.parent === pid && !acc.has(d.id)) {
+      acc.add(d.id);
+      collectDescendantIds(d.id, acc);
+    }
+  }
+  return acc;
+}
+
+// 父文档可选项：排除当前文档自身及其所有后代
+const parentOptions = computed(() => {
+  const excluded = new Set<number>();
+  if (currentId.value > 0) {
+    excluded.add(currentId.value);
+    collectDescendantIds(currentId.value, excluded);
+  }
+  return docs.value.filter((d) => !excluded.has(d.id));
+});
 
 function resetEditor() {
   currentId.value = 0;
@@ -148,7 +168,13 @@ async function loadProjects() {
   settingsLoading.value = true;
   try {
     const { data } = await settingsApi.all();
-    projects.value = data.wiki || [];
+    // 项目列表按 sort 降序排列（sort 相同或无值时按 id 字母序），与前台 /wiki 页顺序一致
+    projects.value = [...(data.wiki || [])].sort((a: any, b: any) => {
+      const sa = Number(a?.sort) || 0;
+      const sb = Number(b?.sort) || 0;
+      if (sa !== sb) return sb - sa;
+      return String(a?.id ?? "").localeCompare(String(b?.id ?? ""));
+    });
     if (projects.value.length) {
       activeProject.value = projects.value[0].id;
     }
@@ -278,6 +304,18 @@ onMounted(loadProjects);
         <Icon icon="ri:book-2-line" class="mx-auto text-3xl text-gray-300 dark:text-gray-600" />
         <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">暂无文库项目</p>
         <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">请先到「设置 → 文库」添加项目，保存后回到本页即可管理文档。</p>
+        <!-- 无项目时也提供前往设置的入口 -->
+        <VButton
+          type="secondary"
+          size="sm"
+          class="mt-4"
+          :route="{ path: '/settings', query: { tab: 'wiki' } }"
+        >
+          <template #icon>
+            <Icon icon="ri:settings-3-line" class="h-full w-full" />
+          </template>
+          前往文库设置
+        </VButton>
       </div>
 
       <div v-else>
@@ -288,6 +326,18 @@ onMounted(loadProjects);
             <select v-model="activeProject" :class="inputCls + ' w-56'" title="选择文库项目">
               <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.title || p.id }}</option>
             </select>
+            <!-- 跳转到设置页文库 tab 管理项目（增删改） -->
+            <VButton
+              type="secondary"
+              size="sm"
+              :route="{ path: '/settings', query: { tab: 'wiki' } }"
+              title="管理文库项目"
+            >
+              <template #icon>
+                <Icon icon="ri:settings-3-line" class="h-full w-full" />
+              </template>
+              管理项目
+            </VButton>
           </div>
           <VButton type="secondary" size="sm" @click="openCreate">
             <template #icon>

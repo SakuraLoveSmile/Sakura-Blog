@@ -1,33 +1,47 @@
-{{- /* widgets/tree.html: 项目文档树（Spec 35a），对应原版 widgets/tree.ejs。
+{{- /* widgets/tree.html: 项目文档树（Spec 35a），对齐原版 widgets/tree.ejs 的 doc-tree 结构。
    上下文为 WidgetInstance（Spec 33）：.Data 为 *WikiTreeWidgetData，
-   仅 wiki 文档页由 assembleWidgets 注入（其余页面 Data 留空，本模板不输出）；
-   tree_node 递归渲染项目内文档树（≤3 层，对齐 store.BuildDocTree 限制），当前文档高亮。
-   dict 传参（node/currentSlug/projectID）由 funcs.go 的 dict helper 提供。*/ -}}
+   仅 wiki 文档页由 assembleWidgets 注入（其余页面 Data 留空，本模板不输出）。
+   结构对齐原版：widget-wrapper doc-tree post-list 内按分组渲染——
+     widget-header dis-select > span.name（分组标题）+ widget-body fs14 > a.link（文档链接），
+   main.css 的 post-list 链接样式（7646-7683）与 svg.active-icon 书签图标（2076 行）自动生效。
+   分组判定：任一顶层节点有 children 即分组模式（顶层标题作分组名，body 内顶层自身 + 后代
+   递归平铺为 a.link）；全部顶层为叶子时渲染为单组（项目名作分组名，全树平铺）。
+   当前文档 a.link.active + svg.active-icon 高亮；嵌套层级缩进用 padding-left 递增（每层 +16px）。
+   tree_doc_link 渲染单个链接、tree_doc_links 递归平铺子节点（dict 传参：Doc/Nodes/CurrentSlug/ProjectID/Pad）。*/ -}}
 {{if .Data}}
-<widget class="widget-wrapper tree" id="data-tree">
-  <div class="widget-header dis-select">
-    <span class="name">{{.Data.ProjectName}}</span>
-    <a class="cap-action" href="/wiki/{{.Data.ProjectID}}">{{lang "btn.all"}}</a>
+<widget class="widget-wrapper doc-tree post-list" id="data-tree">
+  {{- /* 分组模式判定：任一顶层节点有 children 即分组渲染，否则扁平单组 */}}
+  {{$grouped := false}}
+  {{range .Data.Tree}}{{if .Children}}{{$grouped = true}}{{end}}{{end}}
+  {{if $grouped}}
+  {{range .Data.Tree}}
+  <div class="widget-header dis-select"><span class="name">{{.Doc.Title}}</span></div>
+  <div class="widget-body fs14">
+    {{template "tree_doc_link" (dict "Doc" .Doc "CurrentSlug" $.Data.CurrentSlug "ProjectID" $.Data.ProjectID "Pad" 16)}}
+    {{template "tree_doc_links" (dict "Nodes" .Children "CurrentSlug" $.Data.CurrentSlug "ProjectID" $.Data.ProjectID "Pad" 16)}}
   </div>
-  <div class="widget-body">
-    <ul class="tree-list">
-      {{range .Data.Tree}}
-      {{template "tree_node" (dict "node" . "currentSlug" $.Data.CurrentSlug "projectID" $.Data.ProjectID)}}
-      {{end}}
-    </ul>
+  {{end}}
+  {{else}}
+  <div class="widget-header dis-select"><span class="name">{{.Data.ProjectName}}</span></div>
+  <div class="widget-body fs14">
+    {{template "tree_doc_links" (dict "Nodes" .Data.Tree "CurrentSlug" .Data.CurrentSlug "ProjectID" .Data.ProjectID "Pad" 16)}}
   </div>
+  {{end}}
 </widget>
 {{end}}
 
-{{define "tree_node"}}
-<li class="tree-item{{if eq .node.Doc.Slug .currentSlug}} active{{end}}">
-  <a class="tree-link" href="/wiki/{{.projectID}}/{{.node.Doc.Slug}}">{{.node.Doc.Title}}</a>
-  {{if .node.Children}}
-  <ul class="tree-children">
-    {{range .node.Children}}
-    {{template "tree_node" (dict "node" . "currentSlug" $.currentSlug "projectID" $.projectID)}}
-    {{end}}
-  </ul>
-  {{end}}
-</li>
+{{define "tree_doc_link"}}
+{{if and .Doc .Doc.Title}}
+<a class="link{{if eq .Doc.Slug .CurrentSlug}} active{{end}}" href="/wiki/{{.ProjectID}}/{{.Doc.Slug}}"{{if ne .Pad 16}} style="padding-left:{{.Pad}}px"{{end}}>
+  <span class="toc-text">{{.Doc.Title}}</span>
+  {{if eq .Doc.Slug .CurrentSlug}}<svg class="active-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.536A.5.5 0 014 22.143V3a1 1 0 011-1z"/></svg>{{end}}
+</a>
+{{end}}
+{{end}}
+
+{{define "tree_doc_links"}}
+{{range .Nodes}}
+{{template "tree_doc_link" (dict "Doc" .Doc "CurrentSlug" $.CurrentSlug "ProjectID" $.ProjectID "Pad" $.Pad)}}
+{{if .Children}}{{template "tree_doc_links" (dict "Nodes" .Children "CurrentSlug" $.CurrentSlug "ProjectID" $.ProjectID "Pad" (add $.Pad 16))}}{{end}}
+{{end}}
 {{end}}

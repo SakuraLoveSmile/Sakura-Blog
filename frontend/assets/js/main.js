@@ -167,6 +167,18 @@ const init = {
       if (link) sidebar.dismiss();
     });
   },
+  wikiEmptyCard: () => {
+    // 文库空卡片（无本地文档且无外链，带 data-wiki-empty）：点击 toast 提示文案。
+    // document 级事件委托只绑一次，PJAX 换页后 DOM 替换不受影响。
+    if (init.wikiEmptyBound) return;
+    init.wikiEmptyBound = true;
+    document.addEventListener('click', (e) => {
+      const card = e.target.closest && e.target.closest('a[data-wiki-empty]');
+      if (!card) return;
+      e.preventDefault();
+      hud.toast(card.getAttribute('data-wiki-empty'), 2500);
+    });
+  },
   relativeDate: (selector) => {
     selector.forEach(item => {
       const $this = item
@@ -305,6 +317,7 @@ window.stellar = window.stellar || {};
 stellar.initPage = function () {
   init.toc();
   init.sidebar();
+  init.wikiEmptyCard();
   init.relativeDate(document.querySelectorAll('#post-meta time'));
   init.registerTabsTag();
 

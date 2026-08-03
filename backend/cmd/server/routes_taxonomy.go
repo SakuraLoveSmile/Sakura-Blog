@@ -49,12 +49,15 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 				contentHTML = template.HTML(rendered)
 			}
 		}
-		s.renderBase(c, &tmpl.ViewData{
+		data := &tmpl.ViewData{
 			Site:             s.site,
 			Page:             &tmpl.Page{Title: "笔记", Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
 			NotesContentHTML: contentHTML,
 			Moments:          s.momentH.RecentItems(5),
-		})
+		}
+		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（notes.md 的 quot el:h2 标题带 id 锚点）。
+		data.TOC = tmpl.ExtractTOCWith(string(contentHTML), s.tocOptions())
+		s.renderBase(c, data)
 	})
 
 	// 友链 /friends（友链卡片 + RSS 动态聚合），数据由 friends 聚合器的 /api/friends-aggregated 提供。
@@ -138,7 +141,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		s.renderBase(c, &tmpl.ViewData{
 			Site:  s.site,
-			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name},
+			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name, Type: s.site.Article.Type},
 			Posts: s.toCards(posts),
 		})
 	})
@@ -192,7 +195,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		s.renderBase(c, &tmpl.ViewData{
 			Site:  s.site,
-			Page:  &tmpl.Page{Title: "专栏：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Topic: name},
+			Page:  &tmpl.Page{Title: "专栏：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Topic: name, Type: s.site.Article.Type},
 			Posts: s.toCards(posts),
 		})
 	})
@@ -243,7 +246,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		s.renderBase(c, &tmpl.ViewData{
 			Site:  s.site,
-			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name},
+			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name, Type: s.site.Article.Type},
 			Posts: s.toCards(posts),
 		})
 	})
@@ -270,10 +273,12 @@ func (s *webServer) handleWiki(c *gin.Context) {
 		s.render404(c)
 		return
 	}
-	// 项目（可按 tag 过滤），按 Sort 降序
+	// 项目（可按 tag 过滤），按 Sort 降序。
+	// 复制项目值而非引用 s.site.Wiki 共享切片元素：HasDocs 是运行时标记，
+	// 就地修改会污染配置源并引发并发竞态（多请求同时写同一元素）。
 	projects := make([]*tmpl.WikiProject, 0, len(s.site.Wiki))
 	for i := range s.site.Wiki {
-		w := &s.site.Wiki[i]
+		w := s.site.Wiki[i]
 		if tag != "" {
 			matched := false
 			for _, t := range w.Tags {
@@ -286,9 +291,27 @@ func (s *webServer) handleWiki(c *gin.Context) {
 				continue
 			}
 		}
-		projects = append(projects, w)
+		// 有已发布本地文档的项目标记 HasDocs（项目数通常 <10，循环查询可接受）。
+		// 查询失败仅记日志：HasDocs 保持 false 回退外链，不阻塞文库页渲染。
+		if docs, err := s.st.ListWikidocs(w.ID); err != nil {
+			log.Printf("list wikidocs %s: %v", w.ID, err)
+		} else {
+			for _, d := range docs {
+				if d.Status == store.StatusPublished {
+					w.HasDocs = true
+					break
+				}
+			}
+		}
+		projects = append(projects, &w)
 	}
-	sort.SliceStable(projects, func(i, j int) bool { return projects[i].Sort > projects[j].Sort })
+	// Sort 降序，同值按 ID 字母序（与 Console 设置页/项目下拉的排序规则一致）
+	sort.SliceStable(projects, func(i, j int) bool {
+		if projects[i].Sort != projects[j].Sort {
+			return projects[i].Sort > projects[j].Sort
+		}
+		return projects[i].ID < projects[j].ID
+	})
 	s.renderBase(c, &tmpl.ViewData{
 		Site:         s.site,
 		Page:         &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN", Tag: tag},
@@ -383,14 +406,21 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		}
 		break
 	}
-	// 文档树（leftbar tree widget）：过滤未发布节点（draft 不可见）
-	tree, err := s.st.BuildDocTree(projectID)
-	if err != nil {
-		log.Printf("build doc tree %s: %v", projectID, err)
-		s.render500(c)
-		return
+	// 文档树（leftbar tree widget）：过滤未发布节点（draft 不可见）。
+	// 复用上面 ListWikidocs 的 docs，纯内存构建，避免二次查询。
+	tree := store.BuildDocTreeFromDocs(docs)
+	// 最近更新（wiki 维度，Spec 8）：当前项目已发布文档按 UpdatedAt 降序取前 5，
+	// 复用 RecentPost 结构（recent.html 模板零改动），供 assembleWidgets 的 recent widget 装配。
+	recentDocs := make([]*tmpl.RecentPost, 0, len(published))
+	sortedDocs := append([]*store.WikiDoc{}, published...)
+	sort.SliceStable(sortedDocs, func(i, j int) bool { return sortedDocs[i].UpdatedAt.After(sortedDocs[j].UpdatedAt) })
+	for i, d := range sortedDocs {
+		if i >= 5 {
+			break
+		}
+		recentDocs = append(recentDocs, &tmpl.RecentPost{Title: d.Title, URL: "/wiki/" + projectID + "/" + d.Slug})
 	}
-	s.renderBase(c, &tmpl.ViewData{
+	data := &tmpl.ViewData{
 		Site: s.site,
 		Page: &tmpl.Page{
 			Title:       cur.Title,
@@ -400,8 +430,14 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 			Slug:        slug,
 			Description: truncateText(stripHTML(cur.ContentHTML), 150),
 		},
-		WikiProjectID:   projectID,
-		WikiProjectName: project.DisplayTitle(),
+		WikiProjectID:          projectID,
+		WikiProjectName:        project.DisplayTitle(),
+		WikiProjectIcon:        project.Icon,
+		WikiProjectDescription: project.Description,
+		// 搜索框项目化：data-filter 限定当前项目 + placeholder 显示项目名
+		SearchFilter:      "/wiki/" + projectID + "/",
+		SearchPlaceholder: "在 " + project.DisplayTitle() + " 中搜索",
+		WikiRecentDocs:    recentDocs,
 		WikiDoc: &tmpl.WikiDocView{
 			Slug:        cur.Slug,
 			Title:       cur.Title,
@@ -410,7 +446,12 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiPrevDoc: prev,
 		WikiNextDoc: next,
 		WikiDocTree: wikiTreeNodes(tree),
-	})
+		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（标题带 id 锚点）
+		TOC: tmpl.ExtractTOCWith(cur.ContentHTML, s.tocOptions()),
+	}
+	// 评论区：page_key 为 /wiki/{project}/{slug}（fillComments 统一设置 CommentPageKey）
+	s.fillComments(data, "/wiki/"+projectID+"/"+slug)
+	s.renderBase(c, data)
 }
 
 
@@ -675,6 +716,30 @@ func (s *webServer) wikiProjectByID(id string) *tmpl.WikiProject {
 		}
 	}
 	return nil
+}
+
+// hasTag 判断标签列表是否包含指定标签（精确匹配）。
+func hasTag(tags []string, name string) bool {
+	for _, t := range tags {
+		if t == name {
+			return true
+		}
+	}
+	return false
+}
+
+// hasCommonTag 判断两个标签列表是否有交集（wiki_related 同 tag 推荐过滤用）。
+func hasCommonTag(a, b []string) bool {
+	seen := map[string]bool{}
+	for _, t := range a {
+		seen[t] = true
+	}
+	for _, t := range b {
+		if seen[t] {
+			return true
+		}
+	}
+	return false
 }
 
 // wikiTreeNodes store.TreeNode → 模板树节点（跳过未发布文档；draft 节点及其子树不可见）。

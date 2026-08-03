@@ -73,7 +73,29 @@ func (s *webServer) registerSearchRoutes(r *gin.Engine) {
 			s.render500(c)
 			return
 		}
+		items := searchItemsFromPosts(posts)
+		// wiki 文档并入索引：遍历所有项目加载已发布文档（Path=/wiki/<projectID>/<slug>）。
+		// 只加本地索引（/search.json），不改 FTS（/api/search 仍只管文章）。
+		for i := range s.site.Wiki {
+			projectID := s.site.Wiki[i].ID
+			docs, err := s.st.ListWikidocs(projectID)
+			if err != nil {
+				log.Printf("list wikidocs %s for search index: %v", projectID, err)
+				continue // 查询失败跳过该项目，不影响其余索引
+			}
+			for _, d := range docs {
+				if d.Status != store.StatusPublished {
+					continue
+				}
+				content := truncateText(stripHTML(d.ContentHTML), 2000)
+				items = append(items, searchItem{
+					Title:   d.Title,
+					Content: content,
+					Path:    "/wiki/" + projectID + "/" + d.Slug,
+				})
+			}
+		}
 		c.Header("Cache-Control", "no-store")
-		c.JSON(http.StatusOK, searchItemsFromPosts(posts))
+		c.JSON(http.StatusOK, items)
 	})
 }

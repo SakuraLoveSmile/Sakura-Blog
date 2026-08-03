@@ -55,6 +55,7 @@ rightbar:
         icon: default:edit
 
 # 文库项目（配置驱动，不入库）。每个项目一张卡片，点击跳到 url（站内文章/页面或外链）。
+# repo（可选）：GitHub 仓库（owner/name 格式），配置后 wiki 文档页右栏渲染 ghrepo 仓库卡片。
 wiki:
   - id: stellar
     title: Stellar 主题文档
@@ -68,6 +69,7 @@ wiki:
     description: 用 Go(Gin)+html/template+goldmark 复刻 Stellar 的实现记录。
     icon: https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg
     tags: [后端, Go]
+    repo: sakurasep/blog
     url: /archives/
     sort: 90
   - id: frontend
@@ -79,8 +81,10 @@ wiki:
     sort: 80
 
 # 友链动态聚合（/friends 页）。refresh_interval：后端抓取友链 RSS 的刷新间隔（分钟），缺省 60。
+# posts_per_link：每个友链展示的最新文章数，缺省 20。
 friends:
   refresh_interval: 60
+  posts_per_link: 20
 
 # 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
 # rss 非空时，/friends 页后端会定时抓取该友链 RSS/Atom 最新文章并聚合展示；label/color 为分类标签与配色（16 进制不带 #）。

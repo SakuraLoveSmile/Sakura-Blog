@@ -1,6 +1,6 @@
 {{- /* navbar.html: 顶部 tab 导航，对齐 Stellar _partial/main/navbar/nav_tabs_blog.ejs
    被 index / archive / categories / tags 页面共用（{{template "partial/navbar" .}}）。
-   tab 顺序：近期发布 → 分类 → 标签 → 归档。
+   Spec 50：enable_custom 为 true 时完全由配置驱动，false 时保持当前固定 tab + 可配额外项。
    active 规则：
    - 近期发布：首页（Layout=index 且无 Category/Tag 上下文）
    - 分类：分类索引页（Layout=categories）显示"分类"；分类文章列表页（Page.Category 非空）显示"分类：xxx"
@@ -11,6 +11,15 @@
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="post">
+{{- if .Site.NavTabs.EnableCustom}}
+{{- /* 自定义模式：完全由 nav_tabs.items 驱动 */}}
+{{- range .Site.NavTabs.Items}}
+{{- $active := false}}
+{{- if .ActiveRules}}{{if reMatch .ActiveRules $.Page.CanonicalURL}}{{$active = true}}{{end}}{{else if eq .URL $.Page.CanonicalURL}}{{$active = true}}{{end}}
+        <a{{if $active}} class="active"{{end}} href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}{{if .Icon}} data-icon="{{.Icon}}"{{end}}>{{.Title}}</a>
+{{- end}}
+{{- else}}
+{{- /* 默认模式：固定 tab + 可配额外项 */}}
         <a {{if and (eq .Page.Layout "index") (not .Page.Category) (not .Page.Tag)}}class="active" {{end}}href="/">{{- lang "btn.recent_publish" -}}</a>
         {{- if .Page.Category}}
         <a class="active" href="/categories/">{{- lang "nav.category" .Page.Category -}}</a>
@@ -38,9 +47,10 @@
         {{- end}}
         <a {{if eq .Page.Layout "archive"}}class="active" {{end}}href="/archives/">{{- lang "btn.archives" -}}</a>
         {{- /* 可配置导航标签页：site.yml nav_tabs 段，追加在固定 tab 之后 */}}
-        {{- range .Site.NavTabs}}
+        {{- range .Site.NavTabs.Items}}
         <a class="tab" href="{{.URL}}"{{if .External}} target="_blank" rel="noopener"{{end}}>{{.Title}}</a>
         {{- end}}
+{{- end}}
       </nav>
     </div>
   </div>

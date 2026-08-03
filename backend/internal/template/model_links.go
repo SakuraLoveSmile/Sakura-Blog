@@ -9,6 +9,7 @@ type LinkGroup struct {
 // FriendsConfig 友链动态聚合配置（site.yml friends 段）。
 type FriendsConfig struct {
 	RefreshInterval int `yaml:"refresh_interval" json:"refresh_interval"` // RSS 抓取刷新间隔（分钟），<=0 用默认 60
+	MaxPostsPerFeed int `yaml:"posts_per_link" json:"posts_per_link"`     // 每个友链展示的最新文章数，<=0 用默认 20
 }
 
 // LinkItem 友链条目（名称 / 跳转 / 头像 / 描述）。

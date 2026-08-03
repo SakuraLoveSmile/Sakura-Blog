@@ -389,8 +389,9 @@
   </script>
   {{- end -}}
   {{- /* PJAX 无刷新导航：放最后，劫持站内链接点击与前进后退；交换 .l_main 并就地更新左右栏。
-     前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。 */}}
-  <script src="{{url_for "/assets/js/plugins/pjax.js"}}" defer></script>
+     前台无 /admin 链接，不会误抓后台页；后续若加需 data-pjax="false"。
+     ?v= 破 /assets 的 immutable 长缓存（同 head.html 的 ?v=demoX 机制），改 pjax.js 后须 bump。 */}}
+  <script src="{{url_for "/assets/js/plugins/pjax.js"}}?v=2" defer></script>
   {{- /* flying-pages 预取（Spec 36）：条件化注入，需 site.yml plugins.preload.enable=true */}}
   {{- if and .Site.Plugins.Preload .Site.Plugins.Preload.Enable -}}
   <script>

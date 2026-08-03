@@ -17,6 +17,13 @@
       {{icon "default:upup"}}
       <span>{{- lang "btn.top" -}}</span>
     </a>
+    {{- /* 参与讨论：对齐原版 toc.ejs layoutDiv 的 a.buttom（评论服务启用时渲染）*/ -}}
+    {{if .V.Site.Comments.Enabled}}
+    <a class="buttom" onclick="util.scrollComment()">
+      {{icon "default:tocomment"}}
+      <span>{{- lang "btn.comments" -}}</span>
+    </a>
+    {{end}}
   </div>
 </widget>
 {{end}}

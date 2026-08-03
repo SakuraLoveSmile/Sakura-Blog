@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
@@ -28,10 +29,13 @@ const tabs = [
 const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets", "ai"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
+const route = useRoute();
 const active = ref("site");
 const data = ref<Record<string, any>>({});
 const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
+// 加载失败时置为错误文案；非空则渲染错误提示 + 重试，避免空数据渲染导致黑屏
+const loadError = ref("");
 const savingKey = ref("");
 
 // 头像选择器：复用附件选择弹窗，选中后回填 URL
@@ -82,11 +86,17 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.share.platforms = d.article.share.platforms || [];
   d.friends = d.friends || {};
   d.friends.refresh_interval = d.friends.refresh_interval || 0;
+  d.friends.posts_per_link = d.friends.posts_per_link || 20;
   d.seo = d.seo || {};
   d.inject = d.inject || {};
   d.ai = d.ai || {};
   // wiki 段是数组；行内编辑用 _tagsText 字符串代理 tags 数组（逗号分隔）
-  d.wiki = (d.wiki || []).map((w: any) => ({ ...w, _tagsText: (w.tags || []).join(", ") }));
+  // 兼容 tags 为字符串/缺失/项目为 null 等脏数据，避免 .join 抛错导致整页黑屏
+  const rawWiki = Array.isArray(d.wiki) ? d.wiki : [];
+  d.wiki = rawWiki.map((w: any) => {
+    const tags = Array.isArray(w?.tags) ? w.tags : String(w?.tags ?? "").split(/[,，]/).map((s: string) => s.trim()).filter(Boolean);
+    return { ...w, _tagsText: tags.join(", ") };
+  });
   // style 段默认值（Spec 47）
   d.style = d.style || {};
   d.style.color = d.style.color || {};
@@ -103,6 +113,16 @@ function ensureDefaults(d: Record<string, any>) {
   return d;
 }
 
+// 文库项目排序：sort 越大越靠前（降序）；sort 相同或无值时按 id 字母序（与前台 /wiki 页一致）
+function sortWikiProjects(list: any[]): any[] {
+  return [...list].sort((a, b) => {
+    const sa = Number(a?.sort) || 0;
+    const sb = Number(b?.sort) || 0;
+    if (sa !== sb) return sb - sa;
+    return String(a?.id ?? "").localeCompare(String(b?.id ?? ""));
+  });
+}
+
 // wiki 保存 payload：去掉 _tagsText 代理字段，逗号分隔转数组
 function wikiPayload() {
   return (data.value.wiki as any[]).map(({ _tagsText, ...w }) => ({
@@ -114,12 +134,18 @@ function wikiPayload() {
 
 async function load() {
   loading.value = true;
+  loadError.value = "";
   try {
     const { data: res } = await settingsApi.all();
     data.value = ensureDefaults({ ...res });
+    // 文库项目按 sort 降序排列（sort 相同或无值时按 id 字母序），与前台 /wiki 页顺序保持一致
+    data.value.wiki = sortWikiProjects(data.value.wiki);
     for (const s of allSections) {
       rawText.value[s] = JSON.stringify(res[s] ?? null, null, 2);
     }
+  } catch (e: any) {
+    // 失败时保持 data 为空并展示错误态：直接渲染 v-else 空数据会因模板无守卫访问抛错，整个组件卸载显示黑屏
+    loadError.value = e?.response?.data?.error || e?.message || "加载设置失败";
   } finally {
     loading.value = false;
   }
@@ -146,7 +172,12 @@ async function saveJson(section: string) {
     const payload = JSON.parse(rawText.value[section]);
     await settingsApi.updateSection(section, payload);
     if (section === "wiki") {
-      data.value.wiki = (payload || []).map((w: any) => ({ ...w, _tagsText: (w.tags || []).join(", ") }));
+      // 回填后同样按 sort 降序排列，保持与前台顺序一致；兼容 payload 非数组 / tags 为字符串
+      const list = Array.isArray(payload) ? payload : [];
+      data.value.wiki = sortWikiProjects(list.map((w: any) => {
+        const tags = Array.isArray(w?.tags) ? w.tags : String(w?.tags ?? "").split(/[,，]/).map((s: string) => s.trim()).filter(Boolean);
+        return { ...w, _tagsText: tags.join(", ") };
+      }));
     } else {
       data.value[section] = payload;
       ensureDefaults(data.value);
@@ -193,6 +224,39 @@ function moveItem(arr: any[], i: number, dir: -1 | 1) {
   [arr[i], arr[j]] = [arr[j], arr[i]];
 }
 
+// 文库拖拽排序（复用 WidgetsTab 模式）
+const dragWikiIndex = ref<number | null>(null);
+function onWikiDragStart(i: number) {
+  dragWikiIndex.value = i;
+}
+function onWikiDragOver(e: DragEvent, i: number) {
+  e.preventDefault();
+  if (dragWikiIndex.value === null || dragWikiIndex.value === i) return;
+  const arr = data.value.wiki;
+  const [moved] = arr.splice(dragWikiIndex.value, 1);
+  arr.splice(i, 0, moved);
+  dragWikiIndex.value = i;
+  syncWikiSort();
+}
+function onWikiDragEnd() {
+  dragWikiIndex.value = null;
+}
+
+// 拖拽/上下移后按数组位置同步 sort（位置越靠前 sort 越大），
+// 保证保存后重新加载时前台仍按 sort 保持当前顺序，不会回退
+function syncWikiSort() {
+  const arr = data.value.wiki || [];
+  arr.forEach((w: any, idx: number) => {
+    w.sort = arr.length - idx;
+  });
+}
+
+// 文库项目上下移：移动后同步 sort 值（复用通用 moveItem 再同步）
+function moveWikiItem(i: number, dir: -1 | 1) {
+  moveItem(data.value.wiki, i, dir);
+  syncWikiSort();
+}
+
 function togglePlatform(p: string) {
   const arr = data.value.article.share.platforms as string[];
   const i = arr.indexOf(p);
@@ -213,7 +277,7 @@ function addSitemapItem(g: any) {
   g.items.push({ title: "", url: "" });
 }
 function addWikiProject() {
-  data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", sort: 0, _tagsText: "" });
+  data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, _tagsText: "" });
 }
 
 const inputCls =
@@ -223,7 +287,14 @@ const btnCls =
 const rowBtnCls = "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-30";
 const addBtnCls = "inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors dark:text-primary dark:hover:text-primary/80";
 
-onMounted(load);
+// 支持 URL query 定位 tab（如 /console/settings?tab=wiki），供其他页面跳转直达
+onMounted(() => {
+  const tab = route.query.tab;
+  if (typeof tab === "string" && tabs.some((t) => t.key === tab)) {
+    active.value = tab;
+  }
+  load();
+});
 </script>
 
 <template>
@@ -244,6 +315,11 @@ onMounted(load);
     </div>
 
     <div v-if="loading" class="text-sm text-gray-400 py-12 text-center dark:text-gray-500">加载中...</div>
+
+    <div v-else-if="loadError" class="py-12 text-center space-y-3">
+      <p class="text-sm text-red-500 dark:text-red-400">设置加载失败：{{ loadError }}</p>
+      <button @click="load" :class="btnCls">重试</button>
+    </div>
 
     <div v-else class="max-w-3xl">
       <!-- 站点 -->
@@ -419,26 +495,82 @@ onMounted(load);
 
       <!-- 文库 -->
       <div v-show="active === 'wiki'" class="space-y-4">
-        <p class="text-xs text-gray-400 dark:text-gray-500">/wiki 页项目卡片。sort 越大越靠前；tags 逗号分隔。</p>
-        <div v-for="(w, i) in data.wiki" :key="i" class="border border-gray-200 rounded-xl p-4 space-y-3 dark:border-gray-700">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ w.title || w.name || w.id || "新项目" }}</span>
-            <div class="flex items-center gap-1.5">
-              <button @click="moveItem(data.wiki, Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
-              <button @click="moveItem(data.wiki, Number(i), 1)" :disabled="Number(i) === data.wiki.length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>
-              <button @click="removeAt(data.wiki, Number(i))" class="text-red-500 hover:text-red-700"><Icon icon="ri:delete-bin-line" /></button>
+        <p class="text-xs text-gray-400 dark:text-gray-500">/wiki 页项目卡片。拖拽排序；tags 逗号分隔。</p>
+        <div
+          v-for="(w, i) in data.wiki"
+          :key="i"
+          draggable="true"
+          @dragstart="onWikiDragStart(Number(i))"
+          @dragover="onWikiDragOver($event, Number(i))"
+          @dragend="onWikiDragEnd"
+          :class="[
+            'border border-gray-200 rounded-xl p-4 space-y-3 transition-all duration-200 dark:border-gray-700',
+            dragWikiIndex === Number(i) ? 'opacity-40 ring-2 ring-primary/30 scale-[0.97]' : '',
+            'hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-600',
+          ]"
+        >
+          <!-- 卡片头部：拖拽把手 + 图标预览 + 标题 + 操作按钮 -->
+          <div class="flex items-center gap-3">
+            <!-- 拖拽把手 -->
+            <Icon icon="ri:drag-move-2-line" class="text-gray-300 dark:text-gray-600 text-lg shrink-0 cursor-grab active:cursor-grabbing" />
+            <!-- 图标预览 -->
+            <div v-if="w.icon" class="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 shrink-0 bg-gray-50 dark:bg-gray-800">
+              <img :src="w.icon" class="w-full h-full object-cover" alt="" @error="($event.target as HTMLImageElement).style.display = 'none'" />
+            </div>
+            <div v-else class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+              <Icon icon="ri:booklet-line" class="text-gray-400 dark:text-gray-500 text-base" />
+            </div>
+            <!-- 标题 -->
+            <span class="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{{ w.title || w.name || w.id || "新项目" }}</span>
+            <!-- 排序和删除按钮 -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button @click="moveWikiItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls" title="上移"><Icon icon="ri:arrow-up-s-line" /></button>
+              <button @click="moveWikiItem(Number(i), 1)" :disabled="Number(i) === data.wiki.length - 1" :class="rowBtnCls" title="下移"><Icon icon="ri:arrow-down-s-line" /></button>
+              <button @click="removeAt(data.wiki, Number(i))" class="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400" title="删除"><Icon icon="ri:delete-bin-line" /></button>
             </div>
           </div>
+
+          <!-- 第一行：id / title / sort -->
           <div class="grid grid-cols-3 gap-3">
             <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">id</label><input v-model="w.id" :class="inputCls" /></div>
             <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标题</label><input v-model="w.title" :class="inputCls" /></div>
             <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">排序（大在前）</label><input v-model.number="w.sort" type="number" :class="inputCls" /></div>
           </div>
+
+          <!-- 描述 -->
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">描述</label><input v-model="w.description" :class="inputCls" /></div>
-          <div class="grid grid-cols-2 gap-3">
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">图标（图片 URL）</label><input v-model="w.icon" :class="inputCls" /></div>
-            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">链接 URL</label><input v-model="w.url" :class="inputCls" placeholder="/posts/xxx 或 https://..." /></div>
+
+          <!-- 第二行：icon / repo / preview -->
+          <div class="grid grid-cols-3 gap-3">
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">图标（图片 URL）</label><input v-model="w.icon" :class="inputCls" placeholder="https://..." /></div>
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">GitHub 仓库</label><input v-model="w.repo" :class="inputCls" placeholder="owner/repo" /></div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">预览布局</label>
+              <select v-model="w.preview" :class="inputCls">
+                <option value="auto">auto（自动）</option>
+                <option value="wide">wide（宽版）</option>
+                <option value="none">none（无预览）</option>
+              </select>
+            </div>
           </div>
+
+          <!-- 第三行：url + 来源快捷填充 -->
+          <div>
+            <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">链接 URL</label>
+            <div class="flex gap-2">
+              <input v-model="w.url" :class="inputCls" placeholder="/posts/xxx 或 https://..." />
+              <button
+                @click="w.url = '/wiki/' + w.id"
+                :disabled="!w.id"
+                title="链接到 wiki 项目文档"
+                class="shrink-0 px-3 py-2 text-xs bg-primary/10 text-secondary rounded-lg hover:bg-primary/20 disabled:opacity-30 dark:bg-primary/15 dark:text-primary"
+              >
+                <Icon icon="ri:link-m" />
+              </button>
+            </div>
+          </div>
+
+          <!-- 标签 -->
           <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标签（逗号分隔）</label><input v-model="w._tagsText" :class="inputCls" placeholder="Go, 开源" /></div>
         </div>
         <button @click="addWikiProject" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加项目</button>
@@ -498,7 +630,10 @@ onMounted(load);
 
         <div class="border-t border-gray-200 pt-4 mt-6 space-y-3 dark:border-gray-700">
           <p class="text-xs text-gray-400 dark:text-gray-500">友链 RSS 聚合（friends 段，独立保存）</p>
-          <div class="w-56"><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">刷新间隔（分钟，≤0 用默认 60）</label><input v-model.number="data.friends.refresh_interval" type="number" :class="inputCls" /></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">刷新间隔（分钟，≤0 用默认 60）</label><input v-model.number="data.friends.refresh_interval" type="number" :class="inputCls" /></div>
+            <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">每友链文章数量（≤0 用默认 20）</label><input v-model.number="data.friends.posts_per_link" type="number" min="1" :class="inputCls" /></div>
+          </div>
           <button @click="save('friends')" :disabled="savingKey === 'friends'" :class="btnCls">保存 RSS 设置</button>
         </div>
       </div>
@@ -542,7 +677,6 @@ onMounted(load);
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">API Key（本地模型可留空；已保存时显示 ****，留空保存不覆盖）</label><input v-model="data.ai.api_key" type="password" autocomplete="off" :class="inputCls" /></div>
         <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">模型名（如 deepseek-chat / gpt-4o-mini）</label><input v-model="data.ai.model" :class="inputCls" /></div>
         <button @click="save('ai')" :disabled="savingKey === 'ai'" :class="btnCls">保存 AI 设置</button>
-      </div>
       </div>
 
       <!-- 安全 -->
@@ -596,6 +730,7 @@ onMounted(load);
         @select="handleAppleIconSelect"
         @close="showAppleIconPicker = false"
       />
+    </div>
     </div>
   </div>
 </template>

@@ -53,6 +53,9 @@
     const nonHtmlExts = ['xml', 'rss', 'pdf', 'zip', 'rar', 'exe', 'dmg', 'doc', 'xls', 'ppt', 'mp3', 'mp4', 'avi', 'mov'];
     if (nonHtmlExts.includes(ext)) return false;
 
+    // Skip the console SPA (independent Vue app, not a themed page with #l_cover/.l_body)
+    if (url.pathname.startsWith('/console')) return false;
+
     return true;
   }
 
@@ -392,6 +395,13 @@
    */
   async function navigate(url, options = {}) {
     if (isLoading) return false;
+
+    // Console SPA is not a PJAX page: always do a full page navigation
+    // (covers popstate, since history may already hold a /console state from before this fix)
+    if (new URL(url, window.location.href).pathname.startsWith('/console')) {
+      window.location.href = url;
+      return false;
+    }
 
     const isPop = options.isPop || false;
     const startTime = Date.now();

@@ -33,8 +33,12 @@ func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 	site := &tmpl.Site{
 		Title:   "测试站点",
 		Widgets: tmpl.WidgetsConfig{},
+		// 评论开关：TOC widget footer 的「参与讨论」按钮依赖它（对齐原版 comments.service 判断）
+		Comments: tmpl.CommentsConfig{Enabled: true},
 		Wiki: []tmpl.WikiProject{
 			{ID: "stellar", Name: "stellar", Title: "Stellar 文档", Description: "d", Icon: "i", Tags: []string{"主题"}, URL: "", Sort: 1},
+			// 第二个项目：与 stellar 共享 tag（wiki_related 推荐）+ 配置 repo（ghrepo 卡片）
+			{ID: "go-blog", Name: "go-blog", Title: "Go 博客笔记", Description: "g", Icon: "i2", Tags: []string{"主题", "后端"}, URL: "", Sort: 2, Repo: "user/repo"},
 		},
 	}
 	ws := &webServer{
@@ -52,7 +56,7 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
 	// 插入三级树 + 草稿
-	intro := &store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<p>intro body</p>", Status: store.StatusPublished}
+	intro := &store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<h2 id=\"intro-title\">引言</h2><p>intro body</p>", Status: store.StatusPublished}
 	if err := st.CreateWikidoc(intro); err != nil {
 		t.Fatal(err)
 	}
@@ -83,12 +87,32 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	body := w.Body.String()
 	for _, want := range []string{
 		"layout=\"wiki-doc\"", "Stellar 文档", "引言", "intro body",
-		"widget-wrapper tree", "tree-list", "tree-children", "tree-item active",
+		// doc-tree 结构（对齐原版 widgets/tree.ejs）：分组 header + body a.link + 当前文档高亮
+		"widget-wrapper doc-tree post-list", "toc-text", "class=\"link active\"", "active-icon",
 		"/wiki/stellar/setup", "/wiki/stellar/install", // 上下篇 + 树链接
+		// 搜索框项目化（Task #4）：data-filter 限定当前项目 + placeholder 显示项目名
+		`data-filter="/wiki/stellar/"`, "在 Stellar 文档 中搜索",
+		// 同 tag 项目推荐（Task #4）：post-card 卡片渲染 + "更多：{标签名}" + 推荐项目链接
+		"widget-wrapper post-card", "更多：主题", "/wiki/go-blog",
+		// 最近更新（Task #8）：左栏 recent widget 渲染当前项目 wiki 文档
+		"widget-wrapper recent",
+		// 右栏 TOC widget：目录 + footer 回到顶部/参与讨论（对齐原版 toc.ejs layoutDiv）
+		"widget-wrapper toc", `class="top" onclick="util.scrollTop()"`,
+		`class="buttom" onclick="util.scrollComment()"`, "参与讨论",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("wiki-doc page missing %q", want)
 		}
+	}
+	// 最近更新数据源为当前项目已发布文档（recent widget 之后出现 /wiki/stellar/ 链接）
+	if recentIdx := strings.Index(body, "widget-wrapper recent"); recentIdx < 0 {
+		t.Error("wiki-doc page missing recent widget")
+	} else if !strings.Contains(body[recentIdx:], "/wiki/stellar/") {
+		t.Error("recent widget must show current project wiki docs")
+	}
+	// 搜索框 data-filter 由 handleWikiDoc 注入（Task #4 A）
+	if !strings.Contains(body, `data-filter="/wiki/stellar/"`) {
+		t.Error("search input missing data-filter for current project")
 	}
 	if strings.Contains(body, "draft-only") {
 		t.Errorf("wiki-doc page must not expose draft docs")
@@ -115,5 +139,100 @@ func TestWikiDocFrontendChain(t *testing.T) {
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("%s = %d, want 404", p, w.Code)
 		}
+	}
+}
+
+// TestWikiDocGhrepoWidget 项目配置 repo 时，wiki 文档页右栏渲染 ghrepo 卡片（Task #7）。
+func TestWikiDocGhrepoWidget(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "go-blog", Slug: "gb-intro", Title: "GB 引言", Order: 1, Parent: 0, ContentHTML: "<p>gb body</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	ws.registerTaxonomyRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki/go-blog/gb-intro", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("/wiki/go-blog/gb-intro = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	for _, want := range []string{
+		// ghrepo 卡片：repo 参数从 WikiProject.Repo 注入（assembleWidgets case "ghrepo"）
+		"widget-wrapper ghrepo", "/api/gh/widget/repo?repo=user/repo", "user/repo",
+		// wiki_related 推荐 stellar（共同 tag "主题"）
+		"更多：主题", "/wiki/stellar",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("go-blog wiki-doc page missing %q", want)
+		}
+	}
+}
+
+// TestSearchJSONIncludesWikidocs /search.json 本地索引包含已发布 wiki 文档、排除 draft（Task #4 B）。
+func TestSearchJSONIncludesWikidocs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<p>intro body</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "draft-only", Title: "草稿", Order: 2, Parent: 0, ContentHTML: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	ws.registerSearchRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/search.json", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("/search.json = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `"path":"/wiki/stellar/intro"`) || !strings.Contains(body, "引言") {
+		t.Errorf("/search.json missing published wiki doc entry: %s", body)
+	}
+	if strings.Contains(body, "draft-only") {
+		t.Error("/search.json must not include draft wiki docs")
+	}
+}
+
+// TestWikiCardHrefSemantics 文库卡片跳转语义（Task #9）：
+// 有已发布本地文档 → href=/wiki/<id>；无文档有 URL → 保持外链；都没有 → 不输出 href。
+func TestWikiCardHrefSemantics(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	// 追加两个项目：ext（无文档，配置外链）、none（无文档且无 URL）
+	ws.site.Wiki = append(ws.site.Wiki,
+		tmpl.WikiProject{ID: "ext", Name: "ext", Title: "外部文档", Description: "d", Icon: "i", Tags: nil, URL: "https://example.com/docs", Sort: 0},
+		tmpl.WikiProject{ID: "none", Name: "none", Title: "空项目", Description: "d", Icon: "i", Tags: nil, URL: "", Sort: -1},
+	)
+	// stellar 插入已发布文档 → HasDocs；none 仅草稿 → 不算 HasDocs
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "intro", Title: "引言", Order: 1, Parent: 0, ContentHTML: "<p>body</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "none", Slug: "draft", Title: "草稿", Order: 1, Parent: 0, ContentHTML: "<p>hidden</p>", Status: store.StatusDraft}); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	ws.registerTaxonomyRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("/wiki = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	// 有已发布文档 → 跳 /wiki/<id>（handleWikiProject 302 到首篇）
+	if !strings.Contains(body, `class="post-card wiki" href="/wiki/stellar"`) {
+		t.Errorf("card stellar: want href=/wiki/stellar")
+	}
+	// 无文档 → 保持外链
+	if !strings.Contains(body, `href="https://example.com/docs"`) {
+		t.Errorf("card ext: want external URL href")
+	}
+	// 无文档且无 URL（仅草稿）→ 不输出 href，带 data-wiki-empty 属性供前端 toast 提示
+	if !strings.Contains(body, `class="post-card wiki" data-wiki-empty="该项目暂无文档"`) {
+		t.Errorf("card none: want data-wiki-empty toast attr and no href")
+	}
+	if strings.Contains(body, "/wiki/none") {
+		t.Errorf("card none: must not link to /wiki/none")
 	}
 }

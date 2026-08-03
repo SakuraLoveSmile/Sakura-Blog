@@ -38,7 +38,9 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
     var searchSeq = 0; // 丢弃过时响应，避免乱序覆盖
 
     // 服务端搜索结果渲染：DOM 结构/类名与本地匹配完全一致（snippet 已含 .search-keyword 高亮）
-    function renderServerResults(items) {
+    // 降级规则：FTS 结果非空但全部被 data-filter 滤掉（当前项目无命中）时，
+    // 回退本地搜索（/search.json 索引已含 wiki 文档，同样受 filter 限定）。
+    function renderServerResults(items, value) {
       $resultContent.innerHTML = '';
       if (!items.length) return;
       const ul = document.createElement('ul');
@@ -61,7 +63,11 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         li.appendChild(a);
         ul.appendChild(li);
       });
-      if (ul.children.length) $resultContent.appendChild(ul);
+      if (ul.children.length) {
+        $resultContent.appendChild(ul);
+      } else if (filter) {
+        localSearch(value);
+      }
     }
 
     // 本地全文匹配（原逻辑，作 /api/search 不可用时的降级路径）
@@ -164,7 +170,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
           })
           .then(function(json) {
             if (seq !== searchSeq) return; // 过时响应丢弃
-            renderServerResults(json.items || []);
+            renderServerResults(json.items || [], value);
           })
           .catch(function() {
             serverSearchOK = false; // 降级后本会话内不再请求服务端

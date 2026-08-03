@@ -20,7 +20,8 @@
 {{- /* 2. navbar：复用首页导航（对齐 nav_tabs_blog.ejs） */}}
 {{template "partial/navbar" .}}
 
-{{- /* 3. post-list：复用首页文章卡片结构（对齐 index.html 的 post-card 渲染） */}}
+{{- /* 3. post-list：复用首页文章卡片结构（对齐 index.html 的 post-card 渲染）
+   Spec 50：story 布局模式（$.Page.Type == "story" 时）使用大间距图文卡片 */}}
 <div class="post-list post">
   {{range .Posts}}
   <div class="post-card-wrap">
@@ -34,6 +35,22 @@
           {{if .Poster.Caption}}<div class="text caption">{{.Poster.Caption}}</div>{{end}}
         </div>
       </div>
+    </a>
+    {{else}}
+    {{if eq $.Page.Type "story"}}
+    <a class="post-card post" href="/post/{{.Slug}}">
+      {{if .Cover}}
+      <div class="story-cover"><img src="{{.Cover}}"/></div>
+      {{end}}
+      <article class="md-text">
+        <h2 class="post-title">{{.Title}}</h2>
+        <div class="excerpt"><p>{{.Excerpt}}</p></div>
+        <div class="meta cap">
+          <span class="date">{{date .Date "2006年1月2日"}}</span>
+          {{if .Category}}<span class="category">{{.Category}}</span>{{end}}
+          {{if .Pinned}}<span class="pin">{{icon "default:pin"}}</span>{{end}}
+        </div>
+      </article>
     </a>
     {{else}}
     <a class="post-card post" href="/post/{{.Slug}}">
@@ -58,6 +75,7 @@
         </div>
       </article>
     </a>
+    {{end}}
     {{end}}
   </div>
   {{end}}

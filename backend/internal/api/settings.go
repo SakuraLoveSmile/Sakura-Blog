@@ -75,6 +75,10 @@ func (h *Handler) updateSection(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// friends 段影响友链聚合（每友链文章数/刷新间隔），保存后即时重建聚合缓存
+	if section == "friends" && h.onLinksChanged != nil {
+		h.onLinksChanged()
+	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

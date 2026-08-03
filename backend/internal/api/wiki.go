@@ -78,6 +78,19 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 		return
 	}
 
+	// parent 校验：父文档必须存在且属于当前项目，否则文档会从树中静默消失
+	if req.Parent != 0 {
+		parent, err := h.store.GetWikidocByID(req.Parent)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if parent == nil || parent.ProjectID != projectID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "父文档不存在或不属于当前项目"})
+			return
+		}
+	}
+
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
@@ -141,6 +154,37 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 		if other, _ := h.store.GetWikidocBySlug(projectID, newSlug); other != nil {
 			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
 			return
+		}
+	}
+
+	// parent 校验：不能是自身，父文档必须存在且属于当前项目
+	if req.Parent != 0 {
+		if req.Parent == existing.ID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "不能将文档设为自身的子文档"})
+			return
+		}
+		parent, err := h.store.GetWikidocByID(req.Parent)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if parent == nil || parent.ProjectID != projectID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "父文档不存在或不属于当前项目"})
+			return
+		}
+		// 防循环：沿目标父文档的 parent 链向上遍历，链上出现当前文档即构成循环引用
+		cur := parent
+		for cur != nil && cur.Parent != 0 {
+			if cur.Parent == existing.ID {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "不能将文档设为自身后代的子文档"})
+				return
+			}
+			next, err := h.store.GetWikidocByID(cur.Parent)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			cur = next
 		}
 	}
 

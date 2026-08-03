@@ -88,6 +88,12 @@ func (s *Store) ensureCommentReactions() error {
 			s.commentReactionsErr = fmt.Errorf("create comment_likes table: %w", err)
 			return
 		}
+		// 评论区按页查询（ListCommentsByPage/CountCommentsByPage）的走索引优化，
+		// 幂等建索引，老库升级安全。
+		if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_comments_page ON comments(page_key)`); err != nil {
+			s.commentReactionsErr = fmt.Errorf("create index comments page_key: %w", err)
+			return
+		}
 	})
 	return s.commentReactionsErr
 }

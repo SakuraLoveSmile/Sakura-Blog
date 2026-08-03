@@ -22,6 +22,17 @@ const loading = ref(false);
 const failed = ref(false);
 const iframeH = ref(64);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
+const wrapperRef = ref<HTMLElement | null>(null);
+function setWrapperRef(el: any) {
+  wrapperRef.value = el?.$el ?? el ?? null;
+}
+
+function onHandleDragStart() {
+  wrapperRef.value?.classList.add("is-dragging");
+}
+function onHandleDragEnd() {
+  wrapperRef.value?.classList.remove("is-dragging");
+}
 
 async function renderPreview() {
   const key = raw.value;
@@ -67,8 +78,9 @@ const srcdoc = computed(() => {
 <style>
 html,body{margin:0;padding:0;}
 html{scroll-behavior:auto !important;color-scheme:${dark ? "dark" : "light"};background:transparent;}
-body{padding:2px;background:transparent;overflow-x:hidden;}
+body{padding:0;background:transparent;overflow:hidden;}
 .md-text{max-width:100%;}
+.md-text,.md-text.content{padding:0 !important;}
 .md-text>:first-child{margin-top:0;}
 .md-text>:last-child{margin-bottom:0;}
 </style>
@@ -78,13 +90,13 @@ body{padding:2px;background:transparent;overflow-x:hidden;}
 });
 
 // iframe 加载后按内容自适应高度（上限 500px，超出内部滚动）；
-// 用 .md-text 实际盒高 + body padding 测量，避免 body.scrollHeight 含 margin 导致底部余白；
+// 用 .md-text 实际盒高测量，body 无 padding 保证所见即所得；
 // 图片等异步资源加载后延时补测一次
 function measure() {
   const doc = iframeRef.value?.contentDocument;
   const art = doc?.querySelector(".md-text");
   if (!art) return;
-  const h = Math.ceil(art.getBoundingClientRect().height) + 4;
+  const h = Math.ceil(art.getBoundingClientRect().height);
   iframeH.value = Math.min(Math.max(h, 32), 500);
 }
 function onIframeLoad() {
@@ -116,7 +128,7 @@ function cancelEdit() {
 </script>
 
 <template>
-  <NodeViewWrapper class="stellar-tag-node group relative my-2">
+  <NodeViewWrapper :ref="setWrapperRef" class="stellar-tag-node group relative my-2">
     <!-- 左侧 gutter 拖拽把手（悬停卡片浮现，直接拖拽移动节点，无需先选中） -->
     <span
       v-if="!editing"
@@ -124,6 +136,8 @@ function cancelEdit() {
       contenteditable="false"
       title="拖拽移动"
       class="absolute -left-6 top-1.5 z-40 flex h-6 w-5 cursor-grab items-center justify-center rounded text-gray-300 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+      @dragstart="onHandleDragStart"
+      @dragend="onHandleDragEnd"
     >
       <Icon icon="ri:draggable" class="text-base" />
     </span>
@@ -132,7 +146,7 @@ function cancelEdit() {
     <div
       v-if="selected && !editing"
       contenteditable="false"
-      class="stellar-bubble absolute -top-11 left-0 z-50 flex items-center gap-1 rounded-[10px] border border-gray-200 bg-white px-1.5 py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+      class="stellar-bubble absolute -top-11 left-0 z-50 flex max-w-full items-center gap-1 rounded-[10px] border border-gray-200 bg-white px-1.5 py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
     >
       <!-- 左侧类型标签（纯显示；拖拽由左侧 gutter 把手负责） -->
       <span
@@ -154,7 +168,7 @@ function cancelEdit() {
         @click="startEdit"
       >
         <Icon icon="ri:file-edit-line" class="text-base" />
-        <span class="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[11px] text-white group-hover:block dark:bg-gray-700">编辑属性</span>
+        <span class="pointer-events-none absolute -top-8 right-0 hidden whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[11px] text-white group-hover:block dark:bg-gray-700">编辑属性</span>
       </button>
 
       <!-- 删除（红色） -->
@@ -165,7 +179,7 @@ function cancelEdit() {
         @click="deleteNode()"
       >
         <Icon icon="ri:delete-bin-line" class="text-base" />
-        <span class="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[11px] text-white group-hover:block dark:bg-gray-700">删除</span>
+        <span class="pointer-events-none absolute -top-8 right-0 hidden whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[11px] text-white group-hover:block dark:bg-gray-700">删除</span>
       </button>
 
       <!-- 底部指向节点的小箭头 -->
@@ -213,7 +227,7 @@ function cancelEdit() {
         ref="iframeRef"
         :srcdoc="srcdoc"
         :style="{ height: iframeH + 'px' }"
-        :class="['block w-full rounded-lg border-0 bg-transparent', !selected && 'pointer-events-none']"
+        :class="['block w-full border-0 bg-transparent', !selected && 'pointer-events-none']"
         allowtransparency="true"
         sandbox="allow-same-origin allow-scripts"
         title="标签预览"
@@ -225,3 +239,12 @@ function cancelEdit() {
     </div>
   </NodeViewWrapper>
 </template>
+
+<style scoped>
+.stellar-tag-node.is-dragging iframe {
+  display: none !important;
+}
+.stellar-tag-node.is-dragging {
+  opacity: 0.5;
+}
+</style>

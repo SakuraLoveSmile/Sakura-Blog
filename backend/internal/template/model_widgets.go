@@ -171,6 +171,9 @@ func DefaultWidgetLibrary() map[string]WidgetDef {
 		// Spec 35a：tree 为 wiki 文档页项目文档树（数据由 assembleWidgets 仅在本页注入，
 		// 其余页面 Data 为空、模板不输出；缺省仅在 wiki-doc 页面类型左栏启用）
 		"tree": {"layout": "tree"},
+		// 同 tag 项目推荐（wiki 文档页左栏）：数据由 assembleWidgets 从 site.yml wiki 段
+		// 内存过滤（与当前项目 tag 交集），title 缺省"更多项目"，有共同标签时装配期覆盖为"更多：{标签名}"
+		"wiki_related": {"layout": "wiki_related", "title": "更多项目", "limit": 5},
 		// Spec 35b：tagtree 为笔记本标签树（数据由 assembleWidgets 仅在本页注入，
 		// 其余页面 Data 为空、模板不输出；缺省仅在 notebooks/notebook/note 页面类型左栏启用）
 		"tagtree": {"layout": "tagtree"},
@@ -206,9 +209,12 @@ func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 	}
 	def := DefaultPageBars()
 	if pageType == "wiki-doc" {
+		// 左栏：tree（项目文档树）+ wiki_related（同 tag 项目推荐）+ recent（当前项目最近更新），
+		// 对齐原版不追加博客维度的 related/tagcloud/popular；
+		// 右栏：对齐原版 site_tree.wiki.rightbar（ghrepo, toc）——ghrepo 仅项目配置 repo 时输出，否则右栏只剩 toc。
 		return PageBars{
-			Leftbar:  append([]string{"tree"}, def.Leftbar...),
-			Rightbar: def.Rightbar,
+			Leftbar:  []string{"tree", "wiki_related", "recent"},
+			Rightbar: []string{"ghrepo", "toc"},
 		}
 	}
 	if pageType == "notebooks" || pageType == "notebook" || pageType == "note" {

@@ -6,7 +6,7 @@
   <div class="navbar-blur">
     <div class="navbar-container">
       <nav class="wiki">
-        <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">{{- lang "btn.all" -}}</a>
+        <a {{if not .Page.Tag}}class="active" {{end}}href="/wiki">{{- lang "btn.all_wiki" -}}</a>
         {{- range .WikiTags}}
         <a {{if eq $.Page.Tag .}}class="active" {{end}}href="/wiki/tags/{{.}}">{{.}}</a>
         {{- end}}
@@ -18,13 +18,18 @@
 <div class="post-list wiki">
   {{- range .WikiProjects}}
   <div class="post-card-wrap">
-    <a class="post-card wiki" {{if .URL}}href="{{.URL}}"{{end}}>
+    {{- /* 卡片跳转语义：有已发布本地文档 → /wiki/<id>（handleWikiProject 302 到首篇）；
+        无本地文档 → 保持 .URL 外链；都没有 → 不输出 href，加 data-wiki-empty
+        （main.js 事件委托拦截点击并 toast 提示，避免空卡片点击无反馈）。*/ -}}
+    <a class="post-card wiki" {{if .HasDocs}}href="/wiki/{{.ID}}"{{else if .URL}}href="{{.URL}}"{{else}}data-wiki-empty="{{lang "wiki.no_docs"}}"{{end}}>
       <article class="md-text">
         <div class="preview"><img src="{{.Icon}}" alt="{{.DisplayTitle}}" loading="lazy"/></div>
         <div class="excerpt">
           {{- if .Tags}}
           <div class="caps">
-            {{- range .Tags}}<span class="cap breadcrumb">{{.}}</span>{{end}}
+            {{- /* 标签胶囊：tagColorStyle 按标签名输出 inline style（--text-p2 文字色 + --theme-block 半透明底，
+                对齐原版 category_color helper），未命中不输出 style 属性，保持默认灰色。*/ -}}
+            {{- range .Tags}}<span class="cap breadcrumb" {{tagColorStyle .}}>{{.}}</span>{{end}}
           </div>
           {{- end}}
           <h2 class="post-title">{{.DisplayTitle}}</h2>

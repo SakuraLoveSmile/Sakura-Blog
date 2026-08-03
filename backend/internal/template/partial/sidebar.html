@@ -5,7 +5,20 @@
 
 {{- /* logo 区：对应 _partial/sidebar/logo.ejs
    a.avatar(48x48) > div.bg + img.avatar(44x44)
-   a.title > div.main + div.sub.cap */}}
+   a.title > div.main + div.sub.cap
+   wiki 文档页（Layout=wiki-doc）替换为项目化 header（对齐原版 logo.ejs 的 icon 分支）：
+   div.icon 项目 Logo（48x48 容器，.logo-wrap img.icon object-fit: contain）+ a.title 项目名/描述 */}}
+{{if eq .Page.Layout "wiki-doc"}}
+<header class="header">
+  <div class="logo-wrap">
+    {{if .WikiProjectIcon}}<div class="icon"><img class="icon" src="{{.WikiProjectIcon}}" alt="{{.WikiProjectName}}"></div>{{end}}
+    <a class="title" href="/wiki/{{.WikiProjectID}}">
+      <div class="main">{{.WikiProjectName}}</div>
+      {{if .WikiProjectDescription}}<div class="sub normal cap">{{.WikiProjectDescription}}</div>{{end}}
+    </a>
+  </div>
+</header>
+{{else}}
 <header class="header">
   <div class="logo-wrap">
     <a class="avatar" href="/">
@@ -26,6 +39,7 @@
     </a>
   </div>
 </header>
+{{end}}
 
 {{- /* 菜单：对应 _partial/sidebar/menu.ejs
    .nav-area > nav.menu.dis-select > a.nav-item

@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-// ArticleConfig 文章页脚配置（site.yml article 段）。
+// ArticleConfig 文章配置（site.yml article 段）。
+// Spec 50 新增 Type 字段：文章列表页布局模式（tech 紧凑 / story 图文大间距）。
 type ArticleConfig struct {
 	Copyright CopyrightConfig `yaml:"copyright" json:"copyright"`
 	Reward    RewardConfig    `yaml:"reward" json:"reward"`
@@ -14,6 +15,9 @@ type ArticleConfig struct {
 	// CategoryColor 分类配色表（分类名→色值），对齐原版 theme.article.category_color，
 	// 首页卡片分类 meta 的 --text-p2/--theme-block 配色来源。
 	CategoryColor map[string]string `yaml:"category_color" json:"category_color"`
+
+	// Spec 50 文章列表布局模式：tech（紧凑）/ story（图文大间距），缺省 tech。
+	Type string `yaml:"type" json:"type"`
 
 	// Spec 32 文章页首尾增强：
 	ReadNext     bool    `yaml:"read_next" json:"read_next"`         // read_next 下一篇卡片开关

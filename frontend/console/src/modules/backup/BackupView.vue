@@ -130,7 +130,7 @@ onMounted(loadStatus);
       <VCard>
         <template #header>
           <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
-            <Icon icon="ri:database-2-line" class="text-primary" />
+            <Icon icon="ri:database-2-line" class="text-lg text-primary" />
             全量备份
           </span>
         </template>
@@ -184,7 +184,7 @@ onMounted(loadStatus);
       <VCard>
         <template #header>
           <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
-            <Icon icon="ri:markdown-line" class="text-primary" />
+            <Icon icon="ri:markdown-line" class="text-lg text-primary" />
             Markdown 导出
           </span>
         </template>
@@ -207,7 +207,7 @@ onMounted(loadStatus);
       <VCard>
         <template #header>
           <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
-            <Icon icon="ri:upload-cloud-2-line" class="text-primary" />
+            <Icon icon="ri:upload-cloud-2-line" class="text-lg text-primary" />
             Markdown 导入
           </span>
         </template>
@@ -246,7 +246,7 @@ onMounted(loadStatus);
       <VCard>
         <template #header>
           <span class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-gray-100">
-            <Icon icon="ri:restart-line" class="text-red-500" />
+            <Icon icon="ri:restart-line" class="text-lg text-red-500" />
             从备份恢复
           </span>
         </template>
@@ -277,8 +277,7 @@ onMounted(loadStatus);
         <!-- 双重确认：输入 RESTORE 才可执行 -->
         <div
           v-if="pendingRestore"
-          class="mt-4 rounded border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10"
-          style="border-radius: 4px"
+          class="mt-4 rounded-base border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10"
         >
           <p class="text-xs font-medium text-red-700 dark:text-red-300">
             即将恢复：{{ pendingRestore.kind === "upload" ? pendingRestore.file?.name : pendingRestore.name }}
@@ -289,8 +288,7 @@ onMounted(loadStatus);
               v-model="restoreConfirmText"
               type="text"
               placeholder="RESTORE"
-              class="w-40 rounded border border-red-300 bg-white px-2 py-1 text-xs font-mono dark:border-red-500/40 dark:bg-gray-800 dark:text-gray-200"
-              style="border-radius: 4px"
+              class="w-40 rounded-base border border-red-300 bg-white px-2 py-1 text-xs font-mono outline-none transition-colors focus:border-red-500 dark:border-red-500/40 dark:bg-gray-800 dark:text-gray-200"
             />
             <VButton
               type="danger"
