@@ -2,11 +2,13 @@ package seo
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/module"
 	"blog/internal/store"
 )
 
@@ -75,7 +77,9 @@ func saveConfig(st *store.Store, cfg Config) error {
 	return st.PutSetting(settingKey, string(b))
 }
 
-// registerSettings 挂 SEO 配置读写端点。
+// registerSettings 挂 SEO 配置读写端点（/api/v1/seo/settings，Console 在用）。
+// 配置存取逻辑已迁移为 ConfigModule 接口方法（GetConfig/PutConfig），
+// 框架统一端点 GET/PUT /api/v1/settings/seo 与这里共用同一实现。
 func (m *Module) registerSettings(g *gin.RouterGroup) {
 	g.GET("/settings", m.getSettings)
 	g.PUT("/settings", m.putSettings)
@@ -83,29 +87,48 @@ func (m *Module) registerSettings(g *gin.RouterGroup) {
 
 // getSettings GET /api/v1/seo/settings：返回配置（密钥脱敏）。
 func (m *Module) getSettings(c *gin.Context) {
-	cfg := loadConfig(m.deps.Store)
-	if cfg.Push.IndexNowKey != "" {
-		cfg.Push.IndexNowKey = maskValue
+	v, err := m.GetConfig(m.deps)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	if cfg.Push.BaiduToken != "" {
-		cfg.Push.BaiduToken = maskValue
-	}
-	c.JSON(http.StatusOK, cfg)
+	c.JSON(http.StatusOK, v)
 }
 
-// putSettings PUT /api/v1/seo/settings：保存配置。脱敏占位（****/空）时保留原密钥。
+// putSettings PUT /api/v1/seo/settings：保存配置。
 func (m *Module) putSettings(c *gin.Context) {
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
 		return
 	}
-	var incoming Config
-	if err := json.Unmarshal(raw, &incoming); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "配置格式错误"})
+	if err := m.PutConfig(m.deps, raw); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	existing := loadConfig(m.deps.Store)
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// GetConfig ConfigModule 接口：返回脱敏配置（框架端点 GET /api/v1/settings/seo）。
+func (m *Module) GetConfig(deps module.Deps) (any, error) {
+	cfg := loadConfig(deps.Store)
+	if cfg.Push.IndexNowKey != "" {
+		cfg.Push.IndexNowKey = maskValue
+	}
+	if cfg.Push.BaiduToken != "" {
+		cfg.Push.BaiduToken = maskValue
+	}
+	return cfg, nil
+}
+
+// PutConfig ConfigModule 接口：保存配置（框架端点 PUT /api/v1/settings/seo）。
+// 脱敏占位（****/空）时保留原密钥；保存后刷新前台验证码注入。
+func (m *Module) PutConfig(deps module.Deps, raw []byte) error {
+	var incoming Config
+	if err := json.Unmarshal(raw, &incoming); err != nil {
+		return fmt.Errorf("配置格式错误: %v", err)
+	}
+	existing := loadConfig(deps.Store)
 	if incoming.Push.IndexNowKey == "" || incoming.Push.IndexNowKey == maskValue {
 		incoming.Push.IndexNowKey = existing.Push.IndexNowKey
 	}
@@ -115,24 +138,23 @@ func (m *Module) putSettings(c *gin.Context) {
 	if incoming.Push.Engines == nil {
 		incoming.Push.Engines = []string{}
 	}
-	if err := saveConfig(m.deps.Store, incoming); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	if err := saveConfig(deps.Store, incoming); err != nil {
+		return err
 	}
 	// 刷新前台验证码注入
-	m.applyVerifications(incoming)
-	c.JSON(http.StatusOK, gin.H{"ok": true})
+	m.applyVerifications(deps, incoming)
+	return nil
 }
 
-// applyVerifications 把验证码写入 site（前台 head 注入用）；phase 6 接入 head 模板。
-func (m *Module) applyVerifications(cfg Config) {
-	if m.deps.Site == nil {
+// applyVerifications 把验证码写入 site（前台 head 注入用）。
+func (m *Module) applyVerifications(deps module.Deps, cfg Config) {
+	if deps.Site == nil {
 		return
 	}
-	if m.deps.Site.Verifications == nil {
-		m.deps.Site.Verifications = map[string]string{}
+	if deps.Site.Verifications == nil {
+		deps.Site.Verifications = map[string]string{}
 	}
-	m.deps.Site.Verifications["google"] = cfg.Verify.Google
-	m.deps.Site.Verifications["bing"] = cfg.Verify.Bing
-	m.deps.Site.Verifications["baidu"] = cfg.Verify.Baidu
+	deps.Site.Verifications["google"] = cfg.Verify.Google
+	deps.Site.Verifications["bing"] = cfg.Verify.Bing
+	deps.Site.Verifications["baidu"] = cfg.Verify.Baidu
 }

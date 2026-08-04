@@ -37,8 +37,9 @@ func (h *Handler) toggleModule(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求体格式错误"})
 		return
 	}
-	if err := h.modules.SetEnabled(id, body.Enabled); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.modules.SetEnabled(id, body.Enabled, module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}); err != nil {
+		// 依赖缺失/未启用/被依赖等拓扑问题属于请求错误（400）
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "enabled": body.Enabled})
