@@ -23,19 +23,7 @@ type RatingSummary struct {
 
 // EnsureRatingsTable 独立建 ratings 表（对齐 attachment.go 模式，不动 createTables）。
 func (s *Store) EnsureRatingsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS ratings (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		target_id  TEXT NOT NULL DEFAULT '',
-		score      INTEGER NOT NULL DEFAULT 0,
-		voter_hash TEXT NOT NULL DEFAULT '',
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings_target_voter ON ratings(target_id, voter_hash);
-	CREATE INDEX IF NOT EXISTS idx_ratings_target ON ratings(target_id);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create ratings table: %w", err)
-	}
-	return nil
+	return s.ensureTable("ratings")
 }
 
 // VoteRating 投票（同 target + 同 voter_hash 覆盖更新）。

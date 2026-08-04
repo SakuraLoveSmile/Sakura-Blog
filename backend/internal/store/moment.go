@@ -24,7 +24,26 @@ type Moment struct {
 	CreatedAt   time.Time
 }
 
-const momentCols = `id, content_md, content_html, images, visibility, created_at`
+// TableName Entity 接口：moments 表。
+func (m *Moment) TableName() string { return "moments" }
+
+// Columns Entity 接口：全列，首列为 id。
+func (m *Moment) Columns() []string {
+	return []string{"id", "content_md", "content_html", "images", "visibility", "created_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (m *Moment) Values() []any {
+	return []any{m.ContentMD, m.ContentHTML, m.Images, m.Visibility, m.CreatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (m *Moment) SetID(id int64) { m.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (m *Moment) ScanRow(row rowScanner) error {
+	return row.Scan(&m.ID, &m.ContentMD, &m.ContentHTML, &m.Images, &m.Visibility, &m.CreatedAt)
+}
 
 // DecodeMomentImages 将 images 列文本解析为 URL 切片。
 // 新格式为 JSON 数组；兼容旧库的逗号/换行分隔格式。
@@ -84,17 +103,8 @@ func normalizeVisibility(v string) string {
 
 // EnsureMomentsTable 独立建 moments 表（不走 post.go createTables，避免与其它 spec 冲突）。
 func (s *Store) EnsureMomentsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS moments (
-		id           INTEGER PRIMARY KEY AUTOINCREMENT,
-		content_md   TEXT NOT NULL DEFAULT '',
-		content_html TEXT NOT NULL DEFAULT '',
-		images       TEXT NOT NULL DEFAULT '',
-		visibility   TEXT NOT NULL DEFAULT 'public',
-		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE INDEX IF NOT EXISTS idx_moments_created ON moments(created_at);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create moments table: %w", err)
+	if err := s.ensureTable("moments"); err != nil {
+		return err
 	}
 	// 老库迁移：CREATE TABLE IF NOT EXISTS 不给已存在的表加列，需检测后 ALTER（幂等）。
 	return s.migrateMomentColumns()
@@ -170,19 +180,7 @@ func (s *Store) UpdateMoment(m *Moment) error {
 
 // GetMoment 按 id 读取单条瞬间（不存在返回 nil, nil）。
 func (s *Store) GetMoment(id int64) (*Moment, error) {
-	rows, err := s.db.Query(`SELECT `+momentCols+` FROM moments WHERE id = ?`, id)
-	if err != nil {
-		return nil, fmt.Errorf("get moment %d: %w", id, err)
-	}
-	defer rows.Close()
-	list, err := scanMoments(rows)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return nil, nil
-	}
-	return list[0], nil
+	return repo(s, &Moment{}).GetByID(id)
 }
 
 // ListMoments 分页列出全部瞬间（含私密，供 Console 管理用）。page 从 1 开始。
@@ -202,38 +200,21 @@ func (s *Store) listMoments(page, size int, publicOnly bool) ([]*Moment, error) 
 	if size < 1 {
 		size = 20
 	}
-	offset := (page - 1) * size
-	where := ""
+	opts := []QueryOption{OrderBy("substr(created_at, 1, 19) DESC, id DESC"), Limit(size), Offset((page - 1) * size)}
 	if publicOnly {
-		where = ` WHERE visibility = 'public'`
+		opts = append(opts, Where("visibility = 'public'"))
 	}
-	rows, err := s.db.Query(`SELECT `+momentCols+` FROM moments`+where+`
-		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`, size, offset)
-	if err != nil {
-		return nil, fmt.Errorf("list moments: %w", err)
-	}
-	defer rows.Close()
-	return scanMoments(rows)
+	return repo(s, &Moment{}).List(opts...)
 }
 
 // CountMoments 返回瞬间总数（含私密）。
 func (s *Store) CountMoments() (int, error) {
-	var n int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM moments`).Scan(&n)
-	if err != nil {
-		return 0, fmt.Errorf("count moments: %w", err)
-	}
-	return n, nil
+	return repo(s, &Moment{}).Count()
 }
 
 // CountPublicMoments 返回公开瞬间数量。
 func (s *Store) CountPublicMoments() (int, error) {
-	var n int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM moments WHERE visibility = 'public'`).Scan(&n)
-	if err != nil {
-		return 0, fmt.Errorf("count public moments: %w", err)
-	}
-	return n, nil
+	return repo(s, &Moment{}).Count(Where("visibility = 'public'"))
 }
 
 // DeleteMoment 按 id 删除记录。
@@ -247,19 +228,4 @@ func (s *Store) DeleteMoment(id int64) error {
 		return fmt.Errorf("delete moment %d: no rows affected", id)
 	}
 	return nil
-}
-
-func scanMoments(rows *sql.Rows) ([]*Moment, error) {
-	var out []*Moment
-	for rows.Next() {
-		m := &Moment{}
-		if err := rows.Scan(&m.ID, &m.ContentMD, &m.ContentHTML, &m.Images, &m.Visibility, &m.CreatedAt); err != nil {
-			return nil, fmt.Errorf("scan moment: %w", err)
-		}
-		out = append(out, m)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate moments: %w", err)
-	}
-	return out, nil
 }

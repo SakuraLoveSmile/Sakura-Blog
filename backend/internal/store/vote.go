@@ -23,19 +23,7 @@ type VoteCounts struct {
 
 // EnsureVotesTable 独立建 votes 表（对齐 rating.go 模式，不动 createTables）。
 func (s *Store) EnsureVotesTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS votes (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		target_id  TEXT NOT NULL DEFAULT '',
-		value      TEXT NOT NULL DEFAULT '',
-		voter_hash TEXT NOT NULL DEFAULT '',
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_target_voter ON votes(target_id, voter_hash);
-	CREATE INDEX IF NOT EXISTS idx_votes_target ON votes(target_id);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create votes table: %w", err)
-	}
-	return nil
+	return s.ensureTable("votes")
 }
 
 // UpdateVote 投票（同 target + 同 voter_hash 覆盖更新）。

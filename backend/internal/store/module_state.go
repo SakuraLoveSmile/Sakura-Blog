@@ -1,22 +1,13 @@
 package store
 
 import (
-	"fmt"
 	"time"
 )
 
 // EnsureModuleStatesTable 建 module_states 表（功能模块启停状态持久化）。
 // 无记录的模块回退到 Meta.DefaultOn（由 module.Manager 处理），此表仅存用户显式改过的状态。
 func (s *Store) EnsureModuleStatesTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS module_states (
-		id         TEXT PRIMARY KEY,
-		enabled    INTEGER NOT NULL DEFAULT 0,
-		updated_at TEXT NOT NULL DEFAULT ''
-	);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create module_states table: %w", err)
-	}
-	return nil
+	return s.ensureTable("module_states")
 }
 
 // GetModuleStates 返回所有已显式设置的模块启停状态（id -> enabled）。

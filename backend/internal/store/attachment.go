@@ -23,41 +23,39 @@ type Attachment struct {
 	GroupID   int64  // 所属分组 id，0=未分组（Spec 44）
 }
 
-const attachmentCols = `id, filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height, group_id`
+// TableName Entity 接口：attachments 表。
+func (a *Attachment) TableName() string { return "attachments" }
+
+// Columns Entity 接口：全列，首列为 id。
+func (a *Attachment) Columns() []string {
+	return []string{"id", "filename", "path", "url", "mime", "size", "created_at", "thumb_path", "thumb_url", "width", "height", "group_id"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (a *Attachment) Values() []any {
+	return []any{a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt, a.ThumbPath, a.ThumbURL, a.Width, a.Height, a.GroupID}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (a *Attachment) SetID(id int64) { a.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (a *Attachment) ScanRow(row rowScanner) error {
+	return row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height, &a.GroupID)
+}
 
 // UngroupedGroupID 未分组语义常量：不建实体行，group_id=0 即未分组（Spec 44）。
 const UngroupedGroupID int64 = 0
 
-// EnsureAttachmentsTable 独立建 attachments 表（不走 post.go createTables，避免与其它 spec 冲突）。
+// EnsureAttachmentsTable 独立建 attachments 表（统一走 schema.go 注册表）。
+// 幂等迁移：旧库可能缺新列（ADD COLUMN 已存在会报错，忽略即幂等）。
 func (s *Store) EnsureAttachmentsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS attachments (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		filename   TEXT NOT NULL DEFAULT '',
-		path       TEXT NOT NULL DEFAULT '',
-		url        TEXT NOT NULL DEFAULT '',
-		mime       TEXT NOT NULL DEFAULT '',
-		size       INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		thumb_path TEXT NOT NULL DEFAULT '',
-		thumb_url  TEXT NOT NULL DEFAULT '',
-		width      INTEGER NOT NULL DEFAULT 0,
-		height     INTEGER NOT NULL DEFAULT 0
-	);
-	CREATE INDEX IF NOT EXISTS idx_attachments_created ON attachments(created_at);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create attachments table: %w", err)
+	if err := s.ensureTable("attachments"); err != nil {
+		return err
 	}
-	// 分组表（Spec 44）：单层逻辑标签，不做嵌套；order 控制侧栏排序。
-	const groupDDL = `CREATE TABLE IF NOT EXISTS attachment_groups (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		name       TEXT NOT NULL DEFAULT '',
-		"order"    INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);`
-	if _, err := s.db.Exec(groupDDL); err != nil {
-		return fmt.Errorf("create attachment_groups table: %w", err)
+	if err := s.ensureTable("attachment_groups"); err != nil {
+		return err
 	}
-	// 幂等迁移：旧库可能缺新列（ADD COLUMN 已存在会报错，忽略即幂等）
 	for _, alter := range []string{
 		`ALTER TABLE attachments ADD COLUMN thumb_path TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE attachments ADD COLUMN thumb_url TEXT NOT NULL DEFAULT ''`,
@@ -75,17 +73,10 @@ func (s *Store) CreateAttachment(a *Attachment) (int64, error) {
 	if a.CreatedAt.IsZero() {
 		a.CreatedAt = time.Now()
 	}
-	res, err := s.db.Exec(`INSERT INTO attachments (filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height, group_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt, a.ThumbPath, a.ThumbURL, a.Width, a.Height, a.GroupID)
+	id, err := repo(s, &Attachment{}).Create(a)
 	if err != nil {
 		return 0, fmt.Errorf("create attachment: %w", err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("last insert id: %w", err)
-	}
-	a.ID = id
 	return id, nil
 }
 
@@ -103,13 +94,24 @@ func (s *Store) ListAttachments(page, size int, keyword, kind string, groupID *i
 
 	where, args := attachmentFilter(keyword, kind, groupID)
 
-	rows, err := s.db.Query(`SELECT `+attachmentCols+` FROM attachments `+where+`
+	rows, err := s.db.Query(`SELECT id, filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height, group_id FROM attachments `+where+`
 		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`, append(args, size, offset)...)
 	if err != nil {
 		return nil, fmt.Errorf("list attachments: %w", err)
 	}
 	defer rows.Close()
-	return scanAttachments(rows)
+	var out []*Attachment
+	for rows.Next() {
+		a := &Attachment{}
+		if err := a.ScanRow(rows); err != nil {
+			return nil, fmt.Errorf("scan attachment: %w", err)
+		}
+		out = append(out, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate attachments: %w", err)
+	}
+	return out, nil
 }
 
 // CountAttachments 返回附件总数（支持 keyword/kind/group 筛选）。
@@ -146,12 +148,7 @@ func attachmentFilter(keyword, kind string, groupID *int64) (string, []any) {
 
 // GetAttachment 按 id 查单条。未找到返回 nil, nil。
 func (s *Store) GetAttachment(id int64) (*Attachment, error) {
-	row := s.db.QueryRow(`SELECT `+attachmentCols+` FROM attachments WHERE id = ?`, id)
-	a := &Attachment{}
-	err := row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height, &a.GroupID)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	a, err := repo(s, &Attachment{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get attachment %d: %w", id, err)
 	}
@@ -160,13 +157,15 @@ func (s *Store) GetAttachment(id int64) (*Attachment, error) {
 
 // DeleteAttachment 按 id 删除记录。
 func (s *Store) DeleteAttachment(id int64) error {
-	res, err := s.db.Exec(`DELETE FROM attachments WHERE id = ?`, id)
+	a, err := repo(s, &Attachment{}).GetByID(id)
 	if err != nil {
 		return fmt.Errorf("delete attachment %d: %w", id, err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if a == nil {
 		return fmt.Errorf("delete attachment %d: no rows affected", id)
+	}
+	if err := repo(s, &Attachment{}).Delete(id); err != nil {
+		return fmt.Errorf("delete attachment %d: %w", id, err)
 	}
 	return nil
 }
@@ -178,6 +177,27 @@ type AttachmentGroup struct {
 	Order     int
 	CreatedAt time.Time
 	Count     int // 组内附件数（列表时回填，非表字段）
+}
+
+// TableName Entity 接口：attachment_groups 表。
+func (g *AttachmentGroup) TableName() string { return "attachment_groups" }
+
+// Columns Entity 接口：全列，首列为 id（order 加引号避开 SQL 关键字）。
+func (g *AttachmentGroup) Columns() []string {
+	return []string{`id`, `name`, `"order"`, `created_at`}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (g *AttachmentGroup) Values() []any {
+	return []any{g.Name, g.Order, g.CreatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (g *AttachmentGroup) SetID(id int64) { g.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (g *AttachmentGroup) ScanRow(row rowScanner) error {
+	return row.Scan(&g.ID, &g.Name, &g.Order, &g.CreatedAt)
 }
 
 // ListAttachmentGroups 列出全部分组（按 order,id 升序），并回填各组附件数。
@@ -208,16 +228,10 @@ func (s *Store) CreateAttachmentGroup(g *AttachmentGroup) (int64, error) {
 	if g.CreatedAt.IsZero() {
 		g.CreatedAt = time.Now()
 	}
-	res, err := s.db.Exec(`INSERT INTO attachment_groups (name, "order", created_at) VALUES (?, ?, ?)`,
-		g.Name, g.Order, g.CreatedAt)
+	id, err := repo(s, &AttachmentGroup{}).Create(g)
 	if err != nil {
 		return 0, fmt.Errorf("create attachment group: %w", err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("last insert id: %w", err)
-	}
-	g.ID = id
 	return id, nil
 }
 
@@ -286,21 +300,6 @@ func (s *Store) MoveAttachments(ids []int64, groupID int64) (int, error) {
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil
-}
-
-func scanAttachments(rows *sql.Rows) ([]*Attachment, error) {
-	var out []*Attachment
-	for rows.Next() {
-		a := &Attachment{}
-		if err := rows.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height, &a.GroupID); err != nil {
-			return nil, fmt.Errorf("scan attachment: %w", err)
-		}
-		out = append(out, a)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate attachments: %w", err)
-	}
-	return out, nil
 }
 
 // DB 暴露底层 *sql.DB（用于 api 层引用扫描等跨表查询）。

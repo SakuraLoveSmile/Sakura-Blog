@@ -9,14 +9,7 @@ import (
 // 站点配置由 site.yml 配置驱动迁移到 DB 后，各段以 JSON blob 存于此表。
 // 独立建表（不走 post.go createTables），与其它模块 Ensure 模式一致。
 func (s *Store) EnsureSettingsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS settings (
-		section TEXT PRIMARY KEY,
-		value   TEXT NOT NULL DEFAULT ''
-	);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create settings table: %w", err)
-	}
-	return nil
+	return s.ensureTable("settings")
 }
 
 // GetSetting 读取某段配置的 JSON 字符串；段不存在返回 ("", nil)。

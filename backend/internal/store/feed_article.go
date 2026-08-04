@@ -24,26 +24,7 @@ type FeedArticle struct {
 
 // EnsureFeedArticlesTable 建 feed_articles 表（对齐 attachment.go/rating.go 模式，不动 createTables）。
 func (s *Store) EnsureFeedArticlesTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS feed_articles (
-		id           INTEGER PRIMARY KEY AUTOINCREMENT,
-		friend_title TEXT NOT NULL DEFAULT '',
-		friend_url   TEXT NOT NULL DEFAULT '',
-		title        TEXT NOT NULL DEFAULT '',
-		link         TEXT NOT NULL DEFAULT '',
-		summary      TEXT NOT NULL DEFAULT '',
-		published    TEXT NOT NULL DEFAULT '',
-		guid         TEXT NOT NULL DEFAULT '',
-		fetched_at   TEXT NOT NULL DEFAULT '',
-		read         INTEGER NOT NULL DEFAULT 0,
-		favorite     INTEGER NOT NULL DEFAULT 0,
-		later        INTEGER NOT NULL DEFAULT 0
-	);
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_feed_articles_guid ON feed_articles(guid);
-	CREATE INDEX IF NOT EXISTS idx_feed_articles_friend ON feed_articles(friend_url);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create feed_articles table: %w", err)
-	}
-	return nil
+	return s.ensureTable("feed_articles")
 }
 
 // UpsertFeedArticle 按 guid 幂等写入；已存在则只更新元数据，保留 read/favorite/later 状态。

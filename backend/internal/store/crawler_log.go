@@ -40,26 +40,7 @@ type CrawlerAnalysisResult struct {
 
 // EnsureCrawlerLogsTable 建 crawler_logs 表（SEO 爬虫记录用）。
 func (s *Store) EnsureCrawlerLogsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS crawler_logs (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		engine     TEXT NOT NULL DEFAULT '',
-		ua         TEXT NOT NULL DEFAULT '',
-		path       TEXT NOT NULL DEFAULT '',
-		ip_hash    TEXT NOT NULL DEFAULT '',
-		created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
-	)`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create crawler_logs: %w", err)
-	}
-	const idx1 = `CREATE INDEX IF NOT EXISTS idx_crawler_created ON crawler_logs(created_at)`
-	const idx2 = `CREATE INDEX IF NOT EXISTS idx_crawler_engine_created ON crawler_logs(engine, created_at)`
-	if _, err := s.db.Exec(idx1); err != nil {
-		return fmt.Errorf("create idx_crawler_created: %w", err)
-	}
-	if _, err := s.db.Exec(idx2); err != nil {
-		return fmt.Errorf("create idx_crawler_engine_created: %w", err)
-	}
-	return nil
+	return s.ensureTable("crawler_logs")
 }
 
 // RecordCrawler 记录一次爬虫访问。

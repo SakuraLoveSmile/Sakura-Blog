@@ -35,25 +35,7 @@ type ReferrerStat struct {
 // EnsurePageViewsTable 独立建 page_views 明细表（对齐 revision.go 模式，不动 createTables）。
 // 索引：created_at（趋势范围扫描）、path+created_at（热门路径聚合）。
 func (s *Store) EnsurePageViewsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS page_views (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		path       TEXT NOT NULL DEFAULT '',
-		referrer   TEXT NOT NULL DEFAULT '',
-		ua_hash    TEXT NOT NULL DEFAULT '',
-		created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
-	)`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create page_views: %w", err)
-	}
-	const idx1 = `CREATE INDEX IF NOT EXISTS idx_pv_created ON page_views(created_at)`
-	const idx2 = `CREATE INDEX IF NOT EXISTS idx_pv_path_created ON page_views(path, created_at)`
-	if _, err := s.db.Exec(idx1); err != nil {
-		return fmt.Errorf("create idx_pv_created: %w", err)
-	}
-	if _, err := s.db.Exec(idx2); err != nil {
-		return fmt.Errorf("create idx_pv_path_created: %w", err)
-	}
-	return nil
+	return s.ensureTable("page_views")
 }
 
 // RecordView 记录一次页面访问。PV 逐次累加；UV 通过 ua_hash + path + 自然日去重

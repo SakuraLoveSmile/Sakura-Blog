@@ -17,22 +17,7 @@ type SeoPushLog struct {
 
 // EnsureSeoPushLogsTable 建 seo_push_logs 表（站点推送记录用）。
 func (s *Store) EnsureSeoPushLogsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS seo_push_logs (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		engine     TEXT NOT NULL DEFAULT '',
-		url        TEXT NOT NULL DEFAULT '',
-		status     TEXT NOT NULL DEFAULT '',
-		message    TEXT NOT NULL DEFAULT '',
-		created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
-	)`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create seo_push_logs: %w", err)
-	}
-	const idx = `CREATE INDEX IF NOT EXISTS idx_push_created ON seo_push_logs(created_at)`
-	if _, err := s.db.Exec(idx); err != nil {
-		return fmt.Errorf("create idx_push_created: %w", err)
-	}
-	return nil
+	return s.ensureTable("seo_push_logs")
 }
 
 // AddPushLog 追加一条推送记录。

@@ -40,27 +40,30 @@ type Topic struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// topicCols 统一 SELECT 列清单（排序列用 sort；created_at/updated_at 驱动写 "2006-01-02 15:04:05 -0700 MST"）。
-const topicCols = "id, name, slug, description, icon, cover, sort, created_at, updated_at"
+// TableName Entity 接口：topics 表。
+func (t *Topic) TableName() string { return "topics" }
+
+// Columns Entity 接口：全列，首列为 id。
+func (t *Topic) Columns() []string {
+	return []string{"id", "name", "slug", "description", "icon", "cover", "sort", "created_at", "updated_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (t *Topic) Values() []any {
+	return []any{t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.CreatedAt, t.UpdatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (t *Topic) SetID(id int64) { t.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (t *Topic) ScanRow(row rowScanner) error {
+	return row.Scan(&t.ID, &t.Name, &t.Slug, &t.Description, &t.Icon, &t.Cover, &t.Sort, &t.CreatedAt, &t.UpdatedAt)
+}
 
 // EnsureTopicsTable 幂等建 topics 表（DDL 对齐 Spec 52：name/slug 双唯一）。
 func (s *Store) EnsureTopicsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS topics (
-		id          INTEGER PRIMARY KEY AUTOINCREMENT,
-		name        TEXT NOT NULL UNIQUE,
-		slug        TEXT NOT NULL UNIQUE,
-		description TEXT NOT NULL DEFAULT '',
-		icon        TEXT NOT NULL DEFAULT '',
-		cover       TEXT NOT NULL DEFAULT '',
-		sort        INTEGER NOT NULL DEFAULT 0,
-		created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE INDEX IF NOT EXISTS idx_topics_slug ON topics(slug);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create topics table: %w", err)
-	}
-	return nil
+	return s.ensureTable("topics")
 }
 
 // MigrateTopicBackfill 迁移：posts 表增加 topic_id 列（ALTER TABLE，存量默认 0=不属于专栏），
@@ -178,62 +181,22 @@ func slugify(name string) string {
 
 // ListTopics 列出全部专栏，按 sort 倒序 + 创建时间线性（sort 相同默认 0 时即纯时间倒序）。
 func (s *Store) ListTopics() ([]*Topic, error) {
-	rows, err := s.db.Query(`SELECT ` + topicCols + ` FROM topics ORDER BY sort DESC, substr(created_at, 1, 19) DESC, id DESC`)
-	if err != nil {
-		return nil, fmt.Errorf("list topics: %w", err)
-	}
-	defer rows.Close()
-	var out []*Topic
-	for rows.Next() {
-		t, err := scanTopic(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan topic: %w", err)
-		}
-		out = append(out, t)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate topics: %w", err)
-	}
-	return out, nil
+	return repo(s, &Topic{}).List(OrderBy("sort DESC, substr(created_at, 1, 19) DESC, id DESC"))
 }
 
 // GetTopicByID 按 id 查专栏。未找到返回 nil, nil。
 func (s *Store) GetTopicByID(id int64) (*Topic, error) {
-	row := s.db.QueryRow(`SELECT `+topicCols+` FROM topics WHERE id = ?`, id)
-	t, err := scanTopic(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("get topic %d: %w", id, err)
-	}
-	return t, nil
+	return repo(s, &Topic{}).GetByID(id)
 }
 
 // GetTopicBySlug 按 slug 查专栏。未找到返回 nil, nil。
 func (s *Store) GetTopicBySlug(slug string) (*Topic, error) {
-	row := s.db.QueryRow(`SELECT `+topicCols+` FROM topics WHERE slug = ?`, slug)
-	t, err := scanTopic(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("get topic %q: %w", slug, err)
-	}
-	return t, nil
+	return repo(s, &Topic{}).GetOne("slug = ?", slug)
 }
 
 // GetTopicByName 按 name 查专栏。未找到返回 nil, nil。
 func (s *Store) GetTopicByName(name string) (*Topic, error) {
-	row := s.db.QueryRow(`SELECT `+topicCols+` FROM topics WHERE name = ?`, name)
-	t, err := scanTopic(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("get topic by name %q: %w", name, err)
-	}
-	return t, nil
+	return repo(s, &Topic{}).GetOne("name = ?", name)
 }
 
 // CreateTopic 新建专栏，LastInsertId 回填 ID，自动设置 created_at/updated_at。
@@ -244,32 +207,14 @@ func (s *Store) CreateTopic(t *Topic) error {
 		t.CreatedAt = now
 	}
 	t.UpdatedAt = now
-	res, err := s.db.Exec(`INSERT INTO topics (name, slug, description, icon, cover, sort, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.CreatedAt, t.UpdatedAt)
-	if err != nil {
-		return fmt.Errorf("create topic %s: %w", t.Name, err)
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("last insert id: %w", err)
-	}
-	t.ID = id
-	return nil
+	_, err := repo(s, &Topic{}).Create(t)
+	return err
 }
 
 // UpdateTopic 按 id 更新专栏字段，自动刷新 updated_at。专栏不存在返回错误。
 func (s *Store) UpdateTopic(t *Topic) error {
 	t.UpdatedAt = time.Now().UTC()
-	res, err := s.db.Exec(`UPDATE topics SET name=?, slug=?, description=?, icon=?, cover=?, sort=?, updated_at=? WHERE id=?`,
-		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.UpdatedAt, t.ID)
-	if err != nil {
-		return fmt.Errorf("update topic %d: %w", t.ID, err)
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("update topic %d: no rows affected", t.ID)
-	}
-	return nil
+	return repo(s, &Topic{}).Update(t.ID, t)
 }
 
 // DeleteTopic 删除专栏。专栏下仍有文章时返回 ErrTopicInUse（删除保护，调用方映射 403）。
@@ -304,14 +249,4 @@ func (s *Store) CountAllByTopicID(topicID int64) (int, error) {
 		return 0, fmt.Errorf("count all posts of topic %d: %w", topicID, err)
 	}
 	return n, nil
-}
-
-// scanTopic 单行扫描；行顺序对齐 topicCols。
-func scanTopic(row rowScanner) (*Topic, error) {
-	t := &Topic{}
-	err := row.Scan(&t.ID, &t.Name, &t.Slug, &t.Description, &t.Icon, &t.Cover, &t.Sort, &t.CreatedAt, &t.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
 }

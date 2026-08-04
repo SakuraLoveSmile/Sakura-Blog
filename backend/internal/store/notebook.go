@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -18,6 +17,27 @@ type Notebook struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// TableName Entity 接口：notebooks 表。
+func (n *Notebook) TableName() string { return "notebooks" }
+
+// Columns Entity 接口：全列，首列为 id（排序列用 nb_order 而非 order，SQL 保留字）。
+func (n *Notebook) Columns() []string {
+	return []string{"id", "name", "description", "cover", "nb_order", "created_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (n *Notebook) Values() []any {
+	return []any{n.Name, n.Description, n.Cover, n.Order, n.CreatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (n *Notebook) SetID(id int64) { n.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (n *Notebook) ScanRow(row rowScanner) error {
+	return row.Scan(&n.ID, &n.Name, &n.Description, &n.Cover, &n.Order, &n.CreatedAt)
+}
+
 // Note 笔记。
 type Note struct {
 	ID          int64     `json:"id"`
@@ -30,76 +50,45 @@ type Note struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// notebookCols / noteCols 统一 SELECT 列清单。排序列用 nb_order 而非 order（SQL 保留字）。
-const (
-	notebookCols = "id, name, description, cover, nb_order, created_at"
-	noteCols     = "id, notebook_id, title, content, content_html, tags, created_at, updated_at"
-)
+// TableName Entity 接口：notes 表。
+func (n *Note) TableName() string { return "notes" }
 
-// EnsureNotebooksTable 幂等建 notebooks 表（不走 createTables，由调用方启动时按需调用）。
+// Columns Entity 接口：全列，首列为 id。
+func (n *Note) Columns() []string {
+	return []string{"id", "notebook_id", "title", "content", "content_html", "tags", "created_at", "updated_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (n *Note) Values() []any {
+	return []any{n.NotebookID, n.Title, n.Content, n.ContentHTML, n.Tags, n.CreatedAt, n.UpdatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (n *Note) SetID(id int64) { n.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (n *Note) ScanRow(row rowScanner) error {
+	return row.Scan(&n.ID, &n.NotebookID, &n.Title, &n.Content, &n.ContentHTML, &n.Tags, &n.CreatedAt, &n.UpdatedAt)
+}
+
+// EnsureNotebooksTable 幂等建 notebooks 表（统一走 schema.go 注册表）。
 func (s *Store) EnsureNotebooksTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS notebooks (
-		id          INTEGER PRIMARY KEY AUTOINCREMENT,
-		name        TEXT NOT NULL UNIQUE,
-		description TEXT NOT NULL DEFAULT '',
-		cover       TEXT NOT NULL DEFAULT '',
-		nb_order    INTEGER NOT NULL DEFAULT 0,
-		created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create notebooks table: %w", err)
-	}
-	return nil
+	return s.ensureTable("notebooks")
 }
 
 // EnsureNotesTable 幂等建 notes 表。
 func (s *Store) EnsureNotesTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS notes (
-		id           INTEGER PRIMARY KEY AUTOINCREMENT,
-		notebook_id  INTEGER NOT NULL,
-		title        TEXT NOT NULL DEFAULT '',
-		content      TEXT NOT NULL DEFAULT '',
-		content_html TEXT NOT NULL DEFAULT '',
-		tags         TEXT NOT NULL DEFAULT '',
-		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (notebook_id) REFERENCES notebooks(id)
-	);
-	CREATE INDEX IF NOT EXISTS idx_notes_notebook ON notes(notebook_id);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create notes table: %w", err)
-	}
-	return nil
+	return s.ensureTable("notes")
 }
 
 // ListNotebooks 列出全部笔记本，按 nb_order, id 升序。
 func (s *Store) ListNotebooks() ([]*Notebook, error) {
-	rows, err := s.db.Query(`SELECT ` + notebookCols + ` FROM notebooks ORDER BY nb_order, id`)
-	if err != nil {
-		return nil, fmt.Errorf("list notebooks: %w", err)
-	}
-	defer rows.Close()
-	var out []*Notebook
-	for rows.Next() {
-		nb, err := scanNotebook(rows)
-		if err != nil {
-			return nil, fmt.Errorf("scan notebook: %w", err)
-		}
-		out = append(out, nb)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate notebooks: %w", err)
-	}
-	return out, nil
+	return repo(s, &Notebook{}).List(OrderBy("nb_order, id"))
 }
 
 // GetNotebook 按 id 查单个笔记本。未找到返回 nil, nil。
 func (s *Store) GetNotebook(id int64) (*Notebook, error) {
-	row := s.db.QueryRow(`SELECT `+notebookCols+` FROM notebooks WHERE id = ?`, id)
-	nb, err := scanNotebook(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	nb, err := repo(s, &Notebook{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get notebook %d: %w", id, err)
 	}
@@ -108,11 +97,7 @@ func (s *Store) GetNotebook(id int64) (*Notebook, error) {
 
 // GetNotebookByName 按 name 查单个笔记本。未找到返回 nil, nil。
 func (s *Store) GetNotebookByName(name string) (*Notebook, error) {
-	row := s.db.QueryRow(`SELECT `+notebookCols+` FROM notebooks WHERE name = ?`, name)
-	nb, err := scanNotebook(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	nb, err := repo(s, &Notebook{}).GetOne("name = ?", name)
 	if err != nil {
 		return nil, fmt.Errorf("get notebook %q: %w", name, err)
 	}
@@ -125,29 +110,16 @@ func (s *Store) CreateNotebook(nb *Notebook) error {
 	if nb.CreatedAt.IsZero() {
 		nb.CreatedAt = time.Now().UTC()
 	}
-	res, err := s.db.Exec(`INSERT INTO notebooks (name, description, cover, nb_order, created_at)
-		VALUES (?, ?, ?, ?, ?)`,
-		nb.Name, nb.Description, nb.Cover, nb.Order, nb.CreatedAt)
-	if err != nil {
+	if _, err := repo(s, &Notebook{}).Create(nb); err != nil {
 		return fmt.Errorf("create notebook %s: %w", nb.Name, err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("last insert id: %w", err)
-	}
-	nb.ID = id
 	return nil
 }
 
 // UpdateNotebook 按 id 更新笔记本字段。笔记本不存在返回错误。
 func (s *Store) UpdateNotebook(nb *Notebook) error {
-	res, err := s.db.Exec(`UPDATE notebooks SET name=?, description=?, cover=?, nb_order=? WHERE id=?`,
-		nb.Name, nb.Description, nb.Cover, nb.Order, nb.ID)
-	if err != nil {
+	if err := repo(s, &Notebook{}).Update(nb.ID, nb); err != nil {
 		return fmt.Errorf("update notebook %d: %w", nb.ID, err)
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("update notebook %d: no rows affected", nb.ID)
 	}
 	return nil
 }
@@ -174,37 +146,23 @@ func (s *Store) DeleteNotebook(id int64) error {
 // ListNotesByNotebook 分页列出笔记本下的笔记（按更新时间倒序，id 倒序兜底），
 // 返回笔记列表 + 总数 + error。
 func (s *Store) ListNotesByNotebook(notebookID int64, limit, offset int) ([]*Note, int, error) {
-	var total int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM notes WHERE notebook_id = ?`, notebookID).Scan(&total); err != nil {
+	total, err := repo(s, &Note{}).Count(Where("notebook_id = ?", notebookID))
+	if err != nil {
 		return nil, 0, fmt.Errorf("count notes of notebook %d: %w", notebookID, err)
 	}
-	rows, err := s.db.Query(`SELECT `+noteCols+` FROM notes WHERE notebook_id = ? ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?`,
-		notebookID, limit, offset)
+	out, err := repo(s, &Note{}).List(
+		Where("notebook_id = ?", notebookID),
+		OrderBy("updated_at DESC, id DESC"),
+		Limit(limit), Offset(offset))
 	if err != nil {
 		return nil, 0, fmt.Errorf("list notes of notebook %d: %w", notebookID, err)
-	}
-	defer rows.Close()
-	var out []*Note
-	for rows.Next() {
-		n, err := scanNote(rows)
-		if err != nil {
-			return nil, 0, fmt.Errorf("scan note: %w", err)
-		}
-		out = append(out, n)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("iterate notes: %w", err)
 	}
 	return out, total, nil
 }
 
 // GetNote 按 id 查单条笔记。未找到返回 nil, nil。
 func (s *Store) GetNote(id int64) (*Note, error) {
-	row := s.db.QueryRow(`SELECT `+noteCols+` FROM notes WHERE id = ?`, id)
-	n, err := scanNote(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	n, err := repo(s, &Note{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get note %d: %w", id, err)
 	}
@@ -218,37 +176,24 @@ func (s *Store) CreateNote(note *Note) error {
 		note.CreatedAt = now
 	}
 	note.UpdatedAt = now
-	res, err := s.db.Exec(`INSERT INTO notes (notebook_id, title, content, content_html, tags, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		note.NotebookID, note.Title, note.Content, note.ContentHTML, note.Tags, note.CreatedAt, note.UpdatedAt)
-	if err != nil {
+	if _, err := repo(s, &Note{}).Create(note); err != nil {
 		return fmt.Errorf("create note %s: %w", note.Title, err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("last insert id: %w", err)
-	}
-	note.ID = id
 	return nil
 }
 
 // UpdateNote 按 id 更新笔记字段，自动刷新 updated_at。笔记不存在返回错误。
 func (s *Store) UpdateNote(note *Note) error {
 	note.UpdatedAt = time.Now().UTC()
-	res, err := s.db.Exec(`UPDATE notes SET notebook_id=?, title=?, content=?, content_html=?, tags=?, updated_at=? WHERE id=?`,
-		note.NotebookID, note.Title, note.Content, note.ContentHTML, note.Tags, note.UpdatedAt, note.ID)
-	if err != nil {
+	if err := repo(s, &Note{}).Update(note.ID, note); err != nil {
 		return fmt.Errorf("update note %d: %w", note.ID, err)
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("update note %d: no rows affected", note.ID)
 	}
 	return nil
 }
 
 // DeleteNote 硬删除单条笔记。不存在不报错。
 func (s *Store) DeleteNote(id int64) error {
-	if _, err := s.db.Exec(`DELETE FROM notes WHERE id = ?`, id); err != nil {
+	if err := repo(s, &Note{}).Delete(id); err != nil {
 		return fmt.Errorf("delete note %d: %w", id, err)
 	}
 	return nil
@@ -308,24 +253,4 @@ func (s *Store) AllNoteTags() ([]string, error) {
 	}
 	sort.Strings(result)
 	return result, nil
-}
-
-// scanNotebook 单行扫描；行顺序对齐 notebookCols。
-func scanNotebook(row rowScanner) (*Notebook, error) {
-	nb := &Notebook{}
-	err := row.Scan(&nb.ID, &nb.Name, &nb.Description, &nb.Cover, &nb.Order, &nb.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return nb, nil
-}
-
-// scanNote 单行扫描；行顺序对齐 noteCols。
-func scanNote(row rowScanner) (*Note, error) {
-	n := &Note{}
-	err := row.Scan(&n.ID, &n.NotebookID, &n.Title, &n.Content, &n.ContentHTML, &n.Tags, &n.CreatedAt, &n.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return n, nil
 }

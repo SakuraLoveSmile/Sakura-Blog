@@ -2,7 +2,6 @@ package store
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -25,36 +24,35 @@ type User struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
-// userCols 统一 SELECT 列清单（含敏感列，登录/校验路径用）。
-const userCols = "id, username, password_hash, display_name, email, avatar, totp_secret, totp_recovery_codes, auth_secret, created_at"
+// TableName Entity 接口：users 表。
+func (u *User) TableName() string { return "users" }
 
-// EnsureUsersTable 独立建 users 表（不走 post.go createTables，与其它模块 Ensure 模式一致）。
+// Columns Entity 接口：全列，首列为 id（含敏感列，登录/校验路径用）。
+func (u *User) Columns() []string {
+	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "created_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (u *User) Values() []any {
+	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.CreatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (u *User) SetID(id int64) { u.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (u *User) ScanRow(row rowScanner) error {
+	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.CreatedAt)
+}
+
+// EnsureUsersTable 独立建 users 表（统一走 schema.go 注册表）。
 func (s *Store) EnsureUsersTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT NOT NULL UNIQUE,
-		password_hash TEXT NOT NULL,
-		display_name TEXT NOT NULL DEFAULT '',
-		email TEXT NOT NULL DEFAULT '',
-		avatar TEXT NOT NULL DEFAULT '',
-		totp_secret TEXT NOT NULL DEFAULT '',
-		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
-		auth_secret TEXT NOT NULL DEFAULT '',
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create users table: %w", err)
-	}
-	return nil
+	return s.ensureTable("users")
 }
 
 // GetUserByUsername 按用户名查用户（含密码哈希等敏感列）。未找到返回 nil, nil。
 func (s *Store) GetUserByUsername(username string) (*User, error) {
-	row := s.db.QueryRow("SELECT "+userCols+" FROM users WHERE username = ?", username)
-	u, err := scanUser(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	u, err := repo(s, &User{}).GetOne("username = ?", username)
 	if err != nil {
 		return nil, fmt.Errorf("get user by username %s: %w", username, err)
 	}
@@ -63,11 +61,7 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 
 // GetUserByID 按 ID 查用户（含密码哈希等敏感列）。未找到返回 nil, nil。
 func (s *Store) GetUserByID(id int64) (*User, error) {
-	row := s.db.QueryRow("SELECT "+userCols+" FROM users WHERE id = ?", id)
-	u, err := scanUser(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	u, err := repo(s, &User{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get user by id %d: %w", id, err)
 	}
@@ -83,17 +77,9 @@ func (s *Store) CreateUser(user *User) error {
 	if user.TOTPRecoveryCodes == "" {
 		user.TOTPRecoveryCodes = "[]"
 	}
-	res, err := s.db.Exec(`INSERT INTO users (username, password_hash, display_name, email, avatar, totp_secret, totp_recovery_codes, auth_secret, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		user.Username, user.PasswordHash, user.DisplayName, user.Email, user.Avatar, user.TOTPSecret, user.TOTPRecoveryCodes, user.AuthSecret, user.CreatedAt)
-	if err != nil {
+	if _, err := repo(s, &User{}).Create(user); err != nil {
 		return fmt.Errorf("create user %s: %w", user.Username, err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("create user %s: last insert id: %w", user.Username, err)
-	}
-	user.ID = id
 	return nil
 }
 
@@ -151,19 +137,6 @@ func (s *Store) ListUsers() ([]*User, error) {
 		return nil, fmt.Errorf("iterate users: %w", err)
 	}
 	return out, nil
-}
-
-type userScanner interface {
-	Scan(dest ...any) error
-}
-
-func scanUser(row userScanner) (*User, error) {
-	u := &User{}
-	err := row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
 }
 
 // HashPassword bcrypt 哈希（cost=10）。

@@ -115,7 +115,42 @@ func DecodeReferences(s string) []string {
 	return refs
 }
 
-// postCols 统一 SELECT 列清单（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列 + Spec 53 ai_summary 列）。
+// TableName Entity 接口：posts 表。
+func (p *Post) TableName() string { return "posts" }
+
+// Columns Entity 接口：全列，首列为 id（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列 + Spec 53 ai_summary 列）。
+func (p *Post) Columns() []string {
+	return []string{"id", "slug", "title", "excerpt", "cover", "category", "tags", "content_md", "content_html", "status", "created_at", "updated_at", "pinned", "password", "publish_at", "poster", "topic", "topic_id", "\"references\"", "banner", "deleted_at", "draft_json", "meta_description", "meta_keywords", "author", "ai_summary"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应；pinned/publish_at 做存储格式转换）。
+func (p *Post) Values() []any {
+	pinned := 0
+	if p.Pinned {
+		pinned = 1
+	}
+	return []any{p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.DeletedAt, p.DraftJSON, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (p *Post) SetID(id int64) { p.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()（pinned 0/1 转 bool，publish_at 字符串转 time）。
+func (p *Post) ScanRow(row rowScanner) error {
+	var pinned int
+	var password, publishAt, deletedAt string
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary)
+	if err != nil {
+		return err
+	}
+	p.Pinned = pinned != 0
+	p.Password = password
+	p.PublishAt = parsePublishAt(publishAt)
+	p.DeletedAt = deletedAt
+	return nil
+}
+
+// postCols 统一 SELECT 列清单（与 Post.Columns() 同序，供自定义查询拼接用）。
 const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
@@ -160,6 +195,27 @@ type Store struct {
 	// 评论点赞 schema 懒迁移状态（逐 Store 实例，避免包级 Once 在多库实例下漏迁移）。
 	commentReactionsOnce sync.Once
 	commentReactionsErr  error
+
+	// repos 泛型仓储缓存（按表名惰性创建，跨调用复用预编译语句）。
+	reposMu sync.Mutex
+	repos   map[string]any
+}
+
+// repo 取或建指定实体的泛型仓储（按 Store 实例 + 表名缓存，复用 Repository 内预编译语句）。
+// 方法不支持类型参数，故为包级函数：zero 传实体指针（如 &Link{}），T 实例化为 *Link。
+func repo[T Entity](s *Store, zero T) *Repository[T] {
+	s.reposMu.Lock()
+	defer s.reposMu.Unlock()
+	if s.repos == nil {
+		s.repos = map[string]any{}
+	}
+	table := zero.TableName()
+	if r, ok := s.repos[table].(*Repository[T]); ok {
+		return r
+	}
+	r := NewRepository(s.db, zero)
+	s.repos[table] = r
+	return r
 }
 
 // SetPostWriteHook 注册文章写路径回调（main.go 装配）。
@@ -570,21 +626,10 @@ func (s *Store) Create(p *Post) (int64, error) {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
-	pinned := 0
-	if p.Pinned {
-		pinned = 1
-	}
-	res, err := s.db.Exec(`INSERT INTO posts (slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, "references", banner, meta_description, meta_keywords, author, ai_summary)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary)
+	id, err := repo(s, &Post{}).Create(p)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("last insert id: %w", err)
-	}
-	p.ID = id
 	s.firePostWrite("create", p.Slug)
 	return id, nil
 }
@@ -741,16 +786,9 @@ type rowScanner interface {
 
 func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
-	var pinned int
-	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary)
-	if err != nil {
+	if err := p.ScanRow(row); err != nil {
 		return nil, err
 	}
-	p.Pinned = pinned != 0
-	p.Password = password
-	p.PublishAt = parsePublishAt(publishAt)
-	p.DeletedAt = deletedAt
 	return p, nil
 }
 

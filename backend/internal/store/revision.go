@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 	"unicode"
@@ -24,6 +23,27 @@ type Revision struct {
 	CreatedAt time.Time
 }
 
+// TableName Entity 接口：revisions 表。
+func (r *Revision) TableName() string { return "revisions" }
+
+// Columns Entity 接口：全列，首列为 id。
+func (r *Revision) Columns() []string {
+	return []string{"id", "post_slug", "title", "excerpt", "content_md", "tags", "category", "status", "word_count", "created_at"}
+}
+
+// Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
+func (r *Revision) Values() []any {
+	return []any{r.PostSlug, r.Title, r.Excerpt, r.ContentMD, r.Tags, r.Category, r.Status, r.WordCount, r.CreatedAt}
+}
+
+// SetID Entity 接口：回填自增 id。
+func (r *Revision) SetID(id int64) { r.ID = id }
+
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
+func (r *Revision) ScanRow(row rowScanner) error {
+	return row.Scan(&r.ID, &r.PostSlug, &r.Title, &r.Excerpt, &r.ContentMD, &r.Tags, &r.Category, &r.Status, &r.WordCount, &r.CreatedAt)
+}
+
 // RevisionMeta 版本列表项（不含 content_md，省流量）。
 type RevisionMeta struct {
 	ID        int64     `json:"id"`
@@ -37,25 +57,12 @@ type RevisionMeta struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// EnsureRevisionsTable 独立建 revisions 表（对齐 attachment.go 模式，不动 createTables）。
+// EnsureRevisionsTable 独立建 revisions 表（统一走 schema.go 注册表）。
+// 幂等迁移：旧库可能缺 word_count 列（ADD COLUMN 已存在会报错，忽略即幂等）。
 func (s *Store) EnsureRevisionsTable() error {
-	const ddl = `CREATE TABLE IF NOT EXISTS revisions (
-		id         INTEGER PRIMARY KEY AUTOINCREMENT,
-		post_slug  TEXT NOT NULL DEFAULT '',
-		title      TEXT NOT NULL DEFAULT '',
-		excerpt    TEXT NOT NULL DEFAULT '',
-		content_md TEXT NOT NULL DEFAULT '',
-		tags       TEXT NOT NULL DEFAULT '',
-		category   TEXT NOT NULL DEFAULT '',
-		status     TEXT NOT NULL DEFAULT '',
-		word_count INTEGER NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-	CREATE INDEX IF NOT EXISTS idx_revisions_slug_created ON revisions(post_slug, created_at);`
-	if _, err := s.db.Exec(ddl); err != nil {
-		return fmt.Errorf("create revisions table: %w", err)
+	if err := s.ensureTable("revisions"); err != nil {
+		return err
 	}
-	// 幂等迁移：旧库可能缺 word_count 列
 	s.db.Exec(`ALTER TABLE revisions ADD COLUMN word_count INTEGER NOT NULL DEFAULT 0`)
 	return nil
 }
@@ -66,17 +73,10 @@ func (s *Store) CreateRevision(r *Revision) (int64, error) {
 		r.CreatedAt = time.Now()
 	}
 	r.WordCount = CountWords(r.ContentMD)
-	res, err := s.db.Exec(`INSERT INTO revisions (post_slug, title, excerpt, content_md, tags, category, status, word_count, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.PostSlug, r.Title, r.Excerpt, r.ContentMD, r.Tags, r.Category, r.Status, r.WordCount, r.CreatedAt)
+	id, err := repo(s, &Revision{}).Create(r)
 	if err != nil {
 		return 0, fmt.Errorf("create revision: %w", err)
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("last insert id: %w", err)
-	}
-	r.ID = id
 	s.pruneRevisions(r.PostSlug)
 	return id, nil
 }
@@ -105,13 +105,7 @@ func (s *Store) ListRevisions(slug string) ([]*RevisionMeta, error) {
 
 // GetRevision 按 id 查单个版本全文。未找到返回 nil, nil。
 func (s *Store) GetRevision(id int64) (*Revision, error) {
-	row := s.db.QueryRow(`SELECT id, post_slug, title, excerpt, content_md, tags, category, status, word_count, created_at
-		FROM revisions WHERE id = ?`, id)
-	r := &Revision{}
-	err := row.Scan(&r.ID, &r.PostSlug, &r.Title, &r.Excerpt, &r.ContentMD, &r.Tags, &r.Category, &r.Status, &r.WordCount, &r.CreatedAt)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	r, err := repo(s, &Revision{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get revision %d: %w", id, err)
 	}
