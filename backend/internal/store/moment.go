@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -143,6 +144,24 @@ func (s *Store) migrateMomentColumns() error {
 	return nil
 }
 
+// MomentSlugKey 瞬间在搜索索引中的伪 slug（moments 无 slug 列，用 id 构造；
+// store 写路径回调与 cmd/server 回填装配共用，格式必须一致）。
+func MomentSlugKey(id int64) string {
+	return "moment-" + strconv.FormatInt(id, 10)
+}
+
+// SetMomentWriteHook 注册瞬间写路径回调（main.go 装配）。
+func (s *Store) SetMomentWriteHook(h func(op, slug string)) {
+	s.momentWriteHook = h
+}
+
+// fireMomentWrite 触发瞬间写路径回调（未注册则静默）。
+func (s *Store) fireMomentWrite(op, slug string) {
+	if s.momentWriteHook != nil {
+		s.momentWriteHook(op, slug)
+	}
+}
+
 // CreateMoment 新建瞬间，返回 id 并回填 m.ID。
 func (s *Store) CreateMoment(m *Moment) (int64, error) {
 	if m.CreatedAt.IsZero() {
@@ -160,6 +179,7 @@ func (s *Store) CreateMoment(m *Moment) (int64, error) {
 		return 0, fmt.Errorf("last insert id: %w", err)
 	}
 	m.ID = id
+	s.fireMomentWrite("create", MomentSlugKey(id))
 	return id, nil
 }
 
@@ -175,6 +195,7 @@ func (s *Store) UpdateMoment(m *Moment) error {
 	if n == 0 {
 		return fmt.Errorf("update moment %d: no rows affected", m.ID)
 	}
+	s.fireMomentWrite("update", MomentSlugKey(m.ID))
 	return nil
 }
 
@@ -227,5 +248,6 @@ func (s *Store) DeleteMoment(id int64) error {
 	if n == 0 {
 		return fmt.Errorf("delete moment %d: no rows affected", id)
 	}
+	s.fireMomentWrite("delete", MomentSlugKey(id))
 	return nil
 }

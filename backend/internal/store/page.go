@@ -39,6 +39,18 @@ func (p *Page) ScanRow(row rowScanner) error {
 	return row.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt)
 }
 
+// SetPageWriteHook 注册页面写路径回调（main.go 装配）。
+func (s *Store) SetPageWriteHook(h func(op, slug string)) {
+	s.pageWriteHook = h
+}
+
+// firePageWrite 触发页面写路径回调（未注册则静默）。
+func (s *Store) firePageWrite(op, slug string) {
+	if s.pageWriteHook != nil {
+		s.pageWriteHook(op, slug)
+	}
+}
+
 // EnsurePagesTable 独立建 pages 表（统一走 schema.go 注册表）。
 // 幂等迁移：旧库可能缺 deleted_at 列（ADD COLUMN 已存在会报错，忽略即幂等）。
 func (s *Store) EnsurePagesTable() error {
@@ -92,6 +104,7 @@ func (s *Store) CreatePage(p *Page) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("create page %s: %w", p.Slug, err)
 	}
+	s.firePageWrite("create", p.Slug)
 	return id, nil
 }
 
@@ -108,6 +121,7 @@ func (s *Store) UpdatePage(slug string, p *Page) error {
 	if n == 0 {
 		return fmt.Errorf("update page %s: no rows affected", slug)
 	}
+	s.firePageWrite("update", p.Slug)
 	return nil
 }
 
@@ -118,6 +132,7 @@ func (s *Store) DeletePage(slug string) error {
 	if err != nil {
 		return fmt.Errorf("soft delete page %s: %w", slug, err)
 	}
+	s.firePageWrite("delete", slug)
 	return nil
 }
 
@@ -132,6 +147,7 @@ func (s *Store) RestorePage(slug string) error {
 	if err != nil {
 		return fmt.Errorf("restore page %s: %w", slug, err)
 	}
+	s.firePageWrite("restore", slug)
 	return nil
 }
 
@@ -141,5 +157,6 @@ func (s *Store) PurgePage(slug string) error {
 	if err != nil {
 		return fmt.Errorf("purge page %s: %w", slug, err)
 	}
+	s.firePageWrite("purge", slug)
 	return nil
 }

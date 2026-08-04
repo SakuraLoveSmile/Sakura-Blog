@@ -157,8 +157,10 @@ func main() {
 	}
 	ogGen := og.New(ogFontPath, ogCacheDir)
 
-	// store 写路径统一回调：搜索索引同步 + OG 缓存失效。
+	// store 写路径统一回调：搜索索引同步 + OG 缓存失效（文章/页面/瞬间三类）。
 	st.SetPostWriteHook(newPostWriteHook(st, searchIdx, ogGen))
+	st.SetPageWriteHook(newPageWriteHook(st, searchIdx))
+	st.SetMomentWriteHook(newMomentWriteHook(st, searchIdx))
 
 	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
 	siteConfigPath := filepath.Join(app.Root, "backend", "config", "site.yml")

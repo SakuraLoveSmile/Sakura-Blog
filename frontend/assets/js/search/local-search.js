@@ -8,6 +8,9 @@ var searchCache = null;
 var searchCacheKey = 'search_cache_v1';
 var serverSearchOK = true; // /api/search 失败一次后本会话内不再重试，直接走本地降级
 
+// 搜索结果的类型展示名（对齐 /api/search 的 type 字段：post/page/moment）。
+var SEARCH_TYPE_LABELS = { post: '文章', page: '页面', moment: '瞬间' };
+
 var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
   var $input = document.getElementById(searchId);
   if (!$input || $input._searchInitialized === true) return;
@@ -36,38 +39,106 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
     var $resultContent = document.getElementById(contentId);
     var $wrapper = document.getElementById(wrapperId);
     var searchSeq = 0; // 丢弃过时响应，避免乱序覆盖
+    var activeType = ''; // 结果类型 tab：''=全部 / post / page / moment
+    var lastItems = []; // 最近一次服务端响应条目，tab 切换时客户端过滤（无需重新请求）
 
-    // 服务端搜索结果渲染：DOM 结构/类名与本地匹配完全一致（snippet 已含 .search-keyword 高亮）
+    // 单条搜索结果 li 构建（服务端/本地共用 DOM 结构：span.title + p.snippet）
+    function resultItem(item) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = item.path;
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'search-result-title';
+      titleSpan.textContent = item.title?.trim() || 'Untitled';
+      a.appendChild(titleSpan);
+      if (item.snippet) {
+        const para = document.createElement('p');
+        para.className = 'search-result-content';
+        para.innerHTML = item.snippet;
+        a.appendChild(para);
+      }
+      li.appendChild(a);
+      return li;
+    }
+
+    // 服务端搜索结果渲染：类型 tab 栏 + 结果列表（snippet 已含 .search-keyword 高亮）。
+    // 全部视图按类型分组（组标题 文章/页面/瞬间），单类型视图平铺；tab 点击走客户端过滤。
     // 降级规则：FTS 结果非空但全部被 data-filter 滤掉（当前项目无命中）时，
     // 回退本地搜索（/search.json 索引已含 wiki 文档，同样受 filter 限定）。
     function renderServerResults(items, value) {
+      lastItems = items;
+      renderTabsAndList(items, value);
+    }
+
+    function renderTabsAndList(items, value) {
       $resultContent.innerHTML = '';
       if (!items.length) return;
+
+      // 类型 tab：全部/文章/页面/瞬间，点击切换 activeType 后客户端过滤重渲染
+      const tabs = document.createElement('div');
+      tabs.className = 'search-result-tabs';
+      ['', 'post', 'page', 'moment'].forEach(function(type) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = type === '' ? '全部' : (SEARCH_TYPE_LABELS[type] || type);
+        if (type === activeType) btn.classList.add('active');
+        btn.addEventListener('click', function() {
+          if (activeType === type) return;
+          activeType = type;
+          renderTabsAndList(lastItems, value);
+        });
+        tabs.appendChild(btn);
+      });
+      $resultContent.appendChild(tabs);
+
       const ul = document.createElement('ul');
       ul.className = 'search-result-list';
-      items.forEach(function(item) {
-        if (filter && !item.path.includes(filter)) return;
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = item.path;
-        const titleSpan = document.createElement('span');
-        titleSpan.className = 'search-result-title';
-        titleSpan.textContent = item.title?.trim() || 'Untitled';
-        a.appendChild(titleSpan);
-        if (item.snippet) {
-          const para = document.createElement('p');
-          para.className = 'search-result-content';
-          para.innerHTML = item.snippet;
-          a.appendChild(para);
-        }
-        li.appendChild(a);
-        ul.appendChild(li);
+      const visible = items.filter(function(item) {
+        if (filter && !item.path.includes(filter)) return false;
+        return !activeType || item.type === activeType;
       });
+      if (activeType) {
+        // 单类型视图：平铺，保持服务端排序
+        visible.forEach(function(item) { ul.appendChild(resultItem(item)); });
+      } else {
+        // 全部视图：按类型分组展示
+        ['post', 'page', 'moment'].forEach(function(type) {
+          const group = visible.filter(function(item) { return item.type === type; });
+          if (!group.length) return;
+          const li = document.createElement('li');
+          li.className = 'search-result-group-title';
+          li.textContent = SEARCH_TYPE_LABELS[type] || type;
+          ul.appendChild(li);
+          group.forEach(function(item) { ul.appendChild(resultItem(item)); });
+        });
+      }
       if (ul.children.length) {
         $resultContent.appendChild(ul);
       } else if (filter) {
         localSearch(value);
       }
+    }
+
+    // 服务端搜索请求（失败一次后本会话降级本地）
+    function serverSearch(value) {
+      if (!serverSearchOK) {
+        localSearch(value);
+        return;
+      }
+      var seq = ++searchSeq;
+      fetch('/api/search?q=' + encodeURIComponent(value) + '&limit=20')
+        .then(function(res) {
+          if (!res.ok) throw new Error('search api ' + res.status);
+          return res.json();
+        })
+        .then(function(json) {
+          if (seq !== searchSeq) return; // 过时响应丢弃
+          renderServerResults(json.items || [], value);
+        })
+        .catch(function() {
+          serverSearchOK = false; // 降级后本会话内不再请求服务端
+          localSearch(value);
+        });
     }
 
     // 本地全文匹配（原逻辑，作 /api/search 不可用时的降级路径）
@@ -160,25 +231,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         return;
       }
       $wrapper.setAttribute('searching', 'true');
-
-      if (serverSearchOK) {
-        var seq = ++searchSeq;
-        fetch('/api/search?q=' + encodeURIComponent(value) + '&limit=20')
-          .then(function(res) {
-            if (!res.ok) throw new Error('search api ' + res.status);
-            return res.json();
-          })
-          .then(function(json) {
-            if (seq !== searchSeq) return; // 过时响应丢弃
-            renderServerResults(json.items || [], value);
-          })
-          .catch(function() {
-            serverSearchOK = false; // 降级后本会话内不再请求服务端
-            localSearch(value);
-          });
-      } else {
-        localSearch(value);
-      }
+      serverSearch(value);
     });
   }
 

@@ -192,6 +192,10 @@ type Store struct {
 	// 写操作成功后同步调用；回调内部自行容错，不影响主流程。
 	postWriteHook func(op, slug string)
 
+	// pageWriteHook / momentWriteHook 页面/瞬间写路径回调（搜索索引同步用，同 postWriteHook 语义）。
+	pageWriteHook   func(op, slug string)
+	momentWriteHook func(op, slug string)
+
 	// 评论点赞 schema 懒迁移状态（逐 Store 实例，避免包级 Once 在多库实例下漏迁移）。
 	commentReactionsOnce sync.Once
 	commentReactionsErr  error

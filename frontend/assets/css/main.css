@@ -6933,6 +6933,34 @@ details.toc[open] >div.body section .header+.doc_tree {
   font-weight: bold;
   filter: grayscale(25%);
 }
+/* 服务端搜索结果类型 tab（全部/文章/页面/瞬间）与分组标题 */
+.search-wrapper #search-result .search-result-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 4px;
+}
+.search-wrapper #search-result .search-result-tabs button {
+  flex: 1;
+  padding: 4px 0;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-p2);
+  background: var(--bg-a20);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.search-wrapper #search-result .search-result-tabs button.active {
+  color: var(--theme);
+  background: var(--bg-a100);
+  font-weight: 700;
+}
+.search-wrapper #search-result li.search-result-group-title {
+  padding: 10px 4px 2px;
+  color: var(--text-p3);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
 .search-wrapper.noresult[searching='true'] .search-no-result {
   display: block;
   margin-bottom: 8px;

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/search"
 	"blog/internal/store"
 )
 
@@ -37,7 +38,8 @@ func searchItemsFromPosts(posts []*store.Post) []searchItem {
 
 // registerSearchRoutes 注册搜索域路由：/api/search（FTS5）与 /search.json（前端本地匹配索引）。
 func (s *webServer) registerSearchRoutes(r *gin.Engine) {
-	// 服务端全文搜索（Spec 25）：FTS5 bm25 排序 + snippet 高亮。
+	// 服务端全文搜索（Spec 25 + 搜索范围扩展）：FTS5 bm25 排序 + snippet 高亮，
+	// 覆盖文章/页面/瞬间三类（type 参数过滤，空串为全部）。
 	// 前端 local-search.js 优先走此端点，失败降级回 /search.json 本地匹配。
 	r.GET("/api/search", func(c *gin.Context) {
 		if s.searchIdx == nil {
@@ -45,20 +47,22 @@ func (s *webServer) registerSearchRoutes(r *gin.Engine) {
 			return
 		}
 		q := strings.TrimSpace(c.Query("q"))
+		docType := strings.TrimSpace(c.Query("type")) // post / page / moment，空 = 全部
 		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-		results, err := s.searchIdx.Search(q, limit)
+		results, err := s.searchIdx.Search(q, docType, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		type apiItem struct {
+			Type    string `json:"type"` // post / page / moment
 			Title   string `json:"title"`
 			Path    string `json:"path"`
 			Snippet string `json:"snippet"`
 		}
 		items := make([]apiItem, 0, len(results))
 		for _, res := range results {
-			items = append(items, apiItem{Title: res.Title, Path: "/post/" + res.Slug, Snippet: res.Snippet})
+			items = append(items, apiItem{Type: res.Type, Title: res.Title, Path: searchPath(res.Type, res.Slug), Snippet: res.Snippet})
 		}
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{"items": items})
@@ -98,4 +102,16 @@ func (s *webServer) registerSearchRoutes(r *gin.Engine) {
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, items)
 	})
+}
+
+// searchPath 搜索结果路径：post/page 按 slug 拼接，moment 无详情页指向 /moments 时间流。
+func searchPath(docType, slug string) string {
+	switch docType {
+	case search.TypePage:
+		return "/pages/" + slug
+	case search.TypeMoment:
+		return "/moments"
+	default:
+		return "/post/" + slug
+	}
 }

@@ -12,28 +12,29 @@ import (
 	"blog/internal/store"
 )
 
-// 管理端全局搜索（Spec 39）：GET /api/v1/search?q=，Console ⌘K 弹窗消费。
+// 管理端全局搜索（Spec 39）：GET /api/v1/search?q=&type=，Console ⌘K 弹窗消费。
 //
 // 与公开端点 /api/search 的区别：公开端点走 FTS5 索引，而索引只收录已发布
-// 文章（写路径 hook 会主动移除草稿/回收站/定时未到的条目），无法覆盖管理端
-// 「草稿与回收站也可搜」的需求；且页面（pages 表）不进 FTS 索引。因此管理端
-// 直接对 store 全量扫描做多词 AND 子串匹配（个人博客量级性能足够），匹配语义
-// 对齐公开端点：按空白拆词、词间 AND、CJK 天然子串命中。
+// 文章/页面与公开瞬间（写路径 hook 会主动移除草稿/回收站/定时未到的条目），无法覆盖管理端
+// 「草稿与回收站也可搜」的需求。因此管理端直接对 store 全量扫描做多词 AND 子串匹配
+// （个人博客量级性能足够），匹配语义对齐公开端点：按空白拆词、词间 AND、CJK 天然子串命中。
+// type 参数限定范围（post/page/moment，空 = 全部），与公开端点过滤语义一致。
 // 端点挂在鉴权中间件之后，受保护文章正文对已登录管理员可搜，不影响公开语义。
 
 // searchResultItem 单条管理端搜索结果。Snippet 为 HTML 片段（<mark> 高亮，其余已转义）。
 type searchResultItem struct {
 	ID      int64  `json:"id"`
-	Type    string `json:"type"` // post / page
+	Type    string `json:"type"` // post / page / moment
 	Slug    string `json:"slug"`
 	Title   string `json:"title"`
-	Status  string `json:"status"` // published / draft / trashed
+	Status  string `json:"status"` // published / draft / trashed；moment 为 public / private
 	Snippet string `json:"snippet"`
 }
 
-// adminSearch GET /api/v1/search?q=&limit= 全状态搜索文章+页面。
+// adminSearch GET /api/v1/search?q=&type=&limit= 全状态搜索文章+页面+瞬间。
 func (h *Handler) adminSearch(c *gin.Context) {
 	q := strings.TrimSpace(c.Query("q"))
+	docType := c.Query("type") // post / page / moment，空 = 全部
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if limit <= 0 || limit > 50 {
 		limit = 20
@@ -59,36 +60,64 @@ func (h *Handler) adminSearch(c *gin.Context) {
 		}
 	}
 
-	posts, err := h.store.List()
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	trashedPosts, err := h.store.ListTrashed()
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	for _, p := range append(posts, trashedPosts...) {
-		collect(searchResultItem{
-			ID: p.ID, Type: "post", Slug: p.Slug, Title: p.Title, Status: docStatus(p.Status, p.DeletedAt),
-		}, p.Title, plainContent(p.ContentHTML))
+	if docType == "" || docType == "post" {
+		posts, err := h.store.List()
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		trashedPosts, err := h.store.ListTrashed()
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		for _, p := range append(posts, trashedPosts...) {
+			collect(searchResultItem{
+				ID: p.ID, Type: "post", Slug: p.Slug, Title: p.Title, Status: docStatus(p.Status, p.DeletedAt),
+			}, p.Title, plainContent(p.ContentHTML))
+		}
 	}
 
-	pages, err := h.store.ListPages()
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
+	if docType == "" || docType == "page" {
+		pages, err := h.store.ListPages()
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		trashedPages, err := h.store.ListTrashedPages()
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		for _, p := range append(pages, trashedPages...) {
+			collect(searchResultItem{
+				ID: p.ID, Type: "page", Slug: p.Slug, Title: p.Title, Status: docStatus(p.Status, p.DeletedAt),
+			}, p.Title, plainContent(p.ContentHTML))
+		}
 	}
-	trashedPages, err := h.store.ListTrashedPages()
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	for _, p := range append(pages, trashedPages...) {
-		collect(searchResultItem{
-			ID: p.ID, Type: "page", Slug: p.Slug, Title: p.Title, Status: docStatus(p.Status, p.DeletedAt),
-		}, p.Title, plainContent(p.ContentHTML))
+
+	if docType == "" || docType == "moment" {
+		// 瞬间无标题/状态/回收站：标题用正文截断，状态取可见性（公开/私密均可搜，对齐全状态语义）
+		// 查询失败跳过（moments 表由瞬间模块 Ensure，未启用时不应让整个搜索 500）
+		for page := 1; ; page++ {
+			moments, err := h.store.ListMoments(page, 50)
+			if err != nil {
+				break
+			}
+			if len(moments) == 0 {
+				break
+			}
+			for _, m := range moments {
+				content := plainContent(m.ContentHTML)
+				collect(searchResultItem{
+					ID: m.ID, Type: "moment", Slug: store.MomentSlugKey(m.ID),
+					Title: truncateRunes(content, 40), Status: m.Visibility,
+				}, truncateRunes(content, 40), content)
+			}
+			if len(moments) < 50 {
+				break
+			}
+		}
 	}
 
 	items := append(titleHits, contentHits...)
@@ -100,6 +129,15 @@ func (h *Handler) adminSearch(c *gin.Context) {
 	}
 	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// truncateRunes 按 rune 截断字符串，超长加省略号（瞬间无标题，截断正文充当）。
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 // plainContent HTML 正文 → 纯文本：去标签后再解码实体（如 &#34;），

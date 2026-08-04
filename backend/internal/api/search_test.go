@@ -30,8 +30,13 @@ func newSearchTestRouter(t *testing.T, password string) (*gin.Engine, *store.Sto
 
 func doSearch(t *testing.T, r *gin.Engine, q string) []searchResultItem {
 	t.Helper()
+	return doSearchType(t, r, q, "")
+}
+
+func doSearchType(t *testing.T, r *gin.Engine, q, docType string) []searchResultItem {
+	t.Helper()
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/search?q="+q, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/search?q="+q+"&type="+docType, nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("search %q: status = %d, want 200", q, w.Code)
@@ -138,5 +143,61 @@ func TestAdminSearchEmpty(t *testing.T) {
 	}
 	if items := doSearch(t, r, ""); len(items) != 0 {
 		t.Errorf("blank query should return empty items, got %+v", items)
+	}
+}
+
+// TestAdminSearchTypeAndMoments type 参数过滤正确；瞬间可搜（公开/私密均可，状态取可见性）。
+func TestAdminSearchTypeAndMoments(t *testing.T) {
+	r, st := newSearchTestRouter(t, "")
+	if err := st.EnsureMomentsTable(); err != nil {
+		t.Fatalf("ensure moments table: %v", err)
+	}
+	if _, err := st.Create(&store.Post{Slug: "p1", Title: "Go 并发实战", ContentMD: "x", ContentHTML: "<p>goroutine 详解</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := st.CreatePage(&store.Page{Slug: "about", Title: "关于 Go 博客", ContentHTML: "<p>站点介绍</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatalf("create page: %v", err)
+	}
+	if _, err := st.CreateMoment(&store.Moment{ContentHTML: "<p>Go 瞬间感悟</p>", Visibility: store.MomentVisibilityPublic}); err != nil {
+		t.Fatalf("create moment: %v", err)
+	}
+	if _, err := st.CreateMoment(&store.Moment{ContentHTML: "<p>Go 私密瞬间</p>", Visibility: store.MomentVisibilityPrivate}); err != nil {
+		t.Fatalf("create private moment: %v", err)
+	}
+
+	// 空 type：三类全出（含私密瞬间）
+	items := doSearch(t, r, "Go")
+	if len(items) != 4 {
+		t.Fatalf("search all want 4, got %d: %+v", len(items), items)
+	}
+	// 各类型过滤：只回对应类型
+	for _, tc := range []struct {
+		docType string
+		want    int
+	}{
+		{"post", 1},
+		{"page", 1},
+		{"moment", 2},
+	} {
+		items := doSearchType(t, r, "Go", tc.docType)
+		if len(items) != tc.want {
+			t.Errorf("type=%s want %d, got %d", tc.docType, tc.want, len(items))
+			continue
+		}
+		for _, it := range items {
+			if it.Type != tc.docType {
+				t.Errorf("type=%s got item type=%s", tc.docType, it.Type)
+			}
+		}
+	}
+	// 瞬间条目标题截断正文、状态为可见性、slug 为 moment-<id> 伪 slug
+	moments := doSearchType(t, r, "Go", "moment")
+	for _, it := range moments {
+		if it.Status != store.MomentVisibilityPublic && it.Status != store.MomentVisibilityPrivate {
+			t.Errorf("moment status should be visibility, got %q", it.Status)
+		}
+		if !strings.HasPrefix(it.Slug, "moment-") || it.Title == "" {
+			t.Errorf("moment slug/title mismatch: %+v", it)
+		}
 	}
 }
