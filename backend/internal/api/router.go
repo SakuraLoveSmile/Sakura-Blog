@@ -52,6 +52,10 @@ type Handler struct {
 		n int
 		t time.Time
 	}
+
+	// PAT 限流（每令牌 60 次/分钟，与登录限流同模式）
+	patMu   sync.Mutex
+	patHits map[int64]patWindow
 }
 
 // Config API Handler 初始化参数。
@@ -87,6 +91,7 @@ func New(cfg Config) *Handler {
 			n int
 			t time.Time
 		}),
+		patHits:   make(map[int64]patWindow),
 	}
 }
 
@@ -119,6 +124,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"wikidocs", st.EnsureWikidocsTable},        // wiki 文档（Spec 35）
 		{"notebooks", st.EnsureNotebooksTable},      // 笔记本（Spec 35b）
 		{"notes", st.EnsureNotesTable},              // 笔记（Spec 35b）
+		{"pat_tokens", st.EnsurePATTable},           // 个人访问令牌（PAT，只存 sha256 哈希）
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -289,6 +295,11 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)
 
+		// 个人访问令牌管理（PAT）：创建时明文仅返回一次，列表脱敏，DELETE 即吊销
+		authed.GET("/tokens", h.listTokens)
+		authed.POST("/tokens", h.createToken)
+		authed.DELETE("/tokens/:id", h.deleteToken)
+
 		// 用户资料（Spec 45）
 		authed.GET("/profile", h.handleGetProfile)
 		authed.PUT("/profile", h.handleUpdateProfile)
@@ -351,6 +362,18 @@ func (h *Handler) Register(r *gin.Engine) {
 				m.RegisterRoutes(grp, deps)
 			}
 		}
+	}
+
+	// 公开只读 Content API（PAT 令牌认证，与 cookie 主链路完全分离）：
+	// 无论站点密码是否配置都必须校验 Bearer，无任何写端点。
+	pub := r.Group("/api/public/v1", h.patAuth())
+	{
+		pub.GET("/posts", h.pubListPosts)
+		pub.GET("/posts/:slug", h.pubGetPost)
+		pub.GET("/pages", h.pubListPages)
+		pub.GET("/categories", h.pubListCategories)
+		pub.GET("/tags", h.pubListTags)
+		pub.GET("/comments", h.pubListComments)
 	}
 }
 
