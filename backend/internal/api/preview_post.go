@@ -41,13 +41,13 @@ var (
 func (h *Handler) createPostPreview(c *gin.Context) {
 	var p PostPreview
 	if err := c.ShouldBindJSON(&p); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	p.CreatedAt = time.Now()
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成预览失败"})
+		Fail(c, http.StatusInternalServerError, "生成预览失败")
 		return
 	}
 	token := hex.EncodeToString(b)

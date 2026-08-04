@@ -13,12 +13,12 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 		Markdown string `json:"markdown"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	html, err := h.posts.Render(req.Markdown)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "渲染失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"html": html})

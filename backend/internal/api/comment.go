@@ -63,12 +63,12 @@ func (h *Handler) listComments(c *gin.Context) {
 
 	total, err := h.store.CountComments(filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	comments, err := h.store.ListComments(filter, page, size)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -97,11 +97,11 @@ func (h *Handler) listComments(c *gin.Context) {
 func (h *Handler) approveComment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的评论 ID"})
+		Fail(c, http.StatusBadRequest, "无效的评论 ID")
 		return
 	}
 	if err := h.store.UpdateCommentStatus(id, store.CommentApproved); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -111,11 +111,11 @@ func (h *Handler) approveComment(c *gin.Context) {
 func (h *Handler) deleteComment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的评论 ID"})
+		Fail(c, http.StatusBadRequest, "无效的评论 ID")
 		return
 	}
 	if err := h.store.DeleteCommentCascade(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -134,15 +134,15 @@ func (h *Handler) batchComments(c *gin.Context) {
 		Action string  `json:"action"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if len(req.IDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ids 必填"})
+		Fail(c, http.StatusBadRequest, "ids 必填")
 		return
 	}
 	if len(req.IDs) > maxBatchCommentIDs {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "单次最多操作 100 条"})
+		Fail(c, http.StatusBadRequest, "单次最多操作 100 条")
 		return
 	}
 
@@ -154,11 +154,11 @@ func (h *Handler) batchComments(c *gin.Context) {
 	case "delete":
 		succeeded, err = h.store.DeleteComments(req.IDs)
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "action 仅支持 approve / delete"})
+		Fail(c, http.StatusBadRequest, "action 仅支持 approve / delete")
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"succeeded": succeeded, "failed": len(req.IDs) - succeeded})
@@ -171,17 +171,17 @@ func (h *Handler) replyComment(c *gin.Context) {
 		Content  string `json:"content"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if req.ParentID == 0 || strings.TrimSpace(req.Content) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "parent_id 与 content 必填"})
+		Fail(c, http.StatusBadRequest, "parent_id 与 content 必填")
 		return
 	}
 
 	parent, err := h.store.GetComment(req.ParentID)
 	if err != nil || parent == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "被回复的评论不存在"})
+		Fail(c, http.StatusBadRequest, "被回复的评论不存在")
 		return
 	}
 
@@ -193,7 +193,7 @@ func (h *Handler) replyComment(c *gin.Context) {
 
 	html, err := comment.Render(req.Content)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "渲染失败: " + err.Error())
 		return
 	}
 
@@ -215,7 +215,7 @@ func (h *Handler) replyComment(c *gin.Context) {
 		UA:          c.Request.UserAgent(),
 	}
 	if _, err := h.store.CreateComment(cm); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "回复失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "回复失败: " + err.Error())
 		return
 	}
 

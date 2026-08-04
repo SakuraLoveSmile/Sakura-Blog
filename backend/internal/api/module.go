@@ -22,24 +22,24 @@ func (h *Handler) listModules(c *gin.Context) {
 // toggleModule PUT /api/v1/modules/:id：启用/禁用某模块，持久化并即时生效。
 func (h *Handler) toggleModule(c *gin.Context) {
 	if h.modules == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "模块系统未初始化"})
+		Fail(c, http.StatusServiceUnavailable, "模块系统未初始化")
 		return
 	}
 	id := c.Param("id")
 	if !h.modules.Has(id) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "模块不存在"})
+		Fail(c, http.StatusNotFound, "模块不存在")
 		return
 	}
 	var body struct {
 		Enabled bool `json:"enabled"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求体格式错误"})
+		Fail(c, http.StatusBadRequest, "请求体格式错误")
 		return
 	}
 	if err := h.modules.SetEnabled(id, body.Enabled, module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}); err != nil {
 		// 依赖缺失/未启用/被依赖等拓扑问题属于请求错误（400）
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "enabled": body.Enabled})

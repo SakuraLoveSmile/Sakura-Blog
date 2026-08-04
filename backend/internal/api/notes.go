@@ -23,15 +23,15 @@ func (h *Handler) putNotesContent(c *gin.Context) {
 		Content string `json:"content"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if err := os.MkdirAll(filepath.Dir(h.notesPath), 0o755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := os.WriteFile(h.notesPath, []byte(req.Content), 0o644); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

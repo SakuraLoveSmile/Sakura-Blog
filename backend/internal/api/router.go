@@ -370,7 +370,7 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 				return
 			}
 		}
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "未登录或登录已过期"})
+		AbortFail(c, http.StatusUnauthorized, "未登录或登录已过期")
 	}
 }
 

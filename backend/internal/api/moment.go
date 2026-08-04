@@ -49,12 +49,12 @@ func (h *Handler) listMoments(c *gin.Context) {
 
 	total, err := h.store.CountMoments()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	moments, err := h.store.ListMoments(page, size)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -79,18 +79,18 @@ func (h *Handler) createMoment(c *gin.Context) {
 		Visibility string   `json:"visibility"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	// 内容或图片至少其一（纯图瞬间允许）
 	if strings.TrimSpace(req.ContentMD) == "" && store.EncodeMomentImages(req.Images) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
+		Fail(c, http.StatusBadRequest, "内容不能为空")
 		return
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *Handler) createMoment(c *gin.Context) {
 		Visibility:  req.Visibility,
 	}
 	if _, err := h.store.CreateMoment(m); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "发布失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, toMomentJSON(m))
@@ -111,7 +111,7 @@ func (h *Handler) createMoment(c *gin.Context) {
 func (h *Handler) updateMoment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 ID"})
+		Fail(c, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	var req struct {
@@ -120,25 +120,25 @@ func (h *Handler) updateMoment(c *gin.Context) {
 		Visibility string   `json:"visibility"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if strings.TrimSpace(req.ContentMD) == "" && store.EncodeMomentImages(req.Images) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
+		Fail(c, http.StatusBadRequest, "内容不能为空")
 		return
 	}
 	existing, err := h.store.GetMoment(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "瞬间不存在"})
+		Fail(c, http.StatusNotFound, "瞬间不存在")
 		return
 	}
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 	existing.ContentMD = req.ContentMD
@@ -146,7 +146,7 @@ func (h *Handler) updateMoment(c *gin.Context) {
 	existing.Images = store.EncodeMomentImages(req.Images)
 	existing.Visibility = req.Visibility
 	if err := h.store.UpdateMoment(existing); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "保存失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, toMomentJSON(existing))
@@ -156,11 +156,11 @@ func (h *Handler) updateMoment(c *gin.Context) {
 func (h *Handler) deleteMoment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 ID"})
+		Fail(c, http.StatusBadRequest, "无效的 ID")
 		return
 	}
 	if err := h.store.DeleteMoment(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

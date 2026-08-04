@@ -14,7 +14,7 @@ import (
 func (h *Handler) parseIDParam(c *gin.Context) (int64, bool) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 ID"})
+		Fail(c, http.StatusBadRequest, "无效的 ID")
 		return 0, false
 	}
 	return id, true
@@ -24,7 +24,7 @@ func (h *Handler) parseIDParam(c *gin.Context) (int64, bool) {
 func (h *Handler) listNotebooks(c *gin.Context) {
 	notebooks, err := h.store.ListNotebooks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if notebooks == nil {
@@ -41,11 +41,11 @@ func (h *Handler) getNotebook(c *gin.Context) {
 	}
 	nb, err := h.store.GetNotebook(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if nb == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记本不存在"})
+		Fail(c, http.StatusNotFound, "笔记本不存在")
 		return
 	}
 	c.JSON(http.StatusOK, nb)
@@ -60,16 +60,16 @@ func (h *Handler) createNotebook(c *gin.Context) {
 		Order       int    `json:"order"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name 不能为空"})
+		Fail(c, http.StatusBadRequest, "name 不能为空")
 		return
 	}
 	if existing, _ := h.store.GetNotebookByName(name); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "name 已存在"})
+		Fail(c, http.StatusConflict, "name 已存在")
 		return
 	}
 
@@ -80,7 +80,7 @@ func (h *Handler) createNotebook(c *gin.Context) {
 		Order:       req.Order,
 	}
 	if err := h.store.CreateNotebook(nb); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": nb.ID})
@@ -95,11 +95,11 @@ func (h *Handler) updateNotebook(c *gin.Context) {
 	}
 	existing, err := h.store.GetNotebook(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记本不存在"})
+		Fail(c, http.StatusNotFound, "笔记本不存在")
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *Handler) updateNotebook(c *gin.Context) {
 		Order       *int    `json:"order"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -124,12 +124,12 @@ func (h *Handler) updateNotebook(c *gin.Context) {
 	if req.Name != nil {
 		newName := strings.TrimSpace(*req.Name)
 		if newName == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name 不能为空"})
+			Fail(c, http.StatusBadRequest, "name 不能为空")
 			return
 		}
 		if newName != existing.Name {
 			if other, _ := h.store.GetNotebookByName(newName); other != nil {
-				c.JSON(http.StatusConflict, gin.H{"error": "name 已被占用"})
+				Fail(c, http.StatusConflict, "name 已被占用")
 				return
 			}
 		}
@@ -146,7 +146,7 @@ func (h *Handler) updateNotebook(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateNotebook(nb); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -160,15 +160,15 @@ func (h *Handler) deleteNotebook(c *gin.Context) {
 	}
 	nb, err := h.store.GetNotebook(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if nb == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记本不存在"})
+		Fail(c, http.StatusNotFound, "笔记本不存在")
 		return
 	}
 	if err := h.store.DeleteNotebook(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -183,11 +183,11 @@ func (h *Handler) listNotes(c *gin.Context) {
 	}
 	nb, err := h.store.GetNotebook(notebookID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if nb == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记本不存在"})
+		Fail(c, http.StatusNotFound, "笔记本不存在")
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *Handler) listNotes(c *gin.Context) {
 
 	notes, total, err := h.store.ListNotesByNotebook(notebookID, perPage, (page-1)*perPage)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if notes == nil {
@@ -224,11 +224,11 @@ func (h *Handler) getNote(c *gin.Context) {
 	}
 	note, err := h.store.GetNote(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if note == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记不存在"})
+		Fail(c, http.StatusNotFound, "笔记不存在")
 		return
 	}
 	c.JSON(http.StatusOK, note)
@@ -242,11 +242,11 @@ func (h *Handler) createNote(c *gin.Context) {
 	}
 	nb, err := h.store.GetNotebook(notebookID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if nb == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记本不存在"})
+		Fail(c, http.StatusNotFound, "笔记本不存在")
 		return
 	}
 
@@ -256,17 +256,17 @@ func (h *Handler) createNote(c *gin.Context) {
 		Tags    string `json:"tags"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if strings.TrimSpace(req.Title) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "title 不能为空"})
+		Fail(c, http.StatusBadRequest, "title 不能为空")
 		return
 	}
 
 	contentHTML, err := h.posts.Render(req.Content)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -278,7 +278,7 @@ func (h *Handler) createNote(c *gin.Context) {
 		Tags:        req.Tags,
 	}
 	if err := h.store.CreateNote(note); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": note.ID})
@@ -293,11 +293,11 @@ func (h *Handler) updateNote(c *gin.Context) {
 	}
 	existing, err := h.store.GetNote(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记不存在"})
+		Fail(c, http.StatusNotFound, "笔记不存在")
 		return
 	}
 
@@ -308,7 +308,7 @@ func (h *Handler) updateNote(c *gin.Context) {
 		Tags       *string `json:"tags"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -322,16 +322,16 @@ func (h *Handler) updateNote(c *gin.Context) {
 	}
 	if req.NotebookID != nil {
 		if *req.NotebookID <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 notebook_id"})
+			Fail(c, http.StatusBadRequest, "无效的 notebook_id")
 			return
 		}
 		target, err := h.store.GetNotebook(*req.NotebookID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		if target == nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "目标笔记本不存在"})
+			Fail(c, http.StatusNotFound, "目标笔记本不存在")
 			return
 		}
 		note.NotebookID = *req.NotebookID
@@ -339,7 +339,7 @@ func (h *Handler) updateNote(c *gin.Context) {
 	if req.Title != nil {
 		newTitle := strings.TrimSpace(*req.Title)
 		if newTitle == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "title 不能为空"})
+			Fail(c, http.StatusBadRequest, "title 不能为空")
 			return
 		}
 		note.Title = newTitle
@@ -348,7 +348,7 @@ func (h *Handler) updateNote(c *gin.Context) {
 		if *req.Content != existing.Content {
 			contentHTML, err := h.posts.Render(*req.Content)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+				Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 				return
 			}
 			note.ContentHTML = contentHTML
@@ -360,7 +360,7 @@ func (h *Handler) updateNote(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateNote(note); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -374,15 +374,15 @@ func (h *Handler) deleteNote(c *gin.Context) {
 	}
 	note, err := h.store.GetNote(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if note == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "笔记不存在"})
+		Fail(c, http.StatusNotFound, "笔记不存在")
 		return
 	}
 	if err := h.store.DeleteNote(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -392,7 +392,7 @@ func (h *Handler) deleteNote(c *gin.Context) {
 func (h *Handler) noteTags(c *gin.Context) {
 	tags, err := h.store.AllNoteTags()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if tags == nil {

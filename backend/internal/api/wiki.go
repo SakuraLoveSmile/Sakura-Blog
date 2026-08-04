@@ -14,12 +14,12 @@ func (h *Handler) listWikidocs(c *gin.Context) {
 	projectID := c.Param("project")
 	docs, err := h.store.ListWikidocs(projectID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	tree, err := h.store.BuildDocTree(projectID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if docs == nil {
@@ -37,11 +37,11 @@ func (h *Handler) getWikidoc(c *gin.Context) {
 	slug := c.Param("slug")
 	doc, err := h.store.GetWikidocBySlug(projectID, slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		Fail(c, http.StatusNotFound, "文档不存在")
 		return
 	}
 	c.JSON(http.StatusOK, doc)
@@ -51,7 +51,7 @@ func (h *Handler) getWikidoc(c *gin.Context) {
 func (h *Handler) createWikidoc(c *gin.Context) {
 	projectID := c.Param("project")
 	if strings.TrimSpace(projectID) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "project 不能为空"})
+		Fail(c, http.StatusBadRequest, "project 不能为空")
 		return
 	}
 
@@ -64,17 +64,17 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 		Status    string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	slug := strings.TrimSpace(req.Slug)
 	if slug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slug 不能为空"})
+		Fail(c, http.StatusBadRequest, "slug 不能为空")
 		return
 	}
 
 	if existing, _ := h.store.GetWikidocBySlug(projectID, slug); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在"})
+		Fail(c, http.StatusConflict, "slug 已存在")
 		return
 	}
 
@@ -82,18 +82,18 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 	if req.Parent != 0 {
 		parent, err := h.store.GetWikidocByID(req.Parent)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		if parent == nil || parent.ProjectID != projectID {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "父文档不存在或不属于当前项目"})
+			Fail(c, http.StatusBadRequest, "父文档不存在或不属于当前项目")
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 		Status:      status,
 	}
 	if err := h.store.CreateWikidoc(doc); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": doc.ID})
@@ -125,11 +125,11 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 	slug := c.Param("slug")
 	existing, err := h.store.GetWikidocBySlug(projectID, slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		Fail(c, http.StatusNotFound, "文档不存在")
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 		Status    string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetWikidocBySlug(projectID, newSlug); other != nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
+			Fail(c, http.StatusConflict, "slug 已被占用")
 			return
 		}
 	}
@@ -160,28 +160,28 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 	// parent 校验：不能是自身，父文档必须存在且属于当前项目
 	if req.Parent != 0 {
 		if req.Parent == existing.ID {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "不能将文档设为自身的子文档"})
+			Fail(c, http.StatusBadRequest, "不能将文档设为自身的子文档")
 			return
 		}
 		parent, err := h.store.GetWikidocByID(req.Parent)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		if parent == nil || parent.ProjectID != projectID {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "父文档不存在或不属于当前项目"})
+			Fail(c, http.StatusBadRequest, "父文档不存在或不属于当前项目")
 			return
 		}
 		// 防循环：沿目标父文档的 parent 链向上遍历，链上出现当前文档即构成循环引用
 		cur := parent
 		for cur != nil && cur.Parent != 0 {
 			if cur.Parent == existing.ID {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "不能将文档设为自身后代的子文档"})
+				Fail(c, http.StatusBadRequest, "不能将文档设为自身后代的子文档")
 				return
 			}
 			next, err := h.store.GetWikidocByID(cur.Parent)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				Fail(c, http.StatusInternalServerError, err.Error())
 				return
 			}
 			cur = next
@@ -190,7 +190,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -211,7 +211,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 		Status:      status,
 	}
 	if err := h.store.UpdateWikidoc(doc); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -223,15 +223,15 @@ func (h *Handler) deleteWikidoc(c *gin.Context) {
 	slug := c.Param("slug")
 	doc, err := h.store.GetWikidocBySlug(projectID, slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		Fail(c, http.StatusNotFound, "文档不存在")
 		return
 	}
 	if err := h.store.DeleteWikidoc(doc.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

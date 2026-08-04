@@ -23,32 +23,32 @@ const maxQuickActions = 8
 func (h *Handler) dashboardStats(c *gin.Context) {
 	postTotal, err := h.store.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	published, err := h.store.CountPublished()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	commentTotal, err := h.store.CountComments("")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	commentPending, err := h.store.CountComments(store.CommentPending)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	viewTotal, err := h.store.SumViews()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	attachmentTotal, err := h.store.CountAttachments("", "", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 func (h *Handler) dashboardRecentComments(c *gin.Context) {
 	recent, err := h.store.ListRecentComments(5)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	mirror := h.site.Comments.GravatarMirror
@@ -82,7 +82,7 @@ func (h *Handler) dashboardRecentComments(c *gin.Context) {
 func (h *Handler) quickActions(c *gin.Context) {
 	raw, err := h.store.GetSetting(quickActionsSection)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if raw == "" {
@@ -102,14 +102,14 @@ func (h *Handler) quickActions(c *gin.Context) {
 func (h *Handler) saveQuickActions(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
+		Fail(c, http.StatusBadRequest, "读取请求体失败")
 		return
 	}
 	var req struct {
 		Items []string `json:"items"`
 	}
 	if err := json.Unmarshal(body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 JSON"})
+		Fail(c, http.StatusBadRequest, "无效的 JSON")
 		return
 	}
 	// 去空 + 去重，限制最大数量
@@ -127,11 +127,11 @@ func (h *Handler) saveQuickActions(c *gin.Context) {
 	}
 	data, err := json.Marshal(items)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := h.store.PutSetting(quickActionsSection, string(data)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "items": items})

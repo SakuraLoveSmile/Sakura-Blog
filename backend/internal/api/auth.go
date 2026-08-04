@@ -80,7 +80,7 @@ func (h *Handler) login(c *gin.Context) {
 
 	// P0-4：登录限流——同 IP 短窗口内失败超阈返回 429。
 	if h.loginBlocked(ip) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "尝试次数过多，请稍后再试"})
+		Fail(c, http.StatusTooManyRequests, "尝试次数过多，请稍后再试")
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *Handler) login(c *gin.Context) {
 
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -104,19 +104,19 @@ func (h *Handler) login(c *gin.Context) {
 		user, err = h.store.GetUserByUsername(req.Username)
 		if err != nil || user == nil {
 			h.recordLoginFail(ip)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 			return
 		}
 		if err := store.CheckPassword(user.PasswordHash, req.Password); err != nil {
 			h.recordLoginFail(ip)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 			return
 		}
 	} else {
 		// 向后兼容：无 username 时回退旧 admin 密码验证
 		if subtle.ConstantTimeCompare([]byte(req.Password), []byte(password)) != 1 {
 			h.recordLoginFail(ip)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "密码错误"})
+			Fail(c, http.StatusUnauthorized, "密码错误")
 			return
 		}
 		// 旧密码匹配，检查 users 表是否有 admin 用户
@@ -167,19 +167,19 @@ func (h *Handler) handle2FA(c *gin.Context) {
 		Code  string `json:"code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
 	userID, ok := consume2FAToken(req.Token)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token 无效或已过期"})
+		Fail(c, http.StatusUnauthorized, "token 无效或已过期")
 		return
 	}
 
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil || !ValidateTOTP(user.TOTPSecret, req.Code) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "验证码错误"})
+		Fail(c, http.StatusUnauthorized, "验证码错误")
 		return
 	}
 
@@ -196,7 +196,7 @@ func (h *Handler) handleGetProfile(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -219,13 +219,13 @@ func (h *Handler) handleUpdateProfile(c *gin.Context) {
 		Avatar      string `json:"avatar"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *Handler) handleUpdateProfile(c *gin.Context) {
 	user.Email = req.Email
 	user.Avatar = req.Avatar
 	if err := h.store.UpdateUser(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -245,7 +245,7 @@ func (h *Handler) handle2FASetup(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
 
@@ -268,16 +268,16 @@ func (h *Handler) handle2FAConfirm(c *gin.Context) {
 		RecoveryCodes []string `json:"recovery_codes"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
 	if req.Secret == "" || !ValidateTOTP(req.Secret, req.Code) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误"})
+		Fail(c, http.StatusBadRequest, "验证码错误")
 		return
 	}
 	if err := h.store.UpdateTOTPSecret(userID, req.Secret, req.RecoveryCodes); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -288,7 +288,7 @@ func (h *Handler) handle2FADisable(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
 
@@ -296,16 +296,16 @@ func (h *Handler) handle2FADisable(c *gin.Context) {
 		Code string `json:"code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
 	if !ValidateTOTP(user.TOTPSecret, req.Code) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误"})
+		Fail(c, http.StatusBadRequest, "验证码错误")
 		return
 	}
 	if err := h.store.UpdateTOTPSecret(userID, "", nil); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -316,7 +316,7 @@ func (h *Handler) handle2FARecoveryCodes(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
 
@@ -353,7 +353,7 @@ func (h *Handler) changePassword(c *gin.Context) {
 		New     string `json:"new"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -361,31 +361,31 @@ func (h *Handler) changePassword(c *gin.Context) {
 		// 新流程：用户表
 		user, err := h.store.GetUserByID(userID)
 		if err != nil || user == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+			Fail(c, http.StatusUnauthorized, "用户不存在")
 			return
 		}
 		if err := store.CheckPassword(user.PasswordHash, req.Current); err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "当前密码错误"})
+			Fail(c, http.StatusUnauthorized, "当前密码错误")
 			return
 		}
 		newHash, err := store.HashPassword(req.New)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "密码处理失败"})
+			Fail(c, http.StatusInternalServerError, "密码处理失败")
 			return
 		}
 		newAuthSecret := store.GenerateAuthSecret()
 		if err := h.store.UpdatePassword(user.ID, newHash, newAuthSecret); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 	} else {
 		// 向后兼容：userID=0 表示旧版 admin，使用 settings 表
 		if subtle.ConstantTimeCompare([]byte(req.Current), []byte(h.site.Admin.Password)) != 1 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "当前密码错误"})
+			Fail(c, http.StatusUnauthorized, "当前密码错误")
 			return
 		}
 		if err := config.SaveAdminPassword(h.store, h.site, req.New); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}

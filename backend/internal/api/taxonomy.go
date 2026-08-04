@@ -33,7 +33,7 @@ func sortedTaxonomy(m map[string]int) []taxonomyItem {
 func (h *Handler) listCategories(c *gin.Context) {
 	m, err := h.store.CountByCategory()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	items := sortedTaxonomy(m)
@@ -44,7 +44,7 @@ func (h *Handler) listCategories(c *gin.Context) {
 func (h *Handler) listTags(c *gin.Context) {
 	m, err := h.store.CountByTag()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	items := sortedTaxonomy(m)
@@ -58,17 +58,17 @@ func (h *Handler) renameCategory(c *gin.Context) {
 		Name string `json:"name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	newName := strings.TrimSpace(req.Name)
 	if newName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "新分类名不能为空"})
+		Fail(c, http.StatusBadRequest, "新分类名不能为空")
 		return
 	}
 	n, err := h.store.RenameCategory(old, newName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "affected": n})
@@ -78,7 +78,7 @@ func (h *Handler) renameCategory(c *gin.Context) {
 func (h *Handler) deleteCategory(c *gin.Context) {
 	n, err := h.store.DeleteCategory(c.Param("name"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "affected": n})
@@ -91,17 +91,17 @@ func (h *Handler) renameTag(c *gin.Context) {
 		Name string `json:"name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	newName := strings.TrimSpace(req.Name)
 	if newName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "新标签名不能为空"})
+		Fail(c, http.StatusBadRequest, "新标签名不能为空")
 		return
 	}
 	n, err := h.store.RenameTag(old, newName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "affected": n})
@@ -111,7 +111,7 @@ func (h *Handler) renameTag(c *gin.Context) {
 func (h *Handler) deleteTag(c *gin.Context) {
 	n, err := h.store.DeleteTag(c.Param("name"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "affected": n})
@@ -124,17 +124,17 @@ func (h *Handler) mergeTags(c *gin.Context) {
 		Target  string   `json:"target"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	target := strings.TrimSpace(req.Target)
 	if target == "" || len(req.Sources) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "目标标签与来源不能为空"})
+		Fail(c, http.StatusBadRequest, "目标标签与来源不能为空")
 		return
 	}
 	n, err := h.store.MergeTags(req.Sources, target)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "affected": n})

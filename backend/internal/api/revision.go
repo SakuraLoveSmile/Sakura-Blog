@@ -44,7 +44,7 @@ func (h *Handler) listRevisions(c *gin.Context) {
 	slug := c.Param("slug")
 	metas, err := h.store.ListRevisions(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if metas == nil {
@@ -57,16 +57,16 @@ func (h *Handler) listRevisions(c *gin.Context) {
 func (h *Handler) getRevision(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的版本 id"})
+		Fail(c, http.StatusBadRequest, "无效的版本 id")
 		return
 	}
 	rev, err := h.store.GetRevision(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if rev == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "版本不存在"})
+		Fail(c, http.StatusNotFound, "版本不存在")
 		return
 	}
 	c.JSON(http.StatusOK, toRevisionJSON(rev))
@@ -77,32 +77,32 @@ func (h *Handler) getRevision(c *gin.Context) {
 func (h *Handler) restoreRevision(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的版本 id"})
+		Fail(c, http.StatusBadRequest, "无效的版本 id")
 		return
 	}
 	rev, err := h.store.GetRevision(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if rev == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "版本不存在"})
+		Fail(c, http.StatusNotFound, "版本不存在")
 		return
 	}
 
 	existing, err := h.store.GetBySlug(rev.PostSlug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在: " + rev.PostSlug})
+		Fail(c, http.StatusNotFound, "文章不存在: " + rev.PostSlug)
 		return
 	}
 
 	contentHTML, err := h.posts.Render(rev.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
 		return
 	}
 
@@ -126,7 +126,7 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, existing.Slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "回滚失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "回滚失败: " + err.Error())
 		return
 	}
 

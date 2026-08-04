@@ -15,7 +15,7 @@ func (h *Handler) statsTrend(c *gin.Context) {
 	days := parseDays(c, 7)
 	trend, err := h.store.TrendPVUV(days)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"days": days, "trend": trend})
@@ -30,7 +30,7 @@ func (h *Handler) statsPopular(c *gin.Context) {
 	}
 	popular, err := h.store.PopularByViews(days, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 仅统计文章 (/post/*)，过滤 /、/archives、/pages/* 等非文章路径
@@ -65,7 +65,7 @@ func (h *Handler) statsReferrers(c *gin.Context) {
 	}
 	refs, err := h.store.TopReferrers(days, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"days": days, "items": refs})
@@ -76,7 +76,7 @@ func (h *Handler) statsHourly(c *gin.Context) {
 	days := parseDays(c, 7)
 	hourly, err := h.store.HourlyVisits(days)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"days": days, "distribution": hourly})

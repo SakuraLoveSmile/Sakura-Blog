@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/api"
 	"blog/internal/config"
 	"blog/internal/store"
 )
@@ -62,6 +63,19 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App) {
 		log.Printf("panic recovered: %v", err)
 		if c.Writer.Written() {
 			c.Abort()
+			return
+		}
+		// API 路由 panic → 统一 JSON Problem（前台仍走 render500 页，现状不变）
+		if strings.HasPrefix(c.Request.URL.Path, "/api") {
+			msg := fmt.Sprint(err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, api.Problem{
+				Type:     "internal_error",
+				Title:    http.StatusText(http.StatusInternalServerError),
+				Status:   http.StatusInternalServerError,
+				Detail:   msg,
+				Instance: c.Request.URL.Path,
+				Error:    msg,
+			})
 			return
 		}
 		s.render500(c)

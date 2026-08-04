@@ -57,7 +57,7 @@ func (h *Handler) listShares(c *gin.Context) {
 
 	shares, err := h.store.ListShares()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -100,17 +100,17 @@ func (h *Handler) listPostShares(c *gin.Context) {
 	// 验证文章存在
 	p, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if p == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 
 	shares, err := h.store.ListSharesBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -130,11 +130,11 @@ func (h *Handler) createShare(c *gin.Context) {
 	// 验证文章存在
 	p, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if p == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *Handler) createShare(c *gin.Context) {
 		shareType = "published"
 	}
 	if shareType != "published" && shareType != "draft" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "share_type 只能是 published 或 draft"})
+		Fail(c, http.StatusBadRequest, "share_type 只能是 published 或 draft")
 		return
 	}
 
@@ -155,7 +155,7 @@ func (h *Handler) createShare(c *gin.Context) {
 	expiresAt := req.ExpiresAt
 	if expiresAt != "" {
 		if _, err := time.Parse(time.RFC3339, expiresAt); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "expires_at 必须是 RFC3339 格式"})
+			Fail(c, http.StatusBadRequest, "expires_at 必须是 RFC3339 格式")
 			return
 		}
 	}
@@ -166,7 +166,7 @@ func (h *Handler) createShare(c *gin.Context) {
 		ExpiresAt: expiresAt,
 	}
 	if _, err := h.store.CreateShare(sp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 
@@ -178,12 +178,12 @@ func (h *Handler) deleteShare(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 id"})
+		Fail(c, http.StatusBadRequest, "无效的 id")
 		return
 	}
 
 	if err := h.store.DeleteShare(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 

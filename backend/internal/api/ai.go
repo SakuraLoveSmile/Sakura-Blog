@@ -54,43 +54,43 @@ type aiResult struct {
 func (h *Handler) aiGenerate(c *gin.Context) {
 	var req aiGenerateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	if len(req.Fields) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "未指定生成字段"})
+		Fail(c, http.StatusBadRequest, "未指定生成字段")
 		return
 	}
 	for _, f := range req.Fields {
 		if !aiAllowedFields[f] {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("不支持的字段: %s", f)})
+			Fail(c, http.StatusBadRequest, fmt.Sprintf("不支持的字段: %s", f))
 			return
 		}
 	}
 	if strings.TrimSpace(req.Content) == "" && strings.TrimSpace(req.Title) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "正文与标题均为空，无法生成"})
+		Fail(c, http.StatusBadRequest, "正文与标题均为空，无法生成")
 		return
 	}
 
 	cfg, err := config.LoadAI(h.store)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if cfg.BaseURL == "" || cfg.Model == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "AI 未配置，请到 设置 → AI 中填写接口地址与模型"})
+		Fail(c, http.StatusBadRequest, "AI 未配置，请到 设置 → AI 中填写接口地址与模型")
 		return
 	}
 
 	system, user := buildAIPrompt(req)
 	content, err := callChatCompletion(cfg, system, user)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "AI 调用失败: " + err.Error()})
+		Fail(c, http.StatusBadGateway, "AI 调用失败: " + err.Error())
 		return
 	}
 	result, err := parseAIContent(content)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "AI 返回内容解析失败: " + err.Error()})
+		Fail(c, http.StatusBadGateway, "AI 返回内容解析失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -257,24 +257,24 @@ const (
 func (h *Handler) aiSummaryGuest(c *gin.Context) {
 	cfg, err := config.LoadAI(h.store)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if !cfg.UserAPIOn() {
-		c.JSON(http.StatusForbidden, gin.H{"error": "本站未开启读者自助生成"})
+		Fail(c, http.StatusForbidden, "本站未开启读者自助生成")
 		return
 	}
 	if !aiGuestRateAllow(c.ClientIP()) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请求过于频繁，请稍后再试"})
+		Fail(c, http.StatusTooManyRequests, "请求过于频繁，请稍后再试")
 		return
 	}
 	var req aiGuestReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	if strings.TrimSpace(req.Endpoint) == "" || strings.TrimSpace(req.Model) == "" || strings.TrimSpace(req.Content) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "接口地址、模型与正文均必填"})
+		Fail(c, http.StatusBadRequest, "接口地址、模型与正文均必填")
 		return
 	}
 	if err := validateGuestAIEndpoint(req.Endpoint); err != nil {
@@ -282,7 +282,7 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 		if errors.Is(err, errPrivateHost) {
 			status = http.StatusForbidden // SSRF 私网段：403
 		}
-		c.JSON(status, gin.H{"error": "接口地址不可用：" + err.Error()})
+		Fail(c, status, "接口地址不可用："+err.Error())
 		return
 	}
 	content := req.Content
@@ -294,7 +294,7 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 		"你是博客文章摘要助手。根据用户提供的文章正文生成一段导读摘要。只输出摘要文本本身，不要任何解释、标题或 Markdown 标记。",
 		"请为下面的文章生成 120-200 字的中文导读摘要，概括全文亮点与结论：\n"+content)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "AI 调用失败: " + err.Error()})
+		Fail(c, http.StatusBadGateway, "AI 调用失败: " + err.Error())
 		return
 	}
 	summary := strings.TrimSpace(text)

@@ -37,7 +37,7 @@ func (h *Handler) listPages(c *gin.Context) {
 	if c.Query("status") == "trashed" {
 		pages, err := h.store.ListTrashedPages()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		items := make([]*pageJSON, 0, len(pages))
@@ -50,7 +50,7 @@ func (h *Handler) listPages(c *gin.Context) {
 
 	pages, err := h.store.ListPages()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	items := make([]*pageJSON, 0, len(pages))
@@ -65,11 +65,11 @@ func (h *Handler) getPage(c *gin.Context) {
 	slug := c.Param("slug")
 	p, err := h.store.GetPageBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if p == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+		Fail(c, http.StatusNotFound, "页面不存在")
 		return
 	}
 	c.JSON(http.StatusOK, toPageJSON(p))
@@ -84,22 +84,22 @@ func (h *Handler) createPage(c *gin.Context) {
 		Status    string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if strings.TrimSpace(req.Slug) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slug 不能为空"})
+		Fail(c, http.StatusBadRequest, "slug 不能为空")
 		return
 	}
 
 	if existing, _ := h.store.GetPageBySlug(req.Slug); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在"})
+		Fail(c, http.StatusConflict, "slug 已存在")
 		return
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *Handler) createPage(c *gin.Context) {
 		Status:      status,
 	}
 	if _, err := h.store.CreatePage(p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, toPageJSON(p))
@@ -127,11 +127,11 @@ func (h *Handler) updatePage(c *gin.Context) {
 	slug := c.Param("slug")
 	existing, err := h.store.GetPageBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+		Fail(c, http.StatusNotFound, "页面不存在")
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Status    string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -152,14 +152,14 @@ func (h *Handler) updatePage(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetPageBySlug(newSlug); other != nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
+			Fail(c, http.StatusConflict, "slug 已被占用")
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败"})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Status:      status,
 	}
 	if err := h.store.UpdatePage(slug, p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, toPageJSON(p))
@@ -186,7 +186,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 func (h *Handler) deletePage(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.DeletePage(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -196,7 +196,7 @@ func (h *Handler) deletePage(c *gin.Context) {
 func (h *Handler) restorePage(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.RestorePage(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -206,7 +206,7 @@ func (h *Handler) restorePage(c *gin.Context) {
 func (h *Handler) purgePage(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.PurgePage(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

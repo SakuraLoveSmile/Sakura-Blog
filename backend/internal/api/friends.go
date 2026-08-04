@@ -53,7 +53,7 @@ func (r *linkJSON) toStore() *store.Link {
 func (h *Handler) listLinks(c *gin.Context) {
 	links, err := h.store.ListLinks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	items := make([]linkJSON, 0, len(links))
@@ -67,16 +67,16 @@ func (h *Handler) listLinks(c *gin.Context) {
 func (h *Handler) createLink(c *gin.Context) {
 	var req linkJSON
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if req.Name == "" || req.URL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "名称与链接不能为空"})
+		Fail(c, http.StatusBadRequest, "名称与链接不能为空")
 		return
 	}
 	l := req.toStore()
 	if _, err := h.store.CreateLink(l); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	h.afterLinksChanged()
@@ -87,30 +87,30 @@ func (h *Handler) createLink(c *gin.Context) {
 func (h *Handler) updateLink(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "非法 id"})
+		Fail(c, http.StatusBadRequest, "非法 id")
 		return
 	}
 	existing, err := h.store.GetLink(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "友链不存在"})
+		Fail(c, http.StatusNotFound, "友链不存在")
 		return
 	}
 	var req linkJSON
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	if req.Name == "" || req.URL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "名称与链接不能为空"})
+		Fail(c, http.StatusBadRequest, "名称与链接不能为空")
 		return
 	}
 	l := req.toStore()
 	if err := h.store.UpdateLink(id, l); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	l.ID = id
@@ -122,11 +122,11 @@ func (h *Handler) updateLink(c *gin.Context) {
 func (h *Handler) deleteLink(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "非法 id"})
+		Fail(c, http.StatusBadRequest, "非法 id")
 		return
 	}
 	if err := h.store.DeleteLink(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	h.afterLinksChanged()
@@ -149,7 +149,7 @@ var linkCheckHTTPClient = &http.Client{Timeout: 8 * time.Second}
 func (h *Handler) checkLinks(c *gin.Context) {
 	links, err := h.store.ListLinks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	type result struct {

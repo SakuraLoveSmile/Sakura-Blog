@@ -61,12 +61,12 @@ func (h *Handler) adminSearch(c *gin.Context) {
 
 	posts, err := h.store.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	trashedPosts, err := h.store.ListTrashed()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	for _, p := range append(posts, trashedPosts...) {
@@ -77,12 +77,12 @@ func (h *Handler) adminSearch(c *gin.Context) {
 
 	pages, err := h.store.ListPages()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	trashedPages, err := h.store.ListTrashedPages()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	for _, p := range append(pages, trashedPages...) {

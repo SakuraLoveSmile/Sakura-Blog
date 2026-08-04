@@ -16,7 +16,7 @@ import (
 func (h *Handler) getSettings(c *gin.Context) {
 	secs, err := config.LoadSectionsJSON(h.store)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 将 site.yml 中的 authors 段注入响应（非 settings 表，供 Console 文章编辑下拉使用）
@@ -60,7 +60,7 @@ func (h *Handler) updateSection(c *gin.Context) {
 	section := c.Param("section")
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
+		Fail(c, http.StatusBadRequest, "读取请求体失败")
 		return
 	}
 	// comments 段 password 保留逻辑
@@ -72,7 +72,7 @@ func (h *Handler) updateSection(c *gin.Context) {
 		raw = h.preserveAIKey(raw)
 	}
 	if err := config.SaveSection(h.store, h.site, section, raw); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	// friends 段影响友链聚合（每友链文章数/刷新间隔），保存后即时重建聚合缓存
@@ -146,11 +146,12 @@ func (h *Handler) preserveAIKey(raw []byte) []byte {
 // testNotify POST /api/v1/settings/notify/test：向 admin_email 发送测试邮件，验证 SMTP 配置。
 func (h *Handler) testNotify(c *gin.Context) {
 	if h.comments == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "评论系统未初始化"})
+		Fail(c, http.StatusBadRequest, "评论系统未初始化")
 		return
 	}
 	if err := h.comments.SendTestMail(); err != nil {
-		c.JSON(http.StatusOK, gin.H{"ok": false, "error": err.Error()})
+		// 业务失败仍 200（Console 依赖 ok/error 字段），附带统一 Problem 字段
+		c.JSON(http.StatusOK, gin.H{"ok": false, "error": err.Error(), "type": "mail_failed", "title": "发送失败", "status": http.StatusOK, "detail": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

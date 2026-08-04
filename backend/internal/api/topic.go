@@ -16,7 +16,7 @@ import (
 func (h *Handler) listTopics(c *gin.Context) {
 	topics, err := h.store.ListTopics()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	type topicWithCount struct {
@@ -27,7 +27,7 @@ func (h *Handler) listTopics(c *gin.Context) {
 	for _, t := range topics {
 		n, err := h.store.CountAllByTopicID(t.ID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		items = append(items, topicWithCount{Topic: t, PostCount: n})
@@ -47,16 +47,16 @@ func (h *Handler) createTopic(c *gin.Context) {
 		Sort        int    `json:"sort"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name 不能为空"})
+		Fail(c, http.StatusBadRequest, "name 不能为空")
 		return
 	}
 	if existing, _ := h.store.GetTopicByName(name); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "name 已存在"})
+		Fail(c, http.StatusConflict, "name 已存在")
 		return
 	}
 	slug := strings.TrimSpace(req.Slug)
@@ -64,7 +64,7 @@ func (h *Handler) createTopic(c *gin.Context) {
 		slug = generateSlug(name)
 	}
 	if existing, _ := h.store.GetTopicBySlug(slug); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
+		Fail(c, http.StatusConflict, "slug 已被占用")
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *Handler) createTopic(c *gin.Context) {
 		Sort:        req.Sort,
 	}
 	if err := h.store.CreateTopic(t); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": t.ID})
@@ -92,11 +92,11 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 	existing, err := h.store.GetTopicByID(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "专栏不存在"})
+		Fail(c, http.StatusNotFound, "专栏不存在")
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		Sort        *int    `json:"sort"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 
@@ -125,12 +125,12 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	if req.Name != nil {
 		newName := strings.TrimSpace(*req.Name)
 		if newName == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name 不能为空"})
+			Fail(c, http.StatusBadRequest, "name 不能为空")
 			return
 		}
 		if newName != existing.Name {
 			if other, _ := h.store.GetTopicByName(newName); other != nil {
-				c.JSON(http.StatusConflict, gin.H{"error": "name 已被占用"})
+				Fail(c, http.StatusConflict, "name 已被占用")
 				return
 			}
 		}
@@ -143,7 +143,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		}
 		if newSlug != existing.Slug {
 			if other, _ := h.store.GetTopicBySlug(newSlug); other != nil {
-				c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用"})
+				Fail(c, http.StatusConflict, "slug 已被占用")
 				return
 			}
 		}
@@ -163,7 +163,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateTopic(t); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -177,19 +177,19 @@ func (h *Handler) deleteTopic(c *gin.Context) {
 	}
 	t, err := h.store.GetTopicByID(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if t == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "专栏不存在"})
+		Fail(c, http.StatusNotFound, "专栏不存在")
 		return
 	}
 	if err := h.store.DeleteTopic(id); err != nil {
 		if err == store.ErrTopicInUse {
-			c.JSON(http.StatusForbidden, gin.H{"error": "专栏下仍有文章，请先解除关联"})
+			Fail(c, http.StatusForbidden, "专栏下仍有文章，请先解除关联")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

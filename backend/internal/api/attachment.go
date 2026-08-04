@@ -72,12 +72,12 @@ func (h *Handler) listAttachments(c *gin.Context) {
 
 	total, err := h.store.CountAttachments(keyword, kind, groupID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	attachments, err := h.store.ListAttachments(page, size, keyword, kind, groupID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -98,27 +98,27 @@ func (h *Handler) listAttachments(c *gin.Context) {
 func (h *Handler) uploadAttachment(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "未选择文件"})
+		Fail(c, http.StatusBadRequest, "未选择文件")
 		return
 	}
 	defer file.Close()
 
 	if header.Size > h.maxUpload {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("文件超过 %d MB 限制", h.maxUpload>>20)})
+		Fail(c, http.StatusBadRequest, fmt.Sprintf("文件超过 %d MB 限制", h.maxUpload>>20))
 		return
 	}
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	mime, ok := allowedExtMIME[ext]
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的文件类型: " + ext})
+		Fail(c, http.StatusBadRequest, "不支持的文件类型: " + ext)
 		return
 	}
 
 	// 读取全部数据用于图像优化
 	srcData, err := io.ReadAll(file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取文件失败"})
+		Fail(c, http.StatusInternalServerError, "读取文件失败")
 		return
 	}
 
@@ -157,13 +157,13 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 	absPath := filepath.Join(h.uploadDir, relPath)
 
 	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建目录失败"})
+		Fail(c, http.StatusInternalServerError, "创建目录失败")
 		return
 	}
 
 	// 写入主图
 	if err := os.WriteFile(absPath, mainData, 0o644); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "写入文件失败"})
+		Fail(c, http.StatusInternalServerError, "写入文件失败")
 		return
 	}
 
@@ -198,7 +198,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		if thumbPath != "" {
 			os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(thumbPath)))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存记录失败"})
+		Fail(c, http.StatusInternalServerError, "保存记录失败")
 		return
 	}
 
@@ -209,18 +209,18 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 func (h *Handler) deleteAttachment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的附件 ID"})
+		Fail(c, http.StatusBadRequest, "无效的附件 ID")
 		return
 	}
 
 	// 先查记录获取文件路径
 	att, err := h.store.GetAttachment(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if att == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "附件不存在"})
+		Fail(c, http.StatusNotFound, "附件不存在")
 		return
 	}
 
@@ -234,7 +234,7 @@ func (h *Handler) deleteAttachment(c *gin.Context) {
 	}
 
 	if err := h.store.DeleteAttachment(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -251,16 +251,16 @@ type attachmentRef struct {
 func (h *Handler) attachmentRefs(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的附件 ID"})
+		Fail(c, http.StatusBadRequest, "无效的附件 ID")
 		return
 	}
 	att, err := h.store.GetAttachment(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if att == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "附件不存在"})
+		Fail(c, http.StatusNotFound, "附件不存在")
 		return
 	}
 
@@ -382,7 +382,7 @@ type attachmentGroupJSON struct {
 func (h *Handler) listAttachmentGroups(c *gin.Context) {
 	groups, err := h.store.ListAttachmentGroups()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	items := make([]*attachmentGroupJSON, 0, len(groups))
@@ -399,17 +399,17 @@ func (h *Handler) createAttachmentGroup(c *gin.Context) {
 		Order int    `json:"order"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		Fail(c, http.StatusBadRequest, "无效请求体")
 		return
 	}
 	name := strings.TrimSpace(body.Name)
 	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "分组名称不能为空"})
+		Fail(c, http.StatusBadRequest, "分组名称不能为空")
 		return
 	}
 	g := &store.AttachmentGroup{Name: name, Order: body.Order}
 	if _, err := h.store.CreateAttachmentGroup(g); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, &attachmentGroupJSON{ID: g.ID, Name: g.Name, Order: g.Order})
@@ -419,7 +419,7 @@ func (h *Handler) createAttachmentGroup(c *gin.Context) {
 func (h *Handler) updateAttachmentGroup(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的分组 ID"})
+		Fail(c, http.StatusBadRequest, "无效的分组 ID")
 		return
 	}
 	var body struct {
@@ -427,16 +427,16 @@ func (h *Handler) updateAttachmentGroup(c *gin.Context) {
 		Order int    `json:"order"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		Fail(c, http.StatusBadRequest, "无效请求体")
 		return
 	}
 	name := strings.TrimSpace(body.Name)
 	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "分组名称不能为空"})
+		Fail(c, http.StatusBadRequest, "分组名称不能为空")
 		return
 	}
 	if err := h.store.UpdateAttachmentGroup(id, name, body.Order); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "分组不存在"})
+		Fail(c, http.StatusNotFound, "分组不存在")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -446,11 +446,11 @@ func (h *Handler) updateAttachmentGroup(c *gin.Context) {
 func (h *Handler) deleteAttachmentGroup(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的分组 ID"})
+		Fail(c, http.StatusBadRequest, "无效的分组 ID")
 		return
 	}
 	if err := h.store.DeleteAttachmentGroup(id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "分组不存在"})
+		Fail(c, http.StatusNotFound, "分组不存在")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -463,33 +463,33 @@ func (h *Handler) moveAttachments(c *gin.Context) {
 		GroupID int64   `json:"group_id"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效请求体"})
+		Fail(c, http.StatusBadRequest, "无效请求体")
 		return
 	}
 	if len(body.IDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "未选择附件"})
+		Fail(c, http.StatusBadRequest, "未选择附件")
 		return
 	}
 	if len(body.IDs) > 200 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "单次最多移动 200 项"})
+		Fail(c, http.StatusBadRequest, "单次最多移动 200 项")
 		return
 	}
 	if body.GroupID < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的目标分组"})
+		Fail(c, http.StatusBadRequest, "无效的目标分组")
 		return
 	}
 	ok, err := h.store.AttachmentGroupExists(body.GroupID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "目标分组不存在"})
+		Fail(c, http.StatusBadRequest, "目标分组不存在")
 		return
 	}
 	moved, err := h.store.MoveAttachments(body.IDs, body.GroupID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"moved": moved})

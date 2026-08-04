@@ -19,26 +19,26 @@ const maxRestoreSize = 500 << 20
 func (h *Handler) restoreBackup(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少上传文件（字段 file）"})
+		Fail(c, http.StatusBadRequest, "缺少上传文件（字段 file）")
 		return
 	}
 	defer file.Close()
 	if header.Size > maxRestoreSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "备份包超过 500MB 上限"})
+		Fail(c, http.StatusBadRequest, "备份包超过 500MB 上限")
 		return
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maxRestoreSize+1))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取上传文件失败"})
+		Fail(c, http.StatusInternalServerError, "读取上传文件失败")
 		return
 	}
 	if len(data) > maxRestoreSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "备份包超过 500MB 上限"})
+		Fail(c, http.StatusBadRequest, "备份包超过 500MB 上限")
 		return
 	}
 	strict := c.PostForm("strict") == "true"
 	if err := h.backups.Restore(data, strict); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "恢复失败: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "恢复失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"restored": true})
@@ -51,11 +51,11 @@ func (h *Handler) restoreSnapshot(c *gin.Context) {
 		Name string `json:"name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少备份文件名（name）"})
+		Fail(c, http.StatusBadRequest, "缺少备份文件名（name）")
 		return
 	}
 	if err := h.backups.RestoreSnapshot(req.Name); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "恢复失败: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "恢复失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"restored": true})
@@ -88,26 +88,26 @@ func (h *Handler) exportPostsMarkdown(c *gin.Context) {
 func (h *Handler) importPostsMarkdown(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少上传文件（字段 file）"})
+		Fail(c, http.StatusBadRequest, "缺少上传文件（字段 file）")
 		return
 	}
 	defer file.Close()
 	if header.Size > maxImportSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "文件超过 50MB 上限"})
+		Fail(c, http.StatusBadRequest, "文件超过 50MB 上限")
 		return
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maxImportSize+1))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取上传文件失败"})
+		Fail(c, http.StatusInternalServerError, "读取上传文件失败")
 		return
 	}
 	if len(data) > maxImportSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "文件超过 50MB 上限"})
+		Fail(c, http.StatusBadRequest, "文件超过 50MB 上限")
 		return
 	}
 	res, err := h.backups.Import(header.Filename, data)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -121,7 +121,7 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 func (h *Handler) backupStatus(c *gin.Context) {
 	list, err := h.backups.ListBackups()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取备份列表失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "读取备份列表失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

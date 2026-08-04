@@ -16,7 +16,7 @@ import (
 func (h *Handler) listSubscriptions(c *gin.Context) {
 	sources, err := h.store.ListFeedSources()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	total, unread := 0, 0
@@ -41,7 +41,7 @@ func (h *Handler) listSubscriptionArticles(c *gin.Context) {
 		Offset:    (page - 1) * pageSize,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"items": items, "page": page, "page_size": pageSize})
@@ -54,11 +54,11 @@ func (h *Handler) markSubscriptionRead(c *gin.Context) {
 		Read bool  `json:"read"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	if err := h.store.SetFeedArticleFlag(req.ID, "read", req.Read); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -67,7 +67,7 @@ func (h *Handler) markSubscriptionRead(c *gin.Context) {
 // markAllSubscriptionRead POST /subscriptions/read-all?feed=：全部（或指定源）标为已读。
 func (h *Handler) markAllSubscriptionRead(c *gin.Context) {
 	if err := h.store.MarkAllFeedRead(c.Query("feed")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -81,15 +81,15 @@ func (h *Handler) toggleSubscriptionFlag(c *gin.Context) {
 		Value bool   `json:"value"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
 	if req.Flag != "favorite" && req.Flag != "later" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "非法 flag"})
+		Fail(c, http.StatusBadRequest, "非法 flag")
 		return
 	}
 	if err := h.store.SetFeedArticleFlag(req.ID, req.Flag, req.Value); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -98,7 +98,7 @@ func (h *Handler) toggleSubscriptionFlag(c *gin.Context) {
 // refreshSubscriptions POST /subscriptions/refresh：触发聚合器重新抓取全部 RSS 并落库（异步）。
 func (h *Handler) refreshSubscriptions(c *gin.Context) {
 	if h.onLinksChanged == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "聚合器未初始化"})
+		Fail(c, http.StatusServiceUnavailable, "聚合器未初始化")
 		return
 	}
 	h.onLinksChanged() // = friendsAgg.Refresh()（异步 re-fetch + upsert）

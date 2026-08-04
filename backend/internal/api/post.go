@@ -133,7 +133,7 @@ func (h *Handler) listPosts(c *gin.Context) {
 	if status == "trashed" {
 		posts, err := h.store.ListTrashed()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"items": posts, "total": len(posts)})
@@ -143,7 +143,7 @@ func (h *Handler) listPosts(c *gin.Context) {
 	// 获取全部未删除文章后在内存筛选（SQLite 单文件博客数据量有限，无需复杂 SQL）
 	posts, err := h.store.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -193,11 +193,11 @@ func (h *Handler) getPost(c *gin.Context) {
 	slug := c.Param("slug")
 	p, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if p == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 	views, _ := h.store.GetViews(slug)
@@ -212,7 +212,7 @@ func (h *Handler) getPost(c *gin.Context) {
 func (h *Handler) createPost(c *gin.Context) {
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
 		return
 	}
 	// 空 slug 时从标题自动生成（Spec Task 6），并确保唯一；用户指定 slug 则检查冲突
@@ -221,13 +221,13 @@ func (h *Handler) createPost(c *gin.Context) {
 		slugVal = h.ensureUniqueSlug(generateSlug(req.Title))
 		req.Slug = slugVal
 	} else if existing, _ := h.store.GetBySlug(slugVal); existing != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "slug 已存在: " + slugVal})
+		Fail(c, http.StatusConflict, "slug 已存在: " + slugVal)
 		return
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
 		return
 	}
 
@@ -237,7 +237,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		p.Cover = defaultCover(req.Slug)
 	}
 	if _, err := h.store.Create(p); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, toPostJSON(p, 0))
@@ -248,17 +248,17 @@ func (h *Handler) updatePost(c *gin.Context) {
 	slug := c.Param("slug")
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
 		return
 	}
 
@@ -269,14 +269,14 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用: " + newSlug})
+			Fail(c, http.StatusConflict, "slug 已被占用: " + newSlug)
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
 		return
 	}
 
@@ -288,7 +288,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
 		return
 	}
 
@@ -308,26 +308,26 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 	slug := c.Param("slug")
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
 		return
 	}
 	b, err := json.Marshal(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "草稿序列化失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "草稿序列化失败: " + err.Error())
 		return
 	}
 	if err := h.store.SaveDraft(slug, string(b)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存草稿失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "保存草稿失败: " + err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "has_draft": true})
@@ -339,17 +339,17 @@ func (h *Handler) publishPost(c *gin.Context) {
 	slug := c.Param("slug")
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误: " + err.Error()})
+		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
 		return
 	}
 	req.Status = store.StatusPublished
@@ -360,14 +360,14 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "slug 已被占用: " + newSlug})
+			Fail(c, http.StatusConflict, "slug 已被占用: " + newSlug)
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Markdown 渲染失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
 		return
 	}
 
@@ -378,7 +378,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "发布失败: " + err.Error()})
+		Fail(c, http.StatusInternalServerError, "发布失败: " + err.Error())
 		return
 	}
 	// 草稿已应用，清空草稿头（slug 变更时新记录本就无草稿，兼顾清理旧 slug）
@@ -396,7 +396,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 func (h *Handler) discardPostDraft(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.ClearDraft(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -458,7 +458,7 @@ func (h *Handler) snapshotRevision(old, neu *store.Post) {
 func (h *Handler) deletePost(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.Delete(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -468,7 +468,7 @@ func (h *Handler) deletePost(c *gin.Context) {
 func (h *Handler) restorePost(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.RestorePost(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -478,7 +478,7 @@ func (h *Handler) restorePost(c *gin.Context) {
 func (h *Handler) purgePost(c *gin.Context) {
 	slug := c.Param("slug")
 	if err := h.store.PurgePost(slug); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 连带清理版本快照（Spec 22）
@@ -494,7 +494,7 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 		Summary string `json:"summary"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求格式错误"})
+		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
 	summary := strings.TrimSpace(req.Summary)
@@ -503,10 +503,10 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 	}
 	if err := h.store.SetAISummary(slug, summary); err != nil {
 		if strings.Contains(err.Error(), "no rows affected") {
-			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			Fail(c, http.StatusNotFound, "文章不存在")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "ai_summary": summary})
