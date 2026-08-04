@@ -104,11 +104,13 @@ func (h *Handler) login(c *gin.Context) {
 		user, err = h.store.GetUserByUsername(req.Username)
 		if err != nil || user == nil {
 			h.recordLoginFail(ip)
+			h.logLogin(c, 0, req.Username, ip, "fail", "password")
 			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 			return
 		}
 		if err := store.CheckPassword(user.PasswordHash, req.Password); err != nil {
 			h.recordLoginFail(ip)
+			h.logLogin(c, user.ID, req.Username, ip, "fail", "password")
 			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 			return
 		}
@@ -116,6 +118,7 @@ func (h *Handler) login(c *gin.Context) {
 		// 向后兼容：无 username 时回退旧 admin 密码验证
 		if subtle.ConstantTimeCompare([]byte(req.Password), []byte(password)) != 1 {
 			h.recordLoginFail(ip)
+			h.logLogin(c, 0, "admin", ip, "fail", "legacy")
 			Fail(c, http.StatusUnauthorized, "密码错误")
 			return
 		}
@@ -126,6 +129,7 @@ func (h *Handler) login(c *gin.Context) {
 		} else {
 			// users 表为空，使用旧 cookie 格式
 			h.clearLoginFail(ip)
+			h.logLogin(c, 0, "admin", ip, "success", "legacy")
 			expiry := time.Now().Add(authCookieTTL).Unix()
 			mac := hmac.New(sha256.New, []byte(password))
 			mac.Write([]byte(strconv.FormatInt(expiry, 10)))
@@ -146,6 +150,7 @@ func (h *Handler) login(c *gin.Context) {
 
 	// 生成新格式 cookie
 	h.clearLoginFail(ip)
+	h.logLogin(c, user.ID, user.Username, ip, "success", "password")
 	expiry := time.Now().Add(authCookieTTL).Unix()
 	cookie := signAuthCookie(expiry, user.ID, user.AuthSecret)
 	c.SetSameSite(http.SameSiteLaxMode)
@@ -173,17 +178,20 @@ func (h *Handler) handle2FA(c *gin.Context) {
 
 	userID, ok := consume2FAToken(req.Token)
 	if !ok {
+		h.logLogin(c, 0, "", c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusUnauthorized, "token 无效或已过期")
 		return
 	}
 
 	user, err := h.store.GetUserByID(userID)
 	if err != nil || user == nil || !ValidateTOTP(user.TOTPSecret, req.Code) {
+		h.logLogin(c, userID, "", c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusUnauthorized, "验证码错误")
 		return
 	}
 
 	h.clearLoginFail(c.ClientIP())
+	h.logLogin(c, user.ID, user.Username, c.ClientIP(), "success", "2fa")
 	expiry := time.Now().Add(authCookieTTL).Unix()
 	cookie := signAuthCookie(expiry, user.ID, user.AuthSecret)
 	c.SetSameSite(http.SameSiteLaxMode)
@@ -334,7 +342,7 @@ func (h *Handler) authCheck(c *gin.Context) {
 		return
 	}
 	if cookie, err := c.Cookie(authCookieName); err == nil {
-		if _, ok := h.validAuthCookie(cookie); ok {
+		if _, _, _, ok := h.validAuthCookie(cookie); ok {
 			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true})
 			return
 		}
@@ -441,4 +449,73 @@ func (h *Handler) clearLoginFail(ip string) {
 	h.loginMu.Lock()
 	defer h.loginMu.Unlock()
 	delete(h.loginFails, ip)
+}
+
+// logLogin 写一条登录日志（Wave 3a）。日志落库失败不阻塞登录主流程（静默降级）。
+func (h *Handler) logLogin(c *gin.Context, userID int64, username, ip, status, source string) {
+	if h.store == nil {
+		return
+	}
+	ua := c.GetHeader("User-Agent")
+	if len(ua) > 200 {
+		ua = ua[:200] // UA 截断防超长
+	}
+	_ = h.store.CreateLoginLog(userID, username, ip, ua, status, source)
+}
+
+// listLoginLogs GET /api/v1/auth/login-logs：分页查询登录日志（认证组）。
+// 支持 status 过滤（success/fail，空=全部）；时间倒序。
+func (h *Handler) listLoginLogs(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	status := strings.TrimSpace(c.Query("status"))
+
+	items, total, err := h.store.ListLoginLogs(page, size, status)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if items == nil {
+		items = []*store.LoginLog{}
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items, "total": total, "page": page, "size": size})
+}
+
+// apiTokenStatus GET /api/v1/profile/api-token：返回当前用户是否已启用 API Token。
+func (h *Handler) apiTokenStatus(c *gin.Context) {
+	userID := c.GetInt64("userID")
+	user, err := h.store.GetUserByID(userID)
+	if err != nil || user == nil {
+		Fail(c, http.StatusNotFound, "user not found")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"has_token": user.APITokenHash != "", "created_at": user.CreatedAt})
+}
+
+// generateAPIToken POST /api/v1/profile/api-token：生成新 API Token。
+// 明文仅本次响应返回一次（前端提示用户立即保存）；已有旧 token 先撤销再轮换。
+func (h *Handler) generateAPIToken(c *gin.Context) {
+	userID := c.GetInt64("userID")
+	user, err := h.store.GetUserByID(userID)
+	if err != nil || user == nil {
+		Fail(c, http.StatusNotFound, "user not found")
+		return
+	}
+
+	token := store.GenerateAPIToken()
+	if err := h.store.SetAPITokenHash(userID, store.HashAPIToken(token)); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "token": token, "username": user.Username})
+}
+
+// revokeAPIToken DELETE /api/v1/profile/api-token：撤销 API Token（置空哈希，Bearer 立即失效）。
+func (h *Handler) revokeAPIToken(c *gin.Context) {
+	userID := c.GetInt64("userID")
+	if err := h.store.SetAPITokenHash(userID, ""); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
