@@ -40,9 +40,6 @@ func TestStyleInjectCSSEmpty(t *testing.T) {
 	if got := string(s.InjectCSS()); got != "" {
 		t.Errorf("零配置 InjectCSS 应为空，got %q", got)
 	}
-	if got := s.EffectivePrefersTheme(); got != "auto" {
-		t.Errorf("零配置 prefers_theme = %q, want auto", got)
-	}
 }
 
 // TestStyleInjectCSSColors 颜色组注入：theme 拆分量、accent 原样、link 双变量。
@@ -118,12 +115,11 @@ func TestStyleInjectCSSBackgrounds(t *testing.T) {
 		}
 	}
 
-	// leftbar 纯色模式（亮/暗分轨）
-	color := StyleConfig{Leftbar: StyleLeftbar{BackgroundColorLight: "#eee", BackgroundColorDark: "#222"}}
+	// leftbar 纯色模式（全站仅深色，background_color_dark 无条件生效）
+	color := StyleConfig{Leftbar: StyleLeftbar{BackgroundColorDark: "#222"}}
 	c2 := string(color.InjectCSS())
-	if !strings.Contains(c2, ".l_left .leftbar-container{background:#eee;}") ||
-		!strings.Contains(c2, `:root[data-theme="dark"] .l_left .leftbar-container{background:#222;}`) {
-		t.Errorf("leftbar 纯色分轨错误: %s", c2)
+	if !strings.Contains(c2, ".l_left .leftbar-container{background:#222;}") {
+		t.Errorf("leftbar 纯色注入错误: %s", c2)
 	}
 
 	// 全站背景毛玻璃
@@ -160,15 +156,5 @@ func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 	}
 	if !strings.HasPrefix(css, ":root{") {
 		t.Errorf("圆角/渐变变量应在 :root 块内，got %s", css)
-	}
-}
-
-// TestEffectivePrefersTheme 明暗偏好规范化。
-func TestEffectivePrefersTheme(t *testing.T) {
-	cases := map[string]string{"light": "light", "dark": "dark", "auto": "auto", "": "auto", "xxx": "auto"}
-	for in, want := range cases {
-		if got := (StyleConfig{PrefersTheme: in}).EffectivePrefersTheme(); got != want {
-			t.Errorf("EffectivePrefersTheme(%q) = %q, want %q", in, got, want)
-		}
 	}
 }

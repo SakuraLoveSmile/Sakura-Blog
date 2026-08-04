@@ -2,7 +2,6 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
-import { useThemeStore, type ThemeMode } from "@/stores/theme";
 import { useModulesStore } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
@@ -11,7 +10,6 @@ import { searchApi, type SearchResultItem } from "@/api";
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
-const theme = useThemeStore();
 const modulesStore = useModulesStore();
 
 const moreMenuVisible = ref(false);
@@ -31,12 +29,6 @@ const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
 
 // 页脚控制：编辑器等全屏页面通过路由 meta.hideFooter 隐藏
 const showFooter = computed(() => !route.meta.hideFooter);
-
-const themeOptions: { value: ThemeMode; icon: string; label: string }[] = [
-  { value: "light", icon: "ri:sun-line", label: "亮色" },
-  { value: "dark", icon: "ri:moon-line", label: "暗色" },
-  { value: "system", icon: "ri:computer-line", label: "跟随系统" },
-];
 
 interface NavItem {
   path: string;
@@ -385,23 +377,6 @@ function closeProfileDropdown() {
                 class="absolute bottom-full right-0 z-30 mb-2 w-48 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
                 @click.stop
               >
-                <!-- 主题切换 -->
-                <div class="mb-2 flex items-center gap-1 rounded bg-gray-100 p-1 dark:bg-gray-700">
-                  <button
-                    v-for="opt in themeOptions"
-                    :key="opt.value"
-                    :title="opt.label"
-                    :class="[
-                      'flex flex-1 items-center justify-center rounded py-1.5 text-base transition-colors',
-                      theme.mode === opt.value
-                        ? 'bg-white text-primary shadow-sm dark:bg-gray-800'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                    ]"
-                    @click="theme.setMode(opt.value)"
-                  >
-                    <Icon :icon="opt.icon" />
-                  </button>
-                </div>
                 <button
                   class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                   @click="navigateTo('/profile')"

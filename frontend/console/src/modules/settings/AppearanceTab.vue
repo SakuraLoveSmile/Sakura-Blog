@@ -61,23 +61,7 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 2. 深浅模式 -->
-    <div class="mb-6">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">深浅模式</h3>
-      <div class="flex gap-6">
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input type="radio" v-model="data.style.prefers_theme" value="" /> 自动
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input type="radio" v-model="data.style.prefers_theme" value="light" /> 浅色
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-          <input type="radio" v-model="data.style.prefers_theme" value="dark" /> 深色
-        </label>
-      </div>
-    </div>
-
-    <!-- 3. 字体字号 -->
+    <!-- 2. 字体字号 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">字体字号</h3>
       <div class="grid grid-cols-2 gap-4">
@@ -98,7 +82,7 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 4. 字体族 -->
+    <!-- 3. 字体族 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">字体族</h3>
       <div class="grid grid-cols-3 gap-4">
@@ -117,23 +101,14 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 5. 左侧栏背景 -->
+    <!-- 4. 左侧栏背景 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">左侧栏背景</h3>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">浅色模式背景色</label>
-          <div class="flex gap-2 items-center">
-            <input type="color" v-model="data.style.leftbar.background_color_light" class="w-10 h-10 rounded border border-gray-200 cursor-pointer dark:border-gray-600" />
-            <input v-model="data.style.leftbar.background_color_light" :class="inputCls" class="flex-1" />
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">深色模式背景色</label>
-          <div class="flex gap-2 items-center">
-            <input type="color" v-model="data.style.leftbar.background_color_dark" class="w-10 h-10 rounded border border-gray-200 cursor-pointer dark:border-gray-600" />
-            <input v-model="data.style.leftbar.background_color_dark" :class="inputCls" class="flex-1" />
-          </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">背景色</label>
+        <div class="flex gap-2 items-center">
+          <input type="color" v-model="data.style.leftbar.background_color_dark" class="w-10 h-10 rounded border border-gray-200 cursor-pointer dark:border-gray-600" />
+          <input v-model="data.style.leftbar.background_color_dark" :class="inputCls" class="flex-1" />
         </div>
       </div>
       <div class="mt-3">
@@ -158,7 +133,7 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 6. 全站背景 -->
+    <!-- 5. 全站背景 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">全站背景</h3>
       <div>
@@ -184,7 +159,7 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 7. 代码块 -->
+    <!-- 6. 代码块 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">代码块</h3>
       <div>
@@ -193,7 +168,7 @@ function onHeaderPrefixInput(e: Event) {
       </div>
     </div>
 
-    <!-- 8. 杂项 -->
+    <!-- 7. 杂项 -->
     <div class="mb-6">
       <h3 class="text-sm font-semibold text-gray-700 mb-3 dark:text-gray-200">杂项</h3>
       <div>

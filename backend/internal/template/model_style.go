@@ -18,7 +18,6 @@ import (
 
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
-	PrefersTheme string            `yaml:"prefers_theme" json:"prefers_theme"` // auto/light/dark：首访无 localStorage 记录时的缺省明暗（空=auto 跟随系统）
 	SmoothScroll *bool             `yaml:"smooth_scroll" json:"smooth_scroll"` // 平滑滚动（缺省 nil=现状 smooth；显式 false 关闭）
 	TextAlign    string            `yaml:"text_align" json:"text_align"`       // 正文段落对齐（left/justify 等，空=现状 left）
 	Color        StyleColor        `yaml:"color" json:"color"`
@@ -30,22 +29,22 @@ type StyleConfig struct {
 	Paginator    StylePaginator    `yaml:"paginator" json:"paginator"`
 	HeaderPrefix map[string]string `yaml:"header_prefix" json:"header_prefix"` // 技术文章各级标题前缀符号，如 {h2: '#', h3: '='}
 	BorderRadius StyleBorderRadius `yaml:"border_radius" json:"border_radius"` // 圆角四档（Spec 52）：注入 --radius-* 变量
-	Gradient     StyleGradient     `yaml:"gradient" json:"gradient"`         // 渐变两组（Spec 52）：注入 --gradient-* 变量
+	Gradient     StyleGradient     `yaml:"gradient" json:"gradient"`           // 渐变两组（Spec 52）：注入 --gradient-* 变量
 }
 
 // StyleBorderRadius 圆角组（Spec 52）：注入 :root 变量 --radius-card/block/navbar/image。
 // 缺省空 = 不注入，消费点回退 main.css 原硬编码值（var(--radius-*, 原值)）。
 type StyleBorderRadius struct {
-	Card    string `yaml:"card" json:"card"`    // 卡片容器（post-card/article 等，现状 16px/8px 各处）
-	Block   string `yaml:"block" json:"block"`  // 块级元素（note/block 等，现状 8px/4px 各处）
-	Navbar  string `yaml:"navbar" json:"navbar"` // 导航栏/菜单容器（现状 100px/8px）
-	Image   string `yaml:"image" json:"image"`  // 图片（现状 8px/16px，含 .img 类）
+	Card   string `yaml:"card" json:"card"`     // 卡片容器（post-card/article 等，现状 16px/8px 各处）
+	Block  string `yaml:"block" json:"block"`   // 块级元素（note/block 等，现状 8px/4px 各处）
+	Navbar string `yaml:"navbar" json:"navbar"` // 导航栏/菜单容器（现状 100px/8px）
+	Image  string `yaml:"image" json:"image"`   // 图片（现状 8px/16px，含 .img 类）
 }
 
 // StyleGradient 渐变组（Spec 52）：注入 :root 变量 --gradient-button/searchbar。
 // 值为任意 CSS gradient 表达式（linear-gradient(...) 等）；缺省空 = 不注入。
 type StyleGradient struct {
-	Button    string `yaml:"button" json:"button"`    // 按钮背景渐变
+	Button    string `yaml:"button" json:"button"`       // 按钮背景渐变
 	Searchbar string `yaml:"searchbar" json:"searchbar"` // 搜索栏渐变
 }
 
@@ -71,11 +70,10 @@ type StyleFontFamily struct {
 
 // StyleLeftbar leftbar 背景组（缺省空=现状纯色 var(--card)，由 head.html 既有块提供；配 background_image 切换为图片模糊模式）。
 type StyleLeftbar struct {
-	BackgroundColorLight string `yaml:"background_color_light" json:"background_color_light"`
-	BackgroundColorDark  string `yaml:"background_color_dark" json:"background_color_dark"`
-	BackgroundImage      string `yaml:"background_image" json:"background_image"` // 图片 URL（不含 url()）；非空则启用图片模糊侧栏
-	BlurPx               string `yaml:"blur_px" json:"blur_px"`
-	BackgroundOpacity    string `yaml:"background_opacity" json:"background_opacity"`
+	BackgroundColorDark string `yaml:"background_color_dark" json:"background_color_dark"` // 全站仅深色模式，此色无条件生效
+	BackgroundImage     string `yaml:"background_image" json:"background_image"`           // 图片 URL（不含 url()）；非空则启用图片模糊侧栏
+	BlurPx              string `yaml:"blur_px" json:"blur_px"`
+	BackgroundOpacity   string `yaml:"background_opacity" json:"background_opacity"`
 }
 
 // StyleSite 全站背景组（缺省空=现状无背景图、siteblur 透明；配 background_image 后启用毛玻璃遮罩）。
@@ -95,16 +93,6 @@ type StyleCodeblock struct {
 type StylePaginator struct {
 	Prev string `yaml:"prev" json:"prev"`
 	Next string `yaml:"next" json:"next"`
-}
-
-// EffectivePrefersTheme 返回规范化的缺省明暗偏好（auto/light/dark），非法值回退 auto。
-func (s StyleConfig) EffectivePrefersTheme() string {
-	switch s.PrefersTheme {
-	case "light", "dark":
-		return s.PrefersTheme
-	default:
-		return "auto"
-	}
 }
 
 // InjectCSS 生成注入到 head 的样式覆盖（仅输出用户显式配置项，未配置不输出）。
@@ -205,7 +193,7 @@ func (s StyleConfig) InjectCSS() template.CSS {
 }
 
 // leftbarCSS 生成 leftbar 背景覆盖。配 background_image 时重新启用图片模糊侧栏（覆盖 head.html 纯色块）；
-// 仅配 background_color 时改容器纯色（亮/暗分轨）。
+// 仅配 background_color_dark 时改容器纯色（全站仅深色模式，无条件生效）。
 func (s StyleConfig) leftbarCSS() string {
 	l := s.Leftbar
 	var b strings.Builder
@@ -218,13 +206,8 @@ func (s StyleConfig) leftbarCSS() string {
 		b.WriteString(".l_left .leftbar-container{background:transparent;}")
 		b.WriteString(".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}")
 		b.WriteString("@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}")
-	} else if l.BackgroundColorLight != "" || l.BackgroundColorDark != "" {
-		if l.BackgroundColorLight != "" {
-			fmt.Fprintf(&b, ".l_left .leftbar-container{background:%s;}", l.BackgroundColorLight)
-		}
-		if l.BackgroundColorDark != "" {
-			fmt.Fprintf(&b, ":root[data-theme=\"dark\"] .l_left .leftbar-container{background:%s;}", l.BackgroundColorDark)
-		}
+	} else if l.BackgroundColorDark != "" {
+		fmt.Fprintf(&b, ".l_left .leftbar-container{background:%s;}", l.BackgroundColorDark)
 	}
 	return b.String()
 }

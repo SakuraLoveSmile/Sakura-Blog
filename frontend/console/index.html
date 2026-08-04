@@ -1,24 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0e14" />
     <title>Blog Console</title>
-    <script>
-      // 防闪烁：在框架加载前根据本地偏好提前挂上 .dark 类（默认跟随系统）。
-      (function () {
-        try {
-          var m = localStorage.getItem("console-theme") || "system";
-          var dark =
-            m === "dark" ||
-            (m === "system" &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
-          if (dark) document.documentElement.classList.add("dark");
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
     <div id="app"></div>

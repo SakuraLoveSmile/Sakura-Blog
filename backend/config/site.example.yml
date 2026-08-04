@@ -266,7 +266,6 @@ admin:
 # 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号/圆角/渐变走 :root 变量，
 # 字体族/背景/header_prefix/分页箍头走选择器覆盖。
 # style:
-#   prefers_theme: auto        # auto/light/dark：首访无 localStorage 时缺省明暗
 #   smooth_scroll: true        # false 关闭平滑滚动
 #   text_align: left           # 正文段落对齐
 #   color:
@@ -281,8 +280,7 @@ admin:
 #     code: 'Menlo, Monaco, Consolas, monospace'
 #     codeblock: 'Menlo, Monaco, Consolas, monospace'
 #   leftbar:                    # 侧栏背景（缺省纯色；配 background_image 切图片模糊）
-#     background_color_light: 'var(--card)'
-#     background_color_dark: 'var(--card)'
+#     background_color_dark: 'var(--card)'  # 全站仅深色模式，无条件生效
 #     background_image: 'https://.../sidebar-bg.jpg'
 #     blur_px: 100px
 #     background_opacity: '0.8'

@@ -4,8 +4,8 @@
   "description": "用 Go (Gin) + html/template + goldmark 重建 Stellar 风格博客",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#f9fafb",
-  "background_color": "#f9fafb",
+  "theme_color": "#1c1f21",
+  "background_color": "#1c1f21",
   "icons": [
     {
       "src": "/assets/img/icon-192.png",
