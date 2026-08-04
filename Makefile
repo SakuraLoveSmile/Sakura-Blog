@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps merge-check run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check run dev clean
 
 all: build
 
@@ -20,9 +20,22 @@ go-build:
 
 ## test: 静态检查 + 全部测试（Go vet/test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
 ## 注意：go.work workspace 下 ./... 不匹配 use 的 module，须显式列出 backend/frontend 包路径。
-test: console-test assets-test
+test: dist-bootstrap console-test assets-test
 	go vet ./backend/... ./frontend/...
 	go test ./backend/... ./frontend/...
+
+## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
+## frontend/console/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
+## vet/test 不需要真实前端产物，dist 缺失或为空时写入占位文件即可，
+## 使全新 worktree 下 make test 给出行为信号而不是 embed 编译环境错误。
+## 需要真实产物请用 make build / make console（release 产物由 build job 用真实 dist 验证）。
+dist-bootstrap:
+	@if [ ! -f frontend/console/dist/index.html ]; then \
+		echo "dist-bootstrap: dist 缺失或无 index.html，写入占位文件（与 CI stub 同语义，仅满足 go:embed 编译）"; \
+		mkdir -p frontend/console/dist && echo '<!doctype html>' > frontend/console/dist/index.html; \
+	else \
+		echo "dist-bootstrap: dist 已存在，跳过"; \
+	fi
 
 ## console-deps: 自举 console 前端依赖（node_modules 缺失时 npm ci 按需安装，命中 npm 全局缓存，不重复全量下载）
 console-deps:

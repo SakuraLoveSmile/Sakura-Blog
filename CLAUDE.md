@@ -232,27 +232,22 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 - `db.SetMaxOpenConns(1)` 避免 SQLite 写并发 `database is locked`（WAL 模式下读可并发，写仍串行）
 - WAL 模式生成 `*.db-shm`/`*.db-wal` 旁路文件，gitignore 必须补这两条（原来只有 `*.db-journal`）
 
-### 模板名取文件基名，各子目录文件名不能冲突
+### 模板名取路径化命名，不同子目录允许同名文件
 
-`engine.go` 用 `filepath.WalkDir` 递归加载所有 .html，模板名取 `filepath.Base` 去扩展名（如 `admin/list.html` -> `"list"`，不是 `"admin/list"`）。所以 `backend/internal/template/` 下各子目录文件名必须全局唯一：`layout/base`、`partial/head`、`admin/list`、`admin/edit` 基名不冲突即可。handler 调 `engine.Render("list", ...)` 用基名。
+`engine.go` 用 `filepath.WalkDir` 递归加载所有 .html，模板名取相对 root 的路径去 .html（分隔符 /，如 `partial/head.html` -> `"partial/head"`）。子目录前缀防冲突：历史上曾用基名命名，导致 `admin/comments` 被 `partial/comments` 覆盖的 bug，改路径化命名后不同子目录允许同名文件。handler 调 `engine.Render("layout/base", ...)` 用路径名。部署用 `NewEngineFromEmbed`（`//go:embed layout partial`），命名方案与磁盘加载一致；原 admin/ 模板已随后台退役删除（见下节「管理后台统一到 Vue Console」）。
 
 ### Go html/template 模板注释 `{{- /* ... */}}` 在 style 块内易触发解析错误
 
 `{{- /* 注释 */}}` 语法本身合法，但写在 `<style>` 块内、注释文本含 `*/` 或与 CSS 注释 `/* */` 混排时，解析器可能报 `comment ends before closing delimiter`。**对策**：`<style>` 块内的注释用 CSS 原生 `/* ... */`，不要用 Go 模板注释；模板注释只用于 HTML 区域。
 
-### EasyMDE 编辑器提交表单需 forceSync，否则内容不随 form submit
+### 管理后台统一到 Vue Console，服务端渲染 /admin 已退役
 
-EasyMDE 把原生 `<textarea>` 隐藏，用 CodeMirror 替代。表单 submit 时 CodeMirror 的内容不会自动回写到 textarea，导致 POST 收到空 content。**坑**：手动加 `form.addEventListener('submit', ()=>easyMDE.value(easyMDE.value()))` 监听器，若监听器内异常会**阻断默认提交**（表现为点击保存无 POST、停在原页）。
+原 Go html/template 服务端渲染后台（`backend/internal/admin/` + `admin/*.html` 模板 + EasyMDE 编辑器）已整体退役：两处目录均已清空/删除、`/admin` 路由已移除，原 EasyMDE forceSync/深色模式适配与 admin 独立 layout 的坑不再适用。现后台为 Vue SPA，源码与测试在 `frontend/console/`（`src/` + `tests/`）：
 
-**正确**：初始化时设 `forceSync: true`，EasyMDE 内部会在 form submit 时自动同步，不要自己加 submit 监听器。
-
-### EasyMDE 深色模式需手动适配
-
-EasyMDE 默认浅色，深色背景下工具栏/编辑区刺眼。Stellar 的 main.css 无表单/编辑器样式可复用（`button.styl` 只有 `<a>` 伪按钮，`input.styl` 只有 reset）。需在模板 `<style>` 内用 Stellar 变量覆写：`.EasyMDEContainer .CodeMirror { background: var(--card); color: var(--text-p1) }` 等。admin 表单所有样式（input/textarea/select/button/table）都要自写。
-
-### admin 页面独立 layout，不套 base.html
-
-后台不需要前台三列布局 + 侧边栏 widget，套 base.html 会被三列布局挤压表单区域。admin/list.html、admin/edit.html 各自完整 HTML 骨架，仅引用 `main.css` 复用深色模式 CSS 变量（`--card`/`--text-p1`/`--theme`/`--bg-a*`）。siteblur 黑遮罩坑同样需覆写（与前台 preview.html 同款 `body>.sitebg .siteblur { background-color: transparent !important }`）。
+- `frontend/console/embed.go` 用 `//go:embed all:dist` 嵌入 `dist/` 子树（embed 路径只能嵌包目录子树，故 embed.go 放在 console/ 内），随单二进制分发
+- 编译期要求 dist/ 已存在且非空：`go build` 前必须先 `cd frontend/console && npm ci && npm run build`（Makefile 已固化该构建顺序）
+- `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 frontend/console/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback
+- 数据统一走 `/api/v1` REST API（`backend/internal/api/`），编辑器为 `src/components/MarkdownEditor.vue`，不再使用 EasyMDE 与 Go 模板渲染后台页
 
 ### /post/:slug DB 优先 + 文件回退的实现
 
@@ -288,7 +283,7 @@ qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 
 
 ### tags 逗号分隔存储的匹配一致性
 
-tags 以逗号分隔存单列（如 `Go,Stellar`）。查询用逗号包裹 LIKE 防子串误匹配：`(',' || tags || ',') LIKE '%,Go,%'`（防 Go 匹配到 Golang）。**坑**：admin 表单输入若直接存原始值（如 `Go, 测试, Go` 带空格/重复），LIKE 的 `%,测试,%` 匹配不到 `, 测试,`（多空格），而 CountByTag 内存拆分有 TrimSpace 又能数到——两个口径不一致。**对策**：admin save 入口用 `normalizeTags` 规范化（逗号拆分、逐项 trim、去空去重、`,` 重连），与 parser.parseList 语义对齐，保证存储值规范。
+tags 以逗号分隔存单列（如 `Go,Stellar`）。查询用逗号包裹 LIKE 防子串误匹配：`(',' || tags || ',') LIKE '%,Go,%'`（防 Go 匹配到 Golang）。**坑**：Console 表单输入若直接存原始值（如 `Go, 测试, Go` 带空格/重复），LIKE 的 `%,测试,%` 匹配不到 `, 测试,`（多空格），而 CountByTag 内存拆分有 TrimSpace 又能数到——两个口径不一致。**对策**：Console 保存入口（`backend/internal/api/post.go`）用 `normalizeTags` 规范化（逗号拆分、逐项 trim、去空去重、`,` 重连），与 parser.parseList 语义对齐，保证存储值规范。
 
 ### 迁移泛化：migrateColumns 用 map 驱动
 
@@ -321,7 +316,7 @@ base.html 的 main-mask `onclick="sidebar.dismiss()"` 依赖 main.js 的 sidebar
 TOC 依赖标题带 id：`goldmark.New(goldmark.WithParserOptions(parser.WithAutoHeadingID()))`。两个坑：
 
 1. **id 只保留 ASCII**：中文标题生成的 id 会丢非 ASCII 字符（如 `Markdown 元素验证` → `markdown-`，纯中文标题 → `heading-N` 序号兜底）。功能正常但 id 不美观，TOC 提取必须从渲染后 HTML 正则读 id（与标题同源），不能自己从文本推算。
-2. **ContentHTML 是预渲染缓存**：posts 表存的是 goldmark 输出，开启 AutoHeadingID 后老数据没有 id，必须 `-seed` 重导（或 admin 重新保存）才生效。
+2. **ContentHTML 是预渲染缓存**：posts 表存的是 goldmark 输出，开启 AutoHeadingID 后老数据没有 id，必须 `-seed` 重导（或 Console 重新保存）才生效。
 
 另一个编译坑：post 包内已有 frontmatter `parser` 类型（parser.go），与 `github.com/yuin/goldmark/parser` 包名冲突，import 需别名 `mdparser`。
 
@@ -337,13 +332,13 @@ pjax.js 对 `.l_body` 只做属性同步 + 子节点局部替换（换 `.l_main`
 - 导航时属性同步会清掉 `leftbar` attribute，移动端侧栏自动收起，无需手动处理；
 - 侧栏/TOC 节点会被替换成**新节点**，事件绑定要么委托到 document（init.sidebar 的 TOC 点击收侧栏），要么把绑定标记挂在 DOM 节点上（`_searchInitialized`/`_localSearchBound`/`tocState.bound`），`pjax:complete` 重跑 init 时新节点重新绑、旧节点不叠加；
 - TOC 锚点点击被 pjax.js 的 handleHashLink 优先拦截平滑滚动，不会触发整页导航；
-- **前台不得出现会被 PJAX 抓取的 /admin 链接**：后续若加需 `data-pjax="false"`（当前前台无 admin 链接）。
+- **前台不得出现会被 PJAX 抓取的 /console 后台链接**：后续若加需 `data-pjax="false"`（当前前台无后台链接；原 /admin 路由已退役，见 Demo 3「管理后台统一到 Vue Console」）。
 
 main.css 已含 `.error-page` 全套样式（_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f），**不要重复自定义**；404 结构对齐 layout/404.ejs（h1 里是 img#error 图片 + p.what/p.why 语言包文案 + `<br><br>` + a#back「返回主页」）。main.css **缺** `.pjax-loading`/`.pjax-loaded`（_plugins/pjax.styl 未被编译入口包含），在 head.html 按原版 styl 手工补等价产物（page-loading-bar 居中图标 + l_main/#l_cover 的 opacity 0.4/translateY(8px) 过渡 + pjax-fade-in + prefers-reduced-motion），并在 body 闭合前加 `<div class="page-loading-bar">`（对齐 layout.ejs）。
 
 ### 本地搜索：/search.json no-store 与去 jQuery 移植
 
-- 索引端点每次实时查 DB（demo 数据量小），响应头 `Cache-Control: no-store`——admin 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。
+- 索引端点每次实时查 DB（demo 数据量小），响应头 `Cache-Control: no-store`——Console 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。
 - local-search.js 从 Stellar 移植去 jQuery：`utils.jq` 入口改 `DOMContentLoaded + pjax:complete`，`$(...)`→querySelector，`.focus/.keydown`→addEventListener，`.attr`→getAttribute，`toggleClass`→classList.toggle。核心 searchFunc（关键词组合/高亮/排序）与 localStorage 缓存 `search_cache_v1` 原样保留。
 - 初始化挂在 input 的 **focus 事件**上（对齐原版）。注意 headless/失焦窗口里 `el.focus()` 只设 activeElement 不派生 focus 事件，自动化验证时需直接调 searchFunc；真实用户点击输入框无此问题。
 

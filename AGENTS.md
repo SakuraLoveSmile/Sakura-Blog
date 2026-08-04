@@ -38,9 +38,9 @@ git -C .bare worktree add ../feat-font -b feature/font
 
 | Agent | 任务 | 主要改动范围 |
 |-------|------|-------------|
-| A | 评论系统 | `internal/comment/`、`admin/comments.html` |
-| B | 前端样式 | `frontend/assets/css/`、`internal/template/partial/` |
-| C | 后台管理 | `internal/admin/`、`admin/*.html` |
+| A | 评论系统 | `backend/internal/comment/`、`frontend/console/src/modules/comments/` |
+| B | 前端样式 | `frontend/assets/css/`、`backend/internal/template/partial/` |
+| C | 后台管理 | `frontend/console/src/`、`frontend/console/tests/` |
 
 #### UI 类任务开工约定（验收边界）
 
@@ -115,7 +115,7 @@ git -C .bare worktree remove ../feat-comment
 | CSS / Stylus 编译、图标与深色模式 | 「Stellar CSS 剥离规范」（shim 注入、返回值类型、siteblur 遮罩、图标颜色） |
 | 前台 HTML / Go 模板结构 | 「Stellar HTML 结构规范（关键）」（class 名与嵌套必须对齐 Stellar EJS） |
 | Go 服务端渲染 | 「Demo 2 新增坑点」（-root 参数、template.HTML、icons.yml 解析） |
-| 管理后台 / SQLite | 「Demo 3 新增坑点」（driver name、模板基名唯一、EasyMDE） |
+| 管理后台 / SQLite | 「Demo 3 新增坑点」（driver name、模板路径化命名、Vue Console 迁移现状） |
 | DB 迁移 / 配置文件 | 「Step 1 新增坑点」（ALTER 迁移、yaml 引号） |
 | 归档 / 标签 / 缓存头 / JS shim | 「Step 2 新增坑点」「Step 2 收尾修复」（tags 匹配一致性、no-cache、移动端 sidebar） |
 | TOC / 搜索 / PJAX / 404 | 「Step 3 新增坑点」（AutoHeadingID、PJAX DOM 引用、对照原版先行） |
