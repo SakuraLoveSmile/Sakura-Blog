@@ -32,6 +32,7 @@ export const queryKeys = {
   friends: () => ["friends"] as const,
   shares: (params?: Record<string, unknown>) => ["shares", params] as const,
   loginLogs: (params?: Record<string, unknown>) => ["login-logs", params] as const,
+  notifications: (params?: Record<string, unknown>) => ["notifications", params] as const,
   categories: () => ["categories"] as const,
   tags: () => ["tags"] as const,
   dashboard: {

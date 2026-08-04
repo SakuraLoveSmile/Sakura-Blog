@@ -376,3 +376,30 @@ export const seoApi = {
     http.get("/seo/push/logs", { params }),
   clearPushLogs: () => http.delete("/seo/push/logs"),
 };
+
+// --- 站内通知中心（Wave 3b） ---
+export interface NotificationItem {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  content: string;
+  link: string;
+  read: number;
+  created_at: string;
+}
+
+export const notificationApi = {
+  /** 分页查询（未读优先），响应含 unread 未读数 */
+  list: (params: { page?: number; size?: number }) =>
+    http.get<{ items: NotificationItem[]; total: number; unread: number; page: number; size: number }>(
+      "/notifications",
+      { params }
+    ),
+  /** 未读数（铃铛角标轮询用） */
+  unreadCount: () => http.get<{ count: number }>("/notifications/unread-count"),
+  /** 标记单条已读 */
+  markRead: (id: number) => http.put(`/notifications/${id}/read`),
+  /** 全部标记已读 */
+  markAllRead: () => http.put("/notifications/read-all"),
+};

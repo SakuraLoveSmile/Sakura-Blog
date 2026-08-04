@@ -5,7 +5,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useModulesStore } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
-import { searchApi, type SearchResultItem } from "@/api";
+import { searchApi, notificationApi, type SearchResultItem } from "@/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -16,6 +16,28 @@ const moreMenuVisible = ref(false);
 const profileDropdownOpen = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref("");
+
+// 未读通知数（铃铛角标，每 60s 轮询）
+const unreadCount = ref(0);
+let unreadTimer: ReturnType<typeof setInterval> | null = null;
+
+async function loadUnread() {
+  try {
+    const { data } = await notificationApi.unreadCount();
+    unreadCount.value = data.count;
+  } catch {
+    // 静默降级（未登录/网络错误不阻塞 UI）
+  }
+}
+
+onMounted(() => {
+  loadUnread();
+  unreadTimer = setInterval(loadUnread, 60_000);
+});
+
+onBeforeUnmount(() => {
+  if (unreadTimer) clearInterval(unreadTimer);
+});
 
 // 侧边栏收起状态（批注：左侧边栏希望可以收起来），收起后仅图标模式，状态持久化
 const SIDEBAR_KEY = "console:sidebar-collapsed";
@@ -57,6 +79,7 @@ const navItems: NavItem[] = [
   { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
   { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
+  { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
   { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
   { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
   { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
@@ -343,6 +366,19 @@ function closeProfileDropdown() {
       <!-- 底部用户资料区（对齐 Halo profile 70px；收起时仅头像） -->
       <div class="profile-placeholder">
         <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center' : 'w-64'">
+          <!-- 铃铛通知按钮（Wave 3b） -->
+          <div class="relative self-center">
+            <div
+              class="cursor-pointer rounded p-1 transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
+              @click="router.push('/notifications')"
+            >
+              <Icon icon="ri:notification-3-line" class="text-gray-500 dark:text-gray-400" />
+              <span
+                v-if="unreadCount > 0"
+                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+              >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            </div>
+          </div>
           <div class="profile-avatar">
             <img
               v-if="auth.user.avatar"
