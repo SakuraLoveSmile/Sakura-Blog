@@ -1,5 +1,6 @@
 /* Service Worker: static cache-first, pages network-first with offline fallback. */
-const CACHE_VERSION = 'blog-v3';
+// __BLOG_SW_VERSION__ 由 /sw.js 路由替换为 settings site 段 sw_cache_version（缺省 blog-v3）。
+const CACHE_VERSION = '__BLOG_SW_VERSION__';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const PAGE_CACHE = CACHE_VERSION + '-pages';
 

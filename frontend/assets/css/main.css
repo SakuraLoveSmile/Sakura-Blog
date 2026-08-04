@@ -2613,67 +2613,78 @@ div.toast.show {
     top: 36px;
   }
 }
+/* 分页器：居中胶囊分页（index/author/moments/notebook 共用） */
 .paginator-wrap {
-  margin: 1rem;
+  margin: 1.5rem auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  font-size: 1rem;
-  font-weight: 700;
+  width: fit-content;
+  max-width: 100%;
   background: var(--card);
   border-radius: 24px;
-  overflow: hidden;
   box-shadow: 0 2px 8px 0px rgba(0,0,0,0.03);
-  color: var(--text-p3);
+  padding: 0.5rem;
+}
+.paginator-wrap nav.paginator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .paginator-wrap .page-number {
-  padding: 4px 8px;
-  border-radius: 8px;
-  margin: 2px;
-}
-.paginator-wrap a.page-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--text-p3);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 .paginator-wrap a.page-number:hover {
   color: var(--text-p1);
-  background: var(--block);
+  background: var(--theme-a20);
 }
-.paginator-wrap .extend {
-  text-align: center;
-  background-size: contain;
-  width: 1rem;
-  height: 1rem;
-  background-origin: content-box;
-  background-clip: content-box;
-}
-.paginator-wrap .extend.next {
-  border-left: 1px dashed var(--block-border);
-  background-image: url("https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/064b95430caf4.svg");
-}
-.paginator-wrap .extend.prev {
-  border-right: 1px dashed var(--block-border);
-  background-image: url("https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/f049bbd4e88ec.svg");
-}
-.paginator-wrap .current {
-  font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;
-  background: var(--block);
-}
-.paginator-wrap .extend {
-  padding: 1rem;
-  line-height: 0;
-  filter: grayscale(100%);
-}
-.paginator-wrap .extend img {
-  height: 1rem;
-}
-.paginator-wrap .extend.disable {
+.paginator-wrap .page-number.current {
+  color: var(--text-reverse);
+  background: var(--theme);
+  box-shadow: 0 2px 8px var(--theme-a30);
   pointer-events: none;
 }
-.paginator-wrap span.extend {
-  opacity: 0.25;
+.paginator-wrap .extend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background-color: var(--text-p3);
+  -webkit-mask: var(--paginator-arrow) center/0.9rem 0.9rem no-repeat;
+  mask: var(--paginator-arrow) center/0.9rem 0.9rem no-repeat;
+  transition: background-color 0.2s ease;
+}
+.paginator-wrap .extend.next {
+  --paginator-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.paginator-wrap .extend.prev {
+  --paginator-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 6l-6 6 6 6' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 .paginator-wrap a.extend:hover {
-  filter: unset;
+  background-color: var(--theme);
+}
+.paginator-wrap .extend.disable,
+.paginator-wrap span.extend {
+  pointer-events: none;
+  opacity: 0.25;
+}
+@media screen and (max-width: 450px) {
+  .paginator-wrap {
+    margin: 1rem;
+    width: auto;
+  }
 }
 .related-wrap {
   padding: 0 1rem;

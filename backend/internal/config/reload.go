@@ -26,6 +26,12 @@ const (
 	SectionStyle     = "style"     // 外观样式（Spec 34/47）
 	SectionWidgets   = "widgets"   // 侧边栏组件编排（Spec 33/47）
 	SectionAI        = "ai"        // AI 属性生成（OpenAI 兼容接口配置，仅 Console/后端代理消费）
+	// 以下五段此前为 site.yml 纯文件配置，现接入 settings 热更新管线（入库后以 DB 为准）：
+	SectionCover   = "cover"    // 首页 Hero cover 区
+	SectionNavTabs = "nav_tabs" // 导航栏标签页
+	SectionAuthors = "authors"  // 多作者体系
+	SectionPlugins = "plugins"  // 前端体验增强插件开关
+	SectionLang    = "lang"     // 前台文案覆盖表（增量覆盖内置 zhCN，未配置=无覆盖）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -47,6 +53,10 @@ type siteBasic struct {
 	AvatarBG    string `json:"avatar_bg"`
 	LogoTitle   string `json:"logo_title"`
 	LogoSub     string `json:"logo_sub"`
+	// favicon/apple_touch_icon：Spec Task 9 的 Console UI 依赖；sw_cache_version 供 /sw.js 注入 CACHE_VERSION。
+	FaviconURL string `json:"favicon_url"`      // Favicon URL，留空回退 /favicon.ico
+	AppleIcon  string `json:"apple_touch_icon"` // Apple Touch Icon URL，留空回退默认图
+	SWCacheVer string `json:"sw_cache_version"` // Service Worker 缓存版本，留空用内置缺省
 }
 
 // adminSection 对应 settings 表 "admin" 段（管理密码，明文存储与 site.yml 现状同安全等级）。
@@ -157,6 +167,48 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		b, _ := json.Marshal(site.Widgets)
 		st.PutSetting(SectionWidgets, string(b))
 	}
+	// cover/nav_tabs/authors/plugins 段兼容导入：旧库升级时 settings 非空但缺段，
+	// 从 site.yml 初值补导一次，之后以 DB 为准（与 seo/style/widgets 同语义）。
+	if _, ok := settings[SectionCover]; !ok {
+		b, _ := json.Marshal(site.Cover)
+		st.PutSetting(SectionCover, string(b))
+	}
+	if _, ok := settings[SectionNavTabs]; !ok {
+		b, _ := json.Marshal(site.NavTabs)
+		st.PutSetting(SectionNavTabs, string(b))
+	}
+	if _, ok := settings[SectionAuthors]; !ok {
+		b, _ := json.Marshal(site.Authors)
+		st.PutSetting(SectionAuthors, string(b))
+	}
+	if _, ok := settings[SectionPlugins]; !ok {
+		b, _ := json.Marshal(site.Plugins)
+		st.PutSetting(SectionPlugins, string(b))
+	}
+
+	// site 段 favicon 兼容导入：旧库 site 段缺 favicon_url/apple_touch_icon 键时，
+	// 从 site.yml 初值合并补写，避免 RebuildSite 把已加载值清零（site.yml 留空则不补）。
+	if raw, ok := settings[SectionSite]; ok && raw != "" {
+		var sec map[string]json.RawMessage
+		if json.Unmarshal([]byte(raw), &sec) == nil {
+			changed := false
+			if _, has := sec["favicon_url"]; !has && site.FaviconURL != "" {
+				b, _ := json.Marshal(site.FaviconURL)
+				sec["favicon_url"] = b
+				changed = true
+			}
+			if _, has := sec["apple_touch_icon"]; !has && site.AppleIcon != "" {
+				b, _ := json.Marshal(site.AppleIcon)
+				sec["apple_touch_icon"] = b
+				changed = true
+			}
+			if changed {
+				if b, err := json.Marshal(sec); err == nil {
+					st.PutSetting(SectionSite, string(b))
+				}
+			}
+		}
+	}
 
 	nl, err := st.CountLinks()
 	if err != nil {
@@ -253,6 +305,19 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionWidgets, site.Widgets); err != nil {
 		return err
 	}
+	if err := put(SectionCover, site.Cover); err != nil {
+		return err
+	}
+	if err := put(SectionNavTabs, site.NavTabs); err != nil {
+		return err
+	}
+	if err := put(SectionAuthors, site.Authors); err != nil {
+		return err
+	}
+	if err := put(SectionPlugins, site.Plugins); err != nil {
+		return err
+	}
+	// lang 段不写初始值：settings 无 lang 行 = 无文案覆盖（全用内置 zhCN）。
 	return nil
 }
 
@@ -302,6 +367,11 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	var inject tmpl.InjectConfig
 	var style tmpl.StyleConfig
 	var widgets tmpl.WidgetsConfig
+	var cover tmpl.CoverConfig
+	var navTabs tmpl.NavTabsConfig
+	var authors map[string]tmpl.AuthorDef
+	var plugins tmpl.PluginsConfig
+	var langOver map[string]string
 	var admin adminSection
 	adminSet := false
 
@@ -322,6 +392,11 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	unmarshal(SectionInject, &inject)
 	unmarshal(SectionStyle, &style)
 	unmarshal(SectionWidgets, &widgets)
+	unmarshal(SectionCover, &cover)
+	unmarshal(SectionNavTabs, &navTabs)
+	unmarshal(SectionAuthors, &authors)
+	unmarshal(SectionPlugins, &plugins)
+	unmarshal(SectionLang, &langOver)
 	if v, ok := settings[SectionAdmin]; ok && v != "" {
 		if json.Unmarshal([]byte(v), &admin) == nil {
 			adminSet = true
@@ -340,6 +415,9 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.AvatarBG = basic.AvatarBG
 	site.LogoTitle = basic.LogoTitle
 	site.LogoSub = basic.LogoSub
+	site.FaviconURL = basic.FaviconURL
+	site.AppleIcon = basic.AppleIcon
+	site.SWCacheVersion = basic.SWCacheVer
 	site.Menubar = menubar
 	site.Rightbar = rightbar
 	site.Footer = footer
@@ -351,7 +429,12 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.Inject = inject
 	site.Style = style
 	site.Widgets = widgets
+	site.Cover = cover
+	site.NavTabs = navTabs
+	site.Authors = authors
+	site.Plugins = plugins
 	site.Links = groups
+	tmpl.SetLangOverrides(langOver) // 与 site 字段同权衡：写锁保护，读方无锁
 	if adminSet {
 		site.Admin.Password = admin.Password
 	}
@@ -389,6 +472,7 @@ func KnownSections() []string {
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
 		SectionSEO, SectionInject, SectionDashboard,
 		SectionStyle, SectionWidgets, SectionAI,
+		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionLang,
 	}
 }
 
@@ -441,6 +525,16 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &tmpl.WidgetsConfig{}
 	case SectionAI:
 		dst = &AIConfig{}
+	case SectionCover:
+		dst = &tmpl.CoverConfig{}
+	case SectionNavTabs:
+		dst = &tmpl.NavTabsConfig{}
+	case SectionAuthors:
+		dst = &map[string]tmpl.AuthorDef{}
+	case SectionPlugins:
+		dst = &tmpl.PluginsConfig{}
+	case SectionLang:
+		dst = &map[string]string{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}

@@ -12,18 +12,11 @@ import (
 
 // getSettings GET /api/v1/settings：返回全部可编辑分段的原始 JSON。
 // 敏感字段脱敏：comments.notify.password / ai.api_key 非空时返回 "****"。
-// 额外注入 site.yml 的 authors 段（非 settings 表），供 Console 文章编辑下拉使用。
 func (h *Handler) getSettings(c *gin.Context) {
 	secs, err := config.LoadSectionsJSON(h.store)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
-	}
-	// 将 site.yml 中的 authors 段注入响应（非 settings 表，供 Console 文章编辑下拉使用）
-	if len(h.site.Authors) > 0 {
-		if ab, err := json.Marshal(h.site.Authors); err == nil {
-			secs["authors"] = json.RawMessage(ab)
-		}
 	}
 	// 脱敏 comments.notify.password
 	if raw, ok := secs["comments"]; ok {

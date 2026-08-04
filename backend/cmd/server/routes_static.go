@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/fs"
 	"net/http"
 	"os"
@@ -50,11 +51,8 @@ func (s *webServer) registerStaticRoutes(r *gin.Engine) error {
 		r.StaticFS("/assets", http.FS(sub))
 	}
 
-	r.GET("/sw.js", s.serveAsset("js/sw.js", "application/javascript", map[string]string{
-		"Service-Worker-Allowed": "/",
-		"Cache-Control":          "no-cache",
-	}))
-	r.GET("/manifest.webmanifest", s.serveAsset("manifest.webmanifest", "application/manifest+json", nil))
+	r.GET("/sw.js", s.serveSW())
+	r.GET("/manifest.webmanifest", s.serveManifest())
 	r.GET("/favicon.ico", s.serveAsset("img/favicon.ico", "image/x-icon", nil))
 	r.GET("/apple-touch-icon.png", s.serveAsset("img/apple-touch-icon.png", "image/png", nil))
 
@@ -68,4 +66,72 @@ func (s *webServer) registerStaticRoutes(r *gin.Engine) error {
 		c.File(filepath.Join(s.uploadDir, filepath.Clean(fp)))
 	})
 	return nil
+}
+
+// serveSW 提供 Service Worker：缓存版本号由 settings site 段 sw_cache_version 注入（缺省 blog-v3），
+// 版本变更后旧 SW 缓存自动失效（占位符替换见 sw.js 源文件）。
+func (s *webServer) serveSW() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var data []byte
+		var err error
+		if s.devMode {
+			data, err = os.ReadFile(filepath.Join(s.root, "frontend", "assets", "js", "sw.js"))
+		} else {
+			data, err = assets.FS.ReadFile("js/sw.js")
+		}
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		ver := s.site.SWCacheVersion
+		if ver == "" {
+			ver = "blog-v3"
+		}
+		body := strings.ReplaceAll(string(data), "__BLOG_SW_VERSION__", ver)
+		c.Header("Service-Worker-Allowed", "/")
+		c.Header("Cache-Control", "no-cache")
+		c.Data(http.StatusOK, "application/javascript", []byte(body))
+	}
+}
+
+// serveManifest 动态生成 PWA manifest：名称/描述取 settings site 段，主题色取 style 段 accent
+// （缺省 #1c1f21 深色）；响应 no-cache 保证站点信息修改后 PWA 安装名即时同步。
+func (s *webServer) serveManifest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		site := s.site
+		name := firstNonEmpty(site.Title, site.LogoTitle, "Stellar Blog")
+		shortName := firstNonEmpty(site.LogoTitle, site.Title, "Stellar")
+		theme := firstNonEmpty(site.Style.Color.Accent, "#1c1f21")
+		m := map[string]any{
+			"name":             name,
+			"short_name":       shortName,
+			"description":      site.Description,
+			"start_url":        "/",
+			"display":          "standalone",
+			"theme_color":      theme,
+			"background_color": "#1c1f21",
+			"icons": []map[string]string{
+				{"src": "/assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+				{"src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+				{"src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+			},
+		}
+		b, err := json.Marshal(m)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Header("Cache-Control", "no-cache")
+		c.Data(http.StatusOK, "application/manifest+json", b)
+	}
+}
+
+// firstNonEmpty 返回第一个非空字符串，全部为空时返回空串。
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

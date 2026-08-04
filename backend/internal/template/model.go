@@ -313,9 +313,12 @@ type Site struct {
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
 	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
 	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
-	// 前端体验增强插件（Spec 36）：site.yml plugins 段。纯文件配置，不入库、不进 settings 表。
-	// 缺省全关，opt-in 启用；各插件 Enable 为 false 时前端不加载对应脚本。
+	// 前端体验增强插件（Spec 36）：site.yml plugins 段。缺省全关，opt-in 启用；
+	// 各插件 Enable 为 false 时前端不加载对应脚本。
 	Plugins PluginsConfig `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
+	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
+	SWCacheVersion string `yaml:"-" json:"-"`
 }
 
 // PluginsConfig 前端体验增强插件配置（Spec 36）。缺省全关，opt-in 启用。

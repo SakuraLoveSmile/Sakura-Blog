@@ -6,6 +6,11 @@ import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
 import AppearanceTab from "./AppearanceTab.vue";
 import WidgetsTab from "./WidgetsTab.vue";
+import PluginsTab from "./PluginsTab.vue";
+import CoverTab from "./CoverTab.vue";
+import NavTabsTab from "./NavTabsTab.vue";
+import AuthorsTab from "./AuthorsTab.vue";
+import LangTab from "./LangTab.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { VPageHeader, Toast } from "@/components/ui";
 
@@ -24,9 +29,14 @@ const tabs = [
   { key: "security", label: "安全" },
   { key: "appearance", label: "外观" },
   { key: "widgets", label: "组件编排" },
+  { key: "plugins", label: "插件" },
+  { key: "cover", label: "首页 Hero" },
+  { key: "nav_tabs", label: "导航标签" },
+  { key: "authors", label: "作者" },
+  { key: "lang", label: "文案" },
   { key: "advanced", label: "高级·JSON" },
 ];
-const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets", "ai"];
+const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets", "ai", "cover", "nav_tabs", "authors", "plugins", "lang"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const route = useRoute();
@@ -114,6 +124,19 @@ function ensureDefaults(d: Record<string, any>) {
   d.widgets = d.widgets || {};
   d.widgets.library = d.widgets.library || {};
   d.widgets.pages = d.widgets.pages || {};
+  // plugins 段默认值：子配置指针，缺省空对象=关闭（与后端 nil 语义等价）
+  d.plugins = d.plugins || {};
+  d.plugins.preload = d.plugins.preload || {};
+  d.plugins.scrollreveal = d.plugins.scrollreveal || {};
+  d.plugins.heti = d.plugins.heti || {};
+  d.plugins.fancybox = d.plugins.fancybox || {};
+  d.plugins.pjax = d.plugins.pjax || {};
+  d.cover = d.cover || {};
+  d.cover.features = d.cover.features || [];
+  d.nav_tabs = d.nav_tabs || {};
+  d.nav_tabs.items = d.nav_tabs.items || [];
+  d.authors = d.authors || {};
+  d.lang = d.lang || {};
   return d;
 }
 
@@ -718,6 +741,11 @@ onMounted(() => {
 
       <AppearanceTab v-show="active === 'appearance'" :data="data" :saving="savingKey" @save="save" />
       <WidgetsTab v-show="active === 'widgets'" :data="data" :saving="savingKey" @save="save" />
+      <PluginsTab v-show="active === 'plugins'" :data="data.plugins" :saving="savingKey" @save="() => save('plugins')" />
+      <CoverTab v-show="active === 'cover'" :data="data.cover" :saving="savingKey" @save="() => save('cover')" />
+      <NavTabsTab v-show="active === 'nav_tabs'" :data="data.nav_tabs" :saving="savingKey" @save="() => save('nav_tabs')" />
+      <AuthorsTab v-show="active === 'authors'" :data="data.authors" :saving="savingKey" @save="() => save('authors')" />
+      <LangTab v-show="active === 'lang'" :data="data.lang" :saving="savingKey" @save="() => save('lang')" />
 
       <!-- 头像选择器 -->
       <AttachmentPickerModal

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/config"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -118,7 +119,7 @@ func TestSettingsNotifyTest(t *testing.T) {
 	}
 }
 
-// TestSettingsAuthorsInject site.yml authors 注入 settings 响应。
+// TestSettingsAuthorsInject authors 段经 Bootstrap 入库后从 settings 表返回。
 func TestSettingsAuthorsInject(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
@@ -128,14 +129,30 @@ func TestSettingsAuthorsInject(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Admin.Password = "secret"
 	site.Authors = map[string]tmpl.AuthorDef{"admin": {Name: "管理员"}}
+	// authors 段已接入 settings 热更新管线：Bootstrap 把 site.yml 初值导入 settings 表
+	if err := config.Bootstrap(st, site); err != nil {
+		t.Fatalf("bootstrap: %v", err)
+	}
 	r := gin.New()
 	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
-	// 无密码站点时走无密码逻辑：直接造 admin 用户
+	// 无密码站点时走无密码逻辑：直接造 admin 用户（Bootstrap 的 Spec 45 迁移可能已创建，已存在则复用）
 	user := &store.User{Username: "admin", PasswordHash: "x", AuthSecret: store.GenerateAuthSecret()}
-	if err := st.EnsureUsersTable(); err != nil || st.CreateUser(user) != nil {
-		t.Fatalf("seed user: %v", err)
+	if err := st.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users: %v", err)
+	}
+	users, _ := st.ListUsers()
+	if len(users) == 0 {
+		if err := st.CreateUser(user); err != nil {
+			t.Fatalf("seed user: %v", err)
+		}
+		users, _ = st.ListUsers()
+	}
+	user = users[0]
+	// ListUsers 不含 auth_secret，需 GetUserByID 取完整用户（authCookie 签名密钥）
+	if full, err := st.GetUserByID(user.ID); err == nil && full != nil {
+		user = full
 	}
 	w := do2FA(r, http.MethodGet, "/api/v1/settings", "", authCookie(user))
 	var secs map[string]json.RawMessage

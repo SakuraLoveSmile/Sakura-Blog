@@ -333,7 +333,8 @@ comments:
     password: ''          # 【密钥】SMTP 发信密码/授权码
     from: ''              # 发件人地址，留空用 username
 
-# 前端体验增强配置（Spec 36）。缺省全关，opt-in 启用；纯文件配置，不入库、不进 settings 表。
+# 前端体验增强配置（Spec 36）。缺省全关，opt-in 启用。
+# 首次启动导入 settings 表后以后台「插件」Tab 为准（热更新），与 seo 段同语义。
 # 完整示例（各插件 enable 置 true 后按需启用）：
 # plugins:
 #   preload:

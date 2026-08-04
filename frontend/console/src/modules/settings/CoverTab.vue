@@ -1,0 +1,65 @@
+<script setup lang="ts">
+import { Icon } from "@iconify/vue";
+
+// 首页 Hero cover 区（site.yml cover 段入库版）：title/description + features 按钮列表。
+const props = defineProps<{
+  data: any;
+  saving: string;
+}>();
+
+const emit = defineEmits<{ (e: "save"): void }>();
+
+const inputCls =
+  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
+const btnCls =
+  "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
+const addBtnCls =
+  "inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors dark:text-primary dark:hover:text-primary/80";
+const rowBtnCls = "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-30";
+
+function addFeature() {
+  props.data.features.push({ title: "", url: "", icon: "" });
+}
+function removeAt(i: number) {
+  props.data.features.splice(i, 1);
+}
+function moveItem(i: number, dir: -1 | 1) {
+  const j = i + dir;
+  const arr = props.data.features;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+}
+</script>
+
+<template>
+  <div class="space-y-4">
+    <p class="text-xs text-gray-400 dark:text-gray-500">
+      首页 Hero 区：title 非空时首页第一页渲染（对齐 Stellar wiki_cover），留空则不渲染。
+    </p>
+    <div class="grid grid-cols-2 gap-4">
+      <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">标题（留空关闭 Hero）</label><input v-model="data.title" :class="inputCls" placeholder="Welcome" /></div>
+      <div><label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">描述</label><input v-model="data.description" :class="inputCls" placeholder="站点简介" /></div>
+    </div>
+    <div>
+      <label class="block text-xs text-gray-500 mb-1 dark:text-gray-400">Scheme（可选）</label>
+      <input v-model="data.scheme" :class="inputCls" placeholder="如 grid" />
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-xs text-gray-400 dark:text-gray-500">功能按钮（features）</p>
+      <div v-for="(f, i) in data.features" :key="i" class="grid grid-cols-12 gap-2 items-center">
+        <input v-model="f.title" placeholder="按钮文案" :class="inputCls" class="col-span-4" />
+        <input v-model="f.url" placeholder="/url 或 https://..." :class="inputCls" class="col-span-4" />
+        <input v-model="f.icon" placeholder="图标（icons.yml key）" :class="inputCls" class="col-span-2" />
+        <div class="col-span-2 flex items-center gap-1.5 justify-end">
+          <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
+          <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.features.length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>
+          <button @click="removeAt(Number(i))" class="text-red-500 hover:text-red-700"><Icon icon="ri:delete-bin-line" /></button>
+        </div>
+      </div>
+      <button @click="addFeature" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加按钮</button>
+    </div>
+
+    <div><button @click="emit('save')" :disabled="saving === 'cover'" :class="btnCls">保存 Hero</button></div>
+  </div>
+</template>
