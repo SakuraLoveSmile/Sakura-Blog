@@ -109,8 +109,8 @@
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v=dark1">
 
-  {{- /* 标签云 widget 重设计（tagcloud.design）：双模式拖拽云卡片样式 */}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v=cloud9">
+  {{- /* 标签云 widget 重设计（3D 球体版）：双模式球体交互卡片样式 */}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v=sphere1">
 
   {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
   {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v=demo50">{{end}}

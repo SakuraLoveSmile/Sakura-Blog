@@ -1,8 +1,8 @@
-{{- /* widgets/tagcloud.html: 标签云（按 resource/design/tagcloud.design 重设计为双模式交互卡片）。
+{{- /* widgets/tagcloud.html: 标签云（3D 球体版双模式交互卡片）。
    上下文为 WidgetInstance（Spec 33）：.Data 为 BuildTagCloud 构建的条目（含 Level 热度层级）。
    - 静态云为 SSR 兜底（按 orderby/order 排序输出），JS 不可用时完整可用；
-   - 动态云（3x3 平铺无缝循环拖拽）由 assets/js/tagcloud.js 以静态云 DOM 为唯一数据源构建，
-     初始化时切换到动态模式（is-static 类移除）；
+   - 动态云（3D 球体：Fibonacci 球面分布 + 透视投影 + 自动旋转/拖拽）由 assets/js/tagcloud.js
+     以静态云 DOM 为唯一数据源构建，初始化时切换到动态模式（is-static 类移除）；
    - 卡片底部为标签计数统计与操作提示（动态：拖拽探索；静态：按热度排序）。
    样式在 assets/css/tagcloud.css。旧参数 min_font/max_font/color/show_count 已被五档灰度层级
    与底部统计取代，BuildTagCloud 仍计算但本模板不再消费（配置兼容、行为以设计稿为准）。*/ -}}
@@ -13,7 +13,7 @@
   </div>
   <div class="widget-body is-static">
     <div class="tag-card">
-      {{- /* 动态云容器：SSR 留空并隐藏，tagcloud.js 从静态云读数据填充 3x3 tile */}}
+      {{- /* 动态云容器：SSR 留空并隐藏，tagcloud.js 从静态云读数据构建 3D 球体 */}}
       <div class="tag-cloud" hidden>
         <div class="tag-cloud-inner"></div>
       </div>

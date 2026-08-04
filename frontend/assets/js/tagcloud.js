@@ -1,6 +1,6 @@
-// tagcloud.js: 标签云 widget 交互（按 resource/design/tagcloud.design 重设计）。
-// 动态模式：3x3 平铺无缝循环拖拽云（自动漂移 / 拖拽惯性 / 点击涟漪）；
-// 静态模式：SSR 静态云兜底（JS 不可用时默认可见）。
+// tagcloud.js: 标签云 widget 交互（3D 球体版）。
+// 动态模式：3D 球体标签云（Fibonacci 球面分布，透视投影近大远小/近清远淡，
+// 自动旋转 + 拖拽惯性）；静态模式：SSR 静态云兜底（JS 不可用时默认可见）。
 // 全站 defer 加载：遍历 .widget-wrapper.tagcloud 存在性初始化（支持多实例）+
 // pjax:complete 重初始化，元素移出 DOM 后动画循环自清理；数据源为 SSR 静态云 DOM，不发请求。
 (function () {
@@ -9,23 +9,20 @@
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var instances = [];
 
-  function frac(x) { return x - Math.floor(x); }
-
-  function shuffle(arr) {
-    var a = arr.slice();
-    for (var i = a.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i]; a[i] = a[j]; a[j] = t;
-    }
-    return a;
+  // 三维旋转（先绕 Y 轴再绕 X 轴），返回旋转后的坐标
+  function rotate3d(x, y, z, ry, rx) {
+    var cy = Math.cos(ry), sy = Math.sin(ry);
+    var x1 = x * cy + z * sy;
+    var z1 = -x * sy + z * cy;
+    var cx = Math.cos(rx), sx = Math.sin(rx);
+    return { x: x1, y: y * cx - z1 * sx, z: y * sx + z1 * cx };
   }
 
   function create(root) {
     var cloud = root.querySelector('.tag-cloud');
-    var inner = cloud && cloud.querySelector('.tag-cloud-inner');
     var staticCloud = root.querySelector('.tag-cloud-static');
     var modeSwitch = root.querySelector('.tag-mode-switch');
-    if (!cloud || !inner || !staticCloud || !modeSwitch) return null;
+    if (!cloud || !staticCloud || !modeSwitch) return null;
 
     // ── 数据：从 SSR 静态云读 name/href/title/level（唯一数据源）──
     var tags = [];
@@ -40,113 +37,82 @@
     });
     if (!tags.length) return null;
 
-    var cloudWidth = 0, cloudHeight = 0;
-    var offsetX = 0, offsetY = 0, velocityX = 0, velocityY = 0;
-    var isDragging = false, autoDrift = false, driftTime = 0;
+    // 同一 root 重复 create（如 pjax 重初始化）时清理旧球体标签
+    cloud.querySelectorAll('a.tag').forEach(function (a) { a.remove(); });
+
+    var N = tags.length;
+    // Fibonacci 球面分布：单位球面上均匀撒点（Y 轴为竖直轴，绕 Y 旋转呈地球自转感）
+    var golden = Math.PI * (3 - Math.sqrt(5));
+    tags.forEach(function (t, i) {
+      var yy = 1 - (i / (N - 1)) * 2;
+      var r = Math.sqrt(1 - yy * yy);
+      t.px = Math.cos(golden * i) * r;
+      t.py = yy;
+      t.pz = Math.sin(golden * i) * r;
+      t.el = document.createElement('a');
+      t.el.className = 'tag tag-sphere tag-' + t.level;
+      t.el.textContent = t.name;
+      t.el.href = t.href;
+      t.el.title = t.title;
+      cloud.appendChild(t.el);
+    });
+
+    var cloudWidth = 0, cloudHeight = 0, radius = 60;
+    var rotY = 0, rotX = -0.35;   // 初始绕 X 轴倾角，呈现球体立体感
+    var rotSpeed = 0.0045;        // 自动旋转角速度（rad/帧，约 23s 一圈）
+    var velY = 0, velX = 0;       // 拖拽释放后的惯性角速度
+    var isDragging = false, autoRotate = true;
     var lastX = 0, lastY = 0, startX = 0, startY = 0;
     var hasDragged = false, suppressClick = false, suppressTimer = 0;
-    var rafId = 0, stopped = false, mode = 'static';
+    var rafId = 0, stopped = false, mode = 'static', driftTime = 0;
 
-    // 在一个 tile 内铺标签：错位网格 + 确定性小偏移（sin 种子，各 tile 内容一致才可无缝循环）。
-    // 窄侧栏（<280px）用 4x5 网格避免标签拥挤，宽容器用设计稿的 6x4；
-    // 槽位不足时按洗牌序循环取标签，保证所有标签都进入动态云。
-    function fillTile(tileEl, list, cols, rows) {
-      var slots = cols * rows;
-      for (var i = 0; i < slots; i++) {
-        var item = list[i % list.length];
-        var row = Math.floor(i / cols);
-        var col = i % cols;
-        var colOffset = (row % 2 === 1) ? 0.5 : 0;
-        var seed = row * 31 + col * 17;
-        var r1 = frac(Math.sin(seed) * 10000);
-        var r2 = frac(Math.sin(seed + 99) * 10000);
-        var a = document.createElement('a');
-        a.className = 'tag tag-' + item.level;
-        a.textContent = item.name;
-        a.href = item.href;
-        a.title = item.title;
-        a.style.left = (((col + colOffset) / cols) * 100 + (r1 - 0.5) * 5) + '%';
-        a.style.top = (((row + 0.5) / rows) * 100 + (r2 - 0.5) * 6) + '%';
-        a.style.setProperty('--delay', (r1 * 0.5 + 0.15).toFixed(2) + 's');
-        tileEl.appendChild(a);
+    // 透视投影：深度 → 缩放与透明度（近大远小、近清远淡）
+    function project() {
+      for (var i = 0; i < N; i++) {
+        var t = tags[i];
+        var p = rotate3d(t.px, t.py, t.pz, rotY, rotX);
+        var depth = (p.z + 1) / 2;              // 0（背面）~ 1（正面）
+        var persp = 0.8 + depth * 0.4;          // 缩放 0.8x ~ 1.2x
+        var el = t.el;
+        el.style.left = (cloudWidth / 2 + p.x * radius * persp) + 'px';
+        el.style.top = (cloudHeight / 2 + p.y * radius * persp) + 'px';
+        el.style.opacity = (0.3 + 0.7 * depth).toFixed(3);
+        el.style.zIndex = Math.round(depth * 100);
+        el.style.transform = 'translate(-50%, -50%) scale(' + persp.toFixed(3) + ')';
       }
-    }
-
-    function buildTiles() {
-      cloudWidth = cloud.offsetWidth;
-      cloudHeight = cloud.offsetHeight;
-      inner.textContent = '';
-      var narrow = cloudWidth > 0 && cloudWidth < 280;
-      var cols = narrow ? 4 : 6, rows = narrow ? 5 : 4;
-      var list = shuffle(tags);
-      for (var ty = 0; ty < 3; ty++) {
-        for (var tx = 0; tx < 3; tx++) {
-          var tile = document.createElement('div');
-          tile.className = 'tag-tile';
-          tile.style.left = (tx * 33.333) + '%';
-          tile.style.top = (ty * 33.333) + '%';
-          fillTile(tile, list, cols, rows);
-          inner.appendChild(tile);
-        }
-      }
-    }
-
-    function applyTransform() {
-      inner.style.transform = 'translate3d(' + offsetX + 'px, ' + offsetY + 'px, 0)';
-    }
-
-    // 无缝循环：偏移超出一个 tile（即视口尺寸）时归位，视觉上完全一致
-    function wrapOffset() {
-      if (!cloudWidth || !cloudHeight) return;
-      while (offsetX >= cloudWidth) offsetX -= cloudWidth;
-      while (offsetX < 0) offsetX += cloudWidth;
-      while (offsetY >= cloudHeight) offsetY -= cloudHeight;
-      while (offsetY < 0) offsetY += cloudHeight;
-    }
-
-    function createRipple(x, y) {
-      var rect = cloud.getBoundingClientRect();
-      var r = document.createElement('div');
-      r.className = 'ripple';
-      r.style.left = (x - rect.left) + 'px';
-      r.style.top = (y - rect.top) + 'px';
-      r.style.width = '40px';
-      r.style.height = '40px';
-      cloud.appendChild(r);
-      setTimeout(function () { r.remove(); }, 600);
     }
 
     function animate() {
       if (stopped || !cloud.isConnected) { stop(); return; }
-      if (!isDragging && autoDrift && mode === 'dynamic') {
-        driftTime += 0.008;
-        offsetX += Math.sin(driftTime) * 0.15;
-        offsetY += Math.cos(driftTime * 0.7) * 0.08 + Math.sin(driftTime * 1.3) * 0.05;
-        wrapOffset();
-        applyTransform();
+      if (!isDragging && autoRotate && mode === 'dynamic') {
+        driftTime += 0.01;
+        rotY += rotSpeed;
+        // 俯仰摆动（缓动趋近目标角，从任意拖拽姿态平滑回到呼吸节奏）
+        var targetRX = -0.35 + Math.sin(driftTime * 0.5) * 0.08;
+        rotX += (targetRX - rotX) * 0.02;
       }
       // 拖拽惯性（衰减至阈值以下停止）
-      if (!isDragging && (Math.abs(velocityX) > 0.05 || Math.abs(velocityY) > 0.05)) {
-        offsetX += velocityX;
-        offsetY += velocityY;
-        velocityX *= 0.95;
-        velocityY *= 0.95;
-        wrapOffset();
-        applyTransform();
+      if (!isDragging && (Math.abs(velY) > 0.0001 || Math.abs(velX) > 0.0001)) {
+        rotY += velY;
+        rotX += velX;
+        rotX = Math.max(-1.2, Math.min(1.2, rotX));
+        velY *= 0.94;
+        velX *= 0.94;
       }
+      if (mode === 'dynamic') project();
       rafId = requestAnimationFrame(animate);
     }
 
     function onStart(e) {
       if (mode !== 'dynamic') return;
       isDragging = true;
-      autoDrift = false;
+      autoRotate = false;
       hasDragged = false;
       cloud.classList.add('grabbing');
       var p = e.touches ? e.touches[0] : e;
       lastX = startX = p.clientX;
       lastY = startY = p.clientY;
-      velocityX = velocityY = 0;
+      velY = velX = 0;
     }
 
     function onMove(e) {
@@ -156,12 +122,12 @@
       var dy = p.clientY - lastY;
       if (Math.abs(p.clientX - startX) > 5 || Math.abs(p.clientY - startY) > 5) hasDragged = true;
       // 触屏与侧栏外页面纵向滚动共存（touch-action: pan-y），仅取水平位移；鼠标拖拽双轴自由
-      velocityX = dx;
-      velocityY = e.touches ? 0 : dy;
-      offsetX += dx;
-      offsetY += e.touches ? 0 : dy;
-      wrapOffset();
-      applyTransform();
+      velY = dx * 0.006;
+      velX = e.touches ? 0 : dy * 0.006;
+      rotY += velY;
+      rotX += velX;
+      rotX = Math.max(-1.2, Math.min(1.2, rotX));
+      project();
       lastX = p.clientX;
       lastY = p.clientY;
     }
@@ -176,13 +142,25 @@
         clearTimeout(suppressTimer);
         suppressTimer = setTimeout(function () { suppressClick = false; }, 350);
       }
-      // 停顿后恢复自动漂移（reduced-motion 下永不恢复）
+      // 停顿后恢复自动旋转（reduced-motion 下永不恢复）
       var delay = hasDragged ? 2500 : 500;
-      setTimeout(function () { if (!isDragging && mode === 'dynamic' && !stopped) autoDrift = !reduced; }, delay);
+      setTimeout(function () { if (!isDragging && mode === 'dynamic' && !stopped) autoRotate = !reduced; }, delay);
     }
 
     // 捕获阶段拦截：拖拽后吞掉 click（pjax.js 的 document 冒泡监听在捕获被 stopPropagation 后不会触发）；
     // 正常点击放行并补一个涟漪反馈，跳转交给默认行为 / PJAX。
+    function createRipple(x, y) {
+      var rect = cloud.getBoundingClientRect();
+      var r = document.createElement('div');
+      r.className = 'ripple';
+      r.style.left = (x - rect.left) + 'px';
+      r.style.top = (y - rect.top) + 'px';
+      r.style.width = '40px';
+      r.style.height = '40px';
+      cloud.appendChild(r);
+      setTimeout(function () { r.remove(); }, 600);
+    }
+
     function onClickCapture(e) {
       if (suppressClick) {
         suppressClick = false;
@@ -195,15 +173,15 @@
       }
     }
 
-    // 鼠标悬停暂停漂移，移出恢复
-    function onEnter() { if (!isDragging) autoDrift = false; }
-    function onLeave() { if (!isDragging && mode === 'dynamic') autoDrift = !reduced; }
+    // 鼠标悬停暂停自动旋转，移出恢复
+    function onEnter() { if (!isDragging) autoRotate = false; }
+    function onLeave() { if (!isDragging && mode === 'dynamic') autoRotate = !reduced; }
 
     function onResize() {
       cloudWidth = cloud.offsetWidth;
       cloudHeight = cloud.offsetHeight;
-      wrapOffset();
-      applyTransform();
+      radius = Math.min(cloudWidth, cloudHeight) * 0.3;
+      if (mode === 'dynamic') project();
     }
 
     // ── 模式切换 ──
@@ -216,11 +194,11 @@
       if (m === 'static') {
         cloud.setAttribute('hidden', '');
         staticCloud.removeAttribute('hidden');
-        autoDrift = false;
+        autoRotate = false;
       } else {
         staticCloud.setAttribute('hidden', '');
         cloud.removeAttribute('hidden');
-        autoDrift = !reduced;
+        autoRotate = !reduced;
       }
       root.classList.toggle('is-static', m === 'static');
     }
@@ -260,9 +238,12 @@
     modeSwitch.addEventListener('click', onModeClick);
     window.addEventListener('resize', onResize);
 
-    // 先切动态模式使云容器可见（hidden 时 offsetWidth=0，窄栏网格判据会失效），再铺 tile
+    // 先切动态模式使云容器可见（hidden 时 offsetWidth=0），再量尺寸铺球体标签
     switchMode('dynamic');
-    buildTiles();
+    cloudWidth = cloud.offsetWidth;
+    cloudHeight = cloud.offsetHeight;
+    radius = Math.min(cloudWidth, cloudHeight) * 0.3;
+    project();
     rafId = requestAnimationFrame(animate);
 
     return { stop: stop };
