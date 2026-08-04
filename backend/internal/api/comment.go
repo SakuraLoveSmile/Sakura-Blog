@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/comment"
+	"blog/internal/notify"
 	"blog/internal/store"
 )
 
@@ -94,15 +96,43 @@ func (h *Handler) listComments(c *gin.Context) {
 }
 
 // approveComment PUT /api/v1/comments/:id/approve：审核通过。
+// 通过后触发 comment_approved 站内通知（异步，失败仅记日志）。
 func (h *Handler) approveComment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "无效的评论 ID")
 		return
 	}
+	cm, err := h.store.GetComment(id)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if cm == nil {
+		Fail(c, http.StatusNotFound, "评论不存在")
+		return
+	}
 	if err := h.store.UpdateCommentStatus(id, store.CommentApproved); err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
+	}
+	// 站内通知（Wave 3b）：评论审核通过
+	if h.notify != nil {
+		content := cm.ContentMD
+		if r := []rune(content); len(r) > 200 {
+			content = string(r[:200]) + "…"
+		}
+		h.notify.Notify(notify.Event{
+			Type:    "comment_approved",
+			Title:   fmt.Sprintf("评论已通过：%s", cm.Nick),
+			Content: content,
+			Link:    cm.PageKey,
+			Nick:    cm.Nick,
+			Email:   cm.Email,
+			IP:      cm.IP,
+			PageKey: cm.PageKey,
+			Status:  store.CommentApproved,
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

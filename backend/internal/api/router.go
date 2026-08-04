@@ -21,6 +21,7 @@ import (
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
 	"blog/internal/module"
+	"blog/internal/notify"
 	"blog/internal/post"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -39,6 +40,7 @@ type Handler struct {
 	comments  *comment.Handler
 	backups   *backup.Service
 	modules   *module.Manager
+	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
 	uploadDir string
 	notesPath string // content/notes.md 路径（笔记页正文）
 	maxUpload int64  // 单文件上限字节
@@ -62,6 +64,7 @@ type Config struct {
 	Comments    *comment.Handler
 	Backups     *backup.Service
 	Modules     *module.Manager
+	Notify      *notify.Service // 站内通知服务（Wave 3b），可空
 	UploadDir   string
 	NotesPath   string
 	MaxUploadMB int
@@ -80,6 +83,7 @@ func New(cfg Config) *Handler {
 		comments:  cfg.Comments,
 		backups:   cfg.Backups,
 		modules:   cfg.Modules,
+		notify:    cfg.Notify,
 		uploadDir: cfg.UploadDir,
 		notesPath: cfg.NotesPath,
 		maxUpload: int64(maxMB) << 20,
@@ -120,6 +124,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"notebooks", st.EnsureNotebooksTable},      // 笔记本（Spec 35b）
 		{"notes", st.EnsureNotesTable},              // 笔记（Spec 35b）
 		{"login_logs", st.EnsureLoginLogsTable},     // 登录日志（Wave 3a）
+		{"notifications", st.EnsureNotificationsTable}, // 站内通知（Wave 3b）
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -176,6 +181,12 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/profile/api-token", h.apiTokenStatus)
 		authed.POST("/profile/api-token", h.generateAPIToken)
 		authed.DELETE("/profile/api-token", h.revokeAPIToken)
+
+		// 站内通知中心（Wave 3b）：未读优先分页 + 单条/全部已读 + 未读数
+		authed.GET("/notifications", h.listNotifications)
+		authed.GET("/notifications/unread-count", h.unreadNotifications)
+		authed.PUT("/notifications/:id/read", h.markNotificationRead)
+		authed.PUT("/notifications/read-all", h.markAllNotificationsRead)
 
 		// 仪表盘
 		authed.GET("/dashboard/stats", h.dashboardStats)
