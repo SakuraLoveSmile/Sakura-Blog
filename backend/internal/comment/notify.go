@@ -8,6 +8,7 @@ import (
 	"net/smtp"
 	"strings"
 
+	"blog/internal/notify"
 	"blog/internal/store"
 )
 
@@ -51,6 +52,31 @@ func (h *Handler) notify(cm, parent *store.Comment) {
 		body := fmt.Sprintf("%s 在 %s 回复了你的评论：\n\n%s\n\n你的原评论：\n%s\n",
 			cm.Nick, cm.PageKey, cm.ContentMD, parent.ContentMD)
 		h.sendFn(sendFn, parent.Email, subject, body)
+	}
+
+	// 站内通知 + Webhook（Wave 3b）：规则与邮件一致，博主自己发的评论不通知。
+	if h.notifier != nil && (adminEmail == "" || !strings.EqualFold(adminEmail, cm.Email)) {
+		content := cm.ContentMD
+		if r := []rune(content); len(r) > 200 {
+			content = string(r[:200]) + "…" // 通知内容截断，防长文刷屏
+		}
+		ev := notify.Event{
+			Type:    "comment_new",
+			Title:   fmt.Sprintf("新评论：%s", cm.Nick),
+			Content: content,
+			Link:    cm.PageKey,
+			Nick:    cm.Nick,
+			Email:   cm.Email,
+			IP:      cm.IP,
+			PageKey: cm.PageKey,
+			Status:  cm.Status,
+		}
+		if parent != nil {
+			ev.Type = "comment_reply"
+			ev.Title = fmt.Sprintf("%s 回复了评论", cm.Nick)
+			ev.ParentNick = parent.Nick
+		}
+		h.notifier.Notify(ev)
 	}
 }
 

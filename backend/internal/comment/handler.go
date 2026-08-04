@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/notify"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -33,6 +34,7 @@ type Handler struct {
 	store     *store.Store
 	cfg       *tmpl.CommentsConfig
 	siteTitle string // 邮件主题用
+	notifier  *notify.Service // 站内通知服务（Wave 3b），nil 时跳过站内通知/Webhook
 
 	mu   sync.Mutex
 	last map[string]time.Time // IP 限流：IP → 上次评论时间
@@ -46,6 +48,11 @@ func New(s *store.Store, cfg *tmpl.CommentsConfig, siteTitle string) *Handler {
 		siteTitle: siteTitle,
 		last:      map[string]time.Time{},
 	}
+}
+
+// SetNotifier 注入站内通知服务（Wave 3b）。未注入时评论通知仅发邮件。
+func (h *Handler) SetNotifier(n *notify.Service) {
+	h.notifier = n
 }
 
 // Register 注册公开路由（同源 /api/comments）。

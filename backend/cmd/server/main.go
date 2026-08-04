@@ -26,6 +26,7 @@ import (
 	"blog/internal/module"
 	_ "blog/internal/module/seo" // blank import：触发 SEO 模块 init() 自注册
 	"blog/internal/moment"
+	"blog/internal/notify"
 	"blog/internal/og"
 	"blog/internal/page"
 	"blog/internal/post"
@@ -201,6 +202,11 @@ func main() {
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
 
+	// 站内通知中心（Wave 3b）：评论事件写站内通知 + 可选 Webhook（settings 表 notify 段）。
+	// 需在评论 handler 装配前注入，否则评论提交/回复不产生站内通知。
+	notifySvc := notify.New(st)
+	commentHandler.SetNotifier(notifySvc)
+
 	// GitHub 代理缓存（Spec 21）：内存 + 磁盘双缓存客户端，供 ghrepo/ghuser/ghcard 同步取数。
 	// 必须在 seed 之前注入 posts：否则 seed 渲染时 ghClient 为 nil，卡片会降级为纯链接并存入 content_html。
 	ghClient := ghpkg.New(ghpkg.Config{
@@ -325,6 +331,7 @@ func main() {
 			Comments:    commentHandler,
 			Backups:     backupSvc,
 			Modules:     moduleMgr,
+			Notify:      notifySvc,
 			UploadDir:   app.UploadDir,
 			NotesPath:   filepath.Join(app.Root, "content", "notes.md"),
 			MaxUploadMB: app.MaxUploadMB,
