@@ -189,6 +189,7 @@ var zhCN = map[string]string{
 
 	// AI 文章摘要（Spec 53）
 	"ai.summary.title":       "AI 摘要",
+	"ai.summary.tag":         "Reader API",
 	"ai.summary.open":        "用你自己的 API 生成 AI 摘要",
 	"ai.summary.endpoint":    "接口地址（OpenAI 兼容 base_url）",
 	"ai.summary.model":       "模型名称",
@@ -208,12 +209,24 @@ var zhCN = map[string]string{
 	"js.copied":       "已复制",
 }
 
+// langOverrides 运行时文案覆盖表（settings 表 lang 段，RebuildSite 时刷新；nil=无覆盖）。
+// 读多写少：写入由 siteMu 保护（config.RebuildSite），Lang 读方无锁，与 site 字段同权衡。
+var langOverrides map[string]string
+
+// SetLangOverrides 设置运行时文案覆盖表（config.RebuildSite 调用；nil 清空覆盖）。
+func SetLangOverrides(m map[string]string) {
+	langOverrides = m
+}
+
 // Lang 返回 key 对应的中文文案，支持 fmt.Sprintf 式参数替换。
-// 未命中返回 key 本身（便于排查遗漏）。
+// 优先级：settings 覆盖表 > 内置 zhCN；均未命中返回 key 本身（便于排查遗漏）。
 func Lang(key string, args ...interface{}) string {
-	v, ok := zhCN[key]
+	v, ok := langOverrides[key]
 	if !ok {
-		return key
+		v, ok = zhCN[key]
+		if !ok {
+			return key
+		}
 	}
 	if len(args) > 0 {
 		return fmt.Sprintf(v, args...)

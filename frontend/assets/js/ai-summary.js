@@ -3,9 +3,20 @@
 // 生成走 POST /api/v1/ai/summary/guest 透传读者自己的 OpenAI 兼容 API：
 // Key 仅随本次请求发送，不落服务端；「记住」勾选仅存接口/模型到 localStorage（不含 Key）。
 // document 级事件委托绑定，PJAX 换页后 DOM 替换不受影响。
+// 打字机：模块级定时器 ID，PJAX 切页时清理。
 (function () {
   var STORE_KEY = 'Stellar.ai';
   var CONTENT_LIMIT = 40000; // 与后端 aiGuestContentLimit 对齐，前端先截断省流量
+
+  // 打字机定时器 ID，PJAX 切页时清理避免残留
+  var _typewriterTimer = null;
+
+  document.addEventListener('pjax:complete', function () {
+    if (_typewriterTimer) {
+      clearInterval(_typewriterTimer);
+      _typewriterTimer = null;
+    }
+  });
 
   function loadSaved() {
     try {
@@ -46,12 +57,38 @@
   }
 
   function renderSummary(root, text) {
+    // 清理旧打字机定时器（防止重复调用）
+    if (_typewriterTimer) {
+      clearInterval(_typewriterTimer);
+      _typewriterTimer = null;
+    }
     var body = root.querySelector('.body');
     if (body) {
       body.replaceChildren(); // 清空旧占位，不用 innerHTML 避免解析标记
       var p = document.createElement('p');
-      p.textContent = text;
       body.appendChild(p);
+      // 打字机逐字输出（仅读者点击生成后调用，页面加载的已有摘要不走此路径）
+      var chars = Array.from(text);
+      var idx = 0;
+      var cursor = document.createElement('span');
+      cursor.className = 'ai-cursor';
+      p.appendChild(cursor);
+      _typewriterTimer = setInterval(function () {
+        if (idx < chars.length) {
+          // 每次 2 字，末尾不足 2 字时取剩余
+          var step = idx + 2 <= chars.length ? 2 : 1;
+          var chunk = chars.slice(idx, idx + step).join('');
+          idx += step;
+          cursor.before(document.createTextNode(chunk));
+        } else {
+          clearInterval(_typewriterTimer);
+          _typewriterTimer = null;
+          // 输出完成，光标淡出移除
+          cursor.style.transition = 'opacity 0.5s';
+          cursor.style.opacity = '0';
+          setTimeout(function () { cursor.remove(); }, 500);
+        }
+      }, 30);
     }
     var panel = root.querySelector('.ai-summary-panel');
     if (panel) {

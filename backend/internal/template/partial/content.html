@@ -59,7 +59,7 @@
      复用 tag-plugin colorful note 结构与样式，位置在过期提醒之前。*/}}
   {{if and .Page.Title .Page.AISummaryOn}}
   <div class="tag-plugin colorful note ai-summary" id="ai-summary" color="blue"{{if .Page.AIUserAPIOn}} data-user-api="1"{{end}} data-generating-msg="{{lang "ai.summary.generating"}}" data-done-msg="{{lang "ai.summary.done"}}" data-required-msg="{{lang "ai.summary.required"}}">
-    <div class="title">{{- lang "ai.summary.title" -}}</div>
+    <div class="title"><svg class="ai-summary-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg><span class="ai-summary-title-text">{{- lang "ai.summary.title" -}}</span><span class="ai-summary-tag">{{- lang "ai.summary.tag" -}}</span></div>
     <div class="body">{{if .Page.AISummary}}<p>{{.Page.AISummary}}</p>{{end}}</div>
     {{if and (not .Page.AISummary) .Page.AIUserAPIOn}}
     <div class="ai-summary-panel">

@@ -30,29 +30,138 @@ article.md-text.content p>img:not([class]) {
   }
 }
 
-/* ── AI 文章摘要（Spec 53）：容器复用 tag-plugin colorful note，这里只补自助面板布局 ── */
-.ai-summary .ai-summary-panel {
-  margin-top: 8px;
+/* ── AI 文章摘要（Spec 53）：对齐 TianliGPT 样式语言（调研 hexo-theme-stellar
+   _plugins/tianli_gpt.styl 结论）：轻量卡片 + 标题行徽章 + 小圆角按钮。
+   变量映射层：所有颜色经 --ai-* 映射主题变量，深色/浅色自动适配。
+   #ai-summary id 特异性覆盖 tag-plugin colorful note 的主题色块样式。*/
+#ai-summary {
+  --ai-font-color: var(--text-p2);
+  --ai-post-bg: var(--block);
+  --ai-content-bg: var(--background);
+  --ai-border: 1px solid var(--block-border);
+  --ai-tag-bg: var(--card);
+  --ai-btn-bg: var(--card);
+  --ai-btn-color: var(--text-p2);
+  --ai-title-color: var(--text-p1);
+  background: var(--ai-post-bg);
+  border: var(--ai-border);
+  border-radius: 12px;
+  padding: 10px 12px 11px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  box-shadow: none;
+  color: var(--ai-font-color);
+  transition: all .3s;
 }
 
+/* 纯深色模式项目（html[data-theme="dark"] 始终生效）：覆写 colorful[color='blue'] 的蓝色色调变量，
+   还原中性灰值（与 main.css [data-theme="dark"] :root 定义一致）。 */
+:root[data-theme="dark"] #ai-summary {
+  --text-p1: hsla(210deg 0% 100% / 0.8);
+  --text-p2: hsla(210deg 0% 100% / 0.7);
+  --text-p3: hsla(210deg 0% 100% / 0.5);
+}
+
+/* 标题行：图标 + 标题 + 右侧徽章（对齐 tianli_gpt .ai-title） */
+#ai-summary > .title {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 6px;
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: bold;
+  color: var(--ai-title-color);
+}
+#ai-summary .ai-summary-icon {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+}
+#ai-summary .ai-summary-icon path {
+  fill: var(--ai-font-color);
+}
+#ai-summary .ai-summary-title-text {
+  margin-left: 8px;
+  font-weight: bold;
+}
+#ai-summary .ai-summary-tag {
+  font-size: 12px;
+  background-color: var(--ai-tag-bg);
+  color: var(--ai-btn-color);
+  border-radius: 4px;
+  margin-left: auto;
+  line-height: 1;
+  padding: 4px 5px;
+  border: var(--ai-border);
+}
+
+/* 正文/说明块（对齐 tianli_gpt .ai-explanation） */
+#ai-summary > .body {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--ai-content-bg);
+  border-radius: 12px;
+  border: var(--ai-border);
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--ai-font-color);
+}
+#ai-summary > .body p {
+  margin: 0;
+}
+/* 无预生成摘要时 body 为空 div，隐藏避免渲染空说明块 */
+#ai-summary > .body:empty {
+  display: none;
+}
+
+/* 展开按钮：轻量小胶囊（对齐 tianli_gpt .ai-btn-item） */
+.ai-summary .ai-summary-panel {
+  margin-top: 12px;
+}
 .ai-summary .ai-summary-open {
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
   font-size: .8125rem;
-  color: var(--text-p3);
-  background: none;
-  border: none;
-  padding: 0;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ai-btn-color);
+  background: var(--ai-btn-bg);
+  border: var(--ai-border);
+  border-radius: 6px;
+  user-select: none;
+  transition: all .3s;
 }
-
+.ai-summary .ai-summary-open::before {
+  content: '+';
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ai-font-color);
+}
 .ai-summary .ai-summary-open:hover {
-  color: var(--theme-link);
+  background: var(--link);
+  color: var(--text-reverse);
 }
 
+/* 表单：分组卡片背景 + 网格两列（endpoint 全宽，model/key 同行）
+   注意 display 显式值会覆盖 hidden 属性，必须补 [hidden] 规则保证收起可用 */
 .ai-summary .ai-summary-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--ai-content-bg);
+  border: var(--ai-border);
+  border-radius: 12px;
+}
+.ai-summary .ai-summary-form[hidden] {
+  display: none;
 }
 
 .ai-summary .ai-summary-form input[type="url"],
@@ -60,12 +169,22 @@ article.md-text.content p>img:not([class]) {
 .ai-summary .ai-summary-form input[type="password"] {
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-size: .875rem;
-  border-radius: var(--radius-block, 8px);
-  border: 1px solid var(--block-border, var(--theme-a10));
+  border-radius: var(--radius-block, 10px);
+  border: var(--ai-border);
   background: var(--alpha20, rgba(0, 0, 0, .03));
   color: var(--text-p1);
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.ai-summary .ai-summary-form input:focus {
+  outline: none;
+  border-color: var(--theme);
+  background: var(--card, #fff);
+  box-shadow: 0 0 0 3px var(--theme-a20);
+}
+.ai-summary .ai-summary-endpoint {
+  grid-column: 1 / -1;
 }
 
 .ai-summary .ai-summary-remember {
@@ -74,25 +193,76 @@ article.md-text.content p>img:not([class]) {
   gap: 6px;
   font-size: .8125rem;
   color: var(--text-p3);
+  grid-column: 1 / -1;
+}
+.ai-summary .ai-summary-remember input[type="checkbox"] {
+  accent-color: var(--theme);
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 
+/* 生成按钮：轻量小胶囊（对齐 tianli_gpt .ai-btn-item，hover 链接色填充） */
 .ai-summary .ai-summary-generate {
-  align-self: flex-start;
   cursor: pointer;
-  padding: 6px 16px;
+  justify-self: start;
+  padding: 5px 10px;
   font-size: .875rem;
-  border-radius: var(--radius-block, 8px);
-  border: none;
-  background: var(--gradient-button, var(--theme-bg));
-  color: var(--theme-link-opposite, var(--text-p1));
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ai-btn-color);
+  background: var(--ai-btn-bg);
+  border: var(--ai-border);
+  border-radius: 6px;
+  user-select: none;
+  transition: all .3s;
 }
-
+.ai-summary .ai-summary-generate:hover:not(:disabled) {
+  background: var(--link);
+  color: var(--text-reverse);
+}
 .ai-summary .ai-summary-generate:disabled {
   opacity: .6;
   cursor: wait;
 }
 
 .ai-summary .ai-summary-privacy {
+  grid-column: 1 / -1;
   margin: 0;
   color: var(--text-p3);
+  font-size: .75rem;
+}
+
+@media screen and (max-width: 768px) {
+  .ai-summary .ai-summary-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ai-summary .ai-summary-open {
+    align-self: center;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .ai-summary .ai-summary-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 打字机光标：12px 呼吸圆点，输出完成后淡出移除 */
+.ai-cursor {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ai-btn-color);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: ai_breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes ai_breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
