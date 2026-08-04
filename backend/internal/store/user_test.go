@@ -248,3 +248,88 @@ func TestGenerateAuthSecret(t *testing.T) {
 		t.Fatal("two generated secrets should differ")
 	}
 }
+
+// TestEnsureUsersTableMigratesAPITokenColumn 老库（无 api_token_hash 列）补列迁移：
+// 列缺失时 ALTER 补上，已有数据保留；再次调用幂等。
+func TestEnsureUsersTableMigratesAPITokenColumn(t *testing.T) {
+	s, err := New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer s.Close()
+
+	// 模拟 Spec 45 老库：手工建无 api_token_hash 列的 users 表并插入数据
+	if _, err := s.db.Exec(`CREATE TABLE users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		display_name TEXT NOT NULL DEFAULT '',
+		email TEXT NOT NULL DEFAULT '',
+		avatar TEXT NOT NULL DEFAULT '',
+		totp_secret TEXT NOT NULL DEFAULT '',
+		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
+		auth_secret TEXT NOT NULL DEFAULT '',
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`); err != nil {
+		t.Fatalf("create legacy users table: %v", err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO users (username, password_hash, auth_secret) VALUES ('admin', 'x', 'legacy-secret')`); err != nil {
+		t.Fatalf("seed legacy user: %v", err)
+	}
+
+	// 迁移：EnsureUsersTable 应补上 api_token_hash 列
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("migrate users table: %v", err)
+	}
+	has, err := s.tableHasColumn("users", "api_token_hash")
+	if err != nil || !has {
+		t.Fatalf("api_token_hash column should exist after migrate (has=%v err=%v)", has, err)
+	}
+
+	// 存量数据保留且新列默认空
+	u, err := s.GetUserByUsername("admin")
+	if err != nil || u == nil {
+		t.Fatalf("legacy user should survive migrate: %v / %v", u, err)
+	}
+	if u.APITokenHash != "" {
+		t.Errorf("new column should default empty, got %q", u.APITokenHash)
+	}
+
+	// 幂等：再次调用不报错
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("second migrate should be idempotent: %v", err)
+	}
+}
+
+// TestAPITokenSetAndLookup SetAPITokenHash 写入后可被 GetUserByAPITokenHash 命中，
+// 置空（撤销）后不再命中。
+func TestAPITokenSetAndLookup(t *testing.T) {
+	s := newUserStore(t)
+	u := newTestUser("admin", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	token := GenerateAPIToken()
+	hash := HashAPIToken(token)
+	if err := s.SetAPITokenHash(u.ID, hash); err != nil {
+		t.Fatalf("set api token: %v", err)
+	}
+
+	found, err := s.GetUserByAPITokenHash(hash)
+	if err != nil || found == nil || found.ID != u.ID {
+		t.Fatalf("lookup by token hash: %v / %+v", err, found)
+	}
+	// 错误哈希查不到
+	if miss, err := s.GetUserByAPITokenHash("deadbeef"); err != nil || miss != nil {
+		t.Fatalf("wrong hash should miss: %v / %+v", err, miss)
+	}
+
+	// 撤销：置空后不再命中
+	if err := s.SetAPITokenHash(u.ID, ""); err != nil {
+		t.Fatalf("revoke api token: %v", err)
+	}
+	if miss, err := s.GetUserByAPITokenHash(hash); err != nil || miss != nil {
+		t.Fatalf("revoked token should miss: %v / %+v", err, miss)
+	}
+}

@@ -2,6 +2,8 @@ package store
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -21,6 +23,7 @@ type User struct {
 	TOTPSecret        string    `json:"-"`
 	TOTPRecoveryCodes string    `json:"-"` // JSON array of strings
 	AuthSecret        string    `json:"-"` // 随机 32 字节 hex，cookie 签名密钥
+	APITokenHash      string    `json:"-"` // API Token 的 sha256 hex，空=未生成
 	CreatedAt         time.Time `json:"created_at"`
 }
 
@@ -29,12 +32,12 @@ func (u *User) TableName() string { return "users" }
 
 // Columns Entity 接口：全列，首列为 id（含敏感列，登录/校验路径用）。
 func (u *User) Columns() []string {
-	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "created_at"}
+	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "api_token_hash", "created_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (u *User) Values() []any {
-	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.CreatedAt}
+	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.APITokenHash, u.CreatedAt}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -42,12 +45,46 @@ func (u *User) SetID(id int64) { u.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (u *User) ScanRow(row rowScanner) error {
-	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.APITokenHash, &u.CreatedAt)
 }
 
 // EnsureUsersTable 独立建 users 表（统一走 schema.go 注册表）。
+// 老库补列迁移：api_token_hash 为后续新增列，建表后检查缺失则 ALTER 补上（幂等）。
 func (s *Store) EnsureUsersTable() error {
-	return s.ensureTable("users")
+	if err := s.ensureTable("users"); err != nil {
+		return err
+	}
+	has, err := s.tableHasColumn("users", "api_token_hash")
+	if err != nil {
+		return err
+	}
+	if !has {
+		if _, err := s.db.Exec(`ALTER TABLE users ADD COLUMN api_token_hash TEXT NOT NULL DEFAULT ''`); err != nil {
+			return fmt.Errorf("migrate users add api_token_hash: %w", err)
+		}
+	}
+	return nil
+}
+
+// tableHasColumn 检查表是否存在指定列（PRAGMA table_info 查询）。
+func (s *Store) tableHasColumn(table, column string) (bool, error) {
+	rows, err := s.db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return false, fmt.Errorf("table info %s: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notNull, pk int
+		var name, ctype string
+		var dflt any
+		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dflt, &pk); err != nil {
+			return false, fmt.Errorf("scan table info %s: %w", table, err)
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 // GetUserByUsername 按用户名查用户（含密码哈希等敏感列）。未找到返回 nil, nil。
@@ -156,4 +193,35 @@ func GenerateAuthSecret() string {
 	b := make([]byte, 32)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+// GenerateAPIToken 生成 API Token 明文（32 字节随机数 base64url，无填充）。
+// 明文只展示一次：入库前必须先用 HashAPIToken 转为 sha256 hex。
+func GenerateAPIToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// HashAPIToken 计算 API Token 的 sha256 hex（存储与比对均用哈希，库泄漏不暴露明文）。
+func HashAPIToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// SetAPITokenHash 写入/轮换/撤销 API Token 哈希（传空串即撤销）。
+func (s *Store) SetAPITokenHash(userID int64, hash string) error {
+	if _, err := s.db.Exec(`UPDATE users SET api_token_hash = ? WHERE id = ?`, hash, userID); err != nil {
+		return fmt.Errorf("set api token for user %d: %w", userID, err)
+	}
+	return nil
+}
+
+// GetUserByAPITokenHash 按 API Token 哈希查用户（Bearer 认证用）。未命中返回 nil, nil。
+func (s *Store) GetUserByAPITokenHash(hash string) (*User, error) {
+	u, err := repo(s, &User{}).GetOne("api_token_hash = ?", hash)
+	if err != nil {
+		return nil, fmt.Errorf("get user by api token: %w", err)
+	}
+	return u, nil
 }

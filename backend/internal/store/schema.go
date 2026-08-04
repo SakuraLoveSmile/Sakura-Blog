@@ -213,8 +213,22 @@ var tableDDL = map[string]string{
 		totp_secret TEXT NOT NULL DEFAULT '',
 		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
 		auth_secret TEXT NOT NULL DEFAULT '',
+		api_token_hash TEXT NOT NULL DEFAULT '',
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`,
+
+	"login_logs": `CREATE TABLE IF NOT EXISTS login_logs (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL DEFAULT 0,
+		username TEXT NOT NULL DEFAULT '',
+		ip TEXT NOT NULL DEFAULT '',
+		ua TEXT NOT NULL DEFAULT '',
+		status TEXT NOT NULL DEFAULT '',
+		source TEXT NOT NULL DEFAULT '',
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_login_logs_created ON login_logs(created_at);
+	CREATE INDEX IF NOT EXISTS idx_login_logs_status ON login_logs(status);`,
 
 	"settings": `CREATE TABLE IF NOT EXISTS settings (
 		section TEXT PRIMARY KEY,
