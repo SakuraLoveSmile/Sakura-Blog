@@ -94,6 +94,7 @@ const disabling = ref(false);
 onMounted(async () => {
   await loadProfile();
   has2FA.value = auth.user.has_2fa;
+  loadTokenStatus();
 });
 
 /** 开启：获取密钥 + otpauth URL + 恢复码 */
@@ -195,6 +196,55 @@ async function copyText(text: string) {
     ta.remove();
   }
   Toast.success("已复制");
+}
+
+// --- API Token（Wave 3a：Bearer 认证凭证，明文仅生成时展示一次） ---
+const hasToken = ref(false);
+const generating = ref(false);
+const revoking = ref(false);
+const showTokenModal = ref(false);
+const generatedToken = ref("");
+const showRevokeModal = ref(false);
+
+/** 查询当前是否已启用 API Token */
+async function loadTokenStatus() {
+  try {
+    const { data } = await profileApi.apiTokenStatus();
+    hasToken.value = !!data.has_token;
+  } catch (e: any) {
+    // 状态查询失败不阻塞页面，按钮操作时会再次校验
+    Toast.error(e?.response?.data?.error || e?.message || "查询 Token 状态失败");
+  }
+}
+
+/** 生成新 API Token：明文仅本次弹窗展示一次，关闭后不可再查看 */
+async function generateToken() {
+  generating.value = true;
+  try {
+    const { data } = await profileApi.generateApiToken();
+    generatedToken.value = data.token;
+    hasToken.value = true;
+    showTokenModal.value = true;
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || "生成失败");
+  } finally {
+    generating.value = false;
+  }
+}
+
+/** 撤销 API Token：确认后置空哈希，所有使用该 Token 的调用立即 401 */
+async function confirmRevoke() {
+  revoking.value = true;
+  try {
+    await profileApi.revokeApiToken();
+    hasToken.value = false;
+    showRevokeModal.value = false;
+    Toast.success("API Token 已撤销，Bearer 调用立即失效");
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || "撤销失败");
+  } finally {
+    revoking.value = false;
+  }
 }
 
 const inputCls =
@@ -403,6 +453,39 @@ const btnClsDanger =
         </div>
       </VCard>
 
+      <!-- API Token 区（Wave 3a：Bearer 认证凭证） -->
+      <VCard title="API Token（Bearer 认证）">
+        <div class="space-y-4">
+          <template v-if="!hasToken">
+            <p class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <Icon icon="ri:key-2-line" /> 未生成 API Token
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">
+              生成后可通过 <code class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px] dark:bg-gray-700 dark:text-gray-200">Authorization: Bearer
+              &lt;token&gt;</code> 调用管理端 API（脚本/第三方工具）。明文仅生成时展示一次，请立即保存。
+            </p>
+            <button :disabled="generating" :class="btnCls" @click="generateToken">
+              {{ generating ? "生成中..." : "生成 API Token" }}
+            </button>
+          </template>
+
+          <template v-else>
+            <p class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <Icon icon="ri:key-2-fill" /> API Token 已启用
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">
+              轮换 Token 将撤销旧 Token 并生成新的（旧 Token 立即失效）。
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <button :disabled="generating" :class="btnCls" @click="generateToken">
+                {{ generating ? "生成中..." : "轮换 Token" }}
+              </button>
+              <button :class="btnClsDanger" @click="showRevokeModal = true">撤销 Token</button>
+            </div>
+          </template>
+        </div>
+      </VCard>
+
       <!-- 关闭 2FA 确认弹窗 -->
       <VModal
         :visible="showDisableModal"
@@ -435,6 +518,50 @@ const btnClsDanger =
             </button>
             <button :disabled="disabling" :class="btnClsDanger" @click="confirmDisable">
               {{ disabling ? "关闭中..." : "确认关闭" }}
+            </button>
+          </div>
+        </template>
+      </VModal>
+
+      <!-- API Token 明文展示弹窗（仅生成时展示一次） -->
+      <VModal :visible="showTokenModal" title="API Token 已生成" @update:visible="showTokenModal = $event" @close="showTokenModal = false">
+        <div class="space-y-4">
+          <p class="flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <Icon icon="ri:alert-line" />
+            明文仅本次展示，关闭后将无法再次查看，请立即复制并妥善保存。
+          </p>
+          <code
+            class="block break-all rounded bg-gray-100 px-2 py-1.5 font-mono text-xs leading-relaxed dark:bg-gray-700 dark:text-gray-200"
+          >{{ generatedToken }}</code>
+          <div class="flex items-center gap-3">
+            <button :class="btnCls" @click="copyText(generatedToken)">
+              <Icon icon="ri:file-copy-line" class="mr-0.5" />复制 Token
+            </button>
+            <button
+              class="text-xs text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+              @click="showTokenModal = false"
+            >
+              我已保存
+            </button>
+          </div>
+        </div>
+      </VModal>
+
+      <!-- 撤销 Token 确认弹窗 -->
+      <VModal :visible="showRevokeModal" title="撤销 API Token" @update:visible="showRevokeModal = $event" @close="showRevokeModal = false">
+        <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+          撤销后所有使用该 Token 的调用将立即返回 401，且无法恢复。如需继续使用需重新生成。
+        </p>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <button
+              class="rounded-lg px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              @click="showRevokeModal = false"
+            >
+              取消
+            </button>
+            <button :disabled="revoking" :class="btnClsDanger" @click="confirmRevoke">
+              {{ revoking ? "撤销中..." : "确认撤销" }}
             </button>
           </div>
         </template>

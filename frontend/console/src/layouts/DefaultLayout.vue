@@ -61,6 +61,7 @@ const navItems: NavItem[] = [
   { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
   { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
   { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
+  { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统" },
   { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统" },
   { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统" },
   { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统" },

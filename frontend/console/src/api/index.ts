@@ -31,6 +31,9 @@ export const authApi = {
   check: () => http.get("/auth/check"),
   changePassword: (current: string, newPassword: string) =>
     http.put("/auth/password", { current, new: newPassword }),
+  // 登录日志（Wave 3a）：分页查询，status 空=全部 / success / fail
+  loginLogs: (params: { page?: number; size?: number; status?: string }) =>
+    http.get("/auth/login-logs", { params }),
 };
 
 // --- Profile（Spec 45 用户资料） ---
@@ -59,6 +62,16 @@ export const profileApi = {
   },
   getRecoveryCodes() {
     return http.get("/profile/2fa/recovery-codes");
+  },
+  // --- API Token（Wave 3a：Bearer 认证凭证，明文仅生成时展示一次） ---
+  apiTokenStatus() {
+    return http.get<{ has_token: boolean }>("/profile/api-token");
+  },
+  generateApiToken() {
+    return http.post<{ token: string; username: string }>("/profile/api-token");
+  },
+  revokeApiToken() {
+    return http.delete("/profile/api-token");
   },
 };
 
