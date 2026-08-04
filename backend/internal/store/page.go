@@ -63,12 +63,7 @@ func (s *Store) EnsurePagesTable() error {
 
 // ListPublishedPages 返回全部已发布未删除页面（按更新时间倒序），公开只读 API 用。
 func (s *Store) ListPublishedPages() ([]*Page, error) {
-	rows, err := s.db.Query(`SELECT `+pageCols+` FROM pages WHERE deleted_at = '' AND status = ? ORDER BY substr(updated_at, 1, 19) DESC, id DESC`, StatusPublished)
-	if err != nil {
-		return nil, fmt.Errorf("list published pages: %w", err)
-	}
-	defer rows.Close()
-	return scanPages(rows)
+	return repo(s, &Page{}).List(Where("deleted_at = '' AND status = ?", StatusPublished), OrderBy("substr(updated_at, 1, 19) DESC, id DESC"))
 }
 
 // ListPages 列出全部未删除页面（按更新时间倒序）。
