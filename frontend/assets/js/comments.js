@@ -243,6 +243,93 @@
     }
   });
 
+  /* ===== 表情选择器：document 事件委托（PJAX 换页不丢）；guard 防脚本重复执行导致多重绑定 ===== */
+  var EMOJI_LIST = [
+    '😀','😂','🤣','😊','😍','🤔','😎','😴',
+    '😭','😡','🥳','🤯','😰','😓','🤗','🤩',
+    '👍','👎','👏','🙏','🤝','✌️','🤞','🤟',
+    '❤️','🧡','💛','💚','💙','💜','🖤','🤍',
+    '🎉','🎊','🔥','✨','⭐','💫','💥','💯',
+    '☕','🍵','🍰','🍕','🍔','🍻','🍷','🥂',
+    '⚽','🏀','🎮','🎵','🎨','📚','✏️','💻',
+    '🌸','🌺','🌻','🌹','🍀','🌟','🌈','☀️',
+    '🐱','🐶','🦊','🐻','🐼','🦁','🐯','🦒',
+    '🚀','✈️','🚗','🏠','🌍','🌙','❄️','⚡'
+  ];
+
+  function emojiPanel() { return $('cmt-emoji-panel'); }
+
+  // 懒构建面板：首次打开时用 EMOJI_LIST 生成 span（data-emoji 携带字符），data-built 防重复构建
+  function buildEmojiPanel(panel) {
+    EMOJI_LIST.forEach(function (em) {
+      var s = document.createElement('span');
+      s.setAttribute('data-emoji', em);
+      s.textContent = em;
+      s.title = em;
+      panel.appendChild(s);
+    });
+    panel.setAttribute('data-built', '1');
+  }
+
+  // 光标处插入表情，插入后光标移到表情之后
+  function insertEmoji(em) {
+    var ta = $('cmt-content');
+    if (!ta) return;
+    ta.focus();
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + em + ta.value.slice(end);
+    var pos = start + em.length;
+    ta.selectionStart = pos;
+    ta.selectionEnd = pos;
+  }
+
+  function hideEmojiPanel() {
+    var p = emojiPanel();
+    if (p) p.style.display = 'none';
+  }
+
+  function onEmojiClick(e) {
+    // 按钮：切换面板显隐（首次打开时懒构建）
+    var btn = e.target.closest && e.target.closest('#cmt-emoji-btn');
+    if (btn) {
+      e.preventDefault();
+      var panel = emojiPanel();
+      if (!panel) return;
+      if (panel.style.display === 'none') {
+        if (!panel.getAttribute('data-built')) {
+          panel.textContent = '';
+          buildEmojiPanel(panel);
+        }
+        panel.style.display = '';
+      } else {
+        panel.style.display = 'none';
+      }
+      return;
+    }
+    // 面板内表情：光标处插入，面板保持打开
+    var emoji = e.target.closest && e.target.closest('#cmt-emoji-panel span[data-emoji]');
+    if (emoji) {
+      e.preventDefault();
+      insertEmoji(emoji.getAttribute('data-emoji'));
+      return;
+    }
+    // 面板打开时点击面板外部 → 关闭
+    var p = emojiPanel();
+    if (p && p.style.display !== 'none' && !(e.target.closest && e.target.closest('#cmt-emoji-panel'))) {
+      p.style.display = 'none';
+    }
+  }
+
+  function bindEmoji() {
+    if (window.__cmtEmojiBound) return;
+    window.__cmtEmojiBound = true;
+    document.addEventListener('click', onEmojiClick);
+    // PJAX 换页后重置面板状态（新 DOM 的 data-built 已丢失，会重新懒构建）
+    document.addEventListener('pjax:complete', hideEmojiPanel);
+  }
+  bindEmoji();
+
   // Cmd/Ctrl+Enter 提交（编辑器内）
   document.addEventListener('keydown', function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && e.target.closest && e.target.closest('.cmt-editor')) {

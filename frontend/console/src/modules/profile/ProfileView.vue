@@ -250,7 +250,7 @@ async function confirmRevoke() {
 const inputCls =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
 const btnCls =
-  "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
+  "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
 const btnClsDanger =
   "px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
 </script>

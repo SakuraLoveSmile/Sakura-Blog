@@ -13,15 +13,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// 用户角色常量（多用户体系）：admin=超级管理员（全部权限+用户管理），author=作者（内容管理）。
+// 用户角色常量（多用户体系）：admin=超级管理员（全部权限+用户管理），author=作者（内容管理），reader=注册读者（评论带验证标识）。
 const (
 	RoleAdmin  = "admin"
 	RoleAuthor = "author"
+	RoleReader = "reader"
 )
 
 // ValidRole 判断角色值是否合法。
 func ValidRole(role string) bool {
-	return role == RoleAdmin || role == RoleAuthor
+	return role == RoleAdmin || role == RoleAuthor || role == RoleReader
 }
 
 // User 用户模型（多用户：admin 管理全部，author 管理内容）。
@@ -332,4 +333,17 @@ func (s *Store) GetUserByAPITokenHash(hash string) (*User, error) {
 		return nil, fmt.Errorf("get user by api token: %w", err)
 	}
 	return u, nil
+}
+
+// CurrentUser 注入到请求上下文的当前用户信息（匿名或已登录）。
+// 被 api / comment 两个包共享，避免循环依赖。
+type CurrentUser struct {
+	ID       int64  // 0=匿名
+	Username string // 匿名空串
+	Nickname string // display_name 或 username
+	Email    string // 匿名空串
+	Link     string // 预留
+	Avatar   string // 匿名空串
+	Role     string // 空=匿名，否则 Role*
+	Verified bool   // true=已登录注册用户（评论带认证徽章）
 }

@@ -32,6 +32,8 @@ type Comment struct {
 	RootID      int64  // 0=顶级评论，否则为所属顶级评论 id
 	Status      string // approved / pending
 	IsAdmin     bool   // 博主回复标识（is_admin 列 0/1）
+	UserID      int64  // 0=匿名，>0 对应 users 表 id（已注册用户）
+	Verified    bool   // 注册用户标识：已登录用户评论显示"已验证"徽章
 	IP          string
 	UA          string
 	Likes       int64 // 点赞计数（IP 去重后累加）
@@ -43,7 +45,7 @@ func (c *Comment) TableName() string { return "comments" }
 
 // Columns Entity 接口：全列，首列为 id。
 func (c *Comment) Columns() []string {
-	return []string{"id", "page_key", "nick", "email", "link", "content_md", "content_html", "parent_id", "root_id", "status", "is_admin", "ip", "ua", "likes", "created_at"}
+	return []string{"id", "page_key", "nick", "email", "link", "content_md", "content_html", "parent_id", "root_id", "status", "is_admin", "user_id", "verified", "ip", "ua", "likes", "created_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
@@ -52,26 +54,42 @@ func (c *Comment) Values() []any {
 	if c.IsAdmin {
 		isAdmin = 1
 	}
-	return []any{c.PageKey, c.Nick, c.Email, c.Link, c.ContentMD, c.ContentHTML, c.ParentID, c.RootID, c.Status, isAdmin, c.IP, c.UA, c.Likes, c.CreatedAt}
+	userID := c.UserID
+	if userID < 0 {
+		userID = 0
+	}
+	verified := 0
+	if c.Verified {
+		verified = 1
+	}
+	return []any{c.PageKey, c.Nick, c.Email, c.Link, c.ContentMD, c.ContentHTML, c.ParentID, c.RootID, c.Status, isAdmin, userID, verified, c.IP, c.UA, c.Likes, c.CreatedAt}
 }
 
 // SetID Entity 接口：回填自增 id。
 func (c *Comment) SetID(id int64) { c.ID = id }
 
-// ScanRow Entity 接口：行扫描，顺序对齐 Columns()（is_admin 0/1 转 bool）。
+// ScanRow Entity 接口：行扫描，顺序对齐 Columns()（is_admin/verified 0/1 转 bool）。
 func (c *Comment) ScanRow(row rowScanner) error {
-	var isAdmin int
-	if err := row.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.Likes, &c.CreatedAt); err != nil {
+	var isAdmin, verified int
+	if err := row.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.UserID, &verified, &c.IP, &c.UA, &c.Likes, &c.CreatedAt); err != nil {
+		// 兼容老表：缺 user_id/verified 时按零值兜底
+		if isAdminErr := row.Scan(&c.ID, &c.PageKey, &c.Nick, &c.Email, &c.Link, &c.ContentMD, &c.ContentHTML, &c.ParentID, &c.RootID, &c.Status, &isAdmin, &c.IP, &c.UA, &c.Likes, &c.CreatedAt); isAdminErr == nil {
+			c.UserID = 0
+			c.Verified = false
+			c.IsAdmin = isAdmin != 0
+			return nil
+		}
 		return err
 	}
 	c.IsAdmin = isAdmin != 0
+	c.Verified = verified != 0
 	return nil
 }
 
 // 评论点赞 schema 迁移：不碰 post.go createTables，在首次评论读写时懒执行。
 // 迁移状态（sync.Once + err）挂在 Store 实例上，见 post.go 的 Store 定义。
 
-// ensureCommentReactions 为 comments 补 likes 列，并建 comment_likes 去重表。
+// ensureCommentReactions 为 comments 补 likes/user_id/verified 列，并建 comment_likes 去重表。
 func (s *Store) ensureCommentReactions() error {
 	s.commentReactionsOnce.Do(func() {
 		// 老库迁移：CREATE TABLE IF NOT EXISTS 不会给已存在的表加列。
@@ -81,6 +99,8 @@ func (s *Store) ensureCommentReactions() error {
 			return
 		}
 		hasLikes := false
+		hasUserID := false
+		hasVerified := false
 		for rows.Next() {
 			var cid, notnull, pk int
 			var name, ctype string
@@ -90,8 +110,13 @@ func (s *Store) ensureCommentReactions() error {
 				s.commentReactionsErr = fmt.Errorf("scan table_info(comments): %w", err)
 				return
 			}
-			if name == "likes" {
+			switch name {
+			case "likes":
 				hasLikes = true
+			case "user_id":
+				hasUserID = true
+			case "verified":
+				hasVerified = true
 			}
 		}
 		rows.Close()
@@ -102,6 +127,18 @@ func (s *Store) ensureCommentReactions() error {
 		if !hasLikes {
 			if _, err := s.db.Exec(`ALTER TABLE comments ADD COLUMN likes INTEGER NOT NULL DEFAULT 0`); err != nil {
 				s.commentReactionsErr = fmt.Errorf("alter comments add likes: %w", err)
+				return
+			}
+		}
+		if !hasUserID {
+			if _, err := s.db.Exec(`ALTER TABLE comments ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0`); err != nil {
+				s.commentReactionsErr = fmt.Errorf("alter comments add user_id: %w", err)
+				return
+			}
+		}
+		if !hasVerified {
+			if _, err := s.db.Exec(`ALTER TABLE comments ADD COLUMN verified INTEGER NOT NULL DEFAULT 0`); err != nil {
+				s.commentReactionsErr = fmt.Errorf("alter comments add verified: %w", err)
 				return
 			}
 		}

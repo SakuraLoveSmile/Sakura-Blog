@@ -321,6 +321,14 @@ type Site struct {
 	SWCacheVersion string `yaml:"-" json:"-"`
 }
 
+// DefaultAuthorName 返回站点默认作者名：存在多作者配置时取第一个，否则回退站点标题。
+func (s *Site) DefaultAuthorName() string {
+	for _, a := range s.Authors {
+		return a.Name
+	}
+	return s.Title
+}
+
 // PluginsConfig 前端体验增强插件配置（Spec 36）。缺省全关，opt-in 启用。
 // 各子配置均为指针：nil 表示未配置该插件（缺省关闭），非 nil 时按字段生效。
 type PluginsConfig struct {
@@ -562,6 +570,7 @@ type CommentItem struct {
 	Link        string         `json:"link"`         // 个人网站，非空时昵称带链
 	ContentHTML template.HTML  `json:"content_html"` // 已消毒的服务端渲染 HTML，直接输出
 	IsAdmin     bool           `json:"is_admin"`
+	Verified    bool           `json:"verified"` // 注册用户标识：已登录注册用户显示"已验证"徽章
 	Avatar      string         `json:"avatar"`   // Gravatar URL（{mirror}/{md5(email)}）
 	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
 	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）

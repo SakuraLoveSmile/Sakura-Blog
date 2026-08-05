@@ -4824,6 +4824,17 @@ details.folding[child=iframe] >div.body {
   display: grid;
   grid-gap: 16px;
 }
+.tag-plugin.grid > .cell {
+  min-width: 0;
+  overflow: hidden;
+}
+.tag-plugin.grid:not([bg]) > .cell {
+  padding: 0.5rem;
+}
+.tag-plugin.grid > .cell img {
+  max-width: 100%;
+  height: auto;
+}
 .tag-plugin.grid[bg]>.cell> p {
   line-height: 1.5;
 }

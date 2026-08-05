@@ -41,14 +41,24 @@
     cloud.querySelectorAll('a.tag').forEach(function (a) { a.remove(); });
 
     var N = tags.length;
+    // 边界处理：N=1 居中放置，N=2 在赤道平面水平对称
     // Fibonacci 球面分布：单位球面上均匀撒点（Y 轴为竖直轴，绕 Y 旋转呈地球自转感）
     var golden = Math.PI * (3 - Math.sqrt(5));
-    tags.forEach(function (t, i) {
-      var yy = 1 - (i / (N - 1)) * 2;
-      var r = Math.sqrt(1 - yy * yy);
-      t.px = Math.cos(golden * i) * r;
-      t.py = yy;
-      t.pz = Math.sin(golden * i) * r;
+    if (N === 1) {
+      tags[0].px = 0; tags[0].py = 0; tags[0].pz = 1;
+    } else if (N === 2) {
+      tags[0].px = 1; tags[0].py = 0; tags[0].pz = 0;
+      tags[1].px = -1; tags[1].py = 0; tags[1].pz = 0;
+    } else {
+      tags.forEach(function (t, i) {
+        var yy = 1 - (i / (N - 1)) * 2;
+        var r = Math.sqrt(1 - yy * yy);
+        t.px = Math.cos(golden * i) * r;
+        t.py = yy;
+        t.pz = Math.sin(golden * i) * r;
+      });
+    }
+    tags.forEach(function (t) {
       t.el = document.createElement('a');
       t.el.className = 'tag tag-sphere tag-' + t.level;
       t.el.textContent = t.name;

@@ -176,7 +176,7 @@ export const plugins: PluginMeta[] = [
       { name: "source", desc: "来源：default(QQ)/twemoji，省略用默认", default: "default" },
       { name: "height", desc: "自定义高度", default: "—" },
     ],
-    example: "开心 {% emoji default 1 %} 点赞 {% emoji twemoji 1f44d %}",
+    example: "开心 {% emoji default aini %} 点赞 {% emoji twemoji 1f44d %}",
   },
   {
     name: "icon",

@@ -17,8 +17,20 @@ import (
 // 包级共享渲染管道：goldmark 与 bluemonday 均并发安全，公开 API 与 admin 回复共用。
 var (
 	sharedMD     = goldmark.New() // 评论无需 AutoHeadingID
-	sharedPolicy = bluemonday.UGCPolicy()
+	sharedPolicy = buildCommentPolicy()
 )
+
+// buildCommentPolicy 评论 bluemonday 策略：基于 UGCPolicy，额外允许表情图片 img.cmt-emoji-img
+// （Artalk-Emoticons CDN 域名白名单，src 必须指向指定来源）。
+func buildCommentPolicy() *bluemonday.Policy {
+	p := bluemonday.UGCPolicy()
+	// 允许 <img class="cmt-emoji-img"> 用于表情选择器插入的表情图
+	p.AllowAttrs("class", "alt", "title", "src").OnElements("img")
+	// src 必须走 Artalk-Emoticons CDN 或其他受控来源，防 XSS/外链
+	p.AllowURLSchemes("https", "http")
+	// 允许 class="cmt-emoji-img" 的表情图标签复用 UGC 的 img 规则，安全可控
+	return p
+}
 
 // Render 评论内容渲染管道：goldmark（与文章同管线，默认转义原始 HTML）→ bluemonday UGC 消毒。
 // 双重防护：goldmark 把用户输入的原始 HTML 转义为文本，bluemonday 再过滤链接协议等残留风险。
@@ -62,6 +74,7 @@ func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig) *tmpl.CommentItem {
 		Link:        c.Link,
 		ContentHTML: template.HTML(c.ContentHTML), // 服务端已消毒，模板直接输出
 		IsAdmin:     c.IsAdmin,
+		Verified:    c.Verified,
 		Avatar:      AvatarURL(cfg.GravatarMirror, c.Email),
 		TimeAgo:     TimeAgo(c.CreatedAt),
 		Date:        c.CreatedAt.Format("2006-01-02 15:04"),

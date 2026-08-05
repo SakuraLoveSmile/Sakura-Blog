@@ -121,6 +121,9 @@ func (h *Handler) like(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true, "likes": likes, "liked": liked})
 }
 
+// ctxKeyCurrentUser 与 api 包共用的 Gin context key（*store.CurrentUser）。
+const ctxKeyCurrentUser = "current_user"
+
 // createReq 评论提交体。Website 是蜜罐字段：表单中隐藏，正常用户留空，机器人填了即丢弃。
 type createReq struct {
 	PageKey  string `json:"page_key"`
@@ -138,6 +141,25 @@ func (h *Handler) create(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "请求格式错误"})
 		return
+	}
+
+	// 已登录用户：昵称/邮箱/验证状态强制用账户资料，防冒名
+	var userID int64
+	var verified bool
+	if v, ok := c.Get(ctxKeyCurrentUser); ok {
+		if cu, ok := v.(*store.CurrentUser); ok && cu.ID > 0 {
+			userID = cu.ID
+			verified = true
+			if cu.Nickname != "" {
+				req.Nick = cu.Nickname
+			} else if cu.Username != "" {
+				req.Nick = cu.Username
+			}
+			if cu.Email != "" {
+				req.Email = cu.Email
+			}
+			// 个人网站：注册用户暂无扩展字段，沿用用户输入或留空
+		}
 	}
 
 	req.Nick = strings.TrimSpace(req.Nick)
@@ -189,10 +211,14 @@ func (h *Handler) create(c *gin.Context) {
 
 	// 博主身份匹配（邮箱与 admin_email 一致），博主豁免限流且直接发布
 	isAdmin := h.cfg.AdminEmail != "" && strings.EqualFold(req.Email, h.cfg.AdminEmail)
+	// 已注册管理员/作者也视为博主身份（若邮箱匹配 admin_email 已覆盖）
+	if userID > 0 && (verified && !isAdmin) {
+		// 非 admin 邮箱但已登录：保持普通 verified 用户，isAdmin 仍由 admin_email 判定
+	}
 
 	// IP 限流：同 IP 60 秒 1 条
 	ip := c.ClientIP()
-	if !isAdmin && !h.allow(ip) {
+	if !isAdmin && !verified && !h.allow(ip) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"ok": false, "error": "评论太频繁，请稍后再试"})
 		return
 	}
@@ -237,6 +263,8 @@ func (h *Handler) create(c *gin.Context) {
 		RootID:      rootID,
 		Status:      status,
 		IsAdmin:     isAdmin,
+		UserID:      userID,
+		Verified:    verified,
 		IP:          ip,
 		UA:          c.Request.UserAgent(),
 	}

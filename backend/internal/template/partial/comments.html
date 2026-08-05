@@ -1,51 +1,217 @@
-{{- /* comments.html: 自建评论区（参考 Artalk 架构 + Halo 设计语言）。
-   外壳对齐 Stellar _partial/comments/layout.ejs：.related-wrap.md-text#comments > .cmt-title + .cmt-body.{service}；
-   内部为 Halo 结构：编辑器在上（textarea + 三列身份信息 + footer），列表在下（评论行 + 子评论缩进一层）。
-   样式在 assets/css/comments.css，交互在 assets/js/comments.js（事件委托，PJAX 兼容）。
-   两层嵌套模型：子评论与"回复子评论的评论"平级展示（root 的 Children），模板只需两层循环。*/ -}}
+{{- /* comments.html: Artalk 风格评论区（卡片编辑器 + 双身份 + 5-tab 表情 + 居中空状态）。
+   外壳对齐 Stellar _partial/comments/layout.ejs：.related-wrap.md-text#comments > .cmt-title + .cmt-body.native；
+   身份体系：已登录显示"已验证"徽章（绿勾），匿名显示昵称/邮箱/网站三输入；
+   表情面板 5 个 tab：Blobcat / QQ / Tieba / Twemoji / Aru，首次切换 tab 时懒加载 Artalk-Emoticons CDN；
+   交互在 assets/js/comments.js（PJAX 兼容：document 事件委托 + data-built guard）。 */ -}}
 <div class="related-wrap md-text" id="comments">
-  <section class="header cmt-title cap theme">
-    <span>{{.Site.Comments.Title}}</span>
+  <section class="header cmt-title cap theme cmt-title-v2">
+    <span class="cmt-title-icon">
+      <svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </span>
+    <span class="cmt-title-text">{{.Site.Comments.Title}}</span>
+    <span class="cmt-count-badge" id="cmt-count-badge">{{if .CommentCount}}{{lang "comment.count_total" .CommentCount}}{{else}}0{{end}}</span>
   </section>
+
   <section class="body cmt-body native" id="cmt-body"
     data-page-key="/post/{{.Page.Slug}}"
     data-admin-badge="{{.Site.Comments.AdminBadge}}"
-    {{- /* Spec 50 评论区懒加载：data-lazy=1 时前端 IntersectionObserver 进入视口（rootMargin 200px）才 fetch 评论列表 */}}
     data-lazy="1">
 
-    {{- /* 编辑器：Halo 编辑器在上布局。reply-tip 回复提示条默认隐藏；website 为蜜罐隐藏字段（机器人可见） */}}
-    <div class="cmt-editor" id="cmt-editor">
+    {{- /* 编辑器：Artalk 卡片布局（圆角 + 阴影 + 浅边框） */}}
+    <div class="cmt-editor-card" id="cmt-editor">
+      {{- /* 回复提示条：默认隐藏（回复某人时 JS 控制显示） */}}
       <div class="cmt-reply-tip" id="cmt-reply-tip" style="display:none">
-        <span>{{- lang "comment.reply" -}} <b id="cmt-reply-nick"></b></span>
-        <button type="button" class="cmt-reply-cancel" id="cmt-reply-cancel">{{- lang "comment.cancel" -}}</button>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 17l-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+        <span>{{lang "comment.reply_to"}} <b id="cmt-reply-nick"></b></span>
+        <button type="button" class="cmt-reply-cancel" id="cmt-reply-cancel" title="{{lang "comment.cancel"}}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <textarea class="cmt-textarea" id="cmt-content" placeholder="{{lang "comment.placeholder"}}" rows="4" maxlength="2000"></textarea>
-      <div class="cmt-inputs">
-        <input type="text" class="cmt-input" id="cmt-nick" placeholder="{{lang "comment.nickname"}} *" maxlength="32" autocomplete="nickname">
-        <input type="email" class="cmt-input" id="cmt-email" placeholder="{{lang "comment.email"}} *" maxlength="254" autocomplete="email">
-        <input type="text" class="cmt-input" id="cmt-link" placeholder="{{lang "comment.website_opt"}}" maxlength="200" autocomplete="url">
+
+      {{- /* 身份栏：JS 根据 /api/auth/me 结果渲染两种状态之一 */}}
+      <div class="cmt-identity" id="cmt-identity">
+        {{- /* 匿名态（默认占位，JS 重渲染） */}}
+        <div class="cmt-id-anon" id="cmt-id-anon">
+          <div class="cmt-id-anon-row">
+            <input type="text" class="cmt-id-input" id="cmt-nick" placeholder="{{lang "comment.nickname"}} *" maxlength="32" autocomplete="nickname">
+            <input type="email" class="cmt-id-input" id="cmt-email" placeholder="{{lang "comment.email"}} *" maxlength="254" autocomplete="email">
+            <input type="text" class="cmt-id-input" id="cmt-link" placeholder="{{lang "comment.website_opt"}}" maxlength="200" autocomplete="url">
+          </div>
+          <div class="cmt-id-switch">
+            <span class="cmt-id-tip">{{lang "comment.anonymous_tip"}}</span>
+            <button type="button" class="cmt-id-login" id="cmt-open-login">{{lang "comment.switch_login"}}</button>
+          </div>
+        </div>
+        {{- /* 已登录态占位：JS 渲染真实信息 */}}
+        <div class="cmt-id-logged" id="cmt-id-logged" style="display:none">
+          <div class="cmt-id-avatar-wrap">
+            <img class="cmt-id-avatar" id="cmt-id-avatar" src="" alt="">
+            <span class="cmt-id-badge cmt-id-badge-verified" title="{{lang "comment.verified"}}">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" fill-rule="evenodd" stroke="currentColor" stroke-width="1.5"/></svg>
+              {{lang "comment.verified"}}
+            </span>
+          </div>
+          <div class="cmt-id-info">
+            <div class="cmt-id-nick" id="cmt-id-nick"></div>
+            <div class="cmt-id-sub">{{lang "comment.verified"}}</div>
+          </div>
+          <div class="cmt-id-actions">
+            <button type="button" class="cmt-id-logout" id="cmt-do-logout">{{lang "comment.logout"}}</button>
+            <button type="button" class="cmt-id-switch-anon" id="cmt-use-anon">{{lang "comment.switch_anon"}}</button>
+          </div>
+        </div>
+      </div>
+
+      {{- /* 文本输入框（textarea 单行撑高，实际高度由 CSS 控制 min-height） */}}
+      <div class="cmt-textarea-wrap">
+        <textarea class="cmt-textarea" id="cmt-content" placeholder="{{lang "comment.placeholder"}}" rows="5" maxlength="2000"></textarea>
+      </div>
+
+      {{- /* 工具栏 + 提交行 */}}
+      <div class="cmt-footer">
+        <div class="cmt-tools" role="toolbar" aria-label="编辑器工具栏">
+          {{- /* 表情按钮：点击切换面板，首次打开懒构建 tab + 首个 tab 内容 */}}
+          <button type="button" class="cmt-tool-btn cmt-tool-emoji" id="cmt-emoji-btn" title="{{lang "comment.tool_emoji"}}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-bold" title="{{lang "comment.tool_bold"}}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+          </button>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-italic" title="{{lang "comment.tool_italic"}}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+          </button>
+          <span class="cmt-tool-divider"></span>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-quote" title="{{lang "comment.tool_quote"}}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c1 0 1.25.008 1.25 1.031V20c0 1 0 1 1 1z"/></svg>
+          </button>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-code" title="{{lang "comment.tool_code"}}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </button>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-link" title="{{lang "comment.tool_link"}}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </button>
+        </div>
+        <div class="cmt-submit-wrap">
+          <span class="cmt-submit-tip">{{lang "comment.email_hint"}}</span>
+          <button type="button" class="cmt-submit" id="cmt-submit">
+            <span class="cmt-submit-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </span>
+            <span>{{lang "comment.submit"}}</span>
+          </button>
+        </div>
+      </div>
+
+      {{- /* 表情面板：5 个 tab + 懒加载 grid */}}
+      <div class="cmt-emoji-panel-v2" id="cmt-emoji-panel" style="display:none">
+        <div class="cmt-emoji-tabs" role="tablist">
+          <button type="button" class="cmt-emoji-tab is-active" data-pack="blobcat" role="tab" aria-selected="true">Blobcat</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="qq" role="tab">QQ</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="tieba" role="tab">Tieba</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="twemoji" role="tab">Twemoji</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="aru" role="tab">Aru</button>
+        </div>
+        <div class="cmt-emoji-body" id="cmt-emoji-body">
+          {{- /* 内容：JS 懒构建（首次切换 tab 时从 CDN 取表情列表，渲染成 <img>） */}}
+          <div class="cmt-emoji-loading" id="cmt-emoji-loading">
+            <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
+            <span>加载中…</span>
+          </div>
+        </div>
       </div>
       <input type="text" class="cmt-hp" id="cmt-website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="cmt-footer">
-        <span class="cmt-tip">{{- lang "comment.email_hint" -}}</span>
-        <button type="button" class="cmt-submit" id="cmt-submit">{{- lang "comment.submit" -}}</button>
-      </div>
     </div>
 
-    {{- /* 列表：N 条评论计数（SSR）+ 评论列表容器（Spec 50 懒加载：容器 SSR 但列表由 JS fetch /api/comments 渲染） */}}
-    <div class="cmt-count" id="cmt-count">{{if .CommentCount}}{{lang "comment.count" .CommentCount}}{{else}}{{lang "comment.no_comment"}}{{end}}</div>
-    <div class="cmt-list" id="cmt-list">
-      {{- /* 懒加载占位：svg.loading 复用 main.css 旋转图标；进入视口后由 comments.js 替换为评论列表 */}}
-      <div class="cmt-lazy" id="cmt-lazy">
-        <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
-        <span>{{- lang "comment.loading" -}}</span>
+    {{- /* 列表计数 + 列表容器 */}}
+    <div class="cmt-list-wrap">
+      <div class="cmt-list-head" id="cmt-list-head" style="display:none">
+        <span class="cmt-list-title">{{lang "comment.count" 0}}</span>
+      </div>
+      <div class="cmt-list" id="cmt-list">
+        {{- /* 懒加载占位 */}}
+        <div class="cmt-lazy" id="cmt-lazy">
+          <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
+          <span>{{lang "comment.loading"}}</span>
+        </div>
+      </div>
+      {{- /* 空状态（列表 0 条时 JS 显示，与占位互斥） */}}
+      <div class="cmt-empty" id="cmt-empty" style="display:none">
+        <div class="cmt-empty-emoji">🥺</div>
+        <div class="cmt-empty-title">{{lang "comment.empty_title"}}</div>
+        <button type="button" class="cmt-empty-action" id="cmt-empty-action">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          {{lang "comment.empty_action"}}
+        </button>
       </div>
     </div>
   </section>
 </div>
+
+{{- /* 登录/注册弹窗：全局唯一，初始 display:none */}}
+<div class="cmt-modal" id="cmt-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="cmt-modal-title">
+  <div class="cmt-modal-mask" id="cmt-modal-mask"></div>
+  <div class="cmt-modal-dialog" role="document">
+    <button type="button" class="cmt-modal-close" id="cmt-modal-close" title="{{lang "auth.close"}}">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    {{- /* Tab 切换 */}}
+    <div class="cmt-modal-tabs">
+      <button type="button" class="cmt-modal-tab is-active" data-mode="login">
+        <span id="cmt-modal-title-login">{{lang "auth.login_title"}}</span>
+      </button>
+      <button type="button" class="cmt-modal-tab" data-mode="register">
+        <span id="cmt-modal-title-register">{{lang "auth.register_title"}}</span>
+      </button>
+    </div>
+    {{- /* 登录表单 */}}
+    <form class="cmt-modal-form" id="cmt-form-login" autocomplete="on">
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.username"}}</span>
+        <input type="text" name="username" class="cmt-modal-input" id="cmt-login-username" autocomplete="username" maxlength="20" required>
+      </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.password"}}</span>
+        <input type="password" name="password" class="cmt-modal-input" id="cmt-login-password" autocomplete="current-password" maxlength="64" required>
+      </label>
+      <div class="cmt-modal-foot">
+        <button type="button" class="cmt-modal-goto" id="cmt-goto-register">{{lang "auth.goto_register"}}</button>
+        <button type="submit" class="cmt-modal-submit" id="cmt-do-login">{{lang "auth.submit_login"}}</button>
+      </div>
+    </form>
+    {{- /* 注册表单 */}}
+    <form class="cmt-modal-form" id="cmt-form-register" style="display:none" autocomplete="on">
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.username"}} <em class="cmt-modal-hint">{{lang "auth.username_hint"}}</em></span>
+        <input type="text" name="username" class="cmt-modal-input" id="cmt-reg-username" autocomplete="username" maxlength="20" required>
+      </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.password"}} <em class="cmt-modal-hint">{{lang "auth.password_hint"}}</em></span>
+        <input type="password" name="password" class="cmt-modal-input" id="cmt-reg-password" autocomplete="new-password" maxlength="64" required>
+      </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.nickname"}}</span>
+        <input type="text" name="display_name" class="cmt-modal-input" id="cmt-reg-nick" maxlength="32">
+      </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.email"}}</span>
+        <input type="email" name="email" class="cmt-modal-input" id="cmt-reg-email" autocomplete="email" maxlength="254" required>
+      </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.avatar_url"}}</span>
+        <input type="url" name="avatar" class="cmt-modal-input" id="cmt-reg-avatar" maxlength="500" placeholder="https://...">
+      </label>
+      <div class="cmt-modal-foot">
+        <button type="button" class="cmt-modal-goto" id="cmt-goto-login">{{lang "auth.goto_login"}}</button>
+        <button type="submit" class="cmt-modal-submit" id="cmt-do-register">{{lang "auth.submit_register"}}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{- /* 评论点赞：document 事件委托（PJAX 换页不丢），guard 防脚本重复执行导致多重绑定；
+       与 comments.js 的点赞按钮 DOM 选择器 .cmt-like-btn 保持一致。 */ -}}
 <script>
 (function () {
-  /* 评论点赞：document 事件委托，PJAX 换页不丢；guard 防脚本重复执行导致多重绑定 */
   function onLikeClick(e) {
     var btn = e.target.closest && e.target.closest('.cmt-like-btn');
     if (!btn || btn.disabled || btn.getAttribute('data-liked') === '1') return;
@@ -56,32 +222,18 @@
     var prev = countEl ? parseInt(countEl.textContent, 10) || 0 : 0;
     btn.disabled = true;
     if (countEl) countEl.textContent = String(prev + 1);
-    fetch('/api/comments/' + id + '/like', { method: 'POST' })
-      .then(function (r) {
-        return r.json().then(function (data) { return { status: r.status, data: data }; });
-      })
+    fetch('/api/comments/' + id + '/like', { method: 'POST', credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
       .then(function (res) {
         if (!res.data || !res.data.ok) {
           if (countEl) countEl.textContent = String(prev);
-          btn.disabled = false;
-          return;
+          btn.disabled = false; return;
         }
-        if (countEl && typeof res.data.likes === 'number') {
-          countEl.textContent = String(res.data.likes);
-        }
-        if (res.data.liked) {
-          btn.setAttribute('data-liked', '1');
-          btn.classList.add('is-liked');
-        } else {
-          btn.setAttribute('data-liked', '1');
-          btn.classList.add('is-liked');
-          btn.disabled = true;
-        }
+        if (countEl && typeof res.data.likes === 'number') countEl.textContent = String(res.data.likes);
+        btn.setAttribute('data-liked', '1');
+        btn.classList.add('is-liked');
       })
-      .catch(function () {
-        if (countEl) countEl.textContent = String(prev);
-        btn.disabled = false;
-      });
+      .catch(function () { if (countEl) countEl.textContent = String(prev); btn.disabled = false; });
   }
   function bind() {
     if (window.__cmtLikeBound) return;

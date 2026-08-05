@@ -122,6 +122,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		name string
 		fn   func() error
 	}{
+		{"users", st.EnsureUsersTable},              // 多用户/读者注册
 		{"ratings", st.EnsureRatingsTable},          // 评分数据服务（Spec 20）
 		{"votes", st.EnsureVotesTable},              // 投票数据服务（Spec 30）
 		{"revisions", st.EnsureRevisionsTable},      // 文章版本历史（Spec 22）
@@ -142,6 +143,19 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 	}
 
 	h := New(d.Config)
+
+	// 读者身份中间件（挂在引擎根级：comment handler 的 /api/comments、SSR handler 的文章页均受益）
+	r.Use(h.currentUserMiddleware())
+
+	// 公共身份端点（与后台 /api/v1/auth 解耦，cookie 名独立）
+	auth := r.Group("/api/auth")
+	{
+		auth.POST("/register", h.publicRegister)
+		auth.POST("/login", h.publicLogin)
+		auth.GET("/me", h.publicMe)
+		auth.POST("/logout", h.publicLogout)
+	}
+
 	h.Register(r)
 
 	// 友链动态聚合：/api/friends-aggregated 供 /friends 页异步渲染；

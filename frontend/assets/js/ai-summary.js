@@ -6,9 +6,8 @@
 // 打字机：模块级定时器 ID，PJAX 切页时清理。
 (function () {
   var STORE_KEY = 'Stellar.ai';
-  var CONTENT_LIMIT = 40000; // 与后端 aiGuestContentLimit 对齐，前端先截断省流量
+  var CONTENT_LIMIT = 40000;
 
-  // 打字机定时器 ID，PJAX 切页时清理避免残留
   var _typewriterTimer = null;
 
   document.addEventListener('pjax:complete', function () {
@@ -16,6 +15,7 @@
       clearInterval(_typewriterTimer);
       _typewriterTimer = null;
     }
+    initTypewriter();
   });
 
   function loadSaved() {
@@ -99,6 +99,49 @@
     }
   }
 
+  // 对已有摘要文本播放打字机动画（复用 renderSummary 的逐字输出逻辑）
+  function playTypewriter(root) {
+    var body = root.querySelector('.body');
+    var p = body && body.querySelector('p');
+    if (!p) return;
+    var text = p.textContent || '';
+    if (!text) return;
+    if (_typewriterTimer) {
+      clearInterval(_typewriterTimer);
+      _typewriterTimer = null;
+    }
+    p.replaceChildren();
+    var chars = Array.from(text);
+    var idx = 0;
+    var cursor = document.createElement('span');
+    cursor.className = 'ai-cursor';
+    p.appendChild(cursor);
+    _typewriterTimer = setInterval(function () {
+      if (idx < chars.length) {
+        var step = idx + 2 <= chars.length ? 2 : 1;
+        var chunk = chars.slice(idx, idx + step).join('');
+        idx += step;
+        cursor.before(document.createTextNode(chunk));
+      } else {
+        clearInterval(_typewriterTimer);
+        _typewriterTimer = null;
+        cursor.style.transition = 'opacity 0.5s';
+        cursor.style.opacity = '0';
+        setTimeout(function () { cursor.remove(); }, 500);
+      }
+    }, 30);
+  }
+
+  function initTypewriter() {
+    var root = document.getElementById('ai-summary');
+    if (root) {
+      var body = root.querySelector('.body');
+      if (body && body.querySelector('p') && body.querySelector('p').textContent.trim()) {
+        playTypewriter(root);
+      }
+    }
+  }
+
   function generate(root) {
     var endpoint = (root.querySelector('.ai-summary-endpoint').value || '').trim();
     var model = (root.querySelector('.ai-summary-model').value || '').trim();
@@ -163,4 +206,6 @@
       if (root) generate(root);
     }
   });
+
+  document.addEventListener('DOMContentLoaded', initTypewriter);
 })();

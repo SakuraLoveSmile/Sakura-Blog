@@ -196,9 +196,20 @@ var (
 	mdRenderIndex   uint64 // md 标签自增 id（对齐原版 md_index）
 )
 
+// renderInlineMD 仅渲染行内 Markdown 语法（粗体、斜体、链接、行内代码、图片），
+// 排除块级语法（表格、围栏代码块、标题、列表等），供标签插件 body 安全使用。
+func (s *Service) renderInlineMD(md string) string {
+	md = protectMathDelimiters(md)
+	var sb strings.Builder
+	if err := s.inlineMD.Convert([]byte(md), &sb); err != nil {
+		return md
+	}
+	return sb.String()
+}
+
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, iconFunc func(string) string, ghClient GHClient) string {
+func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -350,7 +361,7 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		if title != "" {
 			fmt.Fprintf(&sb, `<div class="title">%s</div>`, title)
 		}
-		fmt.Fprintf(&sb, `<div class="body">%s</div>`, content)
+		fmt.Fprintf(&sb, `<div class="body">%s</div>`, renderInlineMD(content))
 		sb.WriteString(`</div>`)
 		return sb.String()
 	})
@@ -692,7 +703,7 @@ func processShortcodes(md string, renderMD func(string) string, iconFunc func(st
 		if len(parts) < 3 {
 			return match
 		}
-		el, ok := renderFrameBlock(parts[1], parts[2], renderMD)
+		el, ok := renderFrameBlock(parts[1], parts[2], renderInlineMD)
 		if !ok {
 			return match
 		}
@@ -858,7 +869,7 @@ func renderGallery(argsStr, body string) string {
 		}
 		alt, src := m[1], m[2]
 		fmt.Fprintf(&sb, `<div class="%s-cell lazy-box">`, layoutType)
-		fmt.Fprintf(&sb, `<img class="lazy" data-fancybox="gallery-%d" data-src="%s"`, idx, html.EscapeString(src))
+		fmt.Fprintf(&sb, `<img class="lazy" data-fancybox="gallery-%d" src="%s" data-src="%s"`, idx, html.EscapeString(src), html.EscapeString(src))
 		if alt != "" {
 			fmt.Fprintf(&sb, ` alt="%s"`, html.EscapeString(alt))
 		}
@@ -1479,8 +1490,8 @@ func renderMark(argsStr string) (string, bool) {
 
 // emojiSources 内置 emoji CDN 映射，对齐原版 _config.yml tag_plugins.emoji。
 var emojiSources = map[string]string{
-	"default": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif",
-	"twemoji": "https://gcore.jsdelivr.net/gh/twitter/twemoji/assets/svg/{name}.svg",
+	"default": "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/{name}.gif",
+	"twemoji": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/{name}.svg",
 }
 
 // renderEmoji 渲染 {% emoji [source] name [height:...] %}。

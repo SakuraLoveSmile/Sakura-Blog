@@ -20,11 +20,6 @@ const activeCategory = ref<PluginCategory | "全部">("全部");
 const selected = ref<PluginMeta>(plugins[0]);
 const example = ref(plugins[0].example);
 
-// 预览主题：默认跟随 Console 当前主题，可独立切换亮/暗。
-const previewTheme = ref<"light" | "dark">(
-  document.documentElement.dataset.theme === "dark" ? "dark" : "light"
-);
-
 const filtered = computed(() => {
   const kw = search.value.trim().toLowerCase();
   return plugins.filter((p) => {
@@ -88,11 +83,11 @@ refreshPreview();
 
 onBeforeUnmount(() => clearTimeout(previewTimer));
 
-// iframe srcdoc：注入前台样式 + 渲染 HTML，data-theme 控制亮/暗。
+// iframe srcdoc：注入前台样式 + 渲染 HTML，固定暗色预览。
+// 注入 tabs 切换脚本使标签插件预览可交互（main.js 的 registerTabsTag 逻辑）。
 const srcdoc = computed(() => {
-  const t = previewTheme.value;
   return `<!DOCTYPE html>
-<html data-theme="${t}">
+<html data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -101,12 +96,30 @@ const srcdoc = computed(() => {
 <link rel="stylesheet" href="/assets/css/highlight.css">
 <style>
   html,body{margin:0;padding:0;}
-  body{padding:24px;background:${t === "dark" ? "#1c1c1e" : "#fff"};}
+  body{padding:24px;background:#1c1c1e;}
   .md-text{max-width:760px;margin:0 auto;}
 </style>
 </head>
-<body><article class="md-text content">${previewHtml.value}</article></body>
-</html>`;
+<body><article class="md-text content">${previewHtml.value}</article><scr` +
+"ipt>\n" +
+"document.querySelectorAll('.tabs .nav-tabs .tab').forEach(function(el) {\n" +
+"  el.addEventListener('click', function(e) {\n" +
+"    e.preventDefault();\n" +
+"    if (el.classList.contains('active')) return;\n" +
+"    Array.prototype.forEach.call(el.parentNode.children, function(t) {\n" +
+"      t.classList.toggle('active', t === el);\n" +
+"    });\n" +
+"    var a = el.querySelector('a');\n" +
+"    if (!a) return;\n" +
+"    var target = document.getElementById(a.getAttribute('href').replace('#', ''));\n" +
+"    if (!target) return;\n" +
+"    Array.prototype.forEach.call(target.parentNode.children, function(t) {\n" +
+"      t.classList.toggle('active', t === target);\n" +
+"    });\n" +
+"  });\n" +
+"});\n" +
+"<\/script></body>\n" +
+"</html>";
 });
 
 // ---------- 复制 ----------
@@ -311,32 +324,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               渲染预览
               <span v-if="rendering" class="text-[11px] text-gray-400">渲染中...</span>
             </span>
-            <div class="flex items-center gap-1 p-0.5 bg-gray-200/60 rounded-lg dark:bg-gray-600/40">
-              <button
-                @click="previewTheme = 'light'"
-                :title="'亮色预览'"
-                :class="[
-                  'p-1 rounded-md text-sm transition-colors',
-                  previewTheme === 'light' ? 'bg-white text-amber-500 shadow-sm dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400',
-                ]"
-              ><Icon icon="ri:sun-line" /></button>
-              <button
-                @click="previewTheme = 'dark'"
-                :title="'暗色预览'"
-                :class="[
-                  'p-1 rounded-md text-sm transition-colors',
-                  previewTheme === 'dark' ? 'bg-white text-primary shadow-sm dark:bg-gray-800' : 'text-gray-500 dark:text-gray-400',
-                ]"
-              ><Icon icon="ri:moon-line" /></button>
-            </div>
           </div>
           <div class="relative bg-gray-100 dark:bg-gray-900">
             <p v-if="previewError" class="px-4 py-6 text-center text-sm text-red-500">{{ previewError }}</p>
             <iframe
               v-else
               :srcdoc="srcdoc"
-              class="w-full border-0 bg-white"
-              style="height: 420px"
+              class="w-full border-0"
+              style="min-height: 420px; max-height: 600px; resize: vertical; overflow: auto;"
               sandbox="allow-same-origin allow-scripts"
             ></iframe>
           </div>

@@ -51,6 +51,7 @@ type FileMeta struct {
 type Service struct {
 	mdDir    string
 	md       goldmark.Markdown
+	inlineMD goldmark.Markdown // 仅行内语法渲染器（供标签插件 body 使用）
 	parser   parser
 	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
@@ -121,6 +122,10 @@ func NewService(mdDir string) *Service {
 			goldmark.WithParserOptions(mdparser.WithAutoHeadingID()),
 			goldmark.WithRendererOptions(html.WithUnsafe()),
 		),
+		// 仅行内语法渲染器：无扩展，仅基础行内语法（粗体、斜体、链接、行内代码、图片）
+		inlineMD: goldmark.New(
+			goldmark.WithRendererOptions(html.WithUnsafe()),
+		),
 		parser: newParser(),
 	}
 }
@@ -139,7 +144,7 @@ func (s *Service) Render(body string) (string, error) {
 	}
 
 	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.iconFunc, s.ghClient)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

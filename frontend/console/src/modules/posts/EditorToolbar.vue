@@ -232,7 +232,7 @@ const iconBtnCls =
             v-if="bubbleHtml"
             :srcdoc="bubbleSrcdoc"
             class="block w-full border-0 bg-white"
-            style="height: 180px"
+            style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto;"
             sandbox="allow-same-origin allow-scripts"
             title="标签预览"
           ></iframe>

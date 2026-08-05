@@ -164,18 +164,35 @@ function schedulePluginPreview(immediate = false) {
 }
 
 const pluginSrcdoc = computed(() => {
-  const dark = document.documentElement.dataset.theme === "dark";
   return `<!DOCTYPE html>
-<html data-theme="${dark ? "dark" : "light"}">
+<html data-theme="dark">
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="/assets/css/main.css">
 <link rel="stylesheet" href="/assets/css/tag-plugins.css">
 <link rel="stylesheet" href="/assets/css/highlight.css">
-<style>html,body{margin:0;padding:0;}body{padding:16px;background:${dark ? "#1c1c1e" : "#fff"};}.md-text{max-width:100%;}</style>
+<style>html,body{margin:0;padding:0;}body{padding:16px;background:#1c1c1e;}.md-text{max-width:100%;}</style>
 </head>
-<body><article class="md-text content">${pluginPreviewHtml.value}</article></body>
-</html>`;
+<body><article class="md-text content">${pluginPreviewHtml.value}</article><scr` +
+"ipt>\n" +
+"document.querySelectorAll('.tabs .nav-tabs .tab').forEach(function(el) {\n" +
+"  el.addEventListener('click', function(e) {\n" +
+"    e.preventDefault();\n" +
+"    if (el.classList.contains('active')) return;\n" +
+"    Array.prototype.forEach.call(el.parentNode.children, function(t) {\n" +
+"      t.classList.toggle('active', t === el);\n" +
+"    });\n" +
+"    var a = el.querySelector('a');\n" +
+"    if (!a) return;\n" +
+"    var target = document.getElementById(a.getAttribute('href').replace('#', ''));\n" +
+"    if (!target) return;\n" +
+"    Array.prototype.forEach.call(target.parentNode.children, function(t) {\n" +
+"      t.classList.toggle('active', t === target);\n" +
+"    });\n" +
+"  });\n" +
+"});\n" +
+"<\/script></body>\n" +
+"</html>";
 });
 
 function insertPlugin() {
@@ -497,8 +514,8 @@ const chipCls =
               <iframe
                 v-if="pluginPreviewHtml"
                 :srcdoc="pluginSrcdoc"
-                class="w-full border-0 bg-white"
-                style="height: 200px"
+                class="w-full border-0"
+                style="min-height: 200px; max-height: 400px; resize: vertical; overflow: auto;"
                 sandbox="allow-same-origin allow-scripts"
               ></iframe>
               <p v-else class="px-3 py-4 text-center text-xs text-gray-400">填写参数后预览</p>

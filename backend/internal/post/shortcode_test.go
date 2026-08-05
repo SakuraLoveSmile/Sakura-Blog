@@ -8,7 +8,7 @@ import (
 // runShortcodes 便捷调用：identity renderMD + 简单 icon 桩，不依赖 goldmark/GitHub。
 func runShortcodes(md string) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, iconFunc, nil)
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil)
 }
 
 func TestRadioAndCheckboxCoexist(t *testing.T) {
@@ -259,6 +259,73 @@ func TestFoldersTag(t *testing.T) {
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("folders output missing %q: %s", want, out)
+		}
+	}
+}
+
+// --- Spec 49/块级设备框架与 note 行内 Markdown 测试 ---
+// 这两个用例必须走 Service.Render 真实 goldmark 管线：
+// runShortcodes 的 identity renderMD 无法把 ![alt](url) 转成 <img>、无法把 **bold** 转成 <strong>。
+
+// TestFrameBlockTag 块级设备框架（Spec 49）：body 的 ![alt](url) 经 renderInlineMD 渲染成 <img> 后嵌入设备壳。
+func TestFrameBlockTag(t *testing.T) {
+	s := NewService("")
+	out, err := s.Render("{% frame device:iphone width:320px %}![img](url){% endframe %}")
+	if err != nil {
+		t.Fatalf("Render error: %v", err)
+	}
+	for _, want := range []string{
+		`class="tag-plugin frame"`,
+		`device="iphone"`,
+		`max-width:320px`,
+		`class="frame-device iphone"`,
+		`<img`,
+		`src="url"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("frame block output missing %q: %s", want, out)
+		}
+	}
+	// body 无媒体时容错原样输出（不吞内容）
+	raw := "{% frame device:iphone %}no media{% endframe %}"
+	if got, _ := s.Render(raw); !strings.Contains(got, "{% frame device:iphone %}") {
+		t.Fatalf("frame without media should stay raw, got %s", got)
+	}
+}
+
+// TestNoteMarkdownBody note 标签 body 走 renderInlineMD：**bold** 应渲染成 <strong>（回归保护）。
+func TestNoteMarkdownBody(t *testing.T) {
+	s := NewService("")
+	out, err := s.Render("{% note color:blue **bold** %}")
+	if err != nil {
+		t.Fatalf("Render error: %v", err)
+	}
+	for _, want := range []string{
+		`class="tag-plugin colorful note"`,
+		`color="blue"`,
+		`<div class="body">`,
+		`<strong>bold</strong>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("note output missing %q: %s", want, out)
+		}
+	}
+}
+
+// TestGalleryImgAttrs gallery 图片同时输出 src 与 data-src（懒加载回退），并带 data-fancybox 分组（回归保护）。
+func TestGalleryImgAttrs(t *testing.T) {
+	s := NewService("")
+	out, err := s.Render("{% gallery %}\n![img](https://example.com/test.jpg)\n{% endgallery %}")
+	if err != nil {
+		t.Fatalf("Render error: %v", err)
+	}
+	for _, want := range []string{
+		`src="https://example.com/test.jpg"`,
+		`data-src="https://example.com/test.jpg"`,
+		`data-fancybox="gallery-1"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("gallery output missing %q: %s", want, out)
 		}
 	}
 }

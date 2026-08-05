@@ -439,6 +439,13 @@ func tagCloudLevels(items []*TagItem) {
 	}
 	bounds := []float64{0.08, 0.25, 0.55, 0.85}
 	levels := []string{"xl", "lg", "md", "sm", "xs"}
+	// 少量标签（<=5）时保证每个标签有独立层级，避免全部落到同一档
+	if n <= 5 {
+		for i := range items {
+			items[i].Level = levels[i]
+		}
+		return
+	}
 	for i, it := range items {
 		li := len(levels) - 1
 		for b, bound := range bounds {
