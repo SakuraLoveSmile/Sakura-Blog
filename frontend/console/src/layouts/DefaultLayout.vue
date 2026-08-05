@@ -58,6 +58,7 @@ interface NavItem {
   icon: string;
   group: string;
   mobile?: boolean;
+  adminOnly?: boolean; // 多用户体系：仅 admin 可见
   children?: NavItem[]; // 缩进子菜单项（如「文章」下的「分享链接」）
 }
 
@@ -84,21 +85,24 @@ const navItems: NavItem[] = [
   { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
   { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
   { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
-  { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统" },
-  { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统" },
-  { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统" },
-  { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统" },
-  { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统" },
+  { path: "/users", label: "用户", icon: "ri:user-star-line", group: "系统", adminOnly: true },
+  { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统", adminOnly: true },
+  { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统", adminOnly: true },
+  { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统", adminOnly: true },
+  { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", adminOnly: true },
+  { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", adminOnly: true },
 ];
 
 // 合并静态导航与已启用模块贡献的菜单项（后者按 path 去重，避免与静态项重复）。
+// 多用户体系：adminOnly 菜单项仅 admin 可见。
 const allNavItems = computed<NavItem[]>(() => {
   const paths = new Set(navItems.map((i) => i.path));
   const dynamic: NavItem[] = modulesStore
     .enabledNav()
     .filter((n) => !paths.has(n.path))
     .map((n) => ({ path: n.path, label: n.label, icon: n.icon, group: n.group }));
-  return [...navItems, ...dynamic];
+  const visible = (item: NavItem) => !item.adminOnly || auth.isAdmin;
+  return [...navItems.filter(visible), ...dynamic.filter(visible)];
 });
 
 const minimenus = navItems.filter((i) => i.mobile);

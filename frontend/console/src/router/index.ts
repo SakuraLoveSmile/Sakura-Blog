@@ -108,16 +108,19 @@ const router = createRouter({
         {
           path: "plugins",
           name: "Plugins",
+          meta: { adminOnly: true },
           component: () => import("@/modules/plugins/PluginLibrary.vue"),
         },
         {
           path: "modules",
           name: "Modules",
+          meta: { adminOnly: true },
           component: () => import("@/modules/modules/ModulesView.vue"),
         },
         {
           path: "seo",
           component: () => import("@/modules/seo/SeoLayout.vue"),
+          meta: { adminOnly: true },
           children: [
             { path: "", redirect: "/seo/overview" },
             { path: "overview", name: "SeoOverview", component: () => import("@/modules/seo/SeoOverview.vue") },
@@ -131,6 +134,7 @@ const router = createRouter({
         {
           path: "settings",
           name: "Settings",
+          meta: { adminOnly: true },
           component: () => import("@/modules/settings/SettingsView.vue"),
         },
         {
@@ -140,10 +144,16 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: "users",
+          name: "Users",
+          component: () => import("@/modules/users/UserListView.vue"),
+          meta: { requiresAuth: true, adminOnly: true },
+        },
+        {
           path: "login-logs",
           name: "LoginLogs",
           component: () => import("@/modules/profile/LoginLogsView.vue"),
-          meta: { requiresAuth: true },
+          meta: { requiresAuth: true, adminOnly: true },
         },
         {
           path: "notifications",
@@ -154,6 +164,7 @@ const router = createRouter({
         {
           path: "backup",
           name: "Backup",
+          meta: { adminOnly: true },
           component: () => import("@/modules/backup/BackupView.vue"),
         },
       ],
@@ -169,6 +180,9 @@ router.beforeEach(async (to) => {
   }
   if (to.meta.requiresAuth && !auth.authenticated) {
     return { path: "/login", query: { from: to.fullPath } };
+  }
+  if (to.matched.some((r) => r.meta.adminOnly) && !auth.isAdmin) {
+    return { path: "/dashboard" };
   }
   if (to.path === "/login" && auth.authenticated) {
     return { path: "/dashboard" };

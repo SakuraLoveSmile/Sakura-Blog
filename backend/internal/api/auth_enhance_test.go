@@ -30,6 +30,7 @@ func authEnhanceEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Hand
 		Username:     "admin",
 		PasswordHash: "x",
 		AuthSecret:   store.GenerateAuthSecret(),
+		Role:         store.RoleAdmin,
 	}
 	if err := st.CreateUser(user); err != nil {
 		t.Fatalf("create user: %v", err)
@@ -79,7 +80,7 @@ func TestCookieSlidingRenewal(t *testing.T) {
 		t.Fatal("near-expiry cookie should trigger renewal Set-Cookie")
 	}
 	// 新 cookie 应为新格式且过期时间晚于原 cookie
-	if _, _, expiry, ok := h.validAuthCookie(renewed); !ok {
+	if _, _, expiry, _, ok := h.validAuthCookie(renewed); !ok {
 		t.Fatal("renewed cookie should be valid")
 	} else if expiry <= time.Now().Add(2*24*time.Hour).Unix() {
 		t.Errorf("renewed expiry = %d, want later than original %d", expiry, time.Now().Add(2*24*time.Hour).Unix())

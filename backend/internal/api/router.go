@@ -185,9 +185,6 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 管理端全局搜索（Spec 39，Console ⌘K）
 		authed.GET("/search", h.adminSearch)
 
-		// 登录日志（Wave 3a）：登录/2FA 记录查询，分页 + 状态筛选
-		authed.GET("/auth/login-logs", h.listLoginLogs)
-
 		// API Token（Wave 3a）：生成/撤销 Bearer 认证凭证
 		authed.GET("/profile/api-token", h.apiTokenStatus)
 		authed.POST("/profile/api-token", h.generateAPIToken)
@@ -308,15 +305,6 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/moments/:id", h.updateMoment)
 		authed.DELETE("/moments/:id", h.deleteMoment)
 
-		// 站点设置（分段）
-		authed.GET("/settings", h.getSettings)
-		authed.PUT("/settings/:section", h.updateSection)
-		authed.POST("/settings/notify/test", h.testNotify)
-
-		// 功能模块管理（manifest + 启停开关）
-		authed.GET("/modules", h.listModules)
-		authed.PUT("/modules/:id", h.toggleModule)
-
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)
 
@@ -370,21 +358,44 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/tags/:name", h.renameTag)
 		authed.DELETE("/tags/:name", h.deleteTag)
 
-		// 备份与导出（下载走 cookie 认证，Console 直接 <a href> 触发）
-		authed.GET("/backup/export", h.exportBackup)
-		authed.GET("/backup/export/markdown", h.exportPostsMarkdown)
-		authed.POST("/backup/import/markdown", h.importPostsMarkdown)
-		authed.GET("/backup/status", h.backupStatus)
-		authed.POST("/backup/restore", h.restoreBackup)
-		authed.POST("/backup/restore-snapshot", h.restoreSnapshot)
+	}
 
-		// 功能模块后台 API：每个已注册模块套自己的 Gate 中间件（禁用即 403），
-		// 在认证组下注册，运行时开关只影响可用性，无需重注册路由。
+	// 系统管理组（仅 admin）：用户管理 / 登录日志 / 站点设置 / 功能模块 / 备份导出 / SEO 模块。
+	sys := v1.Group("", h.apiAuth(), h.requireRole(store.RoleAdmin))
+	{
+		// 用户管理（多用户体系）：列表/创建/更新/重置密码/删除
+		sys.GET("/users", h.listUsers)
+		sys.POST("/users", h.createUser)
+		sys.PUT("/users/:id", h.updateUser)
+		sys.PUT("/users/:id/password", h.resetUserPassword)
+		sys.DELETE("/users/:id", h.deleteUser)
+
+		// 登录日志（Wave 3a）：登录/2FA 记录查询，分页 + 状态筛选
+		sys.GET("/auth/login-logs", h.listLoginLogs)
+
+		// 站点设置（分段）
+		sys.GET("/settings", h.getSettings)
+		sys.PUT("/settings/:section", h.updateSection)
+		sys.POST("/settings/notify/test", h.testNotify)
+
+		// 功能模块管理（manifest + 启停开关）
+		sys.GET("/modules", h.listModules)
+		sys.PUT("/modules/:id", h.toggleModule)
+
+		// 备份与导出（下载走 cookie 认证，Console 直接 <a href> 触发）
+		sys.GET("/backup/export", h.exportBackup)
+		sys.GET("/backup/export/markdown", h.exportPostsMarkdown)
+		sys.POST("/backup/import/markdown", h.importPostsMarkdown)
+		sys.GET("/backup/status", h.backupStatus)
+		sys.POST("/backup/restore", h.restoreBackup)
+		sys.POST("/backup/restore-snapshot", h.restoreSnapshot)
+
+		// 功能模块后台 API：仅 admin；每个已注册模块套自己的 Gate 中间件（禁用即 403）。
 		if h.modules != nil {
 			deps := module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}
 			for _, m := range module.All() {
 				id := m.Meta().ID
-				grp := authed.Group("", h.modules.Gate(id))
+				grp := sys.Group("", h.modules.Gate(id))
 				m.RegisterRoutes(grp, deps)
 			}
 		}
@@ -410,6 +421,9 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		password := h.site.Admin.Password
 		if password == "" {
+			// 无密码站点：保持历史全放行语义，视为 admin。
+			c.Set("userID", int64(0))
+			c.Set("userRole", store.RoleAdmin)
 			c.Next()
 			return
 		}
@@ -423,13 +437,15 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 				return
 			}
 			c.Set("userID", user.ID)
+			c.Set("userRole", normalizeRole(user.Role))
 			c.Next()
 			return
 		}
 
 		if cookie, err := c.Cookie(authCookieName); err == nil {
-			if userID, authSecret, expiry, ok := h.validAuthCookie(cookie); ok {
+			if userID, authSecret, expiry, role, ok := h.validAuthCookie(cookie); ok {
 				c.Set("userID", userID)
+				c.Set("userRole", role)
 				// 滑动续期：新格式 cookie 剩余有效期不足一半时重新签发（旧格式无 authSecret 不续期）
 				if userID > 0 && authSecret != "" && expiry-time.Now().Unix() < int64(authCookieTTL.Seconds())/2 {
 					newExpiry := time.Now().Add(authCookieTTL).Unix()
@@ -458,49 +474,70 @@ func signAuthCookie(expiry int64, userID int64, authSecret string) string {
 // validAuthCookie 解析并验证 cookie。
 // 先尝试新格式（3 段：expiry.userID.sig），查 users 表获取 auth_secret 验证签名；
 // 新格式失败时回退旧格式（2 段：expiry.sig，签名 key = admin password），返回 userID=0 表示旧版 admin。
-// 返回 (userID, authSecret, expiry, ok)：authSecret 为空表示旧格式（不支持滑动续期）。
-func (h *Handler) validAuthCookie(value string) (int64, string, int64, bool) {
+// 返回 (userID, authSecret, expiry, role, ok)：authSecret 为空表示旧格式（不支持滑动续期）；
+// role 为登录用户角色（旧格式视为 admin）。
+func (h *Handler) validAuthCookie(value string) (int64, string, int64, string, bool) {
 	parts := strings.Split(value, ".")
 	if len(parts) == 3 {
 		// 新格式: expiry.userID.sig
 		expiry, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil || time.Now().Unix() > expiry {
-			return 0, "", 0, false
+			return 0, "", 0, "", false
 		}
 		userID, err := strconv.ParseInt(parts[1], 10, 64)
 		if err != nil {
-			return 0, "", 0, false
+			return 0, "", 0, "", false
 		}
 		user, _ := h.store.GetUserByID(userID)
 		if user == nil {
-			return 0, "", 0, false
+			return 0, "", 0, "", false
 		}
 		msg := fmt.Sprintf("%d.%d", expiry, userID)
 		mac := hmac.New(sha256.New, []byte(user.AuthSecret))
 		mac.Write([]byte(msg))
 		expected := hex.EncodeToString(mac.Sum(nil))
 		if subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expected)) == 1 {
-			return userID, user.AuthSecret, expiry, true
+			return userID, user.AuthSecret, expiry, normalizeRole(user.Role), true
 		}
-		return 0, "", 0, false
+		return 0, "", 0, "", false
 	}
 
 	// 旧格式: expiry.sig（签名 key = admin password）
 	if len(parts) == 2 {
 		password := h.site.Admin.Password
 		if password == "" {
-			return 0, "", 0, false
+			return 0, "", 0, "", false
 		}
 		expiry, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil || time.Now().Unix() > expiry {
-			return 0, "", 0, false
+			return 0, "", 0, "", false
 		}
 		mac := hmac.New(sha256.New, []byte(password))
 		mac.Write([]byte(parts[0]))
 		expected := hex.EncodeToString(mac.Sum(nil))
 		if subtle.ConstantTimeCompare([]byte(parts[1]), []byte(expected)) == 1 {
-			return 0, "", expiry, true // userID=0 代表旧版 admin
+			return 0, "", expiry, store.RoleAdmin, true // userID=0 代表旧版 admin
 		}
 	}
-	return 0, "", 0, false
+	return 0, "", 0, "", false
+}
+
+// normalizeRole 角色归一化：非法/空值回退作者（最小权限）。
+func normalizeRole(role string) string {
+	if store.ValidRole(role) {
+		return role
+	}
+	return store.RoleAuthor
+}
+
+// requireRole 角色校验中间件：当前登录用户需具备指定角色，否则 403。
+func (h *Handler) requireRole(role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		got, _ := c.Get("userRole")
+		if got != role {
+			AbortFail(c, http.StatusForbidden, "无权限：需要管理员角色")
+			return
+		}
+		c.Next()
+	}
 }

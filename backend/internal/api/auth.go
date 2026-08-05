@@ -214,6 +214,7 @@ func (h *Handler) handleGetProfile(c *gin.Context) {
 		"email":        user.Email,
 		"avatar":       user.Avatar,
 		"has_2fa":      user.TOTPSecret != "",
+		"role":         normalizeRole(user.Role),
 	})
 }
 
@@ -338,16 +339,16 @@ func (h *Handler) handle2FARecoveryCodes(c *gin.Context) {
 // authCheck GET /api/v1/auth/check：返回当前登录状态（兼容新旧 cookie 格式）。
 func (h *Handler) authCheck(c *gin.Context) {
 	if h.site.Admin.Password == "" {
-		c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": false})
+		c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": false, "role": store.RoleAdmin})
 		return
 	}
 	if cookie, err := c.Cookie(authCookieName); err == nil {
-		if _, _, _, ok := h.validAuthCookie(cookie); ok {
-			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true})
+		if _, _, _, role, ok := h.validAuthCookie(cookie); ok {
+			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true, "role": role})
 			return
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{"authenticated": false, "passwordRequired": true})
+	c.JSON(http.StatusOK, gin.H{"authenticated": false, "passwordRequired": true, "role": ""})
 }
 
 // changePassword PUT /api/v1/auth/password：Spec 45 迁移至 users 表。

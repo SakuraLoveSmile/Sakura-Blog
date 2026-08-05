@@ -36,6 +36,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		Username:     "admin",
 		PasswordHash: "x",
 		AuthSecret:   store.GenerateAuthSecret(),
+		Role:         store.RoleAdmin,
 	}
 	if err := st.CreateUser(user); err != nil {
 		t.Fatalf("create user: %v", err)

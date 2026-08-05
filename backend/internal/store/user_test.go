@@ -333,3 +333,70 @@ func TestAPITokenSetAndLookup(t *testing.T) {
 		t.Fatalf("revoked token should miss: %v / %+v", err, miss)
 	}
 }
+
+// TestEnsureUsersTableMigratesRoleColumn 多用户迁移：老库（无 role 列）补列后
+// 存量用户全部置为 admin（多用户引入前能登录的账号即管理员），再次调用幂等。
+func TestEnsureUsersTableMigratesRoleColumn(t *testing.T) {
+	s, err := New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer s.Close()
+
+	// 模拟老库：无 role 列（含 api_token_hash 的 Spec 45 形态）
+	if _, err := s.db.Exec(`CREATE TABLE users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		display_name TEXT NOT NULL DEFAULT '',
+		email TEXT NOT NULL DEFAULT '',
+		avatar TEXT NOT NULL DEFAULT '',
+		totp_secret TEXT NOT NULL DEFAULT '',
+		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
+		auth_secret TEXT NOT NULL DEFAULT '',
+		api_token_hash TEXT NOT NULL DEFAULT '',
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`); err != nil {
+		t.Fatalf("create legacy users table: %v", err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO users (username, password_hash, auth_secret) VALUES ('admin', 'x', 'legacy-secret')`); err != nil {
+		t.Fatalf("seed legacy user: %v", err)
+	}
+
+	// 迁移：补 role 列
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("migrate users table: %v", err)
+	}
+	has, err := s.tableHasColumn("users", "role")
+	if err != nil || !has {
+		t.Fatalf("role column should exist after migrate (has=%v err=%v)", has, err)
+	}
+
+	// 存量用户应被提升为 admin（老库用户=管理员）
+	u, err := s.GetUserByUsername("admin")
+	if err != nil || u == nil {
+		t.Fatalf("legacy user should survive migrate: %v / %v", u, err)
+	}
+	if u.Role != RoleAdmin {
+		t.Errorf("legacy user role = %q, want admin", u.Role)
+	}
+
+	// 新创建用户默认 author（最小权限）
+	n := newTestUser("newbie", "secret123")
+	if err := s.CreateUser(n); err != nil {
+		t.Fatalf("create new user: %v", err)
+	}
+	got, _ := s.GetUserByUsername("newbie")
+	if got == nil || got.Role != RoleAuthor {
+		t.Errorf("new user role = %+v, want author", got)
+	}
+
+	// 幂等：再次调用不报错且不改变存量角色
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("second migrate should be idempotent: %v", err)
+	}
+	u2, _ := s.GetUserByUsername("admin")
+	if u2.Role != RoleAdmin {
+		t.Errorf("role changed after second migrate: %q", u2.Role)
+	}
+}

@@ -214,6 +214,7 @@ var tableDDL = map[string]string{
 		totp_recovery_codes TEXT NOT NULL DEFAULT '[]',
 		auth_secret TEXT NOT NULL DEFAULT '',
 		api_token_hash TEXT NOT NULL DEFAULT '',
+		role TEXT NOT NULL DEFAULT 'author',
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`,
 

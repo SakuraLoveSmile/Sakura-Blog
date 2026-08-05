@@ -239,6 +239,7 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 						PasswordHash: hash,
 						DisplayName:  "管理员",
 						AuthSecret:   store.GenerateAuthSecret(),
+						Role:         store.RoleAdmin,
 					}
 					if err := st.CreateUser(admin); err != nil {
 						log.Printf("[warn] migrate admin user: %v", err)

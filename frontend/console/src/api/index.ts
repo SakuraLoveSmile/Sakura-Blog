@@ -44,6 +44,7 @@ export interface UserProfile {
   email: string;
   avatar: string;
   has_2fa: boolean;
+  role?: string;
 }
 
 export const profileApi = {
@@ -73,6 +74,36 @@ export const profileApi = {
   revokeApiToken() {
     return http.delete("/profile/api-token");
   },
+};
+
+// --- Users（多用户体系，admin-only） ---
+export interface UserItem {
+  id: number;
+  username: string;
+  display_name: string;
+  email: string;
+  avatar: string;
+  role: "admin" | "author";
+  created_at: string;
+}
+
+export const usersApi = {
+  list: (params: { page?: number; size?: number; keyword?: string }) =>
+    http.get<{ items: UserItem[]; total: number; page: number; size: number }>("/users", { params }),
+  create: (data: {
+    username: string;
+    display_name: string;
+    email: string;
+    avatar?: string;
+    password: string;
+    role: "admin" | "author";
+  }) => http.post<UserItem>("/users", data),
+  update: (
+    id: number,
+    data: { display_name: string; email: string; avatar?: string; role: "admin" | "author" }
+  ) => http.put<UserItem>(`/users/${id}`, data),
+  resetPassword: (id: number, password: string) => http.put(`/users/${id}/password`, { password }),
+  remove: (id: number) => http.delete(`/users/${id}`),
 };
 
 // --- Dashboard ---
