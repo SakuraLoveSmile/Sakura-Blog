@@ -1,409 +1,725 @@
-/* comments.js: 自建评论区交互。
-   - 事件委托绑在 document 上，PJAX 换页（.l_main 被替换）不丢监听
-   - fetch 提交：approved 无刷新插入列表，pending 提示待审核
-   - 回复按钮：编辑器单实例内联移动到被回复评论下（Halo/Artalk 同款交互）
-   - localStorage 记忆 nick/email/link；Cmd/Ctrl+Enter 提交
-   - 状态与 page_key 绑定：PJAX 换页后回复状态自动失效，防挂错父评论 */
+/* comments.js — Artalk 风格评论区前端逻辑
+ * 依赖：comments.html 模板（#cmt-* DOM）+ comments.css 样式
+ * 无外部依赖；PJAX 兼容：document 事件委托 + __cmtBuilt guard 防重复绑定。
+ * 表情 CDN：Artalk-Emoticons (jsdelivr/gh) —— 与后端 bluemonday 白名单 cdn.jsdelivr.net 对齐
+ */
 (function () {
   'use strict';
 
-  var LS_KEY = 'blog_comment_identity';
+  if (window.__cmtBuilt) return;
+  window.__cmtBuilt = true;
 
-  // 当前回复状态：pageKey 用于换页失效判定，parentId 0=顶级
-  var replyState = { pageKey: '', parentId: 0 };
+  // ------- 常量 -------
+  var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/ArtalkJS/Emoticons/menus/';
+  var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'twemoji', 'aru'];
+  // 每个 pack 的本地文件名（jsdelivr 以 index.json 暴露列表，失败则用 hardcoded 兜底）
+  var EMOJI_FALLBACK = {
+    blobcat: ['blobcatflushed.png', 'blobcathearts.png', 'blobcatsleepo.png', 'blobcatsweats.png', 'blobcatchefkiss.png', 'blobcatcozy.png', 'blobcatderpy.png', 'blobcatgoogly.png', 'blobcatnom.png', 'blobcatsip.png', 'blobcatthink.png', 'blobcatheart.png'],
+    qq: ['微笑.png', '撇嘴.png', '色.png', '发呆.png', '得意.png', '流泪.png', '害羞.png', '闭嘴.png', '睡.png', '大哭.png', '尴尬.png', '发怒.png', '调皮.png', '呲牙.png', '惊讶.png', '难过.png', '酷.png', '冷汗.png', '抓狂.png', '吐.png'],
+    tieba: ['image_emoticon1.png', 'image_emoticon2.png', 'image_emoticon3.png', 'image_emoticon4.png', 'image_emoticon5.png', 'image_emoticon6.png', 'image_emoticon7.png', 'image_emoticon8.png', 'image_emoticon9.png', 'image_emoticon10.png', 'image_emoticon11.png', 'image_emoticon12.png', 'image_emoticon13.png', 'image_emoticon14.png', 'image_emoticon15.png', 'image_emoticon16.png'],
+    twemoji: ['1f600.svg', '1f601.svg', '1f602.svg', '1f603.svg', '1f604.svg', '1f605.svg', '1f606.svg', '1f607.svg', '1f609.svg', '1f60a.svg', '1f60d.svg', '1f60f.svg', '1f612.svg', '1f613.svg', '1f614.svg', '1f616.svg', '1f617.svg', '1f618.svg', '1f61b.svg', '1f61c.svg', '1f61d.svg', '1f61e.svg', '1f620.svg', '1f621.svg', '2764.svg', '1f44d.svg'],
+    aru: ['aru-0.png', 'aru-1.png', 'aru-2.png', 'aru-3.png', 'aru-4.png', 'aru-5.png', 'aru-6.png', 'aru-7.png', 'aru-8.png', 'aru-9.png', 'aru-10.png', 'aru-11.png', 'aru-12.png', 'aru-13.png', 'aru-14.png', 'aru-15.png']
+  };
 
-  function $(id) { return document.getElementById(id); }
-  function cmtBody() { return $('cmt-body'); }
-  function editor() { return $('cmt-editor'); }
+  // ------- 全局运行时状态 -------
+  var state = {
+    me: null,            // {id, nickname, verified, avatar, ...} 来自 /api/auth/me
+    mode: 'anonymous',   // 'anonymous' | 'logged-in'
+    pageKey: '',
+    adminBadge: '',
+    packLoaded: Object.create(null),  // pack -> true
+    activePack: EMOJI_PACKS[0],
+    parentId: 0,
+    comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
+    loadingComments: false
+  };
 
-  function currentPageKey() {
-    var b = cmtBody();
-    return b ? b.getAttribute('data-page-key') : '';
-  }
+  // ------- 工具 -------
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
-  function adminBadge() {
-    var b = cmtBody();
-    return b ? (b.getAttribute('data-admin-badge') || '博主') : '博主';
-  }
-
-  /* ===== HTML 转义（昵称/链接等用户输入插入 DOM 前） ===== */
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
-  /* ===== 提示浮层 ===== */
-  function toast(msg) {
-    var old = document.querySelector('.cmt-toast');
-    if (old) old.remove();
-    var t = document.createElement('div');
-    t.className = 'cmt-toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(function () { t.classList.add('show'); }, 10);
-    setTimeout(function () {
-      t.classList.remove('show');
-      setTimeout(function () { t.remove(); }, 300);
-    }, 2400);
-  }
-
-  /* ===== 身份记忆 ===== */
-  function saveIdentity(nick, email, link) {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify({ nick: nick, email: email, link: link }));
-    } catch (e) { /* 隐私模式等场景静默失败 */ }
-  }
-
-  function loadIdentity() {
-    var nickEl = $('cmt-nick');
-    if (!nickEl) return; // 非文章页
-    try {
-      var s = localStorage.getItem(LS_KEY);
-      if (!s) return;
-      var id = JSON.parse(s);
-      if (id.nick && !nickEl.value) nickEl.value = id.nick;
-      if (id.email && !$('cmt-email').value) $('cmt-email').value = id.email;
-      if (id.link && !$('cmt-link').value) $('cmt-link').value = id.link;
-    } catch (e) { /* 解析失败忽略 */ }
-  }
-
-  /* ===== 编辑器移动（回复内联） ===== */
-  function showReplyTip(nick) {
-    $('cmt-reply-nick').textContent = '@' + nick;
-    $('cmt-reply-tip').style.display = '';
-  }
-
-  function hideReplyTip() {
-    var tip = $('cmt-reply-tip');
-    if (tip) tip.style.display = 'none';
-  }
-
-  function moveEditorTo(item) {
-    var main = item.querySelector(':scope > .cmt-main');
-    var actions = main ? main.querySelector(':scope > .cmt-actions') : null;
-    if (!main || !actions) return;
-    main.insertBefore(editor(), actions.nextSibling);
-  }
-
-  function resetEditor() {
-    var b = cmtBody();
-    if (b && editor()) b.insertBefore(editor(), b.firstChild);
-    hideReplyTip();
-    replyState = { pageKey: '', parentId: 0 };
-  }
-
-  function startReply(btn) {
-    var id = parseInt(btn.getAttribute('data-id'), 10);
-    var nick = btn.getAttribute('data-nick') || '';
-    var item = $('comment-' + id);
-    if (!item || !editor()) return;
-    replyState = { pageKey: currentPageKey(), parentId: id };
-    moveEditorTo(item);
-    showReplyTip(nick);
-    $('cmt-content').focus();
-  }
-
-  /* ===== 评论 DOM 构建（结构与 SSR 模板 comments.html 保持一致；children 递归 + like 按钮，Spec 50 懒加载复用） ===== */
-  function buildItem(cm) {
-    var item = document.createElement('div');
-    item.className = 'cmt-item';
-    item.id = 'comment-' + cm.id;
-    item.setAttribute('data-id', cm.id);
-
-    var nickHtml = cm.link
-      ? '<a class="cmt-nick" href="' + esc(cm.link) + '" target="_blank" rel="external nofollow noopener noreferrer">' + esc(cm.nick) + '</a>'
-      : '<span class="cmt-nick">' + esc(cm.nick) + '</span>';
-    var badgeHtml = cm.is_admin ? '<span class="cmt-badge">' + esc(adminBadge()) + '</span>' : '';
-
-    item.innerHTML =
-      '<img class="cmt-avatar" src="' + esc(cm.avatar) + '" alt="' + esc(cm.nick) + '" loading="lazy">' +
-      '<div class="cmt-main">' +
-        '<div class="cmt-meta">' + nickHtml + badgeHtml +
-          '<span class="cmt-time" title="' + esc(cm.date) + '">' + esc(cm.time_ago) + '</span>' +
-        '</div>' +
-        '<div class="cmt-content">' + cm.content_html + '</div>' + // 服务端已消毒，直接插入
-        '<div class="cmt-actions">' +
-          '<button type="button" class="cmt-reply-btn" data-id="' + cm.id + '" data-nick="' + esc(cm.nick) + '">回复</button>' +
-          '<button type="button" class="cmt-reply-btn cmt-like-btn" data-id="' + cm.id + '" aria-label="赞">赞 <span class="cmt-like-count">' + (cm.likes || 0) + '</span></button>' +
-        '</div>' +
-      '</div>';
-    if (cm.children && cm.children.length) {
-      var children = document.createElement('div');
-      children.className = 'cmt-children';
-      cm.children.forEach(function (child) { children.appendChild(buildItem(child)); });
-      item.querySelector('.cmt-main').appendChild(children);
-    }
-    return item;
-  }
-
-  /* 插入新评论：顶级 → 列表末尾；回复 → 父评论 children 末尾。
-     父评论本身是子评论时挂到同一 children 容器（平级，保持两层嵌套）。 */
-  function insertComment(cm, parentId) {
-    var item = buildItem(cm);
-    var parent = parentId ? $('comment-' + parentId) : null;
-    if (!parent) {
-      $('cmt-list').appendChild(item);
-      return;
-    }
-    var parentChildren = parent.closest('.cmt-children');
-    if (parentChildren) {
-      parentChildren.appendChild(item);
-      return;
-    }
-    var main = parent.querySelector(':scope > .cmt-main');
-    var children = main.querySelector(':scope > .cmt-children');
-    if (!children) {
-      children = document.createElement('div');
-      children.className = 'cmt-children';
-      main.appendChild(children);
-    }
-    children.appendChild(item);
-  }
-
-  function updateCount(delta) {
-    var el = $('cmt-count');
-    if (!el) return;
-    var m = el.textContent.match(/(\d+)/);
-    var n = (m ? parseInt(m[1], 10) : 0) + delta;
-    el.textContent = n + ' 条评论';
-  }
-
-  /* ===== 提交 ===== */
-  function submit() {
-    var b = cmtBody();
-    if (!b) return;
-    var content = $('cmt-content').value.trim();
-    var nick = $('cmt-nick').value.trim();
-    var email = $('cmt-email').value.trim();
-    var link = $('cmt-link').value.trim();
-    var website = $('cmt-website').value; // 蜜罐：正常用户留空
-
-    if (!nick) { toast('请填写昵称'); return; }
-    if (!email) { toast('请填写邮箱'); return; }
-    if (!content) { toast('请填写评论内容'); return; }
-
-    // PJAX 换页后回复状态失效，防挂错父评论
-    if (replyState.pageKey !== currentPageKey()) replyState.parentId = 0;
-
-    var btn = $('cmt-submit');
-    btn.disabled = true;
-
-    fetch('/api/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        page_key: currentPageKey(),
-        nick: nick,
-        email: email,
-        link: link,
-        content: content,
-        parent_id: replyState.parentId,
-        website: website
-      })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        btn.disabled = false;
-        if (!res.ok) { toast(res.error || '提交失败，请稍后再试'); return; }
-        saveIdentity(nick, email, link);
-        $('cmt-content').value = '';
-        if (res.status === 'pending') {
-          resetEditor();
-          toast('评论已提交，审核通过后显示');
-          return;
-        }
-        if (res.comment) {
-          insertComment(res.comment, replyState.parentId);
-          updateCount(1);
-        }
-        resetEditor();
-        toast('发布成功');
-      })
-      .catch(function () {
-        btn.disabled = false;
-        toast('网络错误，请稍后再试');
-      });
-  }
-
-  /* ===== 事件委托（PJAX 换页不丢） ===== */
-  document.addEventListener('click', function (e) {
-    var replyBtn = e.target.closest('.cmt-reply-btn');
-    if (replyBtn) {
-      e.preventDefault();
-      startReply(replyBtn);
-      return;
-    }
-    if (e.target.closest('#cmt-reply-cancel')) {
-      resetEditor();
-      return;
-    }
-    if (e.target.closest('#cmt-submit')) {
-      submit();
-    }
-  });
-
-  /* ===== 表情选择器：document 事件委托（PJAX 换页不丢）；guard 防脚本重复执行导致多重绑定 ===== */
-  var EMOJI_LIST = [
-    '😀','😂','🤣','😊','😍','🤔','😎','😴',
-    '😭','😡','🥳','🤯','😰','😓','🤗','🤩',
-    '👍','👎','👏','🙏','🤝','✌️','🤞','🤟',
-    '❤️','🧡','💛','💚','💙','💜','🖤','🤍',
-    '🎉','🎊','🔥','✨','⭐','💫','💥','💯',
-    '☕','🍵','🍰','🍕','🍔','🍻','🍷','🥂',
-    '⚽','🏀','🎮','🎵','🎨','📚','✏️','💻',
-    '🌸','🌺','🌻','🌹','🍀','🌟','🌈','☀️',
-    '🐱','🐶','🦊','🐻','🐼','🦁','🐯','🦒',
-    '🚀','✈️','🚗','🏠','🌍','🌙','❄️','⚡'
-  ];
-
-  function emojiPanel() { return $('cmt-emoji-panel'); }
-
-  // 懒构建面板：首次打开时用 EMOJI_LIST 生成 span（data-emoji 携带字符），data-built 防重复构建
-  function buildEmojiPanel(panel) {
-    EMOJI_LIST.forEach(function (em) {
-      var s = document.createElement('span');
-      s.setAttribute('data-emoji', em);
-      s.textContent = em;
-      s.title = em;
-      panel.appendChild(s);
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[ch];
     });
-    panel.setAttribute('data-built', '1');
   }
 
-  // 光标处插入表情，插入后光标移到表情之后
-  function insertEmoji(em) {
-    var ta = $('cmt-content');
-    if (!ta) return;
-    ta.focus();
-    var start = ta.selectionStart;
-    var end = ta.selectionEnd;
-    ta.value = ta.value.slice(0, start) + em + ta.value.slice(end);
-    var pos = start + em.length;
-    ta.selectionStart = pos;
-    ta.selectionEnd = pos;
+  function toast(msg, type) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    var bg = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#111827');
+    t.style.cssText = 'position:fixed;z-index:10001;left:50%;top:68px;transform:translateX(-50%);padding:.45rem 1rem;font-size:.82rem;color:#fff;background:' + bg + ';border-radius:999px;box-shadow:0 8px 24px rgba(17,24,39,.25);opacity:0;transition:opacity .18s;';
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.style.opacity = '1'; });
+    setTimeout(function () {
+      t.style.opacity = '0';
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 220);
+    }, 2200);
   }
 
-  function hideEmojiPanel() {
-    var p = emojiPanel();
-    if (p) p.style.display = 'none';
+  function wrapSelection(textarea, before, after, placeholder) {
+    var start = textarea.selectionStart || 0;
+    var end = textarea.selectionEnd || 0;
+    var value = textarea.value;
+    var selected = value.substring(start, end) || (placeholder || '');
+    var newValue = value.substring(0, start) + before + selected + after + value.substring(end);
+    textarea.value = newValue;
+    var pos = start + before.length + selected.length;
+    textarea.setSelectionRange(start + before.length, pos);
+    textarea.focus();
   }
 
-  function onEmojiClick(e) {
-    // 按钮：切换面板显隐（首次打开时懒构建）
-    var btn = e.target.closest && e.target.closest('#cmt-emoji-btn');
-    if (btn) {
-      e.preventDefault();
-      var panel = emojiPanel();
-      if (!panel) return;
-      if (panel.style.display === 'none') {
-        if (!panel.getAttribute('data-built')) {
-          panel.textContent = '';
-          buildEmojiPanel(panel);
-        }
-        panel.style.display = '';
-      } else {
-        panel.style.display = 'none';
-      }
-      return;
-    }
-    // 面板内表情：光标处插入，面板保持打开
-    var emoji = e.target.closest && e.target.closest('#cmt-emoji-panel span[data-emoji]');
-    if (emoji) {
-      e.preventDefault();
-      insertEmoji(emoji.getAttribute('data-emoji'));
-      return;
-    }
-    // 面板打开时点击面板外部 → 关闭
-    var p = emojiPanel();
-    if (p && p.style.display !== 'none' && !(e.target.closest && e.target.closest('#cmt-emoji-panel'))) {
-      p.style.display = 'none';
-    }
+  function insertAtCursor(textarea, text) {
+    var start = textarea.selectionStart || 0;
+    var end = textarea.selectionEnd || 0;
+    var value = textarea.value;
+    textarea.value = value.substring(0, start) + text + value.substring(end);
+    var pos = start + text.length;
+    textarea.setSelectionRange(pos, pos);
+    textarea.focus();
   }
 
-  function bindEmoji() {
-    if (window.__cmtEmojiBound) return;
-    window.__cmtEmojiBound = true;
-    document.addEventListener('click', onEmojiClick);
-    // PJAX 换页后重置面板状态（新 DOM 的 data-built 已丢失，会重新懒构建）
-    document.addEventListener('pjax:complete', hideEmojiPanel);
-  }
-  bindEmoji();
-
-  // Cmd/Ctrl+Enter 提交（编辑器内）
-  document.addEventListener('keydown', function (e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && e.target.closest && e.target.closest('.cmt-editor')) {
-      e.preventDefault();
-      submit();
-    }
-  });
-
-  /* ===== Spec 50 评论区懒加载 =====
-     首屏不请求评论数据：IntersectionObserver 监听 .cmt-body（rootMargin 200px），
-     进入视口才 fetch /api/comments 渲染列表；不支持 IO 时保底立即加载；
-     PJAX 换页后 DOM 重建（data-lazy 重新出现）重新监听；data-loaded 防重复。 */
-  function renderCommentList(comments) {
-    var list = $('cmt-list');
-    if (!list) return;
-    var lazy = $('cmt-lazy');
-    if (lazy) lazy.remove();
-    list.textContent = '';
-    (comments || []).forEach(function (cm) { list.appendChild(buildItem(cm)); });
-  }
-
-  function loadComments() {
-    var b = cmtBody();
-    if (!b || b.getAttribute('data-loaded') === '1') return;
-    b.setAttribute('data-loaded', '1');
-    fetch('/api/comments?page_key=' + encodeURIComponent(currentPageKey()))
+  // ------- 身份：拉取 /api/auth/me 并渲染身份栏 -------
+  function fetchMe(cb) {
+    fetch('/api/auth/me', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (res) {
-        if (res && res.ok) {
-          renderCommentList(res.comments);
-        } else {
-          // 失败：移除占位（避免永久“加载中”），PJAX 换页或下次进入时可重试
-          b.removeAttribute('data-loaded');
-          var lazy = $('cmt-lazy');
-          if (lazy) lazy.remove();
-        }
+      .then(function (d) {
+        state.me = d || { id: 0, verified: false };
+        state.mode = state.me && state.me.id > 0 ? 'logged-in' : 'anonymous';
+        renderIdentity();
+        if (cb) cb();
       })
       .catch(function () {
-        b.removeAttribute('data-loaded');
-        var lazy = $('cmt-lazy');
-        if (lazy) lazy.remove();
+        state.me = { id: 0, verified: false };
+        state.mode = 'anonymous';
+        renderIdentity();
+        if (cb) cb();
       });
   }
 
-  function initLazyComments() {
-    var b = cmtBody();
-    if (!b || b.getAttribute('data-lazy') !== '1' || b.getAttribute('data-loaded') === '1') return;
+  function renderIdentity() {
+    var anon = $('#cmt-id-anon');
+    var logged = $('#cmt-id-logged');
+    if (!anon || !logged) return;
+
+    if (state.mode === 'logged-in') {
+      anon.style.display = 'none';
+      logged.style.display = 'flex';
+      var me = state.me || {};
+      var nick = me.nickname || me.username || '';
+      $('#cmt-id-nick').textContent = nick;
+      var avatar = me.avatar || defaultAvatar(nick || 'U');
+      var avatarImg = $('#cmt-id-avatar');
+      if (avatarImg) avatarImg.src = avatar;
+    } else {
+      anon.style.display = 'block';
+      logged.style.display = 'none';
+      // 匿名态恢复上次输入（localStorage 记住 nick/email/link）
+      try {
+        $('#cmt-nick').value = localStorage.getItem('cmt_nick') || '';
+        $('#cmt-email').value = localStorage.getItem('cmt_email') || '';
+        $('#cmt-link').value = localStorage.getItem('cmt_link') || '';
+      } catch (e) { /* noop */ }
+    }
+  }
+
+  function defaultAvatar(name) {
+    // SVG data URI：首字母渐变圆，不依赖外部服务
+    var letter = String(name || '?').trim().charAt(0).toUpperCase();
+    var hue = (letter.charCodeAt(0) || 0) * 37 % 360;
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(' + hue + ',70%,60%)"/><stop offset="1" stop-color="hsl(' + ((hue + 40) % 360) + ',80%,45%)"/></linearGradient></defs><rect width="100%" height="100%" rx="40" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="36" font-weight="700" fill="#fff">' + letter + '</text></svg>';
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  function rememberAnon() {
+    try {
+      var n = $('#cmt-nick') && $('#cmt-nick').value;
+      var e = $('#cmt-email') && $('#cmt-email').value;
+      var l = $('#cmt-link') && $('#cmt-link').value;
+      localStorage.setItem('cmt_nick', n || '');
+      localStorage.setItem('cmt_email', e || '');
+      localStorage.setItem('cmt_link', l || '');
+    } catch (e) { /* noop */ }
+  }
+
+  // ------- 评论：渲染 -------
+  function buildAvatarUrl(cmt) {
+    if (cmt.avatar) return cmt.avatar;
+    // 邮箱 -> 不访问 gravatar 隐私追踪，用首字母 SVG 兜底
+    return defaultAvatar(cmt.nick || (cmt.email ? cmt.email.split('@')[0] : 'U'));
+  }
+
+  function renderBadges(cmt) {
+    var html = '';
+    if (cmt.is_admin) {
+      html += '<span class="cmt-badge cmt-badge-admin" title="' + escapeHtml(state.adminBadge || '博主') + '">' +
+        '<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 5 5.6.4-4.2 3.7 1.4 5.5L12 14.8 6.8 16.6 8.2 11.1 4 7.4 9.6 7z"/></svg>' +
+        escapeHtml(state.adminBadge || '博主') + '</span>';
+    }
+    if (cmt.verified && !cmt.is_admin) {
+      html += '<span class="cmt-badge cmt-badge-verified" title="已验证">' +
+        '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>' +
+        '已验证</span>';
+    }
+    return html;
+  }
+
+  function renderCommentItem(cmt) {
+    var nickHtml = cmt.link
+      ? '<a href="' + escapeHtml(cmt.link) + '" rel="nofollow noopener" target="_blank">' + escapeHtml(cmt.nick) + '</a>'
+      : escapeHtml(cmt.nick);
+    var avatar = buildAvatarUrl(cmt);
+    return '<article class="cmt-item" data-id="' + cmt.id + '" data-nick="' + escapeHtml(cmt.nick) + '">' +
+      '<img class="cmt-item-avatar" src="' + avatar + '" alt="' + escapeHtml(cmt.nick) + '" loading="lazy">' +
+      '<div class="cmt-item-main">' +
+        '<div class="cmt-item-head">' +
+          '<span class="cmt-item-nick">' + nickHtml + '</span>' +
+          renderBadges(cmt) +
+          '<span class="cmt-item-time">' + escapeHtml(cmt.time_ago || cmt.date_created || '') + '</span>' +
+        '</div>' +
+        (cmt.reply_ref ? '<div class="cmt-reply-ref">' + cmt.reply_ref + '</div>' : '') +
+        '<div class="cmt-item-body">' + (cmt.content_html || '') + '</div>' +
+        '<div class="cmt-item-actions">' +
+          '<button type="button" class="cmt-action-btn cmt-reply-btn" data-id="' + cmt.id + '" data-nick="' + escapeHtml(cmt.nick) + '">' +
+            '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>' +
+            '<span>回复</span>' +
+          '</button>' +
+          '<button type="button" class="cmt-action-btn cmt-like-btn' + (cmt.liked ? ' is-liked' : '') + '" data-id="' + cmt.id + '" data-liked="' + (cmt.liked ? '1' : '0') + '">' +
+            '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+            '<span class="cmt-like-count">' + (cmt.likes || 0) + '</span>' +
+          '</button>' +
+        '</div>' +
+        (cmt.children && cmt.children.length ? '<div class="cmt-children">' + cmt.children.map(renderCommentItem).join('') + '</div>' : '') +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderComments(data) {
+    var listEl = $('#cmt-list');
+    var listHead = $('#cmt-list-head');
+    var emptyEl = $('#cmt-empty');
+    var countBadge = $('#cmt-count-badge');
+    if (!listEl) return;
+
+    state.comments = data && data.comments ? data.comments : [];
+    var total = data && typeof data.total === 'number' ? data.total : state.comments.length;
+
+    listEl.innerHTML = '';
+
+    if (total > 0) {
+      listHead.style.display = 'flex';
+      listHead.querySelector('.cmt-list-title').textContent = total + ' 条评论';
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = state.comments.map(renderCommentItem).join('');
+    } else {
+      listHead.style.display = 'none';
+      emptyEl.style.display = 'flex';
+    }
+
+    if (countBadge) countBadge.textContent = total > 0 ? ('共 ' + total + ' 条评论') : '0';
+  }
+
+  function insertNewComment(cmt) {
+    var listEl = $('#cmt-list');
+    var listHead = $('#cmt-list-head');
+    var emptyEl = $('#cmt-empty');
+    var countBadge = $('#cmt-count-badge');
+    if (!listEl) return;
+
+    var total = 0;
+    if (cmt.parent_id > 0) {
+      // 回复：挂到父评论的 .cmt-children 下
+      var parent = $('.cmt-item[data-id="' + cmt.parent_id + '"]');
+      if (parent) {
+        var main = $('.cmt-item-main', parent);
+        var childrenBox = $('.cmt-children', main);
+        if (!childrenBox) {
+          childrenBox = document.createElement('div');
+          childrenBox.className = 'cmt-children';
+          main.appendChild(childrenBox);
+        }
+        var frag = document.createElement('template');
+        cmt.reply_ref = '回复 <b>' + escapeHtml(parent.getAttribute('data-nick')) + '</b>';
+        frag.innerHTML = renderCommentItem(cmt);
+        childrenBox.appendChild(frag.content.firstElementChild);
+        if (listHead && listHead.querySelector('.cmt-list-title')) {
+          var m = listHead.querySelector('.cmt-list-title').textContent.match(/\d+/);
+          total = parseInt((m && m[0]) || '0', 10) + 1;
+          listHead.querySelector('.cmt-list-title').textContent = total + ' 条评论';
+        }
+      }
+    } else {
+      emptyEl.style.display = 'none';
+      listHead.style.display = 'flex';
+      listHead.querySelector('.cmt-list-title').textContent = '1 条评论';
+      listEl.insertAdjacentHTML('afterbegin', renderCommentItem(cmt));
+      total = 1;
+    }
+
+    // 更新顶部徽章
+    if (countBadge) {
+      var cur = countBadge.textContent.match(/\d+/);
+      var curN = parseInt((cur && cur[0]) || '0', 10);
+      countBadge.textContent = '共 ' + Math.max(curN, total > 0 ? total : 0) + ' 条评论';
+    }
+  }
+
+  // ------- 懒加载评论：IntersectionObserver 触发 -------
+  function maybeLoadComments() {
+    if (state.loadingComments) return;
+    if (state.pageKey == null || state.pageKey === '') return;
+    state.loadingComments = true;
+    fetch('/api/comments?page_key=' + encodeURIComponent(state.pageKey), { credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok) {
+          throw new Error(res.data && res.data.error ? res.data.error : '加载评论失败');
+        }
+        renderComments(res.data);
+      })
+      .catch(function (err) {
+        var listEl = $('#cmt-list');
+        if (listEl) listEl.innerHTML = '<div style="padding:1.5rem 0;color:#ef4444;font-size:.82rem;">加载评论失败：' + escapeHtml(err && err.message ? err.message : '网络错误') + '</div>';
+      });
+  }
+
+  function observeLazy() {
+    var body = $('#cmt-body');
+    if (!body) return;
+    state.pageKey = body.getAttribute('data-page-key') || '';
+    state.adminBadge = body.getAttribute('data-admin-badge') || '';
     if (!('IntersectionObserver' in window)) {
-      loadComments(); // 老浏览器保底：立即加载
+      maybeLoadComments();
       return;
     }
     var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
           io.disconnect();
-          loadComments();
+          maybeLoadComments();
         }
       });
     }, { rootMargin: '200px' });
-    io.observe(b);
+    io.observe(body);
   }
 
-  // 首屏（DOMContentLoaded 兜底 readyState）+ PJAX 换页后重新监听
+  // ------- 提交评论 -------
+  function doSubmit() {
+    rememberAnon();
+    var contentEl = $('#cmt-content');
+    var content = contentEl && contentEl.value ? contentEl.value.trim() : '';
+    if (!content) { toast('评论内容不能为空', 'error'); if (contentEl) contentEl.focus(); return; }
+
+    // 校验匿名态必填
+    var nick, email, link;
+    if (state.mode === 'logged-in') {
+      nick = (state.me && state.me.nickname) || (state.me && state.me.username) || '';
+      email = (state.me && state.me.email) || '';
+      link = '';
+    } else {
+      nick = $('#cmt-nick') && $('#cmt-nick').value.trim();
+      email = $('#cmt-email') && $('#cmt-email').value.trim();
+      link = $('#cmt-link') && $('#cmt-link').value.trim();
+      if (!nick) { toast('请填写昵称', 'error'); return; }
+      if (!email || email.indexOf('@') < 0) { toast('请填写正确的邮箱', 'error'); return; }
+    }
+
+    var website = $('#cmt-website') && $('#cmt-website').value;
+    var body = {
+      page_key: state.pageKey,
+      nick: nick,
+      email: email,
+      link: link,
+      content: content,
+      parent_id: state.parentId || 0,
+      website: website || ''
+    };
+
+    var submitBtn = $('#cmt-submit');
+    if (submitBtn) { submitBtn.disabled = true; var prevHtml = submitBtn.innerHTML; submitBtn.innerHTML = '<span>提交中…</span>'; }
+
+    fetch('/api/comments', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+      .then(function (res) {
+        if (!res.data || !res.data.ok) {
+          throw new Error(res.data && res.data.error ? res.data.error : '发布失败');
+        }
+        // 清空输入
+        if (contentEl) contentEl.value = '';
+        cancelReply();
+        if (res.data.status === 'approved' && res.data.comment) {
+          insertNewComment(res.data.comment);
+          toast('发布成功', 'success');
+        } else {
+          toast('评论提交成功，审核通过后显示', 'success');
+        }
+      })
+      .catch(function (err) {
+        toast(err && err.message ? err.message : '发布失败', 'error');
+      })
+      .then(function () {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = prevHtml || submitBtn.innerHTML; }
+      });
+  }
+
+  // ------- 回复态 -------
+  function startReply(id, nick) {
+    state.parentId = id;
+    var tip = $('#cmt-reply-tip');
+    var nickB = $('#cmt-reply-nick');
+    if (nickB) nickB.textContent = nick || '';
+    if (tip) tip.style.display = 'flex';
+    var ta = $('#cmt-content');
+    if (ta) { ta.scrollIntoView({ block: 'center', behavior: 'smooth' }); ta.focus(); }
+  }
+  function cancelReply() {
+    state.parentId = 0;
+    var tip = $('#cmt-reply-tip');
+    if (tip) tip.style.display = 'none';
+  }
+
+  // ------- 表情面板 -------
+  function toggleEmojiPanel() {
+    var p = $('#cmt-emoji-panel');
+    if (!p) return;
+    var open = p.style.display !== 'none' && p.style.display !== '';
+    p.style.display = open ? 'none' : 'flex';
+    if (!open) {
+      // 首次打开：懒加载默认 pack
+      ensurePackLoaded(state.activePack);
+    }
+  }
+
+  function switchEmojiPack(pack) {
+    state.activePack = pack;
+    $$('.cmt-emoji-tab').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-pack') === pack);
+      b.setAttribute('aria-selected', b.getAttribute('data-pack') === pack ? 'true' : 'false');
+    });
+    ensurePackLoaded(pack);
+  }
+
+  function emojiUrl(pack, file) {
+    return EMOJI_BASE + pack + '/' + encodeURIComponent(file);
+  }
+
+  function ensurePackLoaded(pack) {
+    if (state.packLoaded[pack]) { return; }
+    var body = $('#cmt-emoji-body');
+    if (!body) return;
+    body.innerHTML = '<div class="cmt-emoji-loading">' +
+      '<svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>' +
+      '<span>加载中…</span></div>';
+
+    // 先尝试 index.json，失败走 fallback
+    var url = EMOJI_BASE + pack + '/index.json';
+    fetch(url, { cache: 'force-cache' })
+      .then(function (r) {
+        if (r.ok) return r.json();
+        throw new Error('no-index');
+      })
+      .then(function (list) {
+        var files = Array.isArray(list) ? list : (Array.isArray(list && list.items) ? list.items : null);
+        if (!files || !files.length) throw new Error('empty');
+        return files.map(function (f) { return typeof f === 'string' ? f : (f && f.name ? f.name : null); }).filter(Boolean);
+      })
+      .catch(function () {
+        // 兜底：fallback 列表
+        var fallback = EMOJI_FALLBACK[pack] || ['1f600.svg'];
+        return fallback;
+      })
+      .then(function (files) {
+        state.packLoaded[pack] = true;
+        renderEmojiGrid(pack, files);
+      });
+  }
+
+  function renderEmojiGrid(pack, files) {
+    // 只在当前激活 tab 仍为这个 pack 时渲染（避免切 tab 期间闪回）
+    if (state.activePack !== pack) return;
+    var body = $('#cmt-emoji-body');
+    if (!body) return;
+    var html = '<div class="cmt-emoji-grid">' + files.map(function (f) {
+      var u = emojiUrl(pack, f);
+      return '<button type="button" class="cmt-emoji-cell" data-src="' + escapeHtml(u) + '" title="' + escapeHtml(f.replace(/\.[^.]+$/, '')) + '">' +
+        '<img class="cmt-emoji-img" src="' + escapeHtml(u) + '" alt="' + escapeHtml(f) + '" loading="lazy"></button>';
+    }).join('') + '</div>';
+    body.innerHTML = html;
+  }
+
+  function insertEmojiAtCursor(src) {
+    // 插入 Markdown 图片形式，后端 bluemonday 放行 img.cmt-emoji-img + 指定 CDN
+    var md = '![emoji](' + src + ')';
+    var ta = $('#cmt-content');
+    if (ta) insertAtCursor(ta, md);
+  }
+
+  // ------- 工具栏按钮：Markdown 包装 -------
+  function bindToolbar() {
+    var ta = $('#cmt-content');
+    if (!ta) return;
+
+    on($('#cmt-tool-bold'), 'click', function () { wrapSelection(ta, '**', '**', '加粗文本'); });
+    on($('#cmt-tool-italic'), 'click', function () { wrapSelection(ta, '*', '*', '斜体文本'); });
+    on($('#cmt-tool-quote'), 'click', function () { wrapSelection(ta, '> ', '\n', '引用一句话'); });
+    on($('#cmt-tool-code'), 'click', function () { wrapSelection(ta, '\n```\n', '\n```\n', '代码'); });
+    on($('#cmt-tool-link'), 'click', function () {
+      var url = (typeof prompt === 'function') ? prompt('请输入链接地址：', 'https://') : null;
+      if (!url) return;
+      wrapSelection(ta, '[', '](' + url + ')', '链接文字');
+    });
+
+    // 表情按钮
+    on($('#cmt-emoji-btn'), 'click', function (e) { e.stopPropagation(); toggleEmojiPanel(); });
+    // 点击表情面板外关闭
+    on(document, 'click', function (e) {
+      var panel = $('#cmt-emoji-panel');
+      var btn = $('#cmt-emoji-btn');
+      if (!panel || panel.style.display === 'none') return;
+      if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+      panel.style.display = 'none';
+    });
+  }
+
+  // ------- 登录/注册弹窗 -------
+  function openModal(mode) {
+    var m = $('#cmt-modal');
+    if (!m) return;
+    m.style.display = 'flex';
+    switchModalMode(mode || 'login');
+  }
+  function closeModal() {
+    var m = $('#cmt-modal');
+    if (m) m.style.display = 'none';
+  }
+  function switchModalMode(mode) {
+    var isLogin = mode === 'login';
+    $$('.cmt-modal-tab').forEach(function (t) { t.classList.toggle('is-active', t.getAttribute('data-mode') === mode); });
+    var loginF = $('#cmt-form-login');
+    var regF = $('#cmt-form-register');
+    if (loginF) loginF.style.display = isLogin ? 'flex' : 'none';
+    if (regF) regF.style.display = isLogin ? 'none' : 'flex';
+  }
+  function bindModal() {
+    on($('#cmt-open-login'), 'click', function () { openModal('login'); });
+    on($('#cmt-use-anon'), 'click', function () {
+      // 从登录态切到匿名态：退出登录
+      doLogout(function () {
+        state.mode = 'anonymous';
+        renderIdentity();
+      });
+    });
+    on($('#cmt-do-logout'), 'click', function () {
+      doLogout(function () {
+        state.mode = 'anonymous';
+        renderIdentity();
+        toast('已退出登录', 'success');
+      });
+    });
+    on($('#cmt-modal-close'), 'click', closeModal);
+    on($('#cmt-modal-mask'), 'click', closeModal);
+    on($('#cmt-goto-register'), 'click', function () { switchModalMode('register'); });
+    on($('#cmt-goto-login'), 'click', function () { switchModalMode('login'); });
+    $$('.cmt-modal-tab').forEach(function (t) {
+      on(t, 'click', function () { switchModalMode(t.getAttribute('data-mode') || 'login'); });
+    });
+
+    // Esc 关闭
+    on(document, 'keydown', function (e) {
+      if (e.key === 'Escape') {
+        var m = $('#cmt-modal');
+        if (m && m.style.display === 'flex') closeModal();
+      }
+    });
+
+    // 登录表单
+    on($('#cmt-form-login'), 'submit', function (e) {
+      e.preventDefault();
+      var u = $('#cmt-login-username').value.trim();
+      var p = $('#cmt-login-password').value;
+      if (!u || !p) { toast('请填写用户名和密码', 'error'); return; }
+      var btn = $('#cmt-do-login'); if (btn) btn.disabled = true;
+      fetch('/api/auth/login', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '登录失败');
+          toast('登录成功', 'success');
+          closeModal();
+          fetchMe();
+        })
+        .catch(function (err) { toast(err.message || '登录失败', 'error'); })
+        .then(function () { if (btn) btn.disabled = false; });
+    });
+
+    // 注册表单
+    on($('#cmt-form-register'), 'submit', function (e) {
+      e.preventDefault();
+      var u = $('#cmt-reg-username').value.trim();
+      var p = $('#cmt-reg-password').value;
+      var n = $('#cmt-reg-nick').value.trim();
+      var em = $('#cmt-reg-email').value.trim();
+      var av = $('#cmt-reg-avatar').value.trim();
+      if (!u || !p || !em) { toast('请填写必填项', 'error'); return; }
+      var btn = $('#cmt-do-register'); if (btn) btn.disabled = true;
+      fetch('/api/auth/register', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av })
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '注册失败');
+          toast('注册成功并已登录', 'success');
+          closeModal();
+          fetchMe();
+        })
+        .catch(function (err) { toast(err.message || '注册失败', 'error'); })
+        .then(function () { if (btn) btn.disabled = false; });
+    });
+  }
+
+  function doLogout(cb) {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+      .then(function () { return true; })
+      .catch(function () { return true; })
+      .then(function () {
+        state.me = { id: 0, verified: false };
+        if (cb) cb();
+      });
+  }
+
+  // ------- 通用事件绑定（委托 + PJAX 兼容） -------
+  function on(el, ev, fn) {
+    if (!el) return;
+    el.addEventListener(ev, fn);
+  }
+
+  function bindDelegated() {
+    // 回复按钮（委托到 document，因为评论列表是动态插入的）
+    document.addEventListener('click', function (e) {
+      var replyBtn = e.target.closest && e.target.closest('.cmt-reply-btn');
+      if (replyBtn) {
+        var id = replyBtn.getAttribute('data-id');
+        var nick = replyBtn.getAttribute('data-nick');
+        if (id) startReply(parseInt(id, 10) || 0, nick || '');
+        return;
+      }
+      // 取消回复
+      if (e.target.closest && e.target.closest('#cmt-reply-cancel')) {
+        cancelReply();
+        return;
+      }
+      // 提交按钮
+      if (e.target.closest && e.target.closest('#cmt-submit')) {
+        doSubmit();
+        return;
+      }
+      // 空状态："抢个沙发" → 滚动到输入框
+      if (e.target.closest && e.target.closest('#cmt-empty-action')) {
+        var ta = $('#cmt-content');
+        if (ta) { ta.scrollIntoView({ block: 'center', behavior: 'smooth' }); ta.focus(); }
+        return;
+      }
+      // 表情 tab 切换
+      var tab = e.target.closest && e.target.closest('.cmt-emoji-tab');
+      if (tab) {
+        var pack = tab.getAttribute('data-pack');
+        if (pack) switchEmojiPack(pack);
+        return;
+      }
+      // 表情格子点击
+      var cell = e.target.closest && e.target.closest('.cmt-emoji-cell');
+      if (cell) {
+        var src = cell.getAttribute('data-src');
+        if (src) insertEmojiAtCursor(src);
+        // 保持面板打开允许连发
+        return;
+      }
+    });
+
+    // Ctrl/Cmd + Enter 快捷提交
+    document.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key !== 'Enter') return;
+      var ta = document.activeElement;
+      if (ta && ta.id === 'cmt-content') { e.preventDefault(); doSubmit(); }
+    });
+
+    // 匿名输入记忆
+    ['input', 'change'].forEach(function (ev) {
+      var n = $('#cmt-nick'), em = $('#cmt-email'), l = $('#cmt-link');
+      if (n) n.addEventListener(ev, rememberAnon);
+      if (em) em.addEventListener(ev, rememberAnon);
+      if (l) l.addEventListener(ev, rememberAnon);
+    });
+  }
+
+  // ------- 初始化 -------
+  function init() {
+    var body = $('#cmt-body');
+    if (!body) return;  // 当前页面没有评论区
+    if (body.getAttribute('data-cmt-init') === '1') return;
+    body.setAttribute('data-cmt-init', '1');
+
+    bindDelegated();
+    bindToolbar();
+    bindModal();
+
+    // 1. 拉身份  2. 观察懒加载
+    fetchMe(function () {
+      observeLazy();
+    });
+  }
+
+  // 测试面：机械校验入口（node --test scripts/test/comments.test.mjs 在 vm 沙箱断言）。
+  // 与 pjax.js 的 window.stellar.pjax._internal 模式一致；真实浏览器不消费该对象。
+  // _resetState 仅供测试重建运行时状态；_init 为 init 别名（测试按需显式初始化）。
+  window.stellar = window.stellar || {};
+  window.stellar.comments = {
+    _internal: {
+      escapeHtml: escapeHtml,
+      defaultAvatar: defaultAvatar,
+      buildAvatarUrl: buildAvatarUrl,
+      renderBadges: renderBadges,
+      renderCommentItem: renderCommentItem,
+      renderComments: renderComments,
+      insertNewComment: insertNewComment,
+      insertAtCursor: insertAtCursor,
+      wrapSelection: wrapSelection,
+      insertEmojiAtCursor: insertEmojiAtCursor,
+      startReply: startReply,
+      cancelReply: cancelReply,
+      doSubmit: doSubmit,
+      bindToolbar: bindToolbar,
+      bindDelegated: bindDelegated,
+      emojiUrl: emojiUrl,
+      getState: function () { return state; },
+      _resetState: function () {
+        state.parentId = 0;
+        state.mode = 'anonymous';
+        state.me = null;
+        state.comments = [];
+        state.pageKey = '';
+      },
+      _init: init
+    }
+  };
+
+  // DOMContentLoaded 已过也没关系，立即跑；PJAX 换页后重新跑（DOM 重新生成）
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLazyComments);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    initLazyComments();
+    init();
   }
-  document.addEventListener('pjax:complete', initLazyComments);
-
-  // 身份回填：首屏 + PJAX 换页后（新 DOM 需重新回填）
-  document.addEventListener('DOMContentLoaded', loadIdentity);
   document.addEventListener('pjax:complete', function () {
-    replyState = { pageKey: '', parentId: 0 };
-    loadIdentity();
+    // pjax 后重新初始化新页面的评论区
+    setTimeout(init, 0);
   });
 })();

@@ -73,9 +73,9 @@ fmt.Println("Hello, tabs!")
 ## Gallery 标签
 
 {% gallery size:m ratio:square %}
-![示例图一](https://picsum.photos/400/400?random=1)
-![示例图二](https://picsum.photos/400/400?random=2)
-![示例图三](https://picsum.photos/400/400?random=3)
+![示例图一](/assets/img/icon-512.png)
+![示例图二](/assets/img/icon-512.png)
+![示例图三](/assets/img/icon-512.png)
 {% endgallery %}
 
 ## Button 标签

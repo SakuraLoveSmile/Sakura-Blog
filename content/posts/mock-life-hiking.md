@@ -5,8 +5,6 @@ excerpt: 十二公里山路，从竹海走到山脊，给忙碌的一周按下�
 categories: 生活
 topic: 户外
 tags: [徒步, 生活, 杭州]
-cover: https://picsum.photos/seed/hiking-trail/1280/640
-banner: https://picsum.photos/seed/hiking-banner/1600/640
 poster_headline: 山野治愈力
 poster_caption: 云栖竹径 · 十里琅珰 · 五云山
 ---
@@ -30,7 +28,7 @@ poster_caption: 云栖竹径 · 十里琅珰 · 五云山
 
 ## 一些照片
 
-![山脊远眺](https://picsum.photos/seed/ridge-view/800/450)
+![山脊远眺](/assets/img/icon-512.png)
 
 ## 下次
 

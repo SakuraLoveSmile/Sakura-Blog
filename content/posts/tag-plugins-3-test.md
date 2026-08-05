@@ -62,9 +62,9 @@ git https 展开（带前缀）：
 ## Swiper 轮播
 
 {% swiper width:max effect:cards %}
-![图一](https://picsum.photos/id/1015/800/500)
-![图二](https://picsum.photos/id/1016/800/500)
-![图三](https://picsum.photos/id/1018/800/500)
+![图一](/assets/img/icon-512.png)
+![图二](/assets/img/icon-512.png)
+![图三](/assets/img/icon-512.png)
 {% endswiper %}
 
 ## Chat 聊天记录

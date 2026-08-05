@@ -5,7 +5,6 @@ excerpt: 把最近读完的三本书各摘一段感悟：架构、效率与设�
 categories: 随笔
 topic: 读书
 tags: [读书, 笔记, 随笔]
-cover: https://picsum.photos/seed/reading-books/1280/640
 poster_headline: 书读百遍
 poster_caption: 架构 · 效率 · 设计
 ---

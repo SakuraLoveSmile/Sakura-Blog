@@ -5,7 +5,6 @@ excerpt: 用三个真实场景把 CSS Grid 的常用写法串一遍：两栏、�
 categories: 技术
 topic: 前端
 tags: [CSS, 前端, 布局]
-cover: https://picsum.photos/seed/css-grid/1280/640
 poster_headline: Grid 不只是一张表
 poster_caption: display: grid · grid-template-areas · auto-fit
 ---

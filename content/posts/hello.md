@@ -5,8 +5,6 @@ excerpt: 用 Gin + html/template + goldmark 组合出完整文章页，验证从
 categories: 技术
 topic: 服务端渲染
 tags: [Go, Stellar]
-cover: https://picsum.photos/seed/stellar-demo/1280/640
-banner: https://picsum.photos/seed/stellar-banner/1600/640
 poster_headline: Go 服务端渲染验证
 poster_caption: Gin + goldmark + html/template
 ---
@@ -69,7 +67,7 @@ func main() {
 
 ### 图片
 
-![占位图](https://picsum.photos/seed/stellar-demo/1280/640)
+![占位图](/assets/img/icon-512.png)
 
 ## 下一步
 

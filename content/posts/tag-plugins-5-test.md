@@ -49,7 +49,7 @@ status: draft
 
 ## posters
 
-{% posters api:https://example.com/data.json %}
+{% posters %}
 
 ## reel
 

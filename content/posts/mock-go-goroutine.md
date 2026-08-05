@@ -5,8 +5,8 @@ excerpt: 从 GMP 模型到抢占式调度，聊聊 Go 运行时是如何用 M �
 categories: 技术
 topic: Go 并发
 tags: [Go, 并发, 调度]
-cover: https://picsum.photos/seed/go-goroutine/1280/640
-banner: https://picsum.photos/seed/go-banner/1600/640
+cover: /assets/img/icon-512.png
+banner: /assets/img/icon-512.png
 poster_headline: GMP 模型拆解
 poster_caption: goroutine · channel · scheduler
 ---

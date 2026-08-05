@@ -296,10 +296,12 @@ func (h *Handler) updatePost(c *gin.Context) {
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
-// defaultCover 默认封面 URL：picsum.photos seed 模式，同 slug 永远返回同一张图。
-// source.unsplash.com 已停用；picsum 图源为 Unsplash 授权图片，免 Key 免费商用。
+// defaultCover 默认封面 URL：返回本地占位图，避免外部图片服务（picsum/unsplash）不可达导致控制台报 ERR_ABORTED。
+// 历史上使用 picsum.photos seed 模式（https://picsum.photos/seed/{slug}/1200/675），
+// 但该服务在部分网络环境下不稳定，统一回退到本地 icon-512 占位图；
+// 如需美观的个性化封面，请通过 Console 编辑表单显式上传或填写可靠 CDN 地址。
 func defaultCover(slug string) string {
-	return fmt.Sprintf("https://picsum.photos/seed/%s/1200/675", slug)
+	return "/assets/img/icon-512.png"
 }
 
 // savePostDraft PUT /api/v1/posts/:slug/draft：保存草稿头（整份编辑表单）。

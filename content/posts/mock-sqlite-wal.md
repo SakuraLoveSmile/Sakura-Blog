@@ -5,8 +5,6 @@ excerpt: 把博客的存储从 rollback journal 切到 WAL 之后，写入延迟
 categories: 技术
 topic: 数据库
 tags: [SQLite, 数据库, 性能]
-cover: https://picsum.photos/seed/sqlite-wal/1280/640
-banner: https://picsum.photos/seed/sqlite-banner/1600/640
 poster_headline: WAL 是什么
 poster_caption: write-ahead logging · checkpoint · -wal
 ---

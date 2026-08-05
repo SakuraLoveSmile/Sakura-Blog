@@ -5,8 +5,6 @@ excerpt: 记录一次完整的 Arch 安装与桌面配置经历，包括踩过�
 categories: 技术
 topic: 系统
 tags: [Linux, Arch, 系统]
-cover: https://picsum.photos/seed/arch-linux/1280/640
-banner: https://picsum.photos/seed/arch-banner/1600/640
 poster_headline: 滚动更新与折腾
 poster_caption: pacman · yay · systemd · i3
 ---

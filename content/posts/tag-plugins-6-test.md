@@ -195,49 +195,49 @@ Box 列 3
 ### 基础轮播
 
 {% swiper %}
-![](https://picsum.photos/600/340?1)
-![](https://picsum.photos/600/340?2)
-![](https://picsum.photos/600/340?3)
-![](https://picsum.photos/600/340?4)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
 {% endswiper %}
 
 ### width:min 迷你轮播（slide 25% 宽）
 
 {% swiper width:min %}
-![](https://picsum.photos/600/340?11)
-![](https://picsum.photos/600/340?12)
-![](https://picsum.photos/600/340?13)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
 {% endswiper %}
 
 ### width:max 限宽轮播（容器最大 800px）
 
 {% swiper width:max %}
-![](https://picsum.photos/600/340?21)
-![](https://picsum.photos/600/340?22)
-![](https://picsum.photos/600/340?23)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
 {% endswiper %}
 
 ### coverflow 效果
 
 {% swiper effect:coverflow %}
-![](https://picsum.photos/600/340?31)
-![](https://picsum.photos/600/340?32)
-![](https://picsum.photos/600/340?33)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
 {% endswiper %}
 
 ### cards 效果
 
 {% swiper effect:cards %}
-![](https://picsum.photos/600/340?41)
-![](https://picsum.photos/600/340?42)
-![](https://picsum.photos/600/340?43)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
+![](/assets/img/icon-512.png)
 {% endswiper %}
 
 ## Banner 横幅容器
 
 ### 完整横幅（背景图 + 头像 + 标题/副标题 + 整块链接）
 
-{% banner title:我的博客 subtitle:记录技术成长 bg:https://picsum.photos/1200/400 avatar:https://picsum.photos/80/80 link:https://example.com %}
+{% banner title:我的博客 subtitle:记录技术成长 bg:/assets/img/icon-512.png avatar:/assets/img/icon-512.png link:https://example.com %}
 欢迎来到我的小站，支持 **Markdown** 正文。
 {% endbanner %}
 
@@ -262,10 +262,10 @@ Box 列 3
 {% chat iphone style:qq title:技术交流群 scene:group me:bob %}
 alice:
   name: 小明
-  avatar: https://picsum.photos/80/80?1
+  avatar: /assets/img/icon-512.png
 bob:
   name: 小红
-  avatar: https://picsum.photos/80/80?2
+  avatar: /assets/img/icon-512.png
 <!-- chattip 上午 10:00 -->
 <!-- chatcell user:alice md:大家好！群聊模式所有消息左对齐。 -->
 <!-- chatcell user:bob md:是的，即使设置了 me 参数也不会靠右。 -->
@@ -276,10 +276,10 @@ bob:
 {% chat iphone style:qq title:文件传输群 scene:group %}
 alice:
   name: 小明
-  avatar: https://picsum.photos/80/80?1
+  avatar: /assets/img/icon-512.png
 bob:
   name: 小红
-  avatar: https://picsum.photos/80/80?2
+  avatar: /assets/img/icon-512.png
 <!-- chattip 上午 10:05 -->
 <!-- chatcell user:alice md:发个文件给你 -->
 <!-- chatcell type:image -->
@@ -302,19 +302,19 @@ bob:
 ### iPhone 手机壳
 
 {% frame device:iphone width:320px %}
-![screenshot](https://picsum.photos/600/1200)
+![screenshot](/assets/img/icon-512.png)
 {% endframe %}
 
 ### iPad 平板壳
 
 {% frame device:ipad %}
-![screenshot](https://picsum.photos/800/600)
+![screenshot](/assets/img/icon-512.png)
 {% endframe %}
 
 ### MacBook 笔记本壳
 
 {% frame device:macbook %}
-![screenshot](https://picsum.photos/800/500)
+![screenshot](/assets/img/icon-512.png)
 {% endframe %}
 
 ## Poetry 诗词卡片（Spec 51）
@@ -411,8 +411,8 @@ SQLite 用 WAL 模式提升并发读写性能。
 
 ### albums 专辑卡片（repo 数据源 + size:m）
 
-{% albums repo:user/repo size:m %}
+{% albums size:m %}
 
 ### posters 海报卡片（api 数据源 + size:s）
 
-{% posters api:https://example.com/posters.json size:s %}
+{% posters size:s %}
