@@ -255,6 +255,8 @@ export const linkApi = {
   delete: (id: number) => http.delete(`/links/${id}`),
   /** 并发检测各友链可达性，返回 items: [{id, ok, status}]（status 为 HTTP 状态码，0=无法访问） */
   check: () => http.post("/links/check"),
+  /** 从 GitHub Friends 仓库导入友链（Spec 54）：返回 {imported, skipped, failed[]} */
+  importFromGitHub: (data: { group?: string }) => http.post("/links/import", data),
 };
 
 // --- 友链 RSS 订阅阅读器 ---

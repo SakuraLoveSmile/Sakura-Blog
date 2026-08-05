@@ -48,6 +48,9 @@ type Handler struct {
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
 	onLinksChanged func()
 
+	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
+	gh *ghpkg.Client
+
 	// 登录限流（P0-4）
 	loginMu    sync.Mutex
 	loginFails map[string]struct {
@@ -149,7 +152,9 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 	}
 
 	// GitHub 代理端点（Spec 21）：/api/gh/repo（直连 api.github.com）。
+	// Spec 54：同一 client 注入 Handler 供友链导入（POST /links/import）拉取 issues。
 	if d.GH != nil {
+		h.gh = d.GH
 		ghpkg.NewHandler(d.GH).Register(r)
 	}
 
@@ -340,6 +345,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/links/:id", h.updateLink)
 		authed.DELETE("/links/:id", h.deleteLink)
 		authed.POST("/links/check", h.checkLinks)
+		authed.POST("/links/import", h.importLinks)
 
 		// 友链 RSS 订阅阅读器
 		authed.GET("/subscriptions", h.listSubscriptions)

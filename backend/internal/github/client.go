@@ -139,6 +139,31 @@ func (c *Client) GetIssuesRaw(owner, repo, query string) ([]byte, error) {
 	return c.get(fmt.Sprintf("%s/repos/%s/%s/issues?%s", c.apiBase, owner, repo, query), 30*time.Minute)
 }
 
+// Issue 裁剪后的 issue 信息（友链导入等消费，对齐 GitHub REST 形状）。
+type Issue struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	State  string `json:"state"`
+	Body   string `json:"body"`
+	Labels []struct {
+		Name string `json:"name"`
+	} `json:"labels"`
+}
+
+// GetIssues 仓库 issues 列表（裁剪字段）。query 为调用方用 url.Values 编码好的查询串；
+// 复用 GetIssuesRaw 的缓存（TTL 30min），仅供已注入 apiBase 的测试或内部消费。
+func (c *Client) GetIssues(owner, repo, query string) ([]Issue, error) {
+	data, err := c.GetIssuesRaw(owner, repo, query)
+	if err != nil {
+		return nil, err
+	}
+	var issues []Issue
+	if err := json.Unmarshal(data, &issues); err != nil {
+		return nil, fmt.Errorf("parse issues json: %w", err)
+	}
+	return issues, nil
+}
+
 // get 通用缓存拉取：内存 → 磁盘 → 上游。上游失败时 stale-while-error。
 func (c *Client) get(url string, ttl time.Duration) ([]byte, error) {
 	key := cacheKey(url)

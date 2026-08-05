@@ -90,6 +90,39 @@ const grouped = computed(() => {
   return order.map((title) => ({ title, items: map[title] }));
 });
 
+// GitHub 友链导入（Spec 54）：弹窗 + 分组输入 + 结果 Toast
+const showImportModal = ref(false);
+const importGroup = ref("GitHub 友链");
+const importing = ref(false);
+const importError = ref("");
+
+function openImport() {
+  importGroup.value = "GitHub 友链";
+  importError.value = "";
+  showImportModal.value = true;
+}
+
+async function handleImport() {
+  importing.value = true;
+  importError.value = "";
+  try {
+    const { data } = await linkApi.importFromGitHub({ group: importGroup.value.trim() });
+    const failed = data?.failed || [];
+    const msg = `导入 ${data.imported ?? 0} 条 · 跳过 ${data.skipped ?? 0} 条`;
+    if (failed.length > 0) {
+      Toast.error("部分导入失败", { description: `${msg}，失败 ${failed.length} 条（${failed.slice(0, 3).join("；")}${failed.length > 3 ? "…" : ""}）` });
+    } else {
+      Toast.success("导入完成", { description: msg });
+    }
+    showImportModal.value = false;
+    queryClient.invalidateQueries({ queryKey: ["friends"] });
+  } catch (e: any) {
+    importError.value = e?.response?.data?.error || "导入失败，请稍后重试";
+  } finally {
+    importing.value = false;
+  }
+}
+
 function openCreate() {
   editing.value = { group_title: "", name: "", url: "", avatar: "", description: "", rss: "", label: "", color: "", sort: 0 };
   error.value = "";
@@ -185,6 +218,12 @@ function closeMenus() {
           >
             <Icon :icon="checking ? 'ri:loader-4-line' : 'ri:pulse-line'" :class="checking && 'animate-spin'" />检测全部
           </button>
+          <button
+            class="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            @click="openImport"
+          >
+            <Icon icon="ri:github-fill" />从 GitHub 导入
+          </button>
           <span class="flex-1"></span>
           <span class="text-sm text-gray-400">状态：</span>
           <select v-model="statusFilter" class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-600 outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
@@ -242,6 +281,26 @@ function closeMenus() {
         </div>
       </template>
     </div>
+
+    <!-- GitHub 导入弹窗（Spec 54） -->
+    <VModal v-model:visible="showImportModal" title="从 GitHub 导入友链" :width="480">
+      <p class="mb-3 rounded-base bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+        将从 <code class="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-700">sakurasep/Friends</code> 仓库拉取全部 open issues，解析其中的友链信息并批量写入，已存在的链接自动跳过。
+      </p>
+      <p v-if="importError" class="mb-3 rounded-base bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+        {{ importError }}
+      </p>
+      <div>
+        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">导入分组</label>
+        <input v-model="importGroup" :class="inputCls" placeholder="GitHub 友链" />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="showImportModal = false">取消</VButton>
+          <VButton type="secondary" :loading="importing" @click="handleImport">开始导入</VButton>
+        </div>
+      </template>
+    </VModal>
 
     <!-- Edit/Create modal -->
     <VModal v-model:visible="showModal" :title="editing.id ? '编辑友链' : '新增友链'" :width="560">

@@ -1,10 +1,12 @@
 package github
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -155,5 +157,61 @@ func TestGetUserParse(t *testing.T) {
 	}
 	if u.Login != "xaoxuu" || u.Followers != 5 || u.Repos != 10 || u.Bio != "dev" {
 		t.Fatalf("parse mismatch: %+v", u)
+	}
+}
+
+// TestGetIssues 裁剪解析：上游返回 GitHub 形状 issues 数组，验证字段裁剪与错误传播。
+func TestGetIssues(t *testing.T) {
+	payload, err := json.Marshal([]map[string]any{
+		map[string]any{
+			"number": 10, "title": "W1ndysの小屋", "state": "open",
+			"body":   "### 友链信息\n```json\n{\"title\":\"x\",\"url\":\"https://x.top\"}\n```",
+			"labels": []map[string]string{{"name": "失联"}},
+		},
+		map[string]any{"number": 3, "title": "no-block", "state": "open", "body": "plain body", "labels": []string{}},
+	})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/sakurasep/Friends/issues" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("state"); got != "open" {
+			t.Errorf("expected state=open, got %q", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(payload)
+	}))
+	defer srv.Close()
+
+	c := New(Config{CacheDir: t.TempDir()})
+	c.apiBase = srv.URL
+	issues, err := c.GetIssues("sakurasep", "Friends", "state=open&per_page=100")
+	if err != nil {
+		t.Fatalf("GetIssues: %v", err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("expected 2 issues, got %d", len(issues))
+	}
+	if issues[0].Number != 10 || issues[0].Title != "W1ndysの小屋" || issues[0].State != "open" {
+		t.Errorf("issue[0] mismatch: %+v", issues[0])
+	}
+	if len(issues[0].Labels) != 1 || issues[0].Labels[0].Name != "失联" {
+		t.Errorf("issue[0] labels mismatch: %+v", issues[0].Labels)
+	}
+	if !strings.Contains(issues[0].Body, "友链信息") {
+		t.Errorf("issue[0] body missing")
+	}
+
+	// 上游 500 → 报错
+	c2 := New(Config{CacheDir: t.TempDir()})
+	errSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	defer errSrv.Close()
+	c2.apiBase = errSrv.URL
+	if _, err := c2.GetIssues("o", "r", ""); err == nil {
+		t.Fatal("expected error on upstream 500")
 	}
 }
