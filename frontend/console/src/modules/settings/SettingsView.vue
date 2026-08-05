@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
@@ -14,33 +14,59 @@ import LangTab from "./LangTab.vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { VPageHeader, Toast } from "@/components/ui";
 
-// 全部段结构化编辑；「高级·JSON」保留 8 段 JSON 兜底（一般无需使用）。
-const tabs = [
-  { key: "site", label: "站点" },
-  { key: "menubar", label: "菜单" },
-  { key: "rightbar", label: "右栏" },
-  { key: "footer", label: "页脚" },
-  { key: "wiki", label: "文库" },
-  { key: "comments", label: "评论" },
-  { key: "article", label: "文章" },
-  { key: "seo", label: "SEO" },
-  { key: "inject", label: "代码注入" },
-  { key: "ai", label: "AI" },
-  { key: "security", label: "安全" },
-  { key: "appearance", label: "外观" },
-  { key: "widgets", label: "组件编排" },
-  { key: "plugins", label: "插件" },
-  { key: "cover", label: "首页 Hero" },
-  { key: "nav_tabs", label: "导航标签" },
-  { key: "authors", label: "作者" },
-  { key: "lang", label: "文案" },
-  { key: "advanced", label: "高级·JSON" },
+// 全部段结构化编辑；「高级·JSON」保留 JSON 兜底（一般无需使用）。
+// 两级分组导航：第一行大分组，第二行当前分组下的子 tab
+const groups = [
+  {
+    key: "site",
+    label: "站点",
+    tabs: [
+      { key: "site", label: "站点" },
+      { key: "menubar", label: "菜单" },
+      { key: "rightbar", label: "右栏" },
+      { key: "footer", label: "页脚" },
+      { key: "lang", label: "文案" },
+    ],
+  },
+  {
+    key: "appearance",
+    label: "外观",
+    tabs: [
+      { key: "appearance", label: "外观" },
+      { key: "cover", label: "首页 Hero" },
+      { key: "nav_tabs", label: "导航标签" },
+      { key: "widgets", label: "组件编排" },
+      { key: "plugins", label: "插件" },
+    ],
+  },
+  {
+    key: "content",
+    label: "内容",
+    tabs: [
+      { key: "article", label: "文章" },
+      { key: "comments", label: "评论" },
+      { key: "wiki", label: "文库" },
+      { key: "authors", label: "作者" },
+    ],
+  },
+  {
+    key: "system",
+    label: "系统",
+    tabs: [
+      { key: "seo", label: "SEO" },
+      { key: "inject", label: "代码注入" },
+      { key: "ai", label: "AI" },
+      { key: "security", label: "安全" },
+      { key: "advanced", label: "高级·JSON" },
+    ],
+  },
 ];
 const allSections = ["site", "menubar", "rightbar", "footer", "comments", "article", "wiki", "friends", "seo", "inject", "dashboard", "style", "widgets", "ai", "cover", "nav_tabs", "authors", "plugins", "lang"];
 const platformOptions = ["wechat", "weibo", "email", "link", "twitter", "telegram"];
 
 const route = useRoute();
 const active = ref("site");
+const activeGroup = ref(groups[0].key);
 const data = ref<Record<string, any>>({});
 const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
@@ -314,11 +340,26 @@ const btnCls =
 const rowBtnCls = "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-30";
 const addBtnCls = "inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors dark:text-primary dark:hover:text-primary/80";
 
-// 支持 URL query 定位 tab（如 /console/settings?tab=wiki），供其他页面跳转直达
+// 切换分组：同时激活该分组第一个子 tab
+function selectGroup(key: string) {
+  activeGroup.value = key;
+  const group = groups.find((g) => g.key === key);
+  if (group) active.value = group.tabs[0].key;
+}
+
+// 当前分组下的子 tab 列表
+const currentGroupTabs = computed(() => groups.find((g) => g.key === activeGroup.value)?.tabs ?? []);
+
+// 支持 URL query 定位 tab（如 /console/settings?tab=wiki），供其他页面跳转直达；
+// 命中 tab 时自动选中其所属分组
 onMounted(() => {
   const tab = route.query.tab;
-  if (typeof tab === "string" && tabs.some((t) => t.key === tab)) {
-    active.value = tab;
+  if (typeof tab === "string") {
+    const group = groups.find((g) => g.tabs.some((t) => t.key === tab));
+    if (group) {
+      activeGroup.value = group.key;
+      active.value = tab;
+    }
   }
   load();
 });
@@ -333,12 +374,20 @@ onMounted(() => {
     </VPageHeader>
 
     <div class="m-0 md:m-4">
-    <!-- Tabs -->
-    <div class="flex gap-1 border-b border-gray-200 mb-6 dark:border-gray-700 flex-wrap">
-      <button v-for="t in tabs" :key="t.key" @click="active = t.key"
-        :class="['px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors', active === t.key ? 'border-secondary text-secondary dark:border-primary dark:text-primary' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200']">
-        {{ t.label }}
-      </button>
+    <!-- 分组导航：第一行大分组，第二行当前分组子 tab -->
+    <div class="mb-6">
+      <div class="flex gap-1 border-b border-gray-200 flex-wrap dark:border-gray-700">
+        <button v-for="g in groups" :key="g.key" @click="selectGroup(g.key)"
+          :class="['px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors', activeGroup === g.key ? 'border-secondary text-secondary dark:border-primary dark:text-primary' : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200']">
+          {{ g.label }}
+        </button>
+      </div>
+      <div class="flex gap-1 pt-2 flex-wrap">
+        <button v-for="t in currentGroupTabs" :key="t.key" @click="active = t.key"
+          :class="['px-3 py-1.5 text-xs font-medium rounded-lg transition-colors', active === t.key ? 'bg-secondary text-white dark:bg-primary dark:text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700']">
+          {{ t.label }}
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="text-sm text-gray-400 py-12 text-center dark:text-gray-500">加载中...</div>
