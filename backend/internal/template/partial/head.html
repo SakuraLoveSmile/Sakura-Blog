@@ -25,10 +25,6 @@
   <meta property="og:description" content="{{.Page.Description}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
-  {{- /* 搜索引擎站长验证（SEO 模块）：验证码由 SEO 设置填充 .Site.Verifications */}}
-  {{with index .Site.Verifications "google"}}{{if .}}<meta name="google-site-verification" content="{{.}}">{{end}}{{end}}
-  {{with index .Site.Verifications "bing"}}{{if .}}<meta name="msvalidate.01" content="{{.}}">{{end}}{{end}}
-  {{with index .Site.Verifications "baidu"}}{{if .}}<meta name="baidu-site-verification" content="{{.}}">{{end}}{{end}}
   {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
   {{if and (eq .Page.Layout "post") .Page.Slug}}
   <meta property="og:image" content="/og/{{.Page.Slug}}.png">
@@ -69,10 +65,10 @@
   <link rel="stylesheet" href="{{url_for "/assets/fonts/lxgw/lxgwwenkaiscreen.css"}}">
 
   {{- /* Stellar 主 CSS（编译产物）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=dark2">
+  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v=dark5">
 
   {{- /* Chroma 代码高亮令牌色（深色），容器样式复用 main.css */}}
-  <link rel="stylesheet" href="/assets/css/highlight.css?v=dark1">
+  <link rel="stylesheet" href="/assets/css/highlight.css?v=dark2">
 
   {{- /* KaTeX 数学公式（Spec 07）：前端 auto-render，goldmark 侧仅保护定界符 */}}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" crossorigin="anonymous">
@@ -97,8 +93,8 @@
     })();
   </script>
 
-  {{- /* 自建评论区样式（Halo 设计语言映射 Stellar 变量，深色模式自动兼容）*/}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v=demo3">
+  {{- /* 评论区样式（Artalk 视觉对齐版，强调色映射 --theme，深色模式自动兼容）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v=cmt7">
 
   {{- /* 文章页脚补充样式（仅打赏 #reward；分享图标与 .article-footer 主体均在 main.css）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v=demo6">

@@ -201,6 +201,7 @@ func main() {
 
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
 	commentHandler := comment.New(st, &site.Comments, site.Title)
+	commentHandler.SetUploadDir(app.UploadDir) // 评论图片上传（工具栏仅保留表情+上传）
 
 	// 站内通知中心（Wave 3b）：评论事件写站内通知 + 可选 Webhook（settings 表 notify 段）。
 	// 需在评论 handler 装配前注入，否则评论提交/回复不产生站内通知。

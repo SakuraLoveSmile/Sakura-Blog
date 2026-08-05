@@ -125,8 +125,7 @@ var zhCN = map[string]string{
 	"comment.email":       "邮箱",
 	"comment.website":     "网站",
 	"comment.website_opt": "网站（选填）",
-	"comment.email_hint":  "邮箱仅用于头像与回复通知，不会公开",
-	"comment.submit":      "发布评论",
+	"comment.submit":      "发送",
 	"comment.count":       "%d 条评论",
 	"comment.no_comment":  "暂无评论",
 	"comment.loading":     "加载评论中…", // Spec 50 评论区懒加载占位
@@ -137,7 +136,6 @@ var zhCN = map[string]string{
 	"comment.admin_badge":    "博主",        // 管理员徽章（与 site.Comments.AdminBadge 对齐默认值）
 	"comment.anonymous_tip":  "以匿名身份发布",
 	"comment.switch_login":   "登录账号",
-	"comment.switch_anon":    "使用匿名身份",
 	"comment.logout":         "退出登录",
 	// 登录/注册弹窗
 	"auth.login_title":       "登录",
@@ -158,15 +156,11 @@ var zhCN = map[string]string{
 	"auth.register_ok":       "注册成功",
 	"auth.logout_ok":         "已退出登录",
 	"auth.required":          "请填写用户名和密码",
-	// 工具栏
+	"auth.skip_verify":       "跳过验证",
+	// 工具栏（精简：表情 + 图片上传 + 预览）
 	"comment.tool_emoji":     "表情",
 	"comment.tool_preview":   "预览",
 	"comment.tool_image":     "图片",
-	"comment.tool_quote":     "引用",
-	"comment.tool_code":      "代码块",
-	"comment.tool_link":      "链接",
-	"comment.tool_bold":      "加粗",
-	"comment.tool_italic":    "斜体",
 	// 空状态（Artalk 风格）
 	"comment.empty_title":    "尴尬了，写这么辛苦竟没人评论 🥺",
 	"comment.empty_action":   "抢个沙发吧",

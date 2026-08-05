@@ -1,7 +1,7 @@
 /* comments.js — Artalk 风格评论区前端逻辑
  * 依赖：comments.html 模板（#cmt-* DOM）+ comments.css 样式
  * 无外部依赖；PJAX 兼容：document 事件委托 + __cmtBuilt guard 防重复绑定。
- * 表情 CDN：Artalk-Emoticons (jsdelivr/gh) —— 与后端 bluemonday 白名单 cdn.jsdelivr.net 对齐
+ * 表情 CDN：cdn-x/emoticons（与文章 {% emoji %} shortcode 同源），清单为 Artalk items 格式
  */
 (function () {
   'use strict';
@@ -10,16 +10,9 @@
   window.__cmtBuilt = true;
 
   // ------- 常量 -------
-  var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/ArtalkJS/Emoticons/menus/';
+  // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
+  var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/artalk/';
   var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'twemoji', 'aru'];
-  // 每个 pack 的本地文件名（jsdelivr 以 index.json 暴露列表，失败则用 hardcoded 兜底）
-  var EMOJI_FALLBACK = {
-    blobcat: ['blobcatflushed.png', 'blobcathearts.png', 'blobcatsleepo.png', 'blobcatsweats.png', 'blobcatchefkiss.png', 'blobcatcozy.png', 'blobcatderpy.png', 'blobcatgoogly.png', 'blobcatnom.png', 'blobcatsip.png', 'blobcatthink.png', 'blobcatheart.png'],
-    qq: ['微笑.png', '撇嘴.png', '色.png', '发呆.png', '得意.png', '流泪.png', '害羞.png', '闭嘴.png', '睡.png', '大哭.png', '尴尬.png', '发怒.png', '调皮.png', '呲牙.png', '惊讶.png', '难过.png', '酷.png', '冷汗.png', '抓狂.png', '吐.png'],
-    tieba: ['image_emoticon1.png', 'image_emoticon2.png', 'image_emoticon3.png', 'image_emoticon4.png', 'image_emoticon5.png', 'image_emoticon6.png', 'image_emoticon7.png', 'image_emoticon8.png', 'image_emoticon9.png', 'image_emoticon10.png', 'image_emoticon11.png', 'image_emoticon12.png', 'image_emoticon13.png', 'image_emoticon14.png', 'image_emoticon15.png', 'image_emoticon16.png'],
-    twemoji: ['1f600.svg', '1f601.svg', '1f602.svg', '1f603.svg', '1f604.svg', '1f605.svg', '1f606.svg', '1f607.svg', '1f609.svg', '1f60a.svg', '1f60d.svg', '1f60f.svg', '1f612.svg', '1f613.svg', '1f614.svg', '1f616.svg', '1f617.svg', '1f618.svg', '1f61b.svg', '1f61c.svg', '1f61d.svg', '1f61e.svg', '1f620.svg', '1f621.svg', '2764.svg', '1f44d.svg'],
-    aru: ['aru-0.png', 'aru-1.png', 'aru-2.png', 'aru-3.png', 'aru-4.png', 'aru-5.png', 'aru-6.png', 'aru-7.png', 'aru-8.png', 'aru-9.png', 'aru-10.png', 'aru-11.png', 'aru-12.png', 'aru-13.png', 'aru-14.png', 'aru-15.png']
-  };
 
   // ------- 全局运行时状态 -------
   var state = {
@@ -28,6 +21,7 @@
     pageKey: '',
     adminBadge: '',
     packLoaded: Object.create(null),  // pack -> true
+    packItems: Object.create(null),   // pack -> items 清单缓存（切回已加载 tab 时重渲染）
     activePack: EMOJI_PACKS[0],
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
@@ -58,18 +52,6 @@
     }, 2200);
   }
 
-  function wrapSelection(textarea, before, after, placeholder) {
-    var start = textarea.selectionStart || 0;
-    var end = textarea.selectionEnd || 0;
-    var value = textarea.value;
-    var selected = value.substring(start, end) || (placeholder || '');
-    var newValue = value.substring(0, start) + before + selected + after + value.substring(end);
-    textarea.value = newValue;
-    var pos = start + before.length + selected.length;
-    textarea.setSelectionRange(start + before.length, pos);
-    textarea.focus();
-  }
-
   function insertAtCursor(textarea, text) {
     var start = textarea.selectionStart || 0;
     var end = textarea.selectionEnd || 0;
@@ -81,46 +63,58 @@
   }
 
   // ------- 身份：拉取 /api/auth/me 并渲染身份栏 -------
+  // 三态：logged-in（昵称+退出）/ anonymous（跳过验证，三输入）/ guest（无输入行，按钮=登录）
+  function skipVerifyFlag() {
+    try { return localStorage.getItem('cmt_skip') === '1'; } catch (e) { return false; }
+  }
+
   function fetchMe(cb) {
     fetch('/api/auth/me', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         state.me = d || { id: 0, verified: false };
-        state.mode = state.me && state.me.id > 0 ? 'logged-in' : 'anonymous';
+        state.mode = state.me && state.me.id > 0 ? 'logged-in' : (skipVerifyFlag() ? 'anonymous' : 'guest');
         renderIdentity();
         if (cb) cb();
       })
       .catch(function () {
         state.me = { id: 0, verified: false };
-        state.mode = 'anonymous';
+        state.mode = skipVerifyFlag() ? 'anonymous' : 'guest';
         renderIdentity();
         if (cb) cb();
       });
   }
 
   function renderIdentity() {
+    var identity = $('#cmt-identity');
     var anon = $('#cmt-id-anon');
     var logged = $('#cmt-id-logged');
+    var submit = $('#cmt-submit');
     if (!anon || !logged) return;
 
     if (state.mode === 'logged-in') {
+      if (identity) identity.style.display = 'flex';
       anon.style.display = 'none';
       logged.style.display = 'flex';
       var me = state.me || {};
-      var nick = me.nickname || me.username || '';
-      $('#cmt-id-nick').textContent = nick;
-      var avatar = me.avatar || defaultAvatar(nick || 'U');
-      var avatarImg = $('#cmt-id-avatar');
-      if (avatarImg) avatarImg.src = avatar;
-    } else {
+      var nickEl = $('#cmt-id-nick');
+      if (nickEl) nickEl.textContent = me.nickname || me.username || '';
+      if (submit) submit.textContent = '发送';
+    } else if (state.mode === 'anonymous') {
+      if (identity) identity.style.display = 'flex';
       anon.style.display = 'block';
       logged.style.display = 'none';
+      if (submit) submit.textContent = '发送';
       // 匿名态恢复上次输入（localStorage 记住 nick/email/link）
       try {
         $('#cmt-nick').value = localStorage.getItem('cmt_nick') || '';
         $('#cmt-email').value = localStorage.getItem('cmt_email') || '';
         $('#cmt-link').value = localStorage.getItem('cmt_link') || '';
       } catch (e) { /* noop */ }
+    } else {
+      // guest：隐藏身份行，按钮变「登录」（点击开弹窗，对齐参照截图 1）
+      if (identity) identity.style.display = 'none';
+      if (submit) submit.textContent = '登录';
     }
   }
 
@@ -404,50 +398,47 @@
     ensurePackLoaded(pack);
   }
 
-  function emojiUrl(pack, file) {
-    return EMOJI_BASE + pack + '/' + encodeURIComponent(file);
-  }
-
   function ensurePackLoaded(pack) {
-    if (state.packLoaded[pack]) { return; }
+    var cached = state.packItems[pack];
+    if (cached) { renderEmojiGrid(pack, cached); return; }
     var body = $('#cmt-emoji-body');
     if (!body) return;
     body.innerHTML = '<div class="cmt-emoji-loading">' +
       '<svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>' +
       '<span>加载中…</span></div>';
 
-    // 先尝试 index.json，失败走 fallback
-    var url = EMOJI_BASE + pack + '/index.json';
-    fetch(url, { cache: 'force-cache' })
+    // 拉取 Artalk 格式清单 <base>/<pack>.json（items: [{key, val}]，val 为图片直链）
+    fetch(EMOJI_BASE + pack + '.json', { cache: 'force-cache' })
       .then(function (r) {
         if (r.ok) return r.json();
-        throw new Error('no-index');
+        throw new Error('http ' + r.status);
       })
-      .then(function (list) {
-        var files = Array.isArray(list) ? list : (Array.isArray(list && list.items) ? list.items : null);
-        if (!files || !files.length) throw new Error('empty');
-        return files.map(function (f) { return typeof f === 'string' ? f : (f && f.name ? f.name : null); }).filter(Boolean);
+      .then(function (data) {
+        var items = (data && Array.isArray(data.items)) ? data.items : null;
+        if (!items || !items.length) throw new Error('empty');
+        state.packItems[pack] = items;
+        state.packLoaded[pack] = true;
+        renderEmojiGrid(pack, items);
       })
       .catch(function () {
-        // 兜底：fallback 列表
-        var fallback = EMOJI_FALLBACK[pack] || ['1f600.svg'];
-        return fallback;
-      })
-      .then(function (files) {
-        state.packLoaded[pack] = true;
-        renderEmojiGrid(pack, files);
+        // 加载失败：当前仍停留在此 tab 时给出提示，允许重新点开重试
+        if (state.activePack === pack && body && !state.packLoaded[pack]) {
+          body.innerHTML = '<div class="cmt-emoji-error">表情包加载失败，请检查网络后重试</div>';
+        }
       });
   }
 
-  function renderEmojiGrid(pack, files) {
+  function renderEmojiGrid(pack, items) {
     // 只在当前激活 tab 仍为这个 pack 时渲染（避免切 tab 期间闪回）
     if (state.activePack !== pack) return;
     var body = $('#cmt-emoji-body');
     if (!body) return;
-    var html = '<div class="cmt-emoji-grid">' + files.map(function (f) {
-      var u = emojiUrl(pack, f);
-      return '<button type="button" class="cmt-emoji-cell" data-src="' + escapeHtml(u) + '" title="' + escapeHtml(f.replace(/\.[^.]+$/, '')) + '">' +
-        '<img class="cmt-emoji-img" src="' + escapeHtml(u) + '" alt="' + escapeHtml(f) + '" loading="lazy"></button>';
+    var html = '<div class="cmt-emoji-grid">' + items.map(function (it) {
+      var u = it && it.val;
+      if (!u) return '';
+      var key = (it && it.key) || '';
+      return '<button type="button" class="cmt-emoji-cell" data-src="' + escapeHtml(u) + '" title="' + escapeHtml(key) + '">' +
+        '<img class="cmt-emoji-img" src="' + escapeHtml(u) + '" alt="' + escapeHtml(key) + '" loading="lazy"></button>';
     }).join('') + '</div>';
     body.innerHTML = html;
   }
@@ -459,43 +450,163 @@
     if (ta) insertAtCursor(ta, md);
   }
 
-  // ------- 工具栏按钮：Markdown 包装 -------
+  // ------- Markdown 预览（M↓ 按钮开关，对齐参照截图 4：上半原文下半渲染） -------
+  function safeUrl(u) { return /^(https?:\/\/|\/)/i.test(u); }
+
+  // 行内格式：先转义再套格式，防 XSS；仅支持 图片/链接/粗体/斜体/行内代码
+  function mdInline(s) {
+    var codes = [];
+    s = escapeHtml(s).replace(/`([^`]+)`/g, function (m, c) {
+      codes.push('<code>' + c + '</code>');
+      return '\u0000C' + (codes.length - 1) + '\u0000';
+    });
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, u) {
+      return safeUrl(u) ? '<img class="cmt-emoji-img" src="' + u + '" alt="' + alt + '">' : m;
+    });
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
+      return safeUrl(u) ? '<a href="' + u + '" rel="nofollow noopener" target="_blank">' + t + '</a>' : m;
+    });
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    s = s.replace(/\u0000C(\d+)\u0000/g, function (m, i) { return codes[+i]; });
+    return s;
+  }
+
+  // 客户端最小 Markdown 子集（预览用，提交后以后端渲染为准）：
+  // 标题/引用/代码块/段落 + 行内格式；标题降一级输出（评论区正文层级）
+  function mdToHtml(src) {
+    var text = String(src || '');
+    if (!text.trim()) return '';
+    var blocks = [];
+    text = text.replace(/```([\s\S]*?)```/g, function (m, code) {
+      blocks.push('<pre><code>' + escapeHtml(code.replace(/^\n+|\n+$/g, '')) + '</code></pre>');
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    });
+    var html = [];
+    var para = [];
+    var quote = [];
+    function flushPara() { if (para.length) { html.push('<p>' + mdInline(para.join(' ')) + '</p>'); para = []; } }
+    function flushQuote() { if (quote.length) { html.push('<blockquote>' + quote.map(mdInline).join('<br>') + '</blockquote>'); quote = []; } }
+    text.split('\n').forEach(function (line) {
+      var ph = line.match(/^\u0000B(\d+)\u0000$/);
+      if (ph) { flushPara(); flushQuote(); html.push(blocks[+ph[1]]); return; }
+      var h = line.match(/^(#{1,6})\s+(.*)$/);
+      if (h) {
+        flushPara(); flushQuote();
+        var lv = Math.min(h[1].length + 1, 6);
+        html.push('<h' + lv + '>' + mdInline(h[2]) + '</h' + lv + '>');
+        return;
+      }
+      if (/^>\s?/.test(line)) { flushPara(); quote.push(line.replace(/^>\s?/, '')); return; }
+      if (!line.trim()) { flushPara(); flushQuote(); return; }
+      flushQuote();
+      para.push(line);
+    });
+    flushPara(); flushQuote();
+    return html.join('');
+  }
+
+  function renderPreview() {
+    var p = $('#cmt-preview');
+    var ta = $('#cmt-content');
+    if (!p || !ta) return;
+    var html = mdToHtml(ta.value);
+    p.innerHTML = html ? '<div class="cmt-preview-body">' + html + '</div>' : '<div class="cmt-preview-empty">（无内容）</div>';
+  }
+
+  function togglePreview() {
+    var p = $('#cmt-preview');
+    if (!p) return;
+    var open = p.style.display !== 'none' && p.style.display !== '';
+    p.style.display = open ? 'none' : 'block';
+    if (!open) renderPreview();
+  }
+
+  // 评论图片上传：5MB 限制与后端一致；成功后光标处插入 Markdown 图片语法
+  function uploadCommentImage(file) {
+    if (file.size > 5 * 1024 * 1024) { toast('图片不能超过 5MB', 'error'); return; }
+    var btn = $('#cmt-tool-image');
+    if (btn) btn.disabled = true;
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/api/comments/upload', { method: 'POST', credentials: 'same-origin', body: fd })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok || !res.data.url) {
+          throw new Error(res.data && res.data.error ? res.data.error : '上传失败');
+        }
+        var ta = $('#cmt-content');
+        if (ta) insertAtCursor(ta, '\n![image](' + res.data.url + ')\n');
+        toast('图片已插入', 'success');
+      })
+      .catch(function (err) { toast(err && err.message ? err.message : '上传失败', 'error'); })
+      .finally(function () { if (btn) btn.disabled = false; });
+  }
+
+  // ------- 工具栏按钮：内容支持 Markdown，仅保留表情 + 图片上传 -------
   function bindToolbar() {
     var ta = $('#cmt-content');
     if (!ta) return;
 
-    on($('#cmt-tool-bold'), 'click', function () { wrapSelection(ta, '**', '**', '加粗文本'); });
-    on($('#cmt-tool-italic'), 'click', function () { wrapSelection(ta, '*', '*', '斜体文本'); });
-    on($('#cmt-tool-quote'), 'click', function () { wrapSelection(ta, '> ', '\n', '引用一句话'); });
-    on($('#cmt-tool-code'), 'click', function () { wrapSelection(ta, '\n```\n', '\n```\n', '代码'); });
-    on($('#cmt-tool-link'), 'click', function () {
-      var url = (typeof prompt === 'function') ? prompt('请输入链接地址：', 'https://') : null;
-      if (!url) return;
-      wrapSelection(ta, '[', '](' + url + ')', '链接文字');
+    // 图片上传：选图后 POST /api/comments/upload，成功在光标处插入 Markdown 图片
+    var fileInput = null;
+    on($('#cmt-tool-image'), 'click', function () {
+      if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        fileInput.addEventListener('change', function () {
+          if (fileInput.files && fileInput.files[0]) uploadCommentImage(fileInput.files[0]);
+          fileInput.value = '';
+        });
+      }
+      fileInput.click();
     });
 
+    // Markdown 预览开关（M↓：输入区下半展示渲染结果）
+    on($('#cmt-tool-md'), 'click', function (e) {
+      e.stopPropagation();
+      togglePreview();
+    });
+    // 预览打开时，输入实时重渲染
+    on(ta, 'input', function () {
+      var p = $('#cmt-preview');
+      if (p && p.style.display !== 'none' && p.style.display !== '') renderPreview();
+    });
     // 表情按钮
     on($('#cmt-emoji-btn'), 'click', function (e) { e.stopPropagation(); toggleEmojiPanel(); });
     // 点击表情面板外关闭
     on(document, 'click', function (e) {
       var panel = $('#cmt-emoji-panel');
       var btn = $('#cmt-emoji-btn');
-      if (!panel || panel.style.display === 'none') return;
-      if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
-      panel.style.display = 'none';
+      if (panel && panel.style.display !== 'none') {
+        if (!(panel.contains(e.target) || (btn && btn.contains(e.target)))) panel.style.display = 'none';
+      }
     });
   }
 
-  // ------- 登录/注册弹窗 -------
-  function openModal(mode) {
+  // ------- 登录弹窗：首屏二选一（Email / 跳过验证），选 Email 才进登录注册表单 -------
+  function openModal() {
     var m = $('#cmt-modal');
     if (!m) return;
     m.style.display = 'flex';
-    switchModalMode(mode || 'login');
+    var c = $('#cmt-modal-chooser');
+    var a = $('#cmt-modal-auth');
+    if (c) c.style.display = 'flex';
+    if (a) a.style.display = 'none';
   }
   function closeModal() {
     var m = $('#cmt-modal');
     if (m) m.style.display = 'none';
+  }
+  function showAuth(mode) {
+    var c = $('#cmt-modal-chooser');
+    var a = $('#cmt-modal-auth');
+    if (c) c.style.display = 'none';
+    if (a) a.style.display = 'flex';
+    switchModalMode(mode || 'login');
   }
   function switchModalMode(mode) {
     var isLogin = mode === 'login';
@@ -506,23 +617,24 @@
     if (regF) regF.style.display = isLogin ? 'none' : 'flex';
   }
   function bindModal() {
-    on($('#cmt-open-login'), 'click', function () { openModal('login'); });
-    on($('#cmt-use-anon'), 'click', function () {
-      // 从登录态切到匿名态：退出登录
-      doLogout(function () {
-        state.mode = 'anonymous';
-        renderIdentity();
-      });
-    });
     on($('#cmt-do-logout'), 'click', function () {
       doLogout(function () {
-        state.mode = 'anonymous';
+        try { localStorage.removeItem('cmt_skip'); } catch (e) { /* noop */ }
+        state.mode = 'guest';
         renderIdentity();
         toast('已退出登录', 'success');
       });
     });
     on($('#cmt-modal-close'), 'click', closeModal);
     on($('#cmt-modal-mask'), 'click', closeModal);
+    // 二选一：Email → 登录/注册表单；跳过验证 → 匿名三输入态
+    on($('#cmt-choose-email'), 'click', function () { showAuth('login'); });
+    on($('#cmt-choose-skip'), 'click', function () {
+      try { localStorage.setItem('cmt_skip', '1'); } catch (e) { /* noop */ }
+      state.mode = 'anonymous';
+      renderIdentity();
+      closeModal();
+    });
     on($('#cmt-goto-register'), 'click', function () { switchModalMode('register'); });
     on($('#cmt-goto-login'), 'click', function () { switchModalMode('login'); });
     $$('.cmt-modal-tab').forEach(function (t) {
@@ -618,7 +730,8 @@
       }
       // 提交按钮
       if (e.target.closest && e.target.closest('#cmt-submit')) {
-        doSubmit();
+        // guest 态按钮为「登录」：开弹窗；其余态正常提交
+        if (state.mode === 'guest') openModal(); else doSubmit();
         return;
       }
       // 空状态："抢个沙发" → 滚动到输入框
@@ -648,6 +761,7 @@
     document.addEventListener('keydown', function (e) {
       if (!(e.ctrlKey || e.metaKey)) return;
       if (e.key !== 'Enter') return;
+      if (state.mode === 'guest') return;
       var ta = document.activeElement;
       if (ta && ta.id === 'cmt-content') { e.preventDefault(); doSubmit(); }
     });
@@ -692,14 +806,21 @@
       renderComments: renderComments,
       insertNewComment: insertNewComment,
       insertAtCursor: insertAtCursor,
-      wrapSelection: wrapSelection,
       insertEmojiAtCursor: insertEmojiAtCursor,
+      mdToHtml: mdToHtml,
+      togglePreview: togglePreview,
+      renderPreview: renderPreview,
+      openModal: openModal,
       startReply: startReply,
       cancelReply: cancelReply,
       doSubmit: doSubmit,
       bindToolbar: bindToolbar,
       bindDelegated: bindDelegated,
-      emojiUrl: emojiUrl,
+      bindModal: bindModal,
+      ensurePackLoaded: ensurePackLoaded,
+      renderEmojiGrid: renderEmojiGrid,
+      fetchMe: fetchMe,
+      renderIdentity: renderIdentity,
       getState: function () { return state; },
       _resetState: function () {
         state.parentId = 0;

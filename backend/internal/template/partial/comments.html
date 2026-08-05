@@ -1,15 +1,13 @@
-{{- /* comments.html: Artalk 风格评论区（卡片编辑器 + 双身份 + 5-tab 表情 + 居中空状态）。
-   外壳对齐 Stellar _partial/comments/layout.ejs：.related-wrap.md-text#comments > .cmt-title + .cmt-body.native；
-   身份体系：已登录显示"已验证"徽章（绿勾），匿名显示昵称/邮箱/网站三输入；
-   表情面板 5 个 tab：Blobcat / QQ / Tieba / Twemoji / Aru，首次切换 tab 时懒加载 Artalk-Emoticons CDN；
+{{- /* comments.html: 评论区（大圆角卡片编辑器 + 双身份 + 5-tab 表情 + 居中空状态）。
+   外壳对齐 Stellar _partial/comments/layout.ejs：.related-wrap.md-text#comments > .cmt-title-v2 + .cmt-body.native；
+   身份体系：已登录 = 昵称 + 退出图标，匿名 = 昵称/邮箱/网站三输入 + 登录链接，底部虚线分隔；
+   工具栏精简：表情 + 图片上传 + Markdown 语法帮助（内容支持 Markdown）；
+   表情面板 5 个 tab：Blobcat / QQ / Tieba / Twemoji / Aru，首次切换 tab 时懒加载 cdn-x/emoticons CDN（Artalk 格式清单）；
    交互在 assets/js/comments.js（PJAX 兼容：document 事件委托 + data-built guard）。 */ -}}
 <div class="related-wrap md-text" id="comments">
-  <section class="header cmt-title cap theme cmt-title-v2">
-    <span class="cmt-title-icon">
-      <svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    </span>
+  {{- /* 标题：主题色纯文本（对齐参照截图，无图标/徽章/卡片） */}}
+  <section class="header cmt-title-v2">
     <span class="cmt-title-text">{{.Site.Comments.Title}}</span>
-    <span class="cmt-count-badge" id="cmt-count-badge">{{if .CommentCount}}{{lang "comment.count_total" .CommentCount}}{{else}}0{{end}}</span>
   </section>
 
   <section class="body cmt-body native" id="cmt-body"
@@ -28,37 +26,22 @@
         </button>
       </div>
 
-      {{- /* 身份栏：JS 根据 /api/auth/me 结果渲染两种状态之一 */}}
+      {{- /* 身份栏：三态（JS 渲染）：logged-in = 昵称 + 退出图标；anonymous = 三输入；guest = 整行隐藏。底部统一虚线分隔 */}}
       <div class="cmt-identity" id="cmt-identity">
-        {{- /* 匿名态（默认占位，JS 重渲染） */}}
+        {{- /* 匿名态（跳过验证后显示） */}}
         <div class="cmt-id-anon" id="cmt-id-anon">
           <div class="cmt-id-anon-row">
-            <input type="text" class="cmt-id-input" id="cmt-nick" placeholder="{{lang "comment.nickname"}} *" maxlength="32" autocomplete="nickname">
-            <input type="email" class="cmt-id-input" id="cmt-email" placeholder="{{lang "comment.email"}} *" maxlength="254" autocomplete="email">
-            <input type="text" class="cmt-id-input" id="cmt-link" placeholder="{{lang "comment.website_opt"}}" maxlength="200" autocomplete="url">
-          </div>
-          <div class="cmt-id-switch">
-            <span class="cmt-id-tip">{{lang "comment.anonymous_tip"}}</span>
-            <button type="button" class="cmt-id-login" id="cmt-open-login">{{lang "comment.switch_login"}}</button>
+            <input type="text" class="cmt-id-input" id="cmt-nick" placeholder="{{lang "comment.nickname"}}" maxlength="32" autocomplete="nickname">
+            <input type="email" class="cmt-id-input" id="cmt-email" placeholder="{{lang "comment.email"}}" maxlength="254" autocomplete="email">
+            <input type="text" class="cmt-id-input" id="cmt-link" placeholder="{{lang "comment.website"}}" maxlength="200" autocomplete="url">
           </div>
         </div>
-        {{- /* 已登录态占位：JS 渲染真实信息 */}}
+        {{- /* 已登录态：昵称 + 退出图标（JS 填充昵称） */}}
         <div class="cmt-id-logged" id="cmt-id-logged" style="display:none">
-          <div class="cmt-id-avatar-wrap">
-            <img class="cmt-id-avatar" id="cmt-id-avatar" src="" alt="">
-            <span class="cmt-id-badge cmt-id-badge-verified" title="{{lang "comment.verified"}}">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" fill-rule="evenodd" stroke="currentColor" stroke-width="1.5"/></svg>
-              {{lang "comment.verified"}}
-            </span>
-          </div>
-          <div class="cmt-id-info">
-            <div class="cmt-id-nick" id="cmt-id-nick"></div>
-            <div class="cmt-id-sub">{{lang "comment.verified"}}</div>
-          </div>
-          <div class="cmt-id-actions">
-            <button type="button" class="cmt-id-logout" id="cmt-do-logout">{{lang "comment.logout"}}</button>
-            <button type="button" class="cmt-id-switch-anon" id="cmt-use-anon">{{lang "comment.switch_anon"}}</button>
-          </div>
+          <span class="cmt-id-nick" id="cmt-id-nick"></span>
+          <button type="button" class="cmt-id-logout" id="cmt-do-logout" title="{{lang "comment.logout"}}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
       </div>
 
@@ -67,39 +50,23 @@
         <textarea class="cmt-textarea" id="cmt-content" placeholder="{{lang "comment.placeholder"}}" rows="5" maxlength="2000"></textarea>
       </div>
 
-      {{- /* 工具栏 + 提交行 */}}
+      {{- /* Markdown 预览区（M↓ 开关：上半原文下半渲染，对齐参照截图 4） */}}
+      <div class="cmt-preview" id="cmt-preview" style="display:none"></div>
+
+      {{- /* 工具栏 + 发送：左图标（表情/图片/Markdown 帮助）+ 右胶囊发送按钮（对齐参照截图） */}}
       <div class="cmt-footer">
         <div class="cmt-tools" role="toolbar" aria-label="编辑器工具栏">
-          {{- /* 表情按钮：点击切换面板，首次打开懒构建 tab + 首个 tab 内容 */}}
           <button type="button" class="cmt-tool-btn cmt-tool-emoji" id="cmt-emoji-btn" title="{{lang "comment.tool_emoji"}}">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
-          <button type="button" class="cmt-tool-btn" id="cmt-tool-bold" title="{{lang "comment.tool_bold"}}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-image" title="{{lang "comment.tool_image"}}">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </button>
-          <button type="button" class="cmt-tool-btn" id="cmt-tool-italic" title="{{lang "comment.tool_italic"}}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
-          </button>
-          <span class="cmt-tool-divider"></span>
-          <button type="button" class="cmt-tool-btn" id="cmt-tool-quote" title="{{lang "comment.tool_quote"}}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c1 0 1.25.008 1.25 1.031V20c0 1 0 1 1 1z"/></svg>
-          </button>
-          <button type="button" class="cmt-tool-btn" id="cmt-tool-code" title="{{lang "comment.tool_code"}}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          </button>
-          <button type="button" class="cmt-tool-btn" id="cmt-tool-link" title="{{lang "comment.tool_link"}}">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <button type="button" class="cmt-tool-btn" id="cmt-tool-md" title="{{lang "comment.tool_preview"}}">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 9v4"/><path d="M14.5 11.5L16 13l1.5-1.5"/></svg>
           </button>
         </div>
-        <div class="cmt-submit-wrap">
-          <span class="cmt-submit-tip">{{lang "comment.email_hint"}}</span>
-          <button type="button" class="cmt-submit" id="cmt-submit">
-            <span class="cmt-submit-icon">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </span>
-            <span>{{lang "comment.submit"}}</span>
-          </button>
-        </div>
+        <button type="button" class="cmt-submit" id="cmt-submit">{{lang "comment.submit"}}</button>
       </div>
 
       {{- /* 表情面板：5 个 tab + 懒加载 grid */}}
@@ -147,15 +114,33 @@
   </section>
 </div>
 
-{{- /* 登录/注册弹窗：全局唯一，初始 display:none */}}
+{{- /* 登录弹窗：首屏二选一（Email / 跳过验证，对齐参照截图 2），选 Email 才进登录/注册表单 */}}
 <div class="cmt-modal" id="cmt-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="cmt-modal-title">
   <div class="cmt-modal-mask" id="cmt-modal-mask"></div>
   <div class="cmt-modal-dialog" role="document">
     <button type="button" class="cmt-modal-close" id="cmt-modal-close" title="{{lang "auth.close"}}">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    {{- /* Tab 切换 */}}
-    <div class="cmt-modal-tabs">
+    <div class="cmt-modal-title" id="cmt-modal-title">{{lang "auth.login_title"}}</div>
+    {{- /* 二选一屏 */}}
+    <div class="cmt-modal-chooser" id="cmt-modal-chooser">
+      <button type="button" class="cmt-choose-row" id="cmt-choose-email">
+        <span class="cmt-choose-icon cmt-choose-email">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+        </span>
+        <span class="cmt-choose-label">Email</span>
+      </button>
+      <button type="button" class="cmt-choose-row" id="cmt-choose-skip">
+        <span class="cmt-choose-icon cmt-choose-skip">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="5" y1="19" x2="19" y2="5"/></svg>
+        </span>
+        <span class="cmt-choose-label">{{lang "auth.skip_verify"}}</span>
+      </button>
+    </div>
+    {{- /* 登录/注册表单屏（选 Email 后显示） */}}
+    <div class="cmt-modal-auth" id="cmt-modal-auth" style="display:none">
+      {{- /* Tab 切换 */}}
+      <div class="cmt-modal-tabs">
       <button type="button" class="cmt-modal-tab is-active" data-mode="login">
         <span id="cmt-modal-title-login">{{lang "auth.login_title"}}</span>
       </button>
@@ -205,6 +190,7 @@
         <button type="submit" class="cmt-modal-submit" id="cmt-do-register">{{lang "auth.submit_register"}}</button>
       </div>
     </form>
+    </div>
   </div>
 </div>
 

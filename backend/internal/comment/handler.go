@@ -3,10 +3,14 @@
 package comment
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,26 +33,44 @@ const (
 	ipHashSalt    = "blog-comment-like-v1"
 )
 
+// 评论图片上传限制。
+const (
+	maxUploadSize   = 5 << 20          // 单图 5MB
+	uploadInterval  = 10 * time.Second // 同 IP 上传间隔
+	uploadBurst     = 10               // 窗口内单 IP 最大上传次数
+	uploadWindow    = 10 * time.Minute // 限流窗口
+)
+
 // Handler 评论公开 API 处理器。
 type Handler struct {
 	store     *store.Store
 	cfg       *tmpl.CommentsConfig
 	siteTitle string // 邮件主题用
 	notifier  *notify.Service // 站内通知服务（Wave 3b），nil 时跳过站内通知/Webhook
+	uploadDir string          // 评论图片上传根目录，空=禁用上传端点
 
 	mu   sync.Mutex
 	last map[string]time.Time // IP 限流：IP → 上次评论时间
+
+	uploadMu   sync.Mutex
+	uploadLast map[string]time.Time   // IP → 上次上传时间（间隔限流）
+	uploadHist map[string][]time.Time // IP → 窗口内上传记录（总量限流）
 }
 
 // New 创建评论 handler。cfg 指向站点配置的 Comments 段（运行期只读）。
 func New(s *store.Store, cfg *tmpl.CommentsConfig, siteTitle string) *Handler {
 	return &Handler{
-		store:     s,
-		cfg:       cfg,
-		siteTitle: siteTitle,
-		last:      map[string]time.Time{},
+		store:      s,
+		cfg:        cfg,
+		siteTitle:  siteTitle,
+		last:       map[string]time.Time{},
+		uploadLast: map[string]time.Time{},
+		uploadHist: map[string][]time.Time{},
 	}
 }
+
+// SetUploadDir 注入评论图片上传根目录（未注入时上传端点返回 404）。
+func (h *Handler) SetUploadDir(dir string) { h.uploadDir = dir }
 
 // SetNotifier 注入站内通知服务（Wave 3b）。未注入时评论通知仅发邮件。
 func (h *Handler) SetNotifier(n *notify.Service) {
@@ -61,6 +83,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	g.GET("", h.list)
 	g.POST("", h.create)
 	g.POST("/:id/like", h.like)
+	g.POST("/upload", h.uploadImage)
 }
 
 // list GET /api/comments?page_key= → 评论树 JSON（顶级 + children 两层，仅已发布）。
@@ -309,4 +332,95 @@ func (h *Handler) allow(ip string) bool {
 	}
 	h.last[ip] = now
 	return true
+}
+
+// allowUpload 上传限流：同 IP 间隔 10s + 窗口内总量上限，双 map 顺手清理过期条目。
+func (h *Handler) allowUpload(ip string) bool {
+	h.uploadMu.Lock()
+	defer h.uploadMu.Unlock()
+	now := time.Now()
+	if t, ok := h.uploadLast[ip]; ok && now.Sub(t) < uploadInterval {
+		return false
+	}
+	hist := h.uploadHist[ip]
+	fresh := hist[:0]
+	for _, t := range hist {
+		if now.Sub(t) < uploadWindow {
+			fresh = append(fresh, t)
+		}
+	}
+	if len(fresh) >= uploadBurst {
+		return false
+	}
+	h.uploadHist[ip] = append(fresh, now)
+	h.uploadLast[ip] = now
+	return true
+}
+
+// sniffImageExt 魔数识别图片类型（不信任扩展名/MIME），返回存储用扩展名。
+func sniffImageExt(head []byte) (string, bool) {
+	switch {
+	case len(head) >= 8 && head[0] == 0x89 && head[1] == 'P' && head[2] == 'N' && head[3] == 'G':
+		return ".png", true
+	case len(head) >= 3 && head[0] == 0xFF && head[1] == 0xD8 && head[2] == 0xFF:
+		return ".jpg", true
+	case len(head) >= 6 && (strings.HasPrefix(string(head[:6]), "GIF87a") || strings.HasPrefix(string(head[:6]), "GIF89a")):
+		return ".gif", true
+	case len(head) >= 12 && string(head[0:4]) == "RIFF" && string(head[8:12]) == "WEBP":
+		return ".webp", true
+	}
+	return "", false
+}
+
+// randHex 生成 n 位随机十六进制文件名片段。
+func randHex(n int) string {
+	b := make([]byte, (n+1)/2)
+	if _, err := rand.Read(b); err != nil {
+		return hex.EncodeToString([]byte(time.Now().String()))[:n]
+	}
+	return hex.EncodeToString(b)[:n]
+}
+
+// uploadImage POST /api/comments/upload：评论图片上传（公开但限流），
+// 魔数校验 png/jpeg/gif/webp，存 uploadDir/yyyy/mm/ 随机名，返回 {ok, url}。
+func (h *Handler) uploadImage(c *gin.Context) {
+	if h.uploadDir == "" {
+		c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "上传未启用"})
+		return
+	}
+	if !h.allowUpload(c.ClientIP()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"ok": false, "error": "上传太频繁，请稍后再试"})
+		return
+	}
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "未选择文件"})
+		return
+	}
+	defer file.Close()
+	if header.Size > maxUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "图片不能超过 5MB"})
+		return
+	}
+	data, err := io.ReadAll(io.LimitReader(file, maxUploadSize+1))
+	if err != nil || len(data) > maxUploadSize {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "图片不能超过 5MB"})
+		return
+	}
+	ext, ok := sniffImageExt(data)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "仅支持 png/jpeg/gif/webp 图片"})
+		return
+	}
+	relPath := filepath.Join(time.Now().Format("2006/01"), randHex(16)+ext)
+	absPath := filepath.Join(h.uploadDir, relPath)
+	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "创建目录失败"})
+		return
+	}
+	if err := os.WriteFile(absPath, data, 0o644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "写入文件失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "url": "/uploads/" + filepath.ToSlash(relPath)})
 }
