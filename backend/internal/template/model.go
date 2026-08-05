@@ -52,9 +52,10 @@ type ViewData struct {
 	ExpiredDays int           // 距最后更新天数，>0 时文首渲染过期提醒
 
 	// 专栏体系（对齐原版 topic）：
-	TopicSeries *TopicSeries      // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
-	Topics      []*TopicItem      // /topic 索引页的专栏卡片列表
-	HasTopics   bool              // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
+	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
+	Topics      []*TopicItem // /topic 索引页的专栏卡片列表
+	TopicDetail *TopicDetail // 专栏详情页头部（Layout=topic）：名称/描述/图标/封面/文章数
+	HasTopics   bool         // 是否存在专栏（navbar「专栏」tab 显示条件，对齐原版 publish_list 非空）
 
 	// 瞬间时间流（Layout=moments 时使用）。
 	Moments []*MomentItem
@@ -304,8 +305,6 @@ type Site struct {
 	Inject      InjectConfig   `yaml:"-" json:"inject"`        // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
 	Style       StyleConfig    `yaml:"style"   json:"style"`   // 外观样式可配置化（Spec 34/47）
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
-	// Verifications 搜索引擎站长验证码（google/bing/baidu），由 SEO 模块运行时填充，前台 head 注入 meta。
-	Verifications map[string]string `yaml:"-" json:"-"`
 	// NavTabs 导航栏标签页配置（Spec 50）。
 	// EnableCustom 为 true 时完全由配置驱动，false 时保持当前固定 tab + 可配额外项。
 	NavTabs NavTabsConfig `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
@@ -604,6 +603,17 @@ type TopicItem struct {
 	Name  string
 	Count int
 	Icon  string // 卡片图标（缺省用主题 default.topic 占位图）
+}
+
+// TopicDetail 专栏详情页头部数据（/topic/:slug）：有封面时沉浸 banner，无封面时紧凑卡片。
+type TopicDetail struct {
+	Name        string
+	Description string
+	Icon        string
+	Cover       string
+	Count       int
+	Hue         int    // 无图标时渐变首字头像的色相（名称哈希 0-359）
+	Initial     string // 首字头像文字（名称首 rune）
 }
 
 // Page 对齐 Hexo page 对象，文章页用。

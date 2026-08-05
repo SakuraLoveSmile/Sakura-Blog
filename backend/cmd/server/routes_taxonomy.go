@@ -241,7 +241,7 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 	})
 }
 
-// handleTopicDetail 专栏文章列表页（Spec 52）：专栏头（名称 + 文章数）+ 文章卡片流。
+// handleTopicDetail 专栏文章列表页（Spec 52）：专栏头（名称/描述/图标/封面 + 文章数）+ 文章卡片流。
 // 数据走独立 topics 表（slug 定位 + topic_id 关联文章）；slug 未命中时按 name 兑底 301 到 slug 路径。
 func (s *webServer) handleTopicDetail(c *gin.Context) {
 	slug := c.Param("slug")
@@ -283,6 +283,26 @@ func (s *webServer) handleTopicDetail(c *gin.Context) {
 			Type:   s.site.Article.Type,
 		},
 		Posts: s.toCards(posts),
+		TopicDetail: func() *tmpl.TopicDetail {
+			// 无图标时按名称哈希生成渐变首字头像的色相，保证同一专栏颜色稳定
+			hue := 0
+			for _, r := range t.Name {
+				hue = (hue*31 + int(r)) % 360
+			}
+			initial := ""
+			if rs := []rune(t.Name); len(rs) > 0 {
+				initial = string(rs[0])
+			}
+			return &tmpl.TopicDetail{
+				Name:        t.Name,
+				Description: t.Description,
+				Icon:        t.Icon,
+				Cover:       t.Cover,
+				Count:       len(posts),
+				Hue:         hue,
+				Initial:     initial,
+			}
+		}(),
 	})
 }
 

@@ -2089,6 +2089,62 @@ div.toast.show {
 :root[data-theme="dark"] .article.banner {
   --button-hover-bg: rgba(255,255,255,0.15);
 }
+/* 专栏头紧凑形态（无封面）：高度随内容，避免 .banner 固定 220px 的空旷灰块；
+   有封面时仍走 .article.banner .bg+.content 沉浸样式 */
+.topic-header {
+  background: var(--block);
+  border-radius: 24px;
+  corner-shape: superellipse(1.2);
+  padding: 1rem 1.5rem 1.25rem;
+}
+.topic-header #breadcrumb {
+  margin-bottom: 0.75rem;
+}
+.topic-header .title-area {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.topic-header .topic-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  corner-shape: superellipse(1.2);
+  object-fit: cover;
+  flex: none;
+}
+/* 无图标时的渐变首字头像：色相由 --h（名称哈希）驱动，同专栏颜色稳定 */
+.topic-header .topic-icon.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, hsl(var(--h, 210) 60% 55%), hsl(calc(var(--h, 210) + 40) 60% 42%));
+}
+.topic-header .title-text h1 {
+  font-size: 1.75rem;
+  line-height: 1.25;
+  margin: 0;
+}
+.topic-header .title-text .count {
+  color: var(--text-p3);
+  margin: 0.25rem 0 0;
+}
+.topic-header h1 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 0;
+}
+.topic-header .description {
+  color: var(--text-p2);
+  margin: 0.75rem 0 0;
+}
+.topic-header .count {
+  color: var(--text-p3);
+  margin: 0.5rem 0 0;
+}
 .article-footer {
   margin: 2rem 1rem 1rem;
   padding: 1rem;
@@ -9013,6 +9069,9 @@ body>.sitebg .siteblur:hover {
   display: block;
 }
 .md-text.content p>img,
+/* lazyload 将 img 包裹进 .lazy-box 后不再是 p 的直接子节点，圆角需同时覆盖包裹层与内部 img */
+.md-text.content p>.lazy-box,
+.md-text.content p>.lazy-box>img,
 .md-text.content .tag-plugin.image .image-bg {
   border-radius: 16px;
   corner-shape: superellipse(1.2);

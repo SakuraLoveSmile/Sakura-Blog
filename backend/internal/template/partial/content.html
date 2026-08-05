@@ -10,7 +10,8 @@
    仅文章页（Page.Title 非空）渲染；复用主题现成 .article.banner / .bread-nav / #post-meta / .text.title 样式。*/}}
 {{if .Page.Title}}
 <div class="article banner top"{{if and .Page.Banner .Site.Article.BannerRatio}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
-  {{if .Page.Banner}}<img class="lazy bg" data-src="{{.Page.Banner}}">{{end}}
+  {{- /* banner 封面直出 src：首屏图无需懒加载，且绝对定位的 .bg 不被 lazyload 观察（data-src 会永不加载） */}}
+  {{if .Page.Banner}}<img class="bg" src="{{.Page.Banner}}">{{end}}
   <div class="content">
     <div class="top bread-nav footnote">
       <div class="left">

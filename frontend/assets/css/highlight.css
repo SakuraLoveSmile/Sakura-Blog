@@ -39,9 +39,10 @@ div.chroma table td {
   vertical-align: top;
 }
 div.chroma .lntd:first-child {
-  padding: 1rem 0 1rem 1rem;
-  width: 3.5em;
-  min-width: 3.5em;
+  padding: 1rem 0 1rem 0.75rem;
+  /* 行号栏宽度随位数自适应：仅保留窄偏好值，内容（数字+内边距）撑开，避免固定 3.5em 过宽 */
+  width: 10px;
+  min-width: 0;
   background: var(--block);
   -webkit-user-select: none;
   user-select: none;
