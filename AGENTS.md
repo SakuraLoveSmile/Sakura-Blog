@@ -63,6 +63,14 @@ make merge-check
 - `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
 - `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
+- **dev 上直接工作的提交门禁**：agent 若未经 feature 合并、直接在 `dev`/`main` 等受保护分支上改动（如紧急修复、用户授权的直接提交），提交前必须在当前 worktree 根目录执行：
+
+  ```bash
+  make pre-commit-check
+  ```
+
+  - `pre-commit-check` 与 `merge-check` 共用同一 `make test` 门槛：任一环节失败即以非零码退出，**必须中止提交**；禁止绕过该目标手动 `git commit`。
+  - 该条款使控制面覆盖 feature 合并之外的直接提交路径，两条路径的准入标准一致（全绿才放行）。
 
 ### 4. 先完成先合
 
@@ -99,6 +107,7 @@ git -C .bare worktree remove ../feat-comment
 | 两个 agent 写同一个分支 | 提交冲突、互相覆盖 |
 | feature 分支长期不合并 | 与 dev 分叉越来越大，合并越来越难 |
 | 未通过 `make merge-check` 就把 feature 合回 dev | 破坏 dev 主线，阻塞其他 agent 的 rebase |
+| 在 dev/main 上直接改动却未跑 `make pre-commit-check` 就提交 | 未验证变更混入主线，绕过既有控制面 |
 | agent 基于过时的 dev 快照开分支 | 合并时大量冲突 |
 | UI 任务无参照图/验收清单就开工 | 多轮截图纠偏返工，方向偏差只能事后发现 |
 | 不查坑点知识就修改对应模块 | 重踩已验证过的坑（编译链路、模板结构、SQLite 等），浪费排查轮次 |

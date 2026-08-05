@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check pre-commit-check run dev clean
 
 all: build
 
@@ -65,6 +65,12 @@ merge-check:
 	esac; \
 	$(MAKE) test || { echo "merge-check: make test 失败，中止合并（dev 未被改动）" >&2; exit 1; }; \
 	git -C $(DEV_WORKTREE) merge "$$branch"
+
+## pre-commit-check: 提交前机械检查（覆盖在 dev/main 等分支直接工作、不走 merge-check 的路径）
+## 强制先跑 make test，任一环节失败即以非零码退出、必须中止提交；全绿后才允许 git commit。
+pre-commit-check:
+	@$(MAKE) test || { echo "pre-commit-check: make test 失败，中止提交" >&2; exit 1; }; \
+	echo "pre-commit-check: 全绿，允许提交"
 
 ## run: embed 模式构建并运行（首次加 -seed 导入文章）
 run: build
