@@ -75,57 +75,78 @@ function handleClick() {
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
-  height: 2.25rem;
-  padding: 0 1rem;
-  border: none;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: var(--radius-base);
-  transition: all 0.15s ease;
+  border-radius: var(--radius-full);
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
   background: transparent;
+  white-space: nowrap;
 }
 .btn:hover {
-  opacity: 0.9;
-}
-.btn:active {
   opacity: 1;
 }
-
-/* 默认按钮 hover 改背景加深而非透明度，避免白底上发灰看不清（令牌随亮/暗切换） */
-.btn-default:hover {
-  opacity: 1;
-  background: var(--color-muted);
-  border-color: var(--color-muted-foreground);
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
+/* 默认按钮：描边卡片风格 */
 .btn-default {
-  border: 1px solid var(--color-border);
+  border-color: var(--color-border);
   color: var(--color-foreground);
   background: var(--color-card);
 }
-/* 图标跟随文字颜色，与文案对比度一致，避免近黑色在浅色按钮上突兀 */
+.btn-default:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-border-strong);
+}
 .btn-default .btn-icon {
   color: currentColor;
 }
 
+/* 主按钮：蓝底 + 辉光 */
 .btn-primary {
-  color: var(--color-primary-foreground) !important;
-  background: var(--color-primary) !important;
+  color: var(--color-primary-foreground);
+  background: var(--color-primary);
 }
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-glow-blue);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  background: var(--color-primary-active);
+  transform: scale(0.97);
+}
+
+/* 次要按钮：深灰底 */
 .btn-secondary {
-  color: #fff !important;
-  background: var(--color-secondary) !important;
+  color: var(--color-foreground);
+  background: var(--color-secondary);
 }
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-accent);
+}
+
+/* 危险按钮：红色 */
 .btn-danger {
-  color: #fff !important;
-  background: var(--color-state-error) !important;
+  color: #fff;
+  background: var(--color-state-error);
+}
+.btn-danger:hover:not(:disabled) {
+  background: #ff5d52;
+  box-shadow: 0 0 24px rgba(255, 69, 58, 0.25);
+  transform: translateY(-1px);
 }
 
 .btn-block {
@@ -133,9 +154,9 @@ function handleClick() {
 }
 
 .btn-icon {
-  height: 1.25rem;
-  width: 1.25rem;
-  margin-right: 0.75rem;
+  height: 18px;
+  width: 18px;
+  margin-right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -150,47 +171,47 @@ function handleClick() {
   cursor: not-allowed;
 }
 .btn-loading:hover {
-  opacity: 1;
+  transform: none;
 }
 
 .btn-lg {
-  height: 2.75rem;
-  padding: 0 1.25rem;
-  font-size: 1.125rem;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 16px;
 }
 .btn-sm {
-  height: 1.75rem;
-  padding: 0 0.75rem;
-  font-size: 0.75rem;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
 }
 .btn-sm .btn-icon {
-  height: 0.75rem;
-  width: 0.75rem;
-  margin-right: 0.5rem;
+  height: 14px;
+  width: 14px;
+  margin-right: 6px;
 }
 .btn-xs {
-  height: 1.5rem;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
 }
 .btn-xs .btn-icon {
-  height: 0.75rem;
-  width: 0.75rem;
-  margin-right: 0.5rem;
+  height: 12px;
+  width: 12px;
+  margin-right: 4px;
 }
 
 .btn-circle {
-  width: 2.25rem;
+  width: 36px;
   padding: 0;
-  border-radius: 9999px;
 }
 .btn-lg.btn-circle {
-  width: 2.75rem;
+  width: 44px;
 }
 .btn-sm.btn-circle {
-  width: 1.75rem;
+  width: 28px;
 }
 .btn-xs.btn-circle {
-  width: 1.5rem;
+  width: 24px;
 }
 </style>
