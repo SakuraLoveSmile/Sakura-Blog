@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-// Halo VPagination 复刻（页码 + 总数 + 每页条数）
+// Halo VPagination 复刻（Apple Dark Mode 视觉调整）
 const props = withDefaults(
   defineProps<{
     page: number;
@@ -48,26 +48,32 @@ function changeSize(e: Event) {
 </script>
 
 <template>
-  <div class="flex items-center justify-end gap-4">
-    <span class="text-xs text-gray-500 dark:text-gray-400">共 {{ total }} 条</span>
+  <div class="flex items-center justify-end gap-3">
+    <span class="text-xs" style="color: var(--color-text-tertiary);">共 {{ total }} 条</span>
     <div class="flex items-center gap-1">
       <button
         :disabled="page <= 1"
-        class="flex h-7 w-7 items-center justify-center rounded text-xs text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700"
+        class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+        style="color: var(--color-text-tertiary);"
         @click="goPage(page - 1)"
       >
         &lt;
       </button>
       <template v-for="(item, idx) in pageItems" :key="idx">
-        <span v-if="item === '...'" class="px-1 text-xs text-gray-400">…</span>
+        <span
+          v-if="item === '...'"
+          class="px-1 text-xs"
+          style="color: var(--color-text-quaternary);"
+        >…</span>
         <button
           v-else
           :class="[
-            'h-7 w-7 rounded text-xs transition-colors',
+            'h-8 min-w-8 rounded-lg px-2 text-xs transition-all',
             page === item
-              ? 'bg-secondary text-white'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary',
           ]"
+          :style="page === item ? 'box-shadow: var(--shadow-glow-blue);' : 'color: var(--color-text-tertiary);'"
           @click="goPage(item)"
         >
           {{ item }}
@@ -75,7 +81,8 @@ function changeSize(e: Event) {
       </template>
       <button
         :disabled="page >= totalPages"
-        class="flex h-7 w-7 items-center justify-center rounded text-xs text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700"
+        class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+        style="color: var(--color-text-tertiary);"
         @click="goPage(page + 1)"
       >
         &gt;
@@ -83,7 +90,8 @@ function changeSize(e: Event) {
     </div>
     <select
       :value="size"
-      class="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+      class="apple-select"
+      style="height: 32px; font-size: 12px;"
       @change="changeSize"
     >
       <option v-for="opt in sizeOptions" :key="opt" :value="opt">{{ opt }} 条/页</option>

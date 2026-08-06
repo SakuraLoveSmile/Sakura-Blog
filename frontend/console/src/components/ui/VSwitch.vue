@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Halo VSwitch 复刻（packages/components/src/components/switch）
+// Halo VSwitch 复刻（iOS 风格开关）
 const props = withDefaults(
   defineProps<{
     modelValue?: boolean;
@@ -24,8 +24,8 @@ function toggle() {
 <template>
   <button
     :class="[
-      'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-      modelValue ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-600',
+      'relative inline-flex h-[31px] w-[51px] flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+      modelValue ? 'bg-state-success' : 'bg-accent',
       disabled ? 'cursor-not-allowed opacity-50' : '',
     ]"
     role="switch"
@@ -35,7 +35,7 @@ function toggle() {
   >
     <span
       :class="[
-        'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+        'pointer-events-none inline-block h-[27px] w-[27px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
         modelValue ? 'translate-x-5' : 'translate-x-0',
       ]"
     ></span>

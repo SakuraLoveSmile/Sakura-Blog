@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Halo VModal 复刻（packages/components/src/components/modal/Modal.vue 简化版）
+// Halo VModal 复刻（Apple Dark Mode 视觉调整）
 withDefaults(
   defineProps<{
     visible?: boolean;
@@ -24,16 +24,26 @@ function close() {
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="visible" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-gray-500/75 transition-opacity" @click="close"></div>
+        <div
+          class="absolute inset-0 backdrop-blur-sm"
+          style="background: rgba(0,0,0,0.6);"
+          @click="close"
+        ></div>
         <Transition name="modal-zoom" appear>
           <div
             :style="{ maxWidth: `${width}px` }"
-            class="relative w-full overflow-hidden rounded-base bg-white shadow-xl dark:bg-gray-800"
+            class="relative w-full overflow-hidden rounded-xl bg-card shadow-xl"
+            style="border: 1px solid var(--color-border);"
           >
-            <div v-if="title" class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-              <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ title }}</h3>
+            <div
+              v-if="title"
+              class="flex items-center justify-between px-5 py-4"
+              style="border-bottom: 1px solid var(--color-border);"
+            >
+              <h3 class="text-base font-semibold text-foreground">{{ title }}</h3>
               <button
-                class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                class="rounded-md p-1.5 transition-colors hover:bg-secondary"
+                style="color: var(--color-text-tertiary);"
                 @click="close"
               >
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -41,10 +51,14 @@ function close() {
                 </svg>
               </button>
             </div>
-            <div class="max-h-[70vh] overflow-y-auto p-4">
+            <div class="max-h-[70vh] overflow-y-auto p-5">
               <slot />
             </div>
-            <div v-if="$slots.footer" class="border-t border-gray-100 px-4 py-3 dark:border-gray-700">
+            <div
+              v-if="$slots.footer"
+              class="flex justify-end gap-2 px-5 py-4"
+              style="border-top: 1px solid var(--color-border);"
+            >
               <slot name="footer" />
             </div>
           </div>
