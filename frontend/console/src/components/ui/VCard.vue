@@ -30,49 +30,51 @@ defineProps<{
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border-radius: 4px;
-  border: 1px solid #eaecf0;
+  position: relative;
+  box-shadow: var(--shadow-sm);
 }
-.dark .card-wrapper {
-  background: #1f2937;
-  border-color: #374151;
+.card-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #eaecf0;
-}
-.dark .card-header {
-  border-bottom-color: #374151;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-header-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-.dark .card-header-title {
-  color: #f3f4f6;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-foreground);
 }
 
 .card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-body {
-  padding: 12px 16px;
+  padding: 16px 18px;
 }
 
 .card-footer {
-  border-top: 1px solid #eaecf0;
-  padding: 12px 16px;
-}
-.dark .card-footer {
-  border-top-color: #374151;
+  border-top: 1px solid var(--color-border);
+  padding: 14px 18px;
 }
 </style>

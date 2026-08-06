@@ -33,59 +33,58 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
   flex-shrink: 0;
   flex-wrap: wrap;
   box-sizing: border-box;
-  cursor: pointer;
+  cursor: default;
   text-align: center;
   align-items: center;
   justify-content: center;
-  width: auto;
   vertical-align: middle;
-  height: 1.25rem;
-  font-size: 0.75rem;
-  border-radius: 4px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
+  transition: all 0.15s ease;
 }
 
 .tag-default {
-  border-color: #d9d9d9;
-  color: #4b5563;
-  background: #fff;
-}
-.dark .tag-default {
-  border-color: #4b5563;
-  color: #d1d5db;
-  background: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+  background: var(--color-secondary);
 }
 
 .tag-primary {
   color: #fff;
-  background: #4ccba0;
-  border-color: #4ccba0;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
+
 .tag-secondary {
-  color: #fff;
-  background: #0e1731;
-  border-color: #0e1731;
+  color: var(--color-foreground);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
+
 .tag-danger {
   color: #fff;
-  background: #d71d1d;
-  border-color: #d71d1d;
+  background: var(--color-state-error);
+  border-color: var(--color-state-error);
 }
 
 .tag-rounded {
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .tag-content {
-  padding: 0 0.25rem;
+  padding: 0 2px;
 }
 .tag-left-icon {
-  padding-left: 0.25rem;
+  padding-left: 2px;
   display: inline-flex;
   align-items: center;
 }
 .tag-right-icon {
-  padding-right: 0.25rem;
+  padding-right: 2px;
   display: inline-flex;
   align-items: center;
 }
