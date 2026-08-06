@@ -204,8 +204,8 @@ function openContentResult(item: SearchResultItem) {
 }
 
 const statusBadges: Record<string, { label: string; cls: string }> = {
-  draft: { label: "草稿", cls: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300" },
-  trashed: { label: "回收站", cls: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300" },
+  draft: { label: "草稿", cls: "bg-[rgba(255,159,10,0.15)] text-[#FF9F0A]" },
+  trashed: { label: "回收站", cls: "bg-[rgba(255,69,58,0.15)] text-[#FF453A]" },
 };
 
 function openSearch() {
@@ -276,25 +276,26 @@ function closeProfileDropdown() {
 </script>
 
 <template>
-  <div class="flex h-screen bg-gray-50 dark:bg-gray-900" @click="closeProfileDropdown">
-    <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-white；支持收起为仅图标的 w-16） -->
+  <div class="apple-ambient-glow flex h-screen bg-background text-foreground" @click="closeProfileDropdown">
+    <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-card；支持收起为仅图标的 w-16） -->
     <aside
       :class="sidebarCollapsed ? 'w-16' : 'w-64'"
-      class="navbar fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto bg-white shadow-sm transition-[width] duration-200 md:flex dark:bg-gray-800"
+      class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto border-r border-border transition-[width] duration-200 md:flex"
+      style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px);"
     >
       <!-- Logo -->
       <div class="flex justify-center pb-7 pt-5">
         <a href="/" target="_blank" title="访问首页" class="flex items-center gap-2 transition-all hover:brightness-125">
           <img src="/favicon.svg" alt="Logo" class="h-8 w-8 cursor-pointer select-none" />
-          <span v-if="!sidebarCollapsed" class="text-lg font-bold text-gray-900 dark:text-gray-100">Console</span>
+          <span v-if="!sidebarCollapsed" class="text-lg font-bold text-foreground">Console</span>
         </a>
       </div>
 
       <div class="flex-1 overflow-y-auto">
-        <!-- 搜索框（对齐 Halo：bg-gray-100 rounded p-2；收起时仅图标） -->
+        <!-- 搜索框（对齐 Halo：bg-secondary rounded p-2；收起时仅图标） -->
         <div class="px-3">
           <div
-            class="flex cursor-pointer items-center rounded-base bg-gray-100 p-2 text-gray-400 transition-all hover:text-gray-900 dark:bg-gray-700 dark:hover:text-gray-100"
+            class="flex cursor-pointer items-center rounded-base bg-secondary p-2 text-text-quaternary transition-all hover:text-foreground bg-accent"
             :class="{ 'justify-center': sidebarCollapsed }"
             :title="sidebarCollapsed ? '搜索' : ''"
             @click="openSearch"
@@ -311,7 +312,7 @@ function closeProfileDropdown() {
         <ul class="menu-list space-y-1 p-3">
           <template v-for="group in navGroups" :key="group">
             <li v-if="group && !sidebarCollapsed" class="menu-label">{{ group }}</li>
-            <li v-else-if="group" class="mx-1 my-2 border-t border-gray-100 dark:border-gray-700"></li>
+            <li v-else-if="group" class="mx-1 my-2 border-t border-border"></li>
             <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
               <div
                 :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
@@ -326,7 +327,7 @@ function closeProfileDropdown() {
                   <span class="menu-title flex-1 self-center">{{ item.label }}</span>
                   <span
                     v-if="item.children?.length"
-                    class="self-center text-gray-400 transition-transform dark:text-gray-500"
+                    class="self-center text-text-quaternary transition-transform text-text-tertiary"
                     :class="{ '-rotate-90': !isNavActive(item) }"
                   >
                     <Icon icon="ri:arrow-down-s-line" />
@@ -355,7 +356,7 @@ function closeProfileDropdown() {
       <!-- 收起/展开切换 -->
       <div class="px-3 pb-1">
         <button
-          class="flex w-full items-center rounded-base p-2 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+          class="flex w-full items-center rounded-base p-2 text-text-quaternary transition-all hover:bg-secondary hover:text-foreground hover:bg-accent"
           :class="{ 'justify-center': sidebarCollapsed }"
           :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
           @click="toggleSidebar"
@@ -373,13 +374,13 @@ function closeProfileDropdown() {
           <!-- 铃铛通知按钮（Wave 3b） -->
           <div class="relative self-center">
             <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-secondary hover:bg-accent"
               @click="router.push('/notifications')"
             >
-              <Icon icon="ri:notification-3-line" class="text-gray-500 dark:text-gray-400" />
+              <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
               <span
                 v-if="unreadCount > 0"
-                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-white"
               >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
             </div>
           </div>
@@ -395,7 +396,7 @@ function closeProfileDropdown() {
             </span>
           </div>
           <div v-if="!sidebarCollapsed" class="profile-name">
-            <div class="flex text-sm font-medium text-gray-900 dark:text-gray-100">{{ auth.user.display_name || "管理员" }}</div>
+            <div class="flex text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
             <div class="flex">
               <VTag>
                 <template #leftIcon>
@@ -407,26 +408,26 @@ function closeProfileDropdown() {
           </div>
           <div v-if="!sidebarCollapsed" class="relative self-center">
             <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-gray-100 dark:hover:bg-gray-700"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-secondary hover:bg-accent"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
             >
-              <Icon icon="ri:more-fill" class="text-gray-500 dark:text-gray-400" />
+              <Icon icon="ri:more-fill" class="text-text-tertiary" />
             </div>
             <Transition name="dropdown">
               <div
                 v-if="profileDropdownOpen"
-                class="absolute bottom-full right-0 z-30 mb-2 w-48 rounded-base border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                class="absolute bottom-full right-0 z-30 mb-2 w-48 rounded-base border border-border bg-card p-2 shadow-lg"
                 @click.stop
               >
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
                   @click="navigateTo('/profile')"
                 >
                   <Icon icon="ri:user-settings-line" />
                   个人资料
                 </button>
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
                   @click="handleLogout"
                 >
                   <Icon icon="ri:logout-box-r-line" />
@@ -445,9 +446,9 @@ function closeProfileDropdown() {
       <!-- 页脚（对齐 Halo：Powered by ...） -->
       <footer
         v-if="showFooter"
-        class="border-t border-gray-100 px-4 py-3 text-center text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500"
+        class="border-t border-border px-4 py-3 text-center text-xs text-text-quaternary text-text-tertiary"
       >
-        Powered by <a href="/" target="_blank" class="font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400">Stellar Blog</a>
+        Powered by <a href="/" target="_blank" class="font-medium text-text-tertiary transition-colors hover:text-primary">Stellar Blog</a>
       </footer>
     </main>
 
@@ -481,10 +482,10 @@ function closeProfileDropdown() {
     <Teleport to="body">
       <div v-if="moreMenuVisible" class="fixed inset-0 z-[99999] flex flex-row items-end justify-center">
         <Transition name="fade" appear>
-          <div class="absolute inset-0 bg-gray-500/75 transition-opacity" @click="moreMenuVisible = false"></div>
+          <div class="absolute inset-0 bg-secondary0/75 transition-opacity" @click="moreMenuVisible = false"></div>
         </Transition>
         <Transition name="slide-up" appear>
-          <div class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-white shadow-xl dark:bg-gray-800">
+          <div class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl">
             <ul class="menu-list space-y-1 p-3">
               <template v-for="group in navGroups" :key="group">
                 <li v-if="group" class="menu-label">{{ group }}</li>
@@ -500,7 +501,7 @@ function closeProfileDropdown() {
                     <span class="menu-title flex-1 self-center">{{ item.label }}</span>
                     <span
                       v-if="item.children?.length"
-                      class="self-center text-gray-400 transition-transform dark:text-gray-500"
+                      class="self-center text-text-quaternary transition-transform text-text-tertiary"
                       :class="{ '-rotate-90': !isNavActive(item) }"
                     >
                       <Icon icon="ri:arrow-down-s-line" />
@@ -531,97 +532,97 @@ function closeProfileDropdown() {
     <!-- 全局搜索弹窗（⌘K） -->
     <Transition name="fade">
       <div v-if="searchOpen" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh]" @click.self="searchOpen = false">
-        <div class="absolute inset-0 bg-gray-500/75" @click="searchOpen = false" />
+        <div class="absolute inset-0 bg-secondary0/75" @click="searchOpen = false" />
         <div
-          class="relative mx-4 w-full max-w-md overflow-hidden rounded-base border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+          class="relative mx-4 w-full max-w-md overflow-hidden rounded-base border border-border bg-card shadow-2xl"
         >
-          <div class="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-            <Icon icon="ri:search-line" class="text-gray-400" />
+          <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+            <Icon icon="ri:search-line" class="text-text-quaternary" />
             <input
               v-model="searchQuery"
               type="text"
               placeholder="搜索菜单、文章、页面..."
-              class="flex-1 bg-transparent text-sm text-gray-800 outline-none placeholder-gray-400 dark:text-gray-100"
+              class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-text-quaternary"
               autofocus
             />
-            <kbd class="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400 dark:border-gray-600">ESC</kbd>
+            <kbd class="rounded border border-border px-1.5 py-0.5 text-[10px] text-text-quaternary">ESC</kbd>
           </div>
           <div class="max-h-80 overflow-y-auto py-2">
             <!-- 菜单区 -->
             <template v-if="searchResults.length">
-              <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">菜单</p>
+              <p class="px-4 pb-1 pt-2 text-xs font-medium text-text-quaternary text-text-tertiary">菜单</p>
               <button
                 v-for="(item, i) in searchResults"
                 :key="item.path"
                 :data-search-index="i"
-                :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === i }"
-                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                :class="{ 'bg-accent': activeIndex === i }"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
                 @click="navigateTo(item.path)"
                 @mouseenter="activeIndex = i"
               >
-                <Icon :icon="item.icon" class="text-base text-gray-400" />
+                <Icon :icon="item.icon" class="text-base text-text-quaternary" />
                 <span>{{ item.label }}</span>
-                <span class="ml-auto text-[10px] text-gray-400">{{ item.group || "概览" }}</span>
+                <span class="ml-auto text-[10px] text-text-quaternary">{{ item.group || "概览" }}</span>
               </button>
             </template>
 
             <!-- 内容结果区（≥2 字符启用；接口异常时静默降级为仅菜单搜索） -->
             <template v-if="contentActive">
               <template v-if="postResults.length">
-                <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">文章</p>
+                <p class="px-4 pb-1 pt-2 text-xs font-medium text-text-quaternary text-text-tertiary">文章</p>
                 <button
                   v-for="(item, i) in postResults"
                   :key="'post-' + item.id"
                   :data-search-index="postOffset + i"
-                  :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === postOffset + i }"
-                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                  :class="{ 'bg-accent': activeIndex === postOffset + i }"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-secondary hover:bg-accent"
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = postOffset + i"
                 >
-                  <Icon icon="ri:book-read-line" class="mt-0.5 text-base text-gray-400" />
+                  <Icon icon="ri:book-read-line" class="mt-0.5 text-base text-text-quaternary" />
                   <span class="min-w-0 flex-1">
                     <span class="flex items-center gap-2">
-                      <span class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</span>
+                      <span class="truncate text-sm text-text-secondary">{{ item.title }}</span>
                       <span
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
                         class="shrink-0 rounded px-1.5 py-0.5 text-[10px]"
                       >{{ statusBadges[item.status].label }}</span>
                     </span>
-                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-gray-400 dark:text-gray-500" v-html="item.snippet" />
+                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-text-quaternary text-text-tertiary" v-html="item.snippet" />
                   </span>
                 </button>
               </template>
               <template v-if="pageResults.length">
-                <p class="px-4 pb-1 pt-2 text-xs font-medium text-gray-400 dark:text-gray-500">页面</p>
+                <p class="px-4 pb-1 pt-2 text-xs font-medium text-text-quaternary text-text-tertiary">页面</p>
                 <button
                   v-for="(item, i) in pageResults"
                   :key="'page-' + item.id"
                   :data-search-index="pageOffset + i"
-                  :class="{ 'bg-gray-100 dark:bg-gray-700': activeIndex === pageOffset + i }"
-                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                  :class="{ 'bg-accent': activeIndex === pageOffset + i }"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-secondary hover:bg-accent"
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = pageOffset + i"
                 >
-                  <Icon icon="ri:pages-line" class="mt-0.5 text-base text-gray-400" />
+                  <Icon icon="ri:pages-line" class="mt-0.5 text-base text-text-quaternary" />
                   <span class="min-w-0 flex-1">
                     <span class="flex items-center gap-2">
-                      <span class="truncate text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</span>
+                      <span class="truncate text-sm text-text-secondary">{{ item.title }}</span>
                       <span
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
                         class="shrink-0 rounded px-1.5 py-0.5 text-[10px]"
                       >{{ statusBadges[item.status].label }}</span>
                     </span>
-                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-gray-400 dark:text-gray-500" v-html="item.snippet" />
+                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-text-quaternary text-text-tertiary" v-html="item.snippet" />
                   </span>
                 </button>
               </template>
-              <p v-if="contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-gray-400">搜索中…</p>
-              <p v-else-if="!contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-gray-400">无匹配内容</p>
+              <p v-if="contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-text-quaternary">搜索中…</p>
+              <p v-else-if="!contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-text-quaternary">无匹配内容</p>
             </template>
 
-            <p v-if="searchResults.length === 0 && !contentActive" class="px-4 py-6 text-center text-sm text-gray-400">无匹配结果</p>
+            <p v-if="searchResults.length === 0 && !contentActive" class="px-4 py-6 text-center text-sm text-text-quaternary">无匹配结果</p>
           </div>
         </div>
       </div>
@@ -634,7 +635,7 @@ function closeProfileDropdown() {
 .menu-label {
   padding: 0.5rem;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-text-quaternary);
   user-select: none;
 }
 
@@ -646,30 +647,24 @@ function closeProfileDropdown() {
 
 .menu-item-title {
   transition: all 0.15s ease;
-  font-size: 1rem;
+  font-size: 0.9rem;
   display: flex;
   user-select: none;
   position: relative;
   padding: 0.5rem;
   font-weight: 400;
-  border-radius: 4px;
-  color: #374151;
-}
-.dark .menu-item-title {
-  color: #d1d5db;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
 }
 
 .menu-item-title:hover,
 .menu-item-title.active {
-  background: #f3f4f6;
+  background: rgba(58, 58, 60, 0.6);
+  color: var(--color-foreground);
   font-weight: 500;
 }
-.dark .menu-item-title:hover,
-.dark .menu-item-title.active {
-  background: #374151;
-}
 
-/* 激活项左侧竖条（对齐 Halo：#242e41 3px x 26px） */
+/* 激活项左侧竖条（Apple 蓝） */
 .menu-item-title.active::after {
   position: absolute;
   top: calc(50% - 13px);
@@ -677,39 +672,30 @@ function closeProfileDropdown() {
   width: 3px;
   height: 26px;
   content: "";
-  background: #242e41;
+  background: var(--color-primary);
   border-radius: 6px;
 }
-.dark .menu-item-title.active::after {
-  background: #4ccba0;
-}
 
-/* 缩进子菜单项（如「文章」下的「分享链接」），与 menu-item-title 同色/hover/active 规则 */
+/* 缩进子菜单项 */
 .menu-subitem {
   transition: all 0.15s ease;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   display: flex;
   user-select: none;
   position: relative;
   padding: 0.4rem 0.5rem 0.4rem 2.25rem;
   font-weight: 400;
-  border-radius: 4px;
-  color: #374151;
-}
-.dark .menu-subitem {
-  color: #d1d5db;
+  border-radius: 8px;
+  color: var(--color-text-tertiary);
 }
 .menu-subitem:hover,
 .menu-subitem.active {
-  background: #f3f4f6;
+  background: rgba(58, 58, 60, 0.6);
+  color: var(--color-foreground);
   font-weight: 500;
 }
-.dark .menu-subitem:hover,
-.dark .menu-subitem.active {
-  background: #374151;
-}
 
-/* 底部用户资料区（对齐 Halo 70px） */
+/* 底部用户资料区 */
 .profile-placeholder {
   height: 70px;
 }
@@ -721,12 +707,11 @@ function closeProfileDropdown() {
   bottom: 0;
   display: flex;
   gap: 0.75rem;
-  background: #fff;
+  background: var(--color-sidebar);
+  backdrop-filter: saturate(180%) blur(24px);
   padding: 0.75rem;
   z-index: 10;
-}
-.dark .current-profile {
-  background: #1f2937;
+  border-top: 1px solid var(--color-border);
 }
 
 .profile-avatar {
@@ -743,14 +728,11 @@ function closeProfileDropdown() {
   gap: 0.25rem;
 }
 
-/* 搜索 snippet 命中词高亮（v-html 内容需 :deep），亮/暗主题均保证对比度 */
+/* 搜索 snippet 命中词高亮 */
 .search-snippet :deep(mark) {
   background: transparent;
-  color: #10b981;
+  color: var(--color-primary);
   font-weight: 600;
-}
-.dark .search-snippet :deep(mark) {
-  color: #4ccba0;
 }
 
 .fade-enter-active,
@@ -762,6 +744,16 @@ function closeProfileDropdown() {
   opacity: 0;
 }
 
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: all 0.2s ease;
@@ -770,16 +762,5 @@ function closeProfileDropdown() {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(4px);
-}
-
-.slide-up-enter-active {
-  transition: transform 0.4s ease-in-out;
-}
-.slide-up-leave-active {
-  transition: transform 0.3s ease-in-out;
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
 }
 </style>

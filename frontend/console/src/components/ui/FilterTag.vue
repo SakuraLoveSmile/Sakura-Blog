@@ -9,11 +9,11 @@ defineEmits<{
 
 <template>
   <div
-    class="inline-flex items-center gap-1 rounded-base bg-gray-200 px-2 py-1 text-xs text-gray-600 dark:bg-gray-600 dark:text-gray-300"
+    class="inline-flex items-center gap-1 rounded-base bg-secondary px-2 py-1 text-xs text-text-secondary"
   >
     <slot />
     <button
-      class="text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-white"
+      class="text-text-quaternary transition-colors hover:bg-accent hover:text-foreground"
       @click="$emit('close')"
     >
       <Icon icon="ri:close-line" class="text-sm" />

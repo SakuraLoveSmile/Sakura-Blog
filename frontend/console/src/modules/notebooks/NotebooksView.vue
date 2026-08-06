@@ -3,9 +3,8 @@ import { ref, computed, onMounted } from "vue";
 import { notebookApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VCard, VButton, Toast, Dialog, VModal } from "@/components/ui";
+import { VCard, VButton, Toast, Dialog, VModal } from "@/components/ui";
 
-// ---------- 类型 ----------
 interface Notebook {
   id: number;
   name: string;
@@ -26,9 +25,8 @@ interface Note {
   updated_at: string;
 }
 
-// ---------- 第一级：笔记本列表 ----------
 const notebooks = ref<Notebook[]>([]);
-const noteCounts = ref<Record<number, number>>({}); // notebookId -> 笔记数（后端列表不返回，逐个取 total）
+const noteCounts = ref<Record<number, number>>({});
 const loading = ref(false);
 
 async function loadNotebooks() {
@@ -36,7 +34,6 @@ async function loadNotebooks() {
   try {
     const { data } = await notebookApi.listNotebooks();
     notebooks.value = data.items || [];
-    // 并行取各笔记本笔记数（per_page=1 仅用 total）
     const entries = await Promise.all(
       notebooks.value.map(async (nb) => {
         try {
@@ -55,7 +52,6 @@ async function loadNotebooks() {
   }
 }
 
-// ---------- 笔记本新建/编辑弹窗 ----------
 const nbModalOpen = ref(false);
 const nbModalMode = ref<"create" | "edit">("create");
 const nbEditingId = ref(0);
@@ -122,8 +118,7 @@ function handleDeleteNotebook(nb: Notebook) {
   });
 }
 
-// ---------- 第二级：笔记管理 ----------
-const activeNotebook = ref<Notebook | null>(null); // 非空 = 进入笔记管理
+const activeNotebook = ref<Notebook | null>(null);
 
 function enterNotebook(nb: Notebook) {
   activeNotebook.value = nb;
@@ -133,10 +128,9 @@ function enterNotebook(nb: Notebook) {
 
 function backToNotebooks() {
   activeNotebook.value = null;
-  loadNotebooks(); // 刷新第一级笔记数
+  loadNotebooks();
 }
 
-// --- 左侧笔记列表（分页） ---
 const notes = ref<Note[]>([]);
 const notesTotal = ref(0);
 const notesPage = ref(1);
@@ -175,7 +169,6 @@ function fmtTime(s: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// --- 右侧笔记编辑区 ---
 const currentId = ref(0);
 const noteForm = ref({ title: "", tags: "", content: "" });
 const noteLoading = ref(false);
@@ -185,7 +178,6 @@ const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 
 const hasCurrent = computed(() => currentId.value > 0);
 
-// 常用标签（来自后端 note-tags 聚合，供输入提示）
 const allTags = ref<string[]>([]);
 
 async function loadTags() {
@@ -230,8 +222,8 @@ async function handleSave() {
     });
     editorRef.value?.clearDraft();
     Toast.success("保存成功");
-    await loadNotes(notesPage.value); // 刷新列表（标题/更新时间/标签）
-    await loadTags(); // 新增标签后刷新提示
+    await loadNotes(notesPage.value);
+    await loadTags();
   } catch (e: any) {
     Toast.error(e?.response?.data?.error || "保存失败");
   } finally {
@@ -239,7 +231,6 @@ async function handleSave() {
   }
 }
 
-// --- 新建笔记弹窗 ---
 const createNoteOpen = ref(false);
 const createNoteTitle = ref("");
 const createNoteSaving = ref(false);
@@ -286,7 +277,6 @@ function handleDeleteNote() {
         await notebookApi.deleteNote(currentId.value);
         Toast.success("已删除");
         resetNoteEditor();
-        // 当前页删空则回退一页
         let page = notesPage.value;
         if (notes.value.length === 1 && page > 1) page -= 1;
         await loadNotes(page);
@@ -299,10 +289,37 @@ function handleDeleteNote() {
   });
 }
 
-// ---------- 样式 ----------
-const inputCls =
-  "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500";
-const labelCls = "block text-xs text-gray-500 mb-1 dark:text-gray-400";
+const inputCls = "apple-input";
+const labelCls = "block text-xs text-text-tertiary mb-1";
+
+const searchQuery = ref("");
+const viewMode = ref<"grid" | "list">("grid");
+const menuOpenId = ref<number | null>(null);
+
+function notebookCoverClass(id: number): string {
+  const colors = ["blue", "purple", "green", "orange", "pink", "teal"];
+  const key = String(id);
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return `notebook-cover-${colors[hash % colors.length]}`;
+}
+
+const filteredNotebooks = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return notebooks.value;
+  return notebooks.value.filter((nb) => nb.name.toLowerCase().includes(q));
+});
+
+function toggleMenu(id: number, event: MouseEvent) {
+  event.stopPropagation();
+  menuOpenId.value = menuOpenId.value === id ? null : id;
+}
+
+function closeMenu() {
+  menuOpenId.value = null;
+}
 
 onMounted(() => {
   loadNotebooks();
@@ -312,163 +329,278 @@ onMounted(() => {
 
 <template>
   <div>
-    <VPageHeader :title="activeNotebook ? activeNotebook.name : '笔记本管理'">
-      <template #icon>
-        <Icon icon="ri:book-open-line" class="mr-2 self-center text-xl" />
-      </template>
-      <template v-if="activeNotebook" #actions>
-        <VButton type="secondary" size="sm" @click="backToNotebooks">
-          <template #icon>
-            <Icon icon="ri:arrow-left-line" class="h-full w-full" />
-          </template>
-          返回笔记本列表
-        </VButton>
-      </template>
-    </VPageHeader>
-
-    <div class="m-0 md:m-4">
-      <!-- ============ 第一级：笔记本卡片列表 ============ -->
-      <div v-if="!activeNotebook">
-        <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <Icon icon="ri:folder-open-line" />
-            <span>共 {{ notebooks.length }} 个笔记本</span>
-          </div>
-          <VButton type="secondary" size="sm" @click="openCreateNotebook">
-            <template #icon>
-              <Icon icon="ri:add-line" class="h-full w-full" />
-            </template>
-            新建笔记本
-          </VButton>
-        </div>
-
-        <div v-if="loading" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">加载中...</div>
-
-        <div
-          v-else-if="!notebooks.length"
-          class="rounded border border-gray-200 bg-white py-16 text-center dark:border-gray-700 dark:bg-gray-800"
-        >
-          <Icon icon="ri:book-open-line" class="mx-auto text-3xl text-gray-300 dark:text-gray-600" />
-          <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">暂无笔记本</p>
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">点击「新建笔记本」创建，前台 /notebooks 即时可见。</p>
-        </div>
-
-        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div
-            v-for="nb in notebooks"
-            :key="nb.id"
-            class="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+    <header
+      class="sticky top-0 z-20 flex items-center justify-between px-10 pb-5 pt-7 backdrop-blur-xl"
+      style="background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);"
+    >
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-3">
+          <button
+            v-if="activeNotebook"
+            type="button"
+            class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+            @click="backToNotebooks"
           >
-            <!-- 封面 -->
-            <button type="button" class="relative h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-700" @click="enterNotebook(nb)">
-              <img
-                v-if="nb.cover"
-                :src="nb.cover"
-                :alt="nb.name"
-                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div v-else class="flex h-full w-full items-center justify-center">
-                <Icon icon="ri:book-open-line" class="text-4xl text-gray-300 dark:text-gray-600" />
-              </div>
-              <span
-                class="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white"
-              >{{ noteCounts[nb.id] || 0 }} 篇笔记</span>
-            </button>
-
-            <!-- 信息 -->
-            <div class="flex flex-1 flex-col p-4">
-              <button
-                type="button"
-                class="text-left text-base font-medium text-gray-800 hover:text-primary dark:text-gray-100 dark:hover:text-primary"
-                @click="enterNotebook(nb)"
-              >
-                {{ nb.name }}
-              </button>
-              <p class="mt-1 line-clamp-2 min-h-[2.5rem] flex-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                {{ nb.description || "暂无描述" }}
-              </p>
-              <!-- 操作 -->
-              <div class="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                <VButton type="secondary" size="sm" class="flex-1" @click="enterNotebook(nb)">
-                  <template #icon>
-                    <Icon icon="ri:file-list-3-line" class="h-full w-full" />
-                  </template>
-                  管理笔记
-                </VButton>
-                <button
-                  type="button"
-                  title="编辑"
-                  class="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                  @click="openEditNotebook(nb)"
-                >
-                  <Icon icon="ri:edit-line" />
-                </button>
-                <button
-                  type="button"
-                  title="删除"
-                  class="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                  @click="handleDeleteNotebook(nb)"
-                >
-                  <Icon icon="ri:delete-bin-line" />
-                </button>
-              </div>
-            </div>
+            <Icon icon="ri:arrow-left-line" class="text-base" />
+          </button>
+          <div class="min-w-0">
+            <h1
+              class="truncate text-[28px] font-bold leading-tight tracking-[-0.8px] text-foreground"
+            >
+              {{ activeNotebook ? activeNotebook.name : "笔记本" }}
+            </h1>
+            <p class="mt-1 text-[13px] text-text-tertiary">
+              {{ activeNotebook ? "管理该笔记本下的全部笔记" : "管理你的所有笔记本文档" }}
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- ============ 第二级：笔记管理（左右分栏） ============ -->
+      <div v-if="!activeNotebook" class="flex shrink-0 items-center gap-2.5">
+        <div class="apple-search w-60 rounded-md border-border bg-card">
+          <Icon icon="ri:search-line" class="text-base text-text-quaternary" />
+          <input v-model="searchQuery" type="text" placeholder="搜索笔记本..." />
+        </div>
+
+        <div class="flex gap-0.5 rounded-md border border-border bg-card p-0.5">
+          <button
+            type="button"
+            title="网格视图"
+            :class="[
+              'flex h-[30px] w-8 items-center justify-center rounded-[7px] text-text-quaternary transition-colors',
+              viewMode === 'grid' ? 'bg-accent text-foreground' : 'hover:text-foreground',
+            ]"
+            @click="viewMode = 'grid'"
+          >
+            <Icon icon="ri:grid-line" class="text-base" />
+          </button>
+          <button
+            type="button"
+            title="列表视图"
+            :class="[
+              'flex h-[30px] w-8 items-center justify-center rounded-[7px] text-text-quaternary transition-colors',
+              viewMode === 'list' ? 'bg-accent text-foreground' : 'hover:text-foreground',
+            ]"
+            @click="viewMode = 'list'"
+          >
+            <Icon icon="ri:list-check" class="text-base" />
+          </button>
+        </div>
+
+        <VButton type="primary" @click="openCreateNotebook">
+          <template #icon>
+            <Icon icon="ri:add-line" class="h-full w-full" />
+          </template>
+          新建笔记本
+        </VButton>
+      </div>
+
+      <div v-else class="flex shrink-0 items-center gap-2">
+        <VButton type="secondary" @click="openCreateNote">
+          <template #icon>
+            <Icon icon="ri:add-line" class="h-full w-full" />
+          </template>
+          新建笔记
+        </VButton>
+      </div>
+    </header>
+
+    <div class="px-10 pb-10 pt-2">
+      <div v-if="!activeNotebook">
+        <div v-if="loading" class="py-16 text-center text-sm text-text-quaternary">
+          加载中...
+        </div>
+
+        <div
+          v-else-if="!filteredNotebooks.length"
+          class="rounded-lg border border-border bg-card py-16 text-center"
+        >
+          <Icon icon="ri:book-open-line" class="mx-auto text-3xl text-text-quaternary" />
+          <p class="mt-3 text-sm text-text-tertiary">
+            {{ searchQuery ? "未找到匹配的笔记本" : "暂无笔记本" }}
+          </p>
+          <p v-if="!searchQuery" class="mt-1 text-xs text-text-quaternary">
+            点击「新建笔记本」创建，前台 /notebooks 即时可见。
+          </p>
+        </div>
+
+        <div
+          v-else
+          :class="[
+            'grid gap-5',
+            viewMode === 'grid'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+              : 'grid-cols-1',
+          ]"
+        >
+          <div
+            v-for="nb in filteredNotebooks"
+            :key="nb.id"
+            :class="[
+              'group relative overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border-strong hover:shadow-lg',
+              viewMode === 'list' ? 'flex' : 'flex flex-col',
+            ]"
+          >
+            <button
+              type="button"
+              :class="[
+                'relative overflow-hidden',
+                viewMode === 'list' ? 'h-[120px] w-56 shrink-0' : 'h-[120px] w-full',
+                notebookCoverClass(nb.id),
+              ]"
+              @click="enterNotebook(nb)"
+            >
+              <div class="pointer-events-none absolute inset-0 z-[1]">
+                <div
+                  class="absolute left-[20%] top-[15%] h-24 w-24 rounded-full bg-white/10 blur-2xl"
+                />
+                <div
+                  class="absolute bottom-[-30%] right-[-10%] h-28 w-28 rounded-full bg-white/10 blur-2xl"
+                />
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/15" />
+
+              <div
+                class="absolute left-[18px] top-[18px] z-[2] flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/20 text-white backdrop-blur-md"
+              >
+                <Icon icon="ri:book-open-line" class="text-[22px]" />
+              </div>
+
+              <span
+                class="absolute bottom-3.5 right-4 z-[2] rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md"
+              >
+                {{ noteCounts[nb.id] || 0 }} 篇笔记
+              </span>
+            </button>
+
+            <button
+              type="button"
+              title="更多操作"
+              class="absolute right-3.5 top-3.5 z-[3] flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-black/25 text-white/80 backdrop-blur-md transition-colors hover:bg-black/40 hover:text-white"
+              @click="toggleMenu(nb.id, $event)"
+            >
+              <Icon icon="ri:more-2-fill" class="text-base" />
+            </button>
+
+            <div
+              v-if="menuOpenId === nb.id"
+              class="absolute right-3 top-12 z-20 w-32 overflow-hidden rounded-lg border border-border bg-popover py-1 shadow-lg"
+              @click.stop
+            >
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-accent hover:text-foreground"
+                @click="openEditNotebook(nb); closeMenu()"
+              >
+                <Icon icon="ri:edit-line" />
+                编辑
+              </button>
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-state-error transition-colors hover:bg-red-500/10"
+                @click="handleDeleteNotebook(nb); closeMenu()"
+              >
+                <Icon icon="ri:delete-bin-line" />
+                删除
+              </button>
+            </div>
+
+            <button
+              type="button"
+              :class="[
+                'flex min-w-0 flex-1 text-left',
+                viewMode === 'list' ? 'flex-row items-center justify-between gap-4 px-5' : 'flex-col p-4',
+              ]"
+              @click="enterNotebook(nb)"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-[15px] font-semibold leading-snug text-foreground">
+                  {{ nb.name }}
+                </div>
+                <p
+                  v-if="nb.description"
+                  :class="[
+                    'mt-1.5 text-[13px] leading-5 text-text-tertiary',
+                    viewMode === 'list' ? 'line-clamp-1' : 'line-clamp-2',
+                  ]"
+                >
+                  {{ nb.description }}
+                </p>
+              </div>
+              <div
+                :class="[
+                  'flex items-center gap-1.5 whitespace-nowrap text-[13px] text-text-tertiary',
+                  viewMode === 'list' ? '' : 'mt-2',
+                ]"
+              >
+                <Icon icon="ri:time-line" class="text-sm" />
+                <span>{{ fmtTime(nb.created_at) || "刚刚创建" }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div v-else class="flex flex-col gap-4 lg:flex-row">
-        <!-- 左侧：笔记列表 -->
-        <VCard title="笔记列表" :bodyClass="['!p-0']" class="lg:w-[280px] shrink-0">
+        <VCard title="笔记列表" :bodyClass="['!p-0']" class="lg:w-[300px] shrink-0">
           <template #actions>
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ notesTotal }} 篇</span>
+            <span class="text-xs text-text-quaternary">{{ notesTotal }} 篇</span>
           </template>
           <div class="max-h-[70vh] overflow-y-auto p-2">
-            <div v-if="notesLoading" class="py-8 text-center text-xs text-gray-400 dark:text-gray-500">加载中...</div>
-            <div v-else-if="!notes.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-500">
+            <div v-if="notesLoading" class="py-8 text-center text-xs text-text-quaternary">
+              加载中...
+            </div>
+            <div
+              v-else-if="!notes.length"
+              class="py-8 text-center text-xs text-text-quaternary"
+            >
               暂无笔记<br />点击「新建笔记」创建
             </div>
-            <div v-else class="space-y-0.5">
+            <div v-else class="space-y-1">
               <button
                 v-for="note in notes"
                 :key="note.id"
                 type="button"
                 @click="selectNote(note.id)"
                 :class="[
-                  'block w-full rounded px-2 py-2 text-left transition-colors',
+                  'block w-full rounded-lg px-3 py-2.5 text-left transition-colors',
                   currentId === note.id
-                    ? 'bg-primary/15 text-secondary dark:bg-primary/20 dark:text-primary'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700',
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-text-secondary hover:bg-accent',
                 ]"
               >
-                <span class="block truncate text-sm font-medium">{{ note.title || "未命名笔记" }}</span>
-                <span class="mt-0.5 block text-[10px] text-gray-400 dark:text-gray-500">{{ fmtTime(note.updated_at) }}</span>
-                <span v-if="noteTags(note).length" class="mt-1 flex flex-wrap gap-1">
+                <span class="block truncate text-sm font-semibold">{{ note.title || "未命名笔记" }}</span>
+                <span class="mt-1 flex items-center gap-1 text-[11px] text-text-quaternary">
+                  <Icon icon="ri:time-line" />
+                  {{ fmtTime(note.updated_at) }}
+                </span>
+                <span v-if="noteTags(note).length" class="mt-2 flex flex-wrap gap-1">
                   <span
                     v-for="t in noteTags(note)"
                     :key="t"
-                    class="rounded bg-gray-100 px-1 py-px text-[10px] text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                    class="rounded-full bg-secondary px-2 py-px text-[10px] text-text-tertiary"
                   >{{ t }}</span>
                 </span>
               </button>
             </div>
           </div>
-          <!-- 分页 -->
-          <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-gray-100 px-3 py-2 dark:border-gray-700">
+          <div
+            v-if="totalPages > 1"
+            class="flex items-center justify-between border-t border-border px-3 py-2"
+          >
             <button
               type="button"
               :disabled="notesPage <= 1"
-              class="text-xs text-gray-400 transition-colors hover:text-gray-600 disabled:opacity-30 dark:text-gray-500 dark:hover:text-gray-300"
+              class="flex h-7 w-7 items-center justify-center rounded-md text-text-quaternary transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
               @click="loadNotes(notesPage - 1)"
             >
               <Icon icon="ri:arrow-left-s-line" class="text-base" />
             </button>
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ notesPage }} / {{ totalPages }}</span>
+            <span class="text-xs text-text-quaternary">{{ notesPage }} / {{ totalPages }}</span>
             <button
               type="button"
               :disabled="notesPage >= totalPages"
-              class="text-xs text-gray-400 transition-colors hover:text-gray-600 disabled:opacity-30 dark:text-gray-500 dark:hover:text-gray-300"
+              class="flex h-7 w-7 items-center justify-center rounded-md text-text-quaternary transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
               @click="loadNotes(notesPage + 1)"
             >
               <Icon icon="ri:arrow-right-s-line" class="text-base" />
@@ -476,7 +608,6 @@ onMounted(() => {
           </div>
         </VCard>
 
-        <!-- 右侧：笔记编辑区 -->
         <VCard class="min-w-0 flex-1">
           <template #actions>
             <VButton type="secondary" size="sm" @click="openCreateNote">
@@ -487,15 +618,22 @@ onMounted(() => {
             </VButton>
           </template>
 
-          <div v-if="noteLoading" class="py-16 text-center text-sm text-gray-400 dark:text-gray-500">加载中...</div>
+          <div v-if="noteLoading" class="py-16 text-center text-sm text-text-quaternary">
+            加载中...
+          </div>
 
           <div v-else-if="!hasCurrent" class="py-16 text-center">
-            <Icon icon="ri:file-edit-line" class="mx-auto text-3xl text-gray-300 dark:text-gray-600" />
-            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">选择左侧笔记开始编辑，或点击「新建笔记」</p>
+            <div
+              class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-text-quaternary"
+            >
+              <Icon icon="ri:file-edit-line" class="text-3xl" />
+            </div>
+            <p class="mt-4 text-sm text-text-tertiary">
+              选择左侧笔记开始编辑，或点击「新建笔记」
+            </p>
           </div>
 
           <div v-else class="space-y-4">
-            <!-- 元信息 -->
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <label :class="labelCls">标题</label>
@@ -515,7 +653,6 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Markdown 编辑器 -->
             <MarkdownEditor
               ref="editorRef"
               v-model="noteForm.content"
@@ -523,7 +660,6 @@ onMounted(() => {
               @save="handleSave"
             />
 
-            <!-- 操作按钮 -->
             <div class="flex items-center gap-2">
               <VButton type="secondary" :loading="saving" @click="handleSave">
                 <template #icon>
@@ -537,14 +673,15 @@ onMounted(() => {
                 </template>
                 删除
               </VButton>
-              <span class="ml-auto text-xs text-gray-400 dark:text-gray-500">Ctrl/⌘ + S 快速保存</span>
+              <span class="ml-auto text-xs text-text-quaternary">Ctrl/⌘ + S 快速保存</span>
             </div>
           </div>
         </VCard>
       </div>
     </div>
 
-    <!-- 新建/编辑笔记本弹窗 -->
+    <div v-if="menuOpenId !== null" class="fixed inset-0 z-10" @click="closeMenu" @scroll="closeMenu" />
+
     <VModal
       :visible="nbModalOpen"
       :title="nbModalMode === 'create' ? '新建笔记本' : '编辑笔记本'"
@@ -574,7 +711,6 @@ onMounted(() => {
       </template>
     </VModal>
 
-    <!-- 新建笔记弹窗 -->
     <VModal
       :visible="createNoteOpen"
       title="新建笔记"
@@ -584,7 +720,13 @@ onMounted(() => {
     >
       <div>
         <label :class="labelCls">标题</label>
-        <input v-model="createNoteTitle" :class="inputCls" placeholder="笔记标题" autofocus @keyup.enter="handleCreateNote" />
+        <input
+          v-model="createNoteTitle"
+          :class="inputCls"
+          placeholder="笔记标题"
+          autofocus
+          @keyup.enter="handleCreateNote"
+        />
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">

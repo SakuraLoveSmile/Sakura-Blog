@@ -14,13 +14,13 @@ const props = withDefaults(
 const dotColor = computed(() => {
   switch (props.state) {
     case "success":
-      return "#4ccba0";
+      return "var(--color-state-success)";
     case "warning":
-      return "#f59e0b";
+      return "var(--color-state-warning)";
     case "error":
-      return "#d71d1d";
+      return "var(--color-state-error)";
     default:
-      return "#9ca3af";
+      return "var(--color-text-tertiary)";
   }
 });
 </script>
@@ -35,6 +35,6 @@ const dotColor = computed(() => {
       ></span>
       <span :style="{ background: dotColor }" class="relative inline-flex h-2 w-2 rounded-full"></span>
     </span>
-    <span v-if="text" class="text-xs text-gray-500 dark:text-gray-400">{{ text }}</span>
+    <span v-if="text" class="text-xs" style="color: var(--color-text-tertiary);">{{ text }}</span>
   </div>
 </template>

@@ -5,14 +5,12 @@ import { queryKeys } from "@/api/query-client";
 import { attachmentApi, attachmentGroupApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import {
-  VPageHeader,
   VCard,
   VButton,
   VEmpty,
   VLoading,
   VPagination,
   VModal,
-  FilterDropdown,
   FilterTag,
   Dialog,
   Toast,
@@ -26,14 +24,22 @@ const debouncedKeyword = ref("");
 const page = ref(1);
 const size = ref(24);
 const uploading = ref(false);
-const kindFilter = ref<string | undefined>(undefined);
-const kindItems = [
-  { label: "全部", value: undefined },
-  { label: "仅图片", value: "image" },
-  { label: "非图片", value: "other" },
-];
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+// 视图：grid / list
+const viewMode = ref<"grid" | "list">("grid");
 
+// 类型分段筛选：all / image / document / video / audio / other
+type TypeFilter = "all" | "image" | "document" | "video" | "audio" | "other";
+const typeFilter = ref<TypeFilter>("all");
+const typeFilters: { key: TypeFilter; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "image", label: "图片" },
+  { key: "document", label: "文档" },
+  { key: "video", label: "视频" },
+  { key: "audio", label: "音频" },
+  { key: "other", label: "其他" },
+];
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 watch(keyword, () => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
@@ -43,7 +49,6 @@ watch(keyword, () => {
 });
 
 // --- 分组（Spec 44）---
-// activeGroup: undefined=全部；0=未分组；>0=指定分组
 const activeGroup = ref<number | undefined>(undefined);
 
 interface GroupItem {
@@ -77,7 +82,9 @@ const activeGroupName = computed(() => {
 const queryParams = computed(() => {
   const params: Record<string, unknown> = { page: page.value, size: size.value };
   if (debouncedKeyword.value.trim()) params.keyword = debouncedKeyword.value.trim();
-  if (kindFilter.value) params.kind = kindFilter.value;
+  // 保留后端 kind 过滤：image / other（仅图片 / 非图片），其他分段在前端过滤
+  if (typeFilter.value === "image") params.kind = "image";
+  else if (typeFilter.value !== "all") params.kind = "other";
   if (activeGroup.value !== undefined) params.group = activeGroup.value;
   return params;
 });
@@ -87,12 +94,37 @@ const { data: queryData, isLoading, refetch } = useQuery({
   queryFn: () => attachmentApi.list(queryParams.value).then(({ data }) => data),
 });
 
-const attachments = computed(() => queryData.value?.items || []);
+const attachments = computed<any[]>(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
 
-function handleFilterChange() {
-  page.value = 1;
+// 前端按 mime 精确分类（后端 kind 只区分 image/other，细分在前端完成）
+function categoryOf(mime: string): TypeFilter {
+  if (!mime) return "other";
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (
+    mime.startsWith("text/") ||
+    mime.includes("pdf") ||
+    mime.includes("word") ||
+    mime.includes("excel") ||
+    mime.includes("powerpoint") ||
+    mime.includes("document") ||
+    mime.includes("sheet") ||
+    mime.includes("presentation") ||
+    mime.includes("markdown") ||
+    mime.includes("json") ||
+    mime.includes("xml")
+  ) {
+    return "document";
+  }
+  return "other";
 }
+
+const displayedAttachments = computed(() => {
+  if (typeFilter.value === "all" || typeFilter.value === "image") return attachments.value;
+  return attachments.value.filter((a) => categoryOf(a.mime) === typeFilter.value);
+});
 
 function invalidateAll() {
   queryClient.invalidateQueries({ queryKey: ["attachments"] });
@@ -104,7 +136,6 @@ async function handleUpload(e: Event) {
   if (!input.files?.length) return;
   uploading.value = true;
   try {
-    // 归入当前浏览分组（仅当为自定义分组时）
     const gid = activeGroup.value && activeGroup.value > 0 ? activeGroup.value : undefined;
     await attachmentApi.upload(input.files[0], gid);
     invalidateAll();
@@ -171,17 +202,17 @@ function requestDeleteGroup(g: GroupItem) {
   });
 }
 
-// --- 多选批量移动（复用 PostList 多选模式）---
+// --- 多选批量移动 ---
 const selectedIds = ref<number[]>([]);
 const checkedAll = ref(false);
 
 watch(selectedIds, (val) => {
-  checkedAll.value = val.length === attachments.value.length && val.length > 0;
+  checkedAll.value = val.length === displayedAttachments.value.length && val.length > 0;
 });
 
 function handleCheckAllChange(e: Event) {
   const { checked } = e.target as HTMLInputElement;
-  selectedIds.value = checked ? attachments.value.map((a: any) => a.id) : [];
+  selectedIds.value = checked ? displayedAttachments.value.map((a: any) => a.id) : [];
 }
 
 function checkSelection(id: number) {
@@ -233,6 +264,19 @@ async function openDetail(att: any) {
   }
 }
 
+// 下载附件
+function handleDownload(att: any) {
+  if (!att?.url) return;
+  const a = document.createElement("a");
+  a.href = att.url;
+  a.download = att.filename || "";
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 // 删除（带引用警告）
 const deleteVisible = ref(false);
 const deleteTarget = ref<any | null>(null);
@@ -264,159 +308,384 @@ async function confirmDelete() {
 }
 
 function formatSize(bytes: number) {
+  if (!bytes) return "0 B";
+  if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + " GB";
   if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
-  return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes >= 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return bytes + " B";
 }
 
 function isImage(mime: string) {
   return mime?.startsWith("image/");
 }
 
-const kindLabel = ref("");
-watch(kindFilter, (v) => {
-  kindLabel.value = kindItems.find((i) => i.value === v)?.label || "";
+function isVideo(mime: string) {
+  return mime?.startsWith("video/");
+}
+
+// 文件扩展名（大写展示）
+function extOf(att: any): string {
+  const name: string = att?.filename || "";
+  const dot = name.lastIndexOf(".");
+  if (dot >= 0 && dot < name.length - 1) return name.slice(dot + 1).toUpperCase();
+  if (att?.mime) {
+    const sub = att.mime.split("/")[1];
+    return sub ? sub.toUpperCase().slice(0, 4) : "FILE";
+  }
+  return "FILE";
+}
+
+function formatRelative(s: string): string {
+  if (!s) return "";
+  const t = new Date(s).getTime();
+  if (isNaN(t)) return "";
+  const diff = Date.now() - t;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min} 分钟前`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour} 小时前`;
+  const day = Math.floor(hour / 24);
+  if (day < 30) return `${day} 天前`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `${month} 个月前`;
+  return new Date(s).toLocaleDateString();
+}
+
+// 渐变背景（按 id hash 取色，6 色循环）
+function previewGradient(id: number): string {
+  const palette = [
+    "linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%)",
+    "linear-gradient(135deg, #30D158 0%, #32ADE6 100%)",
+    "linear-gradient(135deg, #FF9F0A 0%, #FF453A 100%)",
+    "linear-gradient(135deg, #BF5AF2 0%, #FF375F 100%)",
+    "linear-gradient(135deg, #64D2FF 0%, #5E5CE6 100%)",
+    "linear-gradient(135deg, #FFD60A 0%, #FF9F0A 100%)",
+  ];
+  return palette[Math.abs(Number(id) || 0) % palette.length];
+}
+
+// --- 存储空间统计（基于当前页附件 computed 派生） ---
+type StorageCat = "image" | "document" | "video" | "audio" | "other";
+const STORAGE_META: Record<StorageCat, { label: string; color: string }> = {
+  image: { label: "图片", color: "#0A84FF" },
+  document: { label: "文档", color: "#30D158" },
+  video: { label: "视频", color: "#BF5AF2" },
+  audio: { label: "音频", color: "#FF9F0A" },
+  other: { label: "其他", color: "#8E8E93" },
+};
+
+const storageStats = computed(() => {
+  const buckets: Record<StorageCat, number> = {
+    image: 0,
+    document: 0,
+    video: 0,
+    audio: 0,
+    other: 0,
+  };
+  for (const a of attachments.value) {
+    const cat = categoryOf(a.mime) as StorageCat;
+    buckets[cat] += Number(a.size) || 0;
+  }
+  const total = Object.values(buckets).reduce((s, v) => s + v, 0);
+  // 估算总容量：已用的 4 倍，下限 1GB（无后端总容量字段时的占位）
+  const estimatedQuota = Math.max(total * 4, 1073741824);
+  return { buckets, total, quota: estimatedQuota };
 });
+
+const storagePercent = computed(() => {
+  const { total, quota } = storageStats.value;
+  if (!quota) return 0;
+  return Math.min(100, Math.round((total / quota) * 1000) / 10);
+});
+
+// 多色渐变进度条：按各分类占比分段
+const storageGradient = computed(() => {
+  const { buckets, total } = storageStats.value;
+  if (!total) return "var(--color-accent)";
+  const order: StorageCat[] = ["image", "document", "video", "audio", "other"];
+  let acc = 0;
+  const stops: string[] = [];
+  for (const cat of order) {
+    const v = buckets[cat];
+    if (!v) continue;
+    const start = (acc / total) * 100;
+    acc += v;
+    const end = (acc / total) * 100;
+    stops.push(`${STORAGE_META[cat].color} ${start.toFixed(2)}%, ${STORAGE_META[cat].color} ${end.toFixed(2)}%`);
+  }
+  return `linear-gradient(90deg, ${stops.join(", ")})`;
+});
+
+const storageBreakdown = computed(() => {
+  const { buckets, total } = storageStats.value;
+  const order: StorageCat[] = ["image", "document", "video", "audio", "other"];
+  return order
+    .map((cat) => ({
+      key: cat,
+      label: STORAGE_META[cat].label,
+      color: STORAGE_META[cat].color,
+      size: buckets[cat],
+      percent: total ? Math.round((buckets[cat] / total) * 1000) / 10 : 0,
+    }))
+    .filter((x) => x.size > 0);
+});
+
+function handleFilterChangeLocal() {
+  page.value = 1;
+  clearSelection();
+}
+
+function typeLabel(mime: string): string {
+  if (!mime) return "其他";
+  if (mime.startsWith("image/")) return "图片";
+  if (mime.startsWith("video/")) return "视频";
+  if (mime.startsWith("audio/")) return "音频";
+  if (
+    mime.startsWith("text/") ||
+    mime.includes("pdf") ||
+    mime.includes("word") ||
+    mime.includes("document")
+  ) {
+    return "文档";
+  }
+  return "其他";
+}
+
+function typePillStyle(mime: string) {
+  let color = "#8E8E93";
+  if (mime?.startsWith("image/")) color = "#0A84FF";
+  else if (mime?.startsWith("video/")) color = "#BF5AF2";
+  else if (mime?.startsWith("audio/")) color = "#FF9F0A";
+  else if (
+    mime?.startsWith("text/") ||
+    mime?.includes("pdf") ||
+    mime?.includes("document")
+  ) {
+    color = "#30D158";
+  }
+  return {
+    backgroundColor: `${color}1A`,
+    color,
+  };
+}
 </script>
 
 <template>
-  <div>
-    <VPageHeader title="附件">
-      <template #icon>
-        <Icon icon="ri:folder-2-line" class="mr-2 self-center text-xl" />
-      </template>
-      <template #actions>
-        <label class="inline-flex cursor-pointer items-center">
-          <VButton type="secondary" :loading="uploading" @click.prevent>
-            <template #icon>
-              <Icon icon="ri:upload-2-line" class="h-full w-full" />
-            </template>
-            上传{{ activeGroup && activeGroup > 0 ? `到「${activeGroupName}」` : "" }}
-          </VButton>
-          <input type="file" accept="image/*" class="hidden" :disabled="uploading" @change="handleUpload" />
-        </label>
-      </template>
-    </VPageHeader>
-
-    <div class="m-0 flex flex-col gap-4 md:m-4 md:flex-row">
-      <!-- 左侧分组栏 -->
-      <div class="w-full shrink-0 md:w-56">
-        <VCard :body-class="['!p-0']">
-          <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">分组</span>
-            <button
-              class="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-700"
-              title="新建分组"
-              @click="openCreateGroup"
-            >
-              <Icon icon="ri:add-line" />
-            </button>
-          </div>
-          <ul class="py-1 text-sm">
-            <li>
-              <button
-                class="flex w-full items-center justify-between px-4 py-2 text-left transition-colors"
-                :class="activeGroup === undefined ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'"
-                @click="selectGroup(undefined)"
-              >
-                <span class="flex items-center gap-2"><Icon icon="ri:apps-line" />全部</span>
-              </button>
-            </li>
-            <li>
-              <button
-                class="flex w-full items-center justify-between px-4 py-2 text-left transition-colors"
-                :class="activeGroup === 0 ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'"
-                @click="selectGroup(0)"
-              >
-                <span class="flex items-center gap-2"><Icon icon="ri:inbox-line" />未分组</span>
-              </button>
-            </li>
-            <li v-for="g in groups" :key="g.id" class="group/item">
-              <div
-                class="flex w-full items-center justify-between px-4 py-2 transition-colors"
-                :class="activeGroup === g.id ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'"
-              >
-                <button class="flex min-w-0 flex-1 items-center gap-2 text-left" @click="selectGroup(g.id)">
-                  <Icon icon="ri:folder-line" class="shrink-0" />
-                  <span class="truncate">{{ g.name }}</span>
-                  <span class="text-[10px] text-gray-400">{{ g.count }}</span>
-                </button>
-                <span class="ml-1 hidden shrink-0 gap-1 group-hover/item:flex">
-                  <button
-                    class="rounded p-0.5 text-gray-400 hover:text-primary"
-                    title="重命名"
-                    @click.stop="openRenameGroup(g)"
-                  ><Icon icon="ri:edit-line" class="text-xs" /></button>
-                  <button
-                    class="rounded p-0.5 text-gray-400 hover:text-red-500"
-                    title="删除"
-                    @click.stop="requestDeleteGroup(g)"
-                  ><Icon icon="ri:delete-bin-line" class="text-xs" /></button>
-                </span>
-              </div>
-            </li>
-          </ul>
-        </VCard>
+  <div class="attachments-page apple-ambient-glow min-h-full">
+    <!-- ===== Page Header ===== -->
+    <header class="attachments-page-header">
+      <div class="flex flex-col gap-1">
+        <h1 class="attachments-page-title">附件管理</h1>
+        <p class="attachments-page-subtitle">
+          共 {{ total }} 个文件 · 已使用 {{ formatSize(storageStats.total) }}
+        </p>
       </div>
+      <div class="flex items-center gap-2.5">
+        <label class="apple-upload-btn">
+          <span class="flex items-center gap-1.5">
+            <Icon icon="ri:upload-2-line" class="text-[15px]" />
+            <span>上传附件{{ activeGroup && activeGroup > 0 ? `到「${activeGroupName}」` : "" }}</span>
+          </span>
+          <input type="file" class="hidden" :disabled="uploading" @change="handleUpload" />
+        </label>
+      </div>
+    </header>
 
-      <!-- 右侧内容区 -->
-      <div class="min-w-0 flex-1">
-        <VCard :body-class="['!p-0']">
-          <!-- 筛选头部 -->
-          <template #header>
-            <div class="block w-full bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
-              <div class="relative flex flex-col items-start sm:flex-row sm:items-center">
-                <!-- 批量操作条 -->
-                <div v-if="selectedIds.length" class="flex w-full flex-1 items-center gap-3">
-                  <span class="text-sm text-gray-500 dark:text-gray-400">已选择 {{ selectedIds.length }} 项</span>
-                  <VButton size="sm" type="secondary" @click="moveVisible = true">
-                    <template #icon><Icon icon="ri:folder-transfer-line" class="h-full w-full" /></template>
-                    移动到分组
-                  </VButton>
-                  <button class="text-sm text-gray-400 hover:text-gray-600" @click="clearSelection">取消选择</button>
+    <!-- ===== Content Area ===== -->
+    <div class="attachments-content-area">
+      <div class="flex flex-col gap-4 lg:flex-row">
+        <!-- 左侧分组栏 -->
+        <aside class="w-full shrink-0 lg:w-56">
+          <VCard :body-class="['!p-0']">
+            <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+              <span class="text-[13px] font-semibold text-[var(--color-foreground)]">分组</span>
+              <button
+                class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                title="新建分组"
+                @click="openCreateGroup"
+              >
+                <Icon icon="ri:add-line" />
+              </button>
+            </div>
+            <ul class="py-1 text-[13px]">
+              <li>
+                <button
+                  class="group-sidebar-item"
+                  :class="{ active: activeGroup === undefined }"
+                  @click="selectGroup(undefined)"
+                >
+                  <span class="flex items-center gap-2">
+                    <Icon icon="ri:apps-line" />
+                    <span>全部</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="group-sidebar-item"
+                  :class="{ active: activeGroup === 0 }"
+                  @click="selectGroup(0)"
+                >
+                  <span class="flex items-center gap-2">
+                    <Icon icon="ri:inbox-line" />
+                    <span>未分组</span>
+                  </span>
+                </button>
+              </li>
+              <li v-for="g in groups" :key="g.id" class="group/item">
+                <div
+                  class="group-sidebar-item"
+                  :class="{ active: activeGroup === g.id }"
+                >
+                  <button class="flex min-w-0 flex-1 items-center gap-2 text-left" @click="selectGroup(g.id)">
+                    <Icon icon="ri:folder-line" class="shrink-0" />
+                    <span class="truncate">{{ g.name }}</span>
+                    <span class="ml-auto text-[10px] opacity-60">{{ g.count }}</span>
+                  </button>
+                  <span class="ml-1 hidden shrink-0 gap-0.5 group-hover/item:flex">
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                      title="重命名"
+                      @click.stop="openRenameGroup(g)"
+                    >
+                      <Icon icon="ri:edit-line" class="text-xs" />
+                    </button>
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-destructive)]"
+                      title="删除"
+                      @click.stop="requestDeleteGroup(g)"
+                    >
+                      <Icon icon="ri:delete-bin-line" class="text-xs" />
+                    </button>
+                  </span>
                 </div>
-                <!-- 常规筛选 -->
-                <div v-else class="flex w-full flex-1 items-center sm:w-auto">
-                  <div class="flex items-center gap-2">
-                    <input
-                      v-model="keyword"
-                      placeholder="搜索文件名..."
-                      type="text"
-                      class="w-48 rounded-base border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    />
-                    <FilterTag v-if="activeGroup !== undefined" @close="selectGroup(undefined)">
-                      分组：{{ activeGroupName }}
-                    </FilterTag>
-                    <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
-                    <FilterTag v-if="kindFilter !== undefined" @close="kindFilter = undefined; handleFilterChange()">
-                      类型：{{ kindLabel }}
-                    </FilterTag>
-                    <span class="text-xs text-gray-400 dark:text-gray-500">共 {{ total }} 项</span>
-                  </div>
-                </div>
-                <div class="mt-4 flex sm:mt-0">
-                  <div class="flex items-center gap-6">
-                    <FilterDropdown v-model="kindFilter" :items="kindItems" label="类型" @change="handleFilterChange" />
-                    <div class="group cursor-pointer rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600" @click="refetch()">
-                      <Icon
-                        icon="ri:refresh-line"
-                        :class="{ 'animate-spin text-gray-900 dark:text-gray-100': isLoading }"
-                        class="h-4 w-4 text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100"
-                      />
-                    </div>
-                  </div>
+              </li>
+            </ul>
+          </VCard>
+        </aside>
+
+        <!-- 右侧主内容 -->
+        <div class="min-w-0 flex-1">
+          <!-- 存储卡 -->
+          <div class="apple-card-highlight storage-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="storage-title">存储空间</div>
+                <div class="storage-info">
+                  已使用 <strong>{{ formatSize(storageStats.total) }}</strong>
+                  <span class="opacity-60"> / 估算 {{ formatSize(storageStats.quota) }} ({{ storagePercent }}%)</span>
                 </div>
               </div>
-              <!-- 全选行 -->
-              <div v-if="attachments.length" class="mt-3 flex items-center gap-2 border-t border-gray-200 pt-2 dark:border-gray-600">
-                <input type="checkbox" :checked="checkedAll" class="cursor-pointer" @change="handleCheckAllChange" />
-                <span class="text-xs text-gray-400 dark:text-gray-500">全选本页</span>
+              <div class="flex items-center gap-2">
+                <button
+                  class="apple-icon-btn"
+                  :class="{ active: isLoading }"
+                  title="刷新"
+                  @click="refetch()"
+                >
+                  <Icon icon="ri:refresh-line" :class="{ 'animate-spin': isLoading }" />
+                </button>
               </div>
             </div>
-          </template>
+            <div class="storage-progress">
+              <div
+                class="storage-progress-fill"
+                :style="{ width: storagePercent + '%', background: storageGradient }"
+              ></div>
+            </div>
+            <div class="storage-breakdown">
+              <div v-for="item in storageBreakdown" :key="item.key" class="storage-item">
+                <span class="storage-dot" :style="{ backgroundColor: item.color }"></span>
+                <span class="storage-label">
+                  <strong>{{ item.label }}</strong>
+                  {{ formatSize(item.size) }}
+                </span>
+              </div>
+              <div v-if="!storageBreakdown.length" class="storage-label">暂无数据</div>
+            </div>
+          </div>
+
+          <!-- 工具栏：分段筛选 + 视图切换 -->
+          <div class="attachments-toolbar">
+            <div class="apple-segmented" role="tablist" aria-label="附件类型筛选">
+              <button
+                v-for="f in typeFilters"
+                :key="f.key"
+                type="button"
+                role="tab"
+                :aria-selected="typeFilter === f.key"
+                :class="{ active: typeFilter === f.key }"
+                @click="typeFilter = f.key; page = 1; clearSelection()"
+              >
+                {{ f.label }}
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <!-- 胶囊搜索框 -->
+              <label class="apple-search apple-search-compact">
+                <Icon icon="ri:search-line" class="text-[15px] text-[var(--color-text-quaternary)]" />
+                <input v-model="keyword" placeholder="搜索附件..." type="text" />
+                <button
+                  v-if="keyword"
+                  type="button"
+                  class="flex h-4 w-4 items-center justify-center rounded-full text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
+                  @click="keyword = ''"
+                >
+                  <Icon icon="ri:close-line" class="text-xs" />
+                </button>
+              </label>
+
+              <!-- 视图切换 -->
+              <div class="apple-view-toggle">
+                <button
+                  type="button"
+                  title="网格视图"
+                  :class="{ active: viewMode === 'grid' }"
+                  @click="viewMode = 'grid'"
+                >
+                  <Icon icon="ri:grid-line" />
+                </button>
+                <button
+                  type="button"
+                  title="列表视图"
+                  :class="{ active: viewMode === 'list' }"
+                  @click="viewMode = 'list'"
+                >
+                  <Icon icon="ri:list-check-2" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 已选筛选标签 + 批量操作 -->
+          <div v-if="selectedIds.length || activeGroup !== undefined || keyword || typeFilter !== 'all'" class="mb-3 flex flex-wrap items-center gap-2">
+            <FilterTag v-if="activeGroup !== undefined" @close="selectGroup(undefined)">
+              分组：{{ activeGroupName }}
+            </FilterTag>
+            <FilterTag v-if="typeFilter !== 'all'" @close="typeFilter = 'all'; handleFilterChangeLocal()">
+              类型：{{ typeFilters.find((f) => f.key === typeFilter)?.label }}
+            </FilterTag>
+            <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
+            <template v-if="selectedIds.length">
+              <span class="text-[13px] text-[var(--color-text-tertiary)]">已选择 {{ selectedIds.length }} 项</span>
+              <VButton size="sm" type="secondary" @click="moveVisible = true">
+                <template #icon><Icon icon="ri:folder-transfer-line" class="h-full w-full" /></template>
+                移动到分组
+              </VButton>
+              <button
+                class="text-[13px] text-[var(--color-text-quaternary)] hover:text-[var(--color-text-tertiary)]"
+                @click="clearSelection"
+              >
+                取消选择
+              </button>
+            </template>
+          </div>
 
           <VLoading v-if="isLoading" />
 
-          <Transition v-else-if="!attachments.length" appear name="fade">
+          <Transition v-else-if="!displayedAttachments.length" appear name="fade">
             <VEmpty message="你可以尝试刷新或者上传附件" title="当前没有附件">
               <template #actions>
                 <VButton @click="refetch">刷新</VButton>
@@ -424,63 +693,175 @@ watch(kindFilter, (v) => {
             </VEmpty>
           </Transition>
 
-          <!-- Grid -->
-          <Transition v-else appear name="fade">
-            <div class="grid grid-cols-2 gap-4 p-4 md:grid-cols-4 lg:grid-cols-6">
+          <!-- ===== Grid View ===== -->
+          <Transition v-else-if="viewMode === 'grid'" appear name="fade">
+            <div class="attachment-grid">
               <div
-                v-for="att in attachments"
+                v-for="att in displayedAttachments"
                 :key="att.id"
-                class="group relative cursor-pointer overflow-hidden rounded-base border bg-white transition-shadow hover:shadow-md dark:bg-gray-800"
-                :class="checkSelection(att.id) ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 dark:border-gray-700'"
+                class="apple-card-highlight attachment-card"
+                :class="{ selected: checkSelection(att.id) }"
                 @click="openDetail(att)"
               >
-                <!-- 选择框 -->
-                <input
-                  type="checkbox"
-                  :checked="checkSelection(att.id)"
-                  class="absolute left-2 top-2 z-10 cursor-pointer"
-                  @click.stop="toggleSelection(att.id)"
-                />
-                <div class="flex aspect-square items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-700/50">
+                <div class="attachment-preview">
                   <img
-                    v-if="isImage(att.mime)"
+                    v-if="isImage(att.mime) && (att.thumb_url || att.url)"
                     :src="att.thumb_url || att.url"
                     :alt="att.filename"
-                    class="h-full w-full object-cover"
+                    class="attachment-preview-img"
                     loading="lazy"
                   />
-                  <div v-else class="flex flex-col items-center gap-1 text-gray-300 dark:text-gray-600">
-                    <Icon icon="ri:file-3-line" class="text-4xl" />
-                    <span class="text-[10px] uppercase">{{ att.mime?.split("/")[1] || "file" }}</span>
-                  </div>
-                </div>
-                <div class="p-2">
-                  <p class="truncate text-xs text-gray-600 dark:text-gray-300">{{ att.filename }}</p>
-                  <div class="mt-0.5 flex items-center gap-2">
-                    <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ formatSize(att.size) }}</span>
-                    <span v-if="att.width && att.height" class="text-[10px] text-gray-400 dark:text-gray-500">
-                      {{ att.width }}×{{ att.height }}
-                    </span>
-                  </div>
-                </div>
-                <div class="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
-                    @click.stop="requestDelete(att)"
+                  <div
+                    v-else
+                    class="attachment-preview-fallback"
+                    :style="{ background: previewGradient(att.id) }"
                   >
-                    <Icon icon="ri:delete-bin-line" />
-                  </button>
+                    <template v-if="isVideo(att.mime)">
+                      <div class="play-button">
+                        <Icon icon="ri:play-fill" />
+                      </div>
+                    </template>
+                    <template v-else>
+                      <Icon
+                        :icon="isImage(att.mime)
+                          ? 'ri:image-line'
+                          : att.mime?.startsWith('audio/')
+                            ? 'ri:music-2-line'
+                            : 'ri:file-3-line'"
+                        class="text-[40px] text-white/85"
+                      />
+                      <span class="preview-ext">{{ extOf(att) }}</span>
+                    </template>
+                  </div>
+
+                  <!-- 选择框 -->
+                  <input
+                    type="checkbox"
+                    :checked="checkSelection(att.id)"
+                    class="attachment-checkbox"
+                    @click.stop="toggleSelection(att.id)"
+                  />
+
+                  <!-- Hover 遮罩 -->
+                  <div class="attachment-hover-overlay" @click.stop>
+                    <button class="attachment-action" title="预览" @click="openDetail(att)">
+                      <Icon icon="ri:eye-line" />
+                    </button>
+                    <button class="attachment-action" title="下载" @click="handleDownload(att)">
+                      <Icon icon="ri:download-2-line" />
+                    </button>
+                    <button class="attachment-action delete" title="删除" @click="requestDelete(att)">
+                      <Icon icon="ri:delete-bin-line" />
+                    </button>
+                  </div>
+                </div>
+                <div class="attachment-info">
+                  <div class="attachment-name" :title="att.filename">{{ att.filename }}</div>
+                  <div class="attachment-meta">
+                    <span>{{ formatSize(att.size) }}</span>
+                    <span>{{ formatRelative(att.created_at) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </Transition>
 
-          <template #footer>
-            <div class="bg-white sm:flex sm:items-center sm:justify-end dark:bg-gray-800">
-              <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[24, 48, 96]" />
-            </div>
-          </template>
-        </VCard>
+          <!-- ===== List View ===== -->
+          <Transition v-else appear name="fade">
+            <VCard :body-class="['!p-0']">
+              <div class="attachment-list">
+                <div class="attachment-list-head">
+                  <span class="col-check">
+                    <input
+                      type="checkbox"
+                      :checked="checkedAll"
+                      class="cursor-pointer"
+                      @change="handleCheckAllChange"
+                    />
+                  </span>
+                  <span class="col-name">文件名</span>
+                  <span class="col-size">大小</span>
+                  <span class="col-type">类型</span>
+                  <span class="col-time">上传时间</span>
+                  <span class="col-actions"></span>
+                </div>
+                <div
+                  v-for="att in displayedAttachments"
+                  :key="att.id"
+                  class="attachment-list-row"
+                  :class="{ selected: checkSelection(att.id) }"
+                  @click="openDetail(att)"
+                >
+                  <span class="col-check" @click.stop>
+                    <input
+                      type="checkbox"
+                      :checked="checkSelection(att.id)"
+                      class="cursor-pointer"
+                      @change="toggleSelection(att.id)"
+                    />
+                  </span>
+                  <span class="col-name">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[var(--color-secondary)]">
+                      <img
+                        v-if="isImage(att.mime) && (att.thumb_url || att.url)"
+                        :src="att.thumb_url || att.url"
+                        :alt="att.filename"
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <Icon
+                        v-else
+                        :icon="isVideo(att.mime)
+                          ? 'ri:video-line'
+                          : att.mime?.startsWith('audio/')
+                            ? 'ri:music-2-line'
+                            : 'ri:file-3-line'"
+                        class="text-[18px] text-[var(--color-text-tertiary)]"
+                      />
+                    </span>
+                    <span class="truncate text-[13px] text-[var(--color-foreground)]" :title="att.filename">
+                      {{ att.filename }}
+                    </span>
+                  </span>
+                  <span class="col-size text-[12px] text-[var(--color-text-tertiary)]">{{ formatSize(att.size) }}</span>
+                  <span class="col-type text-[12px] text-[var(--color-text-tertiary)]">
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      :style="typePillStyle(att.mime)"
+                    >
+                      {{ typeLabel(att.mime) }}
+                    </span>
+                  </span>
+                  <span class="col-time text-[12px] text-[var(--color-text-tertiary)]">{{ formatRelative(att.created_at) }}</span>
+                  <span class="col-actions flex items-center gap-1" @click.stop>
+                    <button class="apple-icon-btn-sm" title="预览" @click="openDetail(att)">
+                      <Icon icon="ri:eye-line" />
+                    </button>
+                    <button class="apple-icon-btn-sm" title="下载" @click="handleDownload(att)">
+                      <Icon icon="ri:download-2-line" />
+                    </button>
+                    <button class="apple-icon-btn-sm danger" title="删除" @click="requestDelete(att)">
+                      <Icon icon="ri:delete-bin-line" />
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </VCard>
+          </Transition>
+
+          <!-- 分页 -->
+          <div
+            v-if="total > size"
+            class="mt-5 flex items-center justify-center border-t border-[var(--color-border)] pt-4"
+          >
+            <VPagination
+              v-model:page="page"
+              v-model:size="size"
+              :total="total"
+              :size-options="[24, 48, 96]"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -490,7 +871,7 @@ watch(kindFilter, (v) => {
         v-model="groupModalName"
         placeholder="分组名称"
         type="text"
-        class="w-full rounded-base border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+        class="apple-input"
         @keyup.enter="submitGroup"
       />
       <template #footer>
@@ -503,19 +884,23 @@ watch(kindFilter, (v) => {
 
     <!-- 批量移动到分组弹窗 -->
     <VModal v-model:visible="moveVisible" title="移动到分组" :width="380">
-      <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">将选中的 {{ selectedIds.length }} 项移动到：</p>
+      <p class="mb-3 text-[13px] text-[var(--color-text-tertiary)]">将选中的 {{ selectedIds.length }} 项移动到：</p>
       <ul class="space-y-1 text-sm">
         <li>
           <button
-            class="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)]"
             @click="moveTo(0)"
-          ><Icon icon="ri:inbox-line" />未分组</button>
+          >
+            <Icon icon="ri:inbox-line" />未分组
+          </button>
         </li>
         <li v-for="g in groups" :key="g.id">
           <button
-            class="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50"
+            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)]"
             @click="moveTo(g.id)"
-          ><Icon icon="ri:folder-line" />{{ g.name }}</button>
+          >
+            <Icon icon="ri:folder-line" />{{ g.name }}
+          </button>
         </li>
       </ul>
       <template #footer>
@@ -528,57 +913,57 @@ watch(kindFilter, (v) => {
     <!-- 详情弹窗 -->
     <VModal v-model:visible="detailVisible" :title="detailItem?.filename" :width="560">
       <template v-if="detailItem">
-        <div class="mb-4 overflow-hidden rounded-base bg-gray-50 dark:bg-gray-700/50">
+        <div class="mb-4 overflow-hidden rounded-[10px] bg-[var(--color-secondary)]">
           <img
             v-if="isImage(detailItem.mime)"
             :src="detailItem.url"
             :alt="detailItem.filename"
             class="max-h-64 w-full object-contain"
           />
-          <div v-else class="flex flex-col items-center py-12 text-gray-300 dark:text-gray-600">
+          <div v-else class="flex flex-col items-center py-12 text-[var(--color-text-quaternary)]">
             <Icon icon="ri:file-3-line" class="text-5xl" />
           </div>
         </div>
 
         <div class="mb-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span class="text-gray-400 dark:text-gray-500">格式：</span>
-            <span class="text-gray-700 dark:text-gray-300">{{ detailItem.mime }}</span>
+            <span class="text-[var(--color-text-quaternary)]">格式：</span>
+            <span class="text-[var(--color-text-secondary)]">{{ detailItem.mime }}</span>
           </div>
           <div>
-            <span class="text-gray-400 dark:text-gray-500">大小：</span>
-            <span class="text-gray-700 dark:text-gray-300">{{ formatSize(detailItem.size) }}</span>
+            <span class="text-[var(--color-text-quaternary)]">大小：</span>
+            <span class="text-[var(--color-text-secondary)]">{{ formatSize(detailItem.size) }}</span>
           </div>
           <div v-if="detailItem.width">
-            <span class="text-gray-400 dark:text-gray-500">尺寸：</span>
-            <span class="text-gray-700 dark:text-gray-300">{{ detailItem.width }}×{{ detailItem.height }} px</span>
+            <span class="text-[var(--color-text-quaternary)]">尺寸：</span>
+            <span class="text-[var(--color-text-secondary)]">{{ detailItem.width }}×{{ detailItem.height }} px</span>
           </div>
           <div>
-            <span class="text-gray-400 dark:text-gray-500">上传：</span>
-            <span class="text-gray-700 dark:text-gray-300">{{ new Date(detailItem.created_at).toLocaleDateString() }}</span>
+            <span class="text-[var(--color-text-quaternary)]">上传：</span>
+            <span class="text-[var(--color-text-secondary)]">{{ new Date(detailItem.created_at).toLocaleDateString() }}</span>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="mb-1 block text-xs text-gray-400 dark:text-gray-500">引用 URL</label>
+          <label class="mb-1 block text-xs text-[var(--color-text-quaternary)]">引用 URL</label>
           <code
-            class="block select-all break-all rounded-base bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300"
+            class="block select-all break-all rounded-[8px] bg-[var(--color-secondary)] px-3 py-2 text-xs text-[var(--color-text-tertiary)]"
           >{{ detailItem.url }}</code>
         </div>
 
         <div>
-          <label class="mb-1 block text-xs text-gray-400 dark:text-gray-500">
+          <label class="mb-1 block text-xs text-[var(--color-text-quaternary)]">
             引用来源
             <span v-if="refsLoading" class="ml-1">加载中...</span>
             <span v-else class="ml-1">({{ detailRefs.length }})</span>
           </label>
-          <div v-if="detailRefs.length === 0 && !refsLoading" class="py-2 text-xs text-gray-400 dark:text-gray-500">无引用</div>
+          <div v-if="detailRefs.length === 0 && !refsLoading" class="py-2 text-xs text-[var(--color-text-quaternary)]">无引用</div>
           <div v-else class="space-y-1.5">
             <div v-for="r in detailRefs" :key="r.type + r.slug" class="flex items-center gap-2 text-sm">
-              <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-gray-400" />
-              <span class="text-gray-600 dark:text-gray-300">{{ r.title || r.slug }}</span>
+              <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-[var(--color-text-quaternary)]" />
+              <span class="text-[var(--color-text-tertiary)]">{{ r.title || r.slug }}</span>
               <span
-                class="rounded-base bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-400 dark:bg-gray-700 dark:text-gray-500"
+                class="rounded-[6px] bg-[var(--color-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-quaternary)]"
               >{{ r.type === "post" ? "文章" : "页面" }}</span>
             </div>
           </div>
@@ -589,18 +974,18 @@ watch(kindFilter, (v) => {
     <!-- 删除确认弹窗 -->
     <VModal v-model:visible="deleteVisible" title="删除附件" :width="420">
       <template v-if="deleteTarget">
-        <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">
+        <p class="mb-3 text-[13px] text-[var(--color-text-tertiary)]">
           确定删除「{{ deleteTarget.filename }}」？此操作不可恢复。
         </p>
-        <div v-if="deleteRefsLoading" class="mb-3 text-xs text-gray-400">检查引用中...</div>
+        <div v-if="deleteRefsLoading" class="mb-3 text-xs text-[var(--color-text-quaternary)]">检查引用中...</div>
         <div
           v-else-if="deleteRefs.length > 0"
-          class="mb-3 rounded-base border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10"
+          class="mb-3 rounded-[10px] border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/10 p-3"
         >
-          <p class="mb-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+          <p class="mb-1.5 text-xs font-medium text-[var(--color-destructive)]">
             <Icon icon="ri:alert-line" class="mr-1 inline" />该附件被 {{ deleteRefs.length }} 处引用，删除后将导致裂图：
           </p>
-          <ul class="space-y-0.5 text-xs text-red-500 dark:text-red-400">
+          <ul class="space-y-0.5 text-xs text-[var(--color-destructive)]/90">
             <li v-for="r in deleteRefs" :key="r.type + r.slug">
               · {{ r.title || r.slug }}（{{ r.type === "post" ? "文章" : "页面" }}）
             </li>
@@ -625,5 +1010,473 @@ watch(kindFilter, (v) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* ===== Page Header ===== */
+.attachments-page {
+  min-height: 100%;
+  background-color: var(--color-background);
+}
+.attachments-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 22px 28px 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 80%, transparent 100%);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.attachments-page-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+  color: #fff;
+  margin: 0;
+}
+.attachments-page-subtitle {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+.attachments-content-area {
+  padding: 8px 28px 40px;
+}
+
+/* 上传按钮 */
+.apple-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3), 0 1px 2px rgba(10, 132, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.apple-upload-btn:hover {
+  background-color: #1a8fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+}
+.apple-upload-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Sidebar group item ===== */
+.group-sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 14px;
+  margin: 1px 8px;
+  border-radius: 9px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.group-sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-foreground);
+}
+.group-sidebar-item.active {
+  background-color: rgba(10, 132, 255, 0.12);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ===== Storage Card ===== */
+.storage-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.storage-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+.storage-info {
+  font-size: 12.5px;
+  color: var(--color-text-tertiary);
+  margin-top: 3px;
+}
+.storage-info strong {
+  color: #fff;
+  font-weight: 600;
+}
+.storage-progress {
+  width: 100%;
+  height: 8px;
+  background-color: var(--color-accent);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.storage-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.storage-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.storage-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.storage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.storage-label {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+.storage-label strong {
+  color: rgba(245, 245, 247, 0.88);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ===== Toolbar ===== */
+.attachments-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.apple-search-compact {
+  height: 34px;
+  width: 220px;
+  padding: 0 12px;
+}
+
+/* 视图切换 */
+.apple-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  padding: 3px;
+  gap: 2px;
+}
+.apple-view-toggle button {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  transition: all 0.18s ease;
+}
+.apple-view-toggle button:hover {
+  color: #fff;
+}
+.apple-view-toggle button.active {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+.apple-view-toggle :deep(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+/* Icon button (storage refresh) */
+.apple-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-tertiary);
+  transition: all 0.18s ease;
+}
+.apple-icon-btn:hover {
+  background-color: var(--color-secondary);
+  color: #fff;
+  border-color: var(--color-border-strong, var(--color-border));
+}
+.apple-icon-btn :deep(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== Attachment Grid ===== */
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1200px) {
+  .attachment-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .attachment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .attachment-grid {
+    grid-template-columns: 1fr;
+  }
+  .apple-search-compact {
+    width: 100%;
+  }
+}
+
+.attachment-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  position: relative;
+  cursor: pointer;
+}
+.attachment-card:hover {
+  border-color: rgba(84, 84, 88, 0.55);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+}
+.attachment-card.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.25);
+}
+.attachment-preview {
+  aspect-ratio: 4 / 3;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-secondary);
+}
+.attachment-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.attachment-preview-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.preview-ext {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+.play-button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.play-button :deep(svg) {
+  width: 22px;
+  height: 22px;
+}
+
+.attachment-checkbox {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 4;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.attachment-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 3;
+}
+.attachment-card:hover .attachment-hover-overlay {
+  opacity: 1;
+}
+.attachment-action {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.attachment-action:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.08);
+}
+.attachment-action.delete:hover {
+  background: rgba(255, 69, 58, 0.35);
+  border-color: rgba(255, 69, 58, 0.5);
+}
+.attachment-action :deep(svg) {
+  width: 18px;
+  height: 18px;
+}
+
+.attachment-info {
+  padding: 12px 14px 14px;
+}
+.attachment-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.attachment-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+/* ===== Attachment List ===== */
+.attachment-list {
+  width: 100%;
+}
+.attachment-list-head,
+.attachment-list-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 100px 90px 130px 130px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.attachment-list-head {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-secondary);
+}
+.attachment-list-row {
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.attachment-list-row:last-child {
+  border-bottom: none;
+}
+.attachment-list-row:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.attachment-list-row.selected {
+  background-color: rgba(10, 132, 255, 0.08);
+}
+.col-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.col-actions {
+  justify-content: flex-end;
+}
+.apple-icon-btn-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  transition: all 0.15s ease;
+}
+.apple-icon-btn-sm:hover {
+  background-color: var(--color-accent);
+  color: var(--color-foreground);
+}
+.apple-icon-btn-sm.danger:hover {
+  background-color: rgba(255, 69, 58, 0.15);
+  color: var(--color-destructive);
+}
+.apple-icon-btn-sm :deep(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 900px) {
+  .attachment-list-head,
+  .attachment-list-row {
+    grid-template-columns: 32px minmax(0, 1fr) 80px 100px;
+  }
+  .col-type,
+  .col-time,
+  .col-actions {
+    display: none;
+  }
 }
 </style>

@@ -45,16 +45,10 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
   transition: all 0.15s ease;
 }
 .entity-wrapper:hover {
-  background: #f9fafb;
-}
-.dark .entity-wrapper:hover {
-  background: rgb(55 65 81 / 0.3);
+  background: rgba(255, 255, 255, 0.03);
 }
 .entity-wrapper.entity-selected {
-  background: #f3f4f6;
-}
-.dark .entity-wrapper.entity-selected {
-  background: rgb(55 65 81 / 0.5);
+  background: var(--color-secondary);
 }
 
 .entity-start-wrapper,
@@ -70,7 +64,7 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
   bottom: 0;
   left: 0;
   width: 2px;
-  background: #4ccba0;
+  background: var(--color-primary);
 }
 
 .entity-checkbox {
