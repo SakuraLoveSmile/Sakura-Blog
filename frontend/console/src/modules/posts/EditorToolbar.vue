@@ -177,7 +177,6 @@ const bubbleSrcdoc = computed(() => {
 const btnBase =
   "flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground";
 const btnActive = "bg-primary text-white hover:bg-primary hover:text-white";
-const iconBtnCls = btnBase;
 </script>
 
 <template>
