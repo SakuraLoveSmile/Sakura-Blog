@@ -1,40 +1,99 @@
 @import "tailwindcss";
 @import "./custom-theme.css";
+@import "./apple-base.css";
 @plugin "tailwindcss-animated";
 
-/* 设计令牌：全站仅深色模式（保持绿色主色 #4ccba0，参考 shadcn/Halo 语义化分层） */
+/* Apple Dark Mode 设计令牌（参照 resource/design/设计稿 原型） */
 @theme {
-  --color-primary: #4ccba0;
+  /* 品牌色 */
+  --color-primary: #0A84FF;
+  --color-primary-hover: #409CFF;
+  --color-primary-active: #0062CC;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #0e1731;
-  --color-secondary-700: #1a2a5c;
-  --color-background: #0b0e14;
-  --color-foreground: #e7ebf3;
-  --color-card: #141821;
-  --color-card-foreground: #e7ebf3;
-  --color-popover: #1a1f2b;
-  --color-popover-foreground: #e7ebf3;
-  --color-muted: #1a1f2b;
-  --color-muted-foreground: #94a3b8;
-  --color-border: #252b39;
-  --color-input: #252b39;
-  --color-ring: #4ccba0;
-  --color-chart-1: #4ccba0;
-  --color-chart-2: #5b8def;
-  --color-chart-grid: #1f2533;
-  --color-state-success: #22c55e;
-  --color-state-warning: #f59e0b;
-  --color-state-error: #ef4444;
-  --radius-base: 4px;
+
+  /* 背景层级（Apple Dark Hierarchy） */
+  --color-background: #000000;
+  --color-foreground: #f5f5f7;
+  --color-card: #1c1c1e;
+  --color-card-foreground: #f5f5f7;
+  --color-popover: #1c1c1e;
+  --color-popover-foreground: #f5f5f7;
+  --color-secondary: #2c2c2e;
+  --color-secondary-700: #3a3a3c;
+  --color-muted: #2c2c2e;
+  --color-muted-foreground: #8e8e93;
+  --color-accent: #3a3a3c;
+  --color-accent-foreground: #f5f5f7;
+
+  /* 文字层级 */
+  --color-text-secondary: #c7c7cc;
+  --color-text-tertiary: #8e8e93;
+  --color-text-quaternary: #6e6e73;
+
+  /* 系统色 */
+  --color-state-success: #30D158;
+  --color-state-warning: #FF9F0A;
+  --color-state-error: #FF453A;
+  --color-system-purple: #BF5AF2;
+  --color-system-pink: #FF375F;
+  --color-system-indigo: #5E5CE6;
+  --color-system-teal: #32ADE6;
+  --color-system-cyan: #64D2FF;
+  --color-system-yellow: #FFD60A;
+
+  /* 边框 / 输入 */
+  --color-border: rgba(84, 84, 88, 0.35);
+  --color-border-strong: rgba(84, 84, 88, 0.6);
+  --color-input: #2c2c2e;
+  --color-ring: #0A84FF;
+
+  /* 侧边栏 */
+  --color-sidebar: rgba(28, 28, 30, 0.85);
+  --color-sidebar-foreground: #f5f5f7;
+  --color-sidebar-accent: rgba(58, 58, 60, 0.6);
+
+  /* 图表 */
+  --color-chart-1: #0A84FF;
+  --color-chart-2: #BF5AF2;
+  --color-chart-grid: #2c2c2e;
+
+  /* 圆角 */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-base: 10px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Monaco", "Consolas", monospace;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.50), 0 2px 4px -2px rgba(0, 0, 0, 0.40);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.60), 0 4px 12px -4px rgba(0, 0, 0, 0.50);
+  --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.70), 0 8px 16px -6px rgba(0, 0, 0, 0.55);
+  --shadow-glow-blue: 0 0 24px rgba(10, 132, 255, 0.25);
+  --shadow-glow-green: 0 0 24px rgba(48, 209, 88, 0.25);
 }
 
-/* 保留 dark: 变体机制：<html> 恒挂 .dark 类（index.html 静态声明），
-   既有组件中的 dark: 工具类继续生效（与基础令牌同值，不产生视觉差异）。 */
+/* 全站仅深色模式：<html> 恒挂 .dark（index.html 静态声明），
+   dark: 变体保留兼容，但基础值已写深色，不再需要浅色回退。 */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  /* 让原生控件（复选框、下拉、日期选择器、滚动条等）跟随深色外观 */
   html {
     color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
