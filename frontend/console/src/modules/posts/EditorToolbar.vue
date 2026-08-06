@@ -58,6 +58,14 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
  { value:"preview", icon:"ri:eye-line", title:"仅预览" },
 ];
 
+// 格式化按钮按设计稿分组（组间左边框分隔）
+const formatGroupText = ["bold","italic","strike","heading"];
+const formatGroupInsert = ["link","quote","code","codeblock"];
+const formatGroupList = ["ul","ol","table"];
+function toolsById(ids: string[]) {
+ return formatTools.filter((t) => ids.includes(t.id));
+}
+
 // ---------- 「+」插入下拉：Stellar 标签插件，悬停出预览气泡 ----------
 
 const insertOpen = ref(false);
@@ -165,178 +173,196 @@ const bubbleSrcdoc = computed(() => {
 </html>`;
 });
 
-const iconBtnCls =
-"p-1.5 rounded-md text-text-tertiary hover:text-foreground hover:bg-accent transition-colors";
+// 工具栏按钮统一样式（Apple 风：32px、8px 圆角、hover 浅底、激活蓝底白字）
+const btnBase =
+  "flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground";
+const btnActive = "bg-primary text-white hover:bg-primary hover:text-white";
+const iconBtnCls = btnBase;
 </script>
 
 <template>
- <div
- class="flex flex-wrap items-center gap-0.5 border border-border rounded-xl bg-card px-2 py-1.5"
- >
- <!-- 「+」插入下拉（Stellar 标签插件；与工具栏同风格的方形图标按钮） -->
- <div ref="dropdownRef" class="relative">
- <button
- type="button"
- title="插入 Stellar 标签"
- :class="[
- 'p-1.5 rounded-md transition-colors',
- insertOpen
- ? 'bg-accent text-foreground'
- : 'text-text-tertiary hover:text-foreground hover:bg-accent',
- ]"
- @click="toggleInsert"
- >
- <Icon icon="ri:add-line" class="text-lg" />
- </button>
+  <div
+    class="flex flex-wrap items-center gap-0 px-4 py-2"
+  >
+    <!-- 分组 1：插入 Stellar 标签 -->
+    <div class="flex items-center gap-0.5 px-1.5">
+      <div ref="dropdownRef" class="relative">
+        <button
+          type="button"
+          title="插入 Stellar 标签"
+          :class="[
+            btnBase,
+            insertOpen ? btnActive : '',
+          ]"
+          @click="toggleInsert"
+        >
+          <Icon icon="ri:add-line" class="text-lg" />
+        </button>
 
- <div
- v-if="insertOpen"
- class="absolute left-0 top-full z-30 mt-1 flex items-start"
- >
- <!-- 菜单（对照 Halo 插入菜单：icon + 文字列表） -->
- <div
- class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg"
- >
- <template v-for="group in groupedPlugins" :key="group.cat">
- <div class="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] text-text-quaternary">
- <Icon :icon="categoryIcons[group.cat] || 'ri:puzzle-line'" />
- {{ group.cat }}
- </div>
- <button
- v-for="p in group.items"
- :key="p.name"
- type="button"
- class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-text-secondary transition-colors hover:bg-accent"
- @click="insertPlugin(p)"
- @mouseenter="onItemEnter(p, $event)"
- @mouseleave="onItemLeave"
- >
- <span class="flex-1 truncate">{{ p.title }}</span>
- <code class="text-[10px] text-text-quaternary">{{ p.name }}</code>
- </button>
- </template>
- </div>
+        <div
+          v-if="insertOpen"
+          class="absolute left-0 top-full z-30 mt-1 flex items-start"
+        >
+          <div
+            class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg"
+          >
+            <template v-for="group in groupedPlugins" :key="group.cat">
+              <div class="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] text-text-quaternary">
+                <Icon :icon="categoryIcons[group.cat] || 'ri:puzzle-line'" />
+                {{ group.cat }}
+              </div>
+              <button
+                v-for="p in group.items"
+                :key="p.name"
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-text-secondary transition-colors hover:bg-accent"
+                @click="insertPlugin(p)"
+                @mouseenter="onItemEnter(p, $event)"
+                @mouseleave="onItemLeave"
+              >
+                <span class="flex-1 truncate">{{ p.title }}</span>
+                <code class="text-[10px] text-text-quaternary">{{ p.name }}</code>
+              </button>
+            </template>
+          </div>
 
- <!-- 悬停预览气泡（右侧弹出，iframe 渲染前台真实效果） -->
- <div
- v-if="bubblePlugin"
- class="ml-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-xl"
- :style="{ marginTop: bubbleTop + 'px' }"
- >
- <div class="flex items-center justify-between border-b border-border px-3 py-1.5">
- <span class="text-xs font-medium text-text-secondary">{{ bubblePlugin.title }} 预览</span>
- <span v-if="bubbleLoading" class="text-[10px] text-text-quaternary">渲染中…</span>
- </div>
- <iframe
- v-if="bubbleHtml"
- :srcdoc="bubbleSrcdoc"
- class="block w-full border-0 bg-card"
- style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto;"
- sandbox="allow-same-origin allow-scripts"
- title="标签预览"
- ></iframe>
- <p v-else class="px-3 py-6 text-center text-xs text-text-quaternary">渲染中…</p>
- </div>
- </div>
- </div>
+          <div
+            v-if="bubblePlugin"
+            class="ml-2 w-80 overflow-hidden rounded-lg border border-border bg-card shadow-xl"
+            :style="{ marginTop: bubbleTop + 'px' }"
+          >
+            <div class="flex items-center justify-between border-b border-border px-3 py-1.5">
+              <span class="text-xs font-medium text-text-secondary">{{ bubblePlugin.title }} 预览</span>
+              <span v-if="bubbleLoading" class="text-[10px] text-text-quaternary">渲染中…</span>
+            </div>
+            <iframe
+              v-if="bubbleHtml"
+              :srcdoc="bubbleSrcdoc"
+              class="block w-full border-0 bg-card"
+              style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto;"
+              sandbox="allow-same-origin allow-scripts"
+              title="标签预览"
+            ></iframe>
+            <p v-else class="px-3 py-6 text-center text-xs text-text-quaternary">渲染中…</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
- <span class="mx-1 h-5 w-px bg-border"></span>
+    <!-- 分组 2：文本格式（粗体/斜体/删除线/标题） -->
+    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+      <button
+        v-for="tool in toolsById(formatGroupText)"
+        :key="tool.id"
+        type="button"
+        :title="tool.title"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        @click="emit('format', tool.id)"
+      >
+        <Icon :icon="tool.icon" class="text-lg" />
+      </button>
+    </div>
 
- <!-- 格式化按钮组（语义化 format 事件；命中态高亮） -->
- <button
- v-for="tool in formatTools"
- :key="tool.id"
- type="button"
- :title="tool.title"
- :class="[
- 'p-1.5 rounded-md transition-colors',
- props.activeStates?.[tool.id]
- ? 'bg-accent text-primary'
- : 'text-text-tertiary hover:text-foreground hover:bg-accent',
- ]"
- @click="emit('format', tool.id)"
- >
- <Icon :icon="tool.icon" class="text-lg" />
- </button>
+    <!-- 分组 3：链接/图片/代码/引用 -->
+    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+      <button
+        v-for="tool in toolsById(formatGroupInsert)"
+        :key="tool.id"
+        type="button"
+        :title="tool.title"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        @click="emit('format', tool.id)"
+      >
+        <Icon :icon="tool.icon" class="text-lg" />
+      </button>
+      <button type="button" title="上传图片" :class="btnBase" @click="emit('upload')">
+        <Icon icon="ri:image-add-line" class="text-lg" />
+      </button>
+      <button type="button" title="从图床选择" :class="btnBase" @click="emit('pick')">
+        <Icon icon="ri:gallery-line" class="text-lg" />
+      </button>
+    </div>
 
- <span class="mx-1 h-5 w-px bg-border"></span>
+    <!-- 分组 4：列表/表格 -->
+    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+      <button
+        v-for="tool in toolsById(formatGroupList)"
+        :key="tool.id"
+        type="button"
+        :title="tool.title"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        @click="emit('format', tool.id)"
+      >
+        <Icon :icon="tool.icon" class="text-lg" />
+      </button>
+    </div>
 
- <button type="button" title="上传图片" :class="iconBtnCls" @click="emit('upload')">
- <Icon icon="ri:image-add-line" class="text-lg" />
- </button>
- <button type="button" title="从图床选择" :class="iconBtnCls" @click="emit('pick')">
- <Icon icon="ri:gallery-line" class="text-lg" />
- </button>
+    <span class="flex-1"></span>
 
- <span class="flex-1"></span>
+    <!-- 分组 5：AI / 预览 / 版本 / 全屏 -->
+    <div class="flex items-center gap-0.5 px-1.5">
+      <button
+        type="button"
+        title="AI 属性生成"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-system-indigo transition-colors hover:bg-secondary"
+        @click="emit('openAi')"
+      >
+        <Icon icon="ri:sparkling-2-line" class="text-lg" />
+      </button>
+      <button type="button" title="发布前预览" :class="btnBase" @click="emit('preview')">
+        <Icon icon="ri:eye-line" class="text-lg" />
+      </button>
+      <button
+        v-if="props.isEdit"
+        type="button"
+        title="版本历史"
+        :class="btnBase"
+        @click="emit('openRevision')"
+      >
+        <Icon icon="ri:history-line" class="text-lg" />
+      </button>
+      <button
+        type="button"
+        :title="props.fullscreen ? '退出全屏' : '全屏编辑'"
+        :class="[btnBase, props.fullscreen ? btnActive : '']"
+        @click="emit('toggleFullscreen')"
+      >
+        <Icon :icon="props.fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="text-lg" />
+      </button>
+    </div>
 
- <!-- AI 属性生成 -->
- <button
- type="button"
- title="AI 属性生成"
- class="p-1.5 rounded-md text-system-indigo hover:bg-accent transition-colors"
- @click="emit('openAi')"
- >
- <Icon icon="ri:sparkling-2-line" class="text-lg" />
- </button>
+    <!-- 编辑 / 分屏 / 预览 三态切换（仅 Markdown 模式） -->
+    <div
+      v-if="props.kind === 'markdown'"
+      class="ml-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5"
+    >
+      <button
+        v-for="btn in modeButtons"
+        :key="btn.value"
+        type="button"
+        :title="btn.title"
+        :class="[
+          'flex h-7 items-center justify-center rounded-md px-2.5 text-base transition-colors',
+          props.mode === btn.value
+            ? 'bg-card text-primary shadow-sm'
+            : 'text-text-tertiary hover:text-foreground',
+        ]"
+        @click="emit('update:mode', btn.value)"
+      >
+        <Icon :icon="btn.icon" />
+      </button>
+    </div>
 
- <!-- 预览（新标签页前台渲染） -->
- <button type="button" title="发布前预览" :class="iconBtnCls" @click="emit('preview')">
- <Icon icon="ri:eye-line" class="text-lg" />
- </button>
-
- <!-- 版本历史（仅编辑态，仅图标） -->
- <button v-if="props.isEdit" type="button" title="版本历史" :class="iconBtnCls" @click="emit('openRevision')">
- <Icon icon="ri:history-line" class="text-lg" />
- </button>
-
- <!-- 全屏编辑 -->
- <button
- type="button"
- :title="props.fullscreen ? '退出全屏' : '全屏编辑'"
- :class="[
- 'p-1.5 rounded-md transition-colors',
- props.fullscreen
- ? 'bg-accent text-foreground'
- : 'text-text-tertiary hover:text-foreground hover:bg-accent',
- ]"
- @click="emit('toggleFullscreen')"
- >
- <Icon :icon="props.fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="text-lg" />
- </button>
-
- <!-- 编辑 / 分屏 / 预览 三态切换（仅 Markdown 模式；富文本本身即所见即得） -->
- <div v-if="props.kind === 'markdown'" class="mx-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5">
- <button
- v-for="btn in modeButtons"
- :key="btn.value"
- type="button"
- :title="btn.title"
- :class="[
- 'p-1.5 rounded-md text-base transition-colors',
- props.mode === btn.value
- ? 'bg-card text-primary shadow-sm'
- : 'text-text-tertiary hover:text-foreground',
- ]"
- @click="emit('update:mode', btn.value)"
- >
- <Icon :icon="btn.icon" />
- </button>
- </div>
-
- <!-- 右侧面板开关（对照 Halo 工具栏最右图标） -->
- <button
- type="button"
- :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
- :class="[
- 'p-1.5 rounded-md transition-colors',
- props.sidebarOpen
- ? 'bg-accent text-foreground'
- : 'text-text-tertiary hover:text-foreground hover:bg-accent',
- ]"
- @click="emit('toggleSidebar')"
- >
- <Icon icon="ri:layout-right-line" class="text-lg" />
- </button>
- </div>
+    <!-- 右侧面板开关 -->
+    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+      <button
+        type="button"
+        :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
+        :class="[btnBase, props.sidebarOpen ? btnActive : '']"
+        @click="emit('toggleSidebar')"
+      >
+        <Icon icon="ri:layout-right-line" class="text-lg" />
+      </button>
+    </div>
+  </div>
 </template>

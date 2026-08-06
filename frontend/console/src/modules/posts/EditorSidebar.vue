@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from"vue";
 import { Icon } from"@iconify/vue";
 import { previewApi, settingsApi, postApi, aiApi } from"@/api";
 import PluginParamForm from"@/modules/plugins/PluginParamForm.vue";
-import { VButton, Toast } from"@/components/ui";
+import { VButton, VSwitch, Toast } from"@/components/ui";
 import {
  plugins,
  PLUGIN_CATEGORIES,
@@ -274,259 +274,312 @@ async function generateAiSummary() {
  }
 }
 
-const fieldCls ="apple-input";
-const textareaCls ="apple-textarea";
-const selectCls ="apple-select";
-const labelCls ="block text-xs text-text-tertiary mb-1";
+const fieldCls = "apple-input";
+const textareaCls = "apple-textarea";
+const selectCls = "apple-select";
+const labelCls = "mb-1.5 block text-[12.5px] font-medium text-text-secondary";
+const cardCls = "rounded-[14px] border border-border bg-card";
+const cardHeaderCls =
+ "px-4 pb-3 pt-3.5 text-[11px] font-semibold uppercase tracking-[0.6px] text-text-tertiary";
+const cardBodyCls = "px-4 pb-4";
 const chipCls =
-"px-2 py-0.5 text-xs rounded-full bg-secondary text-text-secondary transition-colors hover:bg-primary/15 hover:text-primary";
+ "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors";
+const chipIdleCls = "bg-secondary text-text-secondary hover:bg-accent";
+const chipActiveCls = "bg-primary/15 text-primary";
 </script>
 
 <template>
- <div class="flex flex-col rounded-xl border border-border bg-card lg:max-h-[calc(100vh-2rem)]">
- <!-- Tab 切换（对照 Halo 分段控件） -->
- <div class="p-2">
- <div class="grid grid-cols-2 gap-0.5 rounded-lg bg-secondary p-0.5">
- <button
- v-for="tab in [
- { key: 'outline', label: '大纲' },
- { key: 'detail', label: '详情' },
- ]"
- :key="tab.key"
- type="button"
- :class="[
- 'rounded-md py-1.5 text-sm transition-colors',
- activeTab === tab.key
- ? 'bg-card font-medium text-foreground shadow-sm'
- : 'text-text-tertiary hover:text-foreground',
- ]"
- @click="activeTab = tab.key as 'outline' | 'detail'"
- >
- {{ tab.label }}
- </button>
- </div>
- </div>
+  <div class="flex flex-col gap-3">
+    <!-- Tab 切换（大纲 / 设置） -->
+    <div :class="cardCls">
+      <div class="p-1.5">
+        <div class="grid grid-cols-2 gap-0.5 rounded-lg bg-secondary p-0.5">
+          <button
+            v-for="tab in [
+              { key: 'outline', label: '大纲' },
+              { key: 'detail', label: '设置' },
+            ]"
+            :key="tab.key"
+            type="button"
+            :class="[
+              'rounded-md py-1.5 text-[13px] transition-colors',
+              activeTab === tab.key
+                ? 'bg-card font-medium text-foreground shadow-sm'
+                : 'text-text-tertiary hover:text-foreground',
+            ]"
+            @click="activeTab = tab.key as 'outline' | 'detail'"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
+    </div>
 
- <!-- 大纲 -->
- <div v-if="activeTab === 'outline'" class="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
- <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">暂无大纲</p>
- <ul v-else class="space-y-0.5">
- <li v-for="(item, i) in outline" :key="i">
- <button
- type="button"
- class="block w-full truncate rounded px-2 py-1.5 text-left text-sm text-text-secondary transition-colors hover:bg-accent hover:text-foreground"
- :style="{ paddingLeft: 8 + (item.level - minLevel) * 14 + 'px' }"
- :title="item.text"
- @click="emit('jump', item.line, i)"
- >
- {{ item.text }}
- </button>
- </li>
- </ul>
- </div>
+    <!-- 大纲 -->
+    <div v-if="activeTab === 'outline'" :class="cardCls">
+      <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+        <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">暂无大纲</p>
+        <ul v-else class="space-y-0.5">
+          <li v-for="(item, i) in outline" :key="i">
+            <button
+              type="button"
+              class="block w-full truncate rounded-md px-2 py-1.5 text-left text-[13px] text-text-secondary transition-colors hover:bg-accent hover:text-foreground"
+              :style="{ paddingLeft: 8 + (item.level - minLevel) * 14 + 'px' }"
+              :title="item.text"
+              @click="emit('jump', item.line, i)"
+            >
+              {{ item.text }}
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
 
- <!-- 详情（原右栏设置合并） -->
- <div v-else class="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4">
- <!-- 发布设置 -->
- <section class="space-y-3">
- <h4 class="flex items-center gap-1.5 text-xs font-medium text-text-quaternary">
- <Icon icon="ri:settings-3-line" />发布设置
- </h4>
- <div>
- <label :class="labelCls">别名 (Slug)</label>
- <input v-model="form.slug" :class="fieldCls" @input="emit('slugEdited')" />
- <p class="mt-1 text-xs text-text-quaternary">用于文章 URL，留空保存时从标题自动生成</p>
- </div>
- <!-- 作者选择（Spec 38 Wave 5）：authors 为空时不渲染 -->
- <div v-if="Object.keys(authorOptions).length">
- <label :class="labelCls">作者</label>
- <select v-model="form.author" :class="selectCls">
- <option value="">默认（站长）</option>
- <option v-for="(info, id) in authorOptions" :key="id" :value="id">{{ info.name }}</option>
- </select>
- </div>
- <div class="flex items-center gap-2">
- <input id="pinned" v-model="form.pinned" type="checkbox" class="rounded" />
- <label for="pinned" class="text-sm text-text-secondary">置顶</label>
- </div>
- <div>
- <label :class="labelCls">定时发布</label>
- <input v-model="form.publish_at" type="datetime-local" :class="fieldCls" />
- </div>
- </section>
+    <!-- 设置：四张卡片 -->
+    <template v-else>
+      <!-- 卡片 1：发布设置 -->
+      <div :class="cardCls">
+        <div :class="cardHeaderCls">发布设置</div>
+        <div :class="cardBodyCls + ' space-y-3.5'">
+          <div>
+            <label :class="labelCls">别名 (Slug)</label>
+            <input v-model="form.slug" :class="fieldCls" @input="emit('slugEdited')" />
+            <p class="mt-1 text-[11px] text-text-quaternary">用于文章 URL，留空保存时从标题自动生成</p>
+          </div>
+          <div v-if="Object.keys(authorOptions).length">
+            <label :class="labelCls">作者</label>
+            <select v-model="form.author" :class="selectCls">
+              <option value="">默认（站长）</option>
+              <option v-for="(info, id) in authorOptions" :key="id" :value="id">{{ info.name }}</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between py-0.5">
+            <div>
+              <div class="text-[13px] font-medium text-foreground">置顶</div>
+              <div class="mt-0.5 text-[11px] text-text-tertiary">在文章列表顶部显示</div>
+            </div>
+            <VSwitch v-model="form.pinned" />
+          </div>
+          <div>
+            <label :class="labelCls">定时发布</label>
+            <input v-model="form.publish_at" type="datetime-local" :class="fieldCls" />
+          </div>
+          <div>
+            <label :class="labelCls">阅读密码</label>
+            <input v-model="form.password" type="password" :class="fieldCls" />
+          </div>
+        </div>
+      </div>
 
- <!-- 分类与标签 -->
- <section class="space-y-3 border-t border-border pt-4">
- <h4 class="flex items-center gap-1.5 text-xs font-medium text-text-quaternary">
- <Icon icon="ri:price-tag-3-line" />分类与标签
- </h4>
- <div>
- <label :class="labelCls">分类</label>
- <input v-model="form.category" :class="fieldCls" />
- <div v-if="categories.length" class="mt-1.5 flex flex-wrap gap-1">
- <button
- v-for="c in categories"
- :key="c"
- type="button"
- :class="[chipCls, form.category === c && '!bg-primary/20 !text-primary']"
- @click="pickCategory(c)"
- >{{ c }}</button>
- </div>
- </div>
- <div>
- <label :class="labelCls">专栏</label>
- <input v-model="form.topic" :class="fieldCls" />
- </div>
- <div>
- <label :class="labelCls">标签（逗号分隔）</label>
- <input v-model="form.tags" :class="fieldCls" />
- <div v-if="tags.length" class="mt-1.5 flex flex-wrap gap-1">
- <button v-for="t in tags" :key="t" type="button" :class="chipCls" @click="pickTag(t)">{{ t }}</button>
- </div>
- </div>
- </section>
+      <!-- 卡片 2：分类与标签 -->
+      <div :class="cardCls">
+        <div :class="cardHeaderCls">分类与标签</div>
+        <div :class="cardBodyCls + ' space-y-3.5'">
+          <div>
+            <label :class="labelCls">分类</label>
+            <input v-model="form.category" :class="fieldCls" />
+            <div v-if="categories.length" class="mt-2 flex flex-wrap gap-1.5">
+              <button
+                v-for="c in categories"
+                :key="c"
+                type="button"
+                :class="[chipCls, form.category === c ? chipActiveCls : chipIdleCls]"
+                @click="pickCategory(c)"
+              >{{ c }}</button>
+            </div>
+          </div>
+          <div>
+            <label :class="labelCls">专栏</label>
+            <input v-model="form.topic" :class="fieldCls" />
+          </div>
+          <div>
+            <label :class="labelCls">标签（逗号分隔）</label>
+            <input v-model="form.tags" :class="fieldCls" />
+            <div v-if="tags.length" class="mt-2 flex flex-wrap gap-1.5">
+              <button
+                v-for="t in tags"
+                :key="t"
+                type="button"
+                :class="[chipCls, form.tags.split(/[,，]/).map((s) => s.trim()).includes(t) ? chipActiveCls : chipIdleCls]"
+                @click="pickTag(t)"
+              >{{ t }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
- <!-- 其他 -->
- <section class="space-y-3 border-t border-border pt-4">
- <h4 class="flex items-center gap-1.5 text-xs font-medium text-text-quaternary">
- <Icon icon="ri:more-line" />其他
- </h4>
- <div>
- <label :class="labelCls">摘要</label>
- <textarea v-model="form.excerpt" rows="3" :class="textareaCls + ' resize-y'"></textarea>
- </div>
- <!-- AI 文章摘要（Spec 53）：前台文章顶部导读；手动编辑或 AI 生成，独立端点保存 -->
- <div>
- <label :class="labelCls">AI 摘要（前台导读）</label>
- <textarea
- :value="aiSummary"
- rows="4"
- :class="textareaCls + ' resize-y'"
- placeholder="后台预生成的导读摘要，前台文章顶部展示；可手动编辑或用 AI 生成"
- @input="emit('update:aiSummary', ($event.target as HTMLTextAreaElement).value)"
- ></textarea>
- <div class="mt-1.5 flex items-center gap-1.5">
- <button
- type="button"
- class="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:bg-accent disabled:opacity-50"
- :disabled="aiGenerating"
- @click="generateAiSummary"
- >{{ aiGenerating ?"生成中…" :"AI 生成" }}</button>
- <button
- type="button"
- class="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:bg-accent disabled:opacity-50"
- :disabled="aiSaving"
- @click="saveAiSummary"
- >{{ aiSaving ?"保存中…" :"保存摘要" }}</button>
- <button
- v-if="aiSummary"
- type="button"
- class="rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-quaternary hover:bg-accent"
- :disabled="aiSaving"
- @click="clearAiSummary"
- >清空</button>
- </div>
- <p class="mt-1 text-xs text-text-quaternary">AI 未配置时生成不可用（设置 → AI）；读者也可在前台用自己的 API 临时生成</p>
- </div>
- <div>
- <label :class="labelCls">封面 URL</label>
- <div class="flex gap-1.5">
- <input v-model="form.cover" :class="fieldCls + ' flex-1 min-w-0'" />
- <button
- type="button"
- title="从图床选择"
- class="shrink-0 rounded-lg border border-border px-2.5 py-2 text-xs text-text-secondary hover:bg-accent"
- @click="emit('openCoverPicker')"
- >选择</button>
- <button
- type="button"
- title="随机封面图（picsum.photos）"
- class="shrink-0 rounded-lg border border-border px-2.5 py-2 text-xs text-text-secondary hover:bg-accent"
- @click="fetchRandomCover"
- >随机</button>
- </div>
- </div>
- <div>
- <label :class="labelCls">阅读密码</label>
- <input v-model="form.password" type="password" :class="fieldCls" />
- </div>
- <!-- 文章级 SEO（Spec 42）：留空回退站点默认/摘要 -->
- <div>
- <label :class="labelCls">Meta Description</label>
- <textarea v-model="form.meta_description" rows="3" :class="textareaCls + ' resize-y'"></textarea>
- <p class="mt-1 text-xs text-text-quaternary">留空时依次回退：站点默认 description → 文章摘要</p>
- </div>
- <div>
- <label :class="labelCls">Meta Keywords（逗号分隔）</label>
- <input v-model="form.meta_keywords" :class="fieldCls" />
- <p class="mt-1 text-xs text-text-quaternary">留空时使用站点默认 keywords</p>
- </div>
- </section>
+      <!-- 卡片 3：封面设置 -->
+      <div :class="cardCls">
+        <div :class="cardHeaderCls">封面设置</div>
+        <div :class="cardBodyCls + ' space-y-3'">
+          <!-- 封面预览 16:9 深色渐变 -->
+          <div
+            class="relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
+            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);"
+          >
+            <div
+              class="pointer-events-none absolute inset-0"
+              style="background: radial-gradient(circle at 30% 30%, rgba(10,132,255,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 70%, rgba(191,90,242,0.12) 0%, transparent 50%);"
+            ></div>
+            <template v-if="form.cover">
+              <img :src="form.cover" alt="封面预览" class="relative z-10 h-full w-full object-cover" />
+            </template>
+            <template v-else>
+              <Icon
+                icon="ri:image-line"
+                class="relative z-10 text-[36px] text-text-tertiary"
+              />
+              <div class="relative z-10 text-[12px] text-text-tertiary">点击上传封面图片</div>
+            </template>
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-secondary px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent"
+              @click="emit('openCoverPicker')"
+            >
+              <Icon icon="ri:upload-2-line" class="text-[13px]" />
+              上传图片
+            </button>
+            <button
+              type="button"
+              class="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-secondary px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent"
+              @click="fetchRandomCover"
+            >随机</button>
+            <button
+              v-if="form.cover"
+              type="button"
+              class="inline-flex h-8 items-center justify-center rounded-lg px-3 text-[12.5px] transition-colors"
+              style="color: var(--color-state-error); border: 1px solid rgba(255,69,58,0.25);"
+              @click="form.cover = ''"
+            >移除</button>
+          </div>
+          <div>
+            <label :class="labelCls">封面 URL</label>
+            <input v-model="form.cover" :class="fieldCls" />
+          </div>
+        </div>
+      </div>
 
- <!-- 标签插件参数面板（精细调参用；快捷插入走工具栏「+」） -->
- <section class="space-y-3 border-t border-border pt-4">
- <h4 class="flex items-center gap-1.5 text-xs font-medium text-text-quaternary">
- <Icon icon="ri:puzzle-line" />标签插件
- </h4>
- <div class="flex flex-wrap gap-1">
- <button
- type="button"
- :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === '全部' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-text-secondary hover:bg-accent']"
- @click="pluginCat = '全部'"
- >全部</button>
- <button
- v-for="c in PLUGIN_CATEGORIES"
- :key="c"
- type="button"
- :class="['px-2 py-0.5 text-xs rounded-full transition-colors', pluginCat === c ? 'bg-primary text-primary-foreground' : 'bg-secondary text-text-secondary hover:bg-accent']"
- @click="pluginCat = c"
- >{{ c }}</button>
- </div>
- <select
- :value="selectedPlugin?.name"
- :class="selectCls"
- @change="selectPlugin(plugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
- >
- <option :value="undefined" disabled>选择插件…</option>
- <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>
- </select>
+      <!-- 卡片 4：高级选项 -->
+      <div :class="cardCls">
+        <div :class="cardHeaderCls">高级选项</div>
+        <div :class="cardBodyCls + ' space-y-3.5'">
+          <div>
+            <label :class="labelCls">摘要</label>
+            <textarea v-model="form.excerpt" rows="3" :class="textareaCls + ' resize-y'"></textarea>
+          </div>
+          <!-- AI 文章摘要（Spec 53） -->
+          <div>
+            <label :class="labelCls">AI 摘要（前台导读）</label>
+            <textarea
+              :value="aiSummary"
+              rows="4"
+              :class="textareaCls + ' resize-y'"
+              placeholder="后台预生成的导读摘要，前台文章顶部展示；可手动编辑或用 AI 生成"
+              @input="emit('update:aiSummary', ($event.target as HTMLTextAreaElement).value)"
+            ></textarea>
+            <div class="mt-2 flex items-center gap-1.5">
+              <button
+                type="button"
+                class="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-xs text-text-secondary transition-colors hover:bg-accent disabled:opacity-50"
+                :disabled="aiGenerating"
+                @click="generateAiSummary"
+              >{{ aiGenerating ? "生成中…" : "AI 生成" }}</button>
+              <button
+                type="button"
+                class="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-xs text-text-secondary transition-colors hover:bg-accent disabled:opacity-50"
+                :disabled="aiSaving"
+                @click="saveAiSummary"
+              >{{ aiSaving ? "保存中…" : "保存摘要" }}</button>
+              <button
+                v-if="aiSummary"
+                type="button"
+                class="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-xs text-text-quaternary transition-colors hover:bg-accent"
+                :disabled="aiSaving"
+                @click="clearAiSummary"
+              >清空</button>
+            </div>
+            <p class="mt-1 text-[11px] text-text-quaternary">AI 未配置时生成不可用（设置 → AI）；读者也可在前台用自己的 API 临时生成</p>
+          </div>
+          <!-- SEO -->
+          <div>
+            <label :class="labelCls">Meta Description</label>
+            <textarea v-model="form.meta_description" rows="3" :class="textareaCls + ' resize-y'"></textarea>
+            <p class="mt-1 text-[11px] text-text-quaternary">留空时依次回退：站点默认 description → 文章摘要</p>
+          </div>
+          <div>
+            <label :class="labelCls">Meta Keywords（逗号分隔）</label>
+            <input v-model="form.meta_keywords" :class="fieldCls" />
+            <p class="mt-1 text-[11px] text-text-quaternary">留空时使用站点默认 keywords</p>
+          </div>
+        </div>
+      </div>
 
- <div v-if="selectedPlugin" class="space-y-3">
- <PluginParamForm
- v-if="selectedPlugin.form"
- :plugin="selectedPlugin"
- :model-value="pluginCode"
- @update:model-value="onPluginCode"
- />
- <div v-else>
- <label :class="labelCls">示例（可编辑）</label>
- <textarea
- v-model="pluginCode"
- rows="4"
- spellcheck="false"
- :class="textareaCls + ' resize-y font-mono text-xs leading-relaxed'"
- @input="schedulePluginPreview()"
- ></textarea>
- </div>
+      <!-- 标签插件参数面板（折叠为独立卡片） -->
+      <div :class="cardCls">
+        <div :class="cardHeaderCls">标签插件</div>
+        <div :class="cardBodyCls + ' space-y-3'">
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              :class="[chipCls, pluginCat === '全部' ? chipActiveCls : chipIdleCls]"
+              @click="pluginCat = '全部'"
+            >全部</button>
+            <button
+              v-for="c in PLUGIN_CATEGORIES"
+              :key="c"
+              type="button"
+              :class="[chipCls, pluginCat === c ? chipActiveCls : chipIdleCls]"
+              @click="pluginCat = c"
+            >{{ c }}</button>
+          </div>
+          <select
+            :value="selectedPlugin?.name"
+            :class="selectCls"
+            @change="selectPlugin(plugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
+          >
+            <option :value="undefined" disabled>选择插件…</option>
+            <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>
+          </select>
 
- <div>
- <label :class="labelCls">预览<span v-if="pluginRendering" class="ml-1 text-text-quaternary">渲染中…</span></label>
- <div class="overflow-hidden rounded-lg border border-border">
- <iframe
- v-if="pluginPreviewHtml"
- :srcdoc="pluginSrcdoc"
- class="w-full border-0"
- style="min-height: 200px; max-height: 400px; resize: vertical; overflow: auto;"
- sandbox="allow-same-origin allow-scripts"
- ></iframe>
- <p v-else class="px-3 py-4 text-center text-xs text-text-quaternary">填写参数后预览</p>
- </div>
- </div>
+          <div v-if="selectedPlugin" class="space-y-3">
+            <PluginParamForm
+              v-if="selectedPlugin.form"
+              :plugin="selectedPlugin"
+              :model-value="pluginCode"
+              @update:model-value="onPluginCode"
+            />
+            <div v-else>
+              <label :class="labelCls">示例（可编辑）</label>
+              <textarea
+                v-model="pluginCode"
+                rows="4"
+                spellcheck="false"
+                :class="textareaCls + ' resize-y font-mono text-xs leading-relaxed'"
+                @input="schedulePluginPreview()"
+              ></textarea>
+            </div>
 
- <VButton type="secondary" block :disabled="!pluginCode" @click="insertPlugin">插入到正文</VButton>
- </div>
- <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
- </section>
- </div>
- </div>
+            <div>
+              <label :class="labelCls">预览<span v-if="pluginRendering" class="ml-1 text-text-quaternary">渲染中…</span></label>
+              <div class="overflow-hidden rounded-lg border border-border">
+                <iframe
+                  v-if="pluginPreviewHtml"
+                  :srcdoc="pluginSrcdoc"
+                  class="w-full border-0"
+                  style="min-height: 200px; max-height: 400px; resize: vertical; overflow: auto;"
+                  sandbox="allow-same-origin allow-scripts"
+                ></iframe>
+                <p v-else class="px-3 py-4 text-center text-xs text-text-quaternary">填写参数后预览</p>
+              </div>
+            </div>
+
+            <VButton type="secondary" block :disabled="!pluginCode" @click="insertPlugin">插入到正文</VButton>
+          </div>
+          <p v-else class="text-xs text-text-quaternary">选择插件后可编辑参数并插入正文。</p>
+        </div>
+      </div>
+    </template>
+  </div>
 </template>

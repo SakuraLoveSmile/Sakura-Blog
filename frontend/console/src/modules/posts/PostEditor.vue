@@ -10,7 +10,7 @@ import EditorSidebar from"./EditorSidebar.vue";
 import AiGenerateModal from"./AiGenerateModal.vue";
 import RevisionPanel from"./RevisionPanel.vue";
 import { Icon } from"@iconify/vue";
-import { VPageHeader, VButton, Toast, Dialog } from"@/components/ui";
+import { Toast, Dialog } from"@/components/ui";
 
 // 文章编辑器：Halo 式三栏布局——顶部全宽工具栏 + 左侧主编辑区 + 右侧大纲/详情面板。
 // 双编辑器模式：默认富文本所见即得（TipTap），可切 Markdown 分屏兑底；
@@ -365,159 +365,217 @@ function handleDiscardDraft() {
 </script>
 
 <template>
- <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-background': fullscreen }">
- <VPageHeader :title="isEdit ? '编辑文章' : '新建文章'">
- <template #icon>
- <Icon icon="ri:book-read-line" class="mr-2 self-center text-xl" />
- </template>
- <template #actions>
- <div class="flex items-center gap-2">
- <!-- 编辑器选择（富文本/Markdown）：Halo 风轻量胶囊下拉 -->
- <div class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-[var(--color-border-strong)]">
- <Icon icon="ri:edit-box-line" class="text-base text-text-quaternary" />
- <select
- :value="editorKind"
- @change="onEditorKindSelect"
- class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
- title="切换编辑器"
- >
- <option value="rich">富文本编辑器</option>
- <option value="markdown">Markdown 编辑器</option>
- </select>
- <Icon icon="ri:arrow-down-s-line" class="pointer-events-none absolute right-1.5 text-base text-text-quaternary" />
- </div>
- <!-- Markdown 模式下的视图三态切换（与工具栏同步） -->
- <div v-if="editorKind === 'markdown'" class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary">
- <select
- :value="editorMode"
- @change="onEditorModeSelect"
- class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
- title="切换视图模式"
- >
- <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
- </select>
- <Icon icon="ri:arrow-down-s-line" class="pointer-events-none absolute right-1.5 text-base text-text-quaternary" />
- </div>
- <VButton @click="router.push('/posts')">取消</VButton>
- <VButton :loading="saving" @click="handleSave">
- <template #icon>
- <Icon icon="ri:save-line" class="h-full w-full" />
- </template>
- 保存
- </VButton>
- <VButton type="secondary" :loading="publishing" @click="handlePublish">
- <template #icon>
- <Icon icon="ri:send-plane-fill" class="h-full w-full" />
- </template>
- 发布
- </VButton>
- </div>
- </template>
- </VPageHeader>
+  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-background': fullscreen }">
+    <!-- 紧凑 sticky 毛玻璃页头 -->
+    <header
+      class="sticky top-0 z-50 flex items-center gap-4 px-7 py-3"
+      style="background: rgba(0,0,0,0.75); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--color-border);"
+    >
+      <button
+        type="button"
+        title="返回"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+        @click="router.push('/posts')"
+      >
+        <Icon icon="ri:arrow-left-s-line" class="text-2xl" />
+      </button>
+      <h1 class="text-[17px] font-semibold tracking-tight text-foreground">
+        {{ isEdit ? '编辑文章' : '新建文章' }}
+      </h1>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-2">
+        <!-- 编辑器选择（富文本/Markdown） -->
+        <div
+          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-[var(--color-border-strong)]"
+        >
+          <Icon icon="ri:edit-box-line" class="text-base text-text-quaternary" />
+          <select
+            :value="editorKind"
+            @change="onEditorKindSelect"
+            class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+            title="切换编辑器"
+          >
+            <option value="rich">富文本编辑器</option>
+            <option value="markdown">Markdown 编辑器</option>
+          </select>
+          <Icon
+            icon="ri:arrow-down-s-line"
+            class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
+          />
+        </div>
+        <!-- Markdown 模式下的视图三态切换（与工具栏同步） -->
+        <div
+          v-if="editorKind === 'markdown'"
+          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary"
+        >
+          <select
+            :value="editorMode"
+            @change="onEditorModeSelect"
+            class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+            title="切换视图模式"
+          >
+            <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
+          </select>
+          <Icon
+            icon="ri:arrow-down-s-line"
+            class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
+          />
+        </div>
+        <!-- 预览（ghost） -->
+        <button
+          type="button"
+          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-foreground"
+          :disabled="previewing"
+          @click="handlePreview"
+        >
+          <Icon icon="ri:eye-line" class="text-[15px]" />
+          预览
+        </button>
+        <!-- 保存草稿（secondary） -->
+        <button
+          type="button"
+          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] border border-border bg-secondary px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+          :disabled="saving"
+          @click="handleSave"
+        >
+          <Icon icon="ri:save-line" class="text-[15px]" />
+          {{ saving ? '保存中…' : '保存草稿' }}
+        </button>
+        <!-- 发布（primary） -->
+        <button
+          type="button"
+          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] px-4 text-[13px] font-semibold text-white transition-all"
+          style="background: var(--color-primary); box-shadow: 0 0 24px rgba(10,132,255,0.2);"
+          :disabled="publishing"
+          @click="handlePublish"
+        >
+          <Icon icon="ri:send-plane-fill" class="text-[15px]" />
+          {{ publishing ? '发布中…' : '发布' }}
+        </button>
+      </div>
+    </header>
 
- <!-- 草稿头条幅：已发布文章存在已保存未发布的内容 -->
- <div
- v-if="hasDraft && isPublishedPost"
- class="mx-0 mt-4 flex items-center justify-between gap-3 rounded-base border border-green-500/20 bg-green-500/10 px-4 py-2 text-sm text-green-400 md:mx-4"
- >
- <span class="flex items-center gap-2">
- <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
- 当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。
- </span>
- <button
- class="shrink-0 text-xs text-green-400 underline hover:text-green-300"
- @click="handleDiscardDraft"
- >
- 放弃草稿
- </button>
- </div>
+    <!-- 草稿头条幅：令牌化绿色提示条 -->
+    <div
+      v-if="hasDraft && isPublishedPost"
+      class="mx-7 mt-4 flex items-center justify-between gap-3 rounded-lg px-4 py-2 text-sm"
+      style="background: rgba(48,209,88,0.12); color: #30D158; border: 1px solid rgba(48,209,88,0.2);"
+    >
+      <span class="flex items-center gap-2">
+        <span class="inline-block h-1.5 w-1.5 rounded-full" style="background: #30D158;"></span>
+        当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。
+      </span>
+      <button
+        class="shrink-0 text-xs underline opacity-80 transition-opacity hover:opacity-100"
+        @click="handleDiscardDraft"
+      >
+        放弃草稿
+      </button>
+    </div>
 
- <div class="m-0 space-y-4 md:m-4">
- <!-- 顶部全宽工具栏（Halo 式） -->
- <EditorToolbar
- :kind="editorKind"
- :mode="editorMode"
- :sidebar-open="sidebarOpen"
- :is-edit="isEdit"
- :fullscreen="fullscreen"
- :active-states="toolbarActive"
- @format="onFormat"
- @insert="onInsert"
- @upload="onUpload"
- @pick="onPick"
- @update:mode="setEditorMode"
- @toggle-sidebar="toggleSidebar"
- @open-ai="aiOpen = true"
- @preview="handlePreview"
- @toggle-fullscreen="toggleFullscreen"
- @open-revision="revisionOpen = true"
- />
+    <!-- 编辑区：左右两栏（左自适应 + 右 320px） -->
+    <div class="flex gap-6 px-7 py-6">
+      <!-- 左侧自适应编辑区 -->
+      <div class="flex min-w-0 flex-1 flex-col">
+        <!-- 标题区 -->
+        <div
+          class="rounded-t-[14px] border border-b-0 border-border bg-card px-9 pb-5 pt-7"
+        >
+          <input
+            v-model="form.title"
+            placeholder="文章标题"
+            class="w-full border-0 bg-transparent text-[28px] font-bold leading-tight tracking-tight text-foreground outline-none placeholder:text-text-quaternary placeholder:font-semibold"
+            style="font-size: 28px;"
+          />
+        </div>
 
- <!-- 主编辑区 + 右侧面板 -->
- <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
- <div class="min-w-0 flex-1 space-y-4">
- <input
- v-model="form.title"
- placeholder="文章标题"
- class="apple-input w-full px-4 py-3 text-lg font-medium rounded-xl"
- />
- <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
- <RichTextEditor
- v-if="editorKind === 'rich'"
- ref="richRef"
- v-model="form.content_md"
- :storage-key="'post:' + (slug || 'new')"
- @save="handleSave"
- />
- <MarkdownEditor
- v-else
- ref="editorRef"
- v-model="form.content_md"
- :toolbar="false"
- :storage-key="'post:' + (slug || 'new')"
- @save="handleSave"
- @mode-change="(m: any) => (editorMode = m)"
- />
- </div>
+        <!-- 工具栏（独立卡片条） -->
+        <div class="border border-b-0 border-border bg-card">
+          <EditorToolbar
+            :kind="editorKind"
+            :mode="editorMode"
+            :sidebar-open="sidebarOpen"
+            :is-edit="isEdit"
+            :fullscreen="fullscreen"
+            :active-states="toolbarActive"
+            @format="onFormat"
+            @insert="onInsert"
+            @upload="onUpload"
+            @pick="onPick"
+            @update:mode="setEditorMode"
+            @toggle-sidebar="toggleSidebar"
+            @open-ai="aiOpen = true"
+            @preview="handlePreview"
+            @toggle-fullscreen="toggleFullscreen"
+            @open-revision="revisionOpen = true"
+          />
+        </div>
 
- <!-- 右侧大纲/详情面板（工具栏按钮控制收起） -->
- <div
- v-show="sidebarOpen"
- class="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-80 xl:w-96"
- >
- <EditorSidebar
- :form="form"
- :categories="categories"
- :tags="tags"
- :ai-summary="aiSummary"
- @jump="onJump"
- @insert="onInsert"
- @open-cover-picker="coverPickerOpen = true"
- @slug-edited="slugManuallyEdited = true"
- @update:ai-summary="aiSummary = $event"
- />
- </div>
- </div>
- </div>
+        <!-- 编辑器内核（不改） -->
+        <div class="rounded-b-[14px] border border-border bg-card">
+          <RichTextEditor
+            v-if="editorKind === 'rich'"
+            ref="richRef"
+            v-model="form.content_md"
+            :storage-key="'post:' + (slug || 'new')"
+            class="!border-0"
+            @save="handleSave"
+          />
+          <MarkdownEditor
+            v-else
+            ref="editorRef"
+            v-model="form.content_md"
+            :toolbar="false"
+            :storage-key="'post:' + (slug || 'new')"
+            class="!border-0"
+            @save="handleSave"
+            @mode-change="(m: any) => (editorMode = m)"
+          />
+        </div>
+      </div>
 
- <AttachmentPickerModal :open="coverPickerOpen" @select="(url: string) => { form.cover = url; coverPickerOpen = false; }" @close="coverPickerOpen = false" />
+      <!-- 右侧 320px 固定设置面板 -->
+      <div
+        v-show="sidebarOpen"
+        class="sticky top-[72px] w-80 shrink-0"
+        style="max-height: calc(100vh - 88px); overflow-y: auto;"
+      >
+        <EditorSidebar
+          :form="form"
+          :categories="categories"
+          :tags="tags"
+          :ai-summary="aiSummary"
+          @jump="onJump"
+          @insert="onInsert"
+          @open-cover-picker="coverPickerOpen = true"
+          @slug-edited="slugManuallyEdited = true"
+          @update:ai-summary="aiSummary = $event"
+        />
+      </div>
+    </div>
 
- <AiGenerateModal
- :open="aiOpen"
- :form="form"
- :categories="categories"
- :tags="tags"
- @close="aiOpen = false"
- @apply="applyAi"
- />
+    <AttachmentPickerModal
+      :open="coverPickerOpen"
+      @select="(url: string) => { form.cover = url; coverPickerOpen = false; }"
+      @close="coverPickerOpen = false"
+    />
 
- <RevisionPanel
- :open="revisionOpen"
- :slug="slug"
- :current-content="form.content_md"
- :current-word-count="currentWordCount"
- @close="revisionOpen = false"
- @restored="handleRestored"
- />
- </div>
+    <AiGenerateModal
+      :open="aiOpen"
+      :form="form"
+      :categories="categories"
+      :tags="tags"
+      @close="aiOpen = false"
+      @apply="applyAi"
+    />
+
+    <RevisionPanel
+      :open="revisionOpen"
+      :slug="slug"
+      :current-content="form.content_md"
+      :current-word-count="currentWordCount"
+      @close="revisionOpen = false"
+      @restored="handleRestored"
+    />
+  </div>
 </template>

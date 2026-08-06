@@ -186,6 +186,17 @@ select {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
 }
+.apple-textarea.code-style {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: #0f0f10;
+  border-color: var(--color-border-strong, var(--color-border));
+  color: #e5e5e7;
+}
+.apple-textarea.code-style::placeholder {
+  color: rgba(142, 142, 147, 0.6);
+}
 .apple-select {
   height: 36px;
   padding: 0 32px 0 12px;
