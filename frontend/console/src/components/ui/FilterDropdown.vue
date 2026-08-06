@@ -44,7 +44,7 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
 <template>
   <div ref="rootEl" class="relative">
     <div
-      class="flex cursor-pointer select-none items-center text-sm text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white"
+      class="flex cursor-pointer select-none items-center text-sm text-text-secondary transition-colors hover:text-foreground"
       @click="open = !open"
     >
       <span class="mr-0.5">{{ label }}</span>
@@ -53,14 +53,14 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
     <Transition name="dropdown-fade">
       <div
         v-if="open"
-        class="absolute right-0 top-full z-30 mt-2 w-72 rounded-base border border-gray-100 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        class="absolute right-0 top-full z-30 mt-2 w-72 rounded-lg border border-[var(--color-border)] bg-card p-4 shadow-lg"
       >
         <ul class="space-y-1">
           <li
             v-for="(item, index) in items"
             :key="index"
-            :class="{ 'bg-gray-100 dark:bg-gray-700': isSelected(item) }"
-            class="flex cursor-pointer items-center rounded px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+            :class="{ 'bg-secondary': isSelected(item) }"
+            class="flex cursor-pointer items-center rounded px-3 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground"
             @click="select(item)"
           >
             <span class="truncate">{{ item.label }}</span>

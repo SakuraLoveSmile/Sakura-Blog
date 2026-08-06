@@ -3,11 +3,11 @@ import { createApp, h, ref } from "vue";
 // Halo Toast 复刻（重设计）：命令式提示，类型图标 + 语义色 + 可选副标题，暗色自适应。
 type ToastType = "success" | "error" | "info" | "warning";
 
-// 类型语义色（用设计令牌 CSS 变量，随亮/暗切换）
+// 类型语义色（Apple Dark 设计令牌）
 const typeColorVar: Record<ToastType, string> = {
   success: "var(--color-state-success)",
   error: "var(--color-state-error)",
-  info: "var(--color-secondary)",
+  info: "var(--color-primary)",
   warning: "var(--color-state-warning)",
 };
 
@@ -67,10 +67,10 @@ function showToast(type: ToastType, message: string, description = "", duration 
               minWidth: "220px",
               maxWidth: "420px",
               borderRadius: "8px",
-              background: "var(--color-popover)",
-              color: "var(--color-popover-foreground)",
+              background: "var(--color-card)",
+              color: "var(--color-foreground)",
               border: "1px solid var(--color-border)",
-              boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+              boxShadow: "var(--shadow-lg)",
               opacity: visible.value ? 1 : 0,
               transform: visible.value ? "translateY(0)" : "translateY(-8px)",
               transition: "all 0.3s ease",
@@ -97,7 +97,7 @@ function showToast(type: ToastType, message: string, description = "", duration 
                     "div",
                     {
                       class: "mt-0.5 text-xs leading-snug",
-                      style: { color: "var(--color-muted-foreground)" },
+                      style: { color: "var(--color-text-tertiary)" },
                     },
                     description
                   )

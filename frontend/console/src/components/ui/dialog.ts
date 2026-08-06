@@ -13,11 +13,24 @@ export interface DialogOptions {
 
 type DialogType = "info" | "warning" | "error";
 
+// 图标语义色（Apple Dark 设计令牌）
 const iconColors: Record<DialogType, string> = {
-  info: "#4ccba0",
-  warning: "#f59e0b",
-  error: "#d71d1d",
+  info: "var(--color-primary)",
+  warning: "var(--color-state-warning)",
+  error: "var(--color-state-error)",
 };
+
+// 确认按钮底色：danger 红 / secondary 深灰 / 默认主色蓝
+function confirmBackground(type?: "primary" | "danger" | "secondary"): string {
+  if (type === "danger") return "var(--color-state-error)";
+  if (type === "secondary") return "var(--color-secondary)";
+  return "var(--color-primary)";
+}
+
+function confirmTextColor(type?: "primary" | "danger" | "secondary"): string {
+  if (type === "secondary") return "var(--color-foreground)";
+  return "#fff";
+}
 
 function showDialog(type: DialogType, options: DialogOptions) {
   const container = document.createElement("div");
@@ -61,16 +74,22 @@ function showDialog(type: DialogType, options: DialogOptions) {
             style: { opacity: visible.value ? 1 : 0, transition: "opacity 0.2s ease" },
           },
           [
+            // 遮罩：深色半透明 + 毛玻璃
             h("div", {
-              class: "absolute inset-0 bg-gray-500/75",
+              class: "absolute inset-0",
+              style: { background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" },
               onClick: handleCancel,
             }),
             h(
               "div",
               {
-                class:
-                  "relative w-full max-w-sm overflow-hidden rounded bg-white p-5 shadow-xl dark:bg-gray-800",
-                style: { borderRadius: "4px" },
+                class: "relative w-full max-w-sm overflow-hidden p-5",
+                style: {
+                  background: "var(--color-card)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-lg)",
+                  boxShadow: "var(--shadow-lg)",
+                },
               },
               [
                 h("div", { class: "flex items-start gap-3" }, [
@@ -78,7 +97,9 @@ function showDialog(type: DialogType, options: DialogOptions) {
                     "div",
                     {
                       class: "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full",
-                      style: { background: `${iconColors[type]}1a` },
+                      style: {
+                        background: `color-mix(in srgb, ${iconColors[type]} 14%, transparent)`,
+                      },
                     },
                     [
                       h(
@@ -104,41 +125,50 @@ function showDialog(type: DialogType, options: DialogOptions) {
                   h("div", { class: "min-w-0 flex-1" }, [
                     h(
                       "h3",
-                      { class: "text-sm font-semibold text-gray-900 dark:text-gray-100" },
+                      {
+                        class: "text-sm font-semibold",
+                        style: { color: "var(--color-foreground)" },
+                      },
                       options.title
                     ),
                     options.description
                       ? h(
                           "p",
-                          { class: "mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400" },
+                          {
+                            class: "mt-1.5 text-xs leading-relaxed",
+                            style: { color: "var(--color-text-tertiary)" },
+                          },
                           options.description
                         )
                       : null,
                   ]),
                 ]),
                 h("div", { class: "mt-5 flex justify-end gap-2" }, [
+                  // 取消按钮：描边胶囊
                   h(
                     "button",
                     {
-                      class:
-                        "h-8 rounded px-3 text-xs text-gray-600 transition-all hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700",
-                      style: { border: "1px solid #d9d9d9", borderRadius: "4px" },
+                      class: "h-8 px-4 text-xs transition-all hover:bg-secondary",
+                      style: {
+                        color: "var(--color-foreground)",
+                        background: "transparent",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-full)",
+                      },
                       onClick: handleCancel,
                     },
                     options.cancelText || "取消"
                   ),
+                  // 确认按钮：蓝底胶囊（danger 红 / secondary 深灰）
                   h(
                     "button",
                     {
-                      class: "h-8 rounded px-3 text-xs text-white transition-all hover:opacity-90",
+                      class: "h-8 px-4 text-xs transition-all hover:opacity-90",
                       style: {
-                        background:
-                          options.confirmType === "danger"
-                            ? "#d71d1d"
-                            : options.confirmType === "secondary"
-                              ? "#0e1731"
-                              : "#4ccba0",
-                        borderRadius: "4px",
+                        color: confirmTextColor(options.confirmType),
+                        background: confirmBackground(options.confirmType),
+                        border: "none",
+                        borderRadius: "var(--radius-full)",
                       },
                       disabled: loading.value,
                       onClick: handleConfirm,
