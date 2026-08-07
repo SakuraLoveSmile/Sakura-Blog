@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from"vue";
+import { ref, computed, onMounted, nextTick } from"vue";
 import { useQuery, useQueryClient } from"@tanstack/vue-query";
 import { momentApi, settingsApi, attachmentApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
@@ -153,6 +153,37 @@ function onComposerKeydown(e: KeyboardEvent) {
  e.preventDefault();
  handlePublish();
  }
+}
+
+// --- 表情面板（发布框与编辑框共用） ---
+const EMOJIS = [
+ "\u{1F600}","\u{1F601}","\u{1F602}","\u{1F923}","\u{1F60A}","\u{1F60D}","\u{1F618}","\u{1F60E}",
+ "\u{1F914}","\u{1F605}","\u{1F62D}","\u{1F624}","\u{1F973}","\u{1F929}","\u{1F634}","\u{1F92F}",
+ "\u{1F631}","\u{1F64F}","\u{1F44D}","\u{1F44E}","\u{1F44F}","\u{1F64C}","\u{1F4AA}","\u{1F91D}",
+ "\u{270C}","\u{1F91E}","\u{2764}","\u{1F9E1}","\u{1F49B}","\u{1F49A}","\u{1F499}","\u{1F49C}",
+ "\u{1F5A4}","\u{1F494}","\u{2728}","\u{1F389}","\u{1F525}","\u{2B50}","\u{2600}","\u{26A1}",
+ "\u{2744}","\u{1F340}","\u{1F338}","\u{1F34E}","\u{2615}","\u{1F3B5}","\u{1F680}","\u{1F4A1}",
+ "\u{1F4CC}","\u{2705}","\u{274C}","\u{26A0}","\u{1F319}","\u{1F308}",
+];
+const emojiOpen = ref<"new" | "edit" | null>(null);
+const editBox = ref<HTMLTextAreaElement | null>(null);
+
+function toggleEmoji(target: "new" | "edit") {
+ emojiOpen.value = emojiOpen.value === target ? null : target;
+}
+
+// 在光标处插入表情，并恢复光标位置
+function insertEmoji(target: "new" | "edit", emoji: string) {
+ const box = target === "new" ? newContent : editContent;
+ const el = target === "new" ? composerBox.value : editBox.value;
+ const start = el?.selectionStart ?? box.value.length;
+ const end = el?.selectionEnd ?? start;
+ box.value = box.value.slice(0, start) + emoji + box.value.slice(end);
+ nextTick(() => {
+  if (!el) return;
+  el.focus();
+  el.selectionStart = el.selectionEnd = start + emoji.length;
+ });
 }
 
 // --- 选图 / 上传 / 预览（发布框与编辑框共用工具函数） ---
@@ -333,6 +364,7 @@ function formatRelative(s: string): string {
 
 function closeMenus() {
  menuOpenId.value = null;
+ emojiOpen.value = null;
 }
 </script>
 
@@ -355,7 +387,7 @@ function closeMenus() {
     <div class="moments-content-area">
       <div class="moments-container mx-auto w-full max-w-[680px]">
         <!-- Composer card：常驻顶部 -->
-        <VCard :body-class="['!p-4']" class="moment-card-apple mb-5">
+        <VCard :body-class="['!p-4']" class="moment-card-apple relative mb-5">
           <div class="flex gap-3">
             <img
               v-if="ownerAvatar"
@@ -419,6 +451,15 @@ function closeMenus() {
                   >
                     <Icon icon="ri:upload-2-line" class="text-base" />
                   </button>
+                  <button
+                    type="button"
+                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
+                    :class="{ 'bg-accent text-primary': emojiOpen === 'new' }"
+                    title="插入表情"
+                    @click.stop="toggleEmoji('new')"
+                  >
+                    <Icon icon="ri:emotion-line" class="text-base" />
+                  </button>
                   <input
                     ref="newFileInput"
                     type="file"
@@ -463,6 +504,18 @@ function closeMenus() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- 表情面板：发布框 -->
+          <div v-if="emojiOpen === 'new'" class="emoji-panel emoji-panel-below" @click.stop>
+            <button
+              v-for="e in EMOJIS"
+              :key="e"
+              type="button"
+              class="emoji-item"
+              :title="'插入 ' + e"
+              @click.stop="insertEmoji('new', e)"
+            >{{ e }}</button>
           </div>
         </VCard>
 
@@ -596,7 +649,7 @@ function closeMenus() {
       class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       @click.self="cancelEdit"
     >
-      <div class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
+      <div class="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
         <div class="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 class="text-sm font-semibold text-foreground">编辑瞬间</h3>
           <button
@@ -608,6 +661,7 @@ function closeMenus() {
         </div>
         <div class="flex-1 space-y-3 overflow-y-auto p-5">
           <textarea
+            ref="editBox"
             v-model="editContent"
             rows="4"
             placeholder="分享此刻的想法…（可粘贴图片直传）"
@@ -649,6 +703,15 @@ function closeMenus() {
             >
               <Icon icon="ri:upload-2-line" class="text-base" />
             </button>
+            <button
+              type="button"
+              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
+              :class="{ 'bg-accent text-primary': emojiOpen === 'edit' }"
+              title="插入表情"
+              @click.stop="toggleEmoji('edit')"
+            >
+              <Icon icon="ri:emotion-line" class="text-base" />
+            </button>
             <input
               ref="editFileInput"
               type="file"
@@ -668,6 +731,19 @@ function closeMenus() {
             </button>
           </div>
         </div>
+
+        <!-- 表情面板：编辑框 -->
+        <div v-if="emojiOpen === 'edit'" class="emoji-panel emoji-panel-dialog" @click.stop>
+          <button
+            v-for="e in EMOJIS"
+            :key="e"
+            type="button"
+            class="emoji-item"
+            :title="'插入 ' + e"
+            @click.stop="insertEmoji('edit', e)"
+          >{{ e }}</button>
+        </div>
+
         <div class="flex justify-end gap-2 border-t border-border px-5 py-3">
           <VButton size="sm" @click="cancelEdit">取消</VButton>
           <VButton type="secondary" size="sm" :loading="savingEdit" @click="saveEdit">保存</VButton>
@@ -723,6 +799,52 @@ function closeMenus() {
 .moment-textarea:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+/* ===== 表情面板 ===== */
+/* 发布卡默认 overflow:hidden 会裁掉外置面板，此处放开 */
+.moment-card-apple {
+  overflow: visible;
+}
+.emoji-panel {
+  position: absolute;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 8px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: emoji-pop var(--duration-fast) var(--ease-standard);
+}
+.emoji-panel-below {
+  left: 16px;
+  right: 16px;
+  top: 100%;
+  margin-top: 8px;
+}
+.emoji-panel-dialog {
+  left: 20px;
+  right: 20px;
+  top: 52px;
+}
+.emoji-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  font-size: 18px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.emoji-item:hover {
+  background: var(--color-accent);
+}
+@keyframes emoji-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ===== Primary pill button ===== */
