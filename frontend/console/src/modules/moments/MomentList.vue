@@ -141,10 +141,15 @@ const groupedMoments = computed<DateGroup[]>(() => {
   return groups;
 });
 
-const showComposer = ref(false);
-
 // 站长头像（发布框与列表项展示）
 const ownerAvatar = ref("");
+
+// 发布框常驻顶部：头部「发布瞬间」按钮用于滚动并聚焦输入框
+const composerBox = ref<HTMLTextAreaElement | null>(null);
+function focusComposer() {
+  composerBox.value?.scrollIntoView({ block: "center", behavior: "smooth" });
+  composerBox.value?.focus({ preventScroll: true });
+}
 onMounted(async () => {
  try {
  const { data } = await settingsApi.all();
@@ -257,7 +262,6 @@ async function handlePublish() {
     newVisibility.value = "public";
     queryClient.invalidateQueries({ queryKey: ["moments"] });
     Toast.success("发布成功");
-    showComposer.value = false;
   } catch {
   } finally {
     publishing.value = false;
@@ -379,7 +383,7 @@ function closeMenus() {
             {{ f.label }}
           </button>
         </div>
-        <button type="button" class="moments-btn-primary" @click="showComposer = true">
+        <button type="button" class="moments-btn-primary" @click="focusComposer">
           <Icon icon="ri:add-line" class="text-[15px]" />
           <span>发布瞬间</span>
         </button>
@@ -389,8 +393,8 @@ function closeMenus() {
     <!-- Content Area -->
     <div class="moments-content-area">
       <div class="moments-container mx-auto w-full max-w-[680px]">
-        <!-- Composer card -->
-        <VCard v-if="showComposer" :body-class="['!p-4']" class="moment-card-apple mb-5">
+        <!-- Composer card：常驻顶部 -->
+        <VCard :body-class="['!p-4']" class="moment-card-apple mb-5">
           <div class="flex gap-3">
             <img
               v-if="ownerAvatar"
@@ -406,6 +410,7 @@ function closeMenus() {
             </span>
             <div class="min-w-0 flex-1">
               <textarea
+                ref="composerBox"
                 v-model="newContent"
                 :rows="composerFocused || newContent ? 4 : 2"
                 placeholder="分享此刻的想法…（可粘贴图片直传）"
@@ -475,11 +480,12 @@ function closeMenus() {
                 </div>
                 <div class="flex items-center gap-2">
                   <button
+                    v-if="newContent || newImages.length"
                     type="button"
                     class="rounded-full px-3 py-1.5 text-xs text-text-tertiary transition-colors hover:text-foreground"
-                    @click="showComposer = false"
+                    @click="newContent = ''; newImages = []"
                   >
-                    取消
+                    清空
                   </button>
                   <VButton
                     type="secondary"
