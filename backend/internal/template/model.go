@@ -34,6 +34,14 @@ type ViewData struct {
 	// 由 assembleWidgets 在 fillSidebar 后装配；sidebar/rightbar 模板 range 分派渲染。
 	LeftbarWidgets  []*WidgetInstance
 	RightbarWidgets []*WidgetInstance
+	// CustomPageBars 仅用于 Layout=page 独立页面覆盖全局 widgets.pages.page（Spec 33+页面级自定义侧栏）。
+	// nil=未配置，继承 BarsFor 的 page 类型全局默认；非 nil（即使 Leftbar/Rightbar 空）= 用该字段覆盖左右栏。
+	CustomPageBars *PageBars
+	// PageWidgetOverrides 页面级 widget 参数覆盖（仅 Layout=page 自定义侧栏时使用）。
+	// map key = 组件名（与 CustomPageBars.Leftbar/Rightbar 序列中的名字对应）；
+	// value = 页面级 Params（与全局 Library 同名组件参数浅合并，BuildBar 时生效）。
+	// nil 或 key 缺失时不覆盖，走全局参数。
+	PageWidgetOverrides map[string]WidgetDef
 
 	// 评论区（Layout=post 且 comments.enabled 时填充）。
 	Comments     []*CommentItem // 评论树（顶级 + Children 两层）
@@ -574,6 +582,7 @@ type CommentItem struct {
 	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
 	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）
 	Likes       int64          `json:"likes"`    // 点赞数（IP 去重）
+	ReplyRef    string         `json:"reply_ref,omitempty"` // 回复引用，格式 "▸ 被回复人昵称"（仅子评论）
 	Children    []*CommentItem `json:"children,omitempty"`
 }
 

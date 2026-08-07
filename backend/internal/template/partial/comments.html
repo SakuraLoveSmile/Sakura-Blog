@@ -36,9 +36,13 @@
             <input type="text" class="cmt-id-input" id="cmt-link" placeholder="{{lang "comment.website"}}" maxlength="200" autocomplete="url">
           </div>
         </div>
-        {{- /* 已登录态：昵称 + 退出图标（JS 填充昵称） */}}
+        {{- /* 已登录态：昵称 + verified 徽章 + 退出图标（JS 填充） */}}
         <div class="cmt-id-logged" id="cmt-id-logged" style="display:none">
           <span class="cmt-id-nick" id="cmt-id-nick"></span>
+          <span class="cmt-badge cmt-badge-verified cmt-id-verified" id="cmt-id-verified" style="display:none" title="已验证">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            已验证
+          </span>
           <button type="button" class="cmt-id-logout" id="cmt-do-logout" title="{{lang "comment.logout"}}">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
@@ -53,9 +57,30 @@
       {{- /* Markdown 预览区（M↓ 开关：上半原文下半渲染，对齐参照截图 4） */}}
       <div class="cmt-preview" id="cmt-preview" style="display:none"></div>
 
+      {{- /* 表情面板：内嵌编辑器（textarea 与工具栏之间），tabs 在底部 */}}
+      <div class="cmt-emoji-panel-v2" id="cmt-emoji-panel" style="display:none">
+        <div class="cmt-emoji-body" id="cmt-emoji-body">
+          {{- /* 内容：JS 懒构建（首次打开时从 CDN 取表情列表，渲染成 <img>） */}}
+          <div class="cmt-emoji-loading" id="cmt-emoji-loading">
+            <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
+            <span>加载中…</span>
+          </div>
+        </div>
+        <div class="cmt-emoji-tabs" role="tablist">
+          <button type="button" class="cmt-emoji-tab is-active" data-pack="blobcat" role="tab" aria-selected="true">Blobcat</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="qq" role="tab">QQ</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="tieba" role="tab">Tieba</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="aru" role="tab">Aru</button>
+          <button type="button" class="cmt-emoji-tab" data-pack="twemoji" role="tab">Twemoji</button>
+        </div>
+      </div>
+
       {{- /* 工具栏 + 发送：左图标（表情/图片/Markdown 帮助）+ 右胶囊发送按钮（对齐参照截图） */}}
       <div class="cmt-footer">
         <div class="cmt-tools" role="toolbar" aria-label="编辑器工具栏">
+          <button type="button" class="cmt-tool-btn cmt-tool-account" id="cmt-tool-account" style="display:none" title="{{lang "comment.login"}}">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
           <button type="button" class="cmt-tool-btn cmt-tool-emoji" id="cmt-emoji-btn" title="{{lang "comment.tool_emoji"}}">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
@@ -66,26 +91,9 @@
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 9v4"/><path d="M14.5 11.5L16 13l1.5-1.5"/></svg>
           </button>
         </div>
-        <button type="button" class="cmt-submit" id="cmt-submit">{{lang "comment.submit"}}</button>
+        <button type="button" class="cmt-submit" id="cmt-submit">{{lang "comment.login"}}</button>
       </div>
 
-      {{- /* 表情面板：5 个 tab + 懒加载 grid */}}
-      <div class="cmt-emoji-panel-v2" id="cmt-emoji-panel" style="display:none">
-        <div class="cmt-emoji-tabs" role="tablist">
-          <button type="button" class="cmt-emoji-tab is-active" data-pack="blobcat" role="tab" aria-selected="true">Blobcat</button>
-          <button type="button" class="cmt-emoji-tab" data-pack="qq" role="tab">QQ</button>
-          <button type="button" class="cmt-emoji-tab" data-pack="tieba" role="tab">Tieba</button>
-          <button type="button" class="cmt-emoji-tab" data-pack="twemoji" role="tab">Twemoji</button>
-          <button type="button" class="cmt-emoji-tab" data-pack="aru" role="tab">Aru</button>
-        </div>
-        <div class="cmt-emoji-body" id="cmt-emoji-body">
-          {{- /* 内容：JS 懒构建（首次切换 tab 时从 CDN 取表情列表，渲染成 <img>） */}}
-          <div class="cmt-emoji-loading" id="cmt-emoji-loading">
-            <svg class="loading" viewBox="0 0 1024 1024" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M512 1024a512 512 0 1 1 512-512h-96a416 416 0 1 0-416 416z"/></svg>
-            <span>加载中…</span>
-          </div>
-        </div>
-      </div>
       <input type="text" class="cmt-hp" id="cmt-website" tabindex="-1" autocomplete="off" aria-hidden="true">
     </div>
 
@@ -93,6 +101,18 @@
     <div class="cmt-list-wrap">
       <div class="cmt-list-head" id="cmt-list-head" style="display:none">
         <span class="cmt-list-title">{{lang "comment.count" 0}}</span>
+        <div class="cmt-sort-wrap" id="cmt-sort-wrap">
+          <button type="button" class="cmt-sort-btn" id="cmt-sort-btn" aria-haspopup="true" aria-expanded="false">
+            <span class="cmt-sort-label">最新</span>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="cmt-sort-menu" id="cmt-sort-menu" role="menu" style="display:none">
+            <button type="button" class="cmt-sort-item is-active" data-sort="newest" role="menuitem">最新</button>
+            <button type="button" class="cmt-sort-item" data-sort="hottest" role="menuitem">最热</button>
+            <button type="button" class="cmt-sort-item" data-sort="oldest" role="menuitem">最早</button>
+            <button type="button" class="cmt-sort-item" data-sort="author" role="menuitem">作者</button>
+          </div>
+        </div>
       </div>
       <div class="cmt-list" id="cmt-list">
         {{- /* 懒加载占位 */}}

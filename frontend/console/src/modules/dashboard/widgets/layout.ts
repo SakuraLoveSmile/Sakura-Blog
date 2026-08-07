@@ -1,60 +1,144 @@
-import { settingsApi } from"@/api";
-import type { DashboardLayoutItem } from"@/api";
-import { getWidget, widgetRegistry, defaultLayout } from"./registry";
+import type { LayoutWidget } from "./registry";
 
-/** settings 表 dashboard 段的部件条目（与后端 config.dashboardWidget 一致） */
-interface DashboardWidgetEntry {
- id: string;
- enabled: boolean;
+export type Breakpoint = "l" | "m" | "s";
+
+export const BREAKPOINTS = {
+  l: 1280,
+  m: 768,
+} as const;
+
+/** 根据视口宽度获取当前断点 */
+export function getBreakpoint(width: number): Breakpoint {
+  if (width >= BREAKPOINTS.l) return "l";
+  if (width >= BREAKPOINTS.m) return "m";
+  return "s";
 }
 
-// 旧版仪表盘配置（开关+排序实现）的 id → 新部件注册表 type 迁移映射。
-// stats-cards 拆为 4 张统计卡片；pending-alert 已改为固定横幅，不再是部件。
-const legacyIdMap: Record<string, string[]> = {
-"stats-cards": ["stat-posts","stat-comments","stat-views","stat-attachments"],
-"visit-trend": ["trend-chart"],
-"hourly-dist": ["hourly-chart"],
-"pending-alert": [],
+/** 按区域分组的布局（每个断点独立） */
+export interface SectionLayout {
+  stats: LayoutWidget[];
+  chartWide: LayoutWidget | null;
+  chartNarrow: LayoutWidget[];
+  recents: LayoutWidget[];
+  others: LayoutWidget[];
+}
+
+/** 全断点布局存储结构（v6：每个断点独立保存） */
+export type MultiBreakpointLayout = Record<Breakpoint, SectionLayout>;
+
+/** 每个断点的默认布局 - 从v5的ResponsiveSize拆分为独立布局 */
+const defaultLayout_l: SectionLayout = {
+  stats: [
+    { type: "stat-posts",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-published", size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-views",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-comments",  size: { l: 3, m: 6, s: 12 } },
+  ],
+  chartWide: { type: "trend-chart", size: { l: 8, m: 12, s: 12 } },
+  chartNarrow: [
+    { type: "category-donut", size: { l: 4, m: 6, s: 12 } },
+    { type: "quick-actions",  size: { l: 4, m: 6, s: 12 } },
+  ],
+  recents: [
+    { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
+    { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
+  ],
+  others: [],
 };
 
-/** 单个条目 id 归一化为注册表 type 列表（未知 id 丢弃） */
-function normalizeId(id: string): string[] {
- if (getWidget(id)) return [id];
- return legacyIdMap[id] ?? [];
+const defaultLayout_m: SectionLayout = {
+  stats: [
+    { type: "stat-posts",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-published", size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-views",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-comments",  size: { l: 3, m: 6, s: 12 } },
+  ],
+  chartWide: { type: "trend-chart", size: { l: 8, m: 12, s: 12 } },
+  chartNarrow: [
+    { type: "category-donut", size: { l: 4, m: 6, s: 12 } },
+    { type: "quick-actions",  size: { l: 4, m: 6, s: 12 } },
+  ],
+  recents: [
+    { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
+    { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
+  ],
+  others: [],
+};
+
+const defaultLayout_s: SectionLayout = {
+  stats: [
+    { type: "stat-posts",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-published", size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-views",     size: { l: 3, m: 6, s: 12 } },
+    { type: "stat-comments",  size: { l: 3, m: 6, s: 12 } },
+  ],
+  chartWide: { type: "trend-chart", size: { l: 8, m: 12, s: 12 } },
+  chartNarrow: [
+    { type: "category-donut", size: { l: 4, m: 6, s: 12 } },
+    { type: "quick-actions",  size: { l: 4, m: 6, s: 12 } },
+  ],
+  recents: [
+    { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
+    { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
+  ],
+  others: [],
+};
+
+export const defaultMultiLayout: MultiBreakpointLayout = {
+  l: JSON.parse(JSON.stringify(defaultLayout_l)),
+  m: JSON.parse(JSON.stringify(defaultLayout_m)),
+  s: JSON.parse(JSON.stringify(defaultLayout_s)),
+};
+
+/** 获取单个断点的默认布局（深拷贝） */
+export function getDefaultSectionLayout(bp: Breakpoint): SectionLayout {
+  const base = bp === "l" ? defaultLayout_l : bp === "m" ? defaultLayout_m : defaultLayout_s;
+  return JSON.parse(JSON.stringify(base));
 }
 
-/**
- * 读取仪表盘布局：settings dashboard 段 → 启用条目按序展开为部件类型数组。
- * 段缺失 / 数据损坏 / 展开后为空时回落默认布局。
- */
-export async function loadDashboardLayout(): Promise<DashboardLayoutItem[]> {
- try {
- const { data } = await settingsApi.all();
- const widgets: DashboardWidgetEntry[] | undefined = data?.dashboard?.widgets;
- if (!Array.isArray(widgets) || !widgets.length) return [...defaultLayout];
- const types = widgets
- .filter((w) => w.enabled)
- .flatMap((w) => normalizeId(w.id));
- // 去重（legacy 展开可能与新 id 并存）
- const seen = new Set<string>();
- const items = types
- .filter((t) => (seen.has(t) ? false : (seen.add(t), true)))
- .map((type) => ({ type }));
- return items.length ? items : [...defaultLayout];
- } catch {
- return [...defaultLayout];
- }
+/** 兼容v5格式转换为v6 */
+function migrateV5toV6(v5: any): MultiBreakpointLayout | null {
+  try {
+    // v5格式是单个SectionLayout
+    if (v5 && (v5.stats || v5.chartWide)) {
+      // 把v5布局作为l的基础，m和s用默认，但widget的size保持
+      const v5Layout = v5 as SectionLayout;
+      return {
+        l: JSON.parse(JSON.stringify(v5Layout)),
+        m: JSON.parse(JSON.stringify(defaultLayout_m)),
+        s: JSON.parse(JSON.stringify(defaultLayout_s)),
+      };
+    }
+  } catch { /* ignore */ }
+  return null;
 }
 
-/**
- * 保存仪表盘布局到 settings dashboard 段：
- * 布局中的部件按序写 enabled:true，未使用的注册表部件补 enabled:false（保留 dev 版配置段 schema）。
- */
-export async function saveDashboardLayout(items: DashboardLayoutItem[]): Promise<void> {
- const used = new Set(items.map((it) => it.type));
- const widgets: DashboardWidgetEntry[] = [
- ...items.map((it) => ({ id: it.type, enabled: true })),
- ...widgetRegistry.filter((w) => !used.has(w.type)).map((w) => ({ id: w.type, enabled: false })),
- ];
- await settingsApi.updateSection("dashboard", { widgets });
+/** 布局存储key */
+export const LAYOUT_STORAGE_KEY = "dashboard:layout:v6";
+
+/** 从localStorage加载布局，支持v5迁移 */
+export function loadLayoutFromStorage(): MultiBreakpointLayout {
+  try {
+    const saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // 验证格式是否正确（包含l/m/s三个key）
+      if (parsed.l && parsed.m && parsed.s) {
+        return {
+          l: { ...defaultMultiLayout.l, ...parsed.l },
+          m: { ...defaultMultiLayout.m, ...parsed.m },
+          s: { ...defaultMultiLayout.s, ...parsed.s },
+        };
+      }
+      // 尝试v5迁移
+      const migrated = migrateV5toV6(parsed);
+      if (migrated) return migrated;
+    }
+  } catch { /* ignore */ }
+  return JSON.parse(JSON.stringify(defaultMultiLayout));
+}
+
+/** 保存布局到localStorage */
+export function saveLayoutToStorage(layout: MultiBreakpointLayout) {
+  localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
 }

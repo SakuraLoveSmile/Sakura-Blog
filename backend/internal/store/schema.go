@@ -249,15 +249,17 @@ var tableDDL = map[string]string{
 	CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read, created_at);`,
 
 	"pages": `CREATE TABLE IF NOT EXISTS pages (
-		id           INTEGER PRIMARY KEY AUTOINCREMENT,
-		slug         TEXT NOT NULL UNIQUE,
-		title        TEXT NOT NULL DEFAULT '',
-		content_md   TEXT NOT NULL DEFAULT '',
-		content_html TEXT NOT NULL DEFAULT '',
-		status       TEXT NOT NULL DEFAULT 'draft',
-		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		deleted_at   TEXT NOT NULL DEFAULT ''
+		id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+		slug               TEXT NOT NULL UNIQUE,
+		title              TEXT NOT NULL DEFAULT '',
+		content_md         TEXT NOT NULL DEFAULT '',
+		content_html       TEXT NOT NULL DEFAULT '',
+		status             TEXT NOT NULL DEFAULT 'draft',
+		leftbar_widgets  TEXT NOT NULL DEFAULT '',
+		rightbar_widgets TEXT NOT NULL DEFAULT '',
+		created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		deleted_at         TEXT NOT NULL DEFAULT ''
 	);
 	CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
 	CREATE INDEX IF NOT EXISTS idx_pages_created ON pages(created_at);`,
@@ -265,11 +267,15 @@ var tableDDL = map[string]string{
 
 // EnsureSchema 统一建表入口：按注册表执行全部独立表 DDL（幂等）。
 // 每张表建表 + 索引语句原子执行；单表失败即返回错误。
+// 建表后执行追加迁移（旧库缺列时 ADD COLUMN）——含 pages 表左右栏字段与软删列。
 func (s *Store) EnsureSchema() error {
 	for table := range tableDDL {
 		if err := s.ensureTable(table); err != nil {
 			return err
 		}
+	}
+	if err := s.EnsurePagesTable(); err != nil {
+		return err
 	}
 	return nil
 }

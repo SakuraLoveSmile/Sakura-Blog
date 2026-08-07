@@ -154,7 +154,9 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		data.Popular = s.sidebarCached.popular
 		data.LatestComments = s.sidebarCached.latestComments
 		data.TagCloud = s.sidebarCached.tagCloud
-		data.HasTopics = s.sidebarCached.hasTopics
+		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。HasTopics 恒为 false，不走缓存值。
+		//   data.HasTopics = s.sidebarCached.hasTopics
+		data.HasTopics = false
 		data.SiteStats = s.sidebarCached.siteStats
 		tagCounts := s.sidebarCached.tagCounts
 		s.sidebarMu.Unlock()
@@ -188,10 +190,12 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 	if tagErr == nil {
 		data.TagCloud = buildTagCloud(tagCounts, 20)
 	}
-	// 专栏存在性：navbar「专栏」tab 显示条件（对齐原版 theme.topic.publish_list 非空）
-	if topics, err := s.st.CountByTopic(); err == nil && len(topics) > 0 {
-		data.HasTopics = true
-	}
+	// 专栏（Spec 52）：已禁用（用户反馈功能多余）。HasTopics 恒为 false，navbar 「专栏」tab 不再显示。
+	// 保留 DB 查询代码注释，后续恢复：
+	//   if topics, err := s.st.CountByTopic(); err == nil && len(topics) > 0 {
+	//       data.HasTopics = true
+	//   }
+	data.HasTopics = false
 	var stats tmpl.SiteStats
 	statsOK := true
 	if n, err := s.st.CountPosts(); err == nil {
@@ -248,12 +252,19 @@ func (s *webServer) widgetMaxLimit(layout string, fallback int) int {
 
 // assembleWidgets 按页面类型解析左右栏组件序列并逐个装配数据（Spec 33）。
 // 数据全部来自 fillSidebar 已填充的字段/快照（内存截断与重排），不产生新查询。
+// 页面级侧栏覆盖（CustomPageBars，仅 Layout=page 生效）：非 nil 时跳过全局 BarsFor，
+// 用自定义名字列表 BuildBar，即使显式空切片也生效（= 空侧栏，不继承全局）。
 func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]int) {
 	if data.Page == nil {
 		return
 	}
 	cfg := s.site.Widgets
-	bars := cfg.BarsFor(tmpl.PageTypeOf(data.Page.Layout))
+	var bars tmpl.PageBars
+	if data.CustomPageBars != nil {
+		bars = *data.CustomPageBars
+	} else {
+		bars = cfg.BarsFor(tmpl.PageTypeOf(data.Page.Layout))
+	}
 	data.LeftbarWidgets = cfg.BuildBar(bars.Leftbar, data)
 	data.RightbarWidgets = cfg.BuildBar(bars.Rightbar, data)
 	for _, w := range append(append([]*tmpl.WidgetInstance{}, data.LeftbarWidgets...), data.RightbarWidgets...) {

@@ -1,186 +1,402 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from"vue";
-import { useRouter } from"vue-router";
-import type { DashboardLayoutItem } from"@/api";
-import { Icon } from"@iconify/vue";
-import { VPageHeader, VButton, VSpace, Toast } from"@/components/ui";
-import { getWidget, sizeClass } from"./widgets/registry";
-import { loadDashboardLayout, saveDashboardLayout } from"./widgets/layout";
-import { useDashboardStats } from"./widgets/useDashboardStats";
-import { useDashboardEditorStore } from"@/stores/dashboard-editor";
+import { computed, onMounted, ref } from "vue";
+import { Icon } from "@iconify/vue";
+import { widgetRegistry, type WidgetDefinition, type LayoutWidget, type ResponsiveSize } from "./widgets/registry";
+import {
+  type Breakpoint,
+  type SectionLayout,
+  type MultiBreakpointLayout,
+  loadLayoutFromStorage,
+  saveLayoutToStorage,
+  getDefaultSectionLayout,
+} from "./widgets/layout";
+import { provideBreakpoint } from "./useBreakpoint";
+import WidgetCenter from "./WidgetCenter.vue";
+import { useAuthStore } from "@/stores/auth";
+import "./dashboard.css";
 
-const router = useRouter();
+const authStore = useAuthStore();
+const editor = ref({ editing: false });
+const showWidgetCenter = ref(false);
 
-// 待审核提醒横幅（固定展示，不纳入部件体系）
-const { stats } = useDashboardStats();
+// 提供断点上下文（支持视角切换预览）
+const { breakpoint, viewMode, previewWidth, isPreview, setViewMode } = provideBreakpoint();
 
-// 编辑态与草稿在 store：跳转小组件中心页再返回时不丢失
-const editor = useDashboardEditorStore();
+/** 多断点布局存储：l/m/s 各自独立 */
+const multiLayout = ref<MultiBreakpointLayout>(loadLayoutFromStorage());
 
-// --- 布局 ---
-const layout = ref<DashboardLayoutItem[]>([]);
-const loaded = ref(false);
+/** 当前激活断点对应的布局（computed，随breakpoint切换自动切换） */
+const sections = computed<SectionLayout>(() => multiLayout.value[breakpoint.value]);
 
-// 渲染源：编辑态渲染草稿，浏览态渲染已保存布局
-const items = computed(() => (editor.editing ? editor.draft : layout.value));
+// ===== 拖拽排序状态 =====
+type SectionKey = "stats" | "chartNarrow" | "recents" | "others";
+const dragState = ref<{
+  section: SectionKey;
+  fromIndex: number;
+  type: string;
+} | null>(null);
+const dragOverIndex = ref<{ section: SectionKey; index: number } | null>(null);
 
-onMounted(async () => {
- layout.value = await loadDashboardLayout();
- loaded.value = true;
+function makeDragHandlers(section: SectionKey, index: number) {
+  return {
+    draggable: editor.value.editing,
+    onDragstart(e: DragEvent) {
+      if (!editor.value.editing) return;
+      dragState.value = { section, fromIndex: index, type: sections.value[section][index].type };
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", sections.value[section][index].type);
+      }
+    },
+    onDragover(e: DragEvent) {
+      if (!dragState.value || dragState.value.section !== section) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      dragOverIndex.value = { section, index };
+    },
+    onDragleave() {
+      if (dragOverIndex.value?.section === section && dragOverIndex.value.index === index) {
+        dragOverIndex.value = null;
+      }
+    },
+    onDrop(e: DragEvent) {
+      e.preventDefault();
+      if (!dragState.value || dragState.value.section !== section) return;
+      const from = dragState.value.fromIndex;
+      const to = index;
+      if (from !== to) {
+        const bp = breakpoint.value;
+        const layoutCopy = { ...multiLayout.value };
+        const curBp = { ...layoutCopy[bp] };
+        const list = [...(curBp[section] as LayoutWidget[])];
+        const [moved] = list.splice(from, 1);
+        list.splice(to, 0, moved);
+        (curBp[section] as LayoutWidget[]) = list;
+        layoutCopy[bp] = curBp;
+        multiLayout.value = layoutCopy;
+        persist();
+      }
+      dragState.value = null;
+      dragOverIndex.value = null;
+    },
+    onDragend() {
+      dragState.value = null;
+      dragOverIndex.value = null;
+    },
+  };
+}
+
+function dragCellClass(section: SectionKey, index: number): Record<string, boolean> {
+  return {
+    editable: editor.value.editing,
+    dragging: dragState.value?.section === section && dragState.value.fromIndex === index,
+    "drag-over-top":
+      dragOverIndex.value?.section === section &&
+      dragOverIndex.value.index === index &&
+      (dragState.value?.fromIndex ?? -1) > index,
+    "drag-over-bottom":
+      dragOverIndex.value?.section === section &&
+      dragOverIndex.value.index === index &&
+      (dragState.value?.fromIndex ?? -1) < index,
+  };
+}
+
+onMounted(() => {
+  // 初始化已通过 ref 默认值完成
 });
 
-// --- 编辑态 ---
-const saving = ref(false);
-
-function startEditing() {
- editor.start(layout.value);
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "夜深了";
+  if (h < 12) return "早上好";
+  if (h < 14) return "中午好";
+  if (h < 18) return "下午好";
+  return "晚上好";
 }
 
-function cancelEditing() {
- layout.value = editor.cancel();
+function getToday(): string {
+  const d = new Date();
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${weekdays[d.getDay()]}`;
 }
 
-async function saveLayout() {
- saving.value = true;
- try {
- await saveDashboardLayout(editor.draft);
- layout.value = editor.finish();
- Toast.success("仪表盘布局已保存");
- } catch (e: any) {
- Toast.error(e?.response?.data?.error ||"保存失败");
- } finally {
- saving.value = false;
- }
+const displayName = computed(() => authStore.user?.display_name || authStore.user?.username || "管理员");
+
+function getWidgetDef(type: string): WidgetDefinition | undefined {
+  return widgetRegistry.find((w) => w.type === type);
 }
 
-function removeWidget(index: number) {
- editor.remove(index);
+/** 仅保存当前状态到 localStorage */
+function persist() {
+  saveLayoutToStorage(multiLayout.value);
 }
 
-// 「添加部件」：跳转独立的小组件中心页
-function goWidgetCenter() {
- router.push("/dashboard/widgets");
+function toggleEdit() {
+  editor.value.editing = !editor.value.editing;
+  if (!editor.value.editing) persist();
 }
 
-// --- 拖拽排序（复用 MenubarEditor 的原生 dnd 模式） ---
-const dragIndex = ref<number | null>(null);
+/** 当前断点已存在的组件类型列表 */
+function existingTypes(): string[] {
+  const cur = sections.value;
+  return [
+    ...cur.stats.map((w) => w.type),
+    cur.chartWide?.type,
+    ...cur.chartNarrow.map((w) => w.type),
+    ...cur.recents.map((w) => w.type),
+    ...cur.others.map((w) => w.type),
+  ].filter(Boolean) as string[];
+}
 
-function onDragStart(i: number) {
- dragIndex.value = i;
+/** 根据组件类型推断其归属区域 */
+function getSectionForType(type: string): keyof SectionLayout {
+  if (type.startsWith("stat-")) return "stats";
+  if (type === "trend-chart") return "chartWide";
+  if (["category-donut", "quick-actions", "hourly-chart"].includes(type)) return "chartNarrow";
+  if (["recent-posts", "recent-comments"].includes(type)) return "recents";
+  return "others";
 }
-function onDragOver(e: DragEvent, i: number) {
- e.preventDefault();
- if (dragIndex.value === null || dragIndex.value === i) return;
- const arr = editor.draft;
- const [moved] = arr.splice(dragIndex.value, 1);
- arr.splice(i, 0, moved);
- dragIndex.value = i;
+
+/** 向当前断点布局添加组件 */
+function addWidget(widget: LayoutWidget) {
+  const bp = breakpoint.value;
+  if (existingTypes().includes(widget.type)) return;
+  const section = getSectionForType(widget.type);
+  const layoutCopy = { ...multiLayout.value };
+  const curBp = { ...layoutCopy[bp] };
+  if (section === "chartWide") {
+    curBp.chartWide = widget;
+  } else {
+    curBp[section] = [...(curBp[section] as LayoutWidget[]), widget];
+  }
+  layoutCopy[bp] = curBp;
+  multiLayout.value = layoutCopy;
+  persist();
 }
-function onDragEnd() {
- dragIndex.value = null;
+
+function removeFromList(list: LayoutWidget[], type: string): LayoutWidget[] {
+  return list.filter((w) => w.type !== type);
 }
+
+/** 从当前断点布局移除组件 */
+function removeWidget(type: string) {
+  const bp = breakpoint.value;
+  const layoutCopy = { ...multiLayout.value };
+  const curBp = { ...layoutCopy[bp] };
+  if (curBp.chartWide?.type === type) {
+    curBp.chartWide = null;
+  } else {
+    curBp.stats = removeFromList(curBp.stats, type);
+    curBp.chartNarrow = removeFromList(curBp.chartNarrow, type);
+    curBp.recents = removeFromList(curBp.recents, type);
+    curBp.others = removeFromList(curBp.others, type);
+  }
+  layoutCopy[bp] = curBp;
+  multiLayout.value = layoutCopy;
+  persist();
+}
+
+/** 仅重置当前断点布局为默认 */
+function resetLayout() {
+  const bp = breakpoint.value;
+  const layoutCopy = { ...multiLayout.value };
+  layoutCopy[bp] = getDefaultSectionLayout(bp);
+  multiLayout.value = layoutCopy;
+  persist();
+}
+
+/** 根据当前断点获取组件的列跨度style */
+function spanStyle(size: ResponsiveSize): Record<string, string> {
+  const bp = breakpoint.value;
+  const span = size[bp];
+  return { gridColumn: `span ${span} / span ${span}` };
+}
+
+const viewModes: { key: "auto" | Breakpoint; label: string; icon: string }[] = [
+  { key: "auto", label: "自适应", icon: "ri:aspect-ratio-line" },
+  { key: "l",    label: "大屏",   icon: "ri:computer-line" },
+  { key: "m",    label: "中屏",   icon: "ri:tablet-line" },
+  { key: "s",    label: "小屏",   icon: "ri:smartphone-line" },
+];
 </script>
 
 <template>
- <div>
- <!-- VPageHeader -->
- <VPageHeader title="仪表盘">
- <template #icon>
- <Icon icon="ri:dashboard-3-line" class="mr-2 self-center text-xl" />
- </template>
- <template #actions>
- <VSpace v-if="editor.editing">
- <VButton @click="goWidgetCenter">
- <template #icon>
- <Icon icon="ri:add-circle-line" class="h-full w-full" />
- </template>
- 添加部件
- </VButton>
- <VButton @click="cancelEditing">取消</VButton>
- <VButton type="secondary" :loading="saving" @click="saveLayout">
- <template #icon>
- <Icon icon="ri:save-line" class="h-full w-full" />
- </template>
- 保存
- </VButton>
- </VSpace>
- <VButton v-else type="secondary" @click="startEditing">
- <template #icon>
- <Icon icon="ri:settings-4-line" class="h-full w-full" />
- </template>
- 编辑
- </VButton>
- </template>
- </VPageHeader>
+  <div class="dashboard-viewport" :class="{ 'is-preview': isPreview }">
+    <div
+      class="dashboard-canvas"
+      :style="{ width: previewWidth }"
+    >
+      <div class="dashboard-apple" :data-bp="breakpoint">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 apple-greeting">
+          <div>
+            <h1>{{ greeting() }}，{{ displayName }}</h1>
+            <p>{{ getToday() }}，欢迎回到管理仪表盘</p>
+          </div>
+          <div class="apple-header-actions">
+            <div class="apple-view-switch">
+              <button
+                v-for="vm in viewModes"
+                :key="vm.key"
+                class="apple-view-switch-btn"
+                :class="{ active: viewMode === vm.key }"
+                :title="vm.label"
+                @click="setViewMode(vm.key)"
+              >
+                <Icon :icon="vm.icon" class="w-4 h-4" />
+                <span class="apple-view-switch-label">{{ vm.label }}</span>
+              </button>
+            </div>
+            <button class="apple-edit-btn" @click="toggleEdit">
+              <Icon :icon="editor.editing ? 'ri:check-line' : 'ri:edit-line'" class="w-4 h-4" />
+              {{ editor.editing ? "完成" : "编辑布局" }}
+            </button>
+            <button
+              v-if="editor.editing"
+              class="apple-icon-btn"
+              title="添加组件"
+              @click="showWidgetCenter = true"
+            >
+              <Icon icon="ri:add-line" class="w-5 h-5" />
+            </button>
+            <button
+              v-if="editor.editing"
+              class="apple-icon-btn"
+              title="重置当前尺寸布局"
+              @click="resetLayout"
+            >
+              <Icon icon="ri:refresh-line" class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
- <div class="m-0 space-y-4 p-4 md:m-4 md:p-0">
- <!-- 编辑态提示 -->
- <div
- v-if="editor.editing"
- class="flex items-center gap-2 rounded-base border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-400"
- >
- <Icon icon="ri:drag-move-2-line" class="text-base" />
- 编辑模式：拖拽部件调整顺序，点击右上角按钮移除部件，完成后记得保存
- </div>
+        <!-- 编辑模式提示 -->
+        <div v-if="editor.editing" class="apple-edit-hint">
+          <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
+          正在编辑「{{ viewModes.find(v => v.key === breakpoint)?.label }}」布局，可拖拽调整顺序，修改只对当前尺寸生效
+        </div>
 
- <!-- 待审核提醒 -->
- <router-link
- v-if="!editor.editing && stats.comment_pending > 0"
- to="/comments"
- class="flex items-center gap-2 rounded-base border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400 transition-colors hover:bg-amber-500/20"
- >
- <Icon icon="ri:error-warning-line" class="text-base" />
- 有 {{ stats.comment_pending }} 条评论待审核
- <Icon icon="ri:arrow-right-line" class="ml-auto" />
- </router-link>
+        <!-- Section 1: Stats -->
+        <div v-if="sections.stats.length" class="dashboard-grid dashboard-grid-unified">
+          <div
+            v-for="(w, i) in sections.stats"
+            :key="w.type"
+            :class="['widget-cell', dragCellClass('stats', i)]"
+            :style="spanStyle(w.size)"
+            v-bind="makeDragHandlers('stats', i)"
+          >
+            <component
+              v-if="getWidgetDef(w.type)"
+              :is="getWidgetDef(w.type)!.component"
+              v-bind="getWidgetDef(w.type)!.props"
+            />
+            <div v-if="editor.editing" class="apple-edit-overlay">
+              <span class="apple-drag-handle" title="拖拽排序">
+                <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
+              </span>
+              <button class="apple-remove-btn" title="移除" @click.stop="removeWidget(w.type)">
+                <Icon icon="ri:close-line" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
 
- <!-- 部件网格 -->
- <div v-if="loaded || editor.editing" class="grid grid-cols-12 gap-4">
- <template v-for="(item, index) in items" :key="item.type">
- <div
- v-if="getWidget(item.type)"
- :class="[
- sizeClass[getWidget(item.type)!.size],
- editor.editing && 'relative rounded outline-dashed outline-2 outline-[var(--color-border-strong)]',
- editor.editing && dragIndex === index && 'opacity-60 outline-primary',
- ]"
- :draggable="editor.editing"
- @dragstart="editor.editing && onDragStart(index)"
- @dragover="editor.editing && onDragOver($event, index)"
- @dragend="editor.editing && onDragEnd()"
- >
- <component
- :is="getWidget(item.type)!.component"
- v-bind="getWidget(item.type)!.props"
- />
- <!-- 编辑态遮罩：拖拽手柄 + 移除按钮（悬浮在卡片角外侧，避免遮挡内容） -->
- <div v-if="editor.editing" class="absolute inset-0 z-10 cursor-move rounded bg-transparent">
- <span
- class="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-text-quaternary shadow"
- >
- <Icon icon="ri:draggable" class="text-sm" />
- </span>
- <button
- class="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-text-quaternary shadow transition-colors hover:border-red-500/30 hover:bg-red-500/20 hover:text-red-500"
- title="移除部件"
- @click.stop="removeWidget(index)"
- >
- <Icon icon="ri:close-line" class="text-sm" />
- </button>
- </div>
- </div>
- </template>
- </div>
+        <!-- Section 2: Charts -->
+        <div class="dashboard-grid dashboard-grid-charts mt-6">
+          <div
+            v-if="sections.chartWide && getWidgetDef(sections.chartWide.type)"
+            :class="['widget-cell chart-wide-cell', editor.editing && 'editable']"
+          >
+            <component
+              :is="getWidgetDef(sections.chartWide.type)!.component"
+              v-bind="getWidgetDef(sections.chartWide.type)!.props"
+            />
+            <div v-if="editor.editing" class="apple-edit-overlay">
+              <button class="apple-remove-btn" title="移除" @click="removeWidget(sections.chartWide!.type)">
+                <Icon icon="ri:close-line" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div v-if="sections.chartNarrow.length" class="narrow-stack">
+            <div
+              v-for="(w, i) in sections.chartNarrow"
+              :key="w.type"
+              :class="['widget-cell', dragCellClass('chartNarrow', i)]"
+              v-bind="makeDragHandlers('chartNarrow', i)"
+            >
+              <component
+                v-if="getWidgetDef(w.type)"
+                :is="getWidgetDef(w.type)!.component"
+                v-bind="getWidgetDef(w.type)!.props"
+              />
+              <div v-if="editor.editing" class="apple-edit-overlay">
+                <span class="apple-drag-handle" title="拖拽排序">
+                  <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
+                </span>
+                <button class="apple-remove-btn" title="移除" @click.stop="removeWidget(w.type)">
+                  <Icon icon="ri:close-line" class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
- <!-- 空布局占位 -->
- <div
- v-if="(loaded || editor.editing) && !items.length"
- class="flex flex-col items-center gap-3 rounded-base border border-dashed border-border py-16 text-text-quaternary"
- >
- <Icon icon="ri:layout-grid-line" class="text-3xl" />
- <p class="text-sm">仪表盘暂无部件</p>
- <VButton v-if="editor.editing" size="sm" @click="goWidgetCenter">添加部件</VButton>
- </div>
- </div>
- </div>
+        <!-- Section 3: Recents -->
+        <div v-if="sections.recents.length" class="dashboard-grid dashboard-grid-unified mt-6">
+          <div
+            v-for="(w, i) in sections.recents"
+            :key="w.type"
+            :class="['widget-cell', dragCellClass('recents', i)]"
+            :style="spanStyle(w.size)"
+            v-bind="makeDragHandlers('recents', i)"
+          >
+            <component
+              v-if="getWidgetDef(w.type)"
+              :is="getWidgetDef(w.type)!.component"
+              v-bind="getWidgetDef(w.type)!.props"
+            />
+            <div v-if="editor.editing" class="apple-edit-overlay">
+              <span class="apple-drag-handle" title="拖拽排序">
+                <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
+              </span>
+              <button class="apple-remove-btn" title="移除" @click.stop="removeWidget(w.type)">
+                <Icon icon="ri:close-line" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Others -->
+        <div v-if="sections.others.length" class="dashboard-grid dashboard-grid-unified mt-6">
+          <div
+            v-for="(w, i) in sections.others"
+            :key="w.type"
+            :class="['widget-cell', dragCellClass('others', i)]"
+            :style="spanStyle(w.size)"
+            v-bind="makeDragHandlers('others', i)"
+          >
+            <component
+              v-if="getWidgetDef(w.type)"
+              :is="getWidgetDef(w.type)!.component"
+              v-bind="getWidgetDef(w.type)!.props"
+            />
+            <div v-if="editor.editing" class="apple-edit-overlay">
+              <span class="apple-drag-handle" title="拖拽排序">
+                <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
+              </span>
+              <button class="apple-remove-btn" title="移除" @click.stop="removeWidget(w.type)">
+                <Icon icon="ri:close-line" class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <WidgetCenter
+          v-model:visible="showWidgetCenter"
+          :existing-types="existingTypes()"
+          @add="addWidget"
+        />
+      </div>
+    </div>
+  </div>
 </template>

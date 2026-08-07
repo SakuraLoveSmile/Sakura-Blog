@@ -1,0 +1,215 @@
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { Icon } from "@iconify/vue";
+
+// 页面编辑器右侧辅助面板（参考 PostEditor 的 EditorSidebar）：
+// 大纲：解析 Markdown 标题可点击跳转；详情：slug/status + 侧边栏组件参数编辑（快速入口）
+interface PageForm {
+  slug: string;
+  title: string;
+  content_md: string;
+  status: string;
+}
+
+type SidebarWidget = { name: string; params: Record<string, any> };
+
+const props = defineProps<{
+  form: PageForm;
+  leftbarWidgets: SidebarWidget[] | null;
+  rightbarWidgets: SidebarWidget[] | null;
+  widgetLibrary: { name: string; label: string; hint?: string }[];
+  knownWidgetFields: Record<string, { key: string; label: string; type: string; placeholder?: string }[]>;
+}>();
+
+const emit = defineEmits<{
+  (e: "jump", line: number, index: number): void;
+  (e: "openSidebarConfig"): void;
+}>();
+
+const activeTab = ref<"outline" | "detail">("outline");
+
+// ---------- 大纲：解析 ATX 标题（跳过代码围栏），点击跳转到对应行 ----------
+interface OutlineItem {
+  level: number;
+  text: string;
+  line: number;
+}
+
+const outline = computed<OutlineItem[]>(() => {
+  const items: OutlineItem[] = [];
+  let inFence = false;
+  const lines = (props.form.content_md || "").split("\n");
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (/^(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      return;
+    }
+    if (inFence) return;
+    const m = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
+    if (m) items.push({ level: m[1].length, text: m[2], line: i });
+  });
+  return items;
+});
+
+const minLevel = computed(() =>
+  outline.value.length ? Math.min(...outline.value.map((i) => i.level)) : 1
+);
+
+function widgetLabelOf(name: string) {
+  return props.widgetLibrary.find((w) => w.name === name)?.label ?? name;
+}
+</script>
+
+<template>
+  <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <!-- Tabs -->
+    <div class="grid grid-cols-2 gap-0.5 rounded-t-xl bg-gray-100 p-1 dark:bg-gray-700/50">
+      <button
+        :class="[
+          'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+          activeTab === 'outline'
+            ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+        ]"
+        @click="activeTab = 'outline'"
+      >
+        <span class="inline-flex items-center gap-1">
+          <Icon icon="ri:list-unordered" class="h-3.5 w-3.5" />
+          大纲
+          <span class="ml-1 rounded-full bg-gray-200 px-1.5 text-[10px] text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ outline.length }}</span>
+        </span>
+      </button>
+      <button
+        :class="[
+          'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+          activeTab === 'detail'
+            ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+        ]"
+        @click="activeTab = 'detail'"
+      >
+        <span class="inline-flex items-center gap-1">
+          <Icon icon="ri:settings-4-line" class="h-3.5 w-3.5" />
+          详情
+        </span>
+      </button>
+    </div>
+
+    <!-- Outline Tab -->
+    <div v-if="activeTab === 'outline'" class="flex-1 overflow-y-auto p-3">
+      <div v-if="!outline.length" class="flex flex-col items-center justify-center py-8 text-center">
+        <Icon icon="ri:article-line" class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
+        <p class="text-xs text-gray-400">暂无标题，添加 # 标题后可在此跳转</p>
+      </div>
+      <ol v-else class="space-y-0.5">
+        <li
+          v-for="(it, idx) in outline"
+          :key="idx"
+          class="group cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-700/40"
+          :style="{ paddingLeft: `${8 + (it.level - minLevel) * 12}px` }"
+          @click="emit('jump', it.line, idx)"
+        >
+          <span class="truncate text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100">{{ it.text }}</span>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Detail Tab -->
+    <div v-else class="flex-1 overflow-y-auto p-3 space-y-4">
+      <div class="space-y-2">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">页面信息</h3>
+        <div class="space-y-2 rounded-lg bg-gray-50 p-3 text-xs dark:bg-gray-700/40">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-gray-500 dark:text-gray-400">标题</span>
+            <span class="truncate font-medium text-gray-800 dark:text-gray-200">{{ form.title || '(未填)' }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-gray-500 dark:text-gray-400">Slug</span>
+            <span class="truncate font-mono text-[11px] text-gray-800 dark:text-gray-200">{{ form.slug || '(未填)' }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-gray-500 dark:text-gray-400">状态</span>
+            <span
+              :class="[
+                'rounded-full px-2 py-0.5 text-[11px]',
+                form.status === 'published'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
+                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400',
+              ]"
+            >{{ form.status === 'published' ? '已发布' : '草稿' }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-gray-500 dark:text-gray-400">字数</span>
+            <span class="font-mono text-[11px] text-gray-700 dark:text-gray-300">
+              {{ form.content_md ? [...form.content_md].filter((c) => !/\s/.test(c)).length : 0 }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">侧边栏配置</h3>
+          <button
+            class="rounded-md px-2 py-1 text-[11px] text-primary hover:bg-primary/10"
+            @click="emit('openSidebarConfig')"
+          >
+            <Icon icon="ri:arrow-up-down-line" class="mr-0.5 inline h-3 w-3 align-middle" />
+            打开完整配置
+          </button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40">
+            <div class="mb-1 flex items-center justify-between">
+              <span class="font-medium text-gray-600 dark:text-gray-300">左栏</span>
+              <span class="text-[10px] text-gray-400">
+                {{ leftbarWidgets === null ? '继承全局' : `自定义 · ${leftbarWidgets.length} 组件` }}
+              </span>
+            </div>
+            <div v-if="leftbarWidgets?.length" class="mt-1 flex flex-wrap gap-1">
+              <span
+                v-for="w in leftbarWidgets"
+                :key="w.name"
+                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600"
+              >
+                <Icon icon="ri-layout-left-line" class="h-3 w-3 text-gray-400" />
+                {{ widgetLabelOf(w.name) }}
+                <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
+                  {{ Object.keys(w.params).length }}
+                </span>
+              </span>
+            </div>
+            <p v-else-if="Array.isArray(leftbarWidgets) && !leftbarWidgets.length" class="mt-1 text-[10px] text-gray-400">
+              （显式空左栏）
+            </p>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40">
+            <div class="mb-1 flex items-center justify-between">
+              <span class="font-medium text-gray-600 dark:text-gray-300">右栏</span>
+              <span class="text-[10px] text-gray-400">
+                {{ rightbarWidgets === null ? '继承全局' : `自定义 · ${rightbarWidgets.length} 组件` }}
+              </span>
+            </div>
+            <div v-if="rightbarWidgets?.length" class="mt-1 flex flex-wrap gap-1">
+              <span
+                v-for="w in rightbarWidgets"
+                :key="w.name"
+                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600"
+              >
+                <Icon icon="ri-layout-right-line" class="h-3 w-3 text-gray-400" />
+                {{ widgetLabelOf(w.name) }}
+                <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
+                  {{ Object.keys(w.params).length }}
+                </span>
+              </span>
+            </div>
+            <p v-else-if="Array.isArray(rightbarWidgets) && !rightbarWidgets.length" class="mt-1 text-[10px] text-gray-400">
+              （显式空右栏）
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

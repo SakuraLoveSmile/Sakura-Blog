@@ -18,16 +18,16 @@ type healthItem struct {
 
 // overviewData 概览返回体。
 type overviewData struct {
-	TodaySearch  int         `json:"today_search"`  // 今日搜索流量
-	TodayCrawl   int         `json:"today_crawl"`   // 今日爬虫
-	CrawlDelta   int         `json:"crawl_delta"`   // 爬虫环比百分比（vs 昨日）
-	Top7Source   string      `json:"top7_source"`   // 近 7 天 TOP 来源
-	Top7Crawler  string      `json:"top7_crawler"`  // 近 7 天最活跃爬虫
+	TodaySearch  int          `json:"today_search"` // 今日搜索流量
+	TodayCrawl   int          `json:"today_crawl"`  // 今日爬虫
+	CrawlDelta   int          `json:"crawl_delta"`  // 爬虫环比百分比（vs 昨日）
+	Top7Source   string       `json:"top7_source"`  // 近 7 天 TOP 来源
+	Top7Crawler  string       `json:"top7_crawler"` // 近 7 天最活跃爬虫
 	Health       []healthItem `json:"health"`
-	FeaturePush  bool        `json:"feature_push"`
-	FeatureCrawl bool        `json:"feature_crawl"`
-	FeatureTraf  bool        `json:"feature_traffic"`
-	HasVerify    bool        `json:"has_verify"`
+	FeaturePush  bool         `json:"feature_push"`
+	FeatureCrawl bool         `json:"feature_crawl"`
+	FeatureTraf  bool         `json:"feature_traffic"`
+	HasVerify    bool         `json:"has_verify"`
 }
 
 // registerOverview 挂概览端点。
@@ -90,7 +90,9 @@ func (m *Module) overviewHandler(c *gin.Context) {
 	out.FeaturePush = cfg.Push.Enabled
 	out.FeatureCrawl = cfg.Crawler.Enabled
 	out.FeatureTraf = cfg.Traffic.Enabled
-	out.HasVerify = cfg.Verify.Google != "" || cfg.Verify.Bing != "" || cfg.Verify.Baidu != ""
+	// 验证码已归属站点级 SEO 段（设置 → SEO），体检从 site.SEO 读取
+	out.HasVerify = site != nil &&
+		(site.SEO.GoogleVerification != "" || site.SEO.BingVerification != "" || site.SEO.BaiduVerification != "")
 
 	c.JSON(http.StatusOK, out)
 }

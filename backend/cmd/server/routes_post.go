@@ -101,16 +101,17 @@ func (s *webServer) handlePost(c *gin.Context) {
 			data.Page.AuthorName = a.Name
 		}
 		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
-		// 左栏「专栏：xxx」系列文章 widget（对齐 widgets/related.ejs relatedPostsInTopic）
-		if p.Topic != "" {
-			if series, err := s.st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
-				ts := &tmpl.TopicSeries{Name: p.Topic}
-				for _, sp := range series {
-					ts.Posts = append(ts.Posts, &tmpl.TopicSeriesPost{Slug: sp.Slug, Title: sp.Title, Active: sp.Slug == slug})
-				}
-				data.TopicSeries = ts
-			}
-		}
+		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。左栏系列 widget 不再装配，保留查询代码注释后续恢复：
+		// if p.Topic != "" {
+		//     if series, err := s.st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
+		//         ts := &tmpl.TopicSeries{Name: p.Topic}
+		//         for _, sp := range series {
+		//             ts.Posts = append(ts.Posts, &tmpl.TopicSeriesPost{Slug: sp.Slug, Title: sp.Title, Active: sp.Slug == slug})
+		//         }
+		//         data.TopicSeries = ts
+		//     }
+		// }
+		_ = p.Topic
 		// read_next 邻篇导航（site.yml article.read_next 可关）：同分类优先，无同分类邻篇回退全局时间序；
 		// 对齐原版 read_next.ejs：prev=较新文章，next=较早文章；排除加密/未发布文章。
 		if s.site.Article.ReadNext {

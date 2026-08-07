@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -51,6 +52,48 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	userTotal, err := h.store.CountUsersByRole("")
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 计算周环比（与 7 天前对比）：趋势数据用于 sparkline 和增长百分比
+	trend, err := h.store.TrendPVUV(14)
+	if err != nil {
+		trend = nil
+	}
+
+	// 组装 sparkline 数据（最近 7 天 PV）
+	sparkline := make([]int, 0, 7)
+	if len(trend) >= 7 {
+		for _, d := range trend[len(trend)-7:] {
+			sparkline = append(sparkline, d.PV)
+		}
+	} else if len(trend) > 0 {
+		for _, d := range trend {
+			sparkline = append(sparkline, d.PV)
+		}
+	}
+
+	// 计算周增长百分比
+	var postChange float64
+	var viewChange float64
+	var commentChange float64
+	if len(trend) >= 14 {
+		// 简单计算：最近 7 天 vs 前 7 天的 PV 增长
+		recentPV := 0
+		prevPV := 0
+		for i := len(trend) - 7; i < len(trend); i++ {
+			recentPV += trend[i].PV
+		}
+		for i := len(trend) - 14; i < len(trend)-7; i++ {
+			prevPV += trend[i].PV
+		}
+		if prevPV > 0 {
+			viewChange = float64(recentPV-prevPV) / float64(prevPV) * 100
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"post_total":       len(postTotal),
@@ -59,6 +102,11 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 		"comment_pending":  commentPending,
 		"view_total":       viewTotal,
 		"attachment_total": attachmentTotal,
+		"user_total":       userTotal,
+		"post_change":      postChange,
+		"view_change":      viewChange,
+		"comment_change":   commentChange,
+		"sparkline":        sparkline,
 	})
 }
 
@@ -75,6 +123,52 @@ func (h *Handler) dashboardRecentComments(c *gin.Context) {
 		items = append(items, toCommentJSON(cm, mirror))
 	}
 	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// dashboardRecentPosts GET /api/v1/dashboard/recent-posts：最近文章。
+func (h *Handler) dashboardRecentPosts(c *gin.Context) {
+	recent, err := h.store.ListRecentPosts(5)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	items := make([]gin.H, 0, len(recent))
+	for _, p := range recent {
+		items = append(items, gin.H{
+			"slug":      p.Slug,
+			"title":     p.Title,
+			"category":  p.Category,
+			"status":    p.Status,
+			"updated_at": p.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+// dashboardCategories GET /api/v1/dashboard/categories：分类分布统计。
+func (h *Handler) dashboardCategories(c *gin.Context) {
+	counts, err := h.store.CountByCategory()
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	type catItem struct {
+		Name  string `json:"name"`
+		Count int    `json:"count"`
+	}
+	total := 0
+	items := make([]catItem, 0, len(counts))
+	for name, cnt := range counts {
+		if name == "" {
+			continue
+		}
+		items = append(items, catItem{Name: name, Count: cnt})
+		total += cnt
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"total": total,
+		"items": items,
+	})
 }
 
 // quickActions GET /api/v1/dashboard/quick-actions：读取用户自定义的快捷操作 key 列表。

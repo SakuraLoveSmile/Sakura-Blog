@@ -156,43 +156,55 @@ func TestSEODisableStopsCrawler(t *testing.T) {
 	}
 }
 
-// TestSEOLifecycleVerifications 生命周期钩子：启用时注入验证码，禁用时清除。
-func TestSEOLifecycleVerifications(t *testing.T) {
-	mgr, deps, _ := newSeoTestEnv(t)
-	m := &Module{}
-	deps.Site.Verifications = map[string]string{}
-
-	// 保存含 Google 验证码的配置（走 ConfigModule.PutConfig）
-	raw := `{"verify":{"google":"abc123","bing":"","baidu":""}}`
-	if err := m.PutConfig(deps, []byte(raw)); err != nil {
-		t.Fatalf("put config: %v", err)
+// TestSEOLegacyRowMigration 历史迁移：共用 "seo" 行的工具集键拆到 seo_tools，
+// verify 并入站点级 *_verification（仅空缺回填），站点级行移除工具集键，重复执行无副作用。
+func TestSEOLegacyRowMigration(t *testing.T) {
+	_, _, st := newSeoTestEnv(t)
+	legacy := `{"default_description":"old","google_verification":"","push":{"enabled":true,"indexnow_key":"k1"},"crawler":{"enabled":true},"traffic":{"enabled":false},"verify":{"google":"gv","bing":"","baidu":""}}`
+	if err := st.PutSetting(legacySeoKey, legacy); err != nil {
+		t.Fatalf("put legacy row: %v", err)
 	}
-	if deps.Site.Verifications["google"] != "abc123" {
-		t.Fatalf("verification not injected after save, got %v", deps.Site.Verifications)
+	if !migrateLegacySeoRow(st) {
+		t.Fatal("migration should report seo row changed")
 	}
-	// 禁用 → 验证码注入被清除
-	if err := mgr.SetEnabled("seo", false, deps); err != nil {
-		t.Fatalf("disable seo: %v", err)
+	// 工具集配置拆到独立行且内容完整
+	cfg := loadConfig(st)
+	if !cfg.Push.Enabled || cfg.Push.IndexNowKey != "k1" {
+		t.Fatalf("push config lost after migration: %+v", cfg.Push)
 	}
-	if _, ok := deps.Site.Verifications["google"]; ok {
-		t.Fatalf("verifications should be cleared after disable, got %v", deps.Site.Verifications)
+	if !cfg.Crawler.Enabled || cfg.Traffic.Enabled {
+		t.Fatalf("toggle config lost after migration: crawler=%v traffic=%v", cfg.Crawler, cfg.Traffic)
 	}
-	// 重新启用 → 从配置恢复注入
-	if err := mgr.SetEnabled("seo", true, deps); err != nil {
-		t.Fatalf("enable seo: %v", err)
+	// 站点级 SEO 行：工具集键移除、原字段保留、verify 回填 google_verification
+	raw, err := st.GetSetting(legacySeoKey)
+	if err != nil {
+		t.Fatalf("get seo row: %v", err)
 	}
-	if deps.Site.Verifications["google"] != "abc123" {
-		t.Fatalf("verification not restored after enable, got %v", deps.Site.Verifications)
+	for _, k := range []string{`"push"`, `"crawler"`, `"traffic"`, `"verify"`} {
+		if strings.Contains(raw, k) {
+			t.Fatalf("legacy row still contains toolset key %s: %s", k, raw)
+		}
+	}
+	if !strings.Contains(raw, `"default_description":"old"`) {
+		t.Fatalf("site-level fields lost: %s", raw)
+	}
+	if !strings.Contains(raw, `"google_verification":"gv"`) {
+		t.Fatalf("verify not merged into google_verification: %s", raw)
+	}
+	// 幂等：seo_tools 行已存在时不再迁移
+	if migrateLegacySeoRow(st) {
+		t.Fatal("migration should be idempotent")
 	}
 }
 
-// TestSEOConfigEndpoint 配置隔离路由：GET/PUT /api/v1/settings/seo 可用且脱敏。
+// TestSEOConfigEndpoint 配置隔离路由：GET/PUT /api/v1/settings/seo_tools 可用且脱敏，
+// 不再劫持站点级 /settings/seo 分段保存路由。
 func TestSEOConfigEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mgr, deps, st := newSeoTestEnv(t)
 	m := &Module{}
-	if got := m.ConfigSection(); got != "seo" {
-		t.Fatalf("ConfigSection = %q, want seo", got)
+	if got := m.ConfigSection(); got != "seo_tools" {
+		t.Fatalf("ConfigSection = %q, want seo_tools", got)
 	}
 
 	// 预置含密钥的配置
@@ -207,7 +219,7 @@ func TestSEOConfigEndpoint(t *testing.T) {
 
 	// GET：配置可读且密钥脱敏
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/settings/seo", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/settings/seo_tools", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("GET status = %d, body = %s", w.Code, w.Body.String())
@@ -223,7 +235,7 @@ func TestSEOConfigEndpoint(t *testing.T) {
 
 	// PUT：脱敏占位回写不覆盖原密钥
 	w = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodPut, "/api/v1/settings/seo", strings.NewReader(`{"push":{"enabled":false,"indexnow_key":"****"}}`))
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/settings/seo_tools", strings.NewReader(`{"push":{"enabled":false,"indexnow_key":"****"}}`))
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("PUT status = %d, body = %s", w.Code, w.Body.String())
@@ -238,7 +250,7 @@ func TestSEOConfigEndpoint(t *testing.T) {
 		t.Fatalf("disable seo: %v", err)
 	}
 	w = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/settings/seo", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/settings/seo_tools", nil)
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("GET after disable status = %d, want 403", w.Code)

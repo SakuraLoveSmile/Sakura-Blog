@@ -1,0 +1,795 @@
+/* Apple Dark Dashboard Styles */
+/* ========================================
+   Responsive strategy (data-bp driven):
+   - data-bp="l" : large  (≥1280px) —— 默认基础样式
+   - data-bp="m" : medium (768-1279px) —— 两列为主
+   - data-bp="s" : small  (<768px)  —— 单列紧凑
+   级联规则：m 的样式在 s 下也生效（s 比 m 更紧凑，叠加额外样式）
+   ======================================== */
+
+/* ===== Viewport / Preview frame ===== */
+.dashboard-viewport {
+  width: 100%;
+  overflow-x: auto;
+  background: #000;
+  min-height: 100vh;
+}
+.dashboard-viewport.is-preview {
+  padding: 16px 0 40px;
+  background:
+    radial-gradient(ellipse at top, rgba(10, 132, 255, 0.06), transparent 60%),
+    #000;
+}
+.dashboard-canvas {
+  margin: 0 auto;
+  transition: width 0.3s ease;
+}
+
+/* ===== Base (L / large, default) ===== */
+.dashboard-apple {
+  background: #000;
+  color: #fff;
+  padding: 24px 32px 40px;
+}
+
+.apple-greeting {
+  margin-bottom: 24px;
+}
+
+.apple-greeting h1 {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0 0 4px;
+}
+
+.apple-greeting p {
+  font-size: 15px;
+  color: #8E8E93;
+  margin: 0;
+}
+
+.apple-edit-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  background: rgba(10, 132, 255, 0.1);
+  border: 1px solid rgba(10, 132, 255, 0.25);
+  border-radius: 10px;
+  color: #5AC8FA;
+  font-size: 13px;
+}
+
+.apple-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ===== View switch (segmented control) ===== */
+.apple-view-switch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 2px;
+  margin-right: 4px;
+}
+.apple-view-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8E8E93;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.apple-view-switch-btn.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.apple-view-switch-btn:hover:not(.active) {
+  color: #EBEBF5;
+}
+.apple-view-switch-label {
+  display: inline;
+}
+/* s 预览空间有限时隐藏文字只留图标 */
+.dashboard-apple[data-bp="s"] .apple-view-switch-label {
+  display: none;
+}
+
+.apple-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 980px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.apple-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.apple-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #8E8E93;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apple-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+/* ===== Grid Layouts ===== */
+.dashboard-grid {
+  display: grid;
+  gap: 20px;
+}
+
+/**
+ * Unified 12-column grid for stats/recents/others.
+ * Each widget sets gridColumn via inline style based on current breakpoint.
+ */
+.dashboard-grid-unified {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.widget-cell {
+  min-width: 0;
+  position: relative;
+}
+
+.widget-cell.editable {
+  outline: 2px dashed rgba(255, 255, 255, 0.15);
+  outline-offset: 2px;
+  border-radius: 22px;
+}
+
+/* Charts area: special 2fr + 1fr layout (matches design draft) */
+.dashboard-grid-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+/* right narrow column: vertical stack */
+.narrow-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.narrow-stack .widget-cell { flex-shrink: 0; }
+
+/* ===== Card base ===== */
+.apple-card {
+  background: rgba(28, 28, 30, 0.72);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 22px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.apple-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
+}
+
+.apple-card:hover {
+  border-color: rgba(84, 84, 88, 0.55);
+  transform: translateY(-1px);
+}
+
+.apple-section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.apple-card-subtitle {
+  font-size: 12px;
+  color: #8E8E93;
+  margin-top: 3px;
+}
+
+.apple-card-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8E8E93;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ===== Stat card ===== */
+.apple-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.apple-stat-value {
+  font-size: 34px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.apple-stat-label {
+  font-size: 13px;
+  color: #8E8E93;
+  font-weight: 500;
+}
+
+.apple-sparkline {
+  width: 100%;
+  height: 32px;
+  margin-top: 16px;
+}
+
+/* ===== Segment control ===== */
+.apple-segment {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.apple-segment-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8E8E93;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apple-segment-btn.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* ===== List items (posts) ===== */
+.apple-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apple-list-item + .apple-list-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.apple-list-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.apple-list-arrow {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  margin-left: auto;
+}
+
+.apple-list-item:hover .apple-list-arrow {
+  opacity: 1;
+}
+
+.apple-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.apple-status-dot.published {
+  background: #30D158;
+}
+
+.apple-status-dot.draft {
+  background: #FF9F0A;
+}
+
+/* ===== Comment items ===== */
+.apple-comment-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.apple-comment-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.apple-comment-item:focus-visible {
+  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline-offset: -2px;
+}
+
+.apple-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apple-avatar,
+.apple-avatar-fallback {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+}
+
+.apple-pending-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 159, 10, 0.15);
+  color: #FF9F0A;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ===== Quick actions ===== */
+.apple-primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 50%, #BF5AF2 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+}
+
+.apple-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(10, 132, 255, 0.35);
+}
+
+.apple-secondary-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #EBEBF5;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.apple-secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.apple-link {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: #0A84FF;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.apple-link:hover {
+  opacity: 0.8;
+}
+
+/* ===== Category donut ===== */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.donut-legend {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+/* ===== Edit mode ===== */
+.apple-edit-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.apple-remove-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 69, 58, 0.9);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  backdrop-filter: blur(10px);
+}
+
+.apple-remove-btn:hover {
+  transform: scale(1.1);
+}
+
+.apple-drag-handle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(10, 132, 255, 0.9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  backdrop-filter: blur(10px);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.apple-drag-handle:hover {
+  transform: scale(1.1);
+  background: rgba(10, 132, 255, 1);
+}
+
+.apple-drag-handle:active {
+  cursor: grabbing;
+}
+
+.widget-cell.editable {
+  cursor: default;
+}
+
+.widget-cell.dragging {
+  opacity: 0.4;
+}
+
+.widget-cell.drag-over-top {
+  box-shadow: inset 3px 0 0 0 #0A84FF;
+  border-radius: 22px;
+}
+
+.widget-cell.drag-over-bottom {
+  box-shadow: inset -3px 0 0 0 #0A84FF;
+  border-radius: 22px;
+}
+
+/* ===== Utilities ===== */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========================================
+   M 断点 (data-bp="m" 或 "s") — ≤1279px
+   ======================================== */
+.dashboard-apple[data-bp="m"] .dashboard-grid-charts,
+.dashboard-apple[data-bp="s"] .dashboard-grid-charts {
+  grid-template-columns: 1fr;
+}
+.dashboard-apple[data-bp="m"] .narrow-stack,
+.dashboard-apple[data-bp="s"] .narrow-stack {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  flex-direction: unset;
+}
+
+.dashboard-apple[data-bp="m"],
+.dashboard-apple[data-bp="s"] {
+  padding: 20px 24px 32px;
+}
+.dashboard-apple[data-bp="m"] .apple-greeting,
+.dashboard-apple[data-bp="s"] .apple-greeting {
+  margin-bottom: 20px;
+}
+.dashboard-apple[data-bp="m"] .apple-greeting h1,
+.dashboard-apple[data-bp="s"] .apple-greeting h1 {
+  font-size: 30px;
+}
+.dashboard-apple[data-bp="m"] .apple-greeting p,
+.dashboard-apple[data-bp="s"] .apple-greeting p {
+  font-size: 14px;
+}
+
+.dashboard-apple[data-bp="m"] .dashboard-grid,
+.dashboard-apple[data-bp="s"] .dashboard-grid,
+.dashboard-apple[data-bp="m"] .dashboard-grid-unified,
+.dashboard-apple[data-bp="s"] .dashboard-grid-unified {
+  gap: 16px;
+}
+.dashboard-apple[data-bp="m"] .narrow-stack,
+.dashboard-apple[data-bp="s"] .narrow-stack {
+  gap: 16px;
+}
+
+.dashboard-apple[data-bp="m"] .apple-card,
+.dashboard-apple[data-bp="s"] .apple-card {
+  padding: 18px;
+  border-radius: 18px;
+}
+.dashboard-apple[data-bp="m"] .apple-section-title,
+.dashboard-apple[data-bp="s"] .apple-section-title {
+  font-size: 16px;
+}
+
+.dashboard-apple[data-bp="m"] .apple-stat-icon,
+.dashboard-apple[data-bp="s"] .apple-stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  margin-bottom: 14px;
+}
+.dashboard-apple[data-bp="m"] .apple-stat-value,
+.dashboard-apple[data-bp="s"] .apple-stat-value {
+  font-size: 30px;
+}
+.dashboard-apple[data-bp="m"] .apple-stat-label,
+.dashboard-apple[data-bp="s"] .apple-stat-label {
+  font-size: 12px;
+}
+.dashboard-apple[data-bp="m"] .apple-sparkline,
+.dashboard-apple[data-bp="s"] .apple-sparkline {
+  height: 28px;
+  margin-top: 12px;
+}
+
+.dashboard-apple[data-bp="m"] .apple-segment-btn,
+.dashboard-apple[data-bp="s"] .apple-segment-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.dashboard-apple[data-bp="m"] .donut-wrap,
+.dashboard-apple[data-bp="s"] .donut-wrap {
+  gap: 12px;
+}
+
+.dashboard-apple[data-bp="m"] .apple-avatar,
+.dashboard-apple[data-bp="m"] .apple-avatar-fallback,
+.dashboard-apple[data-bp="s"] .apple-avatar,
+.dashboard-apple[data-bp="s"] .apple-avatar-fallback {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+
+/* ========================================
+   S 断点 (data-bp="s") — <768px 手机
+   ======================================== */
+.dashboard-apple[data-bp="s"] .narrow-stack {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-apple[data-bp="s"] {
+  padding: 16px 16px 96px; /* extra bottom space for mobile nav */
+}
+.dashboard-apple[data-bp="s"] .apple-greeting {
+  margin-bottom: 16px;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+.dashboard-apple[data-bp="s"] .apple-greeting h1 {
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+.dashboard-apple[data-bp="s"] .apple-greeting p {
+  font-size: 13px;
+}
+.dashboard-apple[data-bp="s"] .apple-header-actions {
+  width: 100%;
+  justify-content: flex-start;
+}
+.dashboard-apple[data-bp="s"] .apple-edit-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+.dashboard-apple[data-bp="s"] .apple-icon-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-apple[data-bp="s"] .mt-6 {
+  margin-top: 16px !important;
+}
+
+.dashboard-apple[data-bp="s"] .dashboard-grid,
+.dashboard-apple[data-bp="s"] .dashboard-grid-unified {
+  gap: 14px;
+}
+.dashboard-apple[data-bp="s"] .narrow-stack {
+  gap: 14px;
+}
+
+.dashboard-apple[data-bp="s"] .apple-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+.dashboard-apple[data-bp="s"] .apple-section-title {
+  font-size: 15px;
+}
+.dashboard-apple[data-bp="s"] .apple-card-subtitle {
+  font-size: 11px;
+}
+.dashboard-apple[data-bp="s"] .apple-card-badge {
+  font-size: 10px;
+}
+
+.dashboard-apple[data-bp="s"] .apple-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+.dashboard-apple[data-bp="s"] .apple-stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.dashboard-apple[data-bp="s"] .apple-stat-value {
+  font-size: 26px;
+}
+.dashboard-apple[data-bp="s"] .apple-stat-label {
+  font-size: 12px;
+}
+.dashboard-apple[data-bp="s"] .apple-sparkline {
+  height: 24px;
+  margin-top: 10px;
+}
+
+.dashboard-apple[data-bp="s"] .apple-segment {
+  border-radius: 7px;
+}
+.dashboard-apple[data-bp="s"] .apple-segment-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.dashboard-apple[data-bp="s"] .apple-list-item {
+  gap: 10px;
+  padding: 9px 2px;
+}
+.dashboard-apple[data-bp="s"] .apple-list-item .text-sm { font-size: 13px; }
+.dashboard-apple[data-bp="s"] .apple-list-item .text-xs { font-size: 11px; }
+.dashboard-apple[data-bp="s"] .apple-list-arrow {
+  opacity: 0.5; /* always visible on mobile so user knows it's tappable */
+  width: 14px;
+  height: 14px;
+}
+
+.dashboard-apple[data-bp="s"] .apple-comment-item {
+  gap: 10px;
+  padding: 10px;
+}
+.dashboard-apple[data-bp="s"] .apple-avatar,
+.dashboard-apple[data-bp="s"] .apple-avatar-fallback {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.dashboard-apple[data-bp="s"] .donut-wrap {
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+.dashboard-apple[data-bp="s"] .donut-wrap svg {
+  width: 120px !important;
+  height: 120px !important;
+  margin: 0 auto;
+}
+.dashboard-apple[data-bp="s"] .donut-legend {
+  max-height: none;
+}
+
+.dashboard-apple[data-bp="s"] .apple-link {
+  font-size: 12px;
+}
+.dashboard-apple[data-bp="s"] .apple-pending-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+/* S 断点下视角切换器更紧凑 */
+.dashboard-apple[data-bp="s"] .apple-view-switch-btn {
+  padding: 6px 8px;
+}

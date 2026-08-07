@@ -12,7 +12,7 @@
   // ------- 常量 -------
   // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
   var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/artalk/';
-  var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'twemoji', 'aru'];
+  var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'aru', 'twemoji'];
 
   // ------- 全局运行时状态 -------
   var state = {
@@ -25,7 +25,8 @@
     activePack: EMOJI_PACKS[0],
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
-    loadingComments: false
+    loadingComments: false,
+    sortMode: 'newest'    // 'newest' | 'hottest' | 'oldest' | 'author'
   };
 
   // ------- 工具 -------
@@ -90,6 +91,7 @@
     var anon = $('#cmt-id-anon');
     var logged = $('#cmt-id-logged');
     var submit = $('#cmt-submit');
+    var accountBtn = $('#cmt-tool-account');
     if (!anon || !logged) return;
 
     if (state.mode === 'logged-in') {
@@ -100,11 +102,16 @@
       var nickEl = $('#cmt-id-nick');
       if (nickEl) nickEl.textContent = me.nickname || me.username || '';
       if (submit) submit.textContent = '发送';
+      if (accountBtn) accountBtn.style.display = 'none';
+      // 已登录用户：昵称旁显示 verified 徽章（注册用户即已验证，博主优先显示博主徽章则隐藏）
+      var vEl = $('#cmt-id-verified');
+      if (vEl) vEl.style.display = (me.verified !== false && !me.is_admin) ? 'inline-flex' : 'none';
     } else if (state.mode === 'anonymous') {
       if (identity) identity.style.display = 'flex';
       anon.style.display = 'block';
       logged.style.display = 'none';
       if (submit) submit.textContent = '发送';
+      if (accountBtn) accountBtn.style.display = 'inline-flex';
       // 匿名态恢复上次输入（localStorage 记住 nick/email/link）
       try {
         $('#cmt-nick').value = localStorage.getItem('cmt_nick') || '';
@@ -115,6 +122,7 @@
       // guest：隐藏身份行，按钮变「登录」（点击开弹窗，对齐参照截图 1）
       if (identity) identity.style.display = 'none';
       if (submit) submit.textContent = '登录';
+      if (accountBtn) accountBtn.style.display = 'none';
     }
   }
 
@@ -170,9 +178,9 @@
         '<div class="cmt-item-head">' +
           '<span class="cmt-item-nick">' + nickHtml + '</span>' +
           renderBadges(cmt) +
+          (cmt.reply_ref ? '<span class="cmt-reply-ref">' + cmt.reply_ref + '</span>' : '') +
           '<span class="cmt-item-time">' + escapeHtml(cmt.time_ago || cmt.date_created || '') + '</span>' +
         '</div>' +
-        (cmt.reply_ref ? '<div class="cmt-reply-ref">' + cmt.reply_ref + '</div>' : '') +
         '<div class="cmt-item-body">' + (cmt.content_html || '') + '</div>' +
         '<div class="cmt-item-actions">' +
           '<button type="button" class="cmt-action-btn cmt-reply-btn" data-id="' + cmt.id + '" data-nick="' + escapeHtml(cmt.nick) + '">' +
@@ -187,6 +195,27 @@
         (cmt.children && cmt.children.length ? '<div class="cmt-children">' + cmt.children.map(renderCommentItem).join('') + '</div>' : '') +
       '</div>' +
     '</article>';
+  }
+
+  // ------- 评论排序：newest(最新)/hottest(最热)/oldest(最早)/author(作者) -------
+  function sortComments(list) {
+    var arr = list.slice();
+    if (state.sortMode === 'newest') {
+      arr.sort(function (a, b) { return b.id - a.id; });
+    } else if (state.sortMode === 'oldest') {
+      arr.sort(function (a, b) { return a.id - b.id; });
+    } else if (state.sortMode === 'hottest') {
+      arr.sort(function (a, b) {
+        var la = a.likes || 0, lb = b.likes || 0;
+        if (lb !== la) return lb - la;
+        return b.id - a.id; // 点赞相同则最新在前
+      });
+    } else if (state.sortMode === 'author') {
+      // 仅显示博主/作者评论
+      arr = arr.filter(function (c) { return c.is_admin; });
+      arr.sort(function (a, b) { return a.id - b.id; });
+    }
+    return arr;
   }
 
   function renderComments(data) {
@@ -205,13 +234,44 @@
       listHead.style.display = 'flex';
       listHead.querySelector('.cmt-list-title').textContent = total + ' 条评论';
       emptyEl.style.display = 'none';
-      listEl.innerHTML = state.comments.map(renderCommentItem).join('');
+      listEl.innerHTML = sortComments(state.comments).map(renderCommentItem).join('');
+      maybeScrollToHashComment();
     } else {
       listHead.style.display = 'none';
       emptyEl.style.display = 'flex';
     }
 
     if (countBadge) countBadge.textContent = total > 0 ? ('共 ' + total + ' 条评论') : '0';
+  }
+
+  // 深链支持：URL 形如 /post/xxx#comment-123 时，评论懒加载完成后滚动并高亮对应评论
+  function parseHashCommentId() {
+    var loc = window.location;
+    if (!loc) return 0;
+    var m = /(?:#|\/)comment-(\d+)\s*$/.exec(loc.hash || '');
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  function maybeScrollToHashComment() {
+    var id = parseHashCommentId();
+    if (!id) return;
+    var target = document.querySelector('.cmt-item[data-id="' + id + '"]');
+    if (!target) return;
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    target.classList.add('cmt-item-highlight');
+    setTimeout(function () { target.classList.remove('cmt-item-highlight'); }, 2500);
+  }
+
+  function rerenderSorted() {
+    var listEl = $('#cmt-list');
+    if (!listEl || !state.comments.length) return;
+    var sorted = sortComments(state.comments);
+    if (state.sortMode === 'author' && !sorted.length) {
+      // 作者筛选无结果：显示提示
+      listEl.innerHTML = '<div class="cmt-empty-author">暂无作者评论</div>';
+      return;
+    }
+    listEl.innerHTML = sorted.map(renderCommentItem).join('');
   }
 
   function insertNewComment(cmt) {
@@ -234,7 +294,7 @@
           main.appendChild(childrenBox);
         }
         var frag = document.createElement('template');
-        cmt.reply_ref = '回复 <b>' + escapeHtml(parent.getAttribute('data-nick')) + '</b>';
+        cmt.reply_ref = '▸ ' + escapeHtml(parent.getAttribute('data-nick'));
         frag.innerHTML = renderCommentItem(cmt);
         childrenBox.appendChild(frag.content.firstElementChild);
         if (listHead && listHead.querySelector('.cmt-list-title')) {
@@ -625,6 +685,8 @@
         toast('已退出登录', 'success');
       });
     });
+    // 匿名态工具栏的账户图标：点击打开登录弹窗（Email 登录/切换账号）
+    on($('#cmt-tool-account'), 'click', openModal);
     on($('#cmt-modal-close'), 'click', closeModal);
     on($('#cmt-modal-mask'), 'click', closeModal);
     // 二选一：Email → 登录/注册表单；跳过验证 → 匿名三输入态
@@ -754,6 +816,43 @@
         if (src) insertEmojiAtCursor(src);
         // 保持面板打开允许连发
         return;
+      }
+      // 排序：切换下拉菜单
+      var sortBtn = e.target.closest && e.target.closest('#cmt-sort-btn');
+      if (sortBtn) {
+        var menu = $('#cmt-sort-menu');
+        if (menu) {
+          var open = menu.style.display === 'none';
+          menu.style.display = open ? 'block' : 'none';
+          sortBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        return;
+      }
+      // 排序：选择某项
+      var sortItem = e.target.closest && e.target.closest('.cmt-sort-item');
+      if (sortItem) {
+        var mode = sortItem.getAttribute('data-sort');
+        if (mode && mode !== state.sortMode) {
+          state.sortMode = mode;
+          $$('.cmt-sort-item').forEach(function (it) { it.classList.toggle('is-active', it === sortItem); });
+          var label = $('#cmt-sort-label');
+          if (label) label.textContent = sortItem.textContent.trim();
+          rerenderSorted();
+        }
+        var m = $('#cmt-sort-menu');
+        if (m) m.style.display = 'none';
+        var b = $('#cmt-sort-btn');
+        if (b) b.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      // 点击外部关闭排序菜单
+      if (e.target.closest && !e.target.closest('.cmt-sort-wrap')) {
+        var sm = $('#cmt-sort-menu');
+        if (sm && sm.style.display !== 'none') {
+          sm.style.display = 'none';
+          var sb = $('#cmt-sort-btn');
+          if (sb) sb.setAttribute('aria-expanded', 'false');
+        }
       }
     });
 

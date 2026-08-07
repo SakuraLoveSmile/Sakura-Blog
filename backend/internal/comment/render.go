@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"html/template"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 var (
 	sharedMD     = goldmark.New() // 评论无需 AutoHeadingID
 	sharedPolicy = buildCommentPolicy()
+	// 匹配表情包 CDN 图片的 <img src="...">，用于追加 cmt-emoji-img class 以约束尺寸。
+	emojiImgRe = regexp.MustCompile(`(<img\b[^>]*\bsrc="https?://[^"]*(?:emoticons|emoji)[^"]*"[^>]*)(>)`)
 )
 
 // buildCommentPolicy 评论 bluemonday 策略：基于 UGCPolicy，额外允许表情图片 img.cmt-emoji-img
@@ -39,7 +42,17 @@ func Render(src string) (string, error) {
 	if err := sharedMD.Convert([]byte(src), &sb); err != nil {
 		return "", fmt.Errorf("render comment markdown: %w", err)
 	}
-	return sharedPolicy.Sanitize(sb.String()), nil
+	html := sharedPolicy.Sanitize(sb.String())
+	// 给表情包 CDN 的 <img> 追加 cmt-emoji-img class，使 CSS 约束其尺寸为 32px 内联表情。
+	html = emojiImgRe.ReplaceAllStringFunc(html, func(m string) string {
+		if strings.Contains(m, `class="`) {
+			// 已有 class 属性：追加
+			return strings.Replace(m, `class="`, `class="cmt-emoji-img `, 1)
+		}
+		// 无 class：在 src 后插入
+		return emojiImgRe.ReplaceAllString(m, `${1} class="cmt-emoji-img"${2}`)
+	})
+	return html, nil
 }
 
 // AvatarURL 由邮箱生成 Gravatar 头像 URL（md5(小写 trim 后邮箱)），?d=mm 兜底默认头像。
@@ -90,6 +103,11 @@ func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig) []*tmpl.Co
 	// 初始化为空 slice 而非 nil：无评论时 JSON 序列化为 [] 而不是 null（API 消费方更友好）
 	roots := []*tmpl.CommentItem{}
 	byID := map[int64]*tmpl.CommentItem{}
+	// id -> 昵称映射，用于子评论 reply_ref 显示"▸ 被回复人"
+	nickByID := map[int64]string{}
+	for _, c := range comments {
+		nickByID[c.ID] = c.Nick
+	}
 	for _, c := range comments {
 		if c.RootID == 0 {
 			item := ToViewItem(c, cfg)
@@ -100,7 +118,12 @@ func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig) []*tmpl.Co
 	for _, c := range comments {
 		if c.RootID != 0 {
 			if root, ok := byID[c.RootID]; ok {
-				root.Children = append(root.Children, ToViewItem(c, cfg))
+				item := ToViewItem(c, cfg)
+				// 子评论显示被回复人：回复目标是 ParentID（可能是 root 或另一条子评论）
+				if nick, ok := nickByID[c.ParentID]; ok && nick != "" {
+					item.ReplyRef = "▸ " + nick
+				}
+				root.Children = append(root.Children, item)
 			}
 		}
 	}

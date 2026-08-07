@@ -126,6 +126,7 @@ var zhCN = map[string]string{
 	"comment.website":     "网站",
 	"comment.website_opt": "网站（选填）",
 	"comment.submit":      "发送",
+	"comment.login":       "登录",
 	"comment.count":       "%d 条评论",
 	"comment.no_comment":  "暂无评论",
 	"comment.loading":     "加载评论中…", // Spec 50 评论区懒加载占位

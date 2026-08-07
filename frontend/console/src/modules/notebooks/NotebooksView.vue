@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { notebookApi } from "@/api";
-import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import ContentEditor from "@/components/ContentEditor.vue";
 import { Icon } from "@iconify/vue";
 import { VCard, VButton, Toast, Dialog, VModal } from "@/components/ui";
 
@@ -174,7 +174,7 @@ const noteForm = ref({ title: "", tags: "", content: "" });
 const noteLoading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
-const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
+const editorRef = ref<InstanceType<typeof ContentEditor> | null>(null);
 
 const hasCurrent = computed(() => currentId.value > 0);
 
@@ -653,10 +653,12 @@ onMounted(() => {
               </div>
             </div>
 
-            <MarkdownEditor
+            <!-- 内容编辑器（富文本/Markdown 双模式） -->
+            <ContentEditor
               ref="editorRef"
               v-model="noteForm.content"
               :storage-key="'note:' + currentId"
+              min-height="400px"
               @save="handleSave"
             />
 

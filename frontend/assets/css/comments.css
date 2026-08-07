@@ -61,6 +61,7 @@
 
 /* ===== 身份栏：匿名态（三输入同行无边框，底部统一虚线分隔） ===== */
 .cmt-identity { display: flex; flex-direction: column; border-bottom: 1px dashed var(--block-border, #e5e7eb); }
+.cmt-id-anon { display: block; }
 .cmt-id-anon-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -81,6 +82,8 @@
 .cmt-id-input:focus {
   box-shadow: inset 0 0 0 1.5px var(--theme, #0083ff);
 }
+.cmt-id-anon-row .cmt-id-input:first-child { border-top-left-radius: 24px; }
+.cmt-id-anon-row .cmt-id-input:last-child { border-top-right-radius: 24px; }
 .cmt-id-input::placeholder { color: var(--text-p3, #999); }
 
 /* 匿名提示 + 登录切换已废弃：身份入口统一走底栏「登录」按钮与弹窗二选一 */
@@ -100,6 +103,7 @@
   text-overflow: ellipsis;
   overflow: hidden;
 }
+.cmt-id-verified { flex-shrink: 0; }
 .cmt-id-logout {
   display: inline-flex;
   align-items: center;
@@ -237,23 +241,29 @@
 /* 蜜罐字段 */
 .cmt-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
-/* ----------------------- 表情面板（Artalk plug-panel：贴底栏下方展开） ----------------------- */
+/* ----------------------- 表情面板（内嵌编辑器：textarea 与工具栏之间，tabs 置底） ----------------------- */
 .cmt-emoji-panel-v2 {
   border-top: 1px solid var(--block-border, #e5e7eb);
-  background: var(--card-bg, var(--background, #fff));
+  border-bottom: 1px solid var(--block-border, #e5e7eb);
+  background: inherit;
   display: flex;
   flex-direction: column;
-  max-height: 236px;
+  max-height: 220px;
+}
+.cmt-emoji-body {
+  padding: 0.4rem 0.5rem;
+  overflow: auto;
+  flex: 1;
 }
 .cmt-emoji-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.1rem;
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--block-border, #e5e7eb);
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid var(--block-border, #e5e7eb);
 }
 .cmt-emoji-tab {
-  padding: 0.28rem 0.7rem;
+  padding: 0.3rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 400;
   color: var(--text-p2, #555);
@@ -263,16 +273,10 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.cmt-emoji-tab:hover { color: var(--theme, #0083ff); }
+.cmt-emoji-tab:hover { color: var(--theme, #0083ff); background: color-mix(in srgb, var(--theme, #0083ff) 8%, transparent); }
 .cmt-emoji-tab.is-active {
-  background: color-mix(in srgb, var(--theme, #0083ff) 14%, transparent);
   color: var(--theme, #0083ff);
   font-weight: 600;
-}
-.cmt-emoji-body {
-  padding: 0.5rem;
-  overflow: auto;
-  flex: 1;
 }
 .cmt-emoji-loading {
   display: inline-flex;
@@ -290,26 +294,26 @@
 }
 .cmt-emoji-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
-  gap: 0.2rem;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 0.1rem;
 }
 .cmt-emoji-cell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background 0.12s;
 }
 .cmt-emoji-cell:hover { background: color-mix(in srgb, var(--theme, #0083ff) 14%, transparent); }
 .cmt-emoji-img {
-  max-width: 28px;
-  max-height: 28px;
+  max-width: 30px;
+  max-height: 30px;
   object-fit: contain;
   display: block;
 }
@@ -325,6 +329,58 @@
   color: var(--text-p1, #111827);
 }
 .cmt-list-title { font-size: 0.9375rem; font-weight: 500; color: var(--text-p1, #111827); }
+
+/* 排序下拉菜单 */
+.cmt-sort-wrap { position: relative; }
+.cmt-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-p2, #555);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.cmt-sort-btn:hover { color: var(--theme, #0083ff); background: color-mix(in srgb, var(--theme, #0083ff) 8%, transparent); }
+.cmt-sort-btn svg { transition: transform 0.2s; }
+.cmt-sort-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.cmt-sort-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 120px;
+  padding: 0.35rem 0;
+  background: var(--card, var(--block, #fff));
+  border: 1px solid var(--block-border, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  overflow: hidden;
+}
+.cmt-sort-item {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-p2, #555);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.12s, background 0.12s;
+}
+.cmt-sort-item:hover { color: var(--theme, #0083ff); background: color-mix(in srgb, var(--theme, #0083ff) 8%, transparent); }
+.cmt-sort-item.is-active { color: var(--theme, #0083ff); font-weight: 600; }
+.cmt-empty-author {
+  padding: 2rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-p3, #888);
+}
 
 .cmt-list { display: flex; flex-direction: column; }
 .cmt-lazy {
@@ -373,18 +429,31 @@
 }
 .cmt-empty-action:hover { opacity: 0.88; }
 
-/* ----------------------- 单条评论（Artalk comment：方角头像 + 主题色昵称 + 纯文本正文） ----------------------- */
+/* ----------------------- 单条评论（Artalk 卡片：圆角白底 + 圆头像 + 卡片间距） ----------------------- */
 .cmt-item {
   position: relative;
-  padding: 0.9rem 0 0.2rem 3.9rem;
+  padding: 1rem 1rem 0.5rem 3.9rem;
   display: block;
+  border-radius: 16px;
+  background: var(--card, var(--block, #fff));
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.02);
 }
-.cmt-item + .cmt-item { border-top: 1px solid color-mix(in srgb, var(--block-border, #e5e7eb) 60%, transparent); }
+.cmt-item + .cmt-item { margin-top: 0.5rem; border-top: none; }
+
+/* 深链定位高亮：来自 #comment-<id> */
+.cmt-item-highlight {
+  animation: cmt-highlight 2.5s ease-out;
+}
+@keyframes cmt-highlight {
+  0%   { box-shadow: 0 0 0 3px var(--theme, #0A84FF), 0 0 0 6px rgba(10,132,255,0.25); }
+  70%  { box-shadow: 0 0 0 3px var(--theme, #0A84FF), 0 0 0 6px rgba(10,132,255,0.15); }
+  100% { box-shadow: 0 0 8px rgba(0, 0, 0, 0.02); }
+}
 .cmt-item-avatar {
   position: absolute;
-  left: 0; top: 1rem;
-  width: 50px; height: 50px;
-  border-radius: 3px;
+  left: 1rem; top: 1rem;
+  width: 36px; height: 36px;
+  border-radius: 50%;
   object-fit: cover;
   background: var(--block-border, #e5e7eb);
 }
@@ -396,8 +465,8 @@
   gap: 0.4rem;
 }
 .cmt-item-nick {
-  font-size: 0.875rem;
-  font-weight: 400;
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--theme, #0083ff);
 }
 .cmt-item-nick a { color: inherit; text-decoration: none; }
@@ -406,16 +475,19 @@
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
-  padding: 0 6px;
+  padding: 0 8px;
   font-size: 0.68rem;
   font-weight: 500;
   line-height: 1.6;
-  border-radius: 3px;
+  border-radius: 100px;
   background: color-mix(in srgb, var(--text-p3, #777) 22%, transparent);
   color: var(--text-p2, #555);
 }
 .cmt-badge-verified { color: #10b981; background: color-mix(in srgb, #10b981 16%, transparent); }
-.cmt-badge-admin { color: var(--theme, #0083ff); background: color-mix(in srgb, var(--theme, #0083ff) 14%, transparent); }
+.cmt-badge-admin {
+  color: #fff;
+  background: #ff6b35;
+}
 .cmt-item-time {
   font-size: 0.8125rem;
   color: var(--text-p3, #888);
@@ -465,7 +537,9 @@
 .cmt-item-body p { margin: 0.4rem 0; }
 .cmt-item-body p:first-child { margin-top: 0; }
 .cmt-item-body p:last-child { margin-bottom: 0; }
-.cmt-item-body img.cmt-emoji-img {
+.cmt-item-body img.cmt-emoji-img,
+.cmt-item-body img[src*="emoticons"],
+.cmt-item-body img[src*="emoji"] {
   display: inline-block;
   max-width: 32px;
   max-height: 32px;
@@ -499,24 +573,29 @@
 .cmt-like-btn.is-liked { color: #ef4444; }
 .cmt-like-count { font-variant-numeric: tabular-nums; }
 
-/* 回复嵌套（Artalk children：缩进 + 小头像，无气泡） */
+/* 回复嵌套（Artalk：卡片内虚线分隔，无左侧竖线） */
 .cmt-children {
   margin-top: 0.5rem;
-  margin-left: 0.2rem;
-  padding-left: 0.9rem;
-  border-left: 2px solid color-mix(in srgb, var(--block-border, #e5e7eb) 70%, transparent);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 0;
+  border-top: 1px dashed var(--block-border, #e5e7eb);
   display: flex;
   flex-direction: column;
 }
-.cmt-children .cmt-item { padding: 0.7rem 0 0.15rem 3rem; border-top: none; }
-.cmt-children .cmt-item-avatar { width: 36px; height: 36px; top: 0.8rem; }
+.cmt-children .cmt-item {
+  padding: 0.75rem 1rem 0.4rem 3.5rem;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cmt-children .cmt-item + .cmt-item { margin-top: 0; border-top: 1px dashed var(--block-border, #e5e7eb); }
+.cmt-children .cmt-item-avatar { width: 30px; height: 30px; top: 0.75rem; left: 1rem; }
 .cmt-children .cmt-item-body { font-size: 0.9rem; }
 .cmt-reply-ref {
-  font-size: 0.75rem;
-  color: var(--text-p3, #888);
-  margin-bottom: 0.1rem;
+  font-size: 0.875rem;
+  color: var(--theme, #0083ff);
 }
-.cmt-reply-ref b { color: var(--theme, #0083ff); font-weight: 600; }
 
 /* ----------------------- 登录/注册弹窗（Artalk 扁平化） ----------------------- */
 .cmt-modal {
@@ -673,7 +752,6 @@
 }
 
 /* ----------------------- 深色模式微调（Stellar data-theme="dark"） ----------------------- */
-:root[data-theme="dark"] .cmt-emoji-panel-v2,
 :root[data-theme="dark"] .cmt-modal-dialog {
   background: color-mix(in srgb, var(--background) 86%, #000);
   border-color: color-mix(in srgb, var(--block-border) 85%, #111);

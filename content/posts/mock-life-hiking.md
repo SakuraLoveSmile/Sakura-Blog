@@ -28,7 +28,7 @@ poster_caption: 云栖竹径 · 十里琅珰 · 五云山
 
 ## 一些照片
 
-![山脊远眺](/assets/img/icon-512.png)
+![山脊远眺](https://picsum.photos/seed/ridge-view/800/450)
 
 ## 下次
 

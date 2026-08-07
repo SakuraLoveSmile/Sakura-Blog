@@ -213,6 +213,8 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 仪表盘
 		authed.GET("/dashboard/stats", h.dashboardStats)
 		authed.GET("/dashboard/recent-comments", h.dashboardRecentComments)
+		authed.GET("/dashboard/recent-posts", h.dashboardRecentPosts)
+		authed.GET("/dashboard/categories", h.dashboardCategories)
 		authed.GET("/dashboard/quick-actions", h.quickActions)
 		authed.PUT("/dashboard/quick-actions", h.saveQuickActions)
 

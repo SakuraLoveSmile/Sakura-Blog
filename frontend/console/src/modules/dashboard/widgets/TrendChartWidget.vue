@@ -1,206 +1,224 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from"vue";
-import { statsApi } from"@/api";
-import { Icon } from"@iconify/vue";
-import { VCard } from"@/components/ui";
-import { Chart } from"chart.js";
+import { computed, onMounted, ref, watch } from "vue";
+import { Icon } from "@iconify/vue";
+import { useBreakpoint } from "../useBreakpoint";
 
-const trendDays = ref(7);
-const trend = ref<{ date: string; pv: number; uv: number }[]>([]);
-const trendCanvas = ref<HTMLCanvasElement | null>(null);
-const metricTab = ref<'pv' | 'uv' | 'both'>('both');
-let trendChartInstance: Chart | null = null;
+interface DailyStat {
+  date: string;
+  pv: number;
+  uv: number;
+}
 
-/** 趋势图日期范围文字（如"2026-06-27 至 2026-07-26"） */
-const trendDateRange = computed(() => {
- if (!trend.value.length) return '';
- return `${trend.value[0].date} 至 ${trend.value[trend.value.length - 1].date}`;
+const { breakpoint } = useBreakpoint();
+
+const days = ref<7 | 30>(7);
+const data = ref<DailyStat[]>([]);
+const loading = ref(true);
+const error = ref("");
+
+function fetchTrend(d: number) {
+  loading.value = true;
+  fetch(`/api/v1/stats/trend?days=${d}`, { credentials: "include" })
+    .then((r) => {
+      if (!r.ok) throw new Error("加载趋势失败");
+      return r.json();
+    })
+    .then((resp: { trend: DailyStat[] }) => {
+      data.value = resp.trend;
+    })
+    .catch((e) => (error.value = e.message))
+    .finally(() => (loading.value = false));
+}
+
+onMounted(() => fetchTrend(days.value));
+watch(days, (d) => fetchTrend(d));
+
+const totals = computed(() => {
+  const pv = data.value.reduce((s, d) => s + d.pv, 0);
+  const uv = data.value.reduce((s, d) => s + d.uv, 0);
+  const avgPv = data.value.length ? Math.round(pv / data.value.length) : 0;
+  const peak = data.value.reduce((m, d) => Math.max(m, d.pv), 0);
+  return { pv, uv, avgPv, peak };
 });
 
-async function loadTrend() {
- try {
- const { data } = await statsApi.trend(trendDays.value);
- trend.value = data.trend || [];
- } catch (err) {
- console.error('[TrendChart] Failed to load trend data:', err);
- trend.value = [];
- }
- initTrendChart();
-}
-
-// 初始化主趋势折线图
-function initTrendChart() {
- if (!trend.value || trend.value.length === 0) return;
- const canvas = trendCanvas.value;
- if (!canvas) return;
-
- const ctx = canvas.getContext('2d');
- const cs = getComputedStyle(document.documentElement);
- const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#0A84FF';
- const c2 = cs.getPropertyValue('--color-chart-2').trim() || '#BF5AF2';
- const gridColor = cs.getPropertyValue('--color-chart-grid').trim() || '#2c2c2e';
- const mutedColor = cs.getPropertyValue('--color-muted-foreground').trim() || '#8e8e93';
- const cardBg = cs.getPropertyValue('--color-card').trim() || '#1c1c1e';
- const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#ffffff';
- const borderColor = cs.getPropertyValue('--color-border').trim() || '#3a3a3c';
-
- // PV 渐变色填充 - hex alpha（1F = 12% 透明度）
- const gradient = ctx!.createLinearGradient(0, 0, 0, canvas.height);
- gradient.addColorStop(0, c1 + '1F');
- gradient.addColorStop(1, c1 + '00');
-
- trendChartInstance = new Chart(canvas, {
- type: 'line',
- data: {
- labels: trend.value.map(d => d.date.slice(5)),
- datasets: [
- {
- label: 'PV',
- data: trend.value.map(d => d.pv),
- borderColor: c1,
- backgroundColor: gradient,
- borderWidth: 2,
- fill: true,
- tension: 0.35,
- pointRadius: 0,
- pointHoverRadius: 4,
- pointHoverBackgroundColor: c1,
- pointHoverBorderColor: '#1c1c1e',
- pointHoverBorderWidth: 2,
- hidden: metricTab.value === 'uv'
- },
- {
- label: 'UV',
- data: trend.value.map(d => d.uv),
- borderColor: c2,
- backgroundColor: 'transparent',
- borderWidth: 2,
- fill: false,
- tension: 0.35,
- pointRadius: 0,
- pointHoverRadius: 4,
- pointHoverBackgroundColor: c2,
- pointHoverBorderColor: '#1c1c1e',
- pointHoverBorderWidth: 2,
- hidden: metricTab.value === 'pv'
- }
- ]
- },
- options: {
- responsive: true,
- maintainAspectRatio: false,
- animation: {
- duration: 0, // 禁用动画避免重绘
- },
- interaction: { mode: 'index', intersect: false },
- plugins: {
- legend: { display: false },
- tooltip: {
- backgroundColor: cardBg,
- titleColor: fgColor,
- bodyColor: mutedColor,
- borderColor: borderColor,
- borderWidth: 1,
- padding: 10,
- cornerRadius: 8,
- displayColors: true,
- boxPadding: 4
- }
- },
- scales: {
- x: {
- grid: { display: false },
- border: { color: gridColor },
- ticks: {
- color: mutedColor,
- font: { size: 11 },
- maxRotation: 0,
- maxTicksLimit: 7,
- callback: (_, index) => {
- const step = Math.max(1, Math.ceil(trend.value.length / 7));
- return index % step === 0 ? trend.value[index]?.date.slice(5) : '';
- }
- }
- },
- y: {
- beginAtZero: false,
- grid: { color: gridColor },
- border: { display: false },
- ticks: {
- color: mutedColor,
- font: { size: 11 }
- }
- }
- }
- }
- });
-}
-
-// 指标切换
-function switchMetric(key: 'pv' | 'uv' | 'both') {
- metricTab.value = key;
- if (trendChartInstance) {
- trendChartInstance.data.datasets[0].hidden = key === 'uv';
- trendChartInstance.data.datasets[1].hidden = key === 'pv';
- trendChartInstance.update();
- }
-}
-
-onMounted(loadTrend);
-
-onUnmounted(() => {
- trendChartInstance?.destroy();
- trendChartInstance = null;
+const chartWidth = 720;
+const chartHeight = 220;
+const padding = computed(() => {
+  if (breakpoint.value === "s") return { top: 16, right: 8, bottom: 30, left: 8 };
+  if (breakpoint.value === "m") return { top: 20, right: 12, bottom: 30, left: 12 };
+  return { top: 20, right: 20, bottom: 30, left: 40 };
 });
+
+const xScale = computed(() => {
+  const n = data.value.length;
+  const p = padding.value;
+  if (n <= 1) return () => p.left;
+  const w = chartWidth - p.left - p.right;
+  return (i: number) => p.left + (i / (n - 1)) * w;
+});
+
+const yScale = computed(() => {
+  const max = Math.max(...data.value.map((d) => d.pv), 1);
+  const p = padding.value;
+  const h = chartHeight - p.top - p.bottom;
+  return (v: number) => p.top + h - (v / max) * h;
+});
+
+const areaPath = computed(() => {
+  if (data.value.length === 0) return "";
+  const p = padding.value;
+  const pts = data.value.map((d, i) => `${xScale.value(i)},${yScale.value(d.pv)}`);
+  const lastX = xScale.value(data.value.length - 1);
+  const firstX = xScale.value(0);
+  const bottomY = chartHeight - p.bottom;
+  return `M${pts.join(" L")} L${lastX},${bottomY} L${firstX},${bottomY} Z`;
+});
+
+const linePath = computed(() => {
+  if (data.value.length === 0) return "";
+  const pts = data.value.map((d, i) => `${xScale.value(i)},${yScale.value(d.pv)}`);
+  return `M${pts.join(" L")}`;
+});
+
+function formatNumber(n: number): string {
+  if (n >= 10000) return (n / 10000).toFixed(1) + "w";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "k";
+  return n.toString();
+}
+
+function formatLabel(dateStr: string, idx: number, total: number): string {
+  const d = new Date(dateStr);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  if (total <= 7) return `${m}/${day}`;
+  if (idx % Math.ceil(total / 6) === 0 || idx === total - 1) return `${m}/${day}`;
+  return "";
+}
 </script>
 
 <template>
- <VCard class="h-full">
- <template #header>
- <div class="flex w-full flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
- <div>
- <span class="flex items-center gap-2 text-base font-semibold text-foreground">
- <Icon icon="ri:line-chart-line" class="text-lg" />
- 访问趋势
- </span>
- <p v-if="trendDateRange" class="mt-0.5 text-xs text-muted-foreground">{{ trendDateRange }}</p>
- </div>
- <div class="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
- <button
- v-for="{ key, label } in [
- { key: 'pv', label: 'PV' },
- { key: 'uv', label: 'UV' },
- { key: 'both', label: '同时' }
- ]"
- :key="label"
- :class="[
- 'rounded-[6px] px-3 py-1.5 text-xs font-medium transition-all',
- metricTab === key 
- ? 'bg-primary text-primary-foreground shadow-sm'
- : 'text-muted-foreground hover:text-foreground',
- ]"
- @click="switchMetric(key)"
- >
- {{ label }}
- </button>
- </div>
- </div>
- </template>
- <div class="p-4">
- <!-- 图例（图表上方） -->
- <div class="flex items-center justify-center gap-4 text-xs text-muted-foreground">
- <span class="inline-flex items-center gap-1.5">
- <span class="h-2.5 w-2.5 rounded-full bg-chart-1"></span>
- PV 页面浏览量
- </span>
- <span class="inline-flex items-center gap-1.5">
- <span class="h-2.5 w-2.5 rounded-full bg-chart-2"></span>
- UV 独立访客
- </span>
- </div>
- <div class="mt-3 h-[260px] w-full">
- <canvas ref="trendCanvas"></canvas>
- </div>
- </div>
- </VCard>
+  <div class="apple-card h-full" :data-bp="breakpoint">
+    <div class="flex items-center justify-between trend-header">
+      <div>
+        <h3 class="apple-section-title">访问趋势</h3>
+        <p class="trend-subtitle">Traffic Overview</p>
+      </div>
+      <div class="apple-segment">
+        <button :class="['apple-segment-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
+        <button :class="['apple-segment-btn', days === 30 && 'active']" @click="days = 30">30 天</button>
+      </div>
+    </div>
+
+    <div class="trend-stats">
+      <div>
+        <div class="trend-stat-label">总访问量</div>
+        <div class="trend-stat-value">{{ formatNumber(totals.pv) }}</div>
+      </div>
+      <div>
+        <div class="trend-stat-label">独立访客</div>
+        <div class="trend-stat-value">{{ formatNumber(totals.uv) }}</div>
+      </div>
+      <div>
+        <div class="trend-stat-label">日均访问</div>
+        <div class="trend-stat-value">{{ formatNumber(totals.avgPv) }}</div>
+      </div>
+    </div>
+
+    <div v-if="loading" class="trend-chart-box flex items-center justify-center text-[#8E8E93]">
+      <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
+    </div>
+    <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-red-400">{{ error }}</div>
+    <svg v-else :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg">
+      <defs>
+        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.4" />
+          <stop offset="100%" stop-color="#0A84FF" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="trendLine" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#5AC8FA" />
+          <stop offset="50%" stop-color="#0A84FF" />
+          <stop offset="100%" stop-color="#5856D6" />
+        </linearGradient>
+      </defs>
+      <!-- grid lines -->
+      <g stroke="#2C2C2E" stroke-width="1">
+        <line v-for="i in 4" :key="i"
+          :x1="padding.left"
+          :x2="chartWidth - padding.right"
+          :y1="padding.top + ((chartHeight - padding.top - padding.bottom) / 4) * i"
+          :y2="padding.top + ((chartHeight - padding.top - padding.bottom) / 4) * i"
+        />
+      </g>
+      <path :d="areaPath" fill="url(#trendGrad)" />
+      <path :d="linePath" fill="none" stroke="url(#trendLine)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- data points -->
+      <circle
+        v-for="(d, i) in data"
+        :key="i"
+        :cx="xScale(i)"
+        :cy="yScale(d.pv)"
+        r="3"
+        fill="#0A84FF"
+        stroke="#1C1C1E"
+        stroke-width="2"
+      />
+      <!-- x labels -->
+      <text
+        v-for="(d, i) in data"
+        :key="'l'+i"
+        :x="xScale(i)"
+        :y="chartHeight - 8"
+        text-anchor="middle"
+        fill="#8E8E93"
+        font-size="11"
+      >{{ formatLabel(d.date, i, data.length) }}</text>
+    </svg>
+  </div>
 </template>
+
+<style scoped>
+.trend-header { margin-bottom: 24px; }
+.trend-subtitle { color: #8E8E93; font-size: 13px; margin-top: 4px; }
+
+.trend-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.trend-stat-label { color: #8E8E93; font-size: 12px; margin-bottom: 4px; }
+.trend-stat-value { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+
+.trend-chart-box { height: 220px; }
+.trend-chart-svg { height: 220px; }
+
+/* M 断点 */
+.apple-card[data-bp="m"] .trend-header,
+.apple-card[data-bp="s"] .trend-header { margin-bottom: 18px; }
+.apple-card[data-bp="m"] .trend-subtitle,
+.apple-card[data-bp="s"] .trend-subtitle { font-size: 12px; }
+.apple-card[data-bp="m"] .trend-stats,
+.apple-card[data-bp="s"] .trend-stats { gap: 12px; margin-bottom: 18px; }
+.apple-card[data-bp="m"] .trend-stat-value,
+.apple-card[data-bp="s"] .trend-stat-value { font-size: 18px; }
+.apple-card[data-bp="m"] .trend-chart-box,
+.apple-card[data-bp="s"] .trend-chart-box { height: 180px; }
+.apple-card[data-bp="m"] .trend-chart-svg,
+.apple-card[data-bp="s"] .trend-chart-svg { height: 180px; }
+
+/* S 断点 */
+.apple-card[data-bp="s"] .trend-header {
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.apple-card[data-bp="s"] .trend-header .apple-segment {
+  align-self: flex-start;
+}
+.apple-card[data-bp="s"] .trend-stats { gap: 8px; margin-bottom: 14px; }
+.apple-card[data-bp="s"] .trend-stat-label { font-size: 10px; margin-bottom: 2px; }
+.apple-card[data-bp="s"] .trend-stat-value { font-size: 15px; }
+.apple-card[data-bp="s"] .trend-chart-box { height: 150px; }
+.apple-card[data-bp="s"] .trend-chart-svg { height: 150px; }
+</style>

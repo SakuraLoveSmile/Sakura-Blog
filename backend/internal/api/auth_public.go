@@ -239,6 +239,7 @@ func (h *Handler) publicMe(c *gin.Context) {
 		"avatar":   cu.Avatar,
 		"role":     cu.Role,
 		"verified": cu.Verified,
+		"is_admin": cu.Role == store.RoleAdmin,
 	})
 }
 
@@ -263,5 +264,6 @@ func (h *Handler) toPublicUserView(u *store.User) map[string]any {
 		"avatar":   u.Avatar,
 		"role":     u.Role,
 		"verified": true,
+		"is_admin": u.Role == store.RoleAdmin,
 	}
 }

@@ -727,6 +727,16 @@ func (s *Store) RestorePost(slug string) error {
 	return nil
 }
 
+// ListRecentPosts 返回最近更新的 n 篇文章（不含已删除，含草稿和已发布），按 updated_at 倒序。
+func (s *Store) ListRecentPosts(n int) ([]*Post, error) {
+	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE deleted_at = '' ORDER BY substr(updated_at, 1, 19) DESC LIMIT ?", n)
+	if err != nil {
+		return nil, fmt.Errorf("list recent posts: %w", err)
+	}
+	defer rows.Close()
+	return scanPosts(rows)
+}
+
 // PurgePost 彻底删除文章（物理删除记录）。
 func (s *Store) PurgePost(slug string) error {
 	_, err := s.db.Exec(`DELETE FROM posts WHERE slug = ? AND deleted_at != ''`, slug)

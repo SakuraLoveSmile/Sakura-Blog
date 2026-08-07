@@ -17,8 +17,9 @@
       <div class="left">
         <div class="flex-row" id="breadcrumb">
           <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
-          {{- /* 面包屑对齐原版 breadcrumb/blog.ejs：专栏文章 首页/专栏/{专栏名}，普通文章 首页/博客 */}}
-          {{if .Page.Topic}}
+          {{- /* 面包屑对齐原版 breadcrumb/blog.ejs：专栏文章 首页/专栏/{专栏名}，普通文章 首页/博客
+                   （专栏功能已禁用，HasTopics 恒 false，专栏文章也走普通路径，链接跳 404 无意义）*/ -}}
+          {{if and .HasTopics .Page.Topic}}
           <span class="sep"></span>
           <a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a>
           <span class="sep"></span>

@@ -382,10 +382,13 @@ func main() {
 	ws.registerSearchRoutes(r)
 	ws.registerFeedRoutes(r)
 
-	// 未匹配路由：/console/* 走 SPA fallback，其余走自定义 404 页
+	// 未匹配路由：/console/* 走 SPA fallback → 单段 slug 查 pages 表（支持根路径 /about）→ 兜底 404
 	r.NoRoute(func(c *gin.Context) {
 		if consoleIndex != nil && strings.HasPrefix(c.Request.URL.Path, "/console") {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", consoleIndex)
+			return
+		}
+		if pageHandler.ShowByPath(c) {
 			return
 		}
 		ws.render404(c)

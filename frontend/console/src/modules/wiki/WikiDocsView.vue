@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { settingsApi, wikiApi } from "@/api";
-import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import ContentEditor from "@/components/ContentEditor.vue";
 import { Icon } from "@iconify/vue";
 import { VButton, Toast, Dialog, VModal } from "@/components/ui";
 
@@ -176,7 +176,7 @@ const selectedSlug = ref("");
 const docLoading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
-const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
+const editorRef = ref<InstanceType<typeof ContentEditor> | null>(null);
 
 const hasCurrent = computed(() => currentId.value > 0 || !!originalSlug.value);
 
@@ -600,11 +600,12 @@ onMounted(loadProjects);
                 </div>
               </div>
 
-              <!-- Markdown 编辑器（内核保留） -->
-              <MarkdownEditor
+              <!-- 内容编辑器（富文本/Markdown 双模式） -->
+              <ContentEditor
                 ref="editorRef"
                 v-model="form.content_md"
                 :storage-key="'wiki:' + activeProject + ':' + (originalSlug || 'new')"
+                min-height="450px"
                 @save="handleSave"
               />
 

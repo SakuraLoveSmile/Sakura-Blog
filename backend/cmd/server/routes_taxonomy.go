@@ -146,15 +146,11 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		})
 	})
 
-	// 专栏索引页（Spec 52）：专栏卡片列表（对齐 Stellar index_topic.ejs，图标缺省用主题 default.topic 占位图）。
-	// 数据走独立 topics 表（sort DESC + 创建时间线性）；/topics 为别名路由，与 /topic 渲染同一页面。
-	r.GET("/topic", s.handleTopicIndex)
-	r.GET("/topics", s.handleTopicIndex)
-
-	// 专栏文章列表页（Spec 52）：/topic/:slug 专栏页（专栏头 + 文章卡片流）；
-	// /topic/:name 兼容旧路径 301 到 slug 路径（gin 不允许同前缀注册两个不同参数名，
-	// 旧名兼容在 handleTopicDetail 内按 name 兑底处理）。
-	r.GET("/topic/:slug", s.handleTopicDetail)
+	// 专栏（Spec 52）：已禁用（用户反馈功能多余）。保留路由注册但所有请求走 404，
+	// 代码/数据库/模板原样保留，后续恢复只需把下面两行注释掉、去掉 true 条件短路即可。
+	r.GET("/topic", func(c *gin.Context) { s.render404(c) })
+	r.GET("/topics", func(c *gin.Context) { s.render404(c) })
+	r.GET("/topic/:slug", func(c *gin.Context) { s.render404(c) })
 
 	// 标签索引页：标签云（按文章数 DESC）
 	r.GET("/tags", func(c *gin.Context) {

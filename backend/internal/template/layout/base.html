@@ -358,7 +358,7 @@
   <script src="{{url_for "/assets/js/search/local-search.js"}}?v=base1" defer></script>
   {{- /* 自建评论区交互：全站加载（PJAX 换页不重执行 script，事件委托 + 存在性检查，非文章页零副作用）。
         注意：SW 对静态资源 cache-first，必须带 ?v= 版本后缀，否则改版后旧缓存永久生效（评论区曾因此整体失灵） */}}
-  <script src="{{url_for "/assets/js/comments.js"}}?v=cmt8" defer></script>
+  <script src="{{url_for "/assets/js/comments.js"}}?v=cmt15" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}?v=base1" defer></script>
   {{- /* 标签云 widget 交互：3D 球体旋转云/模式切换（.widget-wrapper.tagcloud 存在性检查 + pjax:complete 重初始化，多实例支持） */}}
   <script src="{{url_for "/assets/js/tagcloud.js"}}?v=sphere1" defer></script>

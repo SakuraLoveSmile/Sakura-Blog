@@ -282,7 +282,7 @@ test(`${SURFACE} · insertNewComment：回复挂到父评论 children 容器，�
   const childrenBox = mainBox.children[0];
   assert.equal(childrenBox.className, 'cmt-children');
   assert.equal(childrenBox.children.length, 1);
-  assert.match(childrenBox.children[0]._html, /回复 <b>Alice<\/b>/);
+  assert.match(childrenBox.children[0]._html, /▸ Alice/);
   assert.match(childrenBox.children[0]._html, /data-id="10"/);
   assert.equal(listTitle.textContent, '3 条评论');
   assert.equal(els['#cmt-count-badge'].textContent, '共 3 条评论');

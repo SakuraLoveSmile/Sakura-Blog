@@ -292,11 +292,18 @@ func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 }
 
 // BuildBar 组件名序列 → 实例列表；layout 为空的名字跳过（对齐原版 layoutWidgets 忽略无效项）。
+// 如果 v.PageWidgetOverrides 非 nil 且含当前组件名，则页面级参数与全局 WidgetDef 浅合并（页面级覆盖全局）。
 // Data 由调用方（web.go assembleWidgets）按 layout 装配。
 func (w WidgetsConfig) BuildBar(names []string, v *ViewData) []*WidgetInstance {
 	var out []*WidgetInstance
 	for _, name := range names {
 		def := w.Lookup(name)
+		// 页面级参数覆盖（仅 Layout=page 自定义侧栏时设置 PageWidgetOverrides，其余页面为 nil）
+		if v != nil && v.PageWidgetOverrides != nil {
+			if over, ok := v.PageWidgetOverrides[name]; ok {
+				def = def.merge(over)
+			}
+		}
 		layout := def.Layout()
 		if layout == "" {
 			continue
