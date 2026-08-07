@@ -420,7 +420,7 @@ function closeMenus() {
     <div class="moments-content-area">
       <div class="moments-container mx-auto w-full max-w-[680px]">
         <!-- Composer card：常驻顶部 -->
-        <VCard :body-class="['!p-4']" class="moment-card-apple relative mb-5">
+        <VCard :body-class="['!p-4']" class="moment-card-apple mb-5">
           <div class="flex gap-3">
             <img
               v-if="ownerAvatar"
@@ -540,7 +540,7 @@ function closeMenus() {
           </div>
 
           <!-- 表情面板：发布框（与评论区一致：body 网格 + 底部 tabs） -->
-          <div v-if="emojiOpen === 'new'" class="emoji-panel emoji-panel-below" @click.stop>
+          <div v-if="emojiOpen === 'new'" class="emoji-panel" @click.stop>
             <div class="emoji-body">
               <div v-if="emojiLoading" class="emoji-loading">
                 <Icon icon="ri:loader-4-line" class="animate-spin" />
@@ -704,7 +704,7 @@ function closeMenus() {
       class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       @click.self="cancelEdit"
     >
-      <div class="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
+      <div class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
         <div class="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 class="text-sm font-semibold text-foreground">编辑瞬间</h3>
           <button
@@ -788,7 +788,7 @@ function closeMenus() {
         </div>
 
         <!-- 表情面板：编辑框 -->
-        <div v-if="emojiOpen === 'edit'" class="emoji-panel emoji-panel-dialog" @click.stop>
+        <div v-if="emojiOpen === 'edit'" class="emoji-panel" @click.stop>
           <div class="emoji-body">
             <div v-if="emojiLoading" class="emoji-loading">
               <Icon icon="ri:loader-4-line" class="animate-spin" />
@@ -878,12 +878,16 @@ function closeMenus() {
   box-shadow: none;
 }
 
-/* ===== 表情面板（视觉对齐评论区 cmt-emoji-panel-v2） ===== */
-/* 发布卡默认 overflow:hidden 会裁掉外置面板，此处放开 */
-.moment-card-apple {
-  overflow: visible;
+/* ===== 表情面板（内嵌式，对齐评论区 cmt-emoji-panel-v2：不遮挡内容，擑开布局） ===== */
+.emoji-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
 }
-/* 工具栏表情按钮：对齐评论区 .cmt-tool-btn（36×36 圆角 8，hover 主题色 12%） */
 .emoji-tool-btn {
   display: inline-flex;
   align-items: center;
@@ -902,30 +906,6 @@ function closeMenus() {
 .emoji-tool-btn.is-active {
   color: var(--color-primary);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-}
-/* 面板：边框 + 继承底色 + 220px 限高，body 滚动、tabs 置底 */
-.emoji-panel {
-  position: absolute;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  max-height: 220px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-.emoji-panel-below {
-  left: 16px;
-  right: 16px;
-  top: 100%;
-  margin-top: 8px;
-}
-.emoji-panel-dialog {
-  left: 20px;
-  right: 20px;
-  top: 52px;
 }
 .emoji-body {
   padding: 0.4rem 0.5rem;
