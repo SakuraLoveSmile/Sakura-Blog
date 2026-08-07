@@ -94,6 +94,48 @@ function formatLabel(dateStr: string, idx: number, total: number): string {
   if (idx % Math.ceil(total / 6) === 0 || idx === total - 1) return `${m}/${day}`;
   return "";
 }
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+/* ---- hover tooltip ---- */
+const chartEl = ref<SVGSVGElement | null>(null);
+const hovered = ref<number | null>(null);
+const tooltipWidth = 116;
+const tooltipHeight = 56;
+
+const hoveredPoint = computed(() => {
+  const i = hovered.value;
+  if (i == null || !data.value[i]) return null;
+  const d = data.value[i];
+  return { x: xScale.value(i), y: yScale.value(d.pv), d };
+});
+
+const tooltipPos = computed(() => {
+  const pt = hoveredPoint.value;
+  if (!pt) return null;
+  const p = padding.value;
+  const left = Math.min(Math.max(pt.x - tooltipWidth / 2, p.left), chartWidth - p.right - tooltipWidth);
+  // 顶部放不下时翻转到点下方，始终留在图表可视区域内
+  const below = pt.y - tooltipHeight - 14 < 4;
+  const top = below ? Math.min(pt.y + 14, chartHeight - tooltipHeight - 4) : pt.y - tooltipHeight - 14;
+  return { left, top };
+});
+
+function onChartMove(e: MouseEvent) {
+  const el = chartEl.value;
+  const n = data.value.length;
+  if (!el || n === 0) return;
+  const rect = el.getBoundingClientRect();
+  if (rect.width === 0) return;
+  const p = padding.value;
+  const viewX = ((e.clientX - rect.left) / rect.width) * chartWidth;
+  const w = chartWidth - p.left - p.right;
+  const idx = Math.round(((viewX - p.left) / w) * (n - 1));
+  hovered.value = Math.min(Math.max(idx, 0), n - 1);
+}
 </script>
 
 <template>
@@ -128,7 +170,7 @@ function formatLabel(dateStr: string, idx: number, total: number): string {
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
     <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-red-400">{{ error }}</div>
-    <svg v-else :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg">
+    <svg v-else ref="chartEl" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg" @mousemove="onChartMove" @mouseleave="hovered = null">
       <defs>
         <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.4" />
@@ -172,6 +214,18 @@ function formatLabel(dateStr: string, idx: number, total: number): string {
         fill="#8E8E93"
         font-size="11"
       >{{ formatLabel(d.date, i, data.length) }}</text>
+      <!-- hover highlight -->
+      <g v-if="hoveredPoint" pointer-events="none">
+        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="9" fill="#0A84FF" opacity="0.18" />
+        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="#0A84FF" stroke="#FFFFFF" stroke-width="2" />
+      </g>
+      <!-- hover tooltip -->
+      <g v-if="tooltipPos && hoveredPoint" pointer-events="none">
+        <rect :x="tooltipPos.left" :y="tooltipPos.top" :width="tooltipWidth" :height="tooltipHeight" rx="10" fill="rgba(28,28,30,0.92)" stroke="rgba(255,255,255,0.12)" />
+        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 18" text-anchor="middle" fill="#8E8E93" font-size="10">{{ formatDate(hoveredPoint.d.date) }}</text>
+        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 35" text-anchor="middle" fill="#FFFFFF" font-size="12">访问 {{ hoveredPoint.d.pv }}</text>
+        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 50" text-anchor="middle" fill="#FFFFFF" font-size="12">访客 {{ hoveredPoint.d.uv }}</text>
+      </g>
     </svg>
   </div>
 </template>
