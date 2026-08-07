@@ -155,18 +155,29 @@ function onComposerKeydown(e: KeyboardEvent) {
  }
 }
 
-// --- 表情面板（发布框与编辑框共用） ---
-const EMOJIS = [
- "\u{1F600}","\u{1F601}","\u{1F602}","\u{1F923}","\u{1F60A}","\u{1F60D}","\u{1F618}","\u{1F60E}",
- "\u{1F914}","\u{1F605}","\u{1F62D}","\u{1F624}","\u{1F973}","\u{1F929}","\u{1F634}","\u{1F92F}",
- "\u{1F631}","\u{1F64F}","\u{1F44D}","\u{1F44E}","\u{1F44F}","\u{1F64C}","\u{1F4AA}","\u{1F91D}",
- "\u{270C}","\u{1F91E}","\u{2764}","\u{1F9E1}","\u{1F49B}","\u{1F49A}","\u{1F499}","\u{1F49C}",
- "\u{1F5A4}","\u{1F494}","\u{2728}","\u{1F389}","\u{1F525}","\u{2B50}","\u{2600}","\u{26A1}",
- "\u{2744}","\u{1F340}","\u{1F338}","\u{1F34E}","\u{2615}","\u{1F3B5}","\u{1F680}","\u{1F4A1}",
- "\u{1F4CC}","\u{2705}","\u{274C}","\u{26A0}","\u{1F319}","\u{1F308}",
+// --- 表情面板（发布框与编辑框共用；视觉对齐评论区 cmt-emoji-panel：网格/面板/标签页） ---
+const EMOJI_PACKS = [
+ {
+  key: "smiley", label: "表情",
+  items: ["\u{1F600}","\u{1F601}","\u{1F602}","\u{1F923}","\u{1F60A}","\u{1F60D}","\u{1F618}","\u{1F60E}","\u{1F914}","\u{1F605}","\u{1F62D}","\u{1F624}","\u{1F973}","\u{1F929}","\u{1F634}","\u{1F92F}"],
+ },
+ {
+  key: "gesture", label: "手势",
+  items: ["\u{1F631}","\u{1F64F}","\u{1F44D}","\u{1F44E}","\u{1F44F}","\u{1F64C}","\u{1F4AA}","\u{1F91D}","\u{270C}","\u{1F91E}"],
+ },
+ {
+  key: "heart", label: "爱心",
+  items: ["\u{2764}","\u{1F9E1}","\u{1F49B}","\u{1F49A}","\u{1F499}","\u{1F49C}","\u{1F5A4}","\u{1F494}"],
+ },
+ {
+  key: "object", label: "物件",
+  items: ["\u{2728}","\u{1F389}","\u{1F525}","\u{2B50}","\u{2600}","\u{26A1}","\u{2744}","\u{1F340}","\u{1F338}","\u{1F34E}","\u{2615}","\u{1F3B5}","\u{1F680}","\u{1F4A1}","\u{1F4CC}","\u{2705}","\u{274C}","\u{26A0}","\u{1F319}","\u{1F308}"],
+ },
 ];
 const emojiOpen = ref<"new" | "edit" | null>(null);
+const emojiPack = ref("smiley");
 const editBox = ref<HTMLTextAreaElement | null>(null);
+const currentEmojis = computed(() => EMOJI_PACKS.find((p) => p.key === emojiPack.value)?.items || []);
 
 function toggleEmoji(target: "new" | "edit") {
  emojiOpen.value = emojiOpen.value === target ? null : target;
@@ -453,12 +464,12 @@ function closeMenus() {
                   </button>
                   <button
                     type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
-                    :class="{ 'bg-accent text-primary': emojiOpen === 'new' }"
+                    class="emoji-tool-btn"
+                    :class="{ 'is-active': emojiOpen === 'new' }"
                     title="插入表情"
                     @click.stop="toggleEmoji('new')"
                   >
-                    <Icon icon="ri:emotion-line" class="text-base" />
+                    <Icon icon="ri:emotion-line" class="text-[20px]" />
                   </button>
                   <input
                     ref="newFileInput"
@@ -506,16 +517,31 @@ function closeMenus() {
             </div>
           </div>
 
-          <!-- 表情面板：发布框 -->
+          <!-- 表情面板：发布框（对齐评论区 cmt-emoji-panel 结构：body 网格 + 底部 tabs） -->
           <div v-if="emojiOpen === 'new'" class="emoji-panel emoji-panel-below" @click.stop>
-            <button
-              v-for="e in EMOJIS"
-              :key="e"
-              type="button"
-              class="emoji-item"
-              :title="'插入 ' + e"
-              @click.stop="insertEmoji('new', e)"
-            >{{ e }}</button>
+            <div class="emoji-body">
+              <div class="emoji-grid">
+                <button
+                  v-for="e in currentEmojis"
+                  :key="e"
+                  type="button"
+                  class="emoji-cell"
+                  :title="'插入 ' + e"
+                  @click.stop="insertEmoji('new', e)"
+                >{{ e }}</button>
+              </div>
+            </div>
+            <div class="emoji-tabs" role="tablist">
+              <button
+                v-for="p in EMOJI_PACKS"
+                :key="p.key"
+                type="button"
+                role="tab"
+                :aria-selected="emojiPack === p.key"
+                :class="['emoji-tab', { 'is-active': emojiPack === p.key }]"
+                @click.stop="emojiPack = p.key"
+              >{{ p.label }}</button>
+            </div>
           </div>
         </VCard>
 
@@ -705,12 +731,12 @@ function closeMenus() {
             </button>
             <button
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
-              :class="{ 'bg-accent text-primary': emojiOpen === 'edit' }"
+              class="emoji-tool-btn"
+              :class="{ 'is-active': emojiOpen === 'edit' }"
               title="插入表情"
               @click.stop="toggleEmoji('edit')"
             >
-              <Icon icon="ri:emotion-line" class="text-base" />
+              <Icon icon="ri:emotion-line" class="text-[20px]" />
             </button>
             <input
               ref="editFileInput"
@@ -734,14 +760,29 @@ function closeMenus() {
 
         <!-- 表情面板：编辑框 -->
         <div v-if="emojiOpen === 'edit'" class="emoji-panel emoji-panel-dialog" @click.stop>
-          <button
-            v-for="e in EMOJIS"
-            :key="e"
-            type="button"
-            class="emoji-item"
-            :title="'插入 ' + e"
-            @click.stop="insertEmoji('edit', e)"
-          >{{ e }}</button>
+          <div class="emoji-body">
+            <div class="emoji-grid">
+              <button
+                v-for="e in currentEmojis"
+                :key="e"
+                type="button"
+                class="emoji-cell"
+                :title="'插入 ' + e"
+                @click.stop="insertEmoji('edit', e)"
+              >{{ e }}</button>
+            </div>
+          </div>
+          <div class="emoji-tabs" role="tablist">
+            <button
+              v-for="p in EMOJI_PACKS"
+              :key="p.key"
+              type="button"
+              role="tab"
+              :aria-selected="emojiPack === p.key"
+              :class="['emoji-tab', { 'is-active': emojiPack === p.key }]"
+              @click.stop="emojiPack = p.key"
+            >{{ p.label }}</button>
+          </div>
         </div>
 
         <div class="flex justify-end gap-2 border-t border-border px-5 py-3">
@@ -801,23 +842,43 @@ function closeMenus() {
   box-shadow: none;
 }
 
-/* ===== 表情面板 ===== */
+/* ===== 表情面板（视觉对齐评论区 cmt-emoji-panel-v2） ===== */
 /* 发布卡默认 overflow:hidden 会裁掉外置面板，此处放开 */
 .moment-card-apple {
   overflow: visible;
 }
+/* 工具栏表情按钮：对齐评论区 .cmt-tool-btn（36×36 圆角 8，hover 主题色 12%） */
+.emoji-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+}
+.emoji-tool-btn:hover,
+.emoji-tool-btn.is-active {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+/* 面板：边框 + 继承底色 + 220px 限高，body 滚动、tabs 置底 */
 .emoji-panel {
   position: absolute;
   z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 2px;
-  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  animation: emoji-pop var(--duration-fast) var(--ease-standard);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 .emoji-panel-below {
   left: 16px;
@@ -830,21 +891,60 @@ function closeMenus() {
   right: 20px;
   top: 52px;
 }
-.emoji-item {
-  display: flex;
+.emoji-body {
+  padding: 0.4rem 0.5rem;
+  overflow: auto;
+  flex: 1;
+}
+/* 网格：对齐评论区 auto-fill minmax(38px,1fr) */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 0.1rem;
+}
+.emoji-cell {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  font-size: 18px;
-  border-radius: var(--radius-sm);
-  transition: background-color var(--duration-fast) var(--ease-standard);
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease-standard);
 }
-.emoji-item:hover {
-  background: var(--color-accent);
+.emoji-cell:hover {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
-@keyframes emoji-pop {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+/* 底部 tabs：对齐评论区 .cmt-emoji-tabs */
+.emoji-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+.emoji-tab {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-standard);
+}
+.emoji-tab:hover {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+.emoji-tab.is-active {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 /* ===== Primary pill button ===== */
