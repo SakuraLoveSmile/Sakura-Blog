@@ -39,6 +39,9 @@ npm-debug.log*
 *.swp
 *.swo
 
+# 设计稿/原型（admin-console 原型等），不入版本控制
+admin-console-prototype/
+
 # 构建产物
 dist/
 tmp/
