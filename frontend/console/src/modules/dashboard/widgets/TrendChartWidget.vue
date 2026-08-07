@@ -100,11 +100,12 @@ function formatDate(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-/* ---- hover tooltip ---- */
+/* ---- hover tooltip ----
+ * 坐标换算统一走 svg.getScreenCTM()：viewBox 在元素内是 letterbox 居中缩放，
+ * 直接按元素宽度线性映射会在左右边缘产生偏差，CTM 才是浏览器真实使用的变换。 */
 const chartEl = ref<SVGSVGElement | null>(null);
+const wrapEl = ref<HTMLDivElement | null>(null);
 const hovered = ref<number | null>(null);
-const tooltipWidth = 116;
-const tooltipHeight = 56;
 
 const hoveredPoint = computed(() => {
   const i = hovered.value;
@@ -113,28 +114,58 @@ const hoveredPoint = computed(() => {
   return { x: xScale.value(i), y: yScale.value(d.pv), d };
 });
 
-const tooltipPos = computed(() => {
-  const pt = hoveredPoint.value;
-  if (!pt) return null;
-  const p = padding.value;
-  const left = Math.min(Math.max(pt.x - tooltipWidth / 2, p.left), chartWidth - p.right - tooltipWidth);
-  // 顶部放不下时翻转到点下方，始终留在图表可视区域内
-  const below = pt.y - tooltipHeight - 14 < 4;
-  const top = below ? Math.min(pt.y + 14, chartHeight - tooltipHeight - 4) : pt.y - tooltipHeight - 14;
-  return { left, top };
-});
+/* tooltip 以 HTML 覆盖层渲染（文字不被 viewBox 缩放），位置存像素坐标 */
+const tip = ref<{ left: number; top: number; below: boolean } | null>(null);
+const TIP_HALF = 62; // tooltip 半宽估算，用于水平 clamp
 
-function onChartMove(e: MouseEvent) {
+function viewToWrapPixels(vx: number, vy: number): { x: number; y: number } | null {
+  const el = chartEl.value;
+  const wrap = wrapEl.value;
+  if (!el || !wrap) return null;
+  const ctm = el.getScreenCTM();
+  if (!ctm) return null;
+  const pt = new DOMPoint(vx, vy).matrixTransform(ctm);
+  const wr = wrap.getBoundingClientRect();
+  return { x: pt.x - wr.left, y: pt.y - wr.top };
+}
+
+function updateTip() {
+  const i = hovered.value;
+  if (i == null || !data.value[i]) {
+    tip.value = null;
+    return;
+  }
+  const wrap = wrapEl.value;
+  const px = viewToWrapPixels(xScale.value(i), yScale.value(data.value[i].pv));
+  if (!wrap || !px) {
+    tip.value = null;
+    return;
+  }
+  const wr = wrap.getBoundingClientRect();
+  const left = Math.min(Math.max(px.x, TIP_HALF + 4), wr.width - TIP_HALF - 4);
+  // 上方空间不足时翻转到点下方，始终留在图表可视区域内
+  const below = px.y < 84;
+  const top = below ? px.y + 14 : px.y - 14;
+  tip.value = { left, top, below };
+}
+
+function onChartMove(e: PointerEvent) {
   const el = chartEl.value;
   const n = data.value.length;
   if (!el || n === 0) return;
-  const rect = el.getBoundingClientRect();
-  if (rect.width === 0) return;
-  const p = padding.value;
-  const viewX = ((e.clientX - rect.left) / rect.width) * chartWidth;
-  const w = chartWidth - p.left - p.right;
-  const idx = Math.round(((viewX - p.left) / w) * (n - 1));
+  const ctm = el.getScreenCTM();
+  if (!ctm) return;
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+  const pad = padding.value;
+  const w = chartWidth - pad.left - pad.right;
+  const idx = Math.round(((p.x - pad.left) / w) * (n - 1));
   hovered.value = Math.min(Math.max(idx, 0), n - 1);
+  updateTip();
+}
+
+function onChartLeave() {
+  hovered.value = null;
+  tip.value = null;
 }
 </script>
 
@@ -170,7 +201,8 @@ function onChartMove(e: MouseEvent) {
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
     <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-red-400">{{ error }}</div>
-    <svg v-else ref="chartEl" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg" @mousemove="onChartMove" @mouseleave="hovered = null">
+    <div v-else ref="wrapEl" class="trend-chart-wrap">
+      <svg ref="chartEl" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg" @pointermove="onChartMove" @pointerdown="onChartMove" @pointerleave="onChartLeave">
       <defs>
         <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.4" />
@@ -214,19 +246,26 @@ function onChartMove(e: MouseEvent) {
         fill="#8E8E93"
         font-size="11"
       >{{ formatLabel(d.date, i, data.length) }}</text>
-      <!-- hover highlight -->
+      <!-- hover highlight：垂直引导线 + 放大高亮点 -->
       <g v-if="hoveredPoint" pointer-events="none">
+        <line
+          :x1="hoveredPoint.x" :x2="hoveredPoint.x"
+          :y1="hoveredPoint.y" :y2="chartHeight - padding.bottom"
+          stroke="#0A84FF" stroke-width="1" stroke-dasharray="3 3" opacity="0.45"
+        />
         <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="9" fill="#0A84FF" opacity="0.18" />
         <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="#0A84FF" stroke="#FFFFFF" stroke-width="2" />
       </g>
-      <!-- hover tooltip -->
-      <g v-if="tooltipPos && hoveredPoint" pointer-events="none">
-        <rect :x="tooltipPos.left" :y="tooltipPos.top" :width="tooltipWidth" :height="tooltipHeight" rx="10" fill="rgba(28,28,30,0.92)" stroke="rgba(255,255,255,0.12)" />
-        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 18" text-anchor="middle" fill="#8E8E93" font-size="10">{{ formatDate(hoveredPoint.d.date) }}</text>
-        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 35" text-anchor="middle" fill="#FFFFFF" font-size="12">访问 {{ hoveredPoint.d.pv }}</text>
-        <text :x="tooltipPos.left + tooltipWidth / 2" :y="tooltipPos.top + 50" text-anchor="middle" fill="#FFFFFF" font-size="12">访客 {{ hoveredPoint.d.uv }}</text>
-      </g>
-    </svg>
+      </svg>
+      <!-- hover tooltip：HTML 覆盖层，毛玻璃质感，文字不被 viewBox 缩放 -->
+      <Transition name="tip">
+        <div v-if="tip && hoveredPoint" :class="['trend-tooltip', tip.below ? 'below' : 'above']" :style="{ left: tip.left + 'px', top: tip.top + 'px' }">
+          <div class="trend-tooltip-date">{{ formatDate(hoveredPoint.d.date) }}</div>
+          <div class="trend-tooltip-row"><span class="trend-tooltip-dot pv"></span>访问<b>{{ hoveredPoint.d.pv }}</b></div>
+          <div class="trend-tooltip-row"><span class="trend-tooltip-dot uv"></span>访客<b>{{ hoveredPoint.d.uv }}</b></div>
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -244,7 +283,42 @@ function onChartMove(e: MouseEvent) {
 .trend-stat-value { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 
 .trend-chart-box { height: 220px; }
-.trend-chart-svg { height: 220px; }
+.trend-chart-svg { height: 220px; display: block; touch-action: pan-y; }
+
+/* tooltip 覆盖层 */
+.trend-chart-wrap { position: relative; }
+.trend-tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  min-width: 104px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(28, 28, 30, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.trend-tooltip.above { transform: translate(-50%, -100%); }
+.trend-tooltip.below { transform: translate(-50%, 0); }
+.trend-tooltip-date { color: #8E8E93; font-size: 11px; margin-bottom: 4px; text-align: center; }
+.trend-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #EBEBF0;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: #fff; }
+.trend-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; }
+.trend-tooltip-dot.pv { background: #0A84FF; }
+.trend-tooltip-dot.uv { background: #5AC8FA; }
+
+.tip-enter-active, .tip-leave-active { transition: opacity 0.15s ease; }
+.tip-enter-from, .tip-leave-to { opacity: 0; }
 
 /* M 断点 */
 .apple-card[data-bp="m"] .trend-header,
