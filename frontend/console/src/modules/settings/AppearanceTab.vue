@@ -40,7 +40,7 @@ function onHeaderPrefixInput(e: Event) {
  <label class="block text-xs text-text-tertiary mb-1">主题色 (theme)</label>
  <div class="flex gap-2 items-center">
  <input type="color" v-model="data.style.color.theme" class="w-10 h-10 rounded border border-border cursor-pointer" />
- <input v-model="data.style.color.theme" :class="inputCls" class="flex-1" placeholder="#0A84FF" />
+ <input v-model="data.style.color.theme" :class="inputCls" class="flex-1" placeholder="#2E8DFF" />
  </div>
  </div>
  <div>

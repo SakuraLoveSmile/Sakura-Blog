@@ -176,9 +176,9 @@ function onChartLeave() {
         <h3 class="apple-section-title">访问趋势</h3>
         <p class="trend-subtitle">Traffic Overview</p>
       </div>
-      <div class="apple-segment">
-        <button :class="['apple-segment-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
-        <button :class="['apple-segment-btn', days === 30 && 'active']" @click="days = 30">30 天</button>
+      <div class="apple-segmented">
+        <button :class="['seg-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
+        <button :class="['seg-btn', days === 30 && 'active']" @click="days = 30">30 天</button>
       </div>
     </div>
 
@@ -197,25 +197,25 @@ function onChartLeave() {
       </div>
     </div>
 
-    <div v-if="loading" class="trend-chart-box flex items-center justify-center text-[#8E8E93]">
+    <div v-if="loading" class="trend-chart-box flex items-center justify-center text-muted-foreground">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-red-400">{{ error }}</div>
+    <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-state-error">{{ error }}</div>
     <div v-else ref="wrapEl" class="trend-chart-wrap">
       <svg ref="chartEl" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="w-full trend-chart-svg" @pointermove="onChartMove" @pointerdown="onChartMove" @pointerleave="onChartLeave">
       <defs>
         <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.4" />
-          <stop offset="100%" stop-color="#0A84FF" stop-opacity="0" />
+          <stop offset="0%" stop-color="var(--color-chart-2)" stop-opacity="0.4" />
+          <stop offset="100%" stop-color="var(--color-chart-2)" stop-opacity="0" />
         </linearGradient>
         <linearGradient id="trendLine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#5AC8FA" />
-          <stop offset="50%" stop-color="#0A84FF" />
-          <stop offset="100%" stop-color="#5856D6" />
+          <stop offset="0%" stop-color="#66ABFF" />
+          <stop offset="50%" stop-color="var(--color-chart-2)" />
+          <stop offset="100%" stop-color="#007AFF" />
         </linearGradient>
       </defs>
       <!-- grid lines -->
-      <g stroke="#2C2C2E" stroke-width="1">
+      <g stroke="var(--color-chart-grid)" stroke-width="1">
         <line v-for="i in 4" :key="i"
           :x1="padding.left"
           :x2="chartWidth - padding.right"
@@ -232,8 +232,8 @@ function onChartLeave() {
         :cx="xScale(i)"
         :cy="yScale(d.pv)"
         r="3"
-        fill="#0A84FF"
-        stroke="#1C1C1E"
+        fill="var(--color-chart-2)"
+        stroke="var(--color-card)"
         stroke-width="2"
       />
       <!-- x labels -->
@@ -243,7 +243,7 @@ function onChartLeave() {
         :x="xScale(i)"
         :y="chartHeight - 8"
         text-anchor="middle"
-        fill="#8E8E93"
+        fill="var(--color-muted-foreground)"
         font-size="11"
       >{{ formatLabel(d.date, i, data.length) }}</text>
       <!-- hover highlight：垂直引导线 + 放大高亮点 -->
@@ -251,10 +251,10 @@ function onChartLeave() {
         <line
           :x1="hoveredPoint.x" :x2="hoveredPoint.x"
           :y1="hoveredPoint.y" :y2="chartHeight - padding.bottom"
-          stroke="#0A84FF" stroke-width="1" stroke-dasharray="3 3" opacity="0.45"
+          stroke="var(--color-chart-2)" stroke-width="1" stroke-dasharray="3 3" opacity="0.45"
         />
-        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="9" fill="#0A84FF" opacity="0.18" />
-        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="#0A84FF" stroke="#FFFFFF" stroke-width="2" />
+        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="9" fill="var(--color-chart-2)" opacity="0.18" />
+        <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="var(--color-chart-2)" stroke="var(--color-foreground)" stroke-width="2" />
       </g>
       </svg>
       <!-- hover tooltip：HTML 覆盖层，毛玻璃质感，文字不被 viewBox 缩放 -->
@@ -271,7 +271,7 @@ function onChartLeave() {
 
 <style scoped>
 .trend-header { margin-bottom: 24px; }
-.trend-subtitle { color: #8E8E93; font-size: 13px; margin-top: 4px; }
+.trend-subtitle { color: var(--color-muted-foreground); font-size: 13px; margin-top: 4px; }
 
 .trend-stats {
   display: grid;
@@ -279,8 +279,8 @@ function onChartLeave() {
   gap: 16px;
   margin-bottom: 24px;
 }
-.trend-stat-label { color: #8E8E93; font-size: 12px; margin-bottom: 4px; }
-.trend-stat-value { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.trend-stat-label { color: var(--color-muted-foreground); font-size: 12px; margin-bottom: 4px; }
+.trend-stat-value { color: var(--color-foreground); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 
 .trend-chart-box { height: 220px; }
 .trend-chart-svg { height: 220px; display: block; touch-action: pan-y; }
@@ -294,30 +294,30 @@ function onChartLeave() {
   min-width: 104px;
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(28, 28, 30, 0.72);
+  background: color-mix(in srgb, var(--color-card) 72%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+  box-shadow: var(--shadow-lg);
 }
 .trend-tooltip.above { transform: translate(-50%, -100%); }
 .trend-tooltip.below { transform: translate(-50%, 0); }
-.trend-tooltip-date { color: #8E8E93; font-size: 11px; margin-bottom: 4px; text-align: center; }
+.trend-tooltip-date { color: var(--color-muted-foreground); font-size: 11px; margin-bottom: 4px; text-align: center; }
 .trend-tooltip-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #EBEBF0;
+  color: var(--color-foreground);
   font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
 }
-.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: #fff; }
+.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: var(--color-foreground); }
 .trend-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; }
-.trend-tooltip-dot.pv { background: #0A84FF; }
-.trend-tooltip-dot.uv { background: #5AC8FA; }
+.trend-tooltip-dot.pv { background: var(--color-chart-2); }
+.trend-tooltip-dot.uv { background: var(--color-chart-4); }
 
-.tip-enter-active, .tip-leave-active { transition: opacity 0.15s ease; }
+.tip-enter-active, .tip-leave-active { transition: opacity var(--duration-fast) var(--ease-standard); }
 .tip-enter-from, .tip-leave-to { opacity: 0; }
 
 /* M 断点 */
@@ -341,7 +341,7 @@ function onChartLeave() {
   gap: 10px;
   margin-bottom: 14px;
 }
-.apple-card[data-bp="s"] .trend-header .apple-segment {
+.apple-card[data-bp="s"] .trend-header .apple-segmented {
   align-self: flex-start;
 }
 .apple-card[data-bp="s"] .trend-stats { gap: 8px; margin-bottom: 14px; }

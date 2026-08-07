@@ -355,12 +355,12 @@ function formatRelative(s: string): string {
 // 渐变背景（按 id hash 取色，6 色循环）
 function previewGradient(id: number): string {
   const palette = [
-    "linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%)",
-    "linear-gradient(135deg, #30D158 0%, #32ADE6 100%)",
-    "linear-gradient(135deg, #FF9F0A 0%, #FF453A 100%)",
-    "linear-gradient(135deg, #BF5AF2 0%, #FF375F 100%)",
-    "linear-gradient(135deg, #64D2FF 0%, #5E5CE6 100%)",
-    "linear-gradient(135deg, #FFD60A 0%, #FF9F0A 100%)",
+    "linear-gradient(135deg, #66ABFF 0%, #007AFF 100%)",
+    "linear-gradient(135deg, #2E8DFF 0%, #004FAD 100%)",
+    "linear-gradient(135deg, #9FCBFF 0%, #2E8DFF 100%)",
+    "linear-gradient(135deg, #007AFF 0%, #0064D6 100%)",
+    "linear-gradient(135deg, #66ABFF 0%, #2E8DFF 100%)",
+    "linear-gradient(135deg, #2E8DFF 0%, #0064D6 100%)",
   ];
   return palette[Math.abs(Number(id) || 0) % palette.length];
 }
@@ -368,7 +368,7 @@ function previewGradient(id: number): string {
 // --- 存储空间统计（基于当前页附件 computed 派生） ---
 type StorageCat = "image" | "document" | "video" | "audio" | "other";
 const STORAGE_META: Record<StorageCat, { label: string; color: string }> = {
-  image: { label: "图片", color: "#0A84FF" },
+  image: { label: "图片", color: "#2E8DFF" },
   document: { label: "文档", color: "#30D158" },
   video: { label: "视频", color: "#BF5AF2" },
   audio: { label: "音频", color: "#FF9F0A" },
@@ -454,7 +454,7 @@ function typeLabel(mime: string): string {
 
 function typePillStyle(mime: string) {
   let color = "#8E8E93";
-  if (mime?.startsWith("image/")) color = "#0A84FF";
+  if (mime?.startsWith("image/")) color = "#2E8DFF";
   else if (mime?.startsWith("video/")) color = "#BF5AF2";
   else if (mime?.startsWith("audio/")) color = "#FF9F0A";
   else if (
@@ -472,7 +472,7 @@ function typePillStyle(mime: string) {
 </script>
 
 <template>
-  <div class="attachments-page apple-ambient-glow min-h-full">
+  <div class="attachments-page min-h-full">
     <!-- ===== Page Header ===== -->
     <header class="attachments-page-header">
       <div class="flex flex-col gap-1">
@@ -498,10 +498,10 @@ function typePillStyle(mime: string) {
         <!-- 左侧分组栏 -->
         <aside class="w-full shrink-0 lg:w-56">
           <VCard :body-class="['!p-0']">
-            <div class="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
-              <span class="text-[13px] font-semibold text-[var(--color-foreground)]">分组</span>
+            <div class="flex items-center justify-between border-b border-border px-4 py-3">
+              <span class="text-[13px] font-semibold text-foreground">分组</span>
               <button
-                class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                class="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
                 title="新建分组"
                 @click="openCreateGroup"
               >
@@ -545,14 +545,14 @@ function typePillStyle(mime: string) {
                   </button>
                   <span class="ml-1 hidden shrink-0 gap-0.5 group-hover/item:flex">
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-text-quaternary hover:bg-accent hover:text-primary"
                       title="重命名"
                       @click.stop="openRenameGroup(g)"
                     >
                       <Icon icon="ri:edit-line" class="text-xs" />
                     </button>
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-destructive)]"
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-text-quaternary hover:bg-accent hover:text-[var(--color-destructive)]"
                       title="删除"
                       @click.stop="requestDeleteGroup(g)"
                     >
@@ -625,12 +625,12 @@ function typePillStyle(mime: string) {
             <div class="flex items-center gap-2">
               <!-- 胶囊搜索框 -->
               <label class="apple-search apple-search-compact">
-                <Icon icon="ri:search-line" class="text-[15px] text-[var(--color-text-quaternary)]" />
+                <Icon icon="ri:search-line" class="text-[15px] text-text-quaternary" />
                 <input v-model="keyword" placeholder="搜索附件..." type="text" />
                 <button
                   v-if="keyword"
                   type="button"
-                  class="flex h-4 w-4 items-center justify-center rounded-full text-[var(--color-text-quaternary)] hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
+                  class="flex h-4 w-4 items-center justify-center rounded-full text-text-quaternary hover:bg-accent hover:text-foreground"
                   @click="keyword = ''"
                 >
                   <Icon icon="ri:close-line" class="text-xs" />
@@ -669,13 +669,13 @@ function typePillStyle(mime: string) {
             </FilterTag>
             <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
             <template v-if="selectedIds.length">
-              <span class="text-[13px] text-[var(--color-text-tertiary)]">已选择 {{ selectedIds.length }} 项</span>
+              <span class="text-[13px] text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
               <VButton size="sm" type="secondary" @click="moveVisible = true">
                 <template #icon><Icon icon="ri:folder-transfer-line" class="h-full w-full" /></template>
                 移动到分组
               </VButton>
               <button
-                class="text-[13px] text-[var(--color-text-quaternary)] hover:text-[var(--color-text-tertiary)]"
+                class="text-[13px] text-text-quaternary hover:text-text-tertiary"
                 @click="clearSelection"
               >
                 取消选择
@@ -801,7 +801,7 @@ function typePillStyle(mime: string) {
                     />
                   </span>
                   <span class="col-name">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-[var(--color-secondary)]">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-secondary">
                       <img
                         v-if="isImage(att.mime) && (att.thumb_url || att.url)"
                         :src="att.thumb_url || att.url"
@@ -816,15 +816,15 @@ function typePillStyle(mime: string) {
                           : att.mime?.startsWith('audio/')
                             ? 'ri:music-2-line'
                             : 'ri:file-3-line'"
-                        class="text-[18px] text-[var(--color-text-tertiary)]"
+                        class="text-[18px] text-text-tertiary"
                       />
                     </span>
-                    <span class="truncate text-[13px] text-[var(--color-foreground)]" :title="att.filename">
+                    <span class="truncate text-[13px] text-foreground" :title="att.filename">
                       {{ att.filename }}
                     </span>
                   </span>
-                  <span class="col-size text-[12px] text-[var(--color-text-tertiary)]">{{ formatSize(att.size) }}</span>
-                  <span class="col-type text-[12px] text-[var(--color-text-tertiary)]">
+                  <span class="col-size text-[12px] text-text-tertiary">{{ formatSize(att.size) }}</span>
+                  <span class="col-type text-[12px] text-text-tertiary">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
                       :style="typePillStyle(att.mime)"
@@ -832,7 +832,7 @@ function typePillStyle(mime: string) {
                       {{ typeLabel(att.mime) }}
                     </span>
                   </span>
-                  <span class="col-time text-[12px] text-[var(--color-text-tertiary)]">{{ formatRelative(att.created_at) }}</span>
+                  <span class="col-time text-[12px] text-text-tertiary">{{ formatRelative(att.created_at) }}</span>
                   <span class="col-actions flex items-center gap-1" @click.stop>
                     <button class="apple-icon-btn-sm" title="预览" @click="openDetail(att)">
                       <Icon icon="ri:eye-line" />
@@ -852,7 +852,7 @@ function typePillStyle(mime: string) {
           <!-- 分页 -->
           <div
             v-if="total > size"
-            class="mt-5 flex items-center justify-center border-t border-[var(--color-border)] pt-4"
+            class="mt-5 flex items-center justify-center border-t border-border pt-4"
           >
             <VPagination
               v-model:page="page"
@@ -884,11 +884,11 @@ function typePillStyle(mime: string) {
 
     <!-- 批量移动到分组弹窗 -->
     <VModal v-model:visible="moveVisible" title="移动到分组" :width="380">
-      <p class="mb-3 text-[13px] text-[var(--color-text-tertiary)]">将选中的 {{ selectedIds.length }} 项移动到：</p>
+      <p class="mb-3 text-[13px] text-text-tertiary">将选中的 {{ selectedIds.length }} 项移动到：</p>
       <ul class="space-y-1 text-sm">
         <li>
           <button
-            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)]"
+            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-text-tertiary transition-colors hover:bg-accent"
             @click="moveTo(0)"
           >
             <Icon icon="ri:inbox-line" />未分组
@@ -896,7 +896,7 @@ function typePillStyle(mime: string) {
         </li>
         <li v-for="g in groups" :key="g.id">
           <button
-            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-accent)]"
+            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-text-tertiary transition-colors hover:bg-accent"
             @click="moveTo(g.id)"
           >
             <Icon icon="ri:folder-line" />{{ g.name }}
@@ -913,57 +913,57 @@ function typePillStyle(mime: string) {
     <!-- 详情弹窗 -->
     <VModal v-model:visible="detailVisible" :title="detailItem?.filename" :width="560">
       <template v-if="detailItem">
-        <div class="mb-4 overflow-hidden rounded-[10px] bg-[var(--color-secondary)]">
+        <div class="mb-4 overflow-hidden rounded-[10px] bg-secondary">
           <img
             v-if="isImage(detailItem.mime)"
             :src="detailItem.url"
             :alt="detailItem.filename"
             class="max-h-64 w-full object-contain"
           />
-          <div v-else class="flex flex-col items-center py-12 text-[var(--color-text-quaternary)]">
+          <div v-else class="flex flex-col items-center py-12 text-text-quaternary">
             <Icon icon="ri:file-3-line" class="text-5xl" />
           </div>
         </div>
 
         <div class="mb-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span class="text-[var(--color-text-quaternary)]">格式：</span>
-            <span class="text-[var(--color-text-secondary)]">{{ detailItem.mime }}</span>
+            <span class="text-text-quaternary">格式：</span>
+            <span class="text-text-secondary">{{ detailItem.mime }}</span>
           </div>
           <div>
-            <span class="text-[var(--color-text-quaternary)]">大小：</span>
-            <span class="text-[var(--color-text-secondary)]">{{ formatSize(detailItem.size) }}</span>
+            <span class="text-text-quaternary">大小：</span>
+            <span class="text-text-secondary">{{ formatSize(detailItem.size) }}</span>
           </div>
           <div v-if="detailItem.width">
-            <span class="text-[var(--color-text-quaternary)]">尺寸：</span>
-            <span class="text-[var(--color-text-secondary)]">{{ detailItem.width }}×{{ detailItem.height }} px</span>
+            <span class="text-text-quaternary">尺寸：</span>
+            <span class="text-text-secondary">{{ detailItem.width }}×{{ detailItem.height }} px</span>
           </div>
           <div>
-            <span class="text-[var(--color-text-quaternary)]">上传：</span>
-            <span class="text-[var(--color-text-secondary)]">{{ new Date(detailItem.created_at).toLocaleDateString() }}</span>
+            <span class="text-text-quaternary">上传：</span>
+            <span class="text-text-secondary">{{ new Date(detailItem.created_at).toLocaleDateString() }}</span>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="mb-1 block text-xs text-[var(--color-text-quaternary)]">引用 URL</label>
+          <label class="mb-1 block text-xs text-text-quaternary">引用 URL</label>
           <code
-            class="block select-all break-all rounded-[8px] bg-[var(--color-secondary)] px-3 py-2 text-xs text-[var(--color-text-tertiary)]"
+            class="block select-all break-all rounded-[8px] bg-secondary px-3 py-2 text-xs text-text-tertiary"
           >{{ detailItem.url }}</code>
         </div>
 
         <div>
-          <label class="mb-1 block text-xs text-[var(--color-text-quaternary)]">
+          <label class="mb-1 block text-xs text-text-quaternary">
             引用来源
             <span v-if="refsLoading" class="ml-1">加载中...</span>
             <span v-else class="ml-1">({{ detailRefs.length }})</span>
           </label>
-          <div v-if="detailRefs.length === 0 && !refsLoading" class="py-2 text-xs text-[var(--color-text-quaternary)]">无引用</div>
+          <div v-if="detailRefs.length === 0 && !refsLoading" class="py-2 text-xs text-text-quaternary">无引用</div>
           <div v-else class="space-y-1.5">
             <div v-for="r in detailRefs" :key="r.type + r.slug" class="flex items-center gap-2 text-sm">
-              <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-[var(--color-text-quaternary)]" />
-              <span class="text-[var(--color-text-tertiary)]">{{ r.title || r.slug }}</span>
+              <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-text-quaternary" />
+              <span class="text-text-tertiary">{{ r.title || r.slug }}</span>
               <span
-                class="rounded-[6px] bg-[var(--color-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-quaternary)]"
+                class="rounded-[6px] bg-secondary px-1.5 py-0.5 text-[10px] text-text-quaternary"
               >{{ r.type === "post" ? "文章" : "页面" }}</span>
             </div>
           </div>
@@ -974,10 +974,10 @@ function typePillStyle(mime: string) {
     <!-- 删除确认弹窗 -->
     <VModal v-model:visible="deleteVisible" title="删除附件" :width="420">
       <template v-if="deleteTarget">
-        <p class="mb-3 text-[13px] text-[var(--color-text-tertiary)]">
+        <p class="mb-3 text-[13px] text-text-tertiary">
           确定删除「{{ deleteTarget.filename }}」？此操作不可恢复。
         </p>
-        <div v-if="deleteRefsLoading" class="mb-3 text-xs text-[var(--color-text-quaternary)]">检查引用中...</div>
+        <div v-if="deleteRefsLoading" class="mb-3 text-xs text-text-quaternary">检查引用中...</div>
         <div
           v-else-if="deleteRefs.length > 0"
           class="mb-3 rounded-[10px] border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/10 p-3"
@@ -1005,7 +1005,7 @@ function typePillStyle(mime: string) {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -1024,7 +1024,7 @@ function typePillStyle(mime: string) {
   flex-wrap: wrap;
   gap: 14px;
   padding: 22px 28px 16px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 80%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   position: sticky;
@@ -1062,13 +1062,13 @@ function typePillStyle(mime: string) {
   letter-spacing: -0.1px;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3), 0 1px 2px rgba(10, 132, 255, 0.2);
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 1px 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  transition: all 0.2s var(--ease-standard);
 }
 .apple-upload-btn:hover {
-  background-color: #1a8fff;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 .apple-upload-btn:active {
   transform: translateY(0);
@@ -1088,14 +1088,14 @@ function typePillStyle(mime: string) {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.18s var(--ease-standard);
 }
 .group-sidebar-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: color-mix(in srgb, #fff 5%, transparent);
   color: var(--color-foreground);
 }
 .group-sidebar-item.active {
-  background-color: rgba(10, 132, 255, 0.12);
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -1135,7 +1135,7 @@ function typePillStyle(mime: string) {
 .storage-progress-fill {
   height: 100%;
   border-radius: 4px;
-  transition: width 0.3s ease;
+  transition: width var(--duration-slow) var(--ease-standard);
 }
 .storage-breakdown {
   display: flex;
@@ -1159,7 +1159,7 @@ function typePillStyle(mime: string) {
   color: var(--color-text-tertiary);
 }
 .storage-label strong {
-  color: rgba(245, 245, 247, 0.88);
+  color: color-mix(in srgb, #F5F5F7 88%, transparent);
   font-weight: 600;
   margin-right: 4px;
 }
@@ -1197,7 +1197,7 @@ function typePillStyle(mime: string) {
   align-items: center;
   justify-content: center;
   color: var(--color-text-tertiary);
-  transition: all 0.18s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .apple-view-toggle button:hover {
   color: #fff;
@@ -1215,14 +1215,14 @@ function typePillStyle(mime: string) {
 .apple-icon-btn {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-base);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
   color: var(--color-text-tertiary);
-  transition: all 0.18s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .apple-icon-btn:hover {
   background-color: var(--color-secondary);
@@ -1264,18 +1264,18 @@ function typePillStyle(mime: string) {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.25s var(--ease-standard);
   position: relative;
   cursor: pointer;
 }
 .attachment-card:hover {
-  border-color: rgba(84, 84, 88, 0.55);
+  border-color: var(--color-border);
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 32px -8px color-mix(in srgb, #000 60%, transparent);
 }
 .attachment-card.selected {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .attachment-preview {
   aspect-ratio: 4 / 3;
@@ -1304,8 +1304,8 @@ function typePillStyle(mime: string) {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(0, 0, 0, 0.25);
+  color: color-mix(in srgb, #fff 90%, transparent);
+  background: color-mix(in srgb, #000 25%, transparent);
   padding: 3px 10px;
   border-radius: 9999px;
   font-family: "SF Mono", "JetBrains Mono", monospace;
@@ -1314,12 +1314,12 @@ function typePillStyle(mime: string) {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, #000 50%, transparent);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
   color: #fff;
 }
 .play-button :deep(svg) {
@@ -1341,11 +1341,11 @@ function typePillStyle(mime: string) {
 .attachment-hover-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: color-mix(in srgb, #000 55%, transparent);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: opacity 0.2s var(--ease-standard);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1359,22 +1359,22 @@ function typePillStyle(mime: string) {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, #fff 15%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 20%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-normal) var(--ease-standard);
 }
 .attachment-action:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: color-mix(in srgb, #fff 28%, transparent);
   transform: scale(1.08);
 }
 .attachment-action.delete:hover {
-  background: rgba(255, 69, 58, 0.35);
-  border-color: rgba(255, 69, 58, 0.5);
+  background: color-mix(in srgb, var(--color-state-error) 35%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-error) 50%, transparent);
 }
 .attachment-action :deep(svg) {
   width: 18px;
@@ -1425,16 +1425,16 @@ function typePillStyle(mime: string) {
 .attachment-list-row {
   border-bottom: 1px solid var(--color-border);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .attachment-list-row:last-child {
   border-bottom: none;
 }
 .attachment-list-row:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: color-mix(in srgb, #fff 3%, transparent);
 }
 .attachment-list-row.selected {
-  background-color: rgba(10, 132, 255, 0.08);
+  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 .col-name {
   display: flex;
@@ -1448,19 +1448,19 @@ function typePillStyle(mime: string) {
 .apple-icon-btn-sm {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-tertiary);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .apple-icon-btn-sm:hover {
   background-color: var(--color-accent);
   color: var(--color-foreground);
 }
 .apple-icon-btn-sm.danger:hover {
-  background-color: rgba(255, 69, 58, 0.15);
+  background-color: color-mix(in srgb, var(--color-state-error) 15%, transparent);
   color: var(--color-destructive);
 }
 .apple-icon-btn-sm :deep(svg) {

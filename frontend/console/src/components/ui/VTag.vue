@@ -44,7 +44,7 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
   font-weight: 500;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .tag-default {
@@ -54,7 +54,7 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
 }
 
 .tag-primary {
-  color: #fff;
+  color: var(--color-foreground);
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
@@ -66,7 +66,7 @@ const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rou
 }
 
 .tag-danger {
-  color: #fff;
+  color: var(--color-foreground);
   background: var(--color-state-error);
   border-color: var(--color-state-error);
 }

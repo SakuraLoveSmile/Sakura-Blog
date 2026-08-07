@@ -59,7 +59,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "post_total", label: "文章", icon: "ri:book-read-line", color: "#0A84FF" },
+    props: { statKey: "post_total", label: "文章", icon: "ri:book-read-line", color: "#2E8DFF" },
   },
   {
     type: "stat-published",
@@ -95,7 +95,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "attachment_total", label: "附件", icon: "ri:attachment-2", color: "#5AC8FA" },
+    props: { statKey: "attachment_total", label: "附件", icon: "ri:attachment-2", color: "#66ABFF" },
   },
   {
     type: "stat-users",

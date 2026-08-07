@@ -128,13 +128,13 @@ const formatTools = [
 ];
 
 const iconBtnCls =
-  "p-1.5 rounded-md text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700";
+  "p-1.5 rounded-md text-text-quaternary hover:text-text-quaternary hover:bg-secondary transition-colors dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-accent";
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800">
+  <div class="rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary">
     <!-- 简化工具栏 -->
-    <div class="flex flex-wrap items-center gap-0.5 border-b border-gray-200 px-2 py-1.5 dark:border-gray-600">
+    <div class="flex flex-wrap items-center gap-0.5 border-b border-border px-2 py-1.5 dark:border-border-strong">
       <!-- 格式化按钮组 -->
       <button
         v-for="tool in formatTools"
@@ -144,7 +144,7 @@ const iconBtnCls =
         :class="[
           'p-1.5 rounded-md transition-colors',
           toolbarActive[tool.id]
-            ? 'bg-gray-100 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400'
+            ? 'bg-secondary text-chart-4 dark:bg-accent dark:text-chart-4'
             : iconBtnCls,
         ]"
         @click="onFormat(tool.id)"
@@ -152,7 +152,7 @@ const iconBtnCls =
         <Icon :icon="tool.icon" class="text-lg" />
       </button>
 
-      <span class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-600"></span>
+      <span class="mx-1 h-5 w-px bg-accent dark:bg-accent"></span>
 
       <!-- 图片按钮 -->
       <button type="button" title="上传图片" :class="iconBtnCls" @click="onUpload">
@@ -169,7 +169,7 @@ const iconBtnCls =
         <select
           :value="editorKind"
           @change="onKindChange"
-          class="cursor-pointer appearance-none rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+          class="cursor-pointer appearance-none rounded-md border border-border bg-white px-2 py-1 text-xs text-text-quaternary outline-none dark:border-border-strong dark:bg-accent dark:text-text-secondary"
           title="切换编辑器"
         >
           <option value="rich">富文本</option>
@@ -182,7 +182,7 @@ const iconBtnCls =
         <select
           :value="editorMode"
           @change="onModeChange"
-          class="cursor-pointer appearance-none rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+          class="cursor-pointer appearance-none rounded-md border border-border bg-white px-2 py-1 text-xs text-text-quaternary outline-none dark:border-border-strong dark:bg-accent dark:text-text-secondary"
           title="视图模式"
         >
           <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>

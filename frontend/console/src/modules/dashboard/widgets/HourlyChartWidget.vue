@@ -30,12 +30,12 @@ function initHourlyChart() {
  if (!canvas) return;
 
  const cs = getComputedStyle(document.documentElement);
- const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#0A84FF';
- const primaryColor = cs.getPropertyValue('--color-primary').trim() || '#0A84FF';
+ const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#2E8DFF';
+ const primaryColor = cs.getPropertyValue('--color-primary').trim() || '#2E8DFF';
  const gridColor = cs.getPropertyValue('--color-chart-grid').trim() || '#2c2c2e';
  const mutedColor = cs.getPropertyValue('--color-muted-foreground').trim() || '#8e8e93';
  const cardBg = cs.getPropertyValue('--color-card').trim() || '#1c1c1e';
- const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#ffffff';
+ const fgColor = cs.getPropertyValue('--color-foreground').trim() || '#f5f5f7';
  const borderColor = cs.getPropertyValue('--color-border').trim() || '#3a3a3c';
 
  const hours = Array.from({ length: 24 }, (_, i) => i);

@@ -172,7 +172,7 @@ function cancelEdit() {
  <!-- 删除（红色） -->
  <button
  type="button"
- class="group relative rounded p-1.5 text-red-500 transition-colors hover:bg-red-500/10"
+ class="group relative rounded p-1.5 text-state-error transition-colors hover:bg-state-error/10"
  @mousedown.prevent
  @click="deleteNode()"
  >
@@ -213,10 +213,10 @@ function cancelEdit() {
  v-else
  class="rounded-lg transition-shadow"
  :class="selected
- ? 'ring-2 ring-indigo-500/40'
+ ? 'ring-2 ring-chart-4/40'
  : 'cursor-pointer hover:outline hover:outline-1 hover:outline-dashed hover:outline-[var(--color-border-strong)]'"
  >
- <p v-if="failed" class="rounded-lg border border-red-500/30 px-3 py-4 text-center text-xs text-red-400">
+ <p v-if="failed" class="rounded-lg border border-state-error/30 px-3 py-4 text-center text-xs text-state-error">
  预览渲染失败，可点击编辑检查标签语法
  </p>
  <!-- 未选中时 pointer-events 关闭：整卡任意处点击即选中节点出气泡；选中后恢复可交互/滚动 -->

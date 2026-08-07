@@ -168,7 +168,7 @@ onMounted(loadStatus);
  <td class="py-1.5 text-xs">{{ formatTime(b.mod_time) }}</td>
  <td class="py-1.5 text-right">
  <button
- class="text-xs text-red-500 hover:text-red-600 hover:underline text-red-400"
+ class="text-xs text-state-error hover:text-state-error hover:underline text-state-error"
  :disabled="restoring"
  @click="pickRestoreSnapshot(b.name)"
  >恢复</button>
@@ -216,7 +216,7 @@ onMounted(loadStatus);
  <p class="text-xs text-text-tertiary">
  上传单个 .md 文件或 Markdown 导出的 .zip，按文件名（slug）导入文章。
  </p>
- <p class="mt-1 text-xs text-red-500 text-red-400">
+ <p class="mt-1 text-xs text-state-error text-state-error">
  注意：同名 slug 的文章会被上传内容覆盖。
  </p>
  </div>
@@ -233,7 +233,7 @@ onMounted(loadStatus);
 
  <div
  v-if="importResult"
- class="mt-4 rounded-base bg-green-50 p-3 text-xs text-green-700 bg-green-500/10 text-green-400"
+ class="mt-4 rounded-base bg-state-success/10 p-3 text-xs text-state-success bg-state-success/100/10 text-state-success"
  >
  成功导入 {{ importResult.imported }} 篇：{{ importResult.slugs.join("、") }}
  <template v-if="importResult.skipped.length">
@@ -246,7 +246,7 @@ onMounted(loadStatus);
  <VCard>
  <template #header>
  <span class="flex items-center gap-2 text-base font-bold text-foreground">
- <Icon icon="ri:restart-line" class="text-lg text-red-500" />
+ <Icon icon="ri:restart-line" class="text-lg text-state-error" />
  从备份恢复
  </span>
  </template>
@@ -255,7 +255,7 @@ onMounted(loadStatus);
  <p class="text-xs text-text-tertiary">
  上传全量备份 zip（blog-backup-*.zip）一键还原数据库、附件与站点配置；也可在上方列表对服务器留存的备份直接点「恢复」。
  </p>
- <p class="mt-1 text-xs text-red-500 text-red-400">
+ <p class="mt-1 text-xs text-state-error text-state-error">
  恢复会覆盖当前全部数据（执行前自动留存 .pre-restore 兜底快照）。
  </p>
  <label class="mt-2 flex items-center gap-1.5 text-xs text-text-tertiary">
@@ -277,18 +277,18 @@ onMounted(loadStatus);
  <!-- 双重确认：输入 RESTORE 才可执行 -->
  <div
  v-if="pendingRestore"
- class="mt-4 rounded-base border border-red-200 bg-red-50 p-4 border-red-500/30 bg-red-500/10"
+ class="mt-4 rounded-base border border-state-error bg-state-error/10 p-4 border-state-error/30 bg-state-error/10"
  >
- <p class="text-xs font-medium text-red-700 text-red-300">
+ <p class="text-xs font-medium text-state-error text-state-error">
  即将恢复：{{ pendingRestore.kind ==="upload" ? pendingRestore.file?.name : pendingRestore.name }}
  </p>
- <p class="mt-1 text-xs text-red-600 text-red-400">该操作覆盖当前数据，请输入 <b>RESTORE</b> 确认：</p>
+ <p class="mt-1 text-xs text-state-error text-state-error">该操作覆盖当前数据，请输入 <b>RESTORE</b> 确认：</p>
  <div class="mt-2 flex items-center gap-2">
  <input
  v-model="restoreConfirmText"
  type="text"
  placeholder="RESTORE"
- class="w-40 rounded-base border border-red-300 bg-card px-2 py-1 text-xs font-mono outline-none transition-colors focus:border-red-500 border-red-500/40"
+ class="w-40 rounded-base border border-state-error bg-card px-2 py-1 text-xs font-mono outline-none transition-colors focus:border-state-error border-state-error/40"
  />
  <VButton
  type="danger"
@@ -303,7 +303,7 @@ onMounted(loadStatus);
  </VCard>
 
  <!-- 全量恢复说明 -->
- <div class="rounded-base border border-dashed border-[var(--color-border-strong)] p-5">
+ <div class="rounded-base border border-dashed border-border-strong p-5">
  <h3 class="flex items-center gap-2 text-sm font-semibold text-text-tertiary">
  <Icon icon="ri:tools-line" />
  离线恢复（备选）

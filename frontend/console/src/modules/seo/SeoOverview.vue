@@ -38,7 +38,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <VCard><div class="p-1">
  <p class="flex items-center gap-1 text-xs text-text-quaternary">
  今日爬虫
- <span v-if="data.crawl_delta" :class="data.crawl_delta >= 0 ? 'text-green-600' : 'text-red-500'">
+ <span v-if="data.crawl_delta" :class="data.crawl_delta >= 0 ? 'text-state-success' : 'text-state-error'">
  {{ data.crawl_delta >= 0 ?"↑" :"↓" }}{{ Math.abs(data.crawl_delta) }}%
  </span>
  </p>
@@ -63,7 +63,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <li v-for="h in data.health" :key="h.key" class="flex items-center gap-3 px-4 py-3">
  <Icon
  :icon="h.status === 'ok' ? 'ri:checkbox-circle-fill' : 'ri:error-warning-fill'"
- :class="h.status === 'ok' ? 'text-green-500' : 'text-amber-500'"
+ :class="h.status === 'ok' ? 'text-state-success' : 'text-state-warning'"
  class="text-lg"
  />
  <div class="min-w-0 flex-1">
@@ -73,8 +73,8 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <span
  class="rounded-full px-2 py-0.5 text-xs"
  :class="h.status === 'ok'
- ? 'bg-green-100 text-green-700 bg-green-500/15 text-green-400'
- : 'bg-amber-100 text-amber-700 bg-amber-500/15 text-amber-400'"
+ ? 'bg-state-success/10 text-state-success bg-state-success/100/15 text-state-success'
+ : 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'"
  >{{ h.status ==="ok" ?"正常" :"待优化" }}</span>
  </li>
  </ul>
@@ -90,7 +90,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <p class="text-sm font-medium text-foreground">站点推送</p>
  <p class="mt-1 text-xs text-text-quaternary">向 IndexNow、百度等搜索引擎推送新内容，加速收录</p>
  </div>
- <span class="text-xs" :class="data.feature_push ? 'text-green-600' : 'text-text-quaternary'">
+ <span class="text-xs" :class="data.feature_push ? 'text-state-success' : 'text-text-quaternary'">
  {{ data.feature_push ?"● 已开启" :"○ 未开启" }}
  </span>
  </div></VCard>
@@ -99,7 +99,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <p class="text-sm font-medium text-foreground">爬虫记录</p>
  <p class="mt-1 text-xs text-text-quaternary">追踪搜索引擎爬虫访问行为，了解抓取频率与范围</p>
  </div>
- <span class="text-xs" :class="data.feature_crawl ? 'text-green-600' : 'text-text-quaternary'">
+ <span class="text-xs" :class="data.feature_crawl ? 'text-state-success' : 'text-text-quaternary'">
  {{ data.feature_crawl ?"● 记录已开启" :"○ 未开启" }}
  </span>
  </div></VCard>
@@ -108,7 +108,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <p class="text-sm font-medium text-foreground">搜索流量</p>
  <p class="mt-1 text-xs text-text-quaternary">统计来自 Google、Bing 等搜索引擎的访问来源与着陆页</p>
  </div>
- <span class="text-xs" :class="data.feature_traffic ? 'text-green-600' : 'text-text-quaternary'">
+ <span class="text-xs" :class="data.feature_traffic ? 'text-state-success' : 'text-text-quaternary'">
  {{ data.feature_traffic ?"● 采集已开启" :"○ 未开启" }}
  </span>
  </div></VCard>

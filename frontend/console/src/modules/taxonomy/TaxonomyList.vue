@@ -28,18 +28,18 @@ const searchQuery = ref("");
 
 // 分类图标盒 5 色系统渐变（按索引取色）
 const categoryIconGradients = [
-  "linear-gradient(135deg, #0A84FF, #409CFF)",
-  "linear-gradient(135deg, #30D158, #34E07A)",
-  "linear-gradient(135deg, #BF5AF2, #D47BFF)",
-  "linear-gradient(135deg, #FF9F0A, #FFB340)",
-  "linear-gradient(135deg, #FF453A, #FF6B60)",
+  "linear-gradient(135deg, #66ABFF, #2E8DFF)",
+  "linear-gradient(135deg, #2E8DFF, #007AFF)",
+  "linear-gradient(135deg, #9FCBFF, #66ABFF)",
+  "linear-gradient(135deg, #007AFF, #0064D6)",
+  "linear-gradient(135deg, #2E8DFF, #004FAD)",
 ];
 const categoryIconShadow = [
-  "0 4px 12px rgba(10,132,255,0.35)",
-  "0 4px 12px rgba(48,209,88,0.35)",
-  "0 4px 12px rgba(191,90,242,0.35)",
-  "0 4px 12px rgba(255,159,10,0.35)",
-  "0 4px 12px rgba(255,69,58,0.35)",
+  "0 4px 12px color-mix(in srgb, var(--color-primary) 35%, transparent)",
+  "0 4px 12px color-mix(in srgb, var(--color-state-success) 35%, transparent)",
+  "0 4px 12px color-mix(in srgb, var(--color-chart-5) 35%, transparent)",
+  "0 4px 12px color-mix(in srgb, var(--color-state-warning) 35%, transparent)",
+  "0 4px 12px color-mix(in srgb, var(--color-state-error) 35%, transparent)",
 ];
 const categoryIconKeys = [
   "ri:monitor-line",
@@ -51,13 +51,13 @@ const categoryIconKeys = [
 
 // 标签云 7 色循环（低透明度背景 + 同色边框）
 const tagPalette = [
-  { bg: "rgba(10,132,255,0.15)", border: "rgba(10,132,255,0.25)", text: "#409CFF", glow: "rgba(10,132,255,0.2)" },
-  { bg: "rgba(191,90,242,0.15)", border: "rgba(191,90,242,0.25)", text: "#D47BFF", glow: "rgba(191,90,242,0.2)" },
-  { bg: "rgba(48,209,88,0.15)", border: "rgba(48,209,88,0.25)", text: "#5DDF7D", glow: "rgba(48,209,88,0.2)" },
-  { bg: "rgba(255,159,10,0.15)", border: "rgba(255,159,10,0.25)", text: "#FFB340", glow: "rgba(255,159,10,0.2)" },
-  { bg: "rgba(255,55,95,0.15)", border: "rgba(255,55,95,0.25)", text: "#FF7A8F", glow: "rgba(255,55,95,0.2)" },
-  { bg: "rgba(50,173,230,0.15)", border: "rgba(50,173,230,0.25)", text: "#64D2FF", glow: "rgba(50,173,230,0.2)" },
-  { bg: "rgba(94,92,230,0.15)", border: "rgba(94,92,230,0.25)", text: "#8B89F0", glow: "rgba(94,92,230,0.2)" },
+  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "#66ABFF", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-chart-5) 15%, transparent)", border: "color-mix(in srgb, var(--color-chart-5) 25%, transparent)", text: "var(--color-chart-5)", glow: "color-mix(in srgb, var(--color-chart-5) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-state-success) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-success) 25%, transparent)", text: "var(--color-state-success)", glow: "color-mix(in srgb, var(--color-state-success) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-state-warning) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-warning) 25%, transparent)", text: "var(--color-state-warning)", glow: "color-mix(in srgb, var(--color-state-warning) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-state-error) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-error) 25%, transparent)", text: "var(--color-state-error)", glow: "color-mix(in srgb, var(--color-state-error) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "#66ABFF", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-chart-4) 15%, transparent)", border: "color-mix(in srgb, var(--color-chart-4) 25%, transparent)", text: "#5E5CE6", glow: "color-mix(in srgb, var(--color-chart-4) 20%, transparent)" },
 ];
 
 // 重命名弹窗（替代 prompt()）
@@ -238,7 +238,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="apple-ambient-glow min-h-full">
+  <div class="min-h-full">
     <VPageHeader title="分类与标签">
       <template #icon>
         <Icon icon="ri:price-tag-3-line" class="mr-2 self-center text-xl" />
@@ -520,9 +520,9 @@ onMounted(load);
   letter-spacing: -0.1px;
   border: 1px solid transparent;
   cursor: default;
-  transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
-    box-shadow 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
-    background-color 0.2s ease;
+  transition: transform 0.2s var(--ease-standard),
+    box-shadow 0.2s var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
 }
 .tag-chip:hover {
   transform: translateY(-1px);
@@ -551,7 +551,7 @@ onMounted(load);
   font-weight: 600;
   opacity: 0.75;
   padding: 1px 6px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: color-mix(in srgb, #fff 10%, transparent);
   border-radius: var(--radius-full);
   min-width: 18px;
   text-align: center;
@@ -564,7 +564,7 @@ onMounted(load);
   gap: 2px;
   margin-left: 2px;
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .tag-chip:hover .tag-actions {
   opacity: 1;
@@ -578,10 +578,10 @@ onMounted(load);
   border-radius: var(--radius-full);
   color: inherit;
   opacity: 0.8;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .tag-actions button:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, #fff 18%, transparent);
   opacity: 1;
 }
 </style>

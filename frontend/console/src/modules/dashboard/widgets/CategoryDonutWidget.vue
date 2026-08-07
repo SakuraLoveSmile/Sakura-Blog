@@ -15,7 +15,7 @@ interface CatResp {
   items: CatItem[];
 }
 
-const COLORS = ["#0A84FF", "#5AC8FA", "#BF5AF2", "#FF453A", "#30D158", "#FF9F0A", "#64D2FF", "#FFD60A"];
+const COLORS = ["#2E8DFF", "#66ABFF", "#BF5AF2", "#FF453A", "#30D158", "#FF9F0A", "#9FCBFF", "#007AFF"];
 
 const data = ref<CatItem[]>([]);
 const loading = ref(true);
@@ -75,11 +75,11 @@ const arcs = computed(() => {
       <span class="apple-card-badge">Categories</span>
     </div>
 
-    <div v-if="loading" class="donut-placeholder flex items-center justify-center text-[#8E8E93]">
+    <div v-if="loading" class="donut-placeholder flex items-center justify-center text-muted-foreground">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="donut-placeholder flex items-center justify-center text-red-400">{{ error }}</div>
-    <div v-else-if="data.length === 0" class="donut-placeholder flex items-center justify-center text-[#8E8E93] text-sm">
+    <div v-else-if="error" class="donut-placeholder flex items-center justify-center text-state-error">{{ error }}</div>
+    <div v-else-if="data.length === 0" class="donut-placeholder flex items-center justify-center text-muted-foreground text-sm">
       暂无分类数据
     </div>
     <div v-else class="donut-body">
@@ -95,8 +95,8 @@ const arcs = computed(() => {
             @mouseenter="hoveredIdx = i"
           />
         </g>
-        <text x="90" y="85" text-anchor="middle" fill="#fff" class="donut-center-num">{{ total }}</text>
-        <text x="90" y="105" text-anchor="middle" fill="#8E8E93" class="donut-center-label">篇文章</text>
+        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
+        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">篇文章</text>
       </svg>
       <div class="donut-legend">
         <div
@@ -137,7 +137,7 @@ const arcs = computed(() => {
   flex-shrink: 0;
 }
 .donut-segment {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-normal) var(--ease-standard);
   cursor: pointer;
 }
 .donut-center-num { font-size: 22px; font-weight: 700; }
@@ -158,13 +158,13 @@ const arcs = computed(() => {
   font-size: 13px;
   padding: 4px 6px;
   border-radius: 6px;
-  transition: background 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-standard);
 }
-.donut-legend-item.hovered { background: rgba(255,255,255,0.05); }
+.donut-legend-item.hovered { background: color-mix(in srgb, #fff 5%, transparent); }
 .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.donut-name { color: #EBEBF5; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.donut-count { color: #8E8E93; flex-shrink: 0; }
-.donut-pct { color: #636366; font-size: 11px; width: 34px; text-align: right; flex-shrink: 0; }
+.donut-name { color: var(--color-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donut-count { color: var(--color-muted-foreground); flex-shrink: 0; }
+.donut-pct { color: var(--color-text-quaternary); font-size: 11px; width: 34px; text-align: right; flex-shrink: 0; }
 
 /* M */
 .apple-card[data-bp="m"] .donut-svg,

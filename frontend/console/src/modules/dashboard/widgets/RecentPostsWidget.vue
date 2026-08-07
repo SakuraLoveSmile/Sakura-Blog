@@ -56,11 +56,11 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-if="loading" class="recent-placeholder flex items-center justify-center text-[#8E8E93]">
+    <div v-if="loading" class="recent-placeholder flex items-center justify-center text-muted-foreground">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-red-400">{{ error }}</div>
-    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-[#8E8E93] text-sm">
+    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error">{{ error }}</div>
+    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm">
       暂无文章
     </div>
     <div v-else class="space-y-1">
@@ -76,9 +76,9 @@ onMounted(() => {
               class="apple-status-dot"
               :class="item.status === 'published' ? 'published' : 'draft'"
             />
-            <span class="text-[#EBEBF5] text-sm truncate">{{ item.title }}</span>
+            <span class="text-foreground text-sm truncate">{{ item.title }}</span>
           </div>
-          <div class="flex items-center gap-2 mt-1 text-xs text-[#8E8E93]">
+          <div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
             <span v-if="item.category" class="flex items-center gap-1">
               <Icon icon="ri:folder-3-line" class="w-3 h-3" />
               {{ item.category }}
@@ -89,7 +89,7 @@ onMounted(() => {
             </span>
           </div>
         </div>
-        <Icon icon="ri:arrow-right-s-line" class="w-4 h-4 text-[#636366] apple-list-arrow" />
+        <Icon icon="ri:arrow-right-s-line" class="w-4 h-4 text-text-quaternary apple-list-arrow" />
       </button>
     </div>
   </div>

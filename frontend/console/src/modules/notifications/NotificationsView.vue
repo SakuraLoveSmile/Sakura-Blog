@@ -243,10 +243,10 @@ function formatRelative(dateStr: string): string {
       <!-- 未读摘要横幅 -->
       <div
         v-if="unreadCount > 0"
-        class="mb-5 flex items-center gap-3 rounded-[14px] border border-[rgba(10,132,255,0.18)] bg-[rgba(10,132,255,0.08)] px-4 py-3.5"
+        class="mb-5 flex items-center gap-3 rounded-[14px] border border-primary/18 bg-primary/8 px-4 py-3.5"
       >
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[rgba(10,132,255,0.18)] text-primary"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/18 text-primary"
         >
           <Icon icon="ri:notification-3-line" class="h-[18px] w-[18px]" />
         </div>
@@ -299,7 +299,7 @@ function formatRelative(dateStr: string): string {
               <article
                 v-for="n in group.items"
                 :key="n.id"
-                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-200 last:mb-0 hover:-translate-y-px hover:border-[rgba(84,84,88,0.5)]"
+                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-200 last:mb-0 hover:-translate-y-px hover:border-border-strong"
                 :class="{
                   'notif-card--unread': !n.read,
                   'notif-card--read': n.read,
@@ -337,7 +337,7 @@ function formatRelative(dateStr: string): string {
                   <span
                     v-if="!n.read"
                     class="h-2 w-2 rounded-full bg-primary"
-                    style="box-shadow: 0 0 8px rgba(10, 132, 255, 0.6);"
+                    style="box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent);"
                   />
                   <span v-else class="h-2 w-2 rounded-full bg-transparent" />
                 </div>
@@ -368,14 +368,14 @@ function formatRelative(dateStr: string): string {
 /* 未读卡：蓝色左边框 3px + 略深背景 */
 .notif-card--unread {
   border-left: 3px solid var(--color-primary);
-  background: rgba(10, 132, 255, 0.04);
-  border-color: rgba(10, 132, 255, 0.22);
+  background: color-mix(in srgb, var(--color-primary) 4%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
   padding-left: calc(1rem - 3px);
 }
 
 .notif-card--unread:hover {
-  background: rgba(10, 132, 255, 0.07);
-  border-color: rgba(10, 132, 255, 0.35);
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 /* 已读卡：降低对比度 */
@@ -389,22 +389,22 @@ function formatRelative(dateStr: string): string {
 
 /* 图标配色变体 */
 .notif-icon--blue {
-  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
+  background: linear-gradient(135deg, #66ABFF, #2E8DFF);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .notif-icon--green {
-  background: linear-gradient(135deg, #30d158, #00c7be);
-  box-shadow: 0 2px 8px rgba(48, 209, 88, 0.3);
+  background: linear-gradient(135deg, #2E8DFF, #007AFF);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-success) 30%, transparent);
 }
 
 .notif-icon--pink {
-  background: linear-gradient(135deg, #ff375f, #bf5af2);
-  box-shadow: 0 2px 8px rgba(255, 55, 95, 0.3);
+  background: linear-gradient(135deg, #9FCBFF, #66ABFF);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-error) 30%, transparent);
 }
 
 .notif-icon--orange {
-  background: linear-gradient(135deg, #ff9f0a, #ff6b00);
-  box-shadow: 0 2px 8px rgba(255, 159, 10, 0.3);
+  background: linear-gradient(135deg, #007AFF, #0064D6);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-warning) 30%, transparent);
 }
 </style>

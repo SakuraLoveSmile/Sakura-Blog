@@ -10,7 +10,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  color: "#0A84FF",
+  color: "#2E8DFF",
 });
 
 interface StatsResp {
@@ -88,6 +88,6 @@ const sparklineArea = computed(() => {
       <path :d="sparklineArea" :fill="`url(#grad-${statKey})`" />
       <path :d="sparklinePath" fill="none" :stroke="color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
-    <div v-if="error" class="text-xs text-red-400 mt-1">{{ error }}</div>
+    <div v-if="error" class="text-xs text-state-error mt-1">{{ error }}</div>
   </div>
 </template>

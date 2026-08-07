@@ -331,7 +331,7 @@ onMounted(() => {
   <div>
     <header
       class="sticky top-0 z-20 flex items-center justify-between px-10 pb-5 pt-7 backdrop-blur-xl"
-      style="background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);"
+      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-3">
@@ -497,7 +497,7 @@ onMounted(() => {
               </button>
               <button
                 type="button"
-                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-state-error transition-colors hover:bg-red-500/10"
+                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-state-error transition-colors hover:bg-state-error/10"
                 @click="handleDeleteNotebook(nb); closeMenu()"
               >
                 <Icon icon="ri:delete-bin-line" />

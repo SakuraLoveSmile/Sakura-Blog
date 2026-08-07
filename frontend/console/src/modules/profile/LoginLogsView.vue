@@ -158,8 +158,8 @@ function shortUA(ua: string): string {
  <VTag
  :class="
  log.status === 'success'
- ? 'bg-green-50 text-green-600 bg-green-900/30 text-green-400'
- : 'bg-red-50 text-red-500 bg-red-900/30 text-red-400'
+ ? 'bg-state-success/10 text-state-success bg-state-success/15 text-state-success'
+ : 'bg-state-error/10 text-state-error bg-state-error/15 text-state-error'
 "
  >
  {{ log.status ==="success" ?"成功" :"失败" }}

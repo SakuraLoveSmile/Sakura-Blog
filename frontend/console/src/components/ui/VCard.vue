@@ -44,7 +44,7 @@ defineProps<{
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 6%, transparent), transparent);
   pointer-events: none;
   z-index: 1;
 }

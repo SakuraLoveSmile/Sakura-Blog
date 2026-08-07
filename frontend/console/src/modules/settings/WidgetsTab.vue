@@ -190,7 +190,7 @@ function setJsonText(name: string, val: string) {
  </div>
 
  <!-- 未自定义提示 -->
- <div v-if="!hasCustomConfig" class="flex items-center gap-3 border border-dashed border-[var(--color-border-strong)] rounded-xl p-4">
+ <div v-if="!hasCustomConfig" class="flex items-center gap-3 border border-dashed border-border-strong rounded-xl p-4">
  <div class="text-sm text-text-tertiary">
  当前「{{ pageOptions.find(o => o.key === selectedPage)?.label }}」使用默认布局
  </div>
@@ -224,7 +224,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex items-center gap-1 shrink-0">
  <button @click="moveItem(currentBarWidgets('leftbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
  <button @click="moveItem(currentBarWidgets('leftbar'), i, 1)" :disabled="i === currentBarWidgets('leftbar').length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>
- <button @click="removeWidget('leftbar', i)" class="text-red-400 hover:text-red-600 text-red-500 hover:text-red-400"><Icon icon="ri:delete-bin-line" /></button>
+ <button @click="removeWidget('leftbar', i)" class="text-state-error hover:text-state-error text-state-error hover:text-state-error"><Icon icon="ri:delete-bin-line" /></button>
  </div>
  </div>
  <!-- 添加左栏组件 -->
@@ -261,7 +261,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex items-center gap-1 shrink-0">
  <button @click="moveItem(currentBarWidgets('rightbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
  <button @click="moveItem(currentBarWidgets('rightbar'), i, 1)" :disabled="i === currentBarWidgets('rightbar').length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>
- <button @click="removeWidget('rightbar', i)" class="text-red-400 hover:text-red-600 text-red-500 hover:text-red-400"><Icon icon="ri:delete-bin-line" /></button>
+ <button @click="removeWidget('rightbar', i)" class="text-state-error hover:text-state-error text-state-error hover:text-state-error"><Icon icon="ri:delete-bin-line" /></button>
  </div>
  </div>
  <!-- 添加右栏组件 -->
@@ -277,7 +277,7 @@ function setJsonText(name: string, val: string) {
 
  <!-- 恢复默认 -->
  <div class="flex items-center gap-3">
- <button @click="resetDefaults" class="px-3 py-1.5 text-xs rounded-lg border border-[var(--color-border-strong)] text-text-tertiary hover:bg-secondary hover:bg-accent">
+ <button @click="resetDefaults" class="px-3 py-1.5 text-xs rounded-lg border border-border-strong text-text-tertiary hover:bg-secondary hover:bg-accent">
  恢复默认
  </button>
  <span class="text-xs text-text-quaternary">删除自定义序列，回退到缺省布局</span>
@@ -300,7 +300,7 @@ function setJsonText(name: string, val: string) {
  type="checkbox"
  :checked="!!library[expandedWidget][f.key]"
  @change="library[expandedWidget][f.key] = ($event.target as HTMLInputElement).checked"
- class="rounded border-[var(--color-border-strong)]"
+ class="rounded border-border-strong"
  />
  <input
  v-else-if="f.type === 'number'"

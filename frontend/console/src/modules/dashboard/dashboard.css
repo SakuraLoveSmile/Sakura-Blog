@@ -11,14 +11,14 @@
 .dashboard-viewport {
   width: 100%;
   overflow-x: auto;
-  background: #000;
+  background: var(--color-background);
   min-height: 100vh;
 }
 .dashboard-viewport.is-preview {
   padding: 16px 0 40px;
   background:
-    radial-gradient(ellipse at top, rgba(10, 132, 255, 0.06), transparent 60%),
-    #000;
+    radial-gradient(ellipse at top, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 60%),
+    var(--color-background);
 }
 .dashboard-canvas {
   margin: 0 auto;
@@ -27,8 +27,8 @@
 
 /* ===== Base (L / large, default) ===== */
 .dashboard-apple {
-  background: #000;
-  color: #fff;
+  background: var(--color-background);
+  color: var(--color-foreground);
   padding: 24px 32px 40px;
 }
 
@@ -40,13 +40,13 @@
   font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--color-foreground);
   margin: 0 0 4px;
 }
 
 .apple-greeting p {
   font-size: 15px;
-  color: #8E8E93;
+  color: var(--color-muted-foreground);
   margin: 0;
 }
 
@@ -56,10 +56,10 @@
   gap: 6px;
   padding: 10px 14px;
   margin-bottom: 20px;
-  background: rgba(10, 132, 255, 0.1);
-  border: 1px solid rgba(10, 132, 255, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
   border-radius: 10px;
-  color: #5AC8FA;
+  color: var(--color-primary);
   font-size: 13px;
 }
 
@@ -70,41 +70,8 @@
   flex-wrap: wrap;
 }
 
-/* ===== View switch (segmented control) ===== */
-.apple-view-switch {
-  display: flex;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 9px;
-  padding: 2px;
-  margin-right: 4px;
-}
-.apple-view-switch-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #8E8E93;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-.apple-view-switch-btn.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-.apple-view-switch-btn:hover:not(.active) {
-  color: #EBEBF5;
-}
-.apple-view-switch-label {
-  display: inline;
-}
-/* s 预览空间有限时隐藏文字只留图标 */
-.dashboard-apple[data-bp="s"] .apple-view-switch-label {
+/* ===== View switch：统一走 apple-base.css 的 .apple-segmented ===== */
+.dashboard-apple[data-bp="s"] .view-switch .seg-label {
   display: none;
 }
 
@@ -114,19 +81,19 @@
   gap: 6px;
   padding: 8px 16px;
   border-radius: 980px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: color-mix(in srgb, #fff 10%, transparent);
+  color: var(--color-foreground);
   font-size: 14px;
   font-weight: 500;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .apple-edit-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, #fff 18%, transparent);
 }
 
 .apple-icon-btn {
@@ -136,16 +103,16 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: #8E8E93;
+  background: color-mix(in srgb, #fff 10%, transparent);
+  color: var(--color-muted-foreground);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .apple-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  background: color-mix(in srgb, #fff 18%, transparent);
+  color: var(--color-foreground);
 }
 
 /* ===== Grid Layouts ===== */
@@ -170,7 +137,7 @@
 }
 
 .widget-cell.editable {
-  outline: 2px dashed rgba(255, 255, 255, 0.15);
+  outline: 2px dashed color-mix(in srgb, #fff 15%, transparent);
   outline-offset: 2px;
   border-radius: 22px;
 }
@@ -193,13 +160,13 @@
 
 /* ===== Card base ===== */
 .apple-card {
-  background: rgba(28, 28, 30, 0.72);
+  background: color-mix(in srgb, var(--color-card) 72%, transparent);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   padding: 22px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
   position: relative;
   overflow: hidden;
   height: 100%;
@@ -212,33 +179,33 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
   pointer-events: none;
 }
 
 .apple-card:hover {
-  border-color: rgba(84, 84, 88, 0.55);
+  border-color: var(--color-border-strong);
   transform: translateY(-1px);
 }
 
 .apple-section-title {
   font-size: 17px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-foreground);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 .apple-card-subtitle {
   font-size: 12px;
-  color: #8E8E93;
+  color: var(--color-muted-foreground);
   margin-top: 3px;
 }
 
 .apple-card-badge {
   font-size: 11px;
   font-weight: 500;
-  color: #8E8E93;
+  color: var(--color-muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -257,7 +224,7 @@
 .apple-stat-value {
   font-size: 34px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-foreground);
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin-bottom: 4px;
@@ -265,7 +232,7 @@
 
 .apple-stat-label {
   font-size: 13px;
-  color: #8E8E93;
+  color: var(--color-muted-foreground);
   font-weight: 500;
 }
 
@@ -275,30 +242,7 @@
   margin-top: 16px;
 }
 
-/* ===== Segment control ===== */
-.apple-segment {
-  display: flex;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 2px;
-}
-
-.apple-segment-btn {
-  padding: 5px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #8E8E93;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.apple-segment-btn.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
+/* ===== Segment control：统一走 apple-base.css 的 .apple-segmented ===== */
 
 /* ===== List items (posts) ===== */
 .apple-list-item {
@@ -308,7 +252,7 @@
   padding: 10px 4px;
   border-radius: 12px;
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-standard);
   width: 100%;
   background: none;
   border: none;
@@ -319,16 +263,16 @@
 }
 
 .apple-list-item + .apple-list-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid color-mix(in srgb, #fff 5%, transparent);
 }
 
 .apple-list-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, #fff 4%, transparent);
 }
 
 .apple-list-arrow {
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
   margin-left: auto;
 }
 
@@ -344,11 +288,11 @@
 }
 
 .apple-status-dot.published {
-  background: #30D158;
+  background: var(--color-state-success);
 }
 
 .apple-status-dot.draft {
-  background: #FF9F0A;
+  background: var(--color-state-warning);
 }
 
 /* ===== Comment items ===== */
@@ -357,7 +301,7 @@
   gap: 12px;
   padding: 12px;
   border-radius: 12px;
-  transition: background 0.15s ease;
+  transition: background var(--duration-fast) var(--ease-standard);
   width: 100%;
   text-align: left;
   background: transparent;
@@ -368,11 +312,11 @@
 }
 
 .apple-comment-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, #fff 5%, transparent);
 }
 
 .apple-comment-item:focus-visible {
-  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline: 2px solid color-mix(in srgb, var(--color-ring) 50%, transparent);
   outline-offset: -2px;
 }
 
@@ -393,15 +337,15 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-foreground);
   overflow: hidden;
 }
 
 .apple-pending-badge {
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(255, 159, 10, 0.15);
-  color: #FF9F0A;
+  background: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
+  color: var(--color-state-warning);
   font-size: 10px;
   font-weight: 600;
 }
@@ -415,18 +359,18 @@
   width: 100%;
   padding: 15px 20px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 50%, #BF5AF2 100%);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 20px rgba(10, 132, 255, 0.25);
+  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  box-shadow: var(--shadow-md);
 }
 
 .apple-primary-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(10, 132, 255, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 
 .apple-secondary-btn {
@@ -437,16 +381,16 @@
   gap: 6px;
   padding: 16px 8px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #EBEBF5;
+  background: color-mix(in srgb, #fff 6%, transparent);
+  color: var(--color-foreground);
   text-decoration: none;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all var(--duration-fast) var(--ease-standard);
+  border: 1px solid color-mix(in srgb, #fff 6%, transparent);
 }
 
 .apple-secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, #fff 10%, transparent);
+  border-color: color-mix(in srgb, #fff 12%, transparent);
 }
 
 .apple-link {
@@ -454,9 +398,9 @@
   align-items: center;
   gap: 2px;
   font-size: 13px;
-  color: #0A84FF;
+  color: var(--color-primary);
   text-decoration: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
   background: none;
   border: none;
   padding: 0;
@@ -496,14 +440,14 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(255, 69, 58, 0.9);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-state-error) 90%, transparent);
+  color: var(--color-foreground);
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-standard);
   backdrop-filter: blur(10px);
 }
 
@@ -515,19 +459,19 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(10, 132, 255, 0.9);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
   backdrop-filter: blur(10px);
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
 }
 
 .apple-drag-handle:hover {
   transform: scale(1.1);
-  background: rgba(10, 132, 255, 1);
+  background: var(--color-primary-active);
 }
 
 .apple-drag-handle:active {
@@ -543,12 +487,12 @@
 }
 
 .widget-cell.drag-over-top {
-  box-shadow: inset 3px 0 0 0 #0A84FF;
+  box-shadow: inset 3px 0 0 0 var(--color-primary);
   border-radius: 22px;
 }
 
 .widget-cell.drag-over-bottom {
-  box-shadow: inset -3px 0 0 0 #0A84FF;
+  box-shadow: inset -3px 0 0 0 var(--color-primary);
   border-radius: 22px;
 }
 
@@ -633,8 +577,8 @@
   margin-top: 12px;
 }
 
-.dashboard-apple[data-bp="m"] .apple-segment-btn,
-.dashboard-apple[data-bp="s"] .apple-segment-btn {
+.dashboard-apple[data-bp="m"] .apple-segmented button,
+.dashboard-apple[data-bp="s"] .apple-segmented button {
   padding: 5px 12px;
   font-size: 12px;
 }
@@ -736,10 +680,10 @@
   margin-top: 10px;
 }
 
-.dashboard-apple[data-bp="s"] .apple-segment {
+.dashboard-apple[data-bp="s"] .apple-segmented {
   border-radius: 7px;
 }
-.dashboard-apple[data-bp="s"] .apple-segment-btn {
+.dashboard-apple[data-bp="s"] .apple-segmented button {
   padding: 4px 10px;
   font-size: 12px;
 }
@@ -790,6 +734,6 @@
 }
 
 /* S 断点下视角切换器更紧凑 */
-.dashboard-apple[data-bp="s"] .apple-view-switch-btn {
+.dashboard-apple[data-bp="s"] .view-switch button {
   padding: 6px 8px;
 }

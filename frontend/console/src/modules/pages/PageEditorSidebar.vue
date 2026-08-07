@@ -62,30 +62,30 @@ function widgetLabelOf(name: string) {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <div class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary">
     <!-- Tabs -->
-    <div class="grid grid-cols-2 gap-0.5 rounded-t-xl bg-gray-100 p-1 dark:bg-gray-700/50">
+    <div class="grid grid-cols-2 gap-0.5 rounded-t-xl bg-secondary p-1 dark:bg-accent/50">
       <button
         :class="[
           'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
           activeTab === 'outline'
-            ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-100'
-            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+            ? 'bg-white text-text-quaternary shadow-sm dark:bg-secondary dark:text-foreground'
+            : 'text-text-quaternary hover:text-text-quaternary dark:text-muted-foreground dark:hover:text-foreground',
         ]"
         @click="activeTab = 'outline'"
       >
         <span class="inline-flex items-center gap-1">
           <Icon icon="ri:list-unordered" class="h-3.5 w-3.5" />
           大纲
-          <span class="ml-1 rounded-full bg-gray-200 px-1.5 text-[10px] text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ outline.length }}</span>
+          <span class="ml-1 rounded-full bg-accent px-1.5 text-[10px] text-text-quaternary dark:bg-accent dark:text-text-secondary">{{ outline.length }}</span>
         </span>
       </button>
       <button
         :class="[
           'rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
           activeTab === 'detail'
-            ? 'bg-white text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-100'
-            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+            ? 'bg-white text-text-quaternary shadow-sm dark:bg-secondary dark:text-foreground'
+            : 'text-text-quaternary hover:text-text-quaternary dark:text-muted-foreground dark:hover:text-foreground',
         ]"
         @click="activeTab = 'detail'"
       >
@@ -99,18 +99,18 @@ function widgetLabelOf(name: string) {
     <!-- Outline Tab -->
     <div v-if="activeTab === 'outline'" class="flex-1 overflow-y-auto p-3">
       <div v-if="!outline.length" class="flex flex-col items-center justify-center py-8 text-center">
-        <Icon icon="ri:article-line" class="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
-        <p class="text-xs text-gray-400">暂无标题，添加 # 标题后可在此跳转</p>
+        <Icon icon="ri:article-line" class="mb-2 h-8 w-8 text-text-secondary dark:text-text-quaternary" />
+        <p class="text-xs text-muted-foreground">暂无标题，添加 # 标题后可在此跳转</p>
       </div>
       <ol v-else class="space-y-0.5">
         <li
           v-for="(it, idx) in outline"
           :key="idx"
-          class="group cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-700/40"
+          class="group cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-secondary dark:hover:bg-accent/40"
           :style="{ paddingLeft: `${8 + (it.level - minLevel) * 12}px` }"
           @click="emit('jump', it.line, idx)"
         >
-          <span class="truncate text-gray-600 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100">{{ it.text }}</span>
+          <span class="truncate text-text-quaternary group-hover:text-foreground dark:text-text-secondary dark:group-hover:text-foreground">{{ it.text }}</span>
         </li>
       </ol>
     </div>
@@ -118,30 +118,30 @@ function widgetLabelOf(name: string) {
     <!-- Detail Tab -->
     <div v-else class="flex-1 overflow-y-auto p-3 space-y-4">
       <div class="space-y-2">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">页面信息</h3>
-        <div class="space-y-2 rounded-lg bg-gray-50 p-3 text-xs dark:bg-gray-700/40">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">页面信息</h3>
+        <div class="space-y-2 rounded-lg bg-secondary p-3 text-xs dark:bg-accent/40">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-gray-500 dark:text-gray-400">标题</span>
-            <span class="truncate font-medium text-gray-800 dark:text-gray-200">{{ form.title || '(未填)' }}</span>
+            <span class="text-text-quaternary dark:text-muted-foreground">标题</span>
+            <span class="truncate font-medium text-text-quaternary dark:text-foreground">{{ form.title || '(未填)' }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span class="text-gray-500 dark:text-gray-400">Slug</span>
-            <span class="truncate font-mono text-[11px] text-gray-800 dark:text-gray-200">{{ form.slug || '(未填)' }}</span>
+            <span class="text-text-quaternary dark:text-muted-foreground">Slug</span>
+            <span class="truncate font-mono text-[11px] text-text-quaternary dark:text-foreground">{{ form.slug || '(未填)' }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span class="text-gray-500 dark:text-gray-400">状态</span>
+            <span class="text-text-quaternary dark:text-muted-foreground">状态</span>
             <span
               :class="[
                 'rounded-full px-2 py-0.5 text-[11px]',
                 form.status === 'published'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'
-                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400',
+                  ? 'bg-state-success/10 text-state-success dark:bg-state-success/100/20 dark:text-state-success'
+                  : 'bg-state-warning/10 text-state-warning dark:bg-state-warning/20 dark:text-state-warning',
               ]"
             >{{ form.status === 'published' ? '已发布' : '草稿' }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
-            <span class="text-gray-500 dark:text-gray-400">字数</span>
-            <span class="font-mono text-[11px] text-gray-700 dark:text-gray-300">
+            <span class="text-text-quaternary dark:text-muted-foreground">字数</span>
+            <span class="font-mono text-[11px] text-text-quaternary dark:text-text-secondary">
               {{ form.content_md ? [...form.content_md].filter((c) => !/\s/.test(c)).length : 0 }}
             </span>
           </div>
@@ -150,7 +150,7 @@ function widgetLabelOf(name: string) {
 
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">侧边栏配置</h3>
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">侧边栏配置</h3>
           <button
             class="rounded-md px-2 py-1 text-[11px] text-primary hover:bg-primary/10"
             @click="emit('openSidebarConfig')"
@@ -160,10 +160,10 @@ function widgetLabelOf(name: string) {
           </button>
         </div>
         <div class="space-y-2 text-xs">
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40">
+          <div class="rounded-lg bg-secondary p-3 dark:bg-accent/40">
             <div class="mb-1 flex items-center justify-between">
-              <span class="font-medium text-gray-600 dark:text-gray-300">左栏</span>
-              <span class="text-[10px] text-gray-400">
+              <span class="font-medium text-text-quaternary dark:text-text-secondary">左栏</span>
+              <span class="text-[10px] text-muted-foreground">
                 {{ leftbarWidgets === null ? '继承全局' : `自定义 · ${leftbarWidgets.length} 组件` }}
               </span>
             </div>
@@ -171,23 +171,23 @@ function widgetLabelOf(name: string) {
               <span
                 v-for="w in leftbarWidgets"
                 :key="w.name"
-                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600"
+                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-text-quaternary ring-1 ring-border dark:bg-secondary dark:text-foreground dark:ring-border"
               >
-                <Icon icon="ri-layout-left-line" class="h-3 w-3 text-gray-400" />
+                <Icon icon="ri-layout-left-line" class="h-3 w-3 text-muted-foreground" />
                 {{ widgetLabelOf(w.name) }}
                 <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
                   {{ Object.keys(w.params).length }}
                 </span>
               </span>
             </div>
-            <p v-else-if="Array.isArray(leftbarWidgets) && !leftbarWidgets.length" class="mt-1 text-[10px] text-gray-400">
+            <p v-else-if="Array.isArray(leftbarWidgets) && !leftbarWidgets.length" class="mt-1 text-[10px] text-muted-foreground">
               （显式空左栏）
             </p>
           </div>
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40">
+          <div class="rounded-lg bg-secondary p-3 dark:bg-accent/40">
             <div class="mb-1 flex items-center justify-between">
-              <span class="font-medium text-gray-600 dark:text-gray-300">右栏</span>
-              <span class="text-[10px] text-gray-400">
+              <span class="font-medium text-text-quaternary dark:text-text-secondary">右栏</span>
+              <span class="text-[10px] text-muted-foreground">
                 {{ rightbarWidgets === null ? '继承全局' : `自定义 · ${rightbarWidgets.length} 组件` }}
               </span>
             </div>
@@ -195,16 +195,16 @@ function widgetLabelOf(name: string) {
               <span
                 v-for="w in rightbarWidgets"
                 :key="w.name"
-                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600"
+                class="inline-flex items-center gap-1 rounded-full bg-white px-1.5 py-0.5 text-[10px] text-text-quaternary ring-1 ring-border dark:bg-secondary dark:text-foreground dark:ring-border"
               >
-                <Icon icon="ri-layout-right-line" class="h-3 w-3 text-gray-400" />
+                <Icon icon="ri-layout-right-line" class="h-3 w-3 text-muted-foreground" />
                 {{ widgetLabelOf(w.name) }}
                 <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
                   {{ Object.keys(w.params).length }}
                 </span>
               </span>
             </div>
-            <p v-else-if="Array.isArray(rightbarWidgets) && !rightbarWidgets.length" class="mt-1 text-[10px] text-gray-400">
+            <p v-else-if="Array.isArray(rightbarWidgets) && !rightbarWidgets.length" class="mt-1 text-[10px] text-muted-foreground">
               （显式空右栏）
             </p>
           </div>

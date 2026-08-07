@@ -532,8 +532,8 @@ function getStatusClass(p: PageItem) {
 
 <style scoped>
 .page-list-apple {
-  background: #000;
-  color: #fff;
+  background: var(--color-background);
+  color: var(--color-foreground);
   min-height: 100%;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
@@ -547,10 +547,10 @@ function getStatusClass(p: PageItem) {
   justify-content: space-between;
   height: 56px;
   padding: 0 24px;
-  background: rgba(0, 0, 0, 0.8);
+  background: color-mix(in srgb, #000 80%, transparent);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(84, 84, 88, 0.35);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -568,14 +568,14 @@ function getStatusClass(p: PageItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0A84FF;
+  color: var(--color-primary);
   font-size: 22px;
 }
 
 .header-title {
   font-size: 20px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-foreground);
   letter-spacing: -0.3px;
   margin: 0;
 }
@@ -592,21 +592,21 @@ function getStatusClass(p: PageItem) {
   gap: 6px;
   padding: 7px 18px;
   height: 32px;
-  border-radius: 999px;
-  background: #0A84FF;
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-foreground);
   font-size: 13px;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
+  transition: all 0.2s var(--ease-standard);
+  box-shadow: var(--shadow-md);
 }
 
 .apple-new-btn:hover {
-  background: #1a8fff;
+  background: var(--color-primary-hover);
   transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 
 .apple-new-btn:active {
@@ -624,14 +624,14 @@ function getStatusClass(p: PageItem) {
 }
 
 .apple-card {
-  background: rgba(28, 28, 30, 0.72);
+  background: color-mix(in srgb, var(--color-card) 72%, transparent);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   overflow: hidden;
   position: relative;
-  animation: fadeInUp 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  animation: fadeInUp 0.4s var(--ease-standard) both;
 }
 
 .apple-card::before {
@@ -641,7 +641,7 @@ function getStatusClass(p: PageItem) {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 6%, transparent), transparent);
   pointer-events: none;
 }
 
@@ -656,7 +656,7 @@ function getStatusClass(p: PageItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(84, 84, 88, 0.35);
+  border-bottom: 1px solid var(--color-border);
   gap: 12px;
 }
 
@@ -679,17 +679,17 @@ function getStatusClass(p: PageItem) {
 .custom-checkbox {
   width: 18px;
   height: 18px;
-  border-radius: 5px;
-  border: 1.5px solid rgba(84, 84, 88, 0.6);
-  background: #2c2c2e;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.18s var(--ease-standard);
   font-size: 12px;
-  color: #fff;
+  color: var(--color-foreground);
 }
 
 .custom-checkbox.small {
@@ -699,12 +699,12 @@ function getStatusClass(p: PageItem) {
 }
 
 .custom-checkbox:hover {
-  border-color: #0A84FF;
+  border-color: var(--color-primary);
 }
 
 .custom-checkbox.checked {
-  background: #0A84FF;
-  border-color: #0A84FF;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 /* Search */
@@ -712,23 +712,23 @@ function getStatusClass(p: PageItem) {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #2c2c2e;
+  background: var(--color-secondary);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-base);
   padding: 7px 12px;
   width: 320px;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.2s var(--ease-standard);
 }
 
 .filter-search:focus-within {
-  border-color: rgba(10, 132, 255, 0.4);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+  border-color: color-mix(in srgb, var(--color-ring) 40%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 12%, transparent);
 }
 
 .search-icon {
   width: 14px;
   height: 14px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   flex-shrink: 0;
 }
 
@@ -736,14 +736,14 @@ function getStatusClass(p: PageItem) {
   flex: 1;
   background: transparent;
   border: none;
-  color: #f5f5f7;
+  color: var(--color-foreground);
   font-size: 13px;
   width: 100%;
   font-weight: 400;
 }
 
 .search-input::placeholder {
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
 }
 
 /* Bulk Actions */
@@ -758,9 +758,9 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border-radius: 8px;
-  background: rgba(255, 69, 58, 0.15);
-  color: #FF453A;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-state-error) 15%, transparent);
+  color: var(--color-state-error);
   font-size: 12px;
   font-weight: 600;
   border: none;
@@ -769,12 +769,12 @@ function getStatusClass(p: PageItem) {
 }
 
 .bulk-delete-btn:hover {
-  background: rgba(255, 69, 58, 0.25);
+  background: color-mix(in srgb, var(--color-state-error) 25%, transparent);
 }
 
 .bulk-count {
   font-size: 13px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
 }
 
 /* Filter Buttons */
@@ -788,9 +788,9 @@ function getStatusClass(p: PageItem) {
   gap: 4px;
   padding: 7px 12px;
   height: 32px;
-  border-radius: 8px;
-  background: #2c2c2e;
-  color: #c7c7cc;
+  border-radius: var(--radius-sm);
+  background: var(--color-secondary);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -800,8 +800,8 @@ function getStatusClass(p: PageItem) {
 
 .filter-btn:hover,
 .filter-btn.active {
-  background: #3a3a3c;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-foreground);
 }
 
 .filter-btn svg {
@@ -812,20 +812,20 @@ function getStatusClass(p: PageItem) {
 .icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   border: none;
   cursor: pointer;
   transition: all 0.18s;
 }
 
 .icon-btn:hover {
-  background: #2c2c2e;
-  color: #fff;
+  background: var(--color-secondary);
+  color: var(--color-foreground);
 }
 
 .icon-btn svg {
@@ -845,8 +845,8 @@ function getStatusClass(p: PageItem) {
 /* View Toggle */
 .view-toggle {
   display: flex;
-  background: #2c2c2e;
-  border-radius: 8px;
+  background: var(--color-secondary);
+  border-radius: var(--radius-sm);
   padding: 2px;
 }
 
@@ -857,7 +857,7 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: all 0.18s;
   background: transparent;
@@ -865,12 +865,12 @@ function getStatusClass(p: PageItem) {
 }
 
 .toggle-btn:hover {
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
 }
 
 .toggle-btn.active {
-  background: #3a3a3c;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-foreground);
 }
 
 .toggle-btn svg {
@@ -884,12 +884,12 @@ function getStatusClass(p: PageItem) {
   top: calc(100% + 6px);
   right: 0;
   min-width: 140px;
-  background: #2c2c2e;
-  border: 1px solid rgba(84, 84, 88, 0.35);
-  border-radius: 10px;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
   padding: 6px;
   z-index: 40;
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 32px -8px color-mix(in srgb, #000 60%, transparent);
 }
 
 .dropdown-item {
@@ -900,7 +900,7 @@ function getStatusClass(p: PageItem) {
   padding: 8px 10px;
   border-radius: 6px;
   background: transparent;
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
   font-size: 13px;
   border: none;
   cursor: pointer;
@@ -909,12 +909,12 @@ function getStatusClass(p: PageItem) {
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: color-mix(in srgb, #fff 6%, transparent);
+  color: var(--color-foreground);
 }
 
 .dropdown-item.active {
-  color: #0A84FF;
+  color: var(--color-primary);
 }
 
 .check-icon {
@@ -924,7 +924,7 @@ function getStatusClass(p: PageItem) {
 
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
 }
 
 .dropdown-enter-from,
@@ -939,7 +939,7 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(84, 84, 88, 0.2);
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
@@ -948,9 +948,9 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(10, 132, 255, 0.12);
-  color: #0A84FF;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 500;
 }
@@ -978,7 +978,7 @@ function getStatusClass(p: PageItem) {
 
 .clear-filters {
   font-size: 12px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -987,7 +987,7 @@ function getStatusClass(p: PageItem) {
 }
 
 .clear-filters:hover {
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
 }
 
 /* Loading */
@@ -1001,8 +1001,8 @@ function getStatusClass(p: PageItem) {
 .apple-spinner {
   width: 24px;
   height: 24px;
-  border: 2.5px solid rgba(142, 142, 147, 0.2);
-  border-top-color: #0A84FF;
+  border: 2.5px solid color-mix(in srgb, var(--color-muted-foreground) 20%, transparent);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1018,26 +1018,26 @@ function getStatusClass(p: PageItem) {
 .empty-icon {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, #fff 6%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   margin-bottom: 16px;
 }
 
 .empty-title {
   font-size: 17px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-foreground);
   margin: 0 0 6px;
 }
 
 .empty-desc {
   font-size: 13px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   margin: 0 0 20px;
 }
 
@@ -1051,9 +1051,9 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border-radius: 999px;
-  background: #0A84FF;
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-foreground);
   font-size: 13px;
   font-weight: 600;
   border: none;
@@ -1062,7 +1062,7 @@ function getStatusClass(p: PageItem) {
 }
 
 .apple-btn-primary:hover {
-  background: #1a8fff;
+  background: var(--color-primary-hover);
 }
 
 .apple-btn-secondary {
@@ -1070,9 +1070,9 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 6px;
   padding: 8px 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, #fff 10%, transparent);
+  color: var(--color-foreground);
   font-size: 13px;
   font-weight: 500;
   border: none;
@@ -1081,7 +1081,7 @@ function getStatusClass(p: PageItem) {
 }
 
 .apple-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, #fff 18%, transparent);
 }
 
 /* List View */
@@ -1094,9 +1094,9 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(84, 84, 88, 0.2);
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.18s var(--ease-standard);
   position: relative;
 }
 
@@ -1105,11 +1105,11 @@ function getStatusClass(p: PageItem) {
 }
 
 .page-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, #fff 4%, transparent);
 }
 
 .page-row.selected {
-  background: rgba(10, 132, 255, 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .page-row.selected::before {
@@ -1119,7 +1119,7 @@ function getStatusClass(p: PageItem) {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #0A84FF;
+  background: var(--color-primary);
 }
 
 .row-left {
@@ -1130,7 +1130,7 @@ function getStatusClass(p: PageItem) {
 .page-icon-box {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1143,9 +1143,9 @@ function getStatusClass(p: PageItem) {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+  background: linear-gradient(135deg, color-mix(in srgb, #fff 4%, transparent) 0%, transparent 50%);
   pointer-events: none;
-  border-radius: 10px;
+  border-radius: var(--radius-base);
 }
 
 .page-icon-box svg {
@@ -1153,11 +1153,11 @@ function getStatusClass(p: PageItem) {
   z-index: 1;
 }
 
-.page-icon-box.blue { color: #0A84FF; background: rgba(10, 132, 255, 0.12); }
-.page-icon-box.green { color: #30D158; background: rgba(48, 209, 88, 0.12); }
-.page-icon-box.orange { color: #FF9F0A; background: rgba(255, 159, 10, 0.12); }
-.page-icon-box.red { color: #FF453A; background: rgba(255, 69, 58, 0.12); }
-.page-icon-box.purple { color: #BF5AF2; background: rgba(191, 90, 242, 0.12); }
+.page-icon-box.blue { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.page-icon-box.green { color: var(--color-state-success); background: color-mix(in srgb, var(--color-state-success) 12%, transparent); }
+.page-icon-box.orange { color: var(--color-state-warning); background: color-mix(in srgb, var(--color-state-warning) 12%, transparent); }
+.page-icon-box.red { color: var(--color-state-error); background: color-mix(in srgb, var(--color-state-error) 12%, transparent); }
+.page-icon-box.purple { color: #BF5AF2; background: color-mix(in srgb, var(--color-chart-5) 12%, transparent); }
 
 .page-info {
   flex: 1;
@@ -1174,7 +1174,7 @@ function getStatusClass(p: PageItem) {
 .page-title {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1185,9 +1185,9 @@ function getStatusClass(p: PageItem) {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(10, 132, 255, 0.12);
-  color: #0A84FF;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
   font-size: 10px;
   font-weight: 600;
   border: none;
@@ -1206,7 +1206,7 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
 }
 
 .meta-item svg {
@@ -1218,7 +1218,7 @@ function getStatusClass(p: PageItem) {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #6e6e73;
+  background: var(--color-text-quaternary);
   flex-shrink: 0;
 }
 
@@ -1237,13 +1237,13 @@ function getStatusClass(p: PageItem) {
   text-align: right;
 }
 
-.status-text.text-green { color: #30D158; }
-.status-text.text-orange { color: #FF9F0A; }
-.status-text.text-red { color: #FF453A; }
+.status-text.text-green { color: var(--color-state-success); }
+.status-text.text-orange { color: var(--color-state-warning); }
+.status-text.text-red { color: var(--color-state-error); }
 
 .page-date {
   font-size: 12px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   min-width: 78px;
@@ -1261,7 +1261,7 @@ function getStatusClass(p: PageItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: all 0.18s;
   background: transparent;
@@ -1274,8 +1274,8 @@ function getStatusClass(p: PageItem) {
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: color-mix(in srgb, #fff 8%, transparent);
+  color: var(--color-foreground);
 }
 
 .action-btn svg {
@@ -1288,12 +1288,12 @@ function getStatusClass(p: PageItem) {
   top: calc(100% + 4px);
   right: 0;
   min-width: 140px;
-  background: #2c2c2e;
-  border: 1px solid rgba(84, 84, 88, 0.35);
-  border-radius: 10px;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
   padding: 6px;
   z-index: 40;
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 32px -8px color-mix(in srgb, #000 60%, transparent);
 }
 
 .menu-item {
@@ -1304,7 +1304,7 @@ function getStatusClass(p: PageItem) {
   padding: 8px 10px;
   border-radius: 6px;
   background: transparent;
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
   font-size: 13px;
   border: none;
   cursor: pointer;
@@ -1313,17 +1313,17 @@ function getStatusClass(p: PageItem) {
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: color-mix(in srgb, #fff 6%, transparent);
+  color: var(--color-foreground);
 }
 
 .menu-item.danger {
-  color: #FF453A;
+  color: var(--color-state-error);
 }
 
 .menu-item.danger:hover {
-  background: rgba(255, 69, 58, 0.12);
-  color: #FF453A;
+  background: color-mix(in srgb, var(--color-state-error) 12%, transparent);
+  color: var(--color-state-error);
 }
 
 .menu-item svg {
@@ -1333,7 +1333,7 @@ function getStatusClass(p: PageItem) {
 
 .menu-divider {
   height: 1px;
-  background: rgba(84, 84, 88, 0.3);
+  background: var(--color-border);
   margin: 4px 0;
 }
 
@@ -1346,26 +1346,26 @@ function getStatusClass(p: PageItem) {
 }
 
 .grid-card {
-  background: rgba(44, 44, 46, 0.6);
-  border: 1px solid rgba(84, 84, 88, 0.3);
-  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 20px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.25s var(--ease-standard);
   position: relative;
   overflow: hidden;
 }
 
 .grid-card:hover {
-  background: rgba(58, 58, 60, 0.6);
+  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
   transform: translateY(-2px);
-  border-color: rgba(84, 84, 88, 0.5);
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  border-color: var(--color-border);
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, #000 50%, transparent);
 }
 
 .grid-card.selected {
-  border-color: #0A84FF;
-  background: rgba(10, 132, 255, 0.08);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .grid-checkbox {
@@ -1395,7 +1395,7 @@ function getStatusClass(p: PageItem) {
 .grid-title {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-foreground);
   margin: 0 0 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -1404,7 +1404,7 @@ function getStatusClass(p: PageItem) {
 
 .grid-slug {
   font-size: 12px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
   margin: 0 0 16px;
 }
 
@@ -1420,16 +1420,16 @@ function getStatusClass(p: PageItem) {
   font-weight: 500;
 }
 
-.status-badge.text-green { color: #30D158; }
-.status-badge.text-orange { color: #FF9F0A; }
-.status-badge.text-red { color: #FF453A; }
+.status-badge.text-green { color: var(--color-state-success); }
+.status-badge.text-orange { color: var(--color-state-warning); }
+.status-badge.text-red { color: var(--color-state-error); }
 
 .grid-views {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
 }
 
 .grid-views svg {
@@ -1439,7 +1439,7 @@ function getStatusClass(p: PageItem) {
 
 .grid-date {
   font-size: 11px;
-  color: #6e6e73;
+  color: var(--color-text-quaternary);
 }
 
 .grid-actions {
@@ -1463,22 +1463,22 @@ function getStatusClass(p: PageItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, #000 30%, transparent);
   backdrop-filter: blur(8px);
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
   border: none;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .grid-action-btn:hover {
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  background: color-mix(in srgb, #000 50%, transparent);
+  color: var(--color-foreground);
 }
 
 .grid-action-btn.danger:hover {
-  background: rgba(255, 69, 58, 0.8);
-  color: #fff;
+  background: color-mix(in srgb, var(--color-state-error) 80%, transparent);
+  color: var(--color-foreground);
 }
 
 .grid-action-btn svg {
@@ -1492,16 +1492,16 @@ function getStatusClass(p: PageItem) {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-top: 1px solid rgba(84, 84, 88, 0.2);
+  border-top: 1px solid var(--color-border);
 }
 
 .pagination-info {
   font-size: 12px;
-  color: #8e8e93;
+  color: var(--color-muted-foreground);
 }
 
 .pagination-info strong {
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
   font-weight: 600;
 }
 
@@ -1521,7 +1521,7 @@ function getStatusClass(p: PageItem) {
   justify-content: center;
   font-size: 12px;
   font-weight: 500;
-  color: #c7c7cc;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.18s;
   background: transparent;
@@ -1529,13 +1529,13 @@ function getStatusClass(p: PageItem) {
 }
 
 .page-btn:hover:not(.active):not(:disabled) {
-  background: #2c2c2e;
-  color: #fff;
+  background: var(--color-secondary);
+  color: var(--color-foreground);
 }
 
 .page-btn.active {
-  background: #0A84FF;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-foreground);
   font-weight: 600;
 }
 
@@ -1550,7 +1550,7 @@ function getStatusClass(p: PageItem) {
 }
 
 .page-ellipsis {
-  color: #6e6e73;
+  color: var(--color-text-quaternary);
   font-size: 12px;
   padding: 0 4px;
 }
@@ -1558,8 +1558,8 @@ function getStatusClass(p: PageItem) {
 .page-size-select {
   padding: 6px 10px;
   border-radius: 7px;
-  background: #2c2c2e;
-  color: #c7c7cc;
+  background: var(--color-secondary);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1570,8 +1570,8 @@ function getStatusClass(p: PageItem) {
 }
 
 .page-size-select:hover {
-  background: #3a3a3c;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-foreground);
 }
 
 /* Responsive */

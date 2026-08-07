@@ -73,7 +73,7 @@ function changeSize(e: Event) {
               ? 'bg-primary text-white'
               : 'hover:bg-secondary',
           ]"
-          :style="page === item ? 'box-shadow: var(--shadow-glow-blue);' : 'color: var(--color-text-tertiary);'"
+          :style="page === item ? 'box-shadow: var(--shadow-sm);' : 'color: var(--color-text-tertiary);'"
           @click="goPage(item)"
         >
           {{ item }}

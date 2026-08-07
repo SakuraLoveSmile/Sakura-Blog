@@ -53,7 +53,7 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
     <Transition name="dropdown-fade">
       <div
         v-if="open"
-        class="absolute right-0 top-full z-30 mt-2 w-72 rounded-lg border border-[var(--color-border)] bg-card p-4 shadow-lg"
+        class="absolute right-0 top-full z-30 mt-2 w-72 rounded-lg border border-border bg-card p-4 shadow-lg"
       >
         <ul class="space-y-1">
           <li
@@ -74,7 +74,7 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
 <style scoped>
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .dropdown-fade-enter-from,
 .dropdown-fade-leave-to {

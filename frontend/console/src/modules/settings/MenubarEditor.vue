@@ -113,7 +113,7 @@ function isIconify(key: string) {
  :class="[
  'grid grid-cols-12 gap-2 items-start p-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing',
  errors[i]
- ? 'border-red-300 bg-red-50/50 border-red-500/40 bg-red-500/5'
+ ? 'border-state-error bg-state-error/10/50 border-state-error/40 bg-state-error/100/5'
  : 'border-border ',
  dragIndex === i ? 'opacity-50' : '',
  ]"
@@ -154,7 +154,7 @@ function isIconify(key: string) {
  <label class="block text-[10px] text-text-quaternary mb-0.5">图标 (Iconify key)</label>
  <div class="flex items-center gap-1.5">
  <Icon v-if="isIconify(it.icon)" :icon="it.icon" class="text-lg shrink-0 text-text-tertiary" />
- <span v-else class="w-5 h-5 flex items-center justify-center text-[10px] text-text-quaternary border border-dashed border-[var(--color-border-strong)] rounded">?</span>
+ <span v-else class="w-5 h-5 flex items-center justify-center text-[10px] text-text-quaternary border border-dashed border-border-strong rounded">?</span>
  <input v-model="it.icon" placeholder="solar:documents-bold-duotone" :class="inputCls" />
  </div>
  </div>
@@ -165,7 +165,7 @@ function isIconify(key: string) {
  <div class="flex items-center gap-1">
  <input
  type="color"
- :value="it.theme || '#0A84FF'"
+ :value="it.theme || '#2E8DFF'"
  @input="it.theme = ($event.target as HTMLInputElement).value"
  class="w-7 h-7 rounded border border-border cursor-pointer p-0.5"
  />
@@ -175,14 +175,14 @@ function isIconify(key: string) {
 
  <!-- delete -->
  <div class="col-span-1 flex justify-center pt-5">
- <button @click="removeItem(i)" class="text-red-400 hover:text-red-600 text-red-500 hover:text-red-400">
+ <button @click="removeItem(i)" class="text-state-error hover:text-state-error text-state-error hover:text-state-error">
  <Icon icon="ri:delete-bin-line" class="text-lg" />
  </button>
  </div>
 
  <!-- errors -->
  <div v-if="errors[i]" class="col-span-12 -mt-1">
- <p class="text-[11px] text-red-500 text-red-400">{{ errors[i].join("；") }}</p>
+ <p class="text-[11px] text-state-error text-state-error">{{ errors[i].join("；") }}</p>
  </div>
  </div>
  </div>
@@ -193,7 +193,7 @@ function isIconify(key: string) {
 
  <div class="flex items-center gap-3">
  <button @click="emit('save')" :disabled="hasErrors" :class="btnCls">保存菜单</button>
- <span v-if="hasErrors" class="text-xs text-red-500 text-red-400">请修正上方标红项后保存</span>
+ <span v-if="hasErrors" class="text-xs text-state-error text-state-error">请修正上方标红项后保存</span>
  </div>
  </div>
 </template>

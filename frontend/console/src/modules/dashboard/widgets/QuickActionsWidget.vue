@@ -20,29 +20,29 @@ const actions: QuickAction[] = [
   {
     label: "写文章",
     icon: "ri:quill-pen-line",
-    color: "#0A84FF",
-    bgColor: "rgba(10, 132, 255, 0.12)",
+    color: "#2E8DFF",
+    bgColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
     path: "/posts/editor",
   },
   {
     label: "评论",
     icon: "ri:chat-3-line",
     color: "#30D158",
-    bgColor: "rgba(48, 209, 88, 0.12)",
+    bgColor: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
     path: "/comments",
   },
   {
     label: "分类",
     icon: "ri:folder-3-line",
     color: "#FF9F0A",
-    bgColor: "rgba(255, 159, 10, 0.12)",
+    bgColor: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
     path: "/categories",
   },
   {
     label: "设置",
     icon: "ri:settings-3-line",
     color: "#BF5AF2",
-    bgColor: "rgba(191, 90, 242, 0.12)",
+    bgColor: "color-mix(in srgb, var(--color-chart-5) 12%, transparent)",
     path: "/settings",
   },
 ];
@@ -98,17 +98,17 @@ const hoveredIdx = ref<number | null>(null);
   gap: 6px;
   padding: 12px 8px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, #fff 3%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 4%, transparent);
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.2s var(--ease-standard);
 }
 
 .quick-item-compact:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, #fff 6%, transparent);
+  border-color: color-mix(in srgb, #fff 8%, transparent);
   transform: translateY(-2px);
 }
 
@@ -119,13 +119,13 @@ const hoveredIdx = ref<number | null>(null);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.2s var(--ease-standard);
 }
 
 .quick-label-compact {
   font-size: 12px;
   font-weight: 500;
-  color: #F5F5F7;
+  color: var(--color-foreground);
   letter-spacing: -0.1px;
 }
 

@@ -72,7 +72,7 @@ function select(id: string) {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: color var(--duration-fast) var(--ease-standard);
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
 }
@@ -101,7 +101,7 @@ function select(id: string) {
   border: none;
   cursor: pointer;
   border-radius: var(--radius-full);
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .tabbar-outline .tabbar-item:hover {
   color: var(--color-foreground);

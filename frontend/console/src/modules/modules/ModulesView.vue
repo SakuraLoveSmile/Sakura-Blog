@@ -33,7 +33,7 @@ async function onToggle(m: ModuleItem, next: boolean) {
  <VCard>
  <!-- 说明条 -->
  <div
- class="mb-4 flex items-center gap-2 rounded-base border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 border-blue-500/30 bg-blue-500/10 text-blue-400"
+ class="mb-4 flex items-center gap-2 rounded-base border border-primary bg-primary/10 px-4 py-3 text-sm text-primary border-primary/30 bg-primary/10 text-primary"
  >
  <Icon icon="ri:information-line" class="text-base" />
  功能模块以内置形式随程序编译，可在此启用/停用。停用后其菜单入口隐藏、后台接口关闭。

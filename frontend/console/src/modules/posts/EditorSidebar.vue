@@ -415,11 +415,11 @@ const chipActiveCls = "bg-primary/15 text-primary";
           <!-- 封面预览 16:9 深色渐变 -->
           <div
             class="relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
-            style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);"
+            style="background: linear-gradient(135deg, #00275a 0%, #004FAD 50%, #007AFF 100%);"
           >
             <div
               class="pointer-events-none absolute inset-0"
-              style="background: radial-gradient(circle at 30% 30%, rgba(10,132,255,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 70%, rgba(191,90,242,0.12) 0%, transparent 50%);"
+              style="background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--color-primary) 15%, transparent) 0%, transparent 50%), radial-gradient(circle at 70% 70%, color-mix(in srgb, var(--color-chart-5) 12%, transparent) 0%, transparent 50%);"
             ></div>
             <template v-if="form.cover">
               <img :src="form.cover" alt="封面预览" class="relative z-10 h-full w-full object-cover" />
@@ -450,7 +450,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
               v-if="form.cover"
               type="button"
               class="inline-flex h-8 items-center justify-center rounded-lg px-3 text-[12.5px] transition-colors"
-              style="color: var(--color-state-error); border: 1px solid rgba(255,69,58,0.25);"
+              style="color: var(--color-state-error); border: 1px solid color-mix(in srgb, var(--color-state-error) 25%, transparent);"
               @click="form.cover = ''"
             >移除</button>
           </div>

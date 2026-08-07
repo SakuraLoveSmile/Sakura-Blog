@@ -201,7 +201,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  :class="activeFeed === s.friend_url ? 'bg-primary/10 text-secondary bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
  @click="selectFeed(s.friend_url)"
  >
- <Icon icon="ri:rss-fill" class="text-lg text-orange-400" />
+ <Icon icon="ri:rss-fill" class="text-lg text-state-warning" />
  <span class="min-w-0 flex-1">
  <span class="block truncate text-sm font-medium">{{ s.friend_title }}</span>
  <span class="block truncate text-xs text-text-quaternary">{{ s.friend_url }}</span>
@@ -274,7 +274,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <span class="font-medium text-text-tertiary">{{ a.friend_title }}</span>
  <span>{{ a.published }}</span>
  <span class="flex-1"></span>
- <button title="收藏" class="rounded p-1 hover:bg-secondary hover:bg-accent" :class="a.favorite ? 'text-yellow-500' : 'text-text-quaternary'" @click="toggleFlag(a, 'favorite')">
+ <button title="收藏" class="rounded p-1 hover:bg-secondary hover:bg-accent" :class="a.favorite ? 'text-state-warning' : 'text-text-quaternary'" @click="toggleFlag(a, 'favorite')">
  <Icon :icon="a.favorite ? 'ri:star-fill' : 'ri:star-line'" />
  </button>
  <button title="稍后阅读" class="rounded p-1 hover:bg-secondary hover:bg-accent" :class="a.later ? 'text-primary' : 'text-text-quaternary'" @click="toggleFlag(a, 'later')">

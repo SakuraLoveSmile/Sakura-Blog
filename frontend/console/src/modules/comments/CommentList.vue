@@ -101,42 +101,42 @@ const statCards = computed(() => [
   {
     label: "总评论数",
     value: statusCounts.value.all,
-    color: "#0A84FF",
-    bg: "rgba(10,132,255,0.1)",
+    color: "#2E8DFF",
+    bg: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
     icon: "ri:chat-3-line",
     badgeText: "全部评论",
-    badgeColor: "#0A84FF",
-    badgeBg: "rgba(10,132,255,0.12)",
+    badgeColor: "#2E8DFF",
+    badgeBg: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
   },
   {
     label: "待审核",
     value: statusCounts.value.pending,
     color: "#FF9F0A",
-    bg: "rgba(255,159,10,0.1)",
+    bg: "color-mix(in srgb, var(--color-state-warning) 10%, transparent)",
     icon: "ri:time-line",
     badgeText: "需要处理",
     badgeColor: "#FF9F0A",
-    badgeBg: "rgba(255,159,10,0.12)",
+    badgeBg: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
   },
   {
     label: "已批准",
     value: statusCounts.value.approved,
     color: "#30D158",
-    bg: "rgba(48,209,88,0.1)",
+    bg: "color-mix(in srgb, var(--color-state-success) 10%, transparent)",
     icon: "ri:checkbox-circle-line",
     badgeText: "正常显示",
     badgeColor: "#30D158",
-    badgeBg: "rgba(48,209,88,0.12)",
+    badgeBg: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
   },
   {
     label: "垃圾评论",
     value: statusCounts.value.spam,
     color: "#FF453A",
-    bg: "rgba(255,69,58,0.1)",
+    bg: "color-mix(in srgb, var(--color-state-error) 10%, transparent)",
     icon: "ri:delete-bin-line",
     badgeText: "已拦截",
     badgeColor: "#FF453A",
-    badgeBg: "rgba(255,69,58,0.12)",
+    badgeBg: "color-mix(in srgb, var(--color-state-error) 12%, transparent)",
   },
 ]);
 
@@ -287,11 +287,11 @@ function closeMenus() {
 </script>
 
 <template>
-  <div class="apple-ambient-glow min-h-full" @click="closeMenus">
+  <div class="min-h-full" @click="closeMenus">
     <!-- ===== Page Header ===== -->
     <header
       class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-5 backdrop-blur-xl md:px-8"
-      style="background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);"
+      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
       <div class="flex flex-col gap-1">
         <h1 class="text-[28px] font-bold leading-tight tracking-tight text-white">评论管理</h1>
@@ -321,7 +321,7 @@ function closeMenus() {
         </button>
         <button
           type="button"
-          class="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(10,132,255,0.3),0_1px_2px_rgba(10,132,255,0.2)] transition-all hover:-translate-y-px hover:bg-[#1a8fff] active:translate-y-0"
+          class="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-[0_2px_8px_color-mix(in srgb, var(--color-primary) 30%, transparent),0_1px_2px_color-mix(in srgb, var(--color-primary) 20%, transparent)] transition-all hover:-translate-y-px hover:bg-[#1a8fff] active:translate-y-0"
           @click="router.push({ path: '/settings', query: { tab: 'comments' } })"
         >
           <Icon icon="ri:settings-3-line" class="text-[15px]" />
@@ -404,7 +404,7 @@ function closeMenus() {
               <div v-else-if="batchMode" class="flex items-center gap-2">
                 <input
                   :checked="checkedAll"
-                  class="h-4 w-4 rounded border-[var(--color-border-strong)] text-primary"
+                  class="h-4 w-4 rounded border-border-strong text-primary"
                   type="checkbox"
                   @change="handleCheckAllChange"
                 />
@@ -449,7 +449,7 @@ function closeMenus() {
                 <input
                   v-if="batchMode"
                   :checked="checkSelection(cm.id)"
-                  class="mt-1.5 h-4 w-4 shrink-0 rounded border-[var(--color-border-strong)] text-primary"
+                  class="mt-1.5 h-4 w-4 shrink-0 rounded border-border-strong text-primary"
                   type="checkbox"
                   @change="toggleSelection(cm.id)"
                 />
@@ -564,7 +564,7 @@ function closeMenus() {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -591,19 +591,19 @@ function closeMenus() {
 }
 .comment-status-badge.approved {
   color: #30d158;
-  background-color: rgba(48, 209, 88, 0.12);
+  background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
 }
 .comment-status-badge.pending {
   color: #ff9f0a;
-  background-color: rgba(255, 159, 10, 0.12);
+  background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
 }
 .comment-status-badge.rejected {
   color: #ff453a;
-  background-color: rgba(255, 69, 58, 0.12);
+  background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
 }
 .comment-status-badge.spam {
   color: var(--color-text-tertiary);
-  background-color: rgba(142, 142, 147, 0.15);
+  background-color: color-mix(in srgb, var(--color-muted-foreground) 15%, transparent);
 }
 
 /* 操作按钮：语义色低透明胶囊 */
@@ -618,10 +618,10 @@ function closeMenus() {
   border: 1px solid transparent;
   background-color: transparent;
   color: var(--color-text-secondary);
-  transition: all 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.18s var(--ease-standard);
 }
 .action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: color-mix(in srgb, #fff 5%, transparent);
   color: #fff;
 }
 .action-btn :deep(svg) {
@@ -630,29 +630,29 @@ function closeMenus() {
 }
 .action-btn.approve {
   color: #30d158;
-  background-color: rgba(48, 209, 88, 0.12);
-  border-color: rgba(48, 209, 88, 0.15);
+  background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-success) 15%, transparent);
 }
 .action-btn.approve:hover {
-  background-color: rgba(48, 209, 88, 0.2);
-  border-color: rgba(48, 209, 88, 0.25);
+  background-color: color-mix(in srgb, var(--color-state-success) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-success) 25%, transparent);
 }
 .action-btn.reply {
-  color: #0a84ff;
-  background-color: rgba(10, 132, 255, 0.12);
-  border-color: rgba(10, 132, 255, 0.15);
+  color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 .action-btn.reply:hover {
-  background-color: rgba(10, 132, 255, 0.2);
-  border-color: rgba(10, 132, 255, 0.25);
+  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .action-btn.delete {
   color: #ff453a;
-  background-color: rgba(255, 69, 58, 0.12);
-  border-color: rgba(255, 69, 58, 0.15);
+  background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-error) 15%, transparent);
 }
 .action-btn.delete:hover {
-  background-color: rgba(255, 69, 58, 0.2);
-  border-color: rgba(255, 69, 58, 0.25);
+  background-color: color-mix(in srgb, var(--color-state-error) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-error) 25%, transparent);
 }
 </style>

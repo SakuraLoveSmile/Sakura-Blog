@@ -213,11 +213,11 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 </script>
 
 <template>
-  <div class="apple-ambient-glow min-h-full">
+  <div class="min-h-full">
     <!-- ===== Page Header ===== -->
     <header
       class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-5 backdrop-blur-xl md:px-8"
-      style="background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);"
+      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
       <div class="flex flex-col gap-1">
         <h1 class="text-[28px] font-bold leading-tight tracking-tight text-white">用户管理</h1>
@@ -249,8 +249,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">总用户数</span>
             <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-[#0A84FF]"
-              style="background-color: rgba(10,132,255,0.1);"
+              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-primary"
+              style="background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
@@ -268,7 +268,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: rgba(48,209,88,0.1); color: var(--color-state-success);"
+              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent); color: var(--color-state-success);"
             >
               <Icon icon="ri:arrow-up-line" class="text-[11px]" />
               全部
@@ -284,8 +284,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">管理员</span>
             <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-[#FF375F]"
-              style="background-color: rgba(255,55,95,0.1);"
+              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-error"
+              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent);"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
@@ -303,7 +303,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: rgba(255,55,95,0.1); color: #FF375F;"
+              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent); color: var(--color-state-error);"
             >
               <Icon icon="ri:star-line" class="text-[11px]" />
               最高权限
@@ -318,8 +318,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">作者</span>
             <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-[#BF5AF2]"
-              style="background-color: rgba(191,90,242,0.1);"
+              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-chart-5"
+              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent);"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
@@ -337,7 +337,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: rgba(191,90,242,0.1); color: #BF5AF2;"
+              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent); color: var(--color-chart-5);"
             >
               <Icon icon="ri:edit-2-line" class="text-[11px]" />
               内容编辑
@@ -352,8 +352,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">当前页用户</span>
             <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-[#30D158]"
-              style="background-color: rgba(48,209,88,0.1);"
+              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-success"
+              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
@@ -371,7 +371,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: rgba(48,209,88,0.1); color: var(--color-state-success);"
+              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent); color: var(--color-state-success);"
             >
               <Icon icon="ri:eye-line" class="text-[11px]" />
               本页展示
@@ -507,8 +507,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                       class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium"
                       :style="
                         roleTone(u.role) === 'admin'
-                          ? { backgroundColor: 'rgba(255,55,95,0.15)', color: '#FF375F' }
-                          : { backgroundColor: 'rgba(191,90,242,0.15)', color: '#BF5AF2' }
+                          ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)', color: 'var(--color-state-error)' }
+                          : { backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)', color: 'var(--color-chart-5)' }
                       "
                     >
                       {{ roleLabel(u.role) }}
@@ -517,7 +517,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                   <td class="border-b border-border px-5 py-3.5 align-middle">
                     <span
                       class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                      style="background-color: rgba(44,44,46,0.6); color: var(--color-state-success);"
+                      style="background-color: color-mix(in srgb, var(--color-accent) 60%, transparent); color: var(--color-state-success);"
                     >
                       <VStatusDot state="success" />
                       活跃
@@ -573,7 +573,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
     <VModal v-model:visible="createVisible" title="创建用户" :width="520">
       <div class="space-y-4">
         <div>
-          <label :class="labelCls">用户名 <span class="text-red-500">*</span></label>
+          <label :class="labelCls">用户名 <span class="text-state-error">*</span></label>
           <input v-model="createForm.username" :class="inputCls" placeholder="登录用户名，唯一" />
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -592,7 +592,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label :class="labelCls">初始密码 <span class="text-red-500">*</span></label>
+            <label :class="labelCls">初始密码 <span class="text-state-error">*</span></label>
             <input v-model="createForm.password" type="password" :class="inputCls" placeholder="至少 6 位" />
           </div>
           <div>
@@ -635,7 +635,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <option value="author">作者（可编辑内容）</option>
             <option value="admin">管理员（全部权限）</option>
           </select>
-          <p v-if="editTarget?.role === 'admin' && editForm.role === 'author'" class="mt-1 text-xs text-amber-500">
+          <p v-if="editTarget?.role === 'admin' && editForm.role === 'author'" class="mt-1 text-xs text-state-warning">
             注意：不能降级最后一个管理员
           </p>
         </div>
@@ -651,7 +651,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
     <!-- 重置密码 -->
     <VModal v-model:visible="pwdVisible" title="重置密码" :width="420">
       <div>
-        <label :class="labelCls">新密码（{{ pwdTarget?.username }}）<span class="text-red-500">*</span></label>
+        <label :class="labelCls">新密码（{{ pwdTarget?.username }}）<span class="text-state-error">*</span></label>
         <input v-model="pwdForm.password" type="password" :class="inputCls" placeholder="至少 6 位" />
         <p class="mt-2 text-xs text-text-quaternary">
           重置后该用户所有已登录会话将立即失效

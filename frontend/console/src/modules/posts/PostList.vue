@@ -346,7 +346,7 @@ function closeMenus() {
  <div class="mr-4 hidden items-center sm:flex">
  <input
  :checked="checkedAll"
- class="h-4 w-4 rounded border-[var(--color-border-strong)] text-primary"
+ class="h-4 w-4 rounded border-border-strong text-primary"
  type="checkbox"
  @change="handleCheckAllChange"
  />
@@ -433,7 +433,7 @@ function closeMenus() {
  <template #checkbox>
  <input
  :checked="checkSelection(post.slug)"
- class="h-4 w-4 rounded border-[var(--color-border-strong)] text-primary"
+ class="h-4 w-4 rounded border-border-strong text-primary"
  type="checkbox"
  @change="toggleSelection(post.slug)"
  />
@@ -449,7 +449,7 @@ function closeMenus() {
  <VEntityField :title="post.title || post.slug" max-width="30rem">
  <template #title>
  <div class="flex items-center gap-1.5">
- <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="shrink-0 text-xs text-red-400" />
+ <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="shrink-0 text-xs text-state-error" />
  <span
  class="truncate text-sm font-medium text-foreground hover:text-primary"
  @click.stop="router.push(`/posts/edit/${post.slug}`)"
@@ -461,7 +461,7 @@ function closeMenus() {
  v-if="post.has_draft && post.status === 'published'"
  class="group/dot relative flex shrink-0 items-center"
  >
- <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+ <span class="inline-block h-1.5 w-1.5 rounded-full bg-state-success/100"></span>
  <span
  class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-lg group-hover/dot:block"
  >
@@ -640,7 +640,7 @@ function closeMenus() {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
- transition: opacity 0.15s ease;
+ transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {

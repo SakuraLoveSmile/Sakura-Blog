@@ -369,7 +369,7 @@ function handleDiscardDraft() {
     <!-- 紧凑 sticky 毛玻璃页头 -->
     <header
       class="sticky top-0 z-50 flex items-center gap-4 px-7 py-3"
-      style="background: rgba(0,0,0,0.75); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--color-border);"
+      style="background: color-mix(in srgb, #000 75%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--color-border);"
     >
       <button
         type="button"
@@ -386,7 +386,7 @@ function handleDiscardDraft() {
       <div class="flex items-center gap-2">
         <!-- 编辑器选择（富文本/Markdown） -->
         <div
-          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-[var(--color-border-strong)]"
+          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-border-strong"
         >
           <Icon icon="ri:edit-box-line" class="text-base text-text-quaternary" />
           <select
@@ -445,7 +445,7 @@ function handleDiscardDraft() {
         <button
           type="button"
           class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] px-4 text-[13px] font-semibold text-white transition-all"
-          style="background: var(--color-primary); box-shadow: 0 0 24px rgba(10,132,255,0.2);"
+          style="background: var(--color-primary); box-shadow: 0 0 24px color-mix(in srgb, var(--color-primary) 20%, transparent);"
           :disabled="publishing"
           @click="handlePublish"
         >
@@ -459,10 +459,10 @@ function handleDiscardDraft() {
     <div
       v-if="hasDraft && isPublishedPost"
       class="mx-7 mt-4 flex items-center justify-between gap-3 rounded-lg px-4 py-2 text-sm"
-      style="background: rgba(48,209,88,0.12); color: #30D158; border: 1px solid rgba(48,209,88,0.2);"
+      style="background: color-mix(in srgb, var(--color-state-success) 12%, transparent); color: var(--color-state-success); border: 1px solid color-mix(in srgb, var(--color-state-success) 20%, transparent);"
     >
       <span class="flex items-center gap-2">
-        <span class="inline-block h-1.5 w-1.5 rounded-full" style="background: #30D158;"></span>
+        <span class="inline-block h-1.5 w-1.5 rounded-full" style="background: var(--color-state-success);"></span>
         当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。
       </span>
       <button

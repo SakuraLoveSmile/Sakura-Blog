@@ -269,8 +269,8 @@ function closeMenus() {
  </div>
  <!-- 底部徐标行：状态（药丸）/ RSS / 访问 -->
  <div class="mt-2.5 flex items-center gap-2 text-xs">
- <span v-if="checkStatus[l.id]?.ok" class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-700 bg-green-500/15 text-green-400"><Icon icon="ri:checkbox-circle-fill" />正常</span>
- <span v-else-if="checkStatus[l.id]" :title="errorReason(l.id)" class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-red-600 bg-red-500/15 text-red-400"><Icon icon="ri:error-warning-fill" />异常·{{ errorReason(l.id) }}</span>
+ <span v-if="checkStatus[l.id]?.ok" class="inline-flex items-center gap-1 rounded-full bg-state-success/10 px-2 py-0.5 text-state-success bg-state-success/100/15 text-state-success"><Icon icon="ri:checkbox-circle-fill" />正常</span>
+ <span v-else-if="checkStatus[l.id]" :title="errorReason(l.id)" class="inline-flex items-center gap-1 rounded-full bg-state-error/10 px-2 py-0.5 text-state-error bg-state-error/100/15 text-state-error"><Icon icon="ri:error-warning-fill" />异常·{{ errorReason(l.id) }}</span>
  <span v-else class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-text-quaternary"><Icon icon="ri:pulse-line" />未检测</span>
  <span v-if="l.rss" class="inline-flex items-center gap-1 text-text-quaternary"><Icon icon="ri:rss-line" />RSS</span>
  <a :href="l.url" target="_blank" class="inline-flex items-center gap-1 text-text-quaternary hover:text-primary"><Icon icon="ri:external-link-line" />访问</a>
@@ -286,7 +286,7 @@ function closeMenus() {
  <p class="mb-3 rounded-base bg-secondary px-3 py-2 text-sm text-text-tertiary">
  将从 <code class="rounded bg-secondary px-1 py-0.5 text-xs">sakurasep/Friends</code> 仓库拉取全部 open issues，解析其中的友链信息并批量写入，已存在的链接自动跳过。
  </p>
- <p v-if="importError" class="mb-3 rounded-base bg-red-50 px-3 py-2 text-sm text-red-600 bg-red-500/10 text-red-400">
+ <p v-if="importError" class="mb-3 rounded-base bg-state-error/10 px-3 py-2 text-sm text-state-error bg-state-error/10 text-state-error">
  {{ importError }}
  </p>
  <div>
@@ -303,7 +303,7 @@ function closeMenus() {
 
  <!-- Edit/Create modal -->
  <VModal v-model:visible="showModal" :title="editing.id ? '编辑友链' : '新增友链'" :width="560">
- <p v-if="error" class="mb-3 rounded-base bg-red-50 px-3 py-2 text-sm text-red-600 bg-red-500/10 text-red-400">
+ <p v-if="error" class="mb-3 rounded-base bg-state-error/10 px-3 py-2 text-sm text-state-error bg-state-error/10 text-state-error">
  {{ error }}
  </p>
  <div class="space-y-3">
@@ -361,7 +361,7 @@ function closeMenus() {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
- transition: opacity 0.15s ease;
+ transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {

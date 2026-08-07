@@ -79,11 +79,11 @@ const filteredMoments = computed(() => moments.value.filter(matchFilter));
 
 // 时间线节点色：蓝/橙/绿/紫/红（按 id hash 取色）
 const DOT_COLORS = [
-  { bg: "#0A84FF", glow: "rgba(10, 132, 255, 0.45)" },
-  { bg: "#FF9F0A", glow: "rgba(255, 159, 10, 0.45)" },
-  { bg: "#30D158", glow: "rgba(48, 209, 88, 0.45)" },
-  { bg: "#BF5AF2", glow: "rgba(191, 90, 242, 0.45)" },
-  { bg: "#FF453A", glow: "rgba(255, 69, 58, 0.45)" },
+  { bg: "#2E8DFF", glow: "color-mix(in srgb, var(--color-primary) 45%, transparent)" },
+  { bg: "#FF9F0A", glow: "color-mix(in srgb, var(--color-state-warning) 45%, transparent)" },
+  { bg: "#30D158", glow: "color-mix(in srgb, var(--color-state-success) 45%, transparent)" },
+  { bg: "#BF5AF2", glow: "color-mix(in srgb, var(--color-chart-5) 45%, transparent)" },
+  { bg: "#FF453A", glow: "color-mix(in srgb, var(--color-state-error) 45%, transparent)" },
 ];
 function dotStyle(id: number) {
   const c = DOT_COLORS[Math.abs(Number(id) || 0) % DOT_COLORS.length];
@@ -396,7 +396,7 @@ function closeMenus() {
               v-if="ownerAvatar"
               :src="ownerAvatar"
               alt=""
-              class="h-10 w-10 shrink-0 rounded-full border border-[var(--color-border)] object-cover"
+              class="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
             />
             <span
               v-else
@@ -409,7 +409,7 @@ function closeMenus() {
                 v-model="newContent"
                 :rows="composerFocused || newContent ? 4 : 2"
                 placeholder="分享此刻的想法…（可粘贴图片直传）"
-                class="w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-[var(--color-foreground)] outline-none transition-all placeholder:text-[var(--color-text-quaternary)]"
+                class="w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-foreground outline-none transition-all placeholder:text-text-quaternary"
                 @focus="composerFocused = true"
                 @blur="composerFocused = false"
                 @keydown="onComposerKeydown"
@@ -435,11 +435,11 @@ function closeMenus() {
 
               <p v-if="uploadError" class="mt-2 text-xs text-[var(--color-destructive)]">{{ uploadError }}</p>
 
-              <div class="mt-3 flex items-center justify-between border-t border-[var(--color-border)] pt-2.5">
-                <div class="flex items-center gap-1 text-[var(--color-text-quaternary)]">
+              <div class="mt-3 flex items-center justify-between border-t border-border pt-2.5">
+                <div class="flex items-center gap-1 text-text-quaternary">
                   <button
                     type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
                     title="从图床选择图片"
                     @click.stop="openPicker('new')"
                   >
@@ -447,7 +447,7 @@ function closeMenus() {
                   </button>
                   <button
                     type="button"
-                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+                    class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
                     title="上传本地图片"
                     @click.stop="newFileInput?.click()"
                   >
@@ -463,8 +463,8 @@ function closeMenus() {
                   />
                   <button
                     type="button"
-                    class="flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors hover:bg-[var(--color-accent)]"
-                    :class="newVisibility === 'private' ? 'text-[var(--color-warning)]' : 'hover:text-[var(--color-primary)]'"
+                    class="flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors hover:bg-accent"
+                    :class="newVisibility === 'private' ? 'text-state-warning' : 'hover:text-primary'"
                     :title="newVisibility === 'private' ? '仅自己可见，点击设为公开' : '所有人可见，点击设为私密'"
                     @click.stop="newVisibility = newVisibility === 'private' ? 'public' : 'private'"
                   >
@@ -476,7 +476,7 @@ function closeMenus() {
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
-                    class="rounded-full px-3 py-1.5 text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-foreground)]"
+                    class="rounded-full px-3 py-1.5 text-xs text-text-tertiary transition-colors hover:text-foreground"
                     @click="showComposer = false"
                   >
                     取消
@@ -526,7 +526,7 @@ function closeMenus() {
                     v-if="ownerAvatar"
                     :src="ownerAvatar"
                     alt=""
-                    class="h-10 w-10 shrink-0 rounded-full border border-[var(--color-border)] object-cover"
+                    class="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
                   />
                   <div
                     v-else
@@ -539,7 +539,7 @@ function closeMenus() {
                       <span>{{ m.author_name || m.author || "Admin" }}</span>
                       <span
                         v-if="m.visibility === 'private'"
-                        class="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-warning)]"
+                        class="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-medium text-state-warning"
                         title="私密：仅后台可见，前台不展示"
                       >
                         <Icon icon="ri:lock-line" class="text-[11px]" />私密
@@ -561,7 +561,7 @@ function closeMenus() {
                     <Transition name="fade">
                       <div
                         v-if="menuOpenId === m.id"
-                        class="absolute right-0 top-full z-30 mt-1 w-36 space-y-1 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-card)] p-1.5 shadow-lg"
+                        class="absolute right-0 top-full z-30 mt-1 w-36 space-y-1 rounded-[10px] border border-border bg-card p-1.5 shadow-lg"
                         @click.stop
                       >
                         <VButton block size="sm" @click="startEdit(m)">编辑</VButton>
@@ -584,7 +584,7 @@ function closeMenus() {
                   <div
                     v-for="url in m.images"
                     :key="url"
-                    class="aspect-square overflow-hidden rounded-[10px] bg-[var(--color-secondary)]"
+                    class="aspect-square overflow-hidden rounded-[10px] bg-secondary"
                   >
                     <img :src="url" alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
                   </div>
@@ -611,7 +611,7 @@ function closeMenus() {
 
         <div
           v-if="total > size"
-          class="mt-6 flex items-center justify-center border-t border-[var(--color-border)] pt-4"
+          class="mt-6 flex items-center justify-center border-t border-border pt-4"
         >
           <VPagination
             v-model:page="page"
@@ -629,11 +629,11 @@ function closeMenus() {
       class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       @click.self="cancelEdit"
     >
-      <div class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl">
-        <div class="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
-          <h3 class="text-sm font-semibold text-[var(--color-foreground)]">编辑瞬间</h3>
+      <div class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
+        <div class="flex items-center justify-between border-b border-border px-5 py-3">
+          <h3 class="text-sm font-semibold text-foreground">编辑瞬间</h3>
           <button
-            class="flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-text-quaternary)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
+            class="flex h-7 w-7 items-center justify-center rounded-md text-text-quaternary transition-colors hover:bg-accent hover:text-foreground"
             @click="cancelEdit"
           >
             <Icon icon="ri:close-line" class="text-xl" />
@@ -652,7 +652,7 @@ function closeMenus() {
             <div
               v-for="(url, i) in editImages"
               :key="url"
-              class="group relative aspect-square overflow-hidden rounded-[10px] border border-[var(--color-border)]"
+              class="group relative aspect-square overflow-hidden rounded-[10px] border border-border"
             >
               <img :src="url" alt="" class="h-full w-full object-cover" />
               <button
@@ -665,10 +665,10 @@ function closeMenus() {
             </div>
           </div>
 
-          <div class="flex items-center gap-1 text-[var(--color-text-quaternary)]">
+          <div class="flex items-center gap-1 text-text-quaternary">
             <button
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
               title="从图床选择图片"
               @click.stop="openPicker('edit')"
             >
@@ -676,7 +676,7 @@ function closeMenus() {
             </button>
             <button
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]"
+              class="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-primary"
               title="上传本地图片"
               @click.stop="editFileInput?.click()"
             >
@@ -692,8 +692,8 @@ function closeMenus() {
             />
             <button
               type="button"
-              class="flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors hover:bg-[var(--color-accent)]"
-              :class="editVisibility === 'private' ? 'text-[var(--color-warning)]' : 'hover:text-[var(--color-primary)]'"
+              class="flex h-7 items-center gap-1 rounded-md px-2 text-xs transition-colors hover:bg-accent"
+              :class="editVisibility === 'private' ? 'text-state-warning' : 'hover:text-primary'"
               @click.stop="editVisibility = editVisibility === 'private' ? 'public' : 'private'"
             >
               <Icon :icon="editVisibility === 'private' ? 'ri:lock-line' : 'ri:earth-line'" class="text-base" />
@@ -701,7 +701,7 @@ function closeMenus() {
             </button>
           </div>
         </div>
-        <div class="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+        <div class="flex justify-end gap-2 border-t border-border px-5 py-3">
           <VButton size="sm" @click="cancelEdit">取消</VButton>
           <VButton type="secondary" size="sm" :loading="savingEdit" @click="saveEdit">保存</VButton>
         </div>
@@ -715,7 +715,7 @@ function closeMenus() {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -732,7 +732,7 @@ function closeMenus() {
   align-items: center;
   justify-content: space-between;
   padding: 20px 28px 14px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.45) 80%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, #000 78%, transparent) 0%, color-mix(in srgb, #000 45%, transparent) 80%, transparent 100%);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   position: sticky;
@@ -744,7 +744,7 @@ function closeMenus() {
   font-weight: 700;
   letter-spacing: -0.6px;
   line-height: 1.15;
-  color: #fff;
+  color: var(--color-foreground);
   margin: 0;
 }
 .moments-content-area {
@@ -759,18 +759,18 @@ function closeMenus() {
   padding: 8px 18px;
   border-radius: var(--radius-full, 9999px);
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-foreground);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.1px;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3), 0 1px 2px rgba(10, 132, 255, 0.2);
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s var(--ease-standard);
 }
 .moments-btn-primary:hover {
-  background-color: #1a8fff;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), 0 2px 4px rgba(10, 132, 255, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 .moments-btn-primary:active {
   transform: translateY(0);
@@ -847,14 +847,14 @@ function closeMenus() {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 16px 18px;
-  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.25s var(--ease-standard);
   position: relative;
   overflow: hidden;
 }
 .moment-card:hover {
-  border-color: rgba(84, 84, 88, 0.55);
+  border-color: var(--color-border-strong);
   transform: translateY(-1px);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-xl);
 }
 
 /* Header */
@@ -886,13 +886,13 @@ function closeMenus() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   transition: all 0.18s;
   flex-shrink: 0;
 }
 .moment-more-btn:hover {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: color-mix(in srgb, #fff 6%, transparent);
   color: var(--color-foreground);
 }
 .moment-more-btn :deep(svg) {
@@ -940,7 +940,7 @@ function closeMenus() {
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-tertiary);
-  transition: color 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: color 0.18s var(--ease-standard);
 }
 .moment-action:hover {
   color: var(--color-foreground);

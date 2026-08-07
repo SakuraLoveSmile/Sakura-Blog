@@ -3,81 +3,88 @@
 @import "./apple-base.css";
 @plugin "tailwindcss-animated";
 
-/* Apple Dark Mode 设计令牌（参照 resource/design/设计稿 原型） */
+/* Apple 设计令牌——对齐 .design_library/苹果（Pinguo Apple）colors_and_type.css 的 .dark 语义层。
+   console 恒深色，故直接取 dark 映射值；命名保持 Tailwind v4 @theme 的 --color-* 约定。 */
 @theme {
-  /* 品牌色 */
-  --color-primary: #0A84FF;
-  --color-primary-hover: #409CFF;
-  --color-primary-active: #0062CC;
-  --color-primary-foreground: #ffffff;
+  /* 品牌色（brand-400 / 300 / 500） */
+  --color-primary: #2E8DFF;
+  --color-primary-hover: #66ABFF;
+  --color-primary-active: #007AFF;
+  --color-primary-foreground: #000000;
 
-  /* 背景层级（Apple Dark Hierarchy） */
+  /* 背景层级（background 阶：900 底 / 800 卡 / 700 弹层与边框） */
   --color-background: #000000;
-  --color-foreground: #f5f5f7;
-  --color-card: #1c1c1e;
-  --color-card-foreground: #f5f5f7;
-  --color-popover: #1c1c1e;
-  --color-popover-foreground: #f5f5f7;
-  --color-secondary: #2c2c2e;
-  --color-secondary-700: #3a3a3c;
-  --color-muted: #2c2c2e;
-  --color-muted-foreground: #8e8e93;
-  --color-accent: #3a3a3c;
-  --color-accent-foreground: #f5f5f7;
+  --color-foreground: #F5F5F7;
+  --color-card: #1C1C1E;
+  --color-card-foreground: #F5F5F7;
+  --color-popover: #3A3A3C;
+  --color-popover-foreground: #F5F5F7;
+  --color-secondary: #1C1C1E;
+  --color-secondary-700: #3A3A3C;
+  --color-muted: #1C1C1E;
+  --color-muted-foreground: #8E8E93;
+  --color-accent: #3A3A3C;
+  --color-accent-foreground: #F5F5F7;
 
-  /* 文字层级 */
-  --color-text-secondary: #c7c7cc;
-  --color-text-tertiary: #8e8e93;
-  --color-text-quaternary: #6e6e73;
+  /* 文字层级（text 阶：200/400/500） */
+  --color-text-secondary: #C7C7CC;
+  --color-text-tertiary: #8E8E93;
+  --color-text-quaternary: #6E6E73;
 
-  /* 系统色 */
+  /* 功能色（state-success/error dark 锚点；warning 取 chart-3） */
   --color-state-success: #30D158;
   --color-state-warning: #FF9F0A;
   --color-state-error: #FF453A;
-  --color-system-purple: #BF5AF2;
-  --color-system-pink: #FF375F;
-  --color-system-indigo: #5E5CE6;
-  --color-system-teal: #32ADE6;
-  --color-system-cyan: #64D2FF;
-  --color-system-yellow: #FFD60A;
 
-  /* 边框 / 输入 */
-  --color-border: rgba(84, 84, 88, 0.35);
-  --color-border-strong: rgba(84, 84, 88, 0.6);
-  --color-input: #2c2c2e;
-  --color-ring: #0A84FF;
+  /* 边框 / 输入（dark：实色 background-700；border-strong 取 icon-700） */
+  --color-border: #3A3A3C;
+  --color-border-strong: #48484A;
+  --color-input: #3A3A3C;
+  --color-ring: #2E8DFF;
 
-  /* 侧边栏 */
+  /* 侧边栏（background-800 磨砂变体，保留透明度供 backdrop-blur） */
   --color-sidebar: rgba(28, 28, 30, 0.85);
-  --color-sidebar-foreground: #f5f5f7;
+  --color-sidebar-foreground: #F5F5F7;
   --color-sidebar-accent: rgba(58, 58, 60, 0.6);
 
-  /* 图表 */
-  --color-chart-1: #0A84FF;
-  --color-chart-2: #BF5AF2;
-  --color-chart-grid: #2c2c2e;
+  /* 图表（chart-1..5 dark 值；网格线取 icon-800） */
+  --color-chart-1: #30D158;
+  --color-chart-2: #2E8DFF;
+  --color-chart-3: #FF9F0A;
+  --color-chart-4: #5E5CE6;
+  --color-chart-5: #BF5AF2;
+  --color-chart-grid: #2C2C2E;
 
-  /* 圆角 */
+  /* 圆角（全局基准 --radius: 1.2rem；小控件收紧，按钮 pill） */
+  --radius: 1.2rem;
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-base: 10px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-xl: 1.2rem;
   --radius-2xl: 24px;
   --radius-full: 9999px;
 
-  /* 字体 */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Monaco", "Consolas", monospace;
+  /* 字体（DM Sans 正文 / JetBrains Mono 数据；系统栈回退） */
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
 
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.40);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.50), 0 2px 4px -2px rgba(0, 0, 0, 0.40);
-  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.60), 0 4px 12px -4px rgba(0, 0, 0, 0.50);
-  --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.70), 0 8px 16px -6px rgba(0, 0, 0, 0.55);
-  --shadow-glow-blue: 0 0 24px rgba(10, 132, 255, 0.25);
-  --shadow-glow-green: 0 0 24px rgba(48, 209, 88, 0.25);
+  /* 阴影（库 dark 档 2xs..2xl；禁装饰性辉光） */
+  --shadow-2xs: 0 1px 2px -1px rgba(0, 0, 0, 0.30);
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.30);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.36), 0 1px 3px -1px rgba(0, 0, 0, 0.36);
+  --shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.40), 0 1px 2px -1px rgba(0, 0, 0, 0.36);
+  --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.44), 0 2px 4px -2px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 8px 24px -8px rgba(0, 0, 0, 0.50), 0 4px 8px -4px rgba(0, 0, 0, 0.40);
+  --shadow-xl: 0 16px 40px -10px rgba(0, 0, 0, 0.55), 0 8px 16px -8px rgba(0, 0, 0, 0.44);
+  --shadow-2xl: 0 24px 64px -12px rgba(0, 0, 0, 0.60);
+
+  /* 动效（库规范：单一曲线 × 150/250/350ms 三档） */
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
 }
 
 /* 全站仅深色模式：<html> 恒挂 .dark（index.html 静态声明），

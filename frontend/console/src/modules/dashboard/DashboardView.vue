@@ -234,17 +234,16 @@ const viewModes: { key: "auto" | Breakpoint; label: string; icon: string }[] = [
             <p>{{ getToday() }}，欢迎回到管理仪表盘</p>
           </div>
           <div class="apple-header-actions">
-            <div class="apple-view-switch">
+            <div class="apple-segmented view-switch">
               <button
                 v-for="vm in viewModes"
                 :key="vm.key"
-                class="apple-view-switch-btn"
-                :class="{ active: viewMode === vm.key }"
+                :class="['seg-btn', vm.key === viewMode && 'active']"
                 :title="vm.label"
                 @click="setViewMode(vm.key)"
               >
                 <Icon :icon="vm.icon" class="w-4 h-4" />
-                <span class="apple-view-switch-label">{{ vm.label }}</span>
+                <span class="seg-label">{{ vm.label }}</span>
               </button>
             </div>
             <button class="apple-edit-btn" @click="toggleEdit">

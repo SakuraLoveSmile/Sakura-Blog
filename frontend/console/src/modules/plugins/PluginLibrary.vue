@@ -210,7 +210,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  :class="[
  'text-[10px] px-1 py-px rounded font-mono shrink-0',
  p.type === 'block'
- ? 'bg-amber-100 text-amber-700 bg-amber-500/15 text-amber-400'
+ ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
  ]"
  >{{ p.type ==="block" ?"块" :"行" }}</span>
@@ -242,7 +242,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  :class="[
  'text-[11px] px-1.5 py-0.5 rounded-full',
  selected.type === 'block'
- ? 'bg-amber-100 text-amber-700 bg-amber-500/15 text-amber-400'
+ ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
  ]"
  >{{ selected.type ==="block" ?"块级" :"行内" }}</span>
@@ -326,7 +326,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  </span>
  </div>
  <div class="relative bg-secondary">
- <p v-if="previewError" class="px-4 py-6 text-center text-sm text-red-500">{{ previewError }}</p>
+ <p v-if="previewError" class="px-4 py-6 text-center text-sm text-state-error">{{ previewError }}</p>
  <iframe
  v-else
  :srcdoc="srcdoc"

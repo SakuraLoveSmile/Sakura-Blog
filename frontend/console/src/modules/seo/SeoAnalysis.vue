@@ -48,7 +48,7 @@ const dash = (score: number) => `${(score / 100) * C} ${C}`;
  </VCard>
 
  <VCard v-if="errMsg">
- <p class="flex items-center gap-2 text-sm text-red-500">
+ <p class="flex items-center gap-2 text-sm text-state-error">
  <Icon icon="ri:error-warning-line" /> {{ errMsg }}
  </p>
  </VCard>
@@ -75,7 +75,7 @@ const dash = (score: number) => `${(score / 100) * C} ${C}`;
  <VCard v-if="result.issues.length" title="可优化项">
  <ul class="space-y-2">
  <li v-for="it in result.issues" :key="it.key" class="flex items-center gap-2 text-sm text-text-secondary">
- <Icon icon="ri:error-warning-line" class="text-amber-500" /> {{ it.label }}
+ <Icon icon="ri:error-warning-line" class="text-state-warning" /> {{ it.label }}
  </li>
  </ul>
  </VCard>
@@ -84,7 +84,7 @@ const dash = (score: number) => `${(score / 100) * C} ${C}`;
  <VCard v-if="result.passed.length" title="已通过的检查">
  <ul class="space-y-2">
  <li v-for="it in result.passed" :key="it.key" class="flex items-center gap-2 text-sm text-text-tertiary">
- <Icon icon="ri:checkbox-circle-line" class="text-green-500" /> {{ it.label }}
+ <Icon icon="ri:checkbox-circle-line" class="text-state-success" /> {{ it.label }}
  </li>
  </ul>
  </VCard>

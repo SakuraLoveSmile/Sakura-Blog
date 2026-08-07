@@ -26,7 +26,7 @@ function close() {
       <div v-if="visible" class="fixed inset-0 z-[999] flex items-center justify-center p-4">
         <div
           class="absolute inset-0 backdrop-blur-sm"
-          style="background: rgba(0,0,0,0.6);"
+          style="background: color-mix(in srgb, #000 60%, transparent);"
           @click="close"
         ></div>
         <Transition name="modal-zoom" appear>
@@ -71,14 +71,14 @@ function close() {
 <style scoped>
 .modal-fade-enter-active,
 .modal-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-normal) var(--ease-standard);
 }
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
 }
 .modal-zoom-enter-active {
-  transition: all 0.2s ease-out;
+  transition: all var(--duration-normal) var(--ease-standard)-out;
 }
 .modal-zoom-enter-from {
   opacity: 0;

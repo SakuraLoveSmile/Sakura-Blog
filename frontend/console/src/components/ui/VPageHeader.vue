@@ -8,7 +8,7 @@ defineProps<{
 <template>
   <div
     class="sticky top-0 z-20 flex min-h-[56px] items-center justify-between px-5 py-3 backdrop-blur-xl"
-    style="background: rgba(0,0,0,0.72); border-bottom: 1px solid var(--color-border);"
+    style="background: color-mix(in srgb, #000 72%, transparent); border-bottom: 1px solid var(--color-border);"
   >
     <div class="min-w-0 flex-1 self-center">
       <h2 class="flex items-center gap-2 truncate text-[22px] font-bold" style="color: var(--color-foreground);">

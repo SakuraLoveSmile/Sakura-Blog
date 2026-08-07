@@ -162,13 +162,13 @@ function shareTypeLabel(shareType: string): string {
  <a
  :href="buildFullUrl(share.url)"
  target="_blank"
- class="truncate text-xs text-blue-600 hover:underline text-blue-400"
+ class="truncate text-xs text-primary hover:underline text-primary"
  :title="buildFullUrl(share.url)"
  >
  {{ share.token }}
  </a>
  <span
- class="cursor-pointer shrink-0 text-text-quaternary transition-all hover:text-blue-600"
+ class="cursor-pointer shrink-0 text-text-quaternary transition-all hover:text-primary"
  title="复制链接"
  @click="handleCopy(share.url)"
  >
@@ -184,8 +184,8 @@ function shareTypeLabel(shareType: string): string {
  <span
  class="inline-block rounded-base px-1.5 py-0.5 text-xs font-medium"
  :class="share.share_type === 'draft'
- ? 'bg-yellow-100 text-yellow-700 bg-yellow-500/20 text-yellow-400'
- : 'bg-green-100 text-green-700 bg-green-500/20 text-green-400'"
+ ? 'bg-state-warning/10 text-state-warning bg-state-warning/20 text-state-warning'
+ : 'bg-state-success/10 text-state-success bg-state-success/100/20 text-state-success'"
  >
  {{ shareTypeLabel(share.share_type) }}
  </span>
@@ -205,7 +205,7 @@ function shareTypeLabel(shareType: string): string {
  <VEntityField>
  <template #description>
  <span
- class="cursor-pointer text-sm text-text-quaternary transition-all hover:text-red-500"
+ class="cursor-pointer text-sm text-text-quaternary transition-all hover:text-state-error"
  title="删除"
  @click="handleDelete(share)"
  >
@@ -233,7 +233,7 @@ function shareTypeLabel(shareType: string): string {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
- transition: opacity 0.15s ease;
+ transition: opacity var(--duration-fast) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {

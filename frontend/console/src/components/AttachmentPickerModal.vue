@@ -115,7 +115,7 @@ watch(page, load);
  v-for="item in items"
  :key="item.id"
  @click="emit('select', item.url)"
- class="group relative aspect-square rounded-lg overflow-hidden border border-border hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/30"
+ class="group relative aspect-square rounded-lg overflow-hidden border border-border hover:border-chart-4 hover:ring-2 hover:ring-chart-4/30"
  :title="item.filename"
  >
  <img :src="item.url" :alt="item.filename" loading="lazy" class="w-full h-full object-cover" />

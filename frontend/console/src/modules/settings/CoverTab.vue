@@ -53,7 +53,7 @@ function moveItem(i: number, dir: -1 | 1) {
  <div class="col-span-2 flex items-center gap-1.5 justify-end">
  <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
  <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.features.length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>
- <button @click="removeAt(Number(i))" class="text-red-500 hover:text-red-700"><Icon icon="ri:delete-bin-line" /></button>
+ <button @click="removeAt(Number(i))" class="text-state-error hover:text-state-error"><Icon icon="ri:delete-bin-line" /></button>
  </div>
  </div>
  <button @click="addFeature" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加按钮</button>

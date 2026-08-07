@@ -260,18 +260,18 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  <!-- 草稿恢复条幅（与 MarkdownEditor 同款） -->
  <div
  v-if="draftBanner"
- class="flex items-center justify-between gap-3 rounded-t-xl border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm text-amber-400"
+ class="flex items-center justify-between gap-3 rounded-t-xl border-b border-state-warning/30 bg-state-warning/100/10 px-4 py-2 text-sm text-state-warning"
  >
  <span class="flex items-center gap-1.5">
  <Icon icon="ri:draft-line" />检测到本地未保存草稿，是否恢复？
  </span>
  <span class="flex shrink-0 gap-2">
- <button class="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700" @click="restoreDraft">恢复</button>
- <button class="rounded-md px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-500/15" @click="discardDraft">丢弃</button>
+ <button class="rounded-md bg-state-warning px-2.5 py-1 text-xs font-medium text-white hover:bg-state-warning" @click="restoreDraft">恢复</button>
+ <button class="rounded-md px-2.5 py-1 text-xs text-state-warning hover:bg-state-warning/15" @click="discardDraft">丢弃</button>
  </span>
  </div>
 
- <p v-if="uploadError" class="border-b border-red-500/20 bg-red-500/10 px-4 py-2 text-xs text-red-400">
+ <p v-if="uploadError" class="border-b border-state-error/20 bg-state-error/10 px-4 py-2 text-xs text-state-error">
  {{ uploadError }}
  </p>
 
@@ -313,7 +313,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
 .rte-content .ProseMirror h1 {
  font-size: 1.75em;
  padding-bottom: 0.3em;
- border-bottom: 1px solid #3a3a3c;
+ border-bottom: 1px solid var(--color-border);
 }
 .rte-content .ProseMirror h2 {
  font-size: 1.4em;
@@ -359,7 +359,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
 }
 
 .rte-content .ProseMirror code {
- background: #3a3a3c;
+ background: var(--color-accent);
  border-radius: 4px;
  padding: 0.15em 0.4em;
  font-size: 0.875em;
@@ -372,7 +372,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  position: relative;
  background: #282c34;
  color: #abb2bf;
- border-radius: 10px;
+ border-radius: var(--radius-base);
  padding: 2.5em 1em 1em;
  margin: 0.75em 0;
  overflow-x: auto;
@@ -401,7 +401,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
 
 .rte-content .ProseMirror img {
  max-width: 100%;
- border-radius: 8px;
+ border-radius: var(--radius-sm);
  margin: 0.5em 0;
 }
 .rte-content .ProseMirror img.ProseMirror-selectednode {
@@ -421,7 +421,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  vertical-align: top;
 }
 .rte-content .ProseMirror th {
- background: #3a3a3c;
+ background: var(--color-accent);
  font-weight: 600;
  text-align: left;
 }
@@ -429,7 +429,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  content:"";
  position: absolute;
  inset: 0;
- background: rgba(99, 102, 241, 0.12);
+ background: color-mix(in srgb, var(--color-chart-4) 12%, transparent);
  pointer-events: none;
 }
 .rte-content .ProseMirror td,
@@ -439,12 +439,12 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
 
 .rte-content .ProseMirror hr {
  border: none;
- border-top: 1px solid #3a3a3c;
+ border-top: 1px solid var(--color-border);
  margin: 1.5em 0;
 }
 
 .rte-content .ProseMirror a {
- color: #0A84FF;
+ color: var(--color-primary);
  text-decoration: underline;
  cursor: pointer;
 }
@@ -455,6 +455,6 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  float: left;
  height: 0;
  pointer-events: none;
- color: #8e8e93;
+ color: var(--color-muted-foreground);
 }
 </style>

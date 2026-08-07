@@ -400,7 +400,7 @@ onMounted(loadProjects);
 </script>
 
 <template>
-  <div class="apple-ambient-glow wiki-docs">
+  <div class="wiki-docs">
     <!-- 顶部标题栏 -->
     <header class="wiki-header">
       <div class="min-w-0 flex-1">
@@ -681,7 +681,7 @@ onMounted(loadProjects);
   gap: 16px;
   padding: 24px 40px 18px;
   border-bottom: 1px solid var(--color-border);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 80%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
@@ -764,13 +764,13 @@ onMounted(loadProjects);
   font-weight: 600;
   color: var(--color-foreground);
   cursor: pointer;
-  background: rgba(10, 132, 255, 0.15);
-  border: 1px solid rgba(10, 132, 255, 0.25);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
   border-radius: var(--radius-md);
-  transition: background 0.2s ease;
+  transition: background var(--duration-normal) var(--ease-standard);
 }
 .wiki-tree-all:hover {
-  background: rgba(10, 132, 255, 0.22);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 .wiki-tree-count {
   margin-left: auto;
@@ -800,8 +800,8 @@ onMounted(loadProjects);
   cursor: pointer;
   background: transparent;
   border: none;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-normal) var(--ease-standard);
   user-select: none;
 }
 .wiki-tree-folder:hover {
@@ -812,7 +812,7 @@ onMounted(loadProjects);
   width: 14px;
   height: 14px;
   color: var(--color-text-quaternary);
-  transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: transform 0.2s var(--ease-standard);
 }
 .wiki-tree-folder.expanded .wiki-tree-chevron {
   transform: rotate(90deg);
@@ -848,7 +848,7 @@ onMounted(loadProjects);
   border: none;
   border-left: 3px solid transparent;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: all var(--duration-normal) var(--ease-standard);
 }
 .wiki-tree-child:hover {
   color: var(--color-foreground);
@@ -857,7 +857,7 @@ onMounted(loadProjects);
 .wiki-tree-child.active {
   font-weight: 500;
   color: var(--color-foreground);
-  background: rgba(10, 132, 255, 0.08);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   border-left-color: var(--color-primary);
 }
 .wiki-tree-doc-icon {
@@ -886,7 +886,7 @@ onMounted(loadProjects);
 }
 .wiki-breadcrumb-item {
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color var(--duration-normal) var(--ease-standard);
 }
 .wiki-breadcrumb-item:hover {
   color: var(--color-foreground);
@@ -917,7 +917,7 @@ onMounted(loadProjects);
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  transition: all 0.2s ease;
+  transition: all var(--duration-normal) var(--ease-standard);
 }
 .wiki-stat-card:hover {
   border-color: var(--color-border-strong);
@@ -931,19 +931,19 @@ onMounted(loadProjects);
   width: 36px;
   height: 36px;
   margin-bottom: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-base);
 }
 .wiki-stat-icon.blue {
   color: var(--color-primary);
-  background: rgba(10, 132, 255, 0.15);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 .wiki-stat-icon.green {
   color: var(--color-success);
-  background: rgba(48, 209, 88, 0.15);
+  background: color-mix(in srgb, var(--color-state-success) 15%, transparent);
 }
 .wiki-stat-icon.orange {
   color: var(--color-warning);
-  background: rgba(255, 159, 10, 0.15);
+  background: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
 }
 .wiki-stat-value {
   font-size: 24px;

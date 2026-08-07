@@ -204,8 +204,8 @@ function openContentResult(item: SearchResultItem) {
 }
 
 const statusBadges: Record<string, { label: string; cls: string }> = {
-  draft: { label: "草稿", cls: "bg-[rgba(255,159,10,0.15)] text-[#FF9F0A]" },
-  trashed: { label: "回收站", cls: "bg-[rgba(255,69,58,0.15)] text-[#FF453A]" },
+  draft: { label: "草稿", cls: "bg-state-warning/15 text-state-warning" },
+  trashed: { label: "回收站", cls: "bg-state-error/15 text-state-error" },
 };
 
 function openSearch() {
@@ -276,7 +276,7 @@ function closeProfileDropdown() {
 </script>
 
 <template>
-  <div class="apple-ambient-glow flex h-screen bg-background text-foreground" @click="closeProfileDropdown">
+  <div class="flex h-screen bg-background text-foreground" @click="closeProfileDropdown">
     <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-card；支持收起为仅图标的 w-16） -->
     <aside
       :class="sidebarCollapsed ? 'w-16' : 'w-64'"
@@ -646,7 +646,7 @@ function closeProfileDropdown() {
 }
 
 .menu-item-title {
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
   font-size: 0.9rem;
   display: flex;
   user-select: none;
@@ -659,7 +659,7 @@ function closeProfileDropdown() {
 
 .menu-item-title:hover,
 .menu-item-title.active {
-  background: rgba(58, 58, 60, 0.6);
+  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
   color: var(--color-foreground);
   font-weight: 500;
 }
@@ -678,7 +678,7 @@ function closeProfileDropdown() {
 
 /* 缩进子菜单项 */
 .menu-subitem {
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
   font-size: 0.85rem;
   display: flex;
   user-select: none;
@@ -690,7 +690,7 @@ function closeProfileDropdown() {
 }
 .menu-subitem:hover,
 .menu-subitem.active {
-  background: rgba(58, 58, 60, 0.6);
+  background: color-mix(in srgb, var(--color-accent) 60%, transparent);
   color: var(--color-foreground);
   font-weight: 500;
 }
@@ -737,7 +737,7 @@ function closeProfileDropdown() {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-normal) var(--ease-standard);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -746,7 +746,7 @@ function closeProfileDropdown() {
 
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform var(--duration-slow) var(--ease-standard), opacity var(--duration-slow) var(--ease-standard);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
@@ -756,7 +756,7 @@ function closeProfileDropdown() {
 
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all 0.2s ease;
+  transition: all var(--duration-normal) var(--ease-standard);
 }
 .dropdown-enter-from,
 .dropdown-leave-to {

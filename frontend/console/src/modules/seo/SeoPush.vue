@@ -63,7 +63,7 @@ async function clearLogs() {
  <template #header>
  <div class="flex w-full items-center justify-between px-4 py-3">
  <span class="text-sm font-semibold text-foreground">推送记录（{{ total }}）</span>
- <button class="text-xs text-red-500 hover:underline" @click="clearLogs">清理记录</button>
+ <button class="text-xs text-state-error hover:underline" @click="clearLogs">清理记录</button>
  </div>
  </template>
  <VEmpty v-if="!logs.length" title="暂无推送记录" message="启用推送并发布文章后，这里会显示推送结果" />
@@ -81,7 +81,7 @@ async function clearLogs() {
  <td class="px-4 py-2 text-text-tertiary">{{ l.engine }}</td>
  <td class="max-w-xs truncate px-4 py-2 text-text-tertiary">{{ l.url }}</td>
  <td class="px-4 py-2">
- <span :class="l.status === 'success' ? 'text-green-600' : 'text-red-500'">
+ <span :class="l.status === 'success' ? 'text-state-success' : 'text-state-error'">
  <Icon :icon="l.status === 'success' ? 'ri:checkbox-circle-fill' : 'ri:close-circle-fill'" />
  {{ l.status ==="success" ?"成功" :"失败" }}
  </span>

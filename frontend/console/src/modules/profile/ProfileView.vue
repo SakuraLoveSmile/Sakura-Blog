@@ -251,7 +251,7 @@ const inputCls = "apple-input";
 const btnCls =
 "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
 const btnClsDanger =
-"px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
+"px-4 py-2 bg-state-error/100 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
 </script>
 
 <template>
@@ -298,7 +298,7 @@ const btnClsDanger =
  </button>
  <button
  v-if="form.avatar"
- class="text-xs text-text-quaternary transition-colors hover:text-red-500"
+ class="text-xs text-text-quaternary transition-colors hover:text-state-error"
  @click="form.avatar = ''"
  >
  清除头像
@@ -415,7 +415,7 @@ const btnClsDanger =
 
  <!-- 已开启 -->
  <template v-else>
- <p class="flex items-center gap-2 text-sm text-green-600 text-green-400">
+ <p class="flex items-center gap-2 text-sm text-state-success text-state-success">
  <Icon icon="ri:shield-check-line" /> 两步验证已开启
  </p>
  <p class="text-xs text-text-quaternary">
@@ -431,9 +431,9 @@ const btnClsDanger =
  <!-- 恢复码列表 -->
  <div
  v-if="showRecovery"
- class="rounded-lg border border-amber-200 bg-amber-50 p-4 border-amber-900/60 bg-amber-900/20"
+ class="rounded-lg border border-state-warning bg-state-warning/10 p-4 border-state-warning/60 bg-state-warning/15"
  >
- <p class="flex items-center gap-1 text-xs font-medium text-amber-700 text-amber-400">
+ <p class="flex items-center gap-1 text-xs font-medium text-state-warning text-state-warning">
  <Icon icon="ri:alert-line" />
  恢复码仅显示一次/仅可使用一次，请立即妥善保存。
  </p>
@@ -469,7 +469,7 @@ const btnClsDanger =
  </template>
 
  <template v-else>
- <p class="flex items-center gap-2 text-sm text-green-600 text-green-400">
+ <p class="flex items-center gap-2 text-sm text-state-success text-state-success">
  <Icon icon="ri:key-2-fill" /> API Token 已启用
  </p>
  <p class="text-xs text-text-quaternary">
@@ -525,7 +525,7 @@ const btnClsDanger =
  <!-- API Token 明文展示弹窗（仅生成时展示一次） -->
  <VModal :visible="showTokenModal" title="API Token 已生成" @update:visible="showTokenModal = $event" @close="showTokenModal = false">
  <div class="space-y-4">
- <p class="flex items-center gap-1 text-xs font-medium text-amber-700 text-amber-400">
+ <p class="flex items-center gap-1 text-xs font-medium text-state-warning text-state-warning">
  <Icon icon="ri:alert-line" />
  明文仅本次展示，关闭后将无法再次查看，请立即复制并妥善保存。
  </p>

@@ -405,14 +405,14 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
  <!-- 草稿恢复条幅 -->
  <div
  v-if="draftBanner"
- class="flex items-center justify-between gap-3 px-4 py-2 text-sm text-amber-400 bg-amber-500/10 border-b border-amber-500/20"
+ class="flex items-center justify-between gap-3 px-4 py-2 text-sm text-state-warning bg-state-warning/100/10 border-b border-state-warning/30"
  >
  <span class="flex items-center gap-1.5">
  <Icon icon="ri:draft-line" />检测到本地未保存草稿，是否恢复？
  </span>
  <span class="flex gap-2 shrink-0">
- <button @click="restoreDraft" class="px-2.5 py-1 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700">恢复</button>
- <button @click="discardDraft" class="px-2.5 py-1 text-xs rounded-md text-amber-400 hover:bg-amber-500/15">丢弃</button>
+ <button @click="restoreDraft" class="px-2.5 py-1 text-xs font-medium rounded-md bg-state-warning text-white hover:bg-state-warning">恢复</button>
+ <button @click="discardDraft" class="px-2.5 py-1 text-xs rounded-md text-state-warning hover:bg-state-warning/15">丢弃</button>
  </span>
  </div>
 
@@ -471,7 +471,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
  </div>
  </div>
 
- <p v-if="uploadError" class="px-4 py-2 text-xs text-red-400 bg-red-500/10 border-b border-red-500/20">
+ <p v-if="uploadError" class="px-4 py-2 text-xs text-state-error bg-state-error/10 border-b border-state-error/20">
  {{ uploadError }}
  </p>
 

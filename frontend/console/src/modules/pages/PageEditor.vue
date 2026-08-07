@@ -489,13 +489,13 @@ function handleApplyJson(p: Record<string, any>) {
 }
 
 const inputCls =
-  "w-full rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full rounded-base border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground dark:placeholder-gray-500";
 const smallInputCls =
-  "w-full rounded-base border border-gray-200 px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full rounded-base border border-border px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground dark:placeholder-gray-500";
 </script>
 
 <template>
-  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-gray-50 dark:bg-gray-900': fullscreen }">
+  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }">
     <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
       <template #icon>
         <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
@@ -504,7 +504,7 @@ const smallInputCls =
         <div class="flex items-center gap-2">
           <select
             :value="editorKind"
-            class="rounded-base border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 outline-none transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            class="rounded-base border border-border bg-white px-2 py-1.5 text-xs text-text-quaternary outline-none transition-colors dark:border-border-strong dark:bg-secondary dark:text-foreground"
             @change="onEditorKindSelect"
             title="编辑器模式"
           >
@@ -514,7 +514,7 @@ const smallInputCls =
           <select
             v-if="editorKind === 'markdown'"
             :value="editorMode"
-            class="rounded-base border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 outline-none transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            class="rounded-base border border-border bg-white px-2 py-1.5 text-xs text-text-quaternary outline-none transition-colors dark:border-border-strong dark:bg-secondary dark:text-foreground"
             @change="onEditorModeSelect"
             title="显示模式"
           >
@@ -566,7 +566,7 @@ const smallInputCls =
           <input
             v-model="form.title"
             placeholder="页面标题"
-            class="w-full px-4 py-3 text-lg font-medium border border-gray-200 rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-500"
+            class="w-full px-4 py-3 text-lg font-medium border border-border rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-secondary dark:border-border-strong dark:text-foreground dark:placeholder-gray-500"
           />
           <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
           <RichTextEditor
@@ -609,19 +609,19 @@ const smallInputCls =
         <CollapsibleSection title="基本信息" subtitle="标题、Slug、发布状态" :default-open="!isNew" :key="'basic:' + (isNew ? 'new' : 'edit')">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">标题</label>
+              <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">标题</label>
               <input v-model="form.title" :class="inputCls" />
             </div>
             <div>
-              <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Slug</label>
+              <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">Slug</label>
               <input v-model="form.slug" :class="inputCls" />
             </div>
           </div>
           <div class="mt-4">
-            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">状态</label>
+            <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">状态</label>
             <select
               v-model="form.status"
-              class="w-40 rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              class="w-40 rounded-base border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground"
             >
               <option value="draft">草稿</option>
               <option value="published">发布</option>
@@ -639,23 +639,23 @@ const smallInputCls =
             <!-- 左栏 -->
             <div>
               <div class="mb-2 flex items-center justify-between">
-                <label class="text-sm font-semibold text-gray-800 dark:text-gray-200">左栏</label>
+                <label class="text-sm font-semibold text-text-quaternary dark:text-foreground">左栏</label>
                 <select
                   v-model="leftMode"
-                  class="rounded-base border border-gray-200 px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="rounded-base border border-border px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground"
                 >
                   <option value="inherit">继承全局</option>
                   <option value="custom">自定义</option>
                 </select>
               </div>
               <div v-if="leftMode === 'custom'" class="space-y-2">
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-text-quaternary dark:text-muted-foreground">
                   空列表 = 左栏为空（不渲染任何组件）；点击列表项展开参数编辑：
                 </p>
                 <div class="flex gap-2">
                   <select
                     v-model="newLeftWidget"
-                    class="w-0 min-w-0 flex-1 rounded-base border border-gray-200 px-2 py-1.5 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="w-0 min-w-0 flex-1 rounded-base border border-border px-2 py-1.5 text-sm outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground"
                   >
                     <option value="">+ 添加组件…</option>
                     <option
@@ -675,31 +675,31 @@ const smallInputCls =
                     添加
                   </VButton>
                 </div>
-                <div class="overflow-hidden rounded-base border border-gray-200 dark:border-gray-700">
+                <div class="overflow-hidden rounded-base border border-border dark:border-border-strong">
                   <div
                     v-if="form.leftbar_widgets!.length === 0"
-                    class="px-3 py-4 text-center text-xs text-gray-400"
+                    class="px-3 py-4 text-center text-xs text-muted-foreground"
                   >
                     （无组件 — 将渲染空左栏）
                   </div>
                   <div
                     v-for="(w, idx) in form.leftbar_widgets"
                     :key="w.name"
-                    class="border-b last:border-b-0 dark:border-gray-700"
+                    class="border-b last:border-b-0 dark:border-border-strong"
                   >
                     <div
-                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
                       @click="toggleExpand('left', idx)"
                     >
                       <span class="flex min-w-0 items-center gap-1 truncate">
                         <Icon
                           :icon="expandedWidget === 'left:' + idx ? 'ri:arrow-down-s-line' : 'ri:arrow-right-s-line'"
-                          class="h-4 w-4 shrink-0 text-gray-400"
+                          class="h-4 w-4 shrink-0 text-muted-foreground"
                         />
-                        <span class="text-[10px] text-gray-400">#{{ idx + 1 }}</span>
+                        <span class="text-[10px] text-muted-foreground">#{{ idx + 1 }}</span>
                         <span class="truncate">
                           {{ widgetLabelOf(w.name) }}
-                          <span class="text-xs text-gray-400">（{{ w.name }}）</span>
+                          <span class="text-xs text-muted-foreground">（{{ w.name }}）</span>
                         </span>
                         <span
                           v-if="w.params && Object.keys(w.params).length > 0"
@@ -727,14 +727,14 @@ const smallInputCls =
                         >
                           <Icon icon="ri:arrow-down-line" class="h-4 w-4" />
                         </VButton>
-                        <VButton size="sm" class="!px-2 !text-red-600" @click="removeWidget('left', idx)" title="移除">
+                        <VButton size="sm" class="!px-2 !text-state-error" @click="removeWidget('left', idx)" title="移除">
                           <Icon icon="ri:delete-bin-line" class="h-4 w-4" />
                         </VButton>
                       </div>
                     </div>
                     <div
                       v-if="expandedWidget === 'left:' + idx"
-                      class="space-y-2 border-t border-dashed bg-gray-50 px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800/30"
+                      class="space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
                     >
                       <template v-if="KNOWN_WIDGET_FIELDS[w.name]">
                         <div
@@ -742,16 +742,16 @@ const smallInputCls =
                           :key="f.key"
                           class="grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
-                          <label class="pt-1 text-[11px] font-medium text-gray-600 dark:text-gray-400">{{ f.label }}</label>
+                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
                           <template v-if="f.type === 'boolean'">
                             <label class="flex cursor-pointer items-center gap-1.5 py-0.5">
                               <input
                                 type="checkbox"
                                 :checked="getField(ensureParams('left', idx), f)"
                                 @change="setField(ensureParams('left', idx), f, ($event.target as any).checked)"
-                                class="h-3.5 w-3.5 cursor-pointer rounded border border-gray-300 accent-primary dark:border-gray-600"
+                                class="h-3.5 w-3.5 cursor-pointer rounded border border-border accent-primary dark:border-border-strong"
                               />
-                              <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                              <span class="text-[11px] text-text-quaternary dark:text-muted-foreground">
                                 启用（关闭=走全局 library 默认）
                               </span>
                             </label>
@@ -777,7 +777,7 @@ const smallInputCls =
                         </div>
                       </template>
                       <template v-else>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                        <p class="text-[11px] text-text-quaternary dark:text-muted-foreground">
                           该组件暂无结构化表单，可直接编辑 Params JSON：
                         </p>
                         <textarea
@@ -788,7 +788,7 @@ const smallInputCls =
                           v-model="jsonEditorText"
                         ></textarea>
                         <div class="flex items-end justify-between gap-2">
-                          <span class="text-[11px] text-red-500">{{ jsonEditorError }}</span>
+                          <span class="text-[11px] text-state-error">{{ jsonEditorError }}</span>
                           <VButton size="sm" @click="handleApplyJson(ensureParams('left', idx))">应用 JSON</VButton>
                         </div>
                       </template>
@@ -796,7 +796,7 @@ const smallInputCls =
                   </div>
                 </div>
               </div>
-              <div v-else class="rounded-base border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <div v-else class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground">
                 使用全局 widgets.pages.page 左栏配置（related → recent → tagcloud → popular）
               </div>
             </div>
@@ -804,23 +804,23 @@ const smallInputCls =
             <!-- 右栏 -->
             <div>
               <div class="mb-2 flex items-center justify-between">
-                <label class="text-sm font-semibold text-gray-800 dark:text-gray-200">右栏</label>
+                <label class="text-sm font-semibold text-text-quaternary dark:text-foreground">右栏</label>
                 <select
                   v-model="rightMode"
-                  class="rounded-base border border-gray-200 px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="rounded-base border border-border px-2 py-1 text-xs outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground"
                 >
                   <option value="inherit">继承全局</option>
                   <option value="custom">自定义</option>
                 </select>
               </div>
               <div v-if="rightMode === 'custom'" class="space-y-2">
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-text-quaternary dark:text-muted-foreground">
                   空列表 = 右栏为空；点击列表项展开参数编辑：
                 </p>
                 <div class="flex gap-2">
                   <select
                     v-model="newRightWidget"
-                    class="w-0 min-w-0 flex-1 rounded-base border border-gray-200 px-2 py-1.5 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="w-0 min-w-0 flex-1 rounded-base border border-border px-2 py-1.5 text-sm outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground"
                   >
                     <option value="">+ 添加组件…</option>
                     <option
@@ -840,31 +840,31 @@ const smallInputCls =
                     添加
                   </VButton>
                 </div>
-                <div class="overflow-hidden rounded-base border border-gray-200 dark:border-gray-700">
+                <div class="overflow-hidden rounded-base border border-border dark:border-border-strong">
                   <div
                     v-if="form.rightbar_widgets!.length === 0"
-                    class="px-3 py-4 text-center text-xs text-gray-400"
+                    class="px-3 py-4 text-center text-xs text-muted-foreground"
                   >
                     （无组件 — 将渲染空右栏）
                   </div>
                   <div
                     v-for="(w, idx) in form.rightbar_widgets"
                     :key="w.name"
-                    class="border-b last:border-b-0 dark:border-gray-700"
+                    class="border-b last:border-b-0 dark:border-border-strong"
                   >
                     <div
-                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
                       @click="toggleExpand('right', idx)"
                     >
                       <span class="flex min-w-0 items-center gap-1 truncate">
                         <Icon
                           :icon="expandedWidget === 'right:' + idx ? 'ri:arrow-down-s-line' : 'ri:arrow-right-s-line'"
-                          class="h-4 w-4 shrink-0 text-gray-400"
+                          class="h-4 w-4 shrink-0 text-muted-foreground"
                         />
-                        <span class="text-[10px] text-gray-400">#{{ idx + 1 }}</span>
+                        <span class="text-[10px] text-muted-foreground">#{{ idx + 1 }}</span>
                         <span class="truncate">
                           {{ widgetLabelOf(w.name) }}
-                          <span class="text-xs text-gray-400">（{{ w.name }}）</span>
+                          <span class="text-xs text-muted-foreground">（{{ w.name }}）</span>
                         </span>
                         <span
                           v-if="w.params && Object.keys(w.params).length > 0"
@@ -892,14 +892,14 @@ const smallInputCls =
                         >
                           <Icon icon="ri:arrow-down-line" class="h-4 w-4" />
                         </VButton>
-                        <VButton size="sm" class="!px-2 !text-red-600" @click="removeWidget('right', idx)" title="移除">
+                        <VButton size="sm" class="!px-2 !text-state-error" @click="removeWidget('right', idx)" title="移除">
                           <Icon icon="ri:delete-bin-line" class="h-4 w-4" />
                         </VButton>
                       </div>
                     </div>
                     <div
                       v-if="expandedWidget === 'right:' + idx"
-                      class="space-y-2 border-t border-dashed bg-gray-50 px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800/30"
+                      class="space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
                     >
                       <template v-if="KNOWN_WIDGET_FIELDS[w.name]">
                         <div
@@ -907,16 +907,16 @@ const smallInputCls =
                           :key="f.key"
                           class="grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
-                          <label class="pt-1 text-[11px] font-medium text-gray-600 dark:text-gray-400">{{ f.label }}</label>
+                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
                           <template v-if="f.type === 'boolean'">
                             <label class="flex cursor-pointer items-center gap-1.5 py-0.5">
                               <input
                                 type="checkbox"
                                 :checked="getField(ensureParams('right', idx), f)"
                                 @change="setField(ensureParams('right', idx), f, ($event.target as any).checked)"
-                                class="h-3.5 w-3.5 cursor-pointer rounded border border-gray-300 accent-primary dark:border-gray-600"
+                                class="h-3.5 w-3.5 cursor-pointer rounded border border-border accent-primary dark:border-border-strong"
                               />
-                              <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                              <span class="text-[11px] text-text-quaternary dark:text-muted-foreground">
                                 启用（关闭=走全局 library 默认）
                               </span>
                             </label>
@@ -942,7 +942,7 @@ const smallInputCls =
                         </div>
                       </template>
                       <template v-else>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                        <p class="text-[11px] text-text-quaternary dark:text-muted-foreground">
                           该组件暂无结构化表单，可直接编辑 Params JSON：
                         </p>
                         <textarea
@@ -953,7 +953,7 @@ const smallInputCls =
                           v-model="jsonEditorText"
                         ></textarea>
                         <div class="flex items-end justify-between gap-2">
-                          <span class="text-[11px] text-red-500">{{ jsonEditorError }}</span>
+                          <span class="text-[11px] text-state-error">{{ jsonEditorError }}</span>
                           <VButton size="sm" @click="handleApplyJson(ensureParams('right', idx))">应用 JSON</VButton>
                         </div>
                       </template>
@@ -961,7 +961,7 @@ const smallInputCls =
                   </div>
                 </div>
               </div>
-              <div v-else class="rounded-base border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <div v-else class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground">
                 使用全局 widgets.pages.page 右栏配置（welcome → author → siteinfo → latest_comment → toc）
               </div>
             </div>
@@ -969,38 +969,38 @@ const smallInputCls =
             <!-- 实时缩略预览 -->
             <div>
               <div class="mb-2 flex items-baseline gap-2">
-                <label class="text-sm font-semibold text-gray-800 dark:text-gray-200">实时缩略预览</label>
-                <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                <label class="text-sm font-semibold text-text-quaternary dark:text-foreground">实时缩略预览</label>
+                <span class="text-[11px] text-text-quaternary dark:text-muted-foreground">
                   左右栏宽度比例对齐前台；骨架区下会显示已设置的关键参数摘要
                 </span>
               </div>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-[300px_280px] md:justify-start">
-                <div class="w-full max-w-[320px] space-y-3 rounded-lg bg-gray-50 p-3 ring-1 ring-gray-200 dark:bg-gray-800/30 dark:ring-gray-700">
-                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">Leftbar</div>
+                <div class="w-full max-w-[320px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border">
+                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary">Leftbar</div>
                   <template v-if="resolvedLeftbar.length === 0">
-                    <div class="rounded-base border border-dashed border-gray-300 p-4 text-center text-xs text-gray-400 dark:border-gray-700">
+                    <div class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong">
                       （空侧栏）
                     </div>
                   </template>
                   <div
                     v-for="(name, idx) in resolvedLeftbar"
                     :key="'L-' + name + '-' + idx"
-                    class="overflow-hidden rounded-base ring-1 ring-gray-200 dark:ring-gray-700"
+                    class="overflow-hidden rounded-base ring-1 ring-border dark:ring-border"
                   >
-                    <div class="truncate bg-gray-200/70 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700/60 dark:text-gray-200">
+                    <div class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground">
                       <span class="mr-1 inline-block h-2 w-2 rounded-full bg-primary/60 align-middle"></span>
                       {{ widgetLabelOf(name) }}
                       <span class="ml-1 text-[10px] font-normal opacity-60">({{ name }})</span>
                     </div>
-                    <div class="space-y-1.5 bg-white p-2 dark:bg-gray-800">
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-full"></div>
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-4/5"></div>
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-3/5"></div>
+                    <div class="space-y-1.5 bg-white p-2 dark:bg-secondary">
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-full"></div>
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-4/5"></div>
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-3/5"></div>
                       <template v-if="leftMode === 'custom'">
                         <div
                           v-for="line in widgetSummaryLines(name, 'left', idx)"
                           :key="line"
-                          class="mt-1 truncate border-t border-dashed border-gray-200 pt-1 text-[10px] font-mono text-primary/80 dark:border-gray-700 dark:text-primary/70"
+                          class="mt-1 truncate border-t border-dashed border-border pt-1 text-[10px] font-mono text-primary/80 dark:border-border-strong dark:text-primary/70"
                         >
                           {{ line }}
                         </div>
@@ -1008,32 +1008,32 @@ const smallInputCls =
                     </div>
                   </div>
                 </div>
-                <div class="w-full max-w-[300px] space-y-3 rounded-lg bg-gray-50 p-3 ring-1 ring-gray-200 dark:bg-gray-800/30 dark:ring-gray-700">
-                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">Rightbar</div>
+                <div class="w-full max-w-[300px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border">
+                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary">Rightbar</div>
                   <template v-if="resolvedRightbar.length === 0">
-                    <div class="rounded-base border border-dashed border-gray-300 p-4 text-center text-xs text-gray-400 dark:border-gray-700">
+                    <div class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong">
                       （空侧栏）
                     </div>
                   </template>
                   <div
                     v-for="(name, idx) in resolvedRightbar"
                     :key="'R-' + name + '-' + idx"
-                    class="overflow-hidden rounded-base ring-1 ring-gray-200 dark:ring-gray-700"
+                    class="overflow-hidden rounded-base ring-1 ring-border dark:ring-border"
                   >
-                    <div class="truncate bg-gray-200/70 px-2 py-1 text-xs text-gray-700 dark:bg-gray-700/60 dark:text-gray-200">
+                    <div class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground">
                       <span class="mr-1 inline-block h-2 w-2 rounded-full bg-primary/60 align-middle"></span>
                       {{ widgetLabelOf(name) }}
                       <span class="ml-1 text-[10px] font-normal opacity-60">({{ name }})</span>
                     </div>
-                    <div class="space-y-1.5 bg-white p-2 dark:bg-gray-800">
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-full"></div>
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-4/5"></div>
-                      <div class="h-2 animate-pulse rounded bg-gray-100 dark:bg-gray-700 w-3/5"></div>
+                    <div class="space-y-1.5 bg-white p-2 dark:bg-secondary">
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-full"></div>
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-4/5"></div>
+                      <div class="h-2 animate-pulse rounded bg-secondary dark:bg-accent w-3/5"></div>
                       <template v-if="rightMode === 'custom'">
                         <div
                           v-for="line in widgetSummaryLines(name, 'right', idx)"
                           :key="line"
-                          class="mt-1 truncate border-t border-dashed border-gray-200 pt-1 text-[10px] font-mono text-primary/80 dark:border-gray-700 dark:text-primary/70"
+                          class="mt-1 truncate border-t border-dashed border-border pt-1 text-[10px] font-mono text-primary/80 dark:border-border-strong dark:text-primary/70"
                         >
                           {{ line }}
                         </div>

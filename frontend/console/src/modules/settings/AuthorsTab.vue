@@ -90,7 +90,7 @@ function doSave() {
  <input type="checkbox" v-model="r.hidden" class="rounded" /> 隐藏
  </label>
  <div class="flex items-center gap-1.5 shrink-0">
- <button @click="removeRow(Number(i))" class="text-red-400 hover:text-red-600 text-red-500 hover:text-red-400" title="删除"><Icon icon="ri:delete-bin-line" /></button>
+ <button @click="removeRow(Number(i))" class="text-state-error hover:text-state-error text-state-error hover:text-state-error" title="删除"><Icon icon="ri:delete-bin-line" /></button>
  </div>
  </div>
  <div class="grid grid-cols-3 gap-3">

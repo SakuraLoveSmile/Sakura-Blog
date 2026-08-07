@@ -141,7 +141,7 @@ function doSave() {
  <input v-model="r.key" placeholder="key（如 btn.home）" :class="inputCls + ' font-mono text-xs'" class="col-span-4" />
  <input v-model="r.value" placeholder="覆盖文案" :class="inputCls" class="col-span-6" />
  <div class="col-span-2 flex items-center gap-1.5 justify-end">
- <button @click="removeRow(Number(i))" class="text-red-500 hover:text-red-700"><Icon icon="ri:delete-bin-line" /></button>
+ <button @click="removeRow(Number(i))" class="text-state-error hover:text-state-error"><Icon icon="ri:delete-bin-line" /></button>
  </div>
  </div>
  <button @click="addRow" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加覆盖项</button>

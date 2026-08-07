@@ -42,10 +42,10 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
 <style scoped>
 .entity-wrapper {
   position: relative;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 .entity-wrapper:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, #fff 3%, transparent);
 }
 .entity-wrapper.entity-selected {
   background: var(--color-secondary);

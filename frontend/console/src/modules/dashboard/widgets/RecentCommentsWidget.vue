@@ -31,7 +31,7 @@ function getInitials(name: string): string {
 }
 
 function avatarColor(name: string): string {
-  const colors = ["#0A84FF", "#BF5AF2", "#30D158", "#FF9F0A", "#FF453A", "#5AC8FA"];
+  const colors = ["#2E8DFF", "#BF5AF2", "#30D158", "#FF9F0A", "#FF453A", "#66ABFF"];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
@@ -66,11 +66,11 @@ onMounted(() => {
       </button>
     </div>
 
-    <div v-if="loading" class="recent-placeholder flex items-center justify-center text-[#8E8E93]">
+    <div v-if="loading" class="recent-placeholder flex items-center justify-center text-muted-foreground">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-red-400">{{ error }}</div>
-    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-[#8E8E93] text-sm">
+    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error">{{ error }}</div>
+    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm">
       暂无评论
     </div>
     <div v-else class="apple-comment-list">
@@ -89,17 +89,17 @@ onMounted(() => {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[#EBEBF5] text-sm font-medium">{{ item.nick }}</span>
+            <span class="text-foreground text-sm font-medium">{{ item.nick }}</span>
             <span
               v-if="item.status === 'pending'"
               class="apple-pending-badge"
             >
               待审
             </span>
-            <span class="text-[#636366] text-xs ml-auto">{{ item.date }}</span>
+            <span class="text-text-quaternary text-xs ml-auto">{{ item.date }}</span>
           </div>
-          <p class="text-[#8E8E93] text-sm mt-1 line-clamp-2">{{ item.content }}</p>
-          <div v-if="item.page_key" class="flex items-center gap-1 mt-1.5 text-xs text-[#636366]">
+          <p class="text-muted-foreground text-sm mt-1 line-clamp-2">{{ item.content }}</p>
+          <div v-if="item.page_key" class="flex items-center gap-1 mt-1.5 text-xs text-text-quaternary">
             <Icon icon="ri:article-line" class="w-3 h-3" />
             <span class="truncate">{{ item.page_key }}</span>
           </div>

@@ -78,14 +78,14 @@ function handleClick() {
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  height: 36px;
+  height: 40px;
   padding: 0 16px;
   border: 1px solid transparent;
   outline: 0;
   appearance: none;
   vertical-align: middle;
   border-radius: var(--radius-full);
-  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all var(--duration-fast) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
 }
@@ -121,7 +121,7 @@ function handleClick() {
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
-  box-shadow: var(--shadow-glow-blue);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 .btn-primary:active:not(:disabled) {
@@ -140,12 +140,12 @@ function handleClick() {
 
 /* 危险按钮：红色 */
 .btn-danger {
-  color: #fff;
+  color: var(--color-foreground);
   background: var(--color-state-error);
 }
 .btn-danger:hover:not(:disabled) {
-  background: #ff5d52;
-  box-shadow: 0 0 24px rgba(255, 69, 58, 0.25);
+  background: color-mix(in srgb, var(--color-state-error) 85%, #fff);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -164,7 +164,7 @@ function handleClick() {
 .btn-primary .btn-icon,
 .btn-secondary .btn-icon,
 .btn-danger .btn-icon {
-  color: #fff;
+  color: var(--color-foreground);
 }
 
 .btn-loading {

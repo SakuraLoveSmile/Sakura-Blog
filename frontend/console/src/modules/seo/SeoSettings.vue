@@ -12,7 +12,7 @@ const cfg = ref<any>({
 });
 
 const inputCls =
-  "w-full rounded-base border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500";
+  "w-full rounded-base border border-border px-3 py-2 text-sm outline-none transition-colors focus:border-primary dark:border-border-strong dark:bg-secondary dark:text-foreground dark:placeholder-gray-500";
 
 async function load() {
   loading.value = true;
@@ -52,15 +52,15 @@ async function save() {
     <VCard title="功能开关">
       <div class="space-y-4">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-200">站点推送（文章发布时自动推送到搜索引擎）</span>
+          <span class="text-sm text-text-quaternary dark:text-foreground">站点推送（文章发布时自动推送到搜索引擎）</span>
           <VSwitch v-model="cfg.push.enabled" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-200">爬虫记录（记录搜索引擎爬虫访问）</span>
+          <span class="text-sm text-text-quaternary dark:text-foreground">爬虫记录（记录搜索引擎爬虫访问）</span>
           <VSwitch v-model="cfg.crawler.enabled" />
         </label>
         <label class="flex items-center justify-between">
-          <span class="text-sm text-gray-700 dark:text-gray-200">搜索流量（统计搜索引擎来源访问）</span>
+          <span class="text-sm text-text-quaternary dark:text-foreground">搜索流量（统计搜索引擎来源访问）</span>
           <VSwitch v-model="cfg.traffic.enabled" />
         </label>
       </div>
@@ -80,11 +80,11 @@ async function save() {
           </label>
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">IndexNow Key</label>
+          <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">IndexNow Key</label>
           <input v-model="cfg.push.indexnow_key" :class="inputCls" placeholder="留空表示不修改已保存的 Key" />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">百度推送 Token</label>
+          <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">百度推送 Token</label>
           <input v-model="cfg.push.baidu_token" :class="inputCls" placeholder="百度站长平台 → 普通收录 → 推送接口 token" />
         </div>
       </div>
@@ -92,7 +92,7 @@ async function save() {
 
     <!-- 搜索引擎验证已统一到站点级 SEO 设置 -->
     <VCard title="搜索引擎验证">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-sm text-text-quaternary dark:text-muted-foreground">
         站长验证码已统一到「设置 → SEO」页面配置（Google / Bing / 百度），避免两处重复填写互相覆盖。
       </p>
     </VCard>
