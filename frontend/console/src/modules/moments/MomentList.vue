@@ -51,32 +51,6 @@ const { data: queryData, isLoading, refetch } = useQuery({
 const moments = computed(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
 
-// 筛选 tabs：全部 / 文字 / 图片 / 链接
-type FilterKey = "all" | "text" | "image" | "link";
-const filter = ref<FilterKey>("all");
-const filters: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "全部" },
-  { key: "text", label: "文字" },
-  { key: "image", label: "图片" },
-  { key: "link", label: "链接" },
-];
-
-function momentHasLink(m: any): boolean {
-  const html: string = m?.content || "";
-  return /<a\s/i.test(html) || /https?:\/\//i.test(m?.content_md || "");
-}
-function momentHasImage(m: any): boolean {
-  return Array.isArray(m?.images) && m.images.length > 0;
-}
-function matchFilter(m: any): boolean {
-  if (filter.value === "image") return momentHasImage(m);
-  if (filter.value === "link") return momentHasLink(m);
-  if (filter.value === "text") return !momentHasImage(m);
-  return true;
-}
-
-const filteredMoments = computed(() => moments.value.filter(matchFilter));
-
 // 时间线节点色：蓝/橙/绿/紫/红（按 id hash 取色）
 const DOT_COLORS = [
   { bg: "#2E8DFF", glow: "color-mix(in srgb, var(--color-primary) 45%, transparent)" },
@@ -122,7 +96,7 @@ const groupedMoments = computed<DateGroup[]>(() => {
     week: [],
     earlier: [],
   };
-  for (const m of filteredMoments.value) {
+  for (const m of moments.value) {
     const t = new Date(m?.created_at).getTime();
     if (isNaN(t)) {
       buckets.earlier.push(m);
@@ -370,19 +344,6 @@ function closeMenus() {
         <h1 class="moments-page-title">瞬间</h1>
       </div>
       <div class="flex items-center gap-3">
-        <div class="apple-segmented" role="tablist" aria-label="瞬间筛选">
-          <button
-            v-for="f in filters"
-            :key="f.key"
-            type="button"
-            role="tab"
-            :aria-selected="filter === f.key"
-            :class="{ active: filter === f.key }"
-            @click="filter = f.key"
-          >
-            {{ f.label }}
-          </button>
-        </div>
         <button type="button" class="moments-btn-primary" @click="focusComposer">
           <Icon icon="ri:add-line" class="text-[15px]" />
           <span>发布瞬间</span>
@@ -414,7 +375,7 @@ function closeMenus() {
                 v-model="newContent"
                 :rows="composerFocused || newContent ? 4 : 2"
                 placeholder="分享此刻的想法…（可粘贴图片直传）"
-                class="w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-foreground outline-none transition-all placeholder:text-text-quaternary"
+                class="moment-textarea w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-foreground outline-none transition-all placeholder:text-text-quaternary"
                 @focus="composerFocused = true"
                 @blur="composerFocused = false"
                 @keydown="onComposerKeydown"
@@ -507,7 +468,7 @@ function closeMenus() {
 
         <VLoading v-if="isLoading" />
 
-        <Transition v-else-if="!filteredMoments.length" appear name="fade">
+        <Transition v-else-if="!moments.length" appear name="fade">
           <VEmpty message="发布第一条瞬间吧" title="当前没有瞬间">
             <template #actions>
               <VButton @click="refetch">刷新</VButton>
@@ -650,7 +611,7 @@ function closeMenus() {
             v-model="editContent"
             rows="4"
             placeholder="分享此刻的想法…（可粘贴图片直传）"
-            class="apple-textarea w-full"
+            class="apple-textarea moment-textarea w-full"
             @paste="onPaste('edit', $event)"
           ></textarea>
 
@@ -755,6 +716,13 @@ function closeMenus() {
 }
 .moments-content-area {
   padding: 8px 20px 48px;
+}
+
+/* 输入框聚焦不显示全局蓝色 outline（光标即焦点指示，视觉更干净） */
+.moment-textarea:focus,
+.moment-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* ===== Primary pill button ===== */
