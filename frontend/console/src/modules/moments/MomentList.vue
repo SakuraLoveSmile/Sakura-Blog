@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, reactive } from"vue";
+import { ref, computed, onMounted, nextTick, reactive, watch } from"vue";
 import { useQuery, useQueryClient } from"@tanstack/vue-query";
-import { momentApi, settingsApi, attachmentApi } from"@/api";
+import { momentApi, settingsApi, attachmentApi, previewApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
 import { Icon } from"@iconify/vue";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
@@ -218,6 +218,36 @@ function insertEmoji(target: "new" | "edit", src: string) {
     el.selectionStart = el.selectionEnd = start + md.length;
   });
 }
+
+// --- 实时预览（走后端 goldmark 管线，表情图即时可见；同编辑器预览机制） ---
+const newPreviewHtml = ref("");
+const editPreviewHtml = ref("");
+
+async function refreshMomentPreview(which: "new" | "edit", md: string) {
+  if (!md.trim()) {
+    if (which === "new") newPreviewHtml.value = "";
+    else editPreviewHtml.value = "";
+    return;
+  }
+  try {
+    const { data } = await previewApi.render(md);
+    if (which === "new") newPreviewHtml.value = data.html;
+    else editPreviewHtml.value = data.html;
+  } catch {
+    /* 渲染失败不显示预览 */
+  }
+}
+
+let newPreviewTimer: ReturnType<typeof setTimeout> | undefined;
+let editPreviewTimer: ReturnType<typeof setTimeout> | undefined;
+watch(newContent, (v) => {
+  clearTimeout(newPreviewTimer);
+  newPreviewTimer = setTimeout(() => refreshMomentPreview("new", v), 300);
+});
+watch(editContent, (v) => {
+  clearTimeout(editPreviewTimer);
+  editPreviewTimer = setTimeout(() => refreshMomentPreview("edit", v), 300);
+});
 
 // --- 选图 / 上传 / 预览（发布框与编辑框共用工具函数） ---
 
@@ -446,6 +476,9 @@ function closeMenus() {
                 @keydown="onComposerKeydown"
                 @paste="onPaste('new', $event)"
               ></textarea>
+
+              <!-- 实时预览：表情图即时可见 -->
+              <div v-if="newPreviewHtml" class="moment-preview" v-html="newPreviewHtml"></div>
 
               <div v-if="newImages.length" class="moment-images mt-3">
                 <div
@@ -724,6 +757,9 @@ function closeMenus() {
             @paste="onPaste('edit', $event)"
           ></textarea>
 
+          <!-- 实时预览：表情图即时可见 -->
+          <div v-if="editPreviewHtml" class="moment-preview" v-html="editPreviewHtml"></div>
+
           <div v-if="editImages.length" class="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
             <div
               v-for="(url, i) in editImages"
@@ -958,6 +994,35 @@ function closeMenus() {
 }
 /* 瞬间内容中插入的表情图内联 30px（与评论区一致） */
 .moment-content :deep(img[src*="emoticons"]) {
+  max-width: 30px;
+  max-height: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin: 0 2px;
+}
+
+/* ===== 实时预览（发布框/编辑框：表情图即时可见） ===== */
+.moment-preview {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-foreground);
+  word-break: break-word;
+}
+.moment-preview :deep(p) {
+  margin: 0 0 0.25rem;
+}
+.moment-preview :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.moment-preview :deep(img) {
+  max-width: 100%;
+}
+.moment-preview :deep(img[src*="emoticons"]) {
   max-width: 30px;
   max-height: 30px;
   display: inline-block;
