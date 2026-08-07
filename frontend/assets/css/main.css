@@ -9772,3 +9772,13 @@ a[data-fancybox] {
 .md-text .cmt-body.artalk .artalk .atk-content pre>code {
   padding: 0;
 }
+
+/* 瞬间表情图（控制台表情选择器插入，与评论区同源 CDN）：内联 30px，对齐 .cmt-emoji-img */
+.tag-plugin.timeline .timenode .body img[src*="emoticons"] {
+  max-width: 30px;
+  max-height: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin: 0 2px;
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from"vue";
+import { ref, computed, onMounted, nextTick, reactive } from"vue";
 import { useQuery, useQueryClient } from"@tanstack/vue-query";
 import { momentApi, settingsApi, attachmentApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
@@ -155,46 +155,68 @@ function onComposerKeydown(e: KeyboardEvent) {
  }
 }
 
-// --- 表情面板（发布框与编辑框共用；视觉对齐评论区 cmt-emoji-panel：网格/面板/标签页） ---
+// --- 表情面板（发布框与编辑框共用；与评论区 cmt-emoji-panel 完全一致：CDN 表情包/底部 tabs/网格/插入逻辑） ---
+// 与评论区同源：cdn-x/emoticons Artalk 格式清单（items: [{key, val}]，val 为图片直链）
+const EMOJI_BASE = "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/artalk/";
 const EMOJI_PACKS = [
- {
-  key: "smiley", label: "表情",
-  items: ["\u{1F600}","\u{1F601}","\u{1F602}","\u{1F923}","\u{1F60A}","\u{1F60D}","\u{1F618}","\u{1F60E}","\u{1F914}","\u{1F605}","\u{1F62D}","\u{1F624}","\u{1F973}","\u{1F929}","\u{1F634}","\u{1F92F}"],
- },
- {
-  key: "gesture", label: "手势",
-  items: ["\u{1F631}","\u{1F64F}","\u{1F44D}","\u{1F44E}","\u{1F44F}","\u{1F64C}","\u{1F4AA}","\u{1F91D}","\u{270C}","\u{1F91E}"],
- },
- {
-  key: "heart", label: "爱心",
-  items: ["\u{2764}","\u{1F9E1}","\u{1F49B}","\u{1F49A}","\u{1F499}","\u{1F49C}","\u{1F5A4}","\u{1F494}"],
- },
- {
-  key: "object", label: "物件",
-  items: ["\u{2728}","\u{1F389}","\u{1F525}","\u{2B50}","\u{2600}","\u{26A1}","\u{2744}","\u{1F340}","\u{1F338}","\u{1F34E}","\u{2615}","\u{1F3B5}","\u{1F680}","\u{1F4A1}","\u{1F4CC}","\u{2705}","\u{274C}","\u{26A0}","\u{1F319}","\u{1F308}"],
- },
+  { key: "blobcat", label: "Blobcat" },
+  { key: "qq", label: "QQ" },
+  { key: "tieba", label: "Tieba" },
+  { key: "aru", label: "Aru" },
+  { key: "twemoji", label: "Twemoji" },
 ];
+type EmojiItem = { key: string; val: string };
 const emojiOpen = ref<"new" | "edit" | null>(null);
-const emojiPack = ref("smiley");
+const emojiPack = ref("blobcat");
+const emojiLoading = ref(false);
+const emojiError = ref(false);
+const packCache: Record<string, EmojiItem[]> = reactive({});
 const editBox = ref<HTMLTextAreaElement | null>(null);
-const currentEmojis = computed(() => EMOJI_PACKS.find((p) => p.key === emojiPack.value)?.items || []);
+const currentEmojis = computed<EmojiItem[]>(() => packCache[emojiPack.value] || []);
 
-function toggleEmoji(target: "new" | "edit") {
- emojiOpen.value = emojiOpen.value === target ? null : target;
+// 懒加载 pack 清单（首次打开/切 tab），缓存后直接渲染
+async function ensurePackLoaded(pack: string) {
+  if (packCache[pack]?.length) return;
+  emojiLoading.value = true;
+  emojiError.value = false;
+  try {
+    const r = await fetch(EMOJI_BASE + pack + ".json", { cache: "force-cache" });
+    if (!r.ok) throw new Error("http " + r.status);
+    const data = await r.json();
+    const items = Array.isArray(data?.items) ? (data.items as EmojiItem[]).filter((it) => it?.val) : [];
+    if (!items.length) throw new Error("empty");
+    packCache[pack] = items;
+  } catch {
+    emojiError.value = true;
+  } finally {
+    emojiLoading.value = false;
+  }
 }
 
-// 在光标处插入表情，并恢复光标位置
-function insertEmoji(target: "new" | "edit", emoji: string) {
- const box = target === "new" ? newContent : editContent;
- const el = target === "new" ? composerBox.value : editBox.value;
- const start = el?.selectionStart ?? box.value.length;
- const end = el?.selectionEnd ?? start;
- box.value = box.value.slice(0, start) + emoji + box.value.slice(end);
- nextTick(() => {
-  if (!el) return;
-  el.focus();
-  el.selectionStart = el.selectionEnd = start + emoji.length;
- });
+function switchEmojiPack(pack: string) {
+  emojiPack.value = pack;
+  ensurePackLoaded(pack);
+}
+
+function toggleEmoji(target: "new" | "edit") {
+  const open = emojiOpen.value === target;
+  emojiOpen.value = open ? null : target;
+  if (!open) ensurePackLoaded(emojiPack.value);
+}
+
+// 与评论区一致：插入 Markdown 图片 ![emoji](src)，并恢复光标位置
+function insertEmoji(target: "new" | "edit", src: string) {
+  const md = `![emoji](${src})`;
+  const box = target === "new" ? newContent : editContent;
+  const el = target === "new" ? composerBox.value : editBox.value;
+  const start = el?.selectionStart ?? box.value.length;
+  const end = el?.selectionEnd ?? start;
+  box.value = box.value.slice(0, start) + md + box.value.slice(end);
+  nextTick(() => {
+    if (!el) return;
+    el.focus();
+    el.selectionStart = el.selectionEnd = start + md.length;
+  });
 }
 
 // --- 选图 / 上传 / 预览（发布框与编辑框共用工具函数） ---
@@ -517,18 +539,25 @@ function closeMenus() {
             </div>
           </div>
 
-          <!-- 表情面板：发布框（对齐评论区 cmt-emoji-panel 结构：body 网格 + 底部 tabs） -->
+          <!-- 表情面板：发布框（与评论区一致：body 网格 + 底部 tabs） -->
           <div v-if="emojiOpen === 'new'" class="emoji-panel emoji-panel-below" @click.stop>
             <div class="emoji-body">
-              <div class="emoji-grid">
+              <div v-if="emojiLoading" class="emoji-loading">
+                <Icon icon="ri:loader-4-line" class="animate-spin" />
+                <span>加载中…</span>
+              </div>
+              <div v-else-if="emojiError" class="emoji-error" title="点击重试" @click.stop="ensurePackLoaded(emojiPack)">表情包加载失败，请检查网络后重试</div>
+              <div v-else class="emoji-grid">
                 <button
-                  v-for="e in currentEmojis"
-                  :key="e"
+                  v-for="it in currentEmojis"
+                  :key="it.val"
                   type="button"
                   class="emoji-cell"
-                  :title="'插入 ' + e"
-                  @click.stop="insertEmoji('new', e)"
-                >{{ e }}</button>
+                  :title="it.key"
+                  @click.stop="insertEmoji('new', it.val)"
+                >
+                  <img class="emoji-img" :src="it.val" :alt="it.key" loading="lazy" />
+                </button>
               </div>
             </div>
             <div class="emoji-tabs" role="tablist">
@@ -539,7 +568,7 @@ function closeMenus() {
                 role="tab"
                 :aria-selected="emojiPack === p.key"
                 :class="['emoji-tab', { 'is-active': emojiPack === p.key }]"
-                @click.stop="emojiPack = p.key"
+                @click.stop="switchEmojiPack(p.key)"
               >{{ p.label }}</button>
             </div>
           </div>
@@ -761,15 +790,22 @@ function closeMenus() {
         <!-- 表情面板：编辑框 -->
         <div v-if="emojiOpen === 'edit'" class="emoji-panel emoji-panel-dialog" @click.stop>
           <div class="emoji-body">
-            <div class="emoji-grid">
+            <div v-if="emojiLoading" class="emoji-loading">
+              <Icon icon="ri:loader-4-line" class="animate-spin" />
+              <span>加载中…</span>
+            </div>
+            <div v-else-if="emojiError" class="emoji-error" title="点击重试" @click.stop="ensurePackLoaded(emojiPack)">表情包加载失败，请检查网络后重试</div>
+            <div v-else class="emoji-grid">
               <button
-                v-for="e in currentEmojis"
-                :key="e"
+                v-for="it in currentEmojis"
+                :key="it.val"
                 type="button"
                 class="emoji-cell"
-                :title="'插入 ' + e"
-                @click.stop="insertEmoji('edit', e)"
-              >{{ e }}</button>
+                :title="it.key"
+                @click.stop="insertEmoji('edit', it.val)"
+              >
+                <img class="emoji-img" :src="it.val" :alt="it.key" loading="lazy" />
+              </button>
             </div>
           </div>
           <div class="emoji-tabs" role="tablist">
@@ -780,7 +816,7 @@ function closeMenus() {
               role="tab"
               :aria-selected="emojiPack === p.key"
               :class="['emoji-tab', { 'is-active': emojiPack === p.key }]"
-              @click.stop="emojiPack = p.key"
+              @click.stop="switchEmojiPack(p.key)"
             >{{ p.label }}</button>
           </div>
         </div>
@@ -918,6 +954,36 @@ function closeMenus() {
 }
 .emoji-cell:hover {
   background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+/* 表情图：对齐评论区 .cmt-emoji-img（30px contain） */
+.emoji-img {
+  max-width: 30px;
+  max-height: 30px;
+  object-fit: contain;
+  display: block;
+}
+.emoji-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+.emoji-error {
+  padding: 0.6rem 0.1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+/* 瞬间内容中插入的表情图内联 30px（与评论区一致） */
+.moment-content :deep(img[src*="emoticons"]) {
+  max-width: 30px;
+  max-height: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin: 0 2px;
 }
 /* 底部 tabs：对齐评论区 .cmt-emoji-tabs */
 .emoji-tabs {
