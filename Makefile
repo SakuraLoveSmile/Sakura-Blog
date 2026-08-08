@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check pre-commit-check run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
@@ -56,7 +56,8 @@ assets-test:
 
 ## merge-check: feature 分支合回 dev 的机械化合并封装（在 feature worktree 根目录执行）
 ## 强制先跑 make test，任一环节失败即以非零码退出、不执行合并；全绿后才把当前分支合入 dev。
-## DEV_WORKTREE 指向 dev worktree 路径，默认兄弟目录 ../dev，可按需覆盖。
+## DEV_WORKTREE 指向 dev worktree 路径，默认相对路径 ../dev（从 feature worktree 根出发解析，
+## 前提：feature worktree 与 dev 互为兄弟目录，见 AGENTS.md「开分支 + worktree」的落位约定），可按需覆盖。
 DEV_WORKTREE ?= ../dev
 merge-check:
 	@branch=$$(git branch --show-current); \
@@ -71,6 +72,14 @@ merge-check:
 pre-commit-check:
 	@$(MAKE) test || { echo "pre-commit-check: make test 失败，中止提交" >&2; exit 1; }; \
 	echo "pre-commit-check: 全绿，允许提交"
+
+## hooks-install: 为当前 worktree 一次性挂载 pre-commit hook（机械挂载 pre-commit-check 门槛）
+## hook 脚本为仓库 tracked 文件 .githooks/pre-commit，调用同一 make test 门槛并以退出码阻断；
+## 通过 core.hooksPath 指向 .githooks，每个 worktree 执行一次即可。
+hooks-install:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-commit
+	@echo "hooks-install: 已挂载 pre-commit hook（core.hooksPath=.githooks）"
 
 ## run: embed 模式构建并运行（首次加 -seed 导入文章）
 run: build

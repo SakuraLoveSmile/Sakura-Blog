@@ -24,11 +24,15 @@ dev（主线，唯一集成目标）
 
 ### 1. 开分支 + worktree
 
+以下命令在**仓库根目录**（包含 `.bare/`、`dev/`、`main/`、`release/` 的层级，不在任何 worktree 内部）执行。`git -C .bare` 使命令在 `.bare/` 内运行，相对路径 `../feat-*` 因此落回根目录——feature worktree 统一落位为 `dev` 的**兄弟目录**（如 `feat-comment/`），与现有 `dev`/`main`/`release` 布局一致。
+
+落位必须是兄弟目录的原因：`make merge-check` 的默认 `DEV_WORKTREE=../dev` 从 feature worktree 根出发解析，只有互为兄弟目录才能指向真实的 dev worktree；落位到其他层级时必须显式传 `DEV_WORKTREE=<dev worktree 路径>` 覆盖。
+
 ```bash
-# 给 agent A 开 feature 分支
+# 在仓库根目录执行；feature worktree 落位为根目录下的 feat-comment/（dev 的兄弟目录）
 git -C .bare worktree add ../feat-comment -b feature/comment
 
-# 给 agent B 开 feature 分支
+# 同理，给 agent B 开 feature 分支
 git -C .bare worktree add ../feat-font -b feature/font
 ```
 
@@ -47,6 +51,7 @@ git -C .bare worktree add ../feat-font -b feature/font
 UI/样式类任务（控制台界面、前台样式、编辑器视觉等）开工前必须先固定**单一验收边界**，未固定前不动手改代码：
 
 - **参照图唯一**：开工前确定唯一参照（设计稿 / 原版 Stellar 截图 / 基线截图），路径或来源写进任务描述；后续所有反馈只与该参照对比，中途不得更换参照或以口述追加新方向。
+- **载体位置**：参照图与验收基线截图统一存入该任务所属 spec 目录的 `baselines/` 子目录（如 `specs/56-generic-link-import/baselines/`），该目录入库（勿放 `.qoder/`、`.tmp/` 等被 gitignore 的目录）；spec 中「参照图路径」字段必须是指向入库文件的仓库相对路径。含 UI 子任务的 spec 按 [`specs/_template/spec.md`](specs/_template/spec.md) 的「UI 验收边界」节填写。
 - **可逐项核对的验收清单**：把目标拆成清单，每项是一个可观察的完成判据（例："导航栏滚动时保持固定且无背景模糊"），完成时逐项对照勾选，而不是靠多轮截图来回纠偏。
 - **大范围整改必须拆分**：涉及多个页面/组件的 UI 整改，必须拆分为逐项可验收的子任务，每个子任务对应一个明确的完成判据；禁止在单个任务里承载多个验收目标（如"重构编辑框 + 修批注 + 全局样式意见"混在一起）。
 - **中途新增按新子任务处理**：清单固定后新出现的诉求另开子任务，不追加进进行中的任务。
@@ -71,6 +76,13 @@ make merge-check
 
   - `pre-commit-check` 与 `merge-check` 共用同一 `make test` 门槛：任一环节失败即以非零码退出，**必须中止提交**；禁止绕过该目标手动 `git commit`。
   - 该条款使控制面覆盖 feature 合并之外的直接提交路径，两条路径的准入标准一致（全绿才放行）。
+  - **机械挂载**：仓库提供 tracked 的 pre-commit hook 脚本 `.githooks/pre-commit`（调用同一 `make test` 门槛并以退出码阻断）。每个新 worktree 开工时执行一次安装命令：
+
+    ```bash
+    make hooks-install
+    ```
+
+    安装后直接 `git commit` 会被 hook 以同一门槛机械阻断（`core.hooksPath` 指向 `.githooks`，仅写入当前 worktree 的本地 config）；紧急绕过须显式 `git commit --no-verify`。不改变 CI 配置。
 
 ### 4. 先完成先合
 
@@ -89,6 +101,7 @@ git -C /path/to/dev branch -d feature/comment
 如果 agent B 开工时 A 已合入 dev，B 必须先 rebase 到最新 dev：
 
 ```bash
+# 在 dev worktree 根目录（<根目录>/dev）执行，../feat-font 指向根目录下的 feature worktree
 git -C ../feat-font rebase dev
 # 如有冲突由 agent B 自行解决（B 了解自己在改什么）
 ```
@@ -96,6 +109,7 @@ git -C ../feat-font rebase dev
 ### 6. 清理 worktree
 
 ```bash
+# 与开分支同层级：在仓库根目录执行，../feat-comment 指向根目录下的 feature worktree
 git -C .bare worktree remove ../feat-comment
 ```
 

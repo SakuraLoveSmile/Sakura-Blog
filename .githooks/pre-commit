@@ -1,0 +1,10 @@
+#!/bin/sh
+# pre-commit hook：与 make merge-check / make pre-commit-check 共用同一 make test 门槛。
+# 任一环节失败即以非零码阻断提交；等价于手动执行 make pre-commit-check。
+# 安装方式见 AGENTS.md「提交规范」：make hooks-install（每个 worktree 一次性）。
+echo "pre-commit hook: 运行 make test 门槛（与 merge-check / pre-commit-check 同语义）"
+if ! make test; then
+    echo "pre-commit hook: make test 失败，提交已阻断（如需紧急绕过，显式使用 git commit --no-verify）" >&2
+    exit 1
+fi
+echo "pre-commit hook: 全绿，允许提交"
