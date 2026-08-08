@@ -39,7 +39,7 @@ const pickerOpen = ref(false);
 const uploadError = ref("");
 
 // 本地草稿保护（与 RichTextEditor 共用同一 storageKey 草稿）
-const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft } = useLocalDraft({
+const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft } = useLocalDraft({
  storageKey: props.storageKey,
  getValue: () => props.modelValue,
  setValue: (v) => emit("update:modelValue", v),
@@ -110,6 +110,8 @@ function applyPreview(html: string) {
 
 // 深色-only：iframe 固定 data-theme=dark，无需观察切换
 onMounted(() => {
+ // 检测 localStorage 是否有未保存草稿（MarkdownEditor 无 round-trip，直接检测即可）
+ checkDraft();
  // 默认分屏/预览模式时首次挂载即渲染
  if (mode.value !=="edit") schedulePreview(true);
 });

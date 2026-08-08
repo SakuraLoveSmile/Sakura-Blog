@@ -365,3 +365,23 @@ const btnActive = "bg-primary text-white hover:bg-primary hover:text-white";
     </div>
   </div>
 </template>
+
+<style scoped>
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  /* 工具栏更紧凑 */
+  :deep(.toolbar-wrap) {
+    gap: 0;
+    padding: 4px 8px;
+  }
+  /* 插入下拉的预览气泡：移动端屏幕太窄，隐藏（避免溢出屏幕） */
+  .insert-menu + div,
+  .absolute > div:last-child {
+    display: none !important;
+  }
+  /* 分组边框在移动端稍微减淡 */
+  .border-l {
+    border-left-width: 1px;
+  }
+}
+</style>

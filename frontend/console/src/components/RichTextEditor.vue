@@ -36,8 +36,11 @@ const uploadError = ref("");
 const pickerOpen = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
-// 编辑器规范化基线（onCreate 后的自序列化值）：用于区分“真实编辑”与“加载时 round-trip 重排”。
+// 编辑器规范化基线（onCreate 后的自序列化值）：用于区分"真实编辑"与"加载时 round-trip 重排"。
 let baseline = props.modelValue;
+// baseline 是否已对齐到"真实内容"（API 加载后的内容，非初始空串）。
+// onCreate 时若 modelValue 非空则直接就绪；否则等 watch 首次收到外部内容后再就绪。
+let baselineReady = false;
 
 // 工具栏激活态（随选区/事务变化更新，供 PostEditor 传给 EditorToolbar 高亮）
 const activeStates = reactive<Record<string, boolean>>({});
@@ -58,7 +61,7 @@ function syncActive() {
 
 // 本地草稿保护（与 MarkdownEditor 共用同一 storageKey 草稿，双模式切换不冲突）
 // baseline 传入编辑器规范化基线，避免 round-trip 幻影草稿误弹条幅
-const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft } = useLocalDraft({
+const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft } = useLocalDraft({
  storageKey: props.storageKey,
  getValue: () => props.modelValue,
  setValue: (v) => emit("update:modelValue", v),
@@ -107,10 +110,14 @@ const editor = useEditor({
  },
  },
  onCreate: ({ editor }) => {
- // 记录规范化基线（解析→序列化后的值），供草稿判定与 no-op 拑截
+ // 记录规范化基线（解析->序列化后的值），供草稿判定与 no-op 拦截
  baseline = editor.storage.markdown.getMarkdown() as string;
  lastMarkdown = baseline;
  syncActive();
+ // 立即检测一次草稿（覆盖新建文章 / API 已就绪的场景）；
+ // 若 API 尚未返回（modelValue 为空），watch 首次收到真实内容时会
+ // 重新固化 baseline 并再次 checkDraft，覆盖此次结果
+ checkDraft();
  },
  onSelectionUpdate: syncActive,
  onUpdate: ({ editor }) => {
@@ -120,17 +127,31 @@ const editor = useEditor({
  if (md === baseline && md === lastMarkdown) return;
  lastMarkdown = md;
  emit("update:modelValue", md);
+ // 真实用户编辑：防抖落草稿（watch 中的 scheduleDraft 仅处理外部变更）
+ scheduleDraft();
  },
 });
 
-// 外部变更（AI 回填 / 版本回滚 / 模式切换 / 草稿恢复）→ 重新解析 Markdown 进编辑器
+// 外部变更（AI 回填 / 版本回滚 / 模式切换 / 草稿恢复 / API 首次加载）-> 重新解析 Markdown 进编辑器
 watch(
  () => props.modelValue,
  (v) => {
- scheduleDraft();
+ // v === lastMarkdown 说明是 onUpdate 自己 emit 的回流，跳过 setContent 防循环；
+ // scheduleDraft 已在 onUpdate 中调用，此处不再重复，避免 round-trip 回流落幻影草稿
  if (v === lastMarkdown) return;
  lastMarkdown = v;
  editor.value?.commands.setContent(v, false);
+ if (!baselineReady) {
+ // 首次外部内容加载（API 在 onCreate 之后才返回）：此时 baseline 仍是空串，
+ // 需用真实内容重新固化 baseline，再检测草稿，避免幻影草稿误弹条幅。
+ // 注意：此处不调 scheduleDraft，否则会用 API 内容覆盖 localStorage 中的真实草稿
+ baseline = editor.value?.storage.markdown.getMarkdown() as string;
+ baselineReady = true;
+ checkDraft();
+ } else {
+ // 后续外部变更（AI 回填 / 版本回滚等）：防抖落草稿
+ scheduleDraft();
+ }
  }
 );
 

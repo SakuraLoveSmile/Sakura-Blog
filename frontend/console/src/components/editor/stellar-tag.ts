@@ -10,7 +10,11 @@ import StellarTagView from"./StellarTagView.vue";
 // 序列化时原样写回 raw，round-trip 无损。
 
 // 成对块级标签（{% tag %}…{% endtag %}），与 internal/post/shortcode.go 对齐
+// 顺序敏感：banner body 可嵌 navbar，须先处理 banner 再处理 navbar，
+// 否则 navbar 先被替换为占位 div 会破坏 banner 的 raw 内容
 const PAIRED_TAGS = [
+"banner",
+"navbar",
 "folding",
 "tabs",
 "timeline",
@@ -23,13 +27,21 @@ const PAIRED_TAGS = [
 "poetry",
 "swiper",
 "chat",
+"frame",
+"about",
+"blockquote",
+"reel",
+"paper",
 ];
 
 // 单行标签（{% tag ... %}），与 shortcode.go 对齐
+// navbar/frame 同时有块级和单行两种形式，块级在 PAIRED_TAGS 先处理，
+// 未匹配块级的单行用法由此处 singleLineRe 兜底
 const SINGLE_TAGS = [
 "note",
 "button",
 "checkbox",
+"radio",
 "quot",
 "link",
 "image",
@@ -44,6 +56,24 @@ const SINGLE_TAGS = [
 "copy",
 "rating",
 "ghcard",
+"vote",
+"friends",
+"sites",
+"u",
+"emp",
+"wavy",
+"del",
+"kbd",
+"psw",
+"blur",
+"sup",
+"sub",
+"md",
+"toc",
+"albums",
+"posters",
+"navbar",
+"frame",
 ];
 
 // base64 编解码（支持 Unicode），规避 HTML 属性中的引号/换行/空行问题
