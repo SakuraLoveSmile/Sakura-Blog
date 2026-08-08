@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -135,5 +136,112 @@ func TestImportLinksUnauthorized(t *testing.T) {
 func TestFormatImportFail(t *testing.T) {
 	if got := formatImportFail(7, "缺 url"); got != "issue #7: 缺 url" {
 		t.Errorf("format mismatch: %q", got)
+	}
+}
+
+// --- Spec 56：粘贴文本导入（source=text） ---
+
+func TestParseTextLinksJSONArray(t *testing.T) {
+	content := `[
+		{"name":"小屋","url":"https://a.top/","avatar":"https://a.top/a.png","description":"desc","rss":"https://a.top/atom.xml","label":"大佬","color":"#1BCDFC","sort":3},
+		{"title":"旧格式","url":"https://b.top","icon":"https://b.top/i.png","feed":"https://b.top/feed"},
+		{"name":"缺url"},
+		{"url":"https://c.top"}
+	]`
+	links, failed, err := parseTextLinks(content)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(links) != 2 {
+		t.Fatalf("expected 2 links, got %d", len(links))
+	}
+	if len(failed) != 2 || !strings.Contains(failed[0], "缺 url") || !strings.Contains(failed[1], "缺 name/title") {
+		t.Errorf("failed mismatch: %v", failed)
+	}
+	l := links[0]
+	if l.Name != "小屋" || l.URL != "https://a.top/" || l.Label != "大佬" || l.Sort != 3 {
+		t.Errorf("entry1 mismatch: %+v", l)
+	}
+	if l.Color != "1BCDFC" {
+		t.Errorf("color should strip '#': %q", l.Color)
+	}
+	// 别名回退：title/icon/feed
+	l2 := links[1]
+	if l2.Name != "旧格式" || l2.Avatar != "https://b.top/i.png" || l2.RSS != "https://b.top/feed" {
+		t.Errorf("alias fallback mismatch: %+v", l2)
+	}
+}
+
+func TestParseTextLinksYAML(t *testing.T) {
+	// 顶层列表
+	list := "- name: 甲\n  url: https://a.top\n- name: 乙\n  url: https://b.top\n"
+	links, failed, err := parseTextLinks(list)
+	if err != nil || len(links) != 2 || len(failed) != 0 {
+		t.Fatalf("yaml list: links=%d failed=%v err=%v", len(links), failed, err)
+	}
+	// links 顶层键
+	wrap := "links:\n  - name: 丙\n    url: https://c.top\n"
+	links, _, err = parseTextLinks(wrap)
+	if err != nil || len(links) != 1 || links[0].Name != "丙" {
+		t.Fatalf("yaml wrap: links=%+v err=%v", links, err)
+	}
+}
+
+func TestParseTextLinksErrors(t *testing.T) {
+	cases := []string{"", "   ", "这是一段纯文本", "[]", `{"foo":"bar"}`}
+	for _, c := range cases {
+		if _, _, err := parseTextLinks(c); err == nil {
+			t.Errorf("expected error for %q", c)
+		}
+	}
+}
+
+// TestImportLinksTextSource 端到端：认证后 text 导入 → 去重幂等 → 默认分组。
+func TestImportLinksTextSource(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+
+	body := `{"source":"text","content":"[{\"name\":\"甲\",\"url\":\"https://a.top\"},{\"name\":\"乙\",\"url\":\"https://b.top\",\"rss\":\"https://b.top/feed\"}]"}`
+	w := do2FA(r, http.MethodPost, "/api/v1/links/import", body, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("import: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var res linkImportResult
+	if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if res.Imported != 2 || res.Skipped != 0 || len(res.Failed) != 0 {
+		t.Fatalf("round1 = %+v, want imported=2 skipped=0", res)
+	}
+	// 默认分组落库
+	links, err := st.ListLinks()
+	if err != nil || len(links) != 2 {
+		t.Fatalf("list links: %v (n=%d)", err, len(links))
+	}
+	for _, l := range links {
+		if l.GroupTitle != "导入友链" {
+			t.Errorf("default group mismatch: %q", l.GroupTitle)
+		}
+	}
+
+	// 再次导入：全部跳过（URL 去重幂等）
+	w = do2FA(r, http.MethodPost, "/api/v1/links/import", body, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("reimport: status = %d", w.Code)
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if res.Imported != 0 || res.Skipped != 2 {
+		t.Fatalf("round2 = %+v, want imported=0 skipped=2", res)
+	}
+
+	// 非法内容 → 400
+	w = do2FA(r, http.MethodPost, "/api/v1/links/import", `{"source":"text","content":"不是列表"}`, cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("bad content: status = %d, want 400", w.Code)
+	}
+	// 未知来源 → 400
+	w = do2FA(r, http.MethodPost, "/api/v1/links/import", `{"source":"opml"}`, cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("unknown source: status = %d, want 400", w.Code)
 	}
 }

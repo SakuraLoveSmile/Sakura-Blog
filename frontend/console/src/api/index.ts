@@ -284,10 +284,11 @@ export const linkApi = {
  update: (id: number, data: Record<string, unknown>) =>
  http.put(`/links/${id}`, data),
  delete: (id: number) => http.delete(`/links/${id}`),
- /** 并发检测各友链可达性，返回 items: [{id, ok, status}]（status 为 HTTP 状态码，0=无法访问） */
+ /** 并发检测各友链可达性，返回 {items: [{id, ok, status}], tagged, restored}（status 为 HTTP 状态码，0=无法访问；tagged/restored 为自动打/摘「失效」标签条数） */
  check: () => http.post("/links/check"),
- /** 从 GitHub Friends 仓库导入友链（Spec 54）：返回 {imported, skipped, failed[]} */
- importFromGitHub: (data: { group?: string }) => http.post("/links/import", data),
+ /** 导入友链（Spec 54/56）：source=github 拉 Friends 仓库 issues，source=text 解析粘贴的 JSON/YAML；返回 {imported, skipped, failed[]} */
+ importLinks: (data: { source:"github" |"text"; group?: string; content?: string }) =>
+ http.post("/links/import", data),
 };
 
 // --- 友链 RSS 订阅阅读器 ---

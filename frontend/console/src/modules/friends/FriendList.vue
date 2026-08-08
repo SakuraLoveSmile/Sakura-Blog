@@ -57,9 +57,17 @@ async function runCheck() {
  r.ok ? okN++ : errN++;
  }
  checkStatus.value = map;
- Toast.success("检测完成", { description: `正常 ${okN} · 异常 ${errN}` });
+ // Spec 56：后端自动打/摘「失效」标签，有变更时追加提示并刷新列表
+ const tagged: number = data.tagged ?? 0;
+ const restored: number = data.restored ?? 0;
+ let desc = `正常 ${okN} · 异常 ${errN}`;
+ if (tagged > 0 || restored > 0) {
+ desc += ` · 已标记失效 ${tagged} · 恢复 ${restored}`;
+ queryClient.invalidateQueries({ queryKey: ["friends"] });
+ }
+ Toast.success("检测完成", { description: desc });
  } catch (e: any) {
- Toast.error(e?.response?.data?.error ||"检测失败");
+ Toast.error(e?.response?.data?.error || "检测失败");
  } finally {
  checking.value = false;
  }
@@ -90,34 +98,57 @@ const grouped = computed(() => {
  return order.map((title) => ({ title, items: map[title] }));
 });
 
-// GitHub 友链导入（Spec 54）：弹窗 + 分组输入 + 结果 Toast
+// 友链导入（Spec 54/56）：通用弹窗，来源 GitHub 仓库 / 粘贴 JSON·YAML 文本
 const showImportModal = ref(false);
+const importSource = ref<"github" | "text">("github");
 const importGroup = ref("GitHub 友链");
+const importContent = ref("");
 const importing = ref(false);
 const importError = ref("");
 
+/** 各来源默认分组；切换来源时若当前分组仍为另一来源默认值则跟随切换 */
+const importGroupDefaults: Record<"github" | "text", string> = {
+ github: "GitHub 友链",
+ text: "导入友链",
+};
+
 function openImport() {
- importGroup.value ="GitHub 友链";
- importError.value ="";
+ importSource.value = "github";
+ importGroup.value = importGroupDefaults.github;
+ importContent.value = "";
+ importError.value = "";
  showImportModal.value = true;
+}
+
+function switchImportSource(src: "github" | "text") {
+ if (importSource.value === src) return;
+ if (importGroup.value === importGroupDefaults[importSource.value]) {
+ importGroup.value = importGroupDefaults[src];
+ }
+ importSource.value = src;
+ importError.value = "";
 }
 
 async function handleImport() {
  importing.value = true;
- importError.value ="";
+ importError.value = "";
  try {
- const { data } = await linkApi.importFromGitHub({ group: importGroup.value.trim() });
+ const { data } = await linkApi.importLinks({
+ source: importSource.value,
+ group: importGroup.value.trim(),
+ content: importSource.value === "text" ? importContent.value : undefined,
+ });
  const failed = data?.failed || [];
  const msg = `导入 ${data.imported ?? 0} 条 · 跳过 ${data.skipped ?? 0} 条`;
  if (failed.length > 0) {
- Toast.error("部分导入失败", { description: `${msg}，失败 ${failed.length} 条（${failed.slice(0, 3).join("；")}${failed.length > 3 ?"…" :""}）` });
+ Toast.error("部分导入失败", { description: `${msg}，失败 ${failed.length} 条（${failed.slice(0, 3).join("；")}${failed.length > 3 ? "…" : ""}）` });
  } else {
  Toast.success("导入完成", { description: msg });
  }
  showImportModal.value = false;
  queryClient.invalidateQueries({ queryKey: ["friends"] });
  } catch (e: any) {
- importError.value = e?.response?.data?.error ||"导入失败，请稍后重试";
+ importError.value = e?.response?.data?.error || "导入失败，请稍后重试";
  } finally {
  importing.value = false;
  }
@@ -221,7 +252,7 @@ function closeMenus() {
  class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
  @click="openImport"
  >
- <Icon icon="ri:github-fill" />从 GitHub 导入
+ <Icon icon="ri:import-line" />导入友链
  </button>
  <span class="flex-1"></span>
  <span class="text-sm text-text-quaternary">状态：</span>
@@ -281,17 +312,51 @@ function closeMenus() {
  </template>
  </div>
 
- <!-- GitHub 导入弹窗（Spec 54） -->
- <VModal v-model:visible="showImportModal" title="从 GitHub 导入友链" :width="480">
- <p class="mb-3 rounded-base bg-secondary px-3 py-2 text-sm text-text-tertiary">
+ <!-- 导入友链弹窗（Spec 54/56：来源 GitHub 仓库 / 粘贴文本） -->
+ <VModal v-model:visible="showImportModal" title="导入友链" :width="480">
+ <!-- 来源切换 -->
+ <div class="mb-3 inline-flex rounded-lg border border-border bg-secondary p-0.5">
+ <button
+ type="button"
+ class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors"
+ :class="importSource === 'github' ? 'bg-card text-foreground shadow-sm' : 'text-text-tertiary hover:text-foreground'"
+ @click="switchImportSource('github')"
+ >
+ <Icon icon="ri:github-fill" />GitHub 仓库
+ </button>
+ <button
+ type="button"
+ class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors"
+ :class="importSource === 'text' ? 'bg-card text-foreground shadow-sm' : 'text-text-tertiary hover:text-foreground'"
+ @click="switchImportSource('text')"
+ >
+ <Icon icon="ri:clipboard-line" />粘贴文本
+ </button>
+ </div>
+ <p v-if="importSource === 'github'" class="mb-3 rounded-base bg-secondary px-3 py-2 text-sm text-text-tertiary">
  将从 <code class="rounded bg-secondary px-1 py-0.5 text-xs">sakurasep/Friends</code> 仓库拉取全部 open issues，解析其中的友链信息并批量写入，已存在的链接自动跳过。
  </p>
- <p v-if="importError" class="mb-3 rounded-base bg-state-error/10 px-3 py-2 text-sm text-state-error bg-state-error/10 text-state-error">
+ <p v-else class="mb-3 rounded-base bg-secondary px-3 py-2 text-sm text-text-tertiary">
+ 粘贴 JSON 数组或 YAML 列表批量写入，字段支持 name/title、url、avatar/icon、description、rss/feed、label、color、sort，已存在的链接自动跳过。
+ </p>
+ <p v-if="importError" class="mb-3 rounded-base bg-state-error/10 px-3 py-2 text-sm text-state-error">
  {{ importError }}
  </p>
+ <div class="space-y-3">
  <div>
  <label class="mb-1 block text-xs text-text-tertiary">导入分组</label>
- <input v-model="importGroup" :class="inputCls" placeholder="GitHub 友链" />
+ <input v-model="importGroup" :class="inputCls" :placeholder="importGroupDefaults[importSource]" />
+ </div>
+ <div v-if="importSource === 'text'">
+ <label class="mb-1 block text-xs text-text-tertiary">友链内容（JSON 或 YAML）</label>
+ <textarea
+ v-model="importContent"
+ :class="inputCls"
+ rows="8"
+ class="min-h-[10rem] w-full resize-y font-mono text-xs leading-5"
+ placeholder='[{"name": "示例博客", "url": "https://example.com", "avatar": "https://example.com/avatar.png", "rss": "https://example.com/atom.xml"}]'
+ ></textarea>
+ </div>
  </div>
  <template #footer>
  <div class="flex justify-end gap-2">
