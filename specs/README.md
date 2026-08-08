@@ -2,6 +2,17 @@
 
 每个子目录是一个**可并行开发**的功能 spec，遵循根目录 [`AGENTS.md`](../AGENTS.md)：**一个 agent = 一个 feature 分支 = 一个 worktree，从 dev 拉出，做完合回 dev**。
 
+## 当前批次 · Wave 13（上线冲刺）
+
+来源：正式上线前体检（2026-08）。代码面已 ready，剩余工作在配置/内容/部署层。
+
+| # | Spec | 主题 | 优先级 | 主模块 |
+|---|------|------|--------|--------|
+| 54 | [从 GitHub Friends 仓库导入友链](54-import-friends/spec.md) | console 一键拉取 Friends 仓库 issues 批量导入 links 表 | 中 | `api/import_links.go` + `github/client.go` + `FriendList.vue` |
+| 55 | [正式上线准备（脱敏 / 配置转正 / 内容清理 / 部署收尾）](55-launch-prep/spec.md) | PAT 轮换 + site.yml 转正 + 测试文清理 + 反代模板 + 可选备案号 | 高 | `config/`（生产值）+ `content/posts/` + `deploy/` +（可选）`footer.html` |
+
+**零冲突**：54 / 55 无共享文件热点；55 以配置与内容整理为主，唯一可选代码改动是 Part D 备案号字段。
+
 ## 最新批次 · Wave 11（前端收官收尾，依赖 Wave 10 已合）
 
 来源：前端 vs 原版 Stellar 收官调研（2026-08，对齐度 ~95% 后的小缺口）+ 站长新增 AI 摘要需求。
