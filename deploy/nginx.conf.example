@@ -1,0 +1,60 @@
+# 博客反向代理配置模板（nginx）
+# 复制为站点配置后按实际修改：server_name、证书路径。
+# 证书可用 certbot 签发：certbot --nginx -d blog.example.com
+#
+# 配套：app.yml 必须设置 trusted_proxy: 127.0.0.1/32（nginx 同机部署），
+# 否则 X-Forwarded-For 不被信任，评论/登录的 IP 限流与审计全部失效。
+
+# http → https 全量跳转
+server {
+    listen 80;
+    listen [::]:80;
+    server_name blog.example.com;
+
+    # ACME 验证（certbot 续签用）
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name blog.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/blog.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blog.example.com/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # HSTS（确认全站 https 无 http 资源后再启用；preload 可选）
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # 上传体积上限与 app.yml max_upload_mb（默认 5MB）对齐，留少量余量
+    client_max_body_size 8m;
+
+    # 附件与静态资源长缓存（文件名/内容指纹稳定；app 层已带缓存头，这里只兜底）
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:8080;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        # 透传客户端信息：app.yml.trusted_proxy 信任本地址后才还原真实 IP
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    30s;
+    }
+}
