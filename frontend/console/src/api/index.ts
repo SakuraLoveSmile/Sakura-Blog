@@ -410,6 +410,49 @@ export const seoApi = {
  clearPushLogs: () => http.delete("/seo/push/logs"),
 };
 
+// --- 性能监控模块 ---
+export interface PerfOverview {
+ start_time: string;
+ uptime_sec: number;
+ go_version: string;
+ platform: string;
+ goroutines: number;
+ heap_alloc_mb: number;
+ sys_mem_mb: number;
+ gc_count: number;
+ db_size_bytes: number;
+ recent: { requests: number; avg_ms: number; errors: number; err_rate: number };
+}
+
+export interface PerfSamplePoint {
+ ts: string;
+ metric: string;
+ value: number;
+}
+
+export interface PerfRouteStat {
+ method: string;
+ route: string;
+ count: number;
+ avg_ms: number;
+ max_ms: number;
+ err_count: number;
+}
+
+export interface PerfMinuteStat {
+ minute: string;
+ count: number;
+ err_count: number;
+}
+
+export const perfApi = {
+ overview: () => http.get<PerfOverview>("/perf/overview"),
+ history: (hours: number) =>
+ http.get<{ hours: number; points: PerfSamplePoint[] }>("/perf/history", { params: { hours } }),
+ requests: (hours: number) =>
+ http.get<{ hours: number; routes: PerfRouteStat[]; throughput: PerfMinuteStat[] }>("/perf/requests", { params: { hours } }),
+};
+
 // --- 站内通知中心（Wave 3b） ---
 export interface NotificationItem {
  id: number;

@@ -131,6 +131,12 @@ const router = createRouter({
           ],
         },
         {
+          path: "perf",
+          name: "Perf",
+          meta: { adminOnly: true },
+          component: () => import("@/modules/perf/PerfView.vue"),
+        },
+        {
           path: "settings",
           name: "Settings",
           meta: { adminOnly: true },

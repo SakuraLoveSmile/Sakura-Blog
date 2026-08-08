@@ -188,6 +188,8 @@ func (p *Post) IsPasswordProtected() bool {
 // Store 文章数据访问对象，持 *sql.DB 连接。
 type Store struct {
 	db *sql.DB
+	// path .db 文件路径（性能监控展示库文件体积用）。
+	path string
 	// postWriteHook 文章写路径回调（Spec 25 FTS 同步用），op 取 create/update/delete/restore/purge。
 	// 写操作成功后同步调用；回调内部自行容错，不影响主流程。
 	postWriteHook func(op, slug string)
@@ -255,12 +257,17 @@ func New(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("ping sqlite: %w", err)
 	}
 
-	s := &Store{db: db}
+	s := &Store{db: db, path: dbPath}
 	if err := s.createTables(); err != nil {
 		db.Close()
 		return nil, err
 	}
 	return s, nil
+}
+
+// DBPath 返回 .db 文件路径（可能为空，如旧构造路径）。
+func (s *Store) DBPath() string {
+	return s.path
 }
 
 // Close 关闭底层数据库连接。
@@ -330,7 +337,7 @@ func (s *Store) migrateColumns() error {
 		"poster":     `ALTER TABLE posts ADD COLUMN poster TEXT NOT NULL DEFAULT ''`,
 		"topic":      `ALTER TABLE posts ADD COLUMN topic TEXT NOT NULL DEFAULT ''`,
 		// Spec 52 专栏关联列（与 topics 表同步迁移；对齐 Spec 52「走现有 migrate 模式」决策）
-		"topic_id": `ALTER TABLE posts ADD COLUMN topic_id INTEGER NOT NULL DEFAULT 0`,
+		"topic_id":   `ALTER TABLE posts ADD COLUMN topic_id INTEGER NOT NULL DEFAULT 0`,
 		"references": `ALTER TABLE posts ADD COLUMN "references" TEXT NOT NULL DEFAULT ''`,
 		"banner":     `ALTER TABLE posts ADD COLUMN banner TEXT NOT NULL DEFAULT ''`,
 		"deleted_at": `ALTER TABLE posts ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`,

@@ -24,7 +24,8 @@ import (
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
 	"blog/internal/module"
-	_ "blog/internal/module/seo" // blank import：触发 SEO 模块 init() 自注册
+	_ "blog/internal/module/perf" // blank import：触发性能监控模块 init() 自注册
+	_ "blog/internal/module/seo"  // blank import：触发 SEO 模块 init() 自注册
 	"blog/internal/moment"
 	"blog/internal/notify"
 	"blog/internal/og"

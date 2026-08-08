@@ -263,6 +263,27 @@ var tableDDL = map[string]string{
 	);
 	CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
 	CREATE INDEX IF NOT EXISTS idx_pages_created ON pages(created_at);`,
+
+	"perf_samples": `CREATE TABLE IF NOT EXISTS perf_samples (
+		id     INTEGER PRIMARY KEY AUTOINCREMENT,
+		ts     TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+		metric TEXT NOT NULL DEFAULT '',
+		value  REAL NOT NULL DEFAULT 0
+	);
+	CREATE INDEX IF NOT EXISTS idx_perf_samples_metric_ts ON perf_samples(metric, ts);`,
+
+	"perf_requests": `CREATE TABLE IF NOT EXISTS perf_requests (
+		id        INTEGER PRIMARY KEY AUTOINCREMENT,
+		minute_ts TEXT NOT NULL DEFAULT '',
+		method    TEXT NOT NULL DEFAULT '',
+		route     TEXT NOT NULL DEFAULT '',
+		count     INTEGER NOT NULL DEFAULT 0,
+		total_ms  REAL NOT NULL DEFAULT 0,
+		max_ms    REAL NOT NULL DEFAULT 0,
+		err_count INTEGER NOT NULL DEFAULT 0
+	);
+	CREATE INDEX IF NOT EXISTS idx_perf_requests_minute ON perf_requests(minute_ts);
+	CREATE INDEX IF NOT EXISTS idx_perf_requests_route ON perf_requests(route);`,
 }
 
 // EnsureSchema 统一建表入口：按注册表执行全部独立表 DDL（幂等）。
