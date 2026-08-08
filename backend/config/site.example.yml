@@ -153,6 +153,8 @@ authors:
 #       icon: github:logo
 
 footer:
+  # ICP 备案号（大陆服务器合规要求）；非空时页脚署名行下方渲染并链接 beian.miit.gov.cn，空则不渲染。
+  # beian: 某ICP备00000000号
   social:
     - title: GitHub
       url: https://github.com/

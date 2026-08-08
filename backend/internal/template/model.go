@@ -525,6 +525,7 @@ func (l LinkListConfig) ShowText() bool {
 type Footer struct {
 	Social  []SocialItem   `yaml:"social" json:"social"`
 	Sitemap []SitemapGroup `yaml:"sitemap" json:"sitemap"` // 页脚站点地图多列（对齐原版 footer.ejs sitemap）
+	Beian   string         `yaml:"beian" json:"beian"`     // ICP 备案号（大陆部署合规）；空则页脚不渲染
 }
 
 // SitemapGroup 页脚站点地图分组（组标题 + 链接列表），对齐 theme.footer.sitemap。
