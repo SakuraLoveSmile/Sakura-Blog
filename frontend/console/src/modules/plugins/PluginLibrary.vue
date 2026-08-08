@@ -202,7 +202,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  :class="[
  'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
  selected.name === p.name
- ? 'bg-primary/10 bg-primary/10'
+ ? 'bg-primary/10'
  : 'hover:bg-secondary hover:bg-accent',
  ]"
  >
@@ -218,7 +218,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  :class="[
  'text-sm truncate',
  selected.name === p.name
- ? 'text-secondary font-medium text-primary'
+ ? 'font-medium text-primary'
  : 'text-text-secondary ',
  ]"
  >{{ p.title }}</span>
@@ -237,7 +237,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  <div class="flex items-center gap-2 flex-wrap">
  <h3 class="text-xl font-semibold text-foreground">{{ selected.title }}</h3>
  <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{% {{ selected.name }} %}</code>
- <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-secondary bg-primary/10 text-primary">{{ selected.category }}</span>
+ <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{ selected.category }}</span>
  <span
  :class="[
  'text-[11px] px-1.5 py-0.5 rounded-full',
