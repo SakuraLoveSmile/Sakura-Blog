@@ -395,7 +395,7 @@ function closeMenus() {
  type="checkbox"
  @change="handleCheckAllChange"
  />
- <span class="ml-2 text-xs text-text-tertiary">全选</span>
+ <span class="ml-2 whitespace-nowrap text-xs text-text-tertiary">全选</span>
  </div>
  <div
  class="cursor-pointer rounded p-1 hover:bg-accent"
@@ -434,8 +434,8 @@ function closeMenus() {
  </VEmpty>
  </Transition>
 
- <!-- Entity list：桌面端表格 -->
- <Transition v-else appear name="fade">
+ <!-- Entity list：桌面表格 + 移动端卡片（v-else 单根容器，内部按断点切换） -->
+ <div v-else>
  <div class="hidden sm:block">
  <VEntityContainer>
  <VEntity v-for="post in posts" :key="post.slug" :is-selected="checkSelection(post.slug)">
@@ -524,17 +524,17 @@ function closeMenus() {
  </span>
  </template>
  </VEntityField>
- <VEntityField v-if="post.status === 'draft'">
+ <VEntityField v-if="post.status === 'draft'" class="shrink-0">
  <template #description>
  <VStatusDot state="warning" text="未发布" />
  </template>
  </VEntityField>
- <VEntityField v-else-if="post.status === 'trashed'">
+ <VEntityField v-else-if="post.status === 'trashed'" class="shrink-0">
  <template #description>
  <VStatusDot state="error" text="已删除" />
  </template>
  </VEntityField>
- <VEntityField v-else description="已发布" />
+ <VEntityField v-else class="shrink-0" description="已发布" />
  <VEntityField>
  <template #description>
  <Icon
@@ -544,9 +544,9 @@ function closeMenus() {
  />
  </template>
  </VEntityField>
- <VEntityField>
+ <VEntityField class="shrink-0">
  <template #description>
- <span class="truncate text-xs tabular-nums text-text-tertiary">
+ <span class="whitespace-nowrap text-xs tabular-nums text-text-tertiary">
  {{ formatDate(post.created_at) }}
  </span>
  </template>
@@ -624,15 +624,15 @@ function closeMenus() {
  </h3>
  </div>
  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
- <span v-if="post.status === 'draft'" class="inline-flex items-center gap-1">
+ <span v-if="post.status === 'draft'" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
  <span class="h-1.5 w-1.5 rounded-full bg-state-warning"></span>
  草稿
  </span>
- <span v-else-if="post.status === 'trashed'" class="inline-flex items-center gap-1">
+ <span v-else-if="post.status === 'trashed'" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
  <span class="h-1.5 w-1.5 rounded-full bg-state-error"></span>
  已删除
  </span>
- <span v-else class="inline-flex items-center gap-1">
+ <span v-else class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
  <span class="h-1.5 w-1.5 rounded-full bg-state-success"></span>
  已发布
  </span>
@@ -716,7 +716,7 @@ function closeMenus() {
  </Transition>
  </div>
  </div>
- </Transition>
+ </div>
 
  <!-- Footer: pagination -->
  <template #footer>
@@ -904,8 +904,8 @@ function closeMenus() {
   line-height: 1.35 !important;
  }
 
- /* 卡片封面缩小 */
- .post-card > div:first-child > div:nth-child(2) > div {
+ /* 卡片封面缩小（限定带 shrink-0 的封面容器，避免无封面时误伤内容区标题行） */
+ .post-card > div:first-child > div:nth-child(2).shrink-0 > div {
   width: 56px !important;
  }
 

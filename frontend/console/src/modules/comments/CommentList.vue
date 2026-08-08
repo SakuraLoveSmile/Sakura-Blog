@@ -372,13 +372,13 @@ function closeMenus() {
       <VCard class="mt-5" :body-class="['!p-0']">
         <!-- Card Header: 分段筛选 + 搜索 + 批量操作条 -->
         <template #header>
-          <div class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+          <div class="flex min-w-0 flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
             <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
               <button
                 v-for="tab in statusTabs"
                 :key="tab.key"
                 type="button"
-                :class="{ active: selectedStatus === tab.key }"
+                :class="['shrink-0 whitespace-nowrap', { active: selectedStatus === tab.key }]"
                 @click="selectStatus(tab.key)"
               >
                 {{ tab.label }}
@@ -664,18 +664,18 @@ function closeMenus() {
   border-color: color-mix(in srgb, var(--color-state-error) 25%, transparent);
 }
 
+/* 分段 Tab 横向滚动，不显示滚动条（无条件生效：任何宽度下标签溢出都可横滚） */
+.tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ===== 移动端适配 ===== */
 @media (max-width: 640px) {
-  /* 分段 Tab 横向滚动，不显示滚动条 */
-  .tabs-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .tabs-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
   /* 操作按钮更紧凑 */
   .action-btn {
     padding: 4px 10px;

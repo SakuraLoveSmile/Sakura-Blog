@@ -1,4 +1,4 @@
-import type { LayoutWidget } from "./registry";
+import type { LayoutWidget, ResponsiveSize } from "./registry";
 
 export type Breakpoint = "l" | "m" | "s";
 
@@ -23,10 +23,10 @@ export interface SectionLayout {
   others: LayoutWidget[];
 }
 
-/** 全断点布局存储结构（v6：每个断点独立保存） */
+/** 全断点布局存储结构（每个断点独立保存） */
 export type MultiBreakpointLayout = Record<Breakpoint, SectionLayout>;
 
-/** 每个断点的默认布局 - 从v5的ResponsiveSize拆分为独立布局 */
+/** 每个断点的默认布局 */
 const defaultLayout_l: SectionLayout = {
   stats: [
     { type: "stat-posts",     size: { l: 3, m: 6, s: 12 } },
@@ -59,8 +59,8 @@ const defaultLayout_m: SectionLayout = {
     { type: "quick-actions",  size: { l: 4, m: 6, s: 12 } },
   ],
   recents: [
-    { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
-    { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
+    { type: "recent-posts",   size: { l: 6, m: 12, s: 12 } },
+    { type: "recent-comments",size: { l: 6, m: 12, s: 12 } },
   ],
   others: [],
 };
@@ -96,29 +96,53 @@ export function getDefaultSectionLayout(bp: Breakpoint): SectionLayout {
   return JSON.parse(JSON.stringify(base));
 }
 
-/** 兼容v5格式转换为v6 */
-function migrateV5toV6(v5: any): MultiBreakpointLayout | null {
+/** 布局存储key */
+export const LAYOUT_STORAGE_KEY = "dashboard:layout:v7";
+
+/** v6 旧布局存储 key（仅迁移用） */
+const LEGACY_STORAGE_KEY = "dashboard:layout:v6";
+
+/** 旧默认尺寸：v6 时代 m 断点 recents 的默认值 */
+const OLD_DEFAULT_RECENT_SIZE: ResponsiveSize = { l: 6, m: 6, s: 12 };
+/** 新默认尺寸：v7 时代 m 断点 recents 的默认值 */
+const NEW_DEFAULT_RECENT_SIZE: ResponsiveSize = { l: 6, m: 12, s: 12 };
+
+/**
+ * v6 布局迁移到 v7：结构与 v7 相同（{l,m,s} 三段），仅将 m 断点 recents 中
+ * recent-posts/recent-comments 仍为旧默认尺寸 {l:6,m:6,s:12} 的替换为新默认
+ * {l:6,m:12,s:12}；用户自定义过的其他部件与尺寸全部保留
+ */
+function migrateV6toV7(v6: any): MultiBreakpointLayout | null {
   try {
-    // v5格式是单个SectionLayout
-    if (v5 && (v5.stats || v5.chartWide)) {
-      // 把v5布局作为l的基础，m和s用默认，但widget的size保持
-      const v5Layout = v5 as SectionLayout;
-      return {
-        l: JSON.parse(JSON.stringify(v5Layout)),
-        m: JSON.parse(JSON.stringify(defaultLayout_m)),
-        s: JSON.parse(JSON.stringify(defaultLayout_s)),
-      };
+    if (!v6 || !v6.l || !v6.m || !v6.s) return null;
+    // 深拷贝，避免直接改动 localStorage 原始对象
+    const layout = JSON.parse(JSON.stringify(v6)) as MultiBreakpointLayout;
+    const recents = layout.m.recents;
+    if (Array.isArray(recents)) {
+      for (const w of recents) {
+        const size = w.size;
+        const isOldDefault =
+          size &&
+          size.l === OLD_DEFAULT_RECENT_SIZE.l &&
+          size.m === OLD_DEFAULT_RECENT_SIZE.m &&
+          size.s === OLD_DEFAULT_RECENT_SIZE.s;
+        if (
+          (w.type === "recent-posts" || w.type === "recent-comments") &&
+          isOldDefault
+        ) {
+          w.size = { ...NEW_DEFAULT_RECENT_SIZE };
+        }
+      }
     }
+    return layout;
   } catch { /* ignore */ }
   return null;
 }
 
-/** 布局存储key */
-export const LAYOUT_STORAGE_KEY = "dashboard:layout:v6";
-
-/** 从localStorage加载布局，支持v5迁移 */
+/** 从localStorage加载布局，支持v6迁移 */
 export function loadLayoutFromStorage(): MultiBreakpointLayout {
   try {
+    // 优先读 v7 key
     const saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -130,9 +154,22 @@ export function loadLayoutFromStorage(): MultiBreakpointLayout {
           s: { ...defaultMultiLayout.s, ...parsed.s },
         };
       }
-      // 尝试v5迁移
-      const migrated = migrateV5toV6(parsed);
-      if (migrated) return migrated;
+    }
+    // v7 缺失或格式无效时回退读 v6 key 并迁移
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacy) {
+      const migrated = migrateV6toV7(JSON.parse(legacy));
+      if (migrated && migrated.l && migrated.m && migrated.s) {
+        const layout = {
+          l: { ...defaultMultiLayout.l, ...migrated.l },
+          m: { ...defaultMultiLayout.m, ...migrated.m },
+          s: { ...defaultMultiLayout.s, ...migrated.s },
+        };
+        // 迁移成功后写回 v7 key 并清理 v6 key
+        saveLayoutToStorage(layout);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        return layout;
+      }
     }
   } catch { /* ignore */ }
   return JSON.parse(JSON.stringify(defaultMultiLayout));

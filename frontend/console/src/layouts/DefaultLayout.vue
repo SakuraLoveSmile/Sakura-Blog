@@ -446,7 +446,7 @@ function closeProfileDropdown() {
     </aside>
 
     <!-- Main content -->
-    <main class="content w-full overflow-y-auto pb-16 md:pb-0" :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'">
+    <main class="content w-full min-w-0 overflow-y-auto pb-16 md:pb-0" :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'">
       <router-view />
       <!-- 页脚（对齐 Halo：Powered by ...） -->
       <footer

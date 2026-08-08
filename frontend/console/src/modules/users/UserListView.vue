@@ -674,7 +674,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <label :class="labelCls">用户名 <span class="text-state-error">*</span></label>
           <input v-model="createForm.username" :class="inputCls" placeholder="登录用户名，唯一" />
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label :class="labelCls">显示名</label>
             <input v-model="createForm.display_name" :class="inputCls" placeholder="前台展示名" />
@@ -688,7 +688,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <label :class="labelCls">头像 URL</label>
           <input v-model="createForm.avatar" :class="inputCls" placeholder="https://...（可选）" />
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label :class="labelCls">初始密码 <span class="text-state-error">*</span></label>
             <input v-model="createForm.password" type="password" :class="inputCls" placeholder="至少 6 位" />
@@ -713,7 +713,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
     <!-- 编辑用户 -->
     <VModal v-model:visible="editVisible" title="编辑用户" :width="520">
       <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label :class="labelCls">显示名</label>
             <input v-model="editForm.display_name" :class="inputCls" />
@@ -766,16 +766,13 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 </template>
 
 <style scoped>
-/* ===== 移动端适配 ===== */
-@media (max-width: 640px) {
-  /* 分段 Tab 横向滚动，不显示滚动条 */
-  .tabs-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .tabs-scroll::-webkit-scrollbar {
-    display: none;
-  }
+/* 分段 Tab 横向滚动，不显示滚动条（无条件生效：任何宽度下标签溢出都可横滚） */
+.tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-scroll::-webkit-scrollbar {
+  display: none;
 }
 </style>

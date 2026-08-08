@@ -158,9 +158,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  </template>
  </VPageHeader>
 
- <div class="flex-1 flex overflow-hidden">
+ <div class="flex-1 flex flex-col overflow-hidden md:flex-row">
  <!-- 左侧：分类 + 搜索 + 列表 -->
- <aside class="w-64 shrink-0 border-r border-border flex flex-col bg-card">
+ <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
  <div class="p-3 space-y-2 border-b border-border">
  <div class="relative">
  <Icon icon="ri:search-line" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-quaternary" />
@@ -194,7 +194,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  </div>
  </div>
 
- <div class="flex-1 overflow-y-auto py-1">
+ <div class="flex-1 overflow-y-auto py-1 max-h-48 md:max-h-none">
  <button
  v-for="p in filtered"
  :key="p.name"
@@ -231,7 +231,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  </aside>
 
  <!-- 右侧：详情 + 预览 -->
- <section class="flex-1 overflow-y-auto p-6 space-y-5">
+ <section class="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
  <!-- 标题区 -->
  <div>
  <div class="flex items-center gap-2 flex-wrap">

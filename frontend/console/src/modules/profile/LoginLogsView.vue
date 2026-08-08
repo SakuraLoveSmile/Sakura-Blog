@@ -127,7 +127,8 @@ function shortUA(ua: string): string {
 
  <!-- Entity list -->
  <Transition v-else appear name="fade">
- <ul class="box-border h-full w-full divide-y divide-[var(--color-border)]" role="list">
+ <div class="overflow-x-auto">
+ <ul class="box-border h-full w-full min-w-max md:min-w-0 divide-y divide-[var(--color-border)]" role="list">
  <li v-for="log in logs" :key="log.id">
  <VEntity>
  <template #start>
@@ -191,6 +192,7 @@ function shortUA(ua: string): string {
  </VEntity>
  </li>
  </ul>
+ </div>
  </Transition>
 
  <!-- Footer: pagination -->

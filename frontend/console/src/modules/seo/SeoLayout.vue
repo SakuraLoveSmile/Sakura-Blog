@@ -25,13 +25,13 @@ const active = computed(() => route.path);
  <template #icon><Icon icon="ri:search-eye-line" class="text-primary" /></template>
  </VPageHeader>
 
- <div class="m-0 flex gap-4 p-4 md:m-4 md:p-0">
+ <div class="m-0 flex flex-col gap-4 p-4 md:m-4 md:p-0 md:flex-row">
  <!-- 二级导航 -->
- <nav class="w-40 flex-shrink-0">
- <ul class="space-y-1">
+ <nav class="w-full flex-shrink-0 md:w-40">
+ <ul class="flex gap-1 overflow-x-auto md:block md:space-y-1 md:gap-0">
  <li v-for="s in sub" :key="s.path">
  <button
- class="flex w-full items-center gap-2 rounded-base px-3 py-2 text-sm transition-colors"
+ class="flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-base px-3 py-2 text-sm transition-colors"
  :class="active === s.path
  ? 'bg-primary/10 font-medium text-primary'
  : 'text-text-tertiary hover:bg-secondary hover:bg-accent'"
