@@ -1,6 +1,7 @@
 // tagcloud.js: 标签云 widget 交互（3D 球体版）。
+// 默认静态模式：SSR 静态云直接可见（JS 加载后保持静态）；
 // 动态模式：3D 球体标签云（Fibonacci 球面分布，透视投影近大远小/近清远淡，
-// 自动旋转 + 拖拽惯性）；静态模式：SSR 静态云兜底（JS 不可用时默认可见）。
+// 自动旋转 + 拖拽惯性），用户点击切换按钮后激活。
 // 全站 defer 加载：遍历 .widget-wrapper.tagcloud 存在性初始化（支持多实例）+
 // pjax:complete 重初始化，元素移出 DOM 后动画循环自清理；数据源为 SSR 静态云 DOM，不发请求。
 (function () {
@@ -110,7 +111,12 @@
         velX *= 0.94;
       }
       if (mode === 'dynamic') project();
-      rafId = requestAnimationFrame(animate);
+      // 静态模式且无拖拽/惯性时停止 RAF，避免空转耗电；切回动态时由 switchMode 重启
+      if (mode === 'dynamic' || isDragging || Math.abs(velY) > 0.0001 || Math.abs(velX) > 0.0001) {
+        rafId = requestAnimationFrame(animate);
+      } else {
+        rafId = 0;
+      }
     }
 
     function onStart(e) {
@@ -208,7 +214,12 @@
       } else {
         staticCloud.setAttribute('hidden', '');
         cloud.removeAttribute('hidden');
+        cloudWidth = cloud.offsetWidth;
+        cloudHeight = cloud.offsetHeight;
+        radius = Math.min(cloudWidth, cloudHeight) * 0.3;
+        project();
         autoRotate = !reduced;
+        if (!rafId && !stopped) rafId = requestAnimationFrame(animate);
       }
       root.classList.toggle('is-static', m === 'static');
     }
@@ -248,12 +259,9 @@
     modeSwitch.addEventListener('click', onModeClick);
     window.addEventListener('resize', onResize);
 
-    // 先切动态模式使云容器可见（hidden 时 offsetWidth=0），再量尺寸铺球体标签
-    switchMode('dynamic');
-    cloudWidth = cloud.offsetWidth;
-    cloudHeight = cloud.offsetHeight;
-    radius = Math.min(cloudWidth, cloudHeight) * 0.3;
-    project();
+    // 默认静态模式：SSR 静态云已可见，球体标签已构建但隐藏。
+    // 启动首帧 RAF，animate 在静态无交互时会自行停止；切到动态时由 switchMode 重启。
+    root.classList.add('is-static');
     rafId = requestAnimationFrame(animate);
 
     return { stop: stop };

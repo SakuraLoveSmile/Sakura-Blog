@@ -1,8 +1,8 @@
 /* 标签云 widget 重设计（3D 球体版，参照 resource/design/tagcloud.design 五档热度层级）：
    - widget-body 内为交互卡片：右上角动态/静态模式切换；
+   - 默认静态模式：SSR 静态云直接可见（JS 加载后保持静态）；
    - 动态模式：3D 球体标签云（标签按 Fibonacci 球面分布，透视投影近大远小/近清远淡，
-     自动旋转 + 拖拽惯性，交互在 assets/js/tagcloud.js）；
-   - 静态模式：SSR 静态云（JS 不可用时默认可见）；
+     自动旋转 + 拖拽惯性，交互在 assets/js/tagcloud.js），用户点击切换后激活；
    - 热度以五档灰度层级表达（tag-xl~tag-xs：字号 + 颜色深浅），颜色映射 Stellar 主题变量，
      亮/暗模式自动兼容；
    - prefers-reduced-motion：关闭旋转/入场/脉冲动效，标签静态可见。 */
