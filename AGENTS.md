@@ -130,6 +130,16 @@ git -C .bare worktree remove ../feat-comment
 | TOC / 搜索 / PJAX / 404 | 「Step 3 新增坑点」（AutoHeadingID、PJAX DOM 引用、对照原版先行） |
 | 工具链版本 | 「工具链」（Go / Node / stylus / SQLite 驱动版本与启动方式） |
 
+## UI 设计规范
+
+> 本节为 UI 设计规范的 canonical 路由；真值以 `.design_library/苹果/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。
+
+任一 agent 新增/修改管理后台或前台 UI 前，必须先读 `.design_library/苹果/`，阅读顺序见 `library-consumption.json`（SKILL.md → README.md → css.json → components/index.json → components/{slug}.json → preview/component-{slug}.html → components.css → ui_kits/website/index.html），并遵守：
+
+- 只消费语义 token（`:root` 亮 / `.dark` 暗两层映射，`--primary`/`--background`/`--muted-foreground`/`--border`/`--radius`/`--shadow-*` 及 `--apple-*` 前缀别名），不新造裸色值。
+- 组件模式限 button / card / input / navigation / product-grid / comparison-table 六类，类名与结构对齐 `components.css`。
+- 品牌蓝 `#007AFF`（dark 用 `brand-400`）、单页主色 ≤ 2；DM Sans + JetBrains Mono；圆角 `1.2rem`、按钮 pill；间距基 `0.24rem`、留白优先于分隔线；1px 边框优先、阴影从轻（深阴影仅 hover/overlay）；动效 `cubic-bezier(0.32,0.72,0,1)` 150/250/350ms；移动端触达 ≥ 44×44pt；文案简短克制、无 emoji。
+
 ## 端口约定
 
 > 本节为端口约定的 canonical 来源，运行时真值以 `config/app.yml` 的 `listen_addr`（当前 `:8080`）为准；`.claude/launch.json` 的 go-server 配置与之保持一致。其他文档（如 CLAUDE.md）仅引用本节，不另行定义。
