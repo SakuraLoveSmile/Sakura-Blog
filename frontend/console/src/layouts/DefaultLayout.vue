@@ -280,7 +280,7 @@ function closeProfileDropdown() {
     <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-card；支持收起为仅图标的 w-16） -->
     <aside
       :class="sidebarCollapsed ? 'w-16' : 'w-64'"
-      class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto border-r border-border transition-[width] duration-200 md:flex"
+      class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-200 md:flex"
       style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px);"
     >
       <!-- Logo -->
@@ -370,9 +370,9 @@ function closeProfileDropdown() {
 
       <!-- 底部用户资料区（对齐 Halo profile 70px；收起时仅头像） -->
       <div class="profile-placeholder">
-        <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center' : 'w-64'">
-          <!-- 铃铛通知按钮（Wave 3b） -->
-          <div class="relative self-center">
+        <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center gap-0 !p-0' : 'w-64'">
+          <!-- 铃铛通知按钮（Wave 3b）：收起时隐藏，避免 w-16 宽度放不下两个图标 -->
+          <div v-if="!sidebarCollapsed" class="relative self-center">
             <div
               class="cursor-pointer rounded p-1 transition-all hover:bg-secondary hover:bg-accent"
               @click="router.push('/notifications')"
@@ -395,6 +395,11 @@ function closeProfileDropdown() {
               <Icon icon="ri:user-3-line" class="text-lg text-primary" />
             </span>
           </div>
+          <!-- 收起时：未读徽标叠在头像右上角，保持通知入口可见 -->
+          <div
+            v-if="sidebarCollapsed && unreadCount > 0"
+            class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-white"
+          >{{ unreadCount > 99 ? '99+' : unreadCount }}</div>
           <div v-if="!sidebarCollapsed" class="profile-name">
             <div class="flex text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
             <div class="flex">

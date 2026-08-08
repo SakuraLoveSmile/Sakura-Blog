@@ -216,30 +216,30 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
   <div class="min-h-full">
     <!-- ===== Page Header ===== -->
     <header
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-5 backdrop-blur-xl md:px-8"
+      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-4 backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-5 md:px-8"
       style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
-      <div class="flex flex-col gap-1">
-        <h1 class="text-[28px] font-bold leading-tight tracking-tight text-white">用户管理</h1>
-        <p class="text-[13px] text-text-tertiary">管理所有用户账户、角色和权限</p>
+      <div class="flex flex-col gap-0.5 sm:gap-1">
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[28px]">用户管理</h1>
+        <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有用户账户、角色和权限</p>
       </div>
-      <div class="flex items-center gap-2.5">
-        <VButton size="sm">
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <VButton size="sm" class="!h-8 !w-8 !p-0 sm:!h-auto sm:!w-auto sm:!px-3">
           <template #icon>
-            <Icon icon="ri:download-2-line" class="h-full w-full" />
+            <Icon icon="ri:download-2-line" class="h-4 w-4" />
           </template>
-          导出
+          <span class="hidden sm:inline">导出</span>
         </VButton>
-        <VButton type="primary" size="sm" @click="openCreate">
+        <VButton type="primary" size="sm" class="!h-8 !w-8 !p-0 sm:!h-auto sm:!w-auto sm:!px-3" @click="openCreate">
           <template #icon>
-            <Icon icon="ri:user-add-line" class="h-full w-full" />
+            <Icon icon="ri:user-add-line" class="h-4 w-4" />
           </template>
-          添加用户
+          <span class="hidden sm:inline">添加用户</span>
         </VButton>
       </div>
     </header>
 
-    <div class="px-5 pb-8 md:px-8">
+    <div class="px-4 pb-8 sm:px-5 md:px-8">
       <!-- ===== Stat Cards ===== -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <!-- 总用户数 -->
@@ -385,8 +385,8 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
       <VCard class="mt-5" :body-class="['!p-0']">
         <!-- Card Header: 分段筛选 + 搜索 -->
         <template #header>
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div class="apple-segmented">
+          <div class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
               <button
                 type="button"
                 :class="{ active: roleFilter === 'all' }"
@@ -416,19 +416,29 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                 已禁用
               </button>
             </div>
-            <div class="flex items-center gap-2.5">
-              <div class="apple-search" style="width: 220px;">
-                <Icon icon="ri:search-line" class="text-text-quaternary" />
-                <input v-model="keyword" placeholder="搜索用户..." />
+            <div class="flex w-full items-center gap-2 sm:w-auto">
+              <div class="flex-1 sm:w-[220px] sm:flex-none">
+                <div class="apple-search w-full">
+                  <Icon icon="ri:search-line" class="text-text-quaternary" />
+                  <input v-model="keyword" placeholder="搜索用户..." />
+                </div>
               </div>
               <button
                 type="button"
                 title="刷新"
-                class="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white"
+                class="hidden h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:inline-flex"
                 @click="refetch()"
               >
                 <Icon icon="ri:refresh-line" />
                 刷新
+              </button>
+              <button
+                type="button"
+                title="刷新"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:hidden"
+                @click="refetch()"
+              >
+                <Icon icon="ri:refresh-line" class="text-base" />
               </button>
             </div>
           </div>
@@ -438,73 +448,164 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         <VEmpty v-else-if="!filteredUsers.length" title="暂无用户" />
 
         <template v-else>
-          <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th
-                    class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
+          <!-- 桌面端表格 -->
+          <div class="hidden sm:block">
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th
+                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
+                    >
+                      用户
+                    </th>
+                    <th
+                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
+                    >
+                      角色
+                    </th>
+                    <th
+                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
+                    >
+                      状态
+                    </th>
+                    <th
+                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
+                    >
+                      注册时间
+                    </th>
+                    <th
+                      class="whitespace-nowrap border-b border-border px-5 py-3 text-right text-[12px] font-semibold tracking-wide text-text-tertiary"
+                    >
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="u in filteredUsers"
+                    :key="u.id"
+                    class="transition-colors duration-150 hover:bg-white/[0.03]"
                   >
-                    用户
-                  </th>
-                  <th
-                    class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                  >
-                    角色
-                  </th>
-                  <th
-                    class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                  >
-                    状态
-                  </th>
-                  <th
-                    class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                  >
-                    注册时间
-                  </th>
-                  <th
-                    class="whitespace-nowrap border-b border-border px-5 py-3 text-right text-[12px] font-semibold tracking-wide text-text-tertiary"
-                  >
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="u in filteredUsers"
-                  :key="u.id"
-                  class="transition-colors duration-150 hover:bg-white/[0.03]"
-                >
-                  <td class="border-b border-border px-5 py-3.5 align-middle">
-                    <div class="flex items-center gap-3">
-                      <img
-                        v-if="u.avatar"
-                        :src="u.avatar"
-                        :alt="u.username"
-                        class="h-[38px] w-[38px] shrink-0 rounded-full object-cover"
-                      />
-                      <div
-                        v-else
-                        :class="avatarGradient(u.username)"
-                        class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white"
-                      >
-                        {{ avatarInitial(u) }}
-                      </div>
-                      <div class="flex min-w-0 flex-col gap-0.5">
-                        <span class="text-[14px] font-semibold leading-tight text-foreground">
-                          {{ u.display_name || u.username }}
-                        </span>
-                        <span
-                          class="max-w-[220px] truncate text-[12px] leading-tight text-text-tertiary"
+                    <td class="border-b border-border px-5 py-3.5 align-middle">
+                      <div class="flex items-center gap-3">
+                        <img
+                          v-if="u.avatar"
+                          :src="u.avatar"
+                          :alt="u.username"
+                          class="h-[38px] w-[38px] shrink-0 rounded-full object-cover"
+                        />
+                        <div
+                          v-else
+                          :class="avatarGradient(u.username)"
+                          class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white"
                         >
-                          {{ u.email || u.username }}
-                        </span>
+                          {{ avatarInitial(u) }}
+                        </div>
+                        <div class="flex min-w-0 flex-col gap-0.5">
+                          <span class="text-[14px] font-semibold leading-tight text-foreground">
+                            {{ u.display_name || u.username }}
+                          </span>
+                          <span
+                            class="max-w-[220px] truncate text-[12px] leading-tight text-text-tertiary"
+                          >
+                            {{ u.email || u.username }}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td class="border-b border-border px-5 py-3.5 align-middle">
+                    </td>
+                    <td class="border-b border-border px-5 py-3.5 align-middle">
+                      <span
+                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium"
+                        :style="
+                          roleTone(u.role) === 'admin'
+                            ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)', color: 'var(--color-state-error)' }
+                            : { backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)', color: 'var(--color-chart-5)' }
+                        "
+                      >
+                        {{ roleLabel(u.role) }}
+                      </span>
+                    </td>
+                    <td class="border-b border-border px-5 py-3.5 align-middle">
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
+                        style="background-color: color-mix(in srgb, var(--color-accent) 60%, transparent); color: var(--color-state-success);"
+                      >
+                        <VStatusDot state="success" />
+                        活跃
+                      </span>
+                    </td>
+                    <td
+                      class="border-b border-border px-5 py-3.5 align-middle text-[13px] text-text-secondary"
+                      style="font-variant-numeric: tabular-nums;"
+                    >
+                      {{ u.created_at || "—" }}
+                    </td>
+                    <td class="border-b border-border px-5 py-3.5 text-right align-middle">
+                      <div class="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          title="编辑"
+                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
+                          @click="openEdit(u)"
+                        >
+                          <Icon icon="ri:pencil-line" class="text-[16px]" />
+                        </button>
+                        <button
+                          type="button"
+                          title="重置密码"
+                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
+                          @click="openResetPwd(u)"
+                        >
+                          <Icon icon="ri:key-2-line" class="text-[16px]" />
+                        </button>
+                        <button
+                          type="button"
+                          title="删除"
+                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-[var(--color-state-error)]"
+                          @click="confirmDelete(u)"
+                        >
+                          <Icon icon="ri:delete-bin-line" class="text-[16px]" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 移动端卡片列表 -->
+          <div class="sm:hidden user-card-list">
+            <div
+              v-for="u in filteredUsers"
+              :key="u.id"
+              class="user-card border-b border-border px-3 py-3.5 last:border-b-0"
+            >
+              <div class="flex items-start gap-3">
+                <!-- 头像 -->
+                <img
+                  v-if="u.avatar"
+                  :src="u.avatar"
+                  :alt="u.username"
+                  class="h-10 w-10 shrink-0 rounded-full object-cover"
+                />
+                <div
+                  v-else
+                  :class="avatarGradient(u.username)"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+                >
+                  {{ avatarInitial(u) }}
+                </div>
+
+                <!-- 主体 -->
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-foreground">
+                      {{ u.display_name || u.username }}
+                    </span>
                     <span
-                      class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium"
+                      class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
                       :style="
                         roleTone(u.role) === 'admin'
                           ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)', color: 'var(--color-state-error)' }
@@ -513,57 +614,54 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     >
                       {{ roleLabel(u.role) }}
                     </span>
-                  </td>
-                  <td class="border-b border-border px-5 py-3.5 align-middle">
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                      style="background-color: color-mix(in srgb, var(--color-accent) 60%, transparent); color: var(--color-state-success);"
-                    >
-                      <VStatusDot state="success" />
+                    <span class="ml-auto flex items-center gap-1 text-[11px] text-text-tertiary">
+                      <span class="h-1.5 w-1.5 rounded-full bg-state-success"></span>
                       活跃
                     </span>
-                  </td>
-                  <td
-                    class="border-b border-border px-5 py-3.5 align-middle text-[13px] text-text-secondary"
-                    style="font-variant-numeric: tabular-nums;"
-                  >
-                    {{ u.created_at || "—" }}
-                  </td>
-                  <td class="border-b border-border px-5 py-3.5 text-right align-middle">
-                    <div class="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        title="编辑"
-                        class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                        @click="openEdit(u)"
-                      >
-                        <Icon icon="ri:pencil-line" class="text-[16px]" />
-                      </button>
-                      <button
-                        type="button"
-                        title="重置密码"
-                        class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                        @click="openResetPwd(u)"
-                      >
-                        <Icon icon="ri:key-2-line" class="text-[16px]" />
-                      </button>
-                      <button
-                        type="button"
-                        title="删除"
-                        class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-[var(--color-state-error)]"
-                        @click="confirmDelete(u)"
-                      >
-                        <Icon icon="ri:delete-bin-line" class="text-[16px]" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                  <div class="mt-0.5 truncate text-[12px] text-text-tertiary">
+                    {{ u.email || u.username }}
+                  </div>
+                  <div class="mt-1 text-[11px] text-text-quaternary">
+                    注册：{{ u.created_at || "—" }}
+                  </div>
+
+                  <!-- 操作按钮 -->
+                  <div class="mt-2.5 flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="编辑"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+                      @click="openEdit(u)"
+                    >
+                      <Icon icon="ri:pencil-line" class="text-sm" />
+                    </button>
+                    <button
+                      type="button"
+                      title="重置密码"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+                      @click="openResetPwd(u)"
+                    >
+                      <Icon icon="ri:key-2-line" class="text-sm" />
+                    </button>
+                    <button
+                      type="button"
+                      title="删除"
+                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-tertiary transition-colors hover:bg-secondary hover:text-state-error"
+                      @click="confirmDelete(u)"
+                    >
+                      <Icon icon="ri:delete-bin-line" class="text-sm" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div v-if="total > size" class="border-t border-border p-4">
-            <VPagination :page="page" :size="size" :total="total" @update:page="page = $event" />
+          <div v-if="total > size" class="border-t border-border px-3 py-3 sm:px-4 sm:py-4">
+            <div class="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <VPagination :page="page" :size="size" :total="total" @update:page="page = $event" />
+            </div>
           </div>
         </template>
       </VCard>
@@ -666,3 +764,18 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
     </VModal>
   </div>
 </template>
+
+<style scoped>
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  /* 分段 Tab 横向滚动，不显示滚动条 */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+</style>

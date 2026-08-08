@@ -323,7 +323,7 @@ function closeMenus() {
  <Icon icon="ri:book-read-line" class="mr-2 self-center text-xl" />
  </template>
  <template #actions>
- <div class="flex items-center gap-2">
+ <div class="header-actions flex items-center gap-2">
  <VButton size="sm" @click="router.push('/taxonomy')">分类</VButton>
  <VButton size="sm" @click="router.push('/taxonomy')">标签</VButton>
  <VButton size="sm" @click="selectedStatus = 'trashed'; page = 1">回收站</VButton>
@@ -341,25 +341,18 @@ function closeMenus() {
  <VCard :body-class="['!p-0']">
  <!-- 筛选头部（bg-secondary） -->
  <template #header>
- <div class="block w-full bg-secondary px-4 py-3">
- <div class="relative flex flex-col items-start sm:flex-row sm:items-center">
- <div class="mr-4 hidden items-center sm:flex">
- <input
- :checked="checkedAll"
- class="h-4 w-4 rounded border-border-strong text-primary"
- type="checkbox"
- @change="handleCheckAllChange"
- />
- </div>
- <div class="flex w-full flex-1 items-center sm:w-auto">
- <!-- Normal mode -->
- <div v-if="!selectedSlugs.length" class="flex items-center gap-2">
+ <div class="block w-full bg-secondary px-3 py-3 sm:px-4">
+ <div class="relative flex flex-col gap-3">
+ <!-- 搜索框 + 已选标签（移动端全宽，桌面端左对齐） -->
+ <div class="flex w-full flex-wrap items-center gap-2">
+ <div class="w-full sm:w-auto flex-1 sm:flex-none">
  <input
  v-model="keyword"
  placeholder="输入关键词搜索"
  type="text"
- class="apple-input w-48 py-1.5"
+ class="apple-input w-full py-1.5 sm:w-48"
  />
+ </div>
  <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
  <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
  状态：{{ statusLabel }}
@@ -381,19 +374,34 @@ function closeMenus() {
  清除筛选
  </button>
  </div>
- <!-- Batch mode -->
- <div v-else class="flex items-center gap-3">
+ <!-- 批量选择模式提示 -->
+ <div v-if="selectedSlugs.length" class="flex items-center gap-3">
  <VButton type="danger" size="sm" @click="handleDeleteInBatch">删除</VButton>
  <span class="text-sm text-text-tertiary">已选择 {{ selectedSlugs.length }} 项</span>
  </div>
- </div>
- <div class="mt-4 flex sm:mt-0">
- <div class="flex items-center gap-6">
+ <!-- 筛选下拉按钮行（移动端横向滚动，桌面端直接展示） -->
+ <div class="flex items-center justify-between gap-2">
+ <div class="filter-scroll flex items-center gap-2 sm:gap-6">
  <FilterDropdown v-model="selectedStatus" :items="statusItems" label="状态" @change="handleFilterChange" />
  <FilterDropdown v-model="selectedCategory" :items="categoryItems" label="分类" @change="handleFilterChange" />
  <FilterDropdown v-model="selectedTag" :items="tagItems" label="标签" @change="handleFilterChange" />
  <FilterDropdown v-model="selectedSort" :items="sortItems" label="排序" @change="handleFilterChange" />
- <div class="group cursor-pointer rounded p-1 hover:bg-accent" @click="refetch()">
+ </div>
+ <div class="flex items-center gap-2">
+ <div class="hidden sm:flex">
+ <input
+ :checked="checkedAll"
+ class="h-4 w-4 rounded border-border-strong text-primary"
+ type="checkbox"
+ @change="handleCheckAllChange"
+ />
+ <span class="ml-2 text-xs text-text-tertiary">全选</span>
+ </div>
+ <div
+ class="cursor-pointer rounded p-1 hover:bg-accent"
+ title="刷新"
+ @click="refetch()"
+ >
  <Icon
  icon="ri:refresh-line"
  :class="{ 'animate-spin text-foreground': isFetching }"
@@ -426,8 +434,9 @@ function closeMenus() {
  </VEmpty>
  </Transition>
 
- <!-- Entity list -->
+ <!-- Entity list：桌面端表格 -->
  <Transition v-else appear name="fade">
+ <div class="hidden sm:block">
  <VEntityContainer>
  <VEntity v-for="post in posts" :key="post.slug" :is-selected="checkSelection(post.slug)">
  <template #checkbox>
@@ -456,7 +465,6 @@ function closeMenus() {
  >
  {{ post.title || post.slug }}
  </span>
- <!-- 小绿点：已保存但未发布的草稿头（对齐 Halo） -->
  <span
  v-if="post.has_draft && post.status === 'published'"
  class="group/dot relative flex shrink-0 items-center"
@@ -500,7 +508,6 @@ function closeMenus() {
  </VEntityField>
  </template>
  <template #end>
- <!-- 作者头像（单作者：站长，对齐 Halo 作者列） -->
  <VEntityField v-if="ownerAvatar">
  <template #description>
  <span class="group/avatar relative flex items-center">
@@ -582,11 +589,138 @@ function closeMenus() {
  </template>
  </VEntity>
  </VEntityContainer>
+ </div>
+
+ <!-- 移动端卡片列表 -->
+ <div class="sm:hidden post-card-list">
+ <div
+ v-for="post in posts"
+ :key="post.slug"
+ class="post-card"
+ :class="{ 'is-selected': checkSelection(post.slug) }"
+ @click="router.push(`/posts/edit/${post.slug}`)"
+ >
+ <!-- 选择框 + 封面 + 标题 -->
+ <div class="flex gap-3">
+ <div class="flex shrink-0 items-start pt-1">
+ <input
+ :checked="checkSelection(post.slug)"
+ class="h-4 w-4 rounded border-border-strong text-primary"
+ type="checkbox"
+ @click.stop
+ @change="toggleSelection(post.slug)"
+ />
+ </div>
+ <div v-if="post.cover" class="shrink-0">
+ <div class="w-16 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
+ <img class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
+ </div>
+ </div>
+ <div class="min-w-0 flex-1">
+ <div class="flex items-start gap-1">
+ <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="mt-0.5 shrink-0 text-xs text-state-error" />
+ <h3 class="line-clamp-2 flex-1 text-sm font-medium text-foreground">
+ {{ post.title || post.slug }}
+ </h3>
+ </div>
+ <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
+ <span v-if="post.status === 'draft'" class="inline-flex items-center gap-1">
+ <span class="h-1.5 w-1.5 rounded-full bg-state-warning"></span>
+ 草稿
+ </span>
+ <span v-else-if="post.status === 'trashed'" class="inline-flex items-center gap-1">
+ <span class="h-1.5 w-1.5 rounded-full bg-state-error"></span>
+ 已删除
+ </span>
+ <span v-else class="inline-flex items-center gap-1">
+ <span class="h-1.5 w-1.5 rounded-full bg-state-success"></span>
+ 已发布
+ </span>
+ <span v-if="post.has_draft && post.status === 'published'" class="text-state-success">
+ · 有未发布更改
+ </span>
+ </div>
+ </div>
+ </div>
+
+ <!-- 元信息：分类/标签/浏览量 -->
+ <div class="mt-2 pl-7">
+ <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
+ <span v-if="post.category">
+ {{ post.category }}
+ </span>
+ <span>{{ post.views || 0 }} 阅读</span>
+ <span>{{ formatDate(post.created_at) }}</span>
+ </div>
+ <div v-if="parseTags(post.tags).length" class="mt-1.5 flex flex-wrap gap-1">
+ <span
+ v-for="tag in parseTags(post.tags)"
+ :key="tag"
+ class="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-text-tertiary"
+ >
+ #{{ tag }}
+ </span>
+ </div>
+ </div>
+
+ <!-- 底部操作栏 -->
+ <div class="mt-2 flex items-center justify-end gap-1 border-t border-border pt-2 pl-7">
+ <button
+ class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
+ title="在前台打开"
+ @click.stop="openPost(post.slug)"
+ >
+ <Icon icon="ri:external-link-line" class="text-base" />
+ </button>
+ <button
+ class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
+ title="编辑"
+ @click.stop="router.push(`/posts/edit/${post.slug}`)"
+ >
+ <Icon icon="ri:edit-2-line" class="text-base" />
+ </button>
+ <button
+ class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
+ title="更多"
+ @click.stop="menuOpenSlug = menuOpenSlug === post.slug ? null : post.slug"
+ >
+ <Icon icon="ri:more-fill" class="text-base" />
+ </button>
+ </div>
+
+ <!-- 更多菜单 -->
+ <Transition name="fade">
+ <div
+ v-if="menuOpenSlug === post.slug"
+ class="absolute right-3 bottom-12 z-30 w-32 rounded-base border border-border bg-card p-2 shadow-xl"
+ @click.stop
+ >
+ <template v-if="isTrashed">
+ <VButton block type="secondary" size="sm" @click="handleRestore(post)">恢复</VButton>
+ <div class="mt-2">
+ <VButton block type="danger" size="sm" @click="handlePurge(post)">彻底删除</VButton>
+ </div>
+ </template>
+ <template v-else>
+ <VButton block type="secondary" size="sm" @click="menuOpenSlug = null; router.push(`/posts/edit/${post.slug}`)">
+ 编辑
+ </VButton>
+ <div class="mt-2">
+ <VButton block type="secondary" size="sm" @click="handleCreateShare(post)">分享链接</VButton>
+ </div>
+ <div class="mt-2">
+ <VButton block type="danger" size="sm" @click="handleDelete(post)">删除</VButton>
+ </div>
+ </template>
+ </div>
+ </Transition>
+ </div>
+ </div>
  </Transition>
 
  <!-- Footer: pagination -->
  <template #footer>
- <div class="bg-card sm:flex sm:items-center sm:justify-end">
+ <div class="post-pagination bg-card sm:flex sm:items-center sm:justify-end">
  <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
  </div>
  </template>
@@ -645,5 +779,179 @@ function closeMenus() {
 .fade-enter-from,
 .fade-leave-to {
  opacity: 0;
+}
+
+/* ===== 头部操作按钮：移动端横向滚动 ===== */
+.header-actions {
+ flex-wrap: nowrap;
+}
+
+/* 移动端筛选按钮横向滚动（不显示滚动条） */
+.filter-scroll {
+ overflow-x: auto;
+ -webkit-overflow-scrolling: touch;
+ scrollbar-width: none;
+ flex-shrink: 0;
+}
+.filter-scroll::-webkit-scrollbar {
+ display: none;
+}
+
+/* ===== 移动端卡片列表 ===== */
+.post-card-list {
+ padding: 0;
+}
+.post-card {
+ position: relative;
+ padding: 14px 16px;
+ border-bottom: 1px solid var(--color-border);
+ cursor: pointer;
+ transition: background-color 0.15s var(--ease-standard);
+}
+.post-card:active {
+ background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+.post-card.is-selected {
+ background: var(--color-secondary);
+}
+.post-card:last-child {
+ border-bottom: none;
+}
+.post-card h3 {
+ margin: 0;
+ line-height: 1.4;
+ word-break: break-word;
+}
+/* 确保卡片内 line-clamp 生效 */
+.post-card :deep(.line-clamp-2) {
+ display: -webkit-box;
+ -webkit-line-clamp: 2;
+ -webkit-box-orient: vertical;
+ overflow: hidden;
+}
+
+/* ===== 移动端（S 断点：< 640px） ===== */
+@media (max-width: 640px) {
+ /* 头部操作按钮：横向滚动防止换行 */
+ .header-actions {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  max-width: 70vw;
+ }
+ .header-actions::-webkit-scrollbar {
+  display: none;
+ }
+
+ /* 筛选区压缩 */
+ .filter-scroll {
+  gap: 10px !important;
+ }
+
+ /* 卡片更紧凑 */
+ .post-card {
+  padding: 12px 14px;
+ }
+ .post-card :deep(.line-clamp-2) {
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+ }
+
+ /* 分页居中减少边距 */
+ .post-pagination {
+  justify-content: center !important;
+  padding: 12px 8px !important;
+ }
+}
+
+/* ===== 超小屏（XS 断点：< 420px） ===== */
+@media (max-width: 420px) {
+ /* 筛选头部进一步压缩 */
+ :deep(.card-header > div) {
+  padding: 10px 12px !important;
+  gap: 10px !important;
+ }
+
+ /* 搜索框更紧凑 */
+ :deep(.apple-input) {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  font-size: 13px !important;
+ }
+
+ /* 筛选标签更紧凑 */
+ :deep(.filter-tag) {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+ }
+
+ /* 批量操作栏 */
+ .post-card-list + div,
+ .card-body > div:first-child {
+  gap: 8px !important;
+ }
+ :deep(.v-button.size-sm) {
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+ }
+
+ /* 卡片极致紧凑 */
+ .post-card {
+  padding: 10px 12px;
+ }
+ .post-card h3 {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+ }
+
+ /* 卡片封面缩小 */
+ .post-card > div:first-child > div:nth-child(2) > div {
+  width: 56px !important;
+ }
+
+ /* 元信息字体缩小 */
+ .post-card .mt-2 {
+  margin-top: 8px !important;
+ }
+ .post-card .text-xs {
+  font-size: 11px !important;
+ }
+
+ /* 标签 badge 缩小 */
+ .post-card .rounded-md {
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+ }
+
+ /* 底部操作栏按钮缩小 */
+ .post-card .mt-2.border-t {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+ }
+ .post-card .h-7 {
+  height: 26px !important;
+  width: 26px !important;
+ }
+ .post-card .text-base {
+  font-size: 14px !important;
+ }
+
+ /* 分页更紧凑 */
+ .post-pagination {
+  padding: 10px 6px !important;
+ }
+
+ /* 分享弹窗适配 */
+ :deep(.modal-mask .modal-content) {
+  width: calc(100vw - 32px) !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+ }
+ :deep(.modal-body) {
+  padding: 16px !important;
+ }
+ :deep(.modal-footer) {
+  padding: 12px 16px !important;
+ }
 }
 </style>

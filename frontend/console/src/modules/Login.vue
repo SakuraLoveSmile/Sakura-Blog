@@ -718,4 +718,80 @@ function setBtnRef(el: any, provider: string) {
     transform: translateX(-50%) translateY(calc(-100% + 4px)) scale(0.9);
   }
 }
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 400px) {
+  .login-page {
+    padding: 12px;
+  }
+
+  .login-card {
+    padding: 28px 22px;
+    border-radius: 14px;
+  }
+
+  .login-header {
+    margin-bottom: 24px;
+  }
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+  .logo-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .login-title {
+    font-size: 20px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+    margin-top: 6px !important;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  .apple-input {
+    height: 42px;
+    font-size: 14px;
+  }
+
+  .btn-primary {
+    height: 42px;
+    font-size: 14px;
+  }
+
+  .divider {
+    margin: 20px 0;
+    gap: 12px;
+  }
+
+  .social-buttons {
+    gap: 10px;
+  }
+
+  .social-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .social-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .totp-input {
+    font-size: 16px;
+    letter-spacing: 0.4em;
+  }
+
+  .back-to-site {
+    margin-top: 20px;
+  }
+}
 </style>

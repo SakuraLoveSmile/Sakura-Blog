@@ -133,8 +133,6 @@ onMounted(async () => {
  }
 });
 
-// 发布框：聚焦后展开；字数统计（非空白 rune）
-const composerFocused = ref(false);
 const charCount = computed(() => {
  let n = 0;
  for (const ch of newContent.value) {
@@ -439,9 +437,10 @@ function closeMenus() {
         <h1 class="moments-page-title">瞬间</h1>
       </div>
       <div class="flex items-center gap-3">
-        <button type="button" class="moments-btn-primary" @click="focusComposer">
-          <Icon icon="ri:add-line" class="text-[15px]" />
-          <span>发布瞬间</span>
+        <button type="button" class="moments-btn-primary !h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-4 sm:!text-[13px]" @click="focusComposer">
+          <Icon icon="ri:add-line" class="text-sm sm:text-[15px]" />
+          <span class="sm:hidden">发布</span>
+          <span class="hidden sm:inline">发布瞬间</span>
         </button>
       </div>
     </header>
@@ -468,11 +467,9 @@ function closeMenus() {
               <textarea
                 ref="composerBox"
                 v-model="newContent"
-                :rows="composerFocused || newContent ? 4 : 2"
+                rows="3"
                 placeholder="分享此刻的想法…（可粘贴图片直传）"
-                class="moment-textarea w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-foreground outline-none transition-all placeholder:text-text-quaternary"
-                @focus="composerFocused = true"
-                @blur="composerFocused = false"
+                class="moment-textarea w-full resize-none border-0 bg-transparent px-0 py-1.5 text-[14px] leading-[1.6] text-foreground outline-none placeholder:text-text-quaternary"
                 @keydown="onComposerKeydown"
                 @paste="onPaste('new', $event)"
               ></textarea>
@@ -1273,6 +1270,73 @@ function closeMenus() {
   .apple-segmented :deep(button) {
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  /* 时间线更紧凑 */
+  .moment-item {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .moment-timeline-dot {
+    width: 20px;
+    padding-top: 18px;
+  }
+  .moment-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* 卡片更紧凑 */
+  .moment-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .moment-header {
+    gap: 8px;
+  }
+  .moment-content {
+    font-size: 13.5px;
+    margin-top: 10px;
+  }
+
+  /* 头像缩小 */
+  .moment-header img.h-10,
+  .moment-header .h-10 {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* 操作栏更紧凑 */
+  .moment-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    gap: 14px;
+  }
+  .moment-action {
+    font-size: 11px;
+    gap: 4px;
+  }
+  .moment-action :deep(svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 日期分隔线更紧凑 */
+  .date-separator {
+    padding: 4px 0 6px;
+  }
+  .date-separator-text {
+    font-size: 11px;
+    padding: 2px 10px;
+  }
+
+  /* 图片网格 gap 缩小 */
+  .moment-images {
+    gap: 4px;
+    margin-top: 10px;
+  }
+  .moment-images .aspect-square {
+    border-radius: 8px;
   }
 }
 </style>

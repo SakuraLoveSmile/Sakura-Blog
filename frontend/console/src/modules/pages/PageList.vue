@@ -1624,4 +1624,123 @@ function getStatusClass(p: PageItem) {
     gap: 12px;
   }
 }
+
+/* ===== 移动端进一步紧凑优化（< 640px） ===== */
+@media (max-width: 640px) {
+  /* 页头更紧凑 */
+  .apple-page-header {
+    padding: 16px !important;
+  }
+  .header-title {
+    font-size: 22px;
+  }
+  .header-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .apple-new-btn {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .apple-new-btn .btn-icon {
+    font-size: 16px;
+  }
+
+  /* 内容区 padding 缩小 */
+  .content-wrap {
+    padding: 12px !important;
+  }
+
+  /* 筛选下拉按钮更紧凑 */
+  .filter-btn {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .toggle-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* 列表行更紧凑 */
+  .page-row {
+    padding: 14px 16px !important;
+    gap: 8px !important;
+  }
+  .page-icon-box {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+  .page-title {
+    font-size: 14px;
+  }
+  .page-meta {
+    font-size: 11.5px;
+    margin-top: 4px;
+  }
+  .system-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .page-date {
+    font-size: 11.5px;
+  }
+
+  /* 行右侧状态/日期/操作：移动端在卡片底部横排 */
+  .row-right {
+    width: 100%;
+    justify-content: flex-start !important;
+    gap: 8px;
+    padding-top: 10px;
+    margin-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+  .status-text {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+  .row-actions {
+    margin-left: auto;
+  }
+
+  /* 网格视图卡片更紧凑 */
+  .page-grid-view {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .grid-card {
+    border-radius: 12px;
+  }
+  .grid-cover {
+    height: 120px;
+  }
+  .grid-body {
+    padding: 12px;
+  }
+  .grid-title {
+    font-size: 14px;
+  }
+  .grid-meta {
+    font-size: 11px;
+  }
+  .grid-actions {
+    height: 40px;
+    padding: 0 12px;
+  }
+  .grid-action {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* 分页更紧凑 */
+  .pagination-bar {
+    padding: 12px 16px !important;
+  }
+}
 </style>

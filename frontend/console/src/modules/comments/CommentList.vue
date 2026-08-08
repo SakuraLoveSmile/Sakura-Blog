@@ -290,47 +290,48 @@ function closeMenus() {
   <div class="min-h-full" @click="closeMenus">
     <!-- ===== Page Header ===== -->
     <header
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-5 py-5 backdrop-blur-xl md:px-8"
+      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-4 backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-5 md:px-8"
       style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
-      <div class="flex flex-col gap-1">
-        <h1 class="text-[28px] font-bold leading-tight tracking-tight text-white">评论管理</h1>
-        <p class="text-[13px] text-text-tertiary">管理所有访客评论，审核、回复或删除不当内容</p>
+      <div class="flex flex-col gap-0.5 sm:gap-1">
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[28px]">评论管理</h1>
+        <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有访客评论，审核、回复或删除不当内容</p>
       </div>
-      <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
         <button
           type="button"
           title="刷新"
-          class="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:h-9 sm:w-9 sm:rounded-[10px]"
           @click="refetch()"
         >
           <Icon
             icon="ri:refresh-line"
             :class="{ 'animate-spin text-foreground': isFetching }"
-            class="text-[18px]"
+            class="text-base sm:text-[18px]"
           />
         </button>
         <button
           type="button"
-          class="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-[13px] font-semibold text-white transition-colors hover:border-border-strong hover:bg-secondary"
+          class="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-white transition-colors hover:border-border-strong hover:bg-secondary sm:h-9 sm:gap-1.5 sm:px-4 sm:text-[13px]"
           :class="{ '!border-primary !bg-primary/15 !text-primary': batchMode }"
           @click="batchMode = !batchMode"
         >
-          <Icon icon="ri:list-check-2" class="text-[15px]" />
-          {{ batchMode ? "退出批量" : "批量操作" }}
+          <Icon icon="ri:list-check-2" class="text-sm sm:text-[15px]" />
+          <span class="hidden sm:inline">{{ batchMode ? "退出批量" : "批量操作" }}</span>
         </button>
         <button
           type="button"
-          class="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-5 text-[13px] font-semibold text-white shadow-[0_2px_8px_color-mix(in srgb, var(--color-primary) 30%, transparent),0_1px_2px_color-mix(in srgb, var(--color-primary) 20%, transparent)] transition-all hover:-translate-y-px hover:bg-[#1a8fff] active:translate-y-0"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-[0_2px_8px_color-mix(in srgb, var(--color-primary) 30%, transparent),0_1px_2px_color-mix(in srgb, var(--color-primary) 20%, transparent)] transition-all hover:-translate-y-px hover:bg-[#1a8fff] active:translate-y-0 sm:h-9 sm:w-auto sm:gap-1.5 sm:px-5 sm:text-[13px] sm:font-semibold"
+          title="评论设置"
           @click="router.push({ path: '/settings', query: { tab: 'comments' } })"
         >
-          <Icon icon="ri:settings-3-line" class="text-[15px]" />
-          评论设置
+          <Icon icon="ri:settings-3-line" class="text-base sm:text-[15px]" />
+          <span class="hidden sm:inline">评论设置</span>
         </button>
       </div>
     </header>
 
-    <div class="px-5 pb-8 md:px-8">
+    <div class="px-4 pb-8 sm:px-5 md:px-8">
       <!-- ===== Stat Cards ===== -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div
@@ -371,8 +372,8 @@ function closeMenus() {
       <VCard class="mt-5" :body-class="['!p-0']">
         <!-- Card Header: 分段筛选 + 搜索 + 批量操作条 -->
         <template #header>
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div class="apple-segmented">
+          <div class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
               <button
                 v-for="tab in statusTabs"
                 :key="tab.key"
@@ -394,12 +395,14 @@ function closeMenus() {
               </button>
             </div>
 
-            <div class="flex items-center gap-2.5">
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
               <!-- 批量操作条：选中后显示 -->
               <template v-if="batchMode && selectedIds.length">
-                <VButton type="secondary" size="sm" @click="handleApproveInBatch">批量通过</VButton>
-                <VButton type="danger" size="sm" @click="handleDeleteInBatch">批量删除</VButton>
-                <span class="text-xs text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <VButton type="secondary" size="sm" @click="handleApproveInBatch">批量通过</VButton>
+                  <VButton type="danger" size="sm" @click="handleDeleteInBatch">批量删除</VButton>
+                  <span class="text-xs text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
+                </div>
               </template>
               <div v-else-if="batchMode" class="flex items-center gap-2">
                 <input
@@ -418,7 +421,7 @@ function closeMenus() {
                 </button>
               </div>
 
-              <div class="apple-search" style="width: 240px;">
+              <div class="apple-search flex-1 sm:w-60 sm:flex-none">
                 <Icon icon="ri:search-line" class="text-text-quaternary" />
                 <input v-model="keyword" placeholder="搜索评论内容、作者..." />
               </div>
@@ -442,14 +445,14 @@ function closeMenus() {
             <div
               v-for="cm in filteredComments"
               :key="cm.id"
-              class="border-b border-border px-5 py-5 transition-colors last:border-b-0 hover:bg-white/[0.02]"
+              class="border-b border-border px-3 py-3.5 transition-colors last:border-b-0 hover:bg-white/[0.02] sm:px-5 sm:py-5"
             >
-              <div class="flex items-start gap-3.5">
+              <div class="flex items-start gap-3 sm:gap-3.5">
                 <!-- 批量复选框 -->
                 <input
                   v-if="batchMode"
                   :checked="checkSelection(cm.id)"
-                  class="mt-1.5 h-4 w-4 shrink-0 rounded border-border-strong text-primary"
+                  class="mt-1 h-4 w-4 shrink-0 rounded border-border-strong text-primary sm:mt-1.5"
                   type="checkbox"
                   @change="toggleSelection(cm.id)"
                 />
@@ -459,50 +462,53 @@ function closeMenus() {
                   v-if="cm.avatar"
                   :src="cm.avatar"
                   :alt="cm.nick"
-                  class="h-[42px] w-[42px] shrink-0 rounded-full border border-border object-cover"
+                  class="h-9 w-9 shrink-0 rounded-full border border-border object-cover sm:h-[42px] sm:w-[42px]"
                 />
                 <div
                   v-else
-                  :class="['flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full text-[15px] font-semibold text-white', avatarGradient(cm.nick || cm.email)]"
+                  :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white sm:h-[42px] sm:w-[42px] sm:text-[15px]', avatarGradient(cm.nick || cm.email)]"
                 >
                   {{ avatarInitial(cm) }}
                 </div>
 
                 <!-- 主体 -->
                 <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-2.5">
-                    <span class="text-[14px] font-semibold text-white">{{ cm.nick }}</span>
+                  <div class="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+                    <span class="text-sm font-semibold text-white sm:text-[14px]">{{ cm.nick }}</span>
                     <span
                       v-if="cm.is_admin"
-                      class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary"
+                      class="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary sm:px-2"
                     >
                       博主
                     </span>
-                    <span v-if="cm.email" class="truncate text-[12px] text-text-tertiary">{{ cm.email }}</span>
                     <span
                       class="comment-status-badge"
                       :class="statusInfo(cm.status).cls"
                     >
                       {{ statusInfo(cm.status).label }}
                     </span>
-                    <span class="ml-auto shrink-0 text-[12px] text-text-tertiary">{{ cm.date }}</span>
+                    <span class="ml-auto shrink-0 text-[11px] text-text-tertiary sm:text-[12px]">{{ cm.date }}</span>
                   </div>
+                  <div v-if="cm.email" class="mt-0.5 text-[11px] text-text-tertiary sm:hidden">
+                    {{ cm.email }}
+                  </div>
+                  <span v-if="cm.email" class="hidden truncate text-[12px] text-text-tertiary sm:inline">{{ cm.email }}</span>
 
                   <p v-if="cm.reply_nick" class="mt-1.5 text-xs text-text-quaternary">
                     回复 @{{ cm.reply_nick }}
                   </p>
-                  <p class="mt-2 line-clamp-3 text-[14px] leading-[1.6] text-text-secondary">
+                  <p class="mt-2 line-clamp-3 text-sm leading-[1.6] text-text-secondary sm:text-[14px]">
                     {{ cm.content }}
                   </p>
 
                   <div v-if="cm.page_key" class="mt-2.5 flex items-center gap-1.5 text-[12px]">
                     <span class="text-text-tertiary">评论于：</span>
-                    <span class="cursor-pointer font-medium text-primary transition-opacity hover:opacity-75">
+                    <span class="cursor-pointer truncate font-medium text-primary transition-opacity hover:opacity-75">
                       {{ cm.page_key }}
                     </span>
                   </div>
 
-                  <div class="mt-3.5 flex flex-wrap items-center gap-2">
+                  <div class="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-3.5 sm:gap-2">
                     <button
                       v-if="cm.status === 'pending'"
                       type="button"
@@ -528,16 +534,18 @@ function closeMenus() {
         </Transition>
 
         <template #footer>
-          <div class="border-t border-border bg-black/15 px-5 py-4 sm:flex sm:items-center sm:justify-between">
-            <span class="text-[13px] text-text-tertiary">
-              共 <strong class="font-semibold text-foreground">{{ total }}</strong> 条评论
-            </span>
-            <VPagination
-              v-model:page="page"
-              v-model:size="size"
-              :total="total"
-              :size-options="[20, 30, 50, 100]"
-            />
+          <div class="border-t border-border bg-black/15 px-3 py-3 sm:px-5 sm:py-4">
+            <div class="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span class="text-xs text-text-tertiary sm:text-[13px]">
+                共 <strong class="font-semibold text-foreground">{{ total }}</strong> 条评论
+              </span>
+              <VPagination
+                v-model:page="page"
+                v-model:size="size"
+                :total="total"
+                :size-options="[20, 30, 50, 100]"
+              />
+            </div>
           </div>
         </template>
       </VCard>
@@ -654,5 +662,34 @@ function closeMenus() {
 .action-btn.delete:hover {
   background-color: color-mix(in srgb, var(--color-state-error) 20%, transparent);
   border-color: color-mix(in srgb, var(--color-state-error) 25%, transparent);
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  /* 分段 Tab 横向滚动，不显示滚动条 */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 操作按钮更紧凑 */
+  .action-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  .action-btn :deep(svg) {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* 状态徽章更紧凑 */
+  .comment-status-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
 }
 </style>

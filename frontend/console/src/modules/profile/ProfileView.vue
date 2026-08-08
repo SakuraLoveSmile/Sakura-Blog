@@ -575,3 +575,50 @@ const btnClsDanger =
  </div>
  </div>
 </template>
+
+<style scoped>
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  .max-w-2xl.space-y-8 {
+    padding: 12px 14px !important;
+    gap: 16px !important;
+  }
+
+  /* 卡片标题更紧凑 */
+  :deep(.card-header) {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+  :deep(.card-body) {
+    padding: 14px !important;
+  }
+
+  /* 表单字段更紧凑 */
+  .flex.flex-wrap.gap-3 {
+    gap: 10px;
+  }
+
+  /* 2FA 密钥和恢复码字体缩小 */
+  .font-mono,
+  .break-all {
+    font-size: 11px !important;
+    word-break: break-all;
+  }
+
+  /* API Token 卡片 */
+  .rounded-lg.px-4.py-2 {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* 按钮更紧凑 */
+  button {
+    font-size: 12px !important;
+  }
+
+  /* 代码片段 */
+  code {
+    font-size: 10.5px !important;
+  }
+}
+</style>

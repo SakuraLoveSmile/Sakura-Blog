@@ -226,15 +226,15 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <p class="mb-3 text-sm text-text-tertiary">
  {{ sources.length }} 个订阅 / {{ totalCount }} 篇缓存 / {{ totalUnread }} 篇未读
  </p>
- <div class="mb-3 flex gap-0.5 rounded-lg bg-secondary p-0.5">
+ <div class="mb-3 flex gap-0.5 rounded-lg bg-secondary p-0.5 filter-tabs">
  <button
- v-for="t in filterTabs"
- :key="t.key"
- class="flex-1 rounded-md py-1.5 text-sm transition-colors"
- :class="filter === t.key ? 'bg-card font-medium text-foreground shadow-sm ' : 'text-text-tertiary hover:text-text-secondary '"
- @click="setFilter(t.key)"
+  v-for="t in filterTabs"
+  :key="t.key"
+  class="flex-1 rounded-md py-1.5 text-sm transition-colors"
+  :class="filter === t.key ? 'bg-card font-medium text-foreground shadow-sm ' : 'text-text-tertiary hover:text-text-secondary '"
+  @click="setFilter(t.key)"
  >{{ t.label }}</button>
- </div>
+</div>
  <div class="flex flex-wrap gap-2">
  <button
  :disabled="refreshing"
@@ -296,8 +296,8 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <p v-if="a.summary" class="mt-1.5 line-clamp-2 text-sm text-text-tertiary">{{ a.summary }}</p>
  <div class="mt-2">
  <span
- class="rounded px-1.5 py-0.5 text-xs"
- :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/10 text-secondary bg-primary/15 text-primary'"
+  class="rounded px-1.5 py-0.5 text-xs feed-badge"
+  :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/10 text-secondary bg-primary/15 text-primary'"
  >{{ a.read ?"已读" :"未读" }}</span>
  </div>
  </div>
@@ -305,3 +305,77 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  </div>
  </div>
 </template>
+
+<style scoped>
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+  /* 订阅源侧边栏更紧凑 */
+  aside.rounded-xl {
+    padding: 10px !important;
+  }
+  aside .text-sm.font-semibold {
+    font-size: 13px;
+  }
+  aside .rounded-lg {
+    padding: 8px !important;
+  }
+  aside .text-sm {
+    font-size: 12.5px;
+  }
+  aside .text-xs {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    gap: 12px !important;
+  }
+
+  /* 概览卡更紧凑 */
+  section > .rounded-xl:first-child {
+    padding: 12px !important;
+  }
+  .text-base.font-semibold {
+    font-size: 14px !important;
+  }
+  .text-sm.text-text-tertiary {
+    font-size: 12px;
+  }
+  /* 分段筛选条（全部/未读/已读） */
+  .filter-tabs {
+    margin-bottom: 8px !important;
+  }
+  .filter-tabs button {
+    font-size: 12px;
+    padding: 6px 8px !important;
+  }
+
+  /* 操作按钮：文字更小 */
+  .flex.flex-wrap.gap-2 button {
+    font-size: 11px;
+    padding: 5px 10px !important;
+    height: 32px;
+  }
+
+  /* 文章列表项更紧凑 */
+  section .space-y-4 {
+    gap: 10px !important;
+  }
+  section .space-y-4 .rounded-xl {
+    padding: 12px !important;
+  }
+  section .space-y-4 .text-base {
+    font-size: 13.5px !important;
+  }
+  section .space-y-4 .text-sm.text-text-tertiary {
+    font-size: 12px;
+  }
+
+  /* 已读/未读徽章 */
+  .feed-badge {
+    font-size: 10.5px !important;
+    padding: 2px 8px !important;
+  }
+}
+</style>

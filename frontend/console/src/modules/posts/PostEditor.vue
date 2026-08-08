@@ -368,7 +368,7 @@ function handleDiscardDraft() {
   <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-background': fullscreen }">
     <!-- 紧凑 sticky 毛玻璃页头 -->
     <header
-      class="sticky top-0 z-50 flex items-center gap-4 px-7 py-3"
+      class="editor-header sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 sm:gap-4 sm:px-7 sm:py-3"
       style="background: color-mix(in srgb, #000 75%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--color-border);"
     >
       <button
@@ -379,14 +379,14 @@ function handleDiscardDraft() {
       >
         <Icon icon="ri:arrow-left-s-line" class="text-2xl" />
       </button>
-      <h1 class="text-[17px] font-semibold tracking-tight text-foreground">
+      <h1 class="text-base font-semibold tracking-tight text-foreground sm:text-[17px]">
         {{ isEdit ? '编辑文章' : '新建文章' }}
       </h1>
       <div class="flex-1"></div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- 编辑器选择（富文本/Markdown） -->
         <div
-          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-border-strong"
+          class="relative hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-border-strong sm:flex"
         >
           <Icon icon="ri:edit-box-line" class="text-base text-text-quaternary" />
           <select
@@ -403,10 +403,10 @@ function handleDiscardDraft() {
             class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
           />
         </div>
-        <!-- Markdown 模式下的视图三态切换（与工具栏同步） -->
+        <!-- Markdown 模式下的视图三态切换（与工具栏同步，桌面端显示） -->
         <div
           v-if="editorKind === 'markdown'"
-          class="relative flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary"
+          class="relative hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary sm:flex"
         >
           <select
             :value="editorMode"
@@ -421,36 +421,37 @@ function handleDiscardDraft() {
             class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
           />
         </div>
-        <!-- 预览（ghost） -->
+        <!-- 预览（移动端仅图标） -->
         <button
           type="button"
-          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-foreground"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:h-[34px] sm:w-auto sm:gap-1.5 sm:rounded-[9px] sm:px-3.5 sm:text-[13px] sm:font-medium"
           :disabled="previewing"
           @click="handlePreview"
         >
-          <Icon icon="ri:eye-line" class="text-[15px]" />
-          预览
+          <Icon icon="ri:eye-line" class="text-base sm:text-[15px]" />
+          <span class="hidden sm:inline">预览</span>
         </button>
-        <!-- 保存草稿（secondary） -->
+        <!-- 保存草稿（移动端仅图标） -->
         <button
           type="button"
-          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] border border-border bg-secondary px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground transition-colors hover:bg-accent disabled:opacity-50 sm:h-[34px] sm:w-auto sm:gap-1.5 sm:rounded-[9px] sm:px-3.5 sm:text-[13px] sm:font-medium"
           :disabled="saving"
           @click="handleSave"
+          :title="saving ? '保存中…' : '保存草稿'"
         >
-          <Icon icon="ri:save-line" class="text-[15px]" />
-          {{ saving ? '保存中…' : '保存草稿' }}
+          <Icon icon="ri:save-line" class="text-base sm:text-[15px]" />
+          <span class="hidden sm:inline">{{ saving ? '保存中…' : '保存草稿' }}</span>
         </button>
-        <!-- 发布（primary） -->
+        <!-- 发布（primary，移动端保持文字但更紧凑） -->
         <button
           type="button"
-          class="inline-flex h-[34px] items-center gap-1.5 rounded-[9px] px-4 text-[13px] font-semibold text-white transition-all"
+          class="inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold text-white transition-all sm:h-[34px] sm:gap-1.5 sm:rounded-[9px] sm:px-4 sm:text-[13px]"
           style="background: var(--color-primary); box-shadow: 0 0 24px color-mix(in srgb, var(--color-primary) 20%, transparent);"
           :disabled="publishing"
           @click="handlePublish"
         >
-          <Icon icon="ri:send-plane-fill" class="text-[15px]" />
-          {{ publishing ? '发布中…' : '发布' }}
+          <Icon icon="ri:send-plane-fill" class="text-sm sm:text-[15px]" />
+          <span>{{ publishing ? '发布中…' : '发布' }}</span>
         </button>
       </div>
     </header>
@@ -458,12 +459,12 @@ function handleDiscardDraft() {
     <!-- 草稿头条幅：令牌化绿色提示条 -->
     <div
       v-if="hasDraft && isPublishedPost"
-      class="mx-7 mt-4 flex items-center justify-between gap-3 rounded-lg px-4 py-2 text-sm"
+      class="mx-4 mt-3 flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs sm:mx-7 sm:mt-4 sm:px-4 sm:text-sm"
       style="background: color-mix(in srgb, var(--color-state-success) 12%, transparent); color: var(--color-state-success); border: 1px solid color-mix(in srgb, var(--color-state-success) 20%, transparent);"
     >
-      <span class="flex items-center gap-2">
-        <span class="inline-block h-1.5 w-1.5 rounded-full" style="background: var(--color-state-success);"></span>
-        当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。
+      <span class="flex items-start gap-2 leading-snug">
+        <span class="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full" style="background: var(--color-state-success);"></span>
+        <span>当前有内容已保存，但还未发布。正在编辑的是草稿版本，线上内容不受影响。</span>
       </span>
       <button
         class="shrink-0 text-xs underline opacity-80 transition-opacity hover:opacity-100"
@@ -473,19 +474,18 @@ function handleDiscardDraft() {
       </button>
     </div>
 
-    <!-- 编辑区：左右两栏（左自适应 + 右 320px） -->
-    <div class="flex gap-6 px-7 py-6">
+    <!-- 编辑区：桌面端左右两栏，移动端单列 + 底部抽屉式侧边栏 -->
+    <div class="editor-wrap flex gap-4 px-4 py-4 sm:gap-6 sm:px-7 sm:py-6">
       <!-- 左侧自适应编辑区 -->
       <div class="flex min-w-0 flex-1 flex-col">
         <!-- 标题区 -->
         <div
-          class="rounded-t-[14px] border border-b-0 border-border bg-card px-9 pb-5 pt-7"
+          class="rounded-t-xl border border-b-0 border-border bg-card px-5 pb-4 pt-5 sm:rounded-t-[14px] sm:px-9 sm:pb-5 sm:pt-7"
         >
           <input
             v-model="form.title"
             placeholder="文章标题"
-            class="w-full border-0 bg-transparent text-[28px] font-bold leading-tight tracking-tight text-foreground outline-none placeholder:text-text-quaternary placeholder:font-semibold"
-            style="font-size: 28px;"
+            class="w-full border-0 bg-transparent text-2xl font-bold leading-tight tracking-tight text-foreground outline-none placeholder:text-text-quaternary placeholder:font-semibold sm:text-[28px]"
           />
         </div>
 
@@ -511,8 +511,8 @@ function handleDiscardDraft() {
           />
         </div>
 
-        <!-- 编辑器内核（不改） -->
-        <div class="rounded-b-[14px] border border-border bg-card">
+        <!-- 编辑器内核 -->
+        <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
           <RichTextEditor
             v-if="editorKind === 'rich'"
             ref="richRef"
@@ -534,10 +534,10 @@ function handleDiscardDraft() {
         </div>
       </div>
 
-      <!-- 右侧 320px 固定设置面板 -->
+      <!-- 右侧 320px 固定设置面板（桌面端） -->
       <div
         v-show="sidebarOpen"
-        class="sticky top-[72px] w-80 shrink-0"
+        class="sidebar-desktop sticky top-[72px] hidden w-80 shrink-0 sm:block"
         style="max-height: calc(100vh - 88px); overflow-y: auto;"
       >
         <EditorSidebar
@@ -553,6 +553,40 @@ function handleDiscardDraft() {
         />
       </div>
     </div>
+
+    <!-- 移动端：底部抽屉式侧边栏 -->
+    <Transition name="drawer">
+      <div
+        v-if="sidebarOpen"
+        class="sidebar-mobile fixed inset-x-0 bottom-0 z-[80] sm:hidden"
+        style="max-height: 85vh; background: var(--color-card); border-top: 1px solid var(--color-border); border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -8px 30px rgba(0,0,0,0.4);"
+      >
+        <div class="flex justify-center pt-2 pb-1">
+          <div class="h-1 w-10 rounded-full bg-border"></div>
+        </div>
+        <div class="overflow-y-auto" style="max-height: calc(85vh - 24px);">
+          <EditorSidebar
+            :form="form"
+            :categories="categories"
+            :tags="tags"
+            :ai-summary="aiSummary"
+            @jump="onJump"
+            @insert="onInsert"
+            @open-cover-picker="coverPickerOpen = true"
+            @slug-edited="slugManuallyEdited = true"
+            @update:ai-summary="aiSummary = $event"
+          />
+        </div>
+      </div>
+    </Transition>
+    <!-- 移动端抽屉遮罩 -->
+    <Transition name="fade">
+      <div
+        v-if="sidebarOpen"
+        class="fixed inset-0 z-[70] bg-black/40 sm:hidden"
+        @click="toggleSidebar"
+      ></div>
+    </Transition>
 
     <AttachmentPickerModal
       :open="coverPickerOpen"
@@ -579,3 +613,59 @@ function handleDiscardDraft() {
     />
   </div>
 </template>
+
+<style scoped>
+/* ===== 底部抽屉动画 ===== */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-enter-from,
+.drawer-leave-to {
+  transform: translateY(100%);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ===== 移动端 Markdown 编辑器上下分屏 ===== */
+@media (max-width: 640px) {
+  .editor-wrap :deep(.grid.grid-cols-2) {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr 1fr;
+  }
+  .editor-wrap :deep(.grid.grid-cols-2 textarea) {
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    min-height: 40vh !important;
+    max-height: 50vh !important;
+  }
+  .editor-wrap :deep(.grid.grid-cols-2 > div:last-child),
+  .editor-wrap :deep(.grid.grid-cols-2 > div.relative) {
+    min-height: 40vh !important;
+    max-height: 50vh !important;
+  }
+  .editor-wrap :deep(.grid.grid-cols-2 iframe) {
+    min-height: 40vh !important;
+    height: 50vh !important;
+  }
+}
+
+/* ===== 移动端 editor-wrap：保证富文本/Markdown 编辑区高度合理 ===== */
+@media (max-width: 640px) {
+  .editor-wrap {
+    min-height: calc(100vh - 56px - 48px);
+  }
+  /* 富文本编辑器内容区最小高度 */
+  :deep(.ProseMirror),
+  :deep(.md-editor-content) {
+    min-height: 50vh;
+  }
+}
+</style>

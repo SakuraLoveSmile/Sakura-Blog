@@ -584,4 +584,54 @@ onMounted(load);
   background: color-mix(in srgb, #fff 18%, transparent);
   opacity: 1;
 }
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  /* 内容区 padding 缩小 */
+  .px-5.py-5 {
+    padding: 12px 14px !important;
+  }
+  .md\:px-10 {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  /* 分类卡片更紧凑 */
+  .apple-card-highlight {
+    padding: 14px !important;
+    gap: 12px !important;
+    border-radius: 12px !important;
+  }
+  .apple-card-highlight .h-12.w-12 {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+  .apple-card-highlight .text-2xl {
+    font-size: 20px !important;
+  }
+
+  /* 标签云更紧凑 */
+  .tag-chip-sm {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+  .tag-chip-md {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  .tag-chip-lg {
+    padding: 7px 16px;
+    font-size: 13px;
+  }
+  .tag-chip-xl {
+    padding: 8px 17px;
+    font-size: 14px;
+  }
+
+  /* 标题和统计更紧凑 */
+  h2.text-\[17px\] {
+    font-size: 15px !important;
+  }
+}
 </style>

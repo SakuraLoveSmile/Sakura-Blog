@@ -367,4 +367,43 @@ function closeMenus() {
 .fade-leave-to {
  opacity: 0;
 }
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+ /* 工具条：按钮更紧凑，状态筛选全宽 */
+ .flex.flex-wrap.items-center.gap-2.rounded-xl {
+  gap: 8px;
+  padding: 10px 12px;
+ }
+ .flex.flex-wrap.items-center.gap-2.rounded-xl button,
+ .flex.flex-wrap.items-center.gap-2.rounded-xl select {
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  height: 34px;
+ }
+ .flex.flex-wrap.items-center.gap-2.rounded-xl .text-sm {
+  font-size: 12px !important;
+ }
+
+ /* 分组卡片更紧凑 */
+ .rounded-xl.border.border-border.bg-card.p-4 {
+  padding: 12px !important;
+  border-radius: 12px !important;
+ }
+ .rounded-xl.border.border-border.bg-card.p-4 .mb-3 {
+  margin-bottom: 10px !important;
+ }
+ .rounded-xl.border.border-border.bg-card.p-4 .text-sm {
+  font-size: 13px !important;
+ }
+
+ /* 友链卡片更紧凑 */
+ .group.relative.rounded-lg.border.border-border.p-3 {
+  padding: 10px !important;
+ }
+ .group.relative.rounded-lg.border.border-border.p-3 .h-9.w-9 {
+  width: 32px !important;
+  height: 32px !important;
+ }
+}
 </style>

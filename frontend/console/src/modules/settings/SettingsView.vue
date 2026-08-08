@@ -343,14 +343,15 @@ onMounted(() => {
 
 <template>
   <div class="settings-view">
-    <header class="settings-page-header">
+    <header class="settings-page-header !px-4 !py-4 sm:!px-6 sm:!py-5">
       <div class="settings-page-header-title">
         <Icon icon="ri:settings-3-line" class="settings-page-header-icon" />
-        <span>设置</span>
+        <span class="text-xl sm:text-2xl">设置</span>
       </div>
-      <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" @click="saveActive">
-        <template #icon><Icon icon="ri:save-3-line" /></template>
-        保存更改
+      <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" class="!h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-3.5 sm:!text-[13px]" @click="saveActive">
+        <template #icon><Icon icon="ri:save-3-line" class="!w-4 !h-4 sm:!w-[15px] sm:!h-[15px]" /></template>
+        <span class="sm:hidden">保存</span>
+        <span class="hidden sm:inline">保存更改</span>
       </VButton>
     </header>
 
@@ -377,7 +378,7 @@ onMounted(() => {
           <div class="settings-section-desc">{{ currentGroup.desc }}</div>
         </div>
 
-        <div v-if="currentGroupTabs.length > 1" class="apple-segmented rect settings-subtabs">
+        <div v-if="currentGroupTabs.length > 1" class="apple-segmented rect settings-subtabs subtabs-scroll">
           <button
             v-for="t in currentGroupTabs"
             :key="t.key"
@@ -912,5 +913,65 @@ onMounted(() => {
   .settings-nav-item { border-left: none; border-bottom: 3px solid transparent; margin-left: 0; margin-bottom: -3px; }
   .settings-nav-item.active { border-left: none; border-bottom-color: var(--color-primary); background: transparent; }
   .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ===== 移动端补充优化 ===== */
+@media (max-width: 640px) {
+  .settings-container { padding: 12px; gap: 14px; }
+  .settings-content { gap: 14px; }
+
+  /* 主导航更紧凑 */
+  .settings-nav-list { gap: 0; }
+  .settings-nav-item {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .settings-nav-item-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 子分段 Tab 横向滚动 */
+  .subtabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .subtabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 段落标题更紧凑 */
+  .settings-section-title {
+    font-size: 15px;
+  }
+  .settings-section-desc {
+    font-size: 12px;
+  }
+
+  /* 表单字段更紧凑 */
+  .field {
+    margin-bottom: 12px;
+  }
+  .field label {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .form-grid {
+    gap: 12px;
+  }
+
+  /* 卡片内边距缩小 */
+  .settings-content :deep(.card-body) {
+    padding: 14px !important;
+  }
+
+  /* 卡片标题更紧凑 */
+  .settings-content :deep(.card-header) {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
 }
 </style>

@@ -316,3 +316,67 @@ onMounted(loadStatus);
  </div>
  </div>
 </template>
+
+<style scoped>
+/* ===== 移动端适配 ===== */
+@media (max-width: 640px) {
+  .max-w-4xl {
+    margin: 0 !important;
+  }
+  .space-y-4 {
+    gap: 12px;
+  }
+
+  /* 卡片标题更紧凑 */
+  .text-base.font-bold {
+    font-size: 14px;
+  }
+
+  /* 描述文字 + 按钮上下排列（小屏宽度不够） */
+  .flex.items-start.justify-between.gap-4 {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .flex.items-start.justify-between.gap-4 p {
+    font-size: 11.5px;
+  }
+
+  /* 备份表格：横向滚动 + 字号缩小 */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table th,
+  table td {
+    font-size: 11px;
+    padding: 8px 6px !important;
+    white-space: nowrap;
+  }
+  table .font-mono {
+    font-size: 11px !important;
+  }
+
+  /* Markdown 导入表单更紧凑 */
+  .space-y-3 {
+    gap: 10px;
+  }
+  .mt-4 {
+    margin-top: 12px !important;
+  }
+  .pt-4 {
+    padding-top: 12px !important;
+  }
+
+  /* 恢复提示框 */
+  .bg-yellow-500\/10,
+  .border-yellow-500\/20,
+  .bg-state-warning\/10,
+  .border-state-warning\/20 {
+    padding: 10px 12px !important;
+    font-size: 12px;
+  }
+}
+</style>

@@ -495,13 +495,16 @@ const smallInputCls =
 </script>
 
 <template>
-  <div :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }">
+  <div
+    class="page-editor"
+    :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }"
+  >
     <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
       <template #icon>
         <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
       </template>
       <template #actions>
-        <div class="flex items-center gap-2">
+        <div class="header-actions flex items-center gap-2">
           <select
             :value="editorKind"
             class="rounded-base border border-border bg-white px-2 py-1.5 text-xs text-text-quaternary outline-none transition-colors dark:border-border-strong dark:bg-secondary dark:text-foreground"
@@ -688,7 +691,7 @@ const smallInputCls =
                     class="border-b last:border-b-0 dark:border-border-strong"
                   >
                     <div
-                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
+                      class="widget-item flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
                       @click="toggleExpand('left', idx)"
                     >
                       <span class="flex min-w-0 items-center gap-1 truncate">
@@ -734,13 +737,13 @@ const smallInputCls =
                     </div>
                     <div
                       v-if="expandedWidget === 'left:' + idx"
-                      class="space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
+                      class="widget-params space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
                     >
                       <template v-if="KNOWN_WIDGET_FIELDS[w.name]">
                         <div
                           v-for="f in KNOWN_WIDGET_FIELDS[w.name]"
                           :key="f.key"
-                          class="grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
+                          class="widget-field-grid grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
                           <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
                           <template v-if="f.type === 'boolean'">
@@ -853,7 +856,7 @@ const smallInputCls =
                     class="border-b last:border-b-0 dark:border-border-strong"
                   >
                     <div
-                      class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
+                      class="widget-item flex cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-sm hover:bg-secondary dark:text-foreground dark:hover:bg-secondary/50"
                       @click="toggleExpand('right', idx)"
                     >
                       <span class="flex min-w-0 items-center gap-1 truncate">
@@ -899,13 +902,13 @@ const smallInputCls =
                     </div>
                     <div
                       v-if="expandedWidget === 'right:' + idx"
-                      class="space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
+                      class="widget-params space-y-2 border-t border-dashed bg-secondary px-3 py-2 text-xs dark:border-border-strong dark:bg-secondary/30"
                     >
                       <template v-if="KNOWN_WIDGET_FIELDS[w.name]">
                         <div
                           v-for="f in KNOWN_WIDGET_FIELDS[w.name]"
                           :key="f.key"
-                          class="grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
+                          class="widget-field-grid grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
                           <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
                           <template v-if="f.type === 'boolean'">
@@ -974,7 +977,7 @@ const smallInputCls =
                   左右栏宽度比例对齐前台；骨架区下会显示已设置的关键参数摘要
                 </span>
               </div>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-[300px_280px] md:justify-start">
+              <div class="preview-grid grid grid-cols-1 gap-4 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-[300px_280px] md:justify-start">
                 <div class="w-full max-w-[320px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border">
                   <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary">Leftbar</div>
                   <template v-if="resolvedLeftbar.length === 0">
@@ -1049,3 +1052,199 @@ const smallInputCls =
     </div>
   </div>
 </template>
+
+<style scoped>
+/* ===== 头部操作按钮：移动端横向滚动 ===== */
+.header-actions {
+  flex-wrap: nowrap;
+}
+
+/* ===== 移动端（M 断点：< 1024px）：右侧面板移到底部 ===== */
+@media (max-width: 1023px) {
+  .page-editor :deep(.editor-sidebar-panel) {
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
+  }
+}
+
+/* ===== 移动端（S 断点：< 640px） ===== */
+@media (max-width: 640px) {
+  /* 头部操作按钮：横向滚动防止换行 */
+  .header-actions {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 65vw;
+  }
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 下拉框紧凑化 */
+  .header-actions select {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
+  /* 主容器外边距取消 */
+  .page-editor > div:nth-child(3) {
+    margin: 0 !important;
+    gap: 12px !important;
+  }
+
+  /* 标题输入框紧凑 */
+  .page-editor input[placeholder="页面标题"] {
+    padding: 10px 14px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  /* 基本信息 2 列 → 1 列 */
+  .page-editor .grid.grid-cols-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* 状态选择器全宽 */
+  .page-editor select[class*="w-40"] {
+    width: 100% !important;
+  }
+
+  /* 侧边栏配置区：组件列表项紧凑 */
+  .page-editor .widget-item {
+    padding: 8px 10px !important;
+  }
+
+  /* 实时缩略预览网格：2 列 → 1 列 */
+  .page-editor .preview-grid {
+    grid-template-columns: 1fr !important;
+    justify-items: stretch !important;
+  }
+  .page-editor .preview-grid > div {
+    max-width: 100% !important;
+  }
+
+  /* CollapsibleSection 头部紧凑 */
+  .page-editor :deep(.collapsible-header) {
+    padding: 12px 14px !important;
+  }
+  .page-editor :deep(.collapsible-body) {
+    padding: 12px 14px !important;
+  }
+}
+
+/* ===== 超小屏（XS 断点：< 420px） ===== */
+@media (max-width: 420px) {
+  /* 头部按钮区域进一步压缩 */
+  .header-actions {
+    max-width: 60vw;
+    gap: 6px !important;
+  }
+  .header-actions :deep(.v-button) {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  .header-actions :deep(.v-button.size-sm) {
+    padding: 4px !important;
+    min-width: 28px;
+    height: 28px;
+  }
+
+  /* 标题输入框极致紧凑 */
+  .page-editor input[placeholder="页面标题"] {
+    padding: 8px 12px !important;
+    font-size: 15px !important;
+    border-radius: 10px !important;
+  }
+
+  /* 输入框通用压缩 */
+  .page-editor :deep(.rounded-base.border) {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    font-size: 13px !important;
+  }
+
+  /* 基本信息区间距 */
+  .page-editor .grid.grid-cols-2 {
+    gap: 10px !important;
+  }
+  .page-editor .mt-4 {
+    margin-top: 12px !important;
+  }
+
+  /* 侧栏配置头部 */
+  .page-editor .flex.items-center.justify-between.mb-2 {
+    margin-bottom: 8px !important;
+  }
+  .page-editor .mb-2 select {
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+  }
+
+  /* 组件列表项极致紧凑 */
+  .page-editor .widget-item {
+    padding: 6px 8px !important;
+    font-size: 13px !important;
+  }
+  .page-editor .flex.shrink-0.items-center.gap-1 :deep(.v-button.size-sm) {
+    padding: 3px !important;
+    width: 24px;
+    height: 24px;
+  }
+  .page-editor :deep(.v-button.size-sm.\!px-2) {
+    padding: 3px 6px !important;
+  }
+
+  /* 展开后参数区紧凑 */
+  .page-editor .widget-params {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+  .page-editor .widget-field-grid {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+  .page-editor label.text-\[11px\] {
+    font-size: 10px !important;
+    padding-top: 0 !important;
+  }
+
+  /* 预览卡进一步压缩 */
+  .page-editor .preview-grid > div {
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+  .page-editor .preview-grid > div > div.overflow-hidden > div:first-child {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  .page-editor .preview-grid > div > div.overflow-hidden > div:last-child {
+    padding: 6px 8px !important;
+  }
+
+  /* CollapsibleSection 极致紧凑 */
+  .page-editor :deep(.collapsible-header) {
+    padding: 10px 12px !important;
+  }
+  .page-editor :deep(.collapsible-title) {
+    font-size: 13px !important;
+  }
+  .page-editor :deep(.collapsible-subtitle) {
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+  .page-editor :deep(.collapsible-body) {
+    padding: 10px 12px !important;
+    gap: 12px !important;
+  }
+
+  /* Widget 参数摘要字体缩小 */
+  .page-editor .truncate.border-t.border-dashed {
+    font-size: 9px !important;
+  }
+}
+</style>

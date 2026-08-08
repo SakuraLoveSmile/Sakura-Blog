@@ -474,18 +474,19 @@ function typePillStyle(mime: string) {
 <template>
   <div class="attachments-page min-h-full">
     <!-- ===== Page Header ===== -->
-    <header class="attachments-page-header">
-      <div class="flex flex-col gap-1">
-        <h1 class="attachments-page-title">附件管理</h1>
-        <p class="attachments-page-subtitle">
+    <header class="attachments-page-header !px-4 !py-4 sm:!px-5 sm:!py-5">
+      <div class="flex flex-col gap-0.5 sm:gap-1">
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[26px]">附件管理</h1>
+        <p class="text-[12px] text-text-tertiary sm:text-[13px]">
           共 {{ total }} 个文件 · 已使用 {{ formatSize(storageStats.total) }}
         </p>
       </div>
-      <div class="flex items-center gap-2.5">
-        <label class="apple-upload-btn">
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <label class="apple-upload-btn !h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-4 sm:!text-[13px]">
           <span class="flex items-center gap-1.5">
-            <Icon icon="ri:upload-2-line" class="text-[15px]" />
-            <span>上传附件{{ activeGroup && activeGroup > 0 ? `到「${activeGroupName}」` : "" }}</span>
+            <Icon icon="ri:upload-2-line" class="text-sm sm:text-[15px]" />
+            <span class="sm:inline hidden">上传附件{{ activeGroup && activeGroup > 0 ? `到「${activeGroupName}」` : "" }}</span>
+            <span class="sm:hidden">上传</span>
           </span>
           <input type="file" class="hidden" :disabled="uploading" @change="handleUpload" />
         </label>
@@ -493,13 +494,13 @@ function typePillStyle(mime: string) {
     </header>
 
     <!-- ===== Content Area ===== -->
-    <div class="attachments-content-area">
-      <div class="flex flex-col gap-4 lg:flex-row">
-        <!-- 左侧分组栏 -->
+    <div class="attachments-content-area !px-4 sm:!px-5">
+      <div class="flex flex-col gap-3 sm:gap-4 lg:flex-row">
+        <!-- 左侧分组栏（桌面端侧边栏，移动端紧凑横排） -->
         <aside class="w-full shrink-0 lg:w-56">
           <VCard :body-class="['!p-0']">
-            <div class="flex items-center justify-between border-b border-border px-4 py-3">
-              <span class="text-[13px] font-semibold text-foreground">分组</span>
+            <div class="flex items-center justify-between border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
+              <span class="text-xs font-semibold text-foreground sm:text-[13px]">分组</span>
               <button
                 class="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
                 title="新建分组"
@@ -508,7 +509,43 @@ function typePillStyle(mime: string) {
                 <Icon icon="ri:add-line" />
               </button>
             </div>
-            <ul class="py-1 text-[13px]">
+            <!-- 移动端：横向滚动分组列表 -->
+            <div class="group-scroll lg:hidden">
+              <ul class="flex gap-1 p-2 text-xs">
+                <li>
+                  <button
+                    class="group-sidebar-item-mobile"
+                    :class="{ active: activeGroup === undefined }"
+                    @click="selectGroup(undefined)"
+                  >
+                    <Icon icon="ri:apps-line" class="text-sm" />
+                    <span>全部</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    class="group-sidebar-item-mobile"
+                    :class="{ active: activeGroup === 0 }"
+                    @click="selectGroup(0)"
+                  >
+                    <Icon icon="ri:inbox-line" class="text-sm" />
+                    <span>未分组</span>
+                  </button>
+                </li>
+                <li v-for="g in groups" :key="g.id">
+                  <button
+                    class="group-sidebar-item-mobile"
+                    :class="{ active: activeGroup === g.id }"
+                    @click="selectGroup(g.id)"
+                  >
+                    <Icon icon="ri:folder-line" class="shrink-0 text-sm" />
+                    <span class="truncate">{{ g.name }}</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <!-- 桌面端：垂直列表 -->
+            <ul class="hidden py-1 text-[13px] lg:block">
               <li>
                 <button
                   class="group-sidebar-item"
@@ -608,7 +645,7 @@ function typePillStyle(mime: string) {
 
           <!-- 工具栏：分段筛选 + 视图切换 -->
           <div class="attachments-toolbar">
-            <div class="apple-segmented" role="tablist" aria-label="附件类型筛选">
+            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0" role="tablist" aria-label="附件类型筛选">
               <button
                 v-for="f in typeFilters"
                 :key="f.key"
@@ -624,7 +661,7 @@ function typePillStyle(mime: string) {
 
             <div class="flex items-center gap-2">
               <!-- 胶囊搜索框 -->
-              <label class="apple-search apple-search-compact">
+              <label class="apple-search apple-search-compact w-[160px] sm:w-[200px]">
                 <Icon icon="ri:search-line" class="text-[15px] text-text-quaternary" />
                 <input v-model="keyword" placeholder="搜索附件..." type="text" />
                 <button
@@ -1478,5 +1515,97 @@ function typePillStyle(mime: string) {
   .col-actions {
     display: none;
   }
+}
+
+/* ===== 移动端补充优化 ===== */
+@media (max-width: 640px) {
+  /* 类型分段 Tab 横向滚动，不显示滚动条 */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 工具栏更紧凑 */
+  .attachments-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .attachments-toolbar > :last-child {
+    justify-content: space-between;
+  }
+  .apple-search-compact {
+    width: 100% !important;
+  }
+
+  /* 存储卡更紧凑 */
+  .storage-title {
+    font-size: 13px;
+  }
+  .storage-info {
+    font-size: 11px;
+  }
+  .storage-breakdown {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .storage-label {
+    font-size: 11px;
+  }
+
+  /* 列表视图在 640px 以下：更紧凑，去掉 size 列 */
+  .attachment-list-head,
+  .attachment-list-row {
+    grid-template-columns: 32px minmax(0, 1fr) !important;
+  }
+  .col-size {
+    display: none;
+  }
+}
+
+/* ===== 移动端分组栏：横向滚动胶囊 ===== */
+.group-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.group-scroll::-webkit-scrollbar {
+  display: none;
+}
+.group-scroll ul {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  list-style: none;
+}
+.group-sidebar-item-mobile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.group-sidebar-item-mobile:hover {
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+.group-sidebar-item-mobile.active {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  font-weight: 600;
 }
 </style>
