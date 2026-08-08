@@ -16,7 +16,7 @@ const btnCls =
 const rowBtnCls =
 "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 const addBtnCls =
-"inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors text-primary hover:text-primary/80";
+"inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 // ---------- 页面类型 ----------
 const pageOptions = [

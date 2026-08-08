@@ -184,7 +184,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <li>
  <button
  class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
- :class="!activeFeed ? 'bg-primary/10 text-secondary bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
+ :class="!activeFeed ? 'bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
  @click="selectFeed('')"
  >
  <Icon icon="ri:stack-line" class="text-lg text-text-quaternary" />
@@ -192,13 +192,13 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <span class="block text-sm font-medium">全部动态</span>
  <span class="block text-xs text-text-quaternary">所有订阅源</span>
  </span>
- <span v-if="totalUnread" class="rounded-full bg-primary/15 px-1.5 text-xs text-secondary text-primary">{{ totalUnread }}</span>
+ <span v-if="totalUnread" class="rounded-full bg-primary/15 px-1.5 text-xs text-primary">{{ totalUnread }}</span>
  </button>
  </li>
  <li v-for="s in sources" :key="s.friend_url">
  <button
  class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
- :class="activeFeed === s.friend_url ? 'bg-primary/10 text-secondary bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
+ :class="activeFeed === s.friend_url ? 'bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
  @click="selectFeed(s.friend_url)"
  >
  <Icon icon="ri:rss-fill" class="text-lg text-state-warning" />
@@ -206,7 +206,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <span class="block truncate text-sm font-medium">{{ s.friend_title }}</span>
  <span class="block truncate text-xs text-text-quaternary">{{ s.friend_url }}</span>
  </span>
- <span v-if="s.unread" class="shrink-0 rounded-full bg-primary/15 px-1.5 text-xs text-secondary text-primary">{{ s.unread }}</span>
+ <span v-if="s.unread" class="shrink-0 rounded-full bg-primary/15 px-1.5 text-xs text-primary">{{ s.unread }}</span>
  </button>
  </li>
  </ul>
@@ -297,7 +297,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <div class="mt-2">
  <span
   class="rounded px-1.5 py-0.5 text-xs feed-badge"
-  :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/10 text-secondary bg-primary/15 text-primary'"
+  :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/15 text-primary'"
  >{{ a.read ?"已读" :"未读" }}</span>
  </div>
  </div>

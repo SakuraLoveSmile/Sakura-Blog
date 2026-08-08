@@ -24,7 +24,7 @@ const inputCls = "apple-input";
 const btnCls =
 "px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
 const addBtnCls =
-"inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors text-primary hover:text-primary/80";
+"inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 // 拖拽状态
 const dragIndex = ref<number | null>(null);
