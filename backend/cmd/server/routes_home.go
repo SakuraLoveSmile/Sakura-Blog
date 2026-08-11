@@ -61,7 +61,8 @@ func (s *webServer) renderHome(c *gin.Context, page int) {
 	}
 	s.fillSidebar(data)
 	// 1.38 site_tree.home.comments：首页可配置评论区（默认关），page_key 用 "/"
-	if s.site.Comments.Enabled && s.site.SiteTree.Home.Comments {
+	// 对齐上游 index.ejs 的 is_home_first_page()：仅首页第一页填充，/page/N 不渲染评论区
+	if page == 1 && s.site.Comments.Enabled && s.site.SiteTree.Home.Comments {
 		s.fillComments(data, "/")
 	}
 	s.fillSEO(data, c)

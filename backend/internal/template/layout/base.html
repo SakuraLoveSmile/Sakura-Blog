@@ -374,16 +374,16 @@
        deps 字段对齐原版 services.ejs：先加载依赖（如 marked）再加载 service（Spec 33：timeline/mdrender 需 marked）。 */}}
     (function () {
       var services = [
-        { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}' },
-        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}' },
+        { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}?v=v1' },
+        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}?v=v1' },
         { cls: 'ds-rating', js: '{{url_for "/assets/js/services/rating.js"}}' },
         { cls: 'ds-vote', js: '{{url_for "/assets/js/services/vote.js"}}' },
-        { cls: 'ds-sites', js: '{{url_for "/assets/js/services/sites.js"}}' },
-        { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}', deps: ['marked'] },
-        { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}' },
-        { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}?v=gh1' },
-        { cls: 'ds-timeline', js: '{{url_for "/assets/js/services/timeline.js"}}?v=tl1', deps: ['marked'] },
-        { cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}' }
+        { cls: 'ds-sites', js: '{{url_for "/assets/js/services/sites.js"}}?v=v1' },
+        { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}?v=v1', deps: ['marked'] },
+        { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}?v=v1' },
+        { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}?v=gh2' },
+        { cls: 'ds-timeline', js: '{{url_for "/assets/js/services/timeline.js"}}?v=tl2', deps: ['marked'] },
+        { cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}?v=v1' }
       ];
       var loaded = {};
       function scan() {
@@ -406,16 +406,16 @@
       document.addEventListener('DOMContentLoaded', scan);
     })();
   </script>
-  <script src="{{url_for "/assets/js/main.js"}}?v=base1" defer></script>
-  <script src="{{url_for "/assets/js/search/local-search.js"}}?v=base1" defer></script>
+  <script src="{{url_for "/assets/js/main.js"}}?v=base2" defer></script>
+  <script src="{{url_for "/assets/js/search/local-search.js"}}?v=base2" defer></script>
   {{- /* 自建评论区交互：全站加载（事件委托 + 存在性检查，非文章页零副作用）。
         注意：SW 对静态资源 cache-first，必须带 ?v= 版本后缀，否则改版后旧缓存永久生效（评论区曾因此整体失灵） */}}
-  <script src="{{url_for "/assets/js/comments.js"}}?v=cmt15" defer></script>
-  <script src="{{url_for "/assets/js/reading.js"}}?v=base1" defer></script>
+  <script src="{{url_for "/assets/js/comments.js"}}?v=cmt16" defer></script>
+  <script src="{{url_for "/assets/js/reading.js"}}?v=base2" defer></script>
   {{- /* 标签云 widget 交互：默认静态/3D 球体旋转云模式切换（.widget-wrapper.tagcloud 存在性检查，多实例支持） */}}
-  <script src="{{url_for "/assets/js/tagcloud.js"}}?v=static-default1" defer></script>
+  <script src="{{url_for "/assets/js/tagcloud.js"}}?v=static-default2" defer></script>
   {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}
-  <script src="{{url_for "/assets/js/ai-summary.js"}}?v=typewriter1" defer></script>
+  <script src="{{url_for "/assets/js/ai-summary.js"}}?v=typewriter2" defer></script>
   {{- /* flying-pages 预取（Spec 36）：条件化注入，需 site.yml plugins.preload.enable=true；
      1.35 移除 PJAX 后保留悬停预取缓解整页刷新体验 */}}
   {{- if and .Site.Plugins.Preload .Site.Plugins.Preload.Enable -}}

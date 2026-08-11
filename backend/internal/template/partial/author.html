@@ -53,7 +53,7 @@
   <div class="post-card-wrap">
     {{if and .Cover .Poster}}
     <a class="post-card post photo" href="/post/{{.Slug}}">
-      <div class="cover" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}">
+      <div class="cover" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}" style="--cover-url:url('{{.Cover}}')">
         <img src="{{.Cover}}"/>
         <div class="cover-info" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}"{{if .Poster.Color}} style="color:{{.Poster.Color}}"{{end}}>
           {{if .Poster.Topic}}<div class="text topic">{{.Poster.Topic}}</div>{{end}}
