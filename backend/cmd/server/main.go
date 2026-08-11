@@ -123,6 +123,15 @@ func main() {
 	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。按 root 定位，部署时可选。
 	posts := post.NewService(filepath.Join(app.Root, "content", "posts"))
 	posts.SetIconFunc(reg.Get) // 供 quot 等 shortcode 渲染内联 SVG（复用模板 icon 同一套图标）
+	// 模板内 Markdown 渲染（页脚自定义文案等）：复用文章渲染管线（shortcode + 消毒）
+	tmpl.SetMarkdownRender(func(s string) template.HTML {
+		h, err := posts.Render(s)
+		if err != nil {
+			log.Printf("render footer markdown: %v", err)
+			return ""
+		}
+		return template.HTML(h)
+	})
 
 	// SQLite 持久化：DBPath 已在 ResolveApp 绝对化。
 	st, err := store.New(app.DBPath)
@@ -334,6 +343,8 @@ func main() {
 			Backups:     backupSvc,
 			Modules:     moduleMgr,
 			Notify:      notifySvc,
+			Icons:       reg,
+			RenderSitePreview: ws.renderSitePreview,
 			UploadDir:   app.UploadDir,
 			NotesPath:   filepath.Join(app.Root, "content", "notes.md"),
 			MaxUploadMB: app.MaxUploadMB,

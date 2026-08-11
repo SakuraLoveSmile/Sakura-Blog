@@ -15,7 +15,8 @@
   </div>
   {{end}}
   <div class="text">
-    <p>&copy; {{.Site.Title}} · Powered by <a href="https://github.com/xaoxuu/hexo-theme-stellar" target="_blank" rel="noopener">Stellar</a></p>
+    {{- /* 自定义页脚文案（对齐原版 footer.content，Markdown）；空则回退内置 Powered-by 行 */}}
+    {{if .Site.Footer.Content}}{{markdown .Site.Footer.Content}}{{else}}<p>&copy; {{.Site.Title}} · Powered by <a href="https://github.com/xaoxuu/hexo-theme-stellar" target="_blank" rel="noopener">Stellar</a></p>{{end}}
     {{if .Site.Footer.Beian}}<p><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{.Site.Footer.Beian}}</a></p>{{end}}
   </div>
 </footer>

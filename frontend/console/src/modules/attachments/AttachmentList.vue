@@ -1093,19 +1093,16 @@ function typePillStyle(mime: string) {
   padding: 9px 20px;
   border-radius: var(--radius-full, 9999px);
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-foreground);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.1px;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 1px 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
   transition: all 0.2s var(--ease-standard);
 }
 .apple-upload-btn:hover {
   background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 .apple-upload-btn:active {
   transform: translateY(0);

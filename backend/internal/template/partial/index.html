@@ -19,8 +19,11 @@
   {{- /* story 布局：大间距卡片，封面宽比例（story-cover 16/9），宽标题，meta 行尾对齐（样式在 assets/css/story.css）*/}}
   <div class="post-card-wrap story">
     <a class="post-card post story" href="/post/{{.Slug}}">
+      {{- /* 封面回退：文章无封面且配置了 default.cover 时用占位封面 */}}
       {{if .Cover}}
       <div class="story-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>
+      {{else if $.Site.Default.Cover}}
+      <div class="story-cover"><img src="{{$.Site.Default.Cover}}" alt="{{.Title}}"/></div>
       {{end}}
       <article class="md-text">
         <h2 class="post-title">{{.Title}}</h2>
@@ -33,7 +36,7 @@
           {{- /* 分类：对齐 post_card.ejs 的 span.cap.breadcrumb + category_color 配色（site.yml article.category_color）*/}}
           {{if .Category}}
           <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
-            {{icon "default:category"}}
+            {{icon .CategoryIcon}}
             <span>{{.Category}}</span>
           </span>
           {{end}}
@@ -61,6 +64,9 @@
       <article class="md-text">
         {{if .Cover}}
         <div class="post-cover"><img src="{{.Cover}}"/></div>
+        {{else if $.Site.Default.Cover}}
+        {{- /* 封面回退：文章无封面且配置了 default.cover 时用占位封面 */}}
+        <div class="post-cover"><img src="{{$.Site.Default.Cover}}"/></div>
         {{end}}
         <h2 class="post-title">{{.Title}}</h2>
         <div class="excerpt"><p>{{.Excerpt}}</p></div>
@@ -72,7 +78,7 @@
           {{- /* 分类：对齐 post_card.ejs 的 span.cap.breadcrumb + category_color 配色（site.yml article.category_color）*/}}
           {{if .Category}}
           <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
-            {{icon "default:category"}}
+            {{icon .CategoryIcon}}
             <span>{{.Category}}</span>
           </span>
           {{end}}

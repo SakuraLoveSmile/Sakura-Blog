@@ -1,6 +1,8 @@
 package template
 
 import (
+	"fmt"
+	"html/template"
 	"sort"
 	"strings"
 	"time"
@@ -16,6 +18,13 @@ type ArticleConfig struct {
 	Reward        RewardConfig      `yaml:"reward" json:"reward"`
 	Share         ShareConfig       `yaml:"share" json:"share"`
 	CategoryColor map[string]string `yaml:"category_color" json:"category_color"`
+	// 分类/标签图标表（机制对齐 category_color）：名称 → icon key（icons.yml 的 key 或图片 URL），
+	// icon 模板函数对 URL 渲染 <img>、对 key 内联 SVG；未配置的分类回退 default:category，未配置的标签不渲染图标。
+	CategoryIcon map[string]string `yaml:"category_icon" json:"category_icon"`
+	TagIcon      map[string]string `yaml:"tag_icon" json:"tag_icon"`
+	// 排版（对齐原版 article 段）：indent=正文段落缩进两字符；cover_ratio=卡片封面宽高比（0=主题默认）。
+	Indent     bool    `yaml:"indent" json:"indent"`
+	CoverRatio float64 `yaml:"cover_ratio" json:"cover_ratio"`
 
 	// Spec 32 文章页首尾增强：
 	ReadNext     bool    `yaml:"read_next" json:"read_next"`         // read_next 下一篇卡片开关
@@ -124,4 +133,17 @@ func ResolveEditPage(source string, mapping map[string]string) *EditPageLink {
 		return &EditPageLink{EditURL: edit, APIURL: api}
 	}
 	return nil
+}
+
+// InjectCSS 生成文章排版注入 head 的样式（仅输出显式配置项，未配置输出空串 = 零配置零差异）：
+// indent → 正文段落首行缩进两字符（对齐原版 article.indent）；cover_ratio → 卡片封面宽高比。
+func (a ArticleConfig) InjectCSS() template.CSS {
+	var sb strings.Builder
+	if a.Indent {
+		sb.WriteString(".md-text p{text-indent:2em}")
+	}
+	if a.CoverRatio > 0 {
+		fmt.Fprintf(&sb, ".post-cover img{aspect-ratio:%g;object-fit:cover}", a.CoverRatio)
+	}
+	return template.CSS(sb.String())
 }

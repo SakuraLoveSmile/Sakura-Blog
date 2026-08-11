@@ -215,4 +215,5 @@ Wave 4 四个 spec 无共享文件热点（17 动 `store/post.go`，其余不碰
 - 根目录 `AGENTS.md`、`CLAUDE.md`
 - 铁律：**前端严格对齐原版 Stellar，禁止自创样式**；**补样式前先 grep `assets/css/main.css` 确认类是否已存在**；参考主题 `../resource/hexo-theme-stellar/`
 - 模板路径化命名（`partial/xxx`、`admin/xxx`），基名勿撞现有
+- 新 spec 按 [`_template/spec.md`](_template/spec.md) 起草；含 UI/样式子任务必须填写「UI 验收边界」节（参照图路径 + 逐项验收清单），参照图与基线截图存入本 spec 目录的 `baselines/`（入库），详见根目录 `AGENTS.md`「UI 类任务开工约定」
 - 完成标准：`go build ./... && go vet ./...` 双通过 + spec 内「验证」清单全绿 + 起服务冒烟

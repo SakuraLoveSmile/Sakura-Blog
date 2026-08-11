@@ -40,7 +40,7 @@
           </span>
           {{if .Category}}
           <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
-            {{icon "default:category"}}
+            {{icon .CategoryIcon}}
             <span>{{.Category}}</span>
           </span>
           {{end}}
@@ -77,7 +77,7 @@
           </span>
           {{if .Category}}
           <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
-            {{icon "default:category"}}
+            {{icon .CategoryIcon}}
             <span>{{.Category}}</span>
           </span>
           {{end}}

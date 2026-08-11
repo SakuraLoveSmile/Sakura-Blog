@@ -52,8 +52,7 @@ const replyContent = ref("");
 const batchMode = ref(false);
 
 // 响应式查询参数：page/size/status 变化自动重取。
-// 后端仅支持 pending/approved 筛选；rejected/spam 目前无对应数据，
-// 这两个 tab 发请求后由后端安全回退为空，其余 tab 正常筛选。
+// 后端支持 pending/approved/rejected/spam 四种状态筛选，非法值回退全量。
 const queryParams = computed(() => {
   const params: Record<string, unknown> = { page: page.value, size: size.value };
   if (selectedStatus.value !== "all") params.status = selectedStatus.value;
@@ -68,8 +67,7 @@ const { data: queryData, isLoading, isFetching, refetch } = useQuery({
 const comments = computed(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
 
-// 各状态计数：后端未提供按状态统计接口，这里累积每次查询看到的计数。
-// 切换 tab 触发请求后，对应状态计数会更新为该状态下的真实总数。
+// 各状态计数：直接使用后端列表响应中的 counts（各状态真实总数）。
 const statusCounts = ref<Record<StatusKey, number>>({
   all: 0,
   pending: 0,
@@ -80,9 +78,14 @@ const statusCounts = ref<Record<StatusKey, number>>({
 watch(
   () => queryData.value,
   (data) => {
-    if (!data) return;
-    const t = (data.total as number) || 0;
-    statusCounts.value = { ...statusCounts.value, [selectedStatus.value]: t, all: t };
+    const c = (data?.counts || {}) as Record<string, number>;
+    statusCounts.value = {
+      all: c.all ?? 0,
+      pending: c.pending ?? 0,
+      approved: c.approved ?? 0,
+      rejected: c.rejected ?? 0,
+      spam: c.spam ?? 0,
+    };
   },
   { immediate: true }
 );
@@ -199,16 +202,25 @@ function exitBatchMode() {
   selectedIds.value = [];
 }
 
-// 批量通过：不触发邮件通知（后端批量端点不接 notify）
-async function handleApproveInBatch() {
+// 批量状态操作：不触发邮件通知（后端批量端点不接 notify）
+async function runBatchAction(action: "approve" | "reject" | "spam", label: string) {
   try {
-    const { data } = await commentApi.batch({ ids: selectedIds.value, action: "approve" });
+    const { data } = await commentApi.batch({ ids: selectedIds.value, action });
     selectedIds.value = [];
     queryClient.invalidateQueries({ queryKey: ["comments"] });
-    Toast.success(`批量通过完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
+    Toast.success(`批量${label}完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
   } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "批量通过失败");
+    Toast.error(e?.response?.data?.error || `批量${label}失败`);
   }
+}
+function handleApproveInBatch() {
+  runBatchAction("approve", "通过");
+}
+function handleRejectInBatch() {
+  runBatchAction("reject", "拒绝");
+}
+function handleSpamInBatch() {
+  runBatchAction("spam", "标记垃圾");
 }
 
 function handleDeleteInBatch() {
@@ -248,6 +260,26 @@ function handleApprove(cm: any) {
       Toast.success("已通过");
     },
   });
+}
+
+// 拒绝 / 标垃圾：走通用状态端点（不发通知）
+function handleSetStatus(cm: any, status: "rejected" | "spam", title: string, doneText: string, danger = false) {
+  menuOpenId.value = null;
+  Dialog.warning({
+    title,
+    confirmType: danger ? "danger" : "secondary",
+    onConfirm: async () => {
+      await commentApi.setStatus(cm.id, status);
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      Toast.success(doneText);
+    },
+  });
+}
+function handleReject(cm: any) {
+  handleSetStatus(cm, "rejected", "确定要拒绝该评论吗？", "已拒绝");
+}
+function handleSpam(cm: any) {
+  handleSetStatus(cm, "spam", "确定要将该评论标为垃圾吗？", "已标为垃圾", true);
 }
 
 function handleDelete(cm: any) {
@@ -312,7 +344,7 @@ function closeMenus() {
         </button>
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-white transition-colors hover:border-border-strong hover:bg-secondary sm:h-9 sm:gap-1.5 sm:px-4 sm:text-[13px]"
+          class="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-border-strong hover:bg-secondary sm:h-9 sm:gap-1.5 sm:px-4 sm:text-[13px]"
           :class="{ '!border-primary !bg-primary/15 !text-primary': batchMode }"
           @click="batchMode = !batchMode"
         >
@@ -321,7 +353,7 @@ function closeMenus() {
         </button>
         <button
           type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-[0_2px_8px_color-mix(in srgb, var(--color-primary) 30%, transparent),0_1px_2px_color-mix(in srgb, var(--color-primary) 20%, transparent)] transition-all hover:-translate-y-px hover:bg-[#1a8fff] active:translate-y-0 sm:h-9 sm:w-auto sm:gap-1.5 sm:px-5 sm:text-[13px] sm:font-semibold"
+          class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover active:scale-[0.97] sm:h-9 sm:px-5"
           title="评论设置"
           @click="router.push({ path: '/settings', query: { tab: 'comments' } })"
         >
@@ -400,6 +432,8 @@ function closeMenus() {
               <template v-if="batchMode && selectedIds.length">
                 <div class="flex flex-wrap items-center gap-2">
                   <VButton type="secondary" size="sm" @click="handleApproveInBatch">批量通过</VButton>
+                  <VButton type="secondary" size="sm" @click="handleRejectInBatch">批量拒绝</VButton>
+                  <VButton type="secondary" size="sm" @click="handleSpamInBatch">批量垃圾</VButton>
                   <VButton type="danger" size="sm" @click="handleDeleteInBatch">批量删除</VButton>
                   <span class="text-xs text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
                 </div>
@@ -510,13 +544,31 @@ function closeMenus() {
 
                   <div class="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-3.5 sm:gap-2">
                     <button
-                      v-if="cm.status === 'pending'"
+                      v-if="cm.status !== 'approved'"
                       type="button"
                       class="action-btn approve"
                       @click="handleApprove(cm)"
                     >
                       <Icon icon="ri:check-line" />
                       通过
+                    </button>
+                    <button
+                      v-if="cm.status === 'pending'"
+                      type="button"
+                      class="action-btn reject"
+                      @click="handleReject(cm)"
+                    >
+                      <Icon icon="ri:close-line" />
+                      拒绝
+                    </button>
+                    <button
+                      v-if="cm.status === 'pending' || cm.status === 'approved'"
+                      type="button"
+                      class="action-btn spam"
+                      @click="handleSpam(cm)"
+                    >
+                      <Icon icon="ri:spam-2-line" />
+                      垃圾
                     </button>
                     <button type="button" class="action-btn reply" @click="openReply(cm)">
                       <Icon icon="ri:corner-up-left-line" />
@@ -653,6 +705,24 @@ function closeMenus() {
 .action-btn.reply:hover {
   background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+.action-btn.reject {
+  color: #ff9f0a;
+  background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
+}
+.action-btn.reject:hover {
+  background-color: color-mix(in srgb, var(--color-state-warning) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-warning) 25%, transparent);
+}
+.action-btn.spam {
+  color: var(--color-text-tertiary);
+  background-color: color-mix(in srgb, var(--color-muted-foreground) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-muted-foreground) 18%, transparent);
+}
+.action-btn.spam:hover {
+  background-color: color-mix(in srgb, var(--color-muted-foreground) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-muted-foreground) 30%, transparent);
 }
 .action-btn.delete {
   color: #ff453a;

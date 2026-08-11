@@ -12,6 +12,8 @@ import (
 const (
 	CommentApproved = "approved"
 	CommentPending  = "pending"
+	CommentRejected = "rejected" // 管理员拒绝，前台不展示
+	CommentSpam     = "spam"     // 垃圾评论，前台不展示
 )
 
 // ErrCommentNotFound 评论不存在（点赞等写操作用）。
@@ -30,7 +32,7 @@ type Comment struct {
 	ContentHTML string // goldmark 渲染 + bluemonday 消毒后的 HTML
 	ParentID    int64  // 0=顶级评论，否则为被回复评论 id
 	RootID      int64  // 0=顶级评论，否则为所属顶级评论 id
-	Status      string // approved / pending
+	Status      string // approved / pending / rejected / spam
 	IsAdmin     bool   // 博主回复标识（is_admin 列 0/1）
 	UserID      int64  // 0=匿名，>0 对应 users 表 id（已注册用户）
 	Verified    bool   // 注册用户标识：已登录用户评论显示"已验证"徽章
@@ -216,6 +218,33 @@ func (s *Store) CountCommentsByPage(pageKey string) (int, error) {
 	return repo(s, &Comment{}).Count(Where("page_key = ? AND status = ?", pageKey, CommentApproved))
 }
 
+// CountCommentStatuses 按状态分组统计评论数（管理页 tab 计数用）。
+// 返回 map 含 "all" 与各状态键；无记录的状态键不出现在 map 中。
+func (s *Store) CountCommentStatuses() (map[string]int, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.Query(`SELECT status, COUNT(*) FROM comments GROUP BY status`)
+	if err != nil {
+		return nil, fmt.Errorf("group count comments by status: %w", err)
+	}
+	defer rows.Close()
+	counts := map[string]int{}
+	for rows.Next() {
+		var status string
+		var n int
+		if err := rows.Scan(&status, &n); err != nil {
+			return nil, fmt.Errorf("scan comment status counts: %w", err)
+		}
+		counts[status] = n
+		counts["all"] += n
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate comment status counts: %w", err)
+	}
+	return counts, nil
+}
+
 // GetComment 按 id 查单条评论。未找到返回 nil, nil。
 func (s *Store) GetComment(id int64) (*Comment, error) {
 	if err := s.ensureCommentReactions(); err != nil {
@@ -341,23 +370,29 @@ func idPlaceholders(ids []int64) (string, []interface{}) {
 	return ph, args
 }
 
-// ApproveComments 批量审核通过，单 SQL IN 实现。
+// SetCommentsStatus 批量更新评论状态，单 SQL IN 实现。
 // 返回实际更新的条数（不存在的 id 不计入）；空 ids 直接返回 0。
-func (s *Store) ApproveComments(ids []int64) (int, error) {
+func (s *Store) SetCommentsStatus(ids []int64, status string) (int, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
 	ph, args := idPlaceholders(ids)
 	res, err := s.db.Exec(`UPDATE comments SET status = ? WHERE id IN (`+ph+`)`,
-		append([]interface{}{CommentApproved}, args...)...)
+		append([]interface{}{status}, args...)...)
 	if err != nil {
-		return 0, fmt.Errorf("approve comments batch: %w", err)
+		return 0, fmt.Errorf("set comments status batch: %w", err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("approve comments rows affected: %w", err)
+		return 0, fmt.Errorf("set comments status rows affected: %w", err)
 	}
 	return int(n), nil
+}
+
+// ApproveComments 批量审核通过，单 SQL IN 实现。
+// 返回实际更新的条数（不存在的 id 不计入）；空 ids 直接返回 0。
+func (s *Store) ApproveComments(ids []int64) (int, error) {
+	return s.SetCommentsStatus(ids, CommentApproved)
 }
 
 // DeleteComments 批量删除（级联子评论），事务内先按 id 统计命中数再单 SQL IN 删除。

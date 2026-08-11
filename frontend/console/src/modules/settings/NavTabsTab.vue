@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from"@iconify/vue";
+import IconPicker from"@/components/IconPicker.vue";
 
 // 导航栏标签页（site.yml nav_tabs 段入库版）：
 // enable_custom=true 时导航栏完全由 items 定义；false 时固定 tab + items 追加。
@@ -48,7 +49,9 @@ function moveItem(i: number, dir: -1 | 1) {
  <div class="grid grid-cols-12 gap-2 items-center">
  <input v-model="it.title" placeholder="标题" :class="inputCls" class="col-span-3" />
  <input v-model="it.url" placeholder="/url 或 https://..." :class="inputCls" class="col-span-4" />
- <input v-model="it.icon" placeholder="图标 key（可选）" :class="inputCls" class="col-span-3" />
+ <div class="col-span-3">
+ <IconPicker v-model="it.icon" compact placeholder="图标 key（可选）" hint="该图标当前前台暂未渲染（数据预留）" />
+ </div>
  <div class="col-span-2 flex items-center gap-1.5 justify-end">
  <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
  <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.items.length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>

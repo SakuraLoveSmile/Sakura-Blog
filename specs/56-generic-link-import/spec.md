@@ -81,13 +81,27 @@ The system SHALL tag unreachable links with label「失效」(color EF4444) afte
 
 端点路径与响应结构不变；请求体新增可选 `source` 字段，缺省视为 `github`，Spec 54 全部 Scenario 保持成立。console 入口由「从 GitHub 导入」改为通用「导入友链」弹窗，GitHub 仓库为其中一种来源。
 
+## UI 验收边界（导入弹窗 UI 子任务）
+
+> 载体约定见根目录 [`AGENTS.md`](../../AGENTS.md)「UI 类任务开工约定」；基线截图存放于本目录 `baselines/`（入库）。
+
+- **参照图路径**：`baselines/import-modal-reference.png`（粘贴文本来源弹窗基线，唯一参照，中途不得更换；GitHub 来源对照图为 `baselines/import-modal-github-source.png`）
+- **验收清单**（每项一个可观察判据，完成时逐项对照基线截图勾选）：
+  - [ ] 「链接」页工具条按钮文案为「导入友链」（图标 `ri:import-line`），不再出现「从 GitHub 导入」
+  - [ ] 弹窗标题为「导入友链」，顶部为两段式来源切换（GitHub 仓库 / 粘贴文本）
+  - [ ] 选择粘贴来源时显示多行 textarea，提示文案说明支持 JSON 数组或 YAML
+  - [ ] 切换来源时分组默认值跟随（GitHub 友链 / 导入友链）
+  - [ ] 「检测全部」后有变更时 Toast 追加「已标记失效 X · 恢复 Y」，列表中「失效」标签为红色（`EF4444`）
+  - [ ] 验收完成后的截图存入 `baselines/` 并更新本节勾选状态
+
 ## 验证
 
 1. `go vet ./backend/...` + `go test ./backend/...` 通过（parseTextLinks 纯函数单测 + text 导入/检测打标 httptest 集成用例）
 2. `vue-tsc -b` + console 行为测试通过
 3. console「链接」页：两种来源导入各跑一次，Toast/分组正确，重复导入全部跳过
 4. 「检测全部」：失联友链出现红色「失效」标签，恢复后摘除，已有标签不被覆盖
-5. `make merge-check` 全绿后合入 dev
+5. UI 子任务：「UI 验收边界」清单逐项对照 `baselines/` 基线截图勾选全绿
+6. `make merge-check` 全绿后合入 dev
 
 ## Out of Scope
 

@@ -46,10 +46,11 @@ func toCommentJSON(cm *store.Comment, gravatarMirror string) *commentJSON {
 }
 
 // listComments GET /api/v1/comments：评论列表（status 筛选 + 分页）。
+// 响应附带 counts（各状态真实计数），供管理页 tab 徽标展示。
 func (h *Handler) listComments(c *gin.Context) {
 	filter := c.DefaultQuery("status", "")
 	switch filter {
-	case store.CommentPending, store.CommentApproved:
+	case store.CommentPending, store.CommentApproved, store.CommentRejected, store.CommentSpam:
 		// valid
 	default:
 		filter = ""
@@ -87,11 +88,18 @@ func (h *Handler) listComments(c *gin.Context) {
 		items = append(items, row)
 	}
 
+	counts, err := h.store.CountCommentStatuses()
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"items": items,
-		"total": total,
-		"page":  page,
-		"size":  size,
+		"items":  items,
+		"total":  total,
+		"page":   page,
+		"size":   size,
+		"counts": counts,
 	})
 }
 
@@ -137,6 +145,63 @@ func (h *Handler) approveComment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+// statusComment PUT /api/v1/comments/:id/status：修改评论状态（拒绝 / 垃圾 / 恢复等）。
+// 请求体 {"status": "approved|pending|rejected|spam"}；改为 approved 时同样触发通过通知。
+func (h *Handler) statusComment(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, "无效的评论 ID")
+		return
+	}
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	switch req.Status {
+	case store.CommentPending, store.CommentApproved, store.CommentRejected, store.CommentSpam:
+		// valid
+	default:
+		Fail(c, http.StatusBadRequest, "status 仅支持 pending / approved / rejected / spam")
+		return
+	}
+
+	cm, err := h.store.GetComment(id)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if cm == nil {
+		Fail(c, http.StatusNotFound, "评论不存在")
+		return
+	}
+	if err := h.store.UpdateCommentStatus(id, req.Status); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	// 恢复为已通过时补发通过通知，与 approve 端点行为一致
+	if req.Status == store.CommentApproved && h.notify != nil {
+		content := cm.ContentMD
+		if r := []rune(content); len(r) > 200 {
+			content = string(r[:200]) + "…"
+		}
+		h.notify.Notify(notify.Event{
+			Type:    "comment_approved",
+			Title:   fmt.Sprintf("评论已通过：%s", cm.Nick),
+			Content: content,
+			Link:    cm.PageKey,
+			Nick:    cm.Nick,
+			Email:   cm.Email,
+			IP:      cm.IP,
+			PageKey: cm.PageKey,
+			Status:  store.CommentApproved,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 // deleteComment DELETE /api/v1/comments/:id：删除评论（级联）。
 func (h *Handler) deleteComment(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -154,10 +219,10 @@ func (h *Handler) deleteComment(c *gin.Context) {
 // maxBatchCommentIDs 单次批量操作的 ids 上限。
 const maxBatchCommentIDs = 100
 
-// batchComments POST /api/v1/comments/batch：批量通过/删除。
+// batchComments POST /api/v1/comments/batch：批量通过/拒绝/标垃圾/删除。
 // 事务内执行（store 批量方法内部保证原子性），返回 {succeeded, failed}；
 // 混入不存在的 id 时其余照常成功，failed 计入未命中数。
-// 注意：批量通过不触发邮件通知（通知仅在单条回复路径 replyComment）。
+// 注意：批量操作不触发站内/邮件通知（通知仅在单条通过 approve / status 与回复路径）。
 func (h *Handler) batchComments(c *gin.Context) {
 	var req struct {
 		IDs    []int64 `json:"ids"`
@@ -180,11 +245,15 @@ func (h *Handler) batchComments(c *gin.Context) {
 	var err error
 	switch req.Action {
 	case "approve":
-		succeeded, err = h.store.ApproveComments(req.IDs)
+		succeeded, err = h.store.SetCommentsStatus(req.IDs, store.CommentApproved)
+	case "reject":
+		succeeded, err = h.store.SetCommentsStatus(req.IDs, store.CommentRejected)
+	case "spam":
+		succeeded, err = h.store.SetCommentsStatus(req.IDs, store.CommentSpam)
 	case "delete":
 		succeeded, err = h.store.DeleteComments(req.IDs)
 	default:
-		Fail(c, http.StatusBadRequest, "action 仅支持 approve / delete")
+		Fail(c, http.StatusBadRequest, "action 仅支持 approve / reject / spam / delete")
 		return
 	}
 	if err != nil {
@@ -223,7 +292,7 @@ func (h *Handler) replyComment(c *gin.Context) {
 
 	html, err := comment.Render(req.Content)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "渲染失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "渲染失败: "+err.Error())
 		return
 	}
 
@@ -245,7 +314,7 @@ func (h *Handler) replyComment(c *gin.Context) {
 		UA:          c.Request.UserAgent(),
 	}
 	if _, err := h.store.CreateComment(cm); err != nil {
-		Fail(c, http.StatusInternalServerError, "回复失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "回复失败: "+err.Error())
 		return
 	}
 

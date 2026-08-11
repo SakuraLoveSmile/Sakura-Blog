@@ -2,7 +2,8 @@
    渲染入口：{{template "layout/base" .}}，文章正文通过 {{template "partial/content" .}} 嵌入。
 */ -}}
 <!DOCTYPE html>
-<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" data-theme="dark">
+{{- /* 默认主题（对齐原版 style.prefers_theme）：缺省/dark=深色（现状回归）；light=浅色；auto=跟随系统（head 内脚本按 prefers-color-scheme 设置） */}}
+<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" {{if eq .Site.Style.PrefersTheme "light"}}data-theme="light"{{else if eq .Site.Style.PrefersTheme "auto"}}data-theme="dark" data-theme-auto{{else}}data-theme="dark"{{end}}>
 {{template "partial/head" .}}
 <body>
   {{- /* 阅读进度条：仅文章页由 reading.js 显示并更新宽度 */}}
@@ -67,7 +68,8 @@
         js: '/assets/vendor/fancybox/fancybox.umd.js'
       }
     };
-    const def = { avatar: '', cover: '', loading: '' };
+    {{- /* def 占位素材（site.yml default 段）：空值注入空串，下方 JS 已有空值守卫 */}}
+    const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}' };
     const deps = {
       jquery: '/assets/js/vendor/jquery.min.js',
       {{- /* marked：对齐原版 _config.yml dependencies.marked（timeline/mdrender 渲染 md 正文用，懒加载） */}}
@@ -396,8 +398,17 @@
   </script>
   <script defer src="{{url_for "/assets/js/plugins/preload.js"}}"></script>
   {{- end -}}
-  {{- /* scrollreveal 滚动渐现（Spec 36）：条件化注入，需 site.yml plugins.scrollreveal.enable=true */}}
+  {{- /* scrollreveal 滚动渐现（Spec 36）：条件化注入，需 site.yml plugins.scrollreveal.enable=true。
+     ctx.plugins.scrollreveal 供 scrollreveal-init.js 读取 distance/duration/interval（空/0 时 init 内部回退缺省值）。 */}}
   {{- if and .Site.Plugins.ScrollReveal .Site.Plugins.ScrollReveal.Enable -}}
+  <script>
+    ctx.plugins = ctx.plugins || {};
+    ctx.plugins.scrollreveal = {
+      distance: '{{ .Site.Plugins.ScrollReveal.Distance }}',
+      duration: {{ .Site.Plugins.ScrollReveal.Duration }},
+      interval: {{ .Site.Plugins.ScrollReveal.Interval }}
+    };
+  </script>
   <script defer src="{{url_for "/assets/vendor/scrollreveal.min.js"}}"></script>
   <script defer src="{{url_for "/assets/js/plugins/scrollreveal-init.js"}}"></script>
   {{- end -}}

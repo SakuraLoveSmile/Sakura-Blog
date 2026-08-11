@@ -247,24 +247,13 @@ var zhCN = map[string]string{
 	"js.copied":       "已复制",
 }
 
-// langOverrides 运行时文案覆盖表（settings 表 lang 段，RebuildSite 时刷新；nil=无覆盖）。
-// 读多写少：写入由 siteMu 保护（config.RebuildSite），Lang 读方无锁，与 site 字段同权衡。
-var langOverrides map[string]string
-
-// SetLangOverrides 设置运行时文案覆盖表（config.RebuildSite 调用；nil 清空覆盖）。
-func SetLangOverrides(m map[string]string) {
-	langOverrides = m
-}
-
 // Lang 返回 key 对应的中文文案，支持 fmt.Sprintf 式参数替换。
-// 优先级：settings 覆盖表 > 内置 zhCN；均未命中返回 key 本身（便于排查遗漏）。
+// 命中内置 zhCN 返回文案；未命中返回 key 本身（便于排查遗漏）。
+// 文案个性化已拆解到各具体配置项（footer.content / tag_plugins.copy.toast 等），不再提供全局覆盖表。
 func Lang(key string, args ...interface{}) string {
-	v, ok := langOverrides[key]
+	v, ok := zhCN[key]
 	if !ok {
-		v, ok = zhCN[key]
-		if !ok {
-			return key
-		}
+		return key
 	}
 	if len(args) > 0 {
 		return fmt.Sprintf(v, args...)

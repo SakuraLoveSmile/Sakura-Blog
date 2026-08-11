@@ -426,7 +426,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
               <button
                 type="button"
                 title="刷新"
-                class="hidden h-9 items-center gap-1.5 rounded-[10px] border border-border bg-card px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:inline-flex"
+                class="hidden h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:inline-flex"
                 @click="refetch()"
               >
                 <Icon icon="ri:refresh-line" />
@@ -435,7 +435,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
               <button
                 type="button"
                 title="刷新"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:hidden"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:hidden"
                 @click="refetch()"
               >
                 <Icon icon="ri:refresh-line" class="text-base" />

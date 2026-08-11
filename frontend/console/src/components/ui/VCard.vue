@@ -53,7 +53,7 @@ defineProps<{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  padding: 16px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -70,11 +70,11 @@ defineProps<{
 }
 
 .card-body {
-  padding: 16px 18px;
+  padding: 16px;
 }
 
 .card-footer {
   border-top: 1px solid var(--color-border);
-  padding: 14px 18px;
+  padding: 16px;
 }
 </style>

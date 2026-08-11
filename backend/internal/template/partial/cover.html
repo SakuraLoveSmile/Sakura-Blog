@@ -12,7 +12,8 @@
     {{- if .Site.Cover.Features}}
     <div class="start-wrap">
       {{- range .Site.Cover.Features}}
-      <a class="button start gradient" href="{{.URL}}">{{.Title}}</a>
+      {{- /* icon 非空时经 icon 函数渲染（内联 SVG 或 img），样式在 head.html 的 start-icon 块 */}}
+      <a class="button start gradient{{if .Icon}} has-icon{{end}}" href="{{.URL}}">{{if .Icon}}<span class="start-icon">{{icon .Icon}}</span>{{end}}{{.Title}}</a>
       {{- end}}
     </div>
     {{- end}}

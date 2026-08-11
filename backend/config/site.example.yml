@@ -213,6 +213,12 @@ article:
   category_color:
     技术: '#1BCDFC'
     测试: '#FA7D23'
+  # 分类图标表：分类名 → icon key（icons.yml 的 key 或图片 URL），未配置回退默认分类图标
+  category_icon:
+    技术: 'solar:documents-bold-duotone'
+  # 标签图标表：标签名 → icon key（icons.yml 的 key 或图片 URL），未配置不渲染图标
+  tag_icon:
+    Go: 'solar:hashtag-square-bold'
   copyright:
     enabled: true
     license: 署名-非商业性使用-相同方式共享 4.0 国际

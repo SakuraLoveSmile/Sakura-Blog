@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from"vue";
 import { Icon } from"@iconify/vue";
+import IconPicker from"@/components/IconPicker.vue";
 
 interface MenuItem {
  id: string;
@@ -82,11 +83,6 @@ const errors = computed(() => {
  return errs;
 });
 const hasErrors = computed(() => Object.keys(errors.value).length > 0);
-
-// 判断 icon key 是否为 Iconify 格式（含冒号）
-function isIconify(key: string) {
- return key.includes(":");
-}
 </script>
 
 <template>
@@ -151,12 +147,8 @@ function isIconify(key: string) {
 
  <!-- icon + preview -->
  <div class="col-span-3">
- <label class="block text-[10px] text-text-quaternary mb-0.5">图标 (Iconify key)</label>
- <div class="flex items-center gap-1.5">
- <Icon v-if="isIconify(it.icon)" :icon="it.icon" class="text-lg shrink-0 text-text-tertiary" />
- <span v-else class="w-5 h-5 flex items-center justify-center text-[10px] text-text-quaternary border border-dashed border-border-strong rounded">?</span>
- <input v-model="it.icon" placeholder="solar:documents-bold-duotone" :class="inputCls" />
- </div>
+ <label class="block text-[10px] text-text-quaternary mb-0.5">图标 (icons.yml key)</label>
+ <IconPicker v-model="it.icon" compact placeholder="如 solar:documents-bold-duotone" />
  </div>
 
  <!-- theme color -->

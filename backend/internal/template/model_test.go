@@ -13,12 +13,14 @@ import (
 func TestNewPostCard(t *testing.T) {
 	date := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 	colors := map[string]string{"技术": "1BCDFC"}
+	icons := map[string]string{"技术": "solar:folder-bold"}
 
 	tests := []struct {
 		name       string
 		post       *store.Post
 		colors     map[string]string
 		wantStyle  template.CSS
+		wantIcon   string
 		wantPoster *PosterCard
 	}{
 		{
@@ -29,36 +31,41 @@ func TestNewPostCard(t *testing.T) {
 			},
 			colors:    colors,
 			wantStyle: "--text-p2:#1BCDFC;--theme-block:#1BCDFC20",
+			wantIcon:  "solar:folder-bold",
 		},
 		{
 			name:      "分类未配置配色时 style 为空",
 			post:      &store.Post{Slug: "a", Category: "随笔", CreatedAt: date},
 			colors:    colors,
 			wantStyle: "",
+			wantIcon:  "default:category",
 		},
 		{
-			name:   "合法海报 JSON 解码为 PosterCard",
-			post:   &store.Post{Slug: "p", CreatedAt: date, Poster: `{"headline":"主标题","topic":"专栏","caption":"副题","color":"#fff"}`},
-			colors: nil,
+			name:     "合法海报 JSON 解码为 PosterCard",
+			post:     &store.Post{Slug: "p", CreatedAt: date, Poster: `{"headline":"主标题","topic":"专栏","caption":"副题","color":"#fff"}`},
+			colors:   nil,
+			wantIcon: "default:category",
 			wantPoster: &PosterCard{
 				Headline: "主标题", Topic: "专栏", Caption: "副题", Color: "#fff",
 			},
 		},
 		{
-			name:   "海报缺 headline 时不渲染 photo 卡",
-			post:   &store.Post{Slug: "p2", CreatedAt: date, Poster: `{"topic":"专栏"}`},
-			colors: nil,
+			name:     "海报缺 headline 时不渲染 photo 卡",
+			post:     &store.Post{Slug: "p2", CreatedAt: date, Poster: `{"topic":"专栏"}`},
+			colors:   nil,
+			wantIcon: "default:category",
 		},
 		{
-			name:   "海报 JSON 非法时静默降级",
-			post:   &store.Post{Slug: "p3", CreatedAt: date, Poster: `{bad json`},
-			colors: nil,
+			name:     "海报 JSON 非法时静默降级",
+			post:     &store.Post{Slug: "p3", CreatedAt: date, Poster: `{bad json`},
+			colors:   nil,
+			wantIcon: "default:category",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			card := NewPostCard(tt.post, tt.colors)
+			card := NewPostCard(tt.post, tt.colors, icons)
 			if card.Slug != tt.post.Slug || card.Title != tt.post.Title ||
 				card.Excerpt != tt.post.Excerpt || card.Cover != tt.post.Cover ||
 				card.Category != tt.post.Category || card.Pinned != tt.post.Pinned {
@@ -69,6 +76,9 @@ func TestNewPostCard(t *testing.T) {
 			}
 			if card.CategoryStyle != tt.wantStyle {
 				t.Errorf("CategoryStyle = %q, want %q", card.CategoryStyle, tt.wantStyle)
+			}
+			if card.CategoryIcon != tt.wantIcon {
+				t.Errorf("CategoryIcon = %q, want %q", card.CategoryIcon, tt.wantIcon)
 			}
 			if tt.wantPoster == nil {
 				if card.Poster != nil {
@@ -100,6 +110,30 @@ func TestCategoryColorStyle(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CategoryColorStyle(tt.cat, tt.colors); got != tt.want {
 				t.Errorf("CategoryColorStyle(%q) = %q, want %q", tt.cat, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCategoryIconKey 分类图标 key 解析：命中返回配置值，未命中/空分类回退 default:category。
+func TestCategoryIconKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		cat   string
+		icons map[string]string
+		want  string
+	}{
+		{"分类为空回退默认", "", map[string]string{"Go": "solar:code-bold"}, "default:category"},
+		{"图标表为空回退默认", "Go", nil, "default:category"},
+		{"分类未命中回退默认", "Go", map[string]string{"Rust": "solar:code-bold"}, "default:category"},
+		{"命中值为 icons.yml key", "Go", map[string]string{"Go": "solar:code-bold"}, "solar:code-bold"},
+		{"命中值为图片 URL", "Go", map[string]string{"Go": "https://example.com/go.svg"}, "https://example.com/go.svg"},
+		{"命中值为空串回退默认", "Go", map[string]string{"Go": ""}, "default:category"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CategoryIconKey(tt.cat, tt.icons); got != tt.want {
+				t.Errorf("CategoryIconKey(%q) = %q, want %q", tt.cat, got, tt.want)
 			}
 		})
 	}

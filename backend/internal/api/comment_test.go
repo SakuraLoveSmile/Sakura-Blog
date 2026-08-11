@@ -69,7 +69,7 @@ func TestBatchCommentsUnauthorized(t *testing.T) {
 
 func TestBatchCommentsInvalidAction(t *testing.T) {
 	r, _ := newBatchTestEnv(t)
-	w := postBatch(r, `{"ids":[1],"action":"reject"}`)
+	w := postBatch(r, `{"ids":[1],"action":"bogus"}`)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("invalid action should get 400, got %d", w.Code)
 	}

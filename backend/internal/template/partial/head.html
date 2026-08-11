@@ -145,6 +145,16 @@
   </style>
   {{- end}}
 
+  {{- /* Hero 功能按钮图标（cover.features[].icon）：仅配了 icon 时注入，尺寸间距对齐 a.tag-plugin.button svg 惯例 */}}
+  {{- $hasCoverIcon := false}}
+  {{- range .Site.Cover.Features}}{{if .Icon}}{{$hasCoverIcon = true}}{{end}}{{end}}
+  {{- if $hasCoverIcon}}
+  <style>
+    .l_cover .start-wrap a.start.has-icon { display: inline-flex; align-items: center; }
+    .l_cover .start-wrap .start-icon svg, .l_cover .start-wrap .start-icon img { height: 1.2em; width: auto; margin: 0 0.4em 0 0; flex-shrink: 0; }
+  </style>
+  {{- end}}
+
   {{- /* 侧栏纯色背景：移除 sidebg 背景图模糊 + mask 淡出，改 var(--card) 纯色（Spec Task 2）
      Spec 50：有侧栏背景图时跳过此覆盖，由 model_style.go 的 leftbarCSS() 恢复图片模糊模式 */}}
   {{- if not .Site.Style.Leftbar.BackgroundImage}}
@@ -170,6 +180,10 @@
 
   {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
   {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
+  {{- /* article 段排版注入（indent 缩进 / cover_ratio 封面比例，未配置不输出） */}}
+  {{with .Site.Article.InjectCSS}}<style>{{.}}</style>{{end}}
+  {{- /* prefers_theme=auto：跟随系统明暗（在 CSS 前执行避免闪白） */}}
+  <script>(function(){var h=document.documentElement;if(!h.hasAttribute("data-theme-auto"))return;var m=matchMedia("(prefers-color-scheme: dark)");var f=function(){h.setAttribute("data-theme",m.matches?"dark":"light")};f();if(m.addEventListener){m.addEventListener("change",f)}})();</script>
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>
     if ('serviceWorker' in navigator) {

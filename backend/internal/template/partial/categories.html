@@ -8,7 +8,7 @@
     {{range .Cats}}
     <div>
       <a class="cat" href="/categories/{{.Name}}">
-        <span class="name">{{icon "default:category"}}{{.Name}}</span>
+        <span class="name">{{if .Icon}}{{icon .Icon}}{{else}}{{icon "default:category"}}{{end}}{{.Name}}</span>
         <span class="badge">({{.Count}})</span>
       </a>
     </div>

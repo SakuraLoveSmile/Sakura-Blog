@@ -267,7 +267,7 @@ function closeMenus() {
  <div v-for="g in grouped" :key="g.title" class="rounded-xl border border-border bg-card p-4">
  <div class="mb-3 flex items-center justify-between">
  <span class="text-sm font-semibold text-text-secondary">{{ g.title }} <span class="text-text-quaternary">({{ g.items.length }})</span></span>
- <button class="rounded-lg bg-secondary px-3 py-1 text-xs text-white hover:opacity-90" @click="openCreate">新建</button>
+ <button class="rounded-full bg-secondary px-3 py-1 text-xs text-foreground transition-colors hover:bg-accent" @click="openCreate">新建</button>
  </div>
  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
  <div

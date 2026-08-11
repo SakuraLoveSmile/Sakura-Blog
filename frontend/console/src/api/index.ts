@@ -157,14 +157,17 @@ export const revisionApi = {
 };
 
 // --- Comments ---
+export type CommentStatus = "pending" | "approved" | "rejected" | "spam";
 export const commentApi = {
  list: (params?: Record<string, unknown>) =>
  http.get("/comments", { params }),
  approve: (id: number) => http.put(`/comments/${id}/approve`),
+ setStatus: (id: number, status: CommentStatus) =>
+ http.put(`/comments/${id}/status`, { status }),
  delete: (id: number) => http.delete(`/comments/${id}`),
  reply: (data: { parent_id: number; content: string }) =>
  http.post("/comments/reply", data),
- batch: (data: { ids: number[]; action:"approve" |"delete" }) =>
+ batch: (data: { ids: number[]; action: "approve" | "reject" | "spam" | "delete" }) =>
  http.post("/comments/batch", data),
 };
 
@@ -202,6 +205,9 @@ export const previewApi = {
  /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
  createPostPreview: (form: Record<string, unknown>) =>
  http.post("/preview/post", form),
+ /** 站点配置预览（设置页所见即所得）：草稿分段 → 前台整页 HTML */
+ site: (sections: Record<string, unknown>, page: string) =>
+ http.post<{ html: string }>("/preview/site", { sections, page }),
 };
 
 // --- AI 属性生成（OpenAI 兼容代理，配置在 设置 → AI） ---
@@ -317,6 +323,17 @@ export const taxonomyApi = {
  deleteTag: (name: string) => http.delete(`/tags/${encodeURIComponent(name)}`),
  mergeTags: (sources: string[], target: string) =>
  http.post("/tags/merge", { sources, target }),
+};
+
+// --- Assets (素材速查：插件库图标画廊数据源) ---
+export interface AssetIconItem {
+  key: string;
+  /** 内联 SVG 或图片 URL */
+  value: string;
+}
+
+export const assetsApi = {
+  icons: () => http.get<{ items: AssetIconItem[] }>("/assets/icons"),
 };
 
 // --- 管理端全局搜索（Spec 39，⌘K 弹窗）---

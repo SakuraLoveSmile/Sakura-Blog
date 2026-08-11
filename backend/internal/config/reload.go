@@ -31,7 +31,8 @@ const (
 	SectionNavTabs = "nav_tabs" // 导航栏标签页
 	SectionAuthors = "authors"  // 多作者体系
 	SectionPlugins = "plugins"  // 前端体验增强插件开关
-	SectionLang    = "lang"     // 前台文案覆盖表（增量覆盖内置 zhCN，未配置=无覆盖）
+	SectionTagPlugins = "tag_plugins" // 标签插件默认参数（对齐原版 _config.yml tag_plugins）
+	SectionDefault      = "default"   // 占位素材组（对齐原版 _config.yml default）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -355,7 +356,31 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 
-	// 先在锁外解析成局部值，缩小写锁临界区
+	// admin 段涉及敏感状态，单独处理（预览草稿不共享）
+	var admin adminSection
+	adminSet := false
+	if v, ok := settings[SectionAdmin]; ok && v != "" {
+		if json.Unmarshal([]byte(v), &admin) == nil {
+			adminSet = true
+		}
+	}
+
+	groups := LinksToGroups(links)
+
+	siteMu.Lock()
+	defer siteMu.Unlock()
+	rebuildFromValues(site, settings)
+	site.Links = groups
+	tmpl.SetTagPlugins(site.TagPlugins) // 标签插件默认参数全局生效（预览草稿不触碰）
+	if adminSet {
+		site.Admin.Password = admin.Password
+	}
+	return nil
+}
+
+// rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。
+// RebuildSite（DB 真值）与 ApplyDraftSections（设置页预览草稿）共用，保证解析映射不漂移。
+func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
 	var basic siteBasic
 	var menubar tmpl.Menubar
 	var rightbar tmpl.RightbarConfig
@@ -372,9 +397,8 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	var navTabs tmpl.NavTabsConfig
 	var authors map[string]tmpl.AuthorDef
 	var plugins tmpl.PluginsConfig
-	var langOver map[string]string
-	var admin adminSection
-	adminSet := false
+	var tagPlugins tmpl.TagPluginsConfig
+	var defaultAssets tmpl.DefaultAssets
 
 	unmarshal := func(section string, dst any) {
 		if v, ok := settings[section]; ok && v != "" {
@@ -397,17 +421,9 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	unmarshal(SectionNavTabs, &navTabs)
 	unmarshal(SectionAuthors, &authors)
 	unmarshal(SectionPlugins, &plugins)
-	unmarshal(SectionLang, &langOver)
-	if v, ok := settings[SectionAdmin]; ok && v != "" {
-		if json.Unmarshal([]byte(v), &admin) == nil {
-			adminSet = true
-		}
-	}
+	unmarshal(SectionTagPlugins, &tagPlugins)
+	unmarshal(SectionDefault, &defaultAssets)
 
-	groups := LinksToGroups(links)
-
-	siteMu.Lock()
-	defer siteMu.Unlock()
 	site.Title = basic.Title
 	site.Subtitle = basic.Subtitle
 	site.Description = basic.Description
@@ -434,12 +450,19 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 	site.NavTabs = navTabs
 	site.Authors = authors
 	site.Plugins = plugins
-	site.Links = groups
-	tmpl.SetLangOverrides(langOver) // 与 site 字段同权衡：写锁保护，读方无锁
-	if adminSet {
-		site.Admin.Password = admin.Password
+	site.TagPlugins = tagPlugins
+	site.Default = defaultAssets
+}
+
+// ApplyDraftSections 把草稿分段 JSON 就地应用到传入的 Site 副本（设置页「前端预览」用）：
+// 与 RebuildSite 同一解析映射，但不触碰 DB、全局共享 site、links、admin 密码与全局文案覆盖。
+// raw 中未提供的分段保持 site 原值。
+func ApplyDraftSections(site *tmpl.Site, raw map[string]json.RawMessage) {
+	settings := make(map[string]string, len(raw))
+	for k, v := range raw {
+		settings[k] = string(v)
 	}
-	return nil
+	rebuildFromValues(site, settings)
 }
 
 // LinksToGroups 把扁平的 store.Link 列表按 GroupTitle 分组为 tmpl.LinkGroup，保留首次出现的组顺序。
@@ -473,7 +496,8 @@ func KnownSections() []string {
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
 		SectionSEO, SectionInject, SectionDashboard,
 		SectionStyle, SectionWidgets, SectionAI,
-		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionLang,
+		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
+		SectionTagPlugins, SectionDefault,
 	}
 }
 
@@ -534,8 +558,10 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &map[string]tmpl.AuthorDef{}
 	case SectionPlugins:
 		dst = &tmpl.PluginsConfig{}
-	case SectionLang:
-		dst = &map[string]string{}
+	case SectionTagPlugins:
+		dst = &tmpl.TagPluginsConfig{}
+	case SectionDefault:
+		dst = &tmpl.DefaultAssets{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}

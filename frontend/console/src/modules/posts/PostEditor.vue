@@ -424,7 +424,7 @@ function handleDiscardDraft() {
         <!-- 预览（移动端仅图标） -->
         <button
           type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:h-[34px] sm:w-auto sm:gap-1.5 sm:rounded-[9px] sm:px-3.5 sm:text-[13px] sm:font-medium"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:h-[34px] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[13px] sm:font-semibold"
           :disabled="previewing"
           @click="handlePreview"
         >
@@ -434,7 +434,7 @@ function handleDiscardDraft() {
         <!-- 保存草稿（移动端仅图标） -->
         <button
           type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-secondary text-foreground transition-colors hover:bg-accent disabled:opacity-50 sm:h-[34px] sm:w-auto sm:gap-1.5 sm:rounded-[9px] sm:px-3.5 sm:text-[13px] sm:font-medium"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:bg-accent disabled:opacity-50 sm:h-[34px] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[13px] sm:font-semibold"
           :disabled="saving"
           @click="handleSave"
           :title="saving ? '保存中…' : '保存草稿'"
@@ -445,8 +445,7 @@ function handleDiscardDraft() {
         <!-- 发布（primary，移动端保持文字但更紧凑） -->
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold text-white transition-all sm:h-[34px] sm:gap-1.5 sm:rounded-[9px] sm:px-4 sm:text-[13px]"
-          style="background: var(--color-primary); box-shadow: 0 0 24px color-mix(in srgb, var(--color-primary) 20%, transparent);"
+          class="inline-flex h-8 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50 sm:h-[34px] sm:gap-1.5 sm:px-4 sm:text-[13px]"
           :disabled="publishing"
           @click="handlePublish"
         >

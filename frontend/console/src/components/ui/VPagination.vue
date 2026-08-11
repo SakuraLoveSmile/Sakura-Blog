@@ -70,7 +70,7 @@ function changeSize(e: Event) {
           :class="[
             'h-8 min-w-8 rounded-lg px-2 text-xs transition-all',
             page === item
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-primary-foreground'
               : 'hover:bg-secondary',
           ]"
           :style="page === item ? 'box-shadow: var(--shadow-sm);' : 'color: var(--color-text-tertiary);'"

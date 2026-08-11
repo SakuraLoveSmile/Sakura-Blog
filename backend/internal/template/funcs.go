@@ -28,6 +28,14 @@ var wikiTagColors = map[string]string{
 // Go html/template 对返回值做 HTML 转义，SVG/icon/partial 需返回 template.HTML 跳过转义。
 func FuncMap(reg *IconRegistry) template.FuncMap {
 	return template.FuncMap{
+		// markdown: 渲染 Markdown 片段（页脚自定义文案等），渲染器由 SetMarkdownRender 注入；
+		// 未注入时转义原样输出，保证模板可独立渲染（测试/降级）。
+		"markdown": func(s string) template.HTML {
+			if markdownRender != nil {
+				return markdownRender(s)
+			}
+			return template.HTML(template.HTMLEscapeString(s))
+		},
 		// url_for: Stellar 的 url_for，在无 root 前缀场景直接返回原路径。
 		"url_for": func(path string) string {
 			if path == "" {
@@ -167,4 +175,13 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 			return err == nil && ok
 		},
 	}
+}
+
+// markdownRender 由上层注入的 Markdown 渲染器（main.go 用 post.Service 装配）。
+// 包级变量与 SetTagPlugins 同权衡：启动时写一次，渲染期只读。
+var markdownRender func(string) template.HTML
+
+// SetMarkdownRender 注入 Markdown 渲染函数（页脚自定义文案等模板内 Markdown 用）。
+func SetMarkdownRender(f func(string) template.HTML) {
+	markdownRender = f
 }

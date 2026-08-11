@@ -125,8 +125,17 @@ func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
 	baseURL := s.baseURL(c)
 	data.Page.CanonicalURL = baseURL + c.Request.URL.Path
 	if data.Page.Description == "" {
-		data.Page.Description = s.site.Description
+		data.Page.Description = s.siteOf(data).Description
 	}
+}
+
+// siteOf 当前渲染应使用的站点配置：ViewData.Site 优先（设置页「前端预览」携带草稿配置），
+// 缺省回退全局 s.site（正常流量 ViewData.Site 即 s.site，零差异）。
+func (s *webServer) siteOf(data *tmpl.ViewData) *tmpl.Site {
+	if data != nil && data.Site != nil {
+		return data.Site
+	}
+	return s.site
 }
 
 // baseURL 站点根地址：site.URL 优先，未配置时回退请求 Host（http）。
@@ -163,18 +172,19 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		s.assembleWidgets(data, tagCounts)
 		return
 	}
-	if posts, err := s.st.ListPublishedPaged(1, s.widgetMaxLimit("recent", 5)); err == nil {
+	site := s.siteOf(data)
+	if posts, err := s.st.ListPublishedPaged(1, s.widgetMaxLimit(site, "recent", 5)); err == nil {
 		for _, p := range posts {
 			data.Recent = append(data.Recent, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
 		}
 	}
-	if popular, err := s.st.ListPopular(s.widgetMaxLimit("popular", popularLimit)); err == nil && len(popular) > 0 {
+	if popular, err := s.st.ListPopular(s.widgetMaxLimit(site, "popular", popularLimit)); err == nil && len(popular) > 0 {
 		for _, p := range popular {
 			data.Popular = append(data.Popular, &tmpl.RecentPost{Title: p.Title, URL: "/post/" + p.Slug})
 		}
 	}
-	if s.site.Comments.Enabled {
-		if comments, err := s.st.ListRecentComments(s.widgetMaxLimit("latest_comment", 5)); err == nil {
+	if site.Comments.Enabled {
+		if comments, err := s.st.ListRecentComments(s.widgetMaxLimit(site, "latest_comment", 5)); err == nil {
 			for _, cm := range comments {
 				data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
 					Nick:    cm.Nick,
@@ -237,9 +247,10 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 
 // widgetMaxLimit 扫描用户 library 中指定 layout 的 limit 参数，返回与 fallback 的最大值（查询上限）；
 // 实例装配时再按各自 limit 截断，保证同 layout 多实例不同 limit 均有足量数据。
-func (s *webServer) widgetMaxLimit(layout string, fallback int) int {
+// site 参数化：设置页预览传入草稿站点，正常流量传 s.site。
+func (s *webServer) widgetMaxLimit(site *tmpl.Site, layout string, fallback int) int {
 	max := fallback
-	for _, def := range s.site.Widgets.Library {
+	for _, def := range site.Widgets.Library {
 		if def.Layout() != layout {
 			continue
 		}
@@ -258,7 +269,8 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 	if data.Page == nil {
 		return
 	}
-	cfg := s.site.Widgets
+	site := s.siteOf(data)
+	cfg := site.Widgets
 	var bars tmpl.PageBars
 	if data.CustomPageBars != nil {
 		bars = *data.CustomPageBars
@@ -291,7 +303,7 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			// Spec 38：当前文章有 author 且在 Site.Authors 中命中时，装配作者卡片数据；
 			// 否则不设 Data，模板走站长兜底（零配置回归）。
 			if data.Page != nil && data.Page.Author != "" {
-				if author, ok := s.site.Authors[data.Page.Author]; ok {
+				if author, ok := site.Authors[data.Page.Author]; ok {
 					w.Data = &tmpl.AuthorWidgetData{
 						ID:     data.Page.Author,
 						Author: author,
@@ -528,8 +540,14 @@ func (s *webServer) renderBase(c *gin.Context, data *tmpl.ViewData) {
 
 // toCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
 // 分类配色查 site.yml article.category_color（对齐原版 category_color helper）；
+// 分类图标查 article.category_icon（未命中回退 default:category）；
 // 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
 func (s *webServer) toCard(p *store.Post) *tmpl.PostCard {
+	return s.toCardWith(s.site, p)
+}
+
+// toCardWith 同 toCard，但站点配置参数化（设置页「前端预览」用草稿站点渲染卡片）。
+func (s *webServer) toCardWith(site *tmpl.Site, p *store.Post) *tmpl.PostCard {
 	card := &tmpl.PostCard{
 		Slug:          p.Slug,
 		Title:         p.Title,
@@ -538,7 +556,8 @@ func (s *webServer) toCard(p *store.Post) *tmpl.PostCard {
 		Date:          p.CreatedAt,
 		Pinned:        p.Pinned,
 		Category:      p.Category,
-		CategoryStyle: tmpl.CategoryColorStyle(p.Category, s.site.Article.CategoryColor),
+		CategoryStyle: tmpl.CategoryColorStyle(p.Category, site.Article.CategoryColor),
+		CategoryIcon:  tmpl.CategoryIconKey(p.Category, site.Article.CategoryIcon),
 	}
 	if pd := store.DecodePoster(p.Poster); pd != nil {
 		card.Poster = &tmpl.PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
@@ -551,6 +570,15 @@ func (s *webServer) toCards(posts []*store.Post) []*tmpl.PostCard {
 	cards := make([]*tmpl.PostCard, 0, len(posts))
 	for _, p := range posts {
 		cards = append(cards, s.toCard(p))
+	}
+	return cards
+}
+
+// toCardsWith 同 toCards，站点配置参数化（预览用）。
+func (s *webServer) toCardsWith(site *tmpl.Site, posts []*store.Post) []*tmpl.PostCard {
+	cards := make([]*tmpl.PostCard, 0, len(posts))
+	for _, p := range posts {
+		cards = append(cards, s.toCardWith(site, p))
 	}
 	return cards
 }

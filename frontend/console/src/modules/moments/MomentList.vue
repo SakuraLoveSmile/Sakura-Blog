@@ -437,7 +437,7 @@ function closeMenus() {
         <h1 class="moments-page-title">瞬间</h1>
       </div>
       <div class="flex items-center gap-3">
-        <button type="button" class="moments-btn-primary !h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-4 sm:!text-[13px]" @click="focusComposer">
+        <button type="button" class="moments-btn-primary !h-8 !px-3 !text-xs sm:!h-9 sm:!px-4 sm:!text-[13px]" @click="focusComposer">
           <Icon icon="ri:add-line" class="text-sm sm:text-[15px]" />
           <span class="sm:hidden">发布</span>
           <span class="hidden sm:inline">发布瞬间</span>
@@ -1063,18 +1063,15 @@ function closeMenus() {
   padding: 8px 18px;
   border-radius: var(--radius-full, 9999px);
   background-color: var(--color-primary);
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.1px;
   white-space: nowrap;
-  box-shadow: var(--shadow-md);
   transition: all 0.2s var(--ease-standard);
 }
 .moments-btn-primary:hover {
   background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
 }
 .moments-btn-primary:active {
   transform: translateY(0);

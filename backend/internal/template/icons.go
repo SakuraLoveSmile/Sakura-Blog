@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -89,4 +90,16 @@ func (r *IconRegistry) Len() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.icon)
+}
+
+// Keys 返回全部图标 key（字典序），供 Console 素材速查枚举。
+func (r *IconRegistry) Keys() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	keys := make([]string, 0, len(r.icon))
+	for k := range r.icon {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

@@ -167,33 +167,6 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 	}
 }
 
-// TestSaveSectionLangOverrides lang 段保存后 Lang 覆盖优先、清空后回退内置。
-func TestSaveSectionLangOverrides(t *testing.T) {
-	s := newTestStore(t)
-	site := &tmpl.Site{}
-	if err := Bootstrap(s, site); err != nil {
-		t.Fatalf("bootstrap: %v", err)
-	}
-	if got := tmpl.Lang("btn.home"); got != "主页" {
-		t.Fatalf("default lang broken: %q", got)
-	}
-	if err := SaveSection(s, site, SectionLang, []byte(`{"btn.home":"首页","custom.key":"自定义"}`)); err != nil {
-		t.Fatalf("save lang: %v", err)
-	}
-	if got := tmpl.Lang("btn.home"); got != "首页" {
-		t.Fatalf("override not applied: %q", got)
-	}
-	if got := tmpl.Lang("custom.key"); got != "自定义" {
-		t.Fatalf("custom key broken: %q", got)
-	}
-	if err := SaveSection(s, site, SectionLang, []byte(`{}`)); err != nil {
-		t.Fatalf("clear lang: %v", err)
-	}
-	if got := tmpl.Lang("btn.home"); got != "主页" {
-		t.Fatalf("override not cleared: %q", got)
-	}
-}
-
 // TestBootstrapMergesFavicon 旧库 site 段缺 favicon 键时从 site.yml 初值合并补写。
 func TestBootstrapMergesFavicon(t *testing.T) {
 	s := newTestStore(t)

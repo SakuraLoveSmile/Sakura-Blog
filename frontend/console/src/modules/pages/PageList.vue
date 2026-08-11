@@ -594,19 +594,16 @@ function getStatusClass(p: PageItem) {
   height: 32px;
   border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   font-size: 13px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.2s var(--ease-standard);
-  box-shadow: var(--shadow-md);
 }
 
 .apple-new-btn:hover {
   background: var(--color-primary-hover);
-  transform: translateY(-0.5px);
-  box-shadow: var(--shadow-lg);
 }
 
 .apple-new-btn:active {
@@ -1053,7 +1050,7 @@ function getStatusClass(p: PageItem) {
   padding: 8px 18px;
   border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   font-size: 13px;
   font-weight: 600;
   border: none;
@@ -1535,7 +1532,7 @@ function getStatusClass(p: PageItem) {
 
 .page-btn.active {
   background: var(--color-primary);
-  color: var(--color-foreground);
+  color: var(--color-primary-foreground);
   font-weight: 600;
 }
 

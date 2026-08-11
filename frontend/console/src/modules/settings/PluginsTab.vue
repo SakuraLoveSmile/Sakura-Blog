@@ -36,8 +36,8 @@ const pjaxSelectorsText = computed({
  </label>
  <div class="grid grid-cols-2 gap-4">
  <div>
- <label class="text-xs text-text-tertiary mb-1 block">服务（空用内置 flying_pages）</label>
- <input v-model="data.preload.service" :class="inputCls" placeholder="flying_pages" />
+ <label class="text-xs text-text-quaternary mb-1 block">服务（预留字段，当前仅支持内置 flying_pages，留空即可）</label>
+ <input v-model="data.preload.service" :class="inputCls" placeholder="留空即可" />
  </div>
  </div>
  </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { settingsApi } from "@/api";
+import { settingsApi, previewApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
 import AppearanceTab from "./AppearanceTab.vue";
@@ -10,8 +10,8 @@ import PluginsTab from "./PluginsTab.vue";
 import CoverTab from "./CoverTab.vue";
 import NavTabsTab from "./NavTabsTab.vue";
 import AuthorsTab from "./AuthorsTab.vue";
-import LangTab from "./LangTab.vue";
-import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
+import AttachmentField from "@/components/AttachmentField.vue";
+import IconPicker from "@/components/IconPicker.vue";
 import { VSwitch, VCard, VButton, Toast } from "@/components/ui";
 
 // 全部段结构化编辑；「高级·JSON」保留 JSON 兜底（一般无需使用）。
@@ -27,7 +27,7 @@ const groups = [
       { key: "menubar", label: "菜单" },
       { key: "rightbar", label: "右栏" },
       { key: "footer", label: "页脚" },
-      { key: "lang", label: "文案" },
+      { key: "default", label: "素材" },
     ],
   },
   {
@@ -53,6 +53,7 @@ const groups = [
       { key: "comments", label: "评论" },
       { key: "wiki", label: "文库" },
       { key: "authors", label: "作者" },
+      { key: "tag_plugins", label: "标签插件" },
     ],
   },
   {
@@ -69,8 +70,10 @@ const groups = [
     ],
   },
 ];
-const allSections = ["site","menubar","rightbar","footer","comments","article","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","lang"];
+const allSections = ["site","menubar","rightbar","footer","comments","article","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","tag_plugins","default"];
 const platformOptions = ["wechat","weibo","email","link","twitter","telegram"];
+// 标签插件配色选项（对齐原版 colorful 色板）
+const tagColorOptions = ["red","orange","yellow","green","cyan","blue","purple"];
 
 const route = useRoute();
 const active = ref("site");
@@ -81,15 +84,6 @@ const loading = ref(true);
 const loadError = ref("");
 const savingKey = ref("");
 
-const showAvatarPicker = ref(false);
-const showAvatarBgPicker = ref(false);
-function handleAvatarSelect(url: string) { data.value.site.avatar = url; }
-function handleAvatarBgSelect(url: string) { data.value.site.avatar_bg = url; }
-
-const showFaviconPicker = ref(false);
-const showAppleIconPicker = ref(false);
-function handleFaviconSelect(url: string) { data.value.site.favicon_url = url; }
-function handleAppleIconSelect(url: string) { data.value.site.apple_touch_icon = url; }
 
 function ensureDefaults(d: Record<string, any>) {
   d.site = d.site || {};
@@ -109,6 +103,8 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.reward = d.article.reward || {};
   d.article.share = d.article.share || {};
   d.article.share.platforms = d.article.share.platforms || [];
+  // read_next 缺省与后端默认一致（true）；旧库 article 段可能缺键
+  d.article.read_next = d.article.read_next ?? true;
   d.friends = d.friends || {};
   d.friends.refresh_interval = d.friends.refresh_interval || 0;
   d.friends.posts_per_link = d.friends.posts_per_link || 20;
@@ -129,7 +125,12 @@ function ensureDefaults(d: Record<string, any>) {
   d.style.leftbar = d.style.leftbar || {};
   d.style.site = d.style.site || {};
   d.style.codeblock = d.style.codeblock || {};
-  d.style.header_prefix = d.style.header_prefix || {};
+  // 类型守卫（源头兜底）：存量数据经「高级 JSON」保存后 header_prefix 可能为非对象 primitive，
+  // 对 primitive 赋属性会抛 TypeError 导致设置页白屏 → 非对象（含数组）整体重置为 {}
+  const hpRaw = d.style.header_prefix;
+  if (!hpRaw || typeof hpRaw !== "object" || Array.isArray(hpRaw)) {
+    d.style.header_prefix = {};
+  }
   d.widgets = d.widgets || {};
   d.widgets.library = d.widgets.library || {};
   d.widgets.pages = d.widgets.pages || {};
@@ -138,13 +139,26 @@ function ensureDefaults(d: Record<string, any>) {
   d.plugins.scrollreveal = d.plugins.scrollreveal || {};
   d.plugins.heti = d.plugins.heti || {};
   d.plugins.fancybox = d.plugins.fancybox || {};
+  // 标签插件默认参数（对齐原版 tag_plugins 段）
+  const tp = (d.tag_plugins = d.tag_plugins || {});
+  tp.note = tp.note || {};
+  tp.quot = tp.quot || {};
+  tp.emoji = tp.emoji || {};
+  tp.icon = tp.icon || {};
+  tp.button = tp.button || {};
+  tp.mark = tp.mark || {};
+  tp.hashtag = tp.hashtag || {};
+  tp.gallery = tp.gallery || {};
+  tp.timeline = tp.timeline || {};
+  tp.copy = tp.copy || {};
+  // 占位素材组（对齐原版 default 段）
+  d.default = d.default || {};
   d.plugins.pjax = d.plugins.pjax || {};
   d.cover = d.cover || {};
   d.cover.features = d.cover.features || [];
   d.nav_tabs = d.nav_tabs || {};
   d.nav_tabs.items = d.nav_tabs.items || [];
   d.authors = d.authors || {};
-  d.lang = d.lang || {};
   return d;
 }
 
@@ -318,8 +332,9 @@ function saveActive() {
     case "nav_tabs": save("nav_tabs"); break;
     case "widgets": save("widgets"); break;
     case "plugins": save("plugins"); break;
+    case "tag_plugins": save("tag_plugins"); break;
+    case "default": save("default"); break;
     case "authors": save("authors"); break;
-    case "lang": save("lang"); break;
     case "site": save("site"); break;
     default: break;
   }
@@ -327,6 +342,164 @@ function saveActive() {
 
 const saveDisabled = computed(() => loading.value || !!loadError.value || active.value === "advanced" || savingKey.value !== "");
 const activeSaving = computed(() => savingKey.value === active.value || savingKey.value === "json:" + active.value);
+
+// ---------- 前端预览（所见即所得） ----------
+// 每个设置项映射到具体前台区域：page=渲染哪种前台页，selectors=提取聚焦的 DOM 区域。
+// 后端用草稿配置渲染整页 HTML，前端解析后只保留目标区域塞入 iframe，编辑哪项看哪项。
+interface PreviewFocus {
+  page: string;
+  selectors: string[];
+  label: string;
+}
+const PREVIEW_FOCUS: Record<string, PreviewFocus> = {
+  site: { page: "index", selectors: [".navbar.top", "footer.page-footer"], label: "顶栏与页脚" },
+  menubar: { page: "index", selectors: ["aside.l_left"], label: "左侧菜单" },
+  rightbar: { page: "index", selectors: ["aside.l_right"], label: "右栏组件" },
+  footer: { page: "index", selectors: ["footer.page-footer"], label: "页脚" },
+  lang: { page: "index", selectors: [".navbar.top", ".l_main"], label: "前台文案" },
+  appearance: { page: "index", selectors: ["#l_cover", ".l_body"], label: "整体外观" },
+  cover: { page: "index", selectors: ["#l_cover"], label: "首页 Hero" },
+  nav_tabs: { page: "index", selectors: [".navbar.top"], label: "导航标签" },
+  widgets: { page: "index", selectors: ["aside.l_left", "aside.l_right"], label: "左右栏组件" },
+  plugins: { page: "post", selectors: [".l_main"], label: "文章页（插件效果）" },
+  article: { page: "index", selectors: [".l_main"], label: "文章卡片" },
+  comments: { page: "post", selectors: ["#comments"], label: "评论区" },
+  wiki: { page: "wiki", selectors: [".l_main"], label: "文库页" },
+  authors: { page: "index", selectors: ["aside.l_right"], label: "作者卡片" },
+};
+
+const previewOpen = ref(false);
+const previewHtml = ref("");
+const previewLoading = ref(false);
+let previewTimer: ReturnType<typeof setTimeout> | undefined;
+let previewSeq = 0;
+
+const previewFocus = computed<PreviewFocus | null>(() => PREVIEW_FOCUS[active.value] ?? null);
+
+// 收集当前内存中的草稿分段（未保存的编辑也参与预览）
+function previewSections(): Record<string, unknown> {
+  const secs: Record<string, unknown> = {};
+  for (const k of allSections) {
+    if (data.value[k] !== undefined) secs[k] = data.value[k];
+  }
+  return secs;
+}
+
+// 从整页 HTML 中提取聚焦区域，重组为独立文档（保留原 head 样式，body 仅含目标片段）。
+// 同时与上一次渲染结果做 DOM 对比：变化的子元素加 pv-changed 脉冲高亮，
+// 区域根元素加 pv-flash 轻闪，让用户立刻看到「改到了哪里」。
+let prevRawHtml = "";
+
+// 递归对比同构子元素，把最小变化粒度标记到 newEl 上（属性/文本级变化落在自身）
+function diffMark(oldEl: Element, newEl: Element): void {
+  if (oldEl.outerHTML === newEl.outerHTML) return;
+  const oldKids = Array.from(oldEl.children);
+  const newKids = Array.from(newEl.children);
+  let descended = false;
+  for (let i = 0; i < newKids.length; i++) {
+    const o = oldKids[i];
+    const n = newKids[i];
+    if (o && o.tagName === n.tagName && o.outerHTML !== n.outerHTML) {
+      diffMark(o, n);
+      descended = true;
+    }
+  }
+  if (!descended) newEl.classList.add("pv-changed");
+}
+
+// 过滤预览 head 中的脚本：避免每次编辑（700ms 防抖）刷新预览都重新加载执行
+// jQuery/KaTeX/Mermaid CDN 与统计类注入 → 脚本执行风暴 + 重复计数。
+// 策略：
+// - 外链 <script src>（jQuery/KaTeX×2/Mermaid 及用户注入）全部移除——纯样式预览不需要交互脚本；
+// - 内联脚本默认移除：JSON-LD 结构化数据（无视觉影响）、KaTeX/Mermaid 初始化（其 CDN 已移除）、
+//   Service Worker 注册（PWA 功能）、Inject.Head 用户代码注入（统计脚本会重复计数）；
+// - 保留例外：prefers_theme=auto 的明暗跟随脚本（matchMedia 按系统设置 data-theme，
+//   决定首屏深色/浅色主题渲染，影响预览视觉正确性，见 backend head.html L176）。
+function filterPreviewHead(head: HTMLHeadElement): void {
+  for (const s of Array.from(head.querySelectorAll("script"))) {
+    const t = s.textContent || "";
+    if (!s.src && t.includes("prefers-color-scheme") && t.includes("data-theme-auto")) continue;
+    s.remove();
+  }
+}
+
+function buildFragmentDoc(fullHtml: string, focus: PreviewFocus): string {
+  const doc = new DOMParser().parseFromString(fullHtml, "text/html");
+  const prevDoc = prevRawHtml
+    ? new DOMParser().parseFromString(prevRawHtml, "text/html")
+    : null;
+  for (const sel of focus.selectors) {
+    const el = doc.querySelector(sel);
+    if (!el) continue;
+    const old = prevDoc?.querySelector(sel);
+    if (!old) {
+      el.classList.add("pv-flash");
+      continue;
+    }
+    const changed = old.outerHTML !== el.outerHTML;
+    if (changed) {
+      el.classList.add("pv-flash");
+      diffMark(old, el);
+    }
+  }
+  prevRawHtml = fullHtml;
+
+  const frags = focus.selectors
+    .map((sel) => doc.querySelector(sel)?.outerHTML ?? "")
+    .filter(Boolean);
+  const bodyInner = frags.length ? frags.join("\n") : doc.body.innerHTML;
+  // 只保留样式/布局必需节点：link stylesheet、style、meta 原样保留，脚本按 filterPreviewHead 策略过滤
+  filterPreviewHead(doc.head);
+  const headHtml = doc.head.innerHTML;
+  const bodyClass = doc.body.className || "";
+  // 主题与前台一致：base.html 按 style.prefers_theme 在 <html> 上预设 data-theme（dark/light/auto），
+  // 原样保留该属性；auto 模式的 data-theme-auto + 明暗跟随脚本（filterPreviewHead 中保留）
+  // 共同保证预览明暗与前台一致——替代原「强制深色」脚本，CSS 从首帧起即按前台配置渲染
+  const themeAttr = doc.documentElement.getAttribute("data-theme");
+  const themeAutoAttr = doc.documentElement.hasAttribute("data-theme-auto") ? " data-theme-auto" : "";
+  // 变更高亮特效：区域轻闪 + 变化元素脉冲描边
+  // 注意：不覆盖 body 背景——前台 main.css 按 data-theme 自绘深浅背景，
+  // 控制台变量（--color-background）在前台不存在，注入会把深色底盖成白
+  const fx = `<style>
+body{padding:20px !important}
+.pv-flash{animation:pvFlash 1.1s ease-out 1;border-radius:10px}
+@keyframes pvFlash{0%{background-color:rgba(0,122,255,.14)}100%{background-color:transparent}}
+.pv-changed{animation:pvPulse 1.8s ease-out 1;border-radius:6px;outline:2px solid #007AFF;outline-offset:3px}
+@keyframes pvPulse{0%{box-shadow:0 0 0 0 rgba(0,122,255,.55)}100%{box-shadow:0 0 0 16px rgba(0,122,255,0)}}
+</style>`;
+  return `<!doctype html><html lang="zh-CN" data-theme="${themeAttr || "dark"}"${themeAutoAttr}><head>${headHtml}${fx}</head><body class="${bodyClass}">${bodyInner}</body></html>`;
+}
+
+async function refreshPreview() {
+  if (!previewOpen.value || !previewFocus.value) return;
+  const focus = previewFocus.value;
+  const seq = ++previewSeq;
+  previewLoading.value = true;
+  try {
+    const { data: res } = await previewApi.site(previewSections(), focus.page);
+    if (seq !== previewSeq) return;
+    previewHtml.value = buildFragmentDoc(res.html || "", focus);
+  } catch (e: any) {
+    if (seq === previewSeq) Toast.error(e?.response?.data?.error || "预览渲染失败");
+  } finally {
+    if (seq === previewSeq) previewLoading.value = false;
+  }
+}
+
+function schedulePreview() {
+  if (!previewOpen.value) return;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(refreshPreview, 700);
+}
+
+watch(previewOpen, (open) => {
+  if (open) refreshPreview();
+});
+// 切换设置项 = 切换预览焦点；编辑内容变化 = 防抖重渲染
+watch(active, () => {
+  if (previewOpen.value) refreshPreview();
+});
+watch(data, schedulePreview, { deep: true });
 
 onMounted(() => {
   const tab = route.query.tab;
@@ -342,19 +515,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings-view">
+  <div class="settings-view" :class="{ 'preview-docked': previewOpen }">
     <header class="settings-page-header !px-4 !py-4 sm:!px-6 sm:!py-5">
       <div class="settings-page-header-title">
         <Icon icon="ri:settings-3-line" class="settings-page-header-icon" />
         <span class="text-xl sm:text-2xl">设置</span>
       </div>
-      <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" class="!h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-3.5 sm:!text-[13px]" @click="saveActive">
-        <template #icon><Icon icon="ri:save-3-line" class="!w-4 !h-4 sm:!w-[15px] sm:!h-[15px]" /></template>
-        <span class="sm:hidden">保存</span>
-        <span class="hidden sm:inline">保存更改</span>
-      </VButton>
+      <div class="flex items-center gap-2">
+        <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" class="!h-8 !px-3.5 !text-[13px] !font-semibold sm:!px-4" @click="previewOpen = !previewOpen">
+          <template #icon><Icon icon="ri:eye-line" class="h-full w-full" /></template>
+          <span class="sm:hidden">预览</span>
+          <span class="hidden sm:inline">前端预览</span>
+        </VButton>
+        <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" class="!h-8 !px-3.5 !text-[13px] !font-semibold sm:!px-4" @click="saveActive">
+          <span class="sm:hidden">保存</span>
+          <span class="hidden sm:inline">保存更改</span>
+        </VButton>
+      </div>
     </header>
 
+    <div class="settings-layout">
     <div class="settings-container">
       <nav class="settings-nav">
         <div class="settings-nav-list">
@@ -412,17 +592,11 @@ onMounted(() => {
             <div class="form-grid form-grid-2">
               <div class="field">
                 <label>头像 URL</label>
-                <div class="field-inline">
-                  <input v-model="data.site.avatar" :class="inputCls" placeholder="输入图片 URL" />
-                  <button type="button" class="icon-btn" title="从附件选择" @click="showAvatarPicker = true"><Icon icon="ri:image-upload-line" /></button>
-                </div>
+                <AttachmentField v-model="data.site.avatar" placeholder="输入图片 URL" />
               </div>
               <div class="field">
                 <label>头像悬停背景图</label>
-                <div class="field-inline">
-                  <input v-model="data.site.avatar_bg" :class="inputCls" placeholder="输入图片 URL" />
-                  <button type="button" class="icon-btn" title="从附件选择" @click="showAvatarBgPicker = true"><Icon icon="ri:image-upload-line" /></button>
-                </div>
+                <AttachmentField v-model="data.site.avatar_bg" placeholder="输入图片 URL" />
               </div>
             </div>
 
@@ -455,19 +629,11 @@ onMounted(() => {
             <div class="form-grid form-grid-2">
               <div class="field">
                 <label>Favicon</label>
-                <div class="field-inline">
-                  <img :src="data.site.favicon_url || '/favicon.ico'" class="favicon-img" alt="" />
-                  <input v-model="data.site.favicon_url" :class="inputCls" placeholder="留空用默认 /favicon.ico" />
-                  <button type="button" class="icon-btn" title="从附件选择" @click="showFaviconPicker = true"><Icon icon="ri:image-upload-line" /></button>
-                </div>
+                <AttachmentField v-model="data.site.favicon_url" placeholder="留空用默认 /favicon.ico" show-thumb fallback-src="/favicon.ico" />
               </div>
               <div class="field">
                 <label>Apple Touch Icon</label>
-                <div class="field-inline">
-                  <img :src="data.site.apple_touch_icon || '/apple-touch-icon.png'" class="touch-img" alt="" />
-                  <input v-model="data.site.apple_touch_icon" :class="inputCls" placeholder="留空用默认" />
-                  <button type="button" class="icon-btn" title="从附件选择" @click="showAppleIconPicker = true"><Icon icon="ri:image-upload-line" /></button>
-                </div>
+                <AttachmentField v-model="data.site.apple_touch_icon" placeholder="留空用默认" show-thumb fallback-src="/apple-touch-icon.png" />
               </div>
             </div>
 
@@ -493,7 +659,9 @@ onMounted(() => {
               <div v-for="(it, i) in data.rightbar.welcome_linklist.items" :key="i" class="editable-row">
                 <input v-model="it.title" placeholder="标题" :class="inputCls" class="col-3" />
                 <input v-model="it.url" placeholder="/url 或 https://..." :class="inputCls" class="col-4" />
-                <input v-model="it.icon" placeholder="icon（图片 URL 或 icons.yml key）" :class="inputCls" class="col-3" />
+                <div class="col-3">
+                  <IconPicker v-model="it.icon" compact placeholder="图标 key 或图片 URL" />
+                </div>
                 <div class="row-actions">
                   <button type="button" :disabled="Number(i) === 0" class="row-btn" @click="moveItem(data.rightbar.welcome_linklist.items, Number(i), -1)"><Icon icon="ri:arrow-up-s-line" /></button>
                   <button type="button" :disabled="Number(i) === data.rightbar.welcome_linklist.items.length - 1" class="row-btn" @click="moveItem(data.rightbar.welcome_linklist.items, Number(i), 1)"><Icon icon="ri:arrow-down-s-line" /></button>
@@ -513,7 +681,9 @@ onMounted(() => {
               <div v-for="(s, i) in data.footer.social" :key="i" class="editable-row">
                 <input v-model="s.title" placeholder="标题" :class="inputCls" class="col-2" />
                 <input v-model="s.url" placeholder="链接" :class="inputCls" class="col-3" />
-                <input v-model="s.icon_key" placeholder="icon_key" :class="inputCls" class="col-2" />
+                <div class="col-2">
+                  <IconPicker v-model="s.icon_key" compact placeholder="icon_key" />
+                </div>
                 <input v-model="s.icon" placeholder="icon raw HTML（优先）" :class="inputCls" class="col-3" />
                 <div class="row-actions">
                   <button type="button" :disabled="Number(i) === 0" class="row-btn" @click="moveItem(data.footer.social, Number(i), -1)"><Icon icon="ri:arrow-up-s-line" /></button>
@@ -545,8 +715,29 @@ onMounted(() => {
               </div>
               <button type="button" class="add-btn" @click="addSitemapGroup"><Icon icon="ri:add-line" /> 添加分组</button>
             </div>
+            <div class="subsection">
+              <p class="subsection-title">自定义页脚文案（Markdown，对齐原版 footer.content；空=内置 Powered-by 行）</p>
+              <textarea v-model="data.footer.content" rows="3" :class="textareaCls" placeholder="本站由 [作者](/) 使用 [Stellar](https://github.com/xaoxuu/hexo-theme-stellar) 主题创建。"></textarea>
+            </div>
             <div class="card-actions">
               <VButton type="primary" size="sm" :loading="savingKey === 'footer'" @click="save('footer')">保存页脚</VButton>
+            </div>
+          </VCard>
+
+          <VCard v-show="active === 'default'" title="占位素材">
+            <p class="hint">各场景占位图 URL（对齐原版 default 段）；留空回退内置默认素材。</p>
+            <div class="form-grid form-grid-2">
+              <div class="field"><label>头像</label><AttachmentField v-model="data.default.avatar" /></div>
+              <div class="field"><label>链接卡片图标</label><AttachmentField v-model="data.default.link" /></div>
+              <div class="field"><label>封面</label><AttachmentField v-model="data.default.cover" /></div>
+              <div class="field"><label>正文插图（预留）</label><AttachmentField v-model="data.default.image" /></div>
+              <div class="field"><label>项目卡片（预留）</label><AttachmentField v-model="data.default.project" /></div>
+              <div class="field"><label>横幅（预留）</label><AttachmentField v-model="data.default.banner" /></div>
+              <div class="field"><label>专栏</label><AttachmentField v-model="data.default.topic" /></div>
+              <div class="field"><label>加载图标</label><AttachmentField v-model="data.default.loading" /></div>
+            </div>
+            <div class="card-actions">
+              <VButton type="primary" size="sm" :loading="savingKey === 'default'" @click="save('default')">保存素材</VButton>
             </div>
           </VCard>
 
@@ -580,7 +771,7 @@ onMounted(() => {
               </div>
               <div class="field"><label>描述</label><input v-model="w.description" :class="inputCls" /></div>
               <div class="form-grid form-grid-3">
-                <div class="field"><label>图标（图片 URL）</label><input v-model="w.icon" :class="inputCls" placeholder="https://..." /></div>
+                <div class="field"><label>图标（图片 URL）</label><AttachmentField v-model="w.icon" placeholder="https://..." /></div>
                 <div class="field"><label>GitHub 仓库</label><input v-model="w.repo" :class="inputCls" placeholder="owner/repo" /></div>
                 <div class="field">
                   <label>预览布局</label>
@@ -648,6 +839,25 @@ onMounted(() => {
 
           <VCard v-show="active === 'article'" title="文章设置">
             <div class="subsection">
+              <p class="subsection-title">排版（对齐原版 article 段）</p>
+              <div class="switch-row">
+                <div class="switch-row-label"><div class="switch-row-name">正文段落首行缩进两字符</div></div>
+                <VSwitch v-model="data.article.indent" />
+              </div>
+              <div class="switch-row">
+                <div class="switch-row-label">
+                  <div class="switch-row-name">上下篇导航（read_next）</div>
+                  <div class="switch-row-desc">文章页底部「接下来阅读」较新/较早文章卡片</div>
+                </div>
+                <VSwitch v-model="data.article.read_next" />
+              </div>
+              <div class="form-grid form-grid-3">
+                <div class="field"><label>卡片封面宽高比（0=主题默认，如 2）</label><input v-model.number="data.article.cover_ratio" type="number" step="0.1" min="0" :class="inputCls" /></div>
+                <div class="field"><label>相关文章数上限（0=关）</label><input v-model.number="data.article.related_posts" type="number" min="0" :class="inputCls" /></div>
+                <div class="field"><label>过期提醒阈值（天，0=缺省 180）</label><input v-model.number="data.article.expire_days" type="number" min="0" :class="inputCls" /></div>
+              </div>
+            </div>
+            <div class="subsection">
               <p class="subsection-title">版权声明</p>
               <div class="switch-row">
                 <div class="switch-row-label"><div class="switch-row-name">显示版权声明</div></div>
@@ -679,8 +889,8 @@ onMounted(() => {
               </div>
               <div class="form-grid form-grid-3">
                 <div class="field"><label>按钮文案</label><input v-model="data.article.reward.text" :class="inputCls" /></div>
-                <div class="field"><label>微信收款码 URL</label><input v-model="data.article.reward.wechat" :class="inputCls" /></div>
-                <div class="field"><label>支付宝收款码 URL</label><input v-model="data.article.reward.alipay" :class="inputCls" /></div>
+                <div class="field"><label>微信收款码 URL</label><AttachmentField v-model="data.article.reward.wechat" /></div>
+                <div class="field"><label>支付宝收款码 URL</label><AttachmentField v-model="data.article.reward.alipay" /></div>
               </div>
             </div>
             <div class="card-actions">
@@ -693,6 +903,55 @@ onMounted(() => {
                 <div class="field"><label>每友链文章数量（≤0 用默认 20）</label><input v-model.number="data.friends.posts_per_link" type="number" min="1" :class="inputCls" /></div>
               </div>
               <VButton type="secondary" size="sm" :loading="savingKey === 'friends'" @click="save('friends')">保存 RSS 设置</VButton>
+            </div>
+          </VCard>
+
+          <VCard v-show="active === 'tag_plugins'" title="标签插件默认参数">
+            <p class="hint">对齐原版 _config.yml tag_plugins 段：未在具体标签里指定的参数用这里的默认值；留空=内置默认。</p>
+            <div class="subsection">
+              <p class="subsection-title">默认配色</p>
+              <div class="form-grid form-grid-3">
+                <div class="field"><label>note 提示框</label><select v-model="data.tag_plugins.note.default_color" :class="selectCls"><option value="">默认</option><option v-for="c in tagColorOptions" :key="c" :value="c">{{ c }}</option></select></div>
+                <div class="field"><label>mark 荧光标记</label><select v-model="data.tag_plugins.mark.default_color" :class="selectCls"><option value="">默认</option><option v-for="c in tagColorOptions" :key="c" :value="c">{{ c }}</option></select></div>
+                <div class="field"><label>button 按钮</label><select v-model="data.tag_plugins.button.default_color" :class="selectCls"><option value="">默认</option><option v-for="c in tagColorOptions" :key="c" :value="c">{{ c }}</option></select></div>
+                <div class="field"><label>icon 图标</label><select v-model="data.tag_plugins.icon.default_color" :class="selectCls"><option value="">默认</option><option v-for="c in tagColorOptions" :key="c" :value="c">{{ c }}</option></select></div>
+                <div class="field"><label>hashtag 话题（空=循环色）</label><select v-model="data.tag_plugins.hashtag.default_color" :class="selectCls"><option value="">循环</option><option v-for="c in tagColorOptions" :key="c" :value="c">{{ c }}</option></select></div>
+              </div>
+            </div>
+            <div class="subsection">
+              <p class="subsection-title">quot 小标题默认图标（icons.yml key 或图片 URL）</p>
+              <div class="form-grid form-grid-2">
+                <div class="field"><label>前缀</label><IconPicker v-model="data.tag_plugins.quot.prefix" placeholder="如 bxs:quote-left" /></div>
+                <div class="field"><label>后缀</label><IconPicker v-model="data.tag_plugins.quot.suffix" placeholder="如 bxs:quote-right" /></div>
+              </div>
+            </div>
+            <div class="subsection">
+              <p class="subsection-title">gallery 默认布局</p>
+              <div class="form-grid form-grid-3">
+                <div class="field"><label>布局</label><select v-model="data.tag_plugins.gallery.layout" :class="selectCls"><option value="">默认</option><option value="grid">grid</option><option value="flow">flow</option></select></div>
+                <div class="field"><label>尺寸</label><input v-model="data.tag_plugins.gallery.size" :class="inputCls" placeholder="mix" /></div>
+                <div class="field"><label>宽高比</label><input v-model="data.tag_plugins.gallery.ratio" :class="inputCls" placeholder="origin" /></div>
+              </div>
+            </div>
+            <div class="subsection">
+              <p class="subsection-title">其它</p>
+              <div class="form-grid form-grid-2">
+                <div class="field"><label>timeline 限高（如 80vh，空=不限）</label><input v-model="data.tag_plugins.timeline.max_height" :class="inputCls" /></div>
+                <div class="field"><label>copy 成功提示文案</label><input v-model="data.tag_plugins.copy.toast" :class="inputCls" placeholder="复制成功" /></div>
+              </div>
+            </div>
+            <div class="subsection">
+              <p class="subsection-title">emoji 表情源（{name} 占位；留空=内置 CDN 源）</p>
+              <div class="form-grid form-grid-2">
+                <div class="field"><label>default / qq</label><input v-model="data.tag_plugins.emoji.default" :class="inputCls" /></div>
+                <div class="field"><label>aru</label><input v-model="data.tag_plugins.emoji.aru" :class="inputCls" /></div>
+                <div class="field"><label>tieba</label><input v-model="data.tag_plugins.emoji.tieba" :class="inputCls" /></div>
+                <div class="field"><label>blobcat</label><input v-model="data.tag_plugins.emoji.blobcat" :class="inputCls" /></div>
+                <div class="field"><label>twemoji</label><input v-model="data.tag_plugins.emoji.twemoji" :class="inputCls" /></div>
+              </div>
+            </div>
+            <div class="card-actions">
+              <VButton type="primary" size="sm" :loading="savingKey === 'tag_plugins'" @click="save('tag_plugins')">保存标签插件设置</VButton>
             </div>
           </VCard>
 
@@ -773,6 +1032,15 @@ onMounted(() => {
           </VCard>
 
           <VCard v-show="active === 'appearance'" title="外观设置">
+            <div class="subsection">
+              <div class="field"><label>默认主题（对齐原版 style.prefers_theme）</label>
+                <select v-model="data.style.prefers_theme" :class="selectCls">
+                  <option value="">深色（默认）</option>
+                  <option value="light">浅色</option>
+                  <option value="auto">跟随系统</option>
+                </select>
+              </div>
+            </div>
             <AppearanceTab :data="data" :saving="savingKey" @save="save" />
           </VCard>
           <VCard v-show="active === 'widgets'" title="组件编排">
@@ -790,34 +1058,64 @@ onMounted(() => {
           <VCard v-show="active === 'authors'" title="作者管理">
             <AuthorsTab :data="data.authors" :saving="savingKey" @save="() => save('authors')" />
           </VCard>
-          <VCard v-show="active === 'lang'" title="前台文案覆盖">
-            <LangTab :data="data.lang" :saving="savingKey" @save="() => save('lang')" />
-          </VCard>
         </template>
       </div>
     </div>
 
-    <AttachmentPickerModal :open="showAvatarPicker" @select="handleAvatarSelect" @close="showAvatarPicker = false" />
-    <AttachmentPickerModal :open="showAvatarBgPicker" @select="handleAvatarBgSelect" @close="showAvatarBgPicker = false" />
-    <AttachmentPickerModal :open="showFaviconPicker" @select="handleFaviconSelect" @close="showFaviconPicker = false" />
-    <AttachmentPickerModal :open="showAppleIconPicker" @select="handleAppleIconSelect" @close="showAppleIconPicker = false" />
+    <!-- 前端预览面板（并排右栏，不遮挡设置内容；sticky 跟随滚动） -->
+    <aside v-if="previewOpen" class="preview-panel">
+      <div class="preview-panel-header">
+        <div class="preview-focus-label">
+          <Icon icon="ri:eye-line" class="text-text-tertiary" />
+          <span v-if="previewFocus">预览：{{ previewFocus.label }}</span>
+          <span v-else>该设置无直接前台视觉区域</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" title="刷新预览" class="preview-icon-btn" @click="refreshPreview">
+            <Icon icon="ri:refresh-line" />
+          </button>
+          <button type="button" title="关闭预览" class="preview-icon-btn" @click="previewOpen = false">
+            <Icon icon="ri:close-line" />
+          </button>
+        </div>
+      </div>
+      <div class="preview-panel-body">
+        <template v-if="previewFocus">
+          <div v-if="previewLoading" class="preview-loading">
+            <Icon icon="ri:loader-4-line" class="settings-spin" width="20" height="20" />
+            <span>渲染中…</span>
+          </div>
+          <!-- sandbox 隔离：不授予 allow-same-origin，iframe 运行于 opaque origin，
+               inject 段脚本可执行但无法读取控制台会话凭据；预览资源均为绝对路径，
+               opaque origin 下跨源子资源（CSS/图片/字体）加载不受影响 -->
+          <iframe v-if="previewHtml" :srcdoc="previewHtml" sandbox="allow-scripts" title="前端预览" class="preview-frame" />
+          <div v-else-if="!previewLoading" class="preview-loading">暂无预览</div>
+        </template>
+        <div v-else class="preview-loading">
+          <Icon icon="ri:information-line" width="20" height="20" />
+          <span>当前设置项（如 SEO/AI/安全）不直接决定前台某个视觉区域，保存后在前台查看效果。</span>
+        </div>
+      </div>
+    </aside>
+    </div>
+
   </div>
 </template>
 
 <style scoped>
 .settings-view { min-height: 100%; background: var(--color-background); }
-.settings-page-header { height: 56px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border); background: color-mix(in srgb, #000 60%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); position: sticky; top: 0; z-index: 20; }
+.settings-page-header { height: 56px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border); background: color-mix(in srgb, #000 60%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); position: sticky; top: 0; z-index: 20; }
 .settings-page-header-title { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 600; letter-spacing: -0.2px; color: var(--color-foreground); }
 .settings-page-header-icon { color: var(--color-primary); font-size: 20px; }
-.settings-container { display: flex; gap: 28px; padding: 28px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.settings-container { display: flex; gap: 24px; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 .settings-nav { width: 200px; flex-shrink: 0; padding-top: 4px; }
 .settings-nav-list { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 84px; }
-.settings-nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; color: var(--color-text-tertiary); cursor: pointer; transition: all var(--duration-fast) var(--ease-standard); position: relative; border-left: 3px solid transparent; margin-left: -3px; text-align: left; background: transparent; }
+.settings-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; color: var(--color-text-tertiary); cursor: pointer; transition: all var(--duration-fast) var(--ease-standard); text-align: left; background: transparent; border: none; }
 .settings-nav-item:hover { background: color-mix(in srgb, #fff 4%, transparent); color: var(--color-foreground); }
-.settings-nav-item.active { color: var(--color-primary); font-weight: 500; border-left-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+.settings-nav-item.active { color: var(--color-primary); font-weight: 500; background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
 .settings-nav-item-icon { display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; }
 .settings-nav-item.active .settings-nav-item-icon { opacity: 1; }
-.settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .settings-section-title { font-size: 22px; font-weight: 600; color: var(--color-foreground); letter-spacing: -0.3px; }
 .settings-section-desc { font-size: 13px; color: var(--color-text-tertiary); margin-top: 4px; }
 .settings-subtabs { align-self: flex-start; flex-wrap: wrap; }
@@ -825,30 +1123,30 @@ onMounted(() => {
 .settings-state-error { color: var(--color-state-error); }
 .settings-spin { animation: settings-spin 1s linear infinite; }
 @keyframes settings-spin { to { transform: rotate(360deg); } }
-.field { margin-bottom: 14px; }
+.field { margin-bottom: 16px; }
 .field:last-child { margin-bottom: 0; }
 .field label { display: block; font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 6px; }
 .field-narrow { max-width: 160px; }
 .field-inline { display: flex; gap: 8px; align-items: center; }
 .field-inline .apple-input { flex: 1; }
-.form-grid { display: grid; gap: 14px; margin-bottom: 14px; }
+.form-grid { display: grid; gap: 12px; margin-bottom: 16px; }
 .form-grid:last-child { margin-bottom: 0; }
 .form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hint { font-size: 12px; color: var(--color-text-quaternary); margin: 0 0 12px; }
-.subsection { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--color-border); }
+.subsection { margin-top: 24px; }
 .subsection-title { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin: 0 0 12px; }
-.card-actions { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border); }
+.card-actions { display: flex; align-items: center; gap: 10px; margin-top: 24px; }
 .card-actions-inline { flex-wrap: wrap; }
-.friends-subsection { margin-top: 22px; }
+.friends-subsection { margin-top: 24px; }
 .icon-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-primary) 12%, transparent); color: var(--color-primary); border: none; cursor: pointer; transition: background var(--duration-fast) var(--ease-standard); }
 .icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--color-primary) 20%, transparent); }
 .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .add-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--color-primary); background: transparent; border: none; cursor: pointer; padding: 6px 0; transition: opacity var(--duration-fast) var(--ease-standard); }
 .add-btn:hover { opacity: 0.8; }
 .add-btn-indent { padding-left: 16px; }
-.editable-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.editable-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 8px; align-items: center; }
+.editable-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.editable-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; align-items: center; }
 .col-2 { grid-column: span 2; }
 .col-3 { grid-column: span 3; }
 .col-4 { grid-column: span 4; }
@@ -859,9 +1157,9 @@ onMounted(() => {
 .row-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 .row-btn-danger { color: var(--color-state-error); }
 .row-btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--color-state-error) 12%, transparent); color: var(--color-state-error); }
-.nested-group { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--color-muted); }
+.nested-group { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in srgb, #000 20%, var(--color-card)); }
 .nested-group-head { display: flex; align-items: center; gap: 6px; }
-.preview-box { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px; }
+.preview-box { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; }
 .preview-label { font-size: 12px; font-weight: 500; color: var(--color-text-tertiary); margin: 0 0 12px; }
 .preview-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; }
 .preview-item { text-align: center; }
@@ -874,8 +1172,6 @@ onMounted(() => {
 .avatar-hover-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .avatar-hover-fg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-slow) var(--ease-standard); }
 .avatar-hover:hover .avatar-hover-fg { transform: scale(1.1); }
-.favicon-img { width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0; }
-.touch-img { width: 32px; height: 32px; border-radius: var(--radius-sm); flex-shrink: 0; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--color-border); }
 .switch-row:last-child { border-bottom: none; }
 .switch-row-name { font-size: 13.5px; font-weight: 500; color: var(--color-foreground); }
@@ -891,7 +1187,7 @@ onMounted(() => {
 .test-result { font-size: 12px; }
 .test-result.is-ok { color: var(--color-state-success); }
 .test-result.is-err { color: var(--color-state-error); }
-.json-block { margin-bottom: 18px; }
+.json-block { margin-bottom: 16px; }
 .json-block:last-child { margin-bottom: 0; }
 .json-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .json-block-title { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); font-family: var(--font-mono, ui-monospace, monospace); }
@@ -907,23 +1203,24 @@ onMounted(() => {
 .wiki-title { flex: 1; font-size: 14px; font-weight: 500; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 860px) {
-  .settings-container { flex-direction: column; padding: 18px; }
+  .settings-container { flex-direction: column; padding: 16px; gap: 24px; }
   .settings-nav { width: 100%; }
-  .settings-nav-list { position: static; flex-direction: row; flex-wrap: wrap; }
-  .settings-nav-item { border-left: none; border-bottom: 3px solid transparent; margin-left: 0; margin-bottom: -3px; }
-  .settings-nav-item.active { border-left: none; border-bottom-color: var(--color-primary); background: transparent; }
+  .settings-nav-list { position: static; flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .settings-nav-item { min-height: 44px; padding: 10px 16px; border-radius: 9999px; }
   .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+  /* 窄屏：下坞面板加高，便于查看 */
+  .preview-panel { height: 55vh; }
 }
 
 /* ===== 移动端补充优化 ===== */
 @media (max-width: 640px) {
-  .settings-container { padding: 12px; gap: 14px; }
-  .settings-content { gap: 14px; }
+  .settings-container { padding: 12px; gap: 12px; }
+  .settings-content { gap: 12px; }
 
-  /* 主导航更紧凑 */
-  .settings-nav-list { gap: 0; }
+  /* 主导航更紧凑（保持 44px 触达高度） */
+  .settings-nav-list { gap: 4px; }
   .settings-nav-item {
-    padding: 8px 10px;
+    padding: 8px 12px;
     font-size: 12px;
     gap: 6px;
   }
@@ -965,13 +1262,81 @@ onMounted(() => {
 
   /* 卡片内边距缩小 */
   .settings-content :deep(.card-body) {
-    padding: 14px !important;
+    padding: 12px !important;
   }
 
   /* 卡片标题更紧凑 */
   .settings-content :deep(.card-header) {
-    padding: 12px 14px !important;
+    padding: 12px 16px !important;
     font-size: 13px !important;
   }
+}
+
+/* ===== 前端预览面板（底部停靠，不遮挡、不挤压设置内容） ===== */
+/* sticky bottom：吸附在内容滚动区底部，水平方向跟随内容区（不侵入左侧导航） */
+.preview-panel {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  height: 45vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  background: var(--color-card);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+.preview-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.preview-focus-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.preview-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+.preview-icon-btn:hover {
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+.preview-panel-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--color-background, #fff);
+}
+.preview-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
 }
 </style>

@@ -176,7 +176,7 @@ const bubbleSrcdoc = computed(() => {
 // 工具栏按钮统一样式（Apple 风：32px、8px 圆角、hover 浅底、激活蓝底白字）
 const btnBase =
   "flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground";
-const btnActive = "bg-primary text-white hover:bg-primary hover:text-white";
+const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground";
 </script>
 
 <template>

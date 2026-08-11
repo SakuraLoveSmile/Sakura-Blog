@@ -110,7 +110,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		cats := make([]*tmpl.CatItem, 0, len(counts))
 		for name, n := range counts {
-			cats = append(cats, &tmpl.CatItem{Name: name, Count: n})
+			cats = append(cats, &tmpl.CatItem{Name: name, Count: n, Icon: s.site.Article.CategoryIcon[name]})
 		}
 		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
 		s.renderBase(c, &tmpl.ViewData{
@@ -162,7 +162,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		items := make([]*tmpl.TagItem, 0, len(counts))
 		for name, n := range counts {
-			items = append(items, &tmpl.TagItem{Name: name, Count: n})
+			items = append(items, &tmpl.TagItem{Name: name, Count: n, Icon: s.site.Article.TagIcon[name]})
 		}
 		sort.Slice(items, func(i, j int) bool {
 			if items[i].Count != items[j].Count {
@@ -225,6 +225,10 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 			return
 		}
 		icon := t.Icon
+		if icon == "" {
+			// default.topic 占位素材（对齐原版 default 段），空则回退内置 URL
+			icon = s.site.Default.Topic
+		}
 		if icon == "" {
 			icon = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/10433048.png"
 		}

@@ -18,6 +18,7 @@ import (
 
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
+	PrefersTheme string            `yaml:"prefers_theme" json:"prefers_theme"` // 默认主题：dark（缺省，现状）/light/auto（跟随系统）
 	SmoothScroll *bool             `yaml:"smooth_scroll" json:"smooth_scroll"` // 平滑滚动（缺省 nil=现状 smooth；显式 false 关闭）
 	TextAlign    string            `yaml:"text_align" json:"text_align"`       // 正文段落对齐（left/justify 等，空=现状 left）
 	Color        StyleColor        `yaml:"color" json:"color"`

@@ -12,7 +12,7 @@ const emit = defineEmits<{
 
 const inputCls = "apple-input";
 const btnCls =
-"px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
+"px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-full transition-colors hover:bg-accent disabled:opacity-50";
 const rowBtnCls =
 "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 const addBtnCls =
@@ -31,6 +31,31 @@ const pageOptions = [
 const selectedPage = ref("index");
 
 // ---------- 数据访问 ----------
+// 内置组件库（名称 → layout），与后端 DefaultWidgetLibrary 保持一致。
+// 修复：添加组件下拉此前只读用户自定义 library（未自定义时为空）导致"选不了"，
+// 现以内置组件兜底，保证任何时候都有可选项。
+const BUILTIN_WIDGETS: { name: string; layout: string }[] = [
+  { name: "recent", layout: "recent" },
+  { name: "tagcloud", layout: "tagcloud" },
+  { name: "popular", layout: "popular" },
+  { name: "related", layout: "related" },
+  { name: "welcome", layout: "markdown" },
+  { name: "author", layout: "author" },
+  { name: "siteinfo", layout: "siteinfo" },
+  { name: "latest_comment", layout: "latest_comment" },
+  { name: "toc", layout: "toc" },
+  { name: "ghrepo", layout: "ghrepo" },
+  { name: "ghuser", layout: "ghuser" },
+  { name: "ghissues", layout: "ghissues" },
+  { name: "timeline", layout: "timeline" },
+  { name: "tree", layout: "tree" },
+  { name: "wiki_related", layout: "wiki_related" },
+  { name: "tagtree", layout: "tagtree" },
+];
+
+function builtinLayout(name: string): string {
+  return BUILTIN_WIDGETS.find((w) => w.name === name)?.layout || "";
+}
 function ensureWidgets() {
  const d = props.data;
  d.widgets = d.widgets || {};
@@ -98,10 +123,11 @@ function moveItem(arr: string[], i: number, dir: -1 | 1) {
 const addSelectLeft = ref("");
 const addSelectRight = ref("");
 
-/** 当前栏中尚未添加的 library widget 列表 */
+/** 当前栏中尚未添加的 widget 列表：内置组件 + 自定义 library，排除已用 */
 function availableWidgets(side:"leftbar" |"rightbar"): string[] {
  const used = new Set(currentBarWidgets(side));
- return Object.keys(library.value).filter((k) => !used.has(k));
+ const names = new Set<string>([...BUILTIN_WIDGETS.map((w) => w.name), ...Object.keys(library.value)]);
+ return [...names].filter((k) => !used.has(k)).sort();
 }
 
 function addWidget(side:"leftbar" |"rightbar") {
@@ -110,9 +136,9 @@ function addWidget(side:"leftbar" |"rightbar") {
  if (!pages.value[selectedPage.value]) customise();
  const bar = currentBarWidgets(side);
  bar.push(sel);
- // 确保 library 有定义
+ // 确保 library 有定义（内置组件用其默认 layout，避免 welcome 等被写成同名 layout）
  if (!library.value[sel]) {
- library.value[sel] = { layout: sel };
+ library.value[sel] = { layout: builtinLayout(sel) || sel };
  }
  if (side ==="leftbar") addSelectLeft.value ="";
  else addSelectRight.value ="";
@@ -155,7 +181,7 @@ const noExtraParams = new Set([
 ]);
 
 function widgetLayout(name: string): string {
- return library.value[name]?.layout ||"";
+ return library.value[name]?.layout || builtinLayout(name) ||"";
 }
 
 function widgetFields(name: string) {

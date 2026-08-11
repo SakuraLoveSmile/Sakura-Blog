@@ -76,7 +76,7 @@ function handleClick() {
   justify-content: center;
   text-align: center;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   height: 40px;
   padding: 0 16px;
@@ -120,9 +120,7 @@ function handleClick() {
   background: var(--color-primary);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  filter: brightness(0.96);
 }
 .btn-primary:active:not(:disabled) {
   background: var(--color-primary-active);
@@ -161,7 +159,7 @@ function handleClick() {
   align-items: center;
   justify-content: center;
 }
-.btn-primary .btn-icon,
+/* 图标默认继承按钮文字色（primary 为 primary-foreground，与库规范一致） */
 .btn-secondary .btn-icon,
 .btn-danger .btn-icon {
   color: var(--color-foreground);
@@ -193,7 +191,7 @@ function handleClick() {
   height: 24px;
   padding: 0 8px;
   font-size: 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
 }
 .btn-xs .btn-icon {
   height: 12px;

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { taxonomyApi, settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
+import IconPicker from "@/components/IconPicker.vue";
 import { VPageHeader, VButton, VEmpty, VLoading, VModal, Dialog, Toast } from "@/components/ui";
 
 interface TaxItem {
@@ -15,7 +16,15 @@ const loading = ref(false);
 
 // 分类配色（article.category_color，分类名→#RRGGBB，首页卡片分类颜色）
 const catColors = ref<Record<string, string>>({});
+// 分类/标签图标（article.category_icon / tag_icon，名称→icon key 或 URL，前台面包屑与索引页消费）
+const catIcons = ref<Record<string, string>>({});
+const tagIcons = ref<Record<string, string>>({});
 const savingColors = ref(false);
+
+// 标签图标设置弹窗
+const tagIconModalVisible = ref(false);
+const tagIconTarget = ref("");
+const tagIconValue = ref("");
 
 // 标签合并选择
 const mergeMode = ref(false);
@@ -109,30 +118,56 @@ async function load() {
     categories.value = cRes.data.items || [];
     tags.value = tRes.data.items || [];
     catColors.value = { ...(sRes.data?.article?.category_color || {}) };
+    catIcons.value = { ...(sRes.data?.article?.category_icon || {}) };
+    tagIcons.value = { ...(sRes.data?.article?.tag_icon || {}) };
   } finally {
     loading.value = false;
   }
 }
 
-// 保存前重拉最新 article 段再合并 category_color，避免覆盖 copyright/share/reward
-async function saveColors() {
+// 图标值是否为 URL（前台 icon 函数对 URL 渲染 <img>，预览同理）
+function isIconUrl(v?: string): boolean {
+  const s = (v || "").trim();
+  return s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/");
+}
+
+// 保存前重拉最新 article 段再合并 category_color/category_icon/tag_icon，避免覆盖 copyright/share/reward
+async function saveTaxonomy() {
   savingColors.value = true;
   try {
     const { data: res } = await settingsApi.all();
     const article = { ...(res.article || {}) };
-    const colors: Record<string, string> = {};
-    for (const [name, color] of Object.entries(catColors.value)) {
-      const v = color.trim();
-      if (v) colors[name] = v;
-    }
-    article.category_color = colors;
+    const pick = (m: Record<string, string>) => {
+      const out: Record<string, string> = {};
+      for (const [name, v] of Object.entries(m)) {
+        const s = (v || "").trim();
+        if (s) out[name] = s;
+      }
+      return out;
+    };
+    article.category_color = pick(catColors.value);
+    article.category_icon = pick(catIcons.value);
+    article.tag_icon = pick(tagIcons.value);
     await settingsApi.updateSection("article", article);
-    Toast.success("配色已保存，前台已生效");
+    Toast.success("配色与图标已保存，前台已生效");
   } catch (e: any) {
     Toast.error(e?.response?.data?.error || "保存失败");
   } finally {
     savingColors.value = false;
   }
+}
+
+function openTagIcon(name: string) {
+  tagIconTarget.value = name;
+  tagIconValue.value = tagIcons.value[name] || "";
+  tagIconModalVisible.value = true;
+}
+
+function confirmTagIcon() {
+  const v = tagIconValue.value.trim();
+  if (v) tagIcons.value[tagIconTarget.value] = v;
+  else delete tagIcons.value[tagIconTarget.value];
+  tagIconModalVisible.value = false;
 }
 
 function openRenameCategory(name: string) {
@@ -243,7 +278,7 @@ onMounted(load);
       <template #icon>
         <Icon icon="ri:price-tag-3-line" class="mr-2 self-center text-xl" />
       </template>
-      <template #subtitle>管理文章的分类与标签，配色用于前台卡片展示</template>
+      <template #subtitle>管理文章的分类与标签，配色与图标用于前台展示</template>
       <template #actions>
         <div class="apple-search" style="width: 280px;">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
@@ -291,7 +326,7 @@ onMounted(load);
                 {{ categories.length }} 个分类
               </span>
             </div>
-            <VButton size="sm" :loading="savingColors" @click="saveColors">保存配色</VButton>
+            <VButton size="sm" :loading="savingColors" @click="saveTaxonomy">保存配色与图标</VButton>
           </div>
 
           <VEmpty
@@ -313,20 +348,37 @@ onMounted(load);
                   boxShadow: categoryIconShadow[idx % categoryIconShadow.length],
                 }"
               >
-                <Icon :icon="categoryIconKeys[idx % categoryIconKeys.length]" class="text-2xl" />
+                <img
+                  v-if="isIconUrl(catIcons[c.name])"
+                  :src="catIcons[c.name].trim()"
+                  class="h-6 w-6 object-contain"
+                  alt=""
+                />
+                <Icon
+                  v-else
+                  :icon="catIcons[c.name]?.trim() || categoryIconKeys[idx % categoryIconKeys.length]"
+                  class="text-2xl"
+                />
               </div>
 
               <div class="min-w-0 flex-1">
                 <div class="mb-0.5 truncate text-[15px] font-semibold tracking-tight text-foreground">
                   {{ c.name }}
                 </div>
-                <div class="taxonomy-clamp mb-2 text-xs leading-snug text-text-tertiary">
+                <div class="mb-2 space-y-1 text-xs leading-snug text-text-tertiary">
                   <input
                     v-model="catColors[c.name]"
                     placeholder="#RRGGBB（前台分类标记配色，留空=不配色）"
                     maxlength="7"
                     class="h-7 w-full rounded-md border border-border bg-secondary px-2 font-mono text-xs text-foreground outline-none transition-colors placeholder:text-text-quaternary focus:border-primary"
                   />
+                  <div class="w-full">
+                    <IconPicker
+                      v-model="catIcons[c.name]"
+                      compact
+                      placeholder="图标 key 或图片 URL，留空=默认"
+                    />
+                  </div>
                 </div>
                 <div class="flex items-center gap-2">
                   <span
@@ -343,6 +395,13 @@ onMounted(load);
                       :style="{ background: catColors[c.name] }"
                     ></span>
                     配色已设
+                  </span>
+                  <span
+                    v-if="catIcons[c.name] && catIcons[c.name].trim()"
+                    class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] text-text-tertiary"
+                  >
+                    <Icon icon="ri:shape-line" />
+                    图标已设
                   </span>
                 </div>
               </div>
@@ -369,7 +428,7 @@ onMounted(load);
           </div>
 
           <p class="mt-4 text-xs text-text-quaternary">
-            配色用于首页卡片分类标记（#RRGGBB，留空=不配色），修改后点右上「保存配色」。分类随文章创建，暂不支持单独新建。
+            配色用于首页卡片分类标记（#RRGGBB，留空=不配色）；图标用于前台分类面包屑与分类页（icon key 或图片 URL，留空=默认图标）。修改后点右上「保存配色与图标」。分类随文章创建，暂不支持单独新建。
           </p>
         </section>
 
@@ -395,12 +454,15 @@ onMounted(load);
                 <VButton size="sm" type="primary" @click="confirmMerge">确认合并</VButton>
                 <VButton size="sm" @click="cancelMerge">取消</VButton>
               </template>
-              <VButton v-else size="sm" @click="startMerge">
-                <template #icon>
-                  <Icon icon="ri:git-merge-line" class="h-full w-full" />
-                </template>
-                合并标签
-              </VButton>
+              <template v-else>
+                <VButton size="sm" :loading="savingColors" @click="saveTaxonomy">保存配色与图标</VButton>
+                <VButton size="sm" @click="startMerge">
+                  <template #icon>
+                    <Icon icon="ri:git-merge-line" class="h-full w-full" />
+                  </template>
+                  合并标签
+                </VButton>
+              </template>
             </div>
           </div>
 
@@ -437,9 +499,23 @@ onMounted(load);
               :class="['tag-chip', tagSizeClass(t.count)]"
               :style="tagStyle(idx)"
             >
+              <img
+                v-if="isIconUrl(tagIcons[t.name])"
+                :src="tagIcons[t.name].trim()"
+                class="h-3.5 w-3.5 object-contain"
+                alt=""
+              />
+              <Icon v-else-if="tagIcons[t.name]?.trim()" :icon="tagIcons[t.name].trim()" />
               {{ t.name }}
               <span class="tag-count">{{ t.count }}</span>
               <span class="tag-actions">
+                <button
+                  type="button"
+                  title="设置图标"
+                  @click.stop="openTagIcon(t.name)"
+                >
+                  <Icon icon="ri:shape-line" />
+                </button>
                 <button
                   type="button"
                   title="重命名"
@@ -457,6 +533,10 @@ onMounted(load);
               </span>
             </span>
           </div>
+
+          <p v-if="!mergeMode" class="mt-4 text-xs text-text-quaternary">
+            悬停标签点「设置图标」配置前台标签页图标（icon key 或图片 URL，留空=无图标），修改后点右上「保存配色与图标」。
+          </p>
         </section>
       </template>
     </div>
@@ -478,6 +558,23 @@ onMounted(load);
         <div class="flex justify-end gap-2">
           <VButton @click="renameModalVisible = false">取消</VButton>
           <VButton type="primary" :loading="renaming" @click="confirmRename">确认</VButton>
+        </div>
+      </template>
+    </VModal>
+
+    <!-- 标签图标设置弹窗 -->
+    <VModal v-model:visible="tagIconModalVisible" title="设置标签图标" :width="440">
+      <div>
+        <label class="mb-1.5 block text-xs text-text-tertiary">
+          「{{ tagIconTarget }}」的图标（icons.yml key / Iconify key / 图片 URL，留空=移除）
+        </label>
+        <IconPicker v-model="tagIconValue" placeholder="如 solar:hashtag-square-bold" />
+        <p class="mt-2 text-xs text-text-quaternary">确认后还需点「保存配色与图标」才会写入配置。</p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="tagIconModalVisible = false">取消</VButton>
+          <VButton type="primary" @click="confirmTagIcon">确认</VButton>
         </div>
       </template>
     </VModal>

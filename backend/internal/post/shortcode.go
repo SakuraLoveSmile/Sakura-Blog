@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+
+	tmpl "blog/internal/template"
 )
 
 // note 标签正则：{% note [color:xxx] [title] content %}
@@ -351,6 +353,10 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		}
 		argsStr := parts[1]
 		color, title, content := parseNoteArgs(argsStr)
+		// tag_plugins.note.default_color：未指定 color 时的默认配色（空=不输出 color 属性，现状回归）
+		if color == "" {
+			color = tmpl.CurrentTagPlugins().Note.DefaultColor
+		}
 
 		var sb strings.Builder
 		sb.WriteString(`<div class="tag-plugin colorful note"`)
@@ -816,7 +822,12 @@ func renderTimeline(body string, renderMD func(string) string) string {
 	pairs := splitByMarker(reNodeSplit, body)
 
 	var sb strings.Builder
-	sb.WriteString(`<div class="tag-plugin timeline">`)
+	sb.WriteString(`<div class="tag-plugin timeline"`)
+	// tag_plugins.timeline.max_height：限高滚动（空=不限高，现状）
+	if mh := tmpl.CurrentTagPlugins().Timeline.MaxHeight; mh != "" {
+		fmt.Fprintf(&sb, ` style="max-height:%s;overflow-y:auto"`, mh)
+	}
+	sb.WriteString(`>`)
 	for i, pair := range pairs {
 		fmt.Fprintf(&sb, `<div class="timenode" index="%d">`, i)
 		sb.WriteString(`<div class="header">`)
@@ -834,8 +845,13 @@ func renderTimeline(body string, renderMD func(string) string) string {
 
 func renderGallery(argsStr, body string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"layout", "size", "ratio"}, nil)
+	// tag_plugins.gallery：默认布局参数（空=内置默认 grid/mix/origin）
+	g := tmpl.CurrentTagPlugins().Gallery
 
 	layout := named["layout"]
+	if layout == "" {
+		layout = g.Layout
+	}
 	if layout == "" {
 		layout = "grid"
 	}
@@ -846,9 +862,15 @@ func renderGallery(argsStr, body string) string {
 
 	size := named["size"]
 	if size == "" {
+		size = g.Size
+	}
+	if size == "" {
 		size = "mix"
 	}
 	ratio := named["ratio"]
+	if ratio == "" {
+		ratio = g.Ratio
+	}
 	if ratio == "" {
 		ratio = "origin"
 	}
@@ -910,6 +932,9 @@ func renderButton(argsStr string) (string, bool) {
 	sb.WriteString(`<a class="tag-plugin colorful button"`)
 	if color := named["color"]; color != "" {
 		fmt.Fprintf(&sb, ` color="%s"`, color)
+	} else if c := tmpl.CurrentTagPlugins().Button.DefaultColor; c != "" {
+		// tag_plugins.button.default_color
+		fmt.Fprintf(&sb, ` color="%s"`, c)
 	}
 	if size := named["size"]; size != "" {
 		fmt.Fprintf(&sb, ` size="%s"`, size)
@@ -1222,16 +1247,23 @@ func renderQuot(argsStr string, iconFunc func(string) string) string {
 	if text == "" {
 		text = strings.Join(positional, " ")
 	}
-	// 前缀图标：prefix > icon 预设 > 默认 hashtag
+	// 前缀图标：prefix > icon 预设 > tag_plugins.quot.prefix > 默认 hashtag
+	tp := tmpl.CurrentTagPlugins()
 	prefixKey := named["prefix"]
 	if prefixKey == "" {
 		if ic := named["icon"]; ic == "" || ic == "default" || ic == "hashtag" {
-			prefixKey = "solar:hashtag-square-bold"
+			prefixKey = tp.Quot.Prefix
+			if prefixKey == "" {
+				prefixKey = "solar:hashtag-square-bold"
+			}
 		} else {
 			prefixKey = ic
 		}
 	}
 	suffixKey := named["suffix"]
+	if suffixKey == "" {
+		suffixKey = tp.Quot.Suffix
+	}
 
 	iconHTML := func(key string) string {
 		if key == "" || iconFunc == nil {
@@ -1483,6 +1515,9 @@ func renderMark(argsStr string) (string, bool) {
 	}
 	color := named["color"]
 	if color == "" {
+		color = tmpl.CurrentTagPlugins().Mark.DefaultColor
+	}
+	if color == "" {
 		color = "yellow"
 	}
 	return fmt.Sprintf(`<mark class="tag-plugin colorful mark" color="%s">%s</mark>`, color, text), true
@@ -1491,6 +1526,10 @@ func renderMark(argsStr string) (string, bool) {
 // emojiSources 内置 emoji CDN 映射，对齐原版 _config.yml tag_plugins.emoji。
 var emojiSources = map[string]string{
 	"default": "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/{name}.gif",
+	"qq":      "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/{name}.gif",
+	"aru":     "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/aru/{name}.gif",
+	"tieba":   "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/tieba/{name}.png",
+	"blobcat": "https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/blobcat/{name}.gif",
 	"twemoji": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/{name}.svg",
 }
 
@@ -1510,6 +1549,10 @@ func renderEmoji(argsStr string) (string, bool) {
 		source = "default"
 	}
 	tpl, ok := emojiSources[source]
+	// tag_plugins.emoji：配置源优先于内置默认源
+	if cfgURL := tmpl.CurrentTagPlugins().Emoji[source]; cfgURL != "" {
+		tpl, ok = cfgURL, true
+	}
 	if !ok {
 		return "", false
 	}
@@ -1534,6 +1577,9 @@ func renderIcon(argsStr string, iconFunc func(string) string) (string, bool) {
 		return "", false
 	}
 	color := named["color"]
+	if color == "" {
+		color = tmpl.CurrentTagPlugins().Icon.DefaultColor
+	}
 	if color == "" {
 		color = "blue"
 	}
@@ -1569,6 +1615,10 @@ func renderHashtag(argsStr string) (string, bool) {
 	}
 	href := named["href"]
 	color := named["color"]
+	if color == "" {
+		// tag_plugins.hashtag.default_color：非空时固定默认色，空=循环色板（现状）
+		color = tmpl.CurrentTagPlugins().Hashtag.DefaultColor
+	}
 	if color == "" {
 		idx := atomic.AddUint64(&hashtagColorIdx, 1) - 1
 		color = hashtagColors[idx%uint64(len(hashtagColors))]
@@ -1798,7 +1848,11 @@ func renderCopy(argsStr string) string {
 		}
 	}
 	id := fmt.Sprintf("copy_%d", atomic.AddUint64(&copyIndex, 1))
-	const toast = "复制成功"
+	// tag_plugins.copy.toast：复制成功提示文案（空=内置「复制成功」）
+	toast := tmpl.CurrentTagPlugins().Copy.Toast
+	if toast == "" {
+		toast = "复制成功"
+	}
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin copy">`)
 	if prefix := named["prefix"]; prefix != "" {

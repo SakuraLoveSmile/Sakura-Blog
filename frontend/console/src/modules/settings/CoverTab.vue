@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from"@iconify/vue";
+import IconPicker from"@/components/IconPicker.vue";
 
 // 首页 Hero cover 区（site.yml cover 段入库版）：title/description + features 按钮列表。
 const props = defineProps<{
@@ -40,8 +41,8 @@ function moveItem(i: number, dir: -1 | 1) {
  <div><label class="block text-xs text-text-tertiary mb-1">描述</label><input v-model="data.description" :class="inputCls" placeholder="站点简介" /></div>
  </div>
  <div>
- <label class="block text-xs text-text-tertiary mb-1">Scheme（可选）</label>
- <input v-model="data.scheme" :class="inputCls" placeholder="如 grid" />
+ <label class="block text-xs text-text-quaternary mb-1">Scheme（预留字段，暂不生效，留空即可）</label>
+ <input v-model="data.scheme" :class="inputCls" placeholder="留空即可" />
  </div>
 
  <div class="space-y-2">
@@ -49,7 +50,9 @@ function moveItem(i: number, dir: -1 | 1) {
  <div v-for="(f, i) in data.features" :key="i" class="grid grid-cols-12 gap-2 items-center">
  <input v-model="f.title" placeholder="按钮文案" :class="inputCls" class="col-span-4" />
  <input v-model="f.url" placeholder="/url 或 https://..." :class="inputCls" class="col-span-4" />
- <input v-model="f.icon" placeholder="图标（icons.yml key）" :class="inputCls" class="col-span-2" />
+ <div class="col-span-2">
+ <IconPicker v-model="f.icon" compact placeholder="图标（icons.yml key）" />
+ </div>
  <div class="col-span-2 flex items-center gap-1.5 justify-end">
  <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
  <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.features.length - 1" :class="rowBtnCls"><Icon icon="ri:arrow-down-s-line" /></button>

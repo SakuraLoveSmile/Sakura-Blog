@@ -329,3 +329,32 @@ func TestGalleryImgAttrs(t *testing.T) {
 		}
 	}
 }
+
+// TestEmojiSources 对齐原版 _config.yml tag_plugins.emoji 的五种来源：
+// default/qq/tieba/aru/blobcat/twemoji，未知来源原样保留。
+func TestEmojiSources(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"缺省源走 QQ", "{% emoji aini %}", "emoticons@3.1.0/qq/aini.gif"},
+		{"显式 qq 源", "{% emoji qq weixiao %}", "emoticons@3.1.0/qq/weixiao.gif"},
+		{"tieba 源为 png", "{% emoji tieba huaji %}", "emoticons@3.1.0/tieba/huaji.png"},
+		{"aru 源", "{% emoji aru aru0010 %}", "emoticons@3.1.0/aru/aru0010.gif"},
+		{"blobcat 源", "{% emoji blobcat aww %}", "emoticons@3.1.0/blobcat/aww.gif"},
+		{"twemoji 源", "{% emoji twemoji 1f44d %}", "twemoji@14.0.2/assets/svg/1f44d.svg"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := runShortcodes(tt.in)
+			if !strings.Contains(out, tt.want) {
+				t.Errorf("emoji output missing %q: %s", tt.want, out)
+			}
+		})
+	}
+	// 未知来源不渲染为表情
+	if out := runShortcodes("{% emoji nosuch aini %}"); strings.Contains(out, "emoticons") {
+		t.Errorf("unknown source should not render: %s", out)
+	}
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from"vue";
 import { Icon } from"@iconify/vue";
+import AttachmentField from"@/components/AttachmentField.vue";
 
 // 多作者体系（site.yml authors 段入库版）：key → {name, avatar, description, url, hidden}。
 // 段是 map 结构，表单用行数组代理，变更时同步回 data（保存提交 data.authors）。
@@ -99,7 +100,7 @@ function doSave() {
  <div><label class="block text-xs text-text-tertiary mb-1">主页链接</label><input v-model="r.url" :class="inputCls" placeholder="https://..." /></div>
  </div>
  <div class="grid grid-cols-2 gap-3">
- <div><label class="block text-xs text-text-tertiary mb-1">头像 URL</label><input v-model="r.avatar" :class="inputCls" placeholder="https://..." /></div>
+ <div><label class="block text-xs text-text-tertiary mb-1">头像 URL</label><AttachmentField v-model="r.avatar" placeholder="https://..." /></div>
  <div><label class="block text-xs text-text-tertiary mb-1">简介</label><input v-model="r.description" :class="inputCls" placeholder="博客作者" /></div>
  </div>
  </div>

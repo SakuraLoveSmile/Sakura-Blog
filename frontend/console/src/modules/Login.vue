@@ -504,10 +504,10 @@ function setBtnRef(el: any, provider: string) {
 .btn-primary {
   width: 100%;
   height: 44px;
-  background-color: #007AFF;
-  color: var(--color-foreground);
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 9999px;
   border: none;
   cursor: pointer;
@@ -521,11 +521,11 @@ function setBtnRef(el: any, provider: string) {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #0066CC;
+  filter: brightness(0.96);
 }
 
 .btn-primary:active:not(:disabled) {
-  background-color: #004fad;
+  background-color: var(--color-primary-active);
 }
 
 .btn-primary:disabled {

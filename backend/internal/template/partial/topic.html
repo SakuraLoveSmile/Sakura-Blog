@@ -23,7 +23,7 @@
           {{- /* 分类：对齐 post_card.ejs 的 span.cap.breadcrumb + category_color 配色（site.yml article.category_color）*/}}
           {{if .Category}}
           <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
-            {{icon "default:category"}}
+            {{icon .CategoryIcon}}
             <span>{{.Category}}</span>
           </span>
           {{end}}

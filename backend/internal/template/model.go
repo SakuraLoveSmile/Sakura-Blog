@@ -144,12 +144,14 @@ type ArchiveItem struct {
 type CatItem struct {
 	Name  string
 	Count int
+	Icon  string // 图标 key（article.category_icon 命中值，空则模板回退 default:category）
 }
 
 // TagItem 标签索引页单项。
 type TagItem struct {
 	Name  string
 	Count int
+	Icon  string // 图标 key（article.tag_icon 命中值，空不渲染图标）
 	Size  int    // 标签云字号（px），0 表示默认
 	Color string // 标签云渐变色（tagcloud color 参数开启时插值生成），空不输出 color style
 	Dy    int    // 标签云垂直散落偏移 px（标签名哈希确定性生成，模板输出 --tc-dy）
@@ -166,13 +168,14 @@ type PostCard struct {
 	Pinned        bool         // 置顶（meta 行 pin 图标，对齐 post_card.ejs 的 span.pin）
 	Category      string       // 单分类（meta 行分类面包屑，空不渲染）
 	CategoryStyle template.CSS // 分类配色 style 内容（CategoryColorStyle 生成；CSS 类型绕过 html/template 的 ZgotmplZ 过滤）
+	CategoryIcon  string       // 分类图标 key（CategoryIconKey 解析；未配置回退 default:category）
 	Poster        *PosterCard  // 海报数据（非 nil 且有 Cover 时渲染 photo 封面大卡）
 }
 
 // NewPostCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
 // 分类配色查 site.yml article.category_color（对齐原版 category_color helper）；
 // 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
-func NewPostCard(p *store.Post, categoryColors map[string]string) *PostCard {
+func NewPostCard(p *store.Post, categoryColors, categoryIcons map[string]string) *PostCard {
 	card := &PostCard{
 		Slug:          p.Slug,
 		Title:         p.Title,
@@ -182,6 +185,7 @@ func NewPostCard(p *store.Post, categoryColors map[string]string) *PostCard {
 		Pinned:        p.Pinned,
 		Category:      p.Category,
 		CategoryStyle: CategoryColorStyle(p.Category, categoryColors),
+		CategoryIcon:  CategoryIconKey(p.Category, categoryIcons),
 	}
 	if pd := store.DecodePoster(p.Poster); pd != nil {
 		card.Poster = &PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
@@ -221,6 +225,17 @@ func CategoryColorStyle(cat string, colors map[string]string) template.CSS {
 		bgColor += "20"
 	}
 	return template.CSS("--text-p2:" + textColor + ";--theme-block:" + bgColor)
+}
+
+// CategoryIconKey 解析分类图标 key：命中 article.category_icon 配置则返回配置值
+//（icons.yml key 或图片 URL，icon 模板函数两者都支持），未命中回退 default:category（与改造前硬编码一致）。
+func CategoryIconKey(cat string, icons map[string]string) string {
+	if cat != "" {
+		if v := icons[cat]; v != "" {
+			return v
+		}
+	}
+	return "default:category"
 }
 
 // Paginator 分页器数据，对齐 Stellar _partial/main/post_list/paginator.ejs。
@@ -323,9 +338,26 @@ type Site struct {
 	// 前端体验增强插件（Spec 36）：site.yml plugins 段。缺省全关，opt-in 启用；
 	// 各插件 Enable 为 false 时前端不加载对应脚本。
 	Plugins PluginsConfig `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	// TagPlugins 标签插件默认参数（对齐原版 _config.yml tag_plugins 段）。
+	TagPlugins TagPluginsConfig `yaml:"tag_plugins" json:"tag_plugins"`
+	// Default 占位素材组（对齐原版 _config.yml default 段）。
+	Default DefaultAssets `yaml:"default" json:"default"`
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
+}
+
+// DefaultAssets 对齐原版 _config.yml default 段：各场景占位素材 URL，空则回退内置硬编码值。
+type DefaultAssets struct {
+	Avatar       string `yaml:"avatar" json:"avatar"`
+	Link         string `yaml:"link" json:"link"`
+	Cover        string `yaml:"cover" json:"cover"`
+	Image        string `yaml:"image" json:"image"`
+	Project      string `yaml:"project" json:"project"`
+	Banner       string `yaml:"banner" json:"banner"`
+	Topic        string `yaml:"topic" json:"topic"`
+	Loading      string `yaml:"loading" json:"loading"`
+	ImageOnError string `yaml:"image_onerror" json:"image_onerror"`
 }
 
 // DefaultAuthorName 返回站点默认作者名：存在多作者配置时取第一个，否则回退站点标题。
@@ -526,6 +558,8 @@ type Footer struct {
 	Social  []SocialItem   `yaml:"social" json:"social"`
 	Sitemap []SitemapGroup `yaml:"sitemap" json:"sitemap"` // 页脚站点地图多列（对齐原版 footer.ejs sitemap）
 	Beian   string         `yaml:"beian" json:"beian"`     // ICP 备案号（大陆部署合规）；空则页脚不渲染
+	// Content 页脚自定义文案（Markdown，对齐原版 footer.content）；空则回退内置 Powered-by 行。
+	Content string `yaml:"content" json:"content"`
 }
 
 // SitemapGroup 页脚站点地图分组（组标题 + 链接列表），对齐 theme.footer.sitemap。

@@ -199,7 +199,7 @@ function backToSelect() {
           上一步
         </button>
         <button
-          class="px-4 py-2 rounded-lg bg-primary text-sm text-white hover:opacity-90 transition-opacity"
+          class="px-4 py-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           @click="confirmAdd"
         >
           <Icon icon="ri:add-line" class="w-4 h-4 inline align-middle mr-1" />

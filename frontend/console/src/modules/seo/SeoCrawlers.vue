@@ -59,7 +59,7 @@ const total = computed(() =>
  v-for="r in ranges"
  :key="r.id"
  class="rounded-base px-3 py-1 text-xs transition-colors"
- :class="range === r.id ? 'bg-primary text-white' : 'bg-secondary text-text-tertiary '"
+ :class="range === r.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-text-tertiary '"
  @click="setRange(r.id)"
  >{{ r.label }}</button>
  </div>

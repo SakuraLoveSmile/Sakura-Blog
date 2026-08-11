@@ -7,7 +7,8 @@
   <article id="tags">
     {{range .TagItems}}
     <a class="tag" href="/tags/{{.Name}}">
-      <span class="name">{{.Name}}</span>
+      {{- /* 图标：article.tag_icon 命中时内联渲染（icon 函数兼容 URL 与 icons.yml key），未配置不渲染 */}}
+      <span class="name">{{if .Icon}}{{icon .Icon}}{{end}}{{.Name}}</span>
     </a>
     {{end}}
   </article>

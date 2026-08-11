@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -51,6 +52,12 @@ type Handler struct {
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh *ghpkg.Client
 
+	// icons 图标注册表（icons.yml），素材速查端点用，可空。
+	icons *tmpl.IconRegistry
+
+	// renderSitePreview 设置页「前端预览」渲染回调（cmd/server 注入，nil 时端点 501）。
+	renderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+
 	// 登录限流（P0-4）
 	loginMu    sync.Mutex
 	loginFails map[string]struct {
@@ -72,6 +79,9 @@ type Config struct {
 	Backups     *backup.Service
 	Modules     *module.Manager
 	Notify      *notify.Service // 站内通知服务（Wave 3b），可空
+	Icons       *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
+	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
+	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
 	UploadDir   string
 	NotesPath   string
 	MaxUploadMB int
@@ -91,6 +101,8 @@ func New(cfg Config) *Handler {
 		backups:   cfg.Backups,
 		modules:   cfg.Modules,
 		notify:    cfg.Notify,
+		icons:     cfg.Icons,
+		renderSitePreview: cfg.RenderSitePreview,
 		uploadDir: cfg.UploadDir,
 		notesPath: cfg.NotesPath,
 		maxUpload: int64(maxMB) << 20,
@@ -98,7 +110,7 @@ func New(cfg Config) *Handler {
 			n int
 			t time.Time
 		}),
-		patHits:   make(map[int64]patWindow),
+		patHits: make(map[int64]patWindow),
 	}
 }
 
@@ -122,19 +134,19 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		name string
 		fn   func() error
 	}{
-		{"users", st.EnsureUsersTable},              // 多用户/读者注册
-		{"ratings", st.EnsureRatingsTable},          // 评分数据服务（Spec 20）
-		{"votes", st.EnsureVotesTable},              // 投票数据服务（Spec 30）
-		{"revisions", st.EnsureRevisionsTable},      // 文章版本历史（Spec 22）
-		{"page_views", st.EnsurePageViewsTable},     // 访问统计明细（Spec 24）
-		{"attachments", st.EnsureAttachmentsTable},  // 附件管理
-		{"shared_posts", st.EnsureSharedPostsTable}, // 文章分享链接
-		{"wikidocs", st.EnsureWikidocsTable},        // wiki 文档（Spec 35）
-		{"notebooks", st.EnsureNotebooksTable},      // 笔记本（Spec 35b）
-		{"notes", st.EnsureNotesTable},              // 笔记（Spec 35b）
-		{"login_logs", st.EnsureLoginLogsTable},     // 登录日志（Wave 3a）
+		{"users", st.EnsureUsersTable},                 // 多用户/读者注册
+		{"ratings", st.EnsureRatingsTable},             // 评分数据服务（Spec 20）
+		{"votes", st.EnsureVotesTable},                 // 投票数据服务（Spec 30）
+		{"revisions", st.EnsureRevisionsTable},         // 文章版本历史（Spec 22）
+		{"page_views", st.EnsurePageViewsTable},        // 访问统计明细（Spec 24）
+		{"attachments", st.EnsureAttachmentsTable},     // 附件管理
+		{"shared_posts", st.EnsureSharedPostsTable},    // 文章分享链接
+		{"wikidocs", st.EnsureWikidocsTable},           // wiki 文档（Spec 35）
+		{"notebooks", st.EnsureNotebooksTable},         // 笔记本（Spec 35b）
+		{"notes", st.EnsureNotesTable},                 // 笔记（Spec 35b）
+		{"login_logs", st.EnsureLoginLogsTable},        // 登录日志（Wave 3a）
 		{"notifications", st.EnsureNotificationsTable}, // 站内通知（Wave 3b）
-		{"pat_tokens", st.EnsurePATTable},           // 个人访问令牌（PAT，只存 sha256 哈希）
+		{"pat_tokens", st.EnsurePATTable},              // 个人访问令牌（PAT，只存 sha256 哈希）
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -249,12 +261,15 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 评论
 		authed.GET("/comments", h.listComments)
 		authed.PUT("/comments/:id/approve", h.approveComment)
+		authed.PUT("/comments/:id/status", h.statusComment)
 		authed.DELETE("/comments/:id", h.deleteComment)
 		authed.POST("/comments/reply", h.replyComment)
 		authed.POST("/comments/batch", h.batchComments)
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		authed.POST("/preview/markdown", h.previewMarkdown)
+		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
+		authed.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
 		authed.POST("/preview/post", h.createPostPreview)
 
@@ -373,6 +388,9 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/tags/merge", h.mergeTags)
 		authed.PUT("/tags/:name", h.renameTag)
 		authed.DELETE("/tags/:name", h.deleteTag)
+
+		// 素材速查（插件库图标画廊数据源：icons.yml 全量 key + SVG）
+		authed.GET("/assets/icons", h.listAssetIcons)
 
 	}
 
