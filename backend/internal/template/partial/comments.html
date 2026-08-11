@@ -11,7 +11,7 @@
   </section>
 
   <section class="body cmt-body native" id="cmt-body"
-    data-page-key="/post/{{.Page.Slug}}"
+    data-page-key="{{if .CommentPageKey}}{{.CommentPageKey}}{{else}}/post/{{.Page.Slug}}{{end}}"
     data-admin-badge="{{.Site.Comments.AdminBadge}}"
     data-lazy="1">
 

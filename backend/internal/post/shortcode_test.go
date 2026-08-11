@@ -408,6 +408,23 @@ func TestEmojiURL(t *testing.T) {
 	if out := runShortcodes("{% emoji url:https://example.com/<script> %}"); strings.Contains(out, `<script>`) {
 		t.Errorf("emoji url should escape angle brackets: %s", out)
 	}
+	// height CSS 注入防御：style 值必须转义，不可引入额外 CSS 属性
+	for _, tc := range []struct {
+		name string
+		in   string
+	}{{"url 分支 height 含 background", `{% emoji url:https://e.png height:1em;background:url(https://x.png) %}`},
+		{"source 分支 height 含 background", `{% emoji qq aini height:1em;background:url(https://x.png) %}`},
+		{"url 分支 height 含引号", `{% emoji url:https://e.png height:1em" x="y %}`},
+		{"source 分支 height 含引号", `{% emoji qq aini height:1em" x="y %}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := runShortcodes(tc.in)
+			if strings.Contains(out, `background:`) {
+				t.Errorf("height CSS injection: output contains unexpected background: %s", out)
+			}
+		})
+	}
+
 	// 回归：无 url 时旧行为不变（走 source 配置查找，不输出 alt）
 	out := runShortcodes("{% emoji qq weixiao height:1.75em %}")
 	for _, want := range []string{`src="https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/weixiao.gif"`, `style="height:1.75em"`} {

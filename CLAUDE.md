@@ -394,13 +394,18 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 SW（Service Worker）对 `/assets/*` 走 `cache-first` 策略，静态资源内容变化后老访客拿到新 HTML 但 SW 返回缓存的旧资源，导致新旧资源错配（CSS 新类名引用旧样式文件等）。**对策**：
 
-- 每次修改 `frontend/assets/` 下的文件（main.css、main.js 等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
+- 每次修改 `frontend/assets/` 下的文件（main.css、main.js、plugins/ 脚本等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
 - bump 清单对照 `git diff --name-only` 变化的 assets 文件，只 bump 确实变了的文件，不变的不动
+- bump 对照基线是最近一次改动 assets 的提交（本次评审对应 1.38 同步提交）；plugins/ 下脚本（scrollreveal-init.js、heti-init.js 等）内容变动后同样需要 bump
 - 此坑不影响 `-dev` 开发模式（磁盘实时加载），但影响生产构建产物
 
 ### seed.go Pinned 字段赋值
 
 `seed.go` 的 `Post` 结构体含 `Pinned bool` 字段（置顶标记），但在 `-seed` 导入流程中曾漏掉对该字段的赋值 —— 从 frontmatter 解析出 `pinned: true` 后未映射到数据库记录，导致置顶功能不生效。**已修复**：`seed.go` 导入循环中补充 `Pinned: p.Pinned` 映射。
+
+### seed.go 草稿语义
+
+`seed.go` 的 `Import` 原硬编码 `Status: store.StatusPublished`，未尊重 frontmatter 的 `status: draft`，导致草稿文章被公开发布（如 tag-plugins-test.md）。**已修复**：对齐 `backup.go` 的 `importOne` 写法，在导入循环前置判断 `meta.Status == store.StatusDraft` 时设 `status = store.StatusDraft`，否则保持 Published。
 
 ## Spec 60 · 主题配置复刻 + 页面统一管理（2026-08）
 

@@ -29,6 +29,9 @@ var reGallery = regexp.MustCompile(`(?s){%\s*gallery\s*(.*?)\s*%}(.*?){%\s*endga
 // mermaid 标签正则（块级）：{% mermaid %} body {% endmermaid %}
 var reMermaid = regexp.MustCompile(`(?s){%\s*mermaid\s*%}(.*?){%\s*endmermaid\s*%}`)
 
+// reEmojiHeight 校验 emoji height 参数格式，仅允许合法的 CSS 长度值，防 CSS 注入。
+var reEmojiHeight = regexp.MustCompile(`^[0-9]*\.?[0-9]+(px|em|rem|%|vh|vw)?$`)
+
 // button 标签正则：{% button ... %}
 var reButton = regexp.MustCompile(`{%\s*button\s+(.*?)\s*%}`)
 
@@ -1562,8 +1565,8 @@ func renderEmoji(argsStr string) (string, bool) {
 		if name != "" {
 			sb.WriteString(` alt="` + html.EscapeString(name) + `"`)
 		}
-		if height != "" {
-			sb.WriteString(` style="height:` + height + `"`)
+		if height != "" && reEmojiHeight.MatchString(height) {
+			sb.WriteString(` style="height:` + html.EscapeString(height) + `"`)
 		}
 		sb.WriteString(`/>`)
 		sb.WriteString(`</span>`)
@@ -1591,8 +1594,8 @@ func renderEmoji(argsStr string) (string, bool) {
 	var sb strings.Builder
 	sb.WriteString(`<span class="tag-plugin emoji">`)
 	sb.WriteString(`<img no-lazy="" class="inline" src="` + html.EscapeString(url) + `"`)
-	if height != "" {
-		sb.WriteString(` style="height:` + height + `"`)
+	if height != "" && reEmojiHeight.MatchString(height) {
+		sb.WriteString(` style="height:` + html.EscapeString(height) + `"`)
 	}
 	sb.WriteString(`/>`)
 	sb.WriteString(`</span>`)

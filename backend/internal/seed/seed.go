@@ -38,6 +38,11 @@ func Import(st *store.Store, posts *post.Service) error {
 		if title == "" {
 			title = slug
 		}
+		// 对齐 backup.go importOne 的写法：尊重 frontmatter status 字段，draft 导入为草稿
+		status := store.StatusPublished
+		if meta.Status == store.StatusDraft {
+			status = store.StatusDraft
+		}
 		p := &store.Post{
 			Slug:        slug,
 			Title:       title,
@@ -49,7 +54,7 @@ func Import(st *store.Store, posts *post.Service) error {
 			Tags:        strings.Join(meta.Tags, ","),
 			ContentMD:   body,
 			ContentHTML: html,
-			Status:      store.StatusPublished,
+			Status:      status,
 			CreatedAt:   parseSeedDate(meta.Date),
 			Poster: store.EncodePoster(store.PosterData{
 				Headline: meta.PosterHeadline,
