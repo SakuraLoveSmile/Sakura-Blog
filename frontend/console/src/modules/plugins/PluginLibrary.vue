@@ -11,13 +11,15 @@ import {
 } from"./plugins-data";
 import PluginParamForm from"./PluginParamForm.vue";
 import AssetGallery from"./AssetGallery.vue";
+import WidgetLibraryView from"./WidgetLibraryView.vue";
+import { WIDGET_META } from"../settings/widget-meta";
 
 // Console 插件库（Spec 23）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
 // 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）。
 // 预览复用后端 POST /api/v1/preview/markdown 渲染管线，
 // 通过 iframe srcdoc 注入前台 main.css + tag-plugins.css，保证样式与前台一致。
 
-const viewMode = ref<"plugins" |"assets">("plugins");
+const viewMode = ref<"plugins" |"assets" |"widgets">("plugins");
 const search = ref("");
 const activeCategory = ref<PluginCategory |"全部">("全部");
 const selected = ref<PluginMeta>(plugins[0]);
@@ -157,15 +159,20 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
  </template>
  <template #subtitle>
- {{ viewMode ==="plugins" ?`${plugins.length} 个标签插件 · 语法速查 + 实时渲染预览，与前台样式完全一致` :"图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置" }}
+ {{ viewMode ==="plugins"
+ ? `${plugins.length} 个标签插件 · 语法速查 + 实时渲染预览，与前台样式完全一致`
+ : viewMode ==="assets"
+ ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
+ : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用` }}
  </template>
  </VPageHeader>
 
- <!-- 视图切换：插件 / 素材速查 -->
+ <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
  <div class="px-5 pt-4 pb-4 md:px-6 md:pb-5">
- <div class="apple-segmented" style="max-width: 320px;">
+ <div class="apple-segmented" style="max-width: 420px;">
  <button type="button" :class="{ active: viewMode ==='plugins' }" @click="viewMode ='plugins'">标签插件</button>
  <button type="button" :class="{ active: viewMode ==='assets' }" @click="viewMode ='assets'">素材速查</button>
+ <button type="button" :class="{ active: viewMode ==='widgets' }" @click="viewMode ='widgets'">侧边栏组件</button>
  </div>
  </div>
 
@@ -174,7 +181,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
  <AssetGallery />
  </div>
 
- <div v-else class="flex-1 flex flex-col overflow-hidden md:flex-row">
+ <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
+ <div v-else-if="viewMode ==='widgets'" class="flex-1 overflow-hidden">
+ <WidgetLibraryView />
+ </div>
+
+ <div v-else-if="viewMode ==='plugins'" class="flex-1 flex flex-col overflow-hidden md:flex-row">
  <!-- 左侧：分类 + 搜索 + 列表 -->
  <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
  <div class="p-3 space-y-2 border-b border-border">

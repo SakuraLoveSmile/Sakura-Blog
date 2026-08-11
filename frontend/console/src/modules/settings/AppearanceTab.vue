@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { VButton, VSwitch, Dialog, Toast } from "@/components/ui";
+import { VButton, Dialog, Toast } from "@/components/ui";
 import AttachmentField from "@/components/AttachmentField.vue";
 
 const props = defineProps<{
@@ -26,11 +25,9 @@ function defaultStyle(): Record<string, any> {
     site: { background_image: "", blur_px: "", blur_sat: "", blur_bg: "" },
     codeblock: { scrollbar: "" },
     header_prefix: { h2: "", h3: "", h4: "", h5: "" },
-    // smooth_scroll 语义：null=未配置（默认开），false=显式关闭；UI 代理见 smoothScrollOn
-    smooth_scroll: null,
     text_align: "",
     border_radius: { card: "", block: "", navbar: "", image: "" },
-    gradient: { button: "", searchbar: "" },
+    gradient: { start: "", searchbar: "" },
     paginator: { prev: "", next: "" },
   };
 }
@@ -58,11 +55,6 @@ styleRef.border_radius = styleRef.border_radius || {};
 styleRef.gradient = styleRef.gradient || {};
 styleRef.paginator = styleRef.paginator || {};
 
-// smooth_scroll 开关代理：后端 *bool（null=未配置默认开），开→null、关→false
-const smoothScrollOn = computed({
-  get: () => styleRef.smooth_scroll !== false,
-  set: (v: boolean) => { styleRef.smooth_scroll = v ? null : false; },
-});
 
 /** 恢复默认初始值（内存重置，需点保存才生效） */
 function resetStyle() {
@@ -272,13 +264,6 @@ function rangeFill(val: number, min: number, max: number): string {
     <!-- 8. 布局与效果 -->
     <div class="subsection">
       <p class="subsection-title">布局与效果</p>
-      <div class="switch-row">
-        <div class="switch-row-label">
-          <div class="switch-row-name">平滑滚动 (smooth_scroll)</div>
-          <div class="switch-row-desc">关闭后页面锚点/返回顶部为瞬移（默认开启）</div>
-        </div>
-        <VSwitch v-model="smoothScrollOn" />
-      </div>
       <div class="form-grid form-grid-2">
         <div class="field">
           <label>正文对齐 (text_align)</label>
@@ -308,7 +293,7 @@ function rangeFill(val: number, min: number, max: number): string {
       <p class="subsection-title">渐变 (gradient)</p>
       <p class="hint">任意 CSS gradient 表达式，留空回退主题内置值。</p>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>按钮背景 (button)</label><input v-model="data.style.gradient.button" :class="inputCls" placeholder="linear-gradient(...)" /></div>
+        <div class="field"><label>按钮/起始背景 (start)</label><input v-model="data.style.gradient.start" :class="inputCls" placeholder="linear-gradient(...)" /></div>
         <div class="field"><label>搜索栏背景 (searchbar)</label><input v-model="data.style.gradient.searchbar" :class="inputCls" placeholder="linear-gradient(...)" /></div>
       </div>
     </div>

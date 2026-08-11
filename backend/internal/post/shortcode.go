@@ -86,6 +86,9 @@ var reAudio = regexp.MustCompile(`{%\s*audio\s+(.*?)\s*%}`)
 // copy 标签正则（单行）：{% copy text %}
 var reCopy = regexp.MustCompile(`{%\s*copy\s+(.*?)\s*%}`)
 
+// mbti 标签正则（单行，1.38）：{% mbti INTJ-T 93-72-78-83-51 [url:...] [image:...] %}
+var reMbti = regexp.MustCompile(`{%\s*mbti\s+(.*?)\s*%}`)
+
 // rating 标签正则（单行）：{% rating id %}
 var reRating = regexp.MustCompile(`{%\s*rating\s+(.*?)\s*%}`)
 
@@ -647,6 +650,15 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		return renderBlockquote(parts[1], strings.TrimSpace(parts[2]), renderMD)
 	})
 
+	// 31.5 mbti（单行，1.38 人格卡片）
+	md = reMbti.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reMbti.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		return renderMbti(parts[1])
+	})
+	
 	// 32. reel（块级）
 	md = reReelTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reReelTag.FindStringSubmatch(match)
@@ -1830,6 +1842,158 @@ func renderAudio(argsStr string) string {
 }
 
 // renderCopy 渲染 {% copy text %} / {% copy git user/repo %} 为复制按钮。
+// mbti 人格卡片（1.38）。zh 标签/类型名硬编码，HTML 结构对齐上游 mbti.styl 选择器。
+var mbtiRoles = map[string]string{
+	"INTJ": "analyst", "INTP": "analyst", "ENTJ": "analyst", "ENTP": "analyst",
+	"INFJ": "diplomat", "INFP": "diplomat", "ENFJ": "diplomat", "ENFP": "diplomat",
+	"ISTJ": "sentinel", "ISFJ": "sentinel", "ESTJ": "sentinel", "ESFJ": "sentinel",
+	"ISTP": "explorer", "ISFP": "explorer", "ESTP": "explorer", "ESFP": "explorer",
+}
+var mbtiRoleColors = map[string]string{"analyst": "purple", "diplomat": "green", "sentinel": "blue", "explorer": "yellow"}
+var mbtiTypeNames = map[string]string{
+	"INTJ": "建筑师", "INTP": "逻辑学家", "ENTJ": "指挥官", "ENTP": "辩论家",
+	"INFJ": "提倡者", "INFP": "调停者", "ENFJ": "主人公", "ENFP": "竞选者",
+	"ISTJ": "物流师", "ISFJ": "守卫者", "ESTJ": "总经理", "ESFJ": "执政官",
+	"ISTP": "鉴赏家", "ISFP": "探险家", "ESTP": "企业家", "ESFP": "表演者",
+}
+var mbtiTraits = []struct{ key, color, left, right string }{
+	{"energy", "#2196f3", "外向", "内向"},
+	{"mind", "#FFBD2B", "直觉", "现实"},
+	{"nature", "#3DC550", "思考", "情感"},
+	{"tactics", "#9c27b0", "计划", "展望"},
+	{"identity", "#F44336", "坚决", "谨慎"},
+}
+
+func mbtiAlphaHex(hex string, alpha float64) string {
+	if len(hex) != 7 {
+		return hex
+	}
+	var r, g, b int
+	fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+	return fmt.Sprintf("rgba(%d,%d,%d,%g)", r, g, b, alpha)
+}
+
+func renderMbti(argsStr string) string {
+	fields := strings.Fields(argsStr)
+	if len(fields) == 0 {
+		return ""
+	}
+	typeCode := strings.ToUpper(fields[0])
+	scores := ""
+	url, image := "", ""
+	for _, f := range fields[1:] {
+		switch {
+		case strings.HasPrefix(f, "url:"):
+			url = strings.TrimPrefix(f, "url:")
+		case strings.HasPrefix(f, "image:"):
+			image = strings.TrimPrefix(f, "image:")
+		default:
+			if scores == "" {
+				scores = f
+			}
+		}
+	}
+	key := typeCode
+	if len(key) > 4 {
+		key = key[:4]
+	}
+	role := mbtiRoles[key]
+	themeColor := mbtiRoleColors[role]
+	typeName := mbtiTypeNames[key]
+	if typeName == "" {
+		typeName = typeCode
+	}
+	pcts := make([]int, 5)
+	sp := strings.Split(scores, "-")
+	for i := 0; i < 5; i++ {
+		if i < len(sp) {
+			v := 0
+			fmt.Sscanf(strings.TrimSpace(sp[i]), "%d", &v)
+			if v < 0 {
+				v = 0
+			}
+			if v > 100 {
+				v = 100
+			}
+			pcts[i] = v
+		}
+	}
+	code := strings.ReplaceAll(typeCode, "-", "")
+	sides := [5]string{}
+	if len(code) > 0 && code[0] == 'E' {
+		sides[0] = "left"
+	} else {
+		sides[0] = "right"
+	}
+	if len(code) > 1 && code[1] == 'N' {
+		sides[1] = "left"
+	} else {
+		sides[1] = "right"
+	}
+	if len(code) > 2 && code[2] == 'T' {
+		sides[2] = "left"
+	} else {
+		sides[2] = "right"
+	}
+	if len(code) > 3 && code[3] == 'J' {
+		sides[3] = "left"
+	} else {
+		sides[3] = "right"
+	}
+	if len(code) > 4 && code[4] == 'T' {
+		sides[4] = "right"
+	} else {
+		sides[4] = "left"
+	}
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin colorful note mbti"`)
+	if themeColor != "" {
+		sb.WriteString(` color="` + themeColor + `"`)
+	}
+	sb.WriteString(`>`)
+	if image != "" {
+		sb.WriteString(`<img class="mbti-image" src="` + html.EscapeString(image) + `" alt="" />`)
+	}
+	title := typeCode + " · " + typeName
+	sb.WriteString(`<div class="mbti-title">`)
+	if url != "" {
+		sb.WriteString(`<a class="mbti-title-link" href="` + html.EscapeString(url) + `" target="_blank" rel="external nofollow noopener noreferrer">` + html.EscapeString(title) + `</a>`)
+	} else {
+		sb.WriteString(`<span class="mbti-title-text">` + html.EscapeString(title) + `</span>`)
+	}
+	sb.WriteString(`</div><div class="mbti-body"><div class="mbti-traits">`)
+	for i, t := range mbtiTraits {
+		pct := pcts[i]
+		reverse := sides[i] == "left"
+		position := pct
+		if reverse {
+			position = 100 - pct
+		}
+		activeSide := "right"
+		if position <= 50 {
+			activeSide = "left"
+		}
+		reversed := ""
+		if sides[i] == "right" {
+			reversed = " reversed"
+		}
+		sb.WriteString(`<div class="mbti-trait` + reversed + `" style="--theme:` + t.color + `; --theme-a30:` + mbtiAlphaHex(t.color, 0.3) + `">`)
+		sb.WriteString(`<div class="mbti-labels">`)
+		if activeSide == "left" {
+			sb.WriteString(`<span class="mbti-label left active">` + t.left + ` <span class="pct">` + fmt.Sprintf("%d", pct) + `%</span></span>`)
+			sb.WriteString(`<span class="mbti-label right">` + t.right + `</span>`)
+		} else {
+			sb.WriteString(`<span class="mbti-label left">` + t.left + `</span>`)
+			sb.WriteString(`<span class="mbti-label right active"><span class="pct">` + fmt.Sprintf("%d", pct) + `%</span> ` + t.right + `</span>`)
+		}
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="mbti-progress"><div class="fill" style="width:` + fmt.Sprintf("%d", 100-pct) + `%"></div><span class="mbti-dot" style="left:` + fmt.Sprintf("%d", position) + `%"></span></div>`)
+		sb.WriteString(`</div>`)
+	}
+	sb.WriteString(`</div></div></div>`)
+	return sb.String()
+}
+
 func renderCopy(argsStr string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"git", "prefix"}, []string{"text"})
 	text := named["text"]

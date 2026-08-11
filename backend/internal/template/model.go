@@ -328,6 +328,8 @@ type Site struct {
 	Inject      InjectConfig   `yaml:"-" json:"inject"`        // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
 	Style       StyleConfig    `yaml:"style"   json:"style"`   // 外观样式可配置化（Spec 34/47）
 	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
+	DataCache   DataCacheConfig `yaml:"data_cache" json:"data_cache"` // 动态数据客户端缓存（1.36 data_cache）
+	SiteTree    SiteTreeConfig  `yaml:"site_tree" json:"site_tree"`   // 页面树配置（1.38 site_tree.home.comments 等）
 	// NavTabs 导航栏标签页配置（Spec 50）。
 	// EnableCustom 为 true 时完全由配置驱动，false 时保持当前固定 tab + 可配额外项。
 	NavTabs NavTabsConfig `yaml:"nav_tabs,omitempty" json:"nav_tabs,omitempty"`
@@ -375,7 +377,6 @@ type PluginsConfig struct {
 	ScrollReveal *ScrollRevealConfig `yaml:"scrollreveal,omitempty" json:"scrollreveal,omitempty"`
 	Heti         *HetiConfig         `yaml:"heti,omitempty" json:"heti,omitempty"`
 	Fancybox     *FancyboxConfig     `yaml:"fancybox,omitempty" json:"fancybox,omitempty"`
-	Pjax         *PjaxConfig         `yaml:"pjax,omitempty" json:"pjax,omitempty"`
 }
 
 // PreloadConfig 页面资源预加载（如 Flying Pages）。Service 为第三方库名，空用内置缺省。
@@ -402,12 +403,21 @@ type FancyboxConfig struct {
 	Selector string `yaml:"selector,omitempty" json:"selector,omitempty"`
 }
 
-// PjaxConfig 无刷新导航配置。
-type PjaxConfig struct {
-	Enable    bool     `yaml:"enable" json:"enable"`
-	Selectors []string `yaml:"selectors,omitempty" json:"selectors,omitempty"`
-	Timeout   int      `yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	CacheBust bool     `yaml:"cache_bust,omitempty" json:"cache_bust,omitempty"`
+// DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
+type DataCacheConfig struct {
+	Enable     *bool           `yaml:"enable,omitempty" json:"enable,omitempty"`
+	DefaultTTL int             `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
+	TTL        map[string]int  `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+}
+
+// SiteTreeConfig 页面树配置（1.38）。Home.Comments 首页可配置评论区（默认关）。
+type SiteTreeConfig struct {
+	Home SiteTreeHome `yaml:"home,omitempty" json:"home,omitempty"`
+}
+
+// SiteTreeHome 首页配置。
+type SiteTreeHome struct {
+	Comments bool `yaml:"comments,omitempty" json:"comments,omitempty"`
 }
 
 // AuthorDef 描述一位作者（来自 site.yml authors 段）。

@@ -2,7 +2,7 @@
 // Spec 25：优先请求服务端 /api/search（FTS5 bm25 + snippet 高亮），
 // 失败/不可用时降级回 /search.json 本地匹配（原有逻辑保留）。
 // 数据：GET ctx.search.path（/search.json），localStorage 缓存 search_cache_v1。
-// 入口：DOMContentLoaded + pjax:complete —— PJAX 就地更新 l_left 后搜索框是新节点，需重新绑定。
+// 入口：DOMContentLoaded —— 整页刷新模型下搜索框随文档一次性绑定。
 // 绑定标记挂在 DOM 节点上（_searchInitialized/_localSearchBound/_searchObserved），重复 init 不叠加。
 var searchCache = null;
 var searchCacheKey = 'search_cache_v1';
@@ -318,4 +318,3 @@ function initLocalSearch() {
 
 preloadSearchData();
 document.addEventListener('DOMContentLoaded', initLocalSearch);
-document.addEventListener('pjax:complete', initLocalSearch);

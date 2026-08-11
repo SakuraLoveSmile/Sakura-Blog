@@ -1,6 +1,5 @@
-utils.jq(() => {
-  $(function () {
-    const reactions = {
+(function () {
+  const reactions = {
       '+1': '👍',
       '-1': '👎', 
       'laugh': '😀', 
@@ -20,8 +19,14 @@ utils.jq(() => {
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
-        // 基准补 location.origin：本地 /api/gh 代理的相对路径也能解析（绝对 URL 时 base 被忽略，行为不变）
-        const query = new URL(api, location.origin).search;
+        // 基准补 location.origin：本地 /api/gh 代理的相对路径也能解析（绝对 URL 时 base 被忽略，行为不变）；
+        // 嵌入式预览（srcdoc iframe）location.origin 可能为 "null"，降级取查询串，避免渲染中断
+        let query = "";
+        try {
+          query = new URL(api, location.origin).search;
+        } catch (e) {
+          query = api.includes("?") ? "?" + api.split("?").slice(1).join("?") : "";
+        }
         const arr = data.content || data;
         var users = [];
         const filter = el.getAttribute('user');
@@ -100,10 +105,9 @@ utils.jq(() => {
           
           cell += '</div>';
           cell += '</div>';
-          $(el).append(cell);
+          utils.dom(el).append(cell);
         });
-        window.wrapLazyloadImages(el);
+        window.wrapLazyloadImages?.(el);
       });
     }
-  });
-});
+})();

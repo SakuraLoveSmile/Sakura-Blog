@@ -5,7 +5,7 @@
  *   new Heti('.heti').autoSpacing()  - auto queue on DOMContentLoaded
  *   heti.spacingElements(elements)   - process a list of elements directly
  * We use spacingElements() directly since init runs on DOMContentLoaded
- * / pjax:complete, where autoSpacing()'s internal readyState check would
+ * where autoSpacing()'s internal readyState check would
  * miss the already-fired DOMContentLoaded event.
  * CSS (heti.min.css) is injected conditionally by base.html.
  */
@@ -24,5 +24,4 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
-  document.addEventListener('pjax:complete', init);
 })();

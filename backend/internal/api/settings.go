@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	yaml "github.com/goccy/go-yaml"
 
 	"blog/internal/config"
+	tmpl "blog/internal/template"
 )
 
 // getSettings GET /api/v1/settings：返回全部可编辑分段的原始 JSON。
@@ -134,6 +136,41 @@ func (h *Handler) preserveAIKey(raw []byte) []byte {
 		return b
 	}
 	return raw
+}
+
+// getStyleYAML GET /api/v1/settings/style/yaml：返回当前 style 段的 YAML 文本（主题 YAML 编辑器用）。
+func (h *Handler) getStyleYAML(c *gin.Context) {
+	b, err := yaml.Marshal(h.site.Style)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"yaml": string(b)})
+}
+
+// updateStyleYAML PUT /api/v1/settings/style/yaml：接收 YAML 文本，解析校验后存 style 段并热更新。
+// 解析失败返回 400 + 错误明细（含行号），不写库。
+func (h *Handler) updateStyleYAML(c *gin.Context) {
+	raw, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, "读取请求体失败")
+		return
+	}
+	var sc tmpl.StyleConfig
+	if err := yaml.Unmarshal(raw, &sc); err != nil {
+		Fail(c, http.StatusBadRequest, "YAML 解析失败: "+err.Error())
+		return
+	}
+	jb, err := json.Marshal(sc)
+	if err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := config.SaveSection(h.store, h.site, config.SectionStyle, jb); err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 // testNotify POST /api/v1/settings/notify/test：向 admin_email 发送测试邮件，验证 SMTP 配置。

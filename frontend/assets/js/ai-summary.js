@@ -10,14 +10,6 @@
 
   var _typewriterTimer = null;
 
-  document.addEventListener('pjax:complete', function () {
-    if (_typewriterTimer) {
-      clearInterval(_typewriterTimer);
-      _typewriterTimer = null;
-    }
-    initTypewriter();
-  });
-
   function loadSaved() {
     try {
       var v = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');

@@ -341,8 +341,3 @@ stellar.initPage = function () {
 // Initial page load
 stellar.initPage();
 init.canonicalCheck();
-
-// Listen for PJAX navigation complete
-document.addEventListener('pjax:complete', function () {
-  stellar.initPage();
-});

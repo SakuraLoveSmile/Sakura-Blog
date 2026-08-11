@@ -1,7 +1,7 @@
 /* reading.js: 文章页阅读进度条。
    - 进度条仅 article.md-text.content 存在时启用
    - 图片灯箱已由 fancybox 接管（base.html 懒加载绑定），此文件不再处理图片点击
-   - PJAX：scroll 只绑一次（window.__readingBound）；pjax:complete 重置进度 */
+   - scroll 只绑一次（window.__readingBound） */
 (function () {
   'use strict';
 
@@ -61,5 +61,4 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
-  document.addEventListener('pjax:complete', init);
 })();

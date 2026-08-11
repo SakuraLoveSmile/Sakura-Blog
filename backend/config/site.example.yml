@@ -274,7 +274,6 @@ admin:
 # 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号/圆角/渐变走 :root 变量，
 # 字体族/背景/header_prefix/分页箍头走选择器覆盖。
 # style:
-#   smooth_scroll: true        # false 关闭平滑滚动
 #   text_align: left           # 正文段落对齐
 #   color:
 #     theme: 'hsl(192 98% 55%)' # 主题色（hsl()/hex，解析为 --hue/--sat/--light）
@@ -310,9 +309,23 @@ admin:
 #     block: 8px               # 块级元素（note/block 等，现状 8px/4px 各处）
 #     navbar: 100px            # 导航栏/菜单容器（现状 100px/8px）
 #     image: 8px               # 图片（现状 8px/16px，含 .img 类）
-#   gradient:                   # 渐变两组（Spec 52）：注入 --gradient-*，任意 CSS gradient 值
-#     button: 'linear-gradient(135deg, #ff8a5c, #ff5724)'
+#   corner-shape: superellipse(1.5)  # 连续曲率圆角（1.38，仅 Chromium 139+，其余回退普通圆角；round 关闭）
+#   gradient:                   # 渐变（1.38 键名对齐上游 start/searchbar/angle）：注入 --gradient-*，任意 CSS gradient 值
+#     start: 'linear-gradient(135deg, #ff8a5c, #ff5724)'
 #     searchbar: 'linear-gradient(135deg, #ff8a5c, #ff5724)'
+#     angle: 210deg              # 主题色渐变角度（菜单 grad-def SVG 用）
+
+# 页面树配置（1.38）：首页可配置评论区（默认关，需 comments.enabled 同时为真）
+#site_tree:
+#  home:
+#    comments: false
+
+# 动态数据客户端缓存（1.36 data_cache）：友链/时间线/GitHub 信息等动态数据 stale-while-revalidate，
+# TTL 内不重复请求外部 API，过期后先显缓存再后台刷新。与服务端 /api/gh 缓存共存。
+#data_cache:
+#  enable: true
+#  default_ttl: 3600
+#  ttl: { giscus: 600, waline: 600, artalk: 600 }
 
 # SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
 # 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。
@@ -357,11 +370,6 @@ comments:
 #     enable: true
 #   fancybox:
 #     selector: 'div.lazy-box>img.lazy'
-#   pjax:
-#     enable: true
-#     selectors: ['title', '#l_cover', '.l_body']
-#     timeout: 10000
-#     cache_bust: false
 plugins:
   preload:
     enable: false
@@ -375,8 +383,3 @@ plugins:
     enable: false
   fancybox:
     selector: 'div.lazy-box>img.lazy'
-  pjax:
-    enable: false
-    selectors: ['title', '#l_cover', '.l_body']
-    timeout: 10000
-    cache_bust: false

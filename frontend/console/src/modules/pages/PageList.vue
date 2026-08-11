@@ -6,6 +6,8 @@ import { pageApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import { Dialog, Toast } from "@/components/ui";
+import WikiDocsView from "@/modules/wiki/WikiDocsView.vue";
+import FriendList from "@/modules/friends/FriendList.vue";
 
 interface PageItem {
   slug: string;
@@ -20,6 +22,24 @@ interface PageItem {
 const router = useRouter();
 const route = useRoute();
 const queryClient = useQueryClient();
+
+// Spec 60 页面统一管理：普通页面 / 文库 / 友链 三分段，深链 ?module=wiki|friends。
+const validModules = ["pages", "wiki", "friends"];
+function moduleFromQuery(): string {
+  const m = route.query.module;
+  return typeof m === "string" && validModules.includes(m) ? m : "pages";
+}
+const module = ref<string>(moduleFromQuery());
+watch(
+  () => route.query.module,
+  () => {
+    module.value = moduleFromQuery();
+  }
+);
+function setModule(m: string) {
+  module.value = m;
+  router.replace({ query: { ...route.query, module: m === "pages" ? undefined : m } });
+}
 
 const page = ref(1);
 const size = ref(20);
@@ -231,6 +251,16 @@ function getStatusClass(p: PageItem) {
 
 <template>
   <div class="page-list-apple" @click="closeMenus">
+    <!-- Spec 60 模块分段：普通页面 / 文库 / 友链 -->
+    <div class="apple-segmented" style="margin: 0 0 12px">
+      <button type="button" :class="{ active: module === 'pages' }" @click="setModule('pages')">普通页面</button>
+      <button type="button" :class="{ active: module === 'wiki' }" @click="setModule('wiki')">文库</button>
+      <button type="button" :class="{ active: module === 'friends' }" @click="setModule('friends')">友链</button>
+    </div>
+
+    <WikiDocsView v-if="module === 'wiki'" />
+    <FriendList v-else-if="module === 'friends'" />
+    <template v-else>
     <!-- Header -->
     <div class="apple-page-header">
       <div class="header-left">
@@ -527,6 +557,7 @@ function getStatusClass(p: PageItem) {
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 

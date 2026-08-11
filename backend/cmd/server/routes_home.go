@@ -60,6 +60,10 @@ func (s *webServer) renderHome(c *gin.Context, page int) {
 		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 	}
 	s.fillSidebar(data)
+	// 1.38 site_tree.home.comments：首页可配置评论区（默认关），page_key 用 "/"
+	if s.site.Comments.Enabled && s.site.SiteTree.Home.Comments {
+		s.fillComments(data, "/")
+	}
 	s.fillSEO(data, c)
 	html, err := s.engine.Render("layout/base", data)
 	if err != nil {

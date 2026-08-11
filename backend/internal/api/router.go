@@ -411,6 +411,9 @@ func (h *Handler) Register(r *gin.Engine) {
 		sys.GET("/settings", h.getSettings)
 		sys.PUT("/settings/:section", h.updateSection)
 		sys.POST("/settings/notify/test", h.testNotify)
+		// 主题 YAML 编辑器（Spec 60）：style 段 YAML 读写 + 热更新
+		sys.GET("/settings/style/yaml", h.getStyleYAML)
+		sys.PUT("/settings/style/yaml", h.updateStyleYAML)
 
 		// 功能模块管理（manifest + 启停开关）
 		sys.GET("/modules", h.listModules)

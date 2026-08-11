@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from"vue";
 import { Icon } from"@iconify/vue";
+import {
+  BUILTIN_WIDGET_NAMES,
+  builtinLayoutOf,
+  fieldsForLayout,
+  NO_EXTRA_PARAM_LAYOUTS,
+} from"./widget-meta";
 
 const props = defineProps<{
  data: Record<string, any>;
@@ -19,43 +25,55 @@ const addBtnCls =
 "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 // ---------- 页面类型 ----------
-const pageOptions = [
- { key:"index", label:"首页" },
- { key:"post", label:"文章页" },
- { key:"page", label:"独立页" },
- { key:"archive", label:"归档页" },
- { key:"categories", label:"分类页" },
- { key:"tags", label:"标签页" },
- { key:"author", label:"作者页" },
+// 分组对齐后端 PageTypeOf 枚举；文库/笔记本/友链/瞬间等类型此前 UI 未暴露，
+// 导致这些页面的左右栏编排无入口（渲染时回退 index 或内置缺省）。
+const pageGroups: { label: string; options: { key: string; label: string }[] }[] = [
+ {
+  label: "内容",
+  options: [
+   { key:"index", label:"首页" },
+   { key:"post", label:"文章页" },
+   { key:"page", label:"独立页" },
+   { key:"archive", label:"归档页" },
+   { key:"categories", label:"分类页" },
+   { key:"tags", label:"标签页" },
+  ],
+ },
+ {
+  label: "文库",
+  options: [
+   { key:"wiki", label:"文库列表页" },
+   { key:"wiki-doc", label:"文库文档页" },
+  ],
+ },
+ {
+  label: "笔记本",
+  options: [
+   { key:"notebooks", label:"笔记本列表页" },
+   { key:"notebook", label:"笔记本页" },
+   { key:"note", label:"笔记页" },
+  ],
+ },
+ {
+  label: "互动",
+  options: [
+   { key:"friends", label:"友链页" },
+   { key:"moments", label:"瞬间页" },
+   { key:"topic", label:"专栏页" },
+  ],
+ },
+ {
+  label: "作者",
+  options: [{ key:"author", label:"作者页" }],
+ },
 ];
+const pageOptions = computed(() => pageGroups.flatMap((g) => g.options));
 const selectedPage = ref("index");
 
 // ---------- 数据访问 ----------
-// 内置组件库（名称 → layout），与后端 DefaultWidgetLibrary 保持一致。
+// 内置组件元数据由 widget-meta.ts 统一提供（与后端 DefaultWidgetLibrary 保持一致）。
 // 修复：添加组件下拉此前只读用户自定义 library（未自定义时为空）导致"选不了"，
-// 现以内置组件兜底，保证任何时候都有可选项。
-const BUILTIN_WIDGETS: { name: string; layout: string }[] = [
-  { name: "recent", layout: "recent" },
-  { name: "tagcloud", layout: "tagcloud" },
-  { name: "popular", layout: "popular" },
-  { name: "related", layout: "related" },
-  { name: "welcome", layout: "markdown" },
-  { name: "author", layout: "author" },
-  { name: "siteinfo", layout: "siteinfo" },
-  { name: "latest_comment", layout: "latest_comment" },
-  { name: "toc", layout: "toc" },
-  { name: "ghrepo", layout: "ghrepo" },
-  { name: "ghuser", layout: "ghuser" },
-  { name: "ghissues", layout: "ghissues" },
-  { name: "timeline", layout: "timeline" },
-  { name: "tree", layout: "tree" },
-  { name: "wiki_related", layout: "wiki_related" },
-  { name: "tagtree", layout: "tagtree" },
-];
-
-function builtinLayout(name: string): string {
-  return BUILTIN_WIDGETS.find((w) => w.name === name)?.layout || "";
-}
+// 现以内置组件兜底，保证任何时候都有可选项；非内置名条目为用户保存的"方案"（Spec 58）。
 function ensureWidgets() {
  const d = props.data;
  d.widgets = d.widgets || {};
@@ -123,11 +141,16 @@ function moveItem(arr: string[], i: number, dir: -1 | 1) {
 const addSelectLeft = ref("");
 const addSelectRight = ref("");
 
-/** 当前栏中尚未添加的 widget 列表：内置组件 + 自定义 library，排除已用 */
+/** 当前栏中尚未添加的 widget 列表：内置组件 + 自定义 library（含方案），排除已用 */
 function availableWidgets(side:"leftbar" |"rightbar"): string[] {
  const used = new Set(currentBarWidgets(side));
- const names = new Set<string>([...BUILTIN_WIDGETS.map((w) => w.name), ...Object.keys(library.value)]);
+ const names = new Set<string>([...BUILTIN_WIDGET_NAMES, ...Object.keys(library.value)]);
  return [...names].filter((k) => !used.has(k)).sort();
+}
+
+/** 非内置名的 library 条目 = 组件库保存的方案（Spec 58） */
+function isScheme(name: string): boolean {
+ return !BUILTIN_WIDGET_NAMES.has(name);
 }
 
 function addWidget(side:"leftbar" |"rightbar") {
@@ -138,7 +161,7 @@ function addWidget(side:"leftbar" |"rightbar") {
  bar.push(sel);
  // 确保 library 有定义（内置组件用其默认 layout，避免 welcome 等被写成同名 layout）
  if (!library.value[sel]) {
- library.value[sel] = { layout: builtinLayout(sel) || sel };
+ library.value[sel] = { layout: builtinLayoutOf(sel) || sel };
  }
  if (side ==="leftbar") addSelectLeft.value ="";
  else addSelectRight.value ="";
@@ -155,41 +178,17 @@ function toggleExpand(name: string) {
  expandedWidget.value = expandedWidget.value === name ? null : name;
 }
 
-/** 已知参数白名单 */
-const knownFields: Record<string, { key: string; type: string }[]> = {
- toc: [
- { key:"list_number", type:"checkbox" },
- { key:"min_depth", type:"number" },
- { key:"max_depth", type:"number" },
- { key:"collapse", type:"checkbox" },
- ],
- ghuser: [{ key:"username", type:"text" }],
- ghrepo: [
- { key:"owner", type:"text" },
- { key:"repo", type:"text" },
- ],
- ghissues: [
- { key:"owner", type:"text" },
- { key:"repo", type:"text" },
- ],
- welcome: [{ key:"title", type:"text" }],
-};
-
-const noExtraParams = new Set([
-"tagcloud","author","siteinfo","latest_comment",
-"related","recent","popular","timeline",
-]);
-
+/** 参数字段 schema（widget-meta 按 layout 提供，自定义组件与内置组件共享同 layout 时同样命中） */
 function widgetLayout(name: string): string {
- return library.value[name]?.layout || builtinLayout(name) ||"";
+ return library.value[name]?.layout || builtinLayoutOf(name) ||"";
 }
 
 function widgetFields(name: string) {
- return knownFields[widgetLayout(name)] || null;
+ return fieldsForLayout(widgetLayout(name)) || null;
 }
 
 function isNoExtraParams(name: string) {
- return noExtraParams.has(widgetLayout(name));
+ return NO_EXTRA_PARAM_LAYOUTS.has(widgetLayout(name));
 }
 
 // JSON 兜底 textarea
@@ -208,10 +207,12 @@ function setJsonText(name: string, val: string) {
 <template>
  <div class="space-y-6">
  <!-- 页面类型选择器 -->
- <div class="w-56">
+ <div class="w-64">
  <label class="block text-xs text-text-tertiary mb-1">页面类型</label>
  <select v-model="selectedPage" :class="inputCls">
- <option v-for="o in pageOptions" :key="o.key" :value="o.key">{{ o.label }}</option>
+ <optgroup v-for="g in pageGroups" :key="g.label" :label="g.label">
+ <option v-for="o in g.options" :key="o.key" :value="o.key">{{ o.label }}</option>
+ </optgroup>
  </select>
  </div>
 
@@ -246,6 +247,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex-1 min-w-0 cursor-pointer" @click="toggleExpand(name)">
  <span class="text-sm font-medium text-text-secondary">{{ name }}</span>
  <span class="ml-1.5 text-xs text-text-quaternary">{{ widgetLayout(name) }}</span>
+ <span v-if="isScheme(name)" class="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary align-middle"><Icon icon="ri:bookmark-line" />方案</span>
  </div>
  <div class="flex items-center gap-1 shrink-0">
  <button @click="moveItem(currentBarWidgets('leftbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
@@ -257,7 +259,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex items-center gap-2">
  <select v-model="addSelectLeft" :class="inputCls" class="flex-1">
  <option value="" disabled>选择组件...</option>
- <option v-for="w in availableWidgets('leftbar')" :key="w" :value="w">{{ w }} ({{ widgetLayout(w) || w }})</option>
+ <option v-for="w in availableWidgets('leftbar')" :key="w" :value="w">{{ isScheme(w) ? "方案 · " : "" }}{{ w }} ({{ widgetLayout(w) || w }})</option>
  </select>
  <button @click="addWidget('leftbar')" :disabled="!addSelectLeft" :class="addBtnCls"><Icon icon="ri:add-line" /></button>
  </div>
@@ -283,6 +285,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex-1 min-w-0 cursor-pointer" @click="toggleExpand(name)">
  <span class="text-sm font-medium text-text-secondary">{{ name }}</span>
  <span class="ml-1.5 text-xs text-text-quaternary">{{ widgetLayout(name) }}</span>
+ <span v-if="isScheme(name)" class="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] text-primary align-middle"><Icon icon="ri:bookmark-line" />方案</span>
  </div>
  <div class="flex items-center gap-1 shrink-0">
  <button @click="moveItem(currentBarWidgets('rightbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls"><Icon icon="ri:arrow-up-s-line" /></button>
@@ -294,7 +297,7 @@ function setJsonText(name: string, val: string) {
  <div class="flex items-center gap-2">
  <select v-model="addSelectRight" :class="inputCls" class="flex-1">
  <option value="" disabled>选择组件...</option>
- <option v-for="w in availableWidgets('rightbar')" :key="w" :value="w">{{ w }} ({{ widgetLayout(w) || w }})</option>
+ <option v-for="w in availableWidgets('rightbar')" :key="w" :value="w">{{ isScheme(w) ? "方案 · " : "" }}{{ w }} ({{ widgetLayout(w) || w }})</option>
  </select>
  <button @click="addWidget('rightbar')" :disabled="!addSelectRight" :class="addBtnCls"><Icon icon="ri:add-line" /></button>
  </div>
@@ -320,7 +323,7 @@ function setJsonText(name: string, val: string) {
  <!-- 已知参数字段 -->
  <template v-if="widgetFields(expandedWidget)">
  <div v-for="f in widgetFields(expandedWidget)!" :key="f.key" class="max-w-xs">
- <label class="block text-xs text-text-tertiary mb-1">{{ f.key }}</label>
+ <label class="block text-xs text-text-tertiary mb-1">{{ f.label || f.key }}</label>
  <input
  v-if="f.type === 'checkbox'"
  type="checkbox"
@@ -335,6 +338,21 @@ function setJsonText(name: string, val: string) {
  @input="library[expandedWidget][f.key] = Number(($event.target as HTMLInputElement).value)"
  :class="inputCls"
  />
+ <select
+ v-else-if="f.type === 'select'"
+ :value="library[expandedWidget][f.key]"
+ @change="library[expandedWidget][f.key] = ($event.target as HTMLSelectElement).value"
+ :class="inputCls"
+ >
+ <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
+ </select>
+ <textarea
+ v-else-if="f.type === 'textarea'"
+ rows="4"
+ :value="library[expandedWidget][f.key]"
+ @input="library[expandedWidget][f.key] = ($event.target as HTMLTextAreaElement).value"
+ :class="inputCls + ' font-mono text-xs'"
+ ></textarea>
  <input
  v-else
  type="text"

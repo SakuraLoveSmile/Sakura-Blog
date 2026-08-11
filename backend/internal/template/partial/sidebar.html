@@ -41,15 +41,18 @@
 </header>
 {{end}}
 
-{{- /* 菜单：对应 _partial/sidebar/menu.ejs
-   .nav-area > nav.menu.dis-select > a.nav-item
-   每项 inline style="color:#xxx" 控制 SVG fill=currentColor 的主题色
+{{- /* 菜单：对应 _partial/sidebar/menu.ejs（1.38 列表化）
+   .nav-area > nav.menu.dis-select > a.nav-item（icon + span 标题 + active-dot + grad-def SVG）
+   --item-grad 指向每项内联 SVG 渐变；.themed 项 --item-theme 取配置主题色；
    active 项靠 item.ID == Page.MenuID 判定 */}}
 <div class="nav-area">
   <nav class="menu dis-select">
     {{range .Site.Menubar.Items}}
-    <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}" title="{{.Title}}" href="{{url_for .URL}}"{{if .Theme}} style="color:{{.Theme}}"{{end}}>
-      {{if .Icon}}{{icon .Icon}}{{else}}<span>{{.Title}}</span>{{end}}
+    <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}{{if .Theme}} themed{{end}}" title="{{.Title}}" href="{{url_for .URL}}" style="--item-grad:url(#menu-grad-{{.ID}}){{if .Theme}};--item-theme:{{.Theme}}{{end}}">
+      {{if .Icon}}{{icon .Icon}}{{end}}
+      <span>{{.Title}}</span>
+      {{if eq .ID $.Page.MenuID}}<span class="active-dot"></span>{{end}}
+      {{gradsvg (printf "menu-grad-%s" .ID) $.Site.Style.Gradient.Angle}}
     </a>
     {{end}}
   </nav>

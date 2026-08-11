@@ -67,12 +67,10 @@ func TestStyleInjectCSSColors(t *testing.T) {
 
 // TestStyleInjectCSSFontAndMisc 字体/排版/代码块/分页/header_prefix 选择器级覆盖。
 func TestStyleInjectCSSFontAndMisc(t *testing.T) {
-	no := false
 	s := StyleConfig{
 		FontSize:     StyleFontSize{Root: "18px", Body: "16px"},
 		FontFamily:   StyleFontFamily{Body: "Arial", Code: "Menlo", Codeblock: "Consolas"},
 		TextAlign:    "justify",
-		SmoothScroll: &no,
 		Codeblock:    StyleCodeblock{Scrollbar: "6px"},
 		Paginator:    StylePaginator{Prev: "/p.svg", Next: "/n.svg"},
 		HeaderPrefix: map[string]string{"h2": "#", "h3": "="},
@@ -86,7 +84,6 @@ func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 		"code{font-family:Menlo;}",                       // code 字体
 		"pre,.md-text .highlight{font-family:Consolas;}", // codeblock 字体
 		".md-text p:not([class]){text-align:justify;}",   // 对齐
-		"html{scroll-behavior:auto;}",                    // 关平滑滚动
 		"::-webkit-scrollbar{height:6px;width:6px;}",     // 代码块滚动条
 		".extend.next{background-image:url(/n.svg);}",    // 分页 next
 		".extend.prev{background-image:url(/p.svg);}",    // 分页 prev
@@ -139,7 +136,7 @@ func TestStyleInjectCSSBackgrounds(t *testing.T) {
 func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 	s := StyleConfig{
 		BorderRadius: StyleBorderRadius{Card: "12px", Block: "6px", Navbar: "24px", Image: "4px"},
-		Gradient:     StyleGradient{Button: "linear-gradient(135deg, #ff8a5c, #ff5724)", Searchbar: "linear-gradient(90deg, #f00, #00f)"},
+		Gradient:     StyleGradient{Start: "linear-gradient(135deg, #ff8a5c, #ff5724)", Searchbar: "linear-gradient(90deg, #f00, #00f)"},
 	}
 	css := string(s.InjectCSS())
 	for _, want := range []string{
@@ -147,7 +144,7 @@ func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 		"--radius-block:6px;",
 		"--radius-navbar:24px;",
 		"--radius-image:4px;",
-		"--gradient-button:linear-gradient(135deg, #ff8a5c, #ff5724);",
+		"--gradient-start:linear-gradient(135deg, #ff8a5c, #ff5724);",
 		"--gradient-searchbar:linear-gradient(90deg, #f00, #00f);",
 	} {
 		if !strings.Contains(css, want) {

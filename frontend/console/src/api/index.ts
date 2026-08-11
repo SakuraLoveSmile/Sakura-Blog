@@ -281,6 +281,10 @@ export const settingsApi = {
  updateSection: (section: string, data: unknown) =>
  http.put(`/settings/${section}`, data),
  testNotify: () => http.post("/settings/notify/test"),
+ // Spec 60 主题 YAML 编辑器：style 段 YAML 读写 + 热更新
+ getStyleYAML: () => http.get<{ yaml: string }>("/settings/style/yaml"),
+ updateStyleYAML: (yamlText: string) =>
+ http.put("/settings/style/yaml", yamlText, { headers: { "Content-Type": "text/yaml" } }),
 };
 
 // --- Friends / Links ---

@@ -932,14 +932,10 @@
     }
   };
 
-  // DOMContentLoaded 已过也没关系，立即跑；PJAX 换页后重新跑（DOM 重新生成）
+  // DOMContentLoaded 已过也没关系，立即跑（整页刷新模型，无需换页重初始化）
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-  document.addEventListener('pjax:complete', function () {
-    // pjax 后重新初始化新页面的评论区
-    setTimeout(init, 0);
-  });
 })();

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/vue";
 import MenubarEditor from "./MenubarEditor.vue";
 import AppearanceTab from "./AppearanceTab.vue";
 import WidgetsTab from "./WidgetsTab.vue";
+import ThemeYamlTab from "./ThemeYamlTab.vue";
 import PluginsTab from "./PluginsTab.vue";
 import CoverTab from "./CoverTab.vue";
 import NavTabsTab from "./NavTabsTab.vue";
@@ -37,6 +38,7 @@ const groups = [
     desc: "自定义主题、Hero 与组件编排",
     tabs: [
       { key: "appearance", label: "外观" },
+      { key: "theme_yaml", label: "主题 YAML" },
       { key: "cover", label: "首页 Hero" },
       { key: "nav_tabs", label: "导航标签" },
       { key: "widgets", label: "组件编排" },
@@ -153,7 +155,6 @@ function ensureDefaults(d: Record<string, any>) {
   tp.copy = tp.copy || {};
   // 占位素材组（对齐原版 default 段）
   d.default = d.default || {};
-  d.plugins.pjax = d.plugins.pjax || {};
   d.cover = d.cover || {};
   d.cover.features = d.cover.features || [];
   d.nav_tabs = d.nav_tabs || {};
@@ -1045,6 +1046,9 @@ onMounted(() => {
           </VCard>
           <VCard v-show="active === 'widgets'" title="组件编排">
             <WidgetsTab :data="data" :saving="savingKey" @save="save" />
+          </VCard>
+          <VCard v-show="active === 'theme_yaml'" title="主题 YAML">
+            <ThemeYamlTab />
           </VCard>
           <VCard v-show="active === 'plugins'" title="插件">
             <PluginsTab :data="data.plugins" :saving="savingKey" @save="() => save('plugins')" />

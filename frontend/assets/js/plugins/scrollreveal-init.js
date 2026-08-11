@@ -2,7 +2,6 @@
  * scrollreveal-init.js - Scroll entrance animations (Spec 36)
  * Applies only to .post-card containers on index/list pages.
  * Automatically disabled when the user prefers reduced motion.
- * Re-runs on pjax:complete to animate newly loaded cards.
  */
 (function () {
   'use strict';
@@ -35,5 +34,4 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
-  document.addEventListener('pjax:complete', init);
 })();

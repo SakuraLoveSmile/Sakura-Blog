@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -104,8 +106,43 @@ func FuncMap(reg *IconRegistry) template.FuncMap {
 			return template.HTML(fmt.Sprintf(`<!-- partial: %s -->`, name))
 		},
 
+		// gradsvg: 对齐 1.38 _partial/sidebar/grad-def.ejs——隐藏 SVG 线性渐变定义，
+		// 配合菜单项 --item-grad:url(#id) 使用。angle 为 CSS 角度（0=向上，顺时针），
+		// 缺省 210deg；坐标算法与上游投影实现一致。
+		"gradsvg": func(id string, angle string) template.HTML {
+			deg := 210.0
+			if angle != "" {
+				if v, err := strconv.ParseFloat(strings.TrimSuffix(angle, "deg"), 64); err == nil {
+					deg = v
+				}
+			}
+			rad := deg * math.Pi / 180
+			vx, vy := math.Sin(rad), -math.Cos(rad)
+			mn, mx := math.Inf(1), math.Inf(-1)
+			for _, c := range [][2]float64{{0, 0}, {1, 0}, {0, 1}, {1, 1}} {
+				p := c[0]*vx + c[1]*vy
+				mn = math.Min(mn, p)
+				mx = math.Max(mx, p)
+			}
+			x1 := math.Round((0.5+vx*mn)*1000) / 10
+			y1 := math.Round((0.5+vy*mn)*1000) / 10
+			x2 := math.Round((0.5+vx*mx)*1000) / 10
+			y2 := math.Round((0.5+vy*mx)*1000) / 10
+			return template.HTML(fmt.Sprintf(
+				`<svg class="grad-def" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="%s" x1="%g%%" y1="%g%%" x2="%g%%" y2="%g%%"><stop offset="20%%" style="stop-color:var(--item-theme-light)"/><stop offset="60%%" style="stop-color:var(--item-theme)"/></linearGradient></defs></svg>`,
+				id, x1, y1, x2, y2))
+		},
+
 		// join: 辅助函数，拼接字符串切片。
 		"join": strings.Join,
+
+		// ptrBool: *bool 取值（nil 回退缺省），供 ctx 注入 data_cache.enable 等三态布尔。
+		"ptrBool": func(p *bool, def bool) bool {
+			if p == nil {
+				return def
+			}
+			return *p
+		},
 
 		// contains/split/trim: 字符串处理，logo_sub 按 | 拆 normal/hover 两段用（对齐原版 logo.ejs 的 sub.split('|')）。
 		"contains": strings.Contains,

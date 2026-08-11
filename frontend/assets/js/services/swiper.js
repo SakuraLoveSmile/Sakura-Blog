@@ -55,5 +55,3 @@ if (document.readyState === 'loading') {
 } else {
   initSwiper();
 }
-// PJAX 换页后重新检测初始化
-document.addEventListener('pjax:complete', initSwiper);

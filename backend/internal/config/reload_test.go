@@ -155,7 +155,7 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		{SectionCover, `{"title":"Hello","description":"desc","features":[{"title":"Go","url":"/archives/"}]}`, func() bool { return site.Cover.Title == "Hello" && len(site.Cover.Features) == 1 }},
 		{SectionNavTabs, `{"enable_custom":true,"items":[{"title":"GitHub","url":"https://github.com","external":true}]}`, func() bool { return site.NavTabs.EnableCustom && len(site.NavTabs.Items) == 1 && site.NavTabs.Items[0].External }},
 		{SectionAuthors, `{"sakura":{"name":"Sakura","description":"作者"}}`, func() bool { return site.Authors["sakura"].Name == "Sakura" }},
-		{SectionPlugins, `{"heti":{"enable":true},"pjax":{"enable":true,"selectors":["title"],"timeout":10000}}`, func() bool { return site.Plugins.Heti != nil && site.Plugins.Heti.Enable && site.Plugins.Pjax != nil && site.Plugins.Pjax.Enable }},
+		{SectionPlugins, `{"heti":{"enable":true},"fancybox":{"selector":"div.lazy-box>img.lazy"}}`, func() bool { return site.Plugins.Heti != nil && site.Plugins.Heti.Enable && site.Plugins.Fancybox != nil && site.Plugins.Fancybox.Selector != "" }},
 	}
 	for _, tc := range cases {
 		if err := SaveSection(s, site, tc.section, []byte(tc.payload)); err != nil {

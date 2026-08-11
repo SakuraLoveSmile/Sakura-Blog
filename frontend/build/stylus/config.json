@@ -1,7 +1,6 @@
 {
   "style": {
     "prefers_theme": "auto",
-    "smooth_scroll": true,
     "font-size": {
       "root": "16px",
       "body": "17px",
@@ -50,7 +49,9 @@
       "error": "加载失败，请稍后重试。"
     },
     "gradient": {
-      "start": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))"
+      "start": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))",
+      "angle": "210deg",
+      "searchbar": "linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
     },
     "leftbar": {
       "background-color-light": "var(--card)",
@@ -70,7 +71,8 @@
       "blur-px": "100px",
       "blur-bg": "var(--bg-a75)",
       "blur-sat": "300%"
-    }
+    },
+    "corner-shape": "superellipse(1.5)"
   },
   "article": {
     "type": "tech",
@@ -84,23 +86,51 @@
   "comments": {
     "service": "artalk",
     "lazyload": false,
-    "custom_css": ["artalk"]
+    "custom_css": [
+      "artalk"
+    ]
   },
   "plugins": {
-    "preload": { "enable": true },
-    "pjax": { "enable": false },
-    "fancybox": { "enable": true },
-    "swiper": { "enable": true },
-    "scrollreveal": { "enable": false },
-    "tianli_gpt": { "enable": false },
-    "katex": { "enable": false },
-    "mermaid": { "style_optimization": false },
-    "copycode": { "enable": true },
-    "lazyload": { "transition": "none" }
+    "preload": {
+      "enable": true
+    },
+    "pjax": {
+      "enable": false
+    },
+    "fancybox": {
+      "enable": true
+    },
+    "swiper": {
+      "enable": true
+    },
+    "scrollreveal": {
+      "enable": true
+    },
+    "tianli_gpt": {
+      "enable": false
+    },
+    "katex": {
+      "enable": false
+    },
+    "mermaid": {
+      "style_optimization": false
+    },
+    "copycode": {
+      "enable": true
+    },
+    "lazyload": {
+      "transition": "none"
+    }
   },
   "tag_plugins": {
-    "checkbox": { "interactive": false },
-    "okr": { "border": false },
-    "note": { "border": true }
+    "checkbox": {
+      "interactive": false
+    },
+    "okr": {
+      "border": false
+    },
+    "note": {
+      "border": true
+    }
   }
 }

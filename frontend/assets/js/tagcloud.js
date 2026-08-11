@@ -279,5 +279,4 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
-  document.addEventListener('pjax:complete', init);
 })();

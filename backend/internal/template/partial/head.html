@@ -56,9 +56,7 @@
   </script>
   {{end}}
 
-  {{- /* jQuery 3.7（P1-6 本地化）：defer 保证先于 body 末尾的 main.js 等执行，
-     供 utils.jq 与依赖 jQuery 的插件使用 */}}
-  <script defer src="{{url_for "/assets/js/vendor/jquery.min.js"}}"></script>
+  {{- /* 1.36 去 jQuery：不再加载 vendored jquery，services 走原生 utils.dom */}}
 
   {{- /* 霞鹜文楷屏幕版字体（本地化，参考 xaoxuu.com）：unicode-range 分片按需加载，
      woff2 分片在 /assets/fonts/lxgw/files/（97 片共 4.9MB，浏览器只下载用到的分片）*/}}
@@ -89,7 +87,6 @@
         });
       }
       document.addEventListener('DOMContentLoaded', renderBlogMath);
-      document.addEventListener('pjax:complete', renderBlogMath);
     })();
   </script>
 
@@ -125,7 +122,6 @@
       } else {
         runMermaid();
       }
-      document.addEventListener('pjax:complete', runMermaid);
     })();
   </script>
 
@@ -174,9 +170,6 @@
     .navbar-blur:before,
     .navbar-blur:after { transform: translateZ(0); will-change: backdrop-filter; }
   </style>
-
-  {{- /* PJAX 无刷新导航过渡动画（从内联 style 提取为独立 CSS，支持浏览器缓存） */}}
-  <link rel="stylesheet" href="{{url_for "/assets/css/pjax-transitions.css"}}">
 
   {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
   {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}

@@ -369,3 +369,18 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - [x] Step 2：归档 + 分类/标签（`/archives` 年份分组 + `/categories` `/tags` 索引页（badge 计数）+ `/categories/:name` `/tags/:name` 文章列表（复用首页卡片）+ posts 表加 category/tags 两列（migrateColumns 泛化）+ navbar 抽共用 partial 四 tab + 主题持久化 + JS shim 修控制台错误，preview 验证通过）
 - [x] Step 2 收尾：移动端 sidebar（main.js sidebar 对象 leftbar/dismiss + base.html float-panel menubtn）+ /assets no-cache 协商缓存中间件（curl 304 与移动/桌面视口浏览器验证通过）
 - [x] Step 3：侧边栏动态化（recent/tags 从 DB 实时生成 + 菜单死链清理）+ 文章页 TOC 右栏（AutoHeadingID + ExtractTOC 嵌套 + 原生 scroll-spy）+ 本地搜索（/search.json no-store + 去 jQuery local-search.js）+ PJAX 无刷新导航（pjax.js 接入 + 加载指示样式）+ 自定义 404（NoRoute/render404 统一出口），浏览器全项验证通过（__mark 跨导航存活、scroll-spy 高亮、搜索高亮/noresult、404 双主题截图、控制台零错误）
+
+## Spec 59 · Stellar 1.38.0 同步（2026-08，取代上文 PJAX/jQuery 相关坑点）
+
+资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`frontend/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
+
+- **PJAX 已移除**（对齐 1.35）：导航为整页刷新；`pjax.js`/`pjax-transitions.css`/`plugins.pjax` 配置与 console PJAX 卡片均删除；保留 `flying-pages` 悬停预取（`plugins.preload.enable`）缓解整页刷新。所有 `pjax:complete` 监听已删，事件绑定只走 `DOMContentLoaded`/委托。
+- **jQuery 已移除**（对齐 1.36）：head 不再加载 vendored jquery；`utils` 增加原生 `qs/qsa/dom` 封装（find/append/class/attr/text/html/val/on），`utils.jq` 退化为直调；services 以 1.38 `source/js/services/*` 为蓝本（`utils.dom` 直跑），rating/vote 保留自建本地版。
+- **配置形状对齐**：`style.gradient.button→start`（+`angle`）；删 `style.smooth_scroll`；增 `data_cache`（客户端 SWR：utils.request 同 URL 去重 + localStorage TTL）、`site_tree.home.comments`（首页评论区，默认关）、`style.corner-shape`。
+- **新特性**：mbti 标签（`{% mbti TYPE scores %}`，shortcode.go renderMbti，CSS 随重编带入）；首页评论区（routes_home fillComments "/" + base.html index 分支挂载）。
+- **菜单列表化**（1.38）：sidebar.html 菜单改 `a.nav-item`（icon + span + active-dot + 每项内联 grad-def SVG，`--item-grad`/`--item-theme`），Go 模板函数 `gradsvg` 计算渐变坐标（角度取 `style.gradient.angle`，默认 210deg）。
+
+## Spec 60 · 主题配置复刻 + 页面统一管理（2026-08）
+
+- **主题 YAML**：`GET/PUT /api/v1/settings/style/yaml`（goccy/go-yaml 解析校验 → `SaveSection(style)` → `RebuildSite` 热更新）。设置页外观组「主题 YAML」tab（ThemeYamlTab.vue）直接编辑 site.yml `style` 段，与 AppearanceTab/高级·JSON 同源。`StyleConfig` 对齐 1.38 style 面（font-size code/codeblock、border-radius 七档、codeblock.highlightjs_theme、animated_avatar；header_prefix 值为 URL 时注入图标 background-image）。**注意**：main.css 不消费 `--radius-*` 变量，圆角运行时注入实际无效，颜色/`--fsp`/字体/左栏/全站背景才是有效旋钮。
+- **页面统一管理**：PageList.vue 顶部 `apple-segmented` 三分段（普通页面/文库/友链），深链 `?module=wiki|friends`，内嵌 WikiDocsView/FriendList；数据仍存 wikidocs/links 表。**坑**：分段/module 逻辑必须放在 `useRouter()/useRoute()` 声明之后（TDZ），否则 PageList 挂载失败白屏。

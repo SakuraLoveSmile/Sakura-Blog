@@ -126,6 +126,15 @@ func TestAboutTag(t *testing.T) {
 	}
 }
 
+func TestMbtiTag(t *testing.T) {
+	out := runShortcodes("{% mbti INTJ-T 93-72-78-83-51 %}")
+	for _, want := range []string{`class="tag-plugin colorful note mbti"`, `color="purple"`, `mbti-title`, `INTJ`, `建筑师`, `mbti-trait`, `mbti-progress`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("mbti output missing %q: %s", want, out)
+		}
+	}
+}
+
 func TestBlockquoteTag(t *testing.T) {
 	out := runShortcodes("{% blockquote indent:true %}text{% endblockquote %}")
 	if !strings.Contains(out, `class="tag-plugin blockquote" indent="true"`) {
