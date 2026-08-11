@@ -311,6 +311,7 @@ type Site struct {
 	URL         string         `yaml:"url" json:"url"`             // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
 	Avatar      string         `yaml:"avatar" json:"avatar"`       // logo 头像 URL
 	AvatarBG    string         `yaml:"avatar_bg" json:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
+	LogoIcon    string         `yaml:"logo_icon" json:"logo_icon"` // logo icon 图片 URL（对齐上游 logo.icon，优先于 avatar）
 	LogoTitle   string         `yaml:"logo_title" json:"logo_title"`
 	LogoSub     string         `yaml:"logo_sub" json:"logo_sub"`
 	FaviconURL  string         `yaml:"favicon_url" json:"favicon_url"`           // Favicon URL，留空回退 /favicon.ico
