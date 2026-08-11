@@ -367,3 +367,55 @@ func TestEmojiSources(t *testing.T) {
 		t.Errorf("unknown source should not render: %s", out)
 	}
 }
+
+// TestEmojiURL 对齐原版 scripts/tags/lib/emoji.js 的 url: 分支：
+// {% emoji url:https://... [name:alt] [height:...] %}，url 非空时直接引用外部图片，
+// 不再走 source 配置查找；无 url 时保持旧行为不变。
+func TestEmojiURL(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"url 基本", "{% emoji url:https://example.com/emoji.png %}",
+			`<span class="tag-plugin emoji"><img no-lazy="" class="inline" src="https://example.com/emoji.png"/>`},
+		{"url+name(alt)", "{% emoji url:https://example.com/emoji.png name:alt %}",
+			`src="https://example.com/emoji.png" alt="alt"`},
+		{"url+height", "{% emoji url:https://example.com/emoji.png height:2em %}",
+			`src="https://example.com/emoji.png" style="height:2em"`},
+		{"url 含 ? 与 & 特殊字符", "{% emoji url:https://example.com/a.png?size=1&mode=2 %}",
+			`src="https://example.com/a.png?size=1&amp;mode=2"`},
+		{"url 分支不输出 alt（无 name）", "{% emoji url:https://example.com/emoji.png %}",
+			`emoji.png"/>`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := runShortcodes(tt.in)
+			if !strings.Contains(out, tt.want) {
+				t.Errorf("emoji url output missing %q: %s", tt.want, out)
+			}
+		})
+	}
+	// 无 alt 时不输出 alt 属性
+	if out := runShortcodes("{% emoji url:https://example.com/emoji.png %}"); strings.Contains(out, `alt=`) {
+		t.Errorf("emoji url without name should not output alt: %s", out)
+	}
+	// url 中裸 & 须转义为 &amp;，防 XSS
+	if out := runShortcodes("{% emoji url:https://example.com/a.png?x=1&y=2 %}"); strings.Contains(out, `x=1&y=2"`) {
+		t.Errorf("emoji url should escape ampersand: %s", out)
+	}
+	// url 中 < > 须转义，防 HTML 注入
+	if out := runShortcodes("{% emoji url:https://example.com/<script> %}"); strings.Contains(out, `<script>`) {
+		t.Errorf("emoji url should escape angle brackets: %s", out)
+	}
+	// 回归：无 url 时旧行为不变（走 source 配置查找，不输出 alt）
+	out := runShortcodes("{% emoji qq weixiao height:1.75em %}")
+	for _, want := range []string{`src="https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/weixiao.gif"`, `style="height:1.75em"`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("emoji source regression missing %q: %s", want, out)
+		}
+	}
+	if strings.Contains(out, `alt=`) {
+		t.Errorf("emoji source branch should not output alt: %s", out)
+	}
+}

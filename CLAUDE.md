@@ -380,6 +380,28 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - **新特性**：mbti 标签（`{% mbti TYPE scores %}`，shortcode.go renderMbti，CSS 随重编带入）；首页评论区（routes_home fillComments "/" + base.html index 分支挂载）。
 - **菜单列表化**（1.38）：sidebar.html 菜单改 `a.nav-item`（icon + span + active-dot + 每项内联 grad-def SVG，`--item-grad`/`--item-theme`），Go 模板函数 `gradsvg` 计算渐变坐标（角度取 `style.gradient.angle`，默认 210deg）。
 
+### cover-url 注入：photo 大卡 `.cover:before` 模糊层
+
+1.38 CSS `.cover:before` 伪元素的 `background-image` 读 `var(--cover-url)` 做模糊层（花/叶图 Next 风格），photo 类型大卡必须手动注入内联 style。**模板中写法**：
+
+```html
+<div class="cover" style="--cover-url:url('/uploads/xxx.jpg')">
+```
+
+**坑**：`html/template` 在 style 属性 CSS `url()` 上下文中自动把单引号转义为 `%27`（如 `url('...')` → `url(%27...%27)`），这与上游 Stellar Hexo 行为一致，浏览器正确解析 `%27` 为单引号，无需额外转义函数。如果手动用 `printf` 或 `safe` 函数反而可能双转义，保持默认即可。
+
+### 静态资源版本戳 bump 规范
+
+SW（Service Worker）对 `/assets/*` 走 `cache-first` 策略，静态资源内容变化后老访客拿到新 HTML 但 SW 返回缓存的旧资源，导致新旧资源错配（CSS 新类名引用旧样式文件等）。**对策**：
+
+- 每次修改 `frontend/assets/` 下的文件（main.css、main.js 等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
+- bump 清单对照 `git diff --name-only` 变化的 assets 文件，只 bump 确实变了的文件，不变的不动
+- 此坑不影响 `-dev` 开发模式（磁盘实时加载），但影响生产构建产物
+
+### seed.go Pinned 字段赋值
+
+`seed.go` 的 `Post` 结构体含 `Pinned bool` 字段（置顶标记），但在 `-seed` 导入流程中曾漏掉对该字段的赋值 —— 从 frontmatter 解析出 `pinned: true` 后未映射到数据库记录，导致置顶功能不生效。**已修复**：`seed.go` 导入循环中补充 `Pinned: p.Pinned` 映射。
+
 ## Spec 60 · 主题配置复刻 + 页面统一管理（2026-08）
 
 - **主题 YAML**：`GET/PUT /api/v1/settings/style/yaml`（goccy/go-yaml 解析校验 → `SaveSection(style)` → `RebuildSite` 热更新）。设置页外观组「主题 YAML」tab（ThemeYamlTab.vue）直接编辑 site.yml `style` 段，与 AppearanceTab/高级·JSON 同源。`StyleConfig` 对齐 1.38 style 面（font-size code/codeblock、border-radius 七档、codeblock.highlightjs_theme、animated_avatar；header_prefix 值为 URL 时注入图标 background-image）。**注意**：main.css 不消费 `--radius-*` 变量，圆角运行时注入实际无效，颜色/`--fsp`/字体/左栏/全站背景才是有效旋钮。

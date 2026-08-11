@@ -1545,12 +1545,30 @@ var emojiSources = map[string]string{
 	"twemoji": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/{name}.svg",
 }
 
-// renderEmoji 渲染 {% emoji [source] name [height:...] %}。
+// renderEmoji 渲染 {% emoji [source] name [height:...] %} 或
+// {% emoji url:https://... [name:alt] [height:...] %}。
+// url: 分支对齐原版 scripts/tags/lib/emoji.js：直接引用外部图片，不再走 source 配置查找。
 func renderEmoji(argsStr string) (string, bool) {
-	named, _ := parseNamedPositionalArgs(argsStr, []string{"height"}, []string{"source", "name"})
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"url", "height", "name"}, []string{"source", "name"})
 	source := named["source"]
 	name := named["name"]
 	height := named["height"]
+
+	// url: 优先分支：url 非空时直接以 url 作图片地址，不查 emojiSources
+	if url := named["url"]; url != "" {
+		var sb strings.Builder
+		sb.WriteString(`<span class="tag-plugin emoji">`)
+		sb.WriteString(`<img no-lazy="" class="inline" src="` + html.EscapeString(url) + `"`)
+		if name != "" {
+			sb.WriteString(` alt="` + html.EscapeString(name) + `"`)
+		}
+		if height != "" {
+			sb.WriteString(` style="height:` + height + `"`)
+		}
+		sb.WriteString(`/>`)
+		sb.WriteString(`</span>`)
+		return sb.String(), true
+	}
 
 	if source == "" {
 		return "", false

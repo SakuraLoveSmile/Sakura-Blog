@@ -57,6 +57,7 @@ func Import(st *store.Store, posts *post.Service) error {
 				Caption:  meta.PosterCaption,
 				Color:    meta.PosterColor,
 			}),
+			Pinned:     meta.Pinned,
 			References: store.EncodeReferences(meta.References),
 			Author:     meta.Author,
 		}
