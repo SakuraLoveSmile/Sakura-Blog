@@ -7,6 +7,8 @@
         continue;
       }
       const default_avatar = def.avatar;
+      // RSS 订阅组件开关：data-show-posts="false" 时只渲染友链卡片、跳过每链文章列表（pages.friends.show_posts）。
+      const showPosts = el.dataset.showPosts !== 'false';
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
@@ -36,6 +38,7 @@
             cell += `<div class="desc">#${item.issue_number}</div>`;
           }
           cell += `<div class="posts">`;
+          if (showPosts) {
           if (item.posts?.length > 0) {
             for (let post of item.posts) {
               cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${post.link}">`;
@@ -45,6 +48,7 @@
             }
           } else {
             cell += `<span class="no-post">${item.feed?.length > 0 ? 'RSS 解析失败' : '未设置 RSS 链接'}</span>`;
+          }
           }
           cell += `</div>`;
           cell += `</div>`;

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"html/template"
@@ -11,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -120,6 +123,9 @@ func main() {
 		log.Printf("templates loaded from embed")
 	}
 
+	// 资源版本号：内容哈希自动生成（asset_ver 模板函数消费），根治手写 ?v= 遗漏旧缓存。
+	tmpl.SetAssetVersioner(newAssetVersioner(devMode, app.Root))
+
 	// 文章服务：content/posts/*.md（文件回退用 + seed 源）。按 root 定位，部署时可选。
 	posts := post.NewService(filepath.Join(app.Root, "content", "posts"))
 	posts.SetIconFunc(reg.Get) // 供 quot 等 shortcode 渲染内联 SVG（复用模板 icon 同一套图标）
@@ -182,6 +188,9 @@ func main() {
 	} else {
 		log.Printf("loaded site config: %s", siteConfigPath)
 	}
+	posts.SetLinksFunc(func() ([]tmpl.LinkGroup, string) {
+		return site.Links, site.Default.Link
+	}) // 供 {% links %} shortcode 服务端直出分组友链卡片（site 为共享指针，RebuildSite 热更后即时可见）
 
 	// 评论配置兜底：site.yml 缺字段时补默认值（Enabled 以配置为准，不强制开启）
 	if site.Comments.GravatarMirror == "" {
@@ -346,7 +355,6 @@ func main() {
 			Icons:       reg,
 			RenderSitePreview: ws.renderSitePreview,
 			UploadDir:   app.UploadDir,
-			NotesPath:   filepath.Join(app.Root, "content", "notes.md"),
 			MaxUploadMB: app.MaxUploadMB,
 		},
 		Friends: friendsAgg,
@@ -374,6 +382,16 @@ func main() {
 		ws.fillSEO(data, c)
 	})
 	pageHandler.Register(r)
+	// 友链页内容页化：确保 pages 表存在 slug=friends 系统页（/friends 路由按内容页渲染）。
+	if err := pageHandler.EnsureSystemFriendsPage(); err != nil {
+		log.Printf("[warn] seed friends page: %v", err)
+	}
+	if err := pageHandler.EnsureSystemNotesPage(ws.notesMDPath); err != nil {
+		log.Printf("[warn] seed notes page: %v", err)
+	}
+	if err := pageHandler.EnsureSystemLinksPage(); err != nil {
+		log.Printf("[warn] seed links page: %v", err)
+	}
 
 	momentHandler, err := moment.New(st, posts, engine, site, ws.fillSidebar, ws.fillSEO)
 	if err != nil {
@@ -477,4 +495,41 @@ func main() {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
 	log.Println("server stopped")
+}
+
+// newAssetVersioner 资源版本号解析器：内容 sha256 前 8 位 hex。
+// release 走 embed（不可变，永久缓存）；dev 走磁盘（每次重算，改资源即时换版本号）。
+// path 为模板中的资源路径（如 /assets/css/main.css）。
+func newAssetVersioner(devMode bool, root string) func(string) string {
+	rel := func(p string) string { return strings.TrimPrefix(strings.TrimPrefix(p, "/assets/"), "assets/") }
+	var mu sync.Mutex
+	cache := map[string]string{}
+	return func(p string) string {
+		if !devMode {
+			mu.Lock()
+			if v, ok := cache[p]; ok {
+				mu.Unlock()
+				return v
+			}
+			mu.Unlock()
+		}
+		var data []byte
+		var err error
+		if devMode {
+			data, err = os.ReadFile(filepath.Join(root, "frontend", "assets", rel(p)))
+		} else {
+			data, err = assets.FS.ReadFile(rel(p))
+		}
+		if err != nil {
+			return "0"
+		}
+		sum := sha256.Sum256(data)
+		v := hex.EncodeToString(sum[:])[:8]
+		if !devMode {
+			mu.Lock()
+			cache[p] = v
+			mu.Unlock()
+		}
+		return v
+	}
 }

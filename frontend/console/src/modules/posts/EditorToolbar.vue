@@ -173,15 +173,19 @@ const bubbleSrcdoc = computed(() => {
 </html>`;
 });
 
-// 工具栏按钮统一样式（Apple 风：32px、8px 圆角、hover 浅底、激活蓝底白字）
+// 工具栏按钮统一样式（Apple 风：32px、rounded-lg、hover 灰底）。
+// 激活态用 scoped 的 .btn-active（浅蓝 tint 底 + 蓝色图标）——不叠工具类，
+// 避免 text-primary-foreground 等颜色工具类在级联中被 btnChrome 覆盖失效。
 const btnBase =
-  "flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground";
-const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground";
+  "flex h-8 w-8 items-center justify-center rounded-lg transition-colors";
+const btnChrome =
+  "text-text-secondary hover:bg-secondary hover:text-foreground";
+const btnActive = "btn-active";
 </script>
 
 <template>
   <div
-    class="flex flex-wrap items-center gap-0 px-4 py-2"
+    class="flex items-center gap-0 overflow-x-auto px-4 py-2"
   >
     <!-- 分组 1：插入 Stellar 标签 -->
     <div class="flex items-center gap-0.5 px-1.5">
@@ -191,7 +195,7 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
           title="插入 Stellar 标签"
           :class="[
             btnBase,
-            insertOpen ? btnActive : '',
+            insertOpen ? btnActive : btnChrome,
           ]"
           @click="toggleInsert"
         >
@@ -255,7 +259,7 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
         :key="tool.id"
         type="button"
         :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
         @click="emit('format', tool.id)"
       >
         <Icon :icon="tool.icon" class="text-lg" />
@@ -269,15 +273,15 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
         :key="tool.id"
         type="button"
         :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
         @click="emit('format', tool.id)"
       >
         <Icon :icon="tool.icon" class="text-lg" />
       </button>
-      <button type="button" title="上传图片" :class="btnBase" @click="emit('upload')">
+      <button type="button" title="上传图片" :class="[btnBase, btnChrome]" @click="emit('upload')">
         <Icon icon="ri:image-add-line" class="text-lg" />
       </button>
-      <button type="button" title="从图床选择" :class="btnBase" @click="emit('pick')">
+      <button type="button" title="从图床选择" :class="[btnBase, btnChrome]" @click="emit('pick')">
         <Icon icon="ri:gallery-line" class="text-lg" />
       </button>
     </div>
@@ -289,7 +293,7 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
         :key="tool.id"
         type="button"
         :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : '']"
+        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
         @click="emit('format', tool.id)"
       >
         <Icon :icon="tool.icon" class="text-lg" />
@@ -308,14 +312,14 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
       >
         <Icon icon="ri:sparkling-2-line" class="text-lg" />
       </button>
-      <button type="button" title="发布前预览" :class="btnBase" @click="emit('preview')">
+      <button type="button" title="发布前预览" :class="[btnBase, btnChrome]" @click="emit('preview')">
         <Icon icon="ri:eye-line" class="text-lg" />
       </button>
       <button
         v-if="props.isEdit"
         type="button"
         title="版本历史"
-        :class="btnBase"
+        :class="[btnBase, btnChrome]"
         @click="emit('openRevision')"
       >
         <Icon icon="ri:history-line" class="text-lg" />
@@ -323,7 +327,7 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
       <button
         type="button"
         :title="props.fullscreen ? '退出全屏' : '全屏编辑'"
-        :class="[btnBase, props.fullscreen ? btnActive : '']"
+        :class="[btnBase, props.fullscreen ? btnActive : btnChrome]"
         @click="emit('toggleFullscreen')"
       >
         <Icon :icon="props.fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="text-lg" />
@@ -357,7 +361,7 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
       <button
         type="button"
         :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
-        :class="[btnBase, props.sidebarOpen ? btnActive : '']"
+        :class="[btnBase, props.sidebarOpen ? btnActive : btnChrome]"
         @click="emit('toggleSidebar')"
       >
         <Icon icon="ri:layout-right-line" class="text-lg" />
@@ -367,6 +371,17 @@ const btnActive = "bg-primary text-primary-foreground hover:bg-primary-hover hov
 </template>
 
 <style scoped>
+/* ===== 选中态（加粗/侧边栏/全屏/插入下拉等）=====
+   浅蓝 tint 底 + 蓝色图标（macOS 工具栏惯例；scoped 特异性高于工具类，避免级联覆盖） */
+.btn-active {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+.btn-active:hover {
+  background: color-mix(in srgb, var(--color-primary) 26%, transparent);
+  color: var(--color-primary-hover);
+}
+
 /* ===== 移动端适配 ===== */
 @media (max-width: 640px) {
   /* 工具栏更紧凑 */

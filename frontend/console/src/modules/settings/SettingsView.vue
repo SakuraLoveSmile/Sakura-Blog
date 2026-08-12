@@ -72,7 +72,7 @@ const groups = [
     ],
   },
 ];
-const allSections = ["site","menubar","rightbar","footer","comments","article","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","tag_plugins","default"];
+const allSections = ["site","menubar","rightbar","footer","comments","article","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","tag_plugins","default","pages"];
 const platformOptions = ["wechat","weibo","email","link","twitter","telegram"];
 // 标签插件配色选项（对齐原版 colorful 色板）
 const tagColorOptions = ["red","orange","yellow","green","cyan","blue","purple"];
@@ -118,8 +118,10 @@ function ensureDefaults(d: Record<string, any>) {
   const rawWiki = Array.isArray(d.wiki) ? d.wiki : [];
   d.wiki = rawWiki.map((w: any) => {
     const tags = Array.isArray(w?.tags) ? w.tags : String(w?.tags ?? "").split(/[,，]/).map((s: string) => s.trim()).filter(Boolean);
-    return { ...w, _tagsText: tags.join(",") };
+    return { ...w, hero: w?.hero || {}, _tagsText: tags.join(",") };
   });
+  d.pages = d.pages || {};
+  d.pages.friends = d.pages.friends || {};
   d.style = d.style || {};
   d.style.color = d.style.color || {};
   d.style.font_size = d.style.font_size || {};
@@ -173,11 +175,16 @@ function sortWikiProjects(list: any[]): any[] {
 }
 
 function wikiPayload() {
-  return (data.value.wiki as any[]).map(({ _tagsText, ...w }) => ({
-    ...w,
-    sort: Number(w.sort) || 0,
-    tags: String(_tagsText || "").split(/[,，]/).map((s) => s.trim()).filter(Boolean),
-  }));
+  return (data.value.wiki as any[]).map(({ _tagsText, ...w }) => {
+    const hero = w.hero || {};
+    const hasHero = Boolean(hero.title || hero.description || hero.background);
+    return {
+      ...w,
+      hero: hasHero ? hero : undefined,
+      sort: Number(w.sort) || 0,
+      tags: String(_tagsText || "").split(/[,，]/).map((s) => s.trim()).filter(Boolean),
+    };
+  });
 }
 
 async function load() {
@@ -299,7 +306,7 @@ function addSitemapItem(g: any) {
   g.items.push({ title: "", url: "" });
 }
 function addWikiProject() {
-  data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, _tagsText: "" });
+  data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, hero: {}, _tagsText: "" });
 }
 
 const inputCls = "apple-input";
@@ -791,6 +798,11 @@ onMounted(() => {
                 </div>
               </div>
               <div class="field"><label>标签（逗号分隔）</label><input v-model="w._tagsText" :class="inputCls" placeholder="Go, 开源" /></div>
+              <div class="form-grid form-grid-3">
+                <div class="field"><label>hero 标题</label><input v-model="w.hero.title" :class="inputCls" placeholder="留空不渲染 hero" /></div>
+                <div class="field"><label>hero 副标题</label><input v-model="w.hero.description" :class="inputCls" /></div>
+                <div class="field"><label>hero 背景图</label><AttachmentField v-model="w.hero.background" placeholder="https://..." /></div>
+              </div>
             </div>
             <button type="button" class="add-btn" @click="addWikiProject"><Icon icon="ri:add-line" /> 添加项目</button>
             <div class="card-actions">

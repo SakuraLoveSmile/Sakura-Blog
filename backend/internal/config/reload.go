@@ -33,6 +33,7 @@ const (
 	SectionPlugins = "plugins"  // 前端体验增强插件开关
 	SectionTagPlugins = "tag_plugins" // 标签插件默认参数（对齐原版 _config.yml tag_plugins）
 	SectionDefault      = "default"   // 占位素材组（对齐原版 _config.yml default）
+	SectionPages        = "pages"     // 页面级设置（friends 页等特色设置，按页面键管理）
 
 	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
 	// 仅由 SaveAdminPassword 专用接口读写。
@@ -319,6 +320,9 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionPlugins, site.Plugins); err != nil {
 		return err
 	}
+	if err := put(SectionPages, site.Pages); err != nil {
+		return err
+	}
 	// lang 段不写初始值：settings 无 lang 行 = 无文案覆盖（全用内置 zhCN）。
 	return nil
 }
@@ -399,6 +403,7 @@ func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
 	var plugins tmpl.PluginsConfig
 	var tagPlugins tmpl.TagPluginsConfig
 	var defaultAssets tmpl.DefaultAssets
+	var pages tmpl.PagesConfig
 
 	unmarshal := func(section string, dst any) {
 		if v, ok := settings[section]; ok && v != "" {
@@ -423,6 +428,7 @@ func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
 	unmarshal(SectionPlugins, &plugins)
 	unmarshal(SectionTagPlugins, &tagPlugins)
 	unmarshal(SectionDefault, &defaultAssets)
+	unmarshal(SectionPages, &pages)
 
 	site.Title = basic.Title
 	site.Subtitle = basic.Subtitle
@@ -452,6 +458,7 @@ func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
 	site.Plugins = plugins
 	site.TagPlugins = tagPlugins
 	site.Default = defaultAssets
+	site.Pages = pages
 }
 
 // ApplyDraftSections 把草稿分段 JSON 就地应用到传入的 Site 副本（设置页「前端预览」用）：
@@ -498,6 +505,7 @@ func KnownSections() []string {
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
 		SectionTagPlugins, SectionDefault,
+		SectionPages,
 	}
 }
 
@@ -562,6 +570,8 @@ func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) e
 		dst = &tmpl.TagPluginsConfig{}
 	case SectionDefault:
 		dst = &tmpl.DefaultAssets{}
+	case SectionPages:
+		dst = &tmpl.PagesConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}

@@ -15,6 +15,10 @@ type ViewData struct {
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
 	TOC     template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
 
+	// MenuPages pages 模块已发布页面自动生成的左栏菜单项（fillSidebar 填充，
+	// 追加在 menubar 配置之后；访问路径与 menubar 重复的页面不重复显示）。
+	MenuPages []MenuItem
+
 	// 首页文章列表（Layout=index 时使用）。
 	Posts     []*PostCard // 文章卡片列表
 	Paginator *Paginator  // 分页器数据（nil 或 Total<=1 则不渲染）
@@ -77,6 +81,8 @@ type ViewData struct {
 	// WikiPrevDoc/WikiNextDoc 为同 project 内按 doc_order 的上下篇；WikiDocTree 供 leftbar tree widget 注入。
 	WikiProjectID   string // 项目 ID（面包屑/树链接）
 	WikiProjectName string // 项目显示名（DisplayTitle）
+	// WikiHero 当前项目 hero banner（handleWikiDoc 填充，非空时文档页页首渲染）。
+	WikiHero *HeroConfig
 	// WikiProjectIcon/Description 为 sidebar 项目化 header 数据（handleWikiDoc 填充，
 	// 仅 wiki 文档页使用）：icon 显示项目 Logo，description 作副标题。
 	WikiProjectIcon        string         // 项目 Logo 图片 URL（WikiProject.Icon）
@@ -345,6 +351,8 @@ type Site struct {
 	TagPlugins TagPluginsConfig `yaml:"tag_plugins" json:"tag_plugins"`
 	// Default 占位素材组（对齐原版 _config.yml default 段）。
 	Default DefaultAssets `yaml:"default" json:"default"`
+	// Pages 页面级设置（site.yml / settings 表 pages 段）：按页面键管理，当前仅 friends。
+	Pages PagesConfig `yaml:"pages,omitempty" json:"pages,omitempty"`
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
@@ -692,6 +700,7 @@ type Page struct {
 	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
+	Subtitle     string   // banner 副标题（对齐原版 banner .text.subtitle；友链页取 pages.friends.hero.description）
 
 	// 文章级 SEO（Spec 42）：非空时优先于站点级默认值输出 meta。
 	MetaDescription string // 自定义 meta description（覆盖自动摘要）

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
+import { settingsApi } from "@/api";
+import { Toast } from "@/components/ui";
 
 // 页面编辑器右侧辅助面板（参考 PostEditor 的 EditorSidebar）：
 // 大纲：解析 Markdown 标题可点击跳转；详情：slug/status + 侧边栏组件参数编辑（快速入口）
@@ -59,6 +61,56 @@ const minLevel = computed(() =>
 function widgetLabelOf(name: string) {
   return props.widgetLibrary.find((w) => w.name === name)?.label ?? name;
 }
+
+// ---------- 友链页专属设置（slug=friends 时右侧栏显示，存 settings pages.friends 段） ----------
+const isFriendsPage = computed(() => props.form.slug === "friends");
+const friendsCfg = ref({
+  hero: { title: "", description: "", background: "" },
+  refresh_interval: 0,
+  posts_per_link: 0,
+});
+const friendsSaving = ref(false);
+
+async function loadFriendsCfg() {
+  if (!isFriendsPage.value) return;
+  try {
+    const { data } = await settingsApi.all();
+    const f = data?.pages?.friends || {};
+    friendsCfg.value = {
+      hero: {
+        title: f.hero?.title || "",
+        description: f.hero?.description || "",
+        background: f.hero?.background || "",
+      },
+      refresh_interval: f.refresh_interval || 0,
+      posts_per_link: f.posts_per_link || 0,
+    };
+  } catch {
+    // 设置加载失败不阻断编辑器
+  }
+}
+
+async function saveFriendsCfg() {
+  friendsSaving.value = true;
+  try {
+    const hero = friendsCfg.value.hero;
+    const hasHero = Boolean(hero.title || hero.description || hero.background);
+    await settingsApi.updateSection("pages", {
+      friends: {
+        hero: hasHero ? hero : undefined,
+        refresh_interval: Number(friendsCfg.value.refresh_interval) || 0,
+        posts_per_link: Number(friendsCfg.value.posts_per_link) || 0,
+      },
+    });
+    Toast.success("已保存，前台 /friends 已生效");
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } finally {
+    friendsSaving.value = false;
+  }
+}
+
+onMounted(loadFriendsCfg);
 </script>
 
 <template>
@@ -145,6 +197,39 @@ function widgetLabelOf(name: string) {
               {{ form.content_md ? [...form.content_md].filter((c) => !/\s/.test(c)).length : 0 }}
             </span>
           </div>
+        </div>
+      </div>
+
+      <!-- 友链页专属设置（slug=friends 时显示，存 settings pages.friends 段） -->
+      <div v-if="isFriendsPage" class="space-y-2">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">友链页设置</h3>
+        <div class="space-y-2 rounded-lg bg-secondary p-3 text-xs dark:bg-accent/40">
+          <div>
+            <label class="mb-1 block text-[10px] text-muted-foreground">hero 副标题（banner 签名档）</label>
+            <input v-model="friendsCfg.hero.description" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-[10px] text-muted-foreground">hero 背景图 URL</label>
+            <input v-model="friendsCfg.hero.background" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="https://..." />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="mb-1 block text-[10px] text-muted-foreground">刷新间隔（分钟）</label>
+              <input v-model.number="friendsCfg.refresh_interval" type="number" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="0=缺省 60" />
+            </div>
+            <div>
+              <label class="mb-1 block text-[10px] text-muted-foreground">每链文章数</label>
+              <input v-model.number="friendsCfg.posts_per_link" type="number" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="0=缺省 20" />
+            </div>
+          </div>
+          <p class="text-[10px] text-muted-foreground">RSS 文章列表开关在正文 shortcode：{% friends posts:true|false %}</p>
+          <button
+            class="w-full rounded-md bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+            :disabled="friendsSaving"
+            @click="saveFriendsCfg"
+          >
+            {{ friendsSaving ? "保存中…" : "保存友链页设置" }}
+          </button>
         </div>
       </div>
 

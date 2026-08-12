@@ -14,6 +14,7 @@ type WikiProject struct {
 	URL         string   `yaml:"url" json:"url"`   // 首页/文档链接（站内文章、独立页面或外链）
 	Sort        int      `yaml:"sort" json:"sort"` // 越大越靠前
 	Repo        string   `yaml:"repo" json:"repo"` // GitHub 仓库（owner/name 格式），非空时 wiki 文档页右栏渲染 ghrepo 卡片
+	Hero        *HeroConfig `yaml:"hero,omitempty" json:"hero,omitempty"` // 项目级 hero banner（wiki 文档页页首渲染）
 	// HasDocs 运行时标记：是否有已发布的本地文档（请求时由 handler 填充，不参与配置解析/JSON 输出）。
 	HasDocs bool `yaml:"-" json:"-"`
 }

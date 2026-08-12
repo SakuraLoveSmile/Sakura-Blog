@@ -30,6 +30,8 @@ var wikiTagColors = map[string]string{
 // Go html/template 对返回值做 HTML 转义，SVG/icon/partial 需返回 template.HTML 跳过转义。
 func FuncMap(reg *IconRegistry) template.FuncMap {
 	return template.FuncMap{
+		// asset_ver: 资源内容哈希版本后缀（启动侧 SetAssetVersioner 注入；未注入返回空串）。
+		"asset_ver": AssetVersion,
 		// markdown: 渲染 Markdown 片段（页脚自定义文案等），渲染器由 SetMarkdownRender 注入；
 		// 未注入时转义原样输出，保证模板可独立渲染（测试/降级）。
 		"markdown": func(s string) template.HTML {

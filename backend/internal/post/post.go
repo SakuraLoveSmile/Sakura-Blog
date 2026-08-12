@@ -12,6 +12,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+
+	tmpl "blog/internal/template"
 )
 
 // Post 文章渲染结果。
@@ -55,6 +57,8 @@ type Service struct {
 	parser   parser
 	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
+	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
+	linksFunc func() ([]tmpl.LinkGroup, string)
 }
 
 // GHClient GitHub 数据接口（由 internal/github.Client 实现，解耦循环依赖）。
@@ -92,6 +96,11 @@ type GHUserInfo struct {
 // SetIconFunc 注入图标渲染函数（key → 内联 SVG）。未设置时 quot 等图标降级为空占位。
 func (s *Service) SetIconFunc(f func(string) string) {
 	s.iconFunc = f
+}
+
+// SetLinksFunc 注入站点友链分组提供器（供 {% links %} shortcode 服务端直出）。
+func (s *Service) SetLinksFunc(f func() ([]tmpl.LinkGroup, string)) {
+	s.linksFunc = f
 }
 
 // SetGHClient 注入 GitHub 数据客户端（供 ghrepo/ghuser shortcode 渲染）。未设置时降级纯链接。
@@ -144,7 +153,7 @@ func (s *Service) Render(body string) (string, error) {
 	}
 
 	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

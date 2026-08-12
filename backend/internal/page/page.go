@@ -3,8 +3,11 @@ package page
 
 import (
 	"html/template"
+	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,6 +15,30 @@ import (
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
+
+// FriendsSlug 友链页系统页面 slug：/friends 路由按此 slug 从 pages 表渲染内容页。
+const FriendsSlug = "friends"
+
+// NotesSlug 笔记页系统页面 slug：/notes 路由按此 slug 从 pages 表渲染内容页。
+const NotesSlug = "notes"
+
+// LinksSlug 友链卡片页系统页面 slug：/links 路由按此 slug 从 pages 表渲染内容页。
+const LinksSlug = "links"
+
+// defaultLinksMD 友链卡片页缺省正文：{% links %} 服务端直出分组友链卡片。
+const defaultLinksMD = `{% links %}
+`
+
+// defaultFriendsMD 友链页缺省正文：友链列表组件（带 RSS 文章）+ 交换说明。
+// 站点可在控制台「页面」模块编辑该内容（shortcode {% friends posts:true %} 控制组件形态）。
+const defaultFriendsMD = `## 友链列表
+
+{% friends posts:true %}
+
+## 如何交换友链？
+
+{% note color:blue 欢迎交换友链：请先在您的站点添加本站链接，再通过评论留下您的站点信息（名称 / 网址 / 头像 / 描述），审核通过后即可展示。 %}
+`
 
 // Handler 独立页面请求处理器。
 type Handler struct {
@@ -39,6 +66,81 @@ func (h *Handler) SetRender404(fn gin.HandlerFunc) {
 // SetFillExtra 注入前台页面渲染前的 sidebar/SEO 填充回调。
 func (h *Handler) SetFillExtra(fn func(*tmpl.ViewData, *gin.Context)) {
 	h.fillExtra = fn
+}
+
+// EnsureSystemFriendsPage 确保 pages 表存在友链系统页（slug=friends，published）。
+// 已存在（含用户编辑过的）不覆盖；缺失时创建并预渲染 ContentHTML。
+func (h *Handler) EnsureSystemFriendsPage() error {
+	if p, err := h.store.GetPageBySlug(FriendsSlug); err == nil && p != nil {
+		return nil
+	}
+	html, err := h.posts.Render(defaultFriendsMD)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	id, err := h.store.CreatePage(&store.Page{
+		Slug: FriendsSlug, Title: "友链", ContentMD: defaultFriendsMD, ContentHTML: html,
+		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
+	})
+	if err != nil {
+		return err
+	}
+	log.Printf("[info] seeded system friends page (id=%d, slug=%s)", id, FriendsSlug)
+	return nil
+}
+
+// EnsureSystemNotesPage 确保 pages 表存在笔记系统页（slug=notes，published）。
+// 首次迁移时导入旧 content/notes.md 原文作为正文（记录已存在不覆盖）。
+func (h *Handler) EnsureSystemNotesPage(importPath string) error {
+	if p, err := h.store.GetPageBySlug(NotesSlug); err == nil && p != nil {
+		return nil
+	}
+	md := ""
+	if importPath != "" {
+		if b, err := os.ReadFile(importPath); err == nil {
+			md = string(b)
+		}
+	}
+	if md == "" {
+		md = "（笔记页正文，可在控制台编辑）\n"
+	}
+	html, err := h.posts.Render(md)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	id, err := h.store.CreatePage(&store.Page{
+		Slug: NotesSlug, Title: "笔记", ContentMD: md, ContentHTML: html,
+		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
+	})
+	if err != nil {
+		return err
+	}
+	log.Printf("[info] seeded system notes page (id=%d, slug=%s, imported=%t)", id, NotesSlug, importPath != "" && md != "")
+	return nil
+}
+
+// EnsureSystemLinksPage 确保 pages 表存在友链卡片系统页（slug=links，published）。
+// 已存在（含用户编辑过的）不覆盖。
+func (h *Handler) EnsureSystemLinksPage() error {
+	if p, err := h.store.GetPageBySlug(LinksSlug); err == nil && p != nil {
+		return nil
+	}
+	html, err := h.posts.Render(defaultLinksMD)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	id, err := h.store.CreatePage(&store.Page{
+		Slug: LinksSlug, Title: "友链", ContentMD: defaultLinksMD, ContentHTML: html,
+		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
+	})
+	if err != nil {
+		return err
+	}
+	log.Printf("[info] seeded system links page (id=%d, slug=%s)", id, LinksSlug)
+	return nil
 }
 
 // Register 挂前台路由 GET /pages/:slug（兼容旧路径）。
@@ -76,6 +178,7 @@ func (h *Handler) renderPage(c *gin.Context, p *store.Page) {
 			Slug:   p.Slug,
 			Layout: "page",
 			Lang:   "zh-CN",
+			MenuID: p.Slug, // 自动菜单项（MenuPages）按 slug 高亮
 		},
 		Content: template.HTML(p.ContentHTML),
 	}

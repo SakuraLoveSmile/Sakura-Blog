@@ -83,3 +83,32 @@ test(`${SURFACE} · 无 form schema 的插件产出裸标签`, () => {
   const bare: PluginMeta = { ...notePlugin, name: "hr", form: undefined };
   assert.equal(buildShortcode(bare, {}), "{% hr %}");
 });
+
+// mbti 插件缩影（1.38 新标签）：双 positional（type/scores）+ 双 named（url/image）
+const mbtiPlugin: PluginMeta = {
+  name: "mbti",
+  title: "人格卡片 MBTI",
+  category: "文艺装饰",
+  type: "inline",
+  desc: "",
+  signature: "",
+  params: [],
+  example: "",
+  form: [
+    { key: "type", label: "人格类型", type: "text", role: "positional" },
+    { key: "scores", label: "五维百分比", type: "text", role: "positional" },
+    { key: "url", label: "档案链接", type: "text", role: "named" },
+    { key: "image", label: "横幅图片", type: "text", role: "named" },
+  ],
+};
+
+test(`${SURFACE} · inline：mbti 双 positional 按字段顺序、双 named 按声明顺序拼装，空 named 省略`, () => {
+  assert.equal(
+    buildShortcode(mbtiPlugin, { type: "INTJ-T", scores: "93-72-78-83-51", url: "https://16p.com/x", image: "" }),
+    "{% mbti INTJ-T 93-72-78-83-51 url:https://16p.com/x %}"
+  );
+  assert.equal(
+    buildShortcode(mbtiPlugin, { type: "intj", scores: "50-50-50-50-50", url: "", image: "" }),
+    "{% mbti intj 50-50-50-50-50 %}"
+  );
+});

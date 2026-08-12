@@ -421,6 +421,27 @@ export const plugins: PluginMeta[] = [
  example:"{% toc 本文目录 %}",
  },
  {
+ name:"mbti",
+ title:"人格卡片 MBTI",
+ category:"文艺装饰",
+ type:"inline",
+ desc:"MBTI 人格特征卡片：类型名 + 五维百分比进度条 + 可选档案链接（1.38 新增）。",
+ signature:"{% mbti 类型 百分比-百分比-百分比-百分比-百分比 [url:档案链接] [image:横幅图片] %}",
+ params: [
+ { name:"type", desc:"人格类型代码（如 INTJ-T，大小写均可）", default:"—" },
+ { name:"scores", desc:"五个百分比，- 分隔，顺序：精力-认知-决策-生活-身份", default:"—" },
+ { name:"url", desc:"16Personalities 档案链接（可选，url:https://...）", default:"—" },
+ { name:"image", desc:"标题上方横幅图片地址（可选）", default:"—" },
+ ],
+ example:"{% mbti INTJ-T 93-72-78-83-51 url:https://www.16personalities.com/ch/档案/9d09a4297ffa2 %}",
+ form: [
+ { key:"type", label:"人格类型", type:"text", role:"positional", placeholder:"INTJ-T" },
+ { key:"scores", label:"五维百分比", type:"text", role:"positional", placeholder:"93-72-78-83-51" },
+ { key:"url", label:"档案链接（可选）", type:"text", role:"named", placeholder:"https://www.16personalities.com/..." },
+ { key:"image", label:"横幅图片（可选）", type:"text", role:"named", placeholder:"https://..." },
+ ],
+ },
+ {
  name:"poetry",
  title:"诗词 Poetry",
  category:"文艺装饰",

@@ -66,6 +66,27 @@ watch(raw, renderPreview);
 // iframe srcdoc：深色-only，固定 dark 主题
 // body 背景透明与编辑器融合（无缝渲染）；首尾 margin 归零减少卡片余白
 const srcdoc = computed(() => {
+ // {% friends %} 等数据服务标签输出 ds-* 容器，需前端 service JS 抓数据渲染卡片：
+ // 预览注入最小 utils/def shim + 对应 service 脚本（仅含 ds-friends 容器时）。
+ const dsBootstrap = /ds-friends/.test(html.value)
+  ? `<script>
+window.def = { avatar: 'https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg' };
+window.wrapLazyloadImages = function () {};
+window.utils = {
+ request: function (el, api, cb) { fetch(api).then(cb).catch(function () {}); },
+ dom: function (sel) {
+  var els = typeof sel === 'string' ? Array.prototype.slice.call(document.querySelectorAll(sel)) : (sel && sel.nodeType === 1 ? [sel] : Array.prototype.slice.call(sel || []));
+  var apiObj = {
+   find: function (s) { var r = []; els.forEach(function (el) { Array.prototype.push.apply(r, el.querySelectorAll(s)); }); return window.utils.dom(r); },
+   append: function (c) { els.forEach(function (el) { el.insertAdjacentHTML('beforeend', c); }); return apiObj; }
+  };
+  return apiObj;
+ }
+};
+<\/script>
+<script src="/assets/js/services/friends_and_posts.js?v=tagprev1"><\/script>
+<script src="/assets/js/services/friends.js?v=tagprev1"><\/script>`
+  : "";
  return `<!DOCTYPE html>
 <html data-theme="dark">
 <head>
@@ -83,7 +104,7 @@ body{padding:0;background:transparent;overflow:hidden;}
 .md-text>:last-child{margin-bottom:0;}
 </style>
 </head>
-<body><article class="md-text content">${html.value}</article></body>
+<body><article class="md-text content">${html.value}</article>${dsBootstrap}</body>
 </html>`;
 });
 
@@ -100,6 +121,7 @@ function measure() {
 function onIframeLoad() {
  measure();
  setTimeout(measure, 600);
+ setTimeout(measure, 1600); // service 异步抓数据渲染后补测高度
 }
 
 // ---------- 编辑（内联 textarea 改 raw；复杂参数用右侧详情 Tab 的参数表单） ----------

@@ -113,6 +113,9 @@ var reVote = regexp.MustCompile(`{%\s*vote\s*(.*?)\s*%}`)
 // friends 标签正则（单行）：{% friends [api:url] %}
 var reFriends = regexp.MustCompile(`{%\s*friends\s*(.*?)\s*%}`)
 
+// links 标签正则（单行）：{% links %}（分组友链卡片流，服务端直出站点 links 配置）
+var reLinks = regexp.MustCompile(`{%\s*links\s*%}`)
+
 // sites 标签正则（单行）：{% sites api:url %}
 var reSites = regexp.MustCompile(`{%\s*sites\s*(.*?)\s*%}`)
 
@@ -217,7 +220,7 @@ func (s *Service) renderInlineMD(md string) string {
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient) string {
+func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -580,6 +583,14 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			return match
 		}
 		return renderFriends(parts[1])
+	})
+	
+	// 27.5 links（单行，分组友链卡片流服务端直出，数据来自站点 links 配置注入）
+	md = reLinks.ReplaceAllStringFunc(md, func(match string) string {
+		if linksRender == nil {
+			return match
+		}
+		return linksRender()
 	})
 
 	// 28. sites（单行，站点卡片流，api 必填透传，参数缺失原样输出）
@@ -2373,15 +2384,65 @@ func renderVote(argsStr string, iconFunc func(string) string) string {
 // 缺省 data-api 指向本地友链聚合端点 /api/friends（JSON 形状 {content:[{title,url,html_url,avatar_url,labels}]}
 // 与 friends.js 期望字段一致，无需适配层）。
 func renderFriends(argsStr string) string {
-	named, _ := parseNamedPositionalArgs(argsStr, []string{"api"}, nil)
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"api", "posts"}, nil)
 	api := named["api"]
-	if api == "" {
-		api = "/api/friends"
+	var sb strings.Builder
+	// posts:true 对齐原版 {% friends posts:true %}：渲染带 RSS 文章列表的 ds-friends_and_posts 容器；
+	// 缺省仍为 ds-friends 纯卡片流。
+	if named["posts"] == "true" {
+		if api == "" {
+			api = "/api/friends-aggregated"
+		}
+		sb.WriteString(`<div class="tag-plugin users-posts-wrap">`)
+		fmt.Fprintf(&sb, `<div class="data-service ds-friends_and_posts" data-api="%s"><div class="grid-box"></div></div>`, html.EscapeString(api))
+	} else {
+		if api == "" {
+			api = "/api/friends"
+		}
+		sb.WriteString(`<div class="tag-plugin users-wrap">`)
+		fmt.Fprintf(&sb, `<div class="data-service ds-friends" data-api="%s"><div class="grid-box"></div></div>`, html.EscapeString(api))
+	}
+	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// renderLinks 渲染 {% links %}：分组友链卡片流服务端直出（结构同旧 links.html，
+// 对齐原版 sites 标签插件 sites-wrap + site-card）。数据经 SetLinksFunc 注入。
+func (s *Service) renderLinks() string {
+	var groups []tmpl.LinkGroup
+	defaultLink := ""
+	if s.linksFunc != nil {
+		groups, defaultLink = s.linksFunc()
+	}
+	if len(groups) == 0 {
+		return "<p>暂无友链</p>"
 	}
 	var sb strings.Builder
-	sb.WriteString(`<div class="tag-plugin users-wrap">`)
-	fmt.Fprintf(&sb, `<div class="data-service ds-friends" data-api="%s"><div class="grid-box"></div></div>`, html.EscapeString(api))
-	sb.WriteString(`</div>`)
+	for _, g := range groups {
+		if g.Title != "" {
+			fmt.Fprintf(&sb, "<h2>%s</h2>", html.EscapeString(g.Title))
+		}
+		sb.WriteString(`<div class="tag-plugin sites-wrap"><div class="grid-box">`)
+		for _, it := range g.Items {
+			avatar := it.Avatar
+			if avatar == "" {
+				avatar = defaultLink
+			}
+			if avatar == "" {
+				avatar = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
+			}
+			desc := it.Desc
+			if desc == "" {
+				desc = it.URL
+			}
+			sb.WriteString(`<div class="grid-cell site-card"><a class="card-link" target="_blank" rel="noopener" href="` + html.EscapeString(it.URL) + `">`)
+			sb.WriteString(`<div class="lazy-box snapshot"><img src="` + html.EscapeString(avatar) + `" alt="` + html.EscapeString(it.Name) + `"></div>`)
+			sb.WriteString(`<div class="info"><div class="lazy-box icon"><img src="` + html.EscapeString(avatar) + `" alt=""></div>`)
+			sb.WriteString(`<span class="title">` + html.EscapeString(it.Name) + `</span>`)
+			sb.WriteString(`<span class="desc">` + html.EscapeString(desc) + `</span></div></a></div>`)
+		}
+		sb.WriteString(`</div></div>`)
+	}
 	return sb.String()
 }
 

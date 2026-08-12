@@ -43,7 +43,6 @@ type Handler struct {
 	modules   *module.Manager
 	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
 	uploadDir string
-	notesPath string // content/notes.md 路径（笔记页正文）
 	maxUpload int64  // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
@@ -83,7 +82,6 @@ type Config struct {
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
 	UploadDir   string
-	NotesPath   string
 	MaxUploadMB int
 }
 
@@ -104,7 +102,6 @@ func New(cfg Config) *Handler {
 		icons:     cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
 		uploadDir: cfg.UploadDir,
-		notesPath: cfg.NotesPath,
 		maxUpload: int64(maxMB) << 20,
 		loginFails: make(map[string]struct {
 			n int
@@ -353,10 +350,6 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/profile/2fa/confirm", h.handle2FAConfirm)
 		authed.POST("/profile/2fa/disable", h.handle2FADisable)
 		authed.GET("/profile/2fa/recovery-codes", h.handle2FARecoveryCodes)
-
-		// 笔记页正文（content/notes.md，前台 /notes 上半部分）
-		authed.GET("/notes-content", h.getNotesContent)
-		authed.PUT("/notes-content", h.putNotesContent)
 
 		// 友链
 		authed.GET("/links", h.listLinks)

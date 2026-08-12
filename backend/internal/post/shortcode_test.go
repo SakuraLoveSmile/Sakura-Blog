@@ -8,7 +8,7 @@ import (
 // runShortcodes 便捷调用：identity renderMD + 简单 icon 桩，不依赖 goldmark/GitHub。
 func runShortcodes(md string) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil)
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil)
 }
 
 func TestRadioAndCheckboxCoexist(t *testing.T) {

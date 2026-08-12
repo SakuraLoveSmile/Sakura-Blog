@@ -57,9 +57,8 @@ type Friend struct {
 
 // Aggregator 友链 RSS 聚合器。
 type Aggregator struct {
-	site     *tmpl.Site
-	client   *http.Client
-	interval time.Duration
+	site   *tmpl.Site
+	client *http.Client
 
 	// onArticles 每个友链抓取到文章后的回调（供落库持久化，由 main.go 装配），可空。
 	onArticles func(friendTitle, friendURL string, posts []Post)
@@ -70,17 +69,20 @@ type Aggregator struct {
 
 // New 从站点配置构建聚合器，并用配置初始化缓存（此时 posts 为空，RSS 抓取后填充）。
 func New(site *tmpl.Site) *Aggregator {
-	interval := defaultInterval
-	if site.Friends.RefreshInterval > 0 {
-		interval = time.Duration(site.Friends.RefreshInterval) * time.Minute
-	}
 	a := &Aggregator{
-		site:     site,
-		client:   &http.Client{Timeout: fetchTimeout},
-		interval: interval,
+		site:   site,
+		client: &http.Client{Timeout: fetchTimeout},
 	}
 	a.cache = a.buildBase()
 	return a
+}
+
+// currentInterval 当前生效的刷新周期（pages.friends 优先、回退 friends 段，<=0 用默认 1h；每周期重读以热更生效）。
+func (a *Aggregator) currentInterval() time.Duration {
+	if m := a.site.FriendsRefreshInterval(); m > 0 {
+		return time.Duration(m) * time.Minute
+	}
+	return defaultInterval
 }
 
 // SetOnArticles 注册抓取回调（将文章落库）；在 Start 前调用。
@@ -117,13 +119,12 @@ func (a *Aggregator) buildBase() []Friend {
 	return out
 }
 
-// Start 启动后台聚合：立即异步抓取一次，之后按 interval 周期刷新。
+// Start 启动后台聚合：立即异步抓取一次，之后按 currentInterval 周期刷新（配置热更后下周期生效）。
 func (a *Aggregator) Start() {
 	go func() {
 		a.refresh()
-		ticker := time.NewTicker(a.interval)
-		defer ticker.Stop()
-		for range ticker.C {
+		for {
+			time.Sleep(a.currentInterval())
 			a.refresh()
 		}
 	}()
@@ -234,9 +235,9 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 	return posts, nil
 }
 
-// maxPostsPerFeed 返回每个友链展示的最新文章数上限（site.yml friends.posts_per_link，<=0 用默认 20）。
+// maxPostsPerFeed 返回每个友链展示的最新文章数上限（pages.friends 优先，回退 friends.posts_per_link，<=0 用默认 20）。
 func (a *Aggregator) maxPostsPerFeed() int {
-	if n := a.site.Friends.MaxPostsPerFeed; n > 0 {
+	if n := a.site.FriendsPostsPerLink(); n > 0 {
 		return n
 	}
 	return 20

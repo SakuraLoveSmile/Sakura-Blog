@@ -85,11 +85,6 @@ const router = createRouter({
           component: () => import("@/modules/moments/MomentList.vue"),
         },
         {
-          path: "notes-page",
-          name: "NotesPage",
-          component: () => import("@/modules/notes/NotesEditor.vue"),
-        },
-        {
           path: "taxonomy",
           name: "Taxonomy",
           component: () => import("@/modules/taxonomy/TaxonomyList.vue"),

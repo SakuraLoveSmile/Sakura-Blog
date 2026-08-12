@@ -156,7 +156,37 @@ func (s *webServer) invalidateSidebarCache() {
 // P2-13：结果缓存 45s（TTL 内新文章/评论稍晚出现在侧栏，可接受）；CountByTag 合并为单次调用（原标签云与统计各查一次）。
 // Spec 33：末尾 assembleWidgets 按页面类型装配左右栏实例序列（纯配置查表 + 内存截断，
 // 不产生新查询，因此缓存 key 无需页面类型维度）45s 内重复请求仍不重查库。
+// buildMenuPages pages 模块已发布页面自动生成左栏菜单项：
+// 追加在 menubar 配置之后；访问路径与 menubar 项重复的页面不重复显示（如 /notes /friends 已在菜单）。
+func (s *webServer) buildMenuPages() []tmpl.MenuItem {
+	pages, err := s.st.ListPages()
+	if err != nil {
+		return nil
+	}
+	covered := map[string]bool{}
+	for _, it := range s.site.Menubar.Items {
+		covered[strings.TrimSuffix(it.URL, "/")] = true
+	}
+	var items []tmpl.MenuItem
+	// ListPages 按 updated_at 降序；菜单按创建序（id 升序）更稳定，倒序遍历回正
+	for i := len(pages) - 1; i >= 0; i-- {
+		p := pages[i]
+		if p.Status != store.StatusPublished {
+			continue
+		}
+		u := "/" + p.Slug
+		if covered[u] {
+			continue
+		}
+		covered[u] = true
+		items = append(items, tmpl.MenuItem{ID: p.Slug, Title: p.Title, URL: u, Icon: "solar:documents-bold-duotone"})
+	}
+	return items
+}
+
 func (s *webServer) fillSidebar(data *tmpl.ViewData) {
+	// 已发布页面自动进左栏菜单（不走侧栏缓存：发布/下线需即时反映）
+	data.MenuPages = s.buildMenuPages()
 	s.sidebarMu.Lock()
 	if s.sidebarCached != nil && time.Now().Before(s.sidebarExpiry) {
 		data.Recent = s.sidebarCached.recent

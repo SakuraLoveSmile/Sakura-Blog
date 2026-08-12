@@ -86,6 +86,19 @@ friends:
   refresh_interval: 60
   posts_per_link: 20
 
+# 页面级设置（按页面键管理，控制台「页面 → 友链页」可编辑；不配置 = 现状）。
+# friends：title 覆盖 /friends 页标题；hero 三要素渲染页首 banner；
+# show_posts=false 时只渲染友链卡片、跳过 RSS 文章列表；
+# refresh_interval/posts_per_link 留空或 0 回退上面 friends 段同名字段。
+#pages:
+#  friends:
+#    title: 友链
+#    hero:
+#      title: 朋友们
+#      description: 欢迎交换友链
+#      background: https://example.com/bg.webp
+#    show_posts: true
+
 # 友情链接（配置驱动，不入库）。头像缺省时模板用主题默认占位图。
 # rss 非空时，/friends 页后端会定时抓取该友链 RSS/Atom 最新文章并聚合展示；label/color 为分类标签与配色（16 进制不带 #）。
 links:

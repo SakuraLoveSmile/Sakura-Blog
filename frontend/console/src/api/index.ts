@@ -268,12 +268,6 @@ export const momentApi = {
  delete: (id: number) => http.delete(`/moments/${id}`),
 };
 
-// --- 笔记页（content/notes.md 原文读写，前台 /notes 上半部分） ---
-export const notesApi = {
- get: () => http.get("/notes-content"),
- update: (content: string) => http.put("/notes-content", { content }),
-};
-
 // --- Settings ---
 // 段名与后端 KnownSections 对齐；Spec 42 新增 seo（站点级 SEO）与 inject（ 代码注入 inject_head/inject_footer）两段。
 export const settingsApi = {

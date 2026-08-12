@@ -11,19 +11,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/page"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
 
 // registerTaxonomyRoutes 注册聚合/索引域路由：友链、文库、笔记、归档、分类、专栏、标签。
 func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
-	// 友链页：site.yml links 配置驱动（对齐 Stellar sites 卡片布局）
-	r.GET("/links", func(c *gin.Context) {
-		s.renderBase(c, &tmpl.ViewData{
-			Site: s.site,
-			Page: &tmpl.Page{Title: "友链", Layout: "links", MenuID: "friends", Lang: "zh-CN"},
-		})
-	})
+	// 友链卡片页 /links（内容页化）：pages 表 slug=links 系统页渲染，正文 {% links %} 直出分组卡片。
+	r.GET("/links", s.handleLinksPage)
 
 	// 文库 /wiki（+ /wiki/tags/:tag 标签过滤），对齐 Stellar index_wiki。配置驱动（site.yml wiki 段）。
 	r.GET("/wiki", s.handleWiki)
@@ -41,17 +37,25 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	r.GET("/notebooks/:name", s.handleNotebook)
 	r.GET("/note/:id", s.handleNote)
 
-	// 笔记(手记) /notes，对齐 xaoxuu.com/notes/：上段 content/notes.md 手记正文（quot/okr 等 shortcode），下段本站 moments 近期动态。
+	// 笔记(手记) /notes（内容页化）：正文取 pages 表 slug=notes 系统页（控制台可编辑，
+	// 首次启动自 content/notes.md 迁移）；下段仍为本站 moments 近期动态。
 	r.GET("/notes", func(c *gin.Context) {
 		var contentHTML template.HTML
-		if raw, err := os.ReadFile(s.notesMDPath); err == nil {
-			if rendered, err := s.posts.Render(string(raw)); err == nil {
+		if p, err := s.st.GetPageBySlug(page.NotesSlug); err == nil && p != nil && p.Status == store.StatusPublished {
+			if p.ContentHTML != "" {
+				contentHTML = template.HTML(p.ContentHTML)
+			} else if rendered, e := s.posts.Render(p.ContentMD); e == nil {
+				contentHTML = template.HTML(rendered)
+			}
+		} else if raw, err := os.ReadFile(s.notesMDPath); err == nil {
+			// 兼容未迁移场景（种子失败等）：回退旧文件读取
+			if rendered, e := s.posts.Render(string(raw)); e == nil {
 				contentHTML = template.HTML(rendered)
 			}
 		}
 		data := &tmpl.ViewData{
 			Site:             s.site,
-			Page:             &tmpl.Page{Title: "笔记", Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
+			Page:             &tmpl.Page{Title: s.menuTitle("notes", "笔记"), Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
 			NotesContentHTML: contentHTML,
 			Moments:          s.momentH.RecentItems(5),
 		}
@@ -60,13 +64,9 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		s.renderBase(c, data)
 	})
 
-	// 友链 /friends（友链卡片 + RSS 动态聚合），数据由 friends 聚合器的 /api/friends-aggregated 提供。
-	r.GET("/friends", func(c *gin.Context) {
-		s.renderBase(c, &tmpl.ViewData{
-			Site: s.site,
-			Page: &tmpl.Page{Title: "友链", Layout: "friends", MenuID: "friends", Lang: "zh-CN"},
-		})
-	})
+	// 友链 /friends（内容页化）：pages 表 slug=friends 系统页渲染，正文 md 控制台可编辑，
+	// 友链列表经 {% friends posts:true %} shortcode 嵌入；banner/评论/TOC 同内容页。
+	r.GET("/friends", s.handleFriendsPage)
 
 	// 归档页：按年份分组的文章列表（对齐 Stellar archive.ejs）
 	r.GET("/archives", func(c *gin.Context) {
@@ -306,6 +306,70 @@ func (s *webServer) handleTopicDetail(c *gin.Context) {
 	})
 }
 
+// handleLinksPage 友链卡片页（内容页化）：渲染 pages 表 slug=links 系统页。
+// 正文 {% links %} 服务端直出分组友链卡片；banner/TOC 同内容页。
+func (s *webServer) handleLinksPage(c *gin.Context) {
+	p, err := s.st.GetPageBySlug(page.LinksSlug)
+	if err != nil || p == nil || p.Status != store.StatusPublished {
+		s.render404(c)
+		return
+	}
+	contentHTML := p.ContentHTML
+	if contentHTML == "" {
+		if rendered, e := s.posts.Render(p.ContentMD); e == nil {
+			contentHTML = rendered
+		}
+	}
+	data := &tmpl.ViewData{
+		Site:    s.site,
+		Page:    &tmpl.Page{Title: s.menuTitle("friends", "友链"), Layout: "page", MenuID: p.Slug, Lang: "zh-CN", Slug: p.Slug},
+		Content: template.HTML(contentHTML),
+	}
+	data.TOC = tmpl.ExtractTOCWith(contentHTML, s.tocOptions())
+	s.renderBase(c, data)
+}
+
+// menuTitle 页面标题与菜单配置联动：取 menubar 中 ID==menuID 的菜单项标题，
+// 未配置时回退 fallback（避免标题硬编码与菜单改名脱节）。
+func (s *webServer) menuTitle(menuID, fallback string) string {
+	for _, it := range s.site.Menubar.Items {
+		if it.ID == menuID && it.Title != "" {
+			return it.Title
+		}
+	}
+	return fallback
+}
+
+// handleFriendsPage 友链页（内容页化）：渲染 pages 表 slug=friends 系统页。
+// 正文 md 控制台可编辑（{% friends posts:true %} 嵌入友链组件）；
+// banner 标题/封面/副标题取 pages.friends 设置（缺省回退页面标题）；TOC 与评论同内容页。
+func (s *webServer) handleFriendsPage(c *gin.Context) {
+	p, err := s.st.GetPageBySlug(page.FriendsSlug)
+	if err != nil || p == nil || p.Status != store.StatusPublished {
+		s.render404(c)
+		return
+	}
+	contentHTML := p.ContentHTML
+	if contentHTML == "" {
+		if rendered, e := s.posts.Render(p.ContentMD); e == nil {
+			contentHTML = rendered
+		}
+	}
+	title := s.site.Pages.Friends.Title
+	if title == "" {
+		title = p.Title
+	}
+	pg := &tmpl.Page{Title: title, Layout: "page", MenuID: "friends", Lang: "zh-CN", Slug: p.Slug}
+	if hero := s.site.Pages.Friends.Hero; hero != nil {
+		pg.Banner = hero.Background
+		pg.Subtitle = hero.Description
+	}
+	data := &tmpl.ViewData{Site: s.site, Page: pg, Content: template.HTML(contentHTML)}
+	data.TOC = tmpl.ExtractTOCWith(contentHTML, s.tocOptions())
+	s.fillComments(data, "/friends")
+	s.renderBase(c, data)
+}
+
 // handleWiki 文库页：全量标签 tab + 可选 tag 过滤 + Sort 降序项目列表。
 func (s *webServer) handleWiki(c *gin.Context) {
 	tag := c.Param("tag")
@@ -365,7 +429,7 @@ func (s *webServer) handleWiki(c *gin.Context) {
 	})
 	s.renderBase(c, &tmpl.ViewData{
 		Site:         s.site,
-		Page:         &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN", Tag: tag},
+		Page:         &tmpl.Page{Title: s.menuTitle("wiki", "文库"), Layout: "wiki", MenuID: "wiki", Lang: "zh-CN", Tag: tag},
 		WikiProjects: projects,
 		WikiTags:     tags,
 	})
@@ -401,7 +465,7 @@ func (s *webServer) handleWikiProject(c *gin.Context) {
 	// 无已发布文档：渲染项目首页空态（复用 wiki 布局）
 	s.renderBase(c, &tmpl.ViewData{
 		Site: s.site,
-		Page: &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN"},
+		Page: &tmpl.Page{Title: s.menuTitle("wiki", "文库"), Layout: "wiki", MenuID: "wiki", Lang: "zh-CN"},
 	})
 }
 
@@ -485,6 +549,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiProjectName:        project.DisplayTitle(),
 		WikiProjectIcon:        project.Icon,
 		WikiProjectDescription: project.Description,
+		WikiHero:               project.Hero,
 		// 搜索框项目化：data-filter 限定当前项目 + placeholder 显示项目名
 		SearchFilter:      "/wiki/" + projectID + "/",
 		SearchPlaceholder: "在 " + project.DisplayTitle() + " 中搜索",
