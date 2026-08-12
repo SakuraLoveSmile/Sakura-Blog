@@ -14,6 +14,7 @@ import TaskItem from"@tiptap/extension-task-item";
 import Placeholder from"@tiptap/extension-placeholder";
 import { Markdown } from"tiptap-markdown";
 import { StellarTag } from"@/components/editor/stellar-tag";
+import { CodeBlockWithLang } from"@/components/editor/code-block";
 import { attachmentApi } from"@/api";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from"@/composables/useLocalDraft";
@@ -76,7 +77,10 @@ let lastMarkdown = props.modelValue;
 const editor = useEditor({
  content: props.modelValue,
  extensions: [
- StarterKit,
+ // codeBlock: false 关闭 StarterKit 内置代码块，改由 CodeBlockWithLang 注册
+ // （同 schema 同名扩展不可重复注册；自定义版仅多输出 data-language 供悬停标记/语言标签使用）
+ StarterKit.configure({ codeBlock: false }),
+ CodeBlockWithLang,
  Link.configure({ openOnClick: false }),
  // inline：图片作为段落内联节点——块级 Image 序列化时不补空行，
  // 会把紧随其后的标题合并到同一行破坏 Markdown 结构（round-trip 实测）
@@ -330,6 +334,8 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  font-weight: 700;
  line-height: 1.4;
  margin: 1.2em 0 0.5em;
+ /* 供行首 markdown 井号标记（::before）绝对定位锚定 */
+ position: relative;
 }
 .rte-content .ProseMirror h1 {
  font-size: 1.75em;
@@ -341,6 +347,187 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
 }
 .rte-content .ProseMirror h3 {
  font-size: 1.2em;
+}
+
+/* Typora 式行首标记：悬停标题行时，标题整体右移让位，行首浮现与标题同字号的
+ * 原始 ATX 井号（# / ## / ### ...）。
+ * 逐项对照 Typora 深色截图实测修正：颜色 #CCCCCC（非 #8E8E93）、常规字重 400（非 700）、
+ * 正立不斜体、与所在块同字号 1em、与文本间距约 0.35em、瞬时显隐无过渡动画
+ * （资源包 .md-blockmeta 的 700/italic 与截图实观不符，以截图为准）。
+ * 纯 CSS 伪元素实现：不参与 ProseMirror 事务、不触发序列化，pointer-events 穿透不挡编辑。 */
+.rte-content .ProseMirror h1,
+.rte-content .ProseMirror h2,
+.rte-content .ProseMirror h3,
+.rte-content .ProseMirror h4,
+.rte-content .ProseMirror h5,
+.rte-content .ProseMirror h6 {
+ padding-left: 0;
+}
+.rte-content .ProseMirror h1:hover { padding-left: calc(1ch + 0.35em); }
+.rte-content .ProseMirror h2:hover { padding-left: calc(2ch + 0.35em); }
+.rte-content .ProseMirror h3:hover { padding-left: calc(3ch + 0.35em); }
+.rte-content .ProseMirror h4:hover { padding-left: calc(4ch + 0.35em); }
+.rte-content .ProseMirror h5:hover { padding-left: calc(5ch + 0.35em); }
+.rte-content .ProseMirror h6:hover { padding-left: calc(6ch + 0.35em); }
+
+.rte-content .ProseMirror h1::before,
+.rte-content .ProseMirror h2::before,
+.rte-content .ProseMirror h3::before,
+.rte-content .ProseMirror h4::before,
+.rte-content .ProseMirror h5::before,
+.rte-content .ProseMirror h6::before {
+ content: "";
+ position: absolute;
+ left: 0;
+ top: 0;
+ font-size: 1em;
+ font-weight: 400;
+ font-style: normal;
+ color: #cccccc;
+ opacity: 0;
+ pointer-events: none;
+ user-select: none;
+}
+.rte-content .ProseMirror h1:hover::before {
+ content: "#";
+ opacity: 1;
+}
+.rte-content .ProseMirror h2:hover::before {
+ content: "##";
+ opacity: 1;
+}
+.rte-content .ProseMirror h3:hover::before {
+ content: "###";
+ opacity: 1;
+}
+.rte-content .ProseMirror h4:hover::before {
+ content: "####";
+ opacity: 1;
+}
+.rte-content .ProseMirror h5:hover::before {
+ content: "#####";
+ opacity: 1;
+}
+.rte-content .ProseMirror h6:hover::before {
+ content: "######";
+ opacity: 1;
+}
+
+/* ===== 其他块级语法的 Typora 式行首标记（列表/引用/代码块/表格/水平线）=====
+ * 对照 Typora 深色截图实测逐项修正：
+ * - 标记统一 #CCCCCC + 常规字重 + 正立 + 同正文字号（非加粗斜体）；
+ * - ul/ol：原生符号（•/序号）原位替换为灰色原始标记，文本不整体右移（Typora 无跳行）；
+ * - 代码块：Typora 根本不显示 ```lang 行首标记，语言以悬停出现的「右下角输入控件」
+ *   （官方文档原话）呈现，故语言标签改到右下角悬停显示；三点灯 Typora 亦无（属我方 Stellar 对齐设计，保留）；
+ * - 表格：Typora 悬停显示功能工具栏（行列选择/对齐/删除），无任何文本标记，删除 `<table>`；
+ * - 水平线：Typora 不在线条上方浮动标签，悬停时线条原位替换为 `---` 原文。
+ * 全部纯 CSS，零事务干扰，pointer-events 穿透。 */
+
+/* 标记伪元素公共外观：#CCCCCC + 常规字重 + 正立 + 正文字体（Typora 实测结论） */
+.rte-content .ProseMirror ul:not([data-type="taskList"]) li::before,
+.rte-content .ProseMirror ol li::before,
+.rte-content .ProseMirror ul[data-type="taskList"] li::before,
+.rte-content .ProseMirror blockquote::before,
+.rte-content .ProseMirror hr::before {
+ content: "";
+ position: absolute;
+ font-weight: 400;
+ font-style: normal;
+ color: #cccccc;
+ opacity: 0;
+ pointer-events: none;
+ user-select: none;
+}
+
+/* 无序列表：悬停隐藏原生圆点，在圆点原位显示 "-"，文本不位移 */
+.rte-content .ProseMirror ul:not([data-type="taskList"]) li {
+ position: relative;
+}
+.rte-content .ProseMirror ul:not([data-type="taskList"]) li:hover::marker {
+ visibility: hidden;
+}
+.rte-content .ProseMirror ul:not([data-type="taskList"]) li:hover::before {
+ content: "-";
+ left: -1.15em;
+ opacity: 1;
+}
+
+/* 有序列表：真实序号右对齐原位替换原生序号，文本不位移 */
+.rte-content .ProseMirror ol li {
+ position: relative;
+}
+.rte-content .ProseMirror ol li:hover::marker {
+ visibility: hidden;
+}
+.rte-content .ProseMirror ol li:hover::before {
+ content: counter(list-item) ".";
+ left: -1.7em;
+ width: 1.45em;
+ text-align: right;
+ opacity: 1;
+}
+
+/* 任务列表：悬停原位隐藏复选框，浮现 "- [x] / - [ ]" 原文（Typora 式源码显现，行内重排） */
+.rte-content .ProseMirror ul[data-type="taskList"] li {
+ position: relative;
+}
+.rte-content .ProseMirror ul[data-type="taskList"] li:hover {
+ padding-left: 3ch;
+}
+.rte-content .ProseMirror ul[data-type="taskList"] li:hover > label {
+ visibility: hidden;
+}
+.rte-content .ProseMirror ul[data-type="taskList"] li[data-checked="true"]:hover::before {
+ content: "- [x]";
+ left: 0;
+ opacity: 1;
+}
+.rte-content .ProseMirror ul[data-type="taskList"] li[data-checked="false"]:hover::before {
+ content: "- [ ]";
+ left: 0;
+ opacity: 1;
+}
+
+/* 引用：">" 显示在左竖线内侧留白中，微量让位避免贴线 */
+.rte-content .ProseMirror blockquote:hover {
+ padding-left: calc(1em + 1.2ch);
+}
+.rte-content .ProseMirror blockquote:hover::before {
+ content: ">";
+ left: 0.25em;
+ opacity: 1;
+}
+
+/* 代码块：删除 ```lang 行首标记（Typora 根本不显示）；语言标签移到右下角悬停显示，
+ * 贴近 Typora「右下角语言控件」位置（因 pre overflow-x 裁剪，置于块内右下角） */
+.rte-content .ProseMirror pre code::after {
+ content: attr(data-language);
+ position: absolute;
+ top: auto;
+ bottom: 0.4em;
+ right: 0.75em;
+ font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+ font-size: 0.85em;
+ color: #cccccc;
+ opacity: 0;
+ pointer-events: none;
+}
+.rte-content .ProseMirror pre:hover code::after {
+ opacity: 1;
+}
+.rte-content .ProseMirror pre code[data-language=""]::after {
+ content: none;
+}
+
+/* 水平线：悬停隐藏线条，原位显示 `---` 原文（垂直居中于原线条位置） */
+.rte-content .ProseMirror hr:hover {
+ border-top-color: transparent;
+}
+.rte-content .ProseMirror hr:hover::before {
+ content: "---";
+ top: -0.65em;
+ left: 0;
+ opacity: 1;
 }
 
 .rte-content .ProseMirror ul,
@@ -377,6 +564,8 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  padding-left: 1em;
  margin: 0.75em 0;
  color: #9ca3af;
+ /* 供行首引用标记（::before）锚定 */
+ position: relative;
 }
 
 .rte-content .ProseMirror code {
@@ -434,6 +623,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  margin: 0.75em 0;
  width: 100%;
  table-layout: fixed;
+ position: relative;
 }
 .rte-content .ProseMirror th,
 .rte-content .ProseMirror td {
@@ -462,6 +652,8 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  border: none;
  border-top: 1px solid var(--color-border);
  margin: 1.5em 0;
+ /* 供行首水平线标记（::before）锚定 */
+ position: relative;
 }
 
 .rte-content .ProseMirror a {

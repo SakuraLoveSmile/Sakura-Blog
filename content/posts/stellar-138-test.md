@@ -35,7 +35,7 @@ poster_color: accent
 
 指定高度：
 
-{% emoji twemoji 1f600 height:24px %} {% emoji kukubi %}
+{% emoji twemoji 1f600 height:24px %} {% emoji koubi %}
 
 ### Emoji url: 参数（直接引用外部图片）
 

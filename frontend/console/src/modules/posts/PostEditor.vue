@@ -379,11 +379,11 @@ function handleDiscardDraft() {
       >
         <Icon icon="ri:arrow-left-s-line" class="text-2xl" />
       </button>
-      <h1 class="text-base font-semibold tracking-tight text-foreground sm:text-[17px]">
+      <h1 class="shrink-0 whitespace-nowrap text-base font-semibold tracking-tight text-foreground sm:text-[17px]">
         {{ isEdit ? '编辑文章' : '新建文章' }}
       </h1>
       <div class="flex-1"></div>
-      <div class="flex items-center gap-1.5 sm:gap-2">
+      <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <!-- 编辑器选择（富文本/Markdown） -->
         <div
           class="relative hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-border-strong sm:flex"
@@ -473,8 +473,8 @@ function handleDiscardDraft() {
       </button>
     </div>
 
-    <!-- 编辑区：桌面端左右两栏，移动端单列 + 底部抽屉式侧边栏 -->
-    <div class="editor-wrap flex gap-4 px-4 py-4 sm:gap-6 sm:px-7 sm:py-6">
+    <!-- 编辑区：<640 单列+底部抽屉；640–1024 单列、设置面板下置；≥1024 左右两栏 -->
+    <div class="editor-wrap flex flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-7 sm:py-6 lg:flex-row">
       <!-- 左侧自适应编辑区 -->
       <div class="flex min-w-0 flex-1 flex-col">
         <!-- 标题区 -->
@@ -533,10 +533,10 @@ function handleDiscardDraft() {
         </div>
       </div>
 
-      <!-- 右侧 320px 固定设置面板（桌面端） -->
+      <!-- 右侧设置面板：≥1024 固定 320px 右栏；640–1024 全宽下置于编辑区 -->
       <div
         v-show="sidebarOpen"
-        class="sidebar-desktop sticky top-[72px] hidden w-80 shrink-0 sm:block"
+        class="sidebar-desktop hidden w-full shrink-0 sm:block lg:sticky lg:top-[72px] lg:w-80"
         style="max-height: calc(100vh - 88px); overflow-y: auto;"
       >
         <EditorSidebar
