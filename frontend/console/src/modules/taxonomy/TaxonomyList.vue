@@ -51,7 +51,7 @@ const categoryIconShadow = [
   "0 4px 12px color-mix(in srgb, var(--color-state-error) 35%, transparent)",
 ];
 const categoryIconKeys = [
-  "ri:monitor-line",
+  "ri:computer-line",
   "ri:book-open-line",
   "ri:compass-3-line",
   "ri:star-line",

@@ -146,7 +146,7 @@ function handleOpen(n: NotificationItem) {
 /** 通知类型图标 */
 function typeIcon(type: string): string {
   if (type === "comment_new") return "ri:chat-3-line";
-  if (type === "comment_reply") return "ri:chat-reply-line";
+  if (type === "comment_reply") return "ri:chat-follow-up-line";
   if (type === "comment_approved") return "ri:checkbox-circle-line";
   if (type.startsWith("like_") || type === "moment_like") return "ri:heart-3-line";
   if (type.startsWith("follow_")) return "ri:user-add-line";

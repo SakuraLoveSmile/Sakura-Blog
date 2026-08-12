@@ -2,7 +2,7 @@ import { createApp } from"vue";
 import { createPinia } from"pinia";
 import { VueQueryPlugin, type VueQueryPluginOptions } from"@tanstack/vue-query";
 import { addCollection } from"@iconify/vue";
-import riIcons from"@iconify/json/json/ri.json";
+import riIcons from"./icons/ri-subset.json";
 import { queryClient } from"@/api/query-client";
 import App from"./App.vue";
 import router from"./router";

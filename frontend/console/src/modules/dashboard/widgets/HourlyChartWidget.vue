@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from"vue";
 import { VCard } from"@/components/ui";
-import { Chart } from"chart.js";
+import type { Chart } from"chart.js";
+import { loadChart } from"@/lib/chart-init";
 
 const trendDays = ref(7);
 const hourlyDist = ref<number[]>(Array(24).fill(0));
@@ -21,13 +22,14 @@ async function loadHourly() {
  console.warn('[HourlyChart] Failed to load hourly data, using defaults:', err);
  hourlyDist.value = Array(24).fill(0); // 失败则使用默认数据
  }
- initHourlyChart();
+	 initHourlyChart();
 }
 
-// 初始化时段分布柱状图
-function initHourlyChart() {
+// 初始化时段分布柱状图（Chart.js 懒加载，仅本组件首次渲染时拉取）
+async function initHourlyChart() {
  const canvas = hourlyCanvas.value;
  if (!canvas) return;
+ const { Chart } = await loadChart();
 
  const cs = getComputedStyle(document.documentElement);
  const c1 = cs.getPropertyValue('--color-chart-1').trim() || '#2E8DFF';

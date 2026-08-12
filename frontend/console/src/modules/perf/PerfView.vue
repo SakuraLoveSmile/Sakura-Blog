@@ -2,7 +2,8 @@
 import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
-import { Chart } from "chart.js";
+import type { Chart } from "chart.js";
+import { loadChart } from "@/lib/chart-init";
 import { VPageHeader, VCard, VLoading, VEmpty } from "@/components/ui";
 import {
  perfApi,
@@ -43,9 +44,9 @@ async function load() {
  samples.value = his.data.points || [];
  routes.value = req.data.routes || [];
  throughput.value = req.data.throughput || [];
- requestAnimationFrame(() => {
- initMemChart();
- initTpChart();
+ requestAnimationFrame(async () => {
+ await initMemChart();
+ await initTpChart();
  });
  } catch (e: any) {
  if (e?.response?.status === 403) disabled.value = true;
@@ -122,9 +123,10 @@ function tooltipOpts(cc: ReturnType<typeof chartColors>) {
  };
 }
 
-function initMemChart() {
+async function initMemChart() {
  const canvas = memCanvas.value;
  if (!canvas) return;
+ const { Chart } = await loadChart();
  memChart?.destroy();
  const cc = chartColors();
  const heap = samples.value.filter((p) => p.metric === "heap_alloc_mb");
@@ -180,9 +182,10 @@ function initMemChart() {
  });
 }
 
-function initTpChart() {
+async function initTpChart() {
  const canvas = tpCanvas.value;
  if (!canvas) return;
+ const { Chart } = await loadChart();
  tpChart?.destroy();
  const cc = chartColors();
  tpChart = new Chart(canvas, {
