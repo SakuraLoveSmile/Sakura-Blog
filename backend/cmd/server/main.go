@@ -32,6 +32,7 @@ import (
 	"blog/internal/moment"
 	"blog/internal/notify"
 	"blog/internal/og"
+	ogfonts "blog/internal/og/fonts"
 	"blog/internal/page"
 	"blog/internal/post"
 	seedpkg "blog/internal/seed"
@@ -159,14 +160,14 @@ func main() {
 	// FTS5 全文索引（Spec 25）：在 seed 前装配，保证导入也能同步。
 	searchIdx := setupSearchIndex(st)
 
-	// OG 社交分享图生成器（Spec 27）：字体从 assets/fonts/ 加载，缓存到 data/ogcache/。
+	// OG 社交分享图生成器（Spec 27）：字体走 OG 专用 embed（Spec 61 阶段 1 移出 /assets 公网），
+	// dev 分支直接读磁盘，embed 分支读出字体写入缓存目录供 gg 加载，缓存到 data/ogcache/。
 	ogCacheDir := filepath.Join(filepath.Dir(app.DBPath), "ogcache")
 	var ogFontPath string
 	if devMode {
-		ogFontPath = filepath.Join(app.Root, "frontend", "assets", "fonts", "LXGWWenKai-Regular.ttf")
+		ogFontPath = filepath.Join(app.Root, "backend", "internal", "og", "fonts", "LXGWWenKai-Regular.ttf")
 	} else {
-		// embed 模式：从 embed FS 读出字体写入缓存目录供 gg 加载
-		if data, err := assets.FS.ReadFile("fonts/LXGWWenKai-Regular.ttf"); err == nil {
+		if data, err := ogfonts.FS.ReadFile("LXGWWenKai-Regular.ttf"); err == nil {
 			_ = os.MkdirAll(ogCacheDir, 0o755)
 			ogFontPath = filepath.Join(ogCacheDir, ".font.ttf")
 			_ = os.WriteFile(ogFontPath, data, 0o644)

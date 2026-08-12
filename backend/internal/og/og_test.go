@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-// testFontPath 返回测试用 TTF 路径（项目内 assets/fonts/）。
+// testFontPath 返回测试用 TTF 路径（Spec 61 起字体归 OG 专用 embed，见同目录 fonts/）。
 func testFontPath(t *testing.T) string {
 	t.Helper()
-	// 从 backend/internal/og/ 向上三级到项目根（frontend/assets/fonts/）
-	p := filepath.Join("..", "..", "..", "frontend", "assets", "fonts", "LXGWWenKai-Regular.ttf")
+	// 与 og/fonts embed 同源（backend/internal/og/fonts/）
+	p := filepath.Join("fonts", "LXGWWenKai-Regular.ttf")
 	if _, err := os.Stat(p); err != nil {
 		t.Skipf("font not available: %v", err)
 	}
