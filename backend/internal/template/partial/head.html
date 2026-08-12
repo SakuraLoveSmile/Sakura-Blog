@@ -68,27 +68,9 @@
   {{- /* Chroma 代码高亮令牌色（深色），容器样式复用 main.css */}}
   <link rel="stylesheet" href="/assets/css/highlight.css?v={{asset_ver "/assets/css/highlight.css"}}">
 
-  {{- /* KaTeX 数学公式（Spec 07）：前端 auto-render，goldmark 侧仅保护定界符 */}}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css" crossorigin="anonymous">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
-  <script>
-    (function () {
-      var delimiters = [
-        { left: '$$', right: '$$', display: true },
-        { left: '\\[', right: '\\]', display: true },
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false }
-      ];
-      function renderBlogMath() {
-        if (typeof renderMathInElement !== 'function') return;
-        document.querySelectorAll('.md-text').forEach(function (el) {
-          renderMathInElement(el, { delimiters: delimiters, throwOnError: false });
-        });
-      }
-      document.addEventListener('DOMContentLoaded', renderBlogMath);
-    })();
-  </script>
+  {{- /* KaTeX/Mermaid 按需加载（Spec 61 阶段 1）：页面含数学定界符或 .mermaid 元素才动态注入 CDN，
+    非公式页零请求；loader 幂等自守卫，失败静默降级 */}}
+  <script src="{{url_for "/assets/js/math-mermaid-loader.js"}}?v={{asset_ver "/assets/js/math-mermaid-loader.js"}}" defer></script>
 
   {{- /* 评论区样式（Artalk 视觉对齐版，强调色映射 --theme，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v={{asset_ver "/assets/css/comments.css"}}">
@@ -107,23 +89,6 @@
 
   {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
   {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v={{asset_ver "/assets/css/story.css"}}">{{end}}
-
-  {{- /* Mermaid 图表：CDN + 固定深色主题，PJAX 后重扫 */}}
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <script>
-    (function () {
-      function runMermaid() {
-        if (typeof mermaid === 'undefined') return;
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-        mermaid.run({ querySelector: '.md-text .mermaid, .mermaid' });
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', runMermaid);
-      } else {
-        runMermaid();
-      }
-    })();
-  </script>
 
 {{- /* 阅读体验：进度条 + 图片灯箱（Spec 08）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/reading.css"}}?v={{asset_ver "/assets/css/reading.css"}}">
