@@ -16,20 +16,6 @@ import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/main.css";
 
 addCollection(riIcons);
-import {
- Chart,
- CategoryScale,
- LinearScale,
- BarController,
- LineController,
- BarElement,
- LineElement,
- PointElement, // Chart.js v4: 点元素
- Filler, // Chart.js v4: 面积填充插件（line 数据集 fill:true 依赖）
- Title,
- Tooltip,
- Legend,
-} from"chart.js";
 
 const app = createApp(App);
 app.use(createPinia());
@@ -39,19 +25,5 @@ app.use(router);
 const vueQueryOptions: VueQueryPluginOptions = { queryClient };
 app.use(VueQueryPlugin, vueQueryOptions);
 
-// 注册 Chart.js 必要组件
-Chart.register(
- CategoryScale,
- LinearScale,
- BarController,
- LineController,
- BarElement,
- LineElement,
- PointElement, // Chart.js v4: 点元素
- Filler, // Chart.js v4: 面积填充插件（趋势图 PV fill:true 依赖）
- Title,
- Tooltip,
- Legend
-);
-
+// Chart.js 注册已随 Spec 61 移入 src/lib/chart-init.ts（懒加载，仅 Dashboard/性能页调用）
 app.mount("#app");
