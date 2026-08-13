@@ -2,7 +2,17 @@
 
 每个子目录是一个**可并行开发**的功能 spec，遵循根目录 [`AGENTS.md`](../AGENTS.md)：**一个 agent = 一个 feature 分支 = 一个 worktree，从 dev 拉出，做完合回 dev**。
 
-## 当前批次 · Wave 13（上线冲刺）
+## 当前批次 · Wave 14（优化收尾轮）
+
+来源：Spec 61 优化轮之后的全仓审查（后端 205 Go 文件 + console 111 源文件 + 前台 assets + 仓库卫生，2026-08-13）。已定位问题：Spec 61 笔记优化未接线（半成品）、console Dashboard 4× 重复请求与裸 fetch 绕过 401、确认弹窗失败零反馈、编辑器大文档卡顿、两处一行级 CSS bug、3 处图标走 Iconify CDN、后端 N+1/全量拉取/数据竞争一批。4 阶段顺序推进 + 一节运营收尾（需用户授权）。
+
+| # | Spec | 主题 | 优先级 | 主模块 |
+|---|------|------|--------|--------|
+| 62 | [优化收尾轮（后端收尾 + Console 数据链路/错误处理/编辑器体验 + 测试补强）](62-optimization-round2/spec.md) | 阶段 1 后端（views 入 postCols/listPosts SQL 下推、notebook 接线、atomic.Bool、通知限流、查询收口、死 JS 删除、测试）→ 阶段 2 console（Dashboard 去重接入 axios、错误处理闭环、query key 统一、一行级修复包）→ 阶段 3 编辑器（序列化防抖、预览守卫、tiptap 按需、列表骨架 usePagedList）→ 阶段 4 测试与 format.ts | 高 | `backend/internal/{api,store,comment,notify,feed}` + `cmd/server` + `frontend/console/src` + `frontend/assets/js/{services,plugins}` |
+
+**顺序推进**：4 个 feature 分支（opt2-backend → opt2-console → opt2-editor → opt2-tests）文件面互不交叉，一个合回 dev 后再开下一个，无需冲突矩阵。
+
+## 历史批次 · Wave 13（上线冲刺，代码面已合，配置/内容/部署层待用户推进）
 
 来源：正式上线前体检（2026-08）。代码面已 ready，剩余工作在配置/内容/部署层。
 
