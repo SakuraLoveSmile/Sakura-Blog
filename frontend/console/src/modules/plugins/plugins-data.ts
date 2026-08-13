@@ -294,12 +294,12 @@ export const plugins: PluginMeta[] = [
  { name:"size", desc:"尺寸模式", default:"mix" },
  { name:"ratio", desc:"宽高比", default:"origin" },
  ],
- example:"{% gallery %}\n![](https://picsum.photos/400/300?1)\n![](https://picsum.photos/400/300?2)\n![](https://picsum.photos/400/300?3)\n{% endgallery %}",
+ example:"{% gallery %}\n![首页界面](/assets/img/preview/gallery-1.jpg)\n![文章界面](/assets/img/preview/gallery-2.jpg)\n![技术分享](/assets/img/preview/gallery-3.jpg)\n{% endgallery %}",
  form: [
- { key:"layout", label:"布局", type:"select", role:"named", options: ["grid","flow"], default:"grid" },
- { key:"size", label:"尺寸模式", type:"text", role:"named", default:"mix" },
- { key:"ratio", label:"宽高比", type:"text", role:"named", default:"origin" },
- { key:"content", label:"图片（每行一个 Markdown 图片）", type:"textarea", role:"content", default:"![](https://picsum.photos/400/300?1)\n![](https://picsum.photos/400/300?2)\n![](https://picsum.photos/400/300?3)" },
+  { key:"layout", label:"布局", type:"select", role:"named", options: ["grid","flow"], default:"grid" },
+  { key:"size", label:"尺寸模式", type:"text", role:"named", default:"mix" },
+  { key:"ratio", label:"宽高比", type:"text", role:"named", default:"origin" },
+  { key:"content", label:"图片（每行一个 Markdown 图片）", type:"textarea", role:"content", default:"![首页界面](/assets/img/preview/gallery-1.jpg)\n![文章界面](/assets/img/preview/gallery-2.jpg)\n![技术分享](/assets/img/preview/gallery-3.jpg)" },
  ],
  },
  {
@@ -325,7 +325,7 @@ export const plugins: PluginMeta[] = [
  { name:"gap", desc:"单元格间距", default:"—" },
  { name:"br", desc:"单元格圆角", default:"—" },
  ],
- example:"{% grid c:2 gap:12px %}\n<!-- cell -->\n左栏内容。\n<!-- cell -->\n右栏内容。\n{% endgrid %}",
+ example:"{% grid bg:card c:2 gap:12px %}\n<!-- cell -->\n### 博客技术\n这里写博客相关的技术分享、踩坑记录与教程笔记，卡片样式一眼可辨。\n<!-- cell -->\n### 生活随笔\n记录日常生活的片段、旅行见闻与读书感想。\n{% endgrid %}",
  },
  {
  name:"blockquote",
@@ -353,14 +353,14 @@ export const plugins: PluginMeta[] = [
  { name:"avatar", desc:"头像图片 URL", default:"—" },
  { name:"link", desc:"点击跳转链接（整块包裹）", default:"—" },
  ],
- example:"{% banner title:我的博客 subtitle:记录技术成长 bg:https://picsum.photos/1200/400 avatar:https://picsum.photos/80/80 %}\n欢迎来到我的小站。\n{% endbanner %}",
+ example:"{% banner title:我的博客 subtitle:记录技术成长 bg:/assets/img/preview/banner-bg.jpg avatar:/assets/img/preview/avatar-blog.svg %}\n欢迎来到我的小站。\n{% endbanner %}",
  form: [
- { key:"title", label:"标题", type:"text", role:"named", default:"我的博客" },
- { key:"subtitle", label:"副标题", type:"text", role:"named", default:"记录技术成长" },
- { key:"bg", label:"背景图 URL", type:"text", role:"named", default:"https://picsum.photos/1200/400" },
- { key:"avatar", label:"头像 URL（可选）", type:"text", role:"named", default:"https://picsum.photos/80/80" },
- { key:"link", label:"跳转链接（可选）", type:"text", role:"named" },
- { key:"content", label:"正文", type:"textarea", role:"content", default:"欢迎来到我的小站。" },
+  { key:"title", label:"标题", type:"text", role:"named", default:"我的博客" },
+  { key:"subtitle", label:"副标题", type:"text", role:"named", default:"记录技术成长" },
+  { key:"bg", label:"背景图 URL", type:"text", role:"named", default:"/assets/img/preview/banner-bg.jpg" },
+  { key:"avatar", label:"头像 URL（可选）", type:"text", role:"named", default:"/assets/img/preview/avatar-blog.svg" },
+  { key:"link", label:"跳转链接（可选）", type:"text", role:"named" },
+  { key:"content", label:"正文", type:"textarea", role:"content", default:"欢迎来到我的小站。" },
  ],
  },
  {
@@ -390,11 +390,11 @@ export const plugins: PluginMeta[] = [
  { name:"device", desc:"设备：iphone/ipad/macbook", default:"iphone" },
  { name:"width", desc:"容器最大宽度（如 320px）", default:"—" },
  ],
- example:"{% frame device:iphone width:320px %}\n![screenshot](https://picsum.photos/600/1200)\n{% endframe %}",
+ example:"{% frame device:iphone width:320px %}\n![手机界面截图](/assets/img/preview/frame-shot.jpg)\n{% endframe %}",
  form: [
- { key:"device", label:"设备", type:"select", role:"named", options: ["iphone","ipad","macbook"], default:"iphone" },
- { key:"width", label:"最大宽度（可选）", type:"text", role:"named", default:"320px" },
- { key:"content", label:"媒体内容（Markdown 图片/视频）", type:"textarea", role:"content", default:"![screenshot](https://picsum.photos/600/1200)" },
+  { key:"device", label:"设备", type:"select", role:"named", options: ["iphone","ipad","macbook"], default:"iphone" },
+  { key:"width", label:"最大宽度（可选）", type:"text", role:"named", default:"320px" },
+  { key:"content", label:"媒体内容（Markdown 图片/视频）", type:"textarea", role:"content", default:"![手机界面截图](/assets/img/preview/frame-shot.jpg)" },
  ],
  },
  {
@@ -429,7 +429,7 @@ export const plugins: PluginMeta[] = [
  { name:"height", desc:"头像高度", default:"—" },
  { name:"back", desc:"非空时显示返回首页箭头", default:"—" },
  ],
- example:"{% about avatar:https://picsum.photos/120/120 %}\n这里写关于页正文，支持 **Markdown**。\n{% endabout %}",
+ example:"{% about avatar:/assets/img/preview/avatar-blog.svg %}\n这里写关于页正文，支持 **Markdown**。\n{% endabout %}",
  },
  {
  name:"toc",
@@ -614,9 +614,9 @@ export const plugins: PluginMeta[] = [
  { name:"download", desc:"true 显示下载按钮", default:"false" },
  { name:"ratio", desc:"宽高比（如 16/9）", default:"—" },
  ],
- example:"{% image https://picsum.photos/600/360 风景图 width:80% download:true %}",
+ example:"{% image /assets/img/preview/image-demo.jpg 博客界面截图 width:80% download:true %}",
  form: [
- { key:"src", label:"图片地址", type:"text", role:"positional", default:"https://picsum.photos/600/360" },
+  { key:"src", label:"图片地址", type:"text", role:"positional", default:"/assets/img/preview/image-demo.jpg" },
  { key:"alt", label:"替代文本", type:"text", role:"positional", default:"风景图" },
  { key:"width", label:"宽度", type:"text", role:"named", default:"80%" },
  { key:"bg", label:"背景色", type:"text", role:"named" },
@@ -657,9 +657,9 @@ export const plugins: PluginMeta[] = [
  { name:"width", desc:"最大宽度", default:"100%" },
  { name:"autoplay", desc:"自动播放", default:"false" },
  ],
- example:"{% video https://www.w3schools.com/html/mov_bbb.mp4 %}",
+ example:"{% video /assets/media/preview/sample-video.mp4 %}",
  form: [
- { key:"src", label:"视频地址", type:"text", role:"positional", default:"https://www.w3schools.com/html/mov_bbb.mp4" },
+  { key:"src", label:"视频地址", type:"text", role:"positional", default:"/assets/media/preview/sample-video.mp4" },
  { key:"bilibili", label:"B 站 BV 号（可选）", type:"text", role:"named" },
  { key:"ratio", label:"宽高比", type:"text", role:"named", default:"16/9" },
  { key:"width", label:"最大宽度", type:"text", role:"named", default:"100%" },
@@ -678,9 +678,9 @@ export const plugins: PluginMeta[] = [
  { name:"type", desc:"MIME 类型", default:"audio/mp3" },
  { name:"autoplay", desc:"自动播放", default:"false" },
  ],
- example:"{% audio https://www.w3schools.com/html/horse.mp3 %}",
+ example:"{% audio /assets/media/preview/sample-audio.mp3 %}",
  form: [
- { key:"src", label:"音频地址", type:"text", role:"positional", default:"https://www.w3schools.com/html/horse.mp3" },
+  { key:"src", label:"音频地址", type:"text", role:"positional", default:"/assets/media/preview/sample-audio.mp3" },
  { key:"netease", label:"网易云歌曲 ID（可选）", type:"text", role:"named" },
  { key:"autoplay", label:"自动播放", type:"flag", role:"flag" },
  ],
@@ -696,11 +696,11 @@ export const plugins: PluginMeta[] = [
  { name:"width", desc:"min→窄轮播（slide 25% 宽）/max→容器限宽 800px", default:"—" },
  { name:"effect", desc:"slide/fade/coverflow/cards（后两者需 JS 参数透传）", default:"slide" },
  ],
- example:"{% swiper %}\n![](https://picsum.photos/600/340?1)\n![](https://picsum.photos/600/340?2)\n![](https://picsum.photos/600/340?3)\n{% endswiper %}",
+ example:"{% swiper %}\n![](/assets/img/preview/swiper-1.jpg)\n![](/assets/img/preview/swiper-2.jpg)\n![](/assets/img/preview/swiper-3.jpg)\n{% endswiper %}",
  form: [
- { key:"width", label:"宽度语义", type:"select", role:"named", options: ["","min","max"], default:"" },
- { key:"effect", label:"切换效果", type:"select", role:"named", options: ["slide","fade","coverflow","cards"], default:"slide" },
- { key:"content", label:"轮播图片（每行一张 Markdown 图片）", type:"textarea", role:"content", default:"![](https://picsum.photos/600/340?1)\n![](https://picsum.photos/600/340?2)" },
+  { key:"width", label:"宽度语义", type:"select", role:"named", options: ["","min","max"], default:"" },
+  { key:"effect", label:"切换效果", type:"select", role:"named", options: ["slide","fade","coverflow","cards"], default:"slide" },
+  { key:"content", label:"轮播图片（每行一张 Markdown 图片）", type:"textarea", role:"content", default:"![](/assets/img/preview/swiper-1.jpg)\n![](/assets/img/preview/swiper-2.jpg)" },
  ],
  },
  {
@@ -808,7 +808,7 @@ export const plugins: PluginMeta[] = [
  desc:"拉取外部 Markdown 文件并渲染（客户端 ds-mdrender 服务）。",
  signature:"{% md src %}",
  params: [{ name:"src", desc:"Markdown 文件 URL", default:"—" }],
- example:"{% md https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/main/README.md %}",
+ example:"{% md /assets/md/preview/example.md %}",
  },
 
  // ==================== 数据图表 ====================
@@ -848,7 +848,7 @@ export const plugins: PluginMeta[] = [
  { name:"scene", desc:"场景：group（全员左对齐）/single（me 靠右）", default:"group" },
  { name:"me", desc:"single 模式下靠右显示的参与者 key", default:"—" },
  ],
- example:"{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n name: 小明\n avatar: https://picsum.photos/80/80?1\nbob:\n name: 小红\n avatar: https://picsum.photos/80/80?2\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n<!-- chatcell user:bob md:你好呀～ -->\n{% endchat %}",
+ example:"{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n name: 小明\n avatar: /assets/img/preview/avatar-xiaoming.svg\nbob:\n name: 小红\n avatar: /assets/img/preview/avatar-xiaohong.svg\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n<!-- chatcell user:bob md:你好呀～ -->\n{% endchat %}",
  },
 
  // ==================== GitHub ====================
@@ -918,7 +918,7 @@ export const PLUGIN_PREVIEW: Record<string, PluginPreviewInfo> = {
  gallery: {
   capability: "interactive",
   height: 320,
-  fallback: "图片墙展示正常；灯箱（fancybox）资源不可用时点击无放大效果。",
+  fallback: "图片墙展示本地示例图；灯箱（fancybox）资源不可用时点击无放大效果。",
  },
  folders: {
   capability: "interactive",
@@ -931,6 +931,11 @@ export const PLUGIN_PREVIEW: Record<string, PluginPreviewInfo> = {
   mainJs: true,
   height: 160,
   fallback: "导航栏高亮依赖前台脚本，加载失败时仅显示静态链接。",
+ },
+ grid: {
+  capability: "static",
+  height: 240,
+  fallback: "信息卡为原生网格结构，列宽/间距/圆角由样式直接呈现。",
  },
  // ---- 媒体播放：Swiper ----
  swiper: {
@@ -1001,19 +1006,25 @@ export const PLUGIN_PREVIEW: Record<string, PluginPreviewInfo> = {
   height: 200,
   fallback: "用户卡片使用服务端确定性 Fixture，不发公网请求。",
  },
+ // ---- 数据图表 ----
+ chat: {
+  capability: "static",
+  height: 360,
+  fallback: "聊天记录为服务端渲染结构，头像为本地素材。",
+ },
  // ---- 外部资源：Mermaid / 外部 Markdown ----
  mermaid: {
   capability: "external",
   services: ["mermaid"],
   height: 320,
-  fallback: "Mermaid 资源加载失败时保留图表源码并显示本提示。",
+  fallback: "Mermaid 为本地 vendor（11.16.1），加载失败时保留图表源码并显示本提示。",
  },
  md: {
   capability: "external",
   services: ["mdrender"],
   fixture: "md",
   height: 320,
-  fallback: "外部 Markdown 为本地 Fixture；marked 资源加载失败时显示本提示。",
+  fallback: "外部 Markdown 为本地 Fixture；marked 为本地 vendor，加载失败时显示本提示。",
  },
  // ---- 布局容器 / 文艺装饰 / 提示标注：数据上下文说明 ----
  timeline: {
@@ -1029,22 +1040,22 @@ export const PLUGIN_PREVIEW: Record<string, PluginPreviewInfo> = {
  emoji: {
   capability: "static",
   height: 120,
-  fallback: "表情图为外链图片，网络不可用时显示占位。",
+  fallback: "表情素材为本地资源；未收录的表情名显示占位。",
  },
  image: {
   capability: "static",
   height: 300,
-  fallback: "示例使用外链图片，网络不可用时显示占位。",
+  fallback: "示例图片为本地资源；手动填入的外链图片在无网络时显示占位。",
  },
  video: {
   capability: "static",
   height: 320,
-  fallback: "示例视频来自外链，网络不可用时播放器为空。",
+  fallback: "示例视频为本地资源（体积受控）。",
  },
  audio: {
   capability: "static",
   height: 120,
-  fallback: "示例音频来自外链，网络不可用时播放器为空。",
+  fallback: "示例音频为本地资源（体积受控）。",
  },
 };
 

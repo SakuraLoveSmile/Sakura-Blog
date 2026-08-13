@@ -17,11 +17,11 @@ import AssetGallery from "./AssetGallery.vue";
 import WidgetLibraryView from "./WidgetLibraryView.vue";
 import { WIDGET_META } from "../settings/widget-meta";
 
-// Console 插件库（Spec 23 + Spec 63）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
+// Console 插件库（Spec 23 + Spec 63 + Spec 64）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
 // 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）。
 // 预览复用后端 POST /api/v1/preview/markdown（component-library Fixture 模式）渲染管线，
-// 共享预览运行时（preview/）构建 iframe：注入前台样式与按能力脚本、支持亮/暗主题、
-// 防抖 + 请求序列号、高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
+// 共享预览运行时（preview/）构建 iframe：注入前台样式与按能力脚本、固定暗色主题、
+// 防抖 + 请求序列号、推荐高度 + 内容高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
 
 const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
 const search = ref("");
@@ -53,6 +53,7 @@ const categoryCount = computed(() => {
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
   example.value = p.example;
+  preview.resetHeight(); // 选中标签先应用推荐高度，再按 iframe 实际内容高度回传调整
   preview.scheduleRender(example.value, true);
 }
 
@@ -302,7 +303,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
           ></textarea>
         </div>
 
-        <!-- 预览（Spec 63：共享运行时 + 主题切换 + Fixture 标识 + 降级态） -->
+        <!-- 预览（Spec 63 + Spec 64：共享运行时 + 固定暗色 + Fixture 标识 + 降级态） -->
         <div class="rounded-xl border border-border overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
             <span class="text-xs font-medium text-text-tertiary flex items-center gap-1.5">
@@ -317,15 +318,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               >
                 <Icon icon="ri:database-2-line" />数据为预览 Fixture
               </span>
-              <button
-                type="button"
-                :title="preview.theme.value === 'dark' ? '切换到亮色预览' : '切换到暗色预览'"
-                class="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-accent"
-                @click="preview.toggleTheme()"
-              >
-                <Icon :icon="preview.theme.value === 'dark' ? 'ri:sun-line' : 'ri:moon-line'" />
-                {{ preview.theme.value === "dark" ? "亮色" : "暗色" }}
-              </button>
               <button
                 type="button"
                 title="重新渲染"
@@ -360,7 +352,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               ref="previewFrame"
               :srcdoc="preview.srcdoc.value"
               class="w-full border-0"
-              :style="{ height: preview.frameHeight.value + 'px', minHeight: preview.frameHeight.value + 'px', resize: 'vertical', overflow: 'auto' }"
+              :style="{ height: preview.frameHeight.value + 'px' }"
               sandbox="allow-same-origin allow-scripts"
             ></iframe>
           </div>

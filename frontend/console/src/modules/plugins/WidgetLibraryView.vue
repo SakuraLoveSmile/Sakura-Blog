@@ -319,7 +319,6 @@ function buildWidgetDoc(fullHtml: string): string {
   } else {
     bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">预览渲染失败：未找到侧栏结构</p>`;
   }
-  const themeAttr = doc.documentElement.getAttribute("data-theme") || "dark";
   const bodyClass = doc.body.className || "";
   // 数据服务懒加载 scan 块（base.html 注入，URL 已服务端渲染）：复用页面清单，
   // 内置 shim 提供 utils/ctx/def/deps，不再需要页面自身的 utils 内联块。
@@ -333,8 +332,8 @@ aside.l_left{position:relative;width:300px;max-width:90%;margin:0 auto;max-heigh
 .l_left .leftbar-container{height:auto}
 .l_left .leftbar-container >.widgets{overflow:visible;mask:none;-webkit-mask:none;flex-grow:0}
 </style>`;
+  // Spec 64：预览统一固定暗色（buildPreviewDoc 不接收主题参数）
   return buildPreviewDoc({
-    theme: themeAttr === "light" ? "light" : "dark",
     bodyHtml: bodyInner,
     bodyClass,
     wrapContent: false,

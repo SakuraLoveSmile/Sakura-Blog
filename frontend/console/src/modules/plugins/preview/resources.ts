@@ -1,9 +1,9 @@
-// 组件库预览资源映射（Spec 63）：按插件预览能力把前台真实资源按需接入 iframe。
+// 组件库预览资源映射（Spec 63 + Spec 64）：按插件预览能力把前台真实资源按需接入 iframe。
 // 纯 TS，可脱离 Vue 单测。资源路径与 base.html / head.html 中的前台加载保持一致：
 // - main.js：tabs/folding/navbar 等交互初始化（stellar.initPage 内部有缺失守卫）；
 // - services/*.js：数据服务（rating/vote/friends/sites/mdrender/swiper）；
-// - math-mermaid-loader.js：Mermaid/KaTeX 按需加载（失败静默降级为源码）；
-// - marked：mdrender/timeline 的正文渲染依赖（CDN，失败时降级提示）。
+// - math-mermaid-loader.js：Mermaid/KaTeX 按需加载（本地 vendor 优先，失败降级为源码）；
+// - marked：mdrender/timeline 的正文渲染依赖（本地 vendor，预览运行时不得加载 CDN）。
 
 import type { PluginCapability, PluginPreviewInfo } from "../plugins-data.ts";
 
@@ -19,8 +19,11 @@ export const SERVICE_SCRIPTS: Record<string, string> = {
   mermaid: "/assets/js/math-mermaid-loader.js",
 };
 
-/** marked 依赖（mdrender/timeline 渲染正文用，与 base.html deps 一致）。 */
-export const MARKED_CDN = "https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js";
+/**
+ * marked 依赖（mdrender/timeline 渲染正文用）。
+ * Spec 64：固定为本地 vendor（marked@13.0.3），预览运行时不再加载 CDN。
+ */
+export const MARKED_CDN = "/assets/vendor/marked/marked.umd.min.js";
 
 /** 前台交互初始化脚本（tabs/folding/navbar 等）。 */
 export const MAIN_JS = "/assets/js/main.js";

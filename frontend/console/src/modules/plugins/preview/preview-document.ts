@@ -1,19 +1,17 @@
-// 组件库预览 iframe 文档构建（Spec 63）：标签插件库与侧边栏组件库共用同一套
-// 「CSS 注入 + 前台运行时 shim + 按能力脚本注入 + 降级检测 + 高度回传」逻辑，
+// 组件库预览 iframe 文档构建（Spec 63 + Spec 64 暗色单模式）：标签插件库与侧边栏组件库共用
+// 同一套「CSS 注入 + 前台运行时 shim + 按能力脚本注入 + 降级检测 + 高度回传」逻辑，
 // 避免两套预览行为继续分叉。纯 TS，可脱离 Vue 单测。
 //
+// 预览统一为暗色单模式（Spec 64）：不接收主题参数，固定输出 data-theme="dark"。
 // iframe 内注入的 ctx/def/deps/utils 为 base.html 前台运行时的等价最小版：
 // - ctx：main.js / services 依赖的全局对象（data_cache 关闭，保证预览每次拿最新 Fixture）；
 // - def：friends.js/sites.js 读取的占位素材；
-// - deps：marked 等懒加载依赖的 CDN 地址；
+// - deps：marked 等懒加载依赖的本地 vendor 地址（预览运行时不得加载 CDN）；
 // - utils：css/js/dom/request 等加载辅助（对齐 base.html utils 的语义）。
 
 import { PREVIEW_STYLES } from "./resources.ts";
 
-export type PreviewTheme = "light" | "dark";
-
 export interface PreviewDocOptions {
-  theme: PreviewTheme;
   /** 渲染后的正文/片段 HTML（标签插件为 goldmark 产物；侧栏组件为提取的 aside 片段） */
   bodyHtml: string;
   /** 需要加载的前台脚本（完整 URL 或 /assets 相对路径；依赖须按序排列） */
@@ -36,7 +34,7 @@ export interface PreviewDocOptions {
 const PREVIEW_SHIM = `<script>
 const ctx = { date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' }, root: '/', tag_plugins: { chat: {} }, search: { service: 'local_search', path: '/search.json' }, data_cache: { enable: false, default_ttl: 0 }, copycode: {}, fancybox: {} };
 const def = { avatar: '', cover: '', loading: '' };
-const deps = { marked: 'https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js', lazyload: '/assets/js/vendor/lazyload.min.js' };
+const deps = { marked: '/assets/vendor/marked/marked.umd.min.js', lazyload: '/assets/js/vendor/lazyload.min.js' };
 const utils = {
   _loadedStyles: new Set(), _loadedScripts: new Set(), _loadedElements: new WeakSet(), _inflight: new Map(),
   css: function (href) { if (utils._loadedStyles.has(href)) return null; var ss = document.createElement('link'); ss.rel = 'stylesheet'; ss.href = href; utils._loadedStyles.add(href); document.head.appendChild(ss); return ss; },
@@ -151,14 +149,35 @@ function safeHtml(html: string): string {
   return html.replace(/<\/script/gi, "<\\/script");
 }
 
+// ---------- 预览高度（Spec 64：推荐高度 + 内容高度回传） ----------
+
+/** 预览 iframe 高度上下限：小插件不再被固定 420px 画布包围，高内容最大 900px。 */
+export const MIN_PREVIEW_HEIGHT = 60;
+export const MAX_PREVIEW_HEIGHT = 900;
+/** 未登记推荐高度的插件（静态兜底）初始高度。 */
+export const DEFAULT_PREVIEW_HEIGHT = 240;
+
+/**
+ * 解析插件推荐初始高度：取 PluginPreviewInfo.height，缺省用默认值，并钳制到上下限。
+ * 纯函数，可脱离 Vue 单测（tests/plugin-preview.test.ts）。
+ */
+export function resolvePreviewHeight(info: { height?: number }): number {
+  const h = info.height ?? DEFAULT_PREVIEW_HEIGHT;
+  return Math.min(MAX_PREVIEW_HEIGHT, Math.max(MIN_PREVIEW_HEIGHT, h));
+}
+
+/** 按内容高度回传值计算 iframe 高度：钳制在 [minHeight, MAX_PREVIEW_HEIGHT] 内。 */
+export function clampPreviewHeight(reported: number, minHeight: number): number {
+  return Math.min(MAX_PREVIEW_HEIGHT, Math.max(minHeight, Math.ceil(reported) + 24));
+}
+
 /**
  * 构建预览 iframe 文档（srcdoc）。标签插件库与侧边栏组件库共用：
- * 样式注入（main.css/tag-plugins.css/highlight.css + 字体）、主题属性、
+ * 样式注入（main.css/tag-plugins.css/highlight.css + 字体）、固定暗色主题、
  * 前台运行时 shim、按能力脚本、降级提示、高度回传。
  */
 export function buildPreviewDoc(opts: PreviewDocOptions): string {
   const {
-    theme,
     bodyHtml,
     scripts = [],
     extraHead = "",
@@ -180,7 +199,7 @@ export function buildPreviewDoc(opts: PreviewDocOptions): string {
     : safeHtml(bodyHtml);
 
   return `<!doctype html>
-<html lang="zh-CN" data-theme="${theme}">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

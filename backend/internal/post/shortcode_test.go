@@ -595,3 +595,148 @@ func TestRenderComponentPreviewLinksFixture(t *testing.T) {
 		}
 	}
 }
+
+// ---------- Spec 64：暗色预览收尾（本地资源 / emoji / TOC / albums-posters variant） ----------
+
+func TestRenderComponentPreviewEmojiLocalized(t *testing.T) {
+	// component-library 模式：内置 emoji 源（qq/tieba/twemoji）CDN 地址改写为本地素材；
+	// url: 分支的真实外链不受影响。
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("开心 {% emoji aini %} 点赞 {% emoji twemoji 1f44d %} 滑稽 {% emoji tieba huaji %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`src="/assets/img/preview/emoji/qq-aini.gif"`,
+		`src="/assets/img/preview/emoji/twemoji-1f44d.svg"`,
+		`src="/assets/img/preview/emoji/tieba-huaji.png"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("emoji fixture missing %q in: %s", want, out)
+		}
+	}
+	if strings.Contains(out, "cdn.jsdelivr.net") {
+		t.Errorf("emoji fixture should not keep CDN url: %s", out)
+	}
+	// url: 分支保持用户提供的真实 URL
+	outURL, err := s.RenderComponentPreview("{% emoji url:https://example.com/x.png 名称 %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview url: %v", err)
+	}
+	if !strings.Contains(outURL, `src="https://example.com/x.png"`) {
+		t.Errorf("url: branch should keep real url: %s", outURL)
+	}
+	// 无 profile 的普通渲染保持 CDN 源（生产行为不变）
+	outNormal, err := s.Render("开心 {% emoji aini %}")
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if !strings.Contains(outNormal, "cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/qq/aini.gif") {
+		t.Errorf("normal render should keep CDN emoji url: %s", outNormal)
+	}
+}
+
+func TestRenderComponentPreviewTOCFixture(t *testing.T) {
+	// component-library 模式：{% toc %} 的 details 壳内填充确定性两级目录；
+	// 无 profile 时保持空壳（生产行为不变）。
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% toc 本文目录 %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`<details class="toc" open><summary>本文目录</summary>`,
+		`<ol class="toc"`,
+		`第一章 背景`,
+		`1.1 项目动机`,
+		`第二章 方案`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("toc fixture missing %q in: %s", want, out)
+		}
+	}
+	outNormal, err := s.Render("{% toc 本文目录 %}")
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if strings.Contains(outNormal, "第一章 背景") {
+		t.Errorf("normal render should keep empty toc shell: %s", outNormal)
+	}
+}
+
+func TestRenderComponentPreviewGHFixtureLocalAvatar(t *testing.T) {
+	// GitHub Fixture 头像为本地素材，链接保留真实 GitHub 地址。
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% ghrepo vuejs/vue %}\n\n{% ghuser octocat %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	if !strings.Contains(out, `/assets/img/preview/avatar-gh-vuejs.svg`) {
+		t.Errorf("ghrepo avatar should be local: %s", out)
+	}
+	if !strings.Contains(out, `/assets/img/preview/avatar-gh-octocat.svg`) {
+		t.Errorf("ghuser avatar should be local: %s", out)
+	}
+	if strings.Contains(out, "avatars.githubusercontent.com") {
+		t.Errorf("fixture should not hit github avatar cdn: %s", out)
+	}
+	if !strings.Contains(out, `https://github.com/vuejs/vue`) {
+		t.Errorf("fixture should keep real github link: %s", out)
+	}
+}
+
+func TestRewritePreviewDataAPIsAlbumsPostersVariant(t *testing.T) {
+	// albums/posters 的 ds-friends data-api 改写为带 variant 的本地 Fixture 端点；
+	// 普通 friends 改写不带 variant。
+	in := `<div class="tag-plugin albums-wrap"><div class="data-service ds-friends" data-api="https://example.com/data.json"><div class="tag-plugin gallery grid-box"></div></div></div>` +
+		`<div class="tag-plugin posters-wrap"><div class="data-service ds-friends" data-api="https://example.com/posters.json"><div class="tag-plugin gallery grid-box"></div></div></div>` +
+		`<div class="tag-plugin users-wrap"><div class="data-service ds-friends" data-api="/api/friends"><div class="grid-box"></div></div></div>`
+	out := rewritePreviewDataAPIs(in)
+	for _, want := range []string{
+		`data-api="/api/v1/preview/friends?variant=albums"`,
+		`data-api="/api/v1/preview/friends?variant=posters"`,
+		`data-api="/api/v1/preview/friends"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("rewrite missing %q in: %s", want, out)
+		}
+	}
+	if strings.Contains(out, "example.com") {
+		t.Errorf("rewrite should drop external api url: %s", out)
+	}
+}
+
+func TestRenderComponentPreviewDefaultExamplesOffline(t *testing.T) {
+	// 代表性默认示例经 component-library 渲染后，资源属性（src/data-src/data-api/source）
+	// 不得残留公网地址（href 链接除外）；emoji/md/albums/sites 均被本地化改写。
+	s := NewService(t.TempDir())
+	examples := []string{
+		"{% gallery %}\n![a](/assets/img/preview/gallery-1.jpg)\n{% endgallery %}",
+		"{% banner title:t bg:/assets/img/preview/banner-bg.jpg avatar:/assets/img/preview/avatar-blog.svg %}b{% endbanner %}",
+		"{% frame device:iphone width:320px %}\n![s](/assets/img/preview/frame-shot.jpg)\n{% endframe %}",
+		"{% about avatar:/assets/img/preview/avatar-blog.svg %}a{% endabout %}",
+		"{% image /assets/img/preview/image-demo.jpg 图 width:80% download:true %}",
+		"{% video /assets/media/preview/sample-video.mp4 %}",
+		"{% audio /assets/media/preview/sample-audio.mp3 %}",
+		"{% swiper %}\n![](/assets/img/preview/swiper-1.jpg)\n{% endswiper %}",
+		"{% md /assets/md/preview/example.md %}",
+		"{% albums api:https://example.com/data.json size:m %}",
+		"{% posters api:https://example.com/posters.json size:s %}",
+		"{% sites api:https://example.com/sites.json %}",
+		"{% chat iphone style:qq title:群 me:b %}\nalice:\n name: 小明\n avatar: /assets/img/preview/avatar-xiaoming.svg\n<!-- chatcell user:alice md:hi -->\n{% endchat %}",
+		"{% emoji aini %}",
+		"{% toc 目录 %}",
+		"{% mermaid %}\ngraph TB\n A[开始] --> B[结束]\n{% endmermaid %}",
+	}
+	for _, ex := range examples {
+		out, err := s.RenderComponentPreview(ex)
+		if err != nil {
+			t.Fatalf("RenderComponentPreview(%q): %v", ex, err)
+		}
+		for _, attr := range []string{`src="http`, `data-src="http`, `data-api="http`, `srcset="http`, `<source src="http`} {
+			if strings.Contains(out, attr) {
+				t.Errorf("example %q leaves external %s in: %s", ex, attr, out)
+			}
+		}
+	}
+}

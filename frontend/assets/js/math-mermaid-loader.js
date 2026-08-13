@@ -1,5 +1,7 @@
-// Spec 61 阶段 1：KaTeX（数学公式）/ Mermaid（图表）按需加载器。
-// 页面 .md-text 中存在数学定界符或 .mermaid 元素时才动态注入 CDN 资源，非公式页零请求。
+// Spec 61 阶段 1 + Spec 64 依赖本地化：KaTeX（数学公式）/ Mermaid（图表）按需加载器。
+// 页面 .md-text 中存在数学定界符或 .mermaid 元素时才动态注入资源，非公式页零请求。
+// Spec 64：mermaid@11.16.1 固定为本地 vendor（/assets/vendor/mermaid/），本地加载失败时
+// 才回退 CDN（与 Spec 53 swiper 依赖本地化同原则）；KaTeX 未 vendor，维持 CDN。
 // 导航为整页刷新（Spec 59 起无 PJAX），DOMContentLoaded 扫描一次即可；加载失败静默降级（保持原文）。
 (function () {
   "use strict";
@@ -7,7 +9,8 @@
   var KATEX_CSS = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css";
   var KATEX_JS = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js";
   var KATEX_AUTORENDER = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js";
-  var MERMAID_JS = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
+  var MERMAID_JS = "/assets/vendor/mermaid/mermaid.min.js";
+  var MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
   var MATH_DELIMITERS = [
     { left: "$$", right: "$$", display: true },
     { left: "\\[", right: "\\]", display: true },
@@ -47,6 +50,13 @@
     });
   }
 
+  // 本地 vendor 优先，加载失败回退 CDN（mermaid 专用；KaTeX 未 vendor 直接用 CDN）。
+  function loadScriptLocalFirst(localSrc, cdnSrc) {
+    return loadScript(localSrc).catch(function () {
+      return loadScript(cdnSrc);
+    });
+  }
+
   function loadMath() {
     loadCss(KATEX_CSS);
     loadScript(KATEX_JS)
@@ -62,12 +72,12 @@
   }
 
   function loadMermaid() {
-    loadScript(MERMAID_JS)
+    loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN)
       .then(function () {
         mermaid.initialize({ startOnLoad: false, theme: "dark" });
         mermaid.run({ querySelector: ".md-text .mermaid, .mermaid" });
       })
-      .catch(function () { /* CDN 不可达：静默降级，图表显示源码 */ });
+      .catch(function () { /* 本地 vendor 与 CDN 均不可达：静默降级，图表显示源码 */ });
   }
 
   function init() {

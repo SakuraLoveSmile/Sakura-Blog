@@ -306,3 +306,35 @@ func TestPreviewFixtureFriendsSitesMDStates(t *testing.T) {
 
 // 确保 store 导入被使用（GetRating/GetVotes 返回类型引用）。
 var _ = store.RatingSummary{}
+
+// ---------- Spec 64：friends variant（albums/posters） ----------
+
+func TestPreviewFriendsVariantAlbumsPosters(t *testing.T) {
+	// /api/v1/preview/friends?variant=albums|posters 分别返回方形专辑/竖版海报数据，
+	// 封面为本地素材；缺省 variant 保持普通友链卡（内联 SVG 头像）。
+	r, _, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+	w := do2FA(r, http.MethodGet, "/api/v1/preview/friends?variant=albums", "", cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("albums variant: status=%d", w.Code)
+	}
+	for _, want := range []string{`/assets/img/preview/album-1.jpg`, `"首张专辑"`, `"现场版"`} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("albums variant missing %q: %s", want, w.Body.String())
+		}
+	}
+	w = do2FA(r, http.MethodGet, "/api/v1/preview/friends?variant=posters", "", cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("posters variant: status=%d", w.Code)
+	}
+	for _, want := range []string{`/assets/img/preview/poster-1.jpg`, `"夏日海报"`, `"春日海报"`} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("posters variant missing %q: %s", want, w.Body.String())
+		}
+	}
+	// 缺省 variant：普通友链卡（data URI 头像）
+	w = do2FA(r, http.MethodGet, "/api/v1/preview/friends", "", cookie)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "data:image/svg+xml") {
+		t.Errorf("default friends should keep data-uri avatar: status=%d body=%s", w.Code, w.Body.String())
+	}
+}

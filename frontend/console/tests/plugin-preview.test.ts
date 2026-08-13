@@ -17,7 +17,14 @@ import {
   previewScriptsFor,
   FIXTURE_LABELS,
 } from "../src/modules/plugins/preview/resources.ts";
-import { buildPreviewDoc } from "../src/modules/plugins/preview/preview-document.ts";
+import {
+  buildPreviewDoc,
+  MIN_PREVIEW_HEIGHT,
+  MAX_PREVIEW_HEIGHT,
+  DEFAULT_PREVIEW_HEIGHT,
+  resolvePreviewHeight,
+  clampPreviewHeight,
+} from "../src/modules/plugins/preview/preview-document.ts";
 import { RenderGate } from "../src/modules/plugins/preview/render-gate.ts";
 
 const SURFACE = "插件预览";
@@ -100,15 +107,14 @@ test(`${SURFACE} · GitHub 卡片为 service 类且无客户端脚本（服务�
 
 // ---------- iframe 文档构建 ----------
 
-test(`${SURFACE} · light/dark 主题属性正确`, () => {
-  const light = buildPreviewDoc({ theme: "light", bodyHtml: "<p>x</p>" });
-  assert.ok(light.includes('data-theme="light"'), "light 文档应带 data-theme=light");
-  const dark = buildPreviewDoc({ theme: "dark", bodyHtml: "<p>x</p>" });
-  assert.ok(dark.includes('data-theme="dark"'), "dark 文档应带 data-theme=dark");
+test(`${SURFACE} · 预览文档只有暗色主题（Spec 64 暗色单模式）`, () => {
+  const doc = buildPreviewDoc({ bodyHtml: "<p>x</p>" });
+  assert.ok(doc.includes('data-theme="dark"'), "文档必须固定 data-theme=dark");
+  assert.ok(!doc.includes('data-theme="light"'), "不得出现亮色主题属性");
 });
 
 test(`${SURFACE} · 文档注入前台样式、shim 与主题背景`, () => {
-  const doc = buildPreviewDoc({ theme: "dark", bodyHtml: "<p>x</p>" });
+  const doc = buildPreviewDoc({ bodyHtml: "<p>x</p>" });
   for (const want of [
     "/assets/css/main.css",
     "/assets/css/tag-plugins.css",
@@ -120,10 +126,23 @@ test(`${SURFACE} · 文档注入前台样式、shim 与主题背景`, () => {
   }
 });
 
+test(`${SURFACE} · 预览文档无 CDN 脚本地址（Spec 64 依赖本地化）`, () => {
+  const doc = buildPreviewDoc({
+    bodyHtml: "<p>x</p>",
+    scripts: previewScriptsFor(pluginByName("md")),
+  });
+  // 注入脚本（script src）与 shim deps 必须全部为本地路径
+  const scriptSrcs = [...doc.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
+  for (const src of scriptSrcs) {
+    assert.ok(src.startsWith("/assets/"), `脚本必须为本地路径: ${src}`);
+  }
+  assert.ok(doc.includes("/assets/vendor/marked/marked.umd.min.js"), "marked 应为本地 vendor");
+  assert.ok(!doc.includes("jsdelivr") && !doc.includes("gcore"), "文档不得出现 CDN 域名");
+});
+
 test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
   // 降级提示检测：mermaid 无 svg、mdrender 空、数据服务空 grid-box
   const doc = buildPreviewDoc({
-    theme: "dark",
     bodyHtml: '<div class="mermaid">graph TB</div><div class="data-service ds-mdrender" src="/api/v1/preview/md"></div>',
   });
   for (const want of [
@@ -151,7 +170,7 @@ test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
 });
 
 test(`${SURFACE} · 正文含 </script 时被安全转义（防 iframe 文档截断）`, () => {
-  const doc = buildPreviewDoc({ theme: "dark", bodyHtml: '<script>alert(1)</script>' });
+  const doc = buildPreviewDoc({ bodyHtml: '<script>alert(1)</script>' });
   assert.ok(!doc.includes("</script><script>alert"), "正文 script 闭合标签必须被转义");
 });
 
@@ -224,5 +243,45 @@ test(`${SURFACE} · 门闸 dispose 后不再触发待执行渲染`, () => {
     assert.equal(ran, false, "dispose 后待执行渲染应被取消");
   } finally {
     mock.timers.reset();
+  }
+});
+
+// ---------- 预览高度（Spec 64：推荐高度 + 内容高度回传） ----------
+
+test(`${SURFACE} · 推荐高度解析：登记高度直接采用，缺省用默认值，钳制到上下限`, () => {
+  assert.equal(resolvePreviewHeight({ height: 180 }), 180);
+  assert.equal(resolvePreviewHeight({ height: 420 }), 420);
+  assert.equal(resolvePreviewHeight({}), DEFAULT_PREVIEW_HEIGHT);
+  assert.equal(resolvePreviewHeight({ height: 20 }), MIN_PREVIEW_HEIGHT, "低于下限应钳制到下限");
+  assert.equal(resolvePreviewHeight({ height: 5000 }), MAX_PREVIEW_HEIGHT, "超过上限应钳制到上限");
+  // 实际清单抽查：小行内组件推荐高度远小于旧固定 420 画布
+  assert.ok(resolvePreviewHeight(pluginByName("emoji")) < 200, "emoji 不应被 420px 画布包围");
+  assert.ok(resolvePreviewHeight(pluginByName("chat")) >= 300, "chat 高内容应有较大推荐高度");
+});
+
+test(`${SURFACE} · 内容高度回传钳制：不低于推荐高度、不超上限`, () => {
+  const min = resolvePreviewHeight({ height: 180 });
+  assert.equal(clampPreviewHeight(100, min), min, "回传低于推荐高度时保持推荐高度");
+  assert.equal(clampPreviewHeight(400, min), 424, "回传高于推荐高度时按内容 +24px");
+  assert.equal(clampPreviewHeight(5000, min), MAX_PREVIEW_HEIGHT, "超上限钳制到 900");
+});
+
+// ---------- 默认示例资源本地化（Spec 64：不依赖公网） ----------
+
+test(`${SURFACE} · 所有默认示例的资源地址均为本地（无 picsum/w3schools/GitHub 头像/emoji CDN）`, () => {
+  const forbidden = [
+    "picsum.photos",
+    "w3schools.com",
+    "avatars.githubusercontent.com",
+    "raw.githubusercontent.com",
+    "cdn.jsdelivr.net",
+  ];
+  for (const p of plugins) {
+    const texts = [p.example, ...(p.form || []).map((f) => f.default || "")];
+    for (const t of texts) {
+      for (const host of forbidden) {
+        assert.ok(!t.includes(host), `${p.name} 默认示例仍含公网资源 ${host}: ${t.slice(0, 60)}`);
+      }
+    }
   }
 });

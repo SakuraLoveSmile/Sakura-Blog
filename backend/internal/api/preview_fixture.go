@@ -75,6 +75,10 @@ func (h *Handler) previewVoteFixtureUpdate(c *gin.Context) {
 
 // previewFriendsFixture GET /api/v1/preview/friends：确定性友链卡片数据
 // （形状对齐 friends.js 期望：{content:[{title,url,html_url,avatar_url,labels}]}）。
+// Spec 64：新增内部预览参数 variant=default|albums|posters（仍需登录，仅供组件库使用）：
+// - default：普通友链卡（内联 SVG 头像）；
+// - albums：方形专辑封面卡（本地 /assets/img/preview/album-*.jpg）；
+// - posters：竖版海报卡（本地 /assets/img/preview/poster-*.jpg）。
 func (h *Handler) previewFriendsFixture(c *gin.Context) {
 	switch fixtureState(c) {
 	case fixtureStateError:
@@ -82,12 +86,29 @@ func (h *Handler) previewFriendsFixture(c *gin.Context) {
 	case fixtureStateEmpty:
 		c.JSON(http.StatusOK, gin.H{"content": []any{}})
 	default:
-		c.JSON(http.StatusOK, gin.H{"content": []gin.H{
-			{"title": "Fixture 博客", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": fixtureAvatar("B"), "labels": []gin.H{}},
-			{"title": "Fixture Docs", "url": "https://docs.example.com", "html_url": "https://docs.example.com", "avatar_url": fixtureAvatar("D"), "labels": []gin.H{}},
-			{"title": "Alice 的小站", "url": "https://alice.example.com", "html_url": "https://alice.example.com", "avatar_url": fixtureAvatar("A"), "labels": []gin.H{}},
-			{"title": "Bob 实验室", "url": "https://bob.example.com", "html_url": "https://bob.example.com", "avatar_url": fixtureAvatar("B"), "labels": []gin.H{}},
-		}})
+		switch c.Query("variant") {
+		case "albums":
+			c.JSON(http.StatusOK, gin.H{"content": []gin.H{
+				{"title": "首张专辑", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/album-1.jpg", "labels": []gin.H{}},
+				{"title": "第二专辑", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/album-2.jpg", "labels": []gin.H{}},
+				{"title": "精选集", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/album-3.jpg", "labels": []gin.H{}},
+				{"title": "现场版", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/album-4.jpg", "labels": []gin.H{}},
+			}})
+		case "posters":
+			c.JSON(http.StatusOK, gin.H{"content": []gin.H{
+				{"title": "夏日海报", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/poster-1.jpg", "labels": []gin.H{}},
+				{"title": "秋日海报", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/poster-2.jpg", "labels": []gin.H{}},
+				{"title": "冬日海报", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/poster-3.jpg", "labels": []gin.H{}},
+				{"title": "春日海报", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": "/assets/img/preview/poster-4.jpg", "labels": []gin.H{}},
+			}})
+		default:
+			c.JSON(http.StatusOK, gin.H{"content": []gin.H{
+				{"title": "Fixture 博客", "url": "https://example.com", "html_url": "https://example.com", "avatar_url": fixtureAvatar("B"), "labels": []gin.H{}},
+				{"title": "Fixture Docs", "url": "https://docs.example.com", "html_url": "https://docs.example.com", "avatar_url": fixtureAvatar("D"), "labels": []gin.H{}},
+				{"title": "Alice 的小站", "url": "https://alice.example.com", "html_url": "https://alice.example.com", "avatar_url": fixtureAvatar("A"), "labels": []gin.H{}},
+				{"title": "Bob 实验室", "url": "https://bob.example.com", "html_url": "https://bob.example.com", "avatar_url": fixtureAvatar("B"), "labels": []gin.H{}},
+			}})
+		}
 	}
 }
 
