@@ -151,6 +151,49 @@ Spec 61 优化轮（前端体积 -90.5%、构建流程、安全加固、密码�
 2. UI 子任务按各阶段「UI 验收边界」逐项勾选，截图存入本 spec 目录 `baselines/`（入库，勿放 `.tmp/`）
 3. 验证产物写入各自 worktree 的 `.tmp/`，合回后提示用户授权清理
 
+## 验收结果登记（2026-08-13 四阶段全部完成）
+
+### 阶段 1 · 后端性能与正确性收尾（feature/opt2-backend → `856ef2a`）
+
+- [x] `make test` + `go test -race ./backend/...` 全绿（新增 feed/seed/content_cache 并发/listPosts/dashboardStats 测试 7+ 个）
+- [x] listPosts 单次 COUNT + 单次分页查询（views 随 listCols 投影带出，逐篇 GetViews 全删）；dashboardStats 改 CountAllPosts（保持「全部未删除」旧语义）
+- [x] 笔记三路由实测：/notebooks 计数（GROUP BY）、上下篇（GetPrev/GetNextNote 邻居查询）、?tag= 过滤（SQL 下推）行为与优化前一致
+- [x] contentCache dirty 改 atomic.Bool；`-race` 下新增并发置脏-重建测试通过
+- [x] 评论通知信号量限流（≤5）+ sendSMTP 统一超时会话（Dial 5s / 会话 10s）
+- [x] 密码保护文章不出现在 feed（单测断言）；13 个死 JS 资产删除后前台 3 类页面 200、死资产 404
+- [x] DB/-wal/-shm 与恢复文件权限 0600（ls -l 实测）
+- 附注：parsePublishAt 收敛为 store.ParsePublishAt（UTC）/ParsePublishAtLocal（本地），layout 列表全量兼容；stripHTML/truncateText 抽 `internal/textutil`（含测试迁移）
+
+### 阶段 2 · Console 数据链路与错误处理闭环（feature/opt2-console → `eef367d`）
+
+- [x] Dashboard stats 请求 4×→1×（StatCardWidget 共享 useDashboardStats）；6 个 widget 裸 fetch 全改 dashboardApi/statsApi（补 recentPosts/categories/hourly 端点）
+- [x] 确认弹窗失败：Toast 提示 + 弹窗保持打开 + 无 unhandled rejection；4 处 mutation 补 onError；SEO 三页补 try/catch 空态
+- [x] query key 工厂补 users/unread；28+ 处字面量 invalidate 统一走工厂；PostEditor 保存/发布后 invalidate
+- [x] 死代码清理（dashboard-editor.ts、CollapsibleSection 遮蔽、VSpace、notes/、死导出按钮）
+- [x] 一行级修复包：VModal 动效非法值 + leave-active、抽屉/⌘K 遮罩 bg-black/60、Login spinner 换 ri:loader-4-line、plugins-data 图标统一 ri 子集、mono-500 删除、Login 文案去 emoji、PageList enabled、4 处图片 lazy、铃铛改 useQuery+refetchInterval
+- 附注：UI 验收（遮罩/动效/离线图标）判据已固化于 spec「UI 验收边界」，浏览器终验待用户侧确认（本机 8080 被 Harness GUI 占用，未起服务截图）
+
+### 阶段 3 · 编辑器体验与列表页骨架（feature/opt2-editor → `0baa1df`）
+
+- [x] RTE onUpdate 序列化 200ms 防抖（Ctrl+S 前 flush）；MDE 预览 in-flight 序号守卫 + 50KB 大文档防抖 800ms
+- [x] ContentEditor 编辑器偏好统一 post-editor:kind；RichTextEditor defineAsyncComponent 按需挂载（Markdown-only 不下载 190KB gzip tiptap）
+- [x] SettingsView 8 个 tab 全独立 chunk（dist 验证 AppearanceTab/MenubarEditor/ThemeYamlTab 等均分包）
+- [x] PostList parseTags/checkSelection 预计算（Set 化 selectedSlugs）；6 处 index key 改稳定 key（uuid）
+- [x] SettingsView 预览防抖 1000ms + AuthorsTab 增量写（去全量 delete+assign 级联）
+- [x] NotebooksView 消费后端 note_count（21 请求→1）；SubscriptionList 分页加载更多；CommentList 搜索走后端 keyword（store 新增 ListCommentsSearch/CountCommentsSearch，LIKE nick/email/content）
+- [x] usePagedList composable 抽取 + PostList/ShareList 示范迁移（其余 6 页留后续轮次）
+- 附注：PostList 迁移后行为（分页/防抖/删除确认）按 spec UI 验收边界核对，浏览器终验待用户侧确认
+
+### 阶段 4 · 前端测试与格式化工具（feature/opt2-tests → `8329a0e`）
+
+- [x] `src/lib/format.ts` 统一相对时间/日期/字节（4 套矛盾行为收敛）；5 个组件迁移；边界单测 6 组（刚刚/昨天/30 天/跨月/字节进位）
+- [x] migrateV6toV7 导出 + 5 组迁移测试（旧默认替换/自定义保留/缺段回退/深拷贝）
+- [x] useLocalDraft 8 组测试（stub localStorage + 假定时器；composable 条件化生命周期注册）
+- [x] widget-registry 源码级不变量 4 组（type 唯一/preset 引用/分区合法/statKey 合法）
+- [x] diff 边界 4 组（尾行无换行/空行/MAX_DP_CELLS 退化/单行）+ shortcode 边界 4 组（特殊字符/flag 严格匹配/select 缺省/空值）
+- [x] friends 包 RSS/Atom 解析 5 组（httptest 注入：标题 trim/日期多格式/HTML 剥离/published 优先/summarize 截断）
+- 附注：console 测试文件 2→7（diff/shortcode/format/layout-migration/useLocalDraft/widget-registry），测试数 14→45
+
 ## Out of Scope
 
 - ListByTag 逗号标签改 post_tags 关联表（Spec 61 遗留，影响面大，继续遗留标注）
