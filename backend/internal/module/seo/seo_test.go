@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,13 @@ import (
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
+
+// newSitePtr 构造原子站点指针（Spec 61 阶段 3）。
+func newSitePtr() *atomic.Pointer[tmpl.Site] {
+	p := &atomic.Pointer[tmpl.Site]{}
+	p.Store(&tmpl.Site{})
+	return p
+}
 
 func TestCrawlerEngine(t *testing.T) {
 	cases := map[string]string{
@@ -107,7 +115,7 @@ func newSeoTestEnv(t *testing.T) (*module.Manager, module.Deps, *store.Store) {
 	if err != nil {
 		t.Fatalf("new manager: %v", err)
 	}
-	deps := module.Deps{Store: st, Site: &tmpl.Site{}, Modules: mgr}
+	deps := module.Deps{Store: st, Site: newSitePtr(), Modules: mgr}
 	return mgr, deps, st
 }
 

@@ -140,7 +140,7 @@ func (h *Handler) preserveAIKey(raw []byte) []byte {
 
 // getStyleYAML GET /api/v1/settings/style/yaml：返回当前 style 段的 YAML 文本（主题 YAML 编辑器用）。
 func (h *Handler) getStyleYAML(c *gin.Context) {
-	b, err := yaml.Marshal(h.site.Style)
+	b, err := yaml.Marshal(h.site.Load().Style)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return

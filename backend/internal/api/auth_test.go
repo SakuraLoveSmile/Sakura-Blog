@@ -112,7 +112,7 @@ func TestCookieSecure(t *testing.T) {
 		{"空站点+TLS", "", ctxOf(true, ""), false},
 	}
 	for _, tc := range cases {
-		h := New(Config{Site: &tmpl.Site{URL: tc.siteURL}})
+		h := New(Config{Site: sitePtr(&tmpl.Site{URL: tc.siteURL})})
 		if got := h.cookieSecure(tc.ctx); got != tc.want {
 			t.Fatalf("%s: cookieSecure = %v, want %v", tc.name, got, tc.want)
 		}

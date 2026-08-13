@@ -75,7 +75,7 @@ func (m *Module) overviewHandler(c *gin.Context) {
 	}
 
 	// SEO 健康
-	site := m.deps.Site
+	site := m.deps.Site.Load()
 	https := site != nil && strings.HasPrefix(site.URL, "https://")
 	out.Health = append(out.Health, healthItem{Key: "https", Label: "HTTPS", Status: okWarn(https),
 		Hint: pick(https, "已启用 HTTPS", "站点未使用 HTTPS，影响搜索排名与安全")})

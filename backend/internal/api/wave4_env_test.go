@@ -45,7 +45,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	site.Admin.Password = "secret"
 
 	posts := post.NewService(t.TempDir())
-	comments := comment.New(st, &site.Comments, site.Title)
+	comments := comment.New(st, sitePtr(site))
 	backups := backuppkg.New(backuppkg.Config{
 		Store:     st,
 		Posts:     posts,
@@ -58,7 +58,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	h, err := Mount(r, MountDeps{Config: Config{
 		Store:    st,
 		Posts:    posts,
-		Site:     site,
+		Site: sitePtr(site),
 		Comments: comments,
 		Backups:  backups,
 	}})

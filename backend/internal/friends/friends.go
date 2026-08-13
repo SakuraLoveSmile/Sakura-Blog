@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +58,8 @@ type Friend struct {
 
 // Aggregator 友链 RSS 聚合器。
 type Aggregator struct {
-	site   *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）
+	site   *atomic.Pointer[tmpl.Site]
 	client *http.Client
 
 	// onArticles 每个友链抓取到文章后的回调（供落库持久化，由 main.go 装配），可空。
@@ -68,7 +70,7 @@ type Aggregator struct {
 }
 
 // New 从站点配置构建聚合器，并用配置初始化缓存（此时 posts 为空，RSS 抓取后填充）。
-func New(site *tmpl.Site) *Aggregator {
+func New(site *atomic.Pointer[tmpl.Site]) *Aggregator {
 	a := &Aggregator{
 		site:   site,
 		client: &http.Client{Timeout: fetchTimeout},
@@ -79,7 +81,7 @@ func New(site *tmpl.Site) *Aggregator {
 
 // currentInterval 当前生效的刷新周期（pages.friends 优先、回退 friends 段，<=0 用默认 1h；每周期重读以热更生效）。
 func (a *Aggregator) currentInterval() time.Duration {
-	if m := a.site.FriendsRefreshInterval(); m > 0 {
+	if m := a.site.Load().FriendsRefreshInterval(); m > 0 {
 		return time.Duration(m) * time.Minute
 	}
 	return defaultInterval
@@ -93,7 +95,7 @@ func (a *Aggregator) SetOnArticles(f func(friendTitle, friendURL string, posts [
 // buildBase 从 site.Links 构建友链基础列表（不含抓取到的文章）。
 func (a *Aggregator) buildBase() []Friend {
 	var out []Friend
-	for _, group := range a.site.Links {
+	for _, group := range a.site.Load().Links {
 		for _, it := range group.Items {
 			f := Friend{
 				Title:       it.Name,
@@ -237,7 +239,7 @@ func (a *Aggregator) fetchFeed(url string) ([]Post, error) {
 
 // maxPostsPerFeed 返回每个友链展示的最新文章数上限（pages.friends 优先，回退 friends.posts_per_link，<=0 用默认 20）。
 func (a *Aggregator) maxPostsPerFeed() int {
-	if n := a.site.FriendsPostsPerLink(); n > 0 {
+	if n := a.site.Load().FriendsPostsPerLink(); n > 0 {
 		return n
 	}
 	return 20

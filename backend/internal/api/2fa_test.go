@@ -35,7 +35,7 @@ func new2FATestEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User) {
 	site := &tmpl.Site{}
 	site.Admin.Password = "secret"
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st, user

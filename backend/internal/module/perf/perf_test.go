@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func newPerfTestEnv(t *testing.T) (*Module, *module.Manager, module.Deps, *store
 		t.Fatalf("new manager: %v", err)
 	}
 	m := &Module{agg: newAggregator()}
-	deps := module.Deps{Store: st, Site: &tmpl.Site{}, Modules: mgr}
+	deps := module.Deps{Store: st, Site: newSitePtr(), Modules: mgr}
 	return m, mgr, deps, st
 }
 
@@ -50,6 +51,13 @@ func routeCount(t *testing.T, st *store.Store) int {
 }
 
 // TestPerfDefaultOff 验收：模块默认关闭（用户主动启用）。
+// newSitePtr 构造原子站点指针（Spec 61 阶段 3）。
+func newSitePtr() *atomic.Pointer[tmpl.Site] {
+	p := &atomic.Pointer[tmpl.Site]{}
+	p.Store(&tmpl.Site{})
+	return p
+}
+
 func TestPerfDefaultOff(t *testing.T) {
 	_, mgr, _, _ := newPerfTestEnv(t)
 	if mgr.Enabled("perf") {

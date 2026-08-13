@@ -14,7 +14,7 @@ import (
 // 再用真实内容数据渲染 layout/base。Console 按当前编辑的设置项提取对应 DOM 区域聚焦展示。
 // page 支持 index/categories/tags/post/wiki；不写 DB、不影响全局共享 site。
 func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page string) (string, error) {
-	draft := *s.site
+	draft := *s.site.Load()
 	config.ApplyDraftSections(&draft, sections)
 
 	data := &tmpl.ViewData{Site: &draft}

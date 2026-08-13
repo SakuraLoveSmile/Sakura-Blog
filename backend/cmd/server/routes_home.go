@@ -54,8 +54,8 @@ func (s *webServer) renderHome(c *gin.Context, page int) {
 		pages[i] = i + 1
 	}
 	data := &tmpl.ViewData{
-		Site:      s.site,
-		Page:      &tmpl.Page{Title: s.site.Title, Layout: "index", MenuID: "post", Lang: "zh-CN", Type: s.site.Article.Type},
+		Site:      s.site.Load(),
+		Page:      &tmpl.Page{Title: s.site.Load().Title, Layout: "index", MenuID: "post", Lang: "zh-CN", Type: s.site.Load().Article.Type},
 		Posts:     s.toCards(posts),
 		Paginator: &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 	}
@@ -63,7 +63,7 @@ func (s *webServer) renderHome(c *gin.Context, page int) {
 	// 1.38 site_tree.home.comments：首页可配置评论区（默认关），page_key 用 "/"
 	// 对齐上游 index.ejs 的 is_home_first_page()：仅首页第一页填充，/page/N 不渲染评论区
 	// 仅首页第一页且路径精确为 / 时填充评论区，/page/1 与越界钳制页不填充
-	if page == 1 && c.Request.URL.Path == "/" && s.site.Comments.Enabled && s.site.SiteTree.Home.Comments {
+	if page == 1 && c.Request.URL.Path == "/" && s.site.Load().Comments.Enabled && s.site.Load().SiteTree.Home.Comments {
 		s.fillComments(data, "/")
 	}
 	s.fillSEO(data, c)

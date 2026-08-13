@@ -39,7 +39,7 @@ func TestToCard(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Article.CategoryColor = map[string]string{"技术": "ff0000"}
 	site.Article.CategoryIcon = map[string]string{"技术": "solar:folder-bold"}
-	ws := newWebServer(webDeps{Site: site})
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
 	created := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
 	p := &store.Post{
 		Slug: "hello", Title: "Hello", Excerpt: "ex", Cover: "/c.png",
@@ -99,7 +99,7 @@ func TestRenderSitePreview(t *testing.T) {
 		t.Fatalf("engine: %v", err)
 	}
 	live := &tmpl.Site{Title: "线上标题"}
-	ws := newWebServer(webDeps{Site: live, Store: st, Engine: eng})
+	ws := newWebServer(webDeps{Site: sitePtr(live), Store: st, Engine: eng})
 
 	sections := map[string]json.RawMessage{
 		"site": json.RawMessage(`{"title":"草稿标题"}`),

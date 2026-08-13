@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"sort"
 	"strings"
 	"time"
@@ -204,6 +205,13 @@ func marshalPost(p *store.Post) string {
 // slugPattern 导入文件名合法性：字母数字连字符下划线（防路径穿越与奇异 slug 入库）。
 var slugPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
+// zip 导入防 zip-bomb（Spec 61 阶段 3）：条目数上限 + 单条解压后大小上限。
+// 超出即整体拒绝，避免解压放大导致内存/磁盘耗尽。
+const (
+	maxZipEntries   = 500   // zip 内条目数上限（正常导入远小于此）
+	maxZipEntrySize = 32 << 20 // 单条解压后上限 32MB（markdown 正文远小于此）
+)
+
 // ImportResult Markdown 导入结果。
 type ImportResult struct {
 	Imported []string `json:"imported"` // 成功导入的 slug
@@ -221,6 +229,9 @@ func (s *Service) Import(filename string, data []byte) (*ImportResult, error) {
 		if err != nil {
 			return nil, fmt.Errorf("解析 zip 失败: %w", err)
 		}
+		if len(zr.File) > maxZipEntries {
+			return nil, fmt.Errorf("zip 条目数 %d 超过上限 %d（疑似 zip-bomb，已拒绝）", len(zr.File), maxZipEntries)
+		}
 		for _, zf := range zr.File {
 			name := zf.Name
 			base := filepath.Base(name)
@@ -232,10 +243,14 @@ func (s *Service) Import(filename string, data []byte) (*ImportResult, error) {
 				res.Skipped = append(res.Skipped, base+": 读取失败")
 				continue
 			}
-			content, err := io.ReadAll(rc)
+			content, err := io.ReadAll(io.LimitReader(rc, maxZipEntrySize+1))
 			rc.Close()
 			if err != nil {
 				res.Skipped = append(res.Skipped, base+": 读取失败")
+				continue
+			}
+			if len(content) > maxZipEntrySize {
+				res.Skipped = append(res.Skipped, base+": 解压后超过 "+strconv.Itoa(maxZipEntrySize>>20)+"MB 上限（疑似 zip-bomb）")
 				continue
 			}
 			s.importOne(base, content, res)

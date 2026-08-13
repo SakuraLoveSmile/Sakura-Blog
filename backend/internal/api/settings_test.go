@@ -134,7 +134,7 @@ func TestSettingsAuthorsInject(t *testing.T) {
 		t.Fatalf("bootstrap: %v", err)
 	}
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	// 无密码站点时走无密码逻辑：直接造 admin 用户（Bootstrap 的 Spec 45 迁移可能已创建，已存在则复用）

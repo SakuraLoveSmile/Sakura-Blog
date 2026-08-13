@@ -2,6 +2,7 @@ package comment
 
 import (
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"blog/internal/store"
@@ -23,10 +24,11 @@ func setupNotify(t *testing.T, cfg *tmpl.CommentsConfig) (*Handler, *[]mailRecor
 		records = append(records, mailRecord{To: to, Subject: subject, Body: body})
 	}
 	t.Cleanup(func() { sendMailOverride = nil })
-	h := &Handler{
-		cfg:       cfg,
-		siteTitle: "测试博客",
-	}
+	// Spec 61 阶段 3：Handler 改持站点原子指针，测试用指定配置构造
+	site := &tmpl.Site{Comments: *cfg, Title: "测试博客"}
+	sp := &atomic.Pointer[tmpl.Site]{}
+	sp.Store(site)
+	h := &Handler{site: sp}
 	return h, &records
 }
 

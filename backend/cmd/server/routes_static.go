@@ -83,7 +83,7 @@ func (s *webServer) serveSW() gin.HandlerFunc {
 			c.Status(http.StatusNotFound)
 			return
 		}
-		ver := s.site.SWCacheVersion
+		ver := s.site.Load().SWCacheVersion
 		if ver == "" {
 			ver = "blog-v3"
 		}
@@ -98,7 +98,7 @@ func (s *webServer) serveSW() gin.HandlerFunc {
 // （缺省 #1c1f21 深色）；响应 no-cache 保证站点信息修改后 PWA 安装名即时同步。
 func (s *webServer) serveManifest() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		site := s.site
+		site := s.site.Load()
 		name := firstNonEmpty(site.Title, site.LogoTitle, "Stellar Blog")
 		shortName := firstNonEmpty(site.LogoTitle, site.Title, "Stellar")
 		theme := firstNonEmpty(site.Style.Color.Accent, "#1c1f21")

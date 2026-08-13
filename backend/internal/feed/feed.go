@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 
@@ -23,11 +24,12 @@ const (
 // Handler 订阅 feed 处理器，持 store 与站点配置。
 type Handler struct {
 	store *store.Store
-	site  *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）
+	site  *atomic.Pointer[tmpl.Site]
 }
 
 // New 创建 feed handler。
-func New(st *store.Store, site *tmpl.Site) *Handler {
+func New(st *store.Store, site *atomic.Pointer[tmpl.Site]) *Handler {
 	return &Handler{store: st, site: site}
 }
 
@@ -41,8 +43,8 @@ func (h *Handler) Register(r *gin.Engine) {
 }
 
 func (h *Handler) baseURL(c *gin.Context) string {
-	if h.site.URL != "" {
-		return strings.TrimRight(h.site.URL, "/")
+	if h.site.Load().URL != "" {
+		return strings.TrimRight(h.site.Load().URL, "/")
 	}
 	return "http://" + c.Request.Host
 }
@@ -65,12 +67,12 @@ func feedBody(p *store.Post) string {
 // resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
 func (h *Handler) resolveAuthor(postAuthor string) string {
 	if postAuthor != "" {
-		if a, ok := h.site.Authors[postAuthor]; ok && a.Name != "" {
+		if a, ok := h.site.Load().Authors[postAuthor]; ok && a.Name != "" {
 			return a.Name
 		}
 	}
-	if h.site.Title != "" {
-		return h.site.Title
+	if h.site.Load().Title != "" {
+		return h.site.Load().Title
 	}
 	return ""
 }
@@ -116,7 +118,7 @@ func (h *Handler) atom(c *gin.Context) {
 
 	feed := atomFeed{
 		XMLNS: "http://www.w3.org/2005/Atom",
-		Title: h.site.Title,
+		Title: h.site.Load().Title,
 		Link: []atomLink{
 			{Href: base + "/"},
 			{Href: feedURL, Rel: "self"},
@@ -159,10 +161,10 @@ func (h *Handler) jsonFeed(c *gin.Context) {
 
 	feed := jsonFeed{
 		Version:     "https://jsonfeed.org/version/1.1",
-		Title:       h.site.Title,
+		Title:       h.site.Load().Title,
 		HomePageURL: base + "/",
 		FeedURL:     base + "/feed.json",
-		Description: h.site.Description,
+		Description: h.site.Load().Description,
 		Items:       items,
 	}
 
@@ -179,7 +181,7 @@ func (h *Handler) categoryRSS(c *gin.Context) {
 		return
 	}
 	base := h.baseURL(c)
-	h.writeRSS(c, h.site.Title+" — 分类："+name, base+"/categories/"+name, posts)
+	h.writeRSS(c, h.site.Load().Title+" — 分类："+name, base+"/categories/"+name, posts)
 }
 
 // tagRSS GET /tags/:name/rss.xml — 标签维度 RSS 2.0。
@@ -191,7 +193,7 @@ func (h *Handler) tagRSS(c *gin.Context) {
 		return
 	}
 	base := h.baseURL(c)
-	h.writeRSS(c, h.site.Title+" — 标签："+name, base+"/tags/"+name, posts)
+	h.writeRSS(c, h.site.Load().Title+" — 标签："+name, base+"/tags/"+name, posts)
 }
 
 func (h *Handler) listCategoryPosts(name string) ([]*store.Post, error) {
@@ -235,7 +237,7 @@ func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*s
 		Channel: rssChannel{
 			Title:       title,
 			Link:        channelLink,
-			Description: h.site.Description,
+			Description: h.site.Load().Description,
 			Items:       items,
 		},
 	}
@@ -257,8 +259,8 @@ func (h *Handler) robots(c *gin.Context) {
 		"Disallow: /console",
 		"Sitemap: " + base + "/sitemap.xml",
 	}
-	// Spec 42：站点级 SEO 配置的 robots 附加规则，多行原样追加（热更新：h.site 指针字段即最新值）
-	if extra := strings.TrimSpace(h.site.SEO.RobotsExtra); extra != "" {
+	// Spec 42：站点级 SEO 配置的 robots 附加规则，多行原样追加（热更新：h.site.Load() 指针字段即最新值）
+	if extra := strings.TrimSpace(h.site.Load().SEO.RobotsExtra); extra != "" {
 		lines = append(lines, "", extra)
 	}
 	lines = append(lines, "")

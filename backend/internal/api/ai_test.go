@@ -1,7 +1,9 @@
 package api
 
 import (
+	"crypto/tls"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -95,7 +97,7 @@ func TestCallChatCompletionSuccess(t *testing.T) {
 		BaseURL: srv.URL + "/v1/", // 末尾斜杠应被规范化
 		APIKey:  "sk-test",
 		Model:   "test-model",
-	}, "sys", "user")
+	}, "sys", "user", nil)
 	if err != nil {
 		t.Fatalf("call: %v", err)
 	}
@@ -113,7 +115,7 @@ func TestCallChatCompletionAPIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u")
+	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
 	if err == nil || !strings.Contains(err.Error(), "invalid api key") {
 		t.Fatalf("expected api error message, got %v", err)
 	}
@@ -126,7 +128,7 @@ func TestCallChatCompletionNonJSONResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u")
+	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
 	if err == nil {
 		t.Fatal("non-JSON response should error")
 	}
@@ -150,12 +152,15 @@ func TestValidateGuestAIEndpoint(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err := validateGuestAIEndpoint(c.url)
+			ips, err := validateGuestAIEndpoint(c.url)
 			if c.wantErr && err == nil {
 				t.Fatalf("%s: expected error, got nil", c.url)
 			}
 			if !c.wantErr && err != nil {
 				t.Fatalf("%s: unexpected error: %v", c.url, err)
+			}
+			if !c.wantErr && len(ips) == 0 {
+				t.Fatalf("%s: expected resolved ips", c.url)
 			}
 		})
 	}
@@ -171,5 +176,37 @@ func TestAIGuestRateAllow(t *testing.T) {
 	}
 	if aiGuestRateAllow(ip) {
 		t.Fatal("11th request within window should be rejected")
+	}
+}
+
+// TestGuestAIClientPinsIPAndRejectsRedirect（Spec 61 阶段 3）：加固客户端
+// 1) DialContext 固定拨号校验 IP（封堵 TOCTOU 重绑定）；2) CheckRedirect 拒绝 302 跳转。
+func TestGuestAIClientPinsIPAndRejectsRedirect(t *testing.T) {
+	ok := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/redirect" {
+			http.Redirect(w, r, "https://127.0.0.1:1/evil", http.StatusFound)
+			return
+		}
+		w.Write([]byte(`{"ok":true}`))
+	}))
+	defer ok.Close()
+
+	host, _, _ := net.SplitHostPort(strings.TrimPrefix(ok.URL, "https://"))
+	ips, _ := net.LookupIP(host)
+	client := newGuestAIHTTPClient(host, ips)
+	// 测试自签证书：仅放行证书校验（被测对象是固定拨号与重定向拒绝）
+	client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	// 正常请求经固定拨号可达（非重定向路径不受影响）
+	resp, err := client.Get(ok.URL)
+	if err != nil {
+		t.Fatalf("pinned dial should succeed: %v", err)
+	}
+	resp.Body.Close()
+
+	// 302 重定向被 CheckRedirect 拒绝
+	_, err = client.Get(ok.URL + "/redirect")
+	if err == nil || !strings.Contains(err.Error(), "不允许重定向") {
+		t.Fatalf("expected redirect rejection, got: %v", err)
 	}
 }

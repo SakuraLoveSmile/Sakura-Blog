@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,13 @@ import (
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
+
+// sitePtr 包装 *tmpl.Site 为原子指针（Spec 61 阶段 3：Config.Site 线程化后测试构造点）。
+func sitePtr(s *tmpl.Site) *atomic.Pointer[tmpl.Site] {
+	p := &atomic.Pointer[tmpl.Site]{}
+	p.Store(s)
+	return p
+}
 
 // newTestStore 临时 SQLite 库（modernc 纯 Go 驱动，测试后自动清理）。
 func newTestStore(t *testing.T) *store.Store {
@@ -37,7 +45,7 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	r := gin.New()
-	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: &tmpl.Site{}}})
+	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
 	}
@@ -69,7 +77,7 @@ func TestMountEnsuresTables(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: &tmpl.Site{}}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	// shared_posts 表已建：按 token 查询应返回 (nil, nil) 而非表不存在错误
@@ -89,8 +97,8 @@ func TestMountWithFriendsAggregator(t *testing.T) {
 	r := gin.New()
 	// 只注册路由，不调用 Start()（生命周期由调用方管理）
 	if _, err := Mount(r, MountDeps{
-		Config:  Config{Store: st, Site: site},
-		Friends: friends.New(site),
+		Config:  Config{Store: st, Site: sitePtr(site)},
+		Friends: friends.New(sitePtr(site)),
 	}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
@@ -105,7 +113,7 @@ func TestMountAuthGuardsProtectedRoutes(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Admin.Password = "secret"
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := httptest.NewRecorder()

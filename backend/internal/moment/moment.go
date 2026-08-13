@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 
@@ -26,7 +27,8 @@ type Handler struct {
 	store       *store.Store
 	posts       *post.Service
 	engine      *tmpl.Engine
-	site        *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）
+	site        *atomic.Pointer[tmpl.Site]
 	fillSidebar func(*tmpl.ViewData)
 	fillSEO     func(*tmpl.ViewData, *gin.Context)
 }
@@ -36,7 +38,7 @@ func New(
 	s *store.Store,
 	posts *post.Service,
 	engine *tmpl.Engine,
-	site *tmpl.Site,
+	site *atomic.Pointer[tmpl.Site],
 	fillSidebar func(*tmpl.ViewData),
 	fillSEO func(*tmpl.ViewData, *gin.Context),
 ) (*Handler, error) {
@@ -101,7 +103,7 @@ func (h *Handler) listPublic(c *gin.Context) {
 	}
 
 	data := &tmpl.ViewData{
-		Site: h.site,
+		Site: h.site.Load(),
 		Page: &tmpl.Page{
 			Title:  "瞬间",
 			Layout: "moments",

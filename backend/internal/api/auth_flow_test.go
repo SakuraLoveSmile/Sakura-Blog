@@ -72,7 +72,7 @@ func TestAuthCheckStates(t *testing.T) {
 	// 无密码站点（Password 为空）
 	st2 := newTestStore(t)
 	r2 := gin.New()
-	if _, err := Mount(r2, MountDeps{Config: Config{Store: st2, Site: &tmpl.Site{}}}); err != nil {
+	if _, err := Mount(r2, MountDeps{Config: Config{Store: st2, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w = do2FA(r2, http.MethodGet, "/api/v1/auth/check", "", "")
@@ -95,7 +95,7 @@ func TestLegacyLoginNoUsers(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Admin.Password = "secret"
 	r := gin.New()
-	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}})
+	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
 	}

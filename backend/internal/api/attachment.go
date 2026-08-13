@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/rand"
+	"errors"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -95,9 +96,18 @@ func (h *Handler) listAttachments(c *gin.Context) {
 }
 
 // uploadAttachment POST /api/v1/attachments/upload：上传文件（图片自动优化 + 缩略图）。
+// Spec 61 阶段 3：解析 multipart 前先用 MaxBytesReader 限制请求体总大小——
+// 超大请求在解析阶段即被拒绝，不落临时文件；解析后的 header.Size 校验保留为第二道。
 func (h *Handler) uploadAttachment(c *gin.Context) {
+	// multipart 边界/头部开销余量（64KB），文件上限按 max_upload_mb 配置
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, h.maxUpload+64<<10)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			Fail(c, http.StatusBadRequest, fmt.Sprintf("文件超过 %d MB 限制", h.maxUpload>>20))
+			return
+		}
 		Fail(c, http.StatusBadRequest, "未选择文件")
 		return
 	}

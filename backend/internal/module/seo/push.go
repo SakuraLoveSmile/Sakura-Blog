@@ -41,7 +41,7 @@ func (m *Module) pushHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "尚未在设置中启用任何推送引擎"})
 		return
 	}
-	ok, fail := pushURLs(m.deps.Store, siteHostURL(m.deps.Site), cfg, body.URLs)
+	ok, fail := pushURLs(m.deps.Store, siteHostURL(m.deps.Site.Load()), cfg, body.URLs)
 	c.JSON(http.StatusOK, gin.H{"ok": true, "success": ok, "failed": fail})
 }
 
@@ -179,5 +179,5 @@ func NotifyPublished(deps module.Deps, postURL string) {
 	if !cfg.Push.Enabled || len(cfg.Push.Engines) == 0 || postURL == "" {
 		return
 	}
-	go pushURLs(deps.Store, siteHostURL(deps.Site), cfg, []string{postURL})
+	go pushURLs(deps.Store, siteHostURL(deps.Site.Load()), cfg, []string{postURL})
 }

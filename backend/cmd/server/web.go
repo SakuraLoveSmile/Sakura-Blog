@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -63,7 +64,8 @@ const (
 // webServer 前台路由装配的共享依赖载体：按域拆分的 register* 方法挂在它上面，
 // 渲染辅助（fillSidebar/fillSEO/render404 等）与侧边栏缓存也集中于此。
 type webServer struct {
-	site      *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，前台无锁读 .Load()
+	site      *atomic.Pointer[tmpl.Site]
 	st        *store.Store
 	posts     *post.Service
 	engine    *tmpl.Engine
@@ -83,7 +85,7 @@ type webServer struct {
 
 // webDeps webServer 构造依赖（均为必填，momentH 除外——moment 装配依赖 webServer 的 fill 函数，装配后回填）。
 type webDeps struct {
-	Site      *tmpl.Site
+	Site      *atomic.Pointer[tmpl.Site]
 	Store     *store.Store
 	Posts     *post.Service
 	Engine    *tmpl.Engine
@@ -114,7 +116,7 @@ func newWebServer(d webDeps) *webServer {
 // cookieSecureFor Cookie Secure 标志：site.URL 为 https 且当前请求经 HTTPS 到达（直连 TLS 或反代 X-Forwarded-Proto）时置真。
 // 按请求判定而非启动时定死：http://IP:port 调试访问不签 Secure，避免浏览器拒存 cookie 导致解锁态丢失。
 func (s *webServer) cookieSecureFor(c *gin.Context) bool {
-	if !strings.HasPrefix(s.site.URL, "https://") {
+	if !strings.HasPrefix(s.site.Load().URL, "https://") {
 		return false
 	}
 	return c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
@@ -135,13 +137,13 @@ func (s *webServer) siteOf(data *tmpl.ViewData) *tmpl.Site {
 	if data != nil && data.Site != nil {
 		return data.Site
 	}
-	return s.site
+	return s.site.Load()
 }
 
 // baseURL 站点根地址：site.URL 优先，未配置时回退请求 Host（http）。
 func (s *webServer) baseURL(c *gin.Context) string {
-	if s.site.URL != "" {
-		return s.site.URL
+	if s.site.Load().URL != "" {
+		return s.site.Load().URL
 	}
 	return "http://" + c.Request.Host
 }
@@ -164,7 +166,7 @@ func (s *webServer) buildMenuPages() []tmpl.MenuItem {
 		return nil
 	}
 	covered := map[string]bool{}
-	for _, it := range s.site.Menubar.Items {
+	for _, it := range s.site.Load().Menubar.Items {
 		covered[strings.TrimSuffix(it.URL, "/")] = true
 	}
 	var items []tmpl.MenuItem
@@ -373,8 +375,8 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 				break
 			}
 			var projects []*tmpl.WikiProject
-			for i := range s.site.Wiki {
-				p := s.site.Wiki[i]
+			for i := range s.site.Load().Wiki {
+				p := s.site.Load().Wiki[i]
 				if p.ID == cur.ID {
 					continue
 				}
@@ -437,7 +439,7 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 
 // tocOptions library toc 参数 → TOC 生成选项（Spec 33 参数补齐：list_number/min_depth/max_depth）。
 func (s *webServer) tocOptions() tmpl.TOCOptions {
-	def := s.site.Widgets.Lookup("toc")
+	def := s.site.Load().Widgets.Lookup("toc")
 	return tmpl.TOCOptions{
 		ListNumber: def.Bool("list_number", false),
 		MinDepth:   def.Int("min_depth", 1),
@@ -514,11 +516,11 @@ func toString(v any) string {
 // CommentPageKey 统一在此设置（模板 data-page-key 优先用它，文章页兜底 /post/{slug}）。
 func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
 	data.CommentPageKey = pageKey
-	if !s.site.Comments.Enabled {
+	if !s.site.Load().Comments.Enabled {
 		return
 	}
 	if comments, err := s.st.ListCommentsByPage(pageKey); err == nil {
-		data.Comments = comment.ToViewItems(comments, &s.site.Comments)
+		data.Comments = comment.ToViewItems(comments, &s.site.Load().Comments)
 	}
 	if n, err := s.st.CountCommentsByPage(pageKey); err == nil {
 		data.CommentCount = n
@@ -528,7 +530,7 @@ func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
 // render404 渲染自定义 404 页（HTTP 404 + base 布局 Layout=404），NoRoute 与各路由未命中共用。
 func (s *webServer) render404(c *gin.Context) {
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{Title: "页面不存在", Layout: "404", Lang: "zh-CN"},
 	}
 	s.fillSidebar(data)
@@ -543,7 +545,7 @@ func (s *webServer) render404(c *gin.Context) {
 // render500 渲染自定义 500 页（P1-8），不暴露内部错误细节。
 func (s *webServer) render500(c *gin.Context) {
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{Title: "服务器错误", Layout: "500", Lang: "zh-CN"},
 	}
 	s.fillSidebar(data)
@@ -573,7 +575,7 @@ func (s *webServer) renderBase(c *gin.Context, data *tmpl.ViewData) {
 // 分类图标查 article.category_icon（未命中回退 default:category）；
 // 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
 func (s *webServer) toCard(p *store.Post) *tmpl.PostCard {
-	return s.toCardWith(s.site, p)
+	return s.toCardWith(s.site.Load(), p)
 }
 
 // toCardWith 同 toCard，但站点配置参数化（设置页「前端预览」用草稿站点渲染卡片）。

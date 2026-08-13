@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func newNotebookVerifyServer(t *testing.T) (*webServer, *store.Store) {
 	}
 	site := &tmpl.Site{Title: "测试站点", Widgets: tmpl.WidgetsConfig{}}
 	ws := &webServer{
-		site:      site,
+		site:      sitePtr(site),
 		st:        st,
 		posts:     post.NewService(filepath.Join(t.TempDir(), "posts")),
 		engine:    eng,
@@ -45,6 +46,13 @@ func newNotebookVerifyServer(t *testing.T) (*webServer, *store.Store) {
 		uploadDir: t.TempDir(),
 	}
 	return ws, st
+}
+
+// sitePtr 包装 *tmpl.Site 为原子指针（Spec 61 阶段 3 测试构造点）。
+func sitePtr(s *tmpl.Site) *atomic.Pointer[tmpl.Site] {
+	p := &atomic.Pointer[tmpl.Site]{}
+	p.Store(s)
+	return p
 }
 
 func TestNotebookFrontendChain(t *testing.T) {

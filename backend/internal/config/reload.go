@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
+	"sync/atomic"
 
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -39,11 +39,6 @@ const (
 	// 仅由 SaveAdminPassword 专用接口读写。
 	SectionAdmin = "admin"
 )
-
-// siteMu 保护 RebuildSite 对共享 *tmpl.Site 的就地写入（写者之间互斥）。
-// 注意：前台渲染的读者未持锁读取 site 字段，理论上与 RebuildSite 写存在数据竞争；
-// 但设置修改是低频管理操作，此权衡为本项目（个人博客、低并发）可接受，符合计划的风险说明。
-var siteMu sync.Mutex
 
 // siteBasic 对应 settings 表 "site" 段的基础信息。
 type siteBasic struct {
@@ -348,9 +343,11 @@ func writeSiteLinks(st *store.Store, groups []tmpl.LinkGroup) error {
 	return nil
 }
 
-// RebuildSite 从 DB 重新加载 settings/links，就地更新共享 *site 的字段（写锁保护）。
-// admin 段非空时覆盖 site.Admin.Password（site.yml 仅作首次导入的初始值）。设置/友链保存后调用以实现热更新。
-func RebuildSite(st *store.Store, site *tmpl.Site) error {
+// RebuildSite 从 DB 重新加载 settings/links，构建全新 *tmpl.Site 后经 atomic.Pointer
+// 复制-交换发布，消除前台渲染（无锁读）与热更新写入之间的数据竞争。
+// 未覆盖字段（LogoIcon/DataCache/SiteTree 等启动后不再变化）沿用当前值，读-only 共享安全。
+// admin 段非空时覆盖 Admin.Password（site.yml 仅作首次导入的初始值）。设置/友链保存后调用以实现热更新。
+func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	settings, err := st.AllSettings()
 	if err != nil {
 		return err
@@ -369,16 +366,15 @@ func RebuildSite(st *store.Store, site *tmpl.Site) error {
 		}
 	}
 
+	next := *site.Load() // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
 	groups := LinksToGroups(links)
-
-	siteMu.Lock()
-	defer siteMu.Unlock()
-	rebuildFromValues(site, settings)
-	site.Links = groups
-	tmpl.SetTagPlugins(site.TagPlugins) // 标签插件默认参数全局生效（预览草稿不触碰）
+	rebuildFromValues(&next, settings)
+	next.Links = groups
+	tmpl.SetTagPlugins(next.TagPlugins) // 标签插件默认参数全局生效（预览草稿不触碰）
 	if adminSet {
-		site.Admin.Password = admin.Password
+		next.Admin.Password = admin.Password
 	}
+	site.Store(&next)
 	return nil
 }
 
@@ -527,7 +523,7 @@ func LoadSectionsJSON(st *store.Store) (map[string]json.RawMessage, error) {
 }
 
 // SaveSection 校验并保存某段配置（用对应类型解析拒绝结构错误，再规范化回存），随后 RebuildSite 热更新。
-func SaveSection(st *store.Store, site *tmpl.Site, section string, raw []byte) error {
+func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section string, raw []byte) error {
 	var dst any
 	switch section {
 	case SectionSite:
@@ -615,7 +611,7 @@ func applyCommentDefaults(cc *tmpl.CommentsConfig) {
 // SaveAdminPassword 保存管理密码到 settings 表 admin 段并热更新。
 // 空密码合法（=关闭登录 gate，与 site.yml 留空语义一致）。
 // 找回手段：sqlite3 data/blog.db "DELETE FROM settings WHERE section='admin'" 后重启，回落 site.yml。
-func SaveAdminPassword(st *store.Store, site *tmpl.Site, password string) error {
+func SaveAdminPassword(st *store.Store, site *atomic.Pointer[tmpl.Site], password string) error {
 	b, err := json.Marshal(adminSection{Password: password})
 	if err != nil {
 		return err

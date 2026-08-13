@@ -75,7 +75,7 @@ func (h *Handler) listComments(c *gin.Context) {
 		return
 	}
 
-	mirror := h.site.Comments.GravatarMirror
+	mirror := h.site.Load().Comments.GravatarMirror
 	items := make([]*commentJSON, 0, len(comments))
 	for _, cm := range comments {
 		row := toCommentJSON(cm, mirror)
@@ -296,14 +296,14 @@ func (h *Handler) replyComment(c *gin.Context) {
 		return
 	}
 
-	nick := h.site.Comments.AdminBadge
+	nick := h.site.Load().Comments.AdminBadge
 	if nick == "" {
 		nick = "博主"
 	}
 	cm := &store.Comment{
 		PageKey:     parent.PageKey,
 		Nick:        nick,
-		Email:       h.site.Comments.AdminEmail,
+		Email:       h.site.Load().Comments.AdminEmail,
 		ContentMD:   req.Content,
 		ContentHTML: html,
 		ParentID:    req.ParentID,
@@ -323,5 +323,5 @@ func (h *Handler) replyComment(c *gin.Context) {
 		h.comments.NotifyReply(cm, parent)
 	}
 
-	c.JSON(http.StatusCreated, toCommentJSON(cm, h.site.Comments.GravatarMirror))
+	c.JSON(http.StatusCreated, toCommentJSON(cm, h.site.Load().Comments.GravatarMirror))
 }

@@ -24,7 +24,7 @@ func newSearchTestRouter(t *testing.T, password string) (*gin.Engine, *store.Sto
 	site := &tmpl.Site{}
 	site.Admin.Password = password
 	r := gin.New()
-	New(Config{Store: st, Site: site}).Register(r)
+	New(Config{Store: st, Site: sitePtr(site)}).Register(r)
 	return r, st
 }
 

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -189,9 +190,14 @@ func main() {
 	} else {
 		log.Printf("loaded site config: %s", siteConfigPath)
 	}
+	// Spec 61 阶段 3：站点热更新改为 atomic 复制-交换发布（RebuildSite 构建全新 site 后 Store），
+	// 全部持有者（webServer/api/page/moment/feed/comment/friends）统一经此指针 .Load() 读取，消除数据竞争。
+	sitePtr := &atomic.Pointer[tmpl.Site]{}
+	sitePtr.Store(site)
 	posts.SetLinksFunc(func() ([]tmpl.LinkGroup, string) {
-		return site.Links, site.Default.Link
-	}) // 供 {% links %} shortcode 服务端直出分组友链卡片（site 为共享指针，RebuildSite 热更后即时可见）
+		live := sitePtr.Load()
+		return live.Links, live.Default.Link
+	}) // 供 {% links %} shortcode 服务端直出分组友链卡片（site 经原子指针实时读取）
 
 	// 评论配置兜底：site.yml 缺字段时补默认值（Enabled 以配置为准，不强制开启）
 	if site.Comments.GravatarMirror == "" {
@@ -209,7 +215,7 @@ func main() {
 	if err := config.Bootstrap(st, site); err != nil {
 		log.Fatalf("bootstrap settings: %v", err)
 	}
-	if err := config.RebuildSite(st, site); err != nil {
+	if err := config.RebuildSite(st, sitePtr); err != nil {
 		log.Fatalf("rebuild site from db: %v", err)
 	}
 	log.Printf("site config synced from db (settings/links)")
@@ -220,7 +226,7 @@ func main() {
 	}
 
 	// 评论 handler：公开 API 注册 + 评论回复通知复用（Enabled=false 时不注册路由）
-	commentHandler := comment.New(st, &site.Comments, site.Title)
+	commentHandler := comment.New(st, sitePtr)
 	commentHandler.SetUploadDir(app.UploadDir) // 评论图片上传（工具栏仅保留表情+上传）
 
 	// 站内通知中心（Wave 3b）：评论事件写站内通知 + 可选 Webhook（settings 表 notify 段）。
@@ -252,7 +258,7 @@ func main() {
 
 	// 前台装配载体：渲染辅助 + 各域 register* 方法（见 web.go / routes_*.go）。
 	ws := newWebServer(webDeps{
-		Site:      site,
+		Site:      sitePtr,
 		Store:     st,
 		Posts:     posts,
 		Engine:    engine,
@@ -294,7 +300,7 @@ func main() {
 	// 整站恢复后置链路（Spec 41）：设置/文章已随库恢复，需同步内存态与衍生缓存——
 	// 站点配置热更新、FTS 全量重建、侧边栏快照失效、OG 缓存清空。
 	backupSvc.SetRestoreHook(func() {
-		if err := config.RebuildSite(st, site); err != nil {
+		if err := config.RebuildSite(st, sitePtr); err != nil {
 			log.Printf("restore: rebuild site config: %v", err)
 		}
 		rebuildSearchIndex(st, searchIdx)
@@ -310,7 +316,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("init module manager: %v", err)
 	}
-	moduleDeps := module.Deps{Store: st, Posts: posts, Site: site, Modules: moduleMgr}
+	moduleDeps := module.Deps{Store: st, Posts: posts, Site: sitePtr, Modules: moduleMgr}
 	for _, m := range module.All() {
 		if err := m.Migrate(moduleDeps); err != nil {
 			log.Fatalf("module %s migrate: %v", m.Meta().ID, err)
@@ -320,7 +326,7 @@ func main() {
 	log.Printf("modules: %d registered", len(module.All()))
 
 	// 友链动态聚合：后台定时抓取配置友链（site.yml links 带 rss）的 RSS/Atom 最新文章。
-	friendsAgg := friends.New(site)
+	friendsAgg := friends.New(sitePtr)
 	// 订阅阅读器：友链 RSS 抓取后落库（feed_articles 表），保留已读/收藏/稍后状态。
 	if err := st.EnsureFeedArticlesTable(); err != nil {
 		log.Fatalf("ensure feed_articles table: %v", err)
@@ -348,7 +354,7 @@ func main() {
 		Config: api.Config{
 			Store:       st,
 			Posts:       posts,
-			Site:        site,
+			Site:        sitePtr,
 			Comments:    commentHandler,
 			Backups:     backupSvc,
 			Modules:     moduleMgr,
@@ -373,7 +379,7 @@ func main() {
 	// 管理后台已统一到 Vue Console（/console/ + /api/v1）；服务端渲染后台 /admin 与 /admin/media 已退役。
 
 	// 独立页面前台 /pages/:slug（后台管理已迁移到 Vue Console + /api/v1）
-	pageHandler, err := page.New(st, posts, engine, site)
+	pageHandler, err := page.New(st, posts, engine, sitePtr)
 	if err != nil {
 		log.Fatalf("init page: %v", err)
 	}
@@ -394,7 +400,7 @@ func main() {
 		log.Printf("[warn] seed links page: %v", err)
 	}
 
-	momentHandler, err := moment.New(st, posts, engine, site, ws.fillSidebar, ws.fillSEO)
+	momentHandler, err := moment.New(st, posts, engine, sitePtr, ws.fillSidebar, ws.fillSEO)
 	if err != nil {
 		log.Fatalf("init moments: %v", err)
 	}
@@ -402,7 +408,7 @@ func main() {
 	ws.momentH = momentHandler // /notes 页近期动态依赖，注册 taxonomy 路由前回填
 
 	// 自建评论系统公开 API（/api/comments），comments.enabled 时注册
-	if site.Comments.Enabled {
+	if sitePtr.Load().Comments.Enabled {
 		commentHandler.Register(r)
 	}
 
@@ -445,7 +451,7 @@ func main() {
 		}
 		notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
 		data := &tmpl.ViewData{
-			Site: site,
+			Site: sitePtr.Load(),
 			Page: &tmpl.Page{
 				Title:   title,
 				Slug:    pv.Slug,

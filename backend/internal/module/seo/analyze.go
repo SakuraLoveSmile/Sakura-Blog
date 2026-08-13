@@ -40,8 +40,8 @@ func (m *Module) analyzeHandler(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&body)
 	target := strings.TrimSpace(body.URL)
-	if target == "" && m.deps.Site != nil {
-		target = m.deps.Site.URL
+	if target == "" && m.deps.Site.Load() != nil {
+		target = m.deps.Site.Load().URL
 	}
 	if target == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供待检查的 URL，或先在站点设置里配置 site.url"})

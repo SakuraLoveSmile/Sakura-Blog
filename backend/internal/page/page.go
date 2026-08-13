@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,13 +46,14 @@ type Handler struct {
 	store     *store.Store
 	posts     *post.Service
 	engine    *tmpl.Engine
-	site      *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，渲染时 .Load() 读取
+	site      *atomic.Pointer[tmpl.Site]
 	render404 gin.HandlerFunc
 	fillExtra func(*tmpl.ViewData, *gin.Context) // 前台渲染前填充 sidebar/SEO
 }
 
 // New 创建 page handler，确保 pages 表存在。
-func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *tmpl.Site) (*Handler, error) {
+func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *atomic.Pointer[tmpl.Site]) (*Handler, error) {
 	if err := s.EnsurePagesTable(); err != nil {
 		return nil, err
 	}
@@ -172,7 +174,7 @@ func (h *Handler) ShowByPath(c *gin.Context) bool {
 
 func (h *Handler) renderPage(c *gin.Context, p *store.Page) {
 	data := &tmpl.ViewData{
-		Site: h.site,
+		Site: h.site.Load(),
 		Page: &tmpl.Page{
 			Title:  p.Title,
 			Slug:   p.Slug,

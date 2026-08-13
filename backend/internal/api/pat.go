@@ -365,8 +365,8 @@ func (h *Handler) pubListComments(c *gin.Context) {
 		return
 	}
 	cfg := &tmpl.CommentsConfig{}
-	if h.site != nil {
-		cfg = &h.site.Comments
+	if h.site.Load() != nil {
+		cfg = &h.site.Load().Comments
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": comment.ToViewItems(comments, cfg)})
 }

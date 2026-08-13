@@ -38,7 +38,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			cookie, _ := c.Cookie(postPWCookieName(slug))
 			if !validPostPWCookie(cookie, slug, p.Password) {
 				data := &tmpl.ViewData{
-					Site: s.site,
+					Site: s.site.Load(),
 					Page: &tmpl.Page{
 						Title:  p.Title,
 						Slug:   p.Slug,
@@ -68,7 +68,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			log.Printf("get views for %s: %v", slug, err)
 		}
 		data := &tmpl.ViewData{
-			Site: s.site,
+			Site: s.site.Load(),
 			Page: &tmpl.Page{
 				Title:      p.Title,
 				Slug:       p.Slug,
@@ -97,7 +97,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			data.Page.AIUserAPIOn = aiCfg.UserAPIOn()
 		}
 		// 多作者命中时装配展示名（Spec 53 Part A：banner 作者链接）
-		if a, ok := s.site.Authors[p.Author]; ok {
+		if a, ok := s.site.Load().Authors[p.Author]; ok {
 			data.Page.AuthorName = a.Name
 		}
 		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
@@ -114,7 +114,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		_ = p.Topic
 		// read_next 邻篇导航（site.yml article.read_next 可关）：同分类优先，无同分类邻篇回退全局时间序；
 		// 对齐原版 read_next.ejs：prev=较新文章，next=较早文章；排除加密/未发布文章。
-		if s.site.Article.ReadNext {
+		if s.site.Load().Article.ReadNext {
 			if newer, err := s.st.GetAdjacentPost(slug, p.Category, true); err == nil && newer != nil {
 				data.PrevPost = &tmpl.AdjacentPost{Slug: newer.Slug, Title: newer.Title}
 			}
@@ -123,15 +123,15 @@ func (s *webServer) handlePost(c *gin.Context) {
 			}
 		}
 		// 相关文章：共同标签数 desc + 时间 desc，上限 site.yml article.related_posts（0=关）
-		if n := s.site.Article.RelatedPosts; n > 0 {
+		if n := s.site.Load().Article.RelatedPosts; n > 0 {
 			if related, err := s.st.ListRelatedPosts(slug, p.Tags, n); err == nil && len(related) > 0 {
 				data.RelatedPosts = s.toCards(related)
 			}
 		}
 		// 贡献者/编辑本文：source 固定为 posts/{slug}.md，按 edit_this_page 映射生成链接
-		data.EditPage = tmpl.ResolveEditPage("posts/"+slug+".md", s.site.Article.EditThisPage)
+		data.EditPage = tmpl.ResolveEditPage("posts/"+slug+".md", s.site.Load().Article.EditThisPage)
 		// 过期提醒：距最后更新超阈值（缺省 180 天）时文首渲染提醒块
-		data.ExpiredDays = tmpl.ExpiredDays(data.Page.Date, data.Page.Updated, s.site.Article.ExpireAfterDays(), time.Now())
+		data.ExpiredDays = tmpl.ExpiredDays(data.Page.Date, data.Page.Updated, s.site.Load().Article.ExpireAfterDays(), time.Now())
 		// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
 		desc := p.Excerpt
 		if desc == "" {
@@ -168,7 +168,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 	}
 
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:      p.Title,
 			Slug:       p.Slug,
@@ -216,7 +216,7 @@ func (s *webServer) handlePostUnlock(c *gin.Context) {
 	input := c.PostForm("password")
 	if subtle.ConstantTimeCompare([]byte(input), []byte(p.Password)) != 1 {
 		data := &tmpl.ViewData{
-			Site: s.site,
+			Site: s.site.Load(),
 			Page: &tmpl.Page{
 				Title:       p.Title,
 				Slug:        p.Slug,
@@ -282,7 +282,7 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 	// 预览提示条（内联样式，不依赖外部 CSS）
 	notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">这是一篇通过分享链接预览的文章</div>`)
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:   p.Title,
 			Slug:    p.Slug,

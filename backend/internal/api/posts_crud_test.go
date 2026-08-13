@@ -191,7 +191,7 @@ func TestPostCRUDAuth(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Admin.Password = "secret"
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: site}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	for _, tc := range []struct{ method, path string }{

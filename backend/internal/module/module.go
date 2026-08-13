@@ -9,6 +9,7 @@ package module
 import (
 	"io"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 
@@ -39,7 +40,8 @@ type Meta struct {
 type Deps struct {
 	Store   *store.Store
 	Posts   *post.Service
-	Site    *tmpl.Site
+	// Site 站点配置原子指针（Spec 61 阶段 3）：模块侧 RebuildSite 复制-交换后经 .Load() 读取
+	Site    *atomic.Pointer[tmpl.Site]
 	Modules *Manager // 供中间件按模块启停实时判定（如爬虫埋点）
 }
 

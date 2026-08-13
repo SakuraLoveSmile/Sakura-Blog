@@ -80,8 +80,8 @@ func (s *webServer) registerSearchRoutes(r *gin.Engine) {
 		items := searchItemsFromPosts(posts)
 		// wiki 文档并入索引：遍历所有项目加载已发布文档（Path=/wiki/<projectID>/<slug>）。
 		// 只加本地索引（/search.json），不改 FTS（/api/search 仍只管文章）。
-		for i := range s.site.Wiki {
-			projectID := s.site.Wiki[i].ID
+		for i := range s.site.Load().Wiki {
+			projectID := s.site.Load().Wiki[i].ID
 			docs, err := s.st.ListWikidocs(projectID)
 			if err != nil {
 				log.Printf("list wikidocs %s for search index: %v", projectID, err)

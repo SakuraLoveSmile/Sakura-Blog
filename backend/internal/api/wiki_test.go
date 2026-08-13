@@ -24,7 +24,7 @@ func newWikiTestEnv(t *testing.T) (*gin.Engine, *store.Store) {
 	st := newTestStore(t)
 	r := gin.New()
 	posts := post.NewService(filepath.Join(t.TempDir(), "posts"))
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Posts: posts, Site: &tmpl.Site{}}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Posts: posts, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st

@@ -42,7 +42,7 @@ func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 		},
 	}
 	ws := &webServer{
-		site:      site,
+		site:      sitePtr(site),
 		st:        st,
 		posts:     post.NewService(filepath.Join(t.TempDir(), "posts")),
 		engine:    eng,
@@ -201,7 +201,7 @@ func TestWikiCardHrefSemantics(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ws, st := newWikiVerifyServer(t)
 	// 追加两个项目：ext（无文档，配置外链）、none（无文档且无 URL）
-	ws.site.Wiki = append(ws.site.Wiki,
+	ws.site.Load().Wiki = append(ws.site.Load().Wiki,
 		tmpl.WikiProject{ID: "ext", Name: "ext", Title: "外部文档", Description: "d", Icon: "i", Tags: nil, URL: "https://example.com/docs", Sort: 0},
 		tmpl.WikiProject{ID: "none", Name: "none", Title: "空项目", Description: "d", Icon: "i", Tags: nil, URL: "", Sort: -1},
 	)

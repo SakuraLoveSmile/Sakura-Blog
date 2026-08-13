@@ -30,17 +30,17 @@ func (h *Handler) notify(cm, parent *store.Comment) {
 			log.Printf("comment notify panic: %v", r)
 		}
 	}()
-	if h.cfg.Notify.SMTPHost == "" {
+	if h.site.Load().Comments.Notify.SMTPHost == "" {
 		return
 	}
-	adminEmail := h.cfg.AdminEmail
+	adminEmail := h.site.Load().Comments.AdminEmail
 	sendFn := h.send
 	if sendMailOverride != nil {
 		sendFn = sendMailOverride
 	}
 
 	if adminEmail != "" && !strings.EqualFold(adminEmail, cm.Email) {
-		subject := fmt.Sprintf("「%s」有新评论", h.siteTitle)
+		subject := fmt.Sprintf("「%s」有新评论", h.site.Load().Title)
 		body := fmt.Sprintf("%s 在 %s 发表了评论（状态：%s）：\n\n%s\n",
 			cm.Nick, cm.PageKey, statusText(cm.Status), cm.ContentMD)
 		h.sendFn(sendFn, adminEmail, subject, body)
@@ -48,7 +48,7 @@ func (h *Handler) notify(cm, parent *store.Comment) {
 
 	if parent != nil && cm.Status == store.CommentApproved && parent.Email != "" &&
 		!strings.EqualFold(parent.Email, cm.Email) && !strings.EqualFold(parent.Email, adminEmail) {
-		subject := fmt.Sprintf("「%s」有人回复了你的评论", h.siteTitle)
+		subject := fmt.Sprintf("「%s」有人回复了你的评论", h.site.Load().Title)
 		body := fmt.Sprintf("%s 在 %s 回复了你的评论：\n\n%s\n\n你的原评论：\n%s\n",
 			cm.Nick, cm.PageKey, cm.ContentMD, parent.ContentMD)
 		h.sendFn(sendFn, parent.Email, subject, body)
@@ -95,7 +95,7 @@ func statusText(s string) string {
 
 // send 发送单封邮件。465 端口走隐式 TLS（QQ/163 常用），其余端口走 STARTTLS（net/smtp 默认）。
 func (h *Handler) send(to, subject, body string) {
-	n := h.cfg.Notify
+	n := h.site.Load().Comments.Notify
 	from := n.From
 	if from == "" {
 		from = n.Username
@@ -160,16 +160,16 @@ func sendImplicitTLS(addr, host string, auth smtp.Auth, from, to string, msg []b
 // SendTestMail 向 admin_email 发送测试邮件（Console 配置页「发送测试」按钮用）。
 // SMTP 未配置时返回错误。
 func (h *Handler) SendTestMail() error {
-	if h.cfg.Notify.SMTPHost == "" {
+	if h.site.Load().Comments.Notify.SMTPHost == "" {
 		return fmt.Errorf("SMTP 未配置（smtp_host 为空）")
 	}
-	to := h.cfg.AdminEmail
+	to := h.site.Load().Comments.AdminEmail
 	if to == "" {
 		return fmt.Errorf("博主邮箱（admin_email）未配置")
 	}
-	subject := fmt.Sprintf("「%s」邮件通知测试", h.siteTitle)
+	subject := fmt.Sprintf("「%s」邮件通知测试", h.site.Load().Title)
 	body := "这是一封测试邮件，用于验证 SMTP 配置是否正确。\n\n如果你收到了这封邮件，说明邮件通知功能已就绪。\n"
-	n := h.cfg.Notify
+	n := h.site.Load().Comments.Notify
 	from := n.From
 	if from == "" {
 		from = n.Username

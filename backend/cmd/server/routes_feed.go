@@ -42,12 +42,12 @@ type Item struct {
 // resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
 func (s *webServer) resolveAuthor(postAuthor string) string {
 	if postAuthor != "" {
-		if a, ok := s.site.Authors[postAuthor]; ok && a.Name != "" {
+		if a, ok := s.site.Load().Authors[postAuthor]; ok && a.Name != "" {
 			return a.Name
 		}
 	}
-	if s.site.Title != "" {
-		return s.site.Title
+	if s.site.Load().Title != "" {
+		return s.site.Load().Title
 	}
 	return ""
 }
@@ -96,9 +96,9 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 		rss := RSS{
 			Version: "2.0",
 			Channel: Channel{
-				Title:       s.site.Title,
+				Title:       s.site.Load().Title,
 				Link:        siteURL,
-				Description: s.site.Description,
+				Description: s.site.Load().Description,
 				Items:       rssItemsFromPosts(posts, siteURL, s.resolveAuthor),
 			},
 		}
@@ -144,7 +144,7 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 		}
 
 		// wiki 已发布文档（Spec 35a）：遍历 site.yml wiki 段项目，收录每个项目的 published 文档。
-		for _, project := range s.site.Wiki {
+		for _, project := range s.site.Load().Wiki {
 			docs, err := s.st.ListWikidocs(project.ID)
 			if err != nil {
 				log.Printf("sitemap: list wikidocs %s: %v", project.ID, err)
@@ -221,7 +221,7 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 		data, err := s.ogGen.GetOrGenerate(slug, og.PostInfo{
 			Title:     p.Title,
 			Date:      p.CreatedAt,
-			SiteTitle: s.site.Title,
+			SiteTitle: s.site.Load().Title,
 		})
 		if err != nil {
 			log.Printf("og: generate %s failed: %v", slug, err)

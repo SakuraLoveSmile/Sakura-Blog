@@ -54,7 +54,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			}
 		}
 		data := &tmpl.ViewData{
-			Site:             s.site,
+			Site:             s.site.Load(),
 			Page:             &tmpl.Page{Title: s.menuTitle("notes", "笔记"), Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
 			NotesContentHTML: contentHTML,
 			Moments:          s.momentH.RecentItems(5),
@@ -94,7 +94,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			ay.Posts = append(ay.Posts, &tmpl.ArchiveItem{Slug: p.Slug, Title: title, Date: p.CreatedAt})
 		}
 		s.renderBase(c, &tmpl.ViewData{
-			Site:     s.site,
+			Site:     s.site.Load(),
 			Page:     &tmpl.Page{Title: "归档", Layout: "archive", MenuID: "archive", Lang: "zh-CN"},
 			Archives: years,
 		})
@@ -110,11 +110,11 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		cats := make([]*tmpl.CatItem, 0, len(counts))
 		for name, n := range counts {
-			cats = append(cats, &tmpl.CatItem{Name: name, Count: n, Icon: s.site.Article.CategoryIcon[name]})
+			cats = append(cats, &tmpl.CatItem{Name: name, Count: n, Icon: s.site.Load().Article.CategoryIcon[name]})
 		}
 		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
 		s.renderBase(c, &tmpl.ViewData{
-			Site: s.site,
+			Site: s.site.Load(),
 			Page: &tmpl.Page{Title: "分类", Layout: "categories", MenuID: "post", Lang: "zh-CN"},
 			Cats: cats,
 		})
@@ -140,8 +140,8 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			return
 		}
 		s.renderBase(c, &tmpl.ViewData{
-			Site:  s.site,
-			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name, Type: s.site.Article.Type},
+			Site:  s.site.Load(),
+			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name, Type: s.site.Load().Article.Type},
 			Posts: s.toCards(posts),
 		})
 	})
@@ -162,7 +162,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		}
 		items := make([]*tmpl.TagItem, 0, len(counts))
 		for name, n := range counts {
-			items = append(items, &tmpl.TagItem{Name: name, Count: n, Icon: s.site.Article.TagIcon[name]})
+			items = append(items, &tmpl.TagItem{Name: name, Count: n, Icon: s.site.Load().Article.TagIcon[name]})
 		}
 		sort.Slice(items, func(i, j int) bool {
 			if items[i].Count != items[j].Count {
@@ -171,7 +171,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			return items[i].Name < items[j].Name
 		})
 		s.renderBase(c, &tmpl.ViewData{
-			Site:     s.site,
+			Site:     s.site.Load(),
 			Page:     &tmpl.Page{Title: "标签", Layout: "tags", MenuID: "post", Lang: "zh-CN"},
 			TagItems: items,
 		})
@@ -197,8 +197,8 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			return
 		}
 		s.renderBase(c, &tmpl.ViewData{
-			Site:  s.site,
-			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name, Type: s.site.Article.Type},
+			Site:  s.site.Load(),
+			Page:  &tmpl.Page{Title: "标签：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Tag: name, Type: s.site.Load().Article.Type},
 			Posts: s.toCards(posts),
 		})
 	})
@@ -227,7 +227,7 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 		icon := t.Icon
 		if icon == "" {
 			// default.topic 占位素材（对齐原版 default 段），空则回退内置 URL
-			icon = s.site.Default.Topic
+			icon = s.site.Load().Default.Topic
 		}
 		if icon == "" {
 			icon = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/10433048.png"
@@ -235,7 +235,7 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 		items = append(items, &tmpl.TopicItem{Name: t.Name, Count: n, Icon: icon})
 	}
 	s.renderBase(c, &tmpl.ViewData{
-		Site:   s.site,
+		Site:   s.site.Load(),
 		Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
 		Topics: items,
 	})
@@ -273,14 +273,14 @@ func (s *webServer) handleTopicDetail(c *gin.Context) {
 		return
 	}
 	s.renderBase(c, &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:  tmpl.Lang("nav.topic", t.Name),
 			Layout: "topic",
 			MenuID: "post",
 			Lang:   "zh-CN",
 			Topic:  t.Name,
-			Type:   s.site.Article.Type,
+			Type:   s.site.Load().Article.Type,
 		},
 		Posts: s.toCards(posts),
 		TopicDetail: func() *tmpl.TopicDetail {
@@ -321,7 +321,7 @@ func (s *webServer) handleLinksPage(c *gin.Context) {
 		}
 	}
 	data := &tmpl.ViewData{
-		Site:    s.site,
+		Site:    s.site.Load(),
 		Page:    &tmpl.Page{Title: s.menuTitle("friends", "友链"), Layout: "page", MenuID: p.Slug, Lang: "zh-CN", Slug: p.Slug},
 		Content: template.HTML(contentHTML),
 	}
@@ -332,7 +332,7 @@ func (s *webServer) handleLinksPage(c *gin.Context) {
 // menuTitle 页面标题与菜单配置联动：取 menubar 中 ID==menuID 的菜单项标题，
 // 未配置时回退 fallback（避免标题硬编码与菜单改名脱节）。
 func (s *webServer) menuTitle(menuID, fallback string) string {
-	for _, it := range s.site.Menubar.Items {
+	for _, it := range s.site.Load().Menubar.Items {
 		if it.ID == menuID && it.Title != "" {
 			return it.Title
 		}
@@ -355,16 +355,16 @@ func (s *webServer) handleFriendsPage(c *gin.Context) {
 			contentHTML = rendered
 		}
 	}
-	title := s.site.Pages.Friends.Title
+	title := s.site.Load().Pages.Friends.Title
 	if title == "" {
 		title = p.Title
 	}
 	pg := &tmpl.Page{Title: title, Layout: "page", MenuID: "friends", Lang: "zh-CN", Slug: p.Slug}
-	if hero := s.site.Pages.Friends.Hero; hero != nil {
+	if hero := s.site.Load().Pages.Friends.Hero; hero != nil {
 		pg.Banner = hero.Background
 		pg.Subtitle = hero.Description
 	}
-	data := &tmpl.ViewData{Site: s.site, Page: pg, Content: template.HTML(contentHTML)}
+	data := &tmpl.ViewData{Site: s.site.Load(), Page: pg, Content: template.HTML(contentHTML)}
 	data.TOC = tmpl.ExtractTOCWith(contentHTML, s.tocOptions())
 	s.fillComments(data, "/friends")
 	s.renderBase(c, data)
@@ -376,8 +376,8 @@ func (s *webServer) handleWiki(c *gin.Context) {
 	// 收集全量标签（顶部 tab，保留首见顺序）
 	var tags []string
 	tagSeen := map[string]bool{}
-	for i := range s.site.Wiki {
-		for _, t := range s.site.Wiki[i].Tags {
+	for i := range s.site.Load().Wiki {
+		for _, t := range s.site.Load().Wiki[i].Tags {
 			if !tagSeen[t] {
 				tagSeen[t] = true
 				tags = append(tags, t)
@@ -389,11 +389,11 @@ func (s *webServer) handleWiki(c *gin.Context) {
 		return
 	}
 	// 项目（可按 tag 过滤），按 Sort 降序。
-	// 复制项目值而非引用 s.site.Wiki 共享切片元素：HasDocs 是运行时标记，
+	// 复制项目值而非引用 s.site.Load().Wiki 共享切片元素：HasDocs 是运行时标记，
 	// 就地修改会污染配置源并引发并发竞态（多请求同时写同一元素）。
-	projects := make([]*tmpl.WikiProject, 0, len(s.site.Wiki))
-	for i := range s.site.Wiki {
-		w := s.site.Wiki[i]
+	projects := make([]*tmpl.WikiProject, 0, len(s.site.Load().Wiki))
+	for i := range s.site.Load().Wiki {
+		w := s.site.Load().Wiki[i]
 		if tag != "" {
 			matched := false
 			for _, t := range w.Tags {
@@ -428,7 +428,7 @@ func (s *webServer) handleWiki(c *gin.Context) {
 		return projects[i].ID < projects[j].ID
 	})
 	s.renderBase(c, &tmpl.ViewData{
-		Site:         s.site,
+		Site:         s.site.Load(),
 		Page:         &tmpl.Page{Title: s.menuTitle("wiki", "文库"), Layout: "wiki", MenuID: "wiki", Lang: "zh-CN", Tag: tag},
 		WikiProjects: projects,
 		WikiTags:     tags,
@@ -464,7 +464,7 @@ func (s *webServer) handleWikiProject(c *gin.Context) {
 	}
 	// 无已发布文档：渲染项目首页空态（复用 wiki 布局）
 	s.renderBase(c, &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{Title: s.menuTitle("wiki", "文库"), Layout: "wiki", MenuID: "wiki", Lang: "zh-CN"},
 	})
 }
@@ -536,7 +536,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		recentDocs = append(recentDocs, &tmpl.RecentPost{Title: d.Title, URL: "/wiki/" + projectID + "/" + d.Slug})
 	}
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:       cur.Title,
 			Layout:      "wiki-doc",
@@ -593,7 +593,7 @@ func (s *webServer) handleNotebooks(c *gin.Context) {
 		views = append(views, tmpl.NotebookView{Notebook: *nb, NoteCount: total})
 	}
 	s.renderBase(c, &tmpl.ViewData{
-		Site:      s.site,
+		Site:      s.site.Load(),
 		Page:      &tmpl.Page{Title: tmpl.Lang("notebook.title"), Layout: "notebooks", Lang: "zh-CN"},
 		Notebooks: views,
 	})
@@ -694,7 +694,7 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 		pages[i] = i + 1
 	}
 	s.renderBase(c, &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{Title: nb.Name, Layout: "notebook", Lang: "zh-CN", Tag: tag},
 		NotebookDetail: nb,
 		Notes:          noteValues(notes),
@@ -771,7 +771,7 @@ func (s *webServer) handleNote(c *gin.Context) {
 	}
 	tags := tagCountItems(tagCounts)
 	s.renderBase(c, &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:       note.Title,
 			Layout:      "note",
@@ -827,9 +827,9 @@ func tagCountItems(counts map[string]int) []tmpl.TagCount {
 
 // wikiProjectByID 按 ID 查 site.yml wiki 段项目（配置驱动，未配置返回 nil）。
 func (s *webServer) wikiProjectByID(id string) *tmpl.WikiProject {
-	for i := range s.site.Wiki {
-		if s.site.Wiki[i].ID == id {
-			return &s.site.Wiki[i]
+	for i := range s.site.Load().Wiki {
+		if s.site.Load().Wiki[i].ID == id {
+			return &s.site.Load().Wiki[i]
 		}
 	}
 	return nil
@@ -882,7 +882,7 @@ func wikiTreeNodes(nodes []store.TreeNode) []tmpl.WikiTreeNode {
 func (s *webServer) handleAuthor(c *gin.Context) {
 	id := c.Param("id")
 	// 检查作者是否存在
-	author, ok := s.site.Authors[id]
+	author, ok := s.site.Load().Authors[id]
 	if !ok {
 		s.render404(c)
 		return
@@ -915,7 +915,7 @@ func (s *webServer) handleAuthor(c *gin.Context) {
 		pages[i] = i + 1
 	}
 	data := &tmpl.ViewData{
-		Site: s.site,
+		Site: s.site.Load(),
 		Page: &tmpl.Page{
 			Title:  tmpl.Lang("author.page_title", author.Name),
 			Layout: "author",

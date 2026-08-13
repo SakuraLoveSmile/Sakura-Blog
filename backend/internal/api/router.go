@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,8 @@ const (
 type Handler struct {
 	store     *store.Store
 	posts     *post.Service
-	site      *tmpl.Site
+	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，API 侧 .Load() 读取
+	site      *atomic.Pointer[tmpl.Site]
 	comments  *comment.Handler
 	backups   *backup.Service
 	modules   *module.Manager
@@ -73,7 +75,7 @@ type Handler struct {
 type Config struct {
 	Store       *store.Store
 	Posts       *post.Service
-	Site        *tmpl.Site
+	Site        *atomic.Pointer[tmpl.Site] // 站点配置原子指针（Spec 61 阶段 3）
 	Comments    *comment.Handler
 	Backups     *backup.Service
 	Modules     *module.Manager
@@ -449,7 +451,7 @@ func (h *Handler) Register(r *gin.Engine) {
 // cookie 校验通过且剩余有效期 < TTL 一半时自动签发新 cookie（滑动续期）。
 func (h *Handler) apiAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		password := h.site.Admin.Password
+		password := h.site.Load().Admin.Password
 		if password == "" {
 			// 无密码站点：保持历史全放行语义，视为 admin。
 			c.Set("userID", int64(0))
@@ -534,7 +536,7 @@ func (h *Handler) validAuthCookie(value string) (int64, string, int64, string, b
 
 	// 旧格式: expiry.sig（签名 key = admin password）
 	if len(parts) == 2 {
-		password := h.site.Admin.Password
+		password := h.site.Load().Admin.Password
 		if password == "" {
 			return 0, "", 0, "", false
 		}

@@ -117,7 +117,7 @@ func (h *Handler) dashboardRecentComments(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	mirror := h.site.Comments.GravatarMirror
+	mirror := h.site.Load().Comments.GravatarMirror
 	items := make([]*commentJSON, 0, len(recent))
 	for _, cm := range recent {
 		items = append(items, toCommentJSON(cm, mirror))

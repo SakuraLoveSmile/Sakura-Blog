@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -43,9 +44,9 @@ const (
 
 // Handler 评论公开 API 处理器。
 type Handler struct {
-	store     *store.Store
-	cfg       *tmpl.CommentsConfig
-	siteTitle string // 邮件主题用
+	store *store.Store
+	// site 站点配置原子指针（Spec 61 阶段 3）：评论配置/站点标题随 RebuildSite 复制-交换实时可见
+	site *atomic.Pointer[tmpl.Site]
 	notifier  *notify.Service // 站内通知服务（Wave 3b），nil 时跳过站内通知/Webhook
 	uploadDir string          // 评论图片上传根目录，空=禁用上传端点
 
@@ -57,12 +58,11 @@ type Handler struct {
 	uploadHist map[string][]time.Time // IP → 窗口内上传记录（总量限流）
 }
 
-// New 创建评论 handler。cfg 指向站点配置的 Comments 段（运行期只读）。
-func New(s *store.Store, cfg *tmpl.CommentsConfig, siteTitle string) *Handler {
+// New 创建评论 handler。site 为站点配置原子指针（Comments 段与站点标题经 .Load() 读取）。
+func New(s *store.Store, site *atomic.Pointer[tmpl.Site]) *Handler {
 	return &Handler{
 		store:      s,
-		cfg:        cfg,
-		siteTitle:  siteTitle,
+		site:       site,
 		last:       map[string]time.Time{},
 		uploadLast: map[string]time.Time{},
 		uploadHist: map[string][]time.Time{},
@@ -98,7 +98,8 @@ func (h *Handler) list(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "查询失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": ToViewItems(comments, h.cfg)})
+	cfg := h.site.Load().Comments
+	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": ToViewItems(comments, &cfg)})
 }
 
 // like POST /api/comments/:id/like → IP 去重点赞，返回 {ok, likes, liked}。
@@ -233,7 +234,7 @@ func (h *Handler) create(c *gin.Context) {
 	}
 
 	// 博主身份匹配（邮箱与 admin_email 一致），博主豁免限流且直接发布
-	isAdmin := h.cfg.AdminEmail != "" && strings.EqualFold(req.Email, h.cfg.AdminEmail)
+	isAdmin := h.site.Load().Comments.AdminEmail != "" && strings.EqualFold(req.Email, h.site.Load().Comments.AdminEmail)
 	// 已注册管理员/作者也视为博主身份（若邮箱匹配 admin_email 已覆盖）
 	if userID > 0 && (verified && !isAdmin) {
 		// 非 admin 邮箱但已登录：保持普通 verified 用户，isAdmin 仍由 admin_email 判定
@@ -271,7 +272,7 @@ func (h *Handler) create(c *gin.Context) {
 	}
 
 	status := store.CommentPending
-	if !h.cfg.Moderation || isAdmin {
+	if !h.site.Load().Comments.Moderation || isAdmin {
 		status = store.CommentApproved
 	}
 
@@ -302,7 +303,8 @@ func (h *Handler) create(c *gin.Context) {
 	resp := gin.H{"ok": true, "status": status}
 	if status == store.CommentApproved {
 		// 返回视图模型，前端无刷新插入列表
-		resp["comment"] = ToViewItem(cm, h.cfg)
+		cfg := h.site.Load().Comments
+		resp["comment"] = ToViewItem(cm, &cfg)
 	}
 	c.JSON(http.StatusOK, resp)
 }
@@ -392,8 +394,15 @@ func (h *Handler) uploadImage(c *gin.Context) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"ok": false, "error": "上传太频繁，请稍后再试"})
 		return
 	}
+	// Spec 61 阶段 3：解析 multipart 前先限制请求体总大小，超大请求在解析阶段即被拒绝（不落临时文件）
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize+64<<10)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "图片不能超过 5MB"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "未选择文件"})
 		return
 	}

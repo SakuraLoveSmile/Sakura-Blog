@@ -47,9 +47,9 @@ func (h *Handler) toggleModule(c *gin.Context) {
 
 // notifySEOPublished 文章发布后触发 SEO 自动推送（模块启用 + push.enabled 时才生效）。
 func (h *Handler) notifySEOPublished(slug string) {
-	if h.modules == nil || h.site == nil || h.site.URL == "" {
+	if h.modules == nil || h.site.Load() == nil || h.site.Load().URL == "" {
 		return
 	}
-	url := strings.TrimRight(h.site.URL, "/") + "/post/" + slug
+	url := strings.TrimRight(h.site.Load().URL, "/") + "/post/" + slug
 	seo.NotifyPublished(module.Deps{Store: h.store, Site: h.site, Modules: h.modules}, url)
 }
