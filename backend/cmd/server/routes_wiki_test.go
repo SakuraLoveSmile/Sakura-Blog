@@ -30,6 +30,7 @@ func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
+
 	site := &tmpl.Site{
 		Title:   "测试站点",
 		Widgets: tmpl.WidgetsConfig{},
@@ -42,12 +43,13 @@ func newWikiVerifyServer(t *testing.T) (*webServer, *store.Store) {
 		},
 	}
 	ws := &webServer{
-		site:      sitePtr(site),
-		st:        st,
-		posts:     post.NewService(filepath.Join(t.TempDir(), "posts")),
-		engine:    eng,
-		devMode:   true,
-		uploadDir: t.TempDir(),
+		site:         sitePtr(site),
+		st:           st,
+		posts:        post.NewService(filepath.Join(t.TempDir(), "posts")),
+		engine:       eng,
+		devMode:      true,
+		uploadDir:    t.TempDir(),
+		contentCache: newContentCache(st, sitePtr(site)),
 	}
 	return ws, st
 }

@@ -151,18 +151,24 @@ func (a *Aggregator) handleAggregated(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"content": content})
 }
 
+// checkLinksConcurrency 并发抓取上限（Spec 61 阶段 5：信号量 10，防止大量友链同时拉起抓取打爆连接）。
+const checkLinksConcurrency = 10
+
 // refresh 并发抓取所有带 rss 的友链，聚合后按最新文章时间倒序写回缓存。
 func (a *Aggregator) refresh() {
 	base := a.buildBase()
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, checkLinksConcurrency)
 	for i := range base {
 		f := &base[i]
 		if f.rss == "" {
 			continue
 		}
 		wg.Add(1)
+		sem <- struct{}{} // 信号量：满 10 个并发时阻塞排队
 		go func(fr *Friend) {
 			defer wg.Done()
+			defer func() { <-sem }()
 			posts, err := a.fetchFeed(fr.rss)
 			if err != nil {
 				log.Printf("friends: fetch %s failed: %v", fr.rss, err)

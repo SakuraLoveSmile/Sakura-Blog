@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"path/filepath"
+	"os"
 	"net/http"
 	"regexp"
 	"sort"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/frontend/assets"
 	"blog/internal/comment"
 	"blog/internal/moment"
 	"blog/internal/og"
@@ -66,6 +69,11 @@ const (
 type webServer struct {
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，前台无锁读 .Load()
 	site      *atomic.Pointer[tmpl.Site]
+	// contentCache 内容派生产物缓存（Spec 61 阶段 5：/search.json 与 /sitemap.xml）
+	contentCache *contentCache
+	// swTemplate Service Worker 模板（Spec 61 阶段 5：启动读一次，避免每请求读文件；
+	// dev 模式同样启动时读——改 sw.js 需重启服务生效）
+	swTemplate []byte
 	st        *store.Store
 	posts     *post.Service
 	engine    *tmpl.Engine
@@ -81,6 +89,22 @@ type webServer struct {
 	sidebarMu     sync.Mutex
 	sidebarCached *sidebarSnapshot
 	sidebarExpiry time.Time
+}
+
+// loadSWTemplate 启动时读一次 SW 模板（dev 走磁盘、embed 走 FS），失败返回 nil（serveSW 404）。
+func loadSWTemplate(devMode bool, root string) []byte {
+	var data []byte
+	var err error
+	if devMode {
+		data, err = os.ReadFile(filepath.Join(root, "frontend", "assets", "js", "sw.js"))
+	} else {
+		data, err = assets.FS.ReadFile("js/sw.js")
+	}
+	if err != nil {
+		log.Printf("load sw template: %v", err)
+		return nil
+	}
+	return data
 }
 
 // webDeps webServer 构造依赖（均为必填，momentH 除外——moment 装配依赖 webServer 的 fill 函数，装配后回填）。
@@ -100,16 +124,18 @@ type webDeps struct {
 // newWebServer 构造前台装配载体。
 func newWebServer(d webDeps) *webServer {
 	return &webServer{
-		site:        d.Site,
-		st:          d.Store,
-		posts:       d.Posts,
-		engine:      d.Engine,
-		searchIdx:   d.SearchIdx,
-		ogGen:       d.OGGen,
-		devMode:     d.DevMode,
-		root:        d.Root,
-		uploadDir:   d.UploadDir,
-		notesMDPath: d.NotesPath,
+		site:         d.Site,
+		st:           d.Store,
+		posts:        d.Posts,
+		engine:       d.Engine,
+		searchIdx:    d.SearchIdx,
+		ogGen:        d.OGGen,
+		devMode:      d.DevMode,
+		root:         d.Root,
+		uploadDir:    d.UploadDir,
+		notesMDPath:  d.NotesPath,
+		contentCache: newContentCache(d.Store, d.Site),
+		swTemplate:   loadSWTemplate(d.DevMode, d.Root),
 	}
 }
 

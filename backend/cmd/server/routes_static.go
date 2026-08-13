@@ -72,14 +72,8 @@ func (s *webServer) registerStaticRoutes(r *gin.Engine) error {
 // 版本变更后旧 SW 缓存自动失效（占位符替换见 sw.js 源文件）。
 func (s *webServer) serveSW() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var data []byte
-		var err error
-		if s.devMode {
-			data, err = os.ReadFile(filepath.Join(s.root, "frontend", "assets", "js", "sw.js"))
-		} else {
-			data, err = assets.FS.ReadFile("js/sw.js")
-		}
-		if err != nil {
+		// Spec 61 阶段 5：模板启动时已读入（swTemplate），此处仅做版本占位符替换
+		if len(s.swTemplate) == 0 {
 			c.Status(http.StatusNotFound)
 			return
 		}
@@ -87,7 +81,7 @@ func (s *webServer) serveSW() gin.HandlerFunc {
 		if ver == "" {
 			ver = "blog-v3"
 		}
-		body := strings.ReplaceAll(string(data), "__BLOG_SW_VERSION__", ver)
+		body := strings.ReplaceAll(string(s.swTemplate), "__BLOG_SW_VERSION__", ver)
 		c.Header("Service-Worker-Allowed", "/")
 		c.Header("Cache-Control", "no-cache")
 		c.Data(http.StatusOK, "application/javascript", []byte(body))

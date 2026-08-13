@@ -56,7 +56,7 @@ func assetsCacheControl() gin.HandlerFunc {
 }
 
 // installMiddleware 装配全局中间件链（顺序敏感：recovery → 代理/上传上限 → HEAD 改写 → gzip → 响应头 → 埋点）。
-func (s *webServer) installMiddleware(r *gin.Engine, app *config.App) {
+func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageViewBuffer) {
 	// P1-8：自定义 500——Logger + CustomRecovery，panic 时渲染友好错误页而非裸文本。
 	r.Use(gin.Logger())
 	r.Use(gin.CustomRecovery(func(c *gin.Context, err interface{}) {
@@ -106,7 +106,7 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App) {
 	r.Use(assetsCacheControl())
 
 	// 访问埋点中间件（Spec 24）：仅记录内容页 GET，排除静态/API/后台/机器人。
-	r.Use(trackPageView(s.st))
+	r.Use(trackPageView(pv))
 }
 
 // --- 访问埋点（Spec 24） ---
@@ -120,7 +120,8 @@ var botUASubstrings = []string{
 
 // trackPageView 返回 Gin 中间件：仅记录内容页 GET 请求的访问明细。
 // 白名单制：只记 /、/post/*、/notes、/friends、/moments、/archives 等内容路径。
-func trackPageView(st *store.Store) gin.HandlerFunc {
+// Spec 61 阶段 5：埋点改走 pageViewBuffer 异步批量（不再同步写库串行化读）。
+func trackPageView(pv *pageViewBuffer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
 			c.Next()
@@ -164,7 +165,7 @@ func trackPageView(st *store.Store) gin.HandlerFunc {
 		uaHash := fmt.Sprintf("%x", h.Sum32())
 
 		referrer := c.Request.Referer()
-		_ = st.RecordView(p, referrer, uaHash)
+		pv.push(store.PageView{Path: p, Referrer: referrer, UAHash: uaHash})
 		c.Next()
 	}
 }

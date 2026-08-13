@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"sync"
 	"path/filepath"
 	"time"
 	"unicode/utf8"
@@ -29,18 +30,28 @@ type PostInfo struct {
 	SiteTitle string
 }
 
+// ogCall 进行中的生成调用（singleflight：并发同 slug 共享一次生成，Spec 61 阶段 5）。
+type ogCall struct {
+	done chan struct{}
+	data []byte
+	err  error
+}
+
 // Generator OG 图生成器，持有已解析字体。
 type Generator struct {
 	fontPath  string // TTF 字体路径（运行时加载）
 	cacheDir  string // 磁盘缓存目录
 	fontOK    bool
+
+	inFlightMu sync.Mutex
+	inFlight   map[string]*ogCall // 进行中生成去重
 }
 
 // New 创建生成器。fontPath 为 TTF 文件路径；cacheDir 为缓存目录（自动创建）。
 // 字体加载失败不 panic，Generate 时降级返回占位图。
 func New(fontPath, cacheDir string) *Generator {
 	_ = os.MkdirAll(cacheDir, 0o755)
-	g := &Generator{fontPath: fontPath, cacheDir: cacheDir}
+	g := &Generator{fontPath: fontPath, cacheDir: cacheDir, inFlight: map[string]*ogCall{}}
 	// 预检字体可读
 	if _, err := os.ReadFile(fontPath); err == nil {
 		g.fontOK = true
@@ -54,9 +65,9 @@ func NewFromBytes(fontData []byte, cacheDir string) *Generator {
 	_ = os.MkdirAll(cacheDir, 0o755)
 	fontPath := filepath.Join(cacheDir, ".font.ttf")
 	if err := os.WriteFile(fontPath, fontData, 0o644); err != nil {
-		return &Generator{cacheDir: cacheDir, fontOK: false}
+		return &Generator{cacheDir: cacheDir, fontOK: false, inFlight: map[string]*ogCall{}}
 	}
-	return &Generator{fontPath: fontPath, cacheDir: cacheDir, fontOK: true}
+	return &Generator{fontPath: fontPath, cacheDir: cacheDir, fontOK: true, inFlight: map[string]*ogCall{}}
 }
 
 // CachePath 返回指定 slug 的缓存文件路径。
@@ -70,17 +81,32 @@ func (g *Generator) Invalidate(slug string) {
 }
 
 // GetOrGenerate 优先读缓存；缓存不存在则生成并写入。返回 PNG 字节。
+// Spec 61 阶段 5：并发同 slug 去重（singleflight 简化版）——首个请求生成，其余等待共享结果。
 func (g *Generator) GetOrGenerate(slug string, info PostInfo) ([]byte, error) {
 	path := g.CachePath(slug)
 	if data, err := os.ReadFile(path); err == nil && len(data) > 0 {
 		return data, nil
 	}
-	data, err := g.Generate(info)
-	if err != nil {
-		return nil, err
+	g.inFlightMu.Lock()
+	if call, ok := g.inFlight[slug]; ok {
+		g.inFlightMu.Unlock()
+		<-call.done
+		return call.data, call.err
 	}
-	_ = os.WriteFile(path, data, 0o644)
-	return data, nil
+	call := &ogCall{done: make(chan struct{})}
+	g.inFlight[slug] = call
+	g.inFlightMu.Unlock()
+
+	data, err := g.Generate(info)
+	if err == nil {
+		_ = os.WriteFile(path, data, 0o644)
+	}
+	call.data, call.err = data, err
+	close(call.done)
+	g.inFlightMu.Lock()
+	delete(g.inFlight, slug)
+	g.inFlightMu.Unlock()
+	return data, err
 }
 
 // Generate 绘制 OG 图并编码为 PNG 字节。

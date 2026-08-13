@@ -69,38 +69,16 @@ func (s *webServer) registerSearchRoutes(r *gin.Engine) {
 	})
 
 	// 本地搜索索引：全量 published 文章的标题/正文纯文本，前端 local-search.js 拉取。
-	// no-store：索引需实时反映 admin 改动，禁止浏览器/CDN 缓存。
+	// Spec 61 阶段 5：内存缓存（写路径置脏后重建）；响应仍 no-store，禁止浏览器/CDN 缓存。
 	r.GET("/search.json", func(c *gin.Context) {
-		posts, err := s.st.ListPublished()
+		data, err := s.contentCache.searchJSON()
 		if err != nil {
-			log.Printf("list posts: %v", err)
+			log.Printf("search index: %v", err)
 			s.render500(c)
 			return
 		}
-		items := searchItemsFromPosts(posts)
-		// wiki 文档并入索引：遍历所有项目加载已发布文档（Path=/wiki/<projectID>/<slug>）。
-		// 只加本地索引（/search.json），不改 FTS（/api/search 仍只管文章）。
-		for i := range s.site.Load().Wiki {
-			projectID := s.site.Load().Wiki[i].ID
-			docs, err := s.st.ListWikidocs(projectID)
-			if err != nil {
-				log.Printf("list wikidocs %s for search index: %v", projectID, err)
-				continue // 查询失败跳过该项目，不影响其余索引
-			}
-			for _, d := range docs {
-				if d.Status != store.StatusPublished {
-					continue
-				}
-				content := truncateText(stripHTML(d.ContentHTML), 2000)
-				items = append(items, searchItem{
-					Title:   d.Title,
-					Content: content,
-					Path:    "/wiki/" + projectID + "/" + d.Slug,
-				})
-			}
-		}
 		c.Header("Cache-Control", "no-store")
-		c.JSON(http.StatusOK, items)
+		c.Data(http.StatusOK, "application/json; charset=utf-8", data)
 	})
 }
 

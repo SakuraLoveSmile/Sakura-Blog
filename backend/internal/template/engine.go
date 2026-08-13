@@ -120,15 +120,3 @@ func (e *Engine) Render(name string, data *ViewData) (string, error) {
 	return sb.String(), nil
 }
 
-// RenderBytes 同 Render，返回字节切片（给 Gin 直接写响应）。
-func (e *Engine) RenderBytes(name string, data *ViewData) ([]byte, error) {
-	t := e.tpl.Lookup(name)
-	if t == nil {
-		return nil, fmt.Errorf("template %q not found", name)
-	}
-	var sb strings.Builder
-	if err := t.Execute(&sb, data); err != nil {
-		return nil, fmt.Errorf("execute %s: %w", name, err)
-	}
-	return []byte(sb.String()), nil
-}

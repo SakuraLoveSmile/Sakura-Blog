@@ -58,6 +58,8 @@ type Handler struct {
 
 	// renderSitePreview 设置页「前端预览」渲染回调（cmd/server 注入，nil 时端点 501）。
 	renderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	// onContentChanged 内容写路径回调（cmd/server 注入，可空）：置脏内容派生缓存。
+	onContentChanged func()
 
 	// 登录限流（P0-4）
 	loginMu    sync.Mutex
@@ -83,6 +85,9 @@ type Config struct {
 	Icons       *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	// OnContentChanged 内容写路径回调（Spec 61 阶段 5）：wikidoc/notebook/note/设置保存后
+	// 通知 cmd/server 置脏 /search.json 与 /sitemap.xml 缓存，可空。
+	OnContentChanged func()
 	UploadDir   string
 	MaxUploadMB int
 }
@@ -103,6 +108,7 @@ func New(cfg Config) *Handler {
 		notify:    cfg.Notify,
 		icons:     cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
+		onContentChanged:  cfg.OnContentChanged,
 		uploadDir: cfg.UploadDir,
 		maxUpload: int64(maxMB) << 20,
 		loginFails: make(map[string]struct {

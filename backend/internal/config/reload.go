@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 	"sync/atomic"
 
 	"blog/internal/store"
@@ -73,7 +74,28 @@ func (c AIConfig) SummaryOn() bool { return c.SummaryEnabled == nil || *c.Summar
 func (c AIConfig) UserAPIOn() bool { return c.AllowUserAPI == nil || *c.AllowUserAPI }
 
 // LoadAI 从 settings 读取 AI 配置（未配置时返回零值）。
+// Spec 61 阶段 5：内存缓存——文章页每请求读 settings 改为 RebuildSite（设置保存）时刷新，
+// 首次调用加载，成功即缓存；失败不缓存（下次重试）。
+var (
+	loadAIMu     sync.RWMutex
+	loadAICached AIConfig
+	loadAICacheOK bool
+)
+
 func LoadAI(st *store.Store) (AIConfig, error) {
+	loadAIMu.RLock()
+	if loadAICacheOK {
+		cfg := loadAICached
+		loadAIMu.RUnlock()
+		return cfg, nil
+	}
+	loadAIMu.RUnlock()
+
+	loadAIMu.Lock()
+	defer loadAIMu.Unlock()
+	if loadAICacheOK {
+		return loadAICached, nil
+	}
 	var cfg AIConfig
 	v, err := st.GetSetting(SectionAI)
 	if err != nil || v == "" {
@@ -82,7 +104,16 @@ func LoadAI(st *store.Store) (AIConfig, error) {
 	if err := json.Unmarshal([]byte(v), &cfg); err != nil {
 		return AIConfig{}, err
 	}
+	loadAICached = cfg
+	loadAICacheOK = true
 	return cfg, nil
+}
+
+// InvalidateLoadAI 失效 AI 配置缓存（RebuildSite 内调用，设置保存后下次读取即重载）。
+func InvalidateLoadAI() {
+	loadAIMu.Lock()
+	loadAICacheOK = false
+	loadAIMu.Unlock()
 }
 
 // dashboardWidget 对应 settings 表 "dashboard" 段的单个组件配置。
@@ -390,6 +421,7 @@ func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	}
 	next.Admin.AuthEnabled = adminUser != nil && adminUser.PasswordHash != ""
 	site.Store(&next)
+	InvalidateLoadAI() // Spec 61 阶段 5：设置保存后 AI 配置缓存失效，下次读取重载
 	return nil
 }
 

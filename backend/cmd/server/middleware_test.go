@@ -81,7 +81,7 @@ func TestRecoveryAPIPanicProblem(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	s := newWebServer(webDeps{})
 	r := gin.New()
-	s.installMiddleware(r, &config.App{})
+	s.installMiddleware(r, &config.App{}, newPageViewBuffer(nil))
 	r.GET("/api/v1/boom", func(c *gin.Context) {
 		panic("boom")
 	})

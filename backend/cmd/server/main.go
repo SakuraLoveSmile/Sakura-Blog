@@ -177,9 +177,15 @@ func main() {
 	ogGen := og.New(ogFontPath, ogCacheDir)
 
 	// store 写路径统一回调：搜索索引同步 + OG 缓存失效（文章/页面/瞬间三类）。
-	st.SetPostWriteHook(newPostWriteHook(st, searchIdx, ogGen))
-	st.SetPageWriteHook(newPageWriteHook(st, searchIdx))
-	st.SetMomentWriteHook(newMomentWriteHook(st, searchIdx))
+	// 内容派生缓存（Spec 61 阶段 5）：/search.json 与 /sitemap.xml 写路径置脏。
+	// 注意 ws.contentCache 在 newWebServer 中创建，此处 hook 需在 ws 之后注入——
+	// store hook 由下方 newWebServer 之后统一包装（见 post/page/moment 三处 Set*WriteHook 重新赋值）。
+	postWriteHook := newPostWriteHook(st, searchIdx, ogGen)
+	pageWriteHook := newPageWriteHook(st, searchIdx)
+	momentWriteHook := newMomentWriteHook(st, searchIdx)
+	st.SetPostWriteHook(postWriteHook)
+	st.SetPageWriteHook(pageWriteHook)
+	st.SetMomentWriteHook(momentWriteHook)
 
 	// 站点配置：优先读 config/site.yml，缺失/解析失败时 fallback 到 DefaultSite()
 	siteConfigPath := filepath.Join(app.Root, "backend", "config", "site.yml")
@@ -269,13 +275,18 @@ func main() {
 		UploadDir: app.UploadDir,
 		NotesPath: filepath.Join(app.Root, "content", "notes.md"),
 	})
+	// Spec 61 阶段 5：写路径置脏内容派生缓存（ws.contentCache 已就绪）
+	st.SetPostWriteHook(func(op, slug string) { postWriteHook(op, slug); ws.contentCache.invalidate() })
+	st.SetPageWriteHook(func(op, slug string) { pageWriteHook(op, slug); ws.contentCache.invalidate() })
+	st.SetMomentWriteHook(func(op, slug string) { momentWriteHook(op, slug); ws.contentCache.invalidate() })
 
 	// release 模式：关掉 Gin 调试日志（生产噪音），-dev 保留 debug。
 	if !devMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.New()
-	ws.installMiddleware(r, app)
+	pvBuffer := newPageViewBuffer(st)
+	ws.installMiddleware(r, app, pvBuffer)
 
 	// 静态资源域：/assets、PWA 根作用域文件、/uploads。
 	if err := ws.registerStaticRoutes(r); err != nil {
@@ -305,6 +316,7 @@ func main() {
 		}
 		rebuildSearchIndex(st, searchIdx)
 		ws.invalidateSidebarCache()
+		ws.contentCache.invalidate() // Spec 61 阶段 5：恢复后内容派生缓存全部置脏
 		clearOGCache(ogCacheDir)
 	})
 
@@ -361,6 +373,7 @@ func main() {
 			Notify:      notifySvc,
 			Icons:       reg,
 			RenderSitePreview: ws.renderSitePreview,
+			OnContentChanged:  ws.contentCache.invalidate,
 			UploadDir:   app.UploadDir,
 			MaxUploadMB: app.MaxUploadMB,
 		},
@@ -501,6 +514,8 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
+	// Spec 61 阶段 5：PV 缓冲最终落库（st.Close 由 main 顶部 defer 执行，需在此之前）
+	pvBuffer.close()
 	log.Println("server stopped")
 }
 

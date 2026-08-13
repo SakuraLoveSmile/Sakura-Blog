@@ -38,14 +38,43 @@ func (s *Store) EnsurePageViewsTable() error {
 	return s.ensureTable("page_views")
 }
 
+// PageView 单条访问记录（Spec 61 阶段 5：PV 埋点异步批量写入用）。
+type PageView struct {
+	Path     string
+	Referrer string
+	UAHash   string
+}
+
 // RecordView 记录一次页面访问。PV 逐次累加；UV 通过 ua_hash + path + 自然日去重
 // （查询时 COUNT DISTINCT，写入不做唯一约束，保持 append-only 简洁）。
+// 前台埋点已改走异步批量（BatchRecordViews），此方法保留给单发场景（测试/工具）。
 func (s *Store) RecordView(path, referrer, uaHash string) error {
-	_, err := s.db.Exec(
-		`INSERT INTO page_views(path, referrer, ua_hash) VALUES (?, ?, ?)`,
-		path, referrer, uaHash)
+	return s.BatchRecordViews([]PageView{{Path: path, Referrer: referrer, UAHash: uaHash}})
+}
+
+// BatchRecordViews 单事务批量写入 page_views（Spec 61 阶段 5：PV 异步批量落库，
+// 把写放大从每请求 1 次降到每批 1 次，避免埋点写串行化全部读）。
+func (s *Store) BatchRecordViews(views []PageView) error {
+	if len(views) == 0 {
+		return nil
+	}
+	tx, err := s.db.Begin()
 	if err != nil {
-		return fmt.Errorf("record view %s: %w", path, err)
+		return fmt.Errorf("begin batch views: %w", err)
+	}
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(`INSERT INTO page_views(path, referrer, ua_hash) VALUES (?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("prepare batch views: %w", err)
+	}
+	defer stmt.Close()
+	for _, v := range views {
+		if _, err := stmt.Exec(v.Path, v.Referrer, v.UAHash); err != nil {
+			return fmt.Errorf("batch view %s: %w", v.Path, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit batch views: %w", err)
 	}
 	return nil
 }
@@ -57,13 +86,15 @@ func (s *Store) TrendPVUV(days int) ([]DailyStat, error) {
 		days = 7
 	}
 	since := time.Now().AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+	// Spec 61 阶段 5：date() 无法用索引，改范围比较（page_views.created_at 为固定
+	// "2006-01-02 15:04:05" 格式，字典序与日期序等价，created_at >= "YYYY-MM-DD 00:00:00" 等效 date()>=）
 	rows, err := s.db.Query(`
-		SELECT date(created_at) AS d,
+		SELECT substr(created_at, 1, 10) AS d,
 		       COUNT(*)         AS pv,
 		       COUNT(DISTINCT ua_hash || '|' || path) AS uv
 		FROM page_views
-		WHERE date(created_at) >= ?
-		GROUP BY d ORDER BY d`, since)
+		WHERE created_at >= ?
+		GROUP BY d ORDER BY d`, since+" 00:00:00")
 	if err != nil {
 		return nil, fmt.Errorf("trend query: %w", err)
 	}
@@ -109,8 +140,8 @@ func (s *Store) PopularByViews(days, limit int) ([]PopularStat, error) {
 		       COUNT(*) AS pv,
 		       COUNT(DISTINCT ua_hash) AS uv
 		FROM page_views
-		WHERE date(created_at) >= ?
-		GROUP BY path ORDER BY pv DESC LIMIT ?`, since, limit)
+		WHERE created_at >= ?
+		GROUP BY path ORDER BY pv DESC LIMIT ?`, since+" 00:00:00", limit)
 	if err != nil {
 		return nil, fmt.Errorf("popular query: %w", err)
 	}
@@ -142,8 +173,8 @@ func (s *Store) TopReferrers(days, limit int) ([]ReferrerStat, error) {
 	rows, err := s.db.Query(`
 		SELECT referrer, COUNT(*) AS cnt
 		FROM page_views
-		WHERE date(created_at) >= ? AND referrer != ''
-		GROUP BY referrer ORDER BY cnt DESC LIMIT ?`, since, limit)
+		WHERE created_at >= ? AND referrer != ''
+		GROUP BY referrer ORDER BY cnt DESC LIMIT ?`, since+" 00:00:00", limit)
 	if err != nil {
 		return nil, fmt.Errorf("referrers query: %w", err)
 	}
@@ -186,8 +217,8 @@ func (s *Store) HourlyVisits(days int) ([]HourlyStat, error) {
 		SELECT CAST(strftime('%H', created_at) AS INTEGER) AS h,
 		       COUNT(*) AS cnt
 		FROM page_views
-		WHERE date(created_at) >= ?
-		GROUP BY h ORDER BY h`, since)
+		WHERE created_at >= ?
+		GROUP BY h ORDER BY h`, since+" 00:00:00")
 	if err != nil {
 		return nil, fmt.Errorf("hourly query: %w", err)
 	}
@@ -216,4 +247,13 @@ func (s *Store) HourlyVisits(days int) ([]HourlyStat, error) {
 		out = append(out, HourlyStat{Hour: h, Count: count})
 	}
 	return out, nil
+}
+
+// CountPageViews 返回 page_views 总行数（测试/工具用）。
+func (s *Store) CountPageViews() (int64, error) {
+	var n int64
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM page_views`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count page views: %w", err)
+	}
+	return n, nil
 }

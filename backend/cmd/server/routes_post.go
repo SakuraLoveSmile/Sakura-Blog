@@ -59,13 +59,11 @@ func (s *webServer) handlePost(c *gin.Context) {
 				return
 			}
 		}
-		// 阅读量自增：每次访问 /post/:slug 计数 +1。失败仅记日志，不中断渲染。
-		if err := s.st.IncrViews(slug); err != nil {
-			log.Printf("incr views for %s: %v", slug, err)
-		}
-		views, err := s.st.GetViews(slug)
+		// 阅读量自增：每次访问 /post/:slug 计数 +1（Spec 61 阶段 5：单语句 RETURNING，一次往返）。
+		// 失败仅记日志，不中断渲染。
+		views, err := s.st.IncrViewsAndGet(slug)
 		if err != nil {
-			log.Printf("get views for %s: %v", slug, err)
+			log.Printf("incr views for %s: %v", slug, err)
 		}
 		data := &tmpl.ViewData{
 			Site: s.site.Load(),
@@ -111,7 +109,6 @@ func (s *webServer) handlePost(c *gin.Context) {
 		//         data.TopicSeries = ts
 		//     }
 		// }
-		_ = p.Topic
 		// read_next 邻篇导航（site.yml article.read_next 可关）：同分类优先，无同分类邻篇回退全局时间序；
 		// 对齐原版 read_next.ejs：prev=较新文章，next=较早文章；排除加密/未发布文章。
 		if s.site.Load().Article.ReadNext {

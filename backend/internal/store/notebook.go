@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -253,4 +254,86 @@ func (s *Store) AllNoteTags() ([]string, error) {
 	}
 	sort.Strings(result)
 	return result, nil
+}
+
+// CountNotesByNotebooks 单条 GROUP BY 查询各笔记本笔记数（Spec 61 阶段 5：
+// 笔记本列表页计数从每笔记本一次 COUNT 收敛为一条查询）。未收录的 id 计数为 0。
+func (s *Store) CountNotesByNotebooks(ids []int64) (map[int64]int, error) {
+	out := make(map[int64]int, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(ids)), ",")
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+		out[id] = 0
+	}
+	rows, err := s.db.Query(
+		`SELECT notebook_id, COUNT(*) FROM notes WHERE notebook_id IN (`+placeholders+`) GROUP BY notebook_id`,
+		args...)
+	if err != nil {
+		return nil, fmt.Errorf("count notes by notebooks: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var n int
+		if err := rows.Scan(&id, &n); err != nil {
+			return nil, fmt.Errorf("scan note count: %w", err)
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
+}
+
+// GetPrevNote 同笔记本内按 updated_at DESC, id DESC 排序的上一篇（更新更近的相邻一条）。
+// 未找到返回 nil, nil。原生 SQL：GetOne 不支持 ORDER BY，邻居查询须按序取 LIMIT 1。
+func (s *Store) GetPrevNote(notebookID, id int64) (*Note, error) {
+	return s.neighborNote(notebookID, id, ">", ">", "ASC", "ASC")
+}
+
+// GetNextNote 同笔记本内按 updated_at DESC, id DESC 排序的下一篇（更新更旧的相邻一条）。
+// 未找到返回 nil, nil。
+func (s *Store) GetNextNote(notebookID, id int64) (*Note, error) {
+	return s.neighborNote(notebookID, id, "<", "<", "DESC", "DESC")
+}
+
+// neighborNote 按排序方向取相邻笔记：cmpTime/cmpID 与 order 方向相反成对（
+// prev=取排序在前者，需比当前"更大"并按正序取第一条；next 反之）。
+func (s *Store) neighborNote(notebookID, id int64, cmpTime, cmpID, orderTime, orderID string) (*Note, error) {
+	row := s.db.QueryRow(
+		`SELECT `+strings.Join((&Note{}).Columns(), ", ")+` FROM notes
+		 WHERE notebook_id = ? AND (
+		   updated_at `+cmpTime+` (SELECT updated_at FROM notes WHERE id = ?)
+		   OR (updated_at = (SELECT updated_at FROM notes WHERE id = ?) AND id `+cmpID+` ?))
+		 ORDER BY updated_at `+orderTime+`, id `+orderID+` LIMIT 1`,
+		notebookID, id, id, id)
+	n := &Note{}
+	if err := n.ScanRow(row); err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("neighbor note: %w", err)
+	}
+	return n, nil
+}
+
+// ListNotesByNotebookTag 按标签过滤列出笔记本笔记（Spec 61 阶段 5：tag 过滤下推 SQL，
+// 替代全量取回内存过滤；逗号标签 LIKE 语义与文章 ListByTag 一致）。
+// 返回笔记列表 + 总数 + error。
+func (s *Store) ListNotesByNotebookTag(notebookID int64, tag string, limit, offset int) ([]*Note, int, error) {
+	cond := "notebook_id = ? AND (',' || tags || ',') LIKE ?"
+	like := "%," + tag + ",%"
+	total, err := repo(s, &Note{}).Count(Where(cond, notebookID, like))
+	if err != nil {
+		return nil, 0, fmt.Errorf("count notes by tag: %w", err)
+	}
+	out, err := repo(s, &Note{}).List(
+		Where(cond, notebookID, like),
+		OrderBy("updated_at DESC, id DESC"),
+		Limit(limit), Offset(offset))
+	if err != nil {
+		return nil, 0, fmt.Errorf("list notes by tag: %w", err)
+	}
+	return out, total, nil
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -112,97 +111,15 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 	})
 
 	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、wiki 已发布文档、静态索引页。
+	// Spec 61 阶段 5：生成期缓存（按 baseURL 分 key，写路径置脏后重建）。
 	r.GET("/sitemap.xml", func(c *gin.Context) {
-		baseURL := s.baseURL(c)
-
-		type SitemapURL struct {
-			Loc        string `xml:"loc"`
-			LastMod    string `xml:"lastmod,omitempty"`
-			ChangeFreq string `xml:"changefreq,omitempty"`
-			Priority   string `xml:"priority,omitempty"`
-		}
-		type Sitemap struct {
-			XMLName xml.Name     `xml:"urlset"`
-			XMLNS   string       `xml:"xmlns,attr"`
-			URLs    []SitemapURL `xml:"url"`
-		}
-
-		sm := Sitemap{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
-
-		// 首页
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/", Priority: "1.0"})
-
-		// 所有已发布文章
-		posts, err := s.st.ListPublished()
-		if err == nil {
-			for _, p := range posts {
-				sm.URLs = append(sm.URLs, SitemapURL{
-					Loc:     baseURL + "/post/" + p.Slug,
-					LastMod: p.UpdatedAt.Format("2006-01-02"),
-				})
-			}
-		}
-
-		// wiki 已发布文档（Spec 35a）：遍历 site.yml wiki 段项目，收录每个项目的 published 文档。
-		for _, project := range s.site.Load().Wiki {
-			docs, err := s.st.ListWikidocs(project.ID)
-			if err != nil {
-				log.Printf("sitemap: list wikidocs %s: %v", project.ID, err)
-				continue
-			}
-			for _, doc := range docs {
-				if doc.Status != store.StatusPublished {
-					continue
-				}
-				sm.URLs = append(sm.URLs, SitemapURL{
-					Loc:        baseURL + "/wiki/" + project.ID + "/" + doc.Slug,
-					LastMod:    doc.UpdatedAt.Format("2006-01-02"),
-					ChangeFreq: "weekly",
-					Priority:   "0.6",
-				})
-			}
-		}
-
-		// 笔记本与笔记（Spec 35b）：遍历全部笔记本收录 /notebooks/{name}，及其下全部笔记 /note/{id}。
-		// 笔记无草稿/发布状态概念（notes 表无 status 列），全部收录。
-		notebooks, err := s.st.ListNotebooks()
-		if err == nil {
-			for _, nb := range notebooks {
-				sm.URLs = append(sm.URLs, SitemapURL{
-					Loc:        baseURL + "/notebooks/" + nb.Name,
-					ChangeFreq: "weekly",
-					Priority:   "0.6",
-				})
-				notes, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
-				if err != nil {
-					log.Printf("sitemap: list notes of notebook %d: %v", nb.ID, err)
-					continue
-				}
-				for _, n := range notes {
-					sm.URLs = append(sm.URLs, SitemapURL{
-						Loc:        baseURL + "/note/" + strconv.FormatInt(n.ID, 10),
-						LastMod:    n.UpdatedAt.Format("2006-01-02"),
-						ChangeFreq: "weekly",
-						Priority:   "0.6",
-					})
-				}
-			}
-		}
-
-		// 静态页面
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/archives"})
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/categories"})
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/tags"})
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/links"})
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/moments"})
-
-		output, err := xml.MarshalIndent(sm, "", "  ")
+		output, err := s.contentCache.sitemapXML(s.baseURL(c))
 		if err != nil {
-			log.Printf("marshal sitemap: %v", err)
+			log.Printf("sitemap: %v", err)
 			s.render500(c)
 			return
 		}
-		c.Data(http.StatusOK, "application/xml; charset=utf-8", append([]byte(xml.Header), output...))
+		c.Data(http.StatusOK, "application/xml; charset=utf-8", output)
 	})
 
 	// OG 社交分享图（Spec 27）：/og/:slug.png，磁盘缓存 + 写时失效。

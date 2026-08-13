@@ -21,8 +21,9 @@ type Client struct {
 	cacheDir string // 磁盘缓存目录 data/ghcache/
 	http     *http.Client
 
-	mu    sync.RWMutex
-	mem   map[string]*memEntry
+	mu       sync.RWMutex
+	mem      map[string]*memEntry
+	inflight map[string]*inflightCall // 同 key 并发拉取去重（Spec 61 阶段 5）
 }
 
 type memEntry struct {
@@ -192,21 +193,52 @@ func (c *Client) get(url string, ttl time.Duration) ([]byte, error) {
 		}
 	}
 
-	// 3. 上游拉取
+	// 3. 上游拉取（Spec 61 阶段 5：同 key 并发拉取去重——首个请求 fetch，其余等待共享结果）
+	if c.inflight == nil {
+		c.inflight = map[string]*inflightCall{}
+	}
+	c.mu.Lock()
+	if ic, ok := c.inflight[key]; ok {
+		c.mu.Unlock()
+		<-ic.done
+		return ic.data, ic.err
+	}
+	ic := &inflightCall{done: make(chan struct{})}
+	c.inflight[key] = ic
+	c.mu.Unlock()
+
 	data, err := c.fetch(url)
 	if err != nil {
 		// stale-while-error：有磁盘旧缓存则返回
 		if diskData != nil {
 			c.setMem(key, diskData, ttl) // 续命避免频繁重试
-			return diskData, nil
+			ic.data, ic.err = diskData, nil
+		} else {
+			ic.data, ic.err = nil, err
 		}
-		return nil, err
+		close(ic.done)
+		c.mu.Lock()
+		delete(c.inflight, key)
+		c.mu.Unlock()
+		return ic.data, ic.err
 	}
 
 	// 双写缓存
 	c.setMem(key, data, ttl)
 	_ = os.WriteFile(diskPath, data, 0o644)
+	ic.data, ic.err = data, nil
+	close(ic.done)
+	c.mu.Lock()
+	delete(c.inflight, key)
+	c.mu.Unlock()
 	return data, nil
+}
+
+// inflightCall 进行中的上游拉取（singleflight 简化版，Spec 61 阶段 5）。
+type inflightCall struct {
+	done chan struct{}
+	data []byte
+	err  error
 }
 
 // fetch 实际 HTTP 请求。

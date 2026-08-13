@@ -158,6 +158,10 @@ const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL O
 
 // publishedOrder 排序用 substr 而非 datetime()：驱动把 time.Time 序列化为 "2006-01-02 15:04:05 -0700 MST"
 // 格式，SQLite datetime() 无法解析（返回 NULL 导致排序失效）；前 19 位字典序对同表同时区数据即时间序。
+// Spec 61 阶段 5 复核：posts.created_at 实测含 " +0000 UTC" 后缀、comments 为纯 19 字符、
+// updated_at 含纳秒/本地时区——格式不统一，substr 包裹必须保留；
+// 也因此 (status,pinned,created_at) 复合索引无法服务 substr 表达式排序（SQLite 索引不能用于函数表达式），
+// 本轮不建该索引（避免死索引增加写开销），ListPublished 等排序查询保持全表扫（数据量小，行为等价）。
 const publishedOrder = "ORDER BY pinned DESC, substr(created_at, 1, 19) DESC"
 
 func formatPublishAt(t time.Time) string {
@@ -439,6 +443,8 @@ func (s *Store) ListByCategory(name string) ([]*Post, error) {
 
 // ListByTag 返回包含指定标签的已发布文章，按 created_at 倒序。
 // tags 逗号分隔存储，用逗号包裹 LIKE 防子串误匹配（如 Go 匹配到 Golang）。
+// 【遗留标注 Spec 61 阶段 5】逗号标签 LIKE 全表扫：改关联表（post_tags）影响面大，本轮评估不动；
+// 个人博客数据量下全表扫可接受，标签页并发低。
 func (s *Store) ListByTag(name string) ([]*Post, error) {
 	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND (',' || tags || ',') LIKE ? "+publishedOrder,
 		StatusPublished, "%,"+name+",%")
@@ -489,24 +495,6 @@ func (s *Store) ListPostsByTopicID(topicID int64) ([]*Post, error) {
 	return scanPosts(rows)
 }
 
-// CountByTopic 统计各专栏的已发布文章数（空专栏除外）。
-func (s *Store) CountByTopic() (map[string]int, error) {
-	rows, err := s.db.Query("SELECT topic, COUNT(*) FROM posts WHERE "+publishedWhere+" AND topic != '' GROUP BY topic", StatusPublished)
-	if err != nil {
-		return nil, fmt.Errorf("count by topic: %w", err)
-	}
-	defer rows.Close()
-	out := map[string]int{}
-	for rows.Next() {
-		var name string
-		var n int
-		if err := rows.Scan(&name, &n); err != nil {
-			return nil, fmt.Errorf("scan topic count: %w", err)
-		}
-		out[name] = n
-	}
-	return out, rows.Err()
-}
 
 // CountByTag 统计各标签的已发布文章数。tags 逗号分隔存储，内存拆分计数（跳过空值）。
 func (s *Store) CountByTag() (map[string]int, error) {
@@ -559,72 +547,9 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	return p, nil
 }
 
-// GetPrevPost 按 created_at 查前一篇已发布文章（时间更早的最近一篇）。
-func (s *Store) GetPrevPost(slug string) (*Post, error) {
-	q := "SELECT " + postCols + " FROM posts WHERE " + publishedWhere + " AND substr(created_at, 1, 19) < (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?) ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT 1"
-	row := s.db.QueryRow(q, StatusPublished, slug)
-	p, err := scanOne(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("get prev post for %s: %w", slug, err)
-	}
-	return p, nil
-}
 
-// GetNextPost 按 created_at 查后一篇已发布文章（时间更晚的最近一篇）。
-func (s *Store) GetNextPost(slug string) (*Post, error) {
-	q := "SELECT " + postCols + " FROM posts WHERE " + publishedWhere + " AND substr(created_at, 1, 19) > (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?) ORDER BY substr(created_at, 1, 19) ASC, id ASC LIMIT 1"
-	row := s.db.QueryRow(q, StatusPublished, slug)
-	p, err := scanOne(row)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("get next post for %s: %w", slug, err)
-	}
-	return p, nil
-}
 
-// ListRelatedByTags 按标签匹配相关文章，排除自身，最多 limit 篇。
-func (s *Store) ListRelatedByTags(slug string, tags string, limit int) ([]*Post, error) {
-	tagList := strings.Split(tags, ",")
-	var validTags []string
-	for _, t := range tagList {
-		if t = strings.TrimSpace(t); t != "" {
-			validTags = append(validTags, t)
-		}
-	}
-	if len(validTags) == 0 {
-		return nil, nil
-	}
 
-	seen := map[string]bool{}
-	var result []*Post
-	for _, tag := range validTags {
-		rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND slug != ? AND (',' || tags || ',') LIKE ? "+publishedOrder,
-			StatusPublished, slug, "%,"+tag+",%")
-		if err != nil {
-			return nil, fmt.Errorf("query related posts by tag %s: %w", tag, err)
-		}
-		posts, err := scanPosts(rows)
-		rows.Close()
-		if err != nil {
-			return nil, err
-		}
-		for _, p := range posts {
-			if !seen[p.Slug] {
-				seen[p.Slug] = true
-				result = append(result, p)
-				if len(result) >= limit {
-					return result, nil
-				}
-			}
-		}
-	}
-	return result, nil
-}
 
 // Create 新建文章，返回新记录 id。slug 冲突时返回错误。
 func (s *Store) Create(p *Post) (int64, error) {
@@ -756,11 +681,27 @@ func (s *Store) PurgePost(slug string) error {
 
 // IncrViews 把指定 slug 文章的阅读量 +1。文章不存在时静默（0 行受影响不报错）。
 // 用原子 UPDATE 自增，避免读-改-写竞态；SetMaxOpenConns(1) 已串行化写入。
+// Spec 61 阶段 5 起前台改用 IncrViewsAndGet（单语句 RETURNING，一次往返）。
 func (s *Store) IncrViews(slug string) error {
 	if _, err := s.db.Exec(`UPDATE posts SET views = views + 1 WHERE slug = ?`, slug); err != nil {
 		return fmt.Errorf("incr views for %s: %w", slug, err)
 	}
 	return nil
+}
+
+// IncrViewsAndGet 阅读量自增并返回新值（单语句 UPDATE ... RETURNING，一次往返）。
+// 文章不存在返回 0（不报错）。modernc.org/sqlite v1.54（SQLite 3.5x）支持 RETURNING。
+func (s *Store) IncrViewsAndGet(slug string) (int64, error) {
+	var views int64
+	err := s.db.QueryRow(
+		`UPDATE posts SET views = views + 1 WHERE slug = ? RETURNING views`, slug).Scan(&views)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("incr views for %s: %w", slug, err)
+	}
+	return views, nil
 }
 
 // SumViews 返回全部文章阅读量之和。

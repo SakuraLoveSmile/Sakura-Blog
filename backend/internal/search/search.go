@@ -116,15 +116,28 @@ func (ix *Index) Unindex(docType, slug string) error {
 }
 
 // Rebuild 全量重建（清空后回填）。启动时空表回填用，幂等。
+// Rebuild 全量重建 FTS 索引（Spec 61 阶段 5：整体包事务，中途失败不留半成品索引）。
 func (ix *Index) Rebuild(items []Item) error {
-	if _, err := ix.db.Exec(`DELETE FROM posts_fts`); err != nil {
+	tx, err := ix.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin rebuild: %w", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM posts_fts`); err != nil {
 		return fmt.Errorf("truncate posts_fts: %w", err)
 	}
+	stmt, err := tx.Prepare(`INSERT INTO posts_fts(title, content, slug, title_raw, doc_type) VALUES (?, ?, ?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("prepare rebuild: %w", err)
+	}
+	defer stmt.Close()
 	for _, it := range items {
-		if _, err := ix.db.Exec(`INSERT INTO posts_fts(title, content, slug, title_raw, doc_type) VALUES (?, ?, ?, ?, ?)`,
-			segmentCJK(it.Title), segmentCJK(it.Content), it.Slug, it.Title, it.Type); err != nil {
+		if _, err := stmt.Exec(segmentCJK(it.Title), segmentCJK(it.Content), it.Slug, it.Title, it.Type); err != nil {
 			return fmt.Errorf("rebuild index %s %s: %w", it.Type, it.Slug, err)
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit rebuild: %w", err)
 	}
 	return nil
 }
