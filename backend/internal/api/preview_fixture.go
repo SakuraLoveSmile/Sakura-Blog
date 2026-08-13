@@ -120,13 +120,13 @@ func (h *Handler) previewSitesFixture(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "fixture error")
 	case fixtureStateEmpty:
 		c.JSON(http.StatusOK, gin.H{"content": []any{}})
-	default:
-		c.JSON(http.StatusOK, gin.H{"content": []gin.H{
-			{"title": "Fixture Search", "url": "https://search.example.com", "icon": fixtureAvatar("S"), "cover": "", "description": "确定性示例搜索引擎", "labels": []gin.H{{"name": "工具", "color": "4a6cf7", "lightness": 40, "hue": 228, "saturation": 90}}},
-			{"title": "Fixture Docs", "url": "https://docs.example.com", "icon": fixtureAvatar("D"), "cover": "", "description": "示例文档中心", "labels": []gin.H{{"name": "文档", "color": "10b981", "lightness": 40, "hue": 152, "saturation": 88}}},
-			{"title": "Fixture News", "url": "https://news.example.com", "icon": fixtureAvatar("N"), "cover": "", "description": "示例资讯站", "labels": []gin.H{{"name": "资讯", "color": "f59e0b", "lightness": 48, "hue": 38, "saturation": 92}}},
-		}})
-	}
+		default:
+			c.JSON(http.StatusOK, gin.H{"content": []gin.H{
+				{"title": "Fixture Search", "url": "https://search.example.com", "icon": fixtureAvatar("S"), "cover": "/assets/img/preview/banner-bg.jpg", "description": "确定性示例搜索引擎", "labels": []gin.H{{"name": "工具", "color": "4a6cf7", "lightness": 40, "hue": 228, "saturation": 90}}},
+				{"title": "Fixture Docs", "url": "https://docs.example.com", "icon": fixtureAvatar("D"), "cover": "/assets/img/preview/gallery-1.jpg", "description": "示例文档中心", "labels": []gin.H{{"name": "文档", "color": "10b981", "lightness": 40, "hue": 152, "saturation": 88}}},
+				{"title": "Fixture News", "url": "https://news.example.com", "icon": fixtureAvatar("N"), "cover": "/assets/img/preview/gallery-2.jpg", "description": "示例资讯站", "labels": []gin.H{{"name": "资讯", "color": "f59e0b", "lightness": 48, "hue": 38, "saturation": 92}}},
+			}})
+		}
 }
 
 // previewMDFixture GET /api/v1/preview/md?src=xxx：返回确定性 Markdown 文本

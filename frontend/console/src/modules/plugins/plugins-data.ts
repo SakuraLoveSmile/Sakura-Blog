@@ -231,9 +231,9 @@ export const plugins: PluginMeta[] = [
  { name:"key", desc:"Iconify 图标 key", default:"—" },
  { name:"color", desc:"图标颜色", default:"blue" },
  ],
- example:"{% icon ri:earth-line color:blue %} 星球 {% icon solar:chat-square-like-bold-duotone color:red %} 点赞",
+ example:"{% icon solar:planet-bold-duotone color:blue %} 星球 {% icon solar:chat-square-like-bold-duotone color:red %} 点赞",
  form: [
- { key:"key", label:"图标 key", type:"text", role:"positional", default:"ri:earth-line" },
+  { key:"key", label:"图标 key", type:"text", role:"positional", default:"solar:planet-bold-duotone" },
  { key:"color", label:"颜色", type:"select", role:"named", options: ["red","orange","yellow","green","cyan","blue","purple","gray"], default:"blue" },
  { key:"text", label:"附文本（可选）", type:"text", role:"positional" },
  ],
@@ -459,10 +459,10 @@ export const plugins: PluginMeta[] = [
  ],
  example:"{% mbti INTJ-T 93-72-78-83-51 url:https://www.16personalities.com/ch/档案/9d09a4297ffa2 %}",
  form: [
- { key:"type", label:"人格类型", type:"text", role:"positional", placeholder:"INTJ-T" },
- { key:"scores", label:"五维百分比", type:"text", role:"positional", placeholder:"93-72-78-83-51" },
- { key:"url", label:"档案链接（可选）", type:"text", role:"named", placeholder:"https://www.16personalities.com/..." },
- { key:"image", label:"横幅图片（可选）", type:"text", role:"named", placeholder:"https://..." },
+  { key:"type", label:"人格类型", type:"text", role:"positional", default:"INTJ-T", placeholder:"INTJ-T" },
+  { key:"scores", label:"五维百分比", type:"text", role:"positional", default:"93-72-78-83-51", placeholder:"93-72-78-83-51" },
+  { key:"url", label:"档案链接（可选）", type:"text", role:"named", placeholder:"https://www.16personalities.com/..." },
+  { key:"image", label:"横幅图片（可选）", type:"text", role:"named", placeholder:"https://..." },
  ],
  },
  {
@@ -848,7 +848,7 @@ export const plugins: PluginMeta[] = [
  { name:"scene", desc:"场景：group（全员左对齐）/single（me 靠右）", default:"group" },
  { name:"me", desc:"single 模式下靠右显示的参与者 key", default:"—" },
  ],
- example:"{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n name: 小明\n avatar: /assets/img/preview/avatar-xiaoming.svg\nbob:\n name: 小红\n avatar: /assets/img/preview/avatar-xiaohong.svg\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n<!-- chatcell user:bob md:你好呀～ -->\n{% endchat %}",
+ example:"{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n  name: 小明\n  avatar: /assets/img/preview/avatar-xiaoming.svg\nbob:\n  name: 小红\n  avatar: /assets/img/preview/avatar-xiaohong.svg\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n<!-- chatcell user:bob md:你好呀～ -->\n{% endchat %}",
  },
 
  // ==================== GitHub ====================

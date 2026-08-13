@@ -671,11 +671,11 @@ func TestRenderComponentPreviewGHFixtureLocalAvatar(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderComponentPreview: %v", err)
 	}
-	if !strings.Contains(out, `/assets/img/preview/avatar-gh-vuejs.svg`) {
-		t.Errorf("ghrepo avatar should be local: %s", out)
+	if !strings.Contains(out, `/assets/img/preview/avatar-gh-vuejs.svg?v=4&s=40`) {
+		t.Errorf("ghrepo avatar should be local with resize params: %s", out)
 	}
-	if !strings.Contains(out, `/assets/img/preview/avatar-gh-octocat.svg`) {
-		t.Errorf("ghuser avatar should be local: %s", out)
+	if !strings.Contains(out, `/assets/img/preview/avatar-gh-octocat.svg?v=4&s=64`) {
+		t.Errorf("ghuser avatar should be local with resize params: %s", out)
 	}
 	if strings.Contains(out, "avatars.githubusercontent.com") {
 		t.Errorf("fixture should not hit github avatar cdn: %s", out)

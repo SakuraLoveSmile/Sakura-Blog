@@ -3,9 +3,11 @@ import { ref, watch } from"vue";
 import type { PluginMeta } from"./plugins-data";
 import { buildShortcode } from"./shortcode";
 
-// 标签插件结构化参数表单（Spec 29）。
+// 标签插件结构化参数表单（Spec 29 + Spec 64）。
 // 入参一个具备 form schema 的插件，按字段 role 拼装 shortcode 并经 v-model 产出。
 // 拼装纯逻辑在 ./shortcode.ts（便于 node:test 行为测试），本组件只管表单状态与产出。
+// Spec 64：选中插件时仅初始化表单默认值，**不**用拼装结果覆盖库内精选示例
+// （示例可含表单无法表达的内容：图标间正文、多行 copy 等）；用户编辑字段时才产出。
 const props = defineProps<{
  plugin: PluginMeta;
  modelValue: string;
@@ -28,7 +30,6 @@ watch(
  () => props.plugin.name,
  () => {
  initValues();
- refresh();
  },
  { immediate: true }
 );

@@ -32,7 +32,7 @@ func (fixtureGHClient) GetRepo(owner, repo string) (*GHRepoInfo, error) {
 		Forks:       864,
 		Language:    "Go",
 		License:     "MIT License",
-		OwnerAvatar: "/assets/img/preview/avatar-gh-vuejs.svg",
+		OwnerAvatar: "/assets/img/preview/avatar-gh-vuejs.svg?v=4",
 		OwnerLogin:  owner,
 		HTMLURL:     "https://github.com/" + owner + "/" + repo,
 	}, nil
@@ -43,7 +43,7 @@ func (fixtureGHClient) GetUser(username string) (*GHUserInfo, error) {
 		Login:     username,
 		Name:      "Fixture User",
 		Bio:       "预览 Fixture 用户：组件库预览使用的确定性示例资料。",
-		AvatarURL: "/assets/img/preview/avatar-gh-octocat.svg",
+		AvatarURL: "/assets/img/preview/avatar-gh-octocat.svg?v=4",
 		Followers: 3200,
 		Following: 128,
 		Repos:     96,
