@@ -28,6 +28,10 @@ const sources = ref<FeedSource[]>([]);
 const totalUnread = ref(0);
 const totalCount = ref(0);
 const articles = ref<Article[]>([]);
+const articleTotal = ref(0);
+// Spec 62：文章列表分页（原全量拉取，随订阅累积无界渲染）
+const articlePage = ref(1);
+const articleSize = 50;
 const loading = ref(false);
 const refreshing = ref(false);
 
@@ -51,14 +55,17 @@ async function loadSources() {
  }
 }
 
-async function loadArticles() {
+async function loadArticles(append = false) {
  loading.value = true;
  try {
  const { data } = await subscriptionApi.articles({
  feed: activeFeed.value || undefined,
  filter: filter.value,
+ page: articlePage.value,
+ size: articleSize,
  });
- articles.value = data.items || [];
+ articleTotal.value = data.total || 0;
+ articles.value = append ? [...articles.value, ...(data.items || [])] : (data.items || []);
  } catch (e: any) {
  Toast.error(e.response?.data?.error ||"加载失败");
  } finally {
@@ -66,13 +73,21 @@ async function loadArticles() {
  }
 }
 
+function loadMore() {
+ if (articles.value.length >= articleTotal.value) return;
+ articlePage.value += 1;
+ loadArticles(true);
+}
+
 function selectFeed(url: string) {
  activeFeed.value = url;
+ articlePage.value = 1;
  loadArticles();
 }
 
 function setFilter(f: typeof filter.value) {
  filter.value = f;
+ articlePage.value = 1;
  loadArticles();
 }
 
@@ -300,6 +315,12 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
   :class="a.read ? 'bg-secondary text-text-quaternary ' : 'bg-primary/15 text-primary'"
  >{{ a.read ?"已读" :"未读" }}</span>
  </div>
+ </div>
+ <!-- Spec 62：分页加载更多（原全量渲染，随订阅累积无界） -->
+ <div v-if="articles.length < articleTotal" class="mt-4 flex justify-center">
+ <button class="rounded-full border border-border px-5 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground" :disabled="loading" @click="loadMore">
+ {{ loading ?"加载中…" :"加载更多" }}
+ </button>
  </div>
  </section>
  </div>

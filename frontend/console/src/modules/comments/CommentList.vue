@@ -56,6 +56,8 @@ const batchMode = ref(false);
 const queryParams = computed(() => {
   const params: Record<string, unknown> = { page: page.value, size: size.value };
   if (selectedStatus.value !== "all") params.status = selectedStatus.value;
+  // Spec 62：keyword 走后端 LIKE 搜索（nick/email/content），跨页可搜
+  if (debouncedKeyword.value) params.keyword = debouncedKeyword.value;
   return params;
 });
 
@@ -90,15 +92,7 @@ watch(
   { immediate: true }
 );
 
-// 本地关键字过滤（作用于当前页）
-const filteredComments = computed(() => {
-  const kw = debouncedKeyword.value;
-  if (!kw) return comments.value;
-  return comments.value.filter((cm: any) => {
-    const hay = `${cm.nick || ""} ${cm.email || ""} ${cm.content || ""}`.toLowerCase();
-    return hay.includes(kw);
-  });
-});
+// Spec 62：关键字过滤已下推后端（keyword 参数），此处直接使用列表数据
 
 const statCards = computed(() => [
   {
@@ -172,7 +166,7 @@ const checkedAll = ref(false);
 const selectedIds = ref<number[]>([]);
 
 watch(selectedIds, (val) => {
-  checkedAll.value = val.length === filteredComments.value.length && val.length > 0;
+  checkedAll.value = val.length === comments.value.length && val.length > 0;
 });
 
 // 翻页/筛选变化后清空选中
@@ -182,7 +176,7 @@ watch(queryParams, () => {
 
 function handleCheckAllChange(e: Event) {
   const { checked } = e.target as HTMLInputElement;
-  selectedIds.value = checked ? filteredComments.value.map((cm: any) => cm.id) : [];
+  selectedIds.value = checked ? comments.value.map((cm: any) => cm.id) : [];
 }
 
 function checkSelection(id: number) {
@@ -465,7 +459,7 @@ function closeMenus() {
 
         <VLoading v-if="isLoading" />
 
-        <Transition v-else-if="!filteredComments.length" appear name="fade">
+        <Transition v-else-if="!comments.length" appear name="fade">
           <VEmpty message="你可以尝试刷新或者查看评论筛选" title="当前没有评论">
             <template #actions>
               <VButton @click="refetch">刷新</VButton>
@@ -477,7 +471,7 @@ function closeMenus() {
         <Transition v-else appear name="fade">
           <div class="border-t border-border">
             <div
-              v-for="cm in filteredComments"
+              v-for="cm in comments"
               :key="cm.id"
               class="border-b border-border px-3 py-3.5 transition-colors last:border-b-0 hover:bg-white/[0.02] sm:px-5 sm:py-5"
             >

@@ -187,6 +187,53 @@ func (s *Store) ListRecentComments(n int) ([]*Comment, error) {
 		OrderBy("substr(created_at, 1, 19) DESC, id DESC"), Limit(n))
 }
 
+// commentSearchConds 管理页评论列表过滤条件（status 筛选 + keyword 跨字段 LIKE）。
+// keyword 为空时仅 status 条件（与旧 ListComments 等价）。
+func commentSearchConds(status, keyword string) (string, []any) {
+	conds := []string{}
+	args := []any{}
+	if status != "" {
+		conds = append(conds, "status = ?")
+		args = append(args, status)
+	}
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		like := "%" + kw + "%"
+		conds = append(conds, "(nick LIKE ? OR email LIKE ? OR content LIKE ?)")
+		args = append(args, like, like, like)
+	}
+	return strings.Join(conds, " AND "), args
+}
+
+// ListCommentsSearch 管理页评论列表（status 筛选 + keyword 全文 LIKE + 分页）。
+// Spec 62：console 评论搜索从「本地过滤当前页」改为后端 keyword，跨页可搜。
+func (s *Store) ListCommentsSearch(status, keyword string, page, size int) ([]*Comment, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	cond, args := commentSearchConds(status, keyword)
+	opts := []QueryOption{
+		Where(cond, args...),
+		OrderBy("substr(created_at, 1, 19) DESC, id DESC"),
+		Limit(size), Offset((page - 1) * size),
+	}
+	return repo(s, &Comment{}).List(opts...)
+}
+
+// CountCommentsSearch 管理页分页总数（与 ListCommentsSearch 同过滤条件）。
+func (s *Store) CountCommentsSearch(status, keyword string) (int, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return 0, err
+	}
+	cond, args := commentSearchConds(status, keyword)
+	return repo(s, &Comment{}).Count(Where(cond, args...))
+}
+
 // ListComments 管理页分页查询，按时间倒序。status 为空查全部，否则按状态过滤。page 从 1 开始。
 func (s *Store) ListComments(status string, page, size int) ([]*Comment, error) {
 	if err := s.ensureCommentReactions(); err != nil {

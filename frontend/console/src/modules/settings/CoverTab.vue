@@ -18,7 +18,8 @@ const addBtnCls =
 const rowBtnCls ="text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 
 function addFeature() {
- props.data.features.push({ title:"", url:"", icon:"" });
+ // Spec 62：前端专用稳定 key（增删列表 v-for 不复用错位）
+ props.data.features.push({ title:"", url:"", icon:"", _key: crypto.randomUUID() });
 }
 function removeAt(i: number) {
  props.data.features.splice(i, 1);
@@ -47,7 +48,7 @@ function moveItem(i: number, dir: -1 | 1) {
 
  <div class="space-y-2">
  <p class="text-xs text-text-quaternary">功能按钮（features）</p>
- <div v-for="(f, i) in data.features" :key="i" class="grid grid-cols-12 gap-2 items-center">
+ <div v-for="(f, i) in data.features" :key="f._key || i" class="grid grid-cols-12 gap-2 items-center">
  <input v-model="f.title" placeholder="按钮文案" :class="inputCls" class="col-span-4" />
  <input v-model="f.url" placeholder="/url 或 https://..." :class="inputCls" class="col-span-4" />
  <div class="col-span-2">

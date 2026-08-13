@@ -57,7 +57,8 @@ function moveDown(i: number) {
 }
 
 function addItem() {
- props.items.push({ id:"", title:"", url:"", icon:"", theme:"" });
+ // Spec 62：新增项生成稳定 id 作 v-for key（增删/拖拽排序时不复用错位）
+ props.items.push({ id: crypto.randomUUID(), title:"", url:"", icon:"", theme:"" });
 }
 function removeItem(i: number) {
  props.items.splice(i, 1);
@@ -101,7 +102,7 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
  <div class="space-y-3">
  <div
  v-for="(it, i) in items"
- :key="i"
+ :key="it.id"
  draggable="true"
  @dragstart="onDragStart(i)"
  @dragover="onDragOver($event, i)"

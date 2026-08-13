@@ -34,17 +34,11 @@ async function loadNotebooks() {
   try {
     const { data } = await notebookApi.listNotebooks();
     notebooks.value = data.items || [];
-    const entries = await Promise.all(
-      notebooks.value.map(async (nb) => {
-        try {
-          const { data: d } = await notebookApi.listNotes(nb.id, { page: 1, per_page: 1 });
-          return [nb.id, d.total || 0] as const;
-        } catch {
-          return [nb.id, 0] as const;
-        }
-      })
+    // Spec 62：note_count 由后端单条 GROUP BY 查询随列表返回（阶段 1），
+    // 替代每笔记本一次 listNotes 计数的 N+1（20 笔记本 = 21 请求 → 1 请求）
+    noteCounts.value = Object.fromEntries(
+      (data.items || []).map((nb: any) => [nb.id, nb.note_count || 0])
     );
-    noteCounts.value = Object.fromEntries(entries);
   } catch (e: any) {
     Toast.error(e?.response?.data?.error || "加载笔记本失败");
   } finally {

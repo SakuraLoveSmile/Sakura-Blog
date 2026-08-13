@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from"vue";
 import { useRouter, useRoute } from"vue-router";
-import { useQuery, useMutation, useQueryClient } from"@tanstack/vue-query";
+import { useMutation, useQueryClient } from"@tanstack/vue-query";
 import { postApi, shareApi, taxonomyApi, settingsApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
+import { usePagedList } from"@/composables/usePagedList";
 import { Icon } from"@iconify/vue";
 import {
  VPageHeader,
@@ -27,19 +28,20 @@ const router = useRouter();
 const route = useRoute();
 const queryClient = useQueryClient();
 
-const page = ref(1);
-const size = ref(20);
-
-// 搜索关键词（debounce 300ms，避免每次按键都触发请求）
-const keyword = ref("");
-const debouncedKeyword = ref("");
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-watch(keyword, () => {
- if (debounceTimer) clearTimeout(debounceTimer);
- debounceTimer = setTimeout(() => {
- debouncedKeyword.value = keyword.value;
- page.value = 1;
- }, 300);
+// Spec 62：分页/防抖/查询样板收敛到 usePagedList（示范迁移）
+// usePagedList 泛型项类型（后端 postJSON 无共享 TS 类型，弱类型透传）
+type PostItem = Record<string, any>;
+const { page, size, keyword, items: rawItems, total, isLoading, isFetching, refetch } = usePagedList<PostItem>({
+ apiFn: (params: Record<string, unknown>) => postApi.list(params),
+ keyFn: (params: Record<string, unknown>) => queryKeys.posts(params),
+ keywordParam: "search",
+ extraParams: () => {
+ const params: Record<string, unknown> = {};
+ if (selectedStatus.value) params.status = selectedStatus.value;
+ if (selectedCategory.value) params.category = selectedCategory.value;
+ if (selectedTag.value) params.tag = selectedTag.value;
+ return params;
+ },
 });
 
 // 筛选条件
@@ -107,24 +109,9 @@ onMounted(async () => {
  }
 });
 
-// 响应式查询参数：page/size/status/category/tag/keyword 变化自动重取
-const queryParams = computed(() => {
- const params: Record<string, unknown> = { page: page.value, size: size.value };
- if (selectedStatus.value) params.status = selectedStatus.value;
- if (selectedCategory.value) params.category = selectedCategory.value;
- if (selectedTag.value) params.tag = selectedTag.value;
- if (debouncedKeyword.value.trim()) params.search = debouncedKeyword.value.trim();
- return params;
-});
-
-const { data: queryData, isLoading, isFetching, refetch } = useQuery({
- queryKey: computed(() => queryKeys.posts(queryParams.value)),
- queryFn: () => postApi.list(queryParams.value).then(({ data }) => data),
-});
-
 // 客户端排序（排序变化不触发网络请求）
 const posts = computed(() => {
- const items = [...(queryData.value?.items || [])];
+ const items = [...rawItems.value];
  if (selectedSort.value ==="newest") {
  items.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
  } else if (selectedSort.value ==="oldest") {
@@ -134,11 +121,13 @@ const posts = computed(() => {
  }
  return items;
 });
-const total = computed(() => queryData.value?.total || 0);
 
 // 批量选择
 const checkedAll = ref(false);
-const selectedSlugs = ref<string[]>([]);
+// Spec 62：selectedSlugs 用 Set 承载（checkSelection 每行多次 O(n) includes → O(1) has），
+// 对外（模板长度/批量操作）仍以数组视图呈现
+const selectedSlugs = ref<Set<string>>(new Set());
+const selectedSlugList = computed(() => [...selectedSlugs.value]);
 const menuOpenSlug = ref<string | null>(null);
 
 const hasFilters = computed(
@@ -151,23 +140,25 @@ const hasFilters = computed(
 );
 
 watch(selectedSlugs, (val) => {
- checkedAll.value = val.length === posts.value.length && val.length > 0;
+ checkedAll.value = val.size === (posts.value?.length ?? 0) && val.size > 0;
 });
 
 function handleCheckAllChange(e: Event) {
  const { checked } = e.target as HTMLInputElement;
- selectedSlugs.value = checked ? posts.value.map((p) => p.slug) : [];
+ selectedSlugs.value = checked ? new Set(posts.value.map((p) => p.slug)) : new Set();
 }
 
 function checkSelection(slug: string) {
- return selectedSlugs.value.includes(slug);
+ return selectedSlugs.value.has(slug);
 }
 
 function toggleSelection(slug: string) {
  if (checkSelection(slug)) {
- selectedSlugs.value = selectedSlugs.value.filter((s) => s !== slug);
+ const next = new Set(selectedSlugs.value);
+ next.delete(slug);
+ selectedSlugs.value = next;
  } else {
- selectedSlugs.value = [...selectedSlugs.value, slug];
+ selectedSlugs.value = new Set(selectedSlugs.value).add(slug);
  }
 }
 
@@ -182,7 +173,6 @@ function handleClearFilters() {
  selectedCategory.value = undefined;
  selectedTag.value = undefined;
  keyword.value ="";
- debouncedKeyword.value ="";
  page.value = 1;
 }
 
@@ -217,8 +207,8 @@ function handleDeleteInBatch() {
  description:"该操作会将文章放入回收站，后续可以从回收站恢复",
  confirmType:"danger",
  onConfirm: async () => {
- await Promise.all(selectedSlugs.value.map((slug) => postApi.delete(slug)));
- selectedSlugs.value = [];
+ await Promise.all(selectedSlugList.value.map((slug) => postApi.delete(slug)));
+ selectedSlugs.value = new Set();
  queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  Toast.success("删除成功");
  },
@@ -298,6 +288,16 @@ async function handleCopyShareUrl() {
 const inputCls ="apple-input";
 
 // Helpers
+// Spec 62：每行每渲染 parseTags ×2 改为 computed Map 预解析（行数级 → 单次）
+const parsedTagsMap = computed(() => {
+ const m = new Map<string, string[]>();
+ for (const p of posts.value ?? []) m.set(p.slug, parseTags(p.tags));
+ return m;
+});
+function tagsOf(post: Record<string, any>): string[] {
+ return parsedTagsMap.value.get(post.slug) ?? [];
+}
+
 function parseTags(tags: string): string[] {
  if (!tags) return [];
  return tags.split(",").map((t) => t.trim()).filter(Boolean);
@@ -377,9 +377,9 @@ function closeMenus() {
  </button>
  </div>
  <!-- 批量选择模式提示 -->
- <div v-if="selectedSlugs.length" class="flex items-center gap-3">
+ <div v-if="selectedSlugs.size" class="flex items-center gap-3">
  <VButton type="danger" size="sm" @click="handleDeleteInBatch">删除</VButton>
- <span class="text-sm text-text-tertiary">已选择 {{ selectedSlugs.length }} 项</span>
+ <span class="text-sm text-text-tertiary">已选择 {{ selectedSlugs.size }} 项</span>
  </div>
  <!-- 筛选下拉按钮行（移动端横向滚动，桌面端直接展示） -->
  <div class="flex items-center justify-between gap-2">
@@ -496,9 +496,9 @@ function closeMenus() {
  <span class="text-xs text-text-tertiary">访问量 {{ post.views || 0 }}</span>
  <span v-if="post.pinned" class="text-xs text-text-tertiary">已置顶</span>
  </div>
- <div v-if="parseTags(post.tags).length" class="flex flex-wrap gap-1.5">
+ <div v-if="tagsOf(post).length" class="flex flex-wrap gap-1.5">
  <span
- v-for="tag in parseTags(post.tags)"
+ v-for="tag in tagsOf(post)"
  :key="tag"
  class="rounded-base bg-secondary px-1.5 py-0.5 text-xs text-text-tertiary"
  >
@@ -654,9 +654,9 @@ function closeMenus() {
  <span>{{ post.views || 0 }} 阅读</span>
  <span>{{ formatDate(post.created_at) }}</span>
  </div>
- <div v-if="parseTags(post.tags).length" class="mt-1.5 flex flex-wrap gap-1">
+ <div v-if="tagsOf(post).length" class="mt-1.5 flex flex-wrap gap-1">
  <span
- v-for="tag in parseTags(post.tags)"
+ v-for="tag in tagsOf(post)"
  :key="tag"
  class="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-text-tertiary"
  >

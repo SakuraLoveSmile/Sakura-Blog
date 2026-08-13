@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, defineAsyncComponent } from "vue";
 import { useRoute } from "vue-router";
 import { settingsApi, previewApi } from "@/api";
 import { Icon } from "@iconify/vue";
-import MenubarEditor from "./MenubarEditor.vue";
-import AppearanceTab from "./AppearanceTab.vue";
-import WidgetsTab from "./WidgetsTab.vue";
-import ThemeYamlTab from "./ThemeYamlTab.vue";
-import PluginsTab from "./PluginsTab.vue";
-import CoverTab from "./CoverTab.vue";
-import NavTabsTab from "./NavTabsTab.vue";
-import AuthorsTab from "./AuthorsTab.vue";
+// Spec 62：tab 组件按需加载——设置页全量静态打包含 8 个 tab，多数 tab 极少打开
+const MenubarEditor = defineAsyncComponent(() => import("./MenubarEditor.vue"));
+const AppearanceTab = defineAsyncComponent(() => import("./AppearanceTab.vue"));
+const WidgetsTab = defineAsyncComponent(() => import("./WidgetsTab.vue"));
+const ThemeYamlTab = defineAsyncComponent(() => import("./ThemeYamlTab.vue"));
+const PluginsTab = defineAsyncComponent(() => import("./PluginsTab.vue"));
+const CoverTab = defineAsyncComponent(() => import("./CoverTab.vue"));
+const NavTabsTab = defineAsyncComponent(() => import("./NavTabsTab.vue"));
+const AuthorsTab = defineAsyncComponent(() => import("./AuthorsTab.vue"));
 import AttachmentField from "@/components/AttachmentField.vue";
 import IconPicker from "@/components/IconPicker.vue";
 import { VSwitch, VCard, VButton, Toast } from "@/components/ui";
@@ -306,7 +307,8 @@ function addSitemapItem(g: any) {
   g.items.push({ title: "", url: "" });
 }
 function addWikiProject() {
-  data.value.wiki.push({ id: "", name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, hero: {}, _tagsText: "" });
+  // Spec 62：新增项目生成稳定 id 作 v-for key
+ data.value.wiki.push({ id: crypto.randomUUID(), name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, hero: {}, _tagsText: "" });
 }
 
 const inputCls = "apple-input";
@@ -495,9 +497,11 @@ async function refreshPreview() {
 }
 
 function schedulePreview() {
+  // 预览关闭时零开销（deep watch 仅遍历，不发请求）
   if (!previewOpen.value) return;
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(refreshPreview, 700);
+  // Spec 62：防抖 700→1000ms——预览开启时连续输入（含 AuthorsTab 每键重建）减少整站渲染频率
+  previewTimer = setTimeout(refreshPreview, 1000);
 }
 
 watch(previewOpen, (open) => {
@@ -753,7 +757,7 @@ onMounted(() => {
             <p class="hint">/wiki 页项目卡片。拖拽排序；tags 逗号分隔。</p>
             <div
               v-for="(w, i) in data.wiki"
-              :key="i"
+              :key="w.id"
               draggable="true"
               class="wiki-card"
               :class="{ 'wiki-card-dragging': dragWikiIndex === Number(i) }"

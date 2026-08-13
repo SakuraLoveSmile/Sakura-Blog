@@ -120,22 +120,38 @@ onMounted(() => {
 
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 
+// Spec 62：预览请求序号守卫——连续输入时先发出的慢响应不得覆盖新内容；
+// 仅当请求发起时是最新一版（序号匹配）才应用渲染结果。
+let previewSeq = 0;
+const PREVIEW_DEBOUNCE_MS = 400;
+// 大文档保护：正文超过阈值时提高防抖间隔，降低每停顿一轮的全量网络渲染频率
+const PREVIEW_LARGE_DOC_MS = 800;
+const PREVIEW_LARGE_DOC_BYTES = 50 * 1024;
+
 async function refreshPreview() {
+ const seq = ++previewSeq;
  rendering.value = true;
  try {
  const { data } = await previewApi.render(props.modelValue);
+ if (seq !== previewSeq) return; // 过期响应丢弃（已有更新的输入在途）
  applyPreview(data.html);
  } catch {
+ if (seq !== previewSeq) return;
  applyPreview('<p style="color:#ef4444">预览渲染失败</p>');
  } finally {
- rendering.value = false;
+ if (seq === previewSeq) rendering.value = false;
  }
+}
+
+function previewDebounceMs() {
+ const bytes = new TextEncoder().encode(props.modelValue).length;
+ return bytes > PREVIEW_LARGE_DOC_BYTES ? PREVIEW_LARGE_DOC_MS : PREVIEW_DEBOUNCE_MS;
 }
 
 function schedulePreview(immediate = false) {
  if (mode.value ==="edit") return;
  clearTimeout(previewTimer);
- previewTimer = setTimeout(refreshPreview, immediate ? 0 : 400);
+ previewTimer = setTimeout(refreshPreview, immediate ? 0 : previewDebounceMs());
 }
 
 function setMode(next: ViewMode) {

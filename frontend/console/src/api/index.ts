@@ -301,7 +301,7 @@ export const linkApi = {
 // --- 友链 RSS 订阅阅读器 ---
 export const subscriptionApi = {
  sources: () => http.get("/subscriptions"),
- articles: (params: { feed?: string; filter?: string; page?: number }) =>
+ articles: (params: { feed?: string; filter?: string; page?: number; size?: number }) =>
  http.get("/subscriptions/articles", { params }),
  markRead: (id: number, read: boolean) => http.post("/subscriptions/read", { id, read }),
  markAllRead: (feed?: string) =>

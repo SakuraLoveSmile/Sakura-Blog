@@ -19,7 +19,8 @@ const addBtnCls =
 const rowBtnCls ="text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 
 function addItem() {
- props.data.items.push({ title:"", url:"", external: false, icon:"", active_rules:"" });
+ // Spec 62：前端专用稳定 key（增删列表 v-for 不复用错位）
+ props.data.items.push({ title:"", url:"", external: false, icon:"", active_rules:"", _key: crypto.randomUUID() });
 }
 function removeAt(i: number) {
  props.data.items.splice(i, 1);
@@ -43,7 +44,7 @@ function moveItem(i: number, dir: -1 | 1) {
  <p class="text-xs text-text-quaternary">导航标签（active_rules 为路径前缀/正则，留空按 URL 精确匹配高亮）</p>
  <div
  v-for="(it, i) in data.items"
- :key="i"
+ :key="it._key || i"
  class="border border-border rounded-xl p-4 space-y-2"
  >
  <div class="grid grid-cols-12 gap-2 items-center">

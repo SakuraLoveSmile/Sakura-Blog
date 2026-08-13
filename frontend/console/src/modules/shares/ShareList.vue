@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from"vue";
-import { useQuery, useMutation, useQueryClient } from"@tanstack/vue-query";
+import { computed } from"vue";
+import { useMutation, useQueryClient } from"@tanstack/vue-query";
+import { usePagedList } from"@/composables/usePagedList";
 import { shareApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
 import { Icon } from"@iconify/vue";
@@ -31,22 +32,13 @@ interface ShareRow {
 
 const queryClient = useQueryClient();
 
-const page = ref(1);
-const size = ref(20);
-
-/** 响应式查询参数：page/size 变化自动重取 */
-const queryParams = computed(() => ({
- page: page.value,
- size: size.value,
-}));
-
-const { data: queryData, isLoading, isFetching, refetch } = useQuery({
- queryKey: computed(() => queryKeys.shares(queryParams.value)),
- queryFn: () => shareApi.list(queryParams.value).then(({ data }) => data),
+// Spec 62：分页样板收敛到 usePagedList（示范迁移，与 PostList 同构）
+const { page, size, items: rawShares, total, isLoading, isFetching, refetch } = usePagedList<ShareRow>({
+ apiFn: (params: Record<string, unknown>) => shareApi.list(params),
+ keyFn: (params: Record<string, unknown>) => queryKeys.shares(params),
 });
 
-const shares = computed<ShareRow[]>(() => queryData.value?.items || []);
-const total = computed(() => queryData.value?.total || 0);
+const shares = computed<ShareRow[]>(() => rawShares.value);
 
 /** 删除 mutation：成功后失效分享列表缓存 */
 const deleteMutation = useMutation({

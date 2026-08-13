@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, defineAsyncComponent } from "vue";
 import { Icon } from "@iconify/vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
-import RichTextEditor from "@/components/RichTextEditor.vue";
+// Spec 62：tiptap chunk 按需挂载；编辑器偏好与文章编辑器统一（post-editor:kind）
+const RichTextEditor = defineAsyncComponent(() => import("@/components/RichTextEditor.vue"));
 
 // 通用内容编辑器：内置富文本/Markdown 双模式切换 + 简化工具栏
 // 供笔记页、文库文档、笔记本笔记等非文章/页面的编辑场景复用
@@ -29,10 +30,21 @@ const emit = defineEmits<{
 }>();
 
 const mdRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
-const richRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
+// RTE 异步组件暴露方法接口（defineAsyncComponent 无法推导 InstanceType）
+interface RichEditorExpose {
+  activeStates: Record<string, boolean>;
+  applyFormat: (key: string) => void;
+  insertMarkdown: (text: string) => void;
+  scrollToHeading: (index: number) => void;
+  openImageUpload: () => void;
+  openImagePicker: () => void;
+  clearDraft: () => void;
+}
+const richRef = ref<RichEditorExpose | null>(null);
 
 // 编辑器种类选择（localStorage 持久化）
-const KIND_KEY = "content-editor:kind";
+// Spec 62：与文章编辑器共用 post-editor:kind，文库/笔记跟随全局编辑器偏好
+const KIND_KEY = "post-editor:kind";
 function loadKind(): EditorKind {
   return localStorage.getItem(KIND_KEY) === "markdown" ? "markdown" : "rich";
 }

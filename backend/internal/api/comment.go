@@ -46,7 +46,7 @@ func toCommentJSON(cm *store.Comment, gravatarMirror string) *commentJSON {
 	}
 }
 
-// listComments GET /api/v1/comments：评论列表（status 筛选 + 分页）。
+// listComments GET /api/v1/comments：评论列表（status 筛选 + keyword 搜索 + 分页）。
 // 响应附带 counts（各状态真实计数），供管理页 tab 徽标展示。
 func (h *Handler) listComments(c *gin.Context) {
 	filter := c.DefaultQuery("status", "")
@@ -56,6 +56,8 @@ func (h *Handler) listComments(c *gin.Context) {
 	default:
 		filter = ""
 	}
+	// Spec 62：keyword 后端 LIKE 搜索（nick/email/content），替代 console 本地过滤当前页
+	keyword := strings.TrimSpace(c.Query("keyword"))
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 	if page < 1 {
@@ -65,12 +67,12 @@ func (h *Handler) listComments(c *gin.Context) {
 		size = 20
 	}
 
-	total, err := h.store.CountComments(filter)
+	total, err := h.store.CountCommentsSearch(filter, keyword)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	comments, err := h.store.ListComments(filter, page, size)
+	comments, err := h.store.ListCommentsSearch(filter, keyword, page, size)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return

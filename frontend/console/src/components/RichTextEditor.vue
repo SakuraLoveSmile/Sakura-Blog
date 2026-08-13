@@ -74,6 +74,29 @@ const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, chec
 // 上一次序列化产物：外部值 === lastMarkdown 说明是自己 emit 出去的回流，跳过 setContent 防循环
 let lastMarkdown = props.modelValue;
 
+// Spec 62：序列化防抖——onUpdate 每键全量 getMarkdown() + emit 是大文档卡顿主源，
+// 合并为 200ms 防抖；Ctrl+S（save）前 flush 保证保存包含最后输入。
+let serializeTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSerialize() {
+  if (serializeTimer) clearTimeout(serializeTimer);
+  serializeTimer = setTimeout(flushSerialize, 200);
+}
+function flushSerialize() {
+  if (serializeTimer) {
+    clearTimeout(serializeTimer);
+    serializeTimer = null;
+  }
+  const ed = editor.value;
+  if (!ed) return;
+  const md = ed.storage.markdown.getMarkdown() as string;
+  // 与基线相同说明只是加载时规范化回流（非用户编辑），不回写、不落草稿，避免幻影草稿
+  if (md === baseline && md === lastMarkdown) return;
+  lastMarkdown = md;
+  emit("update:modelValue", md);
+  // 真实用户编辑：防抖落草稿（watch 中的 scheduleDraft 仅处理外部变更）
+  scheduleDraft();
+}
+
 const editor = useEditor({
  content: props.modelValue,
  extensions: [
@@ -107,6 +130,8 @@ const editor = useEditor({
  handleKeyDown: (_view, event) => {
  if ((event.metaKey || event.ctrlKey) && event.key ==="s") {
  event.preventDefault();
+ // Spec 62：保存前 flush 防抖中的序列化，保证最后输入已进入 form
+ flushSerialize();
  emit("save");
  return true;
  }
@@ -124,15 +149,10 @@ const editor = useEditor({
  checkDraft();
  },
  onSelectionUpdate: syncActive,
- onUpdate: ({ editor }) => {
+ onUpdate: () => {
  syncActive();
- const md = editor.storage.markdown.getMarkdown() as string;
- // 与基线相同说明只是加载时规范化回流（非用户编辑），不回写、不落草稿，避免幻影草稿
- if (md === baseline && md === lastMarkdown) return;
- lastMarkdown = md;
- emit("update:modelValue", md);
- // 真实用户编辑：防抖落草稿（watch 中的 scheduleDraft 仅处理外部变更）
- scheduleDraft();
+ // Spec 62：序列化+emit 走 200ms 防抖（大文档每键全量序列化卡顿）
+ scheduleSerialize();
  },
 });
 

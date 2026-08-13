@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from"vue";
+import { ref, onMounted, computed, watch, defineAsyncComponent } from"vue";
 import { useRoute, useRouter } from"vue-router";
 import { useQueryClient } from"@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
 import MarkdownEditor from"@/components/MarkdownEditor.vue";
-import RichTextEditor from"@/components/RichTextEditor.vue";
+// Spec 62：tiptap 190KB gzip chunk 按需挂载——仅富文本模式启用时才下载
+const RichTextEditor = defineAsyncComponent(() => import("@/components/RichTextEditor.vue"));
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
 import EditorToolbar from"./EditorToolbar.vue";
 import EditorSidebar from"./EditorSidebar.vue";
@@ -47,7 +48,17 @@ const loading = ref(false);
 const saving = ref(false);
 const publishing = ref(false);
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
-const richRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
+// RTE 异步组件暴露方法接口（defineAsyncComponent 无法推导 InstanceType）
+interface RichEditorExpose {
+  activeStates: Record<string, boolean>;
+  applyFormat: (key: string) => void;
+  insertMarkdown: (text: string) => void;
+  scrollToHeading: (index: number) => void;
+  openImageUpload: () => void;
+  openImagePicker: () => void;
+  clearDraft: () => void;
+}
+const richRef = ref<RichEditorExpose | null>(null);
 const coverPickerOpen = ref(false);
 const revisionOpen = ref(false);
 const aiOpen = ref(false);

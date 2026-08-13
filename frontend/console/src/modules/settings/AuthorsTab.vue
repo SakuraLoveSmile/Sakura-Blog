@@ -30,10 +30,13 @@ const addBtnCls =
 const rows = ref<AuthorRow[]>([]);
 
 function syncBack() {
- const m: Record<string, any> = {};
+ // Spec 62：增量写——只写变化的 key、移除已删除的行，
+ // 替代每键全量 delete+assign（减少级联触发的对象 churn）
+ const live = new Set<string>();
  for (const r of rows.value) {
  if (!r.key) continue;
- m[r.key] = {
+ live.add(r.key);
+ props.data[r.key] = {
  name: r.name,
  avatar: r.avatar,
  description: r.description,
@@ -41,9 +44,9 @@ function syncBack() {
  hidden: r.hidden,
  };
  }
- // 就地替换对象内容（保持 data.authors 引用不变）
- Object.keys(props.data).forEach((k) => delete props.data[k]);
- Object.assign(props.data, m);
+ for (const k of Object.keys(props.data)) {
+ if (!live.has(k)) delete props.data[k];
+ }
 }
 
 watch(rows, syncBack, { deep: true });
@@ -59,7 +62,8 @@ rows.value = Object.entries(props.data || {}).map(([key, v]: [string, any]) => (
 }));
 
 function addRow() {
- rows.value.push({ key:"", name:"", avatar:"", description:"", url:"", hidden: false });
+ // Spec 62：作者 key 为文章 front matter 引用标识，新增时生成稳定唯一值
+ rows.value.push({ key: "author-" + crypto.randomUUID().slice(0, 8), name:"", avatar:"", description:"", url:"", hidden: false });
 }
 function removeRow(i: number) {
  rows.value.splice(i, 1);
@@ -79,7 +83,7 @@ function doSave() {
  </p>
  <div
  v-for="(r, i) in rows"
- :key="i"
+ :key="r.key"
  class="border border-border rounded-xl p-4 space-y-3"
  >
  <div class="flex items-center gap-3">
