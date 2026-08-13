@@ -119,6 +119,53 @@
 
 ---
 
+
+
+---
+
+## 验收结果登记（2026-08-13 全部完成）
+
+### 阶段 1 · 前端体积（feature/opt-frontend → `513bcf2` 起 4 笔提交）
+
+- [x] 入口 chunk 1,360.26 kB → **129.32 kB（-90.5%）**，gzip 365.9→44.0 kB；留档 dev/.tmp 对比（随 worktree 清理已删，数字记录于此）
+- [x] `make test` 全绿；ri 子集机械校验正/负例均验证（生成器还抓出 2 个不存在的图标并替换）
+- [x] console 验证（headless）：登录/63 个 ri 图标渲染/图标选择器弹窗 33 图标/dashboard SVG 趋势图/性能页双 canvas，零控制台错误；Chart.js 分包后 dashboard 零请求、性能页按需加载 1 次
+- [x] 前台：非公式页 katex/mermaid 零请求；公式文章（新增 mock-katex-math.md 夹具）KaTeX 按需渲染 6 处；mermaid 文章 svg 渲染；再访首页仍零请求
+- [x] `/assets/fonts/` 无 18MB TTF；OG 渲染 dev 分支（68KB PNG）与 embed 分支（69KB PNG）均正常
+- [x] console dist 14 字体 → 7 woff2（legacy woff 构建后剔除）；manifest name 已核实与站点名一致（"Stellar Demo"）；index.html lang=zh-CN
+- 附注：`modulePreload` 预取问题根因是 main.ts 遗留静态导入（`513bcf2` 修复），非 rolldown 行为
+
+### 阶段 2 · 构建流程（feature/opt-build → `fe9d3bc`）
+
+- [x] node_modules 与 lock 一致时 `make build`/`make console-deps` 跳过 npm ci（stamp 哈希比对，篡改 stamp 触发重装验证）
+- [x] `make dev` 三态验证：dist 最新跳过 / touch src 重建 / dist 刷新后跳过
+- [x] `make css` 重编 main.css（280.5 KB）与 git 内产物 **diff 无漂移**；README/CLAUDE.md 补说明
+- [x] `make test` / `make merge-check` 全绿
+
+### 阶段 3 · 后端安全加固（feature/opt-security → `47229d9`）
+
+- [x] `go test -race ./backend/...` + `make test` 全绿（15 包）
+- [x] 7MB 上传在解析前被拒（0.007s，400）；1KB 对照正常走解析（429 限流证明路径完整）
+- [x] zip-bomb：501 条目 → 400 硬拒；单条 40MB 解压放大 → 拒导（skipped）
+- [x] AI guest：http:// 400、https://10.x/127.0.0.1 → 403；加固客户端单测覆盖固定拨号 + 302 拒绝（TLS httptest）；外网实测受限（本机无外网）
+- [x] 热更新保存设置后前台渲染正常；-race 无报；pending2FA 惰性清理（代码级）
+- 附注：site 原子化实际波及 page/moment/feed/comment/friends/module 全部持有者（~100 处 .Load()），非计划预估的 2 处字段
+
+### 阶段 4 · 密码哈希迁移（feature/opt-password → `fc6dc24`）
+
+- [x] 全新库（site.yml 带密码）启动：users 表 admin（bcrypt 60 位）、settings admin 段已清空、`passwordRequired:true`
+- [x] console 链路：无 username 登录 → 新格式 cookie → profile 200；改密后旧 cookie 401、新密码重登 200；限流 5 次后 429（正确密码也被 IP 限流）
+- [x] 旧格式 cookie（明文 HMAC 2 段）→ authCheck false / profile 401；无密码站点 authCheck `passwordRequired:false` + 管理接口全放行 + 登录"无需密码"
+- [x] `make test` 全绿（auth 相关测试重写：迁移幂等/派生/旧路径移除）
+
+### 阶段 5 · 后端性能（feature/opt-perf → `0e15461`）
+
+- [x] `make test` + `-race` 全绿（15 包）
+- [x] /search.json 缓存：单测验证重建一次/置脏可见新内容；运行时两次请求字节一致；sitemap 按 baseURL 分 key 缓存
+- [x] PV 异步批量：立即查 0 → 4s 后批量落库 3 条；优雅退出 kill -INT 后 5 条全部 flush；浏览量数字与优化前一致（3 次访问 views=3）
+- [x] 死代码删除后编译与测试全绿；FTS 重建包事务
+- 附注：created_at 实测**格式不统一**（posts 带时区后缀/comments 纯 19 字符/updated_at 含纳秒），substr 排序包裹按计划条件保留，复合索引因无法服务 substr 表达式排序而不建（已在代码注释说明）；ListByTag LIKE 全表扫标注遗留
+
 ## Out of Scope
 
 - 密码迁移之外的鉴权体系重构
