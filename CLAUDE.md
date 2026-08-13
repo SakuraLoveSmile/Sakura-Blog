@@ -353,7 +353,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
-- Node 22 + stylus 0.62.0（CSS 编译）
+- Node 22 + stylus 0.62.0（CSS 编译；`make css` 从 resource/ 主题源重编 `frontend/assets/css/main.css`，依赖 frontend/node_modules，CI 无源不可编译、不进 test 门禁）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
 - Go 服务：`go run ./backend/cmd/server/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）

@@ -3,16 +3,16 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps css dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
 ## build: 完整构建（console → go 二进制）
 build: console go-build
 
-## console: 构建管理后台 SPA（产出 frontend/console/dist 供 go:embed）
-console:
-	cd frontend/console && npm ci && npm run build
+## console: 构建管理后台 SPA（产出 frontend/console/dist 供 go:embed；依赖未变更时跳过 npm ci）
+console: console-deps
+	cd frontend/console && npm run build
 
 ## go-build: 编译 Go 二进制（要求 frontend/console/dist 已存在）
 go-build:
@@ -37,14 +37,31 @@ dist-bootstrap:
 		echo "dist-bootstrap: dist 已存在，跳过"; \
 	fi
 
-## console-deps: 自举 console 前端依赖（node_modules 缺失时 npm ci 按需安装，命中 npm 全局缓存，不重复全量下载）
+## console-deps: 自举 console 前端依赖——node_modules 缺失或 package-lock.json 内容变化时才 npm ci。
+## .node_modules-stamp 记录 lock 哈希（gitignore），命中 npm 全局缓存，不重复全量下载。
 console-deps:
-	@if [ ! -d frontend/console/node_modules ]; then \
-		echo "console-deps: node_modules 缺失，执行 npm ci 安装依赖（依赖 npm 全局缓存，通常较快）"; \
-		cd frontend/console && npm ci; \
-	else \
-		echo "console-deps: node_modules 已存在，跳过安装"; \
+	@cd frontend/console && { \
+		lock=$$(shasum -a 256 package-lock.json | cut -d' ' -f1); \
+		if [ ! -d node_modules ]; then \
+			echo "console-deps: node_modules 缺失，执行 npm ci 安装依赖（依赖 npm 全局缓存，通常较快）"; \
+			npm ci && echo "$$lock" > .node_modules-stamp; \
+		elif [ ! -f .node_modules-stamp ] || [ "$$(cat .node_modules-stamp)" != "$$lock" ]; then \
+			echo "console-deps: package-lock.json 已变更，重新 npm ci"; \
+			npm ci && echo "$$lock" > .node_modules-stamp; \
+		else \
+			echo "console-deps: node_modules 与 package-lock.json 一致，跳过安装"; \
+		fi; \
+	}
+
+## css: 本地/agent 维护入口——从 resource/hexo-theme-stellar 的 styl 源重编 frontend/assets/css/main.css。
+## 依赖 resource/ 主题源（gitignore，CI 无源不可编译）与 frontend/node_modules（stylus 0.62.0），
+## 不进 test 门禁；产物 main.css 是 git 跟踪文件，重编后 diff 应无漂移。
+css:
+	@if [ ! -d frontend/node_modules ]; then \
+		echo "css: frontend 依赖缺失，执行 npm ci（frontend/package.json 锁 stylus 0.62.0）"; \
+		cd frontend && npm ci; \
 	fi
+	cd frontend && node build/stylus/compile.js
 
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）
 console-test: console-deps
@@ -86,7 +103,17 @@ run: build
 	./$(BINARY)
 
 ## dev: 开发模式（磁盘读模板/资源/frontend/console dist，改样式即时生效）
-dev: console go-build
+## 前端增量：仅当 console/dist 缺失或 console/src 较新时才重建（时间戳判断），否则跳过。
+dev: console-deps go-build
+	@if [ ! -d frontend/console/dist ]; then \
+		echo "dev: console/dist 缺失，构建前端"; \
+		cd frontend/console && npm run build; \
+	elif [ -n "$$(find frontend/console/src -newer frontend/console/dist -print -quit 2>/dev/null)" ]; then \
+		echo "dev: console/src 有更新，重建前端"; \
+		cd frontend/console && npm run build; \
+	else \
+		echo "dev: console/dist 为最新，跳过前端构建"; \
+	fi
 	./$(BINARY) -dev
 
 ## clean: 清理构建产物

@@ -51,7 +51,8 @@
 make build
 
 # 或手动分步：
-# 1. 先构建 Console SPA（go:embed 编译期要求 frontend/console/dist 存在且非空）
+# 1. 先构建 Console SPA（go:embed 编译期要求 frontend/console/dist 存在且非空；
+#    Makefile 已做依赖增量：node_modules 与 package-lock.json 一致时跳过 npm ci）
 cd frontend/console && npm ci && npm run build && cd ../..
 
 # 2. 再编译 Go 二进制
@@ -61,7 +62,19 @@ go build -o blog ./backend/cmd/server
 ./blog -seed   # -seed 首次启动导入 content/posts/*.md
 ```
 
-常用任务：`make build`（完整构建）· `make test`（vet+测试）· `make dev`（开发模式）。
+常用任务：`make build`（完整构建）· `make test`（vet+测试）· `make dev`（开发模式，console/dist 或 src 无变化时跳过前端重建）· `make css`（本地从 Stellar styl 源重编 `frontend/assets/css/main.css`，见下）。
+
+> 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `frontend/console/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
+
+### 重编 main.css（make css）
+
+`frontend/assets/css/main.css`（约 287KB）是 Stellar Stylus 源的编译产物。源在 `resource/hexo-theme-stellar/`（gitignore，不入仓库），CI 无源不可编译，故 `make css` 是**本地/agent 维护入口**，不进 test 门禁：
+
+```bash
+make css   # 依赖 resource/ 主题源 + frontend/node_modules（stylus 0.62.0，make 自动补装）
+```
+
+产物直接覆盖 git 跟踪的 `frontend/assets/css/main.css`，重编后应无漂移（`git diff` 为空即正确）；若编译行为有变（stylus 版本、shim 配置），先对齐 `frontend/build/stylus/` 再重编。
 
 > 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `frontend/console/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
 
