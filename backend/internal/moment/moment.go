@@ -4,7 +4,6 @@ package moment
 import (
 	"html/template"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -18,9 +17,6 @@ import (
 )
 
 const pageSize = 20
-
-var htmlTagRe = regexp.MustCompile(`<[^>]+>`)
-var whitespaceRe = regexp.MustCompile(`\s+`)
 
 // Handler 瞬间请求处理器。
 type Handler struct {
@@ -151,15 +147,3 @@ func joinImages(urls []string) string {
 	return strings.Join(urls, ",")
 }
 
-func stripHTML(s string) string {
-	s = htmlTagRe.ReplaceAllString(s, " ")
-	return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
-}
-
-func excerpt(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	return string(r[:n]) + "…"
-}

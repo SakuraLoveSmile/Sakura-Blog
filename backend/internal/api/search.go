@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/store"
 )
 
@@ -61,17 +62,13 @@ func (h *Handler) adminSearch(c *gin.Context) {
 	}
 
 	if docType == "" || docType == "post" {
-		posts, err := h.store.List()
+		// Spec 62：轻量列单查询（含回收站），替代 List()+ListTrashed() 双全表
+		posts, err := h.store.ListPostSearchCards()
 		if err != nil {
 			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		trashedPosts, err := h.store.ListTrashed()
-		if err != nil {
-			Fail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		for _, p := range append(posts, trashedPosts...) {
+		for _, p := range posts {
 			collect(searchResultItem{
 				ID: p.ID, Type: "post", Slug: p.Slug, Title: p.Title, Status: docStatus(p.Status, p.DeletedAt),
 			}, p.Title, plainContent(p.ContentHTML))
@@ -143,7 +140,7 @@ func truncateRunes(s string, n int) string {
 // plainContent HTML 正文 → 纯文本：去标签后再解码实体（如 &#34;），
 // 避免 snippet 构建时二次转义成 &amp;#34; 漏给前端。
 func plainContent(contentHTML string) string {
-	return html.UnescapeString(stripHTML(contentHTML))
+	return html.UnescapeString(textutil.StripHTML(contentHTML))
 }
 
 // docStatus 归一化状态：软删除 → trashed（对齐 Console 列表筛选值），否则原状态。

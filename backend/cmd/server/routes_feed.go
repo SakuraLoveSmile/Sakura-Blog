@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/feed"
 	"blog/internal/og"
 	"blog/internal/store"
@@ -60,7 +61,7 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(s
 		if p.IsPasswordProtected() {
 			desc = "本文受密码保护"
 		} else if desc == "" {
-			desc = stripHTML(p.ContentHTML)
+			desc = textutil.StripHTML(p.ContentHTML)
 			if len(desc) > 200 {
 				desc = desc[:200]
 			}

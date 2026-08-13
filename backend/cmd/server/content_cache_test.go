@@ -85,3 +85,44 @@ func TestSitemapCacheKeyedByBaseURL(t *testing.T) {
 		t.Fatal("same baseURL should be cached")
 	}
 }
+
+// TestContentCacheConcurrentInvalidate（Spec 62）：invalidate（写 hook）与 get（请求路径）
+// 并发交错时无数据竞争且最终可见置脏后的新内容。配合 go test -race 验证 atomic.Bool 修复。
+func TestContentCacheConcurrentInvalidate(t *testing.T) {
+	st, err := store.New(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	if _, err := st.Create(&store.Post{Slug: "hello", Title: "你好", Status: store.StatusPublished, ContentHTML: "<p>内容</p>"}); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	sitePtr := sitePtr(&tmpl.Site{})
+	c := newContentCache(st, sitePtr)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 200; i++ {
+			c.invalidate() // 写路径：无锁写 dirty
+		}
+	}()
+	for i := 0; i < 200; i++ {
+		if _, err := c.searchJSON(); err != nil {
+			t.Fatalf("searchJSON: %v", err)
+		}
+		if _, err := c.sitemapXML("https://example.com"); err != nil {
+			t.Fatalf("sitemapXML: %v", err)
+		}
+	}
+	<-done
+	// 最后一次 invalidate 后读取必须可见（不因竞态读到过期 clean 态）
+	c.invalidate()
+	got, err := c.searchJSON()
+	if err != nil {
+		t.Fatalf("final searchJSON: %v", err)
+	}
+	if !strings.Contains(string(got), "你好") {
+		t.Fatal("final read should return rebuilt index")
+	}
+}

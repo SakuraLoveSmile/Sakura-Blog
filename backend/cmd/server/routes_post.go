@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/config"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -132,7 +133,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
 		desc := p.Excerpt
 		if desc == "" {
-			d := stripHTML(p.ContentHTML)
+			d := textutil.StripHTML(p.ContentHTML)
 			if len(d) > 150 {
 				d = d[:150]
 			}
@@ -183,7 +184,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 	data.TOC = tmpl.ExtractTOCWith(p.HTML, s.tocOptions())
 	desc := p.Excerpt
 	if desc == "" {
-		d := stripHTML(p.HTML)
+		d := textutil.StripHTML(p.HTML)
 		if len(d) > 150 {
 			d = d[:150]
 		}

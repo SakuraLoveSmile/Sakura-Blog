@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -140,44 +141,17 @@ func (h *Handler) listPosts(c *gin.Context) {
 		return
 	}
 
-	// 获取全部未删除文章后在内存筛选（SQLite 单文件博客数据量有限，无需复杂 SQL）
-	posts, err := h.store.List()
+	// Spec 62：筛选与分页下推 SQL（ListFiltered 单次 COUNT + 单次分页查询，views 随 listCols 投影带出，
+	// 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式）
+	posts, total, err := h.store.ListFiltered(status, category, tag, page, size)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// 筛选
-	var filtered []*store.Post
+	items := make([]*postJSON, 0, len(posts))
 	for _, p := range posts {
-		if status != "" && p.Status != status {
-			continue
-		}
-		if category != "" && p.Category != category {
-			continue
-		}
-		if tag != "" && !containsTag(p.Tags, tag) {
-			continue
-		}
-		filtered = append(filtered, p)
-	}
-
-	total := len(filtered)
-	// 分页
-	start := (page - 1) * size
-	if start > total {
-		start = total
-	}
-	end := start + size
-	if end > total {
-		end = total
-	}
-	paged := filtered[start:end]
-
-	items := make([]*postJSON, 0, len(paged))
-	for _, p := range paged {
-		views, _ := h.store.GetViews(p.Slug)
-		items = append(items, toPostJSON(p, views))
+		items = append(items, toPostJSON(p, p.Views))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -200,8 +174,8 @@ func (h *Handler) getPost(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "文章不存在")
 		return
 	}
-	views, _ := h.store.GetViews(slug)
-	pj := toPostJSON(p, views)
+	// Spec 62：views 已随 GetBySlug 的 listCols 投影带出，无需二次 GetViews 查询。
+	pj := toPostJSON(p, p.Views)
 	if pj.HasDraft {
 		pj.Draft = json.RawMessage(p.DraftJSON)
 	}
@@ -292,7 +266,11 @@ func (h *Handler) updatePost(c *gin.Context) {
 		return
 	}
 
-	views, _ := h.store.GetViews(newSlug)
+	// Spec 62：views 复用 existing 查询投影；slug 变更时新记录阅读量为 0（无需二次 GetViews）。
+	views := existing.Views
+	if newSlug != existing.Slug {
+		views = 0
+	}
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
@@ -384,12 +362,20 @@ func (h *Handler) publishPost(c *gin.Context) {
 		return
 	}
 	// 草稿已应用，清空草稿头（slug 变更时新记录本就无草稿，兼顾清理旧 slug）
-	h.store.ClearDraft(newSlug)
+	if err := h.store.ClearDraft(newSlug); err != nil {
+		log.Printf("clear draft %s: %v", newSlug, err)
+	}
 	if newSlug != slug {
-		h.store.ClearDraft(slug)
+		if err := h.store.ClearDraft(slug); err != nil {
+			log.Printf("clear draft %s: %v", slug, err)
+		}
 	}
 
-	views, _ := h.store.GetViews(newSlug)
+	// Spec 62：views 复用 existing 查询投影；slug 变更时新记录阅读量为 0（无需二次 GetViews）。
+	views := existing.Views
+	if newSlug != existing.Slug {
+		views = 0
+	}
 	h.notifySEOPublished(newSlug)
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
@@ -430,7 +416,9 @@ func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) 
 			return err
 		}
 		// 同步迁移版本归属
-		h.store.UpdateRevisionSlug(existing.Slug, newSlug)
+		if err := h.store.UpdateRevisionSlug(existing.Slug, newSlug); err != nil {
+			log.Printf("update revision slug %s -> %s: %v", existing.Slug, newSlug, err)
+		}
 	} else {
 		if err := h.store.Update(existing.Slug, p); err != nil {
 			return err
@@ -441,11 +429,12 @@ func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) 
 }
 
 // snapshotRevision 把保存前的旧版本写入 revisions；内容无变化则跳过。
+// 版本快照失败记日志（告警级：历史版本丢失不可自动恢复）。
 func (h *Handler) snapshotRevision(old, neu *store.Post) {
 	if old.ContentMD == neu.ContentMD && old.Title == neu.Title {
 		return
 	}
-	h.store.CreateRevision(&store.Revision{
+	if _, err := h.store.CreateRevision(&store.Revision{
 		PostSlug:  neu.Slug,
 		Title:     old.Title,
 		Excerpt:   old.Excerpt,
@@ -453,7 +442,9 @@ func (h *Handler) snapshotRevision(old, neu *store.Post) {
 		Tags:      old.Tags,
 		Category:  old.Category,
 		Status:    old.Status,
-	})
+	}); err != nil {
+		log.Printf("create revision for %s: %v", neu.Slug, err)
+	}
 }
 
 // deletePost DELETE /api/v1/posts/:slug：软删除文章（移入回收站）。
@@ -560,7 +551,7 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		Status:      status,
 		Pinned:      req.Pinned,
 		Password:    strings.TrimSpace(req.Password),
-		PublishAt:   parsePublishAt(req.PublishAt),
+		PublishAt:   store.ParsePublishAtLocal(req.PublishAt),
 		// 文章级 SEO（Spec 42）：空串=未配置，回退站点级/现状链
 		MetaDescription: strings.TrimSpace(req.MetaDescription),
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
@@ -592,24 +583,3 @@ func normalizeTags(raw string) string {
 	return strings.Join(out, ",")
 }
 
-func parsePublishAt(s string) time.Time {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return time.Time{}
-	}
-	for _, layout := range []string{"2006-01-02T15:04", "2006-01-02 15:04", time.RFC3339, "2006-01-02T15:04:05Z"} {
-		if tm, err := time.ParseInLocation(layout, s, time.Local); err == nil {
-			return tm.UTC()
-		}
-	}
-	return time.Time{}
-}
-
-func containsTag(tags, target string) bool {
-	for _, t := range strings.Split(tags, ",") {
-		if strings.TrimSpace(t) == target {
-			return true
-		}
-	}
-	return false
-}

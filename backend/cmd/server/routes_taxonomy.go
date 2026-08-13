@@ -7,10 +7,9 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/page"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -309,19 +308,21 @@ func (s *webServer) handleWiki(c *gin.Context) {
 				continue
 			}
 		}
-		// 有已发布本地文档的项目标记 HasDocs（项目数通常 <10，循环查询可接受）。
-		// 查询失败仅记日志：HasDocs 保持 false 回退外链，不阻塞文库页渲染。
-		if docs, err := s.st.ListWikidocs(w.ID); err != nil {
-			log.Printf("list wikidocs %s: %v", w.ID, err)
-		} else {
-			for _, d := range docs {
-				if d.Status == store.StatusPublished {
-					w.HasDocs = true
-					break
-				}
-			}
-		}
 		projects = append(projects, &w)
+	}
+	// Spec 62：HasDocs（有已发布本地文档的项目）从每项目一次 ListWikidocs 收敛为
+	// 单条 GROUP BY 查询（CountPublishedWikidocsByProjects）。查询失败仅记日志：
+	// HasDocs 保持 false 回退外链，不阻塞文库页渲染。
+	projectIDs := make([]string, 0, len(projects))
+	for _, p := range projects {
+		projectIDs = append(projectIDs, p.ID)
+	}
+	if counts, err := s.st.CountPublishedWikidocsByProjects(projectIDs); err != nil {
+		log.Printf("count wikidocs by projects: %v", err)
+	} else {
+		for _, p := range projects {
+			p.HasDocs = counts[p.ID] > 0
+		}
 	}
 	// Sort 降序，同值按 ID 字母序（与 Console 设置页/项目下拉的排序规则一致）
 	sort.SliceStable(projects, func(i, j int) bool {
@@ -446,7 +447,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 			MenuID:      "wiki",
 			Lang:        "zh-CN",
 			Slug:        slug,
-			Description: truncateText(stripHTML(cur.ContentHTML), 150),
+			Description: textutil.Truncate(textutil.StripHTML(cur.ContentHTML), 150),
 		},
 		WikiProjectID:          projectID,
 		WikiProjectName:        project.DisplayTitle(),
@@ -483,16 +484,20 @@ func (s *webServer) handleNotebooks(c *gin.Context) {
 		s.render500(c)
 		return
 	}
+	// Spec 62：笔记数从「每笔记本一次 COUNT」收敛为单条 GROUP BY 查询（CountNotesByNotebooks）。
+	ids := make([]int64, 0, len(notebooks))
+	for _, nb := range notebooks {
+		ids = append(ids, nb.ID)
+	}
+	counts, err := s.st.CountNotesByNotebooks(ids)
+	if err != nil {
+		log.Printf("count notes of notebooks: %v", err)
+		s.render500(c)
+		return
+	}
 	views := make([]tmpl.NotebookView, 0, len(notebooks))
 	for _, nb := range notebooks {
-		// 笔记数：LIMIT 0 仅取 COUNT（ListNotesByNotebook 的 total 不受 LIMIT/OFFSET 影响）
-		_, total, err := s.st.ListNotesByNotebook(nb.ID, 0, 1)
-		if err != nil {
-			log.Printf("count notes of notebook %d: %v", nb.ID, err)
-			s.render500(c)
-			return
-		}
-		views = append(views, tmpl.NotebookView{Notebook: *nb, NoteCount: total})
+		views = append(views, tmpl.NotebookView{Notebook: *nb, NoteCount: counts[nb.ID]})
 	}
 	s.renderBase(c, &tmpl.ViewData{
 		Site:      s.site.Load(),
@@ -546,17 +551,12 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 	var notes []*store.Note
 	var total int
 	if tag != "" {
-		// tag 过滤：全量取回内存过滤（笔记本规模小；LIMIT -1 = SQLite 无上限）
-		all, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
+		// Spec 62：tag 过滤下推 SQL（ListNotesByNotebookTag），替代全量取回内存过滤
+		notes, _, err = s.st.ListNotesByNotebookTag(nb.ID, tag, -1, 0)
 		if err != nil {
 			log.Printf("list notes of notebook %d: %v", nb.ID, err)
 			s.render500(c)
 			return
-		}
-		for _, n := range all {
-			if noteHasTag(n.Tags, tag) {
-				notes = append(notes, n)
-			}
 		}
 		total = len(notes)
 	} else {
@@ -644,25 +644,18 @@ func (s *webServer) handleNote(c *gin.Context) {
 			contentHTML = template.HTML(rendered)
 		}
 	}
-	// 上下篇：同笔记本内按 updated_at DESC 相邻（LIMIT -1 = SQLite 无上限）
-	all, _, err := s.st.ListNotesByNotebook(nb.ID, -1, 0)
-	if err != nil {
-		log.Printf("list notes of notebook %d: %v", nb.ID, err)
-		s.render500(c)
-		return
-	}
+	// 上下篇：同笔记本内按 updated_at DESC 相邻（Spec 62：两条 LIMIT 1 邻居查询
+	// GetPrevNote/GetNextNote，替代全量取回内存定位）
 	var prev, next *tmpl.NoteNav
-	for i, n := range all {
-		if n.ID != note.ID {
-			continue
-		}
-		if i > 0 {
-			prev = &tmpl.NoteNav{ID: all[i-1].ID, Title: all[i-1].Title}
-		}
-		if i+1 < len(all) {
-			next = &tmpl.NoteNav{ID: all[i+1].ID, Title: all[i+1].Title}
-		}
-		break
+	if pn, err := s.st.GetPrevNote(nb.ID, note.ID); err == nil && pn != nil {
+		prev = &tmpl.NoteNav{ID: pn.ID, Title: pn.Title}
+	} else if err != nil {
+		log.Printf("prev note of %d: %v", note.ID, err)
+	}
+	if nn, err := s.st.GetNextNote(nb.ID, note.ID); err == nil && nn != nil {
+		next = &tmpl.NoteNav{ID: nn.ID, Title: nn.Title}
+	} else if err != nil {
+		log.Printf("next note of %d: %v", note.ID, err)
 	}
 	// tagtree 数据源：所属笔记本标签聚合
 	tagCounts, err := s.st.CountNoteTagsByNotebook(nb.ID)
@@ -678,7 +671,7 @@ func (s *webServer) handleNote(c *gin.Context) {
 			Title:       note.Title,
 			Layout:      "note",
 			Lang:        "zh-CN",
-			Description: truncateText(stripHTML(string(contentHTML)), 150),
+			Description: textutil.Truncate(textutil.StripHTML(string(contentHTML)), 150),
 		},
 		NoteDetail: &tmpl.NoteView{
 			Note:          *note,
@@ -700,16 +693,6 @@ func noteValues(notes []*store.Note) []store.Note {
 		out = append(out, *n)
 	}
 	return out
-}
-
-// noteHasTag 判断笔记标签 CSV 是否包含指定标签（精确匹配，去空白）。
-func noteHasTag(tags, name string) bool {
-	for _, t := range strings.Split(tags, ",") {
-		if strings.TrimSpace(t) == name {
-			return true
-		}
-	}
-	return false
 }
 
 // tagCountItems 标签计数 map → 排序的 TagCount 列表（数量降序，同量按名升序）。

@@ -22,7 +22,9 @@ const maxQuickActions = 8
 
 // dashboardStats GET /api/v1/dashboard/stats：仪表盘统计数据。
 func (h *Handler) dashboardStats(c *gin.Context) {
-	postTotal, err := h.store.List()
+	// Spec 62：全表 List()（含 content_md/content_html 大字段）只为数数，改 COUNT；
+	// CountAllPosts 保持旧 len(List()) 的「全部未删除（含草稿）」语义。
+	postTotal, err := h.store.CountAllPosts()
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -96,7 +98,7 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"post_total":       len(postTotal),
+		"post_total":       postTotal,
 		"post_published":   published,
 		"comment_total":    commentTotal,
 		"comment_pending":  commentPending,

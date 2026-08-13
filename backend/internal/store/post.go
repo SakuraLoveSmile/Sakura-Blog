@@ -54,6 +54,9 @@ type Post struct {
 
 	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无摘要；前台文章顶部展示。
 	AISummary string
+
+	// Views 阅读量（Spec 62：只读投影，仅列表/详情查询经 listCols 填充，不参与 Columns()/Values() 写入）。
+	Views int64
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -145,13 +148,14 @@ func (p *Post) ScanRow(row rowScanner) error {
 	}
 	p.Pinned = pinned != 0
 	p.Password = password
-	p.PublishAt = parsePublishAt(publishAt)
+	p.PublishAt = ParsePublishAt(publishAt)
 	p.DeletedAt = deletedAt
 	return nil
 }
 
-// postCols 统一 SELECT 列清单（与 Post.Columns() 同序，供自定义查询拼接用）。
-const postCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary"
+// listCols 统一 SELECT 列清单（与 Post.Columns() 前 26 列同序，末位附加 views 只读投影；
+// 供自定义查询拼接用，扫描对应 scanOne 的 27 列顺序）。
+const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, views"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -171,13 +175,29 @@ func formatPublishAt(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05Z")
 }
 
-func parsePublishAt(s string) time.Time {
+// ParsePublishAt 解析 publish_at 存储值（UTC 语义：DB 值为 formatPublishAt 输出的 UTC
+// RFC3339 或历史无时区 UTC 数据，按 UTC 解释）。
+// Spec 62：原 api/post.go 另有一份按 time.Local 解析的同名实现（无时区输入语义不同），
+// 统一收敛到本文件，时区语义由 ParsePublishAtLocal 显式区分。
+func ParsePublishAt(s string) time.Time {
+	return parsePublishAt(s, time.UTC)
+}
+
+// ParsePublishAtLocal 解析用户输入的 publish_at（本地时区语义：console 表单无时区时间
+// 按服务器本地时区解释再转 UTC，保证定时发布时刻不因统一而偏移）。
+func ParsePublishAtLocal(s string) time.Time {
+	return parsePublishAt(s, time.Local)
+}
+
+// parsePublishAt 布局列表含全部历史输入形态（RFC3339 带偏移 / 秒级无时区 / 分钟级无时区）；
+// loc 仅作用于无时区字符串，RFC3339 自带偏移时被忽略。
+func parsePublishAt(s string, loc *time.Location) time.Time {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return time.Time{}
 	}
-	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02 15:04:05", "2006-01-02T15:04"} {
-		if t, err := time.ParseInLocation(layout, s, time.UTC); err == nil {
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02T15:04", "2006-01-02 15:04:05", "2006-01-02 15:04"} {
+		if t, err := time.ParseInLocation(layout, s, loc); err == nil {
 			return t.UTC()
 		}
 	}
@@ -209,6 +229,17 @@ type Store struct {
 	// repos 泛型仓储缓存（按表名惰性创建，跨调用复用预编译语句）。
 	reposMu sync.Mutex
 	repos   map[string]any
+}
+
+// chmodDBFiles 收紧 DB 与其 WAL 旁路文件权限为 0600（Spec 62）。
+// 不存在的旁路文件（WAL 未启用过）静默跳过；权限已正确时 os.Chmod 幂等。
+func chmodDBFiles(dbPath string) error {
+	for _, p := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+		if err := os.Chmod(p, 0o600); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("chmod db file %s: %w", p, err)
+		}
+	}
+	return nil
 }
 
 // repo 取或建指定实体的泛型仓储（按 Store 实例 + 表名缓存，复用 Repository 内预编译语句）。
@@ -259,6 +290,13 @@ func New(dbPath string) (*Store, error) {
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("ping sqlite: %w", err)
+	}
+
+	// Spec 62：DB 含用户邮箱/TOTP 密钥/bcrypt 哈希/API token 哈希，
+	// 收紧文件权限防同机用户读取（WAL 旁路文件 -wal/-shm 一并处理）。
+	if err := chmodDBFiles(dbPath); err != nil {
+		db.Close()
+		return nil, err
 	}
 
 	s := &Store{db: db, path: dbPath}
@@ -387,7 +425,7 @@ func (s *Store) migrateColumns() error {
 
 // List 返回全部未删除文章，按 created_at 倒序（最新在前）。
 func (s *Store) List() ([]*Post, error) {
-	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at = '' ORDER BY pinned DESC, substr(created_at, 1, 19) DESC")
+	rows, err := s.db.Query("SELECT " + listCols + " FROM posts WHERE deleted_at = '' ORDER BY pinned DESC, substr(created_at, 1, 19) DESC")
 	if err != nil {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
@@ -395,9 +433,100 @@ func (s *Store) List() ([]*Post, error) {
 	return scanPosts(rows)
 }
 
+// ListFiltered 按 status/category/tag 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
+// 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式），返回分页结果与筛选后总数。
+// 过滤条件与分页均下推 SQL；tag 用逗号包裹 LIKE 防子串误匹配（与 ListByTag 口径一致）。
+func (s *Store) ListFiltered(status, category, tag string, page, size int) ([]*Post, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	conds := []string{"deleted_at = ''"}
+	args := []any{}
+	if status != "" {
+		conds = append(conds, "status = ?")
+		args = append(args, status)
+	}
+	if category != "" {
+		conds = append(conds, "category = ?")
+		args = append(args, category)
+	}
+	if tag != "" {
+		conds = append(conds, "(',' || tags || ',') LIKE ?")
+		args = append(args, "%,"+tag+",%")
+	}
+	where := strings.Join(conds, " AND ")
+
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE "+where, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count filtered posts: %w", err)
+	}
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+where+" ORDER BY pinned DESC, substr(created_at, 1, 19) DESC LIMIT ? OFFSET ?",
+		append(args, size, (page-1)*size)...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list filtered posts: %w", err)
+	}
+	defer rows.Close()
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return posts, total, nil
+}
+
+// PostSearchCard 后台搜索文章卡片（轻量列，Spec 62：adminSearch 每键全表 List 拖回
+// content_md/content_html 大字段，收敛为搜索所需 6 列）。
+type PostSearchCard struct {
+	ID          int64
+	Slug        string
+	Title       string
+	Status      string
+	DeletedAt   string
+	ContentHTML string
+}
+
+// ListPostSearchCards 轻量列返回全部文章搜索卡片（含回收站，按创建时间倒序）。
+func (s *Store) ListPostSearchCards() ([]*PostSearchCard, error) {
+	rows, err := s.db.Query("SELECT id, slug, title, status, deleted_at, content_html FROM posts ORDER BY substr(created_at, 1, 19) DESC")
+	if err != nil {
+		return nil, fmt.Errorf("list post search cards: %w", err)
+	}
+	defer rows.Close()
+	var out []*PostSearchCard
+	for rows.Next() {
+		var c PostSearchCard
+		if err := rows.Scan(&c.ID, &c.Slug, &c.Title, &c.Status, &c.DeletedAt, &c.ContentHTML); err != nil {
+			return nil, fmt.Errorf("scan post search card: %w", err)
+		}
+		out = append(out, &c)
+	}
+	return out, rows.Err()
+}
+
+// ListPostSlugTitles 返回未删除文章的 slug→title 映射（Spec 62：分享列表构建标题映射
+// 用轻量两列查询，替代全表 List 拖回 content_md/content_html 大字段）。
+func (s *Store) ListPostSlugTitles() (map[string]string, error) {
+	rows, err := s.db.Query("SELECT slug, title FROM posts WHERE deleted_at = ''")
+	if err != nil {
+		return nil, fmt.Errorf("list post slug titles: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var slug, title string
+		if err := rows.Scan(&slug, &title); err != nil {
+			return nil, fmt.Errorf("scan post slug title: %w", err)
+		}
+		out[slug] = title
+	}
+	return out, rows.Err()
+}
+
 // ListPublished 返回已发布文章，按 created_at 倒序。
 func (s *Store) ListPublished() ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder, StatusPublished)
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder, StatusPublished)
 	if err != nil {
 		return nil, fmt.Errorf("list published posts: %w", err)
 	}
@@ -413,7 +542,7 @@ func (s *Store) ListPublishedPaged(page, size int) ([]*Post, error) {
 	if size < 1 {
 		size = 10
 	}
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder+" LIMIT ? OFFSET ?",
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" "+publishedOrder+" LIMIT ? OFFSET ?",
 		StatusPublished, size, (page-1)*size)
 	if err != nil {
 		return nil, fmt.Errorf("list published posts paged: %w", err)
@@ -433,7 +562,7 @@ func (s *Store) CountPublished() (int, error) {
 
 // ListByCategory 返回指定分类的已发布文章，按 created_at 倒序。
 func (s *Store) ListByCategory(name string) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND category = ? "+publishedOrder, StatusPublished, name)
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND category = ? "+publishedOrder, StatusPublished, name)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by category %s: %w", name, err)
 	}
@@ -446,7 +575,7 @@ func (s *Store) ListByCategory(name string) ([]*Post, error) {
 // 【遗留标注 Spec 61 阶段 5】逗号标签 LIKE 全表扫：改关联表（post_tags）影响面大，本轮评估不动；
 // 个人博客数据量下全表扫可接受，标签页并发低。
 func (s *Store) ListByTag(name string) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND (',' || tags || ',') LIKE ? "+publishedOrder,
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND (',' || tags || ',') LIKE ? "+publishedOrder,
 		StatusPublished, "%,"+name+",%")
 	if err != nil {
 		return nil, fmt.Errorf("list posts by tag %s: %w", name, err)
@@ -476,7 +605,7 @@ func (s *Store) CountByCategory() (map[string]int, error) {
 
 // ListByTopic 返回指定专栏的已发布文章，按 created_at 倒序。
 func (s *Store) ListByTopic(name string) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND topic = ? "+publishedOrder, StatusPublished, name)
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND topic = ? "+publishedOrder, StatusPublished, name)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by topic %s: %w", name, err)
 	}
@@ -487,7 +616,7 @@ func (s *Store) ListByTopic(name string) ([]*Post, error) {
 // ListPostsByTopicID 返回指定专栏 ID 的已发布文章（Spec 52），按发布时间倒序（对齐 publishedOrder）。
 // 新代码统一走 topic_id 关联，替代按 topic 文本查询的 ListByTopic。
 func (s *Store) ListPostsByTopicID(topicID int64) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND topic_id = ? "+publishedOrder, StatusPublished, topicID)
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND topic_id = ? "+publishedOrder, StatusPublished, topicID)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by topic id %d: %w", topicID, err)
 	}
@@ -529,7 +658,7 @@ func (s *Store) GetPublishedBySlug(slug string) (*Post, error) {
 }
 
 func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
-	q := "SELECT " + postCols + " FROM posts WHERE slug = ?"
+	q := "SELECT " + listCols + " FROM posts WHERE slug = ?"
 	args := []interface{}{slug}
 	if publishedOnly {
 		q += " AND " + publishedWhere
@@ -641,7 +770,7 @@ func (s *Store) Delete(slug string) error {
 
 // ListTrashed 返回回收站中的文章（deleted_at 非空），按删除时间倒序。
 func (s *Store) ListTrashed() ([]*Post, error) {
-	rows, err := s.db.Query("SELECT " + postCols + " FROM posts WHERE deleted_at != '' ORDER BY datetime(deleted_at) DESC")
+	rows, err := s.db.Query("SELECT " + listCols + " FROM posts WHERE deleted_at != '' ORDER BY datetime(deleted_at) DESC")
 	if err != nil {
 		return nil, fmt.Errorf("list trashed posts: %w", err)
 	}
@@ -661,7 +790,7 @@ func (s *Store) RestorePost(slug string) error {
 
 // ListRecentPosts 返回最近更新的 n 篇文章（不含已删除，含草稿和已发布），按 updated_at 倒序。
 func (s *Store) ListRecentPosts(n int) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE deleted_at = '' ORDER BY substr(updated_at, 1, 19) DESC LIMIT ?", n)
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE deleted_at = '' ORDER BY substr(updated_at, 1, 19) DESC LIMIT ?", n)
 	if err != nil {
 		return nil, fmt.Errorf("list recent posts: %w", err)
 	}
@@ -746,11 +875,20 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
+// scanOne 行扫描（listCols 顺序：Post.Columns() 前 26 列 + views 末位，与 listCols 常量对齐）。
 func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
-	if err := p.ScanRow(row); err != nil {
+	var pinned int
+	var password, publishAt, deletedAt string
+	var views int64
+	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &views); err != nil {
 		return nil, err
 	}
+	p.Pinned = pinned != 0
+	p.Password = password
+	p.PublishAt = ParsePublishAt(publishAt)
+	p.DeletedAt = deletedAt
+	p.Views = views
 	return p, nil
 }
 

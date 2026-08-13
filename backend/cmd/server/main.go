@@ -150,7 +150,7 @@ func main() {
 	log.Printf("sqlite ready: %s", app.DBPath)
 
 	// Spec 52 专栏迁移：建 topics 表 + posts 表加 topic_id 列 + 存量 topic 文本回填（幂等）。
-	// 必须在任何 postCols 查询（setupSearchIndex 等）之前执行：postCols 已含 topic_id 列。
+	// 必须在任何 listCols 查询（setupSearchIndex 等）之前执行：listCols 已含 topic_id 列。
 	if err := st.EnsureTopicsTable(); err != nil {
 		log.Fatalf("ensure topics table: %v", err)
 	}
@@ -348,7 +348,7 @@ func main() {
 			if p.Title == "error" || p.Title == "empty" || p.Link == "" {
 				continue
 			}
-			_ = st.UpsertFeedArticle(&store.FeedArticle{
+			if err := st.UpsertFeedArticle(&store.FeedArticle{
 				FriendTitle: friendTitle,
 				FriendURL:   friendURL,
 				Title:       p.Title,
@@ -356,7 +356,9 @@ func main() {
 				Summary:     p.Summary,
 				Published:   p.Published,
 				GUID:        p.Link,
-			})
+			}); err != nil {
+				log.Printf("upsert feed article %s from %s: %v", p.Link, friendTitle, err)
+			}
 		}
 	})
 	friendsAgg.Start()

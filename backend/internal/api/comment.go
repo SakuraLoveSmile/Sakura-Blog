@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/comment"
 	"blog/internal/notify"
 	"blog/internal/store"
@@ -35,7 +36,7 @@ func toCommentJSON(cm *store.Comment, gravatarMirror string) *commentJSON {
 		PageKey:  cm.PageKey,
 		Nick:     cm.Nick,
 		Email:    cm.Email,
-		Content:  truncateText(stripHTML(cm.ContentHTML), 200),
+		Content:  textutil.Truncate(textutil.StripHTML(cm.ContentHTML), 200),
 		ParentID: cm.ParentID,
 		RootID:   cm.RootID,
 		Status:   cm.Status,
@@ -76,14 +77,24 @@ func (h *Handler) listComments(c *gin.Context) {
 	}
 
 	mirror := h.site.Load().Comments.GravatarMirror
+	// Spec 62：父评论昵称从逐条 GetComment 收敛为单条 IN 批量查询（GetCommentsByIDs）。
+	parentIDs := make([]int64, 0, len(comments))
+	for _, cm := range comments {
+		if cm.ParentID != 0 {
+			parentIDs = append(parentIDs, cm.ParentID)
+		}
+	}
+	parents, err := h.store.GetCommentsByIDs(parentIDs)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	items := make([]*commentJSON, 0, len(comments))
 	for _, cm := range comments {
 		row := toCommentJSON(cm, mirror)
 		// 被回复者昵称
-		if cm.ParentID != 0 {
-			if parent, err := h.store.GetComment(cm.ParentID); err == nil && parent != nil {
-				row.ReplyNick = parent.Nick
-			}
+		if p, ok := parents[cm.ParentID]; ok {
+			row.ReplyNick = p.Nick
 		}
 		items = append(items, row)
 	}

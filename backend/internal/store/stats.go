@@ -40,3 +40,13 @@ func (s *Store) ListPopular(limit int) ([]PopularPost, error) {
 func (s *Store) CountPosts() (int, error) {
 	return s.CountPublished()
 }
+
+// CountAllPosts 返回全部未删除文章总数（含草稿；Spec 62：dashboard post_total 用，
+// 与旧 len(List()) 语义一致但 COUNT 化，不再拖回大字段）。
+func (s *Store) CountAllPosts() (int, error) {
+	var n int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE deleted_at = ''").Scan(&n); err != nil {
+		return 0, fmt.Errorf("count all posts: %w", err)
+	}
+	return n, nil
+}

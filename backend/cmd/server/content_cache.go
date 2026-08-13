@@ -12,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"blog/internal/textutil"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -38,23 +39,23 @@ func (c *contentCache) invalidate() {
 
 type searchJSONCache struct {
 	mu    sync.Mutex
-	dirty bool
+	dirty atomic.Bool // Spec 62：invalidate 与 get 并发时无锁读写 bool 是 data race，改 atomic
 	data  atomic.Pointer[[]byte]
 }
 
-func (c *searchJSONCache) invalidate() { c.dirty = true }
+func (c *searchJSONCache) invalidate() { c.dirty.Store(true) }
 
 // get 返回索引 JSON；置脏或首次时重建（互斥保证并发共享一次重建）。
 func (c *contentCache) searchJSON() ([]byte, error) {
 	cache := &c.search
-	if !cache.dirty {
+	if !cache.dirty.Load() {
 		if d := cache.data.Load(); d != nil {
 			return *d, nil
 		}
 	}
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
-	if !cache.dirty {
+	if !cache.dirty.Load() {
 		if d := cache.data.Load(); d != nil {
 			return *d, nil
 		}
@@ -68,7 +69,7 @@ func (c *contentCache) searchJSON() ([]byte, error) {
 		return nil, fmt.Errorf("marshal search index: %w", err)
 	}
 	cache.data.Store(&b)
-	cache.dirty = false
+	cache.dirty.Store(false)
 	return b, nil
 }
 
@@ -91,7 +92,7 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 			if d.Status != store.StatusPublished {
 				continue
 			}
-			content := truncateText(stripHTML(d.ContentHTML), 2000)
+			content := textutil.Truncate(textutil.StripHTML(d.ContentHTML), 2000)
 			items = append(items, searchItem{
 				Title:   d.Title,
 				Content: content,
@@ -106,18 +107,18 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 
 type sitemapCache struct {
 	mu    sync.Mutex
-	dirty bool
+	dirty atomic.Bool // Spec 62：同 searchJSONCache，invalidate 无锁写改 atomic
 	urls  map[string][]byte // baseURL → xml（site.url 未配置时按请求 host 变化，按 key 缓存）
 }
 
-func (c *sitemapCache) invalidate() { c.dirty = true }
+func (c *sitemapCache) invalidate() { c.dirty.Store(true) }
 
 // get 返回指定 baseURL 的 sitemap XML；置脏或首次时重建。
 func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
 	cache := &c.sitemap
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
-	if !cache.dirty {
+	if !cache.dirty.Load() {
 		if d, ok := cache.urls[baseURL]; ok {
 			return d, nil
 		}
@@ -130,7 +131,7 @@ func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
 		cache.urls = map[string][]byte{}
 	}
 	cache.urls[baseURL] = output
-	cache.dirty = false
+	cache.dirty.Store(false)
 	return output, nil
 }
 

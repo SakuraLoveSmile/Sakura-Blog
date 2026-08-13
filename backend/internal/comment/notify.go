@@ -5,11 +5,20 @@ import (
 	"fmt"
 	"log"
 	"mime"
+	"net"
 	"net/smtp"
 	"strings"
+	"time"
 
 	"blog/internal/notify"
 	"blog/internal/store"
+)
+
+// SMTP 会话超时（Spec 62：黑盒 SMTP 无响应时 goroutine 长期驻留，
+// 连接建立与整段会话各设 deadline，复用 notify.Service 的 5s 超时模式）。
+const (
+	smtpDialTimeout    = 5 * time.Second
+	smtpSessionTimeout = 10 * time.Second
 )
 
 // sendFunc 发信函数类型（可注入 seam，单测用）。
@@ -114,29 +123,50 @@ func (h *Handler) send(to, subject, body string) {
 	auth := smtp.PlainAuth("", n.Username, n.Password, n.SMTPHost)
 	var err error
 	if port == 465 {
-		err = sendImplicitTLS(addr, n.SMTPHost, auth, from, to, msg)
+		err = sendSMTP(addr, n.SMTPHost, true, auth, from, to, msg)
 	} else {
-		err = smtp.SendMail(addr, auth, from, []string{to}, msg)
+		err = sendSMTP(addr, n.SMTPHost, false, auth, from, to, msg)
 	}
 	if err != nil {
 		log.Printf("comment notify: send mail to %s failed: %v", to, err)
 	}
 }
 
-// sendImplicitTLS 465 端口隐式 TLS 发送（smtp.SendMail 只支持 STARTTLS，465 需手动 tls.Dial）。
-func sendImplicitTLS(addr, host string, auth smtp.Auth, from, to string, msg []byte) error {
-	conn, err := tls.Dial("tcp", addr, &tls.Config{ServerName: host})
+// sendSMTP 带超时的 SMTP 发送（Spec 62：统一 465 隐式 TLS 与 STARTTLS 两路径，
+// 连接建立设 DialTimeout、整段会话设 SetDeadline，替代无超时的 tls.Dial/smtp.SendMail）。
+func sendSMTP(addr, host string, implicitTLS bool, auth smtp.Auth, from, to string, msg []byte) error {
+	var conn net.Conn
+	var err error
+	if implicitTLS {
+		conn, err = tls.DialWithDialer(&net.Dialer{Timeout: smtpDialTimeout}, "tcp", addr, &tls.Config{ServerName: host})
+	} else {
+		conn, err = net.DialTimeout("tcp", addr, smtpDialTimeout)
+	}
 	if err != nil {
-		return fmt.Errorf("tls dial: %w", err)
+		return fmt.Errorf("dial %s: %w", addr, err)
 	}
 	defer conn.Close()
+
 	client, err := smtp.NewClient(conn, host)
 	if err != nil {
 		return fmt.Errorf("smtp client: %w", err)
 	}
 	defer client.Close()
-	if err := client.Auth(auth); err != nil {
-		return fmt.Errorf("smtp auth: %w", err)
+	// 整段会话 deadline：smtp.Client 无 SetDeadline，直接对底层 conn 设置（client 持有同一 conn）。
+	if err := conn.SetDeadline(time.Now().Add(smtpSessionTimeout)); err != nil {
+		return fmt.Errorf("smtp deadline: %w", err)
+	}
+	if !implicitTLS {
+		if ok, _ := client.Extension("STARTTLS"); ok {
+			if err := client.StartTLS(&tls.Config{ServerName: host}); err != nil {
+				return fmt.Errorf("smtp starttls: %w", err)
+			}
+		}
+	}
+	if auth != nil {
+		if err := client.Auth(auth); err != nil {
+			return fmt.Errorf("smtp auth: %w", err)
+		}
 	}
 	if err := client.Mail(from); err != nil {
 		return fmt.Errorf("smtp mail: %w", err)
@@ -184,7 +214,7 @@ func (h *Handler) SendTestMail() error {
 	msg := []byte(header + body)
 	auth := smtp.PlainAuth("", n.Username, n.Password, n.SMTPHost)
 	if port == 465 {
-		return sendImplicitTLS(addr, n.SMTPHost, auth, from, to, msg)
+		return sendSMTP(addr, n.SMTPHost, true, auth, from, to, msg)
 	}
-	return smtp.SendMail(addr, auth, from, []string{to}, msg)
+	return sendSMTP(addr, n.SMTPHost, false, auth, from, to, msg)
 }

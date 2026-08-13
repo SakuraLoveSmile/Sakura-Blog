@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,6 +57,10 @@ type Handler struct {
 	uploadMu   sync.Mutex
 	uploadLast map[string]time.Time   // IP → 上次上传时间（间隔限流）
 	uploadHist map[string][]time.Time // IP → 窗口内上传记录（总量限流）
+
+	// notifySem 邮件通知并发上限（Spec 62：评论刷屏时逐条 go h.notify 无界增长，
+	// 用有缓冲信号量限制并发，满则丢弃本轮通知并记日志）。
+	notifySem chan struct{}
 }
 
 // New 创建评论 handler。site 为站点配置原子指针（Comments 段与站点标题经 .Load() 读取）。
@@ -66,6 +71,7 @@ func New(s *store.Store, site *atomic.Pointer[tmpl.Site]) *Handler {
 		last:       map[string]time.Time{},
 		uploadLast: map[string]time.Time{},
 		uploadHist: map[string][]time.Time{},
+		notifySem:  make(chan struct{}, commentNotifyConcurrency),
 	}
 }
 
@@ -297,8 +303,8 @@ func (h *Handler) create(c *gin.Context) {
 		return
 	}
 
-	// 异步邮件通知（SMTP 未配置时内部跳过，失败仅记日志）
-	go h.notify(cm, parent)
+	// 异步邮件通知（SMTP 未配置时内部跳过，失败仅记日志；并发受 notifySem 限流）
+	h.launchNotify(cm, parent)
 
 	resp := gin.H{"ok": true, "status": status}
 	if status == store.CommentApproved {
@@ -311,7 +317,23 @@ func (h *Handler) create(c *gin.Context) {
 
 // NotifyReply 管理员后台回复后触发通知（异步）。admin 包调用，规则同 notify。
 func (h *Handler) NotifyReply(cm, parent *store.Comment) {
-	go h.notify(cm, parent)
+	h.launchNotify(cm, parent)
+}
+
+// commentNotifyConcurrency 邮件通知最大并发数（Spec 62）。
+const commentNotifyConcurrency = 5
+
+// launchNotify 限流启动异步通知：并发满时丢弃本轮并记日志（评论刷屏时防 goroutine 无界增长）。
+func (h *Handler) launchNotify(cm, parent *store.Comment) {
+	select {
+	case h.notifySem <- struct{}{}:
+		go func() {
+			defer func() { <-h.notifySem }()
+			h.notify(cm, parent)
+		}()
+	default:
+		log.Printf("comment notify: 通知并发已满(%d)，丢弃本轮通知", commentNotifyConcurrency)
+	}
 }
 
 // reject 400 参数错误统一出口。

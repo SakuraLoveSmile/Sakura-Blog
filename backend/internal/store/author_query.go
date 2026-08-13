@@ -13,7 +13,7 @@ func (s *Store) ListByAuthor(authorID string, offset, limit int) ([]*Post, error
 	if limit < 1 {
 		limit = 10
 	}
-	rows, err := s.db.Query("SELECT "+postCols+" FROM posts WHERE "+publishedWhere+" AND author = ? "+publishedOrder+" LIMIT ? OFFSET ?",
+	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND author = ? "+publishedOrder+" LIMIT ? OFFSET ?",
 		StatusPublished, authorID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list posts by author %s: %w", authorID, err)

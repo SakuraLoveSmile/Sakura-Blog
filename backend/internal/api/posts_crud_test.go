@@ -238,13 +238,13 @@ func TestNormalizeTags(t *testing.T) {
 
 // TestParsePublishAt 定时发布解析：多格式兼容，非法回退零值。
 func TestParsePublishAt(t *testing.T) {
-	if got := parsePublishAt("2026-08-01T10:30"); got.IsZero() {
+	if got := store.ParsePublishAtLocal("2026-08-01T10:30"); got.IsZero() {
 		t.Error("T format should parse")
 	}
-	if got := parsePublishAt("2026-08-01 10:30"); got.IsZero() {
+	if got := store.ParsePublishAtLocal("2026-08-01 10:30"); got.IsZero() {
 		t.Error("space format should parse")
 	}
-	if got := parsePublishAt("not-a-date"); !got.IsZero() {
+	if got := store.ParsePublishAtLocal("not-a-date"); !got.IsZero() {
 		t.Errorf("invalid date should be zero, got %v", got)
 	}
 }

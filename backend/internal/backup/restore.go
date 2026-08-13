@@ -154,13 +154,14 @@ func (s *Service) preRestoreSnapshot() error {
 }
 
 // extractTo 解压单个 zip 条目到目标路径（覆盖写）。
+// Spec 62：0600 权限（备份/恢复含 DB 文件，防同机其他用户读取）。
 func extractTo(zf *zip.File, dst string) error {
 	rc, err := zf.Open()
 	if err != nil {
 		return fmt.Errorf("open zip entry %s: %w", zf.Name, err)
 	}
 	defer rc.Close()
-	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", dst, err)
 	}

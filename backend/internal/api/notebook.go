@@ -20,6 +20,13 @@ func (h *Handler) parseIDParam(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
+// notebookItem 笔记本列表项：携带 note_count 投影（Spec 62——前端笔记本列表页
+// 免「每笔记本一次计数请求」的 N+1，counts 由单条 GROUP BY 查询填充）。
+type notebookItem struct {
+	*store.Notebook
+	NoteCount int `json:"note_count"`
+}
+
 // listNotebooks GET /api/v1/notebooks：列出所有笔记本（按 order, id 升序）。
 func (h *Handler) listNotebooks(c *gin.Context) {
 	notebooks, err := h.store.ListNotebooks()
@@ -30,7 +37,21 @@ func (h *Handler) listNotebooks(c *gin.Context) {
 	if notebooks == nil {
 		notebooks = []*store.Notebook{}
 	}
-	c.JSON(http.StatusOK, gin.H{"items": notebooks, "total": len(notebooks)})
+	// Spec 62：笔记数单条 GROUP BY 查询（CountNotesByNotebooks），替代逐笔记本计数。
+	ids := make([]int64, 0, len(notebooks))
+	for _, nb := range notebooks {
+		ids = append(ids, nb.ID)
+	}
+	counts, err := h.store.CountNotesByNotebooks(ids)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	items := make([]notebookItem, 0, len(notebooks))
+	for _, nb := range notebooks {
+		items = append(items, notebookItem{Notebook: nb, NoteCount: counts[nb.ID]})
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items, "total": len(items)})
 }
 
 // getNotebook GET /api/v1/notebooks/:id：单个笔记本详情。

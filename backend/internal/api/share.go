@@ -61,12 +61,11 @@ func (h *Handler) listShares(c *gin.Context) {
 		return
 	}
 
-	// 构建 slug->title 映射（一次 List 取全部文章，避免逐条查 DB）
-	titleMap := make(map[string]string)
-	if posts, err := h.store.List(); err == nil {
-		for _, p := range posts {
-			titleMap[p.Slug] = p.Title
-		}
+	// 构建 slug->title 映射（Spec 62：轻量两列查询 ListPostSlugTitles，替代全表 List）
+	titleMap, err := h.store.ListPostSlugTitles()
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	total := len(shares)

@@ -17,11 +17,9 @@ func (h *Handler) listWikidocs(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	tree, err := h.store.BuildDocTree(projectID)
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// Spec 62：树结构从已加载的 docs 内存构建（BuildDocTreeFromDocs），
+	// 替代 BuildDocTree 内部再查一次 ListWikidocs 的双查询。
+	tree := store.BuildDocTreeFromDocs(docs)
 	if docs == nil {
 		docs = []*store.WikiDoc{}
 	}

@@ -11,30 +11,6 @@ import (
 	tmpl "blog/internal/template"
 )
 
-func TestTruncateText(t *testing.T) {
-	cases := []struct {
-		in   string
-		n    int
-		want string
-	}{
-		{"短文本", 40, "短文本"},
-		{"一二三四五", 3, "一二三…"}, // 按 rune 截断，多字节安全
-		{"", 5, ""},
-	}
-	for _, c := range cases {
-		if got := truncateText(c.in, c.n); got != c.want {
-			t.Errorf("truncateText(%q, %d) = %q, want %q", c.in, c.n, got, c.want)
-		}
-	}
-}
-
-func TestStripHTML(t *testing.T) {
-	got := stripHTML("<p>hello   <b>world</b></p>\n\n<span>!</span>")
-	if got != "hello world !" {
-		t.Errorf("stripHTML = %q, want %q", got, "hello world !")
-	}
-}
-
 func TestToCard(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Article.CategoryColor = map[string]string{"技术": "ff0000"}

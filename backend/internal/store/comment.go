@@ -253,6 +253,31 @@ func (s *Store) GetComment(id int64) (*Comment, error) {
 	return repo(s, &Comment{}).GetByID(id)
 }
 
+// GetCommentsByIDs 按 id 集合批量查评论（Spec 62：评论列表父评论昵称从逐条 GetComment
+// 收敛为单条 IN 查询），返回 id → 评论 映射；未收录的 id 不存在。
+func (s *Store) GetCommentsByIDs(ids []int64) (map[int64]*Comment, error) {
+	if len(ids) == 0 {
+		return map[int64]*Comment{}, nil
+	}
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(ids)), ",")
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	out, err := repo(s, &Comment{}).List(Where("id IN ("+placeholders+")", args...))
+	if err != nil {
+		return nil, fmt.Errorf("get comments by ids: %w", err)
+	}
+	m := make(map[int64]*Comment, len(out))
+	for _, cm := range out {
+		m[cm.ID] = cm
+	}
+	return m, nil
+}
+
 // LikeComment 对评论点赞（按 ipHash 去重）。插入成功则 likes+1 并 liked=true；
 // 重复点赞返回当前计数、liked=false。评论不存在返回 ErrCommentNotFound。
 func (s *Store) LikeComment(id int64, ipHash string) (liked bool, likes int64, err error) {

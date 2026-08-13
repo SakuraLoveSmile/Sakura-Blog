@@ -36,7 +36,7 @@ func (s *Store) getAdjacent(slug, category string, newer bool) (*Post, error) {
 	if newer {
 		cmp, order = ">", "ASC"
 	}
-	q := "SELECT " + postCols + " FROM posts WHERE " + openWhere +
+	q := "SELECT " + listCols + " FROM posts WHERE " + openWhere +
 		" AND substr(created_at, 1, 19) " + cmp + " (SELECT substr(created_at, 1, 19) FROM posts WHERE slug = ?)"
 	args := []interface{}{StatusPublished, slug}
 	if category != "" {
@@ -83,8 +83,8 @@ func (s *Store) ListRelatedPosts(slug, tags string, limit int) ([]*Post, error) 
 	}
 	commonExpr := strings.Join(caseExprs, " + ")
 
-	q := "SELECT " + postCols + " FROM (" +
-		"SELECT " + postCols + ", (" + commonExpr + ") AS common FROM posts WHERE " + openWhere + " AND slug != ?" +
+	q := "SELECT " + listCols + " FROM (" +
+		"SELECT " + listCols + ", (" + commonExpr + ") AS common FROM posts WHERE " + openWhere + " AND slug != ?" +
 		") WHERE common > 0 ORDER BY common DESC, substr(created_at, 1, 19) DESC LIMIT ?"
 	args = append(args, StatusPublished, slug, limit)
 

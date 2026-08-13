@@ -388,6 +388,23 @@ func aiGuestRateAllow(ip string) bool {
 	now := time.Now()
 	aiGuestMu.Lock()
 	defer aiGuestMu.Unlock()
+	// Spec 62：惰性清理——IP 表膨胀超过阈值时全表扫一遍，删除窗口已过期的条目，
+	// 防公网端点长期运行 map 无界增长（对比 router 登录限流 loginBlocked 的惰性清理模式）。
+	if len(aiGuestHits) > 1024 {
+		for k, hits := range aiGuestHits {
+			kept := hits[:0]
+			for _, t := range hits {
+				if now.Sub(t) < window {
+					kept = append(kept, t)
+				}
+			}
+			if len(kept) == 0 {
+				delete(aiGuestHits, k)
+			} else {
+				aiGuestHits[k] = kept
+			}
+		}
+	}
 	kept := aiGuestHits[ip][:0]
 	for _, t := range aiGuestHits[ip] {
 		if now.Sub(t) < window {

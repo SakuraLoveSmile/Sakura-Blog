@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/textutil"
 	"blog/internal/search"
 	"blog/internal/store"
 )
@@ -23,7 +24,7 @@ type searchItem struct {
 func searchItemsFromPosts(posts []*store.Post) []searchItem {
 	items := make([]searchItem, 0, len(posts))
 	for _, p := range posts {
-		content := stripHTML(p.ContentHTML)
+		content := textutil.StripHTML(p.ContentHTML)
 		if p.IsPasswordProtected() {
 			content = "" // 受保护文章不泄漏正文
 		}

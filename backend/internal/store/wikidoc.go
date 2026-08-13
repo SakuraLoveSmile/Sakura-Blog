@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -74,6 +75,38 @@ func (s *Store) GetWikidocByID(id int64) (*WikiDoc, error) {
 // ListWikidocs 列出指定 project 的全部文档，按 doc_order, id 升序。
 func (s *Store) ListWikidocs(projectID string) ([]*WikiDoc, error) {
 	return repo(s, &WikiDoc{}).List(Where("project_id = ?", projectID), OrderBy("doc_order, id"))
+}
+
+// CountPublishedWikidocsByProjects 各项目的已发布文档数（Spec 62：文库页 HasDocs
+// 从每项目一次 ListWikidocs 收敛为单条 GROUP BY 查询）。未收录的 id 计数为 0。
+func (s *Store) CountPublishedWikidocsByProjects(ids []string) (map[string]int, error) {
+	out := make(map[string]int, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(ids)), ",")
+	args := make([]any, 0, len(ids)+1)
+	for _, id := range ids {
+		args = append(args, id)
+		out[id] = 0
+	}
+	args = append(args, StatusPublished)
+	rows, err := s.db.Query(
+		`SELECT project_id, COUNT(*) FROM wikidocs WHERE project_id IN (`+placeholders+`) AND status = ? GROUP BY project_id`,
+		args...)
+	if err != nil {
+		return nil, fmt.Errorf("count wikidocs by projects: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		var n int
+		if err := rows.Scan(&id, &n); err != nil {
+			return nil, fmt.Errorf("scan wikidoc count: %w", err)
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
 }
 
 // CreateWikidoc 新建文档，LastInsertId 回填 ID，自动设置 created_at/updated_at。

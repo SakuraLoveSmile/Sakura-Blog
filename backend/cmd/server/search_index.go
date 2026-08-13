@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"blog/internal/textutil"
 	"blog/internal/og"
 	"blog/internal/search"
 	"blog/internal/store"
@@ -59,7 +60,7 @@ func searchItemsAll(st *store.Store) []search.Item {
 		log.Printf("search: list published failed: %v", err)
 	} else {
 		for _, p := range published {
-			content := stripHTML(p.ContentHTML)
+			content := textutil.StripHTML(p.ContentHTML)
 			if p.IsPasswordProtected() {
 				content = ""
 			}
@@ -74,7 +75,7 @@ func searchItemsAll(st *store.Store) []search.Item {
 			if p.Status != store.StatusPublished {
 				continue
 			}
-			items = append(items, search.Item{Type: search.TypePage, Slug: p.Slug, Title: p.Title, Content: stripHTML(p.ContentHTML)})
+			items = append(items, search.Item{Type: search.TypePage, Slug: p.Slug, Title: p.Title, Content: textutil.StripHTML(p.ContentHTML)})
 		}
 	}
 	for page := 1; ; page++ {
@@ -87,11 +88,11 @@ func searchItemsAll(st *store.Store) []search.Item {
 			break
 		}
 		for _, m := range moments {
-			content := stripHTML(m.ContentHTML)
+			content := textutil.StripHTML(m.ContentHTML)
 			items = append(items, search.Item{
 				Type:    search.TypeMoment,
 				Slug:    store.MomentSlugKey(m.ID),
-				Title:   truncateText(content, 40),
+				Title:   textutil.Truncate(content, 40),
 				Content: content,
 			})
 		}
@@ -110,11 +111,15 @@ func syncSearchIndex(ix *search.Index, docType, op, slug string, fetch func() (t
 	}
 	switch op {
 	case "delete", "purge":
-		_ = ix.Unindex(docType, slug)
+		if err := ix.Unindex(docType, slug); err != nil {
+			log.Printf("search: unindex %s %s failed: %v", docType, slug, err)
+		}
 	default: // create / update / restore
 		title, content, indexed := fetch()
 		if !indexed {
-			_ = ix.Unindex(docType, slug)
+			if err := ix.Unindex(docType, slug); err != nil {
+				log.Printf("search: unindex %s %s failed: %v", docType, slug, err)
+			}
 			return
 		}
 		if err := ix.IndexDoc(docType, slug, title, content); err != nil {
@@ -138,7 +143,7 @@ func newPostWriteHook(st *store.Store, searchIdx *search.Index, ogGen *og.Genera
 			if p.Status != store.StatusPublished || p.DeletedAt != "" || (!p.PublishAt.IsZero() && p.PublishAt.After(time.Now())) {
 				return "", "", false
 			}
-			content := stripHTML(p.ContentHTML)
+			content := textutil.StripHTML(p.ContentHTML)
 			if p.IsPasswordProtected() {
 				content = ""
 			}
@@ -158,7 +163,7 @@ func newPageWriteHook(st *store.Store, searchIdx *search.Index) func(op, slug st
 			if p.Status != store.StatusPublished || p.DeletedAt != "" {
 				return "", "", false
 			}
-			return p.Title, stripHTML(p.ContentHTML), true
+			return p.Title, textutil.StripHTML(p.ContentHTML), true
 		})
 	}
 }
@@ -178,8 +183,8 @@ func newMomentWriteHook(st *store.Store, searchIdx *search.Index) func(op, slug 
 			if m.Visibility != store.MomentVisibilityPublic {
 				return "", "", false
 			}
-			content := stripHTML(m.ContentHTML)
-			return truncateText(content, 40), content, true
+			content := textutil.StripHTML(m.ContentHTML)
+			return textutil.Truncate(content, 40), content, true
 		})
 	}
 }

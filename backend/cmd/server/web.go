@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"os"
 	"net/http"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/frontend/assets"
+	"blog/internal/textutil"
 	"blog/internal/comment"
 	"blog/internal/moment"
 	"blog/internal/og"
@@ -24,26 +24,6 @@ import (
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
-
-// 搜索索引与 widget 摘要共用的纯文本提取：去标签 + 压缩空白。
-var (
-	htmlTagRe    = regexp.MustCompile(`<[^>]+>`)
-	whitespaceRe = regexp.MustCompile(`\s+`)
-)
-
-func stripHTML(s string) string {
-	s = htmlTagRe.ReplaceAllString(s, " ")
-	return strings.TrimSpace(whitespaceRe.ReplaceAllString(s, " "))
-}
-
-// truncateText 按 rune 截断字符串，超长加省略号（widget 摘要用）。
-func truncateText(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
-	}
-	return string(r[:n]) + "…"
-}
 
 // sidebarSnapshot 侧边栏 45s 快照缓存（P2-13）。
 // 快照切片在请求间共享底层数组，模板渲染只读，无数据竞争。
@@ -246,7 +226,7 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 			for _, cm := range comments {
 				data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
 					Nick:    cm.Nick,
-					Excerpt: truncateText(stripHTML(cm.ContentHTML), 40),
+					Excerpt: textutil.Truncate(textutil.StripHTML(cm.ContentHTML), 40),
 					URL:     cm.PageKey + "#comment-" + strconv.FormatInt(cm.ID, 10),
 					TimeAgo: comment.TimeAgo(cm.CreatedAt),
 				})
@@ -547,9 +527,13 @@ func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
 	}
 	if comments, err := s.st.ListCommentsByPage(pageKey); err == nil {
 		data.Comments = comment.ToViewItems(comments, &s.site.Load().Comments)
-	}
-	if n, err := s.st.CountCommentsByPage(pageKey); err == nil {
-		data.CommentCount = n
+		// Spec 62：ListCommentsByPage 返回全量，计数直接 len 派生，省一次 COUNT 查询。
+		data.CommentCount = len(comments)
+	} else {
+		// 列表查询失败时单独尝试计数（仍失败则留 0，评论区降级为空）
+		if n, err := s.st.CountCommentsByPage(pageKey); err == nil {
+			data.CommentCount = n
+		}
 	}
 }
 
