@@ -102,6 +102,8 @@ const queryParams = computed(() => {
 const { data: queryData, isLoading, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.pages(queryParams.value)),
   queryFn: () => pageApi.list(queryParams.value).then(({ data }) => data as { items: PageItem[]; total: number }),
+  // Spec 62：?module=wiki|friends 时页面渲染的是内嵌组件，不再白拉一次 /pages
+  enabled: computed(() => module.value === "pages"),
 });
 
 // 客户端排序
@@ -162,7 +164,7 @@ function handleDelete(item: PageItem) {
     confirmType: "danger",
     onConfirm: async () => {
       await pageApi.delete(item.slug);
-      queryClient.invalidateQueries({ queryKey: ["pages"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
       Toast.success("删除成功");
     },
   });
@@ -176,7 +178,7 @@ function handleDeleteInBatch() {
     onConfirm: async () => {
       await Promise.all(selectedSlugs.value.map((slug) => pageApi.delete(slug)));
       selectedSlugs.value = [];
-      queryClient.invalidateQueries({ queryKey: ["pages"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
       Toast.success("删除成功");
     },
   });
@@ -188,7 +190,7 @@ function handleRestore(item: PageItem) {
     title: "确定要恢复该页面吗？",
     onConfirm: async () => {
       await pageApi.restore(item.slug);
-      queryClient.invalidateQueries({ queryKey: ["pages"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
       Toast.success("恢复成功");
     },
   });
@@ -202,7 +204,7 @@ function handlePurge(item: PageItem) {
     confirmType: "danger",
     onConfirm: async () => {
       await pageApi.purge(item.slug);
-      queryClient.invalidateQueries({ queryKey: ["pages"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
       Toast.success("已彻底删除");
     },
   });

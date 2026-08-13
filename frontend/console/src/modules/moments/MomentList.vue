@@ -326,7 +326,7 @@ async function handlePublish() {
     newContent.value = "";
     newImages.value = [];
     newVisibility.value = "public";
-    queryClient.invalidateQueries({ queryKey: ["moments"] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
     Toast.success("发布成功");
   } catch {
   } finally {
@@ -364,7 +364,7 @@ async function saveEdit() {
  images: editImages.value,
  visibility: editVisibility.value,
  });
- queryClient.invalidateQueries({ queryKey: ["moments"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
  Toast.success("已保存");
  cancelEdit();
  } catch {
@@ -383,7 +383,7 @@ async function toggleVisibility(m: any) {
  images: Array.isArray(m.images) ? m.images : [],
  visibility: next,
  });
- queryClient.invalidateQueries({ queryKey: ["moments"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
  Toast.success(next ==="private" ?"已设为私密" :"已设为公开");
  } catch {}
 }
@@ -396,7 +396,7 @@ function handleDelete(m: any) {
  confirmType:"danger",
  onConfirm: async () => {
  await momentApi.delete(m.id);
- queryClient.invalidateQueries({ queryKey: ["moments"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
  Toast.success("删除成功");
  },
  });

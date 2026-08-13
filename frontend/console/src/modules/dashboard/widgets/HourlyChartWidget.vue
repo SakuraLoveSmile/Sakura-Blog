@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from"vue";
 import { VCard } from"@/components/ui";
+import { statsApi } from "@/api";
 import type { Chart } from"chart.js";
 import { loadChart } from"@/lib/chart-init";
 
@@ -12,9 +13,8 @@ let hourlyChartInstance: Chart | null = null;
 async function loadHourly() {
  // 加载时段分布数据（如果后端已实现）
  try {
- const res = await fetch(`/api/v1/stats/hourly?days=${trendDays.value}`);
- if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
- const response = await res.json();
+ const resp = await statsApi.hourly(trendDays.value);
+ const response = resp.data;
  hourlyDist.value = Array.isArray(response) ?
  response :
  (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));

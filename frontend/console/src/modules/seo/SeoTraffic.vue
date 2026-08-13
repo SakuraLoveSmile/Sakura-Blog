@@ -20,12 +20,21 @@ const analysis = ref<any>(null);
 const landing = ref<any[]>([]);
 
 async function loadAnalysis() {
+ try {
  const { data } = await seoApi.trafficAnalysis(range.value);
  analysis.value = data;
+ } catch {
+ // Spec 62：失败显示空态而非白屏
+ analysis.value = null;
+ }
 }
 async function loadLanding() {
+ try {
  const { data } = await seoApi.trafficLanding(range.value);
  landing.value = data.items || [];
+ } catch {
+ landing.value = [];
+ }
 }
 onMounted(loadAnalysis);
 

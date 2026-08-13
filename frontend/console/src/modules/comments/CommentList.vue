@@ -207,7 +207,7 @@ async function runBatchAction(action: "approve" | "reject" | "spam", label: stri
   try {
     const { data } = await commentApi.batch({ ids: selectedIds.value, action });
     selectedIds.value = [];
-    queryClient.invalidateQueries({ queryKey: ["comments"] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
     Toast.success(`批量${label}完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
   } catch (e: any) {
     Toast.error(e?.response?.data?.error || `批量${label}失败`);
@@ -233,7 +233,7 @@ function handleDeleteInBatch() {
       try {
         const { data } = await commentApi.batch({ ids: selectedIds.value, action: "delete" });
         selectedIds.value = [];
-        queryClient.invalidateQueries({ queryKey: ["comments"] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
         Toast.success(`批量删除完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
       } catch (e: any) {
         Toast.error(e?.response?.data?.error || "批量删除失败");
@@ -256,7 +256,7 @@ function handleApprove(cm: any) {
     confirmType: "secondary",
     onConfirm: async () => {
       await commentApi.approve(cm.id);
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
       Toast.success("已通过");
     },
   });
@@ -270,7 +270,7 @@ function handleSetStatus(cm: any, status: "rejected" | "spam", title: string, do
     confirmType: danger ? "danger" : "secondary",
     onConfirm: async () => {
       await commentApi.setStatus(cm.id, status);
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
       Toast.success(doneText);
     },
   });
@@ -290,7 +290,7 @@ function handleDelete(cm: any) {
     confirmType: "danger",
     onConfirm: async () => {
       await commentApi.delete(cm.id);
-      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
       Toast.success("删除成功");
     },
   });
@@ -309,7 +309,7 @@ async function handleReply() {
   replyVisible.value = false;
   replyTarget.value = null;
   replyContent.value = "";
-  queryClient.invalidateQueries({ queryKey: ["comments"] });
+  queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
   Toast.success("回复成功");
 }
 
@@ -494,6 +494,7 @@ function closeMenus() {
                 <!-- 头像 -->
                 <img
                   v-if="cm.avatar"
+                  loading="lazy"
                   :src="cm.avatar"
                   :alt="cm.nick"
                   class="h-9 w-9 shrink-0 rounded-full border border-border object-cover sm:h-[42px] sm:w-[42px]"

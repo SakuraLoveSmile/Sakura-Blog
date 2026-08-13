@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed } from "vue";
 import { Icon } from "@iconify/vue";
+import { useDashboardStats } from "./useDashboardStats";
 
 interface Props {
   label: string;
@@ -13,29 +14,9 @@ const props = withDefaults(defineProps<Props>(), {
   color: "#2E8DFF",
 });
 
-interface StatsResp {
-  post_total: number;
-  comment_total: number;
-  comment_pending: number;
-  view_total: number;
-  attachment_total: number;
-  user_total?: number;
-  post_published: number;
-  sparkline?: number[];
-}
-
-const stats = ref<StatsResp | null>(null);
-const error = ref("");
-
-onMounted(() => {
-  fetch("/api/v1/dashboard/stats", { credentials: "include" })
-    .then((r) => {
-      if (!r.ok) throw new Error("加载统计失败");
-      return r.json();
-    })
-    .then((data: StatsResp) => (stats.value = data))
-    .catch((e) => (error.value = e.message));
-});
+// Spec 62：共享 useDashboardStats（模块级 promise 去重），
+// 替代每个 StatCardWidget 各自裸 fetch 一次 /dashboard/stats 的 4-6 次重复请求。
+const { stats } = useDashboardStats();
 
 const value = computed(() => {
   if (!stats.value) return "0";
@@ -88,6 +69,5 @@ const sparklineArea = computed(() => {
       <path :d="sparklineArea" :fill="`url(#grad-${statKey})`" />
       <path :d="sparklinePath" fill="none" :stroke="color" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
-    <div v-if="error" class="text-xs text-state-error mt-1">{{ error }}</div>
   </div>
 </template>

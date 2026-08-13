@@ -1,4 +1,5 @@
 import { createApp, h, ref } from "vue";
+import { Toast } from "./toast";
 
 // Halo Dialog 复刻：命令式确认弹窗（Dialog.warning / Dialog.info / Dialog.error）
 export interface DialogOptions {
@@ -46,9 +47,14 @@ function showDialog(type: DialogType, options: DialogOptions) {
           loading.value = true;
           try {
             await options.onConfirm();
-          } finally {
+          } catch (e: any) {
+            // Spec 62：确认动作（如删除 API）失败——Toast 提示并保持弹窗打开，
+            // 替代原 try/finally 无 catch 的「静默失败 + unhandled rejection + 弹窗关闭」。
+            Toast.error(e?.response?.data?.error || e?.message || "操作失败");
             loading.value = false;
+            return;
           }
+          loading.value = false;
         }
         close();
       }

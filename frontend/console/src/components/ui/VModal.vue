@@ -77,10 +77,14 @@ function close() {
 .modal-fade-leave-to {
   opacity: 0;
 }
-.modal-zoom-enter-active {
-  transition: all var(--duration-normal) var(--ease-standard)-out;
+.modal-zoom-enter-active,
+.modal-zoom-leave-active {
+  /* Spec 62：`var(--ease-standard)-out` 把 -out 拼在变量值后是非法值（回退默认 ease），
+     且缺 leave-active 导致关闭无动画；修正为规范 token 写法并补齐离开态。 */
+  transition: all var(--duration-normal) var(--ease-standard);
 }
-.modal-zoom-enter-from {
+.modal-zoom-enter-from,
+.modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.95);
 }

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from"vue";
 import { useRoute, useRouter } from"vue-router";
+import { useQueryClient } from"@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi } from"@/api";
+import { queryKeys } from"@/api/query-client";
 import MarkdownEditor from"@/components/MarkdownEditor.vue";
 import RichTextEditor from"@/components/RichTextEditor.vue";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
@@ -11,6 +13,8 @@ import AiGenerateModal from"./AiGenerateModal.vue";
 import RevisionPanel from"./RevisionPanel.vue";
 import { Icon } from"@iconify/vue";
 import { Toast, Dialog } from"@/components/ui";
+
+const queryClient = useQueryClient();
 
 // 文章编辑器：Halo 式三栏布局——顶部全宽工具栏 + 左侧主编辑区 + 右侧大纲/详情面板。
 // 双编辑器模式：默认富文本所见即得（TipTap），可切 Markdown 分屏兑底；
@@ -317,6 +321,8 @@ async function handleSave() {
  router.replace(`/posts/edit/${data.slug}`);
  originalStatus.value ="draft";
  }
+ // Spec 62：保存后失效文章列表缓存（返回列表时草稿小绿点/标题即时反映，不等 staleTime）
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  } catch (e: any) {
  Toast.error(e.response?.data?.error ||"保存失败");
  } finally {
@@ -335,6 +341,8 @@ async function handlePublish() {
  }
  clearActiveDraft();
  Toast.success("发布成功");
+ // Spec 62：发布后失效文章列表缓存，列表页立即显示新状态
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  router.push("/posts");
  } catch (e: any) {
  Toast.error(e.response?.data?.error ||"发布失败");

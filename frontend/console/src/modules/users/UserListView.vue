@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { usersApi, type UserItem } from "@/api";
+import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
   VButton,
@@ -53,7 +54,7 @@ const filteredUsers = computed(() => {
 });
 
 function invalidate() {
-  queryClient.invalidateQueries({ queryKey: ["users"] });
+  queryClient.invalidateQueries({ queryKey: queryKeys.users() });
 }
 
 function errMsg(e: any, fallback: string): string {
@@ -224,12 +225,6 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有用户账户、角色和权限</p>
       </div>
       <div class="flex items-center gap-1.5 sm:gap-2.5">
-        <VButton size="sm" class="!h-8 !w-8 !p-0 sm:!h-auto sm:!w-auto sm:!px-3">
-          <template #icon>
-            <Icon icon="ri:download-2-line" class="h-4 w-4" />
-          </template>
-          <span class="hidden sm:inline">导出</span>
-        </VButton>
         <VButton type="primary" size="sm" class="!h-8 !w-8 !p-0 sm:!h-auto sm:!w-auto sm:!px-3" @click="openCreate">
           <template #icon>
             <Icon icon="ri:user-add-line" class="h-4 w-4" />
@@ -493,6 +488,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                           v-if="u.avatar"
                           :src="u.avatar"
                           :alt="u.username"
+                          loading="lazy"
                           class="h-[38px] w-[38px] shrink-0 rounded-full object-cover"
                         />
                         <div
@@ -588,6 +584,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                   v-if="u.avatar"
                   :src="u.avatar"
                   :alt="u.username"
+                  loading="lazy"
                   class="h-10 w-10 shrink-0 rounded-full object-cover"
                 />
                 <div

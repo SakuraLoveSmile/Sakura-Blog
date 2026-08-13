@@ -194,9 +194,11 @@ const isTrashed = computed(() => selectedStatus.value ==="trashed");
 const deleteMutation = useMutation({
  mutationFn: (slug: string) => postApi.delete(slug),
  onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["posts"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  Toast.success("删除成功");
  },
+ // Spec 62：失败反馈（原静默失败）
+ onError: (e: any) => Toast.error(e?.response?.data?.error || "删除失败"),
 });
 
 function handleDelete(post: any) {
@@ -217,7 +219,7 @@ function handleDeleteInBatch() {
  onConfirm: async () => {
  await Promise.all(selectedSlugs.value.map((slug) => postApi.delete(slug)));
  selectedSlugs.value = [];
- queryClient.invalidateQueries({ queryKey: ["posts"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  Toast.success("删除成功");
  },
  });
@@ -229,7 +231,7 @@ function handleRestore(post: any) {
  title:"确定要恢复该文章吗？",
  onConfirm: async () => {
  await postApi.restore(post.slug);
- queryClient.invalidateQueries({ queryKey: ["posts"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  Toast.success("恢复成功");
  },
  });
@@ -243,7 +245,7 @@ function handlePurge(post: any) {
  confirmType:"danger",
  onConfirm: async () => {
  await postApi.purge(post.slug);
- queryClient.invalidateQueries({ queryKey: ["posts"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
  Toast.success("已彻底删除");
  },
  });
@@ -274,7 +276,7 @@ async function handleShareCreate() {
  expires_at: shareForm.value.expires_at,
  });
  shareResultUrl.value = window.location.origin + data.url;
- queryClient.invalidateQueries({ queryKey: ["shares"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.shares() });
  Toast.success("分享链接创建成功");
  } catch (e: any) {
  Toast.error(e?.response?.data?.error ||"创建失败");
@@ -451,7 +453,7 @@ function closeMenus() {
  <VEntityField v-if="post.cover">
  <template #description>
  <div class="w-20 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
- <img class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
+ <img loading="lazy" class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
  </div>
  </template>
  </VEntityField>
@@ -613,7 +615,7 @@ function closeMenus() {
  </div>
  <div v-if="post.cover" class="shrink-0">
  <div class="w-16 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
- <img class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
+ <img loading="lazy" class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
  </div>
  </div>
  <div class="min-w-0 flex-1">

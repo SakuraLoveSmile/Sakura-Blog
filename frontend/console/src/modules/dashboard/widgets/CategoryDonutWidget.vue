@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
-import { useBreakpoint } from "../useBreakpoint";
+import { useBreakpoint } from "../useBreakpoint"
+import { dashboardApi } from "@/api";
 
 const { breakpoint } = useBreakpoint();
 
@@ -23,13 +24,9 @@ const error = ref("");
 const hoveredIdx = ref<number | null>(null);
 
 onMounted(() => {
-  fetch("/api/v1/dashboard/categories", { credentials: "include" })
-    .then((r) => {
-      if (!r.ok) throw new Error("加载分类失败");
-      return r.json();
-    })
-    .then((resp: CatResp) => {
-      data.value = resp.items.sort((a, b) => b.count - a.count).slice(0, 7);
+  dashboardApi.categories()
+    .then((r: { data: CatResp }) => {
+      data.value = r.data.items.sort((a, b) => b.count - a.count).slice(0, 7);
     })
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));

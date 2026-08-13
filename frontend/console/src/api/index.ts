@@ -113,7 +113,9 @@ export interface DashboardLayoutItem {
 
 export const dashboardApi = {
  stats: () => http.get("/dashboard/stats"),
+ recentPosts: () => http.get("/dashboard/recent-posts"),
  recentComments: () => http.get("/dashboard/recent-comments"),
+ categories: () => http.get("/dashboard/categories"),
  quickActions: () => http.get("/dashboard/quick-actions"),
  saveQuickActions: (items: string[]) =>
  http.put("/dashboard/quick-actions", { items }),
@@ -125,6 +127,7 @@ export const statsApi = {
  popular: (days: number = 7, limit: number = 10) =>
  http.get("/stats/popular", { params: { days, limit } }),
  referrers: (days: number = 7) => http.get("/stats/referrers", { params: { days } }),
+ hourly: (days: number = 7) => http.get("/stats/hourly", { params: { days } }),
 };
 
 // --- Posts ---

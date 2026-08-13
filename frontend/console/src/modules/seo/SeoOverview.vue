@@ -7,6 +7,7 @@ import { seoApi } from"@/api";
 
 const router = useRouter();
 const loading = ref(true);
+const error = ref("");
 const data = ref<any>(null);
 
 async function load() {
@@ -14,6 +15,9 @@ async function load() {
  try {
  const res = await seoApi.overview();
  data.value = res.data;
+ } catch (e: any) {
+ // Spec 62：失败显示空态而非白屏（原无 catch，失败=空白页）
+ error.value = e?.response?.data?.error || e?.message || "加载失败";
  } finally {
  loading.value = false;
  }
@@ -26,6 +30,7 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
 <template>
  <div class="space-y-6">
  <VLoading v-if="loading" />
+ <div v-else-if="error" class="rounded-lg border border-border p-6 text-center text-sm text-state-error">{{ error }}</div>
  <template v-else-if="data">
  <!-- 数据概览 -->
  <section>

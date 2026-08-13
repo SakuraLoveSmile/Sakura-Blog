@@ -31,9 +31,9 @@ const btnRefs = ref<Record<string, HTMLButtonElement | null>>({});
 let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 
 const funnyMessages: Record<string, string> = {
-  Apple: "🍎 Apple 登录还在和库克谈判中，再等等~",
-  Google: "🔍 Google 登录在墙外面壁思过，暂时回不来 🏃",
-  GitHub: "🐙 GitHub 登录的 PR 还在 review，老板说别急 😅",
+  Apple: "Apple 登录还在和库克谈判中，再等等~",
+  Google: "Google 登录在墙外面壁思过，暂时回不来",
+  GitHub: "GitHub 登录的 PR 还在 review，老板说别急",
 };
 
 function showTooltip(provider: string) {
@@ -209,7 +209,7 @@ function setBtnRef(el: any, provider: string) {
 
           <!-- 登录按钮 -->
           <button type="submit" class="btn-primary" :disabled="loading">
-            <Icon v-if="loading" icon="line-md:loading-twotone-loop" :width="20" :height="20" class="loading-icon" />
+            <Icon v-if="loading" icon="ri:loader-4-line" :width="20" :height="20" class="loading-icon" />
             {{ loading ? '登录中...' : '登 录' }}
           </button>
         </form>
@@ -283,7 +283,7 @@ function setBtnRef(el: any, provider: string) {
           </Transition>
 
           <button type="submit" class="btn-primary" :disabled="codeLoading">
-            <Icon v-if="codeLoading" icon="line-md:loading-twotone-loop" :width="20" :height="20" class="loading-icon" />
+            <Icon v-if="codeLoading" icon="ri:loader-4-line" :width="20" :height="20" class="loading-icon" />
             {{ codeLoading ? '验证中...' : '验证并登录' }}
           </button>
 

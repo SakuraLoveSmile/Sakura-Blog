@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { useBreakpoint } from "../useBreakpoint";
+import { statsApi } from "@/api";
 
 interface DailyStat {
   date: string;
@@ -18,13 +19,11 @@ const error = ref("");
 
 function fetchTrend(d: number) {
   loading.value = true;
-  fetch(`/api/v1/stats/trend?days=${d}`, { credentials: "include" })
-    .then((r) => {
-      if (!r.ok) throw new Error("加载趋势失败");
-      return r.json();
-    })
-    .then((resp: { trend: DailyStat[] }) => {
-      data.value = resp.trend;
+  // Spec 62：裸 fetch 改走 statsApi（统一 axios 拦截器：401 跳登录/超时/错误结构）
+  statsApi
+    .trend(d)
+    .then((resp: { data: { trend: DailyStat[] } }) => {
+      data.value = resp.data.trend;
     })
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));

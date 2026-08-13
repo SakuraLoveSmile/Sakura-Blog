@@ -127,7 +127,7 @@ const displayedAttachments = computed(() => {
 });
 
 function invalidateAll() {
-  queryClient.invalidateQueries({ queryKey: ["attachments"] });
+  queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
   loadGroups();
 }
 

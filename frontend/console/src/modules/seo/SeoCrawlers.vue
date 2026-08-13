@@ -21,13 +21,23 @@ const logs = ref<any[]>([]);
 const logsTotal = ref(0);
 
 async function loadAnalysis() {
+ try {
  const { data } = await seoApi.crawlerAnalysis(range.value);
  analysis.value = data;
+ } catch {
+ // Spec 62：失败显示空态而非白屏
+ analysis.value = null;
+ }
 }
 async function loadLogs() {
+ try {
  const { data } = await seoApi.crawlerLogs({ page: 1, size: 50 });
  logs.value = data.items || [];
  logsTotal.value = data.total || 0;
+ } catch {
+ logs.value = [];
+ logsTotal.value = 0;
+ }
 }
 onMounted(loadAnalysis);
 

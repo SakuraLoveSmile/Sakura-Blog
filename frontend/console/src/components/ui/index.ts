@@ -5,7 +5,6 @@ export { default as VPageHeader } from "./VPageHeader.vue";
 export { default as VEntityContainer } from "./VEntityContainer.vue";
 export { default as VEntity } from "./VEntity.vue";
 export { default as VEntityField } from "./VEntityField.vue";
-export { default as VSpace } from "./VSpace.vue";
 export { default as VTabbar } from "./VTabbar.vue";
 export type { TabbarItem } from "./VTabbar.vue";
 export { default as VTag } from "./VTag.vue";

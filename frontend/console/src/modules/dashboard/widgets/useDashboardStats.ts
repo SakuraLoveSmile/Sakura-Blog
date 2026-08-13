@@ -8,6 +8,8 @@ export interface DashboardStats {
  comment_pending: number;
  view_total: number;
  attachment_total: number;
+ user_total?: number;
+ sparkline?: number[];
 }
 
 const stats = ref<DashboardStats>({

@@ -52,9 +52,11 @@ const total = computed(() => queryData.value?.total || 0);
 const deleteMutation = useMutation({
  mutationFn: (id: number) => shareApi.delete(id),
  onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: ["shares"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.shares() });
  Toast.success("删除成功");
  },
+ // Spec 62：失败反馈（原静默失败）
+ onError: (e: any) => Toast.error(e?.response?.data?.error || "删除失败"),
 });
 
 /** 删除前弹出确认对话框 */

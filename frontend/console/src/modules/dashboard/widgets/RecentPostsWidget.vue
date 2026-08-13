@@ -2,7 +2,8 @@
 import { onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { useRouter } from "vue-router";
-import { useBreakpoint } from "../useBreakpoint";
+import { useBreakpoint } from "../useBreakpoint"
+import { dashboardApi } from "@/api";
 
 const { breakpoint } = useBreakpoint();
 const router = useRouter();
@@ -35,12 +36,8 @@ function timeAgo(iso: string): string {
 }
 
 onMounted(() => {
-  fetch("/api/v1/dashboard/recent-posts", { credentials: "include" })
-    .then((r) => {
-      if (!r.ok) throw new Error("加载文章失败");
-      return r.json();
-    })
-    .then((resp: PostsResp) => (items.value = resp.items))
+  dashboardApi.recentPosts()
+    .then((r: { data: PostsResp }) => (items.value = r.data.items))
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));
 });

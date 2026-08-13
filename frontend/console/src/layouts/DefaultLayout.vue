@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useQuery } from "@tanstack/vue-query";
 import { useAuthStore } from "@/stores/auth";
 import { useModulesStore } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
+import { queryKeys } from "@/api/query-client";
 
 const router = useRouter();
 const route = useRoute();
@@ -17,27 +19,14 @@ const profileDropdownOpen = ref(false);
 const searchOpen = ref(false);
 const searchQuery = ref("");
 
-// 未读通知数（铃铛角标，每 60s 轮询）
-const unreadCount = ref(0);
-let unreadTimer: ReturnType<typeof setInterval> | null = null;
-
-async function loadUnread() {
-  try {
-    const { data } = await notificationApi.unreadCount();
-    unreadCount.value = data.count;
-  } catch {
-    // 静默降级（未登录/网络错误不阻塞 UI）
-  }
-}
-
-onMounted(() => {
-  loadUnread();
-  unreadTimer = setInterval(loadUnread, 60_000);
+// 未读通知数（铃铛角标，Spec 62：raw axios 轮询改 useQuery + refetchInterval，
+// 与 NotificationsView 共用查询体系——已读操作 invalidate 后角标即时更新）
+const { data: unreadData } = useQuery({
+  queryKey: queryKeys.unread(),
+  queryFn: () => notificationApi.unreadCount().then(({ data }) => data.count),
+  refetchInterval: 60_000,
 });
-
-onBeforeUnmount(() => {
-  if (unreadTimer) clearInterval(unreadTimer);
-});
+const unreadCount = computed(() => unreadData.value || 0);
 
 // 侧边栏收起状态（批注：左侧边栏希望可以收起来），收起后仅图标模式，状态持久化
 const SIDEBAR_KEY = "console:sidebar-collapsed";
@@ -487,7 +476,7 @@ function closeProfileDropdown() {
     <Teleport to="body">
       <div v-if="moreMenuVisible" class="fixed inset-0 z-[99999] flex flex-row items-end justify-center">
         <Transition name="fade" appear>
-          <div class="absolute inset-0 bg-secondary0/75 transition-opacity" @click="moreMenuVisible = false"></div>
+          <div class="absolute inset-0 bg-black/60 transition-opacity" @click="moreMenuVisible = false"></div>
         </Transition>
         <Transition name="slide-up" appear>
           <div class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl">
@@ -537,7 +526,7 @@ function closeProfileDropdown() {
     <!-- 全局搜索弹窗（⌘K） -->
     <Transition name="fade">
       <div v-if="searchOpen" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh]" @click.self="searchOpen = false">
-        <div class="absolute inset-0 bg-secondary0/75" @click="searchOpen = false" />
+        <div class="absolute inset-0 bg-black/60" @click="searchOpen = false" />
         <div
           class="relative mx-4 w-full max-w-md overflow-hidden rounded-base border border-border bg-card shadow-2xl"
         >

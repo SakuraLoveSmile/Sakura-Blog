@@ -63,7 +63,7 @@ async function runCheck() {
  let desc = `正常 ${okN} · 异常 ${errN}`;
  if (tagged > 0 || restored > 0) {
  desc += ` · 已标记失效 ${tagged} · 恢复 ${restored}`;
- queryClient.invalidateQueries({ queryKey: ["friends"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  }
  Toast.success("检测完成", { description: desc });
  } catch (e: any) {
@@ -146,7 +146,7 @@ async function handleImport() {
  Toast.success("导入完成", { description: msg });
  }
  showImportModal.value = false;
- queryClient.invalidateQueries({ queryKey: ["friends"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  } catch (e: any) {
  importError.value = e?.response?.data?.error || "导入失败，请稍后重试";
  } finally {
@@ -177,7 +177,7 @@ async function handleSave() {
  await linkApi.create(payload);
  }
  showModal.value = false;
- queryClient.invalidateQueries({ queryKey: ["friends"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  Toast.success("保存成功");
  } catch (e: any) {
  error.value = e?.response?.data?.error ||"保存失败";
@@ -193,7 +193,7 @@ function handleDelete(l: LinkRow) {
  confirmType:"danger",
  onConfirm: async () => {
  await linkApi.delete(l.id);
- queryClient.invalidateQueries({ queryKey: ["friends"] });
+ queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  Toast.success("删除成功");
  },
  });
@@ -276,7 +276,7 @@ function closeMenus() {
  class="group relative rounded-lg border border-border p-3 transition-shadow hover:shadow-sm"
  >
  <div class="flex items-center gap-2.5">
- <img v-if="l.avatar" :src="l.avatar" class="h-9 w-9 shrink-0 rounded-full bg-secondary object-cover" alt="" />
+ <img v-if="l.avatar" :src="l.avatar" loading="lazy" class="h-9 w-9 shrink-0 rounded-full bg-secondary object-cover" alt="" />
  <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-text-quaternary"><Icon icon="ri:link" /></span>
  <div class="min-w-0 flex-1">
  <div class="flex items-center gap-1.5">
