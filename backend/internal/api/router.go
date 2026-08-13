@@ -278,6 +278,15 @@ func (h *Handler) Register(r *gin.Engine) {
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
 		authed.POST("/preview/post", h.createPostPreview)
 
+		// 组件库预览 Fixture 端点（Spec 63）：只服务预览，不落库、不发外部请求
+		authed.GET("/preview/rating", h.previewRatingFixture)
+		authed.POST("/preview/rating", h.previewRatingFixtureSubmit)
+		authed.GET("/preview/vote/info", h.previewVoteFixtureInfo)
+		authed.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
+		authed.GET("/preview/friends", h.previewFriendsFixture)
+		authed.GET("/preview/sites", h.previewSitesFixture)
+		authed.GET("/preview/md", h.previewMDFixture)
+
 		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）
 		authed.POST("/ai/generate", h.aiGenerate)
 

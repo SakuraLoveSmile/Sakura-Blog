@@ -29,6 +29,30 @@ export interface PluginFormField {
  placeholder?: string;
 }
 
+/**
+ * 预览能力分类（Spec 63 组件库真实预览）：
+ * - static：只需 CSS + HTML，服务端渲染即完整；
+ * - interactive：需要前台交互初始化（tabs/folding/swiper 等，加载 main.js / services/swiper.js）；
+ * - service：需要数据 service 与本地 Fixture（rating/vote/friends/sites/albums/posters/GitHub 卡片）；
+ * - external：需要 Mermaid/KaTeX 或外部 Markdown 加载器（math-mermaid-loader.js / mdrender.js + marked）。
+ */
+export type PluginCapability = "static" | "interactive" | "service" | "external";
+
+/** 插件预览描述（PLUGIN_PREVIEW 表项）。 */
+export interface PluginPreviewInfo {
+ capability: PluginCapability;
+ /** 需要加载的前台 service 资源名（映射见 preview/resources.ts 的 SERVICE_SCRIPTS；mermaid 特例映射到 math-mermaid-loader.js） */
+ services?: string[];
+ /** 本地 Fixture 端点名（service 类，对应 /api/v1/preview/*；gh=GitHub 服务端 Fixture） */
+ fixture?: string;
+ /** 需要加载 main.js 复用前台交互初始化（tabs/folding/folders/navbar） */
+ mainJs?: boolean;
+ /** 推荐预览高度 px（异步内容较高时用，缺省 420） */
+ height?: number;
+ /** 资源不可用 / 参数缺失时的降级文案 */
+ fallback?: string;
+}
+
 export interface PluginMeta {
  /** 标签名（不含 {% %}） */
  name: string;
@@ -868,3 +892,163 @@ export const plugins: PluginMeta[] = [
  example:"{% ghuser octocat %}",
  },
 ];
+
+// ==================== 预览能力清单（Spec 63） ====================
+// 每个插件一条预览描述，供共享预览运行时（preview/）按能力加载资源与 Fixture。
+// 静态插件的预览描述由 previewInfoFor 兜底（capability=static），无需逐条登记。
+
+const STATIC_PLUGIN_PREVIEW: PluginPreviewInfo = {
+ capability: "static",
+};
+
+export const PLUGIN_PREVIEW: Record<string, PluginPreviewInfo> = {
+ // ---- 布局容器：交互初始化 ----
+ folding: {
+  capability: "interactive",
+  mainJs: true,
+  height: 180,
+  fallback: "折叠块为原生 details 结构，无需脚本即可展开/收起。",
+ },
+ tabs: {
+  capability: "interactive",
+  mainJs: true,
+  height: 220,
+  fallback: "Tab 切换依赖前台 main.js，加载失败时仅显示第一个标签页。",
+ },
+ gallery: {
+  capability: "interactive",
+  height: 320,
+  fallback: "图片墙展示正常；灯箱（fancybox）资源不可用时点击无放大效果。",
+ },
+ folders: {
+  capability: "interactive",
+  mainJs: true,
+  height: 260,
+  fallback: "折叠组为原生 details 结构，无需脚本即可展开/收起。",
+ },
+ navbar: {
+  capability: "interactive",
+  mainJs: true,
+  height: 160,
+  fallback: "导航栏高亮依赖前台脚本，加载失败时仅显示静态链接。",
+ },
+ // ---- 媒体播放：Swiper ----
+ swiper: {
+  capability: "interactive",
+  services: ["swiper"],
+  height: 320,
+  fallback: "Swiper 资源加载失败时轮播不可滑动，图片仍按列表展示。",
+ },
+ // ---- 数据 service + 本地 Fixture ----
+ albums: {
+  capability: "service",
+  services: ["friends"],
+  fixture: "friends",
+  height: 300,
+  fallback: "专辑数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
+ },
+ posters: {
+  capability: "service",
+  services: ["friends"],
+  fixture: "friends",
+  height: 300,
+  fallback: "海报数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
+ },
+ rating: {
+  capability: "service",
+  services: ["rating"],
+  fixture: "rating",
+  height: 180,
+  fallback: "评分数据为预览 Fixture，不写入真实统计；加载失败时显示 0 分。",
+ },
+ vote: {
+  capability: "service",
+  services: ["vote"],
+  fixture: "vote",
+  height: 180,
+  fallback: "投票数据为预览 Fixture，不写入真实统计；加载失败时显示 0 票。",
+ },
+ friends: {
+  capability: "service",
+  services: ["friends"],
+  fixture: "friends",
+  height: 320,
+  fallback: "友链数据为本地 Fixture；加载失败时显示空态。",
+ },
+ sites: {
+  capability: "service",
+  services: ["sites"],
+  fixture: "sites",
+  height: 320,
+  fallback: "站点数据为本地 Fixture；加载失败时显示空态。",
+ },
+ // ---- GitHub 卡片：服务端确定性 Fixture ----
+ ghcard: {
+  capability: "service",
+  fixture: "gh",
+  height: 200,
+  fallback: "GitHub 卡片使用服务端确定性 Fixture，不发公网请求。",
+ },
+ ghrepo: {
+  capability: "service",
+  fixture: "gh",
+  height: 200,
+  fallback: "仓库卡片使用服务端确定性 Fixture，不发公网请求。",
+ },
+ ghuser: {
+  capability: "service",
+  fixture: "gh",
+  height: 200,
+  fallback: "用户卡片使用服务端确定性 Fixture，不发公网请求。",
+ },
+ // ---- 外部资源：Mermaid / 外部 Markdown ----
+ mermaid: {
+  capability: "external",
+  services: ["mermaid"],
+  height: 320,
+  fallback: "Mermaid 资源加载失败时保留图表源码并显示本提示。",
+ },
+ md: {
+  capability: "external",
+  services: ["mdrender"],
+  fixture: "md",
+  height: 320,
+  fallback: "外部 Markdown 为本地 Fixture；marked 资源加载失败时显示本提示。",
+ },
+ // ---- 布局容器 / 文艺装饰 / 提示标注：数据上下文说明 ----
+ timeline: {
+  capability: "static",
+  height: 260,
+  fallback: "时间轴内容来自示例正文，无需外部数据。",
+ },
+ toc: {
+  capability: "static",
+  height: 160,
+  fallback: "预览展示 TOC 容器骨架；真实文章页由前台脚本填充目录项。",
+ },
+ emoji: {
+  capability: "static",
+  height: 120,
+  fallback: "表情图为外链图片，网络不可用时显示占位。",
+ },
+ image: {
+  capability: "static",
+  height: 300,
+  fallback: "示例使用外链图片，网络不可用时显示占位。",
+ },
+ video: {
+  capability: "static",
+  height: 320,
+  fallback: "示例视频来自外链，网络不可用时播放器为空。",
+ },
+ audio: {
+  capability: "static",
+  height: 120,
+  fallback: "示例音频来自外链，网络不可用时播放器为空。",
+ },
+};
+
+/** 取插件预览描述：未登记项按静态插件处理（只注入 CSS + HTML）。 */
+export function previewInfoFor(p: Pick<PluginMeta, "name">): PluginPreviewInfo {
+ return PLUGIN_PREVIEW[p.name] || STATIC_PLUGIN_PREVIEW;
+}

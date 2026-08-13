@@ -1,370 +1,374 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from"vue";
-import { Icon } from"@iconify/vue";
-import { previewApi } from"@/api";
-import { VPageHeader } from"@/components/ui";
+import { ref, computed, watch, onBeforeUnmount, onMounted } from "vue";
+import { Icon } from "@iconify/vue";
+import { VPageHeader } from "@/components/ui";
 import {
- plugins,
- PLUGIN_CATEGORIES,
- type PluginMeta,
- type PluginCategory,
-} from"./plugins-data";
-import PluginParamForm from"./PluginParamForm.vue";
-import AssetGallery from"./AssetGallery.vue";
-import WidgetLibraryView from"./WidgetLibraryView.vue";
-import { WIDGET_META } from"../settings/widget-meta";
+  plugins,
+  PLUGIN_CATEGORIES,
+  previewInfoFor,
+  type PluginMeta,
+  type PluginCategory,
+  type PluginPreviewInfo,
+} from "./plugins-data";
+import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
+import { usePluginPreview } from "./preview/usePluginPreview";
+import PluginParamForm from "./PluginParamForm.vue";
+import AssetGallery from "./AssetGallery.vue";
+import WidgetLibraryView from "./WidgetLibraryView.vue";
+import { WIDGET_META } from "../settings/widget-meta";
 
-// Console 插件库（Spec 23）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
+// Console 插件库（Spec 23 + Spec 63）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
 // 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）。
-// 预览复用后端 POST /api/v1/preview/markdown 渲染管线，
-// 通过 iframe srcdoc 注入前台 main.css + tag-plugins.css，保证样式与前台一致。
+// 预览复用后端 POST /api/v1/preview/markdown（component-library Fixture 模式）渲染管线，
+// 共享预览运行时（preview/）构建 iframe：注入前台样式与按能力脚本、支持亮/暗主题、
+// 防抖 + 请求序列号、高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
 
-const viewMode = ref<"plugins" |"assets" |"widgets">("plugins");
+const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
 const search = ref("");
-const activeCategory = ref<PluginCategory |"全部">("全部");
+const activeCategory = ref<PluginCategory | "全部">("全部");
 const selected = ref<PluginMeta>(plugins[0]);
 const example = ref(plugins[0].example);
 
 const filtered = computed(() => {
- const kw = search.value.trim().toLowerCase();
- return plugins.filter((p) => {
- if (activeCategory.value !=="全部" && p.category !== activeCategory.value)
- return false;
- if (!kw) return true;
- return (
- p.name.toLowerCase().includes(kw) ||
- p.title.toLowerCase().includes(kw) ||
- p.desc.toLowerCase().includes(kw)
- );
- });
+  const kw = search.value.trim().toLowerCase();
+  return plugins.filter((p) => {
+    if (activeCategory.value !== "全部" && p.category !== activeCategory.value)
+      return false;
+    if (!kw) return true;
+    return (
+      p.name.toLowerCase().includes(kw) ||
+      p.title.toLowerCase().includes(kw) ||
+      p.desc.toLowerCase().includes(kw)
+    );
+  });
 });
 
 const categoryCount = computed(() => {
- const map: Record<string, number> = { 全部: plugins.length };
- for (const c of PLUGIN_CATEGORIES) map[c] = 0;
- for (const p of plugins) map[p.category]++;
- return map;
+  const map: Record<string, number> = { 全部: plugins.length };
+  for (const c of PLUGIN_CATEGORIES) map[c] = 0;
+  for (const p of plugins) map[p.category]++;
+  return map;
 });
 
 function selectPlugin(p: PluginMeta) {
- selected.value = p;
- example.value = p.example;
- schedulePreview(true);
+  selected.value = p;
+  example.value = p.example;
+  preview.scheduleRender(example.value, true);
 }
 
 // 结构化参数表单产出 shortcode（Spec 29）：同步驱动示例/预览/复制
 function onFormCode(code: string) {
- example.value = code;
+  example.value = code;
 }
 
-// ---------- 实时预览（防抖 500ms，走后端 goldmark + shortcode 管线） ----------
+// ---------- 实时预览（Spec 63：共享预览运行时） ----------
+// 防抖 500ms + 请求序列号（旧请求不覆盖新预览）；请求携带 preview_profile=component-library
+// 让后端进入本地 Fixture 模式（GitHub/友链确定性数据、rating/vote 隔离 ID 不写库）。
 
-const previewHtml = ref("");
-const rendering = ref(false);
-const previewError = ref("");
-let previewTimer: ReturnType<typeof setTimeout> | undefined;
+const previewFrame = ref<HTMLIFrameElement | null>(null);
+const preview = usePluginPreview(() => previewInfoFor(selected.value));
 
-async function refreshPreview() {
- rendering.value = true;
- previewError.value ="";
- try {
- const { data } = await previewApi.render(example.value);
- previewHtml.value = data.html;
- } catch {
- previewError.value ="预览渲染失败";
- } finally {
- rendering.value = false;
- }
-}
+const selectedPreview = computed<PluginPreviewInfo>(() => previewInfoFor(selected.value));
+const capabilityLabel = computed(() => CAPABILITY_LABELS[selectedPreview.value.capability]);
+const fixtureLabel = computed(() =>
+  selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : ""
+);
 
-function schedulePreview(immediate = false) {
- clearTimeout(previewTimer);
- previewTimer = setTimeout(refreshPreview, immediate ? 0 : 500);
-}
-
-watch(example, () => schedulePreview());
+watch(example, () => preview.scheduleRender(example.value));
 // 首次进入立即渲染一次
-refreshPreview();
+preview.scheduleRender(plugins[0].example, true);
 
-onBeforeUnmount(() => clearTimeout(previewTimer));
-
-// iframe srcdoc：注入前台样式 + 渲染 HTML，固定暗色预览。
-// 注入 tabs 切换脚本使标签插件预览可交互（main.js 的 registerTabsTag 逻辑）。
-const srcdoc = computed(() => {
- return `<!DOCTYPE html>
-<html data-theme="dark">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/assets/css/main.css">
-<link rel="stylesheet" href="/assets/css/tag-plugins.css">
-<link rel="stylesheet" href="/assets/css/highlight.css">
-<style>
- html,body{margin:0;padding:0;}
- body{padding:24px;background:#1c1c1e;}
- .md-text{max-width:760px;margin:0 auto;}
-</style>
-</head>
-<body><article class="md-text content">${previewHtml.value}</article><scr` +
-"ipt>\n" +
-"document.querySelectorAll('.tabs .nav-tabs .tab').forEach(function(el) {\n" +
-" el.addEventListener('click', function(e) {\n" +
-" e.preventDefault();\n" +
-" if (el.classList.contains('active')) return;\n" +
-" Array.prototype.forEach.call(el.parentNode.children, function(t) {\n" +
-" t.classList.toggle('active', t === el);\n" +
-" });\n" +
-" var a = el.querySelector('a');\n" +
-" if (!a) return;\n" +
-" var target = document.getElementById(a.getAttribute('href').replace('#', ''));\n" +
-" if (!target) return;\n" +
-" Array.prototype.forEach.call(target.parentNode.children, function(t) {\n" +
-" t.classList.toggle('active', t === target);\n" +
-" });\n" +
-" });\n" +
-"});\n" +
-"<\/script></body>\n" +
-"</html>";
-});
+function onPreviewMessage(event: MessageEvent) {
+  preview.onMessage(event, previewFrame.value);
+}
+onMounted(() => window.addEventListener("message", onPreviewMessage));
+onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 
 // ---------- 复制 ----------
 
-const copied = ref<"syntax" |"example" |"">("");
+const copied = ref<"syntax" | "example" | "">("");
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
-async function copyText(kind:"syntax" |"example", text: string) {
- try {
- await navigator.clipboard.writeText(text);
- } catch {
- const ta = document.createElement("textarea");
- ta.value = text;
- document.body.appendChild(ta);
- ta.select();
- document.execCommand("copy");
- document.body.removeChild(ta);
- }
- copied.value = kind;
- clearTimeout(copiedTimer);
- copiedTimer = setTimeout(() => (copied.value =""), 1500);
+async function copyText(kind: "syntax" | "example", text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  copied.value = kind;
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => (copied.value = ""), 1500);
 }
 
 onBeforeUnmount(() => clearTimeout(copiedTimer));
 </script>
 
 <template>
- <div class="h-full flex flex-col">
- <!-- 页头 -->
- <VPageHeader title="插件库">
- <template #icon>
- <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
- </template>
- <template #subtitle>
- {{ viewMode ==="plugins"
- ? `${plugins.length} 个标签插件 · 语法速查 + 实时渲染预览，与前台样式完全一致`
- : viewMode ==="assets"
- ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
- : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用` }}
- </template>
- </VPageHeader>
+  <div class="h-full flex flex-col">
+    <!-- 页头 -->
+    <VPageHeader title="插件库">
+      <template #icon>
+        <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
+      </template>
+      <template #subtitle>
+        {{ viewMode === "plugins"
+          ? `${plugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
+          : viewMode === "assets"
+          ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
+          : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用` }}
+      </template>
+    </VPageHeader>
 
- <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
- <div class="px-5 pt-4 pb-4 md:px-6 md:pb-5">
- <div class="apple-segmented" style="max-width: 420px;">
- <button type="button" :class="{ active: viewMode ==='plugins' }" @click="viewMode ='plugins'">标签插件</button>
- <button type="button" :class="{ active: viewMode ==='assets' }" @click="viewMode ='assets'">素材速查</button>
- <button type="button" :class="{ active: viewMode ==='widgets' }" @click="viewMode ='widgets'">侧边栏组件</button>
- </div>
- </div>
+    <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
+    <div class="px-5 pt-4 pb-4 md:px-6 md:pb-5">
+      <div class="apple-segmented" style="max-width: 420px;">
+        <button type="button" :class="{ active: viewMode === 'plugins' }" @click="viewMode = 'plugins'">标签插件</button>
+        <button type="button" :class="{ active: viewMode === 'assets' }" @click="viewMode = 'assets'">素材速查</button>
+        <button type="button" :class="{ active: viewMode === 'widgets' }" @click="viewMode = 'widgets'">侧边栏组件</button>
+      </div>
+    </div>
 
- <!-- 素材速查视图 -->
- <div v-if="viewMode ==='assets'" class="flex-1 overflow-y-auto p-5 md:p-6">
- <AssetGallery />
- </div>
+    <!-- 素材速查视图 -->
+    <div v-if="viewMode === 'assets'" class="flex-1 overflow-y-auto p-5 md:p-6">
+      <AssetGallery />
+    </div>
 
- <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
- <div v-else-if="viewMode ==='widgets'" class="flex-1 overflow-hidden">
- <WidgetLibraryView />
- </div>
+    <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
+    <div v-else-if="viewMode === 'widgets'" class="flex-1 overflow-hidden">
+      <WidgetLibraryView />
+    </div>
 
- <div v-else-if="viewMode ==='plugins'" class="flex-1 flex flex-col overflow-hidden md:flex-row">
- <!-- 左侧：分类 + 搜索 + 列表 -->
- <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
- <div class="p-3 space-y-2 border-b border-border">
- <div class="relative">
- <Icon icon="ri:search-line" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-quaternary" />
- <input
- v-model="search"
- placeholder="搜索插件..."
- class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary"
- />
- </div>
- <div class="flex flex-wrap gap-1">
- <button
- @click="activeCategory = '全部'"
- :class="[
- 'px-2 py-0.5 text-xs rounded-full transition-colors',
- activeCategory === '全部'
- ? 'bg-secondary text-white'
- : 'bg-secondary text-text-tertiary hover:bg-accent ',
- ]"
- >全部 {{ categoryCount['全部'] }}</button>
- <button
- v-for="c in PLUGIN_CATEGORIES"
- :key="c"
- @click="activeCategory = c"
- :class="[
- 'px-2 py-0.5 text-xs rounded-full transition-colors',
- activeCategory === c
- ? 'bg-secondary text-white'
- : 'bg-secondary text-text-tertiary hover:bg-accent ',
- ]"
- >{{ c }} {{ categoryCount[c] }}</button>
- </div>
- </div>
+    <div v-else-if="viewMode === 'plugins'" class="flex-1 flex flex-col overflow-hidden md:flex-row">
+      <!-- 左侧：分类 + 搜索 + 列表 -->
+      <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
+        <div class="p-3 space-y-2 border-b border-border">
+          <div class="relative">
+            <Icon icon="ri:search-line" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-quaternary" />
+            <input
+              v-model="search"
+              placeholder="搜索插件..."
+              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <button
+              @click="activeCategory = '全部'"
+              :class="[
+                'px-2 py-0.5 text-xs rounded-full transition-colors',
+                activeCategory === '全部'
+                  ? 'bg-secondary text-white'
+                  : 'bg-secondary text-text-tertiary hover:bg-accent ',
+              ]"
+            >全部 {{ categoryCount['全部'] }}</button>
+            <button
+              v-for="c in PLUGIN_CATEGORIES"
+              :key="c"
+              @click="activeCategory = c"
+              :class="[
+                'px-2 py-0.5 text-xs rounded-full transition-colors',
+                activeCategory === c
+                  ? 'bg-secondary text-white'
+                  : 'bg-secondary text-text-tertiary hover:bg-accent ',
+              ]"
+            >{{ c }} {{ categoryCount[c] }}</button>
+          </div>
+        </div>
 
- <div class="flex-1 overflow-y-auto py-1 max-h-48 md:max-h-none">
- <button
- v-for="p in filtered"
- :key="p.name"
- @click="selectPlugin(p)"
- :class="[
- 'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
- selected.name === p.name
- ? 'bg-primary/10'
- : 'hover:bg-secondary hover:bg-accent',
- ]"
- >
- <span
- :class="[
- 'text-[10px] px-1 py-px rounded font-mono shrink-0',
- p.type === 'block'
- ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
- : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
- ]"
- >{{ p.type ==="block" ?"块" :"行" }}</span>
- <span
- :class="[
- 'text-sm truncate',
- selected.name === p.name
- ? 'font-medium text-primary'
- : 'text-text-secondary ',
- ]"
- >{{ p.title }}</span>
- <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ p.name }}</span>
- </button>
- <p v-if="filtered.length === 0" class="px-4 py-6 text-center text-sm text-text-quaternary">
- 无匹配插件
- </p>
- </div>
- </aside>
+        <div class="flex-1 overflow-y-auto py-1 max-h-48 md:max-h-none">
+          <button
+            v-for="p in filtered"
+            :key="p.name"
+            @click="selectPlugin(p)"
+            :class="[
+              'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
+              selected.name === p.name
+                ? 'bg-primary/10'
+                : 'hover:bg-secondary hover:bg-accent',
+            ]"
+          >
+            <span
+              :class="[
+                'text-[10px] px-1 py-px rounded font-mono shrink-0',
+                p.type === 'block'
+                  ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
+                  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
+              ]"
+            >{{ p.type === "block" ? "块" : "行" }}</span>
+            <span
+              :class="[
+                'text-sm truncate',
+                selected.name === p.name
+                  ? 'font-medium text-primary'
+                  : 'text-text-secondary ',
+              ]"
+            >{{ p.title }}</span>
+            <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ p.name }}</span>
+          </button>
+          <p v-if="filtered.length === 0" class="px-4 py-6 text-center text-sm text-text-quaternary">
+            无匹配插件
+          </p>
+        </div>
+      </aside>
 
- <!-- 右侧：详情 + 预览 -->
- <section class="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
- <!-- 标题区 -->
- <div>
- <div class="flex items-center gap-2 flex-wrap">
- <h3 class="text-xl font-semibold text-foreground">{{ selected.title }}</h3>
- <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{% {{ selected.name }} %}</code>
- <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{ selected.category }}</span>
- <span
- :class="[
- 'text-[11px] px-1.5 py-0.5 rounded-full',
- selected.type === 'block'
- ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
- : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
- ]"
- >{{ selected.type ==="block" ?"块级" :"行内" }}</span>
- </div>
- <p class="text-sm text-text-tertiary mt-1">{{ selected.desc }}</p>
- </div>
+      <!-- 右侧：详情 + 预览 -->
+      <section class="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
+        <!-- 标题区 -->
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-xl font-semibold text-foreground">{{ selected.title }}</h3>
+            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{% {{ selected.name }} %}</code>
+            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{ selected.category }}</span>
+            <span
+              :class="[
+                'text-[11px] px-1.5 py-0.5 rounded-full',
+                selected.type === 'block'
+                  ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
+                  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
+              ]"
+            >{{ selected.type === "block" ? "块级" : "行内" }}</span>
+          </div>
+          <p class="text-sm text-text-tertiary mt-1">{{ selected.desc }}</p>
+        </div>
 
- <!-- 语法 -->
- <div class="rounded-xl border border-border overflow-hidden">
- <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
- <span class="text-xs font-medium text-text-tertiary">语法</span>
- <button
- @click="copyText('syntax', selected.signature)"
- class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
- >
- <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
- {{ copied ==="syntax" ?"已复制" :"复制语法" }}
- </button>
- </div>
- <pre class="px-4 py-3 text-sm font-mono text-text-secondary overflow-x-auto">{{ selected.signature }}</pre>
- </div>
+        <!-- 语法 -->
+        <div class="rounded-xl border border-border overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
+            <span class="text-xs font-medium text-text-tertiary">语法</span>
+            <button
+              @click="copyText('syntax', selected.signature)"
+              class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
+            >
+              <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
+              {{ copied === "syntax" ? "已复制" : "复制语法" }}
+            </button>
+          </div>
+          <pre class="px-4 py-3 text-sm font-mono text-text-secondary overflow-x-auto">{{ selected.signature }}</pre>
+        </div>
 
- <!-- 参数表 -->
- <div v-if="selected.params.length" class="rounded-xl border border-border overflow-hidden">
- <div class="px-4 py-2 bg-secondary border-b border-border">
- <span class="text-xs font-medium text-text-tertiary">参数</span>
- </div>
- <table class="w-full text-sm">
- <thead>
- <tr class="text-left text-xs text-text-quaternary border-b border-border">
- <th class="px-4 py-2 font-medium w-32">参数</th>
- <th class="px-4 py-2 font-medium">说明</th>
- <th class="px-4 py-2 font-medium w-28">默认值</th>
- </tr>
- </thead>
- <tbody>
- <tr v-for="param in selected.params" :key="param.name" class="border-b border-border last:border-0 /50">
- <td class="px-4 py-2"><code class="text-xs font-mono text-secondary text-primary">{{ param.name }}</code></td>
- <td class="px-4 py-2 text-text-tertiary">{{ param.desc }}</td>
- <td class="px-4 py-2 text-text-quaternary font-mono text-xs">{{ param.default }}</td>
- </tr>
- </tbody>
- </table>
- </div>
+        <!-- 参数表 -->
+        <div v-if="selected.params.length" class="rounded-xl border border-border overflow-hidden">
+          <div class="px-4 py-2 bg-secondary border-b border-border">
+            <span class="text-xs font-medium text-text-tertiary">参数</span>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-text-quaternary border-b border-border">
+                <th class="px-4 py-2 font-medium w-32">参数</th>
+                <th class="px-4 py-2 font-medium">说明</th>
+                <th class="px-4 py-2 font-medium w-28">默认值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="param in selected.params" :key="param.name" class="border-b border-border last:border-0 /50">
+                <td class="px-4 py-2"><code class="text-xs font-mono text-secondary text-primary">{{ param.name }}</code></td>
+                <td class="px-4 py-2 text-text-tertiary">{{ param.desc }}</td>
+                <td class="px-4 py-2 text-text-quaternary font-mono text-xs">{{ param.default }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
- <!-- 结构化参数表单（Spec 29，有 form schema 的插件） -->
- <div v-if="selected.form" class="rounded-xl border border-border overflow-hidden">
- <div class="px-4 py-2 bg-secondary border-b border-border">
- <span class="text-xs font-medium text-text-tertiary">参数设置（自动拼装 shortcode）</span>
- </div>
- <div class="p-4">
- <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
- </div>
- </div>
+        <!-- 结构化参数表单（Spec 29，有 form schema 的插件） -->
+        <div v-if="selected.form" class="rounded-xl border border-border overflow-hidden">
+          <div class="px-4 py-2 bg-secondary border-b border-border">
+            <span class="text-xs font-medium text-text-tertiary">参数设置（自动拼装 shortcode）</span>
+          </div>
+          <div class="p-4">
+            <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+          </div>
+        </div>
 
- <!-- 示例编辑 + 复制 -->
- <div class="rounded-xl border border-border overflow-hidden">
- <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
- <span class="text-xs font-medium text-text-tertiary">示例（可编辑，实时预览）</span>
- <button
- @click="copyText('example', example)"
- class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
- >
- <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
- {{ copied ==="example" ?"已复制" :"复制示例" }}
- </button>
- </div>
- <textarea
- v-model="example"
- spellcheck="false"
- class="w-full px-4 py-3 text-sm font-mono leading-relaxed bg-transparent focus:outline-none resize-y min-h-[120px] text-text-secondary"
- ></textarea>
- </div>
+        <!-- 示例编辑 + 复制 -->
+        <div class="rounded-xl border border-border overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
+            <span class="text-xs font-medium text-text-tertiary">示例（可编辑，实时预览）</span>
+            <button
+              @click="copyText('example', example)"
+              class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
+            >
+              <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
+              {{ copied === "example" ? "已复制" : "复制示例" }}
+            </button>
+          </div>
+          <textarea
+            v-model="example"
+            spellcheck="false"
+            class="w-full px-4 py-3 text-sm font-mono leading-relaxed bg-transparent focus:outline-none resize-y min-h-[120px] text-text-secondary"
+          ></textarea>
+        </div>
 
- <!-- 预览 -->
- <div class="rounded-xl border border-border overflow-hidden">
- <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
- <span class="text-xs font-medium text-text-tertiary flex items-center gap-1.5">
- 渲染预览
- <span v-if="rendering" class="text-[11px] text-text-quaternary">渲染中...</span>
- </span>
- </div>
- <div class="relative bg-secondary">
- <p v-if="previewError" class="px-4 py-6 text-center text-sm text-state-error">{{ previewError }}</p>
- <iframe
- v-else
- :srcdoc="srcdoc"
- class="w-full border-0"
- style="min-height: 420px; max-height: 600px; resize: vertical; overflow: auto;"
- sandbox="allow-same-origin allow-scripts"
- ></iframe>
- </div>
- </div>
- </section>
- </div>
- </div>
+        <!-- 预览（Spec 63：共享运行时 + 主题切换 + Fixture 标识 + 降级态） -->
+        <div class="rounded-xl border border-border overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
+            <span class="text-xs font-medium text-text-tertiary flex items-center gap-1.5">
+              渲染预览
+              <span v-if="preview.rendering.value" class="text-[11px] text-text-quaternary">渲染中...</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <span
+                v-if="fixtureLabel"
+                class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 inline-flex items-center gap-1"
+                :title="fixtureLabel"
+              >
+                <Icon icon="ri:database-2-line" />数据为预览 Fixture
+              </span>
+              <button
+                type="button"
+                :title="preview.theme.value === 'dark' ? '切换到亮色预览' : '切换到暗色预览'"
+                class="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-accent"
+                @click="preview.toggleTheme()"
+              >
+                <Icon :icon="preview.theme.value === 'dark' ? 'ri:sun-line' : 'ri:moon-line'" />
+                {{ preview.theme.value === "dark" ? "亮色" : "暗色" }}
+              </button>
+              <button
+                type="button"
+                title="重新渲染"
+                class="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-accent"
+                @click="preview.scheduleRender(example, true)"
+              >
+                <Icon icon="ri:refresh-line" />
+                重新渲染
+              </button>
+            </div>
+          </div>
+          <!-- 依赖状态（能力 + 所需前台资源） -->
+          <div class="flex items-center gap-2 px-4 py-1.5 border-b border-border bg-card/40 flex-wrap">
+            <span class="text-[11px] text-text-quaternary">
+              依赖：<span class="text-text-tertiary">{{ capabilityLabel }}</span>
+              <template v-if="selectedPreview.services?.length">
+                <span class="mx-1 text-text-quaternary">·</span>
+                <code class="font-mono text-[10px] text-text-tertiary">{{ selectedPreview.services.join(" / ") }}</code>
+              </template>
+            </span>
+            <span v-if="fixtureLabel" class="text-[10px] text-text-quaternary hidden md:inline">{{ fixtureLabel }}</span>
+          </div>
+          <div class="relative bg-secondary">
+            <p v-if="preview.previewError.value" class="px-4 py-6 text-center text-sm text-state-error">
+              {{ preview.previewError.value }}
+            </p>
+            <p v-else-if="!preview.previewHtml.value" class="px-4 py-6 text-center text-sm text-text-quaternary">
+              预览为空：该插件示例未产生可见输出，请检查参数是否齐全。
+            </p>
+            <iframe
+              v-else
+              ref="previewFrame"
+              :srcdoc="preview.srcdoc.value"
+              class="w-full border-0"
+              :style="{ height: preview.frameHeight.value + 'px', minHeight: preview.frameHeight.value + 'px', resize: 'vertical', overflow: 'auto' }"
+              sandbox="allow-same-origin allow-scripts"
+            ></iframe>
+          </div>
+          <p v-if="selectedPreview.fallback && !preview.previewError.value" class="px-4 py-2 text-[11px] text-text-quaternary border-t border-border">
+            {{ selectedPreview.fallback }}
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
 </template>

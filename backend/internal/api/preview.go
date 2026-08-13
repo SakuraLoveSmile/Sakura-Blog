@@ -9,15 +9,27 @@ import (
 
 // previewMarkdown POST /api/v1/preview/markdown：把 Markdown 渲染成 HTML。
 // 复用 post.Service 的 goldmark 管线（shortcode/KaTeX/Chroma 高亮），保证预览与前台渲染一致。
+// preview_profile=component-library（Spec 63）时进入本地 Fixture 模式：
+// GitHub/友链用确定性数据，rating/vote/friends/sites/md 端点改写为 /api/v1/preview/*，
+// 不依赖公网、不写入真实数据；缺省保持原有渲染行为不变。
 func (h *Handler) previewMarkdown(c *gin.Context) {
 	var req struct {
-		Markdown string `json:"markdown"`
+		Markdown       string `json:"markdown"`
+		PreviewProfile string `json:"preview_profile"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
-	html, err := h.posts.Render(req.Markdown)
+	var (
+		html string
+		err  error
+	)
+	if req.PreviewProfile == "component-library" {
+		html, err = h.posts.RenderComponentPreview(req.Markdown)
+	} else {
+		html, err = h.posts.Render(req.Markdown)
+	}
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "渲染失败: "+err.Error())
 		return

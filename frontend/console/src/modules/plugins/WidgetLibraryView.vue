@@ -11,6 +11,7 @@ import {
   NO_EXTRA_PARAM_LAYOUTS,
   builtinDefaults,
 } from "../settings/widget-meta";
+import { buildPreviewDoc } from "./preview/preview-document";
 
 // 侧边栏组件库视图（Spec 58）：浏览 16 种内置侧边栏组件、编辑参数并保存为命名方案。
 // 方案 = widgets.library 的命名条目（name → layout + 参数），零后端改动；
@@ -298,7 +299,9 @@ function schedulePreview(immediate = false) {
 // 从整页 HTML 提取预览组件：保留侧栏视觉骨架（.l_left > .sidebg 玻璃质感 +
 // .leftbar-container > .widgets 作用域样式：组件文本色/间距均绑定这些祖先选择器），
 // 去掉 logo/菜单 header、footer 社交区与搜索框，只留预览组件本身。
-// head 脚本全量剥离（纯样式预览），保留 stylesheet/style/meta；主题属性与前台一致。
+// iframe 文档构建复用共享预览运行时（preview/preview-document.ts，Spec 63）：
+// 内置 ctx/def/deps/utils shim（data_cache 关闭），body 仅保留页面 services scan 块
+// （其 utils.js 调用由内置 shim 承接），head 脚本全量剥离、保留 stylesheet/style/meta。
 function buildWidgetDoc(fullHtml: string): string {
   const doc = new DOMParser().parseFromString(fullHtml, "text/html");
   const aside = doc.querySelector("aside.l_left");
@@ -316,18 +319,13 @@ function buildWidgetDoc(fullHtml: string): string {
   } else {
     bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">预览渲染失败：未找到侧栏结构</p>`;
   }
-  for (const s of Array.from(doc.head.querySelectorAll("script"))) s.remove();
-  const headHtml = doc.head.innerHTML;
   const themeAttr = doc.documentElement.getAttribute("data-theme") || "dark";
   const bodyClass = doc.body.className || "";
-  // GitHub 三卡（ghrepo/ghuser/ghissues）与 timeline 靠客户端 service 脚本走本地
-  // /api/gh 代理取数回填（data-service 机制）：预览需保留 jquery + utils 内联块 +
-  // 数据服务懒加载 scan 脚本（均在 base.html body 末尾），其余脚本不引入。
-  const bodyScripts = Array.from(doc.body.querySelectorAll("script"));
-  const jqScr = bodyScripts.find((s) => (s.getAttribute("src") || "").includes("jquery.min.js"));
-  const utilsScr = bodyScripts.find((s) => !s.src && (s.textContent || "").includes("const utils = {"));
-  const scanScr = bodyScripts.find((s) => !s.src && (s.textContent || "").includes("var services = ["));
-  const dataScripts = [jqScr, utilsScr, scanScr].filter((s): s is HTMLScriptElement => !!s).map((s) => s.outerHTML).join("\n");
+  // 数据服务懒加载 scan 块（base.html 注入，URL 已服务端渲染）：复用页面清单，
+  // 内置 shim 提供 utils/ctx/def/deps，不再需要页面自身的 utils 内联块。
+  const scanScr = Array.from(doc.body.querySelectorAll("script")).find(
+    (s) => !s.src && (s.textContent || "").includes("var services = [")
+  );
   // iframe 内布局修正：侧栏宽度/定位不依赖整页 grid；容器高度自适应；去掉 .widgets 滚动与底部渐隐 mask
   const fx = `<style>
 body{padding:12px !important}
@@ -335,7 +333,14 @@ aside.l_left{position:relative;width:300px;max-width:90%;margin:0 auto;max-heigh
 .l_left .leftbar-container{height:auto}
 .l_left .leftbar-container >.widgets{overflow:visible;mask:none;-webkit-mask:none;flex-grow:0}
 </style>`;
-  return `<!doctype html><html lang="zh-CN" data-theme="${themeAttr}"><head>${headHtml}${fx}</head><body class="${bodyClass}">${bodyInner}\n${dataScripts}</body></html>`;
+  return buildPreviewDoc({
+    theme: themeAttr === "light" ? "light" : "dark",
+    bodyHtml: bodyInner,
+    bodyClass,
+    wrapContent: false,
+    extraHead: fx,
+    inlineScripts: scanScr ? [scanScr.outerHTML] : [],
+  });
 }
 
 // 草稿参数变化 → 防抖重渲染；切换选中项立即渲染

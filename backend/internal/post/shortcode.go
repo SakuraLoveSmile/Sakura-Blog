@@ -2406,14 +2406,10 @@ func renderFriends(argsStr string) string {
 	return sb.String()
 }
 
-// renderLinks 渲染 {% links %}：分组友链卡片流服务端直出（结构同旧 links.html，
-// 对齐原版 sites 标签插件 sites-wrap + site-card）。数据经 SetLinksFunc 注入。
-func (s *Service) renderLinks() string {
-	var groups []tmpl.LinkGroup
-	defaultLink := ""
-	if s.linksFunc != nil {
-		groups, defaultLink = s.linksFunc()
-	}
+// renderLinkGroupsHTML 渲染友链分组卡片流 HTML（{% links %} 服务端直出，
+// 结构同旧 links.html，对齐原版 sites 标签插件 sites-wrap + site-card）。
+// 供正常渲染（站点 links 配置注入）与组件库 Fixture 预览（确定性数据）共用。
+func renderLinkGroupsHTML(groups []tmpl.LinkGroup, defaultLink string) string {
 	if len(groups) == 0 {
 		return "<p>暂无友链</p>"
 	}
@@ -2444,6 +2440,16 @@ func (s *Service) renderLinks() string {
 		sb.WriteString(`</div></div>`)
 	}
 	return sb.String()
+}
+
+// renderLinks 渲染 {% links %}：分组友链卡片流服务端直出，数据经 SetLinksFunc 注入。
+func (s *Service) renderLinks() string {
+	var groups []tmpl.LinkGroup
+	defaultLink := ""
+	if s.linksFunc != nil {
+		groups, defaultLink = s.linksFunc()
+	}
+	return renderLinkGroupsHTML(groups, defaultLink)
 }
 
 // renderSites 渲染 {% sites api:url %}，容器交给 services/sites.js 异步渲染。

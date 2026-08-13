@@ -436,3 +436,162 @@ func TestEmojiURL(t *testing.T) {
 		t.Errorf("emoji source branch should not output alt: %s", out)
 	}
 }
+
+// ---------- Spec 63：组件库预览 Fixture ----------
+
+func TestRewritePreviewDataAPIs(t *testing.T) {
+	// 覆盖：rating/vote 端点改写 + data-id 隔离前缀；friends/sites 外部 URL 一律指向本地 Fixture；
+	// md src 编码进查询参数（来源标识，fixture 端点不直连）；非 preview 产物不受影响。
+	in := `<div class="tag-plugin ds-rating" data-api="/api/rating" data-id="demo-post"><div class="body"></div></div>` +
+		`<div class="tag-plugin ds-vote" data-api="/api/vote" data-id="demo-post"></div>` +
+		`<div class="tag-plugin users-wrap"><div class="data-service ds-friends" data-api="https://example.com/data.json"><div class="grid-box"></div></div></div>` +
+		`<div class="tag-plugin sites-wrap"><div class="data-service ds-sites" data-api="https://example.com/sites.json"><div class="grid-box"></div></div></div>` +
+		`<div class="data-service ds-mdrender" src="https://raw.githubusercontent.com/x/y/main/README.md" id="md_1"></div>`
+	out := rewritePreviewDataAPIs(in)
+	for _, want := range []string{
+		`data-api="/api/v1/preview/rating"`,
+		`data-id="preview-demo-post"`,
+		`data-api="/api/v1/preview/vote"`,
+		`data-api="/api/v1/preview/friends"`,
+		`data-api="/api/v1/preview/sites"`,
+		`src="/api/v1/preview/md?src=`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("rewrite missing %q in: %s", want, out)
+		}
+	}
+	// 原外部端点不得作为直连残留（编码进查询参数的来源标识除外）
+	for _, bad := range []string{`/api/rating"`, `/api/vote"`, "example.com/data.json", "example.com/sites.json"} {
+		if strings.Contains(out, bad) {
+			t.Errorf("rewrite should drop %q, got: %s", bad, out)
+		}
+	}
+	// md src 查询参数编码：原 URL 的 / 与 : 被编码，属性不被引号/& 破坏
+	if !strings.Contains(out, `src="/api/v1/preview/md?src=https%3A%2F%2Fraw.githubusercontent.com%2Fx%2Fy%2Fmain%2FREADME.md"`) {
+		t.Errorf("md src should be query-escaped, got: %s", out)
+	}
+}
+
+func TestRewritePreviewDataAPIsFriendsAndPosts(t *testing.T) {
+	// friends posts:true 走 ds-friends_and_posts，同样改写为本地 Fixture 端点
+	in := `<div class="tag-plugin users-posts-wrap"><div class="data-service ds-friends_and_posts" data-api="/api/friends-aggregated"><div class="grid-box"></div></div></div>`
+	out := rewritePreviewDataAPIs(in)
+	if !strings.Contains(out, `data-api="/api/v1/preview/friends"`) {
+		t.Errorf("friends_and_posts rewrite missing: %s", out)
+	}
+}
+
+func TestFixtureGHClient(t *testing.T) {
+	repo, err := (fixtureGHClient{}).GetRepo("vuejs", "vue")
+	if err != nil {
+		t.Fatalf("fixture GetRepo: %v", err)
+	}
+	if repo.FullName != "vuejs/vue" || repo.Stars != 12800 || repo.Language != "Go" {
+		t.Errorf("fixture repo unexpected: %+v", repo)
+	}
+	user, err := (fixtureGHClient{}).GetUser("octocat")
+	if err != nil {
+		t.Fatalf("fixture GetUser: %v", err)
+	}
+	if user.Login != "octocat" || user.Followers != 3200 {
+		t.Errorf("fixture user unexpected: %+v", user)
+	}
+}
+
+func TestRenderComponentPreview(t *testing.T) {
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% ghrepo vuejs/vue %}\n\n{% rating id:demo-post %}\n\n{% friends %}\n\n{% vote 有帮助吗 id:post-1 %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		// ghrepo 使用确定性 Fixture 数据
+		`<span class="repo-name">vuejs/vue</span>`,
+		`>⭐ 12800<`,
+		// rating：端点改写 + preview- 隔离 ID
+		`data-api="/api/v1/preview/rating"`,
+		`data-id="preview-demo-post"`,
+		// vote：端点改写 + preview- 隔离 ID
+		`data-api="/api/v1/preview/vote"`,
+		`data-id="preview-post-1"`,
+		// friends：缺省端点改写为本地 Fixture
+		`data-api="/api/v1/preview/friends"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("component preview missing %q in: %s", want, out)
+		}
+	}
+}
+
+func TestRenderComponentPreviewStaticPlugins(t *testing.T) {
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% note color:green 提示 这是提示内容 %}\n\n{% banner title:我的博客 %}\n欢迎。\n{% endbanner %}\n\n{% poetry 静夜思 author:李白 %}\n床前明月光。\n{% endpoetry %}\n\n{% frame device:iphone width:320px %}\n![s](https://example.com/s.png)\n{% endframe %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`class="tag-plugin colorful note"`,
+		`color="green"`,
+		`class="tag-plugin banner"`,
+		`class="tag-plugin poetry"`,
+		`device="iphone"`,
+		`class="tag-plugin frame"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("static plugin preview missing %q in: %s", want, out)
+		}
+	}
+}
+
+func TestRenderComponentPreviewInteractivePlugins(t *testing.T) {
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% tabs %}\n<!-- tab 标签一 -->\n第一页。\n<!-- tab 标签二 -->\n第二页。\n{% endtabs %}\n\n{% folding color:cyan open:true 详情 %}\n折叠内容。\n{% endfolding %}\n\n{% swiper %}\n![](https://example.com/1.png)\n![](https://example.com/2.png)\n{% endswiper %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`class="tag-plugin tabs"`,
+		`<details class="tag-plugin colorful folding"`,
+		`class="tag-plugin swiper fancybox"`,
+		`<div class="swiper-slide">`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("interactive plugin preview missing %q in: %s", want, out)
+		}
+	}
+}
+
+func TestRenderComponentPreviewExternalPlugins(t *testing.T) {
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% mermaid %}\ngraph TB\n A --> B\n{% endmermaid %}\n\n{% md https://raw.githubusercontent.com/xaoxuu/hexo-theme-stellar/main/README.md %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	// mermaid：源码保留在容器内（客户端 math-mermaid-loader 负责渲染，失败降级为源码）
+	if !strings.Contains(out, `<div class="mermaid">graph TB`) {
+		t.Errorf("mermaid fixture missing: %s", out)
+	}
+	// md：src 改写为本地 Fixture 端点
+	if !strings.Contains(out, `class="data-service ds-mdrender" src="/api/v1/preview/md?src=`) {
+		t.Errorf("md fixture rewrite missing: %s", out)
+	}
+}
+
+func TestRenderComponentPreviewLinksFixture(t *testing.T) {
+	// {% links %} 在 Fixture 模式下服务端直出确定性分组（不依赖站点 links 配置注入）
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% links %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`<h2>推荐站点</h2>`,
+		`<h2>小伙伴</h2>`,
+		`<span class="title">Fixture Blog</span>`,
+		`<span class="title">Alice</span>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("links fixture missing %q in: %s", want, out)
+		}
+	}
+}

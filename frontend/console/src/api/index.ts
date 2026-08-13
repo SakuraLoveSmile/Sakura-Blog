@@ -204,7 +204,9 @@ export const attachmentGroupApi = {
 
 // --- Markdown 预览 ---
 export const previewApi = {
- render: (markdown: string) => http.post("/preview/markdown", { markdown }),
+ /** 渲染 Markdown。previewProfile=component-library（Spec 63）时后端进入本地 Fixture 模式 */
+ render: (markdown: string, previewProfile?: string) =>
+  http.post("/preview/markdown", { markdown, preview_profile: previewProfile }),
  /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
  createPostPreview: (form: Record<string, unknown>) =>
  http.post("/preview/post", form),
