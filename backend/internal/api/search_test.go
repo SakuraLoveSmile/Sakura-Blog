@@ -22,7 +22,7 @@ func newSearchTestRouter(t *testing.T, password string) (*gin.Engine, *store.Sto
 		t.Fatalf("ensure pages table: %v", err)
 	}
 	site := &tmpl.Site{}
-	site.Admin.Password = password
+	enableAdmin(t, st, site, password)
 	r := gin.New()
 	New(Config{Store: st, Site: sitePtr(site)}).Register(r)
 	return r, st

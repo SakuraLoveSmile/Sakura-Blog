@@ -35,8 +35,8 @@ const (
 	SectionDefault      = "default"   // 占位素材组（对齐原版 _config.yml default）
 	SectionPages        = "pages"     // 页面级设置（friends 页等特色设置，按页面键管理）
 
-	// SectionAdmin 管理密码段。故意不入 KnownSections：不经 GET /settings 暴露，
-	// 仅由 SaveAdminPassword 专用接口读写。
+	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
+	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
 	SectionAdmin = "admin"
 )
 
@@ -54,11 +54,6 @@ type siteBasic struct {
 	FaviconURL string `json:"favicon_url"`      // Favicon URL，留空回退 /favicon.ico
 	AppleIcon  string `json:"apple_touch_icon"` // Apple Touch Icon URL，留空回退默认图
 	SWCacheVer string `json:"sw_cache_version"` // Service Worker 缓存版本，留空用内置缺省
-}
-
-// adminSection 对应 settings 表 "admin" 段（管理密码，明文存储与 site.yml 现状同安全等级）。
-type adminSection struct {
-	Password string `json:"password"`
 }
 
 // AIConfig 对应 settings 表 "ai" 段：OpenAI 兼容接口配置，供 AI 属性生成代理使用。
@@ -121,18 +116,21 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		}
 	}
 
-	// admin 段单独兼容导入：旧库升级时 settings 非空但无 admin 段，site.yml 有密码则补导一次。
 	settings, err := st.AllSettings()
 	if err != nil {
 		return err
 	}
+	// admin 段兼容补导（Spec 61 阶段 4 收紧）：仅当 users 表 admin 尚无密码哈希时，
+	// 才把 site.yml 初始密码补入 admin 段供下方迁移消费；已迁移的库不再从 site.yml 回灌明文。
 	if _, ok := settings[SectionAdmin]; !ok && site.Admin.Password != "" {
-		b, err := json.Marshal(adminSection{Password: site.Admin.Password})
-		if err != nil {
-			return err
-		}
-		if err := st.PutSetting(SectionAdmin, string(b)); err != nil {
-			return err
+		if adminUser, _ := st.GetUserByUsername("admin"); adminUser == nil || adminUser.PasswordHash == "" {
+			b, err := json.Marshal(map[string]string{"password": site.Admin.Password})
+			if err != nil {
+				return err
+			}
+			if err := st.PutSetting(SectionAdmin, string(b)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -217,34 +215,55 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		}
 	}
 
-	// Spec 45: 迁移 admin 密码到 users 表
+	// Spec 61 阶段 4: admin 密码迁移到 users 表（幂等）。
+	// settings admin 段非空（旧版本明文密码）时：确保 users 表 admin 用户存在且 bcrypt 匹配该密码
+	// （缺失/不匹配则创建/更新），随后清空 admin 段；之后密码唯一真值在 users 表。
 	if err := st.EnsureUsersTable(); err != nil {
 		log.Printf("[warn] EnsureUsersTable: %v", err)
 	}
-	users, _ := st.ListUsers()
-	if len(users) == 0 {
-		settings, _ := st.AllSettings()
-		if adminJSON, ok := settings[SectionAdmin]; ok && adminJSON != "" {
-			var adminCfg struct {
-				Password string `json:"password"`
+	if settings, _ := st.AllSettings(); settings[SectionAdmin] != "" {
+		var adminCfg struct {
+			Password string `json:"password"`
+		}
+		if json.Unmarshal([]byte(settings[SectionAdmin]), &adminCfg) == nil && adminCfg.Password != "" {
+			admin, err := st.GetUserByUsername("admin")
+			if err != nil {
+				return err
 			}
-			if json.Unmarshal([]byte(adminJSON), &adminCfg) == nil && adminCfg.Password != "" {
+			needCreate := admin == nil
+			needUpdate := !needCreate && store.CheckPassword(admin.PasswordHash, adminCfg.Password) != nil
+			if needCreate {
 				hash, err := store.HashPassword(adminCfg.Password)
-				if err == nil {
-					admin := &store.User{
-						Username:     "admin",
-						PasswordHash: hash,
-						DisplayName:  "管理员",
-						AuthSecret:   store.GenerateAuthSecret(),
-						Role:         store.RoleAdmin,
-					}
-					if err := st.CreateUser(admin); err != nil {
-						log.Printf("[warn] migrate admin user: %v", err)
-					} else {
-						log.Printf("[info] Spec 45: migrated admin password to users table (user: admin)")
-					}
+				if err != nil {
+					return err
+				}
+				admin = &store.User{
+					Username:     "admin",
+					PasswordHash: hash,
+					DisplayName:  "管理员",
+					AuthSecret:   store.GenerateAuthSecret(),
+					Role:         store.RoleAdmin,
+				}
+				if err := st.CreateUser(admin); err != nil {
+					log.Printf("[warn] migrate admin user: %v", err)
+				} else {
+					log.Printf("[info] Spec 61: migrated admin password to users table (user: admin)")
+				}
+			} else if needUpdate {
+				hash, err := store.HashPassword(adminCfg.Password)
+				if err != nil {
+					return err
+				}
+				if err := st.UpdatePassword(admin.ID, hash, admin.AuthSecret); err != nil {
+					log.Printf("[warn] update admin password hash: %v", err)
+				} else {
+					log.Printf("[info] Spec 61: refreshed admin password hash from settings admin section")
 				}
 			}
+		}
+		// 无论是否迁移成功，清空明文 admin 段（此后密码只存在于 users 表）
+		if err := st.PutSetting(SectionAdmin, ""); err != nil {
+			log.Printf("[warn] clear admin section: %v", err)
 		}
 	}
 
@@ -346,7 +365,8 @@ func writeSiteLinks(st *store.Store, groups []tmpl.LinkGroup) error {
 // RebuildSite 从 DB 重新加载 settings/links，构建全新 *tmpl.Site 后经 atomic.Pointer
 // 复制-交换发布，消除前台渲染（无锁读）与热更新写入之间的数据竞争。
 // 未覆盖字段（LogoIcon/DataCache/SiteTree 等启动后不再变化）沿用当前值，读-only 共享安全。
-// admin 段非空时覆盖 Admin.Password（site.yml 仅作首次导入的初始值）。设置/友链保存后调用以实现热更新。
+// Admin.AuthEnabled 从 users 表 admin 用户派生（Spec 61 阶段 4 起密码唯一真值在 users 表）。
+// 设置/友链保存后调用以实现热更新。
 func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	settings, err := st.AllSettings()
 	if err != nil {
@@ -357,23 +377,18 @@ func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 		return err
 	}
 
-	// admin 段涉及敏感状态，单独处理（预览草稿不共享）
-	var admin adminSection
-	adminSet := false
-	if v, ok := settings[SectionAdmin]; ok && v != "" {
-		if json.Unmarshal([]byte(v), &admin) == nil {
-			adminSet = true
-		}
-	}
-
 	next := *site.Load() // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
 	next.Links = groups
 	tmpl.SetTagPlugins(next.TagPlugins) // 标签插件默认参数全局生效（预览草稿不触碰）
-	if adminSet {
-		next.Admin.Password = admin.Password
+	// AuthEnabled 派生（Spec 61 阶段 4）：users 表 admin 用户存在且密码哈希非空 ⇒ 需要密码登录；
+	// 无密码站点（哈希为空/无 admin 用户）保持全放行语义。
+	adminUser, err := st.GetUserByUsername("admin")
+	if err != nil {
+		return err
 	}
+	next.Admin.AuthEnabled = adminUser != nil && adminUser.PasswordHash != ""
 	site.Store(&next)
 	return nil
 }
@@ -606,20 +621,6 @@ func applyCommentDefaults(cc *tmpl.CommentsConfig) {
 	if cc.Title == "" {
 		cc.Title = "评论"
 	}
-}
-
-// SaveAdminPassword 保存管理密码到 settings 表 admin 段并热更新。
-// 空密码合法（=关闭登录 gate，与 site.yml 留空语义一致）。
-// 找回手段：sqlite3 data/blog.db "DELETE FROM settings WHERE section='admin'" 后重启，回落 site.yml。
-func SaveAdminPassword(st *store.Store, site *atomic.Pointer[tmpl.Site], password string) error {
-	b, err := json.Marshal(adminSection{Password: password})
-	if err != nil {
-		return err
-	}
-	if err := st.PutSetting(SectionAdmin, string(b)); err != nil {
-		return err
-	}
-	return RebuildSite(st, site)
 }
 
 // defaultDashboardConfig 返回仪表盘默认配置（全部部件启用、默认顺序）。

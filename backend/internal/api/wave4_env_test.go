@@ -42,7 +42,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		t.Fatalf("create user: %v", err)
 	}
 	site := &tmpl.Site{}
-	site.Admin.Password = "secret"
+	enableAdmin(t, st, site, "secret")
 
 	posts := post.NewService(t.TempDir())
 	comments := comment.New(st, sitePtr(site))

@@ -127,7 +127,7 @@ func TestSettingsAuthorsInject(t *testing.T) {
 		t.Fatalf("ensure schema: %v", err)
 	}
 	site := &tmpl.Site{}
-	site.Admin.Password = "secret"
+	enableAdmin(t, st, site, "secret")
 	site.Authors = map[string]tmpl.AuthorDef{"admin": {Name: "管理员"}}
 	// authors 段已接入 settings 热更新管线：Bootstrap 把 site.yml 初值导入 settings 表
 	if err := config.Bootstrap(st, site); err != nil {

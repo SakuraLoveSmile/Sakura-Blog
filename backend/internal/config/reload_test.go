@@ -33,66 +33,43 @@ func newSitePtr() *atomic.Pointer[tmpl.Site] {
 	return p
 }
 
-func TestSaveAdminPasswordOverridesAndPersists(t *testing.T) {
+func TestBootstrapMigratesAdminSectionToUsersTable(t *testing.T) {
 	s := newTestStore(t)
-	site := newSitePtr()
-	site.Load().Admin.Password = "yml-pass"
-
-	if err := SaveAdminPassword(s, site, "db-pass"); err != nil {
-		t.Fatalf("save: %v", err)
-	}
-	if site.Load().Admin.Password != "db-pass" {
-		t.Fatalf("hot update failed: password = %q", site.Load().Admin.Password)
-	}
-	v, err := s.GetSetting(SectionAdmin)
-	if err != nil || v == "" {
-		t.Fatalf("admin section not persisted: %q, %v", v, err)
-	}
-}
-
-func TestSaveAdminPasswordEmptyDisablesGate(t *testing.T) {
-	s := newTestStore(t)
-	site := newSitePtr()
-	site.Load().Admin.Password = "old"
-
-	if err := SaveAdminPassword(s, site, ""); err != nil {
-		t.Fatalf("save empty: %v", err)
-	}
-	if site.Load().Admin.Password != "" {
-		t.Fatalf("empty password should disable gate, got %q", site.Load().Admin.Password)
-	}
-}
-
-func TestRebuildSiteKeepsYmlPasswordWhenNoAdminSection(t *testing.T) {
-	s := newTestStore(t)
-	site := newSitePtr()
-	site.Load().Admin.Password = "yml-pass"
-
-	if err := RebuildSite(s, site); err != nil {
-		t.Fatalf("rebuild: %v", err)
-	}
-	if site.Load().Admin.Password != "yml-pass" {
-		t.Fatalf("yml password should be kept when DB has no admin section, got %q", site.Load().Admin.Password)
-	}
-}
-
-func TestRebuildSiteDbOverridesYml(t *testing.T) {
-	s := newTestStore(t)
-	if err := s.PutSetting(SectionAdmin, `{"password":"db-pass"}`); err != nil {
+	if err := s.PutSetting(SectionAdmin, `{"password":"secret"}`); err != nil {
 		t.Fatalf("seed admin section: %v", err)
 	}
 	site := newSitePtr()
-	site.Load().Admin.Password = "yml-pass"
 
-	if err := RebuildSite(s, site); err != nil {
-		t.Fatalf("rebuild: %v", err)
+	if err := Bootstrap(s, site.Load()); err != nil {
+		t.Fatalf("bootstrap: %v", err)
 	}
-	if site.Load().Admin.Password != "db-pass" {
-		t.Fatalf("DB admin section should override yml, got %q", site.Load().Admin.Password)
+	// users 表 admin 存在且 bcrypt 匹配；admin 段已清空
+	admin, err := s.GetUserByUsername("admin")
+	if err != nil || admin == nil {
+		t.Fatalf("admin user should be created: %v", err)
+	}
+	if err := store.CheckPassword(admin.PasswordHash, "secret"); err != nil {
+		t.Fatalf("admin hash should match section password: %v", err)
+	}
+	v, _ := s.GetSetting(SectionAdmin)
+	if v != "" {
+		t.Fatalf("admin section should be cleared after migration, got %q", v)
+	}
+
+	// 幂等：二次 Bootstrap 不重复创建/覆盖
+	if err := Bootstrap(s, site.Load()); err != nil {
+		t.Fatalf("second bootstrap: %v", err)
+	}
+	admin2, _ := s.GetUserByUsername("admin")
+	if admin2 == nil || admin2.ID != admin.ID {
+		t.Fatal("second bootstrap should not recreate admin user")
+	}
+	if err := store.CheckPassword(admin2.PasswordHash, "secret"); err != nil {
+		t.Fatalf("admin hash should be unchanged: %v", err)
 	}
 }
 
-func TestBootstrapImportsAdminPassword(t *testing.T) {
+func TestBootstrapMigratesSiteYmlPasswordWhenUsersEmpty(t *testing.T) {
 	s := newTestStore(t)
 	site := newSitePtr()
 	site.Load().Admin.Password = "boot-pass"
@@ -100,20 +77,89 @@ func TestBootstrapImportsAdminPassword(t *testing.T) {
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("bootstrap: %v", err)
 	}
+	admin, err := s.GetUserByUsername("admin")
+	if err != nil || admin == nil {
+		t.Fatalf("admin user should be created from site.yml password: %v", err)
+	}
+	if err := store.CheckPassword(admin.PasswordHash, "boot-pass"); err != nil {
+		t.Fatalf("admin hash should match yml password: %v", err)
+	}
 	v, _ := s.GetSetting(SectionAdmin)
-	if v == "" {
-		t.Fatal("bootstrap should import yml admin password into settings")
+	if v != "" {
+		t.Fatalf("admin section should be cleared after migration, got %q", v)
 	}
-
-	// 幂等：二次导入不覆盖 DB 中已修改的密码。
-	if err := SaveAdminPassword(s, site, "changed"); err != nil {
-		t.Fatalf("change password: %v", err)
-	}
+	// 幂等：二次 Bootstrap 不重导 site.yml 明文（admin 段保持空）
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("second bootstrap: %v", err)
 	}
-	if site.Load().Admin.Password != "changed" {
-		t.Fatalf("second bootstrap must not overwrite DB password, got %q", site.Load().Admin.Password)
+	v, _ = s.GetSetting(SectionAdmin)
+	if v != "" {
+		t.Fatal("second bootstrap should not re-import site.yml password into admin section")
+	}
+	admin2, _ := s.GetUserByUsername("admin")
+	if err := store.CheckPassword(admin2.PasswordHash, "boot-pass"); err != nil {
+		t.Fatalf("admin hash should be stable: %v", err)
+	}
+}
+
+func TestBootstrapSkipsMigrationWhenAdminSectionEmpty(t *testing.T) {
+	s := newTestStore(t)
+	site := newSitePtr() // 无密码配置（site.yml 无 admin.password）
+	site.Load().Admin.Password = ""
+
+	if err := Bootstrap(s, site.Load()); err != nil {
+		t.Fatalf("bootstrap: %v", err)
+	}
+	admin, _ := s.GetUserByUsername("admin")
+	if admin != nil && admin.PasswordHash != "" {
+		t.Fatal("no-password site should not get an admin user with hash")
+	}
+	v, _ := s.GetSetting(SectionAdmin)
+	if v != "" {
+		t.Fatalf("admin section should stay empty, got %q", v)
+	}
+}
+
+func TestRebuildSiteDerivesAuthEnabledFromUsersTable(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("users table: %v", err)
+	}
+	site := newSitePtr()
+
+	// 无 admin 用户 → AuthEnabled=false
+	if err := RebuildSite(s, site); err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+	if site.Load().Admin.AuthEnabled {
+		t.Fatal("no admin user should mean AuthEnabled=false")
+	}
+
+	// 建 admin 用户（bcrypt）→ AuthEnabled=true
+	hash, _ := store.HashPassword("secret")
+	if err := s.CreateUser(&store.User{
+		Username: "admin", PasswordHash: hash, DisplayName: "管理员",
+		AuthSecret: store.GenerateAuthSecret(), Role: store.RoleAdmin,
+	}); err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
+	if err := RebuildSite(s, site); err != nil {
+		t.Fatalf("rebuild 2: %v", err)
+	}
+	if !site.Load().Admin.AuthEnabled {
+		t.Fatal("admin user with hash should mean AuthEnabled=true")
+	}
+
+	// 清空哈希 → AuthEnabled=false（无密码站点语义）
+	admin, _ := s.GetUserByUsername("admin")
+	if err := s.UpdatePassword(admin.ID, "", admin.AuthSecret); err != nil {
+		t.Fatalf("clear hash: %v", err)
+	}
+	if err := RebuildSite(s, site); err != nil {
+		t.Fatalf("rebuild 3: %v", err)
+	}
+	if site.Load().Admin.AuthEnabled {
+		t.Fatal("empty hash should mean AuthEnabled=false")
 	}
 }
 

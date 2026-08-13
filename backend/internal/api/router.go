@@ -446,13 +446,12 @@ func (h *Handler) Register(r *gin.Engine) {
 	}
 }
 
-// apiAuth API 鉴权中间件：密码未配置直接放行；否则校验 HMAC cookie 或 Bearer Token，失败返回 401 JSON。
-// 从 cookie/token 解析 userID 并注入 context（userID=0 代表旧版 admin 用户）。
+// apiAuth API 鉴权中间件：AuthEnabled=false（无密码站点）直接放行；否则校验 HMAC cookie 或 Bearer Token，
+// 失败返回 401 JSON。从 cookie/token 解析 userID 并注入 context（userID=0 代表旧版 admin 用户）。
 // cookie 校验通过且剩余有效期 < TTL 一半时自动签发新 cookie（滑动续期）。
 func (h *Handler) apiAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		password := h.site.Load().Admin.Password
-		if password == "" {
+		if !h.site.Load().Admin.AuthEnabled {
 			// 无密码站点：保持历史全放行语义，视为 admin。
 			c.Set("userID", int64(0))
 			c.Set("userRole", store.RoleAdmin)
@@ -503,53 +502,33 @@ func signAuthCookie(expiry int64, userID int64, authSecret string) string {
 	return fmt.Sprintf("%s.%s", msg, sig)
 }
 
-// validAuthCookie 解析并验证 cookie。
-// 先尝试新格式（3 段：expiry.userID.sig），查 users 表获取 auth_secret 验证签名；
-// 新格式失败时回退旧格式（2 段：expiry.sig，签名 key = admin password），返回 userID=0 表示旧版 admin。
-// 返回 (userID, authSecret, expiry, role, ok)：authSecret 为空表示旧格式（不支持滑动续期）；
-// role 为登录用户角色（旧格式视为 admin）。
+// validAuthCookie 解析并验证 cookie（Spec 61 阶段 4 起仅新格式）：
+// 3 段 expiry.userID.sig，查 users 表取 auth_secret 验证 HMAC 签名。
+// 旧格式（2 段明文密码 HMAC）已随 admin 明文密码移除而删除。
+// 返回 (userID, authSecret, expiry, role, ok)；role 为登录用户角色。
 func (h *Handler) validAuthCookie(value string) (int64, string, int64, string, bool) {
 	parts := strings.Split(value, ".")
-	if len(parts) == 3 {
-		// 新格式: expiry.userID.sig
-		expiry, err := strconv.ParseInt(parts[0], 10, 64)
-		if err != nil || time.Now().Unix() > expiry {
-			return 0, "", 0, "", false
-		}
-		userID, err := strconv.ParseInt(parts[1], 10, 64)
-		if err != nil {
-			return 0, "", 0, "", false
-		}
-		user, _ := h.store.GetUserByID(userID)
-		if user == nil {
-			return 0, "", 0, "", false
-		}
-		msg := fmt.Sprintf("%d.%d", expiry, userID)
-		mac := hmac.New(sha256.New, []byte(user.AuthSecret))
-		mac.Write([]byte(msg))
-		expected := hex.EncodeToString(mac.Sum(nil))
-		if subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expected)) == 1 {
-			return userID, user.AuthSecret, expiry, normalizeRole(user.Role), true
-		}
+	if len(parts) != 3 {
 		return 0, "", 0, "", false
 	}
-
-	// 旧格式: expiry.sig（签名 key = admin password）
-	if len(parts) == 2 {
-		password := h.site.Load().Admin.Password
-		if password == "" {
-			return 0, "", 0, "", false
-		}
-		expiry, err := strconv.ParseInt(parts[0], 10, 64)
-		if err != nil || time.Now().Unix() > expiry {
-			return 0, "", 0, "", false
-		}
-		mac := hmac.New(sha256.New, []byte(password))
-		mac.Write([]byte(parts[0]))
-		expected := hex.EncodeToString(mac.Sum(nil))
-		if subtle.ConstantTimeCompare([]byte(parts[1]), []byte(expected)) == 1 {
-			return 0, "", expiry, store.RoleAdmin, true // userID=0 代表旧版 admin
-		}
+	expiry, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil || time.Now().Unix() > expiry {
+		return 0, "", 0, "", false
+	}
+	userID, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return 0, "", 0, "", false
+	}
+	user, _ := h.store.GetUserByID(userID)
+	if user == nil {
+		return 0, "", 0, "", false
+	}
+	msg := fmt.Sprintf("%d.%d", expiry, userID)
+	mac := hmac.New(sha256.New, []byte(user.AuthSecret))
+	mac.Write([]byte(msg))
+	expected := hex.EncodeToString(mac.Sum(nil))
+	if subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expected)) == 1 {
+		return userID, user.AuthSecret, expiry, normalizeRole(user.Role), true
 	}
 	return 0, "", 0, "", false
 }

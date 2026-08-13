@@ -14,6 +14,41 @@ import (
 	tmpl "blog/internal/template"
 )
 
+// enableAdmin 测试助手（Spec 61 阶段 4）：users 表建/更新 admin 用户（bcrypt 密码）
+// 并打开 AuthEnabled gate（旧语义 enableAdmin(t, st, site, "x") 已被派生布尔替代）。
+func enableAdmin(t *testing.T, st *store.Store, site *tmpl.Site, password string) {
+	t.Helper()
+	if err := st.EnsureUsersTable(); err != nil {
+		t.Fatalf("users table: %v", err)
+	}
+	if password == "" {
+		site.Admin.AuthEnabled = false
+		return
+	}
+	hash, err := store.HashPassword(password)
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+	admin, err := st.GetUserByUsername("admin")
+	if err != nil {
+		t.Fatalf("get admin: %v", err)
+	}
+	if admin == nil {
+		admin = &store.User{
+			Username: "admin", PasswordHash: hash, DisplayName: "管理员",
+			AuthSecret: store.GenerateAuthSecret(), Role: store.RoleAdmin,
+		}
+		if err := st.CreateUser(admin); err != nil {
+			t.Fatalf("create admin: %v", err)
+		}
+	} else if admin.PasswordHash == "" {
+		if err := st.UpdatePassword(admin.ID, hash, admin.AuthSecret); err != nil {
+			t.Fatalf("update admin: %v", err)
+		}
+	}
+	site.Admin.AuthEnabled = true
+}
+
 // sitePtr 包装 *tmpl.Site 为原子指针（Spec 61 阶段 3：Config.Site 线程化后测试构造点）。
 func sitePtr(s *tmpl.Site) *atomic.Pointer[tmpl.Site] {
 	p := &atomic.Pointer[tmpl.Site]{}
@@ -111,7 +146,7 @@ func TestMountAuthGuardsProtectedRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	site := &tmpl.Site{}
-	site.Admin.Password = "secret"
+	enableAdmin(t, st, site, "secret")
 	r := gin.New()
 	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)

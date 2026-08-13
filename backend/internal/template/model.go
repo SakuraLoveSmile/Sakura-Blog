@@ -490,8 +490,11 @@ type InjectConfig struct {
 }
 
 // AdminConfig 管理后台配置（site.yml admin 段）。
+// Password 仅作启动迁移的初始输入（Spec 61 阶段 4 起密码唯一真值在 users 表 bcrypt 哈希）；
+// 运行时密码门禁一律看 AuthEnabled（RebuildSite 时从 users 表 admin 用户派生）。
 type AdminConfig struct {
-	Password string `yaml:"password" json:"password"` // /admin 访问密码；留空则不做密码 gate（本地开发用）
+	Password    string `yaml:"password" json:"password"` // 启动迁移用初始密码；迁移后不再参与鉴权
+	AuthEnabled bool   `yaml:"-" json:"-"`               // 运行时派生：users 表 admin 用户有密码哈希时为 true
 }
 
 // CommentsConfig 评论系统配置（site.yml comments 段）。

@@ -1,12 +1,8 @@
 package api
 
 import (
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -16,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/config"
 	"blog/internal/store"
 )
 
@@ -91,8 +86,7 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
-	password := h.site.Load().Admin.Password
-	if password == "" {
+	if !h.site.Load().Admin.AuthEnabled {
 		c.JSON(http.StatusOK, gin.H{"ok": true, "message": "无需密码"})
 		return
 	}
@@ -105,47 +99,25 @@ func (h *Handler) login(c *gin.Context) {
 
 	var user *store.User
 
-	if req.Username != "" {
-		// 新流程：用户表认证
-		var err error
-		user, err = h.store.GetUserByUsername(req.Username)
-		if err != nil || user == nil {
-			h.recordLoginFail(ip)
-			h.logLogin(c, 0, req.Username, ip, "fail", "password")
-			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
-			return
-		}
-		if err := store.CheckPassword(user.PasswordHash, req.Password); err != nil {
-			h.recordLoginFail(ip)
-			h.logLogin(c, user.ID, req.Username, ip, "fail", "password")
-			Fail(c, http.StatusUnauthorized, "用户名或密码错误")
-			return
-		}
-	} else {
-		// 向后兼容：无 username 时回退旧 admin 密码验证
-		if subtle.ConstantTimeCompare([]byte(req.Password), []byte(password)) != 1 {
-			h.recordLoginFail(ip)
-			h.logLogin(c, 0, "admin", ip, "fail", "legacy")
-			Fail(c, http.StatusUnauthorized, "密码错误")
-			return
-		}
-		// 旧密码匹配，检查 users 表是否有 admin 用户
-		adminUser, _ := h.store.GetUserByUsername("admin")
-		if adminUser != nil {
-			user = adminUser // 使用 users 表 admin 用户（含 TOTP 检查）
-		} else {
-			// users 表为空，使用旧 cookie 格式
-			h.clearLoginFail(ip)
-			h.logLogin(c, 0, "admin", ip, "success", "legacy")
-			expiry := time.Now().Add(authCookieTTL).Unix()
-			mac := hmac.New(sha256.New, []byte(password))
-			mac.Write([]byte(strconv.FormatInt(expiry, 10)))
-			value := strconv.FormatInt(expiry, 10) + "." + hex.EncodeToString(mac.Sum(nil))
-			c.SetSameSite(http.SameSiteLaxMode)
-			c.SetCookie(authCookieName, value, int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
-			c.JSON(http.StatusOK, gin.H{"ok": true})
-			return
-		}
+	// Spec 61 阶段 4：登录一律走 users 表 bcrypt 校验；无 username 时默认 admin 用户
+	// （旧版明文密码比对与旧格式 cookie 已移除）。
+	username := req.Username
+	if username == "" {
+		username = "admin"
+	}
+	var err error
+	user, err = h.store.GetUserByUsername(username)
+	if err != nil || user == nil {
+		h.recordLoginFail(ip)
+		h.logLogin(c, 0, username, ip, "fail", "password")
+		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
+	if err := store.CheckPassword(user.PasswordHash, req.Password); err != nil {
+		h.recordLoginFail(ip)
+		h.logLogin(c, user.ID, username, ip, "fail", "password")
+		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
 	}
 
 	// 检查 TOTP
@@ -345,7 +317,7 @@ func (h *Handler) handle2FARecoveryCodes(c *gin.Context) {
 
 // authCheck GET /api/v1/auth/check：返回当前登录状态（兼容新旧 cookie 格式）。
 func (h *Handler) authCheck(c *gin.Context) {
-	if h.site.Load().Admin.Password == "" {
+	if !h.site.Load().Admin.AuthEnabled {
 		c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": false, "role": store.RoleAdmin})
 		return
 	}
@@ -395,12 +367,23 @@ func (h *Handler) changePassword(c *gin.Context) {
 			return
 		}
 	} else {
-		// 向后兼容：userID=0 表示旧版 admin，使用 settings 表
-		if subtle.ConstantTimeCompare([]byte(req.Current), []byte(h.site.Load().Admin.Password)) != 1 {
+		// Spec 61 阶段 4：userID=0 回退路径改走 users 表 admin（旧 settings 明文回写链路已删除）
+		adminUser, err := h.store.GetUserByUsername("admin")
+		if err != nil || adminUser == nil {
+			Fail(c, http.StatusUnauthorized, "用户不存在")
+			return
+		}
+		if err := store.CheckPassword(adminUser.PasswordHash, req.Current); err != nil {
 			Fail(c, http.StatusUnauthorized, "当前密码错误")
 			return
 		}
-		if err := config.SaveAdminPassword(h.store, h.site, req.New); err != nil {
+		newHash, err := store.HashPassword(req.New)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, "密码处理失败")
+			return
+		}
+		newAuthSecret := store.GenerateAuthSecret()
+		if err := h.store.UpdatePassword(adminUser.ID, newHash, newAuthSecret); err != nil {
 			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}

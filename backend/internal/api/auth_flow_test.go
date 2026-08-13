@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -88,12 +89,14 @@ func TestAuthCheckStates(t *testing.T) {
 	}
 }
 
-// TestLegacyLoginNoUsers 无 users 表记录时旧版登录：admin 密码校验 + 旧格式 cookie。
-func TestLegacyLoginNoUsers(t *testing.T) {
+// TestLoginNoUsernameUsesAdminUser（Spec 61 阶段 4）：无 username 登录默认 admin 用户（users 表 bcrypt），
+// 成功签发新格式 cookie（3 段 expiry.userID.sig）并可访问受保护接口。
+// 旧版明文密码比对与旧格式 cookie（2 段明文 HMAC）已移除。
+func TestLoginNoUsernameUsesAdminUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	site := &tmpl.Site{}
-	site.Admin.Password = "secret"
+	enableAdmin(t, st, site, "secret")
 	r := gin.New()
 	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}})
 	if err != nil {
@@ -102,12 +105,12 @@ func TestLegacyLoginNoUsers(t *testing.T) {
 	// 错误密码 → 401 并写失败日志
 	w := do2FA(r, http.MethodPost, "/api/v1/auth/login", `{"password":"wrong"}`, "")
 	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("wrong legacy password: status = %d, want 401", w.Code)
+		t.Fatalf("wrong password: status = %d, want 401", w.Code)
 	}
-	// 正确密码 → 200 + 旧格式 cookie（2 段：expiry.sig）
+	// 正确密码 → 200 + 新格式 cookie（3 段 expiry.userID.sig）
 	w = do2FA(r, http.MethodPost, "/api/v1/auth/login", `{"password":"secret"}`, "")
 	if w.Code != http.StatusOK {
-		t.Fatalf("legacy login: status = %d, body = %s", w.Code, w.Body.String())
+		t.Fatalf("login: status = %d, body = %s", w.Code, w.Body.String())
 	}
 	var cookie string
 	for _, ck := range w.Result().Cookies() {
@@ -118,11 +121,13 @@ func TestLegacyLoginNoUsers(t *testing.T) {
 	if cookie == "" {
 		t.Fatal("login should set auth cookie")
 	}
-	// 旧格式 cookie 可访问受保护接口（userID=0 旧版 admin）
+	if len(strings.Split(cookie, ".")) != 3 {
+		t.Fatalf("cookie should be new format (3 segments), got %q", cookie)
+	}
+	// 新格式 cookie 可访问受保护接口
 	w = do2FA(r, http.MethodGet, "/api/v1/profile", "", cookie)
-	// 注意：旧版 admin（userID=0）查 users 表返回 404 user not found，属预期分支
-	if w.Code != http.StatusNotFound {
-		t.Errorf("legacy cookie profile: status = %d, want 404 (userID=0)", w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("profile with cookie: status = %d, want 200", w.Code)
 	}
 	if h == nil {
 		t.Fatal("mount should return handler")

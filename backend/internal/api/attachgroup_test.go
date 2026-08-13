@@ -45,7 +45,7 @@ func TestAttachmentGroupsUnauthorized(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	site := &tmpl.Site{}
-	site.Admin.Password = "secret"
+	enableAdmin(t, st, site, "secret")
 	r := gin.New()
 	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
