@@ -155,6 +155,19 @@ test(`${SURFACE} · 正文含 </script 时被安全转义（防 iframe 文档截
   assert.ok(!doc.includes("</script><script>alert"), "正文 script 闭合标签必须被转义");
 });
 
+test(`${SURFACE} · 高度回传以内容高度（body.scrollHeight）优先，避免视口反馈环`, () => {
+  // main.css 的 html{height:100%} 使 documentElement.scrollHeight 等于 iframe 视口
+  // （父级已设置的高度），逐次回传会正反馈膨胀到 900 上限；body.scrollHeight 只反映内容。
+  const doc = buildPreviewDoc({ theme: "dark", bodyHtml: "<p>x</p>" });
+  const start = doc.indexOf("function report");
+  assert.ok(start !== -1, "应包含高度回传脚本");
+  const block = doc.slice(start, start + 400);
+  const bodyIdx = block.indexOf("document.body.scrollHeight");
+  const elemIdx = block.indexOf("documentElement.scrollHeight");
+  assert.ok(bodyIdx !== -1, "回传脚本必须使用 document.body.scrollHeight");
+  assert.ok(elemIdx === -1 || bodyIdx < elemIdx, "body.scrollHeight 必须优先于 documentElement.scrollHeight");
+});
+
 // ---------- 渲染门闸（快速连续编辑防旧覆盖） ----------
 
 test(`${SURFACE} · 快速连续编辑只执行最后一次渲染（防抖）`, () => {

@@ -127,11 +127,14 @@ const DEGRADE_SCRIPT = `<script>
 })();
 </script>`;
 
-/** iframe 高度回传：ResizeObserver + load 兜底，异步内容加载完成后不被裁剪。 */
+/** iframe 高度回传：ResizeObserver + load 兜底，异步内容加载完成后不被裁剪。
+ *  必须用 body.scrollHeight（内容高度）优先：preview iframe 的视口高度 = 父级设置的
+ *  iframe 高度，而 main.css 的 html{height:100%} 使 documentElement.scrollHeight 随
+ *  视口反馈增长（420→444→468…→900 上限的正反馈环），body.scrollHeight 只反映内容。 */
 const RESIZE_SCRIPT = `<script>
 (function () {
   function report() {
-    var h = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+    var h = document.body.scrollHeight || document.documentElement.scrollHeight || 0;
     window.parent.postMessage({ type: 'component-preview-resize', height: h }, '*');
   }
   window.addEventListener('load', report);
