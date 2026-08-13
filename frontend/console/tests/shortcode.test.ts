@@ -112,3 +112,34 @@ test(`${SURFACE} · inline：mbti 双 positional 按字段顺序、双 named 按
     "{% mbti intj 50-50-50-50-50 %}"
   );
 });
+
+// ---- Spec 62 边界补充 ----
+
+test('shortcode 拼装 · 特殊字符：值含空格/引号/花括号不被破坏', () => {
+  const special = buildShortcode(notePlugin, { color: "blue", title: '带 "引号" 与 花括号 {x}', content: "正文" });
+  assert.ok(special.includes('带 "引号" 与 花括号 {x}'), `值原样保留: ${special}`);
+  assert.ok(special.includes("{% note"), "标签开头完整");
+});
+
+test('shortcode 拼装 · flag 仅精确 true 触发（UI checkbox 固定传 "true"）', () => {
+  const on = buildShortcode(foldingPlugin, { open: "true", title: "t" });
+  assert.ok(on.includes("open"), `true 触发 flag: ${on}`);
+  const off = buildShortcode(foldingPlugin, { open: "false", title: "t" });
+  assert.ok(!off.includes("open"), "false 不触发");
+  const upper = buildShortcode(foldingPlugin, { open: "TRUE", title: "t" });
+  assert.ok(!upper.includes("open"), "大写 TRUE 不触发（严格匹配）");
+});
+
+test('shortcode 拼装 · select 未传值则不输出参数（default 由 UI 层 PluginParamForm 填充）', () => {
+  const out = buildShortcode(notePlugin, { title: "x", content: "c" });
+  assert.ok(!out.includes("color:"), `未选 select 不输出空参数: ${out}`);
+  // 显式传入时正常输出
+  const filled = buildShortcode(notePlugin, { color: "green", title: "x", content: "c" });
+  assert.ok(filled.includes("color:green"));
+});
+
+test('shortcode 拼装 · 空 values 对象不 panic，产出最少标签', () => {
+  const out = buildShortcode(foldingPlugin, {});
+  assert.ok(out.includes("{% folding"), `空值仍产出标签: ${out}`);
+  assert.ok(!out.includes(":false") && !out.includes('=""'), "无空参数残留");
+});

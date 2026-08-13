@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { notificationApi, type NotificationItem } from "@/api";
+import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
@@ -180,31 +181,6 @@ function sourceLabel(type: string): string {
   return "系统通知";
 }
 
-/** 相对时间：今天显示「X 分钟前 / X 小时前」，其余显示绝对日期 */
-function formatRelative(dateStr: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr.slice(0, 16).replace("T", " ");
-
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-  if (isSameDay(d, todayStart)) {
-    const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
-    if (diffMin < 1) return "刚刚";
-    if (diffMin < 60) return `${diffMin} 分钟前`;
-    const diffHr = Math.floor(diffMin / 60);
-    return `${diffHr} 小时前`;
-  }
-  if (isSameDay(d, yesterdayStart)) {
-    return `昨天 ${hm}`;
-  }
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
-}
 </script>
 
 <template>

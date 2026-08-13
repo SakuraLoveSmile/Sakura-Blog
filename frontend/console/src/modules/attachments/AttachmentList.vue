@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { attachmentApi, attachmentGroupApi } from "@/api";
+import { formatRelative, formatBytes } from "@/lib/format";
 import { Icon } from "@iconify/vue";
 import {
   VCard,
@@ -307,13 +308,6 @@ async function confirmDelete() {
   Toast.success("删除成功");
 }
 
-function formatSize(bytes: number) {
-  if (!bytes) return "0 B";
-  if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + " GB";
-  if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
-  if (bytes >= 1024) return (bytes / 1024).toFixed(1) + " KB";
-  return bytes + " B";
-}
 
 function isImage(mime: string) {
   return mime?.startsWith("image/");
@@ -335,22 +329,6 @@ function extOf(att: any): string {
   return "FILE";
 }
 
-function formatRelative(s: string): string {
-  if (!s) return "";
-  const t = new Date(s).getTime();
-  if (isNaN(t)) return "";
-  const diff = Date.now() - t;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "刚刚";
-  if (min < 60) return `${min} 分钟前`;
-  const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour} 小时前`;
-  const day = Math.floor(hour / 24);
-  if (day < 30) return `${day} 天前`;
-  const month = Math.floor(day / 30);
-  if (month < 12) return `${month} 个月前`;
-  return new Date(s).toLocaleDateString();
-}
 
 // 渐变背景（按 id hash 取色，6 色循环）
 function previewGradient(id: number): string {
@@ -478,7 +456,7 @@ function typePillStyle(mime: string) {
       <div class="flex flex-col gap-0.5 sm:gap-1">
         <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[26px]">附件管理</h1>
         <p class="text-[12px] text-text-tertiary sm:text-[13px]">
-          共 {{ total }} 个文件 · 已使用 {{ formatSize(storageStats.total) }}
+          共 {{ total }} 个文件 · 已使用 {{ formatBytes(storageStats.total) }}
         </p>
       </div>
       <div class="flex items-center gap-1.5 sm:gap-2.5">
@@ -610,8 +588,8 @@ function typePillStyle(mime: string) {
               <div>
                 <div class="storage-title">存储空间</div>
                 <div class="storage-info">
-                  已使用 <strong>{{ formatSize(storageStats.total) }}</strong>
-                  <span class="opacity-60"> / 估算 {{ formatSize(storageStats.quota) }} ({{ storagePercent }}%)</span>
+                  已使用 <strong>{{ formatBytes(storageStats.total) }}</strong>
+                  <span class="opacity-60"> / 估算 {{ formatBytes(storageStats.quota) }} ({{ storagePercent }}%)</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
@@ -636,7 +614,7 @@ function typePillStyle(mime: string) {
                 <span class="storage-dot" :style="{ backgroundColor: item.color }"></span>
                 <span class="storage-label">
                   <strong>{{ item.label }}</strong>
-                  {{ formatSize(item.size) }}
+                  {{ formatBytes(item.size) }}
                 </span>
               </div>
               <div v-if="!storageBreakdown.length" class="storage-label">暂无数据</div>
@@ -795,7 +773,7 @@ function typePillStyle(mime: string) {
                 <div class="attachment-info">
                   <div class="attachment-name" :title="att.filename">{{ att.filename }}</div>
                   <div class="attachment-meta">
-                    <span>{{ formatSize(att.size) }}</span>
+                    <span>{{ formatBytes(att.size) }}</span>
                     <span>{{ formatRelative(att.created_at) }}</span>
                   </div>
                 </div>
@@ -860,7 +838,7 @@ function typePillStyle(mime: string) {
                       {{ att.filename }}
                     </span>
                   </span>
-                  <span class="col-size text-[12px] text-text-tertiary">{{ formatSize(att.size) }}</span>
+                  <span class="col-size text-[12px] text-text-tertiary">{{ formatBytes(att.size) }}</span>
                   <span class="col-type text-[12px] text-text-tertiary">
                     <span
                       class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
@@ -969,7 +947,7 @@ function typePillStyle(mime: string) {
           </div>
           <div>
             <span class="text-text-quaternary">大小：</span>
-            <span class="text-text-secondary">{{ formatSize(detailItem.size) }}</span>
+            <span class="text-text-secondary">{{ formatBytes(detailItem.size) }}</span>
           </div>
           <div v-if="detailItem.width">
             <span class="text-text-quaternary">尺寸：</span>

@@ -1,4 +1,4 @@
-import { ref, onBeforeUnmount } from"vue";
+import { ref, onBeforeUnmount, getCurrentInstance } from"vue";
 
 // 本地草稿保护 composable：防抖落 localStorage + 恢复/丢弃条幅状态。
 // RichTextEditor 与 MarkdownEditor 共用（同一 storageKey 即同一份草稿，双模式切换不冲突）。
@@ -64,7 +64,11 @@ export function useLocalDraft(options: {
  draftBanner.value = true;
  }
 
- onBeforeUnmount(() => clearTimeout(timer));
+ // Spec 62：非组件环境（node:test 纯函数测试）跳过生命周期注册——
+ // composable 保持纯函数语义，可脱离 Vue 实例直接验证防抖/草稿判定逻辑
+ if (getCurrentInstance()) {
+  onBeforeUnmount(() => clearTimeout(timer));
+ }
 
  return { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft };
 }

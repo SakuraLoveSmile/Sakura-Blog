@@ -3,6 +3,7 @@ import { ref, computed, onMounted, nextTick, reactive, watch } from"vue";
 import { useQuery, useQueryClient } from"@tanstack/vue-query";
 import { momentApi, settingsApi, attachmentApi, previewApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
+import { formatRelative } from"@/lib/format";
 import { Icon } from"@iconify/vue";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
 import {
@@ -407,21 +408,6 @@ function formatTime(s: string): string {
  return s.slice(0, 16).replace("T","");
 }
 
-// 相对时间：列表项展示用（超过 30 天回退绝对时间）
-function formatRelative(s: string): string {
- if (!s) return"";
- const t = new Date(s).getTime();
- if (isNaN(t)) return formatTime(s);
- const diff = Date.now() - t;
- const min = Math.floor(diff / 60000);
- if (min < 1) return"刚刚";
- if (min < 60) return `${min} 分钟前`;
- const hour = Math.floor(min / 60);
- if (hour < 24) return `${hour} 小时前`;
- const day = Math.floor(hour / 24);
- if (day <= 30) return `${day} 天前`;
- return formatTime(s);
-}
 
 function closeMenus() {
  menuOpenId.value = null;

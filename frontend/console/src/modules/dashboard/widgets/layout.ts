@@ -112,7 +112,7 @@ const NEW_DEFAULT_RECENT_SIZE: ResponsiveSize = { l: 6, m: 12, s: 12 };
  * recent-posts/recent-comments 仍为旧默认尺寸 {l:6,m:6,s:12} 的替换为新默认
  * {l:6,m:12,s:12}；用户自定义过的其他部件与尺寸全部保留
  */
-function migrateV6toV7(v6: any): MultiBreakpointLayout | null {
+export function migrateV6toV7(v6: any): MultiBreakpointLayout | null {
   try {
     if (!v6 || !v6.l || !v6.m || !v6.s) return null;
     // 深拷贝，避免直接改动 localStorage 原始对象

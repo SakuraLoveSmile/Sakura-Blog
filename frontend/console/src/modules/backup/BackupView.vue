@@ -5,6 +5,7 @@ import {
  backupExportUrl,
  backupExportMarkdownUrl,
 } from"@/api";
+import { formatBytes } from"@/lib/format";
 import { Icon } from"@iconify/vue";
 import { VPageHeader, VCard, VButton, Dialog, Toast } from"@/components/ui";
 
@@ -105,10 +106,6 @@ async function handleImport(e: Event) {
  });
 }
 
-function formatSize(bytes: number) {
- if (bytes >= 1 << 20) return (bytes / (1 << 20)).toFixed(1) +" MB";
- return (bytes / 1024).toFixed(1) +" KB";
-}
 
 function formatTime(iso: string) {
  return new Date(iso).toLocaleString("zh-CN", { hour12: false });
@@ -164,7 +161,7 @@ onMounted(loadStatus);
  <tbody>
  <tr v-for="b in backups" :key="b.name" class="border-t border-border text-text-tertiary /50">
  <td class="py-1.5 font-mono text-xs">{{ b.name }}</td>
- <td class="py-1.5 text-xs">{{ formatSize(b.size) }}</td>
+ <td class="py-1.5 text-xs">{{ formatBytes(b.size) }}</td>
  <td class="py-1.5 text-xs">{{ formatTime(b.mod_time) }}</td>
  <td class="py-1.5 text-right">
  <button
