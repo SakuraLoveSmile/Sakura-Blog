@@ -11,6 +11,7 @@ const emit = defineEmits<{
 }>();
 
 const inputCls = "apple-input";
+const selectCls = "apple-select";
 
 /** 外观段初始（默认）结构：全部留空 = 不注入任何覆盖，回退主题内置值 */
 function defaultStyle(): Record<string, any> {
@@ -21,14 +22,14 @@ function defaultStyle(): Record<string, any> {
     font_size: { root: "", body: "" },
     font_family: { body: "", code: "", codeblock: "" },
     // blur_px 为 px 字符串（后端 string 字段，直接注入 CSS）；留空 = 回退主题内置值
-    leftbar: { background_color_dark: "", background_image: "", blur_px: "", background_opacity: "" },
+    leftbar: { ui_style: "card", background_color_dark: "", background_image: "", blur_px: "", background_opacity: "" },
     site: { background_image: "", blur_px: "", blur_sat: "", blur_bg: "" },
     codeblock: { scrollbar: "" },
     header_prefix: { h2: "", h3: "", h4: "", h5: "" },
     text_align: "",
-    border_radius: { card: "", block: "", navbar: "", image: "" },
-    gradient: { start: "", searchbar: "" },
-    paginator: { prev: "", next: "" },
+    border_radius: { card: "", block: "", navbar: "", image: "", card_l: "", card_s: "", bar: "", image_l: "", image_s: "" },
+    gradient: { start: "", searchbar: "", avatar: "", angle: "" },
+    corner_shape: "superellipse(1.25)",
   };
 }
 
@@ -53,7 +54,9 @@ if (typeof props.data.style.leftbar?.blur_px === "number") {
 const styleRef = props.data.style as Record<string, any>;
 styleRef.border_radius = styleRef.border_radius || {};
 styleRef.gradient = styleRef.gradient || {};
-styleRef.paginator = styleRef.paginator || {};
+styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
+styleRef.leftbar = styleRef.leftbar || {};
+styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
 
 
 /** 恢复默认初始值（内存重置，需点保存才生效） */
@@ -184,6 +187,13 @@ function rangeFill(val: number, min: number, max: number): string {
     <div class="subsection">
       <p class="subsection-title">左侧栏背景</p>
       <div class="field">
+        <label>左侧栏样式</label>
+        <select v-model="data.style.leftbar.ui_style" :class="selectCls">
+          <option value="card">卡片（纯色）</option>
+          <option value="glass">玻璃（背景图）</option>
+        </select>
+      </div>
+      <div class="field">
         <label>背景色</label>
         <div class="field-inline">
           <input type="color" v-model="data.style.leftbar.background_color_dark" class="apple-color" />
@@ -285,6 +295,19 @@ function rangeFill(val: number, min: number, max: number): string {
         <div class="field"><label>块级元素 (block)</label><input v-model="data.style.border_radius.block" :class="inputCls" placeholder="8px" /></div>
         <div class="field"><label>导航栏 (navbar)</label><input v-model="data.style.border_radius.navbar" :class="inputCls" placeholder="100px" /></div>
         <div class="field"><label>图片 (image)</label><input v-model="data.style.border_radius.image" :class="inputCls" placeholder="8px" /></div>
+        <div class="field"><label>大卡片 (card-l)</label><input v-model="data.style.border_radius.card_l" :class="inputCls" placeholder="24px" /></div>
+        <div class="field"><label>小卡片 (card-s)</label><input v-model="data.style.border_radius.card_s" :class="inputCls" placeholder="12px" /></div>
+        <div class="field"><label>横条 (bar)</label><input v-model="data.style.border_radius.bar" :class="inputCls" placeholder="12px" /></div>
+        <div class="field"><label>大图 (image-l)</label><input v-model="data.style.border_radius.image_l" :class="inputCls" placeholder="24px" /></div>
+        <div class="field"><label>小图 (image-s)</label><input v-model="data.style.border_radius.image_s" :class="inputCls" placeholder="8px" /></div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <p class="subsection-title">连续曲率与头像</p>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>corner-shape</label><input v-model="data.style.corner_shape" :class="inputCls" placeholder="superellipse(1.25)" /></div>
+        <div class="field"><label>头像光环渐变</label><input v-model="data.style.gradient.avatar" :class="inputCls" placeholder="conic-gradient(...)" /></div>
       </div>
     </div>
 
@@ -295,16 +318,7 @@ function rangeFill(val: number, min: number, max: number): string {
       <div class="form-grid form-grid-2">
         <div class="field"><label>按钮/起始背景 (start)</label><input v-model="data.style.gradient.start" :class="inputCls" placeholder="linear-gradient(...)" /></div>
         <div class="field"><label>搜索栏背景 (searchbar)</label><input v-model="data.style.gradient.searchbar" :class="inputCls" placeholder="linear-gradient(...)" /></div>
-      </div>
-    </div>
-
-    <!-- 11. 分页箭头 -->
-    <div class="subsection">
-      <p class="subsection-title">分页箭头 (paginator)</p>
-      <p class="hint">自定义分页器 prev/next 箭头图 URL，留空用主题内置箭头。</p>
-      <div class="form-grid form-grid-2">
-        <div class="field"><label>上一篇箭头 (prev)</label><AttachmentField v-model="data.style.paginator.prev" placeholder="图片 URL" /></div>
-        <div class="field"><label>下一篇箭头 (next)</label><AttachmentField v-model="data.style.paginator.next" placeholder="图片 URL" /></div>
+        <div class="field"><label>菜单渐变角度 (angle)</label><input v-model="data.style.gradient.angle" :class="inputCls" placeholder="210deg" /></div>
       </div>
     </div>
 

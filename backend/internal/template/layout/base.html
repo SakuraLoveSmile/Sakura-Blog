@@ -16,7 +16,7 @@
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
   <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
-    <aside class="l_left">
+    <aside class="l_left{{if eq .Site.Style.Leftbar.UIStyle "card"}} leftbar-card{{end}}">
       <div class="sidebg"></div>
       <div class="leftbar-container">
         {{template "partial/sidebar" .}}

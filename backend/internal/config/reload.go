@@ -481,6 +481,18 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionSEO, &parsed.seo)
 	unmarshal(SectionInject, &parsed.inject)
 	unmarshal(SectionStyle, &parsed.style)
+	if parsed.style.CornerShape == "" {
+		parsed.style.CornerShape = "superellipse(1.25)"
+	}
+	if parsed.style.Leftbar.UIStyle == "" {
+		parsed.style.Leftbar.UIStyle = "card"
+	}
+	if parsed.style.Gradient.Avatar == "" {
+		parsed.style.Gradient.Avatar = "conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
+	}
+	if parsed.article.PinStyle == "" {
+		parsed.article.PinStyle = "carousel"
+	}
 	unmarshal(SectionWidgets, &parsed.widgets)
 	unmarshal(SectionCover, &parsed.cover)
 	unmarshal(SectionNavTabs, &parsed.navTabs)

@@ -10,10 +10,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/textutil"
 	"blog/internal/config"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // registerPostRoutes 注册文章域路由：/post/:slug、密码解锁、分享链接预览。
@@ -89,6 +89,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			},
 			Content: template.HTML(p.ContentHTML),
 		}
+		data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.ContentHTML)
 		// AI 文章摘要（Spec 53）：预生成摘要 + settings ai 段双开关（未配置默认开）
 		if aiCfg, err := config.LoadAI(s.st); err == nil && aiCfg.SummaryOn() {
 			data.Page.AISummary = p.AISummary
@@ -180,6 +181,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		},
 		Content: template.HTML(p.HTML),
 	}
+	data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.HTML)
 
 	data.TOC = tmpl.ExtractTOCWith(p.HTML, s.tocOptions())
 	desc := p.Excerpt

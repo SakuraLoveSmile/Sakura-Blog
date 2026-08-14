@@ -2,6 +2,7 @@ package template
 
 import (
 	"html/template"
+	"strings"
 	"testing"
 	"time"
 
@@ -228,6 +229,41 @@ func TestWikiProjectDisplayTitle(t *testing.T) {
 				t.Errorf("DisplayTitle() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestReadingStats(t *testing.T) {
+	words, minutes := ReadingStats(`<p>你好世界</p><p>Go blog post-1</p>`)
+	if words != 7 || minutes != 1 {
+		t.Fatalf("ReadingStats mixed content = (%d, %d), want (7, 1)", words, minutes)
+	}
+	words, minutes = ReadingStats(strings.Repeat("中", 301))
+	if words != 301 || minutes != 2 {
+		t.Fatalf("ReadingStats long content = (%d, %d), want (301, 2)", words, minutes)
+	}
+	words, minutes = ReadingStats("")
+	if words != 0 || minutes != 1 {
+		t.Fatalf("ReadingStats empty content = (%d, %d), want (0, 1)", words, minutes)
+	}
+}
+
+func TestParseTags(t *testing.T) {
+	got := ParseTags("Go, Go，后端,, 前端")
+	want := []string{"Go", "后端", "前端"}
+	if len(got) != len(want) {
+		t.Fatalf("ParseTags length = %d, want %d: %#v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("ParseTags[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestNewPostCardIncludesTags(t *testing.T) {
+	card := NewPostCard(&store.Post{Tags: "Go, Go，后端,前端,设计,测试"}, nil, nil)
+	if got := strings.Join(card.Tags, "|"); got != "Go|后端|前端|设计|测试" {
+		t.Fatalf("PostCard.Tags = %q, want five ordered unique tags", got)
 	}
 }
 

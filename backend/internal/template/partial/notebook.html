@@ -54,13 +54,13 @@
 <div class="paginator-wrap dis-select">
   <nav class="paginator">
 {{if gt .Paginator.Current 1}}
-<a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}{{if .Page.Tag}}{{$base}}?tag={{.Page.Tag}}{{else}}{{$base}}{{end}}{{else}}{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{sub .Paginator.Current 1}}{{end}}"></a>
+<a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}{{if .Page.Tag}}{{$base}}?tag={{.Page.Tag}}{{else}}{{$base}}{{end}}{{else}}{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{sub .Paginator.Current 1}}{{end}}">{{icon "solar:double-alt-arrow-left-bold-duotone"}}</a>
     {{end}}
 {{range .Paginator.Pages}}
 <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}{{if $.Page.Tag}}{{$base}}?tag={{$.Page.Tag}}{{else}}{{$base}}{{end}}{{else}}{{$base}}?{{if $.Page.Tag}}tag={{$.Page.Tag}}&{{end}}page={{.}}{{end}}">{{.}}</a>
     {{end}}
 {{if lt .Paginator.Current .Paginator.Total}}
-<a class="extend next" rel="next" href="{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{add .Paginator.Current 1}}"></a>
+<a class="extend next" rel="next" href="{{$base}}?{{if .Page.Tag}}tag={{.Page.Tag}}&{{end}}page={{add .Paginator.Current 1}}">{{icon "solar:double-alt-arrow-right-bold-duotone"}}</a>
     {{end}}
   </nav>
 </div>

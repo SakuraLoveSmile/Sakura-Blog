@@ -20,8 +20,11 @@ type ViewData struct {
 	MenuPages []MenuItem
 
 	// 首页文章列表（Layout=index 时使用）。
-	Posts     []*PostCard // 文章卡片列表
-	Paginator *Paginator  // 分页器数据（nil 或 Total<=1 则不渲染）
+	Posts           []*PostCard    // 文章卡片列表
+	Paginator       *Paginator     // 分页器数据（nil 或 Total<=1 则不渲染）
+	PinnedPosts     []*PostCard    // 置顶轮播数据（flat 模式为空）
+	PinnedWiki      []*WikiProject // 文库置顶项目轮播数据
+	PinSliderActive bool           // 首页第一页由轮播替代置顶文章卡片
 
 	// 归档与分类/标签页（Layout=archive/categories/tags 时使用）。
 	Archives []*ArchiveYear // 归档页年份分组
@@ -60,8 +63,10 @@ type ViewData struct {
 	RelatedPosts []*PostCard   // 相关文章（按标签匹配，上限 site.yml article.related_posts）
 
 	// 文章页首尾增强（Spec 32）。
-	EditPage    *EditPageLink // 「编辑本文」+贡献者段（edit_this_page 映射命中时非 nil）
-	ExpiredDays int           // 距最后更新天数，>0 时文首渲染过期提醒
+	EditPage       *EditPageLink // 「编辑本文」+贡献者段（edit_this_page 映射命中时非 nil）
+	ExpiredDays    int           // 距最后更新天数，>0 时文首渲染过期提醒
+	WordCount      int           // 文章正文有效字数（中文按字符统计）
+	ReadingMinutes int           // 预计阅读分钟数
 
 	// 专栏体系（对齐原版 topic）：
 	TopicSeries *TopicSeries // 文章页左栏同专栏系列 widget（Page.Topic 非空时填充）
@@ -176,6 +181,7 @@ type PostCard struct {
 	CategoryStyle template.CSS // 分类配色 style 内容（CategoryColorStyle 生成；CSS 类型绕过 html/template 的 ZgotmplZ 过滤）
 	CategoryIcon  string       // 分类图标 key（CategoryIconKey 解析；未配置回退 default:category）
 	Poster        *PosterCard  // 海报数据（非 nil 且有 Cover 时渲染 photo 封面大卡）
+	Tags          []string     // 文章卡片标签（模板最多展示 5 个）
 }
 
 // NewPostCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
@@ -192,11 +198,31 @@ func NewPostCard(p *store.Post, categoryColors, categoryIcons map[string]string)
 		Category:      p.Category,
 		CategoryStyle: CategoryColorStyle(p.Category, categoryColors),
 		CategoryIcon:  CategoryIconKey(p.Category, categoryIcons),
+		Tags:          ParseTags(p.Tags),
 	}
 	if pd := store.DecodePoster(p.Poster); pd != nil {
 		card.Poster = &PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
 	}
 	return card
+}
+
+// ParseTags 拆分文章 tags 的逗号存储格式，兼容中英文逗号并去除空白。
+func ParseTags(raw string) []string {
+	parts := strings.FieldsFunc(raw, func(r rune) bool { return r == ',' || r == '，' })
+	out := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if _, ok := seen[part]; ok {
+			continue
+		}
+		seen[part] = struct{}{}
+		out = append(out, part)
+	}
+	return out
 }
 
 // PosterCard 海报封面数据，对齐原版 post.poster（headline/topic/caption/color）。
@@ -234,7 +260,7 @@ func CategoryColorStyle(cat string, colors map[string]string) template.CSS {
 }
 
 // CategoryIconKey 解析分类图标 key：命中 article.category_icon 配置则返回配置值
-//（icons.yml key 或图片 URL，icon 模板函数两者都支持），未命中回退 default:category（与改造前硬编码一致）。
+// （icons.yml key 或图片 URL，icon 模板函数两者都支持），未命中回退 default:category（与改造前硬编码一致）。
 func CategoryIconKey(cat string, icons map[string]string) string {
 	if cat != "" {
 		if v := icons[cat]; v != "" {
@@ -311,30 +337,30 @@ type AdminPostRow struct {
 // Site 对齐 Stellar theme + config 的站点级配置。
 // yaml tag 供 config/site.yml 加载（goccy/go-yaml），snake_case 精确映射。
 type Site struct {
-	Title       string         `yaml:"title" json:"title"`
-	Subtitle    string         `yaml:"subtitle" json:"subtitle"`
-	Description string         `yaml:"description" json:"description"`
-	URL         string         `yaml:"url" json:"url"`             // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
-	Avatar      string         `yaml:"avatar" json:"avatar"`       // logo 头像 URL
-	AvatarBG    string         `yaml:"avatar_bg" json:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
-	LogoIcon    string         `yaml:"logo_icon" json:"logo_icon"` // logo icon 图片 URL（对齐上游 logo.icon，优先于 avatar）
-	LogoTitle   string         `yaml:"logo_title" json:"logo_title"`
-	LogoSub     string         `yaml:"logo_sub" json:"logo_sub"`
-	FaviconURL  string         `yaml:"favicon_url" json:"favicon_url"`           // Favicon URL，留空回退 /favicon.ico
-	AppleIcon   string         `yaml:"apple_touch_icon" json:"apple_touch_icon"` // Apple Touch Icon URL，留空回退 /apple-touch-icon.png
-	Menubar     Menubar        `yaml:"menubar" json:"menubar"`
-	Rightbar    RightbarConfig `yaml:"rightbar" json:"rightbar"`
-	Footer      Footer         `yaml:"footer" json:"footer"`
-	Comments    CommentsConfig `yaml:"comments" json:"comments"`
-	Admin       AdminConfig    `yaml:"admin" json:"-"`
-	Links       []LinkGroup    `yaml:"links" json:"links"`     // 友链分组（site.yml links 段）
-	Friends     FriendsConfig  `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
-	Wiki        []WikiProject  `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
-	Article     ArticleConfig  `yaml:"article" json:"article"`
-	SEO         SEOConfig      `yaml:"seo" json:"seo"`         // 站点级 SEO 配置（Spec 42）
-	Inject      InjectConfig   `yaml:"-" json:"inject"`        // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
-	Style       StyleConfig    `yaml:"style"   json:"style"`   // 外观样式可配置化（Spec 34/47）
-	Widgets     WidgetsConfig  `yaml:"widgets" json:"widgets"` // 侧边栏组件配置化编排（Spec 33/47）
+	Title       string          `yaml:"title" json:"title"`
+	Subtitle    string          `yaml:"subtitle" json:"subtitle"`
+	Description string          `yaml:"description" json:"description"`
+	URL         string          `yaml:"url" json:"url"`             // 站点基础 URL（如 https://example.com），用于 canonical/OG/sitemap
+	Avatar      string          `yaml:"avatar" json:"avatar"`       // logo 头像 URL
+	AvatarBG    string          `yaml:"avatar_bg" json:"avatar_bg"` // 头像 hover 旋转背景图，对应原版 style.animated_avatar.background
+	LogoIcon    string          `yaml:"logo_icon" json:"logo_icon"` // logo icon 图片 URL（对齐上游 logo.icon，优先于 avatar）
+	LogoTitle   string          `yaml:"logo_title" json:"logo_title"`
+	LogoSub     string          `yaml:"logo_sub" json:"logo_sub"`
+	FaviconURL  string          `yaml:"favicon_url" json:"favicon_url"`           // Favicon URL，留空回退 /favicon.ico
+	AppleIcon   string          `yaml:"apple_touch_icon" json:"apple_touch_icon"` // Apple Touch Icon URL，留空回退 /apple-touch-icon.png
+	Menubar     Menubar         `yaml:"menubar" json:"menubar"`
+	Rightbar    RightbarConfig  `yaml:"rightbar" json:"rightbar"`
+	Footer      Footer          `yaml:"footer" json:"footer"`
+	Comments    CommentsConfig  `yaml:"comments" json:"comments"`
+	Admin       AdminConfig     `yaml:"admin" json:"-"`
+	Links       []LinkGroup     `yaml:"links" json:"links"`     // 友链分组（site.yml links 段）
+	Friends     FriendsConfig   `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
+	Wiki        []WikiProject   `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
+	Article     ArticleConfig   `yaml:"article" json:"article"`
+	SEO         SEOConfig       `yaml:"seo" json:"seo"`               // 站点级 SEO 配置（Spec 42）
+	Inject      InjectConfig    `yaml:"-" json:"inject"`              // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
+	Style       StyleConfig     `yaml:"style"   json:"style"`         // 外观样式可配置化（Spec 34/47）
+	Widgets     WidgetsConfig   `yaml:"widgets" json:"widgets"`       // 侧边栏组件配置化编排（Spec 33/47）
 	DataCache   DataCacheConfig `yaml:"data_cache" json:"data_cache"` // 动态数据客户端缓存（1.36 data_cache）
 	SiteTree    SiteTreeConfig  `yaml:"site_tree" json:"site_tree"`   // 页面树配置（1.38 site_tree.home.comments 等）
 	// NavTabs 导航栏标签页配置（Spec 50）。
@@ -414,9 +440,9 @@ type FancyboxConfig struct {
 
 // DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
 type DataCacheConfig struct {
-	Enable     *bool           `yaml:"enable,omitempty" json:"enable,omitempty"`
-	DefaultTTL int             `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
-	TTL        map[string]int  `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	Enable     *bool          `yaml:"enable,omitempty" json:"enable,omitempty"`
+	DefaultTTL int            `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
+	TTL        map[string]int `yaml:"ttl,omitempty" json:"ttl,omitempty"`
 }
 
 // SiteTreeConfig 页面树配置（1.38）。Home.Comments 首页可配置评论区（默认关）。
@@ -634,11 +660,11 @@ type CommentItem struct {
 	Link        string         `json:"link"`         // 个人网站，非空时昵称带链
 	ContentHTML template.HTML  `json:"content_html"` // 已消毒的服务端渲染 HTML，直接输出
 	IsAdmin     bool           `json:"is_admin"`
-	Verified    bool           `json:"verified"` // 注册用户标识：已登录注册用户显示"已验证"徽章
-	Avatar      string         `json:"avatar"`   // Gravatar URL（{mirror}/{md5(email)}）
-	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
-	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）
-	Likes       int64          `json:"likes"`    // 点赞数（IP 去重）
+	Verified    bool           `json:"verified"`            // 注册用户标识：已登录注册用户显示"已验证"徽章
+	Avatar      string         `json:"avatar"`              // Gravatar URL（{mirror}/{md5(email)}）
+	TimeAgo     string         `json:"time_ago"`            // 相对时间，如"3 天前"
+	Date        string         `json:"date"`                // 完整日期（title 悬浮提示）
+	Likes       int64          `json:"likes"`               // 点赞数（IP 去重）
 	ReplyRef    string         `json:"reply_ref,omitempty"` // 回复引用，格式 "▸ 被回复人昵称"（仅子评论）
 	Children    []*CommentItem `json:"children,omitempty"`
 }

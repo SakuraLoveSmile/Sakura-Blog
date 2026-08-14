@@ -56,6 +56,12 @@ var reGrid = regexp.MustCompile(`(?s){%\s*grid\s*(.*?)\s*%}(.*?){%\s*endgrid\s*%
 // box 标签正则（块级）：{% box ... %} body {% endbox %}
 var reBox = regexp.MustCompile(`(?s){%\s*box\s+(.*?)\s*%}(.*?){%\s*endbox\s*%}`)
 
+// table 标签正则（块级）：{% table [style:scroll|wrap|compact] %} body {% endtable %}
+var reTable = regexp.MustCompile(`(?s){%\s*table\s*(.*?)\s*%}(.*?){%\s*endtable\s*%}`)
+
+// tip 标签正则（块级）：{% tip text:... %} body {% endtip %}
+var reTip = regexp.MustCompile(`(?s){%\s*tip\s*(.*?)\s*%}(.*?){%\s*endtip\s*%}`)
+
 // link 标签正则（单行）：{% link url [title] [desc:...] [icon:...] %}
 var reLink = regexp.MustCompile(`{%\s*link\s+(.*?)\s*%}`)
 
@@ -326,6 +332,24 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			return match
 		}
 		return renderBox(parts[1], parts[2], renderMD)
+	})
+
+	// 5.9 table（块级，表格 body 单独渲染 Markdown）
+	md = reTable.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reTable.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderTable(parts[1], parts[2], renderMD)
+	})
+
+	// 5.10 tip（块级标签，内部 Markdown 收敛为行内内容）
+	md = reTip.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reTip.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		return renderTip(parts[1], parts[2], renderMD)
 	})
 
 	// 6. button（单行）
@@ -761,12 +785,18 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		src := strings.TrimSpace(parts[1])
+		named, _ := parseNamedPositionalArgs(parts[1], []string{"wrap"}, []string{"src"})
+		src := strings.TrimSpace(named["src"])
 		if src == "" {
 			return match
 		}
 		id := atomic.AddUint64(&mdRenderIndex, 1)
-		return fmt.Sprintf(`<div class="data-service ds-mdrender" src="%s" id="md_%d"></div>`, html.EscapeString(src), id)
+		replace := named["wrap"] == "false"
+		attr := ""
+		if replace {
+			attr = ` data-replace="true"`
+		}
+		return fmt.Sprintf(`<div class="data-service ds-mdrender" src="%s"%s data-heading="true" id="md_%d"></div>`, html.EscapeString(src), attr, id)
 	})
 
 	// 39. toc（单行，wiki 文档树目录壳；本项目 wiki 树待 Spec 35，wiki 参数命中时对齐原版 proj 缺失行为输出空）
@@ -842,6 +872,31 @@ func renderTabs(argsStr, body string, renderMD func(string) string) string {
 	}
 	sb.WriteString(`</div></div>`)
 	return sb.String()
+}
+
+// renderTable 渲染 Stellar 1.40 table 标签。style 仅允许主题提供的三种值，
+// 未知值回退 scroll，避免把任意参数写入 class。
+func renderTable(argsStr, body string, renderMD func(string) string) string {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"style"}, nil)
+	style := named["style"]
+	if style != "wrap" && style != "compact" {
+		style = "scroll"
+	}
+	return fmt.Sprintf(`<div class="tag-plugin table table-%s">%s</div>`, style, renderMD(strings.TrimSpace(body)))
+}
+
+// renderTip 渲染带悬浮说明的行内提示。正文按 Markdown 渲染后去掉外围段落，
+// 与上游 tip.js 的输出保持一致；tooltip 文案始终 HTML 转义。
+func renderTip(argsStr, body string, renderMD func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"text"}, nil)
+	text := named["text"]
+	if text == "" && len(positional) > 0 {
+		text = strings.Join(positional, " ")
+	}
+	inner := strings.ReplaceAll(renderMD(strings.TrimSpace(body)), "\n", "")
+	inner = strings.ReplaceAll(inner, "<p>", "")
+	inner = strings.ReplaceAll(inner, "</p>", "")
+	return fmt.Sprintf(`<span class="tag-plugin tip" tabindex="0"><span class="tip-text">%s</span><span class="tip-bubble" role="tooltip">%s</span></span>`, inner, html.EscapeString(text))
 }
 
 func renderTimeline(body string, renderMD func(string) string) string {

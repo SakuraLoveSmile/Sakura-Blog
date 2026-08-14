@@ -144,6 +144,59 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	}
 }
 
+func TestWikiReadmeFallback(t *testing.T) {
+	project := &tmpl.WikiProject{Repo: "owner/repo", Branch: "docs/main"}
+	html, ok := wikiReadmePlaceholder(project)
+	if !ok {
+		t.Fatal("valid wiki repo should produce README placeholder")
+	}
+	out := string(html)
+	for _, want := range []string{
+		`class="data-service ds-mdrender"`,
+		`src="https://raw.githubusercontent.com/owner/repo/docs/main/README.md"`,
+		`data-base="https://raw.githubusercontent.com/owner/repo/docs/main/"`,
+		`data-replace="true"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("README placeholder missing %q: %s", want, out)
+		}
+	}
+	for _, invalid := range []string{"owner", "owner/repo/extra", "owner/repo?<x>", "owner/repo"} {
+		candidate := &tmpl.WikiProject{Repo: invalid}
+		if invalid == "owner/repo" {
+			candidate.Branch = "../escape"
+		}
+		if _, ok := wikiReadmePlaceholder(candidate); ok {
+			t.Errorf("invalid repo/branch should not produce placeholder: %q", invalid)
+		}
+	}
+}
+
+func TestWikiDocHomepageUsesReadmeAndProjectDescription(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	ws.site.Load().Wiki = append(ws.site.Load().Wiki, tmpl.WikiProject{
+		ID: "readme", Title: "README 项目", Description: "项目默认说明", Repo: "owner/repo", Branch: "main",
+	})
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "readme", Slug: "home", Title: "首页", Order: 1, Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	ws.registerTaxonomyRoutes(r)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki/readme/home", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("README wiki page = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `src="https://raw.githubusercontent.com/owner/repo/main/README.md"`) {
+		t.Fatalf("README homepage missing remote markdown placeholder: %s", body)
+	}
+	if !strings.Contains(body, `content="项目默认说明"`) {
+		t.Fatalf("README homepage missing project description SEO fallback: %s", body)
+	}
+}
+
 // TestWikiDocGhrepoWidget 项目配置 repo 时，wiki 文档页右栏渲染 ghrepo 卡片（Task #7）。
 func TestWikiDocGhrepoWidget(t *testing.T) {
 	gin.SetMode(gin.TestMode)

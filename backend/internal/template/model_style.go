@@ -18,20 +18,21 @@ import (
 
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
-	PrefersTheme string            `yaml:"prefers_theme" json:"prefers_theme"` // 默认主题：dark（缺省，现状）/light/auto（跟随系统）
-	
-	TextAlign    string            `yaml:"text_align" json:"text_align"`       // 正文段落对齐（left/justify 等，空=现状 left）
-	Color        StyleColor        `yaml:"color" json:"color"`
-	FontSize     StyleFontSize     `yaml:"font_size" json:"font_size"`
-	FontFamily   StyleFontFamily   `yaml:"font_family" json:"font_family"`
-	Leftbar      StyleLeftbar      `yaml:"leftbar" json:"leftbar"`
-	Site         StyleSite         `yaml:"site" json:"site"`
-	Codeblock    StyleCodeblock    `yaml:"codeblock" json:"codeblock"`
-	Paginator    StylePaginator    `yaml:"paginator" json:"paginator"`
-	HeaderPrefix map[string]string `yaml:"header_prefix" json:"header_prefix"` // 技术文章各级标题前缀：符号（content）或图标 URL（background-image）
-	BorderRadius StyleBorderRadius `yaml:"border_radius" json:"border_radius"` // 圆角（Spec 52 四档 + 1.38 七档兼容）
-	Gradient     StyleGradient     `yaml:"gradient" json:"gradient"`           // 渐变两组（Spec 52）：注入 --gradient-* 变量
+	PrefersTheme string `yaml:"prefers_theme" json:"prefers_theme"` // 默认主题：dark（缺省，现状）/light/auto（跟随系统）
+
+	TextAlign      string              `yaml:"text_align" json:"text_align"` // 正文段落对齐（left/justify 等，空=现状 left）
+	Color          StyleColor          `yaml:"color" json:"color"`
+	FontSize       StyleFontSize       `yaml:"font_size" json:"font_size"`
+	FontFamily     StyleFontFamily     `yaml:"font_family" json:"font_family"`
+	Leftbar        StyleLeftbar        `yaml:"leftbar" json:"leftbar"`
+	Site           StyleSite           `yaml:"site" json:"site"`
+	Codeblock      StyleCodeblock      `yaml:"codeblock" json:"codeblock"`
+	Paginator      StylePaginator      `yaml:"paginator" json:"paginator"`
+	HeaderPrefix   map[string]string   `yaml:"header_prefix" json:"header_prefix"`     // 技术文章各级标题前缀：符号（content）或图标 URL（background-image）
+	BorderRadius   StyleBorderRadius   `yaml:"border_radius" json:"border_radius"`     // 圆角（Spec 52 四档 + 1.38 七档兼容）
+	Gradient       StyleGradient       `yaml:"gradient" json:"gradient"`               // 渐变两组（Spec 52）：注入 --gradient-* 变量
 	AnimatedAvatar StyleAnimatedAvatar `yaml:"animated_avatar" json:"animated_avatar"` // 1.38 头像动画组
+	CornerShape    string              `yaml:"corner-shape" json:"corner_shape"`       // 连续曲率圆角（1.40）
 }
 
 // StyleBorderRadius 圆角组。Spec 52 四档（card/block/navbar/image）+ 1.38 七档（card-l/card/card-s/bar/image-l/image/image-s）兼容。
@@ -54,6 +55,7 @@ type StyleBorderRadius struct {
 type StyleGradient struct {
 	Start     string `yaml:"start" json:"start"`         // 按钮/起始背景渐变（上游 style.gradient.start）
 	Searchbar string `yaml:"searchbar" json:"searchbar"` // 搜索栏渐变
+	Avatar    string `yaml:"avatar" json:"avatar"`       // 头像 hover 光环渐变
 	Angle     string `yaml:"angle" json:"angle"`         // 主题色渐变角度（1.38 style.gradient.angle，如 210deg；菜单 grad-def SVG 用）
 }
 
@@ -81,6 +83,7 @@ type StyleFontFamily struct {
 
 // StyleLeftbar leftbar 背景组（缺省空=现状纯色 var(--card)，由 head.html 既有块提供；配 background_image 切换为图片模糊模式）。
 type StyleLeftbar struct {
+	UIStyle             string `yaml:"ui-style" json:"ui_style"`                           // glass / card
 	BackgroundColorDark string `yaml:"background_color_dark" json:"background_color_dark"` // 全站仅深色模式，此色无条件生效
 	BackgroundImage     string `yaml:"background_image" json:"background_image"`           // 图片 URL（不含 url()）；非空则启用图片模糊侧栏
 	BlurPx              string `yaml:"blur_px" json:"blur_px"`
@@ -97,7 +100,7 @@ type StyleSite struct {
 
 // StyleCodeblock 代码块组。
 type StyleCodeblock struct {
-	Scrollbar       string `yaml:"scrollbar" json:"scrollbar"`                 // 滚动条宽度（如 4px）
+	Scrollbar        string `yaml:"scrollbar" json:"scrollbar"`                 // 滚动条宽度（如 4px）
 	HighlightjsTheme string `yaml:"highlightjs_theme" json:"highlightjs_theme"` // 1.38 高亮主题 URL（配置对齐，运行时由 head 注入 link）
 }
 
@@ -169,6 +172,9 @@ func (s StyleConfig) InjectCSS() template.CSS {
 		b.WriteString(root.String())
 		b.WriteString("}")
 	}
+	if s.CornerShape != "" {
+		fmt.Fprintf(&b, "*{corner-shape:%s;}", s.CornerShape)
+	}
 
 	// --- 选择器级覆盖 ---
 	// 根字号
@@ -207,6 +213,9 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	}
 	if s.Paginator.Prev != "" {
 		fmt.Fprintf(&b, ".paginator-wrap .extend.prev{background-image:url(%s);}", s.Paginator.Prev)
+	}
+	if s.Gradient.Avatar != "" {
+		fmt.Fprintf(&b, ".logo-wrap a.avatar div.bg{background:%s;}", s.Gradient.Avatar)
 	}
 	// header_prefix：技术文章标题前缀。值为 URL 时注入图标 background-image，否则伪元素 content 符号。
 	for _, h := range []string{"h2", "h3", "h4", "h5"} {

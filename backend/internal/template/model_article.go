@@ -3,14 +3,19 @@ package template
 import (
 	"fmt"
 	"html/template"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // ArticleConfig 文章配置（site.yml article 段）。
 // Spec 50 新增 Type 字段：文章列表页布局模式（tech 紧凑 / story 图文大间距）。
 type ArticleConfig struct {
+	PinStyle    string `yaml:"pin_style" json:"pin_style"`       // carousel / flat
+	ReadingTime bool   `yaml:"reading_time" json:"reading_time"` // 文章页阅读时长
+	CardTags    bool   `yaml:"card_tags" json:"card_tags"`       // 文章卡片标签
 	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
 	// 零配置时前端回退 tech，与现状逐像素一致。
 	Type          string            `yaml:"type" json:"type"`
@@ -34,6 +39,33 @@ type ArticleConfig struct {
 	// EditThisPage 「编辑本文」路径映射：源路径前缀 → 仓库 blob URL 前缀
 	// （对齐原版 contributors.ejs 的 map 参数，如 posts/ → https://github.com/u/r/blob/main/content/posts/）。
 	EditThisPage map[string]string `yaml:"edit_this_page" json:"edit_this_page"`
+}
+
+// EffectivePinStyle 规范化置顶文章展示方式，非法值回退 1.40 默认轮播。
+func (a ArticleConfig) EffectivePinStyle() string {
+	if a.PinStyle == "flat" {
+		return "flat"
+	}
+	return "carousel"
+}
+
+var readingTagRE = regexp.MustCompile(`<[^>]+>`)
+var readingWordRE = regexp.MustCompile(`[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*`)
+
+// ReadingStats 对齐 Stellar reading_time.js：中文字符按 1 字计，英文/数字按词计。
+func ReadingStats(content string) (words, minutes int) {
+	text := readingTagRE.ReplaceAllString(content, " ")
+	for _, r := range text {
+		if unicode.Is(unicode.Han, r) {
+			words++
+		}
+	}
+	words += len(readingWordRE.FindAllString(text, -1))
+	minutes = 1
+	if words > 0 {
+		minutes = (words + 299) / 300
+	}
+	return words, minutes
 }
 
 // CopyrightConfig 版权声明块。

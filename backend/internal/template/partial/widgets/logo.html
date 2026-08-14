@@ -19,7 +19,7 @@
   {{if .Site.LogoIcon}}<div class="icon"><img class="icon" src="{{.Site.LogoIcon}}"></div>{{end}}
   {{- /* avatar 分支：无 LogoIcon 时走原有头像渲染 */}}
   {{if not .Site.LogoIcon}}<a class="avatar" href="/">
-    <div class="bg" style="opacity:0;background-image:url({{.Site.AvatarBG}});"></div>
+    <div class="bg" style="opacity:0"></div>
     <img class="avatar" src="{{.Site.Avatar}}">
   </a>{{end}}
   <a class="title" href="/">

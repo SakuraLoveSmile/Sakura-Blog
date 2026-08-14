@@ -26,7 +26,7 @@
       "card-l": "24px",
       "card": "16px",
       "card-s": "12px",
-      "bar": "8px",
+      "bar": "12px",
       "image-l": "24px",
       "image": "16px",
       "image-s": "8px"
@@ -37,8 +37,7 @@
       "link": "hsl(207 90% 54%)"
     },
     "animated_avatar": {
-      "animate": "auto",
-      "background": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp"
+      "animate": "auto"
     },
     "codeblock": {
       "scrollbar": "4px",
@@ -50,20 +49,18 @@
     },
     "gradient": {
       "start": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))",
+      "avatar": "conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)",
       "angle": "210deg",
       "searchbar": "linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
     },
     "leftbar": {
+      "ui-style": "card",
       "background-color-light": "var(--card)",
       "background-color-dark": "var(--card)",
       "background-image": "url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg)",
       "blur-px": "100px",
       "blur-bg": "var(--bg-a60)",
       "background-opacity": 0.8
-    },
-    "paginator": {
-      "prev": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/f049bbd4e88ec.svg",
-      "next": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/arrow/064b95430caf4.svg"
     },
     "error_page": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg",
     "site": {
@@ -72,13 +69,16 @@
       "blur-bg": "var(--bg-a75)",
       "blur-sat": "300%"
     },
-    "corner-shape": "superellipse(1.5)"
+    "corner-shape": "superellipse(1.25)"
   },
   "article": {
     "type": "tech",
     "cover_ratio": 2,
     "banner_ratio": 2.5,
-    "auto_excerpt": 128
+    "auto_excerpt": 128,
+    "pin_style": "carousel",
+    "reading_time": false,
+    "card_tags": false
   },
   "menubar": {
     "columns": 4

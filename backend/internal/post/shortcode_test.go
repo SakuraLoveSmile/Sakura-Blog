@@ -179,8 +179,42 @@ func TestFrameTag(t *testing.T) {
 
 func TestMDTag(t *testing.T) {
 	out := runShortcodes("{% md /notes/a.md %}")
-	if !strings.Contains(out, `class="data-service ds-mdrender" src="/notes/a.md"`) || !strings.Contains(out, `id="md_`) {
+	if !strings.Contains(out, `class="data-service ds-mdrender" src="/notes/a.md"`) || !strings.Contains(out, `data-heading="true"`) || !strings.Contains(out, `id="md_`) {
 		t.Fatalf("md output wrong: %s", out)
+	}
+	replaced := runShortcodes(`{% md https://example.com/readme.md wrap:false %}`)
+	if !strings.Contains(replaced, `data-replace="true"`) {
+		t.Fatalf("md wrap:false should replace placeholder: %s", replaced)
+	}
+	wrapped := runShortcodes(`{% md https://example.com/readme.md wrap:true %}`)
+	if strings.Contains(wrapped, `data-replace="true"`) {
+		t.Fatalf("md wrap:true should retain placeholder: %s", wrapped)
+	}
+}
+
+func TestTableTag(t *testing.T) {
+	out := runShortcodes("{% table style:compact %}\n| A | B |\n| - | - |\n| 1 | 2 |\n{% endtable %}")
+	if !strings.Contains(out, `class="tag-plugin table table-compact"`) || !strings.Contains(out, "| A | B |") {
+		t.Fatalf("table output wrong: %s", out)
+	}
+	if got := runShortcodes("{% table style:unknown %}body{% endtable %}"); !strings.Contains(got, `table-scroll`) {
+		t.Fatalf("unknown table style should fall back to scroll: %s", got)
+	}
+}
+
+func TestTipTag(t *testing.T) {
+	out := runShortcodes("{% tip text:说明文字 %}**正文**{% endtip %}")
+	for _, want := range []string{`class="tag-plugin tip"`, `class="tip-text"`, `class="tip-bubble"`, `说明文字`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("tip output missing %q: %s", want, out)
+		}
+	}
+}
+
+func TestTimelineTitleStaysLiteral(t *testing.T) {
+	out := runShortcodes("{% timeline %}\n<!-- node **版本 1** -->\n正文\n{% endtimeline %}")
+	if !strings.Contains(out, `<span>**版本 1**</span>`) || strings.Contains(out, "<strong>版本 1</strong>") {
+		t.Fatalf("timeline title must not parse Markdown: %s", out)
 	}
 }
 

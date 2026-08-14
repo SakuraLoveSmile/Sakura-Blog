@@ -44,6 +44,8 @@ var zhCN = map[string]string{
 	"meta.license":        "许可协议",
 	"meta.share":          "分享文章",
 	"meta.contributors":   "本文贡献者",
+	"meta.word_count":     "共 %d 字",
+	"meta.reading_time":   "预计阅读 %d 分钟",
 
 	// 时间后缀（对齐 zh-CN.yml meta.date_suffix.*）
 	"date_suffix.just":  "刚刚",
@@ -53,11 +55,11 @@ var zhCN = map[string]string{
 	"date_suffix.month": "个月前",
 
 	// ── 标签云 widget（tagcloud.design 移植：动态/静态双模式拖拽云）────────
-	"tags.dynamic":     "动态",
-	"tags.static":      "静态",
-	"tags.stat_pre":    "共",
-	"tags.stat_unit":   "个标签",
-	"tags.post_count":  "%d 篇文章",
+	"tags.dynamic":    "动态",
+	"tags.static":     "静态",
+	"tags.stat_pre":   "共",
+	"tags.stat_unit":  "个标签",
+	"tags.post_count": "%d 篇文章",
 
 	// ── page 组（对齐 zh-CN.yml page.*）────────────────────────
 	"page.error.what":   "很抱歉，您访问的页面不存在",
@@ -133,43 +135,43 @@ var zhCN = map[string]string{
 	"comment.reply_to":    "回复",
 	"comment.like":        "赞",
 	// 身份体系
-	"comment.verified":       "已验证",     // 注册用户评论徽章
-	"comment.admin_badge":    "博主",        // 管理员徽章（与 site.Comments.AdminBadge 对齐默认值）
-	"comment.anonymous_tip":  "以匿名身份发布",
-	"comment.switch_login":   "登录账号",
-	"comment.logout":         "退出登录",
+	"comment.verified":      "已验证", // 注册用户评论徽章
+	"comment.admin_badge":   "博主",  // 管理员徽章（与 site.Comments.AdminBadge 对齐默认值）
+	"comment.anonymous_tip": "以匿名身份发布",
+	"comment.switch_login":  "登录账号",
+	"comment.logout":        "退出登录",
 	// 登录/注册弹窗
-	"auth.login_title":       "登录",
-	"auth.register_title":    "注册账号",
-	"auth.username":          "用户名",
-	"auth.username_hint":     "3-20 个字母、数字、下划线或中划线",
-	"auth.password":          "密码",
-	"auth.password_hint":     "6-64 个字符",
-	"auth.nickname":          "昵称（选填）",
-	"auth.email":             "邮箱",
-	"auth.avatar_url":        "头像链接（选填）",
-	"auth.submit_login":      "登 录",
-	"auth.submit_register":   "注 册",
-	"auth.goto_register":     "没有账号？立即注册",
-	"auth.goto_login":        "已有账号？去登录",
-	"auth.close":             "关闭",
-	"auth.login_ok":          "登录成功",
-	"auth.register_ok":       "注册成功",
-	"auth.logout_ok":         "已退出登录",
-	"auth.required":          "请填写用户名和密码",
-	"auth.skip_verify":       "跳过验证",
+	"auth.login_title":     "登录",
+	"auth.register_title":  "注册账号",
+	"auth.username":        "用户名",
+	"auth.username_hint":   "3-20 个字母、数字、下划线或中划线",
+	"auth.password":        "密码",
+	"auth.password_hint":   "6-64 个字符",
+	"auth.nickname":        "昵称（选填）",
+	"auth.email":           "邮箱",
+	"auth.avatar_url":      "头像链接（选填）",
+	"auth.submit_login":    "登 录",
+	"auth.submit_register": "注 册",
+	"auth.goto_register":   "没有账号？立即注册",
+	"auth.goto_login":      "已有账号？去登录",
+	"auth.close":           "关闭",
+	"auth.login_ok":        "登录成功",
+	"auth.register_ok":     "注册成功",
+	"auth.logout_ok":       "已退出登录",
+	"auth.required":        "请填写用户名和密码",
+	"auth.skip_verify":     "跳过验证",
 	// 工具栏（精简：表情 + 图片上传 + 预览）
-	"comment.tool_emoji":     "表情",
-	"comment.tool_preview":   "预览",
-	"comment.tool_image":     "图片",
+	"comment.tool_emoji":   "表情",
+	"comment.tool_preview": "预览",
+	"comment.tool_image":   "图片",
 	// 空状态（Artalk 风格）
-	"comment.empty_title":    "尴尬了，写这么辛苦竟没人评论 🥺",
-	"comment.empty_action":   "抢个沙发吧",
+	"comment.empty_title":  "尴尬了，写这么辛苦竟没人评论 🥺",
+	"comment.empty_action": "抢个沙发吧",
 	// 计数 + 待审核
-	"comment.count_total":    "共 %d 条评论",
-	"comment.pending_tip":    "评论提交成功，审核通过后显示",
-	"comment.submit_ok":      "发布成功",
-	"comment.network_error":  "网络错误，请稍后再试",
+	"comment.count_total":   "共 %d 条评论",
+	"comment.pending_tip":   "评论提交成功，审核通过后显示",
+	"comment.submit_ok":     "发布成功",
+	"comment.network_error": "网络错误，请稍后再试",
 
 	// 500 错误页（404 用 page.error.*）
 	"error500.what": "很抱歉，服务器遇到了内部错误",

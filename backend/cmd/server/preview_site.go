@@ -163,6 +163,7 @@ func (s *webServer) renderPreviewIndex(draft *tmpl.Site, data *tmpl.ViewData) (s
 func (s *webServer) finishPreview(draft *tmpl.Site, data *tmpl.ViewData) (string, error) {
 	// 预览不经 HTTP 请求上下文：描述直接取草稿值（fillSEO 依赖 gin.Context，此处手工兜底）
 	data.Page.Description = draft.Description
+	s.fillPinSlider(data)
 	s.fillSidebar(data)
 	return s.engine.Render("layout/base", data)
 }

@@ -573,6 +573,7 @@ func (s *webServer) render500(c *gin.Context) {
 
 // renderBase 渲染 base 布局并写响应（归档/分类/标签页等共用）。
 func (s *webServer) renderBase(c *gin.Context, data *tmpl.ViewData) {
+	s.fillPinSlider(data)
 	s.fillSidebar(data)
 	s.fillSEO(data, c)
 	html, err := s.engine.Render("layout/base", data)
@@ -582,6 +583,43 @@ func (s *webServer) renderBase(c *gin.Context, data *tmpl.ViewData) {
 		return
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+// fillPinSlider 装配 1.40 置顶轮播数据。文章列表的 flat 模式由数据库 pinned 排序承担，
+// carousel 模式则在列表前抽出置顶项，避免卡片重复出现。
+func (s *webServer) fillPinSlider(data *tmpl.ViewData) {
+	if data == nil || data.Page == nil || data.Site == nil || data.Site.Article.EffectivePinStyle() == "flat" {
+		return
+	}
+	if data.Page.Layout == "index" && data.Paginator != nil && data.Paginator.Current > 1 {
+		return
+	}
+	data.PinSliderActive = pinSliderReplacesPosts(data)
+	switch data.Page.Layout {
+	case "index", "archive", "categories", "tags":
+		posts, err := s.st.ListPublished()
+		if err != nil {
+			return
+		}
+		for _, p := range posts {
+			if p.Pinned {
+				data.PinnedPosts = append(data.PinnedPosts, s.toCardWith(data.Site, p))
+			}
+		}
+	case "wiki":
+		for i := range data.Site.Wiki {
+			if data.Site.Wiki[i].Pin {
+				data.PinnedWiki = append(data.PinnedWiki, &data.Site.Wiki[i])
+			}
+		}
+	}
+}
+
+func pinSliderReplacesPosts(data *tmpl.ViewData) bool {
+	if data == nil || data.Page == nil || data.Page.Layout != "index" || data.Page.Category != "" || data.Page.Tag != "" {
+		return false
+	}
+	return data.Paginator == nil || data.Paginator.Current == 1
 }
 
 // toCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
@@ -604,6 +642,7 @@ func (s *webServer) toCardWith(site *tmpl.Site, p *store.Post) *tmpl.PostCard {
 		Category:      p.Category,
 		CategoryStyle: tmpl.CategoryColorStyle(p.Category, site.Article.CategoryColor),
 		CategoryIcon:  tmpl.CategoryIconKey(p.Category, site.Article.CategoryIcon),
+		Tags:          tmpl.ParseTags(p.Tags),
 	}
 	if pd := store.DecodePoster(p.Poster); pd != nil {
 		card.Poster = &tmpl.PosterCard{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}

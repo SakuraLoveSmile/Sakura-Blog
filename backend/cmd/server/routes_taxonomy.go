@@ -8,12 +8,65 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"blog/internal/page"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 	"blog/internal/textutil"
 )
+
+// wikiReadmePlaceholder mirrors Stellar's wiki_readme helper: an empty project
+// homepage with a GitHub repo is rendered from that repository's README.
+func wikiReadmePlaceholder(project *tmpl.WikiProject) (template.HTML, bool) {
+	if project == nil || !validWikiRepo(project.Repo) {
+		return "", false
+	}
+	branch := strings.TrimSpace(project.Branch)
+	if branch == "" {
+		branch = "HEAD"
+	}
+	if !validWikiBranch(branch) {
+		return "", false
+	}
+	base := "https://raw.githubusercontent.com/" + strings.Trim(project.Repo, "/") + "/" + branch + "/"
+	src := base + "README.md"
+	return template.HTML(`<div class="data-service ds-mdrender" src="` + template.HTMLEscapeString(src) + `" data-base="` + template.HTMLEscapeString(base) + `" data-replace="true" data-heading="true"></div>`), true
+}
+
+func validWikiRepo(repo string) bool {
+	parts := strings.Split(strings.Trim(repo, "/"), "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	for _, part := range parts {
+		for _, r := range part {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || strings.ContainsRune("-_.", r) {
+				continue
+			}
+			return false
+		}
+	}
+	return true
+}
+
+func validWikiBranch(branch string) bool {
+	if branch == "" || strings.HasPrefix(branch, "/") || strings.HasSuffix(branch, "/") || strings.Contains(branch, "//") {
+		return false
+	}
+	for _, part := range strings.Split(branch, "/") {
+		if part == "" || part == "." || part == ".." {
+			return false
+		}
+		for _, r := range part {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || strings.ContainsRune("-_.", r) {
+				continue
+			}
+			return false
+		}
+	}
+	return true
+}
 
 // registerTaxonomyRoutes 注册聚合/索引域路由：友链、文库、笔记、归档、分类、专栏、标签。
 func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
@@ -437,6 +490,16 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		}
 		recentDocs = append(recentDocs, &tmpl.RecentPost{Title: d.Title, URL: "/wiki/" + projectID + "/" + d.Slug})
 	}
+	contentHTML := template.HTML(cur.ContentHTML)
+	if published[0] == cur && strings.TrimSpace(string(contentHTML)) == "" {
+		if readme, ok := wikiReadmePlaceholder(project); ok {
+			contentHTML = readme
+		}
+	}
+	description := textutil.Truncate(textutil.StripHTML(string(contentHTML)), 150)
+	if description == "" {
+		description = textutil.Truncate(project.Description, 150)
+	}
 	data := &tmpl.ViewData{
 		Site: s.site.Load(),
 		Page: &tmpl.Page{
@@ -445,7 +508,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 			MenuID:      "wiki",
 			Lang:        "zh-CN",
 			Slug:        slug,
-			Description: textutil.Truncate(textutil.StripHTML(cur.ContentHTML), 150),
+			Description: description,
 		},
 		WikiProjectID:          projectID,
 		WikiProjectName:        project.DisplayTitle(),
@@ -459,14 +522,14 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiDoc: &tmpl.WikiDocView{
 			Slug:        cur.Slug,
 			Title:       cur.Title,
-			ContentHTML: template.HTML(cur.ContentHTML),
+			ContentHTML: contentHTML,
 			Updated:     cur.UpdatedAt.Format("2006-01-02"), // Spec 53 Part C：wiki dateinfo
 		},
 		WikiPrevDoc: prev,
 		WikiNextDoc: next,
 		WikiDocTree: tree,
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（标题带 id 锚点）
-		TOC: tmpl.ExtractTOCWith(cur.ContentHTML, s.tocOptions()),
+		TOC: tmpl.ExtractTOCWith(string(contentHTML), s.tocOptions()),
 	}
 	// 评论区：page_key 为 /wiki/{project}/{slug}（fillComments 统一设置 CommentPageKey）
 	s.fillComments(data, "/wiki/"+projectID+"/"+slug)

@@ -45,6 +45,37 @@ func TestToCard(t *testing.T) {
 	}
 }
 
+func TestPinSliderActiveOnlyOnHomeFirstPage(t *testing.T) {
+	cases := []struct {
+		name string
+		data *tmpl.ViewData
+		want bool
+	}{
+		{
+			name: "home first page",
+			data: &tmpl.ViewData{Page: &tmpl.Page{Layout: "index"}, Paginator: &tmpl.Paginator{Current: 1}},
+			want: true,
+		},
+		{
+			name: "home second page",
+			data: &tmpl.ViewData{Page: &tmpl.Page{Layout: "index"}, Paginator: &tmpl.Paginator{Current: 2}},
+			want: false,
+		},
+		{
+			name: "category list",
+			data: &tmpl.ViewData{Page: &tmpl.Page{Layout: "index", Category: "技术"}},
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := pinSliderReplacesPosts(tc.data); got != tc.want {
+				t.Fatalf("pinSliderReplacesPosts = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestBuildTagCloud(t *testing.T) {
 	counts := map[string]int{"a": 1, "b": 3, "c": 3, "d": 2}
 	items := buildTagCloud(counts, 3)

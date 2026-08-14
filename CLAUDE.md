@@ -370,6 +370,18 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - [x] Step 2 收尾：移动端 sidebar（main.js sidebar 对象 leftbar/dismiss + base.html float-panel menubtn）+ /assets no-cache 协商缓存中间件（curl 304 与移动/桌面视口浏览器验证通过）
 - [x] Step 3：侧边栏动态化（recent/tags 从 DB 实时生成 + 菜单死链清理）+ 文章页 TOC 右栏（AutoHeadingID + ExtractTOC 嵌套 + 原生 scroll-spy）+ 本地搜索（/search.json no-store + 去 jQuery local-search.js）+ PJAX 无刷新导航（pjax.js 接入 + 加载指示样式）+ 自定义 404（NoRoute/render404 统一出口），浏览器全项验证通过（__mark 跨导航存活、scroll-spy 高亮、搜索高亮/noresult、404 双主题截图、控制台零错误）
 
+## Spec 68 · Stellar 1.40.0 同步（2026-08）
+
+`resource/hexo-theme-stellar` 已固定到 `1.40.0`，`frontend/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
+
+- 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
+- `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
+- Wiki 项目配置 `repo` 且首页文档正文为空时，输出客户端 `ds-mdrender` README 占位；`branch` 缺省为 `HEAD`。Wiki SEO 描述为空时回退项目描述。
+- 当前项目没有 Memos `ds-memos` 模板/配置入口，因此不引入未使用的 Memos 服务；Artalk/Waline 外部评论适配同样不在自建评论范围内。
+- Go 分类字段仍为单一字符串，没有 Hexo category parent 图，因此不复制 `category_tree.js` 的虚假层级；Wiki `wikidocs.parent` 树仍按最多三级递归渲染。
+
+对应阶段记录见 [`specs/68-stellar-140-sync/spec.md`](specs/68-stellar-140-sync/spec.md)。
+
 ## Spec 59 · Stellar 1.38.0 同步（2026-08，取代上文 PJAX/jQuery 相关坑点）
 
 资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`frontend/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：

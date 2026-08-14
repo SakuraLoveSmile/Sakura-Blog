@@ -28,6 +28,7 @@
           <span class="sep"></span>
           <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
           {{end}}
+          {{if and .Site.Article.ReadingTime (gt .WordCount 0)}}<span class="cap reading right">{{lang "meta.word_count" .WordCount}} · {{lang "meta.reading_time" .ReadingMinutes}}</span>{{end}}
         </div>
         <div class="flex-row" id="post-meta">
           {{- /* Spec 53 Part A：多作者命中时首位渲染作者链接（对齐原版 dateinfo.ejs：

@@ -5,15 +5,17 @@ import "html/template"
 // WikiProject 文库项目卡片，对应 site.yml wiki 段的一项。
 // 对齐 Stellar index_wiki 布局的 wiki_card：图标 + 标签 + 标题 + 描述，点击跳到 URL。
 type WikiProject struct {
-	ID          string   `yaml:"id" json:"id"`
-	Name        string   `yaml:"name" json:"name"`
-	Title       string   `yaml:"title" json:"title"`
-	Description string   `yaml:"description" json:"description"`
-	Icon        string   `yaml:"icon" json:"icon"` // 项目 Logo 图片 URL
-	Tags        []string `yaml:"tags" json:"tags"`
-	URL         string   `yaml:"url" json:"url"`   // 首页/文档链接（站内文章、独立页面或外链）
-	Sort        int      `yaml:"sort" json:"sort"` // 越大越靠前
-	Repo        string   `yaml:"repo" json:"repo"` // GitHub 仓库（owner/name 格式），非空时 wiki 文档页右栏渲染 ghrepo 卡片
+	ID          string      `yaml:"id" json:"id"`
+	Name        string      `yaml:"name" json:"name"`
+	Title       string      `yaml:"title" json:"title"`
+	Description string      `yaml:"description" json:"description"`
+	Icon        string      `yaml:"icon" json:"icon"` // 项目 Logo 图片 URL
+	Tags        []string    `yaml:"tags" json:"tags"`
+	URL         string      `yaml:"url" json:"url"`                       // 首页/文档链接（站内文章、独立页面或外链）
+	Sort        int         `yaml:"sort" json:"sort"`                     // 越大越靠前
+	Pin         bool        `yaml:"pin" json:"pin"`                       // 置顶项目
+	Repo        string      `yaml:"repo" json:"repo"`                     // GitHub 仓库（owner/name 格式），非空时 wiki 文档页右栏渲染 ghrepo 卡片
+	Branch      string      `yaml:"branch" json:"branch"`                 // README 所在分支，空值使用 GitHub HEAD
 	Hero        *HeroConfig `yaml:"hero,omitempty" json:"hero,omitempty"` // 项目级 hero banner（wiki 文档页页首渲染）
 	// HasDocs 运行时标记：是否有已发布的本地文档（请求时由 handler 填充，不参与配置解析/JSON 输出）。
 	HasDocs bool `yaml:"-" json:"-"`
@@ -64,8 +66,8 @@ type WikiTreeWidgetData struct {
 // Note 笔记(手记)条目，对应 site.yml notes 段的一项。
 // 对齐 xaoxuu.com/notes/ 的手记风格：时间流内联展示短内容（非文章卡片跳转）。
 type Note struct {
-	Title   string   `yaml:"title"`   // 可选标题
-	Date    string   `yaml:"date"`    // ISO 日期字符串，如 2024-07-20（字符串排序即时间序）
+	Title   string   `yaml:"title"` // 可选标题
+	Date    string   `yaml:"date"`  // ISO 日期字符串，如 2024-07-20（字符串排序即时间序）
 	Tags    []string `yaml:"tags"`
 	Content string   `yaml:"content"` // Markdown 短内容，时间流内联渲染（手记正文）
 	Pin     bool     `yaml:"pin"`     // 置顶

@@ -20,7 +20,25 @@ func LoadSite(path string) (*tmpl.Site, error) {
 	if err := yaml.Unmarshal(b, s); err != nil {
 		return nil, fmt.Errorf("parse site config %s: %w", path, err)
 	}
+	normalizeThemeDefaults(s)
 	return s, nil
+}
+
+// normalizeThemeDefaults keeps site.yml and legacy settings compatible with the
+// 1.40 defaults when newly added keys are absent.
+func normalizeThemeDefaults(s *tmpl.Site) {
+	if s.Style.CornerShape == "" {
+		s.Style.CornerShape = "superellipse(1.25)"
+	}
+	if s.Style.Leftbar.UIStyle == "" {
+		s.Style.Leftbar.UIStyle = "card"
+	}
+	if s.Style.Gradient.Avatar == "" {
+		s.Style.Gradient.Avatar = "conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
+	}
+	if s.Article.PinStyle == "" {
+		s.Article.PinStyle = "carousel"
+	}
 }
 
 // DefaultSite 构造 Demo 2 用的站点配置。
@@ -89,6 +107,7 @@ func DefaultSite() *tmpl.Site {
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
 		Article: tmpl.ArticleConfig{
+			PinStyle:      "carousel",
 			Type:          "tech",                             // 文章列表卡片布局：tech（紧凑）/story（图文大间距），Spec 50
 			CategoryColor: map[string]string{"技术": "#1BCDFC"}, // 对齐原版 theme.article.category_color
 			Copyright: tmpl.CopyrightConfig{
@@ -110,6 +129,11 @@ func DefaultSite() *tmpl.Site {
 			ExpireDays:   180,
 			BannerRatio:  2.5,
 			EditThisPage: nil, // 缺省不配映射；配置后文章页出现贡献者/编辑本文段
+		},
+		Style: tmpl.StyleConfig{
+			CornerShape: "superellipse(1.25)",
+			Leftbar:     tmpl.StyleLeftbar{UIStyle: "card"},
+			Gradient:    tmpl.StyleGradient{Avatar: "conic-gradient(from 0deg, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"},
 		},
 		Links: nil, // 友链由 site.yml links 段驱动；缺省为空，/links 显示「暂无友链」
 		Friends: tmpl.FriendsConfig{
