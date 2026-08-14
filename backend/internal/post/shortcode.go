@@ -584,7 +584,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		}
 		return renderFriends(parts[1])
 	})
-	
+
 	// 27.5 links（单行，分组友链卡片流服务端直出，数据来自站点 links 配置注入）
 	md = reLinks.ReplaceAllStringFunc(md, func(match string) string {
 		if linksRender == nil {
@@ -672,7 +672,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		}
 		return renderMbti(parts[1])
 	})
-	
+
 	// 32. reel（块级）
 	md = reReelTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reReelTag.FindStringSubmatch(match)
@@ -2427,12 +2427,16 @@ func renderLinkGroupsHTML(groups []tmpl.LinkGroup, defaultLink string) string {
 			if avatar == "" {
 				avatar = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
 			}
+			snapshot := it.Snapshot
+			if snapshot == "" {
+				snapshot = avatar
+			}
 			desc := it.Desc
 			if desc == "" {
 				desc = it.URL
 			}
 			sb.WriteString(`<div class="grid-cell site-card"><a class="card-link" target="_blank" rel="noopener" href="` + html.EscapeString(it.URL) + `">`)
-			sb.WriteString(`<div class="lazy-box snapshot"><img src="` + html.EscapeString(avatar) + `" alt="` + html.EscapeString(it.Name) + `"></div>`)
+			sb.WriteString(`<div class="lazy-box snapshot"><img src="` + html.EscapeString(snapshot) + `" alt="` + html.EscapeString(it.Name) + `"></div>`)
 			sb.WriteString(`<div class="info"><div class="lazy-box icon"><img src="` + html.EscapeString(avatar) + `" alt=""></div>`)
 			sb.WriteString(`<span class="title">` + html.EscapeString(it.Name) + `</span>`)
 			sb.WriteString(`<span class="desc">` + html.EscapeString(desc) + `</span></div></a></div>`)

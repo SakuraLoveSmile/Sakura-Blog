@@ -17,7 +17,10 @@ var tableDDL = map[string]string{
 		rss         TEXT NOT NULL DEFAULT '',
 		label       TEXT NOT NULL DEFAULT '',
 		color       TEXT NOT NULL DEFAULT '',
-		sort        INTEGER NOT NULL DEFAULT 0
+		sort        INTEGER NOT NULL DEFAULT 0,
+		snapshot    TEXT NOT NULL DEFAULT '',
+		last_status INTEGER NOT NULL DEFAULT 0,
+		last_checked_at INTEGER NOT NULL DEFAULT 0
 	);
 	CREATE INDEX IF NOT EXISTS idx_links_group ON links(group_title);`,
 

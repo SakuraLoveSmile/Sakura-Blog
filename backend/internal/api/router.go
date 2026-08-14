@@ -22,6 +22,7 @@ import (
 	"blog/internal/comment"
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
+	"blog/internal/linkwatch"
 	"blog/internal/module"
 	"blog/internal/notify"
 	"blog/internal/post"
@@ -36,8 +37,8 @@ const (
 
 // Handler API 请求处理器，持有 store、post service、站点配置、评论 handler。
 type Handler struct {
-	store     *store.Store
-	posts     *post.Service
+	store *store.Store
+	posts *post.Service
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，API 侧 .Load() 读取
 	site      *atomic.Pointer[tmpl.Site]
 	comments  *comment.Handler
@@ -45,10 +46,11 @@ type Handler struct {
 	modules   *module.Manager
 	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
 	uploadDir string
-	maxUpload int64  // 单文件上限字节
+	maxUpload int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
 	onLinksChanged func()
+	linkWatch      *linkwatch.Watcher
 
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh *ghpkg.Client
@@ -75,21 +77,22 @@ type Handler struct {
 
 // Config API Handler 初始化参数。
 type Config struct {
-	Store       *store.Store
-	Posts       *post.Service
-	Site        *atomic.Pointer[tmpl.Site] // 站点配置原子指针（Spec 61 阶段 3）
-	Comments    *comment.Handler
-	Backups     *backup.Service
-	Modules     *module.Manager
-	Notify      *notify.Service // 站内通知服务（Wave 3b），可空
-	Icons       *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
+	Store    *store.Store
+	Posts    *post.Service
+	Site     *atomic.Pointer[tmpl.Site] // 站点配置原子指针（Spec 61 阶段 3）
+	Comments *comment.Handler
+	Backups  *backup.Service
+	Modules  *module.Manager
+	Notify   *notify.Service    // 站内通知服务（Wave 3b），可空
+	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
 	// OnContentChanged 内容写路径回调（Spec 61 阶段 5）：wikidoc/notebook/note/设置保存后
 	// 通知 cmd/server 置脏 /search.json 与 /sitemap.xml 缓存，可空。
 	OnContentChanged func()
-	UploadDir   string
-	MaxUploadMB int
+	UploadDir        string
+	MaxUploadMB      int
+	LinkWatch        *linkwatch.Watcher
 }
 
 // New 创建 API handler。
@@ -99,18 +102,19 @@ func New(cfg Config) *Handler {
 		maxMB = 5
 	}
 	return &Handler{
-		store:     cfg.Store,
-		posts:     cfg.Posts,
-		site:      cfg.Site,
-		comments:  cfg.Comments,
-		backups:   cfg.Backups,
-		modules:   cfg.Modules,
-		notify:    cfg.Notify,
-		icons:     cfg.Icons,
+		store:             cfg.Store,
+		posts:             cfg.Posts,
+		site:              cfg.Site,
+		comments:          cfg.Comments,
+		backups:           cfg.Backups,
+		modules:           cfg.Modules,
+		notify:            cfg.Notify,
+		icons:             cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
 		onContentChanged:  cfg.OnContentChanged,
-		uploadDir: cfg.UploadDir,
-		maxUpload: int64(maxMB) << 20,
+		uploadDir:         cfg.UploadDir,
+		maxUpload:         int64(maxMB) << 20,
+		linkWatch:         cfg.LinkWatch,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time
@@ -127,8 +131,9 @@ func (h *Handler) SetOnLinksChanged(fn func()) {
 // MountDeps API 侧装配依赖：Config 之外附带公共 API 端点的可选组件。
 type MountDeps struct {
 	Config
-	Friends *friends.Aggregator // 友链动态聚合（/api/friends-aggregated），可空
-	GH      *ghpkg.Client       // GitHub 代理缓存客户端（/api/gh/*），可空
+	Friends   *friends.Aggregator // 友链动态聚合（/api/friends-aggregated），可空
+	LinkWatch *linkwatch.Watcher  // 友链连通性/截图巡检器，可空
+	GH        *ghpkg.Client       // GitHub 代理缓存客户端（/api/gh/*），可空
 }
 
 // Mount 承接 main 的 API 侧装配：建表 → /api/v1 路由组 → 友链聚合/GitHub 代理/评分公开端点。
@@ -152,6 +157,7 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"login_logs", st.EnsureLoginLogsTable},        // 登录日志（Wave 3a）
 		{"notifications", st.EnsureNotificationsTable}, // 站内通知（Wave 3b）
 		{"pat_tokens", st.EnsurePATTable},              // 个人访问令牌（PAT，只存 sha256 哈希）
+		{"links", st.EnsureLinksTable},                 // 友链与巡检状态
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -374,6 +380,7 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.PUT("/links/:id", h.updateLink)
 		authed.DELETE("/links/:id", h.deleteLink)
 		authed.POST("/links/check", h.checkLinks)
+		authed.POST("/links/:id/snapshot", h.snapshotLink)
 		authed.POST("/links/import", h.importLinks)
 
 		// 友链 RSS 订阅阅读器

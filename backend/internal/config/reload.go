@@ -464,6 +464,20 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionArticle, &parsed.article)
 	unmarshal(SectionWiki, &parsed.wiki)
 	unmarshal(SectionFriends, &parsed.friends)
+	if raw, ok := settings[SectionFriends]; ok {
+		var fields map[string]json.RawMessage
+		if json.Unmarshal([]byte(raw), &fields) == nil {
+			if _, exists := fields["check_interval"]; !exists {
+				parsed.friends.CheckInterval = 360
+			}
+			if _, exists := fields["snapshot_interval"]; !exists {
+				parsed.friends.SnapshotInterval = 1440
+			}
+			if _, exists := fields["snapshot_provider"]; !exists || parsed.friends.SnapshotProvider == "" {
+				parsed.friends.SnapshotProvider = tmpl.DefaultSnapshotProvider
+			}
+		}
+	}
 	unmarshal(SectionSEO, &parsed.seo)
 	unmarshal(SectionInject, &parsed.inject)
 	unmarshal(SectionStyle, &parsed.style)
@@ -554,13 +568,8 @@ func LinksToGroups(links []*store.Link) []tmpl.LinkGroup {
 			groups = append(groups, tmpl.LinkGroup{Title: l.GroupTitle})
 		}
 		groups[i].Items = append(groups[i].Items, tmpl.LinkItem{
-			Name:   l.Name,
-			URL:    l.URL,
-			Avatar: l.Avatar,
-			Desc:   l.Description,
-			RSS:    l.RSS,
-			Label:  l.Label,
-			Color:  l.Color,
+			Name: l.Name, URL: l.URL, Avatar: l.Avatar, Snapshot: l.Snapshot,
+			Desc: l.Description, RSS: l.RSS, Label: l.Label, Color: l.Color,
 		})
 	}
 	return groups

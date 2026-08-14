@@ -27,6 +27,7 @@ import (
 	"blog/internal/config"
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
+	"blog/internal/linkwatch"
 	"blog/internal/module"
 	_ "blog/internal/module/perf" // blank import：触发性能监控模块 init() 自注册
 	_ "blog/internal/module/seo"  // blank import：触发 SEO 模块 init() 自注册
@@ -362,25 +363,29 @@ func main() {
 		}
 	})
 	friendsAgg.Start()
+	linkWatch := linkwatch.New(st, sitePtr, app.UploadDir)
+	linkWatch.Start()
 
 	// API 侧装配（/api/v1 + 友链聚合/GitHub 代理/评分端点 + 相关表），见 internal/api.Mount。
 	if _, err := api.Mount(r, api.MountDeps{
 		Config: api.Config{
-			Store:       st,
-			Posts:       posts,
-			Site:        sitePtr,
-			Comments:    commentHandler,
-			Backups:     backupSvc,
-			Modules:     moduleMgr,
-			Notify:      notifySvc,
-			Icons:       reg,
+			Store:             st,
+			Posts:             posts,
+			Site:              sitePtr,
+			Comments:          commentHandler,
+			Backups:           backupSvc,
+			Modules:           moduleMgr,
+			Notify:            notifySvc,
+			Icons:             reg,
 			RenderSitePreview: ws.renderSitePreview,
 			OnContentChanged:  ws.contentCache.invalidate,
-			UploadDir:   app.UploadDir,
-			MaxUploadMB: app.MaxUploadMB,
+			UploadDir:         app.UploadDir,
+			MaxUploadMB:       app.MaxUploadMB,
+			LinkWatch:         linkWatch,
 		},
-		Friends: friendsAgg,
-		GH:      ghClient,
+		Friends:   friendsAgg,
+		LinkWatch: linkWatch,
+		GH:        ghClient,
 	}); err != nil {
 		log.Fatalf("mount api: %v", err)
 	}

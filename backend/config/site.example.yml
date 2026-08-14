@@ -85,6 +85,12 @@ wiki:
 friends:
   refresh_interval: 60
   posts_per_link: 20
+  # 连通性巡检间隔（分钟），<=0 关闭，缺省 360。
+  check_interval: 360
+  # 网站截图缓存间隔（分钟），<=0 关闭，缺省 1440。
+  snapshot_interval: 1440
+  # 外部截图服务 URL 模板，必须包含 {url} 占位。
+  snapshot_provider: "https://image.thum.io/get/width/1280/crop/720/{url}"
 
 # 页面级设置（按页面键管理，控制台「页面 → 友链页」可编辑；不配置 = 现状）。
 # friends：title 覆盖 /friends 页标题；hero 三要素渲染页首 banner；

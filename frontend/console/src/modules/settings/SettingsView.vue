@@ -109,8 +109,11 @@ function ensureDefaults(d: Record<string, any>) {
   // read_next 缺省与后端默认一致（true）；旧库 article 段可能缺键
   d.article.read_next = d.article.read_next ?? true;
   d.friends = d.friends || {};
-  d.friends.refresh_interval = d.friends.refresh_interval || 0;
-  d.friends.posts_per_link = d.friends.posts_per_link || 20;
+  d.friends.refresh_interval = d.friends.refresh_interval ?? 60;
+  d.friends.posts_per_link = d.friends.posts_per_link ?? 20;
+  d.friends.check_interval = d.friends.check_interval ?? 360;
+  d.friends.snapshot_interval = d.friends.snapshot_interval ?? 1440;
+  d.friends.snapshot_provider = d.friends.snapshot_provider || "https://image.thum.io/get/width/1280/crop/720/{url}";
   d.seo = d.seo || {};
   d.inject = d.inject || {};
   d.ai = d.ai || {};
@@ -914,12 +917,15 @@ onMounted(() => {
               <VButton type="primary" size="sm" :loading="savingKey === 'article'" @click="save('article')">保存文章设置</VButton>
             </div>
             <div class="subsection friends-subsection">
-              <p class="subsection-title">友链 RSS 聚合（friends 段，独立保存）</p>
+              <p class="subsection-title">友链巡检与 RSS 聚合（friends 段，独立保存）</p>
               <div class="form-grid form-grid-2">
-                <div class="field"><label>刷新间隔（分钟，≤0 用默认 60）</label><input v-model.number="data.friends.refresh_interval" type="number" :class="inputCls" /></div>
+                <div class="field"><label>RSS 刷新间隔（分钟，≤0 用默认 60）</label><input v-model.number="data.friends.refresh_interval" type="number" :class="inputCls" /></div>
                 <div class="field"><label>每友链文章数量（≤0 用默认 20）</label><input v-model.number="data.friends.posts_per_link" type="number" min="1" :class="inputCls" /></div>
+                <div class="field"><label>连通性巡检间隔（分钟，≤0 关闭）</label><input v-model.number="data.friends.check_interval" type="number" :class="inputCls" /></div>
+                <div class="field"><label>截图缓存间隔（分钟，≤0 关闭）</label><input v-model.number="data.friends.snapshot_interval" type="number" :class="inputCls" /></div>
+                <div class="field field-wide"><label>截图服务 URL 模板（使用 {url}）</label><input v-model="data.friends.snapshot_provider" :class="inputCls" /></div>
               </div>
-              <VButton type="secondary" size="sm" :loading="savingKey === 'friends'" @click="save('friends')">保存 RSS 设置</VButton>
+              <VButton type="secondary" size="sm" :loading="savingKey === 'friends'" @click="save('friends')">保存友链设置</VButton>
             </div>
           </VCard>
 
@@ -1147,6 +1153,7 @@ onMounted(() => {
 .field:last-child { margin-bottom: 0; }
 .field label { display: block; font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 6px; }
 .field-narrow { max-width: 160px; }
+.field-wide { grid-column: 1 / -1; }
 .field-inline { display: flex; gap: 8px; align-items: center; }
 .field-inline .apple-input { flex: 1; }
 .form-grid { display: grid; gap: 12px; margin-bottom: 16px; }

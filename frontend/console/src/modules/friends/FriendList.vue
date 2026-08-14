@@ -25,6 +25,9 @@ interface LinkRow {
  label: string;
  color: string;
  sort: number;
+ snapshot: string;
+ last_status: number;
+ last_checked_at: number;
 }
 
 const queryClient = useQueryClient();
@@ -42,29 +45,24 @@ const error = ref("");
 const editing = ref<Partial<LinkRow>>({});
 const menuOpenId = ref<number | null>(null);
 
-// 连通性检测状态（批注：对齐 Halo“检测全部”）：存 {ok, status}，status 为 HTTP 状态码（0=无法访问）
-const checkStatus = ref<Record<number, { ok: boolean; status: number }>>({});
 const checking = ref(false);
 async function runCheck() {
  checking.value = true;
  try {
  const { data } = await linkApi.check();
- const map: Record<number, { ok: boolean; status: number }> = {};
  let okN = 0;
  let errN = 0;
  for (const r of data.items || []) {
- map[r.id] = { ok: r.ok, status: r.status };
  r.ok ? okN++ : errN++;
  }
- checkStatus.value = map;
  // Spec 56：后端自动打/摘「失效」标签，有变更时追加提示并刷新列表
  const tagged: number = data.tagged ?? 0;
  const restored: number = data.restored ?? 0;
  let desc = `正常 ${okN} · 异常 ${errN}`;
  if (tagged > 0 || restored > 0) {
  desc += ` · 已标记失效 ${tagged} · 恢复 ${restored}`;
- queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  }
+ await queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
  Toast.success("检测完成", { description: desc });
  } catch (e: any) {
  Toast.error(e?.response?.data?.error || "检测失败");
@@ -73,10 +71,16 @@ async function runCheck() {
  }
 }
 
-/** 异常原因提示：HTTP 状态码或“无法访问” */
-function errorReason(id: number): string {
- const s = checkStatus.value[id]?.status;
- return s && s > 0 ? `HTTP ${s}` :"无法访问";
+function linkState(l: LinkRow): "ok" | "error" | "unknown" {
+ if (!l.last_checked_at) return "unknown";
+ return l.last_status >= 200 && l.last_status < 400 ? "ok" : "error";
+}
+function errorReason(l: LinkRow): string {
+ return l.last_status > 0 ? `HTTP ${l.last_status}` : "无法访问";
+}
+function checkedAtLabel(ts: number): string {
+ if (!ts) return "";
+ return new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(new Date(ts * 1000));
 }
 
 // 状态筛选：全部 / 正常 / 异常（仅在检测后有意义）
@@ -87,7 +91,7 @@ const grouped = computed(() => {
  const map: Record<string, LinkRow[]> = {};
  const order: string[] = [];
  for (const l of links.value) {
- if (statusFilter.value !=="all" && (checkStatus.value[l.id]?.ok ?"ok" : checkStatus.value[l.id] ?"error" : undefined) !== statusFilter.value) continue;
+ if (statusFilter.value !=="all" && linkState(l) !== statusFilter.value) continue;
  const g = l.group_title ||"未分组";
  if (!map[g]) {
  map[g] = [];
@@ -200,6 +204,23 @@ function handleDelete(l: LinkRow) {
 }
 
 const inputCls = "apple-input";
+const snapshotting = ref(false);
+
+async function takeSnapshot() {
+ if (!editing.value.id) return;
+ snapshotting.value = true;
+ error.value = "";
+ try {
+ const { data } = await linkApi.snapshot(editing.value.id);
+ editing.value = { ...editing.value, ...data };
+ queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
+ Toast.success("截图已更新");
+ } catch (e: any) {
+ error.value = e?.response?.data?.error || "截图失败，请检查截图服务配置";
+ } finally {
+ snapshotting.value = false;
+ }
+}
 
 function closeMenus() {
  menuOpenId.value = null;
@@ -298,11 +319,12 @@ function closeMenus() {
  </Transition>
  </div>
  </div>
- <!-- 底部徐标行：状态（药丸）/ RSS / 访问 -->
+ <!-- 底部状态行：状态（药丸）/ 上次检测 / RSS / 访问 -->
  <div class="mt-2.5 flex items-center gap-2 text-xs">
- <span v-if="checkStatus[l.id]?.ok" class="inline-flex items-center gap-1 rounded-full bg-state-success/10 px-2 py-0.5 text-state-success bg-state-success/100/15 text-state-success"><Icon icon="ri:checkbox-circle-fill" />正常</span>
- <span v-else-if="checkStatus[l.id]" :title="errorReason(l.id)" class="inline-flex items-center gap-1 rounded-full bg-state-error/10 px-2 py-0.5 text-state-error bg-state-error/100/15 text-state-error"><Icon icon="ri:error-warning-fill" />异常·{{ errorReason(l.id) }}</span>
+ <span v-if="linkState(l) === 'ok'" class="inline-flex items-center gap-1 rounded-full bg-state-success/10 px-2 py-0.5 text-state-success"><Icon icon="ri:checkbox-circle-fill" />正常</span>
+ <span v-else-if="linkState(l) === 'error'" :title="errorReason(l)" class="inline-flex items-center gap-1 rounded-full bg-state-error/10 px-2 py-0.5 text-state-error"><Icon icon="ri:error-warning-fill" />异常·{{ errorReason(l) }}</span>
  <span v-else class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-text-quaternary"><Icon icon="ri:pulse-line" />未检测</span>
+ <span v-if="l.last_checked_at" class="text-text-quaternary" :title="`上次检测：${checkedAtLabel(l.last_checked_at)}`">{{ checkedAtLabel(l.last_checked_at) }}</span>
  <span v-if="l.rss" class="inline-flex items-center gap-1 text-text-quaternary"><Icon icon="ri:rss-line" />RSS</span>
  <a :href="l.url" target="_blank" class="inline-flex items-center gap-1 text-text-quaternary hover:text-primary"><Icon icon="ri:external-link-line" />访问</a>
  </div>
@@ -389,6 +411,18 @@ function closeMenus() {
  <div>
  <label class="mb-1 block text-xs text-text-tertiary">头像 URL</label>
  <input v-model="editing.avatar" :class="inputCls" />
+ </div>
+ <div class="rounded-lg border border-border bg-secondary/50 p-3">
+ <div class="mb-2 flex items-center justify-between">
+ <label class="text-xs text-text-tertiary">网站截图</label>
+ <VButton v-if="editing.id" type="secondary" size="sm" :loading="snapshotting" @click="takeSnapshot">
+ <template #icon><Icon icon="ri:camera-line" /></template>
+ 立即截图
+ </VButton>
+ </div>
+ <img v-if="editing.snapshot" :src="editing.snapshot" class="mb-2 aspect-video w-full rounded-md border border-border bg-card object-cover" alt="网站截图" />
+ <p v-else class="mb-2 text-xs text-text-quaternary">暂无缓存截图</p>
+ <input v-model="editing.snapshot" :class="inputCls" placeholder="可手填截图 URL" />
  </div>
  <div>
  <label class="mb-1 block text-xs text-text-tertiary">描述</label>

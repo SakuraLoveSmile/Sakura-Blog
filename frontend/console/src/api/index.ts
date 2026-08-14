@@ -294,7 +294,8 @@ export const linkApi = {
  http.put(`/links/${id}`, data),
  delete: (id: number) => http.delete(`/links/${id}`),
  /** 并发检测各友链可达性，返回 {items: [{id, ok, status}], tagged, restored}（status 为 HTTP 状态码，0=无法访问；tagged/restored 为自动打/摘「失效」标签条数） */
- check: () => http.post("/links/check"),
+	check: () => http.post("/links/check"),
+	snapshot: (id: number) => http.post(`/links/${id}/snapshot`),
  /** 导入友链（Spec 54/56）：source=github 拉 Friends 仓库 issues，source=text 解析粘贴的 JSON/YAML；返回 {imported, skipped, failed[]} */
  importLinks: (data: { source:"github" |"text"; group?: string; content?: string }) =>
  http.post("/links/import", data),
