@@ -183,23 +183,23 @@ function cancelEdit() {
  <!-- 编辑属性 -->
  <button
  type="button"
- class="group relative rounded p-1.5 text-text-tertiary transition-colors hover:bg-accent hover:text-foreground"
+ class="group/btn relative rounded p-1.5 text-text-tertiary transition-colors hover:bg-accent hover:text-foreground"
  @mousedown.prevent
  @click="startEdit"
  >
  <Icon icon="ri:file-edit-line" class="text-base" />
- <span class="pointer-events-none absolute -top-8 right-0 hidden whitespace-nowrap rounded bg-foreground px-2 py-1 text-[11px] text-background group-hover:block">编辑属性</span>
+ <span class="pointer-events-none absolute -top-9 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded border border-border bg-secondary px-2 py-1 text-[11px] text-foreground shadow-md group-hover/btn:block">编辑属性</span>
  </button>
 
  <!-- 删除（红色） -->
  <button
  type="button"
- class="group relative rounded p-1.5 text-state-error transition-colors hover:bg-state-error/10"
+ class="group/btn relative rounded p-1.5 text-state-error transition-colors hover:bg-state-error/10"
  @mousedown.prevent
  @click="deleteNode()"
  >
  <Icon icon="ri:delete-bin-line" class="text-base" />
- <span class="pointer-events-none absolute -top-8 right-0 hidden whitespace-nowrap rounded bg-foreground px-2 py-1 text-[11px] text-background group-hover:block">删除</span>
+ <span class="pointer-events-none absolute -top-9 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded border border-border bg-secondary px-2 py-1 text-[11px] text-foreground shadow-md group-hover/btn:block">删除</span>
  </button>
 
  <!-- 底部指向节点的小箭头 -->
