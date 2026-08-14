@@ -165,20 +165,20 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <template #actions>
  <div class="flex items-center gap-2">
  <button
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
  @click="setFilter('later')"
  >
  <Icon icon="ri:bookmark-line" />稍后阅读
  </button>
  <button
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
  @click="setFilter('favorite')"
  >
  <Icon icon="ri:star-line" />收藏
  </button>
  <router-link
  to="/friends"
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
  >
  <Icon icon="ri:arrow-left-line" />返回链接
  </router-link>
@@ -199,7 +199,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <li>
  <button
  class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
- :class="!activeFeed ? 'bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
+ :class="!activeFeed ? 'bg-primary/15 text-primary' : 'hover:bg-accent'"
  @click="selectFeed('')"
  >
  <Icon icon="ri:stack-line" class="text-lg text-text-quaternary" />
@@ -213,7 +213,7 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <li v-for="s in sources" :key="s.friend_url">
  <button
  class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
- :class="activeFeed === s.friend_url ? 'bg-primary/15 text-primary' : 'hover:bg-secondary hover:bg-accent'"
+ :class="activeFeed === s.friend_url ? 'bg-primary/15 text-primary' : 'hover:bg-accent'"
  @click="selectFeed(s.friend_url)"
  >
  <Icon icon="ri:rss-fill" class="text-lg text-state-warning" />
@@ -253,19 +253,19 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <div class="flex flex-wrap gap-2">
  <button
  :disabled="refreshing"
- class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-secondary disabled:opacity-50 hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-xs text-text-tertiary disabled:opacity-50 hover:bg-accent"
  @click="refreshAll"
  >
  <Icon :icon="refreshing ? 'ri:loader-4-line' : 'ri:download-cloud-2-line'" :class="refreshing && 'animate-spin'" />获取全部
  </button>
  <button
- class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent"
  @click="markAllRead"
  >
  <Icon icon="ri:mail-open-line" />全部标为已读
  </button>
  <button
- class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-text-tertiary hover:bg-accent"
  @click="reloadList"
  >
  <Icon icon="ri:refresh-line" />刷新列表
@@ -289,13 +289,13 @@ const filterTabs: { key: typeof filter.value; label: string }[] = [
  <span class="font-medium text-text-tertiary">{{ a.friend_title }}</span>
  <span>{{ a.published }}</span>
  <span class="flex-1"></span>
- <button title="收藏" class="rounded p-1 hover:bg-secondary hover:bg-accent" :class="a.favorite ? 'text-state-warning' : 'text-text-quaternary'" @click="toggleFlag(a, 'favorite')">
+ <button title="收藏" class="rounded p-1 hover:bg-accent" :class="a.favorite ? 'text-state-warning' : 'text-text-quaternary'" @click="toggleFlag(a, 'favorite')">
  <Icon :icon="a.favorite ? 'ri:star-fill' : 'ri:star-line'" />
  </button>
- <button title="稍后阅读" class="rounded p-1 hover:bg-secondary hover:bg-accent" :class="a.later ? 'text-primary' : 'text-text-quaternary'" @click="toggleFlag(a, 'later')">
+ <button title="稍后阅读" class="rounded p-1 hover:bg-accent" :class="a.later ? 'text-primary' : 'text-text-quaternary'" @click="toggleFlag(a, 'later')">
  <Icon :icon="a.later ? 'ri:bookmark-fill' : 'ri:bookmark-line'" />
  </button>
- <button :title="a.read ? '标为未读' : '标为已读'" class="rounded p-1 text-text-quaternary hover:bg-secondary hover:bg-accent" @click="markRead(a, !a.read)">
+ <button :title="a.read ? '标为未读' : '标为已读'" class="rounded p-1 text-text-quaternary hover:bg-accent" @click="markRead(a, !a.read)">
  <Icon :icon="a.read ? 'ri:mail-line' : 'ri:mail-open-line'" />
  </button>
  </div>

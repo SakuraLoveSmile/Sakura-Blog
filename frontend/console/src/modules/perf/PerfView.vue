@@ -230,7 +230,7 @@ async function initTpChart() {
  :class="[
  'px-2.5 py-1 text-xs rounded-md transition-colors',
  hours === h
- ? 'bg-secondary text-white'
+ ? 'bg-secondary text-foreground'
  : 'text-text-tertiary hover:bg-accent',
  ]"
  >{{ h }}h</button>
@@ -249,7 +249,7 @@ async function initTpChart() {
  >
  <template #actions>
  <button
- class="px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:opacity-90"
+ class="px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg hover:opacity-90"
  @click="router.push('/modules')"
  >前往功能模块
  </button>

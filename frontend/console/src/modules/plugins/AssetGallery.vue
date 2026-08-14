@@ -149,7 +149,7 @@ onMounted(loadIcons);
               :key="item.key"
               type="button"
               :title="`点击复制 {% icon ${item.key} %}`"
-              class="asset-cell group flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card px-2 py-3 transition-all duration-200 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
+              class="asset-cell group flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card px-2 py-3 transition-all duration-150 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
               @click="copyIcon(item.key)"
             >
               <span class="asset-svg flex h-8 w-8 items-center justify-center text-foreground">
@@ -181,7 +181,7 @@ onMounted(loadIcons);
           :class="[
             'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
             activeEmojiSource === s.id
-              ? 'border-primary bg-primary text-white'
+              ? 'border-primary bg-primary text-foreground'
               : 'border-border bg-card text-text-tertiary hover:border-primary hover:text-foreground',
           ]"
           @click="activeEmojiSource = s.id"
@@ -204,7 +204,7 @@ onMounted(loadIcons);
           v-for="name in filteredEmojiNames"
           :key="name"
           type="button"
-          class="asset-cell group flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-1 py-2.5 transition-all duration-200 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
+          class="asset-cell group flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-1 py-2.5 transition-all duration-150 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
           @click="copyEmoji(name)"
         >
           <img :src="emojiUrl(name)" class="h-8 w-8 object-contain" loading="lazy" :alt="name" />

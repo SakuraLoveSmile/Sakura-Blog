@@ -311,7 +311,7 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  <Icon icon="ri:draft-line" />检测到本地未保存草稿，是否恢复？
  </span>
  <span class="flex shrink-0 gap-2">
- <button class="rounded-md bg-state-warning px-2.5 py-1 text-xs font-medium text-white hover:bg-state-warning" @click="restoreDraft">恢复</button>
+ <button class="rounded-md bg-state-warning px-2.5 py-1 text-xs font-medium text-foreground hover:bg-state-warning" @click="restoreDraft">恢复</button>
  <button class="rounded-md px-2.5 py-1 text-xs text-state-warning hover:bg-state-warning/15" @click="discardDraft">丢弃</button>
  </span>
  </div>

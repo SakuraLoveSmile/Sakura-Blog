@@ -306,7 +306,7 @@ function setJsonText(name: string, val: string) {
 
  <!-- 恢复默认 -->
  <div class="flex items-center gap-3">
- <button @click="resetDefaults" class="px-3 py-1.5 text-xs rounded-lg border border-border-strong text-text-tertiary hover:bg-secondary hover:bg-accent">
+ <button @click="resetDefaults" class="px-3 py-1.5 text-xs rounded-full border border-border-strong text-text-tertiary hover:bg-accent">
  恢复默认
  </button>
  <span class="text-xs text-text-quaternary">删除自定义序列，回退到缺省布局</span>

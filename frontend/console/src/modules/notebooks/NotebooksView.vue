@@ -431,7 +431,7 @@ onMounted(() => {
             v-for="nb in filteredNotebooks"
             :key="nb.id"
             :class="[
-              'group relative overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-300 ease-out hover:-translate-y-1 hover:border-border-strong hover:shadow-lg',
+              'group relative overflow-hidden rounded-[14px] border border-border bg-card transition-all duration-250 ease-standard hover:-translate-y-1 hover:border-border-strong hover:shadow-lg',
               viewMode === 'list' ? 'flex' : 'flex flex-col',
             ]"
           >
@@ -455,13 +455,13 @@ onMounted(() => {
               <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/15" />
 
               <div
-                class="absolute left-[18px] top-[18px] z-[2] flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/20 text-white backdrop-blur-md"
+                class="absolute left-[18px] top-[18px] z-[2] flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/20 text-foreground backdrop-blur-md"
               >
                 <Icon icon="ri:book-open-line" class="text-[22px]" />
               </div>
 
               <span
-                class="absolute bottom-3.5 right-4 z-[2] rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md"
+                class="absolute bottom-3.5 right-4 z-[2] rounded-full bg-background/30 px-2.5 py-1 text-[11px] font-medium text-foreground/90 backdrop-blur-md"
               >
                 {{ noteCounts[nb.id] || 0 }} 篇笔记
               </span>
@@ -470,7 +470,7 @@ onMounted(() => {
             <button
               type="button"
               title="更多操作"
-              class="absolute right-3.5 top-3.5 z-[3] flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-black/25 text-white/80 backdrop-blur-md transition-colors hover:bg-black/40 hover:text-white"
+              class="absolute right-3.5 top-3.5 z-[3] flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-background/25 text-foreground/80 backdrop-blur-md transition-colors hover:bg-background/40 hover:text-foreground"
               @click="toggleMenu(nb.id, $event)"
             >
               <Icon icon="ri:more-2-fill" class="text-base" />

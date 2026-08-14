@@ -15,9 +15,16 @@ import {
   Dialog,
   Toast,
 } from "@/components/ui";
+import { themeColors } from "@/lib/theme-colors";
 
 const router = useRouter();
 const queryClient = useQueryClient();
+const colors = themeColors({
+  primary: "#2E8DFF",
+  warning: "#FF9F0A",
+  success: "#30D158",
+  error: "#FF453A",
+});
 
 const page = ref(1);
 const size = ref(20);
@@ -98,41 +105,41 @@ const statCards = computed(() => [
   {
     label: "总评论数",
     value: statusCounts.value.all,
-    color: "#2E8DFF",
+    color: colors.primary,
     bg: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
     icon: "ri:chat-3-line",
     badgeText: "全部评论",
-    badgeColor: "#2E8DFF",
+    badgeColor: colors.primary,
     badgeBg: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
   },
   {
     label: "待审核",
     value: statusCounts.value.pending,
-    color: "#FF9F0A",
+    color: colors.warning,
     bg: "color-mix(in srgb, var(--color-state-warning) 10%, transparent)",
     icon: "ri:time-line",
     badgeText: "需要处理",
-    badgeColor: "#FF9F0A",
+    badgeColor: colors.warning,
     badgeBg: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
   },
   {
     label: "已批准",
     value: statusCounts.value.approved,
-    color: "#30D158",
+    color: colors.success,
     bg: "color-mix(in srgb, var(--color-state-success) 10%, transparent)",
     icon: "ri:checkbox-circle-line",
     badgeText: "正常显示",
-    badgeColor: "#30D158",
+    badgeColor: colors.success,
     badgeBg: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
   },
   {
     label: "垃圾评论",
     value: statusCounts.value.spam,
-    color: "#FF453A",
+    color: colors.error,
     bg: "color-mix(in srgb, var(--color-state-error) 10%, transparent)",
     icon: "ri:delete-bin-line",
     badgeText: "已拦截",
-    badgeColor: "#FF453A",
+    badgeColor: colors.error,
     badgeBg: "color-mix(in srgb, var(--color-state-error) 12%, transparent)",
   },
 ]);
@@ -320,14 +327,14 @@ function closeMenus() {
       style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
       <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[28px]">评论管理</h1>
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">评论管理</h1>
         <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有访客评论，审核、回复或删除不当内容</p>
       </div>
       <div class="flex items-center gap-1.5 sm:gap-2.5">
         <button
           type="button"
           title="刷新"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-white sm:h-9 sm:w-9 sm:rounded-[10px]"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:h-9 sm:w-9 sm:rounded-[10px]"
           @click="refetch()"
         >
           <Icon
@@ -363,7 +370,7 @@ function closeMenus() {
         <div
           v-for="stat in statCards"
           :key="stat.label"
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
         >
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">{{ stat.label }}</span>
@@ -379,7 +386,7 @@ function closeMenus() {
             </div>
           </div>
           <div
-            class="mt-3 text-[34px] font-bold leading-none tracking-tight text-white"
+            class="mt-3 text-[34px] font-bold leading-none tracking-tight text-foreground"
             style="font-variant-numeric: tabular-nums; letter-spacing: -1px;"
           >
             {{ stat.value }}
@@ -495,7 +502,7 @@ function closeMenus() {
                 />
                 <div
                   v-else
-                  :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white sm:h-[42px] sm:w-[42px] sm:text-[15px]', avatarGradient(cm.nick || cm.email)]"
+                  :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-foreground sm:h-[42px] sm:w-[42px] sm:text-[15px]', avatarGradient(cm.nick || cm.email)]"
                 >
                   {{ avatarInitial(cm) }}
                 </div>
@@ -503,7 +510,7 @@ function closeMenus() {
                 <!-- 主体 -->
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
-                    <span class="text-sm font-semibold text-white sm:text-[14px]">{{ cm.nick }}</span>
+                    <span class="text-sm font-semibold text-foreground sm:text-[14px]">{{ cm.nick }}</span>
                     <span
                       v-if="cm.is_admin"
                       class="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary sm:px-2"
@@ -581,7 +588,7 @@ function closeMenus() {
         </Transition>
 
         <template #footer>
-          <div class="border-t border-border bg-black/15 px-3 py-3 sm:px-5 sm:py-4">
+          <div class="border-t border-border bg-background/15 px-3 py-3 sm:px-5 sm:py-4">
             <div class="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span class="text-xs text-text-tertiary sm:text-[13px]">
                 共 <strong class="font-semibold text-foreground">{{ total }}</strong> 条评论
@@ -645,15 +652,15 @@ function closeMenus() {
   background: currentColor;
 }
 .comment-status-badge.approved {
-  color: #30d158;
+  color: var(--color-state-success);
   background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
 }
 .comment-status-badge.pending {
-  color: #ff9f0a;
+  color: var(--color-state-warning);
   background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
 }
 .comment-status-badge.rejected {
-  color: #ff453a;
+  color: var(--color-state-error);
   background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
 }
 .comment-status-badge.spam {
@@ -684,7 +691,7 @@ function closeMenus() {
   height: 13px;
 }
 .action-btn.approve {
-  color: #30d158;
+  color: var(--color-state-success);
   background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
   border-color: color-mix(in srgb, var(--color-state-success) 15%, transparent);
 }
@@ -702,7 +709,7 @@ function closeMenus() {
   border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 .action-btn.reject {
-  color: #ff9f0a;
+  color: var(--color-state-warning);
   background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
   border-color: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
 }
@@ -720,7 +727,7 @@ function closeMenus() {
   border-color: color-mix(in srgb, var(--color-muted-foreground) 30%, transparent);
 }
 .action-btn.delete {
-  color: #ff453a;
+  color: var(--color-state-error);
   background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
   border-color: color-mix(in srgb, var(--color-state-error) 15%, transparent);
 }

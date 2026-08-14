@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { Icon } from "@iconify/vue";
 import { useDashboardStats } from "./useDashboardStats";
+import { themeColor } from "@/lib/theme-colors";
 
 interface Props {
   label: string;
@@ -11,7 +12,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  color: "#2E8DFF",
+  color: themeColor("primary", "#2E8DFF"),
 });
 
 // Spec 62：共享 useDashboardStats（模块级 promise 去重），

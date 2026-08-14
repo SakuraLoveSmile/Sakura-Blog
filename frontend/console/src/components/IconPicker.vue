@@ -183,7 +183,7 @@ const groups = computed(() => {
     <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4"
       @click.self="open = false"
     >
       <div class="ip-modal w-full max-w-2xl max-h-[80vh] flex flex-col bg-card rounded-xl shadow-xl">

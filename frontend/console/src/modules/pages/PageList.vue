@@ -1187,7 +1187,7 @@ function getStatusClass(p: PageItem) {
 .page-icon-box.green { color: var(--color-state-success); background: color-mix(in srgb, var(--color-state-success) 12%, transparent); }
 .page-icon-box.orange { color: var(--color-state-warning); background: color-mix(in srgb, var(--color-state-warning) 12%, transparent); }
 .page-icon-box.red { color: var(--color-state-error); background: color-mix(in srgb, var(--color-state-error) 12%, transparent); }
-.page-icon-box.purple { color: #BF5AF2; background: color-mix(in srgb, var(--color-chart-5) 12%, transparent); }
+.page-icon-box.purple { color: var(--color-chart-5); background: color-mix(in srgb, var(--color-chart-5) 12%, transparent); }
 
 .page-info {
   flex: 1;

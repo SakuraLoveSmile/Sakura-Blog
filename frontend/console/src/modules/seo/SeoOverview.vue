@@ -78,8 +78,8 @@ const dash = (v: any) => (v ==="" || v == null ?"—" : v);
  <span
  class="rounded-full px-2 py-0.5 text-xs"
  :class="h.status === 'ok'
- ? 'bg-state-success/10 text-state-success bg-state-success/100/15 text-state-success'
- : 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'"
+ ? 'bg-state-success/15 text-state-success'
+ : 'bg-state-warning/15 text-state-warning'"
  >{{ h.status ==="ok" ?"正常" :"待优化" }}</span>
  </li>
  </ul>

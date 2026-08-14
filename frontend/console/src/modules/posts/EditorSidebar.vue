@@ -152,7 +152,7 @@ async function refreshPluginPreview() {
  const { data } = await previewApi.render(pluginCode.value);
  pluginPreviewHtml.value = data.html;
  } catch {
- pluginPreviewHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
+ pluginPreviewHtml.value = '<p style="color:var(--color-state-error, #FF453A)">预览渲染失败</p>';
  } finally {
  pluginRendering.value = false;
  }
@@ -171,7 +171,7 @@ const pluginSrcdoc = computed(() => {
 <link rel="stylesheet" href="/assets/css/main.css">
 <link rel="stylesheet" href="/assets/css/tag-plugins.css">
 <link rel="stylesheet" href="/assets/css/highlight.css">
-<style>html,body{margin:0;padding:0;}body{padding:16px;background:#1c1c1e;}.md-text{max-width:100%;}</style>
+<style>html,body{margin:0;padding:0;}/* isolated iframe fallback keeps the console card token */body{padding:16px;background:var(--color-card, #1c1c1e);}.md-text{max-width:100%;}</style>
 </head>
 <body><article class="md-text content">${pluginPreviewHtml.value}</article><scr` +
 "ipt>\n" +
@@ -414,8 +414,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
         <div :class="cardBodyCls + ' space-y-3'">
           <!-- 封面预览 16:9 深色渐变 -->
           <div
-            class="relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
-            style="background: linear-gradient(135deg, #00275a 0%, #004FAD 50%, #007AFF 100%);"
+            class="notebook-cover-blue relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
           >
             <div
               class="pointer-events-none absolute inset-0"

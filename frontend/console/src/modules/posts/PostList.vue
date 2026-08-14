@@ -31,6 +31,19 @@ const queryClient = useQueryClient();
 // Spec 62：分页/防抖/查询样板收敛到 usePagedList（示范迁移）
 // usePagedList 泛型项类型（后端 postJSON 无共享 TS 类型，弱类型透传）
 type PostItem = Record<string, any>;
+
+// 筛选条件必须先于 usePagedList 初始化：queryKey/queryParams 会在 composable setup
+// 期间立即求值，extraParams 需要读取这些 refs，避免触发 TDZ（黑屏）。
+const validStatuses = ["published", "draft", "trashed"];
+function statusFromQuery(): string | undefined {
+ const s = route.query.status;
+ return typeof s ==="string" && validStatuses.includes(s) ? s : undefined;
+}
+const selectedStatus = ref<string | undefined>(statusFromQuery());
+const selectedSort = ref<string | undefined>(undefined);
+const selectedCategory = ref<string | undefined>(undefined);
+const selectedTag = ref<string | undefined>(undefined);
+
 const { page, size, keyword, items: rawItems, total, isLoading, isFetching, refetch } = usePagedList<PostItem>({
  apiFn: (params: Record<string, unknown>) => postApi.list(params),
  keyFn: (params: Record<string, unknown>) => queryKeys.posts(params),
@@ -46,12 +59,6 @@ const { page, size, keyword, items: rawItems, total, isLoading, isFetching, refe
 
 // 筛选条件
 // 状态筛选支持 ?status= 查询参数预置（Spec 39：⌘K 搜索回收站项跳转带筛选）
-const validStatuses = ["published","draft","trashed"];
-function statusFromQuery(): string | undefined {
- const s = route.query.status;
- return typeof s ==="string" && validStatuses.includes(s) ? s : undefined;
-}
-const selectedStatus = ref<string | undefined>(statusFromQuery());
 watch(
  () => route.query.status,
  () => {
@@ -62,9 +69,6 @@ watch(
  }
  }
 );
-const selectedSort = ref<string | undefined>(undefined);
-const selectedCategory = ref<string | undefined>(undefined);
-const selectedTag = ref<string | undefined>(undefined);
 
 const statusItems = [
  { label:"全部", value: undefined },

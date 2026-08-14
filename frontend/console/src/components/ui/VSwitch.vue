@@ -24,7 +24,7 @@ function toggle() {
 <template>
   <button
     :class="[
-      'relative inline-flex h-[31px] w-[51px] flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+      'relative inline-flex h-[31px] w-[51px] flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-standard focus:outline-none',
       modelValue ? 'bg-state-success' : 'bg-accent',
       disabled ? 'cursor-not-allowed opacity-50' : '',
     ]"
@@ -35,7 +35,7 @@ function toggle() {
   >
     <span
       :class="[
-        'pointer-events-none inline-block h-[27px] w-[27px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+        'pointer-events-none inline-block h-[27px] w-[27px] transform rounded-full bg-white shadow ring-0 transition duration-150 ease-standard',
         modelValue ? 'translate-x-5' : 'translate-x-0',
       ]"
     ></span>

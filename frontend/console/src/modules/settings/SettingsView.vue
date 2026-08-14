@@ -472,10 +472,10 @@ function buildFragmentDoc(fullHtml: string, focus: PreviewFocus): string {
   // 控制台变量（--color-background）在前台不存在，注入会把深色底盖成白
   const fx = `<style>
 body{padding:20px !important}
-.pv-flash{animation:pvFlash 1.1s ease-out 1;border-radius:10px}
-@keyframes pvFlash{0%{background-color:rgba(0,122,255,.14)}100%{background-color:transparent}}
-.pv-changed{animation:pvPulse 1.8s ease-out 1;border-radius:6px;outline:2px solid #007AFF;outline-offset:3px}
-@keyframes pvPulse{0%{box-shadow:0 0 0 0 rgba(0,122,255,.55)}100%{box-shadow:0 0 0 16px rgba(0,122,255,0)}}
+.pv-flash{animation:pvFlash 1.1s cubic-bezier(0.32,0.72,0,1) 1;border-radius:10px}
+@keyframes pvFlash{0%{background-color:color-mix(in srgb,var(--color-primary, #007AFF) 14%,transparent)}100%{background-color:transparent}}
+ .pv-changed{animation:pvPulse 1.8s cubic-bezier(0.32,0.72,0,1) 1;border-radius:6px;outline:2px solid var(--color-primary, #007AFF);outline-offset:3px}
+@keyframes pvPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-primary, #007AFF) 55%,transparent)}100%{box-shadow:0 0 0 16px color-mix(in srgb,var(--color-primary, #007AFF) 0%,transparent)}}
 </style>`;
   return `<!doctype html><html lang="zh-CN" data-theme="${themeAttr || "dark"}"${themeAutoAttr}><head>${headHtml}${fx}</head><body class="${bodyClass}">${bodyInner}</body></html>`;
 }

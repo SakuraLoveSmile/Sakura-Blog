@@ -577,7 +577,7 @@ function handleDiscardDraft() {
       <div
         v-if="sidebarOpen"
         class="sidebar-mobile fixed inset-x-0 bottom-0 z-[80] sm:hidden"
-        style="max-height: 85vh; background: var(--color-card); border-top: 1px solid var(--color-border); border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -8px 30px rgba(0,0,0,0.4);"
+        style="max-height: 85vh; background: var(--color-card); border-top: 1px solid var(--color-border); border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); box-shadow: var(--shadow-xl);"
       >
         <div class="flex justify-center pt-2 pb-1">
           <div class="h-1 w-10 rounded-full bg-border"></div>
@@ -601,7 +601,7 @@ function handleDiscardDraft() {
     <Transition name="fade">
       <div
         v-if="sidebarOpen"
-        class="fixed inset-0 z-[70] bg-black/40 sm:hidden"
+        class="fixed inset-0 z-[70] bg-background/40 sm:hidden"
         @click="toggleSidebar"
       ></div>
     </Transition>

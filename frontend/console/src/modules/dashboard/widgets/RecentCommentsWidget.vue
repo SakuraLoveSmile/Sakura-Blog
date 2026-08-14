@@ -31,11 +31,10 @@ function getInitials(name: string): string {
   return name ? name.slice(0, 1).toUpperCase() : "?";
 }
 
-function avatarColor(name: string): string {
-  const colors = ["#2E8DFF", "#BF5AF2", "#30D158", "#FF9F0A", "#FF453A", "#66ABFF"];
+function avatarClass(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
+  return `avatar-gradient-${(Math.abs(hash) % 8) + 1}`;
 }
 
 /** 跳转到前台文章中该评论所在位置（新标签打开，带锚点） */
@@ -81,7 +80,7 @@ onMounted(() => {
         <div v-if="item.avatar" class="apple-avatar">
           <img :src="item.avatar" :alt="item.nick" class="w-full h-full rounded-full object-cover" loading="lazy" />
         </div>
-        <div v-else class="apple-avatar-fallback" :style="{ backgroundColor: avatarColor(item.nick) }">
+        <div v-else :class="['apple-avatar-fallback', avatarClass(item.nick)]">
           {{ getInitials(item.nick) }}
         </div>
         <div class="flex-1 min-w-0">

@@ -3,9 +3,16 @@ import { Icon } from "@iconify/vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useBreakpoint } from "../useBreakpoint";
+import { themeColors } from "@/lib/theme-colors";
 
 const { breakpoint } = useBreakpoint();
 const router = useRouter();
+const colors = themeColors({
+  primary: "#2E8DFF",
+  success: "#30D158",
+  warning: "#FF9F0A",
+  chart5: "#BF5AF2",
+});
 
 interface QuickAction {
   label: string;
@@ -20,28 +27,28 @@ const actions: QuickAction[] = [
   {
     label: "写文章",
     icon: "ri:quill-pen-line",
-    color: "#2E8DFF",
+    color: colors.primary,
     bgColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
     path: "/posts/editor",
   },
   {
     label: "评论",
     icon: "ri:chat-3-line",
-    color: "#30D158",
+    color: colors.success,
     bgColor: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
     path: "/comments",
   },
   {
     label: "分类",
     icon: "ri:folder-3-line",
-    color: "#FF9F0A",
+    color: colors.warning,
     bgColor: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
     path: "/categories",
   },
   {
     label: "设置",
     icon: "ri:settings-3-line",
-    color: "#BF5AF2",
+    color: colors.chart5,
     bgColor: "color-mix(in srgb, var(--color-chart-5) 12%, transparent)",
     path: "/settings",
   },

@@ -375,7 +375,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
             @click="select('builtin', m.name)"
             :class="[
               'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              isSelected('builtin', m.name) ? 'bg-primary/10' : 'hover:bg-secondary hover:bg-accent',
+              isSelected('builtin', m.name) ? 'bg-primary/10' : 'hover:bg-accent',
             ]"
           >
             <span
@@ -395,7 +395,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
             @click="select('scheme', n)"
             :class="[
               'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              isSelected('scheme', n) ? 'bg-primary/10' : 'hover:bg-secondary hover:bg-accent',
+              isSelected('scheme', n) ? 'bg-primary/10' : 'hover:bg-accent',
             ]"
           >
             <Icon icon="ri:bookmark-line" class="text-primary text-sm shrink-0" />
@@ -565,14 +565,14 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                   v-if="nameInputVisible"
                   @click="confirmNameInput"
                   :disabled="saving || !nameInputValue.trim()"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   保存为方案
                 </button>
                 <button
                   v-else
                   @click="openNameInput"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90"
                 >
                   <Icon icon="ri:bookmark-3-line" />
                   保存为方案
@@ -592,13 +592,13 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                 <button
                   @click="saveScheme"
                   :disabled="saving"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   保存
                 </button>
                 <button
                   @click="openNameInput"
-                  class="inline-flex items-center gap-1 rounded-full border border-border px-4 py-1.5 text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
+                  class="inline-flex items-center gap-1 rounded-full border border-border px-4 py-1.5 text-sm text-text-secondary transition-colors hover:bg-accent"
                 >
                   另存为
                 </button>
@@ -624,7 +624,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                 <button
                   @click="confirmNameInput"
                   :disabled="saving || !nameInputValue.trim()"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   保存为新方案
                 </button>

@@ -208,9 +208,9 @@ function onChartLeave() {
           <stop offset="100%" stop-color="var(--color-chart-2)" stop-opacity="0" />
         </linearGradient>
         <linearGradient id="trendLine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#66ABFF" />
+          <stop offset="0%" stop-color="var(--color-primary-hover)" />
           <stop offset="50%" stop-color="var(--color-chart-2)" />
-          <stop offset="100%" stop-color="#007AFF" />
+          <stop offset="100%" stop-color="var(--color-primary-active)" />
         </linearGradient>
       </defs>
       <!-- grid lines -->

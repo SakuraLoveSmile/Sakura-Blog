@@ -73,7 +73,7 @@ const previewSrcdoc = `<!DOCTYPE html>
  html,body{margin:0;padding:0;}
  /* 关闭 Stellar main.css 的平滑滚动，使分屏同步滚动即时跟随而非动画滞后 */
  html{scroll-behavior:auto !important;}
- body{padding:16px 20px;background:#1c1c1e;}
+ /* isolated iframe fallback keeps the console card token */ body{padding:16px 20px;background:var(--color-card, #1c1c1e);}
  .md-text{max-width:100%;}
 </style>
 </head>
@@ -137,7 +137,7 @@ async function refreshPreview() {
  applyPreview(data.html);
  } catch {
  if (seq !== previewSeq) return;
- applyPreview('<p style="color:#ef4444">预览渲染失败</p>');
+ applyPreview('<p style="color:var(--color-state-error, #FF453A)">预览渲染失败</p>');
  } finally {
  if (seq === previewSeq) rendering.value = false;
  }
@@ -429,7 +429,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
  <Icon icon="ri:draft-line" />检测到本地未保存草稿，是否恢复？
  </span>
  <span class="flex gap-2 shrink-0">
- <button @click="restoreDraft" class="px-2.5 py-1 text-xs font-medium rounded-md bg-state-warning text-white hover:bg-state-warning">恢复</button>
+ <button @click="restoreDraft" class="px-2.5 py-1 text-xs font-medium rounded-md bg-state-warning text-foreground hover:bg-state-warning">恢复</button>
  <button @click="discardDraft" class="px-2.5 py-1 text-xs rounded-md text-state-warning hover:bg-state-warning/15">丢弃</button>
  </span>
  </div>

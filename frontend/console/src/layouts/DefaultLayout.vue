@@ -269,7 +269,7 @@ function closeProfileDropdown() {
     <!-- Sidebar（对齐 Halo BasicLayout navbar：w-64 bg-card；支持收起为仅图标的 w-16） -->
     <aside
       :class="sidebarCollapsed ? 'w-16' : 'w-64'"
-      class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-200 md:flex"
+      class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-150 md:flex"
       style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px);"
     >
       <!-- Logo -->
@@ -369,7 +369,7 @@ function closeProfileDropdown() {
               <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
               <span
                 v-if="unreadCount > 0"
-                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-white"
+                class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
               >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
             </div>
           </div>
@@ -387,7 +387,7 @@ function closeProfileDropdown() {
           <!-- 收起时：未读徽标叠在头像右上角，保持通知入口可见 -->
           <div
             v-if="sidebarCollapsed && unreadCount > 0"
-            class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-white"
+            class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
           >{{ unreadCount > 99 ? '99+' : unreadCount }}</div>
           <div v-if="!sidebarCollapsed" class="profile-name">
             <div class="flex text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
@@ -455,7 +455,7 @@ function closeProfileDropdown() {
         class="nav-item"
         @click="router.push(menu.path)"
       >
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-white">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
           <div class="flex h-10 w-10 flex-col items-center justify-center">
             <div class="text-base"><Icon :icon="menu.icon" /></div>
             <div class="mt-0.5 text-xs">{{ menu.label }}</div>
@@ -463,7 +463,7 @@ function closeProfileDropdown() {
         </div>
       </div>
       <div class="nav-item" @click="moreMenuVisible = true">
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-white">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
           <div class="flex h-10 w-10 flex-col items-center justify-center">
             <div class="text-base"><Icon icon="ri:more-fill" /></div>
             <div class="mt-0.5 text-xs">更多</div>
@@ -476,7 +476,7 @@ function closeProfileDropdown() {
     <Teleport to="body">
       <div v-if="moreMenuVisible" class="fixed inset-0 z-[99999] flex flex-row items-end justify-center">
         <Transition name="fade" appear>
-          <div class="absolute inset-0 bg-black/60 transition-opacity" @click="moreMenuVisible = false"></div>
+          <div class="absolute inset-0 bg-background/60 transition-opacity" @click="moreMenuVisible = false"></div>
         </Transition>
         <Transition name="slide-up" appear>
           <div class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl">
@@ -526,7 +526,7 @@ function closeProfileDropdown() {
     <!-- 全局搜索弹窗（⌘K） -->
     <Transition name="fade">
       <div v-if="searchOpen" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[20vh]" @click.self="searchOpen = false">
-        <div class="absolute inset-0 bg-black/60" @click="searchOpen = false" />
+        <div class="absolute inset-0 bg-background/60" @click="searchOpen = false" />
         <div
           class="relative mx-4 w-full max-w-md overflow-hidden rounded-base border border-border bg-card shadow-2xl"
         >

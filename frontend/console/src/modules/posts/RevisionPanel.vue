@@ -277,7 +277,7 @@ const compareOptions = computed(() =>
 <template>
  <div
  v-if="open"
- class="fixed inset-0 z-50 flex justify-end bg-black/40"
+ class="fixed inset-0 z-50 flex justify-end bg-background/40"
  @click.self="emit('close')"
  >
  <div

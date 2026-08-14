@@ -162,7 +162,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'px-2 py-0.5 text-xs rounded-full transition-colors',
                 activeCategory === '全部'
-                  ? 'bg-secondary text-white'
+                  ? 'bg-secondary text-foreground'
                   : 'bg-secondary text-text-tertiary hover:bg-accent ',
               ]"
             >全部 {{ categoryCount['全部'] }}</button>
@@ -173,7 +173,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'px-2 py-0.5 text-xs rounded-full transition-colors',
                 activeCategory === c
-                  ? 'bg-secondary text-white'
+                  ? 'bg-secondary text-foreground'
                   : 'bg-secondary text-text-tertiary hover:bg-accent ',
               ]"
             >{{ c }} {{ categoryCount[c] }}</button>
@@ -189,15 +189,15 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
               selected.name === p.name
                 ? 'bg-primary/10'
-                : 'hover:bg-secondary hover:bg-accent',
+                : 'hover:bg-accent',
             ]"
           >
             <span
               :class="[
                 'text-[10px] px-1 py-px rounded font-mono shrink-0',
                 p.type === 'block'
-                  ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
-                  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
+                  ? 'bg-state-warning/15 text-state-warning'
+                  : 'bg-primary/15 text-primary',
               ]"
             >{{ p.type === "block" ? "块" : "行" }}</span>
             <span
@@ -228,8 +228,8 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               :class="[
                 'text-[11px] px-1.5 py-0.5 rounded-full',
                 selected.type === 'block'
-                  ? 'bg-state-warning/10 text-state-warning bg-state-warning/15 text-state-warning'
-                  : 'bg-sky-100 text-sky-700 bg-sky-500/15 text-sky-400',
+                  ? 'bg-state-warning/15 text-state-warning'
+                  : 'bg-primary/15 text-primary',
               ]"
             >{{ selected.type === "block" ? "块级" : "行内" }}</span>
           </div>
@@ -242,7 +242,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <span class="text-xs font-medium text-text-tertiary">语法</span>
             <button
               @click="copyText('syntax', selected.signature)"
-              class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
+              class="flex items-center gap-1 text-xs text-primary"
             >
               <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
               {{ copied === "syntax" ? "已复制" : "复制语法" }}
@@ -290,7 +290,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <span class="text-xs font-medium text-text-tertiary">示例（可编辑，实时预览）</span>
             <button
               @click="copyText('example', example)"
-              class="flex items-center gap-1 text-xs text-secondary hover:text-primary text-primary"
+              class="flex items-center gap-1 text-xs text-primary"
             >
               <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
               {{ copied === "example" ? "已复制" : "复制示例" }}
@@ -313,7 +313,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             <div class="flex items-center gap-1.5">
               <span
                 v-if="fixtureLabel"
-                class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 inline-flex items-center gap-1"
+                class="text-[10px] px-1.5 py-0.5 rounded-full bg-state-success/15 text-state-success inline-flex items-center gap-1"
                 :title="fixtureLabel"
               >
                 <Icon icon="ri:database-2-line" />数据为预览 Fixture

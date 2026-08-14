@@ -6,6 +6,16 @@ import RecentCommentsWidget from "./RecentCommentsWidget.vue";
 import RecentPostsWidget from "./RecentPostsWidget.vue";
 import CategoryDonutWidget from "./CategoryDonutWidget.vue";
 import QuickActionsWidget from "./QuickActionsWidget.vue";
+import { themeColors } from "@/lib/theme-colors";
+
+const chartColors = themeColors({
+  primary: "#2E8DFF",
+  success: "#30D158",
+  chart5: "#BF5AF2",
+  warning: "#FF9F0A",
+  primaryHover: "#66ABFF",
+  error: "#FF453A",
+});
 
 export type WidgetSize = "small" | "medium" | "large";
 
@@ -59,7 +69,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "post_total", label: "文章", icon: "ri:book-read-line", color: "#2E8DFF" },
+    props: { statKey: "post_total", label: "文章", icon: "ri:book-read-line", color: chartColors.primary },
   },
   {
     type: "stat-published",
@@ -68,7 +78,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "post_published", label: "已发布", icon: "ri:checkbox-circle-line", color: "#30D158" },
+    props: { statKey: "post_published", label: "已发布", icon: "ri:checkbox-circle-line", color: chartColors.success },
   },
   {
     type: "stat-views",
@@ -77,7 +87,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "view_total", label: "浏览量", icon: "ri:eye-line", color: "#BF5AF2" },
+    props: { statKey: "view_total", label: "浏览量", icon: "ri:eye-line", color: chartColors.chart5 },
   },
   {
     type: "stat-comments",
@@ -86,7 +96,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "comment_total", label: "评论", icon: "ri:chat-3-line", color: "#FF9F0A" },
+    props: { statKey: "comment_total", label: "评论", icon: "ri:chat-3-line", color: chartColors.warning },
   },
   {
     type: "stat-attachments",
@@ -95,7 +105,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "attachment_total", label: "附件", icon: "ri:attachment-2", color: "#66ABFF" },
+    props: { statKey: "attachment_total", label: "附件", icon: "ri:attachment-2", color: chartColors.primaryHover },
   },
   {
     type: "stat-users",
@@ -104,7 +114,7 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: SIZE_PRESETS.small,
     defaultSection: "stats",
     component: StatCardWidget,
-    props: { statKey: "user_total", label: "用户", icon: "ri:user-3-line", color: "#FF453A" },
+    props: { statKey: "user_total", label: "用户", icon: "ri:user-3-line", color: chartColors.error },
   },
   {
     type: "trend-chart",

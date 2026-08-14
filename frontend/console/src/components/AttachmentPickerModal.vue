@@ -83,7 +83,7 @@ watch(page, load);
 <template>
  <div
  v-if="open"
- class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+ class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4"
  @click.self="emit('close')"
  >
  <div class="w-full max-w-2xl max-h-[80vh] flex flex-col bg-card rounded-xl shadow-xl">
@@ -120,7 +120,7 @@ watch(page, load);
  >
  <img :src="item.url" :alt="item.filename" loading="lazy" class="w-full h-full object-cover" />
  <span
- class="absolute inset-x-0 bottom-0 px-1.5 py-0.5 text-[10px] text-white bg-black/50 truncate opacity-0 group-hover:opacity-100 transition-opacity"
+ class="absolute inset-x-0 bottom-0 px-1.5 py-0.5 text-[10px] text-foreground bg-background/50 truncate opacity-0 group-hover:opacity-100 transition-opacity"
  >{{ item.filename }}</span>
  </button>
  </div>

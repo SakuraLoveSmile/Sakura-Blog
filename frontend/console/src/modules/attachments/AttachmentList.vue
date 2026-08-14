@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { attachmentApi, attachmentGroupApi } from "@/api";
 import { formatRelative, formatBytes } from "@/lib/format";
+import { themeColors } from "@/lib/theme-colors";
 import { Icon } from "@iconify/vue";
 import {
   VCard,
@@ -18,6 +19,13 @@ import {
 } from "@/components/ui";
 
 const queryClient = useQueryClient();
+const colors = themeColors({
+  primary: "#2E8DFF",
+  chart5: "#BF5AF2",
+  warning: "#FF9F0A",
+  success: "#30D158",
+  tertiary: "#8E8E93",
+});
 
 // 搜索关键词（debounce 300ms）
 const keyword = ref("");
@@ -330,27 +338,19 @@ function extOf(att: any): string {
 }
 
 
-// 渐变背景（按 id hash 取色，6 色循环）
-function previewGradient(id: number): string {
-  const palette = [
-    "linear-gradient(135deg, #66ABFF 0%, #007AFF 100%)",
-    "linear-gradient(135deg, #2E8DFF 0%, #004FAD 100%)",
-    "linear-gradient(135deg, #9FCBFF 0%, #2E8DFF 100%)",
-    "linear-gradient(135deg, #007AFF 0%, #0064D6 100%)",
-    "linear-gradient(135deg, #66ABFF 0%, #2E8DFF 100%)",
-    "linear-gradient(135deg, #2E8DFF 0%, #0064D6 100%)",
-  ];
-  return palette[Math.abs(Number(id) || 0) % palette.length];
+// 预览背景复用全局头像渐变，确保附件、评论和通知的色板一致。
+function previewGradientClass(id: number): string {
+  return `avatar-gradient-${(Math.abs(Number(id) || 0) % 8) + 1}`;
 }
 
 // --- 存储空间统计（基于当前页附件 computed 派生） ---
 type StorageCat = "image" | "document" | "video" | "audio" | "other";
 const STORAGE_META: Record<StorageCat, { label: string; color: string }> = {
-  image: { label: "图片", color: "#2E8DFF" },
-  document: { label: "文档", color: "#30D158" },
-  video: { label: "视频", color: "#BF5AF2" },
-  audio: { label: "音频", color: "#FF9F0A" },
-  other: { label: "其他", color: "#8E8E93" },
+  image: { label: "图片", color: colors.primary },
+  document: { label: "文档", color: colors.success },
+  video: { label: "视频", color: colors.chart5 },
+  audio: { label: "音频", color: colors.warning },
+  other: { label: "其他", color: colors.tertiary },
 };
 
 const storageStats = computed(() => {
@@ -431,16 +431,16 @@ function typeLabel(mime: string): string {
 }
 
 function typePillStyle(mime: string) {
-  let color = "#8E8E93";
-  if (mime?.startsWith("image/")) color = "#2E8DFF";
-  else if (mime?.startsWith("video/")) color = "#BF5AF2";
-  else if (mime?.startsWith("audio/")) color = "#FF9F0A";
+  let color = colors.tertiary;
+  if (mime?.startsWith("image/")) color = colors.primary;
+  else if (mime?.startsWith("video/")) color = colors.chart5;
+  else if (mime?.startsWith("audio/")) color = colors.warning;
   else if (
     mime?.startsWith("text/") ||
     mime?.includes("pdf") ||
     mime?.includes("document")
   ) {
-    color = "#30D158";
+    color = colors.success;
   }
   return {
     backgroundColor: `${color}1A`,
@@ -454,7 +454,7 @@ function typePillStyle(mime: string) {
     <!-- ===== Page Header ===== -->
     <header class="attachments-page-header !px-4 !py-4 sm:!px-5 sm:!py-5">
       <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[26px]">附件管理</h1>
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[26px]">附件管理</h1>
         <p class="text-[12px] text-text-tertiary sm:text-[13px]">
           共 {{ total }} 个文件 · 已使用 {{ formatBytes(storageStats.total) }}
         </p>
@@ -728,8 +728,7 @@ function typePillStyle(mime: string) {
                   />
                   <div
                     v-else
-                    class="attachment-preview-fallback"
-                    :style="{ background: previewGradient(att.id) }"
+                    :class="['attachment-preview-fallback', previewGradientClass(att.id)]"
                   >
                     <template v-if="isVideo(att.mime)">
                       <div class="play-button">
@@ -743,7 +742,7 @@ function typePillStyle(mime: string) {
                           : att.mime?.startsWith('audio/')
                             ? 'ri:music-2-line'
                             : 'ri:file-3-line'"
-                        class="text-[40px] text-white/85"
+                        class="text-[40px] text-foreground/85"
                       />
                       <span class="preview-ext">{{ extOf(att) }}</span>
                     </template>

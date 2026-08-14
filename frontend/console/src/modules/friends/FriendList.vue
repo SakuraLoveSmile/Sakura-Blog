@@ -215,7 +215,7 @@ function closeMenus() {
  <template #actions>
  <router-link
  to="/subscriptions"
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
  >
  <Icon icon="ri:rss-line" />链接订阅
  </router-link>
@@ -239,17 +239,17 @@ function closeMenus() {
  <template v-else>
  <!-- 工具条（对齐 Halo 链接页） -->
  <div class="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5">
- <button class="rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent" @click="openCreate">新建分组</button>
- <button class="rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent" @click="openCreate">新建链接</button>
+ <button class="rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent" @click="openCreate">新建分组</button>
+ <button class="rounded-full border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent" @click="openCreate">新建链接</button>
  <button
  :disabled="checking"
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary disabled:opacity-50 hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary disabled:opacity-50 hover:bg-accent"
  @click="runCheck"
  >
  <Icon :icon="checking ? 'ri:loader-4-line' : 'ri:pulse-line'" :class="checking && 'animate-spin'" />检测全部
  </button>
  <button
- class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-secondary hover:bg-accent"
+ class="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-text-tertiary hover:bg-accent"
  @click="openImport"
  >
  <Icon icon="ri:import-line" />导入友链
@@ -281,13 +281,13 @@ function closeMenus() {
  <div class="min-w-0 flex-1">
  <div class="flex items-center gap-1.5">
  <span class="truncate text-sm font-medium text-foreground">{{ l.name }}</span>
- <span v-if="l.label" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none text-white" :style="{ backgroundColor: l.color ? '#' + l.color : '#9ca3af' }">{{ l.label }}</span>
+ <span v-if="l.label" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none text-foreground" :style="{ backgroundColor: l.color ? '#' + l.color : 'var(--color-text-tertiary)' }">{{ l.label }}</span>
  </div>
  <div class="truncate text-xs text-text-quaternary">{{ l.url }}</div>
  </div>
  <!-- 悬停操作 -->
  <div class="relative shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
- <div class="cursor-pointer rounded p-1 hover:bg-secondary hover:bg-accent" @click.stop="menuOpenId = menuOpenId === l.id ? null : l.id">
+ <div class="cursor-pointer rounded p-1 hover:bg-accent" @click.stop="menuOpenId = menuOpenId === l.id ? null : l.id">
  <Icon icon="ri:more-fill" class="text-text-quaternary" />
  </div>
  <Transition name="fade">

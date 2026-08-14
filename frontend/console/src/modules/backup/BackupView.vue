@@ -368,8 +368,6 @@ onMounted(loadStatus);
   }
 
   /* 恢复提示框 */
-  .bg-yellow-500\/10,
-  .border-yellow-500\/20,
   .bg-state-warning\/10,
   .border-state-warning\/20 {
     padding: 10px 12px !important;

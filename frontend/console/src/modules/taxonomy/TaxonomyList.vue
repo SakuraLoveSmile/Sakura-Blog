@@ -35,14 +35,8 @@ const mergeTarget = ref("");
 const activeTab = ref<"categories" | "tags">("categories");
 const searchQuery = ref("");
 
-// 分类图标盒 5 色系统渐变（按索引取色）
-const categoryIconGradients = [
-  "linear-gradient(135deg, #66ABFF, #2E8DFF)",
-  "linear-gradient(135deg, #2E8DFF, #007AFF)",
-  "linear-gradient(135deg, #9FCBFF, #66ABFF)",
-  "linear-gradient(135deg, #007AFF, #0064D6)",
-  "linear-gradient(135deg, #2E8DFF, #004FAD)",
-];
+// 分类图标盒复用全局头像渐变，保持色板与其他列表组件一致。
+const categoryIconGradients = [1, 2, 3, 4, 5].map((n) => `avatar-gradient-${n}`);
 const categoryIconShadow = [
   "0 4px 12px color-mix(in srgb, var(--color-primary) 35%, transparent)",
   "0 4px 12px color-mix(in srgb, var(--color-state-success) 35%, transparent)",
@@ -60,13 +54,13 @@ const categoryIconKeys = [
 
 // 标签云 7 色循环（低透明度背景 + 同色边框）
 const tagPalette = [
-  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "#66ABFF", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "var(--color-primary-hover)", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
   { bg: "color-mix(in srgb, var(--color-chart-5) 15%, transparent)", border: "color-mix(in srgb, var(--color-chart-5) 25%, transparent)", text: "var(--color-chart-5)", glow: "color-mix(in srgb, var(--color-chart-5) 20%, transparent)" },
   { bg: "color-mix(in srgb, var(--color-state-success) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-success) 25%, transparent)", text: "var(--color-state-success)", glow: "color-mix(in srgb, var(--color-state-success) 20%, transparent)" },
   { bg: "color-mix(in srgb, var(--color-state-warning) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-warning) 25%, transparent)", text: "var(--color-state-warning)", glow: "color-mix(in srgb, var(--color-state-warning) 20%, transparent)" },
   { bg: "color-mix(in srgb, var(--color-state-error) 15%, transparent)", border: "color-mix(in srgb, var(--color-state-error) 25%, transparent)", text: "var(--color-state-error)", glow: "color-mix(in srgb, var(--color-state-error) 20%, transparent)" },
-  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "#66ABFF", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
-  { bg: "color-mix(in srgb, var(--color-chart-4) 15%, transparent)", border: "color-mix(in srgb, var(--color-chart-4) 25%, transparent)", text: "#5E5CE6", glow: "color-mix(in srgb, var(--color-chart-4) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-primary) 15%, transparent)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", text: "var(--color-primary-hover)", glow: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
+  { bg: "color-mix(in srgb, var(--color-chart-4) 15%, transparent)", border: "color-mix(in srgb, var(--color-chart-4) 25%, transparent)", text: "var(--color-chart-4)", glow: "color-mix(in srgb, var(--color-chart-4) 20%, transparent)" },
 ];
 
 // 重命名弹窗（替代 prompt()）
@@ -339,12 +333,11 @@ onMounted(load);
             <div
               v-for="(c, idx) in filteredCategories"
               :key="c.name"
-              class="apple-card-highlight group relative flex items-center gap-4 rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-px hover:shadow-[var(--shadow-lg)]"
+              class="apple-card-highlight group relative flex items-center gap-4 rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-px hover:shadow-[var(--shadow-lg)]"
             >
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-white"
+                :class="['flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-foreground', categoryIconGradients[idx % categoryIconGradients.length]]"
                 :style="{
-                  background: categoryIconGradients[idx % categoryIconGradients.length],
                   boxShadow: categoryIconShadow[idx % categoryIconShadow.length],
                 }"
               >

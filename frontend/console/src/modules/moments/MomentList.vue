@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from"@tanstack/vue-query";
 import { momentApi, settingsApi, attachmentApi, previewApi } from"@/api";
 import { queryKeys } from"@/api/query-client";
 import { formatRelative } from"@/lib/format";
+import { themeColors } from"@/lib/theme-colors";
 import { Icon } from"@iconify/vue";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
 import {
@@ -17,6 +18,13 @@ import {
 } from "@/components/ui";
 
 const queryClient = useQueryClient();
+const colors = themeColors({
+  primary: "#2E8DFF",
+  warning: "#FF9F0A",
+  success: "#30D158",
+  chart5: "#BF5AF2",
+  error: "#FF453A",
+});
 
 const MAX_IMAGES = 9;
 
@@ -54,11 +62,11 @@ const total = computed(() => queryData.value?.total || 0);
 
 // 时间线节点色：蓝/橙/绿/紫/红（按 id hash 取色）
 const DOT_COLORS = [
-  { bg: "#2E8DFF", glow: "color-mix(in srgb, var(--color-primary) 45%, transparent)" },
-  { bg: "#FF9F0A", glow: "color-mix(in srgb, var(--color-state-warning) 45%, transparent)" },
-  { bg: "#30D158", glow: "color-mix(in srgb, var(--color-state-success) 45%, transparent)" },
-  { bg: "#BF5AF2", glow: "color-mix(in srgb, var(--color-chart-5) 45%, transparent)" },
-  { bg: "#FF453A", glow: "color-mix(in srgb, var(--color-state-error) 45%, transparent)" },
+  { bg: colors.primary, glow: "color-mix(in srgb, var(--color-primary) 45%, transparent)" },
+  { bg: colors.warning, glow: "color-mix(in srgb, var(--color-state-warning) 45%, transparent)" },
+  { bg: colors.success, glow: "color-mix(in srgb, var(--color-state-success) 45%, transparent)" },
+  { bg: colors.chart5, glow: "color-mix(in srgb, var(--color-chart-5) 45%, transparent)" },
+  { bg: colors.error, glow: "color-mix(in srgb, var(--color-state-error) 45%, transparent)" },
 ];
 function dotStyle(id: number) {
   const c = DOT_COLORS[Math.abs(Number(id) || 0) % DOT_COLORS.length];
@@ -445,7 +453,7 @@ function closeMenus() {
             />
             <span
               v-else
-              class="avatar-gradient-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white"
+              class="avatar-gradient-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-foreground"
             >
               <Icon icon="ri:user-3-line" class="text-lg" />
             </span>
@@ -472,7 +480,7 @@ function closeMenus() {
                   <img :src="url" alt="" class="h-full w-full object-cover" />
                   <button
                     type="button"
-                    class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/60 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
                     @click.stop="removeImage('new', i)"
                   >
                     <Icon icon="ri:close-line" class="text-sm" />
@@ -621,7 +629,7 @@ function closeMenus() {
                   />
                   <div
                     v-else
-                    :class="['h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white text-[14px] font-semibold', avatarClass(m.id)]"
+                    :class="['h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-foreground text-[14px] font-semibold', avatarClass(m.id)]"
                   >
                     {{ avatarText(m) }}
                   </div>
@@ -677,7 +685,7 @@ function closeMenus() {
                     :key="url"
                     class="aspect-square overflow-hidden rounded-[10px] bg-secondary"
                   >
-                    <img :src="url" alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
+                    <img :src="url" alt="" loading="lazy" class="h-full w-full object-cover transition-transform duration-250 hover:scale-[1.03]" />
                   </div>
                 </div>
 
@@ -717,7 +725,7 @@ function closeMenus() {
     <!-- 编辑弹窗 -->
     <div
       v-if="editingId !== null"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-40 flex items-center justify-center bg-background/50 p-4 backdrop-blur-sm"
       @click.self="cancelEdit"
     >
       <div class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-border bg-card shadow-2xl">
@@ -752,7 +760,7 @@ function closeMenus() {
               <img :src="url" alt="" class="h-full w-full object-cover" />
               <button
                 type="button"
-                class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/60 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
                 @click.stop="removeImage('edit', i)"
               >
                 <Icon icon="ri:close-line" class="text-sm" />
@@ -871,7 +879,7 @@ function closeMenus() {
   align-items: center;
   justify-content: space-between;
   padding: 20px 28px 14px;
-  background: linear-gradient(180deg, color-mix(in srgb, #000 78%, transparent) 0%, color-mix(in srgb, #000 45%, transparent) 80%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-background) 78%, transparent) 0%, color-mix(in srgb, var(--color-background) 45%, transparent) 80%, transparent 100%);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   position: sticky;
@@ -1192,7 +1200,7 @@ function closeMenus() {
   margin-top: 12px;
   font-size: 14px;
   line-height: 1.6;
-  color: #e5e5e7;
+  color: var(--color-text-secondary);
   word-break: break-word;
 }
 .moment-content :deep(a) {

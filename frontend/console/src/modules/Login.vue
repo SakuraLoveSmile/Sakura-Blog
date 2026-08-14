@@ -357,7 +357,7 @@ function setBtnRef(el: any, provider: string) {
   width: 56px;
   height: 56px;
   border-radius: 12px;
-  background: linear-gradient(180deg, #66ABFF 0%, #007AFF 100%);
+  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary-active) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -431,7 +431,7 @@ function setBtnRef(el: any, provider: string) {
 }
 
 .apple-input:focus {
-  border-color: #007AFF;
+  border-color: var(--color-primary-active);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 20%, transparent);
 }
 
@@ -482,7 +482,7 @@ function setBtnRef(el: any, provider: string) {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  accent-color: #007AFF;
+  accent-color: var(--color-primary-active);
   cursor: pointer;
   margin: 0;
 }
@@ -549,7 +549,7 @@ function setBtnRef(el: any, provider: string) {
   content: "";
   flex: 1;
   height: 1px;
-  background-color: #3a3a3c;
+  background-color: var(--color-border);
 }
 
 .divider span {
@@ -585,8 +585,8 @@ function setBtnRef(el: any, provider: string) {
 }
 
 .social-btn:hover {
-  background-color: #2c2c2e;
-  border-color: #48484a;
+  background-color: var(--color-chart-grid);
+  border-color: var(--color-border-strong);
 }
 
 .totp-input {

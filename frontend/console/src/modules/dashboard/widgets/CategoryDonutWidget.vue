@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { useBreakpoint } from "../useBreakpoint"
 import { dashboardApi } from "@/api";
+import { themeColors } from "@/lib/theme-colors";
 
 const { breakpoint } = useBreakpoint();
 
@@ -16,7 +17,25 @@ interface CatResp {
   items: CatItem[];
 }
 
-const COLORS = ["#2E8DFF", "#66ABFF", "#BF5AF2", "#FF453A", "#30D158", "#FF9F0A", "#9FCBFF", "#007AFF"];
+const chartColors = themeColors({
+  chart2: "#2E8DFF",
+  primaryHover: "#66ABFF",
+  chart5: "#BF5AF2",
+  error: "#FF453A",
+  success: "#30D158",
+  warning: "#FF9F0A",
+  primaryActive: "#007AFF",
+});
+const COLORS = [
+  chartColors.chart2,
+  chartColors.primaryHover,
+  chartColors.chart5,
+  chartColors.error,
+  chartColors.success,
+  chartColors.warning,
+  chartColors.primaryHover,
+  chartColors.primaryActive,
+];
 
 const data = ref<CatItem[]>([]);
 const loading = ref(true);

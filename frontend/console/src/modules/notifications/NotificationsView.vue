@@ -169,6 +169,11 @@ function typeVariant(type: string): "blue" | "green" | "pink" | "orange" {
   return "blue";
 }
 
+function typeGradient(type: string): string {
+  const variants = { blue: 1, green: 2, pink: 3, orange: 4 } as const;
+  return `avatar-gradient-${variants[typeVariant(type)]}`;
+}
+
 /** 来源标签（meta 行） */
 function sourceLabel(type: string): string {
   if (type === "comment_new") return "新评论";
@@ -279,7 +284,7 @@ function sourceLabel(type: string): string {
               <article
                 v-for="n in group.items"
                 :key="n.id"
-                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-200 last:mb-0 hover:-translate-y-px hover:border-border-strong"
+                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-150 last:mb-0 hover:-translate-y-px hover:border-border-strong"
                 :class="{
                   'notif-card--unread': !n.read,
                   'notif-card--read': n.read,
@@ -288,8 +293,8 @@ function sourceLabel(type: string): string {
               >
                 <!-- 图标：按类型取色 -->
                 <div
-                  class="notif-icon flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[11px] text-white"
-                  :class="`notif-icon--${typeVariant(n.type)}`"
+                  class="notif-icon flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[11px] text-foreground"
+                  :class="[`notif-icon--${typeVariant(n.type)}`, typeGradient(n.type)]"
                 >
                   <Icon :icon="typeIcon(n.type)" class="h-[22px] w-[22px]" />
                 </div>
@@ -369,22 +374,18 @@ function sourceLabel(type: string): string {
 
 /* 图标配色变体 */
 .notif-icon--blue {
-  background: linear-gradient(135deg, #66ABFF, #2E8DFF);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .notif-icon--green {
-  background: linear-gradient(135deg, #2E8DFF, #007AFF);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-success) 30%, transparent);
 }
 
 .notif-icon--pink {
-  background: linear-gradient(135deg, #9FCBFF, #66ABFF);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-error) 30%, transparent);
 }
 
 .notif-icon--orange {
-  background: linear-gradient(135deg, #007AFF, #0064D6);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-state-warning) 30%, transparent);
 }
 </style>

@@ -221,7 +221,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
       style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
     >
       <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-white sm:text-[28px]">用户管理</h1>
+        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">用户管理</h1>
         <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有用户账户、角色和权限</p>
       </div>
       <div class="flex items-center gap-1.5 sm:gap-2.5">
@@ -239,7 +239,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <!-- 总用户数 -->
         <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
         >
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">总用户数</span>
@@ -255,7 +255,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             </div>
           </div>
           <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-white"
+            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
             style="font-variant-numeric: tabular-nums;"
           >
             {{ stats.total }}
@@ -274,7 +274,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 
         <!-- 管理员 -->
         <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
         >
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">管理员</span>
@@ -290,7 +290,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             </div>
           </div>
           <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-white"
+            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
             style="font-variant-numeric: tabular-nums;"
           >
             {{ stats.adminCount }}
@@ -308,7 +308,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 
         <!-- 作者 -->
         <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
         >
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">作者</span>
@@ -324,7 +324,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             </div>
           </div>
           <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-white"
+            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
             style="font-variant-numeric: tabular-nums;"
           >
             {{ stats.authorCount }}
@@ -342,7 +342,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 
         <!-- 活跃用户 -->
         <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
         >
           <div class="flex items-start justify-between">
             <span class="text-[13px] font-medium text-text-secondary">当前页用户</span>
@@ -358,7 +358,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             </div>
           </div>
           <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-white"
+            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
             style="font-variant-numeric: tabular-nums;"
           >
             {{ users.length }}
@@ -494,7 +494,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                         <div
                           v-else
                           :class="avatarGradient(u.username)"
-                          class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-white"
+                          class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-foreground"
                         >
                           {{ avatarInitial(u) }}
                         </div>
@@ -590,7 +590,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                 <div
                   v-else
                   :class="avatarGradient(u.username)"
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-foreground"
                 >
                   {{ avatarInitial(u) }}
                 </div>

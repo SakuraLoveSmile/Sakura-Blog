@@ -249,9 +249,9 @@ async function confirmRevoke() {
 
 const inputCls = "apple-input";
 const btnCls =
-"px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
+"px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
 const btnClsDanger =
-"px-4 py-2 bg-state-error/100 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
+"px-4 py-2 bg-state-error/100 text-foreground text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50";
 </script>
 
 <template>
