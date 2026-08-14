@@ -85,7 +85,52 @@ const utils = {
   requestAnimationFrame: function (fn) { window.requestAnimationFrame(fn); },
   dark: {}
 };
-window.wrapLazyloadImages = function () {};
+(function () {
+  function markImage(img) {
+    if (img.getAttribute('data-preview-lazy-bound') === '1') return;
+    img.setAttribute('data-preview-lazy-bound', '1');
+    var source = img.getAttribute('data-src');
+    if (source && img.getAttribute('src') !== source) img.setAttribute('src', source);
+    img.classList.add('loading');
+    var done = function () { img.classList.remove('loading'); img.classList.add('loaded'); };
+    var failed = function () { img.classList.remove('loading'); img.classList.add('error'); };
+    img.addEventListener('load', done, { once: true });
+    img.addEventListener('error', failed, { once: true });
+    if (img.complete) {
+      if (img.naturalWidth > 0) done();
+      else if (img.getAttribute('src')) failed();
+    }
+  }
+  function markBackground(el) {
+    var source = el.getAttribute('data-bg');
+    if (!source) return;
+    el.style.backgroundImage = 'url("' + source.replace(/"/g, '\\"') + '")';
+    el.classList.add('loaded');
+  }
+  function eagerLoad(container) {
+    if (typeof container === 'string') container = document.querySelector(container);
+    if (!container) container = document;
+    if (container.nodeType === 1 && container.classList.contains('lazy')) {
+      if (container.tagName === 'IMG') markImage(container);
+      else markBackground(container);
+    }
+    container.querySelectorAll('.lazy').forEach(function (el) {
+      if (el.tagName === 'IMG') markImage(el);
+      else markBackground(el);
+    });
+  }
+  window.wrapLazyloadImages = eagerLoad;
+  eagerLoad(document);
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        mutation.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1) eagerLoad(node);
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+})();
 </script>`;
 
 /** 降级提示检测：异步内容（Mermaid/外部 Markdown/数据服务）加载失败时给出可读提示，不破坏布局。 */
@@ -113,7 +158,8 @@ const DEGRADE_SCRIPT = `<script>
     });
     document.querySelectorAll('.ds-friends, .ds-friends_and_posts, .ds-sites, .ds-timeline').forEach(function (el) {
       var box = el.querySelector('.grid-box');
-      if (box && !box.children.length && !el.querySelector('.preview-hint')) {
+      var empty = box ? !box.children.length : !el.textContent.trim();
+      if (empty && !el.querySelector('.preview-hint')) {
         var cls = el.classList;
         var key = cls.contains('ds-friends') ? 'friends' : (cls.contains('ds-sites') ? 'sites' : 'timeline');
         el.appendChild(hint(HINTS[key] || '数据加载失败（本地 Fixture 不可用）。'));

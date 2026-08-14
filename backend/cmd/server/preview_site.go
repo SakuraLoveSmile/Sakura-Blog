@@ -12,7 +12,7 @@ import (
 // renderSitePreview 用草稿配置渲染前台页面（设置页「前端预览」所见即所得）：
 // 浅拷贝全局 site 后应用草稿分段（config.ApplyDraftSections，与 RebuildSite 同一映射），
 // 再用真实内容数据渲染 layout/base。Console 按当前编辑的设置项提取对应 DOM 区域聚焦展示。
-// page 支持 index/categories/tags/post/wiki；不写 DB、不影响全局共享 site。
+// page 支持 index/categories/tags/post/wiki/notebooks；不写 DB、不影响全局共享 site。
 func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page string) (string, error) {
 	draft := *s.site.Load()
 	config.ApplyDraftSections(&draft, sections)
@@ -76,7 +76,7 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 			data.Page.AuthorName = a.Name
 		}
 		data.Content = template.HTML(p.ContentHTML)
-		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
+		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptionsFrom(&draft))
 		s.fillComments(data, "/post/"+p.Slug)
 	case "wiki":
 		// 文库页：项目列表直接取草稿 wiki 段（预览文库配置）
@@ -103,6 +103,45 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 		data.Page = &tmpl.Page{Title: "文库", Layout: "wiki", MenuID: "wiki", Lang: "zh-CN"}
 		data.WikiProjects = projects
 		data.WikiTags = tags
+		if len(projects) > 0 {
+			project := projects[0]
+			docs, err := s.st.ListWikidocs(project.ID)
+			if err != nil {
+				return "", err
+			}
+			data.WikiProjectID = project.ID
+			data.WikiProjectName = project.DisplayTitle()
+			data.WikiDocTree = wikiDocTree(docs)
+		}
+	case "notebooks":
+		notebooks, err := s.st.ListNotebooks()
+		if err != nil {
+			return "", err
+		}
+		ids := make([]int64, 0, len(notebooks))
+		for _, nb := range notebooks {
+			ids = append(ids, nb.ID)
+		}
+		counts, err := s.st.CountNotesByNotebooks(ids)
+		if err != nil {
+			return "", err
+		}
+		views := make([]tmpl.NotebookView, 0, len(notebooks))
+		for _, nb := range notebooks {
+			views = append(views, tmpl.NotebookView{Notebook: *nb, NoteCount: counts[nb.ID]})
+		}
+		data.Page = &tmpl.Page{Title: "笔记本", Layout: "notebooks", Lang: "zh-CN"}
+		data.Notebooks = views
+		if len(notebooks) > 0 {
+			tagCounts, err := s.st.CountNoteTagsByNotebook(notebooks[0].ID)
+			if err != nil {
+				return "", err
+			}
+			data.TagTreeData = &tmpl.TagTreeWidgetData{
+				Tags:         tagCountItems(tagCounts),
+				NotebookName: notebooks[0].Name,
+			}
+		}
 	default: // index 首页
 		return s.renderPreviewIndex(&draft, data)
 	}

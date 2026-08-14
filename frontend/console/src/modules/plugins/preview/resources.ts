@@ -33,6 +33,7 @@ export const PREVIEW_STYLES = [
   "/assets/fonts/lxgw/lxgwwenkaiscreen.css",
   "/assets/css/main.css",
   "/assets/css/tag-plugins.css",
+  "/assets/css/tagcloud.css",
   "/assets/css/highlight.css",
 ];
 

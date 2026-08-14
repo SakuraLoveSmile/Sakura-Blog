@@ -118,11 +118,28 @@ test(`${SURFACE} · 文档注入前台样式、shim 与主题背景`, () => {
   for (const want of [
     "/assets/css/main.css",
     "/assets/css/tag-plugins.css",
+    "/assets/css/tagcloud.css",
     "/assets/css/highlight.css",
     'class="md-text content"',
     "const utils = {",
   ]) {
     assert.ok(doc.includes(want), `文档缺少 ${want}`);
+  }
+});
+
+test(`${SURFACE} · 预览 shim 会 eager 加载图片与背景图并处理异步节点`, () => {
+  const doc = buildPreviewDoc({
+    bodyHtml: '<img class="lazy" data-src="/assets/img/preview/image-demo.jpg"><div class="lazy img" data-bg="/assets/img/preview/banner-bg.jpg"></div>',
+  });
+  for (const want of [
+    "window.wrapLazyloadImages = eagerLoad",
+    "data-preview-lazy-bound",
+    "data-src",
+    "data-bg",
+    "classList.add('loaded')",
+    "MutationObserver",
+  ]) {
+    assert.ok(doc.includes(want), `预览 shim 缺少 ${want}`);
   }
 });
 
@@ -167,6 +184,15 @@ test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
     ["friends", "gh", "md", "rating", "sites", "vote"],
     "Fixture 端点清单应与后端 /api/v1/preview/* 对齐"
   );
+});
+
+test(`${SURFACE} · 组件 iframe 运行时包含侧栏交互脚本`, () => {
+  const doc = buildPreviewDoc({
+    bodyHtml: '<widget class="widget-wrapper tagcloud"></widget>',
+    scripts: ["/assets/js/main.js", "/assets/js/tagcloud.js"],
+  });
+  assert.ok(doc.includes('<script src="/assets/js/main.js" defer></script>'));
+  assert.ok(doc.includes('<script src="/assets/js/tagcloud.js" defer></script>'));
 });
 
 test(`${SURFACE} · 正文含 </script 时被安全转义（防 iframe 文档截断）`, () => {

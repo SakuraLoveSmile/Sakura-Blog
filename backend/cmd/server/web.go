@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"path/filepath"
-	"os"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/frontend/assets"
-	"blog/internal/textutil"
 	"blog/internal/comment"
 	"blog/internal/moment"
 	"blog/internal/og"
@@ -23,6 +22,7 @@ import (
 	"blog/internal/search"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // sidebarSnapshot 侧边栏 45s 快照缓存（P2-13）。
@@ -48,18 +48,18 @@ const (
 // 渲染辅助（fillSidebar/fillSEO/render404 等）与侧边栏缓存也集中于此。
 type webServer struct {
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，前台无锁读 .Load()
-	site      *atomic.Pointer[tmpl.Site]
+	site *atomic.Pointer[tmpl.Site]
 	// contentCache 内容派生产物缓存（Spec 61 阶段 5：/search.json 与 /sitemap.xml）
 	contentCache *contentCache
 	// swTemplate Service Worker 模板（Spec 61 阶段 5：启动读一次，避免每请求读文件；
 	// dev 模式同样启动时读——改 sw.js 需重启服务生效）
 	swTemplate []byte
-	st        *store.Store
-	posts     *post.Service
-	engine    *tmpl.Engine
-	searchIdx *search.Index // 可空：FTS 建索引失败时降级
-	ogGen     *og.Generator
-	momentH   *moment.Handler // /notes 页近期动态，main 装配 moment 后设置
+	st         *store.Store
+	posts      *post.Service
+	engine     *tmpl.Engine
+	searchIdx  *search.Index // 可空：FTS 建索引失败时降级
+	ogGen      *og.Generator
+	momentH    *moment.Handler // /notes 页近期动态，main 装配 moment 后设置
 
 	devMode     bool
 	root        string // app.Root：-dev 模式磁盘资源基准
@@ -376,13 +376,13 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if data.WikiProjectID == "" {
 				break
 			}
-			cur := s.wikiProjectByID(data.WikiProjectID)
+			cur := wikiProjectByIDOf(site, data.WikiProjectID)
 			if cur == nil {
 				break
 			}
 			var projects []*tmpl.WikiProject
-			for i := range s.site.Load().Wiki {
-				p := s.site.Load().Wiki[i]
+			for i := range site.Wiki {
+				p := site.Wiki[i]
 				if p.ID == cur.ID {
 					continue
 				}
@@ -423,7 +423,7 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if data.WikiProjectID == "" {
 				break
 			}
-			project := s.wikiProjectByID(data.WikiProjectID)
+			project := wikiProjectByIDOf(site, data.WikiProjectID)
 			if project == nil || project.Repo == "" {
 				break
 			}
@@ -445,7 +445,12 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 
 // tocOptions library toc 参数 → TOC 生成选项（Spec 33 参数补齐：list_number/min_depth/max_depth）。
 func (s *webServer) tocOptions() tmpl.TOCOptions {
-	def := s.site.Load().Widgets.Lookup("toc")
+	return s.tocOptionsFrom(s.site.Load())
+}
+
+// tocOptionsFrom 使用指定站点配置读取 toc 参数，设置页预览可据此联动草稿。
+func (s *webServer) tocOptionsFrom(site *tmpl.Site) tmpl.TOCOptions {
+	def := site.Widgets.Lookup("toc")
 	return tmpl.TOCOptions{
 		ListNumber: def.Bool("list_number", false),
 		MinDepth:   def.Int("min_depth", 1),

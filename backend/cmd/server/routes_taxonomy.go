@@ -1,18 +1,18 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
-	"github.com/gin-gonic/gin"
 
-	"blog/internal/textutil"
 	"blog/internal/page"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // registerTaxonomyRoutes 注册聚合/索引域路由：友链、文库、笔记、归档、分类、专栏、标签。
@@ -205,8 +205,6 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 作者文章列表页（Spec 38 多作者体系）：/author/:id，对齐 Stellar author.ejs 的“全部文章”链接。
 	r.GET("/author/:id", s.handleAuthor)
 }
-
-
 
 // handleLinksPage 友链卡片页（内容页化）：渲染 pages 表 slug=links 系统页。
 // 正文 {% links %} 服务端直出分组友链卡片；banner/TOC 同内容页。
@@ -427,7 +425,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 	}
 	// 文档树（leftbar tree widget）：过滤未发布节点（draft 不可见）。
 	// 复用上面 ListWikidocs 的 docs，纯内存构建，避免二次查询。
-	tree := store.BuildDocTreeFromDocs(docs)
+	tree := wikiDocTree(docs)
 	// 最近更新（wiki 维度，Spec 8）：当前项目已发布文档按 UpdatedAt 降序取前 5，
 	// 复用 RecentPost 结构（recent.html 模板零改动），供 assembleWidgets 的 recent widget 装配。
 	recentDocs := make([]*tmpl.RecentPost, 0, len(published))
@@ -466,7 +464,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		},
 		WikiPrevDoc: prev,
 		WikiNextDoc: next,
-		WikiDocTree: wikiTreeNodes(tree),
+		WikiDocTree: tree,
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（标题带 id 锚点）
 		TOC: tmpl.ExtractTOCWith(cur.ContentHTML, s.tocOptions()),
 	}
@@ -596,8 +594,8 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 		pages[i] = i + 1
 	}
 	s.renderBase(c, &tmpl.ViewData{
-		Site: s.site.Load(),
-		Page: &tmpl.Page{Title: nb.Name, Layout: "notebook", Lang: "zh-CN", Tag: tag},
+		Site:           s.site.Load(),
+		Page:           &tmpl.Page{Title: nb.Name, Layout: "notebook", Lang: "zh-CN", Tag: tag},
 		NotebookDetail: nb,
 		Notes:          noteValues(notes),
 		NotesTotal:     total,
@@ -712,9 +710,14 @@ func tagCountItems(counts map[string]int) []tmpl.TagCount {
 
 // wikiProjectByID 按 ID 查 site.yml wiki 段项目（配置驱动，未配置返回 nil）。
 func (s *webServer) wikiProjectByID(id string) *tmpl.WikiProject {
-	for i := range s.site.Load().Wiki {
-		if s.site.Load().Wiki[i].ID == id {
-			return &s.site.Load().Wiki[i]
+	return wikiProjectByIDOf(s.site.Load(), id)
+
+}
+
+func wikiProjectByIDOf(site *tmpl.Site, id string) *tmpl.WikiProject {
+	for i := range site.Wiki {
+		if site.Wiki[i].ID == id {
+			return &site.Wiki[i]
 		}
 	}
 	return nil
@@ -760,6 +763,11 @@ func wikiTreeNodes(nodes []store.TreeNode) []tmpl.WikiTreeNode {
 		})
 	}
 	return out
+}
+
+// wikiDocTree 从已加载的 wiki 文档构建模板树，供真实文档页与预览载体共用。
+func wikiDocTree(docs []*store.WikiDoc) []tmpl.WikiTreeNode {
+	return wikiTreeNodes(store.BuildDocTreeFromDocs(docs))
 }
 
 // handleAuthor 作者文章列表页（Spec 38 多作者体系）。

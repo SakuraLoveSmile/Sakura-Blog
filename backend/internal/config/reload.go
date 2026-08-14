@@ -28,13 +28,13 @@ const (
 	SectionWidgets   = "widgets"   // 侧边栏组件编排（Spec 33/47）
 	SectionAI        = "ai"        // AI 属性生成（OpenAI 兼容接口配置，仅 Console/后端代理消费）
 	// 以下五段此前为 site.yml 纯文件配置，现接入 settings 热更新管线（入库后以 DB 为准）：
-	SectionCover   = "cover"    // 首页 Hero cover 区
-	SectionNavTabs = "nav_tabs" // 导航栏标签页
-	SectionAuthors = "authors"  // 多作者体系
-	SectionPlugins = "plugins"  // 前端体验增强插件开关
+	SectionCover      = "cover"       // 首页 Hero cover 区
+	SectionNavTabs    = "nav_tabs"    // 导航栏标签页
+	SectionAuthors    = "authors"     // 多作者体系
+	SectionPlugins    = "plugins"     // 前端体验增强插件开关
 	SectionTagPlugins = "tag_plugins" // 标签插件默认参数（对齐原版 _config.yml tag_plugins）
-	SectionDefault      = "default"   // 占位素材组（对齐原版 _config.yml default）
-	SectionPages        = "pages"     // 页面级设置（friends 页等特色设置，按页面键管理）
+	SectionDefault    = "default"     // 占位素材组（对齐原版 _config.yml default）
+	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
 	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
@@ -77,8 +77,8 @@ func (c AIConfig) UserAPIOn() bool { return c.AllowUserAPI == nil || *c.AllowUse
 // Spec 61 阶段 5：内存缓存——文章页每请求读 settings 改为 RebuildSite（设置保存）时刷新，
 // 首次调用加载，成功即缓存；失败不缓存（下次重试）。
 var (
-	loadAIMu     sync.RWMutex
-	loadAICached AIConfig
+	loadAIMu      sync.RWMutex
+	loadAICached  AIConfig
 	loadAICacheOK bool
 )
 
@@ -425,83 +425,109 @@ func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	return nil
 }
 
-// rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。
-// RebuildSite（DB 真值）与 ApplyDraftSections（设置页预览草稿）共用，保证解析映射不漂移。
-func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
-	var basic siteBasic
-	var menubar tmpl.Menubar
-	var rightbar tmpl.RightbarConfig
-	var footer tmpl.Footer
-	var comments tmpl.CommentsConfig
-	var article tmpl.ArticleConfig
-	var wiki []tmpl.WikiProject
-	var friends tmpl.FriendsConfig
-	var seo tmpl.SEOConfig
-	var inject tmpl.InjectConfig
-	var style tmpl.StyleConfig
-	var widgets tmpl.WidgetsConfig
-	var cover tmpl.CoverConfig
-	var navTabs tmpl.NavTabsConfig
-	var authors map[string]tmpl.AuthorDef
-	var plugins tmpl.PluginsConfig
-	var tagPlugins tmpl.TagPluginsConfig
-	var defaultAssets tmpl.DefaultAssets
-	var pages tmpl.PagesConfig
+// parsedSections 是 settings 分段的解析结果。解析与赋值分离，保证 RebuildSite 的全量替换
+// 与 ApplyDraftSections 的逐段覆盖共用同一份字段映射。
+type parsedSections struct {
+	basic         siteBasic
+	menubar       tmpl.Menubar
+	rightbar      tmpl.RightbarConfig
+	footer        tmpl.Footer
+	comments      tmpl.CommentsConfig
+	article       tmpl.ArticleConfig
+	wiki          []tmpl.WikiProject
+	friends       tmpl.FriendsConfig
+	seo           tmpl.SEOConfig
+	inject        tmpl.InjectConfig
+	style         tmpl.StyleConfig
+	widgets       tmpl.WidgetsConfig
+	cover         tmpl.CoverConfig
+	navTabs       tmpl.NavTabsConfig
+	authors       map[string]tmpl.AuthorDef
+	plugins       tmpl.PluginsConfig
+	tagPlugins    tmpl.TagPluginsConfig
+	defaultAssets tmpl.DefaultAssets
+	pages         tmpl.PagesConfig
+}
 
-	unmarshal := func(section string, dst any) {
+func parseSections(settings map[string]string) parsedSections {
+	var parsed parsedSections
+	var unmarshal = func(section string, dst any) {
 		if v, ok := settings[section]; ok && v != "" {
 			_ = json.Unmarshal([]byte(v), dst)
 		}
 	}
-	unmarshal(SectionSite, &basic)
-	unmarshal(SectionMenubar, &menubar)
-	unmarshal(SectionRightbar, &rightbar)
-	unmarshal(SectionFooter, &footer)
-	unmarshal(SectionComments, &comments)
-	unmarshal(SectionArticle, &article)
-	unmarshal(SectionWiki, &wiki)
-	unmarshal(SectionFriends, &friends)
-	unmarshal(SectionSEO, &seo)
-	unmarshal(SectionInject, &inject)
-	unmarshal(SectionStyle, &style)
-	unmarshal(SectionWidgets, &widgets)
-	unmarshal(SectionCover, &cover)
-	unmarshal(SectionNavTabs, &navTabs)
-	unmarshal(SectionAuthors, &authors)
-	unmarshal(SectionPlugins, &plugins)
-	unmarshal(SectionTagPlugins, &tagPlugins)
-	unmarshal(SectionDefault, &defaultAssets)
-	unmarshal(SectionPages, &pages)
+	unmarshal(SectionSite, &parsed.basic)
+	unmarshal(SectionMenubar, &parsed.menubar)
+	unmarshal(SectionRightbar, &parsed.rightbar)
+	unmarshal(SectionFooter, &parsed.footer)
+	unmarshal(SectionComments, &parsed.comments)
+	unmarshal(SectionArticle, &parsed.article)
+	unmarshal(SectionWiki, &parsed.wiki)
+	unmarshal(SectionFriends, &parsed.friends)
+	unmarshal(SectionSEO, &parsed.seo)
+	unmarshal(SectionInject, &parsed.inject)
+	unmarshal(SectionStyle, &parsed.style)
+	unmarshal(SectionWidgets, &parsed.widgets)
+	unmarshal(SectionCover, &parsed.cover)
+	unmarshal(SectionNavTabs, &parsed.navTabs)
+	unmarshal(SectionAuthors, &parsed.authors)
+	unmarshal(SectionPlugins, &parsed.plugins)
+	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
+	unmarshal(SectionDefault, &parsed.defaultAssets)
+	unmarshal(SectionPages, &parsed.pages)
+	return parsed
+}
 
-	site.Title = basic.Title
-	site.Subtitle = basic.Subtitle
-	site.Description = basic.Description
-	site.URL = basic.URL
-	site.Avatar = basic.Avatar
-	site.AvatarBG = basic.AvatarBG
-	site.LogoTitle = basic.LogoTitle
-	site.LogoSub = basic.LogoSub
-	site.FaviconURL = basic.FaviconURL
-	site.AppleIcon = basic.AppleIcon
-	site.SWCacheVersion = basic.SWCacheVer
-	site.Menubar = menubar
-	site.Rightbar = rightbar
-	site.Footer = footer
-	site.Comments = comments
-	site.Article = article
-	site.Wiki = wiki
-	site.Friends = friends
-	site.SEO = seo
-	site.Inject = inject
-	site.Style = style
-	site.Widgets = widgets
-	site.Cover = cover
-	site.NavTabs = navTabs
-	site.Authors = authors
-	site.Plugins = plugins
-	site.TagPlugins = tagPlugins
-	site.Default = defaultAssets
-	site.Pages = pages
+// applyParsedSections 写入解析后的分段。all=true 复现 RebuildSite 的全量零值替换；
+// all=false 时仅覆盖 settings 中实际提供的分段，供预览草稿保留未编辑配置。
+func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[string]string, all bool) {
+	assign := func(section string, fn func()) {
+		if all {
+			fn()
+			return
+		}
+		if _, ok := settings[section]; ok {
+			fn()
+		}
+	}
+	assign(SectionSite, func() {
+		site.Title = parsed.basic.Title
+		site.Subtitle = parsed.basic.Subtitle
+		site.Description = parsed.basic.Description
+		site.URL = parsed.basic.URL
+		site.Avatar = parsed.basic.Avatar
+		site.AvatarBG = parsed.basic.AvatarBG
+		site.LogoTitle = parsed.basic.LogoTitle
+		site.LogoSub = parsed.basic.LogoSub
+		site.FaviconURL = parsed.basic.FaviconURL
+		site.AppleIcon = parsed.basic.AppleIcon
+		site.SWCacheVersion = parsed.basic.SWCacheVer
+	})
+	assign(SectionMenubar, func() { site.Menubar = parsed.menubar })
+	assign(SectionRightbar, func() { site.Rightbar = parsed.rightbar })
+	assign(SectionFooter, func() { site.Footer = parsed.footer })
+	assign(SectionComments, func() { site.Comments = parsed.comments })
+	assign(SectionArticle, func() { site.Article = parsed.article })
+	assign(SectionWiki, func() { site.Wiki = parsed.wiki })
+	assign(SectionFriends, func() { site.Friends = parsed.friends })
+	assign(SectionSEO, func() { site.SEO = parsed.seo })
+	assign(SectionInject, func() { site.Inject = parsed.inject })
+	assign(SectionStyle, func() { site.Style = parsed.style })
+	assign(SectionWidgets, func() { site.Widgets = parsed.widgets })
+	assign(SectionCover, func() { site.Cover = parsed.cover })
+	assign(SectionNavTabs, func() { site.NavTabs = parsed.navTabs })
+	assign(SectionAuthors, func() { site.Authors = parsed.authors })
+	assign(SectionPlugins, func() { site.Plugins = parsed.plugins })
+	assign(SectionTagPlugins, func() { site.TagPlugins = parsed.tagPlugins })
+	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
+	assign(SectionPages, func() { site.Pages = parsed.pages })
+}
+
+// rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。
+// RebuildSite 使用全量替换：DB settings 是站点配置的完整真值。
+func rebuildFromValues(site *tmpl.Site, settings map[string]string) {
+	parsed := parseSections(settings)
+	applyParsedSections(site, parsed, settings, true)
 }
 
 // ApplyDraftSections 把草稿分段 JSON 就地应用到传入的 Site 副本（设置页「前端预览」用）：
@@ -512,7 +538,8 @@ func ApplyDraftSections(site *tmpl.Site, raw map[string]json.RawMessage) {
 	for k, v := range raw {
 		settings[k] = string(v)
 	}
-	rebuildFromValues(site, settings)
+	parsed := parseSections(settings)
+	applyParsedSections(site, parsed, settings, false)
 }
 
 // LinksToGroups 把扁平的 store.Link 列表按 GroupTitle 分组为 tmpl.LinkGroup，保留首次出现的组顺序。

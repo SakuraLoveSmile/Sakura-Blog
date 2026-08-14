@@ -1,9 +1,9 @@
 package config
 
 import (
-	"sync/atomic"
 	"encoding/json"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"blog/internal/store"
@@ -207,9 +207,13 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		check   func() bool
 	}{
 		{SectionCover, `{"title":"Hello","description":"desc","features":[{"title":"Go","url":"/archives/"}]}`, func() bool { return site.Load().Cover.Title == "Hello" && len(site.Load().Cover.Features) == 1 }},
-		{SectionNavTabs, `{"enable_custom":true,"items":[{"title":"GitHub","url":"https://github.com","external":true}]}`, func() bool { return site.Load().NavTabs.EnableCustom && len(site.Load().NavTabs.Items) == 1 && site.Load().NavTabs.Items[0].External }},
+		{SectionNavTabs, `{"enable_custom":true,"items":[{"title":"GitHub","url":"https://github.com","external":true}]}`, func() bool {
+			return site.Load().NavTabs.EnableCustom && len(site.Load().NavTabs.Items) == 1 && site.Load().NavTabs.Items[0].External
+		}},
 		{SectionAuthors, `{"sakura":{"name":"Sakura","description":"作者"}}`, func() bool { return site.Load().Authors["sakura"].Name == "Sakura" }},
-		{SectionPlugins, `{"heti":{"enable":true},"fancybox":{"selector":"div.lazy-box>img.lazy"}}`, func() bool { return site.Load().Plugins.Heti != nil && site.Load().Plugins.Heti.Enable && site.Load().Plugins.Fancybox != nil && site.Load().Plugins.Fancybox.Selector != "" }},
+		{SectionPlugins, `{"heti":{"enable":true},"fancybox":{"selector":"div.lazy-box>img.lazy"}}`, func() bool {
+			return site.Load().Plugins.Heti != nil && site.Load().Plugins.Heti.Enable && site.Load().Plugins.Fancybox != nil && site.Load().Plugins.Fancybox.Selector != ""
+		}},
 	}
 	for _, tc := range cases {
 		if err := SaveSection(s, site, tc.section, []byte(tc.payload)); err != nil {
@@ -218,6 +222,48 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		if !tc.check() {
 			t.Fatalf("section %s hot update failed", tc.section)
 		}
+	}
+}
+
+func TestApplyDraftSectionsOnlyOverwritesProvidedSections(t *testing.T) {
+	site := &tmpl.Site{
+		Title:    "线上标题",
+		Comments: tmpl.CommentsConfig{Enabled: true, Title: "评论"},
+		Authors:  map[string]tmpl.AuthorDef{"owner": {Name: "站长", Description: "简介"}},
+		Style:    tmpl.StyleConfig{PrefersTheme: "light"},
+		Widgets: tmpl.WidgetsConfig{Library: map[string]tmpl.WidgetDef{
+			"recent": {"layout": "recent", "limit": 5},
+		}},
+	}
+
+	ApplyDraftSections(site, map[string]json.RawMessage{
+		SectionWidgets: json.RawMessage(`{"library":{"tagcloud":{"layout":"tagcloud","amount":10}}}`),
+	})
+
+	if site.Title != "线上标题" {
+		t.Errorf("title was cleared by widgets-only draft: %q", site.Title)
+	}
+	if !site.Comments.Enabled || site.Comments.Title != "评论" {
+		t.Errorf("comments changed by widgets-only draft: %+v", site.Comments)
+	}
+	if got := site.Authors["owner"]; got.Name != "站长" || got.Description != "简介" {
+		t.Errorf("authors changed by widgets-only draft: %+v", site.Authors)
+	}
+	if site.Style.PrefersTheme != "light" {
+		t.Errorf("style changed by widgets-only draft: %+v", site.Style)
+	}
+	if site.Widgets.Library["tagcloud"].Layout() != "tagcloud" || site.Widgets.Library["recent"] != nil {
+		t.Errorf("widgets section was not replaced: %+v", site.Widgets.Library)
+	}
+
+	ApplyDraftSections(site, map[string]json.RawMessage{
+		SectionSite:     json.RawMessage(`{"title":"草稿标题"}`),
+		SectionComments: json.RawMessage(`{"enabled":false}`),
+		SectionAuthors:  json.RawMessage(`{"editor":{"name":"编辑"}}`),
+		SectionStyle:    json.RawMessage(`{"prefers_theme":"dark"}`),
+	})
+	if site.Title != "草稿标题" || site.Comments.Enabled || site.Authors["editor"].Name != "编辑" || site.Style.PrefersTheme != "dark" {
+		t.Errorf("provided sections were not applied: %+v", site)
 	}
 }
 

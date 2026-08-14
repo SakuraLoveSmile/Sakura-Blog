@@ -260,8 +260,20 @@ const PREVIEW_NAME = "__preview__";
 function previewPageFor(layout: string): string {
   if (["toc", "author", "related"].includes(layout)) return "post";
   if (["tree", "wiki_related"].includes(layout)) return "wiki";
+  if (layout === "tagtree") return "notebooks";
   return "index";
 }
+
+const NO_OUTPUT_HINTS: Record<string, string> = {
+  related: "专栏功能当前已禁用，前台不渲染此组件",
+  tree: "文库组件仅文库文档页有数据，预览以首个项目模拟",
+  wiki_related: "文库组件仅文库文档页有数据，预览以首个项目模拟",
+  tagtree: "笔记本组件仅笔记本页有数据，预览以首个笔记本模拟",
+  ghrepo: "需配置 repo/username/api 参数",
+  ghuser: "需配置 repo/username/api 参数",
+  ghissues: "需配置 repo/username/api 参数",
+  timeline: "需配置 repo/username/api 参数",
+};
 
 const previewHtml = ref("");
 const previewLoading = ref(false);
@@ -283,7 +295,7 @@ async function refreshPreview() {
     };
     const { data } = await previewApi.site(sections, page);
     if (seq !== previewSeq) return;
-    previewHtml.value = buildWidgetDoc(data?.html || "");
+    previewHtml.value = buildWidgetDoc(data?.html || "", draftLayout.value);
   } catch {
     if (seq === previewSeq) previewError.value = "预览渲染失败";
   } finally {
@@ -302,17 +314,18 @@ function schedulePreview(immediate = false) {
 // iframe 文档构建复用共享预览运行时（preview/preview-document.ts，Spec 63）：
 // 内置 ctx/def/deps/utils shim（data_cache 关闭），body 仅保留页面 services scan 块
 // （其 utils.js 调用由内置 shim 承接），head 脚本全量剥离、保留 stylesheet/style/meta。
-function buildWidgetDoc(fullHtml: string): string {
+function buildWidgetDoc(fullHtml: string, layout = ""): string {
   const doc = new DOMParser().parseFromString(fullHtml, "text/html");
   const aside = doc.querySelector("aside.l_left");
   let bodyInner = "";
   if (aside) {
     aside.querySelector("header.header")?.remove();
     aside.querySelector("footer.footer")?.remove();
-    aside.querySelector(".widgets > .search-wrapper")?.remove();
+    aside.querySelector(".search-wrapper")?.remove();
     const widget = aside.querySelector(".widgets > widget:last-child");
     if (!widget) {
-      bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">该组件在当前参数与页面类型下无输出（如 GitHub 系需配置 repo/username）</p>`;
+      const hint = NO_OUTPUT_HINTS[layout] || "该组件在当前参数与页面类型下无输出（如 GitHub 系需配置 repo/username）";
+      bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">${hint}</p>`;
       aside.querySelector(".widgets")?.remove();
     }
     bodyInner = bodyInner || aside.outerHTML;
@@ -335,6 +348,7 @@ aside.l_left{position:relative;width:300px;max-width:90%;margin:0 auto;max-heigh
   // Spec 64：预览统一固定暗色（buildPreviewDoc 不接收主题参数）
   return buildPreviewDoc({
     bodyHtml: bodyInner,
+    scripts: ["/assets/js/main.js", "/assets/js/tagcloud.js"],
     bodyClass,
     wrapContent: false,
     extraHead: fx,

@@ -92,3 +92,155 @@ func TestRenderSitePreview(t *testing.T) {
 		t.Errorf("live site mutated by preview: %q", live.Title)
 	}
 }
+
+func TestRenderSitePreviewWidgetsOnlyKeepsLiveSiteSections(t *testing.T) {
+	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	if err != nil {
+		t.Fatalf("engine: %v", err)
+	}
+	live := &tmpl.Site{Title: "线上标题", Comments: tmpl.CommentsConfig{Enabled: true}}
+	ws := newWebServer(webDeps{Site: sitePtr(live), Store: st, Engine: eng})
+
+	html, err := ws.renderSitePreview(map[string]json.RawMessage{
+		"widgets": json.RawMessage(`{"library":{"__preview__":{"layout":"recent"}},"pages":{"index":{"leftbar":["__preview__"]}}}`),
+	}, "index")
+	if err != nil {
+		t.Fatalf("renderSitePreview widgets-only: %v", err)
+	}
+	if !strings.Contains(html, "线上标题") {
+		t.Errorf("widgets-only preview should retain site title")
+	}
+	if live.Comments.Enabled != true {
+		t.Error("widgets-only preview mutated live comments")
+	}
+}
+
+func TestRenderSitePreviewWikiUsesFirstProjectTreeAndRelatedData(t *testing.T) {
+	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	if err := st.EnsureWikidocsTable(); err != nil {
+		t.Fatalf("ensure wikidocs: %v", err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{
+		ProjectID: "first", Slug: "intro", Title: "首个项目文档", Order: 1, Status: store.StatusPublished,
+	}); err != nil {
+		t.Fatalf("create wiki doc: %v", err)
+	}
+	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	if err != nil {
+		t.Fatalf("engine: %v", err)
+	}
+	first := tmpl.WikiProject{ID: "first", Title: "首个项目", Tags: []string{"go"}, Sort: 10}
+	second := tmpl.WikiProject{ID: "second", Title: "相关项目", Tags: []string{"go"}, Sort: 1}
+	site := &tmpl.Site{
+		Title: "文库预览",
+		Wiki:  []tmpl.WikiProject{first, second},
+		Widgets: tmpl.WidgetsConfig{
+			Library: map[string]tmpl.WidgetDef{
+				"tree":         {"layout": "tree"},
+				"wiki_related": {"layout": "wiki_related"},
+			},
+			Pages: map[string]tmpl.PageBars{
+				"wiki": {Leftbar: []string{"tree", "wiki_related"}},
+			},
+		},
+	}
+	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
+
+	html, err := ws.renderSitePreview(nil, "wiki")
+	if err != nil {
+		t.Fatalf("renderSitePreview wiki: %v", err)
+	}
+	for _, want := range []string{"首个项目文档", "相关项目", `id="data-tree"`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("wiki preview missing %q", want)
+		}
+	}
+}
+
+func TestRenderSitePreviewNotebooksUsesFirstNotebookTagTree(t *testing.T) {
+	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	if err := st.EnsureNotebooksTable(); err != nil {
+		t.Fatalf("ensure notebooks: %v", err)
+	}
+	if err := st.EnsureNotesTable(); err != nil {
+		t.Fatalf("ensure notes: %v", err)
+	}
+	nb := &store.Notebook{Name: "go-notes", Order: 1}
+	if err := st.CreateNotebook(nb); err != nil {
+		t.Fatalf("create notebook: %v", err)
+	}
+	if err := st.CreateNote(&store.Note{NotebookID: nb.ID, Title: "Go 入门", Tags: "Go,后端"}); err != nil {
+		t.Fatalf("create note: %v", err)
+	}
+	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	if err != nil {
+		t.Fatalf("engine: %v", err)
+	}
+	site := &tmpl.Site{
+		Title: "笔记预览",
+		Widgets: tmpl.WidgetsConfig{
+			Library: map[string]tmpl.WidgetDef{"tagtree": {"layout": "tagtree"}},
+			Pages:   map[string]tmpl.PageBars{"notebooks": {Leftbar: []string{"tagtree"}}},
+		},
+	}
+	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
+
+	html, err := ws.renderSitePreview(nil, "notebooks")
+	if err != nil {
+		t.Fatalf("renderSitePreview notebooks: %v", err)
+	}
+	for _, want := range []string{"go-notes", "Go", `id="data-tagtree"`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("notebooks preview missing %q", want)
+		}
+	}
+}
+
+func TestRenderSitePreviewPostUsesDraftTOCDepth(t *testing.T) {
+	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	if _, err := st.Create(&store.Post{
+		Slug: "toc-preview", Title: "TOC 预览", Status: store.StatusPublished,
+		ContentHTML: `<h1 id="h1">一级标题</h1><h2 id="h2">二级标题</h2>`,
+	}); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	if err != nil {
+		t.Fatalf("engine: %v", err)
+	}
+	site := &tmpl.Site{
+		Title: "TOC 预览",
+		Widgets: tmpl.WidgetsConfig{
+			Library: map[string]tmpl.WidgetDef{"toc": {"layout": "toc", "min_depth": 1}},
+			Pages:   map[string]tmpl.PageBars{"post": {Rightbar: []string{"toc"}}},
+		},
+	}
+	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
+
+	html, err := ws.renderSitePreview(map[string]json.RawMessage{
+		"widgets": json.RawMessage(`{"library":{"toc":{"layout":"toc","min_depth":2}},"pages":{"post":{"rightbar":["toc"]}}}`),
+	}, "post")
+	if err != nil {
+		t.Fatalf("renderSitePreview post: %v", err)
+	}
+	if strings.Contains(html, `href="#h1"`) || !strings.Contains(html, `href="#h2"`) {
+		t.Errorf("draft toc min_depth=2 not applied: %s", html)
+	}
+}
