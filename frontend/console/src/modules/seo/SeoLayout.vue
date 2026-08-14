@@ -34,7 +34,7 @@ const active = computed(() => route.path);
  class="flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-base px-3 py-2 text-sm transition-colors"
  :class="active === s.path
  ? 'bg-primary/10 font-medium text-primary'
- : 'text-text-tertiary hover:bg-secondary hover:bg-accent'"
+ : 'text-text-tertiary hover:bg-accent'"
  @click="router.push(s.path)"
  >
  <Icon :icon="s.icon" class="text-base" />

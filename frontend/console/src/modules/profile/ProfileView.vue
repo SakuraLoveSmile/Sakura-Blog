@@ -510,7 +510,7 @@ const btnClsDanger =
  <template #footer>
  <div class="flex justify-end gap-2">
  <button
- class="rounded-lg px-4 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:bg-accent"
+ class="rounded-lg px-4 py-2 text-sm text-text-tertiary transition-colors hover:bg-accent"
  @click="showDisableModal = false"
  >
  取消
@@ -554,7 +554,7 @@ const btnClsDanger =
  <template #footer>
  <div class="flex justify-end gap-2">
  <button
- class="rounded-lg px-4 py-2 text-sm text-text-tertiary transition-colors hover:bg-secondary hover:bg-accent"
+ class="rounded-lg px-4 py-2 text-sm text-text-tertiary transition-colors hover:bg-accent"
  @click="showRevokeModal = false"
  >
  取消

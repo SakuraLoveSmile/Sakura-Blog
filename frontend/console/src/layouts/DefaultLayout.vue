@@ -345,7 +345,7 @@ function closeProfileDropdown() {
       <!-- 收起/展开切换 -->
       <div class="px-3 pb-1">
         <button
-          class="flex w-full items-center rounded-base p-2 text-text-quaternary transition-all hover:bg-secondary hover:text-foreground hover:bg-accent"
+          class="flex w-full items-center rounded-base p-2 text-text-quaternary transition-all hover:text-foreground hover:bg-accent"
           :class="{ 'justify-center': sidebarCollapsed }"
           :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
           @click="toggleSidebar"
@@ -363,7 +363,7 @@ function closeProfileDropdown() {
           <!-- 铃铛通知按钮（Wave 3b）：收起时隐藏，避免 w-16 宽度放不下两个图标 -->
           <div v-if="!sidebarCollapsed" class="relative self-center">
             <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-secondary hover:bg-accent"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-accent"
               @click="router.push('/notifications')"
             >
               <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
@@ -402,7 +402,7 @@ function closeProfileDropdown() {
           </div>
           <div v-if="!sidebarCollapsed" class="relative self-center">
             <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-secondary hover:bg-accent"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-accent"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
             >
               <Icon icon="ri:more-fill" class="text-text-tertiary" />
@@ -414,14 +414,14 @@ function closeProfileDropdown() {
                 @click.stop
               >
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
+                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
                   @click="navigateTo('/profile')"
                 >
                   <Icon icon="ri:user-settings-line" />
                   个人资料
                 </button>
                 <button
-                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
+                  class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-accent"
                   @click="handleLogout"
                 >
                   <Icon icon="ri:logout-box-r-line" />
@@ -550,7 +550,7 @@ function closeProfileDropdown() {
                 :key="item.path"
                 :data-search-index="i"
                 :class="{ 'bg-accent': activeIndex === i }"
-                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-secondary transition-colors hover:bg-secondary hover:bg-accent"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-secondary transition-colors hover:bg-accent"
                 @click="navigateTo(item.path)"
                 @mouseenter="activeIndex = i"
               >
@@ -569,7 +569,7 @@ function closeProfileDropdown() {
                   :key="'post-' + item.id"
                   :data-search-index="postOffset + i"
                   :class="{ 'bg-accent': activeIndex === postOffset + i }"
-                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-secondary hover:bg-accent"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent"
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = postOffset + i"
                 >
@@ -594,7 +594,7 @@ function closeProfileDropdown() {
                   :key="'page-' + item.id"
                   :data-search-index="pageOffset + i"
                   :class="{ 'bg-accent': activeIndex === pageOffset + i }"
-                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-secondary hover:bg-accent"
+                  class="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent"
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = pageOffset + i"
                 >
