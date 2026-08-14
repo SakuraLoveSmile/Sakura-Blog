@@ -19,9 +19,15 @@ import (
 var (
 	sharedMD     = goldmark.New() // 评论无需 AutoHeadingID
 	sharedPolicy = buildCommentPolicy()
-	// 匹配表情包 CDN 图片的 <img src="...">，用于追加 cmt-emoji-img class 以约束尺寸。
-	emojiImgRe = regexp.MustCompile(`(<img\b[^>]*\bsrc="https?://[^"]*(?:emoticons|emoji)[^"]*"[^>]*)(>)`)
+	// 匹配评论 HTML 中的 img 节点，具体是否为表情由 isEmojiSrc 统一判定。
+	emojiImgRe = regexp.MustCompile(`(?i)(<img\b[^>]*\bsrc="([^"]+)"[^>]*)(>)`)
+	emojiSrcRe = regexp.MustCompile(`(?i)^https?://[^"]*(?:emoticons|emoji)[^"]*$`)
 )
+
+// isEmojiSrc 判断图片地址是否命中评论表情 CDN 白名单。
+func isEmojiSrc(src string) bool {
+	return emojiSrcRe.MatchString(src)
+}
 
 // buildCommentPolicy 评论 bluemonday 策略：基于 UGCPolicy，额外允许表情图片 img.cmt-emoji-img
 // （Artalk-Emoticons CDN 域名白名单，src 必须指向指定来源）。
@@ -43,14 +49,18 @@ func Render(src string) (string, error) {
 		return "", fmt.Errorf("render comment markdown: %w", err)
 	}
 	html := sharedPolicy.Sanitize(sb.String())
-	// 给表情包 CDN 的 <img> 追加 cmt-emoji-img class，使 CSS 约束其尺寸为 32px 内联表情。
+	// 给表情包 CDN 的 <img> 追加 cmt-emoji-img class，使 CSS 约束其尺寸为 20px 内联表情。
 	html = emojiImgRe.ReplaceAllStringFunc(html, func(m string) string {
+		matches := emojiImgRe.FindStringSubmatch(m)
+		if len(matches) < 3 || !isEmojiSrc(matches[2]) {
+			return m
+		}
 		if strings.Contains(m, `class="`) {
 			// 已有 class 属性：追加
 			return strings.Replace(m, `class="`, `class="cmt-emoji-img `, 1)
 		}
-		// 无 class：在 src 后插入
-		return emojiImgRe.ReplaceAllString(m, `${1} class="cmt-emoji-img"${2}`)
+		// 无 class：在标签结束前插入
+		return matches[1] + ` class="cmt-emoji-img"` + matches[3]
 	})
 	return html, nil
 }

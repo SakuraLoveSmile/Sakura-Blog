@@ -22,7 +22,6 @@ import (
 	"blog/internal/search"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
-	"blog/internal/textutil"
 )
 
 // sidebarSnapshot 侧边栏 45s 快照缓存（P2-13）。
@@ -226,7 +225,7 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 			for _, cm := range comments {
 				data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
 					Nick:    cm.Nick,
-					Excerpt: textutil.Truncate(textutil.StripHTML(cm.ContentHTML), 40),
+					Excerpt: comment.ExcerptHTML(cm.ContentHTML, 40),
 					URL:     cm.PageKey + "#comment-" + strconv.FormatInt(cm.ID, 10),
 					TimeAgo: comment.TimeAgo(cm.CreatedAt),
 				})

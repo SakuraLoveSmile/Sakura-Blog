@@ -646,8 +646,8 @@ type CommentItem struct {
 // LatestComment 侧边栏"最新评论"widget 单项。
 type LatestComment struct {
 	Nick    string
-	Excerpt string // 内容纯文本摘要（截断）
-	URL     string // page_key + #comment-{id} 锚点
+	Excerpt template.HTML // 保留表情小图的摘要 HTML（comment.ExcerptHTML 白名单重建）
+	URL     string        // page_key + #comment-{id} 锚点
 	TimeAgo string
 }
 

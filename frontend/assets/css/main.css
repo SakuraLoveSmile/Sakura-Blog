@@ -8124,6 +8124,14 @@ details.toc[open] >div.body section .header+.doc_tree {
   border-radius: 12px;
   padding: 0.5rem 1rem;
 }
+.widget-wrapper.timeline .timenode a.body img.cmt-emoji-img {
+  display: inline-block;
+  max-width: 20px;
+  max-height: 20px;
+  vertical-align: -0.25em;
+  margin: 0 1px;
+  object-fit: contain;
+}
 .widget-wrapper.timeline .tag-plugin.timeline .timenode .body p,
 .widget-wrapper.timeline .tag-plugin.timeline .timenode .body li {
   --fsp: calc(17px - 3px);
