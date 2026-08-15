@@ -32,7 +32,9 @@ type StyleConfig struct {
 	BorderRadius   StyleBorderRadius   `yaml:"border_radius" json:"border_radius"`     // 圆角（Spec 52 四档 + 1.38 七档兼容）
 	Gradient       StyleGradient       `yaml:"gradient" json:"gradient"`               // 渐变两组（Spec 52）：注入 --gradient-* 变量
 	AnimatedAvatar StyleAnimatedAvatar `yaml:"animated_avatar" json:"animated_avatar"` // 1.38 头像动画组
-	CornerShape    string              `yaml:"corner-shape" json:"corner_shape"`       // 连续曲率圆角（1.40）
+	Loading        StyleLoading        `yaml:"loading" json:"loading"`
+	ErrorPage      string              `yaml:"error_page" json:"error_page"`
+	CornerShape    string              `yaml:"corner-shape" json:"corner_shape"` // 连续曲率圆角（1.40）
 }
 
 // StyleBorderRadius 圆角组。Spec 52 四档（card/block/navbar/image）+ 1.38 七档（card-l/card/card-s/bar/image-l/image/image-s）兼容。
@@ -108,6 +110,27 @@ type StyleCodeblock struct {
 type StyleAnimatedAvatar struct {
 	Animate    string `yaml:"animate" json:"animate"`       // auto / always
 	Background string `yaml:"background" json:"background"` // 头像旋转背景图 URL
+}
+
+// Enabled reports whether the animated avatar ring should be rendered. Empty
+// values keep the existing default; explicit false-like values disable it.
+func (a StyleAnimatedAvatar) Enabled() bool {
+	switch strings.ToLower(strings.TrimSpace(a.Animate)) {
+	case "false", "off", "none", "0":
+		return false
+	default:
+		return true
+	}
+}
+
+// Always reports whether the avatar ring should animate without hover.
+func (a StyleAnimatedAvatar) Always() bool {
+	return strings.EqualFold(strings.TrimSpace(a.Animate), "always")
+}
+
+type StyleLoading struct {
+	Loading string `yaml:"loading" json:"loading"`
+	Error   string `yaml:"error" json:"error"`
 }
 
 // StylePaginator 分页箭头图（选择器级覆盖 background-image）。
@@ -216,6 +239,11 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	}
 	if s.Gradient.Avatar != "" {
 		fmt.Fprintf(&b, ".logo-wrap a.avatar div.bg{background:%s;}", s.Gradient.Avatar)
+	}
+	if !s.AnimatedAvatar.Enabled() {
+		b.WriteString(".logo-wrap a.avatar div.bg{display:none!important;}")
+	} else if s.AnimatedAvatar.Always() {
+		b.WriteString(".logo-wrap a.avatar div.bg{opacity:1!important;animation:spin infinite 4s;animation-timing-function:linear;}")
 	}
 	// header_prefix：技术文章标题前缀。值为 URL 时注入图标 background-image，否则伪元素 content 符号。
 	for _, h := range []string{"h2", "h3", "h4", "h5"} {

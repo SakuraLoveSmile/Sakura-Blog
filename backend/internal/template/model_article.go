@@ -19,6 +19,8 @@ type ArticleConfig struct {
 	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
 	// 零配置时前端回退 tech，与现状逐像素一致。
 	Type          string            `yaml:"type" json:"type"`
+	AutoExcerpt   int               `yaml:"auto_excerpt" json:"auto_excerpt"`
+	AutoBanner    bool              `yaml:"auto_banner" json:"auto_banner"`
 	Copyright     CopyrightConfig   `yaml:"copyright" json:"copyright"`
 	Reward        RewardConfig      `yaml:"reward" json:"reward"`
 	Share         ShareConfig       `yaml:"share" json:"share"`

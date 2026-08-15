@@ -214,6 +214,19 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		{SectionPlugins, `{"heti":{"enable":true},"fancybox":{"selector":"div.lazy-box>img.lazy"}}`, func() bool {
 			return site.Load().Plugins.Heti != nil && site.Load().Plugins.Heti.Enable && site.Load().Plugins.Fancybox != nil && site.Load().Plugins.Fancybox.Selector != ""
 		}},
+		{SectionSearch, `{"service":"local_search","local_search":{"field":"page","path":"/custom-search.json","content":false,"skip_search":["/wiki/private"]}}`, func() bool {
+			cfg := site.Load().Search
+			return cfg.LocalSearch.Field == "page" && cfg.LocalSearch.Path == "/custom-search.json" && cfg.LocalSearch.Content != nil && !*cfg.LocalSearch.Content && len(cfg.LocalSearch.SkipSearch) == 1
+		}},
+		{SectionSiteTree, `{"home":{"comments":true}}`, func() bool { return site.Load().SiteTree.Home.Comments }},
+		{SectionNotebook, `{"auto_excerpt":64,"order_by":"-created","license":"CC BY","share":true}`, func() bool {
+			cfg := site.Load().Notebook
+			return cfg.AutoExcerpt == 64 && cfg.OrderBy == "-created" && cfg.Share && cfg.License == "CC BY"
+		}},
+		{SectionSEO, `{"canonical":{"originalHost":"origin.example","officialHosts":["mirror.example"]},"open_graph":{"enable":false,"twitter_id":"blog"},"preconnect":["https://cdn.example"],"structured_data":{"links":["https://example.com"]}}`, func() bool {
+			cfg := site.Load().SEO
+			return cfg.Canonical.OriginalHost == "origin.example" && len(cfg.Canonical.OfficialHosts) == 1 && cfg.OpenGraph.Enable != nil && !*cfg.OpenGraph.Enable && len(cfg.Preconnect) == 1 && len(cfg.StructuredData.Links) == 1
+		}},
 	}
 	for _, tc := range cases {
 		if err := SaveSection(s, site, tc.section, []byte(tc.payload)); err != nil {

@@ -44,9 +44,10 @@ type Note struct {
 	ID          int64     `json:"id"`
 	NotebookID  int64     `json:"notebook_id"`
 	Title       string    `json:"title"`
-	Content     string    `json:"content"`      // Markdown 原文
-	ContentHTML string    `json:"content_html"` // 渲染后 HTML
-	Tags        string    `json:"tags"`         // 逗号分隔的标签字符串
+	Excerpt     string    `json:"excerpt,omitempty"` // 渲染期摘要，不落库
+	Content     string    `json:"content"`           // Markdown 原文
+	ContentHTML string    `json:"content_html"`      // 渲染后 HTML
+	Tags        string    `json:"tags"`              // 逗号分隔的标签字符串
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

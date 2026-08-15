@@ -39,6 +39,12 @@ func normalizeThemeDefaults(s *tmpl.Site) {
 	if s.Article.PinStyle == "" {
 		s.Article.PinStyle = "carousel"
 	}
+	if s.Notebook.AutoExcerpt == 0 {
+		s.Notebook.AutoExcerpt = 128
+	}
+	if s.Notebook.OrderBy == "" {
+		s.Notebook.OrderBy = "-updated"
+	}
 }
 
 // DefaultSite 构造 Demo 2 用的站点配置。
@@ -130,6 +136,11 @@ func DefaultSite() *tmpl.Site {
 			BannerRatio:  2.5,
 			EditThisPage: nil, // 缺省不配映射；配置后文章页出现贡献者/编辑本文段
 		},
+		Search: tmpl.SearchConfig{
+			Service:     "local_search",
+			LocalSearch: tmpl.LocalSearchConfig{Field: "all", Path: "/search.json", Content: boolPtr(true)},
+		},
+		Notebook: tmpl.NotebookConfig{AutoExcerpt: 128, OrderBy: "-updated", Share: false},
 		Style: tmpl.StyleConfig{
 			CornerShape: "superellipse(1.25)",
 			Leftbar:     tmpl.StyleLeftbar{UIStyle: "card"},
@@ -145,3 +156,5 @@ func DefaultSite() *tmpl.Site {
 		},
 	}
 }
+
+func boolPtr(v bool) *bool { return &v }

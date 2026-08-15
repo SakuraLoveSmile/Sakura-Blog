@@ -2,16 +2,17 @@
 // 页面存在 #swiper-api 时按需加载 swiper 并初始化；PJAX 换页后重新检测。
 // Spec 53 Part B：依赖本地化（对齐 Spec 28 原则，替代 unpkg CDN），版本锁定 10.3.1，
 // 文件在 assets/vendor/swiper/，随 embed.go 内嵌分发。
-const SWIPER_CSS = '/assets/vendor/swiper/swiper-bundle.min.css';
-const SWIPER_JS = '/assets/vendor/swiper/swiper-bundle.min.js';
+const SWIPER_DEFAULT_CSS = '/assets/vendor/swiper/swiper-bundle.min.css';
+const SWIPER_DEFAULT_JS = '/assets/vendor/swiper/swiper-bundle.min.js';
 
 function initSwiper() {
   const swiper_api = document.getElementById('swiper-api');
   if (swiper_api == undefined) return;
   // 已初始化则跳过（swiper 会在容器上挂 swiper-initialized 类）
   if (swiper_api.classList.contains('swiper-initialized')) return;
-  utils.css(SWIPER_CSS);
-  utils.js(SWIPER_JS, { defer: true }).then(function () {
+  const config = window.__stellarPlugins && window.__stellarPlugins.swiper || {};
+  utils.css(config.css || SWIPER_DEFAULT_CSS);
+  utils.js(config.js || SWIPER_DEFAULT_JS, { defer: true }).then(function () {
     if (typeof Swiper === 'undefined') return;
     const effect = swiper_api.getAttribute('effect') || '';
     const options = {

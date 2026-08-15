@@ -12,17 +12,17 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"blog/internal/textutil"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // contentCache 前台内容派生缓存（search.json / sitemap.xml）。
 type contentCache struct {
-	st   *store.Store
-	site *atomic.Pointer[tmpl.Site] // 站点配置（wiki 项目列表随 RebuildSite 热更）
-	search   searchJSONCache
-	sitemap  sitemapCache
+	st      *store.Store
+	site    *atomic.Pointer[tmpl.Site] // 站点配置（wiki 项目列表随 RebuildSite 热更）
+	search  searchJSONCache
+	sitemap sitemapCache
 }
 
 func newContentCache(st *store.Store, site *atomic.Pointer[tmpl.Site]) *contentCache {
@@ -80,7 +80,8 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
-	items := searchItemsFromPosts(posts)
+	searchCfg := c.site.Load().Search
+	items := searchItemsFromPostsWithConfig(posts, searchCfg)
 	for i := range c.site.Load().Wiki {
 		projectID := c.site.Load().Wiki[i].ID
 		docs, err := c.st.ListWikidocs(projectID)
@@ -92,11 +93,18 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 			if d.Status != store.StatusPublished {
 				continue
 			}
+			path := "/wiki/" + projectID + "/" + d.Slug
+			if searchCfg.LocalSearch.Field == "post" || !searchPathAllowed(path, searchCfg) {
+				continue
+			}
 			content := textutil.Truncate(textutil.StripHTML(d.ContentHTML), 2000)
+			if searchCfg.LocalSearch.Content != nil && !*searchCfg.LocalSearch.Content {
+				content = ""
+			}
 			items = append(items, searchItem{
 				Title:   d.Title,
 				Content: content,
-				Path:    "/wiki/" + projectID + "/" + d.Slug,
+				Path:    path,
 			})
 		}
 	}
@@ -107,7 +115,7 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 
 type sitemapCache struct {
 	mu    sync.Mutex
-	dirty atomic.Bool // Spec 62：同 searchJSONCache，invalidate 无锁写改 atomic
+	dirty atomic.Bool       // Spec 62：同 searchJSONCache，invalidate 无锁写改 atomic
 	urls  map[string][]byte // baseURL → xml（site.url 未配置时按请求 host 变化，按 key 缓存）
 }
 

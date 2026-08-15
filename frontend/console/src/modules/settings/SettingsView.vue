@@ -54,6 +54,7 @@ const groups = [
     tabs: [
       { key: "article", label: "文章" },
       { key: "comments", label: "评论" },
+      { key: "notebook", label: "笔记本" },
       { key: "wiki", label: "文库" },
       { key: "authors", label: "作者" },
       { key: "tag_plugins", label: "标签插件" },
@@ -66,6 +67,7 @@ const groups = [
     desc: "SEO、代码注入、AI 与安全",
     tabs: [
       { key: "seo", label: "SEO" },
+      { key: "search", label: "搜索" },
       { key: "inject", label: "代码注入" },
       { key: "ai", label: "AI" },
       { key: "security", label: "安全" },
@@ -73,7 +75,7 @@ const groups = [
     ],
   },
 ];
-const allSections = ["site","menubar","rightbar","footer","comments","article","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","tag_plugins","default","pages"];
+const allSections = ["site","menubar","rightbar","footer","comments","article","search","site_tree","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","notebook","tag_plugins","default","pages"];
 const platformOptions = ["wechat","weibo","email","link","twitter","telegram"];
 // 标签插件配色选项（对齐原版 colorful 色板）
 const tagColorOptions = ["red","orange","yellow","green","cyan","blue","purple"];
@@ -101,6 +103,9 @@ function ensureDefaults(d: Record<string, any>) {
   d.footer.sitemap = d.footer.sitemap || [];
   d.comments = d.comments || {};
   d.comments.notify = d.comments.notify || {};
+  d.site_tree = d.site_tree || {};
+  d.site_tree.home = d.site_tree.home || {};
+  d.site_tree.home.comments = d.site_tree.home.comments ?? false;
   d.article = d.article || {};
   d.article.copyright = d.article.copyright || {};
   d.article.reward = d.article.reward || {};
@@ -111,6 +116,13 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.pin_style = d.article.pin_style || "carousel";
   d.article.reading_time = d.article.reading_time ?? false;
   d.article.card_tags = d.article.card_tags ?? false;
+  d.article.type = d.article.type || "tech";
+  d.article.banner_ratio = d.article.banner_ratio ?? 0;
+  d.article.auto_excerpt = d.article.auto_excerpt ?? 0;
+  d.article.auto_banner = d.article.auto_banner ?? false;
+  d.article.category_color = d.article.category_color || {};
+  d.article.category_icon = d.article.category_icon || {};
+  d.article.tag_icon = d.article.tag_icon || {};
   d.friends = d.friends || {};
   d.friends.refresh_interval = d.friends.refresh_interval ?? 60;
   d.friends.posts_per_link = d.friends.posts_per_link ?? 20;
@@ -118,6 +130,20 @@ function ensureDefaults(d: Record<string, any>) {
   d.friends.snapshot_interval = d.friends.snapshot_interval ?? 1440;
   d.friends.snapshot_provider = d.friends.snapshot_provider || "https://image.thum.io/get/width/1280/crop/720/{url}";
   d.seo = d.seo || {};
+  d.seo.preconnect = d.seo.preconnect || [];
+  d.seo.canonical = d.seo.canonical || {};
+  d.seo.canonical.officialHosts = d.seo.canonical.officialHosts || [];
+  d.seo.open_graph = d.seo.open_graph || {};
+  d.seo.open_graph.enable = d.seo.open_graph.enable ?? true;
+  d.seo.structured_data = d.seo.structured_data || {};
+  d.seo.structured_data.links = d.seo.structured_data.links || [];
+  d.search = d.search || {};
+  d.search.service = d.search.service || "local_search";
+  d.search.local_search = d.search.local_search || {};
+  d.search.local_search.field = d.search.local_search.field || "all";
+  d.search.local_search.path = d.search.local_search.path || "/search.json";
+  d.search.local_search.content = d.search.local_search.content ?? true;
+  d.search.local_search.skip_search = d.search.local_search.skip_search || [];
   d.inject = d.inject || {};
   d.ai = d.ai || {};
   d.ai.summary_enabled = d.ai.summary_enabled ?? true;
@@ -150,6 +176,17 @@ function ensureDefaults(d: Record<string, any>) {
   d.plugins.scrollreveal = d.plugins.scrollreveal || {};
   d.plugins.heti = d.plugins.heti || {};
   d.plugins.fancybox = d.plugins.fancybox || {};
+  d.plugins.fancybox.enable = d.plugins.fancybox.enable ?? true;
+  d.plugins.swiper = d.plugins.swiper || {};
+  d.plugins.katex = d.plugins.katex || {};
+  d.plugins.mathjax = d.plugins.mathjax || {};
+  d.plugins.mermaid = d.plugins.mermaid || {};
+  d.plugins.copycode = d.plugins.copycode || {};
+  d.plugins.swiper.enable = d.plugins.swiper.enable ?? true;
+  d.plugins.katex.enable = d.plugins.katex.enable ?? true;
+  d.plugins.mathjax.enable = d.plugins.mathjax.enable ?? false;
+  d.plugins.mermaid.enable = d.plugins.mermaid.enable ?? true;
+  d.plugins.copycode.enable = d.plugins.copycode.enable ?? true;
   // 标签插件默认参数（对齐原版 tag_plugins 段）
   const tp = (d.tag_plugins = d.tag_plugins || {});
   tp.note = tp.note || {};
@@ -164,6 +201,14 @@ function ensureDefaults(d: Record<string, any>) {
   tp.copy = tp.copy || {};
   // 占位素材组（对齐原版 default 段）
   d.default = d.default || {};
+  d.default.image_onerror = d.default.image_onerror || "";
+  d.style.loading = d.style.loading || {};
+  d.style.error_page = d.style.error_page || "";
+  d.style.animated_avatar = d.style.animated_avatar || {};
+  d.notebook = d.notebook || {};
+  d.notebook.auto_excerpt = d.notebook.auto_excerpt ?? 128;
+  d.notebook.order_by = d.notebook.order_by || "-updated";
+  d.notebook.share = d.notebook.share ?? false;
   d.cover = d.cover || {};
   d.cover.features = d.cover.features || [];
   d.nav_tabs = d.nav_tabs || {};
@@ -248,6 +293,11 @@ async function saveJson(section: string) {
   }
 }
 
+async function saveComments() {
+  await save("comments");
+  await save("site_tree");
+}
+
 const testing = ref(false);
 const testResult = ref("");
 const testOk = ref(false);
@@ -312,6 +362,32 @@ function addSitemapItem(g: any) {
   g.items = g.items || [];
   g.items.push({ title: "", url: "" });
 }
+
+function addMapEntry(target: "category_color" | "category_icon" | "tag_icon") {
+  data.value.article[target] = data.value.article[target] || {};
+  let key = "新名称";
+  let i = 2;
+  while (Object.prototype.hasOwnProperty.call(data.value.article[target], key)) key = `新名称${i++}`;
+  data.value.article[target][key] = "";
+}
+
+function renameMapEntry(target: "category_color" | "category_icon" | "tag_icon", oldKey: string, event: Event) {
+  const nextKey = (event.target as HTMLInputElement).value;
+  const map = data.value.article[target] || {};
+  if (nextKey === oldKey) return;
+  const value = map[oldKey];
+  delete map[oldKey];
+  map[nextKey || oldKey] = value;
+}
+
+function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon", key: string) {
+  delete data.value.article[target]?.[key];
+}
+
+function updateSkipSearch(event: Event) {
+  data.value.search.local_search.skip_search = (event.target as HTMLTextAreaElement).value
+    .split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean);
+}
 function addWikiProject() {
   // Spec 62：新增项目生成稳定 id 作 v-for key
  data.value.wiki.push({ id: crypto.randomUUID(), name: "", title: "", description: "", icon: "", tags: [], url: "", repo: "", preview: "auto", sort: 0, hero: {}, _tagsText: "" });
@@ -338,8 +414,9 @@ function saveActive() {
     case "rightbar": save("rightbar"); break;
     case "footer": save("footer"); break;
     case "wiki": save("wiki", wikiPayload()); break;
-    case "comments": save("comments"); break;
+    case "comments": saveComments(); break;
     case "article": save("article"); break;
+    case "search": save("search"); break;
     case "seo": save("seo"); break;
     case "inject": save("inject"); break;
     case "ai": save("ai"); break;
@@ -348,6 +425,7 @@ function saveActive() {
     case "nav_tabs": save("nav_tabs"); break;
     case "widgets": save("widgets"); break;
     case "plugins": save("plugins"); break;
+    case "notebook": save("notebook"); break;
     case "tag_plugins": save("tag_plugins"); break;
     case "default": save("default"); break;
     case "authors": save("authors"); break;
@@ -749,6 +827,7 @@ onMounted(() => {
               <div class="field"><label>链接卡片图标</label><AttachmentField v-model="data.default.link" /></div>
               <div class="field"><label>封面</label><AttachmentField v-model="data.default.cover" /></div>
               <div class="field"><label>正文插图（预留）</label><AttachmentField v-model="data.default.image" /></div>
+              <div class="field field-wide"><label>图片加载失败占位图（image_onerror）</label><AttachmentField v-model="data.default.image_onerror" placeholder="可填图片 URL 或 data URI" /></div>
               <div class="field"><label>项目卡片（预留）</label><AttachmentField v-model="data.default.project" /></div>
               <div class="field"><label>横幅（预留）</label><AttachmentField v-model="data.default.banner" /></div>
               <div class="field"><label>专栏</label><AttachmentField v-model="data.default.topic" /></div>
@@ -757,6 +836,17 @@ onMounted(() => {
             <div class="card-actions">
               <VButton type="primary" size="sm" :loading="savingKey === 'default'" @click="save('default')">保存素材</VButton>
             </div>
+          </VCard>
+
+          <VCard v-show="active === 'notebook'" title="笔记本设置">
+            <p class="hint">对齐 Stellar notebook 段；具体笔记本/front-matter 可覆盖这些默认值。</p>
+            <div class="form-grid form-grid-2">
+              <div class="field"><label>自动摘要长度（字符）</label><input v-model.number="data.notebook.auto_excerpt" type="number" min="0" :class="inputCls" /></div>
+              <div class="field"><label>排序字段</label><input v-model="data.notebook.order_by" :class="inputCls" placeholder="-updated" /></div>
+            </div>
+            <div class="switch-row"><div class="switch-row-label"><div class="switch-row-name">显示分享按钮</div></div><VSwitch v-model="data.notebook.share" /></div>
+            <div class="field"><label>许可协议（文本或 false）</label><input :value="typeof data.notebook.license === 'string' ? data.notebook.license : ''" :class="inputCls" placeholder="留空或输入许可文案" @input="data.notebook.license = ($event.target as HTMLInputElement).value" /></div>
+            <div class="card-actions"><VButton type="primary" size="sm" :loading="savingKey === 'notebook'" @click="save('notebook')">保存笔记本设置</VButton></div>
           </VCard>
 
           <VCard v-show="active === 'wiki'" title="文库项目">
@@ -823,6 +913,13 @@ onMounted(() => {
           <VCard v-show="active === 'comments'" title="评论设置">
             <div class="switch-row">
               <div class="switch-row-label">
+                <div class="switch-row-name">首页显示评论区</div>
+                <div class="switch-row-desc">对齐 site_tree.home.comments；文章页评论不受此开关影响</div>
+              </div>
+              <VSwitch v-model="data.site_tree.home.comments" />
+            </div>
+            <div class="switch-row">
+              <div class="switch-row-label">
                 <div class="switch-row-name">启用评论</div>
                 <div class="switch-row-desc">关闭需重启才断开路由</div>
               </div>
@@ -854,7 +951,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="card-actions card-actions-inline">
-              <VButton type="primary" size="sm" :loading="savingKey === 'comments'" @click="save('comments')">保存评论设置</VButton>
+              <VButton type="primary" size="sm" :loading="savingKey === 'comments' || savingKey === 'site_tree'" @click="saveComments">保存评论设置</VButton>
               <VButton type="secondary" size="sm" :disabled="testing" @click="testMail">{{ testing ? "发送中..." : "发送测试邮件" }}</VButton>
               <span v-if="testResult" class="test-result" :class="testOk ? 'is-ok' : 'is-err'">{{ testResult }}</span>
             </div>
@@ -883,6 +980,28 @@ onMounted(() => {
                 <div class="field"><label>卡片封面宽高比（0=主题默认，如 2）</label><input v-model.number="data.article.cover_ratio" type="number" step="0.1" min="0" :class="inputCls" /></div>
                 <div class="field"><label>相关文章数上限（0=关）</label><input v-model.number="data.article.related_posts" type="number" min="0" :class="inputCls" /></div>
                 <div class="field"><label>过期提醒阈值（天，0=缺省 180）</label><input v-model.number="data.article.expire_days" type="number" min="0" :class="inputCls" /></div>
+              </div>
+              <div class="form-grid form-grid-3">
+                <div class="field"><label>文章布局类型</label><select v-model="data.article.type" :class="selectCls"><option value="tech">tech（技术）</option><option value="story">story（图文）</option></select></div>
+                <div class="field"><label>文首横幅宽高比</label><input v-model.number="data.article.banner_ratio" type="number" step="0.1" min="0" :class="inputCls" placeholder="2.5" /></div>
+                <div class="field"><label>自动摘要长度（字符，0=关闭）</label><input v-model.number="data.article.auto_excerpt" type="number" min="0" :class="inputCls" placeholder="128" /></div>
+              </div>
+              <div class="switch-row">
+                <div class="switch-row-label"><div class="switch-row-name">无横幅时使用默认横幅</div><div class="switch-row-desc">文章没有显式 banner 时回退到素材组的 banner</div></div>
+                <VSwitch v-model="data.article.auto_banner" />
+              </div>
+            </div>
+            <div class="subsection">
+              <p class="subsection-title">分类与标签映射</p>
+              <p class="hint">分类颜色使用 CSS 颜色；图标字段可输入图标 key 或从图标库选择。</p>
+              <div v-for="target in (['category_color', 'category_icon', 'tag_icon'] as const)" :key="target" class="mapping-block">
+                <div class="mapping-head"><span>{{ target === 'category_color' ? '分类颜色' : target === 'category_icon' ? '分类图标' : '标签图标' }}</span><button type="button" class="add-btn" @click="addMapEntry(target)"><Icon icon="ri:add-line" /> 添加</button></div>
+                <div v-for="key in Object.keys(data.article[target])" :key="key" class="editable-row">
+                  <input :value="key" :class="inputCls" class="col-4" placeholder="名称" @change="renameMapEntry(target, key, $event)" />
+                  <input v-if="target === 'category_color'" v-model="data.article[target][key]" :class="inputCls" class="col-6" placeholder="#1BCDFC" />
+                  <IconPicker v-else v-model="data.article[target][key]" compact placeholder="图标 key" class="col-6" />
+                  <button type="button" class="row-btn row-btn-danger" title="删除" @click="removeMapEntry(target, key)"><Icon icon="ri:delete-bin-line" /></button>
+                </div>
               </div>
             </div>
             <div class="subsection">
@@ -987,6 +1106,17 @@ onMounted(() => {
           </VCard>
 
           <VCard v-show="active === 'seo'" title="SEO 设置">
+            <div class="subsection">
+              <p class="subsection-title">站点来源与社交卡片</p>
+              <div class="form-grid form-grid-2">
+                <div class="field"><label>源站主机（originalHost）</label><input v-model="data.seo.canonical.originalHost" :class="inputCls" placeholder="example.com" /></div>
+                <div class="field"><label>Twitter ID</label><input v-model="data.seo.open_graph.twitter_id" :class="inputCls" placeholder="username（不含 @）" /></div>
+              </div>
+              <div class="switch-row"><div class="switch-row-label"><div class="switch-row-name">启用 Open Graph</div><div class="switch-row-desc">输出 og:title、og:description 与 Twitter 站点标记</div></div><VSwitch v-model="data.seo.open_graph.enable" /></div>
+              <div class="field"><label>官方主机（每行一个）</label><textarea :value="data.seo.canonical.officialHosts.join('\n')" rows="3" :class="textareaCls" placeholder="localhost" @input="(e) => data.seo.canonical.officialHosts = (e.target as HTMLTextAreaElement).value.split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean)"></textarea></div>
+              <div class="field"><label>预连接域名（每行一个）</label><textarea :value="data.seo.preconnect.join('\n')" rows="3" :class="textareaCls" placeholder="https://cdn.jsdelivr.net" @input="(e) => data.seo.preconnect = (e.target as HTMLTextAreaElement).value.split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean)"></textarea></div>
+              <div class="field"><label>结构化数据社交链接（每行一个）</label><textarea :value="data.seo.structured_data.links.join('\n')" rows="3" :class="textareaCls" placeholder="https://github.com/username" @input="(e) => data.seo.structured_data.links = (e.target as HTMLTextAreaElement).value.split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean)"></textarea></div>
+            </div>
             <div class="field"><label>默认 Meta Description（文章未单独设置时使用）</label><textarea v-model="data.seo.default_description" rows="2" :class="textareaCls"></textarea></div>
             <div class="field"><label>默认 Meta Keywords（逗号分隔）</label><input v-model="data.seo.default_keywords" :class="inputCls" placeholder="博客, Go, 前端" /></div>
             <div class="field"><label>robots.txt 附加规则（原样追加到默认规则之后）</label><textarea v-model="data.seo.robots_extra" rows="4" :class="codeAreaCls" placeholder="User-agent: GPTBot&#10;Disallow: /"></textarea></div>
@@ -1007,6 +1137,23 @@ onMounted(() => {
             </div>
             <div class="card-actions">
               <VButton type="primary" size="sm" :loading="savingKey === 'seo'" @click="save('seo')">保存 SEO 设置</VButton>
+            </div>
+          </VCard>
+
+          <VCard v-show="active === 'search'" title="搜索设置">
+            <p class="hint">对齐 Stellar search.local_search；修改后会立即使本地索引失效并重建。</p>
+            <div class="form-grid form-grid-3">
+              <div class="field"><label>搜索服务</label><select v-model="data.search.service" :class="selectCls"><option value="local_search">local_search</option><option value="todo">todo</option></select></div>
+              <div class="field"><label>索引范围</label><select v-model="data.search.local_search.field" :class="selectCls"><option value="all">全部</option><option value="post">文章</option><option value="page">页面</option></select></div>
+              <div class="field"><label>索引路径</label><input v-model="data.search.local_search.path" :class="inputCls" placeholder="/search.json" /></div>
+            </div>
+            <div class="switch-row">
+              <div class="switch-row-label"><div class="switch-row-name">搜索正文内容</div><div class="switch-row-desc">关闭后仍可搜索标题，但不会把正文写入索引</div></div>
+              <VSwitch v-model="data.search.local_search.content" />
+            </div>
+            <div class="field"><label>排除路径（每行一个）</label><textarea :value="data.search.local_search.skip_search.join('\n')" rows="4" :class="textareaCls" placeholder="/post/private" @input="updateSkipSearch"></textarea></div>
+            <div class="card-actions">
+              <VButton type="primary" size="sm" :loading="savingKey === 'search'" @click="save('search')">保存搜索设置</VButton>
             </div>
           </VCard>
 

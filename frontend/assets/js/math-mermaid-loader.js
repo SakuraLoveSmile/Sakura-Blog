@@ -11,6 +11,7 @@
   var KATEX_AUTORENDER = "https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js";
   var MERMAID_JS = "/assets/vendor/mermaid/mermaid.min.js";
   var MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
+  var pluginConfig = window.__stellarPlugins || {};
   var MATH_DELIMITERS = [
     { left: "$$", right: "$$", display: true },
     { left: "\\[", right: "\\]", display: true },
@@ -72,9 +73,12 @@
   }
 
   function loadMermaid() {
-    loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN)
+    var configured = pluginConfig.mermaid && pluginConfig.mermaid.js;
+    var promise = configured ? loadScript(configured) : loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN);
+    promise
       .then(function () {
-        mermaid.initialize({ startOnLoad: false, theme: "dark" });
+        var theme = pluginConfig.mermaid && pluginConfig.mermaid.theme || "dark";
+        mermaid.initialize({ startOnLoad: false, theme: theme });
         mermaid.run({ querySelector: ".md-text .mermaid, .mermaid" });
       })
       .catch(function () { /* 本地 vendor 与 CDN 均不可达：静默降级，图表显示源码 */ });
@@ -86,8 +90,24 @@
       if (hasMath(el)) needMath = true;
     });
     var needMermaid = !!document.querySelector(".md-text .mermaid, .mermaid");
-    if (needMath) loadMath();
-    if (needMermaid) loadMermaid();
+    var katexEnabled = !pluginConfig.katex || pluginConfig.katex.enable !== false;
+    var mermaidEnabled = !pluginConfig.mermaid || pluginConfig.mermaid.enable !== false;
+    if (needMath && katexEnabled) loadMath();
+    if (needMermaid && mermaidEnabled) loadMermaid();
+
+    var mathjax = pluginConfig.mathjax;
+    if (mathjax && mathjax.enable && mathjax.js) {
+      if (mathjax.v3) {
+        window.MathJax = {
+          tex: {
+            inlineMath: [["$", "$"], ["\\(", "\\)"]],
+            processEscapes: true,
+            skipTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+          }
+        };
+      }
+      loadScript(mathjax.js).catch(function () { /* MathJax 不可达时保留原文 */ });
+    }
   }
 
   if (document.readyState === "loading") {

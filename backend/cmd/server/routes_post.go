@@ -34,6 +34,8 @@ func (s *webServer) handlePost(c *gin.Context) {
 
 	// 优先查 DB
 	if p, err := s.st.GetPublishedBySlug(slug); err == nil && p != nil {
+		excerpt := articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML)
+		banner := articleBanner(s.site.Load(), p.Banner)
 		// 密码门：未解锁则渲染口令表单（不增加阅读量、不泄漏正文）
 		if p.IsPasswordProtected() {
 			cookie, _ := c.Cookie(postPWCookieName(slug))
@@ -41,11 +43,12 @@ func (s *webServer) handlePost(c *gin.Context) {
 				data := &tmpl.ViewData{
 					Site: s.site.Load(),
 					Page: &tmpl.Page{
-						Title:  p.Title,
-						Slug:   p.Slug,
-						Layout: "post-password",
-						Lang:   "zh-CN",
-						MenuID: "post",
+						Title:   p.Title,
+						Slug:    p.Slug,
+						Layout:  "post-password",
+						Lang:    "zh-CN",
+						MenuID:  "post",
+						Excerpt: excerpt,
 					},
 				}
 				s.fillSidebar(data)
@@ -78,11 +81,11 @@ func (s *webServer) handlePost(c *gin.Context) {
 				Author:     p.Author,
 				Date:       p.CreatedAt.Format("2006-01-02"),
 				Updated:    p.UpdatedAt.Format("2006-01-02"),
-				Excerpt:    p.Excerpt,
+				Excerpt:    excerpt,
 				Views:      views,
 				Topic:      p.Topic,
 				References: store.DecodeReferences(p.References),
-				Banner:     p.Banner,
+				Banner:     banner,
 				// 文章级 SEO（Spec 42）：非空时优先输出 meta（优先级见 ViewData.MetaDescription）
 				MetaDescription: p.MetaDescription,
 				MetaKeywords:    p.MetaKeywords,
@@ -132,7 +135,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		// 过期提醒：距最后更新超阈值（缺省 180 天）时文首渲染提醒块
 		data.ExpiredDays = tmpl.ExpiredDays(data.Page.Date, data.Page.Updated, s.site.Load().Article.ExpireAfterDays(), time.Now())
 		// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
-		desc := p.Excerpt
+		desc := excerpt
 		if desc == "" {
 			d := textutil.StripHTML(p.ContentHTML)
 			if len(d) > 150 {
@@ -176,7 +179,8 @@ func (s *webServer) handlePost(c *gin.Context) {
 			Lang:       "zh-CN",
 			MenuID:     "post",
 			Date:       p.Date,
-			Excerpt:    p.Excerpt,
+			Excerpt:    articleExcerpt(s.site.Load(), p.Excerpt, p.HTML),
+			Banner:     articleBanner(s.site.Load(), p.Banner),
 			References: p.References,
 		},
 		Content: template.HTML(p.HTML),
@@ -184,7 +188,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 	data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.HTML)
 
 	data.TOC = tmpl.ExtractTOCWith(p.HTML, s.tocOptions())
-	desc := p.Excerpt
+	desc := data.Page.Excerpt
 	if desc == "" {
 		d := textutil.StripHTML(p.HTML)
 		if len(d) > 150 {
@@ -291,8 +295,9 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 			Lang:    "zh-CN",
 			MenuID:  "post",
 			Date:    p.CreatedAt.Format("2006-01-02"),
-			Excerpt: p.Excerpt,
+			Excerpt: articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML),
 			Topic:   p.Topic,
+			Banner:  articleBanner(s.site.Load(), p.Banner),
 		},
 		Content: notice + template.HTML(p.ContentHTML),
 	}

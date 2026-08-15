@@ -42,6 +42,25 @@ func TestStyleInjectCSSEmpty(t *testing.T) {
 	}
 }
 
+func TestStyleAnimatedAvatarModes(t *testing.T) {
+	if !(StyleAnimatedAvatar{}).Enabled() {
+		t.Fatal("empty animate value should preserve the enabled default")
+	}
+	if (StyleAnimatedAvatar{Animate: "false"}).Enabled() {
+		t.Fatal("false animate value should disable the avatar ring")
+	}
+	if !(StyleAnimatedAvatar{Animate: "always"}).Always() {
+		t.Fatal("always animate value should select continuous animation")
+	}
+
+	if css := string((StyleConfig{AnimatedAvatar: StyleAnimatedAvatar{Animate: "false"}}).InjectCSS()); !strings.Contains(css, "display:none") {
+		t.Fatalf("disabled avatar ring CSS missing: %q", css)
+	}
+	if css := string((StyleConfig{AnimatedAvatar: StyleAnimatedAvatar{Animate: "always"}}).InjectCSS()); !strings.Contains(css, "opacity:1!important;animation:spin") {
+		t.Fatalf("always avatar ring CSS missing: %q", css)
+	}
+}
+
 // TestStyleInjectCSSColors 颜色组注入：theme 拆分量、accent 原样、link 双变量。
 func TestStyleInjectCSSColors(t *testing.T) {
 	s := StyleConfig{Color: StyleColor{

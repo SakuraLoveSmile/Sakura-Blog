@@ -8,9 +8,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/textutil"
 	"blog/internal/search"
 	"blog/internal/store"
+	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // searchItem 本地搜索索引条目（/search.json）。
@@ -22,19 +23,44 @@ type searchItem struct {
 
 // searchItemsFromPosts 已发布文章转本地搜索索引条目：受密码保护的文章不泄漏正文。
 func searchItemsFromPosts(posts []*store.Post) []searchItem {
+	include := true
+	return searchItemsFromPostsWithConfig(posts, tmpl.SearchConfig{LocalSearch: tmpl.LocalSearchConfig{Content: &include}})
+}
+
+func searchItemsFromPostsWithConfig(posts []*store.Post, cfg tmpl.SearchConfig) []searchItem {
 	items := make([]searchItem, 0, len(posts))
 	for _, p := range posts {
+		if cfg.LocalSearch.Field == "page" {
+			continue
+		}
+		path := "/post/" + p.Slug
+		if !searchPathAllowed(path, cfg) {
+			continue
+		}
 		content := textutil.StripHTML(p.ContentHTML)
 		if p.IsPasswordProtected() {
 			content = "" // 受保护文章不泄漏正文
 		}
+		if cfg.LocalSearch.Content != nil && !*cfg.LocalSearch.Content {
+			content = ""
+		}
 		items = append(items, searchItem{
 			Title:   p.Title,
 			Content: content,
-			Path:    "/post/" + p.Slug,
+			Path:    path,
 		})
 	}
 	return items
+}
+
+func searchPathAllowed(path string, cfg tmpl.SearchConfig) bool {
+	for _, blocked := range cfg.LocalSearch.SkipSearch {
+		blocked = strings.TrimSpace(blocked)
+		if blocked != "" && (path == blocked || strings.HasPrefix(path, strings.TrimRight(blocked, "/")+"/")) {
+			return false
+		}
+	}
+	return true
 }
 
 // registerSearchRoutes 注册搜索域路由：/api/search（FTS5）与 /search.json（前端本地匹配索引）。

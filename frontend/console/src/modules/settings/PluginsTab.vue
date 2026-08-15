@@ -71,8 +71,37 @@ const btnCls =
  </div>
  </div>
 
+ <!-- Swiper -->
+ <div class="border border-border rounded-xl p-4 space-y-3">
+  <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.swiper.enable" class="rounded" />轮播图（Swiper）</label>
+  <div class="grid grid-cols-2 gap-4"><div><label class="text-xs text-text-tertiary mb-1 block">CSS 资源 URL（留空使用本地）</label><input v-model="data.swiper.css" :class="inputCls" /></div><div><label class="text-xs text-text-tertiary mb-1 block">JS 资源 URL（留空使用本地）</label><input v-model="data.swiper.js" :class="inputCls" /></div></div>
+ </div>
+
+ <!-- 数学与图表 -->
+ <div class="border border-border rounded-xl p-4 space-y-3">
+  <div class="grid grid-cols-2 gap-4">
+   <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.katex.enable" class="rounded" />KaTeX 数学公式</label>
+   <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.mathjax.enable" class="rounded" />MathJax 数学公式</label>
+   <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.mermaid.enable" class="rounded" />Mermaid 图表</label>
+   <div><label class="text-xs text-text-tertiary mb-1 block">Mermaid 主题</label><select v-model="data.mermaid.theme" :class="inputCls"><option value="default">default</option><option value="dark">dark</option><option value="forest">forest</option><option value="neutral">neutral</option></select></div>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+   <div><label class="text-xs text-text-tertiary mb-1 block">KaTeX head 注入</label><textarea v-model="data.katex.inject" rows="3" :class="inputCls" placeholder="可填 link 标签"></textarea></div>
+   <div><label class="text-xs text-text-tertiary mb-1 block">Mermaid JS URL（留空使用本地）</label><input v-model="data.mermaid.js" :class="inputCls" /></div>
+   <div><label class="text-xs text-text-tertiary mb-1 block">MathJax JS URL</label><input v-model="data.mathjax.js" :class="inputCls" placeholder="https://cdnjs.cloudflare.com/..." /></div>
+   <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.mathjax.v3" class="rounded" />MathJax v3</label>
+   <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.mermaid.style_optimization" class="rounded" />使用主题 Mermaid 样式</label>
+  </div>
+ </div>
+
+ <!-- 代码复制 -->
+ <div class="border border-border rounded-xl p-4 space-y-3">
+  <label class="flex items-center gap-2 text-sm font-medium text-text-secondary"><input type="checkbox" v-model="data.copycode.enable" class="rounded" />代码块复制按钮</label>
+  <div class="grid grid-cols-3 gap-4"><div><label class="text-xs text-text-tertiary mb-1 block">默认文案</label><input v-model="data.copycode.default_text" :class="inputCls" /></div><div><label class="text-xs text-text-tertiary mb-1 block">成功文案</label><input v-model="data.copycode.success_text" :class="inputCls" /></div><div><label class="text-xs text-text-tertiary mb-1 block">提示文案</label><input v-model="data.copycode.toast" :class="inputCls" /></div></div>
+ </div>
+ </div>
+
  <button @click="emit('save')" :disabled="saving === 'plugins'" :class="btnCls">
  保存插件设置
  </button>
- </div>
 </template>

@@ -22,6 +22,7 @@ type Post struct {
 	Title      string
 	HTML       string // goldmark 渲染后的正文 HTML
 	Excerpt    string
+	Banner     string // 文首横幅图 URL
 	Date       string
 	References []string // 参考文献列表（frontmatter references 字段）
 }
@@ -213,6 +214,7 @@ func (s *Service) Load(slug string) (*Post, error) {
 		Title:      title,
 		HTML:       html,
 		Excerpt:    meta.Excerpt,
+		Banner:     meta.Banner,
 		Date:       meta.Date,
 		References: meta.References,
 	}, nil
