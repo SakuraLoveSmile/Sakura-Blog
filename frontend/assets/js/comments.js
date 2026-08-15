@@ -13,6 +13,7 @@
   // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
   var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/artalk/';
   var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'aru', 'twemoji'];
+  var BOOST_EMOJIS = ['👍', '❤️', '😄', '🎉', '😕', '🚀'];
 
   // ------- 全局运行时状态 -------
   var state = {
@@ -167,6 +168,34 @@
     return html;
   }
 
+  function renderBoostButton(cmt, action) {
+    var deleting = action === 'delete';
+    return '<button type="button" class="cmt-action-btn cmt-boost-btn' + (deleting ? ' is-mine' : '') + '"' +
+      ' data-id="' + cmt.id + '" data-boost-action="' + action + '"' +
+      ' title="' + (deleting ? '删除我的回应' : '回应这条评论') + '" aria-label="' + (deleting ? '删除我的回应' : '回应这条评论') + '">' +
+      '<span aria-hidden="true">🚀</span></button>';
+  }
+
+  function renderBoostStrip(cmt) {
+    var boosts = Array.isArray(cmt.boosts) ? cmt.boosts : [];
+    if (!boosts.length) return '';
+    var mine = false;
+    var html = '<div class="cmt-boost-strip" data-count="' + boosts.length + '">';
+    html += boosts.map(function (boost) {
+      if (boost && boost.mine) mine = true;
+      var chip = '<button type="button" class="cmt-boost-chip' + (boost && boost.mine ? ' is-mine' : '') + '"' +
+        (boost && boost.mine ? ' data-boost-mine="1" data-id="' + cmt.id + '" title="删除我的回应"' : '') + '>' +
+        '<img src="' + escapeHtml(boost && boost.avatar || '') + '" alt="' + escapeHtml(boost && boost.nick || '') + '" loading="lazy">' +
+        '<span class="cmt-boost-emoji" aria-hidden="true">' + escapeHtml(boost && boost.emoji || '') + '</span>' +
+        (boost && boost.text ? '<span class="cmt-boost-text">' + escapeHtml(boost.text) + '</span>' : '') +
+        '</button>';
+      return chip;
+    }).join('');
+    if (mine && cmt.can_boost !== false && boosts.length < 50) html += renderBoostButton(cmt, 'delete');
+    html += '</div>';
+    return html;
+  }
+
   function renderCommentItem(cmt) {
     var nickHtml = cmt.link
       ? '<a href="' + escapeHtml(cmt.link) + '" rel="nofollow noopener" target="_blank">' + escapeHtml(cmt.nick) + '</a>'
@@ -182,6 +211,7 @@
           '<span class="cmt-item-time">' + escapeHtml(cmt.time_ago || cmt.date_created || '') + '</span>' +
         '</div>' +
         '<div class="cmt-item-body">' + (cmt.content_html || '') + '</div>' +
+        renderBoostStrip(cmt) +
         '<div class="cmt-item-actions">' +
           '<button type="button" class="cmt-action-btn cmt-reply-btn" data-id="' + cmt.id + '" data-nick="' + escapeHtml(cmt.nick) + '">' +
             '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>' +
@@ -191,6 +221,7 @@
             '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
             '<span class="cmt-like-count">' + (cmt.likes || 0) + '</span>' +
           '</button>' +
+          (!((cmt.boosts || []).some(function (boost) { return boost && boost.mine; })) && cmt.can_boost !== false ? renderBoostButton(cmt, 'add') : '') +
         '</div>' +
         (cmt.children && cmt.children.length ? '<div class="cmt-children">' + cmt.children.map(renderCommentItem).join('') + '</div>' : '') +
       '</div>' +
@@ -435,6 +466,117 @@
     state.parentId = 0;
     var tip = $('#cmt-reply-tip');
     if (tip) tip.style.display = 'none';
+  }
+
+  // ------- 评论 Boost：固定表情 + 16 字短文本 -------
+  function closeBoostPanel() {
+    var panel = $('.cmt-boost-popover');
+    if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
+  }
+
+  function positionBoostPanel(panel, anchor) {
+    if (!panel || !anchor) return;
+    var rect = anchor.getBoundingClientRect();
+    var width = panel.offsetWidth || 250;
+    var left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left));
+    var top = rect.bottom + 8;
+    if (top + panel.offsetHeight > window.innerHeight - 8) top = Math.max(8, rect.top - panel.offsetHeight - 8);
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+  }
+
+  function openBoostPanel(btn) {
+    closeBoostPanel();
+    var panel = document.createElement('div');
+    panel.className = 'cmt-boost-popover';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', '回应评论');
+    panel.setAttribute('data-id', btn.getAttribute('data-id') || '');
+    panel.innerHTML = '<div class="cmt-boost-emojis" role="group" aria-label="选择表情">' +
+      BOOST_EMOJIS.map(function (emoji, i) {
+        return '<button type="button" class="cmt-boost-emoji-btn' + (i === 0 ? ' is-selected' : '') + '" data-emoji="' + escapeHtml(emoji) + '" aria-label="' + escapeHtml(emoji) + '">' + emoji + '</button>';
+      }).join('') + '</div>' +
+      '<div class="cmt-boost-compose"><input type="text" class="cmt-boost-input" maxlength="16" placeholder="说点什么（可选）" aria-label="回应文字"><button type="button" class="cmt-boost-send" aria-label="发送回应">发送</button></div>';
+    document.body.appendChild(panel);
+    panel._boostAnchor = btn;
+    positionBoostPanel(panel, btn);
+    panel.querySelector('.cmt-boost-input').focus();
+  }
+
+  function boostPayload() {
+    var nick = '', email = '';
+    if (state.mode === 'logged-in') {
+      nick = (state.me && (state.me.nickname || state.me.username)) || '';
+      email = (state.me && state.me.email) || '';
+    } else {
+      try {
+        nick = localStorage.getItem('cmt_nick') || '';
+        email = localStorage.getItem('cmt_email') || '';
+      } catch (e) { /* noop */ }
+    }
+    return { nick: nick, email: email };
+  }
+
+  function findComment(list, id) {
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].id) === String(id)) return list[i];
+      var found = findComment(list[i].children || [], id);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function refreshBoostComment(id, boost) {
+    var cmt = findComment(state.comments, id);
+    if (!cmt) return;
+    cmt.boosts = Array.isArray(cmt.boosts) ? cmt.boosts : [];
+    var index = cmt.boosts.findIndex(function (item) { return item && item.mine; });
+    if (index >= 0) cmt.boosts[index] = boost;
+    else cmt.boosts.push(boost);
+    cmt.boost_count = cmt.boosts.length;
+    if (cmt.boosts.length >= 50) cmt.can_boost = false;
+    rerenderSorted();
+  }
+
+  function removeBoostComment(id) {
+    var cmt = findComment(state.comments, id);
+    if (!cmt) return;
+    cmt.boosts = (cmt.boosts || []).filter(function (boost) { return !boost || !boost.mine; });
+    cmt.boost_count = cmt.boosts.length;
+    if (cmt.boosts.length < 50 && !cmt.is_author) cmt.can_boost = true;
+    rerenderSorted();
+  }
+
+  function doBoost(id, panel) {
+    var emojiBtn = panel.querySelector('.cmt-boost-emoji-btn.is-selected') || panel.querySelector('.cmt-boost-emoji-btn');
+    var input = panel.querySelector('.cmt-boost-input');
+    var send = panel.querySelector('.cmt-boost-send');
+    var emoji = emojiBtn && emojiBtn.getAttribute('data-emoji');
+    if (!emoji) return;
+    if (send) send.disabled = true;
+    var body = boostPayload();
+    body.emoji = emoji;
+    body.text = input ? input.value.trim() : '';
+    fetch('/api/comments/' + encodeURIComponent(id) + '/boost', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '回应失败');
+        refreshBoostComment(id, res.data.boost);
+        closeBoostPanel();
+        toast('回应成功', 'success');
+      }).catch(function (err) { toast(err && err.message ? err.message : '回应失败', 'error'); if (send) send.disabled = false; });
+  }
+
+  function doUnboost(id) {
+    fetch('/api/comments/' + encodeURIComponent(id) + '/boost', { method: 'DELETE', credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '删除回应失败');
+        removeBoostComment(id);
+        toast('已删除回应', 'success');
+      }).catch(function (err) { toast(err && err.message ? err.message : '删除回应失败', 'error'); });
   }
 
   // ------- 表情面板 -------
@@ -785,6 +927,34 @@
         if (id) startReply(parseInt(id, 10) || 0, nick || '');
         return;
       }
+      var boostChip = e.target.closest && e.target.closest('.cmt-boost-chip[data-boost-mine="1"]');
+      if (boostChip) {
+        var chipID = boostChip.getAttribute('data-id');
+        if (chipID) doUnboost(chipID);
+        return;
+      }
+      var boostBtn = e.target.closest && e.target.closest('.cmt-boost-btn');
+      if (boostBtn) {
+        var boostID = boostBtn.getAttribute('data-id');
+        if (!boostID) return;
+        if (boostBtn.getAttribute('data-boost-action') === 'delete') doUnboost(boostID);
+        else openBoostPanel(boostBtn);
+        return;
+      }
+      var boostEmoji = e.target.closest && e.target.closest('.cmt-boost-emoji-btn');
+      if (boostEmoji) {
+        var popover = boostEmoji.closest('.cmt-boost-popover');
+        if (popover) {
+          $$('.cmt-boost-emoji-btn', popover).forEach(function (item) { item.classList.toggle('is-selected', item === boostEmoji); });
+        }
+        return;
+      }
+      var boostSend = e.target.closest && e.target.closest('.cmt-boost-send');
+      if (boostSend) {
+        var boostPanel = boostSend.closest('.cmt-boost-popover');
+        if (boostPanel) doBoost(boostPanel.getAttribute('data-id'), boostPanel);
+        return;
+      }
       // 取消回复
       if (e.target.closest && e.target.closest('#cmt-reply-cancel')) {
         cancelReply();
@@ -854,7 +1024,19 @@
           if (sb) sb.setAttribute('aria-expanded', 'false');
         }
       }
+      if (!e.target.closest || !e.target.closest('.cmt-boost-popover')) closeBoostPanel();
     });
+
+    if (window.addEventListener) {
+      window.addEventListener('resize', function () {
+        var panel = $('.cmt-boost-popover');
+        if (panel) positionBoostPanel(panel, panel._boostAnchor);
+      });
+      window.addEventListener('scroll', function () {
+        var panel = $('.cmt-boost-popover');
+        if (panel) positionBoostPanel(panel, panel._boostAnchor);
+      }, true);
+    }
 
     // Ctrl/Cmd + Enter 快捷提交
     document.addEventListener('keydown', function (e) {
@@ -901,6 +1083,7 @@
       defaultAvatar: defaultAvatar,
       buildAvatarUrl: buildAvatarUrl,
       renderBadges: renderBadges,
+      renderBoostStrip: renderBoostStrip,
       renderCommentItem: renderCommentItem,
       renderComments: renderComments,
       insertNewComment: insertNewComment,

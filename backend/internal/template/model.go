@@ -660,13 +660,25 @@ type CommentItem struct {
 	Link        string         `json:"link"`         // 个人网站，非空时昵称带链
 	ContentHTML template.HTML  `json:"content_html"` // 已消毒的服务端渲染 HTML，直接输出
 	IsAdmin     bool           `json:"is_admin"`
-	Verified    bool           `json:"verified"`            // 注册用户标识：已登录注册用户显示"已验证"徽章
-	Avatar      string         `json:"avatar"`              // Gravatar URL（{mirror}/{md5(email)}）
-	TimeAgo     string         `json:"time_ago"`            // 相对时间，如"3 天前"
-	Date        string         `json:"date"`                // 完整日期（title 悬浮提示）
-	Likes       int64          `json:"likes"`               // 点赞数（IP 去重）
+	Verified    bool           `json:"verified"`         // 注册用户标识：已登录注册用户显示"已验证"徽章
+	Avatar      string         `json:"avatar"`           // Gravatar URL（{mirror}/{md5(email)}）
+	TimeAgo     string         `json:"time_ago"`         // 相对时间，如"3 天前"
+	Date        string         `json:"date"`             // 完整日期（title 悬浮提示）
+	Likes       int64          `json:"likes"`            // 点赞数（IP 去重）
+	Boosts      []BoostItem    `json:"boosts"`           // 简短回应 chips
+	BoostCount  int            `json:"boost_count"`
+	CanBoost    bool           `json:"can_boost"`
 	ReplyRef    string         `json:"reply_ref,omitempty"` // 回复引用，格式 "▸ 被回复人昵称"（仅子评论）
 	Children    []*CommentItem `json:"children,omitempty"`
+}
+
+// BoostItem 前台评论区单条简短回应。
+type BoostItem struct {
+	Emoji  string `json:"emoji"`
+	Text   string `json:"text"`
+	Nick   string `json:"nick"`
+	Avatar string `json:"avatar"`
+	Mine   bool   `json:"mine"`
 }
 
 // LatestComment 侧边栏"最新评论"widget 单项。

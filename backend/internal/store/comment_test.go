@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 // mkComment 便捷插入一条评论，返回 id。
 func mkComment(t *testing.T, s *Store, pageKey, status string, rootID int64) int64 {
@@ -178,5 +181,76 @@ func TestDeleteCommentsPartialMissing(t *testing.T) {
 	}
 	if cm, _ := s.GetComment(b); cm == nil {
 		t.Fatalf("comment %d should survive", b)
+	}
+}
+
+func TestCommentBoostCreateUpdateDeleteAndList(t *testing.T) {
+	s := newTestStore(t)
+	id, err := s.CreateComment(&Comment{
+		PageKey: "/post/boost", Nick: "author", Email: "author@example.com",
+		ContentMD: "hello", Status: CommentApproved, IP: "203.0.113.1",
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	meta := BoostMeta{Nick: "reader", Email: "reader@example.com", IP: "203.0.113.2", IPHash: "hash-1"}
+	first, created, err := s.AddBoost(id, "ip:hash-1", "👍", "赞", meta)
+	if err != nil || !created || first.Text != "赞" {
+		t.Fatalf("first boost: item=%+v created=%v err=%v", first, created, err)
+	}
+	second, created, err := s.AddBoost(id, "ip:hash-1", "🎉", "更新", meta)
+	if err != nil || created || second.ID != first.ID || second.Emoji != "🎉" || second.Text != "更新" {
+		t.Fatalf("updated boost: item=%+v created=%v err=%v", second, created, err)
+	}
+	if ok, err := s.HasBoost(id, "ip:hash-1"); err != nil || !ok {
+		t.Fatalf("has boost: ok=%v err=%v", ok, err)
+	}
+	if n, err := s.CountBoostsByComment(id); err != nil || n != 1 {
+		t.Fatalf("count boosts: n=%d err=%v", n, err)
+	}
+	page, err := s.ListBoostsByPage("/post/boost")
+	if err != nil || len(page[id]) != 1 || page[id][0].Emoji != "🎉" {
+		t.Fatalf("list boosts: page=%+v err=%v", page, err)
+	}
+	removed, err := s.DeleteBoost(id, "ip:hash-1")
+	if err != nil || !removed {
+		t.Fatalf("delete boost: removed=%v err=%v", removed, err)
+	}
+	if removed, err = s.DeleteBoost(id, "ip:hash-1"); err != nil || removed {
+		t.Fatalf("delete missing boost: removed=%v err=%v", removed, err)
+	}
+}
+
+func TestCommentBoostSelfAndLimit(t *testing.T) {
+	s := newTestStore(t)
+	id, err := s.CreateComment(&Comment{
+		PageKey: "/post/boost", Nick: "author", Email: "author@example.com",
+		ContentMD: "hello", Status: CommentApproved, UserID: 42, IP: "203.0.113.3",
+	})
+	if err != nil {
+		t.Fatalf("create comment: %v", err)
+	}
+	if _, _, err := s.AddBoost(id, "u:42", "👍", "", BoostMeta{UserID: 42, IP: "203.0.113.4"}); !errors.Is(err, ErrBoostSelf) {
+		t.Fatalf("user self boost err=%v, want ErrBoostSelf", err)
+	}
+	if _, _, err := s.AddBoost(id, "ip:author", "👍", "", BoostMeta{IP: "203.0.113.3"}); !errors.Is(err, ErrBoostSelf) {
+		t.Fatalf("ip self boost err=%v, want ErrBoostSelf", err)
+	}
+	for i := 0; i < 50; i++ {
+		identity := "ip:limit-" + string(rune('a'+i))
+		_, _, err := s.AddBoost(id, identity, "👍", "", BoostMeta{IP: "198.51.100." + string(rune('1'+i))})
+		if err != nil {
+			t.Fatalf("fill boost %d: %v", i, err)
+		}
+	}
+	if n, err := s.CountBoostsByComment(id); err != nil || n != 50 {
+		t.Fatalf("full count: n=%d err=%v", n, err)
+	}
+	if _, _, err := s.AddBoost(id, "ip:overflow", "👍", "", BoostMeta{IP: "198.51.100.200"}); !errors.Is(err, ErrBoostLimit) {
+		t.Fatalf("overflow err=%v, want ErrBoostLimit", err)
+	}
+	// 已有身份在满额后仍允许更新。
+	if _, _, err := s.AddBoost(id, "ip:limit-a", "🚀", "edit", BoostMeta{IP: "198.51.100.1"}); err != nil {
+		t.Fatalf("update at limit: %v", err)
 	}
 }

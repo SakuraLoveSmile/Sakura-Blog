@@ -573,6 +573,134 @@
 .cmt-like-btn.is-liked { color: #ef4444; }
 .cmt-like-count { font-variant-numeric: tabular-nums; }
 
+/* ----------------------- 评论 Boost ----------------------- */
+.cmt-boost-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  padding: 0;
+  font-size: 1rem;
+}
+.cmt-boost-btn.is-mine { color: var(--theme, #0083ff); }
+.cmt-boost-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0.1rem;
+}
+.cmt-boost-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0.22rem 0.55rem 0.22rem 0.32rem;
+  color: var(--text-p2, #555);
+  background: color-mix(in srgb, var(--theme, #0083ff) 8%, var(--card, #fff));
+  border: 1px solid color-mix(in srgb, var(--theme, #0083ff) 18%, var(--block-border, #e5e7eb));
+  border-radius: 999px;
+  cursor: default;
+  font: inherit;
+  line-height: 1.2;
+}
+.cmt-boost-chip.is-mine { cursor: pointer; }
+.cmt-boost-chip.is-mine:hover { border-color: var(--theme, #0083ff); }
+.cmt-boost-chip img {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--block-border, #e5e7eb);
+}
+.cmt-boost-emoji { font-size: 1rem; line-height: 1; }
+.cmt-boost-text {
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+.cmt-boost-strip > .cmt-boost-btn {
+  flex: 0 0 44px;
+  border: 1px solid var(--block-border, #e5e7eb);
+  border-radius: 999px;
+}
+.cmt-boost-popover {
+  position: fixed;
+  z-index: 10002;
+  width: min(280px, calc(100vw - 16px));
+  padding: 0.6rem;
+  background: var(--card, var(--block, #fff));
+  border: 1px solid var(--block-border, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+}
+.cmt-boost-emojis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+.cmt-boost-emoji-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  color: var(--text-p1, #111827);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.15rem;
+}
+.cmt-boost-emoji-btn:hover,
+.cmt-boost-emoji-btn.is-selected {
+  background: color-mix(in srgb, var(--theme, #0083ff) 12%, transparent);
+  border-color: color-mix(in srgb, var(--theme, #0083ff) 26%, transparent);
+}
+.cmt-boost-compose {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.cmt-boost-input {
+  min-width: 0;
+  flex: 1;
+  height: 40px;
+  padding: 0 0.65rem;
+  color: var(--text-p1, #111827);
+  background: transparent;
+  border: 1px solid var(--block-border, #e5e7eb);
+  border-radius: 8px;
+  outline: none;
+  font: inherit;
+  font-size: 0.82rem;
+}
+.cmt-boost-input:focus { border-color: var(--theme, #0083ff); }
+.cmt-boost-send {
+  min-width: 58px;
+  min-height: 40px;
+  padding: 0 0.65rem;
+  color: #fff;
+  background: var(--theme, #0083ff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+}
+.cmt-boost-send:disabled { opacity: 0.55; cursor: wait; }
+
+@media (max-width: 640px) {
+  .cmt-boost-popover { padding: 0.5rem; }
+  .cmt-boost-emoji-btn { min-width: 44px; min-height: 44px; }
+  .cmt-boost-chip { min-height: 32px; }
+}
+
 /* 回复嵌套（Artalk：卡片内虚线分隔，无左侧竖线） */
 .cmt-children {
   margin-top: 0.5rem;

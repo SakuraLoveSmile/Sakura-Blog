@@ -19,6 +19,37 @@ const (
 // ErrCommentNotFound 评论不存在（点赞等写操作用）。
 var ErrCommentNotFound = errors.New("comment not found")
 
+// Boost 业务错误，供公开 API 映射为稳定的 HTTP 状态码。
+var (
+	ErrBoostLimit = errors.New("comment boost limit reached")
+	ErrBoostSelf  = errors.New("cannot boost own comment")
+)
+
+const maxCommentBoosts = 50
+
+// BoostMeta 是创建 Boost 时写入的发布者快照。
+type BoostMeta struct {
+	UserID int64
+	Nick   string
+	Email  string
+	IP     string
+	IPHash string
+}
+
+// CommentBoost 评论 Boost 持久化记录。
+type CommentBoost struct {
+	ID          int64
+	CommentID   int64
+	Emoji       string
+	Text        string
+	UserID      int64
+	Nick        string
+	Email       string
+	IPHash      string
+	IdentityKey string
+	CreatedAt   time.Time
+}
+
 // Comment 评论持久化记录，对齐 comments 表字段。
 // 两层嵌套模型（参考 Artalk）：parent_id 指向被回复评论，root_id 指向所属顶级评论；
 // 顶级评论两者皆为 0。回复子评论时 root_id 沿用被回复评论的 root_id，层级不超两层。
@@ -91,7 +122,7 @@ func (c *Comment) ScanRow(row rowScanner) error {
 // 评论点赞 schema 迁移：不碰 post.go createTables，在首次评论读写时懒执行。
 // 迁移状态（sync.Once + err）挂在 Store 实例上，见 post.go 的 Store 定义。
 
-// ensureCommentReactions 为 comments 补 likes/user_id/verified 列，并建 comment_likes 去重表。
+// ensureCommentReactions 为 comments 补 likes/user_id/verified 列，并建评论反应去重表。
 func (s *Store) ensureCommentReactions() error {
 	s.commentReactionsOnce.Do(func() {
 		// 老库迁移：CREATE TABLE IF NOT EXISTS 不会给已存在的表加列。
@@ -152,6 +183,27 @@ func (s *Store) ensureCommentReactions() error {
 		)`
 		if _, err := s.db.Exec(likesDDL); err != nil {
 			s.commentReactionsErr = fmt.Errorf("create comment_likes table: %w", err)
+			return
+		}
+		const boostsDDL = `CREATE TABLE IF NOT EXISTS comment_boosts (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			comment_id  INTEGER NOT NULL,
+			emoji       TEXT NOT NULL,
+			text        TEXT NOT NULL DEFAULT '',
+			user_id     INTEGER NOT NULL DEFAULT 0,
+			nick        TEXT NOT NULL DEFAULT '',
+			email       TEXT NOT NULL DEFAULT '',
+			ip_hash     TEXT NOT NULL DEFAULT '',
+			identity_key TEXT NOT NULL,
+			created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(comment_id, identity_key)
+		)`
+		if _, err := s.db.Exec(boostsDDL); err != nil {
+			s.commentReactionsErr = fmt.Errorf("create comment_boosts table: %w", err)
+			return
+		}
+		if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_comment_boosts_comment ON comment_boosts(comment_id)`); err != nil {
+			s.commentReactionsErr = fmt.Errorf("create index comment_boosts comment_id: %w", err)
 			return
 		}
 		// 评论区按页查询（ListCommentsByPage/CountCommentsByPage）的走索引优化，
@@ -393,6 +445,165 @@ func (s *Store) HasCommentLike(id int64, ipHash string) (bool, int64, error) {
 		return false, 0, fmt.Errorf("count comment_likes %d: %w", id, err)
 	}
 	return n > 0, likes, nil
+}
+
+// BoostAuthorGuard 判断提交者是否为评论作者。登录身份优先按 user_id 匹配，
+// 同时保留 IP 匹配以覆盖匿名评论作者后来登录的情况。
+func (s *Store) BoostAuthorGuard(commentID int64, meta BoostMeta) (bool, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return false, err
+	}
+	var authorUserID int64
+	var authorIP string
+	err := s.db.QueryRow(`SELECT user_id, ip FROM comments WHERE id = ?`, commentID).Scan(&authorUserID, &authorIP)
+	if err == sql.ErrNoRows {
+		return false, ErrCommentNotFound
+	}
+	if err != nil {
+		return false, fmt.Errorf("select comment %d author: %w", commentID, err)
+	}
+	return (meta.UserID > 0 && authorUserID > 0 && meta.UserID == authorUserID) ||
+		(meta.IP != "" && authorIP != "" && meta.IP == authorIP), nil
+}
+
+// AddBoost 创建或更新一条评论 Boost。返回值为记录、是否新建、错误。
+// 计数、作者保护和 UPSERT 在同一事务中完成，避免并发请求突破每楼上限。
+func (s *Store) AddBoost(commentID int64, identity, emoji, text string, meta BoostMeta) (*CommentBoost, bool, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, false, err
+	}
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		return nil, false, errors.New("boost identity is empty")
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, false, fmt.Errorf("begin boost comment %d: %w", commentID, err)
+	}
+	defer tx.Rollback()
+
+	var authorUserID int64
+	var authorIP string
+	if err := tx.QueryRow(`SELECT user_id, ip FROM comments WHERE id = ?`, commentID).Scan(&authorUserID, &authorIP); err == sql.ErrNoRows {
+		return nil, false, ErrCommentNotFound
+	} else if err != nil {
+		return nil, false, fmt.Errorf("select comment %d author: %w", commentID, err)
+	}
+	if (meta.UserID > 0 && authorUserID > 0 && meta.UserID == authorUserID) ||
+		(meta.IP != "" && authorIP != "" && meta.IP == authorIP) {
+		return nil, false, ErrBoostSelf
+	}
+
+	var existingID int64
+	err = tx.QueryRow(`SELECT id FROM comment_boosts WHERE comment_id = ? AND identity_key = ?`, commentID, identity).Scan(&existingID)
+	created := err == sql.ErrNoRows
+	if err != nil && err != sql.ErrNoRows {
+		return nil, false, fmt.Errorf("find boost comment %d: %w", commentID, err)
+	}
+	if created {
+		var count int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM comment_boosts WHERE comment_id = ?`, commentID).Scan(&count); err != nil {
+			return nil, false, fmt.Errorf("count boosts comment %d: %w", commentID, err)
+		}
+		if count >= maxCommentBoosts {
+			return nil, false, ErrBoostLimit
+		}
+		res, err := tx.Exec(`INSERT INTO comment_boosts
+			(comment_id, emoji, text, user_id, nick, email, ip_hash, identity_key, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			commentID, emoji, text, meta.UserID, meta.Nick, meta.Email, meta.IPHash, identity, time.Now())
+		if err != nil {
+			return nil, false, fmt.Errorf("insert boost comment %d: %w", commentID, err)
+		}
+		if existingID, err = res.LastInsertId(); err != nil {
+			return nil, false, fmt.Errorf("boost comment %d id: %w", commentID, err)
+		}
+	} else if _, err := tx.Exec(`UPDATE comment_boosts SET emoji = ?, text = ?, user_id = ?, nick = ?, email = ?, ip_hash = ?, created_at = ? WHERE id = ?`,
+		emoji, text, meta.UserID, meta.Nick, meta.Email, meta.IPHash, time.Now(), existingID); err != nil {
+		return nil, false, fmt.Errorf("update boost comment %d: %w", commentID, err)
+	}
+
+	boost := &CommentBoost{}
+	if err := tx.QueryRow(`SELECT id, comment_id, emoji, text, user_id, nick, email, ip_hash, identity_key, created_at
+		FROM comment_boosts WHERE id = ?`, existingID).Scan(
+		&boost.ID, &boost.CommentID, &boost.Emoji, &boost.Text, &boost.UserID, &boost.Nick,
+		&boost.Email, &boost.IPHash, &boost.IdentityKey, &boost.CreatedAt); err != nil {
+		return nil, false, fmt.Errorf("reload boost comment %d: %w", commentID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, false, fmt.Errorf("commit boost comment %d: %w", commentID, err)
+	}
+	return boost, created, nil
+}
+
+// DeleteBoost 删除指定身份在评论上的 Boost；不存在时返回 false。
+func (s *Store) DeleteBoost(commentID int64, identity string) (bool, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return false, err
+	}
+	res, err := s.db.Exec(`DELETE FROM comment_boosts WHERE comment_id = ? AND identity_key = ?`, commentID, strings.TrimSpace(identity))
+	if err != nil {
+		return false, fmt.Errorf("delete boost comment %d: %w", commentID, err)
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+// HasBoost 判断指定身份是否已经回应过评论，用于允许同身份更新而不绕过新身份限流。
+func (s *Store) HasBoost(commentID int64, identity string) (bool, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return false, err
+	}
+	var id int64
+	err := s.db.QueryRow(`SELECT id FROM comment_boosts WHERE comment_id = ? AND identity_key = ?`, commentID, strings.TrimSpace(identity)).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("find boost comment %d: %w", commentID, err)
+	}
+	return true, nil
+}
+
+// CountBoostsByComment 返回一条评论的 Boost 数量。
+func (s *Store) CountBoostsByComment(commentID int64) (int, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return 0, err
+	}
+	var count int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM comment_boosts WHERE comment_id = ?`, commentID).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count boosts comment %d: %w", commentID, err)
+	}
+	return count, nil
+}
+
+// ListBoostsByPage 一次返回页面上所有已发布评论的 Boost，避免评论列表逐条查询。
+func (s *Store) ListBoostsByPage(pageKey string) (map[int64][]*CommentBoost, error) {
+	if err := s.ensureCommentReactions(); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.Query(`SELECT b.id, b.comment_id, b.emoji, b.text, b.user_id, b.nick, b.email,
+		b.ip_hash, b.identity_key, b.created_at
+		FROM comment_boosts b JOIN comments c ON c.id = b.comment_id
+		WHERE c.page_key = ? AND c.status = ?
+		ORDER BY b.comment_id ASC, b.created_at ASC, b.id ASC`, pageKey, CommentApproved)
+	if err != nil {
+		return nil, fmt.Errorf("list boosts page %q: %w", pageKey, err)
+	}
+	defer rows.Close()
+	out := map[int64][]*CommentBoost{}
+	for rows.Next() {
+		boost := &CommentBoost{}
+		if err := rows.Scan(&boost.ID, &boost.CommentID, &boost.Emoji, &boost.Text, &boost.UserID, &boost.Nick,
+			&boost.Email, &boost.IPHash, &boost.IdentityKey, &boost.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan boost page %q: %w", pageKey, err)
+		}
+		out[boost.CommentID] = append(out[boost.CommentID], boost)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate boosts page %q: %w", pageKey, err)
+	}
+	return out, nil
 }
 
 // CreateComment 新建评论，返回新记录 id，c.ID 同步回填。

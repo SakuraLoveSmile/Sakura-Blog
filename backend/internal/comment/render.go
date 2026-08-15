@@ -90,7 +90,28 @@ func TimeAgo(t time.Time) string {
 }
 
 // ToViewItem 单条 store 评论转前台视图模型。
-func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig) *tmpl.CommentItem {
+func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) *tmpl.CommentItem {
+	opts := BoostViewOptions{}
+	if len(options) > 0 {
+		opts = options[0]
+	}
+	return ToViewItemWithOptions(c, cfg, opts)
+}
+
+// BoostViewOptions 是评论列表转换时的 Boost 批量数据和当前身份。
+type BoostViewOptions struct {
+	Boosts       map[int64][]*store.CommentBoost
+	Identity     string
+	ViewerUserID int64
+	ViewerIP     string
+}
+
+func ToViewItemWithOptions(c *store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) *tmpl.CommentItem {
+	boosts := opts.Boosts[c.ID]
+	items := make([]tmpl.BoostItem, 0, len(boosts))
+	for _, boost := range boosts {
+		items = append(items, boostItemFromStore(boost, cfg, opts.Identity))
+	}
 	return &tmpl.CommentItem{
 		ID:          c.ID,
 		Nick:        c.Nick,
@@ -102,6 +123,19 @@ func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig) *tmpl.CommentItem {
 		TimeAgo:     TimeAgo(c.CreatedAt),
 		Date:        c.CreatedAt.Format("2006-01-02 15:04"),
 		Likes:       c.Likes,
+		Boosts:      items,
+		BoostCount:  len(items),
+		CanBoost:    (opts.ViewerUserID == 0 || c.UserID == 0 || opts.ViewerUserID != c.UserID) && (opts.ViewerIP == "" || c.IP == "" || opts.ViewerIP != c.IP) && len(items) < 50,
+	}
+}
+
+func boostItemFromStore(boost *store.CommentBoost, cfg *tmpl.CommentsConfig, identity string) tmpl.BoostItem {
+	return tmpl.BoostItem{
+		Emoji:  boost.Emoji,
+		Text:   boost.Text,
+		Nick:   boost.Nick,
+		Avatar: AvatarURL(cfg.GravatarMirror, boost.Email),
+		Mine:   identity != "" && identity == boost.IdentityKey,
 	}
 }
 
@@ -109,7 +143,16 @@ func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig) *tmpl.CommentItem {
 // 顶级评论（root_id=0）保持正序，子评论挂到对应 root 的 Children 下。
 // root 不在结果集（父评论待审/已删）的子评论不展示，属预期行为。
 // main.go SSR 填充与 API 返回共用。
-func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig) []*tmpl.CommentItem {
+func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) []*tmpl.CommentItem {
+	opts := BoostViewOptions{}
+	if len(options) > 0 {
+		opts = options[0]
+	}
+	return ToViewItemsWithOptions(comments, cfg, opts)
+}
+
+// ToViewItemsWithOptions 与 ToViewItems 相同，但会把同页批量查询的 Boost 映射到评论。
+func ToViewItemsWithOptions(comments []*store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) []*tmpl.CommentItem {
 	// 初始化为空 slice 而非 nil：无评论时 JSON 序列化为 [] 而不是 null（API 消费方更友好）
 	roots := []*tmpl.CommentItem{}
 	byID := map[int64]*tmpl.CommentItem{}
@@ -120,7 +163,7 @@ func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig) []*tmpl.Co
 	}
 	for _, c := range comments {
 		if c.RootID == 0 {
-			item := ToViewItem(c, cfg)
+			item := ToViewItemWithOptions(c, cfg, opts)
 			byID[c.ID] = item
 			roots = append(roots, item)
 		}
@@ -128,7 +171,7 @@ func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig) []*tmpl.Co
 	for _, c := range comments {
 		if c.RootID != 0 {
 			if root, ok := byID[c.RootID]; ok {
-				item := ToViewItem(c, cfg)
+				item := ToViewItemWithOptions(c, cfg, opts)
 				// 子评论显示被回复人：回复目标是 ParentID（可能是 root 或另一条子评论）
 				if nick, ok := nickByID[c.ParentID]; ok && nick != "" {
 					item.ReplyRef = "▸ " + nick

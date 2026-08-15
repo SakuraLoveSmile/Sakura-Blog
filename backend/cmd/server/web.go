@@ -530,7 +530,8 @@ func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
 		return
 	}
 	if comments, err := s.st.ListCommentsByPage(pageKey); err == nil {
-		data.Comments = comment.ToViewItems(comments, &s.site.Load().Comments)
+		boosts, _ := s.st.ListBoostsByPage(pageKey)
+		data.Comments = comment.ToViewItemsWithOptions(comments, &s.site.Load().Comments, comment.BoostViewOptions{Boosts: boosts})
 		// Spec 62：ListCommentsByPage 返回全量，计数直接 len 派生，省一次 COUNT 查询。
 		data.CommentCount = len(comments)
 	} else {

@@ -368,5 +368,10 @@ func (h *Handler) pubListComments(c *gin.Context) {
 	if h.site.Load() != nil {
 		cfg = &h.site.Load().Comments
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": comment.ToViewItems(comments, cfg)})
+	boosts, err := h.store.ListBoostsByPage(pageKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "查询失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": comment.ToViewItemsWithOptions(comments, cfg, comment.BoostViewOptions{Boosts: boosts})})
 }

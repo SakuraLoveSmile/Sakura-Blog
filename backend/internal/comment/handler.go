@@ -35,19 +35,30 @@ const (
 	ipHashSalt    = "blog-comment-like-v1"
 )
 
+// AllowedBoostEmojis 是公开 Boost API 与前端保持一致的固定表情集。
+var AllowedBoostEmojis = []string{"👍", "❤️", "😄", "🎉", "😕", "🚀"}
+
+var allowedBoostEmojiSet = func() map[string]struct{} {
+	m := make(map[string]struct{}, len(AllowedBoostEmojis))
+	for _, emoji := range AllowedBoostEmojis {
+		m[emoji] = struct{}{}
+	}
+	return m
+}()
+
 // 评论图片上传限制。
 const (
-	maxUploadSize   = 5 << 20          // 单图 5MB
-	uploadInterval  = 10 * time.Second // 同 IP 上传间隔
-	uploadBurst     = 10               // 窗口内单 IP 最大上传次数
-	uploadWindow    = 10 * time.Minute // 限流窗口
+	maxUploadSize  = 5 << 20          // 单图 5MB
+	uploadInterval = 10 * time.Second // 同 IP 上传间隔
+	uploadBurst    = 10               // 窗口内单 IP 最大上传次数
+	uploadWindow   = 10 * time.Minute // 限流窗口
 )
 
 // Handler 评论公开 API 处理器。
 type Handler struct {
 	store *store.Store
 	// site 站点配置原子指针（Spec 61 阶段 3）：评论配置/站点标题随 RebuildSite 复制-交换实时可见
-	site *atomic.Pointer[tmpl.Site]
+	site      *atomic.Pointer[tmpl.Site]
 	notifier  *notify.Service // 站内通知服务（Wave 3b），nil 时跳过站内通知/Webhook
 	uploadDir string          // 评论图片上传根目录，空=禁用上传端点
 
@@ -89,6 +100,8 @@ func (h *Handler) Register(r *gin.Engine) {
 	g.GET("", h.list)
 	g.POST("", h.create)
 	g.POST("/:id/like", h.like)
+	g.POST("/:id/boost", h.boost)
+	g.DELETE("/:id/boost", h.unboost)
 	g.POST("/upload", h.uploadImage)
 }
 
@@ -105,7 +118,141 @@ func (h *Handler) list(c *gin.Context) {
 		return
 	}
 	cfg := h.site.Load().Comments
-	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": ToViewItems(comments, &cfg)})
+	boosts, err := h.store.ListBoostsByPage(pageKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "查询失败"})
+		return
+	}
+	identity, userID, ip := h.boostViewer(c, "", "")
+	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": ToViewItems(comments, &cfg, BoostViewOptions{
+		Boosts: boosts, Identity: identity, ViewerUserID: userID, ViewerIP: ip,
+	})})
+}
+
+type boostReq struct {
+	Emoji string `json:"emoji"`
+	Text  string `json:"text"`
+	Nick  string `json:"nick"`
+	Email string `json:"email"`
+}
+
+// boostViewer 统一解析登录/匿名 Boost 身份。匿名身份只使用 IP hash 去重，
+// 昵称和邮箱作为发布者快照写入 Boost，不参与 identity key。
+func (h *Handler) boostViewer(c *gin.Context, nick, email string) (identity string, userID int64, ip string) {
+	ip = c.ClientIP()
+	sum := sha256.Sum256([]byte(ip + ipHashSalt))
+	ipHash := hex.EncodeToString(sum[:])
+	if v, ok := c.Get(ctxKeyCurrentUser); ok {
+		if cu, ok := v.(*store.CurrentUser); ok && cu.ID > 0 {
+			return "u:" + strconv.FormatInt(cu.ID, 10), cu.ID, ip
+		}
+	}
+	return "ip:" + ipHash, 0, ip
+}
+
+func (h *Handler) boostMeta(c *gin.Context, req boostReq) (string, store.BoostMeta, int64, error) {
+	identity, userID, ip := h.boostViewer(c, req.Nick, req.Email)
+	sum := sha256.Sum256([]byte(ip + ipHashSalt))
+	ipHash := hex.EncodeToString(sum[:])
+	if v, ok := c.Get(ctxKeyCurrentUser); ok {
+		if cu, ok := v.(*store.CurrentUser); ok && cu.ID > 0 {
+			nick := strings.TrimSpace(cu.Nickname)
+			if nick == "" {
+				nick = strings.TrimSpace(cu.Username)
+			}
+			return identity, store.BoostMeta{UserID: userID, Nick: nick, Email: strings.TrimSpace(cu.Email), IP: ip, IPHash: ipHash}, userID, nil
+		}
+	}
+	req.Nick = strings.TrimSpace(req.Nick)
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Nick == "" {
+		return "", store.BoostMeta{}, 0, errors.New("昵称不能为空")
+	}
+	if utf8.RuneCountInString(req.Nick) > maxNickLen {
+		return "", store.BoostMeta{}, 0, errors.New("昵称过长（最多 32 字）")
+	}
+	if req.Email == "" || !strings.Contains(req.Email, "@") {
+		return "", store.BoostMeta{}, 0, errors.New("邮箱格式不正确")
+	}
+	return identity, store.BoostMeta{Nick: req.Nick, Email: req.Email, IP: ip, IPHash: ipHash}, 0, nil
+}
+
+// boost POST /api/comments/:id/boost 创建或更新当前身份的 Boost。
+func (h *Handler) boost(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "非法评论 id"})
+		return
+	}
+	var req boostReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "请求格式错误"})
+		return
+	}
+	req.Emoji = strings.TrimSpace(req.Emoji)
+	req.Text = strings.TrimSpace(req.Text)
+	if _, ok := allowedBoostEmojiSet[req.Emoji]; !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "表情不在允许列表中"})
+		return
+	}
+	if utf8.RuneCountInString(req.Text) > 16 {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "回应文字最多 16 字"})
+		return
+	}
+	identity, meta, _, err := h.boostMeta(c, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": err.Error()})
+		return
+	}
+	existing, err := h.store.HasBoost(id, identity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "回应失败"})
+		return
+	}
+	if !existing && !h.allow("boost:"+c.ClientIP()) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"ok": false, "error": "操作太频繁，请稍后再试"})
+		return
+	}
+	boost, created, err := h.store.AddBoost(id, identity, req.Emoji, req.Text, meta)
+	if errors.Is(err, store.ErrCommentNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "评论不存在"})
+		return
+	}
+	if errors.Is(err, store.ErrBoostSelf) {
+		c.JSON(http.StatusForbidden, gin.H{"ok": false, "error": "不能回应自己的评论"})
+		return
+	}
+	if errors.Is(err, store.ErrBoostLimit) {
+		c.JSON(http.StatusConflict, gin.H{"ok": false, "error": "这条评论的回应已满"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "回应失败"})
+		return
+	}
+	cfg := h.site.Load().Comments
+	item := boostItemFromStore(boost, &cfg, identity)
+	c.JSON(http.StatusOK, gin.H{"ok": true, "created": created, "boost": item})
+}
+
+// unboost DELETE /api/comments/:id/boost 删除当前身份自己的 Boost。
+func (h *Handler) unboost(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "非法评论 id"})
+		return
+	}
+	identity, _, _ := h.boostViewer(c, "", "")
+	removed, err := h.store.DeleteBoost(id, identity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "删除回应失败"})
+		return
+	}
+	if !removed {
+		c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "未找到自己的回应"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true, "removed": true})
 }
 
 // like POST /api/comments/:id/like → IP 去重点赞，返回 {ok, likes, liked}。
