@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -22,6 +24,7 @@ import (
 	"blog/internal/search"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
+	"blog/internal/textutil"
 )
 
 // sidebarSnapshot 侧边栏 45s 快照缓存（P2-13）。
@@ -129,11 +132,63 @@ func (s *webServer) cookieSecureFor(c *gin.Context) bool {
 
 // fillSEO 填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
 func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
-	baseURL := s.baseURL(c)
+	baseURL := s.canonicalBaseURL(data, c)
 	data.Page.CanonicalURL = baseURL + c.Request.URL.Path
 	if data.Page.Description == "" {
 		data.Page.Description = s.siteOf(data).Description
 	}
+}
+
+// canonicalBaseURL uses Stellar's originalHost rule. Official hosts are still
+// recognised by the client-side warning, but canonical URLs always point at
+// the configured source host.
+func (s *webServer) canonicalBaseURL(data *tmpl.ViewData, c *gin.Context) string {
+	site := s.siteOf(data)
+	original := canonicalHost(site.SEO.Canonical.OriginalHost)
+	if original == "" {
+		return s.baseURL(c)
+	}
+	return "https://" + original
+}
+
+// canonicalHost accepts host-only values and tolerates legacy scheme/port
+// values so host comparisons remain stable across local and proxy requests.
+func canonicalHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err == nil && parsed.Host != "" {
+		raw = parsed.Host
+	} else if !strings.Contains(raw, "://") {
+		if parsed, err := url.Parse("//" + raw); err == nil && parsed.Host != "" {
+			raw = parsed.Host
+		}
+	}
+	if host, _, err := net.SplitHostPort(raw); err == nil {
+		raw = host
+	}
+	return strings.ToLower(strings.TrimSuffix(strings.TrimSpace(raw), "."))
+}
+
+// articleExcerpt applies article.auto_excerpt at render time so changing the
+// setting also updates existing posts that were imported without an excerpt.
+func articleExcerpt(site *tmpl.Site, explicit, contentHTML string) string {
+	if strings.TrimSpace(explicit) != "" || site == nil || site.Article.AutoExcerpt <= 0 {
+		return explicit
+	}
+	return textutil.Truncate(textutil.StripHTML(contentHTML), site.Article.AutoExcerpt)
+}
+
+// articleBanner applies the local default.banner fallback used by the
+// settings-compatible article.auto_banner switch. It intentionally avoids
+// the upstream Unsplash lookup so the server stays deterministic and offline.
+func articleBanner(site *tmpl.Site, explicit string) string {
+	if strings.TrimSpace(explicit) != "" || site == nil || !site.Article.AutoBanner {
+		return explicit
+	}
+	return site.Default.Banner
 }
 
 // siteOf 当前渲染应使用的站点配置：ViewData.Site 优先（设置页「前端预览」携带草稿配置），
@@ -635,7 +690,7 @@ func (s *webServer) toCardWith(site *tmpl.Site, p *store.Post) *tmpl.PostCard {
 	card := &tmpl.PostCard{
 		Slug:          p.Slug,
 		Title:         p.Title,
-		Excerpt:       p.Excerpt,
+		Excerpt:       articleExcerpt(site, p.Excerpt, p.ContentHTML),
 		Cover:         p.Cover,
 		Date:          p.CreatedAt,
 		Pinned:        p.Pinned,

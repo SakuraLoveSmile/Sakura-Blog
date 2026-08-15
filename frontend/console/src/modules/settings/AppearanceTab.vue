@@ -30,6 +30,9 @@ function defaultStyle(): Record<string, any> {
     border_radius: { card: "", block: "", navbar: "", image: "", card_l: "", card_s: "", bar: "", image_l: "", image_s: "" },
     gradient: { start: "", searchbar: "", avatar: "", angle: "" },
     corner_shape: "superellipse(1.25)",
+    animated_avatar: { animate: "auto", background: "" },
+    loading: { loading: "", error: "" },
+    error_page: "",
   };
 }
 
@@ -54,6 +57,8 @@ if (typeof props.data.style.leftbar?.blur_px === "number") {
 const styleRef = props.data.style as Record<string, any>;
 styleRef.border_radius = styleRef.border_radius || {};
 styleRef.gradient = styleRef.gradient || {};
+styleRef.animated_avatar = styleRef.animated_avatar || {};
+styleRef.loading = styleRef.loading || {};
 styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
 styleRef.leftbar = styleRef.leftbar || {};
 styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
@@ -308,6 +313,17 @@ function rangeFill(val: number, min: number, max: number): string {
       <div class="form-grid form-grid-2">
         <div class="field"><label>corner-shape</label><input v-model="data.style.corner_shape" :class="inputCls" placeholder="superellipse(1.25)" /></div>
         <div class="field"><label>头像光环渐变</label><input v-model="data.style.gradient.avatar" :class="inputCls" placeholder="conic-gradient(...)" /></div>
+        <div class="field"><label>头像动画</label><select v-model="data.style.animated_avatar.animate" :class="selectCls"><option value="auto">auto</option><option value="always">always</option></select></div>
+        <div class="field"><label>头像动画背景图</label><AttachmentField v-model="data.style.animated_avatar.background" placeholder="图片 URL" /></div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <p class="subsection-title">加载与错误页</p>
+      <div class="form-grid form-grid-2">
+        <div class="field"><label>加载文案</label><input v-model="data.style.loading.loading" :class="inputCls" placeholder="正在加载" /></div>
+        <div class="field"><label>加载失败文案</label><input v-model="data.style.loading.error" :class="inputCls" placeholder="加载失败，请稍后重试。" /></div>
+        <div class="field field-wide"><label>错误页插图</label><AttachmentField v-model="data.style.error_page" placeholder="图片 URL" show-thumb /></div>
       </div>
     </div>
 

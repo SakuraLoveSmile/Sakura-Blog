@@ -19,6 +19,8 @@ const (
 	SectionFooter    = "footer"    // 页脚
 	SectionComments  = "comments"  // 评论系统
 	SectionArticle   = "article"   // 文章页脚
+	SectionSearch    = "search"    // 本地搜索
+	SectionSiteTree  = "site_tree" // 页面树（首页评论等）
 	SectionWiki      = "wiki"      // 文库项目
 	SectionFriends   = "friends"   // 友链动态聚合
 	SectionSEO       = "seo"       // 站点级 SEO（Spec 42）
@@ -35,6 +37,7 @@ const (
 	SectionTagPlugins = "tag_plugins" // 标签插件默认参数（对齐原版 _config.yml tag_plugins）
 	SectionDefault    = "default"     // 占位素材组（对齐原版 _config.yml default）
 	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
+	SectionNotebook   = "notebook"    // 笔记本默认行为
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
 	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
@@ -173,6 +176,33 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 			return err
 		}
 		if err := st.PutSetting(SectionSEO, string(b)); err != nil {
+			return err
+		}
+	}
+	if _, ok := settings[SectionSearch]; !ok {
+		b, err := json.Marshal(site.Search)
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionSearch, string(b)); err != nil {
+			return err
+		}
+	}
+	if _, ok := settings[SectionSiteTree]; !ok {
+		b, err := json.Marshal(site.SiteTree)
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionSiteTree, string(b)); err != nil {
+			return err
+		}
+	}
+	if _, ok := settings[SectionNotebook]; !ok {
+		b, err := json.Marshal(site.Notebook)
+		if err != nil {
+			return err
+		}
+		if err := st.PutSetting(SectionNotebook, string(b)); err != nil {
 			return err
 		}
 	}
@@ -332,6 +362,12 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionArticle, site.Article); err != nil {
 		return err
 	}
+	if err := put(SectionSearch, site.Search); err != nil {
+		return err
+	}
+	if err := put(SectionSiteTree, site.SiteTree); err != nil {
+		return err
+	}
 	if err := put(SectionWiki, site.Wiki); err != nil {
 		return err
 	}
@@ -363,6 +399,9 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 	if err := put(SectionPlugins, site.Plugins); err != nil {
+		return err
+	}
+	if err := put(SectionNotebook, site.Notebook); err != nil {
 		return err
 	}
 	if err := put(SectionPages, site.Pages); err != nil {
@@ -434,6 +473,8 @@ type parsedSections struct {
 	footer        tmpl.Footer
 	comments      tmpl.CommentsConfig
 	article       tmpl.ArticleConfig
+	search        tmpl.SearchConfig
+	siteTree      tmpl.SiteTreeConfig
 	wiki          []tmpl.WikiProject
 	friends       tmpl.FriendsConfig
 	seo           tmpl.SEOConfig
@@ -444,6 +485,7 @@ type parsedSections struct {
 	navTabs       tmpl.NavTabsConfig
 	authors       map[string]tmpl.AuthorDef
 	plugins       tmpl.PluginsConfig
+	notebook      tmpl.NotebookConfig
 	tagPlugins    tmpl.TagPluginsConfig
 	defaultAssets tmpl.DefaultAssets
 	pages         tmpl.PagesConfig
@@ -462,6 +504,8 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionFooter, &parsed.footer)
 	unmarshal(SectionComments, &parsed.comments)
 	unmarshal(SectionArticle, &parsed.article)
+	unmarshal(SectionSearch, &parsed.search)
+	unmarshal(SectionSiteTree, &parsed.siteTree)
 	unmarshal(SectionWiki, &parsed.wiki)
 	unmarshal(SectionFriends, &parsed.friends)
 	if raw, ok := settings[SectionFriends]; ok {
@@ -493,11 +537,39 @@ func parseSections(settings map[string]string) parsedSections {
 	if parsed.article.PinStyle == "" {
 		parsed.article.PinStyle = "carousel"
 	}
+	if parsed.search.Service == "" {
+		parsed.search.Service = "local_search"
+	}
+	if parsed.search.LocalSearch.Field == "" {
+		parsed.search.LocalSearch.Field = "all"
+	}
+	if parsed.search.LocalSearch.Path == "" {
+		parsed.search.LocalSearch.Path = "/search.json"
+	}
+	if parsed.search.LocalSearch.Content == nil {
+		v := true
+		parsed.search.LocalSearch.Content = &v
+	}
 	unmarshal(SectionWidgets, &parsed.widgets)
 	unmarshal(SectionCover, &parsed.cover)
 	unmarshal(SectionNavTabs, &parsed.navTabs)
 	unmarshal(SectionAuthors, &parsed.authors)
 	unmarshal(SectionPlugins, &parsed.plugins)
+	unmarshal(SectionNotebook, &parsed.notebook)
+	if raw, ok := settings[SectionNotebook]; !ok || raw == "" {
+		parsed.notebook.AutoExcerpt = 128
+		parsed.notebook.OrderBy = "-updated"
+	} else {
+		var fields map[string]json.RawMessage
+		if json.Unmarshal([]byte(raw), &fields) == nil {
+			if _, exists := fields["auto_excerpt"]; !exists && parsed.notebook.AutoExcerpt == 0 {
+				parsed.notebook.AutoExcerpt = 128
+			}
+			if _, exists := fields["order_by"]; !exists && parsed.notebook.OrderBy == "" {
+				parsed.notebook.OrderBy = "-updated"
+			}
+		}
+	}
 	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
 	unmarshal(SectionDefault, &parsed.defaultAssets)
 	unmarshal(SectionPages, &parsed.pages)
@@ -534,6 +606,8 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionFooter, func() { site.Footer = parsed.footer })
 	assign(SectionComments, func() { site.Comments = parsed.comments })
 	assign(SectionArticle, func() { site.Article = parsed.article })
+	assign(SectionSearch, func() { site.Search = parsed.search })
+	assign(SectionSiteTree, func() { site.SiteTree = parsed.siteTree })
 	assign(SectionWiki, func() { site.Wiki = parsed.wiki })
 	assign(SectionFriends, func() { site.Friends = parsed.friends })
 	assign(SectionSEO, func() { site.SEO = parsed.seo })
@@ -544,6 +618,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionNavTabs, func() { site.NavTabs = parsed.navTabs })
 	assign(SectionAuthors, func() { site.Authors = parsed.authors })
 	assign(SectionPlugins, func() { site.Plugins = parsed.plugins })
+	assign(SectionNotebook, func() { site.Notebook = parsed.notebook })
 	assign(SectionTagPlugins, func() { site.TagPlugins = parsed.tagPlugins })
 	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
 	assign(SectionPages, func() { site.Pages = parsed.pages })
@@ -592,6 +667,7 @@ func KnownSections() []string {
 	return []string{
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
+		SectionSearch, SectionSiteTree, SectionNotebook,
 		SectionSEO, SectionInject, SectionDashboard,
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
@@ -633,6 +709,10 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		dst = &tmpl.CommentsConfig{}
 	case SectionArticle:
 		dst = &tmpl.ArticleConfig{}
+	case SectionSearch:
+		dst = &tmpl.SearchConfig{}
+	case SectionSiteTree:
+		dst = &tmpl.SiteTreeConfig{}
 	case SectionWiki:
 		dst = &[]tmpl.WikiProject{}
 	case SectionFriends:
@@ -657,6 +737,8 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		dst = &map[string]tmpl.AuthorDef{}
 	case SectionPlugins:
 		dst = &tmpl.PluginsConfig{}
+	case SectionNotebook:
+		dst = &tmpl.NotebookConfig{}
 	case SectionTagPlugins:
 		dst = &tmpl.TagPluginsConfig{}
 	case SectionDefault:

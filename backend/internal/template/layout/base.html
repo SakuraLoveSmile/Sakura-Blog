@@ -56,9 +56,10 @@
       date_suffix: { just: '{{lang "date_suffix.just"}}', min: '{{lang "date_suffix.min"}}', hour: '{{lang "date_suffix.hour"}}', day: '{{lang "date_suffix.day"}}' },
       root: '/',
       tag_plugins: { chat: {} },
-      search: { service: 'local_search', path: '/search.json', local_search: { path: '/search.json' } },
+      search: { service: '{{or .Site.Search.Service "local_search"}}', path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}', local_search: { path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}' } },
       data_cache: { enable: {{ ptrBool .Site.DataCache.Enable true }}, default_ttl: {{ or .Site.DataCache.DefaultTTL 3600 }} },
-      copycode: { default_text: '{{lang "js.copy"}}', success_text: '{{lang "js.copy_success"}}', toast: '{{lang "js.copied"}}' },
+      plugins: {},
+      copycode: { enable: {{if .Site.Plugins.CopycodeEnabled}}true{{else}}false{{end}}, default_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.DefaultText}}{{.Site.Plugins.Copycode.DefaultText}}{{else}}{{lang "js.copy"}}{{end}}', success_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.SuccessText}}{{.Site.Plugins.Copycode.SuccessText}}{{else}}{{lang "js.copy_success"}}{{end}}', toast: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.Toast}}{{.Site.Plugins.Copycode.Toast}}{{else}}{{lang "js.copied"}}{{end}}' },
       {{- /* fancybox 配置：对齐 _config.yml plugins.fancybox。selector 说明：
          wrapLazyloadImages 将 p>img 转为 div.lazy-box>img.lazy，故选择器直接匹配转换后的结构，
          避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}
@@ -69,7 +70,7 @@
       }
     };
     {{- /* def 占位素材（site.yml default 段）：空值注入空串，下方 JS 已有空值守卫 */}}
-    const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}' };
+    const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}', image_onerror: '{{.Site.Default.ImageOnError}}' };
     const deps = {
       {{- /* marked：对齐原版 _config.yml dependencies.marked（timeline/mdrender 渲染 md 正文用，懒加载） */}}
       marked: 'https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js',
@@ -152,7 +153,7 @@
       onLoading: (el) => {
         if (el) {
           if (el.querySelector('.loading-wrap') === null) {
-            el.insertAdjacentHTML('beforeend', '<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+            el.insertAdjacentHTML('beforeend', '<div class="loading-wrap" aria-label="{{.Site.Style.Loading.Loading}}" title="{{.Site.Style.Loading.Loading}}"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
           }
         }
       },
@@ -170,6 +171,8 @@
             if (svg) svg.remove();
             wrap.insertAdjacentHTML('beforeend', '<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
             wrap.classList.add('error');
+            wrap.setAttribute('aria-label', '{{.Site.Style.Loading.Error}}');
+            wrap.setAttribute('title', '{{.Site.Style.Loading.Error}}');
           }
         }
       },
@@ -307,6 +310,7 @@
         newImg.removeAttribute('src');
         newImg.setAttribute('data-src', src);
         newImg.classList.add('lazy');
+        if (def.image_onerror) newImg.dataset.onerror = def.image_onerror;
         const icon = document.createElement('div');
         icon.className = 'lazy-icon';
         if (def.loading) {
@@ -325,7 +329,14 @@
      即 wrapLazyloadImages 转换后的图片结构）。懒加载：页面存在匹配图才拉取 CDN；
      bind 一次即事件委托覆盖后续 DOM，PJAX 换页后重新检测。 */}}
   <script>
+    document.addEventListener('error', function (event) {
+      const img = event.target;
+      if (!img || img.tagName !== 'IMG' || !img.dataset.onerror || img.dataset.errorApplied) return;
+      img.dataset.errorApplied = '1';
+      img.src = img.dataset.onerror;
+    }, true);
     (function () {
+      if (!{{if .Site.Plugins.FancyboxEnabled}}true{{else}}false{{end}}) return;
       var bound = false, loading = null;
       function fullSelector() {
         return ctx.fancybox.selector;
@@ -385,7 +396,7 @@
         { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}?v={{asset_ver "/assets/js/services/contributors.js"}}' },
         { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}?v={{asset_ver "/assets/js/services/ghinfo.js"}}' },
         { cls: 'ds-timeline', js: '{{url_for "/assets/js/services/timeline.js"}}?v={{asset_ver "/assets/js/services/timeline.js"}}', deps: ['marked'] },
-        { cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}?v={{asset_ver "/assets/js/services/swiper.js"}}' }
+        {{if .Site.Plugins.SwiperEnabled}}{ cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}?v={{asset_ver "/assets/js/services/swiper.js"}}' }{{end}}
       ];
       var loaded = {};
       function scan() {
@@ -414,6 +425,7 @@
         注意：SW 对静态资源 cache-first，必须带 ?v= 版本后缀，否则改版后旧缓存永久生效（评论区曾因此整体失灵） */}}
   <script src="{{url_for "/assets/js/comments.js"}}?v={{asset_ver "/assets/js/comments.js"}}" defer></script>
   <script src="{{url_for "/assets/js/reading.js"}}?v={{asset_ver "/assets/js/reading.js"}}" defer></script>
+  {{if .Site.Plugins.CopycodeEnabled}}<script src="{{url_for "/assets/js/plugins/copycode.js"}}?v={{asset_ver "/assets/js/plugins/copycode.js"}}" defer></script>{{end}}
   {{- /* 标签云 widget 交互：默认静态/3D 球体旋转云模式切换（.widget-wrapper.tagcloud 存在性检查，多实例支持） */}}
   <script src="{{url_for "/assets/js/tagcloud.js"}}?v={{asset_ver "/assets/js/tagcloud.js"}}" defer></script>
   {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}

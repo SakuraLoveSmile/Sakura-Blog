@@ -660,7 +660,7 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 		Site:           s.site.Load(),
 		Page:           &tmpl.Page{Title: nb.Name, Layout: "notebook", Lang: "zh-CN", Tag: tag},
 		NotebookDetail: nb,
-		Notes:          noteValues(notes),
+		Notes:          noteValues(notes, s.site.Load().Notebook.AutoExcerpt),
 		NotesTotal:     total,
 		NotesPage:      page,
 		NotesPerPage:   perPage,
@@ -748,10 +748,18 @@ func (s *webServer) handleNote(c *gin.Context) {
 }
 
 // noteValues store.Note 指针列表 → 值列表（ViewData.Notes 用，模板直接 range）。
-func noteValues(notes []*store.Note) []store.Note {
+func noteValues(notes []*store.Note, autoExcerpt int) []store.Note {
 	out := make([]store.Note, 0, len(notes))
 	for _, n := range notes {
-		out = append(out, *n)
+		v := *n
+		if autoExcerpt > 0 {
+			content := v.ContentHTML
+			if content == "" {
+				content = v.Content
+			}
+			v.Excerpt = textutil.Truncate(textutil.StripHTML(content), autoExcerpt)
+		}
+		out = append(out, v)
 	}
 	return out
 }

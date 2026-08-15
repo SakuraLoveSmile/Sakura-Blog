@@ -357,6 +357,7 @@ type Site struct {
 	Friends     FriendsConfig   `yaml:"friends" json:"friends"` // 友链动态聚合配置（site.yml friends 段）
 	Wiki        []WikiProject   `yaml:"wiki" json:"wiki"`       // 文库项目（site.yml wiki 段，/wiki 页）
 	Article     ArticleConfig   `yaml:"article" json:"article"`
+	Search      SearchConfig    `yaml:"search" json:"search"`
 	SEO         SEOConfig       `yaml:"seo" json:"seo"`               // 站点级 SEO 配置（Spec 42）
 	Inject      InjectConfig    `yaml:"-" json:"inject"`              // 代码注入（Spec 42）：仅入库不入 site.yml（技术决策）
 	Style       StyleConfig     `yaml:"style"   json:"style"`         // 外观样式可配置化（Spec 34/47）
@@ -372,7 +373,8 @@ type Site struct {
 	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
 	// 前端体验增强插件（Spec 36）：site.yml plugins 段。缺省全关，opt-in 启用；
 	// 各插件 Enable 为 false 时前端不加载对应脚本。
-	Plugins PluginsConfig `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	Plugins  PluginsConfig  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	Notebook NotebookConfig `yaml:"notebook,omitempty" json:"notebook,omitempty"`
 	// TagPlugins 标签插件默认参数（对齐原版 _config.yml tag_plugins 段）。
 	TagPlugins TagPluginsConfig `yaml:"tag_plugins" json:"tag_plugins"`
 	// Default 占位素材组（对齐原版 _config.yml default 段）。
@@ -412,6 +414,39 @@ type PluginsConfig struct {
 	ScrollReveal *ScrollRevealConfig `yaml:"scrollreveal,omitempty" json:"scrollreveal,omitempty"`
 	Heti         *HetiConfig         `yaml:"heti,omitempty" json:"heti,omitempty"`
 	Fancybox     *FancyboxConfig     `yaml:"fancybox,omitempty" json:"fancybox,omitempty"`
+	Swiper       *SwiperConfig       `yaml:"swiper,omitempty" json:"swiper,omitempty"`
+	KaTeX        *KaTeXConfig        `yaml:"katex,omitempty" json:"katex,omitempty"`
+	MathJax      *MathJaxConfig      `yaml:"mathjax,omitempty" json:"mathjax,omitempty"`
+	Mermaid      *MermaidConfig      `yaml:"mermaid,omitempty" json:"mermaid,omitempty"`
+	Copycode     *CopycodeConfig     `yaml:"copycode,omitempty" json:"copycode,omitempty"`
+}
+
+func (p PluginsConfig) FancyboxEnabled() bool {
+	return p.Fancybox == nil || p.Fancybox.Enable == nil || *p.Fancybox.Enable
+}
+
+func (p PluginsConfig) SwiperEnabled() bool {
+	return p.Swiper == nil || p.Swiper.Enable
+}
+
+func (p PluginsConfig) KaTeXEnabled() bool {
+	return p.KaTeX == nil || p.KaTeX.Enable
+}
+
+func (p PluginsConfig) MermaidEnabled() bool {
+	return p.Mermaid == nil || p.Mermaid.Enable
+}
+
+func (p PluginsConfig) MathJaxEnabled() bool {
+	return p.MathJax != nil && p.MathJax.Enable
+}
+
+func (p PluginsConfig) CopycodeEnabled() bool {
+	return p.Copycode == nil || p.Copycode.Enable
+}
+
+func (p PluginsConfig) MathLoaderEnabled() bool {
+	return p.KaTeXEnabled() || p.MermaidEnabled() || p.MathJaxEnabled()
 }
 
 // PreloadConfig 页面资源预加载（如 Flying Pages）。Service 为第三方库名，空用内置缺省。
@@ -435,7 +470,66 @@ type HetiConfig struct {
 
 // FancyboxConfig 图片灯箱配置。Selector 为空用内置缺省选择器。
 type FancyboxConfig struct {
+	Enable   *bool  `yaml:"enable" json:"enable"`
 	Selector string `yaml:"selector,omitempty" json:"selector,omitempty"`
+}
+
+// SwiperConfig 轮播插件配置；资源由本地 vendor 提供，URL 字段保留上游配置兼容性。
+type SwiperConfig struct {
+	Enable bool   `yaml:"enable" json:"enable"`
+	CSS    string `yaml:"css,omitempty" json:"css,omitempty"`
+	JS     string `yaml:"js,omitempty" json:"js,omitempty"`
+}
+
+// KaTeXConfig 数学公式渲染配置。
+type KaTeXConfig struct {
+	Enable bool          `yaml:"enable" json:"enable"`
+	Inject template.HTML `yaml:"inject,omitempty" json:"inject,omitempty"`
+}
+
+// MathJaxConfig MathJax 公式渲染配置。
+type MathJaxConfig struct {
+	V3     bool   `yaml:"v3" json:"v3"`
+	Enable bool   `yaml:"enable" json:"enable"`
+	JS     string `yaml:"js,omitempty" json:"js,omitempty"`
+}
+
+// MermaidConfig Mermaid 图表配置。
+type MermaidConfig struct {
+	Enable            bool   `yaml:"enable" json:"enable"`
+	StyleOptimization bool   `yaml:"style_optimization" json:"style_optimization"`
+	JS                string `yaml:"js,omitempty" json:"js,omitempty"`
+	Theme             string `yaml:"theme,omitempty" json:"theme,omitempty"`
+}
+
+// CopycodeConfig 代码块复制按钮文案配置。
+type CopycodeConfig struct {
+	Enable      bool   `yaml:"enable" json:"enable"`
+	DefaultText string `yaml:"default_text,omitempty" json:"default_text,omitempty"`
+	SuccessText string `yaml:"success_text,omitempty" json:"success_text,omitempty"`
+	Toast       string `yaml:"toast,omitempty" json:"toast,omitempty"`
+}
+
+// NotebookConfig 笔记本默认行为配置（对齐 Stellar notebook 段）。
+type NotebookConfig struct {
+	AutoExcerpt int               `yaml:"auto_excerpt" json:"auto_excerpt"`
+	OrderBy     string            `yaml:"order_by" json:"order_by"`
+	License     any               `yaml:"license" json:"license"`
+	Share       bool              `yaml:"share" json:"share"`
+	Tagcons     map[string]string `yaml:"tagcons,omitempty" json:"tagcons,omitempty"`
+}
+
+// SearchConfig 本地搜索配置（对齐 Stellar search.local_search 段）。
+type SearchConfig struct {
+	Service     string            `yaml:"service" json:"service"`
+	LocalSearch LocalSearchConfig `yaml:"local_search" json:"local_search"`
+}
+
+type LocalSearchConfig struct {
+	Field      string   `yaml:"field" json:"field"`
+	Path       string   `yaml:"path" json:"path"`
+	Content    *bool    `yaml:"content" json:"content"`
+	SkipSearch []string `yaml:"skip_search" json:"skip_search"`
 }
 
 // DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
@@ -499,13 +593,35 @@ type CoverFeature struct {
 
 // SEOConfig 站点级 SEO 配置（site.yml seo 段 / settings 表 seo 段，Spec 42）。
 type SEOConfig struct {
-	DefaultDescription string `yaml:"default_description" json:"default_description"` // 默认 meta description（文章级未配置时的回退值）
-	DefaultKeywords    string `yaml:"default_keywords" json:"default_keywords"`       // 默认 meta keywords，逗号分隔
-	RobotsExtra        string `yaml:"robots_extra" json:"robots_extra"`               // robots.txt 附加规则（多行原样追加）
-	NoIndex            bool   `yaml:"no_index" json:"no_index"`                       // true=全站输出 noindex meta（零值=允许收录，旧库升级安全）
-	GoogleVerification string `yaml:"google_verification" json:"google_verification"` // google-site-verification 验证码
-	BingVerification   string `yaml:"bing_verification" json:"bing_verification"`     // msvalidate.01 验证码
-	BaiduVerification  string `yaml:"baidu_verification" json:"baidu_verification"`   // baidu-site-verification 验证码
+	Preconnect         []string             `yaml:"preconnect" json:"preconnect"`
+	Canonical          CanonicalConfig      `yaml:"canonical" json:"canonical"`
+	OpenGraph          OpenGraphConfig      `yaml:"open_graph" json:"open_graph"`
+	StructuredData     StructuredDataConfig `yaml:"structured_data" json:"structured_data"`
+	DefaultDescription string               `yaml:"default_description" json:"default_description"` // 默认 meta description（文章级未配置时的回退值）
+	DefaultKeywords    string               `yaml:"default_keywords" json:"default_keywords"`       // 默认 meta keywords，逗号分隔
+	RobotsExtra        string               `yaml:"robots_extra" json:"robots_extra"`               // robots.txt 附加规则（多行原样追加）
+	NoIndex            bool                 `yaml:"no_index" json:"no_index"`                       // true=全站输出 noindex meta（零值=允许收录，旧库升级安全）
+	GoogleVerification string               `yaml:"google_verification" json:"google_verification"` // google-site-verification 验证码
+	BingVerification   string               `yaml:"bing_verification" json:"bing_verification"`     // msvalidate.01 验证码
+	BaiduVerification  string               `yaml:"baidu_verification" json:"baidu_verification"`   // baidu-site-verification 验证码
+}
+
+type CanonicalConfig struct {
+	OriginalHost  string   `yaml:"originalHost" json:"originalHost"`
+	OfficialHosts []string `yaml:"officialHosts" json:"officialHosts"`
+}
+
+type OpenGraphConfig struct {
+	Enable    *bool  `yaml:"enable" json:"enable"`
+	TwitterID string `yaml:"twitter_id" json:"twitter_id"`
+}
+
+func (c OpenGraphConfig) Enabled() bool {
+	return c.Enable == nil || *c.Enable
+}
+
+type StructuredDataConfig struct {
+	Links []string `yaml:"links" json:"links"`
 }
 
 // InjectConfig 代码注入配置（仅 settings 表 inject 段，Spec 42）。

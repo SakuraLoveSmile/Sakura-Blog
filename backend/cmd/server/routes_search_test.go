@@ -11,6 +11,7 @@ import (
 
 	"blog/internal/search"
 	"blog/internal/store"
+	tmpl "blog/internal/template"
 )
 
 func TestSearchItemsFromPosts(t *testing.T) {
@@ -31,6 +32,39 @@ func TestSearchItemsFromPosts(t *testing.T) {
 	}
 	if strings.Contains(items[1].Content, "秘密") {
 		t.Error("protected content leaked")
+	}
+}
+
+func TestSearchItemsFromPostsConfig(t *testing.T) {
+	posts := []*store.Post{{Slug: "private", Title: "私密", ContentHTML: "<p>机密正文</p>"}}
+	include := false
+	items := searchItemsFromPostsWithConfig(posts, tmpl.SearchConfig{
+		LocalSearch: tmpl.LocalSearchConfig{Content: &include, SkipSearch: []string{"/post/private"}},
+	})
+	if len(items) != 0 {
+		t.Fatalf("skip_search should exclude the post, got %+v", items)
+	}
+	items = searchItemsFromPostsWithConfig(posts, tmpl.SearchConfig{
+		LocalSearch: tmpl.LocalSearchConfig{Content: &include},
+	})
+	if len(items) != 1 || items[0].Content != "" {
+		t.Fatalf("content=false should keep title and remove body, got %+v", items)
+	}
+	items = searchItemsFromPostsWithConfig(posts, tmpl.SearchConfig{
+		LocalSearch: tmpl.LocalSearchConfig{Field: "page"},
+	})
+	if len(items) != 0 {
+		t.Fatalf("field=page should exclude posts, got %+v", items)
+	}
+}
+
+func TestSearchPathAllowedNormalizesPrefixes(t *testing.T) {
+	cfg := tmpl.SearchConfig{LocalSearch: tmpl.LocalSearchConfig{SkipSearch: []string{"/wiki/private"}}}
+	if searchPathAllowed("/wiki/private/chapter", cfg) {
+		t.Fatal("skip_search prefix should exclude nested paths")
+	}
+	if !searchPathAllowed("/wiki/public", cfg) {
+		t.Fatal("unmatched path should remain searchable")
 	}
 }
 

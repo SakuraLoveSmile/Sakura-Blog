@@ -13,18 +13,30 @@
   {{with .Site.SEO.GoogleVerification}}<meta name="google-site-verification" content="{{.}}">{{end}}
   {{with .Site.SEO.BingVerification}}<meta name="msvalidate.01" content="{{.}}">{{end}}
   {{with .Site.SEO.BaiduVerification}}<meta name="baidu-site-verification" content="{{.}}">{{end}}
+  {{range .Site.SEO.Preconnect}}<link rel="preconnect" href="{{.}}" crossorigin>{{end}}
   <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
   <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
   <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="{{if .Site.FaviconURL}}{{.Site.FaviconURL}}{{else}}/favicon.ico{{end}}" sizes="any">
   <link rel="apple-touch-icon" href="{{if .Site.AppleIcon}}{{.Site.AppleIcon}}{{else}}/apple-touch-icon.png{{end}}">
+  <script>
+    window.canonical = {
+      originalHost: '{{.Site.SEO.Canonical.OriginalHost}}',
+      officialHosts: {{jsonify .Site.SEO.Canonical.OfficialHosts}},
+      param: { permalink: '{{.Page.CanonicalURL}}', checklink: '/' }
+    };
+    window.canonical.encoded = btoa(window.canonical.originalHost || '');
+  </script>
   {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
   {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
+  {{if .Site.SEO.OpenGraph.Enabled}}
   <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
   <meta property="og:description" content="{{.Page.Description}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+  {{with .Site.SEO.OpenGraph.TwitterID}}<meta name="twitter:site" content="@{{.}}">{{end}}
+  {{end}}
   {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
   {{if and (eq .Page.Layout "post") .Page.Slug}}
   <meta property="og:image" content="/og/{{.Page.Slug}}.png">
@@ -35,23 +47,24 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "{{.Page.Title}}",
-    {{if .Page.Date}}"datePublished": "{{.Page.Date}}",{{end}}
-    {{if .Page.Updated}}"dateModified": "{{.Page.Updated}}",{{end}}
-    "image": "{{if .Site.URL}}{{.Site.URL}}{{end}}/og/{{.Page.Slug}}.png",
+    "headline": {{jsonify .Page.Title}},
+    {{if .Page.Date}}"datePublished": {{jsonify .Page.Date}},{{end}}
+    {{if .Page.Updated}}"dateModified": {{jsonify .Page.Updated}},{{end}}
+    "image": {{jsonify (printf "%s/og/%s.png" .Site.URL .Page.Slug)}},
     "author": {
       "@type": "Person",
-      "name": "{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.Title}}{{end}}"
+      "name": {{if .Page.Author}}{{jsonify .Page.Author}}{{else}}{{jsonify .Site.Title}}{{end}}
     },
     "publisher": {
       "@type": "Organization",
-      "name": "{{.Site.Title}}"
-    },
+      "name": {{jsonify .Site.Title}}
+    }{{if .Site.SEO.StructuredData.Links}},
+    "sameAs": {{jsonify .Site.SEO.StructuredData.Links}}{{end}},
     {{if .Page.CanonicalURL}}"mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "{{.Page.CanonicalURL}}"
+      "@id": {{jsonify .Page.CanonicalURL}}
     },{{end}}
-    "description": "{{.Page.Description}}"
+    "description": {{jsonify .Page.Description}}
   }
   </script>
   {{end}}
@@ -68,9 +81,14 @@
   {{- /* Chroma 代码高亮令牌色（深色），容器样式复用 main.css */}}
   <link rel="stylesheet" href="/assets/css/highlight.css?v={{asset_ver "/assets/css/highlight.css"}}">
 
+  {{- /* KaTeX 自定义注入（兼容 Stellar plugins.katex.inject）。 */}}
+  {{with .Site.Plugins.KaTeX}}{{.Inject}}{{end}}
+  {{- /* KaTeX/Mermaid/MathJax 按需加载：开关由 plugins 段驱动。 */}}
+  <script>window.__stellarPlugins = {{jsonify .Site.Plugins}};</script>
   {{- /* KaTeX/Mermaid 按需加载（Spec 61 阶段 1）：页面含数学定界符或 .mermaid 元素才动态注入 CDN，
     非公式页零请求；loader 幂等自守卫，失败静默降级 */}}
-  <script src="{{url_for "/assets/js/math-mermaid-loader.js"}}?v={{asset_ver "/assets/js/math-mermaid-loader.js"}}" defer></script>
+  {{if .Site.Plugins.MathLoaderEnabled}}<script src="{{url_for "/assets/js/math-mermaid-loader.js"}}?v={{asset_ver "/assets/js/math-mermaid-loader.js"}}" defer></script>{{end}}
+  {{with .Site.Style.Codeblock.HighlightjsTheme}}<link rel="stylesheet" href="{{.}}">{{end}}
 
   {{- /* 评论区样式（Artalk 视觉对齐版，强调色映射 --theme，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v={{asset_ver "/assets/css/comments.css"}}">

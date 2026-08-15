@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"blog/internal/store"
 	tmpl "blog/internal/template"
@@ -42,6 +46,50 @@ func TestToCard(t *testing.T) {
 	}
 	if c2.CategoryIcon != "default:category" {
 		t.Errorf("unconfigured category icon = %q, want default:category", c2.CategoryIcon)
+	}
+}
+
+func TestArticleAutoExcerptAppliesToExistingPosts(t *testing.T) {
+	site := &tmpl.Site{Article: tmpl.ArticleConfig{AutoExcerpt: 4}}
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
+	card := ws.toCard(&store.Post{Title: "无摘要", ContentHTML: "<p>一二三四五六</p>"})
+	if card.Excerpt != "一二三四…" {
+		t.Fatalf("auto excerpt = %q, want %q", card.Excerpt, "一二三四…")
+	}
+	card = ws.toCard(&store.Post{Excerpt: "显式摘要", ContentHTML: "<p>正文</p>"})
+	if card.Excerpt != "显式摘要" {
+		t.Fatalf("explicit excerpt was replaced: %q", card.Excerpt)
+	}
+}
+
+func TestArticleAutoBannerUsesConfiguredDefault(t *testing.T) {
+	site := &tmpl.Site{
+		Article: tmpl.ArticleConfig{AutoBanner: true},
+		Default: tmpl.DefaultAssets{Banner: "/assets/default-banner.jpg"},
+	}
+	if got := articleBanner(site, ""); got != "/assets/default-banner.jpg" {
+		t.Fatalf("auto banner = %q, want configured default", got)
+	}
+	if got := articleBanner(site, "/posts/explicit.jpg"); got != "/posts/explicit.jpg" {
+		t.Fatalf("explicit banner was replaced: %q", got)
+	}
+	if got := articleBanner(&tmpl.Site{Default: tmpl.DefaultAssets{Banner: "/default.jpg"}}, ""); got != "" {
+		t.Fatalf("disabled auto banner = %q, want empty", got)
+	}
+}
+
+func TestCanonicalBaseURLUsesOriginalHost(t *testing.T) {
+	site := &tmpl.Site{
+		URL: "https://mirror.example",
+		SEO: tmpl.SEOConfig{
+			Canonical: tmpl.CanonicalConfig{OriginalHost: "origin.example", OfficialHosts: []string{"mirror.example"}},
+		},
+	}
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
+	c := gin.CreateTestContextOnly(httptest.NewRecorder(), gin.New())
+	c.Request = httptest.NewRequest(http.MethodGet, "http://mirror.example:8080/post/a", nil)
+	if got := ws.canonicalBaseURL(&tmpl.ViewData{Site: site}, c); got != "https://origin.example" {
+		t.Fatalf("canonical base = %q, want https://origin.example", got)
 	}
 }
 

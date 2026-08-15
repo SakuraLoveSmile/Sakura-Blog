@@ -53,6 +53,7 @@ type postJSON struct {
 	Slug      string   `json:"slug"`
 	Title     string   `json:"title"`
 	Excerpt   string   `json:"excerpt"`
+	Banner    string   `json:"banner"`
 	Cover     string   `json:"cover"`
 	Category  string   `json:"category"`
 	Topic     string   `json:"topic"`
@@ -90,6 +91,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		Slug:            p.Slug,
 		Title:           p.Title,
 		Excerpt:         p.Excerpt,
+		Banner:          p.Banner,
 		Cover:           p.Cover,
 		Category:        p.Category,
 		Topic:           p.Topic,
@@ -186,7 +188,7 @@ func (h *Handler) getPost(c *gin.Context) {
 func (h *Handler) createPost(c *gin.Context) {
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
+		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
 	// 空 slug 时从标题自动生成（Spec Task 6），并确保唯一；用户指定 slug 则检查冲突
@@ -195,13 +197,13 @@ func (h *Handler) createPost(c *gin.Context) {
 		slugVal = h.ensureUniqueSlug(generateSlug(req.Title))
 		req.Slug = slugVal
 	} else if existing, _ := h.store.GetBySlug(slugVal); existing != nil {
-		Fail(c, http.StatusConflict, "slug 已存在: " + slugVal)
+		Fail(c, http.StatusConflict, "slug 已存在: "+slugVal)
 		return
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -211,7 +213,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		p.Cover = defaultCover(req.Slug)
 	}
 	if _, err := h.store.Create(p); err != nil {
-		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, toPostJSON(p, 0))
@@ -232,7 +234,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
+		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
 
@@ -243,14 +245,14 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
-			Fail(c, http.StatusConflict, "slug 已被占用: " + newSlug)
+			Fail(c, http.StatusConflict, "slug 已被占用: "+newSlug)
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -262,7 +264,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
-		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
 
@@ -298,16 +300,16 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
+		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
 	b, err := json.Marshal(req)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "草稿序列化失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "草稿序列化失败: "+err.Error())
 		return
 	}
 	if err := h.store.SaveDraft(slug, string(b)); err != nil {
-		Fail(c, http.StatusInternalServerError, "保存草稿失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "保存草稿失败: "+err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "has_draft": true})
@@ -329,7 +331,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		Fail(c, http.StatusBadRequest, "请求格式错误: " + err.Error())
+		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
 	req.Status = store.StatusPublished
@@ -340,14 +342,14 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
-			Fail(c, http.StatusConflict, "slug 已被占用: " + newSlug)
+			Fail(c, http.StatusConflict, "slug 已被占用: "+newSlug)
 			return
 		}
 	}
 
 	contentHTML, err := h.posts.Render(req.ContentMD)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -358,7 +360,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
-		Fail(c, http.StatusInternalServerError, "发布失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "发布失败: "+err.Error())
 		return
 	}
 	// 草稿已应用，清空草稿头（slug 变更时新记录本就无草稿，兼顾清理旧 slug）
@@ -511,6 +513,7 @@ type postRequest struct {
 	Slug      string `json:"slug"`
 	Title     string `json:"title"`
 	Excerpt   string `json:"excerpt"`
+	Banner    string `json:"banner"`
 	Cover     string `json:"cover"`
 	Category  string `json:"category"`
 	Topic     string `json:"topic"`
@@ -542,6 +545,7 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		Slug:        strings.TrimSpace(req.Slug),
 		Title:       strings.TrimSpace(req.Title),
 		Excerpt:     strings.TrimSpace(req.Excerpt),
+		Banner:      strings.TrimSpace(req.Banner),
 		Cover:       strings.TrimSpace(req.Cover),
 		Category:    strings.TrimSpace(req.Category),
 		Topic:       strings.TrimSpace(req.Topic),
@@ -582,4 +586,3 @@ func normalizeTags(raw string) string {
 	}
 	return strings.Join(out, ",")
 }
-

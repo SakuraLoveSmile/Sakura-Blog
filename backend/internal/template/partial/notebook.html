@@ -34,6 +34,7 @@
       <article class="md-text">
         <div class="excerpt">
           <h2 class="post-title">{{.Title}}</h2>
+          {{if .Excerpt}}<p>{{.Excerpt}}</p>{{end}}
           <p>
             <time datetime="{{date .UpdatedAt "2006-01-02T15:04:05Z07:00"}}">{{date .UpdatedAt "2006年1月2日"}}</time>
             {{- range (split .Tags ",")}}
