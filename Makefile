@@ -1,38 +1,38 @@
 # Stellar 博客项目任务入口
-# 固化构建顺序：先 Console SPA（go:embed 编译期要求 frontend/console/dist 非空），再 Go 二进制。
+# 固化构建顺序：先 Console SPA（go:embed 编译期要求 modules/console/web/dist 非空），再 Go 二进制。
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
+.PHONY: all build console go-build test console-test assets-test module-check console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
 ## build: 完整构建（console → go 二进制）
 build: console go-build
 
-## console: 构建管理后台 SPA（产出 frontend/console/dist 供 go:embed；依赖未变更时跳过 npm ci）
+## console: 构建管理后台 SPA（产出 modules/console/web/dist 供 go:embed；依赖未变更时跳过 npm ci）
 console: console-deps
-	cd frontend/console && npm run build
+	cd modules/console/web && npm run build
 
-## go-build: 编译 Go 二进制（要求 frontend/console/dist 已存在）
+## go-build: 编译 Go 二进制（要求 modules/console/web/dist 已存在）
 go-build:
-	go build -o $(BINARY) ./backend/cmd/server
+	go build -o $(BINARY) ./cmd/blog
 
 ## test: 静态检查 + 全部测试（Go vet/test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
-## 注意：go.work workspace 下 ./... 不匹配 use 的 module，须显式列出 backend/frontend 包路径。
-test: dist-bootstrap console-test assets-test
-	go vet ./backend/... ./frontend/...
-	go test ./backend/... ./frontend/...
+## Go 命令统一从根 module 执行。
+test: dist-bootstrap console-test assets-test module-check
+	go vet ./...
+	go test ./...
 
 ## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
-## frontend/console/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
+## modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
 ## vet/test 不需要真实前端产物，dist 缺失或为空时写入占位文件即可，
 ## 使全新 worktree 下 make test 给出行为信号而不是 embed 编译环境错误。
 ## 需要真实产物请用 make build / make console（release 产物由 build job 用真实 dist 验证）。
 dist-bootstrap:
-	@if [ ! -f frontend/console/dist/index.html ]; then \
+	@if [ ! -f modules/console/web/dist/index.html ]; then \
 		echo "dist-bootstrap: dist 缺失或无 index.html，写入占位文件（与 CI stub 同语义，仅满足 go:embed 编译）"; \
-		mkdir -p frontend/console/dist && echo '<!doctype html>' > frontend/console/dist/index.html; \
+		mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html; \
 	else \
 		echo "dist-bootstrap: dist 已存在，跳过"; \
 	fi
@@ -40,7 +40,7 @@ dist-bootstrap:
 ## console-deps: 自举 console 前端依赖——node_modules 缺失或 package-lock.json 内容变化时才 npm ci。
 ## .node_modules-stamp 记录 lock 哈希（gitignore），命中 npm 全局缓存，不重复全量下载。
 console-deps:
-	@cd frontend/console && { \
+	@cd modules/console/web && { \
 		lock=$$(shasum -a 256 package-lock.json | cut -d' ' -f1); \
 		if [ ! -d node_modules ]; then \
 			echo "console-deps: node_modules 缺失，执行 npm ci 安装依赖（依赖 npm 全局缓存，通常较快）"; \
@@ -53,17 +53,17 @@ console-deps:
 		fi; \
 	}
 
-## css: 本地/agent 维护入口——从 resource/hexo-theme-stellar 的 styl 源重编 frontend/assets/css/main.css。
-## 依赖 resource/ 主题源（gitignore，CI 无源不可编译）与 frontend/node_modules（stylus 0.62.0），
+## css: 本地/agent 维护入口——从 resource/hexo-theme-stellar 的 styl 源重编 modules/stellar/web/assets/css/main.css。
+## 依赖 resource/ 主题源（gitignore，CI 无源不可编译）与 modules/stellar/web/node_modules（stylus 0.62.0），
 ## 不进 test 门禁；产物 main.css 是 git 跟踪文件，重编后 diff 应无漂移。
 css:
-	@if [ ! -d frontend/node_modules ]; then \
-		echo "css: frontend 依赖缺失，执行 npm ci（frontend/package.json 锁 stylus 0.62.0）"; \
-		cd frontend && npm ci; \
+	@if [ ! -d modules/stellar/web/node_modules ]; then \
+		echo "css: Stellar web 依赖缺失，执行 npm ci（modules/stellar/web/package.json 锁 stylus 0.62.0）"; \
+		cd modules/stellar/web && npm ci; \
 	fi
-	cd frontend && node build/stylus/compile.js
+	cd modules/stellar/web && node build/stylus/compile.js
 
-## css-drift-check: 本地核对入口——校验 frontend/assets/css/main.css 与跟踪版本一致（无漂移）。
+## css-drift-check: 本地核对入口——校验 modules/stellar/web/assets/css/main.css 与跟踪版本一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
 ## resource/ 为 gitignore 本地主题源，CI 无源不可编译，无源环境跳过核对、不视为失败。
 ## 用法：在存在 resource/ 源的环境先 make css 重编产物，再运行本目标；
@@ -72,20 +72,24 @@ css-drift-check:
 	@if [ ! -d resource ]; then \
 		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
 	else \
-		git diff --exit-code -- frontend/assets/css/main.css || { \
-			echo "css-drift-check: frontend/assets/css/main.css 与跟踪版本不一致（手改或漂移，先 make css 重编后再核对）" >&2; \
+		git diff --exit-code -- modules/stellar/web/assets/css/main.css || { \
+			echo "css-drift-check: modules/stellar/web/assets/css/main.css 与跟踪版本不一致（手改或漂移，先 make css 重编后再核对）" >&2; \
 			exit 1; \
 		}; \
-		echo "css-drift-check: frontend/assets/css/main.css 与跟踪版本一致，无漂移"; \
+		echo "css-drift-check: modules/stellar/web/assets/css/main.css 与跟踪版本一致，无漂移"; \
 	fi
 
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）
 console-test: console-deps
-	cd frontend/console && npm run test
+	cd modules/console/web && npm run test
 
-## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 frontend/scripts/test/*.test.mjs）
+## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 modules/stellar/web/scripts/test/*.test.mjs）
 assets-test:
-	node --test frontend/scripts/test/*.test.mjs
+	node --test modules/stellar/web/scripts/test/*.test.mjs
+
+## module-check: 静态约束 Console/Stellar/internal 的依赖方向。
+module-check:
+	sh scripts/check-module-deps.sh
 
 ## merge-check: feature 分支合回 dev 的机械化合并封装（在 feature worktree 根目录执行）
 ## 强制先跑 make test，任一环节失败即以非零码退出、不执行合并；全绿后才把当前分支合入 dev。
@@ -145,21 +149,22 @@ hooks-install:
 run: build
 	./$(BINARY)
 
-## dev: 开发模式（磁盘读模板/资源/frontend/console dist，改样式即时生效）
+## dev: 开发模式（磁盘读模板/资源/modules/console/web dist，改样式即时生效）
 ## 前端增量：仅当 console/dist 缺失或 console/src 较新时才重建（时间戳判断），否则跳过。
-dev: console-deps go-build
-	@if [ ! -d frontend/console/dist ]; then \
+dev: console-deps
+	@if [ ! -d modules/console/web/dist ]; then \
 		echo "dev: console/dist 缺失，构建前端"; \
-		cd frontend/console && npm run build; \
-	elif [ -n "$$(find frontend/console/src -newer frontend/console/dist -print -quit 2>/dev/null)" ]; then \
+		cd modules/console/web && npm run build; \
+	elif [ -n "$$(find modules/console/web/src -newer modules/console/web/dist -print -quit 2>/dev/null)" ]; then \
 		echo "dev: console/src 有更新，重建前端"; \
-		cd frontend/console && npm run build; \
+		cd modules/console/web && npm run build; \
 	else \
 		echo "dev: console/dist 为最新，跳过前端构建"; \
 	fi
+	go build -o $(BINARY) ./cmd/blog
 	./$(BINARY) -dev
 
 ## clean: 清理构建产物
 clean:
 	rm -f $(BINARY)
-	rm -rf frontend/console/dist
+	rm -rf modules/console/web/dist

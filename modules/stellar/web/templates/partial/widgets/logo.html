@@ -1,0 +1,39 @@
+{{- /* widgets/logo.html: logo 复用 partial，对应 _partial/sidebar/logo.ejs layoutDiv
+   供 sidebar.html（侧栏 logo）和 base.html（移动端 logo）两处复用。
+   只输出 .logo-wrap 内容，调用方自行包裹 <header class="header"> 或 <header class="header mobile-only">.
+   wiki 文档页（Layout=wiki-doc）输出项目化 logo（对齐原版 logo.ejs wiki 分支），其余输出站点 logo。
+   结构：LogoIcon（div.icon>img.icon，优先于 avatar）→ Avatar（a.avatar>div.bg+img.avatar）→ Title（a.title>div.main+div.sub）
+   配置为空时保持零值安全（字段空则不输出对应标记）。
+*/ -}}
+{{if eq .Page.Layout "wiki-doc"}}
+<div class="logo-wrap">
+  {{if .WikiProjectIcon}}<div class="icon"><img class="icon" src="{{.WikiProjectIcon}}" alt="{{.WikiProjectName}}"></div>{{end}}
+  <a class="title" href="/wiki/{{.WikiProjectID}}">
+    <div class="main">{{.WikiProjectName}}</div>
+    {{if .WikiProjectDescription}}<div class="sub normal cap">{{.WikiProjectDescription}}</div>{{end}}
+  </a>
+</div>
+{{else}}
+<div class="logo-wrap">
+  {{- /* icon 分支：LogoIcon 非空时渲染 div.icon>img.icon（对齐 logo.ejs:77-78）*/}}
+  {{if .Site.LogoIcon}}<div class="icon"><img class="icon" src="{{.Site.LogoIcon}}"></div>{{end}}
+  {{- /* avatar 分支：无 LogoIcon 时走原有头像渲染 */}}
+  {{if not .Site.LogoIcon}}<a class="avatar" href="/">
+    {{if .Site.Style.AnimatedAvatar.Enabled}}
+    <div class="bg" style="opacity:0"></div>
+    {{end}}
+    <img class="avatar" src="{{.Site.Avatar}}">
+  </a>{{end}}
+  <a class="title" href="/">
+    <div class="main">{{.Site.LogoTitle}}</div>
+    {{- /* logo_sub 含 | 时拆 normal/hover 两层 */}}
+    {{if contains .Site.LogoSub "|"}}
+    {{$parts := split .Site.LogoSub "|"}}
+    <div class="sub normal cap">{{trim (index $parts 0)}}</div>
+    <div class="sub hover cap" style="opacity:0">{{join (slice $parts 1) "|"}}</div>
+    {{else}}
+    <div class="sub cap">{{.Site.LogoSub}}</div>
+    {{end}}
+  </a>
+</div>
+{{end}}

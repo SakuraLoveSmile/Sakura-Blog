@@ -1,0 +1,286 @@
+{{- /* content.html: 文章页正文，对应 Stellar _partial/main/article/
+   goldmark 输出的 HTML 包裹在 <article class="md-text content"> 内，
+   Stellar 的 .md-text 选择器会应用文章样式（标题/代码块/引用/列表等）。
+   Content 已是 template.HTML 类型，直接输出不会转义，无需 safe。*/}}
+
+{{- /* 文章头部 banner：对齐 Stellar _partial/main/navbar/article_banner.ejs。
+   面包屑（首页 / 博客）+ 发布日期 + 阅读量（Page.Views，已含本次访问）+ 大标题。
+   front matter banner 非空时渲染横幅图（img.lazy.bg，对齐原版 banner.url 分支），
+   宽高比由 --banner-ratio 变量钩子控制（site.yml article.banner_ratio，post-footer.css 覆盖 main.css 编译期固定值）。
+   仅文章页（Page.Title 非空）渲染；复用主题现成 .article.banner / .bread-nav / #post-meta / .text.title 样式。*/}}
+{{if .Page.Title}}
+<div class="article banner top"{{if and .Page.Banner .Site.Article.BannerRatio}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
+  {{- /* banner 封面直出 src：首屏图无需懒加载，且绝对定位的 .bg 不被 lazyload 观察（data-src 会永不加载） */}}
+  {{if .Page.Banner}}<img class="bg" src="{{.Page.Banner}}">{{end}}
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          {{- /* 面包屑对齐原版 breadcrumb/blog.ejs：专栏文章 首页/专栏/{专栏名}，普通文章 首页/博客
+                   （专栏功能已禁用，HasTopics 恒 false，专栏文章也走普通路径，链接跳 404 无意义）*/ -}}
+          {{if and .HasTopics .Page.Topic}}
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="proj" href="/topic/{{.Page.Topic}}">{{.Page.Topic}}</a>
+          {{else}}
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
+          {{end}}
+          {{if and .Site.Article.ReadingTime (gt .WordCount 0)}}<span class="cap reading right">{{lang "meta.word_count" .WordCount}} · {{lang "meta.reading_time" .ReadingMinutes}}</span>{{end}}
+        </div>
+        <div class="flex-row" id="post-meta">
+          {{- /* Spec 53 Part A：多作者命中时首位渲染作者链接（对齐原版 dateinfo.ejs：
+             有作者时创建时间不带「发布于：」前缀），链接到 /author/{id}/ 作者页。*/}}
+          {{- if and .Page.Author .Page.AuthorName}}
+          <a class="author" href="/author/{{.Page.Author}}/">{{.Page.AuthorName}}</a>
+          <span class="sep"></span>
+          {{- end}}
+          {{- if .Page.Date}}
+          <span class="text created">{{if and .Page.Author .Page.AuthorName}}<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{else}}{{- lang "meta.created" -}}：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{end}}</span>
+          {{- end}}
+          {{- if and .Page.Updated (ne .Page.Updated .Page.Date)}}
+          <span class="sep updated"></span>
+          <span class="text updated">{{- lang "meta.updated" -}}：<time datetime="{{date .Page.Updated "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Updated "2006-01-02"}}</time></span>
+          {{- end}}
+        </div>
+      </div>
+    </div>
+    <div class="bottom only-title">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+
+<article class="md-text content">
+  {{- /* AI 文章摘要（Spec 53）：后台预生成摘要直接展示；无摘要且开读者自助时渲染生成面板
+     （交互在 assets/js/ai-summary.js，POST /api/v1/ai/summary/guest 透传读者自己的 API）。
+     复用 tag-plugin colorful note 结构与样式，位置在过期提醒之前。*/}}
+  {{if and .Page.Title .Page.AISummaryOn}}
+  <div class="tag-plugin colorful note ai-summary" id="ai-summary" color="blue"{{if .Page.AIUserAPIOn}} data-user-api="1"{{end}} data-generating-msg="{{lang "ai.summary.generating"}}" data-done-msg="{{lang "ai.summary.done"}}" data-required-msg="{{lang "ai.summary.required"}}">
+    <div class="title"><svg class="ai-summary-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg><span class="ai-summary-title-text">{{- lang "ai.summary.title" -}}</span><span class="ai-summary-tag">{{- lang "ai.summary.tag" -}}</span></div>
+    <div class="body">{{if .Page.AISummary}}<p>{{.Page.AISummary}}</p>{{end}}</div>
+    {{if .Page.AIUserAPIOn}}
+    <div class="ai-summary-panel">
+      <button type="button" class="ai-summary-open">{{- lang "ai.summary.open" -}}</button>
+      <div class="ai-summary-form" hidden>
+        <input type="url" class="ai-summary-endpoint" placeholder="{{lang "ai.summary.endpoint"}}" autocomplete="off">
+        <input type="text" class="ai-summary-model" placeholder="{{lang "ai.summary.model"}}" autocomplete="off">
+        <input type="password" class="ai-summary-key" placeholder="{{lang "ai.summary.key"}}" autocomplete="off">
+        <label class="ai-summary-remember"><input type="checkbox" class="ai-summary-remember-check">{{lang "ai.summary.remember"}}</label>
+        <button type="button" class="ai-summary-generate">{{- lang "ai.summary.generate" -}}</button>
+        <p class="cap ai-summary-privacy">{{- lang "ai.summary.privacy" -}}</p>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+  {{- /* 过期提醒（Spec 32 增量）：距最后更新超阈值（site.yml article.expire_days，缺省 180 天）时
+     文首渲染提醒块，复用 note 标签插件的 tag-plugin colorful note 结构与样式（shortcode.go 同款）。*/}}
+  {{if gt .ExpiredDays 0}}
+  <div class="tag-plugin colorful note" color="warning">
+    <div class="body">{{- lang "article.expire" .ExpiredDays -}}</div>
+  </div>
+  {{end}}
+  {{.Content}}
+</article>
+
+{{- /* 打赏（site.yml article.reward 驱动）：正文结尾居中按钮，点击展开收款码；
+   展开/收起交互在下方内联脚本统一委托处理（#reward-toggle）。*/}}
+{{if and .Page.Title .Site.Article.Reward.Enabled}}
+<div class="reward-wrap" id="reward">
+  <button type="button" class="reward-toggle" id="reward-toggle" aria-expanded="false" aria-controls="reward-codes">{{icon "default:reward"}}<span>{{if .Site.Article.Reward.Text}}{{.Site.Article.Reward.Text}}{{else}}{{lang "article.reward_default"}}{{end}}</span></button>
+  <div class="reward-codes" id="reward-codes" inert>
+    <div class="reward-codes-inner">
+    {{if .Site.Article.Reward.Wechat}}
+    <figure class="reward-item">
+      <img src="{{.Site.Article.Reward.Wechat}}" alt="{{lang "share.wechat_pay"}}" loading="lazy">
+      <figcaption>{{- lang "share.wechat_pay" -}}</figcaption>
+    </figure>
+    {{end}}
+    {{if .Site.Article.Reward.Alipay}}
+    <figure class="reward-item">
+      <img src="{{.Site.Article.Reward.Alipay}}" alt="{{lang "share.alipay_qrcode"}}" loading="lazy">
+      <figcaption>{{- lang "share.alipay" -}}</figcaption>
+    </figure>
+    {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{- /* 文章页脚：参考文献 / 版权声明 / 贡献者 / 分享（site.yml article 段驱动，全关时不渲染）。
+   对齐 Stellar article_footer.ejs + main.css .article-footer 样式。*/}}
+{{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .EditPage .Site.Article.Share.Enabled)}}
+<div class="article-footer" id="post-footer" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
+  {{if .Page.References}}
+  <section id="references">
+    <div class="header"><span>{{- lang "meta.references" -}}</span></div>
+    <div class="body">
+      <ul>
+        {{range .Page.References}}<li class="post-title">{{.}}</li>{{end}}
+      </ul>
+    </div>
+  </section>
+  {{end}}
+  {{if .Site.Article.Copyright.Enabled}}
+  <section id="license">
+    <div class="header"><span>{{- lang "article.copyright" -}}</span></div>
+    <div class="body">
+      <p>{{- lang "article.author" -}}：{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.DefaultAuthorName}}{{end}}</p>
+      {{if .Page.Date}}<p>{{- lang "meta.created" -}}：{{.Page.Date}}</p>{{end}}
+      {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<p>{{- lang "meta.updated" -}}：{{.Page.Updated}}</p>{{end}}
+      {{if .Site.Article.Copyright.License}}
+      <p>{{- lang "meta.license" -}}：<a href="{{.Site.Article.Copyright.LicenseURL}}" target="_blank" rel="external noopener noreferrer">{{.Site.Article.Copyright.License}}</a></p>
+      {{end}}
+      {{if .Page.CanonicalURL}}<p>{{- lang "article.original_link" -}}：<a href="{{.Page.CanonicalURL}}">{{.Page.CanonicalURL}}</a></p>{{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{- /* 贡献者 + 编辑本文：对齐原版 contributors.ejs（文案 meta.contributors/btn.edit）。
+     edit_this_page 映射命中时渲染；ds-contributors 由 base.html 数据服务扫描按需加载
+     services/contributors.js，拉 commits API 渲染头像列表（API 不可推导时仅保留编辑按钮）。*/}}
+  {{if .EditPage}}
+  <section id="contributors">
+    <div class="header">
+      <span>{{- lang "meta.contributors" -}}</span>
+      <span class="spacer"></span>
+      <a class="edit" href="{{.EditPage.EditURL}}">
+        {{icon "default:edit"}}
+        <span>{{- lang "btn.edit" -}}</span>
+      </a>
+    </div>
+    {{if .EditPage.APIURL}}
+    <div class="body">
+      <div class="ds-contributors users-wrap" api-type="commits" data-api="{{.EditPage.APIURL}}"><div class="grid-box"></div></div>
+    </div>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if .Site.Article.Share.Enabled}}
+  <section id="share">
+    <div class="header"><span>{{- lang "meta.share" -}}</span></div>
+    <div class="body">
+      <div class="link"><input class="copy-area" readonly="true" id="copy-link" value="{{.Page.CanonicalURL}}" aria-hidden="true" tabindex="-1" /></div>
+      <div class="social-wrap dis-select">
+        {{- range .Site.Article.Share.Platforms}}
+        {{- if eq . "wechat"}}
+        <a class="social share-item wechat" onclick="util.toggle('qrcode-wechat')" title="{{lang "share.wechat"}}">{{icon "share:wechat"}}</a>
+        {{- else if eq . "weibo"}}
+        <a class="social share-item weibo" target="_blank" rel="external nofollow noopener noreferrer" data-platform="weibo" title="{{lang "share.weibo"}}">{{icon "share:weibo"}}</a>
+        {{- else if eq . "email"}}
+        <a class="social share-item email" data-platform="email" title="{{lang "share.email"}}">{{icon "share:email"}}</a>
+        {{- else if eq . "link"}}
+        <a class="social share-item link" onclick="util.copy('copy-link', '{{lang "message.copied"}}')" title="{{lang "share.copy_link"}}">{{icon "share:link"}}</a>
+        {{- end}}
+        {{- end}}
+      </div>
+      <div class="qrcode" id="qrcode-wechat" style="opacity:0;height:0">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data={{.Page.CanonicalURL | urlquery}}" alt="{{lang "share.wechat_qrcode"}}"/>
+      </div>
+    </div>
+  </section>
+  {{end}}
+</div>
+<script>
+(function () {
+  var _langPromptCopy = '{{lang "share.prompt_copy"}}';
+  function postUrl() {
+    var footer = document.getElementById('post-footer');
+    return (footer && footer.getAttribute('data-url')) || location.href;
+  }
+  function postTitle() {
+    var footer = document.getElementById('post-footer');
+    return (footer && footer.getAttribute('data-title')) || document.title;
+  }
+  /* 为 weibo / email 分享按钮动态拼接 href（服务端无法拿到完整渲染后 URL，故用 JS） */
+  function initShareLinks() {
+    var url = encodeURIComponent(postUrl());
+    var title = encodeURIComponent(postTitle());
+    var weibo = document.querySelector('#post-footer .share-item.weibo');
+    if (weibo) {
+      weibo.setAttribute('href', 'https://service.weibo.com/share/share.php?url=' + url + '&title=' + title);
+    }
+    var email = document.querySelector('#post-footer .share-item.email');
+    if (email) {
+      var raw = postTitle();
+      var rawUrl = postUrl();
+      email.setAttribute('href', 'mailto:?subject=' + encodeURIComponent(raw) + '&body=' + encodeURIComponent(rawUrl));
+    }
+  }
+  function copyLink() {
+    var text = postUrl();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {
+        window.prompt(_langPromptCopy, text);
+      });
+      return;
+    }
+    window.prompt(_langPromptCopy, text);
+  }
+  function onClick(e) {
+    var shareBtn = e.target.closest && e.target.closest('#post-footer .share-item');
+    if (shareBtn) {
+      /* link / wechat 已通过 onclick 内联处理，此处仅拦截 weibo / email 的默认跳转（href 由 initShareLinks 设置） */
+      var platform = shareBtn.getAttribute('data-platform');
+      if (platform === 'link' || platform === 'wechat') {
+        e.preventDefault();
+      }
+      return;
+    }
+    var rewardBtn = e.target.closest && e.target.closest('#reward-toggle');
+    if (rewardBtn) {
+      e.preventDefault();
+      var codes = document.getElementById('reward-codes');
+      if (!codes) return;
+      var open = !codes.classList.contains('is-open');
+      codes.classList.toggle('is-open', open);
+      rewardBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      /* 收起态 inert：二维码不可 tab 聚焦、不进入无障碍树 */
+      if (open) codes.removeAttribute('inert');
+      else codes.setAttribute('inert', '');
+    }
+  }
+  function bind() {
+    if (window.__postFooterBound) return;
+    window.__postFooterBound = true;
+    document.addEventListener('click', onClick);
+    initShareLinks();
+  }
+  bind();
+})();
+</script>
+{{end}}
+
+{{if or .PrevPost .NextPost}}
+<div class="related-wrap" id="read-next">
+  <section class="body">
+    {{if .PrevPost}}<div class="item" id="prev">
+      <div class="note">{{- lang "meta.newer" -}}</div>
+      <a href="/post/{{.PrevPost.Slug}}">{{.PrevPost.Title}}</a>
+    </div>{{end}}
+    {{if .NextPost}}<div class="item" id="next">
+      <div class="note">{{- lang "meta.older" -}}</div>
+      <a href="/post/{{.NextPost.Slug}}">{{.NextPost.Title}}</a>
+    </div>{{end}}
+  </section>
+</div>
+{{end}}
+
+{{if .RelatedPosts}}
+<div class="related-wrap" id="related-posts">
+  <section class="header"><div class="title cap theme">{{- lang "meta.related_posts" -}}</div></section>
+  <section class="body"><div class="related-posts">
+    {{range .RelatedPosts}}<a class="item" href="/post/{{.Slug}}">
+      <span class="title">{{.Title}}</span>
+      <span class="excerpt">{{.Excerpt}}</span>
+    </a>{{end}}
+  </div></section>
+</div>
+{{end}}

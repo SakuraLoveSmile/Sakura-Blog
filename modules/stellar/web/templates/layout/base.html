@@ -1,0 +1,475 @@
+{{- /* base.html: 主布局骨架，对应 Stellar layout/layout.ejs
+   渲染入口：{{template "layout/base" .}}，文章正文通过 {{template "partial/content" .}} 嵌入。
+*/ -}}
+<!DOCTYPE html>
+{{- /* 默认主题（对齐原版 style.prefers_theme）：缺省/dark=深色（现状回归）；light=浅色；auto=跟随系统（head 内脚本按 prefers-color-scheme 设置） */}}
+<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" {{if eq .Site.Style.PrefersTheme "light"}}data-theme="light"{{else if eq .Site.Style.PrefersTheme "auto"}}data-theme="dark" data-theme-auto{{else}}data-theme="dark"{{end}}>
+{{template "partial/head" .}}
+<body>
+  {{- /* 阅读进度条：仅文章页由 reading.js 显示并更新宽度 */}}
+  <div id="reading-progress" aria-hidden="true" hidden></div>
+
+  {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
+  <div class="sitebg"><div class="siteblur"></div></div>
+
+  <div id="l_cover">{{template "partial/cover" .}}</div>
+
+  {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
+  <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
+    <aside class="l_left{{if eq .Site.Style.Leftbar.UIStyle "card"}} leftbar-card{{end}}">
+      <div class="sidebg"></div>
+      <div class="leftbar-container">
+        {{template "partial/sidebar" .}}
+      </div>
+    </aside>
+
+    <div class="l_main" id="main">
+      {{- /* 移动端 logo：对齐上游 layout.ejs:59 _partial/sidebar/logo（where=main），仅在 l_main 内渲染一次 */}}
+      <header class="header mobile-only">{{template "partial/widgets/logo" .}}</header>
+      {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
+         文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
+      {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{if and .Site.Comments.Enabled .Site.SiteTree.Home.Comments .CommentPageKey}}{{template "partial/comments" .}}{{end}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "topic"}}{{template "partial/topic" .}}{{else if eq .Page.Layout "wiki"}}{{template "partial/wiki" .}}{{else if eq .Page.Layout "notes"}}{{template "partial/notes" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{if and .Site.Comments.Enabled .CommentPageKey}}{{template "partial/comments" .}}{{end}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "author"}}{{template "partial/author" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else if eq .Page.Layout "500"}}{{template "partial/error500" .}}{{else if eq .Page.Layout "wiki-doc"}}{{template "partial/wiki_doc" .}}{{else if eq .Page.Layout "notebooks"}}{{template "partial/notebooks" .}}{{else if eq .Page.Layout "notebook"}}{{template "partial/notebook" .}}{{else if eq .Page.Layout "note"}}{{template "partial/note" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
+      {{template "partial/footer" .}}
+      <div class="main-mask" onclick="sidebar.dismiss()"></div>
+    </div>
+
+    {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
+    <aside class="l_right">{{template "partial/rightbar" .}}</aside>
+
+    {{- /* float-panel：对齐原版 _partial/menubtn.ejs（sticky 面板，仅含右栏/左栏 toggle 两个按钮，
+       小屏由 laptop-only/mobile-only + 内联 display:none 媒体查询接管）。
+       必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。
+       主题切换已迁至左栏 footer 的 social 按钮（对齐原版机制），不再放此处。 */}}
+    <div class="float-panel">
+      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" title="{{lang "btn.toc"}}" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
+      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" title="{{lang "btn.menu"}}" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
+    </div>
+  </div>
+
+  {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
+  {{- $fbSelector := "div.lazy-box>img.lazy" -}}
+  {{- if and .Site.Plugins.Fancybox .Site.Plugins.Fancybox.Selector -}}
+    {{- $fbSelector = .Site.Plugins.Fancybox.Selector -}}
+  {{- end -}}
+  <script>
+    const ctx = {
+      date_suffix: { just: '{{lang "date_suffix.just"}}', min: '{{lang "date_suffix.min"}}', hour: '{{lang "date_suffix.hour"}}', day: '{{lang "date_suffix.day"}}' },
+      root: '/',
+      tag_plugins: { chat: {} },
+      search: { service: '{{or .Site.Search.Service "local_search"}}', path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}', local_search: { path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}' } },
+      data_cache: { enable: {{ ptrBool .Site.DataCache.Enable true }}, default_ttl: {{ or .Site.DataCache.DefaultTTL 3600 }} },
+      plugins: {},
+      copycode: { enable: {{if .Site.Plugins.CopycodeEnabled}}true{{else}}false{{end}}, default_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.DefaultText}}{{.Site.Plugins.Copycode.DefaultText}}{{else}}{{lang "js.copy"}}{{end}}', success_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.SuccessText}}{{.Site.Plugins.Copycode.SuccessText}}{{else}}{{lang "js.copy_success"}}{{end}}', toast: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.Toast}}{{.Site.Plugins.Copycode.Toast}}{{else}}{{lang "js.copied"}}{{end}}' },
+      {{- /* fancybox 配置：对齐 _config.yml plugins.fancybox。selector 说明：
+         wrapLazyloadImages 将 p>img 转为 div.lazy-box>img.lazy，故选择器直接匹配转换后的结构，
+         避开卡片封面（.post-cover 内无 lazy-box）与友链图标（非 lazy-box 包裹），防止 fancybox 劫持链接点击。 */}}
+      fancybox: {
+        selector: '{{ $fbSelector }}',
+        css: '/assets/vendor/fancybox/fancybox.css',
+        js: '/assets/vendor/fancybox/fancybox.umd.js'
+      }
+    };
+    {{- /* def 占位素材（site.yml default 段）：空值注入空串，下方 JS 已有空值守卫 */}}
+    const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}', image_onerror: '{{.Site.Default.ImageOnError}}' };
+    const deps = {
+      {{- /* marked：对齐原版 _config.yml dependencies.marked（timeline/mdrender 渲染 md 正文用，懒加载） */}}
+      marked: 'https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js',
+      lazyload: '/assets/js/vendor/lazyload.min.js'
+    };
+
+    {{- /* utils：对齐原版 scripts/utils.ejs 的 css/js/jq 三个加载辅助（插件按需懒加载 CDN 资源）。
+       css/js 带去重缓存；jq 懒加载 jQuery 并把回调注册到 pjax:complete（对齐原版语义）。 */}}
+    const utils = {
+      _loadedStyles: new Set(),
+      css: (href) => {
+        if (utils._loadedStyles.has(href)) return null;
+        const ss = document.createElement('link');
+        ss.rel = 'stylesheet';
+        ss.href = href;
+        utils._loadedStyles.add(href);
+        document.head.appendChild(ss);
+        return ss;
+      },
+      _loadedScripts: new Set(),
+      js: (src, opt) => new Promise((resolve, reject) => {
+        if (src.startsWith('/')) src = ctx.root + src.substring(1);
+        if (utils._loadedScripts.has(src)) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = src;
+        if (opt) { for (let key of Object.keys(opt)) script[key] = opt[key]; } else { script.async = true; }
+        script.onerror = reject;
+        script.onload = () => { utils._loadedScripts.add(src); resolve(); };
+        document.head.appendChild(script);
+      }),
+      // 1.36 去 jQuery：jq 退化为直调（保留兼容签名），DOM 操作走原生 utils.dom
+      jq: (fn) => { fn(); },
+      qs: (sel, ctx) => (ctx || document).querySelector(sel),
+      qsa: (sel, ctx) => Array.prototype.slice.call((ctx || document).querySelectorAll(sel)),
+      dom: (selector, ctx) => {
+        var els = [];
+        if (typeof selector === 'string') els = utils.qsa(selector, ctx);
+        else if (selector && selector.nodeType === 1) els = [selector];
+        else if (selector && typeof selector.length === 'number') els = Array.prototype.slice.call(selector);
+        var api = {
+          length: els.length,
+          each: function (fn) { els.forEach(function (el, i) { fn.call(el, i, el); }); return api; },
+          find: function (sel) { var r = []; els.forEach(function (el) { Array.prototype.push.apply(r, el.querySelectorAll(sel)); }); return utils.dom(r); },
+          append: function (c) { els.forEach(function (el) { if (typeof c === 'string') el.insertAdjacentHTML('beforeend', c); else if (c && c.nodeType === 1) el.appendChild(c); else if (c && typeof c.length === 'number') Array.prototype.forEach.call(c, function (k) { if (k && k.nodeType === 1) el.appendChild(k); }); }); return api; },
+          remove: function () { els.forEach(function (el) { el.remove(); }); return api; },
+          addClass: function (c) { els.forEach(function (el) { c.trim().split(/\s+/).forEach(function (k) { if (k) el.classList.add(k); }); }); return api; },
+          removeClass: function (c) { els.forEach(function (el) { c.trim().split(/\s+/).forEach(function (k) { if (k) el.classList.remove(k); }); }); return api; },
+          attr: function (n, v) { if (v === undefined) return els[0] ? els[0].getAttribute(n) : undefined; els.forEach(function (el) { el.setAttribute(n, v); }); return api; },
+          text: function (v) { if (v === undefined) return els[0] ? els[0].textContent : undefined; els.forEach(function (el) { el.textContent = v; }); return api; },
+          html: function (c) { if (c === undefined) return els[0] ? els[0].innerHTML : undefined; els.forEach(function (el) { el.innerHTML = c; }); return api; },
+          val: function (v) { if (v === undefined) return els[0] ? els[0].value : undefined; els.forEach(function (el) { el.value = v; }); return api; },
+          on: function (e, cb) { els.forEach(function (el) { el.addEventListener(e, cb); }); return api; },
+          empty: function () { els.forEach(function (el) { el.replaceChildren(); }); return api; }
+        };
+        els.forEach(function (el, i) { api[i] = el; });
+        return api;
+      },
+      _loadedElements: new WeakSet(),
+      // 1.36 data_cache：同 URL 在途去重 + localStorage TTL 缓存
+      _inflight: new Map(),
+      _dcTtl: () => {
+        const dc = (typeof ctx !== 'undefined' && ctx.data_cache) || {};
+        if (dc.enable === false) return 0;
+        return (dc.default_ttl || 3600);
+      },
+      _cacheRead: (url) => {
+        try {
+          const raw = localStorage.getItem('dc:' + url);
+          if (!raw) return null;
+          const o = JSON.parse(raw);
+          const ttl = utils._dcTtl();
+          if (!ttl) return null;
+          if ((Date.now() - o.t) / 1000 > ttl) return null;
+          return o.data;
+        } catch (e) { return null; }
+      },
+      _cacheWrite: (url, data) => {
+        try { localStorage.setItem('dc:' + url, JSON.stringify({ t: Date.now(), data })); } catch (e) {}
+      },
+      onLoading: (el) => {
+        if (el) {
+          if (el.querySelector('.loading-wrap') === null) {
+            el.insertAdjacentHTML('beforeend', '<div class="loading-wrap" aria-label="{{.Site.Style.Loading.Loading}}" title="{{.Site.Style.Loading.Loading}}"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+          }
+        }
+      },
+      onLoadSuccess: (el) => {
+        if (el) {
+          var wrap = el.querySelector('.loading-wrap');
+          if (wrap) wrap.remove();
+        }
+      },
+      onLoadFailure: (el) => {
+        if (el) {
+          var wrap = el.querySelector('.loading-wrap');
+          if (wrap) {
+            var svg = wrap.querySelector('svg');
+            if (svg) svg.remove();
+            wrap.insertAdjacentHTML('beforeend', '<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+            wrap.classList.add('error');
+            wrap.setAttribute('aria-label', '{{.Site.Style.Loading.Error}}');
+            wrap.setAttribute('title', '{{.Site.Style.Loading.Error}}');
+          }
+        }
+      },
+      request: (el, url, callback, onFailure) => {
+        if (el && utils._loadedElements.has(el)) {
+          return;
+        }
+        // 1.36 data_cache：TTL 内缓存优先（不再重复请求外部 API）；同 URL 在途请求去重
+        const cached = utils._cacheRead(url);
+        if (cached != null) {
+          if (el) utils._loadedElements.add(el);
+          utils.onLoadSuccess?.(el);
+          callback({ ok: true, json: async () => cached });
+          return Promise.resolve(cached);
+        }
+        if (utils._inflight.has(url)) return utils._inflight.get(url);
+        const maxRetry = 3;
+        let retryCount = 0;
+        const p = new Promise((resolve, reject) => {
+          const load = () => {
+            utils.onLoading?.(el);
+            let timedOut = false;
+            const timeout = setTimeout(() => {
+              timedOut = true;
+              console.warn('[request] 超时:', url);
+              if (++retryCount >= maxRetry) {
+                utils.onLoadFailure?.(el);
+                onFailure?.();
+                reject('请求超时');
+              } else {
+                setTimeout(load, 1000);
+              }
+            }, 5000);
+            fetch(url).then(resp => {
+              if (timedOut) return;
+              clearTimeout(timeout);
+              if (!resp.ok) throw new Error('响应失败');
+              return resp;
+            }).then(async data => {
+              if (timedOut) return;
+              if (el) utils._loadedElements.add(el);
+              try { utils._cacheWrite(url, await data.clone().json()); } catch (e) {}
+              utils.onLoadSuccess?.(el);
+              callback(data);
+              resolve(data);
+            }).catch(err => {
+              clearTimeout(timeout);
+              console.warn('[request] 错误:', err);
+              if (++retryCount >= maxRetry) {
+                utils.onLoadFailure?.(el);
+                onFailure?.();
+                reject(err);
+              } else {
+                setTimeout(load, 1000);
+              }
+            });
+          };
+          load();
+        });
+        utils._inflight.set(url, p);
+        p.finally(() => utils._inflight.delete(url));
+        return p;
+      },
+      requestWithoutLoading: (url, options = {}, maxRetry = 2, timeout = 5000) => {
+        return new Promise((resolve, reject) => {
+          let retryCount = 0;
+          const tryRequest = () => {
+            let timedOut = false;
+            const timer = setTimeout(() => {
+              timedOut = true;
+              if (++retryCount > maxRetry) reject('timeout');
+              else tryRequest();
+            }, timeout);
+            fetch(url, options)
+              .then(resp => {
+                if (timedOut) return;
+                clearTimeout(timer);
+                if (!resp.ok) throw new Error('bad response');
+                resolve(resp);
+              })
+              .catch(err => {
+                if (timedOut) return;
+                clearTimeout(timer);
+                if (++retryCount > maxRetry) reject(err);
+                else setTimeout(tryRequest, 500);
+              });
+          };
+          tryRequest();
+        });
+      },
+      requestAnimationFrame: (fn) => {
+        if (!window.requestAnimationFrame) {
+          window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame;
+        }
+        window.requestAnimationFrame(fn);
+      },
+      dark: {},
+    };
+  </script>
+  {{- /* lazyload：对齐 _plugins/lazyload.ejs。CDN 异步加载 vanilla-lazyload@19.1，
+     全局 window.lazyLoadOptions 让库自初始化；wrapLazyloadImages() 在客户端将
+     goldmark 输出的 img[src] 转为 .lazy-box > img.lazy[data-src]。
+     PJAX 钩子已在 pjax.js 第 468 行预留 lazyLoadInstance.update()。 */}}
+  <script async src="/assets/js/vendor/lazyload.min.js"></script>
+  <script>
+    window.lazyLoadOptions = {
+      elements_selector: ".lazy",
+      callback_loaded: (el) => {
+        el.classList.add('loaded');
+        const wrapper = el.closest('.lazy-box');
+        const icon = wrapper?.querySelector('.lazy-icon');
+        if (icon) icon.remove();
+      }
+    };
+    window.addEventListener("LazyLoad::Initialized", function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    }, false);
+    document.addEventListener('DOMContentLoaded', function () {
+      window.lazyLoadInstance?.update();
+    });
+
+    window.wrapLazyloadImages = (container) => {
+      if (typeof container === 'string') {
+        container = document.querySelector(container);
+      }
+      if (!container) return;
+      const images = container.querySelectorAll('img');
+      images.forEach((img) => {
+        if (img.classList.contains('lazy')) return;
+        const src = img.getAttribute('src');
+        if (!src) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'lazy-box';
+        const newImg = img.cloneNode();
+        newImg.removeAttribute('src');
+        newImg.setAttribute('data-src', src);
+        newImg.classList.add('lazy');
+        if (def.image_onerror) newImg.dataset.onerror = def.image_onerror;
+        const icon = document.createElement('div');
+        icon.className = 'lazy-icon';
+        if (def.loading) {
+          icon.style.backgroundImage = `url("${def.loading}")`;
+        }
+        wrapper.appendChild(newImg);
+        wrapper.appendChild(icon);
+        img.replaceWith(wrapper);
+      });
+      if (window.lazyLoadInstance?.update) {
+        window.lazyLoadInstance.update();
+      }
+    }
+  </script>
+  {{- /* fancybox：对齐 _plugins/fancybox.ejs。绑定 ctx.fancybox.selector（div.lazy-box>img.lazy，
+     即 wrapLazyloadImages 转换后的图片结构）。懒加载：页面存在匹配图才拉取 CDN；
+     bind 一次即事件委托覆盖后续 DOM，PJAX 换页后重新检测。 */}}
+  <script>
+    document.addEventListener('error', function (event) {
+      const img = event.target;
+      if (!img || img.tagName !== 'IMG' || !img.dataset.onerror || img.dataset.errorApplied) return;
+      img.dataset.errorApplied = '1';
+      img.src = img.dataset.onerror;
+    }, true);
+    (function () {
+      if (!{{if .Site.Plugins.FancyboxEnabled}}true{{else}}false{{end}}) return;
+      var bound = false, loading = null;
+      function fullSelector() {
+        return ctx.fancybox.selector;
+      }
+      function doBind() {
+        if (bound || typeof Fancybox === 'undefined') return;
+        bound = true;
+        Fancybox.bind(fullSelector(), {
+          hideScrollbar: false,
+          Thumbs: { autoStart: false },
+          caption: function (fancybox, slide) {
+            return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null;
+          }
+        });
+      }
+      function loadFancybox() {
+        if (bound) return Promise.resolve();
+        if (loading) return loading;
+        utils.css(ctx.fancybox.css);
+        loading = utils.js(ctx.fancybox.js, { defer: true }).then(doBind);
+        return loading;
+      }
+      function tryInit() {
+        if (bound) return;
+        if (document.querySelectorAll(fullSelector()).length === 0) return;
+        loadFancybox();
+      }
+      {{- /* 捕获阶段拦截：fancybox 尚未就绪时点击正文图片也能触发（消除 CDN 加载窗口内的“首击无效”），
+         就绪后本监听 no-op，交回 fancybox 自身的事件委托。 */}}
+      document.addEventListener('click', function (e) {
+        if (bound || !e.target.closest) return;
+        var img = e.target.closest(fullSelector());
+        if (!img) return;
+        e.preventDefault();
+        loadFancybox().then(function () {
+          if (typeof Fancybox !== 'undefined' && Fancybox.show) {
+            Fancybox.show([{ src: img.getAttribute('data-src') || img.getAttribute('src'), type: 'image', caption: img.alt || '' }]);
+          }
+        });
+      }, true);
+      document.addEventListener('DOMContentLoaded', tryInit);
+    })();
+  </script>
+  <script>
+    {{- /* 数据服务懒加载（对齐 Stellar data_services 机制的极简版）：
+       页面存在 .ds-* 元素时按需拉取对应 service 脚本，
+       service 内部用 utils.jq 事件委托，PJAX 换页后重新检测。
+       deps 字段对齐原版 services.ejs：先加载依赖（如 marked）再加载 service（Spec 33：timeline/mdrender 需 marked）。 */}}
+    (function () {
+      var services = [
+        { cls: 'ds-friends_and_posts', js: '{{url_for "/assets/js/services/friends_and_posts.js"}}?v={{asset_ver "/assets/js/services/friends_and_posts.js"}}' },
+        { cls: 'ds-friends', js: '{{url_for "/assets/js/services/friends.js"}}?v={{asset_ver "/assets/js/services/friends.js"}}' },
+        { cls: 'ds-rating', js: '{{url_for "/assets/js/services/rating.js"}}' },
+        { cls: 'ds-vote', js: '{{url_for "/assets/js/services/vote.js"}}' },
+        { cls: 'ds-sites', js: '{{url_for "/assets/js/services/sites.js"}}?v={{asset_ver "/assets/js/services/sites.js"}}' },
+        { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}?v={{asset_ver "/assets/js/services/mdrender.js"}}', deps: ['marked'] },
+        { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}?v={{asset_ver "/assets/js/services/contributors.js"}}' },
+        { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}?v={{asset_ver "/assets/js/services/ghinfo.js"}}' },
+        { cls: 'ds-timeline', js: '{{url_for "/assets/js/services/timeline.js"}}?v={{asset_ver "/assets/js/services/timeline.js"}}', deps: ['marked'] },
+        {{if .Site.Plugins.SwiperEnabled}}{ cls: 'swiper', js: '{{url_for "/assets/js/services/swiper.js"}}?v={{asset_ver "/assets/js/services/swiper.js"}}' }{{end}}
+      ];
+      var loaded = {};
+      function scan() {
+        for (var i = 0; i < services.length; i++) {
+          var s = services[i];
+          if (loaded[s.cls]) continue;
+          if (document.getElementsByClassName(s.cls).length > 0) {
+            loaded[s.cls] = true;
+            (function (s) {
+              var loadService = function () { utils.js(s.js, { defer: true }); };
+              if (s.deps && s.deps.length) {
+                Promise.all(s.deps.map(function (d) { return utils.js(deps[d]); })).then(loadService);
+              } else {
+                loadService();
+              }
+            })(s);
+          }
+        }
+      }
+      document.addEventListener('DOMContentLoaded', scan);
+    })();
+  </script>
+  <script src="{{url_for "/assets/js/main.js"}}?v={{asset_ver "/assets/js/main.js"}}" defer></script>
+  <script src="{{url_for "/assets/js/search/local-search.js"}}?v={{asset_ver "/assets/js/search/local-search.js"}}" defer></script>
+  {{- /* 自建评论区交互：全站加载（事件委托 + 存在性检查，非文章页零副作用）。
+        注意：SW 对静态资源 cache-first，必须带 ?v= 版本后缀，否则改版后旧缓存永久生效（评论区曾因此整体失灵） */}}
+  <script src="{{url_for "/assets/js/comments.js"}}?v={{asset_ver "/assets/js/comments.js"}}" defer></script>
+  <script src="{{url_for "/assets/js/reading.js"}}?v={{asset_ver "/assets/js/reading.js"}}" defer></script>
+  {{if .Site.Plugins.CopycodeEnabled}}<script src="{{url_for "/assets/js/plugins/copycode.js"}}?v={{asset_ver "/assets/js/plugins/copycode.js"}}" defer></script>{{end}}
+  {{- /* 标签云 widget 交互：默认静态/3D 球体旋转云模式切换（.widget-wrapper.tagcloud 存在性检查，多实例支持） */}}
+  <script src="{{url_for "/assets/js/tagcloud.js"}}?v={{asset_ver "/assets/js/tagcloud.js"}}" defer></script>
+  {{- /* AI 文章摘要自助面板交互（Spec 53）：无 #ai-summary 时内部自行跳过 */}}
+  <script src="{{url_for "/assets/js/ai-summary.js"}}?v={{asset_ver "/assets/js/ai-summary.js"}}" defer></script>
+  {{- /* flying-pages 预取（Spec 36）：条件化注入，需 site.yml plugins.preload.enable=true；
+     1.35 移除 PJAX 后保留悬停预取缓解整页刷新体验 */}}
+  {{- if and .Site.Plugins.Preload .Site.Plugins.Preload.Enable -}}
+  <script>
+    window.FPConfig = {
+      delay: 0,
+      ignoreKeywords: ['/console', '/api'],
+      maxRPS: 5,
+      hoverDelay: 25
+    };
+  </script>
+  <script defer src="{{url_for "/assets/vendor/flying-pages.min.js"}}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof flyingPages === 'function') flyingPages();
+    });
+  </script>
+  <script defer src="{{url_for "/assets/js/plugins/preload.js"}}"></script>
+  {{- end -}}
+  {{- /* scrollreveal 滚动渐现（Spec 36）：条件化注入，需 site.yml plugins.scrollreveal.enable=true。
+     ctx.plugins.scrollreveal 供 scrollreveal-init.js 读取 distance/duration/interval（空/0 时 init 内部回退缺省值）。 */}}
+  {{- if and .Site.Plugins.ScrollReveal .Site.Plugins.ScrollReveal.Enable -}}
+  <script>
+    ctx.plugins = ctx.plugins || {};
+    ctx.plugins.scrollreveal = {
+      distance: '{{ .Site.Plugins.ScrollReveal.Distance }}',
+      duration: {{ .Site.Plugins.ScrollReveal.Duration }},
+      interval: {{ .Site.Plugins.ScrollReveal.Interval }}
+    };
+  </script>
+  <script defer src="{{url_for "/assets/vendor/scrollreveal.min.js"}}"></script>
+  <script defer src="{{url_for "/assets/js/plugins/scrollreveal-init.js"}}?v={{asset_ver "/assets/js/plugins/scrollreveal-init.js"}}"></script>
+  {{- end -}}
+  {{- /* heti 中文排版优化（Spec 36）：条件化注入，需 site.yml plugins.heti.enable=true */}}
+  {{- if and .Site.Plugins.Heti .Site.Plugins.Heti.Enable -}}
+  <link rel="stylesheet" href="{{url_for "/assets/vendor/heti.min.css"}}">
+  <script defer src="{{url_for "/assets/vendor/heti-addon.min.js"}}"></script>
+  <script defer src="{{url_for "/assets/js/plugins/heti-init.js"}}?v={{asset_ver "/assets/js/plugins/heti-init.js"}}"></script>
+  {{- end -}}
+  {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
+  {{.Site.Inject.Footer}}
+</body>
+</html>

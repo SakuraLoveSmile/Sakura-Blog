@@ -4,6 +4,10 @@
 
 > 本文档是与提供方无关的工程坑点知识的 canonical 来源，适用于所有 agent（Qoder / Claude / Trae 等）；按模块的路由入口见 `AGENTS.md` 的「工程坑点知识路由」一节。多 Agent 并行开发流程（分支模型、合并门槛、端口约定、提交规范）以 `AGENTS.md` 为准。
 
+## 第一阶段模块边界
+
+项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`backend/config/`、`content/` 和 `data/` 的运行时路径保持不变。
+
 ## 仓库工作流
 
 ### 目录结构（bare 仓库 + git worktree）
@@ -37,9 +41,9 @@
 
 Stellar 的 Stylus 源码用 `hexo-config()` 读取 Hexo 配置，脱离 Hexo 编译会报 undefined。本项目用 **shim 注入方案**，不改任何 .styl 源文件：
 
-- `frontend/build/stylus/config.json`：从 `_config.yml` 提取 `style`/`article`/`menubar`/`comments`/`plugins`/`tag_plugins` 六段配置
-- `frontend/build/stylus/shim.js`：用 Stylus JS API 的 `define('hexo-config', fn)` 注入函数，按点路径从 config.json 取值
-- `frontend/build/stylus/compile.js`：编译 `resource/hexo-theme-stellar/source/css/main.styl` → `frontend/assets/css/main.css`
+- `modules/stellar/web/build/stylus/config.json`：从 `_config.yml` 提取 `style`/`article`/`menubar`/`comments`/`plugins`/`tag_plugins` 六段配置
+- `modules/stellar/web/build/stylus/shim.js`：用 Stylus JS API 的 `define('hexo-config', fn)` 注入函数，按点路径从 config.json 取值
+- `modules/stellar/web/build/stylus/compile.js`：编译 `resource/hexo-theme-stellar/source/css/main.styl` → `modules/stellar/web/assets/css/main.css`
 - stylus 版本锁定 `0.62.0`（与 hexo-renderer-stylus@3.0.1 依赖的 `^0.62.0` 一致）
 
 ### shim 返回值类型（关键）
@@ -242,12 +246,12 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 
 ### 管理后台统一到 Vue Console，服务端渲染 /admin 已退役
 
-原 Go html/template 服务端渲染后台（`backend/internal/admin/` + `admin/*.html` 模板 + EasyMDE 编辑器）已整体退役：两处目录均已清空/删除、`/admin` 路由已移除，原 EasyMDE forceSync/深色模式适配与 admin 独立 layout 的坑不再适用。现后台为 Vue SPA，源码与测试在 `frontend/console/`（`src/` + `tests/`）：
+原 Go html/template 服务端渲染后台（`internal/admin/` + `admin/*.html` 模板 + EasyMDE 编辑器）已整体退役：两处目录均已清空/删除、`/admin` 路由已移除，原 EasyMDE forceSync/深色模式适配与 admin 独立 layout 的坑不再适用。现后台为 Vue SPA，源码与测试在 `modules/console/web/`（`src/` + `tests/`）：
 
-- `frontend/console/embed.go` 用 `//go:embed all:dist` 嵌入 `dist/` 子树（embed 路径只能嵌包目录子树，故 embed.go 放在 console/ 内），随单二进制分发
-- 编译期要求 dist/ 已存在且非空：`go build` 前必须先 `cd frontend/console && npm ci && npm run build`（Makefile 已固化该构建顺序）
-- `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 frontend/console/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback
-- 数据统一走 `/api/v1` REST API（`backend/internal/api/`），编辑器为 `src/components/MarkdownEditor.vue`，不再使用 EasyMDE 与 Go 模板渲染后台页
+- `modules/console/web/embed.go` 用 `//go:embed all:dist` 嵌入 `dist/` 子树（embed 路径只能嵌包目录子树，故 embed.go 放在 console/ 内），随单二进制分发
+- 编译期要求 dist/ 已存在且非空：`go build` 前必须先 `cd modules/console/web && npm ci && npm run build`（Makefile 已固化该构建顺序）
+- `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 modules/console/web/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback
+- 数据统一走 `/api/v1` REST API（`modules/console/api/`），编辑器为 `src/components/MarkdownEditor.vue`，不再使用 EasyMDE 与 Go 模板渲染后台页
 
 ### /post/:slug DB 优先 + 文件回退的实现
 
@@ -283,7 +287,7 @@ qoder 分支服务固定监听 8081，与 dev 的 8080 区分，两个 worktree 
 
 ### tags 逗号分隔存储的匹配一致性
 
-tags 以逗号分隔存单列（如 `Go,Stellar`）。查询用逗号包裹 LIKE 防子串误匹配：`(',' || tags || ',') LIKE '%,Go,%'`（防 Go 匹配到 Golang）。**坑**：Console 表单输入若直接存原始值（如 `Go, 测试, Go` 带空格/重复），LIKE 的 `%,测试,%` 匹配不到 `, 测试,`（多空格），而 CountByTag 内存拆分有 TrimSpace 又能数到——两个口径不一致。**对策**：Console 保存入口（`backend/internal/api/post.go`）用 `normalizeTags` 规范化（逗号拆分、逐项 trim、去空去重、`,` 重连），与 parser.parseList 语义对齐，保证存储值规范。
+tags 以逗号分隔存单列（如 `Go,Stellar`）。查询用逗号包裹 LIKE 防子串误匹配：`(',' || tags || ',') LIKE '%,Go,%'`（防 Go 匹配到 Golang）。**坑**：Console 表单输入若直接存原始值（如 `Go, 测试, Go` 带空格/重复），LIKE 的 `%,测试,%` 匹配不到 `, 测试,`（多空格），而 CountByTag 内存拆分有 TrimSpace 又能数到——两个口径不一致。**对策**：Console 保存入口（`modules/console/api/post.go`）用 `normalizeTags` 规范化（逗号拆分、逐项 trim、去空去重、`,` 重连），与 parser.parseList 语义对齐，保证存储值规范。
 
 ### 迁移泛化：migrateColumns 用 map 驱动
 
@@ -353,11 +357,11 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 ## 工具链
 
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
-- Node 22 + stylus 0.62.0（CSS 编译；`make css` 从 resource/ 主题源重编 `frontend/assets/css/main.css`，依赖 frontend/node_modules，CI 无源不可编译、不进 test 门禁）
+- Node 22 + stylus 0.62.0（CSS 编译；`make css` 从 resource/ 主题源重编 `modules/stellar/web/assets/css/main.css`，依赖 modules/stellar/web/node_modules，CI 无源不可编译、不进 test 门禁）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
 - 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run ./backend/cmd/server/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
-- Go workspace：`go.work` 在 worktree 根关联 `backend`（module blog）与 `frontend`（module blog/frontend）两 module。**所有 go 命令必须在 worktree 根执行**（`go run ./backend/cmd/server/`、`go vet ./backend/... ./frontend/...`），单独进入子目录会因 import 解析失败报错；`./...` 模式不匹配 use 的 module，须显式写包路径。
+- Go 服务：`go run ./cmd/blog/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
+- Go module：根目录 `go.mod` 是唯一 module。**所有 go 命令必须在 worktree 根执行**（`go run ./cmd/blog/`、`go vet ./...`、`go test ./...`）。
 
 ## Demo 进度
 
@@ -372,7 +376,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 ## Spec 68 · Stellar 1.40.0 同步（2026-08）
 
-`resource/hexo-theme-stellar` 已固定到 `1.40.0`，`frontend/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
+`resource/hexo-theme-stellar` 已固定到 `1.40.0`，`modules/stellar/web/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
 
 - 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
 - `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
@@ -384,7 +388,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 ## Spec 59 · Stellar 1.38.0 同步（2026-08，取代上文 PJAX/jQuery 相关坑点）
 
-资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`frontend/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
+资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`modules/stellar/web/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
 
 - **PJAX 已移除**（对齐 1.35）：导航为整页刷新；`pjax.js`/`pjax-transitions.css`/`plugins.pjax` 配置与 console PJAX 卡片均删除；保留 `flying-pages` 悬停预取（`plugins.preload.enable`）缓解整页刷新。所有 `pjax:complete` 监听已删，事件绑定只走 `DOMContentLoaded`/委托。
 - **jQuery 已移除**（对齐 1.36）：head 不再加载 vendored jquery；`utils` 增加原生 `qs/qsa/dom` 封装（find/append/class/attr/text/html/val/on），`utils.jq` 退化为直调；services 以 1.38 `source/js/services/*` 为蓝本（`utils.dom` 直跑），rating/vote 保留自建本地版。
@@ -406,7 +410,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 SW（Service Worker）对 `/assets/*` 走 `cache-first` 策略，静态资源内容变化后老访客拿到新 HTML 但 SW 返回缓存的旧资源，导致新旧资源错配（CSS 新类名引用旧样式文件等）。**对策**：
 
-- 每次修改 `frontend/assets/` 下的文件（main.css、main.js、plugins/ 脚本等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
+- 每次修改 `modules/stellar/web/assets/` 下的文件（main.css、main.js、plugins/ 脚本等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
 - bump 清单对照 `git diff --name-only` 变化的 assets 文件，只 bump 确实变了的文件，不变的不动
 - bump 对照基线是最近一次改动 assets 的提交（本次评审对应 1.38 同步提交）；plugins/ 下脚本（scrollreveal-init.js、heti-init.js 等）内容变动后同样需要 bump
 - 此坑不影响 `-dev` 开发模式（磁盘实时加载），但影响生产构建产物

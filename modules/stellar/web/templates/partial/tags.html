@@ -1,0 +1,15 @@
+{{- /* tags.html: 标签索引页，对齐 Stellar layout/tags.ejs
+   navbar + div.post-list > article#tags > a.tag（标签云，按计数 DESC 由 handler 排序）
+   由 base.html 按 .Page.Layout == "tags" 分派渲染。
+*/ -}}
+{{template "partial/navbar" .}}
+<div class="post-list">
+  <article id="tags">
+    {{range .TagItems}}
+    <a class="tag" href="/tags/{{.Name}}">
+      {{- /* 图标：article.tag_icon 命中时内联渲染（icon 函数兼容 URL 与 icons.yml key），未配置不渲染 */}}
+      <span class="name">{{if .Icon}}{{icon .Icon}}{{end}}{{.Name}}</span>
+    </a>
+    {{end}}
+  </article>
+</div>

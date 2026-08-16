@@ -1,0 +1,48 @@
+{{- /* topic_header.html: 专栏头（Spec 52）：数据源 .TopicDetail（handleTopicDetail 填充），被 topic.html 引用。
+  双形态：有封面 → 沉浸 banner（img.bg 直出 src，首屏图无需懒加载，且绝对定位的 .bg 不被 lazyload 观察）；
+  无封面 → 紧凑卡片（面包屑 + 图标 + 标题 + 描述 + 文章数），高度随内容，避免 .banner 固定 220px 的空旷灰块。*/ -}}
+{{- if .TopicDetail}}
+{{- if .TopicDetail.Cover}}
+<div class="article banner top topic-banner">
+  <img class="bg" src="{{.TopicDetail.Cover}}" alt="{{.TopicDetail.Name}}">
+  <div class="content">
+    <div class="top bread-nav footnote">
+      <div class="left">
+        <div class="flex-row" id="breadcrumb">
+          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" href="/topics">{{- lang "breadcrumb.topic" -}}</a>
+          <span class="sep"></span>
+          <a class="cap breadcrumb" id="current" href="/topic/{{.TopicDetail.Slug}}">{{.TopicDetail.Name}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="text-area">
+        <h1 class="text title"><span>{{.TopicDetail.Name}}</span></h1>
+        {{if .TopicDetail.Description}}<p class="description">{{.TopicDetail.Description}}</p>{{end}}
+        <p class="description">{{- lang "topic.post_count" .TopicDetail.Count -}}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{- else}}
+<div class="topic-header"{{if not .TopicDetail.Icon}} style="--h:{{.TopicDetail.Hue}}"{{end}}>
+  <div class="flex-row" id="breadcrumb">
+    <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
+    <span class="sep"></span>
+    <a class="cap breadcrumb" href="/topics">{{- lang "breadcrumb.topic" -}}</a>
+    <span class="sep"></span>
+    <a class="cap breadcrumb" id="current" href="/topic/{{.TopicDetail.Slug}}">{{.TopicDetail.Name}}</a>
+  </div>
+  <div class="title-area">
+    {{if .TopicDetail.Icon}}<span class="topic-icon">{{icon .TopicDetail.Icon}}</span>{{else}}<span class="topic-icon fallback">{{.TopicDetail.Initial}}</span>{{end}}
+    <div class="title-text">
+      <h1>{{.TopicDetail.Name}}</h1>
+      <p class="count cap">{{- lang "topic.post_count" .TopicDetail.Count -}}</p>
+    </div>
+  </div>
+  {{if .TopicDetail.Description}}<p class="description">{{.TopicDetail.Description}}</p>{{end}}
+</div>
+{{- end}}
+{{- end}}

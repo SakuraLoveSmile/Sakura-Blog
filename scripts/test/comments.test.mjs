@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import vm from "node:vm";
 
-const source = await readFile(new URL("../../frontend/assets/js/comments.js", import.meta.url), "utf8");
+const source = await readFile(new URL("../../modules/stellar/web/assets/js/comments.js", import.meta.url), "utf8");
 
 function renderer() {
   const window = { stellar: {}, __cmtBuilt: false };

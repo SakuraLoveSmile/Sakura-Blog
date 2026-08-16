@@ -1,0 +1,32 @@
+{{- /* widgets/markdown.html: 通用 markdown/欢迎语组件，对应 widgets/markdown.ejs。上下文为 WidgetInstance（Spec 33）：
+   技术决策：library 可配 content 字段（纯文本 pre-wrap，与 Intro 一致）；现有「欢迎语」迁移为其 welcome 实例，
+   优先级 content 参数 > Site.Rightbar.Intro > 硬编码缺省文案。
+   末段 linklist 对齐原版 markdown.ejs 的 item.linklist → components/linklist.ejs：
+   .linklist.{align}（columns 规则：默认按链接数；columns==1 且多项时 left，否则 center）
+   > a.link > .flex > icon?+span（columns<=2 才显示文字，规则见 model.go LinkListConfig）。
+   数据来自 site.yml rightbar.welcome_linklist（仅 welcome 实例消费），未配置则不渲染。*/ -}}
+<widget class="widget-wrapper markdown">
+  {{$title := .Str "title" ""}}
+  {{if $title}}
+  <div class="widget-header dis-select">
+    <span class="name">{{$title}}</span>
+  </div>
+  {{end}}
+  <div class="widget-body fs14">
+    {{$content := .Str "content" ""}}
+    {{if $content}}<div style="white-space:pre-wrap">{{$content}}</div>{{else if .V.Site.Rightbar.Intro}}<div style="white-space:pre-wrap">{{.V.Site.Rightbar.Intro}}</div>{{else}}<p>{{- lang "widget.welcome" -}}</p>
+    <blockquote>
+      <p>{{- lang "widget.welcome_hint" -}}</p>
+    </blockquote>{{end}}
+    {{if and (eq .Name "welcome") .V.Site.Rightbar.WelcomeLinklist.Items}}
+    {{$ll := .V.Site.Rightbar.WelcomeLinklist}}
+    <div class="linklist {{$ll.AlignClass}}" style="grid-template-columns:repeat({{$ll.EffectiveColumns}},1fr);">
+      {{range $ll.Items}}
+      <a class="link" title="{{.Title}}" href="{{url_for .URL}}">
+        <div class="flex">{{if .Icon}}{{icon .Icon}}{{end}}{{if $ll.ShowText}}<span>{{.Title}}</span>{{end}}</div>
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</widget>

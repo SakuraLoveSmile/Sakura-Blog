@@ -1,0 +1,19 @@
+{{- /* widgets/timeline.html: 通用 timeline（任意 api 驱动），结构对照原版 widgets/timeline.ejs
+   （widget-wrapper.timeline > widget-header(title 非空时) > widget-body > tag-plugin.timeline.data-service.ds-timeline）。
+   api 未配置不渲染（对齐原版 item.api==undefined 返回空）；user/limit/hide 透传为元素属性供 services/timeline.js 消费。
+   注：limit 对齐原版语义——通过 api 上的 per_page 控制数量，此处仅透传属性。*/ -}}
+{{$api := .Str "api" ""}}
+{{if $api}}
+<widget class="widget-wrapper timeline">
+  {{$title := .Str "title" ""}}
+  {{if $title}}
+  <div class="widget-header dis-select">
+    <span class="name">{{$title}}</span>
+  </div>
+  {{end}}
+  <div class="widget-body fs14">
+    <div class="tag-plugin timeline data-service ds-timeline" data-api="{{$api}}"{{$user := .Str "user" ""}}{{if $user}} user="{{$user}}"{{end}}{{$limit := .Str "limit" ""}}{{if $limit}} limit="{{$limit}}"{{end}}{{$hide := .Str "hide" ""}}{{if $hide}} hide="{{$hide}}"{{end}}>
+    </div>
+  </div>
+</widget>
+{{end}}

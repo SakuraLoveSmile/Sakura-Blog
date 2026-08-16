@@ -1,0 +1,27 @@
+{{- /* widgets/author.html: 作者卡片，对应 widgets/author.ejs（user-card）。
+   上下文为 WidgetInstance（Spec 33）。
+   Spec 38 多作者体系：.AuthorData 非 nil 时显示对应作者卡片（avatar + name + bio + 全部文章链接），
+   否则兜底显示站长卡片（.V.Site.Avatar / LogoTitle / Description），与改造前行为一致（零配置回归）。
+   user-card 样式选择器为 .widgets .widget-wrapper.user-card（不限定 l_left），移至右栏样式照常生效。 */ -}}
+{{- $ad := .AuthorData}}
+<widget class="widget-wrapper user-card author">
+  <div class="widget-body">
+    {{if $ad}}
+    <div class="avatar"><img type="img" src="{{$ad.Author.Avatar}}"></div>
+    <p class="username">{{$ad.Author.Name}}</p>
+    <p class="bio">{{$ad.Author.Description}}</p>
+    <a class="follow" href="{{$ad.Path}}">
+      {{icon "solar:documents-bold-duotone"}}
+      {{- lang "btn.all_posts" -}}
+    </a>
+    {{else}}
+    <div class="avatar"><img type="img" src="{{.V.Site.Avatar}}"></div>
+    <p class="username">{{.V.Site.LogoTitle}}</p>
+    <p class="bio">{{.V.Site.Description}}</p>
+    <a class="follow" href="/">
+      {{icon "solar:documents-bold-duotone"}}
+      {{- lang "widget.author_posts" -}}
+    </a>
+    {{end}}
+  </div>
+</widget>

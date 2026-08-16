@@ -1,0 +1,61 @@
+{{- /* sidebar.html: 对应 Stellar _partial/sidebar/index_leftbar.ejs
+   结构：logo + search + widgets(grad-def SVG + nav-area(menu) + 各 widget) + footer(social)
+   严格对齐 preview.html 已验证的 class 嵌套，CSS 选择器绑定这些 class 名。
+   Spec 59：搜索框移到 .widgets 外（对齐上游 index_leftbar.ejs layoutSearch 在 layoutWidgets 前）；
+   nav-area 菜单放入 .widgets 内（上游主题默认：layoutWidgets 内 grad-def SVG → layoutNavArea → 各 widget），
+   菜单因此共享 .widgets 的左右 margin，与主题默认宽度一致。
+*/ -}}
+
+{{- /* logo 区：对应 _partial/sidebar/logo.ejs（复用 partial/widgets/logo，wiki 文档页自动输出项目化 header）*/}}
+<header class="header">
+  {{template "partial/widgets/logo" .}}
+</header>
+
+{{- /* 搜索框：移到 .widgets 外（对齐上游 index_leftbar.ejs layoutSearch 在 layoutWidgets 前）*/}}
+{{template "partial/widgets/search" .}}
+
+{{- /* widgets 区：对应 _partial/widgets/
+   .widgets > grad-def SVG + nav-area 菜单 + widget.widget-wrapper 序列
+   上游主题默认：grad-def SVG 在 widgets 首位置，紧随 layoutNavArea() 把 .nav-area 放进 .widgets
+   （一起滚动、共享左右 margin），其后按 ViewData.LeftbarWidgets 序列分派渲染 */}}
+<div class="widgets">
+  {{gradsvg "leftbar-active-icon-grad" $.Site.Style.Gradient.Angle}}
+  {{- /* 菜单：对应 _partial/sidebar/menu.ejs（1.38 列表化）
+     .nav-area > nav.menu.dis-select > a.nav-item（icon + span 标题 + active-dot + grad-def SVG）
+     --item-grad 指向每项内联 SVG 渐变；.themed 项 --item-theme 取配置主题色；
+     active 项靠 item.ID == Page.MenuID 判定 */}}
+  <div class="nav-area">
+    <nav class="menu dis-select">
+      {{range .Site.Menubar.Items}}
+      <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}{{if .Theme}} themed{{end}}" title="{{.Title}}" href="{{url_for .URL}}" style="--item-grad:url(#menu-grad-{{.ID}}){{if .Theme}};--item-theme:{{.Theme}}{{end}}">
+        {{if .Icon}}{{icon .Icon}}{{end}}
+        <span>{{.Title}}</span>
+        {{if eq .ID $.Page.MenuID}}<span class="active-dot"></span>{{end}}
+        {{gradsvg (printf "menu-grad-%s" .ID) $.Site.Style.Gradient.Angle}}
+      </a>
+      {{end}}
+      {{- /* 已发布页面自动进菜单（fillSidebar 填充 MenuPages，与 menubar 路径重复者已去重） */}}
+      {{range .MenuPages}}
+      <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}{{if .Theme}} themed{{end}}" title="{{.Title}}" href="{{url_for .URL}}" style="--item-grad:url(#menu-grad-{{.ID}}){{if .Theme}};--item-theme:{{.Theme}}{{end}}">
+        {{if .Icon}}{{icon .Icon}}{{end}}
+        <span>{{.Title}}</span>
+        {{if eq .ID $.Page.MenuID}}<span class="active-dot"></span>{{end}}
+        {{gradsvg (printf "menu-grad-%s" .ID) $.Site.Style.Gradient.Angle}}
+      </a>
+      {{end}}
+    </nav>
+  </div>
+  {{range .LeftbarWidgets}}{{template "partial/widgets/dispatch" .}}{{end}}
+</div>
+
+{{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv
+   .footer.dis-select > .social-wrap > a.social */}}
+<footer class="footer dis-select">
+  <div class="social-wrap">
+    {{range .Site.Footer.Social}}
+    <a class="social" title="{{.Title}}" href="{{url_for .URL}}" target="_blank" rel="external nofollow noopener noreferrer">
+      {{if .IconKey}}{{icon .IconKey}}{{else}}{{safe .Icon}}{{end}}
+    </a>
+    {{end}}
+  </div>
+</footer>

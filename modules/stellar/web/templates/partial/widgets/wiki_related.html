@@ -1,0 +1,20 @@
+{{- /* widgets/wiki_related.html: 同 tag 项目推荐（wiki 文档页左栏）。
+   上下文为 WidgetInstance（Spec 33）：.Data 为按 tag 交集过滤后的 []*WikiProject（Sort 降序，limit 截断），
+   仅 wiki 文档页由 assembleWidgets 注入（其余页面 Data 为空、模板不输出）。
+   header 显示"更多：{标签名}"（有共同标签时装配期覆盖 title），缺省"更多项目"。
+   class 对齐原版 post-card（main.css 7707-7745）：item 卡片 bg-a20 底、radius 12px、title 700。*/ -}}
+{{if .Data}}
+<widget class="widget-wrapper post-card">
+  <div class="widget-header dis-select">
+    <span class="name">{{if .Params.title}}{{.Params.title}}{{else}}更多项目{{end}}</span>
+  </div>
+  <div class="widget-body">
+    {{range .Data}}
+    <a class="item wiki" href="/wiki/{{.ID}}">
+      <span class="title">{{.DisplayTitle}}</span>
+      {{if .Description}}<span class="excerpt">{{.Description}}</span>{{end}}
+    </a>
+    {{end}}
+  </div>
+</widget>
+{{end}}

@@ -1,9 +1,0 @@
-// Go workspace：backend（module blog，服务与全部后端依赖）与 frontend（module blog/frontend，仅 embed 包）。
-// 所有 go 命令必须在 dev/ 根目录（本文件所在）执行，workspace 才会同时解析两个 module。
-// 单独进入 backend/ 或 frontend/ 内执行 go 命令会因找不到对端 module 而 import 失败。
-go 1.25.5
-
-use (
-	./backend
-	./frontend
-)

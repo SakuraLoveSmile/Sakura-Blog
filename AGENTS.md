@@ -42,9 +42,9 @@ git -C .bare worktree add ../feat-font -b feature/font
 
 | Agent | 任务 | 主要改动范围 |
 |-------|------|-------------|
-| A | 评论系统 | `backend/internal/comment/`、`frontend/console/src/modules/comments/` |
-| B | 前端样式 | `frontend/assets/css/`、`backend/internal/template/partial/` |
-| C | 后台管理 | `frontend/console/src/`、`frontend/console/tests/` |
+| A | 评论系统 | `internal/comment/`、`modules/console/web/src/modules/comments/` |
+| B | 前端样式 | `modules/stellar/web/assets/css/`、`internal/template/partial/` |
+| C | 后台管理 | `modules/console/web/src/`、`modules/console/web/tests/` |
 
 #### UI 类任务开工约定（验收边界）
 
@@ -85,7 +85,7 @@ make merge-check
 
     安装后直接 `git commit` 会被 hook 以同一门槛机械阻断（`core.hooksPath` 指向 `.githooks`，仅写入当前 worktree 的本地 config）；紧急绕过须显式 `git commit --no-verify`。不改变 CI 配置。
   - **探测回指**：`make merge-check` / `make pre-commit-check` 开头会探测 `core.hooksPath`（探测逻辑在 Makefile 的 `merge-check` / `pre-commit-check` 目标开头），未指向 `.githooks` 时直接失败并提示先执行本命令——未挂载 hook 的 worktree 即使手动运行这两个目标也无法放行，杜绝"手动全绿但机械门禁缺失"的假象。
-- **CSS 产物漂移本地核对**：存在 `resource/` 源（gitignore 本地主题源，CI 无源 不可编译）的 worktree 内，改源后先 `make css` 重编 `frontend/assets/css/main.css`，再执行 `make css-drift-check` 以 `git diff --exit-code` 校验产物无漂移（工作 区手改 `main.css` 时同样非零退出）；该目标仅本地/agent 核对用，不接入 `make test` 门禁、不强制接入 CI。
+- **CSS 产物漂移本地核对**：存在 `resource/` 源（gitignore 本地主题源，CI 无源 不可编译）的 worktree 内，改源后先 `make css` 重编 `modules/stellar/web/assets/css/main.css`，再执行 `make css-drift-check` 以 `git diff --exit-code` 校验产物无漂移（工作区手改 `main.css` 时同样非零退出）；该目标仅本地/agent 核对用，不接入 `make test` 门禁、不强制接入 CI。
 
 ### 4. 先完成先合
 

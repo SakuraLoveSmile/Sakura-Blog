@@ -1,0 +1,169 @@
+{{- /* head.html: 对应 Stellar layout/_partial/head.ejs */}}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#000">
+
+  <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
+  {{- /* Spec 42：description/keywords 优先级见 ViewData.MetaDescription/MetaKeywords（文章级 → 站点级 → 现状回退） */}}
+  <meta name="description" content="{{.MetaDescription}}">
+  {{with .MetaKeywords}}<meta name="keywords" content="{{.}}">{{end}}
+  {{- /* Spec 42：收录开关关闭时全站 noindex（建站期防收录）+ 三家站长验证 meta */}}
+  {{if .Site.SEO.NoIndex}}<meta name="robots" content="noindex">{{end}}
+  {{with .Site.SEO.GoogleVerification}}<meta name="google-site-verification" content="{{.}}">{{end}}
+  {{with .Site.SEO.BingVerification}}<meta name="msvalidate.01" content="{{.}}">{{end}}
+  {{with .Site.SEO.BaiduVerification}}<meta name="baidu-site-verification" content="{{.}}">{{end}}
+  {{range .Site.SEO.Preconnect}}<link rel="preconnect" href="{{.}}" crossorigin>{{end}}
+  <link rel="alternate" type="application/rss+xml" title="{{.Site.Title}}" href="/rss.xml">
+  <link rel="alternate" type="application/atom+xml" title="{{.Site.Title}}" href="/atom.xml">
+  <link rel="alternate" type="application/feed+json" title="{{.Site.Title}}" href="/feed.json">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="{{if .Site.FaviconURL}}{{.Site.FaviconURL}}{{else}}/favicon.ico{{end}}" sizes="any">
+  <link rel="apple-touch-icon" href="{{if .Site.AppleIcon}}{{.Site.AppleIcon}}{{else}}/apple-touch-icon.png{{end}}">
+  <script>
+    window.canonical = {
+      originalHost: '{{.Site.SEO.Canonical.OriginalHost}}',
+      officialHosts: {{jsonify .Site.SEO.Canonical.OfficialHosts}},
+      param: { permalink: '{{.Page.CanonicalURL}}', checklink: '/' }
+    };
+    window.canonical.encoded = btoa(window.canonical.originalHost || '');
+  </script>
+  {{- /* canonical + Open Graph 标签：SEO 基础补全 */}}
+  {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
+  {{if .Site.SEO.OpenGraph.Enabled}}
+  <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
+  <meta property="og:description" content="{{.Page.Description}}">
+  <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
+  {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
+  {{with .Site.SEO.OpenGraph.TwitterID}}<meta name="twitter:site" content="@{{.}}">{{end}}
+  {{end}}
+  {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
+  {{if and (eq .Page.Layout "post") .Page.Slug}}
+  <meta property="og:image" content="/og/{{.Page.Slug}}.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="/og/{{.Page.Slug}}.png">
+  {{- /* P1-10：JSON-LD 结构化数据（BlogPosting schema），依赖 site.URL 生成绝对 URL */}}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": {{jsonify .Page.Title}},
+    {{if .Page.Date}}"datePublished": {{jsonify .Page.Date}},{{end}}
+    {{if .Page.Updated}}"dateModified": {{jsonify .Page.Updated}},{{end}}
+    "image": {{jsonify (printf "%s/og/%s.png" .Site.URL .Page.Slug)}},
+    "author": {
+      "@type": "Person",
+      "name": {{if .Page.Author}}{{jsonify .Page.Author}}{{else}}{{jsonify .Site.Title}}{{end}}
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": {{jsonify .Site.Title}}
+    }{{if .Site.SEO.StructuredData.Links}},
+    "sameAs": {{jsonify .Site.SEO.StructuredData.Links}}{{end}},
+    {{if .Page.CanonicalURL}}"mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": {{jsonify .Page.CanonicalURL}}
+    },{{end}}
+    "description": {{jsonify .Page.Description}}
+  }
+  </script>
+  {{end}}
+
+  {{- /* 1.36 去 jQuery：不再加载 vendored jquery，services 走原生 utils.dom */}}
+
+  {{- /* 霞鹜文楷屏幕版字体（本地化，参考 xaoxuu.com）：unicode-range 分片按需加载，
+     woff2 分片在 /assets/fonts/lxgw/files/（97 片共 4.9MB，浏览器只下载用到的分片）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/fonts/lxgw/lxgwwenkaiscreen.css"}}">
+
+  {{- /* Stellar 主 CSS（编译产物）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/main.css"}}?v={{asset_ver "/assets/css/main.css"}}">
+
+  {{- /* Chroma 代码高亮令牌色（深色），容器样式复用 main.css */}}
+  <link rel="stylesheet" href="/assets/css/highlight.css?v={{asset_ver "/assets/css/highlight.css"}}">
+
+  {{- /* KaTeX 自定义注入（兼容 Stellar plugins.katex.inject）。 */}}
+  {{with .Site.Plugins.KaTeX}}{{.Inject}}{{end}}
+  {{- /* KaTeX/Mermaid/MathJax 按需加载：开关由 plugins 段驱动。 */}}
+  <script>window.__stellarPlugins = {{jsonify .Site.Plugins}};</script>
+  {{- /* KaTeX/Mermaid 按需加载（Spec 61 阶段 1）：页面含数学定界符或 .mermaid 元素才动态注入 CDN，
+    非公式页零请求；loader 幂等自守卫，失败静默降级 */}}
+  {{if .Site.Plugins.MathLoaderEnabled}}<script src="{{url_for "/assets/js/math-mermaid-loader.js"}}?v={{asset_ver "/assets/js/math-mermaid-loader.js"}}" defer></script>{{end}}
+  {{with .Site.Style.Codeblock.HighlightjsTheme}}<link rel="stylesheet" href="{{.}}">{{end}}
+
+  {{- /* 评论区样式（Artalk 视觉对齐版，强调色映射 --theme，深色模式自动兼容）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v={{asset_ver "/assets/css/comments.css"}}">
+
+  {{- /* 文章页脚补充样式（仅打赏 .reward-wrap；分享图标与 .article-footer 主体均在 main.css）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v={{asset_ver "/assets/css/post-footer.css"}}">
+
+  {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/wiki-notes.css"}}?v={{asset_ver "/assets/css/wiki-notes.css"}}">
+
+  {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v={{asset_ver "/assets/css/tag-plugins.css"}}">
+
+  {{- /* Spec 72: 搜索结果区补充样式（tabs/分组标题/主题色高亮；DOM 由 local-search.js 渲染）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/search.css"}}?v={{asset_ver "/assets/css/search.css"}}">
+
+  {{- /* Spec 72: 加密文章解锁页样式（按钮/表单/note 深色微调）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-password.css"}}?v={{asset_ver "/assets/css/post-password.css"}}">
+
+  {{- /* 标签云 widget 重设计（3D 球体版）：双模式球体交互卡片样式 */}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v={{asset_ver "/assets/css/tagcloud.css"}}">
+
+  {{- /* Spec 50: Story 布局样式（article.type=story 时加载；tech 缺省不额外请求，零配置零影响）*/}}
+  {{if eq .Site.Article.EffectiveType "story"}}<link rel="stylesheet" href="{{url_for "/assets/css/story.css"}}?v={{asset_ver "/assets/css/story.css"}}">{{end}}
+
+{{- /* 阅读体验：进度条 + 图片灯箱（Spec 08）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/reading.css"}}?v={{asset_ver "/assets/css/reading.css"}}">
+
+  {{- /* 全站字体覆盖：对齐 xaoxuu.com 的 font-family 声明（main.css 的 html 规则在 1904 行，此处后置覆盖）*/}}
+  <style>
+    html { font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  </style>
+
+  {{- /* demo 专用辅助样式：无站点背景图时屏蔽 siteblur 黑遮罩（见 CLAUDE.md siteblur 坑）
+     Spec 50：有背景图时跳过此覆盖，由 model_style.go 的 siteCSS() 生成毛玻璃效果 */}}
+  {{- if not .Site.Style.Site.BackgroundImage}}
+  <style>
+    body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  </style>
+  {{- end}}
+
+  {{- /* Hero 功能按钮图标（cover.features[].icon）：仅配了 icon 时注入，尺寸间距对齐 a.tag-plugin.button svg 惯例 */}}
+  {{- $hasCoverIcon := false}}
+  {{- range .Site.Cover.Features}}{{if .Icon}}{{$hasCoverIcon = true}}{{end}}{{end}}
+  {{- if $hasCoverIcon}}
+  <style>
+    .l_cover .start-wrap a.start.has-icon { display: inline-flex; align-items: center; }
+    .l_cover .start-wrap .start-icon svg, .l_cover .start-wrap .start-icon img { height: 1.2em; width: auto; margin: 0 0.4em 0 0; flex-shrink: 0; }
+  </style>
+  {{- end}}
+
+
+  {{- /* 导航栏 backdrop-filter 首帧合成延迟修复：提前建立合成层，避免刷新时未过滤态（白底）闪现一帧导致变亮。
+     main.css 为 Stylus 编译产物，故覆盖样式放此处内联。 */}}
+  <style>
+    .navbar-blur:before,
+    .navbar-blur:after { transform: translateZ(0); will-change: backdrop-filter; }
+  </style>
+
+  {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
+  {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
+  {{- /* article 段排版注入（indent 缩进 / cover_ratio 封面比例，未配置不输出） */}}
+  {{with .Site.Article.InjectCSS}}<style>{{.}}</style>{{end}}
+  {{- /* prefers_theme=auto：跟随系统明暗（在 CSS 前执行避免闪白） */}}
+  <script>(function(){var h=document.documentElement;if(!h.hasAttribute("data-theme-auto"))return;var m=matchMedia("(prefers-color-scheme: dark)");var f=function(){h.setAttribute("data-theme",m.matches?"dark":"light")};f();if(m.addEventListener){m.addEventListener("change",f)}})();</script>
+  {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
+  {{- /* Spec 42：代码注入 head 片段（template.HTML 原样输出，不经 bluemonday） */}}
+  {{.Site.Inject.Head}}
+</head>

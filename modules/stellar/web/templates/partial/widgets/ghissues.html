@@ -1,0 +1,19 @@
+{{- /* widgets/ghissues.html: GitHub issues 列表，结构对照原版 widgets/ghissues.ejs
+   （widget-wrapper.timeline > widget-header(title 非空时) > widget-body > tag-plugin.timeline.data-service.ds-timeline）。
+   repo 未配置不渲染；limit/labels 参数拼进本地代理 /api/gh/widget/issues；
+   user 参数透传为元素属性（timeline.js 过滤用）。列表由 services/timeline.js 客户端渲染，断网降级为 loading 错误态不破版。*/ -}}
+{{$repo := .Str "repo" ""}}
+{{if $repo}}
+<widget class="widget-wrapper timeline">
+  {{$title := .Str "title" ""}}
+  {{if $title}}
+  <div class="widget-header dis-select">
+    <span class="name">{{$title}}</span>
+  </div>
+  {{end}}
+  <div class="widget-body fs14">
+    <div class="tag-plugin timeline data-service ds-timeline" data-api="/api/gh/widget/issues?repo={{$repo}}&per_page={{.Int "limit" 3}}{{$labels := .Str "labels" ""}}{{if $labels}}&labels={{$labels}}{{end}}"{{$user := .Str "user" ""}}{{if $user}} user="{{$user}}"{{end}}>
+    </div>
+  </div>
+</widget>
+{{end}}

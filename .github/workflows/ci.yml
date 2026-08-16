@@ -14,22 +14,24 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: backend/go.mod
+          go-version-file: go.mod
 
-      # frontend/console/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
+      # modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
       # vet/test/编译验证不需要真实前端产物，占位文件即可。
-      - name: Stub frontend/console/dist for go:embed
-        run: mkdir -p frontend/console/dist && echo '<!doctype html>' > frontend/console/dist/index.html
+      - name: Stub modules/console/web/dist for go:embed
+        run: mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html
 
-      # go.work workspace 下 ./... 不匹配 use 的 module，须显式列出 backend/frontend 包路径。
       - name: Vet
-        run: go vet ./backend/... ./frontend/...
+        run: go vet ./...
 
       - name: Test
-        run: go test ./backend/... ./frontend/...
+        run: go test ./...
+
+      - name: Check module dependency direction
+        run: sh scripts/check-module-deps.sh
 
       - name: Build
-        run: go build -o blog ./backend/cmd/server
+        run: go build -o blog ./cmd/blog
 
   console:
     runs-on: ubuntu-latest
@@ -40,19 +42,19 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/console/package-lock.json
+          cache-dependency-path: modules/console/web/package-lock.json
 
       - name: Install & build (vue-tsc + vite)
-        run: cd frontend/console && npm ci && npm run build
+        run: cd modules/console/web && npm ci && npm run build
 
       # 与 make test 的前端行为面对齐：
       # console-test = npm run test（vue-tsc 类型检查 + node --test，复用上面的 npm ci 环境）
-      # assets-test = node --test frontend/scripts/test/*.test.mjs（node:test 内置运行器，零依赖）
+      # assets-test = node --test modules/stellar/web/scripts/test/*.test.mjs（node:test 内置运行器，零依赖）
       - name: Console behavior tests (npm run test)
-        run: cd frontend/console && npm run test
+        run: cd modules/console/web && npm run test
 
       - name: Assets behavior tests (node --test)
-        run: node --test frontend/scripts/test/*.test.mjs
+        run: node --test modules/stellar/web/scripts/test/*.test.mjs
 
   # 与发布产物同构的组合构建验证（对齐 release.yml：真实 console 产物 + go build）。
   # go job 用 stub dist 只验证编译；此 job 保证合入主线前 embed 真实前端产物可构建。
@@ -61,21 +63,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ---- Console SPA（go:embed 编译期要求 frontend/console/dist 非空）----
+      # ---- Console SPA（go:embed 编译期要求 modules/console/web/dist 非空）----
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/console/package-lock.json
+          cache-dependency-path: modules/console/web/package-lock.json
 
       - name: Build console
-        run: cd frontend/console && npm ci && npm run build
+        run: cd modules/console/web && npm ci && npm run build
 
       # ---- Go 编译（与 release.yml 同构，CGO 可关）----
       - uses: actions/setup-go@v5
         with:
-          go-version-file: backend/go.mod
+          go-version-file: go.mod
           cache: true
 
-      - name: Build binary (embed real frontend/console dist)
-        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./backend/cmd/server
+      - name: Build binary (embed real modules/console/web dist)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./cmd/blog

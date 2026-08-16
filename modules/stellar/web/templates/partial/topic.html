@@ -1,0 +1,37 @@
+{{- /* topic.html: 专栏详情页（Spec 52）：navbar + 专栏头（topic_header，封面/名称/描述/文章数）+ 文章卡片流。
+  由 base.html 按 .Page.Layout == "topic" 分派渲染；数据来自 handleTopicDetail（.Page.Topic + .Posts）。
+  文章卡复用 index.html 的默认文字卡结构（标题 + 封面 + 摘要 + 日期/分类 meta），链接 /post/{slug}。*/ -}}
+{{template "partial/navbar" .}}
+
+{{template "partial/topic_header" .}}
+
+<div class="post-list post">
+  {{range .Posts}}
+  <div class="post-card-wrap">
+    <a class="post-card post" href="/post/{{.Slug}}">
+      <article class="md-text">
+        {{if .Cover}}
+        <div class="post-cover"><img src="{{.Cover}}" alt="{{.Title}}" loading="lazy"/></div>
+        {{end}}
+        <h2 class="post-title">{{.Title}}</h2>
+        <div class="excerpt"><p>{{.Excerpt}}</p></div>
+        <div class="meta cap">
+          <span class="cap" id="post-meta">
+            {{icon "default:calendar"}}
+            <time datetime="{{date .Date "2006-01-02T15:04:05Z07:00"}}">{{date .Date "2006年1月2日"}}</time>
+          </span>
+          {{- /* 分类：对齐 post_card.ejs 的 span.cap.breadcrumb + category_color 配色（site.yml article.category_color）*/}}
+          {{if .Category}}
+          <span class="cap breadcrumb"{{if .CategoryStyle}} style="{{.CategoryStyle}}"{{end}}>
+            {{icon .CategoryIcon}}
+            <span>{{.Category}}</span>
+          </span>
+          {{end}}
+        </div>
+      </article>
+    </a>
+  </div>
+  {{else}}
+  <p class="wiki-empty">{{- lang "topic.post_empty" -}}</p>
+  {{end}}
+</div>
