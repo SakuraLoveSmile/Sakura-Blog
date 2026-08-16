@@ -28,6 +28,10 @@ func TestPageCRUDFlow(t *testing.T) {
 	if page.Slug != "about" || page.Status != "published" || page.Title != "关于" {
 		t.Errorf("created page mismatch: %+v", page)
 	}
+	createdAt := page.CreatedAt
+	if createdAt == "" || strings.HasPrefix(createdAt, "0001-") {
+		t.Fatalf("created page timestamp is empty: %+v", page)
+	}
 
 	// 创建：slug 空 → 400；slug 冲突 → 409
 	w = do2FA(r, http.MethodPost, "/api/v1/pages", `{"slug":"","title":"x"}`, cookie)
@@ -68,6 +72,9 @@ func TestPageCRUDFlow(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &page)
 	if page.Title != "关于我" {
 		t.Errorf("updated title = %q, want 关于我", page.Title)
+	}
+	if page.CreatedAt != createdAt || strings.HasPrefix(page.CreatedAt, "0001-") {
+		t.Errorf("update must preserve created_at: before=%q after=%q", createdAt, page.CreatedAt)
 	}
 
 	// 更新：slug 被占用 → 409（先建第二页）
@@ -118,6 +125,56 @@ func TestPageCRUDFlow(t *testing.T) {
 	w = do2FA(r, http.MethodGet, "/api/v1/pages/about", "", cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("purged page should 404, got %d", w.Code)
+	}
+}
+
+// TestNotebookNoteUpdatePreservesCreatedAt 更新笔记时不得把创建时间写回零值。
+func TestNotebookNoteUpdatePreservesCreatedAt(t *testing.T) {
+	r, _, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+
+	w := do2FA(r, http.MethodPost, "/api/v1/notebooks", `{"name":"时间字段验收"}`, cookie)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create notebook: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var nb struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &nb); err != nil || nb.ID == 0 {
+		t.Fatalf("decode notebook: %v, body=%s", err, w.Body.String())
+	}
+	w = do2FA(r, http.MethodPost, "/api/v1/notebooks/"+itoa(nb.ID)+"/notes", `{"title":"时间字段","content":"正文","tags":"test"}`, cookie)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create note: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var created struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil || created.ID == 0 {
+		t.Fatalf("decode note: %v, body=%s", err, w.Body.String())
+	}
+
+	w = do2FA(r, http.MethodGet, "/api/v1/notes/"+itoa(created.ID), "", cookie)
+	var before struct {
+		CreatedAt string `json:"created_at"`
+	}
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &before) != nil || before.CreatedAt == "" || strings.HasPrefix(before.CreatedAt, "0001-") {
+		t.Fatalf("created note timestamp missing: status=%d body=%s", w.Code, w.Body.String())
+	}
+
+	w = do2FA(r, http.MethodPut, "/api/v1/notes/"+itoa(created.ID), `{"title":"时间字段（已更新）"}`, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("update note: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	w = do2FA(r, http.MethodGet, "/api/v1/notes/"+itoa(created.ID), "", cookie)
+	var after struct {
+		CreatedAt string `json:"created_at"`
+	}
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &after) != nil {
+		t.Fatalf("get updated note: status=%d body=%s", w.Code, w.Body.String())
+	}
+	if after.CreatedAt != before.CreatedAt || strings.HasPrefix(after.CreatedAt, "0001-") {
+		t.Errorf("update must preserve created_at: before=%q after=%q", before.CreatedAt, after.CreatedAt)
 	}
 }
 

@@ -20,16 +20,16 @@ type pageWidgetJSON struct {
 // pageJSON 页面 API 响应模型。leftbar_widgets / rightbar_widgets：
 // null = 未配置（继承全局 page 级默认）；[] = 明确空侧栏；[{name, params}, ...] = 自定义序列。
 type pageJSON struct {
-	Slug            string            `json:"slug"`
-	Title           string            `json:"title"`
-	ContentMD       string            `json:"content_md,omitempty"`
-	Status          string            `json:"status"`
-	IsSystem        bool              `json:"is_system"`
-	Views           int64             `json:"views"`
-	LeftbarWidgets  []pageWidgetJSON  `json:"leftbar_widgets,omitempty"`
-	RightbarWidgets []pageWidgetJSON  `json:"rightbar_widgets,omitempty"`
-	CreatedAt       string            `json:"created_at"`
-	UpdatedAt       string            `json:"updated_at"`
+	Slug            string           `json:"slug"`
+	Title           string           `json:"title"`
+	ContentMD       string           `json:"content_md,omitempty"`
+	Status          string           `json:"status"`
+	IsSystem        bool             `json:"is_system"`
+	Views           int64            `json:"views"`
+	LeftbarWidgets  []pageWidgetJSON `json:"leftbar_widgets,omitempty"`
+	RightbarWidgets []pageWidgetJSON `json:"rightbar_widgets,omitempty"`
+	CreatedAt       string           `json:"created_at"`
+	UpdatedAt       string           `json:"updated_at"`
 }
 
 func toPageJSON(p *store.Page) *pageJSON {
@@ -244,13 +244,18 @@ func (h *Handler) updatePage(c *gin.Context) {
 	}
 
 	p := &store.Page{
+		ID:              existing.ID,
 		Slug:            newSlug,
 		Title:           strings.TrimSpace(req.Title),
 		ContentMD:       req.ContentMD,
 		ContentHTML:     contentHTML,
 		Status:          status,
+		IsSystem:        existing.IsSystem,
+		Views:           existing.Views,
 		LeftbarWidgets:  leftRaw,
 		RightbarWidgets: rightRaw,
+		CreatedAt:       existing.CreatedAt,
+		DeletedAt:       existing.DeletedAt,
 	}
 	if err := h.store.UpdatePage(slug, p); err != nil {
 		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())

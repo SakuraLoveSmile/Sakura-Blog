@@ -168,6 +168,11 @@ func (s *webServer) handlePost(c *gin.Context) {
 		s.render500(c)
 		return
 	}
+	// 文件回退链路也必须遵守文章发布状态；旧 Demo 文件没有 status 时继续按公开内容兼容。
+	if p.Status != "" && p.Status != store.StatusPublished {
+		s.render404(c)
+		return
+	}
 
 	data := &tmpl.ViewData{
 		Site: s.site.Load(),

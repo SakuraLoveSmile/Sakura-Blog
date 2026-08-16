@@ -343,6 +343,8 @@ func (h *Handler) updateNote(c *gin.Context) {
 		Content:     existing.Content,
 		ContentHTML: existing.ContentHTML,
 		Tags:        existing.Tags,
+		CreatedAt:   existing.CreatedAt,
+		UpdatedAt:   existing.UpdatedAt,
 	}
 	if req.NotebookID != nil {
 		if *req.NotebookID <= 0 {

@@ -24,6 +24,7 @@ type Post struct {
 	Excerpt    string
 	Banner     string // 文首横幅图 URL
 	Date       string
+	Status     string   // draft / published，空=由旧文件回退链路按公开内容兼容
 	References []string // 参考文献列表（frontmatter references 字段）
 }
 
@@ -216,6 +217,7 @@ func (s *Service) Load(slug string) (*Post, error) {
 		Excerpt:    meta.Excerpt,
 		Banner:     meta.Banner,
 		Date:       meta.Date,
+		Status:     meta.Status,
 		References: meta.References,
 	}, nil
 }
