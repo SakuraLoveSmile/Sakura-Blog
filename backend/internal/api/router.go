@@ -70,9 +70,19 @@ type Handler struct {
 		t time.Time
 	}
 
+	// 注册限流（安全审计 2026-08-16）
+	registerMu   sync.Mutex
+	registerHits map[string]registerHit
+
 	// PAT 限流（每令牌 60 次/分钟，与登录限流同模式）
 	patMu   sync.Mutex
 	patHits map[int64]patWindow
+}
+
+// registerHit 注册限流计数条目。
+type registerHit struct {
+	n int
+	t time.Time
 }
 
 // Config API Handler 初始化参数。
@@ -119,7 +129,8 @@ func New(cfg Config) *Handler {
 			n int
 			t time.Time
 		}),
-		patHits: make(map[int64]patWindow),
+		registerHits: make(map[string]registerHit),
+		patHits:      make(map[int64]patWindow),
 	}
 }
 
@@ -216,12 +227,9 @@ func (h *Handler) Register(r *gin.Engine) {
 	// AI 摘要读者自助生成（Spec 53，公开端点：读者临时接入自己的 API，限流/SSRF 防护在 handler 内）
 	v1.POST("/ai/summary/guest", h.aiSummaryGuest)
 
-	// 需认证路由
+	// 需认证路由（账户级：资料/令牌/通知/改密，任何登录角色可用）
 	authed := v1.Group("", h.apiAuth())
 	{
-		// 管理端全局搜索（Spec 39，Console ⌘K）
-		authed.GET("/search", h.adminSearch)
-
 		// API Token（Wave 3a）：生成/撤销 Bearer 认证凭证
 		authed.GET("/profile/api-token", h.apiTokenStatus)
 		authed.POST("/profile/api-token", h.generateAPIToken)
@@ -232,129 +240,6 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.GET("/notifications/unread-count", h.unreadNotifications)
 		authed.PUT("/notifications/:id/read", h.markNotificationRead)
 		authed.PUT("/notifications/read-all", h.markAllNotificationsRead)
-
-		// 仪表盘
-		authed.GET("/dashboard/stats", h.dashboardStats)
-		authed.GET("/dashboard/recent-comments", h.dashboardRecentComments)
-		authed.GET("/dashboard/recent-posts", h.dashboardRecentPosts)
-		authed.GET("/dashboard/categories", h.dashboardCategories)
-		authed.GET("/dashboard/quick-actions", h.quickActions)
-		authed.PUT("/dashboard/quick-actions", h.saveQuickActions)
-
-		// 访问统计（Spec 24）
-		authed.GET("/stats/trend", h.statsTrend)
-		authed.GET("/stats/popular", h.statsPopular)
-		authed.GET("/stats/referrers", h.statsReferrers)
-		authed.GET("/stats/hourly", h.statsHourly)
-
-		// 文章
-		authed.GET("/posts", h.listPosts)
-		authed.GET("/posts/:slug", h.getPost)
-		authed.POST("/posts", h.createPost)
-		authed.PUT("/posts/:slug", h.updatePost)
-		authed.DELETE("/posts/:slug", h.deletePost)
-		authed.POST("/posts/:slug/restore", h.restorePost)
-		authed.DELETE("/posts/:slug/purge", h.purgePost)
-
-		// 文章草稿头（已保存未发布，列表小绿点）
-		authed.PUT("/posts/:slug/draft", h.savePostDraft)
-		authed.DELETE("/posts/:slug/draft", h.discardPostDraft)
-		authed.POST("/posts/:slug/publish", h.publishPost)
-
-		// AI 文章摘要（Spec 53）：保存/清空预生成摘要
-		authed.PUT("/posts/:slug/ai-summary", h.updateAISummary)
-
-		// 文章版本历史（Spec 22）
-		authed.GET("/posts/:slug/revisions", h.listRevisions)
-		authed.GET("/revisions/:id", h.getRevision)
-		authed.POST("/revisions/:id/restore", h.restoreRevision)
-
-		// 评论
-		authed.GET("/comments", h.listComments)
-		authed.PUT("/comments/:id/approve", h.approveComment)
-		authed.PUT("/comments/:id/status", h.statusComment)
-		authed.DELETE("/comments/:id", h.deleteComment)
-		authed.POST("/comments/reply", h.replyComment)
-		authed.POST("/comments/batch", h.batchComments)
-
-		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
-		authed.POST("/preview/markdown", h.previewMarkdown)
-		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
-		authed.POST("/preview/site", h.previewSite)
-		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
-		authed.POST("/preview/post", h.createPostPreview)
-
-		// 组件库预览 Fixture 端点（Spec 63）：只服务预览，不落库、不发外部请求
-		authed.GET("/preview/rating", h.previewRatingFixture)
-		authed.POST("/preview/rating", h.previewRatingFixtureSubmit)
-		authed.GET("/preview/vote/info", h.previewVoteFixtureInfo)
-		authed.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
-		authed.GET("/preview/friends", h.previewFriendsFixture)
-		authed.GET("/preview/sites", h.previewSitesFixture)
-		authed.GET("/preview/md", h.previewMDFixture)
-
-		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）
-		authed.POST("/ai/generate", h.aiGenerate)
-
-		// 附件
-		authed.GET("/attachments", h.listAttachments)
-		authed.POST("/attachments/upload", h.uploadAttachment)
-		authed.POST("/attachments/move", h.moveAttachments)
-		authed.GET("/attachments/:id/refs", h.attachmentRefs)
-		authed.DELETE("/attachments/:id", h.deleteAttachment)
-
-		// 附件分组（Spec 44）
-		authed.GET("/attachment-groups", h.listAttachmentGroups)
-		authed.POST("/attachment-groups", h.createAttachmentGroup)
-		authed.PUT("/attachment-groups/:id", h.updateAttachmentGroup)
-		authed.DELETE("/attachment-groups/:id", h.deleteAttachmentGroup)
-
-		// 页面
-		authed.GET("/pages", h.listPages)
-		authed.GET("/pages/:slug", h.getPage)
-		authed.POST("/pages", h.createPage)
-		authed.PUT("/pages/:slug", h.updatePage)
-		authed.DELETE("/pages/:slug", h.deletePage)
-		authed.POST("/pages/:slug/restore", h.restorePage)
-		authed.DELETE("/pages/:slug/purge", h.purgePage)
-
-		// wiki 文档（Spec 35）
-		wiki := authed.Group("/wiki")
-		{
-			wiki.GET("/:project/docs", h.listWikidocs)
-			wiki.GET("/:project/docs/:slug", h.getWikidoc)
-			wiki.POST("/:project/docs", h.createWikidoc)
-			wiki.PUT("/:project/docs/:slug", h.updateWikidoc)
-			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
-		}
-
-		// 笔记本 / 笔记（Spec 35b）
-		notebooks := authed.Group("/notebooks")
-		{
-			notebooks.GET("", h.listNotebooks)
-			notebooks.POST("", h.createNotebook)
-			notebooks.GET("/:id", h.getNotebook)
-			notebooks.PUT("/:id", h.updateNotebook)
-			notebooks.DELETE("/:id", h.deleteNotebook)
-			notebooks.GET("/:id/notes", h.listNotes)
-			notebooks.POST("/:id/notes", h.createNote)
-		}
-
-		// 专栏（Spec 52）
-		authed.GET("/topics", h.listTopics)
-		authed.POST("/topics", h.createTopic)
-		authed.PUT("/topics/:id", h.updateTopic)
-		authed.DELETE("/topics/:id", h.deleteTopic)
-		authed.GET("/notes/:id", h.getNote)
-		authed.PUT("/notes/:id", h.updateNote)
-		authed.DELETE("/notes/:id", h.deleteNote)
-		authed.GET("/note-tags", h.noteTags)
-
-		// 瞬间
-		authed.GET("/moments", h.listMoments)
-		authed.POST("/moments", h.createMoment)
-		authed.PUT("/moments/:id", h.updateMoment)
-		authed.DELETE("/moments/:id", h.deleteMoment)
 
 		// 管理密码修改（入库，保存后旧 cookie 自动失效）
 		authed.PUT("/auth/password", h.changePassword)
@@ -373,46 +258,167 @@ func (h *Handler) Register(r *gin.Engine) {
 		authed.POST("/profile/2fa/confirm", h.handle2FAConfirm)
 		authed.POST("/profile/2fa/disable", h.handle2FADisable)
 		authed.GET("/profile/2fa/recovery-codes", h.handle2FARecoveryCodes)
-
-		// 友链
-		authed.GET("/links", h.listLinks)
-		authed.POST("/links", h.createLink)
-		authed.PUT("/links/:id", h.updateLink)
-		authed.DELETE("/links/:id", h.deleteLink)
-		authed.POST("/links/check", h.checkLinks)
-		authed.POST("/links/:id/snapshot", h.snapshotLink)
-		authed.POST("/links/import", h.importLinks)
-
-		// 友链 RSS 订阅阅读器
-		authed.GET("/subscriptions", h.listSubscriptions)
-		authed.GET("/subscriptions/articles", h.listSubscriptionArticles)
-		authed.POST("/subscriptions/read", h.markSubscriptionRead)
-		authed.POST("/subscriptions/read-all", h.markAllSubscriptionRead)
-		authed.POST("/subscriptions/flag", h.toggleSubscriptionFlag)
-		authed.POST("/subscriptions/refresh", h.refreshSubscriptions)
-
-		// 文章分享链接
-		authed.GET("/shares", h.listShares)
-		authed.GET("/posts/:slug/shares", h.listPostShares)
-		authed.POST("/posts/:slug/shares", h.createShare)
-		authed.DELETE("/shares/:id", h.deleteShare)
-
-		// 分类 / 标签
-		authed.GET("/categories", h.listCategories)
-		authed.PUT("/categories/:name", h.renameCategory)
-		authed.DELETE("/categories/:name", h.deleteCategory)
-		authed.GET("/tags", h.listTags)
-		authed.POST("/tags/merge", h.mergeTags)
-		authed.PUT("/tags/:name", h.renameTag)
-		authed.DELETE("/tags/:name", h.deleteTag)
-
-		// 素材速查（插件库图标画廊数据源：icons.yml 全量 key + SVG）
-		authed.GET("/assets/icons", h.listAssetIcons)
-
 	}
 
-	// 系统管理组（仅 admin）：用户管理 / 登录日志 / 站点设置 / 功能模块 / 备份导出 / SEO 模块。
-	sys := v1.Group("", h.apiAuth(), h.requireRole(store.RoleAdmin))
+	// 内容管理组（author 及以上，安全审计 2026-08-16）：
+	// 此前全部内容写端点仅要求登录——开放注册的 reader 可经 console 登录端点换取
+	// blog_admin cookie 后写文章/页面/瞬间/友链（配合 WithUnsafe 渲染构成存储型 XSS
+	// 全链路）。现统一加 requireRole(RoleAuthor) 最低角色门禁。
+	author := v1.Group("", h.apiAuth(), h.requireRole(store.RoleAuthor))
+	{
+		// 管理端全局搜索（Spec 39，Console ⌘K）
+		author.GET("/search", h.adminSearch)
+
+		// 仪表盘
+		author.GET("/dashboard/stats", h.dashboardStats)
+		author.GET("/dashboard/recent-comments", h.dashboardRecentComments)
+		author.GET("/dashboard/recent-posts", h.dashboardRecentPosts)
+		author.GET("/dashboard/categories", h.dashboardCategories)
+		author.GET("/dashboard/quick-actions", h.quickActions)
+		author.PUT("/dashboard/quick-actions", h.saveQuickActions)
+
+		// 访问统计（Spec 24）
+		author.GET("/stats/trend", h.statsTrend)
+		author.GET("/stats/popular", h.statsPopular)
+		author.GET("/stats/referrers", h.statsReferrers)
+		author.GET("/stats/hourly", h.statsHourly)
+
+		// 文章
+		author.GET("/posts", h.listPosts)
+		author.GET("/posts/:slug", h.getPost)
+		author.POST("/posts", h.createPost)
+		author.PUT("/posts/:slug", h.updatePost)
+		author.DELETE("/posts/:slug", h.deletePost)
+		author.POST("/posts/:slug/restore", h.restorePost)
+		author.DELETE("/posts/:slug/purge", h.purgePost)
+
+		// 文章草稿头（已保存未发布，列表小绿点）
+		author.PUT("/posts/:slug/draft", h.savePostDraft)
+		author.DELETE("/posts/:slug/draft", h.discardPostDraft)
+		author.POST("/posts/:slug/publish", h.publishPost)
+
+		// AI 文章摘要（Spec 53）：保存/清空预生成摘要
+		author.PUT("/posts/:slug/ai-summary", h.updateAISummary)
+
+		// 文章版本历史（Spec 22）
+		author.GET("/posts/:slug/revisions", h.listRevisions)
+		author.GET("/revisions/:id", h.getRevision)
+		author.POST("/revisions/:id/restore", h.restoreRevision)
+
+		// 评论
+		author.GET("/comments", h.listComments)
+		author.PUT("/comments/:id/approve", h.approveComment)
+		author.PUT("/comments/:id/status", h.statusComment)
+		author.DELETE("/comments/:id", h.deleteComment)
+		author.POST("/comments/reply", h.replyComment)
+		author.POST("/comments/batch", h.batchComments)
+
+		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
+		author.POST("/preview/markdown", h.previewMarkdown)
+		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
+		author.POST("/preview/site", h.previewSite)
+		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
+		author.POST("/preview/post", h.createPostPreview)
+
+		// 组件库预览 Fixture 端点（Spec 63）：只服务预览，不落库、不发外部请求
+		author.GET("/preview/rating", h.previewRatingFixture)
+		author.POST("/preview/rating", h.previewRatingFixtureSubmit)
+		author.GET("/preview/vote/info", h.previewVoteFixtureInfo)
+		author.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
+		author.GET("/preview/friends", h.previewFriendsFixture)
+		author.GET("/preview/sites", h.previewSitesFixture)
+		author.GET("/preview/md", h.previewMDFixture)
+
+		// 附件
+		author.GET("/attachments", h.listAttachments)
+		author.POST("/attachments/upload", h.uploadAttachment)
+		author.POST("/attachments/move", h.moveAttachments)
+		author.GET("/attachments/:id/refs", h.attachmentRefs)
+		author.DELETE("/attachments/:id", h.deleteAttachment)
+
+		// 附件分组（Spec 44）
+		author.GET("/attachment-groups", h.listAttachmentGroups)
+		author.POST("/attachment-groups", h.createAttachmentGroup)
+		author.PUT("/attachment-groups/:id", h.updateAttachmentGroup)
+		author.DELETE("/attachment-groups/:id", h.deleteAttachmentGroup)
+
+		// 页面
+		author.GET("/pages", h.listPages)
+		author.GET("/pages/:slug", h.getPage)
+		author.POST("/pages", h.createPage)
+		author.PUT("/pages/:slug", h.updatePage)
+		author.DELETE("/pages/:slug", h.deletePage)
+		author.POST("/pages/:slug/restore", h.restorePage)
+		author.DELETE("/pages/:slug/purge", h.purgePage)
+
+		// wiki 文档（Spec 35）
+		wiki := author.Group("/wiki")
+		{
+			wiki.GET("/:project/docs", h.listWikidocs)
+			wiki.GET("/:project/docs/:slug", h.getWikidoc)
+			wiki.POST("/:project/docs", h.createWikidoc)
+			wiki.PUT("/:project/docs/:slug", h.updateWikidoc)
+			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
+		}
+
+		// 笔记本 / 笔记（Spec 35b）
+		notebooks := author.Group("/notebooks")
+		{
+			notebooks.GET("", h.listNotebooks)
+			notebooks.POST("", h.createNotebook)
+			notebooks.GET("/:id", h.getNotebook)
+			notebooks.PUT("/:id", h.updateNotebook)
+			notebooks.DELETE("/:id", h.deleteNotebook)
+			notebooks.GET("/:id/notes", h.listNotes)
+			notebooks.POST("/:id/notes", h.createNote)
+		}
+
+		// 专栏（Spec 52）
+		author.GET("/topics", h.listTopics)
+		author.POST("/topics", h.createTopic)
+		author.PUT("/topics/:id", h.updateTopic)
+		author.DELETE("/topics/:id", h.deleteTopic)
+		author.GET("/notes/:id", h.getNote)
+		author.PUT("/notes/:id", h.updateNote)
+		author.DELETE("/notes/:id", h.deleteNote)
+		author.GET("/note-tags", h.noteTags)
+
+		// 瞬间
+		author.GET("/moments", h.listMoments)
+		author.POST("/moments", h.createMoment)
+		author.PUT("/moments/:id", h.updateMoment)
+		author.DELETE("/moments/:id", h.deleteMoment)
+
+		// 友链 RSS 订阅阅读器
+		author.GET("/subscriptions", h.listSubscriptions)
+		author.GET("/subscriptions/articles", h.listSubscriptionArticles)
+		author.POST("/subscriptions/read", h.markSubscriptionRead)
+		author.POST("/subscriptions/read-all", h.markAllSubscriptionRead)
+		author.POST("/subscriptions/flag", h.toggleSubscriptionFlag)
+		author.POST("/subscriptions/refresh", h.refreshSubscriptions)
+
+		// 文章分享链接
+		author.GET("/shares", h.listShares)
+		author.GET("/posts/:slug/shares", h.listPostShares)
+		author.POST("/posts/:slug/shares", h.createShare)
+		author.DELETE("/shares/:id", h.deleteShare)
+
+		// 分类 / 标签
+		author.GET("/categories", h.listCategories)
+		author.PUT("/categories/:name", h.renameCategory)
+		author.DELETE("/categories/:name", h.deleteCategory)
+		author.GET("/tags", h.listTags)
+		author.POST("/tags/merge", h.mergeTags)
+		author.PUT("/tags/:name", h.renameTag)
+		author.DELETE("/tags/:name", h.deleteTag)
+
+		// 素材速查（插件库图标画廊数据源：icons.yml 全量 key + SVG）
+		author.GET("/assets/icons", h.listAssetIcons)
+	}
+
+	// 系统管理组（仅 admin，且站点必须已启用密码认证——安全审计 2026-08-16）：
+	// 用户管理 / 登录日志 / 站点设置 / 功能模块 / 备份导出 / SEO 模块 / 友链管理 / AI 代理。
+	sys := v1.Group("", h.apiAuth(), h.requireSysAdmin())
 	{
 		// 用户管理（多用户体系）：列表/创建/更新/重置密码/删除
 		sys.GET("/users", h.listUsers)
@@ -443,6 +449,20 @@ func (h *Handler) Register(r *gin.Engine) {
 		sys.GET("/backup/status", h.backupStatus)
 		sys.POST("/backup/restore", h.restoreBackup)
 		sys.POST("/backup/restore-snapshot", h.restoreSnapshot)
+
+		// 友链（安全审计 2026-08-16 收进 sys）：links 表 URL 会驱动服务端出站探测/抓取
+		// （linkwatch/friends），探测结果回显构成 SSRF oracle，收敛到 admin 管理。
+		sys.GET("/links", h.listLinks)
+		sys.POST("/links", h.createLink)
+		sys.PUT("/links/:id", h.updateLink)
+		sys.DELETE("/links/:id", h.deleteLink)
+		sys.POST("/links/check", h.checkLinks)
+		sys.POST("/links/:id/snapshot", h.snapshotLink)
+		sys.POST("/links/import", h.importLinks)
+
+		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）：
+		// 消耗 admin 配置的第三方 key，仅 admin 可用（安全审计 2026-08-16 收进 sys）。
+		sys.POST("/ai/generate", h.aiGenerate)
 
 		// 功能模块后台 API：仅 admin；每个已注册模块套自己的 Gate 中间件（禁用即 403）。
 		if h.modules != nil {
@@ -496,14 +516,14 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 		}
 
 		if cookie, err := c.Cookie(authCookieName); err == nil {
-			if userID, authSecret, expiry, role, ok := h.validAuthCookie(cookie); ok {
+			if userID, authSecret, expiry, role, ok := h.validAuthCookie(cookie, cookieAudAdmin); ok {
 				c.Set("userID", userID)
 				c.Set("userRole", role)
 				// 滑动续期：新格式 cookie 剩余有效期不足一半时重新签发（旧格式无 authSecret 不续期）
 				if userID > 0 && authSecret != "" && expiry-time.Now().Unix() < int64(authCookieTTL.Seconds())/2 {
 					newExpiry := time.Now().Add(authCookieTTL).Unix()
 					c.SetSameSite(http.SameSiteLaxMode)
-					c.SetCookie(authCookieName, signAuthCookie(newExpiry, userID, authSecret), int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
+					c.SetCookie(authCookieName, signAuthCookie(cookieAudAdmin, newExpiry, userID, authSecret), int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
 				}
 				c.Next()
 				return
@@ -515,29 +535,38 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 
 // --- HMAC cookie 签名/验证（Spec 45: 迁移至 users 表 bcrypt + auth_secret 签名 key） ---
 
-// signAuthCookie 使用 auth_secret 签名 cookie：<expiry>.<userID>.<hmac-sha256(auth_secret, expiry.userID)>
-func signAuthCookie(expiry int64, userID int64, authSecret string) string {
-	msg := fmt.Sprintf("%d.%d", expiry, userID)
+// cookie audience（安全审计 2026-08-16）：admin cookie（blog_admin，console/API）与
+// 读者 cookie（blog_user，前台）此前共用同一签名算法与 per-user auth_secret，cookie 名
+// 不参与 HMAC——读者 cookie 改名即可冒充 admin 会话。现将 audience 绑定进签名消息，
+// 跨用途重放立即验签失败。副作用：升级后所有旧格式 cookie 失效，需重新登录。
+const (
+	cookieAudAdmin = "admin"
+	cookieAudUser  = "user"
+)
+
+// signAuthCookie 使用 auth_secret 签名 cookie：<aud>.<expiry>.<userID>.<hmac-sha256(auth_secret, aud.expiry.userID)>
+func signAuthCookie(aud string, expiry int64, userID int64, authSecret string) string {
+	msg := fmt.Sprintf("%s.%d.%d", aud, expiry, userID)
 	mac := hmac.New(sha256.New, []byte(authSecret))
 	mac.Write([]byte(msg))
 	sig := hex.EncodeToString(mac.Sum(nil))
 	return fmt.Sprintf("%s.%s", msg, sig)
 }
 
-// validAuthCookie 解析并验证 cookie（Spec 61 阶段 4 起仅新格式）：
-// 3 段 expiry.userID.sig，查 users 表取 auth_secret 验证 HMAC 签名。
-// 旧格式（2 段明文密码 HMAC）已随 admin 明文密码移除而删除。
+// validAuthCookie 解析并验证 cookie（安全审计 2026-08-16 起 4 段格式）：
+// aud.expiry.userID.sig，aud 必须与调用方期望一致（admin/user），查 users 表取
+// auth_secret 验证 HMAC 签名。旧 3 段格式无 audience，一律拒绝。
 // 返回 (userID, authSecret, expiry, role, ok)；role 为登录用户角色。
-func (h *Handler) validAuthCookie(value string) (int64, string, int64, string, bool) {
+func (h *Handler) validAuthCookie(value, aud string) (int64, string, int64, string, bool) {
 	parts := strings.Split(value, ".")
-	if len(parts) != 3 {
+	if len(parts) != 4 || parts[0] != aud {
 		return 0, "", 0, "", false
 	}
-	expiry, err := strconv.ParseInt(parts[0], 10, 64)
+	expiry, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil || time.Now().Unix() > expiry {
 		return 0, "", 0, "", false
 	}
-	userID, err := strconv.ParseInt(parts[1], 10, 64)
+	userID, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
 		return 0, "", 0, "", false
 	}
@@ -545,11 +574,11 @@ func (h *Handler) validAuthCookie(value string) (int64, string, int64, string, b
 	if user == nil {
 		return 0, "", 0, "", false
 	}
-	msg := fmt.Sprintf("%d.%d", expiry, userID)
+	msg := fmt.Sprintf("%s.%d.%d", aud, expiry, userID)
 	mac := hmac.New(sha256.New, []byte(user.AuthSecret))
 	mac.Write([]byte(msg))
 	expected := hex.EncodeToString(mac.Sum(nil))
-	if subtle.ConstantTimeCompare([]byte(parts[2]), []byte(expected)) == 1 {
+	if subtle.ConstantTimeCompare([]byte(parts[3]), []byte(expected)) == 1 {
 		return userID, user.AuthSecret, expiry, normalizeRole(user.Role), true
 	}
 	return 0, "", 0, "", false
@@ -563,11 +592,45 @@ func normalizeRole(role string) string {
 	return store.RoleAuthor
 }
 
-// requireRole 角色校验中间件：当前登录用户需具备指定角色，否则 403。
+// roleLevel 角色层级（安全审计 2026-08-16）：admin(3) > author(2) > reader(1)。
+func roleLevel(role string) int {
+	switch role {
+	case store.RoleAdmin:
+		return 3
+	case store.RoleAuthor:
+		return 2
+	default:
+		return 1
+	}
+}
+
+// requireRole 角色校验中间件（最低角色语义，安全审计 2026-08-16）：
+// 当前登录用户角色层级 >= role 才放行（admin 通过 author 门禁，反向不行）。
 func (h *Handler) requireRole(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		got, _ := c.Get("userRole")
-		if got != role {
+		gotRole, _ := got.(string)
+		if roleLevel(gotRole) < roleLevel(role) {
+			AbortFail(c, http.StatusForbidden, "无权限：需要更高角色")
+			return
+		}
+		c.Next()
+	}
+}
+
+// requireSysAdmin 系统管理组门禁（安全审计 2026-08-16）：
+// admin 角色 + 站点必须已启用密码认证。无密码站点（AuthEnabled=false）的历史
+// 全放行语义不再覆盖破坏性系统端点（备份恢复/用户管理/设置等）——未设密码时
+// 这些端点一律 403，倒逼先设置 admin 密码再使用系统管理功能。
+func (h *Handler) requireSysAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !h.site.Load().Admin.AuthEnabled {
+			AbortFail(c, http.StatusForbidden, "系统管理端点需先设置 admin 密码")
+			return
+		}
+		got, _ := c.Get("userRole")
+		gotRole, _ := got.(string)
+		if roleLevel(gotRole) < roleLevel(store.RoleAdmin) {
 			AbortFail(c, http.StatusForbidden, "无权限：需要管理员角色")
 			return
 		}

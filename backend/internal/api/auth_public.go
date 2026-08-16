@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/store"
+	"blog/internal/textutil"
 )
 
 // 公共读者 cookie 与签名。
@@ -30,15 +31,16 @@ const (
 // ctxKeyCurrentUser Gin context key。值类型 *store.CurrentUser。
 const ctxKeyCurrentUser = "current_user"
 
-// signUserCookie 签读者 cookie：<expiry>.<userID>.<hmac(auth_secret, expiry.userID)>
+// signUserCookie 签读者 cookie：<user>.<expiry>.<userID>.<hmac(auth_secret, user.expiry.userID)>。
+// audience=user 与 admin cookie 绑定区分（安全审计 2026-08-16），跨用途重放验签失败。
 func signUserCookie(expiry int64, userID int64, authSecret string) string {
-	return signAuthCookie(expiry, userID, authSecret)
+	return signAuthCookie(cookieAudUser, expiry, userID, authSecret)
 }
 
 // validUserCookie 验证读者 cookie，返回 (userID, authSecret, expiry, ok)。
-// 与 admin cookie 签名算法相同，但 cookie 名与 TTL 独立，互不干扰。
+// 与 admin cookie 签名算法相同但 audience 独立，cookie 名与 TTL 互不干扰。
 func (h *Handler) validUserCookie(value string) (int64, string, int64, bool) {
-	userID, authSecret, expiry, _, ok := h.validAuthCookie(value)
+	userID, authSecret, expiry, _, ok := h.validAuthCookie(value, cookieAudUser)
 	if !ok {
 		return 0, "", 0, false
 	}
@@ -99,7 +101,12 @@ func GetCurrentUser(c *gin.Context) *store.CurrentUser {
 // publicRegister POST /api/auth/register：reader 角色注册。
 // 入参：username / password / display_name（昵称）/ email / avatar（可选）。
 // 用户名唯一约束；注册成功自动下发 cookie 并返回当前用户。
+// 安全审计 2026-08-16：补 per-IP 注册限流（防批量刷号）与邮箱格式强校验（拒 CRLF）。
 func (h *Handler) publicRegister(c *gin.Context) {
+	if !h.registerAllowed(c.ClientIP()) {
+		Fail(c, http.StatusTooManyRequests, "注册过于频繁，请稍后再试")
+		return
+	}
 	var req struct {
 		Username    string `json:"username"`
 		Password    string `json:"password"`
@@ -132,7 +139,9 @@ func (h *Handler) publicRegister(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "昵称过长（最多 32 字）")
 		return
 	}
-	if req.Email == "" || !strings.Contains(req.Email, "@") || len(req.Email) > maxEmailLen {
+	// 安全审计 2026-08-16：net/mail 强校验替代"含 @ 即可"（拒 CRLF/控制字符，防后续
+	// 通知链路头注入与 SMTP 命令注入）。
+	if !ValidEmail(req.Email) {
 		Fail(c, http.StatusBadRequest, "邮箱格式不正确")
 		return
 	}
@@ -190,8 +199,15 @@ func (h *Handler) publicRegister(c *gin.Context) {
 }
 
 // publicLogin POST /api/auth/login：读者登录。
-// 只接受 role=reader 或更低角色（防止 admin/author 通过公共端点登录泄露权限模型）。
+// 只接受 role=reader（防止 admin/author 通过公共端点登录泄露权限模型）；
+// 安全审计 2026-08-16：补 per-IP 失败限流（复用登录限流窗口）与角色校验的实际执行
+// （此前仅注释声明未实现）。
 func (h *Handler) publicLogin(c *gin.Context) {
+	ip := c.ClientIP()
+	if h.loginBlocked(ip) {
+		Fail(c, http.StatusTooManyRequests, "尝试次数过多，请稍后再试")
+		return
+	}
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -211,20 +227,66 @@ func (h *Handler) publicLogin(c *gin.Context) {
 
 	user, err := h.store.GetUserByUsername(req.Username)
 	if err != nil || user == nil {
+		h.recordLoginFail(ip)
 		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
 	if err := store.CheckPassword(user.PasswordHash, req.Password); err != nil {
+		h.recordLoginFail(ip)
 		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
+	// 角色校验：公共端点仅服务 reader，admin/author 走 /api/v1/auth/login。
+	if normalizeRole(user.Role) != store.RoleReader {
+		h.recordLoginFail(ip)
+		Fail(c, http.StatusForbidden, "管理账号请从后台登录")
+		return
+	}
 
+	h.clearLoginFail(ip)
 	expiry := time.Now().Add(userCookieTTL).Unix()
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(userCookieName, signUserCookie(expiry, user.ID, user.AuthSecret),
 		int(userCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
 
 	c.JSON(http.StatusOK, gin.H{"ok": true, "user": h.toPublicUserView(user)})
+}
+
+// --- 注册限流（安全审计 2026-08-16）---
+
+// 注册限流参数：每 IP 1 小时窗口内最多 5 次注册。
+const (
+	registerWindow   = time.Hour
+	registerMaxHits  = 5
+	registerCooldown = time.Hour // 触发后冷却时长
+)
+
+// registerAllowed 检查该 IP 是否仍可注册，未超限时顺带计数。惰性清理过期条目。
+func (h *Handler) registerAllowed(ip string) bool {
+	h.registerMu.Lock()
+	defer h.registerMu.Unlock()
+	now := time.Now()
+	for k, v := range h.registerHits {
+		if now.Sub(v.t) > registerCooldown {
+			delete(h.registerHits, k)
+		}
+	}
+	v := h.registerHits[ip]
+	if now.Sub(v.t) > registerWindow {
+		v.n = 0
+	}
+	if v.n >= registerMaxHits {
+		return false
+	}
+	v.n++
+	v.t = now
+	h.registerHits[ip] = v
+	return true
+}
+
+// ValidEmail 邮箱校验（安全审计 2026-08-16）：委托 textutil.ValidEmail 共享实现。
+func ValidEmail(s string) bool {
+	return textutil.ValidEmail(s, maxEmailLen)
 }
 
 // publicMe GET /api/auth/me：返回当前用户（匿名或已登录）。

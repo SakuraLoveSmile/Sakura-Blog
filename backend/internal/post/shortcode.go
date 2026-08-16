@@ -32,6 +32,107 @@ var reMermaid = regexp.MustCompile(`(?s){%\s*mermaid\s*%}(.*?){%\s*endmermaid\s*
 // reEmojiHeight 校验 emoji height 参数格式，仅允许合法的 CSS 长度值，防 CSS 注入。
 var reEmojiHeight = regexp.MustCompile(`^[0-9]*\.?[0-9]+(px|em|rem|%|vh|vw)?$`)
 
+// --- 安全审计 2026-08-16：shortcode 输出统一转义/白名单辅助 ---
+// shortcode 在 goldmark 渲染前展开、输出直入最终 HTML（WithUnsafe），参数全部来自
+// 文章/瞬间作者的 markdown 源码，故所有插值必须先经 html.EscapeString 或以下白名单校验。
+
+// 安全审计 2026-08-16：颜色参数白名单——仅放行 #hex、rgb()/rgba() 数字形式、纯字母-连字符色名
+// （Stellar colorful 体系的 red/blue/light-blue 等均在此形态内），杜绝分号/引号/括号注入 style。
+var (
+	reSafeColorHex  = regexp.MustCompile(`^#[0-9a-fA-F]{3,8}$`)
+	reSafeColorRGB  = regexp.MustCompile(`^rgba?\(\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*,\s*[0-9]{1,3}\s*(,\s*(0(\.[0-9]+)?|1(\.0+)?|[0-9]{1,3})\s*)?\)$`)
+	reSafeColorName = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]{0,19}$`)
+)
+
+// safeColor 校验用户可控的颜色参数，非法值返回空串（调用方丢弃该参数或回退默认色）。
+func safeColor(v string) string {
+	v = strings.TrimSpace(v)
+	if reSafeColorHex.MatchString(v) || reSafeColorRGB.MatchString(v) || reSafeColorName.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// 安全审计 2026-08-16：CSS 长度参数白名单（与 reEmojiHeight 同一口径）。
+var reSafeCSSNum = regexp.MustCompile(`^[0-9]*\.?[0-9]+(px|em|rem|%|vh|vw)?$`)
+
+// safeCSSNum 校验 CSS 长度参数（image/grid 的 width/height/padding/gap/br 等），非法值返回空串。
+func safeCSSNum(v string) string {
+	v = strings.TrimSpace(v)
+	if reSafeCSSNum.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// 安全审计 2026-08-16：宽高比参数白名单——放行 16/9、1.5、0.618 等数字比例形式。
+var reSafeCSSRatio = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(/[0-9]+(\.[0-9]+)?)?$`)
+
+// safeCSSRatio 校验 aspect-ratio 类参数，非法值返回空串。
+func safeCSSRatio(v string) string {
+	v = strings.TrimSpace(v)
+	if reSafeCSSRatio.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// 安全审计 2026-08-16：URL scheme 白名单——仅放行 http/https/mailto 与相对路径/锚点，
+// 拒绝 javascript:、data:、vbscript: 等危险 scheme。
+var reSafeURLScheme = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+
+// safeURL 校验用户可控的链接参数，非法 scheme 返回空串（调用方丢弃 href 或回退默认）。
+func safeURL(u string) string {
+	u = strings.TrimSpace(u)
+	if u == "" {
+		return ""
+	}
+	if m := reSafeURLScheme.FindString(u); m != "" {
+		switch strings.ToLower(m) {
+		case "http:", "https:", "mailto:":
+			return u
+		}
+		return ""
+	}
+	return u // 无 scheme：相对路径 / 锚点 / 协议相对 //host
+}
+
+// 安全审计 2026-08-16：class 词白名单——字母开头，限字母数字-_，供拼入 class 的参数（chat style/scene 等）。
+var reSafeClassWord = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]{0,29}$`)
+
+// safeClassWord 校验拼入 class 属性的单词参数，非法值返回空串。
+func safeClassWord(v string) string {
+	v = strings.TrimSpace(v)
+	if reSafeClassWord.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// 安全审计 2026-08-16：icon key 白名单——iconify 形如 solar:hashtag-square-bold，
+// 拒绝携带 HTML 元字符的 key 进入 iconFunc（即使其内部未转义也无法注入）。
+var reSafeIconKey = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9:_.-]{0,63}$`)
+
+// safeIconKey 校验图标 key 参数，非法值返回空串（调用方降级为空占位）。
+func safeIconKey(v string) string {
+	v = strings.TrimSpace(v)
+	if reSafeIconKey.MatchString(v) {
+		return v
+	}
+	return ""
+}
+
+// 安全审计 2026-08-16：quot el 标签白名单——禁止任意标签名注入，非法回退 p。
+var quotElSet = map[string]bool{"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true, "p": true, "div": true, "blockquote": true}
+
+// safeQuotEl 校验 quot 的 el 参数，仅放行白名单标签名，非法回退 p。
+func safeQuotEl(el string) string {
+	if quotElSet[el] {
+		return el
+	}
+	return "p"
+}
+
 // button 标签正则：{% button ... %}
 var reButton = regexp.MustCompile(`{%\s*button\s+(.*?)\s*%}`)
 
@@ -251,15 +352,16 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 
 		var sb strings.Builder
 		sb.WriteString(`<details class="tag-plugin colorful folding"`)
-		if color != "" {
-			fmt.Fprintf(&sb, ` color="%s"`, color)
+		// 安全审计 2026-08-16：color/title 用户可控，白名单/转义后再拼入
+		if c := safeColor(color); c != "" {
+			fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 		}
 		if open {
 			sb.WriteString(` open`)
 		}
 		sb.WriteString(`>`)
 		if title != "" {
-			fmt.Fprintf(&sb, `<summary>%s</summary>`, title)
+			fmt.Fprintf(&sb, `<summary>%s</summary>`, html.EscapeString(title))
 		}
 		fmt.Fprintf(&sb, `<div class="body">%s</div>`, renderedBody)
 		sb.WriteString(`</details>`)
@@ -393,12 +495,13 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 
 		var sb strings.Builder
 		sb.WriteString(`<div class="tag-plugin colorful note"`)
-		if color != "" {
-			fmt.Fprintf(&sb, ` color="%s"`, color)
+		// 安全审计 2026-08-16：color/title 用户可控，白名单/转义后再拼入
+		if c := safeColor(color); c != "" {
+			fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 		}
 		sb.WriteString(`>`)
 		if title != "" {
-			fmt.Fprintf(&sb, `<div class="title">%s</div>`, title)
+			fmt.Fprintf(&sb, `<div class="title">%s</div>`, html.EscapeString(title))
 		}
 		fmt.Fprintf(&sb, `<div class="body">%s</div>`, renderInlineMD(content))
 		sb.WriteString(`</div>`)
@@ -648,7 +751,8 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			if strings.HasSuffix(match, "](") {
 				return match
 			}
-			return fmt.Sprintf(`<u class="p tag-plugin">%s</u>`, text)
+			// 安全审计 2026-08-16：text 用户可控，转义后再输出
+			return fmt.Sprintf(`<u class="p tag-plugin">%s</u>`, html.EscapeString(text))
 		})
 	})
 
@@ -664,7 +768,12 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			if color == "" || text == "" {
 				return match
 			}
-			return fmt.Sprintf(`<span class="tag-plugin" style="color:%s">%s</span>`, html.EscapeString(color), text)
+			// 安全审计 2026-08-16：color 走颜色白名单（非法丢 style），text 用户可控须转义
+			style := ""
+			if c := safeColor(color); c != "" {
+				style = fmt.Sprintf(` style="color:%s"`, html.EscapeString(c))
+			}
+			return fmt.Sprintf(`<span class="tag-plugin"%s>%s</span>`, style, html.EscapeString(text))
 		})
 	})
 
@@ -831,8 +940,9 @@ func renderTabs(argsStr, body string, renderMD func(string) string) string {
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin tabs"`)
-	if align := named["align"]; align != "" {
-		fmt.Fprintf(&sb, ` align="%s"`, align)
+	// 安全审计 2026-08-16：align 用户可控，class 词白名单后再拼入
+	if align := safeClassWord(named["align"]); align != "" {
+		fmt.Fprintf(&sb, ` align="%s"`, html.EscapeString(align))
 	}
 	fmt.Fprintf(&sb, ` id="%s">`, containerID)
 
@@ -852,7 +962,8 @@ func renderTabs(argsStr, body string, renderMD func(string) string) string {
 		} else {
 			sb.WriteString(`<div class="tab">`)
 		}
-		fmt.Fprintf(&sb, `<a href="#%s">%s</a></div>`, href, header)
+		// 安全审计 2026-08-16：header 来自 <!-- tab xxx --> 注释，作者可控，转义后再输出
+		fmt.Fprintf(&sb, `<a href="#%s">%s</a></div>`, href, html.EscapeString(header))
 	}
 	sb.WriteString(`</div>`)
 
@@ -905,7 +1016,8 @@ func renderTimeline(body string, renderMD func(string) string) string {
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin timeline"`)
 	// tag_plugins.timeline.max_height：限高滚动（空=不限高，现状）
-	if mh := tmpl.CurrentTagPlugins().Timeline.MaxHeight; mh != "" {
+	// 安全审计 2026-08-16：max-height 进 style，走 CSS 数值白名单，非法值丢弃
+	if mh := safeCSSNum(tmpl.CurrentTagPlugins().Timeline.MaxHeight); mh != "" {
 		fmt.Fprintf(&sb, ` style="max-height:%s;overflow-y:auto"`, mh)
 	}
 	sb.WriteString(`>`)
@@ -913,7 +1025,8 @@ func renderTimeline(body string, renderMD func(string) string) string {
 		fmt.Fprintf(&sb, `<div class="timenode" index="%d">`, i)
 		sb.WriteString(`<div class="header">`)
 		if h := strings.TrimSpace(pair.header); h != "" {
-			fmt.Fprintf(&sb, `<span>%s</span>`, h)
+			// 安全审计 2026-08-16：header 来自 <!-- node xxx --> 注释，作者可控，转义后再输出
+			fmt.Fprintf(&sb, `<span>%s</span>`, html.EscapeString(h))
 		}
 		sb.WriteString(`</div>`)
 		rendered := strings.TrimSpace(renderMD(pair.body))
@@ -959,7 +1072,8 @@ func renderGallery(argsStr, body string) string {
 	idx := atomic.AddUint64(&galleryIndex, 1)
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, `<div class="tag-plugin gallery %s-box" size="%s" ratio="%s">`, layoutType, size, ratio)
+	// 安全审计 2026-08-16：size/ratio 用户可控，转义后再拼入属性
+	fmt.Fprintf(&sb, `<div class="tag-plugin gallery %s-box" size="%s" ratio="%s">`, layoutType, html.EscapeString(size), html.EscapeString(ratio))
 
 	for _, line := range strings.Split(body, "\n") {
 		line = strings.TrimSpace(line)
@@ -1008,21 +1122,27 @@ func renderButton(argsStr string) (string, bool) {
 		url = parts[len(parts)-1]
 		text = text + " " + strings.Join(parts[:len(parts)-1], " ")
 	}
+	// 安全审计 2026-08-16：url 用户可控，校验 scheme（拒 javascript:/data:/vbscript: 等），非法不渲染
+	if safeURL(url) == "" {
+		return "", false
+	}
 
 	var sb strings.Builder
 	sb.WriteString(`<a class="tag-plugin colorful button"`)
-	if color := named["color"]; color != "" {
-		fmt.Fprintf(&sb, ` color="%s"`, color)
+	// 安全审计 2026-08-16：color/size 用户可控，白名单/转义后再拼入
+	if color := safeColor(named["color"]); color != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(color))
 	} else if c := tmpl.CurrentTagPlugins().Button.DefaultColor; c != "" {
 		// tag_plugins.button.default_color
-		fmt.Fprintf(&sb, ` color="%s"`, c)
+		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 	}
-	if size := named["size"]; size != "" {
-		fmt.Fprintf(&sb, ` size="%s"`, size)
+	if size := safeClassWord(named["size"]); size != "" {
+		fmt.Fprintf(&sb, ` size="%s"`, html.EscapeString(size))
 	}
 	fmt.Fprintf(&sb, ` title="%s" href="%s">`, html.EscapeString(text), html.EscapeString(url))
 	// icon 暂不渲染 SVG（Stellar 依赖 ctx.utils.icon）
-	fmt.Fprintf(&sb, `<span>%s</span></a>`, text)
+	// 安全审计 2026-08-16：text 用户可控，转义后再输出
+	fmt.Fprintf(&sb, `<span>%s</span></a>`, html.EscapeString(text))
 	return sb.String(), true
 }
 
@@ -1045,11 +1165,12 @@ func renderCheckbox(typ, argsStr string) (string, bool) {
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin colorful checkbox"`)
-	if color := named["color"]; color != "" {
-		fmt.Fprintf(&sb, ` color="%s"`, color)
+	// 安全审计 2026-08-16：color/symbol 用户可控，白名单/转义后再拼入
+	if color := safeColor(named["color"]); color != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(color))
 	}
 	if symbol := named["symbol"]; symbol != "" {
-		fmt.Fprintf(&sb, ` symbol="%s"`, symbol)
+		fmt.Fprintf(&sb, ` symbol="%s"`, html.EscapeString(symbol))
 	}
 	sb.WriteString(`>`)
 	// 对齐原版 checkbox.js：checkbox/radio 共用同一结构，仅 input type 不同
@@ -1057,7 +1178,8 @@ func renderCheckbox(typ, argsStr string) (string, bool) {
 	if checked {
 		sb.WriteString(` checked="true"`)
 	}
-	fmt.Fprintf(&sb, `/><span>%s</span></div>`, text)
+	// 安全审计 2026-08-16：text 用户可控，转义后再输出
+	fmt.Fprintf(&sb, `/><span>%s</span></div>`, html.EscapeString(text))
 	return sb.String(), true
 }
 
@@ -1263,9 +1385,10 @@ func okrResolveStatus(status string, percent int) okrStatus {
 func okrLayoutItem(typ, index, title, note string, st okrStatus, percent int, renderMD func(string) string) string {
 	noteHTML := strings.TrimSpace(renderMD(note))
 	var sb strings.Builder
-	fmt.Fprintf(&sb, `<div class="okr-item %s" id="okr-%s">`, typ, strings.ToLower(index))
-	fmt.Fprintf(&sb, `<div class="okr-left"><span class="title">%s</span></div>`, strings.ToUpper(index))
-	fmt.Fprintf(&sb, `<div class="okr-center"><span class="title">%s</span><div class="note">%s</div></div>`, title, noteHTML)
+	// 安全审计 2026-08-16：index/title 用户可控，转义后再拼入 id 与文本
+	fmt.Fprintf(&sb, `<div class="okr-item %s" id="okr-%s">`, typ, html.EscapeString(strings.ToLower(index)))
+	fmt.Fprintf(&sb, `<div class="okr-left"><span class="title">%s</span></div>`, html.EscapeString(strings.ToUpper(index)))
+	fmt.Fprintf(&sb, `<div class="okr-center"><span class="title">%s</span><div class="note">%s</div></div>`, html.EscapeString(title), noteHTML)
 	fmt.Fprintf(&sb, `<div class="okr-right colorful" color="%s"><div class="labels"><span class="status label">%s</span><span class="status percent">%d%%</span></div><div class="progress"><div class="fill" style="width:%d%%;"></div></div></div>`, st.color, st.label, percent, percent)
 	sb.WriteString(`</div>`)
 	return sb.String()
@@ -1307,8 +1430,11 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin colorful okr"`)
+	// 安全审计 2026-08-16：color 用户可控，白名单后再拼入
 	if oColor != "" {
-		fmt.Fprintf(&sb, ` color="%s"`, oColor)
+		if c := safeColor(oColor); c != "" {
+			fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
+		}
 	}
 	sb.WriteString(`>`)
 	sb.WriteString(okrLayoutItem("o", oIndex, oTitle, oNote, okrResolveStatus(oStatus, oPercent), oPercent, renderMD))
@@ -1320,10 +1446,8 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 // renderQuot 渲染 {% quot el:h2 icon:hashtag text:... %} 为 .tag-plugin.quot 小标题。
 func renderQuot(argsStr string, iconFunc func(string) string) string {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"el", "icon", "prefix", "suffix", "text"}, nil)
-	el := named["el"]
-	if el == "" {
-		el = "p"
-	}
+	// 安全审计 2026-08-16：el 标签名白名单（h1-h6/p/div/blockquote），非法回退 p，禁止任意标签名注入
+	el := safeQuotEl(named["el"])
 	text := named["text"]
 	if text == "" {
 		text = strings.Join(positional, " ")
@@ -1347,6 +1471,8 @@ func renderQuot(argsStr string, iconFunc func(string) string) string {
 	}
 
 	iconHTML := func(key string) string {
+		// 安全审计 2026-08-16：icon key 用户可控，格式白名单后再进入 iconFunc
+		key = safeIconKey(key)
 		if key == "" || iconFunc == nil {
 			return `<span class="empty"></span>`
 		}
@@ -1355,13 +1481,14 @@ func renderQuot(argsStr string, iconFunc func(string) string) string {
 
 	var sb strings.Builder
 	fmt.Fprintf(&sb, `<div class="tag-plugin quot %s">`, el)
+	// 安全审计 2026-08-16：text 用户可控，id 属性与文本均转义后再输出
 	if strings.Contains(el, "h") {
-		fmt.Fprintf(&sb, `<%s class="content" id="%s">`, el, text)
+		fmt.Fprintf(&sb, `<%s class="content" id="%s">`, el, html.EscapeString(text))
 	} else {
 		fmt.Fprintf(&sb, `<%s class="content">`, el)
 	}
 	sb.WriteString(iconHTML(prefixKey))
-	fmt.Fprintf(&sb, `<span class="text">%s</span>`, text)
+	fmt.Fprintf(&sb, `<span class="text">%s</span>`, html.EscapeString(text))
 	sb.WriteString(iconHTML(suffixKey))
 	fmt.Fprintf(&sb, `</%s></div>`, el)
 	return sb.String()
@@ -1374,6 +1501,10 @@ func renderLink(argsStr string) (string, bool) {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"icon", "desc"}, []string{"url", "title"})
 	url := named["url"]
 	if url == "" {
+		return "", false
+	}
+	// 安全审计 2026-08-16：url 用户可控，校验 scheme（拒 javascript:/data:/vbscript: 等），非法不渲染
+	if safeURL(url) == "" {
 		return "", false
 	}
 	title := named["title"]
@@ -1432,11 +1563,12 @@ func renderImage(argsStr string) (string, bool) {
 	}
 	alt := named["alt"]
 
+	// 安全审计 2026-08-16：width/height 走 CSS 数值白名单，非法值丢弃，防 style 注入
 	var style strings.Builder
-	if w := named["width"]; w != "" {
+	if w := safeCSSNum(named["width"]); w != "" {
 		style.WriteString("width:" + w + ";")
 	}
-	if h := named["height"]; h != "" {
+	if h := safeCSSNum(named["height"]); h != "" {
 		style.WriteString("height:" + h + ";")
 	}
 
@@ -1445,13 +1577,14 @@ func renderImage(argsStr string) (string, bool) {
 	// image-bg
 	sb.WriteString(`<div class="image-bg"`)
 	bgStyle := ""
-	if bg := named["bg"]; bg != "" {
+	// 安全审计 2026-08-16：bg 走颜色白名单、padding/ratio 走数值白名单，非法值丢弃
+	if bg := safeColor(named["bg"]); bg != "" {
 		bgStyle += "background:" + bg + ";"
 	}
-	if p := named["padding"]; p != "" {
+	if p := safeCSSNum(named["padding"]); p != "" {
 		bgStyle += "padding:" + p + ";"
 	}
-	if r := named["ratio"]; r != "" {
+	if r := safeCSSRatio(named["ratio"]); r != "" {
 		bgStyle += "aspect-ratio:" + r + ";"
 		if style.Len() > 0 {
 			bgStyle += style.String()
@@ -1478,11 +1611,14 @@ func renderImage(argsStr string) (string, bool) {
 		if dl == "true" {
 			href = src
 		}
-		sb.WriteString(`<a class="image-download blur" style="opacity:0" target="_blank"`)
-		if alt != "" {
-			sb.WriteString(` download="` + html.EscapeString(alt) + `"`)
+		// 安全审计 2026-08-16：download 链接校验 scheme，非法值不渲染下载按钮
+		if safeURL(href) != "" {
+			sb.WriteString(`<a class="image-download blur" style="opacity:0" target="_blank"`)
+			if alt != "" {
+				sb.WriteString(` download="` + html.EscapeString(alt) + `"`)
+			}
+			sb.WriteString(` href="` + html.EscapeString(href) + `"><svg class="icon" style="width: 1em; height: 1em;vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M561.00682908 685.55838913a111.03077546 111.03077546 0 0 1-106.8895062 0L256.23182837 487.72885783a55.96309219 55.96309219 0 0 1 79.13181253-79.18777574L450.70357448 523.88101491V181.55477937a55.96309219 55.96309219 0 0 1 111.92618438 0v344.06109173l117.07478902-117.07478901a55.96309219 55.96309219 0 0 1 79.13181252 79.18777574zM282.81429711 797.1487951h447.70473912a55.96309219 55.96309219 0 0 1 0 111.92618438H282.81429711a55.96309219 55.96309219 0 0 1 0-111.92618438z"></path></svg></a>`)
 		}
-		sb.WriteString(` href="` + html.EscapeString(href) + `"><svg class="icon" style="width: 1em; height: 1em;vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M561.00682908 685.55838913a111.03077546 111.03077546 0 0 1-106.8895062 0L256.23182837 487.72885783a55.96309219 55.96309219 0 0 1 79.13181253-79.18777574L450.70357448 523.88101491V181.55477937a55.96309219 55.96309219 0 0 1 111.92618438 0v344.06109173l117.07478902-117.07478901a55.96309219 55.96309219 0 0 1 79.13181252 79.18777574zM282.81429711 797.1487951h447.70473912a55.96309219 55.96309219 0 0 1 0 111.92618438H282.81429711a55.96309219 55.96309219 0 0 1 0-111.92618438z"></path></svg></a>`)
 	}
 	sb.WriteString(`</div>`)
 	// caption
@@ -1499,8 +1635,9 @@ func renderFolders(argsStr, body string, renderMD func(string) string) string {
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin colorful folders"`)
-	if c := named["color"]; c != "" {
-		fmt.Fprintf(&sb, ` color="%s"`, c)
+	// 安全审计 2026-08-16：color 用户可控，白名单后再拼入
+	if c := safeColor(named["color"]); c != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 	}
 	sb.WriteString(`>`)
 
@@ -1518,16 +1655,17 @@ func renderFolders(argsStr, body string, renderMD func(string) string) string {
 // renderGrid 渲染 {% grid [bg:...] [w:...] [c:...] [gap:...] [br:...] %}...{% endgrid %}。
 func renderGrid(argsStr, body string, renderMD func(string) string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"bg", "w", "c", "gap", "br"}, nil)
-	w := named["w"]
-	c := named["c"]
+	// 安全审计 2026-08-16：w/c/gap/br 走 CSS 数值白名单、bg 走颜色白名单，非法值丢弃
+	w := safeCSSNum(named["w"])
+	c := safeCSSNum(named["c"])
 	if w == "" && c == "" {
 		w = "240px"
 	}
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin grid"`)
-	if bg := named["bg"]; bg != "" {
-		fmt.Fprintf(&sb, ` bg="%s"`, bg)
+	if bg := safeColor(named["bg"]); bg != "" {
+		fmt.Fprintf(&sb, ` bg="%s"`, html.EscapeString(bg))
 	}
 	sb.WriteString(` style="`)
 	if w != "" {
@@ -1535,7 +1673,7 @@ func renderGrid(argsStr, body string, renderMD func(string) string) string {
 	} else if c != "" {
 		fmt.Fprintf(&sb, `grid-template-columns: repeat(%s, 1fr);`, c)
 	}
-	if gap := named["gap"]; gap != "" {
+	if gap := safeCSSNum(named["gap"]); gap != "" {
 		fmt.Fprintf(&sb, `grid-gap:%s;`, gap)
 	}
 	sb.WriteString(`">`)
@@ -1548,7 +1686,7 @@ func renderGrid(argsStr, body string, renderMD func(string) string) string {
 			continue
 		}
 		sb.WriteString(`<div class="cell"`)
-		if br := named["br"]; br != "" {
+		if br := safeCSSNum(named["br"]); br != "" {
 			fmt.Fprintf(&sb, ` style="border-radius:%s;"`, br)
 		}
 		sb.WriteString(`>`)
@@ -1569,11 +1707,12 @@ func renderBox(argsStr, body string, renderMD func(string) string) string {
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin colorful note"`)
-	if c := named["color"]; c != "" {
-		fmt.Fprintf(&sb, ` color="%s"`, c)
+	// 安全审计 2026-08-16：color/child 用户可控，白名单/转义后再拼入
+	if c := safeColor(named["color"]); c != "" {
+		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 	}
 	if ch := named["child"]; ch != "" {
-		fmt.Fprintf(&sb, ` child="%s"`, ch)
+		fmt.Fprintf(&sb, ` child="%s"`, html.EscapeString(ch))
 	}
 	sb.WriteString(`>`)
 	if title != "" {
@@ -1601,7 +1740,12 @@ func renderMark(argsStr string) (string, bool) {
 	if color == "" {
 		color = "yellow"
 	}
-	return fmt.Sprintf(`<mark class="tag-plugin colorful mark" color="%s">%s</mark>`, color, text), true
+	// 安全审计 2026-08-16：color 白名单（非法丢弃该属性）、text 转义后再输出
+	colorAttr := ""
+	if c := safeColor(color); c != "" {
+		colorAttr = fmt.Sprintf(` color="%s"`, html.EscapeString(c))
+	}
+	return fmt.Sprintf(`<mark class="tag-plugin colorful mark"%s>%s</mark>`, colorAttr, html.EscapeString(text)), true
 }
 
 // emojiSources 内置 emoji CDN 映射，对齐原版 _config.yml tag_plugins.emoji。
@@ -1688,13 +1832,18 @@ func renderIcon(argsStr string, iconFunc func(string) string) (string, bool) {
 	if text != "" {
 		sb.WriteString(`<div class="tag-plugin icon-wrap">`)
 	}
-	fmt.Fprintf(&sb, `<span class="tag-plugin icon colorful" color="%s">`, color)
+	// 安全审计 2026-08-16：color 用户可控，白名单后再拼入
+	fmt.Fprintf(&sb, `<span class="tag-plugin icon colorful" color="%s">`, html.EscapeString(safeColor(color)))
+	// 安全审计 2026-08-16：key 用户可控，格式白名单后再进入 iconFunc（非法降级空图标）
 	if iconFunc != nil {
-		sb.WriteString(iconFunc(key))
+		if k := safeIconKey(key); k != "" {
+			sb.WriteString(iconFunc(k))
+		}
 	}
 	sb.WriteString(`</span>`)
 	if text != "" {
-		fmt.Fprintf(&sb, `<span class="text">%s</span></div>`, text)
+		// 安全审计 2026-08-16：text 用户可控，转义后再输出
+		fmt.Fprintf(&sb, `<span class="text">%s</span></div>`, html.EscapeString(text))
 	}
 	return sb.String(), true
 }
@@ -1725,13 +1874,17 @@ func renderHashtag(argsStr string) (string, bool) {
 
 	var sb strings.Builder
 	sb.WriteString(`<a class="tag-plugin colorful hashtag"`)
-	fmt.Fprintf(&sb, ` color="%s"`, color)
+	// 安全审计 2026-08-16：color 白名单后再拼入
+	fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(safeColor(color)))
+	// 安全审计 2026-08-16：href 校验 scheme（拒 javascript: 等），非法丢弃 href；text 转义后再输出
 	if href != "" {
-		fmt.Fprintf(&sb, ` href="%s"`, html.EscapeString(href))
+		if u := safeURL(href); u != "" {
+			fmt.Fprintf(&sb, ` href="%s"`, html.EscapeString(u))
+		}
 	}
 	sb.WriteString(`>`)
 	sb.WriteString(hashtagSVG)
-	fmt.Fprintf(&sb, `<span>%s</span>`, text)
+	fmt.Fprintf(&sb, `<span>%s</span>`, html.EscapeString(text))
 	sb.WriteString(`</a>`)
 	return sb.String(), true
 }
@@ -1873,18 +2026,20 @@ func ghUserFallback(url, username string) string {
 // renderVideo 渲染 {% video src %}，支持 bilibili/youtube 嵌入与本地视频。
 func renderVideo(argsStr string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"type", "bilibili", "youtube", "ratio", "width", "autoplay"}, []string{"src"})
-	width := named["width"]
+	// 安全审计 2026-08-16：width/ratio 进 style，走数值白名单，非法回退默认
+	width := safeCSSNum(named["width"])
 	if width == "" {
 		width = "100%"
 	}
-	ratio := named["ratio"]
+	ratio := safeCSSRatio(named["ratio"])
 	if ratio == "" {
 		ratio = "1.7777777777777777" // 16/9
 	}
 	if bv := named["bilibili"]; bv != "" {
-		autoplay := named["autoplay"]
-		if autoplay == "" {
-			autoplay = "false"
+		// 安全审计 2026-08-16：autoplay 进 iframe URL，白名单 true/false，非法回退 false
+		autoplay := "false"
+		if named["autoplay"] == "true" {
+			autoplay = "true"
 		}
 		return fmt.Sprintf(`<div class="tag-plugin video-player" style="aspect-ratio:%s;max-width:%s;"><iframe src="https://player.bilibili.com/player.html?bvid=%s&autoplay=%s" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe></div>`,
 			ratio, width, html.EscapeString(bv), autoplay)
@@ -1901,8 +2056,9 @@ func renderVideo(argsStr string) string {
 	if typ == "" {
 		typ = "video/mp4"
 	}
+	// 安全审计 2026-08-16：type 用户可控，转义后再拼入属性
 	return fmt.Sprintf(`<div class="tag-plugin video-player" style="max-width:%s;"><video controls preload playsinline webkit-playsinline><source src="%s" type="%s">Your browser does not support the video tag.</video></div>`,
-		width, html.EscapeString(named["src"]), typ)
+		width, html.EscapeString(named["src"]), html.EscapeString(typ))
 }
 
 // renderAudio 渲染 {% audio src %}，支持网易云外链与本地音频。
@@ -1910,7 +2066,8 @@ func renderAudio(argsStr string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"type", "netease", "autoplay"}, []string{"src"})
 	if netease := named["netease"]; netease != "" {
 		typ := named["type"]
-		if typ == "" {
+		// 安全审计 2026-08-16：type 进 iframe URL，白名单纯数字（0/1/2），非法回退 2
+		if typ == "" || safeCSSNum(typ) == "" {
 			typ = "2"
 		}
 		auto := "0"
@@ -1924,8 +2081,9 @@ func renderAudio(argsStr string) string {
 	if typ == "" {
 		typ = "audio/mp3"
 	}
+	// 安全审计 2026-08-16：type 用户可控，转义后再拼入属性
 	return fmt.Sprintf(`<div class="tag-plugin audio"><audio controls preload><source src="%s" type="%s">Your browser does not support the audio tag.</audio></div>`,
-		html.EscapeString(named["src"]), typ)
+		html.EscapeString(named["src"]), html.EscapeString(typ))
 }
 
 // renderCopy 渲染 {% copy text %} / {% copy git user/repo %} 为复制按钮。
@@ -2043,8 +2201,9 @@ func renderMbti(argsStr string) string {
 	}
 	title := typeCode + " · " + typeName
 	sb.WriteString(`<div class="mbti-title">`)
-	if url != "" {
-		sb.WriteString(`<a class="mbti-title-link" href="` + html.EscapeString(url) + `" target="_blank" rel="external nofollow noopener noreferrer">` + html.EscapeString(title) + `</a>`)
+	// 安全审计 2026-08-16：url 校验 scheme（拒 javascript: 等），非法降级为无链接文本
+	if u := safeURL(url); u != "" {
+		sb.WriteString(`<a class="mbti-title-link" href="` + html.EscapeString(u) + `" target="_blank" rel="external nofollow noopener noreferrer">` + html.EscapeString(title) + `</a>`)
 	} else {
 		sb.WriteString(`<span class="mbti-title-text">` + html.EscapeString(title) + `</span>`)
 	}
@@ -2110,7 +2269,8 @@ func renderCopy(argsStr string) string {
 		sb.WriteString(`<span>` + html.EscapeString(prefix) + `</span>`)
 	}
 	sb.WriteString(fmt.Sprintf(`<input class="copy-area" id="%s" value="%s">`, id, html.EscapeString(text)))
-	sb.WriteString(fmt.Sprintf(`<button class="copy-btn" onclick="util.copy(&quot;%s&quot;,&quot;%s&quot;)">`, id, toast))
+	// 安全审计 2026-08-16：toast 配置文案进入 onclick JS 字符串，转义防属性逃逸
+	sb.WriteString(fmt.Sprintf(`<button class="copy-btn" onclick="util.copy(&quot;%s&quot;,&quot;%s&quot;)">`, id, html.EscapeString(toast)))
 	sb.WriteString(`<svg class="icon copy-btn" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M5.75 1a.75.75 0 00-.75.75v3c0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75v-3a.75.75 0 00-.75-.75h-4.5zm.75 3V2.5h3V4h-3zm-2.874-.467a.75.75 0 00-.752-1.298A1.75 1.75 0 002 3.75v9.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0014 13.25v-9.5a1.75 1.75 0 00-.874-1.515.75.75 0 10-.752 1.298.25.25 0 01.126.217v9.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-9.5a.25.25 0 01.126-.217z"></path></svg>`)
 	sb.WriteString(`</button></div>`)
 	return sb.String()
@@ -2325,11 +2485,12 @@ func parseChatCellParams(s string) map[string]string {
 // renderChat 渲染 {% chat device [style:] [title:] [scene:] [me:] %}（文字消息 + 时间提示子集）。
 func renderChat(argsStr, body string, renderMD func(string) string) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"style", "title", "scene", "me", "labelColorStyle"}, []string{"device"})
-	style := named["style"]
+	// 安全审计 2026-08-16：style/scene 拼入 class，走 class 词白名单，非法回退默认
+	style := safeClassWord(named["style"])
 	if style == "" {
 		style = "qq"
 	}
-	scene := named["scene"]
+	scene := safeClassWord(named["scene"])
 	if scene == "" {
 		scene = "group"
 	}
@@ -2374,15 +2535,16 @@ func renderChat(argsStr, body string, renderMD func(string) string) string {
 		sb.WriteString(`<div class="user-avatar"><img lazy src="` + html.EscapeString(u.Avatar) + `"></div>`)
 		sb.WriteString(`<div class="user-main"><div class="header">`)
 		if u.LabelText != "" {
-			textColor := u.LabelTextColor
+			// 安全审计 2026-08-16：textColor/bgColor 拼 style，走颜色白名单，非法回退默认
+			textColor := safeColor(u.LabelTextColor)
 			if textColor == "" {
 				textColor = "white"
 			}
-			bgColor := u.LabelBgColor
+			bgColor := safeColor(u.LabelBgColor)
 			if bgColor == "" {
 				bgColor = "#2196f3"
 			}
-			sb.WriteString(`<span class="label hand-color" style="color:` + textColor + `;background:` + bgColor + `;">` + html.EscapeString(u.LabelText) + `</span>`)
+			sb.WriteString(`<span class="label hand-color" style="color:` + html.EscapeString(textColor) + `;background:` + html.EscapeString(bgColor) + `;">` + html.EscapeString(u.LabelText) + `</span>`)
 		}
 		sb.WriteString(`<span class="name">` + html.EscapeString(u.Name) + `</span></div>`)
 		rendered := strings.ReplaceAll(renderMD(c.params["md"]), "\n", "")
@@ -2417,6 +2579,11 @@ func renderVote(argsStr string, iconFunc func(string) string) string {
 			key = def
 		}
 		if iconFunc == nil {
+			return ""
+		}
+		// 安全审计 2026-08-16：icon key 用户可控，格式白名单后再进入 iconFunc，非法降级为空
+		key = safeIconKey(key)
+		if key == "" {
 			return ""
 		}
 		return iconFunc(key)
@@ -2537,7 +2704,8 @@ func renderInlineLabels(md string) string {
 			return match
 		}
 		tag := parts[1]
-		return fmt.Sprintf(`<%s>%s</%s>`, tag, parts[2], tag)
+		// 安全审计 2026-08-16：text 用户可控，转义后再输出
+		return fmt.Sprintf(`<%s>%s</%s>`, tag, html.EscapeString(parts[2]), tag)
 	})
 	md = reSupSub.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reSupSub.FindStringSubmatch(match)
@@ -2552,10 +2720,11 @@ func renderInlineLabels(md string) string {
 		}
 		var sb strings.Builder
 		fmt.Fprintf(&sb, `<%s class="tag-plugin colorful %s"`, tag, tag)
-		if c := named["color"]; c != "" {
-			fmt.Fprintf(&sb, ` color="%s"`, c)
+		// 安全审计 2026-08-16：color 用户可控，白名单后再拼入；text 转义后再输出
+		if c := safeColor(named["color"]); c != "" {
+			fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 		}
-		fmt.Fprintf(&sb, `>%s</%s>`, text, tag)
+		fmt.Fprintf(&sb, `>%s</%s>`, html.EscapeString(text), tag)
 		return sb.String()
 	})
 	return md
@@ -2593,7 +2762,8 @@ func renderAbout(argsStr, body string, renderMD func(string) string) string {
 	if avatar := named["avatar"]; avatar != "" {
 		sb.WriteString(`<div class="about-header"><div class="avatar">`)
 		fmt.Fprintf(&sb, `<img src="%s"`, html.EscapeString(avatar))
-		if b := named["border"]; b != "" {
+		// 安全审计 2026-08-16：border 进 style，走 CSS 数值白名单，非法值丢弃
+		if b := safeCSSNum(named["border"]); b != "" {
 			fmt.Fprintf(&sb, ` style="border-radius:%s"`, html.EscapeString(b))
 		}
 		if h := named["height"]; h != "" {
@@ -2625,19 +2795,21 @@ func renderReel(argsStr, body string, renderMD func(string) string) string {
 	sb.WriteString(`<div class="tag-plugin reel">`)
 	sb.WriteString(`<div class="content">`)
 	sb.WriteString(`<div class="title">`)
-	sb.WriteString(title) // 布局需要：空 title 也输出容器
+	sb.WriteString(html.EscapeString(title)) // 布局需要：空 title 也输出容器（安全审计 2026-08-16：转义）
 	sb.WriteString(`</div>`)
 	if a := named["author"]; a != "" {
-		fmt.Fprintf(&sb, `<div class="meta"><span>%s</span></div>`, a)
+		// 安全审计 2026-08-16：author 用户可控，转义后再输出
+		fmt.Fprintf(&sb, `<div class="meta"><span>%s</span></div>`, html.EscapeString(a))
 	}
 	sb.WriteString(`<div class="body"><div class="main">`)
 	sb.WriteString(strings.ReplaceAll(renderMD(body), "\n", ""))
 	sb.WriteString(`</div></div>`)
 	if d := named["date"]; d != "" {
-		fmt.Fprintf(&sb, `<div class="date">%s</div>`, d)
+		// 安全审计 2026-08-16：date 用户可控，转义后再输出
+		fmt.Fprintf(&sb, `<div class="date">%s</div>`, html.EscapeString(d))
 	}
 	sb.WriteString(`<div class="footer">`)
-	sb.WriteString(named["footer"]) // 布局需要
+	sb.WriteString(html.EscapeString(named["footer"])) // 布局需要（安全审计 2026-08-16：转义）
 	sb.WriteString(`</div>`)
 	sb.WriteString(`</div></div>`)
 	return sb.String()
@@ -2654,7 +2826,7 @@ func renderPaper(argsStr, body string, renderMD func(string) string) string {
 		sb.WriteString(`<div class="content">`)
 	}
 	sb.WriteString(`<div class="title">`) // 布局需要
-	sb.WriteString(named["title"])
+	sb.WriteString(html.EscapeString(named["title"])) // 安全审计 2026-08-16：title 用户可控，转义后再输出
 	sb.WriteString(`</div>`)
 
 	sb.WriteString(`<div class="body">`)
@@ -2682,7 +2854,8 @@ func renderPaper(argsStr, body string, renderMD func(string) string) string {
 				sb.WriteString(`<div class="line">` + rendered + `</div>`)
 			}
 		case "section":
-			sb.WriteString(`<div class="section"><div class="section-title">` + arg + `</div><div class="section-content">` + rendered + `</div></div>`)
+			// 安全审计 2026-08-16：section 标题来自注释标记，作者可控，转义后再输出
+			sb.WriteString(`<div class="section"><div class="section-title">` + html.EscapeString(arg) + `</div><div class="section-content">` + rendered + `</div></div>`)
 		}
 	}
 	sb.WriteString(`</div>`)
@@ -2691,14 +2864,15 @@ func renderPaper(argsStr, body string, renderMD func(string) string) string {
 	if named["author"] != "" || named["date"] != "" {
 		sb.WriteString(`<div class="author-date">`)
 		if a := named["author"]; a != "" {
-			sb.WriteString(`<span class="author">` + a + `</span>`)
+			// 安全审计 2026-08-16：author/date 用户可控，转义后再输出
+			sb.WriteString(`<span class="author">` + html.EscapeString(a) + `</span>`)
 		}
 		if d := named["date"]; d != "" {
-			sb.WriteString(`<span class="date">` + d + `</span>`)
+			sb.WriteString(`<span class="date">` + html.EscapeString(d) + `</span>`)
 		}
 		sb.WriteString(`</div>`)
 	}
-	sb.WriteString(named["footer"])
+	sb.WriteString(html.EscapeString(named["footer"])) // 安全审计 2026-08-16：footer 用户可控，转义后再输出
 	sb.WriteString(`</div>`)
 	sb.WriteString(`</div></div>`)
 	return sb.String()
@@ -2715,14 +2889,20 @@ func renderNavbar(argsStr string) (string, bool) {
 	sb.WriteString(`<div class="tag-plugin navbar">`)
 	for _, link := range positional {
 		if m := reMDLink.FindStringSubmatch(link); len(m) > 2 {
+			// 安全审计 2026-08-16：href 校验 scheme（拒 javascript: 等）、text 转义后再输出
 			text, href := m[1], m[2]
-			if href == named["active"] {
-				fmt.Fprintf(&sb, `<a class="link active" href="%s">%s</a>`, html.EscapeString(href), text)
+			if u := safeURL(href); u != "" {
+				href = u
 			} else {
-				fmt.Fprintf(&sb, `<a class="link" href="%s">%s</a>`, html.EscapeString(href), text)
+				href = "#"
+			}
+			if href == named["active"] {
+				fmt.Fprintf(&sb, `<a class="link active" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text))
+			} else {
+				fmt.Fprintf(&sb, `<a class="link" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text))
 			}
 		} else {
-			fmt.Fprintf(&sb, `<a class="link" href="#%s">%s</a>`, html.EscapeString(link), link)
+			fmt.Fprintf(&sb, `<a class="link" href="#%s">%s</a>`, html.EscapeString(link), html.EscapeString(link))
 		}
 	}
 	sb.WriteString(`</div>`)
@@ -2744,7 +2924,13 @@ func renderNavbarBlock(argsStr, body string) string {
 		if len(m) < 3 {
 			continue
 		}
+		// 安全审计 2026-08-16：href 校验 scheme（拒 javascript: 等），非法回退锚点
 		text, href := m[1], m[2]
+		if u := safeURL(href); u != "" {
+			href = u
+		} else {
+			href = "#"
+		}
 		if text == named["active"] {
 			fmt.Fprintf(&sb, `<a class="nav-link active" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text))
 		} else {
@@ -2770,11 +2956,14 @@ func renderBanner(argsStr, body string, renderMD func(string) string) string {
 	}
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin banner"`)
-	if bg := named["bg"]; bg != "" {
+	// 安全审计 2026-08-16：bg 进 style url()，校验 scheme 后再转义拼入
+	if bg := safeURL(named["bg"]); bg != "" {
 		fmt.Fprintf(&sb, ` style="background-image:url(%s)"`, html.EscapeString(bg))
 	}
 	sb.WriteString(`>`)
-	if link := named["link"]; link != "" {
+	// 安全审计 2026-08-16：link 校验 scheme（拒 javascript: 等），非法不输出整卡链接
+	link := safeURL(named["link"])
+	if link != "" {
 		fmt.Fprintf(&sb, `<a class="banner-link" href="%s">`, html.EscapeString(link))
 	}
 	sb.WriteString(`<div class="banner-content">`)
@@ -2789,7 +2978,7 @@ func renderBanner(argsStr, body string, renderMD func(string) string) string {
 	}
 	fmt.Fprintf(&sb, `<div class="body fs14">%s</div>`, strings.ReplaceAll(renderMD(body), "\n", ""))
 	sb.WriteString(`</div>`)
-	if named["link"] != "" {
+	if link != "" {
 		sb.WriteString(`</a>`)
 	}
 	sb.WriteString(`</div>`)
@@ -2870,7 +3059,8 @@ func renderFrame(argsStr string) (string, bool) {
 		sb.WriteString(`<div class="frame"></div>`)
 		sb.WriteString(`</div>`)
 		if alt != "" {
-			fmt.Fprintf(&sb, `<span class="image-caption">%s</span>`, alt)
+			// 安全审计 2026-08-16：alt 文本用户可控，转义后再输出
+			fmt.Fprintf(&sb, `<span class="image-caption">%s</span>`, html.EscapeString(alt))
 		}
 		sb.WriteString(`</div>`)
 	}
@@ -2894,7 +3084,8 @@ func renderFrameBlock(argsStr, body string, renderMD func(string) string) (strin
 	}
 	var sb strings.Builder
 	fmt.Fprintf(&sb, `<div class="tag-plugin frame" device="%s"`, html.EscapeString(device))
-	if w := named["width"]; w != "" {
+	// 安全审计 2026-08-16：width 进 style，走 CSS 数值白名单，非法值丢弃
+	if w := safeCSSNum(named["width"]); w != "" {
 		fmt.Fprintf(&sb, ` style="max-width:%s"`, html.EscapeString(w))
 	}
 	sb.WriteString(`>`)
@@ -2930,7 +3121,8 @@ func renderTOCTag(argsStr string) string {
 		sb.WriteString(` open`)
 	}
 	sb.WriteString(`>`)
-	fmt.Fprintf(&sb, `<summary>%s</summary>`, title)
+	// 安全审计 2026-08-16：title 用户可控，转义后再输出
+	fmt.Fprintf(&sb, `<summary>%s</summary>`, html.EscapeString(title))
 	sb.WriteString(`</details></div>`)
 	return sb.String()
 }

@@ -58,12 +58,24 @@ func (s *webServer) registerStaticRoutes(r *gin.Engine) error {
 
 	// 上传附件静态托管（运行时数据，不走 go:embed）
 	// P1-11：SVG 防护——对 .svg 响应加 CSP sandbox，禁止内嵌脚本执行。
+	// 安全审计 2026-08-16：拒绝目录请求——c.File 命中目录时 http.ServeFile 会渲染
+	// stdlib 目录列表，/uploads/ 与 /uploads/2026/ 可枚举全部上传文件。
 	r.GET("/uploads/*filepath", func(c *gin.Context) {
 		fp := c.Param("filepath")
+		clean := filepath.Clean(fp)
+		if clean == "/" || strings.HasSuffix(clean, "/") {
+			c.String(http.StatusNotFound, "404 page not found")
+			return
+		}
+		target := filepath.Join(s.uploadDir, clean)
+		if info, err := os.Stat(target); err != nil || info.IsDir() {
+			c.String(http.StatusNotFound, "404 page not found")
+			return
+		}
 		if strings.HasSuffix(strings.ToLower(fp), ".svg") {
 			c.Header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
 		}
-		c.File(filepath.Join(s.uploadDir, filepath.Clean(fp)))
+		c.File(target)
 	})
 	return nil
 }

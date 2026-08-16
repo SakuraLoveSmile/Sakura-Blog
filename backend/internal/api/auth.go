@@ -120,6 +120,14 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
+	// 安全审计 2026-08-16：console 登录端点拒绝 reader 角色——读者凭据不应换取
+	// blog_admin 会话（否则开放注册账号即可进入全部 authed 组内容写端点）。
+	if normalizeRole(user.Role) == store.RoleReader {
+		h.logLogin(c, user.ID, username, ip, "fail", "password")
+		Fail(c, http.StatusForbidden, "读者账号请从前台登录")
+		return
+	}
+
 	// 检查 TOTP
 	if user != nil && user.TOTPSecret != "" {
 		token := generate2FAToken(user.ID)
@@ -131,7 +139,7 @@ func (h *Handler) login(c *gin.Context) {
 	h.clearLoginFail(ip)
 	h.logLogin(c, user.ID, user.Username, ip, "success", "password")
 	expiry := time.Now().Add(authCookieTTL).Unix()
-	cookie := signAuthCookie(expiry, user.ID, user.AuthSecret)
+	cookie := signAuthCookie(cookieAudAdmin, expiry, user.ID, user.AuthSecret)
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(authCookieName, cookie, int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -169,10 +177,17 @@ func (h *Handler) handle2FA(c *gin.Context) {
 		return
 	}
 
+	// 安全审计 2026-08-16：与 login 一致，reader 不经 console 2FA 链路换 admin cookie。
+	if normalizeRole(user.Role) == store.RoleReader {
+		h.logLogin(c, user.ID, user.Username, c.ClientIP(), "fail", "2fa")
+		Fail(c, http.StatusForbidden, "读者账号请从前台登录")
+		return
+	}
+
 	h.clearLoginFail(c.ClientIP())
 	h.logLogin(c, user.ID, user.Username, c.ClientIP(), "success", "2fa")
 	expiry := time.Now().Add(authCookieTTL).Unix()
-	cookie := signAuthCookie(expiry, user.ID, user.AuthSecret)
+	cookie := signAuthCookie(cookieAudAdmin, expiry, user.ID, user.AuthSecret)
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(authCookieName, cookie, int(authCookieTTL.Seconds()), "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
@@ -322,7 +337,7 @@ func (h *Handler) authCheck(c *gin.Context) {
 		return
 	}
 	if cookie, err := c.Cookie(authCookieName); err == nil {
-		if _, _, _, role, ok := h.validAuthCookie(cookie); ok {
+		if _, _, _, role, ok := h.validAuthCookie(cookie, cookieAudAdmin); ok {
 			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true, "role": role})
 			return
 		}
@@ -342,6 +357,13 @@ func (h *Handler) changePassword(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+
+	// 安全审计 2026-08-16：新密码补最小长度校验（此前可设空密码，与
+	// createUser/resetUserPassword 的 len>=6 约束对齐）。
+	if len(req.New) < minPasswordLen {
+		Fail(c, http.StatusBadRequest, "新密码长度至少 6 位")
 		return
 	}
 

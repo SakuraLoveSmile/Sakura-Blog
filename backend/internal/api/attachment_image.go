@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -19,6 +20,13 @@ const (
 	mainMaxWidth           = 2000       // 主图最大宽度
 	jpegMainQuality        = 80
 	jpegThumbQuality       = 70
+	// 解码炸弹防护（安全审计 2026-08-16）：Decode 前用 DecodeConfig 读声明尺寸，
+	// 超限直接拒绝——Go png/jpeg 解码器按声明尺寸一次性分配像素缓冲，
+	// 几十 KB 的 PNG 声明 50000×50000 即分配 ~10GB 内存打挂进程。
+	maxDecodeWidth  = 30000                      // 单边像素上限
+	maxDecodePixels = 100_000_000                // 总像素上限（1 亿）
+	maxDecodeSide   = int64(maxDecodeWidth)      // 便于比较
+	maxDecodeArea   = int64(maxDecodePixels)     // 便于比较
 )
 
 // imageResult 图像优化结果。
@@ -50,6 +58,27 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 			OutExt:    mimeToExt(mime),
 			Optimized: false,
 		}, nil
+	}
+
+	// 解码炸弹预检（安全审计 2026-08-16）：先 DecodeConfig 读声明尺寸，超限拒绝。
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(src))
+	if err != nil {
+		// 连配置头都解不出来：按原语义透传（后续 Decode 也会失败）
+		return &imageResult{
+			MainData:  src,
+			ThumbData: nil,
+			Width:     0,
+			Height:    0,
+			OutMime:   mime,
+			OutExt:    mimeToExt(mime),
+			Optimized: false,
+		}, nil
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 ||
+		int64(cfg.Width) > maxDecodeSide || int64(cfg.Height) > maxDecodeSide ||
+		int64(cfg.Width)*int64(cfg.Height) > maxDecodeArea {
+		return nil, fmt.Errorf("图片声明尺寸 %dx%d 超限（单边 ≤%d、总像素 ≤%d），疑似解码炸弹",
+			cfg.Width, cfg.Height, maxDecodeWidth, maxDecodePixels)
 	}
 
 	// 解码图像获取尺寸

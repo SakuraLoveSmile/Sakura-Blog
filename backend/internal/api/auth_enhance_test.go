@@ -64,7 +64,7 @@ func TestCookieSlidingRenewal(t *testing.T) {
 	r, _, user, h := authEnhanceEnv(t)
 
 	// 剩余 2 天（< 7/2=3.5 天）→ 应续期
-	old := signAuthCookie(time.Now().Add(2*24*time.Hour).Unix(), user.ID, user.AuthSecret)
+	old := signAuthCookie(cookieAudAdmin, time.Now().Add(2*24*time.Hour).Unix(), user.ID, user.AuthSecret)
 	w := do2FA(r, http.MethodGet, "/api/v1/profile", "", old)
 	if w.Code != http.StatusOK {
 		t.Fatalf("profile with near-expiry cookie: status = %d", w.Code)
@@ -80,14 +80,14 @@ func TestCookieSlidingRenewal(t *testing.T) {
 		t.Fatal("near-expiry cookie should trigger renewal Set-Cookie")
 	}
 	// 新 cookie 应为新格式且过期时间晚于原 cookie
-	if _, _, expiry, _, ok := h.validAuthCookie(renewed); !ok {
+	if _, _, expiry, _, ok := h.validAuthCookie(renewed, cookieAudAdmin); !ok {
 		t.Fatal("renewed cookie should be valid")
 	} else if expiry <= time.Now().Add(2*24*time.Hour).Unix() {
 		t.Errorf("renewed expiry = %d, want later than original %d", expiry, time.Now().Add(2*24*time.Hour).Unix())
 	}
 
 	// 剩余 6 天（> 3.5 天）→ 不续期
-	fresh := signAuthCookie(time.Now().Add(6*24*time.Hour).Unix(), user.ID, user.AuthSecret)
+	fresh := signAuthCookie(cookieAudAdmin, time.Now().Add(6*24*time.Hour).Unix(), user.ID, user.AuthSecret)
 	w2 := do2FA(r, http.MethodGet, "/api/v1/profile", "", fresh)
 	if w2.Code != http.StatusOK {
 		t.Fatalf("profile with fresh cookie: status = %d", w2.Code)

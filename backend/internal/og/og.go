@@ -72,7 +72,9 @@ func NewFromBytes(fontData []byte, cacheDir string) *Generator {
 
 // CachePath 返回指定 slug 的缓存文件路径。
 func (g *Generator) CachePath(slug string) string {
-	return filepath.Join(g.cacheDir, slug+".png")
+	// 安全审计 2026-08-16：Base 防御——slug 来自 URL 参数/DB，入库侧已加字符白名单，
+	// 此处兜底保证任何含路径成分的 slug 都被折叠进缓存目录内。
+	return filepath.Join(g.cacheDir, filepath.Base(slug)+".png")
 }
 
 // Invalidate 删除指定 slug 的缓存文件（文章更新/删除时调用）。

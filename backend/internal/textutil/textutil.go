@@ -3,6 +3,7 @@
 package textutil
 
 import (
+	"net/mail"
 	"regexp"
 	"strings"
 )
@@ -25,4 +26,19 @@ func Truncate(s string, n int) string {
 		return s
 	}
 	return string(r[:n]) + "…"
+}
+
+// ValidEmail 邮箱强校验（安全审计 2026-08-16）：
+// net/mail.ParseAddress 解析 + 只接受裸地址（无显示名/注释）+ 拒绝 CR/LF/空白。
+// 此前评论/注册仅校验"含 @"，含 CRLF 的邮箱可经回复通知流入 To: 头与
+// SMTP Rcpt 命令，构成邮件头注入；所有入库邮箱入口统一走本函数。
+func ValidEmail(s string, maxLen int) bool {
+	if s == "" || len(s) > maxLen {
+		return false
+	}
+	if strings.ContainsAny(s, "\r\n \t") {
+		return false
+	}
+	addr, err := mail.ParseAddress(s)
+	return err == nil && addr != nil && addr.Address == s
 }

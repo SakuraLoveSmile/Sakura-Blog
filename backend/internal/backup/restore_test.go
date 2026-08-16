@@ -42,7 +42,7 @@ func TestRestoreRoundTrip(t *testing.T) {
 	if err := st.Upsert(&store.Post{Slug: "keep", Title: "原标题", Status: store.StatusPublished}); err != nil {
 		t.Fatalf("upsert: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(svc.uploadDir, "a.txt"), []byte("v1"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(svc.uploadDir, "a.png"), []byte("v1"), 0o644); err != nil {
 		t.Fatalf("write upload: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestRestoreRoundTrip(t *testing.T) {
 	if err := st.Upsert(&store.Post{Slug: "extra", Title: "新文章", Status: store.StatusPublished}); err != nil {
 		t.Fatalf("upsert3: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(svc.uploadDir, "a.txt"), []byte("v2"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(svc.uploadDir, "a.png"), []byte("v2"), 0o644); err != nil {
 		t.Fatalf("rewrite upload: %v", err)
 	}
 
@@ -87,7 +87,7 @@ func TestRestoreRoundTrip(t *testing.T) {
 		t.Fatalf("extra post should be gone after restore")
 	}
 	// 附件内容回退
-	if data, _ := os.ReadFile(filepath.Join(svc.uploadDir, "a.txt")); string(data) != "v1" {
+	if data, _ := os.ReadFile(filepath.Join(svc.uploadDir, "a.png")); string(data) != "v1" {
 		t.Fatalf("upload content = %q, want v1", data)
 	}
 	// 兜底快照存在
@@ -117,6 +117,35 @@ func TestRestoreRejectsZipSlip(t *testing.T) {
 
 	if err := svc.Restore(buf.Bytes(), false); err == nil || !strings.Contains(err.Error(), "path traversal") {
 		t.Fatalf("expect path traversal rejection, got %v", err)
+	}
+}
+
+// TestRestoreRejectsNonImageUploads 安全审计 2026-08-16：恢复包 uploads/ 条目
+// 仅放行图片扩展名——/uploads 同源直读，植入 .html/.js 即存储型 XSS/后门面。
+func TestRestoreRejectsNonImageUploads(t *testing.T) {
+	svc, st, dir := newTestService(t)
+	// 真实 DB 快照作 blog.db（伪字节会在 attach 阶段先行失败，到不了 uploads 校验）
+	snap := filepath.Join(dir, "src.db")
+	if err := st.BackupTo(snap); err != nil {
+		t.Fatalf("backup to: %v", err)
+	}
+	dbBytes, err := os.ReadFile(snap)
+	if err != nil {
+		t.Fatalf("read snapshot: %v", err)
+	}
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, _ := zw.Create("blog.db")
+	w.Write(dbBytes) //nolint:errcheck
+	w2, _ := zw.Create("uploads/evil.html")
+	w2.Write([]byte("<script>alert(1)</script>")) //nolint:errcheck
+	zw.Close()
+
+	if err := svc.Restore(buf.Bytes(), false); err == nil || !strings.Contains(err.Error(), "图片附件扩展名") {
+		t.Fatalf("expect non-image uploads rejection, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(svc.uploadDir, "evil.html")); !os.IsNotExist(err) {
+		t.Fatalf("evil.html should not be written, stat err = %v", err)
 	}
 }
 

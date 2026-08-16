@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	tmpl "blog/internal/template"
 )
@@ -16,6 +17,9 @@ func newTestAggregator(t *testing.T) (*Aggregator, *httptest.Server) {
 	sitePtr := &atomic.Pointer[tmpl.Site]{}
 	sitePtr.Store(&tmpl.Site{})
 	a := New(sitePtr)
+	// 安全审计 2026-08-16：生产 client 走 safefetch（拒绝环回/私网），单测的
+	// httptest 服务监听 127.0.0.1，注入普通 client 验证 RSS 解析逻辑。
+	a.client = &http.Client{Timeout: 5 * time.Second}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "rss") {
 			w.Write([]byte(rssSample))

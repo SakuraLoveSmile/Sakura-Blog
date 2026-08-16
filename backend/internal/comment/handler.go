@@ -23,6 +23,7 @@ import (
 
 	"blog/internal/notify"
 	"blog/internal/store"
+	"blog/internal/textutil"
 	tmpl "blog/internal/template"
 )
 
@@ -31,6 +32,7 @@ const (
 	maxNickLen    = 32               // 昵称最大字符数（rune）
 	maxContentLen = 2000             // 内容最大字符数（rune）
 	maxLinkLen    = 200              // 网站链接最大字符数
+	maxEmailLen   = 254              // 邮箱最大长度（RFC 5321 上限）
 	rateLimit     = 60 * time.Second // IP 限流：同 IP 60 秒 1 条
 	ipHashSalt    = "blog-comment-like-v1"
 )
@@ -171,7 +173,9 @@ func (h *Handler) boostMeta(c *gin.Context, req boostReq) (string, store.BoostMe
 	if utf8.RuneCountInString(req.Nick) > maxNickLen {
 		return "", store.BoostMeta{}, 0, errors.New("昵称过长（最多 32 字）")
 	}
-	if req.Email == "" || !strings.Contains(req.Email, "@") {
+	// 安全审计 2026-08-16：net/mail 强校验替代"含 @ 即可"（拒 CRLF/控制字符）——
+	// 该邮箱会经回复通知拼入 To: 头与 SMTP Rcpt 命令，弱校验构成邮件头注入。
+	if !textutil.ValidEmail(req.Email, maxEmailLen) {
 		return "", store.BoostMeta{}, 0, errors.New("邮箱格式不正确")
 	}
 	return identity, store.BoostMeta{Nick: req.Nick, Email: req.Email, IP: ip, IPHash: ipHash}, 0, nil
@@ -358,7 +362,8 @@ func (h *Handler) create(c *gin.Context) {
 		h.reject(c, "昵称过长（最多 32 字）")
 		return
 	}
-	if req.Email == "" || !strings.Contains(req.Email, "@") {
+	// 安全审计 2026-08-16：net/mail 强校验（拒 CRLF），防回复通知 To: 头注入。
+	if !textutil.ValidEmail(req.Email, maxEmailLen) {
 		h.reject(c, "邮箱格式不正确")
 		return
 	}

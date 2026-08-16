@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"blog/internal/linkwatch"
 	"blog/internal/store"
@@ -21,7 +22,10 @@ func TestSnapshotLinkAPI(t *testing.T) {
 	defer provider.Close()
 	site := h.site.Load()
 	site.Friends.SnapshotProvider = provider.URL + "?url={url}"
-	h.linkWatch = linkwatch.New(st, h.site, filepath.Join(t.TempDir(), "uploads"))
+	// 安全审计 2026-08-16：生产 watcher 的截图客户端走 safefetch（拒绝环回），
+	// 测试对 127.0.0.1 httptest 服务验证截图落盘逻辑，注入普通 client。
+	h.linkWatch = linkwatch.NewWithClients(st, h.site, filepath.Join(t.TempDir(), "uploads"),
+		&http.Client{Timeout: 3 * time.Second}, &http.Client{Timeout: 3 * time.Second})
 	link := &store.Link{Name: "example", URL: "https://example.com"}
 	if _, err := st.CreateLink(link); err != nil {
 		t.Fatal(err)

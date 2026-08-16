@@ -100,18 +100,31 @@ func TestNormalizeLinkURL(t *testing.T) {
 }
 
 func TestImportLinksNoGHClient(t *testing.T) {
+	// 安全审计 2026-08-16：links/import 收进 sys 组——无密码站点不再历史放行（403）；
+	// 503（未装配 gh client）改由启用密码 + admin cookie 的路径覆盖。
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
+	site := &tmpl.Site{}
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/links/import", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
-	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("expected 503 without gh client, got %d", w.Code)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("passwordless site should lock sys endpoints (403), got %d", w.Code)
+	}
+
+	enableAdmin(t, st, site, "secret")
+	admin, err := st.GetUserByUsername("admin")
+	if err != nil || admin == nil {
+		t.Fatalf("get admin: %v", err)
+	}
+	w2 := do2FA(r, http.MethodPost, "/api/v1/links/import", `{}`, authCookie(admin))
+	if w2.Code != http.StatusServiceUnavailable {
+		t.Errorf("admin with no gh client should get 503, got %d body=%s", w2.Code, w2.Body.String())
 	}
 }
 

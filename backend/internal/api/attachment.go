@@ -143,7 +143,13 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 
 	if strings.HasPrefix(mime, "image/") {
 		res, optErr := optimizeImage(srcData, mime)
-		if optErr == nil && res != nil {
+		if optErr != nil {
+			// 安全审计 2026-08-16：解码炸弹等硬错误直接拒绝上传（此前会静默透传原文，
+			// 恶意超大声明尺寸图片会原样落盘并流传到后续任何解码方）。
+			Fail(c, http.StatusBadRequest, optErr.Error())
+			return
+		}
+		if res != nil {
 			mainData = res.MainData
 			outMime = res.OutMime
 			outExt = res.OutExt

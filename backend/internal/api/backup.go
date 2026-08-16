@@ -16,7 +16,11 @@ const maxRestoreSize = 500 << 20
 
 // restoreBackup POST /api/v1/backup/restore：上传全量备份 zip 一键还原（Spec 41）。
 // 表单字段 file=zip，strict=true 时先清空 uploads 再解包。
+// 安全审计 2026-08-16：FormFile 前先套 http.MaxBytesReader——此前 ParseMultipartForm
+// 会把超限请求体整体解析（超出内存阈值部分落盘临时文件）后 header.Size 检查才生效，
+// 认证用户可持续 stream 超大 multipart 体耗尽临时目录磁盘。
 func (h *Handler) restoreBackup(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxRestoreSize+64<<10)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "缺少上传文件（字段 file）")
@@ -85,7 +89,10 @@ func (h *Handler) exportPostsMarkdown(c *gin.Context) {
 }
 
 // importPostsMarkdown POST /api/v1/backup/import/markdown：上传 .md / .zip，按 slug UPSERT 导入文章。
+// 安全审计 2026-08-16：同 restoreBackup，FormFile 前套 MaxBytesReader（Spec 61 阶段 3
+// 在附件/评论上传补齐了该防护，本端点当时遗漏）。
 func (h *Handler) importPostsMarkdown(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxImportSize+64<<10)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "缺少上传文件（字段 file）")

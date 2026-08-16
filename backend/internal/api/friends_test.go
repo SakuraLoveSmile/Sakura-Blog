@@ -5,16 +5,24 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"blog/internal/linkwatch"
 	"blog/internal/store"
 )
+
+// plainProbe 测试用普通 client 的探测（httptest 服务监听 127.0.0.1，会被生产
+// safefetch 客户端的环回黑名单拒绝；判定逻辑用普通 client 验证，黑名单行为另行断言）。
+func plainProbe(u string) (bool, int) {
+	return linkwatch.ProbeURLWithClient(&http.Client{Timeout: 3 * time.Second}, u)
+}
 
 func TestProbeURLReachable(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
-	ok, status := probeURL(srv.URL)
+	ok, status := plainProbe(srv.URL)
 	if !ok || status != 200 {
 		t.Fatalf("expected reachable 200, got ok=%v status=%d", ok, status)
 	}
@@ -25,7 +33,7 @@ func TestProbeURL404(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
-	ok, status := probeURL(srv.URL)
+	ok, status := plainProbe(srv.URL)
 	if ok || status != 404 {
 		t.Fatalf("expected unreachable 404, got ok=%v status=%d", ok, status)
 	}
@@ -33,9 +41,22 @@ func TestProbeURL404(t *testing.T) {
 
 func TestProbeURLNetworkError(t *testing.T) {
 	// 未监听的地址 → 网络错误，状态码 0
-	ok, status := probeURL("http://127.0.0.1:1")
+	ok, status := plainProbe("http://127.0.0.1:1")
 	if ok || status != 0 {
 		t.Fatalf("expected network error (ok=false status=0), got ok=%v status=%d", ok, status)
+	}
+}
+
+// TestProbeURLRejectsLoopback 安全审计 2026-08-16 回归：生产探测客户端（safefetch）
+// 必须拒绝环回/私网目标——links 表 URL 可间接注入，放行即内网探测 SSRF。
+func TestProbeURLRejectsLoopback(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	ok, status := probeURL(srv.URL) // 生产实现：linkwatch.ProbeURL（safefetch 加固）
+	if ok || status != 0 {
+		t.Fatalf("guarded probe should refuse loopback target, got ok=%v status=%d", ok, status)
 	}
 }
 
@@ -44,6 +65,12 @@ func TestProbeURLNetworkError(t *testing.T) {
 func TestCheckLinksAutoExpiredLabels(t *testing.T) {
 	r, st, user, _ := newFullEnv(t)
 	cookie := authCookie(user)
+
+	// 安全审计 2026-08-16：checkLinks 生产探测走 safefetch（拒绝环回），测试针对
+	// 127.0.0.1 httptest 服务验证判定/打标逻辑，注入普通 client 版本。
+	orig := probeURL
+	probeURL = plainProbe
+	defer func() { probeURL = orig }()
 
 	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

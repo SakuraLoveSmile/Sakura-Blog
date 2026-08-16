@@ -55,7 +55,10 @@ func TestRunOncePersistsStatusAndSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	watcher := New(st, sitePtr, filepath.Join(t.TempDir(), "uploads"))
+	// 安全审计 2026-08-16：生产 client 走 safefetch（拒绝环回），单测对
+	// httptest 服务验证探测/截图逻辑，注入普通 client。
+	watcher := NewWithClients(st, sitePtr, filepath.Join(t.TempDir(), "uploads"),
+		&http.Client{Timeout: 3 * time.Second}, &http.Client{Timeout: 3 * time.Second})
 	if err := watcher.RunOnce(); err != nil {
 		t.Fatal(err)
 	}

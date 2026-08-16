@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
+	"blog/internal/safefetch"
 )
 
 // AI 属性生成代理（Spec 30）：Console 编辑器"AI 属性生成"弹窗的后端。
@@ -317,6 +318,7 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 // validateGuestAIEndpoint 校验读者提供的端点：仅 https，且域名解析后不得落在私网/环回/链路本地段（SSRF 防护）。
 // 返回解析所得的全部公网 IP，供后续 DialContext 固定拨号（封堵 TOCTOU 重绑定）。
 // 私网命中返回 errPrivateHost（handler 映射 403），其余格式问题 400。
+// 安全审计 2026-08-16：黑名单对齐 safefetch.ForbiddenIP（补 0.0.0.0/8、CGNAT 100.64/10、NAT64）。
 func validateGuestAIEndpoint(endpoint string) ([]net.IP, error) {
 	u, err := url.Parse(strings.TrimSpace(endpoint))
 	if err != nil || u.Host == "" {
@@ -330,7 +332,7 @@ func validateGuestAIEndpoint(endpoint string) ([]net.IP, error) {
 		return nil, errors.New("域名无法解析")
 	}
 	for _, ip := range ips {
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+		if safefetch.ForbiddenIP(ip) {
 			return nil, errPrivateHost
 		}
 	}

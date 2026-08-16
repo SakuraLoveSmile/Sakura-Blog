@@ -212,9 +212,9 @@ func applyExpiredLabels(st *store.Store, links []*store.Link, results []linkChec
 }
 
 // probeURL HEAD 探测（失败回退 GET），返回 (可达, HTTP 状态码)；2xx/3xx 视为可达，网络错误状态码为 0。
-func probeURL(url string) (bool, int) {
-	return linkwatch.ProbeURL(url)
-}
+// var 形式便于测试注入：生产实现走 linkwatch.ProbeURL（safefetch 加固，拒绝环回/私网），
+// 单测对 127.0.0.1 httptest 服务验证判定逻辑时替换为普通 client 版本。
+var probeURL = linkwatch.ProbeURL
 
 // snapshotLink POST /api/v1/links/:id/snapshot：立即抓取单条友链截图。
 func (h *Handler) snapshotLink(c *gin.Context) {

@@ -8,6 +8,7 @@ package search
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"strings"
 	"unicode"
 )
@@ -197,8 +198,12 @@ func buildMatch(q string) string {
 }
 
 // renderSnippet 合并 CJK 间的切分空格，并把高亮占位符替换成前台样式 span。
+// 安全审计 2026-08-16：FTS snippet() 返回原始文本（索引内容仅 StripHTML 去标签，
+// 未闭合片段如 `<img src=x onerror=…` 会残留），替换占位符前先整体 HTML 转义，
+// 对齐管理端 api/search.go highlightTerms 的口径，防前端 innerHTML 注入。
 func renderSnippet(s string) string {
 	s = joinCJK(s)
+	s = html.EscapeString(s)
 	s = strings.ReplaceAll(s, hlOpen, `<span class="search-keyword">`)
 	s = strings.ReplaceAll(s, hlClose, `</span>`)
 	return s

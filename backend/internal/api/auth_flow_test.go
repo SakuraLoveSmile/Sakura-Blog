@@ -121,8 +121,9 @@ func TestLoginNoUsernameUsesAdminUser(t *testing.T) {
 	if cookie == "" {
 		t.Fatal("login should set auth cookie")
 	}
-	if len(strings.Split(cookie, ".")) != 3 {
-		t.Fatalf("cookie should be new format (3 segments), got %q", cookie)
+	// 安全审计 2026-08-16：cookie 升级为 4 段（aud.expiry.userID.sig）
+	if len(strings.Split(cookie, ".")) != 4 {
+		t.Fatalf("cookie should be new format (4 segments), got %q", cookie)
 	}
 	// 新格式 cookie 可访问受保护接口
 	w = do2FA(r, http.MethodGet, "/api/v1/profile", "", cookie)

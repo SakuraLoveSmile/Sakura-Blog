@@ -210,6 +210,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 }
 
 // handlePostUnlock 文章密码解锁：口令比对成功签 HMAC cookie 后回跳文章页。
+// 安全审计 2026-08-16：补 IP+slug 维度限流（5 次失败/5 分钟），防在线爆破。
 func (s *webServer) handlePostUnlock(c *gin.Context) {
 	slug := c.Param("slug")
 	p, err := s.st.GetPublishedBySlug(slug)
@@ -217,34 +218,46 @@ func (s *webServer) handlePostUnlock(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/post/"+slug)
 		return
 	}
-	input := c.PostForm("password")
-	if subtle.ConstantTimeCompare([]byte(input), []byte(p.Password)) != 1 {
-		data := &tmpl.ViewData{
-			Site: s.site.Load(),
-			Page: &tmpl.Page{
-				Title:       p.Title,
-				Slug:        p.Slug,
-				Layout:      "post-password",
-				Lang:        "zh-CN",
-				MenuID:      "post",
-				Description: "密码错误，请重试",
-			},
-		}
-		s.fillSidebar(data)
-		s.fillSEO(data, c)
-		html, err := s.engine.Render("layout/base", data)
-		if err != nil {
-			log.Printf("render: %v", err)
-			s.render500(c)
-			return
-		}
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	rlKey := c.ClientIP() + "|" + slug
+	if postPWBlocked(rlKey) {
+		s.renderPostPWPage(c, p, "尝试次数过多，请稍后再试")
 		return
 	}
+	input := c.PostForm("password")
+	if subtle.ConstantTimeCompare([]byte(input), []byte(p.Password)) != 1 {
+		postPWRecordFail(rlKey)
+		s.renderPostPWPage(c, p, "密码错误，请重试")
+		return
+	}
+	postPWClear(rlKey)
 	expiry := time.Now().Add(postPWCookieTTL).Unix()
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(postPWCookieName(slug), signPostPWCookie(slug, p.Password, expiry), int(postPWCookieTTL.Seconds()), "/", "", s.cookieSecureFor(c), true)
 	c.Redirect(http.StatusFound, "/post/"+slug)
+}
+
+// renderPostPWPage 渲染口令输入页（解锁失败/限流共用）。
+func (s *webServer) renderPostPWPage(c *gin.Context, p *store.Post, message string) {
+	data := &tmpl.ViewData{
+		Site: s.site.Load(),
+		Page: &tmpl.Page{
+			Title:       p.Title,
+			Slug:        p.Slug,
+			Layout:      "post-password",
+			Lang:        "zh-CN",
+			MenuID:      "post",
+			Description: message,
+		},
+	}
+	s.fillSidebar(data)
+	s.fillSEO(data, c)
+	html, err := s.engine.Render("layout/base", data)
+	if err != nil {
+		log.Printf("render: %v", err)
+		s.render500(c)
+		return
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 }
 
 // handleSharePreview 分享链接预览：token 换文章（published/draft），带过期检查与预览提示条。

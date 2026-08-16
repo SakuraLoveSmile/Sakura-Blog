@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"blog/internal/config"
+	"blog/internal/safefetch"
 	"blog/internal/store"
 	tmpl "blog/internal/template"
 )
@@ -43,13 +45,24 @@ type Watcher struct {
 }
 
 // New creates a watcher. Configuration is read from site on every cycle.
+// 安全审计 2026-08-16：探测/截图客户端改用 safefetch（SSRF 加固）——links 表 URL
+// 可经 GitHub issue 间接注入，默认 client 可直捣内网/云元数据；探测以 2xx-3xx 判活，
+// 不跟随重定向（30x 本身即存活信号），封堵 302 跳内网。
 func New(st *store.Store, site *atomic.Pointer[tmpl.Site], uploadDir string) *Watcher {
+	return NewWithClients(st, site, uploadDir,
+		safefetch.New(safefetch.Options{Timeout: 8 * time.Second}),
+		safefetch.New(safefetch.Options{Timeout: 15 * time.Second}))
+}
+
+// NewWithClients 以显式 client 构造 watcher（测试注入用：单测的 httptest 服务监听
+// 127.0.0.1，会被生产 safefetch 客户端的环回黑名单拒绝，测试用普通 client 验证逻辑）。
+func NewWithClients(st *store.Store, site *atomic.Pointer[tmpl.Site], uploadDir string, probe, snapshot *http.Client) *Watcher {
 	return &Watcher{
 		store:     st,
 		site:      site,
 		uploadDir: uploadDir,
-		probe:     &http.Client{Timeout: 8 * time.Second},
-		snapshot:  &http.Client{Timeout: 15 * time.Second},
+		probe:     probe,
+		snapshot:  snapshot,
 		sem:       make(chan struct{}, 10),
 	}
 }
@@ -165,7 +178,10 @@ func (w *Watcher) capture(link *store.Link, provider string) (string, error) {
 	if !strings.Contains(provider, "{url}") {
 		return "", fmt.Errorf("snapshot provider must contain {url}")
 	}
-	providerURL := strings.ReplaceAll(provider, "{url}", link.URL)
+	// 安全审计 2026-08-16：{url} 占位替换前做 QueryEscape——link.URL 未转义时其
+	// ?/#/../ 片段可改写 provider 请求的 path/query。快照客户端已换 safefetch，
+	// 拨号层校验覆盖 provider 与注入后的最终目标。
+	providerURL := strings.ReplaceAll(provider, "{url}", url.QueryEscape(link.URL))
 	resp, err := w.snapshot.Get(providerURL)
 	if err != nil {
 		return "", err
@@ -245,8 +261,9 @@ func snapshotExpired(link *store.Link, uploadDir string, interval time.Duration)
 
 // ProbeURL checks a friend URL with HEAD and falls back to GET for servers
 // that reject HEAD. 2xx and 3xx are considered reachable.
+// 安全审计 2026-08-16：默认走 safefetch 客户端（SSRF 加固，不跟随重定向）。
 func ProbeURL(url string) (bool, int) {
-	return ProbeURLWithClient(&http.Client{Timeout: 8 * time.Second}, url)
+	return ProbeURLWithClient(safefetch.New(safefetch.Options{Timeout: 8 * time.Second}), url)
 }
 
 func ProbeURLWithClient(client *http.Client, url string) (bool, int) {

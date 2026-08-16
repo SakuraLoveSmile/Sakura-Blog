@@ -104,6 +104,12 @@ func statusText(s string) string {
 
 // send 发送单封邮件。465 端口走隐式 TLS（QQ/163 常用），其余端口走 STARTTLS（net/smtp 默认）。
 func (h *Handler) send(to, subject, body string) {
+	// 安全审计 2026-08-16：发送端防御性拒绝含 CR/LF 的收件地址——
+	// 该值会拼入 To: 头并作为 Rcpt 命令参数，历史库存量数据仍可能携带 CRLF。
+	if strings.ContainsAny(to, "\r\n") {
+		log.Printf("comment notify: refuse mail to address with CR/LF: %q", to)
+		return
+	}
 	n := h.site.Load().Comments.Notify
 	from := n.From
 	if from == "" {

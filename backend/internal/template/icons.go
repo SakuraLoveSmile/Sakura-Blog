@@ -2,6 +2,7 @@ package template
 
 import (
 	"bufio"
+	"html"
 	_ "embed"
 	"fmt"
 	"io"
@@ -74,7 +75,9 @@ func (r *IconRegistry) Get(key string) string {
 	if svg, ok := r.icon[key]; ok {
 		return svg
 	}
-	return fmt.Sprintf(`<span class="icon-missing" data-icon="%s"></span>`, key)
+	// 安全审计 2026-08-16：key 可来自 {% icon key %} shortcode（内容作者可控），
+	// 未命中白名单时进入本兜底分支，属性值须转义防注入。
+	return fmt.Sprintf(`<span class="icon-missing" data-icon="%s"></span>`, html.EscapeString(key))
 }
 
 // Has 判断 key 是否存在。

@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/safefetch"
 	tmpl "blog/internal/template"
 )
 
@@ -70,10 +71,13 @@ type Aggregator struct {
 }
 
 // New 从站点配置构建聚合器，并用配置初始化缓存（此时 posts 为空，RSS 抓取后填充）。
+// 安全审计 2026-08-16：抓取客户端改用 safefetch（SSRF 加固）——rss URL 来自 links
+// 表（作者可写/GitHub issue 可间接注入），且抓取内容会经公开端点回显，属非盲 SSRF；
+// 允许最多 5 跳重定向（http→https 订阅源跳转常见），每跳均经拨号层校验。
 func New(site *atomic.Pointer[tmpl.Site]) *Aggregator {
 	a := &Aggregator{
 		site:   site,
-		client: &http.Client{Timeout: fetchTimeout},
+		client: safefetch.New(safefetch.Options{Timeout: fetchTimeout, MaxRedirects: 5}),
 	}
 	a.cache = a.buildBase()
 	return a

@@ -41,9 +41,9 @@ func new2FATestEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User) {
 	return r, st, user
 }
 
-// authCookie 为测试用户签发有效签名 cookie。
+// authCookie 为测试用户签发有效签名 cookie（admin audience，安全审计 2026-08-16 起 4 段格式）。
 func authCookie(user *store.User) string {
-	return signAuthCookie(time.Now().Add(authCookieTTL).Unix(), user.ID, user.AuthSecret)
+	return signAuthCookie(cookieAudAdmin, time.Now().Add(authCookieTTL).Unix(), user.ID, user.AuthSecret)
 }
 
 // do2FA 发起带 cookie 的 JSON 请求，返回 recorder。

@@ -3,7 +3,9 @@ package github
 import (
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +32,17 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.GET("/api/gh/widget/issues", h.widgetIssues)
 }
 
+// ghNameRe GitHub owner/repo/username 字符白名单（安全审计 2026-08-16）：
+// 此前 ?repo=a/../../users/x 可构造 api.github.com 内路径穿越（host 固定无内网
+// 风险，但可探测任意 API 端点形状并携带 PAT 请求）。GitHub 标识符字符集：
+// 字母数字与 - . _。
+var ghNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
+
+// validGHName 校验 GitHub 标识符（owner/username/repo 名）。
+func validGHName(s string) bool {
+	return s != "" && len(s) <= 100 && ghNameRe.MatchString(s) && !strings.Contains(s, "..")
+}
+
 // repoInfo 返回仓库裁剪元数据 JSON。
 // GET /api/gh/repo?repo=user/name
 func (h *Handler) repoInfo(c *gin.Context) {
@@ -39,7 +52,7 @@ func (h *Handler) repoInfo(c *gin.Context) {
 		return
 	}
 	owner, name := splitRepo(repo)
-	if owner == "" || name == "" {
+	if !validGHName(owner) || !validGHName(name) {
 		c.String(http.StatusBadRequest, "invalid repo format, expected user/name")
 		return
 	}
@@ -63,6 +76,7 @@ func splitRepo(s string) (string, string) {
 }
 
 // repoParam 解析并校验 repo 查询参数，非法时写 400 并返回 ok=false。
+// 安全审计 2026-08-16：owner/name 走 ghNameRe 白名单（防路径穿越注入）。
 func repoParam(c *gin.Context) (owner, name string, ok bool) {
 	repo := c.Query("repo")
 	if repo == "" {
@@ -70,7 +84,7 @@ func repoParam(c *gin.Context) (owner, name string, ok bool) {
 		return "", "", false
 	}
 	owner, name = splitRepo(repo)
-	if owner == "" || name == "" {
+	if !validGHName(owner) || !validGHName(name) {
 		c.String(http.StatusBadRequest, "invalid repo format, expected user/name")
 		return "", "", false
 	}
@@ -102,8 +116,8 @@ func (h *Handler) widgetRepo(c *gin.Context) {
 // GET /api/gh/widget/user?username=xxx
 func (h *Handler) widgetUser(c *gin.Context) {
 	username := c.Query("username")
-	if username == "" {
-		c.String(http.StatusBadRequest, "missing username param")
+	if !validGHName(username) {
+		c.String(http.StatusBadRequest, "missing or invalid username param")
 		return
 	}
 	info, err := h.client.GetUser(username)

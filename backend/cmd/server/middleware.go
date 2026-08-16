@@ -92,6 +92,13 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 			log.Printf("set trusted proxies: %v", err)
 		}
 		r.ForwardedByClientIP = true
+	} else {
+		// 安全审计 2026-08-16：未配置 trusted_proxy 时显式清空信任列表——gin 默认
+		// 信任 0.0.0.0/0+::/0，X-Forwarded-For 可伪造 ClientIP，绕过登录/评论/
+		// guest AI 的全部 per-IP 限流。清空后仅认 RemoteAddr（直连场景正确语义）。
+		if err := r.SetTrustedProxies(nil); err != nil {
+			log.Printf("clear trusted proxies: %v", err)
+		}
 	}
 
 	// P2-18：multipart 内存上限——跟随 max_upload_mb，防止超大表单解析撑爆内存（超出部分落临时文件）。

@@ -382,7 +382,9 @@ func (s *Service) runAutoBackup() {
 	}
 	name := "blog-backup-" + time.Now().Format("20060102-150405") + ".zip"
 	path := filepath.Join(s.backupDir, name)
-	f, err := os.Create(path)
+	// 安全审计 2026-08-16：备份 zip 含全库凭据（bcrypt/auth_secret/TOTP 种子/PAT 哈希/
+	// 明文文章口令/site.yml），统一 0600 落盘（此前 os.Create 默认 0644，同机其他用户可读）。
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		log.Printf("auto backup: create %s: %v", path, err)
 		return

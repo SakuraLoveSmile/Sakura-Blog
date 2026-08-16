@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -270,6 +271,12 @@ func (h *Handler) createPost(c *gin.Context) {
 	if slugVal == "" {
 		slugVal = h.ensureUniqueSlug(generateSlug(req.Title))
 		req.Slug = slugVal
+	} else if strings.ContainsAny(slugVal, "/\\.") || slugVal != filepath.Base(filepath.FromSlash(slugVal)) {
+		// 安全审计 2026-08-16：显式 slug 此前不校验字符集——含 ../ 的 slug 会随
+		// OG 缓存写入（CachePath 直拼）落到缓存目录外。自动生成路径走 reNonSlugChar
+		// 已天然安全，这里补用户显式指定路径的白名单校验。
+		Fail(c, http.StatusBadRequest, "slug 只允许字母/数字/连字符，且不含路径分隔符")
+		return
 	} else if existing, _ := h.store.GetBySlug(slugVal); existing != nil {
 		Fail(c, http.StatusConflict, "slug 已存在: "+slugVal)
 		return
@@ -320,6 +327,11 @@ func (h *Handler) updatePost(c *gin.Context) {
 	newSlug := strings.TrimSpace(req.Slug)
 	if newSlug == "" {
 		newSlug = slug
+	}
+	// 安全审计 2026-08-16：显式 slug 补路径字符校验（防 OG 缓存写入穿越，见 createPost）。
+	if strings.ContainsAny(newSlug, "/\\.") || newSlug != filepath.Base(filepath.FromSlash(newSlug)) {
+		Fail(c, http.StatusBadRequest, "slug 只允许字母/数字/连字符，且不含路径分隔符")
+		return
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
@@ -425,6 +437,11 @@ func (h *Handler) publishPost(c *gin.Context) {
 	newSlug := strings.TrimSpace(req.Slug)
 	if newSlug == "" {
 		newSlug = slug
+	}
+	// 安全审计 2026-08-16：显式 slug 补路径字符校验（防 OG 缓存写入穿越，见 createPost）。
+	if strings.ContainsAny(newSlug, "/\\.") || newSlug != filepath.Base(filepath.FromSlash(newSlug)) {
+		Fail(c, http.StatusBadRequest, "slug 只允许字母/数字/连字符，且不含路径分隔符")
+		return
 	}
 	if newSlug != slug {
 		if other, _ := h.store.GetBySlug(newSlug); other != nil {
