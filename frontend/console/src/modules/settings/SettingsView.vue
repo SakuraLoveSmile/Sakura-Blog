@@ -781,17 +781,19 @@ onMounted(() => {
           <VCard v-show="active === 'footer'" title="页脚设置">
             <div class="subsection">
               <p class="hint">社交图标（icon 填 raw HTML 如 &lt;img src="..."&gt;，icon_key 填 icons.yml 的 key，二选一，icon 优先）</p>
-              <div v-for="(s, i) in data.footer.social" :key="i" class="editable-row">
-                <input v-model="s.title" placeholder="标题" :class="inputCls" class="col-2" />
-                <input v-model="s.url" placeholder="链接" :class="inputCls" class="col-3" />
-                <div class="col-2">
-                  <IconPicker v-model="s.icon_key" compact placeholder="icon_key" />
-                </div>
-                <input v-model="s.icon" placeholder="icon raw HTML（优先）" :class="inputCls" class="col-3" />
-                <div class="row-actions">
-                  <button type="button" :disabled="Number(i) === 0" class="row-btn" @click="moveItem(data.footer.social, Number(i), -1)"><Icon icon="ri:arrow-up-s-line" /></button>
-                  <button type="button" :disabled="Number(i) === data.footer.social.length - 1" class="row-btn" @click="moveItem(data.footer.social, Number(i), 1)"><Icon icon="ri:arrow-down-s-line" /></button>
-                  <button type="button" class="row-btn row-btn-danger" @click="removeAt(data.footer.social, Number(i))"><Icon icon="ri:delete-bin-line" /></button>
+              <div class="editable-list">
+                <div v-for="(s, i) in data.footer.social" :key="i" class="editable-row">
+                  <input v-model="s.title" placeholder="标题" :class="inputCls" class="col-2" />
+                  <input v-model="s.url" placeholder="链接" :class="inputCls" class="col-3" />
+                  <div class="col-2">
+                    <IconPicker v-model="s.icon_key" compact placeholder="icon_key" />
+                  </div>
+                  <input v-model="s.icon" placeholder="icon raw HTML（优先）" :class="inputCls" class="col-3" />
+                  <div class="row-actions">
+                    <button type="button" :disabled="Number(i) === 0" class="row-btn" @click="moveItem(data.footer.social, Number(i), -1)"><Icon icon="ri:arrow-up-s-line" /></button>
+                    <button type="button" :disabled="Number(i) === data.footer.social.length - 1" class="row-btn" @click="moveItem(data.footer.social, Number(i), 1)"><Icon icon="ri:arrow-down-s-line" /></button>
+                    <button type="button" class="row-btn row-btn-danger" @click="removeAt(data.footer.social, Number(i))"><Icon icon="ri:delete-bin-line" /></button>
+                  </div>
                 </div>
               </div>
               <button type="button" class="add-btn" @click="addSocial"><Icon icon="ri:add-line" /> 添加社交图标</button>

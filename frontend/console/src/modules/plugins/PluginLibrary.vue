@@ -266,7 +266,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             </thead>
             <tbody>
               <tr v-for="param in selected.params" :key="param.name" class="border-b border-border last:border-0 /50">
-                <td class="px-4 py-2"><code class="text-xs font-mono text-secondary text-primary">{{ param.name }}</code></td>
+                <td class="px-4 py-2"><code class="text-xs font-mono text-text-secondary">{{ param.name }}</code></td>
                 <td class="px-4 py-2 text-text-tertiary">{{ param.desc }}</td>
                 <td class="px-4 py-2 text-text-quaternary font-mono text-xs">{{ param.default }}</td>
               </tr>

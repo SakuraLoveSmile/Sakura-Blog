@@ -50,20 +50,57 @@ const emit = defineEmits<{
 const activeTab = ref<"outline" |"detail">("outline");
 
 // ---------- 作者可选项（Spec 38 Wave 5）：authors 为空 map 时不渲染控件 ----------
-const authorOptions = ref<Record<string, { name: string }>>({});
+interface AuthorOption {
+  name: string;
+  avatar?: string;
+  description?: string;
+  url?: string;
+  hidden?: boolean;
+}
+const authorOptions = ref<Record<string, AuthorOption>>({});
 
 async function loadAuthors() {
  try {
  const { data } = await settingsApi.all();
  if (data.authors && typeof data.authors ==="object") {
- authorOptions.value = data.authors;
+ authorOptions.value = data.authors as Record<string, AuthorOption>;
  }
  } catch {
  /* 静默：作者列表缺失不阻塞编辑 */
  }
 }
 
-onMounted(loadAuthors);
+// 作者选择器（头像式）：当前作者头像 / 未选时「+」按钮，点击弹出选择 popover，
+// hover 头像显示悬浮气泡（名称 + 简介 + 主页）。
+const authorPopOpen = ref(false);
+const authorPopRef = ref<HTMLElement | null>(null);
+
+const currentAuthor = computed<AuthorOption | null>(() =>
+ props.form.author ? authorOptions.value[props.form.author] || null : null
+);
+
+const visibleAuthors = computed(() =>
+ Object.entries(authorOptions.value)
+  .filter(([, a]) => !a.hidden)
+  .map(([id, a]) => ({ id, ...a }))
+);
+
+function pickAuthor(id: string) {
+ props.form.author = id;
+ authorPopOpen.value = false;
+}
+
+function onDocClickAuthorPop(e: MouseEvent) {
+ if (!authorPopOpen.value) return;
+ const el = authorPopRef.value;
+ if (el && !el.contains(e.target as Node)) authorPopOpen.value = false;
+}
+
+onMounted(() => {
+ loadAuthors();
+ document.addEventListener("click", onDocClickAuthorPop);
+});
+onBeforeUnmount(() => document.removeEventListener("click", onDocClickAuthorPop));
 
 // ---------- 专栏选择器：仅选择已有专栏，不在编辑器内创建 ----------
 const topicOptions = ref<TopicItem[]>([]);
@@ -177,13 +214,15 @@ function pickCategory(name: string) {
  props.form.category = name;
 }
 
-// 点标签 chip：按逗号拆分去重后追加
+// 点标签 chip：toggle 语义——已选中则移除（可取消标签），未选中则追加；逗号分隔去重
 function pickTag(name: string) {
  const list = props.form.tags
  .split(/[,，]/)
  .map((s) => s.trim())
  .filter(Boolean);
- if (!list.includes(name)) list.push(name);
+ const idx = list.indexOf(name);
+ if (idx >= 0) list.splice(idx, 1);
+ else list.push(name);
  props.form.tags = list.join(",");
 }
 
@@ -428,10 +467,73 @@ const chipActiveCls = "bg-primary/15 text-primary";
           </div>
           <div v-if="Object.keys(authorOptions).length">
             <label :class="labelCls">作者</label>
-            <select v-model="form.author" :class="selectCls">
-              <option value="">默认（站长）</option>
-              <option v-for="(info, id) in authorOptions" :key="id" :value="id">{{ info.name }}</option>
-            </select>
+            <div ref="authorPopRef" class="relative">
+              <div class="flex items-center gap-2.5">
+                <!-- 当前作者头像；未选择时显示「+」；hover 头像弹出悬浮气泡 -->
+                <div class="group/author relative">
+                  <button
+                    type="button"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-text-secondary transition-colors hover:border-primary/50 hover:text-primary"
+                    :title="currentAuthor ? '当前作者：' + currentAuthor.name : '选择作者'"
+                    @click="authorPopOpen = !authorPopOpen"
+                  >
+                    <img
+                      v-if="currentAuthor?.avatar"
+                      :src="currentAuthor.avatar"
+                      :alt="currentAuthor.name"
+                      class="aspect-square h-full w-full object-cover"
+                    />
+                    <span v-else-if="currentAuthor" class="text-[13px] font-medium">{{ currentAuthor.name.slice(0, 1) }}</span>
+                    <Icon v-else icon="ri:add-line" class="h-4 w-4" />
+                  </button>
+                  <!-- 悬浮气泡：作者基本信息 -->
+                  <div
+                    v-if="currentAuthor"
+                    class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-border bg-card px-3 py-2 text-left shadow-xl group-hover/author:block"
+                  >
+                    <div class="text-[12px] font-medium text-foreground">{{ currentAuthor.name }}</div>
+                    <div v-if="currentAuthor.description" class="mt-0.5 text-[11px] leading-relaxed text-text-tertiary">
+                      {{ currentAuthor.description }}
+                    </div>
+                    <div v-if="currentAuthor.url" class="mt-0.5 truncate text-[11px] text-primary">{{ currentAuthor.url }}</div>
+                  </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-[12.5px] text-foreground">{{ currentAuthor ? currentAuthor.name : '默认（站长）' }}</div>
+                  <button type="button" class="text-[11px] text-text-quaternary transition-colors hover:text-primary" @click="authorPopOpen = !authorPopOpen">
+                    {{ currentAuthor ? '更换作者' : '选择作者' }}
+                  </button>
+                </div>
+              </div>
+              <!-- 选择 popover：默认（站长）+ 全部可见作者 -->
+              <div v-if="authorPopOpen" class="absolute left-0 top-full z-30 mt-1.5 w-full rounded-lg border border-border bg-card p-1 shadow-xl">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent"
+                  :class="form.author === '' ? 'text-primary' : 'text-foreground'"
+                  @click="pickAuthor('')"
+                >
+                  <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] text-text-secondary">站</span>
+                  默认（站长）
+                  <Icon v-if="form.author === ''" icon="ri:check-line" class="ml-auto h-3.5 w-3.5 shrink-0" />
+                </button>
+                <button
+                  v-for="a in visibleAuthors"
+                  :key="a.id"
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent"
+                  :class="form.author === a.id ? 'text-primary' : 'text-foreground'"
+                  @click="pickAuthor(a.id)"
+                >
+                  <img v-if="a.avatar" :src="a.avatar" :alt="a.name" class="aspect-square h-6 w-6 shrink-0 rounded-full object-cover" />
+                  <span v-else class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] text-text-secondary">
+                    {{ a.name.slice(0, 1) }}
+                  </span>
+                  <span class="min-w-0 flex-1 truncate">{{ a.name }}</span>
+                  <Icon v-if="form.author === a.id" icon="ri:check-line" class="h-3.5 w-3.5 shrink-0" />
+                </button>
+              </div>
+            </div>
           </div>
           <div class="flex items-center justify-between py-0.5">
             <div>

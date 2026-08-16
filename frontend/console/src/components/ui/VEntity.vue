@@ -90,6 +90,9 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
   align-items: center;
   justify-content: flex-end;
   gap: 1.5rem;
+  /* 窄屏下字段换行而非挤压（防头像/状态等元素变形） */
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
 }
 
 .entity-dropdown {

@@ -514,13 +514,13 @@ function closeMenus() {
  </VEntityField>
  </template>
  <template #end>
- <VEntityField v-if="ownerAvatar">
+ <VEntityField v-if="ownerAvatar" class="shrink-0">
  <template #description>
- <span class="group/avatar relative flex items-center">
+ <span class="group/avatar relative flex shrink-0 items-center">
  <img
  :src="ownerAvatar"
  :alt="ownerName"
- class="h-6 w-6 rounded-full border border-border object-cover"
+ class="h-6 w-6 shrink-0 aspect-square rounded-full border border-border object-cover"
  />
  <span
  class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-lg group-hover/avatar:block"

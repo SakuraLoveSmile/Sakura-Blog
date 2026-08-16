@@ -255,6 +255,26 @@ func (s *Store) DeleteTopic(id int64) error {
 	return nil
 }
 
+// CountByTopic 统计各专栏（posts.topic 文本字段）的已发布文章数（空专栏除外），
+// navbar「专栏」tab 显示条件用（HasTopics）。
+func (s *Store) CountByTopic() (map[string]int, error) {
+	rows, err := s.db.Query("SELECT topic, COUNT(*) FROM posts WHERE "+publishedWhere+" AND topic != '' GROUP BY topic", StatusPublished)
+	if err != nil {
+		return nil, fmt.Errorf("count by topic: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var name string
+		var n int
+		if err := rows.Scan(&name, &n); err != nil {
+			return nil, fmt.Errorf("scan topic count: %w", err)
+		}
+		out[name] = n
+	}
+	return out, rows.Err()
+}
+
 // CountByTopicID 统计专栏下的已发布文章数（删除保护用）。
 func (s *Store) CountByTopicID(topicID int64) (int, error) {
 	var n int

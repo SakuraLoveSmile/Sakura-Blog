@@ -37,7 +37,14 @@ onMounted(() => {
 <template>
   <div class="apple-card h-full" :data-bp="breakpoint">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="apple-section-title">最近文章</h3>
+      <div class="flex items-baseline gap-2.5">
+        <h3 class="apple-section-title">最近文章</h3>
+        <!-- 状态点图例：绿=已发布，黄=草稿 -->
+        <span class="recent-legend">
+          <span class="recent-legend-item"><span class="apple-status-dot published" />已发布</span>
+          <span class="recent-legend-item"><span class="apple-status-dot draft" />草稿</span>
+        </span>
+      </div>
       <button @click="router.push('/posts')" class="apple-link">
         全部
         <Icon icon="ri:arrow-right-s-line" class="w-4 h-4" />
@@ -63,6 +70,7 @@ onMounted(() => {
             <span
               class="apple-status-dot"
               :class="item.status === 'published' ? 'published' : 'draft'"
+              :title="item.status === 'published' ? '已发布' : '草稿'"
             />
             <span class="text-foreground text-sm truncate">{{ item.title }}</span>
           </div>
@@ -87,7 +95,21 @@ onMounted(() => {
 .recent-placeholder {
   min-height: 200px;
 }
+.recent-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 11px;
+  color: var(--color-text-muted, var(--text-muted, #8e8e93));
+}
+.recent-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
 .apple-card[data-bp="m"] .recent-placeholder,
 .apple-card[data-bp="s"] .recent-placeholder { min-height: 180px; }
 .apple-card[data-bp="s"] .recent-placeholder { min-height: 140px; }
+.apple-card[data-bp="s"] .recent-legend { display: none; }
 </style>

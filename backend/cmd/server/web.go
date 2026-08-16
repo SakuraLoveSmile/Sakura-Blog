@@ -648,7 +648,7 @@ func (s *webServer) fillPinSlider(data *tmpl.ViewData) {
 	}
 	data.PinSliderActive = pinSliderReplacesPosts(data)
 	switch data.Page.Layout {
-	case "index", "archive", "categories", "tags":
+	case "index", "archive", "categories", "tags", "topics":
 		posts, err := s.st.ListPublished()
 		if err != nil {
 			return

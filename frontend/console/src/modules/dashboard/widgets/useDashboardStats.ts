@@ -9,7 +9,6 @@ export interface DashboardStats {
  view_total: number;
  attachment_total: number;
  user_total?: number;
- sparkline?: number[];
 }
 
 const stats = ref<DashboardStats>({

@@ -240,10 +240,10 @@ const viewModes: { key: "auto" | Breakpoint; label: string; icon: string }[] = [
                 :key="vm.key"
                 :class="['seg-btn', vm.key === viewMode && 'active']"
                 :title="vm.label"
+                :aria-label="vm.label"
                 @click="setViewMode(vm.key)"
               >
                 <Icon :icon="vm.icon" class="w-4 h-4" />
-                <span class="seg-label">{{ vm.label }}</span>
               </button>
             </div>
             <button class="apple-edit-btn" @click="toggleEdit">

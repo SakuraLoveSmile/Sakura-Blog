@@ -70,8 +70,8 @@
   flex-wrap: wrap;
 }
 
-/* ===== View switch：统一走 apple-base.css 的 .apple-segmented ===== */
-.dashboard-apple[data-bp="s"] .view-switch .seg-label {
+/* ===== View switch：统一走 apple-base.css 的 .apple-segmented（只显示图标，文字在 title 提示） ===== */
+.dashboard-apple .view-switch .seg-label {
   display: none;
 }
 
@@ -235,13 +235,6 @@
   color: var(--color-muted-foreground);
   font-weight: 500;
 }
-
-.apple-sparkline {
-  width: 100%;
-  height: 32px;
-  margin-top: 16px;
-}
-
 /* ===== Segment control：统一走 apple-base.css 的 .apple-segmented ===== */
 
 /* ===== List items (posts) ===== */
@@ -569,12 +562,6 @@
 .dashboard-apple[data-bp="s"] .apple-stat-label {
   font-size: 12px;
 }
-.dashboard-apple[data-bp="m"] .apple-sparkline,
-.dashboard-apple[data-bp="s"] .apple-sparkline {
-  height: 28px;
-  margin-top: 12px;
-}
-
 .dashboard-apple[data-bp="m"] .apple-segmented button,
 .dashboard-apple[data-bp="s"] .apple-segmented button {
   padding: 5px 12px;
@@ -673,11 +660,6 @@
 .dashboard-apple[data-bp="s"] .apple-stat-label {
   font-size: 12px;
 }
-.dashboard-apple[data-bp="s"] .apple-sparkline {
-  height: 24px;
-  margin-top: 10px;
-}
-
 .dashboard-apple[data-bp="s"] .apple-segmented {
   border-radius: 7px;
 }
@@ -801,11 +783,6 @@
   .dashboard-apple[data-bp="s"] .apple-stat-label {
     font-size: 11.5px;
   }
-  .dashboard-apple[data-bp="s"] .apple-sparkline {
-    height: 22px;
-    margin-top: 8px;
-  }
-
   /* 列表项更紧凑 */
   .dashboard-apple[data-bp="s"] .apple-list-item {
     gap: 8px;

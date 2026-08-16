@@ -18,8 +18,7 @@ function defaultStyle(): Record<string, any> {
   return {
     prefers_theme: "",
     color: { theme: "", accent: "", link: "" },
-    // 后端模型仅支持 root/body 字号，无 code/codeblock
-    font_size: { root: "", body: "" },
+    font_size: { root: "", body: "", code: "", codeblock: "" },
     font_family: { body: "", code: "", codeblock: "" },
     // blur_px 为 px 字符串（后端 string 字段，直接注入 CSS）；留空 = 回退主题内置值
     leftbar: { ui_style: "card", background_color_dark: "", background_image: "", blur_px: "", background_opacity: "" },
@@ -154,6 +153,17 @@ function rangeFill(val: number, min: number, max: number): string {
           </div>
         </div>
       </div>
+      <div class="form-grid form-grid-2">
+        <div class="field">
+          <label>行内代码字号 (code)</label>
+          <input v-model="data.style.font_size.code" :class="inputCls" placeholder="85%" />
+        </div>
+        <div class="field">
+          <label>代码块字号 (codeblock)</label>
+          <input v-model="data.style.font_size.codeblock" :class="inputCls" placeholder="0.8125rem" />
+        </div>
+      </div>
+      <p class="hint">code/codeblock 值为百分比或 rem（如 85% / 0.8125rem），留空回退主题内置值。</p>
     </div>
 
     <!-- 3. 字体族 -->
@@ -194,9 +204,12 @@ function rangeFill(val: number, min: number, max: number): string {
       <div class="field">
         <label>左侧栏样式</label>
         <select v-model="data.style.leftbar.ui_style" :class="selectCls">
-          <option value="card">卡片（纯色）</option>
-          <option value="glass">玻璃（背景图）</option>
+          <option value="card">纯色模式</option>
+          <option value="glass">光晕模式（背景图毛玻璃）</option>
         </select>
+        <p v-if="data.style.leftbar.ui_style === 'glass' && !data.style.leftbar.background_image" class="hint">
+          光晕模式需配置下方「背景图片 URL」才有效果，未配置时前台仍呈现纯色卡片。
+        </p>
       </div>
       <div class="field">
         <label>背景色</label>

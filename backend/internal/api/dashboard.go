@@ -60,22 +60,10 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 		return
 	}
 
-	// 计算周环比（与 7 天前对比）：趋势数据用于 sparkline 和增长百分比
+	// 计算周环比（与 7 天前对比）：趋势数据用于增长百分比
 	trend, err := h.store.TrendPVUV(14)
 	if err != nil {
 		trend = nil
-	}
-
-	// 组装 sparkline 数据（最近 7 天 PV）
-	sparkline := make([]int, 0, 7)
-	if len(trend) >= 7 {
-		for _, d := range trend[len(trend)-7:] {
-			sparkline = append(sparkline, d.PV)
-		}
-	} else if len(trend) > 0 {
-		for _, d := range trend {
-			sparkline = append(sparkline, d.PV)
-		}
 	}
 
 	// 计算周增长百分比
@@ -108,7 +96,6 @@ func (h *Handler) dashboardStats(c *gin.Context) {
 		"post_change":      postChange,
 		"view_change":      viewChange,
 		"comment_change":   commentChange,
-		"sparkline":        sparkline,
 	})
 }
 
