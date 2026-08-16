@@ -776,12 +776,12 @@ type CommentItem struct {
 	Link        string         `json:"link"`         // 个人网站，非空时昵称带链
 	ContentHTML template.HTML  `json:"content_html"` // 已消毒的服务端渲染 HTML，直接输出
 	IsAdmin     bool           `json:"is_admin"`
-	Verified    bool           `json:"verified"`         // 注册用户标识：已登录注册用户显示"已验证"徽章
-	Avatar      string         `json:"avatar"`           // Gravatar URL（{mirror}/{md5(email)}）
-	TimeAgo     string         `json:"time_ago"`         // 相对时间，如"3 天前"
-	Date        string         `json:"date"`             // 完整日期（title 悬浮提示）
-	Likes       int64          `json:"likes"`            // 点赞数（IP 去重）
-	Boosts      []BoostItem    `json:"boosts"`           // 简短回应 chips
+	Verified    bool           `json:"verified"` // 注册用户标识：已登录注册用户显示"已验证"徽章
+	Avatar      string         `json:"avatar"`   // Gravatar URL（{mirror}/{md5(email)}）
+	TimeAgo     string         `json:"time_ago"` // 相对时间，如"3 天前"
+	Date        string         `json:"date"`     // 完整日期（title 悬浮提示）
+	Likes       int64          `json:"likes"`    // 点赞数（IP 去重）
+	Boosts      []BoostItem    `json:"boosts"`   // 简短回应 chips
 	BoostCount  int            `json:"boost_count"`
 	CanBoost    bool           `json:"can_boost"`
 	ReplyRef    string         `json:"reply_ref,omitempty"` // 回复引用，格式 "▸ 被回复人昵称"（仅子评论）
@@ -818,15 +818,20 @@ type TopicSeriesPost struct {
 	Active bool
 }
 
-// TopicItem /topic 索引页专栏卡片（名称 + 文章数 + 图标）。
+// TopicItem /topic 索引页专栏卡片（slug、名称、描述、封面与文章数）。
 type TopicItem struct {
-	Name  string
-	Count int
-	Icon  string // 卡片图标（缺省用主题 default.topic 占位图）
+	Name        string
+	Slug        string
+	Description string
+	Cover       string
+	Count       int
+	Icon        string // 卡片图标（缺省用主题 default.topic 占位图）
+	CreatedAt   time.Time
 }
 
 // TopicDetail 专栏详情页头部数据（/topic/:slug）：有封面时沉浸 banner，无封面时紧凑卡片。
 type TopicDetail struct {
+	Slug        string
 	Name        string
 	Description string
 	Icon        string

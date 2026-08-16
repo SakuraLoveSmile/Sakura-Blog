@@ -255,9 +255,7 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		data.Popular = s.sidebarCached.popular
 		data.LatestComments = s.sidebarCached.latestComments
 		data.TagCloud = s.sidebarCached.tagCloud
-		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。HasTopics 恒为 false，不走缓存值。
-		//   data.HasTopics = s.sidebarCached.hasTopics
-		data.HasTopics = false
+		data.HasTopics = s.sidebarCached.hasTopics
 		data.SiteStats = s.sidebarCached.siteStats
 		tagCounts := s.sidebarCached.tagCounts
 		s.sidebarMu.Unlock()
@@ -292,12 +290,10 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 	if tagErr == nil {
 		data.TagCloud = buildTagCloud(tagCounts, 20)
 	}
-	// 专栏（Spec 52）：已禁用（用户反馈功能多余）。HasTopics 恒为 false，navbar 「专栏」tab 不再显示。
-	// 保留 DB 查询代码注释，后续恢复：
-	//   if topics, err := s.st.CountByTopic(); err == nil && len(topics) > 0 {
-	//       data.HasTopics = true
-	//   }
-	data.HasTopics = false
+	// 专栏入口随 topics 表存在性显示，专栏内文章列表仍由详情页按 topic_id 查询。
+	if topics, err := s.st.ListTopics(); err == nil && len(topics) > 0 {
+		data.HasTopics = true
+	}
 	var stats tmpl.SiteStats
 	statsOK := true
 	if n, err := s.st.CountPosts(); err == nil {

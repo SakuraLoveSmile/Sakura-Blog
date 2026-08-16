@@ -152,6 +152,36 @@ export const postApi = {
  discardDraft: (slug: string) => http.delete(`/posts/${slug}/draft`),
 };
 
+// --- Topics ---
+export interface TopicItem {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  cover: string;
+  sort: number;
+  post_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TopicPayload {
+  name: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  cover?: string;
+  sort?: number;
+}
+
+export const topicApi = {
+  list: () => http.get<{ items: TopicItem[]; total: number }>("/topics"),
+  create: (data: TopicPayload) => http.post("/topics", data),
+  update: (id: number, data: Partial<TopicPayload>) => http.put(`/topics/${id}`, data),
+  delete: (id: number) => http.delete(`/topics/${id}`),
+};
+
 // --- Post Revisions (Spec 22) ---
 export const revisionApi = {
  list: (slug: string) => http.get(`/posts/${slug}/revisions`),

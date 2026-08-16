@@ -96,13 +96,13 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 		return
 	}
 	if existing == nil {
-		Fail(c, http.StatusNotFound, "文章不存在: " + rev.PostSlug)
+		Fail(c, http.StatusNotFound, "文章不存在: "+rev.PostSlug)
 		return
 	}
 
 	contentHTML, err := h.posts.Render(rev.ContentMD)
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
 		return
 	}
 
@@ -114,6 +114,7 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 		Cover:       existing.Cover,
 		Category:    rev.Category,
 		Topic:       existing.Topic,
+		TopicID:     existing.TopicID,
 		Tags:        rev.Tags,
 		ContentMD:   rev.ContentMD,
 		ContentHTML: contentHTML,
@@ -126,7 +127,7 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, existing.Slug); err != nil {
-		Fail(c, http.StatusInternalServerError, "回滚失败: " + err.Error())
+		Fail(c, http.StatusInternalServerError, "回滚失败: "+err.Error())
 		return
 	}
 

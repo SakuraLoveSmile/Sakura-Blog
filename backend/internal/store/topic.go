@@ -214,13 +214,35 @@ func (s *Store) CreateTopic(t *Topic) error {
 // UpdateTopic 按 id 更新专栏字段，自动刷新 updated_at。专栏不存在返回错误。
 func (s *Store) UpdateTopic(t *Topic) error {
 	t.UpdatedAt = time.Now().UTC()
-	return repo(s, &Topic{}).Update(t.ID, t)
+
+	// 专栏名称是文章表中的冗余展示字段，必须与 topics 更新保持原子性。
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin update topic %d: %w", t.ID, err)
+	}
+	defer tx.Rollback()
+
+	result, err := tx.Exec(`UPDATE topics SET name=?, slug=?, description=?, icon=?, cover=?, sort=?, updated_at=? WHERE id=?`,
+		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.UpdatedAt, t.ID)
+	if err != nil {
+		return fmt.Errorf("update topic %d: %w", t.ID, err)
+	}
+	if n, _ := result.RowsAffected(); n == 0 {
+		return fmt.Errorf("update topic %d: no rows affected", t.ID)
+	}
+	if _, err := tx.Exec(`UPDATE posts SET topic=? WHERE topic_id=?`, t.Name, t.ID); err != nil {
+		return fmt.Errorf("sync topic name for %d: %w", t.ID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit update topic %d: %w", t.ID, err)
+	}
+	return nil
 }
 
 // DeleteTopic 删除专栏。专栏下仍有文章时返回 ErrTopicInUse（删除保护，调用方映射 403）。
 // 专栏不存在不报错。
 func (s *Store) DeleteTopic(id int64) error {
-	n, err := s.CountByTopicID(id)
+	n, err := s.CountAllByTopicID(id)
 	if err != nil {
 		return err
 	}

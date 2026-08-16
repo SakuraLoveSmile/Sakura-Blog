@@ -77,7 +77,11 @@ func (h *Handler) createTopic(c *gin.Context) {
 		Sort:        req.Sort,
 	}
 	if err := h.store.CreateTopic(t); err != nil {
-		Fail(c, http.StatusInternalServerError, "创建失败: " + err.Error())
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: topics.") {
+			Fail(c, http.StatusConflict, "name 或 slug 已被占用")
+			return
+		}
+		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": t.ID})
@@ -163,7 +167,11 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateTopic(t); err != nil {
-		Fail(c, http.StatusInternalServerError, "更新失败: " + err.Error())
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: topics.") {
+			Fail(c, http.StatusConflict, "name 或 slug 已被占用")
+			return
+		}
+		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})

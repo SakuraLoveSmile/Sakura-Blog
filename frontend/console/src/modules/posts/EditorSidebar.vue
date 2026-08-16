@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from"vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from"vue";
 import { Icon } from"@iconify/vue";
-import { previewApi, settingsApi, postApi, aiApi } from"@/api";
+import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } from"@/api";
 import PluginParamForm from"@/modules/plugins/PluginParamForm.vue";
 import { VButton, VSwitch, Toast } from"@/components/ui";
 import {
@@ -18,8 +18,9 @@ interface PostForm {
  title: string;
  excerpt: string;
  cover: string;
- category: string;
- topic: string;
+	category: string;
+	topic_id: number | null;
+	topic: string;
  tags: string;
  content_md: string;
  status: string;
@@ -63,6 +64,82 @@ async function loadAuthors() {
 }
 
 onMounted(loadAuthors);
+
+// ---------- 专栏选择器：仅选择已有专栏，不在编辑器内创建 ----------
+const topicOptions = ref<TopicItem[]>([]);
+const topicQuery = ref("");
+const topicPickerOpen = ref(false);
+const topicPickerRoot = ref<HTMLElement | null>(null);
+
+const selectedTopic = computed(() => {
+	const id = Number(props.form.topic_id || 0);
+	return id > 0 ? topicOptions.value.find((topic) => topic.id === id) || null : null;
+});
+
+const filteredTopics = computed(() => {
+	const query = topicQuery.value.trim().toLowerCase();
+	if (!query) return topicOptions.value;
+	return topicOptions.value.filter((topic) => topic.name.toLowerCase().includes(query));
+});
+
+function syncTopicFromLegacy() {
+	if (!topicOptions.value.length) return;
+	const currentID = Number(props.form.topic_id || 0);
+	if (currentID > 0) {
+		const current = topicOptions.value.find((topic) => topic.id === currentID);
+		if (current && props.form.topic !== current.name) props.form.topic = current.name;
+		return;
+	}
+	const legacyName = props.form.topic.trim();
+	if (!legacyName) return;
+	const legacy = topicOptions.value.find((topic) => topic.name === legacyName);
+	if (legacy) {
+		props.form.topic_id = legacy.id;
+		props.form.topic = legacy.name;
+	} else {
+		props.form.topic_id = null;
+		props.form.topic = "";
+	}
+}
+
+async function loadTopics() {
+	try {
+		const { data } = await topicApi.list();
+		topicOptions.value = data.items || [];
+		syncTopicFromLegacy();
+	} catch {
+		// 专栏是可选元数据，列表失败不阻塞正文编辑。
+	}
+}
+
+function toggleTopicPicker() {
+	topicPickerOpen.value = !topicPickerOpen.value;
+	if (topicPickerOpen.value) topicQuery.value = "";
+}
+
+function selectTopic(topic: TopicItem) {
+	props.form.topic_id = topic.id;
+	props.form.topic = topic.name;
+	topicPickerOpen.value = false;
+}
+
+function clearTopic() {
+	props.form.topic_id = null;
+	props.form.topic = "";
+	topicPickerOpen.value = false;
+}
+
+function onTopicClickOutside(event: MouseEvent) {
+	if (topicPickerRoot.value && !topicPickerRoot.value.contains(event.target as Node)) {
+		topicPickerOpen.value = false;
+	}
+}
+
+watch(() => [props.form.topic_id, props.form.topic, topicOptions.value.length], syncTopicFromLegacy);
+onMounted(() => {
+	loadTopics();
+	document.addEventListener("mousedown", onTopicClickOutside);
+});
 
 // ---------- 大纲：解析 ATX 标题（跳过代码围栏），点击跳转到对应行 ----------
 
@@ -200,7 +277,10 @@ function insertPlugin() {
  emit("insert","\n" + pluginCode.value +"\n");
 }
 
-onBeforeUnmount(() => clearTimeout(pluginTimer));
+onBeforeUnmount(() => {
+	clearTimeout(pluginTimer);
+	document.removeEventListener("mousedown", onTopicClickOutside);
+});
 
 // ---------- AI 摘要（Spec 53）：textarea 手动编辑 + AI 生成，保存走独立端点 ----------
 const aiSaving = ref(false);
@@ -390,7 +470,48 @@ const chipActiveCls = "bg-primary/15 text-primary";
           </div>
           <div>
             <label :class="labelCls">专栏</label>
-            <input v-model="form.topic" :class="fieldCls" />
+            <div ref="topicPickerRoot" class="relative">
+              <button
+                type="button"
+                class="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-secondary px-3 text-left text-sm text-foreground transition-colors hover:border-border-strong"
+                @click="toggleTopicPicker"
+              >
+                <span class="truncate" :class="!selectedTopic && 'text-text-quaternary'">
+                  {{ selectedTopic?.name || "无专栏" }}
+                </span>
+                <Icon icon="ri:arrow-down-s-line" class="shrink-0 text-text-quaternary" />
+              </button>
+              <div
+                v-if="topicPickerOpen"
+                class="absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded-lg border border-border bg-card p-2 shadow-xl"
+              >
+                <div class="apple-search h-8">
+                  <Icon icon="ri:search-line" class="text-text-quaternary" />
+                  <input v-model="topicQuery" placeholder="搜索专栏名称" @click.stop />
+                </div>
+                <div class="mt-1 max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm text-text-tertiary hover:bg-secondary hover:text-foreground"
+                    @click="clearTopic"
+                  >
+                    <span>无专栏</span>
+                    <Icon v-if="!selectedTopic" icon="ri:check-line" class="text-primary" />
+                  </button>
+                  <button
+                    v-for="topic in filteredTopics"
+                    :key="topic.id"
+                    type="button"
+                    class="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-sm text-text-tertiary hover:bg-secondary hover:text-foreground"
+                    @click="selectTopic(topic)"
+                  >
+                    <span class="truncate">{{ topic.name }}</span>
+                    <Icon v-if="selectedTopic?.id === topic.id" icon="ri:check-line" class="text-primary" />
+                  </button>
+                  <p v-if="filteredTopics.length === 0" class="px-2.5 py-3 text-xs text-text-quaternary">暂无匹配专栏</p>
+                </div>
+              </div>
+            </div>
           </div>
           <div>
             <label :class="labelCls">标签（逗号分隔）</label>

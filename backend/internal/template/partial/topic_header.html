@@ -11,9 +11,9 @@
         <div class="flex-row" id="breadcrumb">
           <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
           <span class="sep"></span>
-          <a class="cap breadcrumb" href="/topic">{{- lang "breadcrumb.topic" -}}</a>
+          <a class="cap breadcrumb" href="/topics">{{- lang "breadcrumb.topic" -}}</a>
           <span class="sep"></span>
-          <a class="cap breadcrumb" id="current" href="/topic">{{.TopicDetail.Name}}</a>
+          <a class="cap breadcrumb" id="current" href="/topic/{{.TopicDetail.Slug}}">{{.TopicDetail.Name}}</a>
         </div>
       </div>
     </div>
@@ -31,12 +31,12 @@
   <div class="flex-row" id="breadcrumb">
     <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
     <span class="sep"></span>
-    <a class="cap breadcrumb" href="/topic">{{- lang "breadcrumb.topic" -}}</a>
+    <a class="cap breadcrumb" href="/topics">{{- lang "breadcrumb.topic" -}}</a>
     <span class="sep"></span>
-    <a class="cap breadcrumb" id="current" href="/topic">{{.TopicDetail.Name}}</a>
+    <a class="cap breadcrumb" id="current" href="/topic/{{.TopicDetail.Slug}}">{{.TopicDetail.Name}}</a>
   </div>
   <div class="title-area">
-    {{if .TopicDetail.Icon}}<img class="topic-icon" src="{{.TopicDetail.Icon}}" alt="{{.TopicDetail.Name}}">{{else}}<span class="topic-icon fallback">{{.TopicDetail.Initial}}</span>{{end}}
+    {{if .TopicDetail.Icon}}<span class="topic-icon">{{icon .TopicDetail.Icon}}</span>{{else}}<span class="topic-icon fallback">{{.TopicDetail.Initial}}</span>{{end}}
     <div class="title-text">
       <h1>{{.TopicDetail.Name}}</h1>
       <p class="count cap">{{- lang "topic.post_count" .TopicDetail.Count -}}</p>

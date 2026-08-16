@@ -30,6 +30,11 @@ const router = createRouter({
           component: () => import("@/modules/posts/PostList.vue"),
         },
         {
+          path: "topics",
+          name: "Topics",
+          component: () => import("@/modules/topics/TopicsView.vue"),
+        },
+        {
           path: "posts/new",
           name: "PostNew",
           component: () => import("@/modules/posts/PostEditor.vue"),

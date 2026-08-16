@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -56,6 +58,7 @@ type postJSON struct {
 	Banner    string   `json:"banner"`
 	Cover     string   `json:"cover"`
 	Category  string   `json:"category"`
+	TopicID   int64    `json:"topic_id"`
 	Topic     string   `json:"topic"`
 	Tags      string   `json:"tags"`
 	ContentMD string   `json:"content_md"`
@@ -94,6 +97,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		Banner:          p.Banner,
 		Cover:           p.Cover,
 		Category:        p.Category,
+		TopicID:         p.TopicID,
 		Topic:           p.Topic,
 		Tags:            p.Tags,
 		ContentMD:       p.ContentMD,
@@ -116,6 +120,72 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		pj.Poster = &posterJ{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
 	}
 	return pj
+}
+
+var (
+	errTopicIDInvalid = errors.New("invalid topic_id")
+	errTopicNotFound  = errors.New("topic not found")
+)
+
+// decodeTopicID distinguishes an omitted topic_id from an explicit null/0 so
+// old clients can keep their existing association while new clients can clear it.
+func decodeTopicID(raw json.RawMessage) (provided bool, id int64, err error) {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 {
+		return false, 0, nil
+	}
+	if bytes.Equal(raw, []byte("null")) {
+		return true, 0, nil
+	}
+	if err := json.Unmarshal(raw, &id); err != nil || id < 0 {
+		return true, 0, errTopicIDInvalid
+	}
+	return true, id, nil
+}
+
+// normalizePostTopic resolves the formal topic_id field and mirrors the
+// selected topic name into posts.topic. An omitted field remains compatible
+// with older clients that only sent topic text.
+func (h *Handler) normalizePostTopic(req *postRequest, fallbackID int64) error {
+	provided, id, err := decodeTopicID(req.TopicID)
+	if err != nil {
+		return err
+	}
+	if !provided {
+		id = fallbackID
+		if id == 0 && strings.TrimSpace(req.Topic) != "" {
+			if legacy, lookupErr := h.store.GetTopicByName(strings.TrimSpace(req.Topic)); lookupErr == nil && legacy != nil {
+				id = legacy.ID
+			}
+		}
+	}
+	if id <= 0 {
+		req.TopicID = json.RawMessage("0")
+		req.Topic = ""
+		return nil
+	}
+	topic, err := h.store.GetTopicByID(id)
+	if err != nil {
+		return err
+	}
+	if topic == nil {
+		return errTopicNotFound
+	}
+	req.TopicID = json.RawMessage(strconv.FormatInt(topic.ID, 10))
+	req.Topic = topic.Name
+	return nil
+}
+
+func failPostTopic(c *gin.Context, err error) bool {
+	switch {
+	case errors.Is(err, errTopicIDInvalid):
+		Fail(c, http.StatusBadRequest, "无效的 topic_id")
+	case errors.Is(err, errTopicNotFound):
+		Fail(c, http.StatusNotFound, "专栏不存在")
+	default:
+		Fail(c, http.StatusInternalServerError, "读取专栏失败: "+err.Error())
+	}
+	return true
 }
 
 // listPosts GET /api/v1/posts：文章列表（支持 status/category/tag 筛选 + 分页）。
@@ -191,6 +261,10 @@ func (h *Handler) createPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	if err := h.normalizePostTopic(&req, 0); err != nil {
+		failPostTopic(c, err)
+		return
+	}
 	// 空 slug 时从标题自动生成（Spec Task 6），并确保唯一；用户指定 slug 则检查冲突
 	slugVal := strings.TrimSpace(req.Slug)
 	if slugVal == "" {
@@ -235,6 +309,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
+		return
+	}
+	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
+		failPostTopic(c, err)
 		return
 	}
 
@@ -303,6 +381,10 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
+		failPostTopic(c, err)
+		return
+	}
 	b, err := json.Marshal(req)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "草稿序列化失败: "+err.Error())
@@ -332,6 +414,10 @@ func (h *Handler) publishPost(c *gin.Context) {
 	var req postRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
+		return
+	}
+	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
+		failPostTopic(c, err)
 		return
 	}
 	req.Status = store.StatusPublished
@@ -396,9 +482,6 @@ func (h *Handler) discardPostDraft(c *gin.Context) {
 // existing 为保存前查出的旧记录；p 为新内容（p.Slug 已设）；newSlug 为目标 slug。
 // 内容无变化（content_md + title 均相同）时不产生空版本。
 func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) error {
-	// Spec 52：请求体不携带 topic_id（postRequest 无该字段），更新/重建时保留原专栏关联；
-	// 关联变更由专门入口负责（届时放开）。
-	p.TopicID = existing.TopicID
 	if newSlug != existing.Slug {
 		// slug 变更：先删旧再建新（保留 created_at）
 		if err := h.store.Delete(existing.Slug); err != nil {
@@ -510,19 +593,20 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 // --- 辅助 ---
 
 type postRequest struct {
-	Slug      string `json:"slug"`
-	Title     string `json:"title"`
-	Excerpt   string `json:"excerpt"`
-	Banner    string `json:"banner"`
-	Cover     string `json:"cover"`
-	Category  string `json:"category"`
-	Topic     string `json:"topic"`
-	Tags      string `json:"tags"`
-	ContentMD string `json:"content_md"`
-	Status    string `json:"status"`
-	Pinned    bool   `json:"pinned"`
-	Password  string `json:"password"`
-	PublishAt string `json:"publish_at"`
+	Slug      string          `json:"slug"`
+	Title     string          `json:"title"`
+	Excerpt   string          `json:"excerpt"`
+	Banner    string          `json:"banner"`
+	Cover     string          `json:"cover"`
+	Category  string          `json:"category"`
+	TopicID   json.RawMessage `json:"topic_id,omitempty"`
+	Topic     string          `json:"topic"`
+	Tags      string          `json:"tags"`
+	ContentMD string          `json:"content_md"`
+	Status    string          `json:"status"`
+	Pinned    bool            `json:"pinned"`
+	Password  string          `json:"password"`
+	PublishAt string          `json:"publish_at"`
 	Poster    *struct {
 		Headline string `json:"headline"`
 		Topic    string `json:"topic"`
@@ -561,6 +645,9 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
 		// 多作者体系（Spec 38）
 		Author: strings.TrimSpace(req.Author),
+	}
+	if _, topicID, err := decodeTopicID(req.TopicID); err == nil {
+		p.TopicID = topicID
 	}
 	if req.Poster != nil {
 		p.Poster = store.EncodePoster(store.PosterData{

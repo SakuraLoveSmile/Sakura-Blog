@@ -83,6 +83,12 @@ func TestTopicCreateDuplicate(t *testing.T) {
 func TestTopicUpdate(t *testing.T) {
 	s := newTopicStore(t)
 	tp := mkTopic(t, s, "旧名", "old", 0)
+	p := pubPost("topic-rename-post", "关联文章")
+	p.TopicID = tp.ID
+	p.Topic = tp.Name
+	if _, err := s.Create(p); err != nil {
+		t.Fatalf("create associated post: %v", err)
+	}
 	tp.Name, tp.Slug, tp.Description = "新名", "new", "desc"
 	if err := s.UpdateTopic(tp); err != nil {
 		t.Fatalf("update: %v", err)
@@ -91,8 +97,35 @@ func TestTopicUpdate(t *testing.T) {
 	if got.Name != "新名" || got.Slug != "new" || got.Description != "desc" {
 		t.Fatalf("update not applied: %+v", got)
 	}
+	updatedPost, err := s.GetBySlug(p.Slug)
+	if err != nil || updatedPost == nil || updatedPost.TopicID != tp.ID || updatedPost.Topic != "新名" {
+		t.Fatalf("associated post not synchronized: %+v (err=%v)", updatedPost, err)
+	}
 	if err := s.UpdateTopic(&Topic{ID: 99999, Name: "x"}); err == nil {
 		t.Fatal("update non-existent should error")
+	}
+}
+
+func TestTopicDeleteProtectionAllStatuses(t *testing.T) {
+	s := newTopicStore(t)
+	tp := mkTopic(t, s, "全状态专栏", "all-status", 0)
+	posts := []*Post{
+		pubPost("topic-published", "已发布"),
+		{Slug: "topic-draft", Title: "草稿", Status: StatusDraft, TopicID: tp.ID, Topic: tp.Name},
+		{Slug: "topic-trashed", Title: "回收站", Status: StatusPublished, DeletedAt: "2026-01-01T00:00:00Z", TopicID: tp.ID, Topic: tp.Name},
+	}
+	posts[0].TopicID = tp.ID
+	posts[0].Topic = tp.Name
+	for _, p := range posts {
+		if _, err := s.Create(p); err != nil {
+			t.Fatalf("create %s: %v", p.Slug, err)
+		}
+	}
+	if n, err := s.CountAllByTopicID(tp.ID); err != nil || n != 3 {
+		t.Fatalf("count all = %d, err=%v, want 3", n, err)
+	}
+	if err := s.DeleteTopic(tp.ID); err != ErrTopicInUse {
+		t.Fatalf("delete with draft/trashed posts = %v, want ErrTopicInUse", err)
 	}
 }
 

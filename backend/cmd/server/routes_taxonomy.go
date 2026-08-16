@@ -198,11 +198,10 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 		})
 	})
 
-	// 专栏（Spec 52）：已禁用（用户反馈功能多余）。保留路由注册但所有请求走 404，
-	// 代码/数据库/模板原样保留，后续恢复只需把下面两行注释掉、去掉 true 条件短路即可。
-	r.GET("/topic", func(c *gin.Context) { s.render404(c) })
-	r.GET("/topics", func(c *gin.Context) { s.render404(c) })
-	r.GET("/topic/:slug", func(c *gin.Context) { s.render404(c) })
+	// 专栏（Spec 52）：索引页与详情页均由 topics 表驱动；详情兼容旧的 name 路径。
+	r.GET("/topic", s.handleTopicIndex)
+	r.GET("/topics", s.handleTopicIndex)
+	r.GET("/topic/:slug", s.handleTopicDetail)
 
 	// 标签索引页：标签云（按文章数 DESC）
 	r.GET("/tags", func(c *gin.Context) {
@@ -257,6 +256,106 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 
 	// 作者文章列表页（Spec 38 多作者体系）：/author/:id，对齐 Stellar author.ejs 的“全部文章”链接。
 	r.GET("/author/:id", s.handleAuthor)
+}
+
+// handleTopicIndex 专栏索引页：按 topics.sort DESC 展示专栏名称、描述、封面与已发布文章数。
+func (s *webServer) handleTopicIndex(c *gin.Context) {
+	topics, err := s.st.ListTopics()
+	if err != nil {
+		log.Printf("list topics: %v", err)
+		s.render500(c)
+		return
+	}
+	items := make([]*tmpl.TopicItem, 0, len(topics))
+	for _, t := range topics {
+		n, err := s.st.CountByTopicID(t.ID)
+		if err != nil {
+			log.Printf("count posts of topic %d: %v", t.ID, err)
+			s.render500(c)
+			return
+		}
+		items = append(items, &tmpl.TopicItem{
+			Name:        t.Name,
+			Slug:        t.Slug,
+			Description: t.Description,
+			Cover:       t.Cover,
+			Icon:        t.Icon,
+			Count:       n,
+			CreatedAt:   t.CreatedAt,
+		})
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site:   s.site.Load(),
+		Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
+		Topics: items,
+	})
+}
+
+// handleTopicDetail 专栏详情页：通过 slug 查询专栏，并按 topic_id 查询已发布文章。
+func (s *webServer) handleTopicDetail(c *gin.Context) {
+	slug := c.Param("slug")
+	t, err := s.st.GetTopicBySlug(slug)
+	if err != nil {
+		log.Printf("get topic %q: %v", slug, err)
+		s.render500(c)
+		return
+	}
+	if t == nil {
+		legacy, err := s.st.GetTopicByName(slug)
+		if err != nil {
+			log.Printf("get topic by name %q: %v", slug, err)
+			s.render500(c)
+			return
+		}
+		if legacy != nil {
+			c.Redirect(http.StatusMovedPermanently, "/topic/"+legacy.Slug)
+			return
+		}
+		s.render404(c)
+		return
+	}
+	posts, err := s.st.ListPostsByTopicID(t.ID)
+	if err != nil {
+		log.Printf("list posts of topic %d: %v", t.ID, err)
+		s.render500(c)
+		return
+	}
+	count, err := s.st.CountByTopicID(t.ID)
+	if err != nil {
+		log.Printf("count posts of topic %d: %v", t.ID, err)
+		s.render500(c)
+		return
+	}
+	hue := 0
+	for _, r := range t.Name {
+		hue = (hue*31 + int(r)) % 360
+	}
+	initial := ""
+	if rs := []rune(t.Name); len(rs) > 0 {
+		initial = string(rs[0])
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site: s.site.Load(),
+		Page: &tmpl.Page{
+			Title:  tmpl.Lang("nav.topic", t.Name),
+			Layout: "topic",
+			MenuID: "post",
+			Lang:   "zh-CN",
+			Topic:  t.Name,
+			Type:   s.site.Load().Article.Type,
+		},
+		TopicDetail: &tmpl.TopicDetail{
+			Slug:        t.Slug,
+			Name:        t.Name,
+			Description: t.Description,
+			Icon:        t.Icon,
+			Cover:       t.Cover,
+			Count:       count,
+			Hue:         hue,
+			Initial:     initial,
+		},
+		Posts: s.toCards(posts),
+	})
 }
 
 // handleLinksPage 友链卡片页（内容页化）：渲染 pages 表 slug=links 系统页。

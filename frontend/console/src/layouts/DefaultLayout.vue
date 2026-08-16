@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
     mobile: true,
     children: [{ path: "/posts/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" }],
   },
+  { path: "/topics", label: "专栏", icon: "ri:book-shelf-line", group: "内容", mobile: true },
   { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
   { path: "/wiki", label: "文库", icon: "ri:book-2-line", group: "内容" },
   { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
