@@ -29,6 +29,9 @@
           <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
           {{end}}
           {{if and .Site.Article.ReadingTime (gt .WordCount 0)}}<span class="cap reading right">{{lang "meta.word_count" .WordCount}} · {{lang "meta.reading_time" .ReadingMinutes}}</span>{{end}}
+          {{- /* AI 成分标签（1.41 ai_label）：面包屑行最右（阅读时长右侧）；banner 含图时
+             不输出配置色（继承 --text-banner），对齐上游 ai_label helper 的 noColor 分支。*/}}
+          {{if $ai := .AILabel}}<span class="cap{{if $ai.Right}} right{{end}} ai-label"{{if and $ai.Color (not .Page.Banner)}} style="color:{{$ai.Color}}"{{end}}>{{if $ai.Icon}}{{icon $ai.Icon}}{{end}}{{$ai.Text}}</span>{{end}}
         </div>
         <div class="flex-row" id="post-meta">
           {{- /* Spec 53 Part A：多作者命中时首位渲染作者链接（对齐原版 dateinfo.ejs：
@@ -88,6 +91,15 @@
   {{end}}
   {{.Content}}
 </article>
+
+{{- /* 文章末尾标签行（1.41 article.tags，缺省开启）：位于 article 闭合之后、article-footer 之前，
+   对齐上游 _partial/main/article/article_tags.ejs——仅文章页（Layout=post）且有标签时渲染，
+   链接结构与 /tags 索引页一致（a.tag + default:hashtag 图标），样式由 main.css .article-tags 提供。*/}}
+{{if and (eq .Page.Layout "post") .Site.Article.EffectiveTags .Page.Tags}}
+<div class="article-tags">
+  {{- range .Page.Tags}}<a class="tag" href="/tags/{{.}}">{{icon "default:hashtag"}}{{.}}</a>{{end -}}
+</div>
+{{end}}
 
 {{- /* 打赏（site.yml article.reward 驱动）：正文结尾居中按钮，点击展开收款码；
    展开/收起交互在下方内联脚本统一委托处理（#reward-toggle）。*/}}

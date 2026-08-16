@@ -14,6 +14,7 @@ type frontMatter struct {
 	Category string
 	Topic    string // 专栏名（对齐原版 frontmatter topic 字段）
 	Tags     []string
+	AILabel  string // AI 成分标签（1.41）：manual/reviewed/polished/generated
 	// 海报封面（对齐原版 post.poster；轻量 parser 不支持嵌套，用平铺 key）
 	PosterHeadline string
 	PosterTopic    string
@@ -91,6 +92,8 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Topic = val
 		case "tags":
 			fm.Tags = parseList(val)
+		case "ai_label":
+			fm.AILabel = strings.TrimSpace(val)
 		case "poster_headline":
 			fm.PosterHeadline = val
 		case "poster_topic":

@@ -6,7 +6,7 @@ import { Toast, VLoading } from "@/components/ui";
 import { emojiSources } from "./assets-data";
 
 // 素材速查（插件库扩展）：
-// - 图标画廊：枚举后端 icons.yml 全量 key（含 solar:*/default:*/github:*/share:*），
+// - 图标画廊：枚举后端 icons.yml 全量 key（含 default:*/example:*/quot:*/chat:*/github:*/share:*），
 //   点击复制 {% icon key %}；key 可直接填入分类/标签图标配置（article.category_icon/tag_icon）。
 // - 表情画廊：按来源浏览可用表情名，点击复制 {% emoji [来源] 名称 %}。
 

@@ -79,6 +79,8 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionFooter, &parsed.footer)
 	unmarshal(SectionComments, &parsed.comments)
 	unmarshal(SectionArticle, &parsed.article)
+	// 1.41 ai_label：article 段整段覆盖，未配置 ai_label 键时补回主题内置四档
+	parsed.article.AILabel.FillDefaults()
 	unmarshal(SectionSearch, &parsed.search)
 	unmarshal(SectionSiteTree, &parsed.siteTree)
 	unmarshal(SectionWiki, &parsed.wiki)

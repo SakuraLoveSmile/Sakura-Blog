@@ -14,7 +14,7 @@ import (
 func TestNewPostCard(t *testing.T) {
 	date := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
 	colors := map[string]string{"技术": "1BCDFC"}
-	icons := map[string]string{"技术": "solar:folder-bold"}
+	icons := map[string]string{"技术": "default:category"}
 
 	tests := []struct {
 		name       string
@@ -32,7 +32,7 @@ func TestNewPostCard(t *testing.T) {
 			},
 			colors:    colors,
 			wantStyle: "--text-p2:#1BCDFC;--theme-block:#1BCDFC20",
-			wantIcon:  "solar:folder-bold",
+			wantIcon:  "default:category",
 		},
 		{
 			name:      "分类未配置配色时 style 为空",
@@ -124,10 +124,10 @@ func TestCategoryIconKey(t *testing.T) {
 		icons map[string]string
 		want  string
 	}{
-		{"分类为空回退默认", "", map[string]string{"Go": "solar:code-bold"}, "default:category"},
+		{"分类为空回退默认", "", map[string]string{"Go": "example:notebook"}, "default:category"},
 		{"图标表为空回退默认", "Go", nil, "default:category"},
-		{"分类未命中回退默认", "Go", map[string]string{"Rust": "solar:code-bold"}, "default:category"},
-		{"命中值为 icons.yml key", "Go", map[string]string{"Go": "solar:code-bold"}, "solar:code-bold"},
+		{"分类未命中回退默认", "Go", map[string]string{"Rust": "example:notebook"}, "default:category"},
+		{"命中值为 icons.yml key", "Go", map[string]string{"Go": "example:notebook"}, "example:notebook"},
 		{"命中值为图片 URL", "Go", map[string]string{"Go": "https://example.com/go.svg"}, "https://example.com/go.svg"},
 		{"命中值为空串回退默认", "Go", map[string]string{"Go": ""}, "default:category"},
 	}

@@ -82,7 +82,7 @@ func safeClassWord(v string) string {
 	return ""
 }
 
-// 安全审计 2026-08-16：icon key 白名单——iconify 形如 solar:hashtag-square-bold，
+// 安全审计 2026-08-16：icon key 白名单——iconify 形如 quot:hashtag，
 // 拒绝携带 HTML 元字符的 key 进入 iconFunc（即使其内部未转义也无法注入）。
 var reSafeIconKey = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9:_.-]{0,63}$`)
 

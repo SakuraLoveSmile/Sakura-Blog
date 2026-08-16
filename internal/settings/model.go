@@ -530,6 +530,28 @@ type LocalSearchConfig struct {
 	Path       string   `yaml:"path" json:"path"`
 	Content    *bool    `yaml:"content" json:"content"`
 	SkipSearch []string `yaml:"skip_search" json:"skip_search"`
+	// LazyLoad 懒加载（1.41）：首次聚焦搜索框才拉取搜索数据，缺省开启。
+	// 指针型同 article.tags——SectionSearch 整段覆盖合并，裸 bool 会被旧持久化行吃掉默认值。
+	LazyLoad *bool `yaml:"lazy_load" json:"lazy_load"`
+	// CacheTTL 搜索数据 localStorage 缓存时长秒（1.41）：nil=默认 86400（1 天），
+	// 显式 0=不缓存。指针型同上。
+	CacheTTL *int `yaml:"cache_ttl" json:"cache_ttl"`
+}
+
+// EffectiveLazyLoad 懒加载开关：未配置按 1.41 默认开启。
+func (c LocalSearchConfig) EffectiveLazyLoad() bool {
+	return c.LazyLoad == nil || *c.LazyLoad
+}
+
+// EffectiveCacheTTL 缓存 TTL 秒：未配置回退默认 86400；显式 0 表示禁用缓存。
+func (c LocalSearchConfig) EffectiveCacheTTL() int {
+	if c.CacheTTL == nil {
+		return 86400
+	}
+	if *c.CacheTTL < 0 {
+		return 0
+	}
+	return *c.CacheTTL
 }
 
 // DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
@@ -571,7 +593,7 @@ type NavTabItem struct {
 	Title       string `yaml:"title" json:"title"`
 	URL         string `yaml:"url" json:"url"`
 	External    bool   `yaml:"external,omitempty" json:"external,omitempty"`         // true 时 target="_blank"
-	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty"`                 // 图标 key（可选），如 solar:home-bold
+	Icon        string `yaml:"icon,omitempty" json:"icon,omitempty"`                 // 图标 key（可选），如 example:planet
 	ActiveRules string `yaml:"active_rules,omitempty" json:"active_rules,omitempty"` // 路径匹配正则（可选），缺省按 URL 精确匹配
 }
 
@@ -670,7 +692,7 @@ type MenuItem struct {
 	ID    string `yaml:"id" json:"id"`
 	Title string `yaml:"title" json:"title"`
 	URL   string `yaml:"url" json:"url"`
-	Icon  string `yaml:"icon" json:"icon"`   // iconify key，如 solar:documents-bold-duotone
+	Icon  string `yaml:"icon" json:"icon"`   // iconify key，如 default:documents
 	Theme string `yaml:"theme" json:"theme"` // 高亮色，如 #1BCDFC
 }
 
@@ -759,7 +781,7 @@ type SocialItem struct {
 	Title   string `yaml:"title" json:"title"`
 	URL     string `yaml:"url" json:"url"`
 	Icon    string `yaml:"icon" json:"icon"`         // raw HTML，如 <img src="...">
-	IconKey string `yaml:"icon_key" json:"icon_key"` // icons.yml 的 key，如 solar:xxx
+	IconKey string `yaml:"icon_key" json:"icon_key"` // icons.yml 的 key，如 example:xxx
 }
 
 // RecentPost 近期发布 widget 的一项。
@@ -834,6 +856,12 @@ type Page struct {
 	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
 	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
 	Subtitle     string   // banner 副标题（对齐原版 banner .text.subtitle；友链页取 pages.friends.hero.description）
+	// Tags 文章标签（1.41 article.tags 末尾标签行）：DB 链路逗号存储经 ParseTags 拆分，
+	// 文件链路直接取 frontmatter 列表。
+	Tags []string
+	// AILabel AI 成分标签档位（1.41 ai_label）：manual/reviewed/polished/generated，
+	// 空=未写 frontmatter（回退配置 default，仍空零渲染）。
+	AILabel string
 
 	// 文章级 SEO（Spec 42）：非空时优先于站点级默认值输出 meta。
 	MetaDescription string // 自定义 meta description（覆盖自动摘要）
@@ -844,6 +872,59 @@ type Page struct {
 	AISummary   string
 	AISummaryOn bool
 	AIUserAPIOn bool
+}
+
+// langLookup 语言包文案查询钩子：settings 是共享层不得依赖表现层（modules/stellar/web 的 Lang），
+// 由表现层启动时通过 SetLangLookup 注入；未注入返回空串（ai_label 零渲染）。
+var langLookup func(string) string
+
+// SetLangLookup 注入语言包文案查询函数（modules/stellar/web init 时挂载 Lang）。
+func SetLangLookup(fn func(string) string) { langLookup = fn }
+
+// AILabelView 文章 AI 成分标签渲染视图（1.41 ai_label）：由 ViewData.AILabel 解析，
+// 模板拼 HTML（icon 走模板函数、style 由模板上下文转义）。
+type AILabelView struct {
+	Text  string // 语言包文案（meta.ai_label.*）
+	Color string // 配置色（已补 # 前缀；banner 含图场景模板不输出该色）
+	Icon  string // icons.yml 键（空=无图标）
+	Right bool   // 无阅读时长时靠右（right class，对齐上游 cap/cap right 分支）
+}
+
+// AILabel 解析文章 AI 成分标签视图（1.41 ai_label）：文章 frontmatter 值优先，
+// 空则回退配置 default；档位配置或语言包文案缺失返回 nil（零渲染，历史文章零变化）。
+func (d *ViewData) AILabel() *AILabelView {
+	if d.Page == nil || d.Site == nil {
+		return nil
+	}
+	cfg := d.Site.Article.AILabel
+	key := d.Page.AILabel
+	if key == "" {
+		key = cfg.Default
+	}
+	if key == "" {
+		return nil
+	}
+	def := cfg.Def(key)
+	if def == nil {
+		return nil
+	}
+	text := ""
+	if langLookup != nil {
+		text = langLookup("meta.ai_label." + key)
+	}
+	if text == "" {
+		return nil
+	}
+	color := def.Color
+	if color != "" && !strings.HasPrefix(color, "#") {
+		color = "#" + color
+	}
+	return &AILabelView{
+		Text:  text,
+		Color: color,
+		Icon:  def.Icon,
+		Right: !(d.Site.Article.ReadingTime && d.WordCount > 0),
+	}
 }
 
 // MetaDescription 计算 head.html 的 meta description 输出（Spec 42 优先级）：
@@ -857,6 +938,11 @@ func (d *ViewData) MetaDescription() string {
 	}
 	if d.Page != nil && d.Page.Excerpt != "" {
 		return d.Page.Excerpt
+	}
+	// Page.Description：handler 计算好的页面描述（文章页=摘要截断，wiki 页=正文/项目描述回退），
+	// 1.41 起 og/JSON-LD 同走本链（原直接读 Page.Description 的输出路径统一归口到这）
+	if d.Page != nil && d.Page.Description != "" {
+		return d.Page.Description
 	}
 	if d.Site != nil {
 		return d.Site.Description

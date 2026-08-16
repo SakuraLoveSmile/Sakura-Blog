@@ -176,3 +176,51 @@ func TestEmbeddedStellarAssetsExist(t *testing.T) {
 		}
 	}
 }
+
+// TestHeadSEO141 Spec 71 T6（上游 1.41 SEO 修复移植）：og:site_name 恒为站点名、
+// 分页 title 带页码后缀、og:description 走 MetaDescription 回退链。
+func TestHeadSEO141(t *testing.T) {
+	engine, err := NewEngineFromEmbed(&IconRegistry{})
+	if err != nil {
+		t.Fatalf("NewEngineFromEmbed: %v", err)
+	}
+	render := func(vd *ViewData) string {
+		t.Helper()
+		html, err := engine.Render("layout/base", vd)
+		if err != nil {
+			t.Fatalf("render layout/base: %v", err)
+		}
+		return html
+	}
+
+	t.Run("og:site_name 恒为站点名", func(t *testing.T) {
+		html := render(&ViewData{
+			Site: &Site{Title: "测试站"},
+			Page: &Page{Title: "文章", Layout: "post"},
+		})
+		if !strings.Contains(html, `<meta property="og:site_name" content="测试站">`) {
+			t.Fatalf("og:site_name 缺失")
+		}
+	})
+
+	t.Run("首页分页 title 带页码", func(t *testing.T) {
+		html := render(&ViewData{
+			Site:      &Site{Title: "测试站"},
+			Page:      &Page{Layout: "index"},
+			Paginator: &Paginator{Current: 2},
+		})
+		if !strings.Contains(html, "<title>测试站 - 第 2 页 - 测试站</title>") {
+			t.Fatalf("分页 title 缺失页码后缀，got: %s", html[:200])
+		}
+	})
+
+	t.Run("非文章页 og:image 回退站点头像", func(t *testing.T) {
+		html := render(&ViewData{
+			Site: &Site{Title: "测试站", Avatar: "https://example.com/a.png"},
+			Page: &Page{Layout: "index"},
+		})
+		if !strings.Contains(html, `<meta property="og:image" content="https://example.com/a.png">`) {
+			t.Fatalf("非文章页 og:image 未回退头像")
+		}
+	})
+}

@@ -50,6 +50,7 @@ type Post struct {
 	// 文章级 SEO（Spec 42）：非空时覆盖站点级默认 meta 输出。
 	MetaDescription string // 自定义 meta description，空=用自动摘要/站点默认
 	MetaKeywords    string // 自定义 meta keywords，逗号分隔，空=用站点默认
+	AILabel         string // AI 成分标签档位（1.41：manual/reviewed/polished/generated，空=不渲染）
 
 	// 多作者体系（Spec 38）：作者 ID，空串=无作者（回退站长）。
 	Author string
@@ -125,7 +126,7 @@ func (p *Post) TableName() string { return "posts" }
 
 // Columns Entity 接口：全列，首列为 id（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列 + Spec 53 ai_summary 列）。
 func (p *Post) Columns() []string {
-	return []string{"id", "slug", "title", "excerpt", "cover", "category", "tags", "content_md", "content_html", "status", "created_at", "updated_at", "pinned", "password", "publish_at", "poster", "topic", "topic_id", "\"references\"", "banner", "deleted_at", "draft_json", "meta_description", "meta_keywords", "author", "ai_summary"}
+	return []string{"id", "slug", "title", "excerpt", "cover", "category", "tags", "content_md", "content_html", "status", "created_at", "updated_at", "pinned", "password", "publish_at", "poster", "topic", "topic_id", "\"references\"", "banner", "deleted_at", "draft_json", "meta_description", "meta_keywords", "author", "ai_summary", "ai_label"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应；pinned/publish_at 做存储格式转换）。
@@ -134,7 +135,7 @@ func (p *Post) Values() []any {
 	if p.Pinned {
 		pinned = 1
 	}
-	return []any{p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.DeletedAt, p.DraftJSON, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary}
+	return []any{p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.DeletedAt, p.DraftJSON, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -144,7 +145,7 @@ func (p *Post) SetID(id int64) { p.ID = id }
 func (p *Post) ScanRow(row rowScanner) error {
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel)
 	if err != nil {
 		return err
 	}
@@ -157,7 +158,7 @@ func (p *Post) ScanRow(row rowScanner) error {
 
 // listCols 统一 SELECT 列清单（与 Post.Columns() 前 26 列同序，末位附加 views 只读投影；
 // 供自定义查询拼接用，扫描对应 scanOne 的 27 列顺序）。
-const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, views"
+const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, ai_label, views"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -402,6 +403,8 @@ func (s *Store) migrateColumns() error {
 		"author": `ALTER TABLE posts ADD COLUMN author TEXT NOT NULL DEFAULT ''`,
 		// Spec 53 AI 文章摘要
 		"ai_summary": `ALTER TABLE posts ADD COLUMN ai_summary TEXT NOT NULL DEFAULT ''`,
+		// Spec 71 (1.41) AI 成分标签档位
+		"ai_label": `ALTER TABLE posts ADD COLUMN ai_label TEXT NOT NULL DEFAULT ''`,
 	}
 	rows, err := s.db.Query(`PRAGMA table_info(posts)`)
 	if err != nil {
@@ -717,9 +720,9 @@ func (s *Store) Update(slug string, p *Post) error {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?, ai_summary=COALESCE((SELECT ai_summary FROM posts WHERE slug=?), '')
+	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?, ai_summary=COALESCE((SELECT ai_summary FROM posts WHERE slug=?), ''), ai_label=COALESCE(NULLIF(?,''), (SELECT ai_label FROM posts WHERE slug=?))
 		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug, slug)
+		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug, p.AILabel, slug, slug)
 	if err != nil {
 		return fmt.Errorf("update post %s: %w", slug, err)
 	}
@@ -887,7 +890,7 @@ func scanOne(row rowScanner) (*Post, error) {
 	var pinned int
 	var password, publishAt, deletedAt string
 	var views int64
-	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &views); err != nil {
+	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel, &views); err != nil {
 		return nil, err
 	}
 	p.Pinned = pinned != 0

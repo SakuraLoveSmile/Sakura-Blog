@@ -134,3 +134,61 @@ func TestAPISearchTypeFilter(t *testing.T) {
 		t.Errorf("unknown type should be empty, got %d", len(items))
 	}
 }
+
+// TestSearchItemsAnchors 1.41 索引条目带章节锚点：标题偏移正确、JSON 序列化含 anchors。
+func TestSearchItemsAnchors(t *testing.T) {
+	posts := []*store.Post{{
+		Slug: "sections", Title: "章节文",
+		ContentHTML: `<p>引言部分</p><h2 id="setup">环境准备</h2><p>安装 Go 环境</p><h3 id="run">运行</h3><p>启动服务</p>`,
+	}}
+	items := searchItemsFromPosts(posts)
+	if len(items) != 1 {
+		t.Fatalf("want 1 item, got %d", len(items))
+	}
+	it := items[0]
+	if len(it.Anchors) != 2 {
+		t.Fatalf("want 2 anchors, got %+v", it.Anchors)
+	}
+	if it.Anchors[0].ID != "setup" || it.Anchors[0].Text != "环境准备" {
+		t.Errorf("anchor0 = %+v", it.Anchors[0])
+	}
+	if it.Anchors[1].ID != "run" || it.Anchors[1].Text != "运行" {
+		t.Errorf("anchor1 = %+v", it.Anchors[1])
+	}
+	// 偏移按 UTF-16 计（与 JS slice 一致；BMP 内与 rune 数等价）：标题首字符应对上
+	runes := []rune(it.Content)
+	if sub := string(runes[it.Anchors[0].Offset:]); !strings.HasPrefix(sub, "环境准备") {
+		t.Errorf("anchor0 offset %d 指向 %q", it.Anchors[0].Offset, sub)
+	}
+	// 序列化：条目含 anchors 数组（前端章节化消费）
+	b, err := json.Marshal(it)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"anchors":[{"id":"setup"`) {
+		t.Errorf("json missing anchors: %s", b)
+	}
+}
+
+// TestResultAnchorMapsHitSection 服务端搜索结果锚点映射：命中词落在第二章节时返回该章节锚点。
+func TestResultAnchorMapsHitSection(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	st := newTestStore(t)
+	ws := &webServer{st: st}
+	p := &store.Post{
+		Slug: "anchored", Title: "锚点文", Status: store.StatusPublished,
+		ContentHTML: `<h2 id="intro">介绍</h2><p>这是介绍</p><h2 id="deploy">部署</h2><p>部署部署部署</p>`,
+	}
+	if _, err := ws.st.Create(p); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	id, text := ws.resultAnchor(search.TypePost, "anchored", []string{"部署"})
+	if id != "deploy" || text != "部署" {
+		t.Fatalf("anchor = (%q, %q), want (deploy, 部署)", id, text)
+	}
+	// 命中首章节之前的引言 → 无锚点
+	id, text = ws.resultAnchor(search.TypePost, "anchored", []string{"不存在的词"})
+	if id != "" || text != "" {
+		t.Fatalf("no-hit should be empty, got (%q, %q)", id, text)
+	}
+}

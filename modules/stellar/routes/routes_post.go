@@ -87,6 +87,10 @@ func (s *webServer) handlePost(c *gin.Context) {
 				Topic:      p.Topic,
 				References: store.DecodeReferences(p.References),
 				Banner:     banner,
+				// 末尾标签行（1.41 article.tags）：DB 逗号存储拆分为列表
+				Tags: tmpl.ParseTags(p.Tags),
+				// AI 成分标签（1.41 ai_label）
+				AILabel: p.AILabel,
 				// 文章级 SEO（Spec 42）：非空时优先输出 meta（优先级见 ViewData.MetaDescription）
 				MetaDescription: p.MetaDescription,
 				MetaKeywords:    p.MetaKeywords,
@@ -188,6 +192,10 @@ func (s *webServer) handlePost(c *gin.Context) {
 			Excerpt:    articleExcerpt(s.site.Load(), p.Excerpt, p.HTML),
 			Banner:     articleBanner(s.site.Load(), p.Banner),
 			References: p.References,
+			// 末尾标签行（1.41 article.tags）：frontmatter 列表直取
+			Tags: p.Tags,
+			// AI 成分标签（1.41 ai_label）
+			AILabel: p.AILabel,
 		},
 		Content: template.HTML(p.HTML),
 	}

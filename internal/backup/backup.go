@@ -221,6 +221,7 @@ func marshalPost(p *store.Post) string {
 	writeKV("excerpt", p.Excerpt)
 	writeKV("cover", p.Cover)
 	writeKV("banner", p.Banner)
+	writeKV("ai_label", p.AILabel)
 	writeKV("category", p.Category)
 	writeKV("topic", p.Topic)
 	if p.Tags != "" {
@@ -331,6 +332,7 @@ func (s *Service) importOne(base string, data []byte, res *ImportResult) {
 		Excerpt:     meta.Excerpt,
 		Cover:       meta.Cover,
 		Banner:      meta.Banner,
+		AILabel:     meta.AILabel,
 		Category:    meta.Category,
 		Topic:       meta.Topic,
 		Tags:        strings.Join(meta.Tags, ","),

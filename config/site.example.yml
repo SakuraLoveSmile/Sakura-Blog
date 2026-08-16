@@ -24,12 +24,12 @@ menubar:
     - id: post
       title: 博客
       url: /
-      icon: solar:documents-bold-duotone
+      icon: default:documents
       theme: "#1BCDFC"
     - id: wiki
       title: 文库
       url: /wiki
-      icon: solar:notebook-bookmark-bold-duotone
+      icon: example:notebook
       theme: "#3DC550"
     - id: notes
       title: 笔记
@@ -39,7 +39,7 @@ menubar:
     - id: friends
       title: 友链
       url: /friends
-      icon: solar:planet-bold-duotone
+      icon: example:planet
       theme: "#FF6B9D"
 
 # 右栏（site.yml rightbar 段）
@@ -49,7 +49,7 @@ rightbar:
     items:
       - title: 查看文库
         url: /wiki
-        icon: solar:notebook-bookmark-bold-duotone
+        icon: example:notebook
       - title: 传送到笔记
         url: /notes
         icon: default:edit
@@ -153,7 +153,7 @@ authors:
 #   items:
 #     - title: 友链
 #       url: /friends/
-#       icon: solar:planet-bold-duotone
+#       icon: example:planet
 #     - title: GitHub
 #       url: https://github.com/example
 #       external: true
@@ -235,16 +235,34 @@ article:
   reading_time: false
   # 文章卡片是否显示标签（最多 5 个）
   card_tags: false
+  # 文章末尾是否显示本文标签（1.41 新增，位于 article-footer 之前；未配置视为开启）
+  tags: true
+  # AI 成分标签（1.41）：frontmatter 用 ai_label: manual/reviewed/polished/generated 标记，
+  # 未写 frontmatter 且 default 为空时零渲染；文案由语言包提供，此处配置各档颜色与图标
+  ai_label:
+    default:
+    manual:
+      color: '#03a9f4'
+      icon: default:shield-user
+    reviewed:
+      color: '#4caf50'
+      icon: default:shield-check
+    polished:
+      color: '#4caf50'
+      icon: default:shield-up
+    generated:
+      color: '#ff9800'
+      icon: default:shield-warning
   # 分类配色表（对齐原版 theme.article.category_color）：首页卡片分类 meta 的文字与底色
   category_color:
     技术: '#1BCDFC'
     测试: '#FA7D23'
   # 分类图标表：分类名 → icon key（icons.yml 的 key 或图片 URL），未配置回退默认分类图标
   category_icon:
-    技术: 'solar:documents-bold-duotone'
+    技术: 'default:documents'
   # 标签图标表：标签名 → icon key（icons.yml 的 key 或图片 URL），未配置不渲染图标
   tag_icon:
-    Go: 'solar:hashtag-square-bold'
+    Go: 'quot:hashtag'
   copyright:
     enabled: true
     license: 署名-非商业性使用-相同方式共享 4.0 国际
@@ -281,7 +299,7 @@ admin:
 # library：组件库（组件名 → layout + 参数），同名组件浅合并覆盖内置缺省参数；
 # pages：页面类型 → 左右栏组件序列，类型枚举 index/post/page/archive/categories/tags/topic/wiki/friends/notes/moments，
 # 未配置的类型回退 index 布局。可用 layout：recent/tagcloud/popular/related/markdown/author/siteinfo/latest_comment/toc/ghrepo/ghuser/ghissues/timeline/linklist。
-#     links: {layout: linklist, title: 快速链接, columns: 2, items: [{title: 主页, url: /, icon: solar:home-bold}]}  # Spec 50 独立 linklist widget
+#     links: {layout: linklist, title: 快速链接, columns: 2, items: [{title: 主页, url: /, icon: example:planet}]}  # Spec 50 独立 linklist widget
 # widgets:
 #   library:
 #     recent: {layout: recent, limit: 10}                 # 最近更新（rss: '' 可隐藏订阅按钮）

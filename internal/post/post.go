@@ -26,6 +26,8 @@ type Post struct {
 	Date       string
 	Status     string   // draft / published，空=由旧文件回退链路按公开内容兼容
 	References []string // 参考文献列表（frontmatter references 字段）
+	Tags       []string // 标签列表（1.41 article.tags 末尾标签行）
+	AILabel    string   // AI 成分标签档位（1.41 ai_label）
 }
 
 // FileMeta 从 Markdown frontmatter 解析出的元数据，供 seed 导入跨包使用。
@@ -38,6 +40,7 @@ type FileMeta struct {
 	Category string
 	Topic    string // 专栏名
 	Tags     []string
+	AILabel  string
 	// 海报封面（poster_headline 等平铺 key，对齐原版 post.poster）
 	PosterHeadline string
 	PosterTopic    string
@@ -171,7 +174,8 @@ func (s *Service) Render(body string) (string, error) {
 	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err
 	}
-	return sb.String(), nil
+	// 3. 普通表格包 .md-table-scroll 横向滚动容器（1.41，对齐上游构建期 filter）
+	return wrapTables(sb.String()), nil
 }
 
 // ParseBytes 解析 Markdown 原文（含可选 frontmatter），返回元数据与正文。
@@ -214,6 +218,8 @@ func (s *Service) Load(slug string) (*Post, error) {
 	}
 	return &Post{
 		Slug:       slug,
+		Tags:       meta.Tags,
+		AILabel:    meta.AILabel,
 		Title:      title,
 		HTML:       html,
 		Excerpt:    meta.Excerpt,

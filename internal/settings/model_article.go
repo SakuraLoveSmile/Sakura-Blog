@@ -16,6 +16,13 @@ type ArticleConfig struct {
 	PinStyle    string `yaml:"pin_style" json:"pin_style"`       // carousel / flat
 	ReadingTime bool   `yaml:"reading_time" json:"reading_time"` // 文章页阅读时长
 	CardTags    bool   `yaml:"card_tags" json:"card_tags"`       // 文章卡片标签
+	// Tags 文章末尾标签行（1.41 新增，缺省开启）。指针型区分「历史 settings/site.yml
+	// 无此键」（nil，按默认 true 处理）与「显式关闭」（false）——SectionArticle 整段
+	// 覆盖式合并，裸 bool 会让旧持久化行把新默认值吃成 false。
+	Tags *bool `yaml:"tags" json:"tags"`
+	// AILabel AI 成分标签配置（1.41）：四档文案色与可选图标；未配置且文章未写
+	// frontmatter ai_label 时零渲染，历史文章零变化。
+	AILabel AILabelConfig `yaml:"ai_label" json:"ai_label"`
 	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
 	// 零配置时前端回退 tech，与现状逐像素一致。
 	Type          string            `yaml:"type" json:"type"`
@@ -49,6 +56,62 @@ func (a ArticleConfig) EffectivePinStyle() string {
 		return "flat"
 	}
 	return "carousel"
+}
+
+// AILabelDef AI 成分标签单档配置（1.41 ai_label）：color 文字色（缺 # 自动补全），icon 可选 icons.yml 键。
+type AILabelDef struct {
+	Color string `yaml:"color" json:"color"`
+	Icon  string `yaml:"icon" json:"icon"`
+}
+
+// AILabelConfig 文章 AI 成分标签配置（site.yml article.ai_label）。四档对齐上游闭集
+// （manual 人工 / reviewed 已审核 / polished 已润色 / generated 全生成）；Default 为
+// 全站缺省档（空=未写 frontmatter 的历史文章零渲染）。
+type AILabelConfig struct {
+	Default   string      `yaml:"default" json:"default"`
+	Manual    *AILabelDef `yaml:"manual" json:"manual"`
+	Reviewed  *AILabelDef `yaml:"reviewed" json:"reviewed"`
+	Polished  *AILabelDef `yaml:"polished" json:"polished"`
+	Generated *AILabelDef `yaml:"generated" json:"generated"`
+}
+
+// Def 返回档位配置；未知档位返回 nil（对齐上游 labelConfig[value] 未命中零渲染）。
+func (c AILabelConfig) Def(key string) *AILabelDef {
+	switch key {
+	case "manual":
+		return c.Manual
+	case "reviewed":
+		return c.Reviewed
+	case "polished":
+		return c.Polished
+	case "generated":
+		return c.Generated
+	}
+	return nil
+}
+
+// FillDefaults 就地补齐缺失档位的上游 1.41 默认（色 + shield 图标）。
+// 上游语义：主题 _config.yml 内置四档默认、站点可逐档覆盖；settings/site.yml 的
+// article 段整段覆盖合并会把未配置的 AILabelConfig 吃成零值（四档全 nil → 一律零渲染），
+// 故加载/热更路径统一走本方法补默认。Default 键不补（留空=未选档零渲染）。
+func (c *AILabelConfig) FillDefaults() {
+	if c.Manual == nil {
+		c.Manual = &AILabelDef{Color: "#03a9f4", Icon: "default:shield-user"}
+	}
+	if c.Reviewed == nil {
+		c.Reviewed = &AILabelDef{Color: "#4caf50", Icon: "default:shield-check"}
+	}
+	if c.Polished == nil {
+		c.Polished = &AILabelDef{Color: "#4caf50", Icon: "default:shield-up"}
+	}
+	if c.Generated == nil {
+		c.Generated = &AILabelDef{Color: "#ff9800", Icon: "default:shield-warning"}
+	}
+}
+
+// EffectiveTags 文章末尾标签行开关：未配置（nil）回退 1.41 默认开启。
+func (a ArticleConfig) EffectiveTags() bool {
+	return a.Tags == nil || *a.Tags
 }
 
 var readingTagRE = regexp.MustCompile(`<[^>]+>`)

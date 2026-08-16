@@ -1,3 +1,71 @@
+// 平滑滚动动画（1.41）：短距离 300ms、长距离最多 600ms，easeOutCubic；
+// 显式 instant，避免与全局 scroll-behavior: smooth 叠加导致滚动变慢。
+let smoothScrollRAF = 0;
+function cancelSmoothScroll() {
+  if (smoothScrollRAF) {
+    cancelAnimationFrame(smoothScrollRAF);
+    smoothScrollRAF = 0;
+  }
+}
+function smoothScrollTo(targetY) {
+  cancelSmoothScroll();
+  targetY = Math.max(0, targetY);
+  const startY = window.scrollY;
+  const diff = targetY - startY;
+  if (Math.abs(diff) < 2) {
+    return;
+  }
+  const duration = Math.min(600, Math.max(300, Math.abs(diff) * 0.15));
+  const startTime = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    window.scrollTo({ top: startY + diff * eased, behavior: 'instant' });
+    if (t < 1) {
+      smoothScrollRAF = requestAnimationFrame(step);
+    } else {
+      smoothScrollRAF = 0;
+    }
+  }
+  smoothScrollRAF = requestAnimationFrame(step);
+}
+
+// 通用页内锚点平滑滚动（1.41）：标题锚点、TOC 链接、navbar 页内导航、脚注回链等。
+// 已被其他处理器拦截的点击通过 defaultPrevented 跳过，避免重复滚动；
+// #start 锚点贴顶滚动，其余锚点与 TOC 点击保持一致（32px offset）。
+let anchorClickBound = false;
+function bindAnchorClick() {
+  if (anchorClickBound) return;
+  anchorClickBound = true;
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!link || e.defaultPrevented) {
+      return;
+    }
+    const href = link.getAttribute('href');
+    if (!href || href.indexOf('#') !== 0) {
+      return;
+    }
+    let id = href.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch (err) {
+      // 片段含非法编码时按原样查找
+    }
+    const target = id && document.getElementById(id);
+    if (!target) {
+      return;
+    }
+    e.preventDefault();
+    const offset = id === 'start' ? 0 : 32;
+    const targetY = target.getBoundingClientRect().top + window.scrollY - offset;
+    smoothScrollTo(targetY);
+    if (window.history && window.history.pushState) {
+      window.history.pushState(null, '', href);
+    }
+  });
+}
+
 // utils
 const util = {
 
@@ -158,6 +226,54 @@ const init = {
     }
     activeTOC(); // 初始高亮
   },
+  navbarPin: () => {
+    // 1.41：列表页 navbar top 背景条未吸顶为卡片样式、吸顶恢复玻璃（.navbar-blur.pinned）。
+    // 吸顶判定直接测 navbar 实际视口位置而非 scrollY 推算：移动端浏览器顶栏伸缩会改变
+    // scrollY（展开顶栏时 scrollY 减小），即使 navbar 仍吸顶也可能跌破阈值导致玻璃误消失。
+    const navbars = document.querySelectorAll('.navbar.top');
+    if (navbars.length === 0) {
+      return;
+    }
+    const TOLERANCE = 2; // 视口顶部允许偏差（px），吸收亚像素/取整误差
+    let states = [];
+    function update() {
+      states.forEach((state) => {
+        const top = state.navbar.getBoundingClientRect().top;
+        state.bar.classList.toggle('pinned', top <= state.stickyTop + TOLERANCE);
+      });
+    }
+    function measure() {
+      states = [];
+      navbars.forEach((navbar) => {
+        const bar = navbar.querySelector('.navbar-blur');
+        if (bar == null) {
+          return;
+        }
+        // getComputedStyle().top 自动兼容桌面 var(--gap-margin) 与移动端 8pt
+        const stickyTop = parseFloat(getComputedStyle(navbar).top) || 16;
+        states.push({ navbar: navbar, bar: bar, stickyTop: stickyTop });
+      });
+      update();
+    }
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) {
+        return;
+      }
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        update();
+        ticking = false;
+      });
+    }, { passive: true });
+    // 顶栏伸缩不一定触发 scroll，兜底监听 visualViewport 尺寸变化
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', update);
+    }
+    window.addEventListener('resize', measure);
+    window.addEventListener('pageshow', measure);
+    measure();
+  },
   sidebar: () => {
     // 移动端点 TOC 链接收起左侧栏。事件委托绑一次即可（TOC 节点 PJAX 后会被替换，委托到 document 不受影响）
     if (tocState.sidebarBound) return;
@@ -317,6 +433,8 @@ window.stellar = window.stellar || {};
 stellar.initPage = function () {
   init.toc();
   init.sidebar();
+  init.navbarPin();
+  bindAnchorClick();
   init.wikiEmptyCard();
   init.relativeDate(document.querySelectorAll('#post-meta time'));
   init.registerTabsTag();

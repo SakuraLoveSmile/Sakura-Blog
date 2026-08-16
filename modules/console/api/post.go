@@ -71,6 +71,7 @@ type postJSON struct {
 	// 文章级 SEO（Spec 42）
 	MetaDescription string `json:"meta_description"`
 	MetaKeywords    string `json:"meta_keywords"`
+	AILabel         string `json:"ai_label"`
 	CreatedAt       string `json:"created_at"`
 	UpdatedAt       string `json:"updated_at"`
 	Views           int64  `json:"views"`
@@ -107,6 +108,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		Password:        p.Password,
 		MetaDescription: p.MetaDescription,
 		MetaKeywords:    p.MetaKeywords,
+		AILabel:         p.AILabel,
 		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
 		Views:           views,
@@ -635,6 +637,8 @@ type postRequest struct {
 	MetaKeywords    string `json:"meta_keywords"`
 	// 多作者体系（Spec 38）：作者 ID
 	Author string `json:"author"`
+	// AI 成分标签档位（1.41 ai_label）：空=不渲染；空串提交时 store 层保留旧值
+	AILabel string `json:"ai_label"`
 }
 
 func reqToPost(req *postRequest, contentHTML string) *store.Post {
@@ -662,6 +666,8 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
 		// 多作者体系（Spec 38）
 		Author: strings.TrimSpace(req.Author),
+		// AI 成分标签（1.41）：空串经 store NULLIF 保留旧值
+		AILabel: strings.TrimSpace(req.AILabel),
 	}
 	if _, topicID, err := decodeTopicID(req.TopicID); err == nil {
 		p.TopicID = topicID

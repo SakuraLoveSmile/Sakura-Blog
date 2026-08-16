@@ -241,7 +241,7 @@ func (s *webServer) buildMenuPages() []tmpl.MenuItem {
 			continue
 		}
 		covered[u] = true
-		items = append(items, tmpl.MenuItem{ID: p.Slug, Title: p.Title, URL: u, Icon: "solar:documents-bold-duotone"})
+		items = append(items, tmpl.MenuItem{ID: p.Slug, Title: p.Title, URL: u, Icon: "default:documents"})
 	}
 	return items
 }

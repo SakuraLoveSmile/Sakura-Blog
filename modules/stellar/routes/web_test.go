@@ -19,7 +19,7 @@ import (
 func TestToCard(t *testing.T) {
 	site := &tmpl.Site{}
 	site.Article.CategoryColor = map[string]string{"技术": "ff0000"}
-	site.Article.CategoryIcon = map[string]string{"技术": "solar:folder-bold"}
+	site.Article.CategoryIcon = map[string]string{"技术": "default:category"}
 	ws := newWebServer(webDeps{Site: sitePtr(site)})
 	created := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
 	p := &store.Post{
@@ -33,8 +33,8 @@ func TestToCard(t *testing.T) {
 	if card.CategoryStyle == "" {
 		t.Error("category with configured color should produce style")
 	}
-	if card.CategoryIcon != "solar:folder-bold" {
-		t.Errorf("category with configured icon = %q, want %q", card.CategoryIcon, "solar:folder-bold")
+	if card.CategoryIcon != "default:category" {
+		t.Errorf("category with configured icon = %q, want %q", card.CategoryIcon, "default:category")
 	}
 	if card.Poster != nil {
 		t.Error("empty poster column should not produce poster card")

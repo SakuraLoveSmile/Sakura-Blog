@@ -149,7 +149,7 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
  <!-- icon + preview -->
  <div class="col-span-3">
  <label class="block text-[10px] text-text-quaternary mb-0.5">图标 (icons.yml key)</label>
- <IconPicker v-model="it.icon" compact placeholder="如 solar:documents-bold-duotone" />
+ <IconPicker v-model="it.icon" compact placeholder="如 default:documents" />
  </div>
 
  <!-- theme color -->

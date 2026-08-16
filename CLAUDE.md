@@ -374,7 +374,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 `resource/hexo-theme-stellar` 已固定到 `1.40.0`，`modules/stellar/web/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
 
-**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本（如 1.41 同步分支已切到 1.41.0）。执行 `make css` 前先确认克隆版本与本分支同步版本一致（`git -C ../resource/hexo-theme-stellar describe --tags`），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
+**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本。执行 `make css` 前先确认克隆版本与本分支同步版本一致（当前以本文档最新 Spec 章节记录的版本为准，见 Spec 71；`git -C ../resource/hexo-theme-stellar describe --tags` 核对），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
 
 - 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
 - `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
@@ -418,3 +418,40 @@ SW（Service Worker，head.html 注册 `/sw.js`）对 `/assets/*` 走 `cache-fir
 
 - **主题 YAML**：`GET/PUT /api/v1/settings/style/yaml`（goccy/go-yaml 解析校验 → `SaveSection(style)` → `RebuildSite` 热更新）。设置页外观组「主题 YAML」tab（ThemeYamlTab.vue）直接编辑 site.yml `style` 段，与 AppearanceTab/高级·JSON 同源。`StyleConfig` 对齐 1.38 style 面（font-size code/codeblock、border-radius 七档、codeblock.highlightjs_theme、animated_avatar；header_prefix 值为 URL 时注入图标 background-image）。**注意**：main.css 不消费 `--radius-*` 变量，圆角运行时注入实际无效，颜色/`--fsp`/字体/左栏/全站背景才是有效旋钮。
 - **页面统一管理**：PageList.vue 顶部 `apple-segmented` 三分段（普通页面/文库/友链），深链 `?module=wiki|friends`，内嵌 WikiDocsView/FriendList；数据仍存 wikidocs/links 表。**坑**：分段/module 逻辑必须放在 `useRouter()/useRoute()` 声明之后（TDZ），否则 PageList 挂载失败白屏。
+
+## Spec 71 · Stellar 1.41.0 同步（2026-08）
+
+`resource/hexo-theme-stellar` 已切到 `1.41.0`，`make css` 重编 `main.css`（293 KB）；自本节起项目同步版本以 1.41.0 为准（Spec 68 的 1.40.0 描述为历史）。坑点：
+
+### 图标命名空间迁移（1.41 破坏性变更）
+
+- `internal/settings/data/icons.yml` 已整体替换为上游 1.41 版：**98 键、12 语义化命名空间**（`default:`/`example:`/`quot:`/`chat:`/`github:`/`share:`/`vote:`/`weibo:`/`image:`/`copy:`/`hashtag:`/`rating:`），`solar:*`/`ph:*`/`bxs:*` 旧前缀全部废除。引用一律用新键（新旧映射以上游 1.41 `icons.yml` 为准）；最长行 `chat:safari` 13.6 KB，Scanner 默认 64 KB buffer 仍够。dev 侧自有的 `default:reward`（打赏）键已在迁移时保留。
+- 上游的「异步图标加载」（`<svg data-icon>` 占位 + `/js/icons/{ns}.json` 拉取替换）属 Hexo 构建系统项**不移植**，本项目保持 IconRegistry 全内联 SVG。
+- **旧键兼容**：settings 表历史持久化值（menubar/rightbar/category_icon/tag_icon）仍带 `solar:` 前缀，`icons.go` 的 `legacyIconAlias` 表在 `Get` 未命中主表时回退——不要删该表，除非确认运行库已无旧键；未知键仍走 `icon-missing` 占位（防注入转义路径）。
+
+### CSS 编译入口变化：1.41 移出的样式段经 compile.js 追加
+
+1.41 把 swiper/fancybox/评论样式移出 `main.styl` 编译入口（上游改按需外置 `<link>`）。本项目不引入按需加载，`compile.js` 的 `EXTRA_STYLES` 在主入口后追加编译 `plugins/swiper.styl`、`plugins/fancybox.styl`、`comments/artalk.styl` 拼进单文件 `main.css`（顺序对齐 1.40 产物）。**上游再移动这些文件位置时需同步更新 EXTRA_STYLES 清单**。
+
+- `config.json` 顺带修正：lazyload transition 的消费路径是 `dependencies.lazyload.transition`（1.40 起即如此，原写在 `plugins.lazyload` 段恒 null 走默认）；`comments`/`plugins.fancybox/swiper/mermaid/pjax` 段已删（无消费者）。
+
+### 配置新增键的「整段覆盖」坑：用 *bool 而非裸 bool
+
+`config` 的 `SectionXxx` 解析是**整段覆盖式合并**（`site.Article = parsed.article`）：settings 表历史 JSON 没有新键时，unmarshal 零值（false/0）会吃掉代码默认值。1.41 新增的 `article.tags`（默认开）、`search.local_search.lazy_load`（默认开）/`cache_ttl`（默认 86400）都用 **`*bool`/`*int` + `Effective*()` 方法**（nil=未配置走默认），`ai_label.default` 留空即零渲染。以后加「默认开启」型配置键沿用此模式。**嵌套配置结构体**同理会整段吃掉默认：`AILabelConfig.FillDefaults()`（nil 档填主题内置四档）需在解析后与主题默认归一化两处都调用（现落点：`internal/config/reload_rebuild.go` 的 parseSections 与 `internal/config/site.go` 的 normalizeThemeDefaults）——只靠 DefaultSite 预填会被 settings 表旧行覆盖清零。
+
+### ai_label 的 store 写路径：NULLIF 保留语义
+
+posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?,''), (SELECT ai_label ...))`：seed 传 frontmatter 新值可更新；Console 旧客户端不传字段（零值 ""）**不清空**已有值。副作用：frontmatter 删掉 ai_label 后 seed 重导不置空，清空需显式 API 调用（见 spec Out of Scope）。
+
+### 搜索章节化：anchors 偏移必须用 UTF-16 单位
+
+`textutil.StripHTMLWithAnchors` 产出的 `Anchor.Offset` 单位是 **UTF-16 code unit**（与 JS `String.slice`/`length` 一致）——前端按它切章节文本；Go 侧消费（`resultAnchor` 命中映射）需自行换算（`Utf16Len`），直接当字节偏移用会中文错位。测试断言同样要用 `[]rune` 索引而非字节切片。
+
+- 搜索缓存升 **v4**（`{ts, ttl, data}` 结构 + `cache_ttl` 秒，0=禁用）；懒加载默认开（首次聚焦才拉 `/search.json`）。
+- `?kw=` 高亮在独立文件 `assets/js/search/highlight.js`（base.html 已引入，asset_ver 内容哈希自动版本戳）。
+- 服务器端 `/api/search` 结果带 `anchor_id/anchor_text`，前端拼 `?kw=首词#锚点`。
+
+### 平滑滚动与「天然规避」项
+
+- `main.js` 新增 `bindAnchorClick`（document 级委托 `a[href^="#"]`，`#start` 贴顶、其余 32px、`defaultPrevented` 跳过）+ `smoothScrollTo`（easeOutCubic，`behavior:'instant'` 防与全局 smooth 叠加）。放 `initPage` 内绑定，有 `anchorClickBound` 防重标记。
+- 上游「评论表情面板误触发 fancybox」与「wiki 标题去重」两项在本项目架构下**天然规避**：fancybox selector 只认 `div.lazy-box>img.lazy`（wrapLazyloadImages 仅处理 `.md-text.content`，评论面板动态渲染不在内）；wiki 文档页 title 不拼项目名前缀。排查同类问题先看本项目 selector/拼装方式，不要照搬上游补丁。

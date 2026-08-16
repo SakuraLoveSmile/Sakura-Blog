@@ -1,6 +1,10 @@
 package web
 
-import "fmt"
+import (
+	"fmt"
+
+	"blog/internal/settings"
+)
 
 // zhCN 文案表，键名对齐原版 Stellar languages/zh-CN.yml。
 // 本项目特有文案以 nav. / comment. / password. / topic. / friend. / wiki. / widget. / js. 前缀区分。
@@ -46,6 +50,11 @@ var zhCN = map[string]string{
 	"meta.contributors":   "本文贡献者",
 	"meta.word_count":     "共 %d 字",
 	"meta.reading_time":   "预计阅读 %d 分钟",
+	// AI 成分标签文案（1.41 ai_label，对齐 zh-CN.yml meta.ai_label.*；缺失键零渲染）
+	"meta.ai_label.manual":    "本文完全由人类完成",
+	"meta.ai_label.reviewed":  "已 AI 审核",
+	"meta.ai_label.polished":  "已 AI 润色",
+	"meta.ai_label.generated": "由 AI 生成",
 
 	// 时间后缀（对齐 zh-CN.yml meta.date_suffix.*）
 	"date_suffix.just":  "刚刚",
@@ -80,6 +89,7 @@ var zhCN = map[string]string{
 	"symbol.colon":      "：",
 	"symbol.brackets_l": "（",
 	"symbol.brackets_r": "）",
+	"symbol.page":       "第 %d 页",
 
 	// ── 本项目特有文案 ─────────────────────────────────────────
 
@@ -261,4 +271,9 @@ func Lang(key string, args ...interface{}) string {
 		return fmt.Sprintf(v, args...)
 	}
 	return v
+}
+
+func init() {
+	// 把语言包查询注入共享层 settings（AILabelView 文案解析用），保持依赖方向 web → settings。
+	settings.SetLangLookup(func(key string) string { return Lang(key) })
 }

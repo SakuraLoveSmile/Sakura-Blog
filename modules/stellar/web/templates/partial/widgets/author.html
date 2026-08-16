@@ -11,7 +11,7 @@
     <p class="username">{{$ad.Author.Name}}</p>
     <p class="bio">{{$ad.Author.Description}}</p>
     <a class="follow" href="{{$ad.Path}}">
-      {{icon "solar:documents-bold-duotone"}}
+      {{icon "default:documents"}}
       {{- lang "btn.all_posts" -}}
     </a>
     {{else}}
@@ -19,7 +19,7 @@
     <p class="username">{{.V.Site.LogoTitle}}</p>
     <p class="bio">{{.V.Site.Description}}</p>
     <a class="follow" href="/">
-      {{icon "solar:documents-bold-duotone"}}
+      {{icon "default:documents"}}
       {{- lang "widget.author_posts" -}}
     </a>
     {{end}}

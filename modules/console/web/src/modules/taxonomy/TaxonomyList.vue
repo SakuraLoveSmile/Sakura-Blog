@@ -561,7 +561,7 @@ onMounted(load);
         <label class="mb-1.5 block text-xs text-text-tertiary">
           「{{ tagIconTarget }}」的图标（icons.yml key / Iconify key / 图片 URL，留空=移除）
         </label>
-        <IconPicker v-model="tagIconValue" placeholder="如 solar:hashtag-square-bold" />
+        <IconPicker v-model="tagIconValue" placeholder="如 quot:hashtag" />
         <p class="mt-2 text-xs text-text-quaternary">确认后还需点「保存配色与图标」才会写入配置。</p>
       </div>
       <template #footer>

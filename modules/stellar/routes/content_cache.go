@@ -97,14 +97,17 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 			if searchCfg.LocalSearch.Field == "post" || !searchPathAllowed(path, searchCfg) {
 				continue
 			}
-			content := textutil.Truncate(textutil.StripHTML(d.ContentHTML), 2000)
+			content, anchors := textutil.StripHTMLWithAnchors(d.ContentHTML)
+			content = textutil.Truncate(content, 2000)
 			if searchCfg.LocalSearch.Content != nil && !*searchCfg.LocalSearch.Content {
 				content = ""
+				anchors = nil
 			}
 			items = append(items, searchItem{
 				Title:   d.Title,
 				Content: content,
 				Path:    path,
+				Anchors: anchors,
 			})
 		}
 	}

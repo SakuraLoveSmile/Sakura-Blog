@@ -30,6 +30,25 @@ type IconRegistry struct {
 // key 字符集含点号：原版存在 default:bookmark.active 这类带 . 的 key。
 var iconLineRe = regexp.MustCompile(`^([a-zA-Z0-9:._-]+):\s*(.+)$`)
 
+// legacyIconAlias 是上游 1.41.0 图标键语义化命名空间迁移的旧键别名表。
+// settings 表历史持久化值（menubar/rightbar/article 的 category_icon、tag_icon 等）
+// 与旧文章内容仍可能携带 solar:/ph:/bxs: 前缀旧键，未命中主表时按此映射回退，
+// 免于一次性数据迁移；新键参照上游 _config.yml 1.41 的示例取值。
+var legacyIconAlias = map[string]string{
+	"solar:documents-bold-duotone":              "default:documents",
+	"solar:chat-square-like-bold-duotone":       "example:chat",
+	"solar:planet-bold-duotone":                 "example:planet",
+	"solar:notebook-bookmark-bold-duotone":      "example:notebook",
+	"solar:pin-linear":                          "default:pin",
+	"solar:hashtag-square-bold":                 "quot:hashtag",
+	"solar:double-alt-arrow-left-bold-duotone":  "default:arrow-left",
+	"solar:double-alt-arrow-right-bold-duotone": "default:arrow-right",
+	"solar:folder-bold":                         "default:category",
+	"ph:seal-question-fill":                     "quot:question",
+	"bxs:quote-left":                            "quot:quote-left",
+	"bxs:quote-right":                           "quot:quote-right",
+}
+
 // LoadIcons 从指定路径加载 icons.yml，返回 IconRegistry。
 // 保留给开发期从 resource/ 读取（go run -dev 时定位）；正式部署用 LoadIconsEmbed。
 func LoadIcons(path string) (*IconRegistry, error) {
@@ -68,12 +87,18 @@ func parseIcons(r io.Reader) (*IconRegistry, error) {
 	return reg, nil
 }
 
-// Get 返回 key 对应的内联 SVG；未找到时返回占位 span，避免菜单出现空图标。
+// Get 返回 key 对应的内联 SVG；未找到时先查 legacyIconAlias 旧键别名，
+// 仍无命中才返回占位 span，避免菜单出现空图标。
 func (r *IconRegistry) Get(key string) string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	if svg, ok := r.icon[key]; ok {
 		return svg
+	}
+	if nk, ok := legacyIconAlias[key]; ok {
+		if svg, ok := r.icon[nk]; ok {
+			return svg
+		}
 	}
 	// 安全审计 2026-08-16：key 可来自 {% icon key %} shortcode（内容作者可控），
 	// 未命中白名单时进入本兜底分支，属性值须转义防注入。

@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="theme-color" content="#000">
 
-  <title>{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}</title>
+  <title>{{if .Page.Title}}{{.Page.Title}} - {{else if and .Paginator (gt .Paginator.Current 1)}}{{.Site.Title}} - {{lang "symbol.page" .Paginator.Current}} - {{end}}{{.Site.Title}}</title>
   {{- /* Spec 42：description/keywords 优先级见 ViewData.MetaDescription/MetaKeywords（文章级 → 站点级 → 现状回退） */}}
   <meta name="description" content="{{.MetaDescription}}">
   {{with .MetaKeywords}}<meta name="keywords" content="{{.}}">{{end}}
@@ -32,10 +32,15 @@
   {{if .Page.CanonicalURL}}<link rel="canonical" href="{{.Page.CanonicalURL}}">{{end}}
   {{if .Site.SEO.OpenGraph.Enabled}}
   <meta property="og:title" content="{{if .Page.Title}}{{.Page.Title}} - {{end}}{{.Site.Title}}">
-  <meta property="og:description" content="{{.Page.Description}}">
+  {{- /* og:site_name（1.41 修复）：恒为站点名，不再复用 og:title */}}
+  <meta property="og:site_name" content="{{.Site.Title}}">
+  {{- /* og:description（1.41 修复）：走 MetaDescription 回退链（文章级 → 站点级 → 摘要/站点描述） */}}
+  <meta property="og:description" content="{{.MetaDescription}}">
   <meta property="og:type" content="{{if eq .Page.Layout "post"}}article{{else}}website{{end}}">
   {{if .Page.CanonicalURL}}<meta property="og:url" content="{{.Page.CanonicalURL}}">{{end}}
   {{with .Site.SEO.OpenGraph.TwitterID}}<meta name="twitter:site" content="@{{.}}">{{end}}
+  {{- /* 非文章页 og:image 回退（1.41）：无 OG 生成图时用站点头像，避免社交卡片无图 */}}
+  {{if and (ne .Page.Layout "post") .Site.Avatar}}<meta property="og:image" content="{{.Site.Avatar}}">{{end}}
   {{end}}
   {{- /* OG 社交分享图（Spec 27）：文章页注入 og:image + twitter:card */}}
   {{if and (eq .Page.Layout "post") .Page.Slug}}
@@ -64,7 +69,7 @@
       "@type": "WebPage",
       "@id": {{jsonify .Page.CanonicalURL}}
     },{{end}}
-    "description": {{jsonify .Page.Description}}
+    "description": {{jsonify .MetaDescription}}
   }
   </script>
   {{end}}

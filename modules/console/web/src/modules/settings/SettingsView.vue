@@ -117,6 +117,7 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.pin_style = d.article.pin_style || "carousel";
   d.article.reading_time = d.article.reading_time ?? false;
   d.article.card_tags = d.article.card_tags ?? false;
+  d.article.tags = d.article.tags ?? true;
   d.article.type = d.article.type || "tech";
   d.article.banner_ratio = d.article.banner_ratio ?? 0;
   d.article.auto_excerpt = d.article.auto_excerpt ?? 0;
@@ -984,6 +985,7 @@ onMounted(() => {
                 <div class="field"><label>置顶文章样式</label><select v-model="data.article.pin_style" :class="selectCls"><option value="carousel">轮播</option><option value="flat">平铺到列表顶部</option></select></div>
                 <div class="switch-row"><div class="switch-row-label"><div class="switch-row-name">显示字数与阅读时长</div></div><VSwitch v-model="data.article.reading_time" /></div>
                 <div class="switch-row"><div class="switch-row-label"><div class="switch-row-name">文章卡片显示标签</div><div class="switch-row-desc">最多显示 5 个</div></div><VSwitch v-model="data.article.card_tags" /></div>
+                <div class="switch-row"><div class="switch-row-label"><div class="switch-row-name">文章末尾显示标签</div><div class="switch-row-desc">正文后、页脚前的标签行</div></div><VSwitch v-model="data.article.tags" /></div>
               </div>
               <div class="form-grid form-grid-3">
                 <div class="field"><label>卡片封面宽高比（0=主题默认，如 2）</label><input v-model.number="data.article.cover_ratio" type="number" step="0.1" min="0" :class="inputCls" /></div>
@@ -1080,8 +1082,8 @@ onMounted(() => {
             <div class="subsection">
               <p class="subsection-title">quot 小标题默认图标（icons.yml key 或图片 URL）</p>
               <div class="form-grid form-grid-2">
-                <div class="field"><label>前缀</label><IconPicker v-model="data.tag_plugins.quot.prefix" placeholder="如 bxs:quote-left" /></div>
-                <div class="field"><label>后缀</label><IconPicker v-model="data.tag_plugins.quot.suffix" placeholder="如 bxs:quote-right" /></div>
+                <div class="field"><label>前缀</label><IconPicker v-model="data.tag_plugins.quot.prefix" placeholder="如 quot:quote-left" /></div>
+                <div class="field"><label>后缀</label><IconPicker v-model="data.tag_plugins.quot.suffix" placeholder="如 quot:quote-right" /></div>
               </div>
             </div>
             <div class="subsection">

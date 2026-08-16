@@ -83,24 +83,8 @@
   "menubar": {
     "columns": 4
   },
-  "comments": {
-    "service": "artalk",
-    "lazyload": false,
-    "custom_css": [
-      "artalk"
-    ]
-  },
   "plugins": {
     "preload": {
-      "enable": true
-    },
-    "pjax": {
-      "enable": false
-    },
-    "fancybox": {
-      "enable": true
-    },
-    "swiper": {
       "enable": true
     },
     "scrollreveal": {
@@ -112,14 +96,8 @@
     "katex": {
       "enable": false
     },
-    "mermaid": {
-      "style_optimization": false
-    },
     "copycode": {
       "enable": true
-    },
-    "lazyload": {
-      "transition": "none"
     }
   },
   "tag_plugins": {
@@ -131,6 +109,11 @@
     },
     "note": {
       "border": true
+    }
+  },
+  "dependencies": {
+    "lazyload": {
+      "transition": "none"
     }
   }
 }

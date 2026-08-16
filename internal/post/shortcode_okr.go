@@ -147,7 +147,7 @@ func renderQuot(argsStr string, iconFunc func(string) string, tagPlugins setting
 		if ic := named["icon"]; ic == "" || ic == "default" || ic == "hashtag" {
 			prefixKey = tp.Quot.Prefix
 			if prefixKey == "" {
-				prefixKey = "solar:hashtag-square-bold"
+				prefixKey = "quot:hashtag"
 			}
 		} else {
 			prefixKey = ic

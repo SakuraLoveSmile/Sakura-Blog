@@ -27,8 +27,8 @@
     {{range $i, $_ := .PinnedPosts}}<button type="button" class="pin-slider-dot{{if eq $i 0}} active{{end}}" data-index="{{$i}}" aria-label="切换置顶内容"></button>{{end}}
     {{range $i, $_ := .PinnedWiki}}<button type="button" class="pin-slider-dot{{if and (eq (len $.PinnedPosts) 0) (eq $i 0)}} active{{end}}" data-index="{{add (len $.PinnedPosts) $i}}" aria-label="切换置顶内容"></button>{{end}}
   </div>
-  <button type="button" class="pin-slider-nav prev" aria-label="上一项">{{icon "solar:double-alt-arrow-left-bold-duotone"}}</button>
-  <button type="button" class="pin-slider-nav next" aria-label="下一项">{{icon "solar:double-alt-arrow-right-bold-duotone"}}</button>
+  <button type="button" class="pin-slider-nav prev" aria-label="上一项">{{icon "default:arrow-left"}}</button>
+  <button type="button" class="pin-slider-nav next" aria-label="下一项">{{icon "default:arrow-right"}}</button>
   {{end}}
 </div>
 <script>

@@ -39,6 +39,8 @@ func normalizeThemeDefaults(s *tmpl.Site) {
 	if s.Article.PinStyle == "" {
 		s.Article.PinStyle = "carousel"
 	}
+	// 1.41 ai_label：site.yml 未配 ai_label 段时补主题内置四档（DefaultSite 已显式含）
+	s.Article.AILabel.FillDefaults()
 	if s.Notebook.AutoExcerpt == 0 {
 		s.Notebook.AutoExcerpt = 128
 	}
@@ -62,17 +64,17 @@ func DefaultSite() *tmpl.Site {
 		Menubar: tmpl.Menubar{
 			Columns: 2,
 			Items: []tmpl.MenuItem{
-				{ID: "post", Title: "博客", URL: "/", Icon: "solar:documents-bold-duotone", Theme: "#1BCDFC"},
-				{ID: "wiki", Title: "文库", URL: "/wiki", Icon: "solar:notebook-bookmark-bold-duotone", Theme: "#3DC550"},
+				{ID: "post", Title: "博客", URL: "/", Icon: "default:documents", Theme: "#1BCDFC"},
+				{ID: "wiki", Title: "文库", URL: "/wiki", Icon: "example:notebook", Theme: "#3DC550"},
 				{ID: "notes", Title: "笔记", URL: "/notes", Icon: "default:edit", Theme: "#FA7D23"},
-				{ID: "friends", Title: "友链", URL: "/friends", Icon: "solar:planet-bold-duotone", Theme: "#FF6B9D"},
+				{ID: "friends", Title: "友链", URL: "/friends", Icon: "example:planet", Theme: "#FF6B9D"},
 			},
 		},
 		Rightbar: tmpl.RightbarConfig{
 			// 欢迎语卡片链接列表（对齐原版 markdown widget 的 linklist）
 			WelcomeLinklist: tmpl.LinkListConfig{
 				Items: []tmpl.LinkListItem{
-					{Title: "查看文库", URL: "/wiki", Icon: "solar:notebook-bookmark-bold-duotone"},
+					{Title: "查看文库", URL: "/wiki", Icon: "example:notebook"},
 					{Title: "传送到笔记", URL: "/notes", Icon: "default:edit"},
 				},
 			},
@@ -113,8 +115,18 @@ func DefaultSite() *tmpl.Site {
 			GravatarMirror: "https://weavatar.com/avatar",
 		},
 		Article: tmpl.ArticleConfig{
-			PinStyle:      "carousel",
-			Type:          "tech",                             // 文章列表卡片布局：tech（紧凑）/story（图文大间距），Spec 50
+			PinStyle: "carousel",
+			Type:     "tech", // 文章列表卡片布局：tech（紧凑）/story（图文大间距），Spec 50
+			// 末尾标签行（1.41）：显式默认开启，与上游 article.tags 缺省一致
+			Tags: boolPtr(true),
+			// AI 成分标签四档（1.41）：对齐上游 _config.yml 默认色与 shield 图标；
+			// default 留空=未写 frontmatter 的历史文章零渲染
+			AILabel: tmpl.AILabelConfig{
+				Manual:    &tmpl.AILabelDef{Color: "#03a9f4", Icon: "default:shield-user"},
+				Reviewed:  &tmpl.AILabelDef{Color: "#4caf50", Icon: "default:shield-check"},
+				Polished:  &tmpl.AILabelDef{Color: "#4caf50", Icon: "default:shield-up"},
+				Generated: &tmpl.AILabelDef{Color: "#ff9800", Icon: "default:shield-warning"},
+			},
 			CategoryColor: map[string]string{"技术": "#1BCDFC"}, // 对齐原版 theme.article.category_color
 			Copyright: tmpl.CopyrightConfig{
 				Enabled:    true,
@@ -137,8 +149,13 @@ func DefaultSite() *tmpl.Site {
 			EditThisPage: nil, // 缺省不配映射；配置后文章页出现贡献者/编辑本文段
 		},
 		Search: tmpl.SearchConfig{
-			Service:     "local_search",
-			LocalSearch: tmpl.LocalSearchConfig{Field: "all", Path: "/search.json", Content: boolPtr(true)},
+			Service: "local_search",
+			LocalSearch: tmpl.LocalSearchConfig{
+				Field: "all", Path: "/search.json", Content: boolPtr(true),
+				// 1.41：懒加载默认开、缓存默认 1 天（Effective* 方法同值兜底，此处显式化）
+				LazyLoad: boolPtr(true),
+				CacheTTL: intPtr(86400),
+			},
 		},
 		Notebook: tmpl.NotebookConfig{AutoExcerpt: 128, OrderBy: "-updated", Share: false},
 		Style: tmpl.StyleConfig{
@@ -158,3 +175,5 @@ func DefaultSite() *tmpl.Site {
 }
 
 func boolPtr(v bool) *bool { return &v }
+
+func intPtr(v int) *int { return &v }
