@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test console-deps css dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
+.PHONY: all build console go-build test console-test assets-test console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
@@ -63,6 +63,22 @@ css:
 	fi
 	cd frontend && node build/stylus/compile.js
 
+## css-drift-check: 本地核对入口——校验 frontend/assets/css/main.css 与跟踪版本一致（无漂移）。
+## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
+## resource/ 为 gitignore 本地主题源，CI 无源不可编译，无源环境跳过核对、不视为失败。
+## 用法：在存在 resource/ 源的环境先 make css 重编产物，再运行本目标；
+## 工作区手改 main.css 或产物与源编译结果漂移时，git diff --exit-code 非零退出。
+css-drift-check:
+	@if [ ! -d resource ]; then \
+		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
+	else \
+		git diff --exit-code -- frontend/assets/css/main.css || { \
+			echo "css-drift-check: frontend/assets/css/main.css 与跟踪版本不一致（手改或漂移，先 make css 重编后再核对）" >&2; \
+			exit 1; \
+		}; \
+		echo "css-drift-check: frontend/assets/css/main.css 与跟踪版本一致，无漂移"; \
+	fi
+
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）
 console-test: console-deps
 	cd frontend/console && npm run test
@@ -73,21 +89,48 @@ assets-test:
 
 ## merge-check: feature 分支合回 dev 的机械化合并封装（在 feature worktree 根目录执行）
 ## 强制先跑 make test，任一环节失败即以非零码退出、不执行合并；全绿后才把当前分支合入 dev。
+## 合入成功后会在 dev worktree 再跑一次 make test 复验合并后组合态（防 dev 领先、feature 落后时
+## 组合态被破坏）；复验失败输出回退指引并以非零码退出，dev 停在合并后的组合态，按指引回退后
+## 先 rebase 最新 dev 修复兼容再重试。保持「先 test 后合并」的语义与退出码契约不变。
+## 开头探测 core.hooksPath：未指向 .githooks 直接失败（提交门禁要求机械挂载，见 AGENTS.md「机械挂载」），
+## 探测只阻断本目标，不改变 make test 门槛本身。
 ## DEV_WORKTREE 指向 dev worktree 路径，默认相对路径 ../dev（从 feature worktree 根出发解析，
 ## 前提：feature worktree 与 dev 互为兄弟目录，见 AGENTS.md「开分支 + worktree」的落位约定），可按需覆盖。
 DEV_WORKTREE ?= ../dev
 merge-check:
-	@branch=$$(git branch --show-current); \
+	@hooks=$$(git config --get core.hooksPath || true); \
+	case "$$hooks" in \
+		.githooks|./.githooks) ;; \
+		"") echo "merge-check: core.hooksPath 未设置（未执行 make hooks-install），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
+		*) echo "merge-check: core.hooksPath 指向 '$$hooks'（应为 .githooks），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
+	esac; \
+	branch=$$(git branch --show-current); \
 	case "$$branch" in \
 		dev|main|release|"") echo "merge-check: 当前分支 '$$branch' 不是 feature 分支，中止" >&2; exit 1;; \
 	esac; \
 	$(MAKE) test || { echo "merge-check: make test 失败，中止合并（dev 未被改动）" >&2; exit 1; }; \
-	git -C $(DEV_WORKTREE) merge "$$branch"
+	git -C $(DEV_WORKTREE) merge "$$branch" || { echo "merge-check: 合入 dev 失败（多为冲突），dev 未被改动，请先 rebase 最新 dev 解决冲突后重试" >&2; exit 1; }; \
+	echo "merge-check: 已合入 dev（$(DEV_WORKTREE)），复验合并后组合态"; \
+	$(MAKE) -C $(DEV_WORKTREE) test || { \
+		echo "merge-check: 合并后组合态 make test 失败，dev 已含本次合并但未通过门禁" >&2; \
+		echo "merge-check: 回退指引：git -C $(DEV_WORKTREE) reset --hard ORIG_HEAD（dev 回到合并前状态）" >&2; \
+		echo "merge-check: 回退后请在本分支 rebase 最新 dev，修复兼容问题后重试 merge-check" >&2; \
+		exit 1; \
+	}; \
+	echo "merge-check: 合并后组合态复验通过，feature '$$branch' 已合入 dev"
 
 ## pre-commit-check: 提交前机械检查（覆盖在 dev/main 等分支直接工作、不走 merge-check 的路径）
 ## 强制先跑 make test，任一环节失败即以非零码退出、必须中止提交；全绿后才允许 git commit。
+## 开头探测 core.hooksPath：未指向 .githooks 直接失败（提交门禁要求机械挂载，见 AGENTS.md「机械挂载」），
+## 探测只阻断本目标，不改变 make test 门槛本身。
 pre-commit-check:
-	@$(MAKE) test || { echo "pre-commit-check: make test 失败，中止提交" >&2; exit 1; }; \
+	@hooks=$$(git config --get core.hooksPath || true); \
+	case "$$hooks" in \
+		.githooks|./.githooks) ;; \
+		"") echo "pre-commit-check: core.hooksPath 未设置（未执行 make hooks-install），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
+		*) echo "pre-commit-check: core.hooksPath 指向 '$$hooks'（应为 .githooks），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
+	esac; \
+	$(MAKE) test || { echo "pre-commit-check: make test 失败，中止提交" >&2; exit 1; }; \
 	echo "pre-commit-check: 全绿，允许提交"
 
 ## hooks-install: 为当前 worktree 一次性挂载 pre-commit hook（机械挂载 pre-commit-check 门槛）

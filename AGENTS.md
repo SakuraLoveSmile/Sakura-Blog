@@ -67,6 +67,7 @@ make merge-check
 
 - `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
 - `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
+- **合并后组合态复验**：合入成功后 `merge-check` 会在 dev worktree 再执行一次 `make test`（防 dev 领先、feature 落后时两者改动组合态破坏门禁）；复验失败时输出回退指引（`git -C <DEV_WORKTREE> reset --hard ORIG_HEAD`，dev 回到合并前状态）并以非零码退出——先回退、再在 feature 分支 rebase 最新 dev 修复兼容后重试。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
 - **dev 上直接工作的提交门禁**：agent 若未经 feature 合并、直接在 `dev`/`main` 等受保护分支上改动（如紧急修复、用户授权的直接提交），提交前必须在当前 worktree 根目录执行：
 
@@ -83,6 +84,8 @@ make merge-check
     ```
 
     安装后直接 `git commit` 会被 hook 以同一门槛机械阻断（`core.hooksPath` 指向 `.githooks`，仅写入当前 worktree 的本地 config）；紧急绕过须显式 `git commit --no-verify`。不改变 CI 配置。
+  - **探测回指**：`make merge-check` / `make pre-commit-check` 开头会探测 `core.hooksPath`（探测逻辑在 Makefile 的 `merge-check` / `pre-commit-check` 目标开头），未指向 `.githooks` 时直接失败并提示先执行本命令——未挂载 hook 的 worktree 即使手动运行这两个目标也无法放行，杜绝"手动全绿但机械门禁缺失"的假象。
+- **CSS 产物漂移本地核对**：存在 `resource/` 源（gitignore 本地主题源，CI 无源 不可编译）的 worktree 内，改源后先 `make css` 重编 `frontend/assets/css/main.css`，再执行 `make css-drift-check` 以 `git diff --exit-code` 校验产物无漂移（工作 区手改 `main.css` 时同样非零退出）；该目标仅本地/agent 核对用，不接入 `make test` 门禁、不强制接入 CI。
 
 ### 4. 先完成先合
 
