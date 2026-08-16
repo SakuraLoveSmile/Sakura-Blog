@@ -70,6 +70,7 @@ const navItems: NavItem[] = [
   { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
   { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
   { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
+  { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动" },
   { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
   { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
   { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },

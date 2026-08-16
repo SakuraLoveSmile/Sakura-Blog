@@ -54,12 +54,13 @@ func (h *Handler) validUserCookie(value string) (int64, string, int64, bool) {
 // currentUserMiddleware 把 *store.CurrentUser 注入 gin context。
 // 无论 cookie 是否有效都放行，匿名用户填 ID=0、Verified=false；
 // 已登录用户从 users 表取资料，Verified=true。
+// Spec 71：封禁用户按匿名处理——既有会话即时失效（评论/Boost/me 全部退化）。
 func (h *Handler) currentUserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cu := &store.CurrentUser{ID: 0, Role: "", Verified: false}
 		if cookie, err := c.Cookie(userCookieName); err == nil {
 			if userID, authSecret, expiry, ok := h.validUserCookie(cookie); ok {
-				if u, err := h.store.GetUserByID(userID); err == nil && u != nil {
+				if u, err := h.store.GetUserByID(userID); err == nil && u != nil && u.Status != store.UserStatusBanned {
 					cu.ID = u.ID
 					cu.Username = u.Username
 					cu.Nickname = u.DisplayName
@@ -240,6 +241,13 @@ func (h *Handler) publicLogin(c *gin.Context) {
 	if normalizeRole(user.Role) != store.RoleReader {
 		h.recordLoginFail(ip)
 		Fail(c, http.StatusForbidden, "管理账号请从后台登录")
+		return
+	}
+	// Spec 71：封禁用户拒绝登录（密码校验后才判，不向未知密码者泄露封禁状态）。
+	if user.Status == store.UserStatusBanned {
+		h.recordLoginFail(ip)
+		h.logLogin(c, user.ID, req.Username, ip, "fail", "banned")
+		Fail(c, http.StatusForbidden, "该账号已被封禁")
 		return
 	}
 

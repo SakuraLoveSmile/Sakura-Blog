@@ -218,6 +218,7 @@ var tableDDL = map[string]string{
 		auth_secret TEXT NOT NULL DEFAULT '',
 		api_token_hash TEXT NOT NULL DEFAULT '',
 		role TEXT NOT NULL DEFAULT 'author',
+		status TEXT NOT NULL DEFAULT 'active',
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);`,
 

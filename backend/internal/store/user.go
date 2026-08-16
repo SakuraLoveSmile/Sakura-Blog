@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -25,6 +26,17 @@ func ValidRole(role string) bool {
 	return role == RoleAdmin || role == RoleAuthor || role == RoleReader
 }
 
+// 用户状态常量（Spec 71 评论用户管理）：active=正常，banned=封禁（无法登录与评论）。
+const (
+	UserStatusActive = "active"
+	UserStatusBanned = "banned"
+)
+
+// ValidUserStatus 判断用户状态值是否合法。
+func ValidUserStatus(status string) bool {
+	return status == UserStatusActive || status == UserStatusBanned
+}
+
 // User 用户模型（多用户：admin 管理全部，author 管理内容）。
 type User struct {
 	ID                int64     `json:"id"`
@@ -38,6 +50,7 @@ type User struct {
 	AuthSecret        string    `json:"-"` // 随机 32 字节 hex，cookie 签名密钥
 	APITokenHash      string    `json:"-"` // API Token 的 sha256 hex，空=未生成
 	Role              string    `json:"role"`
+	Status            string    `json:"status"` // active / banned（Spec 71）
 	CreatedAt         time.Time `json:"created_at"`
 }
 
@@ -46,12 +59,12 @@ func (u *User) TableName() string { return "users" }
 
 // Columns Entity 接口：全列，首列为 id（含敏感列，登录/校验路径用）。
 func (u *User) Columns() []string {
-	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "api_token_hash", "role", "created_at"}
+	return []string{"id", "username", "password_hash", "display_name", "email", "avatar", "totp_secret", "totp_recovery_codes", "auth_secret", "api_token_hash", "role", "status", "created_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (u *User) Values() []any {
-	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.APITokenHash, u.Role, u.CreatedAt}
+	return []any{u.Username, u.PasswordHash, u.DisplayName, u.Email, u.Avatar, u.TOTPSecret, u.TOTPRecoveryCodes, u.AuthSecret, u.APITokenHash, u.Role, u.Status, u.CreatedAt}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -59,7 +72,7 @@ func (u *User) SetID(id int64) { u.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (u *User) ScanRow(row rowScanner) error {
-	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.APITokenHash, &u.Role, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.DisplayName, &u.Email, &u.Avatar, &u.TOTPSecret, &u.TOTPRecoveryCodes, &u.AuthSecret, &u.APITokenHash, &u.Role, &u.Status, &u.CreatedAt)
 }
 
 // EnsureUsersTable 独立建 users 表（统一走 schema.go 注册表）。
@@ -71,6 +84,7 @@ func (s *Store) EnsureUsersTable() error {
 	for _, col := range []struct{ name, ddl string }{
 		{"api_token_hash", `ALTER TABLE users ADD COLUMN api_token_hash TEXT NOT NULL DEFAULT ''`},
 		{"role", `ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'author'`},
+		{"status", `ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active'`},
 	} {
 		has, err := s.tableHasColumn("users", col.name)
 		if err != nil {
@@ -142,6 +156,9 @@ func (s *Store) CreateUser(user *User) error {
 	if !ValidRole(user.Role) {
 		user.Role = RoleAuthor // 未显式指定角色的新用户一律按作者（最小权限）
 	}
+	if user.Status == "" {
+		user.Status = UserStatusActive
+	}
 	if _, err := repo(s, &User{}).Create(user); err != nil {
 		return fmt.Errorf("create user %s: %w", user.Username, err)
 	}
@@ -184,7 +201,7 @@ func (s *Store) UpdateTOTPSecret(userID int64, secret string, codes []string) er
 }
 
 // userListCols 管理端列表列（不含密码/2FA/签名密钥等敏感列）。
-const userListCols = "id, username, display_name, email, avatar, role, created_at"
+const userListCols = "id, username, display_name, email, avatar, role, status, created_at"
 
 // ListUsers 返回全部用户（仅非敏感列，供管理端展示）。
 func (s *Store) ListUsers() ([]*User, error) {
@@ -209,7 +226,7 @@ func (s *Store) ListUsers() ([]*User, error) {
 
 // scanUserList 按 userListCols 顺序扫描一行用户列表记录。
 func scanUserList(row rowScanner, u *User) error {
-	return row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Avatar, &u.Role, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Avatar, &u.Role, &u.Status, &u.CreatedAt)
 }
 
 // ListUsersPage 分页查询用户（keyword 匹配 username/display_name/email，空=全部）。
@@ -333,6 +350,140 @@ func (s *Store) GetUserByAPITokenHash(hash string) (*User, error) {
 		return nil, fmt.Errorf("get user by api token: %w", err)
 	}
 	return u, nil
+}
+
+// UpdateUserStatus 更新用户状态（active/banned）并返回受影响行数（0=用户不存在）。
+func (s *Store) UpdateUserStatus(userID int64, status string) error {
+	if !ValidUserStatus(status) {
+		return fmt.Errorf("invalid user status %q", status)
+	}
+	res, err := s.db.Exec(`UPDATE users SET status = ? WHERE id = ?`, status, userID)
+	if err != nil {
+		return fmt.Errorf("update user %d status: %w", userID, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("update user %d status: no rows affected", userID)
+	}
+	return nil
+}
+
+// CountUsersByStatus 按状态统计用户数（status 空串=全部）。
+func (s *Store) CountUsersByStatus(status string) (int, error) {
+	var n int
+	var err error
+	if status == "" {
+		err = s.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&n)
+	} else {
+		err = s.db.QueryRow("SELECT COUNT(*) FROM users WHERE status = ?", status).Scan(&n)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("count users by status %q: %w", status, err)
+	}
+	return n, nil
+}
+
+// CommentUser 评论用户列表行（reader 用户 + 评论聚合统计，Spec 71）。
+type CommentUser struct {
+	User
+	CommentCount  int       // 名下评论总数
+	LastCommentAt time.Time // 最后评论时间，零值=从未评论
+}
+
+// parseCommentTime 解析 MAX(created_at) 聚合结果：聚合函数丢失列类型声明，
+// modernc 驱动回退为字符串（time.Time 入库为 Go 默认 String() 格式，含单调钟后缀），
+// 需剪掉 " m=..." 后多格式兼容解析；解析失败返回零值。
+func parseCommentTime(s string) time.Time {
+	if i := strings.Index(s, " m="); i >= 0 {
+		s = s[:i]
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05.999999999-07:00",
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02 15:04:05",
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
+// CountCommentUsers 统计注册读者数（status 空串=全部，非法值按全部计）。
+func (s *Store) CountCommentUsers(status string) (int, error) {
+	query := "SELECT COUNT(*) FROM users WHERE role = ?"
+	args := []any{RoleReader}
+	if ValidUserStatus(status) {
+		query += " AND status = ?"
+		args = append(args, status)
+	}
+	var n int
+	if err := s.db.QueryRow(query, args...).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count comment users by status %q: %w", status, err)
+	}
+	return n, nil
+}
+
+// ListCommentUsers 分页查询注册读者（role=reader）及其评论聚合（LEFT JOIN comments）。
+// status 空串=全部；keyword 匹配 username/display_name/email。
+// 排序：最后评论时间倒序（从未评论者殿后），同级按 id 升序。
+func (s *Store) ListCommentUsers(page, size int, keyword, status string) ([]*CommentUser, int, error) {
+	if err := s.ensureCommentReactions(); err != nil { // 依赖 comments.user_id 补列迁移
+		return nil, 0, err
+	}
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 || size > 100 {
+		size = 20
+	}
+	conds := []string{"u.role = ?"}
+	args := []any{RoleReader}
+	if ValidUserStatus(status) {
+		conds = append(conds, "u.status = ?")
+		args = append(args, status)
+	}
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		conds = append(conds, "(u.username LIKE ? OR u.display_name LIKE ? OR u.email LIKE ?)")
+		like := "%" + kw + "%"
+		args = append(args, like, like, like)
+	}
+	where := " WHERE " + strings.Join(conds, " AND ")
+
+	var total int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM users u"+where, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count comment users: %w", err)
+	}
+	rows, err := s.db.Query(`SELECT u.id, u.username, u.display_name, u.email, u.avatar, u.role, u.status, u.created_at,
+		COUNT(cm.id) AS comment_count, MAX(cm.created_at) AS last_comment_at
+		FROM users u LEFT JOIN comments cm ON cm.user_id = u.id`+where+`
+		GROUP BY u.id
+		ORDER BY last_comment_at IS NULL, last_comment_at DESC, u.id ASC
+		LIMIT ? OFFSET ?`,
+		append(args, size, (page-1)*size)...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list comment users: %w", err)
+	}
+	defer rows.Close()
+	var out []*CommentUser
+	for rows.Next() {
+		cu := &CommentUser{}
+		var last sql.NullString
+		if err := rows.Scan(&cu.ID, &cu.Username, &cu.DisplayName, &cu.Email, &cu.Avatar, &cu.Role, &cu.Status, &cu.CreatedAt,
+			&cu.CommentCount, &last); err != nil {
+			return nil, 0, fmt.Errorf("scan comment user: %w", err)
+		}
+		if last.Valid {
+			cu.LastCommentAt = parseCommentTime(last.String)
+		}
+		out = append(out, cu)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate comment users: %w", err)
+	}
+	return out, total, nil
 }
 
 // CurrentUser 注入到请求上下文的当前用户信息（匿名或已登录）。

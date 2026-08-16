@@ -427,6 +427,12 @@ func (h *Handler) Register(r *gin.Engine) {
 		sys.PUT("/users/:id/password", h.resetUserPassword)
 		sys.DELETE("/users/:id", h.deleteUser)
 
+		// 评论用户管理（Spec 71）：注册读者列表/封禁解封/删除/用户级评论批量处置
+		sys.GET("/comment-users", h.listCommentUsers)
+		sys.PUT("/comment-users/:id/status", h.setCommentUserStatus)
+		sys.DELETE("/comment-users/:id", h.deleteCommentUser)
+		sys.POST("/comment-users/:id/comments/bulk", h.bulkCommentUserComments)
+
 		// 登录日志（Wave 3a）：登录/2FA 记录查询，分页 + 状态筛选
 		sys.GET("/auth/login-logs", h.listLoginLogs)
 

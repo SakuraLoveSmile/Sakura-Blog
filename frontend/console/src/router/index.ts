@@ -57,6 +57,12 @@ const router = createRouter({
           component: () => import("@/modules/comments/CommentList.vue"),
         },
         {
+          path: "comment-users",
+          name: "CommentUsers",
+          component: () => import("@/modules/comments/CommentUsersView.vue"),
+          meta: { requiresAuth: true, adminOnly: true },
+        },
+        {
           path: "attachments",
           name: "Attachments",
           component: () => import("@/modules/attachments/AttachmentList.vue"),

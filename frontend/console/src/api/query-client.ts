@@ -35,6 +35,7 @@ export const queryKeys = {
  notifications: (params?: Record<string, unknown>) => ["notifications", params] as const,
  unread: () => ["notifications", "unread"] as const,
  users: (params?: Record<string, unknown>) => ["users", params] as const,
+ commentUsers: (params?: Record<string, unknown>) => ["comment-users", params] as const,
  categories: () => ["categories"] as const,
  tags: () => ["tags"] as const,
  dashboard: {

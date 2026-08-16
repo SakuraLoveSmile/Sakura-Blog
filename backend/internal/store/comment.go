@@ -239,9 +239,9 @@ func (s *Store) ListRecentComments(n int) ([]*Comment, error) {
 		OrderBy("substr(created_at, 1, 19) DESC, id DESC"), Limit(n))
 }
 
-// commentSearchConds 管理页评论列表过滤条件（status 筛选 + keyword 跨字段 LIKE）。
-// keyword 为空时仅 status 条件（与旧 ListComments 等价）。
-func commentSearchConds(status, keyword string) (string, []any) {
+// commentSearchConds 管理页评论列表过滤条件（status 筛选 + keyword 跨字段 LIKE + user_id 过滤）。
+// keyword 为空、userID 为 0 时仅 status 条件（与旧 ListComments 等价）。
+func commentSearchConds(status, keyword string, userID int64) (string, []any) {
 	conds := []string{}
 	args := []any{}
 	if status != "" {
@@ -253,12 +253,16 @@ func commentSearchConds(status, keyword string) (string, []any) {
 		conds = append(conds, "(nick LIKE ? OR email LIKE ? OR content LIKE ?)")
 		args = append(args, like, like, like)
 	}
+	if userID > 0 {
+		conds = append(conds, "user_id = ?")
+		args = append(args, userID)
+	}
 	return strings.Join(conds, " AND "), args
 }
 
-// ListCommentsSearch 管理页评论列表（status 筛选 + keyword 全文 LIKE + 分页）。
+// ListCommentsSearch 管理页评论列表（status 筛选 + keyword 全文 LIKE + user_id 过滤 + 分页）。
 // Spec 62：console 评论搜索从「本地过滤当前页」改为后端 keyword，跨页可搜。
-func (s *Store) ListCommentsSearch(status, keyword string, page, size int) ([]*Comment, error) {
+func (s *Store) ListCommentsSearch(status, keyword string, userID int64, page, size int) ([]*Comment, error) {
 	if err := s.ensureCommentReactions(); err != nil {
 		return nil, err
 	}
@@ -268,7 +272,7 @@ func (s *Store) ListCommentsSearch(status, keyword string, page, size int) ([]*C
 	if size < 1 {
 		size = 20
 	}
-	cond, args := commentSearchConds(status, keyword)
+	cond, args := commentSearchConds(status, keyword, userID)
 	opts := []QueryOption{
 		Where(cond, args...),
 		OrderBy("substr(created_at, 1, 19) DESC, id DESC"),
@@ -278,11 +282,11 @@ func (s *Store) ListCommentsSearch(status, keyword string, page, size int) ([]*C
 }
 
 // CountCommentsSearch 管理页分页总数（与 ListCommentsSearch 同过滤条件）。
-func (s *Store) CountCommentsSearch(status, keyword string) (int, error) {
+func (s *Store) CountCommentsSearch(status, keyword string, userID int64) (int, error) {
 	if err := s.ensureCommentReactions(); err != nil {
 		return 0, err
 	}
-	cond, args := commentSearchConds(status, keyword)
+	cond, args := commentSearchConds(status, keyword, userID)
 	return repo(s, &Comment{}).Count(Where(cond, args...))
 }
 
@@ -704,4 +708,82 @@ func (s *Store) DeleteComments(ids []int64) (int, error) {
 		return 0, fmt.Errorf("commit delete comments batch: %w", err)
 	}
 	return n, nil
+}
+
+// BulkCommentsByUser 按用户批量处置其名下全部评论（Spec 71 评论用户管理）：
+// approve/spam 批量改状态；delete 删除该用户评论并级联其根评论下的子评论，
+// 同时清理被删评论的 boosts。返回实际处置条数（delete 含级联子评论）。
+func (s *Store) BulkCommentsByUser(userID int64, action string) (int, error) {
+	if userID <= 0 {
+		return 0, fmt.Errorf("bulk comments by user %d: invalid user id", userID)
+	}
+	if err := s.ensureCommentReactions(); err != nil {
+		return 0, err
+	}
+	var status string
+	switch action {
+	case "approve":
+		status = CommentApproved
+	case "spam":
+		status = CommentSpam
+	case "delete":
+	default:
+		return 0, fmt.Errorf("bulk comments by user %d: invalid action %q", userID, action)
+	}
+	if status != "" {
+		res, err := s.db.Exec(`UPDATE comments SET status = ? WHERE user_id = ?`, status, userID)
+		if err != nil {
+			return 0, fmt.Errorf("bulk %s comments by user %d: %w", action, userID, err)
+		}
+		n, err := res.RowsAffected()
+		return int(n), err
+	}
+
+	// delete 分支：事务内先清 boosts 再删评论（级联该用户根评论下的他人子评论）。
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("begin bulk delete comments by user %d: %w", userID, err)
+	}
+	defer tx.Rollback()
+
+	var rootIDs []int64
+	rows, err := tx.Query(`SELECT id FROM comments WHERE user_id = ? AND root_id = 0`, userID)
+	if err != nil {
+		return 0, fmt.Errorf("select root comments by user %d: %w", userID, err)
+	}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, fmt.Errorf("scan root comments by user %d: %w", userID, err)
+		}
+		rootIDs = append(rootIDs, id)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterate root comments by user %d: %w", userID, err)
+	}
+
+	delCond := "user_id = ?"
+	delArgs := []any{userID}
+	if len(rootIDs) > 0 {
+		ph, rargs := idPlaceholders(rootIDs)
+		delCond += " OR root_id IN (" + ph + ")"
+		delArgs = append(delArgs, rargs...)
+	}
+	if _, err := tx.Exec(`DELETE FROM comment_boosts WHERE comment_id IN (SELECT id FROM comments WHERE `+delCond+`)`, delArgs...); err != nil {
+		return 0, fmt.Errorf("bulk delete boosts by user %d: %w", userID, err)
+	}
+	res, err := tx.Exec(`DELETE FROM comments WHERE `+delCond, delArgs...)
+	if err != nil {
+		return 0, fmt.Errorf("bulk delete comments by user %d: %w", userID, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("bulk delete comments by user %d count: %w", userID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit bulk delete comments by user %d: %w", userID, err)
+	}
+	return int(n), nil
 }

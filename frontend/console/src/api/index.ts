@@ -106,6 +106,36 @@ export const usersApi = {
  remove: (id: number) => http.delete(`/users/${id}`),
 };
 
+// --- Comment Users（Spec 71 评论用户管理，admin-only） ---
+export interface CommentUserItem {
+ id: number;
+ username: string;
+ display_name: string;
+ email: string;
+ avatar: string;
+ role: string;
+ status: "active" | "banned";
+ created_at: string;
+ comment_count: number;
+ last_comment_at: string; // 空串=从未评论
+}
+
+export const commentUsersApi = {
+ list: (params: { page?: number; size?: number; keyword?: string; status?: string }) =>
+ http.get<{
+ items: CommentUserItem[];
+ total: number;
+ page: number;
+ size: number;
+ counts: { all: number; banned: number };
+ }>("/comment-users", { params }),
+ setStatus: (id: number, status: "active" | "banned") =>
+ http.put(`/comment-users/${id}/status`, { status }),
+ remove: (id: number) => http.delete(`/comment-users/${id}`),
+ bulkComments: (id: number, action: "approve" | "spam" | "delete") =>
+ http.post<{ ok: boolean; affected: number }>(`/comment-users/${id}/comments/bulk`, { action }),
+};
+
 // --- Dashboard ---
 export interface DashboardLayoutItem {
  type: string;
