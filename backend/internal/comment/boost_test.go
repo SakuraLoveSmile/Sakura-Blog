@@ -18,6 +18,10 @@ import (
 )
 
 func newBoostHandlerTest(t *testing.T, authorIP string) (*gin.Engine, *store.Store, int64) {
+	return newBoostHandlerTestAs(t, authorIP, nil)
+}
+
+func newBoostHandlerTestAs(t *testing.T, authorIP string, viewer *store.CurrentUser) (*gin.Engine, *store.Store, int64) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st, err := store.New(filepath.Join(t.TempDir(), "boost.db"))
@@ -36,6 +40,12 @@ func newBoostHandlerTest(t *testing.T, authorIP string) (*gin.Engine, *store.Sto
 	site.Store(&tmpl.Site{Comments: tmpl.CommentsConfig{Enabled: true, GravatarMirror: "https://avatar.test"}})
 	h := New(st, &site)
 	r := gin.New()
+	if viewer != nil {
+		r.Use(func(c *gin.Context) {
+		c.Set(ctxKeyCurrentUser, viewer)
+		c.Next()
+	})
+	}
 	h.Register(r)
 	return r, st, id
 }
@@ -51,20 +61,39 @@ func boostRequest(r *gin.Engine, method, path string, payload any, remote string
 }
 
 func TestBoostAPIValidationAndSelfGuard(t *testing.T) {
-	r, _, id := newBoostHandlerTest(t, "198.51.100.8")
-	if w := boostRequest(r, http.MethodPost, "/api/comments/"+itoa(id)+"/boost", map[string]any{"emoji": "💣", "nick": "n", "email": "n@example.com"}, "198.51.100.9"); w.Code != http.StatusBadRequest {
-		t.Fatalf("invalid emoji status=%d body=%s", w.Code, w.Body.String())
+	r, _, id := newBoostHandlerTestAs(t, "198.51.100.8", &store.CurrentUser{ID: 2, Nickname: "reader", Email: "reader@example.com"})
+	path := "/api/comments/" + itoa(id) + "/boost"
+	for _, emoji := range []string{"💣", "🤝🏽", "🇨🇳", "👨‍👩‍👧‍👦", "1️⃣", "©️"} {
+		if w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": emoji, "nick": "n", "email": "n@example.com"}, "198.51.100.9"); w.Code != http.StatusOK {
+			t.Fatalf("valid emoji %q status=%d body=%s", emoji, w.Code, w.Body.String())
+		}
 	}
-	if w := boostRequest(r, http.MethodPost, "/api/comments/"+itoa(id)+"/boost", map[string]any{"emoji": "👍", "text": strings.Repeat("字", 17), "nick": "n", "email": "n@example.com"}, "198.51.100.9"); w.Code != http.StatusBadRequest {
+	for _, emoji := range []string{"", "hello", "😀😀", "⌂", "♘"} {
+		if w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": emoji, "nick": "n", "email": "n@example.com"}, "198.51.100.9"); w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid emoji %q status=%d body=%s", emoji, w.Code, w.Body.String())
+		}
+	}
+	if w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": "👍", "text": strings.Repeat("字", 17), "nick": "n", "email": "n@example.com"}, "198.51.100.9"); w.Code != http.StatusBadRequest {
 		t.Fatalf("long text status=%d body=%s", w.Code, w.Body.String())
 	}
-	if w := boostRequest(r, http.MethodPost, "/api/comments/"+itoa(id)+"/boost", map[string]any{"emoji": "👍", "nick": "author", "email": "author@example.com"}, "198.51.100.8"); w.Code != http.StatusForbidden {
+	if w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": "👍", "nick": "author", "email": "author@example.com"}, "198.51.100.8"); w.Code != http.StatusForbidden {
 		t.Fatalf("self boost status=%d body=%s", w.Code, w.Body.String())
 	}
 }
 
-func TestBoostAPIAnonymousUpdateAndDelete(t *testing.T) {
-	r, st, id := newBoostHandlerTest(t, "198.51.100.8")
+func TestBoostAPIRequiresLogin(t *testing.T) {
+	r, _, id := newBoostHandlerTest(t, "198.51.100.8")
+	path := "/api/comments/" + itoa(id) + "/boost"
+	if w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": "👍", "nick": "reader", "email": "reader@example.com"}, "198.51.100.9"); w.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous create status=%d body=%s", w.Code, w.Body.String())
+	}
+	if w := boostRequest(r, http.MethodDelete, path, nil, "198.51.100.9"); w.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous delete status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestBoostAPILoggedInUpdateAndDelete(t *testing.T) {
+	r, st, id := newBoostHandlerTestAs(t, "198.51.100.8", &store.CurrentUser{ID: 2, Nickname: "reader", Email: "reader@example.com"})
 	path := "/api/comments/" + itoa(id) + "/boost"
 	w := boostRequest(r, http.MethodPost, path, map[string]any{"emoji": "👍", "text": "第一版", "nick": "reader", "email": "reader@example.com"}, "198.51.100.9")
 	if w.Code != http.StatusOK {

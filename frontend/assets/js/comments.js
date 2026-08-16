@@ -13,7 +13,28 @@
   // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
   var EMOJI_BASE = 'https://cdn.jsdelivr.net/gh/cdn-x/emoticons@3.1.0/artalk/';
   var EMOJI_PACKS = ['blobcat', 'qq', 'tieba', 'aru', 'twemoji'];
-  var BOOST_EMOJIS = ['👍', '❤️', '😄', '🎉', '😕', '🚀'];
+  var BOOST_EMOJI_DATA_URL = '/assets/js/boost-emoji-data.json?v=15.3.2';
+  var BOOST_EMOJI_RECENT_KEY = 'cmt_boost_recent';
+  var BOOST_EMOJI_FALLBACK = [
+    ['👍', 1, '赞', '赞 thumbs up'], ['❤️', 0, '红心', '红心 heart love'],
+    ['😄', 0, '大笑', '大笑 smile'], ['🎉', 6, '庆祝', '庆祝 party'],
+    ['😕', 0, '困惑', '困惑 confused'], ['🚀', 5, '火箭', '火箭 rocket'],
+    ['👏', 1, '鼓掌', '鼓掌 clap'], ['😂', 0, '笑哭', '笑哭 joy'],
+    ['🤝', 1, '握手', '握手 handshake'], ['🔥', 7, '火', '火 fire'],
+    ['✨', 6, '闪亮', '闪亮 sparkles'], ['💯', 7, '满分', '满分 hundred']
+  ];
+  var BOOST_EMOJI_GROUPS = [
+    { id: 'recent', icon: '⭐', label: '常用' },
+    { id: '0', icon: '😄', label: '笑脸和情感' },
+    { id: '1', icon: '👋', label: '人物和身体' },
+    { id: '3', icon: '🐵', label: '动物和自然' },
+    { id: '4', icon: '🍇', label: '食物和饮料' },
+    { id: '5', icon: '✈️', label: '旅行和地点' },
+    { id: '6', icon: '⚽', label: '活动' },
+    { id: '7', icon: '💡', label: '物品' },
+    { id: '8', icon: '❤️', label: '符号' },
+    { id: '9', icon: '🚩', label: '旗帜' }
+  ];
 
   // ------- 全局运行时状态 -------
   var state = {
@@ -27,7 +48,9 @@
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
     loadingComments: false,
-    sortMode: 'newest'    // 'newest' | 'hottest' | 'oldest' | 'author'
+    sortMode: 'newest',   // 'newest' | 'hottest' | 'oldest' | 'author'
+    boostEmojiItems: null,
+    boostEmojiPromise: null
   };
 
   // ------- 工具 -------
@@ -202,7 +225,7 @@
         '</button>';
       return chip;
     }).join('');
-    if (mine && cmt.can_boost !== false && boosts.length < 50) html += renderBoostButton(cmt, 'delete');
+    if (mine) html += renderBoostButton(cmt, 'delete');
     html += '</div>';
     return html;
   }
@@ -231,7 +254,7 @@
             '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
             '<span class="cmt-like-count">' + (cmt.likes || 0) + '</span>' +
           '</button>' +
-          (!((cmt.boosts || []).some(function (boost) { return boost && boost.mine; })) && cmt.can_boost !== false ? renderBoostButton(cmt, 'add') : '') +
+          (!((cmt.boosts || []).some(function (boost) { return boost && boost.mine; })) ? renderBoostButton(cmt, 'add') : '') +
         '</div>' +
         (cmt.children && cmt.children.length ? '<div class="cmt-children">' + cmt.children.map(renderCommentItem).join('') + '</div>' : '') +
       '</div>' +
@@ -478,7 +501,7 @@
     if (tip) tip.style.display = 'none';
   }
 
-  // ------- 评论 Boost：固定表情 + 16 字短文本 -------
+  // ------- 评论 Boost：单行胶囊 + 本地 Unicode 表情选择器 -------
   function closeBoostPanel() {
     var panel = $('.cmt-boost-popover');
     if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
@@ -487,7 +510,7 @@
   function positionBoostPanel(panel, anchor) {
     if (!panel || !anchor) return;
     var rect = anchor.getBoundingClientRect();
-    var width = panel.offsetWidth || 250;
+    var width = panel.offsetWidth || 520;
     var left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left));
     var top = rect.bottom + 8;
     if (top + panel.offsetHeight > window.innerHeight - 8) top = Math.max(8, rect.top - panel.offsetHeight - 8);
@@ -495,22 +518,185 @@
     panel.style.top = top + 'px';
   }
 
+  function boostRecentEmojis() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(BOOST_EMOJI_RECENT_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed.filter(function (item) { return typeof item === 'string' && item; }).slice(0, 24) : [];
+    } catch (e) { return []; }
+  }
+
+  function rememberBoostEmoji(emoji) {
+    var recent = boostRecentEmojis().filter(function (item) { return item !== emoji; });
+    recent.unshift(emoji);
+    try { localStorage.setItem(BOOST_EMOJI_RECENT_KEY, JSON.stringify(recent.slice(0, 24))); } catch (e) { /* noop */ }
+  }
+
+  function clearBoostRecent() {
+    try { localStorage.removeItem(BOOST_EMOJI_RECENT_KEY); } catch (e) { /* noop */ }
+  }
+
+  function loadBoostEmojiData() {
+    if (state.boostEmojiItems) return Promise.resolve(state.boostEmojiItems);
+    if (state.boostEmojiPromise) return state.boostEmojiPromise;
+    state.boostEmojiPromise = fetch(BOOST_EMOJI_DATA_URL, { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('emoji data unavailable');
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.emojis) || !data.emojis.length) throw new Error('emoji data invalid');
+        state.boostEmojiItems = data.emojis.filter(function (row) {
+          return Array.isArray(row) && typeof row[0] === 'string' && row[0] && Number.isInteger(row[1]);
+        });
+        return state.boostEmojiItems;
+      })
+      .catch(function () {
+        state.boostEmojiItems = BOOST_EMOJI_FALLBACK.slice();
+        return state.boostEmojiItems;
+      });
+    return state.boostEmojiPromise;
+  }
+
+  function boostGroupByID(id) {
+    return BOOST_EMOJI_GROUPS.find(function (group) { return group.id === String(id); }) || BOOST_EMOJI_GROUPS[0];
+  }
+
+  function filterBoostEmojis(items, category, query, recent) {
+    var normalizedQuery = String(query || '').trim().toLocaleLowerCase('zh-CN');
+    var all = Array.isArray(items) && items.length ? items : BOOST_EMOJI_FALLBACK;
+    var result;
+    var title;
+    if (normalizedQuery) {
+      result = all.filter(function (row) {
+        return row[0].includes(normalizedQuery) || String(row[2] || '').toLocaleLowerCase('zh-CN').includes(normalizedQuery) || String(row[3] || '').includes(normalizedQuery);
+      });
+      title = '搜索结果';
+    } else if (category === 'recent') {
+      result = (recent || []).map(function (emoji) {
+        return all.find(function (row) { return row[0] === emoji; }) || [emoji, -1, emoji, emoji];
+      });
+      if (!result.length) result = BOOST_EMOJI_FALLBACK.slice(0, 8);
+      title = '常用';
+    } else {
+      result = all.filter(function (row) { return String(row[1]) === String(category); });
+      title = boostGroupByID(category).label;
+    }
+    return { items: result, title: title, query: normalizedQuery };
+  }
+
+  function renderBoostPicker(panel, searchValue) {
+    if (!panel) return;
+    var picker = panel.querySelector('.cmt-boost-picker');
+    var grid = panel.querySelector('.cmt-boost-picker-grid');
+    var title = panel.querySelector('.cmt-boost-picker-title');
+    if (!picker || !grid || !title) return;
+    var query = String(searchValue == null ? (panel.querySelector('.cmt-boost-search') || {}).value || '' : searchValue).trim().toLocaleLowerCase('zh-CN');
+    var category = panel.getAttribute('data-category') || 'recent';
+    var all = state.boostEmojiItems || BOOST_EMOJI_FALLBACK;
+    var recent = boostRecentEmojis();
+    var filtered = filterBoostEmojis(all, category, query, recent);
+    var items = filtered.items;
+    title.textContent = filtered.title;
+
+    $$('.cmt-boost-category', panel).forEach(function (button) {
+      var active = !query && button.getAttribute('data-category') === category;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    var clear = panel.querySelector('.cmt-boost-clear-recent');
+    if (clear) clear.hidden = query || category !== 'recent' || !recent.length;
+    grid.innerHTML = items.length ? items.map(function (row) {
+      return '<button type="button" class="cmt-boost-emoji-option" data-emoji="' + escapeHtml(row[0]) + '" title="' + escapeHtml(row[2] || row[0]) + '" aria-label="' + escapeHtml(row[2] || row[0]) + '">' + escapeHtml(row[0]) + '</button>';
+    }).join('') : '<div class="cmt-boost-picker-empty">没有匹配的表情</div>';
+    positionBoostPanel(panel, panel._boostAnchor);
+  }
+
+  function boostComposerHTML(nickname, avatar) {
+    return '<div class="cmt-boost-bar">' +
+      '<img class="cmt-boost-avatar" src="' + escapeHtml(avatar) + '" alt="">' +
+      '<input type="text" class="cmt-boost-input" maxlength="16" placeholder="Boost ' + escapeHtml(nickname) + '..." aria-label="回应文字">' +
+      '<button type="button" class="cmt-boost-emoji-toggle" aria-label="选择表情" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="9"/>' +
+          '<path d="M8.4 14.1a4.6 4.6 0 0 0 7.2 0"/>' +
+          '<circle cx="9" cy="9.4" r="1.15" fill="currentColor" stroke="none"/>' +
+          '<circle cx="15" cy="9.4" r="1.15" fill="currentColor" stroke="none"/>' +
+        '</svg></button>' +
+      '<button type="button" class="cmt-boost-confirm" aria-label="确认回应" title="确认">' +
+        '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="9.2" stroke-width="1.8"/>' +
+          '<path d="m8.1 12.5 2.7 2.7 5.1-5.6" stroke-width="2.4"/>' +
+        '</svg></button>' +
+      '<button type="button" class="cmt-boost-cancel" aria-label="取消回应" title="取消">' +
+        '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="9.2" stroke-width="1.8"/>' +
+          '<path d="M9.1 9.1l5.8 5.8M14.9 9.1l-5.8 5.8" stroke-width="2.4"/>' +
+        '</svg></button>' +
+      '</div>' +
+      '<div class="cmt-boost-picker" hidden>' +
+        '<div class="cmt-boost-picker-head">' +
+          '<label class="cmt-boost-search-wrap"><span aria-hidden="true">' +
+            '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/></svg>' +
+          '</span><input type="search" class="cmt-boost-search" placeholder="按表情符号名称和别名搜索..." aria-label="搜索表情"></label>' +
+          '<span class="cmt-boost-selected-emoji" aria-hidden="true">👍</span>' +
+        '</div>' +
+        '<div class="cmt-boost-picker-body">' +
+          '<div class="cmt-boost-rail">' +
+            '<div class="cmt-boost-categories" role="tablist" aria-label="表情分类">' + BOOST_EMOJI_GROUPS.map(function (group, index) {
+              return '<button type="button" class="cmt-boost-category' + (index === 0 ? ' is-active' : '') + '" data-category="' + group.id + '" role="tab" aria-selected="' + (index === 0 ? 'true' : 'false') + '" title="' + group.label + '"><span aria-hidden="true">' + group.icon + '</span></button>';
+            }).join('') + '</div>' +
+            '<button type="button" class="cmt-boost-category-more" aria-label="更多分类">' +
+              '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
+            '</button>' +
+          '</div>' +
+          '<div class="cmt-boost-picker-content"><div class="cmt-boost-picker-heading"><span class="cmt-boost-picker-title">常用</span><button type="button" class="cmt-boost-clear-recent" title="清空常用" aria-label="清空常用" hidden>⌫</button></div><div class="cmt-boost-picker-grid" role="listbox" aria-label="表情"></div></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function selectBoostEmoji(panel, emoji) {
+    if (!panel || !emoji) return;
+    panel.setAttribute('data-emoji', emoji);
+    var selected = panel.querySelector('.cmt-boost-selected-emoji');
+    if (selected) selected.textContent = emoji;
+    rememberBoostEmoji(emoji);
+    var picker = panel.querySelector('.cmt-boost-picker');
+    var toggle = panel.querySelector('.cmt-boost-emoji-toggle');
+    if (picker) picker.hidden = true;
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    var input = panel.querySelector('.cmt-boost-input');
+    if (input) input.focus();
+    positionBoostPanel(panel, panel._boostAnchor);
+  }
+
   function openBoostPanel(btn) {
+    if (state.mode !== 'logged-in') {
+      toast('Boost 需要登录后使用', 'error');
+      openModal();
+      return null;
+    }
+    if (btn.getAttribute('data-boost-available') === '0') {
+      toast('当前不能回应这条评论', 'error');
+      return null;
+    }
     closeBoostPanel();
+    var identity = boostPayload();
+    var nickname = identity.nick || '访客';
+    var avatar = state.mode === 'logged-in' && state.me && state.me.avatar ? state.me.avatar : defaultAvatar(nickname);
     var panel = document.createElement('div');
     panel.className = 'cmt-boost-popover';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', '回应评论');
     panel.setAttribute('data-id', btn.getAttribute('data-id') || '');
-    panel.innerHTML = '<div class="cmt-boost-emojis" role="group" aria-label="选择表情">' +
-      BOOST_EMOJIS.map(function (emoji, i) {
-        return '<button type="button" class="cmt-boost-emoji-btn' + (i === 0 ? ' is-selected' : '') + '" data-emoji="' + escapeHtml(emoji) + '" aria-label="' + escapeHtml(emoji) + '">' + emoji + '</button>';
-      }).join('') + '</div>' +
-      '<div class="cmt-boost-compose"><input type="text" class="cmt-boost-input" maxlength="16" placeholder="说点什么（可选）" aria-label="回应文字"><button type="button" class="cmt-boost-send" aria-label="发送回应">发送</button></div>';
+    panel.setAttribute('data-emoji', '👍');
+    panel.setAttribute('data-category', 'recent');
+    panel.innerHTML = boostComposerHTML(nickname, avatar);
     document.body.appendChild(panel);
     panel._boostAnchor = btn;
+    renderBoostPicker(panel, '');
     positionBoostPanel(panel, btn);
     panel.querySelector('.cmt-boost-input').focus();
+    return panel;
   }
 
   function boostPayload() {
@@ -558,10 +744,9 @@
   }
 
   function doBoost(id, panel) {
-    var emojiBtn = panel.querySelector('.cmt-boost-emoji-btn.is-selected') || panel.querySelector('.cmt-boost-emoji-btn');
     var input = panel.querySelector('.cmt-boost-input');
-    var send = panel.querySelector('.cmt-boost-send');
-    var emoji = emojiBtn && emojiBtn.getAttribute('data-emoji');
+    var send = panel.querySelector('.cmt-boost-confirm');
+    var emoji = panel.getAttribute('data-emoji');
     if (!emoji) return;
     if (send) send.disabled = true;
     var body = boostPayload();
@@ -570,8 +755,14 @@
     fetch('/api/comments/' + encodeURIComponent(id) + '/boost', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); })
       .then(function (res) {
+        if (res.status === 401) {
+          closeBoostPanel();
+          toast('Boost 需要登录后使用', 'error');
+          openModal();
+          return;
+        }
         if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '回应失败');
         refreshBoostComment(id, res.data.boost);
         closeBoostPanel();
@@ -951,18 +1142,66 @@
         else openBoostPanel(boostBtn);
         return;
       }
-      var boostEmoji = e.target.closest && e.target.closest('.cmt-boost-emoji-btn');
-      if (boostEmoji) {
-        var popover = boostEmoji.closest('.cmt-boost-popover');
-        if (popover) {
-          $$('.cmt-boost-emoji-btn', popover).forEach(function (item) { item.classList.toggle('is-selected', item === boostEmoji); });
+      var boostToggle = e.target.closest && e.target.closest('.cmt-boost-emoji-toggle');
+      if (boostToggle) {
+        var togglePanel = boostToggle.closest('.cmt-boost-popover');
+        var picker = togglePanel && togglePanel.querySelector('.cmt-boost-picker');
+        if (picker) {
+          picker.hidden = !picker.hidden;
+          boostToggle.setAttribute('aria-expanded', picker.hidden ? 'false' : 'true');
+          if (!picker.hidden) {
+            renderBoostPicker(togglePanel);
+            loadBoostEmojiData().then(function () {
+              if (togglePanel.parentNode && !picker.hidden) renderBoostPicker(togglePanel);
+            });
+            var search = togglePanel.querySelector('.cmt-boost-search');
+            if (search) search.focus();
+          } else {
+            positionBoostPanel(togglePanel, togglePanel._boostAnchor);
+          }
         }
         return;
       }
-      var boostSend = e.target.closest && e.target.closest('.cmt-boost-send');
-      if (boostSend) {
-        var boostPanel = boostSend.closest('.cmt-boost-popover');
+      var boostMore = e.target.closest && e.target.closest('.cmt-boost-category-more');
+      if (boostMore) {
+        var rail = boostMore.closest('.cmt-boost-rail');
+        var cats = rail && rail.querySelector('.cmt-boost-categories');
+        if (cats) cats.scrollBy({ top: cats.clientHeight || 132, behavior: 'smooth' });
+        return;
+      }
+      var boostCategory = e.target.closest && e.target.closest('.cmt-boost-category');
+      if (boostCategory) {
+        var categoryPanel = boostCategory.closest('.cmt-boost-popover');
+        if (categoryPanel) {
+          categoryPanel.setAttribute('data-category', boostCategory.getAttribute('data-category') || 'recent');
+          var categorySearch = categoryPanel.querySelector('.cmt-boost-search');
+          if (categorySearch) categorySearch.value = '';
+          renderBoostPicker(categoryPanel, '');
+        }
+        return;
+      }
+      var boostEmoji = e.target.closest && e.target.closest('.cmt-boost-emoji-option');
+      if (boostEmoji) {
+        var emojiPanel = boostEmoji.closest('.cmt-boost-popover');
+        var emoji = boostEmoji.getAttribute('data-emoji');
+        if (emojiPanel && emoji) selectBoostEmoji(emojiPanel, emoji);
+        return;
+      }
+      var clearRecent = e.target.closest && e.target.closest('.cmt-boost-clear-recent');
+      if (clearRecent) {
+        var clearPanel = clearRecent.closest('.cmt-boost-popover');
+        clearBoostRecent();
+        if (clearPanel) renderBoostPicker(clearPanel, '');
+        return;
+      }
+      var boostConfirm = e.target.closest && e.target.closest('.cmt-boost-confirm');
+      if (boostConfirm) {
+        var boostPanel = boostConfirm.closest('.cmt-boost-popover');
         if (boostPanel) doBoost(boostPanel.getAttribute('data-id'), boostPanel);
+        return;
+      }
+      if (e.target.closest && e.target.closest('.cmt-boost-cancel')) {
+        closeBoostPanel();
         return;
       }
       // 取消回复
@@ -1037,6 +1276,13 @@
       if (!e.target.closest || !e.target.closest('.cmt-boost-popover')) closeBoostPanel();
     });
 
+    document.addEventListener('input', function (e) {
+      var search = e.target.closest && e.target.closest('.cmt-boost-search');
+      if (!search) return;
+      var panel = search.closest('.cmt-boost-popover');
+      if (panel) renderBoostPicker(panel, search.value);
+    });
+
     if (window.addEventListener) {
       window.addEventListener('resize', function () {
         var panel = $('.cmt-boost-popover');
@@ -1048,8 +1294,29 @@
       }, true);
     }
 
-    // Ctrl/Cmd + Enter 快捷提交
+    // Boost 键盘操作，以及评论 Ctrl/Cmd + Enter 快捷提交。
     document.addEventListener('keydown', function (e) {
+      var boostPanel = e.target && e.target.closest && e.target.closest('.cmt-boost-popover');
+      if (boostPanel) {
+        if (e.key === 'Escape') {
+          var picker = boostPanel.querySelector('.cmt-boost-picker');
+          if (picker && !picker.hidden) {
+            picker.hidden = true;
+            var toggle = boostPanel.querySelector('.cmt-boost-emoji-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            positionBoostPanel(boostPanel, boostPanel._boostAnchor);
+          } else {
+            closeBoostPanel();
+          }
+          e.preventDefault();
+          return;
+        }
+        if (e.key === 'Enter' && e.target.closest('.cmt-boost-input')) {
+          e.preventDefault();
+          doBoost(boostPanel.getAttribute('data-id'), boostPanel);
+          return;
+        }
+      }
       if (!(e.ctrlKey || e.metaKey)) return;
       if (e.key !== 'Enter') return;
       if (state.mode === 'guest') return;
@@ -1107,6 +1374,16 @@
       startReply: startReply,
       cancelReply: cancelReply,
       doSubmit: doSubmit,
+      openBoostPanel: openBoostPanel,
+      closeBoostPanel: closeBoostPanel,
+      boostComposerHTML: boostComposerHTML,
+      loadBoostEmojiData: loadBoostEmojiData,
+      renderBoostPicker: renderBoostPicker,
+      filterBoostEmojis: filterBoostEmojis,
+      selectBoostEmoji: selectBoostEmoji,
+      boostRecentEmojis: boostRecentEmojis,
+      rememberBoostEmoji: rememberBoostEmoji,
+      doBoost: doBoost,
       bindToolbar: bindToolbar,
       bindDelegated: bindDelegated,
       bindModal: bindModal,
@@ -1121,6 +1398,8 @@
         state.me = null;
         state.comments = [];
         state.pageKey = '';
+        state.boostEmojiItems = null;
+        state.boostEmojiPromise = null;
       },
       _init: init
     }

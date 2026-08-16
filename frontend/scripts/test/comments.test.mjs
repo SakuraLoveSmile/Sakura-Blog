@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
 const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/comments.js');
+const BOOST_EMOJI_DATA_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/boost-emoji-data.json');
 const SURFACE = '评论区';
 
 function makeClassList() {
@@ -62,7 +63,11 @@ function makeEl(opts = {}) {
     querySelector: (sel) => el.childMap?.[sel] ?? null,
     querySelectorAll: () => el.children,
     appendChild: (child) => { el.children.push(child); child.parentNode = el; return child; },
-    removeChild: () => {},
+    removeChild: (child) => {
+      const index = el.children.indexOf(child);
+      if (index >= 0) el.children.splice(index, 1);
+      if (child) child.parentNode = null;
+    },
     insertAdjacentHTML: (pos, html) => { el.adjacent.push({ pos, html }); },
     scrollIntoView: () => {},
     click: () => { el.clicks = (el.clicks || 0) + 1; },
@@ -229,6 +234,146 @@ test(`${SURFACE} · 评论元信息：作者分组稳定，reply_ref 只输出�
   assert.doesNotMatch(html, /<img src=x onerror/);
   assert.ok(html.indexOf('cmt-item-author') < html.indexOf('cmt-reply-ref'));
   assert.ok(html.indexOf('cmt-reply-ref') < html.indexOf('cmt-item-time'));
+});
+
+test(`${SURFACE} · Boost 图标：can_boost=false 时仍保留按钮并标记不可用`, () => {
+  const { internal } = loadComments();
+  const html = internal.renderCommentItem(sampleCmt({ can_boost: false }));
+  assert.match(html, /class="cmt-action-btn cmt-boost-btn"/);
+  assert.match(html, /data-boost-available="0"/);
+});
+
+// ------- Boost：胶囊编辑器、Unicode 表情数据与交互 -------
+
+test(`${SURFACE} · Boost 胶囊：包含头像、昵称占位、表情、确认、取消和隐藏选择器`, () => {
+  const { internal } = loadComments();
+  const html = internal.boostComposerHTML('A<lice', 'https://cdn.test/a.png?q="x"');
+  assert.match(html, /class="cmt-boost-bar"/);
+  assert.match(html, /class="cmt-boost-avatar"/);
+  assert.match(html, /placeholder="Boost A&lt;lice\.\.\."/);
+  assert.match(html, /class="cmt-boost-emoji-toggle"/);
+  assert.match(html, /class="cmt-boost-confirm"/);
+  assert.match(html, /class="cmt-boost-cancel"/);
+  assert.match(html, /class="cmt-boost-picker" hidden/);
+  assert.match(html, /class="cmt-boost-search"/);
+  assert.match(html, /data-category="9"/);
+});
+
+test(`${SURFACE} · Boost 表情数据：本地索引覆盖分类、肤色、旗帜和 ZWJ 组合`, () => {
+  const data = JSON.parse(readFileSync(BOOST_EMOJI_DATA_PATH, 'utf8'));
+  assert.equal(data.version, '15.3.2');
+  assert.ok(data.emojis.length > 3000, '应包含完整基础表情和肤色变体');
+  for (const emoji of ['🤝🏽', '🇨🇳', '👨‍👩‍👧‍👦']) {
+    assert.ok(data.emojis.some((row) => row[0] === emoji), `本地索引缺少 ${emoji}`);
+  }
+  assert.deepEqual([...new Set(data.emojis.map((row) => row[1]))].sort(), [0, 1, 3, 4, 5, 6, 7, 8, 9]);
+});
+
+test(`${SURFACE} · Boost 表情筛选：按分类和中英文关键词搜索，常用顺序保持`, () => {
+  const { internal } = loadComments();
+  const rows = [
+    ['😀', 0, '嘿嘿', '嘿嘿 grinning face grin'],
+    ['🤝🏽', 1, '握手: 中等肤色', '握手 handshake medium skin tone'],
+    ['🇨🇳', 9, '中国旗', '中国旗 china flag'],
+  ];
+  assert.deepEqual(internal.filterBoostEmojis(rows, '9', '', []).items.map((row) => row[0]), ['🇨🇳']);
+  assert.deepEqual(internal.filterBoostEmojis(rows, 'recent', '握手', []).items.map((row) => row[0]), ['🤝🏽']);
+  assert.deepEqual(internal.filterBoostEmojis(rows, 'recent', 'china', []).items.map((row) => row[0]), ['🇨🇳']);
+  assert.deepEqual(internal.filterBoostEmojis(rows, 'recent', '', ['🇨🇳', '😀']).items.map((row) => row[0]), ['🇨🇳', '😀']);
+});
+
+test(`${SURFACE} · Boost 选择表情：更新胶囊、关闭 picker 并记录最近 24 个`, () => {
+  const { internal, sandbox } = loadComments();
+  const panel = makeEl();
+  const selected = makeEl({ textContent: '☺' });
+  const picker = makeEl(); picker.hidden = false;
+  const toggle = makeEl({ attrs: { 'aria-expanded': 'true' } });
+  const input = makeEl({ tagName: 'INPUT' });
+  panel.childMap = {
+    '.cmt-boost-selected-emoji': selected,
+    '.cmt-boost-picker': picker,
+    '.cmt-boost-emoji-toggle': toggle,
+    '.cmt-boost-input': input,
+  };
+  for (let i = 0; i < 26; i += 1) internal.rememberBoostEmoji(`e${i}`);
+  internal.selectBoostEmoji(panel, '🤝🏽');
+  assert.equal(panel.getAttribute('data-emoji'), '🤝🏽');
+  assert.equal(selected.textContent, '🤝🏽');
+  assert.equal(picker.hidden, true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.ok(input.focused > 0);
+  const recent = JSON.parse(sandbox.localStorage.getItem('cmt_boost_recent'));
+  assert.equal(recent[0], '🤝🏽');
+  assert.equal(recent.length, 24);
+});
+
+test(`${SURFACE} · Boost 确认：提交所选 Unicode 表情和 16 字输入`, async () => {
+  const { internal, fetchCalls } = loadComments({
+    respond: (url, opts) => (url === '/api/comments/7/boost' && opts?.method === 'POST'
+      ? { body: { ok: true, boost: { emoji: '👨‍👩‍👧‍👦', text: '支持', mine: true } } }
+      : null),
+  });
+  internal.getState().mode = 'logged-in';
+  internal.getState().me = { id: 2, nickname: 'Alice', email: 'a@example.com' };
+  const panel = makeEl({ attrs: { 'data-emoji': '👨‍👩‍👧‍👦', 'data-id': '7' } });
+  panel.childMap['.cmt-boost-input'] = makeEl({ value: '  支持  ' });
+  panel.childMap['.cmt-boost-confirm'] = makeEl({ tagName: 'BUTTON' });
+  internal.doBoost('7', panel);
+  await flush();
+  const call = fetchCalls.find((item) => item.url === '/api/comments/7/boost');
+  assert.ok(call);
+  assert.deepEqual(JSON.parse(call.opts.body), {
+    nick: 'Alice', email: 'a@example.com', emoji: '👨‍👩‍👧‍👦', text: '支持',
+  });
+});
+
+test(`${SURFACE} · Boost 键盘：picker 打开时 Escape 先收起，Enter 确认提交`, async () => {
+  const { internal, dispatchDoc, fetchCalls } = loadComments({
+    respond: (url) => (url === '/api/comments/7/boost'
+      ? { body: { ok: true, boost: { emoji: '🤝🏽', text: '', mine: true } } }
+      : null),
+  });
+  internal.getState().mode = 'logged-in';
+  internal.getState().me = { id: 2, nickname: 'Alice', email: 'a@example.com' };
+  internal.bindDelegated();
+  const panel = makeEl({ attrs: { 'data-emoji': '🤝🏽', 'data-id': '7' } });
+  const input = makeEl({ tagName: 'INPUT' });
+  const picker = makeEl(); picker.hidden = false;
+  const toggle = makeEl({ attrs: { 'aria-expanded': 'true' } });
+  panel.childMap = {
+    '.cmt-boost-input': input,
+    '.cmt-boost-confirm': makeEl({ tagName: 'BUTTON' }),
+    '.cmt-boost-picker': picker,
+    '.cmt-boost-emoji-toggle': toggle,
+  };
+  input.closestMap = { '.cmt-boost-popover': panel, '.cmt-boost-input': input };
+  let prevented = 0;
+  dispatchDoc('keydown', { target: input, key: 'Escape', preventDefault: () => { prevented += 1; } });
+  assert.equal(picker.hidden, true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  dispatchDoc('keydown', { target: input, key: 'Enter', preventDefault: () => { prevented += 1; } });
+  await flush();
+  assert.equal(prevented, 2);
+  assert.ok(fetchCalls.some((call) => call.url === '/api/comments/7/boost'));
+});
+
+test(`${SURFACE} · Boost 取消与未登录状态：取消移除胶囊，guest/anonymous 均打开登录弹窗`, () => {
+  const { internal, els, dispatchDoc, sandbox } = loadComments();
+  internal.bindDelegated();
+  const panel = makeEl();
+  sandbox.document.body.appendChild(panel);
+  els['.cmt-boost-popover'] = panel;
+  const cancel = makeEl();
+  cancel.closestMap = { '.cmt-boost-cancel': cancel };
+  dispatchDoc('click', { target: cancel });
+  assert.equal(panel.parentNode, null);
+
+  for (const mode of ['guest', 'anonymous']) {
+    internal.getState().mode = mode;
+    const trigger = makeEl({ attrs: { 'data-id': '7' } });
+    assert.equal(internal.openBoostPanel(trigger), null);
+    assert.equal(els['#cmt-modal'].style.display, 'flex');
+  }
 });
 
 test(`${SURFACE} · buildAvatarUrl：自带 avatar 直出，缺失时按 nick/邮箱前缀生成首字母 SVG data URI`, () => {

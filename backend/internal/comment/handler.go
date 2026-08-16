@@ -17,9 +17,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rivo/uniseg"
 
 	"blog/internal/notify"
 	"blog/internal/store"
@@ -37,16 +39,45 @@ const (
 	ipHashSalt    = "blog-comment-like-v1"
 )
 
-// AllowedBoostEmojis 是公开 Boost API 与前端保持一致的固定表情集。
-var AllowedBoostEmojis = []string{"👍", "❤️", "😄", "🎉", "😕", "🚀"}
-
-var allowedBoostEmojiSet = func() map[string]struct{} {
-	m := make(map[string]struct{}, len(AllowedBoostEmojis))
-	for _, emoji := range AllowedBoostEmojis {
-		m[emoji] = struct{}{}
+// isBoostEmoji 接受一个 Unicode emoji grapheme cluster，包括肤色、旗帜、
+// keycap 与 ZWJ 组合；普通文本和多个表情会被拒绝。
+func isBoostEmoji(value string) bool {
+	if value == "" || uniseg.GraphemeClusterCount(value) != 1 {
+		return false
 	}
-	return m
-}()
+	hasEmojiBase := false
+	hasKeycap := false
+	for _, r := range value {
+		switch {
+		case r == 0x20E3:
+			hasKeycap = true
+		case r == 0x200D || r == 0xFE0E || r == 0xFE0F:
+			// Emoji sequence joiner and presentation selectors.
+		case r >= 0x1F3FB && r <= 0x1F3FF:
+			// Skin-tone modifier; the cluster still needs an emoji base.
+		case r >= 0xE0020 && r <= 0xE007F:
+			// Tag characters used by subdivision flags.
+		case isEmojiBaseRune(r):
+			hasEmojiBase = true
+		}
+	}
+	if hasKeycap {
+		first, _ := utf8.DecodeRuneInString(value)
+		return first == '#' || first == '*' || first >= '0' && first <= '9'
+	}
+	return hasEmojiBase && uniseg.StringWidth(value) == 2
+}
+
+func isEmojiBaseRune(r rune) bool {
+	return unicode.IsGraphic(r) && (r >= 0x1F1E6 && r <= 0x1F1FF ||
+		r >= 0x1F300 && r <= 0x1FAFF ||
+		r >= 0x2300 && r <= 0x23FF ||
+		r >= 0x25A0 && r <= 0x27FF ||
+		r >= 0x2B00 && r <= 0x2BFF ||
+		r == 0x00A9 || r == 0x00AE || r == 0x203C || r == 0x2049 ||
+		r == 0x2122 || r == 0x2139 || r == 0x3030 || r == 0x303D ||
+		r == 0x3297 || r == 0x3299)
+}
 
 // 评论图片上传限制。
 const (
@@ -138,22 +169,23 @@ type boostReq struct {
 	Email string `json:"email"`
 }
 
-// boostViewer 统一解析登录/匿名 Boost 身份。匿名身份只使用 IP hash 去重，
-// 昵称和邮箱作为发布者快照写入 Boost，不参与 identity key。
+// boostViewer 解析登录用户身份和当前 IP。未登录用户不返回可操作的 identity，
+// 历史匿名 Boost 仍可展示，但不会被标记为未登录用户自己的回应。
 func (h *Handler) boostViewer(c *gin.Context, nick, email string) (identity string, userID int64, ip string) {
 	ip = c.ClientIP()
-	sum := sha256.Sum256([]byte(ip + ipHashSalt))
-	ipHash := hex.EncodeToString(sum[:])
 	if v, ok := c.Get(ctxKeyCurrentUser); ok {
 		if cu, ok := v.(*store.CurrentUser); ok && cu.ID > 0 {
 			return "u:" + strconv.FormatInt(cu.ID, 10), cu.ID, ip
 		}
 	}
-	return "ip:" + ipHash, 0, ip
+	return "", 0, ip
 }
 
 func (h *Handler) boostMeta(c *gin.Context, req boostReq) (string, store.BoostMeta, int64, error) {
 	identity, userID, ip := h.boostViewer(c, req.Nick, req.Email)
+	if identity == "" {
+		return "", store.BoostMeta{}, 0, errors.New("请先登录后再使用 Boost")
+	}
 	sum := sha256.Sum256([]byte(ip + ipHashSalt))
 	ipHash := hex.EncodeToString(sum[:])
 	if v, ok := c.Get(ctxKeyCurrentUser); ok {
@@ -188,6 +220,9 @@ func (h *Handler) boost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "非法评论 id"})
 		return
 	}
+	if !requireBoostLogin(c) {
+		return
+	}
 	var req boostReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "请求格式错误"})
@@ -195,8 +230,8 @@ func (h *Handler) boost(c *gin.Context) {
 	}
 	req.Emoji = strings.TrimSpace(req.Emoji)
 	req.Text = strings.TrimSpace(req.Text)
-	if _, ok := allowedBoostEmojiSet[req.Emoji]; !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "表情不在允许列表中"})
+	if !isBoostEmoji(req.Emoji) {
+		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "请选择一个有效的表情"})
 		return
 	}
 	if utf8.RuneCountInString(req.Text) > 16 {
@@ -246,6 +281,9 @@ func (h *Handler) unboost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "非法评论 id"})
 		return
 	}
+	if !requireBoostLogin(c) {
+		return
+	}
 	identity, _, _ := h.boostViewer(c, "", "")
 	removed, err := h.store.DeleteBoost(id, identity)
 	if err != nil {
@@ -257,6 +295,17 @@ func (h *Handler) unboost(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true, "removed": true})
+}
+
+// requireBoostLogin 保证 Boost 的写操作只能由已登录读者发起。
+func requireBoostLogin(c *gin.Context) bool {
+	if v, ok := c.Get(ctxKeyCurrentUser); ok {
+		if cu, ok := v.(*store.CurrentUser); ok && cu.ID > 0 {
+			return true
+		}
+	}
+	c.JSON(http.StatusUnauthorized, gin.H{"ok": false, "error": "请先登录后再使用 Boost"})
+	return false
 }
 
 // like POST /api/comments/:id/like → IP 去重点赞，返回 {ok, likes, liked}。
