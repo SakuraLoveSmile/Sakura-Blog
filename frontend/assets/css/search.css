@@ -1,0 +1,52 @@
+/* Spec 72: 搜索结果区补充样式（main.css 缺 .search-result-tabs / .search-result-group-title，
+   且 .search-keyword 红色报错式高亮在深色下观感差，此处覆盖为主题色高亮）。
+   DOM 由 assets/js/search/local-search.js 动态渲染。 */
+
+/* ---------- 类型 tab 栏：分段式圆角控件（全部/文章/页面/瞬间） ---------- */
+.search-wrapper #search-result .search-result-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 8px 0;
+  background: var(--block);
+  border-radius: 12px;
+}
+.search-wrapper #search-result .search-result-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--text-p3);
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+.search-wrapper #search-result .search-result-tabs button:hover {
+  color: var(--text-p1);
+}
+.search-wrapper #search-result .search-result-tabs button.active {
+  background: var(--card);
+  color: var(--text-p1);
+  font-weight: 500;
+}
+
+/* ---------- 全部视图分组标题（文章/页面/瞬间）：meta 级小字 ---------- */
+.search-wrapper #search-result .search-result-list .search-result-group-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-p3);
+  padding: 0 0.25rem;
+}
+
+/* ---------- 命中关键词：主题色高亮，覆盖 main.css 红色报错式 ---------- */
+.search-wrapper #search-result .search-keyword {
+  color: var(--theme);
+  background: var(--theme-a20);
+  border-bottom: none;
+  filter: none;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0 2px;
+}

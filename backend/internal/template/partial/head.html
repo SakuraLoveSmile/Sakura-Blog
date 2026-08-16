@@ -93,7 +93,7 @@
   {{- /* 评论区样式（Artalk 视觉对齐版，强调色映射 --theme，深色模式自动兼容）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/comments.css"}}?v={{asset_ver "/assets/css/comments.css"}}">
 
-  {{- /* 文章页脚补充样式（仅打赏 #reward；分享图标与 .article-footer 主体均在 main.css）*/}}
+  {{- /* 文章页脚补充样式（仅打赏 .reward-wrap；分享图标与 .article-footer 主体均在 main.css）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/post-footer.css"}}?v={{asset_ver "/assets/css/post-footer.css"}}">
 
   {{- /* 文库/笔记列表页卡片样式（.post-list.wiki；.post-card 基座与 note 卡片复用 main.css）*/}}
@@ -101,6 +101,12 @@
 
   {{- /* Spec 06/16/20/21: 标签插件补充样式（main.css 已有 tabs/timeline/gallery/button/checkbox；含 ghrepo/ghuser 卡片布局）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tag-plugins.css"}}?v={{asset_ver "/assets/css/tag-plugins.css"}}">
+
+  {{- /* Spec 72: 搜索结果区补充样式（tabs/分组标题/主题色高亮；DOM 由 local-search.js 渲染）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/search.css"}}?v={{asset_ver "/assets/css/search.css"}}">
+
+  {{- /* Spec 72: 加密文章解锁页样式（按钮/表单/note 深色微调）*/}}
+  <link rel="stylesheet" href="{{url_for "/assets/css/post-password.css"}}?v={{asset_ver "/assets/css/post-password.css"}}">
 
   {{- /* 标签云 widget 重设计（3D 球体版）：双模式球体交互卡片样式 */}}
   <link rel="stylesheet" href="{{url_for "/assets/css/tagcloud.css"}}?v={{asset_ver "/assets/css/tagcloud.css"}}">
