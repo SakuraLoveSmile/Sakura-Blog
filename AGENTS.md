@@ -151,6 +151,10 @@ git -C .bare worktree remove ../feat-comment
 
 > 本节为 UI 设计规范的 canonical 路由；真值以 `.design_library/苹果/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。
 
+### 主题模式约定
+
+本项目只做深色模式，**永久不实现浅色模式**。新增或修改 UI、CSS、主题配置、组件状态和验收截图时，必须以深色模式为唯一目标，不得新增浅色模式切换、浅色主题 token、浅色专用样式或浅色验收基线；现有第三方主题中的亮色分支仅作为兼容代码保留，不得扩展或作为本项目产品能力使用。
+
 任一 agent 新增/修改管理后台或前台 UI 前，必须先读 `.design_library/苹果/`，阅读顺序见 `library-consumption.json`（SKILL.md → README.md → css.json → components/index.json → components/{slug}.json → preview/component-{slug}.html → components.css → ui_kits/website/index.html），并遵守：
 
 - 只消费语义 token（`:root` 亮 / `.dark` 暗两层映射，`--primary`/`--background`/`--muted-foreground`/`--border`/`--radius`/`--shadow-*` 及 `--apple-*` 前缀别名），不新造裸色值。
