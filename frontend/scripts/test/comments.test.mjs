@@ -221,6 +221,16 @@ test(`${SURFACE} · renderBadges：管理员徽章用站点配置文案，已验
   assert.equal(internal.renderBadges(sampleCmt()), '');
 });
 
+test(`${SURFACE} · 评论元信息：作者分组稳定，reply_ref 只输出转义后的目标昵称`, () => {
+  const { internal } = loadComments();
+  const html = internal.renderCommentItem(sampleCmt({ reply_ref: '▸ <img src=x onerror=alert(1)>' }));
+  assert.match(html, /class="cmt-item-author"/);
+  assert.match(html, /class="cmt-reply-ref"><span aria-hidden="true">▸<\/span> &lt;img src=x onerror=alert\(1\)&gt;<\/span>/);
+  assert.doesNotMatch(html, /<img src=x onerror/);
+  assert.ok(html.indexOf('cmt-item-author') < html.indexOf('cmt-reply-ref'));
+  assert.ok(html.indexOf('cmt-reply-ref') < html.indexOf('cmt-item-time'));
+});
+
 test(`${SURFACE} · buildAvatarUrl：自带 avatar 直出，缺失时按 nick/邮箱前缀生成首字母 SVG data URI`, () => {
   const { internal } = loadComments();
   assert.equal(internal.buildAvatarUrl(sampleCmt({ avatar: 'https://cdn/a.png' })), 'https://cdn/a.png');
@@ -282,7 +292,8 @@ test(`${SURFACE} · insertNewComment：回复挂到父评论 children 容器，�
   const childrenBox = mainBox.children[0];
   assert.equal(childrenBox.className, 'cmt-children');
   assert.equal(childrenBox.children.length, 1);
-  assert.match(childrenBox.children[0]._html, /▸ Alice/);
+  assert.match(childrenBox.children[0]._html, /cmt-reply-ref/);
+  assert.match(childrenBox.children[0]._html, /aria-hidden="true">▸<\/span> Alice/);
   assert.match(childrenBox.children[0]._html, /data-id="10"/);
   assert.equal(listTitle.textContent, '3 条评论');
   assert.equal(els['#cmt-count-badge'].textContent, '共 3 条评论');

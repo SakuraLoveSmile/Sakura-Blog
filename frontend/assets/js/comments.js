@@ -216,9 +216,8 @@
       '<img class="cmt-item-avatar" src="' + avatar + '" alt="' + escapeHtml(cmt.nick) + '" loading="lazy">' +
       '<div class="cmt-item-main">' +
         '<div class="cmt-item-head">' +
-          '<span class="cmt-item-nick">' + nickHtml + '</span>' +
-          renderBadges(cmt) +
-          (cmt.reply_ref ? '<span class="cmt-reply-ref">' + cmt.reply_ref + '</span>' : '') +
+          '<span class="cmt-item-author"><span class="cmt-item-nick">' + nickHtml + '</span>' + renderBadges(cmt) + '</span>' +
+          renderReplyRef(cmt.reply_ref) +
           '<span class="cmt-item-time">' + escapeHtml(cmt.time_ago || cmt.date_created || '') + '</span>' +
         '</div>' +
         '<div class="cmt-item-body">' + (cmt.content_html || '') + '</div>' +
@@ -336,7 +335,7 @@
           main.appendChild(childrenBox);
         }
         var frag = document.createElement('template');
-        cmt.reply_ref = '▸ ' + escapeHtml(parent.getAttribute('data-nick'));
+        cmt.reply_ref = parent.getAttribute('data-nick') || '';
         frag.innerHTML = renderCommentItem(cmt);
         childrenBox.appendChild(frag.content.firstElementChild);
         if (listHead && listHead.querySelector('.cmt-list-title')) {
@@ -1094,6 +1093,7 @@
       defaultAvatar: defaultAvatar,
       buildAvatarUrl: buildAvatarUrl,
       renderBadges: renderBadges,
+      renderReplyRef: renderReplyRef,
       renderBoostStrip: renderBoostStrip,
       renderCommentItem: renderCommentItem,
       renderComments: renderComments,
