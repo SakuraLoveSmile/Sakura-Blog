@@ -54,9 +54,6 @@ tmp/
 /blog
 # go build ./cmd/blog 会在 cmd/blog/ 下生成同名二进制（曾误入库，68MB）
 backend/server
-# go build ./cmd/... 会在包目录下生成同名二进制
-/cmd/blog
-
 # CI 交叉编译产物（release.yml 在 Actions 内构建，本地不应提交）
 blog-linux-amd64
 blog-linux-amd64.sha256
