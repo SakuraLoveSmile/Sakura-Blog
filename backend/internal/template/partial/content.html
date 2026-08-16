@@ -89,9 +89,33 @@
   {{.Content}}
 </article>
 
-{{- /* 文章页脚：版权声明 / 分享 / 打赏（site.yml article 段驱动，全关时不渲染）。
+{{- /* 打赏（site.yml article.reward 驱动）：正文结尾居中按钮，点击展开收款码；
+   展开/收起交互在下方内联脚本统一委托处理（#reward-toggle）。*/}}
+{{if and .Page.Title .Site.Article.Reward.Enabled}}
+<div class="reward-wrap" id="reward">
+  <button type="button" class="reward-toggle" id="reward-toggle" aria-expanded="false" aria-controls="reward-codes">{{icon "default:reward"}}<span>{{if .Site.Article.Reward.Text}}{{.Site.Article.Reward.Text}}{{else}}{{lang "article.reward_default"}}{{end}}</span></button>
+  <div class="reward-codes" id="reward-codes" inert>
+    <div class="reward-codes-inner">
+    {{if .Site.Article.Reward.Wechat}}
+    <figure class="reward-item">
+      <img src="{{.Site.Article.Reward.Wechat}}" alt="{{lang "share.wechat_pay"}}" loading="lazy">
+      <figcaption>{{- lang "share.wechat_pay" -}}</figcaption>
+    </figure>
+    {{end}}
+    {{if .Site.Article.Reward.Alipay}}
+    <figure class="reward-item">
+      <img src="{{.Site.Article.Reward.Alipay}}" alt="{{lang "share.alipay_qrcode"}}" loading="lazy">
+      <figcaption>{{- lang "share.alipay" -}}</figcaption>
+    </figure>
+    {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{- /* 文章页脚：参考文献 / 版权声明 / 贡献者 / 分享（site.yml article 段驱动，全关时不渲染）。
    对齐 Stellar article_footer.ejs + main.css .article-footer 样式。*/}}
-{{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .EditPage .Site.Article.Share.Enabled .Site.Article.Reward.Enabled)}}
+{{if and .Page.Title (or .Page.References .Site.Article.Copyright.Enabled .EditPage .Site.Article.Share.Enabled)}}
 <div class="article-footer" id="post-footer" data-url="{{.Page.CanonicalURL}}" data-title="{{.Page.Title}} - {{.Site.Title}}">
   {{if .Page.References}}
   <section id="references">
@@ -163,29 +187,6 @@
     </div>
   </section>
   {{end}}
-
-  {{if .Site.Article.Reward.Enabled}}
-  <section id="reward">
-    <div class="header"><span>{{- lang "article.reward" -}}</span></div>
-    <div class="body">
-      <button type="button" class="reward-toggle" id="reward-toggle">{{if .Site.Article.Reward.Text}}{{.Site.Article.Reward.Text}}{{else}}{{lang "article.reward_default"}}{{end}}</button>
-      <div class="reward-codes" id="reward-codes" hidden>
-        {{if .Site.Article.Reward.Wechat}}
-        <figure class="reward-item">
-          <img src="{{.Site.Article.Reward.Wechat}}" alt="{{lang "share.wechat_pay"}}" loading="lazy">
-          <figcaption>{{- lang "share.wechat_pay" -}}</figcaption>
-        </figure>
-        {{end}}
-        {{if .Site.Article.Reward.Alipay}}
-        <figure class="reward-item">
-          <img src="{{.Site.Article.Reward.Alipay}}" alt="{{lang "share.alipay_qrcode"}}" loading="lazy">
-          <figcaption>{{- lang "share.alipay" -}}</figcaption>
-        </figure>
-        {{end}}
-      </div>
-    </div>
-  </section>
-  {{end}}
 </div>
 <script>
 (function () {
@@ -238,10 +239,12 @@
       e.preventDefault();
       var codes = document.getElementById('reward-codes');
       if (!codes) return;
-      var open = codes.hasAttribute('hidden');
-      if (open) codes.removeAttribute('hidden');
-      else codes.setAttribute('hidden', '');
+      var open = !codes.classList.contains('is-open');
+      codes.classList.toggle('is-open', open);
       rewardBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      /* 收起态 inert：二维码不可 tab 聚焦、不进入无障碍树 */
+      if (open) codes.removeAttribute('inert');
+      else codes.setAttribute('inert', '');
     }
   }
   function bind() {

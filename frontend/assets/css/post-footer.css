@@ -3,7 +3,7 @@
    - .article-footer .social-wrap：20px 网格、a.social padding:0 / border-radius:4px
    - .social-wrap .social：filter grayscale(100%) 默认灰度，:hover filter unset 变彩色
    - 全局 img{max-width:100%} 将彩色品牌图标约束到网格单元宽
-   此处仅补充 main.css 未含的打赏（#reward）块样式与 banner 宽高比变量钩子。 */
+   此处仅补充 main.css 未含的打赏（.reward-wrap，正文结尾居中）块样式与 banner 宽高比变量钩子。 */
 
 /* Spec 32 banner_ratio：main.css 编译期固定 aspect-ratio: 2.5，
    模板在 .article.banner 上注入 --banner-ratio（site.yml article.banner_ratio）时覆盖。 */
@@ -11,11 +11,19 @@
   aspect-ratio: var(--banner-ratio, 2.5);
 }
 
-.article-footer #reward .reward-toggle {
+/* 打赏：正文结尾居中（模板 .reward-wrap，位于 .article-footer 之外） */
+.reward-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2.5rem auto 0;
+  text-align: center;
+}
+.reward-wrap .reward-toggle {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.45rem 1rem;
+  gap: 0.4rem;
+  padding: 0.45rem 1.1rem;
   border: 1px solid var(--block-border);
   border-radius: 8px;
   background: var(--block);
@@ -25,41 +33,84 @@
   cursor: pointer;
   transition: background 0.2s ease-out, border-color 0.2s ease-out, color 0.2s ease-out;
 }
-.article-footer #reward .reward-toggle:hover {
+.reward-wrap .reward-toggle svg {
+  width: 1em;
+  height: 1em;
+  opacity: 0.75;
+  transition: opacity 0.2s ease-out;
+}
+.reward-wrap .reward-toggle:hover,
+.reward-wrap .reward-toggle[aria-expanded="true"] {
   border-color: var(--theme);
   color: var(--theme);
   background: var(--theme-a20);
 }
-.article-footer #reward .reward-codes {
+.reward-wrap .reward-toggle:hover svg,
+.reward-wrap .reward-toggle[aria-expanded="true"] svg {
+  opacity: 1;
+}
+/* 收款码展开/收起：grid-template-rows 0fr→1fr 高度过渡 + 透明度，收起态 visibility 隐藏（不可聚焦） */
+.reward-wrap .reward-codes {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows 0.25s ease-out, opacity 0.25s ease-out, visibility 0s linear 0.25s;
+}
+.reward-wrap .reward-codes.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition: grid-template-rows 0.25s ease-out, opacity 0.25s ease-out;
+}
+.reward-wrap .reward-codes-inner {
+  box-sizing: border-box;
+  overflow: hidden;
+  min-height: 0;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
-  margin-top: 1rem;
+  padding-top: 0;
+  transition: padding-top 0.25s ease-out;
 }
-.article-footer #reward .reward-codes[hidden] {
-  display: none;
+.reward-wrap .reward-codes.is-open .reward-codes-inner {
+  padding-top: 1rem;
 }
-.article-footer #reward .reward-item {
+.reward-wrap .reward-item {
   margin: 0;
+  padding: 0.75rem;
   text-align: center;
+  background: var(--block);
+  border: 1px solid var(--block-border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease-out;
 }
-.article-footer #reward .reward-item img {
+.reward-wrap .reward-item:hover {
+  border-color: var(--theme);
+}
+.reward-wrap .reward-item img {
   display: block;
-  width: 128px;
+  width: 148px;
   max-width: 100%;
   height: auto;
+  padding: 6px;
   border-radius: 8px;
-  border: 1px solid var(--block-border);
-  background: var(--card);
+  background: #fff; /* 二维码需白底保证扫码对比度，不随暗色模式变暗 */
 }
-.article-footer #reward .reward-item figcaption {
+.reward-wrap .reward-item figcaption {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
   color: var(--text-p3);
 }
 
-@media screen and (max-width: 667px) {
-  .article-footer #reward .reward-codes {
-    justify-content: center;
+@media (prefers-reduced-motion: reduce) {
+  .reward-wrap .reward-toggle,
+  .reward-wrap .reward-toggle svg,
+  .reward-wrap .reward-codes,
+  .reward-wrap .reward-codes.is-open,
+  .reward-wrap .reward-codes-inner,
+  .reward-wrap .reward-item {
+    transition: none;
   }
 }
