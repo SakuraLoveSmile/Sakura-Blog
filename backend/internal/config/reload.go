@@ -38,6 +38,7 @@ const (
 	SectionDefault    = "default"     // 占位素材组（对齐原版 _config.yml default）
 	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
 	SectionNotebook   = "notebook"    // 笔记本默认行为
+	SectionDataCache  = "data_cache"  // 动态数据客户端缓存（base.html 注入 ctx.data_cache 消费）
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
 	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
@@ -241,6 +242,12 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		b, _ := json.Marshal(site.Plugins)
 		st.PutSetting(SectionPlugins, string(b))
 	}
+	// data_cache 段兼容导入：旧库升级时 settings 非空但缺段，从 site.yml 初值补导一次
+	//（与 seo/style/widgets 同语义），之后以 DB 为准。
+	if _, ok := settings[SectionDataCache]; !ok {
+		b, _ := json.Marshal(site.DataCache)
+		st.PutSetting(SectionDataCache, string(b))
+	}
 
 	// site 段 favicon 兼容导入：旧库 site 段缺 favicon_url/apple_touch_icon 键时，
 	// 从 site.yml 初值合并补写，避免 RebuildSite 把已加载值清零（site.yml 留空则不补）。
@@ -407,6 +414,9 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionPages, site.Pages); err != nil {
 		return err
 	}
+	if err := put(SectionDataCache, site.DataCache); err != nil {
+		return err
+	}
 	// lang 段不写初始值：settings 无 lang 行 = 无文案覆盖（全用内置 zhCN）。
 	return nil
 }
@@ -434,7 +444,7 @@ func writeSiteLinks(st *store.Store, groups []tmpl.LinkGroup) error {
 
 // RebuildSite 从 DB 重新加载 settings/links，构建全新 *tmpl.Site 后经 atomic.Pointer
 // 复制-交换发布，消除前台渲染（无锁读）与热更新写入之间的数据竞争。
-// 未覆盖字段（LogoIcon/DataCache/SiteTree 等启动后不再变化）沿用当前值，读-only 共享安全。
+// 未覆盖字段（LogoIcon/SiteTree 等启动后不再变化）沿用当前值，读-only 共享安全。
 // Admin.AuthEnabled 从 users 表 admin 用户派生（Spec 61 阶段 4 起密码唯一真值在 users 表）。
 // 设置/友链保存后调用以实现热更新。
 func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
@@ -489,6 +499,7 @@ type parsedSections struct {
 	tagPlugins    tmpl.TagPluginsConfig
 	defaultAssets tmpl.DefaultAssets
 	pages         tmpl.PagesConfig
+	dataCache     tmpl.DataCacheConfig
 }
 
 func parseSections(settings map[string]string) parsedSections {
@@ -573,6 +584,7 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
 	unmarshal(SectionDefault, &parsed.defaultAssets)
 	unmarshal(SectionPages, &parsed.pages)
+	unmarshal(SectionDataCache, &parsed.dataCache)
 	return parsed
 }
 
@@ -622,6 +634,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionTagPlugins, func() { site.TagPlugins = parsed.tagPlugins })
 	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
 	assign(SectionPages, func() { site.Pages = parsed.pages })
+	assign(SectionDataCache, func() { site.DataCache = parsed.dataCache })
 }
 
 // rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。
@@ -672,7 +685,7 @@ func KnownSections() []string {
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
 		SectionTagPlugins, SectionDefault,
-		SectionPages,
+		SectionPages, SectionDataCache,
 	}
 }
 
@@ -745,6 +758,8 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		dst = &tmpl.DefaultAssets{}
 	case SectionPages:
 		dst = &tmpl.PagesConfig{}
+	case SectionDataCache:
+		dst = &tmpl.DataCacheConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}

@@ -71,11 +71,12 @@ const groups = [
       { key: "inject", label: "代码注入" },
       { key: "ai", label: "AI" },
       { key: "security", label: "安全" },
+      { key: "data_cache", label: "数据缓存" },
       { key: "advanced", label: "高级·JSON" },
     ],
   },
 ];
-const allSections = ["site","menubar","rightbar","footer","comments","article","search","site_tree","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","notebook","tag_plugins","default","pages"];
+const allSections = ["site","menubar","rightbar","footer","comments","article","search","site_tree","wiki","friends","seo","inject","dashboard","style","widgets","ai","cover","nav_tabs","authors","plugins","notebook","tag_plugins","default","pages","data_cache"];
 const platformOptions = ["wechat","weibo","email","link","twitter","telegram"];
 // 标签插件配色选项（对齐原版 colorful 色板）
 const tagColorOptions = ["red","orange","yellow","green","cyan","blue","purple"];
@@ -145,6 +146,11 @@ function ensureDefaults(d: Record<string, any>) {
   d.search.local_search.content = d.search.local_search.content ?? true;
   d.search.local_search.skip_search = d.search.local_search.skip_search || [];
   d.inject = d.inject || {};
+  // data_cache：动态数据客户端缓存（enable 缺省 true 与 base.html 注入默认一致）
+  d.data_cache = d.data_cache || {};
+  d.data_cache.enable = d.data_cache.enable ?? true;
+  d.data_cache.default_ttl = d.data_cache.default_ttl ?? 3600;
+  d.data_cache.ttl = d.data_cache.ttl || {};
   d.ai = d.ai || {};
   d.ai.summary_enabled = d.ai.summary_enabled ?? true;
   d.ai.allow_user_api = d.ai.allow_user_api ?? true;
@@ -429,6 +435,7 @@ function saveActive() {
     case "tag_plugins": save("tag_plugins"); break;
     case "default": save("default"); break;
     case "authors": save("authors"); break;
+    case "data_cache": save("data_cache"); break;
     case "site": save("site"); break;
     default: break;
   }
@@ -1196,6 +1203,27 @@ onMounted(() => {
               <span>密码管理已迁移至 <router-link to="/profile" class="link">个人资料页</router-link>。</span>
             </div>
             <p class="hint">忘记密码：删除数据库 settings 表 admin 段后重启，回落 site.yml 初始密码。</p>
+          </VCard>
+
+          <VCard v-show="active === 'data_cache'" title="数据缓存">
+            <p class="hint">友链、时间线、GitHub 信息等动态数据的浏览器本地缓存（TTL 内命中直接显示缓存，过期后先显示缓存再后台刷新）。对齐原版 Stellar data_cache 段。</p>
+            <div class="switch-row">
+              <div class="switch-row-label">
+                <div class="switch-row-name">启用本地缓存</div>
+                <div class="switch-row-desc">关闭后每次访问都重新拉取动态数据（TTL=0）</div>
+              </div>
+              <VSwitch v-model="data.data_cache.enable" />
+            </div>
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label>默认缓存时长（秒）</label>
+                <input v-model.number="data.data_cache.default_ttl" type="number" min="0" :class="inputCls" placeholder="3600" />
+              </div>
+            </div>
+            <p class="hint">按服务覆盖缓存时长（ttl）请通过「高级 · JSON」编辑。</p>
+            <div class="card-actions card-actions-inline">
+              <VButton type="primary" size="sm" :loading="savingKey === 'data_cache'" @click="save('data_cache')">保存数据缓存设置</VButton>
+            </div>
           </VCard>
 
           <VCard v-show="active === 'advanced'" title="高级 · JSON 兜底编辑">

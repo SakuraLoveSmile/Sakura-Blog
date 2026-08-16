@@ -171,11 +171,13 @@ func TestBootstrapImportsEditableSections(t *testing.T) {
 	site.Load().NavTabs = tmpl.NavTabsConfig{EnableCustom: true, Items: []tmpl.NavTabItem{{Title: "友链", URL: "/friends/"}}}
 	site.Load().Authors = map[string]tmpl.AuthorDef{"sakura": {Name: "Sakura", Description: "作者"}}
 	site.Load().Plugins = tmpl.PluginsConfig{Heti: &tmpl.HetiConfig{Enable: true}}
+	en := false
+	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: 600}
 
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("bootstrap: %v", err)
 	}
-	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins} {
+	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionDataCache} {
 		v, err := s.GetSetting(sec)
 		if err != nil || v == "" {
 			t.Fatalf("section %s not imported: %q, %v", sec, v, err)
@@ -222,6 +224,10 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		{SectionNotebook, `{"auto_excerpt":64,"order_by":"-created","license":"CC BY","share":true}`, func() bool {
 			cfg := site.Load().Notebook
 			return cfg.AutoExcerpt == 64 && cfg.OrderBy == "-created" && cfg.Share && cfg.License == "CC BY"
+		}},
+		{SectionDataCache, `{"enable":false,"default_ttl":120,"ttl":{"friends":86400}}`, func() bool {
+			cfg := site.Load().DataCache
+			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400
 		}},
 		{SectionSEO, `{"canonical":{"originalHost":"origin.example","officialHosts":["mirror.example"]},"open_graph":{"enable":false,"twitter_id":"blog"},"preconnect":["https://cdn.example"],"structured_data":{"links":["https://example.com"]}}`, func() bool {
 			cfg := site.Load().SEO
