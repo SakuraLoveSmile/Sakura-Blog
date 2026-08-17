@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, defineAsyncComponent } from"vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from"vue";
 import { useRoute, useRouter } from"vue-router";
 import { useQueryClient } from"@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi } from"@/api";
@@ -71,10 +71,86 @@ function loadKind(): EditorKind {
  return localStorage.getItem(KIND_KEY) ==="markdown" ?"markdown" :"rich";
 }
 const editorKind = ref<EditorKind>(loadKind());
-function onEditorKindSelect(e: Event) {
- const v = (e.target as HTMLSelectElement).value as EditorKind;
- editorKind.value = v;
- localStorage.setItem(KIND_KEY, v);
+const editorKindOpen = ref(false);
+const editorKindHighlight = ref<EditorKind>(editorKind.value);
+const editorKindTrigger = ref<HTMLButtonElement | null>(null);
+const editorKindMenu = ref<HTMLDivElement | null>(null);
+const editorKindItems: Array<{ value: EditorKind; label: string; icon: string }> = [
+ { value:"rich", label:"默认编辑器", icon:"ri:edit-box-line" },
+ { value:"markdown", label:"Markdown 编辑器", icon:"ri:markdown-line" },
+];
+const currentEditorKind = computed(() =>
+ editorKindItems.find((item) => item.value === editorKind.value) || editorKindItems[0]
+);
+
+function openEditorKindMenu() {
+ editorKindHighlight.value = editorKind.value;
+ editorKindOpen.value = true;
+}
+
+function toggleEditorKindMenu() {
+ if (editorKindOpen.value) {
+  editorKindOpen.value = false;
+ } else {
+  openEditorKindMenu();
+ }
+}
+
+function onEditorKindSelect(value: EditorKind) {
+ editorKind.value = value;
+ localStorage.setItem(KIND_KEY, value);
+ editorKindOpen.value = false;
+ nextTick(() => editorKindTrigger.value?.focus());
+}
+
+function onEditorKindKeydown(e: KeyboardEvent) {
+ if (e.key ==="Escape") {
+  if (editorKindOpen.value) {
+   e.preventDefault();
+   editorKindOpen.value = false;
+  }
+  return;
+ }
+
+ if (!editorKindOpen.value) {
+  if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
+   e.preventDefault();
+   openEditorKindMenu();
+  }
+  return;
+ }
+
+ const currentIndex = editorKindItems.findIndex((item) => item.value === editorKindHighlight.value);
+ if (e.key ==="ArrowDown" || e.key ==="ArrowRight") {
+  e.preventDefault();
+  editorKindHighlight.value = editorKindItems[Math.min(currentIndex + 1, editorKindItems.length - 1)].value;
+ } else if (e.key ==="ArrowUp" || e.key ==="ArrowLeft") {
+  e.preventDefault();
+  editorKindHighlight.value = editorKindItems[Math.max(currentIndex - 1, 0)].value;
+ } else if (e.key ==="Home") {
+  e.preventDefault();
+  editorKindHighlight.value = editorKindItems[0].value;
+ } else if (e.key ==="End") {
+  e.preventDefault();
+  editorKindHighlight.value = editorKindItems[editorKindItems.length - 1].value;
+ } else if (e.key ==="Enter" || e.key ===" ") {
+  e.preventDefault();
+  onEditorKindSelect(editorKindHighlight.value);
+ }
+}
+
+function onEditorKindPointerDown(e: PointerEvent) {
+ const target = e.target as Node;
+ if (!editorKindTrigger.value?.contains(target) && !editorKindMenu.value?.contains(target)) {
+  editorKindOpen.value = false;
+ }
+}
+
+function onEditorKindDocumentKeydown(e: KeyboardEvent) {
+ if (e.key ==="Escape" && editorKindOpen.value) {
+  editorKindOpen.value = false;
+  nextTick(() => editorKindTrigger.value?.focus());
+ }
 }
 
 // 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
@@ -290,6 +366,8 @@ async function loadPost() {
 }
 
 onMounted(async () => {
+ document.addEventListener("pointerdown", onEditorKindPointerDown);
+ document.addEventListener("keydown", onEditorKindDocumentKeydown);
  loadTaxonomy();
  editorMode.value = (editorRef.value?.getMode?.() as EditorMode) ||"split";
  if (!isEdit.value) return;
@@ -301,6 +379,11 @@ onMounted(async () => {
  } finally {
  loading.value = false;
  }
+});
+
+onBeforeUnmount(() => {
+ document.removeEventListener("pointerdown", onEditorKindPointerDown);
+ document.removeEventListener("keydown", onEditorKindDocumentKeydown);
 });
 
 // 回滚成功后重新拉取文章内容到编辑器。
@@ -406,33 +489,76 @@ function handleDiscardDraft() {
       <div class="flex-1"></div>
       <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <!-- 编辑器选择（富文本/Markdown） -->
-        <div
-          class="relative hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:border-border-strong sm:flex"
-        >
-          <Icon icon="ri:edit-box-line" class="text-base text-text-quaternary" />
-          <select
-            :value="editorKind"
-            @change="onEditorKindSelect"
-            class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+        <div class="editor-kind-picker relative hidden sm:block">
+          <button
+            ref="editorKindTrigger"
+            type="button"
+            class="editor-kind-trigger"
+            :class="{ 'is-open': editorKindOpen }"
             title="切换编辑器"
+            aria-label="切换编辑器"
+            aria-haspopup="listbox"
+            :aria-expanded="editorKindOpen"
+            :aria-controls="editorKindOpen ? 'post-editor-kind-menu' : undefined"
+            :aria-activedescendant="editorKindOpen ? `post-editor-kind-${editorKindHighlight}` : undefined"
+            @click="toggleEditorKindMenu"
+            @keydown="onEditorKindKeydown"
           >
-            <option value="rich">富文本编辑器</option>
-            <option value="markdown">Markdown 编辑器</option>
-          </select>
-          <Icon
-            icon="ri:arrow-down-s-line"
-            class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
-          />
+            <span class="editor-kind-trigger-icon" :class="`editor-kind-icon--${editorKind}`">
+              <Icon :icon="currentEditorKind.icon" />
+            </span>
+            <span class="editor-kind-trigger-label">{{ currentEditorKind.label }}</span>
+            <Icon icon="ri:arrow-down-s-line" class="editor-kind-chevron" aria-hidden="true" />
+          </button>
+
+          <Transition name="editor-kind-menu">
+            <div
+              v-if="editorKindOpen"
+              id="post-editor-kind-menu"
+              ref="editorKindMenu"
+              class="editor-kind-menu"
+              role="listbox"
+              aria-label="编辑器类型"
+            >
+              <button
+                v-for="item in editorKindItems"
+                :id="`post-editor-kind-${item.value}`"
+                :key="item.value"
+                type="button"
+                role="option"
+                class="editor-kind-option"
+                :class="{
+                  'is-selected': editorKind === item.value,
+                  'is-highlighted': editorKindHighlight === item.value,
+                }"
+                :aria-selected="editorKind === item.value"
+                @mouseenter="editorKindHighlight = item.value"
+                @focus="editorKindHighlight = item.value"
+                @click="onEditorKindSelect(item.value)"
+              >
+                <span class="editor-kind-option-icon" :class="`editor-kind-icon--${item.value}`">
+                  <Icon :icon="item.icon" />
+                </span>
+                <span class="editor-kind-option-label">{{ item.label }}</span>
+                <Icon
+                  v-if="editorKind === item.value"
+                  icon="ri:check-line"
+                  class="editor-kind-option-check"
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+          </Transition>
         </div>
         <!-- Markdown 模式下的视图三态切换（与工具栏同步，桌面端显示） -->
         <div
           v-if="editorKind === 'markdown'"
-          class="relative hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary sm:flex"
+          class="editor-select-control relative hidden min-w-[132px] items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary sm:flex"
         >
           <select
             :value="editorMode"
             @change="onEditorModeSelect"
-            class="cursor-pointer select-none appearance-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+            class="editor-select cursor-pointer select-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
             title="切换视图模式"
           >
             <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
@@ -635,6 +761,193 @@ function handleDiscardDraft() {
 </template>
 
 <style scoped>
+/* ===== 编辑器类型浮层选择器 ===== */
+.editor-kind-picker {
+  z-index: 70;
+}
+
+.editor-kind-trigger {
+  display: inline-flex;
+  min-width: 176px;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-card) 78%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent), 0 1px 2px color-mix(in srgb, #000 28%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.editor-kind-trigger:hover,
+.editor-kind-trigger.is-open {
+  border-color: color-mix(in srgb, #fff 21%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 78%, transparent);
+}
+
+.editor-kind-trigger:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-ring) 18%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
+}
+
+.editor-kind-trigger-icon,
+.editor-kind-option-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.editor-kind-trigger-icon {
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.editor-kind-option-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 19px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent), inset 0 -1px 1px color-mix(in srgb, #000 18%, transparent);
+}
+
+.editor-kind-icon--rich {
+  background: #0a84ff;
+}
+
+.editor-kind-icon--markdown {
+  background: #64d2ff;
+}
+
+.editor-kind-trigger-label {
+  overflow: hidden;
+  flex: 1;
+  color: var(--color-foreground);
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.editor-kind-chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-tertiary);
+  font-size: 17px;
+  transition: transform var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.editor-kind-trigger.is-open .editor-kind-chevron {
+  transform: rotate(180deg);
+  color: var(--color-text-secondary);
+}
+
+.editor-kind-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(304px, calc(100vw - 24px));
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-popover) 86%, transparent);
+  box-shadow: 0 20px 44px color-mix(in srgb, #000 52%, transparent), 0 3px 10px color-mix(in srgb, #000 24%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+
+.editor-kind-menu::before {
+  position: absolute;
+  top: -6px;
+  right: 78px;
+  width: 11px;
+  height: 11px;
+  border-top: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-left: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  background: color-mix(in srgb, var(--color-popover) 86%, transparent);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.editor-kind-menu::after {
+  position: absolute;
+  top: 0;
+  right: 14px;
+  left: 14px;
+  height: 1px;
+  background: color-mix(in srgb, #fff 7%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.editor-kind-option {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  color: var(--color-text-tertiary);
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.editor-kind-option:hover,
+.editor-kind-option.is-highlighted {
+  background: color-mix(in srgb, #fff 8%, transparent);
+  color: var(--color-foreground);
+}
+
+.editor-kind-option.is-selected {
+  background: color-mix(in srgb, #fff 10%, transparent);
+  color: var(--color-foreground);
+}
+
+.editor-kind-option:active {
+  transform: scale(0.985);
+}
+
+.editor-kind-option:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+.editor-kind-option-label {
+  overflow: hidden;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-kind-option-check {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: 18px;
+}
+
+.editor-kind-menu-enter-active,
+.editor-kind-menu-leave-active {
+  transform-origin: top right;
+  transition: opacity var(--duration-fast) ease, transform var(--duration-normal) var(--ease-standard);
+}
+
+.editor-kind-menu-enter-from,
+.editor-kind-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-5px) scale(0.98);
+}
+
 /* ===== 底部抽屉动画 ===== */
 .drawer-enter-active,
 .drawer-leave-active {

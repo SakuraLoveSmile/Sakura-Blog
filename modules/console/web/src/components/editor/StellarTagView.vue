@@ -68,7 +68,9 @@ watch(raw, renderPreview);
 const srcdoc = computed(() => {
  // {% friends %} 等数据服务标签输出 ds-* 容器，需前端 service JS 抓数据渲染卡片：
  // 预览注入最小 utils/def shim + 对应 service 脚本（仅含 ds-friends 容器时）。
- const dsBootstrap = /ds-friends/.test(html.value)
+ const hasFriendsService = /ds-friends/.test(html.value);
+ const hasMarkdownService = /ds-mdrender/.test(html.value);
+ const dsBootstrap = hasFriendsService || hasMarkdownService
   ? `<script>
 window.def = { avatar: 'https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg' };
 window.wrapLazyloadImages = function () {};
@@ -83,9 +85,13 @@ window.utils = {
   return apiObj;
  }
 };
-<\/script>
-<script src="/assets/js/services/friends_and_posts.js?v=tagprev1"><\/script>
+<\/script>${hasMarkdownService
+  ? `<script src="/assets/vendor/marked/marked.umd.min.js?v=tagprev1"><\/script>
+<script src="/assets/js/services/mdrender.js?v=tagprev1"><\/script>`
+  : ""}${hasFriendsService
+  ? `<script src="/assets/js/services/friends_and_posts.js?v=tagprev1"><\/script>
 <script src="/assets/js/services/friends.js?v=tagprev1"><\/script>`
+  : ""}`
   : "";
  return `<!DOCTYPE html>
 <html data-theme="dark">
