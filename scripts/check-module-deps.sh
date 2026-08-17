@@ -33,7 +33,7 @@ done
 
 # The repository is a single Go module. These paths were retired by the
 # modular layout and must not quietly return through a new worktree or copy.
-for legacy in backend cmd/server go.work; do
+for legacy in backend cmd/server go.work go.work.sum; do
 	if [ -e "$legacy" ]; then
 		printf 'module-check: retired path exists: %s\n' "$legacy" >&2
 		fail=1
