@@ -13,11 +13,6 @@ import (
 	tmpl "blog/internal/settings"
 )
 
-// friendIssueBody 构造带 ```json 友链信息块的 issue body。
-func friendIssueBody(t, url, feed string) string {
-	return "### 友链信息\n```json\n{\"title\":\"测试友链\",\"url\":\"" + url + "\",\"feed\":\"" + feed + "\"}\n```"
-}
-
 func TestExtractJSONBlock(t *testing.T) {
 	body := "### 友链信息\n```json\n{\"title\":\"x\"}\n```\ntrailing"
 	block := extractJSONBlock(body)

@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
@@ -147,8 +146,4 @@ func (h *MomentHandler) RecentItems(limit int) []*tmpl.MomentItem {
 		})
 	}
 	return items
-}
-
-func joinImages(urls []string) string {
-	return strings.Join(urls, ",")
 }

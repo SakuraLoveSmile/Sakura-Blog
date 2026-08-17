@@ -67,16 +67,6 @@ type Handler struct {
 		n int
 		t time.Time
 	}
-
-	// 注册限流（安全审计 2026-08-16）
-	registerMu   sync.Mutex
-	registerHits map[string]registerHit
-}
-
-// registerHit 注册限流计数条目。
-type registerHit struct {
-	n int
-	t time.Time
 }
 
 // Config API Handler 初始化参数。
@@ -122,7 +112,6 @@ func New(cfg Config) *Handler {
 			n int
 			t time.Time
 		}),
-		registerHits: make(map[string]registerHit),
 	}
 }
 

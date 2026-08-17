@@ -184,18 +184,6 @@ func resizeImage(img image.Image, w, h int) image.Image {
 	return dst
 }
 
-// imageDimensions 快速获取图片宽高（不完整解码）。
-func imageDimensions(src []byte, mime string) (w, h int) {
-	if mime == "image/svg+xml" {
-		return 0, 0
-	}
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(src))
-	if err != nil {
-		return 0, 0
-	}
-	return cfg.Width, cfg.Height
-}
-
 func mimeToExt(mime string) string {
 	switch strings.ToLower(mime) {
 	case "image/jpeg":

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,7 +29,7 @@ func TestBootstrapOwnsSharedServices(t *testing.T) {
 	}
 	services.StartBackground()
 	services.StartBackground()
-	if err := services.Close(nil); err != nil {
+	if err := services.Close(context.Background()); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 }

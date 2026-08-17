@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"strings"
 
-	"blog/internal/settings"
 	tmpl "blog/internal/settings"
 )
 
@@ -168,7 +167,7 @@ func (s *Service) RenderComponentPreview(body string) (string, error) {
 		}
 		return sb.String()
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, settings.TagPluginsConfig{})
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, tmpl.TagPluginsConfig{})
 	var sb strings.Builder
 	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err

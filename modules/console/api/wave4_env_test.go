@@ -69,13 +69,6 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	return r, st, user, h
 }
 
-// do2FAReq 发起自定义请求（multipart 等非 JSON body 场景），自动附加 auth cookie。
-func do2FAReq(r *gin.Engine, req *http.Request) *httptest.ResponseRecorder {
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
-}
-
 // do2FARaw 发起带 cookie 的原始 body 请求（非 JSON Content-Type）。
 func do2FARaw(r *gin.Engine, method, path string, body *bytes.Buffer, contentType, cookie string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()

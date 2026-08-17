@@ -18,10 +18,11 @@ console: console-deps
 go-build:
 	go build -o $(BINARY) ./cmd/blog
 
-## test: 静态检查 + 全部测试（Go vet/test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
+## test: 静态检查 + 全部测试（Go vet + staticcheck + test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
 ## Go 命令统一从根 module 执行。
 test: dist-bootstrap console-test assets-test module-check
 	go vet ./...
+	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 	go test ./...
 
 ## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
@@ -90,6 +91,10 @@ assets-test:
 ## module-check: 静态约束 Console/Stellar/internal 的依赖方向。
 module-check:
 	sh scripts/check-module-deps.sh
+
+## lint: staticcheck 静态分析（版本钉死，与 CI 的 Staticcheck 步骤一致）。
+lint:
+	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 
 ## merge-check: feature 分支合回 dev 的机械化合并封装（在 feature worktree 根目录执行）
 ## 强制先跑 make test，任一环节失败即以非零码退出、不执行合并；全绿后才把当前分支合入 dev。

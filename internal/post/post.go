@@ -13,7 +13,6 @@ import (
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 
-	"blog/internal/settings"
 	tmpl "blog/internal/settings"
 )
 
@@ -58,7 +57,7 @@ type Service struct {
 	md       goldmark.Markdown
 	inlineMD goldmark.Markdown // 仅行内语法渲染器（供标签插件 body 使用）
 	parser   parser
-	settings *settings.Manager
+	settings *tmpl.Manager
 	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
@@ -114,7 +113,7 @@ func (s *Service) SetGHClient(c GHClient) {
 
 // SetSettingsManager supplies the current site snapshot to shortcode rendering
 // without relying on package-global tag plugin state.
-func (s *Service) SetSettingsManager(m *settings.Manager) { s.settings = m }
+func (s *Service) SetSettingsManager(m *tmpl.Manager) { s.settings = m }
 
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
 // AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
@@ -161,7 +160,7 @@ func (s *Service) Render(body string) (string, error) {
 	}
 
 	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
-	var tagPlugins settings.TagPluginsConfig
+	var tagPlugins tmpl.TagPluginsConfig
 	if s.settings != nil && s.settings.Current() != nil {
 		tagPlugins = s.settings.Current().TagPlugins
 	}
@@ -179,14 +178,7 @@ func (s *Service) Render(body string) (string, error) {
 // 供备份导入等内存数据源复用，与 ParseFile 共享同一轻量 parser。
 func (s *Service) ParseBytes(src []byte) (FileMeta, string) {
 	meta, body := s.parser.Parse(src)
-	return FileMeta{
-		Title: meta.Title, Date: meta.Date, Excerpt: meta.Excerpt, Cover: meta.Cover, Banner: meta.Banner, Category: meta.Category, Topic: meta.Topic, Tags: meta.Tags,
-		PosterHeadline: meta.PosterHeadline, PosterTopic: meta.PosterTopic, PosterCaption: meta.PosterCaption, PosterColor: meta.PosterColor,
-		References: meta.References,
-		Status:     meta.Status,
-		Pinned:     meta.Pinned,
-		Author:     meta.Author,
-	}, body
+	return FileMeta(meta), body
 }
 
 // ParseFile 读 md 文件并分离 frontmatter 与正文，供 seed 导入复用。

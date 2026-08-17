@@ -14,9 +14,6 @@ import (
 	"blog/internal/store"
 )
 
-// friendsRepo 友链申请仓库（与 resource/friends 快照同源）。
-const friendsRepo = "sakurasep/Friends"
-
 // linkImportRequest 友链导入请求体（Spec 56：来源泛化）。
 type linkImportRequest struct {
 	Source  string `json:"source"`  // 导入来源："github"（默认）/ "text"（粘贴 JSON 或 YAML）

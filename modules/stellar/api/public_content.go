@@ -1,8 +1,6 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"sort"
 	"strconv"
@@ -240,12 +238,4 @@ func splitTags(raw string) []string {
 		}
 	}
 	return out
-}
-
-func generatePAT() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return patPrefix + hex.EncodeToString(bytes), nil
 }
