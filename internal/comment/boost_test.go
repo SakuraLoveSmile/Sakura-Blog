@@ -13,8 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 func newBoostHandlerTest(t *testing.T, authorIP string) (*gin.Engine, *store.Store, int64) {

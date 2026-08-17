@@ -12,7 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 func TestToCard(t *testing.T) {
@@ -149,7 +150,7 @@ func TestRenderSitePreview(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
@@ -178,7 +179,7 @@ func TestRenderSitePreviewWidgetsOnlyKeepsLiveSiteSections(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
@@ -213,7 +214,7 @@ func TestRenderSitePreviewWikiUsesFirstProjectTreeAndRelatedData(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create wiki doc: %v", err)
 	}
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
@@ -264,7 +265,7 @@ func TestRenderSitePreviewNotebooksUsesFirstNotebookTagTree(t *testing.T) {
 	if err := st.CreateNote(&store.Note{NotebookID: nb.ID, Title: "Go 入门", Tags: "Go,后端"}); err != nil {
 		t.Fatalf("create note: %v", err)
 	}
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
@@ -300,7 +301,7 @@ func TestRenderSitePreviewPostUsesDraftTOCDepth(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create post: %v", err)
 	}
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}

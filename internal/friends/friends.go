@@ -3,6 +3,7 @@
 package friends
 
 import (
+	"context"
 	"encoding/xml"
 	"io"
 	"log"
@@ -17,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/safefetch"
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 const (
@@ -66,8 +67,15 @@ type Aggregator struct {
 	// onArticles 每个友链抓取到文章后的回调（供落库持久化，由 main.go 装配），可空。
 	onArticles func(friendTitle, friendURL string, posts []Post)
 
-	mu    sync.RWMutex
-	cache []Friend
+	mu        sync.RWMutex
+	cache     []Friend
+	startOnce sync.Once
+	closeOnce sync.Once
+	workMu    sync.Mutex
+	closed    bool
+	stop      chan struct{}
+	done      chan struct{}
+	work      sync.WaitGroup
 }
 
 // New 从站点配置构建聚合器，并用配置初始化缓存（此时 posts 为空，RSS 抓取后填充）。
@@ -78,6 +86,7 @@ func New(site *atomic.Pointer[tmpl.Site]) *Aggregator {
 	a := &Aggregator{
 		site:   site,
 		client: safefetch.New(safefetch.Options{Timeout: fetchTimeout, MaxRedirects: 5}),
+		stop:   make(chan struct{}),
 	}
 	a.cache = a.buildBase()
 	return a
@@ -127,13 +136,62 @@ func (a *Aggregator) buildBase() []Friend {
 
 // Start 启动后台聚合：立即异步抓取一次，之后按 currentInterval 周期刷新（配置热更后下周期生效）。
 func (a *Aggregator) Start() {
-	go func() {
-		a.refresh()
-		for {
-			time.Sleep(a.currentInterval())
+	a.startOnce.Do(func() {
+		a.done = make(chan struct{})
+		go func() {
+			defer close(a.done)
+			select {
+			case <-a.stop:
+				return
+			default:
+			}
 			a.refresh()
+			for {
+				timer := time.NewTimer(a.currentInterval())
+				select {
+				case <-a.stop:
+					timer.Stop()
+					return
+				case <-timer.C:
+					a.refresh()
+				}
+			}
+		}()
+	})
+}
+
+// Close stops periodic and explicitly requested refreshes before Store closes.
+func (a *Aggregator) Close(ctx context.Context) error {
+	if a == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	a.closeOnce.Do(func() {
+		a.workMu.Lock()
+		a.closed = true
+		a.workMu.Unlock()
+		close(a.stop)
+	})
+	if a.done != nil {
+		select {
+		case <-a.done:
+		case <-ctx.Done():
+			return ctx.Err()
 		}
+	}
+	finished := make(chan struct{})
+	go func() {
+		a.work.Wait()
+		close(finished)
 	}()
+	select {
+	case <-finished:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // Register 挂 /api/friends-aggregated 与 /api/friends 两个 JSON 端点。
@@ -144,7 +202,17 @@ func (a *Aggregator) Register(r *gin.Engine) {
 
 // Refresh 立即异步重建友链缓存（供友链在 console 变更后即时反映到 /friends，不阻塞调用方）。
 func (a *Aggregator) Refresh() {
-	go a.refresh()
+	a.workMu.Lock()
+	if a.closed {
+		a.workMu.Unlock()
+		return
+	}
+	a.work.Add(1)
+	a.workMu.Unlock()
+	go func() {
+		defer a.work.Done()
+		a.refresh()
+	}()
 }
 
 func (a *Aggregator) handleAggregated(c *gin.Context) {

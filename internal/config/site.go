@@ -6,7 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 // LoadSite 从 yaml 文件加载站点配置（如 config/site.yml）。

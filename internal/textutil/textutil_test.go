@@ -2,7 +2,7 @@ package textutil
 
 import "testing"
 
-// TestTruncate 按 rune 截断，多字节安全，超长加省略号（原 cmd/server/web_test.go 迁移）。
+// TestTruncate 按 rune 截断，多字节安全，超长加省略号。
 func TestTruncate(t *testing.T) {
 	cases := []struct {
 		in   string
@@ -20,7 +20,7 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
-// TestStripHTML 去标签 + 压缩空白（原 cmd/server/web_test.go 迁移）。
+// TestStripHTML 去标签 + 压缩空白。
 func TestStripHTML(t *testing.T) {
 	got := StripHTML("<p>hello   <b>world</b></p>\n\n<span>!</span>")
 	if got != "hello world !" {

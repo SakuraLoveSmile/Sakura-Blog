@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 // newTestAggregator 构造聚合器：httptest server 提供 RSS/Atom 双格式样本。

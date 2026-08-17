@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 // registerHomeRoutes 注册首页域路由：/ 与 /page/:num。

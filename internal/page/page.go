@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // FriendsSlug 友链页系统页面 slug：/friends 路由按此 slug 从 pages 表渲染内容页。
@@ -45,15 +45,21 @@ const defaultFriendsMD = `## 友链列表
 type Handler struct {
 	store  *store.Store
 	posts  *post.Service
-	engine *tmpl.Engine
+	engine Renderer
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，渲染时 .Load() 读取
 	site      *atomic.Pointer[tmpl.Site]
 	render404 gin.HandlerFunc
 	fillExtra func(*tmpl.ViewData, *gin.Context) // 前台渲染前填充 sidebar/SEO
 }
 
+// Renderer keeps the internal page service independent from Stellar's web
+// template implementation.
+type Renderer interface {
+	Render(string, *tmpl.ViewData) (string, error)
+}
+
 // New 创建 page handler，确保 pages 表存在。
-func New(s *store.Store, posts *post.Service, engine *tmpl.Engine, site *atomic.Pointer[tmpl.Site]) (*Handler, error) {
+func New(s *store.Store, posts *post.Service, engine Renderer, site *atomic.Pointer[tmpl.Site]) (*Handler, error) {
 	if err := s.EnsurePagesTable(); err != nil {
 		return nil, err
 	}

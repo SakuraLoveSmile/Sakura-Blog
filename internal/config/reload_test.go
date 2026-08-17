@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 func newTestStore(t *testing.T) *store.Store {

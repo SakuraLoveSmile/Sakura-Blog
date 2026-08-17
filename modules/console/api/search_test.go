@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newSearchTestRouter 组装含管理端搜索路由的测试引擎（password 为空则鉴权中间件直接放行）。

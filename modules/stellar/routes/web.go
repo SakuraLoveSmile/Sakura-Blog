@@ -22,8 +22,9 @@ import (
 	"blog/internal/post"
 	"blog/internal/search"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 	"blog/modules/stellar/web/assets"
 )
 
@@ -58,7 +59,7 @@ type webServer struct {
 	swTemplate []byte
 	st         *store.Store
 	posts      *post.Service
-	engine     *tmpl.Engine
+	engine     *stellarweb.Engine
 	searchIdx  *search.Index // 可空：FTS 建索引失败时降级
 	ogGen      *og.Generator
 	momentH    *moment.Handler // /notes 页近期动态，main 装配 moment 后设置
@@ -94,7 +95,7 @@ type webDeps struct {
 	Site      *atomic.Pointer[tmpl.Site]
 	Store     *store.Store
 	Posts     *post.Service
-	Engine    *tmpl.Engine
+	Engine    *stellarweb.Engine
 	SearchIdx *search.Index
 	OGGen     *og.Generator
 	DevMode   bool
@@ -494,14 +495,14 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 }
 
 // tocOptions library toc 参数 → TOC 生成选项（Spec 33 参数补齐：list_number/min_depth/max_depth）。
-func (s *webServer) tocOptions() tmpl.TOCOptions {
+func (s *webServer) tocOptions() stellarweb.TOCOptions {
 	return s.tocOptionsFrom(s.site.Load())
 }
 
 // tocOptionsFrom 使用指定站点配置读取 toc 参数，设置页预览可据此联动草稿。
-func (s *webServer) tocOptionsFrom(site *tmpl.Site) tmpl.TOCOptions {
+func (s *webServer) tocOptionsFrom(site *tmpl.Site) stellarweb.TOCOptions {
 	def := site.Widgets.Lookup("toc")
-	return tmpl.TOCOptions{
+	return stellarweb.TOCOptions{
 		ListNumber: def.Bool("list_number", false),
 		MinDepth:   def.Int("min_depth", 1),
 		MaxDepth:   def.Int("max_depth", 6),

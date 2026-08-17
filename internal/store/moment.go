@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"blog/internal/content"
 )
 
 // 瞬间可见性取值。
@@ -145,7 +147,7 @@ func (s *Store) migrateMomentColumns() error {
 }
 
 // MomentSlugKey 瞬间在搜索索引中的伪 slug（moments 无 slug 列，用 id 构造；
-// store 写路径回调与 cmd/server 回填装配共用，格式必须一致）。
+// store 写路径回调与 Stellar 事件装配共用，格式必须一致）。
 func MomentSlugKey(id int64) string {
 	return "moment-" + strconv.FormatInt(id, 10)
 }
@@ -157,6 +159,9 @@ func (s *Store) SetMomentWriteHook(h func(op, slug string)) {
 
 // fireMomentWrite 触发瞬间写路径回调（未注册则静默）。
 func (s *Store) fireMomentWrite(op, slug string) {
+	if s.contentEvents != nil {
+		s.contentEvents.Publish(content.Event{Kind: content.MomentChanged, Op: op, Slug: slug})
+	}
 	if s.momentWriteHook != nil {
 		s.momentWriteHook(op, slug)
 	}

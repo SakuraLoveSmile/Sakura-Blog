@@ -3,10 +3,6 @@
 package api
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,14 +16,16 @@ import (
 
 	"blog/internal/backup"
 	"blog/internal/comment"
+	"blog/internal/content"
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
+	"blog/internal/identity"
 	"blog/internal/linkwatch"
 	"blog/internal/module"
 	"blog/internal/notify"
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 const (
@@ -58,10 +56,11 @@ type Handler struct {
 	// icons 图标注册表（icons.yml），素材速查端点用，可空。
 	icons *tmpl.IconRegistry
 
-	// renderSitePreview 设置页「前端预览」渲染回调（cmd/server 注入，nil 时端点 501）。
+	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
 	renderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
-	// onContentChanged 内容写路径回调（cmd/server 注入，可空）：置脏内容派生缓存。
-	onContentChanged func()
+	// events is the shared content-change publisher. Console does not know
+	// which module owns the derived caches that consume these events.
+	events content.Events
 
 	// 登录限流（P0-4）
 	loginMu    sync.Mutex
@@ -97,12 +96,11 @@ type Config struct {
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
-	// OnContentChanged 内容写路径回调（Spec 61 阶段 5）：wikidoc/notebook/note/设置保存后
-	// 通知 cmd/server 置脏 /search.json 与 /sitemap.xml 缓存，可空。
-	OnContentChanged func()
-	UploadDir        string
-	MaxUploadMB      int
-	LinkWatch        *linkwatch.Watcher
+	// Events publishes generic changes such as wiki/notebook/note/settings writes.
+	Events      content.Events
+	UploadDir   string
+	MaxUploadMB int
+	LinkWatch   *linkwatch.Watcher
 }
 
 // New 创建 API handler。
@@ -121,7 +119,7 @@ func New(cfg Config) *Handler {
 		notify:            cfg.Notify,
 		icons:             cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
-		onContentChanged:  cfg.OnContentChanged,
+		events:            cfg.Events,
 		uploadDir:         cfg.UploadDir,
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
@@ -139,20 +137,33 @@ func (h *Handler) SetOnLinksChanged(fn func()) {
 	h.onLinksChanged = fn
 }
 
+func (h *Handler) publishContentChanged() {
+	if h.events != nil {
+		h.events.Publish(content.Event{Kind: content.ContentChanged})
+	}
+}
+
 // MountDeps API 侧装配依赖：Config 之外附带公共 API 端点的可选组件。
 type MountDeps struct {
 	Config
 	Friends   *friends.Aggregator // 友链动态聚合（/api/friends-aggregated），可空
 	LinkWatch *linkwatch.Watcher  // 友链连通性/截图巡检器，可空
 	GH        *ghpkg.Client       // GitHub 代理缓存客户端（/api/gh/*），可空
-	// SkipPublic leaves public Stellar endpoints to modules/stellar/api. It is
-	// false by default so direct package callers retain the legacy contract.
-	SkipPublic bool
 }
 
 // Mount 承接 main 的 API 侧装配：建表 → /api/v1 路由组 → 友链聚合/GitHub 代理/评分公开端点。
 // 组件生命周期（如 friends 聚合器的 Start）仍由调用方管理；返回 Handler 供上层继续挂回调。
 func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
+	return mount(r, d, true)
+}
+
+// MountConsole is the module-owned mount. It deliberately excludes public
+// reader and content endpoints; modules/stellar owns those routes at runtime.
+func MountConsole(r *gin.Engine, d MountDeps) (*Handler, error) {
+	return mount(r, d, false)
+}
+
+func mount(r *gin.Engine, d MountDeps, includePublic bool) (*Handler, error) {
 	st := d.Store
 	ensures := []struct {
 		name string
@@ -186,21 +197,20 @@ func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		h.gh = d.GH
 	}
 
-	// 读者身份中间件（挂在引擎根级：comment handler 的 /api/comments、SSR handler 的文章页均受益）
-	r.Use(h.currentUserMiddleware())
-
-	// 公共身份端点（与后台 /api/v1/auth 解耦，cookie 名独立）
-	auth := r.Group("/api/auth")
-	{
-		auth.POST("/register", h.publicRegister)
-		auth.POST("/login", h.publicLogin)
-		auth.GET("/me", h.publicMe)
-		auth.POST("/logout", h.publicLogout)
+	if includePublic {
+		// 读者身份中间件与后台 cookie 互相独立。
+		r.Use(h.currentUserMiddleware())
+		auth := r.Group("/api/auth")
+		{
+			auth.POST("/register", h.publicRegister)
+			auth.POST("/login", h.publicLogin)
+			auth.GET("/me", h.publicMe)
+			auth.POST("/logout", h.publicLogout)
+		}
 	}
 
-	h.Register(r)
-
-	if !d.SkipPublic {
+	h.register(r, includePublic)
+	if includePublic {
 		mountLegacyPublic(r, h, d)
 	}
 	return h, nil
@@ -222,6 +232,15 @@ func mountLegacyPublic(r *gin.Engine, h *Handler, d MountDeps) {
 
 // Register 把 /api/v1 路由组挂到 r 上。
 func (h *Handler) Register(r *gin.Engine) {
+	h.register(r, true)
+}
+
+// RegisterConsole mounts only the Console-owned /api/v1 routes.
+func (h *Handler) RegisterConsole(r *gin.Engine) {
+	h.register(r, false)
+}
+
+func (h *Handler) register(r *gin.Engine, includePublic bool) {
 	v1 := r.Group("/api/v1")
 
 	// 公开路由（无需认证）
@@ -487,16 +506,18 @@ func (h *Handler) Register(r *gin.Engine) {
 		}
 	}
 
-	// 公开只读 Content API（PAT 令牌认证，与 cookie 主链路完全分离）：
-	// 无论站点密码是否配置都必须校验 Bearer，无任何写端点。
-	pub := r.Group("/api/public/v1", h.patAuth())
-	{
-		pub.GET("/posts", h.pubListPosts)
-		pub.GET("/posts/:slug", h.pubGetPost)
-		pub.GET("/pages", h.pubListPages)
-		pub.GET("/categories", h.pubListCategories)
-		pub.GET("/tags", h.pubListTags)
-		pub.GET("/comments", h.pubListComments)
+	if includePublic {
+		// Legacy direct callers retain the complete API surface. The top-level
+		// Console mount uses RegisterConsole and leaves this group to Stellar.
+		pub := r.Group("/api/public/v1", h.patAuth())
+		{
+			pub.GET("/posts", h.pubListPosts)
+			pub.GET("/posts/:slug", h.pubGetPost)
+			pub.GET("/pages", h.pubListPages)
+			pub.GET("/categories", h.pubListCategories)
+			pub.GET("/tags", h.pubListTags)
+			pub.GET("/comments", h.pubListComments)
+		}
 	}
 }
 
@@ -558,11 +579,7 @@ const (
 
 // signAuthCookie 使用 auth_secret 签名 cookie：<aud>.<expiry>.<userID>.<hmac-sha256(auth_secret, aud.expiry.userID)>
 func signAuthCookie(aud string, expiry int64, userID int64, authSecret string) string {
-	msg := fmt.Sprintf("%s.%d.%d", aud, expiry, userID)
-	mac := hmac.New(sha256.New, []byte(authSecret))
-	mac.Write([]byte(msg))
-	sig := hex.EncodeToString(mac.Sum(nil))
-	return fmt.Sprintf("%s.%s", msg, sig)
+	return identity.SignCookie(identity.Audience(aud), expiry, userID, authSecret)
 }
 
 // validAuthCookie 解析并验证 cookie（安全审计 2026-08-16 起 4 段格式）：
@@ -575,7 +592,7 @@ func (h *Handler) validAuthCookie(value, aud string) (int64, string, int64, stri
 		return 0, "", 0, "", false
 	}
 	expiry, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil || time.Now().Unix() > expiry {
+	if err != nil {
 		return 0, "", 0, "", false
 	}
 	userID, err := strconv.ParseInt(parts[2], 10, 64)
@@ -586,11 +603,7 @@ func (h *Handler) validAuthCookie(value, aud string) (int64, string, int64, stri
 	if user == nil {
 		return 0, "", 0, "", false
 	}
-	msg := fmt.Sprintf("%s.%d.%d", aud, expiry, userID)
-	mac := hmac.New(sha256.New, []byte(user.AuthSecret))
-	mac.Write([]byte(msg))
-	expected := hex.EncodeToString(mac.Sum(nil))
-	if subtle.ConstantTimeCompare([]byte(parts[3]), []byte(expected)) == 1 {
+	if _, _, ok := identity.VerifyCookie(value, identity.Audience(aud), user.AuthSecret, time.Now()); ok {
 		return userID, user.AuthSecret, expiry, normalizeRole(user.Role), true
 	}
 	return 0, "", 0, "", false

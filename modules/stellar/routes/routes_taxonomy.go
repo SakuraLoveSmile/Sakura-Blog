@@ -13,8 +13,9 @@ import (
 
 	"blog/internal/page"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 // wikiReadmePlaceholder mirrors Stellar's wiki_readme helper: an empty project
@@ -113,7 +114,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			Moments:          s.momentH.RecentItems(5),
 		}
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（notes.md 的 quot el:h2 标题带 id 锚点）。
-		data.TOC = tmpl.ExtractTOCWith(string(contentHTML), s.tocOptions())
+		data.TOC = stellarweb.ExtractTOCWith(string(contentHTML), s.tocOptions())
 		s.renderBase(c, data)
 	})
 
@@ -380,7 +381,7 @@ func (s *webServer) handleTopicDetail(c *gin.Context) {
 	s.renderBase(c, &tmpl.ViewData{
 		Site: s.site.Load(),
 		Page: &tmpl.Page{
-			Title:  tmpl.Lang("nav.topic", t.Name),
+			Title:  stellarweb.Lang("nav.topic", t.Name),
 			Layout: "topic",
 			MenuID: "post",
 			Lang:   "zh-CN",
@@ -420,7 +421,7 @@ func (s *webServer) handleLinksPage(c *gin.Context) {
 		Page:    &tmpl.Page{Title: s.menuTitle("friends", "友链"), Layout: "page", MenuID: p.Slug, Lang: "zh-CN", Slug: p.Slug},
 		Content: template.HTML(contentHTML),
 	}
-	data.TOC = tmpl.ExtractTOCWith(contentHTML, s.tocOptions())
+	data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
 	s.renderBase(c, data)
 }
 
@@ -460,7 +461,7 @@ func (s *webServer) handleFriendsPage(c *gin.Context) {
 		pg.Subtitle = hero.Description
 	}
 	data := &tmpl.ViewData{Site: s.site.Load(), Page: pg, Content: template.HTML(contentHTML)}
-	data.TOC = tmpl.ExtractTOCWith(contentHTML, s.tocOptions())
+	data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
 	s.fillComments(data, "/friends")
 	s.renderBase(c, data)
 }
@@ -671,7 +672,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiNextDoc: next,
 		WikiDocTree: tree,
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（标题带 id 锚点）
-		TOC: tmpl.ExtractTOCWith(string(contentHTML), s.tocOptions()),
+		TOC: stellarweb.ExtractTOCWith(string(contentHTML), s.tocOptions()),
 	}
 	// 评论区：page_key 为 /wiki/{project}/{slug}（fillComments 统一设置 CommentPageKey）
 	s.fillComments(data, "/wiki/"+projectID+"/"+slug)
@@ -704,7 +705,7 @@ func (s *webServer) handleNotebooks(c *gin.Context) {
 	}
 	s.renderBase(c, &tmpl.ViewData{
 		Site:      s.site.Load(),
-		Page:      &tmpl.Page{Title: tmpl.Lang("notebook.title"), Layout: "notebooks", Lang: "zh-CN"},
+		Page:      &tmpl.Page{Title: stellarweb.Lang("notebook.title"), Layout: "notebooks", Lang: "zh-CN"},
 		Notebooks: views,
 	})
 }
@@ -1023,7 +1024,7 @@ func (s *webServer) handleAuthor(c *gin.Context) {
 	data := &tmpl.ViewData{
 		Site: s.site.Load(),
 		Page: &tmpl.Page{
-			Title:  tmpl.Lang("author.page_title", author.Name),
+			Title:  stellarweb.Lang("author.page_title", author.Name),
 			Layout: "author",
 			MenuID: "post",
 			Lang:   "zh-CN",

@@ -6,7 +6,8 @@ import (
 	"sort"
 
 	"blog/internal/config"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 // renderSitePreview 用草稿配置渲染前台页面（设置页「前端预览」所见即所得）：
@@ -76,7 +77,7 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 			data.Page.AuthorName = a.Name
 		}
 		data.Content = template.HTML(p.ContentHTML)
-		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptionsFrom(&draft))
+		data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptionsFrom(&draft))
 		s.fillComments(data, "/post/"+p.Slug)
 	case "wiki":
 		// 文库页：项目列表直接取草稿 wiki 段（预览文库配置）

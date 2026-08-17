@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // 站点配置分段名（settings 表的 section 主键）。
@@ -461,7 +461,6 @@ func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
 	next.Links = groups
-	tmpl.SetTagPlugins(next.TagPlugins) // 标签插件默认参数全局生效（预览草稿不触碰）
 	// AuthEnabled 派生（Spec 61 阶段 4）：users 表 admin 用户存在且密码哈希非空 ⇒ 需要密码登录；
 	// 无密码站点（哈希为空/无 admin 用户）保持全放行语义。
 	adminUser, err := st.GetUserByUsername("admin")

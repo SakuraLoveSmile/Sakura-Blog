@@ -25,7 +25,7 @@ func setupSearchIndex(st *store.Store) *search.Index {
 	}
 	// 空表回填：旧库首次启用 FTS / 结构迁移重建后全量建索引（幂等，非空不重建）。
 	if n, err := searchIdx.Count(); err == nil && n == 0 {
-		items := searchItemsAll(st)
+		items := search.ItemsFromStore(st)
 		if len(items) > 0 {
 			if err := searchIdx.Rebuild(items); err != nil {
 				log.Printf("search: rebuild failed: %v", err)
@@ -43,7 +43,7 @@ func rebuildSearchIndex(st *store.Store, searchIdx *search.Index) {
 	if searchIdx == nil {
 		return
 	}
-	items := searchItemsAll(st)
+	items := search.ItemsFromStore(st)
 	if err := searchIdx.Rebuild(items); err != nil {
 		log.Printf("search: rebuild after restore failed: %v", err)
 		return
@@ -54,53 +54,7 @@ func rebuildSearchIndex(st *store.Store, searchIdx *search.Index) {
 // searchItemsAll 全量索引条目：已发布文章 + 已发布页面 + 公开瞬间。
 // 密码文章正文置空；瞬间无标题，用正文前 40 字截断充当。
 func searchItemsAll(st *store.Store) []search.Item {
-	var items []search.Item
-	published, err := st.ListPublished()
-	if err != nil {
-		log.Printf("search: list published failed: %v", err)
-	} else {
-		for _, p := range published {
-			content := textutil.StripHTML(p.ContentHTML)
-			if p.IsPasswordProtected() {
-				content = ""
-			}
-			items = append(items, search.Item{Type: search.TypePost, Slug: p.Slug, Title: p.Title, Content: content})
-		}
-	}
-	pages, err := st.ListPages()
-	if err != nil {
-		log.Printf("search: list pages failed: %v", err)
-	} else {
-		for _, p := range pages {
-			if p.Status != store.StatusPublished {
-				continue
-			}
-			items = append(items, search.Item{Type: search.TypePage, Slug: p.Slug, Title: p.Title, Content: textutil.StripHTML(p.ContentHTML)})
-		}
-	}
-	for page := 1; ; page++ {
-		moments, err := st.ListPublicMoments(page, 50)
-		if err != nil {
-			log.Printf("search: list moments failed: %v", err)
-			break
-		}
-		if len(moments) == 0 {
-			break
-		}
-		for _, m := range moments {
-			content := textutil.StripHTML(m.ContentHTML)
-			items = append(items, search.Item{
-				Type:    search.TypeMoment,
-				Slug:    store.MomentSlugKey(m.ID),
-				Title:   textutil.Truncate(content, 40),
-				Content: content,
-			})
-		}
-		if len(moments) < 50 {
-			break
-		}
-	}
-	return items
+	return search.ItemsFromStore(st)
 }
 
 // syncSearchIndex 通用写路径 → FTS 同步：delete/purge 直接移除；

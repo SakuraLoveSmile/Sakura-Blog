@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newSitePtr 构造原子站点指针（Spec 61 阶段 3）。

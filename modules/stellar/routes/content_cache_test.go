@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 // TestSearchJSONCacheRebuildsOnce（Spec 61 阶段 5）：置脏后重建一次，未置脏时重复读取零重建。

@@ -12,8 +12,9 @@ import (
 
 	"blog/internal/config"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 // registerPostRoutes 注册文章域路由：/post/:slug、密码解锁、分享链接预览。
@@ -103,7 +104,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		if a, ok := s.site.Load().Authors[p.Author]; ok {
 			data.Page.AuthorName = a.Name
 		}
-		data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
+		data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。左栏系列 widget 不再装配，保留查询代码注释后续恢复：
 		// if p.Topic != "" {
 		//     if series, err := s.st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
@@ -192,7 +193,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 	}
 	data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.HTML)
 
-	data.TOC = tmpl.ExtractTOCWith(p.HTML, s.tocOptions())
+	data.TOC = stellarweb.ExtractTOCWith(p.HTML, s.tocOptions())
 	desc := data.Page.Excerpt
 	if desc == "" {
 		d := textutil.StripHTML(p.HTML)
@@ -319,7 +320,7 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 		},
 		Content: notice + template.HTML(p.ContentHTML),
 	}
-	data.TOC = tmpl.ExtractTOCWith(p.ContentHTML, s.tocOptions())
+	data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 	s.fillSidebar(data)
 	s.fillSEO(data, c)
 	html, err := s.engine.Render("layout/base", data)

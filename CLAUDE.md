@@ -199,7 +199,7 @@ Go 模板需在页面注入等价的 `ctx` 对象，否则 JS 报 ReferenceError
 
 ### go run 工作目录不可靠，必须用 -root 参数定位 dev 路径
 
-`go run cmd/server/main.go` 把源码编译到临时目录再运行，`os.Executable()` 返回临时二进制路径而非 dev/。而 `os.Getwd()`/`filepath.Abs(".")` 取决于调用方 cwd：
+`go run ./cmd/blog` 把源码编译到临时目录再运行，`os.Executable()` 返回临时二进制路径而非 dev/。而 `os.Getwd()`/`filepath.Abs(".")` 取决于调用方 cwd：
 
 - 在 dev/ 下直接 `go run` 时 cwd 正确
 - 但 preview 工具/Bash 工具的 cwd 不稳定（可能落在项目根 Blog/ 而非 dev/），此时 `filepath.Join(root, "..", "resource", ...)` 会解析成 `Blog/../resource/...` = `Project/resource/...`（少了 Blog 层），`icons.yml` 报 `no such file or directory`，服务起不来表现为 HTTP 000

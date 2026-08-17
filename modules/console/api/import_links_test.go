@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	ghpkg "blog/internal/github"
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 // friendIssueBody 构造带 ```json 友链信息块的 issue body。

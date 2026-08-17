@@ -5,6 +5,7 @@ package backup
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"blog/internal/post"
@@ -31,6 +33,10 @@ type Service struct {
 	auto      bool   // 自动备份是否开启（status API 展示用）
 	// restoreHook 恢复完成回调（Spec 41）：main.go 装配 FTS 重建/配置热更新/缓存清理。
 	restoreHook func()
+	startOnce   sync.Once
+	closeOnce   sync.Once
+	stop        chan struct{}
+	done        chan struct{}
 }
 
 // Config 备份服务初始化参数。
@@ -58,6 +64,7 @@ func New(cfg Config) *Service {
 		backupDir: cfg.BackupDir,
 		keep:      keep,
 		auto:      cfg.Auto,
+		stop:      make(chan struct{}),
 	}
 }
 
@@ -364,14 +371,48 @@ func (s *Service) ListBackups() ([]Info, error) {
 
 // StartAuto 启动自动备份 goroutine：启动先做一次（保证至少一份），之后每 interval 一次。
 func (s *Service) StartAuto(interval time.Duration) {
-	go func() {
-		s.runAutoBackup()
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-		for range ticker.C {
+	s.startOnce.Do(func() {
+		s.done = make(chan struct{})
+		go func() {
+			defer close(s.done)
+			select {
+			case <-s.stop:
+				return
+			default:
+			}
 			s.runAutoBackup()
-		}
-	}()
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-s.stop:
+					return
+				case <-ticker.C:
+					s.runAutoBackup()
+				}
+			}
+		}()
+	})
+}
+
+// Close stops the automatic backup loop before its Store is closed.
+func (s *Service) Close(ctx context.Context) error {
+	if s == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	s.closeOnce.Do(func() { close(s.stop) })
+	if s.done == nil {
+		return nil
+	}
+	select {
+	case <-s.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // runAutoBackup 生成一份全量备份到 backupDir 并按 keep 清理旧份。失败只记日志不中断服务。

@@ -11,8 +11,8 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // 包级共享渲染管道：goldmark 与 bluemonday 均并发安全，公开 API 与 admin 回复共用。
@@ -90,7 +90,7 @@ func TimeAgo(t time.Time) string {
 }
 
 // ToViewItem 单条 store 评论转前台视图模型。
-func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) *tmpl.CommentItem {
+func ToViewItem(c *store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) *CommentItem {
 	opts := BoostViewOptions{}
 	if len(options) > 0 {
 		opts = options[0]
@@ -106,13 +106,13 @@ type BoostViewOptions struct {
 	ViewerIP     string
 }
 
-func ToViewItemWithOptions(c *store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) *tmpl.CommentItem {
+func ToViewItemWithOptions(c *store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) *CommentItem {
 	boosts := opts.Boosts[c.ID]
-	items := make([]tmpl.BoostItem, 0, len(boosts))
+	items := make([]BoostItem, 0, len(boosts))
 	for _, boost := range boosts {
 		items = append(items, boostItemFromStore(boost, cfg, opts.Identity))
 	}
-	return &tmpl.CommentItem{
+	return &CommentItem{
 		ID:          c.ID,
 		Nick:        c.Nick,
 		Link:        c.Link,
@@ -129,8 +129,8 @@ func ToViewItemWithOptions(c *store.Comment, cfg *tmpl.CommentsConfig, opts Boos
 	}
 }
 
-func boostItemFromStore(boost *store.CommentBoost, cfg *tmpl.CommentsConfig, identity string) tmpl.BoostItem {
-	return tmpl.BoostItem{
+func boostItemFromStore(boost *store.CommentBoost, cfg *tmpl.CommentsConfig, identity string) BoostItem {
+	return BoostItem{
 		Emoji:  boost.Emoji,
 		Text:   boost.Text,
 		Nick:   boost.Nick,
@@ -143,7 +143,7 @@ func boostItemFromStore(boost *store.CommentBoost, cfg *tmpl.CommentsConfig, ide
 // 顶级评论（root_id=0）保持正序，子评论挂到对应 root 的 Children 下。
 // root 不在结果集（父评论待审/已删）的子评论不展示，属预期行为。
 // main.go SSR 填充与 API 返回共用。
-func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) []*tmpl.CommentItem {
+func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig, options ...BoostViewOptions) []*CommentItem {
 	opts := BoostViewOptions{}
 	if len(options) > 0 {
 		opts = options[0]
@@ -152,10 +152,10 @@ func ToViewItems(comments []*store.Comment, cfg *tmpl.CommentsConfig, options ..
 }
 
 // ToViewItemsWithOptions 与 ToViewItems 相同，但会把同页批量查询的 Boost 映射到评论。
-func ToViewItemsWithOptions(comments []*store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) []*tmpl.CommentItem {
+func ToViewItemsWithOptions(comments []*store.Comment, cfg *tmpl.CommentsConfig, opts BoostViewOptions) []*CommentItem {
 	// 初始化为空 slice 而非 nil：无评论时 JSON 序列化为 [] 而不是 null（API 消费方更友好）
-	roots := []*tmpl.CommentItem{}
-	byID := map[int64]*tmpl.CommentItem{}
+	roots := []*CommentItem{}
+	byID := map[int64]*CommentItem{}
 	// id -> 昵称映射，用于子评论 reply_ref 显示"▸ 被回复人"
 	nickByID := map[int64]string{}
 	for _, c := range comments {

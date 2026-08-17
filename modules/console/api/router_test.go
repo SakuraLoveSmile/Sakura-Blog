@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/friends"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // enableAdmin 测试助手（Spec 61 阶段 4）：users 表建/更新 admin 用户（bcrypt 密码）
@@ -156,5 +156,47 @@ func TestMountAuthGuardsProtectedRoutes(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("unauthenticated request should get 401, got %d", w.Code)
+	}
+}
+
+// TestConsoleRouteOwnershipSnapshot fixes the public surface that the Console
+// module owns during the migration. Stellar's public compatibility endpoints
+// must not be registered by a Console module mount.
+func TestConsoleRouteOwnershipSnapshot(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	st := newTestStore(t)
+	r := gin.New()
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+		t.Fatalf("mount: %v", err)
+	}
+	routes := routeSet(r)
+	for _, want := range []string{
+		"POST /api/v1/auth/login",
+		"POST /api/v1/auth/logout",
+		"GET /api/v1/auth/check",
+		"POST /api/v1/auth/2fa",
+		"GET /api/v1/posts",
+		"PUT /api/v1/settings/:section",
+		"POST /api/v1/backup/restore",
+	} {
+		if !routes[want] {
+			t.Errorf("Console route missing from ownership snapshot: %s", want)
+		}
+	}
+	for _, forbidden := range []string{
+		"POST /api/auth/register",
+		"POST /api/auth/login",
+		"GET /api/auth/me",
+		"POST /api/auth/logout",
+		"GET /api/public/v1/posts",
+		"GET /api/rating",
+		"POST /api/rating",
+		"GET /api/vote/info",
+		"POST /api/vote/update",
+		"GET /api/friends-aggregated",
+	} {
+		if routes[forbidden] {
+			t.Errorf("Stellar public route registered by Console: %s", forbidden)
+		}
 	}
 }

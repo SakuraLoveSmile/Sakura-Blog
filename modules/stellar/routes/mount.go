@@ -14,13 +14,17 @@ import (
 	"blog/internal/comment"
 	"blog/internal/config"
 	"blog/internal/content"
+	"blog/internal/friends"
+	ghpkg "blog/internal/github"
+	"blog/internal/module"
 	"blog/internal/moment"
 	"blog/internal/og"
 	"blog/internal/page"
 	"blog/internal/post"
 	"blog/internal/search"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 // Dependencies contains the shared services required by the Stellar SSR module.
@@ -30,13 +34,19 @@ type Dependencies struct {
 	Site      *atomic.Pointer[tmpl.Site]
 	Store     *store.Store
 	Posts     *post.Service
-	Engine    *tmpl.Engine
+	Engine    *stellarweb.Engine
+	Icons     *tmpl.IconRegistry
 	OGGen     *og.Generator
+	Search    *search.Index
 	DevMode   bool
 	Root      string
 	UploadDir string
 	NotesPath string
 	Comments  *comment.Handler
+	Friends   *friends.Aggregator
+	GH        *ghpkg.Client
+	Modules   *module.Manager
+	Events    content.Events
 }
 
 // Server owns the Stellar route state and its derived caches.
@@ -47,11 +57,24 @@ type Server struct {
 	pvBuffer    *pageViewBuffer
 	searchIdx   *search.Index
 	ogCacheDir  string
+	eventSub    content.Subscription
 }
 
 // New creates the SSR server and installs content-index write hooks.
 func New(d Dependencies) (*Server, error) {
-	searchIdx := setupSearchIndex(d.Store)
+	searchIdx := d.Search
+	if searchIdx == nil {
+		searchIdx = setupSearchIndex(d.Store)
+	} else if err := searchIdx.Ensure(); err != nil {
+		log.Printf("search: ensure shared fts failed (%v), server search disabled", err)
+		searchIdx = nil
+	} else if count, err := searchIdx.Count(); err == nil && count == 0 {
+		items := search.ItemsFromStore(d.Store)
+		if err := searchIdx.Rebuild(items); err != nil {
+			log.Printf("search: rebuild shared fts failed (%v), server search disabled", err)
+			searchIdx = nil
+		}
+	}
 	ogCacheDir := ""
 	if d.App != nil {
 		ogCacheDir = filepath.Join(filepath.Dir(d.App.DBPath), "ogcache")
@@ -59,9 +82,6 @@ func New(d Dependencies) (*Server, error) {
 	postHook := newPostWriteHook(d.Store, searchIdx, d.OGGen)
 	pageHook := newPageWriteHook(d.Store, searchIdx)
 	momentHook := newMomentWriteHook(d.Store, searchIdx)
-	d.Store.SetPostWriteHook(postHook)
-	d.Store.SetPageWriteHook(pageHook)
-	d.Store.SetMomentWriteHook(momentHook)
 
 	web := newWebServer(webDeps{
 		Site:      d.Site,
@@ -75,17 +95,39 @@ func New(d Dependencies) (*Server, error) {
 		UploadDir: d.UploadDir,
 		NotesPath: d.NotesPath,
 	})
-	// Content caches are initialized by newWebServer, so writes can invalidate them
-	// without exposing the web implementation to the command package.
-	d.Store.SetPostWriteHook(func(op, slug string) { postHook(op, slug); web.contentCache.invalidate() })
-	d.Store.SetPageWriteHook(func(op, slug string) { pageHook(op, slug); web.contentCache.invalidate() })
-	d.Store.SetMomentWriteHook(func(op, slug string) { momentHook(op, slug); web.contentCache.invalidate() })
+	// Content caches are initialized by newWebServer. With app.Services, one
+	// published event is the sole invalidation path for derived data.
+	var eventSub content.Subscription
+	if d.Events != nil {
+		eventSub = d.Events.Subscribe(func(event content.Event) {
+			switch event.Kind {
+			case content.PostChanged:
+				postHook(event.Op, event.Slug)
+			case content.PageChanged:
+				pageHook(event.Op, event.Slug)
+			case content.MomentChanged:
+				momentHook(event.Op, event.Slug)
+			case content.Restored:
+				rebuildSearchIndex(d.Store, searchIdx)
+				clearOGCache(ogCacheDir)
+				web.invalidateSidebarCache()
+			}
+			web.contentCache.invalidate()
+		})
+	} else {
+		// Package-level callers and focused tests may construct a Server without
+		// app.Services; retain their old hook contract in that mode.
+		d.Store.SetPostWriteHook(func(op, slug string) { postHook(op, slug); web.contentCache.invalidate() })
+		d.Store.SetPageWriteHook(func(op, slug string) { pageHook(op, slug); web.contentCache.invalidate() })
+		d.Store.SetMomentWriteHook(func(op, slug string) { momentHook(op, slug); web.contentCache.invalidate() })
+	}
 
 	return &Server{
 		deps:       d,
 		web:        web,
 		searchIdx:  searchIdx,
 		ogCacheDir: ogCacheDir,
+		eventSub:   eventSub,
 	}, nil
 }
 
@@ -168,7 +210,7 @@ func (s *Server) renderDraftPreview(c *gin.Context) {
 		},
 		Content: notice + template.HTML(contentHTML),
 	}
-	data.TOC = tmpl.ExtractTOC(contentHTML)
+	data.TOC = stellarweb.ExtractTOC(contentHTML)
 	s.web.fillSidebar(data)
 	s.web.fillSEO(data, c)
 	html, err := s.deps.Engine.Render("layout/base", data)
@@ -199,22 +241,11 @@ func (s *Server) RenderSitePreview(sections map[string]json.RawMessage, pageName
 	return s.web.renderSitePreview(sections, pageName)
 }
 
-// InvalidateContent invalidates search and sitemap response caches.
-func (s *Server) InvalidateContent() { s.web.contentCache.invalidate() }
-
-// RestoreDerivedState refreshes in-memory state after a backup restore.
-func (s *Server) RestoreDerivedState() {
-	if err := config.RebuildSite(s.deps.Store, s.deps.Site); err != nil {
-		log.Printf("restore: rebuild site config: %v", err)
-	}
-	rebuildSearchIndex(s.deps.Store, s.searchIdx)
-	s.web.invalidateSidebarCache()
-	s.web.contentCache.invalidate()
-	clearOGCache(s.ogCacheDir)
-}
-
 // Close flushes the asynchronous page-view buffer before the store is closed.
 func (s *Server) Close() {
+	if s.eventSub != nil {
+		s.eventSub.Close()
+	}
 	if s.pvBuffer != nil {
 		s.pvBuffer.close()
 	}

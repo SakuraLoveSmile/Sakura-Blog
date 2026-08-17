@@ -12,6 +12,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
+
+	"blog/internal/content"
 )
 
 // Status 文章状态。
@@ -221,6 +223,7 @@ type Store struct {
 	// pageWriteHook / momentWriteHook 页面/瞬间写路径回调（搜索索引同步用，同 postWriteHook 语义）。
 	pageWriteHook   func(op, slug string)
 	momentWriteHook func(op, slug string)
+	contentEvents   content.Events
 
 	// 评论点赞 schema 懒迁移状态（逐 Store 实例，避免包级 Once 在多库实例下漏迁移）。
 	commentReactionsOnce sync.Once
@@ -264,8 +267,16 @@ func (s *Store) SetPostWriteHook(h func(op, slug string)) {
 	s.postWriteHook = h
 }
 
+// SetContentEvents attaches the shared content change publisher. Existing
+// write hooks remain supported for compatibility and are invoked after the
+// event is published.
+func (s *Store) SetContentEvents(events content.Events) { s.contentEvents = events }
+
 // firePostWrite 触发写路径回调（未注册则静默）。
 func (s *Store) firePostWrite(op, slug string) {
+	if s.contentEvents != nil {
+		s.contentEvents.Publish(content.Event{Kind: content.PostChanged, Op: op, Slug: slug})
+	}
 	if s.postWriteHook != nil {
 		s.postWriteHook(op, slug)
 	}

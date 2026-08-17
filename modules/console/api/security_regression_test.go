@@ -18,8 +18,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newReaderEnv 密码站点 + admin + reader 两个用户。

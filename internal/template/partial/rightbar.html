@@ -1,6 +1,0 @@
-{{- /* rightbar.html: 右栏，对应 Stellar _partial/sidebar/index_rightbar.ejs。
-   Spec 33：按 ViewData.RightbarWidgets 序列分派渲染（site.yml widgets 段驱动），
-   缺省序列 = 改造前硬编码顺序：markdown 欢迎语 → author 卡片 → 站点统计 → 最新评论 → TOC（末位 sticky 吸顶）。*/ -}}
-<div class="widgets">
-  {{range .RightbarWidgets}}{{template "partial/widgets/dispatch" .}}{{end}}
-</div>

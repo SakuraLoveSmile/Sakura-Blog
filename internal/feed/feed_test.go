@@ -12,8 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newTestHandler 构造 feed handler：临时 SQLite + 预置文章 + 固定 site（含 baseURL）。

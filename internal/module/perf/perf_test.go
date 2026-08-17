@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newPerfTestEnv 建临时 store + 真实 perf 模块（默认关闭），返回模块/manager/deps。

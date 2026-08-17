@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // doJSON 发起带 JSON body 的请求，返回 recorder。

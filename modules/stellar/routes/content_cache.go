@@ -1,6 +1,6 @@
 // 内容派生产物内存缓存（Spec 61 阶段 5）：/search.json 与 /sitemap.xml 每次请求全量重查
 // 改为「写路径置脏 + 生成期缓存」——重建结果 atomic.Pointer 发布，并发共享一次重建。
-// 置脏来源：post/page/moment 写 hook、wikidoc/notebook/note 保存、设置保存（api.OnContentChanged）。
+// 置脏来源：post/page/moment 写事件、wikidoc/notebook/note 保存和设置保存的内容事件。
 package routes
 
 import (
@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 // contentCache 前台内容派生缓存（search.json / sitemap.xml）。

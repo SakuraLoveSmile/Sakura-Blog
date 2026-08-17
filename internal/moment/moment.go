@@ -12,8 +12,8 @@ import (
 
 	"blog/internal/comment"
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 const pageSize = 20
@@ -22,18 +22,24 @@ const pageSize = 20
 type Handler struct {
 	store  *store.Store
 	posts  *post.Service
-	engine *tmpl.Engine
+	engine Renderer
 	// site 站点配置原子指针（Spec 61 阶段 3）
 	site        *atomic.Pointer[tmpl.Site]
 	fillSidebar func(*tmpl.ViewData)
 	fillSEO     func(*tmpl.ViewData, *gin.Context)
 }
 
+// Renderer is the narrow view boundary consumed by the internal moment
+// service; the concrete Engine belongs to modules/stellar/web.
+type Renderer interface {
+	Render(string, *tmpl.ViewData) (string, error)
+}
+
 // New 创建 moment handler，确保 moments 表存在。
 func New(
 	s *store.Store,
 	posts *post.Service,
-	engine *tmpl.Engine,
+	engine Renderer,
 	site *atomic.Pointer[tmpl.Site],
 	fillSidebar func(*tmpl.ViewData),
 	fillSEO func(*tmpl.ViewData, *gin.Context),

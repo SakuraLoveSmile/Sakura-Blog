@@ -12,8 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // new2FATestEnv 带密码站点 + users 表 admin 用户，返回 engine、store 与用户。

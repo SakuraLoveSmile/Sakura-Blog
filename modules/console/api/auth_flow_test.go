@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 // Wave 4 测试覆盖补强：认证流程补齐（登出/authCheck/改密码/旧版登录/2FA 两步登录）。

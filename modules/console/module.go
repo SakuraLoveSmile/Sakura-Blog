@@ -7,21 +7,29 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	ghpkg "blog/internal/github"
 	"blog/modules/console/api"
 )
+
+// APIConfig is the Console-facing shared service configuration. The concrete
+// API package remains behind this top-level module boundary.
+type APIConfig = api.Config
 
 // MountDeps keeps Console-specific API dependencies together while allowing the
 // command package to provide the Stellar 404/page fallback callback.
 type MountDeps struct {
-	API      api.MountDeps
+	API      APIConfig
+	GH       *ghpkg.Client
 	DevMode  bool
 	Root     string
 	Fallback gin.HandlerFunc
 }
 
-// Mount installs /api/v1, public API compatibility routes, and /console/*.
+// Mount installs Console-owned /api/v1 routes and /console/*.
 func Mount(r *gin.Engine, d MountDeps) (*api.Handler, error) {
-	h, err := api.Mount(r, d.API)
+	// Public reader, rating, vote, friend and GitHub endpoints belong to
+	// Stellar. The Console module mounts only its /api/v1 and /console surface.
+	h, err := api.MountConsole(r, api.MountDeps{Config: d.API, GH: d.GH})
 	if err != nil {
 		return nil, err
 	}

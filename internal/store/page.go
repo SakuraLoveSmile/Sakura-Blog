@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"blog/internal/content"
 )
 
 // WidgetConfig 页面级单个 widget 的配置：组件名 + 页面级覆盖参数（与全局 library 浅合并）。
@@ -153,6 +155,9 @@ func (s *Store) SetPageWriteHook(h func(op, slug string)) {
 
 // firePageWrite 触发页面写路径回调（未注册则静默）。
 func (s *Store) firePageWrite(op, slug string) {
+	if s.contentEvents != nil {
+		s.contentEvents.Publish(content.Event{Kind: content.PageChanged, Op: op, Slug: slug})
+	}
 	if s.pageWriteHook != nil {
 		s.pageWriteHook(op, slug)
 	}

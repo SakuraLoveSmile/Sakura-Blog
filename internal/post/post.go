@@ -13,7 +13,8 @@ import (
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 
-	tmpl "blog/internal/template"
+	"blog/internal/settings"
+	tmpl "blog/internal/settings"
 )
 
 // Post 文章渲染结果。
@@ -57,6 +58,7 @@ type Service struct {
 	md       goldmark.Markdown
 	inlineMD goldmark.Markdown // 仅行内语法渲染器（供标签插件 body 使用）
 	parser   parser
+	settings *settings.Manager
 	iconFunc func(string) string // 渲染内联 SVG（供 quot 等 shortcode 用），由 main.go 用 IconRegistry 装配
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
@@ -110,6 +112,10 @@ func (s *Service) SetGHClient(c GHClient) {
 	s.ghClient = c
 }
 
+// SetSettingsManager supplies the current site snapshot to shortcode rendering
+// without relying on package-global tag plugin state.
+func (s *Service) SetSettingsManager(m *settings.Manager) { s.settings = m }
+
 // NewService 创建文章服务。mdDir 是 markdown 文件根目录（如 content/posts）。
 // AutoHeadingID：标题渲染带 id，供 TOC 锚点与 scroll-spy 使用。
 // 代码块经 Chroma 服务端高亮（CSS class 模式，class 前缀 chroma，table 行号）。
@@ -155,7 +161,11 @@ func (s *Service) Render(body string) (string, error) {
 	}
 
 	// 1. 预处理 shortcodes（正文与 folding 内嵌 md 均在 goldmark 前保护公式定界符）
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks)
+	var tagPlugins settings.TagPluginsConfig
+	if s.settings != nil && s.settings.Current() != nil {
+		tagPlugins = s.settings.Current().TagPlugins
+	}
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks, tagPlugins)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

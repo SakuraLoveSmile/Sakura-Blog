@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newWikiTestEnv 无密码（免认证）测试环境，含 post service（createWikidoc 需渲染 Markdown）。

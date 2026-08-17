@@ -11,7 +11,7 @@ import (
 
 	"blog/internal/search"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 func TestSearchItemsFromPosts(t *testing.T) {

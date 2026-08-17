@@ -8,7 +8,8 @@ import (
 	"strings"
 	"sync/atomic"
 
-	tmpl "blog/internal/template"
+	"blog/internal/settings"
+	tmpl "blog/internal/settings"
 )
 
 // note 标签正则：{% note [color:xxx] [title] content %}
@@ -327,7 +328,7 @@ func (s *Service) renderInlineMD(md string) string {
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string) string {
+func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string, tagPlugins settings.TagPluginsConfig) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -375,7 +376,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			return match
 		}
 		body := strings.TrimSpace(parts[2])
-		return renderTimeline(body, renderMD)
+		return renderTimeline(body, renderMD, tagPlugins)
 	})
 
 	// 4. gallery（块级）
@@ -386,7 +387,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		}
 		argsStr := parts[1]
 		body := strings.TrimSpace(parts[2])
-		return renderGallery(argsStr, body)
+		return renderGallery(argsStr, body, tagPlugins)
 	})
 
 	// 5. tabs（块级）
@@ -460,7 +461,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		el, ok := renderButton(parts[1])
+		el, ok := renderButton(parts[1], tagPlugins)
 		if !ok {
 			return match
 		}
@@ -490,7 +491,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		color, title, content := parseNoteArgs(argsStr)
 		// tag_plugins.note.default_color：未指定 color 时的默认配色（空=不输出 color 属性，现状回归）
 		if color == "" {
-			color = tmpl.CurrentTagPlugins().Note.DefaultColor
+			color = tagPlugins.Note.DefaultColor
 		}
 
 		var sb strings.Builder
@@ -514,7 +515,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		return renderQuot(parts[1], iconFunc)
+		return renderQuot(parts[1], iconFunc, tagPlugins)
 	})
 
 	// 10. link（单行，链接卡片）
@@ -549,7 +550,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		el, ok := renderMark(parts[1])
+		el, ok := renderMark(parts[1], tagPlugins)
 		if !ok {
 			return match
 		}
@@ -562,7 +563,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		el, ok := renderEmoji(parts[1])
+		el, ok := renderEmoji(parts[1], tagPlugins)
 		if !ok {
 			return match
 		}
@@ -575,7 +576,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		el, ok := renderIcon(parts[1], iconFunc)
+		el, ok := renderIcon(parts[1], iconFunc, tagPlugins)
 		if !ok {
 			return match
 		}
@@ -588,7 +589,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		el, ok := renderHashtag(parts[1])
+		el, ok := renderHashtag(parts[1], tagPlugins)
 		if !ok {
 			return match
 		}
@@ -637,7 +638,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 2 {
 			return match
 		}
-		return renderCopy(parts[1])
+		return renderCopy(parts[1], tagPlugins)
 	})
 
 	// 21. rating（单行，评分组件）
@@ -1010,14 +1011,14 @@ func renderTip(argsStr, body string, renderMD func(string) string) string {
 	return fmt.Sprintf(`<span class="tag-plugin tip" tabindex="0"><span class="tip-text">%s</span><span class="tip-bubble" role="tooltip">%s</span></span>`, inner, html.EscapeString(text))
 }
 
-func renderTimeline(body string, renderMD func(string) string) string {
+func renderTimeline(body string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
 	pairs := splitByMarker(reNodeSplit, body)
 
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin timeline"`)
 	// tag_plugins.timeline.max_height：限高滚动（空=不限高，现状）
 	// 安全审计 2026-08-16：max-height 进 style，走 CSS 数值白名单，非法值丢弃
-	if mh := safeCSSNum(tmpl.CurrentTagPlugins().Timeline.MaxHeight); mh != "" {
+	if mh := safeCSSNum(tagPlugins.Timeline.MaxHeight); mh != "" {
 		fmt.Fprintf(&sb, ` style="max-height:%s;overflow-y:auto"`, mh)
 	}
 	sb.WriteString(`>`)
@@ -1037,10 +1038,10 @@ func renderTimeline(body string, renderMD func(string) string) string {
 	return sb.String()
 }
 
-func renderGallery(argsStr, body string) string {
+func renderGallery(argsStr, body string, tagPlugins settings.TagPluginsConfig) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"layout", "size", "ratio"}, nil)
 	// tag_plugins.gallery：默认布局参数（空=内置默认 grid/mix/origin）
-	g := tmpl.CurrentTagPlugins().Gallery
+	g := tagPlugins.Gallery
 
 	layout := named["layout"]
 	if layout == "" {
@@ -1102,7 +1103,7 @@ func renderGallery(argsStr, body string) string {
 	return sb.String()
 }
 
-func renderButton(argsStr string) (string, bool) {
+func renderButton(argsStr string, tagPlugins settings.TagPluginsConfig) (string, bool) {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"color", "icon", "size"}, []string{"text", "url"})
 	text := named["text"]
 	if text == "" && len(positional) > 0 {
@@ -1132,7 +1133,7 @@ func renderButton(argsStr string) (string, bool) {
 	// 安全审计 2026-08-16：color/size 用户可控，白名单/转义后再拼入
 	if color := safeColor(named["color"]); color != "" {
 		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(color))
-	} else if c := tmpl.CurrentTagPlugins().Button.DefaultColor; c != "" {
+	} else if c := tagPlugins.Button.DefaultColor; c != "" {
 		// tag_plugins.button.default_color
 		fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
 	}
@@ -1444,7 +1445,7 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 }
 
 // renderQuot 渲染 {% quot el:h2 icon:hashtag text:... %} 为 .tag-plugin.quot 小标题。
-func renderQuot(argsStr string, iconFunc func(string) string) string {
+func renderQuot(argsStr string, iconFunc func(string) string, tagPlugins settings.TagPluginsConfig) string {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"el", "icon", "prefix", "suffix", "text"}, nil)
 	// 安全审计 2026-08-16：el 标签名白名单（h1-h6/p/div/blockquote），非法回退 p，禁止任意标签名注入
 	el := safeQuotEl(named["el"])
@@ -1453,7 +1454,7 @@ func renderQuot(argsStr string, iconFunc func(string) string) string {
 		text = strings.Join(positional, " ")
 	}
 	// 前缀图标：prefix > icon 预设 > tag_plugins.quot.prefix > 默认 hashtag
-	tp := tmpl.CurrentTagPlugins()
+	tp := tagPlugins
 	prefixKey := named["prefix"]
 	if prefixKey == "" {
 		if ic := named["icon"]; ic == "" || ic == "default" || ic == "hashtag" {
@@ -1724,7 +1725,7 @@ func renderBox(argsStr, body string, renderMD func(string) string) string {
 }
 
 // renderMark 渲染 {% mark text [color:...] %}。
-func renderMark(argsStr string) (string, bool) {
+func renderMark(argsStr string, tagPlugins settings.TagPluginsConfig) (string, bool) {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"color"}, []string{"text"})
 	text := named["text"]
 	if text == "" {
@@ -1735,7 +1736,7 @@ func renderMark(argsStr string) (string, bool) {
 	}
 	color := named["color"]
 	if color == "" {
-		color = tmpl.CurrentTagPlugins().Mark.DefaultColor
+		color = tagPlugins.Mark.DefaultColor
 	}
 	if color == "" {
 		color = "yellow"
@@ -1761,7 +1762,7 @@ var emojiSources = map[string]string{
 // renderEmoji 渲染 {% emoji [source] name [height:...] %} 或
 // {% emoji url:https://... [name:alt] [height:...] %}。
 // url: 分支对齐原版 scripts/tags/lib/emoji.js：直接引用外部图片，不再走 source 配置查找。
-func renderEmoji(argsStr string) (string, bool) {
+func renderEmoji(argsStr string, tagPlugins settings.TagPluginsConfig) (string, bool) {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"url", "height", "name"}, []string{"source", "name"})
 	source := named["source"]
 	name := named["name"]
@@ -1793,7 +1794,7 @@ func renderEmoji(argsStr string) (string, bool) {
 	}
 	tpl, ok := emojiSources[source]
 	// tag_plugins.emoji：配置源优先于内置默认源
-	if cfgURL := tmpl.CurrentTagPlugins().Emoji[source]; cfgURL != "" {
+	if cfgURL := tagPlugins.Emoji[source]; cfgURL != "" {
 		tpl, ok = cfgURL, true
 	}
 	if !ok {
@@ -1813,7 +1814,7 @@ func renderEmoji(argsStr string) (string, bool) {
 }
 
 // renderIcon 渲染 {% icon key [color:...] [style:...] %}。
-func renderIcon(argsStr string, iconFunc func(string) string) (string, bool) {
+func renderIcon(argsStr string, iconFunc func(string) string, tagPlugins settings.TagPluginsConfig) (string, bool) {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"color", "style"}, []string{"key", "text"})
 	key := named["key"]
 	if key == "" {
@@ -1821,7 +1822,7 @@ func renderIcon(argsStr string, iconFunc func(string) string) (string, bool) {
 	}
 	color := named["color"]
 	if color == "" {
-		color = tmpl.CurrentTagPlugins().Icon.DefaultColor
+		color = tagPlugins.Icon.DefaultColor
 	}
 	if color == "" {
 		color = "blue"
@@ -1855,7 +1856,7 @@ var hashtagColors = []string{"red", "orange", "yellow", "green", "cyan", "blue",
 const hashtagSVG = `<svg t="1701408144765" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="200" height="200"><path d="M426.6 64.8c34.8 5.8 58.4 38.8 52.6 73.6l-19.6 117.6h190.2l23-138.6c5.8-34.8 38.8-58.4 73.6-52.6s58.4 38.8 52.6 73.6l-19.4 117.6H896c35.4 0 64 28.6 64 64s-28.6 64-64 64h-137.8l-42.6 256H832c35.4 0 64 28.6 64 64s-28.6 64-64 64h-137.8l-23 138.6c-5.8 34.8-38.8 58.4-73.6 52.6s-58.4-38.8-52.6-73.6l19.6-117.4h-190.4l-23 138.6c-5.8 34.8-38.8 58.4-73.6 52.6s-58.4-38.8-52.6-73.6l19.4-117.8H128c-35.4 0-64-28.6-64-64s28.6-64 64-64h137.8l42.6-256H192c-35.4 0-64-28.6-64-64s28.6-64 64-64h137.8l23-138.6c5.8-34.8 38.8-58.4 73.6-52.6z m11.6 319.2l-42.6 256h190.2l42.6-256h-190.2z"></path></svg>`
 
 // renderHashtag 渲染 {% hashtag text [href] [color:...] %}。
-func renderHashtag(argsStr string) (string, bool) {
+func renderHashtag(argsStr string, tagPlugins settings.TagPluginsConfig) (string, bool) {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"color"}, []string{"text", "href"})
 	text := named["text"]
 	if text == "" {
@@ -1865,7 +1866,7 @@ func renderHashtag(argsStr string) (string, bool) {
 	color := named["color"]
 	if color == "" {
 		// tag_plugins.hashtag.default_color：非空时固定默认色，空=循环色板（现状）
-		color = tmpl.CurrentTagPlugins().Hashtag.DefaultColor
+		color = tagPlugins.Hashtag.DefaultColor
 	}
 	if color == "" {
 		idx := atomic.AddUint64(&hashtagColorIdx, 1) - 1
@@ -2240,7 +2241,7 @@ func renderMbti(argsStr string) string {
 	return sb.String()
 }
 
-func renderCopy(argsStr string) string {
+func renderCopy(argsStr string, tagPlugins settings.TagPluginsConfig) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"git", "prefix"}, []string{"text"})
 	text := named["text"]
 	if text == "" {
@@ -2259,7 +2260,7 @@ func renderCopy(argsStr string) string {
 	}
 	id := fmt.Sprintf("copy_%d", atomic.AddUint64(&copyIndex, 1))
 	// tag_plugins.copy.toast：复制成功提示文案（空=内置「复制成功」）
-	toast := tmpl.CurrentTagPlugins().Copy.Toast
+	toast := tagPlugins.Copy.Toast
 	if toast == "" {
 		toast = "复制成功"
 	}

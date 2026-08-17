@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // Wave 4 测试覆盖补强：设置分段（读取/保存/敏感字段脱敏与保留）。

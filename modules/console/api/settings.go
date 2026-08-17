@@ -9,7 +9,7 @@ import (
 	yaml "github.com/goccy/go-yaml"
 
 	"blog/internal/config"
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 // getSettings GET /api/v1/settings：返回全部可编辑分段的原始 JSON。
@@ -70,9 +70,7 @@ func (h *Handler) updateSection(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if h.onContentChanged != nil {
-		h.onContentChanged()
-	}
+	h.publishContentChanged()
 	// friends 段影响友链聚合（每友链文章数/刷新间隔），保存后即时重建聚合缓存
 	if section == "friends" && h.onLinksChanged != nil {
 		h.onLinksChanged()

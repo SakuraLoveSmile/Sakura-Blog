@@ -24,8 +24,8 @@ import (
 	"github.com/rivo/uniseg"
 
 	"blog/internal/notify"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
 )
 

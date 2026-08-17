@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	tmpl "blog/internal/template"
+	tmpl "blog/internal/settings"
 )
 
 func TestLoginRateLimitTrigger(t *testing.T) {

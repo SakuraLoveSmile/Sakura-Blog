@@ -1,4 +1,4 @@
-// Package textutil 纯文本提取与截断公共工具（Spec 62：从 cmd/server、api、moment
+// Package textutil 纯文本提取与截断公共工具（Spec 62：从组合入口、api、moment
 // 三处复制收敛为单一实现）。
 package textutil
 

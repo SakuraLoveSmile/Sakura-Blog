@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // Wave 4 测试覆盖补强：文章 CRUD 全链路（列表/详情/创建/更新/草稿/发布/删除/恢复/彻底删除）。

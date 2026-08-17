@@ -192,9 +192,7 @@ func (h *Handler) deleteNotebook(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if h.onContentChanged != nil {
-		h.onContentChanged()
-	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -411,9 +409,7 @@ func (h *Handler) deleteNote(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if h.onContentChanged != nil {
-		h.onContentChanged()
-	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

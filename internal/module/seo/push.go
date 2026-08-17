@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // pushClient 推送用 HTTP client（短超时）。

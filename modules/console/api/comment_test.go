@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // newBatchTestEnv 组装无密码（免认证）测试环境，返回 engine 与 store。

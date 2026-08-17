@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // Wave 3a 认证增强测试：cookie 滑动续期 / Bearer API Token / 登录日志落库与查询。

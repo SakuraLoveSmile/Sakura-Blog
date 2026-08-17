@@ -1,9 +1,7 @@
 // Package web contains the Stellar templates and browser assets.
 //
-// The legacy internal/template package still owns the compatibility model and
-// rendering API during this migration. Keeping the canonical resource tree
-// here lets the next extraction move only Go view models, without moving files
-// or changing the deployed HTML at the same time.
+// Templates and browser assets are owned by the Stellar web boundary. Shared
+// configuration and view data remain in internal/settings/viewmodel.
 package web
 
 import "embed"

@@ -10,8 +10,8 @@ import (
 
 	"blog/internal/search"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 // searchItem 本地搜索索引条目（/search.json）。

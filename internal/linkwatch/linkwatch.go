@@ -3,6 +3,7 @@
 package linkwatch
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -17,8 +18,8 @@ import (
 
 	"blog/internal/config"
 	"blog/internal/safefetch"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 const (
@@ -42,6 +43,10 @@ type Watcher struct {
 	probe     *http.Client
 	snapshot  *http.Client
 	sem       chan struct{}
+	startOnce sync.Once
+	closeOnce sync.Once
+	stop      chan struct{}
+	done      chan struct{}
 }
 
 // New creates a watcher. Configuration is read from site on every cycle.
@@ -64,25 +69,66 @@ func NewWithClients(st *store.Store, site *atomic.Pointer[tmpl.Site], uploadDir 
 		probe:     probe,
 		snapshot:  snapshot,
 		sem:       make(chan struct{}, 10),
+		stop:      make(chan struct{}),
 	}
 }
 
 // Start launches the watcher loop. A cycle runs immediately, then sleeps for
 // the currently configured interval before re-reading configuration.
 func (w *Watcher) Start() {
-	go func() {
-		for {
-			cfg := w.site.Load().Friends
-			if cfg.CheckInterval > 0 {
-				if err := w.RunOnce(); err != nil {
-					log.Printf("linkwatch: check cycle failed: %v", err)
+	w.startOnce.Do(func() {
+		w.done = make(chan struct{})
+		go func() {
+			defer close(w.done)
+			for {
+				cfg := w.site.Load().Friends
+				if cfg.CheckInterval > 0 {
+					if err := w.RunOnce(); err != nil {
+						log.Printf("linkwatch: check cycle failed: %v", err)
+					}
+					if !w.wait(time.Duration(cfg.CheckInterval) * time.Minute) {
+						return
+					}
+					continue
 				}
-				time.Sleep(time.Duration(cfg.CheckInterval) * time.Minute)
-				continue
+				if !w.wait(time.Minute) {
+					return
+				}
 			}
-			time.Sleep(time.Minute)
-		}
-	}()
+		}()
+	})
+}
+
+// wait sleeps until the next configured cycle or shutdown.
+func (w *Watcher) wait(duration time.Duration) bool {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-w.stop:
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+// Close stops the periodic watcher before Store closes.
+func (w *Watcher) Close(ctx context.Context) error {
+	if w == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	w.closeOnce.Do(func() { close(w.stop) })
+	if w.done == nil {
+		return nil
+	}
+	select {
+	case <-w.done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // RunOnce performs one complete check/snapshot cycle. It is exported for

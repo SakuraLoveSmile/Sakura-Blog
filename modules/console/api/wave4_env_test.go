@@ -12,8 +12,8 @@ import (
 	backuppkg "blog/internal/backup"
 	"blog/internal/comment"
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // Wave 4 测试覆盖补强：共享完整环境助手。

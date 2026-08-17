@@ -14,8 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/post"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // Nav 模块贡献的 Console 侧栏菜单项。

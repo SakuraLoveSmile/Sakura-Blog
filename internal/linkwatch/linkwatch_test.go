@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"blog/internal/config"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 func TestRunOncePersistsStatusAndSnapshot(t *testing.T) {

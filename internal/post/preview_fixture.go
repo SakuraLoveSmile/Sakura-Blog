@@ -13,7 +13,8 @@ import (
 	"regexp"
 	"strings"
 
-	tmpl "blog/internal/template"
+	"blog/internal/settings"
+	tmpl "blog/internal/settings"
 )
 
 // ---------- GitHub Fixture ----------
@@ -167,7 +168,7 @@ func (s *Service) RenderComponentPreview(body string) (string, error) {
 		}
 		return sb.String()
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, settings.TagPluginsConfig{})
 	var sb strings.Builder
 	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err

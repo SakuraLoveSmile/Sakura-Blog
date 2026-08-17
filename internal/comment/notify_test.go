@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // mailRecord 记录一次发信调用。

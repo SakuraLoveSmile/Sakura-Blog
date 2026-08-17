@@ -15,7 +15,8 @@ import (
 
 	"blog/internal/post"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 // newNotebookVerifyServer 最小 webServer：内存库 + embed 模板 + 空站点配置。
@@ -32,7 +33,7 @@ func newNotebookVerifyServer(t *testing.T) (*webServer, *store.Store) {
 		t.Fatalf("ensure notes: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}

@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/comment"
+	tmpl "blog/internal/settings"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
 )
 
 // PAT 常量。

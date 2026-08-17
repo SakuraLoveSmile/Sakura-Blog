@@ -11,7 +11,8 @@ import (
 
 	"blog/internal/post"
 	"blog/internal/store"
-	tmpl "blog/internal/template"
+	tmpl "blog/modules/stellar/viewmodel"
+	stellarweb "blog/modules/stellar/web"
 )
 
 func TestHandlePostFallbackHidesDraftFile(t *testing.T) {
@@ -26,7 +27,7 @@ func TestHandlePostFallbackHidesDraftFile(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	eng, err := tmpl.NewEngineFromEmbed(&tmpl.IconRegistry{})
+	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("engine: %v", err)
 	}
