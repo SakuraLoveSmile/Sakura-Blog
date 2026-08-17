@@ -17,7 +17,6 @@ import (
 	"blog/internal/backup"
 	"blog/internal/comment"
 	"blog/internal/content"
-	"blog/internal/friends"
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
@@ -72,10 +71,6 @@ type Handler struct {
 	// 注册限流（安全审计 2026-08-16）
 	registerMu   sync.Mutex
 	registerHits map[string]registerHit
-
-	// PAT 限流（每令牌 60 次/分钟，与登录限流同模式）
-	patMu   sync.Mutex
-	patHits map[int64]patWindow
 }
 
 // registerHit 注册限流计数条目。
@@ -128,7 +123,6 @@ func New(cfg Config) *Handler {
 			t time.Time
 		}),
 		registerHits: make(map[string]registerHit),
-		patHits:      make(map[int64]patWindow),
 	}
 }
 
@@ -143,27 +137,18 @@ func (h *Handler) publishContentChanged() {
 	}
 }
 
-// MountDeps API 侧装配依赖：Config 之外附带公共 API 端点的可选组件。
+// MountDeps contains Console API dependencies beyond the shared Config.
 type MountDeps struct {
 	Config
-	Friends   *friends.Aggregator // 友链动态聚合（/api/friends-aggregated），可空
-	LinkWatch *linkwatch.Watcher  // 友链连通性/截图巡检器，可空
-	GH        *ghpkg.Client       // GitHub 代理缓存客户端（/api/gh/*），可空
+	GH *ghpkg.Client // GitHub 代理缓存客户端（/api/gh/*），可空
 }
 
-// Mount 承接 main 的 API 侧装配：建表 → /api/v1 路由组 → 友链聚合/GitHub 代理/评分公开端点。
-// 组件生命周期（如 friends 聚合器的 Start）仍由调用方管理；返回 Handler 供上层继续挂回调。
-func Mount(r *gin.Engine, d MountDeps) (*Handler, error) {
-	return mount(r, d, true)
-}
-
-// MountConsole is the module-owned mount. It deliberately excludes public
-// reader and content endpoints; modules/stellar owns those routes at runtime.
+// MountConsole installs only the Console-owned /api/v1 surface.
 func MountConsole(r *gin.Engine, d MountDeps) (*Handler, error) {
-	return mount(r, d, false)
+	return mount(r, d)
 }
 
-func mount(r *gin.Engine, d MountDeps, includePublic bool) (*Handler, error) {
+func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 	st := d.Store
 	ensures := []struct {
 		name string
@@ -197,50 +182,16 @@ func mount(r *gin.Engine, d MountDeps, includePublic bool) (*Handler, error) {
 		h.gh = d.GH
 	}
 
-	if includePublic {
-		// 读者身份中间件与后台 cookie 互相独立。
-		r.Use(h.currentUserMiddleware())
-		auth := r.Group("/api/auth")
-		{
-			auth.POST("/register", h.publicRegister)
-			auth.POST("/login", h.publicLogin)
-			auth.GET("/me", h.publicMe)
-			auth.POST("/logout", h.publicLogout)
-		}
-	}
-
-	h.register(r, includePublic)
-	if includePublic {
-		mountLegacyPublic(r, h, d)
-	}
+	h.register(r)
 	return h, nil
-}
-
-// mountLegacyPublic preserves the pre-module API contract for package callers
-// and tests. The application entry point uses modules/stellar/api instead.
-func mountLegacyPublic(r *gin.Engine, h *Handler, d MountDeps) {
-	if d.Friends != nil {
-		d.Friends.Register(r)
-		h.SetOnLinksChanged(d.Friends.Refresh)
-	}
-	if d.GH != nil {
-		ghpkg.NewHandler(d.GH).Register(r)
-	}
-	store.NewRatingHandler(d.Store).Register(r)
-	store.NewVoteHandler(d.Store).Register(r)
 }
 
 // Register 把 /api/v1 路由组挂到 r 上。
 func (h *Handler) Register(r *gin.Engine) {
-	h.register(r, true)
+	h.register(r)
 }
 
-// RegisterConsole mounts only the Console-owned /api/v1 routes.
-func (h *Handler) RegisterConsole(r *gin.Engine) {
-	h.register(r, false)
-}
-
-func (h *Handler) register(r *gin.Engine, includePublic bool) {
+func (h *Handler) register(r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 
 	// 公开路由（无需认证）
@@ -506,19 +457,6 @@ func (h *Handler) register(r *gin.Engine, includePublic bool) {
 		}
 	}
 
-	if includePublic {
-		// Legacy direct callers retain the complete API surface. The top-level
-		// Console mount uses RegisterConsole and leaves this group to Stellar.
-		pub := r.Group("/api/public/v1", h.patAuth())
-		{
-			pub.GET("/posts", h.pubListPosts)
-			pub.GET("/posts/:slug", h.pubGetPost)
-			pub.GET("/pages", h.pubListPages)
-			pub.GET("/categories", h.pubListCategories)
-			pub.GET("/tags", h.pubListTags)
-			pub.GET("/comments", h.pubListComments)
-		}
-	}
 }
 
 // apiAuth API 鉴权中间件：AuthEnabled=false（无密码站点）直接放行；否则校验 HMAC cookie 或 Bearer Token，

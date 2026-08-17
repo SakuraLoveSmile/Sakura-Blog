@@ -20,7 +20,7 @@ func newBatchTestEnv(t *testing.T) (*gin.Engine, *store.Store) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st
@@ -58,7 +58,7 @@ func TestBatchCommentsUnauthorized(t *testing.T) {
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := postBatch(r, `{"ids":[1],"action":"approve"}`)

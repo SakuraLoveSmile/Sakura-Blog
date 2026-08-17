@@ -106,7 +106,7 @@ func TestImportLinksNoGHClient(t *testing.T) {
 	st := newTestStore(t)
 	site := &tmpl.Site{}
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := httptest.NewRecorder()
@@ -134,7 +134,7 @@ func TestImportLinksUnauthorized(t *testing.T) {
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}, GH: ghpkg.New(ghpkg.Config{CacheDir: t.TempDir()})}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}, GH: ghpkg.New(ghpkg.Config{CacheDir: t.TempDir()})}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := httptest.NewRecorder()

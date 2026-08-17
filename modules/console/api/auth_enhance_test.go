@@ -38,7 +38,7 @@ func authEnhanceEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Hand
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 	r := gin.New()
-	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}})
+	h, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
 	}

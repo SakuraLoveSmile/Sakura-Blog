@@ -15,6 +15,8 @@ import (
 	"blog/internal/store"
 )
 
+const minPasswordLen = 6
+
 // loginRequest 登录请求体（Spec 45：username 可选，空时回退旧版 admin 密码认证）。
 type loginRequest struct {
 	Username string `json:"username"`

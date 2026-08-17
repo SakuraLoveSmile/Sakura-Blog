@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/friends"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -80,7 +79,7 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	r := gin.New()
-	h, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}})
+	h, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}})
 	if err != nil {
 		t.Fatalf("mount: %v", err)
 	}
@@ -94,9 +93,6 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 		"GET /api/v1/posts/:slug/revisions",
 		"GET /api/v1/attachments",
 		"GET /api/v1/shares",
-		"GET /api/rating",    // 评分公开端点随 Mount 注册
-		"GET /api/vote/info", // 投票公开端点随 Mount 注册（Spec 30）
-		"POST /api/vote/update",
 	} {
 		if !routes[want] {
 			t.Errorf("route %q not registered", want)
@@ -112,7 +108,7 @@ func TestMountEnsuresTables(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	// shared_posts 表已建：按 token 查询应返回 (nil, nil) 而非表不存在错误
@@ -125,30 +121,13 @@ func TestMountEnsuresTables(t *testing.T) {
 	}
 }
 
-func TestMountWithFriendsAggregator(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	st := newTestStore(t)
-	site := &tmpl.Site{}
-	r := gin.New()
-	// 只注册路由，不调用 Start()（生命周期由调用方管理）
-	if _, err := Mount(r, MountDeps{
-		Config:  Config{Store: st, Site: sitePtr(site)},
-		Friends: friends.New(sitePtr(site)),
-	}); err != nil {
-		t.Fatalf("mount: %v", err)
-	}
-	if !routeSet(r)["GET /api/friends-aggregated"] {
-		t.Error("friends aggregated route should be registered")
-	}
-}
-
 func TestMountAuthGuardsProtectedRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	w := httptest.NewRecorder()
@@ -159,9 +138,7 @@ func TestMountAuthGuardsProtectedRoutes(t *testing.T) {
 	}
 }
 
-// TestConsoleRouteOwnershipSnapshot fixes the public surface that the Console
-// module owns during the migration. Stellar's public compatibility endpoints
-// must not be registered by a Console module mount.
+// TestConsoleRouteOwnershipSnapshot fixes the public surface owned by Console.
 func TestConsoleRouteOwnershipSnapshot(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)

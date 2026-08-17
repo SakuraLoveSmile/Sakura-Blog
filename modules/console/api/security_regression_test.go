@@ -48,7 +48,8 @@ func newReaderEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *store.
 		t.Fatalf("get admin: %v", err)
 	}
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
+	mountPublicIdentityForTest(r, st, site)
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st, admin, reader
@@ -76,7 +77,7 @@ func TestConsoleLoginRejectsReader(t *testing.T) {
 // 必须验签失败（audience 绑定进 HMAC 消息）。
 func TestReaderCookieCannotReplayAsAdmin(t *testing.T) {
 	r, _, _, reader := newReaderEnv(t)
-	readerCookie := signUserCookie(time.Now().Add(userCookieTTL).Unix(), reader.ID, reader.AuthSecret)
+	readerCookie := signReaderCookie(reader)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/profile", nil)
 	req.AddCookie(&http.Cookie{Name: authCookieName, Value: readerCookie})

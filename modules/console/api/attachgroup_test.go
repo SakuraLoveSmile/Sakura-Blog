@@ -47,7 +47,7 @@ func TestAttachmentGroupsUnauthorized(t *testing.T) {
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 	r := gin.New()
-	if _, err := Mount(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Site: sitePtr(site)}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	cases := []struct {

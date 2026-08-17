@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/identity"
 	"blog/internal/store"
 )
 
@@ -42,15 +42,10 @@ func doUserReq(r *gin.Engine, method, path, body, userCookie string) *httptest.R
 	req := httptest.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if userCookie != "" {
-		req.AddCookie(&http.Cookie{Name: userCookieName, Value: userCookie})
+		req.AddCookie(&http.Cookie{Name: identity.UserCookieName, Value: userCookie})
 	}
 	r.ServeHTTP(w, req)
 	return w
-}
-
-// signReaderCookie 为 reader 签合法读者 cookie。
-func signReaderCookie(u *store.User) string {
-	return signUserCookie(time.Now().Add(userCookieTTL).Unix(), u.ID, u.AuthSecret)
 }
 
 // TestCommentUsersListAndCounts 评论用户列表：仅 reader 出现，评论聚合正确，

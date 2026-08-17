@@ -55,7 +55,8 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	})
 
 	r := gin.New()
-	h, err := Mount(r, MountDeps{Config: Config{
+	mountPublicIdentityForTest(r, st, site)
+	h, err := MountConsole(r, MountDeps{Config: Config{
 		Store:    st,
 		Posts:    posts,
 		Site:     sitePtr(site),
