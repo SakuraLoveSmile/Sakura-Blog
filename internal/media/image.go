@@ -1,4 +1,5 @@
-package api
+// Package media contains shared media processing helpers.
+package media
 
 import (
 	"bytes"
@@ -29,8 +30,8 @@ const (
 	maxDecodeArea   = int64(maxDecodePixels) // 便于比较
 )
 
-// imageResult 图像优化结果。
-type imageResult struct {
+// ImageResult 图像优化结果。
+type ImageResult struct {
 	MainData  []byte // 优化后主图数据（可能等于原数据=透传）
 	ThumbData []byte // 缩略图数据，nil=无需缩略图
 	Width     int    // 最终主图宽度
@@ -40,16 +41,16 @@ type imageResult struct {
 	Optimized bool   // 是否实际执行了优化
 }
 
-// optimizeImage 对上传图片进行优化处理。
+// OptimizeImage 对上传图片进行优化处理。
 // 规则：
 //   - gif/svg/webp 直接透传（不重编码）
 //   - jpeg/png 小于阈值且宽度不超限时透传
 //   - 需要优化时：缩放至 mainMaxWidth 以内 + JPEG 质量 80 编码
 //   - 缩略图：缩放至 thumbMaxWidth 宽 + JPEG 质量 70
-func optimizeImage(src []byte, mime string) (*imageResult, error) {
+func OptimizeImage(src []byte, mime string) (*ImageResult, error) {
 	// gif / svg / webp 透传
 	if mime == "image/gif" || mime == "image/svg+xml" || mime == "image/webp" {
-		return &imageResult{
+		return &ImageResult{
 			MainData:  src,
 			ThumbData: nil,
 			Width:     0,
@@ -64,7 +65,7 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(src))
 	if err != nil {
 		// 连配置头都解不出来：按原语义透传（后续 Decode 也会失败）
-		return &imageResult{
+		return &ImageResult{
 			MainData:  src,
 			ThumbData: nil,
 			Width:     0,
@@ -85,7 +86,7 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 	img, format, err := image.Decode(bytes.NewReader(src))
 	if err != nil {
 		// 解码失败则透传
-		return &imageResult{
+		return &ImageResult{
 			MainData:  src,
 			ThumbData: nil,
 			Width:     0,
@@ -106,7 +107,7 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 	if !needOptimize {
 		// 小图：仍生成缩略图（Console 列表用），主图透传
 		thumb := generateThumb(img, origW, origH)
-		return &imageResult{
+		return &ImageResult{
 			MainData:  src,
 			ThumbData: thumb,
 			Width:     origW,
@@ -130,7 +131,7 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 	var mainBuf bytes.Buffer
 	if err := jpeg.Encode(&mainBuf, mainImg, &jpeg.Options{Quality: jpegMainQuality}); err != nil {
 		// 编码失败则透传
-		return &imageResult{
+		return &ImageResult{
 			MainData:  src,
 			ThumbData: nil,
 			Width:     origW,
@@ -144,7 +145,7 @@ func optimizeImage(src []byte, mime string) (*imageResult, error) {
 	// 生成缩略图
 	thumb := generateThumb(mainImg, mainW, mainH)
 
-	return &imageResult{
+	return &ImageResult{
 		MainData:  mainBuf.Bytes(),
 		ThumbData: thumb,
 		Width:     mainW,

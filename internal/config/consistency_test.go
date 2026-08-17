@@ -15,7 +15,7 @@ import (
 // make test（go test ./...）即失败。只比较键名，不读取/比较值，密钥内容不进入断言输出。
 // 真值文件不存在时跳过该组（fresh clone / CI 场景无真值配置）。
 func TestExampleConfigKeyConsistency(t *testing.T) {
-	configDir := filepath.Join("..", "..", "backend", "config")
+	configDir := filepath.Join("..", "..", "config")
 	pairs := []struct {
 		example string
 		real    string

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/comments"
 	"blog/internal/friends"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -19,8 +20,10 @@ func TestStellarPublicRouteOwnershipSnapshot(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	defer st.Close()
+	site := &atomic.Pointer[tmpl.Site]{}
+	site.Store(&tmpl.Site{Comments: tmpl.CommentsConfig{Enabled: true, GravatarMirror: "https://avatar.test"}})
 	r := gin.New()
-	if err := Mount(r, Dependencies{Store: st}); err != nil {
+	if err := Mount(r, Dependencies{Store: st, Site: site, Comments: comments.New(st, site)}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	got := map[string]bool{}
@@ -32,6 +35,12 @@ func TestStellarPublicRouteOwnershipSnapshot(t *testing.T) {
 		"POST /api/auth/login",
 		"GET /api/auth/me",
 		"POST /api/auth/logout",
+		"GET /api/comments",
+		"POST /api/comments",
+		"POST /api/comments/:id/like",
+		"POST /api/comments/:id/boost",
+		"DELETE /api/comments/:id/boost",
+		"POST /api/comments/upload",
 		"GET /api/public/v1/posts",
 		"GET /api/public/v1/posts/:slug",
 		"GET /api/public/v1/pages",

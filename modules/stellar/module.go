@@ -60,7 +60,7 @@ func Mount(router *gin.Engine, deps Dependencies) (*Server, error) {
 		return nil, err
 	}
 	if err := stellarapi.Mount(router, stellarapi.Dependencies{
-		Store: deps.Store, Site: deps.Site, Friends: deps.Friends, GH: deps.GH, Identity: publicIdentity, Events: deps.Events,
+		Store: deps.Store, Site: deps.Site, Comments: deps.Comments, Friends: deps.Friends, GH: deps.GH, Identity: publicIdentity, Events: deps.Events,
 	}); err != nil {
 		return nil, err
 	}

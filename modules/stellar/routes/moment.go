@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -90,7 +90,7 @@ func (h *MomentHandler) listPublic(c *gin.Context) {
 			ID:          m.ID,
 			ContentHTML: template.HTML(m.ContentHTML),
 			Images:      store.DecodeMomentImages(m.Images),
-			TimeAgo:     comment.TimeAgo(m.CreatedAt),
+			TimeAgo:     comments.TimeAgo(m.CreatedAt),
 			Date:        m.CreatedAt.Format("2006-01-02 15:04"),
 		})
 	}
@@ -142,7 +142,7 @@ func (h *MomentHandler) RecentItems(limit int) []*tmpl.MomentItem {
 			ID:          m.ID,
 			ContentHTML: template.HTML(m.ContentHTML),
 			Images:      store.DecodeMomentImages(m.Images),
-			TimeAgo:     comment.TimeAgo(m.CreatedAt),
+			TimeAgo:     comments.TimeAgo(m.CreatedAt),
 			Date:        m.CreatedAt.Format("2006-01-02 15:04"),
 		})
 	}

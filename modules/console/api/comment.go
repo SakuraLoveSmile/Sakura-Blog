@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/notify"
 	"blog/internal/store"
 	"blog/internal/textutil"
@@ -41,7 +41,7 @@ func toCommentJSON(cm *store.Comment, gravatarMirror string) *commentJSON {
 		RootID:   cm.RootID,
 		Status:   cm.Status,
 		IsAdmin:  cm.IsAdmin,
-		Avatar:   comment.AvatarURL(gravatarMirror, cm.Email),
+		Avatar:   comments.AvatarURL(gravatarMirror, cm.Email),
 		Date:     cm.CreatedAt.Format("2006-01-02 15:04"),
 	}
 }
@@ -308,7 +308,7 @@ func (h *Handler) replyComment(c *gin.Context) {
 		rootID = parent.RootID
 	}
 
-	html, err := comment.Render(req.Content)
+	html, err := comments.Render(req.Content)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "渲染失败: "+err.Error())
 		return

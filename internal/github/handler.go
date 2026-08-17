@@ -20,16 +20,22 @@ func NewHandler(c *Client) *Handler {
 	return &Handler{client: c}
 }
 
-// Register 注册公开路由到 gin engine。
-// /api/gh/repo：裁剪元数据端点（保留）；ghcard 短码由原生渲染器同步取数（GetRepo/GetUser）。
-// /api/gh/widget/*：Spec 33 侧栏 widget 专用代理，输出 GitHub 形状键
-// （services/ghinfo.js 按元素 id 回填、timeline.js 消费原始字段），前端不直连 api.github.com。
-func (h *Handler) Register(r *gin.Engine) {
-	r.GET("/api/gh/repo", h.repoInfo)
-	r.GET("/api/gh/widget/repo", h.widgetRepo)
-	r.GET("/api/gh/widget/user", h.widgetUser)
-	r.GET("/api/gh/widget/tags", h.widgetTags)
-	r.GET("/api/gh/widget/issues", h.widgetIssues)
+// PublicRoutes exposes GitHub proxy callbacks without owning their URL paths.
+// Stellar binds these callbacks to /api/gh/*.
+type PublicRoutes struct {
+	RepoInfo     gin.HandlerFunc
+	WidgetRepo   gin.HandlerFunc
+	WidgetUser   gin.HandlerFunc
+	WidgetTags   gin.HandlerFunc
+	WidgetIssues gin.HandlerFunc
+}
+
+// PublicRoutes returns the GitHub callbacks used by Stellar.
+func (h *Handler) PublicRoutes() PublicRoutes {
+	return PublicRoutes{
+		RepoInfo: h.repoInfo, WidgetRepo: h.widgetRepo, WidgetUser: h.widgetUser,
+		WidgetTags: h.widgetTags, WidgetIssues: h.widgetIssues,
+	}
 }
 
 // ghNameRe GitHub owner/repo/username 字符白名单（安全审计 2026-08-16）：

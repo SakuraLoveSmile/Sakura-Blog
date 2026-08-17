@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/config"
 	"blog/internal/content"
 	"blog/internal/friends"
@@ -40,7 +40,7 @@ type Dependencies struct {
 	Root      string
 	UploadDir string
 	NotesPath string
-	Comments  *comment.Handler
+	Comments  *comments.Handler
 	Friends   *friends.Aggregator
 	GH        *ghpkg.Client
 	Modules   *module.Manager
@@ -168,9 +168,6 @@ func (s *Server) Mount(r *gin.Engine) error {
 	momentHandler.Register(r)
 	s.web.momentH = momentHandler
 
-	if s.deps.Comments != nil && s.deps.Site.Load().Comments.Enabled {
-		s.deps.Comments.Register(r)
-	}
 	s.web.registerPostRoutes(r)
 	s.web.registerHomeRoutes(r)
 	s.web.registerTaxonomyRoutes(r)

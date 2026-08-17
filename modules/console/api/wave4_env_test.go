@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	backuppkg "blog/internal/backup"
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -45,7 +45,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	enableAdmin(t, st, site, "secret")
 
 	posts := post.NewService(t.TempDir())
-	comments := comment.New(st, sitePtr(site))
+	commentH := comments.New(st, sitePtr(site))
 	backups := backuppkg.New(backuppkg.Config{
 		Store:     st,
 		Posts:     posts,
@@ -60,7 +60,7 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		Store:    st,
 		Posts:    posts,
 		Site:     sitePtr(site),
-		Comments: comments,
+		Comments: commentH,
 		Backups:  backups,
 	}})
 	if err != nil {

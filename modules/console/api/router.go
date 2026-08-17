@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/backup"
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/content"
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
@@ -38,7 +38,7 @@ type Handler struct {
 	posts *post.Service
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，API 侧 .Load() 读取
 	site      *atomic.Pointer[tmpl.Site]
-	comments  *comment.Handler
+	comments  *comments.Handler
 	backups   *backup.Service
 	modules   *module.Manager
 	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
@@ -84,7 +84,7 @@ type Config struct {
 	Store    *store.Store
 	Posts    *post.Service
 	Site     *atomic.Pointer[tmpl.Site] // 站点配置原子指针（Spec 61 阶段 3）
-	Comments *comment.Handler
+	Comments *comments.Handler
 	Backups  *backup.Service
 	Modules  *module.Manager
 	Notify   *notify.Service    // 站内通知服务（Wave 3b），可空

@@ -18,10 +18,16 @@ func NewRatingHandler(s *Store) *RatingHandler {
 	return &RatingHandler{store: s}
 }
 
-// Register 注册公开路由。
-func (h *RatingHandler) Register(r *gin.Engine) {
-	r.GET("/api/rating", h.get)
-	r.POST("/api/rating", h.vote)
+// RatingRoutes exposes rating callbacks without owning their URL paths.
+// Stellar binds them to /api/rating.
+type RatingRoutes struct {
+	Get  gin.HandlerFunc
+	Vote gin.HandlerFunc
+}
+
+// PublicRoutes returns the rating callbacks used by Stellar.
+func (h *RatingHandler) PublicRoutes() RatingRoutes {
+	return RatingRoutes{Get: h.get, Vote: h.vote}
 }
 
 // get 获取评分：GET /api/rating?id=xxx → {avg, count}

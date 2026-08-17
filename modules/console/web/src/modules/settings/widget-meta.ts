@@ -1,7 +1,7 @@
 // 侧边栏组件共享元数据（Spec 58）：设置页 WidgetsTab（组件编排）与插件库
 // WidgetLibraryView（方案保存）共同消费，避免两处名单漂移。
 // 组件清单与缺省参数对齐后端 DefaultWidgetLibrary（internal/template/model_widgets.go），
-// 参数说明对照 backend/config/site.example.yml widgets 段注释。
+// 参数说明对照 config/site.example.yml widgets 段注释。
 
 export type WidgetFieldType = "text" | "number" | "checkbox" | "color" | "select" | "textarea";
 

@@ -8,7 +8,7 @@ import (
 
 func TestBootstrapOwnsSharedServices(t *testing.T) {
 	root := t.TempDir()
-	configPath := filepath.Join(root, "backend", "config", "app.yml")
+	configPath := filepath.Join(root, "config", "app.yml")
 	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 		t.Fatalf("mkdir config: %v", err)
 	}

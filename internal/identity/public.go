@@ -90,13 +90,19 @@ func CurrentUser(c *gin.Context) *store.CurrentUser {
 	return &store.CurrentUser{}
 }
 
-// Register mounts /api/auth/* without exposing Console's implementation.
-func (h *PublicHandler) Register(r *gin.Engine) {
-	auth := r.Group("/api/auth")
-	auth.POST("/register", h.register)
-	auth.POST("/login", h.login)
-	auth.GET("/me", h.me)
-	auth.POST("/logout", h.logout)
+// PublicRoutes exposes reader-session callbacks without owning their URL paths.
+// Stellar binds these callbacks to /api/auth; identity only owns validation,
+// cookie verification and user persistence.
+type PublicRoutes struct {
+	Register gin.HandlerFunc
+	Login    gin.HandlerFunc
+	Me       gin.HandlerFunc
+	Logout   gin.HandlerFunc
+}
+
+// PublicRoutes returns the reader authentication callbacks used by Stellar.
+func (h *PublicHandler) PublicRoutes() PublicRoutes {
+	return PublicRoutes{Register: h.register, Login: h.login, Me: h.me, Logout: h.logout}
 }
 
 func (h *PublicHandler) register(c *gin.Context) {

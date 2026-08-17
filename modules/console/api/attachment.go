@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/media"
 	"blog/internal/store"
 )
 
@@ -142,7 +143,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 	var thumbData []byte
 
 	if strings.HasPrefix(mime, "image/") {
-		res, optErr := optimizeImage(srcData, mime)
+		res, optErr := media.OptimizeImage(srcData, mime)
 		if optErr != nil {
 			// 安全审计 2026-08-16：解码炸弹等硬错误直接拒绝上传（此前会静默透传原文，
 			// 恶意超大声明尺寸图片会原样落盘并流传到后续任何解码方）。

@@ -1,4 +1,4 @@
-package comment
+package comments
 
 import (
 	"bytes"
@@ -46,7 +46,14 @@ func newBoostHandlerTestAs(t *testing.T, authorIP string, viewer *store.CurrentU
 			c.Next()
 		})
 	}
-	h.Register(r)
+	routes := h.PublicRoutes()
+	comments := r.Group("/api/comments")
+	comments.GET("", routes.List)
+	comments.POST("", routes.Create)
+	comments.POST("/:id/like", routes.Like)
+	comments.POST("/:id/boost", routes.Boost)
+	comments.DELETE("/:id/boost", routes.Unboost)
+	comments.POST("/upload", routes.UploadImage)
 	return r, st, id
 }
 

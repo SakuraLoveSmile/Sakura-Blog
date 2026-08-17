@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/comment"
+	"blog/internal/comments"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -206,7 +206,7 @@ func (h *publicContent) listComments(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"ok": false, "error": "page_key 不能为空"})
 		return
 	}
-	comments, err := h.store.ListCommentsByPage(pageKey)
+	list, err := h.store.ListCommentsByPage(pageKey)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "查询失败"})
 		return
@@ -220,7 +220,7 @@ func (h *publicContent) listComments(c *gin.Context) {
 	if h.site != nil && h.site.Load() != nil {
 		cfg = &h.site.Load().Comments
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": comment.ToViewItemsWithOptions(comments, cfg, comment.BoostViewOptions{Boosts: boosts})})
+	c.JSON(http.StatusOK, gin.H{"ok": true, "comments": comments.ToViewItemsWithOptions(list, cfg, comments.BoostViewOptions{Boosts: boosts})})
 }
 
 func publicPost(post *store.Post, detail bool) *publicPostJSON {

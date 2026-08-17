@@ -32,7 +32,7 @@ func main() {
 	flag.BoolVar(&seed, "seed", false, "启动时把 content/posts/*.md 导入 SQLite（按 slug UPSERT）")
 	flag.BoolVar(&devMode, "dev", false, "开发模式：从磁盘读 icons/templates/assets（默认走 go:embed）")
 	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 <root>/internal/settings/data/icons.yml）")
-	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/backend/config/app.yml）")
+	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/config/app.yml）")
 	flag.Parse()
 
 	services, err := app.Bootstrap(app.Options{

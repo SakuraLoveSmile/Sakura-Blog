@@ -1,6 +1,6 @@
-// Package comment 自建评论系统：公开 API（/api/comments）、Markdown 渲染管道、邮件通知。
+// Package comments 自建评论系统：公开 API（/api/comments）、Markdown 渲染管道、邮件通知。
 // 架构参考 Artalk（page_key 定位、两层嵌套），视觉采用 Halo 设计语言。
-package comment
+package comments
 
 import (
 	"crypto/rand"
@@ -127,15 +127,28 @@ func (h *Handler) SetNotifier(n *notify.Service) {
 	h.notifier = n
 }
 
-// Register 注册公开路由（同源 /api/comments）。
-func (h *Handler) Register(r *gin.Engine) {
-	g := r.Group("/api/comments")
-	g.GET("", h.list)
-	g.POST("", h.create)
-	g.POST("/:id/like", h.like)
-	g.POST("/:id/boost", h.boost)
-	g.DELETE("/:id/boost", h.unboost)
-	g.POST("/upload", h.uploadImage)
+// PublicRoutes exposes the public callbacks without owning their URL paths.
+// The Stellar module is the only package that binds these callbacks to HTTP
+// routes; comment remains responsible for shared validation and persistence.
+type PublicRoutes struct {
+	List        gin.HandlerFunc
+	Create      gin.HandlerFunc
+	Like        gin.HandlerFunc
+	Boost       gin.HandlerFunc
+	Unboost     gin.HandlerFunc
+	UploadImage gin.HandlerFunc
+}
+
+// PublicRoutes returns the comment callbacks used by Stellar's public API.
+func (h *Handler) PublicRoutes() PublicRoutes {
+	return PublicRoutes{
+		List:        h.list,
+		Create:      h.create,
+		Like:        h.like,
+		Boost:       h.boost,
+		Unboost:     h.unboost,
+		UploadImage: h.uploadImage,
+	}
 }
 
 // list GET /api/comments?page_key= → 评论树 JSON（顶级 + children 两层，仅已发布）。

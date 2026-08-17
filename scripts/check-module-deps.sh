@@ -16,9 +16,24 @@ if rg -n '"blog/modules/console' modules/stellar --glob '*.go'; then
 	fail=1
 fi
 
+# Shared packages may expose public callbacks, but Stellar owns the public URL
+# map. Keep route binding out of the shared handlers listed here.
+for public_handler in \
+	internal/comments/handler.go \
+	internal/identity/public.go \
+	internal/store/rating_handler.go \
+	internal/store/vote_handler.go \
+	internal/github/handler.go \
+	internal/friends/friends.go; do
+	if rg -n 'r\.(Group|GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\(' "$public_handler"; then
+		printf 'module-check: shared public handler owns routes: %s\n' "$public_handler" >&2
+		fail=1
+	fi
+done
+
 # The repository is a single Go module. These paths were retired by the
 # modular layout and must not quietly return through a new worktree or copy.
-for legacy in backend/internal cmd/server go.work; do
+for legacy in backend cmd/server go.work; do
 	if [ -e "$legacy" ]; then
 		printf 'module-check: retired path exists: %s\n' "$legacy" >&2
 		fail=1

@@ -51,7 +51,7 @@ type ViewData struct {
 	PageWidgetOverrides map[string]WidgetDef
 
 	// 评论区（Layout=post 且 comments.enabled 时填充）。
-	Comments     any // 评论树（顶级 + Children 两层），由 internal/comment 提供
+	Comments     any // 评论树（顶级 + Children 两层），由 internal/comments 提供
 	CommentCount int // 已发布评论总数（"N 条评论"计数）
 
 	// 最新评论 widget（fillSidebar 填充，comments.enabled 时）。

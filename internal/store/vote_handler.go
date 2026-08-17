@@ -17,10 +17,16 @@ func NewVoteHandler(s *Store) *VoteHandler {
 	return &VoteHandler{store: s}
 }
 
-// Register 注册公开路由。
-func (h *VoteHandler) Register(r *gin.Engine) {
-	r.GET("/api/vote/info", h.info)
-	r.POST("/api/vote/update", h.update)
+// VoteRoutes exposes vote callbacks without owning their URL paths.
+// Stellar binds them to /api/vote/*.
+type VoteRoutes struct {
+	Info   gin.HandlerFunc
+	Update gin.HandlerFunc
+}
+
+// PublicRoutes returns the vote callbacks used by Stellar.
+func (h *VoteHandler) PublicRoutes() VoteRoutes {
+	return VoteRoutes{Info: h.info, Update: h.update}
 }
 
 // info 获取计数：GET /api/vote/info?id=xxx → {id, votes: {up, down}}

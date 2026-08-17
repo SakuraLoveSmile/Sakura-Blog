@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"blog/internal/backup"
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/config"
 	"blog/internal/content"
 	"blog/internal/friends"
@@ -50,7 +50,7 @@ type Services struct {
 	Settings   *settings.Manager
 	Site       *atomic.Pointer[settings.Site] // migration bridge; use Settings in new code
 	Post       *post.Service
-	Comment    *comment.Handler
+	Comment    *comments.Handler
 	Identity   *identity.Service
 	Search     *search.Index
 	Backup     *backup.Service
@@ -79,7 +79,7 @@ func Bootstrap(options Options) (*Services, error) {
 	root, _ = filepath.Abs(root)
 	configPath := options.ConfigPath
 	if configPath == "" {
-		configPath = filepath.Join(root, "backend", "config", "app.yml")
+		configPath = filepath.Join(root, "config", "app.yml")
 	}
 	appConfig, err := config.LoadApp(configPath)
 	if err != nil {
@@ -90,7 +90,7 @@ func Bootstrap(options Options) (*Services, error) {
 	}
 	appConfig = config.ResolveApp(appConfig)
 
-	sitePath := filepath.Join(appConfig.Root, "backend", "config", "site.yml")
+	sitePath := filepath.Join(appConfig.Root, "config", "site.yml")
 	site, err := config.LoadSite(sitePath)
 	if err != nil {
 		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
@@ -141,7 +141,7 @@ func Bootstrap(options Options) (*Services, error) {
 	events := content.NewEvents()
 	st.SetContentEvents(events)
 	notifySvc := notify.New(st)
-	commentHandler := comment.New(st, sitePtr)
+	commentHandler := comments.New(st, sitePtr)
 	commentHandler.SetUploadDir(appConfig.UploadDir)
 	commentHandler.SetNotifier(notifySvc)
 	ghClient := ghpkg.New(ghpkg.Config{

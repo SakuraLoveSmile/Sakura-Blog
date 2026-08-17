@@ -1,4 +1,4 @@
-package comment
+package comments
 
 import "html/template"
 

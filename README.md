@@ -27,14 +27,14 @@
 | `modules/console/` | Console | `api/` 管理 API、`web/` Vue SPA 与 embed 资源 |
 | `modules/stellar/` | Stellar | `routes/` 前台 SSR 路由、`web/` 模板/静态资源/CSS 构建链 |
 | `internal/` | 共享核心 | store、content、comments、settings/config、search、media 等业务服务 |
-| `backend/config/` | 运行时配置 | 保留 `app.yml`/`site.yml` 路径，避免改变部署行为 |
+| `config/` | 运行时配置 | 保留 `app.yml`/`site.yml`，与部署目录 `/opt/blog/config/` 对齐 |
 | `content/` | 内容 | Markdown 文章与笔记（git 跟踪）：`posts/*.md`（-seed 导入源 + 前台文件回退）、`notes.md`（/notes 正文） |
 | `data/` | 运行时数据 | DB/上传/备份/缓存（gitignored）：`blog.db`、`uploads/`、`backups/`、`ogcache/`、`ghcache/` |
 | 根级 | 构建与运维 | `go.mod`/`go.sum`、`deploy/`（systemd + update.sh）、`specs/`（spec 文档）、`Makefile`（构建入口） |
 
 前后台渲染机制不变：前台 Go html/template SSR（动态渲染，文章发布即时可见），后台 Vue SPA 经 `/api/v1` 与后端通信。
 
-> **Go module 运行约束**：所有 go 命令从 `dev/` 根目录执行，包路径使用 `./...`；配置仍从 `backend/config/` 加载。
+> **Go module 运行约束**：所有 go 命令从 `dev/` 根目录执行，包路径使用 `./...`；配置从 `config/` 加载。
 
 ## 技术栈
 

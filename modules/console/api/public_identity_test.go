@@ -15,7 +15,12 @@ const testReaderCookieTTL = 30 * 24 * time.Hour
 func mountPublicIdentityForTest(r *gin.Engine, st *store.Store, site *tmpl.Site) {
 	reader := identity.NewPublicHandler(st, sitePtr(site))
 	r.Use(reader.Middleware())
-	reader.Register(r)
+	routes := reader.PublicRoutes()
+	auth := r.Group("/api/auth")
+	auth.POST("/register", routes.Register)
+	auth.POST("/login", routes.Login)
+	auth.GET("/me", routes.Me)
+	auth.POST("/logout", routes.Logout)
 }
 
 func signReaderCookie(u *store.User) string {

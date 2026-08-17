@@ -6,7 +6,7 @@
 
 ## 第一阶段模块边界
 
-项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`backend/config/`、`content/` 和 `data/` 的运行时路径保持不变。
+项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`config/`、`content/` 和 `data/` 的运行时路径保持不变。
 
 ## 仓库工作流
 

@@ -194,10 +194,15 @@ func (a *Aggregator) Close(ctx context.Context) error {
 	}
 }
 
-// Register 挂 /api/friends-aggregated 与 /api/friends 两个 JSON 端点。
-func (a *Aggregator) Register(r *gin.Engine) {
-	r.GET("/api/friends-aggregated", a.handleAggregated)
-	r.GET("/api/friends", a.handleAggregated)
+// PublicRoutes exposes the aggregated-feed callback without owning its URL
+// paths. Stellar binds it to /api/friends*.
+type PublicRoutes struct {
+	Aggregated gin.HandlerFunc
+}
+
+// PublicRoutes returns the friend-feed callback used by Stellar.
+func (a *Aggregator) PublicRoutes() PublicRoutes {
+	return PublicRoutes{Aggregated: a.handleAggregated}
 }
 
 // Refresh 立即异步重建友链缓存（供友链在 console 变更后即时反映到 /friends，不阻塞调用方）。

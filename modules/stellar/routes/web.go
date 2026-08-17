@@ -16,7 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/comment"
+	"blog/internal/comments"
 	"blog/internal/og"
 	"blog/internal/post"
 	"blog/internal/search"
@@ -274,13 +274,13 @@ func (s *webServer) fillSidebar(data *tmpl.ViewData) {
 		}
 	}
 	if site.Comments.Enabled {
-		if comments, err := s.st.ListRecentComments(s.widgetMaxLimit(site, "latest_comment", 5)); err == nil {
-			for _, cm := range comments {
+		if recent, err := s.st.ListRecentComments(s.widgetMaxLimit(site, "latest_comment", 5)); err == nil {
+			for _, cm := range recent {
 				data.LatestComments = append(data.LatestComments, &tmpl.LatestComment{
 					Nick:    cm.Nick,
-					Excerpt: comment.ExcerptHTML(cm.ContentHTML, 40),
+					Excerpt: comments.ExcerptHTML(cm.ContentHTML, 40),
 					URL:     cm.PageKey + "#comment-" + strconv.FormatInt(cm.ID, 10),
-					TimeAgo: comment.TimeAgo(cm.CreatedAt),
+					TimeAgo: comments.TimeAgo(cm.CreatedAt),
 				})
 			}
 		}
@@ -580,11 +580,11 @@ func (s *webServer) fillComments(data *tmpl.ViewData, pageKey string) {
 	if !s.site.Load().Comments.Enabled {
 		return
 	}
-	if comments, err := s.st.ListCommentsByPage(pageKey); err == nil {
+	if list, err := s.st.ListCommentsByPage(pageKey); err == nil {
 		boosts, _ := s.st.ListBoostsByPage(pageKey)
-		data.Comments = comment.ToViewItemsWithOptions(comments, &s.site.Load().Comments, comment.BoostViewOptions{Boosts: boosts})
+		data.Comments = comments.ToViewItemsWithOptions(list, &s.site.Load().Comments, comments.BoostViewOptions{Boosts: boosts})
 		// Spec 62：ListCommentsByPage 返回全量，计数直接 len 派生，省一次 COUNT 查询。
-		data.CommentCount = len(comments)
+		data.CommentCount = len(list)
 	} else {
 		// 列表查询失败时单独尝试计数（仍失败则留 0，评论区降级为空）
 		if n, err := s.st.CountCommentsByPage(pageKey); err == nil {

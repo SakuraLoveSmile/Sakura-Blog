@@ -23,7 +23,7 @@
    chown -R blog:blog /opt/blog
    ```
 
-2. **配置文件**：从仓库 `backend/config/` 复制 example 模板并填值
+2. **配置文件**：从仓库 `config/` 复制 example 模板并填值
 
    ```bash
    cp app.example.yml /opt/blog/config/app.yml     # chmod 600
