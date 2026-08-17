@@ -1,5 +1,5 @@
 // 行为面：文章投票（assets/js/services/vote.js）—— 乐观更新、防重复投票、同步失败回滚。
-// 机械校验入口：make test → assets-test → node --test scripts/test/
+// 机械校验入口：make test → assets-test → node --test modules/stellar/tests/
 // 加载真实 vote.js 源码到 vm 沙箱（最小浏览器桩），断言纯逻辑，不依赖真实 DOM/网络。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/services/vote.js');
+const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/services/vote.js');
 const SURFACE = '投票组件';
 
 function makeClassList() {

@@ -1,5 +1,5 @@
 // 行为面：文章评分（assets/js/services/rating.js）—— localStorage 去重、星级预览、提交防重。
-// 机械校验入口：make test → assets-test → node --test scripts/test/
+// 机械校验入口：make test → assets-test → node --test modules/stellar/tests/
 // 加载真实 rating.js 源码到 vm 沙箱（最小浏览器桩），断言纯逻辑，不依赖真实 DOM/网络。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/services/rating.js');
+const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/services/rating.js');
 const SURFACE = '评分组件';
 
 // classList 桩：Set 语义，覆盖 add/remove/toggle/contains

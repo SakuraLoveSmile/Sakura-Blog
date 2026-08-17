@@ -4,7 +4,7 @@
   "description": "个人博客项目：Go (Gin) 后端 + Go html/template 服务端渲染 + 从 Stellar Hexo 主题提取的 CSS + 自建管理后台。",
   "main": "index.js",
   "scripts": {
-    "test": "node --test scripts/test/*.test.mjs"
+    "test": "node --test ../tests/*.test.mjs"
   },
   "keywords": [],
   "author": "",

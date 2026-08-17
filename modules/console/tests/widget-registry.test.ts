@@ -1,7 +1,7 @@
 // 行为面：仪表盘 widget 注册表数据不变量（源码级校验）。
 // registry.ts 含 .vue 组件 import，node:test 无法直接加载，故对源文件做机械校验：
 // type 唯一、defaultSize 引用存在的 SIZE_PRESETS、defaultSection 合法、props.statKey 对应真实统计字段。
-// 机械校验入口：make test → console-test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → node --test ../tests/*.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const SRC = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "../src/modules/dashboard/widgets/registry.ts"),
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/registry.ts"),
   "utf8"
 );
 

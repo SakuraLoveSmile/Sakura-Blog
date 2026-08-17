@@ -1,8 +1,8 @@
 // 行为面：版本对比行级 diff（src/modules/posts/diff.ts）。
-// 机械校验入口：make test → console-test → npm run test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → npm run test → node --test ../tests/*.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { myersDiff } from '../src/modules/posts/diff.ts';
+import { myersDiff } from '../web/src/modules/posts/diff.ts';
 
 test('diff: empty texts', () => {
   const result = myersDiff('', '');

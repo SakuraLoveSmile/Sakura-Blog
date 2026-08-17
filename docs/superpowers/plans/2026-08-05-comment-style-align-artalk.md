@@ -1,3 +1,13 @@
+> **历史文档：旧目录结构（已废弃）**
+>
+> 本文档记录的是模块化重构前的路径，仅作历史参考，不应据此修改现行代码。
+>
+> 路径映射：
+> - `frontend/console/` → `modules/console/web/`
+> - `frontend/assets/` → `modules/stellar/web/assets/`
+> - `backend/cmd/server/` → `modules/stellar/routes/` + `internal/`
+> - `backend/internal/` → `internal/`
+
 # 评论区对齐 Artalk 样式实现计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -1350,7 +1350,7 @@
     });
   }
 
-  // 测试面：机械校验入口（node --test scripts/test/comments.test.mjs 在 vm 沙箱断言）。
+  // 测试面：机械校验入口（node --test modules/stellar/tests/comments.test.mjs 在 vm 沙箱断言）。
   // 与 pjax.js 的 window.stellar.pjax._internal 模式一致；真实浏览器不消费该对象。
   // _resetState 仅供测试重建运行时状态；_init 为 init 别名（测试按需显式初始化）。
   window.stellar = window.stellar || {};

@@ -1,8 +1,8 @@
 // 行为面：仪表盘布局 v6→v7 迁移（src/modules/dashboard/widgets/layout.ts）。
-// 机械校验入口：make test → console-test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → node --test ../tests/*.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { migrateV6toV7 } from "../src/modules/dashboard/widgets/layout.ts";
+import { migrateV6toV7 } from "../web/src/modules/dashboard/widgets/layout.ts";
 
 const oldRecentSize = { l: 6, m: 6, s: 12 };
 const newRecentSize = { l: 6, m: 12, s: 12 };

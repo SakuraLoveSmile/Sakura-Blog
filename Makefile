@@ -83,9 +83,9 @@ css-drift-check:
 console-test: console-deps
 	cd modules/console/web && npm run test
 
-## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 modules/stellar/web/scripts/test/*.test.mjs）
+## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 modules/stellar/tests/*.test.mjs）
 assets-test:
-	node --test modules/stellar/web/scripts/test/*.test.mjs
+	node --test modules/stellar/tests/*.test.mjs
 
 ## module-check: 静态约束 Console/Stellar/internal 的依赖方向。
 module-check:

@@ -49,12 +49,12 @@ jobs:
 
       # 与 make test 的前端行为面对齐：
       # console-test = npm run test（vue-tsc 类型检查 + node --test，复用上面的 npm ci 环境）
-      # assets-test = node --test modules/stellar/web/scripts/test/*.test.mjs（node:test 内置运行器，零依赖）
+      # assets-test = node --test modules/stellar/tests/*.test.mjs（node:test 内置运行器，零依赖）
       - name: Console behavior tests (npm run test)
         run: cd modules/console/web && npm run test
 
       - name: Assets behavior tests (node --test)
-        run: node --test modules/stellar/web/scripts/test/*.test.mjs
+        run: node --test modules/stellar/tests/*.test.mjs
 
   # 与发布产物同构的组合构建验证（对齐 release.yml：真实 console 产物 + go build）。
   # go job 用 stub dist 只验证编译；此 job 保证合入主线前 embed 真实前端产物可构建。

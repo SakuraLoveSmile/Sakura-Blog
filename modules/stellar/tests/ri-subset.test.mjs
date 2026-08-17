@@ -8,7 +8,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const stellarWebDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const stellarWebDir = join(dirname(fileURLToPath(import.meta.url)), "..", "web");
 const srcDir = join(stellarWebDir, "..", "..", "console", "web", "src");
 
 function collectFiles(dir, out = []) {

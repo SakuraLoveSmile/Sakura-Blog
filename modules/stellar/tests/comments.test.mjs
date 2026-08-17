@@ -1,5 +1,5 @@
 // 行为面：Artalk 风格评论区（assets/js/comments.js）—— 评论渲染、提交校验、回复态与表情插入。
-// 机械校验入口：make test → assets-test → node --test scripts/test/
+// 机械校验入口：make test → assets-test → node --test modules/stellar/tests/
 // 加载真实 comments.js 源码到 vm 沙箱（最小浏览器桩），断言渲染/交互逻辑，不依赖真实 DOM/网络。
 // comments.js 是自执行 IIFE，经 window.stellar.comments._internal 暴露测试面（与 pjax.js 模式一致）。
 import { test } from 'node:test';
@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 
-const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/comments.js');
-const BOOST_EMOJI_DATA_PATH = join(dirname(fileURLToPath(import.meta.url)), '../../assets/js/boost-emoji-data.json');
+const SRC_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/comments.js');
+const BOOST_EMOJI_DATA_PATH = join(dirname(fileURLToPath(import.meta.url)), '../web/assets/js/boost-emoji-data.json');
 const SURFACE = '评论区';
 
 function makeClassList() {

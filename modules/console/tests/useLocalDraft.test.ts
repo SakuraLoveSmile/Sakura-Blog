@@ -1,9 +1,9 @@
 // 行为面：本地草稿 composable（src/composables/useLocalDraft.ts）。
 // node:test 直跑纯函数：stub localStorage + 假定时器（防抖立即执行）。
-// 机械校验入口：make test → console-test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → node --test ../tests/*.test.ts
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { useLocalDraft } from "../src/composables/useLocalDraft.ts";
+import { useLocalDraft } from "../web/src/composables/useLocalDraft.ts";
 
 // --- localStorage stub ---
 const store = new Map<string, string>();

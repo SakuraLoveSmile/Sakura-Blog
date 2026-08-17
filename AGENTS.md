@@ -42,9 +42,9 @@ git -C .bare worktree add ../feat-font -b feature/font
 
 | Agent | 任务 | 主要改动范围 |
 |-------|------|-------------|
-| A | 评论系统 | `internal/comment/`、`modules/console/web/src/modules/comments/` |
+| A | 评论系统 | `internal/comments/`、`modules/console/web/src/modules/comments/` |
 | B | 前端样式 | `modules/stellar/web/assets/css/`、`modules/stellar/web/templates/partial/` |
-| C | 后台管理 | `modules/console/web/src/`、`modules/console/web/tests/` |
+| C | 后台管理 | `modules/console/web/src/`、`modules/console/tests/` |
 
 #### UI 类任务开工约定（验收边界）
 

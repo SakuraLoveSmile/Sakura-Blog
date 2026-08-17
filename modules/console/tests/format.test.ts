@@ -1,8 +1,8 @@
 // 行为面：统一格式化工具（src/lib/format.ts）——相对时间/绝对时间/字节边界。
-// 机械校验入口：make test → console-test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → node --test ../tests/*.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatRelative, formatDateTime, formatDate, formatBytes } from "../src/lib/format.ts";
+import { formatRelative, formatDateTime, formatDate, formatBytes } from "../web/src/lib/format.ts";
 
 // 固定 now：2026-08-13 12:00 本地时间（与测试机时区无关，用本地构造）
 const NOW = new Date(2026, 7, 13, 12, 0, 0); // 2026-08-13 12:00

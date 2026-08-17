@@ -1,5 +1,5 @@
 // 行为面：组件库标签预览（Spec 63）。
-// 机械校验入口：make test → console-test → npm run test → node --test tests/*.test.ts
+// 机械校验入口：make test → console-test → npm run test → node --test ../tests/*.test.ts
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言纯 TS 模块（能力清单/资源映射/
 // iframe 文档构建/渲染门闸），不经 Vue 组件。
 import { test, mock } from "node:test";
@@ -9,14 +9,14 @@ import {
   PLUGIN_PREVIEW,
   previewInfoFor,
   type PluginPreviewInfo,
-} from "../src/modules/plugins/plugins-data.ts";
+} from "../web/src/modules/plugins/plugins-data.ts";
 import {
   SERVICE_SCRIPTS,
   MARKED_CDN,
   MAIN_JS,
   previewScriptsFor,
   FIXTURE_LABELS,
-} from "../src/modules/plugins/preview/resources.ts";
+} from "../web/src/modules/plugins/preview/resources.ts";
 import {
   buildPreviewDoc,
   MIN_PREVIEW_HEIGHT,
@@ -24,8 +24,8 @@ import {
   DEFAULT_PREVIEW_HEIGHT,
   resolvePreviewHeight,
   clampPreviewHeight,
-} from "../src/modules/plugins/preview/preview-document.ts";
-import { RenderGate } from "../src/modules/plugins/preview/render-gate.ts";
+} from "../web/src/modules/plugins/preview/preview-document.ts";
+import { RenderGate } from "../web/src/modules/plugins/preview/render-gate.ts";
 
 const SURFACE = "插件预览";
 
