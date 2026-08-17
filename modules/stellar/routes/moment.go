@@ -1,5 +1,5 @@
-// Package moment 瞬间/说说：前台时间流与后台发布管理。
-package moment
+// MomentHandler owns the public moments route and its reusable query view.
+package routes
 
 import (
 	"html/template"
@@ -19,10 +19,10 @@ import (
 const pageSize = 20
 
 // Handler 瞬间请求处理器。
-type Handler struct {
+type MomentHandler struct {
 	store  *store.Store
 	posts  *post.Service
-	engine Renderer
+	engine MomentRenderer
 	// site 站点配置原子指针（Spec 61 阶段 3）
 	site        *atomic.Pointer[tmpl.Site]
 	fillSidebar func(*tmpl.ViewData)
@@ -31,23 +31,23 @@ type Handler struct {
 
 // Renderer is the narrow view boundary consumed by the internal moment
 // service; the concrete Engine belongs to modules/stellar/web.
-type Renderer interface {
+type MomentRenderer interface {
 	Render(string, *tmpl.ViewData) (string, error)
 }
 
 // New 创建 moment handler，确保 moments 表存在。
-func New(
+func NewMomentHandler(
 	s *store.Store,
 	posts *post.Service,
-	engine Renderer,
+	engine MomentRenderer,
 	site *atomic.Pointer[tmpl.Site],
 	fillSidebar func(*tmpl.ViewData),
 	fillSEO func(*tmpl.ViewData, *gin.Context),
-) (*Handler, error) {
+) (*MomentHandler, error) {
 	if err := s.EnsureMomentsTable(); err != nil {
 		return nil, err
 	}
-	return &Handler{
+	return &MomentHandler{
 		store:       s,
 		posts:       posts,
 		engine:      engine,
@@ -58,13 +58,13 @@ func New(
 }
 
 // Register 挂前台 /moments 路由（后台管理已迁移到 Vue Console + /api/v1）。
-func (h *Handler) Register(r *gin.Engine) {
+func (h *MomentHandler) Register(r *gin.Engine) {
 	r.GET("/moments", h.listPublic)
 	r.GET("/moments/", h.listPublic)
 }
 
 // listPublic GET /moments：时间流 + 分页（20/页）。
-func (h *Handler) listPublic(c *gin.Context) {
+func (h *MomentHandler) listPublic(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if page < 1 {
 		page = 1
@@ -131,7 +131,7 @@ func (h *Handler) listPublic(c *gin.Context) {
 }
 
 // RecentItems 返回最新 limit 条公开 moments 的视图模型，供其它页面（如 /notes 近期动态）内联复用。
-func (h *Handler) RecentItems(limit int) []*tmpl.MomentItem {
+func (h *MomentHandler) RecentItems(limit int) []*tmpl.MomentItem {
 	moments, err := h.store.ListPublicMoments(1, limit)
 	if err != nil {
 		return nil

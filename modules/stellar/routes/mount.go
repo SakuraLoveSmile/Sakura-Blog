@@ -17,9 +17,7 @@ import (
 	"blog/internal/friends"
 	ghpkg "blog/internal/github"
 	"blog/internal/module"
-	"blog/internal/moment"
 	"blog/internal/og"
-	"blog/internal/page"
 	"blog/internal/post"
 	"blog/internal/search"
 	"blog/internal/store"
@@ -53,7 +51,7 @@ type Dependencies struct {
 type Server struct {
 	deps        Dependencies
 	web         *webServer
-	pageHandler *page.Handler
+	pageHandler *PageHandler
 	pvBuffer    *pageViewBuffer
 	searchIdx   *search.Index
 	ogCacheDir  string
@@ -142,7 +140,7 @@ func (s *Server) Mount(r *gin.Engine) error {
 		return err
 	}
 
-	pageHandler, err := page.New(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site)
+	pageHandler, err := NewPageHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site)
 	if err != nil {
 		return err
 	}
@@ -163,7 +161,7 @@ func (s *Server) Mount(r *gin.Engine) error {
 		log.Printf("[warn] seed links page: %v", err)
 	}
 
-	momentHandler, err := moment.New(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site, s.web.fillSidebar, s.web.fillSEO)
+	momentHandler, err := NewMomentHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site, s.web.fillSidebar, s.web.fillSEO)
 	if err != nil {
 		return err
 	}

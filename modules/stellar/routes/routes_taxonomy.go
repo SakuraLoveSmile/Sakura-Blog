@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"blog/internal/page"
 	"blog/internal/store"
 	"blog/internal/textutil"
 	tmpl "blog/modules/stellar/viewmodel"
@@ -95,7 +94,7 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 首次启动自 content/notes.md 迁移）；下段仍为本站 moments 近期动态。
 	r.GET("/notes", func(c *gin.Context) {
 		var contentHTML template.HTML
-		if p, err := s.st.GetPageBySlug(page.NotesSlug); err == nil && p != nil && p.Status == store.StatusPublished {
+		if p, err := s.st.GetPageBySlug(NotesSlug); err == nil && p != nil && p.Status == store.StatusPublished {
 			if p.ContentHTML != "" {
 				contentHTML = template.HTML(p.ContentHTML)
 			} else if rendered, e := s.posts.Render(p.ContentMD); e == nil {
@@ -405,7 +404,7 @@ func (s *webServer) handleTopicDetail(c *gin.Context) {
 // handleLinksPage 友链卡片页（内容页化）：渲染 pages 表 slug=links 系统页。
 // 正文 {% links %} 服务端直出分组友链卡片；banner/TOC 同内容页。
 func (s *webServer) handleLinksPage(c *gin.Context) {
-	p, err := s.st.GetPageBySlug(page.LinksSlug)
+	p, err := s.st.GetPageBySlug(LinksSlug)
 	if err != nil || p == nil || p.Status != store.StatusPublished {
 		s.render404(c)
 		return
@@ -440,7 +439,7 @@ func (s *webServer) menuTitle(menuID, fallback string) string {
 // 正文 md 控制台可编辑（{% friends posts:true %} 嵌入友链组件）；
 // banner 标题/封面/副标题取 pages.friends 设置（缺省回退页面标题）；TOC 与评论同内容页。
 func (s *webServer) handleFriendsPage(c *gin.Context) {
-	p, err := s.st.GetPageBySlug(page.FriendsSlug)
+	p, err := s.st.GetPageBySlug(FriendsSlug)
 	if err != nil || p == nil || p.Status != store.StatusPublished {
 		s.render404(c)
 		return

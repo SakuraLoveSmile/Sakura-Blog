@@ -1,5 +1,5 @@
-// Package page 独立页面：前台 /pages/:slug 渲染（后台管理已迁移到 Vue Console + /api/v1）。
-package page
+// PageHandler owns the public standalone-page routes.
+package routes
 
 import (
 	"html/template"
@@ -42,10 +42,10 @@ const defaultFriendsMD = `## 友链列表
 `
 
 // Handler 独立页面请求处理器。
-type Handler struct {
+type PageHandler struct {
 	store  *store.Store
 	posts  *post.Service
-	engine Renderer
+	engine PageRenderer
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，渲染时 .Load() 读取
 	site      *atomic.Pointer[tmpl.Site]
 	render404 gin.HandlerFunc
@@ -54,31 +54,31 @@ type Handler struct {
 
 // Renderer keeps the internal page service independent from Stellar's web
 // template implementation.
-type Renderer interface {
+type PageRenderer interface {
 	Render(string, *tmpl.ViewData) (string, error)
 }
 
 // New 创建 page handler，确保 pages 表存在。
-func New(s *store.Store, posts *post.Service, engine Renderer, site *atomic.Pointer[tmpl.Site]) (*Handler, error) {
+func NewPageHandler(s *store.Store, posts *post.Service, engine PageRenderer, site *atomic.Pointer[tmpl.Site]) (*PageHandler, error) {
 	if err := s.EnsurePagesTable(); err != nil {
 		return nil, err
 	}
-	return &Handler{store: s, posts: posts, engine: engine, site: site}, nil
+	return &PageHandler{store: s, posts: posts, engine: engine, site: site}, nil
 }
 
 // SetRender404 注入自定义 404 渲染（main.go 的 render404）；未设置时返回简单 404。
-func (h *Handler) SetRender404(fn gin.HandlerFunc) {
+func (h *PageHandler) SetRender404(fn gin.HandlerFunc) {
 	h.render404 = fn
 }
 
 // SetFillExtra 注入前台页面渲染前的 sidebar/SEO 填充回调。
-func (h *Handler) SetFillExtra(fn func(*tmpl.ViewData, *gin.Context)) {
+func (h *PageHandler) SetFillExtra(fn func(*tmpl.ViewData, *gin.Context)) {
 	h.fillExtra = fn
 }
 
 // EnsureSystemFriendsPage 确保 pages 表存在友链系统页（slug=friends，published）。
 // 已存在（含用户编辑过的）不覆盖；缺失时创建并预渲染 ContentHTML。
-func (h *Handler) EnsureSystemFriendsPage() error {
+func (h *PageHandler) EnsureSystemFriendsPage() error {
 	if p, err := h.store.GetPageBySlug(FriendsSlug); err == nil && p != nil {
 		return nil
 	}
@@ -100,7 +100,7 @@ func (h *Handler) EnsureSystemFriendsPage() error {
 
 // EnsureSystemNotesPage 确保 pages 表存在笔记系统页（slug=notes，published）。
 // 首次迁移时导入旧 content/notes.md 原文作为正文（记录已存在不覆盖）。
-func (h *Handler) EnsureSystemNotesPage(importPath string) error {
+func (h *PageHandler) EnsureSystemNotesPage(importPath string) error {
 	if p, err := h.store.GetPageBySlug(NotesSlug); err == nil && p != nil {
 		return nil
 	}
@@ -131,7 +131,7 @@ func (h *Handler) EnsureSystemNotesPage(importPath string) error {
 
 // EnsureSystemLinksPage 确保 pages 表存在友链卡片系统页（slug=links，published）。
 // 已存在（含用户编辑过的）不覆盖。
-func (h *Handler) EnsureSystemLinksPage() error {
+func (h *PageHandler) EnsureSystemLinksPage() error {
 	if p, err := h.store.GetPageBySlug(LinksSlug); err == nil && p != nil {
 		return nil
 	}
@@ -153,13 +153,13 @@ func (h *Handler) EnsureSystemLinksPage() error {
 
 // Register 挂前台路由 GET /pages/:slug（兼容旧路径）。
 // 根路径 /:slug 由 main.go NoRoute 兜底调 ShowByPath，避免与 /wiki/:project /author/:id 等参数路由冲突。
-func (h *Handler) Register(r *gin.Engine) {
+func (h *PageHandler) Register(r *gin.Engine) {
 	r.GET("/pages/:slug", h.show)
 }
 
 // ShowByPath NoRoute 兜底：如果请求路径是单段 slug（不含中间 '/', 非 /console/），
 // 尝试按 pages 表 published 记录渲染；命中返回 true，未命中返回 false 由调用方继续 404。
-func (h *Handler) ShowByPath(c *gin.Context) bool {
+func (h *PageHandler) ShowByPath(c *gin.Context) bool {
 	p := c.Request.URL.Path
 	if len(p) < 2 || p[0] != '/' {
 		return false
@@ -178,7 +178,7 @@ func (h *Handler) ShowByPath(c *gin.Context) bool {
 	return true
 }
 
-func (h *Handler) renderPage(c *gin.Context, p *store.Page) {
+func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
 	data := &tmpl.ViewData{
 		Site: h.site.Load(),
 		Page: &tmpl.Page{
@@ -229,7 +229,7 @@ func (h *Handler) renderPage(c *gin.Context, p *store.Page) {
 }
 
 // show GET /pages/:slug：仅 published 展示，否则 404。复用 renderPage 与 ShowByPath 走同一渲染分支。
-func (h *Handler) show(c *gin.Context) {
+func (h *PageHandler) show(c *gin.Context) {
 	slug := c.Param("slug")
 	p, err := h.store.GetPublished(slug)
 	if err != nil {
@@ -244,7 +244,7 @@ func (h *Handler) show(c *gin.Context) {
 	h.renderPage(c, p)
 }
 
-func (h *Handler) notFound(c *gin.Context) {
+func (h *PageHandler) notFound(c *gin.Context) {
 	if h.render404 != nil {
 		h.render404(c)
 		return

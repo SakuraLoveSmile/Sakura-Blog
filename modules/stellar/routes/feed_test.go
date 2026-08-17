@@ -1,4 +1,4 @@
-package feed
+package routes
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ import (
 )
 
 // newTestHandler 构造 feed handler：临时 SQLite + 预置文章 + 固定 site（含 baseURL）。
-func newTestHandler(t *testing.T, posts []*store.Post) *Handler {
+func newTestHandler(t *testing.T, posts []*store.Post) *FeedHandler {
 	t.Helper()
 	st, err := store.New(t.TempDir() + "/test.db")
 	if err != nil {
@@ -34,10 +34,10 @@ func newTestHandler(t *testing.T, posts []*store.Post) *Handler {
 	}
 	sitePtr := &atomic.Pointer[tmpl.Site]{}
 	sitePtr.Store(&tmpl.Site{URL: "https://example.com", Title: "测试站", Description: "描述"})
-	return New(st, sitePtr)
+	return NewFeedHandler(st, sitePtr)
 }
 
-func doGET(t *testing.T, h *Handler, path string) *httptest.ResponseRecorder {
+func doGET(t *testing.T, h *FeedHandler, path string) *httptest.ResponseRecorder {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

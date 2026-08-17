@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"blog/internal/feed"
 	"blog/internal/og"
 	"blog/internal/store"
 	"blog/internal/textutil"
@@ -82,7 +81,7 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(s
 // registerFeedRoutes 注册订阅/SEO 域路由：Atom/JSON Feed/robots.txt（feed 包）、/rss.xml、/sitemap.xml、/og/:slug。
 func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 	// Atom / JSON Feed / 分类标签 RSS / robots.txt
-	feed.New(s.st, s.site).Register(r)
+	NewFeedHandler(s.st, s.site).Register(r)
 
 	// RSS 2.0 订阅输出：/rss.xml，最新 20 篇 published 文章。
 	r.GET("/rss.xml", func(c *gin.Context) {

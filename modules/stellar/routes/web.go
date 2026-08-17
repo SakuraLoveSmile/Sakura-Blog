@@ -17,7 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/comment"
-	"blog/internal/moment"
 	"blog/internal/og"
 	"blog/internal/post"
 	"blog/internal/search"
@@ -62,7 +61,7 @@ type webServer struct {
 	engine     *stellarweb.Engine
 	searchIdx  *search.Index // 可空：FTS 建索引失败时降级
 	ogGen      *og.Generator
-	momentH    *moment.Handler // /notes 页近期动态，main 装配 moment 后设置
+	momentH    *MomentHandler // /notes 页近期动态，Stellar 装配 moment 后设置
 
 	devMode     bool
 	root        string // app.Root：-dev 模式磁盘资源基准

@@ -1,5 +1,5 @@
-// Package feed 生成 Atom、JSON Feed、分类/标签 RSS 与 robots.txt。
-package feed
+// FeedHandler owns Atom, JSON Feed, taxonomy RSS, and robots.txt routes.
+package routes
 
 import (
 	"encoding/xml"
@@ -22,19 +22,19 @@ const (
 )
 
 // Handler 订阅 feed 处理器，持 store 与站点配置。
-type Handler struct {
+type FeedHandler struct {
 	store *store.Store
 	// site 站点配置原子指针（Spec 61 阶段 3）
 	site *atomic.Pointer[tmpl.Site]
 }
 
 // New 创建 feed handler。
-func New(st *store.Store, site *atomic.Pointer[tmpl.Site]) *Handler {
-	return &Handler{store: st, site: site}
+func NewFeedHandler(st *store.Store, site *atomic.Pointer[tmpl.Site]) *FeedHandler {
+	return &FeedHandler{store: st, site: site}
 }
 
 // Register 注册 feed 相关路由。
-func (h *Handler) Register(r *gin.Engine) {
+func (h *FeedHandler) Register(r *gin.Engine) {
 	r.GET("/atom.xml", h.atom)
 	r.GET("/feed.json", h.jsonFeed)
 	r.GET("/categories/:name/rss.xml", h.categoryRSS)
@@ -42,18 +42,18 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.GET("/robots.txt", h.robots)
 }
 
-func (h *Handler) baseURL(c *gin.Context) string {
+func (h *FeedHandler) baseURL(c *gin.Context) string {
 	if h.site.Load().URL != "" {
 		return strings.TrimRight(h.site.Load().URL, "/")
 	}
 	return "http://" + c.Request.Host
 }
 
-func (h *Handler) setFeedCache(c *gin.Context) {
+func (h *FeedHandler) setFeedCache(c *gin.Context) {
 	c.Header("Cache-Control", "max-age="+strconv.Itoa(feedCacheAge))
 }
 
-func (h *Handler) postURL(base, slug string) string {
+func (h *FeedHandler) postURL(base, slug string) string {
 	return base + "/post/" + slug
 }
 
@@ -65,7 +65,7 @@ func feedBody(p *store.Post) string {
 }
 
 // resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
-func (h *Handler) resolveAuthor(postAuthor string) string {
+func (h *FeedHandler) resolveAuthor(postAuthor string) string {
 	if postAuthor != "" {
 		if a, ok := h.site.Load().Authors[postAuthor]; ok && a.Name != "" {
 			return a.Name
@@ -78,7 +78,7 @@ func (h *Handler) resolveAuthor(postAuthor string) string {
 }
 
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
-func (h *Handler) atom(c *gin.Context) {
+func (h *FeedHandler) atom(c *gin.Context) {
 	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "list posts: %v", err)
@@ -138,7 +138,7 @@ func (h *Handler) atom(c *gin.Context) {
 }
 
 // jsonFeed GET /feed.json — JSON Feed 1.1 全站订阅。
-func (h *Handler) jsonFeed(c *gin.Context) {
+func (h *FeedHandler) jsonFeed(c *gin.Context) {
 	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "list posts: %v", err)
@@ -173,7 +173,7 @@ func (h *Handler) jsonFeed(c *gin.Context) {
 }
 
 // categoryRSS GET /categories/:name/rss.xml — 分类维度 RSS 2.0。
-func (h *Handler) categoryRSS(c *gin.Context) {
+func (h *FeedHandler) categoryRSS(c *gin.Context) {
 	name := c.Param("name")
 	posts, err := h.listCategoryPosts(name)
 	if err != nil {
@@ -185,7 +185,7 @@ func (h *Handler) categoryRSS(c *gin.Context) {
 }
 
 // tagRSS GET /tags/:name/rss.xml — 标签维度 RSS 2.0。
-func (h *Handler) tagRSS(c *gin.Context) {
+func (h *FeedHandler) tagRSS(c *gin.Context) {
 	name := c.Param("name")
 	posts, err := h.listTagPosts(name)
 	if err != nil {
@@ -196,7 +196,7 @@ func (h *Handler) tagRSS(c *gin.Context) {
 	h.writeRSS(c, h.site.Load().Title+" — 标签："+name, base+"/tags/"+name, posts)
 }
 
-func (h *Handler) listCategoryPosts(name string) ([]*store.Post, error) {
+func (h *FeedHandler) listCategoryPosts(name string) ([]*store.Post, error) {
 	counts, err := h.store.CountByCategory()
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (h *Handler) listCategoryPosts(name string) ([]*store.Post, error) {
 	return h.store.ListByCategory(name)
 }
 
-func (h *Handler) listTagPosts(name string) ([]*store.Post, error) {
+func (h *FeedHandler) listTagPosts(name string) ([]*store.Post, error) {
 	counts, err := h.store.CountByTag()
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (h *Handler) listTagPosts(name string) ([]*store.Post, error) {
 	return h.store.ListByTag(name)
 }
 
-func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*store.Post) {
+func (h *FeedHandler) writeRSS(c *gin.Context, title, channelLink string, posts []*store.Post) {
 	base := h.baseURL(c)
 	items := make([]rssItem, 0, len(posts))
 	for _, p := range posts {
@@ -251,7 +251,7 @@ func (h *Handler) writeRSS(c *gin.Context, title, channelLink string, posts []*s
 }
 
 // robots GET /robots.txt
-func (h *Handler) robots(c *gin.Context) {
+func (h *FeedHandler) robots(c *gin.Context) {
 	base := h.baseURL(c)
 	lines := []string{
 		"User-agent: *",
