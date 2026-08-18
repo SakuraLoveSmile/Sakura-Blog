@@ -6,7 +6,25 @@
 
 ## 第一阶段模块边界
 
-项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`config/`、`content/` 和 `data/` 的运行时路径保持不变。
+项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 是组合根：只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`config/`、`content/` 和 `data/` 的运行时路径保持不变。
+
+### 边界规则（机械守卫）
+
+依赖方向与所有权由 `scripts/check-module-deps.sh` 强制（接入 `make test` 与 CI，违规非零退出），不靠自觉：
+
+- 依赖单向 `cmd → modules → internal`；`internal` 不得 import 业务模块；console 与 stellar 互不 import。
+- **Stellar 独家拥有前台 URL 所有权**：`internal/comments`/`internal/identity`/`internal/store`(rating/vote)/`internal/github`/`internal/friends` 等共享包只暴露 `PublicRoutes` 回调结构体，禁止自绑路由（`r.GET/POST…`）；URL 绑定统一在 `modules/stellar/api/`。
+- legacy 黑名单：`backend`/`cmd/server`/`go.work`/`go.work.sum` 不得复活；全仓恰好一个 `go.mod`；`cmd/blog` 只能 import 模块顶层包。
+- 功能模块框架（`internal/module`，现有 `seo`/`perf`）：`init()` 自注册，Console 侧 `RegisterRoutes` 套 `Gate` 中间件（DB 禁用即 403），启停状态存 `module_state` 表；新功能优先走该框架而非新增顶层包。
+
+### 静态分析与测试布局
+
+- `make test` 门禁链：console 测试 + assets 行为面（`make assets-test`）+ module-check + `go vet` + **staticcheck**（版本钉死，与 CI 同步）+ `go test`；新代码必须 staticcheck 零 findings，可单独 `make lint`。
+- 测试落位：Go 测试同包；前端行为面测试在 `modules/console/tests/`（npm run test）与 `modules/stellar/tests/`（node --test），不再放 `web/` 子目录内。
+
+### 大文件拆分约定
+
+单文件过大时按逻辑域**同包拆文件**（零 API 变更），现有范例：`internal/post/shortcode_*.go`（按标签插件族）、`modules/stellar/routes/routes_*.go`（按页面域）、`internal/config/reload_*.go`（按职责）。坑：别名 import（如 `tmpl "blog/internal/settings"`）goimports 无法推断，拆分后必须手动补齐并立即编译验证；sed 按行号区间删除时注意边界可能含结构体收尾大括号。
 
 ## 仓库工作流
 

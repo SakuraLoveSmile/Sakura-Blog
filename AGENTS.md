@@ -65,7 +65,7 @@ feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自�
 make merge-check
 ```
 
-- `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
+- `merge-check` 强制先执行 `make test`（console 测试 + assets 行为面 + module-check + `go vet` + staticcheck + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
 - `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
 - **合并后组合态复验**：合入成功后 `merge-check` 会在 dev worktree 再执行一次 `make test`（防 dev 领先、feature 落后时两者改动组合态破坏门禁）；复验失败时输出回退指引（`git -C <DEV_WORKTREE> reset --hard ORIG_HEAD`，dev 回到合并前状态）并以非零码退出——先回退、再在 feature 分支 rebase 最新 dev 修复兼容后重试。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
@@ -137,6 +137,7 @@ git -C .bare worktree remove ../feat-comment
 
 | 改动范围 | `CLAUDE.md` 必读章节 |
 |---------|-------------------|
+| 模块边界 / 依赖方向 / 新增包或路由 | 「第一阶段模块边界」（module-check 守卫、PublicRoutes URL 所有权、功能模块框架、staticcheck 门禁、拆文件约定） |
 | bare 仓库 / worktree 操作 | 「仓库工作流」（worktree 操作注意、cwd 不保留坑） |
 | CSS / Stylus 编译、图标与深色模式 | 「Stellar CSS 剥离规范」（shim 注入、返回值类型、siteblur 遮罩、图标颜色） |
 | 前台 HTML / Go 模板结构 | 「Stellar HTML 结构规范（关键）」（class 名与嵌套必须对齐 Stellar EJS） |
