@@ -74,3 +74,12 @@ test("registry: stat 卡 statKey 均为 /dashboard/stats 响应字段", () => {
     }
   }
 });
+
+test("registry: Stellar 版本组件注册在 others 区域", () => {
+  const stellar = parsed.find((p) => p.type === "stellar-version");
+  assert.ok(stellar, "stellar-version widget should be registered");
+  assert.equal(stellar.section, "others");
+  assert.match(stellar.size, /l:\s*4/);
+  assert.match(stellar.size, /m:\s*6/);
+  assert.match(stellar.size, /s:\s*12/);
+});

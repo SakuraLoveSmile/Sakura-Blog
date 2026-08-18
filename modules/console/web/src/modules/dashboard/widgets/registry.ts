@@ -6,6 +6,7 @@ import RecentCommentsWidget from "./RecentCommentsWidget.vue";
 import RecentPostsWidget from "./RecentPostsWidget.vue";
 import CategoryDonutWidget from "./CategoryDonutWidget.vue";
 import QuickActionsWidget from "./QuickActionsWidget.vue";
+import StellarVersionWidget from "./StellarVersionWidget.vue";
 import { themeColors } from "@/lib/theme-colors";
 
 const chartColors = themeColors({
@@ -168,6 +169,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: { l: 4, m: 6, s: 12 },
     defaultSection: "chartNarrow",
     component: QuickActionsWidget,
+    props: {},
+  },
+  {
+    type: "stellar-version",
+    label: "Stellar 版本",
+    icon: "ri:git-branch-line",
+    defaultSize: { l: 4, m: 6, s: 12 },
+    defaultSection: "others",
+    component: StellarVersionWidget,
     props: {},
   },
 ];

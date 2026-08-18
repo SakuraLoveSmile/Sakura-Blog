@@ -35,6 +35,7 @@ type memEntry struct {
 type Config struct {
 	Token    string // GitHub PAT（可选）
 	CacheDir string // 磁盘缓存目录（绝对路径）
+	APIBase  string // GitHub REST API 基址（仅测试注入，生产留空）
 }
 
 // New 创建 GitHub 数据客户端。
@@ -44,9 +45,13 @@ func New(cfg Config) *Client {
 		cacheDir = "data/ghcache"
 	}
 	_ = os.MkdirAll(cacheDir, 0o755)
+	apiBase := cfg.APIBase
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
 	return &Client{
 		token:    cfg.Token,
-		apiBase:  "https://api.github.com",
+		apiBase:  apiBase,
 		cacheDir: cacheDir,
 		http:     &http.Client{Timeout: 15 * time.Second},
 		mem:      make(map[string]*memEntry),
@@ -132,6 +137,12 @@ func (c *Client) GetUser(username string) (*UserInfo, error) {
 // 缓存 TTL 6h，与仓库元数据同档。
 func (c *Client) GetTagsRaw(owner, repo string) ([]byte, error) {
 	return c.get(fmt.Sprintf("%s/repos/%s/%s/tags?per_page=5", c.apiBase, owner, repo), 6*time.Hour)
+}
+
+// GetLatestReleaseRaw returns the latest GitHub release payload using the
+// shared six-hour cache and stale-on-error behavior.
+func (c *Client) GetLatestReleaseRaw(owner, repo string) ([]byte, error) {
+	return c.get(fmt.Sprintf("%s/repos/%s/%s/releases/latest", c.apiBase, owner, repo), 6*time.Hour)
 }
 
 // GetIssuesRaw 仓库 issues 列表原样 JSON（Spec 33 ghissues widget，ds-timeline 消费 GitHub 形状字段）。

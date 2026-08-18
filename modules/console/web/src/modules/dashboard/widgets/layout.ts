@@ -43,7 +43,7 @@ const defaultLayout_l: SectionLayout = {
     { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
     { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
   ],
-  others: [],
+  others: [{ type: "stellar-version", size: { l: 4, m: 6, s: 12 } }],
 };
 
 const defaultLayout_m: SectionLayout = {
@@ -62,7 +62,7 @@ const defaultLayout_m: SectionLayout = {
     { type: "recent-posts",   size: { l: 6, m: 12, s: 12 } },
     { type: "recent-comments",size: { l: 6, m: 12, s: 12 } },
   ],
-  others: [],
+  others: [{ type: "stellar-version", size: { l: 4, m: 6, s: 12 } }],
 };
 
 const defaultLayout_s: SectionLayout = {
@@ -81,7 +81,7 @@ const defaultLayout_s: SectionLayout = {
     { type: "recent-posts",   size: { l: 6, m: 6, s: 12 } },
     { type: "recent-comments",size: { l: 6, m: 6, s: 12 } },
   ],
-  others: [],
+  others: [{ type: "stellar-version", size: { l: 4, m: 6, s: 12 } }],
 };
 
 export const defaultMultiLayout: MultiBreakpointLayout = {
@@ -97,10 +97,17 @@ export function getDefaultSectionLayout(bp: Breakpoint): SectionLayout {
 }
 
 /** 布局存储key */
-export const LAYOUT_STORAGE_KEY = "dashboard:layout:v7";
+export const LAYOUT_STORAGE_KEY = "dashboard:layout:v8";
 
-/** v6 旧布局存储 key（仅迁移用） */
-const LEGACY_STORAGE_KEY = "dashboard:layout:v6";
+/** v7 旧布局存储 key（仅迁移用） */
+const LEGACY_V7_STORAGE_KEY = "dashboard:layout:v7";
+/** v6 更早布局存储 key（先迁移到 v7 结构，再升级到 v8） */
+const LEGACY_V6_STORAGE_KEY = "dashboard:layout:v6";
+
+const STELLAR_VERSION_WIDGET = {
+  type: "stellar-version",
+  size: { l: 4, m: 6, s: 12 },
+} as const;
 
 /** 旧默认尺寸：v6 时代 m 断点 recents 的默认值 */
 const OLD_DEFAULT_RECENT_SIZE: ResponsiveSize = { l: 6, m: 6, s: 12 };
@@ -139,6 +146,31 @@ export function migrateV6toV7(v6: any): MultiBreakpointLayout | null {
   return null;
 }
 
+function addStellarVersionWidget(layout: MultiBreakpointLayout): MultiBreakpointLayout {
+  for (const bp of ["l", "m", "s"] as const) {
+    const section = layout[bp];
+    const allWidgets = [
+      ...section.stats,
+      ...(section.chartWide ? [section.chartWide] : []),
+      ...section.chartNarrow,
+      ...section.recents,
+      ...section.others,
+    ];
+    if (!allWidgets.some((widget) => widget.type === STELLAR_VERSION_WIDGET.type)) {
+      section.others = [...section.others, { ...STELLAR_VERSION_WIDGET, size: { ...STELLAR_VERSION_WIDGET.size } }];
+    }
+  }
+  return layout;
+}
+
+function mergeLayout(parsed: MultiBreakpointLayout): MultiBreakpointLayout {
+  return {
+    l: { ...defaultMultiLayout.l, ...parsed.l },
+    m: { ...defaultMultiLayout.m, ...parsed.m },
+    s: { ...defaultMultiLayout.s, ...parsed.s },
+  };
+}
+
 /** 从localStorage加载布局，支持v6迁移 */
 export function loadLayoutFromStorage(): MultiBreakpointLayout {
   try {
@@ -155,19 +187,25 @@ export function loadLayoutFromStorage(): MultiBreakpointLayout {
         };
       }
     }
-    // v7 缺失或格式无效时回退读 v6 key 并迁移
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy) {
-      const migrated = migrateV6toV7(JSON.parse(legacy));
-      if (migrated && migrated.l && migrated.m && migrated.s) {
-        const layout = {
-          l: { ...defaultMultiLayout.l, ...migrated.l },
-          m: { ...defaultMultiLayout.m, ...migrated.m },
-          s: { ...defaultMultiLayout.s, ...migrated.s },
-        };
-        // 迁移成功后写回 v7 key 并清理 v6 key
+    // v7 布局升级到 v8：保留用户排序/尺寸，只补入新增组件一次。
+    const legacyV7 = localStorage.getItem(LEGACY_V7_STORAGE_KEY);
+    if (legacyV7) {
+      const parsed = JSON.parse(legacyV7);
+      if (parsed?.l && parsed?.m && parsed?.s) {
+        const layout = addStellarVersionWidget(mergeLayout(parsed));
         saveLayoutToStorage(layout);
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_V7_STORAGE_KEY);
+        return layout;
+      }
+    }
+    // v6 先完成原有尺寸迁移，再升级到 v8。
+    const legacyV6 = localStorage.getItem(LEGACY_V6_STORAGE_KEY);
+    if (legacyV6) {
+      const migrated = migrateV6toV7(JSON.parse(legacyV6));
+      if (migrated && migrated.l && migrated.m && migrated.s) {
+        const layout = addStellarVersionWidget(mergeLayout(migrated));
+        saveLayoutToStorage(layout);
+        localStorage.removeItem(LEGACY_V6_STORAGE_KEY);
         return layout;
       }
     }

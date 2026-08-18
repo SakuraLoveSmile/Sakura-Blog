@@ -137,12 +137,22 @@ export const commentUsersApi = {
 };
 
 // --- Dashboard ---
+export interface StellarVersionResponse {
+ local_version: string;
+ upstream_version: string;
+ in_sync: boolean;
+ release_url: string;
+ checked_at: string;
+ error?: string;
+}
+
 export interface DashboardLayoutItem {
  type: string;
 }
 
 export const dashboardApi = {
  stats: () => http.get("/dashboard/stats"),
+ stellarVersion: () => http.get<StellarVersionResponse>("/dashboard/stellar-version"),
  recentPosts: () => http.get("/dashboard/recent-posts"),
  recentComments: () => http.get("/dashboard/recent-comments"),
  categories: () => http.get("/dashboard/categories"),

@@ -4,12 +4,137 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/store"
 )
+
+const (
+	stellarOwner = "xaoxuu"
+	stellarRepo  = "hexo-theme-stellar"
+)
+
+var semverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$`)
+
+type stellarVersionResponse struct {
+	LocalVersion    string `json:"local_version"`
+	UpstreamVersion string `json:"upstream_version,omitempty"`
+	InSync          bool   `json:"in_sync"`
+	ReleaseURL      string `json:"release_url,omitempty"`
+	CheckedAt       string `json:"checked_at"`
+	Error           string `json:"error,omitempty"`
+}
+
+// dashboardStellarVersion GET /api/v1/dashboard/stellar-version compares the
+// checked-in Stellar version with GitHub's latest release. Network failures
+// remain a successful API response so the dashboard can show local state.
+func (h *Handler) dashboardStellarVersion(c *gin.Context) {
+	local := normalizeSemver(h.stellarVersion)
+	result := stellarVersionResponse{
+		LocalVersion: local,
+		CheckedAt:    time.Now().UTC().Format(time.RFC3339),
+	}
+
+	if h.gh == nil {
+		result.Error = "GitHub 客户端未启用"
+		c.JSON(http.StatusOK, result)
+		return
+	}
+
+	payload, err := h.gh.GetLatestReleaseRaw(stellarOwner, stellarRepo)
+	if err != nil {
+		result.Error = err.Error()
+		c.JSON(http.StatusOK, result)
+		return
+	}
+
+	var release struct {
+		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
+	}
+	if err := json.Unmarshal(payload, &release); err != nil {
+		result.Error = "解析 GitHub release 失败: " + err.Error()
+		c.JSON(http.StatusOK, result)
+		return
+	}
+	result.UpstreamVersion = normalizeSemver(release.TagName)
+	if result.UpstreamVersion == "" {
+		result.Error = "GitHub release 缺少有效版本号"
+		c.JSON(http.StatusOK, result)
+		return
+	}
+	result.ReleaseURL = release.HTMLURL
+	result.InSync = semverEqual(local, result.UpstreamVersion)
+	c.JSON(http.StatusOK, result)
+}
+
+func normalizeSemver(value string) string {
+	value = strings.TrimPrefix(strings.TrimSpace(value), "v")
+	if !semverPattern.MatchString(value) {
+		return ""
+	}
+	return value
+}
+
+func semverEqual(left, right string) bool {
+	leftMatch := semverPattern.FindStringSubmatch(left)
+	rightMatch := semverPattern.FindStringSubmatch(right)
+	if leftMatch == nil || rightMatch == nil {
+		return false
+	}
+	for i := 1; i <= 3; i++ {
+		leftNumber, _ := strconv.Atoi(leftMatch[i])
+		rightNumber, _ := strconv.Atoi(rightMatch[i])
+		if leftNumber != rightNumber {
+			return false
+		}
+	}
+	return comparePrerelease(leftMatch[4], rightMatch[4]) == 0
+}
+
+func comparePrerelease(left, right string) int {
+	if left == right {
+		return 0
+	}
+	if left == "" {
+		return 1
+	}
+	if right == "" {
+		return -1
+	}
+	leftParts := strings.Split(left, ".")
+	rightParts := strings.Split(right, ".")
+	for i := 0; i < len(leftParts) && i < len(rightParts); i++ {
+		l, r := leftParts[i], rightParts[i]
+		lNum, lErr := strconv.Atoi(l)
+		rNum, rErr := strconv.Atoi(r)
+		switch {
+		case lErr == nil && rErr == nil && lNum != rNum:
+			if lNum < rNum {
+				return -1
+			}
+			return 1
+		case lErr == nil && rErr != nil:
+			return -1
+		case lErr != nil && rErr == nil:
+			return 1
+		case l != r:
+			if l < r {
+				return -1
+			}
+			return 1
+		}
+	}
+	if len(leftParts) < len(rightParts) {
+		return -1
+	}
+	return 1
+}
 
 // quickActionsSection settings 表中存储快捷操作的段名。
 const quickActionsSection = "dashboard_quick_actions"

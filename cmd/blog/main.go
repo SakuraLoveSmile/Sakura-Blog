@@ -58,6 +58,7 @@ func main() {
 		API: console.APIConfig{
 			Store: services.Store, Posts: services.Post, Site: services.Site, Comments: services.Comment,
 			Backups: services.Backup, Modules: services.Modules, Notify: services.Notify, Icons: services.Icons,
+			StellarVersion:    stellar.StellarVersion,
 			RenderSitePreview: stellarServer.RenderSitePreview,
 			Events:            services.Events,
 			UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,

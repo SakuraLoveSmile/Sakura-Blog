@@ -50,7 +50,8 @@ type Handler struct {
 	linkWatch      *linkwatch.Watcher
 
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
-	gh *ghpkg.Client
+	gh             *ghpkg.Client
+	stellarVersion string
 
 	// icons 图标注册表（icons.yml），素材速查端点用，可空。
 	icons *tmpl.IconRegistry
@@ -86,6 +87,9 @@ type Config struct {
 	UploadDir   string
 	MaxUploadMB int
 	LinkWatch   *linkwatch.Watcher
+	// StellarVersion is injected by the composition root to keep Console
+	// independent from the Stellar module package.
+	StellarVersion string
 }
 
 // New 创建 API handler。
@@ -108,6 +112,7 @@ func New(cfg Config) *Handler {
 		uploadDir:         cfg.UploadDir,
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
+		stellarVersion:    cfg.StellarVersion,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time
@@ -236,6 +241,7 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 仪表盘
 		author.GET("/dashboard/stats", h.dashboardStats)
+		author.GET("/dashboard/stellar-version", h.dashboardStellarVersion)
 		author.GET("/dashboard/recent-comments", h.dashboardRecentComments)
 		author.GET("/dashboard/recent-posts", h.dashboardRecentPosts)
 		author.GET("/dashboard/categories", h.dashboardCategories)

@@ -160,6 +160,31 @@ func TestGetUserParse(t *testing.T) {
 	}
 }
 
+func TestGetLatestReleaseRaw(t *testing.T) {
+	var hits int32
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/xaoxuu/hexo-theme-stellar/releases/latest" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		atomic.AddInt32(&hits, 1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tag_name":"v1.42.1","html_url":"https://github.com/xaoxuu/hexo-theme-stellar/releases/tag/v1.42.1"}`))
+	})
+	data, err := c.GetLatestReleaseRaw("xaoxuu", "hexo-theme-stellar")
+	if err != nil {
+		t.Fatalf("GetLatestReleaseRaw: %v", err)
+	}
+	if !strings.Contains(string(data), `"tag_name":"v1.42.1"`) {
+		t.Fatalf("unexpected release payload: %s", data)
+	}
+	if _, err := c.GetLatestReleaseRaw("xaoxuu", "hexo-theme-stellar"); err != nil {
+		t.Fatalf("cached GetLatestReleaseRaw: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 1 {
+		t.Fatalf("expected one upstream hit, got %d", got)
+	}
+}
+
 // TestGetIssues 裁剪解析：上游返回 GitHub 形状 issues 数组，验证字段裁剪与错误传播。
 func TestGetIssues(t *testing.T) {
 	payload, err := json.Marshal([]map[string]any{
