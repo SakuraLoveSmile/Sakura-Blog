@@ -384,8 +384,6 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - 当前项目没有 Memos `ds-memos` 模板/配置入口，因此不引入未使用的 Memos 服务；Artalk/Waline 外部评论适配同样不在自建评论范围内。
 - Go 分类字段仍为单一字符串，没有 Hexo category parent 图，因此不复制 `category_tree.js` 的虚假层级；Wiki `wikidocs.parent` 树仍按最多三级递归渲染。
 
-对应阶段记录见 [`specs/68-stellar-140-sync/spec.md`](specs/68-stellar-140-sync/spec.md)。
-
 ## Spec 59 · Stellar 1.38.0 同步（2026-08，取代上文 PJAX/jQuery 相关坑点）
 
 资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`modules/stellar/web/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
