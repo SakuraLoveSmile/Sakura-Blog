@@ -17,10 +17,14 @@ import (
 	stellarweb "blog/modules/stellar/web"
 )
 
-// registerPostRoutes 注册文章域路由：/post/:slug、密码解锁、分享链接预览。
+// registerPostRoutes 注册文章域路由：/post/:slug（以及兼容旧链接的 /posts/:slug）、密码解锁、分享链接预览。
 func (s *webServer) registerPostRoutes(r *gin.Engine) {
 	// 文章路由 /post/:slug：DB 优先（published），未命中回退文件渲染（向后兼容 Demo 2）
 	r.GET("/post/:slug", s.handlePost)
+	// 兼容复数文章路径，统一重定向到 canonical 单数路径，避免同一文章出现两套 URL。
+	r.GET("/posts/:slug", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/post/"+c.Param("slug"))
+	})
 	// 文章密码解锁
 	r.POST("/post/:slug/unlock", s.handlePostUnlock)
 	// 文章分享链接预览：/preview/shared-posts/:token

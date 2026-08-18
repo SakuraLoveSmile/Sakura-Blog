@@ -48,3 +48,18 @@ func TestHandlePostFallbackHidesDraftFile(t *testing.T) {
 		t.Fatalf("draft fallback status = %d, want 404", w.Code)
 	}
 }
+
+func TestPluralPostPathRedirectsToCanonical(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	(&webServer{}).registerPostRoutes(r)
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/posts/142-stellar-142", nil))
+	if w.Code != http.StatusMovedPermanently {
+		t.Fatalf("plural post status = %d, want %d", w.Code, http.StatusMovedPermanently)
+	}
+	if got := w.Header().Get("Location"); got != "/post/142-stellar-142" {
+		t.Fatalf("plural post location = %q, want canonical path", got)
+	}
+}
