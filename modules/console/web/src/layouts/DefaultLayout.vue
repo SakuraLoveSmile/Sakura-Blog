@@ -449,12 +449,12 @@ function closeProfileDropdown() {
     </main>
 
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary） -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-6 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden">
+    <div class="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden">
       <div
         v-for="menu in minimenus"
         :key="menu.path"
         :class="{ 'bg-black': route.path.startsWith(menu.path) }"
-        class="nav-item"
+        class="nav-item min-w-0"
         @click="router.push(menu.path)"
       >
         <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
@@ -464,7 +464,7 @@ function closeProfileDropdown() {
           </div>
         </div>
       </div>
-      <div class="nav-item" @click="moreMenuVisible = true">
+      <div class="nav-item min-w-0" @click="moreMenuVisible = true">
         <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
           <div class="flex h-10 w-10 flex-col items-center justify-center">
             <div class="text-base"><Icon icon="ri:more-fill" /></div>
