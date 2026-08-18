@@ -36,7 +36,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 	// 优先查 DB
 	if p, err := s.st.GetPublishedBySlug(slug); err == nil && p != nil {
 		excerpt := articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML)
-		banner := articleBanner(s.site.Load(), p.Banner)
+		banner := p.Banner
 		// 密码门：未解锁则渲染口令表单（不增加阅读量、不泄漏正文）
 		if p.IsPasswordProtected() {
 			cookie, _ := c.Cookie(postPWCookieName(slug))
@@ -190,7 +190,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			MenuID:     "post",
 			Date:       p.Date,
 			Excerpt:    articleExcerpt(s.site.Load(), p.Excerpt, p.HTML),
-			Banner:     articleBanner(s.site.Load(), p.Banner),
+			Banner:     p.Banner,
 			References: p.References,
 			// 末尾标签行（1.41 article.tags）：frontmatter 列表直取
 			Tags: p.Tags,
@@ -324,7 +324,7 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 			Date:    p.CreatedAt.Format("2006-01-02"),
 			Excerpt: articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML),
 			Topic:   p.Topic,
-			Banner:  articleBanner(s.site.Load(), p.Banner),
+			Banner:  p.Banner,
 		},
 		Content: notice + template.HTML(p.ContentHTML),
 	}

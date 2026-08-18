@@ -249,7 +249,7 @@ const init = {
         if (bar == null) {
           return;
         }
-        // getComputedStyle().top 自动兼容桌面 var(--gap-margin) 与移动端 8pt
+        // getComputedStyle().top 自动兼容桌面 var(--gap-page) 与移动端 8pt
         const stickyTop = parseFloat(getComputedStyle(navbar).top) || 16;
         states.push({ navbar: navbar, bar: bar, stickyTop: stickyTop });
       });
@@ -280,7 +280,7 @@ const init = {
     tocState.sidebarBound = true;
     document.addEventListener('click', (e) => {
       const link = e.target.closest && e.target.closest('#data-toc a.toc-link');
-      if (link) sidebar.dismiss();
+      if (link) window.sidebar.dismiss();
     });
   },
   wikiEmptyCard: () => {

@@ -3,61 +3,7 @@
    Stellar 的 .md-text 选择器会应用文章样式（标题/代码块/引用/列表等）。
    Content 已是 template.HTML 类型，直接输出不会转义，无需 safe。*/}}
 
-{{- /* 文章头部 banner：对齐 Stellar _partial/main/navbar/article_banner.ejs。
-   面包屑（首页 / 博客）+ 发布日期 + 阅读量（Page.Views，已含本次访问）+ 大标题。
-   front matter banner 非空时渲染横幅图（img.lazy.bg，对齐原版 banner.url 分支），
-   宽高比由 --banner-ratio 变量钩子控制（site.yml article.banner_ratio，post-footer.css 覆盖 main.css 编译期固定值）。
-   仅文章页（Page.Title 非空）渲染；复用主题现成 .article.banner / .bread-nav / #post-meta / .text.title 样式。*/}}
-{{if .Page.Title}}
-<div class="article banner top"{{if and .Page.Banner .Site.Article.BannerRatio}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
-  {{- /* banner 封面直出 src：首屏图无需懒加载，且绝对定位的 .bg 不被 lazyload 观察（data-src 会永不加载） */}}
-  {{if .Page.Banner}}<img class="bg" src="{{.Page.Banner}}">{{end}}
-  <div class="content">
-    <div class="top bread-nav footnote">
-      <div class="left">
-        <div class="flex-row" id="breadcrumb">
-          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
-          {{- /* 面包屑对齐原版 breadcrumb/blog.ejs：专栏文章 首页/专栏/{专栏名}，普通文章 首页/博客
-                   （专栏功能已禁用，HasTopics 恒 false，专栏文章也走普通路径，链接跳 404 无意义）*/ -}}
-          {{if and .HasTopics .Page.Topic}}
-          <span class="sep"></span>
-          <a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a>
-          <span class="sep"></span>
-          <a class="cap breadcrumb" id="proj" href="/topic/{{.Page.Topic}}">{{.Page.Topic}}</a>
-          {{else}}
-          <span class="sep"></span>
-          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
-          {{end}}
-          {{if and .Site.Article.ReadingTime (gt .WordCount 0)}}<span class="cap reading right">{{lang "meta.word_count" .WordCount}} · {{lang "meta.reading_time" .ReadingMinutes}}</span>{{end}}
-          {{- /* AI 成分标签（1.41 ai_label）：面包屑行最右（阅读时长右侧）；banner 含图时
-             不输出配置色（继承 --text-banner），对齐上游 ai_label helper 的 noColor 分支。*/}}
-          {{if $ai := .AILabel}}<span class="cap{{if $ai.Right}} right{{end}} ai-label"{{if and $ai.Color (not .Page.Banner)}} style="color:{{$ai.Color}}"{{end}}>{{if $ai.Icon}}{{icon $ai.Icon}}{{end}}{{$ai.Text}}</span>{{end}}
-        </div>
-        <div class="flex-row" id="post-meta">
-          {{- /* Spec 53 Part A：多作者命中时首位渲染作者链接（对齐原版 dateinfo.ejs：
-             有作者时创建时间不带「发布于：」前缀），链接到 /author/{id}/ 作者页。*/}}
-          {{- if and .Page.Author .Page.AuthorName}}
-          <a class="author" href="/author/{{.Page.Author}}/">{{.Page.AuthorName}}</a>
-          <span class="sep"></span>
-          {{- end}}
-          {{- if .Page.Date}}
-          <span class="text created">{{if and .Page.Author .Page.AuthorName}}<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{else}}{{- lang "meta.created" -}}：<time datetime="{{date .Page.Date "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Date "2006-01-02"}}</time>{{end}}</span>
-          {{- end}}
-          {{- if and .Page.Updated (ne .Page.Updated .Page.Date)}}
-          <span class="sep updated"></span>
-          <span class="text updated">{{- lang "meta.updated" -}}：<time datetime="{{date .Page.Updated "2006-01-02T15:04:05Z07:00"}}">{{date .Page.Updated "2006-01-02"}}</time></span>
-          {{- end}}
-        </div>
-      </div>
-    </div>
-    <div class="bottom only-title">
-      <div class="text-area">
-        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
-      </div>
-    </div>
-  </div>
-</div>
-{{end}}
+{{template "partial/article_banner" .}}
 
 <article class="md-text content">
   {{- /* AI 文章摘要（Spec 53）：后台预生成摘要直接展示；无摘要且开读者自助时渲染生成面板

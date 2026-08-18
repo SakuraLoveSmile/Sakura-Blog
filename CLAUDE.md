@@ -453,6 +453,16 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - `?kw=` 高亮在独立文件 `assets/js/search/highlight.js`（base.html 已引入，asset_ver 内容哈希自动版本戳）。
 - 服务器端 `/api/search` 结果带 `anchor_id/anchor_text`，前端拼 `?kw=首词#锚点`。
 
+## Spec 72 · Stellar 1.42.1 同步（2026-08）
+
+`resource/hexo-theme-stellar` 已固定到 `1.42.1` tag；A 阶段从该源重编 `modules/stellar/web/assets/css/main.css`，验证前必须先用 `git -C ../resource/hexo-theme-stellar describe --tags` 确认共享主题源没有被其他 worktree 切换。
+
+- 配置同步：`article.card_style` 默认 `hero`，`plugins.adaptive_text.enable` 默认开启，`article.auto_banner` 移除，Waline CDN 版本为 `3.15.2`。新增默认开启配置使用指针或 `Effective*` 归一化，避免 settings 表旧行的零值覆盖默认值。
+- CSS 令牌：上游已删除 `--gap-margin`、`--gap-padding`、`--gap-max`，项目侧统一使用 `--gap-base`（组件内间距）与 `--gap-page`（页面级留白）。`compile.js` 的 EXTRA_STYLES 仍固定追加 swiper/fancybox/artalk，1.42.1 未移动这些入口。
+- 自适应文字：`color.js` 与 `plugins/adaptive-text.js` 通过 `data-text-adaptive` 按需加载。Go 模板没有 Hexo bootstrap，`base.html` 的 `utils.initPlugin`/`stellar.initPlugin` 是等价同步注册点；脚本自身在 DOM 就绪后扫描目标元素。图片懒加载通过 DOM 属性读取 `img[src]`，不做 HTML 正则替换，并跳过 script/style/noscript 与 `no-lazy` 标记。
+- 模板契约：hero 卡片和置顶轮播共用 `.cover-info`/`.pin-slide-text` 的标题+单行小字结构；专栏索引使用 `.post-list.topic > .post-card-wrap > .post-card.topic`，最新文章复用 `partial/latest_post_card`，其余文章复用 `.post-panel`。
+- 破坏性变更：`weibo:comment` 已删除，评论数使用 `default:tocomment`；未配置 banner 时不再回退 `default.banner`。验收文章为 `content/posts/142-stellar-142.md`。
+
 ### 平滑滚动与「天然规避」项
 
 - `main.js` 新增 `bindAnchorClick`（document 级委托 `a[href^="#"]`，`#start` 贴顶、其余 32px、`defaultPrevented` 跳过）+ `smoothScrollTo`（easeOutCubic，`behavior:'instant'` 防与全局 smooth 叠加）。放 `initPage` 内绑定，有 `anchorClickBound` 防重标记。

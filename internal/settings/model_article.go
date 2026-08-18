@@ -25,9 +25,11 @@ type ArticleConfig struct {
 	AILabel AILabelConfig `yaml:"ai_label" json:"ai_label"`
 	// Type 文章列表卡片布局（Spec 50）：tech（紧凑）/story（图文大间距），缺省 tech。
 	// 零配置时前端回退 tech，与现状逐像素一致。
-	Type          string            `yaml:"type" json:"type"`
+	Type string `yaml:"type" json:"type"`
+	// CardStyle 文章卡片样式：hero（有封面时全图文字卡）/classic（传统摘要卡）。
+	// 指针型让旧 settings 行的缺失键回退到 1.42 默认 hero，而不是被零值覆盖。
+	CardStyle     *string           `yaml:"card_style" json:"card_style"`
 	AutoExcerpt   int               `yaml:"auto_excerpt" json:"auto_excerpt"`
-	AutoBanner    bool              `yaml:"auto_banner" json:"auto_banner"`
 	Copyright     CopyrightConfig   `yaml:"copyright" json:"copyright"`
 	Reward        RewardConfig      `yaml:"reward" json:"reward"`
 	Share         ShareConfig       `yaml:"share" json:"share"`
@@ -171,6 +173,14 @@ func (a ArticleConfig) EffectiveType() string {
 		return "story"
 	}
 	return "tech"
+}
+
+// EffectiveCardStyle 规范化文章卡片样式，未配置或非法值回退 1.42 默认 hero。
+func (a ArticleConfig) EffectiveCardStyle() string {
+	if a.CardStyle != nil && *a.CardStyle == "classic" {
+		return "classic"
+	}
+	return "hero"
 }
 
 // ExpiredDays 计算距最后更新的天数；未超过阈值返回 0（不提醒）。

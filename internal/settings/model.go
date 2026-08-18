@@ -174,6 +174,8 @@ type PostCard struct {
 	Slug          string
 	Title         string
 	Excerpt       string
+	Subtitle      string       // hero 卡片小字优先值（frontmatter subtitle）
+	Description   string       // hero 卡片小字次优值（frontmatter description）
 	Cover         string       // 封面图 URL，空则不渲染 .post-cover
 	Date          time.Time    // 用于 <time> 标签与格式化
 	Pinned        bool         // 置顶（meta 行 pin 图标，对齐 post_card.ejs 的 span.pin）
@@ -184,6 +186,22 @@ type PostCard struct {
 	Tags          []string     // 文章卡片标签（模板最多展示 5 个）
 }
 
+// EffectiveSubtitle 取 hero 卡片底部单行小字：subtitle > description > excerpt 前 50 字。
+func (p PostCard) EffectiveSubtitle() string {
+	for _, value := range []string{p.Subtitle, p.Description, p.Excerpt} {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		runes := []rune(value)
+		if len(runes) > 50 {
+			return string(runes[:50])
+		}
+		return value
+	}
+	return ""
+}
+
 // NewPostCard store.Post 转文章卡片视图模型，首页/分类标签列表/相关文章共用。
 // 分类配色查 site.yml article.category_color（对齐原版 category_color helper）；
 // 海报 DecodePoster 非 nil 时，与 Cover 一起触发首页 photo 封面大卡。
@@ -192,6 +210,7 @@ func NewPostCard(p *store.Post, categoryColors, categoryIcons map[string]string)
 		Slug:          p.Slug,
 		Title:         p.Title,
 		Excerpt:       p.Excerpt,
+		Description:   p.Excerpt,
 		Cover:         p.Cover,
 		Date:          p.CreatedAt,
 		Pinned:        p.Pinned,
@@ -371,7 +390,7 @@ type Site struct {
 	Cover CoverConfig `yaml:"cover,omitempty" json:"cover,omitempty"`
 	// 多作者体系（Spec 38）：site.yml authors 段，key 为作者 ID。
 	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
-	// 前端体验增强插件（Spec 36）：site.yml plugins 段。缺省全关，opt-in 启用；
+	// 前端体验增强插件（Spec 36）：大部分插件缺省关闭；adaptive_text 遵循 Stellar 1.42 默认开启。
 	// 各插件 Enable 为 false 时前端不加载对应脚本。
 	Plugins  PluginsConfig  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
 	Notebook NotebookConfig `yaml:"notebook,omitempty" json:"notebook,omitempty"`
@@ -412,6 +431,7 @@ func (s *Site) DefaultAuthorName() string {
 type PluginsConfig struct {
 	Preload      *PreloadConfig      `yaml:"preload,omitempty" json:"preload,omitempty"`
 	ScrollReveal *ScrollRevealConfig `yaml:"scrollreveal,omitempty" json:"scrollreveal,omitempty"`
+	AdaptiveText *AdaptiveTextConfig `yaml:"adaptive_text,omitempty" json:"adaptive_text,omitempty"`
 	Heti         *HetiConfig         `yaml:"heti,omitempty" json:"heti,omitempty"`
 	Fancybox     *FancyboxConfig     `yaml:"fancybox,omitempty" json:"fancybox,omitempty"`
 	Swiper       *SwiperConfig       `yaml:"swiper,omitempty" json:"swiper,omitempty"`
@@ -419,6 +439,16 @@ type PluginsConfig struct {
 	MathJax      *MathJaxConfig      `yaml:"mathjax,omitempty" json:"mathjax,omitempty"`
 	Mermaid      *MermaidConfig      `yaml:"mermaid,omitempty" json:"mermaid,omitempty"`
 	Copycode     *CopycodeConfig     `yaml:"copycode,omitempty" json:"copycode,omitempty"`
+}
+
+// AdaptiveTextConfig 文章封面/横幅文字自适应颜色插件配置。
+type AdaptiveTextConfig struct {
+	Enable bool `yaml:"enable" json:"enable"`
+}
+
+// AdaptiveTextEnabled 未配置时按 Stellar 1.42 默认开启，兼容旧 settings 行。
+func (p PluginsConfig) AdaptiveTextEnabled() bool {
+	return p.AdaptiveText == nil || p.AdaptiveText.Enable
 }
 
 func (p PluginsConfig) FancyboxEnabled() bool {
@@ -819,6 +849,8 @@ type TopicItem struct {
 	Cover       string
 	Count       int
 	Icon        string // 卡片图标（缺省用主题 default.topic 占位图）
+	LatestPost  *PostCard
+	Posts       []*PostCard
 	CreatedAt   time.Time
 }
 

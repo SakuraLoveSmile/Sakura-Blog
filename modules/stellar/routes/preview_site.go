@@ -71,7 +71,7 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 			Updated: p.UpdatedAt.Format("2006-01-02"),
 			Excerpt: articleExcerpt(&draft, p.Excerpt, p.ContentHTML),
 			Topic:   p.Topic,
-			Banner:  articleBanner(&draft, p.Banner),
+			Banner:  p.Banner,
 		}
 		if a, ok := draft.Authors[p.Author]; ok {
 			data.Page.AuthorName = a.Name

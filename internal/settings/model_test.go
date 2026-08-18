@@ -92,6 +92,35 @@ func TestNewPostCard(t *testing.T) {
 	}
 }
 
+func TestPostCardEffectiveSubtitle(t *testing.T) {
+	cases := []struct {
+		name string
+		card PostCard
+		want string
+	}{
+		{name: "subtitle 优先", card: PostCard{Subtitle: "副标题", Description: "描述", Excerpt: "摘要"}, want: "副标题"},
+		{name: "description 次优", card: PostCard{Description: "描述", Excerpt: "摘要"}, want: "描述"},
+		{name: "excerpt 截断", card: PostCard{Excerpt: strings.Repeat("字", 51)}, want: strings.Repeat("字", 50)},
+		{name: "空值", card: PostCard{}, want: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.card.EffectiveSubtitle(); got != tc.want {
+				t.Fatalf("EffectiveSubtitle() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAdaptiveTextDefaults(t *testing.T) {
+	if !(PluginsConfig{}).AdaptiveTextEnabled() {
+		t.Fatal("adaptive_text should default to enabled")
+	}
+	if (PluginsConfig{AdaptiveText: &AdaptiveTextConfig{Enable: false}}).AdaptiveTextEnabled() {
+		t.Fatal("explicit adaptive_text.enable=false should disable the plugin")
+	}
+}
+
 // TestCategoryColorStyle 对齐原版 category_color helper 的补 # 前缀与底色后缀规则。
 func TestCategoryColorStyle(t *testing.T) {
 	tests := []struct {

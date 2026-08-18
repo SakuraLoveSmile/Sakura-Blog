@@ -70,7 +70,7 @@ css:
 ## 用法：在存在 resource/ 源的环境先 make css 重编产物，再运行本目标；
 ## 工作区手改 main.css 或产物与源编译结果漂移时，git diff --exit-code 非零退出。
 css-drift-check:
-	@if [ ! -d resource ]; then \
+	@if [ ! -d resource/hexo-theme-stellar ] && [ ! -d ../resource/hexo-theme-stellar ]; then \
 		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
 	else \
 		git diff --exit-code -- modules/stellar/web/assets/css/main.css || { \

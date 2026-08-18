@@ -271,6 +271,23 @@
       },
       dark: {},
     };
+    // 1.42 兼容注册点：页内插件可能在主脚本之前声明初始化函数。
+    utils.initPlugin = (fn, name, options = {}) => {
+      if (typeof fn !== 'function') return;
+      const selector = options.selector || ('[data-plugin="' + name + '"]');
+      const run = () => {
+        const nodes = document.querySelectorAll(selector);
+        if (!nodes.length && !options.allowEmpty) return;
+        return fn(nodes, options);
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
+      else run();
+    };
+    window.utils = utils;
+    window.stellar = window.stellar || {};
+    window.stellar.initPlugin = window.stellar.initPlugin || function (fn, name, options) {
+      return utils.initPlugin(fn, name, options);
+    };
   </script>
   {{- /* lazyload：对齐 _plugins/lazyload.ejs。CDN 异步加载 vanilla-lazyload@19.1，
      全局 window.lazyLoadOptions 让库自初始化；wrapLazyloadImages() 在客户端将
@@ -282,7 +299,7 @@
       elements_selector: ".lazy",
       callback_loaded: (el) => {
         el.classList.add('loaded');
-        const wrapper = el.closest('.lazy-box');
+        const wrapper = el.closest('.lazy-box') || el.parentElement;
         const icon = wrapper?.querySelector('.lazy-icon');
         if (icon) icon.remove();
       }
@@ -294,14 +311,32 @@
       window.lazyLoadInstance?.update();
     });
 
+    // 动态插入的 .lazy 元素不会被 vanilla-lazyload 自动发现；统一刷新实例。
+    if (window.MutationObserver) {
+      window.lazyMutationObserver = new MutationObserver(function (mutations) {
+        if (window.lazyMutationObserver._pending) return;
+        const hasLazy = mutations.some((mutation) => Array.prototype.some.call(mutation.addedNodes, (node) => {
+          return node.nodeType === 1 && (node.matches?.('.lazy') || !!node.querySelector?.('.lazy'));
+        }));
+        if (!hasLazy) return;
+        window.lazyMutationObserver._pending = requestAnimationFrame(function () {
+          window.lazyMutationObserver._pending = null;
+          window.lazyLoadInstance?.update();
+        });
+      });
+      window.lazyMutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     window.wrapLazyloadImages = (container) => {
       if (typeof container === 'string') {
         container = document.querySelector(container);
       }
       if (!container) return;
-      const images = container.querySelectorAll('img');
+      // 只从 DOM 元素及其属性读取图片，避免正则扫描把 script/style/注释里的 src 当成图片。
+      // 同时尊重主题已有 lazy、srcset 和 no-lazy 标记，兼容压缩器移除属性引号后的 src。
+      const images = Array.from(container.querySelectorAll('img[src]'));
       images.forEach((img) => {
-        if (img.classList.contains('lazy')) return;
+        if (img.closest('script,style,noscript') || img.classList.contains('lazy') || img.hasAttribute('data-src') || img.hasAttribute('srcset') || img.hasAttribute('no-lazy') || img.hasAttribute('data-no-lazy')) return;
         const src = img.getAttribute('src');
         if (!src) return;
         const wrapper = document.createElement('div');
@@ -419,6 +454,10 @@
       document.addEventListener('DOMContentLoaded', scan);
     })();
   </script>
+  {{if .Site.Plugins.AdaptiveTextEnabled}}
+  <script src="{{url_for "/assets/js/color.js"}}?v={{asset_ver "/assets/js/color.js"}}" defer></script>
+  <script src="{{url_for "/assets/js/plugins/adaptive-text.js"}}?v={{asset_ver "/assets/js/plugins/adaptive-text.js"}}" defer></script>
+  {{end}}
   <script src="{{url_for "/assets/js/main.js"}}?v={{asset_ver "/assets/js/main.js"}}" defer></script>
   <script src="{{url_for "/assets/js/search/local-search.js"}}?v={{asset_ver "/assets/js/search/local-search.js"}}" defer></script>
   {{- /* 搜索跳转高亮（1.41）：搜索结果链接带 ?kw=，目标页高亮关键词并定位（详见脚本头注释） */}}

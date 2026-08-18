@@ -121,7 +121,7 @@ function ensureDefaults(d: Record<string, any>) {
   d.article.type = d.article.type || "tech";
   d.article.banner_ratio = d.article.banner_ratio ?? 0;
   d.article.auto_excerpt = d.article.auto_excerpt ?? 0;
-  d.article.auto_banner = d.article.auto_banner ?? false;
+  d.article.card_style = d.article.card_style ?? "hero";
   d.article.category_color = d.article.category_color || {};
   d.article.category_icon = d.article.category_icon || {};
   d.article.tag_icon = d.article.tag_icon || {};
@@ -996,10 +996,7 @@ onMounted(() => {
                 <div class="field"><label>文章布局类型</label><select v-model="data.article.type" :class="selectCls"><option value="tech">tech（技术）</option><option value="story">story（图文）</option></select></div>
                 <div class="field"><label>文首横幅宽高比</label><input v-model.number="data.article.banner_ratio" type="number" step="0.1" min="0" :class="inputCls" placeholder="2.5" /></div>
                 <div class="field"><label>自动摘要长度（字符，0=关闭）</label><input v-model.number="data.article.auto_excerpt" type="number" min="0" :class="inputCls" placeholder="128" /></div>
-              </div>
-              <div class="switch-row">
-                <div class="switch-row-label"><div class="switch-row-name">无横幅时使用默认横幅</div><div class="switch-row-desc">文章没有显式 banner 时回退到素材组的 banner</div></div>
-                <VSwitch v-model="data.article.auto_banner" />
+                <div class="field"><label>有封面时的文章卡片样式</label><select v-model="data.article.card_style" :class="selectCls"><option value="hero">hero（全图文字）</option><option value="classic">classic（摘要卡）</option></select></div>
               </div>
             </div>
             <div class="subsection">

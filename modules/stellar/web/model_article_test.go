@@ -43,6 +43,30 @@ func TestArticleEffectiveTags(t *testing.T) {
 	}
 }
 
+func TestAdaptiveTextAssetsFollowSetting(t *testing.T) {
+	engine, err := NewEngineFromEmbed(&IconRegistry{})
+	if err != nil {
+		t.Fatalf("NewEngineFromEmbed: %v", err)
+	}
+	render := func(site *Site) string {
+		t.Helper()
+		html, err := engine.Render("layout/base", &ViewData{
+			Site: site,
+			Page: &Page{Title: "带封面文章", Layout: "post", Banner: "/cover.jpg"},
+		})
+		if err != nil {
+			t.Fatalf("render layout/base: %v", err)
+		}
+		return html
+	}
+	if html := render(&Site{}); !strings.Contains(html, "/assets/js/color.js") || !strings.Contains(html, `data-text-adaptive="split"`) {
+		t.Fatal("adaptive text assets should be enabled by default")
+	}
+	if html := render(&Site{Plugins: PluginsConfig{AdaptiveText: &AdaptiveTextConfig{Enable: false}}}); strings.Contains(html, "/assets/js/color.js") {
+		t.Fatal("adaptive text assets should be omitted when explicitly disabled")
+	}
+}
+
 // TestArticleTagsRowRender 文章末尾标签行渲染：默认开启渲染、显式关闭不渲染、无标签零输出。
 func TestArticleTagsRowRender(t *testing.T) {
 	post := &Page{Title: "测试", Layout: "post", Tags: []string{"Go", "Stellar"}}

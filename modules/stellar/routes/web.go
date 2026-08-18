@@ -181,16 +181,6 @@ func articleExcerpt(site *tmpl.Site, explicit, contentHTML string) string {
 	return textutil.Truncate(textutil.StripHTML(contentHTML), site.Article.AutoExcerpt)
 }
 
-// articleBanner applies the local default.banner fallback used by the
-// settings-compatible article.auto_banner switch. It intentionally avoids
-// the upstream Unsplash lookup so the server stays deterministic and offline.
-func articleBanner(site *tmpl.Site, explicit string) string {
-	if strings.TrimSpace(explicit) != "" || site == nil || !site.Article.AutoBanner {
-		return explicit
-	}
-	return site.Default.Banner
-}
-
 // siteOf 当前渲染应使用的站点配置：ViewData.Site 优先（设置页「前端预览」携带草稿配置），
 // 缺省回退全局 s.site（正常流量 ViewData.Site 即 s.site，零差异）。
 func (s *webServer) siteOf(data *tmpl.ViewData) *tmpl.Site {
@@ -688,6 +678,7 @@ func (s *webServer) toCardWith(site *tmpl.Site, p *store.Post) *tmpl.PostCard {
 		Slug:          p.Slug,
 		Title:         p.Title,
 		Excerpt:       articleExcerpt(site, p.Excerpt, p.ContentHTML),
+		Description:   articleExcerpt(site, p.Excerpt, p.ContentHTML),
 		Cover:         p.Cover,
 		Date:          p.CreatedAt,
 		Pinned:        p.Pinned,

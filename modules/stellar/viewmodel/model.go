@@ -13,6 +13,7 @@ import (
 
 type AdjacentPost = settings.AdjacentPost
 type ArticleConfig = settings.ArticleConfig
+type AdaptiveTextConfig = settings.AdaptiveTextConfig
 type ArchiveItem = settings.ArchiveItem
 type ArchiveYear = settings.ArchiveYear
 type AuthorWidgetData = settings.AuthorWidgetData

@@ -63,19 +63,13 @@ func TestArticleAutoExcerptAppliesToExistingPosts(t *testing.T) {
 	}
 }
 
-func TestArticleAutoBannerUsesConfiguredDefault(t *testing.T) {
-	site := &tmpl.Site{
-		Article: tmpl.ArticleConfig{AutoBanner: true},
-		Default: tmpl.DefaultAssets{Banner: "/assets/default-banner.jpg"},
+func TestArticleCardStyleDefaultsToHero(t *testing.T) {
+	if got := (tmpl.ArticleConfig{}).EffectiveCardStyle(); got != "hero" {
+		t.Fatalf("default card style = %q, want hero", got)
 	}
-	if got := articleBanner(site, ""); got != "/assets/default-banner.jpg" {
-		t.Fatalf("auto banner = %q, want configured default", got)
-	}
-	if got := articleBanner(site, "/posts/explicit.jpg"); got != "/posts/explicit.jpg" {
-		t.Fatalf("explicit banner was replaced: %q", got)
-	}
-	if got := articleBanner(&tmpl.Site{Default: tmpl.DefaultAssets{Banner: "/default.jpg"}}, ""); got != "" {
-		t.Fatalf("disabled auto banner = %q, want empty", got)
+	classic := "classic"
+	if got := (tmpl.ArticleConfig{CardStyle: &classic}).EffectiveCardStyle(); got != "classic" {
+		t.Fatalf("configured card style = %q, want classic", got)
 	}
 }
 

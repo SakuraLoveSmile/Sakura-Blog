@@ -1,4 +1,4 @@
-{{- /* pin_slider.html: 1.40 置顶轮播，数据由 webServer.fillPinSlider 装配。 */ -}}
+{{- /* pin_slider.html: 1.42 置顶轮播，数据由 webServer.fillPinSlider 装配。 */ -}}
 {{if or .PinnedPosts .PinnedWiki}}
 <div class="pin-slider" id="pin-slider" data-interval="5000">
   <div class="pin-slider-track">
@@ -7,15 +7,14 @@
       {{if .Cover}}<img class="pin-slide-bg" src="{{.Cover}}" alt="" loading="lazy">{{end}}
       <div class="pin-slide-text">
         <div class="pin-slide-headline">{{.Title}}</div>
-        {{if .Excerpt}}<div class="pin-slide-caption">{{.Excerpt}}</div>{{end}}
+        {{if .EffectiveSubtitle}}<div class="pin-slide-caption">{{.EffectiveSubtitle}}</div>{{end}}
       </div>
     </a>
     {{end}}
     {{range .PinnedWiki}}
-    <a class="pin-slide" href="{{if .HasDocs}}/wiki/{{.ID}}{{else}}{{.URL}}{{end}}">
+    <a class="pin-slide" href="{{if .HasDocs}}/wiki/{{.ID}}{{else}}{{.URL}}{{end}}"{{if .Icon}} style="--pin-cover-url:url('{{.Icon}}')"{{end}}>
       <img class="pin-slide-bg" src="{{.Icon}}" alt="" loading="lazy">
-      <div class="pin-slide-mask"></div>
-      <div class="pin-slide-info">
+      <div class="pin-slide-info" data-text-adaptive="split">
         <div class="pin-slide-title">{{.DisplayTitle}}</div>
         {{if .Description}}<div class="pin-slide-excerpt">{{.Description}}</div>{{end}}
       </div>

@@ -61,6 +61,18 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 		if cover == "" {
 			cover = fallbackCovers[i%len(fallbackCovers)]
 		}
+		cards := s.toCards(posts)
+		var latest *tmpl.PostCard
+		var rest []*tmpl.PostCard
+		if len(cards) > 0 {
+			latest = cards[0]
+			if len(cards) > 1 {
+				rest = cards[1:]
+				if len(rest) > 3 {
+					rest = rest[:3]
+				}
+			}
+		}
 		slug := strings.TrimSpace(t.Slug)
 		if slug == "" {
 			slug = t.Name
@@ -72,6 +84,8 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 			Description: description,
 			Cover:       cover,
 			Icon:        t.Icon,
+			LatestPost:  latest,
+			Posts:       rest,
 			CreatedAt:   t.CreatedAt,
 		})
 	}

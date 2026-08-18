@@ -16,6 +16,7 @@ type CanonicalConfig = settings.CanonicalConfig
 type StructuredDataConfig = settings.StructuredDataConfig
 type OpenGraphConfig = settings.OpenGraphConfig
 type PluginsConfig = settings.PluginsConfig
+type AdaptiveTextConfig = settings.AdaptiveTextConfig
 type ArticleConfig = settings.ArticleConfig
 type AILabelConfig = settings.AILabelConfig
 type AILabelDef = settings.AILabelDef
