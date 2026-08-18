@@ -50,11 +50,20 @@ type Config struct {
 	Auto      bool
 }
 
+// snapshotMaxAge WriteZip 临时快照文件的最长留存：正常备份分钟级结束即被 defer 删除，
+// 活过该阈值必为进程中断（kill/crash）遗留的孤儿临时文件。
+const snapshotMaxAge = 24 * time.Hour
+
 // New 创建备份服务。Keep <= 0 时默认留存 7 份。
+// 装配时顺带清理 backupDir 下陈旧的 .snapshot-*.db 孤儿临时文件
+// （WriteZip 的 VACUUM INTO 目标，进程中断时 defer 清理不会执行）。
 func New(cfg Config) *Service {
 	keep := cfg.Keep
 	if keep <= 0 {
 		keep = 7
+	}
+	if n := cleanStaleSnapshots(cfg.BackupDir, snapshotMaxAge); n > 0 {
+		log.Printf("backup: cleaned %d stale snapshot temp file(s) in %s", n, cfg.BackupDir)
 	}
 	return &Service{
 		store:     cfg.Store,
@@ -66,6 +75,31 @@ func New(cfg Config) *Service {
 		auto:      cfg.Auto,
 		stop:      make(chan struct{}),
 	}
+}
+
+// cleanStaleSnapshots 清理 backupDir 下超过 maxAge 的 .snapshot-*.db 孤儿临时文件，
+// 返回删除数量。目录不可读或单文件删除失败均静默跳过（清理尽力而为，不影响主流程）。
+func cleanStaleSnapshots(backupDir string, maxAge time.Duration) int {
+	entries, err := os.ReadDir(backupDir)
+	if err != nil {
+		return 0
+	}
+	cutoff := time.Now().Add(-maxAge)
+	removed := 0
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasPrefix(name, ".snapshot-") || !strings.HasSuffix(name, ".db") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil || info.ModTime().After(cutoff) {
+			continue
+		}
+		if os.Remove(filepath.Join(backupDir, name)) == nil {
+			removed++
+		}
+	}
+	return removed
 }
 
 // WriteZip 生成全量备份 zip 写入 w：blog.db（VACUUM INTO 一致性快照）+ uploads/ + site.yml。
