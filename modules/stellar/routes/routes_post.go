@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -108,9 +109,10 @@ func (s *webServer) handlePost(c *gin.Context) {
 			data.Page.AISummaryOn = true
 			data.Page.AIUserAPIOn = aiCfg.UserAPIOn()
 		}
-		// 多作者命中时装配展示名（Spec 53 Part A：banner 作者链接）
-		if a, ok := s.site.Load().Authors[p.Author]; ok {
-			data.Page.AuthorName = a.Name
+		data.Page.AuthorLinks = resolveAuthorLinks(s.site.Load(), p)
+		if len(data.Page.AuthorLinks) > 0 {
+			data.Page.Author = data.Page.AuthorLinks[0].ID
+			data.Page.AuthorName = data.Page.AuthorLinks[0].Name
 		}
 		data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptions())
 		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。左栏系列 widget 不再装配，保留查询代码注释后续恢复：
@@ -204,6 +206,11 @@ func (s *webServer) handlePost(c *gin.Context) {
 		Content: template.HTML(p.HTML),
 	}
 	data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.HTML)
+	data.Page.AuthorLinks = resolveAuthorLinks(s.site.Load(), &store.Post{Author: p.Author, Authors: p.Authors})
+	if len(data.Page.AuthorLinks) > 0 {
+		data.Page.Author = data.Page.AuthorLinks[0].ID
+		data.Page.AuthorName = data.Page.AuthorLinks[0].Name
+	}
 
 	data.TOC = stellarweb.ExtractTOCWith(p.HTML, s.tocOptions())
 	desc := data.Page.Excerpt
@@ -225,6 +232,31 @@ func (s *webServer) handlePost(c *gin.Context) {
 		return
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+func resolveAuthorLinks(site *tmpl.Site, p *store.Post) []tmpl.AuthorLink {
+	if site == nil || p == nil {
+		return nil
+	}
+	ids := append([]string(nil), p.Authors...)
+	if len(ids) == 0 && strings.TrimSpace(p.Author) != "" {
+		ids = []string{strings.TrimSpace(p.Author)}
+	}
+	links := make([]tmpl.AuthorLink, 0, len(ids))
+	seen := map[string]bool{}
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		a, ok := site.Authors[id]
+		if !ok || strings.TrimSpace(a.Name) == "" {
+			continue
+		}
+		links = append(links, tmpl.AuthorLink{ID: id, Name: a.Name, Avatar: a.Avatar, Description: a.Description, URL: a.URL})
+	}
+	return links
 }
 
 // handlePostUnlock 文章密码解锁：口令比对成功签 HMAC cookie 后回跳文章页。

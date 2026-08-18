@@ -29,6 +29,7 @@ interface PostForm {
  publish_at: string;
  meta_description: string;
  meta_keywords: string;
+ authors: string[];
  author: string;
 }
 
@@ -99,8 +100,16 @@ async function loadAuthors() {
 const authorPopOpen = ref(false);
 const authorPopRef = ref<HTMLElement | null>(null);
 
-const currentAuthor = computed<AuthorOption | null>(() =>
- props.form.author ? authorOptions.value[props.form.author] || null : null
+const selectedAuthorIDs = computed(() =>
+ Array.isArray(props.form.authors) && props.form.authors.length
+  ? props.form.authors.filter((id, index, ids) => id && ids.indexOf(id) === index)
+  : (props.form.author ? [props.form.author] : [])
+);
+
+const selectedAuthors = computed(() =>
+ selectedAuthorIDs.value
+  .map((id) => ({ id, author: authorOptions.value[id] }))
+  .filter((item): item is { id: string; author: AuthorOption } => !!item.author)
 );
 
 const visibleAuthors = computed(() =>
@@ -113,10 +122,9 @@ const visibleAuthors = computed(() =>
 // 其他文章只能选择未隐藏作者。
 const authorChoices = computed(() => {
  const choices = [...visibleAuthors.value];
- const currentID = props.form.author;
- const current = currentID ? authorOptions.value[currentID] : null;
- if (currentID && current?.hidden && !choices.some((author) => author.id === currentID)) {
-  choices.push({ id: currentID, ...current });
+ for (const currentID of selectedAuthorIDs.value) {
+  const current = authorOptions.value[currentID];
+  if (current?.hidden && !choices.some((author) => author.id === currentID)) choices.push({ id: currentID, ...current });
  }
  return choices;
 });
@@ -127,9 +135,20 @@ function toggleAuthorPicker() {
  authorPopOpen.value = !authorPopOpen.value;
 }
 
-function pickAuthor(id: string) {
- props.form.author = id;
- authorPopOpen.value = false;
+function setAuthorIDs(ids: string[]) {
+ const next = ids.filter((id, index) => id && ids.indexOf(id) === index);
+ props.form.authors = next;
+ props.form.author = next[0] || "";
+}
+
+function toggleAuthor(id: string) {
+ if (!id) {
+  setAuthorIDs([]);
+  return;
+ }
+ const current = selectedAuthorIDs.value;
+ const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+ setAuthorIDs(next);
 }
 
 function onDocClickAuthorPop(e: MouseEvent) {
@@ -508,42 +527,33 @@ const chipActiveCls = "bg-primary/15 text-primary";
             <p class="mt-1 text-[11px] text-text-quaternary">用于文章 URL，留空保存时从标题自动生成</p>
           </div>
           <div v-if="hasAuthorSettings">
-            <label :class="labelCls">作者</label>
+            <label :class="labelCls">作者（可多选）</label>
             <div ref="authorPopRef" class="relative">
               <div class="flex items-center gap-2.5">
-                <!-- 当前作者头像；未选择时显示「+」；hover 头像弹出悬浮气泡 -->
-                <div class="group/author relative">
-                  <button
-                    type="button"
-                    class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-text-secondary transition-colors hover:border-primary/50 hover:text-primary"
-                    :aria-expanded="authorPopOpen"
-                    aria-haspopup="listbox"
-                    :title="currentAuthor ? '当前作者：' + currentAuthor.name : '选择作者'"
-                    @click="toggleAuthorPicker"
-                  >
-                    <img
-                      v-if="currentAuthor?.avatar"
-                      :src="currentAuthor.avatar"
-                      :alt="currentAuthor.name"
-                      class="aspect-square h-full w-full object-cover"
-                    />
-                    <span v-else-if="currentAuthor" class="text-[13px] font-medium">{{ currentAuthor.name.slice(0, 1) }}</span>
-                    <Icon v-else icon="ri:add-line" class="h-4 w-4" />
-                  </button>
-                  <!-- 悬浮气泡：作者基本信息 -->
-                  <div
-                    v-if="currentAuthor"
-                    class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden w-max max-w-[220px] -translate-x-1/2 rounded-lg border border-border bg-card px-3 py-2 text-left shadow-xl group-hover/author:block"
-                  >
-                    <div class="text-[12px] font-medium text-foreground">{{ currentAuthor.name }}</div>
-                    <div v-if="currentAuthor.description" class="mt-0.5 text-[11px] leading-relaxed text-text-tertiary">
-                      {{ currentAuthor.description }}
-                    </div>
-                    <div v-if="currentAuthor.url" class="mt-0.5 truncate text-[11px] text-primary">{{ currentAuthor.url }}</div>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  class="flex min-h-9 min-w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary px-1.5 text-text-secondary transition-colors hover:border-primary/50 hover:text-primary"
+                  :aria-expanded="authorPopOpen"
+                  aria-haspopup="listbox"
+                  title="选择作者"
+                  @click="toggleAuthorPicker"
+                >
+                  <span v-if="selectedAuthors.length" class="flex -space-x-1">
+                    <span
+                      v-for="item in selectedAuthors.slice(0, 3)"
+                      :key="item.id"
+                      class="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-card bg-secondary text-[11px] text-text-secondary"
+                    >
+                      <img v-if="item.author.avatar" :src="item.author.avatar" :alt="item.author.name" class="h-full w-full object-cover" />
+                      <span v-else>{{ item.author.name.slice(0, 1) }}</span>
+                    </span>
+                  </span>
+                  <Icon v-else icon="ri:add-line" class="h-4 w-4" />
+                </button>
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-[12.5px] text-foreground">{{ currentAuthor ? currentAuthor.name : '默认（站长）' }}</div>
+                  <div class="truncate text-[12.5px] text-foreground">
+                    {{ selectedAuthors.length ? selectedAuthors.map((item) => item.author.name).join('、') : '默认（站长）' }}
+                  </div>
                   <button
                     type="button"
                     class="text-[11px] text-text-quaternary transition-colors hover:text-primary"
@@ -551,11 +561,11 @@ const chipActiveCls = "bg-primary/15 text-primary";
                     aria-haspopup="listbox"
                     @click="toggleAuthorPicker"
                   >
-                    {{ currentAuthor ? '更换作者' : '选择作者' }}
+                    {{ selectedAuthors.length ? '调整作者' : '选择作者' }}
                   </button>
                 </div>
               </div>
-              <!-- 选择 popover：默认（站长）+ 全部可见作者 -->
+              <!-- 选择 popover：默认（站长）+ 全部可见作者，保持打开以便连续多选 -->
               <div
                 v-if="authorPopOpen"
                 role="listbox"
@@ -565,24 +575,24 @@ const chipActiveCls = "bg-primary/15 text-primary";
                 <button
                   type="button"
                   role="option"
-                  :aria-selected="form.author === ''"
+                  :aria-selected="selectedAuthorIDs.length === 0"
                   class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent"
-                  :class="form.author === '' ? 'text-primary' : 'text-foreground'"
-                  @click="pickAuthor('')"
+                  :class="selectedAuthorIDs.length === 0 ? 'text-primary' : 'text-foreground'"
+                  @click="toggleAuthor('')"
                 >
                   <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] text-text-secondary">站</span>
                   默认（站长）
-                  <Icon v-if="form.author === ''" icon="ri:check-line" class="ml-auto h-3.5 w-3.5 shrink-0" />
+                  <Icon v-if="selectedAuthorIDs.length === 0" icon="ri:check-line" class="ml-auto h-3.5 w-3.5 shrink-0" />
                 </button>
                 <button
                   v-for="a in authorChoices"
                   :key="a.id"
                   type="button"
                   role="option"
-                  :aria-selected="form.author === a.id"
+                  :aria-selected="selectedAuthorIDs.includes(a.id)"
                   class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors hover:bg-accent"
-                  :class="form.author === a.id ? 'text-primary' : 'text-foreground'"
-                  @click="pickAuthor(a.id)"
+                  :class="selectedAuthorIDs.includes(a.id) ? 'text-primary' : 'text-foreground'"
+                  @click="toggleAuthor(a.id)"
                 >
                   <img v-if="a.avatar" :src="a.avatar" :alt="a.name" class="aspect-square h-6 w-6 shrink-0 rounded-full object-cover" />
                   <span v-else class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] text-text-secondary">
@@ -590,7 +600,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
                   </span>
                   <span class="min-w-0 flex-1 truncate">{{ a.name }}</span>
                   <span v-if="a.hidden" class="shrink-0 text-[10px] text-text-quaternary">已隐藏</span>
-                  <Icon v-if="form.author === a.id" icon="ri:check-line" class="h-3.5 w-3.5 shrink-0" />
+                  <Icon v-if="selectedAuthorIDs.includes(a.id)" icon="ri:check-line" class="h-3.5 w-3.5 shrink-0" />
                 </button>
               </div>
             </div>

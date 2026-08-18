@@ -77,6 +77,10 @@ func (h *FeedHandler) resolveAuthor(postAuthor string) string {
 	return ""
 }
 
+func (h *FeedHandler) resolvePostAuthors(p *store.Post) string {
+	return resolvePostAuthors(p, h.resolveAuthor)
+}
+
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
 func (h *FeedHandler) atom(c *gin.Context) {
 	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
@@ -104,7 +108,7 @@ func (h *FeedHandler) atom(c *gin.Context) {
 		if p.UpdatedAt.IsZero() {
 			upd = pub
 		}
-		authorName := h.resolveAuthor(p.Author)
+		authorName := h.resolvePostAuthors(p)
 		entries = append(entries, atomEntry{
 			Title:     p.Title,
 			Link:      atomLink{Href: link},
@@ -155,7 +159,7 @@ func (h *FeedHandler) jsonFeed(c *gin.Context) {
 			Title:         p.Title,
 			DatePublished: p.CreatedAt.UTC().Format(time.RFC3339),
 			ContentHTML:   feedBody(p),
-			Author:        h.resolveAuthor(p.Author),
+			Author:        h.resolvePostAuthors(p),
 		})
 	}
 
@@ -229,7 +233,7 @@ func (h *FeedHandler) writeRSS(c *gin.Context, title, channelLink string, posts 
 			Description: feedBody(p),
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			Guid:        link,
-			Author:      h.resolveAuthor(p.Author),
+			Author:      h.resolvePostAuthors(p),
 		})
 	}
 	rss := rssFeed{

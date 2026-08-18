@@ -52,7 +52,27 @@ func (s *webServer) resolveAuthor(postAuthor string) string {
 }
 
 // rssItemsFromPosts 文章转 RSS item：密码文章隐藏正文，无摘要截断正文前 200 字节。
-// resolveAuthor 将 post.Author 键解析为可读作者名。
+// resolvePostAuthors 将关联作者解析为可读作者名，顺序与文章设置一致。
+func resolvePostAuthors(p *store.Post, resolveAuthor func(string) string) string {
+	if p == nil {
+		return ""
+	}
+	ids := append([]string(nil), p.Authors...)
+	if len(ids) == 0 && p.Author != "" {
+		ids = []string{p.Author}
+	}
+	if len(ids) == 0 {
+		return resolveAuthor("")
+	}
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if name := resolveAuthor(id); name != "" {
+			names = append(names, name)
+		}
+	}
+	return strings.Join(names, "、")
+}
+
 func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(string) string) []Item {
 	items := make([]Item, 0, len(posts))
 	for _, p := range posts {
@@ -72,7 +92,7 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(s
 			Description: desc,
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			Guid:        link,
-			Author:      resolveAuthor(p.Author),
+			Author:      resolvePostAuthors(p, resolveAuthor),
 		})
 	}
 	return items

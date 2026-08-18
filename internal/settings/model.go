@@ -876,6 +876,7 @@ type Page struct {
 	MenuID       string // 当前高亮的菜单 id
 	Author       string
 	AuthorName   string // 多作者命中 Site.Authors 时的展示名（Spec 53：banner 作者链接用）
+	AuthorLinks  []AuthorLink
 	Date         string // 原始日期字符串
 	Updated      string
 	Excerpt      string
@@ -904,6 +905,15 @@ type Page struct {
 	AISummary   string
 	AISummaryOn bool
 	AIUserAPIOn bool
+}
+
+// AuthorLink 是文章页作者展示与链接所需的最小视图模型。
+type AuthorLink struct {
+	ID          string
+	Name        string
+	Avatar      string
+	Description string
+	URL         string
 }
 
 // langLookup 语言包文案查询钩子：settings 是共享层不得依赖表现层（modules/stellar/web 的 Lang），

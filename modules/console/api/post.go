@@ -80,8 +80,9 @@ type postJSON struct {
 	AISummary string `json:"ai_summary"`
 	// Draft 草稿头内容（整份编辑表单 JSON），仅详情接口且有草稿时返回。
 	Draft json.RawMessage `json:"draft,omitempty"`
-	// 多作者体系（Spec 38）：作者 ID
-	Author string `json:"author"`
+	// 多作者体系：Authors 按选择顺序返回；Author 保留第一位作者，兼容旧客户端。
+	Authors []string `json:"authors"`
+	Author  string   `json:"author"`
 }
 
 type posterJ struct {
@@ -113,6 +114,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
 		Views:           views,
 		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
+		Authors:         normalizedPostAuthors(p),
 		Author:          p.Author,
 		AISummary:       p.AISummary,
 	}
@@ -268,6 +270,10 @@ func (h *Handler) createPost(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
+	if err := normalizePostAuthorsRequest(&req, nil); err != nil {
+		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
+		return
+	}
 	// 空 slug 时从标题自动生成（Spec Task 6），并确保唯一；用户指定 slug 则检查冲突
 	slugVal := strings.TrimSpace(req.Slug)
 	if slugVal == "" {
@@ -322,6 +328,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
+		return
+	}
+	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
 
@@ -399,6 +409,10 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
+	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
+		return
+	}
 	b, err := json.Marshal(req)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "草稿序列化失败: "+err.Error())
@@ -432,6 +446,10 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
+		return
+	}
+	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
 	req.Status = store.StatusPublished
@@ -635,8 +653,10 @@ type postRequest struct {
 	// 文章级 SEO（Spec 42）
 	MetaDescription string `json:"meta_description"`
 	MetaKeywords    string `json:"meta_keywords"`
-	// 多作者体系（Spec 38）：作者 ID
-	Author string `json:"author"`
+	// 多作者体系：Authors 明确提交时替换完整作者列表；Author 为旧客户端兼容字段。
+	Authors   json.RawMessage `json:"authors,omitempty"`
+	Author    string          `json:"author"`
+	authorIDs []string
 	// AI 成分标签档位（1.41 ai_label）：空=不渲染；空串提交时 store 层保留旧值
 	AILabel string `json:"ai_label"`
 }
@@ -664,8 +684,9 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		// 文章级 SEO（Spec 42）：空串=未配置，回退站点级/现状链
 		MetaDescription: strings.TrimSpace(req.MetaDescription),
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
-		// 多作者体系（Spec 38）
-		Author: strings.TrimSpace(req.Author),
+		// 多作者体系（normalizePostAuthorsRequest 已在 handler 中统一填充）。
+		Authors: normalizeRequestAuthorIDs(req),
+		Author:  strings.TrimSpace(req.Author),
 		// AI 成分标签（1.41）：空串经 store NULLIF 保留旧值
 		AILabel: strings.TrimSpace(req.AILabel),
 	}
@@ -681,6 +702,76 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		})
 	}
 	return p
+}
+
+func normalizeRequestAuthorIDs(req *postRequest) []string {
+	if len(req.authorIDs) > 0 {
+		return append([]string(nil), req.authorIDs...)
+	}
+	var ids []string
+	if len(bytes.TrimSpace(req.Authors)) > 0 {
+		_ = json.Unmarshal(req.Authors, &ids)
+	}
+	return normalizeAuthorIDs(ids)
+}
+
+func normalizedPostAuthors(p *store.Post) []string {
+	ids := normalizeAuthorIDs(p.Authors)
+	if len(ids) == 0 && strings.TrimSpace(p.Author) != "" {
+		ids = []string{strings.TrimSpace(p.Author)}
+	}
+	return ids
+}
+
+func normalizeAuthorIDs(ids []string) []string {
+	seen := make(map[string]struct{}, len(ids))
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
+}
+
+// normalizePostAuthorsRequest 区分旧请求与新请求：authors 缺省时，单个 author 仍可替换作者；
+// 两者都缺省时保留已有关联。明确传 [] 则清空作者。
+func normalizePostAuthorsRequest(req *postRequest, fallback []string) error {
+	raw := bytes.TrimSpace(req.Authors)
+	var ids []string
+	provided := len(raw) > 0
+	if provided {
+		if bytes.Equal(raw, []byte("null")) {
+			ids = []string{}
+		} else if err := json.Unmarshal(raw, &ids); err != nil {
+			return err
+		}
+	}
+	if !provided {
+		if legacy := strings.TrimSpace(req.Author); legacy != "" {
+			ids = []string{legacy}
+		} else {
+			ids = append([]string(nil), fallback...)
+		}
+	}
+	ids = normalizeAuthorIDs(ids)
+	req.authorIDs = ids
+	req.Author = ""
+	if len(ids) > 0 {
+		req.Author = ids[0]
+	}
+	b, err := json.Marshal(ids)
+	if err != nil {
+		return err
+	}
+	req.Authors = b
+	return nil
 }
 
 func normalizeTags(raw string) string {

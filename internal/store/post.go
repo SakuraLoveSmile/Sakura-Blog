@@ -52,8 +52,9 @@ type Post struct {
 	MetaKeywords    string // 自定义 meta keywords，逗号分隔，空=用站点默认
 	AILabel         string // AI 成分标签档位（1.41：manual/reviewed/polished/generated，空=不渲染）
 
-	// 多作者体系（Spec 38）：作者 ID，空串=无作者（回退站长）。
-	Author string
+	// 多作者体系：Authors 按文章中的显示顺序保存；Author 保留第一位作者，兼容旧数据与旧调用方。
+	Authors []string
+	Author  string
 
 	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无摘要；前台文章顶部展示。
 	AISummary string
@@ -434,6 +435,22 @@ func (s *Store) migrateColumns() error {
 	if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_posts_status_publish ON posts(status, publish_at)`); err != nil {
 		return fmt.Errorf("create idx_posts_status_publish: %w", err)
 	}
+	// 多作者关联表：作者数量可变，不能把多个 ID 拼进 posts.author 单列。
+	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS post_authors (
+		post_id    INTEGER NOT NULL,
+		author_id  TEXT NOT NULL,
+		sort_order INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (post_id, author_id),
+		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+	);
+	CREATE INDEX IF NOT EXISTS idx_post_authors_author_order ON post_authors(author_id, sort_order, post_id);`); err != nil {
+		return fmt.Errorf("create post_authors table: %w", err)
+	}
+	// 老库回填：原 posts.author 的单作者记录成为顺序 0 的关联记录；INSERT OR IGNORE 保证幂等。
+	if _, err := s.db.Exec(`INSERT OR IGNORE INTO post_authors (post_id, author_id, sort_order)
+		SELECT id, TRIM(author), 0 FROM posts WHERE TRIM(author) != ''`); err != nil {
+		return fmt.Errorf("backfill post_authors: %w", err)
+	}
 	return nil
 }
 
@@ -444,7 +461,7 @@ func (s *Store) List() ([]*Post, error) {
 		return nil, fmt.Errorf("list posts: %w", err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // ListFiltered 按 status/category/tag 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
@@ -483,7 +500,7 @@ func (s *Store) ListFiltered(status, category, tag string, page, size int) ([]*P
 		return nil, 0, fmt.Errorf("list filtered posts: %w", err)
 	}
 	defer rows.Close()
-	posts, err := scanPosts(rows)
+	posts, err := s.scanPosts(rows)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -545,7 +562,7 @@ func (s *Store) ListPublished() ([]*Post, error) {
 		return nil, fmt.Errorf("list published posts: %w", err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // ListPublishedPaged 分页返回已发布文章，按 created_at 倒序。page 从 1 开始。
@@ -562,7 +579,7 @@ func (s *Store) ListPublishedPaged(page, size int) ([]*Post, error) {
 		return nil, fmt.Errorf("list published posts paged: %w", err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // CountPublished 返回已发布文章总数（分页器用）。
@@ -581,7 +598,7 @@ func (s *Store) ListByCategory(name string) ([]*Post, error) {
 		return nil, fmt.Errorf("list posts by category %s: %w", name, err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // ListByTag 返回包含指定标签的已发布文章，按 created_at 倒序。
@@ -595,7 +612,7 @@ func (s *Store) ListByTag(name string) ([]*Post, error) {
 		return nil, fmt.Errorf("list posts by tag %s: %w", name, err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // CountByCategory 统计各分类的已发布文章数（空分类除外）。
@@ -624,7 +641,7 @@ func (s *Store) ListByTopic(name string) ([]*Post, error) {
 		return nil, fmt.Errorf("list posts by topic %s: %w", name, err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // ListPostsByTopicID 返回指定专栏 ID 的已发布文章（Spec 52），按发布时间倒序（对齐 publishedOrder）。
@@ -635,7 +652,7 @@ func (s *Store) ListPostsByTopicID(topicID int64) ([]*Post, error) {
 		return nil, fmt.Errorf("list posts by topic id %d: %w", topicID, err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // CountByTag 统计各标签的已发布文章数。tags 逗号分隔存储，内存拆分计数（跳过空值）。
@@ -686,6 +703,9 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get post by slug %s: %w", slug, err)
 	}
+	if err := s.hydratePostAuthors([]*Post{p}); err != nil {
+		return nil, err
+	}
 	return p, nil
 }
 
@@ -700,9 +720,18 @@ func (s *Store) Create(p *Post) (int64, error) {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
+	p.Authors = normalizePostAuthors(p.Authors, p.Author)
+	if len(p.Authors) > 0 {
+		p.Author = p.Authors[0]
+	} else {
+		p.Author = ""
+	}
 	id, err := repo(s, &Post{}).Create(p)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
+	}
+	if err := s.replacePostAuthors(id, p.Authors); err != nil {
+		return 0, fmt.Errorf("save authors for post %s: %w", p.Slug, err)
 	}
 	s.firePostWrite("create", p.Slug)
 	return id, nil
@@ -715,7 +744,20 @@ func (s *Store) Create(p *Post) (int64, error) {
 // ai_summary 走 COALESCE 保留（Spec 53）：常规保存不清空摘要，由 SetAISummary 专门维护，
 // 避免 seed/Upsert 等不携带该字段的写路径误清。
 func (s *Store) Update(slug string, p *Post) error {
+	var postID int64
+	if err := s.db.QueryRow(`SELECT id FROM posts WHERE slug = ?`, slug).Scan(&postID); err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("update post %s: no rows affected", slug)
+		}
+		return fmt.Errorf("find post %s: %w", slug, err)
+	}
 	p.UpdatedAt = time.Now()
+	p.Authors = normalizePostAuthors(p.Authors, p.Author)
+	if len(p.Authors) > 0 {
+		p.Author = p.Authors[0]
+	} else {
+		p.Author = ""
+	}
 	pinned := 0
 	if p.Pinned {
 		pinned = 1
@@ -729,6 +771,9 @@ func (s *Store) Update(slug string, p *Post) error {
 	n, _ := res.RowsAffected()
 	if n == 0 {
 		return fmt.Errorf("update post %s: no rows affected", slug)
+	}
+	if err := s.replacePostAuthors(postID, p.Authors); err != nil {
+		return fmt.Errorf("save authors for post %s: %w", slug, err)
 	}
 	s.firePostWrite("update", slug)
 	return nil
@@ -784,7 +829,7 @@ func (s *Store) ListTrashed() ([]*Post, error) {
 		return nil, fmt.Errorf("list trashed posts: %w", err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // RestorePost 从回收站恢复文章（清空 deleted_at）。
@@ -804,12 +849,16 @@ func (s *Store) ListRecentPosts(n int) ([]*Post, error) {
 		return nil, fmt.Errorf("list recent posts: %w", err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }
 
 // PurgePost 彻底删除文章（物理删除记录）。
 func (s *Store) PurgePost(slug string) error {
-	_, err := s.db.Exec(`DELETE FROM posts WHERE slug = ? AND deleted_at != ''`, slug)
+	_, err := s.db.Exec(`DELETE FROM post_authors WHERE post_id = (SELECT id FROM posts WHERE slug = ? AND deleted_at != '')`, slug)
+	if err != nil {
+		return fmt.Errorf("delete authors for purged post %s: %w", slug, err)
+	}
+	_, err = s.db.Exec(`DELETE FROM posts WHERE slug = ? AND deleted_at != ''`, slug)
 	if err != nil {
 		return fmt.Errorf("purge post %s: %w", slug, err)
 	}
@@ -878,6 +927,99 @@ func (s *Store) Upsert(p *Post) error {
 	p.ID = existing.ID
 	p.CreatedAt = existing.CreatedAt
 	return s.Update(p.Slug, p)
+}
+
+// normalizePostAuthors 清理作者 ID、去重并保持用户选择顺序；兼容只填 Author 的旧调用方。
+func normalizePostAuthors(authors []string, legacy string) []string {
+	if len(authors) == 0 && strings.TrimSpace(legacy) != "" {
+		authors = []string{legacy}
+	}
+	seen := make(map[string]struct{}, len(authors))
+	out := make([]string, 0, len(authors))
+	for _, author := range authors {
+		author = strings.TrimSpace(author)
+		if author == "" {
+			continue
+		}
+		if _, ok := seen[author]; ok {
+			continue
+		}
+		seen[author] = struct{}{}
+		out = append(out, author)
+	}
+	return out
+}
+
+// replacePostAuthors 用事务替换一篇文章的完整作者顺序。
+func (s *Store) replacePostAuthors(postID int64, authors []string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM post_authors WHERE post_id = ?`, postID); err != nil {
+		return err
+	}
+	for order, author := range normalizePostAuthors(authors, "") {
+		if _, err := tx.Exec(`INSERT INTO post_authors (post_id, author_id, sort_order) VALUES (?, ?, ?)`, postID, author, order); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// hydratePostAuthors 批量装载关联作者，避免文章列表产生逐篇查询。
+func (s *Store) hydratePostAuthors(posts []*Post) error {
+	if len(posts) == 0 {
+		return nil
+	}
+	placeholders := make([]string, len(posts))
+	args := make([]any, len(posts))
+	byID := make(map[int64]*Post, len(posts))
+	for i, p := range posts {
+		placeholders[i] = "?"
+		args[i] = p.ID
+		byID[p.ID] = p
+		p.Authors = nil
+	}
+	rows, err := s.db.Query(`SELECT post_id, author_id FROM post_authors WHERE post_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY post_id, sort_order, author_id`, args...)
+	if err != nil {
+		return fmt.Errorf("load post authors: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var postID int64
+		var authorID string
+		if err := rows.Scan(&postID, &authorID); err != nil {
+			return fmt.Errorf("scan post author: %w", err)
+		}
+		if p := byID[postID]; p != nil {
+			p.Authors = append(p.Authors, authorID)
+			if len(p.Authors) == 1 {
+				p.Author = authorID
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate post authors: %w", err)
+	}
+	for _, p := range posts {
+		if len(p.Authors) == 0 && strings.TrimSpace(p.Author) != "" {
+			p.Authors = []string{strings.TrimSpace(p.Author)}
+		}
+	}
+	return nil
+}
+
+func (s *Store) scanPosts(rows *sql.Rows) ([]*Post, error) {
+	posts, err := scanPosts(rows)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.hydratePostAuthors(posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
 }
 
 type rowScanner interface {

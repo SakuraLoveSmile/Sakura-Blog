@@ -23,9 +23,10 @@ type frontMatter struct {
 	// 参考文献（对齐原版 article_footer.ejs page.references）
 	References []string
 	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
-	Status string // draft / published，空=由导入方决定
-	Pinned bool   // 置顶
-	Author string // 作者 ID（Spec 38 多作者体系）
+	Status  string   // draft / published，空=由导入方决定
+	Pinned  bool     // 置顶
+	Authors []string // 作者 ID 列表，按 frontmatter 顺序
+	Author  string   // 第一位作者，兼容旧 frontmatter
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -110,7 +111,20 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Pinned = val == "true" || val == "1"
 		case "author":
 			fm.Author = strings.TrimSpace(val)
+			if fm.Author != "" && len(fm.Authors) == 0 {
+				fm.Authors = []string{fm.Author}
+			}
+		case "authors":
+			fm.Authors = parseList(val)
+			if len(fm.Authors) > 0 {
+				fm.Author = fm.Authors[0]
+			}
 		}
+	}
+	if len(fm.Authors) > 0 {
+		fm.Author = fm.Authors[0]
+	} else if fm.Author != "" {
+		fm.Authors = []string{fm.Author}
 	}
 
 	body := strings.Join(lines[end+1:], "\n")

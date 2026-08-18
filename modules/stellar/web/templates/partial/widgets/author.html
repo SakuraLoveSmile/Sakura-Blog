@@ -8,7 +8,7 @@
   <div class="widget-body">
     {{if $ad}}
     <div class="avatar"><img type="img" src="{{$ad.Author.Avatar}}"></div>
-    <p class="username">{{$ad.Author.Name}}</p>
+    <p class="username">{{if $ad.Authors}}{{range $i, $author := $ad.Authors}}{{if $i}}、{{end}}{{$author.Name}}{{end}}{{else}}{{$ad.Author.Name}}{{end}}</p>
     <p class="bio">{{$ad.Author.Description}}</p>
     <a class="follow" href="{{$ad.Path}}">
       {{icon "default:documents"}}

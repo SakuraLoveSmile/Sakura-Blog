@@ -235,6 +235,9 @@ func marshalPost(p *store.Post) string {
 	}
 	writeList("references", store.DecodeReferences(p.References))
 	writeKV("author", p.Author)
+	if len(p.Authors) > 1 {
+		writeList("authors", p.Authors)
+	}
 	b.WriteString("status: " + p.Status + "\n")
 	if p.Pinned {
 		b.WriteString("pinned: true\n")
@@ -348,6 +351,7 @@ func (s *Service) importOne(base string, data []byte, res *ImportResult) {
 			Color:    meta.PosterColor,
 		}),
 		References: store.EncodeReferences(meta.References),
+		Authors:    append([]string(nil), meta.Authors...),
 		Author:     meta.Author,
 	}
 	if err := s.store.Upsert(p); err != nil {

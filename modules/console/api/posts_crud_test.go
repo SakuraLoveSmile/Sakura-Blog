@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -181,6 +182,44 @@ func TestPostCRUDFlow(t *testing.T) {
 	w = do2FA(r, http.MethodGet, "/api/v1/posts/hello-world", "", cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("purged post should 404, got %d", w.Code)
+	}
+}
+
+func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
+	r, _, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"api-multi-author","title":"多作者 API","authors":["alice","bob"],"status":"published"}`, cookie)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create multi-author post: status=%d body=%s", w.Code, w.Body.String())
+	}
+	var created postJSON
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if strings.Join(created.Authors, ",") != "alice,bob" || created.Author != "alice" {
+		t.Fatalf("create authors=%#v primary=%q", created.Authors, created.Author)
+	}
+
+	// 旧客户端不发送 authors 时，更新正文不能误删已有多作者关联。
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"title":"旧客户端更新","status":"published"}`, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("legacy update: status=%d body=%s", w.Code, w.Body.String())
+	}
+	var updated postJSON
+	if err := json.Unmarshal(w.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode update response: %v", err)
+	}
+	if strings.Join(updated.Authors, ",") != "alice,bob" {
+		t.Fatalf("legacy update authors=%#v", updated.Authors)
+	}
+
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"authors":["bob"],"status":"published"}`, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("replace authors: status=%d body=%s", w.Code, w.Body.String())
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &updated); err != nil || strings.Join(updated.Authors, ",") != "bob" || updated.Author != "bob" {
+		t.Fatalf("replace response authors=%#v primary=%q err=%v", updated.Authors, updated.Author, err)
 	}
 }
 

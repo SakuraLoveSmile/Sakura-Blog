@@ -73,8 +73,10 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 			Topic:   p.Topic,
 			Banner:  p.Banner,
 		}
-		if a, ok := draft.Authors[p.Author]; ok {
-			data.Page.AuthorName = a.Name
+		data.Page.AuthorLinks = resolveAuthorLinks(&draft, p)
+		if len(data.Page.AuthorLinks) > 0 {
+			data.Page.Author = data.Page.AuthorLinks[0].ID
+			data.Page.AuthorName = data.Page.AuthorLinks[0].Name
 		}
 		data.Content = template.HTML(p.ContentHTML)
 		data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptionsFrom(&draft))

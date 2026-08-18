@@ -78,6 +78,7 @@ func buildPost(st *store.Store, posts *post.Service, slug string) (*store.Post, 
 		}),
 		Pinned:     meta.Pinned,
 		References: store.EncodeReferences(meta.References),
+		Authors:    append([]string(nil), meta.Authors...),
 		Author:     meta.Author,
 		AILabel:    meta.AILabel,
 	}

@@ -113,6 +113,8 @@ type publicPostJSON struct {
 	Cover             string   `json:"cover"`
 	Category          string   `json:"category"`
 	Tags              []string `json:"tags"`
+	Authors           []string `json:"authors"`
+	Author            string   `json:"author,omitempty"`
 	ContentMD         string   `json:"content_md,omitempty"`
 	ContentHTML       string   `json:"content_html,omitempty"`
 	PasswordProtected bool     `json:"password_protected"`
@@ -223,7 +225,11 @@ func (h *publicContent) listComments(c *gin.Context) {
 
 func publicPost(post *store.Post, detail bool) *publicPostJSON {
 	protected := post.IsPasswordProtected()
-	item := &publicPostJSON{Slug: post.Slug, Title: post.Title, Excerpt: post.Excerpt, Cover: post.Cover, Category: post.Category, Tags: splitTags(post.Tags), PasswordProtected: protected, CreatedAt: post.CreatedAt.Format(time.RFC3339), UpdatedAt: post.UpdatedAt.Format(time.RFC3339)}
+	authors := append([]string(nil), post.Authors...)
+	if len(authors) == 0 && strings.TrimSpace(post.Author) != "" {
+		authors = []string{strings.TrimSpace(post.Author)}
+	}
+	item := &publicPostJSON{Slug: post.Slug, Title: post.Title, Excerpt: post.Excerpt, Cover: post.Cover, Category: post.Category, Tags: splitTags(post.Tags), Authors: authors, Author: post.Author, PasswordProtected: protected, CreatedAt: post.CreatedAt.Format(time.RFC3339), UpdatedAt: post.UpdatedAt.Format(time.RFC3339)}
 	if detail && !protected {
 		item.ContentMD, item.ContentHTML = post.ContentMD, post.ContentHTML
 	}

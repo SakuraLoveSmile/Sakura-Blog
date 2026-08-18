@@ -124,6 +124,8 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 		PublishAt:   existing.PublishAt,
 		Poster:      existing.Poster,
 		References:  existing.References,
+		Authors:     append([]string(nil), existing.Authors...),
+		Author:      existing.Author,
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, existing.Slug); err != nil {

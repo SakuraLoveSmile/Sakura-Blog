@@ -17,7 +17,7 @@
           </div>
         </div>
         <div class="meta-row" id="post-meta">
-          {{if and .Page.Author .Page.AuthorName}}<a class="author" href="/author/{{.Page.Author}}/">{{.Page.AuthorName}}</a><span class="sep"></span>{{end}}
+          {{if .Page.AuthorLinks}}{{range $i, $author := .Page.AuthorLinks}}{{if $i}}<span class="sep"></span>{{end}}<a class="author" href="/author/{{$author.ID}}/">{{$author.Name}}</a>{{end}}<span class="sep"></span>{{end}}
           {{if .Page.Date}}<span class="text created">{{if and .Page.Author .Page.AuthorName}}{{lang "meta.created"}}：{{end}}<time datetime="{{.Page.Date}}">{{.Page.Date}}</time></span>{{end}}
           {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<span class="sep updated"></span><span class="text updated">{{lang "meta.updated"}}：<time datetime="{{.Page.Updated}}">{{.Page.Updated}}</time></span>{{end}}
         </div>

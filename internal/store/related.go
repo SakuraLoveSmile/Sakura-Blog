@@ -52,6 +52,9 @@ func (s *Store) getAdjacent(slug, category string, newer bool) (*Post, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get adjacent post for %s: %w", slug, err)
 	}
+	if err := s.hydratePostAuthors([]*Post{p}); err != nil {
+		return nil, err
+	}
 	return p, nil
 }
 
@@ -93,5 +96,5 @@ func (s *Store) ListRelatedPosts(slug, tags string, limit int) ([]*Post, error) 
 		return nil, fmt.Errorf("list related posts for %s: %w", slug, err)
 	}
 	defer rows.Close()
-	return scanPosts(rows)
+	return s.scanPosts(rows)
 }

@@ -130,9 +130,10 @@ type WidgetInstance struct {
 // AuthorWidgetData author widget 装配数据（Spec 38 多作者体系）。
 // assembleWidgets 从 Page.Author 查找 Site.Authors 命中时设置，模板据此显示对应作者卡片。
 type AuthorWidgetData struct {
-	ID     string    // 作者 ID（用于 /author/{id}/ 链接）
-	Author AuthorDef // 作者定义（name/avatar/description）
-	Path   string    // 作者页路径（/author/{id}/）
+	ID      string       // 作者 ID（用于 /author/{id}/ 链接）
+	Author  AuthorDef    // 作者定义（name/avatar/description）
+	Path    string       // 作者页路径（/author/{id}/）
+	Authors []AuthorLink // 文章的完整作者列表；Author 保留第一位兼容字段
 }
 
 // Str/Int/Bool 参数访问便捷透传（模板里写 .Str "title" "默认"）。

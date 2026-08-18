@@ -80,6 +80,21 @@ func TestImportDraftSemantics(t *testing.T) {
 	}
 }
 
+func TestImportMultipleAuthors(t *testing.T) {
+	st, posts, mdDir := newSeedFixture(t)
+	writePost(t, mdDir, "multi", "title: 多作者\nauthors: [alice, bob]\n")
+	if err := Import(st, posts); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	p, err := st.GetBySlug("multi")
+	if err != nil || p == nil {
+		t.Fatalf("get imported post: %v / %v", p, err)
+	}
+	if strings.Join(p.Authors, ",") != "alice,bob" || p.Author != "alice" {
+		t.Fatalf("imported authors=%#v primary=%q", p.Authors, p.Author)
+	}
+}
+
 // TestImportPinnedMapping frontmatter pinned: true 必须映射到 DB 置顶（曾漏映射的 bug 点）。
 func TestImportPinnedMapping(t *testing.T) {
 	st, posts, mdDir := newSeedFixture(t)

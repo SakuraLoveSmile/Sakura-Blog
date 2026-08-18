@@ -56,10 +56,15 @@
     {{if .Page.Date}}"datePublished": {{jsonify .Page.Date}},{{end}}
     {{if .Page.Updated}}"dateModified": {{jsonify .Page.Updated}},{{end}}
     "image": {{jsonify (printf "%s/og/%s.png" .Site.URL .Page.Slug)}},
-    "author": {
+    "author": {{if gt (len .Page.AuthorLinks) 1}}[
+      {{range $i, $author := .Page.AuthorLinks}}{{if $i}},{{end}}{
+        "@type": "Person",
+        "name": {{jsonify $author.Name}}
+      }{{end}}
+    ]{{else}}{
       "@type": "Person",
-      "name": {{if .Page.Author}}{{jsonify .Page.Author}}{{else}}{{jsonify .Site.Title}}{{end}}
-    },
+      "name": {{if .Page.AuthorLinks}}{{jsonify (index .Page.AuthorLinks 0).Name}}{{else if .Page.Author}}{{jsonify .Page.Author}}{{else}}{{jsonify .Site.Title}}{{end}}
+    }{{end}},
     "publisher": {
       "@type": "Organization",
       "name": {{jsonify .Site.Title}}

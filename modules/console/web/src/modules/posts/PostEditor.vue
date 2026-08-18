@@ -42,6 +42,7 @@ const form = ref({
  publish_at:"",
  meta_description:"",
  meta_keywords:"",
+ authors: [] as string[],
  author:"",
 });
 
@@ -360,7 +361,8 @@ async function loadPost() {
  publish_at: src.publish_at ||"",
  meta_description: src.meta_description ||"",
  meta_keywords: src.meta_keywords ||"",
- author: src.author ||"",
+ authors: Array.isArray(src.authors) ? src.authors.map((id: unknown) => String(id).trim()).filter(Boolean) : (src.author ? [String(src.author)] : []),
+ author: src.author || (Array.isArray(src.authors) && src.authors[0] ? src.authors[0] : ""),
  };
  aiSummary.value = data.ai_summary ||""; // Spec 53：AI 摘要随文章详情载入
 }

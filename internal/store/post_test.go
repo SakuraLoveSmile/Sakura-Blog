@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -31,6 +32,53 @@ func TestPostCreateAndGet(t *testing.T) {
 	}
 	if got.Status != StatusPublished {
 		t.Fatalf("status = %s, want published", got.Status)
+	}
+}
+
+func TestPostAuthorsRoundTripAndLegacyBackfill(t *testing.T) {
+	s := newTestStore(t)
+	p := pubPost("multi-author", "多作者")
+	p.Author = "alice"
+	p.Authors = []string{"alice", " bob ", "alice", "carol"}
+	id, err := s.Create(p)
+	if err != nil {
+		t.Fatalf("create multi-author post: %v", err)
+	}
+	got, err := s.GetBySlug(p.Slug)
+	if err != nil {
+		t.Fatalf("get multi-author post: %v", err)
+	}
+	if strings.Join(got.Authors, ",") != "alice,bob,carol" || got.Author != "alice" {
+		t.Fatalf("authors = %#v, primary = %q", got.Authors, got.Author)
+	}
+	if count, err := s.CountByAuthor("bob"); err != nil || count != 1 {
+		t.Fatalf("count by secondary author = %d, err=%v", count, err)
+	}
+	if posts, err := s.ListByAuthor("carol", 0, 10); err != nil || len(posts) != 1 || posts[0].Slug != p.Slug {
+		t.Fatalf("list by secondary author = %#v, err=%v", posts, err)
+	}
+
+	if err := s.Update(p.Slug, &Post{Title: "更新", Status: StatusPublished, Authors: []string{"carol", "bob"}}); err != nil {
+		t.Fatalf("update authors: %v", err)
+	}
+	got, _ = s.GetBySlug(p.Slug)
+	if strings.Join(got.Authors, ",") != "carol,bob" || got.Author != "carol" {
+		t.Fatalf("updated authors = %#v, primary = %q", got.Authors, got.Author)
+	}
+
+	// 模拟旧库只有 posts.author：迁移必须幂等回填顺序 0 记录。
+	if _, err := s.db.Exec(`DELETE FROM post_authors WHERE post_id = ?`, id); err != nil {
+		t.Fatalf("clear association: %v", err)
+	}
+	if _, err := s.db.Exec(`UPDATE posts SET author = 'legacy' WHERE id = ?`, id); err != nil {
+		t.Fatalf("set legacy author: %v", err)
+	}
+	if err := s.migrateColumns(); err != nil {
+		t.Fatalf("rerun author migration: %v", err)
+	}
+	got, _ = s.GetBySlug(p.Slug)
+	if len(got.Authors) != 1 || got.Authors[0] != "legacy" {
+		t.Fatalf("legacy backfill authors = %#v", got.Authors)
 	}
 }
 

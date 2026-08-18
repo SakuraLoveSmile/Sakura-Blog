@@ -89,7 +89,7 @@
   <section id="license">
     <div class="header"><span>{{- lang "article.copyright" -}}</span></div>
     <div class="body">
-      <p>{{- lang "article.author" -}}：{{if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.DefaultAuthorName}}{{end}}</p>
+      <p>{{- lang "article.author" -}}：{{if .Page.AuthorLinks}}{{range $i, $author := .Page.AuthorLinks}}{{if $i}}、{{end}}{{$author.Name}}{{end}}{{else if .Page.Author}}{{.Page.Author}}{{else}}{{.Site.DefaultAuthorName}}{{end}}</p>
       {{if .Page.Date}}<p>{{- lang "meta.created" -}}：{{.Page.Date}}</p>{{end}}
       {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<p>{{- lang "meta.updated" -}}：{{.Page.Updated}}</p>{{end}}
       {{if .Site.Article.Copyright.License}}

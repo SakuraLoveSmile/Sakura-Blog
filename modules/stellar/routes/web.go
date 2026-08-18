@@ -378,15 +378,14 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 		case "tagcloud":
 			w.Data = tmpl.BuildTagCloud(tagCounts, tmpl.TagCloudOptionsFrom(w.Params))
 		case "author":
-			// Spec 38：当前文章有 author 且在 Site.Authors 中命中时，装配作者卡片数据；
-			// 否则不设 Data，模板走站长兜底（零配置回归）。
-			if data.Page != nil && data.Page.Author != "" {
-				if author, ok := site.Authors[data.Page.Author]; ok {
-					w.Data = &tmpl.AuthorWidgetData{
-						ID:     data.Page.Author,
-						Author: author,
-						Path:   "/author/" + data.Page.Author + "/",
-					}
+			// 多作者文章的作者卡片以第一位作者为头像/简介，名称与链接展示完整作者列表。
+			if data.Page != nil && len(data.Page.AuthorLinks) > 0 {
+				first := data.Page.AuthorLinks[0]
+				w.Data = &tmpl.AuthorWidgetData{
+					ID:      first.ID,
+					Author:  tmpl.AuthorDef{Name: first.Name, Avatar: first.Avatar, Description: first.Description, URL: first.URL},
+					Path:    "/author/" + first.ID + "/",
+					Authors: append([]tmpl.AuthorLink(nil), data.Page.AuthorLinks...),
 				}
 			}
 		case "tree":
