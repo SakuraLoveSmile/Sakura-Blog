@@ -180,13 +180,30 @@ func Bootstrap(options Options) (*Services, error) {
 		log.Printf("seed: imported %d posts from content/posts", n)
 	}
 
+	// 增量自动发现：未做全量 seed 时，把 content/posts 里 DB 缺失的新文件补录进来
+	// （只增不改，Console 编辑过的记录不被文件覆盖），新文章无需手动 -seed 即可上列表。
+	discovered := 0
+	if !seedOnStart {
+		n, err := seedpkg.ImportMissing(st, posts)
+		if err != nil {
+			return fail(fmt.Errorf("discover new posts: %w", err))
+		}
+		discovered = n
+		if n > 0 {
+			if err := st.MigrateTopicBackfill(); err != nil {
+				return fail(fmt.Errorf("migrate topic backfill after discover: %w", err))
+			}
+			log.Printf("seed: discovered %d new posts from content/posts", n)
+		}
+	}
+
 	searchIdx := search.New(st.DB())
 	if err := searchIdx.Ensure(); err != nil {
 		log.Printf("search: ensure fts failed (%v), server search disabled", err)
 		searchIdx = nil
 	} else {
 		count, countErr := searchIdx.Count()
-		if seedOnStart || (countErr == nil && count == 0) {
+		if seedOnStart || discovered > 0 || (countErr == nil && count == 0) {
 			if err := searchIdx.Rebuild(search.ItemsFromStore(st)); err != nil {
 				log.Printf("search: rebuild failed (%v), server search disabled", err)
 				searchIdx = nil

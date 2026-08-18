@@ -257,9 +257,11 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 
 `store.GetPublishedBySlug` 返回 `(nil, nil)` 表示 DB 无记录（不是 error）。handler 先查 DB：`if p, err := st.GetPublishedBySlug(slug); err == nil && p != nil { 走 DB }`，否则回退 `post.Service.Load(slug)` 文件渲染。注意 `os.IsNotExist` 能穿透 `fmt.Errorf("...: %w", err)` 的 `%w` 包裹，正确识别文件不存在。
 
-### seed 用 UPSERT 保证幂等
+### seed 用 UPSERT 保证幂等 + 启动增量自动发现
 
-`-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。
+`-seed` flag 启动时扫描 `content/posts/*.md`，按 slug 调 `store.Upsert`：DB 无记录则 Create，有记录则保留 created_at 更新内容字段。多次执行 `-seed` 不会产生重复记录，方便重复导入。**注意全量 seed 会用文件覆盖 DB 内容字段**（Console 改过但未导出回文件的文章会被刷掉）。
+
+日常新增文章不需要手动 `-seed`：启动时自动跑增量发现（`seed.ImportMissing`，`internal/app/services.go` 装配），只补录 DB 缺失的 slug（任意状态都算存在），**绝不触碰已有记录**，发现新文件时同步重建搜索索引与 topic 回填。文件更新后同步到 DB 仍走显式 `-seed`；posts 目录缺失时发现路径宽容跳过（不阻断启动）。
 
 ## Step 1 新增坑点（首页 + 配置文件化）
 
