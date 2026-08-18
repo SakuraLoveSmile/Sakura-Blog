@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { VSwitch } from "@/components/ui";
+
 // 前端体验增强插件（Spec 36 段入库版）：开关 + 参数表单。
 // 数据结构对齐 site.yml plugins 段；子配置为指针，未配置=关闭（JSON 缺省空对象等价）。
 const props = defineProps<{
@@ -15,6 +17,17 @@ const btnCls =
 
 <template>
  <div class="space-y-6">
+ <!-- 封面文字自适应 -->
+ <div class="border border-border rounded-xl p-4 space-y-3">
+  <div class="flex items-center justify-between gap-4">
+   <div class="min-w-0">
+    <div class="text-sm font-medium text-text-secondary">封面文字自适应颜色</div>
+    <p class="mt-1 text-xs text-text-quaternary">根据封面平均色调整 Hero、横幅和置顶内容的文字对比度</p>
+   </div>
+   <VSwitch v-model="data.adaptive_text.enable" />
+  </div>
+ </div>
+
  <!-- 预加载 -->
  <div class="border border-border rounded-xl p-4 space-y-3">
  <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">

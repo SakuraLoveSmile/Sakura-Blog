@@ -179,6 +179,8 @@ function ensureDefaults(d: Record<string, any>) {
   d.widgets.library = d.widgets.library || {};
   d.widgets.pages = d.widgets.pages || {};
   d.plugins = d.plugins || {};
+  d.plugins.adaptive_text = d.plugins.adaptive_text || {};
+  d.plugins.adaptive_text.enable = d.plugins.adaptive_text.enable ?? true;
   d.plugins.preload = d.plugins.preload || {};
   d.plugins.scrollreveal = d.plugins.scrollreveal || {};
   d.plugins.heti = d.plugins.heti || {};
