@@ -6,25 +6,7 @@
 
 ## 第一阶段模块边界
 
-项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 是组合根：只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`config/`、`content/` 和 `data/` 的运行时路径保持不变。
-
-### 边界规则（机械守卫）
-
-依赖方向与所有权由 `scripts/check-module-deps.sh` 强制（接入 `make test` 与 CI，违规非零退出），不靠自觉：
-
-- 依赖单向 `cmd → modules → internal`；`internal` 不得 import 业务模块；console 与 stellar 互不 import。
-- **Stellar 独家拥有前台 URL 所有权**：`internal/comments`/`internal/identity`/`internal/store`(rating/vote)/`internal/github`/`internal/friends` 等共享包只暴露 `PublicRoutes` 回调结构体，禁止自绑路由（`r.GET/POST…`）；URL 绑定统一在 `modules/stellar/api/`。
-- legacy 黑名单：`backend`/`cmd/server`/`go.work`/`go.work.sum` 不得复活；全仓恰好一个 `go.mod`；`cmd/blog` 只能 import 模块顶层包。
-- 功能模块框架（`internal/module`，现有 `seo`/`perf`）：`init()` 自注册，Console 侧 `RegisterRoutes` 套 `Gate` 中间件（DB 禁用即 403），启停状态存 `module_state` 表；新功能优先走该框架而非新增顶层包。
-
-### 静态分析与测试布局
-
-- `make test` 门禁链：console 测试 + assets 行为面（`make assets-test`）+ module-check + `go vet` + **staticcheck**（版本钉死，与 CI 同步）+ `go test`；新代码必须 staticcheck 零 findings，可单独 `make lint`。
-- 测试落位：Go 测试同包；前端行为面测试在 `modules/console/tests/`（npm run test）与 `modules/stellar/tests/`（node --test），不再放 `web/` 子目录内。
-
-### 大文件拆分约定
-
-单文件过大时按逻辑域**同包拆文件**（零 API 变更），现有范例：`internal/post/shortcode_*.go`（按标签插件族）、`modules/stellar/routes/routes_*.go`（按页面域）、`internal/config/reload_*.go`（按职责）。坑：别名 import（如 `tmpl "blog/internal/settings"`）goimports 无法推断，拆分后必须手动补齐并立即编译验证；sed 按行号区间删除时注意边界可能含结构体收尾大括号。
+项目现在是根目录单一 `go.mod` 的模块化单体。`cmd/blog` 只装配共享服务并调用 `console.Mount` 与 `stellar.Mount`；Console 的 Go API 和 Vue SPA 位于 `modules/console/`，Stellar 的 SSR 路由与前台资源位于 `modules/stellar/`，共享业务位于 `internal/`。`config/`、`content/` 和 `data/` 的运行时路径保持不变。
 
 ## 仓库工作流
 
@@ -90,9 +72,9 @@ Stylus `define()` 接收 JS 原生值自动转换，但类型必须精确，否�
 
 要还原原版观感，在 `config.json` 的 `style.site.background-image` 设值（如 `url(...site-bg1.webp)`）。编译后 `body>.sitebg` 会有 `background-image`，`.siteblur` 自动叠遮罩（深色黑遮罩、亮色白遮罩）。
 
-### CSS 缓存坑
+### 资源版本化：asset_ver 内容哈希（无需手工管版本戳）
 
-http.server 不禁缓存，修改 .styl 重新编译后浏览器可能仍用旧 CSS。preview.html 的 `<link>` 加版本戳（`?v=demo1`），开发时手动改版本号强制刷新；或浏览器 DevTools 禁用缓存。
+模板对 `/assets` 下所有 css/js 的引用统一写 `?v={{asset_ver "<path>"}}`，`asset_ver` 模板函数在启动时按文件内容计算哈希（`modules/stellar/web/assetver.go`，`SetAssetVersioner` 注入；未注入返回空串）。内容一变 URL 自动变，配合 /assets 的 no-cache 协商缓存中间件（见下文 Step 2）保证新鲜，**不需要手工 bump 任何版本戳**。历史备注：demo 阶段曾在 preview.html 手工改 `?v=demo1` 强刷，该做法已被 asset_ver 取代。
 
 ### 菜单图标机制
 
@@ -315,9 +297,9 @@ Step 1 的 migrateCoverColumn 泛化为 `migrateColumns`：`map[列名]ALTER语�
 
 toggleTheme 原来只改 `data-theme` 不持久化，导航后被打回系统偏好。**修法**：toggleTheme 写 `localStorage.setItem('theme', next)`；head.html 在 CSS 加载前的内联脚本读 localStorage 设 `document.documentElement.dataset.theme`（防闪烁）；无记录时不设值，让 `prefers-color-scheme` 媒体查询兜底。
 
-### Stellar JS 外部依赖缺失需 shim/守卫
+### Stellar JS 外部依赖 shim（历史，现状以 Spec 59 去 jQuery 为准）
 
-main.js 从 Stellar 抄来，依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调，demo 未加载 jQuery）与 `window.canonical`（原版 defines.ejs 注入）。缺失时 `init.toc` 抛 `utils is not defined` 中断 `initPage()`（连带 relativeDate 失效），`canonicalCheck` 抛 `originalHost of undefined`。**对策**：base.html 注入 `utils = { jq: (fn) => { if (window.jQuery) fn(); } }` 最小 shim；`canonicalCheck` 开头加 `if (!canonical) return;` 守卫。`sidebar.dismiss` 原本也未实现（移动端 main-mask 点击报错），已在 Step 2 收尾补齐（见下节）。
+main.js 从 Stellar 抄来，原依赖两个外部注入：`utils.jq`（原版 jQuery 就绪回调）与 `window.canonical`（原版 defines.ejs 注入），缺失时 `init.toc`/`canonicalCheck` 抛错中断 `initPage()`。当时的修法：base.html 注入 `utils.jq` 最小 shim + `canonicalCheck` 加守卫。**现状**：1.36/Spec 59 起 jQuery 已移除，`utils.jq` 退化为直调（保留兼容签名），DOM 操作走原生 `utils.dom`；事件绑定只走 `DOMContentLoaded`/document 级委托，不要再按 jQuery 就绪回调语义加 shim。
 
 ### 静态资源缓存：/assets 加 no-cache 协商缓存（已修复）
 
@@ -331,7 +313,7 @@ base.html 的 main-mask `onclick="sidebar.dismiss()"` 依赖 main.js 的 sidebar
 
 **坑**：float-panel menubtn 必须放在 `l_body` 内部（Stellar layout.ejs 在 l_right `</aside>` 之后、l_body 闭合之前），因为激活态样式是 `.l_body[leftbar] .float-panel button.leftbar-toggle`，放外面选中不到。按钮 class `mobile-only leftbar-toggle mobile` + 内联 `style="display:none"`：桌面靠内联样式隐藏，移动端（≤667px）`.mobile-only` 的 `display:block !important` 显示。图标用 `{{icon "default:leftbar"}}`（icons.yml 已确认存在）。main.css 是 Stellar 编译产物，`[leftbar]` attribute、`.float-panel`、`.main-mask` 样式均已包含，无需覆写。
 
-## Step 3 新增坑点（侧边栏动态化 + TOC + 搜索 + PJAX + 404）
+## Step 3 新增坑点（侧边栏动态化 + TOC + 搜索 + 404）
 
 ### goldmark AutoHeadingID：id 生成规则与 re-seed 必要性
 
@@ -346,22 +328,16 @@ TOC 依赖标题带 id：`goldmark.New(goldmark.WithParserOptions(parser.WithAut
 
 CSS 的折叠选择器是 `a.toc-link + ol`（子列表必须紧跟在父级链接后面、嵌在父级 `<li>` 内），**层级缩进选择器是 `.toc-child .toc-link`（padding-left 1.5rem 起逐级加深）**——hexo toc helper 输出的子列表是 `<ol class="toc-child">` 不是裸 `<ol>`，ExtractTOC 少写 class 会导致 h3 不缩进。ExtractTOC 用状态机（openH2/openH3）生成该结构；无 h2 前置的 h3 提升为顶层项。widget 结构对齐 widgets/toc.ejs：`collapse="false"` 属性（_data/widgets.yml 默认配置，CSS 只响应 true/auto）、widget-header 的 cap-action（`sidebar.toggleTOC()` 切 #data-toc 的 collapse class，折叠动画是 `grid-template-rows: 0fr` 不是 display:none）、widget-footer「回到顶部」（`util.scrollTop()`）。标题文案用语言包原文「本文目录」（meta.toc）。
 
-### PJAX 与 DOM 引用的相处方式
+### PJAX 已移除（本节为历史，现状是整页刷新）
 
-pjax.js 对 `.l_body` 只做属性同步 + 子节点局部替换（换 `.l_main`、就地更新 `.l_left`/`.l_right`），因此：
+Step 3 曾接入 pjax.js 做无刷新导航，并围绕 `.l_body` 局部替换设计了一套 DOM 引用/事件绑定规则（`pjax:complete` 重绑、`_searchInitialized` 等绑定标记、属性同步收侧栏）。**Spec 59（对齐 1.35）起 PJAX 已整体移除**，导航为整页刷新，上述规则全部失效：事件绑定只走 `DOMContentLoaded`/document 级委托，不要再写 `pjax:complete` 监听或防重绑标记；head.html 里 `.pjax-loading`/`page-loading-bar` 的手工补丁也已一并删除。保留的结论：**前台不得出现指向 /console 后台的链接**（原 /admin 已退役，见 Demo 3「管理后台统一到 Vue Console」），后续若确需链接注意整页刷新语义。
 
-- main.js 顶层缓存的 `l_body` 引用**不失效**，`sidebar.leftbar/dismiss` 导航后仍可用；
-- 导航时属性同步会清掉 `leftbar` attribute，移动端侧栏自动收起，无需手动处理；
-- 侧栏/TOC 节点会被替换成**新节点**，事件绑定要么委托到 document（init.sidebar 的 TOC 点击收侧栏），要么把绑定标记挂在 DOM 节点上（`_searchInitialized`/`_localSearchBound`/`tocState.bound`），`pjax:complete` 重跑 init 时新节点重新绑、旧节点不叠加；
-- TOC 锚点点击被 pjax.js 的 handleHashLink 优先拦截平滑滚动，不会触发整页导航；
-- **前台不得出现会被 PJAX 抓取的 /console 后台链接**：后续若加需 `data-pjax="false"`（当前前台无后台链接；原 /admin 路由已退役，见 Demo 3「管理后台统一到 Vue Console」）。
-
-main.css 已含 `.error-page` 全套样式（_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f），**不要重复自定义**；404 结构对齐 layout/404.ejs（h1 里是 img#error 图片 + p.what/p.why 语言包文案 + `<br><br>` + a#back「返回主页」）。main.css **缺** `.pjax-loading`/`.pjax-loaded`（_plugins/pjax.styl 未被编译入口包含），在 head.html 按原版 styl 手工补等价产物（page-loading-bar 居中图标 + l_main/#l_cover 的 opacity 0.4/translateY(8px) 过渡 + pjax-fade-in + prefers-reduced-motion），并在 body 闭合前加 `<div class="page-loading-bar">`（对齐 layout.ejs）。
+本节的 404 结论仍然有效：main.css 已含 `.error-page` 全套样式（_components/pages/error.styl 编译产物：h1 4rem、a#back 黄底黑框 #fdb62f），**不要重复自定义**；404 结构对齐 layout/404.ejs（h1 里是 img#error 图片 + p.what/p.why 语言包文案 + `<br><br>` + a#back「返回主页」）。
 
 ### 本地搜索：/search.json no-store 与去 jQuery 移植
 
-- 索引端点每次实时查 DB（demo 数据量小），响应头 `Cache-Control: no-store`——Console 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。
-- local-search.js 从 Stellar 移植去 jQuery：`utils.jq` 入口改 `DOMContentLoaded + pjax:complete`，`$(...)`→querySelector，`.focus/.keydown`→addEventListener，`.attr`→getAttribute，`toggleClass`→classList.toggle。核心 searchFunc（关键词组合/高亮/排序）与 localStorage 缓存 `search_cache_v1` 原样保留。
+- 索引端点每次请求全量重建（内容派生缓存见 `modules/stellar/routes/content_cache.go`），响应头 `Cache-Control: no-store`——Console 改文后索引必须立即反映，与 /assets 的 no-cache 协商缓存不同，这里是禁缓存。另注意：前端 local-search.js 优先走 `/api/search`（FTS5），失败才降级回 /search.json 本地匹配，改搜索逻辑时两个端点都要看。
+- local-search.js 从 Stellar 移植去 jQuery：入口改 `DOMContentLoaded`（早期曾加 `pjax:complete`，随 PJAX 移除已删），`$(...)`→querySelector，`.focus/.keydown`→addEventListener，`.attr`→getAttribute，`toggleClass`→classList.toggle。核心 searchFunc（关键词组合/高亮/排序）与 localStorage 缓存原样保留。
 - 初始化挂在 input 的 **focus 事件**上（对齐原版）。注意 headless/失焦窗口里 `el.focus()` 只设 activeElement 不派生 focus 事件，自动化验证时需直接调 searchFunc；真实用户点击输入框无此问题。
 
 ### 自定义 404：NoRoute + render404 统一出口
@@ -383,6 +359,8 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 ## Demo 进度
 
+> 以下为历史进度快照，不代表现状：其中 Demo 3 的 `/admin` 路由与 EasyMDE 已退役（见「管理后台统一到 Vue Console」），PJAX 已移除（见 Spec 59）。当前能力以后续 Spec 章节与代码为准。
+
 - [x] Demo 0：bare 仓库 + worktree 初始化
 - [x] Demo 1：CSS 编译验证（shim 方案，产物 267.9 KB，artalk/深色模式/插件样式均正确）
 - [x] Demo 2：Go 服务端渲染（Gin + html/template + goldmark，/post/:slug 路由 + 彩色菜单图标 + 深色模式切换 + ctx 注入，preview 验证通过）
@@ -395,6 +373,8 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 ## Spec 68 · Stellar 1.40.0 同步（2026-08）
 
 `resource/hexo-theme-stellar` 已固定到 `1.40.0`，`modules/stellar/web/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
+
+**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本（如 1.41 同步分支已切到 1.41.0）。执行 `make css` 前先确认克隆版本与本分支同步版本一致（`git -C ../resource/hexo-theme-stellar describe --tags`），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
 
 - 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
 - `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
@@ -422,14 +402,9 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 **坑**：`html/template` 在 style 属性 CSS `url()` 上下文中自动把单引号转义为 `%27`（如 `url('...')` → `url(%27...%27)`），这与上游 Stellar Hexo 行为一致，浏览器正确解析 `%27` 为单引号，无需额外转义函数。如果手动用 `printf` 或 `safe` 函数反而可能双转义，保持默认即可。
 
-### 静态资源版本戳 bump 规范
+### 静态资源版本化：asset_ver 内容哈希（手工 bump 已退役）
 
-SW（Service Worker）对 `/assets/*` 走 `cache-first` 策略，静态资源内容变化后老访客拿到新 HTML 但 SW 返回缓存的旧资源，导致新旧资源错配（CSS 新类名引用旧样式文件等）。**对策**：
-
-- 每次修改 `modules/stellar/web/assets/` 下的文件（main.css、main.js、plugins/ 脚本等），必须同步 bump `head.html`/`base.html` 中的 `?v=` 版本戳（如 `main.css?v=dark6` → `dark7`）
-- bump 清单对照 `git diff --name-only` 变化的 assets 文件，只 bump 确实变了的文件，不变的不动
-- bump 对照基线是最近一次改动 assets 的提交（本次评审对应 1.38 同步提交）；plugins/ 下脚本（scrollreveal-init.js、heti-init.js 等）内容变动后同样需要 bump
-- 此坑不影响 `-dev` 开发模式（磁盘实时加载），但影响生产构建产物
+SW（Service Worker，head.html 注册 `/sw.js`）对 `/assets/*` 走 `cache-first` 策略，早期静态资源内容变化后需手工 bump `?v=` 版本戳防新旧资源错配。**现状**：资源引用已统一改为 `?v={{asset_ver "<path>"}}`（Spec 68 引入，模板函数启动时按内容算哈希，见 `modules/stellar/web/assetver.go`），内容一变 URL 自动变，SW cache-first 天然不会命中旧资源，**不再需要手工 bump**。新增 assets 引用时一律用 `asset_ver` 模板函数，不要写死版本号；此坑不影响 `-dev` 开发模式（磁盘实时加载）。
 
 ### seed.go Pinned 字段赋值
 

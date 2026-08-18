@@ -65,7 +65,7 @@ feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自�
 make merge-check
 ```
 
-- `merge-check` 强制先执行 `make test`（console 测试 + assets 行为面 + module-check + `go vet` + staticcheck + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
+- `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
 - `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
 - **合并后组合态复验**：合入成功后 `merge-check` 会在 dev worktree 再执行一次 `make test`（防 dev 领先、feature 落后时两者改动组合态破坏门禁）；复验失败时输出回退指引（`git -C <DEV_WORKTREE> reset --hard ORIG_HEAD`，dev 回到合并前状态）并以非零码退出——先回退、再在 feature 分支 rebase 最新 dev 修复兼容后重试。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
@@ -131,13 +131,12 @@ git -C .bare worktree remove ../feat-comment
 
 ## 工程坑点知识路由
 
-> 与提供方无关的工程坑点知识（已验证的编译链路、模板结构、图标机制、SQLite、PJAX 等坑点）的 canonical 来源是 [CLAUDE.md](CLAUDE.md)，本节只做路由、不复制内容，与「端口约定」「提交规范」的 canonical+回指治理模式一致。该知识适用于所有 agent（Qoder / Claude / Trae 等），不限于 Claude。
+> 与提供方无关的工程坑点知识（已验证的编译链路、模板结构、图标机制、SQLite、资源版本化等坑点）的 canonical 来源是 [CLAUDE.md](CLAUDE.md)，本节只做路由、不复制内容，与「端口约定」「提交规范」的 canonical+回指治理模式一致。该知识适用于所有 agent（Qoder / Claude / Trae 等），不限于 Claude。
 
 任一 agent 动手修改对应模块前，必须先查阅 `CLAUDE.md` 相应章节：
 
 | 改动范围 | `CLAUDE.md` 必读章节 |
 |---------|-------------------|
-| 模块边界 / 依赖方向 / 新增包或路由 | 「第一阶段模块边界」（module-check 守卫、PublicRoutes URL 所有权、功能模块框架、staticcheck 门禁、拆文件约定） |
 | bare 仓库 / worktree 操作 | 「仓库工作流」（worktree 操作注意、cwd 不保留坑） |
 | CSS / Stylus 编译、图标与深色模式 | 「Stellar CSS 剥离规范」（shim 注入、返回值类型、siteblur 遮罩、图标颜色） |
 | 前台 HTML / Go 模板结构 | 「Stellar HTML 结构规范（关键）」（class 名与嵌套必须对齐 Stellar EJS） |
@@ -145,18 +144,18 @@ git -C .bare worktree remove ../feat-comment
 | 管理后台 / SQLite | 「Demo 3 新增坑点」（driver name、模板路径化命名、Vue Console 迁移现状） |
 | DB 迁移 / 配置文件 | 「Step 1 新增坑点」（ALTER 迁移、yaml 引号） |
 | 归档 / 标签 / 缓存头 / JS shim | 「Step 2 新增坑点」「Step 2 收尾修复」（tags 匹配一致性、no-cache、移动端 sidebar） |
-| TOC / 搜索 / PJAX / 404 | 「Step 3 新增坑点」（AutoHeadingID、PJAX DOM 引用、对照原版先行） |
+| TOC / 搜索 / 404（PJAX 已移除，现状见「Spec 59」） | 「Step 3 新增坑点」（AutoHeadingID、搜索双端点、对照原版先行） |
 | 工具链版本 | 「工具链」（Go / Node / stylus / SQLite 驱动版本与启动方式） |
 
 ## UI 设计规范
 
-> 本节为 UI 设计规范的 canonical 路由；真值以 `.design_library/苹果/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。
+> 本节为 UI 设计规范的 canonical 路由；真值以 `resource/apple-design/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。该目录与主题源 `resource/` 一样是 gitignore 的本地资源；新开的 feature worktree 若无此目录，从 dev worktree 复制一份即可。
 
 ### 主题模式约定
 
 本项目只做深色模式，**永久不实现浅色模式**。新增或修改 UI、CSS、主题配置、组件状态和验收截图时，必须以深色模式为唯一目标，不得新增浅色模式切换、浅色主题 token、浅色专用样式或浅色验收基线；现有第三方主题中的亮色分支仅作为兼容代码保留，不得扩展或作为本项目产品能力使用。
 
-任一 agent 新增/修改管理后台或前台 UI 前，必须先读 `.design_library/苹果/`，阅读顺序见 `library-consumption.json`（SKILL.md → README.md → css.json → components/index.json → components/{slug}.json → preview/component-{slug}.html → components.css → ui_kits/website/index.html），并遵守：
+任一 agent 新增/修改管理后台或前台 UI 前，必须先读 `resource/apple-design/`，阅读顺序见其 `library-consumption.json` 的 `recommendedReadOrder`（SKILL.md → README.md → css.json → components/index.json → components/{slug}.json → preview/component-{slug}.html → components.css → ui_kits/website/index.html），并遵守：
 
 - 只消费语义 token（`:root` 亮 / `.dark` 暗两层映射，`--primary`/`--background`/`--muted-foreground`/`--border`/`--radius`/`--shadow-*` 及 `--apple-*` 前缀别名），不新造裸色值。
 - 组件模式限 button / card / input / navigation / product-grid / comparison-table 六类，类名与结构对齐 `components.css`。
