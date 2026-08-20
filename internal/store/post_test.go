@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -104,6 +105,94 @@ func TestPostUpdate(t *testing.T) {
 	}
 	if err := s.Update("ghost", &Post{Title: "x"}); err == nil {
 		t.Fatal("expected error updating non-existent slug")
+	}
+}
+
+func TestPostUpdateSlugKeepsIdentityAndMigratesAssociations(t *testing.T) {
+	s := newTestStore(t)
+	p := pubPost("old-slug", "旧标题")
+	p.Authors = []string{"alice", "bob"}
+	p.Categories = []string{"技术/Go", "生活"}
+	id, err := s.Create(p)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if _, err := s.DB().Exec(`UPDATE posts SET views = 7 WHERE id = ?`, id); err != nil {
+		t.Fatalf("set views: %v", err)
+	}
+	if _, err := s.CreateRevision(&Revision{PostSlug: "old-slug", Title: "更早版本", ContentMD: "old"}); err != nil {
+		t.Fatalf("create revision: %v", err)
+	}
+	before, err := s.GetBySlug("old-slug")
+	if err != nil {
+		t.Fatalf("get before: %v", err)
+	}
+	var events []string
+	s.SetPostWriteHook(func(op, slug string) { events = append(events, op+":"+slug) })
+
+	updated := pubPost("new-slug", "新标题")
+	updated.Authors = []string{"carol", "dave"}
+	updated.Categories = []string{"产品"}
+	if err := s.UpdateSlug("old-slug", "new-slug", updated); err != nil {
+		t.Fatalf("update slug: %v", err)
+	}
+	after, err := s.GetBySlug("new-slug")
+	if err != nil {
+		t.Fatalf("get after: %v", err)
+	}
+	if after.ID != id || !after.CreatedAt.Equal(before.CreatedAt) || after.Views != 7 {
+		t.Fatalf("identity/read count changed: before=%+v after=%+v", before, after)
+	}
+	if strings.Join(after.Authors, ",") != "carol,dave" || strings.Join(after.Categories, ",") != "产品" {
+		t.Fatalf("associations not replaced atomically: authors=%v categories=%v", after.Authors, after.Categories)
+	}
+	if old, _ := s.GetBySlug("old-slug"); old != nil {
+		t.Fatal("old slug should no longer resolve")
+	}
+	revisions, err := s.ListRevisions("new-slug")
+	if err != nil || len(revisions) != 1 || revisions[0].PostSlug != "new-slug" {
+		t.Fatalf("revision slug not migrated: revisions=%+v err=%v", revisions, err)
+	}
+	if got := strings.Join(events, ","); got != "delete:old-slug,update:new-slug" {
+		t.Fatalf("write hooks = %q, want old delete + new update", got)
+	}
+}
+
+func TestPostUpdateSlugConflictAndAssociationFailureRollback(t *testing.T) {
+	s := newTestStore(t)
+	first := pubPost("first", "第一篇")
+	first.Authors = []string{"alice"}
+	first.Categories = []string{"旧分类"}
+	if _, err := s.Create(first); err != nil {
+		t.Fatalf("create first: %v", err)
+	}
+	if _, err := s.Create(pubPost("occupied", "占用 slug")); err != nil {
+		t.Fatalf("create occupied: %v", err)
+	}
+	if err := s.UpdateSlug("first", "occupied", pubPost("occupied", "不应写入")); !errors.Is(err, ErrPostSlugConflict) {
+		t.Fatalf("slug conflict = %v, want ErrPostSlugConflict", err)
+	}
+	got, err := s.GetBySlug("first")
+	if err != nil || got == nil || got.Title != "第一篇" {
+		t.Fatalf("conflict changed old post: post=%+v err=%v", got, err)
+	}
+
+	if _, err := s.DB().Exec(`CREATE TRIGGER fail_post_category BEFORE INSERT ON post_categories BEGIN SELECT RAISE(ABORT, 'forced association failure'); END`); err != nil {
+		t.Fatalf("create failure trigger: %v", err)
+	}
+	defer s.DB().Exec(`DROP TRIGGER fail_post_category`)
+	updated := pubPost("renamed", "不应提交")
+	updated.Authors = []string{"bob"}
+	updated.Categories = []string{"新分类"}
+	if err := s.UpdateSlug("first", "renamed", updated); err == nil {
+		t.Fatal("association failure should fail the transaction")
+	}
+	got, err = s.GetBySlug("first")
+	if err != nil || got == nil || got.Title != "第一篇" || strings.Join(got.Authors, ",") != "alice" || strings.Join(got.Categories, ",") != "旧分类" {
+		t.Fatalf("association failure did not roll back: post=%+v err=%v", got, err)
+	}
+	if renamed, _ := s.GetBySlug("renamed"); renamed != nil {
+		t.Fatal("failed slug update created a new record")
 	}
 }
 

@@ -223,6 +223,42 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 	}
 }
 
+func TestPostSlugUpdatePreservesIdentityAndAssociations(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"api-slug-old","title":"旧文章","content_md":"旧正文","authors":["alice","bob"],"categories":["技术/Go"],"status":"published"}`, cookie)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create post: status=%d body=%s", w.Code, w.Body.String())
+	}
+	before, err := st.GetBySlug("api-slug-old")
+	if err != nil || before == nil {
+		t.Fatalf("get created post: %v nil=%v", err, before == nil)
+	}
+
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-slug-old", `{"slug":"api-slug-new","title":"新文章","content_md":"新正文","status":"published"}`, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("rename post: status=%d body=%s", w.Code, w.Body.String())
+	}
+	if old, _ := st.GetBySlug("api-slug-old"); old != nil {
+		t.Fatal("old slug should not resolve after successful rename")
+	}
+	after, err := st.GetBySlug("api-slug-new")
+	if err != nil || after == nil {
+		t.Fatalf("get renamed post: %v nil=%v", err, after == nil)
+	}
+	if after.ID != before.ID || strings.Join(after.Authors, ",") != "alice,bob" || strings.Join(after.Categories, ",") != "技术/Go" {
+		t.Fatalf("rename lost identity/associations: before=%+v after=%+v", before, after)
+	}
+	revisions, err := st.ListRevisions("api-slug-new")
+	if err != nil || len(revisions) != 1 || revisions[0].PostSlug != "api-slug-new" {
+		t.Fatalf("rename revision mismatch: revisions=%+v err=%v", revisions, err)
+	}
+	if oldRevisions, _ := st.ListRevisions("api-slug-old"); len(oldRevisions) != 0 {
+		t.Fatalf("old slug still owns revisions: %+v", oldRevisions)
+	}
+}
+
 // TestPostCRUDAuth 文章接口未认证一律 401。
 func TestPostCRUDAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)

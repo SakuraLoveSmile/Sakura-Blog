@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test module-check console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
+.PHONY: all build console go-build test console-test assets-test deploy-test module-check release-secret-check console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
@@ -20,10 +20,18 @@ go-build:
 
 ## test: 静态检查 + 全部测试（Go vet + staticcheck + test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
 ## Go 命令统一从根 module 执行。
-test: dist-bootstrap console-test assets-test module-check
+test: dist-bootstrap console-test assets-test deploy-test module-check
 	go vet ./...
 	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 	go test ./...
+
+## release-secret-check: 只扫描 Git 跟踪文件中的常见凭据格式，输出路径和类型，不输出匹配内容。
+release-secret-check:
+	bash scripts/check-release-secrets.sh
+
+## deploy-test: update.sh 的本地部署/回滚测试，不访问网络或真实 systemd。
+deploy-test:
+	bash deploy/update_test.sh
 
 ## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
 ## modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；

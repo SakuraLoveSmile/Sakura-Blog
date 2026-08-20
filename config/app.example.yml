@@ -38,5 +38,5 @@ backup_keep: 7
 
 # GitHub 集成（ghcard/ghrepo/ghuser 卡片，直连 api.github.com 自托管渲染）
 # PAT 只需只读权限；空则匿名访问（60 req/h，易被共享 IP 限流 403）。
-# app.yml 不受 git 跟踪，可直接在此填写 PAT；亦可用环境变量 BLOG_GITHUB_TOKEN 注入（优先级更高）。
+# 生产环境不要把 PAT 写入配置文件，优先用 BLOG_GITHUB_TOKEN 或密钥管理注入。
 github_token:

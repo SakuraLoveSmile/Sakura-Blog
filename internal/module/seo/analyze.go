@@ -3,15 +3,19 @@ package seo
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
+
+	"blog/internal/safefetch"
 )
 
-// analyzeClient 页面抓取用 client（短超时）。
-var analyzeClient = &http.Client{Timeout: 12 * time.Second}
+// defaultAnalyzeClient 页面抓取用 SSRF 加固 client（短超时，最多跟随 5 次
+// 重定向；每一跳都会重新解析并校验目标地址）。
+var defaultAnalyzeClient = safefetch.New(safefetch.Options{Timeout: 12 * time.Second, MaxRedirects: 5})
 
 // checkItem 单条检查结果。
 type checkItem struct {
@@ -47,25 +51,36 @@ func (m *Module) analyzeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供待检查的 URL，或先在站点设置里配置 site.url"})
 		return
 	}
-	if !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
+	targetURL, err := url.Parse(target)
+	if err == nil && targetURL.Scheme == "" {
 		target = "https://" + target
+		targetURL, err = url.Parse(target)
 	}
-
+	if err != nil || targetURL.Host == "" || !strings.EqualFold(targetURL.Scheme, "http") && !strings.EqualFold(targetURL.Scheme, "https") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "URL 无效，仅支持 http 或 https"})
+		return
+	}
+	targetURL.Scheme = strings.ToLower(targetURL.Scheme)
+	target = targetURL.String()
 	req, err := http.NewRequest(http.MethodGet, target, nil)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "URL 无效"})
 		return
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; StellarBlog-SEO/1.0)")
-	resp, err := analyzeClient.Do(req)
+	client := m.analyzeClient
+	if client == nil {
+		client = defaultAnalyzeClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "无法访问该页面：" + err.Error()})
+		c.JSON(http.StatusOK, gin.H{"error": "无法访问该页面"})
 		return
 	}
 	defer resp.Body.Close()
 	doc, err := html.Parse(io.LimitReader(resp.Body, 4<<20))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "页面解析失败：" + err.Error()})
+		c.JSON(http.StatusOK, gin.H{"error": "页面解析失败"})
 		return
 	}
 

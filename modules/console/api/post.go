@@ -381,6 +381,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		if errors.Is(err, store.ErrPostSlugConflict) {
+			Fail(c, http.StatusConflict, "slug 已被占用: "+newSlug)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
@@ -534,32 +538,12 @@ func (h *Handler) discardPostDraft(c *gin.Context) {
 // existing 为保存前查出的旧记录；p 为新内容（p.Slug 已设）；newSlug 为目标 slug。
 // 内容无变化（content_md + title 均相同）时不产生空版本。
 func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) error {
-	if newSlug != existing.Slug {
-		// slug 变更：先删旧再建新（保留 created_at）
-		if err := h.store.Delete(existing.Slug); err != nil {
-			return err
-		}
-		p.CreatedAt = existing.CreatedAt
-		if p.References == "" {
-			p.References = existing.References
-		}
-		if p.Poster == "" {
-			p.Poster = existing.Poster
-		}
-		if p.AISummary == "" {
-			p.AISummary = existing.AISummary
-		}
-		if _, err := h.store.Create(p); err != nil {
-			return err
-		}
-		// 同步迁移版本归属
-		if err := h.store.UpdateRevisionSlug(existing.Slug, newSlug); err != nil {
-			log.Printf("update revision slug %s -> %s: %v", existing.Slug, newSlug, err)
-		}
-	} else {
-		if err := h.store.Update(existing.Slug, p); err != nil {
-			return err
-		}
+	// 直接更新原记录：保持文章 ID、创建时间、阅读量及关联数据，并把
+	// revision slug 一并放进同一事务。索引/OG 失效回调只在提交成功后触发。
+	p.ID = existing.ID
+	p.CreatedAt = existing.CreatedAt
+	if err := h.store.UpdateSlug(existing.Slug, newSlug, p); err != nil {
+		return err
 	}
 	h.snapshotRevision(existing, p)
 	return nil

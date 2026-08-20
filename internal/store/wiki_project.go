@@ -144,7 +144,7 @@ func (s *Store) MigrateWikiProjects(source []*WikiProject) error {
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				id, project.Name, project.Title, project.Headline, project.Subtitle, project.Description,
 				project.Icon, project.Cover, project.Available, project.URL, project.Repo, project.Branch,
-				project.Sort, boolInt(project.Pin), boolInt(project.Visible || !project.Pin && project.ID != ""), hero)
+					project.Sort, boolInt(project.Pin), boolInt(project.Visible), hero)
 			if err != nil {
 				_ = tx.Rollback()
 				return fmt.Errorf("insert wiki project %s: %w", id, err)

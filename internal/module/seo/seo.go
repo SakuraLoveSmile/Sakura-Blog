@@ -3,6 +3,8 @@
 package seo
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
@@ -11,7 +13,10 @@ import (
 
 // Module SEO 工具集模块。deps 在 RegisterRoutes/RegisterPublic 时注入并留存。
 type Module struct {
-	deps module.Deps
+	deps          module.Deps
+	analyzeClient interface {
+		Do(*http.Request) (*http.Response, error)
+	}
 }
 
 func init() {

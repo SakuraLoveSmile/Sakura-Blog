@@ -2,31 +2,58 @@ package routes
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
+	"blog/internal/httpapi"
 )
 
-func TestHeadToGet(t *testing.T) {
+func TestHeadRoutesMatchGetBeforeGin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	// 只验证中间件契约：HEAD 被改写为 GET（net/http 会自动抑制 HEAD 响应体）。
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodHead, "/ping", nil)
-	headToGet()(c)
-	if c.Request.Method != http.MethodGet {
-		t.Errorf("HEAD should be rewritten to GET, got %s", c.Request.Method)
+	r := gin.New()
+	for _, path := range []string{"/", "/rss.xml", "/atom.xml", "/sitemap.xml", "/robots.txt", "/console/"} {
+		path := path
+		r.GET(path, func(c *gin.Context) { c.Header("ETag", `"stable"`); c.String(http.StatusOK, path) })
 	}
-	// GET 不受影响
-	c2, _ := gin.CreateTestContext(httptest.NewRecorder())
-	c2.Request = httptest.NewRequest(http.MethodPost, "/ping", nil)
-	headToGet()(c2)
-	if c2.Request.Method != http.MethodPost {
-		t.Errorf("non-HEAD method should be untouched, got %s", c2.Request.Method)
+	r.NoRoute(func(c *gin.Context) { c.String(http.StatusNotFound, "not found") })
+	server := httptest.NewServer(httpapi.HeadToGet(r))
+	defer server.Close()
+	client := server.Client()
+
+	for _, path := range []string{"/", "/rss.xml", "/atom.xml", "/sitemap.xml", "/robots.txt", "/console/", "/unknown"} {
+		get, err := client.Get(server.URL + path)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		_, _ = io.Copy(io.Discard, get.Body)
+		get.Body.Close()
+		headReq, err := http.NewRequest(http.MethodHead, server.URL+path, nil)
+		if err != nil {
+			t.Fatalf("HEAD %s request: %v", path, err)
+		}
+		head, err := client.Do(headReq)
+		if err != nil {
+			t.Fatalf("HEAD %s: %v", path, err)
+		}
+		headBody, _ := io.ReadAll(head.Body)
+		head.Body.Close()
+		if head.StatusCode != get.StatusCode {
+			t.Errorf("HEAD %s status = %d, GET = %d", path, head.StatusCode, get.StatusCode)
+		}
+		for _, key := range []string{"Content-Type", "Content-Length", "ETag"} {
+			if got, want := head.Header.Get(key), get.Header.Get(key); got != want {
+				t.Errorf("HEAD %s header %s = %q, GET = %q", path, key, got, want)
+			}
+		}
+		if len(headBody) != 0 {
+			t.Errorf("HEAD %s returned body %q", path, headBody)
+		}
 	}
 }
 
@@ -82,12 +109,12 @@ func TestRecoveryAPIPanicProblem(t *testing.T) {
 	s := newWebServer(webDeps{})
 	r := gin.New()
 	s.installMiddleware(r, &config.App{}, newPageViewBuffer(nil))
-	r.GET("/api/v1/boom", func(c *gin.Context) {
+	r.GET("/api/v1/panic", func(c *gin.Context) {
 		panic("boom")
 	})
 
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/boom", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/panic", nil))
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
@@ -95,10 +122,13 @@ func TestRecoveryAPIPanicProblem(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("response is not JSON Problem: %v (body=%s)", err, w.Body.String())
 	}
-	if body["type"] != "internal_error" || body["error"] != "boom" {
+	if body["type"] != "internal_error" || body["error"] != "服务器内部错误，请稍后重试" || body["detail"] != "服务器内部错误，请稍后重试" {
 		t.Fatalf("problem body wrong: %v", body)
 	}
-	if body["instance"] != "/api/v1/boom" {
+	if strings.Contains(w.Body.String(), "boom") {
+		t.Fatalf("panic detail must not be exposed: %s", w.Body.String())
+	}
+	if body["instance"] != "/api/v1/panic" {
 		t.Fatalf("instance should be request path, got %v", body["instance"])
 	}
 }

@@ -1,7 +1,7 @@
 # 站点配置模板，对应 internal/config/site.go 的 DefaultSite()。
 # 复制为 site.yml 后填值：cp config/site.example.yml config/site.yml
 # site.yml 含密钥（admin 密码 / SMTP 密码）、不受 git 跟踪；本 example 仅跟踪结构与安全默认值。
-# 启动时由 config.LoadSite 加载；文件缺失/解析失败时 fallback 到 DefaultSite()。
+# 启动时由 config.LoadSite 加载；生产模式缺失/解析失败会拒绝启动，只有开发模式回退到 DefaultSite()。
 # 注意：# 开头的值（如主题色）必须加引号；raw HTML（如 social icon）用单引号包裹。
 
 title: Stellar Demo

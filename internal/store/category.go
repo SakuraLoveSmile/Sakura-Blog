@@ -119,6 +119,17 @@ func (s *Store) ensureCategoryPaths(paths []string) ([]int64, error) {
 		return nil, err
 	}
 	defer tx.Rollback()
+	ids, err := ensureCategoryPathsTx(tx, paths)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+func ensureCategoryPathsTx(tx *sql.Tx, paths []string) ([]int64, error) {
 	ids := make([]int64, 0, len(paths))
 	for _, path := range paths {
 		parts, err := splitCategoryPath(path)
@@ -145,28 +156,32 @@ func (s *Store) ensureCategoryPaths(paths []string) ([]int64, error) {
 		}
 		ids = append(ids, id)
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return ids, nil
 }
 
 // ReplacePostCategories 替换文章的完整分类关联。paths 顺序即 position 顺序。
 // 空 paths 会清空关联；为了兼容旧调用方，legacy 会在 paths 为空时作为单分类回退。
 func (s *Store) ReplacePostCategories(postID int64, paths []string, legacy string) error {
-	paths = normalizeCategoryPaths(paths)
-	if len(paths) == 0 && strings.TrimSpace(legacy) != "" {
-		paths = []string{strings.TrimSpace(legacy)}
-	}
-	ids, err := s.ensureCategoryPaths(paths)
-	if err != nil {
-		return err
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	if err := replacePostCategoriesTx(tx, postID, paths, legacy); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func replacePostCategoriesTx(tx *sql.Tx, postID int64, paths []string, legacy string) error {
+	paths = normalizeCategoryPaths(paths)
+	if len(paths) == 0 && strings.TrimSpace(legacy) != "" {
+		paths = []string{strings.TrimSpace(legacy)}
+	}
+	ids, err := ensureCategoryPathsTx(tx, paths)
+	if err != nil {
+		return err
+	}
 	if _, err := tx.Exec(`DELETE FROM post_categories WHERE post_id = ?`, postID); err != nil {
 		return err
 	}
@@ -182,7 +197,7 @@ func (s *Store) ReplacePostCategories(postID int64, paths []string, legacy strin
 	if _, err := tx.Exec(`UPDATE posts SET category = ? WHERE id = ?`, legacyValue, postID); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 func normalizeCategoryPaths(paths []string) []string {

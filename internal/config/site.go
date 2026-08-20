@@ -10,7 +10,7 @@ import (
 )
 
 // LoadSite 从 yaml 文件加载站点配置（如 config/site.yml）。
-// 失败时调用方应 fallback 到 DefaultSite()，保证 demo 不因配置问题起不来。
+// 是否回退到 DefaultSite() 由调用方根据运行模式决定；生产环境必须让错误向上传播。
 func LoadSite(path string) (*tmpl.Site, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {

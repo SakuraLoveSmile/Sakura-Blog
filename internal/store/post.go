@@ -4,6 +4,7 @@ package store
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,6 +22,10 @@ const (
 	StatusDraft     = "draft"
 	StatusPublished = "published"
 )
+
+// ErrPostSlugConflict indicates that a requested slug is already owned by a
+// different post. Callers can map this to HTTP 409 without exposing SQL text.
+var ErrPostSlugConflict = errors.New("post slug conflict")
 
 // Post 文章持久化记录。对齐 posts 表字段。
 type Post struct {
@@ -734,19 +739,55 @@ func (s *Store) Create(p *Post) (int64, error) {
 	return id, nil
 }
 
-// Update 按 slug 更新文章字段（title/excerpt/cover/category/tags/content_md/content_html/status/poster），刷新 updated_at。
-// draft_json 不在更新列中（ADD COLUMN 默认值兼容），由 SaveDraft/ClearDraft 单独维护。
-// topic_id 直接写 p.TopicID（Spec 52）：调用方负责传正确的关联值——API 层在 savePostWithSnapshot 中
-// 保留 existing.TopicID（请求体不携带 topic_id），seed 导入显式按专栏名解析；0 表示解除关联。
-// ai_summary 走 COALESCE 保留（Spec 53）：常规保存不清空摘要，由 SetAISummary 专门维护，
-// 避免 seed/Upsert 等不携带该字段的写路径误清。
+// Update 按 slug 更新文章字段。所有字段与关联在同一事务内提交。
 func (s *Store) Update(slug string, p *Post) error {
-	var postID int64
-	if err := s.db.QueryRow(`SELECT id FROM posts WHERE slug = ?`, slug).Scan(&postID); err != nil {
+	return s.UpdateSlug(slug, slug, p)
+}
+
+// UpdateSlug 在原文章记录上原子更新 slug 和文章内容，保留文章 ID、创建时间、阅读量，
+// 并在同一事务内替换作者/分类关联、迁移 revision slug。提交前任何一步失败都会回滚。
+func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin update post %s: %w", oldSlug, err)
+	}
+	defer tx.Rollback()
+
+	var (
+		postID                     int64
+		createdAt                  time.Time
+		poster, references, banner string
+		aiSummary, aiLabel         string
+	)
+	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label FROM posts WHERE slug = ?`, oldSlug).
+		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("update post %s: no rows affected", slug)
+			return fmt.Errorf("update post %s: no rows affected", oldSlug)
 		}
-		return fmt.Errorf("find post %s: %w", slug, err)
+		return fmt.Errorf("find post %s: %w", oldSlug, err)
+	}
+
+	if oldSlug != newSlug {
+		var conflictID int64
+		err := tx.QueryRow(`SELECT id FROM posts WHERE slug = ? AND id != ?`, newSlug, postID).Scan(&conflictID)
+		switch err {
+		case nil:
+			return fmt.Errorf("%w: %s", ErrPostSlugConflict, newSlug)
+		case sql.ErrNoRows:
+		default:
+			return fmt.Errorf("check post slug %s: %w", newSlug, err)
+		}
+	}
+
+	paths := normalizeCategoryPaths(p.Categories)
+	if len(paths) == 0 && strings.TrimSpace(p.Category) != "" {
+		paths = []string{strings.TrimSpace(p.Category)}
+	}
+	p.Categories = paths
+	if len(paths) > 0 {
+		p.Category = paths[0]
+	} else {
+		p.Category = ""
 	}
 	p.UpdatedAt = time.Now()
 	p.Authors = normalizePostAuthors(p.Authors, p.Author)
@@ -759,29 +800,57 @@ func (s *Store) Update(slug string, p *Post) error {
 	if p.Pinned {
 		pinned = 1
 	}
-	res, err := s.db.Exec(`UPDATE posts SET title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=COALESCE((SELECT poster FROM posts WHERE slug=?), ''), topic=?, topic_id=?, "references"=COALESCE((SELECT "references" FROM posts WHERE slug=?), ''), banner=COALESCE((SELECT banner FROM posts WHERE slug=?), ''), meta_description=?, meta_keywords=?, author=?, ai_summary=COALESCE((SELECT ai_summary FROM posts WHERE slug=?), ''), ai_label=COALESCE(NULLIF(?,''), (SELECT ai_label FROM posts WHERE slug=?))
-		WHERE slug=?`,
-		p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), slug, p.Topic, p.TopicID, slug, slug, p.MetaDescription, p.MetaKeywords, p.Author, slug, p.AILabel, slug, slug)
+	if p.Poster == "" {
+		p.Poster = poster
+	}
+	if p.References == "" {
+		p.References = references
+	}
+	if p.Banner == "" {
+		p.Banner = banner
+	}
+	if p.AISummary == "" {
+		p.AISummary = aiSummary
+	}
+	if p.AILabel == "" {
+		p.AILabel = aiLabel
+	}
+
+	res, err := tx.Exec(`UPDATE posts SET slug=?, title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=?, topic=?, topic_id=?, "references"=?, banner=?, meta_description=?, meta_keywords=?, author=?, ai_summary=?, ai_label=?
+		WHERE id=?`,
+		newSlug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel, postID)
 	if err != nil {
-		return fmt.Errorf("update post %s: %w", slug, err)
+		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+			return fmt.Errorf("%w: %s", ErrPostSlugConflict, newSlug)
+		}
+		return fmt.Errorf("update post %s: %w", oldSlug, err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("update post %s: no rows affected", slug)
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("update post %s: no rows affected", oldSlug)
 	}
-	if err := s.replacePostAuthors(postID, p.Authors); err != nil {
-		return fmt.Errorf("save authors for post %s: %w", slug, err)
+	if err := replacePostAuthorsTx(tx, postID, p.Authors); err != nil {
+		return fmt.Errorf("save authors for post %s: %w", oldSlug, err)
 	}
-	if err := s.ReplacePostCategories(postID, p.Categories, p.Category); err != nil {
-		return fmt.Errorf("save categories for post %s: %w", slug, err)
+	if err := replacePostCategoriesTx(tx, postID, p.Categories, p.Category); err != nil {
+		return fmt.Errorf("save categories for post %s: %w", oldSlug, err)
 	}
-	if len(p.Categories) == 0 && strings.TrimSpace(p.Category) != "" {
-		p.Categories = []string{strings.TrimSpace(p.Category)}
+	if oldSlug != newSlug {
+		if _, err := tx.Exec(`UPDATE revisions SET post_slug = ? WHERE post_slug = ?`, newSlug, oldSlug); err != nil {
+			return fmt.Errorf("update revision slug %s->%s: %w", oldSlug, newSlug, err)
+		}
 	}
-	if len(p.Categories) > 0 {
-		p.Category = p.Categories[0]
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit update post %s: %w", oldSlug, err)
 	}
-	s.firePostWrite("update", slug)
+
+	p.ID = postID
+	p.CreatedAt = createdAt
+	if oldSlug != newSlug {
+		s.firePostWrite("delete", oldSlug)
+		s.firePostWrite("update", newSlug)
+	} else {
+		s.firePostWrite("update", newSlug)
+	}
 	return nil
 }
 
@@ -963,6 +1032,13 @@ func (s *Store) replacePostAuthors(postID int64, authors []string) error {
 		return err
 	}
 	defer tx.Rollback()
+	if err := replacePostAuthorsTx(tx, postID, authors); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func replacePostAuthorsTx(tx *sql.Tx, postID int64, authors []string) error {
 	if _, err := tx.Exec(`DELETE FROM post_authors WHERE post_id = ?`, postID); err != nil {
 		return err
 	}
@@ -971,7 +1047,7 @@ func (s *Store) replacePostAuthors(postID int64, authors []string) error {
 			return err
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 // hydratePostAuthors 批量装载关联作者，避免文章列表产生逐篇查询。

@@ -106,3 +106,18 @@ func TestWikiProjectCRUDAndDeleteProtection(t *testing.T) {
 		t.Fatalf("empty project should delete: %v", err)
 	}
 }
+
+func TestWikiProjectMigrationPreservesHiddenVisibility(t *testing.T) {
+	s := newWikiProjectStore(t)
+	source := []*WikiProject{{ID: "hidden", Name: "Hidden", Visible: false, Pin: false}}
+	if err := s.MigrateWikiProjects(source); err != nil {
+		t.Fatalf("migrate hidden project: %v", err)
+	}
+	got, err := s.GetWikiProject("hidden")
+	if err != nil || got == nil {
+		t.Fatalf("get hidden project: %#v, %v", got, err)
+	}
+	if got.Visible {
+		t.Fatal("hidden project became visible during migration")
+	}
+}

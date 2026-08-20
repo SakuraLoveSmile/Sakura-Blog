@@ -93,6 +93,9 @@ func Bootstrap(options Options) (*Services, error) {
 	sitePath := filepath.Join(appConfig.Root, "config", "site.yml")
 	site, err := config.LoadSite(sitePath)
 	if err != nil {
+		if !options.DevMode {
+			return nil, fmt.Errorf("load site config: %w", err)
+		}
 		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
 		site = config.DefaultSite()
 	} else {
@@ -167,6 +170,9 @@ func Bootstrap(options Options) (*Services, error) {
 	if err := config.RebuildSite(st, sitePtr); err != nil {
 		return fail(fmt.Errorf("rebuild site from db: %w", err))
 	}
+	if !options.DevMode && !sitePtr.Load().Admin.AuthEnabled {
+		return fail(fmt.Errorf("production requires an admin password; configure site.yml admin.password or migrate an admin user"))
+	}
 
 	seedOnStart := options.Seed || appConfig.SeedOnStart
 	if seedOnStart {
@@ -197,6 +203,14 @@ func Bootstrap(options Options) (*Services, error) {
 		}
 	}
 
+	// Search.ItemsFromStore reads pages and moments. Ensure their schemas before
+	// FTS backfill; Stellar route constructors run later in main.go.
+	if err := st.EnsurePagesTable(); err != nil {
+		return fail(fmt.Errorf("ensure pages table before search: %w", err))
+	}
+	if err := st.EnsureMomentsTable(); err != nil {
+		return fail(fmt.Errorf("ensure moments table before search: %w", err))
+	}
 	searchIdx := search.New(st.DB())
 	if err := searchIdx.Ensure(); err != nil {
 		log.Printf("search: ensure fts failed (%v), server search disabled", err)

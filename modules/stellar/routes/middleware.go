@@ -15,17 +15,6 @@ import (
 	"blog/internal/store"
 )
 
-// headToGet HEAD 改写为 GET：Gin 注册 GET 路由不会自动响应 HEAD（curl -I/监控探测/CDN 健康检查会 404）。
-// net/http 对 HEAD 请求自动抑制响应体，仅回 header；代价是 HEAD 走完整 handler（量小可接受）。
-func headToGet() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if c.Request.Method == http.MethodHead {
-			c.Request.Method = http.MethodGet
-		}
-		c.Next()
-	}
-}
-
 // securityHeaders P2-14 安全响应头：nosniff 防 MIME 嗅探、SAMEORIGIN 防点击劫持、Referrer-Policy 控制来源泄漏。
 // 不加全局 CSP：前台存在内联脚本/样式（原版 Stellar 结构），严格 CSP 会破坏渲染；/uploads 的 SVG 已单独 CSP 防护（P1-11）。
 func securityHeaders() gin.HandlerFunc {
@@ -55,7 +44,7 @@ func assetsCacheControl() gin.HandlerFunc {
 	}
 }
 
-// installMiddleware 装配全局中间件链（顺序敏感：recovery → 代理/上传上限 → HEAD 改写 → gzip → 响应头 → 埋点）。
+// installMiddleware 装配全局中间件链（顺序敏感：recovery → 代理/上传上限 → gzip → 响应头 → 埋点）。
 func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageViewBuffer) {
 	// P1-8：自定义 500——Logger + CustomRecovery，panic 时渲染友好错误页而非裸文本。
 	r.Use(gin.Logger())
@@ -67,7 +56,7 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 		}
 		// API 路由 panic → 统一 JSON Problem（前台仍走 render500 页，现状不变）
 		if strings.HasPrefix(c.Request.URL.Path, "/api") {
-			msg := fmt.Sprint(err)
+			const msg = "服务器内部错误，请稍后重试"
 			c.AbortWithStatusJSON(http.StatusInternalServerError, httpapi.Problem{
 				Type:     "internal_error",
 				Title:    http.StatusText(http.StatusInternalServerError),
@@ -103,8 +92,6 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 
 	// P2-18：multipart 内存上限——跟随 max_upload_mb，防止超大表单解析撑爆内存（超出部分落临时文件）。
 	r.MaxMultipartMemory = int64(app.MaxUploadMB+1) << 20
-
-	r.Use(headToGet())
 
 	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
 	r.Use(gzip.Gzip(gzip.DefaultCompression))

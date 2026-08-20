@@ -35,6 +35,13 @@ type Options struct {
 	// MaxRedirects 重定向前缀最大跳数。0 = 不跟随重定向（直接返回 30x 响应）。
 	// 跟随时每一跳仍经 DialContext 校验。
 	MaxRedirects int
+	// ResolveIP overrides DNS resolution. It is intended for deterministic tests;
+	// production callers should leave it nil.
+	ResolveIP func(context.Context, string) ([]net.IP, error)
+	// DialContext overrides the final dial after every resolved IP has passed
+	// ForbiddenIP. It is intended for deterministic tests; production callers
+	// should leave it nil.
+	DialContext func(context.Context, string, string) (net.Conn, error)
 }
 
 // New 构造 SSRF 加固的 http.Client。Transport 每次拨号前解析目标主机，
@@ -54,6 +61,16 @@ func New(opts Options) *http.Client {
 		tlsTimeout = 8 * time.Second
 	}
 	dialer := &net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}
+	resolveIP := opts.ResolveIP
+	if resolveIP == nil {
+		resolveIP = func(ctx context.Context, host string) ([]net.IP, error) {
+			return net.DefaultResolver.LookupIP(ctx, "ip", host)
+		}
+	}
+	dialContext := opts.DialContext
+	if dialContext == nil {
+		dialContext = dialer.DialContext
+	}
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			host, port, err := net.SplitHostPort(addr)
@@ -65,7 +82,7 @@ func New(opts Options) *http.Client {
 			if ip := net.ParseIP(host); ip != nil {
 				ips = []net.IP{ip}
 			} else {
-				ips, err = net.DefaultResolver.LookupIP(ctx, "ip", host)
+				ips, err = resolveIP(ctx, host)
 				if err != nil {
 					return nil, err
 				}
@@ -77,7 +94,7 @@ func New(opts Options) *http.Client {
 			}
 			var lastErr error
 			for _, ip := range ips {
-				conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
+				conn, err := dialContext(ctx, network, net.JoinHostPort(ip.String(), port))
 				if err == nil {
 					return conn, nil
 				}

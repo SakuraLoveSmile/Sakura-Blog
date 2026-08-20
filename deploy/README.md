@@ -41,14 +41,16 @@
    | `app.yml` | `trusted_proxy` | nginx 同机填 `127.0.0.1/32`；不填则 IP 限流失效 |
    | `app.yml` | `github_token` | 建议改用 `BLOG_GITHUB_TOKEN` 环境变量注入 |
 
-3. **内容导入（仅一次）**：把 `content/posts/*.md`（已清理，只含真实文章）放到 `/opt/blog/content/posts/`，首启用 seed 导入后关闭：
+3. **安装首个二进制**：首次安装不要执行 `update.sh`；该脚本只接受已有 `/opt/blog/blog` 的升级。将 Release 中已校验的 `blog-linux-amd64` 安装为 `/opt/blog/blog` 并设为可执行。
+
+4. **内容导入（仅一次）**：只把正式文章放到 `/opt/blog/content/posts/`。仓库中的测试/验收文章位于 `docs/fixtures/release-posts/`，不得复制到生产内容目录。首启用 seed 导入后关闭：
 
    ```bash
    sudo -u blog /opt/blog/blog -root /opt/blog -seed   # 手动跑一次
    # 或 app.yml 设 seed_on_start: true 启动一次后改回 false
    ```
 
-4. **systemd**：
+5. **systemd**：
 
    ```bash
    cp blog.service blog-update.service blog-update.timer /etc/systemd/system/
@@ -59,14 +61,16 @@
 
    注意 `blog.service` 的 `BLOG_ROOT=/opt/blog`，`app.yml`/`site.yml` 由 root 解析定位。
 
-5. **反代与证书**：按 `nginx.conf.example` 配置站点（改 `server_name` 与证书路径），certbot 签发证书后启用。
+6. **反代与证书**：按 `nginx.conf.example` 配置站点（改 `server_name` 与证书路径），certbot 签发证书后启用。
 
-6. **自动更新 Token**：
+7. **自动更新 Token**：
 
    ```bash
    install -m 600 -o root -g root /dev/null /opt/blog/.token
    echo "<fine-grained PAT, 仅本仓库 contents 读权限>" > /opt/blog/.token
    ```
+
+   `app.yml`、`site.yml` 和 `.token` 均必须为 `0600`；不要把 Token 写入 Git 跟踪文件、备份日志或命令输出。
 
 ## 上线验证清单
 
@@ -76,7 +80,10 @@
 - [ ] `/console/` 登录后 cookie 带 `Secure`；登录失败 5 次触发限流
 - [ ] 同 IP 60 秒内第二条评论被拒（`trusted_proxy` 生效）
 - [ ] `/robots.txt` 含 `Disallow: /console`；`/sitemap.xml` 正常
-- [ ] 前台无测试文章（hello/mock-*/katex-test 等）
+- [ ] `content/posts/` 只包含正式文章，测试/验收 fixtures 未复制到生产目录
+- [ ] `scripts/check-release-secrets.sh` 扫描通过，未在 Git 跟踪文件发现凭据
+- [ ] `config/app.yml`、`config/site.yml`、`.token` 权限均为 `0600`
+- [ ] 生产 `site.yml` 存在且包含有效 admin 密码；缺失配置时服务应拒绝启动
 - [ ] 页脚备案号渲染（若配置）
 - [ ] `data/backups/` 24h 内生成首份自动备份
 - [ ] `systemctl status blog blog-update.timer` 均 active
@@ -84,6 +91,6 @@
 ## 日常运维
 
 - 日志：`journalctl -u blog -f`；更新日志 `/opt/blog/data/update.log`
-- 手动更新：`sudo /opt/blog/update.sh`（timer 每 6 小时自动跑）
+- 手动更新：`sudo /opt/blog/update.sh`（仅升级已有安装；timer 每 6 小时自动跑）
 - 回滚：update.sh 健康检查失败自动回滚 `blog.bak`；手工回滚即 `cp blog.bak blog && systemctl restart blog`
 - 备份：每日自动全量备份 `data/backups/`（DB + 附件 + site.yml），留存 7 份；建议另行异地同步

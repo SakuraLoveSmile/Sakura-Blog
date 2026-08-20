@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/app"
+	"blog/internal/httpapi"
 	console "blog/modules/console"
 	"blog/modules/stellar"
 )
@@ -73,7 +74,7 @@ func main() {
 	consoleHandler.SetOnLinksChanged(services.Friends.Refresh)
 	services.StartBackground()
 
-	server := &http.Server{Addr: services.App.ListenAddr, Handler: router}
+	server := &http.Server{Addr: services.App.ListenAddr, Handler: httpapi.HeadToGet(router)}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	go func() {
