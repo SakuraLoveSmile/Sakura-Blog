@@ -476,3 +476,12 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - `modules/stellar/web/templates/partial/wiki.html` 已对齐 `index_wiki.ejs` + `wiki_card.ejs`，保留本地项目文档/外链跳转语义；封面覆盖层等待图片与自适应主题色共同就绪后再加 `cover-loaded`，避免默认主题色闪现。
 - Wiki 文档 Hero 使用 `.l_cover.wiki-hero` / `.wiki-cover-background.galaxy` 结构；`assets/js/plugins/galaxy.js`（423 行）按需挂载 WebGL 星河，`dropdown.js`（435 行）由基础布局加载用于 footer/social 浮层。`main.js` 只合入 Wiki Hero 终端/Galaxy 初始化相关改动。
 - `modules/stellar/web/assets/css/main.css` 只能由 `make css` 生成；完成后执行 `make css-drift-check`。本地 `highlight.styl` 与 `search.styl` 小改补丁保存在 `dev/.tmp/stellar-local-tweaks.patch`，不纳入主题源同步提交。
+
+### c078d5d 缺口补齐（2026-08-20）
+
+- **adaptive-text.js**：补入 `--adaptive-background` 背景解析链首位（wiki_doc.html galaxy 背景 `#000000` 直接走纯色路径）；新增 `setWikiOverlayColor`（封面平均色 enhanceSaturation→darken 0.26/lighten 0.46 写 `--wiki-overlay-color`/`--wiki-border-color`）与 `notifyWikiOverlayReady`（派发 `wiki-overlay-ready` 事件）；`split` 样式下父元素含 `wiki-card-cover` 时成功分支写变量并通知、失败分支仅通知解除等待。保留项目特有文件尾部（defer 扫描块）。
+- **icons.yml**：`default:loading` 替换为 SMIL 三圆点内联 SVG（旧 class="loading" 旋转箭头与外部 iconify URL 一并删除）；新增 `default:github`/`default:monitor`/`default:platforms`/`default:fire`；删除 `default:loading-spinner`/`default:loading-placeholder`/`default:goback`（旧键无外部引用）。
+- **--icon-loading 注入**：`funcs.go` 新增 `iconLoadingURL` 模板函数（`default:loading` → data-URI `url("data:image/svg+xml,...")`，URL 值直用，键缺失返回空）；`head.html` 注入 `:root{--icon-loading:...}`，`.lazy-icon` mask 不再回退外部 iconify。
+- **siteinfo 图标兜底**：新增 `assets/js/services/siteinfo.js`（`setSiteCardIcon` + `stellar:sites-ready` 监听）；`sites.js` 补 `siteinfoApi` 计算（无 icon/avatar 且配 api 时 `data-siteinfo-api="{href→encodeURIComponent}"`）、图标 img 加 `siteinfo-icon` class、渲染完成派发 `stellar:sites-ready`。配置面 `model.go` 加 `ServicesConfig`/`SiteInfoConfig`，`Site` 加 `Services` 字段；`site.example.yml` 加 `services.siteinfo.api` 示例（默认空=关闭）；`base.html` ctx 注入 `services.siteinfo.api`、懒加载数组追加 siteinfo.js（scan 去重键改为 `s.js` 允许同 `cls` 多脚本）。
+- **navbar 2px 滚动阈值**：`main.js` `navbarPin` 合入上游 `SCROLL_THRESHOLD = 2`，`update()` 内 `scrolled = window.scrollY >= SCROLL_THRESHOLD`，toggle 条件改为 `scrolled && top <= stickyTop + TOLERANCE`（无轮播页顶部即吸顶，需滚动达阈值才切玻璃）。
+

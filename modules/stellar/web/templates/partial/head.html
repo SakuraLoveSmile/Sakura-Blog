@@ -160,6 +160,8 @@
 
   {{- /* Spec 34/52：style 段注入（仅显式配置时输出 style 标签）：:root 变量（颜色/字号/圆角 --radius-* 四档/渐变 --gradient-* 两组）+ 选择器级覆盖 */}}
   {{with .Site.Style.InjectCSS}}<style>{{.}}</style>{{end}}
+  {{- /* --icon-loading：懒加载占位图标（default:loading 内联 SVG → data-URI），避免 .lazy-icon 回退外部 iconify 请求 */}}
+  {{with iconLoadingURL}}<style>:root{--icon-loading:{{.}};}</style>{{end}}
   {{- /* article 段排版注入（indent 缩进 / cover_ratio 封面比例，未配置不输出） */}}
   {{with .Site.Article.InjectCSS}}<style>{{.}}</style>{{end}}
   {{- /* prefers_theme=auto：跟随系统明暗（在 CSS 前执行避免闪白） */}}

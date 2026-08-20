@@ -230,16 +230,19 @@ const init = {
     // 1.41：列表页 navbar top 背景条未吸顶为卡片样式、吸顶恢复玻璃（.navbar-blur.pinned）。
     // 吸顶判定直接测 navbar 实际视口位置而非 scrollY 推算：移动端浏览器顶栏伸缩会改变
     // scrollY（展开顶栏时 scrollY 减小），即使 navbar 仍吸顶也可能跌破阈值导致玻璃误消失。
+    // 无轮播页（wiki）顶部即吸顶，需滚动达阈值才切玻璃。
     const navbars = document.querySelectorAll('.navbar.top');
     if (navbars.length === 0) {
       return;
     }
     const TOLERANCE = 2; // 视口顶部允许偏差（px），吸收亚像素/取整误差
+    const SCROLL_THRESHOLD = 2; // 滚动阈值（px），未达阈值保持卡片样式
     let states = [];
     function update() {
+      const scrolled = window.scrollY >= SCROLL_THRESHOLD;
       states.forEach((state) => {
         const top = state.navbar.getBoundingClientRect().top;
-        state.bar.classList.toggle('pinned', top <= state.stickyTop + TOLERANCE);
+        state.bar.classList.toggle('pinned', scrolled && top <= state.stickyTop + TOLERANCE);
       });
     }
     function measure() {

@@ -67,7 +67,8 @@
         selector: '{{ $fbSelector }}',
         css: '/assets/vendor/fancybox/fancybox.css',
         js: '/assets/vendor/fancybox/fancybox.umd.js'
-      }
+      },
+      services: { siteinfo: { api: '{{.Site.Services.SiteInfo.API}}' } }
     };
     {{- /* def 占位素材（site.yml default 段）：空值注入空串，下方 JS 已有空值守卫 */}}
     const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}', image_onerror: '{{.Site.Default.ImageOnError}}' };
@@ -427,6 +428,7 @@
         { cls: 'ds-rating', js: '{{url_for "/assets/js/services/rating.js"}}' },
         { cls: 'ds-vote', js: '{{url_for "/assets/js/services/vote.js"}}' },
         { cls: 'ds-sites', js: '{{url_for "/assets/js/services/sites.js"}}?v={{asset_ver "/assets/js/services/sites.js"}}' },
+        {{if .Site.Services.SiteInfo.API}}{ cls: 'ds-sites', js: '{{url_for "/assets/js/services/siteinfo.js"}}?v={{asset_ver "/assets/js/services/siteinfo.js"}}' },{{end}}
         { cls: 'ds-mdrender', js: '{{url_for "/assets/js/services/mdrender.js"}}?v={{asset_ver "/assets/js/services/mdrender.js"}}', deps: ['marked'] },
         { cls: 'ds-contributors', js: '{{url_for "/assets/js/services/contributors.js"}}?v={{asset_ver "/assets/js/services/contributors.js"}}' },
         { cls: 'ds-ghinfo', js: '{{url_for "/assets/js/services/ghinfo.js"}}?v={{asset_ver "/assets/js/services/ghinfo.js"}}' },
@@ -438,9 +440,9 @@
       function scan() {
         for (var i = 0; i < services.length; i++) {
           var s = services[i];
-          if (loaded[s.cls]) continue;
+          if (loaded[s.js]) continue;
           if (document.getElementsByClassName(s.cls).length > 0) {
-            loaded[s.cls] = true;
+            loaded[s.js] = true;
             (function (s) {
               var loadService = function () { utils.js(s.js, { defer: true }); };
               if (s.deps && s.deps.length) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -92,6 +93,26 @@ func FuncMap(reg *settings.IconRegistry) template.FuncMap {
 				return template.HTML(`<img src="` + v + `" alt="` + alt + `">`)
 			}
 			return template.HTML(v)
+		},
+
+		// iconLoadingURL: 取 default:loading 图标，生成 CSS var(--icon-loading) 值。
+		// 值为内联 SVG 时用 url("data:image/svg+xml,...") 编码（encodeURIComponent 等价）；
+		// 值已是 URL（/ 、http://、https://）时直用；键缺失返回空串。
+		// 对齐上游 head.ejs L240-248 语义，供 head.html 注入 :root。
+		// 返回 template.CSS 跳过 html/template 在 <style> 上下文的转义（ZgotmplZ 防护）。
+		"iconLoadingURL": func() template.CSS {
+			v := reg.Get("default:loading")
+			if v == "" || strings.HasPrefix(v, "<span") {
+				return ""
+			}
+			if strings.HasPrefix(v, "/") || strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				return template.CSS(fmt.Sprintf(`url("%s")`, v))
+			}
+			// data:image/svg+xml, 形式：SVG 内特殊字符按 encodeURIComponent 等价编码
+			encoded := url.QueryEscape(v)
+			// url.QueryEscape 把空格编为 +，CSS data-URI 需 %20
+			encoded = strings.ReplaceAll(encoded, "+", "%20")
+			return template.CSS(fmt.Sprintf(`url("data:image/svg+xml,%s")`, encoded))
 		},
 
 		// __: i18n 兼容别名，委托给 Lang。

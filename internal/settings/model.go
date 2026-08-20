@@ -417,9 +417,22 @@ type Site struct {
 	Default DefaultAssets `yaml:"default" json:"default"`
 	// Pages 页面级设置（site.yml / settings 表 pages 段）：按页面键管理，当前仅 friends。
 	Pages PagesConfig `yaml:"pages,omitempty" json:"pages,omitempty"`
+	// Services 外部数据服务配置（site.yml services 段）。
+	Services ServicesConfig `yaml:"services,omitempty" json:"services,omitempty"`
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
+}
+
+// ServicesConfig 外部数据服务配置（对齐上游 _config.yml services 段）。
+type ServicesConfig struct {
+	SiteInfo SiteInfoConfig `yaml:"siteinfo,omitempty" json:"siteinfo,omitempty"`
+}
+
+// SiteInfoConfig siteinfo 图标兜底服务：sites.js 渲染卡片后，对未配 icon/avatar 的卡片
+// 用此 API 补图标。API 为空时功能关闭（与上游一致）。URL 模板中 {href} 会被替换为站点 URL。
+type SiteInfoConfig struct {
+	API string `yaml:"api" json:"api"`
 }
 
 // DefaultAssets 对齐原版 _config.yml default 段：各场景占位素材 URL，空则回退内置硬编码值。

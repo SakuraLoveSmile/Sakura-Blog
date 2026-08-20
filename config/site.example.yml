@@ -429,3 +429,14 @@ plugins:
     enable: false
   fancybox:
     selector: 'div.lazy-box>img.lazy'
+
+# -------------------------------------------------------------
+# 外部数据服务（services）
+# -------------------------------------------------------------
+# siteinfo：友链卡片图标兜底。sites.js 渲染卡片后，对未配 icon/avatar 的卡片
+# 用此 API 补图标。URL 中的 {href} 会被替换为站点链接（encodeURIComponent）。
+# 留空（默认）则功能关闭。
+services:
+  siteinfo:
+    api: ''                # 例：https://api.example.com/siteinfo?url={href}
+
