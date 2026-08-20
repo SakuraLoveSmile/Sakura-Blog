@@ -64,20 +64,27 @@ css:
 	fi
 	cd modules/stellar/web && node build/stylus/compile.js
 
-## css-drift-check: 本地核对入口——校验 modules/stellar/web/assets/css/main.css 与跟踪版本一致（无漂移）。
+## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
 ## resource/ 为 gitignore 本地主题源，CI 无源不可编译，无源环境跳过核对、不视为失败。
-## 用法：在存在 resource/ 源的环境先 make css 重编产物，再运行本目标；
-## 工作区手改 main.css 或产物与源编译结果漂移时，git diff --exit-code 非零退出。
+## 用法：在存在 resource/ 源的环境运行本目标；
+## 工作区手改 main.css 或产物与源编译结果漂移时，cmp 非零退出。
 css-drift-check:
 	@if [ ! -d resource/hexo-theme-stellar ] && [ ! -d ../resource/hexo-theme-stellar ]; then \
 		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
 	else \
-		git diff --exit-code -- modules/stellar/web/assets/css/main.css || { \
-			echo "css-drift-check: modules/stellar/web/assets/css/main.css 与跟踪版本不一致（手改或漂移，先 make css 重编后再核对）" >&2; \
+		css_snapshot=$$(mktemp); \
+		trap 'rm -f "$$css_snapshot"' EXIT INT TERM; \
+		cp modules/stellar/web/assets/css/main.css "$$css_snapshot" || exit 1; \
+		$(MAKE) css >/dev/null || { \
+			echo "css-drift-check: 主题源重编失败" >&2; \
 			exit 1; \
 		}; \
-		echo "css-drift-check: modules/stellar/web/assets/css/main.css 与跟踪版本一致，无漂移"; \
+		cmp -s "$$css_snapshot" modules/stellar/web/assets/css/main.css || { \
+			echo "css-drift-check: modules/stellar/web/assets/css/main.css 与主题源重编结果不一致（存在手改或漂移）" >&2; \
+			exit 1; \
+		}; \
+		echo "css-drift-check: modules/stellar/web/assets/css/main.css 与主题源重编结果一致，无漂移"; \
 	fi
 
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）

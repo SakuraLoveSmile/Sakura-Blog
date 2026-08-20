@@ -25,6 +25,12 @@ type CommentsConfig = settings.CommentsConfig
 type DefaultAssets = settings.DefaultAssets
 type EditPageLink = settings.EditPageLink
 type Footer = settings.Footer
+
+type HeroAction = settings.HeroAction
+type HeroCommand = settings.HeroCommand
+type HeroConfig = settings.HeroConfig
+type HeroPreview = settings.HeroPreview
+
 type IconRegistry = settings.IconRegistry
 type LatestComment = settings.LatestComment
 type LocalSearchConfig = settings.LocalSearchConfig

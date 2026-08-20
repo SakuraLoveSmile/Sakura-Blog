@@ -27,6 +27,9 @@
         } else {
           fill(data);
         }
+        if (el.classList && el.classList.contains('wiki-stars')) {
+          el.classList.add('loaded');
+        }
       });
     }
 })();

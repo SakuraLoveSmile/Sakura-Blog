@@ -222,7 +222,11 @@ func marshalPost(p *store.Post) string {
 	writeKV("cover", p.Cover)
 	writeKV("banner", p.Banner)
 	writeKV("ai_label", p.AILabel)
-	writeKV("category", p.Category)
+	if len(p.Categories) > 0 {
+		writeList("categories", p.Categories)
+	} else {
+		writeKV("category", p.Category)
+	}
 	writeKV("topic", p.Topic)
 	if p.Tags != "" {
 		writeList("tags", strings.Split(p.Tags, ","))
@@ -337,6 +341,7 @@ func (s *Service) importOne(base string, data []byte, res *ImportResult) {
 		Banner:      meta.Banner,
 		AILabel:     meta.AILabel,
 		Category:    meta.Category,
+		Categories:  append([]string(nil), meta.Categories...),
 		Topic:       meta.Topic,
 		Tags:        strings.Join(meta.Tags, ","),
 		ContentMD:   body,

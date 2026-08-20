@@ -55,7 +55,6 @@ const groups = [
       { key: "article", label: "文章" },
       { key: "comments", label: "评论" },
       { key: "notebook", label: "笔记本" },
-      { key: "wiki", label: "文库" },
       { key: "authors", label: "作者" },
       { key: "tag_plugins", label: "标签插件" },
     ],

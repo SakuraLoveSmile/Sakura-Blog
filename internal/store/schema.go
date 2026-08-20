@@ -171,6 +171,35 @@ var tableDDL = map[string]string{
 	);
 	CREATE INDEX IF NOT EXISTS idx_wikidocs_project ON wikidocs(project_id, parent);`,
 
+	"wiki_projects": `CREATE TABLE IF NOT EXISTS wiki_projects (
+		id                  TEXT PRIMARY KEY,
+		name                TEXT NOT NULL DEFAULT '',
+		title               TEXT NOT NULL DEFAULT '',
+		headline            TEXT NOT NULL DEFAULT '',
+		subtitle            TEXT NOT NULL DEFAULT '',
+		description         TEXT NOT NULL DEFAULT '',
+		icon                TEXT NOT NULL DEFAULT '',
+		cover               TEXT NOT NULL DEFAULT '',
+		available           TEXT NOT NULL DEFAULT '',
+		url                 TEXT NOT NULL DEFAULT '',
+		repo                TEXT NOT NULL DEFAULT '',
+		branch              TEXT NOT NULL DEFAULT '',
+		sort                INTEGER NOT NULL DEFAULT 0,
+		pin                 INTEGER NOT NULL DEFAULT 0,
+		visible             INTEGER NOT NULL DEFAULT 1,
+		hero_json           TEXT NOT NULL DEFAULT '',
+		created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE INDEX IF NOT EXISTS idx_wiki_projects_sort ON wiki_projects(visible, pin DESC, sort DESC, id);
+	CREATE TABLE IF NOT EXISTS wiki_project_tags (
+		project_id TEXT NOT NULL,
+		tag        TEXT NOT NULL,
+		position   INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (project_id, tag)
+	);
+	CREATE INDEX IF NOT EXISTS idx_wiki_project_tags_tag ON wiki_project_tags(tag, position, project_id);`,
+
 	"notebooks": `CREATE TABLE IF NOT EXISTS notebooks (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		name        TEXT NOT NULL UNIQUE,

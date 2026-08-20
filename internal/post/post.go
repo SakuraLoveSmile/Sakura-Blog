@@ -22,7 +22,8 @@ type Post struct {
 	Title      string
 	HTML       string // goldmark 渲染后的正文 HTML
 	Excerpt    string
-	Banner     string // 文首横幅图 URL
+	Banner     string   // 文首横幅图 URL
+	Categories []string // 多分类路径（frontmatter categories）
 	Date       string
 	Status     string   // draft / published，空=由旧文件回退链路按公开内容兼容
 	References []string // 参考文献列表（frontmatter references 字段）
@@ -34,15 +35,16 @@ type Post struct {
 
 // FileMeta 从 Markdown frontmatter 解析出的元数据，供 seed 导入跨包使用。
 type FileMeta struct {
-	Title    string
-	Date     string
-	Excerpt  string
-	Cover    string
-	Banner   string // 文首横幅图 URL
-	Category string
-	Topic    string // 专栏名
-	Tags     []string
-	AILabel  string
+	Title      string
+	Date       string
+	Excerpt    string
+	Cover      string
+	Banner     string // 文首横幅图 URL
+	Category   string
+	Categories []string
+	Topic      string // 专栏名
+	Tags       []string
+	AILabel    string
 	// 海报封面（poster_headline 等平铺 key，对齐原版 post.poster）
 	PosterHeadline string
 	PosterTopic    string

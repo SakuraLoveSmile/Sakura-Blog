@@ -6,7 +6,10 @@ import IconPicker from "@/components/IconPicker.vue";
 import { VPageHeader, VButton, VEmpty, VLoading, VModal, Dialog, Toast } from "@/components/ui";
 
 interface TaxItem {
+  id?: number;
   name: string;
+  path?: string;
+  parent_id?: number;
   count: number;
 }
 
@@ -65,12 +68,14 @@ const tagPalette = [
 
 // 重命名弹窗（替代 prompt()）
 const renameModalVisible = ref(false);
-const renameTarget = ref<{ type: "category" | "tag"; name: string } | null>(null);
+const renameTarget = ref<{ type: "category" | "tag"; name: string; id?: number } | null>(null);
 const renameValue = ref("");
 const renaming = ref(false);
 
 // 新建提示弹窗（后端无独立创建接口，分类/标签随文章产生）
 const createHintVisible = ref(false);
+const newCategoryName = ref("");
+const newCategoryParent = ref(0);
 
 function tagSizeClass(count: number): string {
   if (count >= 25) return "tag-chip-xl";
@@ -92,8 +97,16 @@ function tagStyle(index: number) {
 const filteredCategories = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return categories.value;
-  return categories.value.filter((c) => c.name.toLowerCase().includes(q));
+  return categories.value.filter((c) => (c.path || c.name).toLowerCase().includes(q));
 });
+
+function categoryKey(c: TaxItem): string {
+  return c.path || c.name;
+}
+
+function categoryDepth(c: TaxItem): number {
+  return Math.max(0, categoryKey(c).split("/").length - 1);
+}
 
 const filteredTags = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -109,7 +122,10 @@ async function load() {
       taxonomyApi.tags(),
       settingsApi.all(),
     ]);
-    categories.value = cRes.data.items || [];
+    categories.value = (cRes.data.items || []).map((c: any) => ({
+      id: Number(c.id || 0), name: c.name, path: c.path || c.name,
+      parent_id: Number(c.parent_id || 0), count: Number(c.count || 0),
+    }));
     tags.value = tRes.data.items || [];
     catColors.value = { ...(sRes.data?.article?.category_color || {}) };
     catIcons.value = { ...(sRes.data?.article?.category_icon || {}) };
@@ -165,7 +181,8 @@ function confirmTagIcon() {
 }
 
 function openRenameCategory(name: string) {
-  renameTarget.value = { type: "category", name };
+  const item = categories.value.find((c) => c.name === name || categoryKey(c) === name);
+  renameTarget.value = { type: "category", name, id: item?.id };
   renameValue.value = name;
   renameModalVisible.value = true;
 }
@@ -187,7 +204,9 @@ async function confirmRename() {
   renaming.value = true;
   try {
     if (type === "category") {
-      await taxonomyApi.renameCategory(name, next);
+      const id = renameTarget.value.id;
+      if (id) await taxonomyApi.updateCategory(id, { name: next });
+      else await taxonomyApi.renameCategory(name, next);
     } else {
       await taxonomyApi.renameTag(name, next);
     }
@@ -202,12 +221,14 @@ async function confirmRename() {
 }
 
 function deleteCategory(name: string) {
+  const item = categories.value.find((c) => c.name === name || categoryKey(c) === name);
   Dialog.warning({
-    title: `确定从所有文章移除分类「${name}」？`,
+    title: `确定删除分类「${name}」？仅空叶子分类允许删除。`,
     confirmType: "danger",
     onConfirm: async () => {
       try {
-        await taxonomyApi.deleteCategory(name);
+        if (item?.id) await taxonomyApi.deleteCategoryById(item.id);
+        else await taxonomyApi.deleteCategory(name);
         Toast.success("已删除");
         load();
       } catch (e: any) {
@@ -215,6 +236,24 @@ function deleteCategory(name: string) {
       }
     },
   });
+}
+
+async function createCategory() {
+  const name = newCategoryName.value.trim();
+  if (!name) {
+    Toast.error("分类名称不能为空");
+    return;
+  }
+  try {
+    await taxonomyApi.createCategory(name, newCategoryParent.value);
+    Toast.success("分类已创建");
+    newCategoryName.value = "";
+    newCategoryParent.value = 0;
+    createHintVisible.value = false;
+    load();
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "创建失败");
+  }
 }
 
 function deleteTag(name: string) {
@@ -332,7 +371,8 @@ onMounted(load);
           <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div
               v-for="(c, idx) in filteredCategories"
-              :key="c.name"
+              :key="c.id || c.name"
+              :style="{ marginLeft: categoryDepth(c) * 20 + 'px' }"
               class="apple-card-highlight group relative flex items-center gap-4 rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-px hover:shadow-[var(--shadow-lg)]"
             >
               <div
@@ -342,14 +382,14 @@ onMounted(load);
                 }"
               >
                 <img
-                  v-if="isIconUrl(catIcons[c.name])"
-                  :src="catIcons[c.name].trim()"
+                  v-if="isIconUrl(catIcons[categoryKey(c)])"
+                  :src="catIcons[categoryKey(c)].trim()"
                   class="h-6 w-6 object-contain"
                   alt=""
                 />
                 <Icon
                   v-else
-                  :icon="catIcons[c.name]?.trim() || categoryIconKeys[idx % categoryIconKeys.length]"
+                  :icon="catIcons[categoryKey(c)]?.trim() || categoryIconKeys[idx % categoryIconKeys.length]"
                   class="text-2xl"
                 />
               </div>
@@ -357,17 +397,18 @@ onMounted(load);
               <div class="min-w-0 flex-1">
                 <div class="mb-0.5 truncate text-[15px] font-semibold tracking-tight text-foreground">
                   {{ c.name }}
+                  <span v-if="c.path && c.path !== c.name" class="ml-1 text-xs font-normal text-text-quaternary">{{ c.path }}</span>
                 </div>
                 <div class="mb-2 space-y-1 text-xs leading-snug text-text-tertiary">
                   <input
-                    v-model="catColors[c.name]"
+                    v-model="catColors[categoryKey(c)]"
                     placeholder="#RRGGBB（前台分类标记配色，留空=不配色）"
                     maxlength="7"
                     class="h-7 w-full rounded-md border border-border bg-secondary px-2 font-mono text-xs text-foreground outline-none transition-colors placeholder:text-text-quaternary focus:border-primary"
                   />
                   <div class="w-full">
                     <IconPicker
-                      v-model="catIcons[c.name]"
+                    v-model="catIcons[categoryKey(c)]"
                       compact
                       placeholder="图标 key 或图片 URL，留空=默认"
                     />
@@ -380,17 +421,17 @@ onMounted(load);
                     {{ c.count }} 篇
                   </span>
                   <span
-                    v-if="catColors[c.name] && catColors[c.name].trim()"
+                    v-if="catColors[categoryKey(c)] && catColors[categoryKey(c)].trim()"
                     class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] text-text-tertiary"
                   >
                     <span
                       class="h-2.5 w-2.5 rounded-full"
-                      :style="{ background: catColors[c.name] }"
+                      :style="{ background: catColors[categoryKey(c)] }"
                     ></span>
                     配色已设
                   </span>
                   <span
-                    v-if="catIcons[c.name] && catIcons[c.name].trim()"
+                    v-if="catIcons[categoryKey(c)] && catIcons[categoryKey(c)].trim()"
                     class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[11px] text-text-tertiary"
                   >
                     <Icon icon="ri:shape-line" />
@@ -404,7 +445,7 @@ onMounted(load);
                   type="button"
                   title="重命名"
                   class="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-accent hover:text-foreground"
-                  @click="openRenameCategory(c.name)"
+                  @click="openRenameCategory(categoryKey(c))"
                 >
                   <Icon icon="ri:pencil-line" />
                 </button>
@@ -412,7 +453,7 @@ onMounted(load);
                   type="button"
                   title="删除"
                   class="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-accent hover:text-[var(--color-state-error)]"
-                  @click="deleteCategory(c.name)"
+                  @click="deleteCategory(categoryKey(c))"
                 >
                   <Icon icon="ri:delete-bin-line" />
                 </button>
@@ -421,7 +462,7 @@ onMounted(load);
           </div>
 
           <p class="mt-4 text-xs text-text-quaternary">
-            配色用于首页卡片分类标记（#RRGGBB，留空=不配色）；图标用于前台分类面包屑与分类页（icon key 或图片 URL，留空=默认图标）。修改后点右上「保存配色与图标」。分类随文章创建，暂不支持单独新建。
+            配色和图标优先按完整路径匹配；分类支持创建、移动和安全删除，删除前需先清空文章关联与子分类。
           </p>
         </section>
 
@@ -572,19 +613,29 @@ onMounted(load);
       </template>
     </VModal>
 
-    <!-- 新建提示弹窗（后端无独立创建接口） -->
+    <!-- 新建分类/提示标签弹窗 -->
     <VModal
       v-model:visible="createHintVisible"
       :title="activeTab === 'categories' ? '新建分类' : '新建标签'"
       :width="440"
     >
-      <p class="text-sm leading-relaxed text-text-tertiary">
-        {{ activeTab === "categories" ? "分类" : "标签" }}会在发布或编辑文章时自动创建。
-        请前往文章编辑器，在对应字段中输入新的{{ activeTab === "categories" ? "分类" : "标签" }}名称并发布即可。
+      <template v-if="activeTab === 'categories'">
+        <label class="mb-1.5 block text-xs text-text-tertiary">分类名称（不含 /）</label>
+        <input v-model="newCategoryName" class="apple-input w-full" placeholder="例如：前端" @keyup.enter="createCategory" />
+        <label class="mb-1.5 mt-3 block text-xs text-text-tertiary">父分类</label>
+        <select v-model.number="newCategoryParent" class="apple-input w-full">
+          <option :value="0">顶级分类</option>
+          <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.path || c.name }}</option>
+        </select>
+      </template>
+      <p v-else class="text-sm leading-relaxed text-text-tertiary">
+        标签会在发布或编辑文章时自动创建，请前往文章编辑器输入新的标签名称。
       </p>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <VButton type="primary" @click="createHintVisible = false">我知道了</VButton>
+          <VButton @click="createHintVisible = false">取消</VButton>
+          <VButton v-if="activeTab === 'categories'" type="primary" @click="createCategory">创建</VButton>
+          <VButton v-else type="primary" @click="createHintVisible = false">我知道了</VButton>
         </div>
       </template>
     </VModal>

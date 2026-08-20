@@ -92,6 +92,7 @@ type ViewData struct {
 	// 仅 wiki 文档页使用）：icon 显示项目 Logo，description 作副标题。
 	WikiProjectIcon        string         // 项目 Logo 图片 URL（WikiProject.Icon）
 	WikiProjectDescription string         // 项目描述（WikiProject.Description）
+	WikiProjectRepo        string         // GitHub owner/repo，用于详情 Hero 版本标签
 	WikiDoc                *WikiDocView   // 当前文档（nil 时不渲染文档区）
 	WikiPrevDoc            *WikiDocNav    // 上一篇（nil 不渲染）
 	WikiNextDoc            *WikiDocNav    // 下一篇（nil 不渲染）
@@ -153,9 +154,13 @@ type ArchiveItem struct {
 
 // CatItem 分类索引页单项（名称 + 文章数 badge）。
 type CatItem struct {
-	Name  string
-	Count int
-	Icon  string // 图标 key（article.category_icon 命中值，空则模板回退 default:category）
+	ID       int64
+	Name     string
+	Path     string
+	ParentID int64
+	Count    int
+	Icon     string // 图标 key（article.category_icon 命中值，空则模板回退 default:category）
+	Children []*CatItem
 }
 
 // TagItem 标签索引页单项。
@@ -261,7 +266,7 @@ func CategoryColorStyle(cat string, colors map[string]string) template.CSS {
 	if cat == "" || len(colors) == 0 {
 		return ""
 	}
-	color := colors[cat]
+	color := categorySettingValue(cat, colors)
 	if color == "" {
 		return ""
 	}
@@ -282,11 +287,23 @@ func CategoryColorStyle(cat string, colors map[string]string) template.CSS {
 // （icons.yml key 或图片 URL，icon 模板函数两者都支持），未命中回退 default:category（与改造前硬编码一致）。
 func CategoryIconKey(cat string, icons map[string]string) string {
 	if cat != "" {
-		if v := icons[cat]; v != "" {
+		if v := categorySettingValue(cat, icons); v != "" {
 			return v
 		}
 	}
 	return "default:category"
+}
+
+// categorySettingValue 优先按完整路径命中，未命中时回退叶子名称，兼容旧的
+// article.category_color/category_icon 配置。
+func categorySettingValue(cat string, values map[string]string) string {
+	if v := values[cat]; v != "" {
+		return v
+	}
+	if i := strings.LastIndex(cat, "/"); i >= 0 {
+		return values[cat[i+1:]]
+	}
+	return ""
 }
 
 // Paginator 分页器数据，对齐 Stellar _partial/main/post_list/paginator.ejs。

@@ -112,6 +112,7 @@ type publicPostJSON struct {
 	Excerpt           string   `json:"excerpt"`
 	Cover             string   `json:"cover"`
 	Category          string   `json:"category"`
+	Categories        []string `json:"categories"`
 	Tags              []string `json:"tags"`
 	Authors           []string `json:"authors"`
 	Author            string   `json:"author,omitempty"`
@@ -174,8 +175,20 @@ func (h *publicContent) listPages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items, "total": len(items)})
 }
 
-func (h *publicContent) listCategories(c *gin.Context) { h.listTaxonomy(c, h.store.CountByCategory) }
-func (h *publicContent) listTags(c *gin.Context)       { h.listTaxonomy(c, h.store.CountByTag) }
+func (h *publicContent) listCategories(c *gin.Context) {
+	tree, err := h.store.CategoryTree()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	flat := store.FlattenCategoryTree(tree)
+	items := make([]gin.H, 0, len(flat))
+	for _, n := range flat {
+		items = append(items, gin.H{"id": n.ID, "name": n.Name, "path": n.Path, "parent_id": n.ParentID, "count": n.Count, "children": n.Children})
+	}
+	c.JSON(http.StatusOK, gin.H{"tree": tree, "items": items, "total": len(items)})
+}
+func (h *publicContent) listTags(c *gin.Context) { h.listTaxonomy(c, h.store.CountByTag) }
 func (h *publicContent) listTaxonomy(c *gin.Context, fn func() (map[string]int, error)) {
 	values, err := fn()
 	if err != nil {
@@ -229,7 +242,7 @@ func publicPost(post *store.Post, detail bool) *publicPostJSON {
 	if len(authors) == 0 && strings.TrimSpace(post.Author) != "" {
 		authors = []string{strings.TrimSpace(post.Author)}
 	}
-	item := &publicPostJSON{Slug: post.Slug, Title: post.Title, Excerpt: post.Excerpt, Cover: post.Cover, Category: post.Category, Tags: splitTags(post.Tags), Authors: authors, Author: post.Author, PasswordProtected: protected, CreatedAt: post.CreatedAt.Format(time.RFC3339), UpdatedAt: post.UpdatedAt.Format(time.RFC3339)}
+	item := &publicPostJSON{Slug: post.Slug, Title: post.Title, Excerpt: post.Excerpt, Cover: post.Cover, Category: post.Category, Categories: append([]string(nil), post.Categories...), Tags: splitTags(post.Tags), Authors: authors, Author: post.Author, PasswordProtected: protected, CreatedAt: post.CreatedAt.Format(time.RFC3339), UpdatedAt: post.UpdatedAt.Format(time.RFC3339)}
 	if detail && !protected {
 		item.ContentMD, item.ContentHTML = post.ContentMD, post.ContentHTML
 	}

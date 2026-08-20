@@ -1,20 +1,25 @@
 package post
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
+
+	yaml "github.com/goccy/go-yaml"
 )
 
 // frontMatter 文章元数据，从 Markdown 文件头部的 YAML frontmatter 解析。
 type frontMatter struct {
-	Title    string
-	Date     string
-	Excerpt  string
-	Cover    string
-	Banner   string // 文首横幅图 URL（对齐原版 frontmatter banner 字段）
-	Category string
-	Topic    string // 专栏名（对齐原版 frontmatter topic 字段）
-	Tags     []string
-	AILabel  string // AI 成分标签（1.41）：manual/reviewed/polished/generated
+	Title      string
+	Date       string
+	Excerpt    string
+	Cover      string
+	Banner     string // 文首横幅图 URL（对齐原版 frontmatter banner 字段）
+	Category   string
+	Categories []string
+	Topic      string // 专栏名（对齐原版 frontmatter topic 字段）
+	Tags       []string
+	AILabel    string // AI 成分标签（1.41）：manual/reviewed/polished/generated
 	// 海报封面（对齐原版 post.poster；轻量 parser 不支持嵌套，用平铺 key）
 	PosterHeadline string
 	PosterTopic    string
@@ -66,16 +71,15 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 		return fm, s
 	}
 
-	// 解析 frontmatter 行
-	for i := 1; i < end; i++ {
-		line := lines[i]
-		idx := strings.Index(line, ":")
-		if idx == -1 {
-			continue
-		}
-		key := strings.TrimSpace(line[:idx])
-		val := strings.TrimSpace(line[idx+1:])
-		val = strings.Trim(val, `"'`)
+	// 使用项目已有 YAML 依赖解析完整 frontmatter，支持单行列表、YAML 多行列表
+	// 和带引号的值。未知字段被忽略，保留当前导入器的宽松兼容行为。
+	var raw map[string]any
+	frontmatter := strings.Join(lines[1:end], "\n")
+	if err := yaml.Unmarshal([]byte(frontmatter), &raw); err != nil {
+		return fm, strings.Join(lines[end+1:], "\n")
+	}
+	for key, value := range raw {
+		val := yamlString(value)
 		switch key {
 		case "title":
 			fm.Title = val
@@ -87,12 +91,14 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.Cover = val
 		case "banner":
 			fm.Banner = val
-		case "category", "categories":
+		case "category":
 			fm.Category = val
+		case "categories":
+			fm.Categories = yamlStrings(value)
 		case "topic":
 			fm.Topic = val
 		case "tags":
-			fm.Tags = parseList(val)
+			fm.Tags = yamlStrings(value)
 		case "ai_label":
 			fm.AILabel = strings.TrimSpace(val)
 		case "poster_headline":
@@ -104,22 +110,28 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 		case "poster_color":
 			fm.PosterColor = val
 		case "references":
-			fm.References = parseList(val)
+			fm.References = yamlStrings(value)
 		case "status":
 			fm.Status = val
 		case "pinned":
-			fm.Pinned = val == "true" || val == "1"
+			fm.Pinned = strings.EqualFold(val, "true") || val == "1"
 		case "author":
 			fm.Author = strings.TrimSpace(val)
 			if fm.Author != "" && len(fm.Authors) == 0 {
 				fm.Authors = []string{fm.Author}
 			}
 		case "authors":
-			fm.Authors = parseList(val)
+			fm.Authors = yamlStrings(value)
 			if len(fm.Authors) > 0 {
 				fm.Author = fm.Authors[0]
 			}
 		}
+	}
+	if len(fm.Categories) == 0 && strings.TrimSpace(fm.Category) != "" {
+		fm.Categories = []string{strings.TrimSpace(fm.Category)}
+	}
+	if len(fm.Categories) > 0 {
+		fm.Category = fm.Categories[0]
 	}
 	if len(fm.Authors) > 0 {
 		fm.Author = fm.Authors[0]
@@ -142,6 +154,41 @@ func parseList(val string) []string {
 	for _, item := range strings.Split(val, ",") {
 		item = strings.TrimSpace(item)
 		item = strings.Trim(item, `"'`)
+		if item == "" || seen[item] {
+			continue
+		}
+		seen[item] = true
+		out = append(out, item)
+	}
+	return out
+}
+
+func yamlString(value any) string {
+	if value == nil {
+		return ""
+	}
+	if s, ok := value.(string); ok {
+		return strings.TrimSpace(s)
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+// yamlStrings 统一把标量、[a,b] 和 YAML block sequence 转为有序去重列表。
+func yamlStrings(value any) []string {
+	if value == nil {
+		return nil
+	}
+	if s, ok := value.(string); ok {
+		return parseList(s)
+	}
+	rv := reflect.ValueOf(value)
+	if rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array {
+		return parseList(yamlString(value))
+	}
+	seen := map[string]bool{}
+	out := make([]string, 0, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		item := strings.Trim(yamlString(rv.Index(i).Interface()), `"'`)
 		if item == "" || seen[item] {
 			continue
 		}

@@ -28,12 +28,13 @@ type Post struct {
 	Slug        string
 	Title       string
 	Excerpt     string
-	Cover       string // 封面图 URL，可空
-	Category    string // 单分类，可空
-	Tags        string // 多标签，逗号分隔存储（如 "Go,Gin"），可空
-	ContentMD   string // Markdown 原文
-	ContentHTML string // goldmark 预渲染缓存
-	Status      string // draft / published
+	Cover       string   // 封面图 URL，可空
+	Category    string   // 兼容字段：第一项完整分类路径，可空
+	Categories  []string // 多分类完整路径，按文章中的 position 顺序
+	Tags        string   // 多标签，逗号分隔存储（如 "Go,Gin"），可空
+	ContentMD   string   // Markdown 原文
+	ContentHTML string   // goldmark 预渲染缓存
+	Status      string   // draft / published
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Pinned      bool      // 置顶
@@ -451,7 +452,7 @@ func (s *Store) migrateColumns() error {
 		SELECT id, TRIM(author), 0 FROM posts WHERE TRIM(author) != ''`); err != nil {
 		return fmt.Errorf("backfill post_authors: %w", err)
 	}
-	return nil
+	return s.migrateCategories()
 }
 
 // List 返回全部未删除文章，按 created_at 倒序（最新在前）。
@@ -481,8 +482,16 @@ func (s *Store) ListFiltered(status, category, tag string, page, size int) ([]*P
 		args = append(args, status)
 	}
 	if category != "" {
-		conds = append(conds, "category = ?")
-		args = append(args, category)
+		if categoryID, err := s.categoryIDByPath(category); err == nil {
+			conds = append(conds, `id IN (WITH RECURSIVE descendants(id) AS (
+				SELECT ? UNION ALL SELECT c.id FROM categories c JOIN descendants d ON c.parent_id = d.id
+			) SELECT DISTINCT pc.post_id FROM post_categories pc WHERE pc.category_id IN (SELECT id FROM descendants))`)
+			args = append(args, categoryID)
+		} else {
+			// 兼容极老数据库或尚未运行迁移的调用方。
+			conds = append(conds, "category = ?")
+			args = append(args, category)
+		}
 	}
 	if tag != "" {
 		conds = append(conds, "(',' || tags || ',') LIKE ?")
@@ -591,14 +600,9 @@ func (s *Store) CountPublished() (int, error) {
 	return n, nil
 }
 
-// ListByCategory 返回指定分类的已发布文章，按 created_at 倒序。
+// ListByCategory 返回指定分类（含后代）的已发布文章，按 created_at 倒序。
 func (s *Store) ListByCategory(name string) ([]*Post, error) {
-	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+publishedWhere+" AND category = ? "+publishedOrder, StatusPublished, name)
-	if err != nil {
-		return nil, fmt.Errorf("list posts by category %s: %w", name, err)
-	}
-	defer rows.Close()
-	return s.scanPosts(rows)
+	return s.ListByCategoryPath(name)
 }
 
 // ListByTag 返回包含指定标签的已发布文章，按 created_at 倒序。
@@ -613,25 +617,6 @@ func (s *Store) ListByTag(name string) ([]*Post, error) {
 	}
 	defer rows.Close()
 	return s.scanPosts(rows)
-}
-
-// CountByCategory 统计各分类的已发布文章数（空分类除外）。
-func (s *Store) CountByCategory() (map[string]int, error) {
-	rows, err := s.db.Query("SELECT category, COUNT(*) FROM posts WHERE "+publishedWhere+" AND category != '' GROUP BY category", StatusPublished)
-	if err != nil {
-		return nil, fmt.Errorf("count by category: %w", err)
-	}
-	defer rows.Close()
-	out := map[string]int{}
-	for rows.Next() {
-		var name string
-		var n int
-		if err := rows.Scan(&name, &n); err != nil {
-			return nil, fmt.Errorf("scan category count: %w", err)
-		}
-		out[name] = n
-	}
-	return out, rows.Err()
 }
 
 // ListByTopic 返回指定专栏的已发布文章，按 created_at 倒序。
@@ -706,6 +691,9 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 	if err := s.hydratePostAuthors([]*Post{p}); err != nil {
 		return nil, err
 	}
+	if err := s.hydratePostCategories([]*Post{p}); err != nil {
+		return nil, err
+	}
 	return p, nil
 }
 
@@ -732,6 +720,15 @@ func (s *Store) Create(p *Post) (int64, error) {
 	}
 	if err := s.replacePostAuthors(id, p.Authors); err != nil {
 		return 0, fmt.Errorf("save authors for post %s: %w", p.Slug, err)
+	}
+	if err := s.ReplacePostCategories(id, p.Categories, p.Category); err != nil {
+		return 0, fmt.Errorf("save categories for post %s: %w", p.Slug, err)
+	}
+	if len(p.Categories) == 0 && strings.TrimSpace(p.Category) != "" {
+		p.Categories = []string{strings.TrimSpace(p.Category)}
+	}
+	if len(p.Categories) > 0 {
+		p.Category = p.Categories[0]
 	}
 	s.firePostWrite("create", p.Slug)
 	return id, nil
@@ -774,6 +771,15 @@ func (s *Store) Update(slug string, p *Post) error {
 	}
 	if err := s.replacePostAuthors(postID, p.Authors); err != nil {
 		return fmt.Errorf("save authors for post %s: %w", slug, err)
+	}
+	if err := s.ReplacePostCategories(postID, p.Categories, p.Category); err != nil {
+		return fmt.Errorf("save categories for post %s: %w", slug, err)
+	}
+	if len(p.Categories) == 0 && strings.TrimSpace(p.Category) != "" {
+		p.Categories = []string{strings.TrimSpace(p.Category)}
+	}
+	if len(p.Categories) > 0 {
+		p.Category = p.Categories[0]
 	}
 	s.firePostWrite("update", slug)
 	return nil
@@ -1017,6 +1023,9 @@ func (s *Store) scanPosts(rows *sql.Rows) ([]*Post, error) {
 		return nil, err
 	}
 	if err := s.hydratePostAuthors(posts); err != nil {
+		return nil, err
+	}
+	if err := s.hydratePostCategories(posts); err != nil {
 		return nil, err
 	}
 	return posts, nil

@@ -5,7 +5,7 @@
     {{range .PinnedPosts}}
     <a class="pin-slide post-slide{{if not .Cover}} no-cover{{end}}" href="/post/{{.Slug}}"{{if .Cover}} style="--pin-cover-url:url('{{.Cover}}')"{{end}}>
       {{if .Cover}}<img class="pin-slide-bg" src="{{.Cover}}" alt="" loading="lazy">{{end}}
-      <div class="pin-slide-text">
+      <div class="pin-slide-text"{{if .Cover}} data-text-adaptive="split"{{end}}>
         <div class="pin-slide-headline">{{.Title}}</div>
         {{if .EffectiveSubtitle}}<div class="pin-slide-caption">{{.EffectiveSubtitle}}</div>{{end}}
       </div>

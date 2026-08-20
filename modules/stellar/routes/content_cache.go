@@ -82,8 +82,19 @@ func (c *contentCache) buildSearchItems() ([]searchItem, error) {
 	}
 	searchCfg := c.site.Load().Search
 	items := searchItemsFromPostsWithConfig(posts, searchCfg)
-	for i := range c.site.Load().Wiki {
-		projectID := c.site.Load().Wiki[i].ID
+	projects, projectErr := c.st.ListWikiProjects()
+	if projectErr != nil {
+		// Focused package tests created before the project migration may only
+		// provide site.Wiki; keep that compatibility path until Bootstrap runs.
+		for i := range c.site.Load().Wiki {
+			projects = append(projects, &store.WikiProject{ID: c.site.Load().Wiki[i].ID, Visible: true})
+		}
+	}
+	for _, project := range projects {
+		if !project.Visible {
+			continue
+		}
+		projectID := project.ID
 		docs, err := c.st.ListWikidocs(projectID)
 		if err != nil {
 			log.Printf("list wikidocs %s for search index: %v", projectID, err)
@@ -174,7 +185,16 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 		}
 	}
 
-	for _, project := range c.site.Load().Wiki {
+	projects, projectErr := c.st.ListWikiProjects()
+	if projectErr != nil {
+		for i := range c.site.Load().Wiki {
+			projects = append(projects, &store.WikiProject{ID: c.site.Load().Wiki[i].ID, Visible: true})
+		}
+	}
+	for _, project := range projects {
+		if !project.Visible {
+			continue
+		}
 		docs, err := c.st.ListWikidocs(project.ID)
 		if err != nil {
 			log.Printf("sitemap: list wikidocs %s: %v", project.ID, err)

@@ -495,7 +495,7 @@ function closeMenus() {
  <div class="flex flex-col gap-1.5">
  <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
  <span v-if="post.category" class="text-xs text-text-tertiary">
- 分类：{{ post.category }}
+             分类：{{ post.categories?.length ? post.categories.join(" / ") : post.category }}
  </span>
  <span class="text-xs text-text-tertiary">访问量 {{ post.views || 0 }}</span>
  <span v-if="post.pinned" class="text-xs text-text-tertiary">已置顶</span>
@@ -653,7 +653,7 @@ function closeMenus() {
  <div class="mt-2 pl-7">
  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
  <span v-if="post.category">
- {{ post.category }}
+ {{ post.categories?.length ? post.categories.join(" / ") : post.category }}
  </span>
  <span>{{ post.views || 0 }} 阅读</span>
  <span>{{ formatDate(post.created_at) }}</span>

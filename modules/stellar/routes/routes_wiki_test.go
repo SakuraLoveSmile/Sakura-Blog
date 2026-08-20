@@ -277,18 +277,57 @@ func TestWikiCardHrefSemantics(t *testing.T) {
 	}
 	body := w.Body.String()
 	// 有已发布文档 → 跳 /wiki/<id>（handleWikiProject 302 到首篇）
-	if !strings.Contains(body, `class="post-card wiki" href="/wiki/stellar"`) {
+	if !strings.Contains(body, `class="wiki-card no-cover" href="/wiki/stellar"`) {
 		t.Errorf("card stellar: want href=/wiki/stellar")
 	}
 	// 无文档 → 保持外链
 	if !strings.Contains(body, `href="https://example.com/docs"`) {
 		t.Errorf("card ext: want external URL href")
 	}
-	// 无文档且无 URL（仅草稿）→ 不输出 href，带 data-wiki-empty 属性供前端 toast 提示
-	if !strings.Contains(body, `class="post-card wiki" data-wiki-empty="该项目暂无文档"`) {
-		t.Errorf("card none: want data-wiki-empty toast attr and no href")
+	// 无文档且无 URL（仅草稿）→ 不进入项目卡片列表。
+	if strings.Contains(body, "空项目") || strings.Contains(body, "/wiki/none") {
+		t.Errorf("card none: empty project must not be rendered")
 	}
-	if strings.Contains(body, "/wiki/none") {
-		t.Errorf("card none: must not link to /wiki/none")
+}
+
+func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	if err := st.EnsureWikiProjectsTable(); err != nil {
+		t.Fatalf("ensure wiki projects: %v", err)
+	}
+	if err := st.CreateWikiProject(&store.WikiProject{
+		ID: "cover", Name: "cover", Title: "封面项目", Cover: "https://example.com/cover.jpg", Visible: true,
+		Hero: &store.WikiHero{
+			Background: "galaxy", Title: "项目 Hero", Description: "Hero 描述",
+			Preview: &store.WikiHeroPreview{Type: "terminal", Commands: []store.WikiHeroCommand{{Codes: []string{"make dev"}}}},
+		},
+	}); err != nil {
+		t.Fatalf("create project: %v", err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "cover", Slug: "intro", Title: "项目引言", Status: store.StatusPublished}); err != nil {
+		t.Fatalf("create project doc: %v", err)
+	}
+	r := gin.New()
+	ws.registerTaxonomyRoutes(r)
+
+	index := httptest.NewRecorder()
+	r.ServeHTTP(index, httptest.NewRequest(http.MethodGet, "/wiki", nil))
+	if index.Code != http.StatusOK {
+		t.Fatalf("wiki index = %d, want 200", index.Code)
+	}
+	if !strings.Contains(index.Body.String(), `class="wiki-card" style="--cover-url:url('https://example.com/cover.jpg')"`) || !strings.Contains(index.Body.String(), `class="wiki-card-content"`) || !strings.Contains(index.Body.String(), `class="wiki-card-cover"`) || !strings.Contains(index.Body.String(), `data-text-adaptive="split"`) {
+		t.Fatalf("cover project card missing adaptive markup: %s", index.Body.String())
+	}
+
+	detail := httptest.NewRecorder()
+	r.ServeHTTP(detail, httptest.NewRequest(http.MethodGet, "/wiki/cover/intro", nil))
+	if detail.Code != http.StatusOK {
+		t.Fatalf("wiki detail = %d, want 200", detail.Code)
+	}
+	for _, want := range []string{`class="l_cover wiki wiki-hero"`, `class="wiki-cover-background galaxy"`, `data-text-adaptive="split"`, "项目 Hero", "wiki-cover-terminal", "make dev"} {
+		if !strings.Contains(detail.Body.String(), want) {
+			t.Errorf("wiki detail missing %q", want)
+		}
 	}
 }

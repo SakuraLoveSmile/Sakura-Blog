@@ -1,21 +1,47 @@
-{{- /* wiki_doc.html: wiki 文档页（Spec 35a），对齐原版 wiki 文档布局：
-   面包屑（首页 / 文库 / 项目 / 文档）+ 大标题 + 正文 + 上下篇导航。
-   由 base.html 按 .Page.Layout == "wiki-doc" 分派渲染；
-   leftbar tree widget 由 widgets 编排注入（见 partial/widgets/tree.html），不在本模板内。
-   项目级 hero（WikiHero，site.yml wiki 段每项目 hero 子段）非空时页首渲染 hero banner，缺省不输出。*/ -}}
+{{- /* wiki_doc.html: Wiki 文档页；Hero 结构对齐 Stellar wiki_cover.ejs。 */ -}}
 {{- with .WikiHero}}
-<div class="article banner top wiki-hero">
-  {{if .Background}}<img class="bg" src="{{.Background}}" alt="">{{end}}
-  <div class="content">
-    <div class="bottom only-title">
-      <div class="text-area">
-        <h1 class="text title"><span>{{if .Title}}{{.Title}}{{else}}{{$.WikiProjectName}}{{end}}</span></h1>
-        {{if .Description}}<p class="hero-desc">{{.Description}}</p>{{end}}
-      </div>
-    </div>
+<div class="l_cover wiki wiki-hero{{if not .Preview}} without-preview{{end}}">
+  <div class="wiki-cover-background{{if eq .Background "galaxy"}} galaxy{{else if .Background}} image{{end}}" aria-hidden="true">
+    {{if eq .Background "galaxy"}}<canvas></canvas>{{else if .Background}}<img class="wiki-cover-background-image" src="{{.Background}}" alt=""><img class="wiki-cover-background-blur" src="{{.Background}}" alt="">{{end}}
+    <div class="wiki-cover-background-overlay"></div>
+  </div>
+  <div class="wiki-cover-layout"{{if .Background}} data-text-adaptive="split"{{if eq .Background "galaxy"}} style="--adaptive-background:#000000"{{else}} style="--cover-url:url('{{.Background}}')"{{end}}{{end}}>
+    <nav class="wiki-navbar" aria-label="{{$.Site.Title}}">
+      <a class="wiki-navbar-home" href="/">{{$.Site.Title}}</a>
+    </nav>
+    <article class="cover-wrap wiki-cover-content">
+      <section class="wiki-cover-intro">
+        {{if $.WikiProjectRepo}}<div class="wiki-cover-release data-service ds-wiki-release is-loading" data-api="/api/gh/widget/release?repo={{$.WikiProjectRepo}}">
+          <a type="link" id="html_url" target="_blank" rel="noopener noreferrer"><span class="wiki-cover-release-value"><span type="text" id="tag_name"></span></span></a>
+        </div>{{end}}
+        <h1 class="cover-title" data-text-adaptive="contrast">{{if .Title}}{{.Title}}{{else}}{{$.WikiProjectName}}{{end}}</h1>
+        {{if .Description}}<div class="description">{{.Description}}</div>{{end}}
+        <div class="wiki-cover-actions">
+          {{if $.WikiProjectRepo}}<a class="button wiki-cover-source" href="https://github.com/{{$.WikiProjectRepo}}" target="_blank" rel="external nofollow noopener noreferrer">{{icon "default:github"}}<span>{{lang "btn.source"}}</span></a>{{end}}
+          <a class="button" href="#start">{{icon "default:documents"}}<span>{{lang "btn.docs"}}</span></a>
+          {{range .Actions}}{{if and .Title .URL}}<a class="button" href="{{.URL}}" target="_blank" rel="external nofollow noopener noreferrer">{{if .Icon}}{{icon .Icon}}{{end}}<span>{{.Title}}</span></a>{{end}}{{end}}
+        </div>
+      </section>
+      {{with .Preview}}
+      <section class="wiki-cover-preview" aria-label="{{lang "meta.project_preview"}}">
+        {{if and (eq .Type "image") .Image}}<img src="{{.Image}}" alt="" loading="lazy">
+        {{else if and (eq .Type "terminal") .Commands}}
+        <div class="wiki-cover-terminal">
+          <div class="wiki-cover-terminal-toolbar">
+            <div class="wiki-cover-terminal-tabs" role="tablist" aria-label="{{lang "meta.install_method"}}">
+              {{range $i, $command := .Commands}}<button type="button" role="tab" aria-selected="{{if eq $i 0}}true{{else}}false{{end}}" class="{{if eq $i 0}}active{{end}}" data-codes="{{join $command.Codes "\n"}}">{{lang "meta.command" (add $i 1)}}</button>{{end}}
+            </div>
+            <button type="button" class="wiki-cover-copy" data-copy-message="{{lang "message.copied"}}" aria-label="{{lang "btn.copy"}}">{{icon "copy:copy"}}<span>{{lang "btn.copy"}}</span></button>
+          </div>
+          <pre><code>{{with index .Commands 0}}{{range .Codes}}<span>{{.}}</span>{{end}}{{end}}</code></pre>
+        </div>
+        {{end}}
+      </section>
+      {{end}}
+    </article>
   </div>
 </div>
-{{end}}
+{{- end}}
 {{if .WikiDoc.Title}}
 <div class="article banner top">
   <div class="content">

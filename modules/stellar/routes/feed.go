@@ -179,6 +179,10 @@ func (h *FeedHandler) jsonFeed(c *gin.Context) {
 // categoryRSS GET /categories/:name/rss.xml — 分类维度 RSS 2.0。
 func (h *FeedHandler) categoryRSS(c *gin.Context) {
 	name := c.Param("name")
+	h.categoryRSSPath(c, name)
+}
+
+func (h *FeedHandler) categoryRSSPath(c *gin.Context, name string) {
 	posts, err := h.listCategoryPosts(name)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "list posts: %v", err)

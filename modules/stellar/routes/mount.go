@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -223,6 +224,21 @@ func (s *Server) NoRoute(consoleIndex []byte) gin.HandlerFunc {
 		if consoleIndex != nil && strings.HasPrefix(c.Request.URL.Path, "/console") {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", consoleIndex)
 			return
+		}
+		// Gin 的单参数路由不能匹配包含 / 的分类路径；把未命中的
+		// /categories/a/b/ 和嵌套分类 RSS 统一交给分类路径解析器。
+		if strings.HasPrefix(c.Request.URL.Path, "/categories/") {
+			raw := strings.TrimPrefix(c.Request.URL.Path, "/categories/")
+			decoded, err := url.PathUnescape(strings.TrimSuffix(raw, "/"))
+			if err == nil && decoded != "" {
+				if strings.HasSuffix(decoded, "/rss.xml") {
+					name := strings.TrimSuffix(decoded, "/rss.xml")
+					NewFeedHandler(s.deps.Store, s.deps.Site).categoryRSSPath(c, name)
+					return
+				}
+				s.web.handleCategoryPath(c, decoded)
+				return
+			}
 		}
 		if s.pageHandler != nil && s.pageHandler.ShowByPath(c) {
 			return

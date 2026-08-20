@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	tmpl "blog/internal/settings"
@@ -92,6 +93,23 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 	settings, err := st.AllSettings()
 	if err != nil {
 		return err
+	}
+	// Wiki 项目从 site.yml/settings.wiki 一次性迁移到独立表；之后运行时不再
+	// 依赖 settings.wiki，项目管理由 Wiki Store/API 负责。
+	legacyWiki := make([]*store.WikiProject, 0, len(site.Wiki))
+	for i := range site.Wiki {
+		legacyWiki = append(legacyWiki, storeWikiProject(&site.Wiki[i]))
+	}
+	if len(legacyWiki) == 0 && settings[SectionWiki] != "" {
+		var oldWiki []tmpl.WikiProject
+		if json.Unmarshal([]byte(settings[SectionWiki]), &oldWiki) == nil {
+			for i := range oldWiki {
+				legacyWiki = append(legacyWiki, storeWikiProject(&oldWiki[i]))
+			}
+		}
+	}
+	if err := st.MigrateWikiProjects(legacyWiki); err != nil {
+		return fmt.Errorf("migrate wiki projects: %w", err)
 	}
 	// admin 段兼容补导（Spec 61 阶段 4 收紧）：仅当 users 表 admin 尚无密码哈希时，
 	// 才把 site.yml 初始密码补入 admin 段供下方迁移消费；已迁移的库不再从 site.yml 回灌明文。
@@ -274,6 +292,36 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 	}
 
 	return nil
+}
+
+func storeWikiProject(project *tmpl.WikiProject) *store.WikiProject {
+	if project == nil {
+		return nil
+	}
+	p := &store.WikiProject{
+		ID: project.ID, Name: project.Name, Title: project.Title, Headline: project.Headline,
+		Subtitle: project.Subtitle, Description: project.Description, Icon: project.Icon,
+		Cover: project.Cover, Available: project.Available, URL: project.URL, Repo: project.Repo,
+		Branch: project.Branch, Sort: project.Sort, Pin: project.Pin, Visible: project.Visible == nil || *project.Visible,
+		Tags: append([]string(nil), project.Tags...),
+	}
+	if project.Hero != nil {
+		h := &store.WikiHero{
+			Background: project.Hero.Background, Title: project.Hero.Title,
+			Description: project.Hero.Description, Start: project.Hero.Start,
+		}
+		if project.Hero.Preview != nil {
+			h.Preview = &store.WikiHeroPreview{Type: project.Hero.Preview.Type, Image: project.Hero.Preview.Image}
+			for _, cmd := range project.Hero.Preview.Commands {
+				h.Preview.Commands = append(h.Preview.Commands, store.WikiHeroCommand{Codes: append([]string(nil), cmd.Codes...)})
+			}
+		}
+		for _, action := range project.Hero.Actions {
+			h.Actions = append(h.Actions, store.WikiHeroAction{Title: action.Title, URL: action.URL, Icon: action.Icon})
+		}
+		p.Hero = h
+	}
+	return p
 }
 
 // writeSiteSections 把 site 各段序列化为 JSON 写入 settings 表。

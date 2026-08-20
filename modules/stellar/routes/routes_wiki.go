@@ -69,11 +69,12 @@ func validWikiBranch(branch string) bool {
 // handleWiki 文库页：全量标签 tab + 可选 tag 过滤 + Sort 降序项目列表。
 func (s *webServer) handleWiki(c *gin.Context) {
 	tag := c.Param("tag")
+	allProjects := s.wikiProjectsForRuntime()
 	// 收集全量标签（顶部 tab，保留首见顺序）
 	var tags []string
 	tagSeen := map[string]bool{}
-	for i := range s.site.Load().Wiki {
-		for _, t := range s.site.Load().Wiki[i].Tags {
+	for _, project := range allProjects {
+		for _, t := range project.Tags {
 			if !tagSeen[t] {
 				tagSeen[t] = true
 				tags = append(tags, t)
@@ -87,36 +88,20 @@ func (s *webServer) handleWiki(c *gin.Context) {
 	// 项目（可按 tag 过滤），按 Sort 降序。
 	// 复制项目值而非引用 s.site.Load().Wiki 共享切片元素：HasDocs 是运行时标记，
 	// 就地修改会污染配置源并引发并发竞态（多请求同时写同一元素）。
-	projects := make([]*tmpl.WikiProject, 0, len(s.site.Load().Wiki))
-	for i := range s.site.Load().Wiki {
-		w := s.site.Load().Wiki[i]
+	projects := make([]*tmpl.WikiProject, 0, len(allProjects))
+	for _, source := range allProjects {
+		w := *source
+		// 项目卡片只展示有文档或外部入口（URL/仓库）的项目；
+		// 但运行时全量项目仍保留给 wiki_related 等上下文组件。
+		if !w.HasDocs && strings.TrimSpace(w.URL) == "" && strings.TrimSpace(w.Repo) == "" {
+			continue
+		}
 		if tag != "" {
-			matched := false
-			for _, t := range w.Tags {
-				if t == tag {
-					matched = true
-					break
-				}
-			}
-			if !matched {
+			if !wikiProjectHasTag(&w, tag) {
 				continue
 			}
 		}
 		projects = append(projects, &w)
-	}
-	// Spec 62：HasDocs（有已发布本地文档的项目）从每项目一次 ListWikidocs 收敛为
-	// 单条 GROUP BY 查询（CountPublishedWikidocsByProjects）。查询失败仅记日志：
-	// HasDocs 保持 false 回退外链，不阻塞文库页渲染。
-	projectIDs := make([]string, 0, len(projects))
-	for _, p := range projects {
-		projectIDs = append(projectIDs, p.ID)
-	}
-	if counts, err := s.st.CountPublishedWikidocsByProjects(projectIDs); err != nil {
-		log.Printf("count wikidocs by projects: %v", err)
-	} else {
-		for _, p := range projects {
-			p.HasDocs = counts[p.ID] > 0
-		}
 	}
 	// Sort 降序，同值按 ID 字母序（与 Console 设置页/项目下拉的排序规则一致）
 	sort.SliceStable(projects, func(i, j int) bool {
@@ -142,7 +127,7 @@ func (s *webServer) handleWikiProject(c *gin.Context) {
 		s.render404(c)
 		return
 	}
-	// 项目存在性校验（配置驱动：site.yml wiki 段未配置的项目不可访问）
+	// 项目存在性校验（迁移完成后由 wiki_projects 表提供）。
 	if s.wikiProjectByID(projectID) == nil {
 		s.render404(c)
 		return
@@ -257,6 +242,7 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		WikiProjectName:        project.DisplayTitle(),
 		WikiProjectIcon:        project.Icon,
 		WikiProjectDescription: project.Description,
+		WikiProjectRepo:        project.Repo,
 		WikiHero:               project.Hero,
 		// 搜索框项目化：data-filter 限定当前项目 + placeholder 显示项目名
 		SearchFilter:      "/wiki/" + projectID + "/",
@@ -279,10 +265,26 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 	s.renderBase(c, data)
 }
 
-// wikiProjectByID 按 ID 查 site.yml wiki 段项目（配置驱动，未配置返回 nil）。
+// wikiProjectByID 按数据库项目 ID 查项目；未完成迁移的独立测试回退旧配置。
 func (s *webServer) wikiProjectByID(id string) *tmpl.WikiProject {
+	if projects, err := s.st.ListWikiProjects(); err == nil {
+		if marker, markerErr := s.st.GetSetting("wiki_projects_migrated"); markerErr == nil && marker == "1" {
+			for _, p := range projects {
+				if p.ID == id && p.Visible {
+					withCounts := p
+					_ = s.st.PopulateWikiProjectCounts(withCounts)
+					return wikiProjectTemplate(withCounts)
+				}
+			}
+			return nil
+		}
+		for _, p := range projects {
+			if p.ID == id {
+				return wikiProjectTemplate(p)
+			}
+		}
+	}
 	return wikiProjectByIDOf(s.site.Load(), id)
-
 }
 
 func wikiProjectByIDOf(site *tmpl.Site, id string) *tmpl.WikiProject {

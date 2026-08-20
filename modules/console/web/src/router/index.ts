@@ -85,6 +85,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
         },
         {
+          path: "wiki/projects",
+          name: "WikiProjects",
+          component: () => import("@/modules/wiki/WikiProjectsView.vue"),
+          meta: { requiresAuth: true },
+        },
+        {
           path: "notebooks",
           name: "Notebooks",
           component: () => import("@/modules/notebooks/NotebooksView.vue"),

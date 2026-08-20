@@ -53,21 +53,23 @@ func (h *Handler) ensureUniqueSlug(slug string) string {
 
 // postJSON 文章 API 响应模型。
 type postJSON struct {
-	Slug      string   `json:"slug"`
-	Title     string   `json:"title"`
-	Excerpt   string   `json:"excerpt"`
-	Banner    string   `json:"banner"`
-	Cover     string   `json:"cover"`
-	Category  string   `json:"category"`
-	TopicID   int64    `json:"topic_id"`
-	Topic     string   `json:"topic"`
-	Tags      string   `json:"tags"`
-	ContentMD string   `json:"content_md"`
-	Status    string   `json:"status"`
-	Pinned    bool     `json:"pinned"`
-	Password  string   `json:"password"`
-	PublishAt string   `json:"publish_at"`
-	Poster    *posterJ `json:"poster,omitempty"`
+	Slug        string   `json:"slug"`
+	Title       string   `json:"title"`
+	Excerpt     string   `json:"excerpt"`
+	Banner      string   `json:"banner"`
+	Cover       string   `json:"cover"`
+	Category    string   `json:"category"`
+	Categories  []string `json:"categories"`
+	CategoryIDs []int64  `json:"category_ids,omitempty"`
+	TopicID     int64    `json:"topic_id"`
+	Topic       string   `json:"topic"`
+	Tags        string   `json:"tags"`
+	ContentMD   string   `json:"content_md"`
+	Status      string   `json:"status"`
+	Pinned      bool     `json:"pinned"`
+	Password    string   `json:"password"`
+	PublishAt   string   `json:"publish_at"`
+	Poster      *posterJ `json:"poster,omitempty"`
 	// 文章级 SEO（Spec 42）
 	MetaDescription string `json:"meta_description"`
 	MetaKeywords    string `json:"meta_keywords"`
@@ -100,6 +102,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 		Banner:          p.Banner,
 		Cover:           p.Cover,
 		Category:        p.Category,
+		Categories:      append([]string(nil), p.Categories...),
 		TopicID:         p.TopicID,
 		Topic:           p.Topic,
 		Tags:            p.Tags,
@@ -270,6 +273,10 @@ func (h *Handler) createPost(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
+	if err := h.normalizePostCategories(&req); err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err := normalizePostAuthorsRequest(&req, nil); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
@@ -328,6 +335,14 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
+		return
+	}
+	if len(req.Categories) == 0 && len(req.CategoryIDs) == 0 && strings.TrimSpace(req.Category) == "" {
+		req.Categories = append([]string(nil), existing.Categories...)
+		req.Category = existing.Category
+	}
+	if err := h.normalizePostCategories(&req); err != nil {
+		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
@@ -630,21 +645,23 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 // --- 辅助 ---
 
 type postRequest struct {
-	Slug      string          `json:"slug"`
-	Title     string          `json:"title"`
-	Excerpt   string          `json:"excerpt"`
-	Banner    string          `json:"banner"`
-	Cover     string          `json:"cover"`
-	Category  string          `json:"category"`
-	TopicID   json.RawMessage `json:"topic_id,omitempty"`
-	Topic     string          `json:"topic"`
-	Tags      string          `json:"tags"`
-	ContentMD string          `json:"content_md"`
-	Status    string          `json:"status"`
-	Pinned    bool            `json:"pinned"`
-	Password  string          `json:"password"`
-	PublishAt string          `json:"publish_at"`
-	Poster    *struct {
+	Slug        string          `json:"slug"`
+	Title       string          `json:"title"`
+	Excerpt     string          `json:"excerpt"`
+	Banner      string          `json:"banner"`
+	Cover       string          `json:"cover"`
+	Category    string          `json:"category"`
+	Categories  []string        `json:"categories"`
+	CategoryIDs []int64         `json:"category_ids,omitempty"`
+	TopicID     json.RawMessage `json:"topic_id,omitempty"`
+	Topic       string          `json:"topic"`
+	Tags        string          `json:"tags"`
+	ContentMD   string          `json:"content_md"`
+	Status      string          `json:"status"`
+	Pinned      bool            `json:"pinned"`
+	Password    string          `json:"password"`
+	PublishAt   string          `json:"publish_at"`
+	Poster      *struct {
 		Headline string `json:"headline"`
 		Topic    string `json:"topic"`
 		Caption  string `json:"caption"`
@@ -673,6 +690,7 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		Banner:      strings.TrimSpace(req.Banner),
 		Cover:       strings.TrimSpace(req.Cover),
 		Category:    strings.TrimSpace(req.Category),
+		Categories:  append([]string(nil), req.Categories...),
 		Topic:       strings.TrimSpace(req.Topic),
 		Tags:        normalizeTags(req.Tags),
 		ContentMD:   req.ContentMD,
@@ -702,6 +720,46 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		})
 	}
 	return p
+}
+
+// normalizePostCategories resolves category_ids to paths and keeps the legacy
+// category field synchronized with the first submitted category.
+func (h *Handler) normalizePostCategories(req *postRequest) error {
+	if len(req.CategoryIDs) > 0 {
+		paths := make([]string, 0, len(req.CategoryIDs))
+		seen := map[int64]bool{}
+		for _, id := range req.CategoryIDs {
+			if id <= 0 || seen[id] {
+				continue
+			}
+			seen[id] = true
+			n, err := h.store.GetCategoryByID(id)
+			if err != nil {
+				return fmt.Errorf("分类不存在: %d", id)
+			}
+			paths = append(paths, n.Path)
+		}
+		req.Categories = paths
+	}
+	if len(req.Categories) == 0 && strings.TrimSpace(req.Category) != "" {
+		req.Categories = []string{strings.TrimSpace(req.Category)}
+	}
+	for i, path := range req.Categories {
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) == 0 || strings.TrimSpace(path) == "" {
+			return fmt.Errorf("分类路径不能为空")
+		}
+		for _, part := range parts {
+			if strings.TrimSpace(part) == "" {
+				return fmt.Errorf("分类路径不合法: %q", path)
+			}
+		}
+		req.Categories[i] = strings.Trim(path, " /")
+	}
+	if len(req.Categories) > 0 {
+		req.Category = req.Categories[0]
+	}
+	return nil
 }
 
 func normalizeRequestAuthorIDs(req *postRequest) []string {

@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { settingsApi, wikiApi } from "@/api";
+import { wikiApi } from "@/api";
+import type { WikiProject } from "@/api";
 import ContentEditor from "@/components/ContentEditor.vue";
 import { Icon } from "@iconify/vue";
 import { VButton, Toast, Dialog, VModal } from "@/components/ui";
 
 // ---------- 类型 ----------
-interface WikiProject {
- id: string;
- title: string;
- description?: string;
- icon?: string;
-}
-
 interface WikiDoc {
  id: number;
  project_id: string;
@@ -38,7 +32,7 @@ interface FlatNode {
  hasChildren: boolean;
 }
 
-// ---------- 项目（settings wiki 段） ----------
+// ---------- 项目（SQLite wiki_projects） ----------
 const projects = ref<WikiProject[]>([]);
 const activeProject = ref("");
 const settingsLoading = ref(true);
@@ -268,14 +262,9 @@ async function handleCreate() {
 async function loadProjects() {
  settingsLoading.value = true;
  try {
- const { data } = await settingsApi.all();
- // 项目列表按 sort 降序排列（sort 相同或无值时按 id 字母序），与前台 /wiki 页顺序一致
- projects.value = [...(data.wiki || [])].sort((a: any, b: any) => {
- const sa = Number(a?.sort) || 0;
- const sb = Number(b?.sort) || 0;
- if (sa !== sb) return sb - sa;
- return String(a?.id ??"").localeCompare(String(b?.id ??""));
- });
+ const { data } = await wikiApi.listProjects();
+ // 项目列表由后端按 pin/sort/id 稳定排序。
+ projects.value = Array.isArray(data.items) ? data.items : [];
  if (projects.value.length) {
  activeProject.value = projects.value[0].id;
  }
@@ -417,7 +406,7 @@ onMounted(loadProjects);
         <VButton
           type="secondary"
           size="sm"
-          :route="{ path: '/settings', query: { tab: 'wiki' } }"
+          :route="{ path: '/wiki/projects' }"
           title="管理文库项目"
         >
           <template #icon>
@@ -447,7 +436,7 @@ onMounted(loadProjects);
           type="secondary"
           size="sm"
           class="mt-4"
-          :route="{ path: '/settings', query: { tab: 'wiki' } }"
+          :route="{ path: '/wiki/projects' }"
         >
           <template #icon>
             <Icon icon="ri:settings-3-line" class="h-full w-full" />

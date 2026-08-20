@@ -17,8 +17,9 @@ interface PostForm {
  slug: string;
  title: string;
  excerpt: string;
- cover: string;
+	cover: string;
 	category: string;
+	categories: string[];
 	topic_id: number | null;
 	topic: string;
  tags: string;
@@ -33,9 +34,19 @@ interface PostForm {
  author: string;
 }
 
+interface CategoryNode {
+ id: number;
+ name: string;
+ path: string;
+ parent_id: number;
+ count: number;
+ children?: CategoryNode[];
+}
+
 const props = defineProps<{
  form: PostForm;
  categories: string[];
+ categoryTree: CategoryNode[];
  tags: string[];
  aiSummary: string; // Spec 53：AI 摘要由 PostEditor 持有（与 AiGenerateModal 回填共用一份状态）
 }>();
@@ -269,10 +280,60 @@ const minLevel = computed(() =>
  outline.value.length ? Math.min(...outline.value.map((i) => i.level)) : 1
 );
 
-// ---------- 详情：分类/标签 chips ----------
+// ---------- 详情：分类/标签树 ----------
+
+const categoryQuery = ref("");
+
+interface CategoryOption {
+ path: string;
+ name: string;
+ count: number;
+ depth: number;
+}
+
+function flattenCategoryTree(nodes: CategoryNode[], depth = 0): CategoryOption[] {
+ const out: CategoryOption[] = [];
+ for (const node of nodes) {
+  out.push({ path: node.path || node.name, name: node.name, count: node.count, depth });
+  if (node.children?.length) out.push(...flattenCategoryTree(node.children, depth + 1));
+ }
+ return out;
+}
+
+const categoryOptions = computed<CategoryOption[]>(() => {
+ const tree = flattenCategoryTree(props.categoryTree || []);
+ if (tree.length) return tree;
+ return props.categories.map((path) => {
+  const parts = path.split("/");
+  return { path, name: parts[parts.length - 1], count: 0, depth: Math.max(0, parts.length - 1) };
+ });
+});
+
+const filteredCategoryOptions = computed(() => {
+ const query = categoryQuery.value.trim().toLowerCase();
+ if (!query) return categoryOptions.value;
+ return categoryOptions.value.filter((category) =>
+  category.path.toLowerCase().includes(query) || category.name.toLowerCase().includes(query)
+ );
+});
 
 function pickCategory(name: string) {
- props.form.category = name;
+ const selected = Array.isArray(props.form.categories) ? [...props.form.categories] : [];
+ const index = selected.indexOf(name);
+ if (index >= 0) selected.splice(index, 1);
+ else selected.push(name);
+ props.form.categories = selected;
+ props.form.category = selected[0] || "";
+}
+
+function addCategoryFromInput() {
+ const path = categoryQuery.value.trim().replace(/^\/+|\/+$/g, "");
+ if (!path) return;
+ const selected = Array.isArray(props.form.categories) ? [...props.form.categories] : [];
+ if (!selected.includes(path)) selected.push(path);
+ props.form.categories = selected;
+ props.form.category = selected[0] || "";
+ categoryQuery.value = "";
 }
 
 // 点标签 chip：toggle 语义——已选中则移除（可取消标签），未选中则追加；逗号分隔去重
@@ -629,15 +690,33 @@ const chipActiveCls = "bg-primary/15 text-primary";
         <div :class="cardBodyCls + ' space-y-3.5'">
           <div>
             <label :class="labelCls">分类</label>
-            <input v-model="form.category" :class="fieldCls" />
-            <div v-if="categories.length" class="mt-2 flex flex-wrap gap-1.5">
+            <input
+              v-model="categoryQuery"
+              :class="fieldCls"
+              placeholder="搜索分类，回车可创建路径，如 产研/技术"
+              @keyup.enter="addCategoryFromInput"
+            />
+            <div v-if="form.categories?.length" class="mt-2 flex flex-wrap gap-1.5">
+              <span v-for="c in form.categories" :key="c" class="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-xs text-foreground">
+                {{ c }}
+                <button type="button" class="text-text-quaternary hover:text-foreground" @click="pickCategory(c)">×</button>
+              </span>
+            </div>
+            <div v-if="categoryOptions.length" class="mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-secondary/40 p-1.5">
               <button
-                v-for="c in categories"
-                :key="c"
+                v-for="c in filteredCategoryOptions"
+                :key="c.path"
                 type="button"
-                :class="[chipCls, form.category === c ? chipActiveCls : chipIdleCls]"
-                @click="pickCategory(c)"
-              >{{ c }}</button>
+                :class="['flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs transition-colors', form.categories?.includes(c.path) ? 'bg-accent text-primary' : 'text-text-secondary hover:bg-accent/60 hover:text-foreground']"
+                :style="{ paddingLeft: (8 + c.depth * 16) + 'px' }"
+                @click="pickCategory(c.path)"
+              >
+                <Icon :icon="c.depth ? 'ri:arrow-right-s-line' : 'ri:folder-2-line'" class="shrink-0 text-text-quaternary" />
+                <span class="min-w-0 flex-1 truncate">{{ c.name }}</span>
+                <span class="shrink-0 text-[10px] text-text-quaternary">{{ c.path }}</span>
+                <Icon v-if="form.categories?.includes(c.path)" icon="ri:check-line" class="shrink-0 text-primary" />
+              </button>
+              <p v-if="filteredCategoryOptions.length === 0" class="px-2 py-2 text-xs text-text-quaternary">没有匹配的分类，按回车创建路径</p>
             </div>
           </div>
           <div>

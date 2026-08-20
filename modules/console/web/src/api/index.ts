@@ -386,8 +386,13 @@ export const subscriptionApi = {
 
 // --- Taxonomy (categories / tags) ---
 export const taxonomyApi = {
- categories: () => http.get("/categories"),
- renameCategory: (name: string, newName: string) =>
+  categories: () => http.get("/categories"),
+  createCategory: (name: string, parent_id = 0) =>
+    http.post("/categories", { name, parent_id }),
+  updateCategory: (id: number, data: { name: string; parent_id?: number }) =>
+    http.put(`/categories/${id}`, data),
+  deleteCategoryById: (id: number) => http.delete(`/categories/${id}`),
+  renameCategory: (name: string, newName: string) =>
  http.put(`/categories/${encodeURIComponent(name)}`, { name: newName }),
  deleteCategory: (name: string) =>
  http.delete(`/categories/${encodeURIComponent(name)}`),
@@ -434,9 +439,61 @@ export const shareApi = {
  delete: (id: number) => http.delete(`/shares/${id}`),
 };
 
-// --- Wiki Docs（Spec 35a 文库文档管理；项目来自 settings wiki 段） ---
+// --- Wiki 项目与文档（Spec 35a） ---
+export interface WikiHeroPreview {
+ type?: string;
+ commands?: { codes?: string[] }[];
+ image?: string;
+}
+
+export interface WikiHeroAction {
+ title?: string;
+ url?: string;
+ icon?: string;
+}
+
+export interface WikiHero {
+ background?: string;
+ title?: string;
+ description?: string;
+ start?: string;
+ preview?: WikiHeroPreview;
+ actions?: WikiHeroAction[];
+}
+
+export interface WikiProject {
+ id: string;
+ name: string;
+ title: string;
+ headline?: string;
+ subtitle?: string;
+ description?: string;
+ icon?: string;
+ cover?: string;
+ available?: string;
+ url?: string;
+ repo?: string;
+ branch?: string;
+ sort: number;
+ pin: boolean;
+ visible: boolean;
+ hero?: WikiHero;
+ tags: string[];
+ doc_count?: number;
+ published_doc_count?: number;
+ has_docs?: boolean;
+}
+
 // 文档字段：slug / title / order / parent(父文档 ID, 0=顶级) / content_md / status(published|draft)。
 export const wikiApi = {
+ listProjects: () => http.get<{ items: WikiProject[] }>('/wiki/projects'),
+ getProject: (id: string) => http.get<WikiProject>(`/wiki/projects/${encodeURIComponent(id)}`),
+ createProject: (data: Partial<WikiProject> & { id: string }) =>
+  http.post<WikiProject>('/wiki/projects', data),
+ updateProject: (id: string, data: Partial<WikiProject>) =>
+  http.put<WikiProject>(`/wiki/projects/${encodeURIComponent(id)}`, data),
+ deleteProject: (id: string) =>
+  http.delete(`/wiki/projects/${encodeURIComponent(id)}`),
  listDocs: (project: string) =>
  http.get(`/wiki/${encodeURIComponent(project)}/docs`),
  getDoc: (project: string, slug: string) =>

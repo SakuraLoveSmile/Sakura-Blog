@@ -295,6 +295,80 @@ const init = {
       hud.toast(card.getAttribute('data-wiki-empty'), 2500);
     });
   },
+  wikiHeroCopy: () => {
+    if (init.wikiHeroCopyBound) return;
+    init.wikiHeroCopyBound = true;
+    document.addEventListener('click', function (e) {
+      const button = e.target.closest && e.target.closest('.wiki-copy[data-copy-text]');
+      if (!button) return;
+      const text = button.getAttribute('data-copy-text') || '';
+      const done = () => hud.toast('已复制', 1800);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+        return;
+      }
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); done(); } catch (err) {}
+      document.body.removeChild(area);
+    });
+  },
+  wikiCover: () => {
+    // 上游 Wiki Hero：终端预览与 Galaxy WebGL 背景按页面需要初始化。
+    document.querySelectorAll('.wiki-cover-terminal').forEach(function (terminal) {
+      const code = terminal.querySelector('pre code');
+      const tabs = terminal.querySelectorAll('[role="tab"]');
+      function renderCodes(value) {
+        if (!code) return;
+        const lines = value.split(/\r?\n/).filter(function (line) {
+          return line.trim().length > 0;
+        });
+        terminal.dataset.codes = lines.join('\n');
+        code.innerHTML = '';
+        lines.forEach(function (line) {
+          const row = document.createElement('span');
+          row.textContent = line;
+          code.appendChild(row);
+        });
+      }
+      if (tabs.length > 0) {
+        renderCodes(tabs[0].getAttribute('data-codes') || '');
+      }
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          tabs.forEach(function (item) {
+            const active = item === tab;
+            item.classList.toggle('active', active);
+            item.setAttribute('aria-selected', active ? 'true' : 'false');
+          });
+          renderCodes(tab.getAttribute('data-codes') || '');
+        });
+      });
+      const copy = terminal.querySelector('.wiki-cover-copy');
+      if (copy) {
+        copy.addEventListener('click', function () {
+          const value = terminal.dataset.codes || '';
+          if (!value || !navigator.clipboard) return;
+          navigator.clipboard.writeText(value).then(function () {
+            hud.toast(copy.getAttribute('data-copy-message') || 'Copied', 2500);
+          }).catch(function () {});
+        });
+      }
+    });
+
+    const galaxyCanvases = document.querySelectorAll('.wiki-cover-background.galaxy canvas');
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || galaxyCanvases.length === 0 || !window.utils || !utils.js) return;
+    utils.js('/assets/js/plugins/galaxy.js', { defer: true }).then(function () {
+      if (stellar.galaxy && typeof stellar.galaxy.mountAll === 'function') {
+        stellar.galaxy.mountAll(galaxyCanvases);
+      }
+    }).catch(function () {});
+  },
   relativeDate: (selector) => {
     selector.forEach(item => {
       const $this = item
@@ -436,6 +510,8 @@ stellar.initPage = function () {
   init.navbarPin();
   bindAnchorClick();
   init.wikiEmptyCard();
+  init.wikiHeroCopy();
+  init.wikiCover();
   init.relativeDate(document.querySelectorAll('#post-meta time'));
   init.registerTabsTag();
 

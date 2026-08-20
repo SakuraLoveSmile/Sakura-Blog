@@ -23,19 +23,37 @@ func NewHandler(c *Client) *Handler {
 // PublicRoutes exposes GitHub proxy callbacks without owning their URL paths.
 // Stellar binds these callbacks to /api/gh/*.
 type PublicRoutes struct {
-	RepoInfo     gin.HandlerFunc
-	WidgetRepo   gin.HandlerFunc
-	WidgetUser   gin.HandlerFunc
-	WidgetTags   gin.HandlerFunc
-	WidgetIssues gin.HandlerFunc
+	RepoInfo      gin.HandlerFunc
+	WidgetRepo    gin.HandlerFunc
+	WidgetRelease gin.HandlerFunc
+	WidgetUser    gin.HandlerFunc
+	WidgetTags    gin.HandlerFunc
+	WidgetIssues  gin.HandlerFunc
 }
 
 // PublicRoutes returns the GitHub callbacks used by Stellar.
 func (h *Handler) PublicRoutes() PublicRoutes {
 	return PublicRoutes{
-		RepoInfo: h.repoInfo, WidgetRepo: h.widgetRepo, WidgetUser: h.widgetUser,
+		RepoInfo: h.repoInfo, WidgetRepo: h.widgetRepo, WidgetRelease: h.widgetRelease, WidgetUser: h.widgetUser,
 		WidgetTags: h.widgetTags, WidgetIssues: h.widgetIssues,
 	}
+}
+
+// widgetRelease returns the latest release in GitHub's familiar shape for
+// the Wiki Hero version badge. A release failure is intentionally surfaced so
+// the client can keep the badge hidden.
+func (h *Handler) widgetRelease(c *gin.Context) {
+	owner, name, ok := repoParam(c)
+	if !ok {
+		return
+	}
+	data, err := h.client.GetLatestReleaseRaw(owner, name)
+	if err != nil {
+		c.String(http.StatusBadGateway, "github release fetch failed: %v", err)
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=21600")
+	c.Data(http.StatusOK, "application/json; charset=utf-8", data)
 }
 
 // ghNameRe GitHub owner/repo/username 字符白名单（安全审计 2026-08-16）：

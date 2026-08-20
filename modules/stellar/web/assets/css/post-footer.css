@@ -5,6 +5,15 @@
    - 全局 img{max-width:100%} 将彩色品牌图标约束到网格单元宽
    此处仅补充 main.css 未含的打赏（.reward-wrap，正文结尾居中）块样式与 banner 宽高比变量钩子。 */
 
+/* 左栏 footer 允许站点配置直接提供外部 <img> 图标；统一限制到 social 按钮的图标盒，
+   避免 SVG 自身的 128/512px intrinsic size 撑开横向布局。 */
+.l_left footer.footer .social-wrap .social > img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 /* Spec 32 banner_ratio：main.css 编译期固定 aspect-ratio: 2.5，
    模板在 .article.banner 上注入 --banner-ratio（site.yml article.banner_ratio）时覆盖。 */
 .article.banner .bg + .content {

@@ -3,6 +3,8 @@ package web
 import (
 	"strings"
 	"testing"
+
+	"blog/internal/settings"
 )
 
 // renderContent 渲染 partial/content（Spec 71 T3 文章末尾标签行验证用）。
@@ -64,6 +66,28 @@ func TestAdaptiveTextAssetsFollowSetting(t *testing.T) {
 	}
 	if html := render(&Site{Plugins: PluginsConfig{AdaptiveText: &AdaptiveTextConfig{Enable: false}}}); strings.Contains(html, "/assets/js/color.js") {
 		t.Fatal("adaptive text assets should be omitted when explicitly disabled")
+	}
+}
+
+func TestPinSliderAdaptiveTextTarget(t *testing.T) {
+	engine, err := NewEngineFromEmbed(&IconRegistry{})
+	if err != nil {
+		t.Fatalf("NewEngineFromEmbed: %v", err)
+	}
+	html, err := engine.Render("partial/pin_slider", &ViewData{
+		PinnedPosts: []*settings.PostCard{
+			{Slug: "with-cover", Title: "有封面", Cover: "/cover.jpg"},
+			{Slug: "without-cover", Title: "无封面"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render partial/pin_slider: %v", err)
+	}
+	if got := strings.Count(html, `class="pin-slide-text" data-text-adaptive="split"`); got != 1 {
+		t.Fatalf("covered pinned post adaptive target count = %d, want 1\n%s", got, html)
+	}
+	if got := strings.Count(html, `class="pin-slide-text">`); got != 1 {
+		t.Fatalf("uncovered pinned post plain text target count = %d, want 1\n%s", got, html)
 	}
 }
 

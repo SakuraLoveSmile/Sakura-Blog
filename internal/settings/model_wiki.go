@@ -8,8 +8,12 @@ type WikiProject struct {
 	ID          string      `yaml:"id" json:"id"`
 	Name        string      `yaml:"name" json:"name"`
 	Title       string      `yaml:"title" json:"title"`
+	Headline    string      `yaml:"headline" json:"headline"`
+	Subtitle    string      `yaml:"subtitle" json:"subtitle"`
 	Description string      `yaml:"description" json:"description"`
 	Icon        string      `yaml:"icon" json:"icon"` // 项目 Logo 图片 URL
+	Cover       string      `yaml:"cover" json:"cover"`
+	Available   string      `yaml:"available" json:"available"`
 	Tags        []string    `yaml:"tags" json:"tags"`
 	URL         string      `yaml:"url" json:"url"`                       // 首页/文档链接（站内文章、独立页面或外链）
 	Sort        int         `yaml:"sort" json:"sort"`                     // 越大越靠前
@@ -17,6 +21,7 @@ type WikiProject struct {
 	Repo        string      `yaml:"repo" json:"repo"`                     // GitHub 仓库（owner/name 格式），非空时 wiki 文档页右栏渲染 ghrepo 卡片
 	Branch      string      `yaml:"branch" json:"branch"`                 // README 所在分支，空值使用 GitHub HEAD
 	Hero        *HeroConfig `yaml:"hero,omitempty" json:"hero,omitempty"` // 项目级 hero banner（wiki 文档页页首渲染）
+	Visible     *bool       `yaml:"visible,omitempty" json:"visible,omitempty"`
 	// HasDocs 运行时标记：是否有已发布的本地文档（请求时由 handler 填充，不参与配置解析/JSON 输出）。
 	HasDocs bool `yaml:"-" json:"-"`
 }

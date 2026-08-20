@@ -1,10 +1,12 @@
 package routes
 
 import (
+	"errors"
 	"html/template"
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -99,48 +101,22 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 
 	// 分类索引页：所有分类 + 文章数（对齐 Stellar categories.ejs）
 	r.GET("/categories", func(c *gin.Context) {
-		counts, err := s.st.CountByCategory()
+		tree, err := s.st.CategoryTree()
 		if err != nil {
 			log.Printf("count categories: %v", err)
 			s.render500(c)
 			return
 		}
-		cats := make([]*tmpl.CatItem, 0, len(counts))
-		for name, n := range counts {
-			cats = append(cats, &tmpl.CatItem{Name: name, Count: n, Icon: s.site.Load().Article.CategoryIcon[name]})
-		}
-		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
 		s.renderBase(c, &tmpl.ViewData{
 			Site: s.site.Load(),
 			Page: &tmpl.Page{Title: "分类", Layout: "categories", MenuID: "post", Lang: "zh-CN"},
-			Cats: cats,
+			Cats: categoryItems(tree, s.site.Load().Article.CategoryIcon),
 		})
 	})
 
 	// 分类文章列表页：复用首页卡片（对齐 Stellar archive.ejs 的 partial('index') 行为）
 	r.GET("/categories/:name", func(c *gin.Context) {
-		name := c.Param("name")
-		counts, err := s.st.CountByCategory()
-		if err != nil {
-			log.Printf("count categories: %v", err)
-			s.render500(c)
-			return
-		}
-		if _, ok := counts[name]; !ok {
-			s.render404(c)
-			return
-		}
-		posts, err := s.st.ListByCategory(name)
-		if err != nil {
-			log.Printf("list posts: %v", err)
-			s.render500(c)
-			return
-		}
-		s.renderBase(c, &tmpl.ViewData{
-			Site:  s.site.Load(),
-			Page:  &tmpl.Page{Title: "分类：" + name, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: name, Type: s.site.Load().Article.Type},
-			Posts: s.toCards(posts),
-		})
+		s.handleCategoryPath(c, c.Param("name"))
 	})
 
 	// 专栏索引页（Spec 52）：索引页与详情页均由 topics 表驱动；详情兼容旧的 name 路径。
@@ -204,6 +180,47 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 
 	// 作者文章列表页（Spec 38 多作者体系）：/author/:id，对齐 Stellar author.ejs 的“全部文章”链接。
 	r.GET("/author/:id", s.handleAuthor)
+}
+
+// categoryItems converts the Store tree to the recursive template model.
+func categoryItems(nodes []*store.CategoryNode, icons map[string]string) []*tmpl.CatItem {
+	items := make([]*tmpl.CatItem, 0, len(nodes))
+	for _, n := range nodes {
+		icon := icons[n.Path]
+		if icon == "" {
+			icon = icons[n.Name]
+		}
+		items = append(items, &tmpl.CatItem{
+			ID: n.ID, Name: n.Name, Path: n.Path, ParentID: n.ParentID, Count: n.Count, Icon: icon,
+			Children: categoryItems(n.Children, icons),
+		})
+	}
+	return items
+}
+
+// handleCategoryPath 是所有分类详情入口的统一路径解析逻辑。
+// NoRoute 会把包含多个路径段的 /categories/a/b/ 也转交到此方法。
+func (s *webServer) handleCategoryPath(c *gin.Context, path string) {
+	path = strings.Trim(path, "/")
+	if path == "" || strings.HasSuffix(path, "/rss.xml") {
+		s.render404(c)
+		return
+	}
+	posts, err := s.st.ListByCategoryPath(path)
+	if err != nil {
+		if errors.Is(err, store.ErrCategoryNotFound) {
+			s.render404(c)
+			return
+		}
+		log.Printf("list posts by category: %v", err)
+		s.render500(c)
+		return
+	}
+	s.renderBase(c, &tmpl.ViewData{
+		Site:  s.site.Load(),
+		Page:  &tmpl.Page{Title: "分类：" + path, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: path, Type: s.site.Load().Article.Type},
+		Posts: s.toCards(posts),
+	})
 }
 
 // tagCountItems 标签计数 map → 排序的 TagCount 列表（数量降序，同量按名升序）。

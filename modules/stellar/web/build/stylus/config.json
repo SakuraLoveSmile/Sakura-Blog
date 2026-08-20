@@ -11,8 +11,8 @@
       "codeblock": "0.8125rem"
     },
     "font-family": {
-      "body": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
-      "code": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif",
+      "body": "\"LXGW WenKai Screen\", system-ui, \"Microsoft Yahei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+      "code": "\"LXGW WenKai Screen\", Menlo, Monaco, Consolas, system-ui, \"Courier New\", monospace, sans-serif",
       "codeblock": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
     },
     "text-align": "left",

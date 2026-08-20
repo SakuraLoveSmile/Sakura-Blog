@@ -7,8 +7,9 @@
   <article id="tags">
     {{range .TagItems}}
     <a class="tag" href="/tags/{{.Name}}">
-      {{- /* 图标：article.tag_icon 命中时内联渲染（icon 函数兼容 URL 与 icons.yml key），未配置不渲染 */}}
-      <span class="name">{{if .Icon}}{{icon .Icon}}{{end}}{{.Name}}</span>
+      {{- /* 对齐 Stellar：默认显示 hashtag 图标，article.tag_icon 命中时覆盖默认图标 */}}
+      {{if .Icon}}{{icon .Icon}}{{else}}{{icon "default:hashtag"}}{{end}}
+      <span class="name">{{.Name}}</span>
     </a>
     {{end}}
   </article>

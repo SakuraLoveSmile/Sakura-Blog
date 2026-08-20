@@ -69,6 +69,7 @@ func Mount(r *gin.Engine, d Dependencies) error {
 		ghRoutes := ghpkg.NewHandler(d.GH).PublicRoutes()
 		r.GET("/api/gh/repo", ghRoutes.RepoInfo)
 		r.GET("/api/gh/widget/repo", ghRoutes.WidgetRepo)
+		r.GET("/api/gh/widget/release", ghRoutes.WidgetRelease)
 		r.GET("/api/gh/widget/user", ghRoutes.WidgetUser)
 		r.GET("/api/gh/widget/tags", ghRoutes.WidgetTags)
 		r.GET("/api/gh/widget/issues", ghRoutes.WidgetIssues)

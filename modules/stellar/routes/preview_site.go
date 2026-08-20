@@ -21,17 +21,12 @@ func (s *webServer) renderSitePreview(sections map[string]json.RawMessage, page 
 	data := &tmpl.ViewData{Site: &draft}
 	switch page {
 	case "categories":
-		counts, err := s.st.CountByCategory()
+		tree, err := s.st.CategoryTree()
 		if err != nil {
 			return "", err
 		}
-		cats := make([]*tmpl.CatItem, 0, len(counts))
-		for name, n := range counts {
-			cats = append(cats, &tmpl.CatItem{Name: name, Count: n, Icon: draft.Article.CategoryIcon[name]})
-		}
-		sort.Slice(cats, func(i, j int) bool { return cats[i].Name < cats[j].Name })
 		data.Page = &tmpl.Page{Title: "分类", Layout: "categories", MenuID: "post", Lang: "zh-CN"}
-		data.Cats = cats
+		data.Cats = categoryItems(tree, draft.Article.CategoryIcon)
 	case "tags":
 		counts, err := s.st.CountByTag()
 		if err != nil {

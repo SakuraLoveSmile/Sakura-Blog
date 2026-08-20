@@ -415,13 +415,13 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if data.WikiProjectID == "" {
 				break
 			}
-			cur := wikiProjectByIDOf(site, data.WikiProjectID)
+			cur := s.wikiProjectByID(data.WikiProjectID)
 			if cur == nil {
 				break
 			}
 			var projects []*tmpl.WikiProject
-			for i := range site.Wiki {
-				p := site.Wiki[i]
+			for _, source := range s.wikiProjectsForRuntime() {
+				p := *source
 				if p.ID == cur.ID {
 					continue
 				}
@@ -462,7 +462,7 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if data.WikiProjectID == "" {
 				break
 			}
-			project := wikiProjectByIDOf(site, data.WikiProjectID)
+			project := s.wikiProjectByID(data.WikiProjectID)
 			if project == nil || project.Repo == "" {
 				break
 			}
@@ -648,9 +648,9 @@ func (s *webServer) fillPinSlider(data *tmpl.ViewData) {
 			}
 		}
 	case "wiki":
-		for i := range data.Site.Wiki {
-			if data.Site.Wiki[i].Pin {
-				data.PinnedWiki = append(data.PinnedWiki, &data.Site.Wiki[i])
+		for _, project := range s.wikiProjectsForRuntime() {
+			if project.Pin {
+				data.PinnedWiki = append(data.PinnedWiki, project)
 			}
 		}
 	}

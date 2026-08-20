@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -21,24 +22,59 @@ func normalizeTagsCSV(parts []string) string {
 	return strings.Join(out, ",")
 }
 
-// RenameCategory 把所有文章的分类 old 改为 newName，返回受影响行数（含草稿）。
+// RenameCategory 保留旧的按名称 API。新代码应使用 category ID API；这里同步
+// 分类实体和关联，并保留旧返回值语义。
 func (s *Store) RenameCategory(old, newName string) (int64, error) {
-	res, err := s.db.Exec(`UPDATE posts SET category = ? WHERE category = ?`, newName, old)
+	id, err := s.categoryIDByPath(old)
 	if err != nil {
-		return 0, fmt.Errorf("rename category: %w", err)
+		// 极老数据回退到旧字段改写，避免迁移异常时管理接口不可用。
+		res, legacyErr := s.db.Exec(`UPDATE posts SET category = ? WHERE category = ?`, newName, old)
+		if legacyErr != nil {
+			return 0, fmt.Errorf("rename category: %w", legacyErr)
+		}
+		n, _ := res.RowsAffected()
+		return n, nil
 	}
-	n, _ := res.RowsAffected()
-	return n, nil
+	var affected int64
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM post_categories WHERE category_id = ?`, id).Scan(&affected); err != nil {
+		return 0, err
+	}
+	node, err := s.GetCategoryByID(id)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := s.UpdateCategory(id, newName, node.ParentID); err != nil {
+		return 0, err
+	}
+	return affected, nil
 }
 
-// DeleteCategory 清空所有文章的指定分类，返回受影响行数（含草稿）。
+// DeleteCategory 保留旧的按名称 API。ID API 采用安全删除策略；名称 API
+// 继续清空关联以兼容已有 Console 客户端，新的 Console 使用 ID 路由。
 func (s *Store) DeleteCategory(name string) (int64, error) {
-	res, err := s.db.Exec(`UPDATE posts SET category = '' WHERE category = ?`, name)
+	id, err := s.categoryIDByPath(name)
 	if err != nil {
-		return 0, fmt.Errorf("delete category: %w", err)
+		res, legacyErr := s.db.Exec(`UPDATE posts SET category = '' WHERE category = ?`, name)
+		if legacyErr != nil {
+			return 0, fmt.Errorf("delete category: %w", legacyErr)
+		}
+		n, _ := res.RowsAffected()
+		return n, nil
 	}
-	n, _ := res.RowsAffected()
-	return n, nil
+	var affected int64
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM post_categories WHERE category_id = ?`, id).Scan(&affected); err != nil {
+		return 0, err
+	}
+	if _, err := s.db.Exec(`DELETE FROM post_categories WHERE category_id = ?`, id); err != nil {
+		return 0, err
+	}
+	if _, err := s.db.Exec(`UPDATE posts SET category = '' WHERE category = ?`, name); err != nil {
+		return 0, err
+	}
+	if err := s.DeleteCategoryByID(id); err != nil && !errors.Is(err, ErrCategoryNotFound) {
+		return 0, err
+	}
+	return affected, nil
 }
 
 // rewriteTags 对所有含 tags 的文章逐行改写标签 CSV。

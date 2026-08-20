@@ -32,6 +32,7 @@ const form = ref({
  excerpt:"",
  cover:"",
  category:"",
+ categories: [] as string[],
  topic_id: null as number | null,
  topic:"",
  tags:"",
@@ -59,6 +60,15 @@ interface RichEditorExpose {
   openImageUpload: () => void;
   openImagePicker: () => void;
   clearDraft: () => void;
+}
+
+interface CategoryNode {
+  id: number;
+  name: string;
+  path: string;
+  parent_id: number;
+  count: number;
+  children?: CategoryNode[];
 }
 const richRef = ref<RichEditorExpose | null>(null);
 const coverPickerOpen = ref(false);
@@ -244,6 +254,7 @@ const currentWordCount = computed(() => {
 
 // ---------- 分类/标签可选项（Spec 29 P0-4） ----------
 const categories = ref<string[]>([]);
+const categoryTree = ref<CategoryNode[]>([]);
 const tags = ref<string[]>([]);
 
 async function loadTaxonomy() {
@@ -252,7 +263,8 @@ async function loadTaxonomy() {
  taxonomyApi.categories(),
  taxonomyApi.tags(),
  ]);
- categories.value = (cRes.data.items || []).map((i: any) => i.name);
+ categories.value = (cRes.data.items || []).map((i: any) => i.path || i.name);
+ categoryTree.value = Array.isArray(cRes.data.tree) ? cRes.data.tree : [];
  tags.value = (tRes.data.items || []).map((i: any) => i.name);
  } catch {
  /* 静默：可选项缺失不阻塞编辑 */
@@ -322,7 +334,10 @@ async function applyAi(values: Record<string, string>) {
  form.value.slug = values.slug;
  slugManuallyEdited.value = true;
  }
- if (values.category !== undefined) form.value.category = values.category;
+ if (values.category !== undefined) {
+  form.value.category = values.category;
+  form.value.categories = values.category ? [values.category] : [];
+ }
  if (values.tags !== undefined) form.value.tags = values.tags;
  if (values.excerpt !== undefined) form.value.excerpt = values.excerpt;
  if (values.summary !== undefined) {
@@ -351,6 +366,7 @@ async function loadPost() {
  excerpt: src.excerpt,
  cover: src.cover,
  category: src.category,
+ categories: Array.isArray(src.categories) ? src.categories.map((c: unknown) => String(c).trim()).filter(Boolean) : (src.category ? [src.category] : []),
  topic_id: src.topic_id ? Number(src.topic_id) : null,
  topic: src.topic,
  tags: src.tags,
@@ -691,6 +707,7 @@ function handleDiscardDraft() {
         <EditorSidebar
           :form="form"
           :categories="categories"
+          :category-tree="categoryTree"
           :tags="tags"
           :ai-summary="aiSummary"
           @jump="onJump"
@@ -714,9 +731,10 @@ function handleDiscardDraft() {
         </div>
         <div class="overflow-y-auto" style="max-height: calc(85vh - 24px);">
           <EditorSidebar
-            :form="form"
-            :categories="categories"
-            :tags="tags"
+          :form="form"
+          :categories="categories"
+          :category-tree="categoryTree"
+          :tags="tags"
             :ai-summary="aiSummary"
             @jump="onJump"
             @insert="onInsert"

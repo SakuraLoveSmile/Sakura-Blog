@@ -15,6 +15,14 @@ a[data-wiki-empty] {
   cursor: pointer;
 }
 
+/* 标签筛选只剩一个项目时，避免 1fr 网格把 3:4 卡片拉满整列；
+   多项目仍按 Stellar 的自适应多列布局，移动端窄列自然保持满宽。 */
+.post-list.wiki:has(> .post-card-wrap:only-child) > .post-card-wrap {
+  justify-self: start;
+  width: 100%;
+  max-width: 320px;
+}
+
 /* 笔记(手记)时间流：标题与标签（复用 moments 的 .tag-plugin.timeline .timenode 结构） */
 .tag-plugin.timeline .timenode .body .note-title {
   margin: 0 0 0.5rem;

@@ -3,9 +3,28 @@ package settings
 // HeroConfig 页面级 hero banner 三要素（形状取 CoverConfig 的最小子集）：
 // title 主标题、description 副标题、background 背景图 URL。
 type HeroConfig struct {
-	Title       string `yaml:"title" json:"title"`
-	Description string `yaml:"description,omitempty" json:"description,omitempty"`
-	Background  string `yaml:"background,omitempty" json:"background,omitempty"`
+	Title       string       `yaml:"title" json:"title"`
+	Description string       `yaml:"description,omitempty" json:"description,omitempty"`
+	Background  string       `yaml:"background,omitempty" json:"background,omitempty"`
+	Start       string       `yaml:"start,omitempty" json:"start,omitempty"`
+	Preview     *HeroPreview `yaml:"preview,omitempty" json:"preview,omitempty"`
+	Actions     []HeroAction `yaml:"actions,omitempty" json:"actions,omitempty"`
+}
+
+type HeroPreview struct {
+	Type     string        `yaml:"type,omitempty" json:"type,omitempty"`
+	Commands []HeroCommand `yaml:"commands,omitempty" json:"commands,omitempty"`
+	Image    string        `yaml:"image,omitempty" json:"image,omitempty"`
+}
+
+type HeroCommand struct {
+	Codes []string `yaml:"codes,omitempty" json:"codes,omitempty"`
+}
+
+type HeroAction struct {
+	Title string `yaml:"title,omitempty" json:"title,omitempty"`
+	URL   string `yaml:"url,omitempty" json:"url,omitempty"`
+	Icon  string `yaml:"icon,omitempty" json:"icon,omitempty"`
 }
 
 // On hero 是否配置（title 或 background 任一非空）。

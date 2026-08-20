@@ -1,7 +1,4 @@
-{{- /* wiki.html: 文库落地页，对齐 Stellar layout/index_wiki.ejs + wiki_card.ejs
-   顶部 nav tabs（全部 + 各标签）+ .post-list.wiki 项目卡片。
-   由 base.html 按 .Page.Layout == "wiki" 分派渲染；.Page.Tag 非空时为标签过滤页。
-*/ -}}
+{{- /* wiki.html: Wiki 项目列表，对齐 Stellar index_wiki.ejs + wiki_card.ejs。 */ -}}
 {{template "partial/pin_slider" .}}
 <div class="navbar top">
   <div class="navbar-blur">
@@ -19,22 +16,24 @@
 <div class="post-list wiki">
   {{- range .WikiProjects}}
   <div class="post-card-wrap">
-    {{- /* 卡片跳转语义：有已发布本地文档 → /wiki/<id>（handleWikiProject 302 到首篇）；
-        无本地文档 → 保持 .URL 外链；都没有 → 不输出 href，加 data-wiki-empty
-        （main.js 事件委托拦截点击并 toast 提示，避免空卡片点击无反馈）。*/ -}}
-    <a class="post-card wiki" {{if .HasDocs}}href="/wiki/{{.ID}}"{{else if .URL}}href="{{.URL}}"{{else}}data-wiki-empty="{{lang "wiki.no_docs"}}"{{end}}>
-      <article class="md-text">
-        <div class="preview"><img src="{{.Icon}}" alt="{{.DisplayTitle}}" loading="lazy"/></div>
-        <div class="excerpt">
-          {{- if .Tags}}
-          <div class="caps">
-            {{- /* 标签胶囊：tagColorStyle 按标签名输出 inline style（--text-p2 文字色 + --theme-block 半透明底，
-                对齐原版 category_color helper），未命中不输出 style 属性，保持默认灰色。*/ -}}
-            {{- range .Tags}}<span class="cap breadcrumb" {{tagColorStyle .}}>{{.}}</span>{{end}}
+    <a class="wiki-card{{if not .Cover}} no-cover{{end}}"{{if .Cover}} style="--cover-url:url('{{.Cover}}')"{{end}}{{if .HasDocs}} href="/wiki/{{.ID}}"{{else if .URL}} href="{{.URL}}"{{else}} data-wiki-empty="{{lang "wiki.no_docs"}}"{{end}}>
+      <article class="wiki-card-content">
+        <div class="wiki-card-cover{{if not .Cover}} no-cover{{end}}" position="bottom">
+          {{if .Cover}}<img src="{{.Cover}}" alt="" loading="lazy">{{end}}
+          <div class="wiki-card-info" position="bottom"{{if .Cover}} data-text-adaptive="split"{{end}}>
+            <div class="wiki-card-summary">
+              {{if .Tags}}<div class="wiki-tags wiki-meta">{{range .Tags}}<span>{{.}}</span>{{end}}</div>{{end}}
+              <h2 class="headline">{{or .Headline .Title .Name .ID}}</h2>
+              {{if or .Available .Repo}}<div class="wiki-meta">
+                {{if .Available}}<span class="wiki-available">{{icon "default:platforms"}}<span class="label">{{lang "meta.available"}}</span><span class="value">{{.Available}}</span></span>{{end}}
+                {{if .Repo}}<span class="wiki-stars data-service ds-ghinfo" data-api="/api/gh/widget/repo?repo={{.Repo}}">{{icon "default:fire"}}<span type="text" id="stargazers_count"></span></span>{{end}}
+              </div>{{end}}
+            </div>
+            <div class="wiki-project">
+              <div class="project-icon">{{if .Icon}}<img src="{{.Icon}}" alt="">{{else}}{{icon "default:documents"}}{{end}}</div>
+              <div class="project-text"><div class="project-name">{{or .Name .Title .ID}}</div>{{if or .Subtitle .Description}}<div class="project-subtitle">{{or .Subtitle .Description}}</div>{{end}}</div>
+            </div>
           </div>
-          {{- end}}
-          <h2 class="post-title">{{.DisplayTitle}}</h2>
-          {{if .Description}}<p>{{.Description}}</p>{{end}}
         </div>
       </article>
     </a>
@@ -43,3 +42,42 @@
   <p class="wiki-empty">{{- lang "wiki.empty" -}}</p>
   {{- end}}
 </div>
+
+<script>
+  // Wiki 覆盖层须同时等待封面原图和平均主题色完成，避免默认主题色短暂闪现。
+  function revealWikiCover(card) {
+    if (card._wikiImageReady && card._wikiOverlayReady && !card.classList.contains('no-cover')) {
+      card.classList.add('cover-loaded');
+    }
+  }
+  document.addEventListener('wiki-overlay-ready', function(event) {
+    var card = event.target.closest('.wiki-card');
+    if (!card) return;
+    card._wikiOverlayReady = true;
+    revealWikiCover(card);
+  });
+  document.querySelectorAll('.wiki-card-cover:not(.no-cover) > img').forEach(function(img) {
+    var cover = img.parentElement;
+    var card = img.closest('.wiki-card');
+    if (!cover || !card) return;
+    var loaded = function() {
+      card._wikiImageReady = true;
+      revealWikiCover(card);
+    };
+    var failed = function() {
+      card._wikiImageReady = false;
+      card.classList.remove('cover-loaded');
+      card.classList.add('no-cover');
+      cover.classList.add('no-cover', 'cover-error');
+    };
+    img.addEventListener('load', loaded, { once: true });
+    img.addEventListener('error', failed, { once: true });
+    if (img.complete) {
+      if (img.naturalWidth > 0) {
+        loaded();
+      } else {
+        failed();
+      }
+    }
+  });
+</script>

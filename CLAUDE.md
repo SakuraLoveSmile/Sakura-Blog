@@ -376,7 +376,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 `resource/hexo-theme-stellar` 已固定到 `1.40.0`，`modules/stellar/web/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
 
-**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本。执行 `make css` 前先确认克隆版本与本分支同步版本一致（当前以本文档最新 Spec 章节记录的版本为准，见 Spec 71；`git -C ../resource/hexo-theme-stellar describe --tags` 核对），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
+**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本。执行 `make css` 前先确认克隆版本与本分支同步版本一致（当前以本文档最新 Spec 章节记录的版本为准，见 Spec 73；`git -C ../resource/hexo-theme-stellar describe --tags --always` 核对），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
 
 - 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
 - `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
@@ -453,9 +453,9 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - `?kw=` 高亮在独立文件 `assets/js/search/highlight.js`（base.html 已引入，asset_ver 内容哈希自动版本戳）。
 - 服务器端 `/api/search` 结果带 `anchor_id/anchor_text`，前端拼 `?kw=首词#锚点`。
 
-## Spec 72 · Stellar 1.42.1 同步（2026-08）
+## Spec 72 · Stellar 1.42.1 同步（2026-08，历史）
 
-`resource/hexo-theme-stellar` 已固定到 `1.42.1` tag；A 阶段从该源重编 `modules/stellar/web/assets/css/main.css`，验证前必须先用 `git -C ../resource/hexo-theme-stellar describe --tags` 确认共享主题源没有被其他 worktree 切换。
+该版本说明已被 Spec 73 的 `origin/main@c078d5d` 版本锚点替代。历史上曾固定到 `1.42.1` tag；A 阶段从该源重编 `modules/stellar/web/assets/css/main.css`，验证前必须先确认共享主题源没有被其他 worktree 切换。
 
 - 配置同步：`article.card_style` 默认 `hero`，`plugins.adaptive_text.enable` 默认开启，`article.auto_banner` 移除，Waline CDN 版本为 `3.15.2`。新增默认开启配置使用指针或 `Effective*` 归一化，避免 settings 表旧行的零值覆盖默认值。
 - CSS 令牌：上游已删除 `--gap-margin`、`--gap-padding`、`--gap-max`，项目侧统一使用 `--gap-base`（组件内间距）与 `--gap-page`（页面级留白）。`compile.js` 的 EXTRA_STYLES 仍固定追加 swiper/fancybox/artalk，1.42.1 未移动这些入口。
@@ -467,3 +467,12 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 
 - `main.js` 新增 `bindAnchorClick`（document 级委托 `a[href^="#"]`，`#start` 贴顶、其余 32px、`defaultPrevented` 跳过）+ `smoothScrollTo`（easeOutCubic，`behavior:'instant'` 防与全局 smooth 叠加）。放 `initPage` 内绑定，有 `anchorClickBound` 防重标记。
 - 上游「评论表情面板误触发 fancybox」与「wiki 标题去重」两项在本项目架构下**天然规避**：fancybox selector 只认 `div.lazy-box>img.lazy`（wrapLazyloadImages 仅处理 `.md-text.content`，评论面板动态渲染不在内）；wiki 文档页 title 不拼项目名前缀。排查同类问题先看本项目 selector/拼装方式，不要照搬上游补丁。
+
+## Spec 73 · Stellar Wiki 改版同步（2026-08）
+
+当前共享主题源版本锚定为 `origin/main@c078d5d`（`git describe --tags --always` 为 `1.42.1-10-gc078d5d`，上游 main 无 tag），替代 Spec 72 的 `1.42.1` 固定说明。该源跨 worktree 共享；重编前必须确认 detached HEAD 仍指向 `c078d5d`。
+
+- 上游 `source/css/_components/wiki-card.styl` 为 209 行版本：Wiki 列表必须使用 `.post-list.wiki > .post-card-wrap > a.wiki-card`，卡片内部为 `.wiki-card-content`、3:4 `.wiki-card-cover`、自适应文字 `.wiki-card-info`、标签/适用范围/GitHub 热度元信息和 `.wiki-project` 底栏。
+- `modules/stellar/web/templates/partial/wiki.html` 已对齐 `index_wiki.ejs` + `wiki_card.ejs`，保留本地项目文档/外链跳转语义；封面覆盖层等待图片与自适应主题色共同就绪后再加 `cover-loaded`，避免默认主题色闪现。
+- Wiki 文档 Hero 使用 `.l_cover.wiki-hero` / `.wiki-cover-background.galaxy` 结构；`assets/js/plugins/galaxy.js`（423 行）按需挂载 WebGL 星河，`dropdown.js`（435 行）由基础布局加载用于 footer/social 浮层。`main.js` 只合入 Wiki Hero 终端/Galaxy 初始化相关改动。
+- `modules/stellar/web/assets/css/main.css` 只能由 `make css` 生成；完成后执行 `make css-drift-check`。本地 `highlight.styl` 与 `search.styl` 小改补丁保存在 `dev/.tmp/stellar-local-tweaks.patch`，不纳入主题源同步提交。

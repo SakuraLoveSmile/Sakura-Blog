@@ -156,6 +156,7 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"attachments", st.EnsureAttachmentsTable},     // 附件管理
 		{"shared_posts", st.EnsureSharedPostsTable},    // 文章分享链接
 		{"wikidocs", st.EnsureWikidocsTable},           // wiki 文档（Spec 35）
+		{"wiki_projects", st.EnsureWikiProjectsTable},  // wiki 项目元数据（数据库唯一真源）
 		{"notebooks", st.EnsureNotebooksTable},         // 笔记本（Spec 35b）
 		{"notes", st.EnsureNotesTable},                 // 笔记（Spec 35b）
 		{"login_logs", st.EnsureLoginLogsTable},        // 登录日志（Wave 3a）
@@ -325,6 +326,11 @@ func (h *Handler) register(r *gin.Engine) {
 		// wiki 文档（Spec 35）
 		wiki := author.Group("/wiki")
 		{
+			wiki.GET("/projects", h.listWikiProjects)
+			wiki.GET("/projects/:id", h.getWikiProject)
+			wiki.POST("/projects", h.createWikiProject)
+			wiki.PUT("/projects/:id", h.updateWikiProject)
+			wiki.DELETE("/projects/:id", h.deleteWikiProject)
 			wiki.GET("/:project/docs", h.listWikidocs)
 			wiki.GET("/:project/docs/:slug", h.getWikidoc)
 			wiki.POST("/:project/docs", h.createWikidoc)
@@ -376,8 +382,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 分类 / 标签
 		author.GET("/categories", h.listCategories)
-		author.PUT("/categories/:name", h.renameCategory)
-		author.DELETE("/categories/:name", h.deleteCategory)
+		author.POST("/categories", h.createCategory)
+		author.PUT("/categories/:id", h.updateCategory)
+		author.DELETE("/categories/:id", h.deleteCategoryByID)
 		author.GET("/tags", h.listTags)
 		author.POST("/tags/merge", h.mergeTags)
 		author.PUT("/tags/:name", h.renameTag)

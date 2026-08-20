@@ -9,9 +9,42 @@ import (
 	"blog/internal/store"
 )
 
+// wikiProjectAvailable keeps older standalone API tests/clients working while
+// a process is being upgraded. Normal application startup has already run the
+// SQLite migration, so the database lookup is the authoritative path.
+func (h *Handler) wikiProjectAvailable(id string) (bool, error) {
+	project, err := h.store.GetWikiProject(id)
+	if err != nil {
+		return false, err
+	}
+	if project != nil {
+		return true, nil
+	}
+	if h.site != nil && h.site.Load() != nil {
+		for i := range h.site.Load().Wiki {
+			if h.site.Load().Wiki[i].ID == id {
+				return true, nil
+			}
+		}
+	}
+	// Legacy standalone callers may have wikidocs but no migrated project row.
+	// Application startup creates a placeholder row for exactly this case.
+	if docs, err := h.store.ListWikidocs(id); err == nil && len(docs) > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 // listWikidocs GET /api/v1/wiki/:project/docs：文档列表（含树结构）。
 func (h *Handler) listWikidocs(c *gin.Context) {
 	projectID := c.Param("project")
+	if ok, err := h.wikiProjectAvailable(projectID); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	} else if !ok {
+		Fail(c, http.StatusNotFound, "Wiki 项目不存在")
+		return
+	}
 	docs, err := h.store.ListWikidocs(projectID)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -33,6 +66,13 @@ func (h *Handler) listWikidocs(c *gin.Context) {
 func (h *Handler) getWikidoc(c *gin.Context) {
 	projectID := c.Param("project")
 	slug := c.Param("slug")
+	if ok, err := h.wikiProjectAvailable(projectID); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	} else if !ok {
+		Fail(c, http.StatusNotFound, "Wiki 项目不存在")
+		return
+	}
 	doc, err := h.store.GetWikidocBySlug(projectID, slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -50,6 +90,13 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 	projectID := c.Param("project")
 	if strings.TrimSpace(projectID) == "" {
 		Fail(c, http.StatusBadRequest, "project 不能为空")
+		return
+	}
+	if ok, err := h.wikiProjectAvailable(projectID); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	} else if !ok {
+		Fail(c, http.StatusNotFound, "Wiki 项目不存在")
 		return
 	}
 
@@ -121,6 +168,13 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 func (h *Handler) updateWikidoc(c *gin.Context) {
 	projectID := c.Param("project")
 	slug := c.Param("slug")
+	if ok, err := h.wikiProjectAvailable(projectID); err != nil {
+		Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	} else if !ok {
+		Fail(c, http.StatusNotFound, "Wiki 项目不存在")
+		return
+	}
 	existing, err := h.store.GetWikidocBySlug(projectID, slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
