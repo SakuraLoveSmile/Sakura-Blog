@@ -8,9 +8,13 @@ const checkData = ref<UpdateCheckResponse | null>(null);
 const statusData = ref<UpdateStatusResponse | null>(null);
 const checking = ref(false);
 const applying = ref(false);
-const pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 const hasUpdate = computed(() => checkData.value?.update_available ?? false);
+// 三态：current 为 unknown 或 latest 缺失时，无法确定是否有更新（如本地 dev 构建恒为 unknown）。
+const canCompare = computed(
+  () => checkData.value?.current_version !== "unknown" && !!checkData.value?.latest_version
+);
 const applySupported = computed(() => checkData.value?.apply_supported ?? false);
 const currentState = computed(() => statusData.value?.state ?? "idle");
 
@@ -104,12 +108,13 @@ async function fetchStatus() {
 function startPolling() {
   stopPolling();
   fetchStatus();
-  setInterval(() => fetchStatus(), 3000);
+  pollTimer = setInterval(() => fetchStatus(), 3000);
 }
 
 function stopPolling() {
   if (pollTimer) {
     clearInterval(pollTimer);
+    pollTimer = null;
   }
 }
 
@@ -189,13 +194,13 @@ onBeforeUnmount(() => {
         <div v-else-if="checkData" class="mt-4 space-y-4">
           <div class="flex items-center gap-3 rounded-base p-4" :class="hasUpdate ? 'bg-state-success/10' : 'bg-accent/10'">
             <Icon
-              :icon="hasUpdate ? 'ri:arrow-up-circle-fill' : 'ri:checkbox-circle-fill'"
+              :icon="hasUpdate ? 'ri:arrow-up-circle-fill' : (canCompare ? 'ri:checkbox-circle-fill' : 'ri:question-line')"
               class="text-2xl"
               :class="hasUpdate ? 'text-state-success' : 'text-text-quaternary'"
             />
             <div class="flex-1">
               <p class="text-sm font-medium text-foreground">
-                {{ hasUpdate ? "发现新版本" : "已是最新版本" }}
+                {{ hasUpdate ? "发现新版本" : (canCompare ? "已是最新版本" : "无法确定是否有更新") }}
               </p>
               <p class="mt-0.5 text-sm text-text-quaternary">
                 GitHub 最新版本：
@@ -228,7 +233,7 @@ onBeforeUnmount(() => {
             <Icon icon="ri:information-line" class="mt-0.5 text-xl text-state-warning" />
             <div>
               <p class="text-sm font-medium text-state-warning">一键更新不可用</p>
-              <p class="mt-1 text-sm text-text-secondary">{{ checkData.error || "当前环境不支持一键更新（非 systemd 部署）" }}</p>
+              <p class="mt-1 text-sm text-text-secondary">{{ checkData.apply_note || "当前环境不支持一键更新（非 systemd 部署）" }}</p>
             </div>
           </div>
         </div>

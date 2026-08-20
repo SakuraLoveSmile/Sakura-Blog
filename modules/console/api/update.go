@@ -52,6 +52,7 @@ type updateCheckResponse struct {
 	PublishedAt     string `json:"published_at"`
 	ApplySupported  bool   `json:"apply_supported"`
 	CheckedAt       string `json:"checked_at"`
+	ApplyNote       string `json:"apply_note,omitempty"`
 	Error           string `json:"error,omitempty"`
 }
 
@@ -75,14 +76,13 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	}
 
 	if !h.upd.Supported() {
-		// 不支持一键更新时仍返回当前版本与原因，前端据此降级为"仅检查"
-		resp.Error = h.upd.UnsupportedReason()
+		// 不支持一键更新时仅通过 ApplyNote 告知原因，不污染 error——
+		// error 只承载「检查失败」，避免真实上游错误（404/403/网络）被「非 Linux」文案掩盖。
+		resp.ApplyNote = h.upd.UnsupportedReason()
 	}
 
 	if h.gh == nil {
-		if resp.Error == "" {
-			resp.Error = "GitHub 客户端未启用"
-		}
+		resp.Error = "GitHub 客户端未启用"
 		c.JSON(200, resp)
 		return
 	}
@@ -96,9 +96,7 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 		payload, err = h.gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
 	}
 	if err != nil {
-		if resp.Error == "" {
-			resp.Error = fmt.Sprintf("检查更新失败: %s（私有仓库需配置 github_token 或 BLOG_GITHUB_TOKEN）", err.Error())
-		}
+		resp.Error = fmt.Sprintf("检查更新失败: %s（私有仓库需配置 github_token；仓库无 Release 时也会返回 404）", err.Error())
 		c.JSON(200, resp)
 		return
 	}
@@ -110,9 +108,7 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 		PublishedAt time.Time `json:"published_at"`
 	}
 	if err := json.Unmarshal(payload, &release); err != nil {
-		if resp.Error == "" {
-			resp.Error = "解析 GitHub release 失败: " + err.Error()
-		}
+		resp.Error = "解析 GitHub release 失败: " + err.Error()
 		c.JSON(200, resp)
 		return
 	}

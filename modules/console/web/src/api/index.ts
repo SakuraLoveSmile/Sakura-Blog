@@ -639,6 +639,7 @@ export interface UpdateCheckResponse {
  published_at: string;
  apply_supported: boolean;
  checked_at: string;
+ apply_note?: string;
  error?: string;
 }
 

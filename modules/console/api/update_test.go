@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -160,12 +161,39 @@ func TestSystemUpdateCheck_UnsupportedEnvironment(t *testing.T) {
 	if resp.ApplySupported {
 		t.Error("apply_supported should be false")
 	}
-	if resp.Error == "" {
-		t.Error("error should contain unsupported reason")
+	// 不支持原因只走 apply_note，不再污染 error（GitHub 正常时 error 应为空）
+	if resp.ApplyNote == "" {
+		t.Error("apply_note should contain unsupported reason")
+	}
+	if resp.Error != "" {
+		t.Errorf("error should be empty when GitHub check succeeds, got %q", resp.Error)
 	}
 	// 仍应返回版本信息
 	if resp.LatestVersion == "" {
 		t.Error("latest_version should still be populated")
+	}
+}
+
+// TestSystemUpdateCheck_UnsupportedShowsRealError 锁定：runner 不支持时，
+// 若 GitHub 拉取真实失败（如 500），error 必须展示真实上游错误，
+// 且 apply_note 同时存在——不再被「非 Linux」文案掩盖。
+func TestSystemUpdateCheck_UnsupportedShowsRealError(t *testing.T) {
+	r, h, cookie, _ := newUpdateEnvWithCookie(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("boom"))
+	})
+	h.upd = &fakeRunner{supported: false, reason: "当前系统非 Linux，不支持一键更新"}
+	w := doUpdate(r, http.MethodGet, "/api/v1/system/update/check", cookie)
+	if w.Code != 200 {
+		t.Fatalf("check: %d %s", w.Code, w.Body.String())
+	}
+	var resp updateCheckResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.ApplyNote == "" {
+		t.Error("apply_note should still carry unsupported reason")
+	}
+	if !strings.Contains(resp.Error, "检查更新失败") || !strings.Contains(resp.Error, "500") {
+		t.Errorf("error should surface the real upstream failure (status 500), got %q", resp.Error)
 	}
 }
 

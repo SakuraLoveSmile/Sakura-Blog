@@ -12,18 +12,25 @@ const loading = ref(true);
 
 const hasUpdate = computed(() => data.value?.update_available ?? false);
 const applySupported = computed(() => data.value?.apply_supported ?? false);
+// 三态：current 为 unknown 或 latest 缺失时无法确定是否有更新，归「未知」，不再误判为「最新版本」。
+const canCompare = computed(() => {
+  const cv = data.value?.current_version;
+  const lv = data.value?.latest_version;
+  return !!cv && cv !== "unknown" && !!lv;
+});
 
 const stateLabel = computed(() => {
   if (data.value?.error && !data.value?.latest_version) return "检查失败";
   if (hasUpdate.value) return "有新版本";
-  if (data.value?.current_version) return "最新版本";
+  if (canCompare.value) return "最新版本";
   return "未知";
 });
 
 const stateClass = computed(() => {
   if (data.value?.error && !data.value?.latest_version) return "is-unavailable";
   if (hasUpdate.value) return "is-outdated";
-  return "is-synced";
+  if (canCompare.value) return "is-synced";
+  return "is-unavailable";
 });
 
 onMounted(async () => {
@@ -87,7 +94,7 @@ function goToUpdate() {
             class="w-4 h-4"
             aria-hidden="true"
           />
-          {{ hasUpdate ? "点击一键更新" : data?.error || "当前版本已是最新" }}
+          {{ data?.error || (hasUpdate ? "点击一键更新" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
         </span>
         <Icon
           v-if="applySupported && hasUpdate"
