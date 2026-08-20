@@ -145,6 +145,22 @@ func (c *Client) GetLatestReleaseRaw(owner, repo string) ([]byte, error) {
 	return c.get(fmt.Sprintf("%s/repos/%s/%s/releases/latest", c.apiBase, owner, repo), 6*time.Hour)
 }
 
+// RefreshLatestRelease bypasses the cache, fetches the latest release directly
+// from upstream, then writes the result back into the memory and disk caches
+// (same key as GetLatestReleaseRaw). Returns the fresh payload.
+func (c *Client) RefreshLatestRelease(owner, repo string) ([]byte, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/releases/latest", c.apiBase, owner, repo)
+	key := cacheKey(url)
+	data, err := c.fetch(url)
+	if err != nil {
+		return nil, err
+	}
+	ttl := 6 * time.Hour
+	c.setMem(key, data, ttl)
+	_ = os.WriteFile(filepath.Join(c.cacheDir, key+".json"), data, 0o644)
+	return data, nil
+}
+
 // GetIssuesRaw 仓库 issues 列表原样 JSON（Spec 33 ghissues widget，ds-timeline 消费 GitHub 形状字段）。
 // query 为调用方用 url.Values 编码好的查询串（per_page/labels）；issues 时效性高于元数据，TTL 30min。
 func (c *Client) GetIssuesRaw(owner, repo, query string) ([]byte, error) {

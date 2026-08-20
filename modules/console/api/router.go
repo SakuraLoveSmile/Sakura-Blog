@@ -25,6 +25,7 @@ import (
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
+	updr "blog/internal/updaterunner"
 )
 
 const (
@@ -52,6 +53,14 @@ type Handler struct {
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh             *ghpkg.Client
 	stellarVersion string
+
+	// 系统更新（Console 检查更新 / 一键更新）
+	upd              updr.Runner
+	appVersion       string
+	root             string
+	updateRepo       string
+	updateInstallDir string
+	updateApplying   atomic.Bool
 
 	// icons 图标注册表（icons.yml），素材速查端点用，可空。
 	icons *tmpl.IconRegistry
@@ -90,6 +99,12 @@ type Config struct {
 	// StellarVersion is injected by the composition root to keep Console
 	// independent from the Stellar module package.
 	StellarVersion string
+	// 系统更新配置
+	Root             string
+	AppVersion       string
+	UpdateRepo       string
+	UpdateInstallDir string
+	UpdateService    string
 }
 
 // New 创建 API handler。
@@ -98,6 +113,20 @@ func New(cfg Config) *Handler {
 	if maxMB <= 0 {
 		maxMB = 5
 	}
+
+	// 系统更新配置默认值兜底
+	repo := cfg.UpdateRepo
+	if repo == "" {
+		repo = updateRepoDefault
+	}
+	installDir := cfg.UpdateInstallDir
+	if installDir == "" {
+		installDir = updateInstallDirDefault
+	}
+
+	// 构造生产 execRunner（Supported() 在非 systemd 环境自动返回 false）
+	runner := updr.New(installDir)
+
 	return &Handler{
 		store:             cfg.Store,
 		posts:             cfg.Posts,
@@ -113,6 +142,11 @@ func New(cfg Config) *Handler {
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
 		stellarVersion:    cfg.StellarVersion,
+		upd:               runner,
+		appVersion:        cfg.AppVersion,
+		root:              cfg.Root,
+		updateRepo:        repo,
+		updateInstallDir:  installDir,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time
@@ -447,6 +481,11 @@ func (h *Handler) register(r *gin.Engine) {
 		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）：
 		// 消耗 admin 配置的第三方 key，仅 admin 可用（安全审计 2026-08-16 收进 sys）。
 		sys.POST("/ai/generate", h.aiGenerate)
+
+		// 系统更新（检查更新 / 一键更新 / 状态查询）
+		sys.GET("/system/update/check", h.systemUpdateCheck)
+		sys.POST("/system/update/apply", h.systemUpdateApply)
+		sys.GET("/system/update/status", h.systemUpdateStatus)
 
 		// 功能模块后台 API：仅 admin；每个已注册模块套自己的 Gate 中间件（禁用即 403）。
 		if h.modules != nil {

@@ -23,17 +23,23 @@ type App struct {
 	AutoBackup   bool   `yaml:"auto_backup"`   // 每 24h 自动全量备份到 data/backups/，默认开启
 	BackupKeep   int    `yaml:"backup_keep"`   // 自动备份留存份数，默认 7
 	GitHubToken  string `yaml:"github_token"`  // GitHub PAT（可选），空则匿名 60 req/h
+	UpdateRepo       string `yaml:"update_repo"`        // 检查更新的 GitHub 仓库（owner/repo），默认 SakuraLoveSmile/Sakura-Blog
+	UpdateInstallDir string `yaml:"update_install_dir"` // update.sh 所在安装目录，默认 /opt/blog
+	UpdateService    string `yaml:"update_service"`     // systemd oneshot unit 名，默认 blog-update
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
 func DefaultApp() *App {
 	return &App{
-		ListenAddr:  ":8080",
-		DBPath:      "data/blog.db",
-		UploadDir:   "data/uploads",
-		MaxUploadMB: 5,
-		AutoBackup:  true,
-		BackupKeep:  7,
+		ListenAddr:       ":8080",
+		DBPath:            "data/blog.db",
+		UploadDir:         "data/uploads",
+		MaxUploadMB:       5,
+		AutoBackup:        true,
+		BackupKeep:        7,
+		UpdateRepo:        "SakuraLoveSmile/Sakura-Blog",
+		UpdateInstallDir:  "/opt/blog",
+		UpdateService:     "blog-update",
 	}
 }
 
@@ -87,6 +93,17 @@ func ResolveApp(app *App) *App {
 	}
 	if v := os.Getenv("BLOG_GITHUB_TOKEN"); v != "" {
 		app.GitHubToken = v
+	}
+
+	// 更新配置默认值兜底（yaml 未配置时走默认）
+	if app.UpdateRepo == "" {
+		app.UpdateRepo = "SakuraLoveSmile/Sakura-Blog"
+	}
+	if app.UpdateInstallDir == "" {
+		app.UpdateInstallDir = "/opt/blog"
+	}
+	if app.UpdateService == "" {
+		app.UpdateService = "blog-update"
 	}
 
 	// root 绝对化：空则用 cwd

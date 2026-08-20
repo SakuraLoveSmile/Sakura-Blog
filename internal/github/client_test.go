@@ -185,6 +185,38 @@ func TestGetLatestReleaseRaw(t *testing.T) {
 	}
 }
 
+// TestRefreshLatestRelease 绕过缓存直连上游，二次调用必回源。
+func TestRefreshLatestRelease(t *testing.T) {
+	var hits int32
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"tag_name":"v2.0.0","html_url":"https://github.com/o/r/releases/tag/v2.0.0"}`))
+	})
+	// 第一次 RefreshLatestRelease 直连上游
+	data, err := c.RefreshLatestRelease("o", "r")
+	if err != nil {
+		t.Fatalf("RefreshLatestRelease: %v", err)
+	}
+	if !strings.Contains(string(data), `"tag_name":"v2.0.0"`) {
+		t.Fatalf("unexpected payload: %s", data)
+	}
+	// 第二次 RefreshLatestRelease 也应回源（绕过缓存）
+	if _, err := c.RefreshLatestRelease("o", "r"); err != nil {
+		t.Fatalf("second RefreshLatestRelease: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("RefreshLatestRelease should bypass cache each time, got %d upstream hits", got)
+	}
+	// 后续 GetLatestReleaseRaw 应命中 RefreshLatestRelease 写入的缓存
+	if _, err := c.GetLatestReleaseRaw("o", "r"); err != nil {
+		t.Fatalf("GetLatestReleaseRaw after refresh: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("GetLatestReleaseRaw should hit cache written by refresh, got %d upstream hits", got)
+	}
+}
+
 // TestGetIssues 裁剪解析：上游返回 GitHub 形状 issues 数组，验证字段裁剪与错误传播。
 func TestGetIssues(t *testing.T) {
 	payload, err := json.Marshal([]map[string]any{

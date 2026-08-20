@@ -628,3 +628,37 @@ export const notificationApi = {
  /** 全部标记已读 */
  markAllRead: () => http.put("/notifications/read-all"),
 };
+
+// --- 系统更新（检查更新 / 一键更新 / 状态查询） ---
+export interface UpdateCheckResponse {
+ current_version: string;
+ latest_version: string;
+ update_available: boolean;
+ release_url: string;
+ release_notes: string;
+ published_at: string;
+ apply_supported: boolean;
+ checked_at: string;
+ error?: string;
+}
+
+export interface UpdateStatusResponse {
+ state: "idle" | "running" | "succeeded" | "failed";
+ current_version: string;
+ target_version: string;
+ started_at: string;
+ log_tail: string;
+ message?: string;
+}
+
+export const systemApi = {
+ /** 检查更新（refresh=1 绕过缓存直连 GitHub） */
+ check: (refresh?: boolean) =>
+ http.get<UpdateCheckResponse>("/system/update/check", {
+ params: refresh ? { refresh: "1" } : {},
+ }),
+ /** 一键更新（触发 systemd oneshot unit） */
+ apply: () => http.post<{ started: boolean; target_version: string }>("/system/update/apply"),
+ /** 查询更新状态（idle/running/succeeded/failed） */
+ status: () => http.get<UpdateStatusResponse>("/system/update/status"),
+};

@@ -88,6 +88,7 @@ const navItems: NavItem[] = [
   { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统", adminOnly: true },
   { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", adminOnly: true },
   { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", adminOnly: true },
+  { path: "/system-update", label: "系统更新", icon: "ri:rocket-2-line", group: "系统", adminOnly: true },
 ];
 
 // 合并静态导航与已启用模块贡献的菜单项（后者按 path 去重，避免与静态项重复）。

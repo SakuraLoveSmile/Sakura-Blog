@@ -7,6 +7,7 @@ import RecentPostsWidget from "./RecentPostsWidget.vue";
 import CategoryDonutWidget from "./CategoryDonutWidget.vue";
 import QuickActionsWidget from "./QuickActionsWidget.vue";
 import StellarVersionWidget from "./StellarVersionWidget.vue";
+import SystemVersionWidget from "./SystemVersionWidget.vue";
 import { themeColors } from "@/lib/theme-colors";
 
 const chartColors = themeColors({
@@ -178,6 +179,15 @@ export const widgetRegistry: WidgetDefinition[] = [
     defaultSize: { l: 4, m: 6, s: 12 },
     defaultSection: "others",
     component: StellarVersionWidget,
+    props: {},
+  },
+  {
+    type: "system-version",
+    label: "Blog 版本",
+    icon: "ri:rocket-2-line",
+    defaultSize: { l: 4, m: 6, s: 12 },
+    defaultSection: "others",
+    component: SystemVersionWidget,
     props: {},
   },
 ];

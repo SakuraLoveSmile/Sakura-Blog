@@ -35,7 +35,9 @@ jobs:
 
       - name: Build Linux binary
         run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o blog-linux-amd64 ./cmd/blog
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath \
+            -ldflags="-s -w -X blog/internal/app.Version=${GITHUB_REF_NAME}" \
+            -o blog-linux-amd64 ./cmd/blog
           sha256sum blog-linux-amd64 > blog-linux-amd64.sha256
 
       # 产物：Actions Artifacts（每次构建，保留 30 天）

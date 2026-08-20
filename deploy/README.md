@@ -72,6 +72,46 @@
 
    `app.yml`、`site.yml` 和 `.token` 均必须为 `0600`；不要把 Token 写入 Git 跟踪文件、备份日志或命令输出。
 
+## Console 一键更新
+
+Console 后台「系统更新」页面（/console/system-update）可检查 GitHub 最新版本并一键触发更新。一键更新通过 `sudo systemctl start blog-update.service` 触发 oneshot unit，需配置 sudoers 免密规则。
+
+### sudoers 配置
+
+blog 运行用户需免密执行 systemctl start/is-active：
+
+```bash
+# /etc/sudoers.d/blog-update（权限 0440，owner root:root）
+blog ALL=(root) NOPASSWD: /usr/bin/systemctl start blog-update.service
+blog ALL=(root) NOPASSWD: /usr/bin/systemctl is-active blog-update.service
+```
+
+> 仅允许 `start` 和 `is-active`，不开放 `stop`/`restart`/`edit` 等危险操作。
+
+### GitHub PAT
+
+检查更新需要读取仓库 release 信息。私有仓库需配置 PAT（`github_token`），公开仓库可匿名访问（60 req/h 限流）。PAT 权限只需该仓库的 `contents:read`，复用部署时已有的 `.token` 文件即可。
+
+### app.yml 配置
+
+```yaml
+# 系统更新配置（缺省值见下方，多数部署无需修改）
+update_repo: "SakuraLoveSmile/Sakura-Blog"  # GitHub 仓库（owner/repo）
+update_install_dir: "/opt/blog"               # 安装目录（update.sh 所在）
+update_service: "blog-update"                 # systemd oneshot unit 名
+```
+
+### 工作流程
+
+1. **检查更新**：Console 调用 GitHub API 获取最新 release，与当前版本（ldflags 注入的 tag 名）做 semver 比较
+2. **一键更新**：点击后 `sudo systemctl start blog-update.service` 触发 update.sh，后者拉取新版本二进制、健康检查、自动回滚
+3. **状态轮询**：前端每 3 秒轮询 `/api/v1/system/update/status`，对比当前版本与目标版本判断 succeeded/failed
+4. **强制刷新**：`refresh=1` 参数绕过 6h 缓存直连 GitHub（用于刚发布新版本后立即检查）
+
+### 版本内嵌
+
+release 构建通过 ldflags 注入 tag 名（`-X blog/internal/app.Version=${GITHUB_REF_NAME}`），当前版本可直接从二进制读取。本地开发版本固定为 `dev`，Console 页面会回退读取 `<Root>/version` 文件或显示 `unknown`。
+
 ## 上线验证清单
 
 - [ ] `curl -I https://域名/` 返回 200，响应头含 HSTS
@@ -87,6 +127,7 @@
 - [ ] 页脚备案号渲染（若配置）
 - [ ] `data/backups/` 24h 内生成首份自动备份
 - [ ] `systemctl status blog blog-update.timer` 均 active
+- [ ] Console「系统更新」页能检查到版本信息；sudoers 配置后一键更新可触发 blog-update.service
 
 ## 日常运维
 

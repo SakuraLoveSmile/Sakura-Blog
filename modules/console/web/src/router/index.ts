@@ -184,6 +184,12 @@ const router = createRouter({
           meta: { adminOnly: true },
           component: () => import("@/modules/backup/BackupView.vue"),
         },
+        {
+          path: "system-update",
+          name: "SystemUpdate",
+          meta: { adminOnly: true },
+          component: () => import("@/modules/system/SystemUpdateView.vue"),
+        },
       ],
     },
   ],

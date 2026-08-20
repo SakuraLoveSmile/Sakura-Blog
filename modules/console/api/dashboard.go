@@ -97,6 +97,27 @@ func semverEqual(left, right string) bool {
 	return comparePrerelease(leftMatch[4], rightMatch[4]) == 0
 }
 
+// semverCompare 比较两个 semver 字符串（需先经 normalizeSemver 去 v 前缀）。
+// 返回 -1 / 0 / 1 表示 a < b / a == b / a > b；非法版本返回 0。
+func semverCompare(a, b string) int {
+	leftMatch := semverPattern.FindStringSubmatch(a)
+	rightMatch := semverPattern.FindStringSubmatch(b)
+	if leftMatch == nil || rightMatch == nil {
+		return 0
+	}
+	for i := 1; i <= 3; i++ {
+		leftNumber, _ := strconv.Atoi(leftMatch[i])
+		rightNumber, _ := strconv.Atoi(rightMatch[i])
+		if leftNumber != rightNumber {
+			if leftNumber < rightNumber {
+				return -1
+			}
+			return 1
+		}
+	}
+	return comparePrerelease(leftMatch[4], rightMatch[4])
+}
+
 func comparePrerelease(left, right string) int {
 	if left == right {
 		return 0

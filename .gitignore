@@ -63,3 +63,5 @@ blog-data/
 # 版本控制仅跟踪 *.example.yml 模板；首次部署复制 example 为正式文件再填值。
 config/app.yml
 config/site.yml
+.mimosa/
+modules/console/web/.mimosa/
