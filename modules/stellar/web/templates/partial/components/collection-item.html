@@ -1,0 +1,18 @@
+{{- /* collection-item.html: 文本/属性默认由 html/template 转义；Before、After、RawIcon
+       仅接受服务端生成的 template.HTML 受信任片段。 */ -}}
+<a class="{{.ClassAttribute}}" href="{{url_for .Href}}" title="{{.Title}}"{{if .Active}} aria-current="page"{{end}}{{if .Style}} style="{{.Style}}"{{end}}>
+  {{if and .LegacyLink .Active}}<span class="link active" hidden aria-hidden="true"></span>{{end}}
+  {{.Before}}
+  {{if .Icon}}<span class="ui-collection__leading">{{icon .Icon}}</span>{{else if .RawIcon}}<span class="ui-collection__leading">{{.RawIcon}}</span>{{end}}
+  {{if or .ShouldShowTitle .Prefix .Description .Meta}}
+  <span class="ui-collection__content">
+    {{if .Prefix}}<span class="ui-collection__prefix">{{.Prefix}}</span>{{end}}
+    {{if .ShouldShowTitle}}<span class="ui-collection__title">{{.Title}}</span>{{end}}
+    {{if .Description}}<span class="ui-collection__description">{{.Description}}</span>{{end}}
+    {{if .Meta}}<span class="ui-collection__meta">{{.Meta}}</span>{{end}}
+  </span>
+  {{end}}
+  {{.After}}
+  {{if and .Active .ShouldShowIndicator}}<span class="ui-collection__indicator"></span>{{end}}
+  {{if .GradientIDValue}}{{gradsvg .GradientIDValue .GradientAngle}}{{end}}
+</a>

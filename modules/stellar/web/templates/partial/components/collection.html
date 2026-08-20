@@ -1,0 +1,9 @@
+{{- /* collection.html: Stellar 1.43.0 公共 list/grid 组件。 */ -}}
+{{- $collection := .Normalized -}}
+{{- if $collection.Items}}
+<div class="ui-collection{{if $collection.ClassName}} {{$collection.ClassName}}{{end}}" data-layout="{{$collection.Layout}}" data-variant="{{$collection.Variant}}" data-density="{{$collection.Density}}"{{if eq $collection.Layout "grid"}} style="--ui-columns:{{$collection.Columns}}"{{end}}>
+  {{range $collection.Items}}
+  {{template "partial/components/collection-item" .}}
+  {{end}}
+</div>
+{{end}}

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
+	"time"
 
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
@@ -62,38 +64,135 @@ func (s *webServer) handleTopicIndex(c *gin.Context) {
 			cover = fallbackCovers[i%len(fallbackCovers)]
 		}
 		cards := s.toCards(posts)
-		var latest *tmpl.PostCard
-		var rest []*tmpl.PostCard
-		if len(cards) > 0 {
-			latest = cards[0]
-			if len(cards) > 1 {
-				rest = cards[1:]
-				if len(rest) > 3 {
-					rest = rest[:3]
-				}
-			}
-		}
+		sortTopicCards(cards)
+		latest, rest, visible, hidden := splitTopicCards(cards)
 		slug := strings.TrimSpace(t.Slug)
 		if slug == "" {
 			slug = t.Name
 		}
 		items = append(items, &tmpl.TopicItem{
-			Name:        t.Name,
-			Slug:        slug,
-			Count:       n,
-			Description: description,
-			Cover:       cover,
-			Icon:        t.Icon,
-			LatestPost:  latest,
-			Posts:       rest,
-			CreatedAt:   t.CreatedAt,
+			Name:         t.Name,
+			Slug:         slug,
+			Count:        n,
+			Description:  description,
+			Cover:        cover,
+			Icon:         t.Icon,
+			LatestPost:   latest,
+			Posts:        rest,
+			VisiblePosts: visible,
+			HiddenPosts:  hidden,
+			CreatedAt:    t.CreatedAt,
+			UpdatedAt:    t.UpdatedAt,
 		})
 	}
+	sort.SliceStable(items, func(i, j int) bool {
+		left := topicItemDate(items[i])
+		right := topicItemDate(items[j])
+		if !left.Equal(right) {
+			return left.After(right)
+		}
+		if items[i].Slug != items[j].Slug {
+			return items[i].Slug < items[j].Slug
+		}
+		return items[i].Name < items[j].Name
+	})
 	s.renderBase(c, &tmpl.ViewData{
 		Site:   s.site.Load(),
 		Page:   &tmpl.Page{Title: "专栏", Layout: "topics", MenuID: "post", Lang: "zh-CN"},
 		Topics: items,
 	})
+}
+
+func topicItemDate(item *tmpl.TopicItem) time.Time {
+	if item == nil {
+		return time.Time{}
+	}
+	if item.LatestPost != nil {
+		if !item.LatestPost.Date.IsZero() {
+			return item.LatestPost.Date
+		}
+		if !item.LatestPost.UpdatedAt.IsZero() {
+			return item.LatestPost.UpdatedAt
+		}
+	}
+	if !item.UpdatedAt.IsZero() {
+		return item.UpdatedAt
+	}
+	return item.CreatedAt
+}
+
+// sortTopicCards makes the first card the latest published article. Store
+// queries historically put pinned posts first, which is correct for home lists
+// but not for the topic homepage. Date is the published-date representation in
+// the current view model; UpdatedAt and slug/title provide deterministic
+// fallbacks for legacy rows with an empty date.
+func sortTopicCards(cards []*tmpl.PostCard) {
+	sort.SliceStable(cards, func(i, j int) bool {
+		left, right := topicCardDate(cards[i]), topicCardDate(cards[j])
+		if !left.Equal(right) {
+			return left.After(right)
+		}
+		leftUpdated, rightUpdated := topicCardUpdated(cards[i]), topicCardUpdated(cards[j])
+		if !leftUpdated.Equal(rightUpdated) {
+			return leftUpdated.After(rightUpdated)
+		}
+		if cards[i].Slug != cards[j].Slug {
+			return cards[i].Slug < cards[j].Slug
+		}
+		return cards[i].Title < cards[j].Title
+	})
+}
+
+func topicCardDate(card *tmpl.PostCard) time.Time {
+	if card == nil {
+		return time.Time{}
+	}
+	if !card.Date.IsZero() {
+		return card.Date
+	}
+	return card.UpdatedAt
+}
+
+func topicCardUpdated(card *tmpl.PostCard) time.Time {
+	if card == nil {
+		return time.Time{}
+	}
+	return card.UpdatedAt
+}
+
+// splitTopicCards implements topic_card.ejs: one latest card, three visible
+// archive rows, and a native details block for all remaining rows.
+func splitTopicCards(cards []*tmpl.PostCard) (*tmpl.PostCard, []*tmpl.PostCard, []*tmpl.ArchiveItem, []*tmpl.ArchiveItem) {
+	if len(cards) == 0 {
+		return nil, nil, nil, nil
+	}
+	latest := cards[0]
+	rest := cards[1:]
+	visible := make([]*tmpl.ArchiveItem, 0, minInt(len(rest), 3))
+	hidden := make([]*tmpl.ArchiveItem, 0, maxInt(len(rest)-3, 0))
+	for i, card := range rest {
+		item := &tmpl.ArchiveItem{Slug: card.Slug, Title: card.Title, Date: card.Date}
+		if i < 3 {
+			visible = append(visible, item)
+		} else {
+			hidden = append(hidden, item)
+		}
+	}
+	return latest, rest, visible, hidden
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // handleTopicDetail 专栏文章列表页（Spec 52）：专栏头（名称/描述/图标/封面 + 文章数）+ 文章卡片流。

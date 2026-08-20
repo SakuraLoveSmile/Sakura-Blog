@@ -1,7 +1,7 @@
 {{- /* widgets/recent.html: 最近更新，对应 widgets/recent.ejs（post-list），对齐 xaoxuu.com 左栏组件。
    上下文为 WidgetInstance（Spec 33）：.Data 为按 limit 截断的文章列表（fillSidebar 填充）；
    rss 参数对齐原版 item.rss（缺省 /rss.xml，显式配空串隐藏按钮）。*/ -}}
-<widget class="widget-wrapper recent post-list">
+<widget class="widget-wrapper recent-widget recent post-list">
   <div class="widget-header dis-select">
     <span class="name">{{.Str "title" (lang "widget.recent")}}</span>
     {{$rss := .Str "rss" "/rss.xml"}}
@@ -11,9 +11,5 @@
     </a>
     {{end}}
   </div>
-  <div class="widget-body fs14">
-    {{range .Data}}
-    <a class="item title" href="{{url_for .URL}}"><span class="title">{{.Title}}</span></a>
-    {{end}}
-  </div>
+  <div class="widget-body fs14">{{template "partial/components/collection" .Collection}}</div>
 </widget>

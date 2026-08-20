@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"strconv"
+	"strings"
 
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
@@ -67,18 +68,10 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 		return
 	}
 	tags := tagCountItems(tagCounts)
-	if tag != "" {
-		matched := false
-		for _, t := range tags {
-			if t.Name == tag {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			s.render404(c)
-			return
-		}
+	tagTree := s.tagTreeData(tags, nb.Name, tag)
+	if tag != "" && !tagTree.HasTag(tag) {
+		s.render404(c)
+		return
 	}
 	// 分页参数
 	page, _ := strconv.Atoi(c.Query("page"))
@@ -89,8 +82,21 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 	var notes []*store.Note
 	var total int
 	if tag != "" {
-		// Spec 62：tag 过滤下推 SQL（ListNotesByNotebookTag），替代全量取回内存过滤
-		notes, _, err = s.st.ListNotesByNotebookTag(nb.ID, tag, -1, 0)
+		// 层级标签需要把父节点及所有后代一并纳入；先取同笔记本全集，
+		// 再用 TagMatches 过滤，保持旧的精确标签也完全兼容。
+		allNotes, _, listErr := s.st.ListNotesByNotebook(nb.ID, -1, 0)
+		if listErr != nil {
+			err = listErr
+		} else {
+			for _, note := range allNotes {
+				for _, noteTag := range strings.Split(note.Tags, ",") {
+					if tmpl.TagMatches(noteTag, tag) {
+						notes = append(notes, note)
+						break
+					}
+				}
+			}
+		}
 		if err != nil {
 			log.Printf("list notes of notebook %d: %v", nb.ID, err)
 			s.render500(c)
@@ -143,7 +149,7 @@ func (s *webServer) handleNotebook(c *gin.Context) {
 		NotesPerPage:   perPage,
 		Paginator:      &tmpl.Paginator{Current: page, Total: totalPages, Pages: pages},
 		NotebookTags:   tags,
-		TagTreeData:    &tmpl.TagTreeWidgetData{Tags: tags, ActiveTag: tag, NotebookName: nb.Name},
+		TagTreeData:    tagTree,
 	})
 }
 
@@ -220,8 +226,18 @@ func (s *webServer) handleNote(c *gin.Context) {
 			NextNote:      next,
 		},
 		NotebookTags: tags,
-		TagTreeData:  &tmpl.TagTreeWidgetData{Tags: tags, NotebookName: nb.Name},
+		TagTreeData:  s.tagTreeData(tags, nb.Name, ""),
 	})
+}
+
+func (s *webServer) tagTreeData(tags []tmpl.TagCount, notebookName, active string) *tmpl.TagTreeWidgetData {
+	def := s.site.Load().Widgets.Lookup("tagtree")
+	data := tmpl.BuildTagTree(tags, notebookName, active,
+		def.Bool("expand_all", false),
+		def.Bool("expand_active", true),
+		def.Bool("show_tagcon", true))
+	tmpl.ApplyTagcons(data, s.site.Load().Notebook.Tagcons)
+	return data
 }
 
 // noteValues store.Note 指针列表 → 值列表（ViewData.Notes 用，模板直接 range）。

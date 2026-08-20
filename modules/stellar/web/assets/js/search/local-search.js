@@ -163,6 +163,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       li.appendChild(titleSpan);
 
       const a = document.createElement('a');
+      a.className = 'ui-collection__item';
       a.href = item.path + (kw ? '?kw=' + encodeURIComponent(kw) : '') + (item.anchor_id ? '#' + encodeURIComponent(item.anchor_id) : '');
 
       if (item.anchor_text) {
@@ -212,7 +213,11 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       $resultContent.appendChild(tabs);
 
       const ul = document.createElement('ul');
-      ul.className = 'search-result-list';
+      ul.className = 'search-result-list ui-collection ui-collection-adapter';
+      ul.dataset.layout = 'list';
+      ul.dataset.variant = 'summary';
+      ul.dataset.density = 'compact';
+      ul.dataset.uiSurface = 'glass';
       const visible = items.filter(function(item) {
         if (filter && !item.path.includes(filter)) return false;
         return !activeType || item.type === activeType;
@@ -356,7 +361,11 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         });
 
         const ul = document.createElement('ul');
-        ul.className = 'search-result-list';
+        ul.className = 'search-result-list ui-collection ui-collection-adapter';
+        ul.dataset.layout = 'list';
+        ul.dataset.variant = 'summary';
+        ul.dataset.density = 'compact';
+        ul.dataset.uiSurface = 'glass';
         resultList.forEach(function(item) {
           ul.appendChild(item.element);
         });

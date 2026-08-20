@@ -318,6 +318,8 @@ admin:
 # 不写本段 = 现状（零配置逐像素一致）；仅输出显式配置项。颜色/正文字号/圆角/渐变走 :root 变量，
 # 字体族/背景/header_prefix/分页箍头走选择器覆盖。
 # style:
+#   page_transition:
+#     enable: true            # 原生 View Transition；缺省开启，显式 false 关闭
 #   text_align: left           # 正文段落对齐
 #   color:
 #     theme: 'hsl(192 98% 55%)' # 主题色（hsl()/hex，解析为 --hue/--sat/--light）
@@ -325,7 +327,7 @@ admin:
 #     link: 'hsl(207 90% 54%)'  # 超链接色
 #   font_size:
 #     root: 16px               # 根字号
-#     body: 17px               # 正文字号
+#     body: 17px               # 旧配置兼容解析；1.43.0 不再参与渲染
 #   font_family:
 #     body: 'LXGW WenKai Screen, system-ui, sans-serif'
 #     code: 'Menlo, Monaco, Consolas, monospace'
@@ -439,4 +441,3 @@ plugins:
 services:
   siteinfo:
     api: ''                # 例：https://api.example.com/siteinfo?url={href}
-

@@ -8,12 +8,7 @@
   <article id="archive">
     <div class="archive-header h4">{{.Year}}</div>
     {{range .Posts}}
-    <div class="archive-list">
-      <a class="post fs14" href="/post/{{.Slug}}">
-        <time>{{date .Date "01-02"}}</time>
-        <span>{{.Title}}</span>
-      </a>
-    </div>
+    {{template "partial/components/archive-item" .}}
     {{end}}
   </article>
   {{end}}

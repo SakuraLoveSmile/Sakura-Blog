@@ -1,0 +1,9 @@
+{{- /* widget-frame.html: 公共 widget 外框；Body/Footer/Action/Raw HTML 只由服务端
+       组装，普通标题和属性仍经 html/template。 */ -}}
+{{if or .Body .Footer}}
+<widget class="widget-wrapper{{if .ShouldReveal}} scrollreveal{{end}}{{if .SafeClassName}} {{.SafeClassName}}{{end}}"{{range .Attributes}} {{.Name}}="{{.Value}}"{{end}}>
+  {{if or .Title .Action}}<div class="widget-header dis-select">{{if .Title}}<span class="name">{{.Title}}</span>{{end}}{{.Action}}</div>{{end}}
+  {{if .Body}}<div class="widget-body">{{.Body}}</div>{{end}}
+  {{.Footer}}
+</widget>
+{{end}}

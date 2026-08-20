@@ -2,8 +2,8 @@
    渲染入口：{{template "layout/base" .}}，文章正文通过 {{template "partial/content" .}} 嵌入。
 */ -}}
 <!DOCTYPE html>
-{{- /* 默认主题（对齐原版 style.prefers_theme）：缺省/dark=深色（现状回归）；light=浅色；auto=跟随系统（head 内脚本按 prefers-color-scheme 设置） */}}
-<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" {{if eq .Site.Style.PrefersTheme "light"}}data-theme="light"{{else if eq .Site.Style.PrefersTheme "auto"}}data-theme="dark" data-theme-auto{{else}}data-theme="dark"{{end}}>
+{{- /* 产品主题固定为深色；保留 prefers_theme 配置字段仅用于兼容旧 settings，不开放浅色切换能力。 */}}
+<html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" data-theme="dark">
 {{template "partial/head" .}}
 <body>
   {{- /* 阅读进度条：仅文章页由 reading.js 显示并更新宽度 */}}
@@ -16,14 +16,16 @@
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
   <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
-    <aside class="l_left{{if eq .Site.Style.Leftbar.UIStyle "card"}} leftbar-card{{end}}">
+    {{- $leftSurface := "glass" -}}
+    {{- if eq .Site.Style.Leftbar.UIStyle "card" -}}{{- $leftSurface = "card" -}}{{- end -}}
+    <aside class="l_left{{if eq $leftSurface "card"}} leftbar-card{{end}}" data-ui-surface="{{$leftSurface}}">
       <div class="sidebg"></div>
       <div class="leftbar-container">
         {{template "partial/sidebar" .}}
       </div>
     </aside>
 
-    <div class="l_main" id="main">
+    <div class="l_main" id="main" data-ui-surface="content">
       {{- /* 移动端 logo：对齐上游 layout.ejs:59 _partial/sidebar/logo（where=main），仅在 l_main 内渲染一次 */}}
       <header class="header mobile-only">{{template "partial/widgets/logo" .}}</header>
       {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
@@ -34,7 +36,7 @@
     </div>
 
     {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
-    <aside class="l_right">{{template "partial/rightbar" .}}</aside>
+    <aside class="l_right" data-ui-surface="sidebar">{{template "partial/rightbar" .}}</aside>
 
     {{- /* float-panel：对齐原版 _partial/menubtn.ejs（sticky 面板，仅含右栏/左栏 toggle 两个按钮，
        小屏由 laptop-only/mobile-only + 内联 display:none 媒体查询接管）。
@@ -464,6 +466,10 @@
   <script src="{{url_for "/assets/js/main.js"}}?v={{asset_ver "/assets/js/main.js"}}" defer></script>
   {{- /* Stellar 1.42 dropdown：footer/social details 菜单浮层。 */}}
   <script src="{{url_for "/assets/js/plugins/dropdown.js"}}?v={{asset_ver "/assets/js/plugins/dropdown.js"}}" defer></script>
+  {{if .TagTreeData}}
+  <script>window.__STELLAR_TAGTREE__ = {expand_active: {{if .TagTreeData.ExpandActive}}true{{else}}false{{end}}};</script>
+  <script src="{{url_for "/assets/js/tagtree.js"}}?v={{asset_ver "/assets/js/tagtree.js"}}" defer></script>
+  {{end}}
   <script src="{{url_for "/assets/js/search/local-search.js"}}?v={{asset_ver "/assets/js/search/local-search.js"}}" defer></script>
   {{- /* 搜索跳转高亮（1.41）：搜索结果链接带 ?kw=，目标页高亮关键词并定位（详见脚本头注释） */}}
   <script src="{{url_for "/assets/js/search/highlight.js"}}?v={{asset_ver "/assets/js/search/highlight.js"}}" defer></script>

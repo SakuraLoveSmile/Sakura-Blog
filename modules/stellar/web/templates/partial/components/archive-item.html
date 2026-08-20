@@ -1,0 +1,7 @@
+{{- /* archive-item.html: 归档式文章行，archive/topic 共用。 */ -}}
+<div class="archive-list">
+  <a class="post fs14" href="/post/{{.Slug}}">
+    <time>{{date .Date "01-02"}}</time>
+    <span>{{.Title}}</span>
+  </a>
+</div>

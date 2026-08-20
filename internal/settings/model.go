@@ -183,6 +183,7 @@ type PostCard struct {
 	Description   string       // hero 卡片小字次优值（frontmatter description）
 	Cover         string       // 封面图 URL，空则不渲染 .post-cover
 	Date          time.Time    // 用于 <time> 标签与格式化
+	UpdatedAt     time.Time    // 专栏排序优先使用最后更新时间，空时回退 Date
 	Pinned        bool         // 置顶（meta 行 pin 图标，对齐 post_card.ejs 的 span.pin）
 	Category      string       // 单分类（meta 行分类面包屑，空不渲染）
 	CategoryStyle template.CSS // 分类配色 style 内容（CategoryColorStyle 生成；CSS 类型绕过 html/template 的 ZgotmplZ 过滤）
@@ -218,6 +219,7 @@ func NewPostCard(p *store.Post, categoryColors, categoryIcons map[string]string)
 		Description:   p.Excerpt,
 		Cover:         p.Cover,
 		Date:          p.CreatedAt,
+		UpdatedAt:     p.UpdatedAt,
 		Pinned:        p.Pinned,
 		Category:      p.Category,
 		CategoryStyle: CategoryColorStyle(p.Category, categoryColors),
@@ -835,15 +837,6 @@ func (f *Footer) SitemapColumns() int {
 	}
 }
 
-// SocialItem 侧边栏底部社交图标。
-// IconKey 非空时走 icon helper（内联 SVG），否则用 Icon 原样输出（如 <img src>）。
-type SocialItem struct {
-	Title   string `yaml:"title" json:"title"`
-	URL     string `yaml:"url" json:"url"`
-	Icon    string `yaml:"icon" json:"icon"`         // raw HTML，如 <img src="...">
-	IconKey string `yaml:"icon_key" json:"icon_key"` // icons.yml 的 key，如 example:xxx
-}
-
 // RecentPost 近期发布 widget 的一项。
 type RecentPost struct {
 	Title string `yaml:"title"`
@@ -873,15 +866,18 @@ type TopicSeriesPost struct {
 
 // TopicItem /topic 索引页专栏卡片（slug、名称、描述、封面与文章数）。
 type TopicItem struct {
-	Name        string
-	Slug        string
-	Description string
-	Cover       string
-	Count       int
-	Icon        string // 卡片图标（缺省用主题 default.topic 占位图）
-	LatestPost  *PostCard
-	Posts       []*PostCard
-	CreatedAt   time.Time
+	Name         string
+	Slug         string
+	Description  string
+	Cover        string
+	Count        int
+	Icon         string // 卡片图标（缺省用主题 default.topic 占位图）
+	LatestPost   *PostCard
+	Posts        []*PostCard
+	VisiblePosts []*ArchiveItem
+	HiddenPosts  []*ArchiveItem
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // TopicDetail 专栏详情页头部数据（/topic/:slug）：有封面时沉浸 banner，无封面时紧凑卡片。

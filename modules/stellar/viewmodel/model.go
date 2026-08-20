@@ -21,6 +21,8 @@ type AuthorLink = settings.AuthorLink
 type AuthorWidgetData = settings.AuthorWidgetData
 type CanonicalConfig = settings.CanonicalConfig
 type CatItem = settings.CatItem
+type Collection = settings.Collection
+type CollectionItem = settings.CollectionItem
 type CommentsConfig = settings.CommentsConfig
 type DefaultAssets = settings.DefaultAssets
 type EditPageLink = settings.EditPageLink
@@ -64,6 +66,7 @@ type TopicDetail = settings.TopicDetail
 type TopicItem = settings.TopicItem
 type TopicSeries = settings.TopicSeries
 type TopicSeriesPost = settings.TopicSeriesPost
+type WidgetFrame = settings.WidgetFrame
 type ViewData = settings.ViewData
 type WidgetDef = settings.WidgetDef
 type WidgetInstance = settings.WidgetInstance
@@ -83,6 +86,11 @@ func ParseTags(raw string) []string { return settings.ParseTags(raw) }
 func BuildTagCloud(counts map[string]int, opt TagCloudOptions) []*TagItem {
 	return settings.BuildTagCloud(counts, opt)
 }
+func BuildTagTree(tags []TagCount, notebookName, activeTag string, expandAll, expandActive, showTagcon bool) *TagTreeWidgetData {
+	return settings.BuildTagTree(tags, notebookName, activeTag, expandAll, expandActive, showTagcon)
+}
+func TagMatches(tag, selected string) bool                            { return settings.TagMatches(tag, selected) }
+func ApplyTagcons(data *TagTreeWidgetData, tagcons map[string]string) { data.ApplyTagcons(tagcons) }
 func ExpiredDays(created, updated string, threshold int, now time.Time) int {
 	return settings.ExpiredDays(created, updated, threshold, now)
 }

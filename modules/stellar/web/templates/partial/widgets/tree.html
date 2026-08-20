@@ -9,39 +9,8 @@
    当前文档 a.link.active + svg.active-icon 高亮；嵌套层级缩进用 padding-left 递增（每层 +16px）。
    tree_doc_link 渲染单个链接、tree_doc_links 递归平铺子节点（dict 传参：Doc/Nodes/CurrentSlug/ProjectID/Pad）。*/ -}}
 {{if .Data}}
-<widget class="widget-wrapper doc-tree post-list" id="data-tree">
-  {{- /* 分组模式判定：任一顶层节点有 children 即分组渲染，否则扁平单组 */}}
-  {{$grouped := false}}
-  {{range .Data.Tree}}{{if .Children}}{{$grouped = true}}{{end}}{{end}}
-  {{if $grouped}}
-  {{range .Data.Tree}}
-  <div class="widget-header dis-select"><span class="name">{{.Doc.Title}}</span></div>
-  <div class="widget-body fs14">
-    {{template "tree_doc_link" (dict "Doc" .Doc "CurrentSlug" $.Data.CurrentSlug "ProjectID" $.Data.ProjectID "Pad" 16)}}
-    {{template "tree_doc_links" (dict "Nodes" .Children "CurrentSlug" $.Data.CurrentSlug "ProjectID" $.Data.ProjectID "Pad" 16)}}
-  </div>
-  {{end}}
-  {{else}}
+<widget class="widget-wrapper doc-tree post-list doc-tree-widget" id="data-tree" data-wiki="{{.Data.ProjectID}}">
   <div class="widget-header dis-select"><span class="name">{{.Data.ProjectName}}</span></div>
-  <div class="widget-body fs14">
-    {{template "tree_doc_links" (dict "Nodes" .Data.Tree "CurrentSlug" .Data.CurrentSlug "ProjectID" .Data.ProjectID "Pad" 16)}}
-  </div>
-  {{end}}
+  <div class="widget-body fs14">{{template "partial/components/collection" .Data.Collection}}</div>
 </widget>
-{{end}}
-
-{{define "tree_doc_link"}}
-{{if and .Doc .Doc.Title}}
-<a class="link{{if eq .Doc.Slug .CurrentSlug}} active{{end}}" href="/wiki/{{.ProjectID}}/{{.Doc.Slug}}"{{if ne .Pad 16}} style="padding-left:{{.Pad}}px"{{end}}>
-  <span class="toc-text">{{.Doc.Title}}</span>
-  {{if eq .Doc.Slug .CurrentSlug}}<svg class="active-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M5 2h14a1 1 0 011 1v19.143a.5.5 0 01-.766.424L12 18.03l-7.234 4.536A.5.5 0 014 22.143V3a1 1 0 011-1z"/></svg>{{end}}
-</a>
-{{end}}
-{{end}}
-
-{{define "tree_doc_links"}}
-{{range .Nodes}}
-{{template "tree_doc_link" (dict "Doc" .Doc "CurrentSlug" $.CurrentSlug "ProjectID" $.ProjectID "Pad" $.Pad)}}
-{{if .Children}}{{template "tree_doc_links" (dict "Nodes" .Children "CurrentSlug" $.CurrentSlug "ProjectID" $.ProjectID "Pad" (add $.Pad 16))}}{{end}}
-{{end}}
 {{end}}

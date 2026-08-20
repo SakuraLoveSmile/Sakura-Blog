@@ -10,7 +10,9 @@
     <a class="cap-action" onclick="sidebar.toggleTOC()">{{icon "default:rightbar"}}</a>
   </div>
   <div class="widget-body">
-    {{.V.TOC}}
+    <div class="ui-collection toc-collection ui-collection-adapter" data-layout="list" data-variant="nav" data-density="compact" data-ui-surface="sidebar">
+      {{.V.TOC}}
+    </div>
   </div>
   <div class="widget-footer">
     <a class="top" onclick="util.scrollTop()">

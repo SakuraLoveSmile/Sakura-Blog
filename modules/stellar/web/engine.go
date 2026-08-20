@@ -109,8 +109,19 @@ func buildEngine(entries []tplEntry, reg *settings.IconRegistry) (*Engine, error
 	return &Engine{tpl: tpl}, nil
 }
 
-// Render 渲染指定模板名（如 "layout/base"），返回 HTML 字符串。
+// Render 渲染指定布局模板名（如 "layout/base"），返回 HTML 字符串。
 func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
+	return e.render(name, data)
+}
+
+// RenderValue renders a public partial with its local view model. Layout
+// callers keep using the strongly typed Render method above, while collection
+// and widget tests can exercise the shared partials directly.
+func (e *Engine) RenderValue(name string, data any) (string, error) {
+	return e.render(name, data)
+}
+
+func (e *Engine) render(name string, data any) (string, error) {
 	t := e.tpl.Lookup(name)
 	if t == nil {
 		return "", fmt.Errorf("template %q not found", name)

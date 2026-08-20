@@ -1,10 +1,14 @@
 package settings
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 )
 
 // ---------- Spec 34/52: 外观样式可配置化 ----------
@@ -19,6 +23,9 @@ import (
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
 	PrefersTheme string `yaml:"prefers_theme" json:"prefers_theme"` // 默认主题：dark（缺省，现状）/light/auto（跟随系统）
+	// PageTransition 使用指针保留“未配置”和“显式关闭”的区别。
+	// nil 按 Stellar 1.43.0 默认开启；false 由 InjectCSS 输出覆盖规则。
+	PageTransition StylePageTransition `yaml:"page_transition" json:"page_transition"`
 
 	TextAlign      string              `yaml:"text_align" json:"text_align"` // 正文段落对齐（left/justify 等，空=现状 left）
 	Color          StyleColor          `yaml:"color" json:"color"`
@@ -35,6 +42,117 @@ type StyleConfig struct {
 	Loading        StyleLoading        `yaml:"loading" json:"loading"`
 	ErrorPage      string              `yaml:"error_page" json:"error_page"`
 	CornerShape    string              `yaml:"corner-shape" json:"corner_shape"` // 连续曲率圆角（1.40）
+}
+
+// StylePageTransition 原生 View Transition 配置。
+type StylePageTransition struct {
+	Enable *bool `yaml:"enable" json:"enable"`
+}
+
+// UnmarshalYAML accepts both the project's historical snake_case section names
+// and Stellar's upstream hyphenated names (font-size, font-family,
+// border-radius, text-align and prefix). In particular, font-size.body remains
+// readable for old settings but is intentionally ignored by InjectCSS.
+func (s *StyleConfig) UnmarshalYAML(node ast.Node) error {
+	b, err := node.MarshalYAML()
+	if err != nil {
+		return err
+	}
+	type styleAlias StyleConfig
+	var decoded styleAlias
+	if err := yaml.Unmarshal(b, &decoded); err != nil {
+		return err
+	}
+	*s = StyleConfig(decoded)
+	var raw map[string]any
+	if err := yaml.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	decodeAlias := func(keys []string, dst any, present func() bool) error {
+		if present() {
+			return nil
+		}
+		for _, key := range keys {
+			value, ok := raw[key]
+			if !ok || value == nil {
+				continue
+			}
+			encoded, err := yaml.Marshal(value)
+			if err != nil {
+				return err
+			}
+			return yaml.Unmarshal(encoded, dst)
+		}
+		return nil
+	}
+	if err := decodeAlias([]string{"font-size"}, &s.FontSize, func() bool { return s.FontSize != (StyleFontSize{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"font-family"}, &s.FontFamily, func() bool { return s.FontFamily != (StyleFontFamily{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"border-radius"}, &s.BorderRadius, func() bool { return s.BorderRadius != (StyleBorderRadius{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"text-align"}, &s.TextAlign, func() bool { return s.TextAlign != "" }); err != nil {
+		return err
+	}
+	if len(s.HeaderPrefix) == 0 {
+		if err := decodeAlias([]string{"prefix"}, &s.HeaderPrefix, func() bool { return len(s.HeaderPrefix) != 0 }); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UnmarshalJSON mirrors UnmarshalYAML for hot-reloaded settings stored as JSON.
+func (s *StyleConfig) UnmarshalJSON(data []byte) error {
+	type styleAlias StyleConfig
+	var decoded styleAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*s = StyleConfig(decoded)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	decodeAlias := func(keys []string, dst any, present func() bool) error {
+		if present() {
+			return nil
+		}
+		for _, key := range keys {
+			value, ok := raw[key]
+			if !ok || string(value) == "null" {
+				continue
+			}
+			return json.Unmarshal(value, dst)
+		}
+		return nil
+	}
+	if err := decodeAlias([]string{"font-size"}, &s.FontSize, func() bool { return s.FontSize != (StyleFontSize{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"font-family"}, &s.FontFamily, func() bool { return s.FontFamily != (StyleFontFamily{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"border-radius"}, &s.BorderRadius, func() bool { return s.BorderRadius != (StyleBorderRadius{}) }); err != nil {
+		return err
+	}
+	if err := decodeAlias([]string{"text-align"}, &s.TextAlign, func() bool { return s.TextAlign != "" }); err != nil {
+		return err
+	}
+	if len(s.HeaderPrefix) == 0 {
+		if err := decodeAlias([]string{"prefix"}, &s.HeaderPrefix, func() bool { return len(s.HeaderPrefix) != 0 }); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Enabled reports the 1.43.0 default: enabled unless explicitly disabled.
+func (p StylePageTransition) Enabled() bool {
+	return p.Enable == nil || *p.Enable
 }
 
 // StyleBorderRadius 圆角组。Spec 52 四档（card/block/navbar/image）+ 1.38 七档（card-l/card/card-s/bar/image-l/image/image-s）兼容。
@@ -144,6 +262,15 @@ type StylePaginator struct {
 func (s StyleConfig) InjectCSS() template.CSS {
 	var b strings.Builder
 
+	// Keep the upstream default in the existing InjectCSS hook so the runtime
+	// still behaves correctly when the generated CSS is stale. An explicit false
+	// is a post-CSS override and disables both navigation and snapshots.
+	if s.PageTransition.Enabled() {
+		b.WriteString("@view-transition{navigation:auto}.l_left{view-transition-name:leftbar;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation-duration:0.2s;animation-timing-function:ease-out;}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none;}}")
+	} else {
+		b.WriteString("@view-transition{navigation:none}.l_left{view-transition-name:none!important;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation:none!important;}")
+	}
+
 	// --- :root 变量组（颜色 + 正文字号）---
 	var root strings.Builder
 	if h, sat, l, ok := parseHSL(s.Color.Theme); ok {
@@ -156,11 +283,8 @@ func (s StyleConfig) InjectCSS() template.CSS {
 		fmt.Fprintf(&root, "--link:hsla(%sdeg %s%% %s%% / 1);--link-a20:hsla(%sdeg %s%% %s%% / 0.2);",
 			trimNum(h), trimNum(sat), trimNum(l), trimNum(h), trimNum(sat), trimNum(l))
 	}
-	if s.FontSize.Body != "" {
-		// --fsp 派生 --fsh2/3/4；--gap-p/--gap-p-compact 在 main.css 为字面量 calc(17px…)，一并覆盖保持一致。
-		fmt.Fprintf(&root, "--fsp:%s;--gap-p:calc(%s + 4px);--gap-p-compact:calc(%s * 0.75);",
-			s.FontSize.Body, s.FontSize.Body, s.FontSize.Body)
-	}
+	// font-size.body 是 1.42 及更早版本的兼容字段。1.43.0 的新 CSS 使用
+	// --fs-content，不再把该旧值注入渲染变量；保留字段本身以便旧配置正常解析。
 	// 圆角四档（Spec 52）：仅显式配置时输出，未配置不定义变量（消费点 var(--radius-*, 原值) fallback）
 	if s.BorderRadius.Card != "" {
 		fmt.Fprintf(&root, "--radius-card:%s;", s.BorderRadius.Card)

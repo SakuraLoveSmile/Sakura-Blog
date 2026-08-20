@@ -187,11 +187,14 @@ function activeTOC() {
     if (docTop >= topSegTop) { topSeg = seg; topSegTop = docTop; }
   }
   const links = root.querySelectorAll('a.toc-link');
-  links.forEach(l => l.classList.remove('active'));
+  links.forEach(l => l.classList.remove('active', 'is-active', 'ui-collection__item'));
   if (!topSeg) return;
   // 不用属性选择器拼 id（避免特殊字符转义问题），直接比对 getAttribute
   for (const l of links) {
-    if (l.getAttribute('href') === '#' + topSeg.id) { l.classList.add('active'); break; }
+    if (l.getAttribute('href') === '#' + topSeg.id) {
+      l.classList.add('active', 'is-active', 'ui-collection__item');
+      break;
+    }
   }
 }
 

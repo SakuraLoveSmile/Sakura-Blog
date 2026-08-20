@@ -20,29 +20,10 @@
    （一起滚动、共享左右 margin），其后按 ViewData.LeftbarWidgets 序列分派渲染 */}}
 <div class="widgets">
   {{gradsvg "leftbar-active-icon-grad" $.Site.Style.Gradient.Angle}}
-  {{- /* 菜单：对应 _partial/sidebar/menu.ejs（1.38 列表化）
-     .nav-area > nav.menu.dis-select > a.nav-item（icon + span 标题 + active-dot + grad-def SVG）
-     --item-grad 指向每项内联 SVG 渐变；.themed 项 --item-theme 取配置主题色；
-     active 项靠 item.ID == Page.MenuID 判定 */}}
+  {{- /* 菜单：对应 Stellar 1.43.0 menu.ejs，统一使用公共 ui-collection。 */}}
   <div class="nav-area">
     <nav class="menu dis-select">
-      {{range .Site.Menubar.Items}}
-      <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}{{if .Theme}} themed{{end}}" title="{{.Title}}" href="{{url_for .URL}}" style="--item-grad:url(#menu-grad-{{.ID}}){{if .Theme}};--item-theme:{{.Theme}}{{end}}">
-        {{if .Icon}}{{icon .Icon}}{{end}}
-        <span>{{.Title}}</span>
-        {{if eq .ID $.Page.MenuID}}<span class="active-dot"></span>{{end}}
-        {{gradsvg (printf "menu-grad-%s" .ID) $.Site.Style.Gradient.Angle}}
-      </a>
-      {{end}}
-      {{- /* 已发布页面自动进菜单（fillSidebar 填充 MenuPages，与 menubar 路径重复者已去重） */}}
-      {{range .MenuPages}}
-      <a class="nav-item{{if eq .ID $.Page.MenuID}} active{{end}}{{if .Theme}} themed{{end}}" title="{{.Title}}" href="{{url_for .URL}}" style="--item-grad:url(#menu-grad-{{.ID}}){{if .Theme}};--item-theme:{{.Theme}}{{end}}">
-        {{if .Icon}}{{icon .Icon}}{{end}}
-        <span>{{.Title}}</span>
-        {{if eq .ID $.Page.MenuID}}<span class="active-dot"></span>{{end}}
-        {{gradsvg (printf "menu-grad-%s" .ID) $.Site.Style.Gradient.Angle}}
-      </a>
-      {{end}}
+      {{template "partial/components/collection" .MenuCollection}}
     </nav>
   </div>
   {{range .LeftbarWidgets}}{{template "partial/widgets/dispatch" .}}{{end}}
@@ -51,11 +32,32 @@
 {{- /* footer social：对应 index_leftbar.ejs 的 layoutFooterDiv
    .footer.dis-select > .social-wrap > a.social */}}
 <footer class="footer dis-select">
-  <div class="social-wrap">
+  <div class="social-wrap" style="--item-grad:url(#footer-social-icon-grad)">
+    {{gradsvg "footer-social-icon-grad" $.Site.Style.Gradient.Angle}}
     {{range .Site.Footer.Social}}
-    <a class="social" title="{{.Title}}" href="{{url_for .URL}}" target="_blank" rel="external nofollow noopener noreferrer">
+    {{if .IsSpacer}}
+    <span class="social-spacer" aria-hidden="true"></span>
+    {{else if .IsDropdown}}
+    <details class="dropdown social-dropdown" direction="up">
+      <summary class="dropdown-trigger social"{{if .Title}} title="{{.Title}}" aria-label="{{.Title}}"{{end}}>
+        {{if .IconKey}}{{icon .IconKey}}{{else}}{{safe .Icon}}{{end}}
+      </summary>
+      <div class="dropdown-menu ui-collection" data-ui-surface="glass" data-layout="list" data-variant="nav" data-density="compact">
+        {{range .Items}}
+        {{if .Renderable}}
+        <a class="dropdown-item ui-collection__item" href="{{url_for .URL}}" title="{{.Title}}" rel="{{.Rel}}"{{if .External}} target="{{.Target}}"{{end}}>
+          {{if .IconKey}}<span class="ui-collection__leading">{{icon .IconKey}}</span>{{else if .Icon}}<span class="ui-collection__leading">{{safe .Icon}}</span>{{end}}
+          <span class="ui-collection__content"><span class="ui-collection__title">{{.Title}}</span></span>
+        </a>
+        {{end}}
+        {{end}}
+      </div>
+    </details>
+    {{else if .Renderable}}
+    <a class="social"{{if .Title}} title="{{.Title}}"{{end}}{{if .URL}} href="{{url_for .URL}}" rel="{{.Rel}}"{{if .External}} target="{{.Target}}"{{end}}{{else if .OnClick}} onclick="{{.OnClick}}"{{end}}>
       {{if .IconKey}}{{icon .IconKey}}{{else}}{{safe .Icon}}{{end}}
     </a>
+    {{end}}
     {{end}}
   </div>
 </footer>

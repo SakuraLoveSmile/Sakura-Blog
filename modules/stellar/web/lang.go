@@ -30,6 +30,8 @@ var zhCN = map[string]string{
 	"btn.source":         "源码",
 	"btn.docs":           "文档",
 	"btn.copy":           "复制",
+	"btn.expand_posts":   "展开其余 %s 篇",
+	"btn.collapse_posts": "收起",
 
 	// ── meta 组（对齐 zh-CN.yml meta.*）────────────────────────
 	"meta.recent_update":   "最近更新",

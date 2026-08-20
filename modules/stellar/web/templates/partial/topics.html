@@ -1,4 +1,4 @@
-{{- /* topics.html: 专栏索引页的上下布局，对齐 Stellar 1.42 topic_card.ejs。 */ -}}
+{{- /* topics.html: 专栏索引页的上下布局，对齐 Stellar 1.43.0 topic_card.ejs。 */ -}}
 {{template "partial/navbar" .}}
 
 <div class="post-list topic">
@@ -9,11 +9,21 @@
         <h2 class="topic-title">{{.Name}}</h2>
         {{if .Description}}<p class="topic-desc">{{.Description}}</p>{{end}}
         {{template "partial/latest_post_card" .}}
-        {{if .Posts}}
-        <div class="post-panel">
-          <div class="posts">
-            {{range .Posts}}<a class="post-link" href="/post/{{.Slug}}"><span class="title">{{.Title}}</span><span class="date">{{date .Date "2006年1月2日"}}</span></a>{{end}}
-          </div>
+        {{if .VisiblePosts}}
+        <div class="topic-posts">
+          {{range .VisiblePosts}}{{template "partial/components/archive-item" .}}{{end}}
+          {{if .HiddenPosts}}
+          <details class="topic-posts-more">
+            <summary class="topic-posts-toggle">
+              <span class="when-closed">{{lang "btn.expand_posts" (len .HiddenPosts)}}</span>
+              <span class="when-open">{{lang "btn.collapse_posts"}}</span>
+              {{icon "default:arrow-right"}}
+            </summary>
+            <div class="topic-posts-extra">
+              {{range .HiddenPosts}}{{template "partial/components/archive-item" .}}{{end}}
+            </div>
+          </details>
+          {{end}}
         </div>
         {{end}}
       </article>

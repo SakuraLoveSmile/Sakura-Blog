@@ -164,8 +164,6 @@
   {{with iconLoadingURL}}<style>:root{--icon-loading:{{.}};}</style>{{end}}
   {{- /* article 段排版注入（indent 缩进 / cover_ratio 封面比例，未配置不输出） */}}
   {{with .Site.Article.InjectCSS}}<style>{{.}}</style>{{end}}
-  {{- /* prefers_theme=auto：跟随系统明暗（在 CSS 前执行避免闪白） */}}
-  <script>(function(){var h=document.documentElement;if(!h.hasAttribute("data-theme-auto"))return;var m=matchMedia("(prefers-color-scheme: dark)");var f=function(){h.setAttribute("data-theme",m.matches?"dark":"light")};f();if(m.addEventListener){m.addEventListener("change",f)}})();</script>
   {{- /* PWA：注册根作用域 Service Worker（/sw.js） */}}
   <script>
     if ('serviceWorker' in navigator) {

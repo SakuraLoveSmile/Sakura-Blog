@@ -5,8 +5,7 @@
    - 2：两列网格，icon + 文字同行
    - >=3：多列网格，仅 icon（title 作为 tooltip）
    样式复用 main.css 的 .linklist（markdown widget welcome 实例同款，grid 列数由内联 style 驱动）。*/ -}}
-{{$items := .LinkListItems}}
-{{if $items}}
+{{if .LinkListItems}}
 <widget class="widget-wrapper linklist">
   {{$title := .Str "title" ""}}
   {{if $title}}
@@ -14,14 +13,6 @@
     <span class="name">{{$title}}</span>
   </div>
   {{end}}
-  <div class="widget-body fs14">
-    <div class="linklist {{.LinkListAlignClass}}" style="grid-template-columns:repeat({{.LinkListColumns}},1fr);">
-      {{range $items}}
-      <a class="link" title="{{.Title}}" href="{{url_for .URL}}">
-        <div class="flex">{{if .Icon}}{{icon .Icon}}{{end}}{{if $.LinkListShowText}}<span>{{.Title}}</span>{{end}}</div>
-      </a>
-      {{end}}
-    </div>
-  </div>
+  <div class="widget-body fs14">{{template "partial/components/collection" .Collection}}</div>
 </widget>
 {{end}}

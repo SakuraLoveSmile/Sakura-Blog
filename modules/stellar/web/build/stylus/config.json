@@ -1,12 +1,14 @@
 {
   "stellar": {
-    "version": "1.42.1"
+    "version": "1.43.0"
   },
   "style": {
     "prefers_theme": "auto",
+    "page_transition": {
+      "enable": true
+    },
     "font-size": {
       "root": "16px",
-      "body": "17px",
       "code": "85%",
       "codeblock": "0.8125rem"
     },

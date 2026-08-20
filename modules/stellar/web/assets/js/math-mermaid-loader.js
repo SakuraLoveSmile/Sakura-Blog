@@ -30,11 +30,17 @@
   }
 
   function loadCss(href) {
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    link.setAttribute("crossorigin", "anonymous");
-    document.head.appendChild(link);
+    return new Promise(function (resolve) {
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      link.setAttribute("crossorigin", "anonymous");
+      link.onload = resolve;
+      // A failed stylesheet must not prevent Mermaid from rendering with its
+      // official theme; resolve on error and let the renderer continue.
+      link.onerror = resolve;
+      document.head.appendChild(link);
+    });
   }
 
   function loadScript(src) {
@@ -73,13 +79,24 @@
   }
 
   function loadMermaid() {
-    var configured = pluginConfig.mermaid && pluginConfig.mermaid.js;
-    var promise = configured ? loadScript(configured) : loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN);
+    var mermaidConfig = pluginConfig.mermaid || {};
+    var configured = mermaidConfig.js;
+    var styleOptimization = mermaidConfig.style_optimization === true;
+    // 1.43.0 precedence: explicit URL, local vendor, then CDN fallback.
+    var promise = configured
+      ? loadScript(configured).catch(function () { return loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN); })
+      : loadScriptLocalFirst(MERMAID_JS, MERMAID_CDN);
     promise
       .then(function () {
-        var theme = pluginConfig.mermaid && pluginConfig.mermaid.theme || "dark";
-        mermaid.initialize({ startOnLoad: false, theme: theme });
-        mermaid.run({ querySelector: ".md-text .mermaid, .mermaid" });
+        // Official Mermaid theme is deliberately left untouched when custom
+        // Stellar CSS is disabled. The configured theme remains compatible;
+        // neutral is the upstream default for this mode.
+        var cssReady = styleOptimization ? loadCss("/assets/css/mermaid.css") : Promise.resolve();
+        return cssReady.then(function () {
+          var theme = styleOptimization ? (mermaidConfig.theme || "dark") : (mermaidConfig.theme || "neutral");
+          mermaid.initialize({ startOnLoad: false, theme: theme });
+          return mermaid.run({ querySelector: ".md-text .mermaid, .mermaid" });
+        });
       })
       .catch(function () { /* 本地 vendor 与 CDN 均不可达：静默降级，图表显示源码 */ });
   }

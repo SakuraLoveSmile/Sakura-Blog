@@ -242,7 +242,7 @@ func DefaultWidgetLibrary() map[string]WidgetDef {
 		"wiki_related": {"layout": "wiki_related", "title": "更多项目", "limit": 5},
 		// Spec 35b：tagtree 为笔记本标签树（数据由 assembleWidgets 仅在本页注入，
 		// 其余页面 Data 为空、模板不输出；缺省仅在 notebooks/notebook/note 页面类型左栏启用）
-		"tagtree": {"layout": "tagtree"},
+		"tagtree": {"layout": "tagtree", "expand_all": false, "expand_active": true, "show_tagcon": true},
 	}
 }
 

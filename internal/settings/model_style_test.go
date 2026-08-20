@@ -1,8 +1,11 @@
 package settings
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/goccy/go-yaml"
 )
 
 // TestParseHSL 颜色解析：hsl/hsla/hex → HSL 分量（表驱动）。
@@ -34,11 +37,76 @@ func TestParseHSL(t *testing.T) {
 	}
 }
 
-// TestStyleInjectCSSEmpty 零配置 → 空注入（像素回归底线）。
+// TestStyleInjectCSSEmpty 零配置 → 1.43.0 原生 View Transition 默认规则。
 func TestStyleInjectCSSEmpty(t *testing.T) {
 	var s StyleConfig
-	if got := string(s.InjectCSS()); got != "" {
-		t.Errorf("零配置 InjectCSS 应为空，got %q", got)
+	got := string(s.InjectCSS())
+	if !strings.Contains(got, "@view-transition{navigation:auto}") || !strings.Contains(got, "animation-duration:0.2s") {
+		t.Errorf("零配置应默认启用 page transition，got %q", got)
+	}
+}
+
+func TestStylePageTransitionExplicitFalse(t *testing.T) {
+	disabled := false
+	got := string((StyleConfig{PageTransition: StylePageTransition{Enable: &disabled}}).InjectCSS())
+	if !strings.Contains(got, "@view-transition{navigation:none}") || !strings.Contains(got, "animation:none!important") {
+		t.Fatalf("显式关闭应覆盖导航过渡，got %q", got)
+	}
+	if strings.Contains(got, "navigation:auto") {
+		t.Fatalf("显式关闭不应输出 auto 规则，got %q", got)
+	}
+}
+
+func TestStyleAndDefaultLegacyConfigAliases(t *testing.T) {
+	var cfg struct {
+		Style   StyleConfig   `yaml:"style"`
+		Default DefaultAssets `yaml:"default"`
+	}
+	if err := yaml.Unmarshal([]byte(`style:
+  page_transition:
+    enable: false
+  font-size:
+    body: 17px
+    root: 18px
+  font-family:
+    body: Arial
+  text-align: justify
+  border-radius:
+    card: 12px
+  prefix:
+    h2: '#'
+default:
+  loading: /assets/loading.svg
+`), &cfg); err != nil {
+		t.Fatalf("decode upstream style aliases: %v", err)
+	}
+	if cfg.Style.PageTransition.Enable == nil || *cfg.Style.PageTransition.Enable {
+		t.Fatal("explicit page_transition.enable=false was not preserved")
+	}
+	if cfg.Style.FontSize.Body != "17px" || cfg.Style.FontSize.Root != "18px" || cfg.Style.FontFamily.Body != "Arial" || cfg.Style.TextAlign != "justify" {
+		t.Fatalf("hyphenated style aliases = %+v", cfg.Style)
+	}
+	if cfg.Style.BorderRadius.Card != "12px" || cfg.Style.HeaderPrefix["h2"] != "#" || cfg.Default.Loading != "/assets/loading.svg" {
+		t.Fatalf("style/default compatibility values = %+v / %+v", cfg.Style, cfg.Default)
+	}
+	if css := string(cfg.Style.InjectCSS()); strings.Contains(css, "--fsp:17px") || strings.Contains(css, "--gap-p:calc(17px") {
+		t.Fatalf("legacy font-size.body must not affect 1.43 rendering: %s", css)
+	}
+
+	data, err := json.Marshal(map[string]any{
+		"page_transition": map[string]any{"enable": false},
+		"font-size":       map[string]any{"body": "16px"},
+		"default":         map[string]any{"loading": "/loading.svg"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var style StyleConfig
+	if err := json.Unmarshal(data, &style); err != nil {
+		t.Fatalf("decode JSON aliases: %v", err)
+	}
+	if style.PageTransition.Enable == nil || *style.PageTransition.Enable || style.FontSize.Body != "16px" {
+		t.Fatalf("JSON style aliases = %+v", style)
 	}
 }
 
@@ -79,7 +147,7 @@ func TestStyleInjectCSSColors(t *testing.T) {
 			t.Errorf("颜色注入缺 %q\n完整: %s", want, css)
 		}
 	}
-	if !strings.HasPrefix(css, ":root{") {
+	if !strings.Contains(css, ":root{") {
 		t.Errorf("颜色变量应在 :root 块内，got %s", css)
 	}
 }
@@ -96,8 +164,6 @@ func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 	}
 	css := string(s.InjectCSS())
 	for _, want := range []string{
-		"--fsp:16px;",                                    // 正文字号
-		"--gap-p:calc(16px + 4px)",                       // gap 跟随
 		"html{font-size:18px;}",                          // 根字号
 		"html{font-family:Arial;}",                       // body 字体
 		"code{font-family:Menlo;}",                       // code 字体
@@ -112,6 +178,9 @@ func TestStyleInjectCSSFontAndMisc(t *testing.T) {
 		if !strings.Contains(css, want) {
 			t.Errorf("缺 %q\n完整: %s", want, css)
 		}
+	}
+	if strings.Contains(css, "--fsp:16px") || strings.Contains(css, "--gap-p:calc(16px + 4px)") {
+		t.Errorf("旧 font-size.body 不应参与 1.43.0 渲染: %s", css)
 	}
 }
 
@@ -170,7 +239,7 @@ func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 			t.Errorf("圆角/渐变注入缺 %q\n完整: %s", want, css)
 		}
 	}
-	if !strings.HasPrefix(css, ":root{") {
+	if !strings.Contains(css, ":root{") {
 		t.Errorf("圆角/渐变变量应在 :root 块内，got %s", css)
 	}
 }
