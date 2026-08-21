@@ -1,10 +1,8 @@
 {{- /* widgets/linklist.html: 独立 linklist 组件（Spec 50）。上下文为 WidgetInstance。
-   数据与布局由 library 参数提供：items（[{title, url, icon}]）+ columns（int，缺省 1）。
+   数据与布局由 library 参数提供：items（[{title, url, icon}]）+ columns（int，0=按链接数）。
    columns 控制布局（对齐原版 components/linklist.ejs 的 columns 规则）：
-   - 1（含缺省）：竖排列表，每行 icon + 文字（多链接时左对齐）
-   - 2：两列网格，icon + 文字同行
-   - >=3：多列网格，仅 icon（title 作为 tooltip）
-   样式复用 main.css 的 .linklist（markdown widget welcome 实例同款，grid 列数由内联 style 驱动）。*/ -}}
+   - 1：竖排列表；2：两列网格；>=3：多列网格且仅图标。
+   主体统一由公共 collection partial 输出。*/ -}}
 {{if .LinkListItems}}
 <widget class="widget-wrapper linklist">
   {{$title := .Str "title" ""}}

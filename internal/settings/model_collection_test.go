@@ -39,6 +39,65 @@ func TestCollectionNormalizesUpstreamVariants(t *testing.T) {
 	}
 }
 
+func TestCollectionWidgetAdapters(t *testing.T) {
+	popular := (&WidgetInstance{
+		Layout: "popular",
+		Data:   []*RecentPost{{URL: "/post/hot", Title: "热门文章"}},
+	}).Collection()
+	if popular.Layout != "list" || popular.Variant != "nav" || popular.Density != "compact" || len(popular.Items) != 1 {
+		t.Fatalf("popular collection = %+v", popular)
+	}
+
+	links := []LinkListItem{
+		{Title: "当前页", URL: "/library/index.html", Icon: "default:documents"},
+		{Title: "外部页", URL: "https://example.com/docs", Icon: "default:github"},
+		{Title: "第三项", URL: "/third", Icon: "default:rss"},
+	}
+	for _, tt := range []struct {
+		name       string
+		columns    int
+		layout     string
+		variant    string
+		showTitles bool
+	}{
+		{"按项目数", 0, "grid", "icon", false},
+		{"单列列表", 1, "list", "nav", true},
+		{"双列网格", 2, "grid", "nav", true},
+		{"三列图标", 3, "grid", "icon", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := (LinkListConfig{Columns: tt.columns, Items: links}).Collection("https://example.test/library/")
+			if got.Layout != tt.layout || got.Variant != tt.variant || len(got.Items) != len(links) {
+				t.Fatalf("collection = %+v", got)
+			}
+			if got.Items[0].Active != true || got.Items[1].Active {
+				t.Fatalf("active links = %+v", got.Items)
+			}
+			for _, item := range got.Items {
+				if item.ShouldShowTitle() != tt.showTitles {
+					t.Fatalf("show title for %q = %v, want %v", item.Title, item.ShouldShowTitle(), tt.showTitles)
+				}
+			}
+		})
+	}
+
+	related := (&WidgetInstance{
+		Layout: "wiki_related",
+		Data: []*WikiProject{{
+			ID:          "go-blog",
+			Title:       "Go 博客",
+			Description: "项目描述",
+			HasDocs:     true,
+		}},
+	}).Collection()
+	if related.Layout != "list" || related.Variant != "summary" || len(related.Items) != 1 {
+		t.Fatalf("wiki related collection = %+v", related)
+	}
+	if related.Items[0].Href != "/wiki/go-blog" || related.Items[0].Description != "项目描述" {
+		t.Fatalf("wiki related item = %+v", related.Items[0])
+	}
+}
+
 func TestWidgetFrameAttributesAllowList(t *testing.T) {
 	frame := WidgetFrame{Attrs: map[string]string{
 		"data-wiki": "stellar",

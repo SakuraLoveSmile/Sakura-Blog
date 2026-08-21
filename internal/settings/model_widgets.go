@@ -179,20 +179,15 @@ func (w *WidgetInstance) LinkListItems() []LinkListItem {
 	return items
 }
 
-// LinkListColumns 返回 linklist widget 列数（columns 参数，缺省 1，<1 归一为 1）。
-// 列数规则（对齐原版 linklist.ejs 的 columns 语义，区别于 welcome 实例的"按链接数"）：
-// 1=竖排列表（图标+文字），2=两列网格（图标+文字），>=3=多列网格（仅图标）。
+// LinkListColumns 返回 linklist widget 列数。0 按项目数推导；1 为竖排列表，
+// 2+ 为网格，3+ 时 collection 隐藏标题。
 func (w *WidgetInstance) LinkListColumns() int {
-	n := w.Int("columns", 1)
-	if n < 1 {
-		return 1
-	}
-	return n
+	return w.LinkListConfigValue().EffectiveColumns()
 }
 
 // LinkListShowText columns<=2 时才显示文字（>2 纯图标，title 做 tooltip）。
 func (w *WidgetInstance) LinkListShowText() bool {
-	return w.LinkListColumns() <= 2
+	return w.LinkListConfigValue().ShowText()
 }
 
 // LinkListAlignClass 对齐原版：columns==1 且链接数>1 时左对齐（left），否则居中（center）。

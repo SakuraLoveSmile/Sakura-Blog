@@ -1,163 +1,100 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Stellar CSS 编译验证 - Demo 1</title>
-  <link rel="stylesheet" href="../assets/css/main.css?v=demo1-2">
-  <!-- highlightjs 主题（代码块高亮） -->
-  <link rel="stylesheet" href="https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css">
+  <title>Stellar 1.43 Collection 预览</title>
+  <link rel="stylesheet" href="../assets/css/main.css?v=stellar143-collection">
   <style>
-    /* demo 专用辅助样式，非 Stellar 产物 */
-    .demo-toggle {
-      position: fixed; top: 12px; right: 12px; z-index: 9999;
-      padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
-      background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.15);
-      font-size: 14px;
-    }
-    /* 无站点背景图时，siteblur 的黑遮罩会把纯色背景压暗，关掉它让 --background 原色透出 */
+    .demo-icon { width: 1.5rem; height: 1.5rem; display: block; }
+    .demo-note { color: var(--text-p3); font-size: 13px; }
     body>.sitebg .siteblur { background-color: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   </style>
 </head>
 <body>
-  <button class="demo-toggle" onclick="toggleTheme()">切换主题</button>
-
   <div class="sitebg"><div class="siteblur"></div></div>
-
   <div id="l_cover"></div>
 
   <div class="l_body content" id="start" layout="post" type="tech">
-    <aside class="l_left">
+    <aside class="l_left" data-ui-surface="glass">
       <div class="sidebg"></div>
       <div class="leftbar-container">
         <header class="header">
           <div class="logo-wrap">
-            <a class="avatar" href="/">
-              <div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div>
-              <img class="avatar" src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg">
-            </a>
-            <a class="title" href="/">
-              <div class="main">Stellar Demo</div>
-              <div class="sub cap">CSS 编译验证</div>
-            </a>
+            <a class="avatar" href="/"><div class="bg" style="opacity:0"></div><img class="avatar" src="../assets/img/preview/avatar-blog.svg" alt=""></a>
+            <a class="title" href="/"><div class="main">Stellar Demo</div><div class="sub cap">1.43 Collection</div></a>
           </div>
         </header>
-        <!-- 对齐上游主题默认 DOM：nav-area 菜单在 .widgets 内（共享其左右 margin） -->
         <div class="widgets">
-        <div class="nav-area">
-          <nav class="menu dis-select">
-            <a class="nav-item active" title="博客" href="/" style="color:#1BCDFC"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"/><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"/></svg></a>
-            <a class="nav-item" title="归档" href="#" style="color:#3DC550"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M6.94 2c.416 0 .753.324.753.724v1.46c.668-.012 1.417-.012 2.26-.012h4.015c.842 0 1.591 0 2.259.013v-1.46c0-.4.337-.725.753-.725s.753.324.753.724V4.25c1.445.111 2.394.384 3.09 1.055c.698.67.982 1.582 1.097 2.972L22 9H2v-.724c.116-1.39.4-2.302 1.097-2.972s1.645-.944 3.09-1.055V2.724c0-.4.337-.724.753-.724"/><path fill="currentColor" d="M22 14v-2c0-.839-.004-2.335-.017-3H2.01c-.013.665-.01 2.161-.01 3v2c0 3.771 0 5.657 1.172 6.828S6.228 22 10 22h4c3.77 0 5.656 0 6.828-1.172S22 17.772 22 14" opacity=".5"/><path fill="currentColor" d="M18 17a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-5 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-5 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0"/></svg></a>
-            <a class="nav-item" title="探索" href="#" style="color:#FA6400"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20 12a8 8 0 1 1-16 0a8 8 0 0 1 16 0" opacity=".5"/><path fill="currentColor" d="M17.712 5.453c1.047-.193 2.006-.259 2.797-.152c.77.103 1.536.393 1.956 1.064c.446.714.312 1.542-.012 2.258c-.33.728-.918 1.499-1.672 2.268c-1.516 1.547-3.836 3.226-6.597 4.697c-2.763 1.472-5.495 2.484-7.694 2.92c-1.095.217-2.098.299-2.923.201c-.8-.095-1.6-.383-2.032-1.075c-.47-.752-.296-1.63.07-2.379c.375-.768 1.032-1.586 1.872-2.403L4 12.416c0 .219.083.71.168 1.146c.045.23.09.444.123.596c-.652.666-1.098 1.263-1.339 1.756c-.277.567-.208.825-.145.925c.072.116.305.305.937.38c.609.073 1.44.018 2.455-.183c2.02-.4 4.613-1.351 7.28-2.772s4.85-3.015 6.23-4.423c.694-.707 1.15-1.334 1.377-1.836c.233-.515.167-.75.107-.844c-.07-.112-.289-.294-.883-.374c-.542-.072-1.272-.041-2.163.112L16.87 5.656c.338-.101.658-.17.842-.203"/></svg></a>
-            <a class="nav-item" title="社交" href="#" style="color:#F44336"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="m13.629 20.472l-.542.916c-.483.816-1.69.816-2.174 0l-.542-.916c-.42-.71-.63-1.066-.968-1.262c-.338-.197-.763-.204-1.613-.219c-1.256-.021-2.043-.098-2.703-.372a5 5 0 0 1-2.706-2.706C2 14.995 2 13.83 2 11.5v-1c0-3.273 0-4.91.737-6.112a5 5 0 0 1 1.65-1.651C5.59 2 7.228 2 10.5 2h3c3.273 0 4.91 0 6.113.737a5 5 0 0 1 1.65 1.65C22 5.59 22 7.228 22 10.5v1c0 2.33 0 3.495-.38 4.413a5 5 0 0 1-2.707 2.706c-.66.274-1.447.35-2.703.372c-.85.015-1.275.022-1.613.219c-.338.196-.548.551-.968 1.262" opacity=".5"/><path fill="currentColor" d="M10.99 14.308c-1.327-.978-3.49-2.84-3.49-4.593c0-2.677 2.475-3.677 4.5-1.609c2.025-2.068 4.5-1.068 4.5 1.609c0 1.752-2.163 3.615-3.49 4.593c-.454.335-.681.502-1.01.502s-.556-.167-1.01-.502"/></svg></a>
-          </nav>
-        </div>
-          <!-- author 卡片（对应 widgets/author.ejs） -->
-          <widget class="widget-wrapper user-card author">
-            <div class="widget-body">
-              <div class="avatar"><img type="img" src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"></div>
-              <p class="username">Stellar Demo</p>
-              <p class="bio">这是一个用 Stellar 主题 CSS 搭建的博客 demo，验证编译链路与视觉还原。</p>
-              <a class="follow" href="#">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"/><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"/></svg>
-                全部文章
-              </a>
-            </div>
-          </widget>
-
-          <!-- 近期发布（对应 widgets/recent.ejs，post-list） -->
-          <widget class="widget-wrapper recent post-list">
-            <div class="widget-header dis-select">
-              <span class="name">近期发布</span>
-              <a class="cap-action" id="rss" title="Subscribe" href="#">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M5 21q-.825 0-1.412-.587T3 19q0-.825.588-1.412T5 17q.825 0 1.413.588T7 19q0 .825-.587 1.413T5 21m13.5 0q-.65 0-1.088-.475T16.9 19.4q-.275-2.425-1.312-4.537T12.9 11.1q-1.65-1.65-3.762-2.687T4.6 7.1q-.65-.075-1.125-.512T3 5.5q0-.65.45-1.062t1.075-.363q3.075.275 5.763 1.563t4.737 3.337q2.05 2.05 3.338 4.738t1.562 5.762q.05.625-.363 1.075T18.5 21m-6 0q-.625 0-1.075-.437T10.85 19.5q-.225-1.225-.787-2.262T8.65 15.35q-.85-.85-1.888-1.412T4.5 13.15q-.625-.125-1.062-.575T3 11.5q0-.65.45-1.075t1.075-.325q1.825.25 3.413 1.063t2.837 2.062q1.25 1.25 2.063 2.838t1.062 3.412q.1.625-.325 1.075T12.5 21"/></svg>
-              </a>
-            </div>
-            <div class="widget-body fs14">
-              <a class="item title" href="#"><span class="title">Demo 1：Stellar CSS 编译验证</span></a>
-              <a class="item title" href="#"><span class="title">用 shim 方案脱离 Hexo 编译 Stylus</span></a>
-              <a class="item title" href="#"><span class="title">深色模式与菜单图标机制</span></a>
-              <a class="item title" href="#"><span class="title">Go html/template 渲染规划</span></a>
-              <a class="item title" href="#"><span class="title">Artalk 评论集成方案</span></a>
-            </div>
-          </widget>
-
-          <!-- 标签云（对应 widgets/tagcloud.ejs） -->
-          <widget class="widget-wrapper tagcloud">
-            <div class="widget-header dis-select">
-              <span class="name">标签</span>
-            </div>
-            <div class="widget-body fs14">
-              <a class="tag" href="#">CSS</a>
-              <a class="tag" href="#">Stellar</a>
-              <a class="tag" href="#">Go</a>
-              <a class="tag" href="#">Gin</a>
-              <a class="tag" href="#">Hexo</a>
-              <a class="tag" href="#">SQLite</a>
-            </div>
-          </widget>
-        </div>
-        <footer class="footer dis-select">
-          <div class="social-wrap">
-            <a class="social" title="GitHub" href="#" target="_blank" rel="external nofollow noopener noreferrer"><img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/08a41b181ce68.svg"></a>
-            <a class="social" title="Music" href="#" target="_blank" rel="external nofollow noopener noreferrer"><img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3845874.svg"></a>
-            <a class="social" title="Unsplash" href="#" target="_blank" rel="external nofollow noopener noreferrer"><img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/3616429.svg"></a>
-            <a class="social" title="Comments" href="#"><img src="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/social/942ebbf1a4b91.svg"></a>
+          <div class="nav-area">
+            <nav class="menu dis-select">
+              <div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+                <a class="ui-collection__item is-active" href="#home" title="博客" aria-current="page"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">博客</span></span><span class="ui-collection__indicator"></span></a>
+                <a class="ui-collection__item" href="#archive" title="归档"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">归档</span></span></a>
+                <a class="ui-collection__item" href="#explore" title="探索"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 18 4-8 5 4 5-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">探索</span></span></a>
+                <a class="ui-collection__item" href="#social" title="社交"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7.5a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">社交</span></span></a>
+              </div>
+            </nav>
           </div>
-        </footer>
+
+          <widget class="widget-wrapper recent-widget recent">
+            <div class="widget-header dis-select"><span class="name">近期发布</span></div>
+            <div class="widget-body fs14">
+              <div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+                <a class="ui-collection__item" href="#recent-1" title="Collection 组件概览"><span class="ui-collection__content"><span class="ui-collection__title">Collection 组件概览</span></span></a>
+                <a class="ui-collection__item" href="#recent-2" title="深色模式与 active 状态"><span class="ui-collection__content"><span class="ui-collection__title">深色模式与 active 状态</span></span></a>
+                <a class="ui-collection__item" href="#recent-3" title="Go html/template 转义边界"><span class="ui-collection__content"><span class="ui-collection__title">Go html/template 转义边界</span></span></a>
+              </div>
+            </div>
+          </widget>
+        </div>
       </div>
     </aside>
 
-    <div class="l_main" id="main">
+    <div class="l_main" id="main" data-ui-surface="content">
       <article class="md-text content">
-        <h1>Demo 1：Stellar CSS 编译验证</h1>
-        <p>这是一个静态验证页，套用从 Stellar Stylus 源码编译出的 CSS。如果你能看到三列布局、圆角卡片、正确的字体和配色，说明 <code>hexo-config</code> shim 编译链路打通了。</p>
+        <h1>Stellar 1.43 Collection</h1>
+        <p>开发预览页固定使用深色模式，检查 list、grid、summary 与 icon 四种公共 collection 变体。</p>
+        <p class="demo-note">基线：上游 <code>collection-preview.ejs</code> · 1.43.0 · a558ac7</p>
 
-        <h2>布局结构</h2>
-        <p>当前页面包含 <code>.l_left</code>（左栏 logo+菜单）、<code>.l_main</code>（主内容）、<code>.l_right</code>（右栏，本页留空）三列，对应 Stellar 的 <code>layout.ejs</code> 骨架。</p>
+        <h2>响应式网格</h2>
+        <div class="ui-collection" data-layout="grid" data-variant="nav" data-density="auto" style="--ui-columns:2">
+          <a class="ui-collection__item is-active" href="#one" title="项目一" aria-current="page"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">项目一</span></span></a>
+          <a class="ui-collection__item" href="#two" title="项目二"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">项目二</span></span></a>
+          <a class="ui-collection__item" href="#three" title="项目三"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 18 4-8 5 4 5-8" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">项目三</span></span></a>
+          <a class="ui-collection__item" href="#four" title="项目四"><span class="ui-collection__leading"><svg class="demo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7.5a7 7 0 0 1 14 0v4a7 7 0 0 1-14 0z" fill="currentColor"/></svg></span><span class="ui-collection__content"><span class="ui-collection__title">项目四</span></span></a>
+        </div>
 
-        <h2>代码块</h2>
-        <pre><code class="language-go">func main() {
-    r := gin.Default()
-    r.GET("/post/:slug", postHandler)
-    r.Run(":8080")
-}</code></pre>
-
-        <blockquote>这是引用块，验证 <code>blockquote</code> 样式。</blockquote>
-
-        <h2>列表与文本</h2>
-        <ul>
-          <li>普通列表项一</li>
-          <li>普通列表项二</li>
-        </ul>
-        <p><a href="#">超链接</a>、<strong>加粗</strong>、<em>斜体</em>、<code>行内代码</code> 样式验证。</p>
-
-        <div class="note">note 标签插件样式验证（蓝色提示框）</div>
+        <h2>摘要列表</h2>
+        <div class="ui-collection" data-layout="list" data-variant="summary" data-density="auto">
+          <a class="ui-collection__item" href="#summary-one" title="摘要条目"><span class="ui-collection__content"><span class="ui-collection__title">摘要条目</span><span class="ui-collection__description">两行说明用于检查文字层级、截断和 content surface 下的卡片填充。</span></span></a>
+          <a class="ui-collection__item" href="#summary-two" title="第二个摘要条目"><span class="ui-collection__content"><span class="ui-collection__title">第二个摘要条目</span><span class="ui-collection__description">正文宽度下仍复用同一 DOM 与状态变量。</span></span></a>
+        </div>
       </article>
     </div>
 
-    <aside class="l_right"></aside>
+    <aside class="l_right" data-ui-surface="sidebar">
+      <div class="widgets">
+        <widget class="widget-wrapper markdown">
+          <div class="widget-header dis-select"><span class="name">欢迎</span></div>
+          <div class="widget-body fs14">
+            <p>欢迎来到 Collection 验收页。</p>
+            <div class="ui-collection" data-layout="grid" data-variant="nav" data-density="auto" style="--ui-columns:2">
+              <a class="ui-collection__item" href="#library" title="查看文库"><span class="ui-collection__content"><span class="ui-collection__title">查看文库</span></span></a>
+              <a class="ui-collection__item" href="#notes" title="传送到笔记"><span class="ui-collection__content"><span class="ui-collection__title">传送到笔记</span></span></a>
+            </div>
+          </div>
+        </widget>
+        <widget class="widget-wrapper wiki-related">
+          <div class="widget-header dis-select"><span class="name">更多：主题</span></div>
+          <div class="widget-body">
+            <div class="ui-collection" data-layout="list" data-variant="summary" data-density="auto">
+              <a class="ui-collection__item" href="#wiki" title="Go 博客笔记"><span class="ui-collection__content"><span class="ui-collection__title">Go 博客笔记</span><span class="ui-collection__description">与当前项目共享标签的推荐项目。</span></span></a>
+            </div>
+          </div>
+        </widget>
+      </div>
+    </aside>
   </div>
-
-  <script>
-    // ctx mock: 复现 Stellar defines.ejs 注入的全局对象
-    const ctx = {
-      date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' },
-      root: '/',
-      tag_plugins: { chat: {} },
-      search: { service: 'local_search', local_search: { path: '/search.json' } },
-      copycode: { default_text: '复制', success_text: '复制成功', toast: '已复制' }
-    };
-
-    // 主题切换：在 light/dark 显式切换。初始无 data-theme 时按系统偏好判定当前态，避免首次点击无变化。
-    function toggleTheme() {
-      const html = document.documentElement;
-      const cur = html.dataset.theme === 'light' || html.dataset.theme === 'dark'
-        ? html.dataset.theme
-        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      html.dataset.theme = cur === 'dark' ? 'light' : 'dark';
-    }
-  </script>
-  <script src="../assets/js/main.js" defer></script>
 </body>
 </html>

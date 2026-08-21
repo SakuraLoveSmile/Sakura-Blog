@@ -95,8 +95,8 @@ func TestWikiDocFrontendChain(t *testing.T) {
 		"/wiki/stellar/setup", "/wiki/stellar/install", // 上下篇 + 树链接
 		// 搜索框项目化（Task #4）：data-filter 限定当前项目 + placeholder 显示项目名
 		`data-filter="/wiki/stellar/"`, "在 Stellar 文档 中搜索",
-		// 同 tag 项目推荐（Task #4）：post-card 卡片渲染 + "更多：{标签名}" + 推荐项目链接
-		"widget-wrapper post-card", "更多：主题", "/wiki/go-blog",
+		// 同 tag 项目推荐（Task #4）：summary collection + "更多：{标签名}" + 推荐项目链接
+		"widget-wrapper wiki-related", `data-layout="list"`, `data-variant="summary"`, "更多：主题", "/wiki/go-blog",
 		// 最近更新（Task #8）：左栏 recent widget 渲染当前项目 wiki 文档
 		"widget-wrapper recent",
 		// 右栏 TOC widget：目录 + footer 回到顶部/参与讨论（对齐原版 toc.ejs layoutDiv）
@@ -119,6 +119,9 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	}
 	if strings.Contains(body, "draft-only") {
 		t.Errorf("wiki-doc page must not expose draft docs")
+	}
+	if strings.Contains(body, `widget-wrapper post-card`) || strings.Contains(body, `class="item wiki"`) {
+		t.Errorf("wiki-related widget must not depend on legacy post-card/item markup: %s", body)
 	}
 	// 3) 路由安全：/wiki/tags/主题 仍走标签过滤页（handleWiki，Layout=wiki）
 	w = httptest.NewRecorder()

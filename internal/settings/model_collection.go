@@ -2,6 +2,7 @@ package settings
 
 import (
 	"html/template"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -243,7 +244,7 @@ func (w *WidgetInstance) Collection() Collection {
 		return c.Normalized()
 	}
 	switch w.Layout {
-	case "recent":
+	case "recent", "popular":
 		for _, p := range recentPosts(w.Data) {
 			entry := NewCollectionItem(p.URL, p.Title)
 			c.Items = append(c.Items, entry)
@@ -265,19 +266,52 @@ func (w *WidgetInstance) Collection() Collection {
 			}
 		}
 	case "linklist":
-		c.Layout = "grid"
-		c.Variant = "icon"
+		return w.LinkListConfigValue().Collection(w.CurrentPath())
+	case "wiki_related":
+		c.Variant = "summary"
 		c.Density = "auto"
-		c.Columns = w.LinkListColumns()
-		for _, p := range w.LinkListItems() {
-			entry := NewCollectionItem(p.URL, p.Title)
-			entry.Icon = p.Icon
-			entry.ShowTitle = w.LinkListShowText()
-			entry.ShowTitleSet = true
+		for _, project := range wikiProjects(w.Data) {
+			if project == nil || project.ID == "" {
+				continue
+			}
+			href := project.URL
+			if project.HasDocs || href == "" {
+				href = "/wiki/" + project.ID
+			}
+			entry := NewCollectionItem(href, project.DisplayTitle())
+			entry.Description = project.Description
 			c.Items = append(c.Items, entry)
 		}
 	}
 	return c.Normalized()
+}
+
+// LinkListConfigValue converts an independent linklist widget into the same
+// configuration model used by the welcome widget.
+func (w *WidgetInstance) LinkListConfigValue() LinkListConfig {
+	if w == nil {
+		return LinkListConfig{}
+	}
+	return LinkListConfig{Columns: w.Int("columns", 0), Items: w.LinkListItems()}
+}
+
+// WelcomeCollection adapts the welcome widget's linklist through the same
+// collection path as the standalone linklist widget.
+func (w *WidgetInstance) WelcomeCollection() Collection {
+	if w == nil || w.V == nil || w.V.Site == nil {
+		return (Collection{}).Normalized()
+	}
+	return w.V.Site.Rightbar.WelcomeLinklist.Collection(w.CurrentPath())
+}
+
+// CurrentPath returns the normalized request path carried by the page
+// canonical URL. fillSEO runs before template execution, so this remains
+// available even though widget assembly itself is request-context agnostic.
+func (w *WidgetInstance) CurrentPath() string {
+	if w == nil || w.V == nil || w.V.Page == nil {
+		return ""
+	}
+	return normalizeCollectionPath(w.V.Page.CanonicalURL)
 }
 
 // Collection flattens the wiki document tree while preserving depth and active
@@ -327,6 +361,92 @@ func recentPosts(data any) []RecentPost {
 	default:
 		return nil
 	}
+}
+
+func wikiProjects(data any) []*WikiProject {
+	switch items := data.(type) {
+	case []*WikiProject:
+		return items
+	case []WikiProject:
+		out := make([]*WikiProject, 0, len(items))
+		for i := range items {
+			out = append(out, &items[i])
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+// Collection converts LinkListConfig using the 1.43 column rules shared by
+// welcome and standalone linklist widgets: zero means item count, one is a
+// list, two or more is a grid, and three or more hides titles.
+func (l LinkListConfig) Collection(currentPath string) Collection {
+	columns := l.EffectiveColumns()
+	c := Collection{Layout: "list", Variant: "nav", Density: "auto", Columns: columns}
+	if columns >= 2 {
+		c.Layout = "grid"
+	}
+	if columns >= 3 {
+		c.Variant = "icon"
+	}
+	for _, link := range l.Items {
+		if strings.TrimSpace(link.URL) == "" || strings.TrimSpace(link.Title) == "" {
+			continue
+		}
+		entry := NewCollectionItem(link.URL, link.Title)
+		entry.Icon = link.Icon
+		entry.Active = collectionPathsEqual(currentPath, link.URL)
+		entry.ShowTitleSet = true
+		entry.ShowTitle = columns < 3
+		entry.GradientRef = "leftbar-active-icon-grad"
+		c.Items = append(c.Items, entry)
+	}
+	return c.Normalized()
+}
+
+func collectionPathsEqual(currentPath, href string) bool {
+	current := normalizeCollectionPath(currentPath)
+	target := normalizeCollectionPath(href)
+	return current != "" && target != "" && current == target
+}
+
+func normalizeCollectionPath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	if parsed.IsAbs() {
+		return normalizeCollectionPath(parsed.Path)
+	}
+	if parsed.Host != "" {
+		return ""
+	}
+	raw = parsed.Path
+	if raw == "" {
+		raw = "/"
+	}
+	if raw != "/" && !strings.HasPrefix(raw, "/") {
+		raw = "/" + raw
+	}
+	if raw == "/index.html" || raw == "/index" {
+		raw = "/"
+	} else {
+		raw = strings.TrimSuffix(raw, "/index.html")
+		raw = strings.TrimSuffix(raw, "/index")
+		raw = strings.TrimSuffix(raw, ".html")
+		if len(raw) > 1 {
+			raw = strings.TrimSuffix(raw, "/")
+		}
+	}
+	if raw == "" {
+		return "/"
+	}
+	return raw
 }
 
 func safeGradientID(s string) string {
