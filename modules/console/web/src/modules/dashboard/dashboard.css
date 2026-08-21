@@ -446,6 +446,26 @@
   transform: scale(1.1);
 }
 
+.apple-edit-size-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(10px);
+}
+
+.apple-edit-size-btn:hover {
+  transform: scale(1.1);
+  background: var(--color-primary-active);
+}
+
 .apple-drag-handle {
   width: 26px;
   height: 26px;
@@ -473,18 +493,38 @@
   cursor: default;
 }
 
-.widget-cell.dragging {
-  opacity: 0.4;
+/* SortableJS 落点占位：半透明虚线（与动画让其平滑让位） */
+.widget-ghost {
+  opacity: 0.45 !important;
+  border: 2px dashed var(--color-primary) !important;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent) !important;
+  border-radius: 22px;
+  transition: transform var(--duration-fast) var(--ease-standard);
+    box-shadow: none !important;
 }
 
-.widget-cell.drag-over-top {
-  box-shadow: inset 3px 0 0 0 var(--color-primary);
+/* 被选中（按下把手）的源卡片 */
+.widget-chosen {
+  cursor: grabbing;
+}
+
+/* 跟随指针的拖拽替身（forceFallback 克隆）轻阴影 */
+.widget-drag {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
   border-radius: 22px;
 }
 
-.widget-cell.drag-over-bottom {
-  box-shadow: inset -3px 0 0 0 var(--color-primary);
+/* 编辑态下空区域的可落虚线占位 */
+.apple-drop-placeholder {
+  min-height: 96px;
+  border: 2px dashed var(--color-border-strong, rgba(255, 255, 255, 0.28));
   border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted-foreground, rgba(255, 255, 255, 0.5));
+  font-size: 13px;
+  background: color-mix(in srgb, var(--color-primary) 4%, transparent);
 }
 
 /* ===== Utilities ===== */

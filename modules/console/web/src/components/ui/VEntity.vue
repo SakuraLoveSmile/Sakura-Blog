@@ -28,6 +28,9 @@ const classes = computed(() => (props.isSelected ? ["entity-selected"] : []));
     <td class="entity-end-wrapper">
       <div class="entity-end">
         <slot name="end" />
+        <div v-if="$slots.hoverActions" class="entity-hover-actions hidden items-center gap-1 transition-all opacity-0 sm:group-hover:opacity-100 sm:group-hover:flex">
+          <slot name="hoverActions" />
+        </div>
         <div v-if="$slots.dropdownItems" class="entity-dropdown">
           <slot name="dropdownItems" />
         </div>

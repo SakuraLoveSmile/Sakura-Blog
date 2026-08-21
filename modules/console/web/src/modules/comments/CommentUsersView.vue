@@ -9,19 +9,17 @@ import {
 } from "@/api";
 import { Icon } from "@iconify/vue";
 import {
+  VPageHeader,
   VButton,
   VCard,
   VEmpty,
   VLoading,
   VPagination,
-  VStatusDot,
   VModal,
   Dialog,
   Toast,
 } from "@/components/ui";
-
-// Spec 71 评论用户管理：注册读者（role=reader）列表 + 评论聚合 +
-// 封禁/解封 + 按用户查看评论与批量处置。视觉体系对齐 /console/users（UserListView）。
+import { formatRelative } from "@/lib/format";
 
 const queryClient = useQueryClient();
 
@@ -59,11 +57,6 @@ const { data: queryData, isLoading, refetch } = useQuery({
 const users = computed<CommentUserItem[]>(() => queryData.value?.items || []);
 const total = computed(() => queryData.value?.total || 0);
 const counts = computed(() => queryData.value?.counts || { all: 0, banned: 0 });
-
-// 当前页评论总数（统计卡用）
-const pageCommentSum = computed(() =>
-  users.value.reduce((sum, u) => sum + (u.comment_count || 0), 0)
-);
 
 function invalidate() {
   queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === "comment-users" });
@@ -130,10 +123,11 @@ const commentsBusy = ref(false);
 
 interface CommentRow {
   id: number;
-  page_key: string;
+  post_slug: string;
   content: string;
   status: CommentStatus;
-  date: string;
+  created_at?: string;
+  date?: string;
 }
 const commentRows = ref<CommentRow[]>([]);
 const commentsTotal = ref(0);
@@ -172,7 +166,6 @@ function statusLabel(s: string): string {
   return { pending: "待审", approved: "已通过", rejected: "已拒绝", spam: "垃圾" }[s] || s;
 }
 
-// 批量处置：全部标为垃圾 / 全部删除
 function confirmBulk(action: "spam" | "delete") {
   const target = commentsTarget.value;
   if (!target) return;
@@ -199,7 +192,6 @@ async function doBulk(action: "spam" | "delete") {
     Toast.success(`已处置 ${data.affected} 条评论`);
     invalidate();
     await loadComments();
-    // 全部评论被删后可直接关闭弹窗
     if (action === "delete" && commentsTotal.value === 0) {
       commentsVisible.value = false;
     }
@@ -209,504 +201,256 @@ async function doBulk(action: "spam" | "delete") {
     commentsBusy.value = false;
   }
 }
-
-// ---------- 展示辅助 ----------
-function avatarGradient(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
-  }
-  const n = (Math.abs(hash) % 8) + 1;
-  return `avatar-gradient-${n}`;
-}
-
-function avatarInitial(u: CommentUserItem): string {
-  const source = u.display_name?.trim() || u.username || "?";
-  return source.charAt(0).toUpperCase();
-}
 </script>
 
 <template>
   <div class="min-h-full">
-    <!-- ===== Page Header ===== -->
-    <header
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-4 backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-5 md:px-8"
-      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
-    >
-      <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">评论用户</h1>
-        <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理注册读者：评论统计、封禁解封、按用户批量处置</p>
-      </div>
-    </header>
+    <!-- 统一 Page Header -->
+    <VPageHeader title="评论用户">
+      <template #icon>
+        <Icon icon="ri:user-shared-line" class="text-primary" />
+      </template>
+      <template #subtitle>管理注册读者账户、评论活跃度画像、封禁控制与按用户批量清理</template>
+      <template #actions>
+        <div class="apple-search min-w-[200px] max-w-[280px]">
+          <Icon icon="ri:search-line" class="text-text-quaternary" />
+          <input v-model="keyword" placeholder="搜索读者昵称或用户名..." />
+          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <Icon icon="ri:close-line" />
+          </button>
+        </div>
 
-    <div class="px-4 pb-8 sm:px-5 md:px-8">
-      <!-- ===== Stat Cards ===== -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <!-- 评论用户总数 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">评论用户总数</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-primary"
-              style="background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
-              ></span>
-              <Icon icon="ri:user-community-line" class="relative z-[1] text-[19px]" />
-            </div>
+        <VButton :route="{ path: '/console/comments' }">
+          <template #icon><Icon icon="ri:chat-3-line" /></template>
+          返回评论列表
+        </VButton>
+      </template>
+    </VPageHeader>
+
+    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div class="stats-card">
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:user-community-line" />
           </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
-          >
-            {{ counts.all }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span class="text-[12px] text-text-tertiary">注册读者账户</span>
+          <div>
+            <div class="stats-label">注册读者总数</div>
+            <div class="stats-value">{{ counts.all }} <span class="stats-sub">位注册读者</span></div>
           </div>
         </div>
 
-        <!-- 已封禁 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">已封禁</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-error"
-              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent);"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
-              ></span>
-              <Icon icon="ri:forbid-2-line" class="relative z-[1] text-[19px]" />
-            </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:checkbox-circle-line" />
           </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
-          >
-            {{ counts.banned }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span class="text-[12px] text-text-tertiary">无法登录与评论</span>
+          <div>
+            <div class="stats-label">正常活跃读者</div>
+            <div class="stats-value text-[#30D158]">{{ Math.max(0, counts.all - counts.banned) }} <span class="stats-sub">可正常互动</span></div>
           </div>
         </div>
 
-        <!-- 当前页评论数 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">当前页评论数</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-chart-5"
-              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent);"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
-              ></span>
-              <Icon icon="ri:chat-3-line" class="relative z-[1] text-[19px]" />
-            </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
+            <Icon icon="ri:forbid-2-line" />
           </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
-          >
-            {{ pageCommentSum }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span class="text-[12px] text-text-tertiary">本页用户合计</span>
+          <div>
+            <div class="stats-label">已封禁读者</div>
+            <div class="stats-value text-[#FF453A]">{{ counts.banned }} <span class="stats-sub">禁止登录留言</span></div>
           </div>
         </div>
 
-        <!-- 当前页用户 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">当前页用户</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-success"
-              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
-              ></span>
-              <Icon icon="ri:eye-line" class="relative z-[1] text-[19px]" />
-            </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
+            <Icon icon="ri:chat-voice-line" />
           </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
-          >
-            {{ users.length }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span class="text-[12px] text-text-tertiary">共 {{ total }} 条</span>
+          <div>
+            <div class="stats-label">当前列表用户</div>
+            <div class="stats-value">{{ users.length }} <span class="stats-sub">共 {{ total }} 条记录</span></div>
           </div>
         </div>
       </div>
 
-      <!-- ===== User Table Card ===== -->
-      <VCard class="mt-5" :body-class="['!p-0']">
+      <!-- 用户列表卡片 -->
+      <VCard>
         <template #header>
-          <div class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
-            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div class="flex flex-wrap items-center justify-between gap-3 w-full">
+            <div class="apple-segmented">
               <button
                 type="button"
                 :class="{ active: statusFilter === 'all' }"
                 @click="statusFilter = 'all'"
               >
-                全部
+                全部读者
               </button>
               <button
                 type="button"
                 :class="{ active: statusFilter === 'banned' }"
                 @click="statusFilter = 'banned'"
               >
-                已封禁
+                已封禁读者
               </button>
             </div>
-            <div class="flex w-full items-center gap-2 sm:w-auto">
-              <div class="flex-1 sm:w-[220px] sm:flex-none">
-                <div class="apple-search w-full">
-                  <Icon icon="ri:search-line" class="text-text-quaternary" />
-                  <input v-model="keyword" placeholder="搜索用户..." />
-                </div>
-              </div>
-              <button
-                type="button"
-                title="刷新"
-                class="hidden h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:inline-flex"
-                @click="refetch()"
-              >
-                <Icon icon="ri:refresh-line" />
-                刷新
-              </button>
-              <button
-                type="button"
-                title="刷新"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:hidden"
-                @click="refetch()"
-              >
-                <Icon icon="ri:refresh-line" class="text-base" />
-              </button>
-            </div>
+
+            <VButton size="sm" @click="refetch()">
+              <template #icon><Icon icon="ri:refresh-line" /></template>
+              刷新数据
+            </VButton>
           </div>
         </template>
 
         <VLoading v-if="isLoading" />
-        <VEmpty v-else-if="!users.length" title="暂无评论用户" />
+        <VEmpty v-else-if="!users.length" title="暂无对应读者记录" />
 
-        <template v-else>
-          <!-- 桌面端表格 -->
-          <div class="hidden sm:block">
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th
-                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                    >
-                      用户
-                    </th>
-                    <th
-                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                    >
-                      评论数
-                    </th>
-                    <th
-                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                    >
-                      最后评论
-                    </th>
-                    <th
-                      class="whitespace-nowrap border-b border-border px-5 py-3 text-left text-[12px] font-semibold tracking-wide text-text-tertiary"
-                    >
-                      状态
-                    </th>
-                    <th
-                      class="whitespace-nowrap border-b border-border px-5 py-3 text-right text-[12px] font-semibold tracking-wide text-text-tertiary"
-                    >
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="u in users"
-                    :key="u.id"
-                    class="transition-colors duration-150 hover:bg-white/[0.03]"
-                  >
-                    <td class="border-b border-border px-5 py-3.5 align-middle">
-                      <div class="flex items-center gap-3">
-                        <img
-                          v-if="u.avatar"
-                          :src="u.avatar"
-                          :alt="u.username"
-                          loading="lazy"
-                          class="h-[38px] w-[38px] shrink-0 rounded-full object-cover"
-                        />
-                        <div
-                          v-else
-                          :class="avatarGradient(u.username)"
-                          class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[14px] font-semibold text-foreground"
-                        >
-                          {{ avatarInitial(u) }}
-                        </div>
-                        <div class="flex min-w-0 flex-col gap-0.5">
-                          <span class="text-[14px] font-semibold leading-tight text-foreground">
-                            {{ u.display_name || u.username }}
-                          </span>
-                          <span
-                            class="max-w-[220px] truncate text-[12px] leading-tight text-text-tertiary"
-                          >
-                            {{ u.email || u.username }}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td
-                      class="border-b border-border px-5 py-3.5 align-middle text-[13px] text-text-secondary"
-                      style="font-variant-numeric: tabular-nums;"
-                    >
-                      {{ u.comment_count }}
-                    </td>
-                    <td
-                      class="border-b border-border px-5 py-3.5 align-middle text-[13px] text-text-secondary"
-                      style="font-variant-numeric: tabular-nums;"
-                    >
-                      {{ u.last_comment_at || "—" }}
-                    </td>
-                    <td class="border-b border-border px-5 py-3.5 align-middle">
-                      <span
-                        v-if="u.status === 'banned'"
-                        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                        style="background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent); color: var(--color-state-error);"
-                      >
-                        <VStatusDot state="error" />
-                        已封禁
-                      </span>
-                      <span
-                        v-else
-                        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                        style="background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent); color: var(--color-state-success);"
-                      >
-                        <VStatusDot state="success" />
-                        活跃
-                      </span>
-                    </td>
-                    <td class="border-b border-border px-5 py-3.5 text-right align-middle">
-                      <div class="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          title="查看评论"
-                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
-                          @click="openComments(u)"
-                        >
-                          <Icon icon="ri:chat-3-line" class="text-[16px]" />
-                        </button>
-                        <button
-                          v-if="u.status !== 'banned'"
-                          type="button"
-                          title="封禁"
-                          :disabled="banBusy === u.id"
-                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-[var(--color-state-error)] disabled:opacity-50"
-                          @click="confirmBan(u)"
-                        >
-                          <Icon icon="ri:forbid-2-line" class="text-[16px]" />
-                        </button>
-                        <button
-                          v-else
-                          type="button"
-                          title="解封"
-                          :disabled="banBusy === u.id"
-                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-[var(--color-state-success)] disabled:opacity-50"
-                          @click="setStatus(u, 'active')"
-                        >
-                          <Icon icon="ri:lock-unlock-line" class="text-[16px]" />
-                        </button>
-                        <button
-                          type="button"
-                          title="删除"
-                          class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-transparent text-text-tertiary transition-colors hover:border-border hover:bg-secondary hover:text-[var(--color-state-error)]"
-                          @click="confirmDelete(u)"
-                        >
-                          <Icon icon="ri:delete-bin-line" class="text-[16px]" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- 移动端卡片列表 -->
-          <div class="sm:hidden user-card-list">
-            <div
-              v-for="u in users"
-              :key="u.id"
-              class="user-card border-b border-border px-3 py-3.5 last:border-b-0"
-            >
-              <div class="flex items-start gap-3">
-                <img
-                  v-if="u.avatar"
-                  :src="u.avatar"
-                  :alt="u.username"
-                  loading="lazy"
-                  class="h-10 w-10 shrink-0 rounded-full object-cover"
-                />
-                <div
-                  v-else
-                  :class="avatarGradient(u.username)"
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-foreground"
-                >
-                  {{ avatarInitial(u) }}
-                </div>
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="truncate text-sm font-semibold text-foreground">
-                      {{ u.display_name || u.username }}
-                    </span>
-                    <span
-                      v-if="u.status === 'banned'"
-                      class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
-                      style="background-color: color-mix(in srgb, var(--color-state-error) 15%, transparent); color: var(--color-state-error);"
-                    >
-                      已封禁
-                    </span>
-                    <span
+        <div v-else class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left">
+            <thead>
+              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                <th class="px-4 py-3">读者账号</th>
+                <th class="px-4 py-3">发表评论数</th>
+                <th class="px-4 py-3">最后活跃时间</th>
+                <th class="px-4 py-3">账号状态</th>
+                <th class="w-48 px-4 py-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              <tr
+                v-for="u in users"
+                :key="u.id"
+                class="transition-colors hover:bg-secondary/40"
+              >
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="u.avatar"
+                      :src="u.avatar"
+                      class="h-9 w-9 shrink-0 rounded-full border border-border object-cover bg-secondary"
+                      alt=""
+                    />
+                    <div
                       v-else
-                      class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
-                      style="background-color: color-mix(in srgb, var(--color-state-success) 15%, transparent); color: var(--color-state-success);"
+                      class="avatar-gradient-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                     >
-                      活跃
-                    </span>
-                    <span class="ml-auto text-[11px] text-text-tertiary">
-                      {{ u.comment_count }} 条评论
-                    </span>
-                  </div>
-                  <div class="mt-0.5 truncate text-[12px] text-text-tertiary">
-                    {{ u.email || u.username }}
-                  </div>
-                  <div class="mt-1 text-[11px] text-text-quaternary">
-                    最后评论：{{ u.last_comment_at || "—" }}
-                  </div>
+                      {{ (u.display_name || u.username).charAt(0).toUpperCase() }}
+                    </div>
 
-                  <div class="mt-2.5 flex items-center gap-1">
+                    <div class="min-w-0">
+                      <div class="font-semibold text-foreground text-sm flex items-center gap-2">
+                        <span>{{ u.display_name || u.username }}</span>
+                        <span v-if="u.display_name" class="text-xs font-mono text-text-quaternary">(@{{ u.username }})</span>
+                      </div>
+                      <div class="text-xs font-mono text-text-quaternary truncate max-w-[240px]">{{ u.email || '未绑定邮箱' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 font-mono text-sm font-semibold text-foreground">
+                  {{ u.comment_count || 0 }}
+                </td>
+                <td class="px-4 py-3.5 text-xs text-text-tertiary">
+                  {{ u.last_comment_at ? formatRelative(u.last_comment_at) : '暂无留言' }}
+                </td>
+                <td class="px-4 py-3.5 text-xs">
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    :class="u.status === 'banned' ? 'bg-[#FF453A]/10 text-[#FF453A]' : 'bg-[#30D158]/10 text-[#30D158]'"
+                  >
+                    {{ u.status === 'banned' ? '已封禁' : '正常' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
                     <button
                       type="button"
-                      title="查看评论"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+                      class="action-btn text-primary hover:bg-primary/10"
                       @click="openComments(u)"
                     >
-                      <Icon icon="ri:chat-3-line" class="text-sm" />
+                      <Icon icon="ri:chat-3-line" />
+                      <span>查看评论</span>
                     </button>
+
                     <button
                       v-if="u.status !== 'banned'"
                       type="button"
-                      title="封禁"
+                      class="action-btn text-[#FF9500] hover:bg-[#FF9500]/10"
                       :disabled="banBusy === u.id"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-state-error disabled:opacity-50"
                       @click="confirmBan(u)"
                     >
-                      <Icon icon="ri:forbid-2-line" class="text-sm" />
+                      <Icon icon="ri:forbid-2-line" />
+                      <span>封禁</span>
                     </button>
                     <button
                       v-else
                       type="button"
-                      title="解封"
+                      class="action-btn text-[#30D158] hover:bg-[#30D158]/10"
                       :disabled="banBusy === u.id"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-secondary transition-colors hover:bg-secondary hover:text-state-success disabled:opacity-50"
                       @click="setStatus(u, 'active')"
                     >
-                      <Icon icon="ri:lock-unlock-line" class="text-sm" />
+                      <Icon icon="ri:checkbox-circle-line" />
+                      <span>解封</span>
                     </button>
+
                     <button
                       type="button"
-                      title="删除"
-                      class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-secondary/50 text-text-tertiary transition-colors hover:bg-secondary hover:text-state-error"
+                      class="action-btn text-state-error hover:bg-state-error/10"
                       @click="confirmDelete(u)"
                     >
-                      <Icon icon="ri:delete-bin-line" class="text-sm" />
+                      <Icon icon="ri:delete-bin-line" />
                     </button>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          <div v-if="total > size" class="border-t border-border px-3 py-3 sm:px-4 sm:py-4">
-            <div class="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-end">
-              <VPagination :page="page" :size="size" :total="total" @update:page="page = $event" />
-            </div>
-          </div>
-        </template>
+        <!-- 分页 -->
+        <div v-if="total > size" class="flex justify-center pt-4">
+          <VPagination
+            :page="page"
+            :size="size"
+            :total="total"
+            @update:page="page = $event"
+            @update:size="size = $event"
+          />
+        </div>
       </VCard>
     </div>
 
-    <!-- 查看评论弹窗 -->
+    <!-- ============ 用户名下评论弹窗 ============ -->
     <VModal
       v-model:visible="commentsVisible"
-      :title="`「${commentsTarget?.display_name || commentsTarget?.username || ''}」的评论`"
-      :width="720"
+      :title="`「${commentsTarget?.display_name || commentsTarget?.username}」的全部评论`"
+      :width="680"
     >
-      <!-- 批量操作条 -->
-      <div class="mb-3 flex flex-wrap items-center gap-2">
-        <span class="text-[12px] text-text-tertiary">共 {{ commentsTotal }} 条评论</span>
-        <div class="ml-auto flex items-center gap-2">
-          <VButton size="sm" :loading="commentsBusy" :disabled="commentsTotal === 0" @click="confirmBulk('spam')">
-            全部标为垃圾
-          </VButton>
-          <VButton size="sm" type="danger" :loading="commentsBusy" :disabled="commentsTotal === 0" @click="confirmBulk('delete')">
-            全部删除
-          </VButton>
-        </div>
-      </div>
-
-      <VLoading v-if="commentsLoading" />
-      <VEmpty v-else-if="!commentRows.length" title="该用户暂无评论" />
-      <div v-else class="space-y-2">
-        <div
-          v-for="cm in commentRows"
-          :key="cm.id"
-          class="rounded-xl border border-border p-3"
-        >
-          <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-              :style="
-                cm.status === 'approved'
-                  ? { backgroundColor: 'color-mix(in srgb, var(--color-state-success) 12%, transparent)', color: 'var(--color-state-success)' }
-                  : cm.status === 'spam'
-                    ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 12%, transparent)', color: 'var(--color-state-error)' }
-                    : { backgroundColor: 'color-mix(in srgb, var(--color-state-warning) 15%, transparent)', color: 'var(--color-state-warning)' }
-              "
-            >
-              {{ statusLabel(cm.status) }}
-            </span>
-            <span class="truncate text-[12px] text-text-quaternary">{{ cm.page_key }}</span>
-            <span class="ml-auto shrink-0 text-[12px] text-text-quaternary">{{ cm.date }}</span>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-border/60 pb-3">
+          <span class="text-xs text-text-tertiary">共 {{ commentsTotal }} 条记录</span>
+          <div class="flex items-center gap-2">
+            <VButton size="sm" :disabled="commentsBusy || !commentRows.length" @click="confirmBulk('spam')">
+              全部标为垃圾
+            </VButton>
+            <VButton size="sm" type="danger" :disabled="commentsBusy || !commentRows.length" @click="confirmBulk('delete')">
+              全部删除
+            </VButton>
           </div>
-          <p class="mt-1.5 line-clamp-3 text-[13px] leading-relaxed text-text-secondary">{{ cm.content }}</p>
         </div>
-        <div v-if="commentsTotal > 10" class="flex justify-end pt-2">
-          <VPagination
-            :page="commentsPage"
-            :size="10"
-            :total="commentsTotal"
-            @update:page="commentsPage = $event"
-          />
+
+        <VLoading v-if="commentsLoading" />
+        <div v-else-if="!commentRows.length" class="py-12 text-center text-xs text-text-quaternary">
+          该用户名下暂无评论
+        </div>
+        <div v-else class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+          <div
+            v-for="row in commentRows"
+            :key="row.id"
+            class="rounded-xl border border-border bg-card p-3 text-xs"
+          >
+            <div class="flex items-center justify-between text-text-quaternary mb-1.5">
+              <span>在文章: <strong class="text-foreground">{{ row.post_slug }}</strong></span>
+              <span class="rounded px-1.5 py-0.2 bg-secondary text-[10px]">{{ statusLabel(row.status) }}</span>
+            </div>
+            <div class="text-foreground leading-relaxed">{{ row.content }}</div>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -719,13 +463,86 @@ function avatarInitial(u: CommentUserItem): string {
 </template>
 
 <style scoped>
-/* 分段 Tab 横向滚动，不显示滚动条（对齐 UserListView） */
-.tabs-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+/* 统计卡片 */
+.stats-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
 }
-.tabs-scroll::-webkit-scrollbar {
-  display: none;
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
+}
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
+}
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
+
+/* 操作小按钮 */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stats-value {
+    font-size: 14px;
+  }
 }
 </style>

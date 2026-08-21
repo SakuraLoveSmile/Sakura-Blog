@@ -1,963 +1,892 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from"vue";
-import { useRouter, useRoute } from"vue-router";
-import { useMutation, useQueryClient } from"@tanstack/vue-query";
-import { postApi, shareApi, taxonomyApi, settingsApi } from"@/api";
-import { queryKeys } from"@/api/query-client";
-import { usePagedList } from"@/composables/usePagedList";
-import { Icon } from"@iconify/vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useQueryClient } from "@tanstack/vue-query";
+import { postApi, shareApi, taxonomyApi } from "@/api";
+import { queryKeys } from "@/api/query-client";
+import { usePagedList } from "@/composables/usePagedList";
+import { Icon } from "@iconify/vue";
 import {
- VPageHeader,
- VCard,
- VButton,
- VEntityContainer,
- VEntity,
- VEntityField,
- VEmpty,
- VLoading,
- VPagination,
- VStatusDot,
- FilterDropdown,
- FilterTag,
- VModal,
- Dialog,
- Toast,
-} from"@/components/ui";
+  VPageHeader,
+  VCard,
+  VButton,
+  VEmpty,
+  VLoading,
+  VFloatingDock,
+  VPagination,
+  VModal,
+  Dialog,
+  Toast,
+} from "@/components/ui";
+import { formatRelative } from "@/lib/format";
+
+interface PostItem {
+  id?: number;
+  slug: string;
+  title: string;
+  cover?: string;
+  summary?: string;
+  category?: string;
+  tags?: string[];
+  status: "published" | "draft" | "trashed";
+  pin?: boolean;
+  views?: number;
+  created_at: string;
+  updated_at: string;
+}
 
 const router = useRouter();
 const route = useRoute();
 const queryClient = useQueryClient();
 
-// Spec 62：分页/防抖/查询样板收敛到 usePagedList（示范迁移）
-// usePagedList 泛型项类型（后端 postJSON 无共享 TS 类型，弱类型透传）
-type PostItem = Record<string, any>;
-
-// 筛选条件必须先于 usePagedList 初始化：queryKey/queryParams 会在 composable setup
-// 期间立即求值，extraParams 需要读取这些 refs，避免触发 TDZ（黑屏）。
 const validStatuses = ["published", "draft", "trashed"];
 function statusFromQuery(): string | undefined {
- const s = route.query.status;
- return typeof s ==="string" && validStatuses.includes(s) ? s : undefined;
+  const s = route.query.status;
+  return typeof s === "string" && validStatuses.includes(s) ? s : undefined;
 }
+
 const selectedStatus = ref<string | undefined>(statusFromQuery());
-const selectedSort = ref<string | undefined>(undefined);
+const selectedSort = ref<string>("newest");
 const selectedCategory = ref<string | undefined>(undefined);
 const selectedTag = ref<string | undefined>(undefined);
+const viewMode = ref<"grid" | "table">("grid");
 
-const { page, size, keyword, items: rawItems, total, isLoading, isFetching, refetch } = usePagedList<PostItem>({
- apiFn: (params: Record<string, unknown>) => postApi.list(params),
- keyFn: (params: Record<string, unknown>) => queryKeys.posts(params),
- keywordParam: "search",
- extraParams: () => {
- const params: Record<string, unknown> = {};
- if (selectedStatus.value) params.status = selectedStatus.value;
- if (selectedCategory.value) params.category = selectedCategory.value;
- if (selectedTag.value) params.tag = selectedTag.value;
- return params;
- },
+const { page, size, keyword, items: rawItems, total, isLoading, refetch } = usePagedList<PostItem>({
+  apiFn: (params: Record<string, unknown>) => postApi.list(params),
+  keyFn: (params: Record<string, unknown>) => queryKeys.posts(params),
+  keywordParam: "search",
+  extraParams: () => {
+    const params: Record<string, unknown> = {};
+    if (selectedStatus.value) params.status = selectedStatus.value;
+    if (selectedCategory.value) params.category = selectedCategory.value;
+    if (selectedTag.value) params.tag = selectedTag.value;
+    return params;
+  },
 });
 
-// 筛选条件
-// 状态筛选支持 ?status= 查询参数预置（Spec 39：⌘K 搜索回收站项跳转带筛选）
 watch(
- () => route.query.status,
- () => {
- const s = statusFromQuery();
- if (s && s !== selectedStatus.value) {
- selectedStatus.value = s;
- page.value = 1;
- }
- }
+  () => route.query.status,
+  () => {
+    const s = statusFromQuery();
+    if (s && s !== selectedStatus.value) {
+      selectedStatus.value = s;
+      page.value = 1;
+    }
+  }
 );
 
-const statusItems = [
- { label:"全部", value: undefined },
- { label:"已发布", value:"published" },
- { label:"草稿", value:"draft" },
- { label:"回收站", value:"trashed" },
-];
-
-const sortItems = [
- { label:"默认", value: undefined },
- { label:"较近创建", value:"newest" },
- { label:"较早创建", value:"oldest" },
- { label:"较近更新", value:"updated" },
-];
-
-// 分类/标签筛选项（taxonomy API）+ 站长头像（站点设置，作者列展示）
-const categoryItems = ref<{ label: string; value: string | undefined }[]>([{ label:"全部", value: undefined }]);
-const tagItems = ref<{ label: string; value: string | undefined }[]>([{ label:"全部", value: undefined }]);
-const ownerAvatar = ref("");
-const ownerName = ref("");
+// 分类与标签选项
+const categories = ref<string[]>([]);
+const tags = ref<string[]>([]);
 
 onMounted(async () => {
- try {
- const [cRes, tRes] = await Promise.all([taxonomyApi.categories(), taxonomyApi.tags()]);
- categoryItems.value = [
- { label:"全部", value: undefined },
- ...(cRes.data.items || []).map((i: any) => ({ label: i.name, value: i.name })),
- ];
- tagItems.value = [
- { label:"全部", value: undefined },
- ...(tRes.data.items || []).map((i: any) => ({ label: i.name, value: i.name })),
- ];
- } catch {
- /* 静默：筛选项缺失不阻塞列表 */
- }
- try {
- const { data } = await settingsApi.all();
- ownerAvatar.value = data?.site?.avatar ||"";
- ownerName.value = data?.site?.title ||"站长";
- } catch {
- /* 静默 */
- }
+  try {
+    const [cRes, tRes] = await Promise.all([taxonomyApi.categories(), taxonomyApi.tags()]);
+    categories.value = (cRes.data.items || []).map((i: any) => i.name);
+    tags.value = (tRes.data.items || []).map((i: any) => i.name);
+  } catch {}
 });
 
-// 客户端排序（排序变化不触发网络请求）
+// 客户端排序
 const posts = computed(() => {
- const items = [...rawItems.value];
- if (selectedSort.value ==="newest") {
- items.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
- } else if (selectedSort.value ==="oldest") {
- items.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
- } else if (selectedSort.value ==="updated") {
- items.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
- }
- return items;
+  const items = [...rawItems.value];
+  if (selectedSort.value === "newest") {
+    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else if (selectedSort.value === "oldest") {
+    items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  } else if (selectedSort.value === "updated") {
+    items.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }
+  return items;
+});
+
+// ---------- 统计数据 ----------
+const stats = computed(() => {
+  const all = posts.value;
+  let pubCount = 0;
+  let draftCount = 0;
+  let pinCount = 0;
+  for (const p of all) {
+    if (p.status === "published") pubCount++;
+    else if (p.status === "draft") draftCount++;
+    if (p.pin) pinCount++;
+  }
+  return {
+    total: total.value,
+    pubCount,
+    draftCount,
+    pinCount,
+  };
 });
 
 // 批量选择
-const checkedAll = ref(false);
-// Spec 62：selectedSlugs 用 Set 承载（checkSelection 每行多次 O(n) includes → O(1) has），
-// 对外（模板长度/批量操作）仍以数组视图呈现
 const selectedSlugs = ref<Set<string>>(new Set());
-const selectedSlugList = computed(() => [...selectedSlugs.value]);
-const menuOpenSlug = ref<string | null>(null);
 
-const hasFilters = computed(
- () =>
- selectedStatus.value !== undefined ||
- selectedSort.value !== undefined ||
- selectedCategory.value !== undefined ||
- selectedTag.value !== undefined ||
- keyword.value !==""
-);
-
-watch(selectedSlugs, (val) => {
- checkedAll.value = val.size === (posts.value?.length ?? 0) && val.size > 0;
-});
-
-function handleCheckAllChange(e: Event) {
- const { checked } = e.target as HTMLInputElement;
- selectedSlugs.value = checked ? new Set(posts.value.map((p) => p.slug)) : new Set();
+function toggleSelect(slug: string) {
+  if (selectedSlugs.value.has(slug)) selectedSlugs.value.delete(slug);
+  else selectedSlugs.value.add(slug);
 }
 
-function checkSelection(slug: string) {
- return selectedSlugs.value.has(slug);
+function selectAll() {
+  for (const p of posts.value) selectedSlugs.value.add(p.slug);
 }
 
-function toggleSelection(slug: string) {
- if (checkSelection(slug)) {
- const next = new Set(selectedSlugs.value);
- next.delete(slug);
- selectedSlugs.value = next;
- } else {
- selectedSlugs.value = new Set(selectedSlugs.value).add(slug);
- }
+function clearSelection() {
+  selectedSlugs.value.clear();
 }
 
-// 筛选变化时重置到第一页
-function handleFilterChange() {
- page.value = 1;
+// ---------- 操作流 ----------
+function handleDelete(p: PostItem) {
+  Dialog.warning({
+    title: "确定将文章移入回收站吗？",
+    description: `「${p.title}」将被移入回收站，可在回收站中随时恢复。`,
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await postApi.delete(p.slug);
+        selectedSlugs.value.delete(p.slug);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+        await refetch();
+        Toast.success("已移入回收站");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "删除失败");
+      }
+    },
+  });
 }
 
-function handleClearFilters() {
- selectedStatus.value = undefined;
- selectedSort.value = undefined;
- selectedCategory.value = undefined;
- selectedTag.value = undefined;
- keyword.value ="";
- page.value = 1;
+function handleRestore(p: PostItem) {
+  Dialog.warning({
+    title: "确定恢复该文章吗？",
+    description: `「${p.title}」将恢复至草稿/发布状态。`,
+    onConfirm: async () => {
+      try {
+        await postApi.restore(p.slug);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+        await refetch();
+        Toast.success("文章已恢复");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "恢复失败");
+      }
+    },
+  });
 }
 
-const statusLabel = computed(() => statusItems.find((i) => i.value === selectedStatus.value)?.label ||"");
-const sortLabel = computed(() => sortItems.find((i) => i.value === selectedSort.value)?.label ||"");
-const isTrashed = computed(() => selectedStatus.value ==="trashed");
-
-// Mutations：操作成功后自动失效文章列表缓存
-const deleteMutation = useMutation({
- mutationFn: (slug: string) => postApi.delete(slug),
- onSuccess: () => {
- queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
- Toast.success("删除成功");
- },
- // Spec 62：失败反馈（原静默失败）
- onError: (e: any) => Toast.error(e?.response?.data?.error || "删除失败"),
-});
-
-function handleDelete(post: any) {
- menuOpenSlug.value = null;
- Dialog.warning({
- title:"确定要删除该文章吗？",
- description:"该操作会将文章放入回收站，后续可以从回收站恢复",
- confirmType:"danger",
- onConfirm: () => deleteMutation.mutate(post.slug),
- });
+function handlePurge(p: PostItem) {
+  Dialog.warning({
+    title: "确定彻底删除该文章吗？",
+    description: `「${p.title}」将被永久物理删除，不可恢复！`,
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await postApi.purge(p.slug);
+        selectedSlugs.value.delete(p.slug);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+        await refetch();
+        Toast.success("已彻底删除");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "删除失败");
+      }
+    },
+  });
 }
 
-function handleDeleteInBatch() {
- Dialog.warning({
- title:"确定要删除选中的文章吗？",
- description:"该操作会将文章放入回收站，后续可以从回收站恢复",
- confirmType:"danger",
- onConfirm: async () => {
- await Promise.all(selectedSlugList.value.map((slug) => postApi.delete(slug)));
- selectedSlugs.value = new Set();
- queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
- Toast.success("删除成功");
- },
- });
+async function handleBatchDelete() {
+  const slugs = Array.from(selectedSlugs.value);
+  if (!slugs.length) return;
+  Dialog.warning({
+    title: `确定将选中的 ${slugs.length} 篇文章移入回收站吗？`,
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await Promise.all(slugs.map((s) => postApi.delete(s)));
+        clearSelection();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+        await refetch();
+        Toast.success("批量操作成功");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "批量删除失败");
+      }
+    },
+  });
 }
 
-function handleRestore(post: any) {
- menuOpenSlug.value = null;
- Dialog.warning({
- title:"确定要恢复该文章吗？",
- onConfirm: async () => {
- await postApi.restore(post.slug);
- queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
- Toast.success("恢复成功");
- },
- });
-}
-
-function handlePurge(post: any) {
- menuOpenSlug.value = null;
- Dialog.warning({
- title:"确定要彻底删除该文章吗？",
- description:"该操作不可恢复！",
- confirmType:"danger",
- onConfirm: async () => {
- await postApi.purge(post.slug);
- queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
- Toast.success("已彻底删除");
- },
- });
-}
-
-// --- 创建分享链接 ---
-const showShareModal = ref(false);
+// ---------- 分享链接创建弹窗 ----------
+const shareModalOpen = ref(false);
+const shareTarget = ref<PostItem | null>(null);
+const shareDuration = ref<"1" | "7" | "30" | "0">("7");
 const shareCreating = ref(false);
-const shareForm = ref({ share_type:"published", expires_at:"" });
-const shareTargetSlug = ref("");
-const shareResultUrl = ref("");
+const generatedShareUrl = ref("");
 
-/** 打开创建分享链接弹窗 */
-function handleCreateShare(post: any) {
- menuOpenSlug.value = null;
- shareTargetSlug.value = post.slug;
- shareForm.value = { share_type:"published", expires_at:"" };
- shareResultUrl.value ="";
- showShareModal.value = true;
+function openShareModal(p: PostItem) {
+  shareTarget.value = p;
+  shareDuration.value = "7";
+  generatedShareUrl.value = "";
+  shareModalOpen.value = true;
 }
 
-/** 提交创建分享链接请求 */
-async function handleShareCreate() {
- shareCreating.value = true;
- try {
- const { data } = await shareApi.create(shareTargetSlug.value, {
- share_type: shareForm.value.share_type,
- expires_at: shareForm.value.expires_at,
- });
- shareResultUrl.value = window.location.origin + data.url;
- queryClient.invalidateQueries({ queryKey: queryKeys.shares() });
- Toast.success("分享链接创建成功");
- } catch (e: any) {
- Toast.error(e?.response?.data?.error ||"创建失败");
- } finally {
- shareCreating.value = false;
- }
+async function createShare() {
+  if (!shareTarget.value) return;
+  shareCreating.value = true;
+  try {
+    const days = Number(shareDuration.value);
+    const expiresAt =
+      days > 0
+        ? new Date(Date.now() + days * 86400000).toISOString()
+        : "";
+    const { data } = await shareApi.create(shareTarget.value.slug, {
+      share_type: shareTarget.value.status === "draft" ? "draft" : "published",
+      expires_at: expiresAt,
+    });
+    generatedShareUrl.value = window.location.origin + data.url;
+    Toast.success("分享链接已生成");
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "生成分享链接失败");
+  } finally {
+    shareCreating.value = false;
+  }
 }
 
-/** 复制生成的分享链接到剪贴板 */
-async function handleCopyShareUrl() {
- try {
- await navigator.clipboard.writeText(shareResultUrl.value);
- Toast.success("链接已复制到剪贴板");
- } catch {
- Toast.error("复制失败，请手动复制");
- }
+function copyShareUrl() {
+  navigator.clipboard.writeText(generatedShareUrl.value).then(() => {
+    Toast.success("已复制到剪贴板");
+  });
 }
 
-const inputCls ="apple-input";
-
-// Helpers
-// Spec 62：每行每渲染 parseTags ×2 改为 computed Map 预解析（行数级 → 单次）
-const parsedTagsMap = computed(() => {
- const m = new Map<string, string[]>();
- for (const p of posts.value ?? []) m.set(p.slug, parseTags(p.tags));
- return m;
-});
-function tagsOf(post: Record<string, any>): string[] {
- return parsedTagsMap.value.get(post.slug) ?? [];
+function openPostPreview(slug: string) {
+  window.open(`/${slug}`, "_blank");
 }
 
-function parseTags(tags: string): string[] {
- if (!tags) return [];
- return tags.split(",").map((t) => t.trim()).filter(Boolean);
-}
-
-function formatDate(dateStr: string): string {
- if (!dateStr) return"";
- return dateStr.slice(0, 10);
-}
-
-function openPost(slug: string) {
- window.open(`/posts/${slug}`,"_blank");
-}
-
-function closeMenus() {
- menuOpenSlug.value = null;
+function statusBadge(status: string) {
+  switch (status) {
+    case "published":
+      return { cls: "bg-[#30D158]/10 text-[#30D158]", label: "已发布" };
+    case "draft":
+      return { cls: "bg-[#FF9500]/10 text-[#FF9500]", label: "草稿" };
+    case "trashed":
+      return { cls: "bg-[#FF453A]/10 text-[#FF453A]", label: "回收站" };
+    default:
+      return { cls: "bg-secondary text-text-tertiary", label: status };
+  }
 }
 </script>
 
 <template>
- <div @click="closeMenus">
- <!-- VPageHeader -->
- <VPageHeader title="文章">
- <template #icon>
- <Icon icon="ri:book-read-line" class="mr-2 self-center text-xl" />
- </template>
- <template #actions>
- <div class="header-actions flex items-center gap-2">
- <VButton size="sm" @click="router.push('/taxonomy')">分类</VButton>
- <VButton size="sm" @click="router.push('/taxonomy')">标签</VButton>
- <VButton size="sm" @click="selectedStatus = 'trashed'; page = 1">回收站</VButton>
- <VButton type="secondary" @click="router.push('/posts/new')">
- <template #icon>
- <Icon icon="ri:add-circle-line" class="h-full w-full" />
- </template>
- 新建
- </VButton>
- </div>
- </template>
- </VPageHeader>
+  <div class="min-h-full">
+    <!-- 统一 Page Header -->
+    <VPageHeader title="文章管理">
+      <template #icon>
+        <Icon icon="ri:article-line" class="text-primary" />
+      </template>
+      <template #subtitle>撰写与管理博客博文，支持分类标签筛选、版本追踪与临时分享链接</template>
+      <template #actions>
+        <div class="apple-search min-w-[200px] max-w-[280px]">
+          <Icon icon="ri:search-line" class="text-text-quaternary" />
+          <input v-model="keyword" placeholder="搜索文章标题或 Slug..." />
+          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <Icon icon="ri:close-line" />
+          </button>
+        </div>
 
- <div class="m-0 md:m-4">
- <VCard :body-class="['!p-0']">
- <!-- 筛选头部（bg-secondary） -->
- <template #header>
- <div class="block w-full bg-secondary px-3 py-3 sm:px-4">
- <div class="relative flex flex-col gap-3">
- <!-- 搜索框 + 已选标签（移动端全宽，桌面端左对齐） -->
- <div class="flex w-full flex-wrap items-center gap-2">
- <div class="w-full sm:w-auto flex-1 sm:flex-none">
- <input
- v-model="keyword"
- placeholder="输入关键词搜索"
- type="text"
- class="apple-input w-full py-1.5 sm:w-48"
- />
- </div>
- <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
- <FilterTag v-if="selectedStatus !== undefined" @close="selectedStatus = undefined; handleFilterChange()">
- 状态：{{ statusLabel }}
- </FilterTag>
- <FilterTag v-if="selectedCategory !== undefined" @close="selectedCategory = undefined; handleFilterChange()">
- 分类：{{ selectedCategory }}
- </FilterTag>
- <FilterTag v-if="selectedTag !== undefined" @close="selectedTag = undefined; handleFilterChange()">
- 标签：{{ selectedTag }}
- </FilterTag>
- <FilterTag v-if="selectedSort !== undefined" @close="selectedSort = undefined; handleFilterChange()">
- 排序：{{ sortLabel }}
- </FilterTag>
- <button
- v-if="hasFilters"
- class="text-xs text-text-tertiary underline hover:text-foreground"
- @click="handleClearFilters"
- >
- 清除筛选
- </button>
- </div>
- <!-- 批量选择模式提示 -->
- <div v-if="selectedSlugs.size" class="flex items-center gap-3">
- <VButton type="danger" size="sm" @click="handleDeleteInBatch">删除</VButton>
- <span class="text-sm text-text-tertiary">已选择 {{ selectedSlugs.size }} 项</span>
- </div>
- <!-- 筛选下拉按钮行（移动端横向滚动，桌面端直接展示） -->
- <div class="flex items-center justify-between gap-2">
- <div class="filter-scroll flex items-center gap-2 sm:gap-6">
- <FilterDropdown v-model="selectedStatus" :items="statusItems" label="状态" @change="handleFilterChange" />
- <FilterDropdown v-model="selectedCategory" :items="categoryItems" label="分类" @change="handleFilterChange" />
- <FilterDropdown v-model="selectedTag" :items="tagItems" label="标签" @change="handleFilterChange" />
- <FilterDropdown v-model="selectedSort" :items="sortItems" label="排序" @change="handleFilterChange" />
- </div>
- <div class="flex items-center gap-2">
- <div class="hidden sm:flex">
- <input
- :checked="checkedAll"
- class="h-4 w-4 rounded border-border-strong text-primary"
- type="checkbox"
- @change="handleCheckAllChange"
- />
- <span class="ml-2 whitespace-nowrap text-xs text-text-tertiary">全选</span>
- </div>
- <div
- class="cursor-pointer rounded p-1 hover:bg-accent"
- title="刷新"
- @click="refetch()"
- >
- <Icon
- icon="ri:refresh-line"
- :class="{ 'animate-spin text-foreground': isFetching }"
- class="h-4 w-4 text-text-tertiary group-hover:text-foreground"
- />
- </div>
- </div>
- </div>
- </div>
- </div>
- </template>
+        <VButton :route="{ path: '/posts/shares' }">
+          <template #icon><Icon icon="ri:share-forward-line" /></template>
+          分享链接
+        </VButton>
 
- <!-- Loading -->
- <VLoading v-if="isLoading" />
+        <VButton type="primary" :route="{ path: '/posts/new' }">
+          <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
+          撰写文章
+        </VButton>
+      </template>
+    </VPageHeader>
 
- <!-- Empty -->
- <Transition v-else-if="!posts.length" appear name="fade">
- <VEmpty message="你可以尝试刷新或者新建文章" title="当前没有文章">
- <template #actions>
- <div class="flex items-center gap-2">
- <VButton @click="refetch">刷新</VButton>
- <VButton type="primary" @click="router.push('/posts/new')">
- <template #icon>
- <Icon icon="ri:add-circle-line" class="h-full w-full" />
- </template>
- 新建文章
- </VButton>
- </div>
- </template>
- </VEmpty>
- </Transition>
+    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div class="stats-card">
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:article-line" />
+          </div>
+          <div>
+            <div class="stats-label">全部文章</div>
+            <div class="stats-value">{{ stats.total }} <span class="stats-sub">篇博文</span></div>
+          </div>
+        </div>
 
- <!-- Entity list：桌面表格 + 移动端卡片（v-else 单根容器，内部按断点切换） -->
- <div v-else>
- <div class="hidden sm:block">
- <VEntityContainer>
- <VEntity v-for="post in posts" :key="post.slug" :is-selected="checkSelection(post.slug)">
- <template #checkbox>
- <input
- :checked="checkSelection(post.slug)"
- class="h-4 w-4 rounded border-border-strong text-primary"
- type="checkbox"
- @change="toggleSelection(post.slug)"
- />
- </template>
- <template #start>
- <VEntityField v-if="post.cover">
- <template #description>
- <div class="w-20 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
- <img loading="lazy" class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
- </div>
- </template>
- </VEntityField>
- <VEntityField :title="post.title || post.slug" max-width="30rem">
- <template #title>
- <div class="flex items-center gap-1.5">
- <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="shrink-0 text-xs text-state-error" />
- <span
- class="truncate text-sm font-medium text-foreground hover:text-primary"
- @click.stop="router.push(`/posts/edit/${post.slug}`)"
- >
- {{ post.title || post.slug }}
- </span>
- <span
- v-if="post.has_draft && post.status === 'published'"
- class="group/dot relative flex shrink-0 items-center"
- >
- <span class="inline-block h-1.5 w-1.5 rounded-full bg-state-success/100"></span>
- <span
- class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-lg group-hover/dot:block"
- >
- 当前有内容已保存，但还未发布。
- </span>
- </span>
- <span
- class="hidden cursor-pointer text-text-tertiary transition-all hover:text-foreground group-hover:inline-block"
- title="在前台打开"
- @click.stop="openPost(post.slug)"
- >
- <Icon icon="ri:external-link-line" class="h-3.5 w-3.5" />
- </span>
- </div>
- </template>
- <template #description>
- <div class="flex flex-col gap-1.5">
- <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
- <span v-if="post.category" class="text-xs text-text-tertiary">
-             分类：{{ post.categories?.length ? post.categories.join(" / ") : post.category }}
- </span>
- <span class="text-xs text-text-tertiary">访问量 {{ post.views || 0 }}</span>
- <span v-if="post.pinned" class="text-xs text-text-tertiary">已置顶</span>
- </div>
- <div v-if="tagsOf(post).length" class="flex flex-wrap gap-1.5">
- <span
- v-for="tag in tagsOf(post)"
- :key="tag"
- class="rounded-base bg-secondary px-1.5 py-0.5 text-xs text-text-tertiary"
- >
- {{ tag }}
- </span>
- </div>
- </div>
- </template>
- </VEntityField>
- </template>
- <template #end>
- <VEntityField v-if="ownerAvatar" class="shrink-0">
- <template #description>
- <span class="group/avatar relative flex shrink-0 items-center">
- <img
- :src="ownerAvatar"
- :alt="ownerName"
- class="h-6 w-6 shrink-0 aspect-square rounded-full border border-border object-cover"
- />
- <span
- class="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background shadow-lg group-hover/avatar:block"
- >
- {{ ownerName }}
- </span>
- </span>
- </template>
- </VEntityField>
- <VEntityField v-if="post.status === 'draft'" class="shrink-0">
- <template #description>
- <VStatusDot state="warning" text="未发布" />
- </template>
- </VEntityField>
- <VEntityField v-else-if="post.status === 'trashed'" class="shrink-0">
- <template #description>
- <VStatusDot state="error" text="已删除" />
- </template>
- </VEntityField>
- <VEntityField v-else class="shrink-0" description="已发布" />
- <VEntityField>
- <template #description>
- <Icon
- icon="ri:eye-line"
- class="cursor-pointer text-sm text-text-quaternary transition-all hover:text-primary"
- title="公开访问"
- />
- </template>
- </VEntityField>
- <VEntityField class="shrink-0">
- <template #description>
- <span class="whitespace-nowrap text-xs tabular-nums text-text-tertiary">
- {{ formatDate(post.created_at) }}
- </span>
- </template>
- </VEntityField>
- </template>
- <template #dropdownItems>
- <div class="relative">
- <div
- class="cursor-pointer rounded p-1 transition-all hover:bg-accent hover:text-primary"
- @click.stop="menuOpenSlug = menuOpenSlug === post.slug ? null : post.slug"
- >
- <Icon icon="ri:more-fill" />
- </div>
- <Transition name="fade">
- <div
- v-if="menuOpenSlug === post.slug"
- class="absolute right-0 top-full z-30 mt-1 w-32 rounded-base border border-border bg-card p-2 shadow-lg"
- @click.stop
- >
- <template v-if="isTrashed">
- <VButton block type="secondary" size="sm" @click="handleRestore(post)">恢复</VButton>
- <div class="mt-2">
- <VButton block type="danger" size="sm" @click="handlePurge(post)">彻底删除</VButton>
- </div>
- </template>
- <template v-else>
- <VButton block type="secondary" size="sm" @click="menuOpenSlug = null; router.push(`/posts/edit/${post.slug}`)">
- 编辑
- </VButton>
- <div class="mt-2">
- <VButton block type="secondary" size="sm" @click="handleCreateShare(post)">创建分享链接</VButton>
- </div>
- <div class="mt-2">
- <VButton block type="danger" size="sm" @click="handleDelete(post)">删除</VButton>
- </div>
- </template>
- </div>
- </Transition>
- </div>
- </template>
- </VEntity>
- </VEntityContainer>
- </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:checkbox-circle-line" />
+          </div>
+          <div>
+            <div class="stats-label">已公开发布</div>
+            <div class="stats-value text-[#30D158]">{{ stats.pubCount }} <span class="stats-sub">篇在线查阅</span></div>
+          </div>
+        </div>
 
- <!-- 移动端卡片列表 -->
- <div class="sm:hidden post-card-list">
- <div
- v-for="post in posts"
- :key="post.slug"
- class="post-card"
- :class="{ 'is-selected': checkSelection(post.slug) }"
- @click="router.push(`/posts/edit/${post.slug}`)"
- >
- <!-- 选择框 + 封面 + 标题 -->
- <div class="flex gap-3">
- <div class="flex shrink-0 items-start pt-1">
- <input
- :checked="checkSelection(post.slug)"
- class="h-4 w-4 rounded border-border-strong text-primary"
- type="checkbox"
- @click.stop
- @change="toggleSelection(post.slug)"
- />
- </div>
- <div v-if="post.cover" class="shrink-0">
- <div class="w-16 overflow-hidden rounded-md" style="aspect-ratio: 3/2">
- <img loading="lazy" class="h-full w-full object-cover" :src="post.cover" :alt="post.title" />
- </div>
- </div>
- <div class="min-w-0 flex-1">
- <div class="flex items-start gap-1">
- <Icon v-if="post.pinned" icon="ri:pushpin-2-fill" class="mt-0.5 shrink-0 text-xs text-state-error" />
- <h3 class="line-clamp-2 flex-1 text-sm font-medium text-foreground">
- {{ post.title || post.slug }}
- </h3>
- </div>
- <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
- <span v-if="post.status === 'draft'" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
- <span class="h-1.5 w-1.5 rounded-full bg-state-warning"></span>
- 草稿
- </span>
- <span v-else-if="post.status === 'trashed'" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
- <span class="h-1.5 w-1.5 rounded-full bg-state-error"></span>
- 已删除
- </span>
- <span v-else class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
- <span class="h-1.5 w-1.5 rounded-full bg-state-success"></span>
- 已发布
- </span>
- <span v-if="post.has_draft && post.status === 'published'" class="text-state-success">
- · 有未发布更改
- </span>
- </div>
- </div>
- </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
+            <Icon icon="ri:draft-line" />
+          </div>
+          <div>
+            <div class="stats-label">草稿箱</div>
+            <div class="stats-value text-[#FF9500]">{{ stats.draftCount }} <span class="stats-sub">篇未发布</span></div>
+          </div>
+        </div>
 
- <!-- 元信息：分类/标签/浏览量 -->
- <div class="mt-2 pl-7">
- <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
- <span v-if="post.category">
- {{ post.categories?.length ? post.categories.join(" / ") : post.category }}
- </span>
- <span>{{ post.views || 0 }} 阅读</span>
- <span>{{ formatDate(post.created_at) }}</span>
- </div>
- <div v-if="tagsOf(post).length" class="mt-1.5 flex flex-wrap gap-1">
- <span
- v-for="tag in tagsOf(post)"
- :key="tag"
- class="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-text-tertiary"
- >
- #{{ tag }}
- </span>
- </div>
- </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
+            <Icon icon="ri:pushpin-line" />
+          </div>
+          <div>
+            <div class="stats-label">置顶推荐</div>
+            <div class="stats-value">{{ stats.pinCount }} <span class="stats-sub">篇精选置顶</span></div>
+          </div>
+        </div>
+      </div>
 
- <!-- 底部操作栏 -->
- <div class="mt-2 flex items-center justify-end gap-1 border-t border-border pt-2 pl-7">
- <button
- class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
- title="在前台打开"
- @click.stop="openPost(post.slug)"
- >
- <Icon icon="ri:external-link-line" class="text-base" />
- </button>
- <button
- class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
- title="编辑"
- @click.stop="router.push(`/posts/edit/${post.slug}`)"
- >
- <Icon icon="ri:edit-2-line" class="text-base" />
- </button>
- <button
- class="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
- title="更多"
- @click.stop="menuOpenSlug = menuOpenSlug === post.slug ? null : post.slug"
- >
- <Icon icon="ri:more-fill" class="text-base" />
- </button>
- </div>
+      <!-- 工具栏：状态分段 + 筛选 + 视图模式 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+        <!-- 状态分段 -->
+        <div class="apple-segmented">
+          <button
+            type="button"
+            :class="{ active: selectedStatus === undefined }"
+            @click="selectedStatus = undefined; page = 1"
+          >
+            全部
+          </button>
+          <button
+            type="button"
+            :class="{ active: selectedStatus === 'published' }"
+            @click="selectedStatus = 'published'; page = 1"
+          >
+            已发布
+          </button>
+          <button
+            type="button"
+            :class="{ active: selectedStatus === 'draft' }"
+            @click="selectedStatus = 'draft'; page = 1"
+          >
+            草稿
+          </button>
+          <button
+            type="button"
+            :class="{ active: selectedStatus === 'trashed' }"
+            @click="selectedStatus = 'trashed'; page = 1"
+          >
+            回收站
+          </button>
+        </div>
 
- <!-- 更多菜单 -->
- <Transition name="fade">
- <div
- v-if="menuOpenSlug === post.slug"
- class="absolute right-3 bottom-12 z-30 w-32 rounded-base border border-border bg-card p-2 shadow-xl"
- @click.stop
- >
- <template v-if="isTrashed">
- <VButton block type="secondary" size="sm" @click="handleRestore(post)">恢复</VButton>
- <div class="mt-2">
- <VButton block type="danger" size="sm" @click="handlePurge(post)">彻底删除</VButton>
- </div>
- </template>
- <template v-else>
- <VButton block type="secondary" size="sm" @click="menuOpenSlug = null; router.push(`/posts/edit/${post.slug}`)">
- 编辑
- </VButton>
- <div class="mt-2">
- <VButton block type="secondary" size="sm" @click="handleCreateShare(post)">分享链接</VButton>
- </div>
- <div class="mt-2">
- <VButton block type="danger" size="sm" @click="handleDelete(post)">删除</VButton>
- </div>
- </template>
- </div>
- </Transition>
- </div>
- </div>
- </div>
+        <!-- 筛选器与视图 -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- 分类下拉 -->
+          <select v-model="selectedCategory" class="apple-select text-xs h-8">
+            <option :value="undefined">全部分类</option>
+            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+          </select>
 
- <!-- Footer: pagination -->
- <template #footer>
- <div class="post-pagination bg-card sm:flex sm:items-center sm:justify-end">
- <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 30, 50, 100]" />
- </div>
- </template>
- </VCard>
- </div>
+          <!-- 标签下拉 -->
+          <select v-model="selectedTag" class="apple-select text-xs h-8">
+            <option :value="undefined">全部标签</option>
+            <option v-for="t in tags" :key="t" :value="t">{{ t }}</option>
+          </select>
 
- <!-- 创建分享链接弹窗 -->
- <VModal
- v-model:visible="showShareModal"
- :title="shareResultUrl ? '分享链接已创建' : '创建分享链接'"
- :width="520"
- >
- <!-- 表单状态 -->
- <div v-if="!shareResultUrl" class="space-y-4">
- <div>
- <label class="mb-1 block text-xs text-text-tertiary">分享类型</label>
- <select v-model="shareForm.share_type" :class="inputCls">
- <option value="published">已发布版本</option>
- <option value="draft">草稿版本</option>
- </select>
- </div>
- <div>
- <label class="mb-1 block text-xs text-text-tertiary">过期时间（可选）</label>
- <input v-model="shareForm.expires_at" type="datetime-local" :class="inputCls" />
- </div>
- </div>
- <!-- 结果状态：展示生成的链接 -->
- <div v-else class="space-y-3">
- <p class="text-sm text-text-tertiary">分享链接已生成，可复制或直接打开：</p>
- <div
- class="flex items-center gap-2 rounded-base border border-border bg-secondary px-3 py-2"
- >
- <span class="flex-1 truncate text-sm text-primary">{{ shareResultUrl }}</span>
- <VButton size="sm" type="secondary" @click="handleCopyShareUrl">复制</VButton>
- </div>
- <a :href="shareResultUrl" target="_blank" class="inline-block text-xs text-primary hover:underline">
- 在新标签页打开 →
- </a>
- </div>
- <template #footer>
- <div class="flex justify-end gap-2">
- <VButton v-if="!shareResultUrl" @click="showShareModal = false">取消</VButton>
- <VButton v-if="!shareResultUrl" type="secondary" :loading="shareCreating" @click="handleShareCreate">创建</VButton>
- <VButton v-else type="secondary" @click="showShareModal = false">完成</VButton>
- </div>
- </template>
- </VModal>
- </div>
+          <!-- 排序 -->
+          <select v-model="selectedSort" class="apple-select text-xs h-8">
+            <option value="newest">最近创建</option>
+            <option value="updated">最近更新</option>
+            <option value="oldest">最早创建</option>
+          </select>
+
+          <button
+            type="button"
+            class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
+            @click="selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
+          >
+            {{ selectedSlugs.size === posts.length ? '取消全选' : '全选本页' }}
+          </button>
+
+          <div class="apple-segmented">
+            <button
+              type="button"
+              :class="{ active: viewMode === 'grid' }"
+              title="海报卡片视图"
+              @click="viewMode = 'grid'"
+            >
+              <Icon icon="ri:layout-grid-line" />
+            </button>
+            <button
+              type="button"
+              :class="{ active: viewMode === 'table' }"
+              title="表格视图"
+              @click="viewMode = 'table'"
+            >
+              <Icon icon="ri:table-line" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <VLoading v-if="isLoading" />
+
+      <VEmpty
+        v-else-if="posts.length === 0"
+        :title="keyword ? '未找到匹配的文章' : '暂无对应文章'"
+        :message="keyword ? '换个搜索关键词试试' : '点击右上角「撰写文章」创作你的第一篇博文'"
+      />
+
+      <!-- ============ 模式 1：海报卡片网格 ============ -->
+      <div
+        v-else-if="viewMode === 'grid'"
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
+        <div
+          v-for="p in posts"
+          :key="p.slug"
+          class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-border-strong sm:p-0"
+          :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedSlugs.has(p.slug) }"
+        >
+          <!-- 封面图 / 渐变区域 -->
+          <div class="relative aspect-video w-full overflow-hidden bg-secondary">
+            <img
+              v-if="p.cover"
+              :src="p.cover"
+              alt=""
+              loading="lazy"
+              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <div
+              v-else
+              class="avatar-gradient-3 flex h-full w-full items-center justify-center text-4xl text-white/30"
+            >
+              <Icon icon="ri:article-line" />
+            </div>
+
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+            <!-- 顶部多选与置顶徽章 -->
+            <div class="absolute left-2.5 top-2.5 flex items-center gap-1.5" @click.stop>
+              <input
+                type="checkbox"
+                :checked="selectedSlugs.has(p.slug)"
+                class="h-4 w-4 rounded border-border text-primary cursor-pointer"
+                @change="toggleSelect(p.slug)"
+              />
+              <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white flex items-center gap-0.5">
+                <Icon icon="ri:pushpin-fill" /> 置顶
+              </span>
+            </div>
+
+            <!-- 右上角状态 -->
+            <span
+              class="absolute right-2.5 top-2.5 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-md"
+              :class="statusBadge(p.status).cls"
+            >
+              {{ statusBadge(p.status).label }}
+            </span>
+
+            <!-- 底部浮层标题 -->
+            <div class="absolute bottom-2.5 left-3 right-3 text-white">
+              <h3
+                class="truncate text-sm font-bold transition-colors group-hover:text-primary cursor-pointer"
+                :title="p.title"
+                @click="router.push(`/posts/edit/${p.slug}`)"
+              >
+                {{ p.title }}
+              </h3>
+            </div>
+          </div>
+
+          <!-- 卡片正文信息 -->
+          <div class="p-3.5 flex flex-col justify-between flex-1">
+            <div>
+              <p v-if="p.summary" class="line-clamp-2 text-xs text-text-tertiary leading-relaxed mb-2.5">
+                {{ p.summary }}
+              </p>
+
+              <div class="flex flex-wrap items-center gap-1.5 mb-3">
+                <span v-if="p.category" class="rounded bg-secondary px-2 py-0.5 text-[10px] text-text-secondary">
+                  📁 {{ p.category }}
+                </span>
+                <span
+                  v-for="t in (p.tags || []).slice(0, 2)"
+                  :key="t"
+                  class="rounded bg-secondary/60 px-1.5 py-0.5 text-[10px] text-text-quaternary"
+                >
+                  #{{ t }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 底部时间与操作 -->
+            <div class="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary">
+              <span>{{ formatRelative(p.created_at) }}</span>
+
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  title="生成临时分享链接"
+                  @click="openShareModal(p)"
+                >
+                  <Icon icon="ri:share-forward-line" />
+                </button>
+
+                <button
+                  v-if="p.status === 'published'"
+                  type="button"
+                  class="action-icon-btn"
+                  title="前台查阅"
+                  @click="openPostPreview(p.slug)"
+                >
+                  <Icon icon="ri:external-link-line" />
+                </button>
+
+                <button
+                  v-if="p.status !== 'trashed'"
+                  type="button"
+                  class="action-icon-btn"
+                  title="编辑博文"
+                  @click="router.push(`/posts/edit/${p.slug}`)"
+                >
+                  <Icon icon="ri:edit-line" />
+                </button>
+
+                <button
+                  v-if="p.status === 'trashed'"
+                  type="button"
+                  class="action-icon-btn text-primary"
+                  title="恢复博文"
+                  @click="handleRestore(p)"
+                >
+                  <Icon icon="ri:restart-line" />
+                </button>
+
+                <button
+                  v-if="p.status !== 'trashed'"
+                  type="button"
+                  class="action-icon-btn hover:text-state-error"
+                  title="移入回收站"
+                  @click="handleDelete(p)"
+                >
+                  <Icon icon="ri:delete-bin-line" />
+                </button>
+
+                <button
+                  v-if="p.status === 'trashed'"
+                  type="button"
+                  class="action-icon-btn text-state-error"
+                  title="彻底删除"
+                  @click="handlePurge(p)"
+                >
+                  <Icon icon="ri:delete-bin-7-line" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 模式 2：表格列表视图 ============ -->
+      <VCard v-else>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[800px] text-left">
+            <thead>
+              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                <th class="w-12 px-4 py-3 text-center">
+                  <input
+                    type="checkbox"
+                    :checked="selectedSlugs.size > 0 && selectedSlugs.size === posts.length"
+                    class="h-4 w-4 rounded border-border text-primary"
+                    @change="selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
+                  />
+                </th>
+                <th class="px-4 py-3">文章标题</th>
+                <th class="px-4 py-3">分类 / 标签</th>
+                <th class="px-4 py-3">状态</th>
+                <th class="px-4 py-3">更新时间</th>
+                <th class="w-40 px-4 py-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              <tr
+                v-for="p in posts"
+                :key="p.slug"
+                class="cursor-pointer transition-colors hover:bg-secondary/40"
+                :class="{ 'bg-primary/5': selectedSlugs.has(p.slug) }"
+                @click="router.push(`/posts/edit/${p.slug}`)"
+              >
+                <td class="px-4 py-3.5 text-center" @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="selectedSlugs.has(p.slug)"
+                    class="h-4 w-4 rounded border-border text-primary"
+                    @change="toggleSelect(p.slug)"
+                  />
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="p.cover"
+                      :src="p.cover"
+                      class="h-10 w-14 shrink-0 rounded-lg border border-border object-cover bg-secondary"
+                      alt=""
+                    />
+                    <div class="min-w-0">
+                      <div class="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                        <span class="truncate max-w-[320px]">{{ p.title }}</span>
+                        <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white">置顶</span>
+                      </div>
+                      <div class="text-xs font-mono text-text-quaternary">/{{ p.slug }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 text-xs text-text-secondary">
+                  <div class="flex flex-wrap items-center gap-1">
+                    <span v-if="p.category" class="rounded bg-secondary px-1.5 py-0.5 text-[10px]">
+                      {{ p.category }}
+                    </span>
+                    <span v-for="t in (p.tags || []).slice(0, 2)" :key="t" class="text-text-quaternary text-[11px]">
+                      #{{ t }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 text-xs">
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    :class="statusBadge(p.status).cls"
+                  >
+                    {{ statusBadge(p.status).label }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-xs text-text-quaternary">
+                  {{ formatRelative(p.updated_at) }}
+                </td>
+                <td class="px-4 py-3.5 text-right" @click.stop>
+                  <div class="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      class="action-icon-btn"
+                      title="分享链接"
+                      @click="openShareModal(p)"
+                    >
+                      <Icon icon="ri:share-forward-line" />
+                    </button>
+                    <button
+                      v-if="p.status === 'published'"
+                      type="button"
+                      class="action-icon-btn"
+                      title="前台查阅"
+                      @click="openPostPreview(p.slug)"
+                    >
+                      <Icon icon="ri:external-link-line" />
+                    </button>
+                    <button
+                      v-if="p.status !== 'trashed'"
+                      type="button"
+                      class="action-icon-btn"
+                      title="编辑"
+                      @click="router.push(`/posts/edit/${p.slug}`)"
+                    >
+                      <Icon icon="ri:edit-line" />
+                    </button>
+                    <button
+                      v-if="p.status === 'trashed'"
+                      type="button"
+                      class="action-icon-btn text-primary"
+                      title="恢复"
+                      @click="handleRestore(p)"
+                    >
+                      <Icon icon="ri:restart-line" />
+                    </button>
+                    <button
+                      v-if="p.status !== 'trashed'"
+                      type="button"
+                      class="action-icon-btn hover:text-state-error"
+                      title="移入回收站"
+                      @click="handleDelete(p)"
+                    >
+                      <Icon icon="ri:delete-bin-line" />
+                    </button>
+                    <button
+                      v-if="p.status === 'trashed'"
+                      type="button"
+                      class="action-icon-btn text-state-error"
+                      title="彻底删除"
+                      @click="handlePurge(p)"
+                    >
+                      <Icon icon="ri:delete-bin-7-line" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </VCard>
+
+      <!-- 分页 -->
+      <div v-if="total > size" class="flex justify-center pt-4">
+        <VPagination
+          :page="page"
+          :size="size"
+          :total="total"
+          @update:page="page = $event"
+          @update:size="size = $event"
+        />
+      </div>
+    </div>
+
+    <!-- ============ 底部批量操作浮动栏 ============ -->
+    <VFloatingDock
+      :visible="selectedSlugs.size > 0"
+      :count="selectedSlugs.size"
+      title="已选文章"
+      @clear="clearSelection"
+    >
+      <div class="flex items-center gap-2">
+        <VButton size="sm" type="danger" @click="handleBatchDelete">
+          批量移入回收站
+        </VButton>
+      </div>
+    </VFloatingDock>
+
+    <!-- ============ 生成分享链接弹窗 ============ -->
+    <VModal
+      v-model:visible="shareModalOpen"
+      title="生成临时分享链接"
+      :width="460"
+    >
+      <div class="space-y-4 text-xs">
+        <div class="rounded-xl border border-border bg-secondary/40 p-3">
+          <div class="text-text-quaternary">目标文章：</div>
+          <div class="font-bold text-foreground text-sm mt-0.5">{{ shareTarget?.title }}</div>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block font-medium text-text-tertiary">链接有效期</label>
+          <select v-model="shareDuration" class="apple-select w-full">
+            <option value="1">1 天有效</option>
+            <option value="7">7 天有效</option>
+            <option value="30">30 天有效</option>
+            <option value="0">永久有效</option>
+          </select>
+        </div>
+
+        <div v-if="generatedShareUrl" class="space-y-1.5">
+          <label class="block font-medium text-text-tertiary">已生成的分享直链</label>
+          <div class="flex items-center gap-2">
+            <input :value="generatedShareUrl" readonly class="apple-input font-mono text-xs" />
+            <VButton size="sm" @click="copyShareUrl">复制</VButton>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="shareModalOpen = false">关闭</VButton>
+          <VButton
+            v-if="!generatedShareUrl"
+            type="primary"
+            :loading="shareCreating"
+            @click="createShare"
+          >
+            生成链接
+          </VButton>
+        </div>
+      </template>
+    </VModal>
+  </div>
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
- transition: opacity var(--duration-fast) var(--ease-standard);
+/* 统计卡片 */
+.stats-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
 }
-.fade-enter-from,
-.fade-leave-to {
- opacity: 0;
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
 }
-
-/* ===== 头部操作按钮：移动端横向滚动 ===== */
-.header-actions {
- flex-wrap: nowrap;
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
 }
-
-/* 移动端筛选按钮横向滚动（不显示滚动条） */
-.filter-scroll {
- overflow-x: auto;
- -webkit-overflow-scrolling: touch;
- scrollbar-width: none;
- flex-shrink: 0;
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
 }
-.filter-scroll::-webkit-scrollbar {
- display: none;
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
 }
-
-/* ===== 移动端卡片列表 ===== */
-.post-card-list {
- padding: 0;
-}
-.post-card {
- position: relative;
- padding: 14px 16px;
- border-bottom: 1px solid var(--color-border);
- cursor: pointer;
- transition: background-color 0.15s var(--ease-standard);
-}
-.post-card:active {
- background: color-mix(in srgb, var(--color-accent) 40%, transparent);
-}
-.post-card.is-selected {
- background: var(--color-secondary);
-}
-.post-card:last-child {
- border-bottom: none;
-}
-.post-card h3 {
- margin: 0;
- line-height: 1.4;
- word-break: break-word;
-}
-/* 确保卡片内 line-clamp 生效 */
-.post-card :deep(.line-clamp-2) {
- display: -webkit-box;
- -webkit-line-clamp: 2;
- -webkit-box-orient: vertical;
- overflow: hidden;
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
 }
 
-/* ===== 移动端（S 断点：< 640px） ===== */
+/* 操作小按钮 */
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+}
+.action-icon-btn:hover {
+  background: var(--color-secondary);
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+}
+
 @media (max-width: 640px) {
- /* 头部操作按钮：横向滚动防止换行 */
- .header-actions {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  max-width: 70vw;
- }
- .header-actions::-webkit-scrollbar {
-  display: none;
- }
-
- /* 筛选区压缩 */
- .filter-scroll {
-  gap: 10px !important;
- }
-
- /* 卡片更紧凑 */
- .post-card {
-  padding: 12px 14px;
- }
- .post-card :deep(.line-clamp-2) {
-  -webkit-line-clamp: 2;
-  font-size: 14px;
- }
-
- /* 分页居中减少边距 */
- .post-pagination {
-  justify-content: center !important;
-  padding: 12px 8px !important;
- }
-}
-
-/* ===== 超小屏（XS 断点：< 420px） ===== */
-@media (max-width: 420px) {
- /* 筛选头部进一步压缩 */
- :deep(.card-header > div) {
-  padding: 10px 12px !important;
-  gap: 10px !important;
- }
-
- /* 搜索框更紧凑 */
- :deep(.apple-input) {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
-  font-size: 13px !important;
- }
-
- /* 筛选标签更紧凑 */
- :deep(.filter-tag) {
-  padding: 3px 8px !important;
-  font-size: 11px !important;
- }
-
- /* 批量操作栏 */
- .post-card-list + div,
- .card-body > div:first-child {
-  gap: 8px !important;
- }
- :deep(.v-button.size-sm) {
-  padding: 5px 10px !important;
-  font-size: 12px !important;
- }
-
- /* 卡片极致紧凑 */
- .post-card {
-  padding: 10px 12px;
- }
- .post-card h3 {
-  font-size: 13px !important;
-  line-height: 1.35 !important;
- }
-
- /* 卡片封面缩小（限定带 shrink-0 的封面容器，避免无封面时误伤内容区标题行） */
- .post-card > div:first-child > div:nth-child(2).shrink-0 > div {
-  width: 56px !important;
- }
-
- /* 元信息字体缩小 */
- .post-card .mt-2 {
-  margin-top: 8px !important;
- }
- .post-card .text-xs {
-  font-size: 11px !important;
- }
-
- /* 标签 badge 缩小 */
- .post-card .rounded-md {
-  padding: 2px 6px !important;
-  font-size: 10px !important;
- }
-
- /* 底部操作栏按钮缩小 */
- .post-card .mt-2.border-t {
-  margin-top: 8px !important;
-  padding-top: 8px !important;
- }
- .post-card .h-7 {
-  height: 26px !important;
-  width: 26px !important;
- }
- .post-card .text-base {
-  font-size: 14px !important;
- }
-
- /* 分页更紧凑 */
- .post-pagination {
-  padding: 10px 6px !important;
- }
-
- /* 分享弹窗适配 */
- :deep(.modal-mask .modal-content) {
-  width: calc(100vw - 32px) !important;
-  max-width: 100% !important;
-  margin: 0 !important;
- }
- :deep(.modal-body) {
-  padding: 16px !important;
- }
- :deep(.modal-footer) {
-  padding: 12px 16px !important;
- }
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stats-value {
+    font-size: 14px;
+  }
 }
 </style>

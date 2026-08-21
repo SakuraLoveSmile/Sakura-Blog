@@ -1,31 +1,49 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { attachmentApi, attachmentGroupApi } from "@/api";
 import { formatRelative, formatBytes } from "@/lib/format";
-import { themeColors } from "@/lib/theme-colors";
 import { Icon } from "@iconify/vue";
 import {
+  VPageHeader,
   VCard,
   VButton,
   VEmpty,
   VLoading,
   VPagination,
   VModal,
-  FilterTag,
+  VFloatingDock,
   Dialog,
   Toast,
 } from "@/components/ui";
 
+interface AttachmentItem {
+  id: number;
+  filename: string;
+  url: string;
+  mime: string;
+  size: number;
+  group_id?: number;
+  created_at: string;
+  width?: number;
+  height?: number;
+}
+
+interface GroupItem {
+  id: number;
+  name: string;
+  order: number;
+  count: number;
+}
+
+interface AttachmentRefs {
+  posts?: { title: string; slug: string }[];
+  pages?: { title: string; slug: string }[];
+  moments?: { id: number }[];
+}
+
 const queryClient = useQueryClient();
-const colors = themeColors({
-  primary: "#2E8DFF",
-  chart5: "#BF5AF2",
-  warning: "#FF9F0A",
-  success: "#30D158",
-  tertiary: "#8E8E93",
-});
 
 // 搜索关键词（debounce 300ms）
 const keyword = ref("");
@@ -33,19 +51,18 @@ const debouncedKeyword = ref("");
 const page = ref(1);
 const size = ref(24);
 const uploading = ref(false);
-// 视图：grid / list
-const viewMode = ref<"grid" | "list">("grid");
+const viewMode = ref<"grid" | "table">("grid");
 
-// 类型分段筛选：all / image / document / video / audio / other
+// 类型分段筛选
 type TypeFilter = "all" | "image" | "document" | "video" | "audio" | "other";
 const typeFilter = ref<TypeFilter>("all");
-const typeFilters: { key: TypeFilter; label: string }[] = [
-  { key: "all", label: "全部" },
-  { key: "image", label: "图片" },
-  { key: "document", label: "文档" },
-  { key: "video", label: "视频" },
-  { key: "audio", label: "音频" },
-  { key: "other", label: "其他" },
+const typeFilters: { key: TypeFilter; label: string; icon: string }[] = [
+  { key: "all", label: "全部", icon: "ri:apps-line" },
+  { key: "image", label: "图片", icon: "ri:image-line" },
+  { key: "document", label: "文档", icon: "ri:file-text-line" },
+  { key: "video", label: "视频", icon: "ri:video-line" },
+  { key: "audio", label: "音频", icon: "ri:music-line" },
+  { key: "other", label: "其他", icon: "ri:more-line" },
 ];
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,15 +74,8 @@ watch(keyword, () => {
   }, 300);
 });
 
-// --- 分组（Spec 44）---
+// --- 分组管理 ---
 const activeGroup = ref<number | undefined>(undefined);
-
-interface GroupItem {
-  id: number;
-  name: string;
-  order: number;
-  count: number;
-}
 const groups = ref<GroupItem[]>([]);
 
 async function loadGroups() {
@@ -74,7 +84,6 @@ async function loadGroups() {
     groups.value = data.items || [];
   } catch {}
 }
-loadGroups();
 
 function selectGroup(g: number | undefined) {
   activeGroup.value = g;
@@ -82,84 +91,11 @@ function selectGroup(g: number | undefined) {
   clearSelection();
 }
 
-const activeGroupName = computed(() => {
-  if (activeGroup.value === undefined) return "全部";
-  if (activeGroup.value === 0) return "未分组";
-  return groups.value.find((g) => g.id === activeGroup.value)?.name || "分组";
-});
-
-const queryParams = computed(() => {
-  const params: Record<string, unknown> = { page: page.value, size: size.value };
-  if (debouncedKeyword.value.trim()) params.keyword = debouncedKeyword.value.trim();
-  // 保留后端 kind 过滤：image / other（仅图片 / 非图片），其他分段在前端过滤
-  if (typeFilter.value === "image") params.kind = "image";
-  else if (typeFilter.value !== "all") params.kind = "other";
-  if (activeGroup.value !== undefined) params.group = activeGroup.value;
-  return params;
-});
-
-const { data: queryData, isLoading, refetch } = useQuery({
-  queryKey: computed(() => queryKeys.attachments(queryParams.value)),
-  queryFn: () => attachmentApi.list(queryParams.value).then(({ data }) => data),
-});
-
-const attachments = computed<any[]>(() => queryData.value?.items || []);
-const total = computed(() => queryData.value?.total || 0);
-
-// 前端按 mime 精确分类（后端 kind 只区分 image/other，细分在前端完成）
-function categoryOf(mime: string): TypeFilter {
-  if (!mime) return "other";
-  if (mime.startsWith("image/")) return "image";
-  if (mime.startsWith("video/")) return "video";
-  if (mime.startsWith("audio/")) return "audio";
-  if (
-    mime.startsWith("text/") ||
-    mime.includes("pdf") ||
-    mime.includes("word") ||
-    mime.includes("excel") ||
-    mime.includes("powerpoint") ||
-    mime.includes("document") ||
-    mime.includes("sheet") ||
-    mime.includes("presentation") ||
-    mime.includes("markdown") ||
-    mime.includes("json") ||
-    mime.includes("xml")
-  ) {
-    return "document";
-  }
-  return "other";
-}
-
-const displayedAttachments = computed(() => {
-  if (typeFilter.value === "all" || typeFilter.value === "image") return attachments.value;
-  return attachments.value.filter((a) => categoryOf(a.mime) === typeFilter.value);
-});
-
-function invalidateAll() {
-  queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
-  loadGroups();
-}
-
-async function handleUpload(e: Event) {
-  const input = e.target as HTMLInputElement;
-  if (!input.files?.length) return;
-  uploading.value = true;
-  try {
-    const gid = activeGroup.value && activeGroup.value > 0 ? activeGroup.value : undefined;
-    await attachmentApi.upload(input.files[0], gid);
-    invalidateAll();
-    Toast.success("上传成功");
-  } catch {} finally {
-    uploading.value = false;
-    input.value = "";
-  }
-}
-
-// --- 分组管理 ---
 const groupModalVisible = ref(false);
 const groupModalMode = ref<"create" | "rename">("create");
 const groupModalName = ref("");
 const groupModalTarget = ref<GroupItem | null>(null);
+const groupSaving = ref(false);
 
 function openCreateGroup() {
   groupModalMode.value = "create";
@@ -181,1405 +117,962 @@ async function submitGroup() {
     Toast.warning("请输入分组名称");
     return;
   }
+  groupSaving.value = true;
   try {
     if (groupModalMode.value === "create") {
-      await attachmentGroupApi.create({ name, order: groups.value.length });
+      await attachmentGroupApi.create({ name });
       Toast.success("分组已创建");
     } else if (groupModalTarget.value) {
-      await attachmentGroupApi.update(groupModalTarget.value.id, {
-        name,
-        order: groupModalTarget.value.order,
-      });
+      await attachmentGroupApi.update(groupModalTarget.value.id, { name });
       Toast.success("分组已重命名");
     }
     groupModalVisible.value = false;
     await loadGroups();
-  } catch {}
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "操作失败");
+  } finally {
+    groupSaving.value = false;
+  }
 }
 
-function requestDeleteGroup(g: GroupItem) {
+function handleDeleteGroup(g: GroupItem) {
   Dialog.warning({
     title: `确定删除分组「${g.name}」吗？`,
-    description: "组内附件将归入未分组，文件本身不会被删除。",
+    description: "该分组下的附件将自动移至「未分组」，文件本身不会被删除。",
     confirmType: "danger",
     onConfirm: async () => {
-      await attachmentGroupApi.delete(g.id);
-      if (activeGroup.value === g.id) selectGroup(undefined);
-      invalidateAll();
-      Toast.success("分组已删除");
+      try {
+        await attachmentGroupApi.delete(g.id);
+        if (activeGroup.value === g.id) activeGroup.value = undefined;
+        await loadGroups();
+        queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+        Toast.success("分组已删除");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "删除失败");
+      }
     },
   });
 }
 
-// --- 多选批量移动 ---
-const selectedIds = ref<number[]>([]);
-const checkedAll = ref(false);
-
-watch(selectedIds, (val) => {
-  checkedAll.value = val.length === displayedAttachments.value.length && val.length > 0;
+// --- 数据查询 ---
+const queryParams = computed(() => {
+  const params: Record<string, unknown> = { page: page.value, size: size.value };
+  if (debouncedKeyword.value.trim()) params.keyword = debouncedKeyword.value.trim();
+  if (typeFilter.value === "image") params.kind = "image";
+  else if (typeFilter.value !== "all") params.kind = "other";
+  if (activeGroup.value !== undefined) params.group = activeGroup.value;
+  return params;
 });
 
-function handleCheckAllChange(e: Event) {
-  const { checked } = e.target as HTMLInputElement;
-  selectedIds.value = checked ? displayedAttachments.value.map((a: any) => a.id) : [];
-}
-
-function checkSelection(id: number) {
-  return selectedIds.value.includes(id);
-}
-
-function toggleSelection(id: number) {
-  if (checkSelection(id)) {
-    selectedIds.value = selectedIds.value.filter((i) => i !== id);
-  } else {
-    selectedIds.value = [...selectedIds.value, id];
-  }
-}
-
-function clearSelection() {
-  selectedIds.value = [];
-}
-
-// 批量移动弹窗
-const moveVisible = ref(false);
-
-async function moveTo(groupId: number) {
-  if (!selectedIds.value.length) return;
-  try {
-    const { data } = await attachmentApi.move([...selectedIds.value], groupId);
-    moveVisible.value = false;
-    clearSelection();
-    invalidateAll();
-    Toast.success(`已移动 ${data.moved ?? 0} 项`);
-  } catch {}
-}
-
-// 详情弹窗
-const detailVisible = ref(false);
-const detailItem = ref<any | null>(null);
-const detailRefs = ref<any[]>([]);
-const refsLoading = ref(false);
-
-async function openDetail(att: any) {
-  detailItem.value = att;
-  detailRefs.value = [];
-  detailVisible.value = true;
-  refsLoading.value = true;
-  try {
-    const { data } = await attachmentApi.refs(att.id);
-    detailRefs.value = data.refs || [];
-  } catch {} finally {
-    refsLoading.value = false;
-  }
-}
-
-// 下载附件
-function handleDownload(att: any) {
-  if (!att?.url) return;
-  const a = document.createElement("a");
-  a.href = att.url;
-  a.download = att.filename || "";
-  a.target = "_blank";
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// 删除（带引用警告）
-const deleteVisible = ref(false);
-const deleteTarget = ref<any | null>(null);
-const deleteRefs = ref<any[]>([]);
-const deleteRefsLoading = ref(false);
-
-async function requestDelete(att: any) {
-  deleteTarget.value = att;
-  deleteRefs.value = [];
-  deleteVisible.value = true;
-  deleteRefsLoading.value = true;
-  try {
-    const { data } = await attachmentApi.refs(att.id);
-    deleteRefs.value = data.refs || [];
-  } catch {} finally {
-    deleteRefsLoading.value = false;
-  }
-}
-
-async function confirmDelete() {
-  if (!deleteTarget.value) return;
-  const target = deleteTarget.value;
-  await attachmentApi.delete(target.id);
-  deleteVisible.value = false;
-  if (detailItem.value?.id === target.id) detailVisible.value = false;
-  deleteTarget.value = null;
-  invalidateAll();
-  Toast.success("删除成功");
-}
-
-
-function isImage(mime: string) {
-  return mime?.startsWith("image/");
-}
-
-function isVideo(mime: string) {
-  return mime?.startsWith("video/");
-}
-
-// 文件扩展名（大写展示）
-function extOf(att: any): string {
-  const name: string = att?.filename || "";
-  const dot = name.lastIndexOf(".");
-  if (dot >= 0 && dot < name.length - 1) return name.slice(dot + 1).toUpperCase();
-  if (att?.mime) {
-    const sub = att.mime.split("/")[1];
-    return sub ? sub.toUpperCase().slice(0, 4) : "FILE";
-  }
-  return "FILE";
-}
-
-
-// 预览背景复用全局头像渐变，确保附件、评论和通知的色板一致。
-function previewGradientClass(id: number): string {
-  return `avatar-gradient-${(Math.abs(Number(id) || 0) % 8) + 1}`;
-}
-
-// --- 存储空间统计（基于当前页附件 computed 派生） ---
-type StorageCat = "image" | "document" | "video" | "audio" | "other";
-const STORAGE_META: Record<StorageCat, { label: string; color: string }> = {
-  image: { label: "图片", color: colors.primary },
-  document: { label: "文档", color: colors.success },
-  video: { label: "视频", color: colors.chart5 },
-  audio: { label: "音频", color: colors.warning },
-  other: { label: "其他", color: colors.tertiary },
-};
-
-const storageStats = computed(() => {
-  const buckets: Record<StorageCat, number> = {
-    image: 0,
-    document: 0,
-    video: 0,
-    audio: 0,
-    other: 0,
-  };
-  for (const a of attachments.value) {
-    const cat = categoryOf(a.mime) as StorageCat;
-    buckets[cat] += Number(a.size) || 0;
-  }
-  const total = Object.values(buckets).reduce((s, v) => s + v, 0);
-  // 估算总容量：已用的 4 倍，下限 1GB（无后端总容量字段时的占位）
-  const estimatedQuota = Math.max(total * 4, 1073741824);
-  return { buckets, total, quota: estimatedQuota };
+const { data: queryData, isLoading, refetch } = useQuery({
+  queryKey: computed(() => queryKeys.attachments(queryParams.value)),
+  queryFn: () => attachmentApi.list(queryParams.value).then(({ data }) => data),
 });
 
-const storagePercent = computed(() => {
-  const { total, quota } = storageStats.value;
-  if (!quota) return 0;
-  return Math.min(100, Math.round((total / quota) * 1000) / 10);
-});
+const rawAttachments = computed<AttachmentItem[]>(() => (queryData.value?.items || []) as AttachmentItem[]);
+const total = computed(() => queryData.value?.total || 0);
 
-// 多色渐变进度条：按各分类占比分段
-const storageGradient = computed(() => {
-  const { buckets, total } = storageStats.value;
-  if (!total) return "var(--color-accent)";
-  const order: StorageCat[] = ["image", "document", "video", "audio", "other"];
-  let acc = 0;
-  const stops: string[] = [];
-  for (const cat of order) {
-    const v = buckets[cat];
-    if (!v) continue;
-    const start = (acc / total) * 100;
-    acc += v;
-    const end = (acc / total) * 100;
-    stops.push(`${STORAGE_META[cat].color} ${start.toFixed(2)}%, ${STORAGE_META[cat].color} ${end.toFixed(2)}%`);
-  }
-  return `linear-gradient(90deg, ${stops.join(", ")})`;
-});
-
-const storageBreakdown = computed(() => {
-  const { buckets, total } = storageStats.value;
-  const order: StorageCat[] = ["image", "document", "video", "audio", "other"];
-  return order
-    .map((cat) => ({
-      key: cat,
-      label: STORAGE_META[cat].label,
-      color: STORAGE_META[cat].color,
-      size: buckets[cat],
-      percent: total ? Math.round((buckets[cat] / total) * 1000) / 10 : 0,
-    }))
-    .filter((x) => x.size > 0);
-});
-
-function handleFilterChangeLocal() {
-  page.value = 1;
-  clearSelection();
-}
-
-function typeLabel(mime: string): string {
-  if (!mime) return "其他";
-  if (mime.startsWith("image/")) return "图片";
-  if (mime.startsWith("video/")) return "视频";
-  if (mime.startsWith("audio/")) return "音频";
+function categoryOf(mime: string): TypeFilter {
+  if (!mime) return "other";
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
   if (
     mime.startsWith("text/") ||
     mime.includes("pdf") ||
     mime.includes("word") ||
-    mime.includes("document")
+    mime.includes("excel") ||
+    mime.includes("presentation") ||
+    mime.includes("markdown") ||
+    mime.includes("json") ||
+    mime.includes("xml")
   ) {
-    return "文档";
+    return "document";
   }
-  return "其他";
+  return "other";
 }
 
-function typePillStyle(mime: string) {
-  let color = colors.tertiary;
-  if (mime?.startsWith("image/")) color = colors.primary;
-  else if (mime?.startsWith("video/")) color = colors.chart5;
-  else if (mime?.startsWith("audio/")) color = colors.warning;
-  else if (
-    mime?.startsWith("text/") ||
-    mime?.includes("pdf") ||
-    mime?.includes("document")
-  ) {
-    color = colors.success;
+const attachments = computed(() => {
+  if (typeFilter.value === "all" || typeFilter.value === "image") return rawAttachments.value;
+  return rawAttachments.value.filter((a) => categoryOf(a.mime) === typeFilter.value);
+});
+
+// ---------- 统计数据 ----------
+const stats = computed(() => {
+  const all = rawAttachments.value;
+  let totalBytes = 0;
+  let imgCount = 0;
+  let mediaCount = 0;
+  for (const a of all) {
+    totalBytes += a.size || 0;
+    const cat = categoryOf(a.mime);
+    if (cat === "image") imgCount++;
+    else if (cat === "video" || cat === "audio" || cat === "document") mediaCount++;
   }
   return {
-    backgroundColor: `${color}1A`,
-    color,
+    total: total.value,
+    totalBytes: formatBytes(totalBytes),
+    imgCount,
+    mediaCount,
   };
+});
+
+// --- 上传管理 ---
+const fileInput = ref<HTMLInputElement | null>(null);
+const isDragging = ref(false);
+
+async function handleUploadFiles(files: FileList | File[]) {
+  if (!files.length) return;
+  uploading.value = true;
+  let okCount = 0;
+  try {
+    const gid = activeGroup.value && activeGroup.value > 0 ? activeGroup.value : undefined;
+    for (const file of Array.from(files)) {
+      await attachmentApi.upload(file, gid);
+      okCount++;
+    }
+    Toast.success(`成功上传 ${okCount} 个文件`);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+    await loadGroups();
+    await refetch();
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "部分文件上传失败");
+  } finally {
+    uploading.value = false;
+    if (fileInput.value) fileInput.value.value = "";
+  }
+}
+
+function onFileChange(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (input.files?.length) {
+    handleUploadFiles(input.files);
+  }
+}
+
+// 拖拽监听
+function onDragOver(e: DragEvent) {
+  e.preventDefault();
+  isDragging.value = true;
+}
+
+function onDragLeave(e: DragEvent) {
+  e.preventDefault();
+  isDragging.value = false;
+}
+
+function onDrop(e: DragEvent) {
+  e.preventDefault();
+  isDragging.value = false;
+  if (e.dataTransfer?.files?.length) {
+    handleUploadFiles(e.dataTransfer.files);
+  }
+}
+
+onMounted(() => {
+  loadGroups();
+  window.addEventListener("dragover", onDragOver);
+  window.addEventListener("dragleave", onDragLeave);
+  window.addEventListener("drop", onDrop);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("dragover", onDragOver);
+  window.removeEventListener("dragleave", onDragLeave);
+  window.removeEventListener("drop", onDrop);
+});
+
+// --- 批量选择 ---
+const selectedIds = ref<Set<number>>(new Set());
+const batchMoving = ref(false);
+const batchTargetGroup = ref<number | "">("");
+
+function toggleSelect(id: number) {
+  if (selectedIds.value.has(id)) selectedIds.value.delete(id);
+  else selectedIds.value.add(id);
+}
+
+function selectAll() {
+  for (const a of attachments.value) selectedIds.value.add(a.id);
+}
+
+function clearSelection() {
+  selectedIds.value.clear();
+  batchTargetGroup.value = "";
+}
+
+async function batchDelete() {
+  const ids = Array.from(selectedIds.value);
+  if (ids.length === 0) return;
+  Dialog.warning({
+    title: `确定批量删除选中的 ${ids.length} 个附件吗？`,
+    description: "删除后磁盘中的实体文件将被清理，不可恢复。",
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await Promise.all(ids.map((id) => attachmentApi.delete(id)));
+        clearSelection();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+        await loadGroups();
+        await refetch();
+        Toast.success("批量删除成功");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "部分文件删除失败");
+      }
+    },
+  });
+}
+
+async function batchMove() {
+  if (batchTargetGroup.value === "") {
+    Toast.warning("请选择目标分组");
+    return;
+  }
+  const ids = Array.from(selectedIds.value);
+  batchMoving.value = true;
+  try {
+    await attachmentApi.move(ids, Number(batchTargetGroup.value));
+    clearSelection();
+    await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+    await loadGroups();
+    await refetch();
+    Toast.success(`已将 ${ids.length} 个附件移至新分组`);
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "批量移动失败");
+  } finally {
+    batchMoving.value = false;
+  }
+}
+
+// --- 详情抽屉 ---
+const detailItem = ref<AttachmentItem | null>(null);
+const detailRefs = ref<AttachmentRefs | null>(null);
+const detailRefsLoading = ref(false);
+
+async function openDetail(item: AttachmentItem) {
+  detailItem.value = item;
+  detailRefs.value = null;
+  detailRefsLoading.value = true;
+  try {
+    const { data } = await attachmentApi.refs(item.id);
+    detailRefs.value = data;
+  } catch {} finally {
+    detailRefsLoading.value = false;
+  }
+}
+
+function closeDetail() {
+  detailItem.value = null;
+}
+
+function copyText(text: string, msg = "已复制到剪贴板") {
+  navigator.clipboard.writeText(text).then(() => Toast.success(msg));
+}
+
+function handleDeleteSingle(item: AttachmentItem) {
+  Dialog.warning({
+    title: `确定删除附件「${item.filename}」吗？`,
+    description: "删除后不可恢复。",
+    confirmType: "danger",
+    onConfirm: async () => {
+      try {
+        await attachmentApi.delete(item.id);
+        selectedIds.value.delete(item.id);
+        if (detailItem.value?.id === item.id) closeDetail();
+        await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+        await loadGroups();
+        await refetch();
+        Toast.success("已删除");
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || "删除失败");
+      }
+    },
+  });
+}
+
+function formatMimeBadge(mime: string): string {
+  if (!mime) return "FILE";
+  const sub = mime.split("/")[1] || mime;
+  return sub.toUpperCase().slice(0, 5);
 }
 </script>
 
 <template>
-  <div class="attachments-page min-h-full">
-    <!-- ===== Page Header ===== -->
-    <header class="attachments-page-header !px-4 !py-4 sm:!px-5 sm:!py-5">
-      <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[26px]">附件管理</h1>
-        <p class="text-[12px] text-text-tertiary sm:text-[13px]">
-          共 {{ total }} 个文件 · 已使用 {{ formatBytes(storageStats.total) }}
-        </p>
-      </div>
-      <div class="flex items-center gap-1.5 sm:gap-2.5">
-        <label class="apple-upload-btn !h-8 !px-2.5 !text-xs sm:!h-auto sm:!px-4 sm:!text-[13px]">
-          <span class="flex items-center gap-1.5">
-            <Icon icon="ri:upload-2-line" class="text-sm sm:text-[15px]" />
-            <span class="sm:inline hidden">上传附件{{ activeGroup && activeGroup > 0 ? `到「${activeGroupName}」` : "" }}</span>
-            <span class="sm:hidden">上传</span>
-          </span>
-          <input type="file" class="hidden" :disabled="uploading" @change="handleUpload" />
-        </label>
-      </div>
-    </header>
+  <div class="min-h-full">
+    <!-- 统一 Page Header -->
+    <VPageHeader title="媒体库">
+      <template #icon>
+        <Icon icon="ri:image-line" class="text-primary" />
+      </template>
+      <template #subtitle>管理博客全部图片、音视频与文档附件，支持分组合辑与快速直链</template>
+      <template #actions>
+        <div class="apple-search min-w-[200px] max-w-[280px]">
+          <Icon icon="ri:search-line" class="text-text-quaternary" />
+          <input v-model="keyword" placeholder="搜索文件名或 URL..." />
+          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <Icon icon="ri:close-line" />
+          </button>
+        </div>
 
-    <!-- ===== Content Area ===== -->
-    <div class="attachments-content-area !px-4 sm:!px-5">
-      <div class="flex flex-col gap-3 sm:gap-4 lg:flex-row">
-        <!-- 左侧分组栏（桌面端侧边栏，移动端紧凑横排） -->
-        <aside class="w-full shrink-0 lg:w-56">
-          <VCard :body-class="['!p-0']">
-            <div class="flex items-center justify-between border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
-              <span class="text-xs font-semibold text-foreground sm:text-[13px]">分组</span>
+        <VButton @click="openCreateGroup">
+          <template #icon><Icon icon="ri:folder-add-line" /></template>
+          新建分组
+        </VButton>
+
+        <input
+          ref="fileInput"
+          type="file"
+          multiple
+          class="hidden"
+          @change="onFileChange"
+        />
+
+        <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
+          <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
+          上传附件
+        </VButton>
+      </template>
+    </VPageHeader>
+
+    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div class="stats-card">
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:attachment-line" />
+          </div>
+          <div>
+            <div class="stats-label">全部附件</div>
+            <div class="stats-value">{{ stats.total }} <span class="stats-sub">个实体文件</span></div>
+          </div>
+        </div>
+
+        <div class="stats-card">
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:hard-drive-2-line" />
+          </div>
+          <div>
+            <div class="stats-label">当前列表占用</div>
+            <div class="stats-value text-[#30D158]">{{ stats.totalBytes }} <span class="stats-sub">磁盘已用空间</span></div>
+          </div>
+        </div>
+
+        <div class="stats-card">
+          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <Icon icon="ri:image-line" />
+          </div>
+          <div>
+            <div class="stats-label">图片素材</div>
+            <div class="stats-value">{{ stats.imgCount }} <span class="stats-sub">张配图/封面</span></div>
+          </div>
+        </div>
+
+        <div class="stats-card">
+          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
+            <Icon icon="ri:folder-zip-line" />
+          </div>
+          <div>
+            <div class="stats-label">分组合辑</div>
+            <div class="stats-value">{{ groups.length }} <span class="stats-sub">个自定义分组</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主工作区：左侧分组侧栏 + 右侧瀑布流/表格 -->
+      <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+        <!-- 左侧分组侧边栏 -->
+        <VCard class="w-full lg:w-[260px] shrink-0" :bodyClass="['!p-2']">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">附件分组</span>
               <button
-                class="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-accent hover:text-primary"
-                title="新建分组"
+                type="button"
+                class="text-xs text-primary hover:underline"
                 @click="openCreateGroup"
               >
-                <Icon icon="ri:add-line" />
+                + 新建
               </button>
             </div>
-            <!-- 移动端：横向滚动分组列表 -->
-            <div class="group-scroll lg:hidden">
-              <ul class="flex gap-1 p-2 text-xs">
-                <li>
-                  <button
-                    class="group-sidebar-item-mobile"
-                    :class="{ active: activeGroup === undefined }"
-                    @click="selectGroup(undefined)"
-                  >
-                    <Icon icon="ri:apps-line" class="text-sm" />
-                    <span>全部</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    class="group-sidebar-item-mobile"
-                    :class="{ active: activeGroup === 0 }"
-                    @click="selectGroup(0)"
-                  >
-                    <Icon icon="ri:inbox-line" class="text-sm" />
-                    <span>未分组</span>
-                  </button>
-                </li>
-                <li v-for="g in groups" :key="g.id">
-                  <button
-                    class="group-sidebar-item-mobile"
-                    :class="{ active: activeGroup === g.id }"
-                    @click="selectGroup(g.id)"
-                  >
-                    <Icon icon="ri:folder-line" class="shrink-0 text-sm" />
-                    <span class="truncate">{{ g.name }}</span>
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <!-- 桌面端：垂直列表 -->
-            <ul class="hidden py-1 text-[13px] lg:block">
-              <li>
-                <button
-                  class="group-sidebar-item"
-                  :class="{ active: activeGroup === undefined }"
-                  @click="selectGroup(undefined)"
-                >
-                  <span class="flex items-center gap-2">
-                    <Icon icon="ri:apps-line" />
-                    <span>全部</span>
-                  </span>
-                </button>
-              </li>
-              <li>
-                <button
-                  class="group-sidebar-item"
-                  :class="{ active: activeGroup === 0 }"
-                  @click="selectGroup(0)"
-                >
-                  <span class="flex items-center gap-2">
-                    <Icon icon="ri:inbox-line" />
-                    <span>未分组</span>
-                  </span>
-                </button>
-              </li>
-              <li v-for="g in groups" :key="g.id" class="group/item">
-                <div
-                  class="group-sidebar-item"
-                  :class="{ active: activeGroup === g.id }"
-                >
-                  <button class="flex min-w-0 flex-1 items-center gap-2 text-left" @click="selectGroup(g.id)">
-                    <Icon icon="ri:folder-line" class="shrink-0" />
-                    <span class="truncate">{{ g.name }}</span>
-                    <span class="ml-auto text-[10px] opacity-60">{{ g.count }}</span>
-                  </button>
-                  <span class="ml-1 hidden shrink-0 gap-0.5 group-hover/item:flex">
-                    <button
-                      class="flex h-6 w-6 items-center justify-center rounded-md text-text-quaternary hover:bg-accent hover:text-primary"
-                      title="重命名"
-                      @click.stop="openRenameGroup(g)"
-                    >
-                      <Icon icon="ri:edit-line" class="text-xs" />
-                    </button>
-                    <button
-                      class="flex h-6 w-6 items-center justify-center rounded-md text-text-quaternary hover:bg-accent hover:text-[var(--color-destructive)]"
-                      title="删除"
-                      @click.stop="requestDeleteGroup(g)"
-                    >
-                      <Icon icon="ri:delete-bin-line" class="text-xs" />
-                    </button>
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </VCard>
-        </aside>
+          </template>
 
-        <!-- 右侧主内容 -->
-        <div class="min-w-0 flex-1">
-          <!-- 存储卡 -->
-          <div class="apple-card-highlight storage-card">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="storage-title">存储空间</div>
-                <div class="storage-info">
-                  已使用 <strong>{{ formatBytes(storageStats.total) }}</strong>
-                  <span class="opacity-60"> / 估算 {{ formatBytes(storageStats.quota) }} ({{ storagePercent }}%)</span>
-                </div>
+          <div class="space-y-1">
+            <button
+              type="button"
+              class="group-item-btn"
+              :class="{ active: activeGroup === undefined }"
+              @click="selectGroup(undefined)"
+            >
+              <div class="flex items-center gap-2 truncate">
+                <Icon icon="ri:folder-line" />
+                <span class="truncate">全部附件</span>
               </div>
-              <div class="flex items-center gap-2">
+              <span class="group-count-badge">{{ total }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="group-item-btn"
+              :class="{ active: activeGroup === 0 }"
+              @click="selectGroup(0)"
+            >
+              <div class="flex items-center gap-2 truncate">
+                <Icon icon="ri:folder-unknow-line" />
+                <span class="truncate">未分组</span>
+              </div>
+            </button>
+
+            <div class="my-1.5 h-px bg-border/60"></div>
+
+            <div
+              v-for="g in groups"
+              :key="g.id"
+              class="group-item-btn group"
+              :class="{ active: activeGroup === g.id }"
+              @click="selectGroup(g.id)"
+            >
+              <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+                <Icon icon="ri:folder-2-line" class="text-primary" />
+                <span class="truncate">{{ g.name }}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="group-count-badge">{{ g.count || 0 }}</span>
                 <button
-                  class="apple-icon-btn"
-                  :class="{ active: isLoading }"
-                  title="刷新"
-                  @click="refetch()"
+                  type="button"
+                  class="hidden p-0.5 text-text-quaternary hover:text-foreground group-hover:inline-block"
+                  title="重命名"
+                  @click.stop="openRenameGroup(g)"
                 >
-                  <Icon icon="ri:refresh-line" :class="{ 'animate-spin': isLoading }" />
+                  <Icon icon="ri:edit-line" />
+                </button>
+                <button
+                  type="button"
+                  class="hidden p-0.5 text-text-quaternary hover:text-state-error group-hover:inline-block"
+                  title="删除分组"
+                  @click.stop="handleDeleteGroup(g)"
+                >
+                  <Icon icon="ri:delete-bin-line" />
                 </button>
               </div>
-            </div>
-            <div class="storage-progress">
-              <div
-                class="storage-progress-fill"
-                :style="{ width: storagePercent + '%', background: storageGradient }"
-              ></div>
-            </div>
-            <div class="storage-breakdown">
-              <div v-for="item in storageBreakdown" :key="item.key" class="storage-item">
-                <span class="storage-dot" :style="{ backgroundColor: item.color }"></span>
-                <span class="storage-label">
-                  <strong>{{ item.label }}</strong>
-                  {{ formatBytes(item.size) }}
-                </span>
-              </div>
-              <div v-if="!storageBreakdown.length" class="storage-label">暂无数据</div>
             </div>
           </div>
+        </VCard>
 
-          <!-- 工具栏：分段筛选 + 视图切换 -->
-          <div class="attachments-toolbar">
-            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0" role="tablist" aria-label="附件类型筛选">
+        <!-- 右侧主内容区 -->
+        <div class="min-w-0 flex-1 space-y-4">
+          <!-- 工具栏：类型分段 + 视图模式 -->
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+            <!-- 类型筛选 -->
+            <div class="apple-segmented">
               <button
-                v-for="f in typeFilters"
-                :key="f.key"
+                v-for="tf in typeFilters"
+                :key="tf.key"
                 type="button"
-                role="tab"
-                :aria-selected="typeFilter === f.key"
-                :class="{ active: typeFilter === f.key }"
-                @click="typeFilter = f.key; page = 1; clearSelection()"
+                :class="{ active: typeFilter === tf.key }"
+                @click="typeFilter = tf.key; page = 1"
               >
-                {{ f.label }}
+                <Icon :icon="tf.icon" class="mr-1 inline-block" />
+                {{ tf.label }}
               </button>
             </div>
 
+            <!-- 视图与全选 -->
             <div class="flex items-center gap-2">
-              <!-- 胶囊搜索框 -->
-              <label class="apple-search apple-search-compact w-[160px] sm:w-[200px]">
-                <Icon icon="ri:search-line" class="text-[15px] text-text-quaternary" />
-                <input v-model="keyword" placeholder="搜索附件..." type="text" />
-                <button
-                  v-if="keyword"
-                  type="button"
-                  class="flex h-4 w-4 items-center justify-center rounded-full text-text-quaternary hover:bg-accent hover:text-foreground"
-                  @click="keyword = ''"
-                >
-                  <Icon icon="ri:close-line" class="text-xs" />
-                </button>
-              </label>
+              <button
+                type="button"
+                class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
+                @click="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
+              >
+                {{ selectedIds.size === attachments.length ? '取消全选' : '全选本页' }}
+              </button>
 
-              <!-- 视图切换 -->
-              <div class="apple-view-toggle">
+              <div class="apple-segmented">
                 <button
                   type="button"
-                  title="网格视图"
                   :class="{ active: viewMode === 'grid' }"
+                  title="网格视图"
                   @click="viewMode = 'grid'"
                 >
-                  <Icon icon="ri:grid-line" />
+                  <Icon icon="ri:apps-line" />
                 </button>
                 <button
                   type="button"
-                  title="列表视图"
-                  :class="{ active: viewMode === 'list' }"
-                  @click="viewMode = 'list'"
+                  :class="{ active: viewMode === 'table' }"
+                  title="表格视图"
+                  @click="viewMode = 'table'"
                 >
-                  <Icon icon="ri:list-check-2" />
+                  <Icon icon="ri:list-check" />
                 </button>
               </div>
             </div>
-          </div>
-
-          <!-- 已选筛选标签 + 批量操作 -->
-          <div v-if="selectedIds.length || activeGroup !== undefined || keyword || typeFilter !== 'all'" class="mb-3 flex flex-wrap items-center gap-2">
-            <FilterTag v-if="activeGroup !== undefined" @close="selectGroup(undefined)">
-              分组：{{ activeGroupName }}
-            </FilterTag>
-            <FilterTag v-if="typeFilter !== 'all'" @close="typeFilter = 'all'; handleFilterChangeLocal()">
-              类型：{{ typeFilters.find((f) => f.key === typeFilter)?.label }}
-            </FilterTag>
-            <FilterTag v-if="keyword" @close="keyword = ''">关键词：{{ keyword }}</FilterTag>
-            <template v-if="selectedIds.length">
-              <span class="text-[13px] text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
-              <VButton size="sm" type="secondary" @click="moveVisible = true">
-                <template #icon><Icon icon="ri:folder-transfer-line" class="h-full w-full" /></template>
-                移动到分组
-              </VButton>
-              <button
-                class="text-[13px] text-text-quaternary hover:text-text-tertiary"
-                @click="clearSelection"
-              >
-                取消选择
-              </button>
-            </template>
           </div>
 
           <VLoading v-if="isLoading" />
 
-          <Transition v-else-if="!displayedAttachments.length" appear name="fade">
-            <VEmpty message="你可以尝试刷新或者上传附件" title="当前没有附件">
-              <template #actions>
-                <VButton @click="refetch">刷新</VButton>
-              </template>
-            </VEmpty>
-          </Transition>
+          <VEmpty
+            v-else-if="attachments.length === 0"
+            :title="keyword ? '未找到匹配的附件' : '暂无附件'"
+            :message="keyword ? '换个搜索关键词试试' : '点击右上角「上传附件」或直接将文件拖拽至此窗口'"
+          />
 
-          <!-- ===== Grid View ===== -->
-          <Transition v-else-if="viewMode === 'grid'" appear name="fade">
-            <div class="attachment-grid">
-              <div
-                v-for="att in displayedAttachments"
-                :key="att.id"
-                class="apple-card-highlight attachment-card"
-                :class="{ selected: checkSelection(att.id) }"
-                @click="openDetail(att)"
-              >
-                <div class="attachment-preview">
-                  <img
-                    v-if="isImage(att.mime) && (att.thumb_url || att.url)"
-                    :src="att.thumb_url || att.url"
-                    :alt="att.filename"
-                    class="attachment-preview-img"
-                    loading="lazy"
-                  />
-                  <div
-                    v-else
-                    :class="['attachment-preview-fallback', previewGradientClass(att.id)]"
-                  >
-                    <template v-if="isVideo(att.mime)">
-                      <div class="play-button">
-                        <Icon icon="ri:play-fill" />
-                      </div>
-                    </template>
-                    <template v-else>
-                      <Icon
-                        :icon="isImage(att.mime)
-                          ? 'ri:image-line'
-                          : att.mime?.startsWith('audio/')
-                            ? 'ri:music-2-line'
-                            : 'ri:file-3-line'"
-                        class="text-[40px] text-foreground/85"
-                      />
-                      <span class="preview-ext">{{ extOf(att) }}</span>
-                    </template>
-                  </div>
+          <!-- ============ 模式 1：网格卡片视图 ============ -->
+          <div
+            v-else-if="viewMode === 'grid'"
+            class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
+          >
+            <div
+              v-for="a in attachments"
+              :key="a.id"
+              class="attachment-card group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-border-strong hover:shadow-sm"
+              :class="{ 'border-primary ring-1 ring-primary': selectedIds.has(a.id) }"
+              @click="openDetail(a)"
+            >
+              <!-- 缩略图容器 -->
+              <div class="relative aspect-square w-full overflow-hidden bg-secondary">
+                <img
+                  v-if="a.mime && a.mime.startsWith('image/')"
+                  :src="a.url"
+                  loading="lazy"
+                  class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  :alt="a.filename"
+                />
+                <div v-else class="flex h-full w-full flex-col items-center justify-center text-3xl text-text-tertiary">
+                  <Icon :icon="categoryOf(a.mime) === 'video' ? 'ri:video-line' : (categoryOf(a.mime) === 'audio' ? 'ri:music-line' : 'ri:file-text-line')" />
+                </div>
 
-                  <!-- 选择框 -->
+                <!-- 格式角标 -->
+                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90 backdrop-blur-md">
+                  {{ formatMimeBadge(a.mime) }}
+                </span>
+
+                <!-- 多选框 -->
+                <div class="absolute left-2 top-2 z-10" @click.stop>
                   <input
                     type="checkbox"
-                    :checked="checkSelection(att.id)"
-                    class="attachment-checkbox"
-                    @click.stop="toggleSelection(att.id)"
+                    :checked="selectedIds.has(a.id)"
+                    class="h-4 w-4 rounded border-border text-primary"
+                    @change="toggleSelect(a.id)"
                   />
-
-                  <!-- Hover 遮罩 -->
-                  <div class="attachment-hover-overlay" @click.stop>
-                    <button class="attachment-action" title="预览" @click="openDetail(att)">
-                      <Icon icon="ri:eye-line" />
-                    </button>
-                    <button class="attachment-action" title="下载" @click="handleDownload(att)">
-                      <Icon icon="ri:download-2-line" />
-                    </button>
-                    <button class="attachment-action delete" title="删除" @click="requestDelete(att)">
-                      <Icon icon="ri:delete-bin-line" />
-                    </button>
-                  </div>
                 </div>
-                <div class="attachment-info">
-                  <div class="attachment-name" :title="att.filename">{{ att.filename }}</div>
-                  <div class="attachment-meta">
-                    <span>{{ formatBytes(att.size) }}</span>
-                    <span>{{ formatRelative(att.created_at) }}</span>
-                  </div>
+
+                <!-- 悬浮操作按钮组 -->
+                <div class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100" @click.stop>
+                  <button
+                    type="button"
+                    class="rounded-full bg-white/20 p-2 text-white hover:bg-primary"
+                    title="复制 Markdown"
+                    @click.stop="copyText(`![${a.filename}](${a.url})`, '已复制 Markdown 语法')"
+                  >
+                    <Icon icon="ri:markdown-line" class="text-sm" />
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full bg-white/20 p-2 text-white hover:bg-primary"
+                    title="复制直链 URL"
+                    @click.stop="copyText(a.url, '已复制直链 URL')"
+                  >
+                    <Icon icon="ri:link" class="text-sm" />
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full bg-white/20 p-2 text-white hover:bg-state-error"
+                    title="删除"
+                    @click.stop="handleDeleteSingle(a)"
+                  >
+                    <Icon icon="ri:delete-bin-line" class="text-sm" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- 底部信息 -->
+              <div class="p-2.5">
+                <div class="truncate text-xs font-semibold text-foreground" :title="a.filename">
+                  {{ a.filename }}
+                </div>
+                <div class="mt-1 flex items-center justify-between text-[11px] text-text-quaternary">
+                  <span>{{ formatBytes(a.size) }}</span>
+                  <span>{{ formatRelative(a.created_at) }}</span>
                 </div>
               </div>
             </div>
-          </Transition>
+          </div>
 
-          <!-- ===== List View ===== -->
-          <Transition v-else appear name="fade">
-            <VCard :body-class="['!p-0']">
-              <div class="attachment-list">
-                <div class="attachment-list-head">
-                  <span class="col-check">
-                    <input
-                      type="checkbox"
-                      :checked="checkedAll"
-                      class="cursor-pointer"
-                      @change="handleCheckAllChange"
-                    />
-                  </span>
-                  <span class="col-name">文件名</span>
-                  <span class="col-size">大小</span>
-                  <span class="col-type">类型</span>
-                  <span class="col-time">上传时间</span>
-                  <span class="col-actions"></span>
-                </div>
-                <div
-                  v-for="att in displayedAttachments"
-                  :key="att.id"
-                  class="attachment-list-row"
-                  :class="{ selected: checkSelection(att.id) }"
-                  @click="openDetail(att)"
-                >
-                  <span class="col-check" @click.stop>
-                    <input
-                      type="checkbox"
-                      :checked="checkSelection(att.id)"
-                      class="cursor-pointer"
-                      @change="toggleSelection(att.id)"
-                    />
-                  </span>
-                  <span class="col-name">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-secondary">
-                      <img
-                        v-if="isImage(att.mime) && (att.thumb_url || att.url)"
-                        :src="att.thumb_url || att.url"
-                        :alt="att.filename"
-                        class="h-full w-full object-cover"
-                        loading="lazy"
+          <!-- ============ 模式 2：表格列表视图 ============ -->
+          <VCard v-else>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[760px] text-left">
+                <thead>
+                  <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                    <th class="w-12 px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        :checked="selectedIds.size > 0 && selectedIds.size === attachments.length"
+                        class="h-4 w-4 rounded border-border text-primary"
+                        @change="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
                       />
-                      <Icon
-                        v-else
-                        :icon="isVideo(att.mime)
-                          ? 'ri:video-line'
-                          : att.mime?.startsWith('audio/')
-                            ? 'ri:music-2-line'
-                            : 'ri:file-3-line'"
-                        class="text-[18px] text-text-tertiary"
+                    </th>
+                    <th class="px-4 py-3">文件名称</th>
+                    <th class="px-4 py-3">格式 / 类型</th>
+                    <th class="px-4 py-3">文件大小</th>
+                    <th class="px-4 py-3">上传时间</th>
+                    <th class="w-32 px-4 py-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60">
+                  <tr
+                    v-for="a in attachments"
+                    :key="a.id"
+                    class="cursor-pointer transition-colors hover:bg-secondary/40"
+                    :class="{ 'bg-primary/5': selectedIds.has(a.id) }"
+                    @click="openDetail(a)"
+                  >
+                    <td class="px-4 py-3 text-center" @click.stop>
+                      <input
+                        type="checkbox"
+                        :checked="selectedIds.has(a.id)"
+                        class="h-4 w-4 rounded border-border text-primary"
+                        @change="toggleSelect(a.id)"
                       />
-                    </span>
-                    <span class="truncate text-[13px] text-foreground" :title="att.filename">
-                      {{ att.filename }}
-                    </span>
-                  </span>
-                  <span class="col-size text-[12px] text-text-tertiary">{{ formatBytes(att.size) }}</span>
-                  <span class="col-type text-[12px] text-text-tertiary">
-                    <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      :style="typePillStyle(att.mime)"
-                    >
-                      {{ typeLabel(att.mime) }}
-                    </span>
-                  </span>
-                  <span class="col-time text-[12px] text-text-tertiary">{{ formatRelative(att.created_at) }}</span>
-                  <span class="col-actions flex items-center gap-1" @click.stop>
-                    <button class="apple-icon-btn-sm" title="预览" @click="openDetail(att)">
-                      <Icon icon="ri:eye-line" />
-                    </button>
-                    <button class="apple-icon-btn-sm" title="下载" @click="handleDownload(att)">
-                      <Icon icon="ri:download-2-line" />
-                    </button>
-                    <button class="apple-icon-btn-sm danger" title="删除" @click="requestDelete(att)">
-                      <Icon icon="ri:delete-bin-line" />
-                    </button>
-                  </span>
-                </div>
-              </div>
-            </VCard>
-          </Transition>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <img
+                          v-if="a.mime && a.mime.startsWith('image/')"
+                          :src="a.url"
+                          class="h-9 w-9 shrink-0 rounded-lg border border-border object-cover bg-secondary"
+                          alt=""
+                        />
+                        <div v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-base text-text-tertiary">
+                          <Icon :icon="categoryOf(a.mime) === 'video' ? 'ri:video-line' : 'ri:file-text-line'" />
+                        </div>
+                        <div class="min-w-0">
+                          <div class="font-semibold text-foreground text-sm truncate max-w-[280px]">{{ a.filename }}</div>
+                          <div class="text-xs font-mono text-text-quaternary truncate max-w-[280px]">{{ a.url }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs font-mono text-text-secondary">
+                      <span class="rounded bg-secondary px-2 py-0.5 font-bold uppercase">
+                        {{ formatMimeBadge(a.mime) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-xs text-text-tertiary">
+                      {{ formatBytes(a.size) }}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-text-quaternary">
+                      {{ formatRelative(a.created_at) }}
+                    </td>
+                    <td class="px-4 py-3 text-right" @click.stop>
+                      <div class="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          class="action-icon-btn"
+                          title="复制链接"
+                          @click="copyText(a.url, '已复制直链 URL')"
+                        >
+                          <Icon icon="ri:link" />
+                        </button>
+                        <button
+                          type="button"
+                          class="action-icon-btn hover:text-[var(--color-state-error)]"
+                          title="删除"
+                          @click="handleDeleteSingle(a)"
+                        >
+                          <Icon icon="ri:delete-bin-line" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </VCard>
 
           <!-- 分页 -->
-          <div
-            v-if="total > size"
-            class="mt-5 flex items-center justify-center border-t border-border pt-4"
-          >
+          <div v-if="total > size" class="flex justify-center pt-4">
             <VPagination
-              v-model:page="page"
-              v-model:size="size"
+              :page="page"
+              :size="size"
               :total="total"
-              :size-options="[24, 48, 96]"
+              @update:page="page = $event"
+              @update:size="size = $event"
             />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 分组新建/重命名弹窗 -->
-    <VModal v-model:visible="groupModalVisible" :title="groupModalMode === 'create' ? '新建分组' : '重命名分组'" :width="380">
-      <input
-        v-model="groupModalName"
-        placeholder="分组名称"
-        type="text"
-        class="apple-input"
-        @keyup.enter="submitGroup"
-      />
+    <!-- ============ 全屏拖拽遮罩 ============ -->
+    <div
+      v-if="isDragging"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md pointer-events-none"
+    >
+      <div class="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/20 text-5xl text-primary animate-bounce">
+        <Icon icon="ri:upload-cloud-2-line" />
+      </div>
+      <h2 class="mt-4 text-xl font-bold text-white">松开鼠标即可上传文件</h2>
+      <p class="mt-1 text-xs text-white/70">支持多文件批量上传，自动归入当前激活分组</p>
+    </div>
+
+    <!-- ============ 分组管理弹窗 ============ -->
+    <VModal
+      v-model:visible="groupModalVisible"
+      :title="groupModalMode === 'create' ? '新建分组' : '重命名分组'"
+      :width="400"
+    >
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-text-tertiary">分组名称 *</label>
+        <input
+          v-model="groupModalName"
+          class="apple-input"
+          placeholder="如：文章插图 / 封面库"
+          autofocus
+          @keyup.enter="submitGroup"
+        />
+      </div>
       <template #footer>
         <div class="flex justify-end gap-2">
           <VButton @click="groupModalVisible = false">取消</VButton>
-          <VButton type="primary" @click="submitGroup">确定</VButton>
+          <VButton type="primary" :loading="groupSaving" @click="submitGroup">保存</VButton>
         </div>
       </template>
     </VModal>
 
-    <!-- 批量移动到分组弹窗 -->
-    <VModal v-model:visible="moveVisible" title="移动到分组" :width="380">
-      <p class="mb-3 text-[13px] text-text-tertiary">将选中的 {{ selectedIds.length }} 项移动到：</p>
-      <ul class="space-y-1 text-sm">
-        <li>
-          <button
-            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-text-tertiary transition-colors hover:bg-accent"
-            @click="moveTo(0)"
-          >
-            <Icon icon="ri:inbox-line" />未分组
-          </button>
-        </li>
-        <li v-for="g in groups" :key="g.id">
-          <button
-            class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-left text-text-tertiary transition-colors hover:bg-accent"
-            @click="moveTo(g.id)"
-          >
-            <Icon icon="ri:folder-line" />{{ g.name }}
-          </button>
-        </li>
-      </ul>
-      <template #footer>
-        <div class="flex justify-end">
-          <VButton @click="moveVisible = false">取消</VButton>
-        </div>
-      </template>
-    </VModal>
-
-    <!-- 详情弹窗 -->
-    <VModal v-model:visible="detailVisible" :title="detailItem?.filename" :width="560">
-      <template v-if="detailItem">
-        <div class="mb-4 overflow-hidden rounded-[10px] bg-secondary">
+    <!-- ============ 附件详情抽屉 ============ -->
+    <VModal
+      :visible="!!detailItem"
+      title="附件属性详情"
+      :width="540"
+      @update:visible="closeDetail"
+    >
+      <div v-if="detailItem" class="space-y-4">
+        <!-- 大图 / 媒体预览 -->
+        <div class="flex items-center justify-center rounded-2xl border border-border bg-secondary/50 p-4 max-h-[300px] overflow-hidden">
           <img
-            v-if="isImage(detailItem.mime)"
+            v-if="detailItem.mime && detailItem.mime.startsWith('image/')"
             :src="detailItem.url"
+            class="max-h-[260px] rounded-xl object-contain shadow-sm"
             :alt="detailItem.filename"
-            class="max-h-64 w-full object-contain"
           />
-          <div v-else class="flex flex-col items-center py-12 text-text-quaternary">
-            <Icon icon="ri:file-3-line" class="text-5xl" />
+          <div v-else class="py-12 text-center text-4xl text-text-tertiary">
+            <Icon icon="ri:file-text-line" />
           </div>
         </div>
 
-        <div class="mb-4 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <span class="text-text-quaternary">格式：</span>
-            <span class="text-text-secondary">{{ detailItem.mime }}</span>
+        <!-- 基础元数据 -->
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">文件名</div>
+            <div class="font-semibold text-foreground truncate mt-1" :title="detailItem.filename">{{ detailItem.filename }}</div>
           </div>
-          <div>
-            <span class="text-text-quaternary">大小：</span>
-            <span class="text-text-secondary">{{ formatBytes(detailItem.size) }}</span>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">文件大小</div>
+            <div class="font-semibold text-foreground font-mono mt-1">{{ formatBytes(detailItem.size) }}</div>
           </div>
-          <div v-if="detailItem.width">
-            <span class="text-text-quaternary">尺寸：</span>
-            <span class="text-text-secondary">{{ detailItem.width }}×{{ detailItem.height }} px</span>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">MIME 类型</div>
+            <div class="font-semibold text-foreground font-mono mt-1 truncate">{{ detailItem.mime }}</div>
           </div>
-          <div>
-            <span class="text-text-quaternary">上传：</span>
-            <span class="text-text-secondary">{{ new Date(detailItem.created_at).toLocaleDateString() }}</span>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">上传时间</div>
+            <div class="font-semibold text-foreground mt-1">{{ formatRelative(detailItem.created_at) }}</div>
           </div>
         </div>
 
-        <div class="mb-4">
-          <label class="mb-1 block text-xs text-text-quaternary">引用 URL</label>
-          <code
-            class="block select-all break-all rounded-[8px] bg-secondary px-3 py-2 text-xs text-text-tertiary"
-          >{{ detailItem.url }}</code>
+        <!-- 快捷复制 -->
+        <div class="space-y-2">
+          <label class="block text-xs font-medium text-text-tertiary">直链 URL</label>
+          <div class="flex items-center gap-2">
+            <input :value="detailItem.url" readonly class="apple-input font-mono text-xs" />
+            <VButton size="sm" @click="copyText(detailItem.url)">复制</VButton>
+          </div>
         </div>
 
-        <div>
-          <label class="mb-1 block text-xs text-text-quaternary">
-            引用来源
-            <span v-if="refsLoading" class="ml-1">加载中...</span>
-            <span v-else class="ml-1">({{ detailRefs.length }})</span>
-          </label>
-          <div v-if="detailRefs.length === 0 && !refsLoading" class="py-2 text-xs text-text-quaternary">无引用</div>
+        <!-- 前台引用情况 -->
+        <div class="rounded-xl border border-border bg-secondary/30 p-3 text-xs">
+          <div class="mb-2 font-semibold text-foreground flex items-center justify-between">
+            <span>使用排查与引用关联</span>
+            <Icon v-if="detailRefsLoading" icon="ri:loader-4-line" class="animate-spin text-primary" />
+          </div>
+
+          <div v-if="detailRefsLoading" class="text-text-quaternary py-2 text-center">
+            正在排查全站引用...
+          </div>
+          <div v-else-if="!detailRefs || (!detailRefs.posts?.length && !detailRefs.pages?.length && !detailRefs.moments?.length)" class="text-text-quaternary py-1">
+            暂未在已发布的文章、单页或瞬间中检测到直接引用。
+          </div>
           <div v-else class="space-y-1.5">
-            <div v-for="r in detailRefs" :key="r.type + r.slug" class="flex items-center gap-2 text-sm">
-              <Icon :icon="r.type === 'post' ? 'ri:article-line' : 'ri:pages-line'" class="text-text-quaternary" />
-              <span class="text-text-tertiary">{{ r.title || r.slug }}</span>
-              <span
-                class="rounded-[6px] bg-secondary px-1.5 py-0.5 text-[10px] text-text-quaternary"
-              >{{ r.type === "post" ? "文章" : "页面" }}</span>
+            <div v-if="detailRefs.posts?.length" class="text-text-secondary">
+              <span class="font-medium text-foreground">文章：</span>
+              <span v-for="p in detailRefs.posts" :key="p.slug" class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]">
+                {{ p.title }}
+              </span>
+            </div>
+            <div v-if="detailRefs.pages?.length" class="text-text-secondary">
+              <span class="font-medium text-foreground">单页：</span>
+              <span v-for="p in detailRefs.pages" :key="p.slug" class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]">
+                {{ p.title }}
+              </span>
             </div>
           </div>
         </div>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-between w-full">
+          <VButton type="danger" size="sm" @click="detailItem && handleDeleteSingle(detailItem)">
+            删除附件
+          </VButton>
+          <VButton @click="closeDetail">关闭</VButton>
+        </div>
       </template>
     </VModal>
 
-    <!-- 删除确认弹窗 -->
-    <VModal v-model:visible="deleteVisible" title="删除附件" :width="420">
-      <template v-if="deleteTarget">
-        <p class="mb-3 text-[13px] text-text-tertiary">
-          确定删除「{{ deleteTarget.filename }}」？此操作不可恢复。
-        </p>
-        <div v-if="deleteRefsLoading" class="mb-3 text-xs text-text-quaternary">检查引用中...</div>
-        <div
-          v-else-if="deleteRefs.length > 0"
-          class="mb-3 rounded-[10px] border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/10 p-3"
-        >
-          <p class="mb-1.5 text-xs font-medium text-[var(--color-destructive)]">
-            <Icon icon="ri:alert-line" class="mr-1 inline" />该附件被 {{ deleteRefs.length }} 处引用，删除后将导致裂图：
-          </p>
-          <ul class="space-y-0.5 text-xs text-[var(--color-destructive)]/90">
-            <li v-for="r in deleteRefs" :key="r.type + r.slug">
-              · {{ r.title || r.slug }}（{{ r.type === "post" ? "文章" : "页面" }}）
-            </li>
-          </ul>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <VButton @click="deleteVisible = false">取消</VButton>
-          <VButton type="danger" @click="confirmDelete">确认删除</VButton>
-        </div>
-      </template>
-    </VModal>
+    <!-- ============ 底部批量操作浮动栏 (VFloatingDock) ============ -->
+    <VFloatingDock
+      :visible="selectedIds.size > 0"
+      :count="selectedIds.size"
+      title="已选附件"
+      @clear="clearSelection"
+    >
+      <div class="flex items-center gap-2">
+        <select v-model="batchTargetGroup" class="apple-select h-8 text-xs w-36">
+          <option value="">迁移至分组...</option>
+          <option :value="0">未分组</option>
+          <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+        </select>
+        <VButton size="sm" :loading="batchMoving" @click="batchMove">
+          迁移
+        </VButton>
+        <VButton size="sm" type="danger" @click="batchDelete">
+          批量删除
+        </VButton>
+      </div>
+    </VFloatingDock>
   </div>
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--duration-fast) var(--ease-standard);
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* ===== Page Header ===== */
-.attachments-page {
-  min-height: 100%;
-  background-color: var(--color-background);
-}
-.attachments-page-header {
+/* 统计卡片 */
+.stats-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px;
-  padding: 22px 28px 16px;
-  background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  position: sticky;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.stats-card::before {
+  content: "";
+  position: absolute;
   top: 0;
-  z-index: 20;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
 }
-.attachments-page-title {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.8px;
-  line-height: 1.15;
-  color: #fff;
-  margin: 0;
-}
-.attachments-page-subtitle {
-  font-size: 13px;
-  color: var(--color-text-tertiary);
-  margin: 0;
-}
-.attachments-content-area {
-  padding: 8px 28px 40px;
-}
-
-/* 上传按钮 */
-.apple-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 20px;
-  border-radius: var(--radius-full, 9999px);
-  background-color: var(--color-primary);
-  color: var(--color-primary-foreground);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s var(--ease-standard);
-}
-.apple-upload-btn:hover {
-  background-color: var(--color-primary-hover);
-}
-.apple-upload-btn:active {
-  transform: translateY(0);
-}
-
-/* ===== Sidebar group item ===== */
-.group-sidebar-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 14px;
-  margin: 1px 8px;
-  border-radius: 9px;
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.18s var(--ease-standard);
-}
-.group-sidebar-item:hover {
-  background-color: color-mix(in srgb, #fff 5%, transparent);
-  color: var(--color-foreground);
-}
-.group-sidebar-item.active {
-  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-/* ===== Storage Card ===== */
-.storage-card {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 20px 22px;
-  margin-bottom: 16px;
-  position: relative;
-  overflow: hidden;
-}
-.storage-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-}
-.storage-info {
-  font-size: 12.5px;
-  color: var(--color-text-tertiary);
-  margin-top: 3px;
-}
-.storage-info strong {
-  color: #fff;
-  font-weight: 600;
-}
-.storage-progress {
-  width: 100%;
-  height: 8px;
-  background-color: var(--color-accent);
-  border-radius: 4px;
-  overflow: hidden;
-  margin: 14px 0;
-}
-.storage-progress-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width var(--duration-slow) var(--ease-standard);
-}
-.storage-breakdown {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
-.storage-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.storage-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.storage-label {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-}
-.storage-label strong {
-  color: color-mix(in srgb, #F5F5F7 88%, transparent);
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-/* ===== Toolbar ===== */
-.attachments-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.apple-search-compact {
-  height: 34px;
-  width: 220px;
-  padding: 0 12px;
-}
-
-/* 视图切换 */
-.apple-view-toggle {
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full, 9999px);
-  padding: 3px;
-  gap: 2px;
-}
-.apple-view-toggle button {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-full, 9999px);
+.stats-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-tertiary);
-  transition: all var(--duration-fast) var(--ease-standard);
-}
-.apple-view-toggle button:hover {
-  color: #fff;
-}
-.apple-view-toggle button.active {
-  background-color: var(--color-accent);
-  color: #fff;
-}
-.apple-view-toggle :deep(svg) {
-  width: 16px;
-  height: 16px;
-}
-
-/* Icon button (storage refresh) */
-.apple-icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-base);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-tertiary);
-  transition: all var(--duration-fast) var(--ease-standard);
-}
-.apple-icon-btn:hover {
-  background-color: var(--color-secondary);
-  color: #fff;
-  border-color: var(--color-border-strong, var(--color-border));
-}
-.apple-icon-btn :deep(svg) {
-  width: 16px;
-  height: 16px;
-}
-
-/* ===== Attachment Grid ===== */
-.attachment-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-@media (max-width: 1200px) {
-  .attachment-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 900px) {
-  .attachment-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 600px) {
-  .attachment-grid {
-    grid-template-columns: 1fr;
-  }
-  .apple-search-compact {
-    width: 100%;
-  }
-}
-
-.attachment-card {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: all 0.25s var(--ease-standard);
-  position: relative;
-  cursor: pointer;
-}
-.attachment-card:hover {
-  border-color: var(--color-border);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px -8px color-mix(in srgb, #000 60%, transparent);
-}
-.attachment-card.selected {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 25%, transparent);
-}
-.attachment-preview {
-  aspect-ratio: 4 / 3;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-secondary);
-}
-.attachment-preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.attachment-preview-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-.preview-ext {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  color: color-mix(in srgb, #fff 90%, transparent);
-  background: color-mix(in srgb, #000 25%, transparent);
-  padding: 3px 10px;
-  border-radius: 9999px;
-  font-family: "SF Mono", "JetBrains Mono", monospace;
-}
-.play-button {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: color-mix(in srgb, #000 50%, transparent);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
-  color: #fff;
-}
-.play-button :deep(svg) {
-  width: 22px;
-  height: 22px;
-}
-
-.attachment-checkbox {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 4;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: var(--color-primary);
-}
-
-.attachment-hover-overlay {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, #000 55%, transparent);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  opacity: 0;
-  transition: opacity 0.2s var(--ease-standard);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 3;
-}
-.attachment-card:hover .attachment-hover-overlay {
-  opacity: 1;
-}
-.attachment-action {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: color-mix(in srgb, #fff 15%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 20%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-standard);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
 }
-.attachment-action:hover {
-  background: color-mix(in srgb, #fff 28%, transparent);
-  transform: scale(1.08);
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
 }
-.attachment-action.delete:hover {
-  background: color-mix(in srgb, var(--color-state-error) 35%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-error) 50%, transparent);
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
 }
-.attachment-action :deep(svg) {
-  width: 18px;
-  height: 18px;
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
 }
 
-.attachment-info {
-  padding: 12px 14px 14px;
-}
-.attachment-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-.attachment-meta {
+/* 分组项按钮 */
+.group-item-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+}
+.group-item-btn:hover {
+  background: var(--color-secondary);
+  color: var(--color-foreground);
+}
+.group-item-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+.group-item-btn.active .text-primary {
+  color: #fff !important;
+}
+.group-count-badge {
   font-size: 11px;
-  color: var(--color-text-tertiary);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, currentColor 15%, transparent);
 }
 
-/* ===== Attachment List ===== */
-.attachment-list {
-  width: 100%;
-}
-.attachment-list-head,
-.attachment-list-row {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 100px 90px 130px 130px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-}
-.attachment-list-head {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-secondary);
-}
-.attachment-list-row {
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard);
-}
-.attachment-list-row:last-child {
-  border-bottom: none;
-}
-.attachment-list-row:hover {
-  background-color: color-mix(in srgb, #fff 3%, transparent);
-}
-.attachment-list-row.selected {
-  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
-}
-.col-name {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.col-actions {
-  justify-content: flex-end;
-}
-.apple-icon-btn-sm {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
+/* 操作小按钮 */
+.action-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
-  transition: all var(--duration-fast) var(--ease-standard);
-}
-.apple-icon-btn-sm:hover {
-  background-color: var(--color-accent);
-  color: var(--color-foreground);
-}
-.apple-icon-btn-sm.danger:hover {
-  background-color: color-mix(in srgb, var(--color-state-error) 15%, transparent);
-  color: var(--color-destructive);
-}
-.apple-icon-btn-sm :deep(svg) {
-  width: 16px;
-  height: 16px;
-}
-
-@media (max-width: 900px) {
-  .attachment-list-head,
-  .attachment-list-row {
-    grid-template-columns: 32px minmax(0, 1fr) 80px 100px;
-  }
-  .col-type,
-  .col-time,
-  .col-actions {
-    display: none;
-  }
-}
-
-/* ===== 移动端补充优化 ===== */
-@media (max-width: 640px) {
-  /* 类型分段 Tab 横向滚动，不显示滚动条 */
-  .tabs-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-shrink: 0;
-  }
-  .tabs-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* 工具栏更紧凑 */
-  .attachments-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .attachments-toolbar > :last-child {
-    justify-content: space-between;
-  }
-  .apple-search-compact {
-    width: 100% !important;
-  }
-
-  /* 存储卡更紧凑 */
-  .storage-title {
-    font-size: 13px;
-  }
-  .storage-info {
-    font-size: 11px;
-  }
-  .storage-breakdown {
-    flex-wrap: wrap;
-    gap: 8px 14px;
-  }
-  .storage-label {
-    font-size: 11px;
-  }
-
-  /* 列表视图在 640px 以下：更紧凑，去掉 size 列 */
-  .attachment-list-head,
-  .attachment-list-row {
-    grid-template-columns: 32px minmax(0, 1fr) !important;
-  }
-  .col-size {
-    display: none;
-  }
-}
-
-/* ===== 移动端分组栏：横向滚动胶囊 ===== */
-.group-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.group-scroll::-webkit-scrollbar {
-  display: none;
-}
-.group-scroll ul {
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  list-style: none;
-}
-.group-sidebar-item-mobile {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--color-secondary);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  cursor: pointer;
+  background: transparent;
   border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
 }
-.group-sidebar-item-mobile:hover {
-  background: var(--color-accent);
+.action-icon-btn:hover {
+  background: var(--color-secondary);
   color: var(--color-foreground);
+  border-color: var(--color-border);
 }
-.group-sidebar-item-mobile.active {
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  color: var(--color-primary);
-  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
-  font-weight: 600;
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stats-value {
+    font-size: 14px;
+  }
 }
 </style>

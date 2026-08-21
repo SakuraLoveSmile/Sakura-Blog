@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted } from"vue";
+import { ref, computed, onMounted } from "vue";
 import {
- backupApi,
- backupExportUrl,
- backupExportMarkdownUrl,
-} from"@/api";
-import { formatBytes } from"@/lib/format";
-import { Icon } from"@iconify/vue";
-import { VPageHeader, VCard, VButton, Dialog, Toast } from"@/components/ui";
+  backupApi,
+  backupExportUrl,
+  backupExportMarkdownUrl,
+} from "@/api";
+import { formatBytes, formatRelative } from "@/lib/format";
+import { Icon } from "@iconify/vue";
+import { VPageHeader, VCard, VButton, VLoading, VEmpty, VModal, Dialog, Toast } from "@/components/ui";
 
 interface BackupInfo {
- name: string;
- size: number;
- mod_time: string;
+  name: string;
+  size: number;
+  mod_time: string;
 }
 
 const autoBackup = ref(false);
@@ -22,356 +22,459 @@ const loading = ref(false);
 
 const importing = ref(false);
 const importResult = ref<{
- imported: number;
- slugs: string[];
- skipped: string[];
+  imported: number;
+  slugs: string[];
+  skipped: string[];
 } | null>(null);
 
-// 整站恢复（Spec 41）：上传 zip / 服务器快照，双重确认（输入 RESTORE）
+// 整站恢复（双重确认：输入 RESTORE）
 const restoring = ref(false);
 const restoreConfirmText = ref("");
-const pendingRestore = ref<{ kind:"upload" |"snapshot"; file?: File; name?: string } | null>(null);
+const pendingRestore = ref<{ kind: "upload" | "snapshot"; file?: File; name?: string } | null>(null);
 const restoreStrict = ref(false);
 
 function pickRestoreFile(e: Event) {
- const input = e.target as HTMLInputElement;
- if (!input.files?.length) return;
- pendingRestore.value = { kind:"upload", file: input.files[0] };
- restoreConfirmText.value ="";
- input.value ="";
+  const input = e.target as HTMLInputElement;
+  if (!input.files?.length) return;
+  pendingRestore.value = { kind: "upload", file: input.files[0] };
+  restoreConfirmText.value = "";
+  input.value = "";
 }
 
 function pickRestoreSnapshot(name: string) {
- pendingRestore.value = { kind:"snapshot", name };
- restoreConfirmText.value ="";
+  pendingRestore.value = { kind: "snapshot", name };
+  restoreConfirmText.value = "";
 }
 
 async function executeRestore() {
- const p = pendingRestore.value;
- if (!p || restoreConfirmText.value !=="RESTORE") return;
- restoring.value = true;
- try {
- if (p.kind ==="upload" && p.file) {
- await backupApi.restore(p.file, restoreStrict.value);
- } else if (p.kind ==="snapshot" && p.name) {
- await backupApi.restoreSnapshot(p.name);
- }
- Toast.success("恢复完成，前台与搜索索引已同步");
- pendingRestore.value = null;
- loadStatus();
- } catch (err: any) {
- Toast.error(err.response?.data?.error ||"恢复失败");
- } finally {
- restoring.value = false;
- }
+  const p = pendingRestore.value;
+  if (!p || restoreConfirmText.value !== "RESTORE") return;
+  restoring.value = true;
+  try {
+    if (p.kind === "upload" && p.file) {
+      await backupApi.restore(p.file, restoreStrict.value);
+    } else if (p.kind === "snapshot" && p.name) {
+      await backupApi.restoreSnapshot(p.name);
+    }
+    Toast.success("恢复完成，前台与搜索索引已重新同步");
+    pendingRestore.value = null;
+    loadStatus();
+  } catch (err: any) {
+    Toast.error(err.response?.data?.error || "恢复失败");
+  } finally {
+    restoring.value = false;
+  }
 }
 
 async function loadStatus() {
- loading.value = true;
- try {
- const { data } = await backupApi.status();
- autoBackup.value = data.auto_backup;
- backupKeep.value = data.backup_keep;
- backups.value = data.backups || [];
- } catch {} finally {
- loading.value = false;
- }
+  loading.value = true;
+  try {
+    const { data } = await backupApi.status();
+    autoBackup.value = data.auto_backup;
+    backupKeep.value = data.backup_keep;
+    backups.value = data.backups || [];
+  } catch {} finally {
+    loading.value = false;
+  }
 }
 
 async function handleImport(e: Event) {
- const input = e.target as HTMLInputElement;
- if (!input.files?.length) return;
- const file = input.files[0];
- Dialog.warning({
- title: `确定导入「${file.name}」？`,
- description:"同名 slug 的文章会被覆盖。",
- confirmType:"danger",
- onConfirm: async () => {
- importing.value = true;
- importResult.value = null;
- try {
- const { data } = await backupApi.importMarkdown(file);
- importResult.value = data;
- Toast.success(`成功导入 ${data.imported} 篇`);
- } catch (err: any) {
- Toast.error(err.response?.data?.error ||"导入失败");
- } finally {
- importing.value = false;
- input.value ="";
- }
- },
- onCancel: () => {
- input.value ="";
- },
- });
+  const input = e.target as HTMLInputElement;
+  if (!input.files?.length) return;
+  const file = input.files[0];
+  Dialog.warning({
+    title: `确定导入「${file.name}」吗？`,
+    description: "同名 Slug 的文章将被导入的文件内容直接覆盖，请确认后再操作。",
+    confirmType: "danger",
+    onConfirm: async () => {
+      importing.value = true;
+      importResult.value = null;
+      try {
+        const { data } = await backupApi.importMarkdown(file);
+        importResult.value = data;
+        Toast.success(`成功导入 ${data.imported} 篇文章`);
+      } catch (err: any) {
+        Toast.error(err.response?.data?.error || "导入失败");
+      } finally {
+        importing.value = false;
+        input.value = "";
+      }
+    },
+    onCancel: () => {
+      input.value = "";
+    },
+  });
 }
 
-
-function formatTime(iso: string) {
- return new Date(iso).toLocaleString("zh-CN", { hour12: false });
-}
+// ---------- 统计数据 ----------
+const stats = computed(() => {
+  const totalSnapshots = backups.value.length;
+  let totalBytes = 0;
+  for (const b of backups.value) totalBytes += b.size || 0;
+  return {
+    totalSnapshots,
+    totalBytes: formatBytes(totalBytes),
+    autoBackup: autoBackup.value ? "已启用" : "未开启",
+    backupKeep: backupKeep.value > 0 ? `保留 ${backupKeep.value} 份` : "不限",
+  };
+});
 
 onMounted(loadStatus);
 </script>
 
 <template>
- <div>
- <VPageHeader title="备份与导出">
- <template #icon>
- <Icon icon="ri:archive-line" class="mr-2 self-center text-xl" />
- </template>
- </VPageHeader>
+  <div class="min-h-full">
+    <!-- 统一 Page Header -->
+    <VPageHeader title="备份与导出">
+      <template #icon>
+        <Icon icon="ri:archive-line" class="text-primary" />
+      </template>
+      <template #subtitle>打包全站数据快照、Markdown 文章导入导出及一键灾备还原</template>
+      <template #actions>
+        <VButton @click="loadStatus">
+          <template #icon><Icon icon="ri:refresh-line" /></template>
+          刷新状态
+        </VButton>
+      </template>
+    </VPageHeader>
 
- <div class="m-0 max-w-4xl space-y-4 md:m-4">
- <!-- 全量备份 -->
- <VCard>
- <template #header>
- <span class="flex items-center gap-2 text-base font-bold text-foreground">
- <Icon icon="ri:database-2-line" class="text-lg text-primary" />
- 全量备份
- </span>
- </template>
- <div class="flex items-start justify-between gap-4">
- <p class="text-xs text-text-tertiary">
- 打包下载数据库快照（文章/评论/瞬间/页面/设置等全部数据）+ 附件目录 + site.yml。
- </p>
- <a :href="backupExportUrl" class="shrink-0">
- <VButton type="secondary">
- <template #icon>
- <Icon icon="ri:download-2-line" class="h-full w-full" />
- </template>
- 下载备份
- </VButton>
- </a>
- </div>
+    <div class="mx-auto max-w-[1200px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div class="stats-card">
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:database-2-line" />
+          </div>
+          <div>
+            <div class="stats-label">本地快照备份</div>
+            <div class="stats-value">{{ stats.totalSnapshots }} <span class="stats-sub">份快照文件</span></div>
+          </div>
+        </div>
 
- <div class="mt-4 border-t border-border pt-4">
- <p class="mb-2 text-xs text-text-tertiary">
- 自动备份：{{ autoBackup ? `已开启（每 24 小时一次，保留最近 ${backupKeep} 份，存放于服务器 data/backups/）` :"已关闭（可在 config/app.yml 的 auto_backup 开启）" }}
- </p>
- <table v-if="backups.length" class="w-full text-sm">
- <thead>
- <tr class="text-left text-xs text-text-quaternary">
- <th class="py-1.5 font-medium">文件名</th>
- <th class="py-1.5 font-medium">大小</th>
- <th class="py-1.5 font-medium">时间</th>
- <th class="py-1.5"></th>
- </tr>
- </thead>
- <tbody>
- <tr v-for="b in backups" :key="b.name" class="border-t border-border text-text-tertiary /50">
- <td class="py-1.5 font-mono text-xs">{{ b.name }}</td>
- <td class="py-1.5 text-xs">{{ formatBytes(b.size) }}</td>
- <td class="py-1.5 text-xs">{{ formatTime(b.mod_time) }}</td>
- <td class="py-1.5 text-right">
- <button
- class="text-xs text-state-error hover:text-state-error hover:underline text-state-error"
- :disabled="restoring"
- @click="pickRestoreSnapshot(b.name)"
- >恢复</button>
- </td>
- </tr>
- </tbody>
- </table>
- <p v-else-if="!loading" class="text-xs text-text-quaternary">服务器上暂无自动备份。</p>
- </div>
- </VCard>
+        <div class="stats-card">
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:hard-drive-2-line" />
+          </div>
+          <div>
+            <div class="stats-label">快照占用空间</div>
+            <div class="stats-value text-[#30D158]">{{ stats.totalBytes }} <span class="stats-sub">磁盘已用</span></div>
+          </div>
+        </div>
 
- <!-- Markdown 导出 -->
- <VCard>
- <template #header>
- <span class="flex items-center gap-2 text-base font-bold text-foreground">
- <Icon icon="ri:markdown-line" class="text-lg text-primary" />
- Markdown 导出
- </span>
- </template>
- <div class="flex items-start justify-between gap-4">
- <p class="text-xs text-text-tertiary">
- 把全部文章（含草稿）导出为带 frontmatter 的 Markdown 文件打包，可用于迁移或再导入。
- </p>
- <a :href="backupExportMarkdownUrl" class="shrink-0">
- <VButton type="secondary">
- <template #icon>
- <Icon icon="ri:download-2-line" class="h-full w-full" />
- </template>
- 导出文章
- </VButton>
- </a>
- </div>
- </VCard>
+        <div class="stats-card">
+          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <Icon icon="ri:timer-line" />
+          </div>
+          <div>
+            <div class="stats-label">定时自动备份</div>
+            <div class="stats-value text-[#30B0C7]">{{ stats.autoBackup }} <span class="stats-sub">每 24 小时执行</span></div>
+          </div>
+        </div>
 
- <!-- Markdown 导入 -->
- <VCard>
- <template #header>
- <span class="flex items-center gap-2 text-base font-bold text-foreground">
- <Icon icon="ri:upload-cloud-2-line" class="text-lg text-primary" />
- Markdown 导入
- </span>
- </template>
- <div class="flex items-start justify-between gap-4">
- <div>
- <p class="text-xs text-text-tertiary">
- 上传单个 .md 文件或 Markdown 导出的 .zip，按文件名（slug）导入文章。
- </p>
- <p class="mt-1 text-xs text-state-error text-state-error">
- 注意：同名 slug 的文章会被上传内容覆盖。
- </p>
- </div>
- <label class="shrink-0 cursor-pointer">
- <VButton type="secondary" :loading="importing" @click.prevent>
- <template #icon>
- <Icon icon="ri:folder-open-line" class="h-full w-full" />
- </template>
- 选择文件
- </VButton>
- <input type="file" accept=".md,.zip" class="hidden" :disabled="importing" @change="handleImport" />
- </label>
- </div>
+        <div class="stats-card">
+          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
+            <Icon icon="ri:history-line" />
+          </div>
+          <div>
+            <div class="stats-label">快照轮转策略</div>
+            <div class="stats-value">{{ stats.backupKeep }} <span class="stats-sub">自动清理旧版本</span></div>
+          </div>
+        </div>
+      </div>
 
- <div
- v-if="importResult"
- class="mt-4 rounded-base bg-state-success/10 p-3 text-xs text-state-success bg-state-success/100/10 text-state-success"
- >
- 成功导入 {{ importResult.imported }} 篇：{{ importResult.slugs.join("、") }}
- <template v-if="importResult.skipped.length">
- <br />跳过 {{ importResult.skipped.length }} 项：{{ importResult.skipped.join("；") }}
- </template>
- </div>
- </VCard>
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+        <!-- 左侧：全量导出与快照管理 -->
+        <div class="space-y-5 lg:col-span-7">
+          <!-- 全量数据导出 -->
+          <VCard title="全量数据打包下载">
+            <template #header>
+              <div class="flex items-center justify-between w-full">
+                <span class="font-bold text-foreground text-sm flex items-center gap-2">
+                  <Icon icon="ri:folder-zip-line" class="text-primary text-base" />
+                  全量整站备份 (Full Backup)
+                </span>
+                <a :href="backupExportUrl" class="shrink-0" download>
+                  <VButton type="primary" size="sm">
+                    <template #icon><Icon icon="ri:download-2-line" /></template>
+                    立即打包下载
+                  </VButton>
+                </a>
+              </div>
+            </template>
+            <p class="text-xs leading-relaxed text-text-tertiary">
+              打包内容包含 SQLite 核心数据库（文章/评论/瞬间/页面/设置/标签等全部数据）、<code>attachments/</code> 媒体文件目录以及 <code>site.yml</code> 站点配置。
+            </p>
+          </VCard>
 
- <!-- 整站恢复（Spec 41） -->
- <VCard>
- <template #header>
- <span class="flex items-center gap-2 text-base font-bold text-foreground">
- <Icon icon="ri:restart-line" class="text-lg text-state-error" />
- 从备份恢复
- </span>
- </template>
- <div class="flex items-start justify-between gap-4">
- <div>
- <p class="text-xs text-text-tertiary">
- 上传全量备份 zip（blog-backup-*.zip）一键还原数据库、附件与站点配置；也可在上方列表对服务器留存的备份直接点「恢复」。
- </p>
- <p class="mt-1 text-xs text-state-error text-state-error">
- 恢复会覆盖当前全部数据（执行前自动留存 .pre-restore 兜底快照）。
- </p>
- <label class="mt-2 flex items-center gap-1.5 text-xs text-text-tertiary">
- <input v-model="restoreStrict" type="checkbox" class="h-3.5 w-3.5" />
- 严格模式：先清空附件目录再解包（默认保留包外既有附件）
- </label>
- </div>
- <label class="shrink-0 cursor-pointer">
- <VButton type="danger" :loading="restoring" @click.prevent>
- <template #icon>
- <Icon icon="ri:upload-cloud-2-line" class="h-full w-full" />
- </template>
- 选择备份包
- </VButton>
- <input type="file" accept=".zip" class="hidden" :disabled="restoring" @change="pickRestoreFile" />
- </label>
- </div>
+          <!-- 服务器自动快照列表 -->
+          <VCard title="服务器快照列表">
+            <template #header>
+              <div class="flex items-center justify-between w-full">
+                <span class="font-bold text-foreground text-sm flex items-center gap-2">
+                  <Icon icon="ri:server-line" class="text-primary text-base" />
+                  服务器快照留存 (data/backups/)
+                </span>
+                <span class="text-xs font-mono text-text-quaternary">{{ backups.length }} 份</span>
+              </div>
+            </template>
 
- <!-- 双重确认：输入 RESTORE 才可执行 -->
- <div
- v-if="pendingRestore"
- class="mt-4 rounded-base border border-state-error bg-state-error/10 p-4 border-state-error/30 bg-state-error/10"
- >
- <p class="text-xs font-medium text-state-error text-state-error">
- 即将恢复：{{ pendingRestore.kind ==="upload" ? pendingRestore.file?.name : pendingRestore.name }}
- </p>
- <p class="mt-1 text-xs text-state-error text-state-error">该操作覆盖当前数据，请输入 <b>RESTORE</b> 确认：</p>
- <div class="mt-2 flex items-center gap-2">
- <input
- v-model="restoreConfirmText"
- type="text"
- placeholder="RESTORE"
- class="w-40 rounded-base border border-state-error bg-card px-2 py-1 text-xs font-mono outline-none transition-colors focus:border-state-error border-state-error/40"
- />
- <VButton
- type="danger"
- size="sm"
- :disabled="restoreConfirmText !== 'RESTORE'"
- :loading="restoring"
- @click="executeRestore"
- >执行恢复</VButton>
- <VButton size="sm" @click="pendingRestore = null">取消</VButton>
- </div>
- </div>
- </VCard>
+            <VLoading v-if="loading" />
+            <VEmpty
+              v-else-if="!backups.length"
+              title="暂无服务器快照"
+              message="可在 config/app.yml 中开启 auto_backup，系统将每 24 小时自动生成快照"
+            />
 
- <!-- 全量恢复说明 -->
- <div class="rounded-base border border-dashed border-border-strong p-5">
- <h3 class="flex items-center gap-2 text-sm font-semibold text-text-tertiary">
- <Icon icon="ri:tools-line" />
- 离线恢复（备选）
- </h3>
- <p class="mt-1 text-xs leading-relaxed text-text-tertiary">
- 服务无法启动时的手动步骤：停止服务 → 解开备份 zip，将 blog.db 覆盖到 data/blog.db、uploads/ 覆盖到
- data/uploads/（如有需要将 site.yml 放回 config/）→ 重新启动服务。
- </p>
- </div>
- </div>
- </div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-border text-text-quaternary font-medium">
+                    <th class="py-2.5 px-3">快照文件名</th>
+                    <th class="py-2.5 px-3">文件大小</th>
+                    <th class="py-2.5 px-3">创建时间</th>
+                    <th class="py-2.5 px-3 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60">
+                  <tr v-for="b in backups" :key="b.name" class="hover:bg-secondary/40 transition-colors">
+                    <td class="py-2.5 px-3 font-mono font-medium text-foreground truncate max-w-[200px]" :title="b.name">
+                      {{ b.name }}
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-text-tertiary">
+                      {{ formatBytes(b.size) }}
+                    </td>
+                    <td class="py-2.5 px-3 text-text-quaternary">
+                      {{ formatRelative(b.mod_time) }}
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                      <button
+                        type="button"
+                        class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#FF453A] hover:bg-[#FF453A]/10 transition-colors"
+                        :disabled="restoring"
+                        @click="pickRestoreSnapshot(b.name)"
+                      >
+                        还原快照
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </VCard>
+        </div>
+
+        <!-- 右侧：Markdown 导入导出与外部恢复 -->
+        <div class="space-y-5 lg:col-span-5">
+          <!-- Markdown 文章导出 -->
+          <VCard title="Markdown 文章归档导出">
+            <template #header>
+              <div class="flex items-center justify-between w-full">
+                <span class="font-bold text-foreground text-sm flex items-center gap-2">
+                  <Icon icon="ri:markdown-line" class="text-primary text-base" />
+                  文章 Markdown 导出
+                </span>
+                <a :href="backupExportMarkdownUrl" class="shrink-0" download>
+                  <VButton size="sm">
+                    <template #icon><Icon icon="ri:file-download-line" /></template>
+                    导出全部文章
+                  </VButton>
+                </a>
+              </div>
+            </template>
+            <p class="text-xs leading-relaxed text-text-tertiary">
+              将全部文章（含草稿）打包为带 YAML Frontmatter 的纯 <code>.md</code> 文件压缩包，便于迁移至 Hexo、Hugo 等静态博客或外部备份。
+            </p>
+          </VCard>
+
+          <!-- Markdown 文章导入 -->
+          <VCard title="Markdown 文章导入">
+            <p class="text-xs leading-relaxed text-text-tertiary mb-3">
+              支持上传单个 <code>.md</code> 文件或包含多篇 Markdown 文章的 <code>.zip</code> 压缩包，系统将自动解析元数据并写入数据库。
+            </p>
+
+            <div class="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+              <span class="text-[11px] text-[#FF9500] flex items-center gap-1">
+                <Icon icon="ri:alert-line" /> 同名 Slug 将被直接覆盖
+              </span>
+
+              <label class="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".md,.zip"
+                  class="hidden"
+                  :disabled="importing"
+                  @change="handleImport"
+                />
+                <VButton size="sm" :loading="importing" @click.prevent>
+                  <template #icon><Icon icon="ri:upload-2-line" /></template>
+                  选择文件导入
+                </VButton>
+              </label>
+            </div>
+
+            <!-- 导入结果卡片 -->
+            <div
+              v-if="importResult"
+              class="mt-3 rounded-xl border border-[#30D158]/30 bg-[#30D158]/10 p-3 text-xs text-foreground"
+            >
+              <div class="font-bold text-[#30D158] flex items-center gap-1">
+                <Icon icon="ri:checkbox-circle-fill" /> 成功导入 {{ importResult.imported }} 篇文章
+              </div>
+              <div v-if="importResult.slugs.length" class="mt-1 font-mono text-[11px] text-text-tertiary truncate">
+                {{ importResult.slugs.join("、") }}
+              </div>
+              <div v-if="importResult.skipped.length" class="mt-1 text-[11px] text-[#FF9500]">
+                跳过 {{ importResult.skipped.length }} 篇：{{ importResult.skipped.join("；") }}
+              </div>
+            </div>
+          </VCard>
+
+          <!-- 上传 Zip 恢复全站 -->
+          <VCard title="上传本地备份包整站恢复">
+            <p class="text-xs leading-relaxed text-text-tertiary mb-3">
+              可选择先前下载的 <code>blog-backup-*.zip</code> 完整备份包上传并直接覆盖恢复全站。
+            </p>
+
+            <div class="flex items-center justify-between border-t border-border/60 pt-3">
+              <span class="text-xs text-text-quaternary">支持全量覆盖还原</span>
+              <label class="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".zip"
+                  class="hidden"
+                  :disabled="restoring"
+                  @change="pickRestoreFile"
+                />
+                <VButton size="sm" type="danger" @click.prevent>
+                  <template #icon><Icon icon="ri:restart-line" /></template>
+                  上传备份并恢复
+                </VButton>
+              </label>
+            </div>
+          </VCard>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 危险操作：整站恢复双重确认弹窗 ============ -->
+    <VModal
+      :visible="!!pendingRestore"
+      title="⚠️ 确认从备份恢复整站数据"
+      :width="480"
+      @update:visible="pendingRestore = null"
+    >
+      <div v-if="pendingRestore" class="space-y-4 text-xs">
+        <div class="rounded-xl border border-state-error/30 bg-state-error/10 p-3.5 text-foreground leading-relaxed">
+          <div class="font-bold text-state-error text-sm flex items-center gap-1.5 mb-1">
+            <Icon icon="ri:error-warning-fill" /> 高风险操作警告
+          </div>
+          当前数据库中的所有文章、评论、瞬间和配置都将被备份中的数据<strong>全量覆盖</strong>，且此操作不可逆！
+        </div>
+
+        <div class="rounded-xl border border-border bg-card p-3 font-mono">
+          <div class="text-text-quaternary">恢复目标来源：</div>
+          <div class="font-semibold text-foreground mt-1">
+            {{ pendingRestore.kind === 'upload' ? `本地上传文件：${pendingRestore.file?.name}` : `服务器快照：${pendingRestore.name}` }}
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block font-medium text-text-tertiary">
+            请在下方输入框中完整输入 <strong class="text-state-error font-mono">RESTORE</strong> 以确认执行：
+          </label>
+          <input
+            v-model="restoreConfirmText"
+            class="apple-input font-mono text-sm"
+            placeholder="RESTORE"
+            autofocus
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="pendingRestore = null">取消</VButton>
+          <VButton
+            type="danger"
+            :loading="restoring"
+            :disabled="restoreConfirmText !== 'RESTORE'"
+            @click="executeRestore"
+          >
+            确认覆盖并恢复
+          </VButton>
+        </div>
+      </template>
+    </VModal>
+  </div>
 </template>
 
 <style scoped>
-/* ===== 移动端适配 ===== */
+/* 统计卡片 */
+.stats-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
+}
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
+}
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
+
 @media (max-width: 640px) {
-  .max-w-4xl {
-    margin: 0 !important;
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
   }
-  .space-y-4 {
-    gap: 12px;
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
-
-  /* 卡片标题更紧凑 */
-  .text-base.font-bold {
+  .stats-value {
     font-size: 14px;
-  }
-
-  /* 描述文字 + 按钮上下排列（小屏宽度不够） */
-  .flex.items-start.justify-between.gap-4 {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 10px !important;
-  }
-  .flex.items-start.justify-between.gap-4 p {
-    font-size: 11.5px;
-  }
-
-  /* 备份表格：横向滚动 + 字号缩小 */
-  table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  table th,
-  table td {
-    font-size: 11px;
-    padding: 8px 6px !important;
-    white-space: nowrap;
-  }
-  table .font-mono {
-    font-size: 11px !important;
-  }
-
-  /* Markdown 导入表单更紧凑 */
-  .space-y-3 {
-    gap: 10px;
-  }
-  .mt-4 {
-    margin-top: 12px !important;
-  }
-  .pt-4 {
-    padding-top: 12px !important;
-  }
-
-  /* 恢复提示框 */
-  .bg-state-warning\/10,
-  .border-state-warning\/20 {
-    padding: 10px 12px !important;
-    font-size: 12px;
   }
 }
 </style>

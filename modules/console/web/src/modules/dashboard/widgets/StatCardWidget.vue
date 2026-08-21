@@ -27,15 +27,20 @@ const value = computed(() => {
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col">
+  <div class="apple-card h-full flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5">
     <div class="flex items-start justify-between">
-      <div>
-        <div class="apple-stat-icon" :style="{ backgroundColor: color + '20', color: color }">
-          <Icon :icon="icon" class="w-5 h-5" />
-        </div>
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-xl"
+        :style="{ backgroundColor: color + '18', color: color }"
+      >
+        <Icon :icon="icon" class="w-5 h-5" />
       </div>
     </div>
-    <div class="apple-stat-value">{{ value }}</div>
-    <div class="apple-stat-label">{{ label }}</div>
+    <div class="mt-3">
+      <div class="text-[28px] sm:text-[32px] font-bold leading-none tracking-tight text-foreground" style="font-variant-numeric: tabular-nums;">
+        {{ value }}
+      </div>
+      <div class="mt-1.5 text-xs font-medium text-text-tertiary">{{ label }}</div>
+    </div>
   </div>
 </template>

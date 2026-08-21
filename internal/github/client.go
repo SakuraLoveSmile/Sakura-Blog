@@ -58,6 +58,9 @@ func New(cfg Config) *Client {
 	}
 }
 
+// CacheDir 返回磁盘缓存目录，便于派生客户端（如带 Token 的请求级客户端）复用同一缓存。
+func (c *Client) CacheDir() string { return c.cacheDir }
+
 // GetRepo 获取仓库元数据（裁剪字段），缓存 TTL 6h。
 func (c *Client) GetRepo(owner, repo string) (*RepoInfo, error) {
 	url := fmt.Sprintf("%s/repos/%s/%s", c.apiBase, owner, repo)

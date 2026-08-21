@@ -14,7 +14,7 @@ const NavTabsTab = defineAsyncComponent(() => import("./NavTabsTab.vue"));
 const AuthorsTab = defineAsyncComponent(() => import("./AuthorsTab.vue"));
 import AttachmentField from "@/components/AttachmentField.vue";
 import IconPicker from "@/components/IconPicker.vue";
-import { VSwitch, VCard, VButton, Toast } from "@/components/ui";
+import { VPageHeader, VSwitch, VCard, VButton, Toast } from "@/components/ui";
 
 // 全部段结构化编辑；「高级·JSON」保留 JSON 兜底（一般无需使用）。
 // 两级分组导航：第一级为左侧子导航（大分组），第二级为右侧内容内的小分段。
@@ -472,6 +472,7 @@ const PREVIEW_FOCUS: Record<string, PreviewFocus> = {
 };
 
 const previewOpen = ref(false);
+const previewViewport = ref<"desktop" | "tablet" | "mobile">("desktop");
 const previewHtml = ref("");
 const previewLoading = ref(false);
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
@@ -621,23 +622,24 @@ onMounted(() => {
 
 <template>
   <div class="settings-view" :class="{ 'preview-docked': previewOpen }">
-    <header class="settings-page-header !px-4 !py-4 sm:!px-6 sm:!py-5">
-      <div class="settings-page-header-title">
-        <Icon icon="ri:settings-3-line" class="settings-page-header-icon" />
-        <span class="text-xl sm:text-2xl">设置</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" class="!h-8 !px-3.5 !text-[13px] !font-semibold sm:!px-4" @click="previewOpen = !previewOpen">
-          <template #icon><Icon icon="ri:eye-line" class="h-full w-full" /></template>
+    <VPageHeader title="系统设置">
+      <template #icon>
+        <Icon icon="ri:settings-3-line" class="text-primary" />
+      </template>
+      <template #subtitle>站点全局偏好、主题外观定制、内容交互与系统安全配置</template>
+      <template #actions>
+        <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" @click="previewOpen = !previewOpen">
+          <template #icon><Icon icon="ri:eye-line" /></template>
           <span class="sm:hidden">预览</span>
           <span class="hidden sm:inline">前端预览</span>
         </VButton>
-        <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" class="!h-8 !px-3.5 !text-[13px] !font-semibold sm:!px-4" @click="saveActive">
+        <VButton type="primary" size="sm" :disabled="saveDisabled" :loading="activeSaving" @click="saveActive">
+          <template #icon><Icon icon="ri:save-line" /></template>
           <span class="sm:hidden">保存</span>
-          <span class="hidden sm:inline">保存更改</span>
+          <span class="hidden sm:inline">保存当前设置</span>
         </VButton>
-      </div>
-    </header>
+      </template>
+    </VPageHeader>
 
     <div class="settings-layout">
     <div class="settings-container">
@@ -1282,6 +1284,37 @@ onMounted(() => {
           <span v-else>该设置无直接前台视觉区域</span>
         </div>
         <div class="flex items-center gap-1.5">
+          <!-- 视口切换器 -->
+          <div class="apple-segmented rect mr-1">
+            <button
+              type="button"
+              :class="{ active: previewViewport === 'desktop' }"
+              title="桌面端视口 (100%)"
+              class="!p-1.5"
+              @click="previewViewport = 'desktop'"
+            >
+              <Icon icon="ri:macbook-line" class="text-xs" />
+            </button>
+            <button
+              type="button"
+              :class="{ active: previewViewport === 'tablet' }"
+              title="平板端视口 (768px)"
+              class="!p-1.5"
+              @click="previewViewport = 'tablet'"
+            >
+              <Icon icon="ri:tablet-line" class="text-xs" />
+            </button>
+            <button
+              type="button"
+              :class="{ active: previewViewport === 'mobile' }"
+              title="移动端视口 (375px)"
+              class="!p-1.5"
+              @click="previewViewport = 'mobile'"
+            >
+              <Icon icon="ri:smartphone-line" class="text-xs" />
+            </button>
+          </div>
+
           <button type="button" title="刷新预览" class="preview-icon-btn" @click="refreshPreview">
             <Icon icon="ri:refresh-line" />
           </button>
@@ -1299,8 +1332,21 @@ onMounted(() => {
           <!-- sandbox 隔离：不授予 allow-same-origin，iframe 运行于 opaque origin，
                inject 段脚本可执行但无法读取控制台会话凭据；预览资源均为绝对路径，
                opaque origin 下跨源子资源（CSS/图片/字体）加载不受影响 -->
-          <iframe v-if="previewHtml" :srcdoc="previewHtml" sandbox="allow-scripts" title="前端预览" class="preview-frame" />
-          <div v-else-if="!previewLoading" class="preview-loading">暂无预览</div>
+          <div class="flex justify-center w-full h-full">
+            <iframe
+              v-if="previewHtml"
+              :srcdoc="previewHtml"
+              sandbox="allow-scripts"
+              title="前端预览"
+              class="preview-frame transition-all duration-300"
+              :style="{
+                maxWidth: previewViewport === 'mobile' ? '375px' : previewViewport === 'tablet' ? '768px' : '100%',
+                borderRadius: previewViewport !== 'desktop' ? '12px' : '0',
+                boxShadow: previewViewport !== 'desktop' ? '0 8px 30px rgba(0,0,0,0.5)' : 'none',
+              }"
+            />
+            <div v-else-if="!previewLoading" class="preview-loading">暂无预览</div>
+          </div>
         </template>
         <div v-else class="preview-loading">
           <Icon icon="ri:information-line" width="20" height="20" />

@@ -277,3 +277,35 @@ select {
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
+
+/* 标准操作图标按钮（32px / 36px） */
+.apple-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.apple-btn-icon:hover {
+  background: var(--color-secondary);
+  border-color: var(--color-border-strong);
+  color: var(--color-foreground);
+}
+.apple-btn-icon:active {
+  transform: scale(0.95);
+}
+.apple-btn-icon.lg {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+}
+.apple-btn-icon.pill {
+  border-radius: var(--radius-full);
+}

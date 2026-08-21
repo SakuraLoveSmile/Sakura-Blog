@@ -29,20 +29,22 @@
     "axios": "^1.18.1",
     "chart.js": "^4.5.1",
     "pinia": "^4.0.2",
+    "sortablejs": "^1.15.7",
     "tiptap-markdown": "^0.8.10",
     "vue": "^3.5.39",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@iconify/json": "^2.2.510",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.2",
+    "@types/sortablejs": "^1.15.9",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/tsconfig": "^0.9.1",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animated": "^2.1.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
-    "vue-tsc": "^3.3.5",
-    "@iconify/json": "^2.2.510"
+    "vue-tsc": "^3.3.5"
   }
 }

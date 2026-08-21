@@ -2,36 +2,36 @@
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import AttachmentField from "@/components/AttachmentField.vue";
-import { Dialog, Toast, VButton, VCard } from "@/components/ui";
+import { VPageHeader, VButton, VCard, VEmpty, VLoading, Dialog, Toast } from "@/components/ui";
 import { wikiApi, type WikiHeroAction, type WikiProject } from "@/api";
 
 interface ProjectForm {
- id: string;
- name: string;
- title: string;
- headline: string;
- subtitle: string;
- description: string;
- icon: string;
- cover: string;
- available: string;
- url: string;
- repo: string;
- branch: string;
- sort: number;
- pin: boolean;
- visible: boolean;
- tagsText: string;
- hero: {
-  background: string;
+  id: string;
+  name: string;
   title: string;
+  headline: string;
+  subtitle: string;
   description: string;
-  start: string;
-  previewType: "" | "terminal" | "image";
-  previewImage: string;
-  commandsText: string;
-  actions: WikiHeroAction[];
- };
+  icon: string;
+  cover: string;
+  available: string;
+  url: string;
+  repo: string;
+  branch: string;
+  sort: number;
+  pin: boolean;
+  visible: boolean;
+  tagsText: string;
+  hero: {
+    background: string;
+    title: string;
+    description: string;
+    start: string;
+    previewType: "" | "terminal" | "image";
+    previewImage: string;
+    commandsText: string;
+    actions: WikiHeroAction[];
+  };
 }
 
 const inputCls = "apple-input";
@@ -39,29 +39,75 @@ const textareaCls = "apple-textarea";
 const selectCls = "apple-select";
 
 function emptyForm(id = ""): ProjectForm {
- return {
-  id, name: "", title: "", headline: "", subtitle: "", description: "", icon: "", cover: "",
-  available: "", url: "", repo: "", branch: "", sort: 0, pin: false, visible: true, tagsText: "",
-  hero: { background: "", title: "", description: "", start: "", previewType: "", previewImage: "", commandsText: "", actions: [] },
- };
+  return {
+    id,
+    name: "",
+    title: "",
+    headline: "",
+    subtitle: "",
+    description: "",
+    icon: "",
+    cover: "",
+    available: "",
+    url: "",
+    repo: "",
+    branch: "",
+    sort: 0,
+    pin: false,
+    visible: true,
+    tagsText: "",
+    hero: {
+      background: "",
+      title: "",
+      description: "",
+      start: "",
+      previewType: "",
+      previewImage: "",
+      commandsText: "",
+      actions: [],
+    },
+  };
 }
 
 function formFromProject(p: WikiProject): ProjectForm {
- const hero = p.hero || {};
- const preview = hero.preview || {};
- const commands = (preview.commands || []).flatMap((c) => c.codes || []);
- return {
-  id: p.id, name: p.name || p.id, title: p.title || "", headline: p.headline || "", subtitle: p.subtitle || "",
-  description: p.description || "", icon: p.icon || "", cover: p.cover || "", available: p.available || "",
-  url: p.url || "", repo: p.repo || "", branch: p.branch || "", sort: Number(p.sort) || 0,
-  pin: Boolean(p.pin), visible: p.visible !== false, tagsText: (p.tags || []).join(", "),
-  hero: {
-   background: hero.background || "", title: hero.title || "", description: hero.description || "", start: hero.start || "",
-   previewType: preview.type === "terminal" || preview.type === "image" ? preview.type : "",
-   previewImage: preview.image || "", commandsText: commands.join("\n"),
-   actions: (hero.actions || []).map((a) => ({ title: a.title || "", url: a.url || "", icon: a.icon || "" })),
-  },
- };
+  const hero = p.hero || {};
+  const preview = hero.preview || {};
+  const commands = (preview.commands || []).flatMap((c) => c.codes || []);
+  return {
+    id: p.id,
+    name: p.name || p.id,
+    title: p.title || "",
+    headline: p.headline || "",
+    subtitle: p.subtitle || "",
+    description: p.description || "",
+    icon: p.icon || "",
+    cover: p.cover || "",
+    available: p.available || "",
+    url: p.url || "",
+    repo: p.repo || "",
+    branch: p.branch || "",
+    sort: Number(p.sort) || 0,
+    pin: Boolean(p.pin),
+    visible: p.visible !== false,
+    tagsText: (p.tags || []).join(", "),
+    hero: {
+      background: hero.background || "",
+      title: hero.title || "",
+      description: hero.description || "",
+      start: hero.start || "",
+      previewType:
+        preview.type === "terminal" || preview.type === "image"
+          ? preview.type
+          : "",
+      previewImage: preview.image || "",
+      commandsText: commands.join("\n"),
+      actions: (hero.actions || []).map((a) => ({
+        title: a.title || "",
+        url: a.url || "",
+        icon: a.icon || "",
+      })),
+    },
+  };
 }
 
 const projects = ref<WikiProject[]>([]);
@@ -72,281 +118,553 @@ const saving = ref(false);
 const deleting = ref(false);
 const error = ref("");
 
-const selectedProject = computed(() => projects.value.find((p) => p.id === selectedId.value) || null);
+const selectedProject = computed(
+  () => projects.value.find((p) => p.id === selectedId.value) || null
+);
 const isEditing = computed(() => Boolean(selectedId.value));
-const projectCountLabel = computed(() => `${projects.value.length} 个项目`);
+
+// ---------- 统计数据 ----------
+const stats = computed(() => {
+  const all = projects.value;
+  let totalDocs = 0;
+  let pinCount = 0;
+  let visibleCount = 0;
+  for (const p of all) {
+    totalDocs += p.doc_count || 0;
+    if (p.pin) pinCount++;
+    if (p.visible !== false) visibleCount++;
+  }
+  return {
+    totalProjects: all.length,
+    totalDocs,
+    pinCount,
+    visibleCount,
+  };
+});
 
 async function loadProjects(selectID = "") {
- loading.value = true;
- error.value = "";
- try {
-  const { data } = await wikiApi.listProjects();
-  projects.value = Array.isArray(data.items) ? data.items : [];
-  const target = selectID || selectedId.value;
-  const project = projects.value.find((p) => p.id === target) || projects.value[0];
-  if (project) selectProject(project);
-  else {
-   selectedId.value = "";
-   form.value = emptyForm();
+  loading.value = true;
+  error.value = "";
+  try {
+    const { data } = await wikiApi.listProjects();
+    projects.value = Array.isArray(data.items) ? data.items : [];
+    const target = selectID || selectedId.value;
+    const project =
+      projects.value.find((p) => p.id === target) || projects.value[0];
+    if (project) selectProject(project);
+    else {
+      selectedId.value = "";
+      form.value = emptyForm();
+    }
+  } catch (e: any) {
+    error.value = e?.response?.data?.error || e?.message || "加载 Wiki 项目失败";
+  } finally {
+    loading.value = false;
   }
- } catch (e: any) {
-  error.value = e?.response?.data?.error || e?.message || "加载 Wiki 项目失败";
- } finally {
-  loading.value = false;
- }
 }
 
 function selectProject(project: WikiProject) {
- selectedId.value = project.id;
- form.value = formFromProject(project);
- error.value = "";
+  selectedId.value = project.id;
+  form.value = formFromProject(project);
+  error.value = "";
 }
 
 function startCreate() {
- selectedId.value = "";
- form.value = emptyForm();
- error.value = "";
+  selectedId.value = "";
+  form.value = emptyForm();
+  error.value = "";
 }
 
 function addAction() {
- form.value.hero.actions.push({ title: "", url: "", icon: "" });
+  form.value.hero.actions.push({ title: "", url: "", icon: "" });
 }
 
 function removeAction(index: number) {
- form.value.hero.actions.splice(index, 1);
+  form.value.hero.actions.splice(index, 1);
 }
 
 function buildHero() {
- const h = form.value.hero;
- const commands = h.commandsText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
- const actions = h.actions
-  .map((a) => ({ title: (a.title || "").trim(), url: (a.url || "").trim(), icon: (a.icon || "").trim() }))
-  .filter((a) => a.title || a.url);
- const preview = h.previewType
-  ? {
-    type: h.previewType,
-    ...(h.previewImage.trim() ? { image: h.previewImage.trim() } : {}),
-    ...(commands.length ? { commands: commands.map((code) => ({ codes: [code] })) } : {}),
-   }
-  : undefined;
- const hero = {
-  background: h.background.trim(), title: h.title.trim(), description: h.description.trim(), start: h.start.trim(),
-  ...(preview ? { preview } : {}), ...(actions.length ? { actions } : {}),
- };
- return Object.values(hero).some((value) => value && (typeof value !== "object" || Object.keys(value).length)) ? hero : undefined;
+  const h = form.value.hero;
+  const commands = h.commandsText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const actions = h.actions
+    .map((a) => ({
+      title: (a.title || "").trim(),
+      url: (a.url || "").trim(),
+      icon: (a.icon || "").trim(),
+    }))
+    .filter((a) => a.title || a.url);
+  const preview = h.previewType
+    ? {
+        type: h.previewType,
+        ...(h.previewImage.trim() ? { image: h.previewImage.trim() } : {}),
+        ...(commands.length
+          ? { commands: commands.map((code) => ({ codes: [code] })) }
+          : {}),
+      }
+    : undefined;
+  const hero = {
+    background: h.background.trim(),
+    title: h.title.trim(),
+    description: h.description.trim(),
+    start: h.start.trim(),
+    ...(preview ? { preview } : {}),
+    ...(actions.length ? { actions } : {}),
+  };
+  return Object.values(hero).some(
+    (value) =>
+      value && (typeof value !== "object" || Object.keys(value).length)
+  )
+    ? hero
+    : undefined;
 }
 
 function payload() {
- const f = form.value;
- return {
-  id: f.id.trim(), name: f.name.trim(), title: f.title.trim(), headline: f.headline.trim(), subtitle: f.subtitle.trim(),
-  description: f.description.trim(), icon: f.icon.trim(), cover: f.cover.trim(), available: f.available.trim(),
-  url: f.url.trim(), repo: f.repo.trim(), branch: f.branch.trim(), sort: Number(f.sort) || 0, pin: f.pin,
-  visible: f.visible, tags: f.tagsText.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean), hero: buildHero(),
- };
+  const f = form.value;
+  return {
+    id: f.id.trim(),
+    name: f.name.trim(),
+    title: f.title.trim(),
+    headline: f.headline.trim(),
+    subtitle: f.subtitle.trim(),
+    description: f.description.trim(),
+    icon: f.icon.trim(),
+    cover: f.cover.trim(),
+    available: f.available.trim(),
+    url: f.url.trim(),
+    repo: f.repo.trim(),
+    branch: f.branch.trim(),
+    sort: Number(f.sort) || 0,
+    pin: f.pin,
+    visible: f.visible,
+    tags: f.tagsText
+      .split(/[,，]/)
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    hero: buildHero(),
+  };
 }
 
 async function saveProject() {
- const id = form.value.id.trim();
- if (!id) {
-  Toast.error("请输入项目 ID");
-  return;
- }
- if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id)) {
-  Toast.error("项目 ID 只能包含字母、数字、下划线和短横线");
-  return;
- }
- saving.value = true;
- try {
-  if (isEditing.value) await wikiApi.updateProject(selectedId.value, payload());
-  else await wikiApi.createProject(payload() as any);
-  Toast.success(isEditing.value ? "Wiki 项目已保存" : "Wiki 项目已创建");
-  await loadProjects(id);
- } catch (e: any) {
-  Toast.error(e?.response?.data?.error || e?.message || "保存失败");
- } finally {
-  saving.value = false;
- }
+  const id = form.value.id.trim();
+  if (!id) {
+    Toast.error("请输入项目 ID");
+    return;
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id)) {
+    Toast.error("项目 ID 只能包含字母、数字、下划线和短横线");
+    return;
+  }
+  saving.value = true;
+  try {
+    if (isEditing.value)
+      await wikiApi.updateProject(selectedId.value, payload());
+    else await wikiApi.createProject(payload() as any);
+    Toast.success(isEditing.value ? "Wiki 项目已保存" : "Wiki 项目已创建");
+    await loadProjects(id);
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } finally {
+    saving.value = false;
+  }
 }
 
 function deleteProject() {
- const project = selectedProject.value;
- if (!project || project.has_docs) return;
- Dialog.warning({
-  title: "确定删除这个 Wiki 项目吗？",
-  description: `「${project.title || project.name || project.id}」删除后不可恢复。`,
-  confirmType: "danger",
-  onConfirm: async () => {
-   deleting.value = true;
-   try {
-    await wikiApi.deleteProject(project.id);
-    Toast.success("Wiki 项目已删除");
-    selectedId.value = "";
-    await loadProjects();
-   } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "删除失败");
-   } finally {
-    deleting.value = false;
-   }
-  },
- });
+  const project = selectedProject.value;
+  if (!project || project.has_docs) return;
+  Dialog.warning({
+    title: "确定删除这个 Wiki 项目吗？",
+    description: `「${project.title || project.name || project.id}」删除后不可恢复。`,
+    confirmType: "danger",
+    onConfirm: async () => {
+      deleting.value = true;
+      try {
+        await wikiApi.deleteProject(project.id);
+        Toast.success("Wiki 项目已删除");
+        selectedId.value = "";
+        await loadProjects();
+      } catch (e: any) {
+        Toast.error(e?.response?.data?.error || e?.message || "删除失败");
+      } finally {
+        deleting.value = false;
+      }
+    },
+  });
 }
 
 onMounted(() => loadProjects());
 </script>
 
 <template>
- <div class="wiki-projects-view">
-  <header class="wiki-projects-header">
-   <div class="min-w-0">
-    <h1 class="wiki-projects-title"><Icon icon="ri:stack-line" /> Wiki 项目</h1>
-    <p class="wiki-projects-subtitle">管理项目卡片、标签和文档页 Hero · {{ projectCountLabel }}</p>
-   </div>
-   <div class="flex shrink-0 gap-2">
-    <VButton type="secondary" size="sm" :route="{ path: '/wiki' }">
-     <template #icon><Icon icon="ri:file-list-3-line" /></template>文档
-    </VButton>
-    <VButton type="primary" size="sm" @click="startCreate">
-     <template #icon><Icon icon="ri:add-line" /></template>新建项目
-    </VButton>
-   </div>
-  </header>
+  <div class="min-h-full">
+    <!-- 统一 Page Header -->
+    <VPageHeader title="文库项目">
+      <template #icon>
+        <Icon icon="ri:stack-line" class="text-primary" />
+      </template>
+      <template #subtitle>管理文库项目的多版本元数据、封面海报、标签与 Hero 介绍</template>
+      <template #actions>
+        <VButton :route="{ path: '/wiki' }">
+          <template #icon><Icon icon="ri:file-list-3-line" /></template>
+          管理文档
+        </VButton>
+        <VButton type="primary" @click="startCreate">
+          <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
+          新建项目
+        </VButton>
+      </template>
+    </VPageHeader>
 
-  <div v-if="error" class="wiki-projects-error"><Icon icon="ri:error-warning-line" />{{ error }}<VButton type="secondary" size="sm" @click="loadProjects">重试</VButton></div>
-  <div v-if="loading" class="wiki-projects-state"><Icon icon="ri:loader-4-line" class="spin" />加载项目中...</div>
+    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div class="stats-card">
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:stack-line" />
+          </div>
+          <div>
+            <div class="stats-label">文库项目</div>
+            <div class="stats-value">{{ stats.totalProjects }} <span class="stats-sub">个项目合辑</span></div>
+          </div>
+        </div>
 
-  <div v-else class="wiki-projects-layout">
-   <aside class="wiki-project-list">
-    <div class="wiki-project-list-head"><span>项目列表</span><span class="text-xs text-text-tertiary">{{ projects.length }}</span></div>
-    <button v-for="project in projects" :key="project.id" type="button" class="wiki-project-list-item" :class="{ active: selectedId === project.id }" @click="selectProject(project)">
-     <span class="wiki-project-list-icon"><img v-if="project.icon" :src="project.icon" alt="" /><Icon v-else icon="ri:book-2-line" /></span>
-     <span class="min-w-0 flex-1 text-left"><strong>{{ project.title || project.name || project.id }}</strong><small>{{ project.id }} · {{ project.doc_count || 0 }} 篇文档</small></span>
-     <Icon v-if="project.pin" icon="ri:pushpin-2-fill" class="text-primary" />
-    </button>
-    <div v-if="!projects.length" class="wiki-project-empty">还没有 Wiki 项目<br /><button type="button" @click="startCreate">创建第一个项目</button></div>
-   </aside>
+        <div class="stats-card">
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:file-text-line" />
+          </div>
+          <div>
+            <div class="stats-label">文档收录</div>
+            <div class="stats-value text-[#30D158]">{{ stats.totalDocs }} <span class="stats-sub">篇在册文档</span></div>
+          </div>
+        </div>
 
-   <main class="wiki-project-editor">
-    <VCard :title="isEditing ? '编辑项目' : '新建项目'">
-     <div class="form-grid form-grid-3">
-      <div class="field"><label>项目 ID <span class="required">*</span></label><input v-model="form.id" :class="inputCls" :disabled="isEditing" placeholder="stellar" /><small class="field-hint">创建后不可修改，用于 /wiki/:project</small></div>
-      <div class="field"><label>内部名称</label><input v-model="form.name" :class="inputCls" placeholder="Stellar" /></div>
-      <div class="field"><label>排序（大在前）</label><input v-model.number="form.sort" type="number" :class="inputCls" /></div>
-     </div>
-     <div class="form-grid form-grid-2">
-      <div class="field"><label>卡片标题</label><input v-model="form.title" :class="inputCls" /></div>
-      <div class="field"><label>卡片副标题</label><input v-model="form.subtitle" :class="inputCls" /></div>
-      <div class="field"><label>Headline</label><input v-model="form.headline" :class="inputCls" placeholder="可选的短标题" /></div>
-      <div class="field"><label>适用范围</label><input v-model="form.available" :class="inputCls" placeholder="适用于独立博主" /></div>
-     </div>
-     <div class="field"><label>项目简介</label><textarea v-model="form.description" rows="2" :class="textareaCls" /></div>
-     <div class="form-grid form-grid-2">
-      <div class="field"><label>项目图标</label><AttachmentField v-model="form.icon" placeholder="图片 URL" /></div>
-      <div class="field"><label>卡片封面</label><AttachmentField v-model="form.cover" placeholder="图片 URL（留空为无封面）" /></div>
-     </div>
-     <div class="form-grid form-grid-3">
-      <div class="field"><label>GitHub 仓库</label><input v-model="form.repo" :class="inputCls" placeholder="owner/repo" /></div>
-      <div class="field"><label>分支</label><input v-model="form.branch" :class="inputCls" placeholder="main" /></div>
-      <div class="field"><label>外部链接</label><input v-model="form.url" :class="inputCls" placeholder="https://..." /></div>
-     </div>
-     <div class="field"><label>标签（逗号分隔）</label><input v-model="form.tagsText" :class="inputCls" placeholder="开源, 工具" /><small class="field-hint">前台会以 # 标签形式显示，并支持按标签筛选。</small></div>
-     <div class="toggle-row">
-      <label><input v-model="form.visible" type="checkbox" /> <span>在前台显示</span></label>
-      <label><input v-model="form.pin" type="checkbox" /> <span>置顶项目</span></label>
-      <span v-if="selectedProject?.has_docs" class="doc-count"><Icon icon="ri:file-text-line" /> 已有 {{ selectedProject?.doc_count || 0 }} 篇文档</span>
-     </div>
-    </VCard>
+        <div class="stats-card">
+          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
+            <Icon icon="ri:pushpin-line" />
+          </div>
+          <div>
+            <div class="stats-label">置顶推荐</div>
+            <div class="stats-value text-[#FF9500]">{{ stats.pinCount }} <span class="stats-sub">个精选项目</span></div>
+          </div>
+        </div>
 
-    <VCard title="项目 Hero（可选）" class="mt-4">
-     <p class="section-hint">详情页有 Hero 配置时显示在文档标题上方；背景填 galaxy 可启用动态星空，浏览器不支持动效时会自然降级。</p>
-     <div class="form-grid form-grid-2">
-      <div class="field"><label>背景（图片 URL 或 galaxy）</label><input v-model="form.hero.background" :class="inputCls" placeholder="galaxy / https://..." /></div>
-      <div class="field"><label>Hero 标题</label><input v-model="form.hero.title" :class="inputCls" placeholder="留空使用项目名" /></div>
-      <div class="field"><label>Hero 描述</label><input v-model="form.hero.description" :class="inputCls" /></div>
-      <div class="field"><label>开始按钮文案</label><input v-model="form.hero.start" :class="inputCls" placeholder="开始阅读" /></div>
-     </div>
-     <div class="hero-preview-form">
-      <div class="field"><label>预览类型</label><select v-model="form.hero.previewType" :class="selectCls"><option value="">无预览</option><option value="terminal">终端命令</option><option value="image">图片预览</option></select></div>
-      <div v-if="form.hero.previewType === 'image'" class="field"><label>预览图片</label><AttachmentField v-model="form.hero.previewImage" placeholder="图片 URL" /></div>
-      <div v-if="form.hero.previewType === 'terminal'" class="field hero-command-field"><label>命令（每行一条，可复制）</label><textarea v-model="form.hero.commandsText" rows="4" :class="textareaCls" placeholder="npm install stellar\nmake dev" /></div>
-     </div>
-     <div class="actions-editor">
-      <div class="actions-head"><label>操作按钮</label><button type="button" class="text-link" @click="addAction"><Icon icon="ri:add-line" /> 添加按钮</button></div>
-      <div v-for="(action, index) in form.hero.actions" :key="index" class="action-row">
-       <input v-model="action.title" :class="inputCls" placeholder="按钮文案" />
-       <input v-model="action.url" :class="inputCls" placeholder="链接 URL" />
-       <input v-model="action.icon" :class="inputCls" placeholder="图标 key（可选）" />
-       <button type="button" class="remove-action" title="删除按钮" @click="removeAction(index)"><Icon icon="ri:delete-bin-line" /></button>
+        <div class="stats-card">
+          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
+            <Icon icon="ri:global-line" />
+          </div>
+          <div>
+            <div class="stats-label">公开展示</div>
+            <div class="stats-value">{{ stats.visibleCount }} <span class="stats-sub">个前台可见</span></div>
+          </div>
+        </div>
       </div>
-      <p v-if="!form.hero.actions.length" class="field-hint">暂无按钮。</p>
-     </div>
-     <div class="card-actions">
-      <VButton type="primary" size="sm" :loading="saving" @click="saveProject">{{ isEditing ? '保存项目' : '创建项目' }}</VButton>
-      <VButton v-if="isEditing" type="danger" size="sm" :disabled="Boolean(selectedProject?.has_docs)" :loading="deleting" :title="selectedProject?.has_docs ? '有文档的项目不能删除' : '删除项目'" @click="deleteProject">删除项目</VButton>
-      <span v-if="selectedProject?.has_docs" class="delete-hint">项目包含文档时不能删除，请先移除文档。</span>
-     </div>
-    </VCard>
-   </main>
+
+      <VLoading v-if="loading" />
+
+      <div v-else class="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+        <!-- 左侧项目列表 -->
+        <div class="space-y-3 lg:col-span-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">项目列表 ({{ projects.length }})</span>
+            <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">
+              + 新增
+            </button>
+          </div>
+
+          <VEmpty
+            v-if="!projects.length"
+            title="暂无 Wiki 项目"
+            message="点击上方按钮创建你的第一个项目"
+          />
+
+          <div v-else class="space-y-2.5">
+            <div
+              v-for="project in projects"
+              :key="project.id"
+              class="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-all hover:border-border-strong"
+              :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedId === project.id }"
+              @click="selectProject(project)"
+            >
+              <!-- 图标 -->
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-secondary">
+                <img v-if="project.icon" :src="project.icon" alt="" class="h-full w-full object-cover" />
+                <Icon v-else icon="ri:book-2-line" class="text-xl text-text-tertiary" />
+              </div>
+
+              <!-- 标题与信息 -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="truncate text-sm font-semibold text-foreground">
+                    {{ project.title || project.name || project.id }}
+                  </span>
+                  <Icon v-if="project.pin" icon="ri:pushpin-fill" class="shrink-0 text-xs text-primary" />
+                </div>
+                <div class="mt-0.5 flex items-center gap-2 text-xs text-text-quaternary">
+                  <span class="font-mono">/{{ project.id }}</span>
+                  <span>·</span>
+                  <span>{{ project.doc_count || 0 }} 篇文档</span>
+                </div>
+              </div>
+
+              <Icon icon="ri:arrow-right-s-line" class="text-text-quaternary transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧项目表单与 Hero 设置 -->
+        <div class="space-y-5 lg:col-span-8">
+          <VCard :title="isEditing ? `编辑项目：${selectedProject?.title || form.id}` : '新建 Wiki 项目'">
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">项目 ID / Slug <span class="text-state-error">*</span></label>
+                  <input v-model="form.id" :class="inputCls" :disabled="isEditing" placeholder="stellar" />
+                  <small class="mt-1 block text-[11px] text-text-quaternary">用于 /wiki/:project，创建后不可更改</small>
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">内部名称</label>
+                  <input v-model="form.name" :class="inputCls" placeholder="Stellar Docs" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">排序权重（大在前）</label>
+                  <input v-model.number="form.sort" type="number" :class="inputCls" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片主标题</label>
+                  <input v-model="form.title" :class="inputCls" placeholder="如：Stellar 使用指南" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片副标题</label>
+                  <input v-model="form.subtitle" :class="inputCls" placeholder="如：全场景多功能知识库" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">Headline 标签</label>
+                  <input v-model="form.headline" :class="inputCls" placeholder="可选的短标题/亮点" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">适用范围 / 版本</label>
+                  <input v-model="form.available" :class="inputCls" placeholder="如：适用于所有独立博客" />
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">项目简介</label>
+                <textarea v-model="form.description" rows="2" :class="textareaCls" placeholder="关于该文库项目的简短说明..."></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">项目图标</label>
+                  <AttachmentField v-model="form.icon" placeholder="选择或输入图标 URL" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片封面</label>
+                  <AttachmentField v-model="form.cover" placeholder="选择或输入封面 URL" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">GitHub 仓库</label>
+                  <input v-model="form.repo" :class="inputCls" placeholder="owner/repo" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">分支</label>
+                  <input v-model="form.branch" :class="inputCls" placeholder="main" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">外部链接</label>
+                  <input v-model="form.url" :class="inputCls" placeholder="https://..." />
+                </div>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">标签（逗号分隔）</label>
+                <input v-model="form.tagsText" :class="inputCls" placeholder="开源, 知识库, 工具" />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-5 border-t border-border/60 pt-3">
+                <label class="inline-flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                  <input v-model="form.visible" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                  前台公开展示
+                </label>
+                <label class="inline-flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+                  <input v-model="form.pin" type="checkbox" class="h-4 w-4 rounded border-border text-primary" />
+                  置顶推荐项目
+                </label>
+              </div>
+            </div>
+          </VCard>
+
+          <!-- Hero 配置卡 -->
+          <VCard title="项目 Hero 横幅（可选）">
+            <p class="mb-4 text-xs text-text-tertiary leading-relaxed">
+              详情页配置 Hero 时将以全宽横幅呈现；背景填 <code>galaxy</code> 可启用星空动态粒子背景。
+            </p>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">背景设置</label>
+                  <input v-model="form.hero.background" :class="inputCls" placeholder="galaxy / 图片 URL" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">Hero 标题</label>
+                  <input v-model="form.hero.title" :class="inputCls" placeholder="留空使用项目名" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">Hero 描述</label>
+                  <input v-model="form.hero.description" :class="inputCls" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">开始阅读按钮文案</label>
+                  <input v-model="form.hero.start" :class="inputCls" placeholder="开始阅读" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">交互预览模式</label>
+                  <select v-model="form.hero.previewType" :class="selectCls">
+                    <option value="">无预览</option>
+                    <option value="terminal">终端命令窗口</option>
+                    <option value="image">海报图片</option>
+                  </select>
+                </div>
+                <div v-if="form.hero.previewType === 'image'">
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">预览图片</label>
+                  <AttachmentField v-model="form.hero.previewImage" placeholder="图片 URL" />
+                </div>
+              </div>
+
+              <div v-if="form.hero.previewType === 'terminal'">
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">终端命令（每行一条）</label>
+                <textarea
+                  v-model="form.hero.commandsText"
+                  rows="3"
+                  :class="textareaCls"
+                  placeholder="npm install stellar\nmake dev"
+                ></textarea>
+              </div>
+
+              <!-- 快捷行动按钮组 -->
+              <div class="border-t border-border/60 pt-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-medium text-text-tertiary">快捷行动按钮</span>
+                  <button type="button" class="text-xs text-primary hover:underline" @click="addAction">
+                    + 添加按钮
+                  </button>
+                </div>
+
+                <div v-for="(action, index) in form.hero.actions" :key="index" class="flex items-center gap-2 mb-2">
+                  <input v-model="action.title" :class="inputCls" placeholder="按钮文案" class="flex-1" />
+                  <input v-model="action.url" :class="inputCls" placeholder="跳转 URL" class="flex-1" />
+                  <input v-model="action.icon" :class="inputCls" placeholder="图标 key" class="w-28" />
+                  <button
+                    type="button"
+                    class="rounded-lg p-2 text-text-quaternary hover:text-state-error hover:bg-secondary"
+                    @click="removeAction(index)"
+                  >
+                    <Icon icon="ri:delete-bin-line" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <template #footer>
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <VButton type="primary" :loading="saving" @click="saveProject">
+                    {{ isEditing ? '保存修改' : '创建项目' }}
+                  </VButton>
+                  <VButton v-if="isEditing" type="danger" :disabled="Boolean(selectedProject?.has_docs)" :loading="deleting" @click="deleteProject">
+                    删除项目
+                  </VButton>
+                </div>
+                <span v-if="selectedProject?.has_docs" class="text-xs text-text-quaternary">
+                  包含文档的项目不可直接删除
+                </span>
+              </div>
+            </template>
+          </VCard>
+        </div>
+      </div>
+    </div>
   </div>
- </div>
 </template>
 
 <style scoped>
-.wiki-projects-view { max-width: 1440px; margin: 0 auto; padding: 24px; }
-.wiki-projects-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-.wiki-projects-title { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--color-foreground); font-size: 24px; font-weight: 700; }
-.wiki-projects-title svg { color: var(--color-primary); }
-.wiki-projects-subtitle, .section-hint, .field-hint { color: var(--color-text-tertiary); font-size: 12px; }
-.wiki-projects-subtitle { margin: 7px 0 0; }
-.wiki-projects-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
-.wiki-project-list { overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-card); box-shadow: var(--shadow-sm); }
-.wiki-project-list-head { display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-foreground); font-size: 13px; font-weight: 600; }
-.wiki-project-list-item { display: flex; width: 100%; align-items: center; gap: 9px; padding: 12px 14px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent); background: transparent; color: var(--color-foreground); text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
-.wiki-project-list-item:last-of-type { border-bottom: 0; }
-.wiki-project-list-item:hover, .wiki-project-list-item.active { background: color-mix(in srgb, var(--color-primary) 10%, var(--color-card)); }
-.wiki-project-list-item.active { box-shadow: inset 3px 0 var(--color-primary); }
-.wiki-project-list-item strong, .wiki-project-list-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wiki-project-list-item strong { font-size: 13px; font-weight: 600; }
-.wiki-project-list-item small { margin-top: 3px; color: var(--color-text-tertiary); font-size: 11px; }
-.wiki-project-list-icon { display: inline-flex; width: 32px; height: 32px; flex: 0 0 32px; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-secondary); color: var(--color-text-tertiary); }
-.wiki-project-list-icon img { width: 100%; height: 100%; object-fit: cover; }
-.wiki-project-empty { padding: 28px 16px; color: var(--color-text-tertiary); font-size: 12px; line-height: 1.8; text-align: center; }
-.wiki-project-empty button, .text-link { border: 0; background: transparent; color: var(--color-primary); cursor: pointer; }
-.wiki-project-editor { min-width: 0; }
-.wiki-project-editor :deep(.card-body) { padding: 20px; }
-.required { color: var(--color-state-error); }
-.field-hint { display: block; margin-top: 5px; }
-.section-hint { margin: -4px 0 16px; line-height: 1.6; }
-.toggle-row { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 16px; color: var(--color-text-secondary); font-size: 13px; }
-.toggle-row label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
-.toggle-row input { accent-color: var(--color-primary); }
-.doc-count { display: inline-flex; align-items: center; gap: 5px; color: var(--color-text-tertiary); font-size: 12px; }
-.hero-preview-form { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 14px; }
-.hero-command-field { grid-column: 1 / -1; }
-.actions-editor { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border); }
-.actions-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--color-text-secondary); font-size: 13px; font-weight: 600; }
-.text-link { display: inline-flex; align-items: center; gap: 4px; padding: 3px; font-size: 12px; font-weight: 500; }
-.action-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr 32px; gap: 8px; margin-bottom: 8px; }
-.remove-action { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: transparent; color: var(--color-state-error); cursor: pointer; }
-.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
-.delete-hint { color: var(--color-text-tertiary); font-size: 12px; }
-.wiki-projects-state, .wiki-projects-error { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 180px; color: var(--color-text-tertiary); }
-.wiki-projects-error { justify-content: flex-start; min-height: 0; margin-bottom: 14px; color: var(--color-state-error); }
-.wiki-projects-error .btn { margin-left: 4px; }
-.spin { animation: wiki-spin 1s linear infinite; }
-@keyframes wiki-spin { to { transform: rotate(360deg); } }
-@media (max-width: 900px) {
- .wiki-projects-view { padding: 16px; }
- .wiki-projects-layout { grid-template-columns: 1fr; }
- .wiki-project-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
- .wiki-project-list-head { grid-column: 1 / -1; }
- .wiki-project-list-item { border-bottom: 0; }
- .wiki-project-list-item.active { box-shadow: inset 0 -3px var(--color-primary); }
+/* 统计卡片 */
+.stats-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
 }
-@media (max-width: 600px) {
- .wiki-projects-header { align-items: flex-start; flex-direction: column; }
- .wiki-project-list { display: block; }
- .hero-preview-form, .action-row { grid-template-columns: 1fr; }
- .hero-command-field { grid-column: auto; }
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
+}
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
+}
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
+
+@media (max-width: 640px) {
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stats-value {
+    font-size: 14px;
+  }
 }
 </style>

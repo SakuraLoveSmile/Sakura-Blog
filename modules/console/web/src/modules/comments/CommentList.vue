@@ -1,42 +1,54 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { commentApi } from "@/api";
+import { commentApi, type CommentStatus } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
-  VCard,
+  VPageHeader,
   VButton,
   VEmpty,
   VLoading,
+  VFloatingDock,
   VPagination,
   VModal,
   Dialog,
   Toast,
 } from "@/components/ui";
-import { themeColors } from "@/lib/theme-colors";
+import { formatRelative } from "@/lib/format";
 
-const router = useRouter();
+interface CommentItem {
+  id: number;
+  post_slug: string;
+  post_title?: string;
+  parent_id?: number;
+  user_id?: number;
+  nick: string;
+  email: string;
+  website?: string;
+  avatar?: string;
+  ip?: string;
+  browser?: string;
+  os?: string;
+  content: string;
+  content_html?: string;
+  status: CommentStatus;
+  created_at: string;
+}
+
 const queryClient = useQueryClient();
-const colors = themeColors({
-  primary: "#2E8DFF",
-  warning: "#FF9F0A",
-  success: "#30D158",
-  error: "#FF453A",
-});
 
 const page = ref(1);
 const size = ref(20);
 
 type StatusKey = "all" | "pending" | "approved" | "rejected" | "spam";
 const selectedStatus = ref<StatusKey>("all");
-const statusTabs: { key: StatusKey; label: string }[] = [
-  { key: "all", label: "全部" },
-  { key: "pending", label: "待审核" },
-  { key: "approved", label: "已批准" },
-  { key: "rejected", label: "已拒绝" },
-  { key: "spam", label: "垃圾评论" },
+const statusTabs: { key: StatusKey; label: string; icon: string }[] = [
+  { key: "all", label: "全部", icon: "ri:chat-3-line" },
+  { key: "pending", label: "待审核", icon: "ri:time-line" },
+  { key: "approved", label: "已批准", icon: "ri:checkbox-circle-line" },
+  { key: "rejected", label: "已拒绝", icon: "ri:close-circle-line" },
+  { key: "spam", label: "垃圾评论", icon: "ri:spam-2-line" },
 ];
 
 const keyword = ref("");
@@ -50,33 +62,35 @@ watch(keyword, () => {
   }, 300);
 });
 
-const menuOpenId = ref<number | null>(null);
+// 批量模式
+const selectedIds = ref<Set<number>>(new Set());
+
+// 回复弹窗
 const replyVisible = ref(false);
-const replyTarget = ref<any>(null);
+const replyTarget = ref<CommentItem | null>(null);
 const replyContent = ref("");
+const replySubmitting = ref(false);
 
-// 批量模式：仅在批量模式下显示复选框与批量操作条
-const batchMode = ref(false);
+// 键盘快捷流焦点
+const focusedIndex = ref<number>(-1);
+const keyboardHelpVisible = ref(false);
 
-// 响应式查询参数：page/size/status 变化自动重取。
-// 后端支持 pending/approved/rejected/spam 四种状态筛选，非法值回退全量。
+// 响应式查询参数
 const queryParams = computed(() => {
   const params: Record<string, unknown> = { page: page.value, size: size.value };
   if (selectedStatus.value !== "all") params.status = selectedStatus.value;
-  // Spec 62：keyword 走后端 LIKE 搜索（nick/email/content），跨页可搜
   if (debouncedKeyword.value) params.keyword = debouncedKeyword.value;
   return params;
 });
 
-const { data: queryData, isLoading, isFetching, refetch } = useQuery({
+const { data: queryData, isLoading, refetch } = useQuery({
   queryKey: computed(() => queryKeys.comments(queryParams.value)),
   queryFn: () => commentApi.list(queryParams.value).then(({ data }) => data),
 });
 
-const comments = computed(() => queryData.value?.items || []);
+const comments = computed<CommentItem[]>(() => (queryData.value?.items || []) as CommentItem[]);
 const total = computed(() => queryData.value?.total || 0);
 
-// 各状态计数：直接使用后端列表响应中的 counts（各状态真实总数）。
 const statusCounts = ref<Record<StatusKey, number>>({
   all: 0,
   pending: 0,
@@ -84,6 +98,7 @@ const statusCounts = ref<Record<StatusKey, number>>({
   rejected: 0,
   spam: 0,
 });
+
 watch(
   () => queryData.value,
   (data) => {
@@ -99,524 +114,597 @@ watch(
   { immediate: true }
 );
 
-// Spec 62：关键字过滤已下推后端（keyword 参数），此处直接使用列表数据
-
-const statCards = computed(() => [
-  {
-    label: "总评论数",
-    value: statusCounts.value.all,
-    color: colors.primary,
-    bg: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
-    icon: "ri:chat-3-line",
-    badgeText: "全部评论",
-    badgeColor: colors.primary,
-    badgeBg: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
-  },
-  {
-    label: "待审核",
-    value: statusCounts.value.pending,
-    color: colors.warning,
-    bg: "color-mix(in srgb, var(--color-state-warning) 10%, transparent)",
-    icon: "ri:time-line",
-    badgeText: "需要处理",
-    badgeColor: colors.warning,
-    badgeBg: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
-  },
-  {
-    label: "已批准",
-    value: statusCounts.value.approved,
-    color: colors.success,
-    bg: "color-mix(in srgb, var(--color-state-success) 10%, transparent)",
-    icon: "ri:checkbox-circle-line",
-    badgeText: "正常显示",
-    badgeColor: colors.success,
-    badgeBg: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
-  },
-  {
-    label: "垃圾评论",
-    value: statusCounts.value.spam,
-    color: colors.error,
-    bg: "color-mix(in srgb, var(--color-state-error) 10%, transparent)",
-    icon: "ri:delete-bin-line",
-    badgeText: "已拦截",
-    badgeColor: colors.error,
-    badgeBg: "color-mix(in srgb, var(--color-state-error) 12%, transparent)",
-  },
-]);
-
-// 状态徽章：class 名 + 文案
 function statusInfo(status: string): { cls: string; label: string } {
-  if (status === "approved") return { cls: "approved", label: "已批准" };
-  if (status === "pending") return { cls: "pending", label: "待审核" };
-  if (status === "rejected") return { cls: "rejected", label: "已拒绝" };
-  if (status === "spam") return { cls: "spam", label: "垃圾评论" };
-  return { cls: "spam", label: "未知" };
-}
-
-// 按昵称 hash 取头像渐变（avatar-gradient-1..8）
-function avatarGradient(name: string): string {
-  const src = name || "?";
-  let hash = 0;
-  for (let i = 0; i < src.length; i++) {
-    hash = (hash * 31 + src.charCodeAt(i)) & 0xffffffff;
-  }
-  const n = (Math.abs(hash) % 8) + 1;
-  return `avatar-gradient-${n}`;
-}
-function avatarInitial(cm: any): string {
-  const source = (cm?.nick || cm?.email || "?").trim();
-  return source.charAt(0).toUpperCase() || "?";
-}
-
-// 批量选择（对齐 PostList 既有模式）
-const checkedAll = ref(false);
-const selectedIds = ref<number[]>([]);
-
-watch(selectedIds, (val) => {
-  checkedAll.value = val.length === comments.value.length && val.length > 0;
-});
-
-// 翻页/筛选变化后清空选中
-watch(queryParams, () => {
-  selectedIds.value = [];
-});
-
-function handleCheckAllChange(e: Event) {
-  const { checked } = e.target as HTMLInputElement;
-  selectedIds.value = checked ? comments.value.map((cm: any) => cm.id) : [];
-}
-
-function checkSelection(id: number) {
-  return selectedIds.value.includes(id);
-}
-
-function toggleSelection(id: number) {
-  if (checkSelection(id)) {
-    selectedIds.value = selectedIds.value.filter((i) => i !== id);
-  } else {
-    selectedIds.value = [...selectedIds.value, id];
+  switch (status) {
+    case "pending":
+      return { cls: "bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/20", label: "待审核" };
+    case "approved":
+      return { cls: "bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20", label: "已批准" };
+    case "rejected":
+      return { cls: "bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20", label: "已拒绝" };
+    case "spam":
+      return { cls: "bg-[#8E8E93]/10 text-[#8E8E93] border-[#8E8E93]/20", label: "垃圾评论" };
+    default:
+      return { cls: "bg-secondary text-text-tertiary border-border", label: status };
   }
 }
 
-function exitBatchMode() {
-  batchMode.value = false;
-  selectedIds.value = [];
-}
-
-// 批量状态操作：不触发邮件通知（后端批量端点不接 notify）
-async function runBatchAction(action: "approve" | "reject" | "spam", label: string) {
+// ---------- 操作流 ----------
+async function setCommentStatus(id: number, status: CommentStatus) {
   try {
-    const { data } = await commentApi.batch({ ids: selectedIds.value, action });
-    selectedIds.value = [];
-    queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-    Toast.success(`批量${label}完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
+    await commentApi.setStatus(id, status);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
+    await refetch();
+    const map: Record<CommentStatus, string> = {
+      approved: "已批准该评论",
+      rejected: "已拒绝该评论",
+      spam: "已标记为垃圾评论",
+      pending: "已重置为待审核",
+    };
+    Toast.success(map[status] || "状态已更新");
   } catch (e: any) {
-    Toast.error(e?.response?.data?.error || `批量${label}失败`);
+    Toast.error(e?.response?.data?.error || "操作失败");
   }
 }
-function handleApproveInBatch() {
-  runBatchAction("approve", "通过");
-}
-function handleRejectInBatch() {
-  runBatchAction("reject", "拒绝");
-}
-function handleSpamInBatch() {
-  runBatchAction("spam", "标记垃圾");
-}
 
-function handleDeleteInBatch() {
-  const count = selectedIds.value.length;
+function handleDeleteSingle(c: CommentItem) {
   Dialog.warning({
-    title: `确定要删除选中的 ${count} 条评论吗？`,
-    description: "该操作不可恢复",
+    title: `确定删除来自「${c.nick}」的评论吗？`,
+    description: "删除后该评论及其子回复将被永久移除。",
     confirmType: "danger",
     onConfirm: async () => {
       try {
-        const { data } = await commentApi.batch({ ids: selectedIds.value, action: "delete" });
-        selectedIds.value = [];
-        queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-        Toast.success(`批量删除完成：成功 ${data.succeeded} 条，失败 ${data.failed} 条`);
+        await commentApi.delete(c.id);
+        selectedIds.value.delete(c.id);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
+        await refetch();
+        Toast.success("已删除");
       } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "批量删除失败");
+        Toast.error(e?.response?.data?.error || "删除失败");
       }
     },
   });
 }
 
-function selectStatus(key: StatusKey) {
-  if (selectedStatus.value === key) return;
-  selectedStatus.value = key;
-  page.value = 1;
-  selectedIds.value = [];
-}
-
-function handleApprove(cm: any) {
-  menuOpenId.value = null;
-  Dialog.warning({
-    title: "确定要通过该评论吗？",
-    confirmType: "secondary",
-    onConfirm: async () => {
-      await commentApi.approve(cm.id);
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-      Toast.success("已通过");
-    },
-  });
-}
-
-// 拒绝 / 标垃圾：走通用状态端点（不发通知）
-function handleSetStatus(cm: any, status: "rejected" | "spam", title: string, doneText: string, danger = false) {
-  menuOpenId.value = null;
-  Dialog.warning({
-    title,
-    confirmType: danger ? "danger" : "secondary",
-    onConfirm: async () => {
-      await commentApi.setStatus(cm.id, status);
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-      Toast.success(doneText);
-    },
-  });
-}
-function handleReject(cm: any) {
-  handleSetStatus(cm, "rejected", "确定要拒绝该评论吗？", "已拒绝");
-}
-function handleSpam(cm: any) {
-  handleSetStatus(cm, "spam", "确定要将该评论标为垃圾吗？", "已标为垃圾", true);
-}
-
-function handleDelete(cm: any) {
-  menuOpenId.value = null;
-  Dialog.warning({
-    title: "确定要删除该评论吗？",
-    description: "该操作不可恢复",
-    confirmType: "danger",
-    onConfirm: async () => {
-      await commentApi.delete(cm.id);
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-      Toast.success("删除成功");
-    },
-  });
-}
-
-function openReply(cm: any) {
-  menuOpenId.value = null;
-  replyTarget.value = cm;
+function openReply(c: CommentItem) {
+  replyTarget.value = c;
   replyContent.value = "";
   replyVisible.value = true;
 }
 
-async function handleReply() {
-  if (!replyTarget.value || !replyContent.value.trim()) return;
-  await commentApi.reply({ parent_id: replyTarget.value.id, content: replyContent.value });
-  replyVisible.value = false;
-  replyTarget.value = null;
-  replyContent.value = "";
-  queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-  Toast.success("回复成功");
+async function submitReply() {
+  if (!replyTarget.value || !replyContent.value.trim()) {
+    Toast.warning("请输入回复内容");
+    return;
+  }
+  replySubmitting.value = true;
+  try {
+    await commentApi.reply({
+      parent_id: replyTarget.value.id,
+      content: replyContent.value.trim(),
+    });
+    replyVisible.value = false;
+    await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
+    await refetch();
+    Toast.success("回复已发送");
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "回复失败");
+  } finally {
+    replySubmitting.value = false;
+  }
 }
 
-function closeMenus() {
-  menuOpenId.value = null;
+// ---------- 批量操作 ----------
+function toggleSelect(id: number) {
+  if (selectedIds.value.has(id)) selectedIds.value.delete(id);
+  else selectedIds.value.add(id);
 }
+
+function selectAll() {
+  for (const c of comments.value) selectedIds.value.add(c.id);
+}
+
+function clearSelection() {
+  selectedIds.value.clear();
+}
+
+async function handleBatch(action: "approve" | "reject" | "spam" | "delete") {
+  const ids = Array.from(selectedIds.value);
+  if (!ids.length) return;
+
+  const labels = {
+    approve: "批量批准",
+    reject: "批量拒绝",
+    spam: "批量标为垃圾",
+    delete: "批量删除",
+  };
+
+  const execute = async () => {
+    try {
+      await commentApi.batch({ ids, action });
+      clearSelection();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
+      await refetch();
+      Toast.success(`已${labels[action]} ${ids.length} 条评论`);
+    } catch (e: any) {
+      Toast.error(e?.response?.data?.error || "批量操作失败");
+    }
+  };
+
+  if (action === "delete" || action === "spam") {
+    Dialog.warning({
+      title: `确定要${labels[action]}选中的 ${ids.length} 条评论吗？`,
+      description: action === "delete" ? "删除后不可恢复。" : "标记为垃圾后将不再前台展示。",
+      confirmType: "danger",
+      onConfirm: execute,
+    });
+  } else {
+    execute();
+  }
+}
+
+// ---------- 用户信息抽屉 ----------
+const userDrawerTarget = ref<CommentItem | null>(null);
+
+function openUserDrawer(c: CommentItem) {
+  userDrawerTarget.value = c;
+}
+
+// ---------- 键盘流极速审核 ----------
+function onKeydown(e: KeyboardEvent) {
+  // 如果在输入框中打字，不拦截快捷键
+  const tag = (e.target as HTMLElement)?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || replyVisible.value) {
+    return;
+  }
+
+  const list = comments.value;
+  if (!list.length) return;
+
+  if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") {
+    e.preventDefault();
+    if (focusedIndex.value < list.length - 1) focusedIndex.value++;
+    else focusedIndex.value = 0;
+  } else if (e.key === "k" || e.key === "K" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (focusedIndex.value > 0) focusedIndex.value--;
+    else focusedIndex.value = list.length - 1;
+  } else if (focusedIndex.value >= 0 && focusedIndex.value < list.length) {
+    const target = list[focusedIndex.value];
+    if (e.key === "a" || e.key === "A") {
+      e.preventDefault();
+      setCommentStatus(target.id, "approved");
+    } else if (e.key === "d" || e.key === "D") {
+      e.preventDefault();
+      setCommentStatus(target.id, "rejected");
+    } else if (e.key === "s" || e.key === "S") {
+      e.preventDefault();
+      setCommentStatus(target.id, "spam");
+    } else if (e.key === "r" || e.key === "R") {
+      e.preventDefault();
+      openReply(target);
+    } else if (e.key === "x" || e.key === "X") {
+      e.preventDefault();
+      toggleSelect(target.id);
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", onKeydown);
+});
 </script>
 
 <template>
-  <div class="min-h-full" @click="closeMenus">
-    <!-- ===== Page Header ===== -->
-    <header
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-4 backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-5 md:px-8"
-      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
-    >
-      <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">评论管理</h1>
-        <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有访客评论，审核、回复或删除不当内容</p>
-      </div>
-      <div class="flex items-center gap-1.5 sm:gap-2.5">
-        <button
-          type="button"
-          title="刷新"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:border-border-strong hover:bg-secondary hover:text-foreground sm:h-9 sm:w-9 sm:rounded-[10px]"
-          @click="refetch()"
-        >
-          <Icon
-            icon="ri:refresh-line"
-            :class="{ 'animate-spin text-foreground': isFetching }"
-            class="text-base sm:text-[18px]"
-          />
-        </button>
-        <button
-          type="button"
-          class="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-border-strong hover:bg-secondary sm:h-9 sm:gap-1.5 sm:px-4 sm:text-[13px]"
-          :class="{ '!border-primary !bg-primary/15 !text-primary': batchMode }"
-          @click="batchMode = !batchMode"
-        >
-          <Icon icon="ri:list-check-2" class="text-sm sm:text-[15px]" />
-          <span class="hidden sm:inline">{{ batchMode ? "退出批量" : "批量操作" }}</span>
-        </button>
-        <button
-          type="button"
-          class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary-hover active:scale-[0.97] sm:h-9 sm:px-5"
-          title="评论设置"
-          @click="router.push({ path: '/settings', query: { tab: 'comments' } })"
-        >
-          <Icon icon="ri:settings-3-line" class="text-base sm:text-[15px]" />
-          <span class="hidden sm:inline">评论设置</span>
-        </button>
-      </div>
-    </header>
+  <div class="min-h-full">
+    <!-- 统一 Page Header -->
+    <VPageHeader title="评论管理">
+      <template #icon>
+        <Icon icon="ri:chat-3-line" class="text-primary" />
+      </template>
+      <template #subtitle>审核读者留言与互动评论，支持键盘极速审核与批量处置</template>
+      <template #actions>
+        <div class="apple-search min-w-[200px] max-w-[280px]">
+          <Icon icon="ri:search-line" class="text-text-quaternary" />
+          <input v-model="keyword" placeholder="搜索昵称、邮箱或正文..." />
+          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <Icon icon="ri:close-line" />
+          </button>
+        </div>
 
-    <div class="px-4 pb-8 sm:px-5 md:px-8">
-      <!-- ===== Stat Cards ===== -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div
-          v-for="stat in statCards"
-          :key="stat.label"
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
+        <VButton :route="{ path: '/console/comment-users' }">
+          <template #icon><Icon icon="ri:user-shared-line" /></template>
+          评论用户
+        </VButton>
+
+        <button
+          type="button"
+          class="rounded-xl border border-border px-3 py-1.5 text-xs text-text-secondary hover:bg-secondary hover:text-foreground flex items-center gap-1.5"
+          @click="keyboardHelpVisible = !keyboardHelpVisible"
         >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">{{ stat.label }}</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px]"
-              :style="{ color: stat.color, backgroundColor: stat.bg }"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
-              ></span>
-              <Icon :icon="stat.icon" class="relative z-[1] text-[19px]" />
-            </div>
+          <Icon icon="ri:keyboard-line" />
+          <span>快捷键</span>
+        </button>
+      </template>
+    </VPageHeader>
+
+    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+      <!-- 快捷键指南横幅 -->
+      <div
+        v-if="keyboardHelpVisible"
+        class="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-foreground flex flex-wrap items-center justify-between gap-3 animate-fade-in"
+      >
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="font-bold text-primary flex items-center gap-1">
+            <Icon icon="ri:flashlight-line" /> 极速审核快捷键：
+          </span>
+          <span><kbd class="apple-kbd">J</kbd> / <kbd class="apple-kbd">K</kbd> 上下翻选</span>
+          <span><kbd class="apple-kbd">A</kbd> 批准通过</span>
+          <span><kbd class="apple-kbd">D</kbd> 拒绝</span>
+          <span><kbd class="apple-kbd">S</kbd> 标为垃圾</span>
+          <span><kbd class="apple-kbd">R</kbd> 快捷回复</span>
+          <span><kbd class="apple-kbd">X</kbd> 勾选/取消</span>
+        </div>
+        <button type="button" class="text-text-quaternary hover:text-foreground" @click="keyboardHelpVisible = false">
+          <Icon icon="ri:close-line" />
+        </button>
+      </div>
+
+      <!-- 概览数据指标卡（点击直接作为过滤器） -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div
+          class="stats-card cursor-pointer transition-all hover:border-primary"
+          :class="{ 'border-primary ring-1 ring-primary': selectedStatus === 'all' }"
+          @click="selectedStatus = 'all'; page = 1"
+        >
+          <div class="stats-icon text-primary bg-primary/10">
+            <Icon icon="ri:chat-3-line" />
           </div>
-          <div
-            class="mt-3 text-[34px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums; letter-spacing: -1px;"
-          >
-            {{ stat.value }}
+          <div>
+            <div class="stats-label">全部评论</div>
+            <div class="stats-value">{{ statusCounts.all }} <span class="stats-sub">条留言</span></div>
           </div>
-          <div
-            class="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold"
-            :style="{ color: stat.badgeColor, backgroundColor: stat.badgeBg }"
-          >
-            <span class="h-1.5 w-1.5 rounded-full" style="background: currentColor;"></span>
-            {{ stat.badgeText }}
+        </div>
+
+        <div
+          class="stats-card cursor-pointer transition-all hover:border-[#FF9500]"
+          :class="{ 'border-[#FF9500] ring-1 ring-[#FF9500]': selectedStatus === 'pending' }"
+          @click="selectedStatus = 'pending'; page = 1"
+        >
+          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
+            <Icon icon="ri:time-line" />
+          </div>
+          <div>
+            <div class="stats-label">待审核</div>
+            <div class="stats-value text-[#FF9500]">{{ statusCounts.pending }} <span class="stats-sub">条需要处理</span></div>
+          </div>
+        </div>
+
+        <div
+          class="stats-card cursor-pointer transition-all hover:border-[#30D158]"
+          :class="{ 'border-[#30D158] ring-1 ring-[#30D158]': selectedStatus === 'approved' }"
+          @click="selectedStatus = 'approved'; page = 1"
+        >
+          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
+            <Icon icon="ri:checkbox-circle-line" />
+          </div>
+          <div>
+            <div class="stats-label">已批准展示</div>
+            <div class="stats-value text-[#30D158]">{{ statusCounts.approved }} <span class="stats-sub">条正常显示</span></div>
+          </div>
+        </div>
+
+        <div
+          class="stats-card cursor-pointer transition-all hover:border-[#FF453A]"
+          :class="{ 'border-[#FF453A] ring-1 ring-[#FF453A]': selectedStatus === 'spam' }"
+          @click="selectedStatus = 'spam'; page = 1"
+        >
+          <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
+            <Icon icon="ri:spam-2-line" />
+          </div>
+          <div>
+            <div class="stats-label">垃圾拦截</div>
+            <div class="stats-value text-[#FF453A]">{{ statusCounts.spam }} <span class="stats-sub">条已拦截</span></div>
           </div>
         </div>
       </div>
 
-      <!-- ===== Comments Card ===== -->
-      <VCard class="mt-5" :body-class="['!p-0']">
-        <!-- Card Header: 分段筛选 + 搜索 + 批量操作条 -->
-        <template #header>
-          <div class="flex min-w-0 flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
-            <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
-              <button
-                v-for="tab in statusTabs"
-                :key="tab.key"
-                type="button"
-                :class="['shrink-0 whitespace-nowrap', { active: selectedStatus === tab.key }]"
-                @click="selectStatus(tab.key)"
+      <!-- 状态分段栏与批量控制 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
+        <div class="apple-segmented">
+          <button
+            v-for="st in statusTabs"
+            :key="st.key"
+            type="button"
+            :class="{ active: selectedStatus === st.key }"
+            @click="selectedStatus = st.key; page = 1"
+          >
+            <Icon :icon="st.icon" class="mr-1 inline-block" />
+            {{ st.label }}
+            <span v-if="statusCounts[st.key] > 0" class="ml-1 opacity-70 font-mono">
+              ({{ statusCounts[st.key] }})
+            </span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
+            @click="selectedIds.size === comments.length ? clearSelection() : selectAll()"
+          >
+            {{ selectedIds.size === comments.length ? '取消全选' : '全选本页' }}
+          </button>
+        </div>
+      </div>
+
+      <VLoading v-if="isLoading" />
+
+      <VEmpty
+        v-else-if="comments.length === 0"
+        :title="keyword ? '未找到匹配的评论' : '暂无对应状态的评论'"
+        :message="keyword ? '换个搜索关键词试试' : '当读者在前台或文章中留言时将在此处列出'"
+      />
+
+      <!-- 评论卡片列表 -->
+      <div v-else class="space-y-3">
+        <div
+          v-for="(c, idx) in comments"
+          :key="c.id"
+          class="group relative rounded-2xl border border-border bg-card p-4 transition-all hover:border-border-strong sm:p-5"
+          :class="[
+            selectedIds.has(c.id) ? 'border-primary ring-1 ring-primary bg-primary/5' : '',
+            focusedIndex === idx ? 'ring-2 ring-primary/60 border-primary' : ''
+          ]"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <!-- 评论者信息 -->
+            <div class="flex items-start gap-3 min-w-0">
+              <input
+                type="checkbox"
+                :checked="selectedIds.has(c.id)"
+                class="mt-1 h-4 w-4 rounded border-border text-primary cursor-pointer shrink-0"
+                @change="toggleSelect(c.id)"
+              />
+
+              <!-- 头像 -->
+              <img
+                v-if="c.avatar"
+                :src="c.avatar"
+                alt=""
+                class="h-9 w-9 rounded-full border border-border object-cover bg-secondary shrink-0 cursor-pointer"
+                @click="openUserDrawer(c)"
+              />
+              <div
+                v-else
+                class="avatar-gradient-1 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 cursor-pointer"
+                @click="openUserDrawer(c)"
               >
-                {{ tab.label }}
-                <span
-                  class="ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
-                  :class="
-                    selectedStatus === tab.key
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-white/10 text-text-secondary'
-                  "
-                >
-                  {{ statusCounts[tab.key] }}
-                </span>
+                {{ c.nick ? c.nick.charAt(0).toUpperCase() : '?' }}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm font-semibold text-foreground truncate cursor-pointer hover:underline" @click="openUserDrawer(c)">
+                    {{ c.nick || "匿名访客" }}
+                  </span>
+                  <span
+                    class="rounded-full border px-2 py-0.2 text-[10px] font-medium"
+                    :class="statusInfo(c.status).cls"
+                  >
+                    {{ statusInfo(c.status).label }}
+                  </span>
+                  <span v-if="c.email" class="text-xs font-mono text-text-quaternary truncate">
+                    &lt;{{ c.email }}&gt;
+                  </span>
+                </div>
+
+                <!-- 关联文章 / 单页 / 来源 -->
+                <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-text-quaternary">
+                  <span v-if="c.post_title || c.post_slug" class="flex items-center gap-1 text-primary hover:underline">
+                    <Icon icon="ri:article-line" />
+                    <span>{{ c.post_title || c.post_slug }}</span>
+                  </span>
+                  <span>·</span>
+                  <span>{{ formatRelative(c.created_at) }}</span>
+                  <span v-if="c.ip" class="font-mono text-[11px]">IP: {{ c.ip }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                v-if="c.status !== 'approved'"
+                type="button"
+                class="action-btn text-[#30D158] hover:bg-[#30D158]/10"
+                title="批准通过 (A)"
+                @click="setCommentStatus(c.id, 'approved')"
+              >
+                <Icon icon="ri:check-line" />
+                <span class="hidden sm:inline">批准</span>
+              </button>
+
+              <button
+                v-if="c.status !== 'rejected'"
+                type="button"
+                class="action-btn text-[#FF9500] hover:bg-[#FF9500]/10"
+                title="拒绝显示 (D)"
+                @click="setCommentStatus(c.id, 'rejected')"
+              >
+                <Icon icon="ri:close-line" />
+                <span class="hidden sm:inline">拒绝</span>
+              </button>
+
+              <button
+                v-if="c.status !== 'spam'"
+                type="button"
+                class="action-btn text-[#8E8E93] hover:bg-[#8E8E93]/10"
+                title="标为垃圾 (S)"
+                @click="setCommentStatus(c.id, 'spam')"
+              >
+                <Icon icon="ri:spam-2-line" />
+              </button>
+
+              <button
+                type="button"
+                class="action-btn text-primary hover:bg-primary/10"
+                title="快捷回复 (R)"
+                @click="openReply(c)"
+              >
+                <Icon icon="ri:reply-line" />
+              </button>
+
+              <button
+                type="button"
+                class="action-btn text-state-error hover:bg-state-error/10"
+                title="删除评论"
+                @click="handleDeleteSingle(c)"
+              >
+                <Icon icon="ri:delete-bin-line" />
               </button>
             </div>
-
-            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
-              <!-- 批量操作条：选中后显示 -->
-              <template v-if="batchMode && selectedIds.length">
-                <div class="flex flex-wrap items-center gap-2">
-                  <VButton type="secondary" size="sm" @click="handleApproveInBatch">批量通过</VButton>
-                  <VButton type="secondary" size="sm" @click="handleRejectInBatch">批量拒绝</VButton>
-                  <VButton type="secondary" size="sm" @click="handleSpamInBatch">批量垃圾</VButton>
-                  <VButton type="danger" size="sm" @click="handleDeleteInBatch">批量删除</VButton>
-                  <span class="text-xs text-text-tertiary">已选择 {{ selectedIds.length }} 项</span>
-                </div>
-              </template>
-              <div v-else-if="batchMode" class="flex items-center gap-2">
-                <input
-                  :checked="checkedAll"
-                  class="h-4 w-4 rounded border-border-strong text-primary"
-                  type="checkbox"
-                  @change="handleCheckAllChange"
-                />
-                <span class="text-xs text-text-tertiary">全选当前页</span>
-                <button
-                  type="button"
-                  class="text-xs text-text-quaternary underline hover:text-foreground"
-                  @click="exitBatchMode"
-                >
-                  取消
-                </button>
-              </div>
-
-              <div class="apple-search flex-1 sm:w-60 sm:flex-none">
-                <Icon icon="ri:search-line" class="text-text-quaternary" />
-                <input v-model="keyword" placeholder="搜索评论内容、作者..." />
-              </div>
-            </div>
           </div>
-        </template>
 
-        <VLoading v-if="isLoading" />
+          <!-- 评论富文本正文 -->
+          <div
+            v-if="c.content_html"
+            class="comment-rich-content mt-3 text-sm leading-relaxed text-foreground pl-12"
+            v-html="c.content_html"
+          ></div>
+          <p v-else class="mt-3 text-sm leading-relaxed text-foreground pl-12 whitespace-pre-wrap">
+            {{ c.content }}
+          </p>
+        </div>
 
-        <Transition v-else-if="!comments.length" appear name="fade">
-          <VEmpty message="你可以尝试刷新或者查看评论筛选" title="当前没有评论">
-            <template #actions>
-              <VButton @click="refetch">刷新</VButton>
-            </template>
-          </VEmpty>
-        </Transition>
-
-        <!-- ===== Comment List (邮件式布局) ===== -->
-        <Transition v-else appear name="fade">
-          <div class="border-t border-border">
-            <div
-              v-for="cm in comments"
-              :key="cm.id"
-              class="border-b border-border px-3 py-3.5 transition-colors last:border-b-0 hover:bg-white/[0.02] sm:px-5 sm:py-5"
-            >
-              <div class="flex items-start gap-3 sm:gap-3.5">
-                <!-- 批量复选框 -->
-                <input
-                  v-if="batchMode"
-                  :checked="checkSelection(cm.id)"
-                  class="mt-1 h-4 w-4 shrink-0 rounded border-border-strong text-primary sm:mt-1.5"
-                  type="checkbox"
-                  @change="toggleSelection(cm.id)"
-                />
-
-                <!-- 头像 -->
-                <img
-                  v-if="cm.avatar"
-                  loading="lazy"
-                  :src="cm.avatar"
-                  :alt="cm.nick"
-                  class="h-9 w-9 shrink-0 rounded-full border border-border object-cover sm:h-[42px] sm:w-[42px]"
-                />
-                <div
-                  v-else
-                  :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-foreground sm:h-[42px] sm:w-[42px] sm:text-[15px]', avatarGradient(cm.nick || cm.email)]"
-                >
-                  {{ avatarInitial(cm) }}
-                </div>
-
-                <!-- 主体 -->
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
-                    <span class="text-sm font-semibold text-foreground sm:text-[14px]">{{ cm.nick }}</span>
-                    <span
-                      v-if="cm.is_admin"
-                      class="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary sm:px-2"
-                    >
-                      博主
-                    </span>
-                    <span
-                      class="comment-status-badge"
-                      :class="statusInfo(cm.status).cls"
-                    >
-                      {{ statusInfo(cm.status).label }}
-                    </span>
-                    <span class="ml-auto shrink-0 text-[11px] text-text-tertiary sm:text-[12px]">{{ cm.date }}</span>
-                  </div>
-                  <div v-if="cm.email" class="mt-0.5 text-[11px] text-text-tertiary sm:hidden">
-                    {{ cm.email }}
-                  </div>
-                  <span v-if="cm.email" class="hidden truncate text-[12px] text-text-tertiary sm:inline">{{ cm.email }}</span>
-
-                  <p v-if="cm.reply_nick" class="mt-1.5 text-xs text-text-quaternary">
-                    回复 @{{ cm.reply_nick }}
-                  </p>
-                  <p class="mt-2 line-clamp-3 text-sm leading-[1.6] text-text-secondary sm:text-[14px]">
-                    {{ cm.content }}
-                  </p>
-
-                  <div v-if="cm.page_key" class="mt-2.5 flex items-center gap-1.5 text-[12px]">
-                    <span class="text-text-tertiary">评论于：</span>
-                    <span class="cursor-pointer truncate font-medium text-primary transition-opacity hover:opacity-75">
-                      {{ cm.page_key }}
-                    </span>
-                  </div>
-
-                  <div class="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-3.5 sm:gap-2">
-                    <button
-                      v-if="cm.status !== 'approved'"
-                      type="button"
-                      class="action-btn approve"
-                      @click="handleApprove(cm)"
-                    >
-                      <Icon icon="ri:check-line" />
-                      通过
-                    </button>
-                    <button
-                      v-if="cm.status === 'pending'"
-                      type="button"
-                      class="action-btn reject"
-                      @click="handleReject(cm)"
-                    >
-                      <Icon icon="ri:close-line" />
-                      拒绝
-                    </button>
-                    <button
-                      v-if="cm.status === 'pending' || cm.status === 'approved'"
-                      type="button"
-                      class="action-btn spam"
-                      @click="handleSpam(cm)"
-                    >
-                      <Icon icon="ri:spam-2-line" />
-                      垃圾
-                    </button>
-                    <button type="button" class="action-btn reply" @click="openReply(cm)">
-                      <Icon icon="ri:corner-up-left-line" />
-                      回复
-                    </button>
-                    <button type="button" class="action-btn delete" @click="handleDelete(cm)">
-                      <Icon icon="ri:delete-bin-line" />
-                      删除
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Transition>
-
-        <template #footer>
-          <div class="border-t border-border bg-background/15 px-3 py-3 sm:px-5 sm:py-4">
-            <div class="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span class="text-xs text-text-tertiary sm:text-[13px]">
-                共 <strong class="font-semibold text-foreground">{{ total }}</strong> 条评论
-              </span>
-              <VPagination
-                v-model:page="page"
-                v-model:size="size"
-                :total="total"
-                :size-options="[20, 30, 50, 100]"
-              />
-            </div>
-          </div>
-        </template>
-      </VCard>
+        <!-- 分页 -->
+        <div v-if="total > size" class="flex justify-center pt-4">
+          <VPagination
+            :page="page"
+            :size="size"
+            :total="total"
+            @update:page="page = $event"
+            @update:size="size = $event"
+          />
+        </div>
+      </div>
     </div>
 
-    <!-- Reply modal -->
-    <VModal v-model:visible="replyVisible" :title="`回复 @${replyTarget?.nick || ''}`" :width="480">
-      <textarea
-        v-model="replyContent"
-        rows="4"
-        placeholder="回复内容..."
-        class="apple-textarea w-full"
-      ></textarea>
+    <!-- ============ 批量操作浮动栏 ============ -->
+    <VFloatingDock
+      :visible="selectedIds.size > 0"
+      :count="selectedIds.size"
+      title="已选评论"
+      @clear="clearSelection"
+    >
+      <div class="flex items-center gap-2">
+        <VButton size="sm" @click="handleBatch('approve')">
+          批量批准
+        </VButton>
+        <VButton size="sm" @click="handleBatch('reject')">
+          批量拒绝
+        </VButton>
+        <VButton size="sm" @click="handleBatch('spam')">
+          标为垃圾
+        </VButton>
+        <VButton size="sm" type="danger" @click="handleBatch('delete')">
+          批量删除
+        </VButton>
+      </div>
+    </VFloatingDock>
+
+    <!-- ============ 快捷回复弹窗 ============ -->
+    <VModal
+      v-model:visible="replyVisible"
+      :title="`回复给：${replyTarget?.nick || '访客'}`"
+      :width="480"
+    >
+      <div class="space-y-3">
+        <div class="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-text-tertiary">
+          <div class="font-medium text-foreground mb-1">原始评论：</div>
+          <div class="line-clamp-3">{{ replyTarget?.content }}</div>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-text-tertiary">博主回复内容 *</label>
+          <textarea
+            v-model="replyContent"
+            rows="4"
+            class="apple-textarea"
+            placeholder="写下你的回复..."
+            autofocus
+          ></textarea>
+        </div>
+      </div>
+
       <template #footer>
         <div class="flex justify-end gap-2">
           <VButton @click="replyVisible = false">取消</VButton>
-          <VButton type="secondary" @click="handleReply">发送</VButton>
+          <VButton type="primary" :loading="replySubmitting" @click="submitReply">发送回复</VButton>
+        </div>
+      </template>
+    </VModal>
+
+    <!-- ============ 访客/用户画像抽屉 ============ -->
+    <VModal
+      :visible="!!userDrawerTarget"
+      title="评论者画像详情"
+      :width="440"
+      @update:visible="userDrawerTarget = null"
+    >
+      <div v-if="userDrawerTarget" class="space-y-4 text-xs">
+        <div class="flex items-center gap-3 border-b border-border/60 pb-3">
+          <img
+            v-if="userDrawerTarget.avatar"
+            :src="userDrawerTarget.avatar"
+            class="h-12 w-12 rounded-full border border-border object-cover"
+            alt=""
+          />
+          <div
+            v-else
+            class="avatar-gradient-1 flex h-12 w-12 items-center justify-center rounded-full text-base font-bold text-white"
+          >
+            {{ userDrawerTarget.nick ? userDrawerTarget.nick.charAt(0).toUpperCase() : '?' }}
+          </div>
+          <div>
+            <div class="text-base font-bold text-foreground">{{ userDrawerTarget.nick }}</div>
+            <div class="text-text-quaternary font-mono">{{ userDrawerTarget.email || '未填邮箱' }}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">IP 地址</div>
+            <div class="font-mono font-medium text-foreground mt-0.5">{{ userDrawerTarget.ip || '未知' }}</div>
+          </div>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">客户端环境</div>
+            <div class="font-mono font-medium text-foreground mt-0.5 truncate" :title="userDrawerTarget.browser">
+              {{ userDrawerTarget.browser || userDrawerTarget.os || '未知浏览器' }}
+            </div>
+          </div>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">个人主页</div>
+            <div class="font-medium text-foreground mt-0.5 truncate">
+              <a v-if="userDrawerTarget.website" :href="userDrawerTarget.website" target="_blank" class="text-primary hover:underline">
+                {{ userDrawerTarget.website }}
+              </a>
+              <span v-else class="text-text-quaternary">无</span>
+            </div>
+          </div>
+          <div class="rounded-xl border border-border bg-card p-3">
+            <div class="text-text-quaternary">留言时间</div>
+            <div class="font-medium text-foreground mt-0.5">{{ formatRelative(userDrawerTarget.created_at) }}</div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <VButton @click="userDrawerTarget = null">关闭</VButton>
         </div>
       </template>
     </VModal>
@@ -624,144 +712,112 @@ function closeMenus() {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--duration-fast) var(--ease-standard);
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* 状态徽章：系统色 12% 透明底 + 同色文字 + ::before 圆点 */
-.comment-status-badge {
-  display: inline-flex;
+/* 统计卡片 */
+.stats-card {
+  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
+}
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stats-label {
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: var(--radius-full, 9999px);
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
-.comment-status-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
 }
-.comment-status-badge.approved {
-  color: var(--color-state-success);
-  background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
-}
-.comment-status-badge.pending {
-  color: var(--color-state-warning);
-  background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
-}
-.comment-status-badge.rejected {
-  color: var(--color-state-error);
-  background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
-}
-.comment-status-badge.spam {
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
   color: var(--color-text-tertiary);
-  background-color: color-mix(in srgb, var(--color-muted-foreground) 15%, transparent);
+  margin-top: 1px;
 }
 
-/* 操作按钮：语义色低透明胶囊 */
+/* 操作小按钮 */
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
-  border-radius: var(--radius-full, 9999px);
-  border: 1px solid transparent;
-  background-color: transparent;
-  color: var(--color-text-secondary);
-  transition: all 0.18s var(--ease-standard);
-}
-.action-btn:hover {
-  background-color: color-mix(in srgb, #fff 5%, transparent);
-  color: #fff;
-}
-.action-btn :deep(svg) {
-  width: 13px;
-  height: 13px;
-}
-.action-btn.approve {
-  color: var(--color-state-success);
-  background-color: color-mix(in srgb, var(--color-state-success) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-success) 15%, transparent);
-}
-.action-btn.approve:hover {
-  background-color: color-mix(in srgb, var(--color-state-success) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-success) 25%, transparent);
-}
-.action-btn.reply {
-  color: var(--color-primary);
-  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 15%, transparent);
-}
-.action-btn.reply:hover {
-  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
-}
-.action-btn.reject {
-  color: var(--color-state-warning);
-  background-color: color-mix(in srgb, var(--color-state-warning) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
-}
-.action-btn.reject:hover {
-  background-color: color-mix(in srgb, var(--color-state-warning) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-warning) 25%, transparent);
-}
-.action-btn.spam {
-  color: var(--color-text-tertiary);
-  background-color: color-mix(in srgb, var(--color-muted-foreground) 15%, transparent);
-  border-color: color-mix(in srgb, var(--color-muted-foreground) 18%, transparent);
-}
-.action-btn.spam:hover {
-  background-color: color-mix(in srgb, var(--color-muted-foreground) 25%, transparent);
-  border-color: color-mix(in srgb, var(--color-muted-foreground) 30%, transparent);
-}
-.action-btn.delete {
-  color: var(--color-state-error);
-  background-color: color-mix(in srgb, var(--color-state-error) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-error) 15%, transparent);
-}
-.action-btn.delete:hover {
-  background-color: color-mix(in srgb, var(--color-state-error) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-state-error) 25%, transparent);
+  background: transparent;
+  transition: all var(--duration-fast) var(--ease-standard);
+  cursor: pointer;
 }
 
-/* 分段 Tab 横向滚动，不显示滚动条（无条件生效：任何宽度下标签溢出都可横滚） */
-.tabs-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.tabs-scroll::-webkit-scrollbar {
-  display: none;
+/* 快捷键 kbd */
+.apple-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--color-foreground);
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
-/* ===== 移动端适配 ===== */
+/* 表情图片样式 */
+:deep(.comment-rich-content img[alt="emoji"]),
+:deep(.comment-rich-content img[src*="artalk"]),
+:deep(.comment-rich-content img[src*="emoticons"]) {
+  display: inline-block !important;
+  height: 1.45em !important;
+  width: 1.45em !important;
+  vertical-align: -0.22em !important;
+  margin: 0 2px !important;
+  object-fit: contain !important;
+}
+
 @media (max-width: 640px) {
-  /* 操作按钮更紧凑 */
-  .action-btn {
-    padding: 4px 10px;
-    font-size: 11px;
+  .stats-card {
+    padding: 10px 12px;
+    gap: 8px;
   }
-  .action-btn :deep(svg) {
-    width: 12px;
-    height: 12px;
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
-
-  /* 状态徽章更紧凑 */
-  .comment-status-badge {
-    font-size: 10px;
-    padding: 2px 8px;
+  .stats-value {
+    font-size: 14px;
   }
 }
 </style>

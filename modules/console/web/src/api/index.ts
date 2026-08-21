@@ -653,13 +653,19 @@ export interface UpdateStatusResponse {
 }
 
 export const systemApi = {
- /** 检查更新（refresh=1 绕过缓存直连 GitHub） */
- check: (refresh?: boolean) =>
+ /** 检查更新（refresh=1 绕过缓存直连 GitHub；token 为可选 GitHub Token，经 X-GitHub-Token 头携带以鉴权私有仓库） */
+ check: (refresh?: boolean, token?: string) =>
  http.get<UpdateCheckResponse>("/system/update/check", {
  params: refresh ? { refresh: "1" } : {},
+ ...(token ? { headers: { "X-GitHub-Token": token } } : {}),
  }),
- /** 一键更新（触发 systemd oneshot unit） */
- apply: () => http.post<{ started: boolean; target_version: string }>("/system/update/apply"),
+ /** 一键更新（触发 systemd oneshot unit；token 同 check） */
+ apply: (token?: string) =>
+ http.post<{ started: boolean; target_version: string }>(
+ "/system/update/apply",
+ {},
+ token ? { headers: { "X-GitHub-Token": token } } : {}
+ ),
  /** 查询更新状态（idle/running/succeeded/failed） */
  status: () => http.get<UpdateStatusResponse>("/system/update/status"),
 };

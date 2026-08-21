@@ -29,7 +29,7 @@
   /* 文字层级（text 阶：200/400/500） */
   --color-text-secondary: #C7C7CC;
   --color-text-tertiary: #8E8E93;
-  --color-text-quaternary: #6E6E73;
+  --color-text-quaternary: #7C7C82;
 
   /* 功能色（state-success/error dark 锚点；warning 取 chart-3） */
   --color-state-success: #30D158;

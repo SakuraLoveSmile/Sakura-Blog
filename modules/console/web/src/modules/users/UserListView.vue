@@ -5,6 +5,7 @@ import { usersApi, type UserItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import {
+  VPageHeader,
   VButton,
   VCard,
   VEmpty,
@@ -216,23 +217,19 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 <template>
   <div class="min-h-full">
     <!-- ===== Page Header ===== -->
-    <header
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-4 backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-5 md:px-8"
-      style="background: linear-gradient(180deg, color-mix(in srgb, #000 90%, transparent) 0%, color-mix(in srgb, #000 60%, transparent) 80%, transparent 100%);"
-    >
-      <div class="flex flex-col gap-0.5 sm:gap-1">
-        <h1 class="text-xl font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">用户管理</h1>
-        <p class="text-[12px] text-text-tertiary sm:text-[13px]">管理所有用户账户、角色和权限</p>
-      </div>
-      <div class="flex items-center gap-1.5 sm:gap-2.5">
-        <VButton type="primary" size="sm" class="!h-8 !w-8 !p-0 sm:!h-auto sm:!w-auto sm:!px-3" @click="openCreate">
+    <VPageHeader title="用户管理" subtitle="管理所有用户账户、角色和权限">
+      <template #icon>
+        <Icon icon="ri:user-star-line" class="text-xl text-primary sm:text-2xl" />
+      </template>
+      <template #actions>
+        <VButton type="primary" size="sm" @click="openCreate">
           <template #icon>
             <Icon icon="ri:user-add-line" class="h-4 w-4" />
           </template>
           <span class="hidden sm:inline">添加用户</span>
         </VButton>
-      </div>
-    </header>
+      </template>
+    </VPageHeader>
 
     <div class="px-4 pb-8 sm:px-5 md:px-8">
       <!-- ===== Stat Cards ===== -->

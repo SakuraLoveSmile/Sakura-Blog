@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	ghpkg "blog/internal/github"
 )
 
 // updateRepoDefault / updateInstallDirDefault 为 api 层兜底常量，
@@ -66,6 +67,21 @@ type updateStatusResponse struct {
 	Message        string `json:"message,omitempty"`
 }
 
+// githubClientFor 解析本次请求的 GitHub 客户端：
+// 若请求携带 X-GitHub-Token 头，则构造一个带该 Token 的请求级客户端（复用同一磁盘缓存），
+// 用于私有仓库鉴权或提升速率上限；否则回落到启动时构建的共享客户端（已含 app.yml / 环境变量 Token）。
+// 两者皆不可用时返回 nil（GitHub 功能未启用）。
+func (h *Handler) githubClientFor(c *gin.Context) *ghpkg.Client {
+	if t := strings.TrimSpace(c.GetHeader("X-GitHub-Token")); t != "" {
+		cacheDir := "data/ghcache"
+		if h.gh != nil {
+			cacheDir = h.gh.CacheDir()
+		}
+		return ghpkg.New(ghpkg.Config{Token: t, CacheDir: cacheDir})
+	}
+	return h.gh
+}
+
 // systemUpdateCheck GET /api/v1/system/update/check?refresh=1
 func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	current := h.resolveCurrentVersion()
@@ -81,7 +97,8 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 		resp.ApplyNote = h.upd.UnsupportedReason()
 	}
 
-	if h.gh == nil {
+	gh := h.githubClientFor(c)
+	if gh == nil {
 		resp.Error = "GitHub 客户端未启用"
 		c.JSON(200, resp)
 		return
@@ -91,12 +108,12 @@ func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	var payload []byte
 	var err error
 	if refresh {
-		payload, err = h.gh.RefreshLatestRelease(splitOwnerRepo(h.updateRepo))
+		payload, err = gh.RefreshLatestRelease(splitOwnerRepo(h.updateRepo))
 	} else {
-		payload, err = h.gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
+		payload, err = gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
 	}
 	if err != nil {
-		resp.Error = fmt.Sprintf("检查更新失败: %s（私有仓库需配置 github_token；仓库无 Release 时也会返回 404）", err.Error())
+		resp.Error = fmt.Sprintf("检查更新失败: %s（私有仓库可在「系统更新」页填入 GitHub Token 鉴权；仓库无 Release 时也会返回 404）", err.Error())
 		c.JSON(200, resp)
 		return
 	}
@@ -144,9 +161,14 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 
 	current := h.resolveCurrentVersion()
 
-	// 先查 latest 版本以确定 target
-	payload, err := h.gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
+	// 先查 latest 版本以确定 target（携带请求级 Token 以支持私有仓库）
+	payload, err := h.githubClientFor(c).GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
 	if err != nil {
+		// 私有仓库无 Token 时 GitHub 返回 404，给出可操作提示
+		if strings.Contains(err.Error(), "404") {
+			Fail(c, 500, "获取最新版本失败: "+err.Error()+"（私有仓库可在「系统更新」页填入 GitHub Token 鉴权）")
+			return
+		}
 		Fail(c, 500, "获取最新版本失败: "+err.Error())
 		return
 	}

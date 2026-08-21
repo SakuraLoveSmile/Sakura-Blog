@@ -1,26 +1,30 @@
 <script setup lang="ts">
-// Halo VPageHeader 复刻（Apple Dark Mode 视觉调整）
+// VPageHeader（Apple Dark Mode 增强型吸顶标题栏）
 defineProps<{
   title?: string;
+  subtitle?: string;
 }>();
 </script>
 
 <template>
-  <div
-    class="sticky top-0 z-20 flex min-h-[56px] items-center justify-between px-5 py-3 backdrop-blur-xl"
-    style="background: color-mix(in srgb, #000 72%, transparent); border-bottom: 1px solid var(--color-border);"
+  <header
+    class="sticky top-0 z-20 flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 backdrop-blur-2xl transition-all sm:px-6 sm:py-4 md:px-8"
+    style="background: color-mix(in srgb, #000 82%, transparent); border-bottom: 1px solid var(--color-border); box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.35);"
   >
     <div class="min-w-0 flex-1 self-center">
-      <h2 class="flex items-center gap-2 truncate text-[22px] font-bold" style="color: var(--color-foreground);">
+      <div class="flex items-center gap-2.5">
         <slot name="icon" />
-        <span>{{ title }}</span>
-      </h2>
-      <p v-if="$slots.subtitle" class="mt-0.5 truncate text-[13px]" style="color: var(--color-text-tertiary);">
-        <slot name="subtitle" />
+        <h1 class="truncate text-xl font-bold tracking-tight text-foreground sm:text-[22px] md:text-[24px]">
+          <slot name="title">{{ title }}</slot>
+        </h1>
+        <slot name="badge" />
+      </div>
+      <p v-if="subtitle || $slots.subtitle" class="mt-0.5 truncate text-xs text-text-tertiary sm:text-[13px]">
+        <slot name="subtitle">{{ subtitle }}</slot>
       </p>
     </div>
-    <div class="flex items-center gap-2 self-center">
+    <div v-if="$slots.actions" class="flex items-center gap-2 self-center sm:gap-2.5">
       <slot name="actions" />
     </div>
-  </div>
+  </header>
 </template>
