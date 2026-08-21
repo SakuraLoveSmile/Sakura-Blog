@@ -39,7 +39,7 @@
    | `site.yml` | `admin.password` | `/console/` 登录密码，生产必填 |
    | `site.yml` | `footer.beian` | ICP 备案号（大陆服务器必填） |
    | `app.yml` | `trusted_proxy` | nginx 同机填 `127.0.0.1/32`；不填则 IP 限流失效 |
-   | `app.yml` | `github_token` | 建议改用 `BLOG_GITHUB_TOKEN` 环境变量注入 |
+   | `app.yml` | `github_token` | 保持为空；通过 `/etc/blog/blog.env` 的 `BLOG_GITHUB_TOKEN` 注入 |
 
 3. **安装首个二进制**：首次安装不要执行 `update.sh`；该脚本只接受已有 `/opt/blog/blog` 的升级。将 Release 中已校验的 `blog-linux-amd64` 安装为 `/opt/blog/blog` 并设为可执行。
 
@@ -54,9 +54,22 @@
 
    ```bash
    cp blog.service blog-update.service blog-update.timer /etc/systemd/system/
+   install -d -m 755 /etc/blog
+   install -d -m 755 /etc/systemd/system/blog.service.d
+   install -m 600 -o root -g root /dev/null /etc/blog/blog.env
+   cp blog.service.d/10-secrets.conf.example /etc/systemd/system/blog.service.d/10-secrets.conf
    systemctl daemon-reload
    systemctl enable --now blog
    systemctl enable --now blog-update.timer
+   ```
+
+   `blog.service` 已固定使用 `GIN_MODE=release`。如需 GitHub API 访问，使用 root-only 编辑器填写
+   `/etc/blog/blog.env` 中的 `BLOG_GITHUB_TOKEN`，不要把 Token 写进 `app.yml`、tracked unit 或命令行：
+
+   ```bash
+   sudoedit /etc/blog/blog.env
+   # BLOG_GITHUB_TOKEN=<fine-grained PAT，仅本仓库 contents:read>
+   chmod 600 /etc/blog/blog.env
    ```
 
    注意 `blog.service` 的 `BLOG_ROOT=/opt/blog`，`app.yml`/`site.yml` 由 root 解析定位。

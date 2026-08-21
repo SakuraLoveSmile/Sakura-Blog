@@ -23,8 +23,8 @@ Environment=BLOG_ROOT=/opt/blog
 Environment=BLOG_AUTO_BACKUP=true
 Environment=BLOG_BACKUP_KEEP=7
 Environment=TZ=Asia/Shanghai
-# GitHub Token（ghrepo/ghuser 卡片用，可选）
-#Environment=BLOG_GITHUB_TOKEN=
+Environment=GIN_MODE=release
+# GitHub Token 通过 /etc/systemd/system/blog.service.d/10-secrets.conf 注入，禁止写入本 unit。
 
 # 安全加固
 NoNewPrivileges=true
