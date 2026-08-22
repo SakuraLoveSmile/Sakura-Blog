@@ -75,10 +75,12 @@ async function initHourlyChart() {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const values = hourlyDist.value;
 
+  // 峰值高亮与真实数据一致：取最高若干非零时段用 primary，其余统一 chart-1
+  const topValues = [...new Set(values.filter((v) => v > 0))]
+    .sort((a, b) => b - a)
+    .slice(0, 4);
   const bgColors = hours.map((h) =>
-    (h >= 10 && h <= 12) || (h >= 20 && h <= 22)
-      ? primaryColor
-      : c1,
+    topValues.includes(values[h]) ? primaryColor : c1,
   );
 
   const step = sizePreset.value === "small" ? 6 : 4;
@@ -172,17 +174,17 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Large 尺寸时段分析胶囊 -->
+    <!-- Large 尺寸时段分析胶囊：表面层级与 apple-card 边框语言一致 -->
     <div v-if="sizePreset === 'large'" class="grid grid-cols-3 gap-2 mb-3 text-xs">
-      <div class="p-2 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between">
+      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
         <span class="text-muted-foreground">日间活跃 (08-20h)</span>
         <strong class="text-foreground">{{ statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between">
+      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
         <span class="text-muted-foreground">夜间活跃 (20-08h)</span>
         <strong class="text-foreground">{{ 100 - statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between">
+      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
         <span class="text-muted-foreground">单时段峰值</span>
         <strong class="text-primary">{{ statsSummary.maxVal }} 次</strong>
       </div>

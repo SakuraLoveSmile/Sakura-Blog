@@ -476,6 +476,155 @@
   font-weight: 600;
 }
 
+/* ===== Version cards（Stellar/Blog 版本卡共享，两组件不再各自维护 scoped 副本） ===== */
+.version-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 184px;
+}
+
+.version-card-header,
+.version-card-title-row,
+.version-card-footer,
+.version-card-state,
+.version-card-message,
+.version-card-loading {
+  display: flex;
+  align-items: center;
+}
+
+.version-card-header,
+.version-card-footer {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.version-card-title-row {
+  min-width: 0;
+  gap: 10px;
+}
+
+.version-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.version-card-caption,
+.version-card-label {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.version-card-caption {
+  margin: 2px 0 0;
+}
+
+.version-card-state {
+  flex: 0 0 auto;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
+.version-card-state.is-synced,
+.version-card-message.is-synced {
+  color: var(--color-state-success);
+}
+
+.version-card-state.is-outdated,
+.version-card-message.is-outdated {
+  color: var(--color-state-warning);
+}
+
+.version-card-state.is-unavailable,
+.version-card-message.is-unavailable {
+  color: var(--color-muted-foreground);
+}
+
+.version-card-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.version-card-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.version-card-values > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-card-values strong {
+  overflow: hidden;
+  color: var(--color-foreground);
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version-card-footer {
+  margin-top: auto;
+  min-width: 0;
+}
+
+.version-card-message {
+  min-width: 0;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version-card-release {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.version-card-release:hover {
+  color: var(--color-accent-hover);
+}
+
+.version-card-loading {
+  flex: 1;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+}
+
+.version-card:is([data-bp="xs"], [data-bp="xxs"]) {
+  min-height: 168px;
+}
+
+.version-card:is([data-bp="xs"], [data-bp="xxs"]) .version-card-values {
+  margin: 14px 0;
+}
+
 /* ===== Quick actions ===== */
 .apple-primary-btn {
   display: flex;

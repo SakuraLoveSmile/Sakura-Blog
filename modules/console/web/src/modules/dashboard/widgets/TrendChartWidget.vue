@@ -218,7 +218,7 @@ function onChartLeave() {
         <!-- Large 尺寸图例 -->
         <div v-if="sizePreset === 'large'" class="hidden sm:flex items-center gap-3 mr-2 text-xs text-muted-foreground">
           <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-primary" /> PV (浏览量)</span>
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500" /> UV (访客)</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-chart-1" /> UV (访客)</span>
         </div>
         <div class="apple-segmented">
           <button :class="['seg-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
@@ -235,7 +235,7 @@ function onChartLeave() {
       </div>
       <div>
         <div class="trend-stat-label">独立访客 (UV)</div>
-        <div class="trend-stat-value text-emerald-400">{{ formatNumber(totals.uv) }}</div>
+        <div class="trend-stat-value text-chart-1">{{ formatNumber(totals.uv) }}</div>
       </div>
       <div>
         <div class="trend-stat-label">日均访问</div>
@@ -243,7 +243,7 @@ function onChartLeave() {
       </div>
       <div v-if="sizePreset === 'large'">
         <div class="trend-stat-label">峰值单日</div>
-        <div class="trend-stat-value text-amber-400">{{ formatNumber(totals.peak) }}</div>
+        <div class="trend-stat-value text-chart-3">{{ formatNumber(totals.peak) }}</div>
       </div>
     </div>
 
@@ -285,12 +285,12 @@ function onChartLeave() {
         </g>
         <path :d="areaPath" fill="url(#trendGrad)" />
         <path :d="linePath" fill="none" stroke="url(#trendLine)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        <!-- Large 尺寸渲染 UV 辅助绿线 -->
+        <!-- Large 尺寸渲染 UV 辅助线（chart-1 绿色） -->
         <path
           v-if="sizePreset === 'large'"
           :d="uvLinePath"
           fill="none"
-          stroke="#30D158"
+          stroke="var(--color-chart-1)"
           stroke-width="2"
           stroke-dasharray="4 3"
           stroke-linecap="round"
@@ -393,7 +393,7 @@ function onChartLeave() {
 .trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: var(--color-foreground); }
 .trend-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; }
 .trend-tooltip-dot.pv { background: var(--color-chart-2); }
-.trend-tooltip-dot.uv { background: var(--color-chart-4); }
+.trend-tooltip-dot.uv { background: var(--color-chart-1); }
 
 .tip-enter-active, .tip-leave-active { transition: opacity var(--duration-fast) var(--ease-standard); }
 .tip-enter-from, .tip-leave-to { opacity: 0; }

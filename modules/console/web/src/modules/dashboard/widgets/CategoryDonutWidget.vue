@@ -37,6 +37,7 @@ const chartColors = themeColors({
   error: "#FF453A",
   success: "#30D158",
   warning: "#FF9F0A",
+  chart4: "#5E5CE6",
   primaryActive: "#007AFF",
 });
 const COLORS = [
@@ -46,7 +47,7 @@ const COLORS = [
   chartColors.error,
   chartColors.success,
   chartColors.warning,
-  chartColors.primaryHover,
+  chartColors.chart4,
   chartColors.primaryActive,
 ];
 
@@ -145,8 +146,8 @@ function openCategory(name: string) {
           />
         </g>
         <template v-if="hoveredArc">
-          <text x="90" y="82" text-anchor="middle" fill="var(--color-foreground)" class="text-sm font-bold">{{ hoveredArc.name }}</text>
-          <text x="90" y="102" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold">{{ hoveredArc.pct }}% ({{ hoveredArc.count }}篇)</text>
+          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="text-sm font-bold">{{ hoveredArc.name }}</text>
+          <text x="90" y="105" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold">{{ hoveredArc.pct }}% ({{ hoveredArc.count }}篇)</text>
         </template>
         <template v-else>
           <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>

@@ -84,35 +84,27 @@ const value = computed(() => {
           <span>{{ label }}总计</span>
         </div>
       </div>
-      <!-- 极简微型走势示意装饰条 -->
-      <div class="flex items-end gap-1 h-8 opacity-40">
-        <span class="w-1.5 rounded-full" :style="{ height: '40%', backgroundColor: color }" />
-        <span class="w-1.5 rounded-full" :style="{ height: '65%', backgroundColor: color }" />
-        <span class="w-1.5 rounded-full" :style="{ height: '50%', backgroundColor: color }" />
-        <span class="w-1.5 rounded-full" :style="{ height: '80%', backgroundColor: color }" />
-        <span class="w-1.5 rounded-full" :style="{ height: '100%', backgroundColor: color }" />
-      </div>
     </div>
   </div>
 
-  <!-- Medium 尺寸：经典标准 Apple 卡片 -->
+  <!-- Medium 尺寸：经典标准 Apple 卡片，图标与标签同行、数值区自然排布 -->
   <div
     v-else
-    class="apple-card stat-card-medium h-full flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5"
+    class="apple-card stat-card-medium h-full flex flex-col transition-all duration-200 hover:-translate-y-0.5"
   >
-    <div class="flex items-start justify-between">
+    <div class="flex items-center gap-2.5">
       <div
-        class="flex h-10 w-10 items-center justify-center rounded-xl"
+        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
         :style="{ backgroundColor: color + '18', color: color }"
       >
-        <Icon :icon="icon" class="w-5 h-5" />
+        <Icon :icon="icon" class="w-4 h-4" />
       </div>
+      <span class="min-w-0 truncate text-xs font-semibold text-text-tertiary">{{ label }}</span>
     </div>
-    <div class="mt-3">
+    <div class="mt-4">
       <div class="text-[28px] sm:text-[32px] font-bold leading-none tracking-tight text-foreground" style="font-variant-numeric: tabular-nums;">
         {{ value }}
       </div>
-      <div class="mt-1.5 text-xs font-medium text-text-tertiary">{{ label }}</div>
     </div>
   </div>
 </template>

@@ -140,7 +140,7 @@ const hoveredIdx = ref<number | null>(null);
       <button
         v-for="act in displayedActions"
         :key="act.label"
-        class="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] text-left transition-all group"
+        class="quick-action-item flex items-center gap-2 p-2 rounded-xl text-left"
         @click="go(act)"
       >
         <div
@@ -158,7 +158,7 @@ const hoveredIdx = ref<number | null>(null);
       <button
         v-for="(act, i) in displayedActions"
         :key="act.label"
-        class="quick-item-compact"
+        class="quick-action-item flex flex-col items-center gap-1.5 p-3 rounded-[14px]"
         @click="go(act)"
         @mouseenter="hoveredIdx = i"
         @mouseleave="hoveredIdx = null"
@@ -181,7 +181,7 @@ const hoveredIdx = ref<number | null>(null);
       <button
         v-for="act in displayedActions"
         :key="act.label"
-        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-primary/40 hover:-translate-y-0.5 text-center transition-all group"
+        class="quick-action-item flex flex-col items-center justify-center p-3 rounded-2xl text-center group"
         @click="go(act)"
       >
         <div
@@ -198,31 +198,26 @@ const hoveredIdx = ref<number | null>(null);
 </template>
 
 <style scoped>
+/* 三种尺寸共用表面：底色/边框/hover 单一定义（color-mix），布局差异走模板 tailwind */
+.quick-action-item {
+  background: color-mix(in srgb, #fff 3%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 5%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.quick-action-item:hover {
+  background: color-mix(in srgb, #fff 6%, transparent);
+  border-color: color-mix(in srgb, #fff 8%, transparent);
+}
+
 .quick-grid-compact {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-}
-
-.quick-item-compact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border-radius: 14px;
-  background: color-mix(in srgb, #fff 3%, transparent);
-  border: 1px solid color-mix(in srgb, #fff 4%, transparent);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  transition: all 0.2s var(--ease-standard);
-}
-
-.quick-item-compact:hover {
-  background: color-mix(in srgb, #fff 6%, transparent);
-  border-color: color-mix(in srgb, #fff 8%, transparent);
-  transform: translateY(-2px);
 }
 
 .quick-icon-compact {
@@ -232,7 +227,7 @@ const hoveredIdx = ref<number | null>(null);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s var(--ease-standard);
+  transition: background var(--duration-fast) var(--ease-standard);
 }
 
 .quick-label-compact {
