@@ -9,6 +9,10 @@ const SRC = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/registry.ts"),
   "utf8",
 );
+const DASHBOARD_CSS = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/dashboard.css"),
+  "utf8",
+);
 
 const blocks = SRC.match(/defineWidget\(\{[\s\S]*?\n\s+\}\),/g) || [];
 
@@ -43,4 +47,14 @@ test("registry: stat 卡 statKey 均为 /dashboard/stats 响应字段", () => {
   for (const match of SRC.matchAll(/statKey: "([^"]+)"/g)) {
     assert.ok(validKeys.has(match[1]), `非法 statKey: ${match[1]}`);
   }
+});
+
+test("dashboard grid: inset 间距不会被 100% 高度覆盖", () => {
+  const contentRule = DASHBOARD_CSS.match(
+    /\.dashboard-grid-stack > \.grid-stack-item > \.grid-stack-item-content \{([\s\S]*?)\}/,
+  )?.[1] ?? "";
+  const widgetCellRule = DASHBOARD_CSS.match(/\.widget-cell \{([\s\S]*?)\}/)?.[1] ?? "";
+  assert.match(contentRule, /inset:\s*10px/);
+  assert.match(contentRule, /height:\s*auto/);
+  assert.doesNotMatch(widgetCellRule, /height:\s*100%/);
 });
