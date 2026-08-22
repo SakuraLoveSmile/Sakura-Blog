@@ -1,4 +1,16 @@
 (function () {
+  function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function (character) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character];
+    });
+  }
+
   const els = document.getElementsByClassName('ds-friends_and_posts');
     for (var i = 0; i < els.length; i++) {
       const el = els[i];
@@ -15,35 +27,37 @@
         for (let item of (data.content || data)) {
           var cell = `<div class="grid-cell user-post-card">`;
           cell += `<div class="avatar-box">`;
-          cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${item.html_url || item.url}">`;;
-          cell += `<img src="${item.avatar_url || item.avatar || item.icon || default_avatar}" onerror="javascript:this.removeAttribute(\'data-src\');this.src=\'${default_avatar}\';"/>`;
-          cell += `<span class="title">${item.title || item.login}</span>`;
+          cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${escapeHTML(item.html_url || item.url || '#')}">`;;
+          cell += `<img src="${escapeHTML(item.avatar_url || item.avatar || item.icon || default_avatar)}" onerror="javascript:this.removeAttribute(\'data-src\');this.src=\'${escapeHTML(default_avatar)}\';"/>`;
+          cell += `<span class="title">${escapeHTML(item.title || item.login || '')}</span>`;
           cell += `</a>`;
           cell += `<div class="labels">`;
-          for (let label of item.labels) {
+          for (let label of (item.labels || [])) {
             if (label.lightness > 75) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, ${label.saturation}%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${escapeHTML(label.color)};color:hsla(${label.hue}, ${label.saturation}%, 20%, 1);">${escapeHTML(label.name)}</div>`;
             } else if (label.saturation > 90 && label.lightness > 40) {
-              cell += `<div class="label" style="background:#${label.color};color:hsla(${label.hue}, 50%, 20%, 1);">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${escapeHTML(label.color)};color:hsla(${label.hue}, 50%, 20%, 1);">${escapeHTML(label.name)}</div>`;
             } else {
-              cell += `<div class="label" style="background:#${label.color};color:white">${label.name}</div>`;
+              cell += `<div class="label" style="background:#${escapeHTML(label.color)};color:white">${escapeHTML(label.name)}</div>`;
             }
           }
           cell += `</div>`;
           cell += `</div>`;
-          cell += `<div class="previews">`;
+          // Stellar 的 post-panel 负责描述、文章列表和日期的纵向排版。
+          // 缺少它时 .post-link 会退化为普通 inline 内容，RSS 标题和日期会粘连。
+          cell += `<div class="post-panel">`;
           if (item.description) {
-            cell += `<div class="desc">${item.description || item.issue_number || ''}</div>`;
+            cell += `<div class="desc">${escapeHTML(item.description)}</div>`;
           } else {
-            cell += `<div class="desc">#${item.issue_number}</div>`;
+            cell += `<div class="desc">${escapeHTML(item.issue_number ? '#' + item.issue_number : '')}</div>`;
           }
           cell += `<div class="posts">`;
           if (showPosts) {
           if (item.posts?.length > 0) {
             for (let post of item.posts) {
-              cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${post.link}">`;
-              cell += `<span class="title">${post.title}</span>`;
-              cell += `<span class="date">${post.published}</span>`;
+              cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${escapeHTML(post.link || '#')}">`;
+              cell += `<span class="title">${escapeHTML(post.title || '')}</span>`;
+              cell += `<span class="date">${escapeHTML(post.published || '')}</span>`;
               cell += `</a>`;
             }
           } else {
