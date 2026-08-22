@@ -67,7 +67,7 @@ test("v9 统一网格迁移为 v10 实例模型和五断点", () => {
   assert.deepEqual(Object.keys(migrated).sort(), ["lg", "md", "sm", "xs", "xxs"]);
   assert.equal(migrated.lg?.[0].id, "trend-chart");
   assert.equal(typeof migrated.lg?.[0].i, "string");
-  assert.equal(migrated.xs?.[0].w, 3);
+  assert.equal(migrated.xs?.[0].w, 4);
   assert.equal(hasGridOverlaps(migrated.sm ?? []), false);
 });
 
@@ -96,8 +96,8 @@ test("sanitizeDashboardLayouts: 修正边界、去重并保留实例", () => {
   });
   assert.ok(output);
   assert.equal(output.lg?.length, 3);
-  assert.equal(output.lg?.[0].w, 5);
-  assert.equal(output.lg?.[0].h, 29);
+  assert.equal(output.lg?.[0].w, 6);
+  assert.equal(output.lg?.[0].h, 19);
   assert.notEqual(output.lg?.[0].i, output.lg?.[1].i);
   assert.equal(output.lg?.[2].id, "future:widget");
   assert.equal(hasGridOverlaps(output.lg ?? []), false);
@@ -161,7 +161,7 @@ test("Halo 断点、组件最小尺寸和布局复制", () => {
     lg: [{ i: "trend-1", id: "trend-chart", x: 0, y: 0, w: 8, h: 30 }],
     xs: [],
   }, "lg", "xs");
-  assert.equal(copied.xs?.[0].w, 3);
+  assert.equal(copied.xs?.[0].w, 4);
   assert.notEqual(copied.xs?.[0].i, "trend-1");
   assert.equal(hasGridOverlaps(copied.xs ?? []), false);
 });
@@ -172,7 +172,7 @@ test("组件尺寸只有小、中、大三个预设", () => {
   const large = getGridPresetSize("trend-chart", "lg", "large");
   assert.deepEqual(medium, { w: 8, h: 52 });
   assert.ok(small.w < medium.w && small.h < medium.h);
-  assert.ok(large.w > medium.w && large.h > medium.h);
+  assert.ok(large.w > medium.w && large.h >= medium.h);
   assert.equal(getWidgetSizePreset({ w: 8, h: 52 }, "lg", "trend-chart"), "medium");
   assert.equal(getWidgetSizePreset({ w: 99, h: 99 }, "lg", "trend-chart"), "large");
 });
@@ -186,7 +186,7 @@ test("加载历史任意宽高时会迁移到预设且保持无重叠", () => {
   });
   assert.deepEqual(
     output.lg.slice(0, 2).map(({ w, h }) => ({ w, h })),
-    [{ w: 6, h: 39 }, { w: 4, h: 35 }],
+    [{ w: 6, h: 36 }, { w: 6, h: 35 }],
   );
   assert.equal(hasGridOverlaps(output.lg), false);
 });
@@ -197,6 +197,6 @@ test("切换尺寸遇到冲突时会自动移动组件", () => {
     { i: "quick-1", id: "quick-actions", x: 8, y: 0, w: 4, h: 35 },
   ];
   const resized = applyGridWidgetSize(widgets[0], "large", "lg", widgets);
-  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 64 });
+  assert.deepEqual({ w: resized.w, h: resized.h }, { w: 12, h: 52 });
   assert.equal(hasGridOverlaps([resized, widgets[1]]), false);
 });

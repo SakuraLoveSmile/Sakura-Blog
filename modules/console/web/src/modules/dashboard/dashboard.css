@@ -227,6 +227,38 @@
   width: 100%;
 }
 
+/* ===== Semantic widget density =====
+   The grid preset controls both geometry and information density. Keep the
+   surface treatment quiet: the preset changes rhythm, not the dark theme. */
+.widget-cell.widget-size-small > .apple-card {
+  border-radius: 16px;
+}
+
+.widget-cell.widget-size-small > .apple-card .apple-section-title {
+  font-size: 14px;
+}
+
+.widget-cell.widget-size-small > .apple-card .apple-card-badge {
+  font-size: 10px;
+}
+
+.widget-cell.widget-size-medium > .apple-card {
+  border-radius: var(--radius, 19.2px);
+}
+
+.widget-cell.widget-size-large > .apple-card {
+  border-radius: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.widget-cell.widget-size-large > .apple-card .apple-section-title {
+  letter-spacing: -0.02em;
+}
+
+.widget-cell.widget-size-large > .apple-card .apple-list-item {
+  padding-block: 11px;
+}
+
 .widget-cell.editable {
   outline: 2px dashed color-mix(in srgb, #fff 15%, transparent);
   outline-offset: 2px;

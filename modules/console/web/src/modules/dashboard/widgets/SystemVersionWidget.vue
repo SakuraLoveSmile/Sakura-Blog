@@ -4,6 +4,17 @@ import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { systemApi, type UpdateCheckResponse } from "@/api";
 import { useBreakpoint } from "../useBreakpoint";
+import { useWidgetSize } from "../useWidgetSize";
+import type { WidgetSizePreset } from "./layout";
+
+interface Props {
+  sizePreset?: WidgetSizePreset;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  sizePreset: "medium",
+});
+const sizePreset = useWidgetSize(props.sizePreset).preset;
 
 const { breakpoint } = useBreakpoint();
 const router = useRouter();
@@ -50,8 +61,33 @@ function goToUpdate() {
 </script>
 
 <template>
+  <!-- Small 尺寸：单行紧凑胶囊 -->
   <div
-    class="apple-card system-version-card h-full cursor-pointer"
+    v-if="sizePreset === 'small'"
+    class="apple-card h-full flex items-center justify-between p-3 cursor-pointer"
+    :data-bp="breakpoint"
+    @click="goToUpdate"
+  >
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent flex-shrink-0">
+        <Icon icon="ri:rocket-2-line" class="w-4 h-4" />
+      </div>
+      <div class="min-w-0">
+        <div class="text-xs font-semibold text-foreground truncate">Blog {{ data?.current_version || "未知" }}</div>
+        <div class="text-[10px] text-muted-foreground truncate">最新: {{ data?.latest_version || "--" }}</div>
+      </div>
+    </div>
+    <span v-if="!loading" class="system-version-state text-xs ml-2 flex-shrink-0" :class="stateClass">
+      <span class="system-version-dot" aria-hidden="true" />
+      {{ stateLabel }}
+    </span>
+  </div>
+
+  <!-- Medium / Large 尺寸：标准与扩展视图 -->
+  <div
+    v-else
+    class="apple-card system-version-card h-full cursor-pointer flex flex-col justify-between"
+    :class="`system-card-${sizePreset}`"
     :data-bp="breakpoint"
     @click="goToUpdate"
   >
@@ -76,7 +112,7 @@ function goToUpdate() {
       <span>正在检查</span>
     </div>
     <template v-else>
-      <div class="system-version-values">
+      <div class="system-version-values" :class="{ 'grid-cols-3': sizePreset === 'large' }">
         <div>
           <span class="system-version-label">当前版本</span>
           <strong>{{ data?.current_version || "未知" }}</strong>
@@ -84,6 +120,10 @@ function goToUpdate() {
         <div>
           <span class="system-version-label">GitHub 最新</span>
           <strong>{{ data?.latest_version || "未获取" }}</strong>
+        </div>
+        <div v-if="sizePreset === 'large'">
+          <span class="system-version-label">自动应用</span>
+          <strong class="text-xs text-muted-foreground font-normal mt-1">{{ applySupported ? "支持一键更新" : "手动更新" }}</strong>
         </div>
       </div>
 
@@ -94,7 +134,7 @@ function goToUpdate() {
             class="w-4 h-4"
             aria-hidden="true"
           />
-          {{ data?.error || (hasUpdate ? "点击一键更新" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
+          {{ data?.error || (hasUpdate ? "点击进入系统更新页面" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
         </span>
         <Icon
           v-if="applySupported && hasUpdate"

@@ -45,9 +45,14 @@ function statusFromQuery(): string | undefined {
   return typeof s === "string" && validStatuses.includes(s) ? s : undefined;
 }
 
+function categoryFromQuery(): string | undefined {
+  const category = route.query.category;
+  return typeof category === "string" && category.trim() ? category : undefined;
+}
+
 const selectedStatus = ref<string | undefined>(statusFromQuery());
 const selectedSort = ref<string>("newest");
-const selectedCategory = ref<string | undefined>(undefined);
+const selectedCategory = ref<string | undefined>(categoryFromQuery());
 const selectedTag = ref<string | undefined>(undefined);
 const viewMode = ref<"grid" | "table">("grid");
 
@@ -73,6 +78,17 @@ watch(
       page.value = 1;
     }
   }
+);
+
+watch(
+  () => route.query.category,
+  () => {
+    const category = categoryFromQuery();
+    if (category !== selectedCategory.value) {
+      selectedCategory.value = category;
+      page.value = 1;
+    }
+  },
 );
 
 // 分类与标签选项

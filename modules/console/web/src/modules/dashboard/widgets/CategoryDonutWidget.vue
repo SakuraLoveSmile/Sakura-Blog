@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
-import { useBreakpoint } from "../useBreakpoint"
+import { useRouter } from "vue-router";
+import { useBreakpoint } from "../useBreakpoint";
 import { dashboardApi } from "@/api";
 import { themeColors } from "@/lib/theme-colors";
+import type { WidgetSizePreset } from "./layout";
+import { useWidgetSize } from "../useWidgetSize";
+
+interface Props {
+  sizePreset?: WidgetSizePreset;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  sizePreset: "medium",
+});
+const sizePreset = useWidgetSize(props.sizePreset).preset;
 
 const { breakpoint } = useBreakpoint();
+const router = useRouter();
 
 interface CatItem {
   name: string;
@@ -45,13 +58,19 @@ const hoveredIdx = ref<number | null>(null);
 onMounted(() => {
   dashboardApi.categories()
     .then((r: { data: CatResp }) => {
-      data.value = r.data.items.sort((a, b) => b.count - a.count).slice(0, 7);
+      data.value = r.data.items.sort((a, b) => b.count - a.count);
     })
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));
 });
 
 const total = computed(() => data.value.reduce((s, d) => s + d.count, 0));
+
+const displayData = computed(() => {
+  if (sizePreset.value === "small") return data.value.slice(0, 5);
+  if (sizePreset.value === "medium") return data.value.slice(0, 5);
+  return data.value;
+});
 
 const arcs = computed(() => {
   if (total.value === 0) return [];
@@ -60,7 +79,7 @@ const arcs = computed(() => {
   const r = 65;
   const innerR = 45;
   let startAngle = -Math.PI / 2;
-  return data.value.map((d, i) => {
+  return displayData.value.map((d, i) => {
     const angle = (d.count / total.value) * Math.PI * 2;
     const endAngle = startAngle + angle;
     const x1 = cx + r * Math.cos(startAngle);
@@ -82,13 +101,25 @@ const arcs = computed(() => {
     };
   });
 });
+
+const hoveredArc = computed(() => {
+  if (hoveredIdx.value === null || !arcs.value[hoveredIdx.value]) return null;
+  return arcs.value[hoveredIdx.value];
+});
+
+function openCategory(name: string) {
+  router.push({ path: "/posts", query: { category: name } });
+}
 </script>
 
 <template>
-  <div class="apple-card h-full" :data-bp="breakpoint">
+  <div class="apple-card h-full flex flex-col justify-between" :class="`donut-card-${sizePreset}`" :data-bp="breakpoint">
     <div class="donut-header">
-      <h3 class="apple-section-title">分类分布</h3>
-      <span class="apple-card-badge">Categories</span>
+      <div class="flex items-center gap-2">
+        <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">分类分布</h3>
+        <span class="apple-card-badge">Categories</span>
+      </div>
+      <span class="text-xs text-muted-foreground">{{ data.length }} 个分类</span>
     </div>
 
     <div v-if="loading" class="donut-placeholder flex items-center justify-center text-muted-foreground">
@@ -98,7 +129,34 @@ const arcs = computed(() => {
     <div v-else-if="data.length === 0" class="donut-placeholder flex items-center justify-center text-muted-foreground text-sm">
       暂无分类数据
     </div>
-    <div v-else class="donut-body">
+
+    <!-- Small 尺寸：居中纯环形图（Hover 交互切换中心文案） -->
+    <div v-else-if="sizePreset === 'small'" class="flex-1 flex flex-col items-center justify-center">
+      <svg viewBox="0 0 180 180" class="w-32 h-32">
+        <g @mouseleave="hoveredIdx = null">
+          <path
+            v-for="(a, i) in arcs"
+            :key="i"
+            :d="a.path"
+            :fill="a.color"
+            :opacity="hoveredIdx === null || hoveredIdx === i ? 1 : 0.4"
+            class="donut-segment"
+            @mouseenter="hoveredIdx = i"
+          />
+        </g>
+        <template v-if="hoveredArc">
+          <text x="90" y="82" text-anchor="middle" fill="var(--color-foreground)" class="text-sm font-bold">{{ hoveredArc.name }}</text>
+          <text x="90" y="102" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold">{{ hoveredArc.pct }}% ({{ hoveredArc.count }}篇)</text>
+        </template>
+        <template v-else>
+          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
+          <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">篇文章</text>
+        </template>
+      </svg>
+    </div>
+
+    <!-- Medium 尺寸：经典左环右图例 -->
+    <div v-else-if="sizePreset === 'medium'" class="donut-body">
       <svg viewBox="0 0 180 180" class="donut-svg">
         <g @mouseleave="hoveredIdx = null">
           <path
@@ -127,6 +185,51 @@ const arcs = computed(() => {
           <span class="donut-name">{{ a.name }}</span>
           <span class="donut-count">{{ a.count }}</span>
           <span class="donut-pct">{{ a.pct }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Large 尺寸：大环形图 + 带占比进度条的完整分类明细 -->
+    <div v-else class="donut-body gap-6">
+      <svg viewBox="0 0 180 180" class="w-36 h-36 flex-shrink-0">
+        <g @mouseleave="hoveredIdx = null">
+          <path
+            v-for="(a, i) in arcs"
+            :key="i"
+            :d="a.path"
+            :fill="a.color"
+            :opacity="hoveredIdx === null || hoveredIdx === i ? 1 : 0.5"
+            class="donut-segment"
+            @mouseenter="hoveredIdx = i"
+          />
+        </g>
+        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
+        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">总计文章</text>
+      </svg>
+      <div class="flex-1 min-w-0 space-y-2 max-h-52 overflow-y-auto pr-1">
+        <div
+          v-for="(a, i) in arcs"
+          :key="i"
+          class="p-2 rounded-xl bg-secondary/30 hover:bg-secondary/60 transition-colors"
+          :class="hoveredIdx === i && 'ring-1 ring-primary/40'"
+          role="button"
+          tabindex="0"
+          :aria-label="`查看分类：${a.name}`"
+          @mouseenter="hoveredIdx = i"
+          @mouseleave="hoveredIdx = null"
+          @click="openCategory(a.name)"
+          @keydown.enter="openCategory(a.name)"
+        >
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="font-medium text-foreground flex items-center gap-1.5 truncate">
+              <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: a.color }" />
+              {{ a.name }}
+            </span>
+            <span class="text-muted-foreground font-semibold">{{ a.count }} 篇 · {{ a.pct }}%</span>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color }" />
+          </div>
         </div>
       </div>
     </div>

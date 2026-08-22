@@ -3,6 +3,17 @@ import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { dashboardApi, type StellarVersionResponse } from "@/api";
 import { useBreakpoint } from "../useBreakpoint";
+import { useWidgetSize } from "../useWidgetSize";
+import type { WidgetSizePreset } from "./layout";
+
+interface Props {
+  sizePreset?: WidgetSizePreset;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  sizePreset: "medium",
+});
+const sizePreset = useWidgetSize(props.sizePreset).preset;
 
 const { breakpoint } = useBreakpoint();
 const data = ref<StellarVersionResponse | null>(null);
@@ -56,7 +67,34 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="apple-card stellar-version-card h-full" :data-bp="breakpoint">
+  <!-- Small 尺寸：单行紧凑胶囊 -->
+  <div
+    v-if="sizePreset === 'small'"
+    class="apple-card h-full flex items-center justify-between p-3"
+    :data-bp="breakpoint"
+  >
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent flex-shrink-0">
+        <Icon icon="ri:git-branch-line" class="w-4 h-4" />
+      </div>
+      <div class="min-w-0">
+        <div class="text-xs font-semibold text-foreground truncate">Stellar {{ data?.local_version || "未知" }}</div>
+        <div class="text-[10px] text-muted-foreground truncate">最新: {{ data?.upstream_version || "--" }}</div>
+      </div>
+    </div>
+    <span v-if="!loading" class="stellar-version-state text-xs ml-2 flex-shrink-0" :class="`is-${state}`">
+      <span class="stellar-version-dot" aria-hidden="true" />
+      {{ stateLabel }}
+    </span>
+  </div>
+
+  <!-- Medium / Large 尺寸：标准与扩展视图 -->
+  <div
+    v-else
+    class="apple-card stellar-version-card h-full flex flex-col justify-between"
+    :class="`stellar-card-${sizePreset}`"
+    :data-bp="breakpoint"
+  >
     <div class="stellar-version-header">
       <div class="stellar-version-title-row">
         <div class="stellar-version-icon" aria-hidden="true">
@@ -78,7 +116,7 @@ onMounted(async () => {
       <span>正在检查</span>
     </div>
     <template v-else>
-      <div class="stellar-version-values">
+      <div class="stellar-version-values" :class="{ 'grid-cols-3': sizePreset === 'large' }">
         <div>
           <span class="stellar-version-label">本地版本</span>
           <strong>{{ data?.local_version || "未知" }}</strong>
@@ -87,12 +125,16 @@ onMounted(async () => {
           <span class="stellar-version-label">GitHub 最新</span>
           <strong>{{ data?.upstream_version || "未获取" }}</strong>
         </div>
+        <div v-if="sizePreset === 'large'">
+          <span class="stellar-version-label">检查时间</span>
+          <strong class="text-xs text-muted-foreground font-normal mt-1">{{ data?.checked_at ? new Date(data.checked_at).toLocaleDateString() : '刚刚' }}</strong>
+        </div>
       </div>
 
       <div class="stellar-version-footer">
         <span class="stellar-version-message" :class="`is-${state}`">
           <Icon :icon="stateIcon" class="w-4 h-4" aria-hidden="true" />
-          {{ data?.error || (state === "outdated" ? "建议查看最新 release" : "当前版本与上游一致") }}
+          {{ data?.error || (state === "outdated" ? "建议查看最新 release 变更" : "当前版本与上游一致") }}
         </span>
         <a
           v-if="data?.release_url"

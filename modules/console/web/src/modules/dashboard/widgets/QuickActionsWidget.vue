@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useBreakpoint } from "../useBreakpoint";
 import { themeColors } from "@/lib/theme-colors";
+import type { WidgetSizePreset } from "./layout";
+import { useWidgetSize } from "../useWidgetSize";
+
+interface Props {
+  sizePreset?: WidgetSizePreset;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  sizePreset: "medium",
+});
+const sizePreset = useWidgetSize(props.sizePreset).preset;
 
 const { breakpoint } = useBreakpoint();
 const router = useRouter();
@@ -12,80 +23,175 @@ const colors = themeColors({
   success: "#30D158",
   warning: "#FF9F0A",
   chart5: "#BF5AF2",
+  chart2: "#00C7BE",
+  error: "#FF453A",
+  primaryHover: "#66ABFF",
+  primaryActive: "#007AFF",
 });
 
 interface QuickAction {
   label: string;
+  desc?: string;
   icon: string;
   color: string;
   bgColor: string;
   path?: string;
-  action?: () => void;
+  isExternal?: boolean;
 }
 
-const actions: QuickAction[] = [
+const baseActions: QuickAction[] = [
   {
     label: "写文章",
+    desc: "发布新内容",
     icon: "ri:quill-pen-line",
     color: colors.primary,
-    bgColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+    bgColor: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
     path: "/posts/editor",
   },
   {
     label: "评论",
+    desc: "互动审核",
     icon: "ri:chat-3-line",
     color: colors.success,
-    bgColor: "color-mix(in srgb, var(--color-state-success) 12%, transparent)",
+    bgColor: "color-mix(in srgb, var(--color-state-success) 14%, transparent)",
     path: "/comments",
   },
   {
     label: "分类",
+    desc: "组织结构",
     icon: "ri:folder-3-line",
     color: colors.warning,
-    bgColor: "color-mix(in srgb, var(--color-state-warning) 12%, transparent)",
+    bgColor: "color-mix(in srgb, var(--color-state-warning) 14%, transparent)",
     path: "/categories",
   },
   {
     label: "设置",
+    desc: "系统首选项",
     icon: "ri:settings-3-line",
     color: colors.chart5,
-    bgColor: "color-mix(in srgb, var(--color-chart-5) 12%, transparent)",
+    bgColor: "color-mix(in srgb, var(--color-chart-5) 14%, transparent)",
     path: "/settings",
   },
 ];
 
-function go(path?: string) {
-  if (path) router.push(path);
+const extendedActions: QuickAction[] = [
+  ...baseActions,
+  {
+    label: "文章列表",
+    desc: "管理已有文章",
+    icon: "ri:file-list-3-line",
+    color: colors.primaryHover,
+    bgColor: "color-mix(in srgb, var(--color-primary-hover) 14%, transparent)",
+    path: "/posts",
+  },
+  {
+    label: "媒体附件",
+    desc: "文件与图片",
+    icon: "ri:attachment-2",
+    color: colors.chart2,
+    bgColor: "color-mix(in srgb, #00C7BE 14%, transparent)",
+    path: "/attachments",
+  },
+  {
+    label: "系统更新",
+    desc: "版本与升级",
+    icon: "ri:rocket-2-line",
+    color: colors.error,
+    bgColor: "color-mix(in srgb, var(--color-state-error) 14%, transparent)",
+    path: "/system-update",
+  },
+  {
+    label: "查看博客",
+    desc: "打开前台页面",
+    icon: "ri:external-link-line",
+    color: colors.primaryActive,
+    bgColor: "color-mix(in srgb, var(--color-primary-active) 14%, transparent)",
+    path: "/",
+    isExternal: true,
+  },
+];
+
+const displayedActions = computed(() => {
+  if (sizePreset.value === "large") return extendedActions;
+  return baseActions;
+});
+
+function go(act: QuickAction) {
+  if (!act.path) return;
+  if (act.isExternal) {
+    window.open(act.path, "_blank", "noopener,noreferrer");
+  } else {
+    router.push(act.path);
+  }
 }
 
 const hoveredIdx = ref<number | null>(null);
 </script>
 
 <template>
-  <div class="apple-card" :data-bp="breakpoint">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="apple-section-title">快捷操作</h3>
+  <div class="apple-card h-full flex flex-col justify-between" :class="`quick-card-${sizePreset}`" :data-bp="breakpoint">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">快捷操作</h3>
+      <span class="text-xs text-muted-foreground">{{ displayedActions.length }} 个快捷入口</span>
     </div>
 
-    <div class="quick-grid-compact">
+    <!-- Small 尺寸：极紧凑 4 小宫格 -->
+    <div v-if="sizePreset === 'small'" class="grid grid-cols-2 gap-2 flex-1">
       <button
-        v-for="(act, i) in actions"
+        v-for="act in displayedActions"
+        :key="act.label"
+        class="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] text-left transition-all group"
+        @click="go(act)"
+      >
+        <div
+          class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+          :style="{ backgroundColor: act.bgColor, color: act.color }"
+        >
+          <Icon :icon="act.icon" class="w-3.5 h-3.5" />
+        </div>
+        <span class="text-xs font-medium text-foreground truncate">{{ act.label }}</span>
+      </button>
+    </div>
+
+    <!-- Medium 尺寸：经典 2x2 网格 -->
+    <div v-else-if="sizePreset === 'medium'" class="quick-grid-compact flex-1">
+      <button
+        v-for="(act, i) in displayedActions"
         :key="act.label"
         class="quick-item-compact"
-        @click="go(act.path)"
+        @click="go(act)"
         @mouseenter="hoveredIdx = i"
         @mouseleave="hoveredIdx = null"
       >
         <div
           class="quick-icon-compact"
           :style="{
-            backgroundColor: hoveredIdx === i ? act.bgColor.replace('0.12', '0.22') : act.bgColor,
+            backgroundColor: hoveredIdx === i ? act.bgColor.replace('0.14', '0.24') : act.bgColor,
             color: act.color,
           }"
         >
           <Icon :icon="act.icon" class="w-5 h-5" />
         </div>
         <span class="quick-label-compact">{{ act.label }}</span>
+      </button>
+    </div>
+
+    <!-- Large 尺寸：8 宫格全功能扩展 -->
+    <div v-else class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-1">
+      <button
+        v-for="act in displayedActions"
+        :key="act.label"
+        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-primary/40 hover:-translate-y-0.5 text-center transition-all group"
+        @click="go(act)"
+      >
+        <div
+          class="w-10 h-10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform"
+          :style="{ backgroundColor: act.bgColor, color: act.color }"
+        >
+          <Icon :icon="act.icon" class="w-5 h-5" />
+        </div>
+        <span class="text-xs font-semibold text-foreground">{{ act.label }}</span>
+        <span class="text-[10px] text-muted-foreground mt-0.5">{{ act.desc }}</span>
       </button>
     </div>
   </div>
@@ -135,26 +241,4 @@ const hoveredIdx = ref<number | null>(null);
   color: var(--color-foreground);
   letter-spacing: -0.1px;
 }
-
-/* M */
-.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-icon-compact {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-item-compact { padding: 10px 6px; gap: 5px; border-radius: 12px; }
-.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-label-compact { font-size: 11px; }
-
-/* S */
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-grid-compact {
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-icon-compact {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-}
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-item-compact { padding: 12px 4px; gap: 6px; border-radius: 14px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-label-compact { font-size: 11px; }
 </style>

@@ -278,6 +278,7 @@ onBeforeRouteLeave(() => {
           <WidgetSizeModal
             v-if="sizingWidget && sizingDefinition"
             v-model:visible="sizeModalVisible"
+            :widget-id="sizingWidget.id"
             :widget-label="sizingDefinition.label"
             :widget-icon="sizingDefinition.icon"
             :breakpoint="activeBreakpoint"

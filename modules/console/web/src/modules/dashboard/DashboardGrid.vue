@@ -5,6 +5,7 @@ import "gridstack/dist/gridstack.min.css";
 import { Icon } from "@iconify/vue";
 import {
   getGridColumns,
+  getWidgetSizePreset,
   mergeGridWidgetMetadata,
   nodesToGridWidgets,
   type Breakpoint,
@@ -12,6 +13,7 @@ import {
 } from "./widgets/layout";
 import { getWidgetDefinition } from "./widgets/registry";
 import UnknownWidget from "./widgets/UnknownWidget.vue";
+import WidgetSizeProvider from "./WidgetSizeProvider.vue";
 import "./dashboard.css";
 
 interface Props {
@@ -110,12 +112,25 @@ onBeforeUnmount(destroyGrid);
       :gs-w="item.w"
       :gs-h="item.h"
     >
-      <div class="grid-stack-item-content widget-cell" :class="{ editable: editing }">
-        <component
+      <div
+        class="grid-stack-item-content widget-cell"
+        :class="[
+          { editable: editing },
+          `widget-size-${getWidgetSizePreset(item, breakpoint, item.id)}`,
+        ]"
+      >
+        <WidgetSizeProvider
           v-if="getWidgetDefinition(item.id)"
-          :is="getWidgetDefinition(item.id)!.component"
-          v-bind="getWidgetDefinition(item.id)!.props"
-        />
+          :preset="getWidgetSizePreset(item, breakpoint, item.id)"
+          :grid-w="item.w"
+          :grid-h="item.h"
+        >
+          <component
+            :is="getWidgetDefinition(item.id)!.component"
+            v-bind="getWidgetDefinition(item.id)!.props"
+            :size-preset="getWidgetSizePreset(item, breakpoint, item.id)"
+          />
+        </WidgetSizeProvider>
         <UnknownWidget v-else :widget-id="item.id" />
         <div v-if="editing" class="apple-edit-overlay">
           <span class="apple-drag-handle" role="button" tabindex="0" title="拖拽排序" :aria-label="`拖拽${getWidgetDefinition(item.id)?.label ?? '组件'}`">

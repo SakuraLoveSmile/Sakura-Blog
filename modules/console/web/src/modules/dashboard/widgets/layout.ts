@@ -292,33 +292,188 @@ export function findFreeGridPosition(
   return { x: 0, y: bottom };
 }
 
-const WIDGET_SIZE_SCALE: Record<WidgetSizePreset, number> = {
-  small: 0.75,
-  medium: 1,
-  large: 1.5,
+export type WidgetPresetMatrix = Record<WidgetSizePreset, Record<Breakpoint, GridSize>>;
+
+export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
+  ...Object.fromEntries(
+    statTypes.map((type) => [
+      type,
+      {
+        small: {
+          lg: { w: 2, h: 14 }, md: { w: 3, h: 14 }, sm: { w: 2, h: 14 },
+          xs: { w: 2, h: 14 }, xxs: { w: 2, h: 14 },
+        },
+        medium: {
+          lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
+          xs: { w: 2, h: 18 }, xxs: { w: 2, h: 18 },
+        },
+        large: {
+          lg: { w: 6, h: 19 }, md: { w: 12, h: 18 }, sm: { w: 6, h: 18 },
+          xs: { w: 4, h: 18 }, xxs: { w: 4, h: 18 },
+        },
+      },
+    ]),
+  ),
+  "trend-chart": {
+    small: {
+      lg: { w: 6, h: 36 }, md: { w: 6, h: 36 }, sm: { w: 6, h: 36 },
+      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+    },
+    medium: {
+      lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
+    },
+    large: {
+      lg: { w: 12, h: 52 }, md: { w: 12, h: 52 }, sm: { w: 6, h: 52 },
+      xs: { w: 4, h: 50 }, xxs: { w: 4, h: 50 },
+    },
+  },
+  "hourly-chart": {
+    small: {
+      lg: { w: 4, h: 28 }, md: { w: 6, h: 28 }, sm: { w: 3, h: 28 },
+      xs: { w: 4, h: 26 }, xxs: { w: 4, h: 26 },
+    },
+    medium: {
+      lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
+      xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
+    },
+    large: {
+      lg: { w: 6, h: 40 }, md: { w: 12, h: 37 }, sm: { w: 6, h: 37 },
+      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
+    },
+  },
+  "category-donut": {
+    small: {
+      lg: { w: 3, h: 28 }, md: { w: 4, h: 28 }, sm: { w: 3, h: 28 },
+      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+    },
+    medium: {
+      lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
+      xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
+    },
+    large: {
+      lg: { w: 6, h: 34 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+    },
+  },
+  "recent-posts": {
+    small: {
+      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
+      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+    },
+    medium: {
+      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
+    },
+    large: {
+      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+    },
+  },
+  "recent-comments": {
+    small: {
+      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
+      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+    },
+    medium: {
+      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
+    },
+    large: {
+      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+    },
+  },
+  "quick-actions": {
+    small: {
+      lg: { w: 3, h: 24 }, md: { w: 4, h: 22 }, sm: { w: 3, h: 22 },
+      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+    },
+    medium: {
+      lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
+      xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
+    },
+    large: {
+      lg: { w: 6, h: 35 }, md: { w: 12, h: 31 }, sm: { w: 6, h: 31 },
+      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+    },
+  },
+  "stellar-version": {
+    small: {
+      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
+      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+    },
+    medium: {
+      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
+      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+    },
+    large: {
+      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
+      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
+    },
+  },
+  "system-version": {
+    small: {
+      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
+      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+    },
+    medium: {
+      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
+      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+    },
+    large: {
+      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
+      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
+    },
+  },
 };
 
-/** 根据组件默认尺寸生成三个离散大小，避免用户进入任意宽高编辑。 */
+/** 未知组件的显式兜底规格；已注册组件必须使用 WIDGET_PRESET_SPECS。 */
+const FALLBACK_PRESET_SPECS: WidgetPresetMatrix = {
+  small: {
+    lg: { w: 4, h: 14 }, md: { w: 4, h: 14 }, sm: { w: 2, h: 14 },
+    xs: { w: 2, h: 14 }, xxs: { w: 2, h: 14 },
+  },
+  medium: {
+    lg: { w: 6, h: 20 }, md: { w: 6, h: 20 }, sm: { w: 4, h: 20 },
+    xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
+  },
+  large: {
+    lg: { w: 12, h: 32 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+    xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+  },
+};
+
+/** 根据组件预设规格矩阵生成精确离散大小，避免破环网格整除与对齐。 */
 export function getGridPresetSize(type: string, bp: Breakpoint, preset: WidgetSizePreset): GridSize {
-  const defaults = getDefaultGridSize(type, bp);
+  const desired = (WIDGET_PRESET_SPECS[type] ?? FALLBACK_PRESET_SPECS)[preset][bp];
   const constraints = getGridConstraints(type, bp);
-  const scale = WIDGET_SIZE_SCALE[preset];
   return {
-    w: clampInt(Math.round(defaults.w * scale), constraints.minW, constraints.maxW, defaults.w),
-    h: clampInt(Math.round(defaults.h * scale), constraints.minH, constraints.maxH, defaults.h),
+    w: clampInt(desired.w, constraints.minW, constraints.maxW, desired.w),
+    h: clampInt(desired.h, constraints.minH, constraints.maxH, desired.h),
   };
 }
 
 /** 将历史布局的任意尺寸映射到最近的三个预设之一。 */
 export function getWidgetSizePreset(widget: Pick<DashboardWidget, "w" | "h">, bp: Breakpoint, type: string): WidgetSizePreset {
   let closest = WIDGET_SIZE_PRESET_ORDER[0];
-  let distance = Number.POSITIVE_INFINITY;
+  let closestWidthDistance = Number.POSITIVE_INFINITY;
+  let closestHeightDistance = Number.POSITIVE_INFINITY;
+  const seenWidths = new Set<number>();
   for (const preset of WIDGET_SIZE_PRESET_ORDER) {
     const size = getGridPresetSize(type, bp, preset);
-    const nextDistance = Math.abs(widget.w - size.w) + Math.abs(widget.h - size.h);
-    if (nextDistance < distance) {
+    // 同一断点下相同列跨度只保留第一个语义代表，避免弹窗和卡片状态重复。
+    if (seenWidths.has(size.w)) continue;
+    seenWidths.add(size.w);
+    const widthDistance = Math.abs(widget.w - size.w);
+    const heightDistance = Math.abs(widget.h - size.h);
+    if (
+      widthDistance < closestWidthDistance
+      || (widthDistance === closestWidthDistance && heightDistance < closestHeightDistance)
+    ) {
       closest = preset;
-      distance = nextDistance;
+      closestWidthDistance = widthDistance;
+      closestHeightDistance = heightDistance;
     }
   }
   return closest;

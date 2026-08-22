@@ -3,9 +3,11 @@ import { ref, computed, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { VModal } from "@/components/ui";
 import type { Breakpoint, WidgetSizePreset } from "./widgets/layout";
+import { getWidgetPresetOptions } from "./widgets/size-preset-options";
 
 interface Props {
   visible: boolean;
+  widgetId: string;
   widgetLabel: string;
   widgetIcon: string;
   breakpoint: Breakpoint;
@@ -43,11 +45,37 @@ const breakpointLabel: Record<Breakpoint, string> = {
   xxs: "手机",
 };
 
-const sizeOptions: { key: WidgetSizePreset; label: string; description: string; icon: string }[] = [
-  { key: "small", label: "小", description: "紧凑排列", icon: "ri:layout-column-line" },
-  { key: "medium", label: "中", description: "平衡显示", icon: "ri:layout-grid-line" },
-  { key: "large", label: "大", description: "突出展示", icon: "ri:layout-right-line" },
-];
+const presetMeta: Record<WidgetSizePreset, {
+  label: string;
+  title: string;
+  description: string;
+  icon: string;
+}> = {
+  small: {
+    label: "小",
+    title: "紧凑速览",
+    description: "保留核心指标，适合并排查看。",
+    icon: "ri:layout-column-line",
+  },
+  medium: {
+    label: "中",
+    title: "平衡标准",
+    description: "标准内容密度，兼顾信息与呼吸感。",
+    icon: "ri:layout-grid-line",
+  },
+  large: {
+    label: "大",
+    title: "深度洞察",
+    description: "展开趋势、明细与更多操作入口。",
+    icon: "ri:layout-right-line",
+  },
+};
+
+const sizeOptions = computed(() => getWidgetPresetOptions(props.widgetId, props.breakpoint).map(({ preset, size }) => ({
+  key: preset,
+  ...presetMeta[preset],
+  size,
+})));
 
 function save() {
   emit("save", selectedPreset.value);
@@ -60,7 +88,7 @@ function close() {
 </script>
 
 <template>
-  <VModal v-model:visible="modalVisible" title="组件大小" :width="520">
+  <VModal v-model:visible="modalVisible" title="组件大小" :width="600">
     <div class="flex items-center gap-3 mb-5 p-3 rounded-xl bg-secondary dark:bg-secondary/50">
       <div class="w-10 h-10 rounded-lg bg-white dark:bg-accent flex items-center justify-center text-primary">
         <Icon :icon="widgetIcon" class="w-5 h-5" />
@@ -73,23 +101,32 @@ function close() {
       </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 size-preset-options">
       <button
         v-for="option in sizeOptions"
         :key="option.key"
         type="button"
+        :data-size-preset="option.key"
         :aria-pressed="selectedPreset === option.key"
         :class="[
-          'flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-colors',
+          'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-colors',
           selectedPreset === option.key
             ? 'border-primary bg-primary/10 text-primary'
             : 'border-border bg-secondary/40 text-text-quaternary hover:border-primary/50 hover:bg-secondary dark:border-border-strong dark:bg-secondary/30 dark:text-text-secondary',
         ]"
         @click="selectedPreset = option.key"
       >
-        <Icon :icon="option.icon" class="h-6 w-6" />
-        <span class="text-sm font-semibold">{{ option.label }}</span>
-        <span class="text-xs opacity-70">{{ option.description }}</span>
+        <div class="size-preset-preview" :class="`is-${option.key}`" aria-hidden="true">
+          <span class="size-preset-preview-grid">
+            <span class="size-preset-preview-block" />
+          </span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <Icon :icon="option.icon" class="h-4 w-4" />
+          <span class="text-sm font-semibold">{{ option.label }} · {{ option.title }}</span>
+        </div>
+        <span class="text-xs opacity-70 leading-relaxed">{{ option.description }}</span>
+        <span class="size-preset-grid-size">{{ option.size.w }} 列 × {{ option.size.h }} 行</span>
       </button>
     </div>
 
@@ -114,3 +151,67 @@ function close() {
     </template>
   </VModal>
 </template>
+
+<style scoped>
+.size-preset-option {
+  min-height: 176px;
+}
+
+.size-preset-option:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.size-preset-preview {
+  width: 100%;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-card) 88%, var(--color-primary));
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+}
+
+.size-preset-preview-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 86%;
+  height: 70%;
+  border: 1px dashed color-mix(in srgb, var(--color-muted-foreground) 55%, transparent);
+  border-radius: 8px;
+}
+
+.size-preset-preview-block {
+  display: block;
+  width: 74%;
+  height: 64%;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary) 78%, var(--color-card));
+  box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--color-primary) 60%, transparent);
+}
+
+.size-preset-preview.is-small .size-preset-preview-block {
+  width: 34%;
+  height: 42%;
+}
+
+.size-preset-preview.is-medium .size-preset-preview-block {
+  width: 58%;
+  height: 58%;
+}
+
+.size-preset-preview.is-large .size-preset-preview-block {
+  width: 84%;
+  height: 76%;
+}
+
+.size-preset-grid-size {
+  margin-top: auto;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+</style>
