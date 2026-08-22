@@ -14,7 +14,7 @@ import {
   ensureCompleteLayout,
   getDefaultGridLayout,
   loadLegacyLayoutFromStorage,
-  type Breakpoint,
+  type DashboardLayoutBreakpoint,
   type DashboardResponsiveLayout,
   type DashboardWidget,
   type MultiBreakpointLayout,
@@ -25,11 +25,11 @@ const router = useRouter();
 const { previewWidth, setViewMode } = provideBreakpoint();
 const { layout, loading, error, hasServerLayout, load, replace } = useDashboardLayout();
 
-const currentBreakpoint = ref<Breakpoint>("lg");
+const currentBreakpoint = ref<DashboardLayoutBreakpoint>("lg");
 const originalLayout = ref<MultiBreakpointLayout | null>(null);
 const showWidgetCenter = ref(false);
 const legacyLayout = ref<DashboardResponsiveLayout | null>(null);
-const copySource = ref<Breakpoint>("lg");
+const copySource = ref<DashboardLayoutBreakpoint>("lg");
 const refreshKey = ref(0);
 const saving = ref(false);
 
@@ -37,11 +37,9 @@ const currentWidgets = computed(() => layout.value[currentBreakpoint.value] ?? [
 const dirty = computed(() => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value));
 const canImportLegacy = computed(() => !hasServerLayout.value && Boolean(legacyLayout.value));
 
-const breakpointOptions: { key: Breakpoint; label: string; icon: string }[] = [
-  { key: "lg", label: "大屏", icon: "ri:computer-line" },
-  { key: "md", label: "中屏", icon: "ri:tablet-line" },
+const breakpointOptions: { key: DashboardLayoutBreakpoint; label: string; icon: string }[] = [
+  { key: "lg", label: "电脑", icon: "ri:computer-line" },
   { key: "sm", label: "平板", icon: "ri:tablet-line" },
-  { key: "xs", label: "小屏", icon: "ri:smartphone-line" },
   { key: "xxs", label: "手机", icon: "ri:smartphone-line" },
 ];
 
@@ -49,7 +47,7 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function switchBreakpoint(next: Breakpoint) {
+function switchBreakpoint(next: DashboardLayoutBreakpoint) {
   if (next === currentBreakpoint.value) return;
   if (dirty.value && !window.confirm("当前布局尚未保存，切换设备会保留修改但不会丢失。是否继续？")) return;
   currentBreakpoint.value = next;

@@ -43,8 +43,8 @@ const totals = computed(() => {
 const chartWidth = 720;
 const chartHeight = 220;
 const padding = computed(() => {
-  if (breakpoint.value === "xs" || breakpoint.value === "xxs") return { top: 16, right: 8, bottom: 30, left: 8 };
-  if (breakpoint.value === "md" || breakpoint.value === "sm") return { top: 20, right: 12, bottom: 30, left: 12 };
+  if (breakpoint.value === "xxs") return { top: 16, right: 8, bottom: 30, left: 8 };
+  if (breakpoint.value === "sm") return { top: 20, right: 12, bottom: 30, left: 12 };
   return { top: 20, right: 20, bottom: 30, left: 40 };
 });
 

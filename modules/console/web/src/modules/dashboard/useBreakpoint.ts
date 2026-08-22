@@ -1,14 +1,12 @@
 import { ref, computed, onMounted, onBeforeUnmount, provide, inject, type Ref } from "vue";
-import { getBreakpoint, type Breakpoint } from "./widgets/layout";
+import { getBreakpoint, type DashboardLayoutBreakpoint } from "./widgets/layout";
 
-export type ViewMode = "auto" | Breakpoint;
+export type ViewMode = "auto" | DashboardLayoutBreakpoint;
 
 /** 每个视角模式对应的预览宽度（px） */
-export const VIEW_MODE_WIDTH: Record<Exclude<ViewMode, "auto">, number> = {
+export const VIEW_MODE_WIDTH: Record<DashboardLayoutBreakpoint, number> = {
   lg: 1440,
-  md: 1024,
   sm: 800,
-  xs: 540,
   xxs: 390,
 };
 
@@ -17,7 +15,7 @@ const BREAKPOINT_KEY = Symbol("dashboard-breakpoint");
 /**
  * 响应式断点 + 视角预览控制
  * - auto模式：跟随窗口宽度自动切换断点
- * - Halo 五断点模式：手动锁定到对应断点，用于预览
+ * - 三种设备布局：手动锁定到电脑、平板或手机布局，用于预览
  *
  * 响应式样式统一通过 data-bp 属性驱动（替代CSS媒体查询），
  * 确保自动模式和预览模式样式完全一致。
@@ -26,7 +24,7 @@ export function provideBreakpoint() {
   const viewportWidth = ref(window.innerWidth);
   const viewMode = ref<ViewMode>("auto");
 
-  const breakpoint = computed<Breakpoint>(() => {
+  const breakpoint = computed<DashboardLayoutBreakpoint>(() => {
     if (viewMode.value !== "auto") return viewMode.value;
     return getBreakpoint(viewportWidth.value);
   });
@@ -71,11 +69,11 @@ export function provideBreakpoint() {
 }
 
 /** 子组件（widget）注入当前断点 */
-export function useBreakpoint(): { breakpoint: Ref<Breakpoint> } {
-  const bp = inject<{ breakpoint: Ref<Breakpoint> }>(BREAKPOINT_KEY);
+export function useBreakpoint(): { breakpoint: Ref<DashboardLayoutBreakpoint> } {
+  const bp = inject<{ breakpoint: Ref<DashboardLayoutBreakpoint> }>(BREAKPOINT_KEY);
   if (!bp) {
     // fallback：独立使用时跟随窗口
-    const fallbackBp = ref<Breakpoint>(getBreakpoint(window.innerWidth));
+    const fallbackBp = ref<DashboardLayoutBreakpoint>(getBreakpoint(window.innerWidth));
     const update = () => (fallbackBp.value = getBreakpoint(window.innerWidth));
     onMounted(() => {
       update();

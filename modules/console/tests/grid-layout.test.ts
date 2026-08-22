@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   BREAKPOINT_ORDER,
+  DESIGN_BREAKPOINTS,
   GRID_COLUMNS,
   copyLayoutToBreakpoint,
   defaultMultiLayout,
@@ -145,7 +146,9 @@ test("网格几何更新不会丢失实例配置和权限", () => {
 });
 
 test("Halo 断点、组件最小尺寸和布局复制", () => {
+  assert.deepEqual(DESIGN_BREAKPOINTS, ["lg", "sm", "xxs"]);
   assert.equal(getBreakpoint(1440), "lg");
+  assert.equal(getBreakpoint(1024), "sm");
   assert.equal(getBreakpoint(800), "sm");
   assert.equal(getBreakpoint(390), "xxs");
   assert.equal(getGridConstraints("stat-posts", "xs").minW, 2);

@@ -8,6 +8,9 @@ export const BREAKPOINTS: Record<"lg" | "md" | "sm" | "xs", number> = {
 };
 
 export const BREAKPOINT_ORDER: Breakpoint[] = ["lg", "md", "sm", "xs", "xxs"];
+/** 用户可编辑/预览的三种设备布局；其余断点仅为 v10 数据兼容保留。 */
+export const DESIGN_BREAKPOINTS = ["lg", "sm", "xxs"] as const;
+export type DashboardLayoutBreakpoint = (typeof DESIGN_BREAKPOINTS)[number];
 export const GRID_COLUMNS: Record<Breakpoint, number> = {
   lg: 12,
   md: 12,
@@ -28,11 +31,9 @@ export function getGridColumns(bp: Breakpoint): number {
   return GRID_COLUMNS[bp];
 }
 
-export function getBreakpoint(width: number): Breakpoint {
+export function getBreakpoint(width: number): DashboardLayoutBreakpoint {
   if (width >= BREAKPOINTS.lg) return "lg";
-  if (width >= BREAKPOINTS.md) return "md";
   if (width >= BREAKPOINTS.sm) return "sm";
-  if (width >= BREAKPOINTS.xs) return "xs";
   return "xxs";
 }
 

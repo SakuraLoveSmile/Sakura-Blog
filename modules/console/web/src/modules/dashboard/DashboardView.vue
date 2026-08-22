@@ -6,7 +6,6 @@ import { useAuthStore } from "@/stores/auth";
 import DashboardGrid from "./DashboardGrid.vue";
 import { useDashboardLayout } from "./useDashboardLayout";
 import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
-import type { Breakpoint } from "./widgets/layout";
 import "./dashboard.css";
 
 const router = useRouter();
@@ -31,12 +30,10 @@ function today(): string {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]}`;
 }
 
-const viewModes: { key: "auto" | Breakpoint; label: string; icon: string }[] = [
+const viewModes: { key: ViewMode; label: string; icon: string }[] = [
   { key: "auto", label: "自适应", icon: "ri:aspect-ratio-line" },
-  { key: "lg", label: "大屏", icon: "ri:computer-line" },
-  { key: "md", label: "中屏", icon: "ri:tablet-line" },
+  { key: "lg", label: "电脑", icon: "ri:computer-line" },
   { key: "sm", label: "平板", icon: "ri:tablet-line" },
-  { key: "xs", label: "小屏", icon: "ri:smartphone-line" },
   { key: "xxs", label: "手机", icon: "ri:smartphone-line" },
 ];
 
@@ -60,7 +57,7 @@ onMounted(load);
                 :class="['seg-btn', mode.key === viewMode && 'active']"
                 :title="mode.label"
                 :aria-label="mode.label"
-                @click="setViewMode(mode.key as ViewMode)"
+                @click="setViewMode(mode.key)"
               >
                 <Icon :icon="mode.icon" class="w-4 h-4" />
               </button>
