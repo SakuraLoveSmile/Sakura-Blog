@@ -68,6 +68,9 @@ export interface GridConstraints {
   maxH: number;
 }
 
+export type WidgetSizePreset = "small" | "medium" | "large";
+export const WIDGET_SIZE_PRESET_ORDER: WidgetSizePreset[] = ["small", "medium", "large"];
+
 interface WidgetSpec {
   defaults: Record<Breakpoint, GridSize>;
   minW: Record<Breakpoint, number>;
@@ -289,6 +292,64 @@ export function findFreeGridPosition(
   return { x: 0, y: bottom };
 }
 
+const WIDGET_SIZE_SCALE: Record<WidgetSizePreset, number> = {
+  small: 0.75,
+  medium: 1,
+  large: 1.5,
+};
+
+/** 根据组件默认尺寸生成三个离散大小，避免用户进入任意宽高编辑。 */
+export function getGridPresetSize(type: string, bp: Breakpoint, preset: WidgetSizePreset): GridSize {
+  const defaults = getDefaultGridSize(type, bp);
+  const constraints = getGridConstraints(type, bp);
+  const scale = WIDGET_SIZE_SCALE[preset];
+  return {
+    w: clampInt(Math.round(defaults.w * scale), constraints.minW, constraints.maxW, defaults.w),
+    h: clampInt(Math.round(defaults.h * scale), constraints.minH, constraints.maxH, defaults.h),
+  };
+}
+
+/** 将历史布局的任意尺寸映射到最近的三个预设之一。 */
+export function getWidgetSizePreset(widget: Pick<DashboardWidget, "w" | "h">, bp: Breakpoint, type: string): WidgetSizePreset {
+  let closest = WIDGET_SIZE_PRESET_ORDER[0];
+  let distance = Number.POSITIVE_INFINITY;
+  for (const preset of WIDGET_SIZE_PRESET_ORDER) {
+    const size = getGridPresetSize(type, bp, preset);
+    const nextDistance = Math.abs(widget.w - size.w) + Math.abs(widget.h - size.h);
+    if (nextDistance < distance) {
+      closest = preset;
+      distance = nextDistance;
+    }
+  }
+  return closest;
+}
+
+/** 应用离散尺寸；放不下时把组件移到当前断点的第一个空位。 */
+export function applyGridWidgetSize(
+  widget: DashboardWidget,
+  preset: WidgetSizePreset,
+  bp: Breakpoint,
+  widgets: DashboardWidget[],
+): DashboardWidget {
+  const size = getGridPresetSize(widget.id, bp, preset);
+  const others = widgets.filter((item) => item.i !== widget.i);
+  const x = Math.max(0, Math.min(GRID_COLUMNS[bp] - size.w, widget.x));
+  const y = Math.max(0, Math.min(GRID_MAX_ROWS - size.h, widget.y));
+  const position = others.some((item) => overlaps({ x, y, ...size }, item))
+    ? findFreeGridPosition(others, size, bp)
+    : { x, y };
+  const constraints = getGridConstraints(widget.id, bp);
+  return {
+    ...widget,
+    ...position,
+    ...size,
+    minW: constraints.minW,
+    minH: constraints.minH,
+    maxW: constraints.maxW,
+    maxH: constraints.maxH,
+  };
+}
+
 export function createDefaultGridWidget(
   type: string,
   bp: Breakpoint,
@@ -335,12 +396,9 @@ function normalizeBreakpointWidgets(items: unknown, bp: Breakpoint): DashboardWi
   for (const [index, raw] of items.entries()) {
     const item = normalizeWidget(raw, bp, index, used);
     if (!item) continue;
-    if (result.some((existing) => overlaps(existing, item))) {
-      const position = findFreeGridPosition(result, item, bp);
-      result.push({ ...item, ...position });
-    } else {
-      result.push(item);
-    }
+    // 历史 v9/v10 布局可能保存过任意宽高；加载时统一落到最近的离散档位。
+    const preset = getWidgetSizePreset(item, bp, item.id);
+    result.push(applyGridWidgetSize(item, preset, bp, result));
   }
   return result;
 }
@@ -438,18 +496,25 @@ export function migrateV8toV9(input: unknown): Record<"l" | "m" | "s", { widgets
   return output;
 }
 
-function scaleWidget(widget: DashboardWidget, from: number, to: number, bp: Breakpoint, index: number): DashboardWidget {
-  const scaledW = Math.max(1, Math.round((widget.w * to) / from));
+function scaleWidget(
+  widget: DashboardWidget,
+  from: number,
+  to: number,
+  sourceBp: Breakpoint,
+  bp: Breakpoint,
+  index: number,
+): DashboardWidget {
   const scaledX = Math.round((widget.x * to) / from);
-  const size = getDefaultGridSize(widget.id, bp);
+  const preset = getWidgetSizePreset(widget, sourceBp, widget.id);
+  const size = getGridPresetSize(widget.id, bp, preset);
   const constraints = getGridConstraints(widget.id, bp);
   return {
     ...widget,
     i: `${widget.i}-${bp}-${index + 1}`,
-    x: Math.max(0, Math.min(to - scaledW, scaledX)),
+    x: Math.max(0, Math.min(to - size.w, scaledX)),
     y: widget.y,
-    w: Math.min(to, Math.max(constraints.minW, scaledW)),
-    h: Math.min(GRID_MAX_WIDGET_ROWS, Math.max(constraints.minH, widget.h || size.h)),
+    w: size.w,
+    h: size.h,
     minW: constraints.minW,
     minH: constraints.minH,
     maxW: constraints.maxW,
@@ -458,10 +523,10 @@ function scaleWidget(widget: DashboardWidget, from: number, to: number, bp: Brea
   };
 }
 
-function convertWidgets(items: DashboardWidget[], from: number, bp: Breakpoint): DashboardWidget[] {
+function convertWidgets(items: DashboardWidget[], from: number, sourceBp: Breakpoint, bp: Breakpoint): DashboardWidget[] {
   const result: DashboardWidget[] = [];
   for (const [index, item] of items.entries()) {
-    const scaled = scaleWidget(item, from, GRID_COLUMNS[bp], bp, index);
+    const scaled = scaleWidget(item, from, GRID_COLUMNS[bp], sourceBp, bp, index);
     const position = findFreeGridPosition(result, scaled, bp);
     result.push({ ...scaled, ...position });
   }
@@ -479,11 +544,11 @@ export function migrateV9toV10(input: unknown): DashboardResponsiveLayout | null
     v9[oldBp] = normalizeBreakpointWidgets(widgets, oldBp === "l" ? "lg" : "md");
   }
   return {
-    lg: convertWidgets(v9.l, 12, "lg"),
-    md: convertWidgets(v9.m, 12, "md"),
-    sm: convertWidgets(v9.m, 12, "sm"),
-    xs: convertWidgets(v9.s, 12, "xs"),
-    xxs: convertWidgets(v9.s, 12, "xxs"),
+    lg: convertWidgets(v9.l, 12, "lg", "lg"),
+    md: convertWidgets(v9.m, 12, "md", "md"),
+    sm: convertWidgets(v9.m, 12, "md", "sm"),
+    xs: convertWidgets(v9.s, 12, "md", "xs"),
+    xxs: convertWidgets(v9.s, 12, "md", "xxs"),
   };
 }
 
@@ -558,7 +623,7 @@ export function nodesToGridWidgets(
 /**
  * Merge GridStack geometry with instance metadata that is not represented in
  * DOM attributes. This keeps future widget config and permission data intact
- * after a drag or resize.
+ * after a drag.
  */
 export function mergeGridWidgetMetadata(
   items: DashboardWidget[],
@@ -583,7 +648,14 @@ export function copyLayoutToBreakpoint(
   const sourceWidgets = layout[source] ?? [];
   const copied: DashboardWidget[] = [];
   for (const [index, sourceWidget] of sourceWidgets.entries()) {
-    const scaled = scaleWidget(sourceWidget, GRID_COLUMNS[source], GRID_COLUMNS[target], target, index);
+    const scaled = scaleWidget(
+      sourceWidget,
+      GRID_COLUMNS[source],
+      GRID_COLUMNS[target],
+      source,
+      target,
+      index,
+    );
     const position = findFreeGridPosition(copied, scaled, target);
     copied.push({ ...scaled, ...position, i: `${sourceWidget.i}-copy-${target}-${index + 1}` });
   }
@@ -593,6 +665,7 @@ export function copyLayoutToBreakpoint(
 export function ensureCompleteLayout(layout: DashboardResponsiveLayout): MultiBreakpointLayout {
   const result = {} as MultiBreakpointLayout;
   for (const bp of BREAKPOINT_ORDER) {
+    // 统一入口保证只向只读页、Designer 和服务端输出三档尺寸。
     result[bp] = normalizeBreakpointWidgets(layout[bp] ?? defaultMultiLayout[bp], bp);
   }
   return result;

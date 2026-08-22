@@ -6,19 +6,24 @@ import { Toast } from "@/components/ui";
 import { dashboardApi } from "@/api";
 import DashboardGrid from "./DashboardGrid.vue";
 import WidgetCenter from "./WidgetCenter.vue";
+import WidgetSizeModal from "./WidgetSizeModal.vue";
 import { provideBreakpoint } from "./useBreakpoint";
 import { useDashboardLayout } from "./useDashboardLayout";
 import {
   copyLayoutToBreakpoint,
+  applyGridWidgetSize,
   createDefaultGridWidget,
   ensureCompleteLayout,
   getDefaultGridLayout,
+  getWidgetSizePreset,
   loadLegacyLayoutFromStorage,
   type DashboardLayoutBreakpoint,
   type DashboardResponsiveLayout,
   type DashboardWidget,
   type MultiBreakpointLayout,
+  type WidgetSizePreset,
 } from "./widgets/layout";
+import { getWidgetDefinition } from "./widgets/registry";
 import "./dashboard.css";
 
 const router = useRouter();
@@ -32,8 +37,27 @@ const legacyLayout = ref<DashboardResponsiveLayout | null>(null);
 const copySource = ref<DashboardLayoutBreakpoint>("lg");
 const refreshKey = ref(0);
 const saving = ref(false);
+const sizingWidgetId = ref<string | null>(null);
 
 const currentWidgets = computed(() => layout.value[currentBreakpoint.value] ?? []);
+const sizingWidget = computed(() => currentWidgets.value.find((item) => item.i === sizingWidgetId.value) ?? null);
+const sizingDefinition = computed(() => {
+  const widget = sizingWidget.value;
+  if (!widget) return undefined;
+  return getWidgetDefinition(widget.id) ?? {
+    label: `未知组件：${widget.id}`,
+    icon: "ri:question-line",
+  };
+});
+const sizeModalVisible = computed({
+  get: () => Boolean(sizingWidget.value && sizingDefinition.value),
+  set: (visible: boolean) => {
+    if (!visible) sizingWidgetId.value = null;
+  },
+});
+const sizingPreset = computed<WidgetSizePreset>(() => (
+  sizingWidget.value ? getWidgetSizePreset(sizingWidget.value, currentBreakpoint.value, sizingWidget.value.id) : "medium"
+));
 const dirty = computed(() => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value));
 const canImportLegacy = computed(() => !hasServerLayout.value && Boolean(legacyLayout.value));
 
@@ -108,9 +132,20 @@ async function save() {
 }
 
 function configureWidget(instanceId: string) {
-  const widget = currentWidgets.value.find((item) => item.i === instanceId);
-  if (!widget) return;
-  Toast.info("当前内置组件暂无可配置项，尺寸可直接通过网格手柄调整");
+  if (currentWidgets.value.some((item) => item.i === instanceId)) sizingWidgetId.value = instanceId;
+}
+
+function saveWidgetSize(preset: WidgetSizePreset) {
+  if (!sizingWidget.value) return;
+  const updated = currentWidgets.value.map((item) => (
+    item.i === sizingWidget.value?.i
+      ? applyGridWidgetSize(item, preset, currentBreakpoint.value, currentWidgets.value)
+      : item
+  ));
+  updateCurrentWidgets(updated);
+  refreshKey.value += 1;
+  sizingWidgetId.value = null;
+  Toast.success(`已切换为${preset === "small" ? "小" : preset === "large" ? "大" : "中"}尺寸`);
 }
 
 function leave() {
@@ -214,7 +249,7 @@ onBeforeRouteLeave(() => {
         <template v-else>
           <div class="apple-edit-hint">
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
-            拖动组件标题区域调整位置，使用边缘手柄调整宽高；修改只在点击“保存布局”后写入服务端
+            拖动组件标题区域调整位置，点击设置选择大、中、小尺寸；修改只在点击“保存布局”后写入服务端
           </div>
           <DashboardGrid
             :widgets="currentWidgets"
@@ -224,6 +259,15 @@ onBeforeRouteLeave(() => {
             @change="updateCurrentWidgets"
             @remove="removeWidget"
             @configure="configureWidget"
+          />
+          <WidgetSizeModal
+            v-if="sizingWidget && sizingDefinition"
+            v-model:visible="sizeModalVisible"
+            :widget-label="sizingDefinition.label"
+            :widget-icon="sizingDefinition.icon"
+            :breakpoint="currentBreakpoint"
+            :current-preset="sizingPreset"
+            @save="saveWidgetSize"
           />
         </template>
 

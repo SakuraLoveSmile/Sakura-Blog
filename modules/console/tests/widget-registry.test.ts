@@ -13,6 +13,10 @@ const DASHBOARD_CSS = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/dashboard.css"),
   "utf8",
 );
+const DASHBOARD_GRID = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/DashboardGrid.vue"),
+  "utf8",
+);
 
 const blocks = SRC.match(/defineWidget\(\{[\s\S]*?\n\s+\}\),/g) || [];
 
@@ -57,4 +61,10 @@ test("dashboard grid: inset 间距不会被 100% 高度覆盖", () => {
   assert.match(contentRule, /inset:\s*10px/);
   assert.match(contentRule, /height:\s*auto/);
   assert.doesNotMatch(widgetCellRule, /height:\s*100%/);
+});
+
+test("dashboard grid: 只允许拖动位置，不启用自由缩放", () => {
+  assert.match(DASHBOARD_GRID, /disableResize:\s*true/);
+  assert.doesNotMatch(DASHBOARD_GRID, /resizestop|resizable:\s*\{/);
+  assert.doesNotMatch(DASHBOARD_GRID, /gs-min-|gs-max-/);
 });

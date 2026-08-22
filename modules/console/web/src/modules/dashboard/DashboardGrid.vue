@@ -4,7 +4,6 @@ import { GridStack } from "gridstack";
 import "gridstack/dist/gridstack.min.css";
 import { Icon } from "@iconify/vue";
 import {
-  getGridConstraints,
   getGridColumns,
   mergeGridWidgetMetadata,
   nodesToGridWidgets,
@@ -53,7 +52,6 @@ function commitGrid() {
 
 function setEditing(enabled: boolean) {
   grid?.enableMove(enabled);
-  grid?.enableResize(enabled);
 }
 
 function mountGrid() {
@@ -65,15 +63,12 @@ function mountGrid() {
     float: false,
     animate: true,
     disableDrag: !props.editing,
-    disableResize: !props.editing,
-    alwaysShowResizeHandle: props.editing,
+    disableResize: true,
     draggable: { handle: ".apple-drag-handle" },
-    resizable: { handles: "e,se,s,sw,w" },
   }, gridEl.value);
   if (!instance) return;
   grid = instance;
   instance.on("dragstop", commitGrid);
-  instance.on("resizestop", commitGrid);
   setEditing(props.editing);
 }
 
@@ -114,10 +109,6 @@ onBeforeUnmount(destroyGrid);
       :gs-y="item.y"
       :gs-w="item.w"
       :gs-h="item.h"
-      :gs-min-w="item.minW ?? getGridConstraints(item.id, breakpoint).minW"
-      :gs-min-h="item.minH ?? getGridConstraints(item.id, breakpoint).minH"
-      :gs-max-w="item.maxW ?? getGridConstraints(item.id, breakpoint).maxW"
-      :gs-max-h="item.maxH ?? getGridConstraints(item.id, breakpoint).maxH"
     >
       <div class="grid-stack-item-content widget-cell" :class="{ editable: editing }">
         <component
@@ -130,7 +121,7 @@ onBeforeUnmount(destroyGrid);
           <span class="apple-drag-handle" role="button" tabindex="0" title="拖拽排序" :aria-label="`拖拽${getWidgetDefinition(item.id)?.label ?? '组件'}`">
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
           </span>
-          <button class="apple-edit-size-btn" type="button" title="组件设置" aria-label="组件设置" @click.stop="emit('configure', item.i)">
+          <button class="apple-edit-size-btn" type="button" title="选择组件大小" aria-label="选择组件大小" @click.stop="emit('configure', item.i)">
             <Icon icon="ri:settings-3-line" class="w-4 h-4" />
           </button>
           <button class="apple-remove-btn" type="button" title="移除" aria-label="移除组件" @click.stop="emit('remove', item.i)">

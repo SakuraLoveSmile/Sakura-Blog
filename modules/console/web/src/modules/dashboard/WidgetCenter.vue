@@ -50,7 +50,7 @@ function addWidget(widget: WidgetDefinition) {
 <template>
   <VModal v-model:visible="modalVisible" title="添加组件" :width="600">
     <p class="mb-4 text-sm text-text-quaternary dark:text-muted-foreground">
-      选择组件后会放入当前断点的第一个空位，之后可以直接拖拽或缩放。
+      选择组件后会放入当前设备布局的第一个空位，之后可以拖拽位置或选择大、中、小尺寸。
     </p>
     <div class="max-h-96 overflow-y-auto pr-1 space-y-5">
       <section v-for="[group, widgets] in grouped" :key="group">
@@ -67,7 +67,7 @@ function addWidget(widget: WidgetDefinition) {
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-text-quaternary dark:text-foreground">{{ widget.label }}</div>
-              <div class="text-xs text-muted-foreground dark:text-text-quaternary mt-0.5">默认尺寸可在网格中直接调整</div>
+              <div class="text-xs text-muted-foreground dark:text-text-quaternary mt-0.5">默认大小可在组件设置中切换</div>
             </div>
             <Icon icon="ri:add-line" class="w-5 h-5 text-text-secondary dark:text-text-quaternary group-hover:text-primary transition-colors" />
           </button>
