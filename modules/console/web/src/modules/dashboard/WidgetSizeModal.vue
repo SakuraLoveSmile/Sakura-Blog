@@ -2,28 +2,21 @@
 import { ref, computed, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { VModal } from "@/components/ui";
-import {
-  SPAN_LABELS,
-  SIZE_PRESETS,
-  type WidgetSpan,
-  type WidgetSize,
-} from "./widgets/registry";
-import { uniquePresetOptions } from "./widgets/size-preset-options";
-import type { Breakpoint } from "./widgets/layout";
+import type { Breakpoint, GridConstraints, GridSize } from "./widgets/layout";
 
 interface Props {
   visible: boolean;
-  widgetType: string;
   widgetLabel: string;
   widgetIcon: string;
   breakpoint: Breakpoint;
-  currentSpan: WidgetSpan;
+  currentSize: GridSize;
+  constraints: GridConstraints;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
   "update:visible": [value: boolean];
-  "save": [span: WidgetSpan];
+  "save": [size: GridSize];
 }>();
 
 const modalVisible = computed({
@@ -31,13 +24,16 @@ const modalVisible = computed({
   set: (v: boolean) => emit("update:visible", v),
 });
 
-const selectedSpan = ref<WidgetSpan>(props.currentSpan);
+const width = ref(props.currentSize.w);
+const height = ref(props.currentSize.h);
 
-// 打开 / 切换组件时同步当前断点跨度
 watch(
-  () => [props.visible, props.widgetType, props.currentSpan],
+  () => [props.visible, props.currentSize.w, props.currentSize.h],
   () => {
-    if (props.visible) selectedSpan.value = props.currentSpan;
+    if (props.visible) {
+      width.value = props.currentSize.w;
+      height.value = props.currentSize.h;
+    }
   },
   { immediate: true },
 );
@@ -48,29 +44,19 @@ const breakpointLabel: Record<Breakpoint, string> = {
   s: "小屏",
 };
 
-const spans: WidgetSpan[] = [3, 4, 6, 8, 12];
-const presets = computed(() => uniquePresetOptions(SIZE_PRESETS, props.breakpoint));
-const presetLabel: Record<WidgetSize, string> = {
-  small: "小",
-  medium: "中",
-  large: "大",
-};
-
-/** 快捷预设仅改当前断点档：取预设在当前断点下的跨度 */
-function presetSpan(preset: WidgetSize): WidgetSpan {
-  return SIZE_PRESETS[preset][props.breakpoint];
-}
-
-function selectPreset(preset: WidgetSize) {
-  selectedSpan.value = presetSpan(preset);
-}
-
-function close() {
-  emit("update:visible", false);
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(value || min)));
 }
 
 function save() {
-  emit("save", selectedSpan.value);
+  emit("save", {
+    w: clamp(width.value, props.constraints.minW, props.constraints.maxW),
+    h: clamp(height.value, props.constraints.minH, props.constraints.maxH),
+  });
+  emit("update:visible", false);
+}
+
+function close() {
   emit("update:visible", false);
 }
 </script>
@@ -84,52 +70,41 @@ function save() {
       <div class="flex-1 min-w-0">
         <div class="text-sm font-medium text-text-quaternary dark:text-foreground">{{ widgetLabel }}</div>
         <div class="text-xs text-muted-foreground dark:text-text-quaternary">
-          当前断点：{{ breakpointLabel[breakpoint] }}
+          {{ breakpointLabel[breakpoint] }} · 拖拽手柄也可以直接调整
         </div>
       </div>
     </div>
 
-    <!-- 5 档跨度 -->
-    <div class="mb-5">
-      <div class="text-xs font-medium text-text-quaternary dark:text-muted-foreground mb-2">列跨度（12 列网格）</div>
-      <div class="flex gap-1.5">
-        <button
-          v-for="span in spans"
-          :key="span"
-          class="flex-1 min-w-[52px] px-2 py-2 rounded-md border text-sm transition-all"
-          :class="selectedSpan === span
-            ? 'border-primary bg-primary/10 text-primary font-medium'
-            : 'border-border dark:border-border-strong text-text-quaternary dark:text-muted-foreground hover:border-border dark:hover:border-border-strong'"
-          @click="selectedSpan = span"
-        >
-          {{ SPAN_LABELS[span] }}
-        </button>
-      </div>
+    <div class="grid grid-cols-2 gap-4">
+      <label class="flex flex-col gap-2 text-sm text-text-quaternary dark:text-text-secondary">
+        <span>宽度（列）</span>
+        <input
+          v-model.number="width"
+          type="number"
+          :min="constraints.minW"
+          :max="constraints.maxW"
+          step="1"
+          class="apple-grid-number"
+        />
+        <span class="text-xs text-muted-foreground">{{ constraints.minW }}–{{ constraints.maxW }} 列</span>
+      </label>
+      <label class="flex flex-col gap-2 text-sm text-text-quaternary dark:text-text-secondary">
+        <span>高度（网格行）</span>
+        <input
+          v-model.number="height"
+          type="number"
+          :min="constraints.minH"
+          :max="constraints.maxH"
+          step="1"
+          class="apple-grid-number"
+        />
+        <span class="text-xs text-muted-foreground">{{ constraints.minH }}–{{ constraints.maxH }} 行</span>
+      </label>
     </div>
 
-    <!-- 快捷预设（仅改当前断点档） -->
-    <div class="mb-5">
-      <div class="text-xs font-medium text-text-quaternary dark:text-muted-foreground mb-2">快捷预设（仅作用于当前断点）</div>
-      <div class="flex gap-2">
-        <button
-          v-for="preset in presets"
-          :key="preset"
-          class="flex-1 px-3 py-2 rounded-lg border border-border dark:border-border-strong hover:border-primary/50 hover:bg-primary/5 text-sm text-text-quaternary dark:text-text-secondary transition-all"
-          :class="{ 'border-primary bg-primary/10 text-primary dark:text-primary': selectedSpan === presetSpan(preset) }"
-          @click="selectPreset(preset)"
-        >
-          <Icon
-            :icon="preset === 'small' ? 'ri:layout-left-2-line' : preset === 'medium' ? 'ri:layout-masonry-line' : 'ri:layout-5-line'"
-            class="w-4 h-4 inline-block mr-1.5 align-middle"
-          />
-          {{ presetLabel[preset] }}组件
-        </button>
-      </div>
-    </div>
-
-    <div class="p-3 rounded-lg bg-primary/10 dark:bg-primary/10 text-xs text-primary dark:text-primary flex items-start gap-2">
+    <div class="mt-5 p-3 rounded-lg bg-primary/10 text-xs text-primary flex items-start gap-2">
       <Icon icon="ri:information-line" class="w-4 h-4 flex-shrink-0 mt-0.5" />
-      <span>尺寸调整仅作用于当前断点（{{ breakpointLabel[breakpoint] }}）。切换其它断点视角互不影响，需在各断点分别设置。</span>
+      <span>宽度按 12 列网格吸附，高度按网格行吸附；最小尺寸用于保护组件内容不被裁切。</span>
     </div>
 
     <template #footer>
