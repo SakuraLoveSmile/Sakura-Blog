@@ -1,5 +1,6 @@
 import axios from"axios";
 import router from"@/router";
+import type { DashboardResponsiveLayout } from "@/modules/dashboard/widgets/layout";
 
 const http = axios.create({
  baseURL:"/api/v1",
@@ -146,12 +147,22 @@ export interface StellarVersionResponse {
  error?: string;
 }
 
-export interface DashboardLayoutItem {
- type: string;
+export interface DashboardLayoutResponse {
+ version: number;
+ layouts: DashboardResponsiveLayout | null;
+ updated_at?: string;
+}
+
+export interface DashboardLayoutDocument {
+ version: 10;
+ layouts: DashboardResponsiveLayout;
 }
 
 export const dashboardApi = {
  stats: () => http.get("/dashboard/stats"),
+ layout: () => http.get<DashboardLayoutResponse>("/dashboard/layout"),
+ saveLayout: (layouts: DashboardResponsiveLayout) =>
+  http.put<DashboardLayoutResponse>("/dashboard/layout", { version: 10, layouts }),
  stellarVersion: () => http.get<StellarVersionResponse>("/dashboard/stellar-version"),
  recentPosts: () => http.get("/dashboard/recent-posts"),
  recentComments: () => http.get("/dashboard/recent-comments"),

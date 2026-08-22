@@ -269,6 +269,14 @@ var tableDDL = map[string]string{
 		value   TEXT NOT NULL DEFAULT ''
 	);`,
 
+	"user_preferences": `CREATE TABLE IF NOT EXISTS user_preferences (
+		user_id          INTEGER NOT NULL DEFAULT 0,
+		preference_group TEXT NOT NULL,
+		value            TEXT NOT NULL DEFAULT '',
+		updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (user_id, preference_group)
+	);`,
+
 	"notifications": `CREATE TABLE IF NOT EXISTS notifications (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL DEFAULT 0,

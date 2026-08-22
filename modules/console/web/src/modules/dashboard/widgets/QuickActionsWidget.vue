@@ -137,24 +137,24 @@ const hoveredIdx = ref<number | null>(null);
 }
 
 /* M */
-.apple-card[data-bp="m"] .quick-icon-compact {
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-icon-compact {
   width: 34px;
   height: 34px;
   border-radius: 10px;
 }
-.apple-card[data-bp="m"] .quick-item-compact { padding: 10px 6px; gap: 5px; border-radius: 12px; }
-.apple-card[data-bp="m"] .quick-label-compact { font-size: 11px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-item-compact { padding: 10px 6px; gap: 5px; border-radius: 12px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .quick-label-compact { font-size: 11px; }
 
 /* S */
-.apple-card[data-bp="s"] .quick-grid-compact {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-grid-compact {
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
-.apple-card[data-bp="s"] .quick-icon-compact {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-icon-compact {
   width: 40px;
   height: 40px;
   border-radius: 12px;
 }
-.apple-card[data-bp="s"] .quick-item-compact { padding: 12px 4px; gap: 6px; border-radius: 14px; }
-.apple-card[data-bp="s"] .quick-label-compact { font-size: 11px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-item-compact { padding: 12px 4px; gap: 6px; border-radius: 14px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .quick-label-compact { font-size: 11px; }
 </style>

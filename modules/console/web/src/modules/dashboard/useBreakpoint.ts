@@ -5,9 +5,11 @@ export type ViewMode = "auto" | Breakpoint;
 
 /** 每个视角模式对应的预览宽度（px） */
 export const VIEW_MODE_WIDTH: Record<Exclude<ViewMode, "auto">, number> = {
-  l: 1440,
-  m: 1024,
-  s: 390,
+  lg: 1440,
+  md: 1024,
+  sm: 800,
+  xs: 540,
+  xxs: 390,
 };
 
 const BREAKPOINT_KEY = Symbol("dashboard-breakpoint");
@@ -15,7 +17,7 @@ const BREAKPOINT_KEY = Symbol("dashboard-breakpoint");
 /**
  * 响应式断点 + 视角预览控制
  * - auto模式：跟随窗口宽度自动切换断点
- * - l/m/s模式：手动锁定到对应断点，用于预览
+ * - Halo 五断点模式：手动锁定到对应断点，用于预览
  *
  * 响应式样式统一通过 data-bp 属性驱动（替代CSS媒体查询），
  * 确保自动模式和预览模式样式完全一致。

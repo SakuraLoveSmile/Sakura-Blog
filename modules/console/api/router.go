@@ -182,21 +182,22 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		name string
 		fn   func() error
 	}{
-		{"users", st.EnsureUsersTable},                 // 多用户/读者注册
-		{"ratings", st.EnsureRatingsTable},             // 评分数据服务（Spec 20）
-		{"votes", st.EnsureVotesTable},                 // 投票数据服务（Spec 30）
-		{"revisions", st.EnsureRevisionsTable},         // 文章版本历史（Spec 22）
-		{"page_views", st.EnsurePageViewsTable},        // 访问统计明细（Spec 24）
-		{"attachments", st.EnsureAttachmentsTable},     // 附件管理
-		{"shared_posts", st.EnsureSharedPostsTable},    // 文章分享链接
-		{"wikidocs", st.EnsureWikidocsTable},           // wiki 文档（Spec 35）
-		{"wiki_projects", st.EnsureWikiProjectsTable},  // wiki 项目元数据（数据库唯一真源）
-		{"notebooks", st.EnsureNotebooksTable},         // 笔记本（Spec 35b）
-		{"notes", st.EnsureNotesTable},                 // 笔记（Spec 35b）
-		{"login_logs", st.EnsureLoginLogsTable},        // 登录日志（Wave 3a）
-		{"notifications", st.EnsureNotificationsTable}, // 站内通知（Wave 3b）
-		{"pat_tokens", st.EnsurePATTable},              // 个人访问令牌（PAT，只存 sha256 哈希）
-		{"links", st.EnsureLinksTable},                 // 友链与巡检状态
+		{"users", st.EnsureUsersTable},                      // 多用户/读者注册
+		{"ratings", st.EnsureRatingsTable},                  // 评分数据服务（Spec 20）
+		{"votes", st.EnsureVotesTable},                      // 投票数据服务（Spec 30）
+		{"revisions", st.EnsureRevisionsTable},              // 文章版本历史（Spec 22）
+		{"page_views", st.EnsurePageViewsTable},             // 访问统计明细（Spec 24）
+		{"attachments", st.EnsureAttachmentsTable},          // 附件管理
+		{"shared_posts", st.EnsureSharedPostsTable},         // 文章分享链接
+		{"wikidocs", st.EnsureWikidocsTable},                // wiki 文档（Spec 35）
+		{"wiki_projects", st.EnsureWikiProjectsTable},       // wiki 项目元数据（数据库唯一真源）
+		{"notebooks", st.EnsureNotebooksTable},              // 笔记本（Spec 35b）
+		{"notes", st.EnsureNotesTable},                      // 笔记（Spec 35b）
+		{"login_logs", st.EnsureLoginLogsTable},             // 登录日志（Wave 3a）
+		{"notifications", st.EnsureNotificationsTable},      // 站内通知（Wave 3b）
+		{"pat_tokens", st.EnsurePATTable},                   // 个人访问令牌（PAT，只存 sha256 哈希）
+		{"user_preferences", st.EnsureUserPreferencesTable}, // 用户级偏好（Dashboard 布局等）
+		{"links", st.EnsureLinksTable},                      // 友链与巡检状态
 	}
 	for _, e := range ensures {
 		if err := e.fn(); err != nil {
@@ -276,6 +277,8 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 仪表盘
 		author.GET("/dashboard/stats", h.dashboardStats)
+		author.GET("/dashboard/layout", h.getDashboardLayout)
+		author.PUT("/dashboard/layout", h.saveDashboardLayout)
 		author.GET("/dashboard/stellar-version", h.dashboardStellarVersion)
 		author.GET("/dashboard/recent-comments", h.dashboardRecentComments)
 		author.GET("/dashboard/recent-posts", h.dashboardRecentPosts)

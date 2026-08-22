@@ -21,6 +21,11 @@ const router = createRouter({
           component: () => import("@/modules/dashboard/DashboardView.vue"),
         },
         {
+          path: "dashboard/designer",
+          name: "DashboardDesigner",
+          component: () => import("@/modules/dashboard/DashboardDesignerView.vue"),
+        },
+        {
           path: "dashboard/widgets",
           redirect: "/dashboard",
         },

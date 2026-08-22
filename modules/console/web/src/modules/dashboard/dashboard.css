@@ -1,9 +1,9 @@
 /* Apple Dark Dashboard Styles */
 /* ========================================
    Responsive strategy (data-bp driven):
-   - data-bp="l" : large  (≥1280px) —— 默认基础样式
-   - data-bp="m" : medium (768-1279px) —— 两列为主
-   - data-bp="s" : small  (<768px)  —— 单列紧凑
+   - data-bp="lg" : large  (≥1280px) —— 默认基础样式
+   - data-bp="md" : medium (768-1279px) —— 两列为主
+   - data-bp="xs" : small  (<768px)  —— 单列紧凑
    级联规则：m 的样式在 s 下也生效（s 比 m 更紧凑，叠加额外样式）
    ======================================== */
 
@@ -61,6 +61,93 @@
   border-radius: 10px;
   color: var(--color-primary);
   font-size: 13px;
+}
+
+.dashboard-device-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 5px;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, #fff 4%, transparent);
+}
+
+.dashboard-device-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--color-muted-foreground);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.dashboard-device-tab:hover,
+.dashboard-device-tab.active {
+  color: var(--color-foreground);
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.dashboard-import-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  border-radius: 12px;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  font-size: 13px;
+}
+
+.dashboard-import-hint span {
+  flex: 1;
+}
+
+.dashboard-designer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.dashboard-designer .apple-primary-btn,
+.dashboard-designer .apple-secondary-btn {
+  width: auto;
+  min-height: 38px;
+  flex-direction: row;
+  padding: 8px 14px;
+  border-radius: 980px;
+  font-size: 13px;
+}
+
+.dashboard-designer .apple-secondary-btn {
+  border: 1px solid color-mix(in srgb, #fff 9%, transparent);
+}
+
+.dashboard-select {
+  min-height: 38px;
+  padding: 7px 28px 7px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-foreground);
+  background: var(--color-card);
+  outline: none;
+}
+
+.dashboard-select:focus {
+  border-color: var(--color-primary);
 }
 
 .apple-header-actions {
@@ -548,6 +635,31 @@
   outline: none;
 }
 
+.dashboard-designer .apple-edit-btn:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+@media (max-width: 640px) {
+  .dashboard-import-hint {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-import-hint .apple-link {
+    margin-left: 30px;
+  }
+
+  .dashboard-device-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .dashboard-device-tab {
+    flex: 0 0 auto;
+  }
+}
+
 .apple-grid-number:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
@@ -566,200 +678,200 @@
 }
 
 /* ========================================
-   M 断点 (data-bp="m" 或 "s") — ≤1279px
+   M 断点 (data-bp="md" 或 "s") — ≤1279px
    ======================================== */
 
-.dashboard-apple[data-bp="m"],
-.dashboard-apple[data-bp="s"] {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]),
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) {
   padding: 20px 24px 32px;
 }
-.dashboard-apple[data-bp="m"] .apple-greeting,
-.dashboard-apple[data-bp="s"] .apple-greeting {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-greeting,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting {
   margin-bottom: 20px;
 }
-.dashboard-apple[data-bp="m"] .apple-greeting h1,
-.dashboard-apple[data-bp="s"] .apple-greeting h1 {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-greeting h1,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting h1 {
   font-size: 30px;
 }
-.dashboard-apple[data-bp="m"] .apple-greeting p,
-.dashboard-apple[data-bp="s"] .apple-greeting p {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-greeting p,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting p {
   font-size: 14px;
 }
 
-.dashboard-apple[data-bp="m"] .dashboard-grid-stack,
-.dashboard-apple[data-bp="s"] .dashboard-grid-stack {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .dashboard-grid-stack,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-grid-stack {
   margin-inline: -8px;
   padding-inline: 8px;
 }
 
-.dashboard-apple[data-bp="m"] .apple-card,
-.dashboard-apple[data-bp="s"] .apple-card {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-card,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card {
   padding: 18px;
   border-radius: 18px;
 }
-.dashboard-apple[data-bp="m"] .apple-section-title,
-.dashboard-apple[data-bp="s"] .apple-section-title {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-section-title,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-section-title {
   font-size: 16px;
 }
 
-.dashboard-apple[data-bp="m"] .apple-stat-icon,
-.dashboard-apple[data-bp="s"] .apple-stat-icon {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-stat-icon,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-icon {
   width: 38px;
   height: 38px;
   border-radius: 11px;
   margin-bottom: 14px;
 }
-.dashboard-apple[data-bp="m"] .apple-stat-value,
-.dashboard-apple[data-bp="s"] .apple-stat-value {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-stat-value,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-value {
   font-size: 30px;
 }
-.dashboard-apple[data-bp="m"] .apple-stat-label,
-.dashboard-apple[data-bp="s"] .apple-stat-label {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-stat-label,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-label {
   font-size: 12px;
 }
-.dashboard-apple[data-bp="m"] .apple-segmented button,
-.dashboard-apple[data-bp="s"] .apple-segmented button {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-segmented button,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
   padding: 5px 12px;
   font-size: 12px;
 }
 
-.dashboard-apple[data-bp="m"] .donut-wrap,
-.dashboard-apple[data-bp="s"] .donut-wrap {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .donut-wrap,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap {
   gap: 12px;
 }
 
-.dashboard-apple[data-bp="m"] .apple-avatar,
-.dashboard-apple[data-bp="m"] .apple-avatar-fallback,
-.dashboard-apple[data-bp="s"] .apple-avatar,
-.dashboard-apple[data-bp="s"] .apple-avatar-fallback {
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-avatar,
+.dashboard-apple:is([data-bp="md"], [data-bp="sm"]) .apple-avatar-fallback,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar-fallback {
   width: 34px;
   height: 34px;
   font-size: 13px;
 }
 
 /* ========================================
-   S 断点 (data-bp="s") — <768px 手机
+   S 断点 (data-bp="xs") — <768px 手机
    ======================================== */
 
-.dashboard-apple[data-bp="s"] {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) {
   padding: 16px 16px 96px; /* extra bottom space for mobile nav */
 }
-.dashboard-apple[data-bp="s"] .apple-greeting {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting {
   margin-bottom: 16px;
   flex-direction: column !important;
   align-items: flex-start !important;
   gap: 12px !important;
 }
-.dashboard-apple[data-bp="s"] .apple-greeting h1 {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting h1 {
   font-size: 24px;
   letter-spacing: -0.01em;
 }
-.dashboard-apple[data-bp="s"] .apple-greeting p {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting p {
   font-size: 13px;
 }
-.dashboard-apple[data-bp="s"] .apple-header-actions {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-header-actions {
   width: 100%;
   justify-content: flex-start;
 }
-.dashboard-apple[data-bp="s"] .apple-edit-btn {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-edit-btn {
   padding: 7px 14px;
   font-size: 13px;
 }
-.dashboard-apple[data-bp="s"] .apple-icon-btn {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-icon-btn {
   width: 32px;
   height: 32px;
 }
 
-.dashboard-apple[data-bp="s"] .mt-6 {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .mt-6 {
   margin-top: 16px !important;
 }
 
 
-.dashboard-apple[data-bp="s"] .apple-card {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card {
   padding: 16px;
   border-radius: 16px;
 }
-.dashboard-apple[data-bp="s"] .apple-section-title {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-section-title {
   font-size: 15px;
 }
-.dashboard-apple[data-bp="s"] .apple-card-subtitle {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card-subtitle {
   font-size: 11px;
 }
-.dashboard-apple[data-bp="s"] .apple-card-badge {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card-badge {
   font-size: 10px;
 }
 
-.dashboard-apple[data-bp="s"] .apple-stat-icon {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-icon {
   width: 36px;
   height: 36px;
   border-radius: 10px;
   margin-bottom: 12px;
 }
-.dashboard-apple[data-bp="s"] .apple-stat-icon svg {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-icon svg {
   width: 18px;
   height: 18px;
 }
-.dashboard-apple[data-bp="s"] .apple-stat-value {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-value {
   font-size: 26px;
 }
-.dashboard-apple[data-bp="s"] .apple-stat-label {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-label {
   font-size: 12px;
 }
-.dashboard-apple[data-bp="s"] .apple-segmented {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented {
   border-radius: 7px;
 }
-.dashboard-apple[data-bp="s"] .apple-segmented button {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
   padding: 4px 10px;
   font-size: 12px;
 }
 
-.dashboard-apple[data-bp="s"] .apple-list-item {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item {
   gap: 10px;
   padding: 9px 2px;
 }
-.dashboard-apple[data-bp="s"] .apple-list-item .text-sm { font-size: 13px; }
-.dashboard-apple[data-bp="s"] .apple-list-item .text-xs { font-size: 11px; }
-.dashboard-apple[data-bp="s"] .apple-list-arrow {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm { font-size: 13px; }
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs { font-size: 11px; }
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-arrow {
   opacity: 0.5; /* always visible on mobile so user knows it's tappable */
   width: 14px;
   height: 14px;
 }
 
-.dashboard-apple[data-bp="s"] .apple-comment-item {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-comment-item {
   gap: 10px;
   padding: 10px;
 }
-.dashboard-apple[data-bp="s"] .apple-avatar,
-.dashboard-apple[data-bp="s"] .apple-avatar-fallback {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar,
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar-fallback {
   width: 32px;
   height: 32px;
   font-size: 12px;
 }
 
-.dashboard-apple[data-bp="s"] .donut-wrap {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap {
   flex-direction: column;
   gap: 12px;
   align-items: stretch;
 }
-.dashboard-apple[data-bp="s"] .donut-wrap svg {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap svg {
   width: 120px !important;
   height: 120px !important;
   margin: 0 auto;
 }
-.dashboard-apple[data-bp="s"] .donut-legend {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend {
   max-height: none;
 }
 
-.dashboard-apple[data-bp="s"] .apple-link {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-link {
   font-size: 12px;
 }
-.dashboard-apple[data-bp="s"] .apple-pending-badge {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-pending-badge {
   font-size: 9px;
   padding: 1px 5px;
 }
 
 /* S 断点下视角切换器更紧凑 */
-.dashboard-apple[data-bp="s"] .view-switch button {
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .view-switch button {
   padding: 6px 8px;
 }
 
@@ -768,112 +880,112 @@
    极紧凑模式，适配小屏手机
    ======================================== */
 @media (max-width: 420px) {
-  .dashboard-apple[data-bp="s"] {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) {
     padding: 12px 12px 80px;
   }
-  .dashboard-apple[data-bp="s"] .apple-greeting {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting {
     margin-bottom: 12px;
     gap: 10px !important;
   }
-  .dashboard-apple[data-bp="s"] .apple-greeting h1 {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting h1 {
     font-size: 22px;
   }
-  .dashboard-apple[data-bp="s"] .apple-greeting p {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-greeting p {
     font-size: 12px;
   }
 
-  .dashboard-apple[data-bp="s"] .apple-edit-btn {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-edit-btn {
     padding: 6px 12px;
     font-size: 12px;
   }
-  .dashboard-apple[data-bp="s"] .apple-icon-btn {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-icon-btn {
     width: 30px;
     height: 30px;
   }
 
-  .dashboard-apple[data-bp="s"] .dashboard-grid-stack {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .dashboard-grid-stack {
     margin-inline: -6px;
     padding-inline: 6px;
   }
 
-  .dashboard-apple[data-bp="s"] .apple-card {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card {
     padding: 14px;
     border-radius: 14px;
   }
-  .dashboard-apple[data-bp="s"] .apple-section-title {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-section-title {
     font-size: 14px;
   }
-  .dashboard-apple[data-bp="s"] .apple-card-subtitle {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card-subtitle {
     font-size: 11px;
     margin-top: 2px;
   }
 
   /* 统计卡片超紧凑 */
-  .dashboard-apple[data-bp="s"] .apple-stat-icon {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-icon {
     width: 34px;
     height: 34px;
     border-radius: 9px;
     margin-bottom: 10px;
   }
-  .dashboard-apple[data-bp="s"] .apple-stat-icon svg {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-icon svg {
     width: 16px;
     height: 16px;
   }
-  .dashboard-apple[data-bp="s"] .apple-stat-value {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-value {
     font-size: 22px;
   }
-  .dashboard-apple[data-bp="s"] .apple-stat-label {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-stat-label {
     font-size: 11.5px;
   }
   /* 列表项更紧凑 */
-  .dashboard-apple[data-bp="s"] .apple-list-item {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item {
     gap: 8px;
     padding: 8px 2px;
   }
-  .dashboard-apple[data-bp="s"] .apple-list-item .text-sm {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm {
     font-size: 12.5px;
   }
-  .dashboard-apple[data-bp="s"] .apple-list-item .text-xs {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs {
     font-size: 11px;
   }
 
   /* 评论项更紧凑 */
-  .dashboard-apple[data-bp="s"] .apple-comment-item {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-comment-item {
     gap: 8px;
     padding: 8px;
   }
-  .dashboard-apple[data-bp="s"] .apple-avatar,
-  .dashboard-apple[data-bp="s"] .apple-avatar-fallback {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar,
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-avatar-fallback {
     width: 30px;
     height: 30px;
     font-size: 11.5px;
   }
 
   /* 快捷操作按钮更紧凑 */
-  .dashboard-apple[data-bp="s"] .apple-primary-btn {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-primary-btn {
     padding: 12px 16px;
     font-size: 14px;
     border-radius: 12px;
   }
-  .dashboard-apple[data-bp="s"] .apple-secondary-btn {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-secondary-btn {
     padding: 12px 6px;
     font-size: 12px;
     gap: 4px;
     border-radius: 10px;
   }
-  .dashboard-apple[data-bp="s"] .apple-secondary-btn svg {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-secondary-btn svg {
     width: 18px;
     height: 18px;
   }
 
   /* 分段筛选更紧凑 */
-  .dashboard-apple[data-bp="s"] .apple-segmented button {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-segmented button {
     padding: 4px 8px;
     font-size: 11.5px;
   }
 
   /* 甜甜圈图更小 */
-  .dashboard-apple[data-bp="s"] .donut-wrap svg {
+  .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap svg {
     width: 100px !important;
     height: 100px !important;
   }

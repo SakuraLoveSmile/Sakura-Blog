@@ -39,9 +39,11 @@ watch(
 );
 
 const breakpointLabel: Record<Breakpoint, string> = {
-  l: "大屏",
-  m: "中屏",
-  s: "小屏",
+  lg: "大屏",
+  md: "中屏",
+  sm: "平板",
+  xs: "小屏",
+  xxs: "手机",
 };
 
 function clamp(value: number, min: number, max: number): number {

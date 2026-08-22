@@ -108,8 +108,8 @@ onMounted(() => {
   gap: 0.3rem;
   white-space: nowrap;
 }
-.apple-card[data-bp="m"] .recent-placeholder,
-.apple-card[data-bp="s"] .recent-placeholder { min-height: 180px; }
-.apple-card[data-bp="s"] .recent-placeholder { min-height: 140px; }
-.apple-card[data-bp="s"] .recent-legend { display: none; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .recent-placeholder,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-placeholder { min-height: 180px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-placeholder { min-height: 140px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-legend { display: none; }
 </style>

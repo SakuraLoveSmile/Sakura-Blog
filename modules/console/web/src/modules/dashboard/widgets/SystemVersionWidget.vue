@@ -232,11 +232,11 @@ function goToUpdate() {
   font-size: 13px;
 }
 
-.system-version-card[data-bp="s"] {
+.system-version-card:is([data-bp="xs"], [data-bp="xxs"]) {
   min-height: 168px;
 }
 
-.system-version-card[data-bp="s"] .system-version-values {
+.system-version-card:is([data-bp="xs"], [data-bp="xxs"]) .system-version-values {
   margin: 16px 0 14px;
 }
 </style>

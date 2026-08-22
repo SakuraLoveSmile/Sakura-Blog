@@ -43,8 +43,8 @@ const totals = computed(() => {
 const chartWidth = 720;
 const chartHeight = 220;
 const padding = computed(() => {
-  if (breakpoint.value === "s") return { top: 16, right: 8, bottom: 30, left: 8 };
-  if (breakpoint.value === "m") return { top: 20, right: 12, bottom: 30, left: 12 };
+  if (breakpoint.value === "xs" || breakpoint.value === "xxs") return { top: 16, right: 8, bottom: 30, left: 8 };
+  if (breakpoint.value === "md" || breakpoint.value === "sm") return { top: 20, right: 12, bottom: 30, left: 12 };
   return { top: 20, right: 20, bottom: 30, left: 40 };
 });
 
@@ -320,32 +320,32 @@ function onChartLeave() {
 .tip-enter-from, .tip-leave-to { opacity: 0; }
 
 /* M 断点 */
-.apple-card[data-bp="m"] .trend-header,
-.apple-card[data-bp="s"] .trend-header { margin-bottom: 18px; }
-.apple-card[data-bp="m"] .trend-subtitle,
-.apple-card[data-bp="s"] .trend-subtitle { font-size: 12px; }
-.apple-card[data-bp="m"] .trend-stats,
-.apple-card[data-bp="s"] .trend-stats { gap: 12px; margin-bottom: 18px; }
-.apple-card[data-bp="m"] .trend-stat-value,
-.apple-card[data-bp="s"] .trend-stat-value { font-size: 18px; }
-.apple-card[data-bp="m"] .trend-chart-box,
-.apple-card[data-bp="s"] .trend-chart-box { height: 180px; }
-.apple-card[data-bp="m"] .trend-chart-svg,
-.apple-card[data-bp="s"] .trend-chart-svg { height: 180px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-header,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header { margin-bottom: 18px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-subtitle,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-subtitle { font-size: 12px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stats,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 12px; margin-bottom: 18px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stat-value,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 18px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-box,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 180px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-svg,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg { height: 180px; }
 
 /* S 断点 */
-.apple-card[data-bp="s"] .trend-header {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header {
   flex-direction: column;
   align-items: stretch !important;
   gap: 10px;
   margin-bottom: 14px;
 }
-.apple-card[data-bp="s"] .trend-header .apple-segmented {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header .apple-segmented {
   align-self: flex-start;
 }
-.apple-card[data-bp="s"] .trend-stats { gap: 8px; margin-bottom: 14px; }
-.apple-card[data-bp="s"] .trend-stat-label { font-size: 10px; margin-bottom: 2px; }
-.apple-card[data-bp="s"] .trend-stat-value { font-size: 15px; }
-.apple-card[data-bp="s"] .trend-chart-box { height: 150px; }
-.apple-card[data-bp="s"] .trend-chart-svg { height: 150px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 8px; margin-bottom: 14px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-label { font-size: 10px; margin-bottom: 2px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 15px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 150px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg { height: 150px; }
 </style>

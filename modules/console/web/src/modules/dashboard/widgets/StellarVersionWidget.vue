@@ -249,11 +249,11 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.stellar-version-card[data-bp="s"] {
+.stellar-version-card:is([data-bp="xs"], [data-bp="xxs"]) {
   min-height: 168px;
 }
 
-.stellar-version-card[data-bp="s"] .stellar-version-values {
+.stellar-version-card:is([data-bp="xs"], [data-bp="xxs"]) .stellar-version-values {
   margin: 16px 0 14px;
 }
 </style>

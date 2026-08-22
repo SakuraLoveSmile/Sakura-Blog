@@ -10,18 +10,19 @@ const SRC = readFileSync(
   "utf8",
 );
 
-const blocks = SRC.match(/\{\n\s+type: "([^"]+)",[\s\S]*?\n\s+\},/g) || [];
+const blocks = SRC.match(/defineWidget\(\{[\s\S]*?\n\s+\}\),/g) || [];
 
-test("registry: widget type 唯一且组件定义完整", () => {
+test("registry: widget id 唯一且组件定义完整", () => {
   assert.ok(blocks.length >= 8, `registry blocks: ${blocks.length}`);
   const seen = new Set<string>();
   for (const block of blocks) {
-    const type = block.match(/type: "([^"]+)"/)?.[1] ?? "";
-    assert.ok(type, "type 非空");
-    assert.ok(!seen.has(type), `重复 type: ${type}`);
-    assert.ok(block.includes("component:"), `${type} 缺少 component`);
-    assert.ok(block.includes("props:"), `${type} 缺少 props`);
-    seen.add(type);
+    const id = block.match(/id: "([^"]+)"/)?.[1] ?? "";
+    assert.ok(id, "id 非空");
+    assert.ok(!seen.has(id), `重复 id: ${id}`);
+    assert.ok(block.includes("component:"), `${id} 缺少 component`);
+    assert.ok(block.includes("props:"), `${id} 缺少 props`);
+    assert.ok(block.includes("defaultSize:"), `${id} 缺少 defaultSize`);
+    seen.add(id);
   }
 });
 

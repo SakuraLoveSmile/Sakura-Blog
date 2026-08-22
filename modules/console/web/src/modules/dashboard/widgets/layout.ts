@@ -1,37 +1,59 @@
-export type Breakpoint = "l" | "m" | "s";
+export type Breakpoint = "lg" | "md" | "sm" | "xs" | "xxs";
 
-export const BREAKPOINTS = {
-  l: 1280,
-  m: 768,
-} as const;
+export const BREAKPOINTS: Record<"lg" | "md" | "sm" | "xs", number> = {
+  lg: 1200,
+  md: 996,
+  sm: 768,
+  xs: 480,
+};
 
-export const GRID_COLUMNS = 12;
-/** 布局可使用的总行数，需覆盖默认布局和用户后续追加的组件。 */
+export const BREAKPOINT_ORDER: Breakpoint[] = ["lg", "md", "sm", "xs", "xxs"];
+export const GRID_COLUMNS: Record<Breakpoint, number> = {
+  lg: 12,
+  md: 12,
+  sm: 6,
+  xs: 4,
+  xxs: 4,
+};
 export const GRID_MAX_ROWS = 512;
-/** 单个组件的最大高度，避免尺寸编辑器产生不可控的大卡片。 */
 export const GRID_MAX_WIDGET_ROWS = 64;
+export const DASHBOARD_LAYOUT_VERSION = 10;
+export const LEGACY_LAYOUT_STORAGE_KEY = "dashboard:layout:v9";
 
-/** 根据视口宽度获取当前断点。 */
-export function getBreakpoint(width: number): Breakpoint {
-  if (width >= BREAKPOINTS.l) return "l";
-  if (width >= BREAKPOINTS.m) return "m";
-  return "s";
+const LEGACY_V8_STORAGE_KEY = "dashboard:layout:v8";
+const LEGACY_V7_STORAGE_KEY = "dashboard:layout:v7";
+const LEGACY_V6_STORAGE_KEY = "dashboard:layout:v6";
+
+export function getGridColumns(bp: Breakpoint): number {
+  return GRID_COLUMNS[bp];
 }
 
-export interface GridWidget {
-  type: string;
+export function getBreakpoint(width: number): Breakpoint {
+  if (width >= BREAKPOINTS.lg) return "lg";
+  if (width >= BREAKPOINTS.md) return "md";
+  if (width >= BREAKPOINTS.sm) return "sm";
+  if (width >= BREAKPOINTS.xs) return "xs";
+  return "xxs";
+}
+
+export interface DashboardWidget {
+  i: string;
+  id: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
+  config?: Record<string, unknown>;
+  permissions?: string[];
 }
 
-export interface GridBreakpointLayout {
-  widgets: GridWidget[];
-}
-
-/** 三个断点各自独立保存，组件不再属于固定区域。 */
-export type MultiBreakpointLayout = Record<Breakpoint, GridBreakpointLayout>;
+export type GridWidget = DashboardWidget;
+export type DashboardResponsiveLayout = Partial<Record<Breakpoint, DashboardWidget[]>>;
+export type MultiBreakpointLayout = Record<Breakpoint, DashboardWidget[]>;
 
 export interface GridSize {
   w: number;
@@ -45,127 +67,189 @@ export interface GridConstraints {
   maxH: number;
 }
 
-const GRID_DEFAULTS: Record<string, Record<Breakpoint, GridSize>> = {
-  "stat-posts": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "stat-published": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "stat-views": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "stat-comments": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "stat-attachments": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "stat-users": { l: { w: 3, h: 19 }, m: { w: 6, h: 18 }, s: { w: 12, h: 18 } },
-  "trend-chart": { l: { w: 8, h: 52 }, m: { w: 12, h: 44 }, s: { w: 12, h: 42 } },
-  "hourly-chart": { l: { w: 4, h: 40 }, m: { w: 6, h: 37 }, s: { w: 12, h: 35 } },
-  "category-donut": { l: { w: 4, h: 34 }, m: { w: 6, h: 32 }, s: { w: 12, h: 29 } },
-  "quick-actions": { l: { w: 4, h: 35 }, m: { w: 6, h: 31 }, s: { w: 12, h: 20 } },
-  "recent-posts": { l: { w: 6, h: 36 }, m: { w: 12, h: 32 }, s: { w: 12, h: 27 } },
-  "recent-comments": { l: { w: 6, h: 36 }, m: { w: 12, h: 32 }, s: { w: 12, h: 27 } },
-  "stellar-version": { l: { w: 4, h: 25 }, m: { w: 6, h: 23 }, s: { w: 12, h: 22 } },
-  "system-version": { l: { w: 4, h: 25 }, m: { w: 6, h: 23 }, s: { w: 12, h: 22 } },
-};
+interface WidgetSpec {
+  defaults: Record<Breakpoint, GridSize>;
+  minW: Record<Breakpoint, number>;
+  minH: Record<Breakpoint, number>;
+}
 
-/** 组件的默认网格尺寸，新增组件以当前断点的默认值落位。 */
+const statTypes = [
+  "stat-posts",
+  "stat-published",
+  "stat-views",
+  "stat-comments",
+  "stat-attachments",
+  "stat-users",
+];
+
+const widgetSpecs: Record<string, WidgetSpec> = Object.fromEntries(
+  statTypes.map((type) => [type, {
+    defaults: {
+      lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
+      xs: { w: 2, h: 18 }, xxs: { w: 2, h: 18 },
+    },
+    minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+    minH: { lg: 10, md: 10, sm: 10, xs: 10, xxs: 10 },
+  }]),
+) as Record<string, WidgetSpec>;
+
+function spec(type: string, defaults: Record<Breakpoint, GridSize>, minW: Record<Breakpoint, number>, minH: Record<Breakpoint, number>): void {
+  widgetSpecs[type] = { defaults, minW, minH };
+}
+
+spec("trend-chart", {
+  lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
+  xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
+}, { lg: 4, md: 4, sm: 3, xs: 2, xxs: 2 }, { lg: 24, md: 24, sm: 24, xs: 22, xxs: 22 });
+spec("hourly-chart", {
+  lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
+  xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
+}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 20, md: 20, sm: 20, xs: 18, xxs: 18 });
+spec("category-donut", {
+  lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
+  xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
+}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
+spec("quick-actions", {
+  lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
+  xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
+}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 16, md: 16, sm: 16, xs: 14, xxs: 14 });
+for (const type of ["recent-posts", "recent-comments"]) {
+  spec(type, {
+    lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
+    xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
+  }, { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
+}
+for (const type of ["stellar-version", "system-version"]) {
+  spec(type, {
+    lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
+    xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+  }, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 });
+}
+
+function fallbackSpec(): WidgetSpec {
+  const defaults = Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [
+    bp,
+    { w: GRID_COLUMNS[bp] === 4 ? 4 : GRID_COLUMNS[bp] === 6 ? 6 : 6, h: 12 },
+  ])) as Record<Breakpoint, GridSize>;
+  return {
+    defaults,
+    minW: Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [bp, 1])) as Record<Breakpoint, number>,
+    minH: Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [bp, 6])) as Record<Breakpoint, number>,
+  };
+}
+
+function getSpec(type: string): WidgetSpec {
+  return widgetSpecs[type] ?? fallbackSpec();
+}
+
 export function getDefaultGridSize(type: string, bp: Breakpoint): GridSize {
-  return { ...(GRID_DEFAULTS[type]?.[bp] ?? { w: bp === "s" ? 12 : 6, h: 12 }) };
+  return { ...getSpec(type).defaults[bp] };
 }
 
-/** 组件最小尺寸来自现有卡片内容，避免自由缩放时把内容裁掉。 */
 export function getGridConstraints(type: string, bp: Breakpoint): GridConstraints {
-  const minH = GRID_DEFAULTS[type]?.[bp]?.h ?? 12;
-  const minW = bp === "s"
-    ? 12
-    : type === "trend-chart"
-      ? 4
-      : type.startsWith("stat-")
-        ? 2
-        : 3;
-  return { minW, minH, maxW: GRID_COLUMNS, maxH: GRID_MAX_WIDGET_ROWS };
+  const widgetSpec = getSpec(type);
+  return {
+    minW: Math.min(GRID_COLUMNS[bp], widgetSpec.minW[bp]),
+    minH: Math.min(GRID_MAX_WIDGET_ROWS, widgetSpec.minH[bp]),
+    maxW: GRID_COLUMNS[bp],
+    maxH: GRID_MAX_WIDGET_ROWS,
+  };
 }
 
-function cloneLayout(layout: MultiBreakpointLayout): MultiBreakpointLayout {
-  return JSON.parse(JSON.stringify(layout)) as MultiBreakpointLayout;
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function widget(type: string, x: number, y: number, w: number, h: number): GridWidget {
-  return { type, x, y, w, h };
+function createInstanceId(type: string): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const defaultLayout_l: GridBreakpointLayout = {
-  widgets: [
-    widget("stat-posts", 0, 0, 3, 19),
-    widget("stat-published", 3, 0, 3, 19),
-    widget("stat-views", 6, 0, 3, 19),
-    widget("stat-comments", 9, 0, 3, 19),
-    widget("trend-chart", 0, 19, 8, 52),
-    widget("category-donut", 8, 19, 4, 34),
-    widget("quick-actions", 8, 53, 4, 35),
-    widget("recent-posts", 0, 88, 6, 36),
-    widget("recent-comments", 6, 88, 6, 36),
-    widget("stellar-version", 0, 124, 4, 25),
-  ],
-};
+function makeWidget(i: string, id: string, x: number, y: number, w: number, h: number, bp: Breakpoint): DashboardWidget {
+  const constraints = getGridConstraints(id, bp);
+  return {
+    i,
+    id,
+    x,
+    y,
+    w,
+    h,
+    minW: constraints.minW,
+    minH: constraints.minH,
+    maxW: constraints.maxW,
+    maxH: constraints.maxH,
+    config: {},
+  };
+}
 
-const defaultLayout_m: GridBreakpointLayout = {
-  widgets: [
-    widget("stat-posts", 0, 0, 6, 18),
-    widget("stat-published", 6, 0, 6, 18),
-    widget("stat-views", 0, 18, 6, 18),
-    widget("stat-comments", 6, 18, 6, 18),
-    widget("trend-chart", 0, 36, 12, 44),
-    widget("category-donut", 0, 80, 6, 32),
-    widget("quick-actions", 6, 80, 6, 31),
-    widget("recent-posts", 0, 112, 12, 32),
-    widget("recent-comments", 0, 144, 12, 32),
-    widget("stellar-version", 0, 176, 6, 23),
-  ],
-};
+function defaultWidget(id: string, x: number, y: number, w: number, h: number): DashboardWidget {
+  return makeWidget(id, id.replace(/-\d+$/, ""), x, y, w, h, "lg");
+}
 
-const defaultLayout_s: GridBreakpointLayout = {
-  widgets: [
-    widget("stat-posts", 0, 0, 12, 18),
-    widget("stat-published", 0, 18, 12, 18),
-    widget("stat-views", 0, 36, 12, 18),
-    widget("stat-comments", 0, 54, 12, 18),
-    widget("trend-chart", 0, 72, 12, 42),
-    widget("category-donut", 0, 114, 12, 29),
-    widget("quick-actions", 0, 143, 12, 20),
-    widget("recent-posts", 0, 163, 12, 27),
-    widget("recent-comments", 0, 190, 12, 27),
-    widget("stellar-version", 0, 217, 12, 22),
-  ],
-};
+const defaultLayoutLg: DashboardWidget[] = [
+  defaultWidget("stat-posts-1", 0, 0, 3, 19),
+  defaultWidget("stat-published-1", 3, 0, 3, 19),
+  defaultWidget("stat-views-1", 6, 0, 3, 19),
+  defaultWidget("stat-comments-1", 9, 0, 3, 19),
+  defaultWidget("trend-chart-1", 0, 19, 8, 52),
+  defaultWidget("category-donut-1", 8, 19, 4, 34),
+  defaultWidget("quick-actions-1", 8, 53, 4, 35),
+  defaultWidget("recent-posts-1", 0, 88, 6, 36),
+  defaultWidget("recent-comments-1", 6, 88, 6, 36),
+  defaultWidget("stellar-version-1", 0, 124, 4, 25),
+];
+
+const defaultLayoutMd: DashboardWidget[] = [
+  defaultWidget("stat-posts-1", 0, 0, 6, 18),
+  defaultWidget("stat-published-1", 6, 0, 6, 18),
+  defaultWidget("stat-views-1", 0, 18, 6, 18),
+  defaultWidget("stat-comments-1", 6, 18, 6, 18),
+  defaultWidget("trend-chart-1", 0, 36, 12, 44),
+  defaultWidget("category-donut-1", 0, 80, 6, 32),
+  defaultWidget("quick-actions-1", 6, 80, 6, 31),
+  defaultWidget("recent-posts-1", 0, 112, 12, 32),
+  defaultWidget("recent-comments-1", 0, 144, 12, 32),
+  defaultWidget("stellar-version-1", 0, 176, 6, 23),
+];
+
+const defaultLayoutSm: DashboardWidget[] = [
+  defaultWidget("stat-posts-1", 0, 0, 3, 18),
+  defaultWidget("stat-published-1", 3, 0, 3, 18),
+  defaultWidget("stat-views-1", 0, 18, 3, 18),
+  defaultWidget("stat-comments-1", 3, 18, 3, 18),
+  defaultWidget("trend-chart-1", 0, 36, 6, 44),
+  defaultWidget("category-donut-1", 0, 80, 3, 32),
+  defaultWidget("quick-actions-1", 3, 80, 3, 31),
+  defaultWidget("recent-posts-1", 0, 112, 6, 32),
+  defaultWidget("recent-comments-1", 0, 144, 6, 32),
+  defaultWidget("stellar-version-1", 0, 176, 3, 23),
+];
+
+const defaultLayoutXs: DashboardWidget[] = [
+  defaultWidget("stat-posts-1", 0, 0, 2, 18),
+  defaultWidget("stat-published-1", 2, 0, 2, 18),
+  defaultWidget("stat-views-1", 0, 18, 2, 18),
+  defaultWidget("stat-comments-1", 2, 18, 2, 18),
+  defaultWidget("trend-chart-1", 0, 36, 4, 42),
+  defaultWidget("category-donut-1", 0, 78, 4, 29),
+  defaultWidget("quick-actions-1", 0, 107, 4, 20),
+  defaultWidget("recent-posts-1", 0, 127, 4, 27),
+  defaultWidget("recent-comments-1", 0, 154, 4, 27),
+  defaultWidget("stellar-version-1", 0, 181, 4, 22),
+];
 
 export const defaultMultiLayout: MultiBreakpointLayout = {
-  l: { widgets: defaultLayout_l.widgets.map((item) => ({ ...item })) },
-  m: { widgets: defaultLayout_m.widgets.map((item) => ({ ...item })) },
-  s: { widgets: defaultLayout_s.widgets.map((item) => ({ ...item })) },
+  lg: clone(defaultLayoutLg),
+  md: clone(defaultLayoutMd),
+  sm: clone(defaultLayoutSm),
+  xs: clone(defaultLayoutXs),
+  xxs: clone(defaultLayoutXs),
 };
 
-/** 获取单个断点的默认网格布局。 */
-export function getDefaultGridLayout(bp: Breakpoint): GridBreakpointLayout {
-  return cloneLayout(defaultMultiLayout)[bp];
-}
-
-export const LAYOUT_STORAGE_KEY = "dashboard:layout:v9";
-const LEGACY_V8_STORAGE_KEY = "dashboard:layout:v8";
-const LEGACY_V7_STORAGE_KEY = "dashboard:layout:v7";
-const LEGACY_V6_STORAGE_KEY = "dashboard:layout:v6";
-
-interface LegacyResponsiveSize {
-  l?: number;
-  m?: number;
-  s?: number;
-}
-
-interface LegacyWidget {
-  type?: unknown;
-  size?: LegacyResponsiveSize;
-}
-
-interface LegacySectionLayout {
-  stats?: LegacyWidget[];
-  chartWide?: LegacyWidget | null;
-  chartNarrow?: LegacyWidget[];
-  recents?: LegacyWidget[];
-  others?: LegacyWidget[];
+export function getDefaultGridLayout(bp: Breakpoint): DashboardWidget[] {
+  return clone(defaultMultiLayout[bp]);
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
@@ -173,22 +257,11 @@ function clampInt(value: unknown, min: number, max: number, fallback: number): n
   return Math.max(min, Math.min(max, n));
 }
 
-function normalizeGridWidget(item: Partial<GridWidget>, bp: Breakpoint): GridWidget | null {
-  if (typeof item.type !== "string" || !item.type) return null;
-  const constraints = getGridConstraints(item.type, bp);
-  const defaults = getDefaultGridSize(item.type, bp);
-  const w = clampInt(item.w, constraints.minW, constraints.maxW, defaults.w);
-  const h = clampInt(item.h, constraints.minH, constraints.maxH, defaults.h);
-  const x = clampInt(item.x, 0, GRID_COLUMNS - w, 0);
-  const y = clampInt(item.y, 0, GRID_MAX_ROWS - h, 0);
-  return { type: item.type, x, y, w, h };
-}
-
-function overlaps(a: GridWidget, b: GridWidget): boolean {
+function overlaps(a: Pick<DashboardWidget, "x" | "y" | "w" | "h">, b: Pick<DashboardWidget, "x" | "y" | "w" | "h">): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-export function hasGridOverlaps(widgets: GridWidget[]): boolean {
+export function hasGridOverlaps(widgets: DashboardWidget[]): boolean {
   for (let i = 0; i < widgets.length; i += 1) {
     for (let j = i + 1; j < widgets.length; j += 1) {
       if (overlaps(widgets[i], widgets[j])) return true;
@@ -197,16 +270,17 @@ export function hasGridOverlaps(widgets: GridWidget[]): boolean {
   return false;
 }
 
-/** 按 y/x 顺序寻找第一个不与已有组件重叠的位置。 */
 export function findFreeGridPosition(
-  widgets: GridWidget[],
+  widgets: DashboardWidget[],
   size: GridSize,
-): Pick<GridWidget, "x" | "y"> {
-  const w = clampInt(size.w, 1, GRID_COLUMNS, size.w);
+  bp: Breakpoint = "lg",
+): Pick<DashboardWidget, "x" | "y"> {
+  const columns = GRID_COLUMNS[bp];
+  const w = clampInt(size.w, 1, columns, size.w);
   const h = clampInt(size.h, 1, GRID_MAX_WIDGET_ROWS, size.h);
   for (let y = 0; y <= GRID_MAX_ROWS - h; y += 1) {
-    for (let x = 0; x <= GRID_COLUMNS - w; x += 1) {
-      const candidate = { type: "", x, y, w, h };
+    for (let x = 0; x <= columns - w; x += 1) {
+      const candidate = { x, y, w, h };
       if (!widgets.some((item) => overlaps(candidate, item))) return { x, y };
     }
   }
@@ -214,22 +288,54 @@ export function findFreeGridPosition(
   return { x: 0, y: bottom };
 }
 
-export function createDefaultGridWidget(type: string, bp: Breakpoint, widgets: GridWidget[] = []): GridWidget {
+export function createDefaultGridWidget(
+  type: string,
+  bp: Breakpoint,
+  widgets: DashboardWidget[] = [],
+): DashboardWidget {
   const size = getDefaultGridSize(type, bp);
-  const position = findFreeGridPosition(widgets, size);
-  return { type, ...position, ...size };
+  const position = findFreeGridPosition(widgets, size, bp);
+  return makeWidget(createInstanceId(type), type, position.x, position.y, size.w, size.h, bp);
 }
 
-function normalizeWidgets(items: unknown, bp: Breakpoint): GridWidget[] {
+function normalizeWidget(raw: unknown, bp: Breakpoint, index: number, used: Set<string>): DashboardWidget | null {
+  if (!raw || typeof raw !== "object") return null;
+  const source = raw as Partial<DashboardWidget> & { type?: unknown };
+  const id = typeof source.id === "string" && source.id ? source.id : typeof source.type === "string" ? source.type : "";
+  if (!id) return null;
+  let instance = typeof source.i === "string" && source.i ? source.i : `${id}-${index + 1}`;
+  while (used.has(instance)) instance = `${instance}-copy`;
+  used.add(instance);
+  const defaults = getDefaultGridSize(id, bp);
+  const constraints = getGridConstraints(id, bp);
+  const w = clampInt(source.w, constraints.minW, constraints.maxW, defaults.w);
+  const h = clampInt(source.h, constraints.minH, constraints.maxH, defaults.h);
+  const widget: DashboardWidget = {
+    i: instance,
+    id,
+    x: clampInt(source.x, 0, GRID_COLUMNS[bp] - w, 0),
+    y: clampInt(source.y, 0, GRID_MAX_ROWS - h, 0),
+    w,
+    h,
+    minW: clampInt(source.minW, 1, constraints.maxW, constraints.minW),
+    minH: clampInt(source.minH, 1, constraints.maxH, constraints.minH),
+    maxW: clampInt(source.maxW, constraints.minW, constraints.maxW, constraints.maxW),
+    maxH: clampInt(source.maxH, constraints.minH, constraints.maxH, constraints.maxH),
+    config: source.config && typeof source.config === "object" ? clone(source.config) : {},
+  };
+  if (Array.isArray(source.permissions)) widget.permissions = source.permissions.filter((item): item is string => typeof item === "string");
+  return widget;
+}
+
+function normalizeBreakpointWidgets(items: unknown, bp: Breakpoint): DashboardWidget[] {
   if (!Array.isArray(items)) return [];
-  const result: GridWidget[] = [];
-  const seen = new Set<string>();
-  for (const raw of items) {
-    const item = normalizeGridWidget((raw ?? {}) as Partial<GridWidget>, bp);
-    if (!item || seen.has(item.type)) continue;
-    seen.add(item.type);
+  const result: DashboardWidget[] = [];
+  const used = new Set<string>();
+  for (const [index, raw] of items.entries()) {
+    const item = normalizeWidget(raw, bp, index, used);
+    if (!item) continue;
     if (result.some((existing) => overlaps(existing, item))) {
-      const position = findFreeGridPosition(result, { w: item.w, h: item.h });
+      const position = findFreeGridPosition(result, item, bp);
       result.push({ ...item, ...position });
     } else {
       result.push(item);
@@ -238,24 +344,24 @@ function normalizeWidgets(items: unknown, bp: Breakpoint): GridWidget[] {
   return result;
 }
 
-export function sanitizeGridLayout(input: unknown): MultiBreakpointLayout | null {
+export function sanitizeResponsiveLayout(input: unknown): DashboardResponsiveLayout | null {
   if (!input || typeof input !== "object") return null;
   const source = input as Record<string, unknown>;
-  const output = {} as MultiBreakpointLayout;
-  for (const bp of ["l", "m", "s"] as const) {
-    const section = source[bp];
-    if (!section || typeof section !== "object") return null;
-    const widgets = normalizeWidgets((section as { widgets?: unknown }).widgets, bp);
-    output[bp] = { widgets };
+  const output: DashboardResponsiveLayout = {};
+  for (const bp of BREAKPOINT_ORDER) {
+    if (!(bp in source)) continue;
+    const value = source[bp];
+    if (!Array.isArray(value)) return null;
+    output[bp] = normalizeBreakpointWidgets(value, bp);
   }
   return output;
 }
 
-/** v6 → v7：保留历史测试与旧布局迁移语义。 */
+/** Backwards-compatible v6 → v7 migration retained for existing local data. */
 export function migrateV6toV7(v6: any): any | null {
   try {
     if (!v6 || !v6.l || !v6.m || !v6.s) return null;
-    const layout = JSON.parse(JSON.stringify(v6));
+    const layout = clone(v6);
     const recents = layout.m.recents;
     if (Array.isArray(recents)) {
       for (const item of recents) {
@@ -272,6 +378,10 @@ export function migrateV6toV7(v6: any): any | null {
   }
 }
 
+interface LegacyResponsiveSize { l?: number; m?: number; s?: number }
+interface LegacyWidget { type?: unknown; size?: LegacyResponsiveSize; x?: number; y?: number; w?: number; h?: number }
+interface LegacySectionLayout { stats?: LegacyWidget[]; chartWide?: LegacyWidget | null; chartNarrow?: LegacyWidget[]; recents?: LegacyWidget[]; others?: LegacyWidget[] }
+
 function legacyItems(section: LegacySectionLayout): LegacyWidget[] {
   return [
     ...(Array.isArray(section.stats) ? section.stats : []),
@@ -282,38 +392,43 @@ function legacyItems(section: LegacySectionLayout): LegacyWidget[] {
   ];
 }
 
-function packLegacyItems(items: LegacyWidget[], bp: Breakpoint): GridWidget[] {
-  const result: GridWidget[] = [];
+function packLegacyItems(items: LegacyWidget[], bp: "l" | "m" | "s"): DashboardWidget[] {
+  const target: Breakpoint = bp === "l" ? "lg" : "md";
+  const result: DashboardWidget[] = [];
   let cursorX = 0;
   let cursorY = 0;
   let rowHeight = 0;
-  for (const legacy of items) {
+  for (const [index, legacy] of items.entries()) {
     if (typeof legacy.type !== "string" || !legacy.type) continue;
-    const defaults = getDefaultGridSize(legacy.type, bp);
-    const width = clampInt(legacy.size?.[bp], 1, GRID_COLUMNS, defaults.w);
-    if (cursorX + width > GRID_COLUMNS) {
+    const defaults = getDefaultGridSize(legacy.type, target);
+    const width = clampInt(legacy.size?.[bp], 1, GRID_COLUMNS[target], defaults.w);
+    if (cursorX + width > GRID_COLUMNS[target]) {
       cursorX = 0;
       cursorY += rowHeight;
       rowHeight = 0;
     }
-    const packed = normalizeGridWidget(
-      { type: legacy.type, x: cursorX, y: cursorY, w: width, h: defaults.h },
-      bp,
-    );
-    if (packed && !result.some((existing) => existing.type === packed.type)) {
-      result.push(packed);
-      cursorX = packed.x + packed.w;
-      rowHeight = Math.max(rowHeight, packed.h);
+    const item = normalizeWidget({
+      i: `${legacy.type}-${index + 1}`,
+      id: legacy.type,
+      x: cursorX,
+      y: cursorY,
+      w: width,
+      h: defaults.h,
+    }, target, index, new Set(result.map((widget) => widget.i)));
+    if (item) {
+      result.push(item);
+      cursorX = item.x + item.w;
+      rowHeight = Math.max(rowHeight, item.h);
     }
   }
   return result;
 }
 
 /** v8/v7 旧五区域布局 → v9 统一网格布局。 */
-export function migrateV8toV9(input: unknown): MultiBreakpointLayout | null {
+export function migrateV8toV9(input: unknown): Record<"l" | "m" | "s", { widgets: DashboardWidget[] }> | null {
   if (!input || typeof input !== "object") return null;
-  const source = input as Record<Breakpoint, LegacySectionLayout | undefined>;
-  const output = {} as MultiBreakpointLayout;
+  const source = input as Record<"l" | "m" | "s", LegacySectionLayout | undefined>;
+  const output = {} as Record<"l" | "m" | "s", { widgets: DashboardWidget[] }>;
   for (const bp of ["l", "m", "s"] as const) {
     const section = source[bp];
     if (!section || typeof section !== "object") return null;
@@ -322,62 +437,162 @@ export function migrateV8toV9(input: unknown): MultiBreakpointLayout | null {
   return output;
 }
 
-/** 从 localStorage 加载 v9，兼容 v8/v7/v6。 */
-export function loadLayoutFromStorage(): MultiBreakpointLayout {
-  try {
-    const current = localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (current) {
-      const parsed = sanitizeGridLayout(JSON.parse(current));
-      if (parsed) return parsed;
-    }
+function scaleWidget(widget: DashboardWidget, from: number, to: number, bp: Breakpoint, index: number): DashboardWidget {
+  const scaledW = Math.max(1, Math.round((widget.w * to) / from));
+  const scaledX = Math.round((widget.x * to) / from);
+  const size = getDefaultGridSize(widget.id, bp);
+  const constraints = getGridConstraints(widget.id, bp);
+  return {
+    ...widget,
+    i: `${widget.i}-${bp}-${index + 1}`,
+    x: Math.max(0, Math.min(to - scaledW, scaledX)),
+    y: widget.y,
+    w: Math.min(to, Math.max(constraints.minW, scaledW)),
+    h: Math.min(GRID_MAX_WIDGET_ROWS, Math.max(constraints.minH, widget.h || size.h)),
+    minW: constraints.minW,
+    minH: constraints.minH,
+    maxW: constraints.maxW,
+    maxH: constraints.maxH,
+    config: widget.config ? clone(widget.config) : {},
+  };
+}
 
+function convertWidgets(items: DashboardWidget[], from: number, bp: Breakpoint): DashboardWidget[] {
+  const result: DashboardWidget[] = [];
+  for (const [index, item] of items.entries()) {
+    const scaled = scaleWidget(item, from, GRID_COLUMNS[bp], bp, index);
+    const position = findFreeGridPosition(result, scaled, bp);
+    result.push({ ...scaled, ...position });
+  }
+  return result;
+}
+
+/** Convert the current v9 local layout into Halo-style responsive instances. */
+export function migrateV9toV10(input: unknown): DashboardResponsiveLayout | null {
+  const source = input as Record<string, { widgets?: unknown }> | null;
+  if (!source || typeof source !== "object") return null;
+  const v9: Record<"l" | "m" | "s", DashboardWidget[]> = { l: [], m: [], s: [] };
+  for (const oldBp of ["l", "m", "s"] as const) {
+    const widgets = source[oldBp]?.widgets;
+    if (!Array.isArray(widgets)) return null;
+    v9[oldBp] = normalizeBreakpointWidgets(widgets, oldBp === "l" ? "lg" : "md");
+  }
+  return {
+    lg: convertWidgets(v9.l, 12, "lg"),
+    md: convertWidgets(v9.m, 12, "md"),
+    sm: convertWidgets(v9.m, 12, "sm"),
+    xs: convertWidgets(v9.s, 12, "xs"),
+    xxs: convertWidgets(v9.s, 12, "xxs"),
+  };
+}
+
+/** Read old browser data without writing it back; the Designer offers explicit import. */
+export function loadLegacyLayoutFromStorage(): DashboardResponsiveLayout | null {
+  try {
+    const current = localStorage.getItem(LEGACY_LAYOUT_STORAGE_KEY);
+    if (current) {
+      const migrated = migrateV9toV10(JSON.parse(current));
+      if (migrated) return migrated;
+    }
     const legacyV8 = localStorage.getItem(LEGACY_V8_STORAGE_KEY);
     if (legacyV8) {
       const migrated = migrateV8toV9(JSON.parse(legacyV8));
-      if (migrated) {
-        saveLayoutToStorage(migrated);
-        return migrated;
-      }
+      const v10 = migrated && migrateV9toV10(migrated);
+      if (v10) return v10;
     }
-
     const legacyV7 = localStorage.getItem(LEGACY_V7_STORAGE_KEY);
     if (legacyV7) {
       const migrated = migrateV8toV9(JSON.parse(legacyV7));
-      if (migrated) {
-        saveLayoutToStorage(migrated);
-        return migrated;
-      }
+      const v10 = migrated && migrateV9toV10(migrated);
+      if (v10) return v10;
     }
-
     const legacyV6 = localStorage.getItem(LEGACY_V6_STORAGE_KEY);
     if (legacyV6) {
       const migratedV7 = migrateV6toV7(JSON.parse(legacyV6));
-      const migrated = migrateV8toV9(migratedV7);
-      if (migrated) {
-        saveLayoutToStorage(migrated);
-        return migrated;
-      }
+      const migrated = migratedV7 && migrateV8toV9(migratedV7);
+      const v10 = migrated && migrateV9toV10(migrated);
+      if (v10) return v10;
     }
   } catch {
-    // 坏的 localStorage 不应阻断 Dashboard 启动，回退到默认布局。
+    // 浏览器中的坏数据只影响导入提示，不应阻断 Dashboard。
   }
-  return cloneLayout(defaultMultiLayout);
+  return null;
 }
 
-export function saveLayoutToStorage(layout: MultiBreakpointLayout) {
-  localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+export function sanitizeDashboardLayouts(input: unknown): DashboardResponsiveLayout | null {
+  if (!input || typeof input !== "object") return null;
+  const source = input as Record<string, unknown>;
+  const result: DashboardResponsiveLayout = {};
+  for (const bp of BREAKPOINT_ORDER) {
+    if (!(bp in source)) continue;
+    const items = source[bp];
+    if (!Array.isArray(items)) return null;
+    result[bp] = normalizeBreakpointWidgets(items, bp);
+  }
+  return result;
 }
 
-/** 将网格引擎输出的节点转换成可持久化的纯数据。 */
-export function nodesToGridWidgets(nodes: Array<Partial<GridWidget> & { id?: unknown }>): GridWidget[] {
+export function nodesToGridWidgets(
+  nodes: Array<Partial<DashboardWidget> & { id?: unknown; widgetId?: unknown }>,
+  bp: Breakpoint = "lg",
+): DashboardWidget[] {
   return nodes
-    .map((node) => ({
-      type: typeof node.type === "string" ? node.type : typeof node.id === "string" ? node.id : "",
-      x: Math.max(0, Math.round(node.x ?? 0)),
-      y: Math.max(0, Math.round(node.y ?? 0)),
-      w: Math.max(1, Math.round(node.w ?? 1)),
-      h: Math.max(1, Math.round(node.h ?? 1)),
-    }))
-    .filter((node) => Boolean(node.type))
-    .sort((a, b) => a.y - b.y || a.x - b.x || a.type.localeCompare(b.type));
+    .map((node, index) => {
+      const instance = typeof node.i === "string" ? node.i : typeof node.id === "string" ? node.id : `widget-${index + 1}`;
+      const definition = typeof node.widgetId === "string" ? node.widgetId : typeof node.id === "string" ? node.id : instance;
+      return normalizeWidget({
+        ...node,
+        i: instance,
+        id: definition,
+        x: Math.max(0, Math.round(node.x ?? 0)),
+        y: Math.max(0, Math.round(node.y ?? 0)),
+        w: Math.max(1, Math.round(node.w ?? 1)),
+        h: Math.max(1, Math.round(node.h ?? 1)),
+      }, bp, index, new Set());
+    })
+    .filter((node): node is DashboardWidget => Boolean(node))
+    .sort((a, b) => a.y - b.y || a.x - b.x || a.i.localeCompare(b.i));
+}
+
+/**
+ * Merge GridStack geometry with instance metadata that is not represented in
+ * DOM attributes. This keeps future widget config and permission data intact
+ * after a drag or resize.
+ */
+export function mergeGridWidgetMetadata(
+  items: DashboardWidget[],
+  previous: ReadonlyMap<string, DashboardWidget>,
+): DashboardWidget[] {
+  return items.map((item) => {
+    const prior = previous.get(item.i);
+    if (!prior) return item;
+    return {
+      ...item,
+      ...(prior.config !== undefined ? { config: clone(prior.config) } : {}),
+      ...(prior.permissions !== undefined ? { permissions: [...prior.permissions] } : {}),
+    };
+  });
+}
+
+export function copyLayoutToBreakpoint(
+  layout: DashboardResponsiveLayout,
+  source: Breakpoint,
+  target: Breakpoint,
+): DashboardResponsiveLayout {
+  const sourceWidgets = layout[source] ?? [];
+  const copied: DashboardWidget[] = [];
+  for (const [index, sourceWidget] of sourceWidgets.entries()) {
+    const scaled = scaleWidget(sourceWidget, GRID_COLUMNS[source], GRID_COLUMNS[target], target, index);
+    const position = findFreeGridPosition(copied, scaled, target);
+    copied.push({ ...scaled, ...position, i: `${sourceWidget.i}-copy-${target}-${index + 1}` });
+  }
+  return { ...clone(layout), [target]: copied };
+}
+
+export function ensureCompleteLayout(layout: DashboardResponsiveLayout): MultiBreakpointLayout {
+  const result = {} as MultiBreakpointLayout;
+  for (const bp of BREAKPOINT_ORDER) {
+    result[bp] = normalizeBreakpointWidgets(layout[bp] ?? defaultMultiLayout[bp], bp);
+  }
+  return result;
 }

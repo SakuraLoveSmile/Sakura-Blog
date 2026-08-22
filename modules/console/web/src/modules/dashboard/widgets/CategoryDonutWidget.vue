@@ -183,32 +183,32 @@ const arcs = computed(() => {
 .donut-pct { color: var(--color-text-quaternary); font-size: 11px; width: 34px; text-align: right; flex-shrink: 0; }
 
 /* M */
-.apple-card[data-bp="m"] .donut-svg,
-.apple-card[data-bp="s"] .donut-svg { width: 120px; height: 120px; }
-.apple-card[data-bp="m"] .donut-body,
-.apple-card[data-bp="s"] .donut-body { gap: 12px; }
-.apple-card[data-bp="m"] .donut-legend-item,
-.apple-card[data-bp="s"] .donut-legend-item { font-size: 12px; gap: 6px; padding: 3px 4px; }
-.apple-card[data-bp="m"] .donut-center-num,
-.apple-card[data-bp="s"] .donut-center-num { font-size: 20px; }
-.apple-card[data-bp="m"] .donut-dot,
-.apple-card[data-bp="s"] .donut-dot { width: 8px; height: 8px; }
-.apple-card[data-bp="m"] .donut-pct,
-.apple-card[data-bp="s"] .donut-pct { width: 30px; font-size: 10px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-svg,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg { width: 120px; height: 120px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-body,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body { gap: 12px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-legend-item,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend-item { font-size: 12px; gap: 6px; padding: 3px 4px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-center-num,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-center-num { font-size: 20px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-dot,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-dot { width: 8px; height: 8px; }
+.apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-pct,
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct { width: 30px; font-size: 10px; }
 
 /* S: stack vertically, center donut */
-.apple-card[data-bp="s"] .donut-body {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
 }
-.apple-card[data-bp="s"] .donut-svg {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg {
   width: 130px;
   height: 130px;
   margin: 0 auto;
 }
-.apple-card[data-bp="s"] .donut-placeholder { height: 160px; }
-.apple-card[data-bp="s"] .donut-legend {
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-placeholder { height: 160px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend {
   max-height: none;
 }
 </style>
