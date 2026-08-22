@@ -3,6 +3,7 @@ package linkwatch
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,6 +75,65 @@ func TestRunOncePersistsStatusAndSnapshot(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(watcher.uploadDir, "snapshots", "1.jpg")); err != nil {
 		t.Fatalf("snapshot file missing: %v", err)
+	}
+}
+
+func TestBuildSnapshotProviderURL(t *testing.T) {
+	target := "https://example.com/articles?page=2&from=home#top"
+
+	pathProvider := "https://image.thum.io/get/width/1280/crop/720/{url}"
+	pathURL, err := buildSnapshotProviderURL(pathProvider, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(pathURL, "/https://example.com/articles") {
+		t.Fatalf("path provider lost target URL shape: %s", pathURL)
+	}
+	if strings.Contains(pathURL, "?page=2") || strings.Contains(pathURL, "#top") {
+		t.Fatalf("path target rewrote provider URL: %s", pathURL)
+	}
+	if !strings.Contains(pathURL, "%3Fpage%3D2%26from%3Dhome%23top") {
+		t.Fatalf("path target delimiters were not escaped: %s", pathURL)
+	}
+
+	queryProvider := "https://capture.example/render?url={url}"
+	queryURL, err := buildSnapshotProviderURL(queryProvider, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantQueryURL := "https://capture.example/render?url=" + url.QueryEscape(target)
+	if queryURL != wantQueryURL {
+		t.Fatalf("query provider URL = %q, want %q", queryURL, wantQueryURL)
+	}
+}
+
+func TestBuildSnapshotProviderURLRejectsUnsupportedPlaceholderLocation(t *testing.T) {
+	if _, err := buildSnapshotProviderURL("https://capture.example/render#{url}", "https://example.com"); err == nil {
+		t.Fatal("fragment placeholder should be rejected")
+	}
+}
+
+func TestCaptureSupportsPathSnapshotProvider(t *testing.T) {
+	const target = "https://example.com/articles?page=2&from=home#top"
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.RequestURI, "/https://example.com/articles%3Fpage%3D2%26from%3Dhome%23top") {
+			t.Errorf("provider request URI = %q", r.RequestURI)
+		}
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write([]byte("fake-png"))
+	}))
+	defer provider.Close()
+
+	watcher := &Watcher{
+		snapshot:  provider.Client(),
+		uploadDir: t.TempDir(),
+	}
+	path, err := watcher.capture(&store.Link{ID: 7, URL: target}, provider.URL+"/capture/{url}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != "/uploads/snapshots/7.jpg" {
+		t.Fatalf("snapshot path = %q", path)
 	}
 }
 

@@ -221,13 +221,10 @@ func (w *Watcher) Snapshot(id int64) (*store.Link, error) {
 }
 
 func (w *Watcher) capture(link *store.Link, provider string) (string, error) {
-	if !strings.Contains(provider, "{url}") {
-		return "", fmt.Errorf("snapshot provider must contain {url}")
+	providerURL, err := buildSnapshotProviderURL(provider, link.URL)
+	if err != nil {
+		return "", err
 	}
-	// 安全审计 2026-08-16：{url} 占位替换前做 QueryEscape——link.URL 未转义时其
-	// ?/#/../ 片段可改写 provider 请求的 path/query。快照客户端已换 safefetch，
-	// 拨号层校验覆盖 provider 与注入后的最终目标。
-	providerURL := strings.ReplaceAll(provider, "{url}", url.QueryEscape(link.URL))
 	resp, err := w.snapshot.Get(providerURL)
 	if err != nil {
 		return "", err
@@ -276,6 +273,48 @@ func (w *Watcher) capture(link *store.Link, provider string) (string, error) {
 		return "", err
 	}
 	return "/uploads/snapshots/" + fmt.Sprintf("%d.jpg", link.ID), nil
+}
+
+// buildSnapshotProviderURL expands the {url} placeholder according to where
+// the provider places it. Query placeholders need QueryEscape, while
+// path-based providers such as image.thum.io need the target scheme and path
+// separators preserved. Query and fragment delimiters in a path target stay
+// escaped so the target cannot rewrite the provider request itself.
+func buildSnapshotProviderURL(provider, target string) (string, error) {
+	if !strings.Contains(provider, "{url}") {
+		return "", fmt.Errorf("snapshot provider must contain {url}")
+	}
+	parsed, err := url.Parse(provider)
+	if err != nil {
+		return "", fmt.Errorf("invalid snapshot provider: %w", err)
+	}
+
+	var replacement string
+	switch {
+	case strings.Contains(parsed.RawQuery, "{url}"):
+		replacement = url.QueryEscape(target)
+	case strings.Contains(parsed.Path, "{url}"):
+		replacement = escapeSnapshotPathTarget(target)
+	default:
+		return "", fmt.Errorf("snapshot provider must place {url} in path or query")
+	}
+	return strings.ReplaceAll(provider, "{url}", replacement), nil
+}
+
+// escapeSnapshotPathTarget keeps the URL shape expected by path-based
+// screenshot services while escaping delimiters that would alter the
+// provider URL. PathEscape already protects those delimiters; restoring only
+// the scheme/path separators keeps https://example.com readable to thum.io.
+func escapeSnapshotPathTarget(target string) string {
+	escaped := url.PathEscape(target)
+	return strings.NewReplacer(
+		"%2F", "/",
+		"%2f", "/",
+		"%3A", ":",
+		"%3a", ":",
+		"&", "%26",
+		"=", "%3D",
+	).Replace(escaped)
 }
 
 func snapshotExpired(link *store.Link, uploadDir string, interval time.Duration) bool {
