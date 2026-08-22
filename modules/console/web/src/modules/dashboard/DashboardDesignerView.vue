@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { Toast } from "@/components/ui";
@@ -7,7 +7,7 @@ import { dashboardApi } from "@/api";
 import DashboardGrid from "./DashboardGrid.vue";
 import WidgetCenter from "./WidgetCenter.vue";
 import WidgetSizeModal from "./WidgetSizeModal.vue";
-import { provideBreakpoint } from "./useBreakpoint";
+import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
 import { useDashboardLayout } from "./useDashboardLayout";
 import {
   copyLayoutToBreakpoint,
@@ -27,10 +27,13 @@ import { getWidgetDefinition } from "./widgets/registry";
 import "./dashboard.css";
 
 const router = useRouter();
-const { previewWidth, setViewMode } = provideBreakpoint();
+const { breakpoint: autoBreakpoint, previewWidth, viewMode, setViewMode } = provideBreakpoint();
 const { layout, loading, error, hasServerLayout, load, replace } = useDashboardLayout();
 
 const currentBreakpoint = ref<DashboardLayoutBreakpoint>("lg");
+const activeBreakpoint = computed<DashboardLayoutBreakpoint>(() => (
+  viewMode.value === "auto" ? autoBreakpoint.value : currentBreakpoint.value
+));
 const originalLayout = ref<MultiBreakpointLayout | null>(null);
 const showWidgetCenter = ref(false);
 const legacyLayout = ref<DashboardResponsiveLayout | null>(null);
@@ -39,7 +42,7 @@ const refreshKey = ref(0);
 const saving = ref(false);
 const sizingWidgetId = ref<string | null>(null);
 
-const currentWidgets = computed(() => layout.value[currentBreakpoint.value] ?? []);
+const currentWidgets = computed(() => layout.value[activeBreakpoint.value] ?? []);
 const sizingWidget = computed(() => currentWidgets.value.find((item) => item.i === sizingWidgetId.value) ?? null);
 const sizingDefinition = computed(() => {
   const widget = sizingWidget.value;
@@ -56,34 +59,40 @@ const sizeModalVisible = computed({
   },
 });
 const sizingPreset = computed<WidgetSizePreset>(() => (
-  sizingWidget.value ? getWidgetSizePreset(sizingWidget.value, currentBreakpoint.value, sizingWidget.value.id) : "medium"
+  sizingWidget.value ? getWidgetSizePreset(sizingWidget.value, activeBreakpoint.value, sizingWidget.value.id) : "medium"
 ));
 const dirty = computed(() => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value));
 const canImportLegacy = computed(() => !hasServerLayout.value && Boolean(legacyLayout.value));
 
-const breakpointOptions: { key: DashboardLayoutBreakpoint; label: string; icon: string }[] = [
+const viewOptions: { key: ViewMode; label: string; icon: string }[] = [
+  { key: "auto", label: "自适应", icon: "ri:aspect-ratio-line" },
   { key: "lg", label: "电脑", icon: "ri:computer-line" },
   { key: "sm", label: "平板", icon: "ri:tablet-line" },
   { key: "xxs", label: "手机", icon: "ri:smartphone-line" },
+];
+const deviceOptions: { key: DashboardLayoutBreakpoint; label: string }[] = [
+  { key: "lg", label: "电脑" },
+  { key: "sm", label: "平板" },
+  { key: "xxs", label: "手机" },
 ];
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function switchBreakpoint(next: DashboardLayoutBreakpoint) {
-  if (next === currentBreakpoint.value) return;
+function switchBreakpoint(next: ViewMode) {
+  if (next === viewMode.value) return;
   if (dirty.value && !window.confirm("当前布局尚未保存，切换设备会保留修改但不会丢失。是否继续？")) return;
-  currentBreakpoint.value = next;
+  if (next !== "auto") currentBreakpoint.value = next;
   setViewMode(next);
 }
 
 function updateCurrentWidgets(next: DashboardWidget[]) {
-  layout.value = { ...layout.value, [currentBreakpoint.value]: next };
+  layout.value = { ...layout.value, [activeBreakpoint.value]: next };
 }
 
 function addWidget(id: string) {
-  updateCurrentWidgets([...currentWidgets.value, createDefaultGridWidget(id, currentBreakpoint.value, currentWidgets.value)]);
+  updateCurrentWidgets([...currentWidgets.value, createDefaultGridWidget(id, activeBreakpoint.value, currentWidgets.value)]);
   refreshKey.value += 1;
 }
 
@@ -93,16 +102,17 @@ function removeWidget(instanceId: string) {
 }
 
 function resetCurrentLayout() {
-  updateCurrentWidgets(getDefaultGridLayout(currentBreakpoint.value));
+  updateCurrentWidgets(getDefaultGridLayout(activeBreakpoint.value));
   refreshKey.value += 1;
 }
 
 function copyLayout() {
-  if (copySource.value === currentBreakpoint.value) {
+  const target = activeBreakpoint.value;
+  if (copySource.value === target) {
     Toast.info("请选择其他设备布局作为来源");
     return;
   }
-  layout.value = copyLayoutToBreakpoint(layout.value, copySource.value, currentBreakpoint.value) as MultiBreakpointLayout;
+  layout.value = copyLayoutToBreakpoint(layout.value, copySource.value, target) as MultiBreakpointLayout;
   refreshKey.value += 1;
   Toast.success("布局已复制到当前设备");
 }
@@ -138,8 +148,8 @@ function configureWidget(instanceId: string) {
 function saveWidgetSize(preset: WidgetSizePreset) {
   if (!sizingWidget.value) return;
   const updated = currentWidgets.value.map((item) => (
-    item.i === sizingWidget.value?.i
-      ? applyGridWidgetSize(item, preset, currentBreakpoint.value, currentWidgets.value)
+      item.i === sizingWidget.value?.i
+      ? applyGridWidgetSize(item, preset, activeBreakpoint.value, currentWidgets.value)
       : item
   ));
   updateCurrentWidgets(updated);
@@ -159,10 +169,15 @@ function beforeUnload(event: BeforeUnloadEvent) {
 }
 
 onMounted(async () => {
-  setViewMode(currentBreakpoint.value);
+  setViewMode("auto");
   await load();
   originalLayout.value = clone(layout.value);
   if (!hasServerLayout.value) legacyLayout.value = loadLegacyLayoutFromStorage();
+});
+
+watch(activeBreakpoint, () => {
+  // 自适应模式跨越断点时关闭当前尺寸弹窗，避免继续操作旧断点的实例。
+  sizingWidgetId.value = null;
 });
 
 window.addEventListener("beforeunload", beforeUnload);
@@ -178,12 +193,12 @@ onBeforeRouteLeave(() => {
 <template>
   <div class="dashboard-viewport is-preview">
     <div class="dashboard-canvas" :style="{ width: previewWidth }">
-      <div class="dashboard-apple dashboard-designer" :data-bp="currentBreakpoint">
+      <div class="dashboard-apple dashboard-designer" :data-bp="activeBreakpoint">
         <div class="flex flex-col gap-4 apple-greeting">
           <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div>
               <h1>设置仪表盘</h1>
-              <p>按照设备尺寸分别调整组件布局，保存后对当前账号生效</p>
+              <p>可自适应预览，也可按设备尺寸分别调整组件布局，保存后对当前账号生效</p>
             </div>
             <div class="apple-header-actions">
               <button class="apple-secondary-btn" @click="leave">
@@ -199,11 +214,11 @@ onBeforeRouteLeave(() => {
 
           <div class="dashboard-device-tabs" role="tablist" aria-label="设备断点">
             <button
-              v-for="option in breakpointOptions"
+              v-for="option in viewOptions"
               :key="option.key"
-              :class="['dashboard-device-tab', option.key === currentBreakpoint && 'active']"
+              :class="['dashboard-device-tab', option.key === viewMode && 'active']"
               role="tab"
-              :aria-selected="option.key === currentBreakpoint"
+              :aria-selected="option.key === viewMode"
               @click="switchBreakpoint(option.key)"
             >
               <Icon :icon="option.icon" class="w-4 h-4" />
@@ -232,7 +247,7 @@ onBeforeRouteLeave(() => {
           <div class="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
             <label for="dashboard-copy-source">复制来源</label>
             <select id="dashboard-copy-source" v-model="copySource" class="dashboard-select">
-              <option v-for="option in breakpointOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
+            <option v-for="option in deviceOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
             </select>
             <button class="apple-secondary-btn" @click="copyLayout">
               <Icon icon="ri:file-copy-line" class="w-4 h-4" />
@@ -253,7 +268,7 @@ onBeforeRouteLeave(() => {
           </div>
           <DashboardGrid
             :widgets="currentWidgets"
-            :breakpoint="currentBreakpoint"
+            :breakpoint="activeBreakpoint"
             :editing="true"
             :refresh-key="refreshKey"
             @change="updateCurrentWidgets"
@@ -265,7 +280,7 @@ onBeforeRouteLeave(() => {
             v-model:visible="sizeModalVisible"
             :widget-label="sizingDefinition.label"
             :widget-icon="sizingDefinition.icon"
-            :breakpoint="currentBreakpoint"
+            :breakpoint="activeBreakpoint"
             :current-preset="sizingPreset"
             @save="saveWidgetSize"
           />

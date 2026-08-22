@@ -17,6 +17,10 @@ const DASHBOARD_GRID = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/DashboardGrid.vue"),
   "utf8",
 );
+const DASHBOARD_DESIGNER = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/DashboardDesignerView.vue"),
+  "utf8",
+);
 
 const blocks = SRC.match(/defineWidget\(\{[\s\S]*?\n\s+\}\),/g) || [];
 
@@ -67,4 +71,13 @@ test("dashboard grid: 只允许拖动位置，不启用自由缩放", () => {
   assert.match(DASHBOARD_GRID, /disableResize:\s*true/);
   assert.doesNotMatch(DASHBOARD_GRID, /resizestop|resizable:\s*\{/);
   assert.doesNotMatch(DASHBOARD_GRID, /gs-min-|gs-max-/);
+});
+
+test("dashboard designer: 提供自适应和三种设备预览", () => {
+  assert.match(DASHBOARD_DESIGNER, /key: "auto", label: "自适应"/);
+  assert.match(DASHBOARD_DESIGNER, /key: "lg", label: "电脑"/);
+  assert.match(DASHBOARD_DESIGNER, /key: "sm", label: "平板"/);
+  assert.match(DASHBOARD_DESIGNER, /key: "xxs", label: "手机"/);
+  assert.match(DASHBOARD_DESIGNER, /viewMode\.value === "auto" \? autoBreakpoint\.value : currentBreakpoint\.value/);
+  assert.match(DASHBOARD_DESIGNER, /setViewMode\("auto"\)/);
 });
