@@ -429,6 +429,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 素材速查（插件库图标画廊数据源：icons.yml 全量 key + SVG）
 		author.GET("/assets/icons", h.listAssetIcons)
+
+		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
+		author.GET("/plugins/catalog", h.shortcodeCatalog)
 	}
 
 	// 系统管理组（仅 admin，且站点必须已启用密码认证——安全审计 2026-08-16）：
