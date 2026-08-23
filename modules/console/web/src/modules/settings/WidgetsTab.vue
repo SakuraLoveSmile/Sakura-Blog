@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from"vue";
 import { Icon } from"@iconify/vue";
+import SchemaForm from"@/components/forms/SchemaForm.vue";
+import type { SchemaField, SchemaValues } from"@/components/forms/schema";
 import {
   BUILTIN_WIDGET_NAMES,
   builtinLayoutOf,
@@ -187,6 +189,25 @@ function widgetFields(name: string) {
  return fieldsForLayout(widgetLayout(name)) || null;
 }
 
+function hasWidgetFields(name: string): boolean {
+ return (widgetFields(name)?.length || 0) > 0;
+}
+
+function schemaFieldsForWidget(name: string): SchemaField[] {
+ return (widgetFields(name) || []).map((field) => ({
+  key: field.key,
+  type: field.type === "checkbox" ? "switch" : field.type,
+  label: field.label,
+  default: field.def,
+  options: field.options,
+  hint: field.hint,
+ }));
+}
+
+function updateWidgetSchema(name: string, next: SchemaValues) {
+ library.value[name] = { ...library.value[name], ...next };
+}
+
 function isNoExtraParams(name: string) {
  return NO_EXTRA_PARAM_LAYOUTS.has(widgetLayout(name));
 }
@@ -321,47 +342,12 @@ function setJsonText(name: string, val: string) {
  </h4>
 
  <!-- 已知参数字段 -->
- <template v-if="widgetFields(expandedWidget)">
- <div v-for="f in widgetFields(expandedWidget)!" :key="f.key" class="max-w-xs">
- <label class="block text-xs text-text-tertiary mb-1">{{ f.label || f.key }}</label>
- <input
- v-if="f.type === 'checkbox'"
- type="checkbox"
- :checked="!!library[expandedWidget][f.key]"
- @change="library[expandedWidget][f.key] = ($event.target as HTMLInputElement).checked"
- class="rounded border-border-strong"
+ <SchemaForm
+ v-if="hasWidgetFields(expandedWidget)"
+ :fields="schemaFieldsForWidget(expandedWidget)"
+ :model-value="library[expandedWidget]"
+ @update:model-value="updateWidgetSchema(expandedWidget, $event)"
  />
- <input
- v-else-if="f.type === 'number'"
- type="number"
- :value="library[expandedWidget][f.key]"
- @input="library[expandedWidget][f.key] = Number(($event.target as HTMLInputElement).value)"
- :class="inputCls"
- />
- <select
- v-else-if="f.type === 'select'"
- :value="library[expandedWidget][f.key]"
- @change="library[expandedWidget][f.key] = ($event.target as HTMLSelectElement).value"
- :class="inputCls"
- >
- <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
- </select>
- <textarea
- v-else-if="f.type === 'textarea'"
- rows="4"
- :value="library[expandedWidget][f.key]"
- @input="library[expandedWidget][f.key] = ($event.target as HTMLTextAreaElement).value"
- :class="inputCls + ' font-mono text-xs'"
- ></textarea>
- <input
- v-else
- type="text"
- :value="library[expandedWidget][f.key]"
- @input="library[expandedWidget][f.key] = ($event.target as HTMLInputElement).value"
- :class="inputCls"
- />
- </div>
- </template>
 
  <!-- 无额外参数的组件 -->
  <p v-else-if="isNoExtraParams(expandedWidget)" class="text-xs text-text-quaternary">该组件无额外可配置参数。</p>

@@ -1,83 +1,59 @@
 <script setup lang="ts">
-import { ref, watch } from"vue";
-import type { PluginMeta } from"./plugins-data";
-import { buildShortcode } from"./shortcode";
+import { computed, ref, watch } from "vue";
+import SchemaForm from "@/components/forms/SchemaForm.vue";
+import type { SchemaField, SchemaValues } from "@/components/forms/schema";
+import type { PluginMeta } from "./plugins-data";
+import { buildShortcode } from "./shortcode";
 
-// 标签插件结构化参数表单（Spec 29 + Spec 64）。
-// 入参一个具备 form schema 的插件，按字段 role 拼装 shortcode 并经 v-model 产出。
-// 拼装纯逻辑在 ./shortcode.ts（便于 node:test 行为测试），本组件只管表单状态与产出。
-// Spec 64：选中插件时仅初始化表单默认值，**不**用拼装结果覆盖库内精选示例
-// （示例可含表单无法表达的内容：图标间正文、多行 copy 等）；用户编辑字段时才产出。
+// 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
+// 选中插件时只初始化默认值，不用拼装结果覆盖插件库内的精选示例；用户编辑字段时才产出。
 const props = defineProps<{
- plugin: PluginMeta;
- modelValue: string;
+  plugin: PluginMeta;
+  modelValue: string;
 }>();
-const emit = defineEmits<{ (e:"update:modelValue", v: string): void }>();
+const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
-const values = ref<Record<string, string>>({});
+const values = ref<SchemaValues>({});
+
+const fields = computed<SchemaField[]>(() =>
+  (props.plugin.form || []).map((field) => ({
+    key: field.key,
+    label: field.label,
+    type: field.type === "flag" ? "switch" : field.type,
+    default: field.type === "flag" ? field.default === "true" : field.default,
+    options: field.options,
+    placeholder: field.placeholder,
+  }))
+);
 
 function initValues() {
- const v: Record<string, string> = {};
- for (const f of props.plugin.form || []) v[f.key] = f.default ??"";
- values.value = v;
+  const next: SchemaValues = {};
+  for (const field of props.plugin.form || []) {
+    next[field.key] = field.type === "flag" ? field.default === "true" : field.default ?? "";
+  }
+  values.value = next;
 }
 
-function refresh() {
- emit("update:modelValue", buildShortcode(props.plugin, values.value));
+function onSchemaUpdate(next: SchemaValues) {
+  values.value = next;
+  const shortcodeValues: Record<string, string> = {};
+  for (const field of props.plugin.form || []) {
+    const value = next[field.key];
+    shortcodeValues[field.key] =
+      field.type === "flag" ? (value === true ? "true" : "") : value == null ? "" : String(value);
+  }
+  emit("update:modelValue", buildShortcode(props.plugin, shortcodeValues));
 }
 
 watch(
- () => props.plugin.name,
- () => {
- initValues();
- },
- { immediate: true }
+  () => props.plugin.name,
+  () => {
+    initValues();
+  },
+  { immediate: true }
 );
-
-const inputCls = "apple-input";
 </script>
 
 <template>
- <div class="space-y-2.5">
- <div v-for="f in plugin.form || []" :key="f.key">
- <label class="block text-xs text-text-tertiary mb-1">{{ f.label }}</label>
- <select
- v-if="f.type === 'select'"
- v-model="values[f.key]"
- @change="refresh"
- :class="inputCls"
- >
- <option v-for="opt in f.options" :key="opt" :value="opt">{{ opt ||"（默认）" }}</option>
- </select>
- <label
- v-else-if="f.type === 'flag'"
- class="flex items-center gap-2 text-sm text-text-tertiary"
- >
- <input
- type="checkbox"
- :checked="values[f.key] === 'true'"
- @change="values[f.key] = ($event.target as HTMLInputElement).checked ? 'true' : ''; refresh()"
- class="rounded"
- />
- 启用
- </label>
- <textarea
- v-else-if="f.type === 'textarea'"
- v-model="values[f.key]"
- @input="refresh"
- rows="4"
- spellcheck="false"
- :placeholder="f.placeholder"
- :class="inputCls + ' resize-y font-mono text-xs leading-relaxed'"
- ></textarea>
- <input
- v-else
- v-model="values[f.key]"
- @input="refresh"
- type="text"
- :placeholder="f.placeholder"
- :class="inputCls"
- />
- </div>
- </div>
+  <SchemaForm :fields="fields" :model-value="values" @update:model-value="onSchemaUpdate" />
 </template>

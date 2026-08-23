@@ -13,7 +13,7 @@ export interface PluginParam {
 
 /**
  * 结构化参数表单字段（Spec 29）。
- * 供 PluginParamForm.vue 渲染输入并拼装 shortcode：
+ * 供 PluginParamForm.vue 适配 SchemaForm 并拼装 shortcode：
  * - role=positional：位置参数，按字段顺序拼在标签名后
  * - role=named：命名参数，拼为 key:value（值非空才拼）
  * - role=flag：布尔开关，true 时仅拼 key（如 checked/open/download）

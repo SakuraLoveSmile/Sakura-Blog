@@ -1,4 +1,4 @@
-// 标签插件 shortcode 拼装纯逻辑（Spec 29，自 PluginParamForm.vue 提取）。
+// 标签插件 shortcode 拼装纯逻辑（Spec 29，自 SchemaForm 适配器提取）。
 // 独立成模块以便 node:test 行为测试（tests/shortcode.test.ts）直接导入，不经 Vue 组件。
 // 拼装规则：positional 按字段顺序拼在标签名后；named 拼 key:value（值非空才拼）；
 // flag 为真时仅拼 key；content 作正文，块级插件包在 {% name %}…{% endname %} 之间。
