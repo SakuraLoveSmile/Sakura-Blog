@@ -10,6 +10,9 @@ importers:
 
   modules/console/web:
     dependencies:
+      '@blog/api-client':
+        specifier: workspace:*
+        version: link:../../../packages/api-client
       '@fontsource/dm-sans':
         specifier: ^5.3.0
         version: 5.3.0
@@ -125,6 +128,12 @@ importers:
       stylus:
         specifier: ^0.62.0
         version: 0.62.0
+
+  packages/api-client:
+    dependencies:
+      axios:
+        specifier: ^1.18.1
+        version: 1.19.0
 
 packages:
 

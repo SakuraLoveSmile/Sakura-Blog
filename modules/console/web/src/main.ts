@@ -4,6 +4,7 @@ import { VueQueryPlugin, type VueQueryPluginOptions } from"@tanstack/vue-query";
 import { addCollection } from"@iconify/vue";
 import riIcons from"./icons/ri-subset.json";
 import { queryClient } from"@/api/query-client";
+import { configureApiTransport } from "@blog/api-client";
 import App from"./App.vue";
 import router from"./router";
 import "@fontsource/dm-sans/latin-400.css";
@@ -13,6 +14,8 @@ import "@fontsource/dm-sans/latin-700.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/main.css";
+
+configureApiTransport({ onUnauthorized: () => router.push("/login") });
 
 addCollection(riIcons);
 
