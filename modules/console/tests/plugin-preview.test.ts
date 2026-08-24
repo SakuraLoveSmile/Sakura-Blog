@@ -1,5 +1,5 @@
 // 行为面：组件库标签预览（Spec 63）。
-// 机械校验入口：make test → console-test → npm run test → node --test ../tests/*.test.ts
+// 机械校验入口：make test → console-test → pnpm run test → node --test ../tests/*.test.ts
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言纯 TS 模块（能力清单/资源映射/
 // iframe 文档构建/渲染门闸），不经 Vue 组件。
 import { test, mock } from "node:test";

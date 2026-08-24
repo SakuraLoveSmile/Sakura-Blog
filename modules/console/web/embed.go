@@ -7,7 +7,7 @@ import "embed"
 // DistFS 嵌入的 console 构建产物文件系统（dist/ 子树），供 main.go 托管 /console/ 路由。
 // 用 all: 前缀包含下划线/点开头的文件。
 //
-// 注意：编译期要求 dist/ 已存在且非空，故 go build 前必须先 `cd console && npm run build`。
+// 注意：编译期要求 dist/ 已存在且非空，故 go build 前必须先执行 `pnpm --filter console run build`。
 //
 //go:embed all:dist
 var DistFS embed.FS

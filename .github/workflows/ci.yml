@@ -42,20 +42,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: modules/console/web/package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install & build (vue-tsc + vite)
-        run: cd modules/console/web && npm ci && npm run build
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Console (vue-tsc + vite)
+        run: pnpm --filter console run build
 
       # 与 make test 的前端行为面对齐：
-      # console-test = npm run test（vue-tsc 类型检查 + node --test，复用上面的 npm ci 环境）
+      # console-test = pnpm run test（vue-tsc 类型检查 + node --test，复用上面的 pnpm 环境）
       # assets-test = node --test modules/stellar/tests/*.test.mjs（node:test 内置运行器，零依赖）
-      - name: Console behavior tests (npm run test)
-        run: cd modules/console/web && npm run test
+      - name: Console behavior tests (pnpm run test)
+        run: pnpm --filter console run test
 
       - name: Assets behavior tests (node --test)
         run: node --test modules/stellar/tests/*.test.mjs
@@ -67,15 +74,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.4
+
       # ---- Console SPA（go:embed 编译期要求 modules/console/web/dist 非空）----
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: modules/console/web/package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build console
-        run: cd modules/console/web && npm ci && npm run build
+        run: pnpm --filter console run build
 
       # ---- Go 编译（与 release.yml 同构，CGO 可关）----
       - uses: actions/setup-go@v5

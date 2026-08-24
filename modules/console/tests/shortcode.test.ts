@@ -1,5 +1,5 @@
 // 行为面：标签插件 shortcode 拼装（src/modules/plugins/shortcode.ts）。
-// 机械校验入口：make test → console-test → npm run test → node --test ../tests/*.test.ts
+// 机械校验入口：make test → console-test → pnpm run test → node --test ../tests/*.test.ts
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言拼装规则本身，不经 Vue 组件。
 import { test } from "node:test";
 import assert from "node:assert/strict";

@@ -55,8 +55,8 @@ make build
 
 # 或手动分步：
 # 1. 先构建 Console SPA（go:embed 编译期要求 modules/console/web/dist 存在且非空；
-#    Makefile 已做依赖增量：node_modules 与 package-lock.json 一致时跳过 npm ci）
-cd modules/console/web && npm ci && npm run build && cd ../..
+#    Makefile 已做依赖增量：workspace 依赖已安装时跳过 pnpm install）
+pnpm install --frozen-lockfile && pnpm --filter console run build && cd ../..
 
 # 2. 再编译 Go 二进制
 go build -o blog ./cmd/blog
@@ -67,7 +67,7 @@ go build -o blog ./cmd/blog
 
 常用任务：`make build`（完整构建）· `make test`（vet+测试）· `make dev`（开发模式，console/dist 或 src 无变化时跳过前端重建）· `make css`（本地从 Stellar styl 源重编 `modules/stellar/web/assets/css/main.css`，见下）。
 
-> 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `modules/console/web/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
+> 构建顺序必须是**先 `pnpm --filter console run build` 再 `go build`**，否则 `modules/console/web/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
 
 ### 重编 main.css（make css）
 
@@ -79,7 +79,7 @@ make css   # 依赖 resource/ 主题源 + modules/stellar/web/node_modules（sty
 
 产物直接覆盖 git 跟踪的 `modules/stellar/web/assets/css/main.css`，重编后应无漂移（`git diff` 为空即正确）；若编译行为有变（stylus 版本、shim 配置），先对齐 `modules/stellar/web/build/stylus/` 再重编。
 
-> 构建顺序必须是**先 `npm run build` 再 `go build`**，否则 `modules/console/web/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
+> 构建顺序必须是**先 `pnpm --filter console run build` 再 `go build`**，否则 `modules/console/web/embed.go` 的 `//go:embed all:dist` 因目录缺失编译失败（`make build` 已固化该顺序）。
 
 生产部署走 `deploy/` 目录：systemd 服务单元（`blog.service`）+ 自动更新脚本（`update.sh`，从 GitHub Release 拉取单二进制）。
 

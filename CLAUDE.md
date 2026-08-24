@@ -249,7 +249,7 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 原 Go html/template 服务端渲染后台（`internal/admin/` + `admin/*.html` 模板 + EasyMDE 编辑器）已整体退役：两处目录均已清空/删除、`/admin` 路由已移除，原 EasyMDE forceSync/深色模式适配与 admin 独立 layout 的坑不再适用。现后台为 Vue SPA，源码与测试在 `modules/console/web/`（`src/` + `tests/`）：
 
 - `modules/console/web/embed.go` 用 `//go:embed all:dist` 嵌入 `dist/` 子树（embed 路径只能嵌包目录子树，故 embed.go 放在 console/ 内），随单二进制分发
-- 编译期要求 dist/ 已存在且非空：`go build` 前必须先 `cd modules/console/web && npm ci && npm run build`（Makefile 已固化该构建顺序）
+- 编译期要求 dist/ 已存在且非空：`go build` 前必须先在仓库根执行 `pnpm install --frozen-lockfile && pnpm --filter console run build`（Makefile 已固化该构建顺序）
 - `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 modules/console/web/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback
 - 数据统一走 `/api/v1` REST API（`modules/console/api/`），编辑器为 `src/components/MarkdownEditor.vue`，不再使用 EasyMDE 与 Go 模板渲染后台页
 
@@ -484,4 +484,3 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - **--icon-loading 注入**：`funcs.go` 新增 `iconLoadingURL` 模板函数（`default:loading` → data-URI `url("data:image/svg+xml,...")`，URL 值直用，键缺失返回空）；`head.html` 注入 `:root{--icon-loading:...}`，`.lazy-icon` mask 不再回退外部 iconify。
 - **siteinfo 图标兜底**：新增 `assets/js/services/siteinfo.js`（`setSiteCardIcon` + `stellar:sites-ready` 监听）；`sites.js` 补 `siteinfoApi` 计算（无 icon/avatar 且配 api 时 `data-siteinfo-api="{href→encodeURIComponent}"`）、图标 img 加 `siteinfo-icon` class、渲染完成派发 `stellar:sites-ready`。配置面 `model.go` 加 `ServicesConfig`/`SiteInfoConfig`，`Site` 加 `Services` 字段；`site.example.yml` 加 `services.siteinfo.api` 示例（默认空=关闭）；`base.html` ctx 注入 `services.siteinfo.api`、懒加载数组追加 siteinfo.js（scan 去重键改为 `s.js` 允许同 `cls` 多脚本）。
 - **navbar 2px 滚动阈值**：`main.js` `navbarPin` 合入上游 `SCROLL_THRESHOLD = 2`，`update()` 内 `scrolled = window.scrollY >= SCROLL_THRESHOLD`，toggle 条件改为 `scrolled && top <= stickyTop + TOLERANCE`（无轮播页顶部即吸顶，需滚动达阈值才切玻璃）。
-

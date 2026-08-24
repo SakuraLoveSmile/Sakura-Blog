@@ -1,7 +1,7 @@
 // Spec 61 阶段 1：ri 图标子集生成器。
 // 扫描 modules/console/web/src 中全部 `ri:<name>` 用法（.vue/.ts/.js/.json），
 // 从 @iconify/json 的 ri.json 抽取实际用到的图标/别名，写入 console/src/icons/ri-subset.json。
-// 用法：node modules/stellar/web/scripts/gen-ri-subset.mjs（前置：console/web 已 npm ci）
+// 用法：node modules/stellar/web/scripts/gen-ri-subset.mjs（前置：仓库根已 pnpm install）
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

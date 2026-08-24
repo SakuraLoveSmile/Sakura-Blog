@@ -10,9 +10,9 @@ all: build
 ## build: 完整构建（console → go 二进制）
 build: console go-build
 
-## console: 构建管理后台 SPA（产出 modules/console/web/dist 供 go:embed；依赖未变更时跳过 npm ci）
+## console: 构建管理后台 SPA（产出 modules/console/web/dist 供 go:embed；依赖未变更时跳过 pnpm install）
 console: console-deps
-	cd modules/console/web && npm run build
+	cd modules/console/web && pnpm run build
 
 ## go-build: 编译 Go 二进制（要求 modules/console/web/dist 已存在）
 go-build:
@@ -46,31 +46,25 @@ dist-bootstrap:
 		echo "dist-bootstrap: dist 已存在，跳过"; \
 	fi
 
-## console-deps: 自举 console 前端依赖——node_modules 缺失或 package-lock.json 内容变化时才 npm ci。
-## .node_modules-stamp 记录 lock 哈希（gitignore），命中 npm 全局缓存，不重复全量下载。
+## console-deps: 自举前端 workspace 依赖——根 node_modules 缺失时执行 pnpm install。
+## pnpm-lock.yaml 是 workspace 唯一锁文件，--frozen-lockfile 保证构建不隐式改锁。
 console-deps:
-	@cd modules/console/web && { \
-		lock=$$(shasum -a 256 package-lock.json | cut -d' ' -f1); \
-		if [ ! -d node_modules ]; then \
-			echo "console-deps: node_modules 缺失，执行 npm ci 安装依赖（依赖 npm 全局缓存，通常较快）"; \
-			npm ci && echo "$$lock" > .node_modules-stamp; \
-		elif [ ! -f .node_modules-stamp ] || [ "$$(cat .node_modules-stamp)" != "$$lock" ]; then \
-			echo "console-deps: package-lock.json 已变更，重新 npm ci"; \
-			npm ci && echo "$$lock" > .node_modules-stamp; \
-		else \
-			echo "console-deps: node_modules 与 package-lock.json 一致，跳过安装"; \
-		fi; \
-	}
+	@if [ ! -d node_modules/.pnpm ]; then \
+		echo "console-deps: workspace 依赖缺失，执行 pnpm install --frozen-lockfile"; \
+		pnpm install --frozen-lockfile; \
+	else \
+		echo "console-deps: workspace 依赖已安装，跳过 pnpm install"; \
+	fi
 
 ## css: 本地/agent 维护入口——从 resource/hexo-theme-stellar 的 styl 源重编 modules/stellar/web/assets/css/main.css。
 ## 依赖 resource/ 主题源（gitignore，CI 无源不可编译）与 modules/stellar/web/node_modules（stylus 0.62.0），
 ## 不进 test 门禁；产物 main.css 是 git 跟踪文件，重编后 diff 应无漂移。
 css:
 	@if [ ! -d modules/stellar/web/node_modules ]; then \
-		echo "css: Stellar web 依赖缺失，执行 npm ci（modules/stellar/web/package.json 锁 stylus 0.62.0）"; \
-		cd modules/stellar/web && npm ci; \
+		echo "css: Stellar web 依赖缺失，执行 pnpm install（workspace 锁 stylus 0.62.0）"; \
+		pnpm install --frozen-lockfile; \
 	fi
-	cd modules/stellar/web && node build/stylus/compile.js
+	cd modules/stellar/web && pnpm exec node build/stylus/compile.js
 
 ## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
@@ -97,7 +91,7 @@ css-drift-check:
 
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）
 console-test: console-deps
-	cd modules/console/web && npm run test
+	cd modules/console/web && pnpm run test
 
 ## assets-test: 前端行为面机械校验（node:test 内置运行器，零依赖，见 modules/stellar/tests/*.test.mjs）
 assets-test:
@@ -174,10 +168,10 @@ run: build
 dev: console-deps
 	@if [ ! -d modules/console/web/dist ]; then \
 		echo "dev: console/dist 缺失，构建前端"; \
-		cd modules/console/web && npm run build; \
+		cd modules/console/web && pnpm run build; \
 	elif [ -n "$$(find modules/console/web/src -newer modules/console/web/dist -print -quit 2>/dev/null)" ]; then \
 		echo "dev: console/src 有更新，重建前端"; \
-		cd modules/console/web && npm run build; \
+		cd modules/console/web && pnpm run build; \
 	else \
 		echo "dev: console/dist 为最新，跳过前端构建"; \
 	fi

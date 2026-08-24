@@ -1,5 +1,5 @@
 // 行为面：版本对比行级 diff（src/modules/posts/diff.ts）。
-// 机械校验入口：make test → console-test → npm run test → node --test ../tests/*.test.ts
+// 机械校验入口：make test → console-test → pnpm run test → node --test ../tests/*.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { myersDiff } from '../web/src/modules/posts/diff.ts';
