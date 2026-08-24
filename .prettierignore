@@ -3,3 +3,4 @@
 **/.mimosa/**
 modules/stellar/web/assets/vendor/**
 resource/**
+**/*.d.ts

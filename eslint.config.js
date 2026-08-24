@@ -13,6 +13,7 @@ export default [
       "**/dist/**",
       "**/node_modules/**",
       "**/.mimosa/**",
+      "**/*.d.ts",
       "modules/stellar/web/assets/vendor/**",
       "resource/**",
     ],
