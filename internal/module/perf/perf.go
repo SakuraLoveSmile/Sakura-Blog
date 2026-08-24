@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	"blog/internal/store"
 )
 
 // startTime 进程启动时间（uptime 用；init 时机约等于服务启动）。
@@ -52,7 +53,7 @@ func (m *Module) Meta() module.Meta {
 		Description: "服务端运行时指标与请求耗时统计，Console 面板展示",
 		Category:    "工具",
 		Nav: []module.Nav{
-			{Path: "/perf", Label: "性能监控", Icon: "ri:speed-line", Group: "系统", Roles: []string{"admin"}},
+			{Path: "/perf", Label: "性能监控", Icon: "ri:speed-line", Group: "系统", Permissions: []string{store.PermissionSystemManage}},
 		},
 		DefaultOn: false,
 	}

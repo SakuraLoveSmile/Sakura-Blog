@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	"blog/internal/store"
 )
 
 type Module struct{}
@@ -12,7 +13,7 @@ type Module struct{}
 func init() { module.Register(&Module{}) }
 
 func (m *Module) Meta() module.Meta {
-	admin := []string{"admin"}
+	admin := []string{store.PermissionSystemManage}
 	return module.Meta{
 		ID:          "core",
 		Title:       "Console 核心",
@@ -28,19 +29,19 @@ func (m *Module) Meta() module.Meta {
 			{Path: "/wiki", Label: "文库", Icon: "ri:book-2-line", Group: "内容", Children: []module.Nav{{Path: "/wiki/projects", Label: "项目管理", Icon: "ri:stack-line", Group: "内容"}}},
 			{Path: "/notebooks", Label: "笔记本", Icon: "ri:book-open-line", Group: "内容"},
 			{Path: "/comments", Label: "评论", Icon: "ri:chat-3-line", Group: "互动", Mobile: true},
-			{Path: "/comment-users", Label: "评论用户", Icon: "ri:user-community-line", Group: "互动", Roles: admin},
+			{Path: "/comment-users", Label: "评论用户", Icon: "ri:user-community-line", Group: "互动", Permissions: admin},
 			{Path: "/notifications", Label: "通知中心", Icon: "ri:notification-3-line", Group: "互动"},
 			{Path: "/friends", Label: "友链", Icon: "ri:links-line", Group: "互动"},
 			{Path: "/subscriptions", Label: "订阅", Icon: "ri:rss-line", Group: "互动"},
 			{Path: "/attachments", Label: "附件", Icon: "ri:folder-2-line", Group: "媒体", Mobile: true},
 			{Path: "/taxonomy", Label: "分类标签", Icon: "ri:price-tag-3-line", Group: "系统"},
-			{Path: "/users", Label: "用户", Icon: "ri:user-star-line", Group: "系统", Roles: admin},
-			{Path: "/login-logs", Label: "登录日志", Icon: "ri:shield-user-line", Group: "系统", Roles: admin},
-			{Path: "/plugins", Label: "插件", Icon: "ri:puzzle-line", Group: "系统", Roles: admin},
-			{Path: "/modules", Label: "模块", Icon: "ri:apps-2-line", Group: "系统", Roles: admin},
-			{Path: "/settings", Label: "设置", Icon: "ri:settings-3-line", Group: "系统", Roles: admin},
-			{Path: "/backup", Label: "备份", Icon: "ri:archive-line", Group: "系统", Roles: admin},
-			{Path: "/system-update", Label: "系统更新", Icon: "ri:rocket-2-line", Group: "系统", Roles: admin},
+			{Path: "/users", Label: "用户", Icon: "ri:user-star-line", Group: "系统", Permissions: admin},
+			{Path: "/login-logs", Label: "登录日志", Icon: "ri:shield-user-line", Group: "系统", Permissions: admin},
+			{Path: "/plugins", Label: "插件", Icon: "ri:puzzle-line", Group: "系统", Permissions: admin},
+			{Path: "/modules", Label: "模块", Icon: "ri:apps-2-line", Group: "系统", Permissions: admin},
+			{Path: "/settings", Label: "设置", Icon: "ri:settings-3-line", Group: "系统", Permissions: admin},
+			{Path: "/backup", Label: "备份", Icon: "ri:archive-line", Group: "系统", Permissions: admin},
+			{Path: "/system-update", Label: "系统更新", Icon: "ri:rocket-2-line", Group: "系统", Permissions: admin},
 		},
 	}
 }

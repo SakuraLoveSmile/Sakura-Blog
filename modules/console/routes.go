@@ -77,6 +77,31 @@ func setupUCRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndexData,
 	return &consoleIndexData{plain: plain, gzip: compressed}, nil
 }
 
+// setupPluginRoutes serves only explicitly addressed bundle files from the
+// external plugins directory. Bundles are same-origin and never read from an
+// arbitrary URL supplied by the browser.
+func setupPluginRoutes(r *gin.Engine, root string) {
+	pluginRoot := filepath.Join(root, "plugins")
+	handler := func(c *gin.Context) {
+		pluginID := c.Param("id")
+		filePath := strings.TrimPrefix(c.Param("filepath"), "/")
+		ext := strings.ToLower(filepath.Ext(filePath))
+		if pluginID == "" || filePath == "" || (ext != ".js" && ext != ".mjs" && ext != ".css") || strings.Contains(pluginID, "..") || strings.Contains(filePath, "..") || filepath.IsAbs(filePath) {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		fullPath := filepath.Join(pluginRoot, pluginID, filepath.FromSlash(filePath))
+		if _, err := os.Stat(fullPath); err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		c.File(fullPath)
+	}
+	r.GET("/plugins/:id/*filepath", handler)
+	r.HEAD("/plugins/:id/*filepath", handler)
+}
+
 func registerDiskStatic(r *gin.Engine, prefix, distRoot string) {
 	registerStaticHandler(r, prefix+"/assets/*filepath", func(name string) ([]byte, error) {
 		return os.ReadFile(filepath.Join(distRoot, "assets", name))

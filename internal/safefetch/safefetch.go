@@ -68,6 +68,8 @@ type Options struct {
 	// ForbiddenIP. It is intended for deterministic tests; production callers
 	// should leave it nil.
 	DialContext func(context.Context, string, string) (net.Conn, error)
+	// RedirectValidator applies the caller's host policy to every redirect hop.
+	RedirectValidator func(*url.URL) error
 }
 
 // New 构造 SSRF 加固的 http.Client。Transport 每次拨号前解析目标主机，
@@ -141,12 +143,17 @@ func New(opts Options) *http.Client {
 	return &http.Client{
 		Transport: transport,
 		Timeout:   timeout,
-		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if opts.MaxRedirects <= 0 {
 				return http.ErrUseLastResponse // 不跟随：把 30x 响应原样交给调用方
 			}
 			if len(via) >= opts.MaxRedirects {
 				return errors.New("safefetch: too many redirects")
+			}
+			if opts.RedirectValidator != nil {
+				if err := opts.RedirectValidator(req.URL); err != nil {
+					return err
+				}
 			}
 			return nil
 		},

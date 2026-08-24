@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { colorInputValue, withSchemaDefaults, type SchemaField, type SchemaValues } from "./schema";
 
 const props = withDefaults(
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const values = ref<SchemaValues>({});
+const { t, te } = useI18n();
 
 function syncValues() {
   values.value = withSchemaDefaults(props.fields, props.modelValue);
@@ -47,6 +49,14 @@ function displayValue(value: unknown): string | number {
 }
 
 const inputCls = "apple-input";
+
+function fieldLabel(field: SchemaField): string {
+  return field.label_key && te(field.label_key) ? t(field.label_key) : field.label || field.key;
+}
+
+function fieldHint(field: SchemaField): string | undefined {
+  return field.hint_key && te(field.hint_key) ? t(field.hint_key) : field.hint;
+}
 </script>
 
 <template>
@@ -57,7 +67,7 @@ const inputCls = "apple-input";
         class="mb-1 block text-xs text-text-tertiary"
         :for="`schema-field-${field.key}`"
       >
-        {{ field.label || field.key }}
+        {{ fieldLabel(field) }}
       </label>
 
       <label
@@ -72,7 +82,7 @@ const inputCls = "apple-input";
           class="rounded border-border-strong"
           @change="updateValue(field, checkedValue($event))"
         />
-        {{ field.label || field.key }}
+        {{ fieldLabel(field) }}
       </label>
 
       <select
@@ -145,7 +155,7 @@ const inputCls = "apple-input";
         @input="updateValue(field, inputValue(field, $event))"
       />
 
-      <p v-if="field.hint" class="mt-1 text-[11px] text-text-quaternary">{{ field.hint }}</p>
+      <p v-if="fieldHint(field)" class="mt-1 text-[11px] text-text-quaternary">{{ fieldHint(field) }}</p>
     </div>
   </div>
 </template>

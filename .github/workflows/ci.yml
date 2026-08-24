@@ -57,6 +57,12 @@ jobs:
       - name: vue-tsc
         run: pnpm --filter console exec vue-tsc -b
 
+      - name: Build publishable plugin runtime package
+        run: pnpm --filter @blog/plugin-runtime run build
+
+      - name: Build externalized plugin bundle contract
+        run: pnpm --filter console run build:plugin
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod

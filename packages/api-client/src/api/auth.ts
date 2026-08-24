@@ -22,6 +22,8 @@ export interface UserProfile {
   avatar: string;
   has_2fa: boolean;
   role?: string;
+  roles?: string[];
+  permissions?: string[];
 }
 
 export const profileApi = {
@@ -59,7 +61,9 @@ export interface UserItem {
   display_name: string;
   email: string;
   avatar: string;
-  role: "admin" | "author";
+  role: "admin" | "author" | "reader";
+  roles?: string[];
+  permissions?: string[];
   created_at: string;
 }
 
@@ -72,9 +76,10 @@ export const usersApi = {
     email: string;
     avatar?: string;
     password: string;
-    role: "admin" | "author";
+    role: "admin" | "author" | "reader";
+    roles?: Array<"admin" | "author" | "reader">;
   }) => http.post<UserItem>("/users", data),
-  update: (id: number, data: { display_name: string; email: string; avatar?: string; role: "admin" | "author" }) =>
+  update: (id: number, data: { display_name: string; email: string; avatar?: string; role?: "admin" | "author" | "reader"; roles?: Array<"admin" | "author" | "reader"> }) =>
     http.put<UserItem>(`/users/${id}`, data),
   resetPassword: (id: number, password: string) => http.put(`/users/${id}/password`, { password }),
   remove: (id: number) => http.delete(`/users/${id}`),

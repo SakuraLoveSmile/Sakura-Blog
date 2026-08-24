@@ -44,6 +44,9 @@ const (
 // ShortcodeParamSchema is the backend-owned schema consumed by Console forms.
 type ShortcodeParamSchema struct {
 	Label       string             `json:"label,omitempty"`
+	LabelKey    string             `json:"label_key,omitempty"`
+	Hint        string             `json:"hint,omitempty"`
+	HintKey     string             `json:"hint_key,omitempty"`
 	Key         string             `json:"key"`
 	Type        ShortcodeParamType `json:"type"`
 	Role        ShortcodeParamRole `json:"role"`

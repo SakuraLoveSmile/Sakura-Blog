@@ -5,10 +5,12 @@ export interface SchemaField {
   key: string;
   type: SchemaFieldType;
   label?: string;
+  label_key?: string;
   default?: unknown;
   options?: string[];
   placeholder?: string;
   hint?: string;
+  hint_key?: string;
   rows?: number;
 }
 

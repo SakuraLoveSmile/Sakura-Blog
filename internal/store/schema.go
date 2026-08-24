@@ -89,6 +89,36 @@ var tableDDL = map[string]string{
 		updated_at TEXT NOT NULL DEFAULT ''
 	);`,
 
+	"roles": `CREATE TABLE IF NOT EXISTS roles (
+		name        TEXT PRIMARY KEY,
+		description TEXT NOT NULL DEFAULT ''
+	);`,
+
+	"permissions": `CREATE TABLE IF NOT EXISTS permissions (
+		name        TEXT PRIMARY KEY,
+		description TEXT NOT NULL DEFAULT ''
+	);`,
+
+	"role_permissions": `CREATE TABLE IF NOT EXISTS role_permissions (
+		role       TEXT NOT NULL,
+		permission TEXT NOT NULL,
+		PRIMARY KEY (role, permission),
+		FOREIGN KEY (role) REFERENCES roles(name) ON DELETE CASCADE,
+		FOREIGN KEY (permission) REFERENCES permissions(name) ON DELETE CASCADE
+	);
+	CREATE INDEX IF NOT EXISTS idx_role_permissions_permission ON role_permissions(permission);`,
+
+	"user_roles": `CREATE TABLE IF NOT EXISTS user_roles (
+		user_id    INTEGER NOT NULL,
+		role       TEXT NOT NULL,
+		is_primary INTEGER NOT NULL DEFAULT 0,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (user_id, role),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (role) REFERENCES roles(name) ON DELETE CASCADE
+	);
+	CREATE INDEX IF NOT EXISTS idx_user_roles_user_primary ON user_roles(user_id, is_primary DESC, role);`,
+
 	"page_views": `CREATE TABLE IF NOT EXISTS page_views (
 		id         INTEGER PRIMARY KEY AUTOINCREMENT,
 		path       TEXT NOT NULL DEFAULT '',

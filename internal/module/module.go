@@ -21,13 +21,13 @@ import (
 
 // Nav 模块贡献的 Console 侧栏菜单项。
 type Nav struct {
-	Path     string   `json:"path"`             // Console 路由，如 /seo
-	Label    string   `json:"label"`            // 菜单文案
-	Icon     string   `json:"icon"`             // iconify 图标名
-	Group    string   `json:"group"`            // 侧栏分组（对齐 DefaultLayout navGroups）
-	Roles    []string `json:"roles,omitempty"`  // 前端可见角色；空=所有 author 及以上角色
-	Mobile   bool     `json:"mobile,omitempty"` // 是否出现在移动端底部导航
-	Children []Nav    `json:"children,omitempty"`
+	Path        string   `json:"path"`                  // Console 路由，如 /seo
+	Label       string   `json:"label"`                 // 菜单文案
+	Icon        string   `json:"icon"`                  // iconify 图标名
+	Group       string   `json:"group"`                 // 侧栏分组（对齐 DefaultLayout navGroups）
+	Permissions []string `json:"permissions,omitempty"` // 前端可见权限；空=所有已授权用户
+	Mobile      bool     `json:"mobile,omitempty"`      // 是否出现在移动端底部导航
+	Children    []Nav    `json:"children,omitempty"`
 }
 
 // Meta 模块元信息，供 manifest API 与管理页展示。
@@ -50,10 +50,12 @@ type ConfigField struct {
 	Key         string   `json:"key"`
 	Type        string   `json:"type"`
 	Label       string   `json:"label,omitempty"`
+	LabelKey    string   `json:"label_key,omitempty"`
 	Default     any      `json:"default,omitempty"`
 	Options     []string `json:"options,omitempty"`
 	Placeholder string   `json:"placeholder,omitempty"`
 	Hint        string   `json:"hint,omitempty"`
+	HintKey     string   `json:"hint_key,omitempty"`
 	Rows        int      `json:"rows,omitempty"`
 }
 

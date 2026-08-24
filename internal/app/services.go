@@ -28,6 +28,7 @@ import (
 	"blog/internal/notify"
 	"blog/internal/og"
 	ogfonts "blog/internal/og/fonts"
+	"blog/internal/plugin"
 	"blog/internal/post"
 	"blog/internal/search"
 	seedpkg "blog/internal/seed"
@@ -65,6 +66,7 @@ type Services struct {
 	OG         *og.Generator
 	Modules    *module.Manager
 	Storage    *attachmentstorage.Manager
+	Plugins    *plugin.Runtime
 	Events     content.Events
 	Icons      *settings.IconRegistry
 	SitePath   string
@@ -131,6 +133,10 @@ func Bootstrap(options Options) (*Services, error) {
 	if err := st.EnsureTopicsTable(); err != nil {
 		return fail(fmt.Errorf("ensure topics table: %w", err))
 	}
+	pluginRuntime := plugin.NewRuntime()
+	if err := pluginRuntime.LoadDir(filepath.Join(appConfig.Root, "plugins")); err != nil {
+		return fail(fmt.Errorf("load script plugins: %w", err))
+	}
 	if err := st.MigrateTopicBackfill(); err != nil {
 		return fail(fmt.Errorf("migrate topic backfill: %w", err))
 	}
@@ -139,6 +145,7 @@ func Bootstrap(options Options) (*Services, error) {
 	sitePtr.Store(site)
 	settingsMgr := settings.NewManagerFromPointer(sitePtr)
 	posts := post.NewService(filepath.Join(appConfig.Root, "content", "posts"))
+	posts.SetPluginRuntime(pluginRuntime)
 	posts.SetSettingsManager(settingsMgr)
 	posts.SetIconFunc(icons.Get)
 	posts.SetLinksFunc(func() ([]settings.LinkGroup, string) {
@@ -149,6 +156,7 @@ func Bootstrap(options Options) (*Services, error) {
 	events := content.NewEvents()
 	st.SetContentEvents(events)
 	notifySvc := notify.New(st)
+	notifySvc.SetPluginRuntime(pluginRuntime)
 	commentHandler := comments.New(st, sitePtr)
 	commentHandler.SetUploadDir(appConfig.UploadDir)
 	commentHandler.SetNotifier(notifySvc)
@@ -275,7 +283,7 @@ func Bootstrap(options Options) (*Services, error) {
 		App: appConfig, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
 		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx,
 		Backup: backupSvc, Notify: notifySvc, Friends: friendsAgg, LinkWatch: linkWatch,
-		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Events: events, Icons: icons, SitePath: sitePath,
+		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Plugins: pluginRuntime, Events: events, Icons: icons, SitePath: sitePath,
 	}
 	backupSvc.SetRestoreHook(func() {
 		if err := config.RebuildSite(st, sitePtr); err != nil {

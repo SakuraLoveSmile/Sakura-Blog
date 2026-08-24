@@ -105,7 +105,7 @@ async function submitCreate() {
 const editVisible = ref(false);
 const editSaving = ref(false);
 const editTarget = ref<UserItem | null>(null);
-const editForm = ref({ display_name: "", email: "", avatar: "", role: "author" as "admin" | "author" });
+const editForm = ref({ display_name: "", email: "", avatar: "", role: "author" as "admin" | "author" | "reader" });
 
 function openEdit(u: UserItem) {
   editTarget.value = u;
@@ -215,7 +215,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         <Icon icon="ri:user-star-line" class="text-xl text-primary sm:text-2xl" />
       </template>
       <template #actions>
-        <VButton type="primary" size="sm" @click="openCreate">
+        <VButton v-permission="'users:manage'" type="primary" size="sm" @click="openCreate">
           <template #icon>
             <Icon icon="ri:user-add-line" class="h-4 w-4" />
           </template>
@@ -692,6 +692,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <select v-model="createForm.role" :class="inputCls">
               <option value="author">作者（可编辑内容）</option>
               <option value="admin">管理员（全部权限）</option>
+              <option value="reader">读者（仅个人中心）</option>
             </select>
           </div>
         </div>
@@ -726,6 +727,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
           <select v-model="editForm.role" :class="inputCls">
             <option value="author">作者（可编辑内容）</option>
             <option value="admin">管理员（全部权限）</option>
+            <option value="reader">读者（仅个人中心）</option>
           </select>
           <p v-if="editTarget?.role === 'admin' && editForm.role === 'author'" class="mt-1 text-xs text-state-warning">
             注意：不能降级最后一个管理员

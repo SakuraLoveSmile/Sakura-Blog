@@ -138,3 +138,26 @@ func TestUserCenterStaticAndFallbackData(t *testing.T) {
 		t.Fatalf("UC fallback = %d %q", w.Code, w.Body.String())
 	}
 }
+
+func TestPluginBundleRouteIsSameOriginAndTraversalSafe(t *testing.T) {
+	root := t.TempDir()
+	bundle := filepath.Join(root, "plugins", "demo", "dist")
+	if err := os.MkdirAll(bundle, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bundle, "index.js"), []byte("export default {}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	setupPluginRoutes(r, root)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/plugins/demo/dist/index.js", nil))
+	if w.Code != http.StatusOK || w.Body.String() != "export default {}" {
+		t.Fatalf("bundle response = %d %q", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/plugins/demo/../config.yml", nil))
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("traversal response = %d, want 404", w.Code)
+	}
+}

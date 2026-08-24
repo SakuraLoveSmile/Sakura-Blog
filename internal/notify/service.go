@@ -5,11 +5,13 @@ package notify
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	"blog/internal/plugin"
 	"blog/internal/safefetch"
 	"blog/internal/store"
 )
@@ -19,7 +21,10 @@ type Service struct {
 	st             *store.Store
 	client         *http.Client
 	enforceSafeURL bool
+	plugins        *plugin.Runtime
 }
+
+func (s *Service) SetPluginRuntime(runtime *plugin.Runtime) { s.plugins = runtime }
 
 // New 创建通知服务。st 不可为空。
 func New(st *store.Store) *Service {
@@ -96,6 +101,11 @@ func (s *Service) notify(ev Event) {
 		log.Printf("notify: list users: %v", err)
 	}
 	s.PostWebhook(ev)
+	if s.plugins != nil {
+		if _, err := s.plugins.Apply(context.Background(), plugin.HookNotificationWebhook, ev); err != nil {
+			log.Printf("notify: plugin webhook hook failed: %v", err)
+		}
+	}
 }
 
 // PostWebhook 推送可选 Webhook：settings 表 notify 段配置 webhook_url 时，

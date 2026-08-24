@@ -43,13 +43,12 @@ const showFooter = computed(() => !route.meta.hideFooter);
 
 type NavItem = ModuleNav;
 
-function roleAllowed(item: NavItem): boolean {
-  const current = auth.isAdmin ? "admin" : auth.user.role || auth.role;
-  return !item.roles?.length || item.roles.includes(current) || (auth.isAdmin && item.roles.includes("author"));
+function permissionAllowed(item: NavItem): boolean {
+  return !item.permissions?.length || item.permissions.some((permission) => auth.hasPermission(permission));
 }
 
 function visibleNav(item: NavItem): NavItem | null {
-  if (!roleAllowed(item)) return null;
+  if (!permissionAllowed(item)) return null;
   const children = item.children?.map(visibleNav).filter((child): child is NavItem => child !== null);
   return children ? { ...item, children } : item;
 }

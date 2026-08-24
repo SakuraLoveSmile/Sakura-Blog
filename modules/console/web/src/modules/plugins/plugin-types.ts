@@ -19,11 +19,14 @@ export interface PluginParam {
 export interface PluginFormField {
   key: string;
   label: string;
+  label_key?: string;
   type: "text" | "select" | "number" | "color" | "textarea" | "flag";
   role: "positional" | "named" | "content" | "flag";
   options?: string[];
   default?: string;
   placeholder?: string;
+  hint?: string;
+  hint_key?: string;
 }
 
 export type PluginCapability = "static" | "interactive" | "service" | "external";

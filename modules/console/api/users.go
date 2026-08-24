@@ -14,13 +14,15 @@ import (
 
 // userJSON 用户列表/详情响应（非敏感字段）。
 type userJSON struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
-	Avatar      string `json:"avatar"`
-	Role        string `json:"role"`
-	CreatedAt   string `json:"created_at"`
+	ID          int64    `json:"id"`
+	Username    string   `json:"username"`
+	DisplayName string   `json:"display_name"`
+	Email       string   `json:"email"`
+	Avatar      string   `json:"avatar"`
+	Role        string   `json:"role"`
+	Roles       []string `json:"roles"`
+	Permissions []string `json:"permissions"`
+	CreatedAt   string   `json:"created_at"`
 }
 
 func toUserJSON(u *store.User) *userJSON {
@@ -31,7 +33,8 @@ func toUserJSON(u *store.User) *userJSON {
 		Email:       u.Email,
 		Avatar:      u.Avatar,
 		Role:        u.Role,
-		CreatedAt:   u.CreatedAt.Format("2006-01-02 15:04:05"),
+		Roles:       append([]string(nil), u.Roles...), Permissions: append([]string(nil), u.Permissions...),
+		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -56,12 +59,13 @@ func (h *Handler) listUsers(c *gin.Context) {
 // createUser POST /api/v1/users：创建用户（username 唯一，密码至少 6 位，角色必选）。
 func (h *Handler) createUser(c *gin.Context) {
 	var req struct {
-		Username    string `json:"username"`
-		DisplayName string `json:"display_name"`
-		Email       string `json:"email"`
-		Avatar      string `json:"avatar"`
-		Password    string `json:"password"`
-		Role        string `json:"role"`
+		Username    string   `json:"username"`
+		DisplayName string   `json:"display_name"`
+		Email       string   `json:"email"`
+		Avatar      string   `json:"avatar"`
+		Password    string   `json:"password"`
+		Role        string   `json:"role"`
+		Roles       []string `json:"roles"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
@@ -80,8 +84,19 @@ func (h *Handler) createUser(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "密码至少 6 位")
 		return
 	}
-	if !store.ValidRole(req.Role) {
-		Fail(c, http.StatusBadRequest, "角色不合法")
+	roles := requestedRoles(req.Roles, req.Role)
+	if len(roles) == 0 {
+		Fail(c, http.StatusBadRequest, "至少需要一个角色")
+		return
+	}
+	for _, role := range roles {
+		if !store.ValidRole(role) {
+			Fail(c, http.StatusBadRequest, "角色不合法")
+			return
+		}
+	}
+	if len(roles) > 4 {
+		Fail(c, http.StatusBadRequest, "角色数量过多")
 		return
 	}
 	hash, err := store.HashPassword(req.Password)
@@ -96,11 +111,23 @@ func (h *Handler) createUser(c *gin.Context) {
 		Email:        strings.TrimSpace(req.Email),
 		Avatar:       strings.TrimSpace(req.Avatar),
 		AuthSecret:   store.GenerateAuthSecret(),
-		Role:         req.Role,
+		Role:         roles[0],
 	}
 	if err := h.store.CreateUser(user); err != nil {
 		Fail(c, http.StatusConflict, "用户名已存在")
 		return
+	}
+	if len(roles) > 1 {
+		if err := h.store.SetUserRoles(user.ID, roles); err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		refreshed, err := h.store.GetUserByID(user.ID)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		user = refreshed
 	}
 	c.JSON(http.StatusOK, toUserJSON(user))
 }
@@ -113,10 +140,11 @@ func (h *Handler) updateUser(c *gin.Context) {
 		return
 	}
 	var req struct {
-		DisplayName string `json:"display_name"`
-		Email       string `json:"email"`
-		Avatar      string `json:"avatar"`
-		Role        string `json:"role"`
+		DisplayName string   `json:"display_name"`
+		Email       string   `json:"email"`
+		Avatar      string   `json:"avatar"`
+		Role        string   `json:"role"`
+		Roles       []string `json:"roles"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
@@ -127,13 +155,17 @@ func (h *Handler) updateUser(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "用户不存在")
 		return
 	}
+	roles := requestedRoles(req.Roles, req.Role)
+	roleChanged := len(roles) > 0 && !sameRoles(user.Roles, roles)
 	// 角色变更：最后一个 admin 不允许降级（防锁死）。
-	if req.Role != "" && req.Role != user.Role {
-		if !store.ValidRole(req.Role) {
-			Fail(c, http.StatusBadRequest, "角色不合法")
-			return
+	if roleChanged {
+		for _, role := range roles {
+			if !store.ValidRole(role) {
+				Fail(c, http.StatusBadRequest, "角色不合法")
+				return
+			}
 		}
-		if user.Role == store.RoleAdmin && req.Role == store.RoleAuthor {
+		if userHasRole(user, store.RoleAdmin) && !containsRole(roles, store.RoleAdmin) {
 			n, err := h.store.CountUsersByRole(store.RoleAdmin)
 			if err != nil {
 				Fail(c, http.StatusInternalServerError, err.Error())
@@ -152,14 +184,56 @@ func (h *Handler) updateUser(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if req.Role != "" && req.Role != user.Role {
-		if err := h.store.UpdateUserRole(user.ID, req.Role); err != nil {
+	if roleChanged {
+		if err := h.store.SetUserRoles(user.ID, roles); err != nil {
 			Fail(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		user.Role = req.Role
+		refreshed, err := h.store.GetUserByID(user.ID)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		user = refreshed
 	}
 	c.JSON(http.StatusOK, toUserJSON(user))
+}
+
+func requestedRoles(roles []string, primary string) []string {
+	if len(roles) == 0 && strings.TrimSpace(primary) != "" {
+		roles = []string{primary}
+	}
+	out := make([]string, 0, len(roles))
+	seen := map[string]bool{}
+	for _, role := range roles {
+		role = strings.TrimSpace(role)
+		if role != "" && !seen[role] {
+			seen[role] = true
+			out = append(out, role)
+		}
+	}
+	return out
+}
+
+func containsRole(roles []string, target string) bool {
+	for _, role := range roles {
+		if role == target {
+			return true
+		}
+	}
+	return false
+}
+
+func sameRoles(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // resetUserPassword PUT /api/v1/users/:id/password：管理员重置用户密码，
@@ -215,7 +289,7 @@ func (h *Handler) deleteUser(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "用户不存在")
 		return
 	}
-	if user.Role == store.RoleAdmin {
+	if userHasRole(user, store.RoleAdmin) {
 		n, err := h.store.CountUsersByRole(store.RoleAdmin)
 		if err != nil {
 			Fail(c, http.StatusInternalServerError, err.Error())
@@ -231,4 +305,11 @@ func (h *Handler) deleteUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func userHasRole(user *store.User, role string) bool {
+	if user == nil {
+		return false
+	}
+	return containsRole(user.Roles, role) || (len(user.Roles) == 0 && user.Role == role)
 }

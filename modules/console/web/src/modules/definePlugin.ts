@@ -5,7 +5,7 @@ import type { ModuleNav } from "@/stores/modules";
 export interface ConsolePluginMeta {
   title: string;
   description?: string;
-  roles?: string[];
+  permissions?: string[];
 }
 
 export interface ConsolePlugin {

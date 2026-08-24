@@ -1,6 +1,6 @@
 import { definePlugin } from "../definePlugin";
 
-const admin = ["admin"];
+const admin = ["system:manage"];
 
 export default definePlugin({
   id: "core",
@@ -29,19 +29,19 @@ export default definePlugin({
     },
     { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
     { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
-    { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动", roles: admin },
+    { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动", permissions: admin },
     { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
     { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
     { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
     { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
     { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
-    { path: "/users", label: "用户", icon: "ri:user-star-line", group: "系统", roles: admin },
-    { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统", roles: admin },
-    { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统", roles: admin },
-    { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统", roles: admin },
-    { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", roles: admin },
-    { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", roles: admin },
-    { path: "/system-update", label: "系统更新", icon: "ri:rocket-2-line", group: "系统", roles: admin },
+    { path: "/users", label: "用户", icon: "ri:user-star-line", group: "系统", permissions: admin },
+    { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统", permissions: admin },
+    { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统", permissions: admin },
+    { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统", permissions: admin },
+    { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", permissions: admin },
+    { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", permissions: admin },
+    { path: "/system-update", label: "系统更新", icon: "ri:rocket-2-line", group: "系统", permissions: admin },
   ],
   rootRoutes: [
     {
@@ -83,7 +83,7 @@ export default definePlugin({
         path: "comment-users",
         name: "CommentUsers",
         component: () => import("@/modules/comments/CommentUsersView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       { path: "attachments", name: "Attachments", component: () => import("@/modules/attachments/AttachmentList.vue") },
       { path: "pages", name: "Pages", component: () => import("@/modules/pages/PageList.vue") },
@@ -107,32 +107,32 @@ export default definePlugin({
         path: "plugins",
         name: "Plugins",
         component: () => import("@/modules/plugins/PluginLibrary.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       {
         path: "modules",
         name: "Modules",
         component: () => import("@/modules/modules/ModulesView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       {
         path: "settings",
         name: "Settings",
         component: () => import("@/modules/settings/SettingsView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       { path: "profile", name: "Profile", component: () => import("@/modules/profile/ProfileView.vue") },
       {
         path: "users",
         name: "Users",
         component: () => import("@/modules/users/UserListView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       {
         path: "login-logs",
         name: "LoginLogs",
         component: () => import("@/modules/profile/LoginLogsView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       {
         path: "notifications",
@@ -143,13 +143,13 @@ export default definePlugin({
         path: "backup",
         name: "Backup",
         component: () => import("@/modules/backup/BackupView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
       {
         path: "system-update",
         name: "SystemUpdate",
         component: () => import("@/modules/system/SystemUpdateView.vue"),
-        meta: { roles: admin },
+        meta: { permissions: admin },
       },
     ],
   },

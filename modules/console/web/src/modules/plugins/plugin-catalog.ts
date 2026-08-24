@@ -3,6 +3,9 @@ import { PLUGIN_CATEGORIES, type PluginCategory, type PluginFormField, type Plug
 export interface PluginCatalogParam {
   key: string;
   label?: string;
+  label_key?: string;
+  hint?: string;
+  hint_key?: string;
   type: "text" | "select" | "number" | "switch" | "color" | "textarea";
   role: "positional" | "named" | "flag" | "content";
   default?: unknown;
@@ -49,11 +52,14 @@ function mergeForm(existing: PluginMeta | undefined, params: PluginCatalogParam[
     return {
       key: param.key,
       label: param.label || old?.label || param.key,
+      label_key: param.label_key || old?.label_key,
       type: formTypeOf(param.type),
       role: param.role,
       options: param.options?.slice(),
       default: stringDefault(param.default),
       placeholder: old?.placeholder || param.placeholder,
+      hint: param.hint || old?.hint,
+      hint_key: param.hint_key || old?.hint_key,
     };
   });
 }

@@ -6,7 +6,9 @@
   "scripts": {
     "lint": "eslint \"modules/console/web/src/**/*.{ts,vue}\" \"packages/**/*.{ts,vue}\" --max-warnings=0",
     "format": "prettier --write \"modules/console/web/src/**/*.{ts,vue,css}\" \"packages/**/*.{ts,vue,ts}\"",
-    "format:check": "prettier --check \"modules/console/web/src/**/*.{ts,vue,css}\" \"packages/**/*.{ts,vue,ts}\""
+    "format:check": "prettier --check \"modules/console/web/src/**/*.{ts,vue,css}\" \"packages/**/*.{ts,vue,ts}\"",
+    "packages:build": "pnpm --filter @blog/plugin-runtime run build",
+    "packages:publish:dry": "pnpm --filter @blog/plugin-runtime publish --dry-run --no-git-checks"
   },
   "devDependencies": {
     "eslint": "9.39.5",

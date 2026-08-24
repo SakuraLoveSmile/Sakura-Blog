@@ -19,10 +19,13 @@ const fields = computed<SchemaField[]>(() =>
   (props.plugin.form || []).map((field) => ({
     key: field.key,
     label: field.label,
+    label_key: field.label_key,
     type: field.type === "flag" ? "switch" : field.type,
     default: field.type === "flag" ? field.default === "true" : field.default,
     options: field.options,
     placeholder: field.placeholder,
+    hint: field.hint,
+    hint_key: field.hint_key,
   })),
 );
 

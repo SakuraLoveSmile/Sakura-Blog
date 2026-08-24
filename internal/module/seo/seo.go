@@ -9,6 +9,7 @@ import (
 
 	"blog/internal/config"
 	"blog/internal/module"
+	"blog/internal/store"
 )
 
 // Module SEO 工具集模块。deps 在 RegisterRoutes/RegisterPublic 时注入并留存。
@@ -31,7 +32,7 @@ func (m *Module) Meta() module.Meta {
 		Description: "站点体检、搜索引擎推送、爬虫与搜索流量分析、站长验证",
 		Category:    "工具",
 		Nav: []module.Nav{
-			{Path: "/seo", Label: "SEO 工具集", Icon: "ri:search-eye-line", Group: "系统", Roles: []string{"admin"}},
+			{Path: "/seo", Label: "SEO 工具集", Icon: "ri:search-eye-line", Group: "系统", Permissions: []string{store.PermissionSystemManage}},
 		},
 		DefaultOn: true,
 	}

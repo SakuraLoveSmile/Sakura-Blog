@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { moduleApi, type ModuleManifestItem, type ModuleNav } from "@/api";
-import { syncPluginWidgets } from "@/plugin-registry";
+import { moduleApi, pluginApi, type ModuleManifestItem, type ModuleNav } from "@/api";
+import { loadRuntimePluginBundles, syncPluginWidgets } from "@/plugin-registry";
 
 export type ModuleItem = ModuleManifestItem;
 export type { ModuleNav };
@@ -18,6 +18,12 @@ export const useModulesStore = defineStore("modules", () => {
     try {
       const { data } = await moduleApi.list();
       items.value = data.items || [];
+      try {
+        const runtime = await pluginApi.runtime();
+        await loadRuntimePluginBundles(runtime.data.items || []);
+      } catch {
+        // Runtime bundles are optional; compile-time modules remain available.
+      }
       await syncPluginWidgets(new Set(items.value.filter((item) => item.enabled).map((item) => item.id)));
       loaded.value = true;
     } catch {

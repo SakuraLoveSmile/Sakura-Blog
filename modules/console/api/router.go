@@ -22,6 +22,7 @@ import (
 	"blog/internal/linkwatch"
 	"blog/internal/module"
 	"blog/internal/notify"
+	"blog/internal/plugin"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	attachmentstorage "blog/internal/storage"
@@ -46,6 +47,7 @@ type Handler struct {
 	notify         *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
 	storage        AttachmentStorage
 	storageManager *attachmentstorage.Manager
+	plugins        *plugin.Runtime
 	maxUpload      int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
@@ -100,6 +102,7 @@ type Config struct {
 	UploadDir      string
 	Storage        AttachmentStorage
 	StorageManager *attachmentstorage.Manager
+	Plugins        *plugin.Runtime
 	MaxUploadMB    int
 	LinkWatch      *linkwatch.Watcher
 	// StellarVersion is injected by the composition root to keep Console
@@ -152,6 +155,7 @@ func New(cfg Config) *Handler {
 		events:            cfg.Events,
 		storage:           attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
 		storageManager:    cfg.StorageManager,
+		plugins:           cfg.Plugins,
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
 		stellarVersion:    cfg.StellarVersion,
@@ -285,8 +289,8 @@ func (h *Handler) register(r *gin.Engine) {
 	// 内容管理组（author 及以上，安全审计 2026-08-16）：
 	// 此前全部内容写端点仅要求登录——开放注册的 reader 可经 console 登录端点换取
 	// blog_admin cookie 后写文章/页面/瞬间/友链（配合 WithUnsafe 渲染构成存储型 XSS
-	// 全链路）。现统一加 requireRole(RoleAuthor) 最低角色门禁。
-	author := v1.Group("", h.apiAuth(), h.requireRole(store.RoleAuthor))
+	// 全链路）。现统一加 content:write 权限门禁。
+	author := v1.Group("", h.apiAuth(), h.requirePermission(store.PermissionContentWrite))
 	{
 		// 管理端全局搜索（Spec 39，Console ⌘K）
 		author.GET("/search", h.adminSearch)
@@ -465,7 +469,7 @@ func (h *Handler) register(r *gin.Engine) {
 	{
 		uc.GET("/me", h.ucMe)
 	}
-	ucAuthor := v1.Group("/uc", h.apiAuth(), h.requireRole(store.RoleAuthor))
+	ucAuthor := v1.Group("/uc", h.apiAuth(), h.requirePermission(store.PermissionContentWrite))
 	{
 		ucAuthor.GET("/posts", h.listUCPosts)
 		ucAuthor.GET("/posts/:slug", h.getUCPost)
@@ -543,6 +547,8 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.GET("/system/update/check", h.systemUpdateCheck)
 		sys.POST("/system/update/apply", h.systemUpdateApply)
 		sys.GET("/system/update/status", h.systemUpdateStatus)
+		sys.GET("/plugins/runtime", h.listScriptPlugins)
+		sys.POST("/plugins/runtime/hook", h.runScriptPluginHook)
 
 		// 功能模块后台 API：仅 admin；每个已注册模块套自己的 Gate 中间件（禁用即 403）。
 		if h.modules != nil {
@@ -564,8 +570,7 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !h.site.Load().Admin.AuthEnabled {
 			// 无密码站点：保持历史全放行语义，视为 admin。
-			c.Set("userID", int64(0))
-			c.Set("userRole", store.RoleAdmin)
+			h.setAuthorizationContext(c, 0, store.RoleAdmin)
 			c.Next()
 			return
 		}
@@ -578,16 +583,18 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 				AbortFail(c, http.StatusUnauthorized, "API Token 无效或已撤销")
 				return
 			}
-			c.Set("userID", user.ID)
-			c.Set("userRole", normalizeRole(user.Role))
+			if !h.setAuthorizationContext(c, user.ID, normalizeRole(user.Role)) {
+				return
+			}
 			c.Next()
 			return
 		}
 
 		if cookie, err := c.Cookie(authCookieName); err == nil {
 			if userID, authSecret, expiry, role, ok := h.validAuthCookie(cookie, cookieAudAdmin); ok {
-				c.Set("userID", userID)
-				c.Set("userRole", role)
+				if !h.setAuthorizationContext(c, userID, role) {
+					return
+				}
 				// 滑动续期：新格式 cookie 剩余有效期不足一半时重新签发（旧格式无 authSecret 不续期）
 				if userID > 0 && authSecret != "" && expiry-time.Now().Unix() < int64(authCookieTTL.Seconds())/2 {
 					newExpiry := time.Now().Add(authCookieTTL).Unix()
@@ -603,13 +610,36 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 		// PAT and password) are safe to reuse; content/system groups still apply
 		// their role gates below.
 		if public := identity.CurrentUser(c); public.Verified && public.ID > 0 {
-			c.Set("userID", public.ID)
-			c.Set("userRole", normalizeRole(public.Role))
+			if !h.setAuthorizationContext(c, public.ID, normalizeRole(public.Role)) {
+				return
+			}
 			c.Next()
 			return
 		}
 		AbortFail(c, http.StatusUnauthorized, "未登录或登录已过期")
 	}
+}
+
+func (h *Handler) setAuthorizationContext(c *gin.Context, userID int64, role string) bool {
+	c.Set("userID", userID)
+	c.Set("userRole", role)
+	permissions := []string{"*"}
+	if userID > 0 {
+		var err error
+		permissions, err = h.store.GetUserPermissions(userID)
+		if err != nil {
+			AbortFail(c, http.StatusInternalServerError, "读取用户权限失败")
+			return false
+		}
+	}
+	c.Set("userPermissions", permissions)
+	return true
+}
+
+func contextHasPermission(c *gin.Context, permission string) bool {
+	value, _ := c.Get("userPermissions")
+	permissions, _ := value.([]string)
+	return store.HasPermission(permissions, permission)
 }
 
 // --- HMAC cookie 签名/验证（Spec 45: 迁移至 users 表 bcrypt + auth_secret 签名 key） ---
@@ -663,26 +693,11 @@ func normalizeRole(role string) string {
 	return store.RoleAuthor
 }
 
-// roleLevel 角色层级（安全审计 2026-08-16）：admin(3) > author(2) > reader(1)。
-func roleLevel(role string) int {
-	switch role {
-	case store.RoleAdmin:
-		return 3
-	case store.RoleAuthor:
-		return 2
-	default:
-		return 1
-	}
-}
-
-// requireRole 角色校验中间件（最低角色语义，安全审计 2026-08-16）：
-// 当前登录用户角色层级 >= role 才放行（admin 通过 author 门禁，反向不行）。
-func (h *Handler) requireRole(role string) gin.HandlerFunc {
+// requirePermission is the table-driven authorization gate.
+func (h *Handler) requirePermission(permission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		got, _ := c.Get("userRole")
-		gotRole, _ := got.(string)
-		if roleLevel(gotRole) < roleLevel(role) {
-			AbortFail(c, http.StatusForbidden, "无权限：需要更高角色")
+		if !contextHasPermission(c, permission) {
+			AbortFail(c, http.StatusForbidden, "无权限：缺少所需权限")
 			return
 		}
 		c.Next()
@@ -699,10 +714,8 @@ func (h *Handler) requireSysAdmin() gin.HandlerFunc {
 			AbortFail(c, http.StatusForbidden, "系统管理端点需先设置 admin 密码")
 			return
 		}
-		got, _ := c.Get("userRole")
-		gotRole, _ := got.(string)
-		if roleLevel(gotRole) < roleLevel(store.RoleAdmin) {
-			AbortFail(c, http.StatusForbidden, "无权限：需要管理员角色")
+		if !contextHasPermission(c, store.PermissionSystemManage) {
+			AbortFail(c, http.StatusForbidden, "无权限：缺少系统管理权限")
 			return
 		}
 		c.Next()

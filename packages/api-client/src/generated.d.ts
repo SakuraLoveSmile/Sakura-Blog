@@ -20,6 +20,20 @@ export interface ModuleToggleResponse {
 }
 
 //////////
+// source: plugin_runtime.go
+
+export interface ScriptPluginListResponse {
+  items: unknown /* plugin.Manifest */[];
+}
+export interface ScriptPluginHookRequest {
+  hook: unknown /* plugin.Hook */;
+  value: unknown /* json.RawMessage */;
+}
+export interface ScriptPluginHookResponse {
+  value: unknown;
+}
+
+//////////
 // source: shortcode_catalog.go
 
 /**
@@ -44,6 +58,7 @@ export interface UCMeResponse {
   role: string;
   status: string;
   has_2fa: boolean;
+  permissions: string[];
 }
 export interface UCPostListResponse {
   items: (UCPostResponse | undefined)[];

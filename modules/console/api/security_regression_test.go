@@ -4,7 +4,7 @@ package api
 //  1. reader 不能经 console 登录端点换取 blog_admin 会话；
 //  2. 读者 cookie（audience=user）改名重放为 blog_admin 验签失败；
 //  3. 即使持有 admin audience 的合法签名，reader 角色也过不了内容写端点的
-//     requireRole(RoleAuthor) 门禁；
+//     content:write 权限门禁；
 //  4. 备份恢复上传在请求体超限时被 MaxBytesReader 拒绝。
 
 import (

@@ -41,6 +41,7 @@ func Mount(r *gin.Engine, d MountDeps) (*api.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	setupPluginRoutes(r, d.Root)
 	r.NoRoute(func(c *gin.Context) {
 		if consoleIndex != nil && (c.Request.URL.Path == "/console" || strings.HasPrefix(c.Request.URL.Path, "/console/")) {
 			writeConsoleData(c, "text/html; charset=utf-8", consoleIndex.plain, consoleIndex.gzip)

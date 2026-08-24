@@ -1,6 +1,7 @@
 package post
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	mdparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 
+	"blog/internal/plugin"
 	tmpl "blog/internal/settings"
 )
 
@@ -70,6 +72,7 @@ type Service struct {
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
 	linksFunc func() ([]tmpl.LinkGroup, string)
+	plugins   *plugin.Runtime
 }
 
 // GHClient GitHub 数据接口（由 internal/github.Client 实现，解耦循环依赖）。
@@ -119,6 +122,10 @@ func (s *Service) SetGHClient(c GHClient) {
 	s.ghClient = c
 }
 
+// SetPluginRuntime enables the declared shortcode/content-filter hooks. A nil
+// runtime preserves the normal renderer for tests and minimal embedders.
+func (s *Service) SetPluginRuntime(runtime *plugin.Runtime) { s.plugins = runtime }
+
 // SetSettingsManager supplies the current site snapshot to shortcode rendering
 // without relying on package-global tag plugin state.
 func (s *Service) SetSettingsManager(m *tmpl.Manager) { s.settings = m }
@@ -157,6 +164,15 @@ func NewService(mdDir string) *Service {
 // Render 把 Markdown 正文渲染成 HTML。抽成公共函数，供文件加载与 admin 保存/seed 复用同一 goldmark 实例。
 // 渲染流程：先预处理 shortcodes（note/folding → HTML），再 goldmark 渲染整篇。
 func (s *Service) Render(body string) (string, error) {
+	if s.plugins != nil {
+		value, err := s.plugins.Apply(context.Background(), plugin.HookShortcode, body)
+		if err != nil {
+			return "", fmt.Errorf("plugin shortcode hook: %w", err)
+		}
+		if transformed, ok := value.(string); ok {
+			body = transformed
+		}
+	}
 	// renderMD 闭包：用同一 goldmark 实例渲染子片段（folding body 等）
 	renderMD := func(md string) string {
 		md = protectMathDelimiters(md)
@@ -180,7 +196,17 @@ func (s *Service) Render(body string) (string, error) {
 		return "", err
 	}
 	// 3. 普通表格包 .md-table-scroll 横向滚动容器（1.41，对齐上游构建期 filter）
-	return wrapTables(sb.String()), nil
+	result := wrapTables(sb.String())
+	if s.plugins != nil {
+		value, err := s.plugins.Apply(context.Background(), plugin.HookContentFilter, result)
+		if err != nil {
+			return "", fmt.Errorf("plugin content filter hook: %w", err)
+		}
+		if transformed, ok := value.(string); ok {
+			result = transformed
+		}
+	}
+	return result, nil
 }
 
 // ParseBytes 解析 Markdown 原文（含可选 frontmatter），返回元数据与正文。

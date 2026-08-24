@@ -3,16 +3,18 @@ import { useAuthStore } from "@/stores/auth";
 import { useModulesStore } from "@/stores/modules";
 import { consolePlugins, getConsolePlugin } from "@/plugin-registry";
 
-function attachModuleMeta(route: RouteRecordRaw, moduleId: string): RouteRecordRaw {
+function attachModuleMeta(route: RouteRecordRaw, moduleId: string, defaultPermissions: string[] = []): RouteRecordRaw {
   const { children, ...rest } = route;
+  const meta = { ...route.meta, moduleId } as Record<string, unknown>;
+  if (!Array.isArray(meta.permissions) && defaultPermissions.length > 0) meta.permissions = defaultPermissions;
   return (
     children
       ? {
           ...rest,
-          meta: { ...route.meta, moduleId },
-          children: children.map((child) => attachModuleMeta(child, moduleId)),
+          meta,
+          children: children.map((child) => attachModuleMeta(child, moduleId, defaultPermissions)),
         }
-      : { ...rest, meta: { ...route.meta, moduleId } }
+      : { ...rest, meta }
   ) as RouteRecordRaw;
 }
 
@@ -21,11 +23,13 @@ function buildRoutes(): RouteRecordRaw[] {
   if (!core?.shell) throw new Error("Console core plugin must provide the DefaultLayout shell");
 
   const rootRoutes = consolePlugins.flatMap((plugin) =>
-    (plugin.rootRoutes ?? []).map((route) => attachModuleMeta(route, plugin.id)),
+    (plugin.rootRoutes ?? []).map((route) => attachModuleMeta(route, plugin.id, plugin.meta.permissions ?? [])),
   );
   const moduleChildren = consolePlugins
     .filter((plugin) => plugin.id !== "core")
-    .flatMap((plugin) => (plugin.routes ?? []).map((route) => attachModuleMeta(route, plugin.id)));
+    .flatMap((plugin) =>
+      (plugin.routes ?? []).map((route) => attachModuleMeta(route, plugin.id, plugin.meta.permissions ?? [])),
+    );
   const shell = attachModuleMeta(
     { ...core.shell, children: [...(core.shell.children ?? []), ...moduleChildren] },
     core.id,
@@ -38,13 +42,10 @@ const router = createRouter({
   routes: buildRoutes(),
 });
 
-function rolesFor(to: { matched: readonly { meta: Record<string, unknown> }[] }): string[] {
-  return to.matched.flatMap((record) => (Array.isArray(record.meta.roles) ? (record.meta.roles as string[]) : []));
-}
-
-function hasRole(roles: string[], auth: ReturnType<typeof useAuthStore>): boolean {
-  const current = auth.isAdmin ? "admin" : auth.user.role || auth.role;
-  return roles.includes(current) || (auth.isAdmin && roles.includes("author"));
+function permissionsFor(to: { matched: readonly { meta: Record<string, unknown> }[] }): string[] {
+  return to.matched.flatMap((record) =>
+    Array.isArray(record.meta.permissions) ? (record.meta.permissions as string[]) : [],
+  );
 }
 
 // 路由守卫：认证、后端 manifest 模块启停、角色均在进入页面前统一判定。
@@ -57,10 +58,9 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { from: to.fullPath } };
   }
   if (auth.authenticated) {
-    const currentRole = auth.user.role || auth.role;
-    if (currentRole === "author") {
-      // Authors now work in the user center. The Console remains an admin
-      // surface; use a full navigation because /uc is a separate Vite entry.
+    if (!auth.hasPermission("console:access")) {
+      // Users without the console permission work in the User Center. Use a
+      // full navigation because /uc is a separate Vite entry.
       window.location.assign("/uc/");
       return false;
     }
@@ -70,8 +70,8 @@ router.beforeEach(async (to) => {
       .find((value): value is string => typeof value === "string");
     if (moduleId && !modules.isEnabled(moduleId)) return { path: "/dashboard" };
 
-    const roles = rolesFor(to);
-    if (roles.length > 0 && !hasRole(roles, auth)) {
+    const permissions = permissionsFor(to);
+    if (permissions.length > 0 && !permissions.some((permission) => auth.hasPermission(permission))) {
       return { path: "/dashboard" };
     }
   }

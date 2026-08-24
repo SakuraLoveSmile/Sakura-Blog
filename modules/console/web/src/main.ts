@@ -5,6 +5,8 @@ import { addCollection } from "@iconify/vue";
 import riIcons from "./icons/ri-subset.json";
 import { queryClient } from "@/api/query-client";
 import { configureApiTransport } from "@blog/api-client";
+import { permissionDirective } from "@/directives/permission";
+import { i18n } from "@/i18n";
 import { Dialog, Toast } from "@/components/ui";
 import App from "./App.vue";
 import router from "./router";
@@ -49,6 +51,8 @@ addCollection(riIcons);
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
+app.directive("permission", permissionDirective);
+app.use(i18n);
 
 // 注册 TanStack Query：统一管理服务端状态（缓存/重取/乐观更新）
 const vueQueryOptions: VueQueryPluginOptions = { queryClient };

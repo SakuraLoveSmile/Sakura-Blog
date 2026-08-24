@@ -50,6 +50,8 @@ type User struct {
 	AuthSecret        string    `json:"-"` // 随机 32 字节 hex，cookie 签名密钥
 	APITokenHash      string    `json:"-"` // API Token 的 sha256 hex，空=未生成
 	Role              string    `json:"role"`
+	Roles             []string  `json:"roles,omitempty"`
+	Permissions       []string  `json:"permissions,omitempty"`
 	Status            string    `json:"status"` // active / banned（Spec 71）
 	CreatedAt         time.Time `json:"created_at"`
 }
@@ -102,7 +104,7 @@ func (s *Store) EnsureUsersTable() error {
 			}
 		}
 	}
-	return nil
+	return s.EnsureAuthorizationTables()
 }
 
 // tableHasColumn 检查表是否存在指定列（PRAGMA table_info 查询）。
@@ -132,6 +134,9 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get user by username %s: %w", username, err)
 	}
+	if err := s.hydrateAuthorization(u); err != nil {
+		return nil, err
+	}
 	return u, nil
 }
 
@@ -140,6 +145,9 @@ func (s *Store) GetUserByID(id int64) (*User, error) {
 	u, err := repo(s, &User{}).GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("get user by id %d: %w", id, err)
+	}
+	if err := s.hydrateAuthorization(u); err != nil {
+		return nil, err
 	}
 	return u, nil
 }
@@ -162,7 +170,10 @@ func (s *Store) CreateUser(user *User) error {
 	if _, err := repo(s, &User{}).Create(user); err != nil {
 		return fmt.Errorf("create user %s: %w", user.Username, err)
 	}
-	return nil
+	if err := s.EnsureAuthorizationTables(); err != nil {
+		return err
+	}
+	return s.SetUserRoles(user.ID, []string{user.Role})
 }
 
 // UpdateUser 更新用户资料字段（display_name/email/avatar），不动认证相关列。
@@ -221,6 +232,14 @@ func (s *Store) ListUsers() ([]*User, error) {
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate users: %w", err)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close users: %w", err)
+	}
+	for _, user := range out {
+		if err := s.hydrateAuthorization(user); err != nil {
+			return nil, err
+		}
+	}
 	return out, nil
 }
 
@@ -266,13 +285,21 @@ func (s *Store) ListUsersPage(page, size int, keyword string) ([]*User, int, err
 	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("iterate users: %w", err)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, 0, fmt.Errorf("close users: %w", err)
+	}
+	for _, user := range out {
+		if err := s.hydrateAuthorization(user); err != nil {
+			return nil, 0, err
+		}
+	}
 	return out, total, nil
 }
 
 // CountUsersByRole 按角色统计用户数（防锁死：最后一个 admin 不可删除/降级）。
 func (s *Store) CountUsersByRole(role string) (int, error) {
 	var n int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM users WHERE role = ?", role).Scan(&n); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT user_id) FROM user_roles WHERE role = ?", role).Scan(&n); err != nil {
 		return 0, fmt.Errorf("count users by role %s: %w", role, err)
 	}
 	return n, nil
@@ -280,14 +307,13 @@ func (s *Store) CountUsersByRole(role string) (int, error) {
 
 // UpdateUserRole 更新用户角色并返回受影响行数（行数=0 表示用户不存在）。
 func (s *Store) UpdateUserRole(userID int64, role string) error {
-	res, err := s.db.Exec(`UPDATE users SET role = ? WHERE id = ?`, role, userID)
-	if err != nil {
-		return fmt.Errorf("update user %d role: %w", userID, err)
+	if !ValidRole(role) {
+		return fmt.Errorf("invalid role %q", role)
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("update user %d role: no rows affected", userID)
+	if err := s.EnsureAuthorizationTables(); err != nil {
+		return err
 	}
-	return nil
+	return s.SetUserRoles(userID, []string{role})
 }
 
 // DeleteUser 删除用户（用户存在且删除成功返回 nil；不存在返回错误）。
@@ -413,7 +439,7 @@ func parseCommentTime(s string) time.Time {
 
 // CountCommentUsers 统计注册读者数（status 空串=全部，非法值按全部计）。
 func (s *Store) CountCommentUsers(status string) (int, error) {
-	query := "SELECT COUNT(*) FROM users WHERE role = ?"
+	query := "SELECT COUNT(*) FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.is_primary = 1 WHERE ur.role = ?"
 	args := []any{RoleReader}
 	if ValidUserStatus(status) {
 		query += " AND status = ?"
@@ -439,7 +465,7 @@ func (s *Store) ListCommentUsers(page, size int, keyword, status string) ([]*Com
 	if size < 1 || size > 100 {
 		size = 20
 	}
-	conds := []string{"u.role = ?"}
+	conds := []string{"ur.role = ?", "ur.is_primary = 1"}
 	args := []any{RoleReader}
 	if ValidUserStatus(status) {
 		conds = append(conds, "u.status = ?")
@@ -453,12 +479,12 @@ func (s *Store) ListCommentUsers(page, size int, keyword, status string) ([]*Com
 	where := " WHERE " + strings.Join(conds, " AND ")
 
 	var total int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM users u"+where, args...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM users u JOIN user_roles ur ON ur.user_id = u.id"+where, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count comment users: %w", err)
 	}
-	rows, err := s.db.Query(`SELECT u.id, u.username, u.display_name, u.email, u.avatar, u.role, u.status, u.created_at,
+	rows, err := s.db.Query(`SELECT u.id, u.username, u.display_name, u.email, u.avatar, ur.role, u.status, u.created_at,
 		COUNT(cm.id) AS comment_count, MAX(cm.created_at) AS last_comment_at
-		FROM users u LEFT JOIN comments cm ON cm.user_id = u.id`+where+`
+		FROM users u JOIN user_roles ur ON ur.user_id = u.id LEFT JOIN comments cm ON cm.user_id = u.id`+where+`
 		GROUP BY u.id
 		ORDER BY last_comment_at IS NULL, last_comment_at DESC, u.id ASC
 		LIMIT ? OFFSET ?`,

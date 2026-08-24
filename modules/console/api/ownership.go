@@ -15,7 +15,7 @@ import (
 // role middleware has established an authenticated Console user. Admins have
 // unrestricted access; authors must be present in post_authors for the slug.
 func (h *Handler) requirePostOwnership(c *gin.Context, slug string) bool {
-	if c.GetString("userRole") == store.RoleAdmin {
+	if contextHasPermission(c, store.PermissionContentManageAny) {
 		return true
 	}
 	userID := c.GetInt64("userID")
@@ -34,7 +34,7 @@ func (h *Handler) requirePostOwnership(c *gin.Context, slug string) bool {
 // requireRevisionOwnership applies the same boundary to revision restore,
 // which addresses a revision ID rather than a post slug.
 func (h *Handler) requireRevisionOwnership(c *gin.Context, revisionID int64) bool {
-	if c.GetString("userRole") == store.RoleAdmin {
+	if contextHasPermission(c, store.PermissionContentManageAny) {
 		return true
 	}
 	owned, err := h.store.HasRevisionAuthor(revisionID, c.GetInt64("userID"))
@@ -50,7 +50,7 @@ func (h *Handler) requireRevisionOwnership(c *gin.Context, revisionID int64) boo
 }
 
 func (h *Handler) requireShareOwnership(c *gin.Context, shareID int64) bool {
-	if c.GetString("userRole") == store.RoleAdmin {
+	if contextHasPermission(c, store.PermissionContentManageAny) {
 		return true
 	}
 	owned, err := h.store.HasShareAuthor(shareID, c.GetInt64("userID"))
@@ -65,16 +65,15 @@ func (h *Handler) requireShareOwnership(c *gin.Context, shareID int64) bool {
 	return true
 }
 
-func isAuthorRole(c *gin.Context) bool {
-	return c.GetString("userRole") == store.RoleAuthor
-}
-
 // forceCurrentAuthor makes ownership of a newly created or updated article a
 // server decision. The client may not replace an author session's owner with
 // an arbitrary users.id. Admin requests retain their explicit author list.
 func forceCurrentAuthor(c *gin.Context, req *postRequest) error {
-	if !isAuthorRole(c) {
+	if contextHasPermission(c, store.PermissionContentManageAny) {
 		return nil
+	}
+	if !contextHasPermission(c, store.PermissionContentWrite) {
+		return fmt.Errorf("current user cannot write content")
 	}
 	userID := c.GetInt64("userID")
 	if userID <= 0 {

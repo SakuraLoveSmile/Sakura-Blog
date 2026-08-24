@@ -125,7 +125,12 @@ func (h *Handler) login(c *gin.Context) {
 
 	// 安全审计 2026-08-16：console 登录端点拒绝 reader 角色——读者凭据不应换取
 	// blog_admin 会话（否则开放注册账号即可进入全部 authed 组内容写端点）。
-	if normalizeRole(user.Role) == store.RoleReader {
+	canConsole, permissionErr := h.store.UserHasPermission(user.ID, store.PermissionContentWrite)
+	if permissionErr != nil {
+		Fail(c, http.StatusInternalServerError, "读取用户权限失败")
+		return
+	}
+	if !canConsole {
 		h.logLogin(c, user.ID, username, ip, "fail", "password")
 		Fail(c, http.StatusForbidden, "读者账号请从前台登录")
 		return
@@ -183,8 +188,13 @@ func (h *Handler) handle2FA(c *gin.Context) {
 		return
 	}
 
-	// 安全审计 2026-08-16：与 login 一致，reader 不经 console 2FA 链路换 admin cookie。
-	if normalizeRole(user.Role) == store.RoleReader {
+	// 安全审计 2026-08-16：与 login 一致，读者不经 console 2FA 链路换 admin cookie。
+	canConsole, permissionErr := h.store.UserHasPermission(user.ID, store.PermissionContentWrite)
+	if permissionErr != nil {
+		Fail(c, http.StatusInternalServerError, "读取用户权限失败")
+		return
+	}
+	if !canConsole {
 		h.logLogin(c, user.ID, user.Username, c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusForbidden, "读者账号请从前台登录")
 		return
@@ -199,6 +209,18 @@ func (h *Handler) handle2FA(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
+type profileResponse struct {
+	ID          int64    `json:"id"`
+	Username    string   `json:"username"`
+	DisplayName string   `json:"display_name"`
+	Email       string   `json:"email"`
+	Avatar      string   `json:"avatar"`
+	Has2FA      bool     `json:"has_2fa"`
+	Role        string   `json:"role"`
+	Roles       []string `json:"roles"`
+	Permissions []string `json:"permissions"`
+}
+
 // handleGetProfile GET /api/v1/profile：返回当前用户资料。
 func (h *Handler) handleGetProfile(c *gin.Context) {
 	userID := c.GetInt64("userID")
@@ -207,14 +229,10 @@ func (h *Handler) handleGetProfile(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "user not found")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"id":           user.ID,
-		"username":     user.Username,
-		"display_name": user.DisplayName,
-		"email":        user.Email,
-		"avatar":       user.Avatar,
-		"has_2fa":      user.TOTPSecret != "",
-		"role":         normalizeRole(user.Role),
+	c.JSON(http.StatusOK, profileResponse{
+		ID: user.ID, Username: user.Username, DisplayName: user.DisplayName,
+		Email: user.Email, Avatar: user.Avatar, Has2FA: user.TOTPSecret != "",
+		Role: normalizeRole(user.Role), Roles: user.Roles, Permissions: user.Permissions,
 	})
 }
 
@@ -336,28 +354,35 @@ func (h *Handler) handle2FARecoveryCodes(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"recovery_codes": codes})
 }
 
+type authCheckResponse struct {
+	Authenticated           bool     `json:"authenticated"`
+	PasswordRequired        bool     `json:"passwordRequired"`
+	Role                    string   `json:"role"`
+	Permissions             []string `json:"permissions"`
+	ConsoleAccessDisallowed bool     `json:"console_access_disallowed,omitempty"`
+}
+
 // authCheck GET /api/v1/auth/check：返回当前登录状态（兼容新旧 cookie 格式）。
 func (h *Handler) authCheck(c *gin.Context) {
 	if !h.site.Load().Admin.AuthEnabled {
-		c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": false, "role": store.RoleAdmin})
+		c.JSON(http.StatusOK, authCheckResponse{Authenticated: true, PasswordRequired: false, Role: store.RoleAdmin, Permissions: []string{"*"}})
 		return
 	}
 	if cookie, err := c.Cookie(authCookieName); err == nil {
-		if _, _, _, role, ok := h.validAuthCookie(cookie, cookieAudAdmin); ok {
-			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true, "role": role})
+		if userID, _, _, role, ok := h.validAuthCookie(cookie, cookieAudAdmin); ok {
+			permissions, _ := h.store.GetUserPermissions(userID)
+			c.JSON(http.StatusOK, authCheckResponse{Authenticated: true, PasswordRequired: true, Role: role, Permissions: permissions})
 			return
 		}
 	}
-	if public := identity.CurrentUser(c); public.Verified && public.Role == store.RoleAuthor {
-		c.JSON(http.StatusOK, gin.H{
-			"authenticated":             true,
-			"passwordRequired":          true,
-			"role":                      public.Role,
-			"console_access_disallowed": true,
-		})
-		return
+	if public := identity.CurrentUser(c); public.Verified {
+		permissions, _ := h.store.GetUserPermissions(public.ID)
+		if store.HasPermission(permissions, store.PermissionContentWrite) && !store.HasPermission(permissions, store.PermissionConsoleAccess) {
+			c.JSON(http.StatusOK, authCheckResponse{Authenticated: true, PasswordRequired: true, Role: public.Role, Permissions: permissions, ConsoleAccessDisallowed: true})
+			return
+		}
 	}
-	c.JSON(http.StatusOK, gin.H{"authenticated": false, "passwordRequired": true, "role": ""})
+	c.JSON(http.StatusOK, authCheckResponse{Authenticated: false, PasswordRequired: true, Role: "", Permissions: []string{}})
 }
 
 // changePassword PUT /api/v1/auth/password：Spec 45 迁移至 users 表。

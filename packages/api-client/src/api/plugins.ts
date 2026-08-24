@@ -4,11 +4,14 @@ import { http } from "../transport";
 export interface ShortcodeCatalogParam {
   key: string;
   label?: string;
+  label_key?: string;
   type: "text" | "select" | "number" | "switch" | "color" | "textarea";
   role: "positional" | "named" | "flag" | "content";
   default?: unknown;
   options?: string[];
   placeholder?: string;
+  hint?: string;
+  hint_key?: string;
 }
 
 export interface ShortcodeCatalogDoc {
@@ -37,7 +40,19 @@ export interface ShortcodeCatalogItem {
 
 export const pluginApi = {
   catalog: () => http.get<{ items: ShortcodeCatalogItem[] }>("/plugins/catalog"),
+  runtime: () => http.get<{ items: RuntimePluginManifest[] }>("/plugins/runtime"),
 };
+
+export interface RuntimePluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  kind?: "script" | "bundle";
+  bundle?: string;
+  hooks: string[];
+  permissions: string[];
+  network_allowlist?: string[];
+}
 
 // --- 功能模块（manifest + 启停） ---
 export interface ModuleNav {
@@ -45,7 +60,7 @@ export interface ModuleNav {
   label: string;
   icon: string;
   group: string;
-  roles?: string[];
+  permissions?: string[];
   mobile?: boolean;
   children?: ModuleNav[];
 }
@@ -70,6 +85,7 @@ export interface ModuleConfigField {
   options?: string[];
   placeholder?: string;
   hint?: string;
+  hint_key?: string;
   rows?: number;
 }
 

@@ -15,14 +15,15 @@ import (
 
 // UCMeResponse is the account summary consumed by the User Center shell.
 type UCMeResponse struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
-	Avatar      string `json:"avatar"`
-	Role        string `json:"role"`
-	Status      string `json:"status"`
-	Has2FA      bool   `json:"has_2fa"`
+	ID          int64    `json:"id"`
+	Username    string   `json:"username"`
+	DisplayName string   `json:"display_name"`
+	Email       string   `json:"email"`
+	Avatar      string   `json:"avatar"`
+	Role        string   `json:"role"`
+	Status      string   `json:"status"`
+	Has2FA      bool     `json:"has_2fa"`
+	Permissions []string `json:"permissions"`
 }
 
 type UCPostListResponse struct {
@@ -98,7 +99,7 @@ func (h *Handler) ucMe(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, UCMeResponse{
 		ID: user.ID, Username: user.Username, DisplayName: displayName(user), Email: user.Email,
-		Avatar: user.Avatar, Role: user.Role, Status: user.Status, Has2FA: strings.TrimSpace(user.TOTPSecret) != "",
+		Avatar: user.Avatar, Role: user.Role, Status: user.Status, Has2FA: strings.TrimSpace(user.TOTPSecret) != "", Permissions: user.Permissions,
 	})
 }
 

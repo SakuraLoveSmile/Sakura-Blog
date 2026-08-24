@@ -4,6 +4,8 @@ import { VueQueryPlugin, type VueQueryPluginOptions } from "@tanstack/vue-query"
 import { addCollection } from "@iconify/vue";
 import riIcons from "../icons/ri-subset.json";
 import { configureApiTransport } from "@blog/api-client";
+import { permissionDirective } from "@/directives/permission";
+import { i18n } from "@/i18n";
 import { Toast } from "@/components/ui";
 import { queryClient } from "@/api/query-client";
 import App from "./App.vue";
@@ -24,5 +26,7 @@ addCollection(riIcons);
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
+app.directive("permission", permissionDirective);
+app.use(i18n);
 app.use(VueQueryPlugin, { queryClient } satisfies VueQueryPluginOptions);
 app.mount("#app");

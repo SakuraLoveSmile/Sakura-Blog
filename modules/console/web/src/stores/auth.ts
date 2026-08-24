@@ -9,6 +9,8 @@ const emptyUser = (): UserProfile => ({
   avatar: "",
   has_2fa: false,
   role: "",
+  roles: [],
+  permissions: [],
 });
 
 export const useAuthStore = defineStore("auth", () => {
@@ -20,10 +22,14 @@ export const useAuthStore = defineStore("auth", () => {
   // 多用户体系：登录态角色（auth/check 返回，老 cookie/无密码站点场景兜底）
   const role = ref("");
 
-  // 多用户体系：admin 才有系统管理权限。
-  // 无密码站点保持历史全放行语义（视为 admin）；有密码站点按角色判定
-  // （优先 profile 的角色，fallback 到 auth/check 的 role，兼容旧版 admin cookie）。
-  const isAdmin = computed(() => !passwordRequired.value || user.value.role === "admin" || role.value === "admin");
+  function hasPermission(permission: string): boolean {
+    if (!passwordRequired.value) return true;
+    const permissions = user.value.permissions || [];
+    return permissions.includes("*") || permissions.includes(permission);
+  }
+
+  // 多用户体系：权限表是显式授权真值；无密码站点保持历史全放行语义。
+  const isAdmin = computed(() => hasPermission("system:manage"));
 
   // 拉取当前用户资料；旧 cookie（userID=0）下 profile 返回 404，静默保持默认值
   async function fetchUser() {
@@ -80,6 +86,7 @@ export const useAuthStore = defineStore("auth", () => {
     initialized,
     user,
     role,
+    hasPermission,
     isAdmin,
     checkAuth,
     login,

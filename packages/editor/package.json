@@ -1,6 +1,9 @@
 {
   "name": "@blog/editor",
-  "private": true,
+  "version": "0.1.0",
+  "private": false,
+  "license": "GPL-3.0-or-later",
+  "files": ["dist", "src"],
   "type": "module",
   "exports": {
     ".": {
@@ -34,5 +37,6 @@
   "peerDependencies": {
     "@iconify/vue": "^5.0.1",
     "vue": "^3.5.39"
-  }
+  },
+  "publishConfig": { "access": "public" }
 }
