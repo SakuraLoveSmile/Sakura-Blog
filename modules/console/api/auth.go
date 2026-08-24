@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/identity"
 	"blog/internal/store"
 )
 
@@ -151,6 +152,9 @@ func (h *Handler) login(c *gin.Context) {
 func (h *Handler) logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(c), true)
+	// UC 与公共身份共用 blog_user cookie；Console profile 的复用登出也应
+	// 一并结束公共会话，避免跳转到 /uc 后仍被旧 cookie 自动登录。
+	c.SetCookie(identity.UserCookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -343,6 +347,15 @@ func (h *Handler) authCheck(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"authenticated": true, "passwordRequired": true, "role": role})
 			return
 		}
+	}
+	if public := identity.CurrentUser(c); public.Verified && public.Role == store.RoleAuthor {
+		c.JSON(http.StatusOK, gin.H{
+			"authenticated":             true,
+			"passwordRequired":          true,
+			"role":                      public.Role,
+			"console_access_disallowed": true,
+		})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"authenticated": false, "passwordRequired": true, "role": ""})
 }

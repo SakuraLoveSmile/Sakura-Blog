@@ -94,9 +94,9 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 	r.MaxMultipartMemory = int64(app.MaxUploadMB+1) << 20
 
 	// P1-5：gzip 压缩——对 HTML/CSS/JS/JSON/XML 等文本响应启用 gzip，注册在静态与路由之前。
-	// Console 已自行协商并返回构建期 .gz；排除 /console，避免全局中间件再次包装
+	// Console/UC 已自行协商并返回构建期 .gz；排除两套 SPA，避免全局中间件再次包装
 	// 预压缩字节并清掉 Content-Encoding，导致浏览器把 gzip 数据当作 HTML/JS 读取。
-	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPathsRegexs([]string{`^/console(?:/|$)`})))
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPathsRegexs([]string{`^/(?:console|uc)(?:/|$)`})))
 
 	r.Use(securityHeaders())
 	r.Use(assetsCacheControl())

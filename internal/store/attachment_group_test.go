@@ -48,6 +48,29 @@ func TestEnsureAttachmentsTableIdempotent(t *testing.T) {
 	mkAttach(t, s, "a.png", "image/png", UngroupedGroupID)
 }
 
+func TestAttachmentsCanBeListedByOwner(t *testing.T) {
+	s := newAttachStore(t)
+	mk := func(ownerID int64, name string) {
+		t.Helper()
+		if _, err := s.CreateAttachment(&Attachment{
+			Filename: name, Path: "2026/08/" + name, URL: "/uploads/2026/08/" + name,
+			Mime: "image/png", Size: 10, OwnerID: ownerID,
+		}); err != nil {
+			t.Fatalf("create attachment %s: %v", name, err)
+		}
+	}
+	mk(11, "mine.png")
+	mk(22, "other.png")
+	items, err := s.ListAttachmentsByOwner(11, 1, 20, "", "image", nil)
+	if err != nil || len(items) != 1 || items[0].Filename != "mine.png" {
+		t.Fatalf("owner attachments = %+v, err=%v", items, err)
+	}
+	count, err := s.CountAttachmentsByOwner(22, "", "image", nil)
+	if err != nil || count != 1 {
+		t.Fatalf("owner count = %d, err=%v", count, err)
+	}
+}
+
 func TestAttachmentGroupCRUD(t *testing.T) {
 	s := newAttachStore(t)
 

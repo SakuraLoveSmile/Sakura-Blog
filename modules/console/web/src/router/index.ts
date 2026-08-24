@@ -57,6 +57,13 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { from: to.fullPath } };
   }
   if (auth.authenticated) {
+    const currentRole = auth.user.role || auth.role;
+    if (currentRole === "author") {
+      // Authors now work in the user center. The Console remains an admin
+      // surface; use a full navigation because /uc is a separate Vite entry.
+      window.location.assign("/uc/");
+      return false;
+    }
     if (!modules.loaded) await modules.fetch();
     const moduleId = to.matched
       .map((record) => record.meta.moduleId)

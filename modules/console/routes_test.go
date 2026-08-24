@@ -101,3 +101,40 @@ func TestAcceptsGzip(t *testing.T) {
 		}
 	}
 }
+
+func TestUserCenterStaticAndFallbackData(t *testing.T) {
+	root := t.TempDir()
+	dist := filepath.Join(root, "modules", "console", "web", "dist-uc")
+	if err := os.MkdirAll(filepath.Join(dist, "assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dist, "uc.html"), []byte("<uc-app>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dist, "assets", "app.js"), []byte("uc"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := gin.New()
+	index, err := setupUCRoutes(r, true, root)
+	if err != nil || index == nil || string(index.plain) != "<uc-app>" {
+		t.Fatalf("setup UC routes: index=%+v err=%v", index, err)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/assets/app.js", nil))
+	if w.Code != http.StatusOK || w.Body.String() != "uc" {
+		t.Fatalf("UC asset = %d %q", w.Code, w.Body.String())
+	}
+
+	r.NoRoute(func(c *gin.Context) {
+		if c.Request.URL.Path == "/uc/posts/hello" {
+			writeConsoleData(c, "text/html; charset=utf-8", index.plain, index.gzip)
+			return
+		}
+		c.Status(http.StatusNotFound)
+	})
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/posts/hello", nil))
+	if w.Code != http.StatusOK || w.Body.String() != "<uc-app>" {
+		t.Fatalf("UC fallback = %d %q", w.Code, w.Body.String())
+	}
+}

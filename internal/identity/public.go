@@ -1,8 +1,11 @@
 package identity
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -39,6 +42,8 @@ type PublicHandler struct {
 	loginFails   map[string]loginHit
 	registerMu   sync.Mutex
 	registerHits map[string]registerHit
+	captchaMu    sync.Mutex
+	captchas     map[string]registerCaptcha
 }
 
 type loginHit struct {
@@ -50,8 +55,19 @@ type registerHit struct {
 	at time.Time
 }
 
+type registerCaptcha struct {
+	answer    string
+	expiresAt time.Time
+}
+
 func NewPublicHandler(st *store.Store, site *atomic.Pointer[tmpl.Site]) *PublicHandler {
-	return &PublicHandler{store: st, site: site, loginFails: map[string]loginHit{}, registerHits: map[string]registerHit{}}
+	return &PublicHandler{
+		store:        st,
+		site:         site,
+		loginFails:   map[string]loginHit{},
+		registerHits: map[string]registerHit{},
+		captchas:     map[string]registerCaptcha{},
+	}
 }
 
 // Middleware injects a verified *store.CurrentUser into the shared Gin key.
@@ -94,15 +110,66 @@ func CurrentUser(c *gin.Context) *store.CurrentUser {
 // Stellar binds these callbacks to /api/auth; identity only owns validation,
 // cookie verification and user persistence.
 type PublicRoutes struct {
-	Register gin.HandlerFunc
-	Login    gin.HandlerFunc
-	Me       gin.HandlerFunc
-	Logout   gin.HandlerFunc
+	Register          gin.HandlerFunc
+	RegisterChallenge gin.HandlerFunc
+	Login             gin.HandlerFunc
+	Me                gin.HandlerFunc
+	Logout            gin.HandlerFunc
+	Upgrade           gin.HandlerFunc
 }
 
 // PublicRoutes returns the reader authentication callbacks used by Stellar.
 func (h *PublicHandler) PublicRoutes() PublicRoutes {
-	return PublicRoutes{Register: h.register, Login: h.login, Me: h.me, Logout: h.logout}
+	return PublicRoutes{
+		Register:          h.register,
+		RegisterChallenge: h.registerChallenge,
+		Login:             h.login,
+		Me:                h.me,
+		Logout:            h.logout,
+		Upgrade:           h.upgrade,
+	}
+}
+
+type registerChallengeResponse struct {
+	Token    string `json:"token"`
+	Question string `json:"question"`
+}
+
+type publicUserResponse struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
+	Avatar   string `json:"avatar"`
+	Role     string `json:"role"`
+	Verified bool   `json:"verified"`
+	IsAdmin  bool   `json:"is_admin"`
+}
+
+type publicAuthResponse struct {
+	OK   bool               `json:"ok"`
+	User publicUserResponse `json:"user"`
+}
+
+func (h *PublicHandler) registerChallenge(c *gin.Context) {
+	first := randomCaptchaNumber(1, 9)
+	second := randomCaptchaNumber(1, 9)
+	tokenBytes := make([]byte, 18)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		jsonError(c, http.StatusInternalServerError, "验证码生成失败，请稍后再试")
+		return
+	}
+	token := base64.RawURLEncoding.EncodeToString(tokenBytes)
+	now := time.Now()
+	h.captchaMu.Lock()
+	for key, challenge := range h.captchas {
+		if now.After(challenge.expiresAt) {
+			delete(h.captchas, key)
+		}
+	}
+	h.captchas[token] = registerCaptcha{answer: strconv.Itoa(first + second), expiresAt: now.Add(10 * time.Minute)}
+	h.captchaMu.Unlock()
+	c.JSON(http.StatusOK, registerChallengeResponse{Token: token, Question: fmt.Sprintf("%d + %d = ?", first, second)})
 }
 
 func (h *PublicHandler) register(c *gin.Context) {
@@ -111,14 +178,20 @@ func (h *PublicHandler) register(c *gin.Context) {
 		return
 	}
 	var req struct {
-		Username    string `json:"username"`
-		Password    string `json:"password"`
-		DisplayName string `json:"display_name"`
-		Email       string `json:"email"`
-		Avatar      string `json:"avatar"`
+		Username      string `json:"username"`
+		Password      string `json:"password"`
+		DisplayName   string `json:"display_name"`
+		Email         string `json:"email"`
+		Avatar        string `json:"avatar"`
+		CaptchaToken  string `json:"captcha_token"`
+		CaptchaAnswer string `json:"captcha_answer"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonError(c, http.StatusBadRequest, "请求格式错误")
+		return
+	}
+	if !h.consumeCaptcha(req.CaptchaToken, req.CaptchaAnswer) {
+		jsonError(c, http.StatusBadRequest, "验证码错误或已过期")
 		return
 	}
 	req.Username, req.Password, req.DisplayName = strings.TrimSpace(req.Username), strings.TrimSpace(req.Password), strings.TrimSpace(req.DisplayName)
@@ -169,7 +242,7 @@ func (h *PublicHandler) register(c *gin.Context) {
 		return
 	}
 	h.setUserCookie(c, u)
-	c.JSON(http.StatusCreated, gin.H{"ok": true, "user": publicUser(u)})
+	c.JSON(http.StatusCreated, publicAuthResponse{OK: true, User: publicUser(u)})
 }
 
 func (h *PublicHandler) login(c *gin.Context) {
@@ -197,8 +270,8 @@ func (h *PublicHandler) login(c *gin.Context) {
 		jsonError(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
-	if u.Role != store.RoleReader {
-		jsonError(c, http.StatusForbidden, "管理账号请从后台登录")
+	if u.Role != store.RoleReader && u.Role != store.RoleAuthor {
+		jsonError(c, http.StatusForbidden, "管理员账号请从后台登录")
 		return
 	}
 	if u.Status == store.UserStatusBanned {
@@ -207,7 +280,7 @@ func (h *PublicHandler) login(c *gin.Context) {
 	}
 	h.clearLoginFail(ip)
 	h.setUserCookie(c, u)
-	c.JSON(http.StatusOK, gin.H{"ok": true, "user": publicUser(u)})
+	c.JSON(http.StatusOK, publicAuthResponse{OK: true, User: publicUser(u)})
 }
 
 func (h *PublicHandler) me(c *gin.Context) {
@@ -219,6 +292,41 @@ func (h *PublicHandler) logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(UserCookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+func (h *PublicHandler) upgrade(c *gin.Context) {
+	current := CurrentUser(c)
+	if !current.Verified || current.ID <= 0 {
+		jsonError(c, http.StatusUnauthorized, "请先登录")
+		return
+	}
+	user, err := h.store.GetUserByID(current.ID)
+	if err != nil || user == nil {
+		jsonError(c, http.StatusUnauthorized, "登录状态无效")
+		return
+	}
+	if user.Role == store.RoleAuthor {
+		c.JSON(http.StatusOK, publicAuthResponse{OK: true, User: publicUser(user)})
+		return
+	}
+	if user.Role != store.RoleReader {
+		jsonError(c, http.StatusForbidden, "当前账号不能升级为作者")
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || store.CheckPassword(user.PasswordHash, req.Password) != nil {
+		jsonError(c, http.StatusUnauthorized, "密码错误")
+		return
+	}
+	if err := h.store.UpdateUserRole(user.ID, store.RoleAuthor); err != nil {
+		jsonError(c, http.StatusInternalServerError, "升级失败，请稍后再试")
+		return
+	}
+	user.Role = store.RoleAuthor
+	h.setUserCookie(c, user)
+	c.JSON(http.StatusOK, publicAuthResponse{OK: true, User: publicUser(user)})
 }
 
 func (h *PublicHandler) setUserCookie(c *gin.Context, u *store.User) {
@@ -295,11 +403,28 @@ func (h *PublicHandler) registerAllowed(ip string) bool {
 	return true
 }
 
-func publicUser(u *store.User) map[string]any {
+func (h *PublicHandler) consumeCaptcha(token, answer string) bool {
+	token, answer = strings.TrimSpace(token), strings.TrimSpace(answer)
+	h.captchaMu.Lock()
+	defer h.captchaMu.Unlock()
+	challenge, ok := h.captchas[token]
+	delete(h.captchas, token)
+	return ok && time.Now().Before(challenge.expiresAt) && challenge.answer == answer
+}
+
+func randomCaptchaNumber(min, max int) int {
+	buf := []byte{0}
+	if _, err := rand.Read(buf); err != nil {
+		return min
+	}
+	return min + int(buf[0])%(max-min+1)
+}
+
+func publicUser(u *store.User) publicUserResponse {
 	nickname := u.DisplayName
 	if nickname == "" {
 		nickname = u.Username
 	}
-	return map[string]any{"id": u.ID, "username": u.Username, "nickname": nickname, "email": u.Email, "avatar": u.Avatar, "role": u.Role, "verified": true, "is_admin": u.Role == store.RoleAdmin}
+	return publicUserResponse{ID: u.ID, Username: u.Username, Nickname: nickname, Email: u.Email, Avatar: u.Avatar, Role: u.Role, Verified: true, IsAdmin: u.Role == store.RoleAdmin}
 }
 func jsonError(c *gin.Context, status int, message string) { c.JSON(status, gin.H{"error": message}) }

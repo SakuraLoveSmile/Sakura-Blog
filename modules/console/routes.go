@@ -29,7 +29,7 @@ func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndex
 			log.Printf("console dist not found: %s (dev), /console/ unavailable", consoleDir)
 			return nil, nil
 		}
-		registerDiskStatic(r, consoleDir)
+		registerDiskStatic(r, "/console", consoleDir)
 		plain, err := os.ReadFile(filepath.Join(consoleDir, "index.html"))
 		if err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndex
 		return &consoleIndexData{plain: plain, gzip: compressed}, nil
 	}
 
-	registerEmbedStatic(r)
+	registerEmbedStatic(r, "/console")
 	plain, err := console.DistFS.ReadFile("dist/index.html")
 	if err != nil {
 		return nil, err
@@ -49,19 +49,47 @@ func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndex
 	return &consoleIndexData{plain: plain, gzip: compressed}, nil
 }
 
-func registerDiskStatic(r *gin.Engine, distRoot string) {
-	registerStaticHandler(r, "/console/assets/*filepath", func(name string) ([]byte, error) {
+func setupUCRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndexData, error) {
+	if devMode {
+		ucDir := filepath.Join(root, "modules", "console", "web", "dist-uc")
+		info, err := os.Stat(ucDir)
+		if err != nil || !info.IsDir() {
+			log.Printf("user center dist not found: %s (dev), /uc/ unavailable", ucDir)
+			return nil, nil
+		}
+		registerDiskStatic(r, "/uc", ucDir)
+		plain, err := os.ReadFile(filepath.Join(ucDir, "uc.html"))
+		if err != nil {
+			return nil, err
+		}
+		compressed, _ := os.ReadFile(filepath.Join(ucDir, "uc.html.gz"))
+		log.Printf("user center SPA loaded from %s (dev)", ucDir)
+		return &consoleIndexData{plain: plain, gzip: compressed}, nil
+	}
+
+	registerEmbedStatic(r, "/uc")
+	plain, err := console.UCDistFS.ReadFile("dist-uc/uc.html")
+	if err != nil {
+		return nil, err
+	}
+	compressed, _ := console.UCDistFS.ReadFile("dist-uc/uc.html.gz")
+	log.Printf("user center SPA loaded from embed")
+	return &consoleIndexData{plain: plain, gzip: compressed}, nil
+}
+
+func registerDiskStatic(r *gin.Engine, prefix, distRoot string) {
+	registerStaticHandler(r, prefix+"/assets/*filepath", func(name string) ([]byte, error) {
 		return os.ReadFile(filepath.Join(distRoot, "assets", name))
 	}, func(name string) ([]byte, error) {
 		return os.ReadFile(filepath.Join(distRoot, "assets", name+".gz"))
 	})
 	if entries, err := os.ReadDir(distRoot); err == nil {
 		for _, entry := range entries {
-			if entry.IsDir() || entry.Name() == "index.html" || strings.HasSuffix(entry.Name(), ".gz") {
+			if entry.IsDir() || entry.Name() == "index.html" || entry.Name() == ".gitkeep" || strings.HasSuffix(entry.Name(), ".gz") {
 				continue
 			}
 			name := entry.Name()
-			registerStaticHandler(r, "/console/"+name, func(_ string) ([]byte, error) {
+			registerStaticHandler(r, prefix+"/"+name, func(_ string) ([]byte, error) {
 				return os.ReadFile(filepath.Join(distRoot, name))
 			}, func(_ string) ([]byte, error) {
 				return os.ReadFile(filepath.Join(distRoot, name+".gz"))
@@ -70,25 +98,31 @@ func registerDiskStatic(r *gin.Engine, distRoot string) {
 	}
 }
 
-func registerEmbedStatic(r *gin.Engine) {
-	registerStaticHandler(r, "/console/assets/*filepath", func(name string) ([]byte, error) {
-		return console.DistFS.ReadFile("dist/assets/" + name)
+func registerEmbedStatic(r *gin.Engine, prefix string) {
+	fs := console.DistFS
+	root := "dist"
+	if prefix == "/uc" {
+		fs = console.UCDistFS
+		root = "dist-uc"
+	}
+	registerStaticHandler(r, prefix+"/assets/*filepath", func(name string) ([]byte, error) {
+		return fs.ReadFile(root + "/assets/" + name)
 	}, func(name string) ([]byte, error) {
-		return console.DistFS.ReadFile("dist/assets/" + name + ".gz")
+		return fs.ReadFile(root + "/assets/" + name + ".gz")
 	})
-	entries, err := console.DistFS.ReadDir("dist")
+	entries, err := fs.ReadDir(root)
 	if err != nil {
 		return
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || entry.Name() == "index.html" || strings.HasSuffix(entry.Name(), ".gz") {
+		if entry.IsDir() || entry.Name() == "index.html" || entry.Name() == ".gitkeep" || strings.HasSuffix(entry.Name(), ".gz") {
 			continue
 		}
 		name := entry.Name()
-		registerStaticHandler(r, "/console/"+name, func(_ string) ([]byte, error) {
-			return console.DistFS.ReadFile("dist/" + name)
+		registerStaticHandler(r, prefix+"/"+name, func(_ string) ([]byte, error) {
+			return fs.ReadFile(root + "/" + name)
 		}, func(_ string) ([]byte, error) {
-			return console.DistFS.ReadFile("dist/" + name + ".gz")
+			return fs.ReadFile(root + "/" + name + ".gz")
 		})
 	}
 }

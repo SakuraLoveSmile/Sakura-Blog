@@ -99,6 +99,11 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 		"GET /api/v1/dashboard/stellar-version",
 		"GET /api/v1/plugins/catalog",
 		"GET /api/v1/modules",
+		"GET /api/v1/uc/me",
+		"GET /api/v1/uc/posts",
+		"GET /api/v1/uc/attachments",
+		"POST /api/v1/uc/posts",
+		"POST /api/v1/uc/attachments/upload",
 	} {
 		if !routes[want] {
 			t.Errorf("route %q not registered", want)
@@ -161,6 +166,8 @@ func TestConsoleRouteOwnershipSnapshot(t *testing.T) {
 		"GET /api/v1/posts",
 		"PUT /api/v1/settings/:section",
 		"POST /api/v1/backup/restore",
+		"GET /api/v1/uc/me",
+		"GET /api/v1/uc/posts",
 	} {
 		if !routes[want] {
 			t.Errorf("Console route missing from ownership snapshot: %s", want)

@@ -80,7 +80,7 @@ func (h *Handler) importAttachmentURL(c *gin.Context) {
 			groupID = req.GroupID
 		}
 	}
-	attachment, err := h.persistImportedAttachment(filename, mimeType, data, groupID)
+	attachment, err := h.persistImportedAttachment(filename, mimeType, data, groupID, c.GetInt64("userID"))
 	if err != nil {
 		if errors.Is(err, errImportedImage) {
 			Fail(c, http.StatusBadRequest, err.Error())
@@ -135,7 +135,7 @@ func attachmentURLFileInfo(target *url.URL, contentType string) (filename, mimeT
 	return base, mimeType, true
 }
 
-func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData []byte, groupID int64) (*store.Attachment, error) {
+func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData []byte, groupID, ownerID int64) (*store.Attachment, error) {
 	res, err := media.OptimizeImage(srcData, mimeType)
 	if err != nil {
 		return nil, errImportedImage
@@ -167,6 +167,7 @@ func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData [
 		Filename: filename, Path: filepath.ToSlash(relPath), URL: "/uploads/" + filepath.ToSlash(relPath),
 		Mime: outMime, Size: int64(len(mainData)), ThumbPath: thumbPath, ThumbURL: thumbURL,
 		Width: width, Height: height, GroupID: groupID,
+		OwnerID: ownerID,
 	}
 	if _, err := h.store.CreateAttachment(attachment); err != nil {
 		_ = h.storage.Remove(attachment.Path)

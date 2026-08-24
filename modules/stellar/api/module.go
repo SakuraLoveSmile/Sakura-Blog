@@ -41,10 +41,12 @@ func Mount(r *gin.Engine, d Dependencies) error {
 	}
 	identityRoutes := publicIdentity.PublicRoutes()
 	auth := r.Group("/api/auth")
+	auth.GET("/register/challenge", identityRoutes.RegisterChallenge)
 	auth.POST("/register", identityRoutes.Register)
 	auth.POST("/login", identityRoutes.Login)
 	auth.GET("/me", identityRoutes.Me)
 	auth.POST("/logout", identityRoutes.Logout)
+	auth.POST("/upgrade", identityRoutes.Upgrade)
 
 	if d.Comments != nil && d.Site != nil && d.Site.Load() != nil && d.Site.Load().Comments.Enabled {
 		commentRoutes := d.Comments.PublicRoutes()

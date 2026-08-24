@@ -12,3 +12,4 @@ packages:
       - "errors.go"
       - "module.go"
       - "shortcode_catalog.go"
+      - "uc.go"

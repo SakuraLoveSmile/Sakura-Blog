@@ -37,9 +37,17 @@ func Mount(r *gin.Engine, d MountDeps) (*api.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	ucIndex, err := setupUCRoutes(r, d.DevMode, d.Root)
+	if err != nil {
+		return nil, err
+	}
 	r.NoRoute(func(c *gin.Context) {
-		if consoleIndex != nil && strings.HasPrefix(c.Request.URL.Path, "/console") {
+		if consoleIndex != nil && (c.Request.URL.Path == "/console" || strings.HasPrefix(c.Request.URL.Path, "/console/")) {
 			writeConsoleData(c, "text/html; charset=utf-8", consoleIndex.plain, consoleIndex.gzip)
+			return
+		}
+		if ucIndex != nil && (c.Request.URL.Path == "/uc" || strings.HasPrefix(c.Request.URL.Path, "/uc/")) {
+			writeConsoleData(c, "text/html; charset=utf-8", ucIndex.plain, ucIndex.gzip)
 			return
 		}
 		if d.Fallback != nil {

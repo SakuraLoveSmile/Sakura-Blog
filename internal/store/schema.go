@@ -144,7 +144,8 @@ var tableDDL = map[string]string{
 		thumb_path TEXT NOT NULL DEFAULT '',
 		thumb_url  TEXT NOT NULL DEFAULT '',
 		width      INTEGER NOT NULL DEFAULT 0,
-		height     INTEGER NOT NULL DEFAULT 0
+		height     INTEGER NOT NULL DEFAULT 0,
+		owner_id   INTEGER NOT NULL DEFAULT 0
 	);
 	CREATE INDEX IF NOT EXISTS idx_attachments_created ON attachments(created_at);`,
 

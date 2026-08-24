@@ -21,6 +21,7 @@ type Attachment struct {
 	Width     int    // 图片宽度（px），0=非图片/未知
 	Height    int    // 图片高度（px）
 	GroupID   int64  // 所属分组 id，0=未分组（Spec 44）
+	OwnerID   int64  // 上传者 users.id；0=历史/系统附件
 }
 
 // TableName Entity 接口：attachments 表。
@@ -28,12 +29,12 @@ func (a *Attachment) TableName() string { return "attachments" }
 
 // Columns Entity 接口：全列，首列为 id。
 func (a *Attachment) Columns() []string {
-	return []string{"id", "filename", "path", "url", "mime", "size", "created_at", "thumb_path", "thumb_url", "width", "height", "group_id"}
+	return []string{"id", "filename", "path", "url", "mime", "size", "created_at", "thumb_path", "thumb_url", "width", "height", "group_id", "owner_id"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (a *Attachment) Values() []any {
-	return []any{a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt, a.ThumbPath, a.ThumbURL, a.Width, a.Height, a.GroupID}
+	return []any{a.Filename, a.Path, a.URL, a.Mime, a.Size, a.CreatedAt, a.ThumbPath, a.ThumbURL, a.Width, a.Height, a.GroupID, a.OwnerID}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -41,7 +42,7 @@ func (a *Attachment) SetID(id int64) { a.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (a *Attachment) ScanRow(row rowScanner) error {
-	return row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height, &a.GroupID)
+	return row.Scan(&a.ID, &a.Filename, &a.Path, &a.URL, &a.Mime, &a.Size, &a.CreatedAt, &a.ThumbPath, &a.ThumbURL, &a.Width, &a.Height, &a.GroupID, &a.OwnerID)
 }
 
 // UngroupedGroupID 未分组语义常量：不建实体行，group_id=0 即未分组（Spec 44）。
@@ -62,8 +63,11 @@ func (s *Store) EnsureAttachmentsTable() error {
 		`ALTER TABLE attachments ADD COLUMN width INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE attachments ADD COLUMN height INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE attachments ADD COLUMN group_id INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE attachments ADD COLUMN owner_id INTEGER NOT NULL DEFAULT 0`,
 	} {
-		s.db.Exec(alter)
+		if _, err := s.db.Exec(alter); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			return fmt.Errorf("migrate attachments: %w", err)
+		}
 	}
 	return nil
 }
@@ -84,6 +88,15 @@ func (s *Store) CreateAttachment(a *Attachment) (int64, error) {
 // keyword 模糊匹配 filename；kind 为 "image" 时仅返回 image/* 类型，"other" 返回非图片。
 // groupID 为 nil 时不按分组筛选（全部）；为 0 时仅未分组；>0 时指定组（Spec 44）。
 func (s *Store) ListAttachments(page, size int, keyword, kind string, groupID *int64) ([]*Attachment, error) {
+	return s.listAttachments(nil, page, size, keyword, kind, groupID)
+}
+
+// ListAttachmentsByOwner lists only attachments uploaded by ownerID.
+func (s *Store) ListAttachmentsByOwner(ownerID int64, page, size int, keyword, kind string, groupID *int64) ([]*Attachment, error) {
+	return s.listAttachments(&ownerID, page, size, keyword, kind, groupID)
+}
+
+func (s *Store) listAttachments(ownerID *int64, page, size int, keyword, kind string, groupID *int64) ([]*Attachment, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -93,8 +106,12 @@ func (s *Store) ListAttachments(page, size int, keyword, kind string, groupID *i
 	offset := (page - 1) * size
 
 	where, args := attachmentFilter(keyword, kind, groupID)
+	if ownerID != nil {
+		where += " AND owner_id = ?"
+		args = append(args, *ownerID)
+	}
 
-	rows, err := s.db.Query(`SELECT id, filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height, group_id FROM attachments `+where+`
+	rows, err := s.db.Query(`SELECT id, filename, path, url, mime, size, created_at, thumb_path, thumb_url, width, height, group_id, owner_id FROM attachments `+where+`
 		ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ? OFFSET ?`, append(args, size, offset)...)
 	if err != nil {
 		return nil, fmt.Errorf("list attachments: %w", err)
@@ -116,7 +133,20 @@ func (s *Store) ListAttachments(page, size int, keyword, kind string, groupID *i
 
 // CountAttachments 返回附件总数（支持 keyword/kind/group 筛选）。
 func (s *Store) CountAttachments(keyword, kind string, groupID *int64) (int, error) {
+	return s.countAttachments(nil, keyword, kind, groupID)
+}
+
+// CountAttachmentsByOwner counts only attachments uploaded by ownerID.
+func (s *Store) CountAttachmentsByOwner(ownerID int64, keyword, kind string, groupID *int64) (int, error) {
+	return s.countAttachments(&ownerID, keyword, kind, groupID)
+}
+
+func (s *Store) countAttachments(ownerID *int64, keyword, kind string, groupID *int64) (int, error) {
 	where, args := attachmentFilter(keyword, kind, groupID)
+	if ownerID != nil {
+		where += " AND owner_id = ?"
+		args = append(args, *ownerID)
+	}
 	var n int
 	err := s.db.QueryRow(`SELECT COUNT(*) FROM attachments `+where, args...).Scan(&n)
 	if err != nil {

@@ -17,10 +17,12 @@ func mountPublicIdentityForTest(r *gin.Engine, st *store.Store, site *tmpl.Site)
 	r.Use(reader.Middleware())
 	routes := reader.PublicRoutes()
 	auth := r.Group("/api/auth")
+	auth.GET("/register/challenge", routes.RegisterChallenge)
 	auth.POST("/register", routes.Register)
 	auth.POST("/login", routes.Login)
 	auth.GET("/me", routes.Me)
 	auth.POST("/logout", routes.Logout)
+	auth.POST("/upgrade", routes.Upgrade)
 }
 
 func signReaderCookie(u *store.User) string {

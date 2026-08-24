@@ -5,7 +5,10 @@ import { readdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const dist = join(dirname(fileURLToPath(import.meta.url)), "..", "dist", "assets");
+const distRoot = process.argv[2]
+  ? join(process.cwd(), process.argv[2])
+  : join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
+const dist = join(distRoot, "assets");
 
 let removed = 0;
 for (const name of readdirSync(dist)) {

@@ -450,6 +450,34 @@ func (h *Handler) register(r *gin.Engine) {
 		author.GET("/modules", h.listModules)
 	}
 
+	// User Center: readers may inspect their account and upgrade; article and
+	// attachment surfaces require author. The write handlers reuse the Batch 4
+	// ownership checks and server-side author binding.
+	uc := v1.Group("/uc", h.apiAuth())
+	{
+		uc.GET("/me", h.ucMe)
+	}
+	ucAuthor := v1.Group("/uc", h.apiAuth(), h.requireRole(store.RoleAuthor))
+	{
+		ucAuthor.GET("/posts", h.listUCPosts)
+		ucAuthor.GET("/posts/:slug", h.getUCPost)
+		ucAuthor.POST("/posts", h.createUCPost)
+		ucAuthor.PUT("/posts/:slug", h.updateUCPost)
+		ucAuthor.DELETE("/posts/:slug", h.deletePost)
+		ucAuthor.PUT("/posts/:slug/draft", h.saveUCDraft)
+		ucAuthor.DELETE("/posts/:slug/draft", h.discardPostDraft)
+		ucAuthor.POST("/posts/:slug/publish", h.publishUCPost)
+		ucAuthor.POST("/posts/:slug/restore", h.restorePost)
+		ucAuthor.DELETE("/posts/:slug/purge", h.purgePost)
+		ucAuthor.PUT("/posts/:slug/ai-summary", h.updateAISummary)
+		ucAuthor.POST("/revisions/:id/restore", h.restoreRevision)
+
+		ucAuthor.GET("/attachments", h.listUCAttachments)
+		ucAuthor.POST("/attachments/upload", h.uploadAttachment)
+		ucAuthor.POST("/attachments/import-url", h.importAttachmentURL)
+		ucAuthor.DELETE("/attachments/:id", h.deleteUCAttachment)
+	}
+
 	// 系统管理组（仅 admin，且站点必须已启用密码认证——安全审计 2026-08-16）：
 	// 用户管理 / 登录日志 / 站点设置 / 功能模块 / 备份导出 / SEO 模块 / 友链管理 / AI 代理。
 	sys := v1.Group("", h.apiAuth(), h.requireSysAdmin())
@@ -561,6 +589,16 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 				c.Next()
 				return
 			}
+		}
+		// Public author sessions use blog_user so the UC app can share the same
+		// identity cookie. Account-level endpoints (profile, notifications, 2FA,
+		// PAT and password) are safe to reuse; content/system groups still apply
+		// their role gates below.
+		if public := identity.CurrentUser(c); public.Verified && public.ID > 0 {
+			c.Set("userID", public.ID)
+			c.Set("userRole", normalizeRole(public.Role))
+			c.Next()
+			return
 		}
 		AbortFail(c, http.StatusUnauthorized, "未登录或登录已过期")
 	}

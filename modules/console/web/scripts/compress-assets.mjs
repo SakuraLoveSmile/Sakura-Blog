@@ -4,7 +4,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const gzipAsync = promisify(gzip);
-const distRoot = resolve("dist");
+const distRoot = resolve(process.argv[2] ?? "dist");
 
 async function filesUnder(dir) {
   const entries = await readdir(dir, { withFileTypes: true });

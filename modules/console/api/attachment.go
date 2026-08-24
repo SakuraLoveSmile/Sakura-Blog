@@ -201,6 +201,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		Width:     imgW,
 		Height:    imgH,
 		GroupID:   uploadGroupID(c, h.store),
+		OwnerID:   c.GetInt64("userID"),
 	}
 	if _, err := h.store.CreateAttachment(att); err != nil {
 		h.storage.Remove(att.Path)

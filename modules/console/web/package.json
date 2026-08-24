@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build && node scripts/strip-legacy-fonts.mjs && node scripts/compress-assets.mjs",
+    "build": "vue-tsc -b && vite build && node scripts/strip-legacy-fonts.mjs && node scripts/compress-assets.mjs && vite build --config vite.uc.config.ts && node scripts/strip-legacy-fonts.mjs dist-uc && node scripts/compress-assets.mjs dist-uc",
     "test": "vue-tsc -b && tsx --test ../tests/*.test.ts",
     "preview": "vite preview"
   },

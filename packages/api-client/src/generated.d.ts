@@ -28,3 +28,65 @@ export interface ModuleToggleResponse {
 export interface ShortcodeCatalogResponse {
   items: unknown /* post.ShortcodeCatalogEntry */[];
 }
+
+//////////
+// source: uc.go
+
+/**
+ * UCMeResponse is the account summary consumed by the User Center shell.
+ */
+export interface UCMeResponse {
+  id: number /* int64 */;
+  username: string;
+  display_name: string;
+  email: string;
+  avatar: string;
+  role: string;
+  status: string;
+  has_2fa: boolean;
+}
+export interface UCPostListResponse {
+  items: (UCPostResponse | undefined)[];
+  total: number /* int */;
+  page: number /* int */;
+  size: number /* int */;
+}
+export interface UCAttachmentListResponse {
+  items: (UCAttachmentResponse | undefined)[];
+  total: number /* int */;
+  page: number /* int */;
+  size: number /* int */;
+}
+/**
+ * UCPostResponse is the stable User Center article projection. It deliberately
+ * contains no site-setting mutation contract; the editor only sends the
+ * limited fields handled by mergeUCPostBody.
+ */
+export interface UCPostResponse {
+  slug: string;
+  title: string;
+  excerpt: string;
+  content_md: string;
+  status: string;
+  cover: string;
+  tags: string;
+  authors: string[];
+  author: string;
+  created_at: string;
+  updated_at: string;
+  views: number /* int64 */;
+  has_draft: boolean;
+  draft?: unknown /* json.RawMessage */;
+}
+export interface UCAttachmentResponse {
+  id: number /* int64 */;
+  filename: string;
+  url: string;
+  mime: string;
+  size: number /* int64 */;
+  created_at: string;
+  thumb_url: string;
+  width: number /* int */;
+  height: number /* int */;
+  group_id: number /* int64 */;
+}

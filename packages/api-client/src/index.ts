@@ -16,5 +16,6 @@ export * from "./api/monitoring";
 export * from "./api/plugins";
 export * from "./api/settings";
 export * from "./api/wiki";
+export * from "./api/uc";
 
 export { default } from "./transport";
