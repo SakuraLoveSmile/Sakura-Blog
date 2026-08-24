@@ -39,7 +39,7 @@ func Mount(r *gin.Engine, d MountDeps) (*api.Handler, error) {
 	}
 	r.NoRoute(func(c *gin.Context) {
 		if consoleIndex != nil && strings.HasPrefix(c.Request.URL.Path, "/console") {
-			c.Data(http.StatusOK, "text/html; charset=utf-8", consoleIndex)
+			writeConsoleData(c, "text/html; charset=utf-8", consoleIndex.plain, consoleIndex.gzip)
 			return
 		}
 		if d.Fallback != nil {

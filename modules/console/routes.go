@@ -1,12 +1,12 @@
 package console
 
 import (
-	"io/fs"
 	"log"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,11 +14,14 @@ import (
 	console "blog/modules/console/web"
 )
 
-// setupConsoleRoutes Vue Console SPA 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 modules/console/web/dist 读。
-// 只注册 /console/assets/* 与根级静态文件；其余 /console 路径（含 /console/ 本身与 SPA 前端路由）
-// 由调用方在 NoRoute 返回 index.html，保证前端路由刷新不 404。
-// 返回 index.html 内容（nil 表示 console 不可用，dev 模式缺 dist 不报错）。
-func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) ([]byte, error) {
+type consoleIndexData struct {
+	plain []byte
+	gzip  []byte
+}
+
+// setupConsoleRoutes Vue Console 静态托管（/console/）：默认走 go:embed（单二进制），-dev 从磁盘 modules/console/web/dist 读。
+// 静态文件统一按 Accept-Encoding 协商预压缩 .gz；其余 /console 路径由 NoRoute 返回 index.html。
+func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) (*consoleIndexData, error) {
 	if devMode {
 		consoleDir := filepath.Join(root, "modules", "console", "web", "dist")
 		info, err := os.Stat(consoleDir)
@@ -26,57 +29,129 @@ func setupConsoleRoutes(r *gin.Engine, devMode bool, root string) ([]byte, error
 			log.Printf("console dist not found: %s (dev), /console/ unavailable", consoleDir)
 			return nil, nil
 		}
-		r.Static("/console/assets", filepath.Join(consoleDir, "assets"))
-		// 根级静态文件（favicon.svg 等）
-		if entries, err := os.ReadDir(consoleDir); err == nil {
-			for _, e := range entries {
-				if !e.IsDir() && e.Name() != "index.html" {
-					name := e.Name()
-					r.StaticFile("/console/"+name, filepath.Join(consoleDir, name))
+		registerDiskStatic(r, consoleDir)
+		plain, err := os.ReadFile(filepath.Join(consoleDir, "index.html"))
+		if err != nil {
+			return nil, err
+		}
+		compressed, _ := os.ReadFile(filepath.Join(consoleDir, "index.html.gz"))
+		log.Printf("console SPA loaded from %s (dev)", consoleDir)
+		return &consoleIndexData{plain: plain, gzip: compressed}, nil
+	}
+
+	registerEmbedStatic(r)
+	plain, err := console.DistFS.ReadFile("dist/index.html")
+	if err != nil {
+		return nil, err
+	}
+	compressed, _ := console.DistFS.ReadFile("dist/index.html.gz")
+	log.Printf("console SPA loaded from embed")
+	return &consoleIndexData{plain: plain, gzip: compressed}, nil
+}
+
+func registerDiskStatic(r *gin.Engine, distRoot string) {
+	registerStaticHandler(r, "/console/assets/*filepath", func(name string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(distRoot, "assets", name))
+	}, func(name string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(distRoot, "assets", name+".gz"))
+	})
+	if entries, err := os.ReadDir(distRoot); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() || entry.Name() == "index.html" || strings.HasSuffix(entry.Name(), ".gz") {
+				continue
+			}
+			name := entry.Name()
+			registerStaticHandler(r, "/console/"+name, func(_ string) ([]byte, error) {
+				return os.ReadFile(filepath.Join(distRoot, name))
+			}, func(_ string) ([]byte, error) {
+				return os.ReadFile(filepath.Join(distRoot, name+".gz"))
+			})
+		}
+	}
+}
+
+func registerEmbedStatic(r *gin.Engine) {
+	registerStaticHandler(r, "/console/assets/*filepath", func(name string) ([]byte, error) {
+		return console.DistFS.ReadFile("dist/assets/" + name)
+	}, func(name string) ([]byte, error) {
+		return console.DistFS.ReadFile("dist/assets/" + name + ".gz")
+	})
+	entries, err := console.DistFS.ReadDir("dist")
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Name() == "index.html" || strings.HasSuffix(entry.Name(), ".gz") {
+			continue
+		}
+		name := entry.Name()
+		registerStaticHandler(r, "/console/"+name, func(_ string) ([]byte, error) {
+			return console.DistFS.ReadFile("dist/" + name)
+		}, func(_ string) ([]byte, error) {
+			return console.DistFS.ReadFile("dist/" + name + ".gz")
+		})
+	}
+}
+
+type staticReader func(name string) ([]byte, error)
+
+func registerStaticHandler(r *gin.Engine, route string, plain staticReader, compressed staticReader) {
+	handler := func(c *gin.Context) {
+		name := strings.TrimPrefix(c.Param("filepath"), "/")
+		if name == "" {
+			name = filepath.Base(route)
+		}
+		if strings.Contains(name, "..") || filepath.IsAbs(name) {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		data, err := plain(name)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		gzipData, _ := compressed(name)
+		writeConsoleData(c, consoleContentType(name), data, gzipData)
+	}
+	r.GET(route, handler)
+	r.HEAD(route, handler)
+}
+
+func writeConsoleData(c *gin.Context, contentType string, plain, compressed []byte) {
+	if len(compressed) > 0 && acceptsGzip(c.GetHeader("Accept-Encoding")) {
+		c.Header("Content-Encoding", "gzip")
+		c.Header("Vary", "Accept-Encoding")
+		c.Header("Content-Length", strconv.Itoa(len(compressed)))
+		c.Data(http.StatusOK, contentType, compressed)
+		return
+	}
+	c.Header("Vary", "Accept-Encoding")
+	c.Header("Content-Length", strconv.Itoa(len(plain)))
+	c.Data(http.StatusOK, contentType, plain)
+}
+
+func acceptsGzip(header string) bool {
+	for _, raw := range strings.Split(header, ",") {
+		parts := strings.Split(raw, ";")
+		encoding := strings.TrimSpace(strings.ToLower(parts[0]))
+		if encoding != "gzip" && encoding != "*" {
+			continue
+		}
+		quality := 1.0
+		for _, parameter := range parts[1:] {
+			keyValue := strings.SplitN(strings.TrimSpace(parameter), "=", 2)
+			if len(keyValue) == 2 && strings.EqualFold(keyValue[0], "q") {
+				if value, err := strconv.ParseFloat(keyValue[1], 64); err == nil {
+					quality = value
 				}
 			}
 		}
-		consoleIndex, _ := os.ReadFile(filepath.Join(consoleDir, "index.html"))
-		log.Printf("console SPA loaded from %s (dev)", consoleDir)
-		return consoleIndex, nil
+		return quality > 0
 	}
-
-	// embed 模式：console.DistFS（all:dist）
-	assetsSub, err := fs.Sub(console.DistFS, "dist/assets")
-	if err != nil {
-		return nil, err
-	}
-	r.StaticFS("/console/assets", http.FS(assetsSub))
-	// 根级静态文件（favicon.svg / icons.svg 等）
-	entries, err := console.DistFS.ReadDir("dist")
-	if err != nil {
-		return nil, err
-	}
-	for _, e := range entries {
-		if e.IsDir() || e.Name() == "index.html" {
-			continue
-		}
-		name := e.Name()
-		r.GET("/console/"+name, func(c *gin.Context) {
-			data, err := console.DistFS.ReadFile("dist/" + name)
-			if err != nil {
-				c.Status(http.StatusNotFound)
-				return
-			}
-			c.Data(http.StatusOK, consoleContentType(name), data)
-		})
-	}
-	consoleIndex, err := console.DistFS.ReadFile("dist/index.html")
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("console SPA loaded from embed")
-	return consoleIndex, nil
+	return false
 }
 
 // consoleContentType 按扩展名推断 console 根级静态文件的 Content-Type。
-// 常见类型显式返回（不依赖运行环境 mime 数据库，alpine 精简镜像也能正确），
-// 其余 fallback 到 mime.TypeByExtension，再不行用 octet-stream。
 func consoleContentType(name string) string {
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ".svg":
