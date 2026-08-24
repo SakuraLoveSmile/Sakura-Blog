@@ -243,7 +243,12 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 	// settings admin 段非空（旧版本明文密码）时：确保 users 表 admin 用户存在且 bcrypt 匹配该密码
 	// （缺失/不匹配则创建/更新），随后清空 admin 段；之后密码唯一真值在 users 表。
 	if err := st.EnsureUsersTable(); err != nil {
-		log.Printf("[warn] EnsureUsersTable: %v", err)
+		return fmt.Errorf("ensure users table: %w", err)
+	}
+	// 文章 ownership 迁移依赖 users.username -> users.id；在 seed_on_start
+	// 可能写文章之前先完成，避免旧 TEXT 关联表被新写路径继续使用。
+	if err := st.EnsurePostAuthorsTable(); err != nil {
+		return fmt.Errorf("ensure post authors table: %w", err)
 	}
 	if settings, _ := st.AllSettings(); settings[SectionAdmin] != "" {
 		var adminCfg struct {

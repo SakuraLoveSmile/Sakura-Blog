@@ -277,7 +277,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := normalizePostAuthorsRequest(&req, nil); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, nil); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -318,6 +318,9 @@ func (h *Handler) createPost(c *gin.Context) {
 // updatePost PUT /api/v1/posts/:slug：更新文章。
 func (h *Handler) updatePost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -345,7 +348,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -409,6 +412,9 @@ func defaultCover(slug string) string {
 // 不渲染、不产 revision、不影响线上内容；列表小绿点据此显示。
 func (h *Handler) savePostDraft(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -428,7 +434,7 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
-	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -448,6 +454,9 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 // 请求体与 updatePost 相同（整份表单）；强制 status=published，成功后清空草稿头。
 func (h *Handler) publishPost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	existing, err := h.store.GetBySlug(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -467,7 +476,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
-	if err := normalizePostAuthorsRequest(&req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -527,6 +536,9 @@ func (h *Handler) publishPost(c *gin.Context) {
 // discardPostDraft DELETE /api/v1/posts/:slug/draft：放弃草稿头。
 func (h *Handler) discardPostDraft(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	if err := h.store.ClearDraft(slug); err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -571,6 +583,9 @@ func (h *Handler) snapshotRevision(old, neu *store.Post) {
 // deletePost DELETE /api/v1/posts/:slug：软删除文章（移入回收站）。
 func (h *Handler) deletePost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	if err := h.store.Delete(slug); err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -581,6 +596,9 @@ func (h *Handler) deletePost(c *gin.Context) {
 // restorePost POST /api/v1/posts/:slug/restore：从回收站恢复文章。
 func (h *Handler) restorePost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	if err := h.store.RestorePost(slug); err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -591,6 +609,9 @@ func (h *Handler) restorePost(c *gin.Context) {
 // purgePost DELETE /api/v1/posts/:slug/purge：彻底删除文章（物理删除）。
 func (h *Handler) purgePost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	if err := h.store.PurgePost(slug); err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -604,6 +625,9 @@ func (h *Handler) purgePost(c *gin.Context) {
 // 请求体 {"summary": "..."}；传空串即清空。独立于主保存链路，避免常规保存误清。
 func (h *Handler) updateAISummary(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	var req struct {
 		Summary string `json:"summary"`
 	}
@@ -655,9 +679,10 @@ type postRequest struct {
 	MetaDescription string `json:"meta_description"`
 	MetaKeywords    string `json:"meta_keywords"`
 	// 多作者体系：Authors 明确提交时替换完整作者列表；Author 为旧客户端兼容字段。
-	Authors   json.RawMessage `json:"authors,omitempty"`
-	Author    string          `json:"author"`
-	authorIDs []string
+	Authors    json.RawMessage `json:"authors,omitempty"`
+	Author     string          `json:"author"`
+	authorRefs []string
+	authorIDs  []int64
 	// AI 成分标签档位（1.41 ai_label）：空=不渲染；空串提交时 store 层保留旧值
 	AILabel string `json:"ai_label"`
 }
@@ -687,8 +712,9 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		MetaDescription: strings.TrimSpace(req.MetaDescription),
 		MetaKeywords:    strings.TrimSpace(req.MetaKeywords),
 		// 多作者体系（normalizePostAuthorsRequest 已在 handler 中统一填充）。
-		Authors: normalizeRequestAuthorIDs(req),
-		Author:  strings.TrimSpace(req.Author),
+		Authors:   normalizeRequestAuthorRefs(req),
+		AuthorIDs: append([]int64(nil), req.authorIDs...),
+		Author:    strings.TrimSpace(req.Author),
 		// AI 成分标签（1.41）：空串经 store NULLIF 保留旧值
 		AILabel: strings.TrimSpace(req.AILabel),
 	}
@@ -746,15 +772,15 @@ func (h *Handler) normalizePostCategories(req *postRequest) error {
 	return nil
 }
 
-func normalizeRequestAuthorIDs(req *postRequest) []string {
-	if len(req.authorIDs) > 0 {
-		return append([]string(nil), req.authorIDs...)
+func normalizeRequestAuthorRefs(req *postRequest) []string {
+	if len(req.authorRefs) > 0 {
+		return append([]string(nil), req.authorRefs...)
 	}
-	var ids []string
+	var refs []string
 	if len(bytes.TrimSpace(req.Authors)) > 0 {
-		_ = json.Unmarshal(req.Authors, &ids)
+		_ = json.Unmarshal(req.Authors, &refs)
 	}
-	return normalizeAuthorIDs(ids)
+	return normalizeAuthorIDs(refs)
 }
 
 func normalizedPostAuthors(p *store.Post) []string {
@@ -783,8 +809,9 @@ func normalizeAuthorIDs(ids []string) []string {
 }
 
 // normalizePostAuthorsRequest 区分旧请求与新请求：authors 缺省时，单个 author 仍可替换作者；
-// 两者都缺省时保留已有关联。明确传 [] 则清空作者。
-func normalizePostAuthorsRequest(req *postRequest, fallback []string) error {
+// 两者都缺省时保留已有关联。明确传 [] 则清空作者。author 角色随后由服务端强制
+// 绑定当前用户，不能信任请求体里的作者引用。
+func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, fallback []string) error {
 	raw := bytes.TrimSpace(req.Authors)
 	var ids []string
 	provided := len(raw) > 0
@@ -803,7 +830,8 @@ func normalizePostAuthorsRequest(req *postRequest, fallback []string) error {
 		}
 	}
 	ids = normalizeAuthorIDs(ids)
-	req.authorIDs = ids
+	req.authorRefs = ids
+	req.authorIDs = nil
 	req.Author = ""
 	if len(ids) > 0 {
 		req.Author = ids[0]
@@ -813,7 +841,7 @@ func normalizePostAuthorsRequest(req *postRequest, fallback []string) error {
 		return err
 	}
 	req.Authors = b
-	return nil
+	return forceCurrentAuthor(c, req)
 }
 
 func normalizeTags(raw string) string {

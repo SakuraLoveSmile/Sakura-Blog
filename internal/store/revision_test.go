@@ -14,6 +14,17 @@ func newTestStore(t *testing.T) *Store {
 	if err := s.EnsureRevisionsTable(); err != nil {
 		t.Fatalf("ensure revisions table: %v", err)
 	}
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users table: %v", err)
+	}
+	for _, username := range []string{"alice", "bob", "carol", "dave", "legacy"} {
+		if err := s.CreateUser(&User{Username: username, PasswordHash: "test", AuthSecret: GenerateAuthSecret(), Role: RoleAuthor}); err != nil {
+			t.Fatalf("create test user %s: %v", username, err)
+		}
+	}
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
 	t.Cleanup(func() { s.Close() })
 	return s
 }

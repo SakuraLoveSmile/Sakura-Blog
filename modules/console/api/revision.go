@@ -80,6 +80,9 @@ func (h *Handler) restoreRevision(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "无效的版本 id")
 		return
 	}
+	if !h.requireRevisionOwnership(c, id) {
+		return
+	}
 	rev, err := h.store.GetRevision(id)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())

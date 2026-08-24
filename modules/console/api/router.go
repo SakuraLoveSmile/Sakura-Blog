@@ -190,6 +190,7 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		fn   func() error
 	}{
 		{"users", st.EnsureUsersTable},                      // 多用户/读者注册
+		{"post_authors", st.EnsurePostAuthorsTable},         // 文章 ownership（users.id）
 		{"ratings", st.EnsureRatingsTable},                  // 评分数据服务（Spec 20）
 		{"votes", st.EnsureVotesTable},                      // 投票数据服务（Spec 30）
 		{"revisions", st.EnsureRevisionsTable},              // 文章版本历史（Spec 22）

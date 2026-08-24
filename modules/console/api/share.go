@@ -125,6 +125,9 @@ func (h *Handler) listPostShares(c *gin.Context) {
 // 请求体: {share_type: "published"|"draft", expires_at: ""}
 func (h *Handler) createShare(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 
 	// 验证文章存在
 	p, err := h.store.GetBySlug(slug)
@@ -178,6 +181,9 @@ func (h *Handler) deleteShare(c *gin.Context) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "无效的 id")
+		return
+	}
+	if !h.requireShareOwnership(c, id) {
 		return
 	}
 

@@ -59,8 +59,9 @@ type Post struct {
 	AILabel         string // AI 成分标签档位（1.41：manual/reviewed/polished/generated，空=不渲染）
 
 	// 多作者体系：Authors 按文章中的显示顺序保存；Author 保留第一位作者，兼容旧数据与旧调用方。
-	Authors []string
-	Author  string
+	Authors   []string
+	AuthorIDs []int64 // 关联 users.id；Authors 仅作用户名显示与旧主题兼容。
+	Author    string
 
 	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无摘要；前台文章顶部展示。
 	AISummary string
@@ -428,6 +429,13 @@ func (s *Store) migrateColumns() error {
 		}
 		existing[name] = true
 	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate table_info: %w", err)
+	}
+	// Store 使用单连接 SQLite；释放 PRAGMA 游标后才能继续做迁移查询。
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close table_info: %w", err)
+	}
 	for col, alter := range want {
 		if existing[col] {
 			continue // 列已存在，无需迁移
@@ -441,21 +449,17 @@ func (s *Store) migrateColumns() error {
 	if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_posts_status_publish ON posts(status, publish_at)`); err != nil {
 		return fmt.Errorf("create idx_posts_status_publish: %w", err)
 	}
-	// 多作者关联表：作者数量可变，不能把多个 ID 拼进 posts.author 单列。
-	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS post_authors (
-		post_id    INTEGER NOT NULL,
-		author_id  TEXT NOT NULL,
-		sort_order INTEGER NOT NULL DEFAULT 0,
-		PRIMARY KEY (post_id, author_id),
-		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
-	);
-	CREATE INDEX IF NOT EXISTS idx_post_authors_author_order ON post_authors(author_id, sort_order, post_id);`); err != nil {
-		return fmt.Errorf("create post_authors table: %w", err)
+	// 多作者关联表在 Store.New 阶段只确保新结构存在；旧 TEXT 关联表要等
+	// users 表就绪后由 EnsurePostAuthorsTable 完成用户名 -> users.id 迁移。
+	if err := s.ensurePostAuthorsTableCreated(); err != nil {
+		return err
 	}
-	// 老库回填：原 posts.author 的单作者记录成为顺序 0 的关联记录；INSERT OR IGNORE 保证幂等。
-	if _, err := s.db.Exec(`INSERT OR IGNORE INTO post_authors (post_id, author_id, sort_order)
-		SELECT id, TRIM(author), 0 FROM posts WHERE TRIM(author) != ''`); err != nil {
-		return fmt.Errorf("backfill post_authors: %w", err)
+	if usersExists, err := s.tableExists("users"); err != nil {
+		return err
+	} else if usersExists {
+		if err := s.EnsurePostAuthorsTable(); err != nil {
+			return err
+		}
 	}
 	return s.migrateCategories()
 }
@@ -713,17 +717,14 @@ func (s *Store) Create(p *Post) (int64, error) {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
-	p.Authors = normalizePostAuthors(p.Authors, p.Author)
-	if len(p.Authors) > 0 {
-		p.Author = p.Authors[0]
-	} else {
-		p.Author = ""
+	if err := s.preparePostAuthors(p); err != nil {
+		return 0, fmt.Errorf("prepare post authors: %w", err)
 	}
 	id, err := repo(s, &Post{}).Create(p)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
-	if err := s.replacePostAuthors(id, p.Authors); err != nil {
+	if err := s.replacePostAuthors(id, p.AuthorIDs); err != nil {
 		return 0, fmt.Errorf("save authors for post %s: %w", p.Slug, err)
 	}
 	if err := s.ReplacePostCategories(id, p.Categories, p.Category); err != nil {
@@ -747,6 +748,9 @@ func (s *Store) Update(slug string, p *Post) error {
 // UpdateSlug 在原文章记录上原子更新 slug 和文章内容，保留文章 ID、创建时间、阅读量，
 // 并在同一事务内替换作者/分类关联、迁移 revision slug。提交前任何一步失败都会回滚。
 func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
+	if err := s.preparePostAuthors(p); err != nil {
+		return fmt.Errorf("prepare post authors: %w", err)
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin update post %s: %w", oldSlug, err)
@@ -790,12 +794,6 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 		p.Category = ""
 	}
 	p.UpdatedAt = time.Now()
-	p.Authors = normalizePostAuthors(p.Authors, p.Author)
-	if len(p.Authors) > 0 {
-		p.Author = p.Authors[0]
-	} else {
-		p.Author = ""
-	}
 	pinned := 0
 	if p.Pinned {
 		pinned = 1
@@ -828,7 +826,7 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("update post %s: no rows affected", oldSlug)
 	}
-	if err := replacePostAuthorsTx(tx, postID, p.Authors); err != nil {
+	if err := replacePostAuthorsTx(tx, postID, p.AuthorIDs); err != nil {
 		return fmt.Errorf("save authors for post %s: %w", oldSlug, err)
 	}
 	if err := replacePostCategoriesTx(tx, postID, p.Categories, p.Category); err != nil {
@@ -1004,46 +1002,25 @@ func (s *Store) Upsert(p *Post) error {
 	return s.Update(p.Slug, p)
 }
 
-// normalizePostAuthors 清理作者 ID、去重并保持用户选择顺序；兼容只填 Author 的旧调用方。
-func normalizePostAuthors(authors []string, legacy string) []string {
-	if len(authors) == 0 && strings.TrimSpace(legacy) != "" {
-		authors = []string{legacy}
-	}
-	seen := make(map[string]struct{}, len(authors))
-	out := make([]string, 0, len(authors))
-	for _, author := range authors {
-		author = strings.TrimSpace(author)
-		if author == "" {
-			continue
-		}
-		if _, ok := seen[author]; ok {
-			continue
-		}
-		seen[author] = struct{}{}
-		out = append(out, author)
-	}
-	return out
-}
-
 // replacePostAuthors 用事务替换一篇文章的完整作者顺序。
-func (s *Store) replacePostAuthors(postID int64, authors []string) error {
+func (s *Store) replacePostAuthors(postID int64, authorIDs []int64) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if err := replacePostAuthorsTx(tx, postID, authors); err != nil {
+	if err := replacePostAuthorsTx(tx, postID, authorIDs); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-func replacePostAuthorsTx(tx *sql.Tx, postID int64, authors []string) error {
+func replacePostAuthorsTx(tx *sql.Tx, postID int64, authorIDs []int64) error {
 	if _, err := tx.Exec(`DELETE FROM post_authors WHERE post_id = ?`, postID); err != nil {
 		return err
 	}
-	for order, author := range normalizePostAuthors(authors, "") {
-		if _, err := tx.Exec(`INSERT INTO post_authors (post_id, author_id, sort_order) VALUES (?, ?, ?)`, postID, author, order); err != nil {
+	for order, authorID := range normalizeAuthorIDs(authorIDs) {
+		if _, err := tx.Exec(`INSERT INTO post_authors (post_id, author_id, sort_order) VALUES (?, ?, ?)`, postID, authorID, order); err != nil {
 			return err
 		}
 	}
@@ -1063,27 +1040,68 @@ func (s *Store) hydratePostAuthors(posts []*Post) error {
 		args[i] = p.ID
 		byID[p.ID] = p
 		p.Authors = nil
+		p.AuthorIDs = nil
 	}
-	rows, err := s.db.Query(`SELECT post_id, author_id FROM post_authors WHERE post_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY post_id, sort_order, author_id`, args...)
+	typeName, exists, err := s.postAuthorsColumnType()
 	if err != nil {
-		return fmt.Errorf("load post authors: %w", err)
+		return err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var postID int64
-		var authorID string
-		if err := rows.Scan(&postID, &authorID); err != nil {
-			return fmt.Errorf("scan post author: %w", err)
+	if exists && !isIntegerColumn(typeName) {
+		rows, err := s.db.Query(`SELECT post_id, author_id FROM post_authors WHERE post_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY post_id, sort_order, author_id`, args...)
+		if err != nil {
+			return fmt.Errorf("load legacy post authors: %w", err)
 		}
-		if p := byID[postID]; p != nil {
-			p.Authors = append(p.Authors, authorID)
-			if len(p.Authors) == 1 {
-				p.Author = authorID
+		defer rows.Close()
+		for rows.Next() {
+			var postID int64
+			var authorName string
+			if err := rows.Scan(&postID, &authorName); err != nil {
+				return fmt.Errorf("scan legacy post author: %w", err)
+			}
+			if p := byID[postID]; p != nil {
+				p.Authors = append(p.Authors, authorName)
+				if len(p.Authors) == 1 {
+					p.Author = authorName
+				}
 			}
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate post authors: %w", err)
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("iterate legacy post authors: %w", err)
+		}
+	} else if exists {
+		usersExists, err := s.tableExists("users")
+		if err != nil {
+			return err
+		}
+		query := `SELECT pa.post_id, pa.author_id, '' FROM post_authors pa WHERE pa.post_id IN (` + strings.Join(placeholders, ",") + `) ORDER BY pa.post_id, pa.sort_order, pa.author_id`
+		if usersExists {
+			query = `SELECT pa.post_id, pa.author_id, COALESCE(u.username, '') FROM post_authors pa LEFT JOIN users u ON u.id = pa.author_id WHERE pa.post_id IN (` + strings.Join(placeholders, ",") + `) ORDER BY pa.post_id, pa.sort_order, pa.author_id`
+		}
+		rows, err := s.db.Query(query, args...)
+		if err != nil {
+			return fmt.Errorf("load post authors: %w", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var postID, authorID int64
+			var authorName string
+			if err := rows.Scan(&postID, &authorID, &authorName); err != nil {
+				return fmt.Errorf("scan post author: %w", err)
+			}
+			if p := byID[postID]; p != nil {
+				p.AuthorIDs = append(p.AuthorIDs, authorID)
+				if strings.TrimSpace(authorName) == "" {
+					authorName = fmt.Sprintf("%d", authorID)
+				}
+				p.Authors = append(p.Authors, authorName)
+				if len(p.Authors) == 1 {
+					p.Author = authorName
+				}
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("iterate post authors: %w", err)
+		}
 	}
 	for _, p := range posts {
 		if len(p.Authors) == 0 && strings.TrimSpace(p.Author) != "" {

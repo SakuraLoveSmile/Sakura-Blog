@@ -25,6 +25,19 @@ func newSeedFixture(t *testing.T) (*store.Store, *post.Service, string) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
+	if err := st.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users table: %v", err)
+	}
+	for _, username := range []string{"alice", "bob"} {
+		if err := st.CreateUser(&store.User{
+			Username: username, PasswordHash: "test", AuthSecret: store.GenerateAuthSecret(), Role: store.RoleAuthor,
+		}); err != nil {
+			t.Fatalf("create author %s: %v", username, err)
+		}
+	}
+	if err := st.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
 	t.Cleanup(func() { st.Close() })
 	mdDir := t.TempDir()
 	return st, post.NewService(mdDir), mdDir

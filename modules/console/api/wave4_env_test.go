@@ -41,6 +41,13 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 	if err := st.CreateUser(user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
+	for _, username := range []string{"alice", "bob"} {
+		if err := st.CreateUser(&store.User{
+			Username: username, PasswordHash: "x", AuthSecret: store.GenerateAuthSecret(), Role: store.RoleAuthor,
+		}); err != nil {
+			t.Fatalf("create author %s: %v", username, err)
+		}
+	}
 	site := &tmpl.Site{}
 	enableAdmin(t, st, site, "secret")
 

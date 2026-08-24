@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -105,6 +106,79 @@ func TestReaderRoleBlockedFromContentWrite(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("reader with valid admin-aud cookie should hit author gate (403), got %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+// TestAuthorCannotWriteAnotherAuthorsPost 验证文章所有写入口都以
+// post_authors.users.id 做对象级授权，而不是仅依赖 author 角色门禁。
+func TestAuthorCannotWriteAnotherAuthorsPost(t *testing.T) {
+	r, st, admin, _ := newFullEnv(t)
+	authorA, err := st.GetUserByUsername("alice")
+	if err != nil || authorA == nil {
+		t.Fatalf("get author A: %v", err)
+	}
+	authorB, err := st.GetUserByUsername("bob")
+	if err != nil || authorB == nil {
+		t.Fatalf("get author B: %v", err)
+	}
+	post := &store.Post{Slug: "author-a-post", Title: "A 的文章", Status: store.StatusPublished, AuthorIDs: []int64{authorA.ID}}
+	if _, err := st.Create(post); err != nil {
+		t.Fatalf("create owned post: %v", err)
+	}
+	revisionID, err := st.CreateRevision(&store.Revision{PostSlug: post.Slug, Title: post.Title, ContentMD: "旧正文"})
+	if err != nil {
+		t.Fatalf("create revision: %v", err)
+	}
+	shareID, err := st.CreateShare(&store.SharedPost{PostSlug: post.Slug, ShareType: "published"})
+	if err != nil {
+		t.Fatalf("create share: %v", err)
+	}
+
+	cases := []struct {
+		name, method, path, body string
+	}{
+		{"update", http.MethodPut, "/api/v1/posts/author-a-post", `{"title":"越权"}`},
+		{"save draft", http.MethodPut, "/api/v1/posts/author-a-post/draft", `{"title":"越权草稿"}`},
+		{"publish", http.MethodPost, "/api/v1/posts/author-a-post/publish", `{}`},
+		{"discard draft", http.MethodDelete, "/api/v1/posts/author-a-post/draft", ""},
+		{"ai summary", http.MethodPut, "/api/v1/posts/author-a-post/ai-summary", `{"summary":"越权摘要"}`},
+		{"delete", http.MethodDelete, "/api/v1/posts/author-a-post", ""},
+		{"restore", http.MethodPost, "/api/v1/posts/author-a-post/restore", ""},
+		{"purge", http.MethodDelete, "/api/v1/posts/author-a-post/purge", ""},
+		{"restore revision", http.MethodPost, "/api/v1/revisions/" + strconv.FormatInt(revisionID, 10) + "/restore", ""},
+		{"create share", http.MethodPost, "/api/v1/posts/author-a-post/shares", `{}`},
+		{"delete share", http.MethodDelete, "/api/v1/shares/" + strconv.FormatInt(shareID, 10), ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := do2FA(r, tc.method, tc.path, tc.body, authCookie(authorB))
+			if w.Code != http.StatusForbidden {
+				t.Fatalf("status=%d body=%s, want 403", w.Code, w.Body.String())
+			}
+		})
+	}
+
+	// author 新建文章时，客户端提交的 bob 不能替换服务端确定的 alice 归属。
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"author-created","title":"A 新建","authors":["bob"],"status":"published"}`, authCookie(authorA))
+	if w.Code != http.StatusCreated {
+		t.Fatalf("author create status=%d body=%s, want 201", w.Code, w.Body.String())
+	}
+	created, err := st.GetBySlug("author-created")
+	if err != nil || created == nil {
+		t.Fatalf("get author-created: %v", err)
+	}
+	if len(created.AuthorIDs) != 1 || created.AuthorIDs[0] != authorA.ID {
+		t.Fatalf("author-created ids=%v, want [%d]", created.AuthorIDs, authorA.ID)
+	}
+
+	// 归属作者可以写；管理员仍保留全通语义。
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/author-a-post", `{"title":"A 更新","authors":["bob"]}`, authCookie(authorA))
+	if w.Code != http.StatusOK {
+		t.Fatalf("owner update status=%d body=%s, want 200", w.Code, w.Body.String())
+	}
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/author-a-post", `{"title":"管理员更新"}`, authCookie(admin))
+	if w.Code != http.StatusOK {
+		t.Fatalf("admin update status=%d body=%s, want 200", w.Code, w.Body.String())
 	}
 }
 
