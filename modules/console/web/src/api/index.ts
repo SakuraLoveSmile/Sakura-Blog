@@ -452,6 +452,11 @@ export interface ShortcodeCatalogItem {
  type: "inline" | "block" | "hybrid";
  category: string;
  capability: "static" | "interactive" | "service" | "external";
+ services?: string[];
+ fixture?: string;
+ main_js?: boolean;
+ height?: number;
+ fallback?: string;
  params: ShortcodeCatalogParam[];
  param_docs: ShortcodeCatalogDoc[];
 }

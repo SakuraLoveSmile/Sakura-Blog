@@ -4,11 +4,7 @@
 // iframe 文档构建/渲染门闸），不经 Vue 组件。
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
-import {
-  PLUGIN_PREVIEW,
-  previewInfoFor,
-  type PluginPreviewInfo,
-} from "../web/src/modules/plugins/plugin-preview.ts";
+import { previewInfoFor, type PluginPreviewInfo } from "../web/src/modules/plugins/plugin-types.ts";
 import {
   SERVICE_SCRIPTS,
   MARKED_CDN,
@@ -30,15 +26,46 @@ const SURFACE = "插件预览";
 
 const LEGAL_CAPABILITIES = new Set(["static", "interactive", "service", "external"]);
 
+// 运行时由 /api/v1/plugins/catalog 提供；测试保留最小 contract fixture，验证资源映射纯逻辑。
+const PREVIEW_FIXTURES: Record<string, PluginPreviewInfo> = {
+  folding: { capability: "interactive", mainJs: true, height: 180 },
+  tabs: { capability: "interactive", mainJs: true, height: 220 },
+  gallery: { capability: "interactive", height: 320 },
+  folders: { capability: "interactive", mainJs: true, height: 260 },
+  navbar: { capability: "interactive", mainJs: true, height: 160 },
+  grid: { capability: "static", height: 240 },
+  swiper: { capability: "interactive", services: ["swiper"], height: 320 },
+  albums: { capability: "service", services: ["friends"], fixture: "friends", height: 300 },
+  posters: { capability: "service", services: ["friends"], fixture: "friends", height: 300 },
+  rating: { capability: "service", services: ["rating"], fixture: "rating", height: 180 },
+  vote: { capability: "service", services: ["vote"], fixture: "vote", height: 180 },
+  friends: { capability: "service", services: ["friends"], fixture: "friends", height: 320 },
+  sites: { capability: "service", services: ["sites"], fixture: "sites", height: 320 },
+  ghcard: { capability: "service", fixture: "gh", height: 200 },
+  ghrepo: { capability: "service", fixture: "gh", height: 200 },
+  ghuser: { capability: "service", fixture: "gh", height: 200 },
+  chat: { capability: "static", height: 360 },
+  mermaid: { capability: "external", services: ["mermaid"], height: 320 },
+  md: { capability: "external", services: ["mdrender"], fixture: "md", height: 320 },
+  timeline: { capability: "static", height: 260 },
+  toc: { capability: "static", height: 160 },
+  emoji: { capability: "static", height: 120 },
+  image: { capability: "static", height: 300 },
+  video: { capability: "static", height: 320 },
+  audio: { capability: "static", height: 120 },
+};
+
 function pluginByName(name: string): PluginPreviewInfo {
-  return previewInfoFor({ name });
+  const preview = PREVIEW_FIXTURES[name];
+  assert.ok(preview, `plugin ${name} should have preview metadata`);
+  return previewInfoFor({ preview });
 }
 
 // ---------- 能力清单 ----------
 
 test(`${SURFACE} · 每个插件都有合法预览能力描述（static/interactive/service/external）`, () => {
-  assert.ok(Object.keys(PLUGIN_PREVIEW).length >= 10, "预览能力清单不应退化为空");
-  for (const [name, info] of Object.entries(PLUGIN_PREVIEW)) {
+  assert.ok(Object.keys(PREVIEW_FIXTURES).length >= 10, "预览能力清单不应退化为空");
+  for (const [name, info] of Object.entries(PREVIEW_FIXTURES)) {
     assert.ok(
       LEGAL_CAPABILITIES.has(info.capability),
       `${name} capability 非法: ${info.capability}`
@@ -53,14 +80,10 @@ test(`${SURFACE} · 每个插件都有合法预览能力描述（static/interact
       assert.ok(info.height >= 80 && info.height <= 900, `${name} 预览高度越界: ${info.height}`);
     }
   }
-  // PLUGIN_PREVIEW 中登记的条目也必须合法
-  for (const [name, info] of Object.entries(PLUGIN_PREVIEW)) {
-    assert.ok(LEGAL_CAPABILITIES.has(info.capability), `PLUGIN_PREVIEW[${name}] capability 非法`);
-  }
 });
 
 test(`${SURFACE} · 静态插件不会加载无关 service（资源清单为空）`, () => {
-  for (const [name, info] of Object.entries(PLUGIN_PREVIEW)) {
+  for (const [name, info] of Object.entries(PREVIEW_FIXTURES)) {
     if (info.capability !== "static") continue;
     const scripts = previewScriptsFor(info);
     assert.deepEqual(scripts, [], `${name}（static）不应加载任何脚本: ${scripts.join(",")}`);
@@ -167,8 +190,8 @@ test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
   }
   // 数据标签端点改写由后端完成；前端断言 fixture 端点名与 FIXTURE_LABELS 文案一一对应
   const fixtureNames = new Set<string>();
-  for (const name of Object.keys(PLUGIN_PREVIEW)) {
-    const f = previewInfoFor({ name }).fixture;
+  for (const name of Object.keys(PREVIEW_FIXTURES)) {
+    const f = PREVIEW_FIXTURES[name].fixture;
     if (f) fixtureNames.add(f);
   }
   for (const f of fixtureNames) {

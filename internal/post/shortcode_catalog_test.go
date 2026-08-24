@@ -74,3 +74,24 @@ func TestShortcodeCatalogReturnsDefensiveCopy(t *testing.T) {
 		}
 	}
 }
+
+func TestShortcodeCatalogPreviewMetadata(t *testing.T) {
+	items := ShortcodeCatalog()
+	byName := make(map[string]ShortcodeCatalogEntry, len(items))
+	for _, item := range items {
+		byName[item.Name] = item
+	}
+
+	if item := byName["tabs"]; item.Capability != ShortcodeInteractive || !item.MainJS || item.Height != 220 {
+		t.Fatalf("tabs preview metadata incomplete: %+v", item)
+	}
+	if item := byName["swiper"]; len(item.Services) != 1 || item.Services[0] != "swiper" {
+		t.Fatalf("swiper preview services incomplete: %+v", item)
+	}
+	if item := byName["rating"]; item.Capability != ShortcodeService || item.Fixture != "rating" {
+		t.Fatalf("rating preview metadata incomplete: %+v", item)
+	}
+	if item := byName["md"]; item.Capability != ShortcodeExternal || item.Fixture != "md" || len(item.Services) != 1 || item.Services[0] != "mdrender" {
+		t.Fatalf("md preview metadata incomplete: %+v", item)
+	}
+}

@@ -1,11 +1,17 @@
 package post
 
-// shortcodeDisplayMetadata is the backend-owned presentation catalog for parsed tags.
+// shortcodeDisplayMetadata is the backend-owned presentation and preview catalog for parsed tags.
 var shortcodeDisplayMetadata = map[string]struct {
 	Title       string
 	Description string
 	Signature   string
 	Example     string
+	PreviewSet  bool
+	Services    []string
+	Fixture     string
+	MainJS      bool
+	Height      int
+	Fallback    string
 	FormFields  []ShortcodeParamSchema
 	ParamDocs   []ShortcodeParamDoc
 }{
@@ -119,6 +125,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内表情图，支持 QQ/贴吧/阿鲁/猫咪/twemoji 五种来源（完整清单见「素材速查」）。",
 		Signature:   "{% emoji [来源] 名称 [height:高度] %}",
 		Example:     "开心 {% emoji aini %} 点赞 {% emoji twemoji 1f44d %} 滑稽 {% emoji tieba huaji %}",
+		PreviewSet:  true,
+		Height:      120,
+		Fallback:    "表情素材为本地资源；未收录的表情名显示占位。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "source", Desc: "来源：default(QQ)/qq/tieba/aru/blobcat/twemoji，省略用 default", Default: "default"},
@@ -145,6 +154,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "可展开/收起的折叠区块，正文支持 Markdown。",
 		Signature:   "{% folding [color:颜色] [open:true] 标题 %} 正文 {% endfolding %}",
 		Example:     "{% folding color:cyan open:true 点击查看详情 %}\n这里是折叠内容，支持 **Markdown**。\n{% endfolding %}",
+		PreviewSet:  true,
+		MainJS:      true,
+		Height:      180,
+		Fallback:    "折叠块为原生 details 结构，无需脚本即可展开/收起。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
 			{Label: "默认展开", Key: "open", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: "true"},
@@ -161,6 +174,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "多标签切换容器，用 <!-- tab 标题 --> 分隔各页。",
 		Signature:   "{% tabs [active:序号] %} <!-- tab 标题 --> 内容 {% endtabs %}",
 		Example:     "{% tabs %}\n<!-- tab 标签一 -->\n第一页内容。\n<!-- tab 标签二 -->\n第二页内容。\n{% endtabs %}",
+		PreviewSet:  true,
+		MainJS:      true,
+		Height:      220,
+		Fallback:    "Tab 切换依赖前台 main.js，加载失败时仅显示第一个标签页。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "active", Desc: "默认激活的标签序号（从 1 起）", Default: "1"},
@@ -172,6 +189,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "垂直时间轴，用 <!-- node 标题 --> 分隔节点。",
 		Signature:   "{% timeline %} <!-- node 时间 --> 内容 {% endtimeline %}",
 		Example:     "{% timeline %}\n<!-- node 2024-01 -->\n项目启动。\n<!-- node 2024-06 -->\n首个版本发布。\n{% endtimeline %}",
+		PreviewSet:  true,
+		Height:      260,
+		Fallback:    "时间轴内容来自示例正文，无需外部数据。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
@@ -180,6 +200,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "网格/瀑布流图片墙，正文每行一个 Markdown 图片。",
 		Signature:   "{% gallery [layout:grid] [size:mix] [ratio:origin] %} ![alt](src) {% endgallery %}",
 		Example:     "{% gallery %}\n![首页界面](/assets/img/preview/gallery-1.jpg)\n![文章界面](/assets/img/preview/gallery-2.jpg)\n![技术分享](/assets/img/preview/gallery-3.jpg)\n{% endgallery %}",
+		PreviewSet:  true,
+		Height:      320,
+		Fallback:    "图片墙展示本地示例图；灯箱（fancybox）资源不可用时点击无放大效果。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "布局", Key: "layout", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "grid", Options: []string{"grid", "flow"}},
 			{Label: "尺寸模式", Key: "size", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "mix"},
@@ -197,6 +220,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "多个折叠项的分组，用 <!-- folder 标题 --> 分隔。",
 		Signature:   "{% folders [color:颜色] %} <!-- folder 标题 --> 内容 {% endfolders %}",
 		Example:     "{% folders color:blue %}\n<!-- folder 第一章 -->\n内容一。\n<!-- folder 第二章 -->\n内容二。\n{% endfolders %}",
+		PreviewSet:  true,
+		MainJS:      true,
+		Height:      260,
+		Fallback:    "折叠组为原生 details 结构，无需脚本即可展开/收起。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色", Default: "—"},
@@ -207,6 +234,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "响应式网格布局，用 <!-- cell --> 分隔单元格。",
 		Signature:   "{% grid [w:列宽] [c:列数] [gap:间距] [br:圆角] %} <!-- cell --> 内容 {% endgrid %}",
 		Example:     "{% grid bg:card c:2 gap:12px %}\n<!-- cell -->\n### 博客技术\n这里写博客相关的技术分享、踩坑记录与教程笔记，卡片样式一眼可辨。\n<!-- cell -->\n### 生活随笔\n记录日常生活的片段、旅行见闻与读书感想。\n{% endgrid %}",
+		PreviewSet:  true,
+		Height:      240,
+		Fallback:    "信息卡为原生网格结构，列宽/间距/圆角由样式直接呈现。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "w", Desc: "最小列宽（如 240px），与 c 二选一", Default: "240px"},
@@ -251,6 +281,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "文章内导航栏，正文每行一个 [文本](链接)，active 项高亮。",
 		Signature:   "{% navbar active:首页 %}\n[首页](/) [关于](/about) [作品](/works)\n{% endnavbar %}",
 		Example:     "{% navbar active:首页 %}\n[首页](https://example.com/)\n[关于](https://example.com/about)\n[作品](https://example.com/works)\n{% endnavbar %}",
+		PreviewSet:  true,
+		MainJS:      true,
+		Height:      160,
+		Fallback:    "导航栏高亮依赖前台脚本，加载失败时仅显示静态链接。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "高亮项文本", Key: "active", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "首页"},
 			{Label: "导航链接（每行 [文本](链接)）", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "[首页](https://example.com/)\n[关于](https://example.com/about)\n[作品](https://example.com/works)"},
@@ -308,6 +342,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "文章内目录组件（wiki: 项目树暂未启用）；display:mobile 仅移动端显示。",
 		Signature:   "{% toc [title] [display:mobile] %}",
 		Example:     "{% toc 本文目录 %}",
+		PreviewSet:  true,
+		Height:      160,
+		Fallback:    "预览展示 TOC 容器骨架；真实文章页由前台脚本填充目录项。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "title", Desc: "目录标题（位置参数）", Default: "TOC"},
@@ -451,6 +488,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带尺寸/背景/下载/比例的增强图片。",
 		Signature:   "{% image src [alt] [width:宽] [bg:背景] [download:true] [ratio:比例] %}",
 		Example:     "{% image /assets/img/preview/image-demo.jpg 博客界面截图 width:80% download:true %}",
+		PreviewSet:  true,
+		Height:      300,
+		Fallback:    "示例图片为本地资源；手动填入的外链图片在无网络时显示占位。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "图片地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/img/preview/image-demo.jpg"},
 			{Label: "替代文本", Key: "alt", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "风景图"},
@@ -487,6 +527,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "视频播放器，支持本地/Bilibili/YouTube。",
 		Signature:   "{% video src %} / {% video bilibili:BV号 %} / {% video youtube:ID %}",
 		Example:     "{% video /assets/media/preview/sample-video.mp4 %}",
+		PreviewSet:  true,
+		Height:      320,
+		Fallback:    "示例视频为本地资源（体积受控）。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "视频地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/media/preview/sample-video.mp4"},
 			{Label: "B 站 BV 号（可选）", Key: "bilibili", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
@@ -507,6 +550,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "音频播放器，支持本地与网易云外链。",
 		Signature:   "{% audio src %} / {% audio netease:歌曲ID %}",
 		Example:     "{% audio /assets/media/preview/sample-audio.mp3 %}",
+		PreviewSet:  true,
+		Height:      120,
+		Fallback:    "示例音频为本地资源（体积受控）。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "音频地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/media/preview/sample-audio.mp3"},
 			{Label: "网易云歌曲 ID（可选）", Key: "netease", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
@@ -523,6 +569,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "图片轮播，正文为若干 Markdown 图片；width 控制容器宽度语义。",
 		Signature:   "{% swiper [width:min/max] [effect:slide/fade/coverflow/cards] %} ![](src) {% endswiper %}",
 		Example:     "{% swiper %}\n![](/assets/img/preview/swiper-1.jpg)\n![](/assets/img/preview/swiper-2.jpg)\n![](/assets/img/preview/swiper-3.jpg)\n{% endswiper %}",
+		PreviewSet:  true,
+		Services:    []string{"swiper"},
+		Height:      320,
+		Fallback:    "Swiper 资源加载失败时轮播不可滑动，图片仍按列表展示。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "宽度语义", Key: "width", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "", Options: []string{"", "min", "max"}},
 			{Label: "切换效果", Key: "effect", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "slide", Options: []string{"slide", "fade", "coverflow", "cards"}},
@@ -538,6 +588,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "方形网格专辑卡片，支持 repo/api 数据服务与 size 尺寸档位。",
 		Signature:   "{% albums [repo:owner/repo] [api:数据URL] [size:s/m/l/xl/mix] %}",
 		Example:     "{% albums api:https://example.com/data.json size:m %}",
+		PreviewSet:  true,
+		Services:    []string{"friends"},
+		Fixture:     "friends",
+		Height:      300,
+		Fallback:    "专辑数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
@@ -550,6 +605,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "竖版海报网格卡片，支持 repo/api 数据服务与 size 尺寸档位。",
 		Signature:   "{% posters [repo:owner/repo] [api:数据URL] [size:xs/s/m/l/xl/mix] %}",
 		Example:     "{% posters api:https://example.com/posters.json size:s %}",
+		PreviewSet:  true,
+		Services:    []string{"friends"},
+		Fixture:     "friends",
+		Height:      300,
+		Fallback:    "海报数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
@@ -576,6 +636,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "五星评分组件，对接本地 /api/rating 数据服务。",
 		Signature:   "{% rating id [title:标题] %}",
 		Example:     "{% rating demo-post 给这篇文章打分 %}",
+		PreviewSet:  true,
+		Services:    []string{"rating"},
+		Fixture:     "rating",
+		Height:      180,
+		Fallback:    "评分数据为预览 Fixture，不写入真实统计；加载失败时显示 0 分。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "评分对象 ID", Key: "id", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "demo-post"},
 			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "给这篇文章打分"},
@@ -590,6 +655,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "赞/踩投票组件，对接本地 /api/vote 数据服务。",
 		Signature:   "{% vote 标题 [id:唯一ID] [yes:图标key] [no:图标key] %}",
 		Example:     "{% vote 这篇文章有帮助吗 id:demo-post %}",
+		PreviewSet:  true,
+		Services:    []string{"vote"},
+		Fixture:     "vote",
+		Height:      180,
+		Fallback:    "投票数据为预览 Fixture，不写入真实统计；加载失败时显示 0 票。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "id", Desc: "投票对象唯一 ID", Default: "default"},
@@ -602,6 +672,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "友链网格卡片，缺省读本站友链聚合 /api/friends，可用 api 指定外部数据。",
 		Signature:   "{% friends [api:数据URL] %}",
 		Example:     "{% friends %}",
+		PreviewSet:  true,
+		Services:    []string{"friends"},
+		Fixture:     "friends",
+		Height:      320,
+		Fallback:    "友链数据为本地 Fixture；加载失败时显示空态。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "/api/friends"},
@@ -612,6 +687,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "站点推荐网格，外部 API 驱动（api 参数必填）。",
 		Signature:   "{% sites api:数据URL %}",
 		Example:     "{% sites api:https://example.com/sites.json %}",
+		PreviewSet:  true,
+		Services:    []string{"sites"},
+		Fixture:     "sites",
+		Height:      320,
+		Fallback:    "站点数据为本地 Fixture；加载失败时显示空态。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "api", Desc: "数据服务 URL（必填）", Default: "—"},
@@ -622,6 +702,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "拉取外部 Markdown 文件并渲染（客户端 ds-mdrender 服务）。",
 		Signature:   "{% md src %}",
 		Example:     "{% md /assets/md/preview/example.md %}",
+		PreviewSet:  true,
+		Services:    []string{"mdrender"},
+		Fixture:     "md",
+		Height:      320,
+		Fallback:    "外部 Markdown 为本地 Fixture；marked 为本地 vendor，加载失败时显示本提示。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "src", Desc: "Markdown 文件 URL", Default: "—"},
@@ -632,6 +717,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "Mermaid 图表（流程图/时序图/甘特图等），正文为原始 Mermaid 代码。",
 		Signature:   "{% mermaid %} 图表代码 {% endmermaid %}",
 		Example:     "{% mermaid %}\ngraph TB\n A[开始] --> B{判断}\n B -->|是| C[执行]\n B -->|否| D[结束]\n{% endmermaid %}",
+		PreviewSet:  true,
+		Services:    []string{"mermaid"},
+		Height:      320,
+		Fallback:    "Mermaid 为本地 vendor（11.16.1），加载失败时保留图表源码并显示本提示。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
@@ -652,6 +741,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "模拟聊天界面，顶部 YAML 定义参与者，正文用 <!-- chatcell --> / <!-- chattip --> 编排消息；scene:group 全员左对齐。",
 		Signature:   "{% chat device [style:qq] [title:标题] [scene:group/single] [me:用户key] %} 用户YAML + 消息 {% endchat %}",
 		Example:     "{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n  name: 小明\n  avatar: /assets/img/preview/avatar-xiaoming.svg\nbob:\n  name: 小红\n  avatar: /assets/img/preview/avatar-xiaohong.svg\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n<!-- chatcell user:bob md:你好呀～ -->\n{% endchat %}",
+		PreviewSet:  true,
+		Height:      360,
+		Fallback:    "聊天记录为服务端渲染结构，头像为本地素材。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "style", Desc: "样式：qq/wechat", Default: "qq"},
@@ -664,6 +756,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "github-readme-stats 卡片，经本地 /api/gh/card 代理缓存。",
 		Signature:   "{% ghcard user/repo [theme:主题] %} / {% ghcard user %}",
 		Example:     "{% ghcard anuraghazra/github-readme-stats %}",
+		PreviewSet:  true,
+		Fixture:     "gh",
+		Height:      200,
+		Fallback:    "GitHub 卡片使用服务端确定性 Fixture，不发公网请求。",
 		FormFields: []ShortcodeParamSchema{
 			{Label: "user/repo 或 user", Key: "repo", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "anuraghazra/github-readme-stats"},
 			{Label: "主题", Key: "theme", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
@@ -680,6 +776,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "静态仓库卡片（星标/Fork/语言/许可证），API 失败降级为链接。",
 		Signature:   "{% ghrepo user/repo %}",
 		Example:     "{% ghrepo vuejs/vue %}",
+		PreviewSet:  true,
+		Fixture:     "gh",
+		Height:      200,
+		Fallback:    "仓库卡片使用服务端确定性 Fixture，不发公网请求。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
@@ -688,6 +788,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "静态用户卡片（头像/简介/粉丝/仓库数），API 失败降级为链接。",
 		Signature:   "{% ghuser username %}",
 		Example:     "{% ghuser octocat %}",
+		PreviewSet:  true,
+		Fixture:     "gh",
+		Height:      200,
+		Fallback:    "用户卡片使用服务端确定性 Fixture，不发公网请求。",
 		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},

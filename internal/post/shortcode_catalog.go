@@ -69,6 +69,11 @@ type ShortcodeCatalogEntry struct {
 	Type        ShortcodeType          `json:"type"`
 	Category    string                 `json:"category"`
 	Capability  ShortcodeCapability    `json:"capability"`
+	Services    []string               `json:"services,omitempty"`
+	Fixture     string                 `json:"fixture,omitempty"`
+	MainJS      bool                   `json:"main_js,omitempty"`
+	Height      int                    `json:"height,omitempty"`
+	Fallback    string                 `json:"fallback,omitempty"`
 	Params      []ShortcodeParamSchema `json:"params"`
 	ParamDocs   []ShortcodeParamDoc    `json:"param_docs"`
 }
@@ -233,6 +238,13 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 	for _, registration := range shortcodeRegistry {
 		entry := registration.entry
 		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
+			if display.PreviewSet {
+				entry.Services = append([]string(nil), display.Services...)
+				entry.Fixture = display.Fixture
+				entry.MainJS = display.MainJS
+				entry.Height = display.Height
+				entry.Fallback = display.Fallback
+			}
 			if display.FormFields != nil {
 				entry.Params = append([]ShortcodeParamSchema(nil), display.FormFields...)
 			}

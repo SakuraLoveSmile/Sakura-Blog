@@ -4,11 +4,11 @@ import { Icon } from "@iconify/vue";
 import { VPageHeader } from "@/components/ui";
 import {
   PLUGIN_CATEGORIES,
+  previewInfoFor,
   type PluginMeta,
   type PluginCategory,
   type PluginPreviewInfo,
 } from "./plugin-types";
-import { previewInfoFor } from "./plugin-preview";
 import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
 import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";

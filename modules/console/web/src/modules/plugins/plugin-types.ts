@@ -47,4 +47,9 @@ export interface PluginMeta {
   params: PluginParam[];
   example: string;
   form?: PluginFormField[];
+  preview?: PluginPreviewInfo;
+}
+
+export function previewInfoFor(plugin: { preview?: PluginPreviewInfo }): PluginPreviewInfo {
+  return plugin.preview || { capability: "static" };
 }

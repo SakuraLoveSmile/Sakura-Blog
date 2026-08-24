@@ -24,6 +24,11 @@ export interface PluginCatalogItem {
   type: "inline" | "block" | "hybrid";
   category: string;
   capability: "static" | "interactive" | "service" | "external";
+  services?: string[];
+  fixture?: string;
+  main_js?: boolean;
+  height?: number;
+  fallback?: string;
   params: PluginCatalogParam[];
   param_docs: Array<{ name: string; desc: string; default?: string }>;
 }
@@ -85,6 +90,14 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
       })) || existing?.params || [],
       example: item.example || existing?.example || fallbackExample(item),
       form: mergeForm(existing, item.params),
+      preview: {
+        capability: item.capability,
+        services: item.services?.slice(),
+        fixture: item.fixture,
+        mainJs: item.main_js,
+        height: item.height,
+        fallback: item.fallback,
+      },
     };
   });
 }
