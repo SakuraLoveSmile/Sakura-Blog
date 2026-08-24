@@ -66,8 +66,7 @@ async function loadArticles(append = false) {
     });
     articleTotal.value = data.total || 0;
     articles.value = append ? [...articles.value, ...(data.items || [])] : data.items || [];
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "加载失败");
+  } catch {
   } finally {
     loading.value = false;
   }
@@ -102,8 +101,7 @@ async function refreshAll() {
       await loadArticles();
       refreshing.value = false;
     }, 2500);
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "刷新失败");
+  } catch {
     refreshing.value = false;
   }
 }
@@ -121,7 +119,6 @@ async function markRead(a: Article, read = true) {
     await loadSources();
   } catch {
     a.read = !read;
-    Toast.error("操作失败");
   }
 }
 
@@ -131,9 +128,7 @@ async function markAllRead() {
     articles.value.forEach((a) => (a.read = true));
     await loadSources();
     Toast.success("已全部标为已读");
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "操作失败");
-  }
+  } catch {}
 }
 
 async function toggleFlag(a: Article, flag: "favorite" | "later") {
@@ -143,7 +138,6 @@ async function toggleFlag(a: Article, flag: "favorite" | "later") {
     await subscriptionApi.toggleFlag(a.id, flag, next);
   } catch {
     a[flag] = !next;
-    Toast.error("操作失败");
   }
 }
 

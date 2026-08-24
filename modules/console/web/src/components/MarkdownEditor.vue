@@ -342,9 +342,9 @@ async function uploadAndInsert(file: File) {
     const md = `![${file.name}](${data.url})`;
     const replaced = props.modelValue.replace(placeholder, md);
     emit("update:modelValue", replaced);
-  } catch (e: any) {
+  } catch {
     emit("update:modelValue", props.modelValue.replace(placeholder, ""));
-    uploadError.value = e.response?.data?.error || `图片 ${file.name} 上传失败`;
+    uploadError.value = `图片 ${file.name} 上传失败`;
   }
 }
 

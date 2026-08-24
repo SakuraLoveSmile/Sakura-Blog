@@ -290,8 +290,8 @@ async function load() {
     for (const s of allSections) {
       rawText.value[s] = JSON.stringify(res[s] ?? null, null, 2);
     }
-  } catch (e: any) {
-    loadError.value = e?.response?.data?.error || e?.message || "加载设置失败";
+  } catch {
+    loadError.value = "加载设置失败";
   } finally {
     loading.value = false;
   }
@@ -304,8 +304,7 @@ async function save(section: string, payload?: unknown) {
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
     Toast.success("已保存，前台已生效");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     savingKey.value = "";
   }
@@ -334,8 +333,7 @@ async function saveJson(section: string) {
       ensureDefaults(data.value);
     }
     Toast.success("已保存，前台已生效");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败（检查 JSON 格式）");
+  } catch {
   } finally {
     savingKey.value = "";
   }
@@ -361,9 +359,9 @@ async function testMail() {
       testOk.value = false;
       testResult.value = res.error || "发送失败";
     }
-  } catch (e: any) {
+  } catch {
     testOk.value = false;
-    testResult.value = e?.response?.data?.error || e?.message || "请求失败";
+    testResult.value = "请求失败";
   } finally {
     testing.value = false;
   }
@@ -695,8 +693,8 @@ async function refreshPreview() {
     const { data: res } = await previewApi.site(previewSections(), focus.page);
     if (seq !== previewSeq) return;
     previewHtml.value = buildFragmentDoc(res.html || "", focus);
-  } catch (e: any) {
-    if (seq === previewSeq) Toast.error(e?.response?.data?.error || "预览渲染失败");
+  } catch {
+    if (seq === previewSeq) previewHtml.value = "";
   } finally {
     if (seq === previewSeq) previewLoading.value = false;
   }

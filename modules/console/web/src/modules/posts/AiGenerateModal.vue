@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { aiApi } from "@/api";
-import { VModal, VButton, Toast } from "@/components/ui";
+import { VModal, VButton } from "@/components/ui";
 
 // AI 属性生成弹窗（对照 Halo AI 插件）：勾选字段 → 单项/一键生成 → 保存回填。
 // 生成走后端 /ai/generate 代理（OpenAI 兼容，配置在 设置 → AI）。
@@ -99,9 +99,7 @@ async function generate(fields: FieldKey[]) {
       tags: props.tags,
     });
     applyResult(data, fields);
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "生成失败");
-  }
+  } catch {}
 }
 
 async function generateOne(f: FieldKey) {

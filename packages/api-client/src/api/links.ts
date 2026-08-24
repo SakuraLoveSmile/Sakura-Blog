@@ -1,10 +1,11 @@
 import { http } from "../transport";
+import type { LinkPayload } from "./contracts";
 
 // --- Friends / Links ---
 export const linkApi = {
   list: () => http.get("/links"),
-  create: (data: Record<string, unknown>) => http.post("/links", data),
-  update: (id: number, data: Record<string, unknown>) => http.put(`/links/${id}`, data),
+  create: (data: LinkPayload) => http.post("/links", data),
+  update: (id: number, data: LinkPayload) => http.put(`/links/${id}`, data),
   delete: (id: number) => http.delete(`/links/${id}`),
   /** 并发检测各友链可达性，返回 {items: [{id, ok, status}], tagged, restored}（status 为 HTTP 状态码，0=无法访问；tagged/restored 为自动打/摘「失效」标签条数） */
   check: () => http.post("/links/check"),

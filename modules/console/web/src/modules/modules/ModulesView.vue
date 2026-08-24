@@ -17,9 +17,7 @@ async function onToggle(m: ModuleItem, next: boolean) {
   try {
     await store.toggle(m.id, next);
     Toast.success(next ? "已启用" : "已停用", { description: m.title });
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "操作失败");
-  }
+  } catch {}
 }
 </script>
 

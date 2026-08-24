@@ -31,8 +31,7 @@ async function push() {
     Toast.success("推送完成", { description: `成功 ${data.success} · 失败 ${data.failed}` });
     urls.value = "";
     await loadLogs();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "推送失败");
+  } catch {
   } finally {
     pushing.value = false;
   }

@@ -69,8 +69,8 @@ async function loadList() {
   try {
     const { data } = await revisionApi.list(props.slug);
     metas.value = data.items || [];
-  } catch (e: any) {
-    error.value = e.response?.data?.error || "加载版本列表失败";
+  } catch {
+    error.value = "加载版本列表失败";
   } finally {
     loadingList.value = false;
   }
@@ -102,8 +102,8 @@ async function rebuildDiff() {
       compareTarget.value === "current" ? props.currentContent || "" : await fetchContent(compareTarget.value);
     // 左（旧）→ 右（新）：新增绿、删除红
     hunks.value = myersDiff(left, right).hunks;
-  } catch (e: any) {
-    error.value = e.response?.data?.error || "加载版本内容失败";
+  } catch {
+    error.value = "加载版本内容失败";
   } finally {
     loadingDiff.value = false;
   }
@@ -124,8 +124,8 @@ async function handleRestore() {
         Toast.success("已回滚");
         emit("restored");
         emit("close");
-      } catch (e: any) {
-        error.value = e.response?.data?.error || "回滚失败";
+      } catch {
+        error.value = "回滚失败";
       } finally {
         restoring.value = false;
       }

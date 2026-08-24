@@ -131,8 +131,7 @@ async function submitGroup() {
     }
     groupModalVisible.value = false;
     await loadGroups();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "操作失败");
+  } catch {
   } finally {
     groupSaving.value = false;
   }
@@ -150,9 +149,7 @@ function handleDeleteGroup(g: GroupItem) {
         await loadGroups();
         queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
         Toast.success("分组已删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -242,8 +239,7 @@ async function handleUploadFiles(files: FileList | File[]) {
     await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
     await loadGroups();
     await refetch();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "部分文件上传失败");
+  } catch {
   } finally {
     uploading.value = false;
     if (fileInput.value) fileInput.value.value = "";
@@ -266,8 +262,7 @@ async function submitURLImport() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
     await loadGroups();
     await refetch();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "URL 图片导入失败");
+  } catch {
   } finally {
     importingURL.value = false;
   }
@@ -346,9 +341,7 @@ async function batchDelete() {
         await loadGroups();
         await refetch();
         Toast.success("批量删除成功");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "部分文件删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -367,8 +360,7 @@ async function batchMove() {
     await loadGroups();
     await refetch();
     Toast.success(`已将 ${ids.length} 个附件移至新分组`);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "批量移动失败");
+  } catch {
   } finally {
     batchMoving.value = false;
   }
@@ -414,9 +406,7 @@ function handleDeleteSingle(item: AttachmentItem) {
         await loadGroups();
         await refetch();
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }

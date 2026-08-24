@@ -315,8 +315,7 @@ async function saveTaxonomySettings(
     catIcons.value = article.category_icon;
     tagIcons.value = article.tag_icon;
     return true;
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存配色/图标失败");
+  } catch {
     return false;
   } finally {
     savingSettings.value = false;
@@ -403,8 +402,7 @@ async function saveCategoryModal() {
     await saveTaxonomySettings(nextColors, nextIcons);
     categoryModalVisible.value = false;
     await load();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "操作失败");
+  } catch {
   } finally {
     categorySaving.value = false;
   }
@@ -428,9 +426,7 @@ function deleteCategory(c: TaxItem) {
         delete nextIcons[name];
         await saveTaxonomySettings(nextColors, nextIcons);
         await load();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -462,8 +458,7 @@ async function confirmRenameTag() {
     Toast.success("标签已重命名");
     renameModalVisible.value = false;
     await load();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "重命名失败");
+  } catch {
   } finally {
     renaming.value = false;
   }
@@ -482,9 +477,7 @@ function deleteTag(name: string) {
         await saveTaxonomySettings(undefined, undefined, nextTagIcons);
         Toast.success("标签已移除");
         await load();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -561,8 +554,7 @@ async function confirmMergeTags() {
         clearTagSelection();
         mergeMode.value = false;
         await load();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "合并失败");
+      } catch {
       } finally {
         merging.value = false;
       }

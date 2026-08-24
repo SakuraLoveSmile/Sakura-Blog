@@ -40,8 +40,8 @@ async function load() {
       pages: w.pages && typeof w.pages === "object" ? w.pages : {},
     };
     select("builtin", selName.value);
-  } catch (e: any) {
-    loadError.value = e?.response?.data?.error || e?.message || "加载设置失败";
+  } catch {
+    loadError.value = "加载设置失败";
   } finally {
     loading.value = false;
   }
@@ -157,8 +157,7 @@ async function confirmNameInput() {
     Toast.success("方案已保存", { description: `「${name}」可在设置 → 组件编排中选用` });
     nameInputVisible.value = false;
     select("scheme", name);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -171,8 +170,7 @@ async function saveScheme() {
     widgets.value.library[selName.value] = cleanDraft();
     await putWidgets();
     Toast.success("已保存，前台已生效");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -215,9 +213,7 @@ function removeScheme() {
         await putWidgets();
         Toast.success("方案已删除");
         select("builtin", WIDGET_META[0].name);
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || e?.message || "删除失败");
-      }
+      } catch {}
     },
   });
 }

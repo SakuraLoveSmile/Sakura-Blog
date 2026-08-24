@@ -15,9 +15,9 @@ async function load() {
   try {
     const res = await seoApi.overview();
     data.value = res.data;
-  } catch (e: any) {
+  } catch {
     // Spec 62：失败显示空态而非白屏（原无 catch，失败=空白页）
-    error.value = e?.response?.data?.error || e?.message || "加载失败";
+    error.value = "加载失败";
   } finally {
     loading.value = false;
   }

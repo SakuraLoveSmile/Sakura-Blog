@@ -1,4 +1,5 @@
 import { http } from "../transport";
+import type { JsonValue } from "./contracts";
 
 // --- 备份与导出 ---
 // 下载接口走 cookie 认证，直接 <a href> 触发浏览器下载，不走 axios。
@@ -29,7 +30,7 @@ export const backupApi = {
 // 段名与后端 KnownSections 对齐；Spec 42 新增 seo（站点级 SEO）与 inject（代码注入 inject_head/inject_footer）两段。
 export const settingsApi = {
   all: () => http.get("/settings"),
-  updateSection: (section: string, data: unknown) => http.put(`/settings/${section}`, data),
+  updateSection: (section: string, data: JsonValue | undefined) => http.put(`/settings/${section}`, data),
   testNotify: () => http.post("/settings/notify/test"),
   // Spec 60 主题 YAML 编辑器：style 段 YAML 读写 + 热更新
   getStyleYAML: () => http.get<{ yaml: string }>("/settings/style/yaml"),

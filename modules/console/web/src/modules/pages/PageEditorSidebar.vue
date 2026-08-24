@@ -101,8 +101,7 @@ async function saveFriendsCfg() {
       },
     });
     Toast.success("已保存，前台 /friends 已生效");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     friendsSaving.value = false;
   }

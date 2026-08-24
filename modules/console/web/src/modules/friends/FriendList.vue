@@ -184,8 +184,7 @@ async function runCheckAll() {
     }
     await queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
     Toast.success("检测完成", { description: desc });
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "检测失败");
+  } catch {
   } finally {
     checking.value = false;
   }
@@ -241,8 +240,8 @@ async function handleSave() {
     }
     showModal.value = false;
     queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || "保存失败";
+  } catch {
+    error.value = "保存失败";
   } finally {
     saving.value = false;
   }
@@ -259,9 +258,7 @@ function handleDelete(l: LinkRow) {
         selectedIds.value.delete(l.id);
         queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -275,8 +272,8 @@ async function takeSnapshot() {
     Object.assign(editing, data);
     queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
     Toast.success("截图已更新");
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || "截图失败，请检查截图服务配置";
+  } catch {
+    error.value = "截图失败，请检查截图服务配置";
   } finally {
     snapshotting.value = false;
   }
@@ -320,8 +317,8 @@ async function handleImport() {
     }
     showImportModal.value = false;
     queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
-  } catch (e: any) {
-    importError.value = e?.response?.data?.error || "导入失败，请稍后重试";
+  } catch {
+    importError.value = "导入失败，请稍后重试";
   } finally {
     importing.value = false;
   }
@@ -355,9 +352,7 @@ async function batchDelete() {
         clearSelection();
         queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
         Toast.success("批量删除成功");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "部分删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -381,8 +376,7 @@ async function batchMoveGroup() {
     clearSelection();
     queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
     Toast.success(`已将 ${ids.length} 条友链迁移至「${target}」`);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "批量迁移失败");
+  } catch {
   } finally {
     batchMoving.value = false;
   }

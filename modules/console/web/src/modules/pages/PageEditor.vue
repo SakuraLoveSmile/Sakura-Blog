@@ -392,7 +392,6 @@ onMounted(async () => {
       rightbar_widgets: normalizeWidgetList((data as any).rightbar_widgets),
     };
   } catch {
-    Toast.error("加载失败");
   } finally {
     loading.value = false;
   }
@@ -411,8 +410,7 @@ async function handleSave() {
     editorRef.value?.clearDraft();
     Toast.success("保存成功");
     router.push("/pages");
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -471,8 +469,7 @@ async function handlePreview() {
     editorRef.value?.clearDraft();
     Toast.success("已保存，即将打开前台预览");
     window.open("/" + form.value.slug.trim(), "_blank", "noopener");
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     previewing.value = false;
   }

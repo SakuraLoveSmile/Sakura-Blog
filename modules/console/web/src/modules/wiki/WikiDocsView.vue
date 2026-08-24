@@ -247,8 +247,7 @@ async function handleCreate() {
     Toast.success("文档已创建");
     await loadDocs();
     await selectDoc(slug);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "创建失败");
+  } catch {
   } finally {
     creating.value = false;
   }
@@ -263,8 +262,7 @@ async function loadProjects() {
     if (projects.value.length && !activeProject.value) {
       activeProject.value = projects.value[0].id;
     }
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载文库项目失败");
+  } catch {
   } finally {
     settingsLoading.value = false;
   }
@@ -278,8 +276,7 @@ async function loadDocs() {
     docs.value = data.docs || [];
     flatTree.value = flatten(data.tree || []);
     expanded.value = new Set(flatTree.value.filter((n) => n.hasChildren).map((n) => n.doc.id));
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载文档失败");
+  } catch {
   } finally {
     docsLoading.value = false;
   }
@@ -306,8 +303,7 @@ async function selectDoc(slug: string) {
       status: data.status === "published" ? "published" : "draft",
       content_md: data.content_md,
     };
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载文档失败");
+  } catch {
   } finally {
     docLoading.value = false;
   }
@@ -336,8 +332,7 @@ async function handleSave() {
     } else {
       selectedSlug.value = newSlug;
     }
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -356,8 +351,7 @@ function handleDelete() {
         Toast.success("已删除");
         resetEditor();
         await loadDocs();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
+      } catch {
       } finally {
         deleting.value = false;
       }

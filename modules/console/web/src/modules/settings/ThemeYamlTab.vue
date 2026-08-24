@@ -16,8 +16,8 @@ async function load() {
   try {
     const { data } = await settingsApi.getStyleYAML();
     yamlText.value = data.yaml || "";
-  } catch (e: any) {
-    loadError.value = e?.response?.data?.error || e?.message || "加载主题 YAML 失败";
+  } catch {
+    loadError.value = "加载主题 YAML 失败";
   } finally {
     loading.value = false;
   }
@@ -28,9 +28,7 @@ async function save() {
     await settingsApi.updateStyleYAML(yamlText.value);
     Toast.success("主题已保存，前台已热更新");
     await load();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败（检查 YAML 格式）");
-  }
+  } catch {}
 }
 
 onMounted(load);

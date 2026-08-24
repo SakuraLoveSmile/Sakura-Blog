@@ -1,3 +1,5 @@
+import type { JsonObject } from "./api/contracts";
+
 export type Breakpoint = "lg" | "md" | "sm" | "xs" | "xxs";
 
 export interface DashboardWidget {
@@ -11,7 +13,7 @@ export interface DashboardWidget {
   minH?: number;
   maxW?: number;
   maxH?: number;
-  config?: Record<string, unknown>;
+  config?: JsonObject;
   permissions?: string[];
 }
 

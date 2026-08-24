@@ -298,8 +298,8 @@ async function uploadFile(target: "new" | "edit", file: File) {
   try {
     const { data } = await attachmentApi.upload(file);
     addImage(target, data.url);
-  } catch (e: any) {
-    uploadError.value = e.response?.data?.error || `图片 ${file.name} 上传失败`;
+  } catch {
+    uploadError.value = `图片 ${file.name} 上传失败`;
   }
 }
 
@@ -338,8 +338,7 @@ async function handlePublish() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
     await refetch();
     Toast.success("瞬间发布成功");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "发布失败");
+  } catch {
   } finally {
     publishing.value = false;
   }
@@ -371,8 +370,7 @@ async function saveEdit() {
     await refetch();
     Toast.success("瞬间已更新");
     editModalOpen.value = false;
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     savingEdit.value = false;
   }
@@ -391,10 +389,9 @@ async function toggleVisibility(m: MomentRow) {
     await queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
     await refetch();
     Toast.success(next === "private" ? "已设为仅自己可见" : "已设为公开展示");
-  } catch (e: any) {
+  } catch {
     // 失败回退
     m.visibility = next === "private" ? "public" : "private";
-    Toast.error(e?.response?.data?.error || "更新可见性失败");
   }
 }
 
@@ -409,9 +406,7 @@ function handleDelete(m: MomentRow) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.moments() });
         await refetch();
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }

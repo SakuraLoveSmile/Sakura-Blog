@@ -146,9 +146,7 @@ async function setCommentStatus(id: number, status: CommentStatus) {
       pending: "已重置为待审核",
     };
     Toast.success(map[status] || "状态已更新");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "操作失败");
-  }
+  } catch {}
 }
 
 function handleDeleteSingle(c: CommentItem) {
@@ -163,9 +161,7 @@ function handleDeleteSingle(c: CommentItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
         await refetch();
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -191,8 +187,7 @@ async function submitReply() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
     await refetch();
     Toast.success("回复已发送");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "回复失败");
+  } catch {
   } finally {
     replySubmitting.value = false;
   }
@@ -230,9 +225,7 @@ async function handleBatch(action: "approve" | "reject" | "spam" | "delete") {
       await queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
       await refetch();
       Toast.success(`已${labels[action]} ${ids.length} 条评论`);
-    } catch (e: any) {
-      Toast.error(e?.response?.data?.error || "批量操作失败");
-    }
+    } catch {}
   };
 
   if (action === "delete" || action === "spam") {

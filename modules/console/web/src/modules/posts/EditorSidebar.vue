@@ -458,7 +458,6 @@ async function saveAiSummary() {
     await postApi.updateAISummary(props.form.slug, props.aiSummary.trim());
     Toast.success("AI 摘要已保存");
   } catch {
-    Toast.error("AI 摘要保存失败");
   } finally {
     aiSaving.value = false;
   }
@@ -476,7 +475,6 @@ async function clearAiSummary() {
     emit("update:aiSummary", "");
     Toast.success("AI 摘要已清空");
   } catch {
-    Toast.error("AI 摘要清空失败");
   } finally {
     aiSaving.value = false;
   }
@@ -508,9 +506,7 @@ async function generateAiSummary() {
     } else {
       Toast.error("生成结果为空，请重试");
     }
-  } catch (err: unknown) {
-    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-    Toast.error(msg || "AI 生成失败，请检查 设置 → AI 配置");
+  } catch {
   } finally {
     aiGenerating.value = false;
   }

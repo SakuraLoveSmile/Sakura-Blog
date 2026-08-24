@@ -1,8 +1,9 @@
 import { http } from "../transport";
+import type { AttachmentListParams } from "./contracts";
 
 // --- Attachments ---
 export const attachmentApi = {
-  list: (params?: Record<string, unknown>) => http.get("/attachments", { params }),
+  list: (params?: AttachmentListParams) => http.get("/attachments", { params }),
   upload: (file: File, groupId?: number) => {
     const form = new FormData();
     form.append("file", file);

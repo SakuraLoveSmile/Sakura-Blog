@@ -51,10 +51,6 @@ function invalidate() {
   queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === "comment-users" });
 }
 
-function errMsg(e: any, fallback: string): string {
-  return e?.response?.data?.error || e?.response?.data?.detail || fallback;
-}
-
 // ---------- 封禁 / 解封 ----------
 const banBusy = ref(0);
 
@@ -74,8 +70,7 @@ async function setStatus(u: CommentUserItem, status: "active" | "banned") {
     await commentUsersApi.setStatus(u.id, status);
     invalidate();
     Toast.success(status === "banned" ? "已封禁" : "已解封");
-  } catch (e: any) {
-    Toast.error(errMsg(e, "操作失败"));
+  } catch {
   } finally {
     banBusy.value = 0;
   }
@@ -96,9 +91,7 @@ function confirmDelete(u: CommentUserItem) {
         await commentUsersApi.remove(u.id);
         invalidate();
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(errMsg(e, "删除失败"));
-      }
+      } catch {}
     },
   });
 }
@@ -140,8 +133,7 @@ async function loadComments() {
     });
     commentRows.value = (data.items || []) as CommentRow[];
     commentsTotal.value = data.total || 0;
-  } catch (e: any) {
-    Toast.error(errMsg(e, "加载评论失败"));
+  } catch {
   } finally {
     commentsLoading.value = false;
   }
@@ -184,8 +176,7 @@ async function doBulk(action: "spam" | "delete") {
     if (action === "delete" && commentsTotal.value === 0) {
       commentsVisible.value = false;
     }
-  } catch (e: any) {
-    Toast.error(errMsg(e, "批量处置失败"));
+  } catch {
   } finally {
     commentsBusy.value = false;
   }

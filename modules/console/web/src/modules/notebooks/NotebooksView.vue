@@ -133,8 +133,7 @@ async function loadNotebooks() {
         enterNotebook(target, false);
       }
     }
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载笔记本失败");
+  } catch {
   } finally {
     loading.value = false;
   }
@@ -188,8 +187,7 @@ async function handleSaveNotebook() {
     }
     nbModalOpen.value = false;
     await loadNotebooks();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     nbSaving.value = false;
   }
@@ -208,9 +206,7 @@ function handleDeleteNotebook(nb: Notebook) {
           backToNotebooks();
         }
         await loadNotebooks();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -255,8 +251,7 @@ async function loadNotes(page = 1) {
         selectNote(match.id, false);
       }
     }
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载笔记失败");
+  } catch {
   } finally {
     notesLoading.value = false;
   }
@@ -280,8 +275,7 @@ async function selectNote(id: number, updateRoute = true) {
     if (updateRoute && activeNotebook.value) {
       router.replace({ query: { ...route.query, nb: activeNotebook.value.id, note: id } });
     }
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载笔记内容失败");
+  } catch {
   } finally {
     noteLoading.value = false;
   }
@@ -310,8 +304,7 @@ async function handleCreateNote() {
     Toast.success("笔记已创建");
     await loadNotes(1);
     await selectNote(data.id);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "创建失败");
+  } catch {
   } finally {
     createNoteSaving.value = false;
   }
@@ -334,8 +327,7 @@ async function handleSave() {
     Toast.success("笔记已保存");
     await loadNotes(notesPage.value);
     await loadTags();
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -356,8 +348,7 @@ function handleDeleteNote() {
         let page = notesPage.value;
         if (notes.value.length === 1 && page > 1) page -= 1;
         await loadNotes(page);
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
+      } catch {
       } finally {
         deleting.value = false;
       }

@@ -1,9 +1,10 @@
 import { http } from "../transport";
+import type { SeoSettingsPayload } from "./contracts";
 
 // --- SEO 工具集模块 ---
 export const seoApi = {
   getSettings: () => http.get("/seo/settings"),
-  saveSettings: (data: Record<string, unknown>) => http.put("/seo/settings", data),
+  saveSettings: (data: SeoSettingsPayload) => http.put("/seo/settings", data),
   overview: () => http.get("/seo/overview"),
   analyze: (url: string) => http.post("/seo/analyze", { url }),
   crawlerAnalysis: (range: string) => http.get("/seo/crawlers/analysis", { params: { range } }),
@@ -82,7 +83,7 @@ export const notificationApi = {
       { params },
     ),
   /** 未读数（铃铛角标轮询用） */
-  unreadCount: () => http.get<{ count: number }>("/notifications/unread-count"),
+  unreadCount: () => http.get<{ count: number }>("/notifications/unread-count", { mute: true }),
   /** 标记单条已读 */
   markRead: (id: number) => http.put(`/notifications/${id}/read`),
   /** 全部标记已读 */
@@ -127,5 +128,5 @@ export const systemApi = {
       token ? { headers: { "X-GitHub-Token": token } } : {},
     ),
   /** 查询更新状态（idle/running/succeeded/failed） */
-  status: () => http.get<UpdateStatusResponse>("/system/update/status"),
+  status: () => http.get<UpdateStatusResponse>("/system/update/status", { mute: true }),
 };

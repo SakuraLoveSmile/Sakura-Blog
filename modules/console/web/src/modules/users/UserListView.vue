@@ -62,10 +62,6 @@ function invalidate() {
   queryClient.invalidateQueries({ queryKey: queryKeys.users() });
 }
 
-function errMsg(e: any, fallback: string): string {
-  return e?.response?.data?.error || e?.response?.data?.detail || fallback;
-}
-
 // ---------- 创建用户 ----------
 const createVisible = ref(false);
 const createSaving = ref(false);
@@ -99,8 +95,7 @@ async function submitCreate() {
     createVisible.value = false;
     invalidate();
     Toast.success("用户创建成功");
-  } catch (e: any) {
-    Toast.error(errMsg(e, "创建失败"));
+  } catch {
   } finally {
     createSaving.value = false;
   }
@@ -126,8 +121,7 @@ async function submitEdit() {
     editVisible.value = false;
     invalidate();
     Toast.success("已保存");
-  } catch (e: any) {
-    Toast.error(errMsg(e, "保存失败"));
+  } catch {
   } finally {
     editSaving.value = false;
   }
@@ -153,8 +147,7 @@ async function submitResetPwd() {
     await usersApi.resetPassword(pwdTarget.value.id, pwdForm.value.password);
     pwdVisible.value = false;
     Toast.success("密码已重置，该用户旧登录态已失效");
-  } catch (e: any) {
-    Toast.error(errMsg(e, "重置失败"));
+  } catch {
   } finally {
     pwdSaving.value = false;
   }
@@ -172,9 +165,7 @@ function confirmDelete(u: UserItem) {
         await usersApi.remove(u.id);
         invalidate();
         Toast.success("已删除");
-      } catch (e: any) {
-        Toast.error(errMsg(e, "删除失败"));
-      }
+      } catch {}
     },
   });
 }

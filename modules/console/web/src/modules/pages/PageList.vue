@@ -138,9 +138,7 @@ function handleDelete(item: PageItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
         await refetch();
         Toast.success("已移入回收站");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -155,9 +153,7 @@ function handleRestore(item: PageItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
         await refetch();
         Toast.success("恢复成功");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "恢复失败");
-      }
+      } catch {}
     },
   });
 }
@@ -174,9 +170,7 @@ function handlePurge(item: PageItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
         await refetch();
         Toast.success("已彻底删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -194,9 +188,7 @@ async function handleBatchDelete() {
         await queryClient.invalidateQueries({ queryKey: queryKeys.pages() });
         await refetch();
         Toast.success("批量操作成功");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "部分页面操作失败");
-      }
+      } catch {}
     },
   });
 }

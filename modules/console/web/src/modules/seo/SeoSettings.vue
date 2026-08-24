@@ -38,8 +38,7 @@ async function save() {
   try {
     await seoApi.saveSettings(cfg.value);
     Toast.success("保存成功", { description: "SEO 设置已更新" });
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }

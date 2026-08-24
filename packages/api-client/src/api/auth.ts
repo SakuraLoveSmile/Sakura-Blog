@@ -3,11 +3,11 @@ import { http } from "../transport";
 // --- Auth ---
 // Spec 45：username 用户表认证 + TOTP 2FA；username 为空时后端回退旧版 admin 密码认证。
 export const authApi = {
-  login: (username: string, password: string) => http.post("/auth/login", { username, password }),
+  login: (username: string, password: string) => http.post("/auth/login", { username, password }, { mute: true }),
   // 两步登录第二步：验证 TOTP code 后下发签名 cookie
-  verify2FA: (token: string, code: string) => http.post("/auth/2fa", { token, code }),
-  logout: () => http.post("/auth/logout"),
-  check: () => http.get("/auth/check"),
+  verify2FA: (token: string, code: string) => http.post("/auth/2fa", { token, code }, { mute: true }),
+  logout: () => http.post("/auth/logout", undefined, { mute: true }),
+  check: () => http.get("/auth/check", { mute: true }),
   changePassword: (current: string, newPassword: string) => http.put("/auth/password", { current, new: newPassword }),
   // 登录日志（Wave 3a）：分页查询，status 空=全部 / success / fail
   loginLogs: (params: { page?: number; size?: number; status?: string }) => http.get("/auth/login-logs", { params }),
@@ -25,7 +25,7 @@ export interface UserProfile {
 }
 
 export const profileApi = {
-  get: () => http.get<UserProfile>("/profile"),
+  get: () => http.get<UserProfile>("/profile", { mute: true }),
   update: (data: { display_name: string; email: string; avatar: string }) => http.put("/profile", data),
   // --- 2FA 管理（Spec 45：TOTP 开启/关闭/恢复码） ---
   setup2FA() {

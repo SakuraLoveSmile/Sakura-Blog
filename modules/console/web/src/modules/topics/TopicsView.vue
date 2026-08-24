@@ -97,19 +97,14 @@ function openEdit(topic: TopicItem) {
   modalVisible.value = true;
 }
 
-function errorMessage(error: any, fallback: string) {
-  return error?.response?.data?.error || error?.message || fallback;
-}
-
 async function load() {
   loading.value = true;
   loadFailed.value = false;
   try {
     const { data } = await topicApi.list();
     topics.value = data.items || [];
-  } catch (error: any) {
+  } catch {
     loadFailed.value = true;
-    Toast.error(errorMessage(error, "专栏加载失败"));
   } finally {
     loading.value = false;
   }
@@ -140,8 +135,7 @@ async function save() {
     }
     modalVisible.value = false;
     await load();
-  } catch (error: any) {
-    Toast.error(errorMessage(error, "保存失败"));
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -160,8 +154,7 @@ function remove(topic: TopicItem) {
         await topicApi.delete(topic.id);
         Toast.success("专栏已删除");
         await load();
-      } catch (error: any) {
-        Toast.error(errorMessage(error, "删除失败"));
+      } catch {
       } finally {
         deletingId.value = null;
       }

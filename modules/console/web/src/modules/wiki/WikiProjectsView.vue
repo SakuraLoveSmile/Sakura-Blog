@@ -150,8 +150,8 @@ async function loadProjects(selectID = "") {
       selectedId.value = "";
       form.value = emptyForm();
     }
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || e?.message || "加载 Wiki 项目失败";
+  } catch {
+    error.value = "加载 Wiki 项目失败";
   } finally {
     loading.value = false;
   }
@@ -252,8 +252,7 @@ async function saveProject() {
     else await wikiApi.createProject(payload() as any);
     Toast.success(isEditing.value ? "Wiki 项目已保存" : "Wiki 项目已创建");
     await loadProjects(id);
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -273,8 +272,7 @@ function deleteProject() {
         Toast.success("Wiki 项目已删除");
         selectedId.value = "";
         await loadProjects();
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || e?.message || "删除失败");
+      } catch {
       } finally {
         deleting.value = false;
       }

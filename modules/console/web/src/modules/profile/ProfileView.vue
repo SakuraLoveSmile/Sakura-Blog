@@ -35,8 +35,7 @@ async function saveProfile() {
     await profileApi.update(form.value);
     await auth.fetchUser();
     Toast.success("资料已保存");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "保存失败");
+  } catch {
   } finally {
     savingProfile.value = false;
   }
@@ -67,8 +66,7 @@ async function changePassword() {
     Toast.success("密码已修改，请使用新密码重新登录");
     await auth.logout();
     router.push("/login");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "修改失败");
+  } catch {
   } finally {
     savingPwd.value = false;
   }
@@ -104,8 +102,7 @@ async function startSetup() {
     const { data } = await profileApi.setup2FA();
     setupData.value = data;
     setupCode.value = "";
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "获取 2FA 配置失败");
+  } catch {
   } finally {
     setupLoading.value = false;
   }
@@ -134,8 +131,7 @@ async function confirmSetup() {
     setupCode.value = "";
     Toast.success("两步验证已开启，请妥善保存恢复码");
     auth.fetchUser().catch(() => {});
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "确认失败");
+  } catch {
   } finally {
     confirming.value = false;
   }
@@ -148,8 +144,7 @@ async function loadRecoveryCodes() {
     const { data } = await profileApi.getRecoveryCodes();
     recoveryCodes.value = data.recovery_codes || [];
     showRecovery.value = true;
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "获取恢复码失败");
+  } catch {
   } finally {
     loadingRecovery.value = false;
   }
@@ -176,8 +171,7 @@ async function confirmDisable() {
     disableCode.value = "";
     Toast.success("两步验证已关闭");
     auth.fetchUser().catch(() => {});
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "关闭失败");
+  } catch {
   } finally {
     disabling.value = false;
   }
@@ -211,9 +205,8 @@ async function loadTokenStatus() {
   try {
     const { data } = await profileApi.apiTokenStatus();
     hasToken.value = !!data.has_token;
-  } catch (e: any) {
+  } catch {
     // 状态查询失败不阻塞页面，按钮操作时会再次校验
-    Toast.error(e?.response?.data?.error || e?.message || "查询 Token 状态失败");
   }
 }
 
@@ -225,8 +218,7 @@ async function generateToken() {
     generatedToken.value = data.token;
     hasToken.value = true;
     showTokenModal.value = true;
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "生成失败");
+  } catch {
   } finally {
     generating.value = false;
   }
@@ -240,8 +232,7 @@ async function confirmRevoke() {
     hasToken.value = false;
     showRevokeModal.value = false;
     Toast.success("API Token 已撤销，Bearer 调用立即失效");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || e?.message || "撤销失败");
+  } catch {
   } finally {
     revoking.value = false;
   }

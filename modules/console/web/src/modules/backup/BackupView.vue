@@ -55,8 +55,7 @@ async function executeRestore() {
     Toast.success("恢复完成，前台与搜索索引已重新同步");
     pendingRestore.value = null;
     loadStatus();
-  } catch (err: any) {
-    Toast.error(err.response?.data?.error || "恢复失败");
+  } catch {
   } finally {
     restoring.value = false;
   }
@@ -90,8 +89,7 @@ async function handleImport(e: Event) {
         const { data } = await backupApi.importMarkdown(file);
         importResult.value = data;
         Toast.success(`成功导入 ${data.imported} 篇文章`);
-      } catch (err: any) {
-        Toast.error(err.response?.data?.error || "导入失败");
+      } catch {
       } finally {
         importing.value = false;
         input.value = "";

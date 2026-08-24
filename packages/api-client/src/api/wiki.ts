@@ -1,4 +1,5 @@
 import { http } from "../transport";
+import type { NoteListParams, NotePayload, WikiDocPayload } from "./contracts";
 
 // --- Wiki 项目与文档（Spec 35a） ---
 export interface WikiHeroPreview {
@@ -56,9 +57,8 @@ export const wikiApi = {
   listDocs: (project: string) => http.get(`/wiki/${encodeURIComponent(project)}/docs`),
   getDoc: (project: string, slug: string) =>
     http.get(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
-  createDoc: (project: string, data: Record<string, unknown>) =>
-    http.post(`/wiki/${encodeURIComponent(project)}/docs`, data),
-  updateDoc: (project: string, slug: string, data: Record<string, unknown>) =>
+  createDoc: (project: string, data: WikiDocPayload) => http.post(`/wiki/${encodeURIComponent(project)}/docs`, data),
+  updateDoc: (project: string, slug: string, data: WikiDocPayload) =>
     http.put(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`, data),
   deleteDoc: (project: string, slug: string) =>
     http.delete(`/wiki/${encodeURIComponent(project)}/docs/${encodeURIComponent(slug)}`),
@@ -75,12 +75,10 @@ export const notebookApi = {
   updateNotebook: (id: number, data: { name?: string; description?: string; cover?: string; order?: number }) =>
     http.put(`/notebooks/${id}`, data),
   deleteNotebook: (id: number) => http.delete(`/notebooks/${id}`),
-  listNotes: (notebookId: number, params?: Record<string, unknown>) =>
-    http.get(`/notebooks/${notebookId}/notes`, { params }),
-  createNote: (notebookId: number, data: { title: string; content?: string; tags?: string }) =>
-    http.post(`/notebooks/${notebookId}/notes`, data),
+  listNotes: (notebookId: number, params?: NoteListParams) => http.get(`/notebooks/${notebookId}/notes`, { params }),
+  createNote: (notebookId: number, data: NotePayload) => http.post(`/notebooks/${notebookId}/notes`, data),
   getNote: (id: number) => http.get(`/notes/${id}`),
-  updateNote: (id: number, data: Record<string, unknown>) => http.put(`/notes/${id}`, data),
+  updateNote: (id: number, data: NotePayload) => http.put(`/notes/${id}`, data),
   deleteNote: (id: number) => http.delete(`/notes/${id}`),
   getTags: () => http.get("/note-tags"),
 };

@@ -201,8 +201,7 @@ async function handlePreview() {
   try {
     const { data } = await previewApi.createPostPreview({ ...form.value });
     window.open(`/preview/draft/${data.token}`, "_blank");
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "预览生成失败");
+  } catch {
   } finally {
     previewing.value = false;
   }
@@ -400,8 +399,7 @@ onMounted(async () => {
   loading.value = true;
   try {
     await loadPost();
-  } catch (e: any) {
-    Toast.error("加载失败");
+  } catch {
   } finally {
     loading.value = false;
   }
@@ -417,9 +415,7 @@ async function handleRestored() {
   try {
     await loadPost();
     clearActiveDraft();
-  } catch (e: any) {
-    Toast.error("回滚后重载失败");
-  }
+  } catch {}
 }
 
 /** 保存：已发布文章 → 存草稿头（线上不变，列表出小绿点）；草稿/新建 → 直接保存为草稿 */
@@ -445,8 +441,7 @@ async function handleSave() {
     }
     // Spec 62：保存后失效文章列表缓存（返回列表时草稿小绿点/标题即时反映，不等 staleTime）
     queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "保存失败");
+  } catch {
   } finally {
     saving.value = false;
   }
@@ -466,8 +461,7 @@ async function handlePublish() {
     // Spec 62：发布后失效文章列表缓存，列表页立即显示新状态
     queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
     router.push("/posts");
-  } catch (e: any) {
-    Toast.error(e.response?.data?.error || "发布失败");
+  } catch {
   } finally {
     publishing.value = false;
   }
@@ -486,9 +480,7 @@ function handleDiscardDraft() {
         await loadPost();
         clearActiveDraft();
         Toast.success("已放弃草稿");
-      } catch (e: any) {
-        Toast.error(e.response?.data?.error || "操作失败");
-      }
+      } catch {}
     },
   });
 }

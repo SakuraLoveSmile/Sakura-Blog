@@ -112,8 +112,7 @@ async function checkUpdate(refresh = false) {
     if (refresh) {
       Toast.success("已完成最新版本检查");
     }
-  } catch (err: any) {
-    Toast.error(err.response?.data?.error || "检查更新失败");
+  } catch {
   } finally {
     checking.value = false;
   }
@@ -130,8 +129,7 @@ async function applyUpdate() {
         const { data } = await systemApi.apply(tokenParam());
         Toast.success(`更新已触发，目标版本 ${data.target_version}`);
         startPolling();
-      } catch (err: any) {
-        Toast.error(err.response?.data?.error || "触发更新失败");
+      } catch {
       } finally {
         applying.value = false;
       }

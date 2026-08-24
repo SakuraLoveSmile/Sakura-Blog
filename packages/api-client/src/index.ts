@@ -1,11 +1,12 @@
 // Package entrypoint: keep the historical @/api barrel stable while the
 // implementation is organized by API domain under src/api/.
-export { configureApiTransport, http } from "./transport";
-export type { ApiTransportOptions } from "./transport";
+export { configureApiTransport, getApiErrorMessage, http, installApiInterceptors } from "./transport";
+export type { ApiErrorEnvelope, ApiTransportOptions } from "./transport";
 export type { Breakpoint, DashboardResponsiveLayout, DashboardWidget } from "./types";
 export type * from "./generated";
 
 export * from "./api/auth";
+export * from "./api/contracts";
 export * from "./api/content";
 export * from "./api/dashboard";
 export * from "./api/editor";

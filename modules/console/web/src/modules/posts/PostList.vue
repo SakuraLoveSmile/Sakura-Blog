@@ -172,9 +172,7 @@ function handleDelete(p: PostItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
         await refetch();
         Toast.success("已移入回收站");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -189,9 +187,7 @@ function handleRestore(p: PostItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
         await refetch();
         Toast.success("文章已恢复");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "恢复失败");
-      }
+      } catch {}
     },
   });
 }
@@ -208,9 +204,7 @@ function handlePurge(p: PostItem) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
         await refetch();
         Toast.success("已彻底删除");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -228,9 +222,7 @@ async function handleBatchDelete() {
         await queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
         await refetch();
         Toast.success("批量操作成功");
-      } catch (e: any) {
-        Toast.error(e?.response?.data?.error || "批量删除失败");
-      }
+      } catch {}
     },
   });
 }
@@ -261,8 +253,7 @@ async function createShare() {
     });
     generatedShareUrl.value = window.location.origin + data.url;
     Toast.success("分享链接已生成");
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "生成分享链接失败");
+  } catch {
   } finally {
     shareCreating.value = false;
   }

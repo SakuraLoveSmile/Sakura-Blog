@@ -59,7 +59,6 @@ const deleteMutation = useMutation({
     queryClient.invalidateQueries({ queryKey: queryKeys.shares() });
     Toast.success("分享链接已删除并失效");
   },
-  onError: (e: any) => Toast.error(e?.response?.data?.error || "删除失败"),
 });
 
 function handleDelete(share: ShareRow) {

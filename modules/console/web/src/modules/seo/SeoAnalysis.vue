@@ -20,8 +20,8 @@ async function analyze() {
     } else {
       result.value = data;
     }
-  } catch (e: any) {
-    errMsg.value = e?.response?.data?.error || "检查失败";
+  } catch {
+    errMsg.value = "检查失败";
   } finally {
     loading.value = false;
   }

@@ -121,8 +121,6 @@ const readMutation = useMutation({
   onSuccess: () => {
     invalidate();
   },
-  // Spec 62：失败反馈（原静默失败）
-  onError: (e: any) => Toast.error(e?.response?.data?.error || "标记失败"),
 });
 
 /** 全部已读 */
@@ -132,8 +130,6 @@ const readAllMutation = useMutation({
     invalidate();
     Toast.success("已全部标记为已读");
   },
-  // Spec 62：失败反馈（原静默失败）
-  onError: (e: any) => Toast.error(e?.response?.data?.error || "标记失败"),
 });
 
 /** 点击条目：标记已读 + 新标签页打开目标页面 */

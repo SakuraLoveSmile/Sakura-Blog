@@ -24,8 +24,7 @@ async function loadIcons() {
   try {
     const { data } = await assetsApi.icons();
     icons.value = data.items || [];
-  } catch (e: any) {
-    Toast.error(e?.response?.data?.error || "加载图标失败");
+  } catch {
   } finally {
     iconsLoading.value = false;
   }

@@ -5,6 +5,7 @@ import { addCollection } from "@iconify/vue";
 import riIcons from "./icons/ri-subset.json";
 import { queryClient } from "@/api/query-client";
 import { configureApiTransport } from "@blog/api-client";
+import { Dialog, Toast } from "@/components/ui";
 import App from "./App.vue";
 import router from "./router";
 import "@fontsource/dm-sans/latin-400.css";
@@ -15,7 +16,33 @@ import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/main.css";
 
-configureApiTransport({ onUnauthorized: () => router.push("/login") });
+let unauthorizedDialogOpen = false;
+
+function handleUnauthorized() {
+  // A burst of parallel queries can all receive 401 at once. Keep one dialog
+  // and let the user choose when to leave the current page.
+  if (router.currentRoute.value.path === "/login" || unauthorizedDialogOpen) return;
+  unauthorizedDialogOpen = true;
+  const redirect = router.currentRoute.value.fullPath;
+  Dialog.warning({
+    title: "登录已过期",
+    description: "请重新登录后继续操作。",
+    confirmText: "去登录",
+    cancelText: "稍后",
+    onConfirm: async () => {
+      unauthorizedDialogOpen = false;
+      await router.replace({ path: "/login", query: redirect !== "/login" ? { redirect } : {} });
+    },
+    onCancel: () => {
+      unauthorizedDialogOpen = false;
+    },
+  });
+}
+
+configureApiTransport({
+  onUnauthorized: handleUnauthorized,
+  onError: (_error, message) => Toast.error(message),
+});
 
 addCollection(riIcons);
 
