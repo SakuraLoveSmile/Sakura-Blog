@@ -13,12 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
+	"blog/internal/safefetch"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
 
-// pushClient 推送用 HTTP client（短超时）。
-var pushClient = &http.Client{Timeout: 10 * time.Second}
+// pushClient 推送用 SSRF 加固 client（短超时）。目标主机虽由内置引擎固定，
+// 仍统一经过 SafeFetch，避免未来新增可配置引擎时回退到普通 client。
+var pushClient = safefetch.New(safefetch.Options{Timeout: 10 * time.Second})
 
 // registerPush 挂站点推送相关端点。
 func (m *Module) registerPush(g *gin.RouterGroup) {
@@ -103,7 +105,11 @@ func pushIndexNow(key, host, target string) error {
 		"urlList": []string{target},
 	}
 	b, _ := json.Marshal(payload)
-	req, err := http.NewRequest(http.MethodPost, "https://api.indexnow.org/indexnow", bytes.NewReader(b))
+	endpoint := "https://api.indexnow.org/indexnow"
+	if _, err := safefetch.ValidateURL(endpoint); err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -126,6 +132,9 @@ func pushBaidu(token, host, target string) error {
 		return fmt.Errorf("未配置百度推送 token")
 	}
 	endpoint := fmt.Sprintf("http://data.zz.baidu.com/urls?site=%s&token=%s", url.QueryEscape(host), url.QueryEscape(token))
+	if _, err := safefetch.ValidateURL(endpoint); err != nil {
+		return err
+	}
 	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(target))
 	if err != nil {
 		return err

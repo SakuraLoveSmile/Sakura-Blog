@@ -40,7 +40,7 @@ func TestDashboardStellarVersionStates(t *testing.T) {
 			}))
 			defer upstream.Close()
 
-			gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: upstream.URL})
+			gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: upstream.URL, HTTPClient: upstream.Client()})
 			st := newTestStore(t)
 			site := &tmpl.Site{}
 			enableAdmin(t, st, site, "")

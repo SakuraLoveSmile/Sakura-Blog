@@ -244,6 +244,7 @@ func TestGetIssues(t *testing.T) {
 
 	c := New(Config{CacheDir: t.TempDir()})
 	c.apiBase = srv.URL
+	c.http = srv.Client()
 	issues, err := c.GetIssues("sakurasep", "Friends", "state=open&per_page=100")
 	if err != nil {
 		t.Fatalf("GetIssues: %v", err)
@@ -268,6 +269,7 @@ func TestGetIssues(t *testing.T) {
 	}))
 	defer errSrv.Close()
 	c2.apiBase = errSrv.URL
+	c2.http = errSrv.Client()
 	if _, err := c2.GetIssues("o", "r", ""); err == nil {
 		t.Fatal("expected error on upstream 500")
 	}

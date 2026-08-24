@@ -118,7 +118,6 @@ func TestMarkReadFlow(t *testing.T) {
 // TestPostWebhookPayload Webhook：配置 webhook_url 后事件 POST JSON 字段完整。
 func TestPostWebhookPayload(t *testing.T) {
 	st, _ := newTestEnv(t)
-	svc := New(st)
 
 	var got map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +133,7 @@ func TestPostWebhookPayload(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
+	svc := NewWithClient(st, srv.Client())
 
 	if err := st.PutSetting("notify", `{"webhook_url":"`+srv.URL+`"}`); err != nil {
 		t.Fatalf("put webhook config: %v", err)
@@ -163,6 +163,24 @@ func TestPostWebhookPayload(t *testing.T) {
 		if got[k] != v {
 			t.Errorf("webhook payload[%q] = %v, want %q", k, got[k], v)
 		}
+	}
+}
+
+// TestPostWebhookRejectsLoopback 生产 New 使用 SafeFetch，不得向本机 Webhook 发请求。
+func TestPostWebhookRejectsLoopback(t *testing.T) {
+	st, _ := newTestEnv(t)
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		called = true
+	}))
+	defer srv.Close()
+	if err := st.PutSetting("notify", `{"webhook_url":"`+srv.URL+`"}`); err != nil {
+		t.Fatalf("put webhook config: %v", err)
+	}
+
+	New(st).notify(Event{Type: "comment_new", Title: "t", Content: "c", Link: "/p"})
+	if called {
+		t.Fatal("loopback webhook must be rejected")
 	}
 }
 

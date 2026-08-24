@@ -18,6 +18,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 	"time"
@@ -153,8 +154,51 @@ func New(opts Options) *http.Client {
 }
 
 // ForbiddenIP 判断 IP 是否落在禁访段：
-// 环回 / RFC1918 私网 / 链路本地 / 多播 / 未指定 / 0.0.0.0-8 / CGNAT 100.64.0.0/10 /
-// NAT64 64:ff9b::/96。IPv4-mapped IPv6 由 To4 归一化后按 IPv4 规则判定。
+// 环回 / RFC1918 私网 / 链路本地 / 多播 / 未指定 / 0.0.0.0-8 / 保留地址 /
+// CGNAT / NAT64。IPv4-mapped IPv6 由 netip.Unmap 与 To4 共同归一化。
+// forbiddenReservedPrefixes 是不应被服务端主动访问的特殊用途/保留网段。
+// 除 RFC1918、环回和链路本地外，额外覆盖文档地址、基准测试网段、IPv4
+// 保留地址以及 IPv6 文档/协议分配网段，避免把“非私网”误当成“公网可访问”。
+var forbiddenReservedPrefixes = []netip.Prefix{
+	mustPrefix("100.64.0.0/10"),
+	mustPrefix("192.0.0.0/24"),
+	mustPrefix("192.0.2.0/24"),
+	mustPrefix("192.88.99.0/24"),
+	mustPrefix("198.18.0.0/15"),
+	mustPrefix("198.51.100.0/24"),
+	mustPrefix("203.0.113.0/24"),
+	mustPrefix("240.0.0.0/4"),
+	mustPrefix("64:ff9b::/96"),
+	mustPrefix("100::/64"),
+	mustPrefix("2001:0::/32"),
+	mustPrefix("2001:2::/48"),
+	mustPrefix("2001:10::/28"),
+	mustPrefix("2001:20::/28"),
+	mustPrefix("2001:db8::/32"),
+}
+
+func mustPrefix(raw string) netip.Prefix {
+	prefix, err := netip.ParsePrefix(raw)
+	if err != nil {
+		panic(err)
+	}
+	return prefix
+}
+
+func hasForbiddenReservedPrefix(ip net.IP) bool {
+	addr, ok := netip.AddrFromSlice(ip)
+	if !ok {
+		return true
+	}
+	addr = addr.Unmap()
+	for _, prefix := range forbiddenReservedPrefixes {
+		if prefix.Contains(addr) {
+			return true
+		}
+	}
+	return false
+}
+
 func ForbiddenIP(ip net.IP) bool {
 	if ip == nil {
 		return true
@@ -162,6 +206,9 @@ func ForbiddenIP(ip net.IP) bool {
 	switch {
 	case ip.IsLoopback(), ip.IsPrivate(), ip.IsLinkLocalUnicast(),
 		ip.IsLinkLocalMulticast(), ip.IsMulticast(), ip.IsUnspecified():
+		return true
+	}
+	if hasForbiddenReservedPrefix(ip) {
 		return true
 	}
 	if ip4 := ip.To4(); ip4 != nil {

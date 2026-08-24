@@ -9,7 +9,10 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +21,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/safefetch"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -114,5 +118,27 @@ func TestPublicLoginRejectsNonReader(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("admin login via public endpoint should be 403, got %d", w.Code)
+	}
+}
+
+// TestSafeFetchRejectsPrivateDNSResolutionBeforeDial 验证域名解析到内网地址时，
+// 请求在拨号前被拒绝；这覆盖 DNS rebinding/混合解析响应，不能只依赖 IP 字面量校验。
+func TestSafeFetchRejectsPrivateDNSResolutionBeforeDial(t *testing.T) {
+	dialCalled := false
+	client := safefetch.New(safefetch.Options{
+		ResolveIP: func(context.Context, string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP("169.254.169.254")}, nil
+		},
+		DialContext: func(context.Context, string, string) (net.Conn, error) {
+			dialCalled = true
+			return nil, errors.New("unexpected dial")
+		},
+	})
+	_, err := client.Get("https://rebind.test/image.png")
+	if !errors.Is(err, safefetch.ErrForbiddenHost) {
+		t.Fatalf("error = %v, want ErrForbiddenHost", err)
+	}
+	if dialCalled {
+		t.Fatal("private DNS result must be rejected before DialContext")
 	}
 }

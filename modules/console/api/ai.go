@@ -2,15 +2,12 @@ package api
 
 import (
 	"bytes"
-	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -162,13 +159,10 @@ type chatCompletionResp struct {
 	} `json:"error"`
 }
 
-// aiHTTPClient AI 请求专用 client（30s 超时，生成较慢的本地模型可覆盖大多数场景）。
-var aiHTTPClient = &http.Client{Timeout: 30 * time.Second}
-
 // callChatCompletion 调用 OpenAI 兼容 /chat/completions，返回首个 choice 的文本内容。
-// client 为空时用默认 aiHTTPClient（管理员配置场景：base_url 与 SMTP 同信任级，
-// 本地模型如 Ollama 的 localhost 是明确使用场景，故默认 client 不做内网限制）；
-// guest 场景传入 newGuestAIHTTPClient 的加固客户端（IP 固定拨号 + 禁重定向）。
+// client 为空时使用统一的 safefetch 客户端；调用方传入 client 仅用于
+// guest 场景和测试注入。配置地址在建请求前校验 scheme/host，最终拨号时
+// 再解析并校验每个 IP，封堵 DNS rebinding 与重定向绕过。
 func callChatCompletion(cfg config.AIConfig, system, user string, client *http.Client) (string, error) {
 	payload := map[string]any{
 		"model": cfg.Model,
@@ -182,8 +176,15 @@ func callChatCompletion(cfg config.AIConfig, system, user string, client *http.C
 	if err != nil {
 		return "", err
 	}
-	url := strings.TrimRight(cfg.BaseURL, "/") + "/chat/completions"
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	endpoint := strings.TrimRight(cfg.BaseURL, "/") + "/chat/completions"
+	if client == nil {
+		validated, err := safefetch.ValidateURL(endpoint)
+		if err != nil {
+			return "", err
+		}
+		endpoint = validated.String()
+	}
+	httpReq, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}
@@ -192,7 +193,7 @@ func callChatCompletion(cfg config.AIConfig, system, user string, client *http.C
 		httpReq.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	}
 	if client == nil {
-		client = aiHTTPClient
+		client = safefetch.New(safefetch.Options{Timeout: 30 * time.Second})
 	}
 	resp, err := client.Do(httpReq)
 	if err != nil {
@@ -284,7 +285,7 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "接口地址、模型与正文均必填")
 		return
 	}
-	ips, err := validateGuestAIEndpoint(req.Endpoint)
+	_, err = validateGuestAIEndpoint(req.Endpoint)
 	if err != nil {
 		status := http.StatusBadRequest
 		if errors.Is(err, errPrivateHost) {
@@ -298,9 +299,8 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 		content = string(runes[:aiGuestContentLimit])
 	}
 	guest := config.AIConfig{BaseURL: req.Endpoint, APIKey: req.APIKey, Model: req.Model}
-	// 固定拨号已校验 IP + 禁重定向（封堵 TOCTOU 重绑定与 302 内网跳转）
-	epURL, _ := url.Parse(strings.TrimSpace(req.Endpoint))
-	client := newGuestAIHTTPClient(epURL.Hostname(), ips)
+	// 统一 safefetch 客户端在最终拨号时重新解析/校验 IP，并拒绝重定向。
+	client := safefetch.New(safefetch.Options{Timeout: 30 * time.Second})
 	text, err := callChatCompletion(guest,
 		"你是博客文章摘要助手。根据用户提供的文章正文生成一段导读摘要。只输出摘要文本本身，不要任何解释、标题或 Markdown 标记。",
 		"请为下面的文章生成 120-200 字的中文导读摘要，概括全文亮点与结论：\n"+content, client)
@@ -316,12 +316,16 @@ func (h *Handler) aiSummaryGuest(c *gin.Context) {
 }
 
 // validateGuestAIEndpoint 校验读者提供的端点：仅 https，且域名解析后不得落在私网/环回/链路本地段（SSRF 防护）。
-// 返回解析所得的全部公网 IP，供后续 DialContext 固定拨号（封堵 TOCTOU 重绑定）。
+// 返回解析所得的全部公网 IP 仅用于请求前的快速拒绝；实际拨号仍由 safefetch
+// 在每次连接时重新解析并校验，封堵 TOCTOU DNS rebinding。
 // 私网命中返回 errPrivateHost（handler 映射 403），其余格式问题 400。
 // 安全审计 2026-08-16：黑名单对齐 safefetch.ForbiddenIP（补 0.0.0.0/8、CGNAT 100.64/10、NAT64）。
 func validateGuestAIEndpoint(endpoint string) ([]net.IP, error) {
-	u, err := url.Parse(strings.TrimSpace(endpoint))
-	if err != nil || u.Host == "" {
+	u, err := safefetch.ValidateURL(endpoint)
+	if err != nil {
+		if errors.Is(err, safefetch.ErrForbiddenHost) {
+			return nil, errPrivateHost
+		}
 		return nil, errors.New("地址格式错误")
 	}
 	if u.Scheme != "https" {
@@ -337,42 +341,6 @@ func validateGuestAIEndpoint(endpoint string) ([]net.IP, error) {
 		}
 	}
 	return ips, nil
-}
-
-// newGuestAIHTTPClient 构造 SSRF 加固的 guest AI 客户端（Spec 61 阶段 3）：
-//   - DialContext 固定拨号校验时解析所得的公网 IP（保留 SNI/证书校验），封堵 TOCTOU DNS 重绑定；
-//   - CheckRedirect 直接拒绝，封堵 302 跳转内网的绕过。
-func newGuestAIHTTPClient(hostname string, ips []net.IP) *http.Client {
-	dialer := &net.Dialer{Timeout: 10 * time.Second}
-	transport := &http.Transport{
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			_, port, err := net.SplitHostPort(addr)
-			if err != nil {
-				return nil, err
-			}
-			var lastErr error
-			for _, ip := range ips {
-				conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
-				if err == nil {
-					return conn, nil
-				}
-				lastErr = err
-			}
-			if lastErr == nil {
-				lastErr = errors.New("无可用 IP")
-			}
-			return nil, lastErr
-		},
-		TLSClientConfig:   &tls.Config{ServerName: hostname}, // 保留 SNI 与证书校验
-		ForceAttemptHTTP2: true,
-	}
-	return &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second,
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return errors.New("不允许重定向")
-		},
-	}
 }
 
 // errPrivateHost SSRF 私网段哨兵错误（映射 403）。

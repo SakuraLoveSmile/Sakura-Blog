@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"net"
@@ -8,8 +9,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"blog/internal/config"
+	"blog/internal/safefetch"
 )
 
 func TestBuildAIPromptIncludesFieldsAndTaxonomy(t *testing.T) {
@@ -97,7 +100,7 @@ func TestCallChatCompletionSuccess(t *testing.T) {
 		BaseURL: srv.URL + "/v1/", // 末尾斜杠应被规范化
 		APIKey:  "sk-test",
 		Model:   "test-model",
-	}, "sys", "user", nil)
+	}, "sys", "user", srv.Client())
 	if err != nil {
 		t.Fatalf("call: %v", err)
 	}
@@ -115,7 +118,7 @@ func TestCallChatCompletionAPIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
+	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
 	if err == nil || !strings.Contains(err.Error(), "invalid api key") {
 		t.Fatalf("expected api error message, got %v", err)
 	}
@@ -128,9 +131,21 @@ func TestCallChatCompletionNonJSONResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
+	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", srv.Client())
 	if err == nil {
 		t.Fatal("non-JSON response should error")
+	}
+}
+
+func TestCallChatCompletionRejectsLoopbackByDefault(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("loopback AI endpoint must not receive a request")
+	}))
+	defer srv.Close()
+
+	_, err := callChatCompletion(config.AIConfig{BaseURL: srv.URL, Model: "m"}, "s", "u", nil)
+	if err == nil || !strings.Contains(err.Error(), "forbidden address") {
+		t.Fatalf("error = %v, want loopback rejection", err)
 	}
 }
 
@@ -179,34 +194,47 @@ func TestAIGuestRateAllow(t *testing.T) {
 	}
 }
 
-// TestGuestAIClientPinsIPAndRejectsRedirect（Spec 61 阶段 3）：加固客户端
-// 1) DialContext 固定拨号校验 IP（封堵 TOCTOU 重绑定）；2) CheckRedirect 拒绝 302 跳转。
-func TestGuestAIClientPinsIPAndRejectsRedirect(t *testing.T) {
+// TestSafeFetchClientRejectsRedirect（Spec 61 阶段 3）：统一客户端
+// 1) 拨号前校验解析所得 IP；2) 不跟随 302，避免跳转到内网。
+func TestSafeFetchClientRejectsRedirect(t *testing.T) {
 	ok := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/redirect" {
-			http.Redirect(w, r, "https://127.0.0.1:1/evil", http.StatusFound)
+			http.Redirect(w, r, "https://private.test/evil", http.StatusFound)
 			return
 		}
 		w.Write([]byte(`{"ok":true}`))
 	}))
 	defer ok.Close()
 
-	host, _, _ := net.SplitHostPort(strings.TrimPrefix(ok.URL, "https://"))
-	ips, _ := net.LookupIP(host)
-	client := newGuestAIHTTPClient(host, ips)
+	_, port, _ := net.SplitHostPort(ok.Listener.Addr().String())
+	client := safefetch.New(safefetch.Options{
+		Timeout:      3 * time.Second,
+		MaxRedirects: 0,
+		ResolveIP: func(context.Context, string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP("1.1.1.1")}, nil
+		},
+		DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, network, ok.Listener.Addr().String())
+		},
+	})
 	// 测试自签证书：仅放行证书校验（被测对象是固定拨号与重定向拒绝）
 	client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	baseURL := "https://public.test:" + port
 
-	// 正常请求经固定拨号可达（非重定向路径不受影响）
-	resp, err := client.Get(ok.URL)
+	// 正常请求经 SafeFetch 校验后可达。
+	resp, err := client.Get(baseURL)
 	if err != nil {
-		t.Fatalf("pinned dial should succeed: %v", err)
+		t.Fatalf("safe dial should succeed: %v", err)
 	}
 	resp.Body.Close()
 
-	// 302 重定向被 CheckRedirect 拒绝
-	_, err = client.Get(ok.URL + "/redirect")
-	if err == nil || !strings.Contains(err.Error(), "不允许重定向") {
-		t.Fatalf("expected redirect rejection, got: %v", err)
+	// 302 保留给调用方，不会跟随到 private.test。
+	resp, err = client.Get(baseURL + "/redirect")
+	if err != nil {
+		t.Fatalf("redirect response should be returned: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("redirect status = %d, want %d", resp.StatusCode, http.StatusFound)
 	}
 }

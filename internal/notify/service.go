@@ -10,22 +10,35 @@ import (
 	"net/http"
 	"time"
 
+	"blog/internal/safefetch"
 	"blog/internal/store"
 )
 
 // Service 通知服务：写站内通知 + 可选 Webhook。所有写操作异步降级，不阻塞主流程。
 type Service struct {
-	st     *store.Store
-	client *http.Client
+	st             *store.Store
+	client         *http.Client
+	enforceSafeURL bool
 }
 
 // New 创建通知服务。st 不可为空。
 func New(st *store.Store) *Service {
 	return &Service{
-		st: st,
-		client: &http.Client{
-			Timeout: 5 * time.Second, // Webhook 超时兜底，防第三方拖慢
-		},
+		st:             st,
+		client:         safefetch.New(safefetch.Options{Timeout: 5 * time.Second}),
+		enforceSafeURL: true,
+	}
+}
+
+// NewWithClient 构造通知服务并允许测试注入 HTTP client；生产调用应使用 New，
+// 由统一 safefetch 客户端拒绝非 HTTP(S)、环回、私网和保留地址。
+func NewWithClient(st *store.Store, client *http.Client) *Service {
+	if client == nil {
+		client = safefetch.New(safefetch.Options{Timeout: 5 * time.Second})
+	}
+	return &Service{
+		st:     st,
+		client: client,
 	}
 }
 
@@ -102,6 +115,12 @@ func (s *Service) PostWebhook(ev Event) {
 	}
 	if cfg.WebhookURL == "" {
 		return
+	}
+	if s.enforceSafeURL {
+		if _, err := safefetch.ValidateURL(cfg.WebhookURL); err != nil {
+			log.Printf("notify: reject unsafe webhook URL: %v", err)
+			return
+		}
 	}
 	body, err := json.Marshal(ev)
 	if err != nil {

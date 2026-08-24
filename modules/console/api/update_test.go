@@ -26,7 +26,7 @@ type fakeRunner struct {
 }
 
 func (f *fakeRunner) Supported() bool             { return f.supported }
-func (f *fakeRunner) UnsupportedReason() string    { return f.reason }
+func (f *fakeRunner) UnsupportedReason() string   { return f.reason }
 func (f *fakeRunner) Start(context.Context) error { atomic.AddInt32(&f.started, 1); return f.startErr }
 func (f *fakeRunner) Active(context.Context) bool { return f.active }
 
@@ -55,16 +55,16 @@ func newUpdateEnvWithCookie(t *testing.T, ghHandler http.HandlerFunc) (*gin.Engi
 	}))
 	t.Cleanup(srv.Close)
 
-	gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: srv.URL})
+	gh := ghpkg.New(ghpkg.Config{CacheDir: t.TempDir(), APIBase: srv.URL, HTTPClient: srv.Client()})
 
 	r := gin.New()
 	h, err := MountConsole(r, MountDeps{
 		Config: Config{
-			Store:       st,
-			Site:        sitePtr(site),
-			AppVersion:  "v1.4.1",
-			UpdateRepo:  "SakuraLoveSmile/Sakura-Blog",
-			Root:        t.TempDir(),
+			Store:      st,
+			Site:       sitePtr(site),
+			AppVersion: "v1.4.1",
+			UpdateRepo: "SakuraLoveSmile/Sakura-Blog",
+			Root:       t.TempDir(),
 		},
 		GH: gh,
 	})
@@ -373,9 +373,9 @@ func TestSemverCompare(t *testing.T) {
 
 func TestSplitOwnerRepo(t *testing.T) {
 	cases := []struct {
-		input      string
-		owner      string
-		repo       string
+		input string
+		owner string
+		repo  string
 	}{
 		{"SakuraLoveSmile/Sakura-Blog", "SakuraLoveSmile", "Sakura-Blog"},
 		{"a/b/c", "a", "b/c"},

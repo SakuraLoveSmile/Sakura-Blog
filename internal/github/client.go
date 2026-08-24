@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"blog/internal/safefetch"
 )
 
 // Client GitHub REST 代理客户端，内存 + 磁盘双层缓存，stale-while-error 降级。
@@ -33,9 +35,10 @@ type memEntry struct {
 
 // Config 构造 Client 所需配置。
 type Config struct {
-	Token    string // GitHub PAT（可选）
-	CacheDir string // 磁盘缓存目录（绝对路径）
-	APIBase  string // GitHub REST API 基址（仅测试注入，生产留空）
+	Token      string       // GitHub PAT（可选）
+	CacheDir   string       // 磁盘缓存目录（绝对路径）
+	APIBase    string       // GitHub REST API 基址（仅测试注入，生产留空）
+	HTTPClient *http.Client // HTTP client（仅测试注入，生产留空以启用 safefetch）
 }
 
 // New 创建 GitHub 数据客户端。
@@ -49,11 +52,15 @@ func New(cfg Config) *Client {
 	if apiBase == "" {
 		apiBase = "https://api.github.com"
 	}
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient = safefetch.New(safefetch.Options{Timeout: 15 * time.Second})
+	}
 	return &Client{
 		token:    cfg.Token,
 		apiBase:  apiBase,
 		cacheDir: cacheDir,
-		http:     &http.Client{Timeout: 15 * time.Second},
+		http:     httpClient,
 		mem:      make(map[string]*memEntry),
 	}
 }
