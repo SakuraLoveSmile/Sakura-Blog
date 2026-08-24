@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, onBeforeUnmount } from"vue";
+import { ref, reactive, watch, onBeforeUnmount, nextTick, computed } from"vue";
 import { Icon } from"@iconify/vue";
 import { useEditor, EditorContent } from"@tiptap/vue-3";
 import StarterKit from"@tiptap/starter-kit";
@@ -18,6 +18,14 @@ import { CodeBlockWithLang } from"@/components/editor/code-block";
 import { attachmentApi } from"@/api";
 import AttachmentPickerModal from"@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from"@/composables/useLocalDraft";
+import {
+ SearchReplaceExtension,
+ findTextMatches,
+ replaceAllSearchMatches as replaceAllMatches,
+ replaceSearchMatch,
+ setSearchReplaceState,
+ type SearchMatch,
+} from"@/components/editor/search-replace";
 
 // 所见即所得富文本编辑器（Halo 同款 TipTap 内核）。
 // content_md 仍是唯一数据源：tiptap-markdown 负责 Markdown ↔ ProseMirror 双向转换。
@@ -36,6 +44,17 @@ const emit = defineEmits<{
 const uploadError = ref("");
 const pickerOpen = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchOpen = ref(false);
+const searchQuery = ref("");
+const replaceQuery = ref("");
+const searchCaseSensitive = ref(false);
+const activeSearchIndex = ref(0);
+const searchMatches = ref<SearchMatch[]>([]);
+const currentSearchIndex = computed(() => {
+ if (searchMatches.value.length === 0) return -1;
+ return ((activeSearchIndex.value % searchMatches.value.length) + searchMatches.value.length) % searchMatches.value.length;
+});
 
 // 编辑器规范化基线（onCreate 后的自序列化值）：用于区分"真实编辑"与"加载时 round-trip 重排"。
 let baseline = props.modelValue;
@@ -123,6 +142,7 @@ const editor = useEditor({
  breaks: false,
  transformPastedText: true,
  }),
+ SearchReplaceExtension,
  ],
  editorProps: {
  handlePaste: (_view, event) => handleImageFiles(event.clipboardData?.files),
@@ -133,7 +153,12 @@ const editor = useEditor({
  // Spec 62：保存前 flush 防抖中的序列化，保证最后输入已进入 form
  flushSerialize();
  emit("save");
- return true;
+  return true;
+ }
+ if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() ==="f") {
+  event.preventDefault();
+  openSearch();
+  return true;
  }
  return false;
  },
@@ -143,6 +168,7 @@ const editor = useEditor({
  baseline = editor.storage.markdown.getMarkdown() as string;
  lastMarkdown = baseline;
  syncActive();
+ refreshSearchMatches();
  // 立即检测一次草稿（覆盖新建文章 / API 已就绪的场景）；
  // 若 API 尚未返回（modelValue 为空），watch 首次收到真实内容时会
  // 重新固化 baseline 并再次 checkDraft，覆盖此次结果
@@ -151,6 +177,7 @@ const editor = useEditor({
  onSelectionUpdate: syncActive,
  onUpdate: () => {
  syncActive();
+ refreshSearchMatches();
  // Spec 62：序列化+emit 走 200ms 防抖（大文档每键全量序列化卡顿）
  scheduleSerialize();
  },
@@ -176,8 +203,73 @@ watch(
  // 后续外部变更（AI 回填 / 版本回滚等）：防抖落草稿
  scheduleDraft();
  }
+ refreshSearchMatches();
  }
 );
+
+function refreshSearchMatches() {
+ const ed = editor.value;
+ searchMatches.value = ed ? findTextMatches(ed.state.doc, searchQuery.value, searchCaseSensitive.value) : [];
+}
+
+function syncSearchDecorations() {
+ const ed = editor.value;
+ if (!ed) return;
+ setSearchReplaceState(ed, {
+  query: searchQuery.value,
+  caseSensitive: searchCaseSensitive.value,
+  activeIndex: currentSearchIndex.value < 0 ? 0 : currentSearchIndex.value,
+ });
+}
+
+watch([searchQuery, searchCaseSensitive], () => {
+ activeSearchIndex.value = 0;
+ refreshSearchMatches();
+ syncSearchDecorations();
+});
+
+function openSearch() {
+ searchOpen.value = true;
+ nextTick(() => {
+  searchInputRef.value?.focus();
+  searchInputRef.value?.select();
+ });
+}
+
+function closeSearch() {
+ searchOpen.value = false;
+ searchQuery.value = "";
+ replaceQuery.value = "";
+}
+
+function moveSearchMatch(delta: number) {
+ if (searchMatches.value.length === 0) return;
+ activeSearchIndex.value = currentSearchIndex.value + delta;
+ syncSearchDecorations();
+ const match = searchMatches.value[currentSearchIndex.value];
+ if (match) editor.value?.chain().focus().setTextSelection({ from: match.from, to: match.to }).run();
+}
+
+function replaceCurrentSearchMatch() {
+ const match = searchMatches.value[currentSearchIndex.value];
+ if (!match || !editor.value) return;
+ replaceSearchMatch(editor.value, match, replaceQuery.value);
+}
+
+function replaceAllSearchMatches() {
+ if (!editor.value) return;
+ replaceAllMatches(editor.value, searchMatches.value, replaceQuery.value);
+}
+
+function onSearchKeydown(event: KeyboardEvent) {
+ if (event.key ==="Escape") {
+  event.preventDefault();
+  closeSearch();
+ } else if (event.key ==="Enter") {
+  event.preventDefault();
+  moveSearchMatch(event.shiftKey ? -1 : 1);
+ }
+}
 
 onBeforeUnmount(() => editor.value?.destroy());
 
@@ -296,7 +388,7 @@ function scrollToHeading(index: number) {
  dom?.scrollIntoView({ block:"start", behavior:"smooth" });
 }
 
-defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, openImagePicker, clearDraft, activeStates });
+defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, openImagePicker, clearDraft, activeStates, openSearch });
 </script>
 
 <template>
@@ -319,6 +411,72 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  <p v-if="uploadError" class="border-b border-state-error/20 bg-state-error/10 px-4 py-2 text-xs text-state-error">
  {{ uploadError }}
  </p>
+
+ <div class="rte-search-actions flex items-center justify-end border-b border-border px-4 py-2">
+  <button
+   type="button"
+   class="rte-search-toggle inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs text-text-secondary transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+   aria-label="查找和替换"
+   title="查找和替换（Ctrl/Cmd+F）"
+   @click="openSearch"
+  >
+   <Icon icon="ri:search-line" class="text-sm" />
+   <span>查找和替换</span>
+  </button>
+ </div>
+
+ <div v-if="searchOpen" class="rte-search-bar flex flex-wrap items-center gap-2 border-b border-border bg-secondary/40 px-4 py-3">
+  <label class="rte-search-field flex min-w-[12rem] flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3">
+   <Icon icon="ri:search-line" class="shrink-0 text-text-quaternary" />
+   <input
+    ref="searchInputRef"
+    v-model="searchQuery"
+    class="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-text-quaternary"
+    aria-label="搜索文本"
+    placeholder="搜索文本"
+    autocomplete="off"
+    @keydown="onSearchKeydown"
+   />
+   <span v-if="searchQuery" class="shrink-0 text-xs tabular-nums text-text-quaternary" aria-live="polite">
+    {{ searchMatches.length ? `${currentSearchIndex + 1}/${searchMatches.length}` : "无匹配" }}
+   </span>
+  </label>
+
+  <label class="rte-search-field flex min-w-[12rem] flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3">
+   <span class="shrink-0 text-xs text-text-quaternary">替换</span>
+   <input
+    v-model="replaceQuery"
+    class="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-text-quaternary"
+    aria-label="替换为"
+    placeholder="替换为"
+    autocomplete="off"
+    @keydown="onSearchKeydown"
+   />
+  </label>
+
+  <label class="inline-flex min-h-11 shrink-0 items-center gap-1.5 px-1 text-xs text-text-secondary">
+   <input v-model="searchCaseSensitive" type="checkbox" class="h-4 w-4 accent-primary" />
+   区分大小写
+  </label>
+
+  <div class="flex shrink-0 items-center gap-1">
+   <button type="button" class="rte-search-icon-button" aria-label="上一个匹配" title="上一个匹配" :disabled="!searchMatches.length" @click="moveSearchMatch(-1)">
+    <Icon icon="ri:arrow-up-s-line" />
+   </button>
+   <button type="button" class="rte-search-icon-button" aria-label="下一个匹配" title="下一个匹配" :disabled="!searchMatches.length" @click="moveSearchMatch(1)">
+    <Icon icon="ri:arrow-down-s-line" />
+   </button>
+  </div>
+
+  <div class="flex shrink-0 items-center gap-1">
+   <button type="button" class="rte-search-action" :disabled="!searchMatches.length" @click="replaceCurrentSearchMatch">替换</button>
+   <button type="button" class="rte-search-action" :disabled="!searchMatches.length" @click="replaceAllSearchMatches">全部替换</button>
+  </div>
+
+  <button type="button" class="rte-search-icon-button" aria-label="关闭查找和替换" title="关闭" @click="closeSearch">
+   <Icon icon="ri:close-line" />
+  </button>
+ </div>
 
  <div class="rte-content">
  <EditorContent :editor="editor" />
@@ -689,5 +847,73 @@ defineExpose({ applyFormat, insertMarkdown, scrollToHeading, openImageUpload, op
  height: 0;
  pointer-events: none;
  color: var(--color-muted-foreground);
+}
+
+/* 查找替换只使用现有 Console 深色语义色；Decoration 不进入 Markdown 序列化。 */
+.rte-search-field {
+ min-height: 2.75rem;
+ transition: border-color 150ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 150ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.rte-search-field:focus-within {
+ border-color: var(--color-primary);
+ box-shadow: 0 0 0 1px var(--color-primary);
+}
+.rte-search-icon-button,
+.rte-search-action {
+ display: inline-flex;
+ min-height: 2.75rem;
+ align-items: center;
+ justify-content: center;
+ border-radius: 999px;
+ color: var(--color-text-secondary);
+ font-size: 0.75rem;
+ transition: background-color 150ms cubic-bezier(0.32, 0.72, 0, 1), color 150ms cubic-bezier(0.32, 0.72, 0, 1), opacity 150ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.rte-search-icon-button {
+ width: 2.75rem;
+}
+.rte-search-action {
+ padding: 0 0.75rem;
+}
+.rte-search-icon-button:hover:not(:disabled),
+.rte-search-action:hover:not(:disabled) {
+ background: var(--color-secondary);
+ color: var(--color-foreground);
+}
+.rte-search-icon-button:focus-visible,
+.rte-search-action:focus-visible,
+.rte-search-toggle:focus-visible {
+ outline: 2px solid var(--color-primary);
+ outline-offset: 2px;
+}
+.rte-search-icon-button:disabled,
+.rte-search-action:disabled {
+ cursor: not-allowed;
+ opacity: 0.42;
+}
+.rte-search-match {
+ border-radius: 0.2rem;
+ background: color-mix(in srgb, var(--color-primary) 24%, transparent);
+ box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+.rte-search-match-current {
+ background: color-mix(in srgb, var(--color-primary) 52%, transparent);
+ box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+@media (max-width: 640px) {
+ .rte-search-actions {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+ }
+ .rte-search-bar {
+  align-items: stretch;
+ }
+ .rte-search-field {
+  min-width: 100%;
+ }
+ .rte-search-bar > .rte-search-field + .rte-search-field {
+  margin-top: 0.125rem;
+ }
 }
 </style>
