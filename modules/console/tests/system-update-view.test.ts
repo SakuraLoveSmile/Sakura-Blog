@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../web/src");
 const API_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../packages/api-client/src");
 const VIEW = readFileSync(join(ROOT, "modules/system/SystemUpdateView.vue"), "utf8");
-const API = readFileSync(join(API_ROOT, "index.ts"), "utf8");
+const API = readFileSync(join(API_ROOT, "api/monitoring.ts"), "utf8");
 
 test("SystemUpdateView: poll timer lifecycle is owned (no leaked/const interval)", () => {
   // 防止回退为 const null / 丢弃 setInterval 返回值——那会导致 Toast 每 3 秒无限弹、离开页面后仍请求泄漏。

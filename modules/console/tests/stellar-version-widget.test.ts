@@ -8,7 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../web/src");
 const API_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../packages/api-client/src");
 const WIDGET = readFileSync(join(ROOT, "modules/dashboard/widgets/StellarVersionWidget.vue"), "utf8");
 const DASHBOARD_CSS = readFileSync(join(ROOT, "modules/dashboard/dashboard.css"), "utf8");
-const API = readFileSync(join(API_ROOT, "index.ts"), "utf8");
+const API = readFileSync(join(API_ROOT, "api/dashboard.ts"), "utf8");
 
 test("Stellar version widget: API and four visible states are wired", () => {
   assert.match(API, /stellarVersion:\s*\(\)\s*=>\s*http\.get<StellarVersionResponse>\("\/dashboard\/stellar-version"\)/);
