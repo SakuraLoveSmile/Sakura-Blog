@@ -34,6 +34,16 @@ func TestShortcodeCatalogCoversRegisteredParsers(t *testing.T) {
 			t.Errorf("required parser %q missing from catalog", name)
 		}
 	}
+	items := ShortcodeCatalog()
+	for _, item := range items {
+		if item.Name == "note" {
+			if item.Title == "" || item.Description == "" || item.Signature == "" || item.Example == "" || len(item.ParamDocs) == 0 {
+				t.Fatalf("note display metadata incomplete: %+v", item)
+			}
+			return
+		}
+	}
+	t.Fatal("catalog does not contain note display metadata")
 }
 
 func TestShortcodeCatalogReturnsDefensiveCopy(t *testing.T) {

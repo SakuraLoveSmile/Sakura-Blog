@@ -16,10 +16,15 @@ export interface PluginCatalogParam {
 
 export interface PluginCatalogItem {
   name: string;
+  title: string;
+  description: string;
+  signature: string;
+  example: string;
   type: "inline" | "block" | "hybrid";
   category: string;
   capability: "static" | "interactive" | "service" | "external";
   params: PluginCatalogParam[];
+  param_docs: Array<{ name: string; desc: string; default?: string }>;
 }
 
 function categoryOf(value: string): PluginCategory {
@@ -67,13 +72,17 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
     const existing = baseByName.get(item.name);
     return {
       name: item.name,
-      title: existing?.title || item.name,
+      title: item.title || existing?.title || item.name,
       category: categoryOf(item.category),
       type: existing?.type || (item.type === "block" ? "block" : "inline"),
-      desc: existing?.desc || "由后端 shortcode catalog 提供。",
-      signature: existing?.signature || fallbackExample(item),
-      params: existing?.params || [],
-      example: existing?.example || fallbackExample(item),
+      desc: item.description || existing?.desc || "由后端 shortcode catalog 提供。",
+      signature: item.signature || existing?.signature || fallbackExample(item),
+      params: item.param_docs?.map((param) => ({
+        name: param.name,
+        desc: param.desc,
+        ...(param.default ? { default: param.default } : {}),
+      })) || existing?.params || [],
+      example: item.example || existing?.example || fallbackExample(item),
       form: mergeForm(existing, item.params),
     };
   });

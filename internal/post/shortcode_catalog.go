@@ -51,13 +51,25 @@ type ShortcodeParamSchema struct {
 	Placeholder string             `json:"placeholder,omitempty"`
 }
 
+// ShortcodeParamDoc is the human-readable parameter reference for the editor.
+type ShortcodeParamDoc struct {
+	Name    string `json:"name"`
+	Desc    string `json:"desc"`
+	Default string `json:"default,omitempty"`
+}
+
 // ShortcodeCatalogEntry is the backend source of truth for parsed shortcode tags.
 type ShortcodeCatalogEntry struct {
-	Name       string                 `json:"name"`
-	Type       ShortcodeType          `json:"type"`
-	Category   string                 `json:"category"`
-	Capability ShortcodeCapability    `json:"capability"`
-	Params     []ShortcodeParamSchema `json:"params"`
+	Name        string                 `json:"name"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Signature   string                 `json:"signature"`
+	Example     string                 `json:"example"`
+	Type        ShortcodeType          `json:"type"`
+	Category    string                 `json:"category"`
+	Capability  ShortcodeCapability    `json:"capability"`
+	Params      []ShortcodeParamSchema `json:"params"`
+	ParamDocs   []ShortcodeParamDoc    `json:"param_docs"`
 }
 
 type shortcodeRegistration struct {
@@ -225,6 +237,16 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 		}
 		for i := range entry.Params {
 			entry.Params[i].Options = append([]string(nil), entry.Params[i].Options...)
+		}
+		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
+			entry.Title = display.Title
+			entry.Description = display.Description
+			entry.Signature = display.Signature
+			entry.Example = display.Example
+			entry.ParamDocs = append([]ShortcodeParamDoc(nil), display.ParamDocs...)
+		}
+		if entry.ParamDocs == nil {
+			entry.ParamDocs = []ShortcodeParamDoc{}
 		}
 		items = append(items, entry)
 	}

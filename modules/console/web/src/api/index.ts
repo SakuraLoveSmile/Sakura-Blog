@@ -436,12 +436,23 @@ export interface ShortcodeCatalogParam {
  placeholder?: string;
 }
 
+export interface ShortcodeCatalogDoc {
+ name: string;
+ desc: string;
+ default?: string;
+}
+
 export interface ShortcodeCatalogItem {
  name: string;
+ title: string;
+ description: string;
+ signature: string;
+ example: string;
  type: "inline" | "block" | "hybrid";
  category: string;
  capability: "static" | "interactive" | "service" | "external";
  params: ShortcodeCatalogParam[];
+ param_docs: ShortcodeCatalogDoc[];
 }
 
 export const pluginApi = {
