@@ -1,0 +1,5 @@
+**/dist/**
+**/node_modules/**
+**/.mimosa/**
+modules/stellar/web/assets/vendor/**
+resource/**
