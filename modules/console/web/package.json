@@ -15,6 +15,7 @@
     "@iconify/vue": "^5.0.1",
     "@tanstack/vue-query": "^5.101.4",
     "@blog/api-client": "workspace:*",
+    "@blog/components": "workspace:*",
     "@tiptap/core": "^2.27.2",
     "@tiptap/extension-code-block": "^2.27.2",
     "@tiptap/extension-image": "^2.27.2",

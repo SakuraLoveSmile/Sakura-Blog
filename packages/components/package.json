@@ -1,0 +1,16 @@
+{
+  "name": "@blog/components",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/ui/index.ts",
+      "import": "./src/ui/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "@iconify/vue": "^5.0.1",
+    "vue": "^3.5.39",
+    "vue-router": "^4.6.4"
+  }
+}
