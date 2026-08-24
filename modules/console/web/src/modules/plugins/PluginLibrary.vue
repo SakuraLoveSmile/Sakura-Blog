@@ -52,14 +52,9 @@ watch(runtimePlugins, (next) => {
 const filtered = computed(() => {
   const kw = search.value.trim().toLowerCase();
   return runtimePlugins.value.filter((p) => {
-    if (activeCategory.value !== "全部" && p.category !== activeCategory.value)
-      return false;
+    if (activeCategory.value !== "全部" && p.category !== activeCategory.value) return false;
     if (!kw) return true;
-    return (
-      p.name.toLowerCase().includes(kw) ||
-      p.title.toLowerCase().includes(kw) ||
-      p.desc.toLowerCase().includes(kw)
-    );
+    return p.name.toLowerCase().includes(kw) || p.title.toLowerCase().includes(kw) || p.desc.toLowerCase().includes(kw);
   });
 });
 
@@ -92,7 +87,7 @@ const preview = usePluginPreview(() => previewInfoFor(selected.value));
 const selectedPreview = computed<PluginPreviewInfo>(() => previewInfoFor(selected.value));
 const capabilityLabel = computed(() => CAPABILITY_LABELS[selectedPreview.value.capability]);
 const fixtureLabel = computed(() =>
-  selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : ""
+  selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : "",
 );
 
 watch(example, () => {
@@ -147,20 +142,26 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
       </template>
       <template #subtitle>
-        {{ viewMode === "plugins"
-          ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
-          : viewMode === "assets"
-          ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
-          : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用` }}
+        {{
+          viewMode === "plugins"
+            ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
+            : viewMode === "assets"
+              ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
+              : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
+        }}
       </template>
     </VPageHeader>
 
     <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
     <div class="px-5 pt-4 pb-4 md:px-6 md:pb-5">
-      <div class="apple-segmented" style="max-width: 420px;">
-        <button type="button" :class="{ active: viewMode === 'plugins' }" @click="viewMode = 'plugins'">标签插件</button>
+      <div class="apple-segmented" style="max-width: 420px">
+        <button type="button" :class="{ active: viewMode === 'plugins' }" @click="viewMode = 'plugins'">
+          标签插件
+        </button>
         <button type="button" :class="{ active: viewMode === 'assets' }" @click="viewMode = 'assets'">素材速查</button>
-        <button type="button" :class="{ active: viewMode === 'widgets' }" @click="viewMode = 'widgets'">侧边栏组件</button>
+        <button type="button" :class="{ active: viewMode === 'widgets' }" @click="viewMode = 'widgets'">
+          侧边栏组件
+        </button>
       </div>
     </div>
 
@@ -195,7 +196,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                   ? 'bg-secondary text-foreground'
                   : 'bg-secondary text-text-tertiary hover:bg-accent ',
               ]"
-            >全部 {{ categoryCount['全部'] }}</button>
+            >
+              全部 {{ categoryCount["全部"] }}
+            </button>
             <button
               v-for="c in PLUGIN_CATEGORIES"
               :key="c"
@@ -206,7 +209,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                   ? 'bg-secondary text-foreground'
                   : 'bg-secondary text-text-tertiary hover:bg-accent ',
               ]"
-            >{{ c }} {{ categoryCount[c] }}</button>
+            >
+              {{ c }} {{ categoryCount[c] }}
+            </button>
           </div>
         </div>
 
@@ -217,32 +222,26 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             @click="selectPlugin(p)"
             :class="[
               'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              selected.name === p.name
-                ? 'bg-primary/10'
-                : 'hover:bg-accent',
+              selected.name === p.name ? 'bg-primary/10' : 'hover:bg-accent',
             ]"
           >
             <span
               :class="[
                 'text-[10px] px-1 py-px rounded font-mono shrink-0',
-                p.type === 'block'
-                  ? 'bg-state-warning/15 text-state-warning'
-                  : 'bg-primary/15 text-primary',
+                p.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
               ]"
-            >{{ p.type === "block" ? "块" : "行" }}</span>
+              >{{ p.type === "block" ? "块" : "行" }}</span
+            >
             <span
               :class="[
                 'text-sm truncate',
-                selected.name === p.name
-                  ? 'font-medium text-primary'
-                  : 'text-text-secondary ',
+                selected.name === p.name ? 'font-medium text-primary' : 'text-text-secondary ',
               ]"
-            >{{ p.title }}</span>
+              >{{ p.title }}</span
+            >
             <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ p.name }}</span>
           </button>
-          <p v-if="filtered.length === 0" class="px-4 py-6 text-center text-sm text-text-quaternary">
-            无匹配插件
-          </p>
+          <p v-if="filtered.length === 0" class="px-4 py-6 text-center text-sm text-text-quaternary">无匹配插件</p>
         </div>
       </aside>
 
@@ -252,16 +251,19 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="text-xl font-semibold text-foreground">{{ selected.title }}</h3>
-            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{% {{ selected.name }} %}</code>
-            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{ selected.category }}</span>
+            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono"
+              >{% {{ selected.name }} %}</code
+            >
+            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{
+              selected.category
+            }}</span>
             <span
               :class="[
                 'text-[11px] px-1.5 py-0.5 rounded-full',
-                selected.type === 'block'
-                  ? 'bg-state-warning/15 text-state-warning'
-                  : 'bg-primary/15 text-primary',
+                selected.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
               ]"
-            >{{ selected.type === "block" ? "块级" : "行内" }}</span>
+              >{{ selected.type === "block" ? "块级" : "行内" }}</span
+            >
           </div>
           <p class="text-sm text-text-tertiary mt-1">{{ selected.desc }}</p>
         </div>
@@ -296,7 +298,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
             </thead>
             <tbody>
               <tr v-for="param in selected.params" :key="param.name" class="border-b border-border last:border-0 /50">
-                <td class="px-4 py-2"><code class="text-xs font-mono text-text-secondary">{{ param.name }}</code></td>
+                <td class="px-4 py-2">
+                  <code class="text-xs font-mono text-text-secondary">{{ param.name }}</code>
+                </td>
                 <td class="px-4 py-2 text-text-tertiary">{{ param.desc }}</td>
                 <td class="px-4 py-2 text-text-quaternary font-mono text-xs">{{ param.default }}</td>
               </tr>
@@ -318,10 +322,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         <div class="rounded-xl border border-border overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
             <span class="text-xs font-medium text-text-tertiary">示例（可编辑，实时预览）</span>
-            <button
-              @click="copyText('example', example)"
-              class="flex items-center gap-1 text-xs text-primary"
-            >
+            <button @click="copyText('example', example)" class="flex items-center gap-1 text-xs text-primary">
               <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
               {{ copied === "example" ? "已复制" : "复制示例" }}
             </button>
@@ -368,7 +369,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                 <code class="font-mono text-[10px] text-text-tertiary">{{ selectedPreview.services.join(" / ") }}</code>
               </template>
             </span>
-            <span v-if="fixtureLabel" class="text-[10px] text-text-quaternary hidden md:inline">{{ fixtureLabel }}</span>
+            <span v-if="fixtureLabel" class="text-[10px] text-text-quaternary hidden md:inline">{{
+              fixtureLabel
+            }}</span>
           </div>
           <div class="relative bg-secondary">
             <p v-if="preview.previewError.value" class="px-4 py-6 text-center text-sm text-state-error">
@@ -386,7 +389,10 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               sandbox="allow-same-origin allow-scripts"
             ></iframe>
           </div>
-          <p v-if="selectedPreview.fallback && !preview.previewError.value" class="px-4 py-2 text-[11px] text-text-quaternary border-t border-border">
+          <p
+            v-if="selectedPreview.fallback && !preview.previewError.value"
+            class="px-4 py-2 text-[11px] text-text-quaternary border-t border-border"
+          >
             {{ selectedPreview.fallback }}
           </p>
         </div>

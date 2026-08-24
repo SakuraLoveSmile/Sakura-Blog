@@ -20,7 +20,7 @@ const props = withDefaults(
   {
     activeId: undefined,
     type: "default",
-  }
+  },
 );
 
 const emit = defineEmits<{

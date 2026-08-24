@@ -33,9 +33,7 @@ async function loadIcons() {
 
 const iconGroups = computed(() => {
   const kw = iconFilter.value.trim().toLowerCase();
-  const list = kw
-    ? icons.value.filter((i) => i.key.toLowerCase().includes(kw))
-    : icons.value;
+  const list = kw ? icons.value.filter((i) => i.key.toLowerCase().includes(kw)) : icons.value;
   const groups: { prefix: string; items: AssetIconItem[] }[] = [];
   const byPrefix = new Map<string, AssetIconItem[]>();
   for (const item of list) {
@@ -57,7 +55,7 @@ const activeEmojiSource = ref(emojiSources[0].id);
 const emojiFilter = ref("");
 
 const currentEmojiSource = computed(
-  () => emojiSources.find((s) => s.id === activeEmojiSource.value) || emojiSources[0]
+  () => emojiSources.find((s) => s.id === activeEmojiSource.value) || emojiSources[0],
 );
 
 const filteredEmojiNames = computed(() => {
@@ -107,32 +105,30 @@ onMounted(loadIcons);
 <template>
   <div>
     <!-- 子分类切换 -->
-    <div class="apple-segmented mb-5" style="max-width: 320px;">
+    <div class="apple-segmented mb-5" style="max-width: 320px">
       <button
         type="button"
         :class="{ active: subTab === 'icons' }"
-        @click="subTab = 'icons'; loadIcons()"
+        @click="
+          subTab = 'icons';
+          loadIcons();
+        "
       >
         图标（icons.yml）
       </button>
-      <button
-        type="button"
-        :class="{ active: subTab === 'emoji' }"
-        @click="subTab = 'emoji'"
-      >
-        表情（Emoji）
-      </button>
+      <button type="button" :class="{ active: subTab === 'emoji' }" @click="subTab = 'emoji'">表情（Emoji）</button>
     </div>
 
     <!-- ============ 图标画廊 ============ -->
     <section v-if="subTab === 'icons'">
       <div class="mb-4 flex items-center gap-3">
-        <div class="apple-search" style="width: 260px;">
+        <div class="apple-search" style="width: 260px">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
           <input v-model="iconFilter" placeholder="搜索图标 key..." />
         </div>
         <p class="text-xs text-text-quaternary">
-          点击复制 <code class="rounded bg-accent px-1 py-0.5 font-mono">{% icon key %}</code>；key 也可直接填入「分类与标签」页的图标配置。
+          点击复制 <code class="rounded bg-accent px-1 py-0.5 font-mono">{% icon key %}</code>；key
+          也可直接填入「分类与标签」页的图标配置。
         </p>
       </div>
 
@@ -153,15 +149,12 @@ onMounted(loadIcons);
               @click="copyIcon(item.key)"
             >
               <span class="asset-svg flex h-8 w-8 items-center justify-center text-foreground">
-                <img
-                  v-if="isUrl(item.value)"
-                  :src="item.value"
-                  class="h-7 w-7 object-contain"
-                  alt=""
-                />
+                <img v-if="isUrl(item.value)" :src="item.value" class="h-7 w-7 object-contain" alt="" />
                 <span v-else v-html="item.value"></span>
               </span>
-              <span class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground">
+              <span
+                class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground"
+              >
                 {{ copiedKey === `{% icon ${item.key} %}` ? "已复制 ✓" : item.key }}
               </span>
             </button>
@@ -190,12 +183,15 @@ onMounted(loadIcons);
         </button>
       </div>
       <div class="mb-4 flex items-center gap-3">
-        <div class="apple-search" style="width: 260px;">
+        <div class="apple-search" style="width: 260px">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
           <input v-model="emojiFilter" placeholder="搜索表情名称..." />
         </div>
         <p class="text-xs text-text-quaternary">
-          点击复制 <code class="rounded bg-accent px-1 py-0.5 font-mono">{% emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} %}</code>
+          点击复制
+          <code class="rounded bg-accent px-1 py-0.5 font-mono"
+            >{% emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} %}</code
+          >
         </p>
       </div>
 
@@ -208,7 +204,9 @@ onMounted(loadIcons);
           @click="copyEmoji(name)"
         >
           <img :src="emojiUrl(name)" class="h-8 w-8 object-contain" loading="lazy" :alt="name" />
-          <span class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground">
+          <span
+            class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground"
+          >
             {{ name }}
           </span>
         </button>

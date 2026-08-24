@@ -21,9 +21,12 @@ const pickerOpen = ref(false);
 const thumbError = ref(false);
 
 // 值变化后重置缩略图错误标记，重新尝试加载
-watch(() => props.modelValue, () => {
-  thumbError.value = false;
-});
+watch(
+  () => props.modelValue,
+  () => {
+    thumbError.value = false;
+  },
+);
 
 function onSelect(url: string) {
   emit("update:modelValue", url);
@@ -49,12 +52,7 @@ function onSelect(url: string) {
     <button type="button" class="attachment-btn" title="从图床选择" @click="pickerOpen = true">
       <Icon icon="ri:image-upload-line" />
     </button>
-    <AttachmentPickerModal
-      v-if="pickerOpen"
-      :open="pickerOpen"
-      @select="onSelect"
-      @close="pickerOpen = false"
-    />
+    <AttachmentPickerModal v-if="pickerOpen" :open="pickerOpen" @select="onSelect" @close="pickerOpen = false" />
   </div>
 </template>
 

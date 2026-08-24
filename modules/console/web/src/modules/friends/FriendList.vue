@@ -4,17 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { linkApi } from "@/api";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VButton,
-  VCard,
-  VEmpty,
-  VLoading,
-  VModal,
-  VFloatingDock,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VButton, VCard, VEmpty, VLoading, VModal, VFloatingDock, Dialog, Toast } from "@/components/ui";
 
 interface LinkRow {
   id: number;
@@ -167,9 +157,7 @@ function errorReason(l: LinkRow): string {
 
 function checkedAtLabel(ts: number): string {
   if (!ts) return "";
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(
-    new Date(ts * 1000)
-  );
+  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "short" }).format(new Date(ts * 1000));
 }
 
 function normalizeColor(hex?: string): string {
@@ -388,7 +376,7 @@ async function batchMoveGroup() {
         const item = links.value.find((l) => l.id === id);
         if (!item) return Promise.resolve();
         return linkApi.update(id, { ...item, group_title: target });
-      })
+      }),
     );
     clearSelection();
     queryClient.invalidateQueries({ queryKey: queryKeys.friends() });
@@ -413,7 +401,12 @@ async function batchMoveGroup() {
         <div class="apple-search min-w-[200px] max-w-[260px]">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
           <input v-model="searchQuery" placeholder="搜索友链名称/URL/分组..." />
-          <button v-if="searchQuery" type="button" class="text-text-quaternary hover:text-foreground" @click="searchQuery = ''">
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="text-text-quaternary hover:text-foreground"
+            @click="searchQuery = ''"
+          >
             <Icon icon="ri:close-line" />
           </button>
         </div>
@@ -506,25 +499,13 @@ async function batchMoveGroup() {
           <div class="flex items-center gap-3">
             <!-- 状态过滤胶囊 -->
             <div class="apple-segmented">
-              <button
-                type="button"
-                :class="{ active: statusFilter === 'all' }"
-                @click="statusFilter = 'all'"
-              >
+              <button type="button" :class="{ active: statusFilter === 'all' }" @click="statusFilter = 'all'">
                 全部 ({{ links.length }})
               </button>
-              <button
-                type="button"
-                :class="{ active: statusFilter === 'ok' }"
-                @click="statusFilter = 'ok'"
-              >
+              <button type="button" :class="{ active: statusFilter === 'ok' }" @click="statusFilter = 'ok'">
                 正常 ({{ stats.ok }})
               </button>
-              <button
-                type="button"
-                :class="{ active: statusFilter === 'error' }"
-                @click="statusFilter = 'error'"
-              >
+              <button type="button" :class="{ active: statusFilter === 'error' }" @click="statusFilter = 'error'">
                 异常 ({{ stats.error }})
               </button>
             </div>
@@ -574,11 +555,7 @@ async function batchMoveGroup() {
 
         <!-- ============ 模式 1：卡片网格分组视图 ============ -->
         <div v-else-if="viewMode === 'grid'" class="space-y-6">
-          <div
-            v-for="g in grouped"
-            :key="g.title"
-            class="rounded-2xl border border-border bg-card p-5"
-          >
+          <div v-for="g in grouped" :key="g.title" class="rounded-2xl border border-border bg-card p-5">
             <div class="mb-4 flex items-center justify-between">
               <div class="flex items-center gap-2.5">
                 <span class="text-[15px] font-semibold text-foreground">{{ g.title }}</span>
@@ -625,7 +602,7 @@ async function batchMoveGroup() {
                         v-else
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-base text-text-tertiary avatar-gradient-1"
                       >
-                        {{ l.name ? l.name.charAt(0).toUpperCase() : '🔗' }}
+                        {{ l.name ? l.name.charAt(0).toUpperCase() : "🔗" }}
                       </div>
 
                       <div class="min-w-0 flex-1">
@@ -652,12 +629,7 @@ async function batchMoveGroup() {
 
                     <!-- 行内快捷操作按钮组 -->
                     <div class="flex shrink-0 items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
-                      <button
-                        type="button"
-                        class="action-icon-btn"
-                        title="编辑"
-                        @click="openEdit(l)"
-                      >
+                      <button type="button" class="action-icon-btn" title="编辑" @click="openEdit(l)">
                         <Icon icon="ri:pencil-line" />
                       </button>
                       <button
@@ -678,7 +650,9 @@ async function batchMoveGroup() {
                 </div>
 
                 <!-- 卡片底部：状态标签 + 检测时间 + RSS + 外链 -->
-                <div class="mt-3.5 flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary">
+                <div
+                  class="mt-3.5 flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary"
+                >
                   <div class="flex items-center gap-2">
                     <span
                       v-if="linkState(l) === 'ok'"
@@ -771,12 +745,19 @@ async function batchMoveGroup() {
                         class="h-8 w-8 shrink-0 rounded-full border border-border object-cover"
                         alt=""
                       />
-                      <div v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs">
+                      <div
+                        v-else
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs"
+                      >
                         🔗
                       </div>
                       <div class="min-w-0">
                         <div class="font-semibold text-foreground text-sm truncate">{{ l.name }}</div>
-                        <a :href="l.url" target="_blank" class="text-xs text-text-quaternary hover:text-primary truncate block max-w-[280px]">
+                        <a
+                          :href="l.url"
+                          target="_blank"
+                          class="text-xs text-text-quaternary hover:text-primary truncate block max-w-[280px]"
+                        >
                           {{ l.url }}
                         </a>
                       </div>
@@ -823,7 +804,12 @@ async function batchMoveGroup() {
                       <button type="button" class="action-icon-btn" title="编辑" @click="openEdit(l)">
                         <Icon icon="ri:pencil-line" />
                       </button>
-                      <button type="button" class="action-icon-btn hover:text-[var(--color-state-error)]" title="删除" @click="handleDelete(l)">
+                      <button
+                        type="button"
+                        class="action-icon-btn hover:text-[var(--color-state-error)]"
+                        title="删除"
+                        @click="handleDelete(l)"
+                      >
                         <Icon icon="ri:delete-bin-line" />
                       </button>
                     </div>
@@ -906,7 +892,9 @@ async function batchMoveGroup() {
                 :key="preset.value"
                 type="button"
                 class="color-preset-dot"
-                :class="{ active: (editing.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase() }"
+                :class="{
+                  active: (editing.color || '').replace(/^#/, '').toLowerCase() === preset.value.toLowerCase(),
+                }"
                 :style="{ background: `#${preset.value}` }"
                 :title="preset.label"
                 @click="editing.color = preset.value"
@@ -923,7 +911,12 @@ async function batchMoveGroup() {
 
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">网站描述</label>
-          <textarea v-model="editing.description" class="apple-textarea" rows="2" placeholder="简短的一句话介绍"></textarea>
+          <textarea
+            v-model="editing.description"
+            class="apple-textarea"
+            rows="2"
+            placeholder="简短的一句话介绍"
+          ></textarea>
         </div>
 
         <div>
@@ -964,19 +957,11 @@ async function batchMoveGroup() {
       <div class="space-y-4">
         <!-- 来源切换 -->
         <div class="apple-segmented">
-          <button
-            type="button"
-            :class="{ active: importSource === 'github' }"
-            @click="switchImportSource('github')"
-          >
+          <button type="button" :class="{ active: importSource === 'github' }" @click="switchImportSource('github')">
             <Icon icon="ri:github-fill" class="mr-1.5 inline-block" />
             GitHub Issues 仓库
           </button>
-          <button
-            type="button"
-            :class="{ active: importSource === 'text' }"
-            @click="switchImportSource('text')"
-          >
+          <button type="button" :class="{ active: importSource === 'text' }" @click="switchImportSource('text')">
             <Icon icon="ri:clipboard-line" class="mr-1.5 inline-block" />
             粘贴 JSON / YAML
           </button>
@@ -1018,12 +1003,7 @@ async function batchMoveGroup() {
     </VModal>
 
     <!-- ============ 底部批量操作栏 (VFloatingDock) ============ -->
-    <VFloatingDock
-      :visible="selectedIds.size > 0"
-      :count="selectedIds.size"
-      title="已选友链"
-      @clear="clearSelection"
-    >
+    <VFloatingDock :visible="selectedIds.size > 0" :count="selectedIds.size" title="已选友链" @clear="clearSelection">
       <div class="flex items-center gap-2">
         <input
           v-model="batchTargetGroup"
@@ -1031,12 +1011,8 @@ async function batchMoveGroup() {
           placeholder="迁移至分组..."
           list="group-options"
         />
-        <VButton size="sm" :loading="batchMoving" @click="batchMoveGroup">
-          迁移分组
-        </VButton>
-        <VButton size="sm" type="danger" @click="batchDelete">
-          批量删除
-        </VButton>
+        <VButton size="sm" :loading="batchMoving" @click="batchMoveGroup"> 迁移分组 </VButton>
+        <VButton size="sm" type="danger" @click="batchDelete"> 批量删除 </VButton>
       </div>
     </VFloatingDock>
   </div>
@@ -1124,7 +1100,8 @@ async function batchMoveGroup() {
   border-radius: var(--radius-full);
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-standard),
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 .color-preset-dot:hover {

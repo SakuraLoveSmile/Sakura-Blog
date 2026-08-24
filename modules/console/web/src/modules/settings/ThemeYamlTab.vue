@@ -39,7 +39,9 @@ onMounted(load);
 <template>
   <div class="space-y-4">
     <p class="text-xs text-text-quaternary">
-      直接编辑 Stellar 主题 <code>style</code> 段 YAML（颜色/字号/圆角/渐变/左栏与全站背景/分页/标题前缀等），保存即热更新前台样式。键名对齐上游 <code>_config.yml</code>。
+      直接编辑 Stellar 主题 <code>style</code> 段
+      YAML（颜色/字号/圆角/渐变/左栏与全站背景/分页/标题前缀等），保存即热更新前台样式。键名对齐上游
+      <code>_config.yml</code>。
     </p>
     <div v-if="loadError" class="text-sm text-state-error">{{ loadError }}</div>
     <textarea

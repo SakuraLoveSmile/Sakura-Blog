@@ -20,7 +20,7 @@ export class RenderGate {
         this.timer = undefined;
         void this.run(run);
       },
-      immediate ? 0 : this.delay
+      immediate ? 0 : this.delay,
     );
     return seq;
   }

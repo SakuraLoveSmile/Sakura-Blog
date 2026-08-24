@@ -93,7 +93,8 @@ async function reply(item: CommentItem) {
 }
 
 onMounted(() => {
-  dashboardApi.recentComments()
+  dashboardApi
+    .recentComments()
     .then((r: { data: CommentsResp }) => (items.value = r.data.items))
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));
@@ -107,7 +108,11 @@ const displayedItems = computed(() => {
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col justify-between" :class="`recent-comments-${sizePreset}`" :data-bp="breakpoint">
+  <div
+    class="apple-card h-full flex flex-col justify-between"
+    :class="`recent-comments-${sizePreset}`"
+    :data-bp="breakpoint"
+  >
     <div class="flex items-center justify-between mb-3">
       <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">最近评论</h3>
       <button @click="router.push('/comments')" class="apple-link text-xs">
@@ -119,8 +124,13 @@ const displayedItems = computed(() => {
     <div v-if="loading" class="recent-placeholder flex items-center justify-center text-muted-foreground flex-1">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">{{ error }}</div>
-    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1">
+    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">
+      {{ error }}
+    </div>
+    <div
+      v-else-if="items.length === 0"
+      class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1"
+    >
       暂无评论
     </div>
 
@@ -136,7 +146,13 @@ const displayedItems = computed(() => {
         <div v-if="item.avatar" class="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
           <img :src="item.avatar" :alt="item.nick" class="w-full h-full object-cover" loading="lazy" />
         </div>
-        <div v-else :class="['w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0', avatarClass(item.nick)]">
+        <div
+          v-else
+          :class="[
+            'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-foreground flex-shrink-0',
+            avatarClass(item.nick),
+          ]"
+        >
           {{ getInitials(item.nick) }}
         </div>
         <div class="min-w-0 flex-1">
@@ -151,11 +167,7 @@ const displayedItems = computed(() => {
 
     <!-- Large 尺寸：评论流 + 内联审核动作 -->
     <div v-else-if="sizePreset === 'large'" class="apple-comment-list flex-1 overflow-y-auto pr-0.5">
-      <div
-        v-for="item in displayedItems"
-        :key="item.id"
-        class="apple-comment-item group"
-      >
+      <div v-for="item in displayedItems" :key="item.id" class="apple-comment-item group">
         <button class="flex min-w-0 flex-1 gap-3 text-left" type="button" @click="openComment(item)">
           <div v-if="item.avatar" class="apple-avatar">
             <img :src="item.avatar" :alt="item.nick" class="w-full h-full rounded-full object-cover" loading="lazy" />
@@ -177,13 +189,23 @@ const displayedItems = computed(() => {
           </div>
         </button>
         <div class="comment-inline-actions" aria-label="评论操作">
-          <button type="button" title="通过" :disabled="actionBusy === item.id" @click.stop="moderate(item, 'approved')">
+          <button
+            type="button"
+            title="通过"
+            :disabled="actionBusy === item.id"
+            @click.stop="moderate(item, 'approved')"
+          >
             <Icon icon="ri:check-line" />
           </button>
           <button type="button" title="回复" :disabled="actionBusy === item.id" @click.stop="reply(item)">
             <Icon icon="ri:reply-line" />
           </button>
-          <button type="button" title="标记垃圾" :disabled="actionBusy === item.id" @click.stop="moderate(item, 'spam')">
+          <button
+            type="button"
+            title="标记垃圾"
+            :disabled="actionBusy === item.id"
+            @click.stop="moderate(item, 'spam')"
+          >
             <Icon icon="ri:spam-2-line" />
           </button>
           <button type="button" title="删除" :disabled="actionBusy === item.id" @click.stop="moderate(item, 'delete')">
@@ -211,12 +233,7 @@ const displayedItems = computed(() => {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-foreground text-sm font-medium">{{ item.nick }}</span>
-            <span
-              v-if="item.status === 'pending'"
-              class="apple-pending-badge"
-            >
-              待审
-            </span>
+            <span v-if="item.status === 'pending'" class="apple-pending-badge"> 待审 </span>
             <span class="text-text-quaternary text-xs ml-auto">{{ item.date }}</span>
           </div>
           <p class="text-muted-foreground text-sm mt-1 line-clamp-2">{{ item.content }}</p>

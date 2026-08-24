@@ -38,7 +38,11 @@ const queryParams = computed(() => ({
   keyword: debouncedKeyword.value,
 }));
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => ["users", queryParams.value] as const),
   queryFn: () => usersApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -81,8 +85,7 @@ function openCreate() {
 
 async function submitCreate() {
   if (!createForm.value.username.trim()) return Toast.error("用户名不能为空");
-  if (!createForm.value.password || createForm.value.password.length < 6)
-    return Toast.error("密码至少 6 位");
+  if (!createForm.value.password || createForm.value.password.length < 6) return Toast.error("密码至少 6 位");
   createSaving.value = true;
   try {
     await usersApi.create({
@@ -144,8 +147,7 @@ function openResetPwd(u: UserItem) {
 
 async function submitResetPwd() {
   if (!pwdTarget.value) return;
-  if (!pwdForm.value.password || pwdForm.value.password.length < 6)
-    return Toast.error("密码至少 6 位");
+  if (!pwdForm.value.password || pwdForm.value.password.length < 6) return Toast.error("密码至少 6 位");
   pwdSaving.value = true;
   try {
     await usersApi.resetPassword(pwdTarget.value.id, pwdForm.value.password);
@@ -242,25 +244,28 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <span class="text-[13px] font-medium text-text-secondary">总用户数</span>
             <div
               class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-primary"
-              style="background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);"
+              style="background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
+                style="background: currentColor; opacity: 0.12"
               ></span>
               <Icon icon="ri:team-line" class="relative z-[1] text-[19px]" />
             </div>
           </div>
           <div
             class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
+            style="font-variant-numeric: tabular-nums"
           >
             {{ stats.total }}
           </div>
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent); color: var(--color-state-success);"
+              style="
+                background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);
+                color: var(--color-state-success);
+              "
             >
               <Icon icon="ri:arrow-up-line" class="text-[11px]" />
               全部
@@ -277,25 +282,28 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <span class="text-[13px] font-medium text-text-secondary">管理员</span>
             <div
               class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-error"
-              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent);"
+              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent)"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
+                style="background: currentColor; opacity: 0.12"
               ></span>
               <Icon icon="ri:shield-user-line" class="relative z-[1] text-[19px]" />
             </div>
           </div>
           <div
             class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
+            style="font-variant-numeric: tabular-nums"
           >
             {{ stats.adminCount }}
           </div>
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent); color: var(--color-state-error);"
+              style="
+                background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent);
+                color: var(--color-state-error);
+              "
             >
               <Icon icon="ri:star-line" class="text-[11px]" />
               最高权限
@@ -311,25 +319,28 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <span class="text-[13px] font-medium text-text-secondary">作者</span>
             <div
               class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-chart-5"
-              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent);"
+              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent)"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
+                style="background: currentColor; opacity: 0.12"
               ></span>
               <Icon icon="ri:quill-pen-line" class="relative z-[1] text-[19px]" />
             </div>
           </div>
           <div
             class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
+            style="font-variant-numeric: tabular-nums"
           >
             {{ stats.authorCount }}
           </div>
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent); color: var(--color-chart-5);"
+              style="
+                background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent);
+                color: var(--color-chart-5);
+              "
             >
               <Icon icon="ri:edit-2-line" class="text-[11px]" />
               内容编辑
@@ -345,25 +356,28 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
             <span class="text-[13px] font-medium text-text-secondary">当前页用户</span>
             <div
               class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-success"
-              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);"
+              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent)"
             >
               <span
                 class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12;"
+                style="background: currentColor; opacity: 0.12"
               ></span>
               <Icon icon="ri:user-star-line" class="relative z-[1] text-[19px]" />
             </div>
           </div>
           <div
             class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums;"
+            style="font-variant-numeric: tabular-nums"
           >
             {{ users.length }}
           </div>
           <div class="mt-2.5 flex items-center gap-1.5">
             <span
               class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent); color: var(--color-state-success);"
+              style="
+                background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);
+                color: var(--color-state-success);
+              "
             >
               <Icon icon="ri:eye-line" class="text-[11px]" />
               本页展示
@@ -377,34 +391,18 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
       <VCard class="mt-5" :body-class="['!p-0']">
         <!-- Card Header: 分段筛选 + 搜索 -->
         <template #header>
-          <div class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4">
+          <div
+            class="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:p-4"
+          >
             <div class="tabs-scroll apple-segmented -mx-1 px-1 sm:mx-0 sm:px-0">
-              <button
-                type="button"
-                :class="{ active: roleFilter === 'all' }"
-                @click="roleFilter = 'all'"
-              >
-                全部
-              </button>
-              <button
-                type="button"
-                :class="{ active: roleFilter === 'admin' }"
-                @click="roleFilter = 'admin'"
-              >
+              <button type="button" :class="{ active: roleFilter === 'all' }" @click="roleFilter = 'all'">全部</button>
+              <button type="button" :class="{ active: roleFilter === 'admin' }" @click="roleFilter = 'admin'">
                 管理员
               </button>
-              <button
-                type="button"
-                :class="{ active: roleFilter === 'author' }"
-                @click="roleFilter = 'author'"
-              >
+              <button type="button" :class="{ active: roleFilter === 'author' }" @click="roleFilter = 'author'">
                 作者
               </button>
-              <button
-                type="button"
-                :class="{ active: roleFilter === 'disabled' }"
-                @click="roleFilter = 'disabled'"
-              >
+              <button type="button" :class="{ active: roleFilter === 'disabled' }" @click="roleFilter = 'disabled'">
                 已禁用
               </button>
             </div>
@@ -499,9 +497,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                           <span class="text-[14px] font-semibold leading-tight text-foreground">
                             {{ u.display_name || u.username }}
                           </span>
-                          <span
-                            class="max-w-[220px] truncate text-[12px] leading-tight text-text-tertiary"
-                          >
+                          <span class="max-w-[220px] truncate text-[12px] leading-tight text-text-tertiary">
                             {{ u.email || u.username }}
                           </span>
                         </div>
@@ -512,8 +508,14 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                         class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-medium"
                         :style="
                           roleTone(u.role) === 'admin'
-                            ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)', color: 'var(--color-state-error)' }
-                            : { backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)', color: 'var(--color-chart-5)' }
+                            ? {
+                                backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)',
+                                color: 'var(--color-state-error)',
+                              }
+                            : {
+                                backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)',
+                                color: 'var(--color-chart-5)',
+                              }
                         "
                       >
                         {{ roleLabel(u.role) }}
@@ -522,7 +524,10 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     <td class="border-b border-border px-5 py-3.5 align-middle">
                       <span
                         class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium"
-                        style="background-color: color-mix(in srgb, var(--color-accent) 60%, transparent); color: var(--color-state-success);"
+                        style="
+                          background-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+                          color: var(--color-state-success);
+                        "
                       >
                         <VStatusDot state="success" />
                         活跃
@@ -530,7 +535,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                     </td>
                     <td
                       class="border-b border-border px-5 py-3.5 align-middle text-[13px] text-text-secondary"
-                      style="font-variant-numeric: tabular-nums;"
+                      style="font-variant-numeric: tabular-nums"
                     >
                       {{ u.created_at || "—" }}
                     </td>
@@ -602,8 +607,14 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                       class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium"
                       :style="
                         roleTone(u.role) === 'admin'
-                          ? { backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)', color: 'var(--color-state-error)' }
-                          : { backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)', color: 'var(--color-chart-5)' }
+                          ? {
+                              backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)',
+                              color: 'var(--color-state-error)',
+                            }
+                          : {
+                              backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)',
+                              color: 'var(--color-chart-5)',
+                            }
                       "
                     >
                       {{ roleLabel(u.role) }}
@@ -616,9 +627,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                   <div class="mt-0.5 truncate text-[12px] text-text-tertiary">
                     {{ u.email || u.username }}
                   </div>
-                  <div class="mt-1 text-[11px] text-text-quaternary">
-                    注册：{{ u.created_at || "—" }}
-                  </div>
+                  <div class="mt-1 text-[11px] text-text-quaternary">注册：{{ u.created_at || "—" }}</div>
 
                   <!-- 操作按钮 -->
                   <div class="mt-2.5 flex items-center gap-1">
@@ -745,9 +754,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
       <div>
         <label :class="labelCls">新密码（{{ pwdTarget?.username }}）<span class="text-state-error">*</span></label>
         <input v-model="pwdForm.password" type="password" :class="inputCls" placeholder="至少 6 位" />
-        <p class="mt-2 text-xs text-text-quaternary">
-          重置后该用户所有已登录会话将立即失效
-        </p>
+        <p class="mt-2 text-xs text-text-quaternary">重置后该用户所有已登录会话将立即失效</p>
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">

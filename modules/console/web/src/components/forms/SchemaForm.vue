@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import {
-  colorInputValue,
-  withSchemaDefaults,
-  type SchemaField,
-  type SchemaValues,
-} from "./schema";
+import { colorInputValue, withSchemaDefaults, type SchemaField, type SchemaValues } from "./schema";
 
 const props = withDefaults(
   defineProps<{
     fields: SchemaField[];
     modelValue?: SchemaValues;
   }>(),
-  { modelValue: () => ({}) }
+  { modelValue: () => ({}) },
 );
 
 const emit = defineEmits<{
@@ -25,11 +20,7 @@ function syncValues() {
   values.value = withSchemaDefaults(props.fields, props.modelValue);
 }
 
-watch(
-  [() => props.fields, () => props.modelValue],
-  syncValues,
-  { immediate: true, deep: true }
-);
+watch([() => props.fields, () => props.modelValue], syncValues, { immediate: true, deep: true });
 
 function updateValue(field: SchemaField, value: unknown) {
   const next = { ...values.value, [field.key]: value };

@@ -54,9 +54,7 @@ const outline = computed<OutlineItem[]>(() => {
   return items;
 });
 
-const minLevel = computed(() =>
-  outline.value.length ? Math.min(...outline.value.map((i) => i.level)) : 1
-);
+const minLevel = computed(() => (outline.value.length ? Math.min(...outline.value.map((i) => i.level)) : 1));
 
 function widgetLabelOf(name: string) {
   return props.widgetLibrary.find((w) => w.name === name)?.label ?? name;
@@ -114,7 +112,9 @@ onMounted(loadFriendsCfg);
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary">
+  <div
+    class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white dark:border-border-strong dark:bg-secondary"
+  >
     <!-- Tabs -->
     <div class="grid grid-cols-2 gap-0.5 rounded-t-xl bg-secondary p-1 dark:bg-accent/50">
       <button
@@ -129,7 +129,10 @@ onMounted(loadFriendsCfg);
         <span class="inline-flex items-center gap-1">
           <Icon icon="ri:list-unordered" class="h-3.5 w-3.5" />
           大纲
-          <span class="ml-1 rounded-full bg-accent px-1.5 text-[10px] text-text-quaternary dark:bg-accent dark:text-text-secondary">{{ outline.length }}</span>
+          <span
+            class="ml-1 rounded-full bg-accent px-1.5 text-[10px] text-text-quaternary dark:bg-accent dark:text-text-secondary"
+            >{{ outline.length }}</span
+          >
         </span>
       </button>
       <button
@@ -162,7 +165,10 @@ onMounted(loadFriendsCfg);
           :style="{ paddingLeft: `${8 + (it.level - minLevel) * 12}px` }"
           @click="emit('jump', it.line, idx)"
         >
-          <span class="truncate text-text-quaternary group-hover:text-foreground dark:text-text-secondary dark:group-hover:text-foreground">{{ it.text }}</span>
+          <span
+            class="truncate text-text-quaternary group-hover:text-foreground dark:text-text-secondary dark:group-hover:text-foreground"
+            >{{ it.text }}</span
+          >
         </li>
       </ol>
     </div>
@@ -170,15 +176,21 @@ onMounted(loadFriendsCfg);
     <!-- Detail Tab -->
     <div v-else class="flex-1 overflow-y-auto p-3 space-y-4">
       <div class="space-y-2">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">页面信息</h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">
+          页面信息
+        </h3>
         <div class="space-y-2 rounded-lg bg-secondary p-3 text-xs dark:bg-accent/40">
           <div class="flex items-center justify-between gap-2">
             <span class="text-text-quaternary dark:text-muted-foreground">标题</span>
-            <span class="truncate font-medium text-text-quaternary dark:text-foreground">{{ form.title || '(未填)' }}</span>
+            <span class="truncate font-medium text-text-quaternary dark:text-foreground">{{
+              form.title || "(未填)"
+            }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
             <span class="text-text-quaternary dark:text-muted-foreground">Slug</span>
-            <span class="truncate font-mono text-[11px] text-text-quaternary dark:text-foreground">{{ form.slug || '(未填)' }}</span>
+            <span class="truncate font-mono text-[11px] text-text-quaternary dark:text-foreground">{{
+              form.slug || "(未填)"
+            }}</span>
           </div>
           <div class="flex items-center justify-between gap-2">
             <span class="text-text-quaternary dark:text-muted-foreground">状态</span>
@@ -189,7 +201,8 @@ onMounted(loadFriendsCfg);
                   ? 'bg-state-success/10 text-state-success dark:bg-state-success/100/20 dark:text-state-success'
                   : 'bg-state-warning/10 text-state-warning dark:bg-state-warning/20 dark:text-state-warning',
               ]"
-            >{{ form.status === 'published' ? '已发布' : '草稿' }}</span>
+              >{{ form.status === "published" ? "已发布" : "草稿" }}</span
+            >
           </div>
           <div class="flex items-center justify-between gap-2">
             <span class="text-text-quaternary dark:text-muted-foreground">字数</span>
@@ -202,27 +215,48 @@ onMounted(loadFriendsCfg);
 
       <!-- 友链页专属设置（slug=friends 时显示，存 settings pages.friends 段） -->
       <div v-if="isFriendsPage" class="space-y-2">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">友链页设置</h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">
+          友链页设置
+        </h3>
         <div class="space-y-2 rounded-lg bg-secondary p-3 text-xs dark:bg-accent/40">
           <div>
             <label class="mb-1 block text-[10px] text-muted-foreground">hero 副标题（banner 签名档）</label>
-            <input v-model="friendsCfg.hero.description" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" />
+            <input
+              v-model="friendsCfg.hero.description"
+              class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary"
+            />
           </div>
           <div>
             <label class="mb-1 block text-[10px] text-muted-foreground">hero 背景图 URL</label>
-            <input v-model="friendsCfg.hero.background" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="https://..." />
+            <input
+              v-model="friendsCfg.hero.background"
+              class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary"
+              placeholder="https://..."
+            />
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="mb-1 block text-[10px] text-muted-foreground">刷新间隔（分钟）</label>
-              <input v-model.number="friendsCfg.refresh_interval" type="number" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="0=缺省 60" />
+              <input
+                v-model.number="friendsCfg.refresh_interval"
+                type="number"
+                class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary"
+                placeholder="0=缺省 60"
+              />
             </div>
             <div>
               <label class="mb-1 block text-[10px] text-muted-foreground">每链文章数</label>
-              <input v-model.number="friendsCfg.posts_per_link" type="number" class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary" placeholder="0=缺省 20" />
+              <input
+                v-model.number="friendsCfg.posts_per_link"
+                type="number"
+                class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary"
+                placeholder="0=缺省 20"
+              />
             </div>
           </div>
-          <p class="text-[10px] text-muted-foreground">RSS 文章列表开关在正文 shortcode：{% friends posts:true|false %}</p>
+          <p class="text-[10px] text-muted-foreground">
+            RSS 文章列表开关在正文 shortcode：{% friends posts:true|false %}
+          </p>
           <button
             class="w-full rounded-md bg-primary px-2 py-1.5 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             :disabled="friendsSaving"
@@ -235,7 +269,9 @@ onMounted(loadFriendsCfg);
 
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">侧边栏配置</h3>
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-text-quaternary dark:text-muted-foreground">
+            侧边栏配置
+          </h3>
           <button
             class="rounded-md px-2 py-1 text-[11px] text-primary hover:bg-primary/10"
             @click="emit('openSidebarConfig')"
@@ -249,7 +285,7 @@ onMounted(loadFriendsCfg);
             <div class="mb-1 flex items-center justify-between">
               <span class="font-medium text-text-quaternary dark:text-text-secondary">左栏</span>
               <span class="text-[10px] text-muted-foreground">
-                {{ leftbarWidgets === null ? '继承全局' : `自定义 · ${leftbarWidgets.length} 组件` }}
+                {{ leftbarWidgets === null ? "继承全局" : `自定义 · ${leftbarWidgets.length} 组件` }}
               </span>
             </div>
             <div v-if="leftbarWidgets?.length" class="mt-1 flex flex-wrap gap-1">
@@ -260,12 +296,18 @@ onMounted(loadFriendsCfg);
               >
                 <Icon icon="ri-layout-left-line" class="h-3 w-3 text-muted-foreground" />
                 {{ widgetLabelOf(w.name) }}
-                <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
+                <span
+                  v-if="w.params && Object.keys(w.params).length"
+                  class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary"
+                >
                   {{ Object.keys(w.params).length }}
                 </span>
               </span>
             </div>
-            <p v-else-if="Array.isArray(leftbarWidgets) && !leftbarWidgets.length" class="mt-1 text-[10px] text-muted-foreground">
+            <p
+              v-else-if="Array.isArray(leftbarWidgets) && !leftbarWidgets.length"
+              class="mt-1 text-[10px] text-muted-foreground"
+            >
               （显式空左栏）
             </p>
           </div>
@@ -273,7 +315,7 @@ onMounted(loadFriendsCfg);
             <div class="mb-1 flex items-center justify-between">
               <span class="font-medium text-text-quaternary dark:text-text-secondary">右栏</span>
               <span class="text-[10px] text-muted-foreground">
-                {{ rightbarWidgets === null ? '继承全局' : `自定义 · ${rightbarWidgets.length} 组件` }}
+                {{ rightbarWidgets === null ? "继承全局" : `自定义 · ${rightbarWidgets.length} 组件` }}
               </span>
             </div>
             <div v-if="rightbarWidgets?.length" class="mt-1 flex flex-wrap gap-1">
@@ -284,12 +326,18 @@ onMounted(loadFriendsCfg);
               >
                 <Icon icon="ri-layout-right-line" class="h-3 w-3 text-muted-foreground" />
                 {{ widgetLabelOf(w.name) }}
-                <span v-if="w.params && Object.keys(w.params).length" class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary">
+                <span
+                  v-if="w.params && Object.keys(w.params).length"
+                  class="ml-0.5 rounded-full bg-primary/10 px-1 text-primary"
+                >
                   {{ Object.keys(w.params).length }}
                 </span>
               </span>
             </div>
-            <p v-else-if="Array.isArray(rightbarWidgets) && !rightbarWidgets.length" class="mt-1 text-[10px] text-muted-foreground">
+            <p
+              v-else-if="Array.isArray(rightbarWidgets) && !rightbarWidgets.length"
+              class="mt-1 text-[10px] text-muted-foreground"
+            >
               （显式空右栏）
             </p>
           </div>

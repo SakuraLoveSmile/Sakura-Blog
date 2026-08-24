@@ -31,9 +31,9 @@ const { breakpoint: autoBreakpoint, previewWidth, viewMode, setViewMode } = prov
 const { layout, loading, error, hasServerLayout, load, replace } = useDashboardLayout();
 
 const currentBreakpoint = ref<DashboardLayoutBreakpoint>("lg");
-const activeBreakpoint = computed<DashboardLayoutBreakpoint>(() => (
-  viewMode.value === "auto" ? autoBreakpoint.value : currentBreakpoint.value
-));
+const activeBreakpoint = computed<DashboardLayoutBreakpoint>(() =>
+  viewMode.value === "auto" ? autoBreakpoint.value : currentBreakpoint.value,
+);
 const originalLayout = ref<MultiBreakpointLayout | null>(null);
 const showWidgetCenter = ref(false);
 const legacyLayout = ref<DashboardResponsiveLayout | null>(null);
@@ -47,10 +47,12 @@ const sizingWidget = computed(() => currentWidgets.value.find((item) => item.i =
 const sizingDefinition = computed(() => {
   const widget = sizingWidget.value;
   if (!widget) return undefined;
-  return getWidgetDefinition(widget.id) ?? {
-    label: `未知组件：${widget.id}`,
-    icon: "ri:question-line",
-  };
+  return (
+    getWidgetDefinition(widget.id) ?? {
+      label: `未知组件：${widget.id}`,
+      icon: "ri:question-line",
+    }
+  );
 });
 const sizeModalVisible = computed({
   get: () => Boolean(sizingWidget.value && sizingDefinition.value),
@@ -58,10 +60,14 @@ const sizeModalVisible = computed({
     if (!visible) sizingWidgetId.value = null;
   },
 });
-const sizingPreset = computed<WidgetSizePreset>(() => (
-  sizingWidget.value ? getWidgetSizePreset(sizingWidget.value, activeBreakpoint.value, sizingWidget.value.id) : "medium"
-));
-const dirty = computed(() => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value));
+const sizingPreset = computed<WidgetSizePreset>(() =>
+  sizingWidget.value
+    ? getWidgetSizePreset(sizingWidget.value, activeBreakpoint.value, sizingWidget.value.id)
+    : "medium",
+);
+const dirty = computed(
+  () => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value),
+);
 const canImportLegacy = computed(() => !hasServerLayout.value && Boolean(legacyLayout.value));
 
 const viewOptions: { key: ViewMode; label: string; icon: string }[] = [
@@ -92,7 +98,10 @@ function updateCurrentWidgets(next: DashboardWidget[]) {
 }
 
 function addWidget(id: string) {
-  updateCurrentWidgets([...currentWidgets.value, createDefaultGridWidget(id, activeBreakpoint.value, currentWidgets.value)]);
+  updateCurrentWidgets([
+    ...currentWidgets.value,
+    createDefaultGridWidget(id, activeBreakpoint.value, currentWidgets.value),
+  ]);
   refreshKey.value += 1;
 }
 
@@ -147,11 +156,11 @@ function configureWidget(instanceId: string) {
 
 function saveWidgetSize(preset: WidgetSizePreset) {
   if (!sizingWidget.value) return;
-  const updated = currentWidgets.value.map((item) => (
-      item.i === sizingWidget.value?.i
+  const updated = currentWidgets.value.map((item) =>
+    item.i === sizingWidget.value?.i
       ? applyGridWidgetSize(item, preset, activeBreakpoint.value, currentWidgets.value)
-      : item
-  ));
+      : item,
+  );
   updateCurrentWidgets(updated);
   refreshKey.value += 1;
   sizingWidgetId.value = null;
@@ -187,7 +196,6 @@ onBeforeRouteLeave(() => {
   if (!dirty.value) return true;
   return window.confirm("布局尚未保存，确定要离开吗？");
 });
-
 </script>
 
 <template>
@@ -206,7 +214,10 @@ onBeforeRouteLeave(() => {
                 返回
               </button>
               <button class="apple-edit-btn" :disabled="saving || loading" @click="save">
-                <Icon :icon="saving ? 'ri:loader-4-line' : 'ri:save-3-line'" :class="['w-4 h-4', saving && 'animate-spin']" />
+                <Icon
+                  :icon="saving ? 'ri:loader-4-line' : 'ri:save-3-line'"
+                  :class="['w-4 h-4', saving && 'animate-spin']"
+                />
                 {{ saving ? "保存中" : "保存布局" }}
               </button>
             </div>
@@ -247,7 +258,7 @@ onBeforeRouteLeave(() => {
           <div class="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
             <label for="dashboard-copy-source">复制来源</label>
             <select id="dashboard-copy-source" v-model="copySource" class="dashboard-select">
-            <option v-for="option in deviceOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
+              <option v-for="option in deviceOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
             </select>
             <button class="apple-secondary-btn" @click="copyLayout">
               <Icon icon="ri:file-copy-line" class="w-4 h-4" />

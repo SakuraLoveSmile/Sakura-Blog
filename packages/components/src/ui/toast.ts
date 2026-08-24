@@ -33,8 +33,7 @@ let toastContainer: HTMLElement | null = null;
 function ensureContainer(): HTMLElement {
   if (!toastContainer || !document.body.contains(toastContainer)) {
     toastContainer = document.createElement("div");
-    toastContainer.className =
-      "fixed top-4 left-1/2 z-[99999] flex -translate-x-1/2 flex-col items-center gap-2";
+    toastContainer.className = "fixed top-4 left-1/2 z-[99999] flex -translate-x-1/2 flex-col items-center gap-2";
     document.body.appendChild(toastContainer);
   }
   return toastContainer;
@@ -87,7 +86,7 @@ function showToast(type: ToastType, message: string, description = "", duration 
                 class: "mt-px flex-shrink-0",
                 style: { color: typeColorVar[type], fill: "currentColor" },
               },
-              [h("path", { d: typeIconPath[type], fill: "currentColor" })]
+              [h("path", { d: typeIconPath[type], fill: "currentColor" })],
             ),
             // 文本区：标题 + 可选副标题
             h("div", { class: "min-w-0 flex-1" }, [
@@ -99,11 +98,11 @@ function showToast(type: ToastType, message: string, description = "", duration 
                       class: "mt-0.5 text-xs leading-snug",
                       style: { color: "var(--color-text-tertiary)" },
                     },
-                    description
+                    description,
                   )
                 : null,
             ]),
-          ]
+          ],
         );
     },
   });

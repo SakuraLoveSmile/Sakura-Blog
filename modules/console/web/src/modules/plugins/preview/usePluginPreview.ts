@@ -6,11 +6,7 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import { previewApi } from "@/api";
 import type { PluginPreviewInfo } from "../plugin-types.ts";
-import {
-  buildPreviewDoc,
-  resolvePreviewHeight,
-  clampPreviewHeight,
-} from "./preview-document.ts";
+import { buildPreviewDoc, resolvePreviewHeight, clampPreviewHeight } from "./preview-document.ts";
 import { previewScriptsFor } from "./resources.ts";
 import { RenderGate } from "./render-gate.ts";
 

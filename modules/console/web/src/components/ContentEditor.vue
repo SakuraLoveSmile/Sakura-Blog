@@ -21,7 +21,7 @@ const props = withDefaults(
   {
     placeholder: "开始写作…",
     minHeight: "400px",
-  }
+  },
 );
 
 const emit = defineEmits<{
@@ -73,7 +73,7 @@ function setEditorMode(m: EditorMode) {
 
 // 工具栏格式按钮激活态（仅富文本模式）
 const toolbarActive = computed<Record<string, boolean>>(() =>
-  editorKind.value === "rich" ? (richRef.value?.activeStates ?? {}) : {}
+  editorKind.value === "rich" ? (richRef.value?.activeStates ?? {}) : {},
 );
 
 // Markdown 格式映射表
@@ -155,9 +155,7 @@ const iconBtnCls =
         :title="tool.title"
         :class="[
           'p-1.5 rounded-md transition-colors',
-          toolbarActive[tool.id]
-            ? 'bg-secondary text-chart-4 dark:bg-accent dark:text-chart-4'
-            : iconBtnCls,
+          toolbarActive[tool.id] ? 'bg-secondary text-chart-4 dark:bg-accent dark:text-chart-4' : iconBtnCls,
         ]"
         @click="onFormat(tool.id)"
       >
@@ -219,7 +217,7 @@ const iconBtnCls =
       :storage-key="storageKey"
       @update:model-value="emit('update:modelValue', $event)"
       @save="emit('save')"
-      @mode-change="(m: any) => editorMode = m"
+      @mode-change="(m: any) => (editorMode = m)"
     />
   </div>
 </template>

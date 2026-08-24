@@ -89,11 +89,7 @@ onMounted(async () => {
   </div>
 
   <!-- Medium / Large 尺寸：标准与扩展视图（样式走 dashboard.css 共享 .version-card-*） -->
-  <div
-    v-else
-    class="apple-card version-card h-full"
-    :data-bp="breakpoint"
-  >
+  <div v-else class="apple-card version-card h-full" :data-bp="breakpoint">
     <div class="version-card-header">
       <div class="version-card-title-row">
         <div class="version-card-icon" aria-hidden="true">
@@ -126,7 +122,9 @@ onMounted(async () => {
         </div>
         <div v-if="sizePreset === 'large'">
           <span class="version-card-label">检查时间</span>
-          <strong class="text-xs text-muted-foreground font-normal mt-1">{{ data?.checked_at ? new Date(data.checked_at).toLocaleDateString() : '刚刚' }}</strong>
+          <strong class="text-xs text-muted-foreground font-normal mt-1">{{
+            data?.checked_at ? new Date(data.checked_at).toLocaleDateString() : "刚刚"
+          }}</strong>
         </div>
       </div>
 

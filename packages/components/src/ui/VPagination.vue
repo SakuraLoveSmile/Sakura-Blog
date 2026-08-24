@@ -9,7 +9,7 @@ const props = withDefaults(
     total: number;
     sizeOptions?: number[];
   }>(),
-  { sizeOptions: () => [20, 30, 50, 100] }
+  { sizeOptions: () => [20, 30, 50, 100] },
 );
 
 const emit = defineEmits<{
@@ -49,29 +49,23 @@ function changeSize(e: Event) {
 
 <template>
   <div class="flex items-center justify-end gap-3">
-    <span class="text-xs" style="color: var(--color-text-tertiary);">共 {{ total }} 条</span>
+    <span class="text-xs" style="color: var(--color-text-tertiary)">共 {{ total }} 条</span>
     <div class="flex items-center gap-1">
       <button
         :disabled="page <= 1"
         class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
-        style="color: var(--color-text-tertiary);"
+        style="color: var(--color-text-tertiary)"
         @click="goPage(page - 1)"
       >
         &lt;
       </button>
       <template v-for="(item, idx) in pageItems" :key="idx">
-        <span
-          v-if="item === '...'"
-          class="px-1 text-xs"
-          style="color: var(--color-text-quaternary);"
-        >…</span>
+        <span v-if="item === '...'" class="px-1 text-xs" style="color: var(--color-text-quaternary)">…</span>
         <button
           v-else
           :class="[
             'h-8 min-w-8 rounded-lg px-2 text-xs transition-all',
-            page === item
-              ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-secondary',
+            page === item ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary',
           ]"
           :style="page === item ? 'box-shadow: var(--shadow-sm);' : 'color: var(--color-text-tertiary);'"
           @click="goPage(item)"
@@ -82,18 +76,13 @@ function changeSize(e: Event) {
       <button
         :disabled="page >= totalPages"
         class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
-        style="color: var(--color-text-tertiary);"
+        style="color: var(--color-text-tertiary)"
         @click="goPage(page + 1)"
       >
         &gt;
       </button>
     </div>
-    <select
-      :value="size"
-      class="apple-select"
-      style="height: 32px; font-size: 12px;"
-      @change="changeSize"
-    >
+    <select :value="size" class="apple-select" style="height: 32px; font-size: 12px" @change="changeSize">
       <option v-for="opt in sizeOptions" :key="opt" :value="opt">{{ opt }} 条/页</option>
     </select>
   </div>

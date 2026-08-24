@@ -8,7 +8,7 @@ const props = withDefaults(
     animate?: boolean;
     text?: string;
   }>(),
-  { state: "default", animate: false, text: undefined }
+  { state: "default", animate: false, text: undefined },
 );
 
 const dotColor = computed(() => {
@@ -35,6 +35,6 @@ const dotColor = computed(() => {
       ></span>
       <span :style="{ background: dotColor }" class="relative inline-flex h-2 w-2 rounded-full"></span>
     </span>
-    <span v-if="text" class="text-xs" style="color: var(--color-text-tertiary);">{{ text }}</span>
+    <span v-if="text" class="text-xs" style="color: var(--color-text-tertiary)">{{ text }}</span>
   </div>
 </template>

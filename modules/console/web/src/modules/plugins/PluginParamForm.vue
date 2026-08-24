@@ -23,13 +23,13 @@ const fields = computed<SchemaField[]>(() =>
     default: field.type === "flag" ? field.default === "true" : field.default,
     options: field.options,
     placeholder: field.placeholder,
-  }))
+  })),
 );
 
 function initValues() {
   const next: SchemaValues = {};
   for (const field of props.plugin.form || []) {
-    next[field.key] = field.type === "flag" ? field.default === "true" : field.default ?? "";
+    next[field.key] = field.type === "flag" ? field.default === "true" : (field.default ?? "");
   }
   values.value = next;
 }
@@ -50,7 +50,7 @@ watch(
   () => {
     initValues();
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 

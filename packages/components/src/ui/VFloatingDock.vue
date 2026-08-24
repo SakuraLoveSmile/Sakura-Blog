@@ -10,7 +10,7 @@ withDefaults(
     visible: false,
     count: 0,
     title: "",
-  }
+  },
 );
 
 defineEmits<{
@@ -26,12 +26,16 @@ defineEmits<{
         class="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border px-4 py-2.5 shadow-2xl backdrop-blur-2xl transition-all"
         style="
           background: color-mix(in srgb, var(--color-card) 85%, transparent);
-          box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+          box-shadow:
+            0 16px 36px -8px rgba(0, 0, 0, 0.65),
+            0 0 0 1px rgba(255, 255, 255, 0.08);
         "
       >
         <!-- 已选计数药丸 -->
         <div class="flex items-center gap-2 pr-1 border-r border-border">
-          <span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground">
+          <span
+            class="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground"
+          >
             {{ count }}
           </span>
           <span class="text-xs font-medium text-foreground whitespace-nowrap">
@@ -63,7 +67,8 @@ defineEmits<{
 <style scoped>
 .dock-slide-enter-active,
 .dock-slide-leave-active {
-  transition: transform var(--duration-normal) var(--ease-standard),
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
     opacity var(--duration-normal) var(--ease-standard);
 }
 .dock-slide-enter-from,

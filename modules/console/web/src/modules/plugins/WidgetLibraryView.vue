@@ -89,14 +89,12 @@ const search = ref("");
 const filteredMeta = computed(() => {
   const kw = search.value.trim().toLowerCase();
   if (!kw) return WIDGET_META;
-  return WIDGET_META.filter(
-    (m) => m.name.toLowerCase().includes(kw) || m.label.toLowerCase().includes(kw)
-  );
+  return WIDGET_META.filter((m) => m.name.toLowerCase().includes(kw) || m.label.toLowerCase().includes(kw));
 });
 const schemeNames = computed(() =>
   Object.keys(widgets.value.library)
     .filter((n) => !BUILTIN_WIDGET_NAMES.has(n))
-    .sort()
+    .sort(),
 );
 const filteredSchemes = computed(() => {
   const kw = search.value.trim().toLowerCase();
@@ -336,7 +334,7 @@ function buildWidgetDoc(fullHtml: string, layout = ""): string {
   // 数据服务懒加载 scan 块（base.html 注入，URL 已服务端渲染）：复用页面清单，
   // 内置 shim 提供 utils/ctx/def/deps，不再需要页面自身的 utils 内联块。
   const scanScr = Array.from(doc.body.querySelectorAll("script")).find(
-    (s) => !s.src && (s.textContent || "").includes("var services = [")
+    (s) => !s.src && (s.textContent || "").includes("var services = ["),
   );
   // iframe 内布局修正：侧栏宽度/定位不依赖整页 grid；容器高度自适应；去掉 .widgets 滚动与底部渐隐 mask
   const fx = `<style>
@@ -397,12 +395,15 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                 'text-sm truncate',
                 isSelected('builtin', m.name) ? 'font-medium text-primary' : 'text-text-secondary',
               ]"
-            >{{ m.label }}</span>
+              >{{ m.label }}</span
+            >
             <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ m.name }}</span>
           </button>
 
           <!-- 已保存方案组 -->
-          <p class="mt-2 px-4 py-1 text-[11px] font-medium text-text-quaternary">已保存方案 {{ filteredSchemes.length }}</p>
+          <p class="mt-2 px-4 py-1 text-[11px] font-medium text-text-quaternary">
+            已保存方案 {{ filteredSchemes.length }}
+          </p>
           <button
             v-for="n in filteredSchemes"
             :key="n"
@@ -418,8 +419,11 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                 'text-sm truncate',
                 isSelected('scheme', n) ? 'font-medium text-primary' : 'text-text-secondary',
               ]"
-            >{{ n }}</span>
-            <span class="ml-auto text-[10px] px-1 py-px rounded bg-primary/10 text-primary font-mono shrink-0">{{ schemeLayout(n) }}</span>
+              >{{ n }}</span
+            >
+            <span class="ml-auto text-[10px] px-1 py-px rounded bg-primary/10 text-primary font-mono shrink-0">{{
+              schemeLayout(n)
+            }}</span>
           </button>
           <p v-if="!filteredSchemes.length" class="px-4 py-2 text-xs text-text-quaternary">
             暂无方案 — 选择内置组件编辑参数后「保存为方案」
@@ -433,9 +437,11 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
         <div>
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="text-xl font-semibold text-foreground">
-              {{ selKind === 'builtin' ? (selMeta?.label || selName) : selName }}
+              {{ selKind === "builtin" ? selMeta?.label || selName : selName }}
             </h3>
-            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{{ draftLayout }}</code>
+            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{{
+              draftLayout
+            }}</code>
             <span
               v-if="selKind === 'scheme'"
               class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"
@@ -444,7 +450,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
             </span>
           </div>
           <p class="text-sm text-text-tertiary mt-1">
-            {{ selKind === 'builtin' ? selMeta?.desc : `基于 ${draftLayout} 布局的自定义方案` }}
+            {{ selKind === "builtin" ? selMeta?.desc : `基于 ${draftLayout} 布局的自定义方案` }}
           </p>
         </div>
 
@@ -502,11 +508,23 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                     v-else
                     :type="f.type === 'number' ? 'number' : 'text'"
                     :value="draft[f.key]"
-                    @input="setField(f, f.type === 'number' ? Number(($event.target as HTMLInputElement).value) : ($event.target as HTMLInputElement).value)"
+                    @input="
+                      setField(
+                        f,
+                        f.type === 'number'
+                          ? Number(($event.target as HTMLInputElement).value)
+                          : ($event.target as HTMLInputElement).value,
+                      )
+                    "
                     :placeholder="f.hint || ''"
                     :class="inputCls + (f.type === 'number' ? '' : ' font-mono')"
                   />
-                  <p v-if="f.hint && f.type !== 'textarea' && f.type !== 'text'" class="mt-1 text-[11px] text-text-quaternary">{{ f.hint }}</p>
+                  <p
+                    v-if="f.hint && f.type !== 'textarea' && f.type !== 'text'"
+                    class="mt-1 text-[11px] text-text-quaternary"
+                  >
+                    {{ f.hint }}
+                  </p>
                 </div>
               </div>
             </template>
@@ -550,7 +568,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
               v-else
               :srcdoc="previewHtml"
               class="w-full border-0"
-              style="min-height: 260px; max-height: 480px; resize: vertical; overflow: auto;"
+              style="min-height: 260px; max-height: 480px; resize: vertical; overflow: auto"
               sandbox="allow-same-origin allow-scripts"
             ></iframe>
           </div>
@@ -560,7 +578,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
         <div class="rounded-xl border border-border overflow-hidden">
           <div class="px-4 py-2 bg-secondary border-b border-border">
             <span class="text-xs font-medium text-text-tertiary">
-              {{ selKind === 'builtin' ? '保存为方案（可在设置 → 组件编排中选用）' : '方案操作' }}
+              {{ selKind === "builtin" ? "保存为方案（可在设置 → 组件编排中选用）" : "方案操作" }}
             </span>
           </div>
           <div class="p-4 space-y-3">
@@ -591,9 +609,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                   <Icon icon="ri:bookmark-3-line" />
                   保存为方案
                 </button>
-                <span class="text-xs text-text-quaternary">
-                  以当前参数创建命名方案，不改动内置组件缺省
-                </span>
+                <span class="text-xs text-text-quaternary"> 以当前参数创建命名方案，不改动内置组件缺省 </span>
               </div>
               <p v-if="widgets.library[selName]" class="text-[11px] text-text-quaternary">
                 当前 library 已存在同名覆盖配置（来自组件编排的参数编辑），上方表单已包含该覆盖。
@@ -624,7 +640,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                   删除
                 </button>
                 <span v-if="referencedPages(selName).length" class="text-xs text-text-quaternary">
-                  被页面类型「{{ referencedPages(selName).join('、') }}」引用中
+                  被页面类型「{{ referencedPages(selName).join("、") }}」引用中
                 </span>
               </div>
               <div v-if="nameInputVisible" class="flex items-center gap-2">

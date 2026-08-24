@@ -203,22 +203,24 @@ function onChartLeave() {
         <h3 class="apple-section-title text-sm">访问趋势</h3>
         <span class="text-[11px] text-muted-foreground">近 7 天</span>
       </div>
-      <div class="text-xs font-semibold text-primary">
-        总浏览 {{ formatNumber(totals.pv) }}
-      </div>
+      <div class="text-xs font-semibold text-primary">总浏览 {{ formatNumber(totals.pv) }}</div>
     </div>
 
     <!-- Medium / Large 尺寸顶部标准标题与分段器 -->
     <div v-else class="flex items-center justify-between trend-header">
       <div>
-        <h3 class="apple-section-title">{{ sizePreset === 'large' ? '流量深度分析与访问趋势' : '访问趋势' }}</h3>
-        <p class="trend-subtitle">{{ sizePreset === 'large' ? 'PV / UV 双指标趋势与转化监测' : 'Traffic Overview' }}</p>
+        <h3 class="apple-section-title">{{ sizePreset === "large" ? "流量深度分析与访问趋势" : "访问趋势" }}</h3>
+        <p class="trend-subtitle">{{ sizePreset === "large" ? "PV / UV 双指标趋势与转化监测" : "Traffic Overview" }}</p>
       </div>
       <div class="flex items-center gap-2">
         <!-- Large 尺寸图例 -->
         <div v-if="sizePreset === 'large'" class="hidden sm:flex items-center gap-3 mr-2 text-xs text-muted-foreground">
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-primary" /> PV (浏览量)</span>
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-chart-1" /> UV (访客)</span>
+          <span class="inline-flex items-center gap-1"
+            ><span class="w-2.5 h-2.5 rounded-full bg-primary" /> PV (浏览量)</span
+          >
+          <span class="inline-flex items-center gap-1"
+            ><span class="w-2.5 h-2.5 rounded-full bg-chart-1" /> UV (访客)</span
+          >
         </div>
         <div class="apple-segmented">
           <button :class="['seg-btn', days === 7 && 'active']" @click="days = 7">7 天</button>
@@ -228,7 +230,11 @@ function onChartLeave() {
     </div>
 
     <!-- 指标卡片：Small 隐藏；Medium 3项；Large 4项 -->
-    <div v-if="sizePreset !== 'small'" class="trend-stats" :class="{ 'grid-cols-4': sizePreset === 'large', 'grid-cols-3': sizePreset === 'medium' }">
+    <div
+      v-if="sizePreset !== 'small'"
+      class="trend-stats"
+      :class="{ 'grid-cols-4': sizePreset === 'large', 'grid-cols-3': sizePreset === 'medium' }"
+    >
       <div>
         <div class="trend-stat-label">总访问量 (PV)</div>
         <div class="trend-stat-value">{{ formatNumber(totals.pv) }}</div>
@@ -247,10 +253,20 @@ function onChartLeave() {
       </div>
     </div>
 
-    <div v-if="loading" class="trend-chart-box flex items-center justify-center text-muted-foreground" :style="{ height: `${chartHeight}px` }">
+    <div
+      v-if="loading"
+      class="trend-chart-box flex items-center justify-center text-muted-foreground"
+      :style="{ height: `${chartHeight}px` }"
+    >
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="trend-chart-box flex items-center justify-center text-state-error" :style="{ height: `${chartHeight}px` }">{{ error }}</div>
+    <div
+      v-else-if="error"
+      class="trend-chart-box flex items-center justify-center text-state-error"
+      :style="{ height: `${chartHeight}px` }"
+    >
+      {{ error }}
+    </div>
     <div v-else ref="wrapEl" class="trend-chart-wrap">
       <svg
         ref="chartEl"
@@ -275,7 +291,7 @@ function onChartLeave() {
         <!-- grid lines -->
         <g stroke="var(--color-chart-grid)" stroke-width="1">
           <line
-            v-for="i in (sizePreset === 'small' ? 2 : 4)"
+            v-for="i in sizePreset === 'small' ? 2 : 4"
             :key="i"
             :x1="padding.left"
             :x2="chartWidth - padding.right"
@@ -284,7 +300,14 @@ function onChartLeave() {
           />
         </g>
         <path :d="areaPath" fill="url(#trendGrad)" />
-        <path :d="linePath" fill="none" stroke="url(#trendLine)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path
+          :d="linePath"
+          fill="none"
+          stroke="url(#trendLine)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
         <!-- Large 尺寸渲染 UV 辅助线（chart-1 绿色） -->
         <path
           v-if="sizePreset === 'large'"
@@ -332,15 +355,30 @@ function onChartLeave() {
             opacity="0.45"
           />
           <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="9" fill="var(--color-chart-2)" opacity="0.18" />
-          <circle :cx="hoveredPoint.x" :cy="hoveredPoint.y" r="5" fill="var(--color-chart-2)" stroke="var(--color-foreground)" stroke-width="2" />
+          <circle
+            :cx="hoveredPoint.x"
+            :cy="hoveredPoint.y"
+            r="5"
+            fill="var(--color-chart-2)"
+            stroke="var(--color-foreground)"
+            stroke-width="2"
+          />
         </g>
       </svg>
       <!-- hover tooltip -->
       <Transition name="tip">
-        <div v-if="tip && hoveredPoint" :class="['trend-tooltip', tip.below ? 'below' : 'above']" :style="{ left: tip.left + 'px', top: tip.top + 'px' }">
+        <div
+          v-if="tip && hoveredPoint"
+          :class="['trend-tooltip', tip.below ? 'below' : 'above']"
+          :style="{ left: tip.left + 'px', top: tip.top + 'px' }"
+        >
           <div class="trend-tooltip-date">{{ formatDate(hoveredPoint.d.date) }}</div>
-          <div class="trend-tooltip-row"><span class="trend-tooltip-dot pv" />访问<b>{{ hoveredPoint.d.pv }}</b></div>
-          <div class="trend-tooltip-row"><span class="trend-tooltip-dot uv" />访客<b>{{ hoveredPoint.d.uv }}</b></div>
+          <div class="trend-tooltip-row">
+            <span class="trend-tooltip-dot pv" />访问<b>{{ hoveredPoint.d.pv }}</b>
+          </div>
+          <div class="trend-tooltip-row">
+            <span class="trend-tooltip-dot uv" />访客<b>{{ hoveredPoint.d.uv }}</b>
+          </div>
         </div>
       </Transition>
     </div>
@@ -348,8 +386,14 @@ function onChartLeave() {
 </template>
 
 <style scoped>
-.trend-header { margin-bottom: 24px; }
-.trend-subtitle { color: var(--color-muted-foreground); font-size: 13px; margin-top: 4px; }
+.trend-header {
+  margin-bottom: 24px;
+}
+.trend-subtitle {
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+  margin-top: 4px;
+}
 
 .trend-stats {
   display: grid;
@@ -357,14 +401,31 @@ function onChartLeave() {
   gap: 16px;
   margin-bottom: 24px;
 }
-.trend-stat-label { color: var(--color-muted-foreground); font-size: 12px; margin-bottom: 4px; }
-.trend-stat-value { color: var(--color-foreground); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.trend-stat-label {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.trend-stat-value {
+  color: var(--color-foreground);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
 
-.trend-chart-box { height: 220px; }
-.trend-chart-svg { height: 220px; display: block; touch-action: pan-y; }
+.trend-chart-box {
+  height: 220px;
+}
+.trend-chart-svg {
+  height: 220px;
+  display: block;
+  touch-action: pan-y;
+}
 
 /* tooltip 覆盖层 */
-.trend-chart-wrap { position: relative; }
+.trend-chart-wrap {
+  position: relative;
+}
 .trend-tooltip {
   position: absolute;
   z-index: 5;
@@ -378,9 +439,18 @@ function onChartLeave() {
   border: 1px solid color-mix(in srgb, #fff 12%, transparent);
   box-shadow: var(--shadow-lg);
 }
-.trend-tooltip.above { transform: translate(-50%, -100%); }
-.trend-tooltip.below { transform: translate(-50%, 0); }
-.trend-tooltip-date { color: var(--color-muted-foreground); font-size: 11px; margin-bottom: 4px; text-align: center; }
+.trend-tooltip.above {
+  transform: translate(-50%, -100%);
+}
+.trend-tooltip.below {
+  transform: translate(-50%, 0);
+}
+.trend-tooltip-date {
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  margin-bottom: 4px;
+  text-align: center;
+}
 .trend-tooltip-row {
   display: flex;
   align-items: center;
@@ -390,27 +460,59 @@ function onChartLeave() {
   line-height: 18px;
   white-space: nowrap;
 }
-.trend-tooltip-row b { margin-left: auto; padding-left: 12px; font-weight: 600; color: var(--color-foreground); }
-.trend-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; }
-.trend-tooltip-dot.pv { background: var(--color-chart-2); }
-.trend-tooltip-dot.uv { background: var(--color-chart-1); }
+.trend-tooltip-row b {
+  margin-left: auto;
+  padding-left: 12px;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+.trend-tooltip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.trend-tooltip-dot.pv {
+  background: var(--color-chart-2);
+}
+.trend-tooltip-dot.uv {
+  background: var(--color-chart-1);
+}
 
-.tip-enter-active, .tip-leave-active { transition: opacity var(--duration-fast) var(--ease-standard); }
-.tip-enter-from, .tip-leave-to { opacity: 0; }
+.tip-enter-active,
+.tip-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.tip-enter-from,
+.tip-leave-to {
+  opacity: 0;
+}
 
 /* M 断点 */
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-header,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header { margin-bottom: 18px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header {
+  margin-bottom: 18px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-subtitle,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-subtitle { font-size: 12px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-subtitle {
+  font-size: 12px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stats,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 12px; margin-bottom: 18px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats {
+  gap: 12px;
+  margin-bottom: 18px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-stat-value,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 18px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value {
+  font-size: 18px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-box,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 180px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box {
+  height: 180px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .trend-chart-svg,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg { height: 180px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg {
+  height: 180px;
+}
 
 /* S 断点 */
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header {
@@ -422,9 +524,21 @@ function onChartLeave() {
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-header .apple-segmented {
   align-self: flex-start;
 }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats { gap: 8px; margin-bottom: 14px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-label { font-size: 10px; margin-bottom: 2px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value { font-size: 15px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box { height: 150px; }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg { height: 150px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stats {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-label {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-stat-value {
+  font-size: 15px;
+}
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-box {
+  height: 150px;
+}
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .trend-chart-svg {
+  height: 150px;
+}
 </style>

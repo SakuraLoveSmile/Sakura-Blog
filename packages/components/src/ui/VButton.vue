@@ -22,7 +22,7 @@ const props = withDefaults(
     disabled: false,
     loading: false,
     route: undefined,
-  }
+  },
 );
 
 const router = useRouter();

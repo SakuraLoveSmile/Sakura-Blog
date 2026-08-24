@@ -9,11 +9,7 @@ const props = defineProps<{
   gridH: number;
 }>();
 
-provideWidgetSize(
-  toRef(props, "preset"),
-  toRef(props, "gridW"),
-  toRef(props, "gridH"),
-);
+provideWidgetSize(toRef(props, "preset"), toRef(props, "gridW"), toRef(props, "gridH"));
 </script>
 
 <template>

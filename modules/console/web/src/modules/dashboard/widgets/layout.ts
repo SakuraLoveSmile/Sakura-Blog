@@ -77,64 +77,115 @@ interface WidgetSpec {
   minH: Record<Breakpoint, number>;
 }
 
-const statTypes = [
-  "stat-posts",
-  "stat-published",
-  "stat-views",
-  "stat-comments",
-  "stat-attachments",
-  "stat-users",
-];
+const statTypes = ["stat-posts", "stat-published", "stat-views", "stat-comments", "stat-attachments", "stat-users"];
 
 const widgetSpecs: Record<string, WidgetSpec> = Object.fromEntries(
-  statTypes.map((type) => [type, {
-    defaults: {
-      lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 2, h: 18 }, xxs: { w: 2, h: 18 },
+  statTypes.map((type) => [
+    type,
+    {
+      defaults: {
+        lg: { w: 3, h: 19 },
+        md: { w: 6, h: 18 },
+        sm: { w: 3, h: 18 },
+        xs: { w: 2, h: 18 },
+        xxs: { w: 2, h: 18 },
+      },
+      minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+      minH: { lg: 10, md: 10, sm: 10, xs: 10, xxs: 10 },
     },
-    minW: { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
-    minH: { lg: 10, md: 10, sm: 10, xs: 10, xxs: 10 },
-  }]),
+  ]),
 ) as Record<string, WidgetSpec>;
 
-function spec(type: string, defaults: Record<Breakpoint, GridSize>, minW: Record<Breakpoint, number>, minH: Record<Breakpoint, number>): void {
+function spec(
+  type: string,
+  defaults: Record<Breakpoint, GridSize>,
+  minW: Record<Breakpoint, number>,
+  minH: Record<Breakpoint, number>,
+): void {
   widgetSpecs[type] = { defaults, minW, minH };
 }
 
-spec("trend-chart", {
-  lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-  xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
-}, { lg: 4, md: 4, sm: 3, xs: 2, xxs: 2 }, { lg: 24, md: 24, sm: 24, xs: 22, xxs: 22 });
-spec("hourly-chart", {
-  lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
-  xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 20, md: 20, sm: 20, xs: 18, xxs: 18 });
-spec("category-donut", {
-  lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
-  xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
-spec("quick-actions", {
-  lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
-  xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
-}, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 16, md: 16, sm: 16, xs: 14, xxs: 14 });
+spec(
+  "trend-chart",
+  {
+    lg: { w: 8, h: 52 },
+    md: { w: 12, h: 44 },
+    sm: { w: 6, h: 44 },
+    xs: { w: 4, h: 42 },
+    xxs: { w: 4, h: 42 },
+  },
+  { lg: 4, md: 4, sm: 3, xs: 2, xxs: 2 },
+  { lg: 24, md: 24, sm: 24, xs: 22, xxs: 22 },
+);
+spec(
+  "hourly-chart",
+  {
+    lg: { w: 4, h: 40 },
+    md: { w: 6, h: 37 },
+    sm: { w: 3, h: 37 },
+    xs: { w: 4, h: 35 },
+    xxs: { w: 4, h: 35 },
+  },
+  { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+  { lg: 20, md: 20, sm: 20, xs: 18, xxs: 18 },
+);
+spec(
+  "category-donut",
+  {
+    lg: { w: 4, h: 34 },
+    md: { w: 6, h: 32 },
+    sm: { w: 3, h: 32 },
+    xs: { w: 4, h: 29 },
+    xxs: { w: 4, h: 29 },
+  },
+  { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+  { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 },
+);
+spec(
+  "quick-actions",
+  {
+    lg: { w: 4, h: 35 },
+    md: { w: 6, h: 31 },
+    sm: { w: 3, h: 31 },
+    xs: { w: 4, h: 20 },
+    xxs: { w: 4, h: 20 },
+  },
+  { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+  { lg: 16, md: 16, sm: 16, xs: 14, xxs: 14 },
+);
 for (const type of ["recent-posts", "recent-comments"]) {
-  spec(type, {
-    lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-    xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
-  }, { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 }, { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 });
+  spec(
+    type,
+    {
+      lg: { w: 6, h: 36 },
+      md: { w: 12, h: 32 },
+      sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 27 },
+      xxs: { w: 4, h: 27 },
+    },
+    { lg: 3, md: 3, sm: 3, xs: 2, xxs: 2 },
+    { lg: 18, md: 18, sm: 18, xs: 16, xxs: 16 },
+  );
 }
 for (const type of ["stellar-version", "system-version"]) {
-  spec(type, {
-    lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-    xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
-  }, { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 }, { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 });
+  spec(
+    type,
+    {
+      lg: { w: 4, h: 25 },
+      md: { w: 6, h: 23 },
+      sm: { w: 3, h: 23 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
+    },
+    { lg: 2, md: 2, sm: 2, xs: 2, xxs: 2 },
+    { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 },
+  );
 }
 
 function fallbackSpec(): WidgetSpec {
-  const defaults = Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [
-    bp,
-    { w: GRID_COLUMNS[bp] === 4 ? 4 : GRID_COLUMNS[bp] === 6 ? 6 : 6, h: 12 },
-  ])) as Record<Breakpoint, GridSize>;
+  const defaults = Object.fromEntries(
+    BREAKPOINT_ORDER.map((bp) => [bp, { w: GRID_COLUMNS[bp] === 4 ? 4 : GRID_COLUMNS[bp] === 6 ? 6 : 6, h: 12 }]),
+  ) as Record<Breakpoint, GridSize>;
   return {
     defaults,
     minW: Object.fromEntries(BREAKPOINT_ORDER.map((bp) => [bp, 1])) as Record<Breakpoint, number>,
@@ -171,7 +222,15 @@ function createInstanceId(type: string): string {
   return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function makeWidget(i: string, id: string, x: number, y: number, w: number, h: number, bp: Breakpoint): DashboardWidget {
+function makeWidget(
+  i: string,
+  id: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  bp: Breakpoint,
+): DashboardWidget {
   const constraints = getGridConstraints(id, bp);
   return {
     i,
@@ -261,7 +320,10 @@ function clampInt(value: unknown, min: number, max: number, fallback: number): n
   return Math.max(min, Math.min(max, n));
 }
 
-function overlaps(a: Pick<DashboardWidget, "x" | "y" | "w" | "h">, b: Pick<DashboardWidget, "x" | "y" | "w" | "h">): boolean {
+function overlaps(
+  a: Pick<DashboardWidget, "x" | "y" | "w" | "h">,
+  b: Pick<DashboardWidget, "x" | "y" | "w" | "h">,
+): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
@@ -300,130 +362,211 @@ export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
       type,
       {
         small: {
-          lg: { w: 2, h: 14 }, md: { w: 3, h: 14 }, sm: { w: 2, h: 14 },
-          xs: { w: 2, h: 14 }, xxs: { w: 2, h: 14 },
+          lg: { w: 2, h: 14 },
+          md: { w: 3, h: 14 },
+          sm: { w: 2, h: 14 },
+          xs: { w: 2, h: 14 },
+          xxs: { w: 2, h: 14 },
         },
         medium: {
-          lg: { w: 3, h: 19 }, md: { w: 6, h: 18 }, sm: { w: 3, h: 18 },
-          xs: { w: 2, h: 18 }, xxs: { w: 2, h: 18 },
+          lg: { w: 3, h: 19 },
+          md: { w: 6, h: 18 },
+          sm: { w: 3, h: 18 },
+          xs: { w: 2, h: 18 },
+          xxs: { w: 2, h: 18 },
         },
         large: {
-          lg: { w: 6, h: 19 }, md: { w: 12, h: 18 }, sm: { w: 6, h: 18 },
-          xs: { w: 4, h: 18 }, xxs: { w: 4, h: 18 },
+          lg: { w: 6, h: 19 },
+          md: { w: 12, h: 18 },
+          sm: { w: 6, h: 18 },
+          xs: { w: 4, h: 18 },
+          xxs: { w: 4, h: 18 },
         },
       },
     ]),
   ),
   "trend-chart": {
     small: {
-      lg: { w: 6, h: 36 }, md: { w: 6, h: 36 }, sm: { w: 6, h: 36 },
-      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+      lg: { w: 6, h: 36 },
+      md: { w: 6, h: 36 },
+      sm: { w: 6, h: 36 },
+      xs: { w: 4, h: 32 },
+      xxs: { w: 4, h: 32 },
     },
     medium: {
-      lg: { w: 8, h: 52 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
+      lg: { w: 8, h: 52 },
+      md: { w: 12, h: 44 },
+      sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 42 },
+      xxs: { w: 4, h: 42 },
     },
     large: {
-      lg: { w: 12, h: 52 }, md: { w: 12, h: 52 }, sm: { w: 6, h: 52 },
-      xs: { w: 4, h: 50 }, xxs: { w: 4, h: 50 },
+      lg: { w: 12, h: 52 },
+      md: { w: 12, h: 52 },
+      sm: { w: 6, h: 52 },
+      xs: { w: 4, h: 50 },
+      xxs: { w: 4, h: 50 },
     },
   },
   "hourly-chart": {
     small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 28 }, sm: { w: 3, h: 28 },
-      xs: { w: 4, h: 26 }, xxs: { w: 4, h: 26 },
+      lg: { w: 4, h: 28 },
+      md: { w: 6, h: 28 },
+      sm: { w: 3, h: 28 },
+      xs: { w: 4, h: 26 },
+      xxs: { w: 4, h: 26 },
     },
     medium: {
-      lg: { w: 4, h: 40 }, md: { w: 6, h: 37 }, sm: { w: 3, h: 37 },
-      xs: { w: 4, h: 35 }, xxs: { w: 4, h: 35 },
+      lg: { w: 4, h: 40 },
+      md: { w: 6, h: 37 },
+      sm: { w: 3, h: 37 },
+      xs: { w: 4, h: 35 },
+      xxs: { w: 4, h: 35 },
     },
     large: {
-      lg: { w: 6, h: 40 }, md: { w: 12, h: 37 }, sm: { w: 6, h: 37 },
-      xs: { w: 4, h: 42 }, xxs: { w: 4, h: 42 },
+      lg: { w: 6, h: 40 },
+      md: { w: 12, h: 37 },
+      sm: { w: 6, h: 37 },
+      xs: { w: 4, h: 42 },
+      xxs: { w: 4, h: 42 },
     },
   },
   "category-donut": {
     small: {
-      lg: { w: 3, h: 28 }, md: { w: 4, h: 28 }, sm: { w: 3, h: 28 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+      lg: { w: 3, h: 28 },
+      md: { w: 4, h: 28 },
+      sm: { w: 3, h: 28 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
     },
     medium: {
-      lg: { w: 4, h: 34 }, md: { w: 6, h: 32 }, sm: { w: 3, h: 32 },
-      xs: { w: 4, h: 29 }, xxs: { w: 4, h: 29 },
+      lg: { w: 4, h: 34 },
+      md: { w: 6, h: 32 },
+      sm: { w: 3, h: 32 },
+      xs: { w: 4, h: 29 },
+      xxs: { w: 4, h: 29 },
     },
     large: {
-      lg: { w: 6, h: 34 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+      lg: { w: 6, h: 34 },
+      md: { w: 12, h: 32 },
+      sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 36 },
+      xxs: { w: 4, h: 36 },
     },
   },
   "recent-posts": {
     small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+      lg: { w: 4, h: 28 },
+      md: { w: 6, h: 26 },
+      sm: { w: 6, h: 26 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
     },
     medium: {
-      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
+      lg: { w: 6, h: 36 },
+      md: { w: 12, h: 32 },
+      sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 27 },
+      xxs: { w: 4, h: 27 },
     },
     large: {
-      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+      lg: { w: 12, h: 36 },
+      md: { w: 12, h: 44 },
+      sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 36 },
+      xxs: { w: 4, h: 36 },
     },
   },
   "recent-comments": {
     small: {
-      lg: { w: 4, h: 28 }, md: { w: 6, h: 26 }, sm: { w: 6, h: 26 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+      lg: { w: 4, h: 28 },
+      md: { w: 6, h: 26 },
+      sm: { w: 6, h: 26 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
     },
     medium: {
-      lg: { w: 6, h: 36 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-      xs: { w: 4, h: 27 }, xxs: { w: 4, h: 27 },
+      lg: { w: 6, h: 36 },
+      md: { w: 12, h: 32 },
+      sm: { w: 6, h: 32 },
+      xs: { w: 4, h: 27 },
+      xxs: { w: 4, h: 27 },
     },
     large: {
-      lg: { w: 12, h: 36 }, md: { w: 12, h: 44 }, sm: { w: 6, h: 44 },
-      xs: { w: 4, h: 36 }, xxs: { w: 4, h: 36 },
+      lg: { w: 12, h: 36 },
+      md: { w: 12, h: 44 },
+      sm: { w: 6, h: 44 },
+      xs: { w: 4, h: 36 },
+      xxs: { w: 4, h: 36 },
     },
   },
   "quick-actions": {
     small: {
-      lg: { w: 3, h: 24 }, md: { w: 4, h: 22 }, sm: { w: 3, h: 22 },
-      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+      lg: { w: 3, h: 24 },
+      md: { w: 4, h: 22 },
+      sm: { w: 3, h: 22 },
+      xs: { w: 4, h: 16 },
+      xxs: { w: 4, h: 16 },
     },
     medium: {
-      lg: { w: 4, h: 35 }, md: { w: 6, h: 31 }, sm: { w: 3, h: 31 },
-      xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
+      lg: { w: 4, h: 35 },
+      md: { w: 6, h: 31 },
+      sm: { w: 3, h: 31 },
+      xs: { w: 4, h: 20 },
+      xxs: { w: 4, h: 20 },
     },
     large: {
-      lg: { w: 6, h: 35 }, md: { w: 12, h: 31 }, sm: { w: 6, h: 31 },
-      xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+      lg: { w: 6, h: 35 },
+      md: { w: 12, h: 31 },
+      sm: { w: 6, h: 31 },
+      xs: { w: 4, h: 32 },
+      xxs: { w: 4, h: 32 },
     },
   },
   "stellar-version": {
     small: {
-      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+      lg: { w: 3, h: 18 },
+      md: { w: 4, h: 18 },
+      sm: { w: 3, h: 18 },
+      xs: { w: 4, h: 16 },
+      xxs: { w: 4, h: 16 },
     },
     medium: {
-      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+      lg: { w: 4, h: 25 },
+      md: { w: 6, h: 23 },
+      sm: { w: 3, h: 23 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
     },
     large: {
-      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
-      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
+      lg: { w: 6, h: 25 },
+      md: { w: 12, h: 23 },
+      sm: { w: 6, h: 23 },
+      xs: { w: 4, h: 28 },
+      xxs: { w: 4, h: 28 },
     },
   },
   "system-version": {
     small: {
-      lg: { w: 3, h: 18 }, md: { w: 4, h: 18 }, sm: { w: 3, h: 18 },
-      xs: { w: 4, h: 16 }, xxs: { w: 4, h: 16 },
+      lg: { w: 3, h: 18 },
+      md: { w: 4, h: 18 },
+      sm: { w: 3, h: 18 },
+      xs: { w: 4, h: 16 },
+      xxs: { w: 4, h: 16 },
     },
     medium: {
-      lg: { w: 4, h: 25 }, md: { w: 6, h: 23 }, sm: { w: 3, h: 23 },
-      xs: { w: 4, h: 22 }, xxs: { w: 4, h: 22 },
+      lg: { w: 4, h: 25 },
+      md: { w: 6, h: 23 },
+      sm: { w: 3, h: 23 },
+      xs: { w: 4, h: 22 },
+      xxs: { w: 4, h: 22 },
     },
     large: {
-      lg: { w: 6, h: 25 }, md: { w: 12, h: 23 }, sm: { w: 6, h: 23 },
-      xs: { w: 4, h: 28 }, xxs: { w: 4, h: 28 },
+      lg: { w: 6, h: 25 },
+      md: { w: 12, h: 23 },
+      sm: { w: 6, h: 23 },
+      xs: { w: 4, h: 28 },
+      xxs: { w: 4, h: 28 },
     },
   },
 };
@@ -431,16 +574,25 @@ export const WIDGET_PRESET_SPECS: Record<string, WidgetPresetMatrix> = {
 /** 未知组件的显式兜底规格；已注册组件必须使用 WIDGET_PRESET_SPECS。 */
 const FALLBACK_PRESET_SPECS: WidgetPresetMatrix = {
   small: {
-    lg: { w: 4, h: 14 }, md: { w: 4, h: 14 }, sm: { w: 2, h: 14 },
-    xs: { w: 2, h: 14 }, xxs: { w: 2, h: 14 },
+    lg: { w: 4, h: 14 },
+    md: { w: 4, h: 14 },
+    sm: { w: 2, h: 14 },
+    xs: { w: 2, h: 14 },
+    xxs: { w: 2, h: 14 },
   },
   medium: {
-    lg: { w: 6, h: 20 }, md: { w: 6, h: 20 }, sm: { w: 4, h: 20 },
-    xs: { w: 4, h: 20 }, xxs: { w: 4, h: 20 },
+    lg: { w: 6, h: 20 },
+    md: { w: 6, h: 20 },
+    sm: { w: 4, h: 20 },
+    xs: { w: 4, h: 20 },
+    xxs: { w: 4, h: 20 },
   },
   large: {
-    lg: { w: 12, h: 32 }, md: { w: 12, h: 32 }, sm: { w: 6, h: 32 },
-    xs: { w: 4, h: 32 }, xxs: { w: 4, h: 32 },
+    lg: { w: 12, h: 32 },
+    md: { w: 12, h: 32 },
+    sm: { w: 6, h: 32 },
+    xs: { w: 4, h: 32 },
+    xxs: { w: 4, h: 32 },
   },
 };
 
@@ -455,7 +607,11 @@ export function getGridPresetSize(type: string, bp: Breakpoint, preset: WidgetSi
 }
 
 /** 将历史布局的任意尺寸映射到最近的三个预设之一。 */
-export function getWidgetSizePreset(widget: Pick<DashboardWidget, "w" | "h">, bp: Breakpoint, type: string): WidgetSizePreset {
+export function getWidgetSizePreset(
+  widget: Pick<DashboardWidget, "w" | "h">,
+  bp: Breakpoint,
+  type: string,
+): WidgetSizePreset {
   let closest = WIDGET_SIZE_PRESET_ORDER[0];
   let closestWidthDistance = Number.POSITIVE_INFINITY;
   let closestHeightDistance = Number.POSITIVE_INFINITY;
@@ -468,8 +624,8 @@ export function getWidgetSizePreset(widget: Pick<DashboardWidget, "w" | "h">, bp
     const widthDistance = Math.abs(widget.w - size.w);
     const heightDistance = Math.abs(widget.h - size.h);
     if (
-      widthDistance < closestWidthDistance
-      || (widthDistance === closestWidthDistance && heightDistance < closestHeightDistance)
+      widthDistance < closestWidthDistance ||
+      (widthDistance === closestWidthDistance && heightDistance < closestHeightDistance)
     ) {
       closest = preset;
       closestWidthDistance = widthDistance;
@@ -518,7 +674,8 @@ export function createDefaultGridWidget(
 function normalizeWidget(raw: unknown, bp: Breakpoint, index: number, used: Set<string>): DashboardWidget | null {
   if (!raw || typeof raw !== "object") return null;
   const source = raw as Partial<DashboardWidget> & { type?: unknown };
-  const id = typeof source.id === "string" && source.id ? source.id : typeof source.type === "string" ? source.type : "";
+  const id =
+    typeof source.id === "string" && source.id ? source.id : typeof source.type === "string" ? source.type : "";
   if (!id) return null;
   let instance = typeof source.i === "string" && source.i ? source.i : `${id}-${index + 1}`;
   while (used.has(instance)) instance = `${instance}-copy`;
@@ -540,7 +697,8 @@ function normalizeWidget(raw: unknown, bp: Breakpoint, index: number, used: Set<
     maxH: clampInt(source.maxH, constraints.minH, constraints.maxH, constraints.maxH),
     config: source.config && typeof source.config === "object" ? clone(source.config) : {},
   };
-  if (Array.isArray(source.permissions)) widget.permissions = source.permissions.filter((item): item is string => typeof item === "string");
+  if (Array.isArray(source.permissions))
+    widget.permissions = source.permissions.filter((item): item is string => typeof item === "string");
   return widget;
 }
 
@@ -592,9 +750,26 @@ export function migrateV6toV7(v6: any): any | null {
   }
 }
 
-interface LegacyResponsiveSize { l?: number; m?: number; s?: number }
-interface LegacyWidget { type?: unknown; size?: LegacyResponsiveSize; x?: number; y?: number; w?: number; h?: number }
-interface LegacySectionLayout { stats?: LegacyWidget[]; chartWide?: LegacyWidget | null; chartNarrow?: LegacyWidget[]; recents?: LegacyWidget[]; others?: LegacyWidget[] }
+interface LegacyResponsiveSize {
+  l?: number;
+  m?: number;
+  s?: number;
+}
+interface LegacyWidget {
+  type?: unknown;
+  size?: LegacyResponsiveSize;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+interface LegacySectionLayout {
+  stats?: LegacyWidget[];
+  chartWide?: LegacyWidget | null;
+  chartNarrow?: LegacyWidget[];
+  recents?: LegacyWidget[];
+  others?: LegacyWidget[];
+}
 
 function legacyItems(section: LegacySectionLayout): LegacyWidget[] {
   return [
@@ -621,14 +796,19 @@ function packLegacyItems(items: LegacyWidget[], bp: "l" | "m" | "s"): DashboardW
       cursorY += rowHeight;
       rowHeight = 0;
     }
-    const item = normalizeWidget({
-      i: `${legacy.type}-${index + 1}`,
-      id: legacy.type,
-      x: cursorX,
-      y: cursorY,
-      w: width,
-      h: defaults.h,
-    }, target, index, new Set(result.map((widget) => widget.i)));
+    const item = normalizeWidget(
+      {
+        i: `${legacy.type}-${index + 1}`,
+        id: legacy.type,
+        x: cursorX,
+        y: cursorY,
+        w: width,
+        h: defaults.h,
+      },
+      target,
+      index,
+      new Set(result.map((widget) => widget.i)),
+    );
     if (item) {
       result.push(item);
       cursorX = item.x + item.w;
@@ -678,7 +858,12 @@ function scaleWidget(
   };
 }
 
-function convertWidgets(items: DashboardWidget[], from: number, sourceBp: Breakpoint, bp: Breakpoint): DashboardWidget[] {
+function convertWidgets(
+  items: DashboardWidget[],
+  from: number,
+  sourceBp: Breakpoint,
+  bp: Breakpoint,
+): DashboardWidget[] {
   const result: DashboardWidget[] = [];
   for (const [index, item] of items.entries()) {
     const scaled = scaleWidget(item, from, GRID_COLUMNS[bp], sourceBp, bp, index);
@@ -759,17 +944,24 @@ export function nodesToGridWidgets(
 ): DashboardWidget[] {
   return nodes
     .map((node, index) => {
-      const instance = typeof node.i === "string" ? node.i : typeof node.id === "string" ? node.id : `widget-${index + 1}`;
-      const definition = typeof node.widgetId === "string" ? node.widgetId : typeof node.id === "string" ? node.id : instance;
-      return normalizeWidget({
-        ...node,
-        i: instance,
-        id: definition,
-        x: Math.max(0, Math.round(node.x ?? 0)),
-        y: Math.max(0, Math.round(node.y ?? 0)),
-        w: Math.max(1, Math.round(node.w ?? 1)),
-        h: Math.max(1, Math.round(node.h ?? 1)),
-      }, bp, index, new Set());
+      const instance =
+        typeof node.i === "string" ? node.i : typeof node.id === "string" ? node.id : `widget-${index + 1}`;
+      const definition =
+        typeof node.widgetId === "string" ? node.widgetId : typeof node.id === "string" ? node.id : instance;
+      return normalizeWidget(
+        {
+          ...node,
+          i: instance,
+          id: definition,
+          x: Math.max(0, Math.round(node.x ?? 0)),
+          y: Math.max(0, Math.round(node.y ?? 0)),
+          w: Math.max(1, Math.round(node.w ?? 1)),
+          h: Math.max(1, Math.round(node.h ?? 1)),
+        },
+        bp,
+        index,
+        new Set(),
+      );
     })
     .filter((node): node is DashboardWidget => Boolean(node))
     .sort((a, b) => a.y - b.y || a.x - b.x || a.i.localeCompare(b.i));
@@ -803,14 +995,7 @@ export function copyLayoutToBreakpoint(
   const sourceWidgets = layout[source] ?? [];
   const copied: DashboardWidget[] = [];
   for (const [index, sourceWidget] of sourceWidgets.entries()) {
-    const scaled = scaleWidget(
-      sourceWidget,
-      GRID_COLUMNS[source],
-      GRID_COLUMNS[target],
-      source,
-      target,
-      index,
-    );
+    const scaled = scaleWidget(sourceWidget, GRID_COLUMNS[source], GRID_COLUMNS[target], source, target, index);
     const position = findFreeGridPosition(copied, scaled, target);
     copied.push({ ...scaled, ...position, i: `${sourceWidget.i}-copy-${target}-${index + 1}` });
   }

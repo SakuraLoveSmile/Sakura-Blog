@@ -66,7 +66,11 @@ const queryParams = computed(() => {
   return params;
 });
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => queryKeys.pages(queryParams.value)),
   queryFn: () => pageApi.list(queryParams.value).then(({ data }) => data as { items: PageItem[]; total: number }),
 });
@@ -265,7 +269,9 @@ function statusBadge(status: string) {
           </div>
           <div>
             <div class="stats-label">已公开发布</div>
-            <div class="stats-value text-[#30D158]">{{ stats.publishedCount }} <span class="stats-sub">个正常展示</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ stats.publishedCount }} <span class="stats-sub">个正常展示</span>
+            </div>
           </div>
         </div>
 
@@ -275,7 +281,9 @@ function statusBadge(status: string) {
           </div>
           <div>
             <div class="stats-label">草稿状态</div>
-            <div class="stats-value text-[#FF9500]">{{ stats.draftCount }} <span class="stats-sub">个未发布草稿</span></div>
+            <div class="stats-value text-[#FF9500]">
+              {{ stats.draftCount }} <span class="stats-sub">个未发布草稿</span>
+            </div>
           </div>
         </div>
 
@@ -299,7 +307,10 @@ function statusBadge(status: string) {
             :key="st.key"
             type="button"
             :class="{ active: selectedStatus === st.key }"
-            @click="selectedStatus = st.key; page = 1"
+            @click="
+              selectedStatus = st.key;
+              page = 1;
+            "
           >
             <Icon :icon="st.icon" class="mr-1 inline-block" />
             {{ st.label }}
@@ -319,16 +330,11 @@ function statusBadge(status: string) {
             class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
             @click="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
           >
-            {{ selectedSlugs.size === pages.length ? '取消全选' : '全选本页' }}
+            {{ selectedSlugs.size === pages.length ? "取消全选" : "全选本页" }}
           </button>
 
           <div class="apple-segmented">
-            <button
-              type="button"
-              :class="{ active: viewMode === 'grid' }"
-              title="卡片视图"
-              @click="viewMode = 'grid'"
-            >
+            <button type="button" :class="{ active: viewMode === 'grid' }" title="卡片视图" @click="viewMode = 'grid'">
               <Icon icon="ri:layout-grid-line" />
             </button>
             <button
@@ -352,10 +358,7 @@ function statusBadge(status: string) {
       />
 
       <!-- ============ 模式 1：卡片网格视图 ============ -->
-      <div
-        v-else-if="viewMode === 'grid'"
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      >
+      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <div
           v-for="p in pages"
           :key="p.slug"
@@ -372,10 +375,7 @@ function statusBadge(status: string) {
                   class="h-4 w-4 rounded border-border text-primary cursor-pointer"
                   @change="toggleSelect(p.slug)"
                 />
-                <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                  :class="statusBadge(p.status).cls"
-                >
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
                   {{ statusBadge(p.status).label }}
                 </span>
                 <span
@@ -515,14 +515,9 @@ function statusBadge(status: string) {
                     </span>
                   </div>
                 </td>
-                <td class="px-4 py-3.5 font-mono text-xs text-text-tertiary">
-                  /{{ p.slug }}
-                </td>
+                <td class="px-4 py-3.5 font-mono text-xs text-text-tertiary">/{{ p.slug }}</td>
                 <td class="px-4 py-3.5 text-xs">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    :class="statusBadge(p.status).cls"
-                  >
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
                     {{ statusBadge(p.status).label }}
                   </span>
                 </td>
@@ -607,9 +602,7 @@ function statusBadge(status: string) {
       @clear="clearSelection"
     >
       <div class="flex items-center gap-2">
-        <VButton size="sm" type="danger" @click="handleBatchDelete">
-          批量移入回收站
-        </VButton>
+        <VButton size="sm" type="danger" @click="handleBatchDelete"> 批量移入回收站 </VButton>
       </div>
     </VFloatingDock>
   </div>

@@ -1,69 +1,67 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from"vue";
-import { Icon } from"@iconify/vue";
-import { previewApi } from"@/api";
-import {
- type PluginMeta,
-} from"@/modules/plugins/plugin-types";
-import { PLUGIN_CATEGORIES } from"@/modules/plugins/plugin-types";
-import { loadPluginCatalog, runtimePlugins } from"@/modules/plugins/usePluginCatalog";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { Icon } from "@iconify/vue";
+import { previewApi } from "@/api";
+import { type PluginMeta } from "@/modules/plugins/plugin-types";
+import { PLUGIN_CATEGORIES } from "@/modules/plugins/plugin-types";
+import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCatalog";
 
 // 编辑器顶部工具栏（对照 Halo 编辑器）：
 // 左侧「+」插入下拉（Stellar 标签，悬停出预览气泡）+ 格式化按钮组 + 图片；
 // 右侧 AI 属性生成、编辑/分屏/预览三态切换（仅 Markdown 模式）、右侧面板开关。
 // 格式化按钮发语义化 format(id) 事件，由宿主路由到富文本/Markdown 编辑器。
-type ViewMode ="edit" |"split" |"preview";
-type EditorKind ="rich" |"markdown";
+type ViewMode = "edit" | "split" | "preview";
+type EditorKind = "rich" | "markdown";
 
 const props = defineProps<{
- kind: EditorKind;
- mode: ViewMode;
- sidebarOpen: boolean;
- isEdit: boolean;
- fullscreen: boolean;
- activeStates?: Record<string, boolean>;
+  kind: EditorKind;
+  mode: ViewMode;
+  sidebarOpen: boolean;
+  isEdit: boolean;
+  fullscreen: boolean;
+  activeStates?: Record<string, boolean>;
 }>();
 
 const emit = defineEmits<{
- (e:"format", id: string): void;
- (e:"insert", text: string): void;
- (e:"upload"): void;
- (e:"pick"): void;
- (e:"update:mode", mode: ViewMode): void;
- (e:"toggleSidebar"): void;
- (e:"openAi"): void;
- (e:"preview"): void;
- (e:"toggleFullscreen"): void;
- (e:"openRevision"): void;
+  (e: "format", id: string): void;
+  (e: "insert", text: string): void;
+  (e: "upload"): void;
+  (e: "pick"): void;
+  (e: "update:mode", mode: ViewMode): void;
+  (e: "toggleSidebar"): void;
+  (e: "openAi"): void;
+  (e: "preview"): void;
+  (e: "toggleFullscreen"): void;
+  (e: "openRevision"): void;
 }>();
 
 // 格式化按钮（id 与 RichTextEditor.applyFormat / PostEditor markdown 映射表一致）
 const formatTools = [
- { id:"bold", icon:"ri:bold", title:"加粗 (Cmd/Ctrl+B)" },
- { id:"italic", icon:"ri:italic", title:"斜体 (Cmd/Ctrl+I)" },
- { id:"strike", icon:"ri:strikethrough", title:"删除线" },
- { id:"heading", icon:"ri:heading", title:"标题" },
- { id:"link", icon:"ri:link", title:"链接 (Cmd/Ctrl+K)" },
- { id:"quote", icon:"ri:double-quotes-l", title:"引用" },
- { id:"code", icon:"ri:code-line", title:"行内代码" },
- { id:"codeblock", icon:"ri:code-box-line", title:"代码块" },
- { id:"ul", icon:"ri:list-unordered", title:"无序列表" },
- { id:"ol", icon:"ri:list-ordered", title:"有序列表" },
- { id:"table", icon:"ri:table-2", title:"插入表格" },
+  { id: "bold", icon: "ri:bold", title: "加粗 (Cmd/Ctrl+B)" },
+  { id: "italic", icon: "ri:italic", title: "斜体 (Cmd/Ctrl+I)" },
+  { id: "strike", icon: "ri:strikethrough", title: "删除线" },
+  { id: "heading", icon: "ri:heading", title: "标题" },
+  { id: "link", icon: "ri:link", title: "链接 (Cmd/Ctrl+K)" },
+  { id: "quote", icon: "ri:double-quotes-l", title: "引用" },
+  { id: "code", icon: "ri:code-line", title: "行内代码" },
+  { id: "codeblock", icon: "ri:code-box-line", title: "代码块" },
+  { id: "ul", icon: "ri:list-unordered", title: "无序列表" },
+  { id: "ol", icon: "ri:list-ordered", title: "有序列表" },
+  { id: "table", icon: "ri:table-2", title: "插入表格" },
 ];
 
 const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
- { value:"edit", icon:"ri:edit-2-line", title:"仅编辑" },
- { value:"split", icon:"ri:layout-column-line", title:"即时渲染（分屏预览）" },
- { value:"preview", icon:"ri:eye-line", title:"仅预览" },
+  { value: "edit", icon: "ri:edit-2-line", title: "仅编辑" },
+  { value: "split", icon: "ri:layout-column-line", title: "即时渲染（分屏预览）" },
+  { value: "preview", icon: "ri:eye-line", title: "仅预览" },
 ];
 
 // 格式化按钮按设计稿分组（组间左边框分隔）
-const formatGroupText = ["bold","italic","strike","heading"];
-const formatGroupInsert = ["link","quote","code","codeblock"];
-const formatGroupList = ["ul","ol","table"];
+const formatGroupText = ["bold", "italic", "strike", "heading"];
+const formatGroupInsert = ["link", "quote", "code", "codeblock"];
+const formatGroupList = ["ul", "ol", "table"];
 function toolsById(ids: string[]) {
- return formatTools.filter((t) => ids.includes(t.id));
+  return formatTools.filter((t) => ids.includes(t.id));
 }
 
 // ---------- 「+」插入下拉：Stellar 标签插件，悬停出预览气泡 ----------
@@ -73,45 +71,45 @@ const dropdownRef = ref<HTMLElement | null>(null);
 
 // 按分类分组（保持 PLUGIN_CATEGORIES 顺序）
 const groupedPlugins = computed(() =>
- PLUGIN_CATEGORIES.map((cat) => ({
- cat,
-  items: runtimePlugins.value.filter((p) => p.category === cat),
- })).filter((g) => g.items.length > 0)
+  PLUGIN_CATEGORIES.map((cat) => ({
+    cat,
+    items: runtimePlugins.value.filter((p) => p.category === cat),
+  })).filter((g) => g.items.length > 0),
 );
 
 // 分类图标（菜单项左侧，对照 Halo 插入菜单的 icon+文字样式）
 const categoryIcons: Record<string, string> = {
- 提示标注:"ri:alert-line",
- 布局容器:"ri:layout-grid-line",
- 媒体播放:"ri:play-circle-line",
- 数据图表:"ri:bar-chart-2-line",
- GitHub:"ri:github-line",
+  提示标注: "ri:alert-line",
+  布局容器: "ri:layout-grid-line",
+  媒体播放: "ri:play-circle-line",
+  数据图表: "ri:bar-chart-2-line",
+  GitHub: "ri:github-line",
 };
 
 function toggleInsert() {
- insertOpen.value = !insertOpen.value;
- if (!insertOpen.value) hideBubble();
+  insertOpen.value = !insertOpen.value;
+  if (!insertOpen.value) hideBubble();
 }
 
 function onDocClick(e: MouseEvent) {
- if (insertOpen.value && dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
- insertOpen.value = false;
- hideBubble();
- }
+  if (insertOpen.value && dropdownRef.value && !dropdownRef.value.contains(e.target as Node)) {
+    insertOpen.value = false;
+    hideBubble();
+  }
 }
 onMounted(() => {
- loadPluginCatalog();
- document.addEventListener("click", onDocClick);
+  loadPluginCatalog();
+  document.addEventListener("click", onDocClick);
 });
 onBeforeUnmount(() => {
- document.removeEventListener("click", onDocClick);
- clearTimeout(hoverTimer);
+  document.removeEventListener("click", onDocClick);
+  clearTimeout(hoverTimer);
 });
 
 function insertPlugin(p: PluginMeta) {
- emit("insert","\n" + p.example +"\n");
- insertOpen.value = false;
- hideBubble();
+  emit("insert", "\n" + p.example + "\n");
+  insertOpen.value = false;
+  hideBubble();
 }
 
 // ---------- 悬停预览气泡（300ms 防抖；渲染结果按插件名缓存） ----------
@@ -124,46 +122,46 @@ const previewCache = new Map<string, string>();
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 
 function onItemEnter(p: PluginMeta, e: MouseEvent) {
- clearTimeout(hoverTimer);
- const item = e.currentTarget as HTMLElement;
- hoverTimer = setTimeout(async () => {
- bubblePlugin.value = p;
- // 气泡顶部与菜单项对齐（相对下拉容器），限制不超出下拉高度
- const menu = dropdownRef.value?.querySelector(".insert-menu") as HTMLElement | null;
- bubbleTop.value = Math.max(0, item.offsetTop - (menu?.scrollTop || 0));
- const cached = previewCache.get(p.name);
- if (cached !== undefined) {
- bubbleHtml.value = cached;
- return;
- }
- bubbleLoading.value = true;
- bubbleHtml.value ="";
- try {
- const { data } = await previewApi.render(p.example);
- previewCache.set(p.name, data.html);
- // 请求返回时鼠标可能已移到其他项，只有仍悬停在该项才展示
- if (bubblePlugin.value?.name === p.name) bubbleHtml.value = data.html;
- } catch {
- if (bubblePlugin.value?.name === p.name) bubbleHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
- } finally {
- bubbleLoading.value = false;
- }
- }, 300);
+  clearTimeout(hoverTimer);
+  const item = e.currentTarget as HTMLElement;
+  hoverTimer = setTimeout(async () => {
+    bubblePlugin.value = p;
+    // 气泡顶部与菜单项对齐（相对下拉容器），限制不超出下拉高度
+    const menu = dropdownRef.value?.querySelector(".insert-menu") as HTMLElement | null;
+    bubbleTop.value = Math.max(0, item.offsetTop - (menu?.scrollTop || 0));
+    const cached = previewCache.get(p.name);
+    if (cached !== undefined) {
+      bubbleHtml.value = cached;
+      return;
+    }
+    bubbleLoading.value = true;
+    bubbleHtml.value = "";
+    try {
+      const { data } = await previewApi.render(p.example);
+      previewCache.set(p.name, data.html);
+      // 请求返回时鼠标可能已移到其他项，只有仍悬停在该项才展示
+      if (bubblePlugin.value?.name === p.name) bubbleHtml.value = data.html;
+    } catch {
+      if (bubblePlugin.value?.name === p.name) bubbleHtml.value = '<p style="color:#ef4444">预览渲染失败</p>';
+    } finally {
+      bubbleLoading.value = false;
+    }
+  }, 300);
 }
 
 function onItemLeave() {
- clearTimeout(hoverTimer);
+  clearTimeout(hoverTimer);
 }
 
 function hideBubble() {
- clearTimeout(hoverTimer);
- bubblePlugin.value = null;
- bubbleHtml.value ="";
+  clearTimeout(hoverTimer);
+  bubblePlugin.value = null;
+  bubbleHtml.value = "";
 }
 
 // 预览气泡 iframe：深色-only，固定 dark 主题
 const bubbleSrcdoc = computed(() => {
- return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html data-theme="dark">
 <head>
 <meta charset="utf-8">
@@ -179,39 +177,27 @@ const bubbleSrcdoc = computed(() => {
 // 工具栏按钮统一样式（Apple 风：32px、rounded-lg、hover 灰底）。
 // 激活态用 scoped 的 .btn-active（浅蓝 tint 底 + 蓝色图标）——不叠工具类，
 // 避免 text-primary-foreground 等颜色工具类在级联中被 btnChrome 覆盖失效。
-const btnBase =
-  "flex h-8 w-8 items-center justify-center rounded-lg transition-colors";
-const btnChrome =
-  "text-text-secondary hover:bg-secondary hover:text-foreground";
+const btnBase = "flex h-8 w-8 items-center justify-center rounded-lg transition-colors";
+const btnChrome = "text-text-secondary hover:bg-secondary hover:text-foreground";
 const btnActive = "btn-active";
 </script>
 
 <template>
-  <div
-    class="flex items-center gap-0 overflow-x-auto px-4 py-2"
-  >
+  <div class="flex items-center gap-0 overflow-x-auto px-4 py-2">
     <!-- 分组 1：插入 Stellar 标签 -->
     <div class="flex items-center gap-0.5 px-1.5">
       <div ref="dropdownRef" class="relative">
         <button
           type="button"
           title="插入 Stellar 标签"
-          :class="[
-            btnBase,
-            insertOpen ? btnActive : btnChrome,
-          ]"
+          :class="[btnBase, insertOpen ? btnActive : btnChrome]"
           @click="toggleInsert"
         >
           <Icon icon="ri:add-line" class="text-lg" />
         </button>
 
-        <div
-          v-if="insertOpen"
-          class="absolute left-0 top-full z-30 mt-1 flex items-start"
-        >
-          <div
-            class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg"
-          >
+        <div v-if="insertOpen" class="absolute left-0 top-full z-30 mt-1 flex items-start">
+          <div class="insert-menu max-h-96 w-52 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg">
             <template v-for="group in groupedPlugins" :key="group.cat">
               <div class="flex items-center gap-1.5 px-3 pb-1 pt-2 text-[11px] text-text-quaternary">
                 <Icon :icon="categoryIcons[group.cat] || 'ri:puzzle-line'" />
@@ -245,7 +231,7 @@ const btnActive = "btn-active";
               v-if="bubbleHtml"
               :srcdoc="bubbleSrcdoc"
               class="block w-full border-0 bg-card"
-              style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto;"
+              style="min-height: 180px; max-height: 360px; resize: vertical; overflow: auto"
               sandbox="allow-same-origin allow-scripts"
               title="标签预览"
             ></iframe>
@@ -338,10 +324,7 @@ const btnActive = "btn-active";
     </div>
 
     <!-- 编辑 / 分屏 / 预览 三态切换（仅 Markdown 模式） -->
-    <div
-      v-if="props.kind === 'markdown'"
-      class="ml-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5"
-    >
+    <div v-if="props.kind === 'markdown'" class="ml-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5">
       <button
         v-for="btn in modeButtons"
         :key="btn.value"
@@ -349,9 +332,7 @@ const btnActive = "btn-active";
         :title="btn.title"
         :class="[
           'flex h-7 items-center justify-center rounded-md px-2.5 text-base transition-colors',
-          props.mode === btn.value
-            ? 'bg-card text-primary shadow-sm'
-            : 'text-text-tertiary hover:text-foreground',
+          props.mode === btn.value ? 'bg-card text-primary shadow-sm' : 'text-text-tertiary hover:text-foreground',
         ]"
         @click="emit('update:mode', btn.value)"
       >

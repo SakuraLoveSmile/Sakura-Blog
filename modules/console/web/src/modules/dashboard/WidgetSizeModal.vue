@@ -17,7 +17,7 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   "update:visible": [value: boolean];
-  "save": [preset: WidgetSizePreset];
+  save: [preset: WidgetSizePreset];
 }>();
 
 const modalVisible = computed({
@@ -45,12 +45,15 @@ const breakpointLabel: Record<Breakpoint, string> = {
   xxs: "手机",
 };
 
-const presetMeta: Record<WidgetSizePreset, {
-  label: string;
-  title: string;
-  description: string;
-  icon: string;
-}> = {
+const presetMeta: Record<
+  WidgetSizePreset,
+  {
+    label: string;
+    title: string;
+    description: string;
+    icon: string;
+  }
+> = {
   small: {
     label: "小",
     title: "紧凑速览",
@@ -71,11 +74,13 @@ const presetMeta: Record<WidgetSizePreset, {
   },
 };
 
-const sizeOptions = computed(() => getWidgetPresetOptions(props.widgetId, props.breakpoint).map(({ preset, size }) => ({
-  key: preset,
-  ...presetMeta[preset],
-  size,
-})));
+const sizeOptions = computed(() =>
+  getWidgetPresetOptions(props.widgetId, props.breakpoint).map(({ preset, size }) => ({
+    key: preset,
+    ...presetMeta[preset],
+    size,
+  })),
+);
 
 function save() {
   emit("save", selectedPreset.value);

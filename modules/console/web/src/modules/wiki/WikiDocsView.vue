@@ -61,7 +61,7 @@ const visibleTree = computed<FlatNode[]>(() => {
     return flatTree.value.filter(
       (n) =>
         (n.doc.title && n.doc.title.toLowerCase().includes(kw)) ||
-        (n.doc.slug && n.doc.slug.toLowerCase().includes(kw))
+        (n.doc.slug && n.doc.slug.toLowerCase().includes(kw)),
     );
   }
 
@@ -107,9 +107,7 @@ const childCountMap = computed<Record<number, number>>(() => {
 
 // ---------- 统计数据 ----------
 const totalDocs = computed(() => docs.value.length);
-const currentProject = computed(() =>
-  projects.value.find((p) => p.id === activeProject.value) || null
-);
+const currentProject = computed(() => projects.value.find((p) => p.id === activeProject.value) || null);
 const thisMonthUpdates = computed(() => {
   const now = new Date();
   const y = now.getFullYear();
@@ -119,9 +117,7 @@ const thisMonthUpdates = computed(() => {
     return !isNaN(t.getTime()) && t.getFullYear() === y && t.getMonth() === m;
   }).length;
 });
-const draftDocsCount = computed(() =>
-  docs.value.filter((d) => d.status === "draft").length
-);
+const draftDocsCount = computed(() => docs.value.filter((d) => d.status === "draft").length);
 
 // 面包屑
 const breadcrumb = computed<{ title: string; slug?: string }[]>(() => {
@@ -281,9 +277,7 @@ async function loadDocs() {
     const { data } = await wikiApi.listDocs(activeProject.value);
     docs.value = data.docs || [];
     flatTree.value = flatten(data.tree || []);
-    expanded.value = new Set(
-      flatTree.value.filter((n) => n.hasChildren).map((n) => n.doc.id)
-    );
+    expanded.value = new Set(flatTree.value.filter((n) => n.hasChildren).map((n) => n.doc.id));
   } catch (e: any) {
     Toast.error(e?.response?.data?.error || "加载文档失败");
   } finally {
@@ -415,9 +409,7 @@ onMounted(loadProjects);
         message="请先前往「文库项目」创建你的第一个技术知识库合辑"
       >
         <template #actions>
-          <VButton type="primary" :route="{ path: '/wiki/projects' }">
-            前往新建项目
-          </VButton>
+          <VButton type="primary" :route="{ path: '/wiki/projects' }"> 前往新建项目 </VButton>
         </template>
       </VEmpty>
 
@@ -440,7 +432,9 @@ onMounted(loadProjects);
             </div>
             <div>
               <div class="stats-label">已公开发布</div>
-              <div class="stats-value text-[#30D158]">{{ totalDocs - draftDocsCount }} <span class="stats-sub">篇可在线查阅</span></div>
+              <div class="stats-value text-[#30D158]">
+                {{ totalDocs - draftDocsCount }} <span class="stats-sub">篇可在线查阅</span>
+              </div>
             </div>
           </div>
 
@@ -450,7 +444,9 @@ onMounted(loadProjects);
             </div>
             <div>
               <div class="stats-label">草稿状态</div>
-              <div class="stats-value text-[#FF9500]">{{ draftDocsCount }} <span class="stats-sub">篇暂未发布</span></div>
+              <div class="stats-value text-[#FF9500]">
+                {{ draftDocsCount }} <span class="stats-sub">篇暂未发布</span>
+              </div>
             </div>
           </div>
 
@@ -474,7 +470,12 @@ onMounted(loadProjects);
               <div class="apple-search !py-1">
                 <Icon icon="ri:search-line" class="text-text-quaternary" />
                 <input v-model="treeKeyword" placeholder="过滤文档标题或 Slug..." />
-                <button v-if="treeKeyword" type="button" class="text-text-quaternary hover:text-foreground" @click="treeKeyword = ''">
+                <button
+                  v-if="treeKeyword"
+                  type="button"
+                  class="text-text-quaternary hover:text-foreground"
+                  @click="treeKeyword = ''"
+                >
                   <Icon icon="ri:close-line" />
                 </button>
               </div>
@@ -512,7 +513,10 @@ onMounted(loadProjects);
                   class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
                   :style="{ paddingLeft: `${8 + node.depth * 14}px` }"
                 >
-                  <div class="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer" @click="toggleFolder(node.doc.id)">
+                  <div
+                    class="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"
+                    @click="toggleFolder(node.doc.id)"
+                  >
                     <Icon
                       icon="ri:arrow-right-s-line"
                       class="shrink-0 text-text-quaternary transition-transform duration-200"
@@ -523,7 +527,10 @@ onMounted(loadProjects);
                   </div>
 
                   <div class="flex items-center gap-1">
-                    <span v-if="childCountMap[node.doc.id]" class="rounded bg-secondary px-1.5 py-0.2 font-mono text-[10px] text-text-quaternary">
+                    <span
+                      v-if="childCountMap[node.doc.id]"
+                      class="rounded bg-secondary px-1.5 py-0.2 font-mono text-[10px] text-text-quaternary"
+                    >
                       {{ childCountMap[node.doc.id] }}
                     </span>
                     <button
@@ -544,7 +551,7 @@ onMounted(loadProjects);
                   :class="[
                     selectedSlug === node.doc.slug
                       ? 'bg-primary text-white font-semibold'
-                      : 'text-text-secondary hover:bg-secondary hover:text-foreground'
+                      : 'text-text-secondary hover:bg-secondary hover:text-foreground',
                   ]"
                   :style="{ paddingLeft: `${18 + node.depth * 14}px` }"
                   @click="selectDoc(node.doc.slug)"
@@ -577,13 +584,13 @@ onMounted(loadProjects);
 
             <!-- 未选择文档状态 -->
             <VCard v-else-if="!hasCurrent" class="py-16 text-center">
-              <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-3xl text-text-tertiary">
+              <div
+                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-3xl text-text-tertiary"
+              >
                 <Icon icon="ri:file-edit-line" />
               </div>
               <h3 class="mt-4 text-base font-semibold text-foreground">选择左侧文档开始编排</h3>
-              <p class="mt-1 text-xs text-text-quaternary">
-                可在左侧树形大纲中点击任意文档，或点击右上角「新建文档」
-              </p>
+              <p class="mt-1 text-xs text-text-quaternary">可在左侧树形大纲中点击任意文档，或点击右上角「新建文档」</p>
               <div class="mt-5 flex justify-center gap-3">
                 <VButton type="primary" @click="openCreate(0)">
                   <template #icon><Icon icon="ri:add-line" /></template>
@@ -601,7 +608,7 @@ onMounted(loadProjects);
                   <span
                     class="cursor-pointer hover:text-foreground"
                     :class="{ 'font-semibold text-foreground': idx === breadcrumb.length - 1 }"
-                    @click="idx === 0 ? selectAllDocs() : (crumb.slug ? selectDoc(crumb.slug) : null)"
+                    @click="idx === 0 ? selectAllDocs() : crumb.slug ? selectDoc(crumb.slug) : null"
                   >
                     {{ crumb.title }}
                   </span>
@@ -656,9 +663,7 @@ onMounted(loadProjects);
                       删除
                     </VButton>
                   </div>
-                  <span class="text-xs text-text-quaternary">
-                    快捷键 ⌘ + S 实时保存
-                  </span>
+                  <span class="text-xs text-text-quaternary"> 快捷键 ⌘ + S 实时保存 </span>
                 </div>
               </template>
             </VCard>
@@ -668,11 +673,7 @@ onMounted(loadProjects);
     </div>
 
     <!-- 新建文档弹窗 -->
-    <VModal
-      v-model:visible="createOpen"
-      title="新建 Wiki 文档"
-      :width="440"
-    >
+    <VModal v-model:visible="createOpen" title="新建 Wiki 文档" :width="440">
       <div class="space-y-4">
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">文档标题 *</label>

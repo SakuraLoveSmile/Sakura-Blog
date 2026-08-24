@@ -95,10 +95,7 @@ function formFromProject(p: WikiProject): ProjectForm {
       title: hero.title || "",
       description: hero.description || "",
       start: hero.start || "",
-      previewType:
-        preview.type === "terminal" || preview.type === "image"
-          ? preview.type
-          : "",
+      previewType: preview.type === "terminal" || preview.type === "image" ? preview.type : "",
       previewImage: preview.image || "",
       commandsText: commands.join("\n"),
       actions: (hero.actions || []).map((a) => ({
@@ -118,9 +115,7 @@ const saving = ref(false);
 const deleting = ref(false);
 const error = ref("");
 
-const selectedProject = computed(
-  () => projects.value.find((p) => p.id === selectedId.value) || null
-);
+const selectedProject = computed(() => projects.value.find((p) => p.id === selectedId.value) || null);
 const isEditing = computed(() => Boolean(selectedId.value));
 
 // ---------- 统计数据 ----------
@@ -149,8 +144,7 @@ async function loadProjects(selectID = "") {
     const { data } = await wikiApi.listProjects();
     projects.value = Array.isArray(data.items) ? data.items : [];
     const target = selectID || selectedId.value;
-    const project =
-      projects.value.find((p) => p.id === target) || projects.value[0];
+    const project = projects.value.find((p) => p.id === target) || projects.value[0];
     if (project) selectProject(project);
     else {
       selectedId.value = "";
@@ -200,9 +194,7 @@ function buildHero() {
     ? {
         type: h.previewType,
         ...(h.previewImage.trim() ? { image: h.previewImage.trim() } : {}),
-        ...(commands.length
-          ? { commands: commands.map((code) => ({ codes: [code] })) }
-          : {}),
+        ...(commands.length ? { commands: commands.map((code) => ({ codes: [code] })) } : {}),
       }
     : undefined;
   const hero = {
@@ -213,10 +205,7 @@ function buildHero() {
     ...(preview ? { preview } : {}),
     ...(actions.length ? { actions } : {}),
   };
-  return Object.values(hero).some(
-    (value) =>
-      value && (typeof value !== "object" || Object.keys(value).length)
-  )
+  return Object.values(hero).some((value) => value && (typeof value !== "object" || Object.keys(value).length))
     ? hero
     : undefined;
 }
@@ -259,8 +248,7 @@ async function saveProject() {
   }
   saving.value = true;
   try {
-    if (isEditing.value)
-      await wikiApi.updateProject(selectedId.value, payload());
+    if (isEditing.value) await wikiApi.updateProject(selectedId.value, payload());
     else await wikiApi.createProject(payload() as any);
     Toast.success(isEditing.value ? "Wiki 项目已保存" : "Wiki 项目已创建");
     await loadProjects(id);
@@ -336,7 +324,9 @@ onMounted(() => loadProjects());
           </div>
           <div>
             <div class="stats-label">文档收录</div>
-            <div class="stats-value text-[#30D158]">{{ stats.totalDocs }} <span class="stats-sub">篇在册文档</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ stats.totalDocs }} <span class="stats-sub">篇在册文档</span>
+            </div>
           </div>
         </div>
 
@@ -367,17 +357,13 @@ onMounted(() => loadProjects());
         <!-- 左侧项目列表 -->
         <div class="space-y-3 lg:col-span-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">项目列表 ({{ projects.length }})</span>
-            <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">
-              + 新增
-            </button>
+            <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary"
+              >项目列表 ({{ projects.length }})</span
+            >
+            <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">+ 新增</button>
           </div>
 
-          <VEmpty
-            v-if="!projects.length"
-            title="暂无 Wiki 项目"
-            message="点击上方按钮创建你的第一个项目"
-          />
+          <VEmpty v-if="!projects.length" title="暂无 Wiki 项目" message="点击上方按钮创建你的第一个项目" />
 
           <div v-else class="space-y-2.5">
             <div
@@ -388,7 +374,9 @@ onMounted(() => loadProjects());
               @click="selectProject(project)"
             >
               <!-- 图标 -->
-              <div class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-secondary">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-secondary"
+              >
                 <img v-if="project.icon" :src="project.icon" alt="" class="h-full w-full object-cover" />
                 <Icon v-else icon="ri:book-2-line" class="text-xl text-text-tertiary" />
               </div>
@@ -408,7 +396,10 @@ onMounted(() => loadProjects());
                 </div>
               </div>
 
-              <Icon icon="ri:arrow-right-s-line" class="text-text-quaternary transition-transform group-hover:translate-x-0.5" />
+              <Icon
+                icon="ri:arrow-right-s-line"
+                class="text-text-quaternary transition-transform group-hover:translate-x-0.5"
+              />
             </div>
           </div>
         </div>
@@ -419,7 +410,9 @@ onMounted(() => loadProjects());
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">项目 ID / Slug <span class="text-state-error">*</span></label>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary"
+                    >项目 ID / Slug <span class="text-state-error">*</span></label
+                  >
                   <input v-model="form.id" :class="inputCls" :disabled="isEditing" placeholder="stellar" />
                   <small class="mt-1 block text-[11px] text-text-quaternary">用于 /wiki/:project，创建后不可更改</small>
                 </div>
@@ -454,7 +447,12 @@ onMounted(() => loadProjects());
 
               <div>
                 <label class="mb-1 block text-xs font-medium text-text-tertiary">项目简介</label>
-                <textarea v-model="form.description" rows="2" :class="textareaCls" placeholder="关于该文库项目的简短说明..."></textarea>
+                <textarea
+                  v-model="form.description"
+                  rows="2"
+                  :class="textareaCls"
+                  placeholder="关于该文库项目的简短说明..."
+                ></textarea>
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -580,9 +578,15 @@ onMounted(() => loadProjects());
               <div class="flex items-center justify-between w-full">
                 <div class="flex items-center gap-2">
                   <VButton type="primary" :loading="saving" @click="saveProject">
-                    {{ isEditing ? '保存修改' : '创建项目' }}
+                    {{ isEditing ? "保存修改" : "创建项目" }}
                   </VButton>
-                  <VButton v-if="isEditing" type="danger" :disabled="Boolean(selectedProject?.has_docs)" :loading="deleting" @click="deleteProject">
+                  <VButton
+                    v-if="isEditing"
+                    type="danger"
+                    :disabled="Boolean(selectedProject?.has_docs)"
+                    :loading="deleting"
+                    @click="deleteProject"
+                  >
                     删除项目
                   </VButton>
                 </div>

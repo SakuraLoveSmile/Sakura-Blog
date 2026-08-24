@@ -30,7 +30,10 @@ const statsSummary = computed(() => {
   const dayTimeTotal = values.slice(8, 20).reduce((a, b) => a + b, 0);
   const dayPct = total > 0 ? Math.round((dayTimeTotal / total) * 100) : 50;
 
-  const peakStr = peakHour >= 0 ? `${peakHour.toString().padStart(2, "0")}:00 - ${(peakHour + 1).toString().padStart(2, "0")}:00` : "--";
+  const peakStr =
+    peakHour >= 0
+      ? `${peakHour.toString().padStart(2, "0")}:00 - ${(peakHour + 1).toString().padStart(2, "0")}:00`
+      : "--";
   return { peakStr, total, dayPct, maxVal };
 });
 
@@ -46,7 +49,7 @@ async function loadHourly() {
     const response = resp.data;
     hourlyDist.value = Array.isArray(response)
       ? response
-      : (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
+      : response.distribution?.map((d: any) => d.count) || Array(24).fill(0);
   } catch (err) {
     hourlyDist.value = Array(24).fill(0);
   }
@@ -76,12 +79,8 @@ async function initHourlyChart() {
   const values = hourlyDist.value;
 
   // 峰值高亮与真实数据一致：取最高若干非零时段用 primary，其余统一 chart-1
-  const topValues = [...new Set(values.filter((v) => v > 0))]
-    .sort((a, b) => b - a)
-    .slice(0, 4);
-  const bgColors = hours.map((h) =>
-    topValues.includes(values[h]) ? primaryColor : c1,
-  );
+  const topValues = [...new Set(values.filter((v) => v > 0))].sort((a, b) => b - a).slice(0, 4);
+  const bgColors = hours.map((h) => (topValues.includes(values[h]) ? primaryColor : c1));
 
   const step = sizePreset.value === "small" ? 6 : 4;
 
@@ -167,7 +166,9 @@ onUnmounted(() => {
         <span v-if="sizePreset !== 'small'" class="apple-card-badge">24h Hours</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary">
+        <span
+          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary"
+        >
           <Icon icon="ri:fire-line" class="w-3 h-3" />
           {{ statsSummary.peakStr }}
         </span>

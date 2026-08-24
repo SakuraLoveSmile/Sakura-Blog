@@ -3,17 +3,7 @@ import { ref, computed, reactive, onMounted } from "vue";
 import { taxonomyApi, settingsApi } from "@/api";
 import { Icon } from "@iconify/vue";
 import IconPicker from "@/components/IconPicker.vue";
-import {
-  VPageHeader,
-  VButton,
-  VCard,
-  VEmpty,
-  VLoading,
-  VModal,
-  VFloatingDock,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VButton, VCard, VEmpty, VLoading, VModal, VFloatingDock, Dialog, Toast } from "@/components/ui";
 
 interface TaxItem {
   id?: number;
@@ -279,11 +269,7 @@ function toggleTagSort(by: "count" | "name") {
 async function load() {
   loading.value = true;
   try {
-    const [cRes, tRes, sRes] = await Promise.all([
-      taxonomyApi.categories(),
-      taxonomyApi.tags(),
-      settingsApi.all(),
-    ]);
+    const [cRes, tRes, sRes] = await Promise.all([taxonomyApi.categories(), taxonomyApi.tags(), settingsApi.all()]);
     categories.value = (cRes.data.items || []).map((c: any) => ({
       id: Number(c.id || 0),
       name: c.name,
@@ -304,7 +290,7 @@ async function load() {
 async function saveTaxonomySettings(
   updatedColors?: Record<string, string>,
   updatedCatIcons?: Record<string, string>,
-  updatedTagIcons?: Record<string, string>
+  updatedTagIcons?: Record<string, string>,
 ) {
   savingSettings.value = true;
   try {
@@ -602,27 +588,24 @@ onMounted(load);
             v-model="searchQuery"
             :placeholder="activeTab === 'categories' ? '搜索分类名称/路径...' : '搜索标签名称...'"
           />
-          <button v-if="searchQuery" type="button" class="text-text-quaternary hover:text-foreground" @click="searchQuery = ''">
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="text-text-quaternary hover:text-foreground"
+            @click="searchQuery = ''"
+          >
             <Icon icon="ri:close-line" />
           </button>
         </div>
 
-        <VButton
-          v-if="activeTab === 'categories'"
-          type="primary"
-          @click="openCreateCategory(0)"
-        >
+        <VButton v-if="activeTab === 'categories'" type="primary" @click="openCreateCategory(0)">
           <template #icon>
             <Icon icon="ri:add-line" class="h-full w-full" />
           </template>
           新建分类
         </VButton>
 
-        <VButton
-          v-else
-          :type="mergeMode ? 'default' : 'primary'"
-          @click="toggleMergeMode"
-        >
+        <VButton v-else :type="mergeMode ? 'default' : 'primary'" @click="toggleMergeMode">
           <template #icon>
             <Icon :icon="mergeMode ? 'ri:close-line' : 'ri:git-merge-line'" class="h-full w-full" />
           </template>
@@ -693,19 +676,11 @@ onMounted(load);
         <!-- 胶囊分段控件与工具栏 -->
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="apple-segmented">
-            <button
-              type="button"
-              :class="{ active: activeTab === 'categories' }"
-              @click="activeTab = 'categories'"
-            >
+            <button type="button" :class="{ active: activeTab === 'categories' }" @click="activeTab = 'categories'">
               <Icon icon="ri:folder-line" class="mr-1.5 text-sm inline-block align-sub" />
               分类 ({{ categories.length }})
             </button>
-            <button
-              type="button"
-              :class="{ active: activeTab === 'tags' }"
-              @click="activeTab = 'tags'"
-            >
+            <button type="button" :class="{ active: activeTab === 'tags' }" @click="activeTab = 'tags'">
               <Icon icon="ri:hashtag" class="mr-1.5 text-sm inline-block align-sub" />
               标签 ({{ tags.length }})
             </button>
@@ -732,14 +707,9 @@ onMounted(load);
               </button>
             </div>
 
-            <button
-              type="button"
-              class="apple-sort-btn"
-              title="按文章数排序"
-              @click="toggleTagSort('count')"
-            >
+            <button type="button" class="apple-sort-btn" title="按文章数排序" @click="toggleTagSort('count')">
               <Icon icon="ri:arrow-up-down-line" />
-              文章数 {{ tagSortBy === 'count' ? (tagSortOrder === 'desc' ? '↓' : '↑') : '' }}
+              文章数 {{ tagSortBy === "count" ? (tagSortOrder === "desc" ? "↓" : "↑") : "" }}
             </button>
           </div>
         </div>
@@ -767,11 +737,7 @@ onMounted(load);
                 :style="{ paddingLeft: `${Math.max(16, c.depth * 28 + 16)}px` }"
               >
                 <!-- 层级连线导轨指示 -->
-                <div
-                  v-if="c.depth > 0"
-                  class="category-tree-line"
-                  :style="{ left: `${c.depth * 28 - 6}px` }"
-                ></div>
+                <div v-if="c.depth > 0" class="category-tree-line" :style="{ left: `${c.depth * 28 - 6}px` }"></div>
 
                 <!-- 左侧：折叠展开 + 图标 + 名称与路径 -->
                 <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -804,7 +770,9 @@ onMounted(load);
                     />
                     <Icon
                       v-else
-                      :icon="catIcons[categoryKey(c)]?.trim() || categoryDefaultIcons[idx % categoryDefaultIcons.length]"
+                      :icon="
+                        catIcons[categoryKey(c)]?.trim() || categoryDefaultIcons[idx % categoryDefaultIcons.length]
+                      "
                       class="text-lg"
                     />
                   </div>
@@ -831,10 +799,7 @@ onMounted(load);
                     v-if="catColors[categoryKey(c)]"
                     class="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-text-secondary shadow-xs"
                   >
-                    <span
-                      class="h-2.5 w-2.5 rounded-full"
-                      :style="{ background: catColors[categoryKey(c)] }"
-                    ></span>
+                    <span class="h-2.5 w-2.5 rounded-full" :style="{ background: catColors[categoryKey(c)] }"></span>
                     {{ catColors[categoryKey(c)] }}
                   </span>
 
@@ -864,12 +829,7 @@ onMounted(load);
                     >
                       <Icon icon="ri:node-tree" />
                     </button>
-                    <button
-                      type="button"
-                      title="编辑分类属性"
-                      class="row-action-btn"
-                      @click="openEditCategory(c)"
-                    >
+                    <button type="button" title="编辑分类属性" class="row-action-btn" @click="openEditCategory(c)">
                       <Icon icon="ri:pencil-line" />
                     </button>
                     <button
@@ -934,10 +894,7 @@ onMounted(load);
             <div
               v-for="t in filteredAndSortedTags"
               :key="t.name"
-              :class="[
-                'apple-tag-pill group',
-                { 'selected-for-merge': mergeMode && selectedTags.has(t.name) },
-              ]"
+              :class="['apple-tag-pill group', { 'selected-for-merge': mergeMode && selectedTags.has(t.name) }]"
               @click="mergeMode ? toggleTagSelect(t.name) : undefined"
             >
               <!-- 合并模式多选框 -->
@@ -955,11 +912,7 @@ onMounted(load);
                 class="h-3.5 w-3.5 object-contain"
                 alt=""
               />
-              <Icon
-                v-else-if="tagIcons[t.name]?.trim()"
-                :icon="tagIcons[t.name].trim()"
-                class="text-primary text-xs"
-              />
+              <Icon v-else-if="tagIcons[t.name]?.trim()" :icon="tagIcons[t.name].trim()" class="text-primary text-xs" />
 
               <!-- 标签名 -->
               <span class="tag-name">{{ t.name }}</span>
@@ -971,18 +924,10 @@ onMounted(load);
 
               <!-- 悬浮操作按钮 -->
               <span v-if="!mergeMode" class="tag-hover-actions">
-                <button
-                  type="button"
-                  title="配置前台图标"
-                  @click.stop="openTagIcon(t.name)"
-                >
+                <button type="button" title="配置前台图标" @click.stop="openTagIcon(t.name)">
                   <Icon icon="ri:shape-line" />
                 </button>
-                <button
-                  type="button"
-                  title="重命名"
-                  @click.stop="openRenameTag(t.name)"
-                >
+                <button type="button" title="重命名" @click.stop="openRenameTag(t.name)">
                   <Icon icon="ri:pencil-line" />
                 </button>
                 <button
@@ -1011,11 +956,7 @@ onMounted(load);
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-border/60">
-                  <tr
-                    v-for="t in filteredAndSortedTags"
-                    :key="t.name"
-                    class="transition-colors hover:bg-secondary/40"
-                  >
+                  <tr v-for="t in filteredAndSortedTags" :key="t.name" class="transition-colors hover:bg-secondary/40">
                     <td v-if="mergeMode" class="px-4 py-3 text-center">
                       <input
                         type="checkbox"
@@ -1044,26 +985,18 @@ onMounted(load);
                       <span v-else class="text-text-quaternary">默认无图标</span>
                     </td>
                     <td class="px-4 py-3 text-right font-mono text-sm text-foreground">
-                      <span class="inline-block rounded-md bg-secondary px-2 py-0.5 text-xs font-semibold text-text-tertiary">
+                      <span
+                        class="inline-block rounded-md bg-secondary px-2 py-0.5 text-xs font-semibold text-text-tertiary"
+                      >
                         {{ t.count }}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right">
                       <div class="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          class="row-action-btn"
-                          title="设置图标"
-                          @click="openTagIcon(t.name)"
-                        >
+                        <button type="button" class="row-action-btn" title="设置图标" @click="openTagIcon(t.name)">
                           <Icon icon="ri:shape-line" />
                         </button>
-                        <button
-                          type="button"
-                          class="row-action-btn"
-                          title="重命名"
-                          @click="openRenameTag(t.name)"
-                        >
+                        <button type="button" class="row-action-btn" title="重命名" @click="openRenameTag(t.name)">
                           <Icon icon="ri:pencil-line" />
                         </button>
                         <button
@@ -1095,24 +1028,14 @@ onMounted(load);
         <!-- 基础信息 -->
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">分类名称 *</label>
-          <input
-            v-model="categoryForm.name"
-            class="apple-input"
-            required
-            placeholder="例如：前端开发"
-            maxlength="40"
-          />
+          <input v-model="categoryForm.name" class="apple-input" required placeholder="例如：前端开发" maxlength="40" />
         </div>
 
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">父级分类</label>
           <select v-model.number="categoryForm.parent_id" class="apple-select w-full">
             <option :value="0">顶级分类（无父级）</option>
-            <option
-              v-for="c in availableParentCategories"
-              :key="c.id"
-              :value="c.id"
-            >
+            <option v-for="c in availableParentCategories" :key="c.id" :value="c.id">
               {{ c.path || c.name }}
             </option>
           </select>
@@ -1157,10 +1080,7 @@ onMounted(load);
         <!-- 图标配置 -->
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">前台专属图标</label>
-          <IconPicker
-            v-model="categoryForm.icon"
-            placeholder="icons.yml key、Iconify key 或图片 URL，留空=默认"
-          />
+          <IconPicker v-model="categoryForm.icon" placeholder="icons.yml key、Iconify key 或图片 URL，留空=默认" />
         </div>
 
         <!-- 实时效果预览卡片 -->
@@ -1176,11 +1096,7 @@ onMounted(load);
                 class="h-5 w-5 object-contain"
                 alt=""
               />
-              <Icon
-                v-else
-                :icon="categoryForm.icon?.trim() || 'ri:folder-line'"
-                class="text-xl"
-              />
+              <Icon v-else :icon="categoryForm.icon?.trim() || 'ri:folder-line'" class="text-xl" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
@@ -1191,10 +1107,7 @@ onMounted(load);
                   v-if="categoryForm.color?.trim()"
                   class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] text-text-secondary"
                 >
-                  <span
-                    class="h-2 w-2 rounded-full"
-                    :style="{ background: categoryForm.color }"
-                  ></span>
+                  <span class="h-2 w-2 rounded-full" :style="{ background: categoryForm.color }"></span>
                   {{ categoryForm.color }}
                 </span>
               </div>
@@ -1207,9 +1120,7 @@ onMounted(load);
       <template #footer>
         <div class="flex justify-end gap-2">
           <VButton @click="categoryModalVisible = false">取消</VButton>
-          <VButton type="primary" :loading="categorySaving" @click="saveCategoryModal">
-            保存
-          </VButton>
+          <VButton type="primary" :loading="categorySaving" @click="saveCategoryModal"> 保存 </VButton>
         </div>
       </template>
     </VModal>
@@ -1269,9 +1180,7 @@ onMounted(load);
           placeholder="合并到（目标标签名）"
           @keyup.enter="confirmMergeTags"
         />
-        <VButton size="sm" type="primary" :loading="merging" @click="confirmMergeTags">
-          确认合并
-        </VButton>
+        <VButton size="sm" type="primary" :loading="merging" @click="confirmMergeTags"> 确认合并 </VButton>
       </div>
     </VFloatingDock>
   </div>
@@ -1461,7 +1370,8 @@ onMounted(load);
   border-radius: var(--radius-full);
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-standard),
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 .color-preset-dot:hover {

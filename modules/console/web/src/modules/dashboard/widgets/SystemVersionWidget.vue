@@ -84,12 +84,7 @@ function goToUpdate() {
   </div>
 
   <!-- Medium / Large 尺寸：标准与扩展视图（样式走 dashboard.css 共享 .version-card-*） -->
-  <div
-    v-else
-    class="apple-card version-card h-full cursor-pointer"
-    :data-bp="breakpoint"
-    @click="goToUpdate"
-  >
+  <div v-else class="apple-card version-card h-full cursor-pointer" :data-bp="breakpoint" @click="goToUpdate">
     <div class="version-card-header">
       <div class="version-card-title-row">
         <div class="version-card-icon" aria-hidden="true">
@@ -122,7 +117,9 @@ function goToUpdate() {
         </div>
         <div v-if="sizePreset === 'large'">
           <span class="version-card-label">自动应用</span>
-          <strong class="text-xs text-muted-foreground font-normal mt-1">{{ applySupported ? "支持一键更新" : "手动更新" }}</strong>
+          <strong class="text-xs text-muted-foreground font-normal mt-1">{{
+            applySupported ? "支持一键更新" : "手动更新"
+          }}</strong>
         </div>
       </div>
 
@@ -133,7 +130,9 @@ function goToUpdate() {
             class="w-4 h-4"
             aria-hidden="true"
           />
-          {{ data?.error || (hasUpdate ? "点击进入系统更新页面" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
+          {{
+            data?.error || (hasUpdate ? "点击进入系统更新页面" : canCompare ? "当前版本已是最新" : "版本未知，无法比较")
+          }}
         </span>
         <Icon
           v-if="applySupported && hasUpdate"

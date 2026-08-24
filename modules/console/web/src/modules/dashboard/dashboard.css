@@ -299,14 +299,17 @@
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   padding: 22px;
-  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
   position: relative;
   overflow: hidden;
   height: 100%;
 }
 
 .apple-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -740,7 +743,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
   backdrop-filter: blur(10px);
 }
 
@@ -763,7 +768,9 @@
   justify-content: center;
   cursor: grab;
   backdrop-filter: blur(10px);
-  transition: transform var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
 }
 
 .apple-drag-handle:hover {
@@ -938,7 +945,6 @@
   margin-top: 16px !important;
 }
 
-
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card {
   padding: 16px;
   border-radius: 16px;
@@ -981,8 +987,12 @@
   gap: 10px;
   padding: 9px 2px;
 }
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm { font-size: 13px; }
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs { font-size: 11px; }
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm {
+  font-size: 13px;
+}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs {
+  font-size: 11px;
+}
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-arrow {
   opacity: 0.5; /* always visible on mobile so user knows it's tappable */
   width: 14px;

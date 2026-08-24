@@ -9,11 +9,7 @@ export interface WidgetSizeContext {
 
 export const WIDGET_SIZE_KEY: InjectionKey<WidgetSizeContext> = Symbol("dashboard-widget-size");
 
-export function provideWidgetSize(
-  preset: Ref<WidgetSizePreset>,
-  gridW?: Ref<number>,
-  gridH?: Ref<number>,
-) {
+export function provideWidgetSize(preset: Ref<WidgetSizePreset>, gridW?: Ref<number>, gridH?: Ref<number>) {
   const context: WidgetSizeContext = { preset, gridW, gridH };
   provide(WIDGET_SIZE_KEY, context);
   return context;

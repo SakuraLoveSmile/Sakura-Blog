@@ -12,11 +12,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function hm(d: Date): string {

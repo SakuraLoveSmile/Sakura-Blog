@@ -234,15 +234,11 @@ export function buildPreviewDoc(opts: PreviewDocOptions): string {
     inlineScripts = [],
   } = opts;
 
-  const styleLinks = PREVIEW_STYLES.map(
-    (href) => `<link rel="stylesheet" href="${href}">`
-  ).join("\n");
+  const styleLinks = PREVIEW_STYLES.map((href) => `<link rel="stylesheet" href="${href}">`).join("\n");
 
   const scriptTags = scripts.map((src) => `<script src="${src}" defer></script>`).join("\n");
   const inlineTags = inlineScripts.join("\n");
-  const body = wrapContent
-    ? `<article class="md-text content">${safeHtml(bodyHtml)}</article>`
-    : safeHtml(bodyHtml);
+  const body = wrapContent ? `<article class="md-text content">${safeHtml(bodyHtml)}</article>` : safeHtml(bodyHtml);
 
   return `<!doctype html>
 <html lang="zh-CN" data-theme="dark">

@@ -10,7 +10,7 @@ withDefaults(
     type: "row",
     count: 5,
     rows: 4,
-  }
+  },
 );
 </script>
 
@@ -41,11 +41,7 @@ withDefaults(
     <!-- 卡片网格骨架（Dashboard / Attachments） -->
     <template v-else-if="type === 'card'">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <div
-          v-for="i in count"
-          :key="i"
-          class="rounded-xl border border-border bg-card p-4 space-y-3"
-        >
+        <div v-for="i in count" :key="i" class="rounded-xl border border-border bg-card p-4 space-y-3">
           <div class="h-32 w-full rounded-lg skeleton" />
           <div class="h-4 w-3/4 rounded skeleton" />
           <div class="h-3 w-1/2 rounded skeleton opacity-70" />
@@ -55,7 +51,7 @@ withDefaults(
 
     <!-- 纯文本行骨架 -->
     <template v-else-if="type === 'text'">
-      <div v-for="i in (rows || count)" :key="i" class="space-y-2">
+      <div v-for="i in rows || count" :key="i" class="space-y-2">
         <div
           class="h-3.5 rounded skeleton"
           :style="{ width: i === (rows || count) ? '60%' : `${85 + ((i * 17) % 15)}%` }"
