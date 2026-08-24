@@ -59,13 +59,14 @@ func main() {
 		API: console.APIConfig{
 			Store: services.Store, Posts: services.Post, Site: services.Site, Comments: services.Comment,
 			Backups: services.Backup, Modules: services.Modules, Notify: services.Notify, Icons: services.Icons,
-			StellarVersion:    stellar.StellarVersion,
+			StellarVersion: stellar.StellarVersion,
+			StellarOwner:   stellar.RepositoryOwner, StellarRepo: stellar.RepositoryName,
 			RenderSitePreview: stellarServer.RenderSitePreview,
 			Events:            services.Events,
 			UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
-			Root:              services.App.Root,
-			AppVersion:        app.Version,
-			UpdateRepo:        services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
+			Root:       services.App.Root,
+			AppVersion: app.Version,
+			UpdateRepo: services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
 		},
 		GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
 	})

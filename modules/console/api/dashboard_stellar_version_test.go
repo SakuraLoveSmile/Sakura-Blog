@@ -47,6 +47,7 @@ func TestDashboardStellarVersionStates(t *testing.T) {
 			r := gin.New()
 			if _, err := MountConsole(r, MountDeps{Config: Config{
 				Store: st, Site: sitePtr(site), StellarVersion: "1.42.1",
+				StellarOwner: "xaoxuu", StellarRepo: "hexo-theme-stellar",
 			}, GH: gh}); err != nil {
 				t.Fatalf("mount: %v", err)
 			}

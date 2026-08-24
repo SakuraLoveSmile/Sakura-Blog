@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -171,15 +170,9 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 	// 生成随机文件名
 	randName := randomHex(8) + outExt
 	relPath := filepath.Join(subDir, randName)
-	absPath := filepath.Join(h.uploadDir, relPath)
-
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
-		Fail(c, http.StatusInternalServerError, "创建目录失败")
-		return
-	}
 
 	// 写入主图
-	if err := os.WriteFile(absPath, mainData, 0o644); err != nil {
+	if err := h.storage.Save(filepath.ToSlash(relPath), mainData); err != nil {
 		Fail(c, http.StatusInternalServerError, "写入文件失败")
 		return
 	}
@@ -191,8 +184,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 	if len(thumbData) > 0 {
 		thumbName := "thumb_" + randName
 		thumbRel := filepath.Join(subDir, thumbName)
-		thumbAbs := filepath.Join(h.uploadDir, thumbRel)
-		if err := os.WriteFile(thumbAbs, thumbData, 0o644); err == nil {
+		if err := h.storage.Thumb(filepath.ToSlash(thumbRel), thumbData); err == nil {
 			thumbPath = filepath.ToSlash(thumbRel)
 			thumbURL = "/uploads/" + thumbPath
 		}
@@ -211,9 +203,9 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		GroupID:   uploadGroupID(c, h.store),
 	}
 	if _, err := h.store.CreateAttachment(att); err != nil {
-		os.Remove(absPath)
+		h.storage.Remove(att.Path)
 		if thumbPath != "" {
-			os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(thumbPath)))
+			h.storage.Remove(thumbPath)
 		}
 		Fail(c, http.StatusInternalServerError, "保存记录失败")
 		return
@@ -243,11 +235,11 @@ func (h *Handler) deleteAttachment(c *gin.Context) {
 
 	// 删除磁盘文件（失败不阻塞 DB 删除）
 	if att.Path != "" {
-		os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(att.Path)))
+		h.storage.Remove(att.Path)
 	}
 	// 连带删除缩略图
 	if att.ThumbPath != "" {
-		os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(att.ThumbPath)))
+		h.storage.Remove(att.ThumbPath)
 	}
 
 	if err := h.store.DeleteAttachment(id); err != nil {

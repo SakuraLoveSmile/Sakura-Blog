@@ -21,6 +21,13 @@ import (
 // Dependencies is the public module boundary for Stellar's shared services.
 type Dependencies = routes.Dependencies
 
+// RepositoryOwner and RepositoryName are the Stellar module's self-reported
+// upstream identity. Console must consume these through its mount contract.
+const (
+	RepositoryOwner = "xaoxuu"
+	RepositoryName  = "hexo-theme-stellar"
+)
+
 // Server exposes lifecycle and callback hooks needed by the other module mount.
 type Server struct {
 	*routes.Server

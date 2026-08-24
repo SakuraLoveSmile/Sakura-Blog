@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -153,18 +152,13 @@ func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData [
 	subDir := now.Format("2006/01")
 	randName := randomHex(8) + outExt
 	relPath := filepath.Join(subDir, randName)
-	absPath := filepath.Join(h.uploadDir, relPath)
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(absPath, mainData, 0o644); err != nil {
+	if err := h.storage.Save(filepath.ToSlash(relPath), mainData); err != nil {
 		return nil, err
 	}
 	thumbPath, thumbURL := "", ""
 	if len(thumbData) > 0 {
 		thumbRel := filepath.Join(subDir, "thumb_"+randName)
-		thumbAbs := filepath.Join(h.uploadDir, thumbRel)
-		if err := os.WriteFile(thumbAbs, thumbData, 0o644); err == nil {
+		if err := h.storage.Thumb(filepath.ToSlash(thumbRel), thumbData); err == nil {
 			thumbPath = filepath.ToSlash(thumbRel)
 			thumbURL = "/uploads/" + thumbPath
 		}
@@ -175,9 +169,9 @@ func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData [
 		Width: width, Height: height, GroupID: groupID,
 	}
 	if _, err := h.store.CreateAttachment(attachment); err != nil {
-		_ = os.Remove(absPath)
+		_ = h.storage.Remove(attachment.Path)
 		if thumbPath != "" {
-			_ = os.Remove(filepath.Join(h.uploadDir, filepath.FromSlash(thumbPath)))
+			_ = h.storage.Remove(thumbPath)
 		}
 		return nil, err
 	}

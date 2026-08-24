@@ -43,7 +43,7 @@ type Handler struct {
 	backups   *backup.Service
 	modules   *module.Manager
 	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
-	uploadDir string
+	storage   AttachmentStorage
 	maxUpload int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
@@ -53,6 +53,8 @@ type Handler struct {
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh             *ghpkg.Client
 	stellarVersion string
+	stellarOwner   string
+	stellarRepo    string
 
 	// 系统更新（Console 检查更新 / 一键更新）
 	upd              updr.Runner
@@ -94,11 +96,14 @@ type Config struct {
 	// Events publishes generic changes such as wiki/notebook/note/settings writes.
 	Events      content.Events
 	UploadDir   string
+	Storage     AttachmentStorage
 	MaxUploadMB int
 	LinkWatch   *linkwatch.Watcher
 	// StellarVersion is injected by the composition root to keep Console
 	// independent from the Stellar module package.
 	StellarVersion string
+	StellarOwner   string
+	StellarRepo    string
 	// 系统更新配置
 	Root             string
 	AppVersion       string
@@ -138,10 +143,12 @@ func New(cfg Config) *Handler {
 		icons:             cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
 		events:            cfg.Events,
-		uploadDir:         cfg.UploadDir,
+		storage:           attachmentStorageOrLocal(cfg.Storage, cfg.UploadDir),
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
 		stellarVersion:    cfg.StellarVersion,
+		stellarOwner:      cfg.StellarOwner,
+		stellarRepo:       cfg.StellarRepo,
 		upd:               runner,
 		appVersion:        cfg.AppVersion,
 		root:              cfg.Root,

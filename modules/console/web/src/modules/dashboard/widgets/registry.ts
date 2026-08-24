@@ -10,6 +10,18 @@ import StellarVersionWidget from "./StellarVersionWidget.vue";
 import SystemVersionWidget from "./SystemVersionWidget.vue";
 import { themeColors } from "@/lib/theme-colors";
 
+/**
+ * Official widget extension point: `widget:registry:register`.
+ *
+ * Widgets are compile-time registrations in this registry. A future external
+ * contributor may add a definition here or through a generated module registry;
+ * runtime loading is intentionally not part of the current contract.
+ */
+export const WIDGET_REGISTRY_EXTENSION_POINT = "widget:registry:register";
+
+/** Reserved editor extension point: `editor:toolbar:item:register`. */
+export const EDITOR_TOOLBAR_EXTENSION_POINT = "editor:toolbar:item:register";
+
 const chartColors = themeColors({
   primary: "#2E8DFF",
   success: "#30D158",

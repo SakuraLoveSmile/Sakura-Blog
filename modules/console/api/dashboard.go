@@ -14,11 +14,6 @@ import (
 	"blog/internal/store"
 )
 
-const (
-	stellarOwner = "xaoxuu"
-	stellarRepo  = "hexo-theme-stellar"
-)
-
 var semverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$`)
 
 type stellarVersionResponse struct {
@@ -46,7 +41,12 @@ func (h *Handler) dashboardStellarVersion(c *gin.Context) {
 		return
 	}
 
-	payload, err := h.gh.GetLatestReleaseRaw(stellarOwner, stellarRepo)
+	if h.stellarOwner == "" || h.stellarRepo == "" {
+		result.Error = "Stellar 上游仓库未配置"
+		c.JSON(http.StatusOK, result)
+		return
+	}
+	payload, err := h.gh.GetLatestReleaseRaw(h.stellarOwner, h.stellarRepo)
 	if err != nil {
 		result.Error = err.Error()
 		c.JSON(http.StatusOK, result)
