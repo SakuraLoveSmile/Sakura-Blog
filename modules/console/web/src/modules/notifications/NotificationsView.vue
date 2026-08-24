@@ -5,14 +5,7 @@ import { notificationApi, type NotificationItem } from "@/api";
 import { formatRelative } from "@/lib/format";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VButton,
-  VEmpty,
-  VLoading,
-  VPagination,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VButton, VEmpty, VLoading, VPagination, Toast } from "@/components/ui";
 
 const queryClient = useQueryClient();
 
@@ -21,7 +14,12 @@ const size = ref(20);
 
 const queryParams = computed(() => ({ page: page.value, size: size.value }));
 
-const { data: queryData, isLoading, isFetching, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  isFetching,
+  refetch,
+} = useQuery({
   queryKey: computed(() => queryKeys.notifications(queryParams.value)),
   queryFn: () => notificationApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -70,11 +68,7 @@ interface NotifGroup {
 }
 
 function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 const groupedNotifications = computed<NotifGroup[]>(() => {
@@ -185,7 +179,6 @@ function sourceLabel(type: string): string {
   if (type === "storage_warning") return "存储空间";
   return "系统通知";
 }
-
 </script>
 
 <template>
@@ -194,9 +187,7 @@ function sourceLabel(type: string): string {
       <template #icon>
         <Icon icon="ri:notification-3-line" class="mr-2 self-center text-xl" />
       </template>
-      <template #subtitle>
-        管理你收到的所有通知与提醒
-      </template>
+      <template #subtitle> 管理你收到的所有通知与提醒 </template>
       <template #actions>
         <VButton
           size="sm"
@@ -230,9 +221,7 @@ function sourceLabel(type: string): string {
         v-if="unreadCount > 0"
         class="mb-5 flex items-center gap-3 rounded-[14px] border border-primary/18 bg-primary/8 px-4 py-3.5"
       >
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/18 text-primary"
-        >
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/18 text-primary">
           <Icon icon="ri:notification-3-line" class="h-[18px] w-[18px]" />
         </div>
         <div class="text-[13px] text-text-secondary">
@@ -275,9 +264,7 @@ function sourceLabel(type: string): string {
               <div class="text-[13px] font-bold tracking-tight text-text-secondary">
                 {{ group.title }}
               </div>
-              <div class="text-[12px] font-medium text-text-tertiary">
-                {{ group.items.length }} 条
-              </div>
+              <div class="text-[12px] font-medium text-text-tertiary">{{ group.items.length }} 条</div>
             </div>
 
             <div>
@@ -322,7 +309,7 @@ function sourceLabel(type: string): string {
                   <span
                     v-if="!n.read"
                     class="h-2 w-2 rounded-full bg-primary"
-                    style="box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent);"
+                    style="box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent)"
                   />
                   <span v-else class="h-2 w-2 rounded-full bg-transparent" />
                 </div>
@@ -332,12 +319,7 @@ function sourceLabel(type: string): string {
 
           <!-- 分页 -->
           <div class="mt-6 flex justify-end border-t border-border pt-4">
-            <VPagination
-              v-model:page="page"
-              v-model:size="size"
-              :total="total"
-              :size-options="[20, 50, 100]"
-            />
+            <VPagination v-model:page="page" v-model:size="size" :total="total" :size-options="[20, 50, 100]" />
           </div>
         </div>
       </Transition>

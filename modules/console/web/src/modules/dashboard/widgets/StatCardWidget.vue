@@ -43,7 +43,10 @@ const value = computed(() => {
       <Icon :icon="icon" class="w-4 h-4" />
     </div>
     <div class="min-w-0 flex-1">
-      <div class="text-xl font-bold leading-tight tracking-tight text-foreground truncate" style="font-variant-numeric: tabular-nums;">
+      <div
+        class="text-xl font-bold leading-tight tracking-tight text-foreground truncate"
+        style="font-variant-numeric: tabular-nums"
+      >
         {{ value }}
       </div>
       <div class="text-[11px] font-medium text-text-tertiary truncate">{{ label }}</div>
@@ -68,7 +71,10 @@ const value = computed(() => {
           <div class="text-xs text-text-quaternary">实时核心统计指标</div>
         </div>
       </div>
-      <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" :style="{ backgroundColor: color + '14', color: color }">
+      <span
+        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+        :style="{ backgroundColor: color + '14', color: color }"
+      >
         <Icon icon="ri:pulse-line" class="w-3 h-3" />
         活跃
       </span>
@@ -76,7 +82,10 @@ const value = computed(() => {
 
     <div class="mt-4 flex items-end justify-between">
       <div>
-        <div class="text-3xl sm:text-4xl font-bold leading-none tracking-tight text-foreground" style="font-variant-numeric: tabular-nums;">
+        <div
+          class="text-3xl sm:text-4xl font-bold leading-none tracking-tight text-foreground"
+          style="font-variant-numeric: tabular-nums"
+        >
           {{ value }}
         </div>
         <div class="mt-2 text-xs font-medium text-text-tertiary flex items-center gap-1.5">
@@ -102,7 +111,10 @@ const value = computed(() => {
       <span class="min-w-0 truncate text-xs font-semibold text-text-tertiary">{{ label }}</span>
     </div>
     <div class="mt-4">
-      <div class="text-[28px] sm:text-[32px] font-bold leading-none tracking-tight text-foreground" style="font-variant-numeric: tabular-nums;">
+      <div
+        class="text-[28px] sm:text-[32px] font-bold leading-none tracking-tight text-foreground"
+        style="font-variant-numeric: tabular-nums"
+      >
         {{ value }}
       </div>
     </div>

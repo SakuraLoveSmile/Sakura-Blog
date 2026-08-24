@@ -7,7 +7,7 @@ const props = withDefaults(
     theme?: "default" | "primary" | "secondary" | "danger";
     rounded?: boolean;
   }>(),
-  { theme: "default", rounded: false }
+  { theme: "default", rounded: false },
 );
 
 const classes = computed(() => [`tag-${props.theme}`, { "tag-rounded": props.rounded }]);

@@ -5,7 +5,7 @@ const props = withDefaults(
     modelValue?: boolean;
     disabled?: boolean;
   }>(),
-  { modelValue: false, disabled: false }
+  { modelValue: false, disabled: false },
 );
 
 const emit = defineEmits<{

@@ -52,7 +52,9 @@ async function save() {
     <VCard title="功能开关">
       <div class="space-y-4">
         <label class="flex items-center justify-between">
-          <span class="text-sm text-text-quaternary dark:text-foreground">站点推送（文章发布时自动推送到搜索引擎）</span>
+          <span class="text-sm text-text-quaternary dark:text-foreground"
+            >站点推送（文章发布时自动推送到搜索引擎）</span
+          >
           <VSwitch v-model="cfg.push.enabled" />
         </label>
         <label class="flex items-center justify-between">
@@ -71,12 +73,20 @@ async function save() {
       <div class="space-y-4">
         <div class="flex gap-4">
           <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" :checked="cfg.push.engines.includes('indexnow')"
-              @change="(e:any) => toggleEngine('indexnow', e.target.checked)" /> IndexNow（Bing/Yandex 等）
+            <input
+              type="checkbox"
+              :checked="cfg.push.engines.includes('indexnow')"
+              @change="(e: any) => toggleEngine('indexnow', e.target.checked)"
+            />
+            IndexNow（Bing/Yandex 等）
           </label>
           <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" :checked="cfg.push.engines.includes('baidu')"
-              @change="(e:any) => toggleEngine('baidu', e.target.checked)" /> 百度
+            <input
+              type="checkbox"
+              :checked="cfg.push.engines.includes('baidu')"
+              @change="(e: any) => toggleEngine('baidu', e.target.checked)"
+            />
+            百度
           </label>
         </div>
         <div>
@@ -85,7 +95,11 @@ async function save() {
         </div>
         <div>
           <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">百度推送 Token</label>
-          <input v-model="cfg.push.baidu_token" :class="inputCls" placeholder="百度站长平台 → 普通收录 → 推送接口 token" />
+          <input
+            v-model="cfg.push.baidu_token"
+            :class="inputCls"
+            placeholder="百度站长平台 → 普通收录 → 推送接口 token"
+          />
         </div>
       </div>
     </VCard>

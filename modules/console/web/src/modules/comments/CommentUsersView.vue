@@ -1,24 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import {
-  commentUsersApi,
-  commentApi,
-  type CommentUserItem,
-  type CommentStatus,
-} from "@/api";
+import { commentUsersApi, commentApi, type CommentUserItem, type CommentStatus } from "@/api";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VButton,
-  VCard,
-  VEmpty,
-  VLoading,
-  VPagination,
-  VModal,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VButton, VCard, VEmpty, VLoading, VPagination, VModal, Dialog, Toast } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 
 const queryClient = useQueryClient();
@@ -49,7 +34,11 @@ const queryParams = computed(() => ({
   status: statusFilter.value === "all" ? "" : "banned",
 }));
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => ["comment-users", queryParams.value] as const),
   queryFn: () => commentUsersApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -246,7 +235,9 @@ async function doBulk(action: "spam" | "delete") {
           </div>
           <div>
             <div class="stats-label">正常活跃读者</div>
-            <div class="stats-value text-[#30D158]">{{ Math.max(0, counts.all - counts.banned) }} <span class="stats-sub">可正常互动</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ Math.max(0, counts.all - counts.banned) }} <span class="stats-sub">可正常互动</span>
+            </div>
           </div>
         </div>
 
@@ -256,7 +247,9 @@ async function doBulk(action: "spam" | "delete") {
           </div>
           <div>
             <div class="stats-label">已封禁读者</div>
-            <div class="stats-value text-[#FF453A]">{{ counts.banned }} <span class="stats-sub">禁止登录留言</span></div>
+            <div class="stats-value text-[#FF453A]">
+              {{ counts.banned }} <span class="stats-sub">禁止登录留言</span>
+            </div>
           </div>
         </div>
 
@@ -266,7 +259,9 @@ async function doBulk(action: "spam" | "delete") {
           </div>
           <div>
             <div class="stats-label">当前列表用户</div>
-            <div class="stats-value">{{ users.length }} <span class="stats-sub">共 {{ total }} 条记录</span></div>
+            <div class="stats-value">
+              {{ users.length }} <span class="stats-sub">共 {{ total }} 条记录</span>
+            </div>
           </div>
         </div>
       </div>
@@ -276,18 +271,10 @@ async function doBulk(action: "spam" | "delete") {
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-3 w-full">
             <div class="apple-segmented">
-              <button
-                type="button"
-                :class="{ active: statusFilter === 'all' }"
-                @click="statusFilter = 'all'"
-              >
+              <button type="button" :class="{ active: statusFilter === 'all' }" @click="statusFilter = 'all'">
                 全部读者
               </button>
-              <button
-                type="button"
-                :class="{ active: statusFilter === 'banned' }"
-                @click="statusFilter = 'banned'"
-              >
+              <button type="button" :class="{ active: statusFilter === 'banned' }" @click="statusFilter = 'banned'">
                 已封禁读者
               </button>
             </div>
@@ -314,11 +301,7 @@ async function doBulk(action: "spam" | "delete") {
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
-              <tr
-                v-for="u in users"
-                :key="u.id"
-                class="transition-colors hover:bg-secondary/40"
-              >
+              <tr v-for="u in users" :key="u.id" class="transition-colors hover:bg-secondary/40">
                 <td class="px-4 py-3.5">
                   <div class="flex items-center gap-3">
                     <img
@@ -337,9 +320,13 @@ async function doBulk(action: "spam" | "delete") {
                     <div class="min-w-0">
                       <div class="font-semibold text-foreground text-sm flex items-center gap-2">
                         <span>{{ u.display_name || u.username }}</span>
-                        <span v-if="u.display_name" class="text-xs font-mono text-text-quaternary">(@{{ u.username }})</span>
+                        <span v-if="u.display_name" class="text-xs font-mono text-text-quaternary"
+                          >(@{{ u.username }})</span
+                        >
                       </div>
-                      <div class="text-xs font-mono text-text-quaternary truncate max-w-[240px]">{{ u.email || '未绑定邮箱' }}</div>
+                      <div class="text-xs font-mono text-text-quaternary truncate max-w-[240px]">
+                        {{ u.email || "未绑定邮箱" }}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -347,23 +334,19 @@ async function doBulk(action: "spam" | "delete") {
                   {{ u.comment_count || 0 }}
                 </td>
                 <td class="px-4 py-3.5 text-xs text-text-tertiary">
-                  {{ u.last_comment_at ? formatRelative(u.last_comment_at) : '暂无留言' }}
+                  {{ u.last_comment_at ? formatRelative(u.last_comment_at) : "暂无留言" }}
                 </td>
                 <td class="px-4 py-3.5 text-xs">
                   <span
                     class="rounded-full px-2 py-0.5 text-[10px] font-medium"
                     :class="u.status === 'banned' ? 'bg-[#FF453A]/10 text-[#FF453A]' : 'bg-[#30D158]/10 text-[#30D158]'"
                   >
-                    {{ u.status === 'banned' ? '已封禁' : '正常' }}
+                    {{ u.status === "banned" ? "已封禁" : "正常" }}
                   </span>
                 </td>
                 <td class="px-4 py-3.5 text-right">
                   <div class="flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      class="action-btn text-primary hover:bg-primary/10"
-                      @click="openComments(u)"
-                    >
+                    <button type="button" class="action-btn text-primary hover:bg-primary/10" @click="openComments(u)">
                       <Icon icon="ri:chat-3-line" />
                       <span>查看评论</span>
                     </button>
@@ -429,7 +412,12 @@ async function doBulk(action: "spam" | "delete") {
             <VButton size="sm" :disabled="commentsBusy || !commentRows.length" @click="confirmBulk('spam')">
               全部标为垃圾
             </VButton>
-            <VButton size="sm" type="danger" :disabled="commentsBusy || !commentRows.length" @click="confirmBulk('delete')">
+            <VButton
+              size="sm"
+              type="danger"
+              :disabled="commentsBusy || !commentRows.length"
+              @click="confirmBulk('delete')"
+            >
               全部删除
             </VButton>
           </div>
@@ -440,13 +428,11 @@ async function doBulk(action: "spam" | "delete") {
           该用户名下暂无评论
         </div>
         <div v-else class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
-          <div
-            v-for="row in commentRows"
-            :key="row.id"
-            class="rounded-xl border border-border bg-card p-3 text-xs"
-          >
+          <div v-for="row in commentRows" :key="row.id" class="rounded-xl border border-border bg-card p-3 text-xs">
             <div class="flex items-center justify-between text-text-quaternary mb-1.5">
-              <span>在文章: <strong class="text-foreground">{{ row.post_slug }}</strong></span>
+              <span
+                >在文章: <strong class="text-foreground">{{ row.post_slug }}</strong></span
+              >
               <span class="rounded px-1.5 py-0.2 bg-secondary text-[10px]">{{ statusLabel(row.status) }}</span>
             </div>
             <div class="text-foreground leading-relaxed">{{ row.content }}</div>

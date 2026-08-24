@@ -83,7 +83,11 @@ const queryParams = computed(() => {
   return params;
 });
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => queryKeys.comments(queryParams.value)),
   queryFn: () => commentApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -111,7 +115,7 @@ watch(
       spam: c.spam ?? 0,
     };
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function statusInfo(status: string): { cls: string; label: string } {
@@ -359,7 +363,10 @@ onUnmounted(() => {
         <div
           class="stats-card cursor-pointer transition-all hover:border-primary"
           :class="{ 'border-primary ring-1 ring-primary': selectedStatus === 'all' }"
-          @click="selectedStatus = 'all'; page = 1"
+          @click="
+            selectedStatus = 'all';
+            page = 1;
+          "
         >
           <div class="stats-icon text-primary bg-primary/10">
             <Icon icon="ri:chat-3-line" />
@@ -373,42 +380,57 @@ onUnmounted(() => {
         <div
           class="stats-card cursor-pointer transition-all hover:border-[#FF9500]"
           :class="{ 'border-[#FF9500] ring-1 ring-[#FF9500]': selectedStatus === 'pending' }"
-          @click="selectedStatus = 'pending'; page = 1"
+          @click="
+            selectedStatus = 'pending';
+            page = 1;
+          "
         >
           <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
             <Icon icon="ri:time-line" />
           </div>
           <div>
             <div class="stats-label">待审核</div>
-            <div class="stats-value text-[#FF9500]">{{ statusCounts.pending }} <span class="stats-sub">条需要处理</span></div>
+            <div class="stats-value text-[#FF9500]">
+              {{ statusCounts.pending }} <span class="stats-sub">条需要处理</span>
+            </div>
           </div>
         </div>
 
         <div
           class="stats-card cursor-pointer transition-all hover:border-[#30D158]"
           :class="{ 'border-[#30D158] ring-1 ring-[#30D158]': selectedStatus === 'approved' }"
-          @click="selectedStatus = 'approved'; page = 1"
+          @click="
+            selectedStatus = 'approved';
+            page = 1;
+          "
         >
           <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
             <Icon icon="ri:checkbox-circle-line" />
           </div>
           <div>
             <div class="stats-label">已批准展示</div>
-            <div class="stats-value text-[#30D158]">{{ statusCounts.approved }} <span class="stats-sub">条正常显示</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ statusCounts.approved }} <span class="stats-sub">条正常显示</span>
+            </div>
           </div>
         </div>
 
         <div
           class="stats-card cursor-pointer transition-all hover:border-[#FF453A]"
           :class="{ 'border-[#FF453A] ring-1 ring-[#FF453A]': selectedStatus === 'spam' }"
-          @click="selectedStatus = 'spam'; page = 1"
+          @click="
+            selectedStatus = 'spam';
+            page = 1;
+          "
         >
           <div class="stats-icon text-[#FF453A] bg-[#FF453A]/10">
             <Icon icon="ri:spam-2-line" />
           </div>
           <div>
             <div class="stats-label">垃圾拦截</div>
-            <div class="stats-value text-[#FF453A]">{{ statusCounts.spam }} <span class="stats-sub">条已拦截</span></div>
+            <div class="stats-value text-[#FF453A]">
+              {{ statusCounts.spam }} <span class="stats-sub">条已拦截</span>
+            </div>
           </div>
         </div>
       </div>
@@ -421,7 +443,10 @@ onUnmounted(() => {
             :key="st.key"
             type="button"
             :class="{ active: selectedStatus === st.key }"
-            @click="selectedStatus = st.key; page = 1"
+            @click="
+              selectedStatus = st.key;
+              page = 1;
+            "
           >
             <Icon :icon="st.icon" class="mr-1 inline-block" />
             {{ st.label }}
@@ -437,7 +462,7 @@ onUnmounted(() => {
             class="rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
             @click="selectedIds.size === comments.length ? clearSelection() : selectAll()"
           >
-            {{ selectedIds.size === comments.length ? '取消全选' : '全选本页' }}
+            {{ selectedIds.size === comments.length ? "取消全选" : "全选本页" }}
           </button>
         </div>
       </div>
@@ -458,7 +483,7 @@ onUnmounted(() => {
           class="group relative rounded-2xl border border-border bg-card p-4 transition-all hover:border-border-strong sm:p-5"
           :class="[
             selectedIds.has(c.id) ? 'border-primary ring-1 ring-primary bg-primary/5' : '',
-            focusedIndex === idx ? 'ring-2 ring-primary/60 border-primary' : ''
+            focusedIndex === idx ? 'ring-2 ring-primary/60 border-primary' : '',
           ]"
         >
           <div class="flex items-start justify-between gap-3">
@@ -484,12 +509,15 @@ onUnmounted(() => {
                 class="avatar-gradient-1 flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 cursor-pointer"
                 @click="openUserDrawer(c)"
               >
-                {{ c.nick ? c.nick.charAt(0).toUpperCase() : '?' }}
+                {{ c.nick ? c.nick.charAt(0).toUpperCase() : "?" }}
               </div>
 
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-sm font-semibold text-foreground truncate cursor-pointer hover:underline" @click="openUserDrawer(c)">
+                  <span
+                    class="text-sm font-semibold text-foreground truncate cursor-pointer hover:underline"
+                    @click="openUserDrawer(c)"
+                  >
                     {{ c.nick || "匿名访客" }}
                   </span>
                   <span
@@ -595,34 +623,17 @@ onUnmounted(() => {
     </div>
 
     <!-- ============ 批量操作浮动栏 ============ -->
-    <VFloatingDock
-      :visible="selectedIds.size > 0"
-      :count="selectedIds.size"
-      title="已选评论"
-      @clear="clearSelection"
-    >
+    <VFloatingDock :visible="selectedIds.size > 0" :count="selectedIds.size" title="已选评论" @clear="clearSelection">
       <div class="flex items-center gap-2">
-        <VButton size="sm" @click="handleBatch('approve')">
-          批量批准
-        </VButton>
-        <VButton size="sm" @click="handleBatch('reject')">
-          批量拒绝
-        </VButton>
-        <VButton size="sm" @click="handleBatch('spam')">
-          标为垃圾
-        </VButton>
-        <VButton size="sm" type="danger" @click="handleBatch('delete')">
-          批量删除
-        </VButton>
+        <VButton size="sm" @click="handleBatch('approve')"> 批量批准 </VButton>
+        <VButton size="sm" @click="handleBatch('reject')"> 批量拒绝 </VButton>
+        <VButton size="sm" @click="handleBatch('spam')"> 标为垃圾 </VButton>
+        <VButton size="sm" type="danger" @click="handleBatch('delete')"> 批量删除 </VButton>
       </div>
     </VFloatingDock>
 
     <!-- ============ 快捷回复弹窗 ============ -->
-    <VModal
-      v-model:visible="replyVisible"
-      :title="`回复给：${replyTarget?.nick || '访客'}`"
-      :width="480"
-    >
+    <VModal v-model:visible="replyVisible" :title="`回复给：${replyTarget?.nick || '访客'}`" :width="480">
       <div class="space-y-3">
         <div class="rounded-xl border border-border bg-secondary/40 p-3 text-xs text-text-tertiary">
           <div class="font-medium text-foreground mb-1">原始评论：</div>
@@ -650,12 +661,7 @@ onUnmounted(() => {
     </VModal>
 
     <!-- ============ 访客/用户画像抽屉 ============ -->
-    <VModal
-      :visible="!!userDrawerTarget"
-      title="评论者画像详情"
-      :width="440"
-      @update:visible="userDrawerTarget = null"
-    >
+    <VModal :visible="!!userDrawerTarget" title="评论者画像详情" :width="440" @update:visible="userDrawerTarget = null">
       <div v-if="userDrawerTarget" class="space-y-4 text-xs">
         <div class="flex items-center gap-3 border-b border-border/60 pb-3">
           <img
@@ -668,29 +674,34 @@ onUnmounted(() => {
             v-else
             class="avatar-gradient-1 flex h-12 w-12 items-center justify-center rounded-full text-base font-bold text-white"
           >
-            {{ userDrawerTarget.nick ? userDrawerTarget.nick.charAt(0).toUpperCase() : '?' }}
+            {{ userDrawerTarget.nick ? userDrawerTarget.nick.charAt(0).toUpperCase() : "?" }}
           </div>
           <div>
             <div class="text-base font-bold text-foreground">{{ userDrawerTarget.nick }}</div>
-            <div class="text-text-quaternary font-mono">{{ userDrawerTarget.email || '未填邮箱' }}</div>
+            <div class="text-text-quaternary font-mono">{{ userDrawerTarget.email || "未填邮箱" }}</div>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
           <div class="rounded-xl border border-border bg-card p-3">
             <div class="text-text-quaternary">IP 地址</div>
-            <div class="font-mono font-medium text-foreground mt-0.5">{{ userDrawerTarget.ip || '未知' }}</div>
+            <div class="font-mono font-medium text-foreground mt-0.5">{{ userDrawerTarget.ip || "未知" }}</div>
           </div>
           <div class="rounded-xl border border-border bg-card p-3">
             <div class="text-text-quaternary">客户端环境</div>
             <div class="font-mono font-medium text-foreground mt-0.5 truncate" :title="userDrawerTarget.browser">
-              {{ userDrawerTarget.browser || userDrawerTarget.os || '未知浏览器' }}
+              {{ userDrawerTarget.browser || userDrawerTarget.os || "未知浏览器" }}
             </div>
           </div>
           <div class="rounded-xl border border-border bg-card p-3">
             <div class="text-text-quaternary">个人主页</div>
             <div class="font-medium text-foreground mt-0.5 truncate">
-              <a v-if="userDrawerTarget.website" :href="userDrawerTarget.website" target="_blank" class="text-primary hover:underline">
+              <a
+                v-if="userDrawerTarget.website"
+                :href="userDrawerTarget.website"
+                target="_blank"
+                class="text-primary hover:underline"
+              >
                 {{ userDrawerTarget.website }}
               </a>
               <span v-else class="text-text-quaternary">无</span>

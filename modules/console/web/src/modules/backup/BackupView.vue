@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import {
-  backupApi,
-  backupExportUrl,
-  backupExportMarkdownUrl,
-} from "@/api";
+import { backupApi, backupExportUrl, backupExportMarkdownUrl } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VCard, VButton, VLoading, VEmpty, VModal, Dialog, Toast } from "@/components/ui";
@@ -73,7 +69,8 @@ async function loadStatus() {
     autoBackup.value = data.auto_backup;
     backupKeep.value = data.backup_keep;
     backups.value = data.backups || [];
-  } catch {} finally {
+  } catch {
+  } finally {
     loading.value = false;
   }
 }
@@ -167,7 +164,9 @@ onMounted(loadStatus);
           </div>
           <div>
             <div class="stats-label">定时自动备份</div>
-            <div class="stats-value text-[#30B0C7]">{{ stats.autoBackup }} <span class="stats-sub">每 24 小时执行</span></div>
+            <div class="stats-value text-[#30B0C7]">
+              {{ stats.autoBackup }} <span class="stats-sub">每 24 小时执行</span>
+            </div>
           </div>
         </div>
 
@@ -202,7 +201,8 @@ onMounted(loadStatus);
               </div>
             </template>
             <p class="text-xs leading-relaxed text-text-tertiary">
-              打包内容包含 SQLite 核心数据库（文章/评论/瞬间/页面/设置/标签等全部数据）、<code>attachments/</code> 媒体文件目录以及 <code>site.yml</code> 站点配置。
+              打包内容包含 SQLite 核心数据库（文章/评论/瞬间/页面/设置/标签等全部数据）、<code>attachments/</code>
+              媒体文件目录以及 <code>site.yml</code> 站点配置。
             </p>
           </VCard>
 
@@ -237,7 +237,10 @@ onMounted(loadStatus);
                 </thead>
                 <tbody class="divide-y divide-border/60">
                   <tr v-for="b in backups" :key="b.name" class="hover:bg-secondary/40 transition-colors">
-                    <td class="py-2.5 px-3 font-mono font-medium text-foreground truncate max-w-[200px]" :title="b.name">
+                    <td
+                      class="py-2.5 px-3 font-mono font-medium text-foreground truncate max-w-[200px]"
+                      :title="b.name"
+                    >
                       {{ b.name }}
                     </td>
                     <td class="py-2.5 px-3 font-mono text-text-tertiary">
@@ -282,14 +285,16 @@ onMounted(loadStatus);
               </div>
             </template>
             <p class="text-xs leading-relaxed text-text-tertiary">
-              将全部文章（含草稿）打包为带 YAML Frontmatter 的纯 <code>.md</code> 文件压缩包，便于迁移至 Hexo、Hugo 等静态博客或外部备份。
+              将全部文章（含草稿）打包为带 YAML Frontmatter 的纯 <code>.md</code> 文件压缩包，便于迁移至 Hexo、Hugo
+              等静态博客或外部备份。
             </p>
           </VCard>
 
           <!-- Markdown 文章导入 -->
           <VCard title="Markdown 文章导入">
             <p class="text-xs leading-relaxed text-text-tertiary mb-3">
-              支持上传单个 <code>.md</code> 文件或包含多篇 Markdown 文章的 <code>.zip</code> 压缩包，系统将自动解析元数据并写入数据库。
+              支持上传单个 <code>.md</code> 文件或包含多篇 Markdown 文章的
+              <code>.zip</code> 压缩包，系统将自动解析元数据并写入数据库。
             </p>
 
             <div class="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
@@ -298,13 +303,7 @@ onMounted(loadStatus);
               </span>
 
               <label class="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".md,.zip"
-                  class="hidden"
-                  :disabled="importing"
-                  @change="handleImport"
-                />
+                <input type="file" accept=".md,.zip" class="hidden" :disabled="importing" @change="handleImport" />
                 <VButton size="sm" :loading="importing" @click.prevent>
                   <template #icon><Icon icon="ri:upload-2-line" /></template>
                   选择文件导入
@@ -338,13 +337,7 @@ onMounted(loadStatus);
             <div class="flex items-center justify-between border-t border-border/60 pt-3">
               <span class="text-xs text-text-quaternary">支持全量覆盖还原</span>
               <label class="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".zip"
-                  class="hidden"
-                  :disabled="restoring"
-                  @change="pickRestoreFile"
-                />
+                <input type="file" accept=".zip" class="hidden" :disabled="restoring" @change="pickRestoreFile" />
                 <VButton size="sm" type="danger" @click.prevent>
                   <template #icon><Icon icon="ri:restart-line" /></template>
                   上传备份并恢复
@@ -374,7 +367,11 @@ onMounted(loadStatus);
         <div class="rounded-xl border border-border bg-card p-3 font-mono">
           <div class="text-text-quaternary">恢复目标来源：</div>
           <div class="font-semibold text-foreground mt-1">
-            {{ pendingRestore.kind === 'upload' ? `本地上传文件：${pendingRestore.file?.name}` : `服务器快照：${pendingRestore.name}` }}
+            {{
+              pendingRestore.kind === "upload"
+                ? `本地上传文件：${pendingRestore.file?.name}`
+                : `服务器快照：${pendingRestore.name}`
+            }}
           </div>
         </div>
 
@@ -382,12 +379,7 @@ onMounted(loadStatus);
           <label class="mb-1.5 block font-medium text-text-tertiary">
             请在下方输入框中完整输入 <strong class="text-state-error font-mono">RESTORE</strong> 以确认执行：
           </label>
-          <input
-            v-model="restoreConfirmText"
-            class="apple-input font-mono text-sm"
-            placeholder="RESTORE"
-            autofocus
-          />
+          <input v-model="restoreConfirmText" class="apple-input font-mono text-sm" placeholder="RESTORE" autofocus />
         </div>
       </div>
 

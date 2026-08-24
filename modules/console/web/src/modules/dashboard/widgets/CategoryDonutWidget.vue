@@ -57,7 +57,8 @@ const error = ref("");
 const hoveredIdx = ref<number | null>(null);
 
 onMounted(() => {
-  dashboardApi.categories()
+  dashboardApi
+    .categories()
     .then((r: { data: CatResp }) => {
       data.value = r.data.items.sort((a, b) => b.count - a.count);
     })
@@ -114,7 +115,11 @@ function openCategory(name: string) {
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col justify-between" :class="`donut-card-${sizePreset}`" :data-bp="breakpoint">
+  <div
+    class="apple-card h-full flex flex-col justify-between"
+    :class="`donut-card-${sizePreset}`"
+    :data-bp="breakpoint"
+  >
     <div class="donut-header">
       <div class="flex items-center gap-2">
         <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">分类分布</h3>
@@ -127,7 +132,10 @@ function openCategory(name: string) {
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
     <div v-else-if="error" class="donut-placeholder flex items-center justify-center text-state-error">{{ error }}</div>
-    <div v-else-if="data.length === 0" class="donut-placeholder flex items-center justify-center text-muted-foreground text-sm">
+    <div
+      v-else-if="data.length === 0"
+      class="donut-placeholder flex items-center justify-center text-muted-foreground text-sm"
+    >
       暂无分类数据
     </div>
 
@@ -146,12 +154,20 @@ function openCategory(name: string) {
           />
         </g>
         <template v-if="hoveredArc">
-          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="text-sm font-bold">{{ hoveredArc.name }}</text>
-          <text x="90" y="105" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold">{{ hoveredArc.pct }}% ({{ hoveredArc.count }}篇)</text>
+          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="text-sm font-bold">
+            {{ hoveredArc.name }}
+          </text>
+          <text x="90" y="105" text-anchor="middle" :fill="hoveredArc.color" class="text-xs font-semibold">
+            {{ hoveredArc.pct }}% ({{ hoveredArc.count }}篇)
+          </text>
         </template>
         <template v-else>
-          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
-          <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">篇文章</text>
+          <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">
+            {{ total }}
+          </text>
+          <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">
+            篇文章
+          </text>
         </template>
       </svg>
     </div>
@@ -170,8 +186,12 @@ function openCategory(name: string) {
             @mouseenter="hoveredIdx = i"
           />
         </g>
-        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
-        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">篇文章</text>
+        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">
+          {{ total }}
+        </text>
+        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">
+          篇文章
+        </text>
       </svg>
       <div class="donut-legend">
         <div
@@ -204,8 +224,12 @@ function openCategory(name: string) {
             @mouseenter="hoveredIdx = i"
           />
         </g>
-        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">{{ total }}</text>
-        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">总计文章</text>
+        <text x="90" y="85" text-anchor="middle" fill="var(--color-foreground)" class="donut-center-num">
+          {{ total }}
+        </text>
+        <text x="90" y="105" text-anchor="middle" fill="var(--color-muted-foreground)" class="donut-center-label">
+          总计文章
+        </text>
       </svg>
       <div class="flex-1 min-w-0 space-y-2 max-h-52 overflow-y-auto pr-1">
         <div
@@ -229,7 +253,10 @@ function openCategory(name: string) {
             <span class="text-muted-foreground font-semibold">{{ a.count }} 篇 · {{ a.pct }}%</span>
           </div>
           <div class="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-300" :style="{ width: `${a.pct}%`, backgroundColor: a.color }" />
+            <div
+              class="h-full rounded-full transition-all duration-300"
+              :style="{ width: `${a.pct}%`, backgroundColor: a.color }"
+            />
           </div>
         </div>
       </div>
@@ -244,7 +271,9 @@ function openCategory(name: string) {
   justify-content: space-between;
   margin-bottom: 16px;
 }
-.donut-placeholder { height: 180px; }
+.donut-placeholder {
+  height: 180px;
+}
 
 .donut-body {
   display: flex;
@@ -260,8 +289,13 @@ function openCategory(name: string) {
   transition: opacity var(--duration-normal) var(--ease-standard);
   cursor: pointer;
 }
-.donut-center-num { font-size: 22px; font-weight: 700; }
-.donut-center-label { font-size: 11px; }
+.donut-center-num {
+  font-size: 22px;
+  font-weight: 700;
+}
+.donut-center-label {
+  font-size: 11px;
+}
 
 .donut-legend {
   flex: 1;
@@ -280,25 +314,64 @@ function openCategory(name: string) {
   border-radius: 6px;
   transition: background var(--duration-fast) var(--ease-standard);
 }
-.donut-legend-item.hovered { background: color-mix(in srgb, #fff 5%, transparent); }
-.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.donut-name { color: var(--color-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.donut-count { color: var(--color-muted-foreground); flex-shrink: 0; }
-.donut-pct { color: var(--color-text-quaternary); font-size: 11px; width: 34px; text-align: right; flex-shrink: 0; }
+.donut-legend-item.hovered {
+  background: color-mix(in srgb, #fff 5%, transparent);
+}
+.donut-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.donut-name {
+  color: var(--color-foreground);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.donut-count {
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+.donut-pct {
+  color: var(--color-text-quaternary);
+  font-size: 11px;
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
 
 /* M */
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-svg,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg { width: 120px; height: 120px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-svg {
+  width: 120px;
+  height: 120px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-body,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body { gap: 12px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
+  gap: 12px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-legend-item,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend-item { font-size: 12px; gap: 6px; padding: 3px 4px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend-item {
+  font-size: 12px;
+  gap: 6px;
+  padding: 3px 4px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-center-num,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-center-num { font-size: 20px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-center-num {
+  font-size: 20px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-dot,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-dot { width: 8px; height: 8px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-dot {
+  width: 8px;
+  height: 8px;
+}
 .apple-card:is([data-bp="md"], [data-bp="sm"]) .donut-pct,
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct { width: 30px; font-size: 10px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-pct {
+  width: 30px;
+  font-size: 10px;
+}
 
 /* S: stack vertically, center donut */
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-body {
@@ -311,7 +384,9 @@ function openCategory(name: string) {
   height: 130px;
   margin: 0 auto;
 }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-placeholder { height: 160px; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-placeholder {
+  height: 160px;
+}
 .apple-card:is([data-bp="xs"], [data-bp="xxs"]) .donut-legend {
   max-height: none;
 }

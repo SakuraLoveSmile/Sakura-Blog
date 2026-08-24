@@ -4,13 +4,7 @@ import { Icon } from "@iconify/vue";
 import type { Chart } from "chart.js";
 import { loadChart } from "@/lib/chart-init";
 import { VPageHeader, VCard, VLoading, VEmpty, VButton } from "@/components/ui";
-import {
-  perfApi,
-  type PerfOverview,
-  type PerfSamplePoint,
-  type PerfRouteStat,
-  type PerfMinuteStat,
-} from "@/api";
+import { perfApi, type PerfOverview, type PerfSamplePoint, type PerfRouteStat, type PerfMinuteStat } from "@/api";
 
 const loading = ref(true);
 const disabled = ref(false);
@@ -262,13 +256,7 @@ function methodBadge(method: string) {
       <template #subtitle>实时监控 Go 运行时负载、内存分配趋势、Goroutines 并发与高耗时路由排行</template>
       <template #actions>
         <div class="apple-segmented">
-          <button
-            v-for="h in [1, 6, 24]"
-            :key="h"
-            type="button"
-            :class="{ active: hours === h }"
-            @click="hours = h"
-          >
+          <button v-for="h in [1, 6, 24]" :key="h" type="button" :class="{ active: hours === h }" @click="hours = h">
             最近 {{ h }}h
           </button>
         </div>
@@ -290,9 +278,7 @@ function methodBadge(method: string) {
         message="请前往「功能模块」页启用性能监控模块后查看实时指标与趋势"
       >
         <template #actions>
-          <VButton type="primary" :route="{ path: '/modules' }">
-            前往功能模块
-          </VButton>
+          <VButton type="primary" :route="{ path: '/modules' }"> 前往功能模块 </VButton>
         </template>
       </VEmpty>
 
@@ -326,7 +312,10 @@ function methodBadge(method: string) {
             </div>
             <div>
               <div class="stats-label">堆内存 / 系统内存</div>
-              <div class="stats-value">{{ overview.heap_alloc_mb.toFixed(1) }} <span class="text-xs text-text-tertiary">/ {{ overview.sys_mem_mb.toFixed(1) }} MB</span></div>
+              <div class="stats-value">
+                {{ overview.heap_alloc_mb.toFixed(1) }}
+                <span class="text-xs text-text-tertiary">/ {{ overview.sys_mem_mb.toFixed(1) }} MB</span>
+              </div>
               <span class="stats-sub">GC 执行 {{ overview.gc_count }} 次</span>
             </div>
           </div>
@@ -338,7 +327,9 @@ function methodBadge(method: string) {
             <div>
               <div class="stats-label">数据库体积 (SQLite)</div>
               <div class="stats-value">{{ fmtBytes(overview.db_size_bytes) }}</div>
-              <span class="stats-sub">近 {{ overview.recent.requests }} 次请求 · 均耗 {{ fmtMs(overview.recent.avg_ms) }}</span>
+              <span class="stats-sub"
+                >近 {{ overview.recent.requests }} 次请求 · 均耗 {{ fmtMs(overview.recent.avg_ms) }}</span
+              >
             </div>
           </div>
         </div>
@@ -425,7 +416,10 @@ function methodBadge(method: string) {
                   <td class="py-2.5 px-3 text-right text-text-tertiary">
                     {{ fmtMs(r.max_ms) }}
                   </td>
-                  <td class="py-2.5 px-3 text-right" :class="r.err_count > 0 ? 'text-[#FF453A] font-bold' : 'text-text-quaternary'">
+                  <td
+                    class="py-2.5 px-3 text-right"
+                    :class="r.err_count > 0 ? 'text-[#FF453A] font-bold' : 'text-text-quaternary'"
+                  >
                     {{ fmtPct(r.err_count / (r.count || 1)) }}
                   </td>
                 </tr>

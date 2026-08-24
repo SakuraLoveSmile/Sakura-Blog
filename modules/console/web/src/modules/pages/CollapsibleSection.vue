@@ -12,7 +12,7 @@ const props = withDefaults(
   {
     subtitle: "",
     defaultOpen: false,
-  }
+  },
 );
 
 const open = ref(props.defaultOpen);
@@ -23,7 +23,7 @@ watch(
   (val) => {
     if (val) open.value = true;
   },
-  { immediate: false }
+  { immediate: false },
 );
 </script>
 
@@ -36,10 +36,7 @@ watch(
       >
         <div class="min-w-0">
           <div class="text-base font-bold text-foreground dark:text-foreground">{{ title }}</div>
-          <div
-            v-if="subtitle"
-            class="mt-0.5 text-xs font-normal text-text-quaternary dark:text-muted-foreground"
-          >
+          <div v-if="subtitle" class="mt-0.5 text-xs font-normal text-text-quaternary dark:text-muted-foreground">
             {{ subtitle }}
           </div>
         </div>
@@ -48,10 +45,7 @@ watch(
           class="h-5 w-5 shrink-0 text-muted-foreground"
         />
       </div>
-      <div
-        v-if="open"
-        class="mt-4 pt-4 border-t border-border dark:border-border-strong"
-      >
+      <div v-if="open" class="mt-4 pt-4 border-t border-border dark:border-border-strong">
         <slot />
       </div>
     </div>

@@ -17,13 +17,27 @@ const emit = defineEmits<{
 const inner = ref<any>(null);
 const activeStates = computed<Record<string, boolean>>(() => inner.value?.activeStates ?? {});
 
-function applyFormat(id: string) { inner.value?.applyFormat(id); }
-function insertMarkdown(text: string) { inner.value?.insertMarkdown(text); }
-function scrollToHeading(index: number) { inner.value?.scrollToHeading(index); }
-function openImageUpload() { inner.value?.openImageUpload(); }
-function openImagePicker() { inner.value?.openImagePicker(); }
-function clearDraft() { inner.value?.clearDraft(); }
-function openSearch() { inner.value?.openSearch(); }
+function applyFormat(id: string) {
+  inner.value?.applyFormat(id);
+}
+function insertMarkdown(text: string) {
+  inner.value?.insertMarkdown(text);
+}
+function scrollToHeading(index: number) {
+  inner.value?.scrollToHeading(index);
+}
+function openImageUpload() {
+  inner.value?.openImageUpload();
+}
+function openImagePicker() {
+  inner.value?.openImagePicker();
+}
+function clearDraft() {
+  inner.value?.clearDraft();
+}
+function openSearch() {
+  inner.value?.openSearch();
+}
 
 defineExpose({
   applyFormat,

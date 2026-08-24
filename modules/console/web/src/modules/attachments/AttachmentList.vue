@@ -167,7 +167,11 @@ const queryParams = computed(() => {
   return params;
 });
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => queryKeys.attachments(queryParams.value)),
   queryFn: () => attachmentApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -382,7 +386,8 @@ async function openDetail(item: AttachmentItem) {
   try {
     const { data } = await attachmentApi.refs(item.id);
     detailRefs.value = data;
-  } catch {} finally {
+  } catch {
+  } finally {
     detailRefsLoading.value = false;
   }
 }
@@ -445,13 +450,7 @@ function formatMimeBadge(mime: string): string {
           新建分组
         </VButton>
 
-        <input
-          ref="fileInput"
-          type="file"
-          multiple
-          class="hidden"
-          @change="onFileChange"
-        />
+        <input ref="fileInput" type="file" multiple class="hidden" @change="onFileChange" />
 
         <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
           <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
@@ -483,7 +482,9 @@ function formatMimeBadge(mime: string): string {
           </div>
           <div>
             <div class="stats-label">当前列表占用</div>
-            <div class="stats-value text-[#30D158]">{{ stats.totalBytes }} <span class="stats-sub">磁盘已用空间</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ stats.totalBytes }} <span class="stats-sub">磁盘已用空间</span>
+            </div>
           </div>
         </div>
 
@@ -515,11 +516,7 @@ function formatMimeBadge(mime: string): string {
           <template #header>
             <div class="flex items-center justify-between w-full">
               <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">附件分组</span>
-              <button
-                type="button"
-                class="text-xs text-primary hover:underline"
-                @click="openCreateGroup"
-              >
+              <button type="button" class="text-xs text-primary hover:underline" @click="openCreateGroup">
                 + 新建
               </button>
             </div>
@@ -539,12 +536,7 @@ function formatMimeBadge(mime: string): string {
               <span class="group-count-badge">{{ total }}</span>
             </button>
 
-            <button
-              type="button"
-              class="group-item-btn"
-              :class="{ active: activeGroup === 0 }"
-              @click="selectGroup(0)"
-            >
+            <button type="button" class="group-item-btn" :class="{ active: activeGroup === 0 }" @click="selectGroup(0)">
               <div class="flex items-center gap-2 truncate">
                 <Icon icon="ri:folder-unknow-line" />
                 <span class="truncate">未分组</span>
@@ -598,7 +590,10 @@ function formatMimeBadge(mime: string): string {
                 :key="tf.key"
                 type="button"
                 :class="{ active: typeFilter === tf.key }"
-                @click="typeFilter = tf.key; page = 1"
+                @click="
+                  typeFilter = tf.key;
+                  page = 1;
+                "
               >
                 <Icon :icon="tf.icon" class="mr-1 inline-block" />
                 {{ tf.label }}
@@ -612,7 +607,7 @@ function formatMimeBadge(mime: string): string {
                 class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
                 @click="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
               >
-                {{ selectedIds.size === attachments.length ? '取消全选' : '全选本页' }}
+                {{ selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
               </button>
 
               <div class="apple-segmented">
@@ -666,11 +661,21 @@ function formatMimeBadge(mime: string): string {
                   :alt="a.filename"
                 />
                 <div v-else class="flex h-full w-full flex-col items-center justify-center text-3xl text-text-tertiary">
-                  <Icon :icon="categoryOf(a.mime) === 'video' ? 'ri:video-line' : (categoryOf(a.mime) === 'audio' ? 'ri:music-line' : 'ri:file-text-line')" />
+                  <Icon
+                    :icon="
+                      categoryOf(a.mime) === 'video'
+                        ? 'ri:video-line'
+                        : categoryOf(a.mime) === 'audio'
+                          ? 'ri:music-line'
+                          : 'ri:file-text-line'
+                    "
+                  />
                 </div>
 
                 <!-- 格式角标 -->
-                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90 backdrop-blur-md">
+                <span
+                  class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white/90 backdrop-blur-md"
+                >
                   {{ formatMimeBadge(a.mime) }}
                 </span>
 
@@ -685,7 +690,10 @@ function formatMimeBadge(mime: string): string {
                 </div>
 
                 <!-- 悬浮操作按钮组 -->
-                <div class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100" @click.stop>
+                <div
+                  class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/50 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100"
+                  @click.stop
+                >
                   <button
                     type="button"
                     class="rounded-full bg-white/20 p-2 text-white hover:bg-primary"
@@ -771,11 +779,16 @@ function formatMimeBadge(mime: string): string {
                           class="h-9 w-9 shrink-0 rounded-lg border border-border object-cover bg-secondary"
                           alt=""
                         />
-                        <div v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-base text-text-tertiary">
+                        <div
+                          v-else
+                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-base text-text-tertiary"
+                        >
                           <Icon :icon="categoryOf(a.mime) === 'video' ? 'ri:video-line' : 'ri:file-text-line'" />
                         </div>
                         <div class="min-w-0">
-                          <div class="font-semibold text-foreground text-sm truncate max-w-[280px]">{{ a.filename }}</div>
+                          <div class="font-semibold text-foreground text-sm truncate max-w-[280px]">
+                            {{ a.filename }}
+                          </div>
                           <div class="text-xs font-mono text-text-quaternary truncate max-w-[280px]">{{ a.url }}</div>
                         </div>
                       </div>
@@ -836,7 +849,9 @@ function formatMimeBadge(mime: string): string {
       v-if="isDragging"
       class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md pointer-events-none"
     >
-      <div class="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/20 text-5xl text-primary animate-bounce">
+      <div
+        class="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/20 text-5xl text-primary animate-bounce"
+      >
         <Icon icon="ri:upload-cloud-2-line" />
       </div>
       <h2 class="mt-4 text-xl font-bold text-white">松开鼠标即可上传文件</h2>
@@ -892,15 +907,12 @@ function formatMimeBadge(mime: string): string {
     </VModal>
 
     <!-- ============ 附件详情抽屉 ============ -->
-    <VModal
-      :visible="!!detailItem"
-      title="附件属性详情"
-      :width="540"
-      @update:visible="closeDetail"
-    >
+    <VModal :visible="!!detailItem" title="附件属性详情" :width="540" @update:visible="closeDetail">
       <div v-if="detailItem" class="space-y-4">
         <!-- 大图 / 媒体预览 -->
-        <div class="flex items-center justify-center rounded-2xl border border-border bg-secondary/50 p-4 max-h-[300px] overflow-hidden">
+        <div
+          class="flex items-center justify-center rounded-2xl border border-border bg-secondary/50 p-4 max-h-[300px] overflow-hidden"
+        >
           <img
             v-if="detailItem.mime && detailItem.mime.startsWith('image/')"
             :src="detailItem.url"
@@ -916,7 +928,9 @@ function formatMimeBadge(mime: string): string {
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div class="rounded-xl border border-border bg-card p-3">
             <div class="text-text-quaternary">文件名</div>
-            <div class="font-semibold text-foreground truncate mt-1" :title="detailItem.filename">{{ detailItem.filename }}</div>
+            <div class="font-semibold text-foreground truncate mt-1" :title="detailItem.filename">
+              {{ detailItem.filename }}
+            </div>
           </div>
           <div class="rounded-xl border border-border bg-card p-3">
             <div class="text-text-quaternary">文件大小</div>
@@ -948,22 +962,33 @@ function formatMimeBadge(mime: string): string {
             <Icon v-if="detailRefsLoading" icon="ri:loader-4-line" class="animate-spin text-primary" />
           </div>
 
-          <div v-if="detailRefsLoading" class="text-text-quaternary py-2 text-center">
-            正在排查全站引用...
-          </div>
-          <div v-else-if="!detailRefs || (!detailRefs.posts?.length && !detailRefs.pages?.length && !detailRefs.moments?.length)" class="text-text-quaternary py-1">
+          <div v-if="detailRefsLoading" class="text-text-quaternary py-2 text-center">正在排查全站引用...</div>
+          <div
+            v-else-if="
+              !detailRefs || (!detailRefs.posts?.length && !detailRefs.pages?.length && !detailRefs.moments?.length)
+            "
+            class="text-text-quaternary py-1"
+          >
             暂未在已发布的文章、单页或瞬间中检测到直接引用。
           </div>
           <div v-else class="space-y-1.5">
             <div v-if="detailRefs.posts?.length" class="text-text-secondary">
               <span class="font-medium text-foreground">文章：</span>
-              <span v-for="p in detailRefs.posts" :key="p.slug" class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]">
+              <span
+                v-for="p in detailRefs.posts"
+                :key="p.slug"
+                class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]"
+              >
                 {{ p.title }}
               </span>
             </div>
             <div v-if="detailRefs.pages?.length" class="text-text-secondary">
               <span class="font-medium text-foreground">单页：</span>
-              <span v-for="p in detailRefs.pages" :key="p.slug" class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]">
+              <span
+                v-for="p in detailRefs.pages"
+                :key="p.slug"
+                class="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[11px]"
+              >
                 {{ p.title }}
               </span>
             </div>
@@ -973,33 +998,22 @@ function formatMimeBadge(mime: string): string {
 
       <template #footer>
         <div class="flex items-center justify-between w-full">
-          <VButton type="danger" size="sm" @click="detailItem && handleDeleteSingle(detailItem)">
-            删除附件
-          </VButton>
+          <VButton type="danger" size="sm" @click="detailItem && handleDeleteSingle(detailItem)"> 删除附件 </VButton>
           <VButton @click="closeDetail">关闭</VButton>
         </div>
       </template>
     </VModal>
 
     <!-- ============ 底部批量操作浮动栏 (VFloatingDock) ============ -->
-    <VFloatingDock
-      :visible="selectedIds.size > 0"
-      :count="selectedIds.size"
-      title="已选附件"
-      @clear="clearSelection"
-    >
+    <VFloatingDock :visible="selectedIds.size > 0" :count="selectedIds.size" title="已选附件" @clear="clearSelection">
       <div class="flex items-center gap-2">
         <select v-model="batchTargetGroup" class="apple-select h-8 text-xs w-36">
           <option value="">迁移至分组...</option>
           <option :value="0">未分组</option>
           <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
         </select>
-        <VButton size="sm" :loading="batchMoving" @click="batchMove">
-          迁移
-        </VButton>
-        <VButton size="sm" type="danger" @click="batchDelete">
-          批量删除
-        </VButton>
+        <VButton size="sm" :loading="batchMoving" @click="batchMove"> 迁移 </VButton>
+        <VButton size="sm" type="danger" @click="batchDelete"> 批量删除 </VButton>
       </div>
     </VFloatingDock>
   </div>

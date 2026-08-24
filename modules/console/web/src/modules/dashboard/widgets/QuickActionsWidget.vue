@@ -129,7 +129,11 @@ const hoveredIdx = ref<number | null>(null);
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col justify-between" :class="`quick-card-${sizePreset}`" :data-bp="breakpoint">
+  <div
+    class="apple-card h-full flex flex-col justify-between"
+    :class="`quick-card-${sizePreset}`"
+    :data-bp="breakpoint"
+  >
     <div class="flex items-center justify-between mb-3">
       <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">快捷操作</h3>
       <span class="text-xs text-muted-foreground">{{ displayedActions.length }} 个快捷入口</span>
@@ -205,7 +209,8 @@ const hoveredIdx = ref<number | null>(null);
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),
+  transition:
+    background var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard);
 }
 

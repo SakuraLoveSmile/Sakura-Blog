@@ -36,15 +36,14 @@ let grid: GridStack | null = null;
 function readGridWidgets(): DashboardWidget[] {
   if (!gridEl.value) return props.widgets.map((item) => ({ ...item }));
   const source = new Map(props.widgets.map((item) => [item.i, item]));
-  const nodes = Array.from(gridEl.value.querySelectorAll<HTMLElement>(".grid-stack-item"))
-    .map((element) => ({
-      i: element.getAttribute("gs-id") ?? "",
-      widgetId: element.getAttribute("data-widget-id") ?? "",
-      x: Number(element.getAttribute("gs-x")),
-      y: Number(element.getAttribute("gs-y")),
-      w: Number(element.getAttribute("gs-w")),
-      h: Number(element.getAttribute("gs-h")),
-    }));
+  const nodes = Array.from(gridEl.value.querySelectorAll<HTMLElement>(".grid-stack-item")).map((element) => ({
+    i: element.getAttribute("gs-id") ?? "",
+    widgetId: element.getAttribute("data-widget-id") ?? "",
+    x: Number(element.getAttribute("gs-x")),
+    y: Number(element.getAttribute("gs-y")),
+    w: Number(element.getAttribute("gs-w")),
+    h: Number(element.getAttribute("gs-h")),
+  }));
   return mergeGridWidgetMetadata(nodesToGridWidgets(nodes, props.breakpoint), source);
 }
 
@@ -58,16 +57,19 @@ function setEditing(enabled: boolean) {
 
 function mountGrid() {
   if (!gridEl.value || grid) return;
-  const instance = GridStack.init({
-    column: getGridColumns(props.breakpoint),
-    cellHeight: 8,
-    margin: 10,
-    float: false,
-    animate: true,
-    disableDrag: !props.editing,
-    disableResize: true,
-    draggable: { handle: ".apple-drag-handle" },
-  }, gridEl.value);
+  const instance = GridStack.init(
+    {
+      column: getGridColumns(props.breakpoint),
+      cellHeight: 8,
+      margin: 10,
+      float: false,
+      animate: true,
+      disableDrag: !props.editing,
+      disableResize: true,
+      draggable: { handle: ".apple-drag-handle" },
+    },
+    gridEl.value,
+  );
   if (!instance) return;
   grid = instance;
   instance.on("dragstop", commitGrid);
@@ -86,9 +88,18 @@ async function rebuildGrid() {
   mountGrid();
 }
 
-watch(() => props.breakpoint, () => void rebuildGrid());
-watch(() => props.refreshKey, () => void rebuildGrid());
-watch(() => props.editing, (enabled) => setEditing(enabled));
+watch(
+  () => props.breakpoint,
+  () => void rebuildGrid(),
+);
+watch(
+  () => props.refreshKey,
+  () => void rebuildGrid(),
+);
+watch(
+  () => props.editing,
+  (enabled) => setEditing(enabled),
+);
 
 onMounted(mountGrid);
 onBeforeUnmount(destroyGrid);
@@ -114,10 +125,7 @@ onBeforeUnmount(destroyGrid);
     >
       <div
         class="grid-stack-item-content widget-cell"
-        :class="[
-          { editable: editing },
-          `widget-size-${getWidgetSizePreset(item, breakpoint, item.id)}`,
-        ]"
+        :class="[{ editable: editing }, `widget-size-${getWidgetSizePreset(item, breakpoint, item.id)}`]"
       >
         <WidgetSizeProvider
           v-if="getWidgetDefinition(item.id)"
@@ -133,13 +141,31 @@ onBeforeUnmount(destroyGrid);
         </WidgetSizeProvider>
         <UnknownWidget v-else :widget-id="item.id" />
         <div v-if="editing" class="apple-edit-overlay">
-          <span class="apple-drag-handle" role="button" tabindex="0" title="拖拽排序" :aria-label="`拖拽${getWidgetDefinition(item.id)?.label ?? '组件'}`">
+          <span
+            class="apple-drag-handle"
+            role="button"
+            tabindex="0"
+            title="拖拽排序"
+            :aria-label="`拖拽${getWidgetDefinition(item.id)?.label ?? '组件'}`"
+          >
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
           </span>
-          <button class="apple-edit-size-btn" type="button" title="选择组件大小" aria-label="选择组件大小" @click.stop="emit('configure', item.i)">
+          <button
+            class="apple-edit-size-btn"
+            type="button"
+            title="选择组件大小"
+            aria-label="选择组件大小"
+            @click.stop="emit('configure', item.i)"
+          >
             <Icon icon="ri:settings-3-line" class="w-4 h-4" />
           </button>
-          <button class="apple-remove-btn" type="button" title="移除" aria-label="移除组件" @click.stop="emit('remove', item.i)">
+          <button
+            class="apple-remove-btn"
+            type="button"
+            title="移除"
+            aria-label="移除组件"
+            @click.stop="emit('remove', item.i)"
+          >
             <Icon icon="ri:close-line" class="w-4 h-4" />
           </button>
         </div>

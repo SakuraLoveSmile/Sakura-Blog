@@ -36,9 +36,7 @@ function tokenParam(): string | undefined {
 
 const hasUpdate = computed(() => checkData.value?.update_available ?? false);
 // 三态：current 为 unknown 或 latest 缺失时，无法确定是否有更新（如本地 dev 构建恒为 unknown）。
-const canCompare = computed(
-  () => checkData.value?.current_version !== "unknown" && !!checkData.value?.latest_version
-);
+const canCompare = computed(() => checkData.value?.current_version !== "unknown" && !!checkData.value?.latest_version);
 const applySupported = computed(() => checkData.value?.apply_supported ?? false);
 const currentState = computed(() => statusData.value?.state ?? "idle");
 
@@ -197,9 +195,7 @@ onBeforeUnmount(() => {
       <template #icon>
         <Icon icon="ri:rocket-2-line" class="text-primary" />
       </template>
-      <template #subtitle>
-        检查 Blog 新版本、查看更新日志并执行一键在线升级
-      </template>
+      <template #subtitle> 检查 Blog 新版本、查看更新日志并执行一键在线升级 </template>
       <template #actions>
         <VButton size="sm" type="default" :loading="checking" @click="checkUpdate(false)">
           <template #icon>
@@ -225,9 +221,14 @@ onBeforeUnmount(() => {
             <span>版本概览</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium" :class="versionStatusClass">
+            <span
+              class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              :class="versionStatusClass"
+            >
               <Icon
-                :icon="hasUpdate ? 'ri:arrow-up-circle-fill' : (canCompare ? 'ri:checkbox-circle-fill' : 'ri:question-line')"
+                :icon="
+                  hasUpdate ? 'ri:arrow-up-circle-fill' : canCompare ? 'ri:checkbox-circle-fill' : 'ri:question-line'
+                "
                 class="text-sm"
               />
               {{ versionStatusText }}
@@ -237,7 +238,9 @@ onBeforeUnmount(() => {
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <!-- 当前版本 -->
-          <div class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong">
+          <div
+            class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong"
+          >
             <div class="flex items-center justify-between text-xs text-text-tertiary">
               <span class="flex items-center gap-1.5">
                 <Icon icon="ri:database-2-line" class="text-primary" />
@@ -256,7 +259,9 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- GitHub 最新 Release -->
-          <div class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong">
+          <div
+            class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong"
+          >
             <div class="flex items-center justify-between text-xs text-text-tertiary">
               <span class="flex items-center gap-1.5">
                 <Icon icon="ri:github-fill" class="text-text-secondary" />
@@ -278,9 +283,7 @@ onBeforeUnmount(() => {
                 {{ checkData?.latest_version || "未获取" }}
               </div>
               <p class="mt-1 text-xs text-text-quaternary">
-                <span v-if="checkData?.published_at">
-                  发布于 {{ formatDate(checkData.published_at) }}
-                </span>
+                <span v-if="checkData?.published_at"> 发布于 {{ formatDate(checkData.published_at) }} </span>
                 <span v-else-if="checking">正在检索最新发布…</span>
                 <span v-else>暂无发布数据</span>
               </p>
@@ -288,7 +291,9 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- 更新服务状态 -->
-          <div class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong sm:col-span-2 lg:col-span-1">
+          <div
+            class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong sm:col-span-2 lg:col-span-1"
+          >
             <div class="flex items-center justify-between text-xs text-text-tertiary">
               <span class="flex items-center gap-1.5">
                 <Icon icon="ri:pulse-line" class="text-primary" />
@@ -313,7 +318,10 @@ onBeforeUnmount(() => {
       </VCard>
 
       <!-- 2. 检查异常错误提示（若有） -->
-      <div v-if="checkData?.error && !checkData.latest_version" class="flex items-start gap-3 rounded-base border border-state-error/30 bg-state-error/10 p-4 text-sm text-state-error">
+      <div
+        v-if="checkData?.error && !checkData.latest_version"
+        class="flex items-start gap-3 rounded-base border border-state-error/30 bg-state-error/10 p-4 text-sm text-state-error"
+      >
         <Icon icon="ri:error-warning-line" class="mt-0.5 shrink-0 text-xl text-state-error" />
         <div class="flex-1">
           <div class="font-semibold text-state-error">检查更新遇到错误</div>
@@ -331,7 +339,10 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- 3. 环境不支持一键更新提示（若有） -->
-      <div v-if="checkData && !applySupported" class="flex items-start gap-3 rounded-base border border-state-warning/30 bg-state-warning/10 p-4 text-sm text-state-warning">
+      <div
+        v-if="checkData && !applySupported"
+        class="flex items-start gap-3 rounded-base border border-state-warning/30 bg-state-warning/10 p-4 text-sm text-state-warning"
+      >
         <Icon icon="ri:information-line" class="mt-0.5 shrink-0 text-xl text-state-warning" />
         <div class="flex-1">
           <div class="font-semibold text-state-warning">一键在线更新不可用</div>
@@ -363,12 +374,7 @@ onBeforeUnmount(() => {
               </template>
               复制日志
             </VButton>
-            <a
-              v-if="checkData?.release_url"
-              :href="checkData.release_url"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a v-if="checkData?.release_url" :href="checkData.release_url" target="_blank" rel="noopener noreferrer">
               <VButton size="xs" type="secondary">
                 <template #icon>
                   <Icon icon="ri:external-link-line" />
@@ -379,10 +385,16 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <div v-if="hasUpdate" class="mb-4 flex items-center justify-between rounded-base border border-primary/30 bg-primary/10 p-3.5 text-xs text-primary">
+        <div
+          v-if="hasUpdate"
+          class="mb-4 flex items-center justify-between rounded-base border border-primary/30 bg-primary/10 p-3.5 text-xs text-primary"
+        >
           <div class="flex items-center gap-2.5">
             <Icon icon="ri:arrow-up-circle-fill" class="text-base text-primary" />
-            <span>发现新版本 <strong>{{ checkData?.latest_version }}</strong>，建议及时升级体验最新功能与稳定性改进。</span>
+            <span
+              >发现新版本 <strong>{{ checkData?.latest_version }}</strong
+              >，建议及时升级体验最新功能与稳定性改进。</span
+            >
           </div>
           <span v-if="checkData?.published_at" class="text-text-tertiary">
             发布于 {{ formatDate(checkData.published_at) }}
@@ -390,11 +402,13 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="checkData?.release_notes" class="rounded-base border border-border bg-[#0d0d0e] p-4">
-          <div class="custom-scrollbar max-h-72 overflow-y-auto font-mono text-xs leading-relaxed text-text-secondary whitespace-pre-wrap">{{ checkData.release_notes }}</div>
+          <div
+            class="custom-scrollbar max-h-72 overflow-y-auto font-mono text-xs leading-relaxed text-text-secondary whitespace-pre-wrap"
+          >
+            {{ checkData.release_notes }}
+          </div>
         </div>
-        <div v-else class="py-4 text-center text-xs text-text-quaternary">
-          暂无详细更新日志
-        </div>
+        <div v-else class="py-4 text-center text-xs text-text-quaternary">暂无详细更新日志</div>
       </VCard>
 
       <!-- 5. 一键在线升级操作卡片 -->
@@ -409,7 +423,8 @@ onBeforeUnmount(() => {
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="max-w-xl space-y-2">
             <p class="text-xs leading-relaxed text-text-secondary">
-              点击后将向后台更新服务（systemd）发送升级指令，自动从 GitHub Release 下载最新的二进制文件并平滑重启 Blog 服务。
+              点击后将向后台更新服务（systemd）发送升级指令，自动从 GitHub Release 下载最新的二进制文件并平滑重启 Blog
+              服务。
             </p>
             <div class="flex flex-wrap gap-2 text-[11px] text-text-tertiary">
               <span class="flex items-center gap-1 rounded bg-secondary px-2 py-0.5">
@@ -435,9 +450,12 @@ onBeforeUnmount(() => {
               @click="applyUpdate"
             >
               <template #icon>
-                <Icon :icon="currentState === 'running' ? 'ri:loader-4-line' : 'ri:arrow-up-circle-line'" class="text-lg" />
+                <Icon
+                  :icon="currentState === 'running' ? 'ri:loader-4-line' : 'ri:arrow-up-circle-line'"
+                  class="text-lg"
+                />
               </template>
-              {{ currentState === "running" ? "正在升级中…" : (hasUpdate ? "立即一键升级" : "已是最新版本") }}
+              {{ currentState === "running" ? "正在升级中…" : hasUpdate ? "立即一键升级" : "已是最新版本" }}
             </VButton>
           </div>
         </div>
@@ -481,7 +499,10 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- macOS Terminal 终端日志窗口 -->
-          <div v-if="statusData.log_tail" class="overflow-hidden rounded-base border border-[#2a2a2c] bg-[#0c0c0e] shadow-xl">
+          <div
+            v-if="statusData.log_tail"
+            class="overflow-hidden rounded-base border border-[#2a2a2c] bg-[#0c0c0e] shadow-xl"
+          >
             <div class="flex items-center justify-between border-b border-[#2a2a2c] bg-[#161618] px-3.5 py-2">
               <div class="flex items-center gap-2">
                 <div class="flex items-center gap-1.5">
@@ -489,9 +510,7 @@ onBeforeUnmount(() => {
                   <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#FFBD2E] opacity-80" />
                   <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#27C93F] opacity-80" />
                 </div>
-                <span class="ml-2 font-mono text-[11px] text-text-tertiary">
-                  system-update.service — output
-                </span>
+                <span class="ml-2 font-mono text-[11px] text-text-tertiary"> system-update.service — output </span>
               </div>
               <VButton size="xs" type="default" @click="copyText(statusData.log_tail, '终端日志')">
                 <template #icon>
@@ -500,7 +519,9 @@ onBeforeUnmount(() => {
                 复制日志
               </VButton>
             </div>
-            <pre class="custom-scrollbar max-h-56 overflow-y-auto p-3.5 font-mono text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap selection:bg-primary/30">{{ statusData.log_tail }}</pre>
+            <pre
+              class="custom-scrollbar max-h-56 overflow-y-auto p-3.5 font-mono text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap selection:bg-primary/30"
+              >{{ statusData.log_tail }}</pre>
           </div>
         </div>
       </VCard>
@@ -524,7 +545,8 @@ onBeforeUnmount(() => {
 
         <div class="space-y-3">
           <p class="text-xs leading-relaxed text-text-secondary">
-            私有仓库需鉴权才能检查更新；填入 Personal Access Token 可访问私有仓库并提升速率上限（从 60次/小时 提升至 5,000次/小时）。Token 仅保存在本浏览器 localStorage，随请求以 X-GitHub-Token 头发送，不会存储到服务端。
+            私有仓库需鉴权才能检查更新；填入 Personal Access Token 可访问私有仓库并提升速率上限（从 60次/小时 提升至
+            5,000次/小时）。Token 仅保存在本浏览器 localStorage，随请求以 X-GitHub-Token 头发送，不会存储到服务端。
           </p>
           <div class="relative flex items-center">
             <div class="pointer-events-none absolute left-3 flex items-center text-text-quaternary">
@@ -551,9 +573,7 @@ onBeforeUnmount(() => {
               <Icon icon="ri:checkbox-circle-line" />
               已填入，下次「检查更新」与「一键更新」将携带该 Token
             </p>
-            <p v-else class="text-text-quaternary">
-              未配置 Token，当前采用匿名请求
-            </p>
+            <p v-else class="text-text-quaternary">未配置 Token，当前采用匿名请求</p>
             <a
               href="https://github.com/settings/tokens/new?scopes=repo&description=Blog%20System%20Update"
               target="_blank"

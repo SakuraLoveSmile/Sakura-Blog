@@ -56,7 +56,15 @@ const selectedCategory = ref<string | undefined>(categoryFromQuery());
 const selectedTag = ref<string | undefined>(undefined);
 const viewMode = ref<"grid" | "table">("grid");
 
-const { page, size, keyword, items: rawItems, total, isLoading, refetch } = usePagedList<PostItem>({
+const {
+  page,
+  size,
+  keyword,
+  items: rawItems,
+  total,
+  isLoading,
+  refetch,
+} = usePagedList<PostItem>({
   apiFn: (params: Record<string, unknown>) => postApi.list(params),
   keyFn: (params: Record<string, unknown>) => queryKeys.posts(params),
   keywordParam: "search",
@@ -77,7 +85,7 @@ watch(
       selectedStatus.value = s;
       page.value = 1;
     }
-  }
+  },
 );
 
 watch(
@@ -246,10 +254,7 @@ async function createShare() {
   shareCreating.value = true;
   try {
     const days = Number(shareDuration.value);
-    const expiresAt =
-      days > 0
-        ? new Date(Date.now() + days * 86400000).toISOString()
-        : "";
+    const expiresAt = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : "";
     const { data } = await shareApi.create(shareTarget.value.slug, {
       share_type: shareTarget.value.status === "draft" ? "draft" : "published",
       expires_at: expiresAt,
@@ -367,28 +372,40 @@ function statusBadge(status: string) {
           <button
             type="button"
             :class="{ active: selectedStatus === undefined }"
-            @click="selectedStatus = undefined; page = 1"
+            @click="
+              selectedStatus = undefined;
+              page = 1;
+            "
           >
             全部
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'published' }"
-            @click="selectedStatus = 'published'; page = 1"
+            @click="
+              selectedStatus = 'published';
+              page = 1;
+            "
           >
             已发布
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'draft' }"
-            @click="selectedStatus = 'draft'; page = 1"
+            @click="
+              selectedStatus = 'draft';
+              page = 1;
+            "
           >
             草稿
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'trashed' }"
-            @click="selectedStatus = 'trashed'; page = 1"
+            @click="
+              selectedStatus = 'trashed';
+              page = 1;
+            "
           >
             回收站
           </button>
@@ -420,7 +437,7 @@ function statusBadge(status: string) {
             class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
             @click="selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
           >
-            {{ selectedSlugs.size === posts.length ? '取消全选' : '全选本页' }}
+            {{ selectedSlugs.size === posts.length ? "取消全选" : "全选本页" }}
           </button>
 
           <div class="apple-segmented">
@@ -453,10 +470,7 @@ function statusBadge(status: string) {
       />
 
       <!-- ============ 模式 1：海报卡片网格 ============ -->
-      <div
-        v-else-if="viewMode === 'grid'"
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      >
+      <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <div
           v-for="p in posts"
           :key="p.slug"
@@ -472,10 +486,7 @@ function statusBadge(status: string) {
               loading="lazy"
               class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div
-              v-else
-              class="avatar-gradient-3 flex h-full w-full items-center justify-center text-4xl text-white/30"
-            >
+            <div v-else class="avatar-gradient-3 flex h-full w-full items-center justify-center text-4xl text-white/30">
               <Icon icon="ri:article-line" />
             </div>
 
@@ -489,7 +500,10 @@ function statusBadge(status: string) {
                 class="h-4 w-4 rounded border-border text-primary cursor-pointer"
                 @change="toggleSelect(p.slug)"
               />
-              <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white flex items-center gap-0.5">
+              <span
+                v-if="p.pin"
+                class="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white flex items-center gap-0.5"
+              >
                 <Icon icon="ri:pushpin-fill" /> 置顶
               </span>
             </div>
@@ -536,16 +550,13 @@ function statusBadge(status: string) {
             </div>
 
             <!-- 底部时间与操作 -->
-            <div class="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary">
+            <div
+              class="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary"
+            >
               <span>{{ formatRelative(p.created_at) }}</span>
 
               <div class="flex items-center gap-1">
-                <button
-                  type="button"
-                  class="action-icon-btn"
-                  title="生成临时分享链接"
-                  @click="openShareModal(p)"
-                >
+                <button type="button" class="action-icon-btn" title="生成临时分享链接" @click="openShareModal(p)">
                   <Icon icon="ri:share-forward-line" />
                 </button>
 
@@ -652,7 +663,9 @@ function statusBadge(status: string) {
                     <div class="min-w-0">
                       <div class="font-semibold text-foreground text-sm flex items-center gap-1.5">
                         <span class="truncate max-w-[320px]">{{ p.title }}</span>
-                        <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white">置顶</span>
+                        <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white"
+                          >置顶</span
+                        >
                       </div>
                       <div class="text-xs font-mono text-text-quaternary">/{{ p.slug }}</div>
                     </div>
@@ -669,10 +682,7 @@ function statusBadge(status: string) {
                   </div>
                 </td>
                 <td class="px-4 py-3.5 text-xs">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    :class="statusBadge(p.status).cls"
-                  >
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusBadge(p.status).cls">
                     {{ statusBadge(p.status).label }}
                   </span>
                 </td>
@@ -681,12 +691,7 @@ function statusBadge(status: string) {
                 </td>
                 <td class="px-4 py-3.5 text-right" @click.stop>
                   <div class="flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      class="action-icon-btn"
-                      title="分享链接"
-                      @click="openShareModal(p)"
-                    >
+                    <button type="button" class="action-icon-btn" title="分享链接" @click="openShareModal(p)">
                       <Icon icon="ri:share-forward-line" />
                     </button>
                     <button
@@ -762,18 +767,12 @@ function statusBadge(status: string) {
       @clear="clearSelection"
     >
       <div class="flex items-center gap-2">
-        <VButton size="sm" type="danger" @click="handleBatchDelete">
-          批量移入回收站
-        </VButton>
+        <VButton size="sm" type="danger" @click="handleBatchDelete"> 批量移入回收站 </VButton>
       </div>
     </VFloatingDock>
 
     <!-- ============ 生成分享链接弹窗 ============ -->
-    <VModal
-      v-model:visible="shareModalOpen"
-      title="生成临时分享链接"
-      :width="460"
-    >
+    <VModal v-model:visible="shareModalOpen" title="生成临时分享链接" :width="460">
       <div class="space-y-4 text-xs">
         <div class="rounded-xl border border-border bg-secondary/40 p-3">
           <div class="text-text-quaternary">目标文章：</div>
@@ -802,12 +801,7 @@ function statusBadge(status: string) {
       <template #footer>
         <div class="flex justify-end gap-2">
           <VButton @click="shareModalOpen = false">关闭</VButton>
-          <VButton
-            v-if="!generatedShareUrl"
-            type="primary"
-            :loading="shareCreating"
-            @click="createShare"
-          >
+          <VButton v-if="!generatedShareUrl" type="primary" :loading="shareCreating" @click="createShare">
             生成链接
           </VButton>
         </div>

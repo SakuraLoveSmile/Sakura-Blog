@@ -1,9 +1,4 @@
-import {
-  PLUGIN_CATEGORIES,
-  type PluginCategory,
-  type PluginFormField,
-  type PluginMeta,
-} from "./plugin-types";
+import { PLUGIN_CATEGORIES, type PluginCategory, type PluginFormField, type PluginMeta } from "./plugin-types";
 
 export interface PluginCatalogParam {
   key: string;
@@ -34,9 +29,7 @@ export interface PluginCatalogItem {
 }
 
 function categoryOf(value: string): PluginCategory {
-  return PLUGIN_CATEGORIES.includes(value as PluginCategory)
-    ? (value as PluginCategory)
-    : "布局容器";
+  return PLUGIN_CATEGORIES.includes(value as PluginCategory) ? (value as PluginCategory) : "布局容器";
 }
 
 function stringDefault(value: unknown): string | undefined {
@@ -66,9 +59,7 @@ function mergeForm(existing: PluginMeta | undefined, params: PluginCatalogParam[
 }
 
 function fallbackExample(item: PluginCatalogItem): string {
-  return item.type === "block"
-    ? `{% ${item.name} %}\n{% end${item.name} %}`
-    : `{% ${item.name} %}`;
+  return item.type === "block" ? `{% ${item.name} %}\n{% end${item.name} %}` : `{% ${item.name} %}`;
 }
 
 /** Rebuild the UI list from the backend catalog while preserving display copy. */
@@ -83,11 +74,14 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
       type: existing?.type || (item.type === "block" ? "block" : "inline"),
       desc: item.description || existing?.desc || "由后端 shortcode catalog 提供。",
       signature: item.signature || existing?.signature || fallbackExample(item),
-      params: item.param_docs?.map((param) => ({
-        name: param.name,
-        desc: param.desc,
-        ...(param.default ? { default: param.default } : {}),
-      })) || existing?.params || [],
+      params:
+        item.param_docs?.map((param) => ({
+          name: param.name,
+          desc: param.desc,
+          ...(param.default ? { default: param.default } : {}),
+        })) ||
+        existing?.params ||
+        [],
       example: item.example || existing?.example || fallbackExample(item),
       form: mergeForm(existing, item.params),
       preview: {

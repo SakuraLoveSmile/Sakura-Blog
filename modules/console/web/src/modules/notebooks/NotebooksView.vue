@@ -5,16 +5,7 @@ import { notebookApi } from "@/api";
 import ContentEditor from "@/components/ContentEditor.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VCard,
-  VButton,
-  VEmpty,
-  VLoading,
-  Toast,
-  Dialog,
-  VModal,
-} from "@/components/ui";
+import { VPageHeader, VCard, VButton, VEmpty, VLoading, Toast, Dialog, VModal } from "@/components/ui";
 
 interface Notebook {
   id: number;
@@ -86,7 +77,7 @@ const filteredNotebooks = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return notebooks.value;
   return notebooks.value.filter(
-    (nb) => nb.name.toLowerCase().includes(q) || (nb.description || "").toLowerCase().includes(q)
+    (nb) => nb.name.toLowerCase().includes(q) || (nb.description || "").toLowerCase().includes(q),
   );
 });
 
@@ -97,7 +88,7 @@ const filteredNotes = computed(() => {
     (n) =>
       (n.title || "").toLowerCase().includes(q) ||
       (n.tags || "").toLowerCase().includes(q) ||
-      (n.content || "").toLowerCase().includes(q)
+      (n.content || "").toLowerCase().includes(q),
   );
 });
 
@@ -133,9 +124,7 @@ async function loadNotebooks() {
   try {
     const { data } = await notebookApi.listNotebooks();
     notebooks.value = data.items || [];
-    noteCounts.value = Object.fromEntries(
-      (data.items || []).map((nb: any) => [nb.id, nb.note_count || 0])
-    );
+    noteCounts.value = Object.fromEntries((data.items || []).map((nb: any) => [nb.id, nb.note_count || 0]));
     // 从路由参数恢复激活的笔记本
     const nbIdParam = Number(route.query.nb);
     if (nbIdParam > 0 && !activeNotebook.value) {
@@ -399,14 +388,23 @@ onMounted(() => {
         <Icon v-else icon="ri:book-open-line" class="text-primary" />
       </template>
       <template #subtitle>
-        {{ activeNotebook ? (activeNotebook.description || "管理该笔记本下的全部笔记") : "管理你的所有笔记本与 Markdown 备忘录" }}
+        {{
+          activeNotebook
+            ? activeNotebook.description || "管理该笔记本下的全部笔记"
+            : "管理你的所有笔记本与 Markdown 备忘录"
+        }}
       </template>
       <template #actions>
         <template v-if="!activeNotebook">
           <div class="apple-search min-w-[200px] max-w-[280px]">
             <Icon icon="ri:search-line" class="text-text-quaternary" />
             <input v-model="searchQuery" placeholder="搜索笔记本..." />
-            <button v-if="searchQuery" type="button" class="text-text-quaternary hover:text-foreground" @click="searchQuery = ''">
+            <button
+              v-if="searchQuery"
+              type="button"
+              class="text-text-quaternary hover:text-foreground"
+              @click="searchQuery = ''"
+            >
               <Icon icon="ri:close-line" />
             </button>
           </div>
@@ -453,7 +451,9 @@ onMounted(() => {
             </div>
             <div>
               <div class="stats-label">笔记总数</div>
-              <div class="stats-value text-[#30D158]">{{ totalNotesCount }} <span class="stats-sub">篇归档笔记</span></div>
+              <div class="stats-value text-[#30D158]">
+                {{ totalNotesCount }} <span class="stats-sub">篇归档笔记</span>
+              </div>
             </div>
           </div>
 
@@ -484,9 +484,7 @@ onMounted(() => {
           :message="searchQuery ? '换个搜索关键词试试' : '点击右上角「新建笔记本」创建首个合辑'"
         >
           <template #actions>
-            <VButton v-if="!searchQuery" size="sm" type="primary" @click="openCreateNotebook">
-              新建首个笔记本
-            </VButton>
+            <VButton v-if="!searchQuery" size="sm" type="primary" @click="openCreateNotebook"> 新建首个笔记本 </VButton>
           </template>
         </VEmpty>
 
@@ -508,15 +506,14 @@ onMounted(() => {
                 :alt="nb.name"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              <div
-                v-else
-                class="flex h-full w-full items-center justify-center text-3xl text-white/90"
-              >
+              <div v-else class="flex h-full w-full items-center justify-center text-3xl text-white/90">
                 <Icon icon="ri:book-open-line" />
               </div>
 
               <!-- 篇数药丸 -->
-              <span class="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
+              <span
+                class="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md"
+              >
                 {{ noteCounts[nb.id] || 0 }} 篇笔记
               </span>
             </div>
@@ -532,19 +529,16 @@ onMounted(() => {
                 </p>
               </div>
 
-              <div class="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-xs text-text-quaternary">
+              <div
+                class="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-xs text-text-quaternary"
+              >
                 <span class="flex items-center gap-1">
                   <Icon icon="ri:time-line" />
                   {{ fmtTime(nb.created_at) || "刚刚创建" }}
                 </span>
 
                 <div class="flex items-center gap-1">
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    title="编辑笔记本"
-                    @click.stop="openEditNotebook(nb)"
-                  >
+                  <button type="button" class="action-icon-btn" title="编辑笔记本" @click.stop="openEditNotebook(nb)">
                     <Icon icon="ri:pencil-line" />
                   </button>
                   <button
@@ -586,9 +580,7 @@ onMounted(() => {
 
             <!-- 笔记项列表 -->
             <div class="max-h-[65vh] overflow-y-auto p-2 space-y-1">
-              <div v-if="notesLoading" class="py-8 text-center text-xs text-text-quaternary">
-                加载笔记中...
-              </div>
+              <div v-if="notesLoading" class="py-8 text-center text-xs text-text-quaternary">加载笔记中...</div>
 
               <div v-else-if="filteredNotes.length === 0" class="py-12 text-center text-xs text-text-quaternary">
                 {{ noteSearchQuery ? "未找到匹配的笔记" : "该笔记本暂无笔记" }}
@@ -651,21 +643,17 @@ onMounted(() => {
 
           <!-- 栏 2：右侧沉浸式写作区 -->
           <VCard class="min-w-0 flex-1">
-            <div v-if="noteLoading" class="py-24 text-center text-sm text-text-quaternary">
-              加载笔记详情中...
-            </div>
+            <div v-if="noteLoading" class="py-24 text-center text-sm text-text-quaternary">加载笔记详情中...</div>
 
             <div v-else-if="!hasCurrent" class="flex flex-col items-center justify-center py-24 text-center">
-              <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-3xl text-text-tertiary">
+              <div
+                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary text-3xl text-text-tertiary"
+              >
                 <Icon icon="ri:file-edit-line" />
               </div>
               <h3 class="mt-4 text-base font-semibold text-foreground">未选择笔记</h3>
-              <p class="mt-1 text-xs text-text-tertiary">
-                从左侧列表选择一篇笔记开始编辑，或点击上方「新建笔记」
-              </p>
-              <VButton type="primary" size="sm" class="mt-4" @click="openCreateNote">
-                新建笔记
-              </VButton>
+              <p class="mt-1 text-xs text-text-tertiary">从左侧列表选择一篇笔记开始编辑，或点击上方「新建笔记」</p>
+              <VButton type="primary" size="sm" class="mt-4" @click="openCreateNote"> 新建笔记 </VButton>
             </div>
 
             <div v-else class="space-y-4">
@@ -721,20 +709,11 @@ onMounted(() => {
     </div>
 
     <!-- ============ 新建 / 编辑笔记本弹窗 ============ -->
-    <VModal
-      v-model:visible="nbModalOpen"
-      :title="nbModalMode === 'create' ? '新建笔记本' : '编辑笔记本'"
-      :width="500"
-    >
+    <VModal v-model:visible="nbModalOpen" :title="nbModalMode === 'create' ? '新建笔记本' : '编辑笔记本'" :width="500">
       <form class="space-y-4" @submit.prevent="handleSaveNotebook">
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">笔记本名称 *</label>
-          <input
-            v-model="nbForm.name"
-            class="apple-input"
-            required
-            placeholder="如：Golang 实践 / 读书笔记"
-          />
+          <input v-model="nbForm.name" class="apple-input" required placeholder="如：Golang 实践 / 读书笔记" />
         </div>
 
         <div>

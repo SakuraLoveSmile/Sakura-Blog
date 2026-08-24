@@ -46,32 +46,55 @@ select {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.08),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   pointer-events: none;
 }
 
 /* 渐变头像（brand 蓝族单色系——设计库「单页主色 ≤ 2、冷暖不混」约束） */
-.avatar-gradient-1 { background: linear-gradient(135deg, #66ABFF, #2E8DFF); }
-.avatar-gradient-2 { background: linear-gradient(135deg, #2E8DFF, #007AFF); }
-.avatar-gradient-3 { background: linear-gradient(135deg, #9FCBFF, #2E8DFF); }
-.avatar-gradient-4 { background: linear-gradient(135deg, #007AFF, #0064D6); }
-.avatar-gradient-5 { background: linear-gradient(135deg, #66ABFF, #007AFF); }
-.avatar-gradient-6 { background: linear-gradient(135deg, #2E8DFF, #004FAD); }
-.avatar-gradient-7 { background: linear-gradient(135deg, #9FCBFF, #66ABFF); }
-.avatar-gradient-8 { background: linear-gradient(135deg, #007AFF, #004FAD); }
+.avatar-gradient-1 {
+  background: linear-gradient(135deg, #66abff, #2e8dff);
+}
+.avatar-gradient-2 {
+  background: linear-gradient(135deg, #2e8dff, #007aff);
+}
+.avatar-gradient-3 {
+  background: linear-gradient(135deg, #9fcbff, #2e8dff);
+}
+.avatar-gradient-4 {
+  background: linear-gradient(135deg, #007aff, #0064d6);
+}
+.avatar-gradient-5 {
+  background: linear-gradient(135deg, #66abff, #007aff);
+}
+.avatar-gradient-6 {
+  background: linear-gradient(135deg, #2e8dff, #004fad);
+}
+.avatar-gradient-7 {
+  background: linear-gradient(135deg, #9fcbff, #66abff);
+}
+.avatar-gradient-8 {
+  background: linear-gradient(135deg, #007aff, #004fad);
+}
 
 /* 笔记本封面渐变（brand 蓝族单色系；类名为遗留命名，仅值对齐设计库） */
-.notebook-cover-blue { background: linear-gradient(135deg, #66ABFF, #007AFF); }
-.notebook-cover-purple { background: linear-gradient(135deg, #2E8DFF, #004FAD); }
-.notebook-cover-green { background: linear-gradient(135deg, #9FCBFF, #2E8DFF); }
-.notebook-cover-orange { background: linear-gradient(135deg, #007AFF, #0064D6); }
-.notebook-cover-pink { background: linear-gradient(135deg, #66ABFF, #2E8DFF); }
-.notebook-cover-teal { background: linear-gradient(135deg, #2E8DFF, #0064D6); }
+.notebook-cover-blue {
+  background: linear-gradient(135deg, #66abff, #007aff);
+}
+.notebook-cover-purple {
+  background: linear-gradient(135deg, #2e8dff, #004fad);
+}
+.notebook-cover-green {
+  background: linear-gradient(135deg, #9fcbff, #2e8dff);
+}
+.notebook-cover-orange {
+  background: linear-gradient(135deg, #007aff, #0064d6);
+}
+.notebook-cover-pink {
+  background: linear-gradient(135deg, #66abff, #2e8dff);
+}
+.notebook-cover-teal {
+  background: linear-gradient(135deg, #2e8dff, #0064d6);
+}
 
 /* 胶囊分段控件（设计稿通用 segmented control） */
 .apple-segmented {
@@ -118,7 +141,9 @@ select {
   background: color-mix(in srgb, #000 30%, var(--color-secondary));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-input::placeholder {
   color: var(--color-text-quaternary);
@@ -136,7 +161,9 @@ select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   resize: vertical;
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-textarea::placeholder {
   color: var(--color-text-quaternary);
@@ -161,7 +188,9 @@ select {
   padding: 0 32px 0 12px;
   font-size: 14px;
   color: var(--color-foreground);
-  background: color-mix(in srgb, #000 30%, var(--color-secondary)) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 10px center;
+  background: color-mix(in srgb, #000 30%, var(--color-secondary))
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")
+    no-repeat right 10px center;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   appearance: none;
@@ -178,7 +207,9 @@ select {
   background: color-mix(in srgb, #000 30%, var(--color-secondary));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-search:focus-within {
   border-color: var(--color-ring);
@@ -197,21 +228,66 @@ select {
 }
 
 /* ===== 设置页共享表单布局（全局，供各 Tab 子组件复用，保证与设置页视觉一致） ===== */
-.field { margin-bottom: 16px; }
-.field:last-child { margin-bottom: 0; }
-.field label { display: block; font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 6px; }
-.field-narrow { max-width: 160px; }
-.field-inline { display: flex; gap: 8px; align-items: center; }
-.field-inline .apple-input { flex: 1; }
-.form-grid { display: grid; gap: 12px; margin-bottom: 16px; }
-.form-grid:last-child { margin-bottom: 0; }
-.form-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.hint { font-size: 12px; color: var(--color-text-quaternary); margin: 0 0 12px; }
-.subsection { margin-top: 24px; }
-.subsection-title { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin: 0 0 12px; }
-.card-actions { display: flex; align-items: center; gap: 10px; margin-top: 24px; }
-.card-actions-inline { flex-wrap: wrap; }
+.field {
+  margin-bottom: 16px;
+}
+.field:last-child {
+  margin-bottom: 0;
+}
+.field label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 6px;
+}
+.field-narrow {
+  max-width: 160px;
+}
+.field-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.field-inline .apple-input {
+  flex: 1;
+}
+.form-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.form-grid:last-child {
+  margin-bottom: 0;
+}
+.form-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.hint {
+  font-size: 12px;
+  color: var(--color-text-quaternary);
+  margin: 0 0 12px;
+}
+.subsection {
+  margin-top: 24px;
+}
+.subsection-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.card-actions-inline {
+  flex-wrap: wrap;
+}
 
 /* Apple 风颜色选择器：与 apple-input 同高同圆角，swatch 内嵌 */
 .apple-color {
@@ -222,15 +298,25 @@ select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 .apple-color:focus {
   border-color: var(--color-ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 15%, transparent);
 }
-.apple-color::-webkit-color-swatch-wrapper { padding: 0; }
-.apple-color::-webkit-color-swatch { border: none; border-radius: calc(var(--radius-sm) - 2px); }
-.apple-color::-moz-color-swatch { border: none; border-radius: calc(var(--radius-sm) - 2px); }
+.apple-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.apple-color::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
+.apple-color::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
 
 /* Apple 风滑杆：主色填充 + 可见轨道 + 圆润 thumb。
    轨道底色用可见的浅灰（secondary 与卡片同色会隐形），填充部分由组件内联 gradient 覆盖。 */
@@ -256,7 +342,9 @@ select {
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-standard);
 }
-.apple-range::-webkit-slider-thumb:hover { transform: scale(1.1); }
+.apple-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
 .apple-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
@@ -266,7 +354,13 @@ select {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
-.apple-range-value { font-size: 13px; color: var(--color-text-tertiary); width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+.apple-range-value {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 /* 缩略图预览（图片 URL 旁的 44×36 圆角小图） */
 .apple-thumb {

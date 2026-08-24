@@ -72,7 +72,7 @@ const WIDGET_LIBRARY: { name: string; label: string; hint?: string }[] = [
   { name: "wiki_related", label: "文库相关项目", hint: "仅 wiki-doc 页面有数据" },
 ];
 const WIDGET_OPTIONS = computed(() =>
-  WIDGET_LIBRARY.map((w) => ({ label: `${w.label}（${w.name}）${w.hint ? " — " + w.hint : ""}`, value: w.name }))
+  WIDGET_LIBRARY.map((w) => ({ label: `${w.label}（${w.name}）${w.hint ? " — " + w.hint : ""}`, value: w.name })),
 );
 
 // 从 SidebarWidget[] 提取纯 name 列表（用于 disabled 判断、预览等）
@@ -121,7 +121,12 @@ function toggleExpand(side: "left" | "right", idx: number) {
 }
 
 // ---------------- 参数表单（对齐 Settings → WidgetsTab 的 knownFields） ----------------
-type FieldDef = { key: string; label: string; type: "string" | "number" | "boolean" | "textarea"; placeholder?: string };
+type FieldDef = {
+  key: string;
+  label: string;
+  type: "string" | "number" | "boolean" | "textarea";
+  placeholder?: string;
+};
 const KNOWN_WIDGET_FIELDS: Record<string, FieldDef[]> = {
   toc: [
     { key: "title", label: "标题", type: "string", placeholder: "默认为空（不显示 header 标题）" },
@@ -158,12 +163,8 @@ const KNOWN_WIDGET_FIELDS: Record<string, FieldDef[]> = {
     { key: "content", label: "欢迎语正文（Markdown）", type: "textarea" },
     { key: "columns", label: "链接列数（linklist 兼容）", type: "number" },
   ],
-  author: [
-    { key: "title", label: "标题", type: "string" },
-  ],
-  siteinfo: [
-    { key: "title", label: "标题", type: "string" },
-  ],
+  author: [{ key: "title", label: "标题", type: "string" }],
+  siteinfo: [{ key: "title", label: "标题", type: "string" }],
   related: [
     { key: "title", label: "标题", type: "string" },
     { key: "limit", label: "显示条数", type: "number" },
@@ -313,7 +314,7 @@ function setEditorMode(m: EditorMode) {
 
 // 工具栏格式按钮激活态（仅富文本模式有；Markdown 模式不高亮）
 const toolbarActive = computed<Record<string, boolean>>(() =>
-  editorKind.value === "rich" ? (richRef.value?.activeStates ?? {}) : {}
+  editorKind.value === "rich" ? (richRef.value?.activeStates ?? {}) : {},
 );
 
 // 侧边栏配置面板（从底部移入可折叠区，右侧面板有按钮跳转过来）
@@ -427,11 +428,11 @@ function widgetLabelOf(name: string) {
 }
 
 // 预览渲染的「最终组件序列」
-const resolvedLeftbar = computed<string[]>(
-  () => leftMode.value === "inherit" ? GLOBAL_DEFAULT_PAGE_BARS.left : widgetNames(form.value.leftbar_widgets)
+const resolvedLeftbar = computed<string[]>(() =>
+  leftMode.value === "inherit" ? GLOBAL_DEFAULT_PAGE_BARS.left : widgetNames(form.value.leftbar_widgets),
 );
-const resolvedRightbar = computed<string[]>(
-  () => rightMode.value === "inherit" ? GLOBAL_DEFAULT_PAGE_BARS.right : widgetNames(form.value.rightbar_widgets)
+const resolvedRightbar = computed<string[]>(() =>
+  rightMode.value === "inherit" ? GLOBAL_DEFAULT_PAGE_BARS.right : widgetNames(form.value.rightbar_widgets),
 );
 
 // 取预览里显示的「关键参数摘要」行（2 行以内，避免过高）
@@ -495,10 +496,7 @@ const smallInputCls =
 </script>
 
 <template>
-  <div
-    class="page-editor"
-    :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }"
-  >
+  <div class="page-editor" :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }">
     <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
       <template #icon>
         <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
@@ -609,7 +607,12 @@ const smallInputCls =
 
       <!-- 基本信息 + 侧边栏完整配置（放在底部，右侧面板可跳过来） -->
       <div id="page-sidebar-config" class="space-y-4">
-        <CollapsibleSection title="基本信息" subtitle="标题、Slug、发布状态" :default-open="!isNew" :key="'basic:' + (isNew ? 'new' : 'edit')">
+        <CollapsibleSection
+          title="基本信息"
+          subtitle="标题、Slug、发布状态"
+          :default-open="!isNew"
+          :key="'basic:' + (isNew ? 'new' : 'edit')"
+        >
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">标题</label>
@@ -673,7 +676,10 @@ const smallInputCls =
                   <VButton
                     size="sm"
                     :disabled="!newLeftWidget"
-                    @click="addWidget('left', newLeftWidget); newLeftWidget = ''"
+                    @click="
+                      addWidget('left', newLeftWidget);
+                      newLeftWidget = '';
+                    "
                   >
                     添加
                   </VButton>
@@ -730,7 +736,12 @@ const smallInputCls =
                         >
                           <Icon icon="ri:arrow-down-line" class="h-4 w-4" />
                         </VButton>
-                        <VButton size="sm" class="!px-2 !text-state-error" @click="removeWidget('left', idx)" title="移除">
+                        <VButton
+                          size="sm"
+                          class="!px-2 !text-state-error"
+                          @click="removeWidget('left', idx)"
+                          title="移除"
+                        >
                           <Icon icon="ri:delete-bin-line" class="h-4 w-4" />
                         </VButton>
                       </div>
@@ -745,7 +756,9 @@ const smallInputCls =
                           :key="f.key"
                           class="widget-field-grid grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
-                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
+                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{
+                            f.label
+                          }}</label>
                           <template v-if="f.type === 'boolean'">
                             <label class="flex cursor-pointer items-center gap-1.5 py-0.5">
                               <input
@@ -799,7 +812,10 @@ const smallInputCls =
                   </div>
                 </div>
               </div>
-              <div v-else class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground">
+              <div
+                v-else
+                class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground"
+              >
                 使用全局 widgets.pages.page 左栏配置（related → recent → tagcloud → popular）
               </div>
             </div>
@@ -838,7 +854,10 @@ const smallInputCls =
                   <VButton
                     size="sm"
                     :disabled="!newRightWidget"
-                    @click="addWidget('right', newRightWidget); newRightWidget = ''"
+                    @click="
+                      addWidget('right', newRightWidget);
+                      newRightWidget = '';
+                    "
                   >
                     添加
                   </VButton>
@@ -895,7 +914,12 @@ const smallInputCls =
                         >
                           <Icon icon="ri:arrow-down-line" class="h-4 w-4" />
                         </VButton>
-                        <VButton size="sm" class="!px-2 !text-state-error" @click="removeWidget('right', idx)" title="移除">
+                        <VButton
+                          size="sm"
+                          class="!px-2 !text-state-error"
+                          @click="removeWidget('right', idx)"
+                          title="移除"
+                        >
                           <Icon icon="ri:delete-bin-line" class="h-4 w-4" />
                         </VButton>
                       </div>
@@ -910,7 +934,9 @@ const smallInputCls =
                           :key="f.key"
                           class="widget-field-grid grid grid-cols-1 gap-1 sm:grid-cols-[120px_1fr] sm:items-start"
                         >
-                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{ f.label }}</label>
+                          <label class="pt-1 text-[11px] font-medium text-text-quaternary dark:text-muted-foreground">{{
+                            f.label
+                          }}</label>
                           <template v-if="f.type === 'boolean'">
                             <label class="flex cursor-pointer items-center gap-1.5 py-0.5">
                               <input
@@ -964,7 +990,10 @@ const smallInputCls =
                   </div>
                 </div>
               </div>
-              <div v-else class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground">
+              <div
+                v-else
+                class="rounded-base border border-dashed border-border px-3 py-4 text-center text-xs text-text-quaternary dark:border-border-strong dark:text-muted-foreground"
+              >
                 使用全局 widgets.pages.page 右栏配置（welcome → author → siteinfo → latest_comment → toc）
               </div>
             </div>
@@ -977,11 +1006,21 @@ const smallInputCls =
                   左右栏宽度比例对齐前台；骨架区下会显示已设置的关键参数摘要
                 </span>
               </div>
-              <div class="preview-grid grid grid-cols-1 gap-4 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-[300px_280px] md:justify-start">
-                <div class="w-full max-w-[320px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border">
-                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary">Leftbar</div>
+              <div
+                class="preview-grid grid grid-cols-1 gap-4 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-[300px_280px] md:justify-start"
+              >
+                <div
+                  class="w-full max-w-[320px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border"
+                >
+                  <div
+                    class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary"
+                  >
+                    Leftbar
+                  </div>
                   <template v-if="resolvedLeftbar.length === 0">
-                    <div class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong">
+                    <div
+                      class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong"
+                    >
                       （空侧栏）
                     </div>
                   </template>
@@ -990,7 +1029,9 @@ const smallInputCls =
                     :key="'L-' + name + '-' + idx"
                     class="overflow-hidden rounded-base ring-1 ring-border dark:ring-border"
                   >
-                    <div class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground">
+                    <div
+                      class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground"
+                    >
                       <span class="mr-1 inline-block h-2 w-2 rounded-full bg-primary/60 align-middle"></span>
                       {{ widgetLabelOf(name) }}
                       <span class="ml-1 text-[10px] font-normal opacity-60">({{ name }})</span>
@@ -1011,10 +1052,18 @@ const smallInputCls =
                     </div>
                   </div>
                 </div>
-                <div class="w-full max-w-[300px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border">
-                  <div class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary">Rightbar</div>
+                <div
+                  class="w-full max-w-[300px] space-y-3 rounded-lg bg-secondary p-3 ring-1 ring-border dark:bg-secondary/30 dark:ring-border"
+                >
+                  <div
+                    class="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground dark:text-text-quaternary"
+                  >
+                    Rightbar
+                  </div>
                   <template v-if="resolvedRightbar.length === 0">
-                    <div class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong">
+                    <div
+                      class="rounded-base border border-dashed border-border p-4 text-center text-xs text-muted-foreground dark:border-border-strong"
+                    >
                       （空侧栏）
                     </div>
                   </template>
@@ -1023,7 +1072,9 @@ const smallInputCls =
                     :key="'R-' + name + '-' + idx"
                     class="overflow-hidden rounded-base ring-1 ring-border dark:ring-border"
                   >
-                    <div class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground">
+                    <div
+                      class="truncate bg-accent/70 px-2 py-1 text-xs text-text-quaternary dark:bg-accent/60 dark:text-foreground"
+                    >
                       <span class="mr-1 inline-block h-2 w-2 rounded-full bg-primary/60 align-middle"></span>
                       {{ widgetLabelOf(name) }}
                       <span class="ml-1 text-[10px] font-normal opacity-60">({{ name }})</span>

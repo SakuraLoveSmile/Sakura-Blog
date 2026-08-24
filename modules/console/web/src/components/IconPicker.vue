@@ -103,9 +103,7 @@ function isUrl(v: string): boolean {
   return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("/");
 }
 
-const matchedItem = computed(() =>
-  icons.value.find((i) => i.key === (props.modelValue || "").trim()) || null
-);
+const matchedItem = computed(() => icons.value.find((i) => i.key === (props.modelValue || "").trim()) || null);
 
 // 非空、非 URL、清单加载完成且不在清单 → 前台将渲染 icon-missing 占位
 // 注意：加载中/加载失败（iconsLoaded=false）时不显示警告，避免误报
@@ -131,9 +129,7 @@ const filter = ref("");
 
 const groups = computed(() => {
   const kw = filter.value.trim().toLowerCase();
-  const list = kw
-    ? icons.value.filter((i) => i.key.toLowerCase().includes(kw))
-    : icons.value;
+  const list = kw ? icons.value.filter((i) => i.key.toLowerCase().includes(kw)) : icons.value;
   const byPrefix = new Map<string, AssetIconItem[]>();
   for (const item of list) {
     const prefix = item.key.split(":")[0] || "other";
@@ -157,11 +153,7 @@ const groups = computed(() => {
         alt=""
         @error="($event.target as HTMLImageElement).style.display = 'none'"
       />
-      <span
-        v-else-if="warnValue"
-        class="ip-warn-badge"
-        title="该值不在图标库中，前台将显示占位"
-      >
+      <span v-else-if="warnValue" class="ip-warn-badge" title="该值不在图标库中，前台将显示占位">
         <Icon icon="ri:alert-line" />
       </span>
       <input
@@ -181,63 +173,58 @@ const groups = computed(() => {
          （hover:-translate-y-px）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭；
          模式对齐 components/ui/VModal.vue；scoped 样式随 data-v 属性照常生效 -->
     <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4"
-      @click.self="open = false"
-    >
-      <div class="ip-modal w-full max-w-2xl max-h-[80vh] flex flex-col bg-card rounded-xl shadow-xl">
-        <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
-          <h3 class="text-sm font-medium text-foreground">选择图标（icons.yml）</h3>
-          <div class="apple-search" style="width: 240px;">
-            <Icon icon="ri:search-line" class="text-text-quaternary" />
-            <input v-model="filter" placeholder="搜索图标 key..." />
-          </div>
-          <button type="button" @click="open = false" class="text-text-quaternary hover:text-foreground">
-            <Icon icon="ri:close-line" class="text-xl" />
-          </button>
-        </div>
-
-        <div class="ip-modal-body flex-1 overflow-y-auto p-5">
-          <p v-if="loading" class="text-sm text-text-tertiary">加载中...</p>
-          <p v-else-if="iconsFailed" class="flex items-center gap-2 text-sm text-text-quaternary">
-            图标清单加载失败
-            <button type="button" class="ip-retry" @click="ensureLoaded">重试</button>
-          </p>
-          <template v-else>
-            <div v-for="g in groups" :key="g.prefix" class="mb-5">
-              <h4 class="ip-group-title">
-                {{ g.prefix }}:*
-                <span class="ip-group-count">{{ g.items.length }} 个</span>
-              </h4>
-              <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
-                <button
-                  v-for="item in g.items"
-                  :key="item.key"
-                  type="button"
-                  class="ip-cell"
-                  :class="{ active: item.key === (modelValue || '').trim() }"
-                  :title="item.key"
-                  @click="selectIcon(item.key)"
-                >
-                  <span class="ip-cell-svg">
-                    <img
-                      v-if="isUrl(item.value)"
-                      :src="item.value"
-                      class="h-6 w-6 object-contain"
-                      alt=""
-                    />
-                    <span v-else v-html="item.value"></span>
-                  </span>
-                  <span class="ip-cell-key">{{ item.key.split(":")[1] || item.key }}</span>
-                </button>
-              </div>
+      <div
+        v-if="open"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4"
+        @click.self="open = false"
+      >
+        <div class="ip-modal w-full max-w-2xl max-h-[80vh] flex flex-col bg-card rounded-xl shadow-xl">
+          <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
+            <h3 class="text-sm font-medium text-foreground">选择图标（icons.yml）</h3>
+            <div class="apple-search" style="width: 240px">
+              <Icon icon="ri:search-line" class="text-text-quaternary" />
+              <input v-model="filter" placeholder="搜索图标 key..." />
             </div>
-            <p v-if="groups.length === 0" class="text-sm text-text-quaternary">没有匹配的图标。</p>
-          </template>
+            <button type="button" @click="open = false" class="text-text-quaternary hover:text-foreground">
+              <Icon icon="ri:close-line" class="text-xl" />
+            </button>
+          </div>
+
+          <div class="ip-modal-body flex-1 overflow-y-auto p-5">
+            <p v-if="loading" class="text-sm text-text-tertiary">加载中...</p>
+            <p v-else-if="iconsFailed" class="flex items-center gap-2 text-sm text-text-quaternary">
+              图标清单加载失败
+              <button type="button" class="ip-retry" @click="ensureLoaded">重试</button>
+            </p>
+            <template v-else>
+              <div v-for="g in groups" :key="g.prefix" class="mb-5">
+                <h4 class="ip-group-title">
+                  {{ g.prefix }}:*
+                  <span class="ip-group-count">{{ g.items.length }} 个</span>
+                </h4>
+                <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+                  <button
+                    v-for="item in g.items"
+                    :key="item.key"
+                    type="button"
+                    class="ip-cell"
+                    :class="{ active: item.key === (modelValue || '').trim() }"
+                    :title="item.key"
+                    @click="selectIcon(item.key)"
+                  >
+                    <span class="ip-cell-svg">
+                      <img v-if="isUrl(item.value)" :src="item.value" class="h-6 w-6 object-contain" alt="" />
+                      <span v-else v-html="item.value"></span>
+                    </span>
+                    <span class="ip-cell-key">{{ item.key.split(":")[1] || item.key }}</span>
+                  </button>
+                </div>
+              </div>
+              <p v-if="groups.length === 0" class="text-sm text-text-quaternary">没有匹配的图标。</p>
+            </template>
+          </div>
         </div>
       </div>
-    </div>
     </Teleport>
   </div>
 </template>

@@ -5,16 +5,7 @@ import { momentApi, settingsApi, attachmentApi, previewApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
-import {
-  VPageHeader,
-  VButton,
-  VEmpty,
-  VLoading,
-  VPagination,
-  VModal,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VButton, VEmpty, VLoading, VPagination, VModal, Dialog, Toast } from "@/components/ui";
 
 interface MomentRow {
   id: number;
@@ -57,7 +48,11 @@ const previewImage = ref<string | null>(null);
 
 const queryParams = computed(() => ({ page: page.value, size: size.value }));
 
-const { data: queryData, isLoading, refetch } = useQuery({
+const {
+  data: queryData,
+  isLoading,
+  refetch,
+} = useQuery({
   queryKey: computed(() => queryKeys.moments(queryParams.value)),
   queryFn: () => momentApi.list(queryParams.value).then(({ data }) => data),
 });
@@ -155,9 +150,7 @@ const charCount = computed(() => {
   return n;
 });
 
-const canPublish = computed(
-  () => !!newContent.value.trim() || newImages.value.length > 0
-);
+const canPublish = computed(() => !!newContent.value.trim() || newImages.value.length > 0);
 
 // 快捷键 ⌘+Enter 发布
 function onComposerKeydown(e: KeyboardEvent) {
@@ -311,9 +304,7 @@ async function uploadFile(target: "new" | "edit", file: File) {
 }
 
 function onPaste(target: "new" | "edit", e: ClipboardEvent) {
-  const files = Array.from(e.clipboardData?.files || []).filter((f) =>
-    f.type.startsWith("image/")
-  );
+  const files = Array.from(e.clipboardData?.files || []).filter((f) => f.type.startsWith("image/"));
   if (files.length === 0) return;
   e.preventDefault();
   files.forEach((f) => uploadFile(target, f));
@@ -471,7 +462,9 @@ function formatTime(s: string): string {
             </div>
             <div>
               <div class="stats-label">公开展示</div>
-              <div class="stats-value text-[#30D158]">{{ stats.publicCount }} <span class="stats-sub">条公开动态</span></div>
+              <div class="stats-value text-[#30D158]">
+                {{ stats.publicCount }} <span class="stats-sub">条公开动态</span>
+              </div>
             </div>
           </div>
 
@@ -481,7 +474,9 @@ function formatTime(s: string): string {
             </div>
             <div>
               <div class="stats-label">私密归档</div>
-              <div class="stats-value text-[#FF9500]">{{ stats.privateCount }} <span class="stats-sub">条仅己可见</span></div>
+              <div class="stats-value text-[#FF9500]">
+                {{ stats.privateCount }} <span class="stats-sub">条仅己可见</span>
+              </div>
             </div>
           </div>
 
@@ -573,12 +568,7 @@ function formatTime(s: string): string {
                     class="hidden"
                     @change="onPickFiles('new', $event)"
                   />
-                  <button
-                    type="button"
-                    class="action-tool-btn"
-                    title="上传本地图片"
-                    @click="newFileInput?.click()"
-                  >
+                  <button type="button" class="action-tool-btn" title="上传本地图片" @click="newFileInput?.click()">
                     <Icon icon="ri:upload-2-line" />
                   </button>
 
@@ -656,9 +646,7 @@ function formatTime(s: string): string {
 
                 <!-- 字符计数与发布按钮 -->
                 <div class="flex items-center gap-3">
-                  <span v-if="charCount > 0" class="text-xs text-text-quaternary">
-                    {{ charCount }} 字
-                  </span>
+                  <span v-if="charCount > 0" class="text-xs text-text-quaternary"> {{ charCount }} 字 </span>
                   <VButton
                     type="primary"
                     size="sm"
@@ -676,11 +664,7 @@ function formatTime(s: string): string {
         </div>
 
         <!-- ============ 瞬间列表 / 时间轴 ============ -->
-        <VEmpty
-          v-if="moments.length === 0"
-          title="暂无任何瞬间"
-          message="在上方输入框写下你的第一条微动态吧！"
-        />
+        <VEmpty v-if="moments.length === 0" title="暂无任何瞬间" message="在上方输入框写下你的第一条微动态吧！" />
 
         <div v-else class="space-y-6">
           <div v-for="g in groupedMoments" :key="g.key" class="space-y-3">
@@ -709,9 +693,12 @@ function formatTime(s: string): string {
                     />
                     <div
                       v-else
-                      :class="[avatarClass(m.id), 'flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white']"
+                      :class="[
+                        avatarClass(m.id),
+                        'flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white',
+                      ]"
                     >
-                      {{ m.author_name ? m.author_name.charAt(0) : 'A' }}
+                      {{ m.author_name ? m.author_name.charAt(0) : "A" }}
                     </div>
 
                     <div>
@@ -721,7 +708,11 @@ function formatTime(s: string): string {
                         </span>
                         <span
                           class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                          :class="m.visibility === 'private' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'"
+                          :class="
+                            m.visibility === 'private'
+                              ? 'bg-[#FF9500]/10 text-[#FF9500]'
+                              : 'bg-[#30D158]/10 text-[#30D158]'
+                          "
                         >
                           {{ m.visibility === "private" ? "私密" : "公开" }}
                         </span>
@@ -742,12 +733,7 @@ function formatTime(s: string): string {
                     >
                       <Icon :icon="m.visibility === 'private' ? 'ri:lock-line' : 'ri:global-line'" />
                     </button>
-                    <button
-                      type="button"
-                      class="action-icon-btn"
-                      title="编辑"
-                      @click="startEdit(m)"
-                    >
+                    <button type="button" class="action-icon-btn" title="编辑" @click="startEdit(m)">
                       <Icon icon="ri:pencil-line" />
                     </button>
                     <button
@@ -776,8 +762,11 @@ function formatTime(s: string): string {
                   v-if="Array.isArray(m.images) && m.images.length > 0"
                   class="mt-3.5 grid gap-2"
                   :class="[
-                    m.images.length === 1 ? 'grid-cols-1 max-w-[320px]' :
-                    m.images.length === 2 || m.images.length === 4 ? 'grid-cols-2 max-w-[440px]' : 'grid-cols-3 max-w-[540px]'
+                    m.images.length === 1
+                      ? 'grid-cols-1 max-w-[320px]'
+                      : m.images.length === 2 || m.images.length === 4
+                        ? 'grid-cols-2 max-w-[440px]'
+                        : 'grid-cols-3 max-w-[540px]',
                   ]"
                 >
                   <div
@@ -786,7 +775,11 @@ function formatTime(s: string): string {
                     class="group relative aspect-square overflow-hidden rounded-xl border border-border bg-secondary cursor-pointer"
                     @click="previewImage = img"
                   >
-                    <img :src="img" alt="" class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105" />
+                    <img
+                      :src="img"
+                      alt=""
+                      class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    />
                   </div>
                 </div>
               </div>
@@ -846,12 +839,7 @@ function formatTime(s: string): string {
 
         <div class="flex items-center justify-between border-t border-border/60 pt-3">
           <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="action-tool-btn"
-              title="从媒体库选择图片"
-              @click.stop="openPicker('edit')"
-            >
+            <button type="button" class="action-tool-btn" title="从媒体库选择图片" @click.stop="openPicker('edit')">
               <Icon icon="ri:image-line" />
             </button>
             <input
@@ -862,12 +850,7 @@ function formatTime(s: string): string {
               class="hidden"
               @change="onPickFiles('edit', $event)"
             />
-            <button
-              type="button"
-              class="action-tool-btn"
-              title="上传本地图片"
-              @click="editFileInput?.click()"
-            >
+            <button type="button" class="action-tool-btn" title="上传本地图片" @click="editFileInput?.click()">
               <Icon icon="ri:upload-2-line" />
             </button>
 
@@ -902,9 +885,7 @@ function formatTime(s: string): string {
                 </div>
 
                 <div class="max-h-44 overflow-y-auto pt-2">
-                  <div v-if="emojiLoading" class="py-6 text-center text-xs text-text-quaternary">
-                    加载表情包中...
-                  </div>
+                  <div v-if="emojiLoading" class="py-6 text-center text-xs text-text-quaternary">加载表情包中...</div>
                   <div v-else class="grid grid-cols-6 gap-1.5">
                     <button
                       v-for="item in currentEmojis"
@@ -952,19 +933,10 @@ function formatTime(s: string): string {
     </VModal>
 
     <!-- 图床选择模态框 -->
-    <AttachmentPickerModal
-      :open="pickerOpen"
-      @select="onPickerSelect"
-      @close="pickerOpen = false"
-    />
+    <AttachmentPickerModal :open="pickerOpen" @select="onPickerSelect" @close="pickerOpen = false" />
 
     <!-- 大图放大查看模态框 -->
-    <VModal
-      :visible="!!previewImage"
-      title="图片预览"
-      :width="680"
-      @update:visible="previewImage = null"
-    >
+    <VModal :visible="!!previewImage" title="图片预览" :width="680" @update:visible="previewImage = null">
       <div class="flex items-center justify-center p-2">
         <img :src="previewImage || ''" class="max-h-[70vh] rounded-xl object-contain shadow-lg" alt="" />
       </div>

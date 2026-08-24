@@ -107,7 +107,7 @@ const minimenus = navItems.filter((i) => i.mobile);
 
 // 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
 const flatNavItems = computed<NavItem[]>(() =>
-  allNavItems.value.flatMap((i) => (i.children ? [i, ...i.children] : [i]))
+  allNavItems.value.flatMap((i) => (i.children ? [i, ...i.children] : [i])),
 );
 
 const searchResults = computed(() => {
@@ -279,11 +279,16 @@ function closeProfileDropdown() {
     <aside
       :class="sidebarCollapsed ? 'sidebar-collapsed w-16' : 'w-64'"
       class="fixed inset-y-0 left-0 z-[999] hidden h-full flex-col overflow-y-auto overflow-x-hidden border-r border-border transition-[width] duration-150 md:flex"
-      style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px);"
+      style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px)"
     >
       <!-- Logo -->
       <div class="flex justify-center pb-7 pt-5">
-        <a href="/" target="_blank" title="访问首页" class="flex items-center gap-2 transition-all hover:brightness-125">
+        <a
+          href="/"
+          target="_blank"
+          title="访问首页"
+          class="flex items-center gap-2 transition-all hover:brightness-125"
+        >
           <img src="/favicon.svg" alt="Logo" class="h-8 w-8 cursor-pointer select-none" />
           <span v-if="!sidebarCollapsed" class="text-lg font-bold text-foreground">Console</span>
         </a>
@@ -311,7 +316,11 @@ function closeProfileDropdown() {
           <template v-for="group in navGroups" :key="group">
             <li v-if="group && !sidebarCollapsed" class="menu-label">{{ group }}</li>
             <li v-else-if="group" class="mx-1 my-2 border-t border-border"></li>
-            <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item group/item relative">
+            <li
+              v-for="item in allNavItems.filter((i) => i.group === group)"
+              :key="item.path"
+              class="menu-item group/item relative"
+            >
               <div
                 :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
                 class="menu-item-title"
@@ -386,7 +395,8 @@ function closeProfileDropdown() {
               <span
                 v-if="unreadCount > 0"
                 class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
-              >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+                >{{ unreadCount > 99 ? "99+" : unreadCount }}</span
+              >
             </div>
           </div>
           <div class="profile-avatar">
@@ -404,7 +414,9 @@ function closeProfileDropdown() {
           <div
             v-if="sidebarCollapsed && unreadCount > 0"
             class="pointer-events-none absolute left-1/2 top-1/2 ml-4 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
-          >{{ unreadCount > 99 ? '99+' : unreadCount }}</div>
+          >
+            {{ unreadCount > 99 ? "99+" : unreadCount }}
+          </div>
           <div v-if="!sidebarCollapsed" class="profile-name">
             <div class="flex text-sm font-medium text-foreground">{{ auth.user.display_name || "管理员" }}</div>
             <div class="flex">
@@ -451,19 +463,27 @@ function closeProfileDropdown() {
     </aside>
 
     <!-- Main content -->
-    <main class="content w-full min-w-0 overflow-y-auto pb-16 md:pb-0" :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'">
+    <main
+      class="content w-full min-w-0 overflow-y-auto pb-16 md:pb-0"
+      :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'"
+    >
       <router-view />
       <!-- 页脚（对齐 Halo：Powered by ...） -->
       <footer
         v-if="showFooter"
         class="border-t border-border px-4 py-3 text-center text-xs text-text-quaternary text-text-tertiary"
       >
-        Powered by <a href="/" target="_blank" class="font-medium text-text-tertiary transition-colors hover:text-primary">Stellar Blog</a>
+        Powered by
+        <a href="/" target="_blank" class="font-medium text-text-tertiary transition-colors hover:text-primary"
+          >Stellar Blog</a
+        >
       </footer>
     </main>
 
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary） -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden">
+    <div
+      class="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+    >
       <div
         v-for="menu in minimenus"
         :key="menu.path"
@@ -495,16 +515,14 @@ function closeProfileDropdown() {
           <div class="absolute inset-0 bg-background/60 transition-opacity" @click="moreMenuVisible = false"></div>
         </Transition>
         <Transition name="slide-up" appear>
-          <div class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl">
+          <div
+            class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl"
+          >
             <ul class="menu-list space-y-1 p-3">
               <template v-for="group in navGroups" :key="group">
                 <li v-if="group" class="menu-label">{{ group }}</li>
                 <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
-                  <div
-                    :class="{ active: isNavActive(item) }"
-                    class="menu-item-title"
-                    @click="navigateTo(item.path)"
-                  >
+                  <div :class="{ active: isNavActive(item) }" class="menu-item-title" @click="navigateTo(item.path)">
                     <span class="menu-icon mr-3 self-center">
                       <Icon :icon="item.icon" width="20" height="20" />
                     </span>
@@ -541,11 +559,19 @@ function closeProfileDropdown() {
 
     <!-- 全局搜索弹窗（⌘K） -->
     <Transition name="fade">
-      <div v-if="searchOpen" class="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] p-4" @click.self="searchOpen = false">
-        <div class="absolute inset-0 backdrop-blur-md" style="background: color-mix(in srgb, #000 65%, transparent);" @click="searchOpen = false" />
+      <div
+        v-if="searchOpen"
+        class="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] p-4"
+        @click.self="searchOpen = false"
+      >
+        <div
+          class="absolute inset-0 backdrop-blur-md"
+          style="background: color-mix(in srgb, #000 65%, transparent)"
+          @click="searchOpen = false"
+        />
         <div
           class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-all"
-          style="box-shadow: var(--shadow-2xl);"
+          style="box-shadow: var(--shadow-2xl)"
         >
           <!-- 搜索输入头 -->
           <div class="flex items-center gap-3 border-b border-border px-4 py-3.5 bg-card">
@@ -557,14 +583,18 @@ function closeProfileDropdown() {
               class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-text-quaternary"
               autofocus
             />
-            <kbd class="rounded border border-border bg-secondary px-2 py-0.5 text-[10px] font-mono text-text-tertiary">ESC</kbd>
+            <kbd class="rounded border border-border bg-secondary px-2 py-0.5 text-[10px] font-mono text-text-tertiary"
+              >ESC</kbd
+            >
           </div>
 
           <!-- 搜索结果列表 -->
           <div class="max-h-80 overflow-y-auto py-2">
             <!-- 菜单区 -->
             <template v-if="searchResults.length">
-              <p class="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">系统菜单</p>
+              <p class="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+                系统菜单
+              </p>
               <button
                 v-for="(item, i) in searchResults"
                 :key="item.path"
@@ -574,18 +604,24 @@ function closeProfileDropdown() {
                 @click="navigateTo(item.path)"
                 @mouseenter="activeIndex = i"
               >
-                <div class="flex h-6 w-6 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                >
                   <Icon :icon="item.icon" class="text-sm" />
                 </div>
                 <span class="font-medium">{{ item.label }}</span>
-                <span class="ml-auto rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] text-text-tertiary">{{ item.group || "概览" }}</span>
+                <span class="ml-auto rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] text-text-tertiary">{{
+                  item.group || "概览"
+                }}</span>
               </button>
             </template>
 
             <!-- 内容结果区（≥2 字符启用；接口异常时静默降级为仅菜单搜索） -->
             <template v-if="contentActive">
               <template v-if="postResults.length">
-                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">文章内容</p>
+                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+                  文章内容
+                </p>
                 <button
                   v-for="(item, i) in postResults"
                   :key="'post-' + item.id"
@@ -595,7 +631,9 @@ function closeProfileDropdown() {
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = postOffset + i"
                 >
-                  <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary">
+                  <div
+                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                  >
                     <Icon icon="ri:book-read-line" class="text-sm" />
                   </div>
                   <span class="min-w-0 flex-1">
@@ -605,14 +643,21 @@ function closeProfileDropdown() {
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
                         class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      >{{ statusBadges[item.status].label }}</span>
+                        >{{ statusBadges[item.status].label }}</span
+                      >
                     </span>
-                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-text-tertiary" v-html="item.snippet" />
+                    <span
+                      v-if="item.snippet"
+                      class="search-snippet mt-0.5 block truncate text-xs text-text-tertiary"
+                      v-html="item.snippet"
+                    />
                   </span>
                 </button>
               </template>
               <template v-if="pageResults.length">
-                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">独立页面</p>
+                <p class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-text-quaternary">
+                  独立页面
+                </p>
                 <button
                   v-for="(item, i) in pageResults"
                   :key="'page-' + item.id"
@@ -622,7 +667,9 @@ function closeProfileDropdown() {
                   @click="openContentResult(item)"
                   @mouseenter="activeIndex = pageOffset + i"
                 >
-                  <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary">
+                  <div
+                    class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-secondary text-text-tertiary group-hover:text-primary"
+                  >
                     <Icon icon="ri:pages-line" class="text-sm" />
                   </div>
                   <span class="min-w-0 flex-1">
@@ -632,26 +679,55 @@ function closeProfileDropdown() {
                         v-if="statusBadges[item.status]"
                         :class="statusBadges[item.status].cls"
                         class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                      >{{ statusBadges[item.status].label }}</span>
+                        >{{ statusBadges[item.status].label }}</span
+                      >
                     </span>
-                    <span v-if="item.snippet" class="search-snippet mt-0.5 block truncate text-xs text-text-tertiary" v-html="item.snippet" />
+                    <span
+                      v-if="item.snippet"
+                      class="search-snippet mt-0.5 block truncate text-xs text-text-tertiary"
+                      v-html="item.snippet"
+                    />
                   </span>
                 </button>
               </template>
-              <p v-if="contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-text-tertiary">搜索中…</p>
-              <p v-else-if="!contentSearching && !contentResults.length" class="px-4 py-3 text-center text-xs text-text-tertiary">无匹配内容</p>
+              <p
+                v-if="contentSearching && !contentResults.length"
+                class="px-4 py-3 text-center text-xs text-text-tertiary"
+              >
+                搜索中…
+              </p>
+              <p
+                v-else-if="!contentSearching && !contentResults.length"
+                class="px-4 py-3 text-center text-xs text-text-tertiary"
+              >
+                无匹配内容
+              </p>
             </template>
 
-            <p v-if="searchResults.length === 0 && !contentActive" class="px-4 py-6 text-center text-sm text-text-quaternary">无匹配结果</p>
+            <p
+              v-if="searchResults.length === 0 && !contentActive"
+              class="px-4 py-6 text-center text-sm text-text-quaternary"
+            >
+              无匹配结果
+            </p>
           </div>
 
           <!-- 底部快捷键 Footer 状态栏 -->
-          <div class="flex items-center justify-between border-t border-border bg-secondary/40 px-4 py-2 text-[11px] text-text-tertiary">
+          <div
+            class="flex items-center justify-between border-t border-border bg-secondary/40 px-4 py-2 text-[11px] text-text-tertiary"
+          >
             <div class="flex items-center gap-3">
-              <span class="flex items-center gap-1.5"><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↑↓</kbd> 导航</span>
-              <span class="flex items-center gap-1.5"><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↵</kbd> 打开</span>
+              <span class="flex items-center gap-1.5"
+                ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↑↓</kbd>
+                导航</span
+              >
+              <span class="flex items-center gap-1.5"
+                ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">↵</kbd> 打开</span
+              >
             </div>
-            <span class="flex items-center gap-1.5"><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">ESC</kbd> 关闭</span>
+            <span class="flex items-center gap-1.5"
+              ><kbd class="rounded border border-border bg-card px-1.5 py-0.5 text-[9px] font-mono">ESC</kbd> 关闭</span
+            >
           </div>
         </div>
       </div>
@@ -714,7 +790,6 @@ function closeProfileDropdown() {
   color: var(--color-primary);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
-
 
 /* 缩进子菜单项 */
 .menu-subitem {
@@ -786,7 +861,9 @@ function closeProfileDropdown() {
 
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform var(--duration-slow) var(--ease-standard), opacity var(--duration-slow) var(--ease-standard);
+  transition:
+    transform var(--duration-slow) var(--ease-standard),
+    opacity var(--duration-slow) var(--ease-standard);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {

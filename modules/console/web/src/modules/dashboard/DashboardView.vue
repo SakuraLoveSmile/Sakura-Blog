@@ -76,12 +76,7 @@ onMounted(load);
         <div v-else-if="error" class="apple-grid-empty text-state-error">
           {{ error }}
         </div>
-        <DashboardGrid
-          v-else
-          :widgets="layout[breakpoint]"
-          :breakpoint="breakpoint"
-          :editing="false"
-        />
+        <DashboardGrid v-else :widgets="layout[breakpoint]" :breakpoint="breakpoint" :editing="false" />
       </div>
     </div>
   </div>

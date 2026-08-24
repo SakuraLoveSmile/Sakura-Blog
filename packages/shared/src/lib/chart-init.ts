@@ -19,7 +19,7 @@ export function loadChart(): Promise<typeof import("chart.js")> {
           mod.Filler, // Chart.js v4: 面积填充插件（line 数据集 fill:true 依赖）
           mod.Title,
           mod.Tooltip,
-          mod.Legend
+          mod.Legend,
         );
         chartRegistered = true;
       }

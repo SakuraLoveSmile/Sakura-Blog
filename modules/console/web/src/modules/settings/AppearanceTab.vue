@@ -26,7 +26,17 @@ function defaultStyle(): Record<string, any> {
     codeblock: { scrollbar: "" },
     header_prefix: { h2: "", h3: "", h4: "", h5: "" },
     text_align: "",
-    border_radius: { card: "", block: "", navbar: "", image: "", card_l: "", card_s: "", bar: "", image_l: "", image_s: "" },
+    border_radius: {
+      card: "",
+      block: "",
+      navbar: "",
+      image: "",
+      card_l: "",
+      card_s: "",
+      bar: "",
+      image_l: "",
+      image_s: "",
+    },
     gradient: { start: "", searchbar: "", avatar: "", angle: "" },
     corner_shape: "superellipse(1.25)",
     animated_avatar: { animate: "auto", background: "" },
@@ -61,7 +71,6 @@ styleRef.loading = styleRef.loading || {};
 styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
 styleRef.leftbar = styleRef.leftbar || {};
 styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
-
 
 /** 恢复默认初始值（内存重置，需点保存才生效） */
 function resetStyle() {
@@ -132,7 +141,11 @@ function rangeFill(val: number, min: number, max: number): string {
           <label>根字号 (root)</label>
           <div class="field-inline">
             <input
-              type="range" min="12" max="20" step="1" class="apple-range"
+              type="range"
+              min="12"
+              max="20"
+              step="1"
+              class="apple-range"
               :value="pxNum(data.style.font_size?.root)"
               :style="{ background: rangeFill(pxNum(data.style.font_size?.root), 12, 20) }"
               @input="data.style.font_size.root = numPx(Number(($event.target as HTMLInputElement).value))"
@@ -144,7 +157,11 @@ function rangeFill(val: number, min: number, max: number): string {
           <label>正文字号 (body)</label>
           <div class="field-inline">
             <input
-              type="range" min="12" max="20" step="1" class="apple-range"
+              type="range"
+              min="12"
+              max="20"
+              step="1"
+              class="apple-range"
               :value="pxNum(data.style.font_size?.body, 15)"
               :style="{ background: rangeFill(pxNum(data.style.font_size?.body, 15), 12, 20) }"
               @input="data.style.font_size.body = numPx(Number(($event.target as HTMLInputElement).value))"
@@ -172,15 +189,30 @@ function rangeFill(val: number, min: number, max: number): string {
       <div class="form-grid form-grid-3">
         <div class="field">
           <label>正文字体 (body)</label>
-          <input v-model="data.style.font_family.body" :class="inputCls" list="font-family-candidates" placeholder="留空使用默认字体" />
+          <input
+            v-model="data.style.font_family.body"
+            :class="inputCls"
+            list="font-family-candidates"
+            placeholder="留空使用默认字体"
+          />
         </div>
         <div class="field">
           <label>行内代码字体 (code)</label>
-          <input v-model="data.style.font_family.code" :class="inputCls" list="font-family-candidates" placeholder="留空使用默认字体" />
+          <input
+            v-model="data.style.font_family.code"
+            :class="inputCls"
+            list="font-family-candidates"
+            placeholder="留空使用默认字体"
+          />
         </div>
         <div class="field">
           <label>代码块字体 (codeblock)</label>
-          <input v-model="data.style.font_family.codeblock" :class="inputCls" list="font-family-candidates" placeholder="留空使用默认字体" />
+          <input
+            v-model="data.style.font_family.codeblock"
+            :class="inputCls"
+            list="font-family-candidates"
+            placeholder="留空使用默认字体"
+          />
         </div>
       </div>
       <!-- 候选列表：仅提示用，手填值照常写入 data.style.font_family.* -->
@@ -227,7 +259,11 @@ function rangeFill(val: number, min: number, max: number): string {
           <label>模糊半径 (blur_px)</label>
           <div class="field-inline">
             <input
-              type="range" min="0" max="20" step="1" class="apple-range"
+              type="range"
+              min="0"
+              max="20"
+              step="1"
+              class="apple-range"
               :value="pxNum(data.style.leftbar.blur_px, 0)"
               :style="{ background: rangeFill(pxNum(data.style.leftbar.blur_px, 0), 0, 20) }"
               @input="data.style.leftbar.blur_px = numPx(Number(($event.target as HTMLInputElement).value))"
@@ -281,10 +317,18 @@ function rangeFill(val: number, min: number, max: number): string {
         <label>标题前缀 (header_prefix)</label>
         <p class="hint">各标题级别前缀字符（如 h2="#"）；非 h2-h5 的存量键保留不动，可在「高级 JSON」兜底中查看。</p>
         <div class="form-grid form-grid-2">
-          <div class="field"><label>h2</label><input v-model="data.style.header_prefix.h2" :class="inputCls" placeholder="如 #" /></div>
-          <div class="field"><label>h3</label><input v-model="data.style.header_prefix.h3" :class="inputCls" placeholder="如 =" /></div>
-          <div class="field"><label>h4</label><input v-model="data.style.header_prefix.h4" :class="inputCls" placeholder="如 ~" /></div>
-          <div class="field"><label>h5</label><input v-model="data.style.header_prefix.h5" :class="inputCls" placeholder="如 ^" /></div>
+          <div class="field">
+            <label>h2</label><input v-model="data.style.header_prefix.h2" :class="inputCls" placeholder="如 #" />
+          </div>
+          <div class="field">
+            <label>h3</label><input v-model="data.style.header_prefix.h3" :class="inputCls" placeholder="如 =" />
+          </div>
+          <div class="field">
+            <label>h4</label><input v-model="data.style.header_prefix.h4" :class="inputCls" placeholder="如 ~" />
+          </div>
+          <div class="field">
+            <label>h5</label><input v-model="data.style.header_prefix.h5" :class="inputCls" placeholder="如 ^" />
+          </div>
         </div>
       </div>
     </div>
@@ -309,34 +353,82 @@ function rangeFill(val: number, min: number, max: number): string {
       <p class="subsection-title">圆角 (border_radius)</p>
       <p class="hint">四档圆角，留空回退主题内置值；值为 CSS 长度，如 16px。</p>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>卡片 (card)</label><input v-model="data.style.border_radius.card" :class="inputCls" placeholder="16px" /></div>
-        <div class="field"><label>块级元素 (block)</label><input v-model="data.style.border_radius.block" :class="inputCls" placeholder="8px" /></div>
-        <div class="field"><label>导航栏 (navbar)</label><input v-model="data.style.border_radius.navbar" :class="inputCls" placeholder="100px" /></div>
-        <div class="field"><label>图片 (image)</label><input v-model="data.style.border_radius.image" :class="inputCls" placeholder="8px" /></div>
-        <div class="field"><label>大卡片 (card-l)</label><input v-model="data.style.border_radius.card_l" :class="inputCls" placeholder="24px" /></div>
-        <div class="field"><label>小卡片 (card-s)</label><input v-model="data.style.border_radius.card_s" :class="inputCls" placeholder="12px" /></div>
-        <div class="field"><label>横条 (bar)</label><input v-model="data.style.border_radius.bar" :class="inputCls" placeholder="12px" /></div>
-        <div class="field"><label>大图 (image-l)</label><input v-model="data.style.border_radius.image_l" :class="inputCls" placeholder="24px" /></div>
-        <div class="field"><label>小图 (image-s)</label><input v-model="data.style.border_radius.image_s" :class="inputCls" placeholder="8px" /></div>
+        <div class="field">
+          <label>卡片 (card)</label
+          ><input v-model="data.style.border_radius.card" :class="inputCls" placeholder="16px" />
+        </div>
+        <div class="field">
+          <label>块级元素 (block)</label
+          ><input v-model="data.style.border_radius.block" :class="inputCls" placeholder="8px" />
+        </div>
+        <div class="field">
+          <label>导航栏 (navbar)</label
+          ><input v-model="data.style.border_radius.navbar" :class="inputCls" placeholder="100px" />
+        </div>
+        <div class="field">
+          <label>图片 (image)</label
+          ><input v-model="data.style.border_radius.image" :class="inputCls" placeholder="8px" />
+        </div>
+        <div class="field">
+          <label>大卡片 (card-l)</label
+          ><input v-model="data.style.border_radius.card_l" :class="inputCls" placeholder="24px" />
+        </div>
+        <div class="field">
+          <label>小卡片 (card-s)</label
+          ><input v-model="data.style.border_radius.card_s" :class="inputCls" placeholder="12px" />
+        </div>
+        <div class="field">
+          <label>横条 (bar)</label><input v-model="data.style.border_radius.bar" :class="inputCls" placeholder="12px" />
+        </div>
+        <div class="field">
+          <label>大图 (image-l)</label
+          ><input v-model="data.style.border_radius.image_l" :class="inputCls" placeholder="24px" />
+        </div>
+        <div class="field">
+          <label>小图 (image-s)</label
+          ><input v-model="data.style.border_radius.image_s" :class="inputCls" placeholder="8px" />
+        </div>
       </div>
     </div>
 
     <div class="subsection">
       <p class="subsection-title">连续曲率与头像</p>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>corner-shape</label><input v-model="data.style.corner_shape" :class="inputCls" placeholder="superellipse(1.25)" /></div>
-        <div class="field"><label>头像光环渐变</label><input v-model="data.style.gradient.avatar" :class="inputCls" placeholder="conic-gradient(...)" /></div>
-        <div class="field"><label>头像动画</label><select v-model="data.style.animated_avatar.animate" :class="selectCls"><option value="auto">auto</option><option value="always">always</option></select></div>
-        <div class="field"><label>头像动画背景图</label><AttachmentField v-model="data.style.animated_avatar.background" placeholder="图片 URL" /></div>
+        <div class="field">
+          <label>corner-shape</label
+          ><input v-model="data.style.corner_shape" :class="inputCls" placeholder="superellipse(1.25)" />
+        </div>
+        <div class="field">
+          <label>头像光环渐变</label
+          ><input v-model="data.style.gradient.avatar" :class="inputCls" placeholder="conic-gradient(...)" />
+        </div>
+        <div class="field">
+          <label>头像动画</label
+          ><select v-model="data.style.animated_avatar.animate" :class="selectCls">
+            <option value="auto">auto</option>
+            <option value="always">always</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>头像动画背景图</label
+          ><AttachmentField v-model="data.style.animated_avatar.background" placeholder="图片 URL" />
+        </div>
       </div>
     </div>
 
     <div class="subsection">
       <p class="subsection-title">加载与错误页</p>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>加载文案</label><input v-model="data.style.loading.loading" :class="inputCls" placeholder="正在加载" /></div>
-        <div class="field"><label>加载失败文案</label><input v-model="data.style.loading.error" :class="inputCls" placeholder="加载失败，请稍后重试。" /></div>
-        <div class="field field-wide"><label>错误页插图</label><AttachmentField v-model="data.style.error_page" placeholder="图片 URL" show-thumb /></div>
+        <div class="field">
+          <label>加载文案</label><input v-model="data.style.loading.loading" :class="inputCls" placeholder="正在加载" />
+        </div>
+        <div class="field">
+          <label>加载失败文案</label
+          ><input v-model="data.style.loading.error" :class="inputCls" placeholder="加载失败，请稍后重试。" />
+        </div>
+        <div class="field field-wide">
+          <label>错误页插图</label><AttachmentField v-model="data.style.error_page" placeholder="图片 URL" show-thumb />
+        </div>
       </div>
     </div>
 
@@ -345,9 +437,18 @@ function rangeFill(val: number, min: number, max: number): string {
       <p class="subsection-title">渐变 (gradient)</p>
       <p class="hint">任意 CSS gradient 表达式，留空回退主题内置值。</p>
       <div class="form-grid form-grid-2">
-        <div class="field"><label>按钮/起始背景 (start)</label><input v-model="data.style.gradient.start" :class="inputCls" placeholder="linear-gradient(...)" /></div>
-        <div class="field"><label>搜索栏背景 (searchbar)</label><input v-model="data.style.gradient.searchbar" :class="inputCls" placeholder="linear-gradient(...)" /></div>
-        <div class="field"><label>菜单渐变角度 (angle)</label><input v-model="data.style.gradient.angle" :class="inputCls" placeholder="210deg" /></div>
+        <div class="field">
+          <label>按钮/起始背景 (start)</label
+          ><input v-model="data.style.gradient.start" :class="inputCls" placeholder="linear-gradient(...)" />
+        </div>
+        <div class="field">
+          <label>搜索栏背景 (searchbar)</label
+          ><input v-model="data.style.gradient.searchbar" :class="inputCls" placeholder="linear-gradient(...)" />
+        </div>
+        <div class="field">
+          <label>菜单渐变角度 (angle)</label
+          ><input v-model="data.style.gradient.angle" :class="inputCls" placeholder="210deg" />
+        </div>
       </div>
     </div>
 

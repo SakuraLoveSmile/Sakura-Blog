@@ -4,16 +4,7 @@ import { Icon } from "@iconify/vue";
 import { topicApi, type TopicItem } from "@/api";
 import AttachmentField from "@/components/AttachmentField.vue";
 import IconPicker from "@/components/IconPicker.vue";
-import {
-  Dialog,
-  Toast,
-  VButton,
-  VCard,
-  VEmpty,
-  VLoading,
-  VModal,
-  VPageHeader,
-} from "@/components/ui";
+import { Dialog, Toast, VButton, VCard, VEmpty, VLoading, VModal, VPageHeader } from "@/components/ui";
 
 const topics = ref<TopicItem[]>([]);
 const loading = ref(false);
@@ -63,10 +54,7 @@ const filteredTopics = computed(() => {
   const query = search.value.trim().toLowerCase();
   let list = topics.value;
   if (query) {
-    list = list.filter(
-      (topic) =>
-        topic.name.toLowerCase().includes(query) || topic.slug.toLowerCase().includes(query)
-    );
+    list = list.filter((topic) => topic.name.toLowerCase().includes(query) || topic.slug.toLowerCase().includes(query));
   }
 
   return [...list].sort((a, b) => {
@@ -280,23 +268,13 @@ onMounted(load);
           </div>
 
           <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="apple-sort-btn"
-              title="按排序权重排列"
-              @click="toggleSort('sort')"
-            >
+            <button type="button" class="apple-sort-btn" title="按排序权重排列" @click="toggleSort('sort')">
               <Icon icon="ri:arrow-up-down-line" />
-              排序权重 {{ sortBy === 'sort' ? (sortOrder === 'desc' ? '↓' : '↑') : '' }}
+              排序权重 {{ sortBy === "sort" ? (sortOrder === "desc" ? "↓" : "↑") : "" }}
             </button>
-            <button
-              type="button"
-              class="apple-sort-btn"
-              title="按文章数排列"
-              @click="toggleSort('post_count')"
-            >
+            <button type="button" class="apple-sort-btn" title="按文章数排列" @click="toggleSort('post_count')">
               <Icon icon="ri:article-line" />
-              文章数 {{ sortBy === 'post_count' ? (sortOrder === 'desc' ? '↓' : '↑') : '' }}
+              文章数 {{ sortBy === "post_count" ? (sortOrder === "desc" ? "↓" : "↑") : "" }}
             </button>
 
             <!-- 视图模式切换 -->
@@ -358,20 +336,28 @@ onMounted(load);
                 <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
                   {{ topic.post_count }} 篇收录
                 </span>
-                <span v-if="topic.sort" class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80 backdrop-blur-md">
+                <span
+                  v-if="topic.sort"
+                  class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80 backdrop-blur-md"
+                >
                   权重 {{ topic.sort }}
                 </span>
               </div>
 
               <!-- 底部遮罩渐变 -->
-              <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80"></div>
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80"
+              ></div>
             </div>
 
             <!-- 卡片内容区 -->
             <div class="flex flex-1 flex-col justify-between p-4 pt-2">
               <div>
                 <div class="flex items-center gap-2">
-                  <div v-if="topic.icon" class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary text-sm">
+                  <div
+                    v-if="topic.icon"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary text-sm"
+                  >
                     <Icon :icon="topic.icon" />
                   </div>
                   <h3 class="truncate text-base font-bold text-foreground">{{ topic.name }}</h3>
@@ -392,12 +378,7 @@ onMounted(load);
                   <template #icon><Icon icon="ri:pencil-line" /></template>
                   编辑
                 </VButton>
-                <VButton
-                  size="sm"
-                  type="danger"
-                  :loading="deletingId === topic.id"
-                  @click="remove(topic)"
-                >
+                <VButton size="sm" type="danger" :loading="deletingId === topic.id" @click="remove(topic)">
                   <template #icon><Icon icon="ri:delete-bin-line" /></template>
                   删除
                 </VButton>
@@ -422,13 +403,11 @@ onMounted(load);
                 </tr>
               </thead>
               <tbody class="divide-y divide-border/60">
-                <tr
-                  v-for="topic in filteredTopics"
-                  :key="topic.id"
-                  class="transition-colors hover:bg-secondary/40"
-                >
+                <tr v-for="topic in filteredTopics" :key="topic.id" class="transition-colors hover:bg-secondary/40">
                   <td class="px-4 py-3">
-                    <div class="flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+                    <div
+                      class="flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary"
+                    >
                       <img v-if="topic.cover" :src="topic.cover" :alt="topic.name" class="h-full w-full object-cover" />
                       <Icon v-else :icon="topic.icon || 'ri:book-shelf-line'" class="text-xl text-text-tertiary" />
                     </div>
@@ -455,12 +434,7 @@ onMounted(load);
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1">
-                      <button
-                        type="button"
-                        class="action-icon-btn"
-                        title="编辑专栏"
-                        @click="openEdit(topic)"
-                      >
+                      <button type="button" class="action-icon-btn" title="编辑专栏" @click="openEdit(topic)">
                         <Icon icon="ri:pencil-line" />
                       </button>
                       <button
@@ -470,7 +444,10 @@ onMounted(load);
                         :disabled="deletingId === topic.id"
                         @click="remove(topic)"
                       >
-                        <Icon :icon="deletingId === topic.id ? 'ri:loader-4-line' : 'ri:delete-bin-line'" :class="deletingId === topic.id && 'animate-spin'" />
+                        <Icon
+                          :icon="deletingId === topic.id ? 'ri:loader-4-line' : 'ri:delete-bin-line'"
+                          :class="deletingId === topic.id && 'animate-spin'"
+                        />
                       </button>
                     </div>
                   </td>
@@ -483,11 +460,7 @@ onMounted(load);
     </div>
 
     <!-- ============ 新建 / 编辑专栏弹窗 ============ -->
-    <VModal
-      v-model:visible="modalVisible"
-      :title="editingId == null ? '新建专栏' : '编辑专栏'"
-      :width="580"
-    >
+    <VModal v-model:visible="modalVisible" :title="editingId == null ? '新建专栏' : '编辑专栏'" :width="580">
       <form class="space-y-4" @submit.prevent="save">
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="sm:col-span-2">

@@ -124,9 +124,9 @@ function showDialog(type: DialogType, options: DialogOptions) {
                             "stroke-linecap": "round",
                             "stroke-linejoin": "round",
                           }),
-                        ]
+                        ],
                       ),
-                    ]
+                    ],
                   ),
                   h("div", { class: "min-w-0 flex-1" }, [
                     h(
@@ -135,7 +135,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                         class: "text-sm font-semibold",
                         style: { color: "var(--color-foreground)" },
                       },
-                      options.title
+                      options.title,
                     ),
                     options.description
                       ? h(
@@ -144,7 +144,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                             class: "mt-1.5 text-xs leading-relaxed",
                             style: { color: "var(--color-text-tertiary)" },
                           },
-                          options.description
+                          options.description,
                         )
                       : null,
                   ]),
@@ -163,7 +163,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                       },
                       onClick: handleCancel,
                     },
-                    options.cancelText || "取消"
+                    options.cancelText || "取消",
                   ),
                   // 确认按钮：蓝底胶囊（danger 红 / secondary 深灰）
                   h(
@@ -179,12 +179,12 @@ function showDialog(type: DialogType, options: DialogOptions) {
                       disabled: loading.value,
                       onClick: handleConfirm,
                     },
-                    loading.value ? "处理中..." : options.confirmText || "确定"
+                    loading.value ? "处理中..." : options.confirmText || "确定",
                   ),
                 ]),
-              ]
+              ],
             ),
-          ]
+          ],
         );
     },
   });

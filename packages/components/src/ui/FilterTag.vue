@@ -8,9 +8,7 @@ defineEmits<{
 </script>
 
 <template>
-  <div
-    class="inline-flex items-center gap-1 rounded-base bg-secondary px-2 py-1 text-xs text-text-secondary"
-  >
+  <div class="inline-flex items-center gap-1 rounded-base bg-secondary px-2 py-1 text-xs text-text-secondary">
     <slot />
     <button
       class="text-text-quaternary transition-colors hover:bg-accent hover:text-foreground"

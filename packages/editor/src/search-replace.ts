@@ -28,11 +28,7 @@ export const searchReplacePluginKey = new PluginKey<SearchReplaceState>("searchR
  * match in its original node means replacing it can retain the node's marks.
  * Empty queries intentionally produce no matches.
  */
-export function findTextMatches(
-  doc: ProseMirrorNode,
-  query: string,
-  caseSensitive = false,
-): SearchMatch[] {
+export function findTextMatches(doc: ProseMirrorNode, query: string, caseSensitive = false): SearchMatch[] {
   if (!query) return [];
 
   const needle = caseSensitive ? query : query.toLocaleLowerCase();
@@ -130,11 +126,7 @@ export function replaceSearchMatch(editor: Editor, match: SearchMatch, replaceme
  * Replace from right to left so changing one match's length never shifts the
  * positions of the matches still waiting to be replaced.
  */
-export function replaceAllSearchMatches(
-  editor: Editor,
-  matches: readonly SearchMatch[],
-  replacement: string,
-): void {
+export function replaceAllSearchMatches(editor: Editor, matches: readonly SearchMatch[], replacement: string): void {
   if (matches.length === 0) return;
 
   const { state } = editor;

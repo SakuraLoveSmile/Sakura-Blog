@@ -37,7 +37,8 @@ const loading = ref(true);
 const error = ref("");
 
 onMounted(() => {
-  dashboardApi.recentPosts()
+  dashboardApi
+    .recentPosts()
     .then((r: { data: PostsResp }) => (items.value = r.data.items))
     .catch((e) => (error.value = e.message))
     .finally(() => (loading.value = false));
@@ -59,7 +60,11 @@ function previewPost(item: PostItem) {
 </script>
 
 <template>
-  <div class="apple-card h-full flex flex-col justify-between" :class="`recent-posts-${sizePreset}`" :data-bp="breakpoint">
+  <div
+    class="apple-card h-full flex flex-col justify-between"
+    :class="`recent-posts-${sizePreset}`"
+    :data-bp="breakpoint"
+  >
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-baseline gap-2.5">
         <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">最近文章</h3>
@@ -78,8 +83,13 @@ function previewPost(item: PostItem) {
     <div v-if="loading" class="recent-placeholder flex items-center justify-center text-muted-foreground flex-1">
       <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
     </div>
-    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">{{ error }}</div>
-    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1">
+    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">
+      {{ error }}
+    </div>
+    <div
+      v-else-if="items.length === 0"
+      class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1"
+    >
       暂无文章
     </div>
 
@@ -92,10 +102,7 @@ function previewPost(item: PostItem) {
         @click="editPost(item)"
       >
         <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
-          <span
-            class="apple-status-dot"
-            :class="item.status === 'published' ? 'published' : 'draft'"
-          />
+          <span class="apple-status-dot" :class="item.status === 'published' ? 'published' : 'draft'" />
           <span class="text-foreground text-xs truncate">{{ item.title }}</span>
         </div>
         <span class="text-[10px] text-muted-foreground whitespace-nowrap">{{ formatRelative(item.updated_at) }}</span>
@@ -140,12 +147,7 @@ function previewPost(item: PostItem) {
 
     <!-- Medium 尺寸：标准富列表 -->
     <div v-else class="space-y-1 flex-1 overflow-y-auto pr-0.5">
-      <button
-        v-for="item in displayedItems"
-        :key="item.slug"
-        class="apple-list-item group"
-        @click="editPost(item)"
-      >
+      <button v-for="item in displayedItems" :key="item.slug" class="apple-list-item group" @click="editPost(item)">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span
@@ -189,7 +191,9 @@ function previewPost(item: PostItem) {
   gap: 0.3rem;
   white-space: nowrap;
 }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-legend { display: none; }
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-legend {
+  display: none;
+}
 
 .recent-post-main {
   display: flex;

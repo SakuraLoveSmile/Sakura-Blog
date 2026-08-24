@@ -203,9 +203,7 @@ export function fieldsForLayout(layout: string): WidgetField[] | undefined {
 }
 
 /** 无额外可配置参数的 layout 集合（author/siteinfo 等） */
-export const NO_EXTRA_PARAM_LAYOUTS = new Set(
-  WIDGET_META.filter((m) => m.fields.length === 0).map((m) => m.layout)
-);
+export const NO_EXTRA_PARAM_LAYOUTS = new Set(WIDGET_META.filter((m) => m.fields.length === 0).map((m) => m.layout));
 
 /** 内置组件缺省定义（layout + 各字段 def 值），作为方案编辑的初始表单 */
 export function builtinDefaults(name: string): Record<string, any> {

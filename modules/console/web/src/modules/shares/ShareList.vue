@@ -5,16 +5,7 @@ import { usePagedList } from "@/composables/usePagedList";
 import { shareApi } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VCard,
-  VButton,
-  VEmpty,
-  VLoading,
-  VPagination,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VCard, VButton, VEmpty, VLoading, VPagination, Dialog, Toast } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 
 /** 分享链接响应模型 */
@@ -31,7 +22,14 @@ interface ShareRow {
 
 const queryClient = useQueryClient();
 
-const { page, size, items: rawShares, total, isLoading, refetch } = usePagedList<ShareRow>({
+const {
+  page,
+  size,
+  items: rawShares,
+  total,
+  isLoading,
+  refetch,
+} = usePagedList<ShareRow>({
   apiFn: (params: Record<string, unknown>) => shareApi.list(params),
   keyFn: (params: Record<string, unknown>) => queryKeys.shares(params),
 });
@@ -132,7 +130,9 @@ function isExpired(expiresAt: string): boolean {
           </div>
           <div>
             <div class="stats-label">正常有效链接</div>
-            <div class="stats-value text-[#30D158]">{{ stats.activeCount }} <span class="stats-sub">仍可正常访问</span></div>
+            <div class="stats-value text-[#30D158]">
+              {{ stats.activeCount }} <span class="stats-sub">仍可正常访问</span>
+            </div>
           </div>
         </div>
 
@@ -142,7 +142,9 @@ function isExpired(expiresAt: string): boolean {
           </div>
           <div>
             <div class="stats-label">已过期失效</div>
-            <div class="stats-value text-[#FF453A]">{{ stats.expiredCount }} <span class="stats-sub">已过有效时限</span></div>
+            <div class="stats-value text-[#FF453A]">
+              {{ stats.expiredCount }} <span class="stats-sub">已过有效时限</span>
+            </div>
           </div>
         </div>
       </div>
@@ -169,11 +171,7 @@ function isExpired(expiresAt: string): boolean {
               </tr>
             </thead>
             <tbody class="divide-y divide-border/60">
-              <tr
-                v-for="s in shares"
-                :key="s.id"
-                class="transition-colors hover:bg-secondary/40"
-              >
+              <tr v-for="s in shares" :key="s.id" class="transition-colors hover:bg-secondary/40">
                 <td class="px-4 py-3.5">
                   <div class="font-semibold text-foreground text-sm truncate max-w-[280px]">
                     {{ s.post_title || s.post_slug }}
@@ -183,9 +181,11 @@ function isExpired(expiresAt: string): boolean {
                 <td class="px-4 py-3.5 text-xs">
                   <span
                     class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    :class="s.share_type === 'draft' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'"
+                    :class="
+                      s.share_type === 'draft' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'
+                    "
                   >
-                    {{ s.share_type === 'draft' ? '草稿预览' : '公开发布' }}
+                    {{ s.share_type === "draft" ? "草稿预览" : "公开发布" }}
                   </span>
                 </td>
                 <td class="px-4 py-3.5 font-mono text-xs text-text-secondary">
@@ -208,10 +208,7 @@ function isExpired(expiresAt: string): boolean {
                   >
                     已过期 ({{ formatRelative(s.expires_at) }})
                   </span>
-                  <span
-                    v-else-if="s.expires_at"
-                    class="text-text-tertiary"
-                  >
+                  <span v-else-if="s.expires_at" class="text-text-tertiary">
                     {{ formatRelative(s.expires_at) }} 到期
                   </span>
                   <span v-else class="text-[#30D158]">永久有效</span>
