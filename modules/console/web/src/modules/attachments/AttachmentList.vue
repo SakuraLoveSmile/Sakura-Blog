@@ -51,6 +51,9 @@ const debouncedKeyword = ref("");
 const page = ref(1);
 const size = ref(24);
 const uploading = ref(false);
+const importingURL = ref(false);
+const importURLVisible = ref(false);
+const importURL = ref("");
 const viewMode = ref<"grid" | "table">("grid");
 
 // 类型分段筛选
@@ -243,6 +246,29 @@ async function handleUploadFiles(files: FileList | File[]) {
   }
 }
 
+async function submitURLImport() {
+  const url = importURL.value.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    Toast.warning("请输入 http:// 或 https:// 图片 URL");
+    return;
+  }
+  importingURL.value = true;
+  try {
+    const gid = activeGroup.value && activeGroup.value > 0 ? activeGroup.value : undefined;
+    await attachmentApi.importURL(url, gid);
+    Toast.success("URL 图片已导入");
+    importURL.value = "";
+    importURLVisible.value = false;
+    await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+    await loadGroups();
+    await refetch();
+  } catch (e: any) {
+    Toast.error(e?.response?.data?.error || "URL 图片导入失败");
+  } finally {
+    importingURL.value = false;
+  }
+}
+
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files?.length) {
@@ -430,6 +456,10 @@ function formatMimeBadge(mime: string): string {
         <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
           <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
           上传附件
+        </VButton>
+        <VButton :disabled="uploading || importingURL" @click="importURLVisible = true">
+          <template #icon><Icon icon="ri:link-m" /></template>
+          从 URL 导入
         </VButton>
       </template>
     </VPageHeader>
@@ -833,6 +863,30 @@ function formatMimeBadge(mime: string): string {
         <div class="flex justify-end gap-2">
           <VButton @click="groupModalVisible = false">取消</VButton>
           <VButton type="primary" :loading="groupSaving" @click="submitGroup">保存</VButton>
+        </div>
+      </template>
+    </VModal>
+
+    <!-- ============ URL 导入弹窗 ============ -->
+    <VModal v-model:visible="importURLVisible" title="从 URL 导入图片" :width="520">
+      <div class="space-y-3">
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-text-tertiary">图片 URL</label>
+          <input
+            v-model="importURL"
+            class="apple-input"
+            type="url"
+            placeholder="https://example.com/image.png"
+            autofocus
+            @keyup.enter="submitURLImport"
+          />
+        </div>
+        <p class="text-xs text-text-quaternary">仅支持 HTTP/HTTPS 图片；服务端会校验目标地址并限制文件大小。</p>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <VButton @click="importURLVisible = false">取消</VButton>
+          <VButton type="primary" :loading="importingURL" @click="submitURLImport">导入</VButton>
         </div>
       </template>
     </VModal>

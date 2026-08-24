@@ -18,11 +18,36 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
 // ErrForbiddenHost 目标主机解析到禁访地址段（私网/环回/链路本地等）。
 var ErrForbiddenHost = errors.New("safefetch: target host resolves to a forbidden address")
+
+// ErrInvalidURL indicates a URL that is not an allowed HTTP(S) target.
+var ErrInvalidURL = errors.New("safefetch: only http and https URLs are allowed")
+
+// ValidateURL performs the cheap preflight checks that must happen before any
+// request is created. DNS/IP checks are repeated by New's DialContext at the
+// final dial to close the DNS rebinding window.
+func ValidateURL(raw string) (*url.URL, error) {
+	u, err := url.ParseRequestURI(strings.TrimSpace(raw))
+	if err != nil || u == nil || u.Host == "" {
+		return nil, ErrInvalidURL
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, ErrInvalidURL
+	}
+	if u.User != nil || u.Hostname() == "" {
+		return nil, ErrInvalidURL
+	}
+	if ip := net.ParseIP(u.Hostname()); ip != nil && ForbiddenIP(ip) {
+		return nil, ErrForbiddenHost
+	}
+	return u, nil
+}
 
 // Options 客户端构造参数。
 type Options struct {

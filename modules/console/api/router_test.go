@@ -92,6 +92,7 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 		"GET /api/v1/posts",
 		"GET /api/v1/posts/:slug/revisions",
 		"GET /api/v1/attachments",
+		"POST /api/v1/attachments/import-url",
 		"GET /api/v1/shares",
 		"GET /api/v1/dashboard/layout",
 		"PUT /api/v1/dashboard/layout",

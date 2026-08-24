@@ -341,6 +341,7 @@ func (h *Handler) register(r *gin.Engine) {
 		// 附件
 		author.GET("/attachments", h.listAttachments)
 		author.POST("/attachments/upload", h.uploadAttachment)
+		author.POST("/attachments/import-url", h.importAttachmentURL)
 		author.POST("/attachments/move", h.moveAttachments)
 		author.GET("/attachments/:id/refs", h.attachmentRefs)
 		author.DELETE("/attachments/:id", h.deleteAttachment)

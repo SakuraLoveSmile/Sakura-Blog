@@ -267,6 +267,8 @@ export const attachmentApi = {
  headers: {"Content-Type":"multipart/form-data" },
  });
  },
+ importURL: (url: string, groupId?: number) =>
+  http.post("/attachments/import-url", { url, group_id: groupId || 0 }),
  refs: (id: number) => http.get(`/attachments/${id}/refs`),
  delete: (id: number) => http.delete(`/attachments/${id}`),
  move: (ids: number[], groupId: number) =>
