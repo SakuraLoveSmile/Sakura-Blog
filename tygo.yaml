@@ -1,0 +1,13 @@
+# Go API types are the source of truth for generated Console declarations.
+type_mappings:
+  time.Time: string
+  time.Duration: number
+
+packages:
+  - path: "blog/modules/console/api"
+    output_path: "../../../packages/api-client/src/generated.d.ts"
+    fallback_type: unknown
+    preserve_comments: types
+    include_files:
+      - "errors.go"
+      - "shortcode_catalog.go"

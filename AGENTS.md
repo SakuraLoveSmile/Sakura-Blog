@@ -178,3 +178,8 @@ git -C .bare worktree remove ../feat-comment
 - 中文提交信息，格式：`类型: 简短描述`
 - 类型：`feat` / `fix` / `refactor` / `docs` / `chore`
 - 代码内容、错误信息、文件路径保持英文；注释用中文
+
+## API 类型生成规矩
+
+- 新增 API 响应必须使用 Go struct，不得新增 `gin.H` 作为响应 schema。
+- 修改 Console API 响应结构后，在仓库根执行 `go generate ./modules/console/api`，提交生成的 `packages/api-client/src/generated.d.ts`。

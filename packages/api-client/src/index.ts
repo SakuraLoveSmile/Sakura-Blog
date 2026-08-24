@@ -4,6 +4,7 @@ import type { DashboardResponsiveLayout } from "./types";
 export { configureApiTransport, http } from "./transport";
 export type { ApiTransportOptions } from "./transport";
 export type { Breakpoint, DashboardResponsiveLayout, DashboardWidget } from "./types";
+export type * from "./generated";
 
 export default http;
 

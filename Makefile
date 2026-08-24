@@ -3,7 +3,7 @@
 
 BINARY := blog
 
-.PHONY: all build console go-build test console-test assets-test deploy-test module-check release-secret-check console-deps css css-drift-check dist-bootstrap merge-check pre-commit-check hooks-install run dev clean
+.PHONY: all build console go-build test console-test assets-test deploy-test module-check release-secret-check console-deps css css-drift-check dist-bootstrap generate merge-check pre-commit-check hooks-install run dev clean
 
 all: build
 
@@ -28,6 +28,10 @@ test: dist-bootstrap console-test assets-test deploy-test module-check
 ## release-secret-check: 只扫描 Git 跟踪文件中的常见凭据格式，输出路径和类型，不输出匹配内容。
 release-secret-check:
 	bash scripts/check-release-secrets.sh
+
+## generate: 从 Go API structs 生成 Console TypeScript 声明。
+generate:
+	go generate ./modules/console/api
 
 ## deploy-test: update.sh 的本地部署/回滚测试，不访问网络或真实 systemd。
 deploy-test:
