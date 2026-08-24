@@ -40,9 +40,29 @@ export const pluginApi = {
 };
 
 // --- 功能模块（manifest + 启停） ---
+export interface ModuleNav {
+  path: string;
+  label: string;
+  icon: string;
+  group: string;
+  roles?: string[];
+  mobile?: boolean;
+  children?: ModuleNav[];
+}
+
+export interface ModuleManifestItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  nav: ModuleNav[];
+  enabled: boolean;
+  locked?: boolean;
+}
+
 export const moduleApi = {
   /** 全部模块 meta + 启停状态 */
-  list: () => http.get("/modules"),
+  list: () => http.get<{ items: ModuleManifestItem[] }>("/modules"),
   /** 启用/禁用模块 */
-  toggle: (id: string, enabled: boolean) => http.put(`/modules/${id}`, { enabled }),
+  toggle: (id: string, enabled: boolean) => http.put<{ ok: boolean; enabled: boolean }>(`/modules/${id}`, { enabled }),
 };

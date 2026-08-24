@@ -9,6 +9,17 @@
 export type Problem = unknown /* httpapi.Problem */;
 
 //////////
+// source: module.go
+
+export interface ModuleListResponse {
+  items: unknown /* module.ManifestItem */[];
+}
+export interface ModuleToggleResponse {
+  ok: boolean;
+  enabled: boolean;
+}
+
+//////////
 // source: shortcode_catalog.go
 
 /**

@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { useRouter, useRoute } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { useAuthStore } from "@/stores/auth";
-import { useModulesStore } from "@/stores/modules";
+import { useModulesStore, type ModuleNav } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
@@ -41,69 +41,28 @@ const isMac = /macintosh|mac os x/i.test(navigator.userAgent);
 // 页脚控制：编辑器等全屏页面通过路由 meta.hideFooter 隐藏
 const showFooter = computed(() => !route.meta.hideFooter);
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: string;
-  group: string;
-  mobile?: boolean;
-  adminOnly?: boolean; // 多用户体系：仅 admin 可见
-  children?: NavItem[]; // 缩进子菜单项（如「文章」下的「分享链接」）
+type NavItem = ModuleNav;
+
+function roleAllowed(item: NavItem): boolean {
+  const current = auth.isAdmin ? "admin" : auth.user.role || auth.role;
+  return !item.roles?.length || item.roles.includes(current) || (auth.isAdmin && item.roles.includes("author"));
 }
 
-const navGroups = ["", "内容", "互动", "媒体", "系统"];
+function visibleNav(item: NavItem): NavItem | null {
+  if (!roleAllowed(item)) return null;
+  const children = item.children?.map(visibleNav).filter((child): child is NavItem => child !== null);
+  return children ? { ...item, children } : item;
+}
 
-// 对齐 Halo：仪表盘无分组标签，内容/互动/媒体/系统分组
-const navItems: NavItem[] = [
-  { path: "/dashboard", label: "仪表盘", icon: "ri:dashboard-3-line", group: "", mobile: true },
-  {
-    path: "/posts",
-    label: "文章",
-    icon: "ri:book-read-line",
-    group: "内容",
-    mobile: true,
-    children: [{ path: "/posts/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" }],
-  },
-  { path: "/topics", label: "专栏", icon: "ri:book-shelf-line", group: "内容", mobile: true },
-  { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
-  {
-    path: "/wiki",
-    label: "文库",
-    icon: "ri:book-2-line",
-    group: "内容",
-    children: [{ path: "/wiki/projects", label: "项目管理", icon: "ri:stack-line", group: "内容" }],
-  },
-  { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
-  { path: "/moments", label: "瞬间", icon: "ri:quill-pen-line", group: "内容" },
-  { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
-  { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动" },
-  { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
-  { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
-  { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
-  { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
-  { path: "/taxonomy", label: "分类标签", icon: "ri:price-tag-3-line", group: "系统" },
-  { path: "/users", label: "用户", icon: "ri:user-star-line", group: "系统", adminOnly: true },
-  { path: "/login-logs", label: "登录日志", icon: "ri:shield-user-line", group: "系统", adminOnly: true },
-  { path: "/plugins", label: "插件", icon: "ri:puzzle-line", group: "系统", adminOnly: true },
-  { path: "/modules", label: "模块", icon: "ri:apps-2-line", group: "系统", adminOnly: true },
-  { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", adminOnly: true },
-  { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", adminOnly: true },
-  { path: "/system-update", label: "系统更新", icon: "ri:rocket-2-line", group: "系统", adminOnly: true },
-];
-
-// 合并静态导航与已启用模块贡献的菜单项（后者按 path 去重，避免与静态项重复）。
-// 多用户体系：adminOnly 菜单项仅 admin 可见。
-const allNavItems = computed<NavItem[]>(() => {
-  const paths = new Set(navItems.map((i) => i.path));
-  const dynamic: NavItem[] = modulesStore
+// 菜单真值来自后端 /api/v1/modules；前端模块只声明契约，不自行决定显隐。
+const allNavItems = computed<NavItem[]>(() =>
+  modulesStore
     .enabledNav()
-    .filter((n) => !paths.has(n.path))
-    .map((n) => ({ path: n.path, label: n.label, icon: n.icon, group: n.group }));
-  const visible = (item: NavItem) => !item.adminOnly || auth.isAdmin;
-  return [...navItems.filter(visible), ...dynamic.filter(visible)];
-});
-
-const minimenus = navItems.filter((i) => i.mobile);
+    .map(visibleNav)
+    .filter((item): item is NavItem => item !== null),
+);
+const navGroups = computed(() => ["", ...new Set(allNavItems.value.map((item) => item.group).filter(Boolean))]);
+const minimenus = computed(() => allNavItems.value.filter((item) => item.mobile));
 
 // 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
 const flatNavItems = computed<NavItem[]>(() =>

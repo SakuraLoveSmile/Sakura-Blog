@@ -56,10 +56,16 @@ async function onToggle(m: ModuleItem, next: boolean) {
               <div class="flex items-center gap-2">
                 <span class="truncate text-sm font-medium text-foreground">{{ m.title }}</span>
                 <VTag>{{ m.category || "模块" }}</VTag>
+                <VTag v-if="m.locked" theme="secondary">核心</VTag>
               </div>
               <p class="mt-1 line-clamp-2 text-xs text-text-tertiary">{{ m.description }}</p>
             </div>
-            <VSwitch :model-value="m.enabled" class="mt-1" @change="(v: boolean) => onToggle(m, v)" />
+            <VSwitch
+              :model-value="m.enabled"
+              :disabled="m.locked"
+              class="mt-1"
+              @change="(v: boolean) => onToggle(m, v)"
+            />
           </div>
         </div>
       </VCard>

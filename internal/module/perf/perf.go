@@ -52,7 +52,7 @@ func (m *Module) Meta() module.Meta {
 		Description: "服务端运行时指标与请求耗时统计，Console 面板展示",
 		Category:    "工具",
 		Nav: []module.Nav{
-			{Path: "/perf", Label: "性能监控", Icon: "ri:speed-line", Group: "系统"},
+			{Path: "/perf", Label: "性能监控", Icon: "ri:speed-line", Group: "系统", Roles: []string{"admin"}},
 		},
 		DefaultOn: false,
 	}

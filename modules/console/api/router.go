@@ -405,11 +405,15 @@ func (h *Handler) register(r *gin.Engine) {
 		author.DELETE("/notes/:id", h.deleteNote)
 		author.GET("/note-tags", h.noteTags)
 
-		// 瞬间
-		author.GET("/moments", h.listMoments)
-		author.POST("/moments", h.createMoment)
-		author.PUT("/moments/:id", h.updateMoment)
-		author.DELETE("/moments/:id", h.deleteMoment)
+		// 瞬间模块 API：模块停用时由 manifest 对齐的 Gate 返回 403。
+		momentRoutes := author
+		if h.modules != nil {
+			momentRoutes = author.Group("", h.modules.Gate("moments"))
+		}
+		momentRoutes.GET("/moments", h.listMoments)
+		momentRoutes.POST("/moments", h.createMoment)
+		momentRoutes.PUT("/moments/:id", h.updateMoment)
+		momentRoutes.DELETE("/moments/:id", h.deleteMoment)
 
 		// 友链 RSS 订阅阅读器
 		author.GET("/subscriptions", h.listSubscriptions)
@@ -440,6 +444,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
 		author.GET("/plugins/catalog", h.shortcodeCatalog)
+
+		// 模块 manifest 对 author 角色可读；启停写操作仍在 sys 组。
+		author.GET("/modules", h.listModules)
 	}
 
 	// 系统管理组（仅 admin，且站点必须已启用密码认证——安全审计 2026-08-16）：
@@ -470,8 +477,7 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.GET("/settings/style/yaml", h.getStyleYAML)
 		sys.PUT("/settings/style/yaml", h.updateStyleYAML)
 
-		// 功能模块管理（manifest + 启停开关）
-		sys.GET("/modules", h.listModules)
+		// 功能模块管理（启停开关；manifest 读取位于 author 组）
 		sys.PUT("/modules/:id", h.toggleModule)
 
 		// 备份与导出（下载走 cookie 认证，Console 直接 <a href> 触发）

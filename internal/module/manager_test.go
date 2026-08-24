@@ -19,6 +19,7 @@ import (
 type fakeModule struct {
 	id          string
 	defaultOn   bool
+	locked      bool
 	deps        []string
 	failEnable  bool
 	failDisable bool
@@ -28,7 +29,9 @@ type fakeModule struct {
 	disables    []string
 }
 
-func (f *fakeModule) Meta() Meta { return Meta{ID: f.id, Title: f.id, DefaultOn: f.defaultOn} }
+func (f *fakeModule) Meta() Meta {
+	return Meta{ID: f.id, Title: f.id, DefaultOn: f.defaultOn, Locked: f.locked}
+}
 func (f *fakeModule) Migrate(Deps) error {
 	return nil
 }
@@ -188,6 +191,16 @@ func TestSetEnabledRollback(t *testing.T) {
 	}
 	if !m.Enabled("a") {
 		t.Fatal("state must stay enabled after failed disable")
+	}
+}
+
+func TestSetEnabledRejectsLockedModule(t *testing.T) {
+	m, _ := newTestManager(t, &fakeModule{id: "core", defaultOn: true, locked: true})
+	if err := m.SetEnabled("core", false, Deps{}); err == nil || !strings.Contains(err.Error(), "不可停用") {
+		t.Fatalf("locked module should reject disable, got: %v", err)
+	}
+	if !m.Enabled("core") {
+		t.Fatal("locked module state must remain enabled")
 	}
 }
 

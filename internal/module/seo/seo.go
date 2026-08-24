@@ -31,7 +31,7 @@ func (m *Module) Meta() module.Meta {
 		Description: "站点体检、搜索引擎推送、爬虫与搜索流量分析、站长验证",
 		Category:    "工具",
 		Nav: []module.Nav{
-			{Path: "/seo", Label: "SEO 工具集", Icon: "ri:search-eye-line", Group: "系统"},
+			{Path: "/seo", Label: "SEO 工具集", Icon: "ri:search-eye-line", Group: "系统", Roles: []string{"admin"}},
 		},
 		DefaultOn: true,
 	}

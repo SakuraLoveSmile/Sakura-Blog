@@ -1,220 +1,74 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useModulesStore } from "@/stores/modules";
+import { consolePlugins, getConsolePlugin } from "@/plugin-registry";
+
+function attachModuleMeta(route: RouteRecordRaw, moduleId: string): RouteRecordRaw {
+  const { children, ...rest } = route;
+  return (
+    children
+      ? {
+          ...rest,
+          meta: { ...route.meta, moduleId },
+          children: children.map((child) => attachModuleMeta(child, moduleId)),
+        }
+      : { ...rest, meta: { ...route.meta, moduleId } }
+  ) as RouteRecordRaw;
+}
+
+function buildRoutes(): RouteRecordRaw[] {
+  const core = getConsolePlugin("core");
+  if (!core?.shell) throw new Error("Console core plugin must provide the DefaultLayout shell");
+
+  const rootRoutes = consolePlugins.flatMap((plugin) =>
+    (plugin.rootRoutes ?? []).map((route) => attachModuleMeta(route, plugin.id)),
+  );
+  const moduleChildren = consolePlugins
+    .filter((plugin) => plugin.id !== "core")
+    .flatMap((plugin) => (plugin.routes ?? []).map((route) => attachModuleMeta(route, plugin.id)));
+  const shell = attachModuleMeta(
+    { ...core.shell, children: [...(core.shell.children ?? []), ...moduleChildren] },
+    core.id,
+  );
+  return [...rootRoutes, shell];
+}
 
 const router = createRouter({
   history: createWebHistory("/console/"),
-  routes: [
-    {
-      path: "/login",
-      name: "Login",
-      component: () => import("@/modules/Login.vue"),
-    },
-    {
-      path: "/",
-      component: () => import("@/layouts/DefaultLayout.vue"),
-      meta: { requiresAuth: true },
-      children: [
-        { path: "", redirect: "/dashboard" },
-        {
-          path: "dashboard",
-          name: "Dashboard",
-          component: () => import("@/modules/dashboard/DashboardView.vue"),
-        },
-        {
-          path: "dashboard/designer",
-          name: "DashboardDesigner",
-          component: () => import("@/modules/dashboard/DashboardDesignerView.vue"),
-        },
-        {
-          path: "dashboard/widgets",
-          redirect: "/dashboard",
-        },
-        {
-          path: "posts",
-          name: "Posts",
-          component: () => import("@/modules/posts/PostList.vue"),
-        },
-        {
-          path: "topics",
-          name: "Topics",
-          component: () => import("@/modules/topics/TopicsView.vue"),
-        },
-        {
-          path: "posts/new",
-          name: "PostNew",
-          component: () => import("@/modules/posts/PostEditor.vue"),
-          meta: { hideFooter: true },
-        },
-        {
-          path: "posts/edit/:slug",
-          name: "PostEdit",
-          component: () => import("@/modules/posts/PostEditor.vue"),
-          meta: { hideFooter: true },
-        },
-        {
-          path: "posts/shares",
-          name: "Shares",
-          component: () => import("@/modules/shares/ShareList.vue"),
-        },
-        {
-          path: "comments",
-          name: "Comments",
-          component: () => import("@/modules/comments/CommentList.vue"),
-        },
-        {
-          path: "comment-users",
-          name: "CommentUsers",
-          component: () => import("@/modules/comments/CommentUsersView.vue"),
-          meta: { requiresAuth: true, adminOnly: true },
-        },
-        {
-          path: "attachments",
-          name: "Attachments",
-          component: () => import("@/modules/attachments/AttachmentList.vue"),
-        },
-        {
-          path: "pages",
-          name: "Pages",
-          component: () => import("@/modules/pages/PageList.vue"),
-        },
-        {
-          path: "pages/edit/:slug",
-          name: "PageEdit",
-          component: () => import("@/modules/pages/PageEditor.vue"),
-          meta: { hideFooter: true },
-        },
-        {
-          path: "wiki",
-          name: "Wiki",
-          component: () => import("@/modules/wiki/WikiDocsView.vue"),
-          meta: { requiresAuth: true },
-        },
-        {
-          path: "wiki/projects",
-          name: "WikiProjects",
-          component: () => import("@/modules/wiki/WikiProjectsView.vue"),
-          meta: { requiresAuth: true },
-        },
-        {
-          path: "notebooks",
-          name: "Notebooks",
-          component: () => import("@/modules/notebooks/NotebooksView.vue"),
-          meta: { requiresAuth: true },
-        },
-        {
-          path: "moments",
-          name: "Moments",
-          component: () => import("@/modules/moments/MomentList.vue"),
-        },
-        {
-          path: "taxonomy",
-          name: "Taxonomy",
-          component: () => import("@/modules/taxonomy/TaxonomyList.vue"),
-        },
-        {
-          path: "friends",
-          name: "Friends",
-          component: () => import("@/modules/friends/FriendList.vue"),
-        },
-        {
-          path: "subscriptions",
-          name: "Subscriptions",
-          component: () => import("@/modules/subscriptions/SubscriptionList.vue"),
-        },
-        {
-          path: "plugins",
-          name: "Plugins",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/plugins/PluginLibrary.vue"),
-        },
-        {
-          path: "modules",
-          name: "Modules",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/modules/ModulesView.vue"),
-        },
-        {
-          path: "seo",
-          component: () => import("@/modules/seo/SeoLayout.vue"),
-          meta: { adminOnly: true },
-          children: [
-            { path: "", redirect: "/seo/overview" },
-            { path: "overview", name: "SeoOverview", component: () => import("@/modules/seo/SeoOverview.vue") },
-            { path: "analysis", name: "SeoAnalysis", component: () => import("@/modules/seo/SeoAnalysis.vue") },
-            { path: "push", name: "SeoPush", component: () => import("@/modules/seo/SeoPush.vue") },
-            { path: "crawlers", name: "SeoCrawlers", component: () => import("@/modules/seo/SeoCrawlers.vue") },
-            { path: "traffic", name: "SeoTraffic", component: () => import("@/modules/seo/SeoTraffic.vue") },
-            { path: "settings", name: "SeoSettings", component: () => import("@/modules/seo/SeoSettings.vue") },
-          ],
-        },
-        {
-          path: "perf",
-          name: "Perf",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/perf/PerfView.vue"),
-        },
-        {
-          path: "settings",
-          name: "Settings",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/settings/SettingsView.vue"),
-        },
-        {
-          path: "profile",
-          name: "Profile",
-          component: () => import("@/modules/profile/ProfileView.vue"),
-          meta: { requiresAuth: true },
-        },
-        {
-          path: "users",
-          name: "Users",
-          component: () => import("@/modules/users/UserListView.vue"),
-          meta: { requiresAuth: true, adminOnly: true },
-        },
-        {
-          path: "login-logs",
-          name: "LoginLogs",
-          component: () => import("@/modules/profile/LoginLogsView.vue"),
-          meta: { requiresAuth: true, adminOnly: true },
-        },
-        {
-          path: "notifications",
-          name: "Notifications",
-          component: () => import("@/modules/notifications/NotificationsView.vue"),
-          meta: { requiresAuth: true },
-        },
-        {
-          path: "backup",
-          name: "Backup",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/backup/BackupView.vue"),
-        },
-        {
-          path: "system-update",
-          name: "SystemUpdate",
-          meta: { adminOnly: true },
-          component: () => import("@/modules/system/SystemUpdateView.vue"),
-        },
-      ],
-    },
-  ],
+  routes: buildRoutes(),
 });
 
-// 路由守卫：未登录跳转 /login
+function rolesFor(to: { matched: readonly { meta: Record<string, unknown> }[] }): string[] {
+  return to.matched.flatMap((record) => (Array.isArray(record.meta.roles) ? (record.meta.roles as string[]) : []));
+}
+
+function hasRole(roles: string[], auth: ReturnType<typeof useAuthStore>): boolean {
+  const current = auth.isAdmin ? "admin" : auth.user.role || auth.role;
+  return roles.includes(current) || (auth.isAdmin && roles.includes("author"));
+}
+
+// 路由守卫：认证、后端 manifest 模块启停、角色均在进入页面前统一判定。
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  if (!auth.initialized) {
-    await auth.checkAuth();
-  }
+  const modules = useModulesStore();
+  if (!auth.initialized) await auth.checkAuth();
+
   if (to.meta.requiresAuth && !auth.authenticated) {
     return { path: "/login", query: { from: to.fullPath } };
   }
-  if (to.matched.some((r) => r.meta.adminOnly) && !auth.isAdmin) {
-    return { path: "/dashboard" };
+  if (auth.authenticated) {
+    if (!modules.loaded) await modules.fetch();
+    const moduleId = to.matched
+      .map((record) => record.meta.moduleId)
+      .find((value): value is string => typeof value === "string");
+    if (moduleId && !modules.isEnabled(moduleId)) return { path: "/dashboard" };
+
+    const roles = rolesFor(to);
+    if (roles.length > 0 && !hasRole(roles, auth)) {
+      return { path: "/dashboard" };
+    }
   }
-  if (to.path === "/login" && auth.authenticated) {
-    return { path: "/dashboard" };
-  }
+  if (to.path === "/login" && auth.authenticated) return { path: "/dashboard" };
 });
 
 export default router;

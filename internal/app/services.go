@@ -20,6 +20,8 @@ import (
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
 	"blog/internal/module"
+	_ "blog/internal/module/core"
+	_ "blog/internal/module/moments"
 	_ "blog/internal/module/perf"
 	_ "blog/internal/module/seo"
 	"blog/internal/notify"

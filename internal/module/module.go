@@ -20,20 +20,24 @@ import (
 
 // Nav 模块贡献的 Console 侧栏菜单项。
 type Nav struct {
-	Path  string `json:"path"`  // Console 路由，如 /seo
-	Label string `json:"label"` // 菜单文案
-	Icon  string `json:"icon"`  // iconify 图标名
-	Group string `json:"group"` // 侧栏分组（对齐 DefaultLayout navGroups）
+	Path     string   `json:"path"`             // Console 路由，如 /seo
+	Label    string   `json:"label"`            // 菜单文案
+	Icon     string   `json:"icon"`             // iconify 图标名
+	Group    string   `json:"group"`            // 侧栏分组（对齐 DefaultLayout navGroups）
+	Roles    []string `json:"roles,omitempty"`  // 前端可见角色；空=所有 author 及以上角色
+	Mobile   bool     `json:"mobile,omitempty"` // 是否出现在移动端底部导航
+	Children []Nav    `json:"children,omitempty"`
 }
 
 // Meta 模块元信息，供 manifest API 与管理页展示。
 type Meta struct {
-	ID          string `json:"id"`          // 唯一标识，如 "seo"
-	Title       string `json:"title"`       // 中文标题
-	Description string `json:"description"` // 一句话简介
-	Category    string `json:"category"`    // 分类，如 "工具"
-	Nav         []Nav  `json:"nav"`         // 贡献的菜单项
-	DefaultOn   bool   `json:"-"`           // 无 DB 记录时的默认启停
+	ID          string `json:"id"`               // 唯一标识，如 "seo"
+	Title       string `json:"title"`            // 中文标题
+	Description string `json:"description"`      // 一句话简介
+	Category    string `json:"category"`         // 分类，如 "工具"
+	Nav         []Nav  `json:"nav"`              // 贡献的菜单项
+	DefaultOn   bool   `json:"-"`                // 无 DB 记录时的默认启停
+	Locked      bool   `json:"locked,omitempty"` // 核心模块不可由用户停用
 }
 
 // Deps 模块可用的共享服务（装配时由 main 注入）。

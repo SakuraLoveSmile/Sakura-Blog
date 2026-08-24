@@ -1,24 +1,10 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { moduleApi } from "@/api";
+import { moduleApi, type ModuleManifestItem, type ModuleNav } from "@/api";
+import { syncPluginWidgets } from "@/plugin-registry";
 
-// 模块贡献的 Console 菜单项（对齐后端 module.Nav）
-export interface ModuleNav {
-  path: string;
-  label: string;
-  icon: string;
-  group: string;
-}
-
-// 模块 manifest 条目（对齐后端 module.ManifestItem）
-export interface ModuleItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  nav: ModuleNav[];
-  enabled: boolean;
-}
+export type ModuleItem = ModuleManifestItem;
+export type { ModuleNav };
 
 /**
  * 功能模块状态：登录后拉取 manifest，供动态菜单与模块管理页使用。
@@ -32,10 +18,13 @@ export const useModulesStore = defineStore("modules", () => {
     try {
       const { data } = await moduleApi.list();
       items.value = data.items || [];
+      await syncPluginWidgets(new Set(items.value.filter((item) => item.enabled).map((item) => item.id)));
       loaded.value = true;
     } catch {
       // 拉取失败不阻塞控制台，动态菜单降级为空
       items.value = [];
+      await syncPluginWidgets(new Set());
+      loaded.value = true;
     }
   }
 
@@ -53,6 +42,7 @@ export const useModulesStore = defineStore("modules", () => {
     await moduleApi.toggle(id, enabled);
     const it = items.value.find((m) => m.id === id);
     if (it) it.enabled = enabled;
+    await syncPluginWidgets(new Set(items.value.filter((item) => item.enabled).map((item) => item.id)));
   }
 
   return { items, loaded, fetch, enabledNav, isEnabled, toggle };

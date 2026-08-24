@@ -66,6 +66,9 @@ func (m *Manager) SetEnabled(id string, enabled bool, deps Deps) error {
 	if _, ok := m.mods[id]; !ok {
 		return fmt.Errorf("模块 %s 未注册", id)
 	}
+	if !enabled && m.isLocked(id) {
+		return fmt.Errorf("模块 %s 不可停用", id)
+	}
 	if m.enabled[id] == enabled {
 		return nil // 状态未变，跳过钩子
 	}
@@ -73,6 +76,15 @@ func (m *Manager) SetEnabled(id string, enabled bool, deps Deps) error {
 		return m.enableLocked(id, deps)
 	}
 	return m.disableLocked(id, deps)
+}
+
+func (m *Manager) isLocked(id string) bool {
+	for _, meta := range m.metas {
+		if meta.ID == id {
+			return meta.Locked
+		}
+	}
+	return false
 }
 
 // enableLocked 启用（调用方持写锁）。

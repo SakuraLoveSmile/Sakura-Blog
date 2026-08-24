@@ -98,6 +98,7 @@ func TestMountRegistersCoreRoutes(t *testing.T) {
 		"PUT /api/v1/dashboard/layout",
 		"GET /api/v1/dashboard/stellar-version",
 		"GET /api/v1/plugins/catalog",
+		"GET /api/v1/modules",
 	} {
 		if !routes[want] {
 			t.Errorf("route %q not registered", want)
