@@ -16,6 +16,7 @@
     "@tanstack/vue-query": "^5.101.4",
     "@blog/api-client": "workspace:*",
     "@blog/components": "workspace:*",
+    "@blog/editor": "workspace:*",
     "@blog/shared": "workspace:*",
     "@tiptap/core": "^2.27.2",
     "@tiptap/extension-code-block": "^2.27.2",

@@ -16,6 +16,9 @@ importers:
       '@blog/components':
         specifier: workspace:*
         version: link:../../../packages/components
+      '@blog/editor':
+        specifier: workspace:*
+        version: link:../../../packages/editor
       '@blog/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
@@ -152,6 +155,66 @@ importers:
       vue-router:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.41)
+
+  packages/editor:
+    dependencies:
+      '@blog/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@blog/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@iconify/vue':
+        specifier: ^5.0.1
+        version: 5.0.1(vue@3.5.41)
+      '@tiptap/core':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/extension-code-block':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
+      '@tiptap/extension-image':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)
+      '@tiptap/extension-link':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
+      '@tiptap/extension-placeholder':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
+      '@tiptap/extension-table':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
+      '@tiptap/extension-table-cell':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)
+      '@tiptap/extension-table-header':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)
+      '@tiptap/extension-table-row':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)
+      '@tiptap/extension-task-item':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
+      '@tiptap/extension-task-list':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)
+      '@tiptap/pm':
+        specifier: ^2.27.2
+        version: 2.27.2
+      '@tiptap/starter-kit':
+        specifier: ^2.27.2
+        version: 2.27.2
+      '@tiptap/vue-3':
+        specifier: ^2.27.2
+        version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)(vue@3.5.41)
+      tiptap-markdown:
+        specifier: ^0.8.10
+        version: 0.8.10(@tiptap/core@2.27.2)
+      vue:
+        specifier: ^3.5.39
+        version: 3.5.41(typescript@6.0.3)
 
   packages/shared:
     dependencies:

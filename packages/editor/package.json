@@ -1,0 +1,38 @@
+{
+  "name": "@blog/editor",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./RichTextEditor.vue": "./src/RichTextEditor.vue",
+    "./search-replace": "./src/search-replace.ts",
+    "./code-block": "./src/code-block.ts"
+  },
+  "dependencies": {
+    "@blog/api-client": "workspace:*",
+    "@blog/shared": "workspace:*",
+    "@tiptap/core": "^2.27.2",
+    "@tiptap/extension-code-block": "^2.27.2",
+    "@tiptap/extension-image": "^2.27.2",
+    "@tiptap/extension-link": "^2.27.2",
+    "@tiptap/extension-placeholder": "^2.27.2",
+    "@tiptap/extension-table": "^2.27.2",
+    "@tiptap/extension-table-cell": "^2.27.2",
+    "@tiptap/extension-table-header": "^2.27.2",
+    "@tiptap/extension-table-row": "^2.27.2",
+    "@tiptap/extension-task-item": "^2.27.2",
+    "@tiptap/extension-task-list": "^2.27.2",
+    "@tiptap/pm": "^2.27.2",
+    "@tiptap/starter-kit": "^2.27.2",
+    "@tiptap/vue-3": "^2.27.2",
+    "tiptap-markdown": "^0.8.10"
+  },
+  "peerDependencies": {
+    "@iconify/vue": "^5.0.1",
+    "vue": "^3.5.39"
+  }
+}

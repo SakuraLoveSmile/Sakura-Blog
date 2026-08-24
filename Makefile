@@ -49,7 +49,7 @@ dist-bootstrap:
 ## console-deps: 自举前端 workspace 依赖——根 node_modules 缺失时执行 pnpm install。
 ## pnpm-lock.yaml 是 workspace 唯一锁文件，--frozen-lockfile 保证构建不隐式改锁。
 console-deps:
-	@if [ ! -d node_modules/.pnpm ] || [ ! -e modules/console/web/node_modules/@blog/api-client ] || [ ! -e modules/console/web/node_modules/@blog/components ] || [ ! -e modules/console/web/node_modules/@blog/shared ]; then \
+	@if [ ! -d node_modules/.pnpm ] || [ ! -e modules/console/web/node_modules/@blog/api-client ] || [ ! -e modules/console/web/node_modules/@blog/components ] || [ ! -e modules/console/web/node_modules/@blog/shared ] || [ ! -e modules/console/web/node_modules/@blog/editor ]; then \
 		echo "console-deps: workspace 依赖缺失，执行 pnpm install --frozen-lockfile"; \
 		pnpm install --frozen-lockfile; \
 	else \
