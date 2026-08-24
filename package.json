@@ -8,9 +8,11 @@
     "format": "prettier --write \"modules/console/web/src/**/*.{ts,vue,css}\" \"packages/**/*.{ts,vue,ts}\"",
     "format:check": "prettier --check \"modules/console/web/src/**/*.{ts,vue,css}\" \"packages/**/*.{ts,vue,ts}\"",
     "packages:build": "pnpm --filter @blog/plugin-runtime run build",
-    "packages:publish:dry": "pnpm --filter @blog/plugin-runtime publish --dry-run --no-git-checks"
+    "packages:publish:dry": "pnpm --filter @blog/plugin-runtime publish --dry-run --no-git-checks",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-vue": "10.10.0",

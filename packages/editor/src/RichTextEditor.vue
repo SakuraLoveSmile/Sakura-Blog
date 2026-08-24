@@ -39,6 +39,8 @@ const props = defineProps<{
   extensions?: unknown[];
   attachmentPicker?: Component;
 }>();
+
+const tiptapTestHookEnabled = import.meta.env.DEV || import.meta.env.VITE_E2E === "1";
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
@@ -178,6 +180,9 @@ const editor = useEditor({
     // 若 API 尚未返回（modelValue 为空），watch 首次收到真实内容时会
     // 重新固化 baseline 并再次 checkDraft，覆盖此次结果
     checkDraft();
+    if (tiptapTestHookEnabled) {
+      (window as Window & { __consoleTiptapEditor?: unknown }).__consoleTiptapEditor = editor;
+    }
   },
   onSelectionUpdate: syncActive,
   onUpdate: () => {
@@ -276,7 +281,12 @@ function onSearchKeydown(event: KeyboardEvent) {
   }
 }
 
-onBeforeUnmount(() => editor.value?.destroy());
+onBeforeUnmount(() => {
+  if (tiptapTestHookEnabled) {
+    delete (window as Window & { __consoleTiptapEditor?: unknown }).__consoleTiptapEditor;
+  }
+  editor.value?.destroy();
+});
 
 // ---------- 图片上传（粘贴 / 拖拽 / 工具栏按钮 / 图床选择） ----------
 

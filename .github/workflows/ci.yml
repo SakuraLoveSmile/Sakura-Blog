@@ -116,6 +116,33 @@ jobs:
       - name: Assets behavior tests (node --test)
         run: node --test modules/stellar/tests/*.test.mjs
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Console assets
+        run: pnpm --filter console run build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run critical path e2e
+        run: pnpm run e2e
+
   # 与发布产物同构的组合构建验证（对齐 release.yml：真实 console 产物 + go build）。
   # go job 用 stub dist 只验证编译；此 job 保证合入主线前 embed 真实前端产物可构建。
   build:

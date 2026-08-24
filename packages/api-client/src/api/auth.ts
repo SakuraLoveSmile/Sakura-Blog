@@ -79,8 +79,16 @@ export const usersApi = {
     role: "admin" | "author" | "reader";
     roles?: Array<"admin" | "author" | "reader">;
   }) => http.post<UserItem>("/users", data),
-  update: (id: number, data: { display_name: string; email: string; avatar?: string; role?: "admin" | "author" | "reader"; roles?: Array<"admin" | "author" | "reader"> }) =>
-    http.put<UserItem>(`/users/${id}`, data),
+  update: (
+    id: number,
+    data: {
+      display_name: string;
+      email: string;
+      avatar?: string;
+      role?: "admin" | "author" | "reader";
+      roles?: Array<"admin" | "author" | "reader">;
+    },
+  ) => http.put<UserItem>(`/users/${id}`, data),
   resetPassword: (id: number, password: string) => http.put(`/users/${id}/password`, { password }),
   remove: (id: number) => http.delete(`/users/${id}`),
 };
