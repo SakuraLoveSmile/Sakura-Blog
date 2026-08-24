@@ -16,6 +16,9 @@ importers:
       '@blog/components':
         specifier: workspace:*
         version: link:../../../packages/components
+      '@blog/shared':
+        specifier: workspace:*
+        version: link:../../../packages/shared
       '@fontsource/dm-sans':
         specifier: ^5.3.0
         version: 5.3.0
@@ -149,6 +152,18 @@ importers:
       vue-router:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.41)
+
+  packages/shared:
+    dependencies:
+      '@tanstack/vue-query':
+        specifier: ^5.101.4
+        version: 5.102.2(vue@3.5.41)
+      chart.js:
+        specifier: ^4.5.1
+        version: 4.5.1
+      vue:
+        specifier: ^3.5.39
+        version: 3.5.41(typescript@6.0.3)
 
 packages:
 

@@ -1,0 +1,26 @@
+{
+  "name": "@blog/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./composables/*": {
+      "types": "./src/composables/*.ts",
+      "import": "./src/composables/*.ts",
+      "default": "./src/composables/*.ts"
+    },
+    "./lib/*": {
+      "types": "./src/lib/*.ts",
+      "import": "./src/lib/*.ts",
+      "default": "./src/lib/*.ts"
+    }
+  },
+  "peerDependencies": {
+    "@tanstack/vue-query": "^5.101.4",
+    "chart.js": "^4.5.1",
+    "vue": "^3.5.39"
+  }
+}
