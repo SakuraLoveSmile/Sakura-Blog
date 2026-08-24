@@ -5,11 +5,11 @@ import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } fro
 import PluginParamForm from"@/modules/plugins/PluginParamForm.vue";
 import { VButton, VSwitch, Toast } from"@/components/ui";
 import {
- plugins,
  PLUGIN_CATEGORIES,
  type PluginMeta,
  type PluginCategory,
 } from"@/modules/plugins/plugins-data";
+import { loadPluginCatalog, runtimePlugins } from"@/modules/plugins/usePluginCatalog";
 
 // 编辑器右侧辅助面板（对照 Halo）：大纲 / 详情 两个 Tab。
 // 大纲：解析 Markdown 标题可点击跳转；详情：合并原右栏全部设置字段与标签插件参数面板。
@@ -170,6 +170,7 @@ function onDocClickAuthorPop(e: MouseEvent) {
 
 onMounted(() => {
  loadAuthors();
+ loadPluginCatalog();
  document.addEventListener("click", onDocClickAuthorPop);
 });
 onBeforeUnmount(() => document.removeEventListener("click", onDocClickAuthorPop));
@@ -359,8 +360,8 @@ function fetchRandomCover() {
 const pluginCat = ref<PluginCategory |"全部">("全部");
 const pluginList = computed(() =>
  pluginCat.value ==="全部"
- ? plugins
- : plugins.filter((p) => p.category === pluginCat.value)
+ ? runtimePlugins.value
+ : runtimePlugins.value.filter((p) => p.category === pluginCat.value)
 );
 const selectedPlugin = ref<PluginMeta | null>(null);
 const pluginCode = ref("");
@@ -908,7 +909,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
           <select
             :value="selectedPlugin?.name"
             :class="selectCls"
-            @change="selectPlugin(plugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
+            @change="selectPlugin(runtimePlugins.find((p) => p.name === ($event.target as HTMLSelectElement).value)!)"
           >
             <option :value="undefined" disabled>选择插件…</option>
             <option v-for="p in pluginList" :key="p.name" :value="p.name">{{ p.title }}</option>

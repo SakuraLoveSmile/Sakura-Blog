@@ -426,6 +426,28 @@ export const assetsApi = {
   icons: () => http.get<{ items: AssetIconItem[] }>("/assets/icons"),
 };
 
+// --- Shortcode catalog（后端 parser 注册表真值） ---
+export interface ShortcodeCatalogParam {
+ key: string;
+ type: "text" | "select" | "number" | "switch" | "color" | "textarea";
+ role: "positional" | "named" | "flag" | "content";
+ default?: unknown;
+ options?: string[];
+ placeholder?: string;
+}
+
+export interface ShortcodeCatalogItem {
+ name: string;
+ type: "inline" | "block" | "hybrid";
+ category: string;
+ capability: "static" | "interactive" | "service" | "external";
+ params: ShortcodeCatalogParam[];
+}
+
+export const pluginApi = {
+ catalog: () => http.get<{ items: ShortcodeCatalogItem[] }>("/plugins/catalog"),
+};
+
 // --- 管理端全局搜索（Spec 39，⌘K 弹窗）---
 export interface SearchResultItem {
  id: number;

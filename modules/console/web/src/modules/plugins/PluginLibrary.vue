@@ -3,7 +3,6 @@ import { ref, computed, watch, onBeforeUnmount, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader } from "@/components/ui";
 import {
-  plugins,
   PLUGIN_CATEGORIES,
   previewInfoFor,
   type PluginMeta,
@@ -15,6 +14,7 @@ import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";
 import AssetGallery from "./AssetGallery.vue";
 import WidgetLibraryView from "./WidgetLibraryView.vue";
+import { loadPluginCatalog, runtimePlugins } from "./usePluginCatalog";
 import { WIDGET_META } from "../settings/widget-meta";
 
 // Console 插件库（Spec 23 + Spec 63 + Spec 64）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
@@ -26,12 +26,17 @@ import { WIDGET_META } from "../settings/widget-meta";
 const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
 const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
-const selected = ref<PluginMeta>(plugins[0]);
-const example = ref(plugins[0].example);
+const selected = ref<PluginMeta>(runtimePlugins.value[0]);
+const example = ref(runtimePlugins.value[0].example);
+
+watch(runtimePlugins, (next) => {
+  const refreshed = next.find((plugin) => plugin.name === selected.value.name);
+  if (refreshed) selected.value = refreshed;
+});
 
 const filtered = computed(() => {
   const kw = search.value.trim().toLowerCase();
-  return plugins.filter((p) => {
+  return runtimePlugins.value.filter((p) => {
     if (activeCategory.value !== "全部" && p.category !== activeCategory.value)
       return false;
     if (!kw) return true;
@@ -44,9 +49,9 @@ const filtered = computed(() => {
 });
 
 const categoryCount = computed(() => {
-  const map: Record<string, number> = { 全部: plugins.length };
+  const map: Record<string, number> = { 全部: runtimePlugins.value.length };
   for (const c of PLUGIN_CATEGORIES) map[c] = 0;
-  for (const p of plugins) map[p.category]++;
+  for (const p of runtimePlugins.value) map[p.category]++;
   return map;
 });
 
@@ -77,12 +82,15 @@ const fixtureLabel = computed(() =>
 
 watch(example, () => preview.scheduleRender(example.value));
 // 首次进入立即渲染一次
-preview.scheduleRender(plugins[0].example, true);
+preview.scheduleRender(runtimePlugins.value[0].example, true);
 
 function onPreviewMessage(event: MessageEvent) {
   preview.onMessage(event, previewFrame.value);
 }
-onMounted(() => window.addEventListener("message", onPreviewMessage));
+onMounted(() => {
+  window.addEventListener("message", onPreviewMessage);
+  void loadPluginCatalog();
+});
 onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 
 // ---------- 复制 ----------
@@ -118,7 +126,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       </template>
       <template #subtitle>
         {{ viewMode === "plugins"
-          ? `${plugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
+          ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
           : viewMode === "assets"
           ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
           : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用` }}

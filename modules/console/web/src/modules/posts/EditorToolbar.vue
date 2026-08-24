@@ -3,10 +3,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from"vue";
 import { Icon } from"@iconify/vue";
 import { previewApi } from"@/api";
 import {
- plugins,
  PLUGIN_CATEGORIES,
  type PluginMeta,
 } from"@/modules/plugins/plugins-data";
+import { loadPluginCatalog, runtimePlugins } from"@/modules/plugins/usePluginCatalog";
 
 // 编辑器顶部工具栏（对照 Halo 编辑器）：
 // 左侧「+」插入下拉（Stellar 标签，悬停出预览气泡）+ 格式化按钮组 + 图片；
@@ -75,7 +75,7 @@ const dropdownRef = ref<HTMLElement | null>(null);
 const groupedPlugins = computed(() =>
  PLUGIN_CATEGORIES.map((cat) => ({
  cat,
- items: plugins.filter((p) => p.category === cat),
+  items: runtimePlugins.value.filter((p) => p.category === cat),
  })).filter((g) => g.items.length > 0)
 );
 
@@ -99,7 +99,10 @@ function onDocClick(e: MouseEvent) {
  hideBubble();
  }
 }
-onMounted(() => document.addEventListener("click", onDocClick));
+onMounted(() => {
+ loadPluginCatalog();
+ document.addEventListener("click", onDocClick);
+});
 onBeforeUnmount(() => {
  document.removeEventListener("click", onDocClick);
  clearTimeout(hoverTimer);
