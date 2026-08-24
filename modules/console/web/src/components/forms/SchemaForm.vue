@@ -125,6 +125,17 @@ const inputCls = "apple-input";
       ></textarea>
 
       <input
+        v-else-if="field.type === 'password'"
+        :id="`schema-field-${field.key}`"
+        type="password"
+        :value="displayValue(values[field.key])"
+        :placeholder="field.placeholder"
+        :class="inputCls"
+        autocomplete="new-password"
+        @input="updateValue(field, inputValue(field, $event))"
+      />
+
+      <input
         v-else
         :id="`schema-field-${field.key}`"
         type="text"

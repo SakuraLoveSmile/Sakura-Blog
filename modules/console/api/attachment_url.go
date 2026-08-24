@@ -160,11 +160,11 @@ func (h *Handler) persistImportedAttachment(filename, mimeType string, srcData [
 		thumbRel := filepath.Join(subDir, "thumb_"+randName)
 		if err := h.storage.Thumb(filepath.ToSlash(thumbRel), thumbData); err == nil {
 			thumbPath = filepath.ToSlash(thumbRel)
-			thumbURL = "/uploads/" + thumbPath
+			thumbURL = h.attachmentURL(thumbPath)
 		}
 	}
 	attachment := &store.Attachment{
-		Filename: filename, Path: filepath.ToSlash(relPath), URL: "/uploads/" + filepath.ToSlash(relPath),
+		Filename: filename, Path: filepath.ToSlash(relPath), URL: h.attachmentURL(filepath.ToSlash(relPath)),
 		Mime: outMime, Size: int64(len(mainData)), ThumbPath: thumbPath, ThumbURL: thumbURL,
 		Width: width, Height: height, GroupID: groupID,
 		OwnerID: ownerID,

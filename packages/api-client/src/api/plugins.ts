@@ -58,6 +58,19 @@ export interface ModuleManifestItem {
   nav: ModuleNav[];
   enabled: boolean;
   locked?: boolean;
+  config_section?: string;
+  config_schema?: ModuleConfigField[];
+}
+
+export interface ModuleConfigField {
+  key: string;
+  type: "text" | "password" | "select" | "number" | "switch" | "color" | "textarea";
+  label?: string;
+  default?: unknown;
+  options?: string[];
+  placeholder?: string;
+  hint?: string;
+  rows?: number;
 }
 
 export const moduleApi = {
@@ -65,4 +78,7 @@ export const moduleApi = {
   list: () => http.get<{ items: ModuleManifestItem[] }>("/modules"),
   /** 启用/禁用模块 */
   toggle: (id: string, enabled: boolean) => http.put<{ ok: boolean; enabled: boolean }>(`/modules/${id}`, { enabled }),
+  getConfig: (section: string) => http.get<Record<string, unknown>>(`/settings/${section}`),
+  putConfig: (section: string, value: Record<string, unknown>) =>
+    http.put<{ ok: boolean }>(`/settings/${section}`, value),
 };

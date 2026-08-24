@@ -46,7 +46,7 @@ func (h *Handler) toggleModule(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求体格式错误")
 		return
 	}
-	if err := h.modules.SetEnabled(id, body.Enabled, module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}); err != nil {
+	if err := h.modules.SetEnabled(id, body.Enabled, module.Deps{Store: h.store, Posts: h.posts, Storage: h.storageManager, Site: h.site, Modules: h.modules}); err != nil {
 		// 依赖缺失/未启用/被依赖等拓扑问题属于请求错误（400）
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -60,5 +60,5 @@ func (h *Handler) notifySEOPublished(slug string) {
 		return
 	}
 	url := strings.TrimRight(h.site.Load().URL, "/") + "/post/" + slug
-	seo.NotifyPublished(module.Deps{Store: h.store, Site: h.site, Modules: h.modules}, url)
+	seo.NotifyPublished(module.Deps{Store: h.store, Storage: h.storageManager, Site: h.site, Modules: h.modules}, url)
 }

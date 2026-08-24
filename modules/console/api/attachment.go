@@ -177,7 +177,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		return
 	}
 
-	url := "/uploads/" + filepath.ToSlash(relPath)
+	url := h.attachmentURL(filepath.ToSlash(relPath))
 
 	// 写入缩略图
 	var thumbPath, thumbURL string
@@ -186,7 +186,7 @@ func (h *Handler) uploadAttachment(c *gin.Context) {
 		thumbRel := filepath.Join(subDir, thumbName)
 		if err := h.storage.Thumb(filepath.ToSlash(thumbRel), thumbData); err == nil {
 			thumbPath = filepath.ToSlash(thumbRel)
-			thumbURL = "/uploads/" + thumbPath
+			thumbURL = h.attachmentURL(thumbPath)
 		}
 	}
 

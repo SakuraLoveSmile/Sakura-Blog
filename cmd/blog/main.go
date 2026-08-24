@@ -64,9 +64,10 @@ func main() {
 			RenderSitePreview: stellarServer.RenderSitePreview,
 			Events:            services.Events,
 			UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
-			Root:       services.App.Root,
-			AppVersion: app.Version,
-			UpdateRepo: services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
+			StorageManager: services.Storage,
+			Root:           services.App.Root,
+			AppVersion:     app.Version,
+			UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
 		},
 		GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
 	})

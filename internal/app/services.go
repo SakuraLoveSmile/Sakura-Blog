@@ -24,6 +24,7 @@ import (
 	_ "blog/internal/module/moments"
 	_ "blog/internal/module/perf"
 	_ "blog/internal/module/seo"
+	storagemodule "blog/internal/module/storage"
 	"blog/internal/notify"
 	"blog/internal/og"
 	ogfonts "blog/internal/og/fonts"
@@ -31,6 +32,7 @@ import (
 	"blog/internal/search"
 	seedpkg "blog/internal/seed"
 	"blog/internal/settings"
+	attachmentstorage "blog/internal/storage"
 	"blog/internal/store"
 )
 
@@ -62,6 +64,7 @@ type Services struct {
 	GitHub     *ghpkg.Client
 	OG         *og.Generator
 	Modules    *module.Manager
+	Storage    *attachmentstorage.Manager
 	Events     content.Events
 	Icons      *settings.IconRegistry
 	SitePath   string
@@ -176,6 +179,11 @@ func Bootstrap(options Options) (*Services, error) {
 		return fail(fmt.Errorf("production requires an admin password; configure site.yml admin.password or migrate an admin user"))
 	}
 
+	attachmentStorage, err := storagemodule.NewManager(st, appConfig.UploadDir)
+	if err != nil {
+		return fail(fmt.Errorf("init attachment storage: %w", err))
+	}
+
 	seedOnStart := options.Seed || appConfig.SeedOnStart
 	if seedOnStart {
 		n, _ := seedpkg.Count(posts)
@@ -234,7 +242,7 @@ func Bootstrap(options Options) (*Services, error) {
 	if err != nil {
 		return fail(fmt.Errorf("init module manager: %w", err))
 	}
-	moduleDeps := module.Deps{Store: st, Posts: posts, Site: sitePtr, Modules: moduleMgr}
+	moduleDeps := module.Deps{Store: st, Posts: posts, Storage: attachmentStorage, Site: sitePtr, Modules: moduleMgr}
 	for _, mod := range module.All() {
 		if err := mod.Migrate(moduleDeps); err != nil {
 			return fail(fmt.Errorf("module %s migrate: %w", mod.Meta().ID, err))
@@ -267,7 +275,7 @@ func Bootstrap(options Options) (*Services, error) {
 		App: appConfig, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
 		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx,
 		Backup: backupSvc, Notify: notifySvc, Friends: friendsAgg, LinkWatch: linkWatch,
-		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Events: events, Icons: icons, SitePath: sitePath,
+		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Events: events, Icons: icons, SitePath: sitePath,
 	}
 	backupSvc.SetRestoreHook(func() {
 		if err := config.RebuildSite(st, sitePtr); err != nil {

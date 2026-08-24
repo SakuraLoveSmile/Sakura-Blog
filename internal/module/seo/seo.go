@@ -55,7 +55,7 @@ func (m *Module) Migrate(deps module.Deps) error {
 }
 
 // RegisterRoutes 挂 /api/v1/seo/* 后台 API（外层已包 Gate 中间件），
-// 并挂框架统一配置端点 GET/PUT /api/v1/settings/seo（ConfigModule）。
+// 并挂框架统一配置端点 GET/PUT /api/v1/settings/seo_tools（ConfigModule）。
 func (m *Module) RegisterRoutes(authed *gin.RouterGroup, deps module.Deps) {
 	m.deps = deps
 	seo := authed.Group("/seo")

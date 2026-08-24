@@ -1,0 +1,14 @@
+# Combined configuration reference.
+# The application reads two runtime files, not this file:
+#   config/app.yml  <- copy config/app.example.yml
+#   config/site.yml <- copy config/site.example.yml
+# Keep both runtime files outside Git when they contain passwords or tokens.
+#
+# Quick setup:
+#   cp config/app.example.yml config/app.yml
+#   cp config/site.example.yml config/site.yml
+#
+# Storage settings are persisted in the database through the Console module
+# configuration endpoint. The default provider is local; configure the storage
+# module in Console before selecting an S3-compatible provider.
+

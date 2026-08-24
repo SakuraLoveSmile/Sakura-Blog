@@ -24,6 +24,7 @@ import (
 	"blog/internal/notify"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
+	attachmentstorage "blog/internal/storage"
 	"blog/internal/store"
 	updr "blog/internal/updaterunner"
 )
@@ -38,13 +39,14 @@ type Handler struct {
 	store *store.Store
 	posts *post.Service
 	// site 站点配置原子指针（Spec 61 阶段 3）：RebuildSite 复制-交换发布，API 侧 .Load() 读取
-	site      *atomic.Pointer[tmpl.Site]
-	comments  *comments.Handler
-	backups   *backup.Service
-	modules   *module.Manager
-	notify    *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
-	storage   AttachmentStorage
-	maxUpload int64 // 单文件上限字节
+	site           *atomic.Pointer[tmpl.Site]
+	comments       *comments.Handler
+	backups        *backup.Service
+	modules        *module.Manager
+	notify         *notify.Service // 站内通知服务（Wave 3b），nil 时通知 API 返回空
+	storage        AttachmentStorage
+	storageManager *attachmentstorage.Manager
+	maxUpload      int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
 	onLinksChanged func()
@@ -94,11 +96,12 @@ type Config struct {
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
 	// Events publishes generic changes such as wiki/notebook/note/settings writes.
-	Events      content.Events
-	UploadDir   string
-	Storage     AttachmentStorage
-	MaxUploadMB int
-	LinkWatch   *linkwatch.Watcher
+	Events         content.Events
+	UploadDir      string
+	Storage        AttachmentStorage
+	StorageManager *attachmentstorage.Manager
+	MaxUploadMB    int
+	LinkWatch      *linkwatch.Watcher
 	// StellarVersion is injected by the composition root to keep Console
 	// independent from the Stellar module package.
 	StellarVersion string
@@ -132,6 +135,10 @@ func New(cfg Config) *Handler {
 	// 构造生产 execRunner（Supported() 在非 systemd 环境自动返回 false）
 	runner := updr.New(installDir)
 
+	storageBackend := cfg.Storage
+	if cfg.StorageManager != nil {
+		storageBackend = cfg.StorageManager
+	}
 	return &Handler{
 		store:             cfg.Store,
 		posts:             cfg.Posts,
@@ -143,7 +150,8 @@ func New(cfg Config) *Handler {
 		icons:             cfg.Icons,
 		renderSitePreview: cfg.RenderSitePreview,
 		events:            cfg.Events,
-		storage:           attachmentStorageOrLocal(cfg.Storage, cfg.UploadDir),
+		storage:           attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
+		storageManager:    cfg.StorageManager,
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
 		stellarVersion:    cfg.StellarVersion,
@@ -538,7 +546,7 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 功能模块后台 API：仅 admin；每个已注册模块套自己的 Gate 中间件（禁用即 403）。
 		if h.modules != nil {
-			deps := module.Deps{Store: h.store, Posts: h.posts, Site: h.site, Modules: h.modules}
+			deps := module.Deps{Store: h.store, Posts: h.posts, Storage: h.storageManager, Site: h.site, Modules: h.modules}
 			for _, m := range module.All() {
 				id := m.Meta().ID
 				grp := sys.Group("", h.modules.Gate(id))

@@ -1,5 +1,5 @@
 /** Schema-driven form field definitions shared by Console features. */
-export type SchemaFieldType = "text" | "select" | "number" | "switch" | "color" | "textarea";
+export type SchemaFieldType = "text" | "password" | "select" | "number" | "switch" | "color" | "textarea";
 
 export interface SchemaField {
   key: string;

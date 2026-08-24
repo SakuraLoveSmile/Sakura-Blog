@@ -15,6 +15,7 @@ import (
 
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
+	"blog/internal/storage"
 	"blog/internal/store"
 )
 
@@ -31,19 +32,36 @@ type Nav struct {
 
 // Meta 模块元信息，供 manifest API 与管理页展示。
 type Meta struct {
-	ID          string `json:"id"`               // 唯一标识，如 "seo"
-	Title       string `json:"title"`            // 中文标题
-	Description string `json:"description"`      // 一句话简介
-	Category    string `json:"category"`         // 分类，如 "工具"
-	Nav         []Nav  `json:"nav"`              // 贡献的菜单项
-	DefaultOn   bool   `json:"-"`                // 无 DB 记录时的默认启停
-	Locked      bool   `json:"locked,omitempty"` // 核心模块不可由用户停用
+	ID            string        `json:"id"`               // 唯一标识，如 "seo"
+	Title         string        `json:"title"`            // 中文标题
+	Description   string        `json:"description"`      // 一句话简介
+	Category      string        `json:"category"`         // 分类，如 "工具"
+	Nav           []Nav         `json:"nav"`              // 贡献的菜单项
+	DefaultOn     bool          `json:"-"`                // 无 DB 记录时的默认启停
+	Locked        bool          `json:"locked,omitempty"` // 核心模块不可由用户停用
+	ConfigSection string        `json:"config_section,omitempty"`
+	ConfigSchema  []ConfigField `json:"config_schema,omitempty"`
+}
+
+// ConfigField is the backend-owned schema consumed by Console SchemaForm.
+// Default is intentionally open because schema defaults may be strings,
+// numbers, or booleans while the manifest itself remains a typed struct.
+type ConfigField struct {
+	Key         string   `json:"key"`
+	Type        string   `json:"type"`
+	Label       string   `json:"label,omitempty"`
+	Default     any      `json:"default,omitempty"`
+	Options     []string `json:"options,omitempty"`
+	Placeholder string   `json:"placeholder,omitempty"`
+	Hint        string   `json:"hint,omitempty"`
+	Rows        int      `json:"rows,omitempty"`
 }
 
 // Deps 模块可用的共享服务（装配时由 main 注入）。
 type Deps struct {
-	Store *store.Store
-	Posts *post.Service
+	Store   *store.Store
+	Posts   *post.Service
+	Storage *storage.Manager
 	// Site 站点配置原子指针（Spec 61 阶段 3）：模块侧 RebuildSite 复制-交换后经 .Load() 读取
 	Site    *atomic.Pointer[tmpl.Site]
 	Modules *Manager // 供中间件按模块启停实时判定（如爬虫埋点）
@@ -130,7 +148,12 @@ func MountConfigRoutes(g *gin.RouterGroup, deps Deps, m Module) bool {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"ok": true})
+		c.JSON(http.StatusOK, ConfigPutResponse{OK: true})
 	})
 	return true
+}
+
+// ConfigPutResponse is the stable response for module configuration writes.
+type ConfigPutResponse struct {
+	OK bool `json:"ok"`
 }

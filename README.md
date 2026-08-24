@@ -84,3 +84,7 @@ make css   # 依赖 resource/ 主题源 + modules/stellar/web/node_modules（sty
 生产部署走 `deploy/` 目录：systemd 服务单元（`blog.service`）+ 自动更新脚本（`update.sh`，从 GitHub Release 拉取单二进制）。
 
 详见 [Demo 验证阶段计划](../.claude/plans/stellar-toasty-panda.md)。
+
+## 许可
+
+项目采用 GPLv3 或更高版本；Halo 组件与 Stellar 主题的第三方归属见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，英文说明见 [README.en.md](README.en.md)。
