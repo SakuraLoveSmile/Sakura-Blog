@@ -5,7 +5,7 @@
 // - math-mermaid-loader.js：Mermaid/KaTeX 按需加载（本地 vendor 优先，失败降级为源码）；
 // - marked：mdrender/timeline 的正文渲染依赖（本地 vendor，预览运行时不得加载 CDN）。
 
-import type { PluginCapability, PluginPreviewInfo } from "../plugins-data.ts";
+import type { PluginCapability, PluginPreviewInfo } from "../plugin-types.ts";
 
 /** service 资源名 → 前台脚本路径（services 字段取值域）。 */
 export const SERVICE_SCRIPTS: Record<string, string> = {

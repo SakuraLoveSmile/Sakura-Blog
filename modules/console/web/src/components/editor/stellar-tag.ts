@@ -1,6 +1,6 @@
 import { Node } from"@tiptap/core";
 import { VueNodeViewRenderer } from"@tiptap/vue-3";
-import { plugins } from"@/modules/plugins/plugins-data";
+import { runtimePlugins } from"@/modules/plugins/usePluginCatalog";
 import StellarTagView from"./StellarTagView.vue";
 
 // Stellar 标签插件的富文本可视化节点（Spec：Stellar 标签富文本可视化）。
@@ -101,14 +101,10 @@ export function tagNameOf(raw: string): string {
 }
 
 // 标签名 → 中文标题映射（来自插件库元数据），供气泡类型标签显示
-const tagTitleMap: Record<string, string> = Object.fromEntries(
- plugins.map((p) => [p.name, p.title])
-);
-
 /** 类型标签中文名（如 note → 「提示框 Note」）；未命中回退标签名 */
 export function typeLabelOf(raw: string): string {
  const name = tagNameOf(raw);
- return tagTitleMap[name] || name;
+ return runtimePlugins.value.find((plugin) => plugin.name === name)?.title || name;
 }
 
 const placeholder = (raw: string) => `<div data-stellar-tag="${encodeRaw(raw)}"></div>`;

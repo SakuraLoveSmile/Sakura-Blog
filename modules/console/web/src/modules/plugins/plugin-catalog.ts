@@ -3,10 +3,11 @@ import {
   type PluginCategory,
   type PluginFormField,
   type PluginMeta,
-} from "./plugins-data";
+} from "./plugin-types";
 
 export interface PluginCatalogParam {
   key: string;
+  label?: string;
   type: "text" | "select" | "number" | "switch" | "color" | "textarea";
   role: "positional" | "named" | "flag" | "content";
   default?: unknown;
@@ -49,7 +50,7 @@ function mergeForm(existing: PluginMeta | undefined, params: PluginCatalogParam[
     const old = existing?.form?.find((field) => field.key === param.key);
     return {
       key: param.key,
-      label: old?.label || param.key,
+      label: param.label || old?.label || param.key,
       type: formTypeOf(param.type),
       role: param.role,
       options: param.options?.slice(),

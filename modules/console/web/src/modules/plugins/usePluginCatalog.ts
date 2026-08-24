@@ -1,13 +1,13 @@
 import { ref } from "vue";
 import { pluginApi } from "@/api";
-import { plugins, type PluginMeta } from "./plugins-data";
+import type { PluginMeta } from "./plugin-types";
 import { mergePluginCatalog, type PluginCatalogItem } from "./plugin-catalog";
 
-export const runtimePlugins = ref<PluginMeta[]>(plugins);
+export const runtimePlugins = ref<PluginMeta[]>([]);
 
 let loadPromise: Promise<PluginMeta[]> | null = null;
 
-/** Load the parser-owned catalog once; static metadata remains the offline fallback. */
+/** Load the parser-owned catalog once; the API is the runtime source of truth. */
 export function loadPluginCatalog(): Promise<PluginMeta[]> {
   if (loadPromise) return loadPromise;
 
@@ -15,7 +15,7 @@ export function loadPluginCatalog(): Promise<PluginMeta[]> {
     .catalog()
     .then(({ data }) => {
       if (data.items.length > 0) {
-        runtimePlugins.value = mergePluginCatalog(plugins, data.items as PluginCatalogItem[]);
+        runtimePlugins.value = mergePluginCatalog([], data.items as PluginCatalogItem[]);
       }
       return runtimePlugins.value;
     })

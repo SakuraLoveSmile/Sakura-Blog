@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mergePluginCatalog, type PluginCatalogItem } from "../web/src/modules/plugins/plugin-catalog.ts";
-import type { PluginMeta } from "../web/src/modules/plugins/plugins-data.ts";
+import type { PluginMeta } from "../web/src/modules/plugins/plugin-types.ts";
 
 const basePlugin: PluginMeta = {
   name: "note",

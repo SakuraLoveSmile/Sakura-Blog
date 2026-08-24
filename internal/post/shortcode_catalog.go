@@ -43,6 +43,7 @@ const (
 
 // ShortcodeParamSchema is the backend-owned schema consumed by Console forms.
 type ShortcodeParamSchema struct {
+	Label       string             `json:"label,omitempty"`
 	Key         string             `json:"key"`
 	Type        ShortcodeParamType `json:"type"`
 	Role        ShortcodeParamRole `json:"role"`
@@ -231,19 +232,22 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 	items := make([]ShortcodeCatalogEntry, 0, len(shortcodeRegistry))
 	for _, registration := range shortcodeRegistry {
 		entry := registration.entry
+		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
+			if display.FormFields != nil {
+				entry.Params = append([]ShortcodeParamSchema(nil), display.FormFields...)
+			}
+			entry.Title = display.Title
+			entry.Description = display.Description
+			entry.Signature = display.Signature
+			entry.Example = display.Example
+			entry.ParamDocs = append([]ShortcodeParamDoc(nil), display.ParamDocs...)
+		}
 		entry.Params = append([]ShortcodeParamSchema(nil), entry.Params...)
 		if entry.Params == nil {
 			entry.Params = []ShortcodeParamSchema{}
 		}
 		for i := range entry.Params {
 			entry.Params[i].Options = append([]string(nil), entry.Params[i].Options...)
-		}
-		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
-			entry.Title = display.Title
-			entry.Description = display.Description
-			entry.Signature = display.Signature
-			entry.Example = display.Example
-			entry.ParamDocs = append([]ShortcodeParamDoc(nil), display.ParamDocs...)
 		}
 		if entry.ParamDocs == nil {
 			entry.ParamDocs = []ShortcodeParamDoc{}

@@ -5,11 +5,10 @@
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import {
-  plugins,
   PLUGIN_PREVIEW,
   previewInfoFor,
   type PluginPreviewInfo,
-} from "../web/src/modules/plugins/plugins-data.ts";
+} from "../web/src/modules/plugins/plugin-preview.ts";
 import {
   SERVICE_SCRIPTS,
   MARKED_CDN,
@@ -32,29 +31,26 @@ const SURFACE = "插件预览";
 const LEGAL_CAPABILITIES = new Set(["static", "interactive", "service", "external"]);
 
 function pluginByName(name: string): PluginPreviewInfo {
-  const p = plugins.find((x) => x.name === name);
-  assert.ok(p, `plugin ${name} should exist`);
-  return previewInfoFor(p!);
+  return previewInfoFor({ name });
 }
 
 // ---------- 能力清单 ----------
 
 test(`${SURFACE} · 每个插件都有合法预览能力描述（static/interactive/service/external）`, () => {
-  assert.ok(plugins.length >= 50, `插件数应以当前清单为准（实际 ${plugins.length}），不再用旧 29 个假设`);
-  for (const p of plugins) {
-    const info = previewInfoFor(p);
+  assert.ok(Object.keys(PLUGIN_PREVIEW).length >= 10, "预览能力清单不应退化为空");
+  for (const [name, info] of Object.entries(PLUGIN_PREVIEW)) {
     assert.ok(
       LEGAL_CAPABILITIES.has(info.capability),
-      `${p.name} capability 非法: ${info.capability}`
+      `${name} capability 非法: ${info.capability}`
     );
     for (const s of info.services || []) {
-      assert.ok(s in SERVICE_SCRIPTS, `${p.name} 引用了未登记的 service: ${s}`);
+      assert.ok(s in SERVICE_SCRIPTS, `${name} 引用了未登记的 service: ${s}`);
     }
     if (info.fixture) {
-      assert.ok(info.fixture in FIXTURE_LABELS, `${p.name} 引用了未登记的 fixture: ${info.fixture}`);
+      assert.ok(info.fixture in FIXTURE_LABELS, `${name} 引用了未登记的 fixture: ${info.fixture}`);
     }
     if (info.height !== undefined) {
-      assert.ok(info.height >= 80 && info.height <= 900, `${p.name} 预览高度越界: ${info.height}`);
+      assert.ok(info.height >= 80 && info.height <= 900, `${name} 预览高度越界: ${info.height}`);
     }
   }
   // PLUGIN_PREVIEW 中登记的条目也必须合法
@@ -64,11 +60,10 @@ test(`${SURFACE} · 每个插件都有合法预览能力描述（static/interact
 });
 
 test(`${SURFACE} · 静态插件不会加载无关 service（资源清单为空）`, () => {
-  for (const p of plugins) {
-    const info = previewInfoFor(p);
+  for (const [name, info] of Object.entries(PLUGIN_PREVIEW)) {
     if (info.capability !== "static") continue;
     const scripts = previewScriptsFor(info);
-    assert.deepEqual(scripts, [], `${p.name}（static）不应加载任何脚本: ${scripts.join(",")}`);
+    assert.deepEqual(scripts, [], `${name}（static）不应加载任何脚本: ${scripts.join(",")}`);
   }
 });
 
@@ -172,8 +167,8 @@ test(`${SURFACE} · Fixture 路由与失败降级提示正确`, () => {
   }
   // 数据标签端点改写由后端完成；前端断言 fixture 端点名与 FIXTURE_LABELS 文案一一对应
   const fixtureNames = new Set<string>();
-  for (const p of plugins) {
-    const f = previewInfoFor(p).fixture;
+  for (const name of Object.keys(PLUGIN_PREVIEW)) {
+    const f = previewInfoFor({ name }).fixture;
     if (f) fixtureNames.add(f);
   }
   for (const f of fixtureNames) {
@@ -290,24 +285,4 @@ test(`${SURFACE} · 内容高度回传钳制：不低于推荐高度、不超上
   assert.equal(clampPreviewHeight(100, min), min, "回传低于推荐高度时保持推荐高度");
   assert.equal(clampPreviewHeight(400, min), 424, "回传高于推荐高度时按内容 +24px");
   assert.equal(clampPreviewHeight(5000, min), MAX_PREVIEW_HEIGHT, "超上限钳制到 900");
-});
-
-// ---------- 默认示例资源本地化（Spec 64：不依赖公网） ----------
-
-test(`${SURFACE} · 所有默认示例的资源地址均为本地（无 picsum/w3schools/GitHub 头像/emoji CDN）`, () => {
-  const forbidden = [
-    "picsum.photos",
-    "w3schools.com",
-    "avatars.githubusercontent.com",
-    "raw.githubusercontent.com",
-    "cdn.jsdelivr.net",
-  ];
-  for (const p of plugins) {
-    const texts = [p.example, ...(p.form || []).map((f) => f.default || "")];
-    for (const t of texts) {
-      for (const host of forbidden) {
-        assert.ok(!t.includes(host), `${p.name} 默认示例仍含公网资源 ${host}: ${t.slice(0, 60)}`);
-      }
-    }
-  }
 });

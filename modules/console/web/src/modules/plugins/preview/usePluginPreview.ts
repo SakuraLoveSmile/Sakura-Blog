@@ -5,7 +5,7 @@
 
 import { computed, onBeforeUnmount, ref } from "vue";
 import { previewApi } from "@/api";
-import type { PluginPreviewInfo } from "../plugins-data.ts";
+import type { PluginPreviewInfo } from "../plugin-types.ts";
 import {
   buildPreviewDoc,
   resolvePreviewHeight,

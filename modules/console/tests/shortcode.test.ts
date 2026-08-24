@@ -4,11 +4,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildShortcode } from "../web/src/modules/plugins/shortcode.ts";
-import type { PluginMeta } from "../web/src/modules/plugins/plugins-data.ts";
+import type { PluginMeta } from "../web/src/modules/plugins/plugin-types.ts";
 
 const SURFACE = "shortcode 拼装";
 
-// note 插件缩影：named 配色 + positional 标题 + content 正文（对照 plugins-data.ts 的 form schema）
+// note 插件缩影：named 配色 + positional 标题 + content 正文（对照 catalog 的 form schema）
 const notePlugin: PluginMeta = {
   name: "note",
   title: "提示框 Note",

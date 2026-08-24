@@ -40,6 +40,9 @@ func TestShortcodeCatalogCoversRegisteredParsers(t *testing.T) {
 			if item.Title == "" || item.Description == "" || item.Signature == "" || item.Example == "" || len(item.ParamDocs) == 0 {
 				t.Fatalf("note display metadata incomplete: %+v", item)
 			}
+			if len(item.Params) == 0 || item.Params[0].Label != "配色" {
+				t.Fatalf("note form label missing from catalog: %+v", item.Params)
+			}
 			return
 		}
 	}

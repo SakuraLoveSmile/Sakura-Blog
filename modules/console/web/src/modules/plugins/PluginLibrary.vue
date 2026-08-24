@@ -4,11 +4,11 @@ import { Icon } from "@iconify/vue";
 import { VPageHeader } from "@/components/ui";
 import {
   PLUGIN_CATEGORIES,
-  previewInfoFor,
   type PluginMeta,
   type PluginCategory,
   type PluginPreviewInfo,
-} from "./plugins-data";
+} from "./plugin-types";
+import { previewInfoFor } from "./plugin-preview";
 import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
 import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";
@@ -26,12 +26,27 @@ import { WIDGET_META } from "../settings/widget-meta";
 const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
 const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
-const selected = ref<PluginMeta>(runtimePlugins.value[0]);
-const example = ref(runtimePlugins.value[0].example);
+const loadingPlugin: PluginMeta = {
+  name: "__loading__",
+  title: "插件目录",
+  category: "布局容器",
+  type: "inline",
+  desc: "正在加载后端 shortcode catalog。",
+  signature: "",
+  params: [],
+  example: "",
+};
+const selected = ref<PluginMeta>(loadingPlugin);
+const example = ref("");
 
 watch(runtimePlugins, (next) => {
   const refreshed = next.find((plugin) => plugin.name === selected.value.name);
-  if (refreshed) selected.value = refreshed;
+  if (refreshed) {
+    selected.value = refreshed;
+  } else if (next[0] && selected.value.name === loadingPlugin.name) {
+    selected.value = next[0];
+    example.value = next[0].example;
+  }
 });
 
 const filtered = computed(() => {
@@ -80,16 +95,23 @@ const fixtureLabel = computed(() =>
   selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : ""
 );
 
-watch(example, () => preview.scheduleRender(example.value));
-// 首次进入立即渲染一次
-preview.scheduleRender(runtimePlugins.value[0].example, true);
+watch(example, () => {
+  if (example.value) preview.scheduleRender(example.value);
+});
 
 function onPreviewMessage(event: MessageEvent) {
   preview.onMessage(event, previewFrame.value);
 }
 onMounted(() => {
   window.addEventListener("message", onPreviewMessage);
-  void loadPluginCatalog();
+  void loadPluginCatalog().then((next) => {
+    if (next[0] && selected.value.name === loadingPlugin.name) {
+      selected.value = next[0];
+      example.value = next[0].example;
+      preview.resetHeight();
+      preview.scheduleRender(example.value, true);
+    }
+  });
 });
 onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 

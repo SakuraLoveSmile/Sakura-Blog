@@ -3,9 +3,9 @@ import { ref, computed, onMounted, onBeforeUnmount } from"vue";
 import { Icon } from"@iconify/vue";
 import { previewApi } from"@/api";
 import {
- PLUGIN_CATEGORIES,
  type PluginMeta,
-} from"@/modules/plugins/plugins-data";
+} from"@/modules/plugins/plugin-types";
+import { PLUGIN_CATEGORIES } from"@/modules/plugins/plugin-types";
 import { loadPluginCatalog, runtimePlugins } from"@/modules/plugins/usePluginCatalog";
 
 // 编辑器顶部工具栏（对照 Halo 编辑器）：

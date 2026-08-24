@@ -5,10 +5,10 @@ import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } fro
 import PluginParamForm from"@/modules/plugins/PluginParamForm.vue";
 import { VButton, VSwitch, Toast } from"@/components/ui";
 import {
- PLUGIN_CATEGORIES,
  type PluginMeta,
  type PluginCategory,
-} from"@/modules/plugins/plugins-data";
+} from"@/modules/plugins/plugin-types";
+import { PLUGIN_CATEGORIES } from"@/modules/plugins/plugin-types";
 import { loadPluginCatalog, runtimePlugins } from"@/modules/plugins/usePluginCatalog";
 
 // 编辑器右侧辅助面板（对照 Halo）：大纲 / 详情 两个 Tab。

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
-import type { PluginMeta } from "./plugins-data";
+import type { PluginMeta } from "./plugin-types";
 import { buildShortcode } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。

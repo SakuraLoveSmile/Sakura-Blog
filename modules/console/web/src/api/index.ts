@@ -429,6 +429,7 @@ export const assetsApi = {
 // --- Shortcode catalog（后端 parser 注册表真值） ---
 export interface ShortcodeCatalogParam {
  key: string;
+ label?: string;
  type: "text" | "select" | "number" | "switch" | "color" | "textarea";
  role: "positional" | "named" | "flag" | "content";
  default?: unknown;
