@@ -74,7 +74,12 @@ const xScale = computed(() => {
   return (i: number) => p.left + (i / (n - 1)) * w;
 });
 
-const maxVal = computed(() => Math.max(...data.value.map((d) => d.pv), 1));
+const maxVal = computed(() => {
+  const peak = Math.max(...data.value.map((d) => d.pv), 0);
+  if (peak === 0) return 1;
+  // 留出少量顶部呼吸空间，避免峰值贴住图表边界；仍以 0 为基线，保持数据比例诚实。
+  return Math.max(peak * 1.12, peak + 1);
+});
 
 const yScale = computed(() => {
   const max = maxVal.value;
@@ -83,27 +88,68 @@ const yScale = computed(() => {
   return (v: number) => p.top + h - (v / max) * h;
 });
 
+function getShapePreservingSpline(points: { x: number; y: number }[]): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M${points[0].x},${points[0].y}`;
+  if (points.length === 2) return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
+
+  // Catmull–Rom 会在峰谷附近制造额外波峰。用 Fritsch–Carlson 风格的
+  // 单调切线，让曲线只经过真实数据的峰谷，视觉平滑但不虚构拐点。
+  const secants = points.slice(0, -1).map((point, i) => {
+    const next = points[i + 1];
+    return (next.y - point.y) / (next.x - point.x);
+  });
+  const tangents = new Array<number>(points.length);
+  tangents[0] = secants[0];
+  tangents[points.length - 1] = secants[secants.length - 1];
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const previous = secants[i - 1];
+    const next = secants[i];
+    if (previous === 0 || next === 0 || Math.sign(previous) !== Math.sign(next)) {
+      tangents[i] = 0;
+      continue;
+    }
+    // 相邻点等距时，调和平均可限制切线幅度，避免过冲。
+    tangents[i] = (2 * previous * next) / (previous + next);
+  }
+
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const point = points[i];
+    const next = points[i + 1];
+    const segment = next.x - point.x;
+    const cp1x = point.x + segment / 3;
+    const cp1y = point.y + (tangents[i] * segment) / 3;
+    const cp2x = next.x - segment / 3;
+    const cp2y = next.y - (tangents[i + 1] * segment) / 3;
+    d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`;
+  }
+  return d;
+}
+
 const areaPath = computed(() => {
   if (data.value.length === 0) return "";
   const p = padding.value;
-  const pts = data.value.map((d, i) => `${xScale.value(i)},${yScale.value(d.pv)}`);
+  const pts = data.value.map((d, i) => ({ x: xScale.value(i), y: yScale.value(d.pv) }));
+  const spline = getShapePreservingSpline(pts);
   const lastX = xScale.value(data.value.length - 1);
   const firstX = xScale.value(0);
   const bottomY = chartHeight.value - p.bottom;
-  return `M${pts.join(" L")} L${lastX},${bottomY} L${firstX},${bottomY} Z`;
+  return `${spline} L${lastX},${bottomY} L${firstX},${bottomY} Z`;
 });
 
 const linePath = computed(() => {
   if (data.value.length === 0) return "";
-  const pts = data.value.map((d, i) => `${xScale.value(i)},${yScale.value(d.pv)}`);
-  return `M${pts.join(" L")}`;
+  const pts = data.value.map((d, i) => ({ x: xScale.value(i), y: yScale.value(d.pv) }));
+  return getShapePreservingSpline(pts);
 });
 
 // Large 尺寸下的 UV 折线
 const uvLinePath = computed(() => {
   if (data.value.length === 0) return "";
-  const pts = data.value.map((d, i) => `${xScale.value(i)},${yScale.value(d.uv)}`);
-  return `M${pts.join(" L")}`;
+  const pts = data.value.map((d, i) => ({ x: xScale.value(i), y: yScale.value(d.uv) }));
+  return getShapePreservingSpline(pts);
 });
 
 function formatNumber(n: number): string {
