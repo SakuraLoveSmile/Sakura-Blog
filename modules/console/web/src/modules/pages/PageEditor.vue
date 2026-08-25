@@ -494,7 +494,7 @@ const smallInputCls =
 
 <template>
   <div class="page-editor" :class="{ 'fixed inset-0 z-[9999] overflow-y-auto bg-secondary dark:bg-card': fullscreen }">
-    <VPageHeader :title="isNew ? '新建页面' : '编辑页面'">
+    <VPageHeader :title="isNew ? '新建页面' : '编辑页面'" :hide-on-scroll="false">
       <template #icon>
         <Icon icon="ri:pages-line" class="mr-2 self-center text-xl" />
       </template>

@@ -9,7 +9,7 @@ const props = withDefaults(
     hideOnScroll?: boolean;
   }>(),
   {
-    hideOnScroll: false,
+    hideOnScroll: true,
   },
 );
 
@@ -98,9 +98,9 @@ onUnmounted(() => {
 .page-header-scroll-aware {
   will-change: transform, opacity;
   transition:
-    transform 220ms var(--ease-standard),
-    opacity 180ms var(--ease-standard),
-    background-color 180ms var(--ease-standard);
+    transform var(--duration-normal) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
 }
 
 .page-header-scroll-hidden {
