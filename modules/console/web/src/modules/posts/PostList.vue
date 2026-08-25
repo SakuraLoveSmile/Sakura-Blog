@@ -286,7 +286,7 @@ function statusBadge(status: string) {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="文章管理">
+    <VPageHeader title="文章管理" :hide-on-scroll="true">
       <template #icon>
         <Icon icon="ri:article-line" class="text-primary" />
       </template>
