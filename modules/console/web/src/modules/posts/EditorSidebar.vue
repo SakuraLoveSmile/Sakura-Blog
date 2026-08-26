@@ -868,8 +868,8 @@ const chipActiveCls = "bg-primary/15 text-primary";
               class="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-secondary px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent"
               @click="emit('openCoverPicker')"
             >
-              <Icon icon="ri:upload-2-line" class="text-[13px]" />
-              上传图片
+              <Icon icon="ri:image-upload-line" class="text-[13px]" />
+              从附件库选择
             </button>
             <button
               type="button"

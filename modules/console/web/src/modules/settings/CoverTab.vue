@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import { VButton } from "@/components/ui";
 import IconPicker from "@/components/IconPicker.vue";
 
 // 首页 Hero cover 区（site.yml cover 段入库版）：title/description + features 按钮列表。
@@ -11,9 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: "save"): void }>();
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 const rowBtnCls = "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 
 function addFeature() {
@@ -60,20 +58,37 @@ function moveItem(i: number, dir: -1 | 1) {
           <IconPicker v-model="f.icon" compact placeholder="图标（icons.yml key）" />
         </div>
         <div class="col-span-2 flex items-center gap-1.5 justify-end">
-          <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls">
+          <button
+            type="button"
+            title="上移"
+            @click="moveItem(Number(i), -1)"
+            :disabled="Number(i) === 0"
+            :class="rowBtnCls"
+          >
             <Icon icon="ri:arrow-up-s-line" />
           </button>
-          <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.features.length - 1" :class="rowBtnCls">
+          <button
+            type="button"
+            title="下移"
+            @click="moveItem(Number(i), 1)"
+            :disabled="Number(i) === data.features.length - 1"
+            :class="rowBtnCls"
+          >
             <Icon icon="ri:arrow-down-s-line" />
           </button>
-          <button @click="removeAt(Number(i))" class="text-state-error hover:text-state-error">
+          <button type="button" title="删除按钮" @click="removeAt(Number(i))" class="text-state-error hover:text-state-error">
             <Icon icon="ri:delete-bin-line" />
           </button>
         </div>
       </div>
-      <button @click="addFeature" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加按钮</button>
+      <VButton type="secondary" size="sm" @click="addFeature">
+        <template #icon><Icon icon="ri:add-line" /></template>
+        添加按钮
+      </VButton>
     </div>
 
-    <div><button @click="emit('save')" :disabled="saving === 'cover'" :class="btnCls">保存 Hero</button></div>
+    <div>
+      <VButton type="primary" size="sm" :loading="saving === 'cover'" @click="emit('save')">保存 Hero</VButton>
+    </div>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { settingsApi } from "@/api";
+import AttachmentField from "@/components/AttachmentField.vue";
 import { Toast } from "@/components/ui";
 
 // 页面编辑器右侧辅助面板（参考 PostEditor 的 EditorSidebar）：
@@ -227,11 +228,7 @@ onMounted(loadFriendsCfg);
           </div>
           <div>
             <label class="mb-1 block text-[10px] text-muted-foreground">hero 背景图 URL</label>
-            <input
-              v-model="friendsCfg.hero.background"
-              class="w-full rounded-base border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary dark:border-border-strong dark:bg-secondary"
-              placeholder="https://..."
-            />
+            <AttachmentField v-model="friendsCfg.hero.background" placeholder="https://..." show-thumb />
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>

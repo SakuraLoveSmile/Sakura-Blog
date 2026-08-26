@@ -2,12 +2,13 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { assetsApi, type AssetIconItem } from "@/api";
+import AttachmentPickerModal from "./AttachmentPickerModal.vue";
 
 // 图标选择器：数据源硬限定 icons.yml（GET /api/v1/assets/icons，key + 内联 SVG 或 URL）。
 // - 当前值在清单 → 内联预览（v-html 只渲染 API 返回的 SVG）；值是 URL → <img>；
 //   其他非空值 → 警告「不在图标库中，前台将显示占位」（对齐前台 icon helper 的 icon-missing 行为）。
 // - 手填输入保留为兜底（emit 前 trim，与 matchedItem/warnValue 的 trim 匹配保持一致）；
-//   「选择」按钮打开遮罩弹窗，搜索（35 项客户端过滤）+ 按前缀分组网格。
+//   图标按钮打开遮罩弹窗，搜索（35 项客户端过滤）+ 按前缀分组网格；图片按钮打开附件库。
 // - 弹窗用 Teleport 挂到 body：避免 TaxonomyList 分类卡片等 transform 祖先
 //   （hover:-translate-y-px）约束 fixed 定位导致遮罩只覆盖卡片、点外部无法关闭。
 // - 数据模块级缓存：多实例（菜单/右栏/页脚等多行）共享一次请求。
@@ -48,6 +49,7 @@ async function fetchIcons(): Promise<AssetIconItem[]> {
 const icons = ref<AssetIconItem[]>([]);
 const loading = ref(false);
 const open = ref(false);
+const attachmentPickerOpen = ref(false);
 // 清单加载状态：成功/失败分别标记，失败允许重试（弹窗内提供重试入口）
 const iconsLoaded = ref(false);
 const iconsFailed = ref(false);
@@ -75,6 +77,11 @@ function openPicker() {
 function selectIcon(key: string) {
   emit("update:modelValue", key);
   open.value = false;
+}
+
+function selectAttachment(url: string) {
+  emit("update:modelValue", url);
+  attachmentPickerOpen.value = false;
 }
 
 // ---------- Escape 关闭弹窗 ----------
@@ -162,8 +169,17 @@ const groups = computed(() => {
         :placeholder="placeholder"
         @input="emit('update:modelValue', ($event.target as HTMLInputElement).value.trim())"
       />
-      <button type="button" class="ip-btn" title="选择图标" @click="openPicker">
+      <button type="button" class="ip-btn" title="选择图标" aria-label="选择图标" @click="openPicker">
         <Icon icon="ri:shape-line" />
+      </button>
+      <button
+        type="button"
+        class="ip-btn"
+        title="从附件库选择图片"
+        aria-label="从附件库选择图片"
+        @click="attachmentPickerOpen = true"
+      >
+        <Icon icon="ri:image-upload-line" />
       </button>
     </div>
     <p v-if="warnValue" class="ip-warn-text">不在图标库中，前台将显示占位</p>
@@ -226,6 +242,11 @@ const groups = computed(() => {
         </div>
       </div>
     </Teleport>
+    <AttachmentPickerModal
+      :open="attachmentPickerOpen"
+      @select="selectAttachment"
+      @close="attachmentPickerOpen = false"
+    />
   </div>
 </template>
 

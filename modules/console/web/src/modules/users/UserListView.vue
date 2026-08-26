@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { usersApi, type UserItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import { Icon } from "@iconify/vue";
+import AttachmentField from "@/components/AttachmentField.vue";
 import {
   VPageHeader,
   VButton,
@@ -680,7 +681,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         </div>
         <div>
           <label :class="labelCls">头像 URL</label>
-          <input v-model="createForm.avatar" :class="inputCls" placeholder="https://...（可选）" />
+          <AttachmentField v-model="createForm.avatar" placeholder="https://...（可选）" show-thumb />
         </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
@@ -720,7 +721,7 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
         </div>
         <div>
           <label :class="labelCls">头像 URL</label>
-          <input v-model="editForm.avatar" :class="inputCls" />
+          <AttachmentField v-model="editForm.avatar" placeholder="https://..." show-thumb />
         </div>
         <div>
           <label :class="labelCls">角色</label>

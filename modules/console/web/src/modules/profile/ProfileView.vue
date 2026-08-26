@@ -282,7 +282,7 @@ const btnClsDanger =
                   class="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/20"
                   @click="showAvatarPicker = true"
                 >
-                  <Icon icon="ri:image-upload-line" class="mr-1" />选择头像
+                  <Icon icon="ri:image-upload-line" class="mr-1" />从附件库选择
                 </button>
                 <button
                   v-if="form.avatar"

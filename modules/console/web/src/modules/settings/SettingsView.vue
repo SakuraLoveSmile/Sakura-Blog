@@ -897,6 +897,7 @@ onMounted(() => {
               <MenubarEditor
                 :items="data.menubar.items"
                 :columns="data.menubar.columns"
+                :saving="savingKey"
                 @update:columns="data.menubar.columns = $event"
                 @save="save('menubar')"
               />

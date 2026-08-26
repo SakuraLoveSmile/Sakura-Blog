@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
+import { VButton } from "@/components/ui";
 import AttachmentField from "@/components/AttachmentField.vue";
 
 // 多作者体系（site.yml authors 段入库版）：key → {name, avatar, description, url, hidden}。
@@ -22,9 +23,6 @@ interface AuthorRow {
 }
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 const rows = ref<AuthorRow[]>([]);
 
@@ -98,6 +96,7 @@ function doSave() {
         </label>
         <div class="flex items-center gap-1.5 shrink-0">
           <button
+            type="button"
             @click="removeRow(Number(i))"
             class="text-state-error hover:text-state-error text-state-error hover:text-state-error"
             title="删除"
@@ -131,7 +130,12 @@ function doSave() {
         </div>
       </div>
     </div>
-    <button @click="addRow" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加作者</button>
-    <div><button @click="doSave" :disabled="saving === 'authors'" :class="btnCls">保存作者</button></div>
+    <VButton type="secondary" size="sm" @click="addRow">
+      <template #icon><Icon icon="ri:add-line" /></template>
+      添加作者
+    </VButton>
+    <div>
+      <VButton type="primary" size="sm" :loading="saving === 'authors'" @click="doSave">保存作者</VButton>
+    </div>
   </div>
 </template>

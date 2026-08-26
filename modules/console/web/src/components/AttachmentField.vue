@@ -3,10 +3,10 @@ import { ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import AttachmentPickerModal from "./AttachmentPickerModal.vue";
 
-// 附件 URL 字段：手填 input + 可选缩略图 + 「从图床选择」按钮。
+// 附件 URL 字段：手填 input + 可选缩略图 + 「从附件库选择」按钮。
 // 内部 v-if 懒挂载单个 AttachmentPickerModal 实例（open 时创建，关闭即销毁）。
 const props = defineProps<{
-  modelValue: string;
+  modelValue?: string;
   placeholder?: string;
   showThumb?: boolean;
   /** modelValue 为空时缩略图回退显示的默认图（如 favicon 默认 /favicon.ico） */
@@ -49,7 +49,13 @@ function onSelect(url: string) {
       alt=""
       @error="thumbError = true"
     />
-    <button type="button" class="attachment-btn" title="从图床选择" @click="pickerOpen = true">
+    <button
+      type="button"
+      class="attachment-btn"
+      title="从附件库选择图片"
+      aria-label="从附件库选择图片"
+      @click="pickerOpen = true"
+    >
       <Icon icon="ri:image-upload-line" />
     </button>
     <AttachmentPickerModal v-if="pickerOpen" :open="pickerOpen" @select="onSelect" @close="pickerOpen = false" />

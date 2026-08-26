@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VSwitch } from "@/components/ui";
+import { VButton, VSwitch } from "@/components/ui";
 
 // 前端体验增强插件（Spec 36 段入库版）：开关 + 参数表单。
 // 数据结构对齐 site.yml plugins 段；子配置为指针，未配置=关闭（JSON 缺省空对象等价）。
@@ -11,8 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: "save"): void }>();
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
 </script>
 
 <template>
@@ -170,5 +168,7 @@ const btnCls =
     </div>
   </div>
 
-  <button @click="emit('save')" :disabled="saving === 'plugins'" :class="btnCls">保存插件设置</button>
+  <div class="mt-4">
+    <VButton type="primary" size="sm" :loading="saving === 'plugins'" @click="emit('save')">保存插件设置</VButton>
+  </div>
 </template>

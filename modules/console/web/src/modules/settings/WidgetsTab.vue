@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Icon } from "@iconify/vue";
+import { VButton } from "@/components/ui";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
 import { BUILTIN_WIDGET_NAMES, builtinLayoutOf, fieldsForLayout, NO_EXTRA_PARAM_LAYOUTS } from "./widget-meta";
@@ -14,10 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-full transition-colors hover:bg-accent disabled:opacity-50";
 const rowBtnCls = "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 // ---------- 页面类型 ----------
 // 分组对齐后端 PageTypeOf 枚举；文库/笔记本/友链/瞬间等类型此前 UI 未暴露，
@@ -238,7 +236,7 @@ function setJsonText(name: string, val: string) {
       <div class="text-sm text-text-tertiary">
         当前「{{ pageOptions.find((o) => o.key === selectedPage)?.label }}」使用默认布局
       </div>
-      <button @click="customise" :class="btnCls" class="py-1.5! px-3! text-xs!">自定义</button>
+      <VButton type="secondary" size="sm" @click="customise">自定义</VButton>
     </div>
 
     <!-- 左右栏编排 -->
@@ -271,10 +269,18 @@ function setJsonText(name: string, val: string) {
               >
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <button @click="moveItem(currentBarWidgets('leftbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls">
+              <button
+                type="button"
+                title="上移左栏组件"
+                @click="moveItem(currentBarWidgets('leftbar'), i, -1)"
+                :disabled="i === 0"
+                :class="rowBtnCls"
+              >
                 <Icon icon="ri:arrow-up-s-line" />
               </button>
               <button
+                type="button"
+                title="下移左栏组件"
                 @click="moveItem(currentBarWidgets('leftbar'), i, 1)"
                 :disabled="i === currentBarWidgets('leftbar').length - 1"
                 :class="rowBtnCls"
@@ -282,6 +288,8 @@ function setJsonText(name: string, val: string) {
                 <Icon icon="ri:arrow-down-s-line" />
               </button>
               <button
+                type="button"
+                title="删除左栏组件"
                 @click="removeWidget('leftbar', i)"
                 class="text-state-error hover:text-state-error text-state-error hover:text-state-error"
               >
@@ -297,7 +305,13 @@ function setJsonText(name: string, val: string) {
                 {{ isScheme(w) ? "方案 · " : "" }}{{ w }} ({{ widgetLayout(w) || w }})
               </option>
             </select>
-            <button @click="addWidget('leftbar')" :disabled="!addSelectLeft" :class="addBtnCls">
+            <button
+              type="button"
+              title="添加左栏组件"
+              @click="addWidget('leftbar')"
+              :disabled="!addSelectLeft"
+              class="text-primary hover:text-primary-hover disabled:opacity-30"
+            >
               <Icon icon="ri:add-line" />
             </button>
           </div>
@@ -330,10 +344,18 @@ function setJsonText(name: string, val: string) {
               >
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <button @click="moveItem(currentBarWidgets('rightbar'), i, -1)" :disabled="i === 0" :class="rowBtnCls">
+              <button
+                type="button"
+                title="上移右栏组件"
+                @click="moveItem(currentBarWidgets('rightbar'), i, -1)"
+                :disabled="i === 0"
+                :class="rowBtnCls"
+              >
                 <Icon icon="ri:arrow-up-s-line" />
               </button>
               <button
+                type="button"
+                title="下移右栏组件"
                 @click="moveItem(currentBarWidgets('rightbar'), i, 1)"
                 :disabled="i === currentBarWidgets('rightbar').length - 1"
                 :class="rowBtnCls"
@@ -341,6 +363,8 @@ function setJsonText(name: string, val: string) {
                 <Icon icon="ri:arrow-down-s-line" />
               </button>
               <button
+                type="button"
+                title="删除右栏组件"
                 @click="removeWidget('rightbar', i)"
                 class="text-state-error hover:text-state-error text-state-error hover:text-state-error"
               >
@@ -356,7 +380,13 @@ function setJsonText(name: string, val: string) {
                 {{ isScheme(w) ? "方案 · " : "" }}{{ w }} ({{ widgetLayout(w) || w }})
               </option>
             </select>
-            <button @click="addWidget('rightbar')" :disabled="!addSelectRight" :class="addBtnCls">
+            <button
+              type="button"
+              title="添加右栏组件"
+              @click="addWidget('rightbar')"
+              :disabled="!addSelectRight"
+              class="text-primary hover:text-primary-hover disabled:opacity-30"
+            >
               <Icon icon="ri:add-line" />
             </button>
           </div>
@@ -365,12 +395,9 @@ function setJsonText(name: string, val: string) {
 
       <!-- 恢复默认 -->
       <div class="flex items-center gap-3">
-        <button
-          @click="resetDefaults"
-          class="px-3 py-1.5 text-xs rounded-full border border-border-strong text-text-tertiary hover:bg-accent"
-        >
+        <VButton type="secondary" size="sm" @click="resetDefaults">
           恢复默认
-        </button>
+        </VButton>
         <span class="text-xs text-text-quaternary">删除自定义序列，回退到缺省布局</span>
       </div>
     </template>
@@ -407,7 +434,9 @@ function setJsonText(name: string, val: string) {
 
     <!-- 保存按钮 -->
     <div>
-      <button @click="emit('save', 'widgets')" :disabled="saving === 'widgets'" :class="btnCls">保存组件设置</button>
+      <VButton type="primary" size="sm" :loading="saving === 'widgets'" @click="emit('save', 'widgets')">
+        保存组件设置
+      </VButton>
     </div>
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Icon } from "@iconify/vue";
+import { VButton } from "@/components/ui";
 import IconPicker from "@/components/IconPicker.vue";
 
 interface MenuItem {
@@ -14,6 +15,7 @@ interface MenuItem {
 const props = defineProps<{
   items: MenuItem[];
   columns: number;
+  saving: string;
 }>();
 
 const emit = defineEmits<{
@@ -22,9 +24,6 @@ const emit = defineEmits<{
 }>();
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 
 // 拖拽状态
 const dragIndex = ref<number | null>(null);
@@ -117,6 +116,8 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
           <Icon icon="ri:drag-move-2-fill" class="text-text-quaternary text-lg" />
           <div class="flex gap-0.5">
             <button
+              type="button"
+              title="上移"
               @click="moveUp(i)"
               :disabled="i === 0"
               class="text-text-quaternary hover:text-text-tertiary disabled:opacity-20"
@@ -124,6 +125,8 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
               <Icon icon="ri:arrow-up-s-line" />
             </button>
             <button
+              type="button"
+              title="下移"
               @click="moveDown(i)"
               :disabled="i === items.length - 1"
               class="text-text-quaternary hover:text-text-tertiary disabled:opacity-20"
@@ -178,6 +181,8 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
         <!-- delete -->
         <div class="col-span-1 flex justify-center pt-5">
           <button
+            type="button"
+            title="删除菜单项"
             @click="removeItem(i)"
             class="text-state-error hover:text-state-error text-state-error hover:text-state-error"
           >
@@ -192,10 +197,15 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
       </div>
     </div>
 
-    <button @click="addItem" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加菜单项</button>
+    <VButton type="secondary" size="sm" @click="addItem">
+      <template #icon><Icon icon="ri:add-line" /></template>
+      添加菜单项
+    </VButton>
 
     <div class="flex items-center gap-3">
-      <button @click="emit('save')" :disabled="hasErrors" :class="btnCls">保存菜单</button>
+      <VButton type="primary" size="sm" :disabled="hasErrors" :loading="saving === 'menubar'" @click="emit('save')">
+        保存菜单
+      </VButton>
       <span v-if="hasErrors" class="text-xs text-state-error text-state-error">请修正上方标红项后保存</span>
     </div>
   </div>

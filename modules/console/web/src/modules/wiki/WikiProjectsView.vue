@@ -507,7 +507,7 @@ onMounted(() => loadProjects());
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">背景设置</label>
-                  <input v-model="form.hero.background" :class="inputCls" placeholder="galaxy / 图片 URL" />
+                  <AttachmentField v-model="form.hero.background" placeholder="galaxy / 图片 URL" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">Hero 标题</label>

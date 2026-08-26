@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { linkApi } from "@/api";
 import { Icon } from "@iconify/vue";
+import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, VModal, VFloatingDock, Dialog, Toast } from "@/components/ui";
 
 interface LinkRow {
@@ -850,7 +851,7 @@ async function batchMoveGroup() {
 
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text-tertiary">网站头像 / Favicon</label>
-          <input v-model="editing.avatar" class="apple-input" placeholder="图片 URL，留空展示文字占位" />
+          <AttachmentField v-model="editing.avatar" placeholder="图片 URL，留空展示文字占位" show-thumb />
         </div>
 
         <!-- 配色与标签 -->
@@ -934,7 +935,7 @@ async function batchMoveGroup() {
             alt="网站截图"
           />
           <p v-else class="mb-2 text-xs text-text-quaternary">暂无缓存截图</p>
-          <input v-model="editing.snapshot" class="apple-input text-xs" placeholder="可手动指定截图 URL" />
+          <AttachmentField v-model="editing.snapshot" placeholder="可手动指定截图 URL" show-thumb />
         </div>
       </form>
 

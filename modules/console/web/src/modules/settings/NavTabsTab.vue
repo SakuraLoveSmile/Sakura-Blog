@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import { VButton } from "@/components/ui";
 import IconPicker from "@/components/IconPicker.vue";
 
 // 导航栏标签页（site.yml nav_tabs 段入库版）：
@@ -12,9 +13,6 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: "save"): void }>();
 
 const inputCls = "apple-input";
-const btnCls =
-  "px-4 py-2 bg-secondary text-foreground text-sm font-medium rounded-lg border border-secondary-700/30 hover:opacity-90 disabled:opacity-50 shadow-sm";
-const addBtnCls = "inline-flex items-center gap-1 text-sm text-primary transition-colors hover:text-primary/80";
 const rowBtnCls = "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 
 function addItem() {
@@ -54,13 +52,25 @@ function moveItem(i: number, dir: -1 | 1) {
             />
           </div>
           <div class="col-span-2 flex items-center gap-1.5 justify-end">
-            <button @click="moveItem(Number(i), -1)" :disabled="Number(i) === 0" :class="rowBtnCls">
+            <button
+              type="button"
+              title="上移"
+              @click="moveItem(Number(i), -1)"
+              :disabled="Number(i) === 0"
+              :class="rowBtnCls"
+            >
               <Icon icon="ri:arrow-up-s-line" />
             </button>
-            <button @click="moveItem(Number(i), 1)" :disabled="Number(i) === data.items.length - 1" :class="rowBtnCls">
+            <button
+              type="button"
+              title="下移"
+              @click="moveItem(Number(i), 1)"
+              :disabled="Number(i) === data.items.length - 1"
+              :class="rowBtnCls"
+            >
               <Icon icon="ri:arrow-down-s-line" />
             </button>
-            <button @click="removeAt(Number(i))" class="text-state-error hover:text-state-error">
+            <button type="button" title="删除标签" @click="removeAt(Number(i))" class="text-state-error hover:text-state-error">
               <Icon icon="ri:delete-bin-line" />
             </button>
           </div>
@@ -77,9 +87,14 @@ function moveItem(i: number, dir: -1 | 1) {
           </label>
         </div>
       </div>
-      <button @click="addItem" :class="addBtnCls"><Icon icon="ri:add-line" /> 添加标签</button>
+      <VButton type="secondary" size="sm" @click="addItem">
+        <template #icon><Icon icon="ri:add-line" /></template>
+        添加标签
+      </VButton>
     </div>
 
-    <div><button @click="emit('save')" :disabled="saving === 'nav_tabs'" :class="btnCls">保存导航标签</button></div>
+    <div>
+      <VButton type="primary" size="sm" :loading="saving === 'nav_tabs'" @click="emit('save')">保存导航标签</VButton>
+    </div>
   </div>
 </template>
