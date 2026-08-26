@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+mkdir -p "$PWD/.tmp"
 server_tmp="$(mktemp -d "$PWD/.tmp/e2e-server.XXXXXX")"
 go run ./scripts/e2e/prepare.go -db "$server_tmp/blog.db"
 
