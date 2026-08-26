@@ -87,8 +87,11 @@ function showDialog(type: DialogType, options: DialogOptions) {
             h(
               "div",
               {
-                class: "relative w-full max-w-sm overflow-hidden p-5",
+                // Dialog 通过 createApp 动态挂载，组件包里的 Tailwind max-w-sm
+                // 不一定会被宿主 SPA 扫描到，因此宽度约束必须由内联样式兜底。
+                class: "relative w-full overflow-hidden p-5",
                 style: {
+                  maxWidth: "24rem",
                   background: "var(--color-card)",
                   border: "1px solid var(--color-border)",
                   borderRadius: "var(--radius-lg)",
