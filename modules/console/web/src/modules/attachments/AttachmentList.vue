@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { attachmentApi, attachmentGroupApi } from "@/api";
@@ -223,7 +223,6 @@ const stats = computed(() => {
 
 // --- 上传管理 ---
 const fileInput = ref<HTMLInputElement | null>(null);
-const isDragging = ref(false);
 
 async function handleUploadFiles(files: FileList | File[]) {
   if (!files.length) return;
@@ -275,36 +274,8 @@ function onFileChange(e: Event) {
   }
 }
 
-// 拖拽监听
-function onDragOver(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = true;
-}
-
-function onDragLeave(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = false;
-}
-
-function onDrop(e: DragEvent) {
-  e.preventDefault();
-  isDragging.value = false;
-  if (e.dataTransfer?.files?.length) {
-    handleUploadFiles(e.dataTransfer.files);
-  }
-}
-
 onMounted(() => {
   loadGroups();
-  window.addEventListener("dragover", onDragOver);
-  window.addEventListener("dragleave", onDragLeave);
-  window.addEventListener("drop", onDrop);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("dragover", onDragOver);
-  window.removeEventListener("dragleave", onDragLeave);
-  window.removeEventListener("drop", onDrop);
 });
 
 // --- 批量选择 ---
@@ -370,9 +341,15 @@ async function batchMove() {
 const detailItem = ref<AttachmentItem | null>(null);
 const detailRefs = ref<AttachmentRefs | null>(null);
 const detailRefsLoading = ref(false);
+const detailGroupID = ref(0);
+const detailGroupSaving = ref(false);
+const detailGroupChanged = computed(
+  () => detailItem.value !== null && detailGroupID.value !== (detailItem.value.group_id ?? 0),
+);
 
 async function openDetail(item: AttachmentItem) {
   detailItem.value = item;
+  detailGroupID.value = item.group_id ?? 0;
   detailRefs.value = null;
   detailRefsLoading.value = true;
   try {
@@ -386,6 +363,24 @@ async function openDetail(item: AttachmentItem) {
 
 function closeDetail() {
   detailItem.value = null;
+}
+
+async function saveDetailGroup() {
+  const item = detailItem.value;
+  if (!item || !detailGroupChanged.value) return;
+
+  detailGroupSaving.value = true;
+  try {
+    await attachmentApi.move([item.id], detailGroupID.value);
+    detailItem.value = { ...item, group_id: detailGroupID.value };
+    await queryClient.invalidateQueries({ queryKey: queryKeys.attachments() });
+    await loadGroups();
+    await refetch();
+    Toast.success("附件分组已更新");
+  } catch {
+  } finally {
+    detailGroupSaving.value = false;
+  }
 }
 
 function copyText(text: string, msg = "已复制到剪贴板") {
@@ -626,7 +621,7 @@ function formatMimeBadge(mime: string): string {
           <VEmpty
             v-else-if="attachments.length === 0"
             :title="keyword ? '未找到匹配的附件' : '暂无附件'"
-            :message="keyword ? '换个搜索关键词试试' : '点击右上角「上传附件」或直接将文件拖拽至此窗口'"
+            :message="keyword ? '换个搜索关键词试试' : '点击右上角「上传附件」选择文件'"
           />
 
           <!-- ============ 模式 1：网格卡片视图 ============ -->
@@ -834,20 +829,6 @@ function formatMimeBadge(mime: string): string {
       </div>
     </div>
 
-    <!-- ============ 全屏拖拽遮罩 ============ -->
-    <div
-      v-if="isDragging"
-      class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md pointer-events-none"
-    >
-      <div
-        class="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/20 text-5xl text-primary animate-bounce"
-      >
-        <Icon icon="ri:upload-cloud-2-line" />
-      </div>
-      <h2 class="mt-4 text-xl font-bold text-white">松开鼠标即可上传文件</h2>
-      <p class="mt-1 text-xs text-white/70">支持多文件批量上传，自动归入当前激活分组</p>
-    </div>
-
     <!-- ============ 分组管理弹窗 ============ -->
     <VModal
       v-model:visible="groupModalVisible"
@@ -936,6 +917,23 @@ function formatMimeBadge(mime: string): string {
           </div>
         </div>
 
+        <!-- 所属分组 -->
+        <div class="rounded-xl border border-border bg-card p-3">
+          <label for="attachment-detail-group" class="mb-1.5 block text-xs font-medium text-text-tertiary"
+            >所属分组</label
+          >
+          <select
+            id="attachment-detail-group"
+            v-model.number="detailGroupID"
+            class="apple-select w-full"
+            data-testid="attachment-detail-group"
+            aria-label="附件分组"
+          >
+            <option :value="0">未分组</option>
+            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </div>
+
         <!-- 快捷复制 -->
         <div class="space-y-2">
           <label class="block text-xs font-medium text-text-tertiary">直链 URL</label>
@@ -989,7 +987,19 @@ function formatMimeBadge(mime: string): string {
       <template #footer>
         <div class="flex items-center justify-between w-full">
           <VButton type="danger" size="sm" @click="detailItem && handleDeleteSingle(detailItem)"> 删除附件 </VButton>
-          <VButton @click="closeDetail">关闭</VButton>
+          <div class="flex items-center gap-2">
+            <VButton
+              type="primary"
+              size="sm"
+              data-testid="save-attachment-group"
+              :loading="detailGroupSaving"
+              :disabled="!detailGroupChanged"
+              @click="saveDetailGroup"
+            >
+              保存分组
+            </VButton>
+            <VButton @click="closeDetail">关闭</VButton>
+          </div>
         </div>
       </template>
     </VModal>
