@@ -16,6 +16,7 @@ export default defineConfig({
     command: "VITE_E2E=1 pnpm --filter console run build && bash scripts/e2e/run-server.sh",
     url: "http://127.0.0.1:8096/console/",
     reuseExistingServer: false,
-    timeout: 120_000,
+    // CI 的全新 runner 需要编译 Go 服务；将冷启动时间与测试超时解耦。
+    timeout: process.env.CI ? 300_000 : 120_000,
   },
 });
