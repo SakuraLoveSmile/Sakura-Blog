@@ -94,13 +94,13 @@ function close() {
 
 <template>
   <VModal v-model:visible="modalVisible" title="组件大小" :width="600">
-    <div class="flex items-center gap-3 mb-5 p-3 rounded-xl bg-secondary dark:bg-secondary/50">
-      <div class="w-10 h-10 rounded-lg bg-white dark:bg-accent flex items-center justify-center text-primary">
+    <div class="size-modal-header flex items-center gap-3 mb-5 p-3 rounded-xl">
+      <div class="size-modal-icon w-10 h-10 rounded-lg flex items-center justify-center text-primary">
         <Icon :icon="widgetIcon" class="w-5 h-5" />
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-sm font-medium text-text-quaternary dark:text-foreground">{{ widgetLabel }}</div>
-        <div class="text-xs text-muted-foreground dark:text-text-quaternary">
+        <div class="text-sm font-medium text-foreground">{{ widgetLabel }}</div>
+        <div class="text-xs text-muted-foreground">
           {{ breakpointLabel[breakpoint] }} · 选择预设大小
         </div>
       </div>
@@ -114,10 +114,10 @@ function close() {
         :data-size-preset="option.key"
         :aria-pressed="selectedPreset === option.key"
         :class="[
-          'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-colors',
+          'size-preset-option flex min-h-40 flex-col items-center justify-start gap-2 rounded-xl border p-3 text-center transition-all',
           selectedPreset === option.key
-            ? 'border-primary bg-primary/10 text-primary'
-            : 'border-border bg-secondary/40 text-text-quaternary hover:border-primary/50 hover:bg-secondary dark:border-border-strong dark:bg-secondary/30 dark:text-text-secondary',
+            ? 'is-selected border-primary bg-primary/10 text-primary'
+            : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-primary/50 hover:bg-white/[0.06]',
         ]"
         @click="selectedPreset = option.key"
       >
@@ -135,14 +135,14 @@ function close() {
       </button>
     </div>
 
-    <div class="mt-5 p-3 rounded-lg bg-primary/10 text-xs text-primary flex items-start gap-2">
+    <div class="size-modal-note mt-5 p-3 rounded-lg text-xs text-primary flex items-start gap-2">
       <Icon icon="ri:information-line" class="w-4 h-4 flex-shrink-0 mt-0.5" />
       <span>组件只能使用这三个预设大小；如果新尺寸放不下，组件会自动移动到当前布局的空位。</span>
     </div>
 
     <template #footer>
       <button
-        class="px-4 py-2 rounded-lg bg-secondary dark:bg-secondary text-sm text-text-quaternary dark:text-text-secondary hover:bg-accent dark:hover:bg-accent transition-colors mr-2"
+        class="size-modal-cancel px-4 py-2 rounded-lg text-sm mr-2"
         @click="close"
       >
         取消
@@ -160,6 +160,12 @@ function close() {
 <style scoped>
 .size-preset-option {
   min-height: 176px;
+  background: color-mix(in srgb, var(--color-card) 88%, transparent);
+}
+
+.size-preset-option.is-selected {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 10px 24px -16px var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .size-preset-option:focus-visible {
@@ -174,7 +180,9 @@ function close() {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--color-card) 88%, var(--color-primary));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent),
+    color-mix(in srgb, var(--color-card) 88%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
 }
 
@@ -218,5 +226,32 @@ function close() {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.02em;
+}
+
+.size-modal-header {
+  background: color-mix(in srgb, var(--color-card) 82%, var(--color-primary));
+  border: 1px solid color-mix(in srgb, #fff 7%, transparent);
+}
+
+.size-modal-icon {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.size-modal-note {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.size-modal-cancel {
+  color: var(--color-muted-foreground);
+  background: color-mix(in srgb, #fff 5%, transparent);
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.size-modal-cancel:hover {
+  color: var(--color-foreground);
+  background: color-mix(in srgb, #fff 9%, transparent);
 }
 </style>

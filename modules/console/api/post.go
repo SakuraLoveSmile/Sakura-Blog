@@ -130,6 +130,80 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 	return pj
 }
 
+// postListJSON 文章列表响应模型。列表页不需要正文、阅读口令或草稿内容，
+// 与详情用的 postJSON 分开，避免大字段随每次分页/搜索请求返回。
+type postListJSON struct {
+	Slug            string   `json:"slug"`
+	Title           string   `json:"title"`
+	Excerpt         string   `json:"excerpt"`
+	Banner          string   `json:"banner"`
+	Cover           string   `json:"cover"`
+	Category        string   `json:"category"`
+	Categories      []string `json:"categories"`
+	TopicID         int64    `json:"topic_id"`
+	Topic           string   `json:"topic"`
+	Tags            string   `json:"tags"`
+	Status          string   `json:"status"`
+	Pinned          bool     `json:"pinned"`
+	PublishAt       string   `json:"publish_at"`
+	Poster          *posterJ `json:"poster,omitempty"`
+	MetaDescription string   `json:"meta_description"`
+	MetaKeywords    string   `json:"meta_keywords"`
+	AILabel         string   `json:"ai_label"`
+	CreatedAt       string   `json:"created_at"`
+	UpdatedAt       string   `json:"updated_at"`
+	Views           int64    `json:"views"`
+	HasDraft        bool     `json:"has_draft"`
+	AISummary       string   `json:"ai_summary"`
+	Authors         []string `json:"authors"`
+	Author          string   `json:"author"`
+}
+
+func toPostListJSON(p *store.Post) *postListJSON {
+	status := p.Status
+	if p.DeletedAt != "" {
+		status = "trashed"
+	}
+	pj := &postListJSON{
+		Slug:            p.Slug,
+		Title:           p.Title,
+		Excerpt:         p.Excerpt,
+		Banner:          p.Banner,
+		Cover:           p.Cover,
+		Category:        p.Category,
+		Categories:      append([]string(nil), p.Categories...),
+		TopicID:         p.TopicID,
+		Topic:           p.Topic,
+		Tags:            p.Tags,
+		Status:          status,
+		Pinned:          p.Pinned,
+		MetaDescription: p.MetaDescription,
+		MetaKeywords:    p.MetaKeywords,
+		AILabel:         p.AILabel,
+		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
+		Views:           p.Views,
+		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
+		AISummary:       p.AISummary,
+		Authors:         normalizedPostAuthors(p),
+		Author:          p.Author,
+	}
+	if !p.PublishAt.IsZero() {
+		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
+	}
+	if pd := store.DecodePoster(p.Poster); pd != nil {
+		pj.Poster = &posterJ{Headline: pd.Headline, Topic: pd.Topic, Caption: pd.Caption, Color: pd.Color}
+	}
+	return pj
+}
+
+type postListResponse struct {
+	Items []*postListJSON `json:"items"`
+	Total int64           `json:"total"`
+	Page  int             `json:"page"`
+	Size  int             `json:"size"`
+}
+
 var (
 	errTopicIDInvalid = errors.New("invalid topic_id")
 	errTopicNotFound  = errors.New("topic not found")
@@ -196,11 +270,12 @@ func failPostTopic(c *gin.Context, err error) bool {
 	return true
 }
 
-// listPosts GET /api/v1/posts：文章列表（支持 status/category/tag 筛选 + 分页）。
+// listPosts GET /api/v1/posts：文章列表（支持 status/category/tag/search 筛选 + 分页）。
 func (h *Handler) listPosts(c *gin.Context) {
 	status := c.Query("status")
 	category := c.Query("category")
 	tag := c.Query("tag")
+	search := c.Query("search")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 	if page < 1 {
@@ -210,36 +285,20 @@ func (h *Handler) listPosts(c *gin.Context) {
 		size = 20
 	}
 
-	// 回收站专用列表
-	if status == "trashed" {
-		posts, err := h.store.ListTrashed()
-		if err != nil {
-			Fail(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"items": posts, "total": len(posts)})
-		return
-	}
-
-	// Spec 62：筛选与分页下推 SQL（ListFiltered 单次 COUNT + 单次分页查询，views 随 listCols 投影带出，
-	// 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式）
-	posts, total, err := h.store.ListFiltered(status, category, tag, page, size)
+	// Spec 62：筛选、搜索与分页下推 SQL（ListFiltered 单次 COUNT + 单次分页查询，
+	// 使用轻量 postListCols 投影，替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式）。
+	posts, total, err := h.store.ListFiltered(status, category, tag, search, page, size)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	items := make([]*postJSON, 0, len(posts))
+	items := make([]*postListJSON, 0, len(posts))
 	for _, p := range posts {
-		items = append(items, toPostJSON(p, p.Views))
+		items = append(items, toPostListJSON(p))
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"items": items,
-		"total": total,
-		"page":  page,
-		"size":  size,
-	})
+	c.JSON(http.StatusOK, postListResponse{Items: items, Total: total, Page: page, Size: size})
 }
 
 // getPost GET /api/v1/posts/:slug：文章详情。

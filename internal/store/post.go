@@ -168,6 +168,11 @@ func (p *Post) ScanRow(row rowScanner) error {
 // 供自定义查询拼接用，扫描对应 scanOne 的 27 列顺序）。
 const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, ai_label, views"
 
+// postListCols 是 Console 文章列表的轻量投影：列表只需要文章元数据，不能把正文、
+// 预渲染 HTML、口令或草稿 JSON 一起读入内存。末尾的 draft marker 只保留是否有草稿
+// 这一布尔信息，views 继续作为只读投影返回。
+const postListCols = "id, slug, title, excerpt, cover, category, tags, status, created_at, updated_at, pinned, publish_at, poster, topic, topic_id, deleted_at, meta_description, meta_keywords, author, ai_summary, ai_label, CASE WHEN draft_json != '' THEN 1 ELSE 0 END, views"
+
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
 
@@ -474,19 +479,25 @@ func (s *Store) List() ([]*Post, error) {
 	return s.scanPosts(rows)
 }
 
-// ListFiltered 按 status/category/tag 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
+// ListFiltered 按 status/category/tag/search 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
 // 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式），返回分页结果与筛选后总数。
-// 过滤条件与分页均下推 SQL；tag 用逗号包裹 LIKE 防子串误匹配（与 ListByTag 口径一致）。
-func (s *Store) ListFiltered(status, category, tag string, page, size int) ([]*Post, int64, error) {
+// 过滤条件、搜索与分页均下推 SQL；tag 用逗号包裹 LIKE 防子串误匹配（与 ListByTag 口径一致）。
+// 查询使用 postListCols，避免列表加载正文、预渲染 HTML、口令和草稿 JSON。
+func (s *Store) ListFiltered(status, category, tag, search string, page, size int) ([]*Post, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if size < 1 {
 		size = 20
 	}
-	conds := []string{"deleted_at = ''"}
+	conds := make([]string, 0, 5)
 	args := []any{}
-	if status != "" {
+	if status == "trashed" {
+		conds = append(conds, "deleted_at != ''")
+	} else {
+		conds = append(conds, "deleted_at = ''")
+	}
+	if status != "" && status != "trashed" {
 		conds = append(conds, "status = ?")
 		args = append(args, status)
 	}
@@ -506,23 +517,33 @@ func (s *Store) ListFiltered(status, category, tag string, page, size int) ([]*P
 		conds = append(conds, "(',' || tags || ',') LIKE ?")
 		args = append(args, "%,"+tag+",%")
 	}
+	if search = strings.TrimSpace(search); search != "" {
+		pattern := "%" + escapeLikePattern(search) + "%"
+		conds = append(conds, "(title LIKE ? ESCAPE '\\' OR slug LIKE ? ESCAPE '\\')")
+		args = append(args, pattern, pattern)
+	}
 	where := strings.Join(conds, " AND ")
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE "+where, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count filtered posts: %w", err)
 	}
-	rows, err := s.db.Query("SELECT "+listCols+" FROM posts WHERE "+where+" ORDER BY pinned DESC, substr(created_at, 1, 19) DESC LIMIT ? OFFSET ?",
+	rows, err := s.db.Query("SELECT "+postListCols+" FROM posts WHERE "+where+" ORDER BY pinned DESC, substr(created_at, 1, 19) DESC LIMIT ? OFFSET ?",
 		append(args, size, (page-1)*size)...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list filtered posts: %w", err)
 	}
 	defer rows.Close()
-	posts, err := s.scanPosts(rows)
+	posts, err := s.scanPostListRows(rows)
 	if err != nil {
 		return nil, 0, err
 	}
 	return posts, total, nil
+}
+
+// escapeLikePattern 把用户搜索词中的 LIKE 通配符当作普通字符处理。
+func escapeLikePattern(value string) string {
+	return strings.NewReplacer("\\", "\\\\", "%", "\\%", "_", "\\_").Replace(value)
 }
 
 // PostSearchCard 后台搜索文章卡片（轻量列，Spec 62：adminSearch 每键全表 List 拖回
@@ -1127,6 +1148,51 @@ func (s *Store) scanPosts(rows *sql.Rows) ([]*Post, error) {
 
 type rowScanner interface {
 	Scan(dest ...any) error
+}
+
+// scanPostList 扫描 postListCols，避免把文章正文等大字段读入 Post。
+func scanPostList(row rowScanner) (*Post, error) {
+	p := &Post{}
+	var pinned, hasDraft int
+	var publishAt string
+	var views int64
+	if err := row.Scan(
+		&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags,
+		&p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &publishAt, &p.Poster,
+		&p.Topic, &p.TopicID, &p.DeletedAt, &p.MetaDescription, &p.MetaKeywords,
+		&p.Author, &p.AISummary, &p.AILabel, &hasDraft, &views,
+	); err != nil {
+		return nil, err
+	}
+	p.Pinned = pinned != 0
+	p.PublishAt = ParsePublishAt(publishAt)
+	p.Views = views
+	if hasDraft != 0 {
+		// 只保留存在性标记；列表接口不需要草稿 JSON 本身。
+		p.DraftJSON = "1"
+	}
+	return p, nil
+}
+
+func (s *Store) scanPostListRows(rows *sql.Rows) ([]*Post, error) {
+	var out []*Post
+	for rows.Next() {
+		p, err := scanPostList(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan post list: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate post list: %w", err)
+	}
+	if err := s.hydratePostAuthors(out); err != nil {
+		return nil, err
+	}
+	if err := s.hydratePostCategories(out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // scanOne 行扫描（listCols 顺序：Post.Columns() 前 26 列 + views 末位，与 listCols 常量对齐）。

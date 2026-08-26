@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { dashboardApi, type StellarVersionResponse } from "@/api";
 import { useBreakpoint } from "../useBreakpoint";
 import { useWidgetSize } from "../useWidgetSize";
 import type { WidgetSizePreset } from "./layout";
+import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
@@ -47,7 +48,8 @@ const stateIcon = computed(() => {
   }
 });
 
-onMounted(async () => {
+async function loadVersion() {
+  loading.value = true;
   try {
     const response = await dashboardApi.stellarVersion();
     data.value = response.data;
@@ -63,7 +65,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  loadVersion();
+  window.addEventListener(DASHBOARD_REFRESH_EVENT, loadVersion);
 });
+onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadVersion));
 </script>
 
 <template>
@@ -89,7 +97,12 @@ onMounted(async () => {
   </div>
 
   <!-- Medium / Large 尺寸：标准与扩展视图（样式走 dashboard.css 共享 .version-card-*） -->
-  <div v-else class="apple-card version-card h-full" :data-bp="breakpoint">
+  <div
+    v-else
+    class="apple-card version-card h-full"
+    :class="{ 'is-attention': state === 'outdated' }"
+    :data-bp="breakpoint"
+  >
     <div class="version-card-header">
       <div class="version-card-title-row">
         <div class="version-card-icon" aria-hidden="true">
@@ -114,17 +127,15 @@ onMounted(async () => {
       <div class="version-card-values" :class="{ 'grid-cols-3': sizePreset === 'large' }">
         <div>
           <span class="version-card-label">本地版本</span>
-          <strong>{{ data?.local_version || "未知" }}</strong>
+          <strong class="font-mono">{{ data?.local_version || "未知" }}</strong>
         </div>
         <div>
           <span class="version-card-label">GitHub 最新</span>
-          <strong>{{ data?.upstream_version || "未获取" }}</strong>
+          <strong class="font-mono">{{ data?.upstream_version || "未获取" }}</strong>
         </div>
         <div v-if="sizePreset === 'large'">
           <span class="version-card-label">检查时间</span>
-          <strong class="text-xs text-muted-foreground font-normal mt-1">{{
-            data?.checked_at ? new Date(data.checked_at).toLocaleDateString() : "刚刚"
-          }}</strong>
+          <strong class="text-xs text-muted-foreground font-normal mt-1 font-mono">{{ data?.checked_at ? new Date(data.checked_at).toLocaleDateString() : '刚刚' }}</strong>
         </div>
       </div>
 

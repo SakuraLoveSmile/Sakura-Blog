@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/comments"
+	"blog/internal/config"
 	"blog/internal/og"
 	"blog/internal/post"
 	"blog/internal/search"
@@ -237,6 +238,10 @@ func (s *webServer) buildMenuPages() []tmpl.MenuItem {
 }
 
 func (s *webServer) fillSidebar(data *tmpl.ViewData) {
+	if ai, err := config.LoadAI(s.st); err == nil {
+		data.QAEnabled = ai.QAOn()
+		data.QAAllowUserLLM = ai.QAUserLLMOn()
+	}
 	// 已发布页面自动进左栏菜单（不走侧栏缓存：发布/下线需即时反映）
 	data.MenuPages = s.buildMenuPages()
 	s.sidebarMu.Lock()

@@ -14,3 +14,4 @@ packages:
       - "shortcode_catalog.go"
       - "uc.go"
       - "plugin_runtime.go"
+      - "rag.go"

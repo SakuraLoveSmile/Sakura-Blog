@@ -30,6 +30,7 @@ import (
 	ogfonts "blog/internal/og/fonts"
 	"blog/internal/plugin"
 	"blog/internal/post"
+	"blog/internal/rag"
 	"blog/internal/search"
 	seedpkg "blog/internal/seed"
 	"blog/internal/settings"
@@ -58,6 +59,7 @@ type Services struct {
 	Comment    *comments.Handler
 	Identity   *identity.Service
 	Search     *search.Index
+	RAG        *rag.Service
 	Backup     *backup.Service
 	Notify     *notify.Service
 	Friends    *friends.Aggregator
@@ -257,6 +259,15 @@ func Bootstrap(options Options) (*Services, error) {
 		}
 	}
 
+	// RAG is an optional enhancement: schema/load failures are logged and do
+	// not prevent the blog, Console, or public content routes from starting.
+	var ragSvc *rag.Service
+	if candidate, ragErr := rag.New(st, events); ragErr != nil {
+		log.Printf("rag: disabled during bootstrap: %v", ragErr)
+	} else {
+		ragSvc = candidate
+	}
+
 	friendsAgg := friends.New(sitePtr)
 	linkWatch := linkwatch.New(st, sitePtr, appConfig.UploadDir)
 	backupSvc := backup.New(backup.Config{
@@ -281,7 +292,7 @@ func Bootstrap(options Options) (*Services, error) {
 	})
 	services := &Services{
 		App: appConfig, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
-		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx,
+		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx, RAG: ragSvc,
 		Backup: backupSvc, Notify: notifySvc, Friends: friendsAgg, LinkWatch: linkWatch,
 		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Plugins: pluginRuntime, Events: events, Icons: icons, SitePath: sitePath,
 	}
@@ -312,6 +323,9 @@ func (s *Services) StartBackground() {
 		if s.LinkWatch != nil {
 			s.LinkWatch.Start()
 		}
+		if s.RAG != nil {
+			s.RAG.Start()
+		}
 	})
 }
 
@@ -335,6 +349,11 @@ func (s *Services) Close(ctx context.Context) error {
 	}
 	if s.LinkWatch != nil {
 		if err := s.LinkWatch.Close(ctx); closeErr == nil {
+			closeErr = err
+		}
+	}
+	if s.RAG != nil {
+		if err := s.RAG.Close(ctx); closeErr == nil {
 			closeErr = err
 		}
 	}

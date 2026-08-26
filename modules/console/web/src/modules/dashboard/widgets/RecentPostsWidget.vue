@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { useRouter } from "vue-router";
 import { useBreakpoint } from "../useBreakpoint";
@@ -7,6 +7,7 @@ import { dashboardApi } from "@/api";
 import { formatRelative } from "@/lib/format";
 import type { WidgetSizePreset } from "./layout";
 import { useWidgetSize } from "../useWidgetSize";
+import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
@@ -36,13 +37,20 @@ const items = ref<PostItem[]>([]);
 const loading = ref(true);
 const error = ref("");
 
-onMounted(() => {
-  dashboardApi
-    .recentPosts()
+function loadPosts() {
+  loading.value = true;
+  error.value = "";
+  dashboardApi.recentPosts()
     .then((r: { data: PostsResp }) => (items.value = r.data.items))
-    .catch((e) => (error.value = e.message))
+    .catch((e) => (error.value = e instanceof Error ? e.message : "文章加载失败"))
     .finally(() => (loading.value = false));
+}
+
+onMounted(() => {
+  loadPosts();
+  window.addEventListener(DASHBOARD_REFRESH_EVENT, loadPosts);
 });
+onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadPosts));
 
 const displayedItems = computed(() => {
   if (sizePreset.value === "small") return items.value.slice(0, 3);
@@ -60,11 +68,7 @@ function previewPost(item: PostItem) {
 </script>
 
 <template>
-  <div
-    class="apple-card h-full flex flex-col justify-between"
-    :class="`recent-posts-${sizePreset}`"
-    :data-bp="breakpoint"
-  >
+  <div class="apple-card h-full flex flex-col justify-between" :class="`recent-posts-${sizePreset}`" :data-bp="breakpoint">
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-baseline gap-2.5">
         <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">最近文章</h3>
@@ -80,30 +84,32 @@ function previewPost(item: PostItem) {
       </button>
     </div>
 
-    <div v-if="loading" class="recent-placeholder flex items-center justify-center text-muted-foreground flex-1">
-      <Icon icon="ri:loader-4-line" class="w-6 h-6 animate-spin" />
+    <div v-if="loading" class="dashboard-skeleton-list flex-1" aria-label="正在加载文章">
+      <span v-for="index in (sizePreset === 'large' ? 5 : 3)" :key="index" class="dashboard-skeleton-row">
+        <i class="dashboard-skeleton-avatar" />
+        <i class="dashboard-skeleton-copy" />
+      </span>
     </div>
-    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">
-      {{ error }}
-    </div>
-    <div
-      v-else-if="items.length === 0"
-      class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1"
-    >
+    <div v-else-if="error" class="recent-placeholder flex items-center justify-center text-state-error flex-1">{{ error }}</div>
+    <div v-else-if="items.length === 0" class="recent-placeholder flex items-center justify-center text-muted-foreground text-sm flex-1">
       暂无文章
     </div>
 
     <!-- Small 尺寸：单行精简列表 -->
-    <div v-else-if="sizePreset === 'small'" class="space-y-1 flex-1">
+    <div v-else-if="sizePreset === 'small'" class="space-y-1.5 flex-1">
       <button
         v-for="item in displayedItems"
         :key="item.slug"
-        class="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-white/5 text-left transition-colors"
+        class="w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl hover:bg-white/5 text-left transition-all border border-transparent hover:border-white/5"
         @click="editPost(item)"
       >
-        <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
-          <span class="apple-status-dot" :class="item.status === 'published' ? 'published' : 'draft'" />
-          <span class="text-foreground text-xs truncate">{{ item.title }}</span>
+        <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+          <span
+            class="apple-status-dot"
+            :class="item.status === 'published' ? 'published' : 'draft'"
+            :aria-label="item.status === 'published' ? '已发布' : '草稿'"
+          />
+          <span class="text-foreground text-xs font-medium truncate">{{ item.title }}</span>
         </div>
         <span class="text-[10px] text-muted-foreground whitespace-nowrap">{{ formatRelative(item.updated_at) }}</span>
       </button>
@@ -114,20 +120,20 @@ function previewPost(item: PostItem) {
       <div v-for="item in displayedItems" :key="item.slug" class="apple-list-item group">
         <button class="recent-post-main" type="button" @click="editPost(item)">
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
               <span
                 class="apple-status-dot"
                 :class="item.status === 'published' ? 'published' : 'draft'"
                 :title="item.status === 'published' ? '已发布' : '草稿'"
               />
-              <span class="text-foreground text-sm truncate">{{ item.title }}</span>
+              <span class="text-foreground text-sm font-medium tracking-tight truncate">{{ item.title }}</span>
             </div>
-            <div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-              <span v-if="item.category" class="flex items-center gap-1">
-                <Icon icon="ri:folder-3-line" class="w-3 h-3" />
+            <div class="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+              <span v-if="item.category" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-muted-foreground border border-white/5">
+                <Icon icon="ri:folder-3-line" class="w-3 h-3 text-primary" />
                 {{ item.category }}
               </span>
-              <span class="flex items-center gap-1">
+              <span class="flex items-center gap-1 text-[11px]">
                 <Icon icon="ri:time-line" class="w-3 h-3" />
                 {{ formatRelative(item.updated_at) }}
               </span>
@@ -147,22 +153,27 @@ function previewPost(item: PostItem) {
 
     <!-- Medium 尺寸：标准富列表 -->
     <div v-else class="space-y-1 flex-1 overflow-y-auto pr-0.5">
-      <button v-for="item in displayedItems" :key="item.slug" class="apple-list-item group" @click="editPost(item)">
+      <button
+        v-for="item in displayedItems"
+        :key="item.slug"
+        class="apple-list-item group"
+        @click="editPost(item)"
+      >
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2.5">
             <span
               class="apple-status-dot"
               :class="item.status === 'published' ? 'published' : 'draft'"
               :title="item.status === 'published' ? '已发布' : '草稿'"
             />
-            <span class="text-foreground text-sm truncate">{{ item.title }}</span>
+            <span class="text-foreground text-sm font-medium tracking-tight truncate">{{ item.title }}</span>
           </div>
-          <div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            <span v-if="item.category" class="flex items-center gap-1">
-              <Icon icon="ri:folder-3-line" class="w-3 h-3" />
+          <div class="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+            <span v-if="item.category" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-muted-foreground border border-white/5">
+              <Icon icon="ri:folder-3-line" class="w-3 h-3 text-primary" />
               {{ item.category }}
             </span>
-            <span class="flex items-center gap-1">
+            <span class="flex items-center gap-1 text-[11px]">
               <Icon icon="ri:time-line" class="w-3 h-3" />
               {{ formatRelative(item.updated_at) }}
             </span>
@@ -181,19 +192,17 @@ function previewPost(item: PostItem) {
 .recent-legend {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
   font-size: 11px;
-  color: var(--color-text-muted, var(--text-muted, #8e8e93));
+  color: var(--color-muted-foreground);
 }
 .recent-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   white-space: nowrap;
 }
-.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-legend {
-  display: none;
-}
+.apple-card:is([data-bp="xs"], [data-bp="xxs"]) .recent-legend { display: none; }
 
 .recent-post-main {
   display: flex;
@@ -210,7 +219,7 @@ function previewPost(item: PostItem) {
 .recent-post-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   opacity: 0;
   transition: opacity 150ms var(--ease-standard);
 }
@@ -221,22 +230,25 @@ function previewPost(item: PostItem) {
 }
 
 .recent-post-actions button {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 10%, transparent);
+  border-radius: 50%;
   color: var(--color-muted-foreground);
-  background: transparent;
+  background: color-mix(in srgb, #fff 4%, transparent);
+  backdrop-filter: blur(8px);
   cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .recent-post-actions button:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  transform: scale(1.05);
 }
 
 .recent-post-actions svg {

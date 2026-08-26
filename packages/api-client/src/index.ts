@@ -14,6 +14,7 @@ export * from "./api/links";
 export * from "./api/media";
 export * from "./api/monitoring";
 export * from "./api/plugins";
+export * from "./api/rag";
 export * from "./api/settings";
 export * from "./api/wiki";
 export * from "./api/uc";

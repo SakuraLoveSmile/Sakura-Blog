@@ -6,6 +6,7 @@ import type { Chart } from "chart.js";
 import { loadChart } from "@/lib/chart-init";
 import type { WidgetSizePreset } from "./layout";
 import { useWidgetSize } from "../useWidgetSize";
+import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
@@ -18,6 +19,7 @@ const sizePreset = useWidgetSize(props.sizePreset).preset;
 
 const trendDays = ref(7);
 const hourlyDist = ref<number[]>(Array(24).fill(0));
+const loading = ref(true);
 const hourlyCanvas = ref<HTMLCanvasElement | null>(null);
 let hourlyChartInstance: Chart | null = null;
 
@@ -25,17 +27,16 @@ let hourlyChartInstance: Chart | null = null;
 const statsSummary = computed(() => {
   const values = hourlyDist.value;
   const maxVal = Math.max(...values, 0);
-  const peakHour = values.indexOf(maxVal);
+  const peakHour = maxVal > 0 ? values.indexOf(maxVal) : -1;
   const total = values.reduce((a, b) => a + b, 0);
   const dayTimeTotal = values.slice(8, 20).reduce((a, b) => a + b, 0);
   const dayPct = total > 0 ? Math.round((dayTimeTotal / total) * 100) : 50;
 
-  const peakStr =
-    peakHour >= 0
-      ? `${peakHour.toString().padStart(2, "0")}:00 - ${(peakHour + 1).toString().padStart(2, "0")}:00`
-      : "--";
+  const peakStr = peakHour >= 0 ? `${peakHour.toString().padStart(2, "0")}:00 - ${(peakHour + 1).toString().padStart(2, "0")}:00` : "暂无峰值";
   return { peakStr, total, dayPct, maxVal };
 });
+
+const isEmpty = computed(() => hourlyDist.value.every((value) => value <= 0));
 
 const canvasHeight = computed(() => {
   if (sizePreset.value === "small") return 140;
@@ -44,16 +45,25 @@ const canvasHeight = computed(() => {
 });
 
 async function loadHourly() {
+  loading.value = true;
   try {
     const resp = await statsApi.hourly(trendDays.value);
     const response = resp.data;
-    hourlyDist.value = Array.isArray(response)
+    const source = Array.isArray(response)
       ? response
-      : response.distribution?.map((d: any) => d.count) || Array(24).fill(0);
+      : (response.distribution?.map((d: any) => d.count) || Array(24).fill(0));
+    hourlyDist.value = Array.from({ length: 24 }, (_, index) => Number(source[index]) || 0);
   } catch (err) {
     hourlyDist.value = Array(24).fill(0);
+  } finally {
+    loading.value = false;
   }
-  initHourlyChart();
+  if (isEmpty.value) {
+    hourlyChartInstance?.destroy();
+    hourlyChartInstance = null;
+  } else {
+    initHourlyChart();
+  }
 }
 
 async function initHourlyChart() {
@@ -71,16 +81,16 @@ async function initHourlyChart() {
   const primaryColor = cs.getPropertyValue("--color-primary").trim() || "#2E8DFF";
   const gridColor = cs.getPropertyValue("--color-chart-grid").trim() || "#2c2c2e";
   const mutedColor = cs.getPropertyValue("--color-muted-foreground").trim() || "#8e8e93";
-  const cardBg = cs.getPropertyValue("--color-card").trim() || "#1c1c1e";
   const fgColor = cs.getPropertyValue("--color-foreground").trim() || "#f5f5f7";
-  const borderColor = cs.getPropertyValue("--color-border").trim() || "#3a3a3c";
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const values = hourlyDist.value;
 
-  // 峰值高亮与真实数据一致：取最高若干非零时段用 primary，其余统一 chart-1
-  const topValues = [...new Set(values.filter((v) => v > 0))].sort((a, b) => b - a).slice(0, 4);
-  const bgColors = hours.map((h) => (topValues.includes(values[h]) ? primaryColor : c1));
+  // 只高亮真实最大值；相同峰值的时段保持联动，避免用固定时段制造假峰值。
+  const peakValue = Math.max(...values, 0);
+  const bgColors = hours.map((h) =>
+    peakValue > 0 && values[h] === peakValue ? primaryColor : c1,
+  );
 
   const step = sizePreset.value === "small" ? 6 : 4;
 
@@ -93,7 +103,10 @@ async function initHourlyChart() {
           label: "访问量",
           data: values,
           backgroundColor: bgColors,
-          borderRadius: 3,
+          borderColor: bgColors,
+          borderWidth: 1,
+          borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 1, bottomRight: 1 },
+          borderSkipped: false,
           barPercentage: sizePreset.value === "small" ? 0.65 : 0.75,
           categoryPercentage: 0.85,
         },
@@ -108,16 +121,17 @@ async function initHourlyChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: cardBg,
+          backgroundColor: "rgba(28, 28, 30, 0.92)",
           titleColor: fgColor,
           bodyColor: mutedColor,
-          borderColor: borderColor,
+          borderColor: "rgba(255, 255, 255, 0.12)",
           borderWidth: 1,
-          padding: 8,
-          cornerRadius: 8,
+          padding: 10,
+          cornerRadius: 10,
+          boxPadding: 4,
           callbacks: {
             title: (items: any[]) => items[0].label,
-            label: (item: any) => `访问量: ${item.parsed.y}`,
+            label: (item: any) => ` 访问量: ${Number(item.parsed.y).toLocaleString()}`,
           },
         },
       },
@@ -127,17 +141,17 @@ async function initHourlyChart() {
           border: { color: gridColor },
           ticks: {
             color: mutedColor,
-            font: { size: 10 },
+            font: { size: 10, family: "var(--font-mono)" },
             callback: (_, index) => (index % step === 0 ? `${hours[index]}:00` : ""),
           },
         },
         y: {
           beginAtZero: true,
-          grid: { color: gridColor },
+          grid: { color: gridColor, drawTicks: false },
           border: { display: false },
           ticks: {
             color: mutedColor,
-            font: { size: 10 },
+            font: { size: 10, family: "var(--font-mono)" },
             display: sizePreset.value !== "small",
           },
         },
@@ -147,12 +161,18 @@ async function initHourlyChart() {
 }
 
 watch(sizePreset, () => {
-  initHourlyChart();
+  if (!isEmpty.value) initHourlyChart();
 });
 
-onMounted(loadHourly);
+watch(trendDays, loadHourly);
+
+onMounted(() => {
+  loadHourly();
+  window.addEventListener(DASHBOARD_REFRESH_EVENT, loadHourly);
+});
 
 onUnmounted(() => {
+  window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadHourly);
   hourlyChartInstance?.destroy();
   hourlyChartInstance = null;
 });
@@ -166,33 +186,138 @@ onUnmounted(() => {
         <span v-if="sizePreset !== 'small'" class="apple-card-badge">24h Hours</span>
       </div>
       <div class="flex items-center gap-2">
-        <span
-          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary"
-        >
-          <Icon icon="ri:fire-line" class="w-3 h-3" />
+        <div v-if="sizePreset !== 'small'" class="apple-segmented hourly-range-switch" aria-label="时段统计范围">
+          <button type="button" :class="['seg-btn', trendDays === 7 && 'active']" :aria-pressed="trendDays === 7" @click="trendDays = 7">7 天</button>
+          <button type="button" :class="['seg-btn', trendDays === 30 && 'active']" :aria-pressed="trendDays === 30" @click="trendDays = 30">30 天</button>
+        </div>
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/15">
+          <Icon icon="ri:fire-line" class="w-3.5 h-3.5" />
           {{ statsSummary.peakStr }}
         </span>
       </div>
     </div>
 
     <!-- Large 尺寸时段分析胶囊：表面层级与 apple-card 边框语言一致 -->
-    <div v-if="sizePreset === 'large'" class="grid grid-cols-3 gap-2 mb-3 text-xs">
-      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
-        <span class="text-muted-foreground">日间活跃 (08-20h)</span>
-        <strong class="text-foreground">{{ statsSummary.dayPct }}%</strong>
+    <div v-if="sizePreset === 'large'" class="grid grid-cols-3 gap-2.5 mb-3 text-xs">
+      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+        <span class="text-muted-foreground flex items-center gap-1">
+          <Icon icon="ri:sun-line" class="w-3.5 h-3.5 text-amber-400" />
+          日间活跃
+        </span>
+        <strong class="text-foreground tabular-nums font-semibold">{{ statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
-        <span class="text-muted-foreground">夜间活跃 (20-08h)</span>
-        <strong class="text-foreground">{{ 100 - statsSummary.dayPct }}%</strong>
+      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+        <span class="text-muted-foreground flex items-center gap-1">
+          <Icon icon="ri:moon-line" class="w-3.5 h-3.5 text-indigo-400" />
+          夜间活跃
+        </span>
+        <strong class="text-foreground tabular-nums font-semibold">{{ 100 - statsSummary.dayPct }}%</strong>
       </div>
-      <div class="p-2 rounded-xl bg-secondary/40 border border-white/10 flex items-center justify-between">
-        <span class="text-muted-foreground">单时段峰值</span>
-        <strong class="text-primary">{{ statsSummary.maxVal }} 次</strong>
+      <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+        <span class="text-muted-foreground flex items-center gap-1">
+          <Icon icon="ri:flashlight-line" class="w-3.5 h-3.5 text-primary" />
+          单时段峰值
+        </span>
+        <strong class="text-primary tabular-nums font-semibold">{{ statsSummary.maxVal.toLocaleString() }} 次</strong>
       </div>
     </div>
 
-    <div class="flex-1 min-h-0 w-full" :style="{ height: `${canvasHeight}px` }">
-      <canvas ref="hourlyCanvas" />
+    <div class="hourly-chart-stage flex-1 min-h-0 w-full" :style="{ height: `${canvasHeight}px` }">
+      <canvas v-if="!isEmpty || loading" ref="hourlyCanvas" :class="{ 'is-loading': loading }" aria-label="24 小时访问量分布图" />
+      <div v-if="loading" class="hourly-chart-skeleton" aria-label="正在加载时段分布">
+        <span v-for="height in [28, 42, 34, 62, 48, 72, 40, 55, 32, 66, 46, 78]" :key="height" :style="{ height: `${height}%` }" />
+      </div>
+      <div v-else-if="isEmpty" class="hourly-empty-state" aria-label="暂无时段访问数据">
+        <div class="hourly-empty-lines" aria-hidden="true"><i /><i /><i /></div>
+        <Icon icon="ri:bar-chart-2-line" class="w-5 h-5" />
+        <span>暂无访问数据</span>
+        <small>有新的访问后，这里会显示高峰时段</small>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.hourly-chart-stage {
+  position: relative;
+}
+
+.hourly-chart-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  transition: opacity 180ms var(--ease-standard);
+}
+
+.hourly-chart-stage canvas.is-loading {
+  opacity: 0.12;
+}
+
+.hourly-chart-skeleton {
+  position: absolute;
+  inset: 10px 4px 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 5px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.hourly-chart-skeleton span {
+  position: relative;
+  z-index: 0;
+  width: 3.5%;
+  min-height: 8px;
+  border-radius: 999px 999px 2px 2px;
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.hourly-chart-skeleton::after {
+  z-index: 1;
+}
+
+.hourly-empty-state {
+  position: absolute;
+  inset: 8px 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  border-radius: 14px;
+  color: var(--color-muted-foreground);
+  background: color-mix(in srgb, var(--color-background) 35%, transparent);
+}
+
+.hourly-empty-state span {
+  color: var(--color-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hourly-empty-state small {
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+}
+
+.hourly-empty-lines {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 30px;
+  margin-bottom: 2px;
+}
+
+.hourly-empty-lines i {
+  display: block;
+  width: 5px;
+  height: 12px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
+  border-radius: 3px 3px 1px 1px;
+}
+
+.hourly-empty-lines i:nth-child(2) { height: 22px; }
+.hourly-empty-lines i:nth-child(3) { height: 16px; }
+</style>

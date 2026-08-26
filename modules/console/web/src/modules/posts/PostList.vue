@@ -18,18 +18,18 @@ import {
   Dialog,
   Toast,
 } from "@/components/ui";
-import { formatRelative } from "@/lib/format";
+import { formatRelative, formatDateTime } from "@/lib/format";
 
 interface PostItem {
   id?: number;
   slug: string;
   title: string;
   cover?: string;
-  summary?: string;
+  excerpt?: string;
   category?: string;
-  tags?: string[];
+  tags?: string | string[];
   status: "published" | "draft" | "trashed";
-  pin?: boolean;
+  pinned?: boolean;
   views?: number;
   created_at: string;
   updated_at: string;
@@ -133,7 +133,7 @@ const stats = computed(() => {
   for (const p of all) {
     if (p.status === "published") pubCount++;
     else if (p.status === "draft") draftCount++;
-    if (p.pin) pinCount++;
+    if (p.pinned) pinCount++;
   }
   return {
     total: total.value,
@@ -269,17 +269,51 @@ function openPostPreview(slug: string) {
   window.open(`/${slug}`, "_blank");
 }
 
+function formatViews(views: number): string {
+  if (views < 1000) return String(views);
+  const value = views / 1000;
+  return `${value.toFixed(value >= 10 ? 0 : 1).replace(/\.0$/, "")}k`;
+}
+
+function parseTags(tags: string | string[] | undefined | null): string[] {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags.filter(Boolean);
+  return tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
 function statusBadge(status: string) {
   switch (status) {
     case "published":
-      return { cls: "bg-[#30D158]/10 text-[#30D158]", label: "已发布" };
+      return { cls: "bg-state-success/10 text-state-success", dotCls: "bg-state-success", label: "已发布" };
     case "draft":
-      return { cls: "bg-[#FF9500]/10 text-[#FF9500]", label: "草稿" };
+      return { cls: "bg-state-warning/10 text-state-warning", dotCls: "bg-state-warning", label: "草稿" };
     case "trashed":
-      return { cls: "bg-[#FF453A]/10 text-[#FF453A]", label: "回收站" };
+      return { cls: "bg-state-error/10 text-state-error", dotCls: "bg-state-error", label: "回收站" };
     default:
-      return { cls: "bg-secondary text-text-tertiary", label: status };
+      return { cls: "bg-secondary text-text-tertiary", dotCls: "bg-text-quaternary", label: status };
   }
+}
+
+function handleTitleEnter(e: MouseEvent) {
+  const container = e.currentTarget as HTMLElement | null;
+  if (!container) return;
+  const inner = container.querySelector(".post-title-inner") as HTMLElement | null;
+  if (!inner) return;
+  const overflow = inner.scrollWidth - container.clientWidth;
+  if (overflow > 2) {
+    container.style.setProperty("--scroll-dist", `-${overflow + 8}px`);
+    container.style.setProperty("--scroll-duration", `${Math.max(3, overflow / 30)}s`);
+    container.classList.add("is-overflowing");
+  }
+}
+
+function handleTitleLeave(e: MouseEvent) {
+  const container = e.currentTarget as HTMLElement | null;
+  if (!container) return;
+  container.classList.remove("is-overflowing");
 }
 </script>
 
@@ -462,99 +496,150 @@ function statusBadge(status: string) {
 
       <!-- ============ 模式 1：海报卡片网格 ============ -->
       <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <div
+        <article
           v-for="p in posts"
           :key="p.slug"
-          class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-border-strong sm:p-0"
-          :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedSlugs.has(p.slug) }"
+          class="post-card group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card hover:-translate-y-0.5 hover:border-border-strong hover:shadow-lg"
+          :class="{ 'is-selected': selectedSlugs.has(p.slug) }"
         >
-          <!-- 封面图 / 渐变区域 -->
-          <div class="relative aspect-video w-full overflow-hidden bg-secondary">
+          <!-- 封面图：只保留媒体与轻量浮层，点击直达编辑，悬停平滑缩放 -->
+          <div
+            class="relative aspect-video w-full cursor-pointer overflow-hidden bg-secondary"
+            @click="router.push(`/posts/edit/${p.slug}`)"
+          >
             <img
               v-if="p.cover"
               :src="p.cover"
               alt=""
               loading="lazy"
-              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              decoding="async"
+              class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
-            <div v-else class="avatar-gradient-3 flex h-full w-full items-center justify-center text-4xl text-white/30">
+            <div v-else class="post-card-placeholder flex h-full w-full items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105">
               <Icon icon="ri:article-line" />
             </div>
 
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+            <!-- 顶部浮动栏：多选、置顶与状态各自保持清晰热区与高对比浮层 -->
+            <div class="pointer-events-none absolute inset-x-2.5 top-2.5 flex items-center justify-between">
+              <div class="pointer-events-auto flex items-center gap-1.5" @click.stop>
+                <label
+                  class="group/cb relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-transform duration-150 active:scale-90"
+                  :aria-label="`选择文章：${p.title}`"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="selectedSlugs.has(p.slug)"
+                    class="sr-only"
+                    @change="toggleSelect(p.slug)"
+                  />
+                  <!-- 未选中：高对比圆环 + 悬停微光点 -->
+                  <div
+                    v-if="!selectedSlugs.has(p.slug)"
+                    class="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 shadow-sm transition-colors duration-200 group-hover/cb:border-white/70 group-hover/cb:bg-black/80"
+                  >
+                    <div class="h-1.5 w-1.5 rounded-full bg-white/0 transition-colors duration-200 group-hover/cb:bg-white/50"></div>
+                  </div>
+                  <!-- 已选中：Apple 蓝实心底板 + 锐利白色勾选 -->
+                  <div
+                    v-else
+                    class="flex h-7 w-7 items-center justify-center rounded-full border border-primary bg-primary text-white shadow-[0_0_10px_rgba(46,141,255,0.6)] transition-colors duration-200"
+                  >
+                    <Icon icon="ri:check-line" class="text-sm font-bold" />
+                  </div>
+                </label>
+                <span
+                  v-if="p.pinned"
+                  class="inline-flex items-center gap-1 rounded-full border border-white/20 bg-primary px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
+                >
+                  <Icon icon="ri:pushpin-fill" class="text-[10px]" /> 置顶
+                </span>
+              </div>
 
-            <!-- 顶部多选与置顶徽章 -->
-            <div class="absolute left-2.5 top-2.5 flex items-center gap-1.5" @click.stop>
-              <input
-                type="checkbox"
-                :checked="selectedSlugs.has(p.slug)"
-                class="h-4 w-4 rounded border-border text-primary cursor-pointer"
-                @change="toggleSelect(p.slug)"
-              />
               <span
-                v-if="p.pin"
-                class="rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white flex items-center gap-0.5"
+                class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-2.5 py-0.5 text-[11px] font-medium text-white/90 shadow-sm"
               >
-                <Icon icon="ri:pushpin-fill" /> 置顶
+                <span class="h-1.5 w-1.5 rounded-full shadow-[0_0_6px_currentColor]" :class="statusBadge(p.status).dotCls"></span>
+                {{ statusBadge(p.status).label }}
               </span>
-            </div>
-
-            <!-- 右上角状态 -->
-            <span
-              class="absolute right-2.5 top-2.5 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur-md"
-              :class="statusBadge(p.status).cls"
-            >
-              {{ statusBadge(p.status).label }}
-            </span>
-
-            <!-- 底部浮层标题 -->
-            <div class="absolute bottom-2.5 left-3 right-3 text-white">
-              <h3
-                class="truncate text-sm font-bold transition-colors group-hover:text-primary cursor-pointer"
-                :title="p.title"
-                @click="router.push(`/posts/edit/${p.slug}`)"
-              >
-                {{ p.title }}
-              </h3>
             </div>
           </div>
 
-          <!-- 卡片正文信息 -->
-          <div class="p-3.5 flex flex-col justify-between flex-1">
+          <!-- 卡片正文信息：分类与标签作为 Eyebrow 前置，单行滚动标题主导 -->
+          <div class="flex flex-1 flex-col justify-between p-4">
             <div>
-              <p v-if="p.summary" class="line-clamp-2 text-xs text-text-tertiary leading-relaxed mb-2.5">
-                {{ p.summary }}
-              </p>
-
-              <div class="flex flex-wrap items-center gap-1.5 mb-3">
-                <span v-if="p.category" class="rounded bg-secondary px-2 py-0.5 text-[10px] text-text-secondary">
-                  📁 {{ p.category }}
+              <!-- 1. 分类与标签（Eyebrow 前置元信息，保齐网格行高，点击即快捷筛选） -->
+              <div class="mb-2 flex min-h-[22px] flex-wrap items-center gap-1.5">
+                <span
+                  v-if="p.category"
+                  class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-white/5 bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:bg-white/[0.12] hover:text-foreground active:scale-95"
+                  :title="`按分类「${p.category}」筛选`"
+                  @click.stop="selectedCategory = p.category; page = 1"
+                >
+                  <Icon icon="ri:folder-3-line" class="text-xs text-text-tertiary" />
+                  {{ p.category }}
                 </span>
                 <span
-                  v-for="t in (p.tags || []).slice(0, 2)"
+                  v-for="t in parseTags(p.tags).slice(0, 2)"
                   :key="t"
-                  class="rounded bg-secondary/60 px-1.5 py-0.5 text-[10px] text-text-quaternary"
+                  class="inline-flex cursor-pointer items-center rounded-md border border-white/5 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-text-tertiary transition-colors hover:border-primary/40 hover:bg-white/[0.1] hover:text-foreground active:scale-95"
+                  :title="`按标签「#${t}」筛选`"
+                  @click.stop="selectedTag = t; page = 1"
                 >
                   #{{ t }}
                 </span>
+                <span
+                  v-if="!p.category && parseTags(p.tags).length === 0"
+                  class="inline-flex items-center rounded-md border border-white/[0.04] bg-white/[0.02] px-2 py-0.5 text-[10px] text-text-quaternary"
+                >
+                  未分类
+                </span>
               </div>
+
+              <!-- 2. 单行自适应溢出平滑滚动标题 -->
+              <div
+                class="post-title-wrapper mb-2"
+                :title="p.title"
+                @mouseenter="handleTitleEnter($event)"
+                @mouseleave="handleTitleLeave($event)"
+                @click="router.push(`/posts/edit/${p.slug}`)"
+              >
+                <div class="post-title-scroll">
+                  <h3 class="post-title-inner text-[15px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+                    {{ p.title }}
+                  </h3>
+                </div>
+              </div>
+
+              <!-- 3. 摘要信息（若有） -->
+              <p v-if="p.excerpt" class="mb-2.5 line-clamp-2 text-xs leading-relaxed text-text-tertiary">
+                {{ p.excerpt }}
+              </p>
             </div>
 
-            <!-- 底部时间与操作 -->
-            <div
-              class="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs text-text-quaternary"
-            >
-              <span>{{ formatRelative(p.created_at) }}</span>
+            <!-- 底部时间、阅读量与操作：默认半透明弱化呈现，悬停/聚焦时高亮 -->
+            <div class="flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs">
+              <div
+                class="flex items-center gap-1.5 text-[11px] text-text-tertiary transition-colors hover:text-text-secondary"
+                :title="`创建时间：${formatDateTime(p.created_at)}\n更新时间：${formatDateTime(p.updated_at)}`"
+              >
+                <span>{{ formatRelative(p.created_at) }}</span>
+                <template v-if="p.views !== undefined">
+                  <span class="text-text-quaternary" aria-hidden="true">·</span>
+                  <span>{{ formatViews(p.views) }} 浏览</span>
+                </template>
+              </div>
 
-              <div class="flex items-center gap-1">
-                <button type="button" class="action-icon-btn" title="生成临时分享链接" @click="openShareModal(p)">
+              <div
+                class="post-card-actions flex items-center gap-1 opacity-60 transition-opacity duration-200 sm:opacity-40 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+              >
+                <button type="button" class="post-card-action" title="生成临时分享链接" @click="openShareModal(p)">
                   <Icon icon="ri:share-forward-line" />
                 </button>
 
                 <button
                   v-if="p.status === 'published'"
                   type="button"
-                  class="action-icon-btn"
+                  class="post-card-action"
                   title="前台查阅"
                   @click="openPostPreview(p.slug)"
                 >
@@ -564,7 +649,7 @@ function statusBadge(status: string) {
                 <button
                   v-if="p.status !== 'trashed'"
                   type="button"
-                  class="action-icon-btn"
+                  class="post-card-action"
                   title="编辑博文"
                   @click="router.push(`/posts/edit/${p.slug}`)"
                 >
@@ -574,7 +659,7 @@ function statusBadge(status: string) {
                 <button
                   v-if="p.status === 'trashed'"
                   type="button"
-                  class="action-icon-btn text-primary"
+                  class="post-card-action text-primary"
                   title="恢复博文"
                   @click="handleRestore(p)"
                 >
@@ -584,7 +669,7 @@ function statusBadge(status: string) {
                 <button
                   v-if="p.status !== 'trashed'"
                   type="button"
-                  class="action-icon-btn hover:text-state-error"
+                  class="post-card-action post-card-action-danger"
                   title="移入回收站"
                   @click="handleDelete(p)"
                 >
@@ -594,7 +679,7 @@ function statusBadge(status: string) {
                 <button
                   v-if="p.status === 'trashed'"
                   type="button"
-                  class="action-icon-btn text-state-error"
+                  class="post-card-action post-card-action-danger text-state-error"
                   title="彻底删除"
                   @click="handlePurge(p)"
                 >
@@ -603,7 +688,7 @@ function statusBadge(status: string) {
               </div>
             </div>
           </div>
-        </div>
+        </article>
       </div>
 
       <!-- ============ 模式 2：表格列表视图 ============ -->
@@ -654,7 +739,7 @@ function statusBadge(status: string) {
                     <div class="min-w-0">
                       <div class="font-semibold text-foreground text-sm flex items-center gap-1.5">
                         <span class="truncate max-w-[320px]">{{ p.title }}</span>
-                        <span v-if="p.pin" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white"
+                        <span v-if="p.pinned" class="rounded bg-primary px-1.5 py-0.2 text-[9px] font-bold text-white"
                           >置顶</span
                         >
                       </div>
@@ -667,7 +752,7 @@ function statusBadge(status: string) {
                     <span v-if="p.category" class="rounded bg-secondary px-1.5 py-0.5 text-[10px]">
                       {{ p.category }}
                     </span>
-                    <span v-for="t in (p.tags || []).slice(0, 2)" :key="t" class="text-text-quaternary text-[11px]">
+                    <span v-for="t in parseTags(p.tags).slice(0, 2)" :key="t" class="text-text-quaternary text-[11px]">
                       #{{ t }}
                     </span>
                   </div>
@@ -856,7 +941,116 @@ function statusBadge(status: string) {
   margin-top: 1px;
 }
 
-/* 操作小按钮 */
+/* Apple 深色卡片微光边框与选中光效 */
+.post-card {
+  position: relative;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.post-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  z-index: 10;
+}
+
+.post-card.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 0 24px rgba(46, 141, 255, 0.18);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-card));
+}
+
+/* 标题单行与自适应溢出滚动 */
+.post-title-wrapper {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 1.2rem), transparent 100%);
+}
+
+.post-title-wrapper.is-overflowing {
+  mask-image: none;
+}
+
+.post-title-scroll {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.post-title-wrapper.is-overflowing .post-title-inner {
+  animation: title-marquee var(--scroll-duration, 4s) cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+  will-change: transform;
+}
+
+@keyframes title-marquee {
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+  80%,
+  100% {
+    transform: translateX(var(--scroll-dist, 0px));
+  }
+}
+
+.post-title-inner {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* 海报卡片媒体占位：克制的暗色渐变承托图标，不抢标题层级 */
+.post-card-placeholder {
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-background));
+  color: color-mix(in srgb, var(--color-foreground) 22%, transparent);
+  font-size: 1.5rem;
+}
+
+.post-card-actions {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.post-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-secondary) 78%, transparent);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.post-card-action:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-accent);
+  color: var(--color-foreground);
+}
+
+.post-card-action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.post-card-action-danger:hover {
+  border-color: color-mix(in srgb, var(--color-state-error) 40%, transparent);
+  background: color-mix(in srgb, var(--color-state-error) 12%, transparent);
+  color: var(--color-state-error);
+}
+
+/* 操作小按钮（表格视图沿用） */
 .action-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -867,7 +1061,10 @@ function statusBadge(status: string) {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+	transition:
+		background-color var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard),
+		color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {
@@ -877,6 +1074,11 @@ function statusBadge(status: string) {
 }
 
 @media (max-width: 640px) {
+  .post-card-action {
+    width: 32px;
+    height: 32px;
+  }
+
   .stats-card {
     padding: 10px 12px;
     gap: 8px;

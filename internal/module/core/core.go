@@ -42,6 +42,7 @@ func (m *Module) Meta() module.Meta {
 			{Path: "/settings", Label: "设置", Icon: "ri:settings-3-line", Group: "系统", Permissions: admin},
 			{Path: "/backup", Label: "备份", Icon: "ri:archive-line", Group: "系统", Permissions: admin},
 			{Path: "/system-update", Label: "系统更新", Icon: "ri:rocket-2-line", Group: "系统", Permissions: admin},
+			{Path: "/assistant", Label: "AI 助手", Icon: "ri:sparkling-2-line", Group: "工具", Permissions: admin},
 		},
 	}
 }

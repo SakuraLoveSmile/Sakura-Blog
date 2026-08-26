@@ -1,11 +1,10 @@
 package api
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
+	"blog/internal/llm"
 	"blog/internal/safefetch"
 )
 
@@ -147,77 +147,14 @@ func contains(list []string, v string) bool {
 	return false
 }
 
-// chatCompletionResp OpenAI 兼容响应（只取需要的字段）。
-type chatCompletionResp struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
-	Error *struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
 // callChatCompletion 调用 OpenAI 兼容 /chat/completions，返回首个 choice 的文本内容。
 // client 为空时使用统一的 safefetch 客户端；调用方传入 client 仅用于
 // guest 场景和测试注入。配置地址在建请求前校验 scheme/host，最终拨号时
 // 再解析并校验每个 IP，封堵 DNS rebinding 与重定向绕过。
 func callChatCompletion(cfg config.AIConfig, system, user string, client *http.Client) (string, error) {
-	payload := map[string]any{
-		"model": cfg.Model,
-		"messages": []map[string]string{
-			{"role": "system", "content": system},
-			{"role": "user", "content": user},
-		},
-		"temperature": 0.3,
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-	endpoint := strings.TrimRight(cfg.BaseURL, "/") + "/chat/completions"
-	if client == nil {
-		validated, err := safefetch.ValidateURL(endpoint)
-		if err != nil {
-			return "", err
-		}
-		endpoint = validated.String()
-	}
-	httpReq, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
-	if err != nil {
-		return "", err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	if cfg.APIKey != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	if client == nil {
-		client = safefetch.New(safefetch.Options{Timeout: 30 * time.Second})
-	}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return "", err
-	}
-	var cr chatCompletionResp
-	if err := json.Unmarshal(data, &cr); err != nil {
-		return "", fmt.Errorf("响应非 JSON（HTTP %d）", resp.StatusCode)
-	}
-	if cr.Error != nil && cr.Error.Message != "" {
-		return "", fmt.Errorf("%s", cr.Error.Message)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
-	if len(cr.Choices) == 0 {
-		return "", fmt.Errorf("响应缺少 choices")
-	}
-	return cr.Choices[0].Message.Content, nil
+	return llm.New(client).ChatCompletion(context.Background(), llm.Config{
+		BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, Model: cfg.Model,
+	}, []llm.Message{{Role: "system", Content: system}, {Role: "user", Content: user}})
 }
 
 // parseAIContent 解析模型输出为结构化结果：容忍 ```json 代码块包裹与前后杂文。

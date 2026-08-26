@@ -55,10 +55,10 @@ func TestPostCRUDFlow(t *testing.T) {
 	// 列表：status 筛选
 	w = do2FA(r, http.MethodGet, "/api/v1/posts?status=published", "", cookie)
 	var list struct {
-		Items []postJSON `json:"items"`
-		Total int        `json:"total"`
-		Page  int        `json:"page"`
-		Size  int        `json:"size"`
+		Items []postListJSON `json:"items"`
+		Total int            `json:"total"`
+		Page  int            `json:"page"`
+		Size  int            `json:"size"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &list); err != nil {
 		t.Fatalf("decode list: %v", err)
@@ -145,10 +145,9 @@ func TestPostCRUDFlow(t *testing.T) {
 		t.Fatalf("delete post: status = %d", w.Code)
 	}
 	w = do2FA(r, http.MethodGet, "/api/v1/posts?status=trashed", "", cookie)
-	// 回收站列表返回原始 store.Post（含 DeletedAt），不是 postJSON
 	var trash struct {
-		Items []store.Post `json:"items"`
-		Total int          `json:"total"`
+		Items []postListJSON `json:"items"`
+		Total int            `json:"total"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &trash); err != nil || trash.Total != 1 {
 		t.Fatalf("trashed list: %+v (err %v), want 1", trash, err)

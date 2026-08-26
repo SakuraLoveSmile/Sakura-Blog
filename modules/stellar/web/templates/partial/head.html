@@ -114,6 +114,7 @@
 
   {{- /* Spec 72: 搜索结果区补充样式（tabs/分组标题/主题色高亮；DOM 由 local-search.js 渲染）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/search.css"}}?v={{asset_ver "/assets/css/search.css"}}">
+  {{if .QAEnabled}}<script src="{{url_for "/assets/js/search/ai-ask.js"}}?v={{asset_ver "/assets/js/search/ai-ask.js"}}" defer></script>{{end}}
 
   {{- /* Spec 72: 加密文章解锁页样式（按钮/表单/note 深色微调）*/}}
   <link rel="stylesheet" href="{{url_for "/assets/css/post-password.css"}}?v={{asset_ver "/assets/css/post-password.css"}}">

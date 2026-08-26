@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, defineAsyncComponent } from "vue";
 import { useRoute } from "vue-router";
-import { settingsApi, previewApi } from "@/api";
+import { settingsApi, previewApi, getApiErrorMessage } from "@/api";
 import { Icon } from "@iconify/vue";
 // Spec 62：tab 组件按需加载——设置页全量静态打包含 8 个 tab，多数 tab 极少打开
 const MenubarEditor = defineAsyncComponent(() => import("./MenubarEditor.vue"));
@@ -177,8 +177,11 @@ function ensureDefaults(d: Record<string, any>) {
   d.data_cache.default_ttl = d.data_cache.default_ttl ?? 3600;
   d.data_cache.ttl = d.data_cache.ttl || {};
   d.ai = d.ai || {};
+  d.ai.embedding_model = d.ai.embedding_model || "";
   d.ai.summary_enabled = d.ai.summary_enabled ?? true;
   d.ai.allow_user_api = d.ai.allow_user_api ?? true;
+  d.ai.qa_enabled = d.ai.qa_enabled ?? false;
+  d.ai.qa_allow_user_llm = d.ai.qa_allow_user_llm ?? true;
   const rawWiki = Array.isArray(d.wiki) ? d.wiki : [];
   d.wiki = rawWiki.map((w: any) => {
     const tags = Array.isArray(w?.tags)
@@ -303,8 +306,9 @@ async function save(section: string, payload?: unknown) {
     const body = payload !== undefined ? payload : data.value[section];
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
-    Toast.success("已保存，前台已生效");
-  } catch {
+    Toast.success("设置已保存，前台已生效");
+  } catch (error) {
+    Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
   } finally {
     savingKey.value = "";
   }
@@ -332,8 +336,9 @@ async function saveJson(section: string) {
       data.value[section] = payload;
       ensureDefaults(data.value);
     }
-    Toast.success("已保存，前台已生效");
-  } catch {
+    Toast.success("设置已保存，前台已生效");
+  } catch (error) {
+    Toast.error(getApiErrorMessage(error, "JSON 解析或保存失败"));
   } finally {
     savingKey.value = "";
   }
@@ -518,6 +523,7 @@ function saveActive() {
       save("ai");
       break;
     case "appearance":
+    case "theme_yaml":
       save("style");
       break;
     case "cover":
@@ -550,7 +556,13 @@ function saveActive() {
     case "site":
       save("site");
       break;
+    case "security":
+      Toast.info("密码管理与安全设置已迁移至「个人资料」页面");
+      break;
     default:
+      if (allSections.includes(active.value)) {
+        save(active.value);
+      }
       break;
   }
 }
@@ -1891,6 +1903,10 @@ onMounted(() => {
                 <label>模型名（如 deepseek-chat / gpt-4o-mini）</label
                 ><input v-model="data.ai.model" :class="inputCls" />
               </div>
+              <div class="field">
+                <label>Embedding 模型（启用知识库时必填）</label
+                ><input v-model="data.ai.embedding_model" :class="inputCls" placeholder="如 text-embedding-3-small" />
+              </div>
               <div class="subsection">
                 <p class="subsection-title">AI 文章摘要</p>
                 <div class="switch-row">
@@ -1904,6 +1920,22 @@ onMounted(() => {
                     <div class="switch-row-desc">允许读者临时接入自己的 API 生成摘要（Key 不落本站）</div>
                   </div>
                   <VSwitch v-model="data.ai.allow_user_api" />
+                </div>
+              </div>
+              <div class="subsection">
+                <p class="subsection-title">RAG 知识库问答</p>
+                <p class="hint">开启 Embedding 模型后，可在「AI 助手」中构建公开文章知识库；前台问答默认关闭。</p>
+                <div class="switch-row">
+                  <div class="switch-row-label">
+                    <div class="switch-row-desc">开启前台 AI 问答（仅使用已发布公开文章和页面）</div>
+                  </div>
+                  <VSwitch v-model="data.ai.qa_enabled" />
+                </div>
+                <div class="switch-row">
+                  <div class="switch-row-label">
+                    <div class="switch-row-desc">允许读者使用自己的 AI 模型生成最终回答（Embedding 仍使用本站配置）</div>
+                  </div>
+                  <VSwitch v-model="data.ai.qa_allow_user_llm" />
                 </div>
               </div>
               <div class="card-actions">

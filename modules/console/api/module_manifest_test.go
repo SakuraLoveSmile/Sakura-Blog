@@ -9,10 +9,23 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
-	_ "blog/internal/module/core"
+	core "blog/internal/module/core"
 	_ "blog/internal/module/moments"
 	tmpl "blog/internal/settings"
 )
+
+func TestCoreManifestContainsAssistantNav(t *testing.T) {
+	meta := (&core.Module{}).Meta()
+	for _, item := range meta.Nav {
+		if item.Path == "/assistant" {
+			if item.Label != "AI 助手" || item.Group != "工具" {
+				t.Fatalf("assistant nav = %+v, want label/group AI 助手/工具", item)
+			}
+			return
+		}
+	}
+	t.Fatal("core manifest is missing the AI assistant nav item")
+}
 
 func TestMomentsRouteFollowsManifestGate(t *testing.T) {
 	gin.SetMode(gin.TestMode)

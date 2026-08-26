@@ -11,6 +11,8 @@ import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
 import { useDashboardLayout } from "./useDashboardLayout";
 import {
   copyLayoutToBreakpoint,
+  createDashboardTemplateLayout,
+  DASHBOARD_LAYOUT_TEMPLATES,
   applyGridWidgetSize,
   createDefaultGridWidget,
   ensureCompleteLayout,
@@ -31,9 +33,9 @@ const { breakpoint: autoBreakpoint, previewWidth, viewMode, setViewMode } = prov
 const { layout, loading, error, hasServerLayout, load, replace } = useDashboardLayout();
 
 const currentBreakpoint = ref<DashboardLayoutBreakpoint>("lg");
-const activeBreakpoint = computed<DashboardLayoutBreakpoint>(() =>
-  viewMode.value === "auto" ? autoBreakpoint.value : currentBreakpoint.value,
-);
+const activeBreakpoint = computed<DashboardLayoutBreakpoint>(() => (
+  viewMode.value === "auto" ? autoBreakpoint.value : currentBreakpoint.value
+));
 const originalLayout = ref<MultiBreakpointLayout | null>(null);
 const showWidgetCenter = ref(false);
 const legacyLayout = ref<DashboardResponsiveLayout | null>(null);
@@ -41,18 +43,17 @@ const copySource = ref<DashboardLayoutBreakpoint>("lg");
 const refreshKey = ref(0);
 const saving = ref(false);
 const sizingWidgetId = ref<string | null>(null);
+const selectedTemplate = ref("creator");
 
 const currentWidgets = computed(() => layout.value[activeBreakpoint.value] ?? []);
 const sizingWidget = computed(() => currentWidgets.value.find((item) => item.i === sizingWidgetId.value) ?? null);
 const sizingDefinition = computed(() => {
   const widget = sizingWidget.value;
   if (!widget) return undefined;
-  return (
-    getWidgetDefinition(widget.id) ?? {
-      label: `未知组件：${widget.id}`,
-      icon: "ri:question-line",
-    }
-  );
+  return getWidgetDefinition(widget.id) ?? {
+    label: `未知组件：${widget.id}`,
+    icon: "ri:question-line",
+  };
 });
 const sizeModalVisible = computed({
   get: () => Boolean(sizingWidget.value && sizingDefinition.value),
@@ -60,14 +61,10 @@ const sizeModalVisible = computed({
     if (!visible) sizingWidgetId.value = null;
   },
 });
-const sizingPreset = computed<WidgetSizePreset>(() =>
-  sizingWidget.value
-    ? getWidgetSizePreset(sizingWidget.value, activeBreakpoint.value, sizingWidget.value.id)
-    : "medium",
-);
-const dirty = computed(
-  () => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value),
-);
+const sizingPreset = computed<WidgetSizePreset>(() => (
+  sizingWidget.value ? getWidgetSizePreset(sizingWidget.value, activeBreakpoint.value, sizingWidget.value.id) : "medium"
+));
+const dirty = computed(() => originalLayout.value !== null && JSON.stringify(layout.value) !== JSON.stringify(originalLayout.value));
 const canImportLegacy = computed(() => !hasServerLayout.value && Boolean(legacyLayout.value));
 
 const viewOptions: { key: ViewMode; label: string; icon: string }[] = [
@@ -98,10 +95,7 @@ function updateCurrentWidgets(next: DashboardWidget[]) {
 }
 
 function addWidget(id: string) {
-  updateCurrentWidgets([
-    ...currentWidgets.value,
-    createDefaultGridWidget(id, activeBreakpoint.value, currentWidgets.value),
-  ]);
+  updateCurrentWidgets([...currentWidgets.value, createDefaultGridWidget(id, activeBreakpoint.value, currentWidgets.value)]);
   refreshKey.value += 1;
 }
 
@@ -113,6 +107,14 @@ function removeWidget(instanceId: string) {
 function resetCurrentLayout() {
   updateCurrentWidgets(getDefaultGridLayout(activeBreakpoint.value));
   refreshKey.value += 1;
+}
+
+function applyTemplate() {
+  const template = DASHBOARD_LAYOUT_TEMPLATES.find((item) => item.id === selectedTemplate.value);
+  if (!template) return;
+  layout.value = createDashboardTemplateLayout(template.id);
+  refreshKey.value += 1;
+  Toast.success(`已套用「${template.label}」模板，请检查后保存`);
 }
 
 function copyLayout() {
@@ -143,6 +145,7 @@ async function save() {
     originalLayout.value = clone(complete);
     hasServerLayout.value = true;
     Toast.success("仪表盘布局已保存");
+    await router.push("/dashboard");
   } catch (err: any) {
     Toast.error(err?.response?.data?.error || "仪表盘布局保存失败");
   } finally {
@@ -156,11 +159,11 @@ function configureWidget(instanceId: string) {
 
 function saveWidgetSize(preset: WidgetSizePreset) {
   if (!sizingWidget.value) return;
-  const updated = currentWidgets.value.map((item) =>
-    item.i === sizingWidget.value?.i
+  const updated = currentWidgets.value.map((item) => (
+      item.i === sizingWidget.value?.i
       ? applyGridWidgetSize(item, preset, activeBreakpoint.value, currentWidgets.value)
-      : item,
-  );
+      : item
+  ));
   updateCurrentWidgets(updated);
   refreshKey.value += 1;
   sizingWidgetId.value = null;
@@ -196,6 +199,7 @@ onBeforeRouteLeave(() => {
   if (!dirty.value) return true;
   return window.confirm("布局尚未保存，确定要离开吗？");
 });
+
 </script>
 
 <template>
@@ -209,15 +213,16 @@ onBeforeRouteLeave(() => {
               <p>可自适应预览，也可按设备尺寸分别调整组件布局，保存后对当前账号生效</p>
             </div>
             <div class="apple-header-actions">
-              <button class="apple-secondary-btn" @click="leave">
+              <button class="apple-secondary-btn" aria-label="返回仪表盘" @click="leave">
                 <Icon icon="ri:arrow-left-line" class="w-4 h-4" />
                 返回
               </button>
+              <span v-if="dirty" class="designer-dirty-badge">
+                <span class="designer-dirty-dot" aria-hidden="true" />
+                有未保存更改
+              </span>
               <button class="apple-edit-btn" :disabled="saving || loading" @click="save">
-                <Icon
-                  :icon="saving ? 'ri:loader-4-line' : 'ri:save-3-line'"
-                  :class="['w-4 h-4', saving && 'animate-spin']"
-                />
+                <Icon :icon="saving ? 'ri:loader-4-line' : 'ri:save-3-line'" :class="['w-4 h-4', saving && 'animate-spin']" />
                 {{ saving ? "保存中" : "保存布局" }}
               </button>
             </div>
@@ -254,10 +259,22 @@ onBeforeRouteLeave(() => {
               <Icon icon="ri:refresh-line" class="w-4 h-4" />
               重置当前布局
             </button>
+            <div class="dashboard-template-picker">
+              <label for="dashboard-template">布局模板</label>
+              <select id="dashboard-template" v-model="selectedTemplate" class="dashboard-select" aria-label="布局模板">
+                <option v-for="template in DASHBOARD_LAYOUT_TEMPLATES" :key="template.id" :value="template.id">
+                  {{ template.label }} · {{ template.description }}
+                </option>
+              </select>
+              <button class="apple-secondary-btn" @click="applyTemplate">
+                <Icon icon="ri:layout-4-line" class="w-4 h-4" />
+                一键套用
+              </button>
+            </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
             <label for="dashboard-copy-source">复制来源</label>
-            <select id="dashboard-copy-source" v-model="copySource" class="dashboard-select">
+            <select id="dashboard-copy-source" v-model="copySource" class="dashboard-select" aria-label="复制来源设备">
               <option v-for="option in deviceOptions" :key="option.key" :value="option.key">{{ option.label }}</option>
             </select>
             <button class="apple-secondary-btn" @click="copyLayout">
@@ -273,7 +290,7 @@ onBeforeRouteLeave(() => {
         </div>
         <div v-else-if="error" class="apple-grid-empty text-state-error">{{ error }}</div>
         <template v-else>
-          <div class="apple-edit-hint">
+          <div class="apple-edit-hint" role="status">
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
             拖动组件标题区域调整位置，点击设置选择大、中、小尺寸；修改只在点击“保存布局”后写入服务端
           </div>

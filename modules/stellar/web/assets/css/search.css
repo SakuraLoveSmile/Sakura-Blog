@@ -50,3 +50,69 @@
   border-radius: 4px;
   padding: 0 2px;
 }
+
+/* ---------- RAG 问答：搜索结果顶部的轻量入口 ---------- */
+.search-ai-ask {
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--block);
+}
+.search-ai-ask-button,
+.search-ai-ask-submit,
+.search-ai-ask-byok {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.search-ai-ask-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--text-p2);
+  text-align: left;
+}
+.search-ai-ask-button:hover { background: var(--card); color: var(--theme); }
+.search-ai-ask-button svg { width: 1.1em; height: 1.1em; }
+.search-ai-ask-form { margin-top: 8px; }
+.search-ai-ask-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 6px 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: var(--card);
+  color: var(--text-p1);
+  font: inherit;
+  resize: vertical;
+}
+.search-ai-ask-input:focus { border-color: var(--theme); box-shadow: 0 0 0 1px var(--theme-a20); }
+.search-ai-ask-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.search-ai-ask-byok { padding: 0 8px; background: transparent; color: var(--text-p3); font-size: 0.75rem; }
+.search-ai-ask-byok:hover { color: var(--theme); }
+.search-ai-ask-submit { padding: 0 15px; background: var(--theme); color: var(--card); font-size: 0.8125rem; }
+.search-ai-ask-submit:hover { opacity: 0.85; }
+.search-ai-ask-submit:disabled { cursor: wait; opacity: 0.55; }
+.search-ai-ask-result {
+  margin-top: 10px;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--text-p2);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+.search-ai-ask-result p { margin: 0 0 8px; white-space: pre-wrap; }
+.search-ai-ask-result.is-error { color: var(--text-p3); }
+.search-ai-ask-citations-title { margin-top: 8px; color: var(--text-p3); font-size: 0.75rem; }
+.search-ai-ask-citations { display: grid; gap: 4px; margin-top: 4px; }
+.search-ai-ask-citations a { color: var(--theme); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

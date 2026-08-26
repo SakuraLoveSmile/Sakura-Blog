@@ -24,6 +24,7 @@ import (
 	"blog/internal/notify"
 	"blog/internal/plugin"
 	"blog/internal/post"
+	"blog/internal/rag"
 	tmpl "blog/internal/settings"
 	attachmentstorage "blog/internal/storage"
 	"blog/internal/store"
@@ -48,6 +49,7 @@ type Handler struct {
 	storage        AttachmentStorage
 	storageManager *attachmentstorage.Manager
 	plugins        *plugin.Runtime
+	rag            *rag.Service
 	maxUpload      int64 // 单文件上限字节
 
 	// onLinksChanged 友链变更后的回调（用于触发 friends 聚合器即时刷新），可空。
@@ -103,6 +105,7 @@ type Config struct {
 	Storage        AttachmentStorage
 	StorageManager *attachmentstorage.Manager
 	Plugins        *plugin.Runtime
+	RAG            *rag.Service
 	MaxUploadMB    int
 	LinkWatch      *linkwatch.Watcher
 	// StellarVersion is injected by the composition root to keep Console
@@ -156,6 +159,7 @@ func New(cfg Config) *Handler {
 		storage:           attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
 		storageManager:    cfg.StorageManager,
 		plugins:           cfg.Plugins,
+		rag:               cfg.RAG,
 		maxUpload:         int64(maxMB) << 20,
 		linkWatch:         cfg.LinkWatch,
 		stellarVersion:    cfg.StellarVersion,
@@ -252,6 +256,8 @@ func (h *Handler) register(r *gin.Engine) {
 
 	// AI 摘要读者自助生成（Spec 53，公开端点：读者临时接入自己的 API，限流/SSRF 防护在 handler 内）
 	v1.POST("/ai/summary/guest", h.aiSummaryGuest)
+	// RAG 前台问答：是否启用与 BYOK 策略在 handler 内判定。
+	v1.POST("/rag/ask/public", h.ragAskPublic)
 
 	// 需认证路由（账户级：资料/令牌/通知/改密，任何登录角色可用）
 	authed := v1.Group("", h.apiAuth())
@@ -542,6 +548,9 @@ func (h *Handler) register(r *gin.Engine) {
 		// AI 属性生成（OpenAI 兼容代理，配置在 settings "ai" 段）：
 		// 消耗 admin 配置的第三方 key，仅 admin 可用（安全审计 2026-08-16 收进 sys）。
 		sys.POST("/ai/generate", h.aiGenerate)
+		sys.GET("/rag/status", h.ragStatus)
+		sys.POST("/rag/ask", h.ragAsk)
+		sys.POST("/rag/rebuild", h.ragRebuild)
 
 		// 系统更新（检查更新 / 一键更新 / 状态查询）
 		sys.GET("/system/update/check", h.systemUpdateCheck)

@@ -8,6 +8,8 @@ import CategoryDonutWidget from "./CategoryDonutWidget.vue";
 import QuickActionsWidget from "./QuickActionsWidget.vue";
 import StellarVersionWidget from "./StellarVersionWidget.vue";
 import SystemVersionWidget from "./SystemVersionWidget.vue";
+import TopPostsWidget from "./TopPostsWidget.vue";
+import SystemHealthWidget from "./SystemHealthWidget.vue";
 import { themeColors } from "@/lib/theme-colors";
 
 const chartColors = themeColors({
@@ -165,6 +167,24 @@ export const widgetRegistry: WidgetDefinition[] = [
     component: QuickActionsWidget,
     props: {},
     defaultSize: { w: 4, h: 35 },
+  }),
+  defineWidget({
+    id: "top-posts",
+    label: "热门文章",
+    icon: "ri:fire-line",
+    group: "statistics",
+    component: TopPostsWidget,
+    props: {},
+    defaultSize: { w: 6, h: 34 },
+  }),
+  defineWidget({
+    id: "system-health",
+    label: "系统状态",
+    icon: "ri:heart-pulse-line",
+    group: "system",
+    component: SystemHealthWidget,
+    props: {},
+    defaultSize: { w: 6, h: 34 },
   }),
   defineWidget({
     id: "stellar-version",

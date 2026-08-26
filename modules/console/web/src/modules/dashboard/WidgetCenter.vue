@@ -11,7 +11,7 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   "update:visible": [value: boolean];
-  add: [id: string];
+  "add": [id: string];
 }>();
 
 const modalVisible = computed({
@@ -49,36 +49,27 @@ function addWidget(widget: WidgetDefinition) {
 
 <template>
   <VModal v-model:visible="modalVisible" title="添加组件" :width="600">
-    <p class="mb-4 text-sm text-text-quaternary dark:text-muted-foreground">
+    <p class="mb-4 text-sm text-muted-foreground">
       选择组件后会放入当前设备布局的第一个空位，之后可以拖拽位置或选择大、中、小尺寸。
     </p>
     <div class="max-h-96 overflow-y-auto pr-1 space-y-5">
       <section v-for="[group, widgets] in grouped" :key="group">
-        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {{ groupLabels[group] ?? group }}
-        </h3>
+        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ groupLabels[group] ?? group }}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             v-for="widget in widgets"
             :key="widget.id"
-            class="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-border-strong hover:border-primary/60 hover:bg-secondary dark:hover:bg-secondary/50 text-left transition-all group"
+            class="flex items-center gap-3 p-3 rounded-xl border border-white/10 hover:border-primary/60 hover:bg-white/[0.05] text-left transition-all group"
             @click="addWidget(widget)"
           >
-            <div
-              class="w-10 h-10 rounded-lg bg-secondary dark:bg-secondary flex items-center justify-center text-text-quaternary dark:text-muted-foreground group-hover:text-primary transition-colors"
-            >
+            <div class="w-10 h-10 rounded-lg bg-white/[0.05] flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
               <Icon :icon="widget.icon" class="w-5 h-5" />
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-text-quaternary dark:text-foreground">{{ widget.label }}</div>
-              <div class="text-xs text-muted-foreground dark:text-text-quaternary mt-0.5">
-                默认大小可在组件设置中切换
-              </div>
+              <div class="text-sm font-medium text-foreground">{{ widget.label }}</div>
+              <div class="text-xs text-muted-foreground mt-0.5">默认大小可在组件设置中切换</div>
             </div>
-            <Icon
-              icon="ri:add-line"
-              class="w-5 h-5 text-text-secondary dark:text-text-quaternary group-hover:text-primary transition-colors"
-            />
+              <Icon icon="ri:add-line" class="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
           </button>
         </div>
       </section>
@@ -86,7 +77,7 @@ function addWidget(widget: WidgetDefinition) {
 
     <template #footer>
       <button
-        class="px-4 py-2 rounded-lg bg-secondary dark:bg-secondary text-sm text-text-quaternary dark:text-text-secondary hover:bg-accent dark:hover:bg-accent transition-colors"
+        class="px-4 py-2 rounded-lg bg-white/[0.05] text-sm text-muted-foreground hover:bg-white/[0.09] hover:text-foreground transition-colors"
         @click="close"
       >
         关闭

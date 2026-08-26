@@ -21,6 +21,26 @@ const DASHBOARD_DESIGNER = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/DashboardDesignerView.vue"),
   "utf8",
 );
+const DASHBOARD_LAYOUT = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/layout.ts"),
+  "utf8",
+);
+const DASHBOARD_STATS = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/useDashboardStats.ts"),
+  "utf8",
+);
+const RECENT_COMMENTS = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/RecentCommentsWidget.vue"),
+  "utf8",
+);
+const HOURLY = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/HourlyChartWidget.vue"),
+  "utf8",
+);
+const TREND = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "../web/src/modules/dashboard/widgets/TrendChartWidget.vue"),
+  "utf8",
+);
 
 const blocks = SRC.match(/defineWidget\(\{[\s\S]*?\n\s+\}\),/g) || [];
 
@@ -80,4 +100,30 @@ test("dashboard designer: 提供自适应和三种设备预览", () => {
   assert.match(DASHBOARD_DESIGNER, /key: "xxs", label: "手机"/);
   assert.match(DASHBOARD_DESIGNER, /viewMode\.value === "auto" \? autoBreakpoint\.value : currentBreakpoint\.value/);
   assert.match(DASHBOARD_DESIGNER, /setViewMode\("auto"\)/);
+});
+
+test("dashboard designer: 保存成功后返回仪表盘", () => {
+  assert.match(DASHBOARD_DESIGNER, /Toast\.success\("仪表盘布局已保存"\);\s*await router\.push\("\/dashboard"\);/);
+});
+
+test("dashboard phase 3: registers health/top-post widgets and three templates", () => {
+  assert.match(SRC, /id: "top-posts"/);
+  assert.match(SRC, /id: "system-health"/);
+  for (const template of ["creator", "analyst", "monitor"]) {
+    assert.match(DASHBOARD_LAYOUT, new RegExp(`id: "${template}"`));
+  }
+  assert.match(DASHBOARD_LAYOUT, /createDashboardTemplateLayout/);
+  assert.match(DASHBOARD_LAYOUT, /"top-posts":/);
+  assert.match(DASHBOARD_LAYOUT, /"system-health":/);
+});
+
+test("dashboard phase 1/2: refresh and non-blocking chart/comment states are wired", () => {
+  assert.match(DASHBOARD_STATS, /DASHBOARD_REFRESH_EVENT/);
+  assert.match(DASHBOARD_STATS, /refreshStats\(force = false\)/);
+  assert.doesNotMatch(RECENT_COMMENTS, /window\.(prompt|confirm)/);
+  assert.match(RECENT_COMMENTS, /comment-reply-popover/);
+  assert.match(RECENT_COMMENTS, /handleAvatarError/);
+  assert.match(HOURLY, /暂无访问数据/);
+  assert.match(HOURLY, /trendDays === 30/);
+  assert.match(TREND, /showUv/);
 });

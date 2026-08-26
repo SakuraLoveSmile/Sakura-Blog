@@ -1,28 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import DashboardGrid from "./DashboardGrid.vue";
 import { useDashboardLayout } from "./useDashboardLayout";
 import { provideBreakpoint, type ViewMode } from "./useBreakpoint";
+import { DASHBOARD_REFRESH_EVENT } from "./widgets/useDashboardStats";
 import "./dashboard.css";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { breakpoint, viewMode, previewWidth, isPreview, setViewMode } = provideBreakpoint();
 const { layout, loading, error, load } = useDashboardLayout();
+const refreshing = ref(false);
 
 const displayName = computed(() => authStore.user?.display_name || authStore.user?.username || "管理员");
 
-function greeting(): string {
+const greetingInfo = computed(() => {
   const hour = new Date().getHours();
-  if (hour < 6) return "夜深了";
-  if (hour < 12) return "早上好";
-  if (hour < 14) return "中午好";
-  if (hour < 18) return "下午好";
-  return "晚上好";
-}
+  if (hour < 6) return { text: "夜深了", icon: "ri:moon-clear-line" };
+  if (hour < 12) return { text: "早上好", icon: "ri:sun-foggy-line" };
+  if (hour < 14) return { text: "中午好", icon: "ri:sun-line" };
+  if (hour < 18) return { text: "下午好", icon: "ri:sun-cloudy-line" };
+  if (hour < 22) return { text: "晚上好", icon: "ri:moon-foggy-line" };
+  return { text: "夜深了", icon: "ri:moon-clear-line" };
+});
 
 function today(): string {
   const date = new Date();
@@ -37,6 +40,13 @@ const viewModes: { key: ViewMode; label: string; icon: string }[] = [
   { key: "xxs", label: "手机", icon: "ri:smartphone-line" },
 ];
 
+function refreshDashboard() {
+  if (refreshing.value) return;
+  refreshing.value = true;
+  window.dispatchEvent(new Event(DASHBOARD_REFRESH_EVENT));
+  window.setTimeout(() => { refreshing.value = false; }, 850);
+}
+
 onMounted(load);
 </script>
 
@@ -46,7 +56,10 @@ onMounted(load);
       <div class="dashboard-apple" :data-bp="breakpoint">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 apple-greeting">
           <div>
-            <h1>{{ greeting() }}，{{ displayName }}</h1>
+            <h1 class="flex items-center gap-2.5">
+              <span class="greeting-icon" aria-hidden="true"><Icon :icon="greetingInfo.icon" class="w-6 h-6" /></span>
+              <span>{{ greetingInfo.text }}，{{ displayName }}</span>
+            </h1>
             <p>{{ today() }}，欢迎回到管理仪表盘</p>
           </div>
           <div class="apple-header-actions">
@@ -62,6 +75,16 @@ onMounted(load);
                 <Icon :icon="mode.icon" class="w-4 h-4" />
               </button>
             </div>
+            <button
+              class="apple-icon-btn dashboard-refresh-btn"
+              type="button"
+              title="刷新仪表盘数据"
+              aria-label="刷新仪表盘数据"
+              :aria-busy="refreshing"
+              @click="refreshDashboard"
+            >
+              <Icon :icon="refreshing ? 'ri:loader-4-line' : 'ri:refresh-line'" class="w-4 h-4" :class="{ 'animate-spin': refreshing }" />
+            </button>
             <button class="apple-edit-btn" @click="router.push('/dashboard/designer')">
               <Icon icon="ri:settings-3-line" class="w-4 h-4" />
               设置布局

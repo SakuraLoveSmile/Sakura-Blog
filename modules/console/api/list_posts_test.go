@@ -36,10 +36,10 @@ func TestListPostsFilterPaginationViews(t *testing.T) {
 		t.Fatalf("status filter: code = %d, body = %s", w.Code, w.Body.String())
 	}
 	var list struct {
-		Items []postJSON `json:"items"`
-		Total int        `json:"total"`
-		Page  int        `json:"page"`
-		Size  int        `json:"size"`
+		Items []postListJSON `json:"items"`
+		Total int            `json:"total"`
+		Page  int            `json:"page"`
+		Size  int            `json:"size"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &list); err != nil {
 		t.Fatalf("decode: %v", err)
@@ -50,11 +50,14 @@ func TestListPostsFilterPaginationViews(t *testing.T) {
 	if len(list.Items) != 2 || list.Page != 1 {
 		t.Fatalf("page 1 size: %d items, page %d", len(list.Items), list.Page)
 	}
+	if strings.Contains(w.Body.String(), `"content_md"`) {
+		t.Fatal("post list should not return content_md")
+	}
 	// 第 2 页应只剩 1 条
 	w = do2FA(r, http.MethodGet, "/api/v1/posts?status=published&page=2&size=2", "", cookie)
 	var page2 struct {
-		Items []postJSON `json:"items"`
-		Total int        `json:"total"`
+		Items []postListJSON `json:"items"`
+		Total int            `json:"total"`
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &page2)
 	if page2.Total != 3 || len(page2.Items) != 1 {
@@ -79,7 +82,7 @@ func TestListPostsFilterPaginationViews(t *testing.T) {
 	}
 	w = do2FA(r, http.MethodGet, "/api/v1/posts?status=published", "", cookie)
 	var viewsList struct {
-		Items []postJSON `json:"items"`
+		Items []postListJSON `json:"items"`
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &viewsList)
 	seen := false
@@ -93,6 +96,27 @@ func TestListPostsFilterPaginationViews(t *testing.T) {
 	}
 	if !seen {
 		t.Fatal("go-1 missing from list")
+	}
+
+	// 5) search：标题与 slug 均参与筛选，未命中时不得返回完整列表
+	w = do2FA(r, http.MethodGet, "/api/v1/posts?search=文章一", "", cookie)
+	var searchList struct {
+		Items []postListJSON `json:"items"`
+		Total int            `json:"total"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &searchList); err != nil {
+		t.Fatalf("search decode: %v", err)
+	}
+	if searchList.Total != 1 || len(searchList.Items) != 1 || searchList.Items[0].Slug != "go-1" {
+		t.Fatalf("title search = %+v, want go-1 only", searchList)
+	}
+	w = do2FA(r, http.MethodGet, "/api/v1/posts?search=go-2", "", cookie)
+	if !jsonHas(w.Body.String(), `"total":1`) || !jsonHas(w.Body.String(), `"slug":"go-2"`) {
+		t.Fatalf("slug search: %s", w.Body.String())
+	}
+	w = do2FA(r, http.MethodGet, "/api/v1/posts?search=不存在的文章", "", cookie)
+	if !jsonHas(w.Body.String(), `"total":0`) || !jsonHas(w.Body.String(), `"items":[]`) {
+		t.Fatalf("unmatched search: %s", w.Body.String())
 	}
 }
 

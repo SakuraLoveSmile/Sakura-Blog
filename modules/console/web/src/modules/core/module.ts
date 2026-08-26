@@ -42,6 +42,7 @@ export default definePlugin({
     { path: "/settings", label: "设置", icon: "ri:settings-3-line", group: "系统", permissions: admin },
     { path: "/backup", label: "备份", icon: "ri:archive-line", group: "系统", permissions: admin },
     { path: "/system-update", label: "系统更新", icon: "ri:rocket-2-line", group: "系统", permissions: admin },
+    { path: "/assistant", label: "AI 助手", icon: "ri:sparkling-2-line", group: "工具", permissions: admin },
   ],
   rootRoutes: [
     {
@@ -149,6 +150,12 @@ export default definePlugin({
         path: "system-update",
         name: "SystemUpdate",
         component: () => import("@/modules/system/SystemUpdateView.vue"),
+        meta: { permissions: admin },
+      },
+      {
+        path: "assistant",
+        name: "Assistant",
+        component: () => import("@/modules/assistant/AssistantView.vue"),
         meta: { permissions: admin },
       },
     ],

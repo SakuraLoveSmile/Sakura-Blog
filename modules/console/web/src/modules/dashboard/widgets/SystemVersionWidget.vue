@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { systemApi, type UpdateCheckResponse } from "@/api";
 import { useBreakpoint } from "../useBreakpoint";
 import { useWidgetSize } from "../useWidgetSize";
 import type { WidgetSizePreset } from "./layout";
+import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
@@ -44,7 +45,8 @@ const stateClass = computed(() => {
   return "is-unavailable";
 });
 
-onMounted(async () => {
+async function loadVersion() {
+  loading.value = true;
   try {
     const { data: resp } = await systemApi.check();
     data.value = resp;
@@ -53,7 +55,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(() => {
+  loadVersion();
+  window.addEventListener(DASHBOARD_REFRESH_EVENT, loadVersion);
 });
+onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadVersion));
 
 function goToUpdate() {
   router.push("/system-update");
@@ -84,7 +92,13 @@ function goToUpdate() {
   </div>
 
   <!-- Medium / Large 尺寸：标准与扩展视图（样式走 dashboard.css 共享 .version-card-*） -->
-  <div v-else class="apple-card version-card h-full cursor-pointer" :data-bp="breakpoint" @click="goToUpdate">
+  <div
+    v-else
+    class="apple-card version-card h-full cursor-pointer"
+    :class="{ 'is-attention': hasUpdate }"
+    :data-bp="breakpoint"
+    @click="goToUpdate"
+  >
     <div class="version-card-header">
       <div class="version-card-title-row">
         <div class="version-card-icon" aria-hidden="true">
@@ -109,17 +123,15 @@ function goToUpdate() {
       <div class="version-card-values" :class="{ 'grid-cols-3': sizePreset === 'large' }">
         <div>
           <span class="version-card-label">当前版本</span>
-          <strong>{{ data?.current_version || "未知" }}</strong>
+          <strong class="font-mono">{{ data?.current_version || "未知" }}</strong>
         </div>
         <div>
           <span class="version-card-label">GitHub 最新</span>
-          <strong>{{ data?.latest_version || "未获取" }}</strong>
+          <strong class="font-mono">{{ data?.latest_version || "未获取" }}</strong>
         </div>
         <div v-if="sizePreset === 'large'">
           <span class="version-card-label">自动应用</span>
-          <strong class="text-xs text-muted-foreground font-normal mt-1">{{
-            applySupported ? "支持一键更新" : "手动更新"
-          }}</strong>
+          <strong class="text-xs text-muted-foreground font-normal mt-1 font-mono">{{ applySupported ? "支持一键更新" : "手动更新" }}</strong>
         </div>
       </div>
 
@@ -130,9 +142,7 @@ function goToUpdate() {
             class="w-4 h-4"
             aria-hidden="true"
           />
-          {{
-            data?.error || (hasUpdate ? "点击进入系统更新页面" : canCompare ? "当前版本已是最新" : "版本未知，无法比较")
-          }}
+          {{ data?.error || (hasUpdate ? "点击进入系统更新页面" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
         </span>
         <Icon
           v-if="applySupported && hasUpdate"

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useBreakpoint } from "../useBreakpoint";
 import { themeColors } from "@/lib/theme-colors";
 import type { WidgetSizePreset } from "./layout";
 import { useWidgetSize } from "../useWidgetSize";
+import { DASHBOARD_REFRESH_EVENT } from "./useDashboardStats";
+import { dashboardApi } from "@/api";
 
 interface Props {
   sizePreset?: WidgetSizePreset;
@@ -30,6 +32,7 @@ const colors = themeColors({
 });
 
 interface QuickAction {
+  key: string;
   label: string;
   desc?: string;
   icon: string;
@@ -41,6 +44,7 @@ interface QuickAction {
 
 const baseActions: QuickAction[] = [
   {
+    key: "write_post",
     label: "写文章",
     desc: "发布新内容",
     icon: "ri:quill-pen-line",
@@ -49,6 +53,7 @@ const baseActions: QuickAction[] = [
     path: "/posts/editor",
   },
   {
+    key: "review_comments",
     label: "评论",
     desc: "互动审核",
     icon: "ri:chat-3-line",
@@ -57,6 +62,7 @@ const baseActions: QuickAction[] = [
     path: "/comments",
   },
   {
+    key: "manage_categories",
     label: "分类",
     desc: "组织结构",
     icon: "ri:folder-3-line",
@@ -65,6 +71,7 @@ const baseActions: QuickAction[] = [
     path: "/categories",
   },
   {
+    key: "settings",
     label: "设置",
     desc: "系统首选项",
     icon: "ri:settings-3-line",
@@ -77,6 +84,7 @@ const baseActions: QuickAction[] = [
 const extendedActions: QuickAction[] = [
   ...baseActions,
   {
+    key: "manage_posts",
     label: "文章列表",
     desc: "管理已有文章",
     icon: "ri:file-list-3-line",
@@ -85,6 +93,7 @@ const extendedActions: QuickAction[] = [
     path: "/posts",
   },
   {
+    key: "upload_attachment",
     label: "媒体附件",
     desc: "文件与图片",
     icon: "ri:attachment-2",
@@ -93,6 +102,7 @@ const extendedActions: QuickAction[] = [
     path: "/attachments",
   },
   {
+    key: "system_update",
     label: "系统更新",
     desc: "版本与升级",
     icon: "ri:rocket-2-line",
@@ -101,6 +111,7 @@ const extendedActions: QuickAction[] = [
     path: "/system-update",
   },
   {
+    key: "open_frontend",
     label: "查看博客",
     desc: "打开前台页面",
     icon: "ri:external-link-line",
@@ -111,9 +122,27 @@ const extendedActions: QuickAction[] = [
   },
 ];
 
+const actionCatalog = [...extendedActions];
+const remoteActions = ref<QuickAction[] | null>(null);
+
+async function loadActions() {
+  try {
+    const response = await dashboardApi.quickActions();
+    const keys = Array.isArray(response.data?.items) ? response.data.items : [];
+    const resolved: QuickAction[] = keys.flatMap((key: unknown) => {
+      const action = actionCatalog.find((candidate: QuickAction) => candidate.key === key);
+      return action ? [action] : [];
+    });
+    remoteActions.value = resolved.length ? resolved : null;
+  } catch {
+    remoteActions.value = null;
+  }
+}
+
 const displayedActions = computed(() => {
-  if (sizePreset.value === "large") return extendedActions;
-  return baseActions;
+  const source = remoteActions.value ?? (sizePreset.value === "large" ? extendedActions : baseActions);
+  if (sizePreset.value === "large") return source;
+  return source.slice(0, 4);
 });
 
 function go(act: QuickAction) {
@@ -126,14 +155,16 @@ function go(act: QuickAction) {
 }
 
 const hoveredIdx = ref<number | null>(null);
+
+onMounted(() => {
+  loadActions();
+  window.addEventListener(DASHBOARD_REFRESH_EVENT, loadActions);
+});
+onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, loadActions));
 </script>
 
 <template>
-  <div
-    class="apple-card h-full flex flex-col justify-between"
-    :class="`quick-card-${sizePreset}`"
-    :data-bp="breakpoint"
-  >
+  <div class="apple-card h-full flex flex-col justify-between" :class="`quick-card-${sizePreset}`" :data-bp="breakpoint">
     <div class="flex items-center justify-between mb-3">
       <h3 class="apple-section-title" :class="{ 'text-sm': sizePreset === 'small' }">快捷操作</h3>
       <span class="text-xs text-muted-foreground">{{ displayedActions.length }} 个快捷入口</span>
@@ -145,6 +176,8 @@ const hoveredIdx = ref<number | null>(null);
         v-for="act in displayedActions"
         :key="act.label"
         class="quick-action-item flex items-center gap-2 p-2 rounded-xl text-left"
+        :class="{ 'quick-action-featured': act.label === '写文章' }"
+        :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
         @click="go(act)"
       >
         <div
@@ -163,6 +196,8 @@ const hoveredIdx = ref<number | null>(null);
         v-for="(act, i) in displayedActions"
         :key="act.label"
         class="quick-action-item flex flex-col items-center gap-1.5 p-3 rounded-[14px]"
+        :class="{ 'quick-action-featured': act.label === '写文章' }"
+        :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
         @click="go(act)"
         @mouseenter="hoveredIdx = i"
         @mouseleave="hoveredIdx = null"
@@ -186,6 +221,8 @@ const hoveredIdx = ref<number | null>(null);
         v-for="act in displayedActions"
         :key="act.label"
         class="quick-action-item flex flex-col items-center justify-center p-3 rounded-2xl text-center group"
+        :class="{ 'quick-action-featured': act.label === '写文章' }"
+        :aria-label="act.desc ? `${act.label}：${act.desc}` : act.label"
         @click="go(act)"
       >
         <div
@@ -209,14 +246,31 @@ const hoveredIdx = ref<number | null>(null);
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition:
-    background var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .quick-action-item:hover {
   background: color-mix(in srgb, #fff 6%, transparent);
   border-color: color-mix(in srgb, #fff 8%, transparent);
+  transform: scale(1.02);
+  box-shadow: 0 10px 24px -18px #000, 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.quick-action-item:active {
+  transform: scale(0.98);
+}
+
+.quick-action-item.quick-action-featured {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 15%, transparent), color-mix(in srgb, #fff 4%, transparent));
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent), 0 12px 28px -22px var(--color-primary);
+}
+
+.quick-action-item.quick-action-featured:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
 }
 
 .quick-grid-compact {

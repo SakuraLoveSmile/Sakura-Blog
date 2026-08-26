@@ -34,6 +34,51 @@ export interface ScriptPluginHookResponse {
 }
 
 //////////
+// source: rag.go
+
+/**
+ * RAGStatusResponse is the stable Console status envelope.
+ */
+export interface RAGStatusResponse {
+  status: string;
+  total: number /* int */;
+  done: number /* int */;
+  document_count: number /* int */;
+  chunk_count: number /* int */;
+  embedding_model: string;
+  embedding_dims: number /* int */;
+  last_built_at: string;
+  last_error: string;
+}
+/**
+ * RAGAskRequest is shared by the private and public endpoints. BYOK fields
+ * replace only the final Chat model and are never persisted.
+ */
+export interface RAGAskRequest {
+  question: string;
+  endpoint?: string;
+  model?: string;
+  api_key?: string;
+}
+/**
+ * RAGCitation is a source link returned with a RAG answer.
+ */
+export interface RAGCitation {
+  id: string;
+  type: string;
+  title: string;
+  slug: string;
+  url: string;
+}
+/**
+ * RAGAskResponse is returned by Console and public QA.
+ */
+export interface RAGAskResponse {
+  answer: string;
+  citations: RAGCitation[];
+}
+
+//////////
 // source: shortcode_catalog.go
 
 /**

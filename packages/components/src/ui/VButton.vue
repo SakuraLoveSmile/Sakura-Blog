@@ -3,12 +3,13 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { RouteLocationRaw } from "vue-router";
 
-// Halo VButton 复刻（packages/components/src/components/button/Button.vue）
+// Halo VButton 复刻（Apple Dark Mode 现代化精简控件）
 const props = withDefaults(
   defineProps<{
-    type?: "default" | "primary" | "secondary" | "danger";
+    type?: "default" | "primary" | "secondary" | "danger" | "ghost";
     size?: "lg" | "md" | "sm" | "xs";
     circle?: boolean;
+    pill?: boolean;
     block?: boolean;
     disabled?: boolean;
     loading?: boolean;
@@ -18,6 +19,7 @@ const props = withDefaults(
     type: "default",
     size: "md",
     circle: false,
+    pill: false,
     block: false,
     disabled: false,
     loading: false,
@@ -26,30 +28,31 @@ const props = withDefaults(
 );
 
 const router = useRouter();
-const emit = defineEmits<{ (event: "click"): void }>();
+const emit = defineEmits<{ (event: "click", e?: any): void }>();
 
 const classes = computed(() => [
   `btn-${props.size}`,
   `btn-${props.type}`,
   { "btn-circle": props.circle },
+  { "btn-pill": props.pill },
   { "btn-block": props.block },
   { "btn-loading": props.loading },
 ]);
 
-function handleClick() {
+function handleClick(e: MouseEvent) {
   if (props.disabled || props.loading) return;
   if (props.route) {
     router.push(props.route);
     return;
   }
-  emit("click");
+  emit("click", e);
 }
 </script>
 
 <template>
-  <button :class="classes" :disabled="disabled" class="btn" type="button" @click="handleClick">
+  <button :class="classes" :disabled="disabled || loading" class="btn" type="button" @click="handleClick">
     <span v-if="$slots.icon || loading" class="btn-icon">
-      <svg v-if="loading" class="animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <svg v-if="loading" class="animate-spin btn-spinner" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path
           class="opacity-75"
@@ -59,7 +62,7 @@ function handleClick() {
       </svg>
       <slot v-else name="icon" />
     </span>
-    <span class="btn-content">
+    <span v-if="$slots.default" class="btn-content">
       <slot />
     </span>
   </button>
@@ -69,147 +72,203 @@ function handleClick() {
 .btn {
   display: inline-flex;
   flex-shrink: 0;
-  cursor: pointer;
-  user-select: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
   text-align: center;
-  font-size: 14px;
-  font-weight: 600;
   text-decoration: none;
-  height: 40px;
-  padding: 0 16px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+  line-height: 1;
   border: 1px solid transparent;
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: var(--radius-full);
-  transition: all var(--duration-fast) var(--ease-standard);
+  border-radius: 9px;
+  transition: all var(--duration-fast, 150ms) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
+  box-sizing: border-box;
 }
-.btn:hover {
+
+.btn:hover:not(:disabled) {
   opacity: 1;
 }
+
 .btn:active:not(:disabled) {
   transform: scale(0.97);
 }
+
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* 默认按钮：描边卡片风格 */
+/* 默认按钮：Apple 深色卡片微描边风格 */
 .btn-default {
-  border-color: var(--color-border);
-  color: var(--color-foreground);
-  background: var(--color-card);
+  border-color: color-mix(in srgb, #fff 12%, transparent);
+  color: var(--color-foreground, #f5f5f7);
+  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 8%, var(--color-card, #1c1c1e));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
-.btn-default:hover {
-  background: var(--color-secondary);
-  border-color: var(--color-border-strong);
+.btn-default:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 16%, var(--color-card, #1c1c1e));
+  border-color: color-mix(in srgb, #fff 20%, transparent);
 }
-.btn-default .btn-icon {
-  color: currentColor;
+.btn-default:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 22%, var(--color-card, #1c1c1e));
 }
 
-/* 主按钮：蓝底 + 辉光 */
+/* 主按钮：品牌蓝底 + 顶层微光 + 高对比白字 */
 .btn-primary {
-  color: var(--color-primary-foreground);
-  background: var(--color-primary);
+  color: #ffffff !important;
+  background: var(--color-primary, #2e8dff);
+  border-color: color-mix(in srgb, var(--color-primary-hover, #66abff) 30%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 2px 6px color-mix(in srgb, var(--color-primary, #2e8dff) 30%, transparent);
 }
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(0.96);
+  background: var(--color-primary-hover, #4fa3ff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 3px 10px color-mix(in srgb, var(--color-primary, #2e8dff) 45%, transparent);
 }
 .btn-primary:active:not(:disabled) {
-  background: var(--color-primary-active);
+  background: var(--color-primary-active, #007aff);
   transform: scale(0.97);
 }
 
-/* 次要按钮：深灰底 */
+/* 次要按钮：深色半透明胶囊 */
 .btn-secondary {
-  color: var(--color-foreground);
-  background: var(--color-secondary);
+  color: var(--color-foreground, #f5f5f7);
+  background: color-mix(in srgb, #fff 8%, transparent);
+  border-color: color-mix(in srgb, #fff 8%, transparent);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: var(--color-accent);
+  background: color-mix(in srgb, #fff 14%, transparent);
+  border-color: color-mix(in srgb, #fff 14%, transparent);
+}
+.btn-secondary:active:not(:disabled) {
+  background: color-mix(in srgb, #fff 20%, transparent);
 }
 
-/* 危险按钮：红色 */
+/* 幽灵按钮：透明底 */
+.btn-ghost {
+  color: var(--color-muted-foreground, #8e8e93);
+  background: transparent;
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--color-foreground, #f5f5f7);
+  background: color-mix(in srgb, #fff 8%, transparent);
+}
+
+/* 危险按钮：Apple 红色 */
 .btn-danger {
-  color: var(--color-foreground);
-  background: var(--color-state-error);
+  color: #ffffff !important;
+  background: var(--color-state-error, #ff453a);
+  border-color: color-mix(in srgb, #fff 15%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-state-error, #ff453a) 30%, transparent);
 }
 .btn-danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-state-error) 85%, #fff);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-state-error, #ff453a) 88%, #fff);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-state-error, #ff453a) 45%, transparent);
 }
 
 .btn-block {
   width: 100%;
 }
 
+.btn-pill {
+  border-radius: 9999px;
+}
+
 .btn-icon {
-  height: 18px;
-  width: 18px;
-  margin-right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
 }
-/* 图标默认继承按钮文字色（primary 为 primary-foreground，与库规范一致） */
-.btn-secondary .btn-icon,
-.btn-danger .btn-icon {
-  color: var(--color-foreground);
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .btn-loading {
   cursor: not-allowed;
 }
-.btn-loading:hover {
-  transform: none;
+
+/* 尺寸阶梯 */
+.btn-lg {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14.5px;
+  border-radius: 11px;
+}
+.btn-lg .btn-spinner {
+  width: 16px;
+  height: 16px;
 }
 
-.btn-lg {
-  height: 44px;
-  padding: 0 20px;
-  font-size: 16px;
-}
 .btn-sm {
   height: 28px;
-  padding: 0 12px;
-  font-size: 13px;
+  padding: 0 11px;
+  font-size: 12px;
+  border-radius: 7px;
+  gap: 4px;
 }
-.btn-sm .btn-icon {
-  height: 14px;
-  width: 14px;
-  margin-right: 6px;
+.btn-sm .btn-spinner {
+  width: 12px;
+  height: 12px;
 }
+
 .btn-xs {
   height: 24px;
   padding: 0 8px;
-  font-size: 12px;
-  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  border-radius: 6px;
+  gap: 4px;
 }
-.btn-xs .btn-icon {
-  height: 12px;
-  width: 12px;
-  margin-right: 4px;
+.btn-xs .btn-spinner {
+  width: 11px;
+  height: 11px;
 }
 
+/* 圆形按钮 */
 .btn-circle {
-  width: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
+  border-radius: 9999px;
 }
 .btn-lg.btn-circle {
-  width: 44px;
+  width: 40px;
+  height: 40px;
 }
 .btn-sm.btn-circle {
   width: 28px;
+  height: 28px;
 }
 .btn-xs.btn-circle {
   width: 24px;
+  height: 24px;
 }
 </style>

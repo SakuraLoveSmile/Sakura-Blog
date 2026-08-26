@@ -1,4 +1,14 @@
 /* Apple Dark Dashboard Styles */
+@keyframes dashboard-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dashboard-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* ========================================
    Responsive strategy (data-bp driven):
    - data-bp="lg" : large  (≥1280px) —— 默认基础样式
@@ -50,17 +60,34 @@
   margin: 0;
 }
 
+.greeting-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: 0 0 22px -8px var(--color-primary);
+}
+
 .apple-edit-hint {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
   margin-bottom: 20px;
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 11%, transparent), transparent 75%),
+    color-mix(in srgb, var(--color-card) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-  border-radius: 10px;
+  border-radius: 14px;
   color: var(--color-primary);
   font-size: 13px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
 }
 
 .dashboard-device-tabs {
@@ -72,7 +99,10 @@
   width: fit-content;
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   border-radius: 14px;
-  background: color-mix(in srgb, #fff 4%, transparent);
+  background: color-mix(in srgb, var(--color-card) 76%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent), 0 8px 24px -20px #000;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .dashboard-device-tab {
@@ -94,6 +124,7 @@
 .dashboard-device-tab.active {
   color: var(--color-foreground);
   background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .dashboard-import-hint {
@@ -122,6 +153,25 @@
   margin-bottom: 16px;
 }
 
+.dashboard-template-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.dashboard-template-picker label {
+  white-space: nowrap;
+}
+
+.dashboard-template-picker .dashboard-select {
+  max-width: 260px;
+  min-width: 190px;
+  min-height: 38px;
+}
+
 .dashboard-designer .apple-primary-btn,
 .dashboard-designer .apple-secondary-btn {
   width: auto;
@@ -134,6 +184,28 @@
 
 .dashboard-designer .apple-secondary-btn {
   border: 1px solid color-mix(in srgb, #fff 9%, transparent);
+}
+
+.designer-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--color-state-warning);
+  background: color-mix(in srgb, var(--color-state-warning) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-state-warning) 18%, transparent);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.designer-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  animation: dashboard-pulse 1.8s ease-in-out infinite;
 }
 
 .dashboard-select {
@@ -277,6 +349,15 @@
   z-index: 5;
 }
 
+.dashboard-grid-stack.is-editing .grid-stack-item-content {
+  border-radius: 22px;
+}
+
+.dashboard-grid-stack.is-editing .grid-stack-item:hover .widget-cell {
+  outline-color: color-mix(in srgb, var(--color-primary) 48%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
 .apple-grid-empty {
   min-height: 180px;
   margin: 0 0 20px;
@@ -291,45 +372,170 @@
   background: color-mix(in srgb, var(--color-primary) 4%, transparent);
 }
 
+.dashboard-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+  padding: 4px 0;
+}
+
+.dashboard-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 12px;
+  background: color-mix(in srgb, #fff 3%, transparent);
+}
+
+.dashboard-skeleton-row::after,
+.hourly-chart-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, #fff 9%, transparent) 50%, transparent 80%);
+  animation: dashboard-shimmer 1.6s ease-in-out infinite;
+}
+
+.dashboard-skeleton-avatar,
+.dashboard-skeleton-copy {
+  display: block;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, #fff 8%, transparent);
+}
+
+.dashboard-skeleton-avatar {
+  width: 26px;
+  height: 26px;
+  margin-left: 10px;
+  border-radius: 50%;
+}
+
+.dashboard-skeleton-copy {
+  width: 45%;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.dashboard-skeleton-copy.is-wide {
+  width: 62%;
+}
+
+.dashboard-apple .overflow-y-auto,
+.dashboard-apple .overflow-x-auto,
+.dashboard-apple .apple-comment-list,
+.dashboard-apple .donut-legend {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground) 45%, transparent) transparent;
+}
+
+.dashboard-apple .overflow-y-auto::-webkit-scrollbar,
+.dashboard-apple .overflow-x-auto::-webkit-scrollbar,
+.dashboard-apple .apple-comment-list::-webkit-scrollbar,
+.dashboard-apple .donut-legend::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.dashboard-apple .overflow-y-auto::-webkit-scrollbar-track,
+.dashboard-apple .overflow-x-auto::-webkit-scrollbar-track,
+.dashboard-apple .apple-comment-list::-webkit-scrollbar-track,
+.dashboard-apple .donut-legend::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-apple .overflow-y-auto::-webkit-scrollbar-thumb,
+.dashboard-apple .overflow-x-auto::-webkit-scrollbar-thumb,
+.dashboard-apple .apple-comment-list::-webkit-scrollbar-thumb,
+.dashboard-apple .donut-legend::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-muted-foreground) 35%, transparent);
+}
+
+.dashboard-refresh-btn[aria-busy="true"] {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.stat-change-label,
+.stat-card-medium-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-change-label.is-up,
+.stat-card-medium-state.is-up {
+  color: var(--color-state-success);
+}
+
+.stat-change-label.is-down,
+.stat-card-medium-state.is-down {
+  color: var(--color-state-error);
+}
+
+.stat-change-label.is-flat,
+.stat-card-medium-state.is-flat {
+  color: var(--color-muted-foreground);
+}
+
+.stat-card-medium-state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 7px color-mix(in srgb, currentColor 55%, transparent);
+}
+
 /* ===== Card base ===== */
 .apple-card {
-  background: color-mix(in srgb, var(--color-card) 72%, transparent);
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--color-primary) 3.5%, transparent) 0%, transparent 60%),
+    color-mix(in srgb, var(--color-card) 78%, transparent);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   padding: 22px;
-  transition:
-    transform var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
+  transition: transform var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
   position: relative;
   overflow: hidden;
   height: 100%;
 }
 
 .apple-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, #fff 18%, transparent) 22%, color-mix(in srgb, var(--color-primary) 10%, transparent) 50%, color-mix(in srgb, #fff 18%, transparent) 78%, transparent 100%);
   pointer-events: none;
 }
 
 .apple-card:hover {
-  border-color: var(--color-border-strong);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, #fff 16%, transparent);
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  transform: translateY(-2px);
+}
+
+.apple-card:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
 .apple-section-title {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 650;
   color: var(--color-foreground);
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .apple-card-subtitle {
@@ -371,6 +577,172 @@
   color: var(--color-muted-foreground);
   font-weight: 500;
 }
+
+.stat-live-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--stat-color, var(--color-primary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stat-color, var(--color-primary)) 12%, transparent), 0 0 10px var(--stat-color, var(--color-primary));
+  animation: dashboard-pulse 2.2s ease-in-out infinite;
+}
+
+.stat-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+}
+
+.stat-card-medium-body {
+  min-width: 0;
+}
+
+.stat-card-medium-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, #fff 7%, transparent);
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+}
+
+.stat-card-medium-context,
+.stat-card-medium-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.stat-card-medium-context {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-card-medium-state {
+  flex: 0 0 auto;
+  color: var(--color-foreground);
+}
+
+.stat-card-medium-state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.apple-card.stat-card-medium {
+  padding: 12px 16px;
+}
+
+.apple-card.stat-card-medium > .stat-card-medium-body {
+  margin-top: 8px;
+}
+
+.apple-card.stat-card-medium .stat-card-medium-footer {
+  padding-top: 7px;
+  font-size: 10px;
+}
+
+@media (max-width: 1279px) {
+  .apple-card.stat-card-medium {
+    padding: 10px 14px;
+  }
+
+  .apple-card.stat-card-medium .stat-card-medium-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .apple-card.stat-card-medium > .stat-card-medium-body {
+    margin-top: 6px;
+  }
+
+  .apple-card.stat-card-medium .stat-card-medium-footer {
+    padding-top: 5px;
+  }
+}
+
+.stat-card-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.stat-card-signal-orbit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--stat-color, var(--color-primary));
+  border: 1px solid color-mix(in srgb, var(--stat-color, var(--color-primary)) 28%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--stat-color, var(--color-primary)) 10%, transparent);
+  box-shadow: 0 0 22px -8px var(--stat-color, var(--color-primary));
+  animation: dashboard-pulse 2.4s ease-in-out infinite;
+}
+
+/* 大尺寸统计卡的内容必须落在既有网格行高内，避免设计器中的底部裁切。 */
+.apple-card.stat-card-large {
+  padding: 12px 14px;
+}
+
+.apple-card.stat-card-large .stat-card-large-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.apple-card.stat-card-large > .stat-card-large-body {
+  margin-top: 8px;
+}
+
+.apple-card.stat-card-large .stat-card-large-value {
+  font-size: 32px;
+}
+
+.apple-card.stat-card-large .stat-card-large-meta {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.apple-card.stat-card-large .stat-card-signal-orbit {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 1279px) {
+  .apple-card.stat-card-large {
+    padding: 8px 12px;
+  }
+
+  .apple-card.stat-card-large .stat-card-large-header {
+    gap: 8px;
+  }
+
+  .apple-card.stat-card-large .stat-card-large-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .apple-card.stat-card-large > .stat-card-large-body {
+    margin-top: 4px;
+  }
+
+  .apple-card.stat-card-large .stat-card-large-value {
+    font-size: 30px;
+  }
+}
 /* ===== Segment control：统一走 apple-base.css 的 .apple-segmented ===== */
 
 /* ===== List items (posts) ===== */
@@ -381,7 +753,7 @@
   padding: 10px 4px;
   border-radius: 12px;
   text-decoration: none;
-  transition: background var(--duration-fast) var(--ease-standard);
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
   width: 100%;
   background: none;
   border: none;
@@ -396,7 +768,8 @@
 }
 
 .apple-list-item:hover {
-  background: color-mix(in srgb, #fff 4%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 7%, transparent), color-mix(in srgb, #fff 3%, transparent));
+  transform: translateX(2px);
 }
 
 .apple-list-arrow {
@@ -414,14 +787,18 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  position: relative;
 }
 
 .apple-status-dot.published {
   background: var(--color-state-success);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-state-success) 65%, transparent);
+  animation: dashboard-pulse 2.4s ease-in-out infinite;
 }
 
 .apple-status-dot.draft {
   background: var(--color-state-warning);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-state-warning) 65%, transparent);
 }
 
 /* ===== Comment items ===== */
@@ -430,7 +807,7 @@
   gap: 12px;
   padding: 12px;
   border-radius: 12px;
-  transition: background var(--duration-fast) var(--ease-standard);
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
   width: 100%;
   text-align: left;
   background: transparent;
@@ -441,7 +818,8 @@
 }
 
 .apple-comment-item:hover {
-  background: color-mix(in srgb, #fff 5%, transparent);
+  background: linear-gradient(100deg, color-mix(in srgb, #fff 6%, transparent), color-mix(in srgb, var(--color-primary) 5%, transparent));
+  transform: translateY(-1px);
 }
 
 .apple-comment-item:focus-visible {
@@ -468,15 +846,30 @@
   font-weight: 600;
   color: var(--color-foreground);
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, #fff 16%, transparent);
+  box-shadow: 0 4px 14px -8px #000, inset 0 1px 0 color-mix(in srgb, #fff 18%, transparent);
 }
 
 .apple-pending-badge {
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--color-state-warning) 15%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-state-warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-state-warning) 22%, transparent);
   color: var(--color-state-warning);
   font-size: 10px;
   font-weight: 600;
+}
+
+.apple-pending-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
 }
 
 /* ===== Version cards（Stellar/Blog 版本卡共享，两组件不再各自维护 scoped 副本） ===== */
@@ -485,6 +878,13 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 184px;
+}
+
+.version-card.is-attention {
+  border-color: color-mix(in srgb, var(--color-state-warning) 28%, transparent);
+  background:
+    radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--color-state-warning) 12%, transparent), transparent 58%),
+    color-mix(in srgb, var(--color-card) 78%, transparent);
 }
 
 .version-card-header,
@@ -559,6 +959,11 @@
   background: currentColor;
 }
 
+.version-card-state:not(.is-unavailable) .version-card-dot {
+  box-shadow: 0 0 8px currentColor;
+  animation: dashboard-pulse 2s ease-in-out infinite;
+}
+
 .version-card-values {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -581,6 +986,10 @@
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.version-card-values strong.font-mono {
+  letter-spacing: -0.02em;
 }
 
 .version-card-footer {
@@ -711,71 +1120,82 @@
   gap: 4px;
   z-index: 10;
   pointer-events: auto;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, #fff 10%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-card) 80%, transparent);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .apple-remove-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-state-error) 90%, transparent);
-  color: var(--color-foreground);
-  border: none;
+  background: color-mix(in srgb, var(--color-state-error) 85%, transparent);
+  color: #fff;
+  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform var(--duration-fast) var(--ease-standard);
-  backdrop-filter: blur(10px);
+  transition: all var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .apple-remove-btn:hover {
   transform: scale(1.1);
+  background: var(--color-state-error);
 }
 
 .apple-edit-size-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
   color: var(--color-primary-foreground);
-  border: none;
+  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    transform var(--duration-fast) var(--ease-standard),
-    background var(--duration-fast) var(--ease-standard);
-  backdrop-filter: blur(10px);
+  transition: all var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .apple-edit-size-btn:hover {
   transform: scale(1.1);
-  background: var(--color-primary-active);
+  background: var(--color-primary);
 }
 
 .apple-drag-handle {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  background: color-mix(in srgb, var(--color-card) 90%, var(--color-primary));
+  color: var(--color-foreground);
   display: flex;
-  border: none;
+  border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+  box-shadow: var(--shadow-sm);
   padding: 0;
   font: inherit;
   align-items: center;
   justify-content: center;
   cursor: grab;
-  backdrop-filter: blur(10px);
-  transition:
-    transform var(--duration-fast) var(--ease-standard),
-    background var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .apple-drag-handle:hover {
   transform: scale(1.1);
-  background: var(--color-primary-active);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .apple-drag-handle:active {
@@ -945,6 +1365,7 @@
   margin-top: 16px !important;
 }
 
+
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-card {
   padding: 16px;
   border-radius: 16px;
@@ -987,12 +1408,8 @@
   gap: 10px;
   padding: 9px 2px;
 }
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm {
-  font-size: 13px;
-}
-.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs {
-  font-size: 11px;
-}
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-sm { font-size: 13px; }
+.dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-item .text-xs { font-size: 11px; }
 .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .apple-list-arrow {
   opacity: 0.5; /* always visible on mobile so user knows it's tappable */
   width: 14px;
@@ -1150,5 +1567,16 @@
   .dashboard-apple:is([data-bp="xs"], [data-bp="xxs"]) .donut-wrap svg {
     width: 100px !important;
     height: 100px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-apple *,
+  .dashboard-apple *::before,
+  .dashboard-apple *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

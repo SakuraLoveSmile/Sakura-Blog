@@ -66,6 +66,7 @@ func main() {
 			UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
 			StorageManager: services.Storage,
 			Plugins:        services.Plugins,
+			RAG:            services.RAG,
 			Root:           services.App.Root,
 			AppVersion:     app.Version,
 			UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,

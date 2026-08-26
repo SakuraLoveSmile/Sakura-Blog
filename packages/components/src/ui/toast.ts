@@ -1,14 +1,14 @@
 import { createApp, h, ref } from "vue";
 
-// Halo Toast 复刻（重设计）：命令式提示，类型图标 + 语义色 + 可选副标题，暗色自适应。
+// Halo Toast 复刻（Apple Dark Mode 浮动胶囊 HUD 提示）
 type ToastType = "success" | "error" | "info" | "warning";
 
 // 类型语义色（Apple Dark 设计令牌）
 const typeColorVar: Record<ToastType, string> = {
-  success: "var(--color-state-success)",
-  error: "var(--color-state-error)",
-  info: "var(--color-primary)",
-  warning: "var(--color-state-warning)",
+  success: "#30d158",
+  error: "#ff453a",
+  info: "#2e8dff",
+  warning: "#ff9f0a",
 };
 
 // 类型图标（内联 SVG path，24x24 viewBox，currentColor 填充）
@@ -22,7 +22,6 @@ const typeIconPath: Record<ToastType, string> = {
     "M12.866 3l9.526 16.5a1 1 0 0 1-.866 1.5H2.474a1 1 0 0 1-.866-1.5L11.134 3a1 1 0 0 1 1.732 0M11 16v2h2v-2zm0-7v5h2V9z",
 };
 
-// 优先级更高的 opts 参数（保留旧的 (message, duration) 数字签名兼容）
 interface ToastOptions {
   description?: string;
   duration?: number;
@@ -33,7 +32,9 @@ let toastContainer: HTMLElement | null = null;
 function ensureContainer(): HTMLElement {
   if (!toastContainer || !document.body.contains(toastContainer)) {
     toastContainer = document.createElement("div");
-    toastContainer.className = "fixed top-4 left-1/2 z-[99999] flex -translate-x-1/2 flex-col items-center gap-2";
+    toastContainer.id = "blog-toast-container";
+    toastContainer.style.cssText =
+      "position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;width:max-content;max-width:92vw;";
     document.body.appendChild(toastContainer);
   }
   return toastContainer;
@@ -42,6 +43,7 @@ function ensureContainer(): HTMLElement {
 function showToast(type: ToastType, message: string, description = "", duration = 2500) {
   const container = ensureContainer();
   const el = document.createElement("div");
+  el.style.pointerEvents = "auto";
   container.appendChild(el);
 
   const visible = ref(false);
@@ -49,30 +51,47 @@ function showToast(type: ToastType, message: string, description = "", duration 
   const app = createApp({
     setup() {
       setTimeout(() => (visible.value = true), 10);
-      setTimeout(() => {
+
+      const timer = setTimeout(() => {
+        dismiss();
+      }, duration);
+
+      function dismiss() {
+        clearTimeout(timer);
         visible.value = false;
         setTimeout(() => {
           app.unmount();
           el.remove();
-        }, 300);
-      }, duration);
+        }, 250);
+      }
 
       return () =>
         h(
           "div",
           {
-            class: "flex items-start gap-2.5 px-4 py-3 text-sm",
+            class: "apple-toast-item",
+            onClick: dismiss,
             style: {
-              minWidth: "220px",
-              maxWidth: "420px",
-              borderRadius: "8px",
-              background: "var(--color-card)",
-              color: "var(--color-foreground)",
-              border: "1px solid var(--color-border)",
-              boxShadow: "var(--shadow-lg)",
+              display: "flex",
+              alignItems: description ? "flex-start" : "center",
+              gap: "10px",
+              padding: description ? "10px 16px" : "9px 18px",
+              minWidth: "180px",
+              maxWidth: "460px",
+              borderRadius: description ? "14px" : "99px",
+              background: "rgba(28, 28, 30, 0.94)",
+              color: "#f5f5f7",
+              border: "1px solid rgba(255, 255, 255, 0.14)",
+              boxShadow:
+                "0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
               opacity: visible.value ? 1 : 0,
-              transform: visible.value ? "translateY(0)" : "translateY(-8px)",
-              transition: "all 0.3s ease",
+              transform: visible.value ? "translateY(0) scale(1)" : "translateY(-10px) scale(0.96)",
+              transition: "all 220ms cubic-bezier(0.32, 0.72, 0, 1)",
+              cursor: "pointer",
+              userSelect: "none",
+              fontSize: "13.5px",
             },
           },
           [
@@ -83,25 +102,55 @@ function showToast(type: ToastType, message: string, description = "", duration 
                 width: "18",
                 height: "18",
                 viewBox: "0 0 24 24",
-                class: "mt-px flex-shrink-0",
-                style: { color: typeColorVar[type], fill: "currentColor" },
+                style: {
+                  color: typeColorVar[type],
+                  fill: "currentColor",
+                  flexShrink: "0",
+                  marginTop: description ? "2px" : "0",
+                },
               },
               [h("path", { d: typeIconPath[type], fill: "currentColor" })],
             ),
             // 文本区：标题 + 可选副标题
-            h("div", { class: "min-w-0 flex-1" }, [
-              h("div", { class: "font-medium leading-snug" }, message),
-              description
-                ? h(
-                    "div",
-                    {
-                      class: "mt-0.5 text-xs leading-snug",
-                      style: { color: "var(--color-text-tertiary)" },
+            h(
+              "div",
+              {
+                style: {
+                  minWidth: "0",
+                  flex: "1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                },
+              },
+              [
+                h(
+                  "div",
+                  {
+                    style: {
+                      fontWeight: "550",
+                      lineHeight: "1.35",
+                      color: "#ffffff",
+                      fontSize: "13.5px",
                     },
-                    description,
-                  )
-                : null,
-            ]),
+                  },
+                  message,
+                ),
+                description
+                  ? h(
+                      "div",
+                      {
+                        style: {
+                          fontSize: "12px",
+                          lineHeight: "1.4",
+                          color: "#8e8e93",
+                        },
+                      },
+                      description,
+                    )
+                  : null,
+              ],
+            ),
           ],
         );
     },

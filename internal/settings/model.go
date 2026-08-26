@@ -14,6 +14,8 @@ type ViewData struct {
 	Page    *Page
 	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
 	TOC     template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
+	QAEnabled bool // AI 公开问答入口开关，由前台 fillSidebar 读取 settings.ai
+	QAAllowUserLLM bool // 是否展示前台「使用自己的 AI 模型」入口
 
 	// MenuPages pages 模块已发布页面自动生成的左栏菜单项（fillSidebar 填充，
 	// 追加在 menubar 配置之后；访问路径与 menubar 重复的页面不重复显示）。
