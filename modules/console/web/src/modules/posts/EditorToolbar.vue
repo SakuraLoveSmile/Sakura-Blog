@@ -183,9 +183,9 @@ const btnActive = "btn-active";
 </script>
 
 <template>
-  <div class="flex items-center gap-0 overflow-x-auto px-4 py-2">
+  <div class="editor-toolbar relative z-10 flex min-w-0 items-center gap-0 px-4 py-2">
     <!-- 分组 1：插入 Stellar 标签 -->
-    <div class="flex items-center gap-0.5 px-1.5">
+    <div class="editor-toolbar-insert relative z-20 flex shrink-0 items-center gap-0.5 px-1.5">
       <div ref="dropdownRef" class="relative">
         <button
           type="button"
@@ -241,115 +241,118 @@ const btnActive = "btn-active";
       </div>
     </div>
 
-    <!-- 分组 2：文本格式（粗体/斜体/删除线/标题） -->
-    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
-      <button
-        v-for="tool in toolsById(formatGroupText)"
-        :key="tool.id"
-        type="button"
-        :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
-        @click="emit('format', tool.id)"
-      >
-        <Icon :icon="tool.icon" class="text-lg" />
-      </button>
-    </div>
+    <!-- 其余工具保留横向滚动，但不再裁剪插入菜单的垂直溢出内容。 -->
+    <div class="editor-toolbar-scroll flex min-w-0 flex-1 items-center gap-0 overflow-x-auto">
+      <!-- 分组 2：文本格式（粗体/斜体/删除线/标题） -->
+      <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+        <button
+          v-for="tool in toolsById(formatGroupText)"
+          :key="tool.id"
+          type="button"
+          :title="tool.title"
+          :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
+          @click="emit('format', tool.id)"
+        >
+          <Icon :icon="tool.icon" class="text-lg" />
+        </button>
+      </div>
 
-    <!-- 分组 3：链接/图片/代码/引用 -->
-    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
-      <button
-        v-for="tool in toolsById(formatGroupInsert)"
-        :key="tool.id"
-        type="button"
-        :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
-        @click="emit('format', tool.id)"
-      >
-        <Icon :icon="tool.icon" class="text-lg" />
-      </button>
-      <button type="button" title="上传图片" :class="[btnBase, btnChrome]" @click="emit('upload')">
-        <Icon icon="ri:image-add-line" class="text-lg" />
-      </button>
-      <button type="button" title="从图床选择" :class="[btnBase, btnChrome]" @click="emit('pick')">
-        <Icon icon="ri:gallery-line" class="text-lg" />
-      </button>
-    </div>
+      <!-- 分组 3：链接/图片/代码/引用 -->
+      <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+        <button
+          v-for="tool in toolsById(formatGroupInsert)"
+          :key="tool.id"
+          type="button"
+          :title="tool.title"
+          :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
+          @click="emit('format', tool.id)"
+        >
+          <Icon :icon="tool.icon" class="text-lg" />
+        </button>
+        <button type="button" title="上传图片" :class="[btnBase, btnChrome]" @click="emit('upload')">
+          <Icon icon="ri:image-add-line" class="text-lg" />
+        </button>
+        <button type="button" title="从图床选择" :class="[btnBase, btnChrome]" @click="emit('pick')">
+          <Icon icon="ri:gallery-line" class="text-lg" />
+        </button>
+      </div>
 
-    <!-- 分组 4：列表/表格 -->
-    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
-      <button
-        v-for="tool in toolsById(formatGroupList)"
-        :key="tool.id"
-        type="button"
-        :title="tool.title"
-        :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
-        @click="emit('format', tool.id)"
-      >
-        <Icon :icon="tool.icon" class="text-lg" />
-      </button>
-    </div>
+      <!-- 分组 4：列表/表格 -->
+      <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+        <button
+          v-for="tool in toolsById(formatGroupList)"
+          :key="tool.id"
+          type="button"
+          :title="tool.title"
+          :class="[btnBase, props.activeStates?.[tool.id] ? btnActive : btnChrome]"
+          @click="emit('format', tool.id)"
+        >
+          <Icon :icon="tool.icon" class="text-lg" />
+        </button>
+      </div>
 
-    <span class="flex-1"></span>
+      <span class="flex-1"></span>
 
-    <!-- 分组 5：AI / 预览 / 版本 / 全屏 -->
-    <div class="flex items-center gap-0.5 px-1.5">
-      <button
-        type="button"
-        title="AI 属性生成"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-system-indigo transition-colors hover:bg-secondary"
-        @click="emit('openAi')"
-      >
-        <Icon icon="ri:sparkling-2-line" class="text-lg" />
-      </button>
-      <button type="button" title="发布前预览" :class="[btnBase, btnChrome]" @click="emit('preview')">
-        <Icon icon="ri:eye-line" class="text-lg" />
-      </button>
-      <button
-        v-if="props.isEdit"
-        type="button"
-        title="版本历史"
-        :class="[btnBase, btnChrome]"
-        @click="emit('openRevision')"
-      >
-        <Icon icon="ri:history-line" class="text-lg" />
-      </button>
-      <button
-        type="button"
-        :title="props.fullscreen ? '退出全屏' : '全屏编辑'"
-        :class="[btnBase, props.fullscreen ? btnActive : btnChrome]"
-        @click="emit('toggleFullscreen')"
-      >
-        <Icon :icon="props.fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="text-lg" />
-      </button>
-    </div>
+      <!-- 分组 5：AI / 预览 / 版本 / 全屏 -->
+      <div class="flex items-center gap-0.5 px-1.5">
+        <button
+          type="button"
+          title="AI 属性生成"
+          class="flex h-8 w-8 items-center justify-center rounded-lg text-system-indigo transition-colors hover:bg-secondary"
+          @click="emit('openAi')"
+        >
+          <Icon icon="ri:sparkling-2-line" class="text-lg" />
+        </button>
+        <button type="button" title="发布前预览" :class="[btnBase, btnChrome]" @click="emit('preview')">
+          <Icon icon="ri:eye-line" class="text-lg" />
+        </button>
+        <button
+          v-if="props.isEdit"
+          type="button"
+          title="版本历史"
+          :class="[btnBase, btnChrome]"
+          @click="emit('openRevision')"
+        >
+          <Icon icon="ri:history-line" class="text-lg" />
+        </button>
+        <button
+          type="button"
+          :title="props.fullscreen ? '退出全屏' : '全屏编辑'"
+          :class="[btnBase, props.fullscreen ? btnActive : btnChrome]"
+          @click="emit('toggleFullscreen')"
+        >
+          <Icon :icon="props.fullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" class="text-lg" />
+        </button>
+      </div>
 
-    <!-- 编辑 / 分屏 / 预览 三态切换（仅 Markdown 模式） -->
-    <div v-if="props.kind === 'markdown'" class="ml-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5">
-      <button
-        v-for="btn in modeButtons"
-        :key="btn.value"
-        type="button"
-        :title="btn.title"
-        :class="[
-          'flex h-7 items-center justify-center rounded-md px-2.5 text-base transition-colors',
-          props.mode === btn.value ? 'bg-card text-primary shadow-sm' : 'text-text-tertiary hover:text-foreground',
-        ]"
-        @click="emit('update:mode', btn.value)"
-      >
-        <Icon :icon="btn.icon" />
-      </button>
-    </div>
+      <!-- 编辑 / 分屏 / 预览 三态切换（仅 Markdown 模式） -->
+      <div v-if="props.kind === 'markdown'" class="ml-1 flex items-center gap-0.5 rounded-lg bg-secondary p-0.5">
+        <button
+          v-for="btn in modeButtons"
+          :key="btn.value"
+          type="button"
+          :title="btn.title"
+          :class="[
+            'flex h-7 items-center justify-center rounded-md px-2.5 text-base transition-colors',
+            props.mode === btn.value ? 'bg-card text-primary shadow-sm' : 'text-text-tertiary hover:text-foreground',
+          ]"
+          @click="emit('update:mode', btn.value)"
+        >
+          <Icon :icon="btn.icon" />
+        </button>
+      </div>
 
-    <!-- 右侧面板开关 -->
-    <div class="flex items-center gap-0.5 border-l border-border px-1.5">
-      <button
-        type="button"
-        :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
-        :class="[btnBase, props.sidebarOpen ? btnActive : btnChrome]"
-        @click="emit('toggleSidebar')"
-      >
-        <Icon icon="ri:layout-right-line" class="text-lg" />
-      </button>
+      <!-- 右侧面板开关 -->
+      <div class="flex items-center gap-0.5 border-l border-border px-1.5">
+        <button
+          type="button"
+          :title="props.sidebarOpen ? '收起右侧面板' : '展开右侧面板'"
+          :class="[btnBase, props.sidebarOpen ? btnActive : btnChrome]"
+          @click="emit('toggleSidebar')"
+        >
+          <Icon icon="ri:layout-right-line" class="text-lg" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
