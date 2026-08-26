@@ -17,6 +17,7 @@ const backups = ref<BackupInfo[]>([]);
 const loading = ref(false);
 
 const importing = ref(false);
+const importFileInput = ref<HTMLInputElement | null>(null);
 const importResult = ref<{
   imported: number;
   slugs: string[];
@@ -25,9 +26,17 @@ const importResult = ref<{
 
 // 整站恢复（双重确认：输入 RESTORE）
 const restoring = ref(false);
+const restoreFileInput = ref<HTMLInputElement | null>(null);
 const restoreConfirmText = ref("");
 const pendingRestore = ref<{ kind: "upload" | "snapshot"; file?: File; name?: string } | null>(null);
 const restoreStrict = ref(false);
+
+function openRestorePicker() {
+  const input = restoreFileInput.value;
+  if (!input || restoring.value) return;
+  input.value = "";
+  input.click();
+}
 
 function pickRestoreFile(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -72,6 +81,13 @@ async function loadStatus() {
   } finally {
     loading.value = false;
   }
+}
+
+function openImportPicker() {
+  const input = importFileInput.value;
+  if (!input || importing.value) return;
+  input.value = "";
+  input.click();
 }
 
 async function handleImport(e: Event) {
@@ -300,13 +316,18 @@ onMounted(loadStatus);
                 <Icon icon="ri:alert-line" /> 同名 Slug 将被直接覆盖
               </span>
 
-              <label class="cursor-pointer">
-                <input type="file" accept=".md,.zip" class="hidden" :disabled="importing" @change="handleImport" />
-                <VButton size="sm" :loading="importing" @click.prevent>
-                  <template #icon><Icon icon="ri:upload-2-line" /></template>
-                  选择文件导入
-                </VButton>
-              </label>
+              <input
+                ref="importFileInput"
+                type="file"
+                accept=".md,.zip"
+                class="hidden"
+                :disabled="importing"
+                @change="handleImport"
+              />
+              <VButton size="sm" :loading="importing" @click="openImportPicker">
+                <template #icon><Icon icon="ri:upload-2-line" /></template>
+                选择文件导入
+              </VButton>
             </div>
 
             <!-- 导入结果卡片 -->
@@ -334,13 +355,18 @@ onMounted(loadStatus);
 
             <div class="flex items-center justify-between border-t border-border/60 pt-3">
               <span class="text-xs text-text-quaternary">支持全量覆盖还原</span>
-              <label class="cursor-pointer">
-                <input type="file" accept=".zip" class="hidden" :disabled="restoring" @change="pickRestoreFile" />
-                <VButton size="sm" type="danger" @click.prevent>
-                  <template #icon><Icon icon="ri:restart-line" /></template>
-                  上传备份并恢复
-                </VButton>
-              </label>
+              <input
+                ref="restoreFileInput"
+                type="file"
+                accept=".zip"
+                class="hidden"
+                :disabled="restoring"
+                @change="pickRestoreFile"
+              />
+              <VButton size="sm" type="danger" :disabled="restoring" @click="openRestorePicker">
+                <template #icon><Icon icon="ri:restart-line" /></template>
+                上传备份并恢复
+              </VButton>
             </div>
           </VCard>
         </div>
