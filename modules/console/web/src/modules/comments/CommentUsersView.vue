@@ -200,7 +200,7 @@ async function doBulk(action: "spam" | "delete") {
           </button>
         </div>
 
-        <VButton :route="{ path: '/console/comments' }">
+        <VButton :route="{ path: '/comments' }">
           <template #icon><Icon icon="ri:chat-3-line" /></template>
           返回评论列表
         </VButton>

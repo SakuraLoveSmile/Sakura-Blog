@@ -313,7 +313,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <VButton :route="{ path: '/console/comment-users' }">
+        <VButton :route="{ path: '/comment-users' }">
           <template #icon><Icon icon="ri:user-shared-line" /></template>
           评论用户
         </VButton>

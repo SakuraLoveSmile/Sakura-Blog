@@ -86,6 +86,8 @@ export default definePlugin({
         component: () => import("@/modules/comments/CommentUsersView.vue"),
         meta: { permissions: admin },
       },
+      // 兼容旧版本把 Console 基准路径重复拼接后的书签：/console/console/comment-users。
+      { path: "console/comment-users", redirect: "/comment-users" },
       { path: "attachments", name: "Attachments", component: () => import("@/modules/attachments/AttachmentList.vue") },
       { path: "pages", name: "Pages", component: () => import("@/modules/pages/PageList.vue") },
       {
