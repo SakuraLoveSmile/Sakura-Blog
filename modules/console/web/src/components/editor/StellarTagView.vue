@@ -9,7 +9,7 @@ import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { NodeViewWrapper, nodeViewProps } from "@tiptap/vue-3";
 import { Icon } from "@iconify/vue";
 import { previewApi } from "@/api";
-import { typeLabelOf } from "./stellar-tag";
+import { tagNameOf, typeLabelOf } from "./stellar-tag";
 
 // Stellar 标签节点的 NodeView：选中时浮出 Halo 同款操作气泡（类型标签 + 编辑/删除），iframe 渲染前台真实效果。
 const props = defineProps(nodeViewProps);
@@ -40,17 +40,22 @@ async function renderPreview() {
     html.value = "";
     return;
   }
-  const cached = previewCache.get(key);
-  if (cached !== undefined) {
-    html.value = cached;
-    failed.value = false;
-    return;
+  // links 读取当前站点配置，不能使用跨节点/跨页面的长期缓存；否则新增或编辑友链后
+  // 重新打开编辑器仍会展示旧卡片。其它纯内容标签继续复用缓存，避免同一页面重复请求。
+  const cacheable = tagNameOf(key).toLowerCase() !== "links";
+  if (cacheable) {
+    const cached = previewCache.get(key);
+    if (cached !== undefined) {
+      html.value = cached;
+      failed.value = false;
+      return;
+    }
   }
   loading.value = true;
   failed.value = false;
   try {
     const { data } = await previewApi.render(key);
-    previewCache.set(key, data.html);
+    if (cacheable) previewCache.set(key, data.html);
     // 请求返回时 raw 可能已被编辑更新，只有仍一致才展示
     if (raw.value === key) html.value = data.html;
   } catch {

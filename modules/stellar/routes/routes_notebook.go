@@ -181,13 +181,14 @@ func (s *webServer) handleNote(c *gin.Context) {
 		s.render404(c)
 		return
 	}
-	// 正文：优先 ContentHTML，为空时渲染 Markdown 原文
-	contentHTML := template.HTML(note.ContentHTML)
-	if contentHTML == "" && note.Content != "" {
-		if rendered, err := s.posts.Render(note.Content); err == nil {
-			contentHTML = template.HTML(rendered)
-		}
+	// 正文：复用缓存 HTML；含 {% links %} 时按当前站点友链配置重新渲染。
+	renderedContent, renderErr := renderStoredContent(s.posts, note.Content, note.ContentHTML)
+	if renderErr != nil {
+		log.Printf("render note %d: %v", id, renderErr)
+		s.render500(c)
+		return
 	}
+	contentHTML := template.HTML(renderedContent)
 	// 上下篇：同笔记本内按 updated_at DESC 相邻（Spec 62：两条 LIMIT 1 邻居查询
 	// GetPrevNote/GetNextNote，替代全量取回内存定位）
 	var prev, next *tmpl.NoteNav

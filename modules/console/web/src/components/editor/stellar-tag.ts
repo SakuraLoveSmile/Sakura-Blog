@@ -59,6 +59,7 @@ const SINGLE_TAGS = [
   "ghcard",
   "vote",
   "friends",
+  "links",
   "sites",
   "u",
   "emp",

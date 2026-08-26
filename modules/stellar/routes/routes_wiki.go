@@ -218,7 +218,13 @@ func (s *webServer) handleWikiDoc(c *gin.Context) {
 		}
 		recentDocs = append(recentDocs, &tmpl.RecentPost{Title: d.Title, URL: "/wiki/" + projectID + "/" + d.Slug})
 	}
-	contentHTML := template.HTML(cur.ContentHTML)
+	renderedContent, renderErr := renderStoredContent(s.posts, cur.ContentMD, cur.ContentHTML)
+	if renderErr != nil {
+		log.Printf("render wiki doc %s/%s: %v", projectID, slug, renderErr)
+		s.render500(c)
+		return
+	}
+	contentHTML := template.HTML(renderedContent)
 	if published[0] == cur && strings.TrimSpace(string(contentHTML)) == "" {
 		if readme, ok := wikiReadmePlaceholder(project); ok {
 			contentHTML = readme

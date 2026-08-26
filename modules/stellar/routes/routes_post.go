@@ -40,7 +40,13 @@ func (s *webServer) handlePost(c *gin.Context) {
 
 	// 优先查 DB
 	if p, err := s.st.GetPublishedBySlug(slug); err == nil && p != nil {
-		excerpt := articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML)
+		contentHTML, renderErr := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML)
+		if renderErr != nil {
+			log.Printf("render post %s: %v", slug, renderErr)
+			s.render500(c)
+			return
+		}
+		excerpt := articleExcerpt(s.site.Load(), p.Excerpt, contentHTML)
 		banner := p.Banner
 		// 密码门：未解锁则渲染口令表单（不增加阅读量、不泄漏正文）
 		if p.IsPasswordProtected() {
@@ -100,9 +106,9 @@ func (s *webServer) handlePost(c *gin.Context) {
 				MetaDescription: p.MetaDescription,
 				MetaKeywords:    p.MetaKeywords,
 			},
-			Content: template.HTML(p.ContentHTML),
+			Content: template.HTML(contentHTML),
 		}
-		data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(p.ContentHTML)
+		data.WordCount, data.ReadingMinutes = tmpl.ReadingStats(contentHTML)
 		// AI 文章摘要（Spec 53）：预生成摘要 + settings ai 段双开关（未配置默认开）
 		if aiCfg, err := config.LoadAI(s.st); err == nil && aiCfg.SummaryOn() {
 			data.Page.AISummary = p.AISummary
@@ -114,7 +120,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 			data.Page.Author = data.Page.AuthorLinks[0].ID
 			data.Page.AuthorName = data.Page.AuthorLinks[0].Name
 		}
-		data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptions())
+		data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
 		// 专栏（Spec 52）：已禁用（用户反馈功能多余）。左栏系列 widget 不再装配，保留查询代码注释后续恢复：
 		// if p.Topic != "" {
 		//     if series, err := s.st.ListByTopic(p.Topic); err == nil && len(series) > 0 {
@@ -148,7 +154,7 @@ func (s *webServer) handlePost(c *gin.Context) {
 		// 文章描述：优先 Excerpt，否则截断正文前 150 字符（去 HTML 标签）
 		desc := excerpt
 		if desc == "" {
-			d := textutil.StripHTML(p.ContentHTML)
+			d := textutil.StripHTML(contentHTML)
 			if len(d) > 150 {
 				d = d[:150]
 			}
@@ -346,6 +352,12 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 		s.render404(c)
 		return
 	}
+	contentHTML, renderErr := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML)
+	if renderErr != nil {
+		log.Printf("render shared post %s: %v", p.Slug, renderErr)
+		s.render500(c)
+		return
+	}
 	// 预览提示条（内联样式，不依赖外部 CSS）
 	notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">这是一篇通过分享链接预览的文章</div>`)
 	data := &tmpl.ViewData{
@@ -358,13 +370,13 @@ func (s *webServer) handleSharePreview(c *gin.Context) {
 			Lang:    "zh-CN",
 			MenuID:  "post",
 			Date:    p.CreatedAt.Format("2006-01-02"),
-			Excerpt: articleExcerpt(s.site.Load(), p.Excerpt, p.ContentHTML),
+			Excerpt: articleExcerpt(s.site.Load(), p.Excerpt, contentHTML),
 			Topic:   p.Topic,
 			Banner:  p.Banner,
 		},
-		Content: notice + template.HTML(p.ContentHTML),
+		Content: notice + template.HTML(contentHTML),
 	}
-	data.TOC = stellarweb.ExtractTOCWith(p.ContentHTML, s.tocOptions())
+	data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
 	s.fillSidebar(data)
 	s.fillSEO(data, c)
 	html, err := s.engine.Render("layout/base", data)

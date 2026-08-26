@@ -17,11 +17,10 @@ func (s *webServer) handleLinksPage(c *gin.Context) {
 		s.render404(c)
 		return
 	}
-	contentHTML := p.ContentHTML
-	if contentHTML == "" {
-		if rendered, e := s.posts.Render(p.ContentMD); e == nil {
-			contentHTML = rendered
-		}
+	contentHTML, err := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML)
+	if err != nil {
+		s.render500(c)
+		return
 	}
 	data := &tmpl.ViewData{
 		Site:    s.site.Load(),
@@ -52,11 +51,10 @@ func (s *webServer) handleFriendsPage(c *gin.Context) {
 		s.render404(c)
 		return
 	}
-	contentHTML := p.ContentHTML
-	if contentHTML == "" {
-		if rendered, e := s.posts.Render(p.ContentMD); e == nil {
-			contentHTML = rendered
-		}
+	contentHTML, err := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML)
+	if err != nil {
+		s.render500(c)
+		return
 	}
 	title := s.site.Load().Pages.Friends.Title
 	if title == "" {

@@ -179,6 +179,11 @@ func (h *PageHandler) ShowByPath(c *gin.Context) bool {
 }
 
 func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
+	contentHTML, err := renderStoredContent(h.posts, p.ContentMD, p.ContentHTML)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "render: %v", err)
+		return
+	}
 	data := &tmpl.ViewData{
 		Site: h.site.Load(),
 		Page: &tmpl.Page{
@@ -188,7 +193,7 @@ func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
 			Lang:   "zh-CN",
 			MenuID: p.Slug, // 自动菜单项（MenuPages）按 slug 高亮
 		},
-		Content: template.HTML(p.ContentHTML),
+		Content: template.HTML(contentHTML),
 	}
 	// 页面级自定义侧栏：只要左右栏至少一个是「显式配置过」（非空字符串，配置=继承全局不进来），
 	// 就构造 CustomPageBars 指针；未配置的一侧用空切片（不落全局 DefaultPageBars 的默认组件）。
