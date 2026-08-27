@@ -399,6 +399,14 @@ div.swiper-slide img {
   border: 1px solid var(--block-border);
   border-radius: 12px;
 }
+/* 独立页面的 poetry 后通常紧跟 quot 小标题；收紧这组相邻块的外部节奏。 */
+.l_body[layout='page'] .md-text.content > .tag-plugin.poetry:has(+ .tag-plugin.quot) {
+  margin-bottom: 1rem;
+}
+.l_body[layout='page'] .md-text.content > .tag-plugin.poetry + .tag-plugin.quot {
+  margin-top: 1rem;
+  margin-bottom: var(--gap-p);
+}
 .tag-plugin.poetry .content {
   display: flex;
   flex-direction: column;
