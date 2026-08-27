@@ -6,7 +6,7 @@ import MarkdownEditor from "@/components/MarkdownEditor.vue";
 const RichTextEditor = defineAsyncComponent(() => import("@/components/RichTextEditor.vue"));
 
 // 通用内容编辑器：内置富文本/Markdown 双模式切换 + 简化工具栏
-// 供笔记页、文库文档、笔记本笔记等非文章/页面的编辑场景复用
+// 供文库文档等非文章/页面的编辑场景复用
 // 文章/页面编辑器已使用更复杂的 EditorToolbar，不走本组件
 type EditorKind = "rich" | "markdown";
 type EditorMode = "edit" | "split" | "preview";

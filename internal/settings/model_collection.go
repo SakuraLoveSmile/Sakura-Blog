@@ -187,7 +187,7 @@ func (f WidgetFrame) Attributes() []WidgetAttribute {
 	if len(f.Attrs) == 0 {
 		return nil
 	}
-	allowed := map[string]bool{"id": true, "collapse": true, "data-notebook": true, "data-wiki": true}
+	allowed := map[string]bool{"id": true, "collapse": true, "data-wiki": true}
 	keys := make([]string, 0, len(f.Attrs))
 	for key := range f.Attrs {
 		if allowed[key] {

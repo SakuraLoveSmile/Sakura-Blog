@@ -99,7 +99,7 @@ type Config struct {
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
-	// Events publishes generic changes such as wiki/notebook/note/settings writes.
+	// Events publishes generic changes such as wiki/settings writes.
 	Events         content.Events
 	UploadDir      string
 	Storage        AttachmentStorage
@@ -215,8 +215,6 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		{"shared_posts", st.EnsureSharedPostsTable},         // 文章分享链接
 		{"wikidocs", st.EnsureWikidocsTable},                // wiki 文档（Spec 35）
 		{"wiki_projects", st.EnsureWikiProjectsTable},       // wiki 项目元数据（数据库唯一真源）
-		{"notebooks", st.EnsureNotebooksTable},              // 笔记本（Spec 35b）
-		{"notes", st.EnsureNotesTable},                      // 笔记（Spec 35b）
 		{"login_logs", st.EnsureLoginLogsTable},             // 登录日志（Wave 3a）
 		{"notifications", st.EnsureNotificationsTable},      // 站内通知（Wave 3b）
 		{"pat_tokens", st.EnsurePATTable},                   // 个人访问令牌（PAT，只存 sha256 哈希）
@@ -402,27 +400,11 @@ func (h *Handler) register(r *gin.Engine) {
 			wiki.DELETE("/:project/docs/:slug", h.deleteWikidoc)
 		}
 
-		// 笔记本 / 笔记（Spec 35b）
-		notebooks := author.Group("/notebooks")
-		{
-			notebooks.GET("", h.listNotebooks)
-			notebooks.POST("", h.createNotebook)
-			notebooks.GET("/:id", h.getNotebook)
-			notebooks.PUT("/:id", h.updateNotebook)
-			notebooks.DELETE("/:id", h.deleteNotebook)
-			notebooks.GET("/:id/notes", h.listNotes)
-			notebooks.POST("/:id/notes", h.createNote)
-		}
-
 		// 专栏（Spec 52）
 		author.GET("/topics", h.listTopics)
 		author.POST("/topics", h.createTopic)
 		author.PUT("/topics/:id", h.updateTopic)
 		author.DELETE("/topics/:id", h.deleteTopic)
-		author.GET("/notes/:id", h.getNote)
-		author.PUT("/notes/:id", h.updateNote)
-		author.DELETE("/notes/:id", h.deleteNote)
-		author.GET("/note-tags", h.noteTags)
 
 		// 瞬间模块 API：模块停用时由 manifest 对齐的 Gate 返回 403。
 		momentRoutes := author

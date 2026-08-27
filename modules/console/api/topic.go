@@ -9,7 +9,7 @@ import (
 	"blog/internal/store"
 )
 
-// 专栏（Spec 52）：/api/v1/topics CRUD，对齐 notebook.go 的既有 API 风格与权限中间件。
+// 专栏（Spec 52）：/api/v1/topics CRUD，沿用内容 API 的权限中间件。
 // slug 与 name 双唯一：URL 用 slug，展示用 name；冲突统一 409；删除保护（有文章关联）403。
 
 // listTopics GET /api/v1/topics：列出全部专栏（sort DESC + 创建时间线性），每项带文章总数角标。

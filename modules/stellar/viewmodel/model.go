@@ -43,11 +43,6 @@ type LinkListItem = settings.LinkListItem
 type MenuItem = settings.MenuItem
 type Menubar = settings.Menubar
 type MomentItem = settings.MomentItem
-type Note = settings.Note
-type NoteNav = settings.NoteNav
-type NoteView = settings.NoteView
-type NotebookConfig = settings.NotebookConfig
-type NotebookView = settings.NotebookView
 type Page = settings.Page
 type PageBars = settings.PageBars
 type Paginator = settings.Paginator
@@ -61,7 +56,6 @@ type SiteStats = settings.SiteStats
 type TagCloudOptions = settings.TagCloudOptions
 type TagCount = settings.TagCount
 type TagItem = settings.TagItem
-type TagTreeWidgetData = settings.TagTreeWidgetData
 type TopicDetail = settings.TopicDetail
 type TopicItem = settings.TopicItem
 type TopicSeries = settings.TopicSeries
@@ -86,11 +80,6 @@ func ParseTags(raw string) []string { return settings.ParseTags(raw) }
 func BuildTagCloud(counts map[string]int, opt TagCloudOptions) []*TagItem {
 	return settings.BuildTagCloud(counts, opt)
 }
-func BuildTagTree(tags []TagCount, notebookName, activeTag string, expandAll, expandActive, showTagcon bool) *TagTreeWidgetData {
-	return settings.BuildTagTree(tags, notebookName, activeTag, expandAll, expandActive, showTagcon)
-}
-func TagMatches(tag, selected string) bool                            { return settings.TagMatches(tag, selected) }
-func ApplyTagcons(data *TagTreeWidgetData, tagcons map[string]string) { data.ApplyTagcons(tagcons) }
 func ExpiredDays(created, updated string, threshold int, now time.Time) int {
 	return settings.ExpiredDays(created, updated, threshold, now)
 }

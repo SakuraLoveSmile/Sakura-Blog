@@ -15,7 +15,7 @@ import (
 	stellarweb "blog/modules/stellar/web"
 )
 
-// registerTaxonomyRoutes 注册聚合/索引域路由：友链、文库、笔记、归档、分类、专栏、标签。
+// registerTaxonomyRoutes 注册聚合/索引域路由：友链、文库、手记、归档、分类、专栏、标签。
 func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 友链卡片页 /links（内容页化）：pages 表 slug=links 系统页渲染，正文 {% links %} 直出分组卡片。
 	r.GET("/links", s.handleLinksPage)
@@ -29,12 +29,6 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 且 handleWikiDoc 对 project=tags 做防御式 404，语义不冲突。
 	r.GET("/wiki/:project", s.handleWikiProject)
 	r.GET("/wiki/:project/:slug", s.handleWikiDoc)
-
-	// 笔记本体系（Spec 35b）：/notebooks 列表、/notebooks/:name 笔记列表（分页 + ?tag= 过滤）、
-	// /note/:id 笔记页。与 /notes（手记单页）共存：/note/* 静态段不冲突。
-	r.GET("/notebooks", s.handleNotebooks)
-	r.GET("/notebooks/:name", s.handleNotebook)
-	r.GET("/note/:id", s.handleNote)
 
 	// 笔记(手记) /notes（内容页化）：正文取 pages 表 slug=notes 系统页（控制台可编辑，
 	// 首次启动自 content/notes.md 迁移）；瞬间由正文中的 {% moments %} 组件按需插入。
@@ -218,19 +212,4 @@ func (s *webServer) handleCategoryPath(c *gin.Context, path string) {
 		Page:  &tmpl.Page{Title: "分类：" + path, Layout: "index", MenuID: "post", Lang: "zh-CN", Category: path, Type: s.site.Load().Article.Type},
 		Posts: s.toCards(posts),
 	})
-}
-
-// tagCountItems 标签计数 map → 排序的 TagCount 列表（数量降序，同量按名升序）。
-func tagCountItems(counts map[string]int) []tmpl.TagCount {
-	items := make([]tmpl.TagCount, 0, len(counts))
-	for name, n := range counts {
-		items = append(items, tmpl.TagCount{Name: name, Count: n})
-	}
-	sort.Slice(items, func(i, j int) bool {
-		if items[i].Count != items[j].Count {
-			return items[i].Count > items[j].Count
-		}
-		return items[i].Name < items[j].Name
-	})
-	return items
 }

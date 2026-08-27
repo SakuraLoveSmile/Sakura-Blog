@@ -114,20 +114,6 @@ type ViewData struct {
 	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为系统页面正文渲染结果；瞬间由正文 shortcode 注入。
 	NotesContentHTML template.HTML
 
-	// 笔记本体系（Spec 35b）：Notebooks 为列表页卡片（Layout=notebooks）；
-	// NotebookDetail/Notes/NotesTotal/NotesPage/NotesPerPage 为笔记本详情页（Layout=notebook）的当前笔记本与分页笔记列表；
-	// NoteDetail 为笔记详情（Layout=note）；NotebookTags 为当前笔记本标签聚合、
-	// TagTreeData 供 leftbar tagtree widget 注入（数据仅本页有，不进侧栏快照）。
-	Notebooks      []NotebookView
-	NotebookDetail *store.Notebook
-	Notes          []store.Note
-	NoteDetail     *NoteView
-	NotesTotal     int
-	NotesPage      int
-	NotesPerPage   int
-	NotebookTags   []TagCount
-	TagTreeData    *TagTreeWidgetData
-
 	// 作者页（Layout=author 时使用）：AuthorProfile 为当前作者定义，Posts/Paginator 复用首页字段。
 	AuthorProfile *AuthorDef
 
@@ -174,6 +160,13 @@ type TagItem struct {
 	Color string // 标签云渐变色（tagcloud color 参数开启时插值生成），空不输出 color style
 	Dy    int    // 标签云垂直散落偏移 px（标签名哈希确定性生成，模板输出 --tc-dy）
 	Level string // 标签云热度层级（xl/lg/md/sm/xs，按入选排名百分比分档，tagcloud.design 移植）
+}
+
+// TagCount 标签聚合项（名称 + 数量）。
+// 该通用模型同时供文章标签页和标签云使用。
+type TagCount struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }
 
 // PostCard 首页文章卡片数据，对齐 Stellar _partial/main/post_list/post_card.ejs。
@@ -413,8 +406,7 @@ type Site struct {
 	Authors map[string]AuthorDef `yaml:"authors,omitempty" json:"authors,omitempty"`
 	// 前端体验增强插件（Spec 36）：大部分插件缺省关闭；adaptive_text 遵循 Stellar 1.42 默认开启。
 	// 各插件 Enable 为 false 时前端不加载对应脚本。
-	Plugins  PluginsConfig  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
-	Notebook NotebookConfig `yaml:"notebook,omitempty" json:"notebook,omitempty"`
+	Plugins PluginsConfig `yaml:"plugins,omitempty" json:"plugins,omitempty"`
 	// TagPlugins 标签插件默认参数（对齐原版 _config.yml tag_plugins 段）。
 	TagPlugins TagPluginsConfig `yaml:"tag_plugins" json:"tag_plugins"`
 	// Default 占位素材组（对齐原版 _config.yml default 段）。
@@ -572,15 +564,6 @@ type CopycodeConfig struct {
 	DefaultText string `yaml:"default_text,omitempty" json:"default_text,omitempty"`
 	SuccessText string `yaml:"success_text,omitempty" json:"success_text,omitempty"`
 	Toast       string `yaml:"toast,omitempty" json:"toast,omitempty"`
-}
-
-// NotebookConfig 笔记本默认行为配置（对齐 Stellar notebook 段）。
-type NotebookConfig struct {
-	AutoExcerpt int               `yaml:"auto_excerpt" json:"auto_excerpt"`
-	OrderBy     string            `yaml:"order_by" json:"order_by"`
-	License     any               `yaml:"license" json:"license"`
-	Share       bool              `yaml:"share" json:"share"`
-	Tagcons     map[string]string `yaml:"tagcons,omitempty" json:"tagcons,omitempty"`
 }
 
 // SearchConfig 本地搜索配置（对齐 Stellar search.local_search 段）。

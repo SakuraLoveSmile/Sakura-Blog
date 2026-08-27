@@ -14,7 +14,6 @@ var zhCN = map[string]string{
 	"btn.blog":           "文章",
 	"btn.wiki":           "文档",
 	"btn.topic":          "专栏",
-	"btn.notebook":       "笔记本",
 	"btn.recent_publish": "近期发布",
 	"btn.all_wiki":       "所有项目",
 	"btn.categories":     "分类",
@@ -35,8 +34,6 @@ var zhCN = map[string]string{
 
 	// ── meta 组（对齐 zh-CN.yml meta.*）────────────────────────
 	"meta.recent_update":   "最近更新",
-	"meta.tag_tree":        "标签",
-	"meta.all_notes":       "所有笔记",
 	"meta.toc":             "本文目录",
 	"meta.read_next":       "接下来阅读",
 	"meta.prev":            "回顾上一篇",
@@ -116,8 +113,6 @@ var zhCN = map[string]string{
 	"breadcrumb.friends":  "友链",
 	"breadcrumb.links":    "友链",
 	"breadcrumb.wiki":     "文库",
-	"breadcrumb.notebook": "笔记本",
-	"breadcrumb.note":     "笔记",
 
 	// 文章页
 	"article.expire":         "本文最后更新于 %d 天前，其中的信息可能已经过时，请谨慎参考。",
@@ -206,12 +201,6 @@ var zhCN = map[string]string{
 	"wiki.empty":       "暂无文库项目",
 	"wiki.no_docs":     "该项目暂无文档",
 
-	// 笔记本（Spec 35b）
-	"notebook.title":      "笔记本",
-	"notebook.empty":      "暂无笔记本",
-	"notebook.note_empty": "暂无笔记",
-	"notebook.note_count": "共 %d 篇笔记",
-
 	// Widget 标题缺省值
 	"widget.siteinfo":       "站点统计",
 	"widget.tagcloud":       "标签",
@@ -220,7 +209,6 @@ var zhCN = map[string]string{
 	"widget.latest_comment": "最新评论",
 	"widget.toc":            "本文目录",
 	"widget.author_posts":   "全部文章",
-	"widget.tagtree":        "标签",
 	"widget.posts":          "文章",
 	"widget.tags":           "标签",
 	"widget.comments":       "评论",

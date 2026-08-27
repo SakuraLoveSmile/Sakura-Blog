@@ -1,6 +1,6 @@
 // 内容派生产物内存缓存（Spec 61 阶段 5）：/search.json 与 /sitemap.xml 每次请求全量重查
 // 改为「写路径置脏 + 生成期缓存」——重建结果 atomic.Pointer 发布，并发共享一次重建。
-// 置脏来源：post/page/moment 写事件、wikidoc/notebook/note 保存和设置保存的内容事件。
+// 置脏来源：post/page/moment/wikidoc 写事件和设置保存的内容事件。
 package routes
 
 import (
@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
-	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -158,7 +157,7 @@ func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
 }
 
 // buildSitemap 全量重建 sitemap（与旧 GET /sitemap.xml 同逻辑）：
-// 首页 + 已发布文章 + wiki 已发布文档 + 笔记本/笔记 + 静态索引页。
+// 首页 + 已发布文章 + wiki 已发布文档 + 静态索引页。
 func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 	type SitemapURL struct {
 		Loc        string `xml:"loc"`
@@ -210,30 +209,6 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 				ChangeFreq: "weekly",
 				Priority:   "0.6",
 			})
-		}
-	}
-
-	notebooks, err := c.st.ListNotebooks()
-	if err == nil {
-		for _, nb := range notebooks {
-			sm.URLs = append(sm.URLs, SitemapURL{
-				Loc:        baseURL + "/notebooks/" + nb.Name,
-				ChangeFreq: "weekly",
-				Priority:   "0.6",
-			})
-			notes, _, err := c.st.ListNotesByNotebook(nb.ID, -1, 0)
-			if err != nil {
-				log.Printf("sitemap: list notes of notebook %d: %v", nb.ID, err)
-				continue
-			}
-			for _, n := range notes {
-				sm.URLs = append(sm.URLs, SitemapURL{
-					Loc:        baseURL + "/note/" + strconv.FormatInt(n.ID, 10),
-					LastMod:    n.UpdatedAt.Format("2006-01-02"),
-					ChangeFreq: "weekly",
-					Priority:   "0.6",
-				})
-			}
 		}
 	}
 

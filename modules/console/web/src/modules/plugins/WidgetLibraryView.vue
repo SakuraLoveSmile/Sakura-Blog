@@ -254,7 +254,6 @@ const PREVIEW_NAME = "__preview__";
 function previewPageFor(layout: string): string {
   if (["toc", "author", "related"].includes(layout)) return "post";
   if (["tree", "wiki_related"].includes(layout)) return "wiki";
-  if (layout === "tagtree") return "notebooks";
   return "index";
 }
 
@@ -262,7 +261,6 @@ const NO_OUTPUT_HINTS: Record<string, string> = {
   related: "专栏功能当前已禁用，前台不渲染此组件",
   tree: "文库组件仅文库文档页有数据，预览以首个项目模拟",
   wiki_related: "文库组件仅文库文档页有数据，预览以首个项目模拟",
-  tagtree: "笔记本组件仅笔记本页有数据，预览以首个笔记本模拟",
   ghrepo: "需配置 repo/username/api 参数",
   ghuser: "需配置 repo/username/api 参数",
   ghissues: "需配置 repo/username/api 参数",

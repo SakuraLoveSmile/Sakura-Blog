@@ -35,7 +35,6 @@ const (
 	SectionTagPlugins = "tag_plugins" // 标签插件默认参数（对齐原版 _config.yml tag_plugins）
 	SectionDefault    = "default"     // 占位素材组（对齐原版 _config.yml default）
 	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
-	SectionNotebook   = "notebook"    // 笔记本默认行为
 	SectionDataCache  = "data_cache"  // 动态数据客户端缓存（base.html 注入 ctx.data_cache 消费）
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
@@ -151,15 +150,6 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 			return err
 		}
 		if err := st.PutSetting(SectionSiteTree, string(b)); err != nil {
-			return err
-		}
-	}
-	if _, ok := settings[SectionNotebook]; !ok {
-		b, err := json.Marshal(site.Notebook)
-		if err != nil {
-			return err
-		}
-		if err := st.PutSetting(SectionNotebook, string(b)); err != nil {
 			return err
 		}
 	}
@@ -397,9 +387,6 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 	if err := put(SectionPlugins, site.Plugins); err != nil {
-		return err
-	}
-	if err := put(SectionNotebook, site.Notebook); err != nil {
 		return err
 	}
 	if err := put(SectionPages, site.Pages); err != nil {

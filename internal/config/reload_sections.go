@@ -32,7 +32,7 @@ func KnownSections() []string {
 	return []string{
 		SectionSite, SectionMenubar, SectionRightbar, SectionFooter,
 		SectionComments, SectionArticle, SectionWiki, SectionFriends,
-		SectionSearch, SectionSiteTree, SectionNotebook,
+		SectionSearch, SectionSiteTree,
 		SectionSEO, SectionInject, SectionDashboard,
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
@@ -102,8 +102,6 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		dst = &map[string]tmpl.AuthorDef{}
 	case SectionPlugins:
 		dst = &tmpl.PluginsConfig{}
-	case SectionNotebook:
-		dst = &tmpl.NotebookConfig{}
 	case SectionTagPlugins:
 		dst = &tmpl.TagPluginsConfig{}
 	case SectionDefault:

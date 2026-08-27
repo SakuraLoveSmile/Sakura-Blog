@@ -122,18 +122,6 @@ export interface WikiDocPayload {
   status?: Exclude<ContentStatus, "trashed"> | string;
 }
 
-export interface NoteListParams {
-  page?: number;
-  per_page?: number;
-}
-
-export interface NotePayload {
-  notebook_id?: number;
-  title?: string;
-  content?: string;
-  tags?: string;
-}
-
 export interface SeoSettingsPayload {
   push?: {
     enabled?: boolean;

@@ -18,7 +18,7 @@ const inputCls = "apple-input";
 const rowBtnCls = "text-text-quaternary hover:text-text-tertiary hover:text-foreground disabled:opacity-30";
 
 // ---------- 页面类型 ----------
-// 分组对齐后端 PageTypeOf 枚举；文库/笔记本/友链/瞬间等类型此前 UI 未暴露，
+// 分组对齐后端 PageTypeOf 枚举；文库/友链/瞬间等类型此前 UI 未暴露，
 // 导致这些页面的左右栏编排无入口（渲染时回退 index 或内置缺省）。
 const pageGroups: { label: string; options: { key: string; label: string }[] }[] = [
   {
@@ -37,14 +37,6 @@ const pageGroups: { label: string; options: { key: string; label: string }[] }[]
     options: [
       { key: "wiki", label: "文库列表页" },
       { key: "wiki-doc", label: "文库文档页" },
-    ],
-  },
-  {
-    label: "笔记本",
-    options: [
-      { key: "notebooks", label: "笔记本列表页" },
-      { key: "notebook", label: "笔记本页" },
-      { key: "note", label: "笔记页" },
     ],
   },
   {

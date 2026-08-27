@@ -50,7 +50,7 @@ function normalizeWidgetList(raw: any): SidebarWidget[] | null {
   });
 }
 
-// 可用 widget 库（组件名 → 中文名）。tree/tagtree/wiki_related 等特殊组件仅在对应页面类型有数据，
+// 可用 widget 库（组件名 → 中文名）。tree/wiki_related 等特殊组件仅在对应页面类型有数据，
 // 独立页面也可勾选（BuildBar 会兜底过滤掉 Data 为空的无效项）。
 const WIDGET_LIBRARY: { name: string; label: string; hint?: string }[] = [
   { name: "related", label: "专栏系列", hint: "文章属专栏时显示" },
@@ -68,7 +68,6 @@ const WIDGET_LIBRARY: { name: string; label: string; hint?: string }[] = [
   { name: "ghuser", label: "GitHub 用户卡", hint: "需 library 配 username" },
   { name: "ghissues", label: "GitHub Issues", hint: "需 library 配 repo" },
   { name: "tree", label: "文库项目树", hint: "仅 wiki-doc 页面有数据" },
-  { name: "tagtree", label: "笔记本标签树", hint: "仅笔记本页面有数据" },
   { name: "wiki_related", label: "文库相关项目", hint: "仅 wiki-doc 页面有数据" },
 ];
 const WIDGET_OPTIONS = computed(() =>

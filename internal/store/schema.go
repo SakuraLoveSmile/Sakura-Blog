@@ -231,28 +231,6 @@ var tableDDL = map[string]string{
 	);
 	CREATE INDEX IF NOT EXISTS idx_wiki_project_tags_tag ON wiki_project_tags(tag, position, project_id);`,
 
-	"notebooks": `CREATE TABLE IF NOT EXISTS notebooks (
-		id          INTEGER PRIMARY KEY AUTOINCREMENT,
-		name        TEXT NOT NULL UNIQUE,
-		description TEXT NOT NULL DEFAULT '',
-		cover       TEXT NOT NULL DEFAULT '',
-		nb_order    INTEGER NOT NULL DEFAULT 0,
-		created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);`,
-
-	"notes": `CREATE TABLE IF NOT EXISTS notes (
-		id           INTEGER PRIMARY KEY AUTOINCREMENT,
-		notebook_id  INTEGER NOT NULL,
-		title        TEXT NOT NULL DEFAULT '',
-		content      TEXT NOT NULL DEFAULT '',
-		content_html TEXT NOT NULL DEFAULT '',
-		tags         TEXT NOT NULL DEFAULT '',
-		created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (notebook_id) REFERENCES notebooks(id)
-	);
-	CREATE INDEX IF NOT EXISTS idx_notes_notebook ON notes(notebook_id);`,
-
 	"topics": `CREATE TABLE IF NOT EXISTS topics (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		name        TEXT NOT NULL UNIQUE,

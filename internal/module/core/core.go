@@ -27,7 +27,6 @@ func (m *Module) Meta() module.Meta {
 			{Path: "/topics", Label: "专栏", Icon: "ri:book-shelf-line", Group: "内容", Mobile: true},
 			{Path: "/pages", Label: "页面", Icon: "ri:pages-line", Group: "内容", Mobile: true},
 			{Path: "/wiki", Label: "文库", Icon: "ri:book-2-line", Group: "内容", Children: []module.Nav{{Path: "/wiki/projects", Label: "项目管理", Icon: "ri:stack-line", Group: "内容"}}},
-			{Path: "/notebooks", Label: "笔记本", Icon: "ri:book-open-line", Group: "内容"},
 			{Path: "/comments", Label: "评论", Icon: "ri:chat-3-line", Group: "互动", Mobile: true},
 			{Path: "/comment-users", Label: "评论用户", Icon: "ri:user-community-line", Group: "互动", Permissions: admin},
 			{Path: "/notifications", Label: "通知中心", Icon: "ri:notification-3-line", Group: "互动"},

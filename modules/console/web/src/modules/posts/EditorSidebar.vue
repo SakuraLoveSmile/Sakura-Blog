@@ -836,7 +836,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
         <div :class="cardBodyCls + ' space-y-3'">
           <!-- 封面预览 16:9 深色渐变 -->
           <div
-            class="notebook-cover-blue relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
+            class="cover-preview-blue relative flex aspect-video w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-border"
           >
             <div
               class="pointer-events-none absolute inset-0"

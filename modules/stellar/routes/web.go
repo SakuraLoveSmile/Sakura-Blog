@@ -474,12 +474,6 @@ func (s *webServer) assembleWidgets(data *tmpl.ViewData, tagCounts map[string]in
 			if w.Params.Str("repo", "") == "" {
 				w.Params["repo"] = project.Repo
 			}
-		case "tagtree":
-			// Spec 35b：笔记本相关页注入标签树（数据仅本页有，不进侧栏快照；
-			// 其余页面 Data 留空，模板不输出，零配置降级）。
-			if data.TagTreeData != nil {
-				w.Data = data.TagTreeData
-			}
 		case "linklist":
 			// Spec 50：linklist widget 数据，从 widget params 的 items 解析。
 			w.Data = parseLinkListItems(w.Params)

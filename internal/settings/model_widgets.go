@@ -235,9 +235,6 @@ func DefaultWidgetLibrary() map[string]WidgetDef {
 		// 同 tag 项目推荐（wiki 文档页左栏）：数据由 assembleWidgets 从 site.yml wiki 段
 		// 内存过滤（与当前项目 tag 交集），title 缺省"更多项目"，有共同标签时装配期覆盖为"更多：{标签名}"
 		"wiki_related": {"layout": "wiki_related", "title": "更多项目", "limit": 5},
-		// Spec 35b：tagtree 为笔记本标签树（数据由 assembleWidgets 仅在本页注入，
-		// 其余页面 Data 为空、模板不输出；缺省仅在 notebooks/notebook/note 页面类型左栏启用）
-		"tagtree": {"layout": "tagtree", "expand_all": false, "expand_active": true, "show_tagcon": true},
 	}
 }
 
@@ -257,10 +254,9 @@ func (w WidgetsConfig) Lookup(name string) WidgetDef {
 	return def.merge(w.Library[name])
 }
 
-// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → wiki-doc 缺省 → 笔记本缺省 → 内置缺省。
+// BarsFor 页面类型 → 左右栏序列：pages[pageType] → pages[index] → wiki-doc 缺省 → 内置缺省。
 // wiki-doc（Spec 35a）零配置时左栏首项挂 tree（项目文档树）；
-// notebooks/notebook/note（Spec 35b）零配置时左栏首项挂 tagtree（笔记本标签树）；
-// 其余沿用 index 缺省；用户显式配置 pages 时尊重配置（tree/tagtree 组件名可在任意页面类型的 leftbar 中启用）。
+// 其余沿用 index 缺省；用户显式配置 pages 时尊重配置（tree 组件名可在任意页面类型的 leftbar 中启用）。
 func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 	if b, ok := w.Pages[pageType]; ok {
 		return b
@@ -276,12 +272,6 @@ func (w WidgetsConfig) BarsFor(pageType string) PageBars {
 		return PageBars{
 			Leftbar:  []string{"tree", "wiki_related", "recent"},
 			Rightbar: []string{"ghrepo", "toc"},
-		}
-	}
-	if pageType == "notebooks" || pageType == "notebook" || pageType == "note" {
-		return PageBars{
-			Leftbar:  append([]string{"tagtree"}, def.Leftbar...),
-			Rightbar: def.Rightbar,
 		}
 	}
 	return def
@@ -313,9 +303,7 @@ func (w WidgetsConfig) BuildBar(names []string, v *ViewData) []*WidgetInstance {
 // post-password/404/500 等异常页与列表页同用 index 布局）。
 func PageTypeOf(layout string) string {
 	switch layout {
-	case "post", "page", "archive", "categories", "tags", "wiki", "friends", "notes", "moments", "index",
-		"notebooks", "notebook", "note":
-		// Spec 35b：笔记本三层页面为独立类型（BarsFor 零配置时左栏挂 tagtree）
+	case "post", "page", "archive", "categories", "tags", "wiki", "friends", "notes", "moments", "index":
 		return layout
 	case "topics":
 		return "topic"

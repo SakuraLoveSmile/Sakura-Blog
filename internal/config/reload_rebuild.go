@@ -59,7 +59,6 @@ type parsedSections struct {
 	navTabs       tmpl.NavTabsConfig
 	authors       map[string]tmpl.AuthorDef
 	plugins       tmpl.PluginsConfig
-	notebook      tmpl.NotebookConfig
 	tagPlugins    tmpl.TagPluginsConfig
 	defaultAssets tmpl.DefaultAssets
 	pages         tmpl.PagesConfig
@@ -132,21 +131,6 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionNavTabs, &parsed.navTabs)
 	unmarshal(SectionAuthors, &parsed.authors)
 	unmarshal(SectionPlugins, &parsed.plugins)
-	unmarshal(SectionNotebook, &parsed.notebook)
-	if raw, ok := settings[SectionNotebook]; !ok || raw == "" {
-		parsed.notebook.AutoExcerpt = 128
-		parsed.notebook.OrderBy = "-updated"
-	} else {
-		var fields map[string]json.RawMessage
-		if json.Unmarshal([]byte(raw), &fields) == nil {
-			if _, exists := fields["auto_excerpt"]; !exists && parsed.notebook.AutoExcerpt == 0 {
-				parsed.notebook.AutoExcerpt = 128
-			}
-			if _, exists := fields["order_by"]; !exists && parsed.notebook.OrderBy == "" {
-				parsed.notebook.OrderBy = "-updated"
-			}
-		}
-	}
 	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
 	unmarshal(SectionDefault, &parsed.defaultAssets)
 	unmarshal(SectionPages, &parsed.pages)
@@ -196,7 +180,6 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionNavTabs, func() { site.NavTabs = parsed.navTabs })
 	assign(SectionAuthors, func() { site.Authors = parsed.authors })
 	assign(SectionPlugins, func() { site.Plugins = parsed.plugins })
-	assign(SectionNotebook, func() { site.Notebook = parsed.notebook })
 	assign(SectionTagPlugins, func() { site.TagPlugins = parsed.tagPlugins })
 	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
 	assign(SectionPages, func() { site.Pages = parsed.pages })

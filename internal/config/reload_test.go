@@ -221,10 +221,6 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 			return cfg.LocalSearch.Field == "page" && cfg.LocalSearch.Path == "/custom-search.json" && cfg.LocalSearch.Content != nil && !*cfg.LocalSearch.Content && len(cfg.LocalSearch.SkipSearch) == 1
 		}},
 		{SectionSiteTree, `{"home":{"comments":true}}`, func() bool { return site.Load().SiteTree.Home.Comments }},
-		{SectionNotebook, `{"auto_excerpt":64,"order_by":"-created","license":"CC BY","share":true}`, func() bool {
-			cfg := site.Load().Notebook
-			return cfg.AutoExcerpt == 64 && cfg.OrderBy == "-created" && cfg.Share && cfg.License == "CC BY"
-		}},
 		{SectionDataCache, `{"enable":false,"default_ttl":120,"ttl":{"friends":86400}}`, func() bool {
 			cfg := site.Load().DataCache
 			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400

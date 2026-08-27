@@ -175,13 +175,6 @@ export const WIDGET_META: WidgetMeta[] = [
       { key: "limit", type: "number", label: "显示条数", def: 5 },
     ],
   },
-  {
-    name: "tagtree",
-    label: "笔记本标签树",
-    layout: "tagtree",
-    desc: "笔记本页面的标签树，仅笔记本页面有数据。",
-    fields: [],
-  },
 ];
 
 export const BUILTIN_WIDGET_NAMES = new Set(WIDGET_META.map((w) => w.name));

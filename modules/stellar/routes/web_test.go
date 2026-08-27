@@ -240,49 +240,6 @@ func TestRenderSitePreviewWikiUsesFirstProjectTreeAndRelatedData(t *testing.T) {
 	}
 }
 
-func TestRenderSitePreviewNotebooksUsesFirstNotebookTagTree(t *testing.T) {
-	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { st.Close() })
-	if err := st.EnsureNotebooksTable(); err != nil {
-		t.Fatalf("ensure notebooks: %v", err)
-	}
-	if err := st.EnsureNotesTable(); err != nil {
-		t.Fatalf("ensure notes: %v", err)
-	}
-	nb := &store.Notebook{Name: "go-notes", Order: 1}
-	if err := st.CreateNotebook(nb); err != nil {
-		t.Fatalf("create notebook: %v", err)
-	}
-	if err := st.CreateNote(&store.Note{NotebookID: nb.ID, Title: "Go 入门", Tags: "Go,后端"}); err != nil {
-		t.Fatalf("create note: %v", err)
-	}
-	eng, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
-	if err != nil {
-		t.Fatalf("engine: %v", err)
-	}
-	site := &tmpl.Site{
-		Title: "笔记预览",
-		Widgets: tmpl.WidgetsConfig{
-			Library: map[string]tmpl.WidgetDef{"tagtree": {"layout": "tagtree"}},
-			Pages:   map[string]tmpl.PageBars{"notebooks": {Leftbar: []string{"tagtree"}}},
-		},
-	}
-	ws := newWebServer(webDeps{Site: sitePtr(site), Store: st, Engine: eng})
-
-	html, err := ws.renderSitePreview(nil, "notebooks")
-	if err != nil {
-		t.Fatalf("renderSitePreview notebooks: %v", err)
-	}
-	for _, want := range []string{"go-notes", "Go", `id="data-tagtree"`} {
-		if !strings.Contains(html, want) {
-			t.Errorf("notebooks preview missing %q", want)
-		}
-	}
-}
-
 func TestRenderSitePreviewPostUsesDraftTOCDepth(t *testing.T) {
 	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {

@@ -41,12 +41,6 @@ func normalizeThemeDefaults(s *tmpl.Site) {
 	}
 	// 1.41 ai_label：site.yml 未配 ai_label 段时补主题内置四档（DefaultSite 已显式含）
 	s.Article.AILabel.FillDefaults()
-	if s.Notebook.AutoExcerpt == 0 {
-		s.Notebook.AutoExcerpt = 128
-	}
-	if s.Notebook.OrderBy == "" {
-		s.Notebook.OrderBy = "-updated"
-	}
 }
 
 // DefaultSite 构造 Demo 2 用的站点配置。
@@ -157,7 +151,6 @@ func DefaultSite() *tmpl.Site {
 				CacheTTL: intPtr(86400),
 			},
 		},
-		Notebook: tmpl.NotebookConfig{AutoExcerpt: 128, OrderBy: "-updated", Share: false},
 		Style: tmpl.StyleConfig{
 			CornerShape: "superellipse(1.25)",
 			Leftbar:     tmpl.StyleLeftbar{UIStyle: "card"},

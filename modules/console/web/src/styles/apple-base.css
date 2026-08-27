@@ -76,24 +76,9 @@ select {
   background: linear-gradient(135deg, #007aff, #004fad);
 }
 
-/* 笔记本封面渐变（brand 蓝族单色系；类名为遗留命名，仅值对齐设计库） */
-.notebook-cover-blue {
+/* 封面预览渐变（brand 蓝族单色系） */
+.cover-preview-blue {
   background: linear-gradient(135deg, #66abff, #007aff);
-}
-.notebook-cover-purple {
-  background: linear-gradient(135deg, #2e8dff, #004fad);
-}
-.notebook-cover-green {
-  background: linear-gradient(135deg, #9fcbff, #2e8dff);
-}
-.notebook-cover-orange {
-  background: linear-gradient(135deg, #007aff, #0064d6);
-}
-.notebook-cover-pink {
-  background: linear-gradient(135deg, #66abff, #2e8dff);
-}
-.notebook-cover-teal {
-  background: linear-gradient(135deg, #2e8dff, #0064d6);
 }
 
 /* 胶囊分段控件（设计稿通用 segmented control） */

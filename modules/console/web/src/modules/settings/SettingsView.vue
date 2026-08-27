@@ -54,7 +54,6 @@ const groups = [
     tabs: [
       { key: "article", label: "文章" },
       { key: "comments", label: "评论" },
-      { key: "notebook", label: "笔记本" },
       { key: "authors", label: "作者" },
       { key: "tag_plugins", label: "标签插件" },
     ],
@@ -96,7 +95,6 @@ const allSections = [
   "nav_tabs",
   "authors",
   "plugins",
-  "notebook",
   "tag_plugins",
   "default",
   "pages",
@@ -246,10 +244,6 @@ function ensureDefaults(d: Record<string, any>) {
   d.style.loading = d.style.loading || {};
   d.style.error_page = d.style.error_page || "";
   d.style.animated_avatar = d.style.animated_avatar || {};
-  d.notebook = d.notebook || {};
-  d.notebook.auto_excerpt = d.notebook.auto_excerpt ?? 128;
-  d.notebook.order_by = d.notebook.order_by || "-updated";
-  d.notebook.share = d.notebook.share ?? false;
   d.cover = d.cover || {};
   d.cover.features = d.cover.features || [];
   d.nav_tabs = d.nav_tabs || {};
@@ -537,9 +531,6 @@ function saveActive() {
       break;
     case "plugins":
       save("plugins");
-      break;
-    case "notebook":
-      save("notebook");
       break;
     case "tag_plugins":
       save("tag_plugins");
@@ -1112,38 +1103,6 @@ onMounted(() => {
               <div class="card-actions">
                 <VButton type="primary" size="sm" :loading="savingKey === 'default'" @click="save('default')"
                   >保存素材</VButton
-                >
-              </div>
-            </VCard>
-
-            <VCard v-show="active === 'notebook'" title="笔记本设置">
-              <p class="hint">对齐 Stellar notebook 段；具体笔记本/front-matter 可覆盖这些默认值。</p>
-              <div class="form-grid form-grid-2">
-                <div class="field">
-                  <label>自动摘要长度（字符）</label
-                  ><input v-model.number="data.notebook.auto_excerpt" type="number" min="0" :class="inputCls" />
-                </div>
-                <div class="field">
-                  <label>排序字段</label
-                  ><input v-model="data.notebook.order_by" :class="inputCls" placeholder="-updated" />
-                </div>
-              </div>
-              <div class="switch-row">
-                <div class="switch-row-label"><div class="switch-row-name">显示分享按钮</div></div>
-                <VSwitch v-model="data.notebook.share" />
-              </div>
-              <div class="field">
-                <label>许可协议（文本或 false）</label
-                ><input
-                  :value="typeof data.notebook.license === 'string' ? data.notebook.license : ''"
-                  :class="inputCls"
-                  placeholder="留空或输入许可文案"
-                  @input="data.notebook.license = ($event.target as HTMLInputElement).value"
-                />
-              </div>
-              <div class="card-actions">
-                <VButton type="primary" size="sm" :loading="savingKey === 'notebook'" @click="save('notebook')"
-                  >保存笔记本设置</VButton
                 >
               </div>
             </VCard>

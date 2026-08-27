@@ -27,7 +27,6 @@ export default definePlugin({
       group: "内容",
       children: [{ path: "/wiki/projects", label: "项目管理", icon: "ri:stack-line", group: "内容" }],
     },
-    { path: "/notebooks", label: "笔记本", icon: "ri:book-open-line", group: "内容" },
     { path: "/comments", label: "评论", icon: "ri:chat-3-line", group: "互动", mobile: true },
     { path: "/comment-users", label: "评论用户", icon: "ri:user-community-line", group: "互动", permissions: admin },
     { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
@@ -98,7 +97,6 @@ export default definePlugin({
       },
       { path: "wiki", name: "Wiki", component: () => import("@/modules/wiki/WikiDocsView.vue") },
       { path: "wiki/projects", name: "WikiProjects", component: () => import("@/modules/wiki/WikiProjectsView.vue") },
-      { path: "notebooks", name: "Notebooks", component: () => import("@/modules/notebooks/NotebooksView.vue") },
       { path: "taxonomy", name: "Taxonomy", component: () => import("@/modules/taxonomy/TaxonomyList.vue") },
       { path: "friends", name: "Friends", component: () => import("@/modules/friends/FriendList.vue") },
       {
