@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { pageApi, editorImportApi, getApiErrorMessage } from "@/api";
+import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import EditorToolbar from "../posts/EditorToolbar.vue";
 import PageEditorSidebar from "./PageEditorSidebar.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
+import AttachmentField from "@/components/AttachmentField.vue";
 import { Icon } from "@iconify/vue";
 import { VPageHeader, VButton, Toast, Dialog } from "@/components/ui";
 
@@ -21,6 +22,7 @@ const isNew = computed(() => slugParam.value === "new");
 
 // 页面级 widget 配置项：组件名 + 页面级参数覆盖（与全局 library 浅合并）
 type SidebarWidget = { name: string; params: Record<string, any> };
+type PageBannerInfo = { title: string; subtitle: string; avatar: string; icon: string };
 
 // null = 未配置（继承全局 page 级默认）；[] = 显式空侧栏；[{name, params}, ...] = 自定义序列
 type SidebarMode = "inherit" | "custom";
@@ -29,6 +31,11 @@ const form = ref<{
   title: string;
   content_md: string;
   status: "draft" | "published";
+  banner: string;
+  banner_info: PageBannerInfo;
+  breadcrumb: boolean;
+  author: string;
+  date: string;
   leftbar_widgets: SidebarWidget[] | null;
   rightbar_widgets: SidebarWidget[] | null;
 }>({
@@ -36,6 +43,11 @@ const form = ref<{
   title: "",
   content_md: "",
   status: "draft",
+  banner: "",
+  banner_info: { title: "", subtitle: "", avatar: "", icon: "" },
+  breadcrumb: true,
+  author: "",
+  date: "",
   leftbar_widgets: null,
   rightbar_widgets: null,
 });
@@ -264,6 +276,45 @@ function applyParamsFromJson(p: Record<string, any>, raw: string): string {
 
 const loading = ref(false);
 const saving = ref(false);
+const authorOptions = ref<Record<string, { name: string; hidden?: boolean }>>({});
+
+function normalizeAuthors(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, { name: string; hidden?: boolean }> = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const item = value as Record<string, unknown>;
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+    if (id.trim() && name) out[id.trim()] = { name, hidden: item.hidden === true };
+  }
+  return out;
+}
+
+async function loadAuthors() {
+  try {
+    const { data } = await settingsApi.all();
+    authorOptions.value = normalizeAuthors(data?.authors);
+  } catch {
+    authorOptions.value = {};
+  }
+}
+
+const authorChoices = computed(() => {
+  const choices = Object.entries(authorOptions.value)
+    .filter(([, author]) => !author.hidden)
+    .map(([id, author]) => ({ id, ...author }));
+  const current = form.value.author ? authorOptions.value[form.value.author] : undefined;
+  if (current?.hidden && !choices.some((choice) => choice.id === form.value.author)) {
+    choices.push({ id: form.value.author, ...current });
+  }
+  return choices;
+});
+
+function todayString() {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
 const richRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 
@@ -402,6 +453,10 @@ function hasImportField(fields: string[], ...names: string[]) {
 function applyImportedPage(data: Awaited<ReturnType<typeof editorImportApi.markdown>>["data"]) {
   const m = data.metadata;
   if (hasImportField(data.fields, "title")) form.value.title = m.title || "";
+  if (hasImportField(data.fields, "banner")) form.value.banner = m.banner || "";
+  if (hasImportField(data.fields, "date")) form.value.date = m.date || "";
+  if (hasImportField(data.fields, "author")) form.value.author = m.author || "";
+  if (hasImportField(data.fields, "authors") && !form.value.author) form.value.author = m.authors?.[0] || "";
   // Keep an existing page URL stable; a new page may adopt the explicit
   // front matter slug or the filename-derived suggestion.
   if (isNew.value && (hasImportField(data.fields, "slug") || hasImportField(data.fields, "title"))) {
@@ -465,15 +520,28 @@ const newLeftWidget = ref("");
 const newRightWidget = ref("");
 
 onMounted(async () => {
+  form.value.date = todayString();
+  await loadAuthors();
   if (isNew.value) return;
   loading.value = true;
   try {
     const { data } = await pageApi.get(slugParam.value);
+    const info = (data as any).banner_info || {};
     form.value = {
       slug: data.slug,
       title: data.title,
       content_md: data.content_md,
       status: (data.status as any) || "draft",
+      banner: (data as any).banner || "",
+      banner_info: {
+        title: info.title || "",
+        subtitle: info.subtitle || "",
+        avatar: info.avatar || "",
+        icon: info.icon || "",
+      },
+      breadcrumb: (data as any).breadcrumb !== false,
+      author: (data as any).author || "",
+      date: (data as any).date || "",
       // API 返回：undefined/missing = null（未配置）；[] = 显式空；[...] = 自定义（含旧 string[] / 新对象数组两种）
       leftbar_widgets: normalizeWidgetList((data as any).leftbar_widgets),
       rightbar_widgets: normalizeWidgetList((data as any).rightbar_widgets),
@@ -717,6 +785,60 @@ const smallInputCls =
               <option value="draft">草稿</option>
               <option value="published">发布</option>
             </select>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="横幅与元信息"
+          subtitle="背景图、标题、副标题、头像、面包屑、作者与发布日期"
+          :default-open="!isNew"
+          :key="'banner-config:' + (isNew ? 'new' : 'edit')"
+        >
+          <div class="space-y-4">
+            <div>
+              <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">横幅背景图</label>
+              <AttachmentField v-model="form.banner" placeholder="https://..." show-thumb />
+            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">横幅显示标题</label>
+                <input v-model="form.banner_info.title" :class="inputCls" placeholder="留空回退页面标题" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">横幅副标题</label>
+                <input v-model="form.banner_info.subtitle" :class="inputCls" placeholder="可选" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">头像</label>
+                <AttachmentField v-model="form.banner_info.avatar" placeholder="https://..." show-thumb />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">图标</label>
+                <AttachmentField v-model="form.banner_info.icon" placeholder="https://..." show-thumb />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <label class="flex min-h-10 items-center gap-2 rounded-base border border-border px-3 py-2 text-sm dark:border-border-strong">
+                <input v-model="form.breadcrumb" type="checkbox" class="h-4 w-4 accent-primary" />
+                <span class="text-text-quaternary dark:text-foreground">显示面包屑和日期</span>
+              </label>
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">作者</label>
+                <select v-model="form.author" :class="inputCls">
+                  <option value="">不指定作者</option>
+                  <option v-for="author in authorChoices" :key="author.id" :value="author.id">
+                    {{ author.name }}（{{ author.id }}）
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">发布日期</label>
+                <input v-model="form.date" type="date" :class="inputCls" />
+              </div>
+            </div>
+            <p class="text-xs text-muted-foreground">
+              头像优先于图标；不填写横幅标题时使用页面标题。清空发布日期后，前台不会显示发布日期。
+            </p>
           </div>
         </CollapsibleSection>
 

@@ -877,29 +877,40 @@ type TopicDetail struct {
 	Initial     string // 首字头像文字（名称首 rune）
 }
 
-// Page 对齐 Hexo page 对象，文章页用。
+// PageBannerInfo 是独立页面横幅的结构化覆盖项。
+type PageBannerInfo struct {
+	Title    string
+	Subtitle string
+	Avatar   string
+	Icon     string
+}
+
+// Page 对齐 Hexo page 对象，文章页与独立页面共用。
 type Page struct {
-	Title        string
-	Slug         string
-	Layout       string // post / page / index / archive / categories / tags
-	Type         string // tech / story
-	Lang         string
-	MenuID       string // 当前高亮的菜单 id
-	Author       string
-	AuthorName   string // 多作者命中 Site.Authors 时的展示名（Spec 53：banner 作者链接用）
-	AuthorLinks  []AuthorLink
-	Date         string // 原始日期字符串
-	Updated      string
-	Excerpt      string
-	Views        int64    // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
-	Category     string   // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
-	Tag          string   // 标签文章列表页的当前标签名
-	Topic        string   // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
-	CanonicalURL string   // 当前页面完整 URL（用于 canonical 和 og:url）
-	Description  string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
-	References   []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
-	Banner       string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
-	Subtitle     string   // banner 副标题（对齐原版 banner .text.subtitle；友链页取 pages.friends.hero.description）
+	Title          string
+	Slug           string
+	Layout         string // post / page / index / archive / categories / tags
+	Type           string // tech / story
+	Lang           string
+	MenuID         string // 当前高亮的菜单 id
+	Author         string
+	AuthorName     string // 多作者命中 Site.Authors 时的展示名（Spec 53：banner 作者链接用）
+	AuthorLinks    []AuthorLink
+	Date           string // 原始日期字符串
+	Updated        string
+	Excerpt        string
+	Views          int64    // 文章阅读量（仅文章页 Layout=post 使用，已含本次访问）
+	Category       string   // 分类文章列表页的当前分类名（navbar 显示"分类：xxx"）
+	Tag            string   // 标签文章列表页的当前标签名
+	Topic          string   // 专栏名：文章页（面包屑/左栏系列卡）与专栏列表页（navbar 显示"专栏：xxx"）
+	CanonicalURL   string   // 当前页面完整 URL（用于 canonical 和 og:url）
+	Description    string   // 页面描述（用于 og:description，文章页用 Excerpt，非文章页用 Site.Description）
+	References     []string // 参考文献列表（对齐原版 article_footer.ejs page.references）
+	Banner         string   // 文首横幅图 URL（front matter banner，对齐原版 article_banner.ejs banner.url）
+	Subtitle       string   // banner 副标题（对齐原版 banner .text.subtitle；友链页取 pages.friends.hero.description）
+	BannerInfo     PageBannerInfo
+	HideBreadcrumb bool   // 独立页面关闭横幅顶部面包屑/元信息
+	Path           string // 当前页面 canonical path，用于横幅面包屑链接
 	// Tags 文章标签（1.41 article.tags 末尾标签行）：DB 链路逗号存储经 ParseTags 拆分，
 	// 文件链路直接取 frontmatter 列表。
 	Tags []string
@@ -916,6 +927,36 @@ type Page struct {
 	AISummary   string
 	AISummaryOn bool
 	AIUserAPIOn bool
+}
+
+// BannerTitle 返回横幅标题覆盖；未设置时回退页面标题。
+func (p *Page) BannerTitle() string {
+	if p == nil {
+		return ""
+	}
+	if p.BannerInfo.Title != "" {
+		return p.BannerInfo.Title
+	}
+	return p.Title
+}
+
+// BannerAvatar 返回横幅头像/图标资源，头像优先于图标。
+func (p *Page) BannerAvatar() string {
+	if p == nil {
+		return ""
+	}
+	if p.BannerInfo.Avatar != "" {
+		return p.BannerInfo.Avatar
+	}
+	return p.BannerInfo.Icon
+}
+
+// BannerStyleURL 返回用于 CSS url() 的横幅地址；与 Stellar EJS 一样转义单引号。
+func (p *Page) BannerStyleURL() string {
+	if p == nil {
+		return ""
+	}
+	return strings.ReplaceAll(p.Banner, "'", "%27")
 }
 
 // AuthorLink 是文章页作者展示与链接所需的最小视图模型。

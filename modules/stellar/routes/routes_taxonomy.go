@@ -34,19 +34,25 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	// 首次启动自 content/notes.md 迁移）；瞬间由正文中的 {% moments %} 组件按需插入。
 	r.GET("/notes", func(c *gin.Context) {
 		var contentHTML template.HTML
+		var pageModel *tmpl.Page
 		if p, err := s.st.GetPageBySlug(NotesSlug); err == nil && p != nil && p.Status == store.StatusPublished {
 			if rendered, e := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML); e == nil {
 				contentHTML = template.HTML(rendered)
 			}
+			pageModel = buildPageModel(s.site.Load(), p, "/notes", "notes")
+			pageModel.Layout = "notes"
 		} else if raw, err := os.ReadFile(s.notesMDPath); err == nil {
 			// 兼容未迁移场景（种子失败等）：回退旧文件读取
 			if rendered, e := s.posts.Render(string(raw)); e == nil {
 				contentHTML = template.HTML(rendered)
 			}
 		}
+		if pageModel == nil {
+			pageModel = &tmpl.Page{Title: s.menuTitle("notes", "笔记"), Layout: "notes", MenuID: "notes", Lang: "zh-CN", Path: "/notes"}
+		}
 		data := &tmpl.ViewData{
 			Site:             s.site.Load(),
-			Page:             &tmpl.Page{Title: s.menuTitle("notes", "笔记"), Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
+			Page:             pageModel,
 			NotesContentHTML: contentHTML,
 		}
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（notes.md 的 quot el:h2 标题带 id 锚点）。

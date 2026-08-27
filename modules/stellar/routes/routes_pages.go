@@ -24,7 +24,7 @@ func (s *webServer) handleLinksPage(c *gin.Context) {
 	}
 	data := &tmpl.ViewData{
 		Site:    s.site.Load(),
-		Page:    &tmpl.Page{Title: s.menuTitle("friends", "友链"), Layout: "page", MenuID: p.Slug, Lang: "zh-CN", Slug: p.Slug},
+		Page:    buildPageModel(s.site.Load(), p, "/links", p.Slug),
 		Content: template.HTML(contentHTML),
 	}
 	data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
@@ -56,16 +56,7 @@ func (s *webServer) handleFriendsPage(c *gin.Context) {
 		s.render500(c)
 		return
 	}
-	title := s.site.Load().Pages.Friends.Title
-	if title == "" {
-		title = p.Title
-	}
-	pg := &tmpl.Page{Title: title, Layout: "page", MenuID: "friends", Lang: "zh-CN", Slug: p.Slug}
-	if hero := s.site.Load().Pages.Friends.Hero; hero != nil {
-		pg.Banner = hero.Background
-		pg.Subtitle = hero.Description
-	}
-	data := &tmpl.ViewData{Site: s.site.Load(), Page: pg, Content: template.HTML(contentHTML)}
+	data := &tmpl.ViewData{Site: s.site.Load(), Page: buildPageModel(s.site.Load(), p, "/friends", "friends"), Content: template.HTML(contentHTML)}
 	data.TOC = stellarweb.ExtractTOCWith(contentHTML, s.tocOptions())
 	s.fillComments(data, "/friends")
 	s.renderBase(c, data)

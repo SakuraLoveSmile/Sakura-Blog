@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -8,6 +9,48 @@ import (
 
 	"blog/internal/content"
 )
+
+// PageBannerInfo 是 Page 横幅可编辑的覆盖信息。
+// 数据库中以 JSON 字符串保存，API 侧使用同样的结构化字段。
+type PageBannerInfo struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+	Avatar   string `json:"avatar"`
+	Icon     string `json:"icon"`
+}
+
+// Value 实现 driver.Valuer，使仓储可以直接写入结构化横幅信息。
+func (b PageBannerInfo) Value() (driver.Value, error) {
+	raw, err := json.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+	return string(raw), nil
+}
+
+// Scan 实现 sql.Scanner；历史库若存在空/损坏 JSON，安全降级为空配置。
+func (b *PageBannerInfo) Scan(src any) error {
+	*b = PageBannerInfo{}
+	if src == nil {
+		return nil
+	}
+	var raw []byte
+	switch v := src.(type) {
+	case string:
+		raw = []byte(v)
+	case []byte:
+		raw = v
+	default:
+		return fmt.Errorf("scan page banner_info: unsupported %T", src)
+	}
+	if strings.TrimSpace(string(raw)) == "" {
+		return nil
+	}
+	if err := json.Unmarshal(raw, b); err != nil {
+		*b = PageBannerInfo{}
+	}
+	return nil
+}
 
 // WidgetConfig 页面级单个 widget 的配置：组件名 + 页面级覆盖参数（与全局 library 浅合并）。
 // 向后兼容：JSON 存储同时支持两种格式，解析时自动归一化：
@@ -30,6 +73,11 @@ type Page struct {
 	ContentMD       string
 	ContentHTML     string
 	Status          string // draft / published
+	Banner          string // 横幅背景图 URL
+	BannerInfo      PageBannerInfo
+	Breadcrumb      bool   // 是否显示横幅顶部面包屑与元信息
+	Author          string // site.yml authors ID
+	PublishedAt     string // YYYY-MM-DD，空串表示不显示发布日期
 	IsSystem        bool   // 是否为系统页面
 	Views           int64  // 浏览量
 	LeftbarWidgets  string // JSON 编码，空串=继承全局
@@ -45,12 +93,14 @@ func (p *Page) TableName() string { return "pages" }
 // Columns Entity 接口：全列，首列为 id。
 func (p *Page) Columns() []string {
 	return []string{"id", "slug", "title", "content_md", "content_html", "status",
+		"banner", "banner_info", "breadcrumb", "author", "published_at",
 		"is_system", "views", "leftbar_widgets", "rightbar_widgets", "created_at", "updated_at", "deleted_at"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (p *Page) Values() []any {
 	return []any{p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status,
+		p.Banner, p.BannerInfo, p.Breadcrumb, p.Author, p.PublishedAt,
 		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.CreatedAt, p.UpdatedAt, p.DeletedAt}
 }
 
@@ -60,6 +110,7 @@ func (p *Page) SetID(id int64) { p.ID = id }
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (p *Page) ScanRow(row rowScanner) error {
 	return row.Scan(&p.ID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status,
+		&p.Banner, &p.BannerInfo, &p.Breadcrumb, &p.Author, &p.PublishedAt,
 		&p.IsSystem, &p.Views, &p.LeftbarWidgets, &p.RightbarWidgets, &p.CreatedAt, &p.UpdatedAt, &p.DeletedAt)
 }
 
@@ -169,11 +220,36 @@ func (s *Store) EnsurePagesTable() error {
 	if err := s.ensureTable("pages"); err != nil {
 		return err
 	}
-	s.db.Exec(`ALTER TABLE pages ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`)
-	s.db.Exec(`ALTER TABLE pages ADD COLUMN leftbar_widgets TEXT NOT NULL DEFAULT ''`)
-	s.db.Exec(`ALTER TABLE pages ADD COLUMN rightbar_widgets TEXT NOT NULL DEFAULT ''`)
-	s.db.Exec(`ALTER TABLE pages ADD COLUMN is_system INTEGER NOT NULL DEFAULT 0`)
-	s.db.Exec(`ALTER TABLE pages ADD COLUMN views INTEGER NOT NULL DEFAULT 0`)
+	want := map[string]string{
+		"deleted_at":       `ALTER TABLE pages ADD COLUMN deleted_at TEXT NOT NULL DEFAULT ''`,
+		"leftbar_widgets":  `ALTER TABLE pages ADD COLUMN leftbar_widgets TEXT NOT NULL DEFAULT ''`,
+		"rightbar_widgets": `ALTER TABLE pages ADD COLUMN rightbar_widgets TEXT NOT NULL DEFAULT ''`,
+		"is_system":        `ALTER TABLE pages ADD COLUMN is_system INTEGER NOT NULL DEFAULT 0`,
+		"views":            `ALTER TABLE pages ADD COLUMN views INTEGER NOT NULL DEFAULT 0`,
+		"banner":           `ALTER TABLE pages ADD COLUMN banner TEXT NOT NULL DEFAULT ''`,
+		"banner_info":      `ALTER TABLE pages ADD COLUMN banner_info TEXT NOT NULL DEFAULT '{}'`,
+		"breadcrumb":       `ALTER TABLE pages ADD COLUMN breadcrumb INTEGER NOT NULL DEFAULT 1`,
+		"author":           `ALTER TABLE pages ADD COLUMN author TEXT NOT NULL DEFAULT ''`,
+		"published_at":     `ALTER TABLE pages ADD COLUMN published_at TEXT NOT NULL DEFAULT ''`,
+	}
+	for col, alter := range want {
+		has, err := s.tableHasColumn("pages", col)
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := s.db.Exec(alter); err != nil {
+			return fmt.Errorf("alter pages add %s: %w", col, err)
+		}
+		// 仅在首次加列时回填旧页面，避免后续启动把用户主动清空的日期恢复。
+		if col == "published_at" {
+			if _, err := s.db.Exec(`UPDATE pages SET published_at = substr(created_at, 1, 10) WHERE published_at = ''`); err != nil {
+				return fmt.Errorf("backfill pages published_at: %w", err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -336,9 +412,11 @@ func (s *Store) CreatePage(p *Page) (int64, error) {
 func (s *Store) UpdatePage(slug string, p *Page) error {
 	p.UpdatedAt = time.Now().UTC()
 	res, err := s.db.Exec(`UPDATE pages SET slug=?, title=?, content_md=?, content_html=?, status=?,
+		banner=?, banner_info=?, breadcrumb=?, author=?, published_at=?,
 		is_system=?, views=?, leftbar_widgets=?, rightbar_widgets=?, updated_at=?
 		WHERE slug=?`,
 		p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status,
+		p.Banner, p.BannerInfo, p.Breadcrumb, p.Author, p.PublishedAt,
 		p.IsSystem, p.Views, p.LeftbarWidgets, p.RightbarWidgets, p.UpdatedAt, slug)
 	if err != nil {
 		return fmt.Errorf("update page %s: %w", slug, err)

@@ -15,7 +15,7 @@
   <div id="l_cover">{{template "partial/cover" .}}</div>
 
   {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
-  <div class="l_body {{if eq .Page.Layout "post"}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
+  <div class="l_body {{if or (eq .Page.Layout "post") (eq .Page.Layout "page") (eq .Page.Layout "wiki") (eq .Page.Layout "notes") (eq .Page.Layout "wiki-doc")}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
     {{- $leftSurface := "glass" -}}
     {{- if eq .Site.Style.Leftbar.UIStyle "card" -}}{{- $leftSurface = "card" -}}{{- end -}}
     <aside class="l_left{{if eq $leftSurface "card"}} leftbar-card{{end}}" data-ui-surface="{{$leftSurface}}">

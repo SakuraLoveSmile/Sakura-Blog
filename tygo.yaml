@@ -16,3 +16,4 @@ packages:
       - "plugin_runtime.go"
       - "rag.go"
       - "editor_import.go"
+      - "page.go"

@@ -70,11 +70,23 @@ export interface PageWidget {
   params?: JsonObject;
 }
 
+export interface PageBannerInfo {
+  title?: string;
+  subtitle?: string;
+  avatar?: string;
+  icon?: string;
+}
+
 export interface PagePayload {
   slug?: string;
   title?: string;
   content_md?: string;
   status?: Exclude<ContentStatus, "trashed"> | string;
+  banner?: string;
+  banner_info?: PageBannerInfo;
+  breadcrumb?: boolean;
+  author?: string;
+  date?: string;
   leftbar_widgets?: PageWidget[] | null;
   rightbar_widgets?: PageWidget[] | null;
 }

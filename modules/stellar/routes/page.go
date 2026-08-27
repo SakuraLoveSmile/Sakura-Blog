@@ -85,23 +85,71 @@ func (h *PageHandler) SetFillExtra(fn func(*tmpl.ViewData, *gin.Context)) {
 // EnsureSystemFriendsPage 确保 pages 表存在友链系统页（slug=friends，published）。
 // 已存在（含用户编辑过的）不覆盖；缺失时创建并预渲染 ContentHTML。
 func (h *PageHandler) EnsureSystemFriendsPage() error {
-	if p, err := h.store.GetPageBySlug(FriendsSlug); err == nil && p != nil {
+	p, err := h.store.GetPageBySlug(FriendsSlug)
+	if err != nil {
+		return err
+	}
+	if p == nil {
+		html, err := h.posts.Render(defaultFriendsMD)
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		id, err := h.store.CreatePage(&store.Page{
+			Slug: FriendsSlug, Title: "友链", ContentMD: defaultFriendsMD, ContentHTML: html,
+			Status: store.StatusPublished, IsSystem: true, Breadcrumb: true,
+			PublishedAt: now.UTC().Format("2006-01-02"), CreatedAt: now, UpdatedAt: now,
+		})
+		if err != nil {
+			return err
+		}
+		log.Printf("[info] seeded system friends page (id=%d, slug=%s)", id, FriendsSlug)
+		p, err = h.store.GetPageBySlug(FriendsSlug)
+		if err != nil {
+			return err
+		}
+	}
+	return h.migrateLegacyFriendsBanner(p)
+}
+
+const legacyFriendsBannerMigration = "page_banner_friends_legacy_migrated"
+
+// migrateLegacyFriendsBanner 将旧 pages.friends Hero 一次性转入系统 Page，之后以 pages 记录为唯一来源。
+func (h *PageHandler) migrateLegacyFriendsBanner(p *store.Page) error {
+	if p == nil {
 		return nil
 	}
-	html, err := h.posts.Render(defaultFriendsMD)
-	if err != nil {
+	if err := h.store.EnsureSettingsTable(); err != nil {
 		return err
 	}
-	now := time.Now()
-	id, err := h.store.CreatePage(&store.Page{
-		Slug: FriendsSlug, Title: "友链", ContentMD: defaultFriendsMD, ContentHTML: html,
-		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
-	})
-	if err != nil {
+	marker, err := h.store.GetSetting(legacyFriendsBannerMigration)
+	if err != nil || marker == "1" {
 		return err
 	}
-	log.Printf("[info] seeded system friends page (id=%d, slug=%s)", id, FriendsSlug)
-	return nil
+	changed := false
+	if h.site != nil && h.site.Load() != nil {
+		legacy := h.site.Load().Pages.Friends
+		if p.BannerInfo.Title == "" && legacy.Title != "" {
+			p.BannerInfo.Title = legacy.Title
+			changed = true
+		}
+		if legacy.Hero != nil {
+			if p.Banner == "" && legacy.Hero.Background != "" {
+				p.Banner = legacy.Hero.Background
+				changed = true
+			}
+			if p.BannerInfo.Subtitle == "" && legacy.Hero.Description != "" {
+				p.BannerInfo.Subtitle = legacy.Hero.Description
+				changed = true
+			}
+		}
+	}
+	if changed {
+		if err := h.store.UpdatePage(FriendsSlug, p); err != nil {
+			return err
+		}
+	}
+	return h.store.PutSetting(legacyFriendsBannerMigration, "1")
 }
 
 // EnsureSystemNotesPage 确保 pages 表存在笔记系统页（slug=notes，published）。
@@ -127,7 +175,8 @@ func (h *PageHandler) EnsureSystemNotesPage(importPath string) error {
 	now := time.Now()
 	id, err := h.store.CreatePage(&store.Page{
 		Slug: NotesSlug, Title: "笔记", ContentMD: md, ContentHTML: html,
-		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
+		Status: store.StatusPublished, IsSystem: true, Breadcrumb: true,
+		PublishedAt: now.UTC().Format("2006-01-02"), CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
 		return err
@@ -183,7 +232,8 @@ func (h *PageHandler) EnsureSystemLinksPage() error {
 	now := time.Now()
 	id, err := h.store.CreatePage(&store.Page{
 		Slug: LinksSlug, Title: "友链", ContentMD: defaultLinksMD, ContentHTML: html,
-		Status: store.StatusPublished, IsSystem: true, CreatedAt: now, UpdatedAt: now,
+		Status: store.StatusPublished, IsSystem: true, Breadcrumb: true,
+		PublishedAt: now.UTC().Format("2006-01-02"), CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
 		return err
@@ -226,14 +276,8 @@ func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
 		return
 	}
 	data := &tmpl.ViewData{
-		Site: h.site.Load(),
-		Page: &tmpl.Page{
-			Title:  p.Title,
-			Slug:   p.Slug,
-			Layout: "page",
-			Lang:   "zh-CN",
-			MenuID: p.Slug, // 自动菜单项（MenuPages）按 slug 高亮
-		},
+		Site:    h.site.Load(),
+		Page:    buildPageModel(h.site.Load(), p, "/"+p.Slug, p.Slug),
 		Content: template.HTML(contentHTML),
 	}
 	// 页面级自定义侧栏：只要左右栏至少一个是「显式配置过」（非空字符串，配置=继承全局不进来），
@@ -272,6 +316,34 @@ func (h *PageHandler) renderPage(c *gin.Context, p *store.Page) {
 		return
 	}
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+}
+
+// buildPageModel 将 pages 表记录转换为普通 Page 的 Stellar 视图模型。
+// 普通页及 friends/links/notes 系统页共用此路径，避免横幅字段出现分叉。
+func buildPageModel(site *tmpl.Site, p *store.Page, path, menuID string) *tmpl.Page {
+	if p == nil {
+		return &tmpl.Page{Layout: "page", Lang: "zh-CN", Path: path, MenuID: menuID}
+	}
+	pg := &tmpl.Page{
+		Title:          p.Title,
+		Slug:           p.Slug,
+		Layout:         "page",
+		Lang:           "zh-CN",
+		MenuID:         menuID,
+		Banner:         p.Banner,
+		BannerInfo:     tmpl.PageBannerInfo{Title: p.BannerInfo.Title, Subtitle: p.BannerInfo.Subtitle, Avatar: p.BannerInfo.Avatar, Icon: p.BannerInfo.Icon},
+		HideBreadcrumb: !p.Breadcrumb,
+		Author:         p.Author,
+		Date:           p.PublishedAt,
+		Updated:        p.UpdatedAt.Format("2006-01-02"),
+		Path:           path,
+	}
+	pg.AuthorLinks = resolveAuthorLinks(site, &store.Post{Author: p.Author})
+	if len(pg.AuthorLinks) > 0 {
+		pg.Author = pg.AuthorLinks[0].ID
+		pg.AuthorName = pg.AuthorLinks[0].Name
+	}
+	return pg
 }
 
 // show GET /pages/:slug：仅 published 展示，否则 404。复用 renderPage 与 ShowByPath 走同一渲染分支。

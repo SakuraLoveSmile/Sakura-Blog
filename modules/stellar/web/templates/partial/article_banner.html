@@ -1,15 +1,24 @@
-{{- /* article_banner.html: 对齐 Stellar 1.42 article_banner.ejs 的显式两行结构。 */ -}}
-{{if .Page.Title}}
+{{- /* article_banner.html: 普通页与文章页共用的 Stellar 横幅结构。 */ -}}
+{{if .Page.BannerTitle}}
 <div class="article-banner-wrap">
-  <div class="article banner top"{{if .Page.Banner}} style="--bg-url:url('{{.Page.Banner}}')"{{else if and .Site.Article.BannerRatio .Page.Banner}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
-    {{if .Page.Banner}}<img class="bg" src="{{.Page.Banner}}" alt="">{{end}}
+  <div class="article banner top"{{if .Page.Banner}} style="--bg-url:url('{{.Page.BannerStyleURL}}')"{{end}}>
+    {{if .Page.Banner}}<img class="lazy bg" data-src="{{.Page.Banner}}" alt="">{{end}}
     <div class="content"{{if .Page.Banner}} data-text-adaptive="split"{{end}}>
       {{if .Page.Banner}}<div class="banner-mask banner-mask-top" aria-hidden="true"></div><div class="banner-mask banner-mask-bottom" aria-hidden="true"></div>{{end}}
+      {{if not .Page.HideBreadcrumb}}
       <div class="top bread-nav footnote">
         <div class="top-row">
           <div class="left" id="breadcrumb">
             <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
-            {{if and .HasTopics .Page.Topic}}<span class="sep"></span><a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a><span class="sep"></span><a class="cap breadcrumb" id="proj" href="/topic/{{.Page.Topic}}">{{.Page.Topic}}</a>{{else}}<span class="sep"></span><a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>{{end}}
+            {{if eq .Page.Layout "page"}}
+              <span class="sep"></span><a class="cap breadcrumb" href="{{if .Page.Path}}{{.Page.Path}}{{else}}/{{.Page.Slug}}{{end}}">{{.Page.Title}}</a>
+            {{else if eq .Page.Layout "notes"}}
+              <span class="sep"></span><a class="cap breadcrumb" href="/notes">{{- lang "breadcrumb.notes" -}}</a>
+            {{else if and .HasTopics .Page.Topic}}
+              <span class="sep"></span><a class="cap breadcrumb" id="menu" href="/topic/">{{- lang "breadcrumb.topic" -}}</a><span class="sep"></span><a class="cap breadcrumb" id="proj" href="/topic/{{.Page.Topic}}">{{.Page.Topic}}</a>
+            {{else}}
+              <span class="sep"></span><a class="cap breadcrumb" href="/">{{- lang "breadcrumb.blog" -}}</a>
+            {{end}}
           </div>
           <div class="right">
             {{if and (eq .Page.Layout "post") .Site.Article.ReadingTime (gt .WordCount 0)}}<span class="cap reading">{{lang "meta.word_count" .WordCount}} · {{lang "meta.reading_time" .ReadingMinutes}}</span>{{end}}
@@ -17,15 +26,17 @@
           </div>
         </div>
         <div class="meta-row" id="post-meta">
-          {{if .Page.AuthorLinks}}{{range $i, $author := .Page.AuthorLinks}}{{if $i}}<span class="sep"></span>{{end}}<a class="author" href="/author/{{$author.ID}}/">{{$author.Name}}</a>{{end}}<span class="sep"></span>{{end}}
+          {{if .Page.AuthorLinks}}{{range $i, $author := .Page.AuthorLinks}}{{if $i}}<span class="sep"></span>{{end}}<a class="author" href="/author/{{$author.ID}}/">{{$author.Name}}</a>{{end}}<span class="sep"></span>{{else if and .Page.Author .Page.AuthorName}}<a class="author" href="/author/{{.Page.Author}}/">{{.Page.AuthorName}}</a><span class="sep"></span>{{end}}
           {{if .Page.Date}}<span class="text created">{{if and .Page.Author .Page.AuthorName}}{{lang "meta.created"}}：{{end}}<time datetime="{{.Page.Date}}">{{.Page.Date}}</time></span>{{end}}
           {{if and .Page.Updated (ne .Page.Updated .Page.Date)}}<span class="sep updated"></span><span class="text updated">{{lang "meta.updated"}}：<time datetime="{{.Page.Updated}}">{{.Page.Updated}}</time></span>{{end}}
         </div>
       </div>
-      <div class="bottom only-title">
+      {{end}}
+      <div class="bottom{{if and .Page.BannerTitle (not .Page.BannerInfo.Subtitle) (not .Page.Subtitle)}} only-title{{end}}">
+        {{if .Page.BannerAvatar}}<img class="lazy avatar" data-src="{{.Page.BannerAvatar}}" alt="">{{end}}
         <div class="text-area">
-          <h1 class="text title"><span>{{.Page.Title}}</span></h1>
-          {{if .Page.Subtitle}}<div class="text subtitle">{{.Page.Subtitle}}</div>{{end}}
+          <h1 class="text title"><span>{{.Page.BannerTitle}}</span></h1>
+          {{if .Page.BannerInfo.Subtitle}}<div class="text subtitle">{{.Page.BannerInfo.Subtitle}}</div>{{else if .Page.Subtitle}}<div class="text subtitle">{{.Page.Subtitle}}</div>{{end}}
         </div>
       </div>
     </div>

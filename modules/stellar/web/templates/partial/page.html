@@ -1,18 +1,5 @@
-{{- /* partial/page.html: 独立页面正文，对齐 Stellar 普通页 layout（.md-text）
-   banner 支持封面图（Page.Banner）与副标题（Page.Subtitle，对齐原版 .text.subtitle）。*/}}
-{{if .Page.Title}}
-<div class="article banner top"{{if and .Page.Banner .Site.Article.BannerRatio}} style="--banner-ratio:{{.Site.Article.BannerRatio}}"{{end}}>
-  {{if .Page.Banner}}<img class="bg" src="{{.Page.Banner}}">{{end}}
-  <div class="content">
-    <div class="bottom only-title">
-      <div class="text-area">
-        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
-        {{if .Page.Subtitle}}<div class="text subtitle">{{.Page.Subtitle}}</div>{{end}}
-      </div>
-    </div>
-  </div>
-</div>
-{{end}}
+{{- /* Page 正文：横幅统一复用 article_banner，正文本身不注入额外间距。 */ -}}
+{{template "partial/article_banner" .}}
 <article class="md-text content">
   {{.Content}}
 </article>

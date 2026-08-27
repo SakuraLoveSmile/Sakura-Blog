@@ -79,6 +79,66 @@ export interface ModuleToggleResponse {
 }
 
 //////////
+// source: page.go
+
+/**
+ * PageWidgetJSON 前端 widget 配置项：组件名 + 页面级参数覆盖（与全局 library 浅合并）。
+ */
+export interface PageWidgetJSON {
+  name: string;
+  params?: { [key: string]: unknown};
+}
+/**
+ * PageBannerInfoJSON 页面横幅可编辑覆盖项。
+ */
+export interface PageBannerInfoJSON {
+  title: string;
+  subtitle: string;
+  avatar: string;
+  icon: string;
+}
+/**
+ * PageJSON 页面详情 API 响应模型。leftbar_widgets / rightbar_widgets：
+ * null = 未配置（继承全局 page 级默认）；[] = 明确空侧栏；[{name, params}, ...] = 自定义序列。
+ */
+export interface PageJSON {
+  slug: string;
+  title: string;
+  content_md?: string;
+  status: string;
+  banner: string;
+  banner_info: PageBannerInfoJSON;
+  breadcrumb: boolean;
+  author: string;
+  date: string;
+  is_system: boolean;
+  views: number /* int64 */;
+  leftbar_widgets?: PageWidgetJSON[];
+  rightbar_widgets?: PageWidgetJSON[];
+  created_at: string;
+  updated_at: string;
+}
+/**
+ * PageListJSON 页面列表响应模型，不包含正文与横幅大字段。
+ */
+export interface PageListJSON {
+  slug: string;
+  title: string;
+  status: string;
+  is_system: boolean;
+  views: number /* int64 */;
+  created_at: string;
+  updated_at: string;
+}
+/**
+ * PageListResponse 页面列表响应。
+ */
+export interface PageListResponse {
+  items: (PageListJSON | undefined)[];
+  total: number /* int */;
+}
+
+//////////
 // source: plugin_runtime.go
 
 export interface ScriptPluginListResponse {

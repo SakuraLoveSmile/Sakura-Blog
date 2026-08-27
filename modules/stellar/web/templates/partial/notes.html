@@ -1,31 +1,5 @@
-{{- /* notes.html: 笔记(手记)页，对齐 xaoxuu.com/notes/ 的两段式结构：
-   正文来自 pages 表中的可编辑 Markdown；瞬间通过正文中的 {% moments %} shortcode 插入，
-   因而既能保留默认 Notes 页布局，也能复用到任意文章或独立页面。
-   由 base.html 按 .Page.Layout == "notes" 分派渲染。
-*/ -}}
-<div class="article banner top">
-  <div class="content">
-    <div class="top bread-nav footnote">
-      <div class="left">
-        <div class="flex-row" id="breadcrumb">
-          <a class="cap breadcrumb" href="/">{{- lang "breadcrumb.home" -}}</a>
-          <span class="sep"></span>
-          <a class="cap breadcrumb" href="/notes">{{- lang "breadcrumb.notes" -}}</a>
-        </div>
-      </div>
-    </div>
-    <div class="bottom only-title">
-      <div class="text-area">
-        <h1 class="text title"><span>{{.Page.Title}}</span></h1>
-      </div>
-    </div>
-  </div>
-</div>
-
+{{- /* notes.html: 保留 notes 专用正文回退，横幅结构复用普通 Page。 */ -}}
+{{template "partial/article_banner" .}}
 <article class="md-text content">
-  {{if .NotesContentHTML}}{{.NotesContentHTML}}{{end}}
-
-  {{- if not .NotesContentHTML}}
-  <p class="wiki-empty">{{- lang "notes.empty" -}}</p>
-  {{- end}}
+  {{if .NotesContentHTML}}{{.NotesContentHTML}}{{else}}<p class="wiki-empty">{{- lang "notes.empty" -}}</p>{{end}}
 </article>
