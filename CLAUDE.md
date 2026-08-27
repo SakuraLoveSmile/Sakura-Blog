@@ -10,26 +10,26 @@
 
 ## 仓库工作流
 
-### 目录结构（bare 仓库 + git worktree）
+### 目录结构（根目录 dev + git worktree）
 
-根目录是 bare 仓库容器，三个分支各占独立子目录 worktree：
+Blog 根目录是长期保留的 `dev` 工作树；`main` / `release` 只保留在远端，临时 feature worktree 放在 Blog 同级目录：
 
 | 分支 | 工作树路径 | 用途 |
 |------|-----------|------|
-| `main` | `main/` | 主分支，稳定版本 |
-| `dev` | `dev/` | 日常开发 |
-| `release` | `release/` | 发布版本 |
+| `dev` | Blog 根目录 | 日常开发 |
+| `main` | `origin/main` | 远端稳定版本 |
+| `release` | `origin/release` | 远端发布版本 |
 
-- `.bare/`：bare 仓库核心，根目录 `.git` 文件指向它
+- `.git/`：普通仓库元数据与 worktree 管理信息
 - `resource/`：参考资源（hexo-theme-stellar 主题克隆），已 gitignore，不入版本控制
 - `.claude/`：本地工具配置（launch.json），不入版本控制
 
 ### worktree 操作注意
 
-- **git 命令必须在某个 worktree 子目录内执行**（main/dev/release），根目录是 bare 仓库，执行 `git status`/`git add`/`git commit` 会报 `fatal: this operation must be run in a work tree`
-- **注意：bash 每次调用的 cwd 可能不保留**，容易在根目录误执行 git 命令。提交时用 `cd /Users/sakurasep/Documents/Code/Project/Blog/dev && git ...` 显式切目录，或用 `git -C <worktree路径> ...`
-- 若 worktree 的 `.git` 文件丢失（`git worktree list` 显示 `prunable`），而 `.bare/worktrees/<name>/` 元数据还在，可重建：`echo "gitdir: /Users/sakurasep/Documents/Code/Project/Blog/.bare/worktrees/<name>" > <子目录>/.git`
-- `resource/` 通过相对路径引用：从 `dev/` 出发是 `../resource/hexo-theme-stellar/...`
+- **git 命令在 Blog 根目录执行**，根目录当前分支为 `dev`；提交前仍须执行 `make pre-commit-check`
+- 新 feature worktree 建在 Blog 同级目录，例如 `git worktree add ../Blog-feat-name -b feature/name`，合入后立即移除
+- `make merge-check` 默认从 `git worktree list` 自动定位根目录的 `dev`，非标准路径可传 `DEV_WORKTREE=<路径>`
+- `resource/` 通过当前 worktree 根的相对路径引用；sibling feature worktree 应链接到 Blog 根目录的 `resource/`
 
 ### 提交规范
 
@@ -197,14 +197,14 @@ Go 模板需在页面注入等价的 `ctx` 对象，否则 JS 报 ReferenceError
 
 ## Demo 2 新增坑点（Go 服务端渲染）
 
-### go run 工作目录不可靠，必须用 -root 参数定位 dev 路径
+### go run 工作目录不可靠，必须用 -root 参数定位工作树路径
 
-`go run ./cmd/blog` 把源码编译到临时目录再运行，`os.Executable()` 返回临时二进制路径而非 dev/。而 `os.Getwd()`/`filepath.Abs(".")` 取决于调用方 cwd：
+`go run ./cmd/blog` 把源码编译到临时目录再运行，`os.Executable()` 返回临时二进制路径而非工作树。`os.Getwd()`/`filepath.Abs(".")` 也取决于调用方 cwd：
 
-- 在 dev/ 下直接 `go run` 时 cwd 正确
-- 但 preview 工具/Bash 工具的 cwd 不稳定（可能落在项目根 Blog/ 而非 dev/），此时 `filepath.Join(root, "..", "resource", ...)` 会解析成 `Blog/../resource/...` = `Project/resource/...`（少了 Blog 层），`icons.yml` 报 `no such file or directory`，服务起不来表现为 HTTP 000
+- 在 Blog 根目录直接 `go run` 时 cwd 正确
+- preview 工具/Bash 工具的 cwd 可能变化，因此应始终显式传入 Blog 根目录；开发期资源路径统一解析为 `<root>/resource/...`
 
-**修复**：main.go 加 `-root` flag 接收 dev 绝对路径，launch.json 显式传 `-root /Users/sakurasep/Documents/Code/Project/Blog/dev`。preview 启动要留 ~10s（go run 首次编译 Gin 依赖较慢，3s 测试窗口会误判"卡住"）。
+**用法**：`main.go` 的 `-root` 接收 Blog 根目录，launch.json 使用 `-root /Users/sakurasep/Documents/Code/Project/Blog`。preview 启动要留 ~10s（go run 首次编译 Gin 依赖较慢，3s 测试窗口会误判"卡住"）。
 
 ### template.HTML 类型不需要 safe 函数转义
 
@@ -355,8 +355,8 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 - Go 1.25.5（Gin + goldmark + modernc.org/sqlite）
 - Node 22 + stylus 0.62.0（CSS 编译；`make css` 从 resource/ 主题源重编 `modules/stellar/web/assets/css/main.css`，依赖 modules/stellar/web/node_modules，CI 无源不可编译、不进 test 门禁）
 - SQLite（`modernc.org/sqlite` 纯 Go 驱动，免 CGO，driver name `"sqlite"`）
-- 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`，指向 dev/）
-- Go 服务：`go run ./cmd/blog/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080，qoder 端口 8081（约定以 `AGENTS.md` 的「端口约定」为准）
+- 预览：`python3 -m http.server 8090`（配置在根目录 `.claude/launch.json`）
+- Go 服务：`go run ./cmd/blog/ -root <worktree 绝对路径>`，`-seed` 可选（导入 content/posts/*.md 到 DB）。dev 端口 8080（约定以 `AGENTS.md` 的「端口约定」为准）
 - Go module：根目录 `go.mod` 是唯一 module。**所有 go 命令必须在 worktree 根执行**（`go run ./cmd/blog/`、`go vet ./...`、`go test ./...`）。
 
 ## Demo 进度
@@ -376,7 +376,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 `resource/hexo-theme-stellar` 已固定到 `1.40.0`，`modules/stellar/web/assets/css/main.css` 必须通过 `make css` 从该主题源重编；CSS 版本使用模板的 `asset_ver` 内容哈希，不再手写固定版本号。同步内容包括 `corner-shape`、左栏 card、头像渐变、文章置顶轮播、reading time、card tags、table/tip/md 标签和 Wiki README 首页回退。
 
-**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本。执行 `make css` 前先确认克隆版本与本分支同步版本一致（当前以本文档最新 Spec 章节记录的版本为准，见 Spec 73；`git -C ../resource/hexo-theme-stellar describe --tags --always` 核对），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
+**主题源版本漂移警示**：`resource/hexo-theme-stellar` 是 gitignore 的本地克隆、跨 worktree 共享，可能被其他 feature 分支切到别的版本。执行 `make css` 前先确认克隆版本与本分支同步版本一致（当前以本文档最新 Spec 章节记录的版本为准，见 Spec 73；`git -C resource/hexo-theme-stellar describe --tags --always` 核对），不一致先切回，避免产物跨版本漂移导致 `css-drift-check` 失败。
 
 - 置顶轮播仅在 `article.pin_style=carousel` 且文章列表为首页第一页时装配；首页后续分页、flat 模式不重复显示。
 - `ReadingStats` 中文按字符、英文/数字按词统计，空正文阅读分钟仍为 1；展示开关由 `article.reading_time` 控制。
@@ -386,7 +386,7 @@ Step 3 初版误以为 main.css 缺 `.error-page` 而自写一套（蓝绿按钮
 
 ## Spec 59 · Stellar 1.38.0 同步（2026-08，取代上文 PJAX/jQuery 相关坑点）
 
-资源克隆 `../resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`modules/stellar/web/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
+资源克隆 `resource/hexo-theme-stellar` 已切到 `1.38.0` tag；`modules/stellar/web/build/stylus/config.json` 同步 1.38 形状（增 `style.corner-shape`/`gradient.angle`，删 `smooth_scroll`），重编 `main.css`。**上文 Step 3 的 PJAX 与去 jQuery 移植章节自此为历史**，现状如下：
 
 - **PJAX 已移除**（对齐 1.35）：导航为整页刷新；`pjax.js`/`pjax-transitions.css`/`plugins.pjax` 配置与 console PJAX 卡片均删除；保留 `flying-pages` 悬停预取（`plugins.preload.enable`）缓解整页刷新。所有 `pjax:complete` 监听已删，事件绑定只走 `DOMContentLoaded`/委托。
 - **jQuery 已移除**（对齐 1.36）：head 不再加载 vendored jquery；`utils` 增加原生 `qs/qsa/dom` 封装（find/append/class/attr/text/html/val/on），`utils.jq` 退化为直调；services 以 1.38 `source/js/services/*` 为蓝本（`utils.dom` 直跑），rating/vote 保留自建本地版。
@@ -475,7 +475,7 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - 上游 `source/css/_components/wiki-card.styl` 为 209 行版本：Wiki 列表必须使用 `.post-list.wiki > .post-card-wrap > a.wiki-card`，卡片内部为 `.wiki-card-content`、3:4 `.wiki-card-cover`、自适应文字 `.wiki-card-info`、标签/适用范围/GitHub 热度元信息和 `.wiki-project` 底栏。
 - `modules/stellar/web/templates/partial/wiki.html` 已对齐 `index_wiki.ejs` + `wiki_card.ejs`，保留本地项目文档/外链跳转语义；封面覆盖层等待图片与自适应主题色共同就绪后再加 `cover-loaded`，避免默认主题色闪现。
 - Wiki 文档 Hero 使用 `.l_cover.wiki-hero` / `.wiki-cover-background.galaxy` 结构；`assets/js/plugins/galaxy.js`（423 行）按需挂载 WebGL 星河，`dropdown.js`（435 行）由基础布局加载用于 footer/social 浮层。`main.js` 只合入 Wiki Hero 终端/Galaxy 初始化相关改动。
-- `modules/stellar/web/assets/css/main.css` 只能由 `make css` 生成；完成后执行 `make css-drift-check`。本地 `highlight.styl` 与 `search.styl` 小改补丁保存在 `dev/.tmp/stellar-local-tweaks.patch`，不纳入主题源同步提交。
+- `modules/stellar/web/assets/css/main.css` 只能由 `make css` 生成；完成后执行 `make css-drift-check`。本地 `highlight.styl` 与 `search.styl` 小改补丁保存在 `.tmp/stellar-local-tweaks.patch`，不纳入主题源同步提交。
 
 ### c078d5d 缺口补齐（2026-08-20）
 

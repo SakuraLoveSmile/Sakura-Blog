@@ -4,22 +4,21 @@
 
 ## 仓库结构
 
-本仓库采用 bare 仓库 + git worktree 工作流，根目录是 bare 仓库容器，三分支分别 checkout 到独立子目录：
+本仓库根目录就是日常开发使用的 `dev` 工作树；稳定与发布分支仅保留在远端，临时 feature worktree 放在根目录同级：
 
 | 分支 | 工作树路径 | 用途 |
 |------|-----------|------|
-| `main` | `main/` | 主分支，稳定版本 |
-| `dev` | `dev/` | 日常开发 |
-| `release` | `release/` | 发布版本 |
+| `dev` | Blog 根目录 | 日常开发 |
+| `main` | `origin/main` | 远端稳定版本 |
+| `release` | `origin/release` | 远端发布版本 |
 
-- `.bare/`：bare 仓库（git 核心），根目录的 `.git` 文件指向它
 - `resource/`：参考资源（hexo-theme-stellar 主题克隆），已 gitignore，不入版本控制
 
-在任一工作树目录内执行 git 命令即可操作对应分支。
+在 Blog 根目录执行 git 命令即可操作 `dev`；临时 feature worktree 使用 `git worktree add ../Blog-<feature>` 创建。
 
 ### dev 分支目录布局（模块化单体）
 
-`dev/` 使用单一 Go module；Console 与 Stellar 仍构建为一个 Go 二进制：
+根目录使用单一 Go module；Console 与 Stellar 仍构建为一个 Go 二进制：
 
 | 目录 | 归属 | 内容 |
 |------|------|------|
@@ -34,7 +33,7 @@
 
 前后台渲染机制不变：前台 Go html/template SSR（动态渲染，文章发布即时可见），后台 Vue SPA 经 `/api/v1` 与后端通信。
 
-> **Go module 运行约束**：所有 go 命令从 `dev/` 根目录执行，包路径使用 `./...`；配置从 `config/` 加载。
+> **Go module 运行约束**：所有 go 命令从 Blog 根目录执行，包路径使用 `./...`；配置从 `config/` 加载。
 
 ## 技术栈
 

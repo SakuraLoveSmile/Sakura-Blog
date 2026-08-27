@@ -9,8 +9,8 @@ const fs = require('fs')
 const path = require('path')
 const stylus = require('stylus')
 
-// 主题源在仓库容器根（worktree 的上一层）：stylus → build → web → stellar → modules → worktree 根 → 容器根，共 6 层
-const STELLAR_CSS_DIR = path.resolve(__dirname, '../../../../../../resource/hexo-theme-stellar/source/css')
+// 主题源位于当前 worktree 根的 resource/：stylus → build → web → stellar → modules → worktree 根，共 5 层
+const STELLAR_CSS_DIR = path.resolve(__dirname, '../../../../../resource/hexo-theme-stellar/source/css')
 const OUT_CSS = path.resolve(__dirname, '../../assets/css/main.css')
 
 // 追加编译的样式段（1.40 主入口曾包含、1.41 移出；顺序对齐 1.40 产物内的出现顺序）

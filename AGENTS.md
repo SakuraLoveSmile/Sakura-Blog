@@ -1,10 +1,10 @@
 # Multi-Agent 并行开发规范
 
-本项目使用 bare 仓库 + git worktree 管理多分支。当多个 AI agent（Qoder / Claude / Trae 等）需要并行开发时，遵循以下规范。
+本项目的 Blog 根目录就是 `dev` 日常工作树；需要并行开发时，用 Blog 根目录外的短生命周期 git worktree 隔离任务。
 
 ## 核心原则
 
-**一个 agent = 一个 feature 分支 = 一个 worktree，所有分支从 dev 拉出，做完合回 dev。**
+**一个 agent = 一个 feature 分支 = 一个 worktree，所有分支从 dev 拉出，做完合回根目录的 dev。**
 
 绝不让两个 agent 写同一个分支，也绝不让 agent 在独立分支上完整重写项目。
 
@@ -17,23 +17,21 @@ dev（主线，唯一集成目标）
 └── feature/tag-plugins       ← agent C
 ```
 
-保留分支：`dev`（日常开发）/ `main`（稳定快照）/ `release`（发布）。
-所有 feature 分支短生命周期，合完即删。
+本地长期保留分支只有 `dev`；`main` / `release` 只通过 `origin/main` / `origin/release` 使用。
+所有 feature 分支和 worktree 都是短生命周期，合完即删。
 
 ## 操作流程
 
 ### 1. 开分支 + worktree
 
-以下命令在**仓库根目录**（包含 `.bare/`、`dev/`、`main/`、`release/` 的层级，不在任何 worktree 内部）执行。`git -C .bare` 使命令在 `.bare/` 内运行，相对路径 `../feat-*` 因此落回根目录——feature worktree 统一落位为 `dev` 的**兄弟目录**（如 `feat-comment/`），与现有 `dev`/`main`/`release` 布局一致。
-
-落位必须是兄弟目录的原因：`make merge-check` 的默认 `DEV_WORKTREE=../dev` 从 feature worktree 根出发解析，只有互为兄弟目录才能指向真实的 dev worktree；落位到其他层级时必须显式传 `DEV_WORKTREE=<dev worktree 路径>` 覆盖。
+以下命令在 Blog 根目录（当前 `dev` worktree）执行。feature worktree 统一落位到 Blog 的同级目录，避免被根目录 Git 视为未跟踪内容；`make merge-check` 会自动解析根目录的 `dev` worktree，也可显式传 `DEV_WORKTREE=<dev worktree 路径>` 覆盖。
 
 ```bash
-# 在仓库根目录执行；feature worktree 落位为根目录下的 feat-comment/（dev 的兄弟目录）
-git -C .bare worktree add ../feat-comment -b feature/comment
+# 在 Blog 根目录执行；feature worktree 落位到 Blog 同级目录
+git worktree add ../Blog-feat-comment -b feature/comment
 
 # 同理，给 agent B 开 feature 分支
-git -C .bare worktree add ../feat-font -b feature/font
+git worktree add ../Blog-feat-font -b feature/font
 ```
 
 ### 2. 任务拆解：模块级隔离
@@ -61,7 +59,7 @@ UI/样式类任务（控制台界面、前台样式、编辑器视觉等）开�
 feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自己的 feature worktree 内执行机械化合并封装：
 
 ```bash
-# 在 feature worktree 根目录执行（默认 dev worktree 在 ../dev，可用 DEV_WORKTREE= 覆盖）
+# 在 feature worktree 根目录执行（默认自动定位 Blog 根目录的 dev，可用 DEV_WORKTREE 覆盖）
 make merge-check
 ```
 
@@ -69,7 +67,7 @@ make merge-check
 - `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
 - **合并后组合态复验**：合入成功后 `merge-check` 会在 dev worktree 再执行一次 `make test`（防 dev 领先、feature 落后时两者改动组合态破坏门禁）；复验失败时输出回退指引（`git -C <DEV_WORKTREE> reset --hard ORIG_HEAD`，dev 回到合并前状态）并以非零码退出——先回退、再在 feature 分支 rebase 最新 dev 修复兼容后重试。
 - 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
-- **dev 上直接工作的提交门禁**：agent 若未经 feature 合并、直接在 `dev`/`main` 等受保护分支上改动（如紧急修复、用户授权的直接提交），提交前必须在当前 worktree 根目录执行：
+- **dev 上直接工作的提交门禁**：agent 若未经 feature 合并、直接在 `dev` 等受保护分支上改动（如紧急修复、用户授权的直接提交），提交前必须在当前 worktree 根目录执行：
 
   ```bash
   make pre-commit-check
@@ -94,7 +92,7 @@ make merge-check
 make merge-check
 
 # 删掉用完的分支
-git -C /path/to/dev branch -d feature/comment
+git branch -d feature/comment
 ```
 
 > 合并只发生在本地 worktree；**推送 dev 分支属外部写操作，必须由用户单独授权后再执行**，agent 不得自行 `git push`。
@@ -104,16 +102,16 @@ git -C /path/to/dev branch -d feature/comment
 如果 agent B 开工时 A 已合入 dev，B 必须先 rebase 到最新 dev：
 
 ```bash
-# 在 dev worktree 根目录（<根目录>/dev）执行，../feat-font 指向根目录下的 feature worktree
-git -C ../feat-font rebase dev
+# 在 Blog 根目录执行，../Blog-feat-font 指向同级 feature worktree
+git -C ../Blog-feat-font rebase dev
 # 如有冲突由 agent B 自行解决（B 了解自己在改什么）
 ```
 
 ### 6. 清理 worktree
 
 ```bash
-# 与开分支同层级：在仓库根目录执行，../feat-comment 指向根目录下的 feature worktree
-git -C .bare worktree remove ../feat-comment
+# 与开分支同级：在 Blog 根目录执行
+git worktree remove ../Blog-feat-comment
 ```
 
 ## 反模式（禁止）
@@ -149,7 +147,7 @@ git -C .bare worktree remove ../feat-comment
 
 ## UI 设计规范
 
-> 本节为 UI 设计规范的 canonical 路由；真值以 `resource/apple-design/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。该目录与主题源 `resource/` 一样是 gitignore 的本地资源；新开的 feature worktree 若无此目录，从 dev worktree 复制一份即可。
+> 本节为 UI 设计规范的 canonical 路由；真值以 `resource/apple-design/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。该目录与主题源 `resource/` 一样是 gitignore 的本地资源；新开的 sibling feature worktree 应链接到 Blog 根目录的 `resource/`。
 
 ### 主题模式约定
 

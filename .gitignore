@@ -34,6 +34,11 @@ npm-debug.log*
 
 # AI 工具本地产物（harness 报告等），不入库
 .qoder/
+# 本地编辑器与 agent 工具配置，不入库
+.claude/
+.playwright-mcp/
+.trae/
+.zcode/
 # AI 工具运行时索引产物（向量索引 / 搜索缓存 / 知识图谱），可再生，不入库
 .workflow/
 *.swp

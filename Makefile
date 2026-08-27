@@ -80,7 +80,7 @@ css:
 ## 用法：在存在 resource/ 源的环境运行本目标；
 ## 工作区手改 main.css 或产物与源编译结果漂移时，cmp 非零退出。
 css-drift-check:
-	@if [ ! -d resource/hexo-theme-stellar ] && [ ! -d ../resource/hexo-theme-stellar ]; then \
+	@if [ ! -d resource/hexo-theme-stellar ]; then \
 		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
 	else \
 		css_snapshot=$$(mktemp); \
@@ -120,9 +120,9 @@ lint:
 ## 先 rebase 最新 dev 修复兼容再重试。保持「先 test 后合并」的语义与退出码契约不变。
 ## 开头探测 core.hooksPath：未指向 .githooks 直接失败（提交门禁要求机械挂载，见 AGENTS.md「机械挂载」），
 ## 探测只阻断本目标，不改变 make test 门槛本身。
-## DEV_WORKTREE 指向 dev worktree 路径，默认相对路径 ../dev（从 feature worktree 根出发解析，
-## 前提：feature worktree 与 dev 互为兄弟目录，见 AGENTS.md「开分支 + worktree」的落位约定），可按需覆盖。
-DEV_WORKTREE ?= ../dev
+## DEV_WORKTREE 指向 dev worktree 路径；默认从 Git worktree 列表自动定位 refs/heads/dev，
+## 可按需显式覆盖。feature worktree 不依赖固定目录层级。
+DEV_WORKTREE ?= $(shell git worktree list --porcelain 2>/dev/null | awk '/^worktree / { p = substr($$0, 10) } /^branch refs\/heads\/dev$$/ { print p; exit }')
 merge-check:
 	@hooks=$$(git config --get core.hooksPath || true); \
 	case "$$hooks" in \
@@ -130,6 +130,10 @@ merge-check:
 		"") echo "merge-check: core.hooksPath 未设置（未执行 make hooks-install），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
 		*) echo "merge-check: core.hooksPath 指向 '$$hooks'（应为 .githooks），提交门禁要求机械挂载 pre-commit hook，请先执行 make hooks-install 后重试" >&2; exit 1;; \
 	esac; \
+	dev_worktree="$(DEV_WORKTREE)"; \
+	if [ -z "$$dev_worktree" ] || [ ! -d "$$dev_worktree" ] || [ "$$(git -C "$$dev_worktree" branch --show-current 2>/dev/null)" != "dev" ]; then \
+		echo "merge-check: 无法定位根目录 dev worktree（当前解析值：$$dev_worktree），请显式传 DEV_WORKTREE=<dev worktree 路径>" >&2; exit 1; \
+	fi; \
 	branch=$$(git branch --show-current); \
 	case "$$branch" in \
 		dev|main|release|"") echo "merge-check: 当前分支 '$$branch' 不是 feature 分支，中止" >&2; exit 1;; \
@@ -145,7 +149,7 @@ merge-check:
 	}; \
 	echo "merge-check: 合并后组合态复验通过，feature '$$branch' 已合入 dev"
 
-## pre-commit-check: 提交前机械检查（覆盖在 dev/main 等分支直接工作、不走 merge-check 的路径）
+## pre-commit-check: 提交前机械检查（覆盖在 dev 等分支直接工作、不走 merge-check 的路径）
 ## 强制先跑 make test，任一环节失败即以非零码退出、必须中止提交；全绿后才允许 git commit。
 ## 开头探测 core.hooksPath：未指向 .githooks 直接失败（提交门禁要求机械挂载，见 AGENTS.md「机械挂载」），
 ## 探测只阻断本目标，不改变 make test 门槛本身。

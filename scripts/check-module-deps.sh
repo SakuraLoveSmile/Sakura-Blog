@@ -42,7 +42,7 @@ done
 
 # Validation artifacts may contain a copied module cache (for example
 # .tmp/gomodcache). They are intentionally outside the repository module.
-go_mod_count=$(find . -type d -name .tmp -prune -o -name go.mod -type f -not -path './.git/*' -print | wc -l | tr -d ' ')
+go_mod_count=$(find . \( -type d -name .tmp -o -type d -path './resource' \) -prune -o -name go.mod -type f -not -path './.git/*' -print | wc -l | tr -d ' ')
 if [ "$go_mod_count" -ne 1 ]; then
 	printf 'module-check: expected exactly one go.mod, found %s\n' "$go_mod_count" >&2
 	fail=1
