@@ -40,9 +40,10 @@ async function renderPreview() {
     html.value = "";
     return;
   }
-  // links 读取当前站点配置，不能使用跨节点/跨页面的长期缓存；否则新增或编辑友链后
-  // 重新打开编辑器仍会展示旧卡片。其它纯内容标签继续复用缓存，避免同一页面重复请求。
-  const cacheable = tagNameOf(key).toLowerCase() !== "links";
+  // links/moments 读取当前站点数据，不能使用跨节点/跨页面的长期缓存；否则新增友链、
+  // 编辑瞬间后重新打开编辑器仍会展示旧卡片。其它纯内容标签继续复用缓存，避免重复请求。
+  const dynamicTags = new Set(["links", "moments"]);
+  const cacheable = !dynamicTags.has(tagNameOf(key).toLowerCase());
   if (cacheable) {
     const cached = previewCache.get(key);
     if (cached !== undefined) {

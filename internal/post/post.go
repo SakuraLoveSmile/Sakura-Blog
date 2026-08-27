@@ -72,7 +72,9 @@ type Service struct {
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
 	linksFunc func() ([]tmpl.LinkGroup, string)
-	plugins   *plugin.Runtime
+	// momentsFunc 返回最新公开瞬间，供 {% moments %} shortcode 服务端直出；nil 时渲染空态。
+	momentsFunc func(limit int) []*tmpl.MomentItem
+	plugins     *plugin.Runtime
 }
 
 // GHClient GitHub 数据接口（由 internal/github.Client 实现，解耦循环依赖）。
@@ -115,6 +117,11 @@ func (s *Service) SetIconFunc(f func(string) string) {
 // SetLinksFunc 注入站点友链分组提供器（供 {% links %} shortcode 服务端直出）。
 func (s *Service) SetLinksFunc(f func() ([]tmpl.LinkGroup, string)) {
 	s.linksFunc = f
+}
+
+// SetMomentsFunc 注入最新公开瞬间提供器（供 {% moments %} shortcode 服务端直出）。
+func (s *Service) SetMomentsFunc(f func(limit int) []*tmpl.MomentItem) {
+	s.momentsFunc = f
 }
 
 // SetGHClient 注入 GitHub 数据客户端（供 ghrepo/ghuser shortcode 渲染）。未设置时降级纯链接。
@@ -188,7 +195,7 @@ func (s *Service) Render(body string) (string, error) {
 	if s.settings != nil && s.settings.Current() != nil {
 		tagPlugins = s.settings.Current().TagPlugins
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks, tagPlugins)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks, s.renderMoments, tagPlugins)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

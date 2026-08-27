@@ -3,6 +3,8 @@ package post
 import (
 	"strings"
 	"testing"
+
+	"blog/internal/settings"
 )
 
 // ---------- Spec 63：组件库预览 Fixture ----------
@@ -161,6 +163,57 @@ func TestRenderComponentPreviewLinksFixture(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("links fixture missing %q in: %s", want, out)
 		}
+	}
+}
+
+func TestRenderMomentsShortcodeUsesInjectedItems(t *testing.T) {
+	s := NewService(t.TempDir())
+	requestedLimit := 0
+	s.SetSettingsManager(settings.NewManager(&settings.Site{Avatar: "/avatar.png", LogoTitle: "本站"}))
+	s.SetMomentsFunc(func(limit int) []*settings.MomentItem {
+		requestedLimit = limit
+		return []*settings.MomentItem{
+			{ID: 7, ContentHTML: "<p>公开动态</p>", TimeAgo: "刚刚", Date: "2026-08-27 10:00", Images: []string{"/one.png"}},
+		}
+	})
+
+	out, err := s.Render("{% moments limit:2 %}")
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if requestedLimit != 2 {
+		t.Fatalf("moments shortcode should pass limit 2, got %d", requestedLimit)
+	}
+	for _, want := range []string{
+		`<div class="tag-plugin timeline">`,
+		`<div class="timenode">`,
+		`<span>本站</span>`,
+		`<p>公开动态</p>`,
+		`data-fancybox="moment-7"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("moments shortcode missing %q in: %s", want, out)
+		}
+	}
+}
+
+func TestRenderComponentPreviewMomentsFixture(t *testing.T) {
+	s := NewService(t.TempDir())
+	out, err := s.RenderComponentPreview("{% moments limit:1 %}")
+	if err != nil {
+		t.Fatalf("RenderComponentPreview: %v", err)
+	}
+	for _, want := range []string{
+		`<span>Fixture Blog</span>`,
+		`<p>今天完成了瞬间组件的预览接入。</p>`,
+		`data-fancybox="moment-1001"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("moments fixture missing %q in: %s", want, out)
+		}
+	}
+	if strings.Contains(out, "这是可以插入任意页面的公开动态时间流") {
+		t.Errorf("limit:1 should omit the second fixture item: %s", out)
 	}
 }
 

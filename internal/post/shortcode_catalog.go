@@ -220,6 +220,7 @@ var shortcodeRegistry = []shortcodeRegistration{
 		positional("title", nil), named("id", "default"), named("yes", "ri:arrow-up-line"), named("no", "ri:arrow-down-line")),
 	shortcodeEntry("friends", ShortcodeInline, "媒体播放", ShortcodeService, reFriends, named("api", "/api/friends")),
 	shortcodeEntry("links", ShortcodeInline, "媒体播放", ShortcodeStatic, reLinks),
+	shortcodeEntry("moments", ShortcodeInline, "媒体播放", ShortcodeService, reMoments, named("limit", 5)),
 	shortcodeEntry("sites", ShortcodeInline, "媒体播放", ShortcodeService, reSites, named("api", nil)),
 	shortcodeEntry("md", ShortcodeInline, "媒体播放", ShortcodeExternal, reMDTag, positional("src", nil)),
 

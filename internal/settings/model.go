@@ -10,12 +10,12 @@ import (
 
 // ViewData 贯穿所有模板的渲染上下文，对齐 Stellar layout.ejs 的 page/theme/config 三层。
 type ViewData struct {
-	Site    *Site
-	Page    *Page
-	Content template.HTML // 文章正文 HTML（goldmark 渲染后）
-	TOC     template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
-	QAEnabled bool // AI 公开问答入口开关，由前台 fillSidebar 读取 settings.ai
-	QAAllowUserLLM bool // 是否展示前台「使用自己的 AI 模型」入口
+	Site           *Site
+	Page           *Page
+	Content        template.HTML // 文章正文 HTML（goldmark 渲染后）
+	TOC            template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
+	QAEnabled      bool          // AI 公开问答入口开关，由前台 fillSidebar 读取 settings.ai
+	QAAllowUserLLM bool          // 是否展示前台「使用自己的 AI 模型」入口
 
 	// MenuPages pages 模块已发布页面自动生成的左栏菜单项（fillSidebar 填充，
 	// 追加在 menubar 配置之后；访问路径与 menubar 重复的页面不重复显示）。
@@ -111,7 +111,7 @@ type ViewData struct {
 	// 复用 RecentPost 结构，模板零改动）；非 wiki 文档页为 nil，走全局 Recent。
 	WikiRecentDocs []*RecentPost
 
-	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为 content/notes.md 渲染的手记正文；近期动态复用 Moments。
+	// 笔记(手记)（Layout=notes 时使用）：NotesContentHTML 为系统页面正文渲染结果；瞬间由正文 shortcode 注入。
 	NotesContentHTML template.HTML
 
 	// 笔记本体系（Spec 35b）：Notebooks 为列表页卡片（Layout=notebooks）；

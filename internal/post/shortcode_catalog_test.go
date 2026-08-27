@@ -29,7 +29,7 @@ func TestShortcodeCatalogCoversRegisteredParsers(t *testing.T) {
 		}
 	}
 
-	for _, name := range []string{"note", "table", "tip", "links", "navbar", "frame", "ghrepo"} {
+	for _, name := range []string{"note", "table", "tip", "links", "moments", "navbar", "frame", "ghrepo"} {
 		if !seen[name] {
 			t.Errorf("required parser %q missing from catalog", name)
 		}
@@ -93,5 +93,8 @@ func TestShortcodeCatalogPreviewMetadata(t *testing.T) {
 	}
 	if item := byName["md"]; item.Capability != ShortcodeExternal || item.Fixture != "md" || len(item.Services) != 1 || item.Services[0] != "mdrender" {
 		t.Fatalf("md preview metadata incomplete: %+v", item)
+	}
+	if item := byName["moments"]; item.Capability != ShortcodeService || item.Fixture != "moments" || item.Height != 420 {
+		t.Fatalf("moments preview metadata incomplete: %+v", item)
 	}
 }

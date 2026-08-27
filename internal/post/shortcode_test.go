@@ -10,7 +10,7 @@ import (
 // runShortcodes 便捷调用：identity renderMD + 简单 icon 桩，不依赖 goldmark/GitHub。
 func runShortcodes(md string) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, settings.TagPluginsConfig{})
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, settings.TagPluginsConfig{})
 }
 
 // TestShortcodeXSSMitigation 安全审计 2026-08-16 回归：用户可控的 shortcode 参数

@@ -682,6 +682,22 @@ var shortcodeDisplayMetadata = map[string]struct {
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "/api/friends"},
 		},
 	},
+	"moments": {
+		Title:       "瞬间时间流 Moments",
+		Description: "读取当前站点的公开瞬间，渲染为可插入任意文章或页面的时间流组件。",
+		Signature:   "{% moments [limit:数量] %}",
+		Example:     "{% moments limit:5 %}",
+		PreviewSet:  true,
+		Fixture:     "moments",
+		Height:      420,
+		Fallback:    "瞬间数据来自当前站点；组件库预览使用确定性本地 Fixture。",
+		FormFields: []ShortcodeParamSchema{
+			{Label: "显示条数", Key: "limit", Type: ShortcodeParamNumber, Role: ShortcodeParamNamed, Default: 5, Hint: "最多显示 50 条"},
+		},
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "limit", Desc: "显示最新公开瞬间的条数，范围 1-50", Default: "5"},
+		},
+	},
 	"sites": {
 		Title:       "站点卡片 Sites",
 		Description: "站点推荐网格，外部 API 驱动（api 参数必填）。",

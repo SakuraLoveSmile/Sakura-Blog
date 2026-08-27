@@ -4,6 +4,7 @@ import (
 	tmpl "blog/internal/settings"
 	"fmt"
 	"html"
+	"strconv"
 	"strings"
 )
 
@@ -123,6 +124,81 @@ func (s *Service) renderLinks() string {
 		groups, defaultLink = s.linksFunc()
 	}
 	return renderLinkGroupsHTML(groups, defaultLink)
+}
+
+// momentsLimit 解析 {% moments [limit:n] %} 的数量参数。
+// 限制最大数量，避免作者误填超大值时一次请求拉取过多公开瞬间。
+func momentsLimit(argsStr string) int {
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"limit"}, nil)
+	limit := 5
+	if n, err := strconv.Atoi(named["limit"]); err == nil && n > 0 {
+		limit = n
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	return limit
+}
+
+// renderMoments 渲染 {% moments [limit:n] %}：读取当前站点最新公开瞬间，
+// 输出与 /moments 页面相同的 timeline/timenode 结构，便于插入任意文章或独立页面。
+func (s *Service) renderMoments(argsStr string) string {
+	var items []*tmpl.MomentItem
+	if s.momentsFunc != nil {
+		items = s.momentsFunc(momentsLimit(argsStr))
+	}
+
+	var site *tmpl.Site
+	if s.settings != nil {
+		site = s.settings.Current()
+	}
+	return renderMomentsHTML(items, site)
+}
+
+// renderMomentsHTML 渲染瞬间时间流的公共 HTML 结构。
+// 生产数据由 store 转换为 MomentItem；组件库预览也复用此函数，保证两处结构一致。
+func renderMomentsHTML(items []*tmpl.MomentItem, site *tmpl.Site) string {
+	if len(items) == 0 {
+		return `<p class="cap" style="text-align:center;padding:2rem 0;color:var(--text-p3);">暂无瞬间</p>`
+	}
+
+	avatar := ""
+	author := ""
+	if site != nil {
+		avatar = safeURL(site.Avatar)
+		author = site.LogoTitle
+		if author == "" {
+			author = site.Title
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin timeline">`)
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		sb.WriteString(`<div class="timenode"><div class="header"><div class="user-info">`)
+		fmt.Fprintf(&sb, `<img src="%s" alt=""><span>%s</span>`, html.EscapeString(avatar), html.EscapeString(author))
+		fmt.Fprintf(&sb, `</div><span title="%s">%s</span></div><div class="body">`, html.EscapeString(item.Date), html.EscapeString(item.TimeAgo))
+		if item.ContentHTML != "" {
+			sb.WriteString(string(item.ContentHTML))
+		}
+		if len(item.Images) > 0 {
+			fmt.Fprintf(&sb, `<div class="tag-plugin gallery grid-box" size="%s" ratio="%s">`, html.EscapeString(item.GridSize()), html.EscapeString(item.GridRatio()))
+			for _, image := range item.Images {
+				image = safeURL(image)
+				if image == "" {
+					continue
+				}
+				fmt.Fprintf(&sb, `<div class="grid-cell lazy-box"><img class="lazy" data-fancybox="moment-%d" data-src="%s" alt=""><div class="lazy-icon"></div><div class="image-meta"></div></div>`, item.ID, html.EscapeString(image))
+			}
+			sb.WriteString(`</div>`)
+		}
+		sb.WriteString(`</div></div>`)
+	}
+	sb.WriteString(`</div>`)
+	return sb.String()
 }
 
 // renderSites 渲染 {% sites api:url %}，容器交给 services/sites.js 异步渲染。

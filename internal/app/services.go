@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"path/filepath"
@@ -153,6 +154,27 @@ func Bootstrap(options Options) (*Services, error) {
 	posts.SetLinksFunc(func() ([]settings.LinkGroup, string) {
 		live := sitePtr.Load()
 		return live.Links, live.Default.Link
+	})
+	posts.SetMomentsFunc(func(limit int) []*settings.MomentItem {
+		if limit < 1 {
+			limit = 5
+		}
+		moments, err := st.ListPublicMoments(1, limit)
+		if err != nil {
+			log.Printf("list moments for shortcode: %v", err)
+			return nil
+		}
+		items := make([]*settings.MomentItem, 0, len(moments))
+		for _, moment := range moments {
+			items = append(items, &settings.MomentItem{
+				ID:          moment.ID,
+				ContentHTML: template.HTML(moment.ContentHTML),
+				Images:      store.DecodeMomentImages(moment.Images),
+				TimeAgo:     comments.TimeAgo(moment.CreatedAt),
+				Date:        moment.CreatedAt.Format("2006-01-02 15:04"),
+			})
+		}
+		return items
 	})
 
 	events := content.NewEvents()

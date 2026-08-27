@@ -37,13 +37,11 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	r.GET("/note/:id", s.handleNote)
 
 	// 笔记(手记) /notes（内容页化）：正文取 pages 表 slug=notes 系统页（控制台可编辑，
-	// 首次启动自 content/notes.md 迁移）；下段仍为本站 moments 近期动态。
+	// 首次启动自 content/notes.md 迁移）；瞬间由正文中的 {% moments %} 组件按需插入。
 	r.GET("/notes", func(c *gin.Context) {
 		var contentHTML template.HTML
 		if p, err := s.st.GetPageBySlug(NotesSlug); err == nil && p != nil && p.Status == store.StatusPublished {
-			if p.ContentHTML != "" {
-				contentHTML = template.HTML(p.ContentHTML)
-			} else if rendered, e := s.posts.Render(p.ContentMD); e == nil {
+			if rendered, e := renderStoredContent(s.posts, p.ContentMD, p.ContentHTML); e == nil {
 				contentHTML = template.HTML(rendered)
 			}
 		} else if raw, err := os.ReadFile(s.notesMDPath); err == nil {
@@ -56,7 +54,6 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 			Site:             s.site.Load(),
 			Page:             &tmpl.Page{Title: s.menuTitle("notes", "笔记"), Layout: "notes", MenuID: "notes", Lang: "zh-CN"},
 			NotesContentHTML: contentHTML,
-			Moments:          s.momentH.RecentItems(5),
 		}
 		// 右栏 TOC widget 数据：与文章页一致，从渲染正文提取目录（notes.md 的 quot el:h2 标题带 id 锚点）。
 		data.TOC = stellarweb.ExtractTOCWith(string(contentHTML), s.tocOptions())

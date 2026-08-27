@@ -121,6 +121,9 @@ var reFriends = regexp.MustCompile(`{%\s*friends\s*(.*?)\s*%}`)
 // links 标签正则（单行）：{% links %}（分组友链卡片流，服务端直出站点 links 配置）
 var reLinks = regexp.MustCompile(`{%\s*links\s*%}`)
 
+// moments 标签正则（单行）：{% moments [limit:n] %}（公开瞬间时间流，服务端直出）
+var reMoments = regexp.MustCompile(`{%\s*moments\s*(.*?)\s*%}`)
+
 // sites 标签正则（单行）：{% sites api:url %}
 var reSites = regexp.MustCompile(`{%\s*sites\s*(.*?)\s*%}`)
 
@@ -225,7 +228,7 @@ func (s *Service) renderInlineMD(md string) string {
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string, tagPlugins settings.TagPluginsConfig) string {
+func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string, momentsRender func(string) string, tagPlugins settings.TagPluginsConfig) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -616,6 +619,15 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 			return match
 		}
 		return linksRender()
+	})
+
+	// 27.6 moments（单行，最新公开瞬间时间流，数据由当前站点注入）
+	md = reMoments.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reMoments.FindStringSubmatch(match)
+		if len(parts) < 2 || momentsRender == nil {
+			return match
+		}
+		return momentsRender(parts[1])
 	})
 
 	// 28. sites（单行，站点卡片流，api 必填透传，参数缺失原样输出）

@@ -60,6 +60,7 @@ const SINGLE_TAGS = [
   "vote",
   "friends",
   "links",
+  "moments",
   "sites",
   "u",
   "emp",

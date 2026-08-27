@@ -76,6 +76,7 @@ export const FIXTURE_LABELS: Record<string, string> = {
   rating: "评分数据为预览 Fixture，不写入真实统计",
   vote: "投票数据为预览 Fixture，不写入真实统计",
   friends: "友链数据为本地 Fixture",
+  moments: "瞬间数据为本地 Fixture",
   sites: "站点数据为本地 Fixture",
   md: "外部 Markdown 为本地 Fixture",
   gh: "GitHub 数据为服务端确定性 Fixture",

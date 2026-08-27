@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -40,6 +41,11 @@ const defaultFriendsMD = `## 友链列表
 
 {% note color:blue 欢迎交换友链：请先在您的站点添加本站链接，再通过评论留下您的站点信息（名称 / 网址 / 头像 / 描述），审核通过后即可展示。 %}
 `
+
+// notesMomentsLine matches the default moments component as a standalone
+// Markdown line. It is used only for the one-time migration of old system
+// Notes pages; user-authored Notes content is never rewritten.
+var notesMomentsLine = regexp.MustCompile(`(?m)^[ \t]*{%\s*moments(?:\s+[^%]*)?\s*%}[ \t]*(?:\r?\n|$)`)
 
 // Handler 独立页面请求处理器。
 type PageHandler struct {
@@ -99,10 +105,11 @@ func (h *PageHandler) EnsureSystemFriendsPage() error {
 }
 
 // EnsureSystemNotesPage 确保 pages 表存在笔记系统页（slug=notes，published）。
-// 首次迁移时导入旧 content/notes.md 原文作为正文（记录已存在不覆盖）。
+// 首次迁移时导入旧 content/notes.md 原文作为正文；若已有页面正文仍是旧默认内容，
+// 仅追加新的 {% moments %} shortcode，不覆盖用户自定义的 Notes 页面。
 func (h *PageHandler) EnsureSystemNotesPage(importPath string) error {
 	if p, err := h.store.GetPageBySlug(NotesSlug); err == nil && p != nil {
-		return nil
+		return h.migrateDefaultNotesMoments(p, importPath)
 	}
 	md := ""
 	if importPath != "" {
@@ -127,6 +134,40 @@ func (h *PageHandler) EnsureSystemNotesPage(importPath string) error {
 	}
 	log.Printf("[info] seeded system notes page (id=%d, slug=%s, imported=%t)", id, NotesSlug, importPath != "" && md != "")
 	return nil
+}
+
+// migrateDefaultNotesMoments upgrades only the old repository-provided Notes
+// content. Comparing the normalized Markdown with the current default after
+// removing its moments line makes the migration idempotent and leaves edited
+// system pages untouched.
+func (h *PageHandler) migrateDefaultNotesMoments(p *store.Page, importPath string) error {
+	if p == nil || importPath == "" || notesMomentsLine.MatchString(p.ContentMD) {
+		return nil
+	}
+	b, err := os.ReadFile(importPath)
+	if err != nil {
+		return nil
+	}
+	defaultMD := string(b)
+	if strings.TrimSpace(defaultMD) == "" || normalizeNotesMarkdown(p.ContentMD) != normalizeNotesMarkdown(notesMomentsLine.ReplaceAllString(defaultMD, "")) {
+		return nil
+	}
+	html, err := h.posts.Render(defaultMD)
+	if err != nil {
+		return err
+	}
+	updated := *p
+	updated.ContentMD = defaultMD
+	updated.ContentHTML = html
+	if err := h.store.UpdatePage(NotesSlug, &updated); err != nil {
+		return err
+	}
+	log.Printf("[info] migrated system notes page with moments shortcode (id=%d)", p.ID)
+	return nil
+}
+
+func normalizeNotesMarkdown(md string) string {
+	return strings.TrimSpace(strings.ReplaceAll(md, "\r\n", "\n"))
 }
 
 // EnsureSystemLinksPage 确保 pages 表存在友链卡片系统页（slug=links，published）。

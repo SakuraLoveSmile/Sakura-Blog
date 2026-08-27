@@ -4,6 +4,7 @@ package post
 // 预览不依赖公网、不写入真实数据，仍能展示标签的结构、样式、交互与典型数据状态：
 //   - ghrepo/ghuser/ghcard 使用确定性 GitHub Fixture（不发网络请求）；
 //   - {% links %} 友链分组使用确定性 Fixture；
+//   - {% moments %} 瞬间时间流使用确定性 Fixture；
 //   - rating/vote/friends/sites/md 的 data-api/src 改写为本地 /api/v1/preview/* Fixture 端点，
 //     其中 rating/vote 的 data-id 加 preview- 前缀（隔离 ID，永不与真实内容冲突）；
 //   - Fixture 只服务预览：不新增数据库迁移、不持久化用户操作，线上渲染与 API 行为不变。
@@ -84,6 +85,33 @@ func fixtureAvatar(letter string) string {
 func fixtureLinksHTML() string {
 	groups, defaultLink := fixtureLinksRender()
 	return renderLinkGroupsHTML(groups, defaultLink)
+}
+
+// fixtureMomentsHTML 渲染组件库中的确定性瞬间 Fixture，不读取真实 moments 数据。
+func fixtureMomentsHTML(argsStr string) string {
+	items := []*tmpl.MomentItem{
+		{
+			ID:          1001,
+			ContentHTML: "<p>今天完成了瞬间组件的预览接入。</p>",
+			Images:      []string{"/assets/img/preview/gallery-1.jpg", "/assets/img/preview/gallery-2.jpg"},
+			TimeAgo:     "刚刚",
+			Date:        "2026-08-27 10:30",
+		},
+		{
+			ID:          1002,
+			ContentHTML: "<p>这是可以插入任意页面的公开动态时间流。</p>",
+			TimeAgo:     "昨天",
+			Date:        "2026-08-26 18:20",
+		},
+	}
+	limit := momentsLimit(argsStr)
+	if limit < len(items) {
+		items = items[:limit]
+	}
+	return renderMomentsHTML(items, &tmpl.Site{
+		Avatar:    "/assets/img/preview/avatar-blog.svg",
+		LogoTitle: "Fixture Blog",
+	})
 }
 
 // ---------- 数据端点改写 ----------
@@ -167,7 +195,7 @@ func (s *Service) RenderComponentPreview(body string) (string, error) {
 		}
 		return sb.String()
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, tmpl.TagPluginsConfig{})
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, fixtureMomentsHTML, tmpl.TagPluginsConfig{})
 	var sb strings.Builder
 	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err

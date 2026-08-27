@@ -30,3 +30,5 @@
 {% endokr %}
 
 {% quot el:h2 text:近期动态 %}
+
+{% moments %}
