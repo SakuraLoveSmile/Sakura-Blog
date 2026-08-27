@@ -348,6 +348,8 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		author.POST("/preview/markdown", h.previewMarkdown)
+		// Markdown 导入（只解析内存，不落库；文章/页面编辑器共用）
+		author.POST("/editor/import/markdown", h.importMarkdown)
 		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
 		author.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）

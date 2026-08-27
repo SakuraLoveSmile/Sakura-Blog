@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { pageApi } from "@/api";
+import { pageApi, editorImportApi, getApiErrorMessage } from "@/api";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import EditorToolbar from "../posts/EditorToolbar.vue";
 import PageEditorSidebar from "./PageEditorSidebar.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VButton, Toast } from "@/components/ui";
+import { VPageHeader, VButton, Toast, Dialog } from "@/components/ui";
 
 // 页面编辑器：Halo 式三栏布局——顶部全宽工具栏 + 左侧主编辑区 + 右侧大纲/详情面板。
 // 双编辑器模式：默认富文本所见即得（TipTap），可切 Markdown 分屏兑底；
@@ -363,6 +363,94 @@ function onUpload() {
 function onPick() {
   (editorKind.value === "rich" ? richRef.value : editorRef.value)?.openImagePicker();
 }
+
+function clearActiveDraft() {
+  (editorKind.value === "rich" ? richRef.value : editorRef.value)?.clearDraft();
+}
+
+const importing = ref(false);
+const importFieldLabels: Record<string, string> = {
+  slug: "Slug",
+  title: "标题",
+  excerpt: "摘要",
+  description: "描述",
+  cover: "封面",
+  banner: "横幅",
+  category: "分类",
+  categories: "分类",
+  topic: "专栏",
+  tags: "标签",
+  ai_label: "AI 标签",
+  date: "日期",
+  status: "状态",
+  pinned: "置顶",
+  authors: "作者",
+  author: "作者",
+  meta_description: "Meta Description",
+  meta_keywords: "Meta Keywords",
+  poster_headline: "海报标题",
+  poster_topic: "海报专栏",
+  poster_caption: "海报副标题",
+  poster_color: "海报颜色",
+  references: "参考文献",
+};
+
+function hasImportField(fields: string[], ...names: string[]) {
+  return names.some((name) => fields.includes(name));
+}
+
+function applyImportedPage(data: Awaited<ReturnType<typeof editorImportApi.markdown>>["data"]) {
+  const m = data.metadata;
+  if (hasImportField(data.fields, "title")) form.value.title = m.title || "";
+  // Keep an existing page URL stable; a new page may adopt the explicit
+  // front matter slug or the filename-derived suggestion.
+  if (isNew.value && (hasImportField(data.fields, "slug") || hasImportField(data.fields, "title"))) {
+    form.value.slug = m.slug || data.slug_suggestion || "";
+  }
+  const importedStatus = (m.status || "").toLowerCase();
+  if (hasImportField(data.fields, "status") && (importedStatus === "draft" || importedStatus === "published")) {
+    form.value.status = importedStatus as "draft" | "published";
+  }
+  form.value.content_md = data.content_md;
+  clearActiveDraft();
+  const stellarTags = data.stellar_tags || [];
+  const tags = stellarTags.length ? `，已识别 ${stellarTags.length} 个 Stellar 标签` : "";
+  Toast.success(`Markdown 已导入，请检查后保存${tags}`);
+}
+
+async function onImport(file: File) {
+  if (importing.value) return;
+  if (!/\.(md|markdown)$/i.test(file.name)) {
+    Toast.error("请选择 .md 或 .markdown 文件");
+    return;
+  }
+  importing.value = true;
+  try {
+    const content = await file.text();
+    const { data } = await editorImportApi.markdown({ filename: file.name, content, kind: "page" });
+    const warnings = [...(data.unknown_fields || []), ...(data.unmapped_fields || [])].map(
+      (field) => importFieldLabels[field] || field,
+    );
+    const warningText = warnings.length
+      ? `\n以下字段不会写入当前页面表单：${Array.from(new Set(warnings)).join("、")}。原文件未被修改。`
+      : "";
+    const stellarTags = data.stellar_tags || [];
+    const stellarText = stellarTags.length ? `\n将识别 Stellar 标签：${stellarTags.join("、")}。` : "";
+    Dialog.warning({
+      title: "确认导入 Markdown？",
+      description: `导入将替换当前编辑器正文，但不会自动保存或发布。${
+        data.metadata.title ? `标题：${data.metadata.title}。` : ""
+      }${stellarText}${warningText}`,
+      confirmText: "导入并替换",
+      confirmType: "primary",
+      onConfirm: () => applyImportedPage(data),
+    });
+  } catch (error) {
+    Toast.error(`Markdown 导入失败：${getApiErrorMessage(error)}`);
+  } finally {
+    importing.value = false;
+  }
+}
 // 大纲点击跳转：富文本按标题序号定位节点，Markdown 按行号滚动
 function onJump(line: number, index: number) {
   if (editorKind.value === "rich") {
@@ -406,7 +494,7 @@ async function handleSave() {
     } else {
       await pageApi.update(slugParam.value, payload);
     }
-    editorRef.value?.clearDraft();
+    clearActiveDraft();
     Toast.success("保存成功");
     router.push("/pages");
   } catch {
@@ -465,7 +553,7 @@ async function handlePreview() {
     } else {
       await pageApi.update(slugParam.value, payload);
     }
-    editorRef.value?.clearDraft();
+    clearActiveDraft();
     Toast.success("已保存，即将打开前台预览");
     window.open("/" + form.value.slug.trim(), "_blank", "noopener");
   } catch {
@@ -547,6 +635,7 @@ const smallInputCls =
         :active-states="toolbarActive"
         @format="onFormat"
         @insert="onInsert"
+        @import="onImport"
         @upload="onUpload"
         @pick="onPick"
         @update:mode="setEditorMode"

@@ -3,6 +3,7 @@ package post
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	yaml "github.com/goccy/go-yaml"
@@ -10,6 +11,7 @@ import (
 
 // frontMatter 文章元数据，从 Markdown 文件头部的 YAML frontmatter 解析。
 type frontMatter struct {
+	Slug       string
 	Title      string
 	Date       string
 	Excerpt    string
@@ -26,12 +28,34 @@ type frontMatter struct {
 	PosterCaption  string
 	PosterColor    string
 	// 参考文献（对齐原版 article_footer.ejs page.references）
-	References []string
+	References      []string
+	MetaDescription string
+	MetaKeywords    string
 	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
 	Status  string   // draft / published，空=由导入方决定
 	Pinned  bool     // 置顶
 	Authors []string // 作者 ID 列表，按 frontmatter 顺序
 	Author  string   // 第一位作者，兼容旧 frontmatter
+}
+
+// MarkdownImportResult is the lossless, read-only result used by the Console
+// editor import endpoint. Body is never rendered or normalized; callers may
+// replace the editor value with it verbatim.
+type MarkdownImportResult struct {
+	Meta           FileMeta
+	Body           string
+	HasFrontMatter bool
+	Fields         []string
+	UnknownFields  []string
+}
+
+var knownFrontMatterFields = map[string]struct{}{
+	"slug": {}, "title": {}, "date": {}, "excerpt": {}, "description": {},
+	"cover": {}, "banner": {}, "category": {}, "categories": {}, "topic": {},
+	"tags": {}, "ai_label": {}, "poster_headline": {}, "poster_topic": {},
+	"poster_caption": {}, "poster_color": {}, "references": {}, "status": {},
+	"pinned": {}, "authors": {}, "author": {}, "meta_description": {},
+	"meta_keywords": {},
 }
 
 // parser 轻量的 frontmatter 解析器。不引入 yaml 库，只识别 key: value 行。
@@ -83,6 +107,8 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 		switch key {
 		case "title":
 			fm.Title = val
+		case "slug":
+			fm.Slug = val
 		case "date":
 			fm.Date = val
 		case "excerpt", "description":
@@ -111,6 +137,10 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 			fm.PosterColor = val
 		case "references":
 			fm.References = yamlStrings(value)
+		case "meta_description":
+			fm.MetaDescription = val
+		case "meta_keywords":
+			fm.MetaKeywords = val
 		case "status":
 			fm.Status = val
 		case "pinned":
@@ -141,6 +171,57 @@ func (p parser) Parse(src []byte) (frontMatter, string) {
 
 	body := strings.Join(lines[end+1:], "\n")
 	return fm, strings.TrimPrefix(body, "\n")
+}
+
+// ParseImport parses a Markdown document for editor import. Unlike Parse,
+// malformed or unclosed front matter is reported to the caller so the UI can
+// stop before replacing the current document. Unknown keys are returned in a
+// deterministic order for a stable confirmation message.
+func (p parser) ParseImport(src []byte) (MarkdownImportResult, error) {
+	result := MarkdownImportResult{Body: string(src)}
+	s := string(src)
+	lines := strings.Split(s, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return result, nil
+	}
+	result.HasFrontMatter = true
+	end := -1
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			end = i
+			break
+		}
+	}
+	if end < 0 {
+		return MarkdownImportResult{}, fmt.Errorf("front matter 未闭合")
+	}
+	frontmatter := strings.Join(lines[1:end], "\n")
+	var raw map[string]any
+	if err := yaml.Unmarshal([]byte(frontmatter), &raw); err != nil {
+		return MarkdownImportResult{}, fmt.Errorf("front matter 格式错误: %w", err)
+	}
+	fields := make([]string, 0, len(raw))
+	unknown := make([]string, 0)
+	for key := range raw {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		fields = append(fields, key)
+		if _, ok := knownFrontMatterFields[key]; !ok {
+			unknown = append(unknown, key)
+		}
+	}
+	sort.Strings(fields)
+	sort.Strings(unknown)
+	result.Fields = fields
+	result.UnknownFields = unknown
+	// Parse's permissive behavior is retained for seed/backup callers; this
+	// path has already validated YAML, so the metadata conversion cannot fail.
+	meta, body := p.Parse(src)
+	result.Meta = FileMeta(meta)
+	result.Body = body
+	return result, nil
 }
 
 // parseList 解析行内列表值，支持 `[Go, Gin]` 与 `Go, Gin` 两种写法。

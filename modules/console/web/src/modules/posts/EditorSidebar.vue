@@ -15,6 +15,7 @@ interface PostForm {
   title: string;
   excerpt: string;
   cover: string;
+  banner: string;
   category: string;
   categories: string[];
   topic_id: number | null;
@@ -27,6 +28,7 @@ interface PostForm {
   publish_at: string;
   meta_description: string;
   meta_keywords: string;
+  ai_label: string;
   authors: string[];
   author: string;
 }

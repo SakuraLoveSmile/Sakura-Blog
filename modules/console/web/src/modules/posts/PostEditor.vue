@@ -2,7 +2,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
-import { postApi, taxonomyApi, previewApi } from "@/api";
+import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage } from "@/api";
 import { queryKeys } from "@/api/query-client";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 // Spec 62：tiptap 190KB gzip chunk 按需挂载——仅富文本模式启用时才下载
@@ -31,6 +31,7 @@ const form = ref({
   title: "",
   excerpt: "",
   cover: "",
+  banner: "",
   category: "",
   categories: [] as string[],
   topic_id: null as number | null,
@@ -43,6 +44,7 @@ const form = ref({
   publish_at: "",
   meta_description: "",
   meta_keywords: "",
+  ai_label: "",
   authors: [] as string[],
   author: "",
 });
@@ -312,6 +314,116 @@ function onPick() {
   (editorKind.value === "rich" ? richRef.value : editorRef.value)?.openImagePicker();
 }
 
+const importing = ref(false);
+const importFieldLabels: Record<string, string> = {
+  slug: "Slug",
+  title: "标题",
+  excerpt: "摘要",
+  description: "描述（摘要）",
+  cover: "封面",
+  banner: "横幅",
+  category: "分类",
+  categories: "分类",
+  topic: "专栏",
+  tags: "标签",
+  ai_label: "AI 标签",
+  date: "日期",
+  status: "状态",
+  pinned: "置顶",
+  authors: "作者",
+  author: "作者",
+  meta_description: "Meta Description",
+  meta_keywords: "Meta Keywords",
+  poster_headline: "海报标题",
+  poster_topic: "海报专栏",
+  poster_caption: "海报副标题",
+  poster_color: "海报颜色",
+  references: "参考文献",
+};
+
+function hasImportField(fields: string[], ...names: string[]) {
+  return names.some((name) => fields.includes(name));
+}
+
+function applyImportedPost(data: Awaited<ReturnType<typeof editorImportApi.markdown>>["data"]) {
+  const m = data.metadata;
+  if (hasImportField(data.fields, "title")) form.value.title = m.title || "";
+  if (hasImportField(data.fields, "excerpt", "description")) form.value.excerpt = m.excerpt || "";
+  if (hasImportField(data.fields, "cover")) form.value.cover = m.cover || "";
+  if (hasImportField(data.fields, "banner")) form.value.banner = m.banner || "";
+  if (hasImportField(data.fields, "category", "categories")) {
+    const list = Array.isArray(m.categories) ? m.categories.filter(Boolean) : m.category ? [m.category] : [];
+    form.value.categories = list;
+    form.value.category = list[0] || "";
+  }
+  if (hasImportField(data.fields, "topic")) {
+    form.value.topic = m.topic || "";
+    form.value.topic_id = null;
+  }
+  if (hasImportField(data.fields, "tags")) form.value.tags = Array.isArray(m.tags) ? m.tags.join(",") : "";
+  const importedStatus = (m.status || "").toLowerCase();
+  if (hasImportField(data.fields, "status") && (importedStatus === "draft" || importedStatus === "published")) {
+    form.value.status = importedStatus;
+  }
+  if (hasImportField(data.fields, "pinned")) form.value.pinned = !!m.pinned;
+  if (hasImportField(data.fields, "authors", "author")) {
+    const authors = Array.isArray(m.authors) ? m.authors.filter(Boolean) : m.author ? [m.author] : [];
+    form.value.authors = authors;
+    form.value.author = authors[0] || "";
+  }
+  if (hasImportField(data.fields, "meta_description")) form.value.meta_description = m.meta_description || "";
+  if (hasImportField(data.fields, "meta_keywords")) form.value.meta_keywords = m.meta_keywords || "";
+  if (hasImportField(data.fields, "ai_label")) form.value.ai_label = m.ai_label || "";
+  // A route slug is immutable while editing an existing article; on create,
+  // use the explicit front matter slug or the filename-derived suggestion.
+  if (!isEdit.value && (hasImportField(data.fields, "slug") || hasImportField(data.fields, "title"))) {
+    const importedSlug = m.slug || data.slug_suggestion;
+    if (importedSlug) {
+      form.value.slug = importedSlug;
+      slugManuallyEdited.value = true;
+    }
+  }
+  form.value.content_md = data.content_md;
+  clearActiveDraft();
+  const stellarTags = data.stellar_tags || [];
+  const tags = stellarTags.length ? `，已识别 ${stellarTags.length} 个 Stellar 标签` : "";
+  Toast.success(`Markdown 已导入，请检查后保存${tags}`);
+}
+
+async function onImport(file: File) {
+  if (importing.value) return;
+  if (!/\.(md|markdown)$/i.test(file.name)) {
+    Toast.error("请选择 .md 或 .markdown 文件");
+    return;
+  }
+  importing.value = true;
+  try {
+    const content = await file.text();
+    const { data } = await editorImportApi.markdown({ filename: file.name, content, kind: "post" });
+    const warnings = [...(data.unknown_fields || []), ...(data.unmapped_fields || [])].map(
+      (field) => importFieldLabels[field] || field,
+    );
+    const warningText = warnings.length
+      ? `\n以下字段不会写入当前文章表单：${Array.from(new Set(warnings)).join("、")}。原文件未被修改。`
+      : "";
+    const stellarTags = data.stellar_tags || [];
+    const stellarText = stellarTags.length ? `\n将识别 Stellar 标签：${stellarTags.join("、")}。` : "";
+    Dialog.warning({
+      title: "确认导入 Markdown？",
+      description: `导入将替换当前编辑器正文，但不会自动保存或发布。${
+        data.metadata.title ? `标题：${data.metadata.title}。` : ""
+      }${stellarText}${warningText}`,
+      confirmText: "导入并替换",
+      confirmType: "primary",
+      onConfirm: () => applyImportedPost(data),
+    });
+  } catch (error) {
+    Toast.error(`Markdown 导入失败：${getApiErrorMessage(error)}`);
+  } finally {
+    importing.value = false;
+  }
+}
+
 /** 清除当前编辑器的本地草稿（同一 storageKey，两实例任一清除即可） */
 function clearActiveDraft() {
   (editorKind.value === "rich" ? richRef.value : editorRef.value)?.clearDraft();
@@ -364,6 +476,7 @@ async function loadPost() {
     title: src.title,
     excerpt: src.excerpt,
     cover: src.cover,
+    banner: src.banner || "",
     category: src.category,
     categories: Array.isArray(src.categories)
       ? src.categories.map((c: unknown) => String(c).trim()).filter(Boolean)
@@ -380,6 +493,7 @@ async function loadPost() {
     publish_at: src.publish_at || "",
     meta_description: src.meta_description || "",
     meta_keywords: src.meta_keywords || "",
+    ai_label: src.ai_label || "",
     authors: Array.isArray(src.authors)
       ? src.authors.map((id: unknown) => String(id).trim()).filter(Boolean)
       : src.author
@@ -676,6 +790,7 @@ function handleDiscardDraft() {
             :active-states="toolbarActive"
             @format="onFormat"
             @insert="onInsert"
+            @import="onImport"
             @upload="onUpload"
             @pick="onPick"
             @update:mode="setEditorMode"

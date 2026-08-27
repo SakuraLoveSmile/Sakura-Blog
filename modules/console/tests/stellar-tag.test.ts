@@ -17,6 +17,10 @@ test("Stellar 标签编辑器识别动态 links/moments 并刷新预览", () => 
   assert.ok(singleTagsEnd > singleTagsStart, "单行标签白名单未闭合");
   assert.match(tagSource.slice(singleTagsStart, singleTagsEnd), /"links"/);
   assert.match(tagSource.slice(singleTagsStart, singleTagsEnd), /"moments"/);
+  const pairedStart = tagSource.indexOf("const PAIRED_TAGS = [");
+  const pairedEnd = tagSource.indexOf("];", pairedStart);
+  assert.match(tagSource.slice(pairedStart, pairedEnd), /"table"/);
+  assert.match(tagSource.slice(pairedStart, pairedEnd), /"tip"/);
   assert.match(tagSource, /SINGLE_TAGS\.join\("\|"\)/);
   assert.match(viewSource, /new Set\(\["links", "moments"\]\)/);
   assert.match(viewSource, /const cacheable = !dynamicTags\.has\(tagNameOf\(key\)\.toLowerCase\(\)\)/);

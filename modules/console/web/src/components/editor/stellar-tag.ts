@@ -24,6 +24,8 @@ const PAIRED_TAGS = [
   "folders",
   "grid",
   "box",
+  "table",
+  "tip",
   "poetry",
   "swiper",
   "chat",

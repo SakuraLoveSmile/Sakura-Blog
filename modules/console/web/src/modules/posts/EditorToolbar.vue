@@ -25,6 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "format", id: string): void;
   (e: "insert", text: string): void;
+  (e: "import", file: File): void;
   (e: "upload"): void;
   (e: "pick"): void;
   (e: "update:mode", mode: ViewMode): void;
@@ -68,6 +69,19 @@ function toolsById(ids: string[]) {
 
 const insertOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
+const importInput = ref<HTMLInputElement | null>(null);
+
+function chooseImportFile() {
+  importInput.value?.click();
+}
+
+function onImportFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  // Reset immediately so selecting the same file twice still emits an event.
+  input.value = "";
+  if (file) emit("import", file);
+}
 
 // 按分类分组（保持 PLUGIN_CATEGORIES 顺序）
 const groupedPlugins = computed(() =>
@@ -239,6 +253,16 @@ const btnActive = "btn-active";
           </div>
         </div>
       </div>
+      <input
+        ref="importInput"
+        type="file"
+        accept=".md,.markdown,text/markdown,text/plain"
+        class="hidden"
+        @change="onImportFileChange"
+      />
+      <button type="button" title="导入 Markdown 文件" :class="[btnBase, btnChrome]" @click="chooseImportFile">
+        <Icon icon="ri:file-upload-line" class="text-lg" />
+      </button>
     </div>
 
     <!-- 其余工具保留横向滚动，但不再裁剪插入菜单的垂直溢出内容。 -->

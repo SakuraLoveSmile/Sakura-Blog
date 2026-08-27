@@ -37,6 +37,7 @@ type Post struct {
 
 // FileMeta 从 Markdown frontmatter 解析出的元数据，供 seed 导入跨包使用。
 type FileMeta struct {
+	Slug       string
 	Title      string
 	Date       string
 	Excerpt    string
@@ -53,7 +54,9 @@ type FileMeta struct {
 	PosterCaption  string
 	PosterColor    string
 	// 参考文献（对齐原版 article_footer.ejs page.references）
-	References []string
+	References      []string
+	MetaDescription string
+	MetaKeywords    string
 	// 备份导出/导入扩展字段（seed 源文件一般不写，缺失时保持零值）
 	Status  string   // draft / published，空=由导入方决定
 	Pinned  bool     // 置顶
@@ -221,6 +224,13 @@ func (s *Service) Render(body string) (string, error) {
 func (s *Service) ParseBytes(src []byte) (FileMeta, string) {
 	meta, body := s.parser.Parse(src)
 	return FileMeta(meta), body
+}
+
+// ParseImport validates and parses a Markdown document for editor import.
+// Unlike ParseBytes it reports malformed front matter and exposes the fields
+// that were present so callers can warn before applying the snapshot.
+func (s *Service) ParseImport(src []byte) (MarkdownImportResult, error) {
+	return s.parser.ParseImport(src)
 }
 
 // ParseFile 读 md 文件并分离 frontmatter 与正文，供 seed 导入复用。

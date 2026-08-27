@@ -16,7 +16,12 @@ const goldenCases = [
   },
   {
     name: "code block",
-    markdown: "```go\nfmt.Println(\"hello\")\n```",
+    markdown: '```go\nfmt.Println("hello")\n```',
+  },
+  {
+    name: "Stellar block tags",
+    markdown:
+      "{% tip text:提示 %}\n保留 **Markdown**。\n{% endtip %}\n\n{% table style:scroll %}\n| A | B |\n| --- | --- |\n| 1 | 2 |\n{% endtable %}",
   },
 ];
 
@@ -31,12 +36,14 @@ test("TipTap 2 golden round-trip baseline has zero normalized diff", async ({ pa
 
   for (const golden of goldenCases) {
     const roundTrip = await page.evaluate((markdown) => {
-      const editor = (window as Window & {
-        __consoleTiptapEditor?: {
-          commands: { setContent: (value: string, emitUpdate?: boolean) => void };
-          storage: { markdown: { getMarkdown: () => string } };
-        };
-      }).__consoleTiptapEditor;
+      const editor = (
+        window as Window & {
+          __consoleTiptapEditor?: {
+            commands: { setContent: (value: string, emitUpdate?: boolean) => void };
+            storage: { markdown: { getMarkdown: () => string } };
+          };
+        }
+      ).__consoleTiptapEditor;
       if (!editor) throw new Error("development TipTap editor hook is unavailable");
       editor.commands.setContent(markdown, false);
       return editor.storage.markdown.getMarkdown();
