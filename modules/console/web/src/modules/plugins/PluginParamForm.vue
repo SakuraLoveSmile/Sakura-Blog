@@ -10,6 +10,7 @@ import { buildShortcode } from "./shortcode";
 const props = defineProps<{
   plugin: PluginMeta;
   modelValue: string;
+  initialValues?: Record<string, unknown>;
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
@@ -32,7 +33,15 @@ const fields = computed<SchemaField[]>(() =>
 function initValues() {
   const next: SchemaValues = {};
   for (const field of props.plugin.form || []) {
-    next[field.key] = field.type === "flag" ? field.default === "true" : (field.default ?? "");
+    const initial = props.initialValues?.[field.key];
+    next[field.key] =
+      initial !== undefined
+        ? field.type === "flag"
+          ? initial === true || initial === "true"
+          : initial
+        : field.type === "flag"
+          ? field.default === "true"
+          : (field.default ?? "");
   }
   values.value = next;
 }
@@ -49,11 +58,11 @@ function onSchemaUpdate(next: SchemaValues) {
 }
 
 watch(
-  () => props.plugin.name,
+  [() => props.plugin.name, () => props.initialValues],
   () => {
     initValues();
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 </script>
 

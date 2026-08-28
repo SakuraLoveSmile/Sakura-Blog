@@ -38,8 +38,15 @@ export interface ShortcodeCatalogItem {
   param_docs: ShortcodeCatalogDoc[];
 }
 
+export interface ShortcodeEditResult {
+  name: string;
+  values: Record<string, unknown>;
+  editable: boolean;
+}
+
 export const pluginApi = {
   catalog: () => http.get<{ items: ShortcodeCatalogItem[] }>("/plugins/catalog"),
+  parseShortcode: (raw: string) => http.post<ShortcodeEditResult>("/plugins/shortcode/parse", { raw }),
   runtime: () => http.get<{ items: RuntimePluginManifest[] }>("/plugins/runtime"),
 };
 
