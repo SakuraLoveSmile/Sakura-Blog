@@ -400,9 +400,10 @@ div.swiper-slide img {
   border-radius: 12px;
 }
 /* 横幅使正文不再是 .md-text 的首子元素；恢复首个标签卡片的正文节奏。
-   使用逻辑属性覆盖 HeTi 对首子元素的 margin-block-start: 0。 */
+   HeTi 会以 !important 清零首子元素的 margin-block-start，因此这里必须以
+   同等优先级覆盖，并保持 page 专用范围。 */
 .l_body[layout='page'] .article-banner-wrap + article.md-text.content > .tag-plugin:first-child {
-  margin-block-start: var(--gap-p);
+  margin-block-start: var(--gap-p) !important;
 }
 /* 独立页面的 poetry 后通常紧跟 quot 小标题；收紧这组相邻块的外部节奏。 */
 .l_body[layout='page'] .md-text.content > .tag-plugin.poetry:has(+ .tag-plugin.quot) {
