@@ -7,7 +7,7 @@
 
 ## 验收清单
 
-- [ ] `/about` 横幅底部到正文首个 `.tag-plugin` 顶部的实际间距为 `var(--gap-p)`（当前主题桌面值为 32px）。
-- [ ] 启用 Heti 时，正文首块的 `margin-block-start` 不再被 `.heti > :first-child` 的 `!important` 规则清零。
-- [ ] `/notes` 等非 `layout="page"` 页面不被该 page 专用规则改变布局。
-- [ ] 同尺寸深色模式截图中，横幅与正文首块的留白节奏与 Stellar 原版保持一致。
+- [x] `/about` 横幅底部到正文首个 `.tag-plugin` 顶部的实际间距为 `var(--gap-p)`（当前主题桌面值为 32px）。
+- [x] 启用 Heti 时，正文首块的 `margin-block-start` 不再被 `.heti > :first-child` 的 `!important` 规则清零。
+- [x] `/notes` 等非 `layout="page"` 页面不被该 page 专用规则改变布局。
+- [x] 同尺寸深色模式截图中，横幅与正文首块的留白节奏与 Stellar 原版保持一致。
