@@ -1,5 +1,7 @@
 export type PluginCategory = "提示标注" | "布局容器" | "文艺装饰" | "媒体播放" | "数据图表" | "GitHub";
-export type PluginType = "inline" | "block";
+// hybrid：同时存在单行与块级两种写法（navbar / frame），需按 variant 决定拼装方式。
+export type PluginType = "inline" | "block" | "hybrid";
+export type PluginVariant = "inline" | "block";
 
 export const PLUGIN_CATEGORIES: PluginCategory[] = [
   "提示标注",

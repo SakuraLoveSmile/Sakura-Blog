@@ -2,15 +2,18 @@
 import { computed, ref, watch } from "vue";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
-import type { PluginMeta } from "./plugin-types";
-import { buildShortcode } from "./shortcode";
+import type { PluginMeta, PluginVariant } from "./plugin-types";
+import { buildShortcode, initFormValues } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
-// 选中插件时只初始化默认值，不用拼装结果覆盖插件库内的精选示例；用户编辑字段时才产出。
+// 插入模式（initialValues 未传）用 catalog default 初始化；
+// 编辑模式（initialValues 来自 /plugins/shortcode/parse）只用 raw 真实解析出的值，
+// 缺失字段取空值，绝不回填 default，避免保存时静默写入作者没写过的参数。
 const props = defineProps<{
   plugin: PluginMeta;
   modelValue: string;
   initialValues?: Record<string, unknown>;
+  variant?: PluginVariant;
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
@@ -31,19 +34,7 @@ const fields = computed<SchemaField[]>(() =>
 );
 
 function initValues() {
-  const next: SchemaValues = {};
-  for (const field of props.plugin.form || []) {
-    const initial = props.initialValues?.[field.key];
-    next[field.key] =
-      initial !== undefined
-        ? field.type === "flag"
-          ? initial === true || initial === "true"
-          : initial
-        : field.type === "flag"
-          ? field.default === "true"
-          : (field.default ?? "");
-  }
-  values.value = next;
+  values.value = initFormValues(props.plugin.form || [], props.initialValues);
 }
 
 function onSchemaUpdate(next: SchemaValues) {
@@ -54,11 +45,11 @@ function onSchemaUpdate(next: SchemaValues) {
     shortcodeValues[field.key] =
       field.type === "flag" ? (value === true ? "true" : "") : value == null ? "" : String(value);
   }
-  emit("update:modelValue", buildShortcode(props.plugin, shortcodeValues));
+  emit("update:modelValue", buildShortcode(props.plugin, shortcodeValues, props.variant));
 }
 
 watch(
-  [() => props.plugin.name, () => props.initialValues],
+  [() => props.plugin.name, () => props.initialValues, () => props.variant],
   () => {
     initValues();
   },

@@ -7,52 +7,48 @@ import (
 )
 
 // ShortcodeEditResult is the parser-owned result used to initialize the
-// Console property editor. Values only contain fields that are present in the
-// shortcode, except flags which are always returned as booleans so an omitted
-// flag can override a form default.
+// Console property editor. Values always contain every catalog parameter so the
+// form can tell "absent" from "empty": editing an existing shortcode must never
+// inject a default the author never wrote.
 type ShortcodeEditResult struct {
 	Name     string         `json:"name"`
 	Values   map[string]any `json:"values"`
 	Editable bool           `json:"editable"`
+	// Variant 只对 hybrid 标签（navbar/frame）输出，标明当前 raw 是 inline 还是 block，
+	// 前端据此选择包装方式，避免把旧的单行语法强行改写为块级。
+	Variant string `json:"variant,omitempty"`
 }
 
 var shortcodeEditOpening = regexp.MustCompile(`(?s)^\s*{%\s*([a-zA-Z][a-zA-Z0-9_-]*)\b(.*?)\s*%}`)
 
-// Keep this list deliberately small. A tag not in the list is still returned
-// to the caller with Editable=false, so the existing raw editor remains the
-// lossless fallback for every other Stellar tag.
-var shortcodeEditSupported = map[string]bool{
-	"note":     true,
-	"button":   true,
-	"checkbox": true,
-	"radio":    true,
-	"mark":     true,
-	"folding":  true,
-	"box":      true,
-	"image":    true,
-	"video":    true,
-	"audio":    true,
-	"copy":     true,
+// shortcodeEditURLSchemes 位置参数里可能带冒号（如链接），这些前缀不算命名参数。
+var shortcodeEditURLSchemes = map[string]bool{
+	"http": true, "https": true, "ftp": true, "ftps": true, "mailto": true, "tel": true,
 }
 
-var shortcodeEditBlock = map[string]bool{
-	"folding": true,
-	"box":     true,
+// shortcodeEditColonPositional 这些位置参数的值本身含冒号（如 Iconify 图标 key），
+// 不能按 key:value 判定为命名参数；只在尚未填入位置参数时适用。
+var shortcodeEditColonPositional = map[string]bool{
+	"icon": true,
 }
 
-// These are parser-supported arguments which are intentionally not exposed by
-// the current catalog form. Seeing one means the raw editor is safer than
-// rebuilding the shortcode and dropping it.
-var shortcodeEditKnownArgs = map[string]map[string]bool{
-	"button":   {"color": true, "icon": true, "size": true},
-	"checkbox": {"color": true, "checked": true, "symbol": true},
-	"radio":    {"color": true, "checked": true, "symbol": true},
-	"folding":  {"color": true, "open": true},
-	"box":      {"color": true, "child": true},
-	"image":    {"width": true, "height": true, "bg": true, "download": true, "padding": true, "fancybox": true, "ratio": true},
-	"video":    {"type": true, "bilibili": true, "youtube": true, "ratio": true, "width": true, "autoplay": true},
-	"audio":    {"type": true, "netease": true, "autoplay": true},
-	"copy":     {"git": true, "prefix": true},
+// shortcodeEditPositionalFallback 旧语法把值写在位置参数里，而 schema 用 named 字段承载。
+// 解析时把剩余位置参数回填到首個空字段，重建时统一输出 canonical named 形式。
+var shortcodeEditPositionalFallback = map[string][]string{
+	"banner": {"title", "subtitle"},
+	"quot":   {"text"},
+	"tip":    {"text"},
+	"frame":  {"device"},
+}
+
+// shortcodeFrameInlineParams 是 frame 单行旧语法的参数布局，与块级（device/width/content）不同。
+// 只在解析/生成单行 frame 时使用，不引入通用 variant schema 体系。
+var shortcodeFrameInlineParams = []ShortcodeParamSchema{
+	positional("device", "设备", "iphone"),
+	named("img", "图片 URL", nil),
+	named("video", "视频 URL", nil),
+	named("focus", "焦点", nil),
+	positional("alt", "替代文本", nil),
 }
 
 type shortcodeEditEnvelope struct {
@@ -62,7 +58,16 @@ type shortcodeEditEnvelope struct {
 	block bool
 }
 
-func parseShortcodeEditEnvelope(raw string, name string) (shortcodeEditEnvelope, error) {
+// shortcodeEditHasClosing 判断 raw 是否带 {% endxxx %}（hybrid 标签据此区分 inline/block）。
+func shortcodeEditHasClosing(raw, name string) bool {
+	re, err := regexp.Compile(`(?is){%\s*end` + regexp.QuoteMeta(name) + `\s*%}`)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(raw)
+}
+
+func parseShortcodeEditEnvelope(raw, name string, block bool) (shortcodeEditEnvelope, error) {
 	trimmed := strings.TrimSpace(raw)
 	loc := shortcodeEditOpening.FindStringSubmatchIndex(trimmed)
 	if len(loc) < 6 {
@@ -71,7 +76,7 @@ func parseShortcodeEditEnvelope(raw string, name string) (shortcodeEditEnvelope,
 
 	args := strings.TrimSpace(trimmed[loc[4]:loc[5]])
 	rest := trimmed[loc[1]:]
-	if shortcodeEditBlock[name] {
+	if block {
 		end := regexp.MustCompile(`(?is)^([\s\S]*?)\s*{%\s*end` + regexp.QuoteMeta(name) + `\s*%}\s*$`)
 		parts := end.FindStringSubmatch(rest)
 		if len(parts) != 2 {
@@ -85,58 +90,56 @@ func parseShortcodeEditEnvelope(raw string, name string) (shortcodeEditEnvelope,
 	return shortcodeEditEnvelope{name: name, args: args}, nil
 }
 
-func shortcodeEditParams(name string) ([]ShortcodeParamSchema, bool) {
-	for _, item := range ShortcodeCatalog() {
-		if item.Name == name {
-			return item.Params, true
-		}
-	}
-	return nil, false
-}
-
-func shortcodeEditParamSet(params []ShortcodeParamSchema) map[string]ShortcodeParamSchema {
-	set := make(map[string]ShortcodeParamSchema, len(params))
-	for _, param := range params {
-		set[param.Key] = param
-	}
-	return set
-}
-
-func parseShortcodeEditArgs(name, args string, params []ShortcodeParamSchema) (map[string]string, []string, error) {
+// shortcodeEditSplitArgs 按 catalog schema 把开标签参数切成 named / flag / positional。
+// 形如 key:value 但 key 不在 schema 中的 token 一律报错，交回源码编辑，
+// 避免重建 shortcode 时把未知参数静默当成位置参数吞掉。
+func shortcodeEditSplitArgs(name, args string, params []ShortcodeParamSchema) (map[string]string, []string, error) {
 	named := make(map[string]string)
 	var positional []string
-	paramSet := shortcodeEditParamSet(params)
 
 	for _, token := range splitArgs(args) {
+		key, value, hasColon := strings.Cut(token, ":")
 		matched := false
-		for _, param := range params {
-			if param.Role != ShortcodeParamNamed && param.Role != ShortcodeParamFlag {
-				continue
+
+		if hasColon {
+			for _, param := range params {
+				switch param.Role {
+				case ShortcodeParamNamed:
+					if param.Key == key {
+						named[param.Key] = value
+						matched = true
+					}
+				case ShortcodeParamFlag:
+					if param.Key == key {
+						if value != "true" && value != "false" {
+							return nil, nil, fmt.Errorf("%s shortcode 的 %s flag 无效", name, param.Key)
+						}
+						named[param.Key] = value
+						matched = true
+					}
+				}
+				if matched {
+					break
+				}
 			}
-			if token == param.Key && param.Role == ShortcodeParamFlag {
-				named[param.Key] = "true"
-				matched = true
-				break
+		} else {
+			// 裸 flag：{% checkbox checked 文本 %}
+			for _, param := range params {
+				if param.Role == ShortcodeParamFlag && param.Key == token {
+					named[param.Key] = "true"
+					matched = true
+					break
+				}
 			}
-			prefix := param.Key + ":"
-			if !strings.HasPrefix(token, prefix) {
-				continue
-			}
-			value := strings.TrimPrefix(token, prefix)
-			if param.Role == ShortcodeParamFlag && value != "true" && value != "false" {
-				return nil, nil, fmt.Errorf("%s shortcode 的 %s flag 无效", name, param.Key)
-			}
-			named[param.Key] = value
-			matched = true
-			break
 		}
 		if matched {
 			continue
 		}
-
-		// A known parser argument absent from the current UI schema must not be
-		// silently discarded by buildShortcode.
-		if key, _, ok := strings.Cut(token, ":"); ok && shortcodeEditKnownArgs[name][key] && paramSet[key].Key == "" {
+		if hasColon && !shortcodeEditURLSchemes[strings.ToLower(key)] {
+			if shortcodeEditColonPositional[name] && len(positional) == 0 {
+				positional = append(positional, token)
+				continue
+			}
 			return nil, nil, fmt.Errorf("%s shortcode 参数 %s 暂不支持可视化编辑", name, key)
 		}
 		positional = append(positional, token)
@@ -144,50 +147,121 @@ func parseShortcodeEditArgs(name, args string, params []ShortcodeParamSchema) (m
 	return named, positional, nil
 }
 
+// shortcodeEditInitValues 初始化全部 schema 字段：flag=false，其余为空字符串。
 func shortcodeEditInitValues(params []ShortcodeParamSchema) map[string]any {
-	values := make(map[string]any)
+	values := make(map[string]any, len(params))
 	for _, param := range params {
 		if param.Role == ShortcodeParamFlag {
 			values[param.Key] = false
+		} else {
+			values[param.Key] = ""
 		}
 	}
 	return values
 }
 
-func shortcodeEditSetNamed(values map[string]any, params []ShortcodeParamSchema, named map[string]string) {
+func shortcodeEditApplyNamed(values map[string]any, params []ShortcodeParamSchema, named map[string]string) {
 	for _, param := range params {
-		if value, ok := named[param.Key]; ok {
-			if param.Role == ShortcodeParamFlag {
-				values[param.Key] = value == "true"
-			} else {
-				values[param.Key] = value
-			}
+		value, ok := named[param.Key]
+		if !ok {
+			continue
+		}
+		if param.Role == ShortcodeParamFlag {
+			values[param.Key] = value == "true"
+		} else {
+			values[param.Key] = value
 		}
 	}
 }
 
-func shortcodeEditSetPositional(values map[string]any, params []ShortcodeParamSchema, positional []string, joinSingle bool) error {
-	fields := make([]string, 0, len(params))
+// shortcodeEditApplyPositional 把位置参数写入 schema 的 positional 字段。
+// 最后一个 positional 字段吸收剩余 token（自由文本不被截断）；
+// 没有 positional 字段时原样返回剩余 token，由调用方决定归属或报错。
+func shortcodeEditApplyPositional(values map[string]any, params []ShortcodeParamSchema, positional []string) []string {
+	var fields []string
 	for _, param := range params {
 		if param.Role == ShortcodeParamPositional {
 			fields = append(fields, param.Key)
 		}
 	}
-	if len(positional) > len(fields) && !joinSingle {
-		return fmt.Errorf("位置参数数量超出 schema")
+	if len(fields) == 0 || len(positional) == 0 {
+		return positional
 	}
-	if joinSingle && len(fields) == 1 {
-		if len(positional) > 0 {
-			values[fields[0]] = strings.Join(positional, " ")
+
+	tail := len(fields) - 1
+	if len(positional) <= tail {
+		for i, key := range fields {
+			if i < len(positional) {
+				values[key] = positional[i]
+			}
 		}
 		return nil
 	}
-	for i, key := range fields {
-		if i < len(positional) {
-			values[key] = positional[i]
+	for i := 0; i < tail; i++ {
+		values[fields[i]] = positional[i]
+	}
+	values[fields[tail]] = strings.Join(positional[tail:], " ")
+	return nil
+}
+
+// shortcodeEditApplyFallback 把剩余位置参数回填到 schema 的 named 字段（旧语法兼容）。
+// 最后一个字段吸收剩余 token；无 fallback 定义且仍有剩余参数时返回 false。
+func shortcodeEditApplyFallback(values map[string]any, name string, leftover []string) bool {
+	if len(leftover) == 0 {
+		return true
+	}
+	keys, ok := shortcodeEditPositionalFallback[name]
+	if !ok {
+		return false
+	}
+	for i, key := range keys {
+		if shortcodeEditString(values, key) != "" || i >= len(leftover) {
+			continue
+		}
+		if i == len(keys)-1 {
+			values[key] = strings.Join(leftover[i:], " ")
+		} else {
+			values[key] = leftover[i]
 		}
 	}
-	return nil
+	return true
+}
+
+// parseEmojiArgs 解析 emoji 的两种模式：
+// 普通：{% emoji [source] name [height:x] %}；URL：{% emoji url:https://... [name:alt] [height:x] %}。
+func parseEmojiArgs(args string) (source, name, url, height string) {
+	var positional []string
+	for _, tok := range splitArgs(args) {
+		switch {
+		case strings.HasPrefix(tok, "url:"):
+			url = strings.TrimPrefix(tok, "url:")
+		case strings.HasPrefix(tok, "height:"):
+			height = strings.TrimPrefix(tok, "height:")
+		case strings.HasPrefix(tok, "name:"):
+			name = strings.TrimPrefix(tok, "name:")
+		default:
+			positional = append(positional, tok)
+		}
+	}
+	if url != "" {
+		if name == "" {
+			name = strings.Join(positional, " ")
+		}
+		return "", name, url, height
+	}
+	switch len(positional) {
+	case 0:
+	case 1:
+		if name == "" {
+			name = positional[0]
+		}
+	default:
+		source = positional[0]
+		if name == "" {
+			name = strings.Join(positional[1:], " ")
+		}
+	}
+	return source, name, url, height
 }
 
 func shortcodeEditString(values map[string]any, key string) string {
@@ -224,60 +298,88 @@ func validateShortcodeEditValues(name string, values map[string]any) error {
 	return nil
 }
 
-// ParseShortcodeForEdit parses only the simple catalog-backed tags used by the
-// first visual editor version. Unsupported tags intentionally return a normal
-// result with Editable=false so callers can keep editing their raw source.
+// ParseShortcodeForEdit 解析 catalog 内的任意标签，供 Console 属性面板初始化。
+// 不在 catalog 中或语法无法无损映射的标签返回 Editable=false / 错误，
+// 由调用方回退到源码编辑；绝不改动持久化内容。
 func ParseShortcodeForEdit(raw string) (ShortcodeEditResult, error) {
-	loc := shortcodeEditOpening.FindStringSubmatchIndex(strings.TrimSpace(raw))
+	trimmed := strings.TrimSpace(raw)
+	loc := shortcodeEditOpening.FindStringSubmatchIndex(trimmed)
 	if len(loc) < 6 {
 		return ShortcodeEditResult{}, fmt.Errorf("shortcode 格式无效")
 	}
-	name := strings.ToLower(strings.TrimSpace(strings.TrimSpace(raw)[loc[2]:loc[3]]))
+	name := strings.ToLower(strings.TrimSpace(trimmed[loc[2]:loc[3]]))
 	result := ShortcodeEditResult{Name: name, Values: map[string]any{}, Editable: false}
-	if !shortcodeEditSupported[name] {
+
+	entry, ok := findShortcodeCatalogEntry(name)
+	if !ok {
 		return result, nil
 	}
 
-	envelope, err := parseShortcodeEditEnvelope(raw, name)
+	block := entry.Type == ShortcodeBlock
+	variant := ShortcodeVariantInline
+	if block {
+		variant = ShortcodeVariantBlock
+	} else if entry.Type == ShortcodeHybrid && shortcodeEditHasClosing(trimmed, name) {
+		block = true
+		variant = ShortcodeVariantBlock
+	}
+
+	envelope, err := parseShortcodeEditEnvelope(trimmed, name, block)
 	if err != nil {
 		return ShortcodeEditResult{}, err
 	}
-	params, ok := shortcodeEditParams(name)
-	if !ok || len(params) == 0 {
-		return result, nil
-	}
-	named, positional, err := parseShortcodeEditArgs(name, envelope.args, params)
-	if err != nil {
-		return ShortcodeEditResult{}, err
+
+	params := entry.Params
+	if name == "frame" && !block {
+		params = shortcodeFrameInlineParams
 	}
 	values := shortcodeEditInitValues(params)
-	shortcodeEditSetNamed(values, params, named)
 
 	switch name {
 	case "note":
-		color, title, content := parseNoteArgs(envelope.args)
-		if color != "" {
-			values["color"] = color
-		}
-		if title != "" {
-			values["title"] = title
-		}
-		values["content"] = content
-	case "folding", "box":
-		if err := shortcodeEditSetPositional(values, params, positional, true); err != nil {
-			return ShortcodeEditResult{}, err
-		}
-		values["content"] = envelope.body
+		color, title, body := parseNoteArgs(envelope.args)
+		values["color"] = color
+		values["title"] = title
+		values["content"] = body
+	case "emoji":
+		source, emojiName, url, height := parseEmojiArgs(envelope.args)
+		values["source"] = source
+		values["name"] = emojiName
+		values["url"] = url
+		values["height"] = height
 	default:
-		joinSingle := name == "checkbox" || name == "radio" || name == "mark" || name == "copy"
-		if err := shortcodeEditSetPositional(values, params, positional, joinSingle); err != nil {
+		named, positional, err := shortcodeEditSplitArgs(name, envelope.args, params)
+		if err != nil {
 			return ShortcodeEditResult{}, err
+		}
+		shortcodeEditApplyNamed(values, params, named)
+		leftover := shortcodeEditApplyPositional(values, params, positional)
+		if block {
+			for _, param := range params {
+				if param.Role == ShortcodeParamContent {
+					values[param.Key] = envelope.body
+				}
+			}
+		}
+		switch {
+		case name == "navbar" && !block:
+			// 单行 navbar 的链接列表是位置参数，按行展示在 content 里
+			values["content"] = strings.Join(leftover, "\n")
+		default:
+			if !shortcodeEditApplyFallback(values, name, leftover) {
+				return ShortcodeEditResult{}, fmt.Errorf("%s shortcode 参数无法映射到属性表单", name)
+			}
 		}
 	}
+
 	if err := validateShortcodeEditValues(name, values); err != nil {
 		return ShortcodeEditResult{}, err
 	}
+
 	result.Values = values
 	result.Editable = true
+	if entry.Type == ShortcodeHybrid {
+		result.Variant = string(variant)
+	}
 	return result, nil
 }

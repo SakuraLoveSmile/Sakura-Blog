@@ -10,8 +10,9 @@ import { NodeViewWrapper, nodeViewProps } from "@tiptap/vue-3";
 import { Icon } from "@iconify/vue";
 import { pluginApi, previewApi } from "@/api";
 import StellarTagPropertyPopover from "./StellarTagPropertyPopover.vue";
-import type { PluginMeta } from "@/modules/plugins/plugin-types";
+import type { PluginMeta, PluginVariant } from "@/modules/plugins/plugin-types";
 import { loadPluginCatalog } from "@/modules/plugins/usePluginCatalog";
+import { formForVariant } from "@/modules/plugins/shortcode";
 import { tagNameOf, typeLabelOf } from "./stellar-tag";
 
 // Stellar 标签节点的 NodeView：选中时浮出 Halo 同款操作气泡（类型标签 + 编辑/删除），iframe 渲染前台真实效果。
@@ -153,14 +154,21 @@ const editing = ref(false);
 const editingLoading = ref(false);
 const editingError = ref("");
 const editingPlugin = ref<PluginMeta | null>(null);
-const editingValues = ref<Record<string, unknown>>({});
+const editingVariant = ref<PluginVariant | undefined>(undefined);
+const editingValues = ref<Record<string, unknown> | undefined>(undefined);
+
+// hybrid 标签（frame 单行）需要按 variant 换一套属性字段；其余标签原样返回。
+const editingFormPlugin = computed(() =>
+  editingPlugin.value ? formForVariant(editingPlugin.value, editingVariant.value) : null,
+);
 
 async function startEdit() {
   editing.value = true;
   editingLoading.value = true;
   editingError.value = "";
   editingPlugin.value = null;
-  editingValues.value = {};
+  editingVariant.value = undefined;
+  editingValues.value = undefined;
 
   const sourceRaw = raw.value;
   const tagName = tagNameOf(sourceRaw).toLowerCase();
@@ -173,11 +181,13 @@ async function startEdit() {
     }
     const { data } = await pluginApi.parseShortcode(sourceRaw);
     if (!editing.value || raw.value !== sourceRaw) return;
-    if (!data.editable || data.name.toLowerCase() !== tagName || !plugin.form?.length) {
+    // 零参数组件（links）也算支持：面板会提示「没有可编辑属性」并保留源码编辑。
+    if (!data.editable || data.name.toLowerCase() !== tagName) {
       editingError.value = "当前标签暂不支持属性面板，可直接编辑源码。";
       return;
     }
     editingPlugin.value = plugin;
+    editingVariant.value = data.variant;
     editingValues.value = data.values;
   } catch {
     if (editing.value && raw.value === sourceRaw) editingError.value = "属性解析失败，可直接编辑源码。";
@@ -259,8 +269,9 @@ function closeEditor() {
 
     <StellarTagPropertyPopover
       v-if="editing"
-      :plugin="editingPlugin"
+      :plugin="editingFormPlugin"
       :initial-values="editingValues"
+      :variant="editingVariant"
       :raw="raw"
       :loading="editingLoading"
       :error="editingError"

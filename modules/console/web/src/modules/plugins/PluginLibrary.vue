@@ -65,6 +65,13 @@ const categoryCount = computed(() => {
   return map;
 });
 
+// 列表徽标：hybrid 标签两种写法都支持，用「混」区分于纯块级/纯行内
+function typeBadge(type: PluginMeta["type"]): string {
+  if (type === "block") return "块";
+  if (type === "hybrid") return "混";
+  return "行";
+}
+
 function selectPlugin(p: PluginMeta) {
   selected.value = p;
   example.value = p.example;
@@ -230,7 +237,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                 'text-[10px] px-1 py-px rounded font-mono shrink-0',
                 p.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
               ]"
-              >{{ p.type === "block" ? "块" : "行" }}</span
+              >{{ typeBadge(p.type) }}</span
             >
             <span
               :class="[
@@ -262,7 +269,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                 'text-[11px] px-1.5 py-0.5 rounded-full',
                 selected.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
               ]"
-              >{{ selected.type === "block" ? "块级" : "行内" }}</span
+              >{{ selected.type === "block" ? "块级" : selected.type === "hybrid" ? "块级/行内" : "行内" }}</span
             >
           </div>
           <p class="text-sm text-text-tertiary mt-1">{{ selected.desc }}</p>

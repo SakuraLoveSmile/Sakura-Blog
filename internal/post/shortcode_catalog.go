@@ -32,6 +32,14 @@ const (
 	ShortcodeHybrid ShortcodeType = "hybrid"
 )
 
+// ShortcodeEditVariant 描述 hybrid 标签当前 raw 实际采用的形式。
+type ShortcodeEditVariant string
+
+const (
+	ShortcodeVariantInline ShortcodeEditVariant = "inline"
+	ShortcodeVariantBlock  ShortcodeEditVariant = "block"
+)
+
 type ShortcodeCapability string
 
 const (
@@ -91,28 +99,47 @@ var (
 	shortcodeDevices = []string{"iphone", "ipad", "macbook"}
 )
 
-func positional(key string, defaultValue any) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: defaultValue}
+// --- 参数构造器 ---
+// catalog 是参数真值：Console 表单、插件库插入、可视化属性编辑共用同一份 schema。
+// 每个字段必须对应当前 renderer 真实消费的参数，避免属性编辑重新生成时静默丢参数。
+
+func positional(key, label string, defaultValue any) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: defaultValue}
 }
 
-func positionalSelect(key string, defaultValue any, options ...string) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamSelect, Role: ShortcodeParamPositional, Default: defaultValue, Options: options}
+func positionalSelect(key, label string, defaultValue any, options ...string) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamSelect, Role: ShortcodeParamPositional, Default: defaultValue, Options: options}
 }
 
-func named(key string, defaultValue any) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: defaultValue}
+func named(key, label string, defaultValue any) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: defaultValue}
 }
 
-func namedSelect(key string, defaultValue any, options ...string) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: defaultValue, Options: options}
+func namedNumber(key, label string, defaultValue any) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamNumber, Role: ShortcodeParamNamed, Default: defaultValue}
 }
 
-func flag(key string, defaultValue bool) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: defaultValue}
+func namedSelect(key, label string, defaultValue any, options ...string) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: defaultValue, Options: options}
 }
 
-func content(key string, defaultValue any) ShortcodeParamSchema {
-	return ShortcodeParamSchema{Key: key, Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: defaultValue}
+func flag(key, label string, defaultValue bool) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: defaultValue}
+}
+
+func content(key, label string, defaultValue any) ShortcodeParamSchema {
+	return ShortcodeParamSchema{Key: key, Label: label, Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: defaultValue}
+}
+
+// withPlaceholder / withHint 只补充展示信息，不改变参数语义。
+func (p ShortcodeParamSchema) withPlaceholder(v string) ShortcodeParamSchema {
+	p.Placeholder = v
+	return p
+}
+
+func (p ShortcodeParamSchema) withHint(v string) ShortcodeParamSchema {
+	p.Hint = v
+	return p
 }
 
 func shortcodeEntry(name string, typ ShortcodeType, category string, capability ShortcodeCapability, parser *regexp.Regexp, params ...ShortcodeParamSchema) shortcodeRegistration {
@@ -130,110 +157,166 @@ func shortcodeEntry(name string, typ ShortcodeType, category string, capability 
 // shortcodeRegistry is deliberately adjacent to the parser's regexp names:
 // adding a parser without adding a catalog entry should be caught by review/tests.
 var shortcodeRegistry = []shortcodeRegistration{
+	// --- 提示标注 ---
 	shortcodeEntry("note", ShortcodeInline, "提示标注", ShortcodeStatic, reNote,
-		namedSelect("color", "blue", shortcodeColors...), positional("title", nil), content("content", nil)),
+		namedSelect("color", "配色", "blue", shortcodeColors...), positional("title", "标题（可选）", nil), content("content", "内容", nil)),
 	shortcodeEntry("quot", ShortcodeInline, "提示标注", ShortcodeStatic, reQuot,
-		namedSelect("el", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "hashtag"), named("text", "")),
+		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"), named("text", "标题文本", nil)),
 	shortcodeEntry("mark", ShortcodeInline, "提示标注", ShortcodeStatic, reMark,
-		positional("text", "重点内容"), namedSelect("color", "yellow", shortcodeColors...)),
+		positional("text", "文本", "重点内容"), namedSelect("color", "颜色", "yellow", shortcodeColors...)),
 	shortcodeEntry("button", ShortcodeInline, "提示标注", ShortcodeStatic, reButton,
-		positional("text", "访问主页"), positional("url", "https://example.com"), namedSelect("color", "blue", shortcodeColors...), namedSelect("size", nil, "", "small", "large")),
+		positional("text", "按钮文本", "访问主页"), positional("url", "链接", "https://example.com"),
+		namedSelect("color", "配色", "blue", shortcodeColors...), namedSelect("size", "尺寸", nil, "", "small", "large"), named("icon", "图标 key", nil)),
 	shortcodeEntry("checkbox", ShortcodeInline, "提示标注", ShortcodeStatic, reCheckbox,
-		positional("text", "已完成的任务"), flag("checked", true), namedSelect("color", "green", shortcodeColors...)),
+		positional("text", "文本", "已完成的任务"), flag("checked", "默认勾选", true),
+		namedSelect("color", "配色", "green", shortcodeColors...), named("symbol", "勾选符号", nil)),
 	shortcodeEntry("radio", ShortcodeInline, "提示标注", ShortcodeStatic, reCheckbox,
-		positional("text", "选项一"), flag("checked", true), namedSelect("color", "blue", shortcodeColors...)),
+		positional("text", "文本", "选项一"), flag("checked", "默认选中", true),
+		namedSelect("color", "配色", "blue", shortcodeColors...), named("symbol", "选中符号", nil)),
 	shortcodeEntry("hashtag", ShortcodeInline, "提示标注", ShortcodeStatic, reHashtag,
-		positional("text", "日常"), positional("href", nil), namedSelect("color", nil, shortcodeColors...)),
+		positional("text", "文本", "日常"), positional("href", "链接（可选）", nil),
+		namedSelect("color", "颜色（留空循环）", nil, shortcodeColors...)),
 	shortcodeEntry("emoji", ShortcodeInline, "提示标注", ShortcodeStatic, reEmoji,
-		positionalSelect("source", "default", "default", "qq", "tieba", "aru", "blobcat", "twemoji"), positional("name", "aini"), named("height", nil)),
+		positionalSelect("source", "来源（留空用默认源）", nil, "", "default", "qq", "tieba", "aru", "blobcat", "twemoji"),
+		positional("name", "表情名称", "aini"), named("url", "图片 URL（URL 模式）", nil), named("height", "高度", nil)),
 	shortcodeEntry("icon", ShortcodeInline, "提示标注", ShortcodeStatic, reIcon,
-		positional("key", "example:planet"), namedSelect("color", "blue", shortcodeColors...), positional("text", nil)),
+		positional("key", "图标 key", "example:planet"), namedSelect("color", "颜色", "blue", shortcodeColors...),
+		named("style", "内联样式", nil), positional("text", "附文本（可选）", nil)),
 
+	// --- 布局容器 ---
 	shortcodeEntry("folding", ShortcodeBlock, "布局容器", ShortcodeInteractive, reFolding,
-		namedSelect("color", nil, shortcodeColors...), flag("open", true), positional("title", "点击查看详情"), content("content", "这里是折叠内容，支持 **Markdown**。")),
+		namedSelect("color", "配色", nil, shortcodeColors...), flag("open", "默认展开", true),
+		positional("title", "标题", "点击查看详情"), content("content", "正文", "这里是折叠内容，支持 **Markdown**。")),
 	shortcodeEntry("tabs", ShortcodeBlock, "布局容器", ShortcodeInteractive, reTabs,
-		named("active", nil), content("content", nil)),
+		named("active", "默认激活序号（从 1 起）", nil), namedSelect("align", "对齐方式", nil, "", "left", "center", "right"),
+		content("content", "Tabs 内容（<!-- tab 标题 --> 分隔）", nil)),
 	shortcodeEntry("timeline", ShortcodeBlock, "布局容器", ShortcodeStatic, reTimeline,
-		content("content", nil)),
+		content("content", "时间轴内容（<!-- node 时间 --> 分隔）", nil)),
 	shortcodeEntry("gallery", ShortcodeBlock, "布局容器", ShortcodeInteractive, reGallery,
-		namedSelect("layout", "grid", "grid", "flow"), named("size", "mix"), named("ratio", "origin"), content("content", nil)),
+		namedSelect("layout", "布局", "grid", "grid", "flow"), named("size", "尺寸模式", "mix"),
+		named("ratio", "宽高比", "origin"), content("content", "图片（每行一个 Markdown 图片）", nil)),
 	shortcodeEntry("folders", ShortcodeBlock, "布局容器", ShortcodeInteractive, reFolders,
-		namedSelect("color", nil, shortcodeColors...), content("content", nil)),
+		namedSelect("color", "配色", nil, shortcodeColors...), content("content", "折叠项（<!-- folder 标题 --> 分隔）", nil)),
 	shortcodeEntry("grid", ShortcodeBlock, "布局容器", ShortcodeStatic, reGrid,
-		named("w", "240px"), named("c", nil), named("gap", nil), named("br", nil), content("content", nil)),
+		namedSelect("bg", "背景样式", nil, "", "card"), named("w", "最小列宽", "240px"), named("c", "固定列数", nil),
+		named("gap", "单元格间距", nil), named("br", "单元格圆角", nil), content("content", "单元格（<!-- cell --> 分隔）", nil)),
 	shortcodeEntry("table", ShortcodeBlock, "布局容器", ShortcodeStatic, reTable,
-		namedSelect("style", nil, "scroll", "wrap", "compact"), content("content", nil)),
+		namedSelect("style", "样式", nil, "scroll", "wrap", "compact"), content("content", "表格 Markdown", nil)),
 	shortcodeEntry("tip", ShortcodeBlock, "布局容器", ShortcodeStatic, reTip,
-		named("text", nil), content("content", nil)),
+		named("text", "提示文字", nil), content("content", "提示内容", nil)),
 	shortcodeEntry("blockquote", ShortcodeBlock, "布局容器", ShortcodeStatic, reBlockquoteTag,
-		namedSelect("indent", false, "", "true", "false"), content("content", nil)),
+		namedSelect("indent", "首行缩进", nil, "", "true", "false"), content("content", "引用正文", nil)),
 	shortcodeEntry("banner", ShortcodeBlock, "布局容器", ShortcodeStatic, reBannerTag,
-		named("title", nil), named("subtitle", nil), named("bg", nil), named("avatar", nil), named("link", nil), content("content", nil)),
+		named("title", "标题", nil), named("subtitle", "副标题", nil), named("bg", "背景图 URL", nil),
+		named("avatar", "头像 URL", nil), named("link", "跳转链接", nil), content("content", "正文", nil)),
 	shortcodeEntry("navbar", ShortcodeHybrid, "布局容器", ShortcodeInteractive, reNavbarTag,
-		named("active", nil), content("content", nil)),
+		named("active", "高亮项", nil), content("content", "导航链接（每行 [文本](链接)）", nil)),
 	shortcodeEntry("frame", ShortcodeHybrid, "布局容器", ShortcodeStatic, reFrameTag,
-		namedSelect("device", "iphone", shortcodeDevices...), named("width", nil), content("content", nil)),
+		namedSelect("device", "设备", "iphone", shortcodeDevices...), named("width", "最大宽度", nil),
+		content("content", "媒体内容（Markdown 图片/视频）", nil)),
 	shortcodeEntry("box", ShortcodeBlock, "布局容器", ShortcodeStatic, reBox,
-		namedSelect("color", nil, shortcodeColors...), namedSelect("child", nil, shortcodeColors...), positional("title", "卡片标题"), content("content", "卡片正文，支持 **Markdown**。")),
+		namedSelect("color", "外框配色", nil, shortcodeColors...), namedSelect("child", "子元素配色", nil, shortcodeColors...),
+		positional("title", "标题", "卡片标题"), content("content", "正文", "卡片正文，支持 **Markdown**。")),
 	shortcodeEntry("about", ShortcodeBlock, "布局容器", ShortcodeStatic, reAbout,
-		named("avatar", nil), named("border", nil), named("height", nil), flag("back", false), content("content", nil)),
+		named("avatar", "头像 URL", nil), named("border", "头像边框", nil), named("height", "头像高度", nil),
+		flag("back", "显示返回箭头", false), content("content", "正文", nil)),
 	shortcodeEntry("toc", ShortcodeInline, "布局容器", ShortcodeStatic, reTOCTag,
-		positional("title", "TOC"), namedSelect("display", nil, "", "mobile")),
+		positional("title", "目录标题", "TOC"), named("wiki", "Wiki 项目（未启用时输出空）", nil),
+		namedSelect("open", "默认展开", nil, "", "true", "false"), namedSelect("display", "显示方式", nil, "", "mobile")),
 
+	// --- 文艺装饰 ---
 	shortcodeEntry("mbti", ShortcodeInline, "文艺装饰", ShortcodeStatic, reMbti,
-		positional("type", "INTJ-T"), positional("scores", "93-72-78-83-51"), named("url", nil), named("image", nil)),
+		positional("type", "人格类型", "INTJ-T").withPlaceholder("INTJ-T"),
+		positional("scores", "五维百分比", "93-72-78-83-51").withPlaceholder("93-72-78-83-51"),
+		named("url", "档案链接", nil), named("image", "横幅图片", nil)),
 	shortcodeEntry("poetry", ShortcodeBlock, "文艺装饰", ShortcodeStatic, rePoetry,
-		positional("title", nil), named("author", nil), named("date", nil), named("footer", nil), content("content", nil)),
+		positional("title", "标题", nil), named("author", "作者", nil), named("date", "日期", nil),
+		named("footer", "页脚", nil), content("content", "正文", nil)),
 	shortcodeEntry("paper", ShortcodeBlock, "文艺装饰", ShortcodeStatic, rePaperTag,
-		namedSelect("style", nil, "", "underline"), named("title", nil), named("author", nil), named("date", nil), named("footer", nil), content("content", nil)),
+		namedSelect("style", "标题下划线装饰", nil, "", "underline"), named("title", "标题", nil),
+		named("author", "作者", nil), named("date", "日期", nil), named("footer", "页脚", nil),
+		content("content", "正文（<!-- paragraph/section/line --> 标记）", nil)),
 	shortcodeEntry("reel", ShortcodeBlock, "文艺装饰", ShortcodeStatic, reReelTag,
-		positional("title", nil), named("author", nil), named("date", nil), named("footer", nil), content("content", nil)),
-	shortcodeEntry("psw", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("emp", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("wavy", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("blur", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("sub", ShortcodeInline, "文艺装饰", ShortcodeStatic, reSupSub, positional("text", nil), namedSelect("color", nil, shortcodeColors...)),
-	shortcodeEntry("sup", ShortcodeInline, "文艺装饰", ShortcodeStatic, reSupSub, positional("text", nil), namedSelect("color", nil, shortcodeColors...)),
-	shortcodeEntry("u", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("del", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
-	shortcodeEntry("kbd", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", nil)),
+		positional("title", "标题", nil), named("author", "作者", nil), named("date", "日期", nil),
+		named("footer", "页脚", nil), content("content", "正文", nil)),
+	shortcodeEntry("psw", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "隐藏文本", nil)),
+	shortcodeEntry("emp", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "着重文本", nil)),
+	shortcodeEntry("wavy", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "波浪文本", nil)),
+	shortcodeEntry("blur", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "模糊文本", nil)),
+	shortcodeEntry("sub", ShortcodeInline, "文艺装饰", ShortcodeStatic, reSupSub,
+		positional("text", "下标文本", nil), namedSelect("color", "配色", nil, shortcodeColors...)),
+	shortcodeEntry("sup", ShortcodeInline, "文艺装饰", ShortcodeStatic, reSupSub,
+		positional("text", "上标文本", nil), namedSelect("color", "配色", nil, shortcodeColors...)),
+	shortcodeEntry("u", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "文本", nil)),
+	shortcodeEntry("del", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "文本", nil)),
+	shortcodeEntry("kbd", ShortcodeInline, "文艺装饰", ShortcodeStatic, reInlineLabel, positional("text", "按键", nil)),
 
+	// --- 媒体播放 / 数据服务 ---
 	shortcodeEntry("image", ShortcodeInline, "媒体播放", ShortcodeStatic, reImage,
-		positional("src", "/assets/img/preview/image-demo.jpg"), positional("alt", "风景图"), named("width", "80%"), named("bg", nil), flag("download", false), named("ratio", nil)),
+		positional("src", "图片地址", "/assets/img/preview/image-demo.jpg"), positional("alt", "替代文本", "风景图"),
+		named("width", "宽度", "80%"), named("height", "高度", nil), named("bg", "背景色", nil),
+		flag("download", "显示下载按钮", false), named("padding", "内边距", nil),
+		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)),
 	shortcodeEntry("link", ShortcodeInline, "媒体播放", ShortcodeStatic, reLink,
-		positional("url", "https://example.com"), positional("title", "示例站点"), named("desc", nil), named("icon", nil)),
+		positional("url", "链接", "https://example.com"), positional("title", "标题", "示例站点"),
+		named("desc", "描述（提供则用 rich 布局）", nil), named("icon", "图标/缩略图 URL", nil)),
 	shortcodeEntry("video", ShortcodeInline, "媒体播放", ShortcodeStatic, reVideo,
-		positional("src", "/assets/media/preview/sample-video.mp4"), named("bilibili", nil), named("youtube", nil), named("ratio", "16/9"), named("width", "100%"), flag("autoplay", false)),
+		positional("src", "视频地址", "/assets/media/preview/sample-video.mp4"), named("bilibili", "B 站 BV 号", nil),
+		named("youtube", "YouTube 视频 ID", nil), named("type", "MIME 类型", nil),
+		named("ratio", "宽高比", "16/9"), named("width", "最大宽度", "100%"), flag("autoplay", "自动播放", false)),
 	shortcodeEntry("audio", ShortcodeInline, "媒体播放", ShortcodeStatic, reAudio,
-		positional("src", "/assets/media/preview/sample-audio.mp3"), named("netease", nil), named("type", "audio/mp3"), flag("autoplay", false)),
+		positional("src", "音频地址", "/assets/media/preview/sample-audio.mp3"), named("netease", "网易云歌曲 ID", nil),
+		named("type", "MIME 类型", "audio/mp3"), flag("autoplay", "自动播放", false)),
 	shortcodeEntry("swiper", ShortcodeBlock, "媒体播放", ShortcodeInteractive, reSwiper,
-		namedSelect("width", "", "", "min", "max"), namedSelect("effect", "slide", "slide", "fade", "coverflow", "cards"), content("content", nil)),
+		namedSelect("width", "宽度语义", "", "", "min", "max"),
+		namedSelect("effect", "切换效果", "slide", "slide", "fade", "coverflow", "cards"),
+		content("content", "轮播图片（每行一张 Markdown 图片）", nil)),
 	shortcodeEntry("albums", ShortcodeInline, "媒体播放", ShortcodeService, reAlbumsTag,
-		named("repo", nil), named("api", nil), namedSelect("size", "s", "s", "m", "l", "xl", "mix")),
+		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
+		namedSelect("size", "卡片尺寸", "s", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("posters", ShortcodeInline, "媒体播放", ShortcodeService, rePostersTag,
-		named("repo", nil), named("api", nil), namedSelect("size", "xs", "xs", "s", "m", "l", "xl", "mix")),
+		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
+		namedSelect("size", "卡片尺寸", "xs", "xs", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("copy", ShortcodeInline, "媒体播放", ShortcodeStatic, reCopy,
-		positional("text", "npm install stellar-theme"), named("git", nil), named("prefix", nil)),
+		positional("text", "复制文本", "npm install stellar-theme"), named("git", "git 仓库（user/repo）", nil),
+		named("prefix", "前缀标签文本", nil)),
 	shortcodeEntry("rating", ShortcodeInline, "媒体播放", ShortcodeService, reRating,
-		positional("id", "demo-post"), positional("title", "给这篇文章打分")),
+		named("id", "评分对象 ID", "demo-post"), named("icon", "评分图标 key", nil),
+		positional("title", "标题", "给这篇文章打分")),
 	shortcodeEntry("vote", ShortcodeInline, "媒体播放", ShortcodeService, reVote,
-		positional("title", nil), named("id", "default"), named("yes", "ri:arrow-up-line"), named("no", "ri:arrow-down-line")),
-	shortcodeEntry("friends", ShortcodeInline, "媒体播放", ShortcodeService, reFriends, named("api", "/api/friends")),
+		positional("title", "标题", nil), named("id", "投票对象 ID", "default"),
+		named("yes", "赞成图标 key", "ri:arrow-up-line"), named("no", "反对图标 key", "ri:arrow-down-line")),
+	shortcodeEntry("friends", ShortcodeInline, "媒体播放", ShortcodeService, reFriends,
+		named("api", "数据服务 URL", "/api/friends"), flag("posts", "带 RSS 文章列表", false)),
 	shortcodeEntry("links", ShortcodeInline, "媒体播放", ShortcodeStatic, reLinks),
-	shortcodeEntry("moments", ShortcodeInline, "媒体播放", ShortcodeService, reMoments, named("limit", 5)),
-	shortcodeEntry("sites", ShortcodeInline, "媒体播放", ShortcodeService, reSites, named("api", nil)),
-	shortcodeEntry("md", ShortcodeInline, "媒体播放", ShortcodeExternal, reMDTag, positional("src", nil)),
+	shortcodeEntry("moments", ShortcodeInline, "媒体播放", ShortcodeService, reMoments,
+		namedNumber("limit", "显示条数", 5).withHint("最多显示 50 条")),
+	shortcodeEntry("sites", ShortcodeInline, "媒体播放", ShortcodeService, reSites, named("api", "数据服务 URL", nil)),
+	shortcodeEntry("md", ShortcodeInline, "媒体播放", ShortcodeExternal, reMDTag,
+		positional("src", "Markdown 文件 URL", nil), namedSelect("wrap", "包裹容器", nil, "", "true", "false")),
 
-	shortcodeEntry("mermaid", ShortcodeBlock, "数据图表", ShortcodeExternal, reMermaid, content("content", nil)),
+	// --- 数据图表 ---
+	shortcodeEntry("mermaid", ShortcodeBlock, "数据图表", ShortcodeExternal, reMermaid, content("content", "Mermaid 源码", nil)),
 	shortcodeEntry("okr", ShortcodeBlock, "数据图表", ShortcodeStatic, reOKR,
-		positional("title", "o1"), named("percent", nil), namedSelect("status", "in_track", "in_track", "at_risk", "off_track", "finished", "unfinished"), named("color", nil), content("content", nil)),
+		positional("title", "目标编号", "o1"), named("percent", "完成百分比", nil),
+		namedSelect("status", "状态", "in_track", "in_track", "at_risk", "off_track", "finished", "unfinished"),
+		namedSelect("color", "配色", nil, shortcodeColors...),
+		content("content", "目标与 KR（<!-- okr krN --> 分隔）", nil)),
 	shortcodeEntry("chat", ShortcodeBlock, "数据图表", ShortcodeStatic, reChat,
-		positional("device", nil), namedSelect("style", "qq", "qq", "wechat"), named("title", nil), namedSelect("scene", "group", "group", "single"), named("me", nil), content("content", nil)),
+		positional("device", "设备", nil).withPlaceholder("iphone"),
+		namedSelect("style", "样式", "qq", "qq", "wechat"), named("title", "标题", nil),
+		namedSelect("scene", "场景", "group", "group", "single"), named("me", "靠右显示的参与者 key（single 模式）", nil),
+		content("content", "参与者 YAML + 消息（<!-- chattip --> / <!-- chatcell -->）", nil)),
 
+	// --- GitHub ---
 	shortcodeEntry("ghcard", ShortcodeInline, "GitHub", ShortcodeService, reGHCard,
-		positional("repo", "anuraghazra/github-readme-stats"), named("theme", nil), flag("show_owner", true), named("title_color", nil)),
-	shortcodeEntry("ghrepo", ShortcodeInline, "GitHub", ShortcodeService, reGHRepo, positional("repo", nil)),
-	shortcodeEntry("ghuser", ShortcodeInline, "GitHub", ShortcodeService, reGHUser, positional("username", nil)),
+		positional("repo", "user/repo 或 user", "anuraghazra/github-readme-stats"), named("theme", "主题", nil),
+		flag("show_owner", "显示仓库所有者", true), named("title_color", "标题颜色", nil),
+		named("text_color", "文本颜色", nil), named("icon_color", "图标颜色", nil),
+		named("bg_color", "背景颜色", nil), flag("hide_border", "隐藏边框", false),
+		named("cache_seconds", "缓存秒数", nil), named("locale", "语言", nil)),
+	shortcodeEntry("ghrepo", ShortcodeInline, "GitHub", ShortcodeService, reGHRepo, positional("repo", "user/repo", nil)),
+	shortcodeEntry("ghuser", ShortcodeInline, "GitHub", ShortcodeService, reGHUser, positional("username", "GitHub 用户名", nil)),
 }
 
 // ShortcodeCatalog returns a defensive copy so callers cannot mutate the registry.
@@ -248,9 +331,6 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 				entry.MainJS = display.MainJS
 				entry.Height = display.Height
 				entry.Fallback = display.Fallback
-			}
-			if display.FormFields != nil {
-				entry.Params = append([]ShortcodeParamSchema(nil), display.FormFields...)
 			}
 			entry.Title = display.Title
 			entry.Description = display.Description
@@ -271,4 +351,14 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 		items = append(items, entry)
 	}
 	return items
+}
+
+// findShortcodeCatalogEntry 按标签名查 catalog；可视化编辑只处理 catalog 内标签。
+func findShortcodeCatalogEntry(name string) (ShortcodeCatalogEntry, bool) {
+	for _, item := range ShortcodeCatalog() {
+		if item.Name == name {
+			return item, true
+		}
+	}
+	return ShortcodeCatalogEntry{}, false
 }

@@ -2,17 +2,20 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
-import type { PluginMeta } from "@/modules/plugins/plugin-types";
+import type { PluginMeta, PluginVariant } from "@/modules/plugins/plugin-types";
 
+// initialValues 故意不给默认值：undefined 代表「插入模式」用 catalog default，
+// 有值代表「编辑模式」只用 raw 解析结果，见 PluginParamForm。
 const props = withDefaults(
   defineProps<{
     plugin: PluginMeta | null;
     initialValues?: Record<string, unknown>;
+    variant?: PluginVariant;
     raw: string;
     loading?: boolean;
     error?: string;
   }>(),
-  { initialValues: () => ({}), loading: false, error: "" },
+  { loading: false, error: "" },
 );
 
 const emit = defineEmits<{
@@ -144,11 +147,19 @@ onBeforeUnmount(() => {
         <Icon icon="ri:loader-4-line" class="animate-spin text-base" />
         正在读取属性
       </div>
+      <!-- 零参数组件（如 links）也算可编辑：没有属性可填，但仍保留源码编辑通道 -->
+      <p
+        v-else-if="plugin && !sourceMode && !plugin.form?.length"
+        class="py-8 text-center text-xs text-text-quaternary"
+      >
+        该组件没有可编辑属性
+      </p>
       <PluginParamForm
         v-else-if="plugin && !sourceMode"
         :plugin="plugin"
         :model-value="draft"
         :initial-values="initialValues"
+        :variant="variant"
         @update:model-value="scheduleStructuredUpdate"
       />
       <div v-else class="space-y-2">

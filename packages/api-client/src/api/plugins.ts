@@ -42,6 +42,8 @@ export interface ShortcodeEditResult {
   name: string;
   values: Record<string, unknown>;
   editable: boolean;
+  /** 仅 hybrid 标签（navbar/frame）返回，标明当前 raw 是单行还是块级写法。 */
+  variant?: "inline" | "block";
 }
 
 export const pluginApi = {
