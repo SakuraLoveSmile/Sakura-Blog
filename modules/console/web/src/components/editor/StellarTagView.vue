@@ -238,6 +238,7 @@ function closeEditor() {
       <!-- 编辑属性 -->
       <button
         type="button"
+        aria-label="编辑属性"
         class="group/btn relative rounded p-1.5 text-text-tertiary transition-colors hover:bg-accent hover:text-foreground"
         @mousedown.prevent
         @click="startEdit"
@@ -252,6 +253,7 @@ function closeEditor() {
       <!-- 删除（红色） -->
       <button
         type="button"
+        aria-label="删除组件"
         class="group/btn relative rounded p-1.5 text-state-error transition-colors hover:bg-state-error/10"
         @mousedown.prevent
         @click="deleteNode()"
