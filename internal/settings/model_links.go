@@ -30,4 +30,7 @@ type LinkItem struct {
 	RSS      string `yaml:"rss" json:"rss"`
 	Label    string `yaml:"label" json:"label"`
 	Color    string `yaml:"color" json:"color"`
+	// Unavailable is derived from the persisted health check and status label;
+	// it is never read from or written to site configuration.
+	Unavailable bool `yaml:"-" json:"-"`
 }

@@ -3,6 +3,8 @@ package post
 import (
 	"strings"
 	"testing"
+
+	tmpl "blog/internal/settings"
 )
 
 func TestVoteRender(t *testing.T) {
@@ -38,6 +40,32 @@ func TestFriendsRender(t *testing.T) {
 	out = runShortcodes("{% friends api:https://example.com/data.json %}")
 	if !strings.Contains(out, `data-api="https://example.com/data.json"`) {
 		t.Errorf("friends api not passed through: %s", out)
+	}
+}
+
+func TestRenderLinkGroupsSeparatesUnavailable(t *testing.T) {
+	out := renderLinkGroupsHTML([]tmpl.LinkGroup{{
+		Title: "推荐站点",
+		Items: []tmpl.LinkItem{
+			{Name: "正常站点", URL: "https://normal.example", Desc: "正常描述"},
+			{Name: "失效站点", URL: "https://down.example", Desc: "失效描述", Unavailable: true},
+		},
+	}, {
+		Title: "只有失联",
+		Items: []tmpl.LinkItem{{Name: "第二个失联", URL: "https://down-2.example", Unavailable: true}},
+	}}, "")
+
+	if !strings.Contains(out, `<h2>推荐站点</h2>`) || strings.Contains(out, `<h2>只有失联</h2>`) {
+		t.Fatalf("available groups = %s", out)
+	}
+	if !strings.Contains(out, `<h2 class="unavailable-title">失联友链</h2>`) {
+		t.Fatalf("unavailable section missing: %s", out)
+	}
+	if !strings.Contains(out, `href="https://normal.example"`) || strings.Contains(out, `href="https://down.example"`) || strings.Contains(out, `href="https://down-2.example"`) {
+		t.Fatalf("linkability partition mismatch: %s", out)
+	}
+	if strings.Index(out, "失联友链") < strings.Index(out, "正常站点") {
+		t.Fatalf("unavailable section should be last: %s", out)
 	}
 }
 

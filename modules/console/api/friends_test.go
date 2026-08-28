@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -63,8 +64,10 @@ func TestProbeURLRejectsLoopback(t *testing.T) {
 // TestCheckLinksAutoExpiredLabels Spec 56：检测后自动打/摘「失效」标签三规则：
 // 失败且无标签 → 打标；恢复且标签为「失效」 → 摘除；已有其他标签 → 不覆盖。
 func TestCheckLinksAutoExpiredLabels(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, h := newFullEnv(t)
 	cookie := authCookie(user)
+	var refreshed atomic.Int32
+	h.SetOnLinksChanged(func() { refreshed.Add(1) })
 
 	// 安全审计 2026-08-16：checkLinks 生产探测走 safefetch（拒绝环回），测试针对
 	// 127.0.0.1 httptest 服务验证判定/打标逻辑，注入普通 client 版本。
@@ -111,6 +114,9 @@ func TestCheckLinksAutoExpiredLabels(t *testing.T) {
 
 	// 首轮：dead 打标，alive 摘标，labeled 不动
 	run()
+	if refreshed.Load() != 1 {
+		t.Fatalf("link refresh callback after first check = %d, want 1", refreshed.Load())
+	}
 	if body.Tagged != 1 || body.Restored != 1 {
 		t.Fatalf("round1: tagged = %d, restored = %d, want 1/1", body.Tagged, body.Restored)
 	}
@@ -129,6 +135,9 @@ func TestCheckLinksAutoExpiredLabels(t *testing.T) {
 
 	// 次轮幂等：无新增打/摘
 	run()
+	if refreshed.Load() != 2 {
+		t.Fatalf("link refresh callback after second check = %d, want 2", refreshed.Load())
+	}
 	if body.Tagged != 0 || body.Restored != 0 {
 		t.Fatalf("round2 should be idempotent, got tagged = %d, restored = %d", body.Tagged, body.Restored)
 	}
@@ -138,6 +147,9 @@ func TestCheckLinksAutoExpiredLabels(t *testing.T) {
 		t.Fatalf("update dead link: %v", err)
 	}
 	run()
+	if refreshed.Load() != 3 {
+		t.Fatalf("link refresh callback after third check = %d, want 3", refreshed.Load())
+	}
 	if body.Restored != 1 {
 		t.Fatalf("round3: restored = %d, want 1", body.Restored)
 	}

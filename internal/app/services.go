@@ -292,6 +292,7 @@ func Bootstrap(options Options) (*Services, error) {
 
 	friendsAgg := friends.New(sitePtr)
 	linkWatch := linkwatch.New(st, sitePtr, appConfig.UploadDir)
+	linkWatch.SetOnChanged(friendsAgg.Refresh)
 	backupSvc := backup.New(backup.Config{
 		Store: st, Posts: posts, UploadDir: appConfig.UploadDir, SitePath: sitePath,
 		BackupDir: filepath.Join(filepath.Dir(appConfig.DBPath), "backups"), Keep: appConfig.BackupKeep, Auto: appConfig.AutoBackup,

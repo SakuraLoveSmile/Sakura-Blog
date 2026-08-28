@@ -43,10 +43,19 @@ type Watcher struct {
 	probe     *http.Client
 	snapshot  *http.Client
 	sem       chan struct{}
+	onChanged func()
 	startOnce sync.Once
 	closeOnce sync.Once
 	stop      chan struct{}
 	done      chan struct{}
+}
+
+// SetOnChanged registers a callback invoked after a check cycle publishes its
+// refreshed link state. Callers use it to refresh derived public caches.
+func (w *Watcher) SetOnChanged(f func()) {
+	if w != nil {
+		w.onChanged = f
+	}
 }
 
 // New creates a watcher. Configuration is read from site on every cycle.
@@ -167,8 +176,7 @@ func (w *Watcher) RunOnce() error {
 			return err
 		}
 	}
-	tagged, restored := ApplyExpiredLabels(w.store, links, results)
-	siteChanged := tagged+restored > 0
+	_, _ = ApplyExpiredLabels(w.store, links, results)
 
 	cfg := w.site.Load().Friends
 	if cfg.SnapshotInterval > 0 && cfg.SnapshotProvider != "" {
@@ -184,11 +192,13 @@ func (w *Watcher) RunOnce() error {
 			if err := w.store.UpdateLinkSnapshot(links[i].ID, path); err != nil {
 				return err
 			}
-			siteChanged = true
 		}
 	}
-	if siteChanged {
-		return config.RebuildSite(w.store, w.site)
+	if err := config.RebuildSite(w.store, w.site); err != nil {
+		return err
+	}
+	if w.onChanged != nil {
+		w.onChanged()
 	}
 	return nil
 }

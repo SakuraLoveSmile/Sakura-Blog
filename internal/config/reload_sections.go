@@ -5,6 +5,8 @@ import (
 	"blog/internal/store"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -22,9 +24,24 @@ func LinksToGroups(links []*store.Link) []tmpl.LinkGroup {
 		groups[i].Items = append(groups[i].Items, tmpl.LinkItem{
 			Name: l.Name, URL: l.URL, Avatar: l.Avatar, Snapshot: l.Snapshot,
 			Desc: l.Description, RSS: l.RSS, Label: l.Label, Color: l.Color,
+			Unavailable: linkUnavailable(l),
 		})
 	}
 	return groups
+}
+
+// linkUnavailable derives the public display state from persisted health data
+// and the two conventional manually assigned health labels. A zero timestamp
+// means that the default zero status has never been checked.
+func linkUnavailable(l *store.Link) bool {
+	if l == nil {
+		return false
+	}
+	label := strings.TrimSpace(l.Label)
+	if label == "失效" || label == "失联" {
+		return true
+	}
+	return l.LastCheckedAt > 0 && (l.LastStatus < http.StatusOK || l.LastStatus >= http.StatusMultipleChoices)
 }
 
 // KnownSections 返回可编辑的分段名（顺序固定，供 GET 返回与校验）。

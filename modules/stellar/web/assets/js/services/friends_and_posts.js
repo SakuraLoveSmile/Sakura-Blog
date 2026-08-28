@@ -24,7 +24,12 @@
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
+        const unavailable = [];
         for (let item of (data.content || data)) {
+          if (item.unavailable === true) {
+            unavailable.push(item);
+            continue;
+          }
           var cell = `<div class="grid-cell user-post-card">`;
           cell += `<div class="avatar-box">`;
           cell += `<a class="card-link" target="_blank" rel="external nofollow noopener noreferrer" href="${escapeHTML(item.html_url || item.url || '#')}">`;;
@@ -68,6 +73,32 @@
           cell += `</div>`;
           cell += `</div>`;
           utils.dom(el).find('.grid-box').append(cell);
+        }
+        if (unavailable.length > 0) {
+          let section = `<div class="unavailable-friends"><div class="unavailable-title">失联友链</div><div class="grid-box">`;
+          for (let item of unavailable) {
+            section += `<div class="grid-cell user-post-card unavailable-card">`;
+            section += `<div class="avatar-box">`;
+            section += `<div class="card-link unavailable-card" aria-disabled="true">`;
+            section += `<img src="${escapeHTML(item.avatar_url || item.avatar || item.icon || default_avatar)}"/>`;
+            section += `<span class="title">${escapeHTML(item.title || item.login || '')}</span>`;
+            section += `</div>`;
+            section += `<div class="labels">`;
+            for (let label of (item.labels || [])) {
+              if (label.lightness > 75) {
+                section += `<div class="label" style="background:#${escapeHTML(label.color)};color:hsla(${label.hue}, ${label.saturation}%, 20%, 1);">${escapeHTML(label.name)}</div>`;
+              } else if (label.saturation > 90 && label.lightness > 40) {
+                section += `<div class="label" style="background:#${escapeHTML(label.color)};color:hsla(${label.hue}, 50%, 20%, 1);">${escapeHTML(label.name)}</div>`;
+              } else {
+                section += `<div class="label" style="background:#${escapeHTML(label.color)};color:white">${escapeHTML(label.name)}</div>`;
+              }
+            }
+            section += `</div></div>`;
+            section += `<div class="post-panel"><div class="desc">${escapeHTML(item.description || (item.issue_number ? '#' + item.issue_number : ''))}</div><div class="posts"></div></div>`;
+            section += `</div>`;
+          }
+          section += `</div></div>`;
+          utils.dom(el).append(section);
         }
         window.wrapLazyloadImages(el);
       });

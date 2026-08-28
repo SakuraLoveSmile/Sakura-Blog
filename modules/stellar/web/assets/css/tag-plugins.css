@@ -399,6 +399,11 @@ div.swiper-slide img {
   border: 1px solid var(--block-border);
   border-radius: 12px;
 }
+/* 横幅使正文不再是 .md-text 的首子元素；恢复首个标签卡片的正文节奏。
+   使用逻辑属性覆盖 HeTi 对首子元素的 margin-block-start: 0。 */
+.l_body[layout='page'] .article-banner-wrap + article.md-text.content > .tag-plugin:first-child {
+  margin-block-start: var(--gap-p);
+}
 /* 独立页面的 poetry 后通常紧跟 quot 小标题；收紧这组相邻块的外部节奏。 */
 .l_body[layout='page'] .md-text.content > .tag-plugin.poetry:has(+ .tag-plugin.quot) {
   margin-bottom: 1rem;
@@ -438,6 +443,27 @@ div.swiper-slide img {
   align-self: flex-end;
   font-size: 0.75rem;
   color: var(--text-p3);
+}
+
+/* 失联友链集中在组件末尾，保留原卡片布局但明确为不可交互状态。 */
+.unavailable-friends,
+.unavailable-links {
+  margin-top: var(--gap-p);
+}
+.unavailable-title {
+  margin-bottom: var(--gap-p-compact);
+  color: var(--text-p2);
+  font-weight: 600;
+}
+.unavailable-card {
+  cursor: default;
+  opacity: 0.68;
+}
+.unavailable-card:hover,
+.unavailable-card:hover .lazy-box,
+.unavailable-card:hover > .lazy-box {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ---------- Spec 51: paper 纸张卡片（对齐 _plugins/paper.styl） ---------- */

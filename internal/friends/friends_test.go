@@ -1,6 +1,7 @@
 package friends
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -170,3 +171,36 @@ func TestParseTime(t *testing.T) {
 		}
 	}
 }
+
+func TestRefreshSkipsRSSForUnavailableFriend(t *testing.T) {
+	var requests atomic.Int32
+	a, ts := newTestAggregator(t)
+	defer ts.Close()
+	sitePtr := &atomic.Pointer[tmpl.Site]{}
+	sitePtr.Store(&tmpl.Site{Links: []tmpl.LinkGroup{{Items: []tmpl.LinkItem{{
+		Name: "失联友链", URL: "https://example.com", RSS: ts.URL + "/rss.xml", Unavailable: true,
+	}}}}})
+	a.site = sitePtr
+	a.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests.Add(1)
+		return http.DefaultTransport.RoundTrip(req)
+	})}
+	a.refresh()
+	if requests.Load() != 0 {
+		t.Fatalf("unavailable friend RSS requests = %d, want 0", requests.Load())
+	}
+	if len(a.cache) != 1 || !a.cache[0].Unavailable {
+		t.Fatalf("cache = %+v", a.cache)
+	}
+	payload, err := json.Marshal(a.cache[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(payload), `"unavailable":true`) {
+		t.Fatalf("public payload missing unavailable flag: %s", payload)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

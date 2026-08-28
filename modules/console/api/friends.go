@@ -198,9 +198,10 @@ func (h *Handler) checkLinks(c *gin.Context) {
 	}
 
 	tagged, restored := applyExpiredLabels(h.store, links, results)
-	if tagged+restored > 0 {
-		h.afterLinksChanged()
-	}
+	// Health timestamps are part of the public link classification even when
+	// no automatic label was added or removed, so always rebuild and refresh
+	// the friends cache after persisting a check cycle.
+	h.afterLinksChanged()
 	c.JSON(http.StatusOK, gin.H{"items": results, "tagged": tagged, "restored": restored})
 }
 

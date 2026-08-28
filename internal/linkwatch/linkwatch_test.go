@@ -16,6 +16,51 @@ import (
 	"blog/internal/store"
 )
 
+func TestRunOnceRebuildsLinkHealthAndNotifies(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer server.Close()
+
+	st, err := store.New(filepath.Join(t.TempDir(), "blog.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if err := st.EnsureLinksTable(); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.EnsureSettingsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.EnsureUsersTable(); err != nil {
+		t.Fatal(err)
+	}
+	site := config.DefaultSite()
+	site.Friends.CheckInterval = 1
+	site.Friends.SnapshotInterval = 0
+	sitePtr := &atomic.Pointer[tmpl.Site]{}
+	sitePtr.Store(site)
+	link := &store.Link{Name: "custom label", URL: server.URL, Label: "博客"}
+	if _, err := st.CreateLink(link); err != nil {
+		t.Fatal(err)
+	}
+
+	watcher := NewWithClients(st, sitePtr, t.TempDir(), &http.Client{Timeout: 3 * time.Second}, &http.Client{Timeout: 3 * time.Second})
+	var changed atomic.Int32
+	watcher.SetOnChanged(func() { changed.Add(1) })
+	if err := watcher.RunOnce(); err != nil {
+		t.Fatal(err)
+	}
+	if changed.Load() != 1 {
+		t.Fatalf("onChanged calls = %d, want 1", changed.Load())
+	}
+	live := sitePtr.Load()
+	if len(live.Links) != 1 || !live.Links[0].Items[0].Unavailable {
+		t.Fatalf("rebuilt link state = %+v", live.Links)
+	}
+}
+
 func TestRunOncePersistsStatusAndSnapshot(t *testing.T) {
 	friend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodHead {

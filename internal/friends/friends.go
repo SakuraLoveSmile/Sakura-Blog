@@ -51,6 +51,7 @@ type Friend struct {
 	AvatarURL   string  `json:"avatar_url"`
 	Labels      []Label `json:"labels"`
 	Description string  `json:"description"`
+	Unavailable bool    `json:"unavailable"`
 	Posts       []Post  `json:"posts"`
 	Feed        []Post  `json:"feed"` // 抓取失败但配置了 rss 时置一项，前端显示"RSS 解析失败"
 
@@ -116,6 +117,7 @@ func (a *Aggregator) buildBase() []Friend {
 				HTMLURL:     it.URL,
 				AvatarURL:   it.Avatar,
 				Description: firstNonEmpty(it.Desc, it.URL),
+				Unavailable: it.Unavailable,
 				Labels:      []Label{},
 				Posts:       []Post{},
 				Feed:        []Post{},
@@ -238,7 +240,7 @@ func (a *Aggregator) refresh() {
 	sem := make(chan struct{}, checkLinksConcurrency)
 	for i := range base {
 		f := &base[i]
-		if f.rss == "" {
+		if f.rss == "" || f.Unavailable {
 			continue
 		}
 		wg.Add(1)

@@ -14,6 +14,8 @@ const SRC_PATH = join(
 
 async function renderFriend(payload, options = {}) {
   const appended = [];
+  const sections = [];
+  appended.sections = sections;
   const element = {
     dataset: {
       api: "/api/friends-aggregated",
@@ -38,7 +40,7 @@ async function renderFriend(payload, options = {}) {
         Promise.resolve(callback({ json: async () => payload }));
       },
       dom() {
-        return { find: () => gridBox };
+        return { find: () => gridBox, append: (html) => sections.push(html) };
       },
     },
     window: {
@@ -108,4 +110,27 @@ test("关闭 RSS 文章列表时保留友链卡片但不渲染文章", async () 
   assert.equal(cards.length, 1);
   assert.doesNotMatch(cards[0], /不应显示/);
   assert.match(cards[0], /class="posts"><\/div>/);
+});
+
+test("失联友链移入页尾分区且不渲染链接或 RSS 错误", async () => {
+  const cards = await renderFriend({
+    content: [
+      { title: "正常友链", url: "https://example.com", posts: [] },
+      {
+        title: "失联友链",
+        url: "https://down.example",
+        description: "暂时无法访问",
+        unavailable: true,
+        feed: [{ title: "error" }],
+        labels: [{ name: "失联", color: "FF453A", hue: 3, saturation: 100, lightness: 61 }],
+      },
+    ],
+  });
+
+  assert.equal(cards.length, 1);
+  assert.equal(cards.sections.length, 1);
+  assert.match(cards[0], /href="https:\/\/example\.com"/);
+  assert.match(cards.sections[0], /unavailable-friends[\s\S]*失联友链/);
+  assert.doesNotMatch(cards.sections[0], /href=|post-link|RSS 解析失败|class="no-post"/);
+  assert.match(cards.sections[0], /暂时无法访问/);
 });

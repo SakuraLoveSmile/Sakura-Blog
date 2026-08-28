@@ -84,36 +84,78 @@ func renderLinkGroupsHTML(groups []tmpl.LinkGroup, defaultLink string) string {
 		return "<p>暂无友链</p>"
 	}
 	var sb strings.Builder
+	var unavailable []tmpl.LinkItem
+	wroteGroup := false
 	for _, g := range groups {
+		available := make([]tmpl.LinkItem, 0, len(g.Items))
+		for _, it := range g.Items {
+			if it.Unavailable {
+				unavailable = append(unavailable, it)
+				continue
+			}
+			available = append(available, it)
+		}
+		if len(available) == 0 {
+			continue
+		}
 		if g.Title != "" {
 			fmt.Fprintf(&sb, "<h2>%s</h2>", html.EscapeString(g.Title))
 		}
-		sb.WriteString(`<div class="tag-plugin sites-wrap"><div class="grid-box">`)
-		for _, it := range g.Items {
-			avatar := it.Avatar
-			if avatar == "" {
-				avatar = defaultLink
-			}
-			if avatar == "" {
-				avatar = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
-			}
-			snapshot := it.Snapshot
-			if snapshot == "" {
-				snapshot = avatar
-			}
-			desc := it.Desc
-			if desc == "" {
-				desc = it.URL
-			}
-			sb.WriteString(`<div class="grid-cell site-card"><a class="card-link" target="_blank" rel="noopener" href="` + html.EscapeString(it.URL) + `">`)
-			sb.WriteString(`<div class="lazy-box snapshot"><img src="` + html.EscapeString(snapshot) + `" alt="` + html.EscapeString(it.Name) + `"></div>`)
-			sb.WriteString(`<div class="info"><div class="lazy-box icon"><img src="` + html.EscapeString(avatar) + `" alt=""></div>`)
-			sb.WriteString(`<span class="title">` + html.EscapeString(it.Name) + `</span>`)
-			sb.WriteString(`<span class="desc">` + html.EscapeString(desc) + `</span></div></a></div>`)
+		renderSiteCards(&sb, available, defaultLink, false)
+		wroteGroup = true
+	}
+	if len(unavailable) > 0 {
+		if wroteGroup {
+			sb.WriteString("\n")
 		}
-		sb.WriteString(`</div></div>`)
+		fmt.Fprint(&sb, `<h2 class="unavailable-title">失联友链</h2>`)
+		renderSiteCards(&sb, unavailable, defaultLink, true)
+		wroteGroup = true
+	}
+	if !wroteGroup {
+		return "<p>暂无友链</p>"
 	}
 	return sb.String()
+}
+
+func renderSiteCards(sb *strings.Builder, items []tmpl.LinkItem, defaultLink string, unavailable bool) {
+	if unavailable {
+		sb.WriteString(`<div class="tag-plugin sites-wrap unavailable-links"><div class="grid-box">`)
+	} else {
+		sb.WriteString(`<div class="tag-plugin sites-wrap"><div class="grid-box">`)
+	}
+	for _, it := range items {
+		avatar := it.Avatar
+		if avatar == "" {
+			avatar = defaultLink
+		}
+		if avatar == "" {
+			avatar = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg"
+		}
+		snapshot := it.Snapshot
+		if snapshot == "" {
+			snapshot = avatar
+		}
+		desc := it.Desc
+		if desc == "" {
+			desc = it.URL
+		}
+		if it.Unavailable {
+			sb.WriteString(`<div class="grid-cell site-card"><div class="card-link unavailable-card" aria-disabled="true">`)
+		} else {
+			sb.WriteString(`<div class="grid-cell site-card"><a class="card-link" target="_blank" rel="noopener" href="` + html.EscapeString(it.URL) + `">`)
+		}
+		sb.WriteString(`<div class="lazy-box snapshot"><img src="` + html.EscapeString(snapshot) + `" alt="` + html.EscapeString(it.Name) + `"></div>`)
+		sb.WriteString(`<div class="info"><div class="lazy-box icon"><img src="` + html.EscapeString(avatar) + `" alt=""></div>`)
+		sb.WriteString(`<span class="title">` + html.EscapeString(it.Name) + `</span>`)
+		sb.WriteString(`<span class="desc">` + html.EscapeString(desc) + `</span></div>`)
+		if it.Unavailable {
+			sb.WriteString(`</div></div>`)
+		} else {
+			sb.WriteString(`</a></div>`)
+		}
+	}
+	sb.WriteString(`</div></div>`)
 }
 
 // renderLinks 渲染 {% links %}：分组友链卡片流服务端直出，数据经 SetLinksFunc 注入。
