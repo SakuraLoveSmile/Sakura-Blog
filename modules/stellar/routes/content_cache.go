@@ -132,7 +132,12 @@ type sitemapCache struct {
 	urls  map[string][]byte // baseURL → xml（site.url 未配置时按请求 host 变化，按 key 缓存）
 }
 
-func (c *sitemapCache) invalidate() { c.dirty.Store(true) }
+func (c *sitemapCache) invalidate() {
+	c.mu.Lock()
+	c.urls = nil
+	c.dirty.Store(true)
+	c.mu.Unlock()
+}
 
 // get 返回指定 baseURL 的 sitemap XML；置脏或首次时重建。
 func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
