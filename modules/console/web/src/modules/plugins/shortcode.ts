@@ -133,10 +133,7 @@ export type ShortcodeFormValues = Record<string, string | boolean>;
  * 编辑模式（initialValues 来自 /plugins/shortcode/parse）只取 raw 里真实解析出的值，
  * 缺失字段一律为空值——否则保存时会把作者从没写过的 default 静默写进正文。
  */
-export function initFormValues(
-  form: PluginFormField[],
-  initialValues?: Record<string, unknown>,
-): ShortcodeFormValues {
+export function initFormValues(form: PluginFormField[], initialValues?: Record<string, unknown>): ShortcodeFormValues {
   const editing = initialValues !== undefined;
   const next: ShortcodeFormValues = {};
   for (const field of form) {
