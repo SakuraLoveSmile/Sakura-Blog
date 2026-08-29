@@ -26,7 +26,7 @@
   {{range .Posts}}
   {{if eq $.Site.Article.EffectiveType "story"}}
   <div class="post-card-wrap story">
-    <a class="post-card post story" href="/post/{{.Slug}}">
+    <a class="post-card post story card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       {{if .Cover}}
       <div class="story-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>
       {{end}}
@@ -52,7 +52,7 @@
   {{else}}
   <div class="post-card-wrap">
     {{if and .Cover .Poster}}
-    <a class="post-card post photo" href="/post/{{.Slug}}">
+    <a class="post-card post photo card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <div class="cover" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}" style="--cover-url:url('{{.Cover}}')">
         <img src="{{.Cover}}"/>
         <div class="cover-info" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}"{{if .Poster.Color}} style="color:{{.Poster.Color}}"{{end}}>
@@ -63,7 +63,7 @@
       </div>
     </a>
     {{else}}
-    <a class="post-card post" href="/post/{{.Slug}}">
+    <a class="post-card post card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <article class="md-text">
         {{if .Cover}}
         <div class="post-cover"><img src="{{.Cover}}"/></div>

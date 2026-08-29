@@ -1,8 +1,10 @@
 # 部署指南
 
-单二进制部署：systemd 服务 + nginx 反代 + 定时自动更新（`update.sh` 从 GitHub Release 拉取，并校验 SHA256 与 Artifact Attestation）。
+单二进制部署：systemd 服务 + nginx 反代 + 定时自动更新（`update.sh` 从 GitHub Release 拉取，并校验 SHA256）。
 
-`update.sh` 依赖 `curl`、`sha256sum`、`systemctl`、`python3` 和支持 `gh attestation verify` 的 GitHub CLI。默认强制校验发布二进制的构建来源证明；只有迁移没有 attestation 的历史 Release 时，才临时设置 `BLOG_VERIFY_PROVENANCE=0`。
+`update.sh` 依赖 `curl`、`sha256sum`、`systemctl` 和 `python3`。它适用于公开或私有 GitHub 仓库；私有仓库通过 `/opt/blog/.token` 使用仅 `contents:read` 的 PAT 读取 Release 资产。
+
+每个新 Release 必须包含 `blog-linux-amd64`、`blog-linux-amd64.sha256` 和 `blog-linux-amd64.spdx.json`。更新脚本下载二进制和 SHA256 文件，校验通过后才执行替换、健康检查与失败回滚；SBOM 供发布审查和依赖分析使用。
 
 ## 目录约定（服务器）
 

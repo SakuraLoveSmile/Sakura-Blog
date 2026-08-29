@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
 import type { PluginMeta, PluginVariant } from "./plugin-types";
-import { buildShortcode, initFormValues } from "./shortcode";
+import { buildShortcodeResult, initFormValues } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
 // 插入模式（initialValues 未传）用 catalog default 初始化；
@@ -15,9 +15,13 @@ const props = defineProps<{
   initialValues?: Record<string, unknown>;
   variant?: PluginVariant;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: string] }>();
+const emit = defineEmits<{
+  "update:modelValue": [value: string];
+  validation: [state: { valid: boolean; error?: string }];
+}>();
 
 const values = ref<SchemaValues>({});
+const validation = ref<{ valid: boolean; error?: string }>({ valid: true });
 
 const fields = computed<SchemaField[]>(() =>
   (props.plugin.form || []).map((field) => ({
@@ -35,17 +39,29 @@ const fields = computed<SchemaField[]>(() =>
 
 function initValues() {
   values.value = initFormValues(props.plugin.form || [], props.initialValues);
+  updateValidation(values.value, false);
 }
 
-function onSchemaUpdate(next: SchemaValues) {
-  values.value = next;
+function shortcodeValues(next: SchemaValues): Record<string, string | boolean> {
   const shortcodeValues: Record<string, string> = {};
   for (const field of props.plugin.form || []) {
     const value = next[field.key];
     shortcodeValues[field.key] =
       field.type === "flag" ? (value === true ? "true" : "") : value == null ? "" : String(value);
   }
-  emit("update:modelValue", buildShortcode(props.plugin, shortcodeValues, props.variant));
+  return shortcodeValues;
+}
+
+function updateValidation(next: SchemaValues, emitUpdate: boolean) {
+  const result = buildShortcodeResult(props.plugin, shortcodeValues(next), props.variant);
+  validation.value = result.valid ? { valid: true } : { valid: false, error: result.error };
+  emit("validation", validation.value);
+  if (emitUpdate && result.valid) emit("update:modelValue", result.raw);
+}
+
+function onSchemaUpdate(next: SchemaValues) {
+  values.value = next;
+  updateValidation(next, true);
 }
 
 watch(

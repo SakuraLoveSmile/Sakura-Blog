@@ -2,7 +2,7 @@
 {{- $background := .Cover -}}
 {{- if .LatestPost -}}
 {{- if .LatestPost.Cover}}{{$background = .LatestPost.Cover}}{{end -}}
-<a class="cover" position="bottom" style="--cover-url:url('{{$background}}')" href="/post/{{.LatestPost.Slug}}">
+<a class="cover card-hover card-hover--spotlight card-hover--tilt" position="bottom" style="--cover-url:url('{{$background}}')" href="/post/{{.LatestPost.Slug}}">
   <img src="{{$background}}" alt="{{.LatestPost.Title}}" loading="lazy">
   <div class="cover-info" position="bottom" data-text-adaptive="split">
     <div class="text headline">{{.LatestPost.Title}}</div>
@@ -10,7 +10,7 @@
   </div>
 </a>
 {{- else if $background -}}
-<a class="cover" position="bottom" style="--cover-url:url('{{$background}}')" href="/topic/{{.Slug}}">
+<a class="cover card-hover card-hover--spotlight card-hover--tilt" position="bottom" style="--cover-url:url('{{$background}}')" href="/topic/{{.Slug}}">
   <img src="{{$background}}" alt="{{.Name}}" loading="lazy">
   <div class="cover-info" position="bottom" data-text-adaptive="split"><div class="text headline">{{.Name}}</div></div>
 </a>

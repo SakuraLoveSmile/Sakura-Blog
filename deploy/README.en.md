@@ -1,8 +1,10 @@
 # Deployment guide
 
-The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies both SHA256 integrity and GitHub Artifact Attestation provenance.
+The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies the downloaded binary with SHA256 before deployment.
 
-`update.sh` requires `curl`, `sha256sum`, `systemctl`, `python3`, and a GitHub CLI that supports `gh attestation verify`. Provenance verification is strict by default; temporarily set `BLOG_VERIFY_PROVENANCE=0` only while migrating releases created before attestations were enabled.
+`update.sh` requires `curl`, `sha256sum`, `systemctl`, and `python3`. It supports public and private GitHub repositories; a private repository uses a `contents:read` PAT in `/opt/blog/.token` to read Release assets.
+
+Every new Release must include `blog-linux-amd64`, `blog-linux-amd64.sha256`, and `blog-linux-amd64.spdx.json`. The updater downloads the binary and checksum, verifies the checksum, and only then performs the replacement, health check, and automatic rollback flow. The SBOM remains available for release review and dependency analysis.
 
 ## Configuration
 

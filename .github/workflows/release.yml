@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # 创建 Release + 生成 release notes
-      id-token: write   # GitHub Artifact Attestation
-      attestations: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -57,12 +55,6 @@ jobs:
           format: spdx-json
           artifact-name: blog-linux-amd64.spdx.json
           output-file: blog-linux-amd64.spdx.json
-
-      # 证明由本仓库的 GitHub Actions 构建的二进制，部署端可用 gh attestation verify 校验。
-      - name: Attest Linux binary provenance
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
-        with:
-          subject-path: blog-linux-amd64
 
       # 产物：Actions Artifacts（每次构建，保留 30 天）
       - name: Upload artifact

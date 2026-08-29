@@ -27,6 +27,9 @@ func wikiProjectTemplate(p *store.WikiProject) *tmpl.WikiProject {
 			Background: p.Hero.Background, Title: p.Hero.Title,
 			Description: p.Hero.Description, Start: p.Hero.Start,
 		}
+		if p.Hero.Animation != nil {
+			h.Animation = &tmpl.HeroAnimation{Type: p.Hero.Animation.Type, Params: p.Hero.Animation.Params}
+		}
 		if p.Hero.Preview != nil {
 			h.Preview = &tmpl.HeroPreview{Type: p.Hero.Preview.Type, Image: p.Hero.Preview.Image}
 			for _, command := range p.Hero.Preview.Commands {
@@ -36,7 +39,7 @@ func wikiProjectTemplate(p *store.WikiProject) *tmpl.WikiProject {
 		for _, action := range p.Hero.Actions {
 			h.Actions = append(h.Actions, tmpl.HeroAction{Title: action.Title, URL: action.URL, Icon: action.Icon})
 		}
-		out.Hero = h
+		out.Hero = normalizeLegacyWikiHero(h)
 	}
 	return out
 }
@@ -76,6 +79,7 @@ func (s *webServer) wikiProjectsForRuntime() []*tmpl.WikiProject {
 		out := make([]*tmpl.WikiProject, 0, len(s.site.Load().Wiki))
 		for i := range s.site.Load().Wiki {
 			p := s.site.Load().Wiki[i]
+			p.Hero = normalizeLegacyWikiHero(p.Hero)
 			out = append(out, &p)
 		}
 		return out
@@ -97,6 +101,22 @@ func (s *webServer) wikiProjectsForRuntime() []*tmpl.WikiProject {
 		filtered = append(filtered, p)
 	}
 	return filtered
+}
+
+// normalizeLegacyWikiHero keeps the old background: galaxy shorthand working
+// for direct embedders that bypass the Store migration path.
+func normalizeLegacyWikiHero(hero *tmpl.HeroConfig) *tmpl.HeroConfig {
+	if hero == nil {
+		return nil
+	}
+	out := *hero
+	if strings.EqualFold(strings.TrimSpace(out.Background), "galaxy") {
+		out.Background = ""
+		if out.Animation == nil || strings.TrimSpace(out.Animation.Type) == "" {
+			out.Animation = &tmpl.HeroAnimation{Type: "galaxy"}
+		}
+	}
+	return &out
 }
 
 func wikiProjectHasTag(p *tmpl.WikiProject, tag string) bool {

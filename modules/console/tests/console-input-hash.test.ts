@@ -29,6 +29,10 @@ test("console input hash covers workspace inputs and excludes dist output", () =
     writeFixture(root, "pnpm-workspace.yaml", "packages: []\n");
     writeFixture(root, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
     writeFixture(root, "modules/console/web/src/main.ts", "export const value = 1;\n");
+    writeFixture(root, "modules/console/web/index.html", "<!doctype html>\n");
+    writeFixture(root, "modules/console/web/uc.html", "<!doctype html>\n");
+    writeFixture(root, "modules/console/web/public/runtime.json", '{"version":1}\n');
+    writeFixture(root, "modules/console/web/scripts/build.mjs", "export const build = 1;\n");
     writeFixture(root, "modules/console/web/vite.config.ts", "export default {};\n");
     writeFixture(root, "modules/console/web/package.json", "{}\n");
     writeFixture(root, "packages/editor/src/index.ts", "export const editor = 1;\n");
@@ -50,9 +54,21 @@ test("console input hash covers workspace inputs and excludes dist output", () =
     const afterViteConfig = runHash(root);
     assert.notEqual(afterViteConfig, afterWorkspaceSource);
 
-    writeFixture(root, "packages/editor/package.json", "{\"version\": 2}\n");
+    writeFixture(root, "modules/console/web/index.html", "<!doctype html><main>changed</main>\n");
+    const afterHtml = runHash(root);
+    assert.notEqual(afterHtml, afterViteConfig);
+
+    writeFixture(root, "modules/console/web/public/runtime.json", '{"version":2}\n');
+    const afterPublic = runHash(root);
+    assert.notEqual(afterPublic, afterHtml);
+
+    writeFixture(root, "modules/console/web/scripts/build.mjs", "export const build = 2;\n");
+    const afterBuildScript = runHash(root);
+    assert.notEqual(afterBuildScript, afterPublic);
+
+    writeFixture(root, "packages/editor/package.json", '{"version": 2}\n');
     const afterPackageManifest = runHash(root);
-    assert.notEqual(afterPackageManifest, afterViteConfig);
+    assert.notEqual(afterPackageManifest, afterBuildScript);
 
     writeFixture(root, "modules/console/web/dist/index.js", "new output\n");
     assert.equal(runHash(root), afterPackageManifest);

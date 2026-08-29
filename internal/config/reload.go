@@ -305,6 +305,9 @@ func storeWikiProject(project *tmpl.WikiProject) *store.WikiProject {
 			Background: project.Hero.Background, Title: project.Hero.Title,
 			Description: project.Hero.Description, Start: project.Hero.Start,
 		}
+		if project.Hero.Animation != nil {
+			h.Animation = &store.WikiHeroAnimation{Type: project.Hero.Animation.Type, Params: project.Hero.Animation.Params}
+		}
 		if project.Hero.Preview != nil {
 			h.Preview = &store.WikiHeroPreview{Type: project.Hero.Preview.Type, Image: project.Hero.Preview.Image}
 			for _, cmd := range project.Hero.Preview.Commands {

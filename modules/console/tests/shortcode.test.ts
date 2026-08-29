@@ -3,7 +3,12 @@
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言拼装规则本身，不经 Vue 组件。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildShortcode, formForVariant } from "../web/src/modules/plugins/shortcode.ts";
+import {
+  buildShortcode,
+  buildShortcodeResult,
+  formForVariant,
+  serializeShortcodeArgument,
+} from "../web/src/modules/plugins/shortcode.ts";
 import type { PluginMeta } from "../web/src/modules/plugins/plugin-types.ts";
 
 const SURFACE = "shortcode 拼装";
@@ -45,7 +50,7 @@ const foldingPlugin: PluginMeta = {
 test(`${SURFACE} · inline：named + positional + content 按规则拼装`, () => {
   assert.equal(
     buildShortcode(notePlugin, { color: "green", title: "提示", content: "正文内容" }),
-    "{% note 提示 color:green 正文内容 %}"
+    "{% note 提示 color:green 正文内容 %}",
   );
 });
 
@@ -57,7 +62,7 @@ test(`${SURFACE} · inline：named 值为空则整个 key:value 省略，content
 test(`${SURFACE} · block：content 包在 {% name %}…{% endname %} 之间并前后换行`, () => {
   assert.equal(
     buildShortcode(foldingPlugin, { title: "详情", open: "", content: "折叠正文" }),
-    "{% folding 详情 %}\n折叠正文\n{% endfolding %}"
+    "{% folding 详情 %}\n折叠正文\n{% endfolding %}",
   );
 });
 
@@ -66,19 +71,16 @@ test(`${SURFACE} · block：content 包在 {% name %}…{% endname %} 之间并�
 test(`${SURFACE} · block：flag 为 true 拼 key:true，非 true 不拼`, () => {
   assert.equal(
     buildShortcode(foldingPlugin, { title: "详情", open: "true", content: "正文" }),
-    "{% folding 详情 open:true %}\n正文\n{% endfolding %}"
+    "{% folding 详情 open:true %}\n正文\n{% endfolding %}",
   );
   assert.equal(
     buildShortcode(foldingPlugin, { title: "详情", open: "false", content: "正文" }),
-    "{% folding 详情 %}\n正文\n{% endfolding %}"
+    "{% folding 详情 %}\n正文\n{% endfolding %}",
   );
 });
 
 test(`${SURFACE} · block：content 为空时正文位置保留单个空格占位`, () => {
-  assert.equal(
-    buildShortcode(foldingPlugin, { title: "", open: "", content: "  " }),
-    "{% folding %} {% endfolding %}"
-  );
+  assert.equal(buildShortcode(foldingPlugin, { title: "", open: "", content: "  " }), "{% folding %} {% endfolding %}");
 });
 
 test(`${SURFACE} · 无 form schema 的插件产出裸标签`, () => {
@@ -107,20 +109,40 @@ const mbtiPlugin: PluginMeta = {
 test(`${SURFACE} · inline：mbti 双 positional 按字段顺序、双 named 按声明顺序拼装，空 named 省略`, () => {
   assert.equal(
     buildShortcode(mbtiPlugin, { type: "INTJ-T", scores: "93-72-78-83-51", url: "https://16p.com/x", image: "" }),
-    "{% mbti INTJ-T 93-72-78-83-51 url:https://16p.com/x %}"
+    "{% mbti INTJ-T 93-72-78-83-51 url:https://16p.com/x %}",
   );
   assert.equal(
     buildShortcode(mbtiPlugin, { type: "intj", scores: "50-50-50-50-50", url: "", image: "" }),
-    "{% mbti intj 50-50-50-50-50 %}"
+    "{% mbti intj 50-50-50-50-50 %}",
   );
 });
 
 // ---- Spec 62 边界补充 ----
 
-test('shortcode 拼装 · 特殊字符：值含空格/引号/花括号不被破坏', () => {
-  const special = buildShortcode(notePlugin, { color: "blue", title: '带 "引号" 与 花括号 {x}', content: "正文" });
-  assert.ok(special.includes('带 "引号" 与 花括号 {x}'), `值原样保留: ${special}`);
-  assert.ok(special.includes("{% note"), "标签开头完整");
+test("shortcode 拼装 · 特殊字符：值含空格时使用 quote，单双引号同时出现时拒绝", () => {
+  const special = buildShortcode(notePlugin, {
+    color: "blue",
+    title: "带 \"引号\" 与 '单引号' 及花括号 {x}",
+    content: "正文",
+  });
+  assert.equal(special, "");
+  assert.deepEqual(serializeShortcodeArgument("带 空格"), { value: '"带 空格"' });
+  assert.deepEqual(serializeShortcodeArgument("带 '单引号'"), { value: "\"带 '单引号'\"" });
+  assert.equal(serializeShortcodeArgument('带 "双引号"').value, "'带 \"双引号\"'");
+  assert.match(serializeShortcodeArgument("a'b\"c").error || "", /单双引号/);
+  assert.match(serializeShortcodeArgument("a\nb").error || "", /换行/);
+});
+
+test("shortcode 拼装 · catalog required / required_any 不满足时返回无效状态", () => {
+  const required: PluginMeta = {
+    ...notePlugin,
+    edit: { enabled: true, required: ["title"], required_any: [["color", "content"]] },
+  };
+  const result = buildShortcodeResult(required, { title: "", color: "", content: "" });
+  assert.equal(result.valid, false);
+  assert.match(result.error || "", /必填/);
+  const alternative = buildShortcodeResult(required, { title: "标题", color: "", content: "正文" });
+  assert.equal(alternative.valid, true);
 });
 
 test('shortcode 拼装 · flag 仅精确 true 触发（UI checkbox 固定传 "true"）', () => {
@@ -132,7 +154,7 @@ test('shortcode 拼装 · flag 仅精确 true 触发（UI checkbox 固定传 "tr
   assert.ok(!upper.includes("open"), "大写 TRUE 不触发（严格匹配）");
 });
 
-test('shortcode 拼装 · select 未传值则不输出参数（default 由 UI 层 PluginParamForm 填充）', () => {
+test("shortcode 拼装 · select 未传值则不输出参数（default 由 UI 层 PluginParamForm 填充）", () => {
   const out = buildShortcode(notePlugin, { title: "x", content: "c" });
   assert.ok(!out.includes("color:"), `未选 select 不输出空参数: ${out}`);
   // 显式传入时正常输出
@@ -140,7 +162,7 @@ test('shortcode 拼装 · select 未传值则不输出参数（default 由 UI �
   assert.ok(filled.includes("color:green"));
 });
 
-test('shortcode 拼装 · 空 values 对象不 panic，产出最少标签', () => {
+test("shortcode 拼装 · 空 values 对象不 panic，产出最少标签", () => {
   const out = buildShortcode(foldingPlugin, {});
   assert.ok(out.includes("{% folding"), `空值仍产出标签: ${out}`);
   assert.ok(!out.includes(":false") && !out.includes('=""'), "无空参数残留");
@@ -198,25 +220,25 @@ test(`${SURFACE} · hybrid navbar：variant 缺省/块级 → 块级包装`, () 
   const values = { active: "首页", content: "[首页](/)\n[关于](/about)" };
   assert.equal(
     buildShortcode(navbarPlugin, values),
-    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}"
+    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}",
   );
   assert.equal(
     buildShortcode(navbarPlugin, values, "block"),
-    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}"
+    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}",
   );
 });
 
 test(`${SURFACE} · hybrid navbar：variant=inline → 单行且正文换行折叠为空格`, () => {
   assert.equal(
     buildShortcode(navbarPlugin, { active: "/", content: "[首页](/)\n[关于](/about)" }, "inline"),
-    "{% navbar active:/ [首页](/) [关于](/about) %}"
+    "{% navbar active:/ [首页](/) [关于](/about) %}",
   );
 });
 
 test(`${SURFACE} · hybrid frame：块级用 device/width/content`, () => {
   assert.equal(
     buildShortcode(framePlugin, { device: "iphone", width: "320px", content: "![截图](/a.jpg)" }, "block"),
-    "{% frame device:iphone width:320px %}\n![截图](/a.jpg)\n{% endframe %}"
+    "{% frame device:iphone width:320px %}\n![截图](/a.jpg)\n{% endframe %}",
   );
 });
 
@@ -224,16 +246,16 @@ test(`${SURFACE} · hybrid frame：单行用局部 override 的 device/img/video
   const inline = formForVariant(framePlugin, "inline");
   assert.deepEqual(
     inline.form?.map((f) => f.key),
-    ["device", "img", "video", "focus", "alt"]
+    ["device", "img", "video", "focus", "alt"],
   );
   // 原插件定义不被污染
   assert.deepEqual(
     framePlugin.form?.map((f) => f.key),
-    ["device", "width", "content"]
+    ["device", "width", "content"],
   );
   assert.equal(
     buildShortcode(inline, { device: "iphone", img: "/a.jpg", video: "", focus: "top", alt: "手机截图" }, "inline"),
-    "{% frame iphone 手机截图 img:/a.jpg focus:top %}"
+    "{% frame iphone 手机截图 img:/a.jpg focus:top %}",
   );
 });
 
@@ -245,6 +267,23 @@ test(`${SURFACE} · formForVariant 只影响 frame 单行，其余插件原样�
 
 test(`${SURFACE} · 零参数 links 产出裸标签`, () => {
   assert.equal(buildShortcode(linksPlugin, {}), "{% links %}");
+});
+
+test(`${SURFACE} · emoji URL 模式省略 source 并保留 name/height`, () => {
+  const emoji: PluginMeta = {
+    ...linksPlugin,
+    name: "emoji",
+    form: [
+      { key: "source", label: "来源", type: "select", role: "positional" },
+      { key: "name", label: "名称", type: "text", role: "positional" },
+      { key: "url", label: "URL", type: "text", role: "named" },
+      { key: "height", label: "高度", type: "text", role: "named" },
+    ],
+  };
+  assert.equal(
+    buildShortcode(emoji, { source: "twemoji", name: "笑脸", url: "https://example.com/e.png", height: "2em" }),
+    "{% emoji url:https://example.com/e.png name:笑脸 height:2em %}",
+  );
 });
 
 test(`${SURFACE} · 位置参数含空格时按字段顺序整体保留（image src/alt）`, () => {
@@ -260,6 +299,6 @@ test(`${SURFACE} · 位置参数含空格时按字段顺序整体保留（image 
   };
   assert.equal(
     buildShortcode(imagePlugin, { src: "/a.jpg", alt: "这是一张 很长的 说明", width: "80%", download: "true" }),
-    "{% image /a.jpg 这是一张 很长的 说明 width:80% download:true %}"
+    '{% image /a.jpg "这是一张 很长的 说明" width:80% download:true %}',
   );
 });

@@ -41,6 +41,13 @@ The two local-only filter surfaces are recorded because their comments reference
 
 The extracted Stellar theme resources are from `hexo-theme-stellar` by xaoxuu and are MIT-licensed. Their notice is recorded in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 
+## React Bits attribution
+
+The Stellar 1.44 Galaxy and Card Hover effects include independent adaptations
+of React Bits references by David HDev. They remain under the MIT terms and are
+listed in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md); the source URLs
+are also retained in the JavaScript file headers.
+
 ## Dependency notices
 
 Third-party packages that remain under their own licenses are governed by their package metadata and lockfiles. This document records the upstream code that is materially relevant to the repository's component audit; it is not a replacement for the license files distributed by those dependencies.

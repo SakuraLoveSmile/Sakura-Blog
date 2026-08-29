@@ -13,7 +13,7 @@ func TestCollectionPreviewContract(t *testing.T) {
 	}
 	body := string(html)
 	for _, want := range []string{
-		`main.css?v=stellar143-collection`,
+		`main.css?v=stellar144-collection`,
 		`class="l_left" data-ui-surface="glass"`,
 		`class="l_main" id="main" data-ui-surface="content"`,
 		`class="l_right" data-ui-surface="sidebar"`,

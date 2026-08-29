@@ -280,7 +280,7 @@ func TestWikiCardHrefSemantics(t *testing.T) {
 	}
 	body := w.Body.String()
 	// 有已发布文档 → 跳 /wiki/<id>（handleWikiProject 302 到首篇）
-	if !strings.Contains(body, `class="wiki-card no-cover" href="/wiki/stellar"`) {
+	if !strings.Contains(body, `class="wiki-card card-hover card-hover--spotlight card-hover--tilt no-cover" href="/wiki/stellar"`) {
 		t.Errorf("card stellar: want href=/wiki/stellar")
 	}
 	// 无文档 → 保持外链
@@ -319,7 +319,7 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 	if index.Code != http.StatusOK {
 		t.Fatalf("wiki index = %d, want 200", index.Code)
 	}
-	if !strings.Contains(index.Body.String(), `class="wiki-card" style="--cover-url:url('https://example.com/cover.jpg')"`) || !strings.Contains(index.Body.String(), `class="wiki-card-content"`) || !strings.Contains(index.Body.String(), `class="wiki-card-cover"`) || !strings.Contains(index.Body.String(), `data-text-adaptive="split"`) {
+	if !strings.Contains(index.Body.String(), `class="wiki-card card-hover card-hover--spotlight card-hover--tilt" style="--cover-url:url('https://example.com/cover.jpg')"`) || !strings.Contains(index.Body.String(), `class="wiki-card-content"`) || !strings.Contains(index.Body.String(), `class="wiki-card-cover"`) || !strings.Contains(index.Body.String(), `data-text-adaptive="split"`) {
 		t.Fatalf("cover project card missing adaptive markup: %s", index.Body.String())
 	}
 
@@ -332,5 +332,12 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 		if !strings.Contains(detail.Body.String(), want) {
 			t.Errorf("wiki detail missing %q", want)
 		}
+	}
+}
+
+func TestLegacyWikiHeroBackgroundGalaxyFallback(t *testing.T) {
+	got := normalizeLegacyWikiHero(&tmpl.HeroConfig{Background: " galaxy ", Title: "旧配置"})
+	if got == nil || got.Background != "" || got.Animation == nil || got.Animation.Type != "galaxy" || got.Title != "旧配置" {
+		t.Fatalf("legacy hero shorthand was not normalized: %#v", got)
 	}
 }

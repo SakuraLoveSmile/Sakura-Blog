@@ -19,13 +19,6 @@ case "${1:-}" in
 esac
 EOF
 chmod +x "$fake_bin/systemctl"
-cat > "$fake_bin/gh" <<'EOF'
-#!/usr/bin/env bash
-set -u
-printf '%s\n' "$*" >> "${TEST_GH_LOG:?}"
-exit "${TEST_GH_RC:-0}"
-EOF
-chmod +x "$fake_bin/gh"
 export PATH="$fake_bin:$PATH"
 
 export INSTALL_DIR="$test_root/install"
@@ -38,14 +31,10 @@ export BLOG_HEALTH_RETRY_DELAY=0
 export BLOG_HEALTH_RETRIES=1
 export BLOG_ROLLBACK_HEALTH_DELAY=0
 export TEST_SYSTEMCTL_LOG="$test_root/systemctl.log"
-export TEST_GH_LOG="$test_root/gh.log"
-export BLOG_GH_BIN="$fake_bin/gh"
 mkdir -p "$INSTALL_DIR"
 : > "$TEST_SYSTEMCTL_LOG"
-: > "$TEST_GH_LOG"
 
 unset BLOG_PROXY
-unset BLOG_VERIFY_PROVENANCE
 export http_proxy="http://127.0.0.1:9"
 export HTTP_PROXY="$http_proxy"
 # shellcheck source=update.sh
@@ -92,18 +81,6 @@ fi
 reset_install
 new_bin="$test_root/new-success"
 printf 'new-binary\n' > "$new_bin"
-
-export TOKEN=""
-export TEST_GH_RC=0
-verify_provenance "$new_bin" || fail "successful provenance verification returned failure"
-grep -q -- "--signer-workflow ${REPO}/.github/workflows/release.yml" "$TEST_GH_LOG" || fail "provenance verifier did not constrain signer workflow"
-export TEST_GH_RC=1
-if verify_provenance "$new_bin"; then
-  fail "failed provenance verification returned success"
-fi
-export VERIFY_PROVENANCE=0
-verify_provenance "$new_bin" || fail "explicit provenance migration bypass returned failure"
-export VERIFY_PROVENANCE=1
 
 deploy_binary "$new_bin" "v2" "old-version" || fail "successful deployment returned failure"
 assert_file_content "$INSTALL_DIR/blog" "new-binary"

@@ -43,3 +43,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## React Bits (Galaxy and Spotlight Card references)
+
+- Project: [DavidHDev/react-bits](https://github.com/DavidHDev/react-bits)
+- License: MIT
+- Referenced effects: Galaxy WebGL background and Spotlight Card hover effect
+- Local adaptations: `modules/stellar/web/assets/js/plugins/galaxy.js` and `card-hover.js`
+
+The local JavaScript is an independent adaptation of the published React Bits
+effect algorithms. The MIT attribution and the source link are retained in the
+file headers and apply to the adapted portions.

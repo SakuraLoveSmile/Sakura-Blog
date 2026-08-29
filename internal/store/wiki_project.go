@@ -14,12 +14,21 @@ import (
 // WikiHero describes the optional project landing-page hero. It deliberately
 // lives in store so the Console/API layer does not depend on Stellar templates.
 type WikiHero struct {
-	Background  string           `json:"background,omitempty"`
-	Title       string           `json:"title,omitempty"`
-	Description string           `json:"description,omitempty"`
-	Start       string           `json:"start,omitempty"`
-	Preview     *WikiHeroPreview `json:"preview,omitempty"`
-	Actions     []WikiHeroAction `json:"actions,omitempty"`
+	Background  string             `json:"background,omitempty"`
+	Animation   *WikiHeroAnimation `json:"animation,omitempty"`
+	Title       string             `json:"title,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Start       string             `json:"start,omitempty"`
+	Preview     *WikiHeroPreview   `json:"preview,omitempty"`
+	Actions     []WikiHeroAction   `json:"actions,omitempty"`
+}
+
+// WikiHeroAnimation is the structured Stellar 1.44 background animation
+// configuration. Params are intentionally kept as JSON values so the frontend
+// can apply the upstream per-field normalization without a database migration.
+type WikiHeroAnimation struct {
+	Type   string         `json:"type,omitempty"`
+	Params map[string]any `json:"params,omitempty"`
 }
 
 type WikiHeroPreview struct {
@@ -85,7 +94,8 @@ func encodeWikiHero(hero *WikiHero) string {
 	if hero == nil {
 		return ""
 	}
-	b, err := json.Marshal(hero)
+	normalized := normalizeWikiHero(hero)
+	b, err := json.Marshal(normalized)
 	if err != nil {
 		return ""
 	}
@@ -100,10 +110,47 @@ func decodeWikiHero(raw string) *WikiHero {
 	if json.Unmarshal([]byte(raw), &hero) != nil {
 		return nil
 	}
-	if hero.Background == "" && hero.Title == "" && hero.Description == "" && hero.Start == "" && hero.Preview == nil && len(hero.Actions) == 0 {
+	hero = *normalizeWikiHero(&hero)
+	if hero.Background == "" && hero.Animation == nil && hero.Title == "" && hero.Description == "" && hero.Start == "" && hero.Preview == nil && len(hero.Actions) == 0 {
 		return nil
 	}
 	return &hero
+}
+
+// normalizeWikiHero converts the pre-1.44 background: galaxy shorthand to the
+// structured animation field. The returned value is a copy, so callers can
+// safely normalize data while rendering or persisting it.
+func normalizeWikiHero(hero *WikiHero) *WikiHero {
+	if hero == nil {
+		return nil
+	}
+	out := *hero
+	if hero.Animation != nil {
+		animation := *hero.Animation
+		animation.Type = strings.TrimSpace(animation.Type)
+		if len(animation.Params) > 0 {
+			animation.Params = cloneJSONMap(animation.Params)
+		}
+		out.Animation = &animation
+	}
+	if strings.EqualFold(strings.TrimSpace(out.Background), "galaxy") {
+		out.Background = ""
+		if out.Animation == nil || out.Animation.Type == "" {
+			out.Animation = &WikiHeroAnimation{Type: "galaxy"}
+		}
+	}
+	return &out
+}
+
+func cloneJSONMap(source map[string]any) map[string]any {
+	if len(source) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(source))
+	for key, value := range source {
+		out[key] = value
+	}
+	return out
 }
 
 func (s *Store) EnsureWikiProjectsTable() error {

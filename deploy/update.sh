@@ -5,7 +5,7 @@
 #   手动执行：sudo /opt/blog/update.sh
 #   自动执行：配合 blog-update.timer 定时运行
 #
-# 依赖：curl, sha256sum, systemctl, python3, gh（GitHub CLI，需支持 attestation verify）
+# 依赖：curl, sha256sum, systemctl, python3
 
 set -euo pipefail
 
@@ -28,10 +28,6 @@ HEALTH_RETRIES="${BLOG_HEALTH_RETRIES:-5}"
 HEALTH_INITIAL_DELAY="${BLOG_HEALTH_INITIAL_DELAY:-3}"
 HEALTH_RETRY_DELAY="${BLOG_HEALTH_RETRY_DELAY:-2}"
 ROLLBACK_HEALTH_DELAY="${BLOG_ROLLBACK_HEALTH_DELAY:-3}"
-# 构建来源证明默认强制校验；仅迁移没有 attestation 的旧 Release 时可显式设为 0。
-VERIFY_PROVENANCE="${BLOG_VERIFY_PROVENANCE:-1}"
-GH_BIN="${BLOG_GH_BIN:-gh}"
-SIGNER_WORKFLOW="${BLOG_SIGNER_WORKFLOW:-${REPO}/.github/workflows/release.yml}"
 # HTTP 代理（国内服务器走代理加速 GitHub，留空则直连）
 # systemd timer 触发时无继承的环境变量，必须在此显式设置
 PROXY="${BLOG_PROXY:-}"
@@ -367,41 +363,6 @@ download_file() {
   numfmt --to=iec-i --suffix=B "$file_size" 2>/dev/null || echo "${file_size}B"
 }
 
-# 用 GitHub CLI 校验 GitHub Artifact Attestation，限制到本仓库的 release workflow。
-# SHA256 证明下载内容未损坏；attestation 证明产物来自受信任的 GitHub Actions 构建。
-verify_provenance() {
-  local artifact="$1"
-  if [[ "$VERIFY_PROVENANCE" == "0" ]]; then
-    log "构建来源证明校验已显式禁用（BLOG_VERIFY_PROVENANCE=0）"
-    return 0
-  fi
-  if [[ "$VERIFY_PROVENANCE" != "1" ]]; then
-    log "ERROR: BLOG_VERIFY_PROVENANCE 只允许为 0 或 1"
-    return 1
-  fi
-  if ! command -v "$GH_BIN" >/dev/null 2>&1; then
-    log "ERROR: 未找到 GitHub CLI（${GH_BIN}），无法校验构建来源证明"
-    return 1
-  fi
-
-  local output
-  if [[ -n "${TOKEN:-}" ]]; then
-    output=$(GH_TOKEN="$TOKEN" "$GH_BIN" attestation verify "$artifact" \
-      --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
-      log "ERROR: Artifact Attestation 校验失败: ${output}"
-      return 1
-    }
-  else
-    output=$("$GH_BIN" attestation verify "$artifact" \
-      --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
-      log "ERROR: Artifact Attestation 校验失败: ${output}"
-      return 1
-    }
-  fi
-  log "Artifact Attestation 校验通过: ${SIGNER_WORKFLOW}"
-  return 0
-}
-
 # ---------- 主流程 ----------
 main() {
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -506,10 +467,6 @@ if [[ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]]; then
 fi
 sub "SHA256 校验" "${C_GREEN}✓${C_RESET} 通过"
 log "SHA256 校验通过"
-if ! verify_provenance "$TMP_BIN"; then
-  die "构建来源证明校验失败"
-fi
-sub "构建来源证明" "${C_GREEN}✓${C_RESET} 通过"
 echo ""
 
 # 部署

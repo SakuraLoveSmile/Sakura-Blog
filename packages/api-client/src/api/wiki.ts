@@ -8,6 +8,11 @@ export interface WikiHeroPreview {
   image?: string;
 }
 
+export interface WikiHeroAnimation {
+  type?: string;
+  params?: Record<string, unknown>;
+}
+
 export interface WikiHeroAction {
   title?: string;
   url?: string;
@@ -16,6 +21,7 @@ export interface WikiHeroAction {
 
 export interface WikiHero {
   background?: string;
+  animation?: WikiHeroAnimation;
   title?: string;
   description?: string;
   start?: string;

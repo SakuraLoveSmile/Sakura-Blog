@@ -10,12 +10,18 @@ import (
 
 func TestWikiProjectCRUDAPI(t *testing.T) {
 	r, st := newWikiTestEnv(t)
-	create := wikiReq(r, http.MethodPost, "/api/v1/wiki/projects", `{"id":"stellar","title":"Stellar","tags":["主题","开源"],"visible":false,"hero":{"background":"galaxy"}}`)
+	create := wikiReq(r, http.MethodPost, "/api/v1/wiki/projects", `{"id":"stellar","title":"Stellar","tags":["主题","开源"],"visible":false,"hero":{"background":"https://cdn.example/hero.jpg","animation":{"type":"galaxy","params":{"density":4,"transparent":true}}}}`)
 	if create.Code != http.StatusCreated {
 		t.Fatalf("create project got %d: %s", create.Code, create.Body.String())
 	}
 	if !strings.Contains(create.Body.String(), `"visible":false`) {
 		t.Fatalf("create response should preserve visible=false: %s", create.Body.String())
+	}
+	if !strings.Contains(create.Body.String(), `"animation":{"type":"galaxy","params":{"density":4,"transparent":true}}`) {
+		t.Fatalf("create response should preserve Hero animation: %s", create.Body.String())
+	}
+	if !strings.Contains(create.Body.String(), `"background":"https://cdn.example/hero.jpg"`) {
+		t.Fatalf("create response should preserve Hero background image: %s", create.Body.String())
 	}
 
 	duplicate := wikiReq(r, http.MethodPost, "/api/v1/wiki/projects", `{"id":"stellar","title":"Duplicate"}`)
