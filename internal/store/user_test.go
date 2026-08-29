@@ -188,6 +188,82 @@ func TestUserUpdateTOTPSecret(t *testing.T) {
 	}
 }
 
+func TestDeleteUserClearsPostAuthorsAndKeepsByline(t *testing.T) {
+	s := newUserStore(t)
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
+	u := newTestUser("author", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO posts(slug, title, author) VALUES('delete-user-post', '文章标题', 'author')`); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	var postID int64
+	if err := s.DB().QueryRow(`SELECT id FROM posts WHERE slug = 'delete-user-post'`).Scan(&postID); err != nil {
+		t.Fatalf("read post id: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO post_authors(post_id, author_id, sort_order) VALUES(?, ?, 0)`, postID, u.ID); err != nil {
+		t.Fatalf("create ownership: %v", err)
+	}
+	if err := s.DeleteUser(u.ID); err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+	var associationCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM post_authors WHERE author_id = ?`, u.ID).Scan(&associationCount); err != nil {
+		t.Fatalf("count ownership: %v", err)
+	}
+	if associationCount != 0 {
+		t.Fatalf("post author associations = %d, want 0", associationCount)
+	}
+	var byline string
+	if err := s.DB().QueryRow(`SELECT author FROM posts WHERE id = ?`, postID).Scan(&byline); err != nil {
+		t.Fatalf("read byline: %v", err)
+	}
+	if byline != "author" {
+		t.Fatalf("post author = %q, want author", byline)
+	}
+}
+
+func TestDeleteUserRollsBackAssociationOnUserDeleteFailure(t *testing.T) {
+	s := newUserStore(t)
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
+	u := newTestUser("blocked-author", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	var postID int64
+	if err := s.DB().QueryRow(`INSERT INTO posts(slug, title, author) VALUES('rollback-post', '文章', 'blocked-author') RETURNING id`).Scan(&postID); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO post_authors(post_id, author_id, sort_order) VALUES(?, ?, 0)`, postID, u.ID); err != nil {
+		t.Fatalf("create ownership: %v", err)
+	}
+	if _, err := s.DB().Exec(`CREATE TRIGGER block_user_delete BEFORE DELETE ON users BEGIN SELECT RAISE(ABORT, 'delete blocked'); END`); err != nil {
+		t.Fatalf("create trigger: %v", err)
+	}
+	if err := s.DeleteUser(u.ID); err == nil {
+		t.Fatal("delete should fail when users trigger aborts")
+	}
+	var associationCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM post_authors WHERE author_id = ?`, u.ID).Scan(&associationCount); err != nil {
+		t.Fatalf("count ownership after rollback: %v", err)
+	}
+	if associationCount != 1 {
+		t.Fatalf("post author associations after rollback = %d, want 1", associationCount)
+	}
+	var usersCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, u.ID).Scan(&usersCount); err != nil {
+		t.Fatalf("count user after rollback: %v", err)
+	}
+	if usersCount != 1 {
+		t.Fatalf("users after rollback = %d, want 1", usersCount)
+	}
+}
+
 // TestListUsers 列表仅返回非敏感列，按 id 升序。
 func TestListUsers(t *testing.T) {
 	s := newUserStore(t)

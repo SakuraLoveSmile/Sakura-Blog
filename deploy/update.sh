@@ -5,7 +5,7 @@
 #   手动执行：sudo /opt/blog/update.sh
 #   自动执行：配合 blog-update.timer 定时运行
 #
-# 依赖：curl, sha256sum, systemctl, python3, gh（GitHub CLI，需支持 attestation verify）
+# 依赖：curl, sha256sum, systemctl, python3, gh（GitHub CLI，需支持 attestation verify --bundle）
 
 set -euo pipefail
 
@@ -367,10 +367,11 @@ download_file() {
   numfmt --to=iec-i --suffix=B "$file_size" 2>/dev/null || echo "${file_size}B"
 }
 
-# 用 GitHub CLI 校验 GitHub Artifact Attestation，限制到本仓库的 release workflow。
+# 用 GitHub CLI 校验 GitHub Artifact Attestation bundle，限制到本仓库的 release workflow。
 # SHA256 证明下载内容未损坏；attestation 证明产物来自受信任的 GitHub Actions 构建。
 verify_provenance() {
   local artifact="$1"
+  local bundle="${2:-}"
   if [[ "$VERIFY_PROVENANCE" == "0" ]]; then
     log "构建来源证明校验已显式禁用（BLOG_VERIFY_PROVENANCE=0）"
     return 0
@@ -383,17 +384,21 @@ verify_provenance() {
     log "ERROR: 未找到 GitHub CLI（${GH_BIN}），无法校验构建来源证明"
     return 1
   fi
+  if [[ -z "$bundle" || ! -s "$bundle" ]]; then
+    log "ERROR: Release 缺少构建来源证明 bundle，拒绝更新"
+    return 1
+  fi
 
   local output
   if [[ -n "${TOKEN:-}" ]]; then
     output=$(GH_TOKEN="$TOKEN" "$GH_BIN" attestation verify "$artifact" \
-      --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
+      --bundle "$bundle" --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
       log "ERROR: Artifact Attestation 校验失败: ${output}"
       return 1
     }
   else
     output=$("$GH_BIN" attestation verify "$artifact" \
-      --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
+      --bundle "$bundle" --repo "$REPO" --signer-workflow "$SIGNER_WORKFLOW" 2>&1) || {
       log "ERROR: Artifact Attestation 校验失败: ${output}"
       return 1
     }
@@ -480,14 +485,19 @@ echo ""
 # 获取资产 API URL
 BINARY_URL=$(get_asset_url "$LATEST_TAG" "blog-linux-amd64")
 SHA_URL=$(get_asset_url "$LATEST_TAG" "blog-linux-amd64.sha256")
+BUNDLE_URL=""
+if [[ "$VERIFY_PROVENANCE" == "1" ]]; then
+  BUNDLE_URL=$(get_asset_url "$LATEST_TAG" "blog-linux-amd64.attestation.jsonl")
+fi
 
-if [[ -z "$BINARY_URL" ]] || [[ -z "$SHA_URL" ]]; then
+if [[ -z "$BINARY_URL" ]] || [[ -z "$SHA_URL" ]] || [[ "$VERIFY_PROVENANCE" == "1" && -z "$BUNDLE_URL" ]]; then
   die "未找到 Release ${LATEST_TAG} 的资产文件"
 fi
 
 TMP_BIN=$(mktemp)
 TMP_SHA=$(mktemp)
-trap 'rm -f "$TMP_BIN" "$TMP_SHA"' EXIT
+TMP_BUNDLE=$(mktemp)
+trap 'rm -f "$TMP_BIN" "$TMP_SHA" "$TMP_BUNDLE"' EXIT
 
 # 下载二进制
 echo "  ${C_GRAY}下载二进制...${C_RESET}"
@@ -498,6 +508,11 @@ sub "blog-linux-amd64" "${C_GREEN}✓${C_RESET} ${BIN_SIZE}"
 SHA_SIZE=$(download_file "$SHA_URL" "$TMP_SHA") || die "SHA256 文件下载失败"
 sub "blog-linux-amd64.sha256" "${C_GREEN}✓${C_RESET} ${SHA_SIZE}"
 
+if [[ "$VERIFY_PROVENANCE" == "1" ]]; then
+  BUNDLE_SIZE=$(download_file "$BUNDLE_URL" "$TMP_BUNDLE") || die "构建来源证明 bundle 下载失败"
+  sub "blog-linux-amd64.attestation.jsonl" "${C_GREEN}✓${C_RESET} ${BUNDLE_SIZE}"
+fi
+
 # 校验完整性
 EXPECTED_SHA=$(awk '{print $1}' "$TMP_SHA")
 ACTUAL_SHA=$(sha256sum "$TMP_BIN" | awk '{print $1}')
@@ -506,7 +521,7 @@ if [[ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]]; then
 fi
 sub "SHA256 校验" "${C_GREEN}✓${C_RESET} 通过"
 log "SHA256 校验通过"
-if ! verify_provenance "$TMP_BIN"; then
+if ! verify_provenance "$TMP_BIN" "$TMP_BUNDLE"; then
   die "构建来源证明校验失败"
 fi
 sub "构建来源证明" "${C_GREEN}✓${C_RESET} 通过"

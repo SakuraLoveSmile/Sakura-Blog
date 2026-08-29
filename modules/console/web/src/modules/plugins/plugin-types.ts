@@ -42,6 +42,13 @@ export interface PluginPreviewInfo {
   fallback?: string;
 }
 
+export interface PluginEditSchema {
+  enabled: boolean;
+  required?: string[];
+  required_any?: string[][];
+  legacy_args?: string[];
+}
+
 export interface PluginMeta {
   name: string;
   title: string;
@@ -52,6 +59,7 @@ export interface PluginMeta {
   params: PluginParam[];
   example: string;
   form?: PluginFormField[];
+  edit?: PluginEditSchema;
   preview?: PluginPreviewInfo;
 }
 

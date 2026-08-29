@@ -92,17 +92,23 @@ fi
 reset_install
 new_bin="$test_root/new-success"
 printf 'new-binary\n' > "$new_bin"
+bundle="$test_root/blog-linux-amd64.attestation.jsonl"
+printf '{"dsseEnvelope":"fixture"}\n' > "$bundle"
 
 export TOKEN=""
 export TEST_GH_RC=0
-verify_provenance "$new_bin" || fail "successful provenance verification returned failure"
+verify_provenance "$new_bin" "$bundle" || fail "successful provenance verification returned failure"
 grep -q -- "--signer-workflow ${REPO}/.github/workflows/release.yml" "$TEST_GH_LOG" || fail "provenance verifier did not constrain signer workflow"
+grep -q -- "--bundle $bundle" "$TEST_GH_LOG" || fail "provenance verifier did not use the downloaded bundle"
+if verify_provenance "$new_bin" "$test_root/missing-bundle"; then
+  fail "missing attestation bundle should fail in strict mode"
+fi
 export TEST_GH_RC=1
-if verify_provenance "$new_bin"; then
+if verify_provenance "$new_bin" "$bundle"; then
   fail "failed provenance verification returned success"
 fi
 export VERIFY_PROVENANCE=0
-verify_provenance "$new_bin" || fail "explicit provenance migration bypass returned failure"
+verify_provenance "$new_bin" "$test_root/missing-bundle" || fail "explicit provenance migration bypass returned failure"
 export VERIFY_PROVENANCE=1
 
 deploy_binary "$new_bin" "v2" "old-version" || fail "successful deployment returned failure"
