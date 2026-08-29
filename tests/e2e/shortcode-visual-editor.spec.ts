@@ -73,10 +73,9 @@ async function expectMarkdownContains(page: Page, needle: string) {
 
 async function expectPreviewContains(page: Page, needle: string) {
   await expect
-    .poll(
-      async () => (await page.locator(".stellar-tag-node iframe").first().getAttribute("srcdoc")) ?? "",
-      { timeout: 20_000 },
-    )
+    .poll(async () => (await page.locator(".stellar-tag-node iframe").first().getAttribute("srcdoc")) ?? "", {
+      timeout: 20_000,
+    })
     .toContain(needle);
 }
 
@@ -223,7 +222,7 @@ test("结构化编辑回退：含单双引号的参数不提交并提示源码�
   const dialog = await openPropertyPanel(page);
   const original = await getMarkdown(page);
 
-  await dialog.locator("#schema-field-text").fill('含 "双引号" 与 \'单引号\'');
+  await dialog.locator("#schema-field-text").fill("含 \"双引号\" 与 '单引号'");
   await expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
   await expect(dialog.getByText(/单双引号/)).toBeVisible();
   await dialog.getByRole("button", { name: "应用" }).click({ force: true });

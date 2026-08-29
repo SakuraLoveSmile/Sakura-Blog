@@ -182,7 +182,9 @@ onBeforeUnmount(() => {
           class="apple-input w-full resize-y font-mono text-xs leading-relaxed"
           @keydown.stop
         ></textarea>
-        <p class="text-[11px] leading-relaxed text-text-quaternary">当前组件保留原始 Markdown shortcode；保存后不会改变正文数据模型。</p>
+        <p class="text-[11px] leading-relaxed text-text-quaternary">
+          当前组件保留原始 Markdown shortcode；保存后不会改变正文数据模型。
+        </p>
       </div>
     </div>
 

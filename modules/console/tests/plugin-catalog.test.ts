@@ -56,7 +56,10 @@ const catalog: PluginCatalogItem[] = [
 
 test("catalog merge uses backend order and preserves display metadata", () => {
   const merged = mergePluginCatalog([basePlugin], catalog);
-  assert.deepEqual(merged.map((plugin) => plugin.name), ["note", "table"]);
+  assert.deepEqual(
+    merged.map((plugin) => plugin.name),
+    ["note", "table"],
+  );
   assert.equal(merged[0].title, "后端 Note");
   assert.equal(merged[0].desc, "后端描述");
   assert.equal(merged[0].signature, "{% note ... %}");

@@ -31,7 +31,7 @@ test("console input hash covers workspace inputs and excludes dist output", () =
     writeFixture(root, "modules/console/web/src/main.ts", "export const value = 1;\n");
     writeFixture(root, "modules/console/web/index.html", "<!doctype html>\n");
     writeFixture(root, "modules/console/web/uc.html", "<!doctype html>\n");
-    writeFixture(root, "modules/console/web/public/runtime.json", "{\"version\":1}\n");
+    writeFixture(root, "modules/console/web/public/runtime.json", '{"version":1}\n');
     writeFixture(root, "modules/console/web/scripts/build.mjs", "export const build = 1;\n");
     writeFixture(root, "modules/console/web/vite.config.ts", "export default {};\n");
     writeFixture(root, "modules/console/web/package.json", "{}\n");
@@ -58,7 +58,7 @@ test("console input hash covers workspace inputs and excludes dist output", () =
     const afterHtml = runHash(root);
     assert.notEqual(afterHtml, afterViteConfig);
 
-    writeFixture(root, "modules/console/web/public/runtime.json", "{\"version\":2}\n");
+    writeFixture(root, "modules/console/web/public/runtime.json", '{"version":2}\n');
     const afterPublic = runHash(root);
     assert.notEqual(afterPublic, afterHtml);
 
@@ -66,7 +66,7 @@ test("console input hash covers workspace inputs and excludes dist output", () =
     const afterBuildScript = runHash(root);
     assert.notEqual(afterBuildScript, afterPublic);
 
-    writeFixture(root, "packages/editor/package.json", "{\"version\": 2}\n");
+    writeFixture(root, "packages/editor/package.json", '{"version": 2}\n');
     const afterPackageManifest = runHash(root);
     assert.notEqual(afterPackageManifest, afterBuildScript);
 
