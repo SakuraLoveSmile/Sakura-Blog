@@ -3,7 +3,7 @@
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言拼装规则本身，不经 Vue 组件。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildShortcode, formForVariant } from "../web/src/modules/plugins/shortcode.ts";
+import { buildShortcode, buildShortcodeResult, formForVariant, serializeShortcodeArgument } from "../web/src/modules/plugins/shortcode.ts";
 import type { PluginMeta } from "../web/src/modules/plugins/plugin-types.ts";
 
 const SURFACE = "shortcode 拼装";
@@ -117,10 +117,23 @@ test(`${SURFACE} · inline：mbti 双 positional 按字段顺序、双 named 按
 
 // ---- Spec 62 边界补充 ----
 
-test('shortcode 拼装 · 特殊字符：值含空格/引号/花括号不被破坏', () => {
-  const special = buildShortcode(notePlugin, { color: "blue", title: '带 "引号" 与 花括号 {x}', content: "正文" });
-  assert.ok(special.includes('带 "引号" 与 花括号 {x}'), `值原样保留: ${special}`);
-  assert.ok(special.includes("{% note"), "标签开头完整");
+test('shortcode 拼装 · 特殊字符：值含空格时使用 quote，单双引号同时出现时拒绝', () => {
+  const special = buildShortcode(notePlugin, { color: "blue", title: '带 "引号" 与 \'单引号\' 及花括号 {x}', content: "正文" });
+  assert.equal(special, "");
+  assert.deepEqual(serializeShortcodeArgument("带 空格"), { value: '"带 空格"' });
+  assert.deepEqual(serializeShortcodeArgument("带 '单引号'"), { value: '"带 \'单引号\'"' });
+  assert.equal(serializeShortcodeArgument('带 "双引号"').value, "'带 \"双引号\"'");
+  assert.match(serializeShortcodeArgument("a'b\"c").error || "", /单双引号/);
+  assert.match(serializeShortcodeArgument("a\nb").error || "", /换行/);
+});
+
+test("shortcode 拼装 · catalog required / required_any 不满足时返回无效状态", () => {
+  const required: PluginMeta = { ...notePlugin, edit: { enabled: true, required: ["title"], required_any: [["color", "content"]] } };
+  const result = buildShortcodeResult(required, { title: "", color: "", content: "" });
+  assert.equal(result.valid, false);
+  assert.match(result.error || "", /必填/);
+  const alternative = buildShortcodeResult(required, { title: "标题", color: "", content: "正文" });
+  assert.equal(alternative.valid, true);
 });
 
 test('shortcode 拼装 · flag 仅精确 true 触发（UI checkbox 固定传 "true"）', () => {
@@ -247,6 +260,23 @@ test(`${SURFACE} · 零参数 links 产出裸标签`, () => {
   assert.equal(buildShortcode(linksPlugin, {}), "{% links %}");
 });
 
+test(`${SURFACE} · emoji URL 模式省略 source 并保留 name/height`, () => {
+  const emoji: PluginMeta = {
+    ...linksPlugin,
+    name: "emoji",
+    form: [
+      { key: "source", label: "来源", type: "select", role: "positional" },
+      { key: "name", label: "名称", type: "text", role: "positional" },
+      { key: "url", label: "URL", type: "text", role: "named" },
+      { key: "height", label: "高度", type: "text", role: "named" },
+    ],
+  };
+  assert.equal(
+    buildShortcode(emoji, { source: "twemoji", name: "笑脸", url: "https://example.com/e.png", height: "2em" }),
+    "{% emoji url:https://example.com/e.png name:笑脸 height:2em %}",
+  );
+});
+
 test(`${SURFACE} · 位置参数含空格时按字段顺序整体保留（image src/alt）`, () => {
   const imagePlugin: PluginMeta = {
     ...linksPlugin,
@@ -260,6 +290,6 @@ test(`${SURFACE} · 位置参数含空格时按字段顺序整体保留（image 
   };
   assert.equal(
     buildShortcode(imagePlugin, { src: "/a.jpg", alt: "这是一张 很长的 说明", width: "80%", download: "true" }),
-    "{% image /a.jpg 这是一张 很长的 说明 width:80% download:true %}"
+    '{% image /a.jpg "这是一张 很长的 说明" width:80% download:true %}'
   );
 });

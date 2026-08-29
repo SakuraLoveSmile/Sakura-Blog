@@ -364,6 +364,26 @@ func TestParseShortcodeForEditSemantics(t *testing.T) {
 	}
 }
 
+func TestEmojiURLRoundTripKeepsAlt(t *testing.T) {
+	raw := `{% emoji url:https://example.com/emoji.png name:原始表情 height:20px %}`
+	parsed, err := ParseShortcodeForEdit(raw)
+	if err != nil {
+		t.Fatalf("parse emoji URL: %v", err)
+	}
+	if parsed.Values["url"] != "https://example.com/emoji.png" || parsed.Values["name"] != "原始表情" {
+		t.Fatalf("emoji URL values = %#v", parsed.Values)
+	}
+	// This is the canonical form emitted by the Console builder when url is set.
+	rebuilt := `{% emoji url:https://example.com/emoji.png name:原始表情 height:32px %}`
+	second, err := ParseShortcodeForEdit(rebuilt)
+	if err != nil {
+		t.Fatalf("parse rebuilt emoji URL: %v", err)
+	}
+	if second.Values["url"] != parsed.Values["url"] || second.Values["name"] != parsed.Values["name"] {
+		t.Fatalf("emoji URL alt/url changed after round-trip: first=%#v second=%#v", parsed.Values, second.Values)
+	}
+}
+
 func TestParseShortcodeForEditHybridVariants(t *testing.T) {
 	t.Run("navbar block", func(t *testing.T) {
 		got, err := ParseShortcodeForEdit("{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}")

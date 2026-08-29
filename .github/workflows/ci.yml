@@ -199,7 +199,11 @@ jobs:
     if: github.event_name == 'pull_request' && github.base_ref == 'release'
     runs-on: ubuntu-latest
     steps:
-      - name: Require main as release source
+      - uses: actions/checkout@v4
+
+      - name: Require main from this repository as release source
         env:
           HEAD_REF: ${{ github.head_ref }}
-        run: test "$HEAD_REF" = main
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: bash scripts/check-release-source.sh

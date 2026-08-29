@@ -194,6 +194,42 @@ test("emoji（特殊 inline）：source/name 模式字段回填与改值", async
   await expectMarkdownContains(page, "{% emoji twemoji 1f44d height:32px %}");
 });
 
+test("emoji URL 模式：修改其他字段后保留外链与 alt", async ({ page }) => {
+  await setMarkdown(page, "{% emoji url:https://example.com/e.png name:原表情 height:20px %}");
+  const dialog = await openPropertyPanel(page);
+
+  await expect(dialog.locator("#schema-field-url")).toHaveValue("https://example.com/e.png");
+  await expect(dialog.locator("#schema-field-name")).toHaveValue("原表情");
+  await dialog.locator("#schema-field-height").fill("32px");
+  await expectMarkdownContains(page, "{% emoji url:https://example.com/e.png name:原表情 height:32px %}");
+  const markdown = await getMarkdown(page);
+  expect(markdown).not.toContain("emoji twemoji");
+});
+
+test("结构化编辑校验：清空必填字段时禁用应用且不提交无效 raw", async ({ page }) => {
+  await setMarkdown(page, "{% button 访问主页 https://example.com %}");
+  const dialog = await openPropertyPanel(page);
+  const original = await getMarkdown(page);
+
+  await dialog.locator("#schema-field-url").fill("");
+  await expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
+  await expect(dialog.getByText(/必填参数/)).toBeVisible();
+  await dialog.getByRole("button", { name: "取消" }).click();
+  expect(await getMarkdown(page)).toBe(original);
+});
+
+test("结构化编辑回退：含单双引号的参数不提交并提示源码编辑", async ({ page }) => {
+  await setMarkdown(page, "{% button 访问主页 https://example.com %}");
+  const dialog = await openPropertyPanel(page);
+  const original = await getMarkdown(page);
+
+  await dialog.locator("#schema-field-text").fill('含 "双引号" 与 \'单引号\'');
+  await expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
+  await expect(dialog.getByText(/单双引号/)).toBeVisible();
+  await dialog.getByRole("button", { name: "应用" }).click({ force: true });
+  expect(await getMarkdown(page)).toBe(original);
+});
+
 test("links（零参数）：面板提示无属性但保留源码编辑", async ({ page }) => {
   await setMarkdown(page, "{% links %}");
   const dialog = await openPropertyPanel(page);

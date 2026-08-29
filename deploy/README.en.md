@@ -2,7 +2,11 @@
 
 The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies both SHA256 integrity and GitHub Artifact Attestation provenance.
 
-`update.sh` requires `curl`, `sha256sum`, `systemctl`, `python3`, and a GitHub CLI that supports `gh attestation verify`. Provenance verification is strict by default; temporarily set `BLOG_VERIFY_PROVENANCE=0` only while migrating releases created before attestations were enabled.
+`update.sh` requires `curl`, `sha256sum`, `systemctl`, `python3`, and a GitHub CLI that supports `gh attestation verify --bundle`. Provenance verification is strict by default; temporarily set `BLOG_VERIFY_PROVENANCE=0` only while migrating releases created before attestation bundles were published.
+
+Public repositories support anonymous updates and do not require a PAT. The binary, SHA256 file, and `blog-linux-amd64.attestation.jsonl` are public Release assets; the updater verifies the downloaded binary against that bundle while constraining the repository and release-workflow signer to `SakuraLoveSmile/Sakura-Blog`. A private repository may still use a `contents:read` PAT in `/opt/blog/.token` to read Release assets; anonymous bundle verification does not depend on a token.
+
+Every new Release must include `blog-linux-amd64`, its `.sha256` file, and `blog-linux-amd64.attestation.jsonl`. Releases without a bundle are rejected by default. For a one-time migration only, explicitly set `BLOG_VERIFY_PROVENANCE=0` (for example, `sudo BLOG_VERIFY_PROVENANCE=0 /opt/blog/update.sh`), then restore the strict default immediately.
 
 ## Configuration
 

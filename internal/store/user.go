@@ -318,12 +318,35 @@ func (s *Store) UpdateUserRole(userID int64, role string) error {
 
 // DeleteUser 删除用户（用户存在且删除成功返回 nil；不存在返回错误）。
 func (s *Store) DeleteUser(userID int64) error {
-	res, err := s.db.Exec(`DELETE FROM users WHERE id = ?`, userID)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin delete user %d: %w", userID, err)
+	}
+	defer tx.Rollback()
+
+	// post_authors deliberately uses ON DELETE RESTRICT so article ownership
+	// cannot disappear accidentally. User deletion is the explicit ownership
+	// removal path: clear only the association and keep posts.author unchanged
+	// so existing article bylines remain visible.
+	var authorsTable int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_authors'`).Scan(&authorsTable); err != nil {
+		return fmt.Errorf("check post_authors before deleting user %d: %w", userID, err)
+	}
+	if authorsTable > 0 {
+		if _, err := tx.Exec(`DELETE FROM post_authors WHERE author_id = ?`, userID); err != nil {
+			return fmt.Errorf("delete post authors for user %d: %w", userID, err)
+		}
+	}
+
+	res, err := tx.Exec(`DELETE FROM users WHERE id = ?`, userID)
 	if err != nil {
 		return fmt.Errorf("delete user %d: %w", userID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("delete user %d: no rows affected", userID)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete user %d: %w", userID, err)
 	}
 	return nil
 }

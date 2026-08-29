@@ -64,6 +64,33 @@ jobs:
         with:
           subject-path: blog-linux-amd64
 
+      # 将签名 bundle 作为公开 Release 资产发布，部署端可匿名离线验签。
+      - name: Download Linux attestation bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          bundle_dir="$(mktemp -d)"
+          cp blog-linux-amd64 "$bundle_dir/blog-linux-amd64"
+          bundle_path=""
+          for attempt in 1 2 3 4 5; do
+            if (cd "$bundle_dir" && gh attestation download blog-linux-amd64 --repo "$ARTIFACT_REPOSITORY"); then
+              bundle_path="$(find "$bundle_dir" -maxdepth 1 -type f -name '*.jsonl' -print -quit)"
+              if [[ -n "$bundle_path" && -s "$bundle_path" ]]; then
+                break
+              fi
+            fi
+            bundle_path=""
+            if [[ "$attempt" -eq 5 ]]; then
+              echo "attestation bundle is not available after retries" >&2
+              exit 1
+            fi
+            sleep "$((attempt * 2))"
+          done
+          cp "$bundle_path" blog-linux-amd64.attestation.jsonl
+          test -s blog-linux-amd64.attestation.jsonl
+
       # 产物：Actions Artifacts（每次构建，保留 30 天）
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -73,6 +100,7 @@ jobs:
             blog-linux-amd64
             blog-linux-amd64.sha256
             blog-linux-amd64.spdx.json
+            blog-linux-amd64.attestation.jsonl
           retention-days: 30
 
       # GitHub Release（打 tag 时，服务器 update.sh 从此下载）
@@ -84,5 +112,6 @@ jobs:
             blog-linux-amd64
             blog-linux-amd64.sha256
             blog-linux-amd64.spdx.json
+            blog-linux-amd64.attestation.jsonl
           generate_release_notes: true
           fail_on_unmatched_files: true  # 如果没有二进制文件则失败
