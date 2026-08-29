@@ -1,6 +1,8 @@
 # Deployment guide
 
-The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary.
+The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies both SHA256 integrity and GitHub Artifact Attestation provenance.
+
+`update.sh` requires `curl`, `sha256sum`, `systemctl`, `python3`, and a GitHub CLI that supports `gh attestation verify`. Provenance verification is strict by default; temporarily set `BLOG_VERIFY_PROVENANCE=0` only while migrating releases created before attestations were enabled.
 
 ## Configuration
 
@@ -37,4 +39,3 @@ make build
 ```
 
 Run `bash deploy/update_test.sh` to exercise update and rollback logic without contacting GitHub or systemd.
-

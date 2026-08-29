@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # 创建 Release + 生成 release notes
+      id-token: write   # GitHub Artifact Attestation
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +49,21 @@ jobs:
             -o blog-linux-amd64 ./cmd/blog
           sha256sum blog-linux-amd64 > blog-linux-amd64.sha256
 
+      # 以最终发布二进制为主体生成 SPDX JSON SBOM；output-file 让它同时进入 Release。
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0.24.2
+        with:
+          file: blog-linux-amd64
+          format: spdx-json
+          artifact-name: blog-linux-amd64.spdx.json
+          output-file: blog-linux-amd64.spdx.json
+
+      # 证明由本仓库的 GitHub Actions 构建的二进制，部署端可用 gh attestation verify 校验。
+      - name: Attest Linux binary provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: blog-linux-amd64
+
       # 产物：Actions Artifacts（每次构建，保留 30 天）
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -55,6 +72,7 @@ jobs:
           path: |
             blog-linux-amd64
             blog-linux-amd64.sha256
+            blog-linux-amd64.spdx.json
           retention-days: 30
 
       # GitHub Release（打 tag 时，服务器 update.sh 从此下载）
@@ -65,5 +83,6 @@ jobs:
           files: |
             blog-linux-amd64
             blog-linux-amd64.sha256
+            blog-linux-amd64.spdx.json
           generate_release_notes: true
           fail_on_unmatched_files: true  # 如果没有二进制文件则失败
