@@ -31,9 +31,9 @@ func TestConsoleStaticGzipNegotiation(t *testing.T) {
 		t.Fatalf("gzip close: %v", err)
 	}
 	for name, data := range map[string][]byte{
-		"index.html":       []byte("<!doctype html>"),
-		"assets/app.js":    plain,
-		"assets/app.js.gz": compressed.Bytes(),
+		"index.html":           []byte("<!doctype html>"),
+		"assets/app-123.js":    plain,
+		"assets/app-123.js.gz": compressed.Bytes(),
 	} {
 		if err := os.WriteFile(filepath.Join(dist, name), data, 0o644); err != nil {
 			t.Fatalf("write %s: %v", name, err)
@@ -44,8 +44,16 @@ func TestConsoleStaticGzipNegotiation(t *testing.T) {
 	if _, err := setupConsoleRoutes(r, true, root); err != nil {
 		t.Fatalf("setup routes: %v", err)
 	}
+	index := []byte("<!doctype html>")
+	r.NoRoute(func(c *gin.Context) {
+		if c.Request.URL.Path == "/console" || c.Request.URL.Path == "/console/" || c.Request.URL.Path == "/console/posts" {
+			writeConsoleData(c, "text/html; charset=utf-8", index, nil)
+			return
+		}
+		c.Status(http.StatusNotFound)
+	})
 
-	gzipRequest := httptest.NewRequest(http.MethodGet, "/console/assets/app.js", nil)
+	gzipRequest := httptest.NewRequest(http.MethodGet, "/console/assets/app-123.js", nil)
 	gzipRequest.Header.Set("Accept-Encoding", "gzip, deflate")
 	gzipResponse := httptest.NewRecorder()
 	r.ServeHTTP(gzipResponse, gzipRequest)
@@ -57,6 +65,9 @@ func TestConsoleStaticGzipNegotiation(t *testing.T) {
 	}
 	if got := gzipResponse.Header().Get("Vary"); got != "Accept-Encoding" {
 		t.Fatalf("Vary = %q, want Accept-Encoding", got)
+	}
+	if got := gzipResponse.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("asset Cache-Control = %q, want immutable", got)
 	}
 	if got := gzipResponse.Header().Get("Content-Type"); got != "application/javascript" {
 		t.Fatalf("Content-Type = %q, want application/javascript", got)
@@ -73,7 +84,7 @@ func TestConsoleStaticGzipNegotiation(t *testing.T) {
 		t.Fatalf("decoded body = %q, want %q", decoded, plain)
 	}
 
-	plainRequest := httptest.NewRequest(http.MethodGet, "/console/assets/app.js", nil)
+	plainRequest := httptest.NewRequest(http.MethodGet, "/console/assets/app-123.js", nil)
 	plainRequest.Header.Set("Accept-Encoding", "identity")
 	plainResponse := httptest.NewRecorder()
 	r.ServeHTTP(plainResponse, plainRequest)
@@ -82,6 +93,20 @@ func TestConsoleStaticGzipNegotiation(t *testing.T) {
 	}
 	if plainResponse.Body.String() != string(plain) {
 		t.Fatalf("plain body = %q, want %q", plainResponse.Body.String(), plain)
+	}
+	if got := plainResponse.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("plain asset Cache-Control = %q, want immutable", got)
+	}
+
+	for _, path := range []string{"/console", "/console/", "/console/posts"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != http.StatusOK || w.Body.String() != string(index) {
+			t.Fatalf("console SPA %s = %d %q", path, w.Code, w.Body.String())
+		}
+		if got := w.Header().Get("Cache-Control"); got != "no-cache" {
+			t.Errorf("console SPA %s Cache-Control = %q, want no-cache", path, got)
+		}
 	}
 }
 
@@ -111,7 +136,7 @@ func TestUserCenterStaticAndFallbackData(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dist, "uc.html"), []byte("<uc-app>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dist, "assets", "app.js"), []byte("uc"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dist, "assets", "app-123.js"), []byte("uc"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
@@ -120,13 +145,16 @@ func TestUserCenterStaticAndFallbackData(t *testing.T) {
 		t.Fatalf("setup UC routes: index=%+v err=%v", index, err)
 	}
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/assets/app.js", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/assets/app-123.js", nil))
 	if w.Code != http.StatusOK || w.Body.String() != "uc" {
 		t.Fatalf("UC asset = %d %q", w.Code, w.Body.String())
 	}
+	if got := w.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("UC asset Cache-Control = %q, want immutable", got)
+	}
 
 	r.NoRoute(func(c *gin.Context) {
-		if c.Request.URL.Path == "/uc/posts/hello" {
+		if c.Request.URL.Path == "/uc" || c.Request.URL.Path == "/uc/" || c.Request.URL.Path == "/uc/posts/hello" {
 			writeConsoleData(c, "text/html; charset=utf-8", index.plain, index.gzip)
 			return
 		}
@@ -136,6 +164,17 @@ func TestUserCenterStaticAndFallbackData(t *testing.T) {
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/posts/hello", nil))
 	if w.Code != http.StatusOK || w.Body.String() != "<uc-app>" {
 		t.Fatalf("UC fallback = %d %q", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("UC fallback Cache-Control = %q, want no-cache", got)
+	}
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/uc/", nil))
+	if w.Code != http.StatusOK || w.Body.String() != "<uc-app>" {
+		t.Fatalf("UC index = %d %q", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("UC index Cache-Control = %q, want no-cache", got)
 	}
 }
 

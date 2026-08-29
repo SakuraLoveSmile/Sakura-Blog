@@ -86,6 +86,45 @@ func TestSitemapCacheKeyedByBaseURL(t *testing.T) {
 	}
 }
 
+// TestSitemapCacheInvalidateMultipleBaseURLs verifies that a content change
+// invalidates every host variant, not only the first variant rebuilt after it.
+func TestSitemapCacheInvalidateMultipleBaseURLs(t *testing.T) {
+	st, err := store.New(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	if _, err := st.Create(&store.Post{Slug: "before", Title: "之前", Status: store.StatusPublished}); err != nil {
+		t.Fatalf("create initial post: %v", err)
+	}
+	c := newContentCache(st, sitePtr(&tmpl.Site{}))
+
+	if _, err := c.sitemapXML("https://a.example"); err != nil {
+		t.Fatalf("build sitemap a: %v", err)
+	}
+	if _, err := c.sitemapXML("https://b.example"); err != nil {
+		t.Fatalf("build sitemap b: %v", err)
+	}
+	if _, err := st.Create(&store.Post{Slug: "after", Title: "之后", Status: store.StatusPublished}); err != nil {
+		t.Fatalf("create new post: %v", err)
+	}
+
+	c.sitemap.invalidate()
+	a, err := c.sitemapXML("https://a.example")
+	if err != nil {
+		t.Fatalf("rebuild sitemap a: %v", err)
+	}
+	b, err := c.sitemapXML("https://b.example")
+	if err != nil {
+		t.Fatalf("rebuild sitemap b: %v", err)
+	}
+	for name, data := range map[string][]byte{"a": a, "b": b} {
+		if !strings.Contains(string(data), "/post/after") {
+			t.Errorf("sitemap %s does not contain new post: %s", name, data)
+		}
+	}
+}
+
 // TestContentCacheConcurrentInvalidate（Spec 62）：invalidate（写 hook）与 get（请求路径）
 // 并发交错时无数据竞争且最终可见置脏后的新内容。配合 go test -race 验证 atomic.Bool 修复。
 func TestContentCacheConcurrentInvalidate(t *testing.T) {

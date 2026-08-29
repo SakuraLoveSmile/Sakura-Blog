@@ -208,6 +208,16 @@ export interface ShortcodeCatalogResponse {
 }
 
 //////////
+// source: shortcode_edit.go
+
+/**
+ * ShortcodeEditRequest is the raw Stellar shortcode sent by the property editor.
+ */
+export interface ShortcodeEditRequest {
+  raw: string;
+}
+
+//////////
 // source: uc.go
 
 /**

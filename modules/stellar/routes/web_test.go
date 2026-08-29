@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +16,37 @@ import (
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
 )
+
+func TestInvalidateSidebarCacheConcurrentWithReaders(t *testing.T) {
+	ws := &webServer{
+		sidebarCached: &sidebarSnapshot{},
+		sidebarExpiry: time.Now().Add(time.Hour),
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			ws.sidebarMu.Lock()
+			_ = ws.sidebarCached
+			_ = ws.sidebarExpiry
+			ws.sidebarMu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			ws.invalidateSidebarCache()
+		}
+	}()
+	wg.Wait()
+
+	ws.sidebarMu.Lock()
+	defer ws.sidebarMu.Unlock()
+	if !ws.sidebarExpiry.IsZero() {
+		t.Fatalf("sidebar expiry = %v, want zero", ws.sidebarExpiry)
+	}
+}
 
 func TestToCard(t *testing.T) {
 	site := &tmpl.Site{}

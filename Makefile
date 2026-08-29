@@ -54,12 +54,16 @@ dist-bootstrap:
 		echo "dist-bootstrap: dist 已存在，跳过"; \
 	fi
 
-## console-deps: 自举前端 workspace 依赖——根 node_modules 缺失时执行 pnpm install。
-## pnpm-lock.yaml 是 workspace 唯一锁文件，--frozen-lockfile 保证构建不隐式改锁。
+## console-deps: 自举前端 workspace 依赖——依赖缺失或 lockfile 指纹变化时执行 pnpm install。
+## pnpm-lock.yaml 是 workspace 唯一锁文件，--frozen-lockfile 保证构建不隐式改锁；
+## 安装成功后把指纹写入 node_modules，避免仅凭目录存在误判依赖仍是旧版本。
 console-deps:
-	@if [ ! -d node_modules/.pnpm ] || [ ! -e modules/console/web/node_modules/@blog/api-client ] || [ ! -e modules/console/web/node_modules/@blog/components ] || [ ! -e modules/console/web/node_modules/@blog/shared ] || [ ! -e modules/console/web/node_modules/@blog/editor ]; then \
+	@set -e; \
+	lock_hash="$$(scripts/console-input-hash.sh --lock)"; \
+	if [ ! -d node_modules/.pnpm ] || [ ! -e modules/console/web/node_modules/@blog/api-client ] || [ ! -e modules/console/web/node_modules/@blog/components ] || [ ! -e modules/console/web/node_modules/@blog/editor ] || [ ! -e modules/console/web/node_modules/@blog/plugin-runtime ] || [ ! -e modules/console/web/node_modules/@blog/shared ] || [ ! -f node_modules/.sakura-pnpm-lock.sha256 ] || [ "$$(cat node_modules/.sakura-pnpm-lock.sha256)" != "$$lock_hash" ]; then \
 		echo "console-deps: workspace 依赖缺失，执行 pnpm install --frozen-lockfile"; \
 		pnpm install --frozen-lockfile; \
+		printf '%s\n' "$$lock_hash" > node_modules/.sakura-pnpm-lock.sha256; \
 	else \
 		echo "console-deps: workspace 依赖已安装，跳过 pnpm install"; \
 	fi
@@ -176,16 +180,18 @@ run: build
 	./$(BINARY)
 
 ## dev: 开发模式（磁盘读模板/资源/modules/console/web dist，改样式即时生效）
-## 前端增量：仅当 console/dist 缺失或 console/src 较新时才重建（时间戳判断），否则跳过。
+## 前端增量：按 scripts/console-input-hash.sh 覆盖的完整输入指纹判断，避免只看 console/src 漏判。
 dev: console-deps
-	@if [ ! -d modules/console/web/dist ]; then \
-		echo "dev: console/dist 缺失，构建前端"; \
-		cd modules/console/web && pnpm run build; \
-	elif [ -n "$$(find modules/console/web/src -newer modules/console/web/dist -print -quit 2>/dev/null)" ]; then \
-		echo "dev: console/src 有更新，重建前端"; \
-		cd modules/console/web && pnpm run build; \
+	@set -e; \
+	input_hash="$$(scripts/console-input-hash.sh)"; \
+	input_hash_file="modules/console/web/dist/.input-hash"; \
+	if [ ! -f modules/console/web/dist/index.html ] || [ ! -f "$$input_hash_file" ] || [ "$$(cat "$$input_hash_file")" != "$$input_hash" ]; then \
+		echo "dev: Console 输入已变化或产物缺失，构建前端"; \
+		(cd modules/console/web && pnpm run build); \
+		input_hash="$$(scripts/console-input-hash.sh)"; \
+		printf '%s\n' "$$input_hash" > "$$input_hash_file"; \
 	else \
-		echo "dev: console/dist 为最新，跳过前端构建"; \
+		echo "dev: Console 输入未变化，跳过前端构建"; \
 	fi
 	go build -o $(BINARY) ./cmd/blog
 	./$(BINARY) -dev

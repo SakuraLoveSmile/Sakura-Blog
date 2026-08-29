@@ -38,8 +38,17 @@ export interface ShortcodeCatalogItem {
   param_docs: ShortcodeCatalogDoc[];
 }
 
+export interface ShortcodeEditResult {
+  name: string;
+  values: Record<string, unknown>;
+  editable: boolean;
+  /** 仅 hybrid 标签（navbar/frame）返回，标明当前 raw 是单行还是块级写法。 */
+  variant?: "inline" | "block";
+}
+
 export const pluginApi = {
   catalog: () => http.get<{ items: ShortcodeCatalogItem[] }>("/plugins/catalog"),
+  parseShortcode: (raw: string) => http.post<ShortcodeEditResult>("/plugins/shortcode/parse", { raw }),
   runtime: () => http.get<{ items: RuntimePluginManifest[] }>("/plugins/runtime"),
 };
 

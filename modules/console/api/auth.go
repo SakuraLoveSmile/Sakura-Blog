@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,9 +38,15 @@ type pendingToken struct {
 	expiresAt time.Time
 }
 
-func generate2FAToken(userID int64) string {
+func generate2FAToken(userID int64) (string, error) {
+	return generate2FATokenFrom(rand.Reader, userID)
+}
+
+func generate2FATokenFrom(reader io.Reader, userID int64) (string, error) {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := io.ReadFull(reader, b); err != nil {
+		return "", fmt.Errorf("read secure random bytes: %w", err)
+	}
 	token := base64.URLEncoding.EncodeToString(b)
 
 	pending2FA.Lock()
@@ -55,7 +63,7 @@ func generate2FAToken(userID int64) string {
 	}
 	pending2FA.Unlock()
 
-	return token
+	return token, nil
 }
 
 func consume2FAToken(token string) (int64, bool) {
@@ -138,7 +146,15 @@ func (h *Handler) login(c *gin.Context) {
 
 	// 检查 TOTP
 	if user != nil && user.TOTPSecret != "" {
-		token := generate2FAToken(user.ID)
+		generateToken := h.generate2FA
+		if generateToken == nil {
+			generateToken = generate2FAToken
+		}
+		token, err := generateToken(user.ID)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, "生成 2FA token 失败")
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"require_2fa": true, "token": token})
 		return
 	}

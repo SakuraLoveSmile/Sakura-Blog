@@ -78,8 +78,8 @@ func TestSecurityHeaders(t *testing.T) {
 
 	w2 := httptest.NewRecorder()
 	r.ServeHTTP(w2, httptest.NewRequest(http.MethodGet, "/console/x", nil))
-	if w2.Header().Get("Cache-Control") != "no-cache, no-store, must-revalidate" {
-		t.Errorf("console path should get no-cache, got %q", w2.Header().Get("Cache-Control"))
+	if w2.Header().Get("Cache-Control") != "" {
+		t.Errorf("security headers should not decide console cache policy, got %q", w2.Header().Get("Cache-Control"))
 	}
 }
 

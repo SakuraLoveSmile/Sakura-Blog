@@ -12,7 +12,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 	MainJS      bool
 	Height      int
 	Fallback    string
-	FormFields  []ShortcodeParamSchema
 	ParamDocs   []ShortcodeParamDoc
 }{
 	"note": {
@@ -20,11 +19,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带标题与配色的提示块，用于强调说明。",
 		Signature:   "{% note [color:颜色] [标题] 内容 %}",
 		Example:     "{% note color:green 提示 这是一条成功提示，支持 **Markdown** 行内语法。 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "blue", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "标题（可选）", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Placeholder: "提示"},
-			{Label: "内容", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "这是一条提示，支持 **Markdown** 行内语法。"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色：red/orange/yellow/green/cyan/blue/purple/gray", Default: "blue"},
 			{Name: "标题", Desc: "可选，第二个位置参数起为正文", Default: "—"},
@@ -35,11 +29,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带前缀图标的强调小标题，可作为锚点标题。",
 		Signature:   "{% quot [el:h2] [icon:图标] text:文本 %}",
 		Example:     "{% quot el:h2 text:这是一个小标题 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "标签", Key: "el", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "p", Options: []string{"p", "h2", "h3", "h4", "h5", "h6"}},
-			{Label: "图标 key", Key: "icon", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "hashtag"},
-			{Label: "标题文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "这是一个小标题"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "el", Desc: "标题标签：p/h2/h3/h4/h5/h6", Default: "p"},
 			{Name: "icon", Desc: "前缀图标 key（Iconify）", Default: "hashtag"},
@@ -51,10 +40,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内荧光笔高亮文本。",
 		Signature:   "{% mark 文本 [color:颜色] %}",
 		Example:     "这里有一段 {% mark 重点内容 color:cyan %} 需要高亮。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "重点内容"},
-			{Label: "颜色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "yellow", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "高亮颜色", Default: "yellow"},
 		},
@@ -64,15 +49,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "可点击的链接按钮。",
 		Signature:   "{% button 文本 链接 [color:颜色] [size:尺寸] %}",
 		Example:     "{% button 访问主页 https://example.com color:purple %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "按钮文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "访问主页"},
-			{Label: "链接", Key: "url", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "https://example.com"},
-			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "blue", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "尺寸", Key: "size", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "small", "large"}},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "按钮配色", Default: "blue"},
 			{Name: "size", Desc: "尺寸：small/large", Default: "—"},
+			{Name: "icon", Desc: "前置图标 key", Default: "—"},
 		},
 	},
 	"checkbox": {
@@ -80,14 +60,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内复选框，可用于清单展示。",
 		Signature:   "{% checkbox [checked] 文本 [color:颜色] %}",
 		Example:     "{% checkbox checked 已完成的任务 color:green %}\n{% checkbox 待办的任务 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "已完成的任务"},
-			{Label: "默认勾选", Key: "checked", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: "true"},
-			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "green", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "checked", Desc: "位置参数，出现即勾选", Default: "false"},
 			{Name: "color", Desc: "配色", Default: "blue"},
+			{Name: "symbol", Desc: "自定义勾选符号", Default: "—"},
 		},
 	},
 	"radio": {
@@ -95,14 +71,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内单选框，与 checkbox 同源（symbol 参数可换勾选项符号）。",
 		Signature:   "{% radio [checked] 文本 [color:颜色] %}",
 		Example:     "{% radio checked 选项一 color:blue %}\n{% radio 选项二 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "选项一"},
-			{Label: "默认选中", Key: "checked", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: "true"},
-			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "blue", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "checked", Desc: "位置参数，出现即选中", Default: "false"},
 			{Name: "color", Desc: "配色", Default: "blue"},
+			{Name: "symbol", Desc: "自定义选中符号", Default: "—"},
 		},
 	},
 	"hashtag": {
@@ -110,11 +82,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带 # 图标的话题标签，颜色可循环或指定。",
 		Signature:   "{% hashtag 文本 [链接] [color:颜色] %}",
 		Example:     "{% hashtag 日常 %} {% hashtag 技术 color:blue %} {% hashtag 随笔 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "日常"},
-			{Label: "链接（可选）", Key: "href", Type: ShortcodeParamText, Role: ShortcodeParamPositional},
-			{Label: "颜色（留空循环）", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "href", Desc: "可选跳转链接（位置参数）", Default: "—"},
 			{Name: "color", Desc: "缺省时按红橙黄绿青蓝紫循环", Default: "循环"},
@@ -128,10 +95,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      120,
 		Fallback:    "表情素材为本地资源；未收录的表情名显示占位。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "source", Desc: "来源：default(QQ)/qq/tieba/aru/blobcat/twemoji，省略用 default", Default: "default"},
 			{Name: "height", Desc: "自定义高度", Default: "—"},
+			{Name: "name", Desc: "表情名称（URL 模式下作为 alt）", Default: "—"},
+			{Name: "url", Desc: "外部图片 URL，非空时直接引用图片", Default: "—"},
 		},
 	},
 	"icon": {
@@ -139,14 +107,10 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "内联 Iconify 图标，可附文本。",
 		Signature:   "{% icon key [color:颜色] [文本] %}",
 		Example:     "{% icon example:planet color:blue %} 星球 {% icon example:chat color:red %} 点赞",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "图标 key", Key: "key", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "example:planet"},
-			{Label: "颜色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "blue", Options: []string{"red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "附文本（可选）", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "key", Desc: "Iconify 图标 key", Default: "—"},
 			{Name: "color", Desc: "图标颜色", Default: "blue"},
+			{Name: "style", Desc: "图标内联样式", Default: "—"},
 		},
 	},
 	"folding": {
@@ -158,12 +122,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		MainJS:      true,
 		Height:      180,
 		Fallback:    "折叠块为原生 details 结构，无需脚本即可展开/收起。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "默认展开", Key: "open", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: "true"},
-			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "点击查看详情"},
-			{Label: "正文", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "这里是折叠内容，支持 **Markdown**。"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色", Default: "—"},
 			{Name: "open", Desc: "true 时默认展开", Default: "false"},
@@ -178,7 +136,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		MainJS:      true,
 		Height:      220,
 		Fallback:    "Tab 切换依赖前台 main.js，加载失败时仅显示第一个标签页。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "active", Desc: "默认激活的标签序号（从 1 起）", Default: "1"},
 			{Name: "align", Desc: "标签对齐方式", Default: "—"},
@@ -192,7 +149,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      260,
 		Fallback:    "时间轴内容来自示例正文，无需外部数据。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"gallery": {
@@ -203,12 +159,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      320,
 		Fallback:    "图片墙展示本地示例图；灯箱（fancybox）资源不可用时点击无放大效果。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "布局", Key: "layout", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "grid", Options: []string{"grid", "flow"}},
-			{Label: "尺寸模式", Key: "size", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "mix"},
-			{Label: "宽高比", Key: "ratio", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "origin"},
-			{Label: "图片（每行一个 Markdown 图片）", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "![首页界面](/assets/img/preview/gallery-1.jpg)\n![文章界面](/assets/img/preview/gallery-2.jpg)\n![技术分享](/assets/img/preview/gallery-3.jpg)"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "layout", Desc: "布局：grid/flow", Default: "grid"},
 			{Name: "size", Desc: "尺寸模式", Default: "mix"},
@@ -224,7 +174,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		MainJS:      true,
 		Height:      260,
 		Fallback:    "折叠组为原生 details 结构，无需脚本即可展开/收起。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色", Default: "—"},
 		},
@@ -237,12 +186,12 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      240,
 		Fallback:    "信息卡为原生网格结构，列宽/间距/圆角由样式直接呈现。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "w", Desc: "最小列宽（如 240px），与 c 二选一", Default: "240px"},
 			{Name: "c", Desc: "固定列数", Default: "—"},
 			{Name: "gap", Desc: "单元格间距", Default: "—"},
 			{Name: "br", Desc: "单元格圆角", Default: "—"},
+			{Name: "bg", Desc: "单元格背景样式：card", Default: "—"},
 		},
 	},
 	"blockquote": {
@@ -250,7 +199,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带引号图标的增强引用块，支持首行缩进。",
 		Signature:   "{% blockquote [indent:true/false] %} 引用正文 {% endblockquote %}",
 		Example:     "{% blockquote indent:true %}\n引用正文，支持多段落 Markdown。\n{% endblockquote %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "indent", Desc: "段落首行缩进 2 字符", Default: "false"},
 		},
@@ -260,14 +208,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "横幅容器：背景图 + 头像 + 标题/副标题 + 正文，可整块链接跳转。",
 		Signature:   "{% banner [title:标题] [subtitle:副标题] [bg:背景图] [avatar:头像] [link:链接] %} 正文 {% endbanner %}",
 		Example:     "{% banner title:我的博客 subtitle:记录技术成长 bg:/assets/img/preview/banner-bg.jpg avatar:/assets/img/preview/avatar-blog.svg %}\n欢迎来到我的小站。\n{% endbanner %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "我的博客"},
-			{Label: "副标题", Key: "subtitle", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "记录技术成长"},
-			{Label: "背景图 URL", Key: "bg", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "/assets/img/preview/banner-bg.jpg"},
-			{Label: "头像 URL（可选）", Key: "avatar", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "/assets/img/preview/avatar-blog.svg"},
-			{Label: "跳转链接（可选）", Key: "link", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-			{Label: "正文", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "欢迎来到我的小站。"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "title", Desc: "标题文本", Default: "—"},
 			{Name: "subtitle", Desc: "副标题文本", Default: "—"},
@@ -285,10 +225,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		MainJS:      true,
 		Height:      160,
 		Fallback:    "导航栏高亮依赖前台脚本，加载失败时仅显示静态链接。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "高亮项文本", Key: "active", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "首页"},
-			{Label: "导航链接（每行 [文本](链接)）", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "[首页](https://example.com/)\n[关于](https://example.com/about)\n[作品](https://example.com/works)"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "active", Desc: "当前高亮项的链接文本", Default: "—"},
 		},
@@ -298,11 +234,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "把图片/视频嵌入 iPhone/iPad/MacBook 纯 CSS 设备外壳。",
 		Signature:   "{% frame device:iphone [width:最大宽度] %} ![截图](url) {% endframe %}",
 		Example:     "{% frame device:iphone width:320px %}\n![手机界面截图](/assets/img/preview/frame-shot.jpg)\n{% endframe %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "设备", Key: "device", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "iphone", Options: []string{"iphone", "ipad", "macbook"}},
-			{Label: "最大宽度（可选）", Key: "width", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "320px"},
-			{Label: "媒体内容（Markdown 图片/视频）", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "![手机界面截图](/assets/img/preview/frame-shot.jpg)"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "device", Desc: "设备：iphone/ipad/macbook", Default: "iphone"},
 			{Name: "width", Desc: "容器最大宽度（如 320px）", Default: "—"},
@@ -313,12 +244,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "带标题的卡片容器，正文支持 Markdown。",
 		Signature:   "{% box [color:颜色] [child:子色] 标题 %} 正文 {% endbox %}",
 		Example:     "{% box color:green 卡片标题 %}\n卡片正文，支持 **Markdown**。\n{% endbox %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "外框配色", Key: "color", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "子元素配色", Key: "child", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Options: []string{"", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "gray"}},
-			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "卡片标题"},
-			{Label: "正文", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "卡片正文，支持 **Markdown**。"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "外框配色", Default: "—"},
 			{Name: "child", Desc: "子元素配色", Default: "—"},
@@ -329,7 +254,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "关于页卡片：头像 + 正文（Markdown），可选返回箭头与头像边框。",
 		Signature:   "{% about [avatar:头像] [border:边框色] [height:头像高] [back:true] %} 正文 {% endabout %}",
 		Example:     "{% about avatar:/assets/img/preview/avatar-blog.svg %}\n这里写关于页正文，支持 **Markdown**。\n{% endabout %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "avatar", Desc: "头像图片 URL", Default: "—"},
 			{Name: "border", Desc: "头像边框颜色", Default: "—"},
@@ -345,10 +269,11 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      160,
 		Fallback:    "预览展示 TOC 容器骨架；真实文章页由前台脚本填充目录项。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "title", Desc: "目录标题（位置参数）", Default: "TOC"},
 			{Name: "display", Desc: "mobile=仅移动端显示", Default: "—"},
+			{Name: "wiki", Desc: "Wiki 项目（文档树未启用时输出空）", Default: "—"},
+			{Name: "open", Desc: "false 时收起目录", Default: "true"},
 		},
 	},
 	"mbti": {
@@ -356,12 +281,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "MBTI 人格特征卡片：类型名 + 五维百分比进度条 + 可选档案链接（1.38 新增）。",
 		Signature:   "{% mbti 类型 百分比-百分比-百分比-百分比-百分比 [url:档案链接] [image:横幅图片] %}",
 		Example:     "{% mbti INTJ-T 93-72-78-83-51 url:https://www.16personalities.com/ch/档案/9d09a4297ffa2 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "人格类型", Key: "type", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "INTJ-T", Placeholder: "INTJ-T"},
-			{Label: "五维百分比", Key: "scores", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "93-72-78-83-51", Placeholder: "93-72-78-83-51"},
-			{Label: "档案链接（可选）", Key: "url", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Placeholder: "https://www.16personalities.com/..."},
-			{Label: "横幅图片（可选）", Key: "image", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Placeholder: "https://..."},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "type", Desc: "人格类型代码（如 INTJ-T，大小写均可）", Default: "—"},
 			{Name: "scores", Desc: "五个百分比，- 分隔，顺序：精力-认知-决策-生活-身份", Default: "—"},
@@ -374,7 +293,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "居中排版的诗词区块，含标题/作者/日期/页脚。",
 		Signature:   "{% poetry [标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endpoetry %}",
 		Example:     "{% poetry 静夜思 author:李白 %}\n床前明月光，\n疑是地上霜。\n举头望明月，\n低头思故乡。\n{% endpoetry %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "author", Desc: "作者", Default: "—"},
 			{Name: "date", Desc: "日期", Default: "—"},
@@ -386,7 +304,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "信纸排版卡片，正文可用 <!-- paragraph/section/line --> 标记分段。",
 		Signature:   "{% paper [style:underline] [title:标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endpaper %}",
 		Example:     "{% paper title:一封家书 author:张三 %}\n<!-- paragraph -->\n见字如面。\n<!-- line right -->\n勿念。\n{% endpaper %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "style", Desc: "标题下划线装饰：underline", Default: "—"},
 			{Name: "title", Desc: "标题", Default: "—"},
@@ -400,7 +317,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "胶片卷轴式卡片，正文按行排列，含标题/作者/日期/页脚。",
 		Signature:   "{% reel [标题] [author:作者] [date:日期] [footer:页脚] %} 正文 {% endreel %}",
 		Example:     "{% reel 观影手记 author:阿甘 date:2026-07 %}\n第 1 帧：开场长镜头。\n第 2 帧：主角登场。\n{% endreel %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "author", Desc: "作者", Default: "—"},
 			{Name: "date", Desc: "日期", Default: "—"},
@@ -412,7 +328,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内密码遮罩，默认模糊隐藏，悬停显示明文。",
 		Signature:   "{% psw 隐藏文本 %}",
 		Example:     "这里是 {% psw 密码内容 %} 遮罩文本。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"emp": {
@@ -420,7 +335,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内着重强调：下划线 + 粗体。",
 		Signature:   "{% emp 着重文本 %}",
 		Example:     "这段话里 {% emp 重点强调 %} 一下。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"wavy": {
@@ -428,7 +342,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内波浪线装饰文本。",
 		Signature:   "{% wavy 波浪文本 %}",
 		Example:     "这里用 {% wavy 波浪线 %} 标注。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"blur": {
@@ -436,7 +349,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内模糊文本，悬停变清晰。",
 		Signature:   "{% blur 模糊文本 %}",
 		Example:     "剧透警告：{% blur 结局大反转 %}。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"sub": {
@@ -444,7 +356,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内下标文本，可选彩色。",
 		Signature:   "{% sub [color:颜色] 下标文本 %}",
 		Example:     "化学式 H{% sub 2 %}O 与上标 m{% sup 2 %}。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色：red/orange/yellow/green/cyan/blue/purple/gray", Default: "—"},
 		},
@@ -454,7 +365,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内上标文本，可选彩色（与 sub 配对）。",
 		Signature:   "{% sup [color:颜色] 上标文本 %}",
 		Example:     "面积 m{% sup 2 %}。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色：red/orange/yellow/green/cyan/blue/purple/gray", Default: "—"},
 		},
@@ -464,7 +374,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内下划线文本。",
 		Signature:   "{% u 文本 %}",
 		Example:     "这里需要 {% u 下划线 %} 标注。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"del": {
@@ -472,7 +381,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内删除线文本。",
 		Signature:   "{% del 文本 %}",
 		Example:     "原价 {% del 999 元 %}，现价 599 元。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"kbd": {
@@ -480,7 +388,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "行内键盘按键样式。",
 		Signature:   "{% kbd 按键 %}",
 		Example:     "按下 {% kbd Ctrl %} + {% kbd C %} 复制。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"image": {
@@ -491,19 +398,14 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      300,
 		Fallback:    "示例图片为本地资源；手动填入的外链图片在无网络时显示占位。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "图片地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/img/preview/image-demo.jpg"},
-			{Label: "替代文本", Key: "alt", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "风景图"},
-			{Label: "宽度", Key: "width", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "80%"},
-			{Label: "背景色", Key: "bg", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-			{Label: "显示下载按钮", Key: "download", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag},
-			{Label: "宽高比（如 16/9）", Key: "ratio", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "width", Desc: "宽度（如 300px / 50%）", Default: "100%"},
 			{Name: "bg", Desc: "背景色", Default: "—"},
 			{Name: "download", Desc: "true 显示下载按钮", Default: "false"},
 			{Name: "ratio", Desc: "宽高比（如 16/9）", Default: "—"},
+			{Name: "height", Desc: "高度（如 300px / 50%）", Default: "—"},
+			{Name: "padding", Desc: "内边距", Default: "—"},
+			{Name: "fancybox", Desc: "灯箱分组名", Default: "—"},
 		},
 	},
 	"link": {
@@ -511,12 +413,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "链接卡片，带描述时为上下结构(rich)，否则左右结构(plain)。",
 		Signature:   "{% link url [标题] [desc:描述] [icon:图标URL] %}",
 		Example:     "{% link https://example.com 示例站点 desc:一个示例链接卡片 %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "链接", Key: "url", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "https://example.com"},
-			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "示例站点"},
-			{Label: "描述（提供则用 rich 布局）", Key: "desc", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "一个示例链接卡片"},
-			{Label: "图标/缩略图 URL", Key: "icon", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "desc", Desc: "描述，提供则用 rich 布局", Default: "—"},
 			{Name: "icon", Desc: "图标/缩略图 URL", Default: "—"},
@@ -530,19 +426,13 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      320,
 		Fallback:    "示例视频为本地资源（体积受控）。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "视频地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/media/preview/sample-video.mp4"},
-			{Label: "B 站 BV 号（可选）", Key: "bilibili", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-			{Label: "宽高比", Key: "ratio", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "16/9"},
-			{Label: "最大宽度", Key: "width", Type: ShortcodeParamText, Role: ShortcodeParamNamed, Default: "100%"},
-			{Label: "自动播放", Key: "autoplay", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "bilibili", Desc: "B 站 BV 号", Default: "—"},
 			{Name: "youtube", Desc: "YouTube 视频 ID", Default: "—"},
 			{Name: "ratio", Desc: "宽高比", Default: "16/9"},
 			{Name: "width", Desc: "最大宽度", Default: "100%"},
 			{Name: "autoplay", Desc: "自动播放", Default: "false"},
+			{Name: "type", Desc: "MIME 类型（如 video/mp4）", Default: "—"},
 		},
 	},
 	"audio": {
@@ -553,11 +443,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      120,
 		Fallback:    "示例音频为本地资源（体积受控）。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "音频地址", Key: "src", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "/assets/media/preview/sample-audio.mp3"},
-			{Label: "网易云歌曲 ID（可选）", Key: "netease", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-			{Label: "自动播放", Key: "autoplay", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "netease", Desc: "网易云歌曲 ID", Default: "—"},
 			{Name: "type", Desc: "MIME 类型", Default: "audio/mp3"},
@@ -573,11 +458,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Services:    []string{"swiper"},
 		Height:      320,
 		Fallback:    "Swiper 资源加载失败时轮播不可滑动，图片仍按列表展示。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "宽度语义", Key: "width", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "", Options: []string{"", "min", "max"}},
-			{Label: "切换效果", Key: "effect", Type: ShortcodeParamSelect, Role: ShortcodeParamNamed, Default: "slide", Options: []string{"slide", "fade", "coverflow", "cards"}},
-			{Label: "轮播图片（每行一张 Markdown 图片）", Key: "content", Type: ShortcodeParamTextarea, Role: ShortcodeParamContent, Default: "![](/assets/img/preview/swiper-1.jpg)\n![](/assets/img/preview/swiper-2.jpg)"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "width", Desc: "min→窄轮播（slide 25% 宽）/max→容器限宽 800px", Default: "—"},
 			{Name: "effect", Desc: "slide/fade/coverflow/cards（后两者需 JS 参数透传）", Default: "slide"},
@@ -593,7 +473,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "friends",
 		Height:      300,
 		Fallback:    "专辑数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "—"},
@@ -610,7 +489,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "friends",
 		Height:      300,
 		Fallback:    "海报数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "—"},
@@ -622,10 +500,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "一键复制文本，支持 git 仓库地址快捷生成。",
 		Signature:   "{% copy 文本 %} / {% copy git:user/repo %}",
 		Example:     "{% copy npm install stellar-theme %}\n{% copy git:user/repo %}",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "复制文本", Key: "text", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "npm install stellar-theme"},
-			{Label: "git 仓库（user/repo，可选）", Key: "git", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "git", Desc: "ssh/gh/https，按仓库路径生成克隆命令", Default: "—"},
 			{Name: "prefix", Desc: "前缀标签文本", Default: "—"},
@@ -641,10 +515,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "rating",
 		Height:      180,
 		Fallback:    "评分数据为预览 Fixture，不写入真实统计；加载失败时显示 0 分。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "评分对象 ID", Key: "id", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "demo-post"},
-			{Label: "标题", Key: "title", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "给这篇文章打分"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "id", Desc: "评分对象唯一 ID", Default: "default"},
 			{Name: "title", Desc: "标题（位置参数）", Default: "—"},
@@ -660,7 +530,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "vote",
 		Height:      180,
 		Fallback:    "投票数据为预览 Fixture，不写入真实统计；加载失败时显示 0 票。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "id", Desc: "投票对象唯一 ID", Default: "default"},
 			{Name: "yes", Desc: "赞成按钮图标 key", Default: "ri:arrow-up-line"},
@@ -677,9 +546,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "friends",
 		Height:      320,
 		Fallback:    "友链数据为本地 Fixture；加载失败时显示空态。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "/api/friends"},
+			{Name: "posts", Desc: "true 时渲染带 RSS 文章列表的友链流", Default: "false"},
 		},
 	},
 	"moments": {
@@ -691,9 +560,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "moments",
 		Height:      420,
 		Fallback:    "瞬间数据来自当前站点；组件库预览使用确定性本地 Fixture。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "显示条数", Key: "limit", Type: ShortcodeParamNumber, Role: ShortcodeParamNamed, Default: 5, Hint: "最多显示 50 条"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "limit", Desc: "显示最新公开瞬间的条数，范围 1-50", Default: "5"},
 		},
@@ -708,7 +574,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "sites",
 		Height:      320,
 		Fallback:    "站点数据为本地 Fixture；加载失败时显示空态。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "api", Desc: "数据服务 URL（必填）", Default: "—"},
 		},
@@ -723,9 +588,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "md",
 		Height:      320,
 		Fallback:    "外部 Markdown 为本地 Fixture；marked 为本地 vendor，加载失败时显示本提示。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "src", Desc: "Markdown 文件 URL", Default: "—"},
+			{Name: "wrap", Desc: "false 时用拉取内容替换容器", Default: "true"},
 		},
 	},
 	"mermaid": {
@@ -737,7 +602,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Services:    []string{"mermaid"},
 		Height:      320,
 		Fallback:    "Mermaid 为本地 vendor（11.16.1），加载失败时保留图表源码并显示本提示。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"okr": {
@@ -745,7 +609,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Description: "OKR 目标与关键结果展示，用 <!-- okr krN --> 分隔 KR。",
 		Signature:   "{% okr o1 [percent:50] [status:in_track] %} 目标 <!-- okr kr1 percent:80 --> 关键结果 {% endokr %}",
 		Example:     "{% okr o1 percent:60 status:in_track %}\n提升博客阅读体验\n<!-- okr kr1 percent:80 -->\n完成标签插件三期\n<!-- okr kr2 percent:40 -->\n上线站内搜索\n{% endokr %}",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "percent", Desc: "完成百分比", Default: "—"},
 			{Name: "status", Desc: "in_track/at_risk/off_track/finished/unfinished", Default: "in_track"},
@@ -760,7 +623,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		PreviewSet:  true,
 		Height:      360,
 		Fallback:    "聊天记录为服务端渲染结构，头像为本地素材。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "style", Desc: "样式：qq/wechat", Default: "qq"},
 			{Name: "scene", Desc: "场景：group（全员左对齐）/single（me 靠右）", Default: "group"},
@@ -776,15 +638,16 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "gh",
 		Height:      200,
 		Fallback:    "GitHub 卡片使用服务端确定性 Fixture，不发公网请求。",
-		FormFields: []ShortcodeParamSchema{
-			{Label: "user/repo 或 user", Key: "repo", Type: ShortcodeParamText, Role: ShortcodeParamPositional, Default: "anuraghazra/github-readme-stats"},
-			{Label: "主题", Key: "theme", Type: ShortcodeParamText, Role: ShortcodeParamNamed},
-			{Label: "显示仓库所有者", Key: "show_owner", Type: ShortcodeParamSwitch, Role: ShortcodeParamFlag, Default: "true"},
-		},
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "theme", Desc: "卡片主题", Default: "—"},
 			{Name: "show_owner", Desc: "显示仓库所有者", Default: "true"},
 			{Name: "title_color", Desc: "标题颜色", Default: "—"},
+			{Name: "text_color", Desc: "文本颜色", Default: "—"},
+			{Name: "icon_color", Desc: "图标颜色", Default: "—"},
+			{Name: "bg_color", Desc: "背景颜色", Default: "—"},
+			{Name: "hide_border", Desc: "隐藏卡片边框", Default: "false"},
+			{Name: "cache_seconds", Desc: "卡片缓存秒数", Default: "—"},
+			{Name: "locale", Desc: "卡片语言", Default: "—"},
 		},
 	},
 	"ghrepo": {
@@ -796,7 +659,6 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "gh",
 		Height:      200,
 		Fallback:    "仓库卡片使用服务端确定性 Fixture，不发公网请求。",
-		FormFields:  []ShortcodeParamSchema{},
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 	"ghuser": {
@@ -808,7 +670,31 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fixture:     "gh",
 		Height:      200,
 		Fallback:    "用户卡片使用服务端确定性 Fixture，不发公网请求。",
-		FormFields:  []ShortcodeParamSchema{},
+		ParamDocs:   []ShortcodeParamDoc{},
+	},
+	"tip": {
+		Title:       "行内提示 Tip",
+		Description: "带悬浮说明气泡的行内提示，正文按 Markdown 渲染。",
+		Signature:   "{% tip [text:说明] %} 内容 {% endtip %}",
+		Example:     "{% tip text:这是说明 %}\n被提示的内容\n{% endtip %}",
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "text", Desc: "悬浮说明文案（也可用位置参数）", Default: "—"},
+		},
+	},
+	"table": {
+		Title:       "增强表格 Table",
+		Description: "表格容器，style 控制横向滚动、换行与紧凑三种呈现。",
+		Signature:   "{% table [style:scroll] %} 表格 Markdown {% endtable %}",
+		Example:     "{% table style:scroll %}\n| 列一 | 列二 |\n| --- | --- |\n| A | B |\n{% endtable %}",
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "style", Desc: "scroll（横向滚动）/wrap（换行）/compact（紧凑）", Default: "scroll"},
+		},
+	},
+	"links": {
+		Title:       "友链分组 Links",
+		Description: "按站点 links 配置分组直出友链卡片流，无参数。",
+		Signature:   "{% links %}",
+		Example:     "{% links %}",
 		ParamDocs:   []ShortcodeParamDoc{},
 	},
 }

@@ -1,6 +1,32 @@
 package store
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+	"time"
+)
+
+// Migration describes one schema change after the legacy schema baseline.
+// Each Up function runs in its own transaction; the ledger row is committed
+// in the same transaction only after Up succeeds.
+type Migration struct {
+	Version int
+	Name    string
+	Up      func(*sql.Tx) error
+}
+
+// schemaMigrations intentionally starts with a no-op baseline. Existing
+// Ensure*/ALTER code remains the legacy schema bootstrap and is not replayed
+// through the ledger. New migrations should be appended in increasing order.
+var schemaMigrations = []Migration{
+	{Version: 1, Name: "legacy-baseline"},
+}
+
+const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
+	version    INTEGER PRIMARY KEY,
+	name       TEXT NOT NULL,
+	applied_at TEXT NOT NULL
+)`
 
 // tableDDL 独立表建表 DDL 注册表（EnsureSchema/ensureTable 统一执行，幂等）。
 // 值可含多条语句（分号分隔，SQLite Exec 支持）；posts/comments 两张核心表仍在
@@ -354,6 +380,81 @@ func (s *Store) EnsureSchema() error {
 	}
 	if err := s.EnsurePagesTable(); err != nil {
 		return err
+	}
+	return s.applyMigrations(schemaMigrations)
+}
+
+func (s *Store) ensureMigrationLedger() error {
+	if _, err := s.db.Exec(schemaMigrationsDDL); err != nil {
+		return fmt.Errorf("create schema_migrations table: %w", err)
+	}
+	return nil
+}
+
+// applyMigrations validates and applies an ordered migration list. It is kept
+// separate from the legacy Ensure* bootstrap so future migrations can be
+// added without moving or replaying historical ALTER statements.
+func (s *Store) applyMigrations(migrations []Migration) error {
+	if err := s.ensureMigrationLedger(); err != nil {
+		return err
+	}
+	for i, migration := range migrations {
+		if migration.Version <= 0 || migration.Name == "" {
+			return fmt.Errorf("invalid schema migration at index %d", i)
+		}
+		if i > 0 && migration.Version <= migrations[i-1].Version {
+			return fmt.Errorf("schema migrations must be strictly increasing: %d after %d", migration.Version, migrations[i-1].Version)
+		}
+	}
+
+	applied := map[int]string{}
+	rows, err := s.db.Query(`SELECT version, name FROM schema_migrations`)
+	if err != nil {
+		return fmt.Errorf("read schema migration ledger: %w", err)
+	}
+	for rows.Next() {
+		var version int
+		var name string
+		if err := rows.Scan(&version, &name); err != nil {
+			rows.Close()
+			return fmt.Errorf("scan schema migration ledger: %w", err)
+		}
+		applied[version] = name
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("iterate schema migration ledger: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close schema migration ledger: %w", err)
+	}
+
+	for _, migration := range migrations {
+		if name, ok := applied[migration.Version]; ok {
+			if name != migration.Name {
+				return fmt.Errorf("schema migration version %d name mismatch: ledger=%q code=%q", migration.Version, name, migration.Name)
+			}
+			continue
+		}
+
+		tx, err := s.db.Begin()
+		if err != nil {
+			return fmt.Errorf("begin schema migration %d %s: %w", migration.Version, migration.Name, err)
+		}
+		if migration.Up != nil {
+			if err := migration.Up(tx); err != nil {
+				tx.Rollback()
+				return fmt.Errorf("apply schema migration %d %s: %w", migration.Version, migration.Name, err)
+			}
+		}
+		if _, err := tx.Exec(`INSERT INTO schema_migrations(version, name, applied_at) VALUES(?, ?, ?)`, migration.Version, migration.Name, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("record schema migration %d %s: %w", migration.Version, migration.Name, err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit schema migration %d %s: %w", migration.Version, migration.Name, err)
+		}
+		applied[migration.Version] = migration.Name
 	}
 	return nil
 }

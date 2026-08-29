@@ -1,6 +1,6 @@
 module blog
 
-go 1.25.5
+go 1.26.6
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
@@ -14,9 +14,9 @@ require (
 	github.com/rivo/uniseg v0.4.7
 	github.com/yuin/goldmark v1.8.4
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.51.0
 	golang.org/x/image v0.44.0
-	golang.org/x/net v0.51.0
+	golang.org/x/net v0.55.0
 	modernc.org/sqlite v1.54.0
 )
 
@@ -54,7 +54,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
-	github.com/quic-go/quic-go v0.59.0 // indirect
+	github.com/quic-go/quic-go v0.59.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect

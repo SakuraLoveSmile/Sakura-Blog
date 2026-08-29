@@ -201,6 +201,8 @@ func (s *webServer) baseURL(c *gin.Context) string {
 
 // invalidateSidebarCache 侧边栏快照立即失效（整站恢复后用，Spec 41）；平时靠 45s TTL 自然过期。
 func (s *webServer) invalidateSidebarCache() {
+	s.sidebarMu.Lock()
+	defer s.sidebarMu.Unlock()
 	s.sidebarExpiry = time.Time{}
 }
 
