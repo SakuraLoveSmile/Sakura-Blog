@@ -305,8 +305,9 @@ func New(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("mkdir db dir %s: %w", dir, err)
 	}
 
-	// 用 file: DSN 启用 WAL 与忙等待，提升并发读 + 避免短暂锁冲突
-	dsn := "file:" + dbPath + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+	// 用 file: DSN 启用 WAL、忙等待与外键约束，提升并发读、避免短暂锁冲突，
+	// 并让 schema 中声明的关系约束在每个连接上真正生效。
+	dsn := "file:" + dbPath + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite %s: %w", dbPath, err)
@@ -316,6 +317,15 @@ func New(dbPath string) (*Store, error) {
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("ping sqlite: %w", err)
+	}
+	var foreignKeys int
+	if err := db.QueryRow(`PRAGMA foreign_keys`).Scan(&foreignKeys); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("check sqlite foreign keys: %w", err)
+	}
+	if foreignKeys != 1 {
+		db.Close()
+		return nil, fmt.Errorf("sqlite foreign keys are disabled")
 	}
 
 	// Spec 62：DB 含用户邮箱/TOTP 密钥/bcrypt 哈希/API token 哈希，
@@ -955,10 +965,14 @@ func (s *Store) ListRecentPosts(n int) ([]*Post, error) {
 
 // PurgePost 彻底删除文章（物理删除记录）。
 func (s *Store) PurgePost(slug string) error {
-	_, err := s.db.Exec(`DELETE FROM post_authors WHERE post_id = (SELECT id FROM posts WHERE slug = ? AND deleted_at != '')`, slug)
-	if err != nil {
-		return fmt.Errorf("delete authors for purged post %s: %w", slug, err)
+	if exists, err := s.tableExists("post_authors"); err != nil {
+		return err
+	} else if exists {
+		if _, err := s.db.Exec(`DELETE FROM post_authors WHERE post_id = (SELECT id FROM posts WHERE slug = ? AND deleted_at != '')`, slug); err != nil {
+			return fmt.Errorf("delete authors for purged post %s: %w", slug, err)
+		}
 	}
+	var err error
 	_, err = s.db.Exec(`DELETE FROM posts WHERE slug = ? AND deleted_at != ''`, slug)
 	if err != nil {
 		return fmt.Errorf("purge post %s: %w", slug, err)
@@ -1044,6 +1058,16 @@ func (s *Store) replacePostAuthors(postID int64, authorIDs []int64) error {
 }
 
 func replacePostAuthorsTx(tx *sql.Tx, postID int64, authorIDs []int64) error {
+	var exists int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_authors'`).Scan(&exists); err != nil {
+		return err
+	}
+	if exists == 0 {
+		if len(normalizeAuthorIDs(authorIDs)) == 0 {
+			return nil
+		}
+		return errors.New("post_authors table is not ready")
+	}
 	if _, err := tx.Exec(`DELETE FROM post_authors WHERE post_id = ?`, postID); err != nil {
 		return err
 	}
