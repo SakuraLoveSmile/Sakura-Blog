@@ -197,13 +197,13 @@ except: pass
   echo "$asset_url"
 }
 
-# 健康检查：systemd 处于 active 状态，且本地端口 HTTP 探测返回 2xx/3xx
+# 健康检查：systemd 处于 active 状态，且本地 readiness 端点返回 2xx/3xx
 # 注意：脚本全局导出了 http_proxy，本地探测必须 --noproxy 绕过代理
 check_health() {
   systemctl is-active --quiet "$SERVICE_NAME" || return 1
   local code=""
   code=$(curl -s -o /dev/null -w "%{http_code}" --noproxy '*' \
-    --max-time 5 "http://127.0.0.1:${HEALTH_PORT}/" 2>/dev/null || echo "000")
+    --max-time 5 "http://127.0.0.1:${HEALTH_PORT}/readyz" 2>/dev/null || echo "000")
   [[ "$code" =~ ^(200|301|302|303|307|308)$ ]]
 }
 

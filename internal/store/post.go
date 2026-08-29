@@ -2,6 +2,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -340,6 +341,12 @@ func (s *Store) DBPath() string {
 // Close 关闭底层数据库连接。
 func (s *Store) Close() error {
 	return s.db.Close()
+}
+
+// PingContext reports whether the SQLite connection is usable within the
+// caller's deadline. It keeps the database handle private to the store layer.
+func (s *Store) PingContext(ctx context.Context) error {
+	return s.db.PingContext(ctx)
 }
 
 func (s *Store) createTables() error {

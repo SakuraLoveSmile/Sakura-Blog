@@ -45,6 +45,9 @@ fail() {
   exit 1
 }
 
+health_definition="$(declare -f check_health)"
+[[ "$health_definition" == *"/readyz"* ]] || fail "health check should use /readyz"
+
 assert_file_content() {
   local path="$1" expected="$2" actual
   actual="$(cat "$path")"
