@@ -70,6 +70,16 @@ type ShortcodeParamDoc struct {
 	Default string `json:"default,omitempty"`
 }
 
+// ShortcodeEditSchema describes the safety boundary of the visual editor.
+// Params remains the field layout; this schema owns whether editing is
+// enabled and which values are required to preserve renderer semantics.
+type ShortcodeEditSchema struct {
+	Enabled     bool       `json:"enabled"`
+	Required    []string   `json:"required,omitempty"`
+	RequiredAny [][]string `json:"required_any,omitempty"`
+	LegacyArgs  []string   `json:"legacy_args,omitempty"`
+}
+
 // ShortcodeCatalogEntry is the backend source of truth for parsed shortcode tags.
 type ShortcodeCatalogEntry struct {
 	Name        string                 `json:"name"`
@@ -87,6 +97,7 @@ type ShortcodeCatalogEntry struct {
 	Fallback    string                 `json:"fallback,omitempty"`
 	Params      []ShortcodeParamSchema `json:"params"`
 	ParamDocs   []ShortcodeParamDoc    `json:"param_docs"`
+	Edit        ShortcodeEditSchema    `json:"edit"`
 }
 
 type shortcodeRegistration struct {
@@ -149,9 +160,15 @@ func shortcodeEntry(name string, typ ShortcodeType, category string, capability 
 	return shortcodeRegistration{
 		entry: ShortcodeCatalogEntry{
 			Name: name, Type: typ, Category: category, Capability: capability, Params: params,
+			Edit: ShortcodeEditSchema{Enabled: true},
 		},
 		parser: parser,
 	}
+}
+
+func (r shortcodeRegistration) withEdit(schema ShortcodeEditSchema) shortcodeRegistration {
+	r.entry.Edit = schema
+	return r
 }
 
 // shortcodeRegistry is deliberately adjacent to the parser's regexp names:
@@ -161,18 +178,18 @@ var shortcodeRegistry = []shortcodeRegistration{
 	shortcodeEntry("note", ShortcodeInline, "提示标注", ShortcodeStatic, reNote,
 		namedSelect("color", "配色", "blue", shortcodeColors...), positional("title", "标题（可选）", nil), content("content", "内容", nil)),
 	shortcodeEntry("quot", ShortcodeInline, "提示标注", ShortcodeStatic, reQuot,
-		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"), named("text", "标题文本", nil)),
+		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"), named("text", "标题文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
 	shortcodeEntry("mark", ShortcodeInline, "提示标注", ShortcodeStatic, reMark,
-		positional("text", "文本", "重点内容"), namedSelect("color", "颜色", "yellow", shortcodeColors...)),
+		positional("text", "文本", "重点内容"), namedSelect("color", "颜色", "yellow", shortcodeColors...)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("button", ShortcodeInline, "提示标注", ShortcodeStatic, reButton,
 		positional("text", "按钮文本", "访问主页"), positional("url", "链接", "https://example.com"),
-		namedSelect("color", "配色", "blue", shortcodeColors...), namedSelect("size", "尺寸", nil, "", "small", "large"), named("icon", "图标 key", nil)),
+		namedSelect("color", "配色", "blue", shortcodeColors...), namedSelect("size", "尺寸", nil, "", "small", "large"), named("icon", "图标 key", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text", "url"}}),
 	shortcodeEntry("checkbox", ShortcodeInline, "提示标注", ShortcodeStatic, reCheckbox,
 		positional("text", "文本", "已完成的任务"), flag("checked", "默认勾选", true),
-		namedSelect("color", "配色", "green", shortcodeColors...), named("symbol", "勾选符号", nil)),
+		namedSelect("color", "配色", "green", shortcodeColors...), named("symbol", "勾选符号", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("radio", ShortcodeInline, "提示标注", ShortcodeStatic, reCheckbox,
 		positional("text", "文本", "选项一"), flag("checked", "默认选中", true),
-		namedSelect("color", "配色", "blue", shortcodeColors...), named("symbol", "选中符号", nil)),
+		namedSelect("color", "配色", "blue", shortcodeColors...), named("symbol", "选中符号", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("hashtag", ShortcodeInline, "提示标注", ShortcodeStatic, reHashtag,
 		positional("text", "文本", "日常"), positional("href", "链接（可选）", nil),
 		namedSelect("color", "颜色（留空循环）", nil, shortcodeColors...)),
@@ -203,17 +220,17 @@ var shortcodeRegistry = []shortcodeRegistration{
 	shortcodeEntry("table", ShortcodeBlock, "布局容器", ShortcodeStatic, reTable,
 		namedSelect("style", "样式", nil, "scroll", "wrap", "compact"), content("content", "表格 Markdown", nil)),
 	shortcodeEntry("tip", ShortcodeBlock, "布局容器", ShortcodeStatic, reTip,
-		named("text", "提示文字", nil), content("content", "提示内容", nil)),
+		named("text", "提示文字", nil), content("content", "提示内容", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
 	shortcodeEntry("blockquote", ShortcodeBlock, "布局容器", ShortcodeStatic, reBlockquoteTag,
 		namedSelect("indent", "首行缩进", nil, "", "true", "false"), content("content", "引用正文", nil)),
 	shortcodeEntry("banner", ShortcodeBlock, "布局容器", ShortcodeStatic, reBannerTag,
 		named("title", "标题", nil), named("subtitle", "副标题", nil), named("bg", "背景图 URL", nil),
-		named("avatar", "头像 URL", nil), named("link", "跳转链接", nil), content("content", "正文", nil)),
+		named("avatar", "头像 URL", nil), named("link", "跳转链接", nil), content("content", "正文", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"title", "subtitle"}}),
 	shortcodeEntry("navbar", ShortcodeHybrid, "布局容器", ShortcodeInteractive, reNavbarTag,
 		named("active", "高亮项", nil), content("content", "导航链接（每行 [文本](链接)）", nil)),
 	shortcodeEntry("frame", ShortcodeHybrid, "布局容器", ShortcodeStatic, reFrameTag,
 		namedSelect("device", "设备", "iphone", shortcodeDevices...), named("width", "最大宽度", nil),
-		content("content", "媒体内容（Markdown 图片/视频）", nil)),
+		content("content", "媒体内容（Markdown 图片/视频）", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"device"}}),
 	shortcodeEntry("box", ShortcodeBlock, "布局容器", ShortcodeStatic, reBox,
 		namedSelect("color", "外框配色", nil, shortcodeColors...), namedSelect("child", "子元素配色", nil, shortcodeColors...),
 		positional("title", "标题", "卡片标题"), content("content", "正文", "卡片正文，支持 **Markdown**。")),
@@ -256,17 +273,17 @@ var shortcodeRegistry = []shortcodeRegistration{
 		positional("src", "图片地址", "/assets/img/preview/image-demo.jpg"), positional("alt", "替代文本", "风景图"),
 		named("width", "宽度", "80%"), named("height", "高度", nil), named("bg", "背景色", nil),
 		flag("download", "显示下载按钮", false), named("padding", "内边距", nil),
-		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)),
+		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"src"}}),
 	shortcodeEntry("link", ShortcodeInline, "媒体播放", ShortcodeStatic, reLink,
 		positional("url", "链接", "https://example.com"), positional("title", "标题", "示例站点"),
 		named("desc", "描述（提供则用 rich 布局）", nil), named("icon", "图标/缩略图 URL", nil)),
 	shortcodeEntry("video", ShortcodeInline, "媒体播放", ShortcodeStatic, reVideo,
 		positional("src", "视频地址", "/assets/media/preview/sample-video.mp4"), named("bilibili", "B 站 BV 号", nil),
 		named("youtube", "YouTube 视频 ID", nil), named("type", "MIME 类型", nil),
-		named("ratio", "宽高比", "16/9"), named("width", "最大宽度", "100%"), flag("autoplay", "自动播放", false)),
+		named("ratio", "宽高比", "16/9"), named("width", "最大宽度", "100%"), flag("autoplay", "自动播放", false)).withEdit(ShortcodeEditSchema{Enabled: true, RequiredAny: [][]string{{"src", "bilibili", "youtube"}}}),
 	shortcodeEntry("audio", ShortcodeInline, "媒体播放", ShortcodeStatic, reAudio,
 		positional("src", "音频地址", "/assets/media/preview/sample-audio.mp3"), named("netease", "网易云歌曲 ID", nil),
-		named("type", "MIME 类型", "audio/mp3"), flag("autoplay", "自动播放", false)),
+		named("type", "MIME 类型", "audio/mp3"), flag("autoplay", "自动播放", false)).withEdit(ShortcodeEditSchema{Enabled: true, RequiredAny: [][]string{{"src", "netease"}}}),
 	shortcodeEntry("swiper", ShortcodeBlock, "媒体播放", ShortcodeInteractive, reSwiper,
 		namedSelect("width", "宽度语义", "", "", "min", "max"),
 		namedSelect("effect", "切换效果", "slide", "slide", "fade", "coverflow", "cards"),
@@ -279,7 +296,7 @@ var shortcodeRegistry = []shortcodeRegistration{
 		namedSelect("size", "卡片尺寸", "xs", "xs", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("copy", ShortcodeInline, "媒体播放", ShortcodeStatic, reCopy,
 		positional("text", "复制文本", "npm install stellar-theme"), named("git", "git 仓库（user/repo）", nil),
-		named("prefix", "前缀标签文本", nil)),
+		named("prefix", "前缀标签文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("rating", ShortcodeInline, "媒体播放", ShortcodeService, reRating,
 		named("id", "评分对象 ID", "demo-post"), named("icon", "评分图标 key", nil),
 		positional("title", "标题", "给这篇文章打分")),
@@ -345,6 +362,12 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 		for i := range entry.Params {
 			entry.Params[i].Options = append([]string(nil), entry.Params[i].Options...)
 		}
+		entry.Edit.Required = append([]string(nil), entry.Edit.Required...)
+		entry.Edit.RequiredAny = append([][]string(nil), entry.Edit.RequiredAny...)
+		for i := range entry.Edit.RequiredAny {
+			entry.Edit.RequiredAny[i] = append([]string(nil), entry.Edit.RequiredAny[i]...)
+		}
+		entry.Edit.LegacyArgs = append([]string(nil), entry.Edit.LegacyArgs...)
 		if entry.ParamDocs == nil {
 			entry.ParamDocs = []ShortcodeParamDoc{}
 		}

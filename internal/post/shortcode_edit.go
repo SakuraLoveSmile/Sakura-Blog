@@ -32,15 +32,6 @@ var shortcodeEditColonPositional = map[string]bool{
 	"icon": true,
 }
 
-// shortcodeEditPositionalFallback 旧语法把值写在位置参数里，而 schema 用 named 字段承载。
-// 解析时把剩余位置参数回填到首個空字段，重建时统一输出 canonical named 形式。
-var shortcodeEditPositionalFallback = map[string][]string{
-	"banner": {"title", "subtitle"},
-	"quot":   {"text"},
-	"tip":    {"text"},
-	"frame":  {"device"},
-}
-
 // shortcodeFrameInlineParams 是 frame 单行旧语法的参数布局，与块级（device/width/content）不同。
 // 只在解析/生成单行 frame 时使用，不引入通用 variant schema 体系。
 var shortcodeFrameInlineParams = []ShortcodeParamSchema{
@@ -206,19 +197,18 @@ func shortcodeEditApplyPositional(values map[string]any, params []ShortcodeParam
 
 // shortcodeEditApplyFallback 把剩余位置参数回填到 schema 的 named 字段（旧语法兼容）。
 // 最后一个字段吸收剩余 token；无 fallback 定义且仍有剩余参数时返回 false。
-func shortcodeEditApplyFallback(values map[string]any, name string, leftover []string) bool {
+func shortcodeEditApplyFallback(values map[string]any, legacyArgs []string, leftover []string) bool {
 	if len(leftover) == 0 {
 		return true
 	}
-	keys, ok := shortcodeEditPositionalFallback[name]
-	if !ok {
+	if len(legacyArgs) == 0 {
 		return false
 	}
-	for i, key := range keys {
+	for i, key := range legacyArgs {
 		if shortcodeEditString(values, key) != "" || i >= len(leftover) {
 			continue
 		}
-		if i == len(keys)-1 {
+		if i == len(legacyArgs)-1 {
 			values[key] = strings.Join(leftover[i:], " ")
 		} else {
 			values[key] = leftover[i]
@@ -269,30 +259,25 @@ func shortcodeEditString(values map[string]any, key string) string {
 	return value
 }
 
-func validateShortcodeEditValues(name string, values map[string]any) error {
-	require := func(keys ...string) error {
-		for _, key := range keys {
-			if strings.TrimSpace(shortcodeEditString(values, key)) == "" {
-				return fmt.Errorf("%s shortcode 缺少必要参数 %s", name, key)
-			}
-		}
+func validateShortcodeEditValues(entry ShortcodeCatalogEntry, values map[string]any) error {
+	if !entry.Edit.Enabled {
 		return nil
 	}
-
-	switch name {
-	case "button":
-		return require("text", "url")
-	case "checkbox", "radio", "mark", "copy":
-		return require("text")
-	case "image":
-		return require("src")
-	case "video":
-		if shortcodeEditString(values, "src") == "" && shortcodeEditString(values, "bilibili") == "" && shortcodeEditString(values, "youtube") == "" {
-			return fmt.Errorf("video shortcode 缺少媒体地址")
+	for _, key := range entry.Edit.Required {
+		if strings.TrimSpace(shortcodeEditString(values, key)) == "" {
+			return fmt.Errorf("%s shortcode 缺少必要参数 %s", entry.Name, key)
 		}
-	case "audio":
-		if shortcodeEditString(values, "src") == "" && shortcodeEditString(values, "netease") == "" {
-			return fmt.Errorf("audio shortcode 缺少媒体地址")
+	}
+	for _, keys := range entry.Edit.RequiredAny {
+		valid := false
+		for _, key := range keys {
+			if strings.TrimSpace(shortcodeEditString(values, key)) != "" {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return fmt.Errorf("%s shortcode 缺少必要参数（至少填写一个：%s）", entry.Name, strings.Join(keys, ", "))
 		}
 	}
 	return nil
@@ -312,6 +297,9 @@ func ParseShortcodeForEdit(raw string) (ShortcodeEditResult, error) {
 
 	entry, ok := findShortcodeCatalogEntry(name)
 	if !ok {
+		return result, nil
+	}
+	if !entry.Edit.Enabled {
 		return result, nil
 	}
 
@@ -366,13 +354,13 @@ func ParseShortcodeForEdit(raw string) (ShortcodeEditResult, error) {
 			// 单行 navbar 的链接列表是位置参数，按行展示在 content 里
 			values["content"] = strings.Join(leftover, "\n")
 		default:
-			if !shortcodeEditApplyFallback(values, name, leftover) {
+			if !shortcodeEditApplyFallback(values, entry.Edit.LegacyArgs, leftover) {
 				return ShortcodeEditResult{}, fmt.Errorf("%s shortcode 参数无法映射到属性表单", name)
 			}
 		}
 	}
 
-	if err := validateShortcodeEditValues(name, values); err != nil {
+	if err := validateShortcodeEditValues(entry, values); err != nil {
 		return ShortcodeEditResult{}, err
 	}
 

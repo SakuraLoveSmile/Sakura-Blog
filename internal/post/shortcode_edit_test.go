@@ -71,9 +71,18 @@ var shortcodeEditFixtures = map[string]string{
 
 func TestShortcodeEditFixturesCoverCatalog(t *testing.T) {
 	catalog := ShortcodeCatalog()
-	if len(catalog) != len(shortcodeEditFixtures) {
+	enabled := 0
+	for _, item := range catalog {
+		if item.Edit.Enabled {
+			enabled++
+		}
+	}
+	if enabled != len(shortcodeEditFixtures) {
 		missing := make([]string, 0, 8)
 		for _, item := range catalog {
+			if !item.Edit.Enabled {
+				continue
+			}
 			if _, ok := shortcodeEditFixtures[item.Name]; !ok {
 				missing = append(missing, item.Name)
 			}
@@ -82,6 +91,9 @@ func TestShortcodeEditFixturesCoverCatalog(t *testing.T) {
 		for name := range shortcodeEditFixtures {
 			found := false
 			for _, item := range catalog {
+				if !item.Edit.Enabled {
+					continue
+				}
 				if item.Name == name {
 					found = true
 					break
@@ -95,6 +107,9 @@ func TestShortcodeEditFixturesCoverCatalog(t *testing.T) {
 	}
 
 	for _, item := range catalog {
+		if !item.Edit.Enabled {
+			continue
+		}
 		raw, ok := shortcodeEditFixtures[item.Name]
 		if !ok {
 			t.Fatalf("catalog 标签 %s 缺少编辑 fixture", item.Name)
@@ -113,10 +128,50 @@ func TestShortcodeEditFixturesCoverCatalog(t *testing.T) {
 	}
 }
 
+func TestShortcodeEditSchemaOwnsRequiredValues(t *testing.T) {
+	tests := []struct {
+		name   string
+		values map[string]any
+		wantOK bool
+	}{
+		{name: "button missing url", values: map[string]any{"text": "按钮"}},
+		{name: "video youtube alternative", values: map[string]any{"youtube": "abc123"}, wantOK: true},
+		{name: "video missing media", values: map[string]any{}},
+		{name: "audio netease alternative", values: map[string]any{"netease": "123"}, wantOK: true},
+		{name: "mark missing text", values: map[string]any{}},
+	}
+	entries := map[string]ShortcodeCatalogEntry{}
+	for _, item := range ShortcodeCatalog() {
+		entries[item.Name] = item
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var entry ShortcodeCatalogEntry
+			switch tt.name {
+			case "button missing url":
+				entry = entries["button"]
+			case "video youtube alternative", "video missing media":
+				entry = entries["video"]
+			case "audio netease alternative":
+				entry = entries["audio"]
+			case "mark missing text":
+				entry = entries["mark"]
+			}
+			err := validateShortcodeEditValues(entry, tt.values)
+			if (err == nil) != tt.wantOK {
+				t.Fatalf("validate %s = %v, wantOK=%v", entry.Name, err, tt.wantOK)
+			}
+		})
+	}
+}
+
 // 编辑已有 shortcode 时，未被写出的参数必须是空值/ false，
 // 绝不能回落到 catalog default，否则保存会静默写入作者没写过的参数。
 func TestParseShortcodeForEditReturnsEverySchemaField(t *testing.T) {
 	for _, item := range ShortcodeCatalog() {
+		if !item.Edit.Enabled {
+			continue
+		}
 		raw := shortcodeEditFixtures[item.Name]
 		got, err := ParseShortcodeForEdit(raw)
 		if err != nil {
@@ -413,6 +468,9 @@ func TestParseShortcodeForEditFallbacks(t *testing.T) {
 // 再解析一次，确保「打开属性面板 → 不改任何值 → 应用」不会改变 shortcode 语义。
 func TestParseShortcodeForEditRoundTrip(t *testing.T) {
 	for _, item := range ShortcodeCatalog() {
+		if !item.Edit.Enabled {
+			continue
+		}
 		raw := shortcodeEditFixtures[item.Name]
 		first, err := ParseShortcodeForEdit(raw)
 		if err != nil {
@@ -451,6 +509,9 @@ func renderForEditTest(s *Service, raw string) (string, error) {
 func TestShortcodeEditRoundTripKeepsRender(t *testing.T) {
 	s := NewService(t.TempDir())
 	for _, item := range ShortcodeCatalog() {
+		if !item.Edit.Enabled {
+			continue
+		}
 		raw := shortcodeEditFixtures[item.Name]
 		first, err := renderForEditTest(s, raw)
 		if err != nil {

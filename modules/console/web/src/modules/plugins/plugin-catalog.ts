@@ -35,6 +35,12 @@ export interface PluginCatalogItem {
   fallback?: string;
   params: PluginCatalogParam[];
   param_docs: Array<{ name: string; desc: string; default?: string }>;
+  edit?: {
+    enabled: boolean;
+    required?: string[];
+    required_any?: string[][];
+    legacy_args?: string[];
+  };
 }
 
 function categoryOf(value: string): PluginCategory {
