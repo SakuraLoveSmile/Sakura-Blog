@@ -214,6 +214,17 @@ func FuncMap(reg *settings.IconRegistry) template.FuncMap {
 			}
 			return template.JS(string(b))
 		},
+		// jsonAttr serializes a value for a quoted HTML data attribute. Returning
+		// a plain string deliberately lets html/template apply contextual
+		// escaping exactly once, so quotes and ampersands cannot break out of the
+		// attribute; the client performs the final type/range validation.
+		"jsonAttr": func(v interface{}) string {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "null"
+			}
+			return string(b)
+		},
 
 		// dict: 构造键值 map（模板内传参用，如 widgets/tree 的 tree_node 递归调用）。
 		"dict": func(values ...interface{}) (map[string]interface{}, error) {

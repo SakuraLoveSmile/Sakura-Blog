@@ -464,9 +464,26 @@
   <script src="{{url_for "/assets/js/plugins/adaptive-text.js"}}?v={{asset_ver "/assets/js/plugins/adaptive-text.js"}}" defer></script>
   {{end}}
   <script src="{{url_for "/assets/js/main.js"}}?v={{asset_ver "/assets/js/main.js"}}" defer></script>
+  {{- /* Stellar 1.44 Card Hover：配置开启时按需加载；主题样式已在构建产物中预编译。 */}}
+  {{if .Site.Plugins.CardHoverEnabled}}
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      ctx.card_hover = {
+        spotlightColor: {{jsonify .Site.Plugins.CardHoverSpotlightColor}},
+        maxTilt: {{.Site.Plugins.CardHoverMaxTilt}}
+      };
+      utils.js('{{url_for "/assets/js/plugins/card-hover.js"}}?v={{asset_ver "/assets/js/plugins/card-hover.js"}}', { defer: true }).then(function () {
+        if (stellar.cardHover && typeof stellar.cardHover.mountAll === 'function') {
+          stellar.cardHover.mountAll(document);
+        }
+      }).catch(function () {});
+    });
+  </script>
+  {{end}}
   {{- /* Stellar 1.42 dropdown：footer/social details 菜单浮层。 */}}
   <script src="{{url_for "/assets/js/plugins/dropdown.js"}}?v={{asset_ver "/assets/js/plugins/dropdown.js"}}" defer></script>
   <script src="{{url_for "/assets/js/search/local-search.js"}}?v={{asset_ver "/assets/js/search/local-search.js"}}" defer></script>
+  <script src="{{url_for "/assets/js/search/shortcut.js"}}?v={{asset_ver "/assets/js/search/shortcut.js"}}" defer></script>
   {{- /* 搜索跳转高亮（1.41）：搜索结果链接带 ?kw=，目标页高亮关键词并定位（详见脚本头注释） */}}
   <script src="{{url_for "/assets/js/search/highlight.js"}}?v={{asset_ver "/assets/js/search/highlight.js"}}" defer></script>
   {{- /* 自建评论区交互：全站加载（事件委托 + 存在性检查，非文章页零副作用）。

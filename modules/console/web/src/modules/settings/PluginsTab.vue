@@ -26,6 +26,27 @@ const inputCls = "apple-input";
       </div>
     </div>
 
+    <!-- Card Hover（Stellar 1.44） -->
+    <div class="border border-border rounded-xl p-4 space-y-3">
+      <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <div class="text-sm font-medium text-text-secondary">卡片 Hover 光斑与倾斜</div>
+          <p class="mt-1 text-xs text-text-quaternary">为文章、文库、link/grid 卡片启用 Spotlight 与 3D Tilt（桌面精细指针）</p>
+        </div>
+        <VSwitch v-model="data.card_hover.enable" />
+      </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label class="text-xs text-text-tertiary mb-1 block">光斑颜色</label>
+          <input v-model="data.card_hover.spotlight_color" :class="inputCls" placeholder="rgba(255, 255, 255, 0.25)" />
+        </div>
+        <div>
+          <label class="text-xs text-text-tertiary mb-1 block">最大倾角（0–8°）</label>
+          <input v-model.number="data.card_hover.max_tilt" type="number" min="0" max="8" step="0.5" :class="inputCls" />
+        </div>
+      </div>
+    </div>
+
     <!-- 预加载 -->
     <div class="border border-border rounded-xl p-4 space-y-3">
       <label class="flex items-center gap-2 text-sm font-medium text-text-secondary">

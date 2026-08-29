@@ -21,7 +21,7 @@ func TestDashboardStellarVersionStates(t *testing.T) {
 		wantError    bool
 		wantUpstream string
 	}{
-		{name: "synced", tag: "v1.42.1", status: http.StatusOK, wantSync: true, wantUpstream: "1.42.1"},
+		{name: "synced", tag: "v1.44.0", status: http.StatusOK, wantSync: true, wantUpstream: "1.44.0"},
 		{name: "outdated", tag: "v1.42.2", status: http.StatusOK, wantUpstream: "1.42.2"},
 		{name: "upstream failure", status: http.StatusInternalServerError, wantError: true},
 	}
@@ -46,7 +46,7 @@ func TestDashboardStellarVersionStates(t *testing.T) {
 			enableAdmin(t, st, site, "")
 			r := gin.New()
 			if _, err := MountConsole(r, MountDeps{Config: Config{
-				Store: st, Site: sitePtr(site), StellarVersion: "1.42.1",
+				Store: st, Site: sitePtr(site), StellarVersion: "1.44.0",
 				StellarOwner: "xaoxuu", StellarRepo: "hexo-theme-stellar",
 			}, GH: gh}); err != nil {
 				t.Fatalf("mount: %v", err)
@@ -62,7 +62,7 @@ func TestDashboardStellarVersionStates(t *testing.T) {
 			if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 				t.Fatalf("decode: %v", err)
 			}
-			if got.LocalVersion != "1.42.1" || got.InSync != tc.wantSync || got.UpstreamVersion != tc.wantUpstream {
+			if got.LocalVersion != "1.44.0" || got.InSync != tc.wantSync || got.UpstreamVersion != tc.wantUpstream {
 				t.Fatalf("response = %+v", got)
 			}
 			if (got.Error != "") != tc.wantError {
@@ -80,10 +80,10 @@ func TestSemverEqual(t *testing.T) {
 		left, right string
 		want        bool
 	}{
-		{"1.42.1", "v1.42.1", true},
-		{"1.42.1", "1.42.2", false},
-		{"1.42.1-rc.1", "1.42.1-rc.1", true},
-		{"1.42.1-rc.1", "1.42.1", false},
+		{"1.44.0", "v1.44.0", true},
+		{"1.44.0", "1.44.1", false},
+		{"1.44.0-rc.1", "1.44.0-rc.1", true},
+		{"1.44.0-rc.1", "1.44.0", false},
 		{"1.42", "1.42.0", false},
 	} {
 		if got := semverEqual(normalizeSemver(tc.left), normalizeSemver(tc.right)); got != tc.want {
