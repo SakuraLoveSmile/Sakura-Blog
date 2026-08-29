@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { queryKeys } from "@/api/query-client";
 import { linkApi } from "@/api";
+import FriendSettings from "./FriendSettings.vue";
 import { Icon } from "@iconify/vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, VModal, VFloatingDock, Dialog, Toast } from "@/components/ui";
@@ -24,6 +26,19 @@ interface LinkRow {
 }
 
 const queryClient = useQueryClient();
+const route = useRoute();
+const router = useRouter();
+const activeTab = ref(route.query.tab === "settings" ? "settings" : "list");
+
+watch(activeTab, (tab) => {
+  const query = { ...route.query };
+  if (tab === "list") delete query.tab;
+  else query.tab = tab;
+  if (route.query.tab !== query.tab) void router.push({ query });
+});
+watch(() => route.query.tab, (tab) => {
+  activeTab.value = tab === "settings" ? "settings" : "list";
+});
 
 const { data: queryData, isLoading } = useQuery({
   queryKey: queryKeys.friends(),
@@ -387,12 +402,13 @@ async function batchMoveGroup() {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="链接">
+    <VPageHeader title="友链">
       <template #icon>
         <Icon icon="ri:links-line" class="text-primary" />
       </template>
       <template #subtitle>维护博客友链与外部网站，支持健康度自动检测、网站截图与 RSS 订阅</template>
       <template #actions>
+        <template v-if="activeTab === 'list'">
         <div class="apple-search min-w-[200px] max-w-[260px]">
           <Icon icon="ri:search-line" class="text-text-quaternary" />
           <input v-model="searchQuery" placeholder="搜索友链名称/URL/分组..." />
@@ -427,10 +443,16 @@ async function batchMoveGroup() {
           </template>
           新增友链
         </VButton>
+        </template>
       </template>
     </VPageHeader>
 
-    <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
+    <nav class="friends-tabs apple-segmented rect" aria-label="友链分类">
+      <button type="button" :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">列表</button>
+      <button type="button" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
+    </nav>
+
+    <div v-if="activeTab === 'list'" class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <VLoading v-if="isLoading" />
 
       <template v-else>
@@ -816,6 +838,7 @@ async function batchMoveGroup() {
         </VCard>
       </template>
     </div>
+    <FriendSettings v-else />
 
     <!-- ============ 新增 / 编辑友链弹窗 ============ -->
     <VModal v-model:visible="showModal" :title="editing.id ? '编辑友链' : '新增友链'" :width="560">
@@ -1014,6 +1037,16 @@ async function batchMoveGroup() {
 </template>
 
 <style scoped>
+.friends-tabs {
+  display: flex;
+  width: min(1400px, calc(100% - 32px));
+  margin: 16px auto 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.friends-tabs::-webkit-scrollbar { display: none; }
+.friends-tabs button { min-height: 44px; white-space: nowrap; }
+
 /* 统计卡片 */
 .stats-card {
   display: flex;
