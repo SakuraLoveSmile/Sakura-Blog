@@ -1,6 +1,6 @@
 {
   "stellar": {
-    "version": "1.43.0"
+    "version": "1.44.0"
   },
   "style": {
     "prefers_theme": "auto",
@@ -116,6 +116,11 @@
     },
     "adaptive_text": {
       "enable": true
+    },
+    "card_hover": {
+      "enable": true,
+      "spotlight_color": "rgba(255, 255, 255, 0.25)",
+      "max_tilt": 3
     }
   },
   "tag_plugins": {

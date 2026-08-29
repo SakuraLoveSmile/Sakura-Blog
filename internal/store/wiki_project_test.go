@@ -57,7 +57,7 @@ func TestWikiProjectMigrationIsIdempotentAndKeepsMetadata(t *testing.T) {
 	if len(got.Tags) != 2 || got.Tags[0] != "主题" || got.Tags[1] != "开源" {
 		t.Fatalf("tags should be ordered and de-duplicated: %#v", got.Tags)
 	}
-	if got.Hero == nil || got.Hero.Background != "galaxy" || got.Hero.Preview == nil || got.Hero.Preview.Commands[0].Codes[0] != "make dev" {
+	if got.Hero == nil || got.Hero.Background != "" || got.Hero.Animation == nil || got.Hero.Animation.Type != "galaxy" || got.Hero.Preview == nil || got.Hero.Preview.Commands[0].Codes[0] != "make dev" {
 		t.Fatalf("hero metadata was not migrated: %#v", got.Hero)
 	}
 	legacy, err := s.GetWikiProject("legacy-docs")

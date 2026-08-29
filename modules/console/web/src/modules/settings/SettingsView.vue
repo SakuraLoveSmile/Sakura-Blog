@@ -211,6 +211,10 @@ function ensureDefaults(d: Record<string, any>) {
   d.plugins = d.plugins || {};
   d.plugins.adaptive_text = d.plugins.adaptive_text || {};
   d.plugins.adaptive_text.enable = d.plugins.adaptive_text.enable ?? true;
+  d.plugins.card_hover = d.plugins.card_hover || {};
+  d.plugins.card_hover.enable = d.plugins.card_hover.enable ?? false;
+  d.plugins.card_hover.spotlight_color = d.plugins.card_hover.spotlight_color || "rgba(255, 255, 255, 0.25)";
+  d.plugins.card_hover.max_tilt = d.plugins.card_hover.max_tilt ?? 3;
   d.plugins.preload = d.plugins.preload || {};
   d.plugins.scrollreveal = d.plugins.scrollreveal || {};
   d.plugins.heti = d.plugins.heti || {};

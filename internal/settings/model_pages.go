@@ -3,12 +3,20 @@ package settings
 // HeroConfig 页面级 hero banner 三要素（形状取 CoverConfig 的最小子集）：
 // title 主标题、description 副标题、background 背景图 URL。
 type HeroConfig struct {
-	Title       string       `yaml:"title" json:"title"`
-	Description string       `yaml:"description,omitempty" json:"description,omitempty"`
-	Background  string       `yaml:"background,omitempty" json:"background,omitempty"`
-	Start       string       `yaml:"start,omitempty" json:"start,omitempty"`
-	Preview     *HeroPreview `yaml:"preview,omitempty" json:"preview,omitempty"`
-	Actions     []HeroAction `yaml:"actions,omitempty" json:"actions,omitempty"`
+	Title       string         `yaml:"title" json:"title"`
+	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
+	Background  string         `yaml:"background,omitempty" json:"background,omitempty"`
+	Animation   *HeroAnimation `yaml:"animation,omitempty" json:"animation,omitempty"`
+	Start       string         `yaml:"start,omitempty" json:"start,omitempty"`
+	Preview     *HeroPreview   `yaml:"preview,omitempty" json:"preview,omitempty"`
+	Actions     []HeroAction   `yaml:"actions,omitempty" json:"actions,omitempty"`
+}
+
+// HeroAnimation describes an optional Wiki Hero background animation.
+// Stellar 1.44 currently supports type "galaxy" with camelCase parameters.
+type HeroAnimation struct {
+	Type   string         `yaml:"type,omitempty" json:"type,omitempty"`
+	Params map[string]any `yaml:"params,omitempty" json:"params,omitempty"`
 }
 
 type HeroPreview struct {

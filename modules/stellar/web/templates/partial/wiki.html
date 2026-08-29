@@ -16,7 +16,7 @@
 <div class="post-list wiki">
   {{- range .WikiProjects}}
   <div class="post-card-wrap">
-    <a class="wiki-card{{if not .Cover}} no-cover{{end}}"{{if .Cover}} style="--cover-url:url('{{.Cover}}')"{{end}}{{if .HasDocs}} href="/wiki/{{.ID}}"{{else if .URL}} href="{{.URL}}"{{else}} data-wiki-empty="{{lang "wiki.no_docs"}}"{{end}}>
+    <a class="wiki-card card-hover card-hover--spotlight card-hover--tilt{{if not .Cover}} no-cover{{end}}"{{if .Cover}} style="--cover-url:url('{{.Cover}}')"{{end}}{{if .HasDocs}} href="/wiki/{{.ID}}"{{else if .URL}} href="{{.URL}}"{{else}} data-wiki-empty="{{lang "wiki.no_docs"}}"{{end}}>
       <article class="wiki-card-content">
         <div class="wiki-card-cover{{if not .Cover}} no-cover{{end}}" position="bottom">
           {{if .Cover}}<img src="{{.Cover}}" alt="" loading="lazy">{{end}}

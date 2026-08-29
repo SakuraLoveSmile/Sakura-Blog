@@ -1,15 +1,15 @@
 {{- /* widgets/search.html: 搜索框，对应 Stellar _partial/sidebar/search.ejs（wiki 文档页带项目维度：
    data-filter 限定当前项目 + placeholder 显示项目名；其余页面走默认全站搜索）
    对齐 index_leftbar.ejs layoutWidgets：搜索框在 .widgets 容器内第一个，而非独立层级。
-   .search-wrapper#search-wrapper > form.search-form(a.search-button + input#search-input) + #search-result + .search-no-result
+   .search-wrapper#search-wrapper > .search-form[role=search](label.search-button + input#search-input) + #search-result + .search-no-result
    交互在 assets/js/search/local-search.js（去 jQuery 移植版）*/ -}}
 <div class="search-wrapper" id="search-wrapper">
-  <form class="search-form">
-    <a class="search-button" onclick="document.getElementById('search-input').focus();">
+  <div class="search-form" role="search">
+    <label class="search-button" for="search-input" aria-hidden="true">
       {{icon "default:search"}}
-    </a>
-    <input type="text" class="search-input" id="search-input" placeholder="{{if .SearchPlaceholder}}{{.SearchPlaceholder}}{{else}}{{lang "search.search"}}{{end}}"{{if .SearchFilter}} data-filter="{{.SearchFilter}}"{{end}}>
-  </form>
+    </label>
+    <input type="search" class="search-input" id="search-input" aria-label="{{if .SearchPlaceholder}}{{.SearchPlaceholder}}{{else}}{{lang "search.search"}}{{end}}" placeholder="{{if .SearchPlaceholder}}{{.SearchPlaceholder}}{{else}}{{lang "search.search"}}{{end}}"{{if .SearchFilter}} data-filter="{{.SearchFilter}}"{{end}}>
+  </div>
   {{if .QAEnabled}}
   <section class="search-ai-ask" id="rag-ai-ask" aria-label="AI 问答">
     <button type="button" class="search-ai-ask-button" data-rag-ai-open>

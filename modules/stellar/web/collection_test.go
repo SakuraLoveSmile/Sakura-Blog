@@ -33,7 +33,7 @@ func TestCollectionTemplateVariantsAndEscaping(t *testing.T) {
 	}
 	for _, want := range []string{
 		`class="ui-collection"`, `data-layout="grid"`, `data-variant="icon"`, `data-density="compact"`, `--ui-columns:3`,
-		`class="ui-collection__item is-active"`, `aria-current="page"`, `--ui-item-depth:2`,
+		`class="ui-collection__item is-active card-hover card-hover--spotlight"`, `aria-current="page"`, `--ui-item-depth:2`,
 		`title="标题 &lt;危险&gt;"`,
 	} {
 		if !strings.Contains(html, want) {
@@ -94,7 +94,7 @@ func TestRegressionWidgetsUseCollectionContract(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-layout="grid"`, `data-variant="nav"`, `--ui-columns:2`,
-		`class="ui-collection__item is-active"`,
+		`class="ui-collection__item is-active card-hover card-hover--spotlight"`,
 		`文库 &lt;查看&gt;`, `aria-current="page"`,
 	} {
 		if !strings.Contains(welcome, want) {
@@ -124,7 +124,7 @@ func TestRegressionWidgetsUseCollectionContract(t *testing.T) {
 	}
 	for _, want := range []string{
 		`data-layout="grid"`, `data-variant="icon"`, `--ui-columns:3`,
-		`class="ui-collection__item is-active"`, `title="图标 &lt;一&gt;"`,
+		`class="ui-collection__item is-active card-hover card-hover--spotlight"`, `title="图标 &lt;一&gt;"`,
 	} {
 		if !strings.Contains(linklist, want) {
 			t.Errorf("linklist output missing %q: %s", want, linklist)

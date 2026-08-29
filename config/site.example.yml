@@ -57,6 +57,19 @@ rightbar:
 # 文库项目（配置驱动，不入库）。每个项目一张卡片，点击跳到 url（站内文章/页面或外链）。
 # repo（可选）：GitHub 仓库（owner/name 格式），配置后 wiki 文档页右栏渲染 ghrepo 仓库卡片；项目首页正文为空时回退 README。
 # branch（可选）：README 所在分支，缺省使用 GitHub HEAD。
+# Stellar 1.44 Hero（可选）：项目文档页支持图片背景、Galaxy 动画及二者叠加；
+# animation.params 使用 Galaxy 的 camelCase 参数，非法值会在前台安全降级。
+# 示例：
+#   hero:
+#     title: Stellar 文档
+#     description: 主题使用指南
+#     background: https://example.com/hero.webp
+#     animation:
+#       type: galaxy
+#       params:
+#         density: 2
+#         speed: 0.5
+#         transparent: true
 wiki:
   - id: stellar
     title: Stellar 主题文档
@@ -418,6 +431,10 @@ comments:
 #     enable: true
 #   fancybox:
 #     selector: 'div.lazy-box>img.lazy'
+#   card_hover:
+#     enable: true
+#     spotlight_color: 'rgba(255, 255, 255, 0.25)'
+#     max_tilt: 3
 plugins:
   preload:
     enable: false
@@ -431,6 +448,10 @@ plugins:
     enable: false
   fancybox:
     selector: 'div.lazy-box>img.lazy'
+  card_hover:
+    enable: false
+    spotlight_color: 'rgba(255, 255, 255, 0.25)'
+    max_tilt: 3
 
 # -------------------------------------------------------------
 # 外部数据服务（services）

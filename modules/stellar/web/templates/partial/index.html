@@ -6,7 +6,7 @@
   {{if or (not $.PinSliderActive) (not .Pinned)}}
   {{if eq $.Site.Article.EffectiveType "story"}}
   <div class="post-card-wrap story">
-    <a class="post-card post story" href="/post/{{.Slug}}">
+    <a class="post-card post story card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       {{if .Cover}}<div class="story-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>{{else if $.Site.Default.Cover}}<div class="story-cover"><img src="{{$.Site.Default.Cover}}" alt="{{.Title}}"/></div>{{end}}
       <article class="md-text">
         <h2 class="post-title">{{.Title}}</h2>
@@ -21,7 +21,7 @@
   </div>
   {{else if and (eq $.Site.Article.EffectiveCardStyle "hero") .Cover}}
   <div class="post-card-wrap">
-    <a class="post-card post photo" href="/post/{{.Slug}}">
+    <a class="post-card post photo card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <div class="cover" position="bottom" style="--cover-url:url('{{.Cover}}')">
         <img src="{{.Cover}}" alt="{{.Title}}"/>
         <div class="cover-info" position="bottom" data-text-adaptive="split">
@@ -33,7 +33,7 @@
   </div>
   {{else if and .Cover .Poster}}
   <div class="post-card-wrap">
-    <a class="post-card post photo" href="/post/{{.Slug}}">
+    <a class="post-card post photo card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <div class="cover" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}" style="--cover-url:url('{{.Cover}}')">
         <img src="{{.Cover}}" alt="{{.Title}}"/>
         <div class="cover-info" position="{{if .Poster.Topic}}top{{else}}bottom{{end}}"{{if .Poster.Color}} style="color:{{.Poster.Color}}"{{end}}>
@@ -46,7 +46,7 @@
   </div>
   {{else}}
   <div class="post-card-wrap">
-    <a class="post-card post" href="/post/{{.Slug}}">
+    <a class="post-card post card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <article class="md-text">
         {{if .Cover}}<div class="post-cover"><img src="{{.Cover}}" alt="{{.Title}}"/></div>{{else if $.Site.Default.Cover}}<div class="post-cover"><img src="{{$.Site.Default.Cover}}" alt="{{.Title}}"/></div>{{end}}
         <h2 class="post-title">{{.Title}}</h2>

@@ -1,11 +1,13 @@
 {{- /* wiki_doc.html: Wiki 文档页；Hero 结构对齐 Stellar wiki_cover.ejs。 */ -}}
 {{- with .WikiHero}}
+{{- $galaxy := and .Animation (eq .Animation.Type "galaxy") -}}
 <div class="l_cover wiki wiki-hero{{if not .Preview}} without-preview{{end}}">
-  <div class="wiki-cover-background{{if eq .Background "galaxy"}} galaxy{{else if .Background}} image{{end}}" aria-hidden="true">
-    {{if eq .Background "galaxy"}}<canvas></canvas>{{else if .Background}}<img class="wiki-cover-background-image" src="{{.Background}}" alt=""><img class="wiki-cover-background-blur" src="{{.Background}}" alt="">{{end}}
+  <div class="wiki-cover-background{{if $galaxy}} galaxy{{end}}{{if .Background}} image{{end}}" aria-hidden="true">
+    {{if .Background}}<img class="wiki-cover-background-image" src="{{.Background}}" alt=""><img class="wiki-cover-background-blur" src="{{.Background}}" alt="">{{end}}
+    {{if $galaxy}}<canvas data-galaxy-params="{{jsonAttr .Animation.Params}}"></canvas>{{end}}
     <div class="wiki-cover-background-overlay"></div>
   </div>
-  <div class="wiki-cover-layout"{{if .Background}} data-text-adaptive="split"{{if eq .Background "galaxy"}} style="--adaptive-background:#000000"{{else}} style="--cover-url:url('{{.Background}}')"{{end}}{{end}}>
+  <div class="wiki-cover-layout"{{if .Background}} data-text-adaptive="split" style="--cover-url:url('{{.Background}}')"{{else if $galaxy}} data-text-adaptive="split" style="--adaptive-background:#000000"{{end}}>
     <nav class="wiki-navbar" aria-label="{{$.Site.Title}}">
       <a class="wiki-navbar-home" href="/">{{$.Site.Title}}</a>
     </nav>
@@ -17,9 +19,9 @@
         <h1 class="cover-title" data-text-adaptive="contrast">{{if .Title}}{{.Title}}{{else}}{{$.WikiProjectName}}{{end}}</h1>
         {{if .Description}}<div class="description">{{.Description}}</div>{{end}}
         <div class="wiki-cover-actions">
-          {{if $.WikiProjectRepo}}<a class="button wiki-cover-source" href="https://github.com/{{$.WikiProjectRepo}}" target="_blank" rel="external nofollow noopener noreferrer">{{icon "default:github"}}<span>{{lang "btn.source"}}</span></a>{{end}}
-          <a class="button" href="#start">{{icon "default:documents"}}<span>{{lang "btn.docs"}}</span></a>
-          {{range .Actions}}{{if and .Title .URL}}<a class="button" href="{{.URL}}" target="_blank" rel="external nofollow noopener noreferrer">{{if .Icon}}{{icon .Icon}}{{end}}<span>{{.Title}}</span></a>{{end}}{{end}}
+          {{if $.WikiProjectRepo}}<a class="button card-hover card-hover--spotlight wiki-cover-source" href="https://github.com/{{$.WikiProjectRepo}}" target="_blank" rel="external nofollow noopener noreferrer">{{icon "default:github"}}<span>{{lang "btn.source"}}</span></a>{{end}}
+          <a class="button card-hover card-hover--spotlight" href="#start">{{icon "default:documents"}}<span>{{lang "btn.docs"}}</span></a>
+          {{range .Actions}}{{if and .Title .URL}}<a class="button card-hover card-hover--spotlight" href="{{.URL}}" target="_blank" rel="external nofollow noopener noreferrer">{{if .Icon}}{{icon .Icon}}{{end}}<span>{{.Title}}</span></a>{{end}}{{end}}
         </div>
       </section>
       {{with .Preview}}

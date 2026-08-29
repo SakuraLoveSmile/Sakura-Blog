@@ -31,6 +31,7 @@ type Footer = settings.Footer
 type HeroAction = settings.HeroAction
 type HeroCommand = settings.HeroCommand
 type HeroConfig = settings.HeroConfig
+type HeroAnimation = settings.HeroAnimation
 type HeroPreview = settings.HeroPreview
 
 type IconRegistry = settings.IconRegistry

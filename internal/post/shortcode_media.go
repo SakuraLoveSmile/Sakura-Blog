@@ -32,7 +32,7 @@ func renderLink(argsStr string) (string, bool) {
 	sb.WriteString(`<div class="tag-plugin link dis-select">`)
 	if desc != "" && desc != "false" {
 		// rich 模式（上下结构）
-		sb.WriteString(`<a class="link-card rich" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		sb.WriteString(`<a class="link-card rich card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
 		if strings.Contains(url, "://") {
 			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
 		}
@@ -47,7 +47,7 @@ func renderLink(argsStr string) (string, bool) {
 		sb.WriteString(`</div>`)
 	} else {
 		// plain 模式（左右结构）
-		sb.WriteString(`<a class="link-card plain" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		sb.WriteString(`<a class="link-card plain card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
 		if strings.Contains(url, "://") {
 			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
 		}
@@ -199,7 +199,11 @@ func renderGrid(argsStr, body string, renderMD func(string) string) string {
 		if cell == "" {
 			continue
 		}
-		sb.WriteString(`<div class="cell"`)
+		cellClass := `cell`
+		if named["bg"] == "card" {
+			cellClass = `cell card-hover card-hover--spotlight card-hover--tilt`
+		}
+		sb.WriteString(`<div class="` + cellClass + `"`)
 		if br := safeCSSNum(named["br"]); br != "" {
 			fmt.Fprintf(&sb, ` style="border-radius:%s;"`, br)
 		}

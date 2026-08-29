@@ -458,6 +458,7 @@ type PluginsConfig struct {
 	Preload      *PreloadConfig      `yaml:"preload,omitempty" json:"preload,omitempty"`
 	ScrollReveal *ScrollRevealConfig `yaml:"scrollreveal,omitempty" json:"scrollreveal,omitempty"`
 	AdaptiveText *AdaptiveTextConfig `yaml:"adaptive_text,omitempty" json:"adaptive_text,omitempty"`
+	CardHover    *CardHoverConfig    `yaml:"card_hover,omitempty" json:"card_hover,omitempty"`
 	Heti         *HetiConfig         `yaml:"heti,omitempty" json:"heti,omitempty"`
 	Fancybox     *FancyboxConfig     `yaml:"fancybox,omitempty" json:"fancybox,omitempty"`
 	Swiper       *SwiperConfig       `yaml:"swiper,omitempty" json:"swiper,omitempty"`
@@ -470,6 +471,38 @@ type PluginsConfig struct {
 // AdaptiveTextConfig 文章封面/横幅文字自适应颜色插件配置。
 type AdaptiveTextConfig struct {
 	Enable bool `yaml:"enable" json:"enable"`
+}
+
+// CardHoverConfig 卡片鼠标跟随光斑与 3D 倾斜配置（Stellar 1.44）。
+// 该插件沿用上游默认关闭；只有显式 enable: true 才会加载客户端能力。
+type CardHoverConfig struct {
+	Enable         bool    `yaml:"enable" json:"enable"`
+	SpotlightColor string  `yaml:"spotlight_color,omitempty" json:"spotlight_color,omitempty"`
+	MaxTilt        float64 `yaml:"max_tilt,omitempty" json:"max_tilt,omitempty"`
+}
+
+// CardHoverEnabled 未配置时保持 Stellar 1.44 默认关闭。
+func (p PluginsConfig) CardHoverEnabled() bool {
+	return p.CardHover != nil && p.CardHover.Enable
+}
+
+// CardHoverSpotlightColor 返回配置的光斑颜色，空值交给客户端使用默认值。
+func (p PluginsConfig) CardHoverSpotlightColor() string {
+	if p.CardHover == nil {
+		return ""
+	}
+	return p.CardHover.SpotlightColor
+}
+
+// CardHoverMaxTilt 返回配置的最大倾角，非法或未配置时使用上游默认 3 度。
+func (p PluginsConfig) CardHoverMaxTilt() float64 {
+	if p.CardHover == nil || p.CardHover.MaxTilt < 0 || p.CardHover.MaxTilt > 8 {
+		return 3
+	}
+	if p.CardHover.MaxTilt == 0 {
+		return 0
+	}
+	return p.CardHover.MaxTilt
 }
 
 // AdaptiveTextEnabled 未配置时按 Stellar 1.42 默认开启，兼容旧 settings 行。
