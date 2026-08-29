@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base32"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +17,67 @@ import (
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
+
+type failingRandomReader struct{}
+
+func (failingRandomReader) Read([]byte) (int, error) {
+	return 0, errors.New("entropy unavailable")
+}
+
+func TestGenerate2FATokenRandomFailure(t *testing.T) {
+	pending2FA.Lock()
+	before := len(pending2FA.tokens)
+	pending2FA.Unlock()
+
+	token, err := generate2FATokenFrom(failingRandomReader{}, 42)
+	if err == nil {
+		t.Fatal("random reader failure should be returned")
+	}
+	if token != "" {
+		t.Fatalf("failed token = %q, want empty", token)
+	}
+
+	pending2FA.Lock()
+	after := len(pending2FA.tokens)
+	pending2FA.Unlock()
+	if after != before {
+		t.Fatalf("pending 2FA tokens changed after random failure: before=%d after=%d", before, after)
+	}
+}
+
+func TestLogin2FATokenGenerationFailure(t *testing.T) {
+	r, st, user, h := authEnhanceEnv(t)
+	seedLoginUser(t, st, user)
+	if err := st.UpdateTOTPSecret(user.ID, GenerateSecret(), GenerateRecoveryCodes(8)); err != nil {
+		t.Fatalf("enable 2fa: %v", err)
+	}
+	h.generate2FA = func(userID int64) (string, error) {
+		return generate2FATokenFrom(failingRandomReader{}, userID)
+	}
+
+	pending2FA.Lock()
+	before := len(pending2FA.tokens)
+	pending2FA.Unlock()
+	w := do2FA(r, http.MethodPost, "/api/v1/auth/login", `{"username":"admin","password":"secret"}`, "")
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("login with random failure: status=%d body=%s, want 500", w.Code, w.Body.String())
+	}
+	if w.Result().Cookies() != nil {
+		for _, cookie := range w.Result().Cookies() {
+			if cookie.Name == authCookieName && cookie.Value != "" {
+				t.Fatalf("random failure must not issue auth cookie: %q", cookie.Value)
+			}
+		}
+	}
+	pending2FA.Lock()
+	after := len(pending2FA.tokens)
+	pending2FA.Unlock()
+	if after != before {
+		t.Fatalf("pending 2FA tokens changed after login failure: before=%d after=%d", before, after)
+	}
+}
+
+var _ io.Reader = failingRandomReader{}
 
 // new2FATestEnv 带密码站点 + users 表 admin 用户，返回 engine、store 与用户。
 func new2FATestEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User) {
