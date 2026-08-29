@@ -57,7 +57,9 @@ type Handler struct {
 	linkWatch      *linkwatch.Watcher
 
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
-	gh             *ghpkg.Client
+	gh *ghpkg.Client
+	// generate2FA is injectable only for testing secure-random failure handling.
+	generate2FA    func(int64) (string, error)
 	stellarVersion string
 	stellarOwner   string
 	stellarRepo    string
@@ -170,6 +172,7 @@ func New(cfg Config) *Handler {
 		root:              cfg.Root,
 		updateRepo:        repo,
 		updateInstallDir:  installDir,
+		generate2FA:       generate2FAToken,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time
@@ -447,6 +450,7 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
 		author.GET("/plugins/catalog", h.shortcodeCatalog)
+		author.POST("/plugins/shortcode/parse", h.shortcodeEdit)
 
 		// 模块 manifest 对 author 角色可读；启停写操作仍在 sys 组。
 		author.GET("/modules", h.listModules)

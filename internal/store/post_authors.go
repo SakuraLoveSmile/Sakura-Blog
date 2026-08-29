@@ -51,6 +51,16 @@ func (s *Store) EnsurePostAuthorsTable() error {
 // has necessarily created users. A legacy TEXT table is deliberately left in
 // place until EnsurePostAuthorsTable can run with users available.
 func (s *Store) ensurePostAuthorsTableCreated() error {
+	usersExists, err := s.tableExists("users")
+	if err != nil {
+		return err
+	}
+	// Keep the optional ownership schema absent until the users table is
+	// bootstrapped. With SQLite foreign_keys=ON, touching a child table whose
+	// parent does not exist fails even when the child has no rows.
+	if !usersExists {
+		return nil
+	}
 	typeName, exists, err := s.postAuthorsColumnType()
 	if err != nil {
 		return err

@@ -155,6 +155,7 @@ func registerEmbedStatic(r *gin.Engine, prefix string) {
 type staticReader func(name string) ([]byte, error)
 
 func registerStaticHandler(r *gin.Engine, route string, plain staticReader, compressed staticReader) {
+	immutable := strings.Contains(route, "/assets/")
 	handler := func(c *gin.Context) {
 		name := strings.TrimPrefix(c.Param("filepath"), "/")
 		if name == "" {
@@ -169,6 +170,9 @@ func registerStaticHandler(r *gin.Engine, route string, plain staticReader, comp
 			c.Status(http.StatusNotFound)
 			return
 		}
+		if immutable {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		}
 		gzipData, _ := compressed(name)
 		writeConsoleData(c, consoleContentType(name), data, gzipData)
 	}
@@ -177,6 +181,9 @@ func registerStaticHandler(r *gin.Engine, route string, plain staticReader, comp
 }
 
 func writeConsoleData(c *gin.Context, contentType string, plain, compressed []byte) {
+	if c.Writer.Header().Get("Cache-Control") == "" {
+		c.Header("Cache-Control", "no-cache")
+	}
 	if len(compressed) > 0 && acceptsGzip(c.GetHeader("Accept-Encoding")) {
 		c.Header("Content-Encoding", "gzip")
 		c.Header("Vary", "Accept-Encoding")

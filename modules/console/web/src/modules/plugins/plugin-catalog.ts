@@ -1,4 +1,10 @@
-import { PLUGIN_CATEGORIES, type PluginCategory, type PluginFormField, type PluginMeta } from "./plugin-types";
+import {
+  PLUGIN_CATEGORIES,
+  type PluginCategory,
+  type PluginFormField,
+  type PluginMeta,
+  type PluginType,
+} from "./plugin-types";
 
 export interface PluginCatalogParam {
   key: string;
@@ -29,10 +35,21 @@ export interface PluginCatalogItem {
   fallback?: string;
   params: PluginCatalogParam[];
   param_docs: Array<{ name: string; desc: string; default?: string }>;
+  edit?: {
+    enabled: boolean;
+    required?: string[];
+    required_any?: string[][];
+    legacy_args?: string[];
+  };
 }
 
 function categoryOf(value: string): PluginCategory {
   return PLUGIN_CATEGORIES.includes(value as PluginCategory) ? (value as PluginCategory) : "布局容器";
+}
+
+// hybrid 必须原样保留：navbar/frame 有单行与块级两种写法，映射成 inline 会丢失块级包装。
+function typeOf(value: string): PluginType {
+  return value === "block" || value === "hybrid" ? value : "inline";
 }
 
 function stringDefault(value: unknown): string | undefined {
@@ -77,7 +94,7 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
       name: item.name,
       title: item.title || existing?.title || item.name,
       category: categoryOf(item.category),
-      type: existing?.type || (item.type === "block" ? "block" : "inline"),
+      type: existing?.type || typeOf(item.type),
       desc: item.description || existing?.desc || "由后端 shortcode catalog 提供。",
       signature: item.signature || existing?.signature || fallbackExample(item),
       params:

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	ghpkg "blog/internal/github"
+	"github.com/gin-gonic/gin"
 )
 
 // updateRepoDefault / updateInstallDirDefault 为 api 层兜底常量，

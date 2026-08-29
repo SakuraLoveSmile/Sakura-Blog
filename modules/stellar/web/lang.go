@@ -105,14 +105,14 @@ var zhCN = map[string]string{
 	"nav.topic":    "专栏：%s",
 
 	// 面包屑
-	"breadcrumb.home":     "首页",
-	"breadcrumb.blog":     "博客",
-	"breadcrumb.topic":    "专栏",
-	"breadcrumb.notes":    "笔记",
-	"breadcrumb.moments":  "瞬间",
-	"breadcrumb.friends":  "友链",
-	"breadcrumb.links":    "友链",
-	"breadcrumb.wiki":     "文库",
+	"breadcrumb.home":    "首页",
+	"breadcrumb.blog":    "博客",
+	"breadcrumb.topic":   "专栏",
+	"breadcrumb.notes":   "笔记",
+	"breadcrumb.moments": "瞬间",
+	"breadcrumb.friends": "友链",
+	"breadcrumb.links":   "友链",
+	"breadcrumb.wiki":    "文库",
 
 	// 文章页
 	"article.expire":         "本文最后更新于 %d 天前，其中的信息可能已经过时，请谨慎参考。",

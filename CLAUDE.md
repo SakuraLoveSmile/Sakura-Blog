@@ -484,3 +484,18 @@ posts 表 `ai_label` 列在 Update/Upsert SQL 里是 `ai_label=COALESCE(NULLIF(?
 - **--icon-loading 注入**：`funcs.go` 新增 `iconLoadingURL` 模板函数（`default:loading` → data-URI `url("data:image/svg+xml,...")`，URL 值直用，键缺失返回空）；`head.html` 注入 `:root{--icon-loading:...}`，`.lazy-icon` mask 不再回退外部 iconify。
 - **siteinfo 图标兜底**：新增 `assets/js/services/siteinfo.js`（`setSiteCardIcon` + `stellar:sites-ready` 监听）；`sites.js` 补 `siteinfoApi` 计算（无 icon/avatar 且配 api 时 `data-siteinfo-api="{href→encodeURIComponent}"`）、图标 img 加 `siteinfo-icon` class、渲染完成派发 `stellar:sites-ready`。配置面 `model.go` 加 `ServicesConfig`/`SiteInfoConfig`，`Site` 加 `Services` 字段；`site.example.yml` 加 `services.siteinfo.api` 示例（默认空=关闭）；`base.html` ctx 注入 `services.siteinfo.api`、懒加载数组追加 siteinfo.js（scan 去重键改为 `s.js` 允许同 `cls` 多脚本）。
 - **navbar 2px 滚动阈值**：`main.js` `navbarPin` 合入上游 `SCROLL_THRESHOLD = 2`，`update()` 内 `scrolled = window.scrollY >= SCROLL_THRESHOLD`，toggle 条件改为 `scrolled && top <= stickyTop + TOLERANCE`（无轮播页顶部即吸顶，需滚动达阈值才切玻璃）。
+
+## Shortcode 可视化属性编辑（全 catalog 属性面板，2026-08）
+
+链路：`StellarTagView` → `POST /api/v1/plugins/shortcode/parse` → `post.ParseShortcodeForEdit` → `PluginParamForm` → `buildShortcode()` → `updateAttributes({ raw })` → iframe 预览自动刷新。`content_md` / raw 仍是唯一持久化真值，没有 build API、没有 codec registry、没有第二套 schema。
+
+- **参数真值只有一份**：`internal/post/shortcode_catalog.go` 的 `shortcodeRegistry`（helper 带中文 label）。`shortcode_metadata.go` 的 `FormFields` 已整体删除，只剩展示/预览元数据（Title/Description/Signature/Example/PreviewSet/ParamDocs）。改参数只改 registry，不要再建第二份参数表。
+- **字段必须对齐真实 renderer**：以各 `renderXxx` 里的 `parseNamedPositionalArgs(args, namedKeys, positionalKeys)` 为准核对，不要只看 Signature/ParamDocs。已知反直觉处：quot/tip 的 `text` 是 named 但支持位置参数兜底（见 `shortcodeEditPositionalFallback`）；rating 只有 `title` 是位置参数、`id`/`icon` 是 named；frame 单行（device/img/video/focus/alt）与块级（device/width/content）是两套字段。
+- **编辑模式不注入 default**：`ParseShortcodeForEdit` 返回全部 schema 字段，缺失为 `""` / `false`；前端 `initFormValues` 用 `initialValues !== undefined` 区分插入/编辑模式。给缺失字段喂 default 会让「只改标题」也把未出现过的参数写进正文。
+- **flag 一律输出 `key:true`**：renderer 并非所有 flag 都接受裸 token（folding open / image download / about back / video autoplay / ghcard show_owner / checkbox checked）。
+- **安全回退优先**：未知 `key:value`（排除 http/https 等 URL scheme 与 Iconify key 这种值本身带冒号的位置参数）、多余位置参数无法落位、块级缺结束标签 → `ParseShortcodeForEdit` 返回 error，前端提示并保留源码编辑，绝不静默把参数吞成位置参数。
+- **位置参数尾字段吸收余量**：`shortcodeEditApplyPositional` 让最后一个 positional 字段吸收剩余 token，保证 `{% image src 这是一张 很长的 说明 %}` 这类自由文本不被截断。
+- **hybrid variant**：navbar/frame 由 raw 是否含 `{% endxxx %}` 判定 inline/block，结果返回 `variant`；前端 `formForVariant` 只对 frame 单行做局部 form override。单行 hybrid 的正文换行必须折叠为空格——`splitArgs` 只按空格/制表符切分，换行会导致位置参数粘成一个 token。
+- **零参数标签也算可编辑**：`links` 的 `form` 为空，`StellarTagView` 不能再用 `form.length === 0` 判定不支持；面板显示「该组件没有可编辑属性」并保留源码编辑。
+- **后续扩展只加 textarea**：tabs/timeline/folders/grid/paper/okr/chat/gallery/swiper 的 marker 正文统一作为 `content` textarea，不做子项 CRUD。
+- **测试门禁**：`internal/post/shortcode_edit_test.go` 的 `shortcodeEditFixtures` 给每个 catalog 标签一条 fixture，`TestShortcodeEditFixturesCoverCatalog` 机械要求 58/58 可编辑；`TestShortcodeEditRoundTripKeepsRender` 复位全局自增序号（`tabIndexCounter`/`galleryIndex`/`hashtagColorIdx`/`copyIndex`/`mdRenderIndex`）后比对「原始 raw 渲染结果 == 重建 raw 渲染结果」。新增第 59 个标签却忘记支持时，测试直接失败。

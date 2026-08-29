@@ -4,7 +4,11 @@ on:
   push:
     branches: [main, dev, release]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, release]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   go:
@@ -21,8 +25,14 @@ jobs:
       - name: Stub modules/console/web/dist for go:embed
         run: mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html
 
+      - name: Check Go formatting
+        run: test -z "$(gofmt -l .)"
+
       - name: Vet
         run: go vet ./...
+
+      - name: Go vulnerability check
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
       - name: Test
         run: go test ./...
@@ -183,3 +193,13 @@ jobs:
 
       - name: Build binary (embed real modules/console/web dist)
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./cmd/blog
+
+  # release 只能由 main 晋级；该检查只在目标分支为 release 的 PR 上运行。
+  release-source:
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main as release source
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: test "$HEAD_REF" = main

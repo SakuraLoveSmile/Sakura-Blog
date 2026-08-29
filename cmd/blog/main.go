@@ -44,6 +44,7 @@ func main() {
 	}
 
 	router := gin.New()
+	httpapi.RegisterHealthRoutes(router, services.Store)
 	stellarServer, err := stellar.Mount(router, stellar.Dependencies{
 		App: services.App, Site: services.Site, Store: services.Store, Posts: services.Post,
 		OGGen: services.OG, Search: services.Search, DevMode: devMode, Root: services.App.Root,
@@ -81,7 +82,13 @@ func main() {
 	consoleHandler.SetOnLinksChanged(services.Friends.Refresh)
 	services.StartBackground()
 
-	server := &http.Server{Addr: services.App.ListenAddr, Handler: httpapi.HeadToGet(router)}
+	server := &http.Server{
+		Addr:              services.App.ListenAddr,
+		Handler:           httpapi.HeadToGet(router),
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       90 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	go func() {

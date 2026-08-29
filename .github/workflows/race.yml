@@ -1,0 +1,27 @@
+name: Race
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空。
+      - name: Stub modules/console/web/dist for go:embed
+        run: mkdir -p modules/console/web/dist && echo '<!doctype html>' > modules/console/web/dist/index.html
+
+      - name: Race tests
+        run: go test -race ./...

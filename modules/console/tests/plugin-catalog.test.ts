@@ -74,3 +74,25 @@ test("empty catalog does not invent entries", () => {
   const merged = mergePluginCatalog([basePlugin], []);
   assert.deepEqual(merged, []);
 });
+
+test("hybrid type is preserved instead of collapsing to inline", () => {
+  const hybrid: PluginCatalogItem[] = [
+    {
+      name: "navbar",
+      title: "文章内导航",
+      description: "",
+      signature: "{% navbar %}",
+      example: "{% navbar %}",
+      type: "hybrid",
+      category: "布局容器",
+      capability: "interactive",
+      param_docs: [],
+      params: [
+        { key: "active", type: "text", role: "named" },
+        { key: "content", type: "textarea", role: "content" },
+      ],
+    },
+  ];
+  const merged = mergePluginCatalog([], hybrid);
+  assert.equal(merged[0].type, "hybrid");
+});

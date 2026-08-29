@@ -3,7 +3,7 @@
 // Node 22.18+ 原生剥离类型运行 .ts，零新增依赖；断言拼装规则本身，不经 Vue 组件。
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildShortcode } from "../web/src/modules/plugins/shortcode.ts";
+import { buildShortcode, formForVariant } from "../web/src/modules/plugins/shortcode.ts";
 import type { PluginMeta } from "../web/src/modules/plugins/plugin-types.ts";
 
 const SURFACE = "shortcode 拼装";
@@ -61,10 +61,12 @@ test(`${SURFACE} · block：content 包在 {% name %}…{% endname %} 之间并�
   );
 });
 
-test(`${SURFACE} · block：flag 为 true 仅拼 key，非 true 不拼`, () => {
+// flag 统一输出 key:true：renderer 并非所有 flag 都接受裸 token
+// （folding open / image download / about back / video autoplay / ghcard show_owner / checkbox checked）
+test(`${SURFACE} · block：flag 为 true 拼 key:true，非 true 不拼`, () => {
   assert.equal(
     buildShortcode(foldingPlugin, { title: "详情", open: "true", content: "正文" }),
-    "{% folding 详情 open %}\n正文\n{% endfolding %}"
+    "{% folding 详情 open:true %}\n正文\n{% endfolding %}"
   );
   assert.equal(
     buildShortcode(foldingPlugin, { title: "详情", open: "false", content: "正文" }),
@@ -123,7 +125,7 @@ test('shortcode 拼装 · 特殊字符：值含空格/引号/花括号不被破�
 
 test('shortcode 拼装 · flag 仅精确 true 触发（UI checkbox 固定传 "true"）', () => {
   const on = buildShortcode(foldingPlugin, { open: "true", title: "t" });
-  assert.ok(on.includes("open"), `true 触发 flag: ${on}`);
+  assert.ok(on.includes("open:true"), `true 触发 flag: ${on}`);
   const off = buildShortcode(foldingPlugin, { open: "false", title: "t" });
   assert.ok(!off.includes("open"), "false 不触发");
   const upper = buildShortcode(foldingPlugin, { open: "TRUE", title: "t" });
@@ -142,4 +144,122 @@ test('shortcode 拼装 · 空 values 对象不 panic，产出最少标签', () =
   const out = buildShortcode(foldingPlugin, {});
   assert.ok(out.includes("{% folding"), `空值仍产出标签: ${out}`);
   assert.ok(!out.includes(":false") && !out.includes('=""'), "无空参数残留");
+});
+
+// ---- 全 catalog 可视化编辑补全：hybrid / 零参数 / 含空格位置参数 ----
+
+// hybrid 缩影：navbar 单行与块级共用 active + content，只有包装方式不同
+const navbarPlugin: PluginMeta = {
+  name: "navbar",
+  title: "文章内导航 Navbar",
+  category: "布局容器",
+  type: "hybrid",
+  desc: "",
+  signature: "",
+  params: [],
+  example: "",
+  form: [
+    { key: "active", label: "高亮项", type: "text", role: "named" },
+    { key: "content", label: "导航链接", type: "textarea", role: "content" },
+  ],
+};
+
+// hybrid 缩影：frame 块级（device/width/content）
+const framePlugin: PluginMeta = {
+  name: "frame",
+  title: "设备框架 Frame",
+  category: "布局容器",
+  type: "hybrid",
+  desc: "",
+  signature: "",
+  params: [],
+  example: "",
+  form: [
+    { key: "device", label: "设备", type: "select", role: "named", options: ["iphone", "ipad", "macbook"] },
+    { key: "width", label: "最大宽度", type: "text", role: "named" },
+    { key: "content", label: "媒体内容", type: "textarea", role: "content" },
+  ],
+};
+
+// 零参数缩影：links
+const linksPlugin: PluginMeta = {
+  name: "links",
+  title: "友链分组 Links",
+  category: "媒体播放",
+  type: "inline",
+  desc: "",
+  signature: "",
+  params: [],
+  example: "{% links %}",
+  form: [],
+};
+
+test(`${SURFACE} · hybrid navbar：variant 缺省/块级 → 块级包装`, () => {
+  const values = { active: "首页", content: "[首页](/)\n[关于](/about)" };
+  assert.equal(
+    buildShortcode(navbarPlugin, values),
+    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}"
+  );
+  assert.equal(
+    buildShortcode(navbarPlugin, values, "block"),
+    "{% navbar active:首页 %}\n[首页](/)\n[关于](/about)\n{% endnavbar %}"
+  );
+});
+
+test(`${SURFACE} · hybrid navbar：variant=inline → 单行且正文换行折叠为空格`, () => {
+  assert.equal(
+    buildShortcode(navbarPlugin, { active: "/", content: "[首页](/)\n[关于](/about)" }, "inline"),
+    "{% navbar active:/ [首页](/) [关于](/about) %}"
+  );
+});
+
+test(`${SURFACE} · hybrid frame：块级用 device/width/content`, () => {
+  assert.equal(
+    buildShortcode(framePlugin, { device: "iphone", width: "320px", content: "![截图](/a.jpg)" }, "block"),
+    "{% frame device:iphone width:320px %}\n![截图](/a.jpg)\n{% endframe %}"
+  );
+});
+
+test(`${SURFACE} · hybrid frame：单行用局部 override 的 device/img/video/focus/alt`, () => {
+  const inline = formForVariant(framePlugin, "inline");
+  assert.deepEqual(
+    inline.form?.map((f) => f.key),
+    ["device", "img", "video", "focus", "alt"]
+  );
+  // 原插件定义不被污染
+  assert.deepEqual(
+    framePlugin.form?.map((f) => f.key),
+    ["device", "width", "content"]
+  );
+  assert.equal(
+    buildShortcode(inline, { device: "iphone", img: "/a.jpg", video: "", focus: "top", alt: "手机截图" }, "inline"),
+    "{% frame iphone 手机截图 img:/a.jpg focus:top %}"
+  );
+});
+
+test(`${SURFACE} · formForVariant 只影响 frame 单行，其余插件原样返回`, () => {
+  assert.equal(formForVariant(navbarPlugin, "inline"), navbarPlugin);
+  assert.equal(formForVariant(framePlugin, "block"), framePlugin);
+  assert.equal(formForVariant(framePlugin, undefined), framePlugin);
+});
+
+test(`${SURFACE} · 零参数 links 产出裸标签`, () => {
+  assert.equal(buildShortcode(linksPlugin, {}), "{% links %}");
+});
+
+test(`${SURFACE} · 位置参数含空格时按字段顺序整体保留（image src/alt）`, () => {
+  const imagePlugin: PluginMeta = {
+    ...linksPlugin,
+    name: "image",
+    form: [
+      { key: "src", label: "图片地址", type: "text", role: "positional" },
+      { key: "alt", label: "替代文本", type: "text", role: "positional" },
+      { key: "width", label: "宽度", type: "text", role: "named" },
+      { key: "download", label: "下载", type: "flag", role: "flag" },
+    ],
+  };
+  assert.equal(
+    buildShortcode(imagePlugin, { src: "/a.jpg", alt: "这是一张 很长的 说明", width: "80%", download: "true" }),
+    "{% image /a.jpg 这是一张 很长的 说明 width:80% download:true %}"
+  );
 });
