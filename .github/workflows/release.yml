@@ -17,14 +17,14 @@ jobs:
       id-token: write   # GitHub Artifact Attestation
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 8.15.4
 
       # ---- Console SPA（go:embed 编译期要求 modules/console/web/dist 非空）----
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
           cache: pnpm
@@ -37,7 +37,7 @@ jobs:
         run: pnpm --filter console run build
 
       # ---- Go 交叉编译（sqlite 纯 Go 实现，CGO 可关）----
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
           cache: true
@@ -51,7 +51,7 @@ jobs:
 
       # 以最终发布二进制为主体生成 SPDX JSON SBOM；output-file 让它同时进入 Release。
       - name: Generate SPDX SBOM
-        uses: anchore/sbom-action@v0.24.2
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           file: blog-linux-amd64
           format: spdx-json
@@ -60,13 +60,13 @@ jobs:
 
       # 证明由本仓库的 GitHub Actions 构建的二进制，部署端可用 gh attestation verify 校验。
       - name: Attest Linux binary provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         with:
           subject-path: blog-linux-amd64
 
       # 产物：Actions Artifacts（每次构建，保留 30 天）
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: blog-linux-amd64
           path: |
@@ -78,7 +78,7 @@ jobs:
       # GitHub Release（打 tag 时，服务器 update.sh 从此下载）
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             blog-linux-amd64

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, dev, release]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, release]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -193,3 +193,13 @@ jobs:
 
       - name: Build binary (embed real modules/console/web dist)
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o blog ./cmd/blog
+
+  # release 只能由 main 晋级；该检查只在目标分支为 release 的 PR 上运行。
+  release-source:
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main as release source
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: test "$HEAD_REF" = main
