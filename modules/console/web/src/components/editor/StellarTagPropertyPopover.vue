@@ -71,6 +71,7 @@ function scheduleStructuredUpdate(value: string) {
 function onStructuredValidation(state: { valid: boolean; error?: string }) {
   structuredValid.value = state.valid;
   structuredError.value = state.error || "";
+  if (!state.valid) clearUpdateTimer();
 }
 
 function enterSourceMode() {
