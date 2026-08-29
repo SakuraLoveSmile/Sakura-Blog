@@ -340,6 +340,10 @@ func New(dbPath string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	if err := s.applyMigrations(schemaMigrations); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return s, nil
 }
 
