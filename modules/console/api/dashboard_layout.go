@@ -117,16 +117,16 @@ func decodeDashboardLayout(reader io.Reader) (*dashboardLayoutDocument, error) {
 	}
 	var extra any
 	if err := decoder.Decode(&extra); err != io.EOF {
-			return nil, fmt.Errorf("dashboard 布局只能包含一个 JSON 对象")
+		return nil, fmt.Errorf("dashboard 布局只能包含一个 JSON 对象")
 	}
 	if document.Version != dashboardLayoutVersion {
 		return nil, fmt.Errorf("不支持的 Dashboard 布局版本 %d", document.Version)
 	}
 	if document.Layouts == nil {
-			return nil, fmt.Errorf("dashboard 布局缺少 layouts")
+		return nil, fmt.Errorf("dashboard 布局缺少 layouts")
 	}
 	if len(document.Layouts) > len(dashboardLayoutColumns) {
-			return nil, fmt.Errorf("dashboard 布局包含未知断点")
+		return nil, fmt.Errorf("dashboard 布局包含未知断点")
 	}
 
 	for breakpoint, widgets := range document.Layouts {

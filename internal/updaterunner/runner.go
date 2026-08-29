@@ -110,9 +110,11 @@ func runChild(bin string, argv []string, captureOutput bool) error {
 // NoopRunner 非 systemd 环境的占位 runner，Supported() 恒 false。
 type NoopRunner struct{}
 
-func (NoopRunner) Supported() bool             { return false }
-func (NoopRunner) UnsupportedReason() string   { return "当前环境不支持一键更新（非 systemd 部署）" }
-func (NoopRunner) Start(context.Context) error  { return fmt.Errorf("不支持") }
+func (NoopRunner) Supported() bool { return false }
+func (NoopRunner) UnsupportedReason() string {
+	return "当前环境不支持一键更新（非 systemd 部署）"
+}
+func (NoopRunner) Start(context.Context) error { return fmt.Errorf("不支持") }
 func (NoopRunner) Active(context.Context) bool { return false }
 
 // 确保 syscall 包被引用（forkExec 未来可用 syscall.SysProcAttr）
