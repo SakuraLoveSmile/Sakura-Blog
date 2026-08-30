@@ -66,10 +66,8 @@
 
 {{if and .Paginator (gt .Paginator.Total 1)}}
 <div class="paginator-wrap dis-select">
-  <nav class="paginator">
-    {{if gt .Paginator.Current 1}}<a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/{{else}}/page/{{sub .Paginator.Current 1}}{{end}}">{{icon "default:arrow-left"}}</a>{{end}}
-    {{range .Paginator.Pages}}<a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/{{else}}/page/{{.}}{{end}}">{{.}}</a>{{end}}
-    {{if lt .Paginator.Current .Paginator.Total}}<a class="extend next" rel="next" href="/page/{{add .Paginator.Current 1}}">{{icon "default:arrow-right"}}</a>{{end}}
-  </nav>
+  {{if gt .Paginator.Current 1}}<a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/{{else}}/page/{{sub .Paginator.Current 1}}{{end}}">{{icon "default:arrow-left"}}</a>{{end}}
+  {{range .Paginator.Pages}}<a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/{{else}}/page/{{.}}{{end}}">{{.}}</a>{{end}}
+  {{if lt .Paginator.Current .Paginator.Total}}<a class="extend next" rel="next" href="/page/{{add .Paginator.Current 1}}">{{icon "default:arrow-right"}}</a>{{end}}
 </div>
 {{end}}
