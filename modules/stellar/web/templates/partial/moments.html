@@ -44,7 +44,7 @@
 
   {{- if .Paginator}}
   {{- if gt .Paginator.Total 1}}
-  <div class="paginator-wrap dis-select slide-up">
+  <div class="paginator-wrap dis-select{{if and .Site.Plugins.ScrollReveal .Site.Plugins.ScrollReveal.Enable}} slide-up{{end}}">
     {{- if gt .Paginator.Current 1}}
     <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/moments{{else}}/moments?page={{sub .Paginator.Current 1}}{{end}}">{{icon "default:arrow-left"}}</a>
     {{- else}}
