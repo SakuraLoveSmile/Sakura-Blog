@@ -227,6 +227,11 @@ onBeforeUnmount(() => {
     <div
       v-if="menuOpen"
       class="attachment-menu"
+      :class="{
+        'attachment-menu-preview': showThumb && hasPreview,
+        'attachment-menu-empty': showThumb && !hasPreview,
+        'attachment-menu-inline': !showThumb,
+      }"
       role="menu"
       aria-label="附件操作"
       @keydown.esc.stop.prevent="closeMenu(true)"
@@ -434,22 +439,21 @@ onBeforeUnmount(() => {
 
 .attachment-menu {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 40;
-  width: min(200px, calc(100vw - 32px));
+  z-index: 50;
+  width: min(180px, calc(100vw - 32px));
   padding: 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-popover);
   color: var(--color-popover-foreground);
   box-shadow: var(--shadow-xl);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 .attachment-menu::before {
   position: absolute;
   top: -6px;
-  right: 14px;
   width: 11px;
   height: 11px;
   border-top: 1px solid var(--color-border);
@@ -457,6 +461,42 @@ onBeforeUnmount(() => {
   background: var(--color-popover);
   content: "";
   transform: rotate(45deg);
+}
+
+/* 缩略图已有图片：气泡锚定在右上角 22px 按钮正下方，箭头对齐按钮中心 */
+.attachment-menu-preview {
+  top: 34px;
+  right: 0;
+  left: auto;
+}
+
+.attachment-menu-preview::before {
+  right: 11px;
+  left: auto;
+}
+
+/* 缩略图空状态：气泡在 112px 卡片正下方 */
+.attachment-menu-empty {
+  top: calc(100% + 8px);
+  right: auto;
+  left: 0;
+}
+
+.attachment-menu-empty::before {
+  right: auto;
+  left: 24px;
+}
+
+/* 单行输入框模式：气泡在右侧操作按钮下方 */
+.attachment-menu-inline {
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+}
+
+.attachment-menu-inline::before {
+  right: 12px;
+  left: auto;
 }
 
 .attachment-menu-item {
