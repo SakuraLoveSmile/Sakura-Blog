@@ -369,31 +369,40 @@ onBeforeUnmount(() => {
 
 .attachment-menu-trigger {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   display: inline-flex;
-  width: 44px;
-  height: 44px;
+  width: 22px;
+  height: 22px;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--color-foreground) 12%, transparent);
+  border: 0;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-card) 86%, transparent);
-  color: var(--color-foreground);
+  background: color-mix(in srgb, var(--color-primary) 85%, transparent);
+  color: #ffffff;
+  font-size: 14px;
   cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  opacity: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition:
+    opacity var(--duration-fast) var(--ease-standard),
     background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.attachment-preview:hover .attachment-menu-trigger,
+.attachment-menu-trigger:focus-visible,
+.attachment-menu-trigger[aria-expanded="true"] {
+  opacity: 1;
 }
 
 .attachment-menu-trigger:hover:not(:disabled),
 .attachment-menu-trigger[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
   background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  color: #ffffff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 .attachment-menu-trigger:disabled {
@@ -405,18 +414,31 @@ onBeforeUnmount(() => {
   position: relative;
   top: auto;
   right: auto;
-  flex: 0 0 44px;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
+  opacity: 1;
+  box-shadow: none;
+}
+
+.attachment-menu-trigger-inline:hover:not(:disabled),
+.attachment-menu-trigger-inline[aria-expanded="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
 }
 
 .attachment-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   z-index: 40;
-  width: min(236px, calc(100vw - 32px));
-  padding: 8px;
+  width: min(200px, calc(100vw - 32px));
+  padding: 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-popover);
@@ -427,7 +449,7 @@ onBeforeUnmount(() => {
 .attachment-menu::before {
   position: absolute;
   top: -6px;
-  right: 24px;
+  right: 14px;
   width: 11px;
   height: 11px;
   border-top: 1px solid var(--color-border);
@@ -440,15 +462,15 @@ onBeforeUnmount(() => {
 .attachment-menu-item {
   display: flex;
   width: 100%;
-  min-height: 44px;
+  min-height: 36px;
   align-items: center;
-  gap: 12px;
-  padding: 0 12px;
+  gap: 10px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: inherit;
-  font-size: 14px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition:
