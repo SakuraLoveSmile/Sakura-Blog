@@ -12,13 +12,28 @@ for (const file of [
   "web/templates/partial/moments.html",
   "web/templates/partial/author.html",
 ]) {
-  test(`${file} uses direct Stellar paginator links`, () => {
+  test(`${file} uses Stellar paginator markup`, () => {
     const template = readFileSync(join(ROOT, file), "utf8");
 
     assert.match(
       template,
-      /<div class="paginator-wrap dis-select">[\s\S]*?<a class="(?:extend prev|page-number)/,
-      "paginator links should be direct children of the wrapper",
+      /<div class="paginator-wrap dis-select slide-up">/,
+      "paginator wrapper should keep Stellar's scroll-reveal class",
+    );
+    assert.match(
+      template,
+      /<a class="extend prev" rel="prev"[\s\S]*?<span class="extend prev" rel="prev">/,
+      "paginator should render a linked previous arrow and a disabled first-page arrow",
+    );
+    assert.match(
+      template,
+      /<span class="page-number current">\{\{\.\}\}<\/span>[\s\S]*?<a class="page-number" href=/,
+      "the current page should be an unlinked span while other pages remain links",
+    );
+    assert.match(
+      template,
+      /<a class="extend next" rel="next"[\s\S]*?<span class="extend next" rel="next">/,
+      "paginator should render a linked next arrow and a disabled last-page arrow",
     );
     assert.doesNotMatch(template, /<nav class="paginator">/, "paginator must not add a wrapper nav");
   });
