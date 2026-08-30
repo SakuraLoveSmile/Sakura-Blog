@@ -3,6 +3,7 @@ import { Icon } from "@iconify/vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import IconPicker from "@/components/IconPicker.vue";
 import { VButton, VSwitch } from "@/components/ui";
+import { headingStyleMode as styleMode } from "../style-mode";
 
 const props = defineProps<{ data: Record<string, any>; saving: string }>();
 const emit = defineEmits<{ save: [section: string] }>();
@@ -45,103 +46,145 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 
 <template>
   <form class="settings-post-form" @submit.prevent="handleSubmit">
+    <div :class="`settings-style-${styleMode}`">
+      <div class="settings-style-preview-toolbar">
+      <div class="settings-style-toolbar-header">
+        <span class="settings-style-toolbar-title">
+          <Icon icon="ri:layout-grid-line" />
+          二级标题与分组方案实时对比
+        </span>
+        <span class="settings-style-toolbar-hint">点击以下按钮可实时切换整页排版样式</span>
+      </div>
+      <div class="settings-style-switcher" role="radiogroup" aria-label="二级标题样式切换">
+        <button
+          type="button"
+          class="settings-style-btn"
+          :class="{ active: styleMode === 'panel' }"
+          @click="styleMode = 'panel'"
+        >
+          <span class="settings-style-btn-tag">方案 1</span>
+          <span class="settings-style-btn-name">胶囊指示条 + 内嵌面板（推荐）</span>
+        </button>
+        <button
+          type="button"
+          class="settings-style-btn"
+          :class="{ active: styleMode === 'card' }"
+          @click="styleMode = 'card'"
+        >
+          <span class="settings-style-btn-tag">方案 2</span>
+          <span class="settings-style-btn-name">独立次级卡片（Sub-Card）</span>
+        </button>
+        <button
+          type="button"
+          class="settings-style-btn"
+          :class="{ active: styleMode === 'tree' }"
+          @click="styleMode = 'tree'"
+        >
+          <span class="settings-style-btn-tag">方案 3</span>
+          <span class="settings-style-btn-name">标题色带 + 层级引导线</span>
+        </button>
+      </div>
+    </div>
+
     <section class="settings-post-section settings-post-section-first">
       <div class="settings-post-section-heading">
         <h2>文章展示</h2>
         <p>控制文章列表、文章卡片和文章页的内容呈现方式。</p>
       </div>
 
-      <div class="settings-post-field">
-        <label for="settings-post-type">文章布局类型</label>
-        <select id="settings-post-type" v-model="data.article.type" :class="selectCls">
-          <option value="tech">tech（技术）</option>
-          <option value="story">story（图文）</option>
-        </select>
-        <p class="settings-post-help">技术布局强调正文阅读，图文布局适合有封面和横幅的文章。</p>
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-card-style">有封面时的文章卡片样式</label>
-        <select id="settings-post-card-style" v-model="data.article.card_style" :class="selectCls">
-          <option value="hero">hero（全图文字）</option>
-          <option value="classic">classic（摘要卡）</option>
-        </select>
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-pin-style">置顶文章样式</label>
-        <select id="settings-post-pin-style" v-model="data.article.pin_style" :class="selectCls">
-          <option value="carousel">轮播</option>
-          <option value="flat">平铺到列表顶部</option>
-        </select>
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-cover-ratio">卡片封面宽高比</label>
-        <input
-          id="settings-post-cover-ratio"
-          v-model.number="data.article.cover_ratio"
-          type="number"
-          step="0.1"
-          min="0"
-          :class="inputCls"
-          placeholder="0（使用主题默认值，如 2）"
-        />
-        <p class="settings-post-help">填写 0 使用主题默认比例。</p>
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-banner-ratio">文首横幅宽高比</label>
-        <input
-          id="settings-post-banner-ratio"
-          v-model.number="data.article.banner_ratio"
-          type="number"
-          step="0.1"
-          min="0"
-          :class="inputCls"
-          placeholder="0（使用主题默认值，如 2.5）"
-        />
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-auto-excerpt">自动摘要长度</label>
-        <input
-          id="settings-post-auto-excerpt"
-          v-model.number="data.article.auto_excerpt"
-          type="number"
-          min="0"
-          :class="inputCls"
-          placeholder="0（关闭）"
-        />
-        <p class="settings-post-help">按字符数截取摘要，填写 0 关闭自动摘要。</p>
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-related-posts">相关文章数上限</label>
-        <input
-          id="settings-post-related-posts"
-          v-model.number="data.article.related_posts"
-          type="number"
-          min="0"
-          :class="inputCls"
-          placeholder="0（关闭）"
-        />
-      </div>
-
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">显示字数与阅读时长</div>
-          <p class="settings-post-help">在文章卡片和文章页显示正文统计信息。</p>
+      <div class="settings-section-body">
+        <div class="settings-post-field">
+          <label for="settings-post-type">文章布局类型</label>
+          <select id="settings-post-type" v-model="data.article.type" :class="selectCls">
+            <option value="tech">tech（技术）</option>
+            <option value="story">story（图文）</option>
+          </select>
+          <p class="settings-post-help">技术布局强调正文阅读，图文布局适合有封面和横幅的文章。</p>
         </div>
-        <VSwitch v-model="data.article.reading_time" aria-label="显示字数与阅读时长" />
-      </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">文章卡片显示标签</div>
-          <p class="settings-post-help">文章列表卡片最多显示 5 个标签。</p>
+        <div class="settings-post-field">
+          <label for="settings-post-card-style">有封面时的文章卡片样式</label>
+          <select id="settings-post-card-style" v-model="data.article.card_style" :class="selectCls">
+            <option value="hero">hero（全图文字）</option>
+            <option value="classic">classic（摘要卡）</option>
+          </select>
         </div>
-        <VSwitch v-model="data.article.card_tags" aria-label="文章卡片显示标签" />
+
+        <div class="settings-post-field">
+          <label for="settings-post-pin-style">置顶文章样式</label>
+          <select id="settings-post-pin-style" v-model="data.article.pin_style" :class="selectCls">
+            <option value="carousel">轮播</option>
+            <option value="flat">平铺到列表顶部</option>
+          </select>
+        </div>
+
+        <div class="settings-post-field">
+          <label for="settings-post-cover-ratio">卡片封面宽高比</label>
+          <input
+            id="settings-post-cover-ratio"
+            v-model.number="data.article.cover_ratio"
+            type="number"
+            step="0.1"
+            min="0"
+            :class="inputCls"
+            placeholder="0（使用主题默认值，如 2）"
+          />
+          <p class="settings-post-help">填写 0 使用主题默认比例。</p>
+        </div>
+
+        <div class="settings-post-field">
+          <label for="settings-post-banner-ratio">文首横幅宽高比</label>
+          <input
+            id="settings-post-banner-ratio"
+            v-model.number="data.article.banner_ratio"
+            type="number"
+            step="0.1"
+            min="0"
+            :class="inputCls"
+            placeholder="0（使用主题默认值，如 2.5）"
+          />
+        </div>
+
+        <div class="settings-post-field">
+          <label for="settings-post-auto-excerpt">自动摘要长度</label>
+          <input
+            id="settings-post-auto-excerpt"
+            v-model.number="data.article.auto_excerpt"
+            type="number"
+            min="0"
+            :class="inputCls"
+            placeholder="0（关闭）"
+          />
+          <p class="settings-post-help">按字符数截取摘要，填写 0 关闭自动摘要。</p>
+        </div>
+
+        <div class="settings-post-field">
+          <label for="settings-post-related-posts">相关文章数上限</label>
+          <input
+            id="settings-post-related-posts"
+            v-model.number="data.article.related_posts"
+            type="number"
+            min="0"
+            :class="inputCls"
+            placeholder="0（关闭）"
+          />
+        </div>
+
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">显示字数与阅读时长</div>
+            <p class="settings-post-help">在文章卡片和文章页显示正文统计信息。</p>
+          </div>
+          <VSwitch v-model="data.article.reading_time" aria-label="显示字数与阅读时长" />
+        </div>
+
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">文章卡片显示标签</div>
+            <p class="settings-post-help">文章列表卡片最多显示 5 个标签。</p>
+          </div>
+          <VSwitch v-model="data.article.card_tags" aria-label="文章卡片显示标签" />
+        </div>
       </div>
     </section>
 
@@ -151,41 +194,43 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
         <p>控制正文排版、上下篇导航和文章时效提示。</p>
       </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">正文段落首行缩进两字符</div>
-          <p class="settings-post-help">适合中文长文阅读；关闭后正文保持常规左对齐。</p>
+      <div class="settings-section-body">
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">正文段落首行缩进两字符</div>
+            <p class="settings-post-help">适合中文长文阅读；关闭后正文保持常规左对齐。</p>
+          </div>
+          <VSwitch v-model="data.article.indent" aria-label="正文段落首行缩进两字符" />
         </div>
-        <VSwitch v-model="data.article.indent" aria-label="正文段落首行缩进两字符" />
-      </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">上下篇导航</div>
-          <p class="settings-post-help">在文章页底部显示较新与较早文章卡片。</p>
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">上下篇导航</div>
+            <p class="settings-post-help">在文章页底部显示较新与较早文章卡片。</p>
+          </div>
+          <VSwitch v-model="data.article.read_next" aria-label="上下篇导航" />
         </div>
-        <VSwitch v-model="data.article.read_next" aria-label="上下篇导航" />
-      </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">文章末尾显示标签</div>
-          <p class="settings-post-help">在正文后、页脚前显示文章标签行。</p>
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">文章末尾显示标签</div>
+            <p class="settings-post-help">在正文后、页脚前显示文章标签行。</p>
+          </div>
+          <VSwitch v-model="data.article.tags" aria-label="文章末尾显示标签" />
         </div>
-        <VSwitch v-model="data.article.tags" aria-label="文章末尾显示标签" />
-      </div>
 
-      <div class="settings-post-field">
-        <label for="settings-post-expire-days">过期提醒阈值</label>
-        <input
-          id="settings-post-expire-days"
-          v-model.number="data.article.expire_days"
-          type="number"
-          min="0"
-          :class="inputCls"
-          placeholder="0（使用默认 180 天）"
-        />
-        <p class="settings-post-help">文章发布超过指定天数后显示提醒，填写 0 使用默认值 180 天。</p>
+        <div class="settings-post-field">
+          <label for="settings-post-expire-days">过期提醒阈值</label>
+          <input
+            id="settings-post-expire-days"
+            v-model.number="data.article.expire_days"
+            type="number"
+            min="0"
+            :class="inputCls"
+            placeholder="0（使用默认 180 天）"
+          />
+          <p class="settings-post-help">文章发布超过指定天数后显示提醒，填写 0 使用默认值 180 天。</p>
+        </div>
       </div>
     </section>
 
@@ -195,61 +240,63 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
         <p>为分类设置颜色或图标，为标签设置图标。修改名称会同步更新对应映射键。</p>
       </div>
 
-      <div
-        v-for="target in ['category_color', 'category_icon', 'tag_icon'] as const"
-        :key="target"
-        class="settings-post-mapping-block"
-      >
-        <div class="settings-post-mapping-head">
-          <div>
-            <h3>
-              {{ target === "category_color" ? "分类颜色" : target === "category_icon" ? "分类图标" : "标签图标" }}
-            </h3>
-            <p v-if="target === 'category_color'" class="settings-post-help">填写 CSS 颜色值，例如 #1BCDFC。</p>
-            <p v-else class="settings-post-help">输入图标 key，或从当前图标库中选择。</p>
-          </div>
-          <button type="button" class="settings-post-add-btn" @click="addMapEntry(target)">
-            <Icon icon="ri:add-line" />
-            <span>添加</span>
-          </button>
-        </div>
-
-        <div class="settings-post-mapping-list">
-          <div v-for="key in Object.keys(data.article[target])" :key="key" class="settings-post-mapping-row">
-            <input
-              :value="key"
-              :class="inputCls"
-              placeholder="名称"
-              aria-label="映射名称"
-              @change="renameMapEntry(target, key, $event)"
-            />
-            <input
-              v-if="target === 'category_color'"
-              v-model="data.article[target][key]"
-              :class="inputCls"
-              placeholder="#1BCDFC"
-              aria-label="分类颜色"
-            />
-            <IconPicker
-              v-else
-              v-model="data.article[target][key]"
-              compact
-              placeholder="图标 key"
-              class="settings-post-icon-picker"
-            />
-            <button
-              type="button"
-              class="settings-post-row-btn settings-post-row-btn-danger"
-              title="删除"
-              aria-label="删除映射"
-              @click="removeMapEntry(target, key)"
-            >
-              <Icon icon="ri:delete-bin-line" />
+      <div class="settings-section-body">
+        <div
+          v-for="target in ['category_color', 'category_icon', 'tag_icon'] as const"
+          :key="target"
+          class="settings-post-mapping-block"
+        >
+          <div class="settings-post-mapping-head">
+            <div>
+              <h3>
+                {{ target === "category_color" ? "分类颜色" : target === "category_icon" ? "分类图标" : "标签图标" }}
+              </h3>
+              <p v-if="target === 'category_color'" class="settings-post-help">填写 CSS 颜色值，例如 #1BCDFC。</p>
+              <p v-else class="settings-post-help">输入图标 key，或从当前图标库中选择。</p>
+            </div>
+            <button type="button" class="settings-post-add-btn" @click="addMapEntry(target)">
+              <Icon icon="ri:add-line" />
+              <span>添加</span>
             </button>
           </div>
-          <p v-if="Object.keys(data.article[target]).length === 0" class="settings-post-empty">
-            暂无映射，可点击右上角添加。
-          </p>
+
+          <div class="settings-post-mapping-list">
+            <div v-for="key in Object.keys(data.article[target])" :key="key" class="settings-post-mapping-row">
+              <input
+                :value="key"
+                :class="inputCls"
+                placeholder="名称"
+                aria-label="映射名称"
+                @change="renameMapEntry(target, key, $event)"
+              />
+              <input
+                v-if="target === 'category_color'"
+                v-model="data.article[target][key]"
+                :class="inputCls"
+                placeholder="#1BCDFC"
+                aria-label="分类颜色"
+              />
+              <IconPicker
+                v-else
+                v-model="data.article[target][key]"
+                compact
+                placeholder="图标 key"
+                class="settings-post-icon-picker"
+              />
+              <button
+                type="button"
+                class="settings-post-row-btn settings-post-row-btn-danger"
+                title="删除"
+                aria-label="删除映射"
+                @click="removeMapEntry(target, key)"
+              >
+                <Icon icon="ri:delete-bin-line" />
+              </button>
+            </div>
+            <p v-if="Object.keys(data.article[target]).length === 0" class="settings-post-empty">
+              暂无映射，可点击右上角添加。
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -260,58 +307,60 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
         <p>设置文章页底部的版权信息和分享入口。</p>
       </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">显示版权声明</div>
-          <p class="settings-post-help">在文章末尾显示许可协议和版权提示。</p>
+      <div class="settings-section-body">
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">显示版权声明</div>
+            <p class="settings-post-help">在文章末尾显示许可协议和版权提示。</p>
+          </div>
+          <VSwitch v-model="data.article.copyright.enabled" aria-label="显示版权声明" />
         </div>
-        <VSwitch v-model="data.article.copyright.enabled" aria-label="显示版权声明" />
-      </div>
 
-      <div class="settings-post-field">
-        <label for="settings-post-license">协议名</label>
-        <input
-          id="settings-post-license"
-          v-model="data.article.copyright.license"
-          :class="inputCls"
-          placeholder="CC BY-NC 4.0"
-        />
-      </div>
-
-      <div class="settings-post-field">
-        <label for="settings-post-license-url">协议链接</label>
-        <input
-          id="settings-post-license-url"
-          v-model="data.article.copyright.license_url"
-          :class="inputCls"
-          placeholder="https://creativecommons.org/licenses/by-nc/4.0/"
-        />
-      </div>
-
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">启用分享</div>
-          <p class="settings-post-help">在文章页显示所选分享平台。</p>
+        <div class="settings-post-field">
+          <label for="settings-post-license">协议名</label>
+          <input
+            id="settings-post-license"
+            v-model="data.article.copyright.license"
+            :class="inputCls"
+            placeholder="CC BY-NC 4.0"
+          />
         </div>
-        <VSwitch v-model="data.article.share.enabled" aria-label="启用分享" />
-      </div>
 
-      <div class="settings-post-field settings-post-platform-field">
-        <span class="settings-post-field-label">分享平台</span>
-        <div class="settings-post-platforms" role="group" aria-label="分享平台">
-          <label
-            v-for="platform in platformOptions"
-            :key="platform"
-            class="settings-post-platform"
-            :class="{ active: data.article.share.platforms.includes(platform) }"
-          >
-            <input
-              type="checkbox"
-              :checked="data.article.share.platforms.includes(platform)"
-              @change="togglePlatform(platform)"
-            />
-            <span>{{ platform }}</span>
-          </label>
+        <div class="settings-post-field">
+          <label for="settings-post-license-url">协议链接</label>
+          <input
+            id="settings-post-license-url"
+            v-model="data.article.copyright.license_url"
+            :class="inputCls"
+            placeholder="https://creativecommons.org/licenses/by-nc/4.0/"
+          />
+        </div>
+
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">启用分享</div>
+            <p class="settings-post-help">在文章页显示所选分享平台。</p>
+          </div>
+          <VSwitch v-model="data.article.share.enabled" aria-label="启用分享" />
+        </div>
+
+        <div class="settings-post-field settings-post-platform-field">
+          <span class="settings-post-field-label">分享平台</span>
+          <div class="settings-post-platforms" role="group" aria-label="分享平台">
+            <label
+              v-for="platform in platformOptions"
+              :key="platform"
+              class="settings-post-platform"
+              :class="{ active: data.article.share.platforms.includes(platform) }"
+            >
+              <input
+                type="checkbox"
+                :checked="data.article.share.platforms.includes(platform)"
+                @change="togglePlatform(platform)"
+              />
+              <span>{{ platform }}</span>
+            </label>
+          </div>
         </div>
       </div>
     </section>
@@ -322,29 +371,32 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
         <p>在文章页提供可选的打赏入口和收款码。</p>
       </div>
 
-      <div class="settings-post-switch">
-        <div class="settings-post-switch-copy">
-          <div class="settings-post-switch-name">启用打赏</div>
-          <p class="settings-post-help">开启后，在文章页显示打赏按钮和收款码。</p>
+      <div class="settings-section-body">
+        <div class="settings-post-switch">
+          <div class="settings-post-switch-copy">
+            <div class="settings-post-switch-name">启用打赏</div>
+            <p class="settings-post-help">开启后，在文章页显示打赏按钮和收款码。</p>
+          </div>
+          <VSwitch v-model="data.article.reward.enabled" aria-label="启用打赏" />
         </div>
-        <VSwitch v-model="data.article.reward.enabled" aria-label="启用打赏" />
-      </div>
 
-      <div class="settings-post-field">
-        <label for="settings-post-reward-text">按钮文案</label>
-        <input id="settings-post-reward-text" v-model="data.article.reward.text" :class="inputCls" placeholder="赞赏" />
-      </div>
+        <div class="settings-post-field">
+          <label for="settings-post-reward-text">按钮文案</label>
+          <input id="settings-post-reward-text" v-model="data.article.reward.text" :class="inputCls" placeholder="赞赏" />
+        </div>
 
-      <div class="settings-post-field">
-        <span class="settings-post-field-label">微信收款码</span>
-        <AttachmentField v-model="data.article.reward.wechat" placeholder="输入图片 URL 或从附件库选择" />
-      </div>
+        <div class="settings-post-field">
+          <span class="settings-post-field-label">微信收款码</span>
+          <AttachmentField v-model="data.article.reward.wechat" placeholder="输入图片 URL 或从附件库选择" />
+        </div>
 
-      <div class="settings-post-field">
-        <span class="settings-post-field-label">支付宝收款码</span>
-        <AttachmentField v-model="data.article.reward.alipay" placeholder="输入图片 URL 或从附件库选择" />
+        <div class="settings-post-field">
+          <span class="settings-post-field-label">支付宝收款码</span>
+          <AttachmentField v-model="data.article.reward.alipay" placeholder="输入图片 URL 或从附件库选择" />
+        </div>
       </div>
     </section>
+    </div>
 
     <div class="settings-post-actions">
       <div class="settings-post-actions-inner">
@@ -362,29 +414,86 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
   background: var(--color-card);
 }
 
-.settings-post-section {
-  margin: 0;
-  padding: 28px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.settings-post-section-first {
-  padding-top: 30px;
-}
-
-.settings-post-section-heading {
+/* 顶部方案预览对比工具条 */
+.settings-style-preview-toolbar {
   max-width: 860px;
-  margin-bottom: 28px;
+  margin: 24px 28px 12px;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card));
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-radius: var(--radius-xl);
 }
 
-.settings-post-section-heading h2 {
-  margin: 0;
-  color: var(--color-foreground);
-  font-size: 17px;
+.settings-style-toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings-style-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
   font-weight: 650;
-  letter-spacing: -0.01em;
+  color: var(--color-primary);
 }
 
+.settings-style-toolbar-hint {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.settings-style-switcher {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-style-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.settings-style-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+.settings-style-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.settings-style-btn-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs, 4px);
+  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.settings-style-btn.active .settings-style-btn-tag {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* ================= 通用字段与说明文本基础排版 ================= */
 .settings-post-section-heading p,
 .settings-post-help {
   margin: 6px 0 0;
@@ -396,40 +505,27 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 .settings-post-field,
 .settings-post-switch {
   max-width: 860px;
-  margin: 0 0 24px;
-  padding: 0 0 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.settings-post-section > :last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: 0;
 }
 
 .settings-post-field > label,
 .settings-post-field-label {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: var(--color-foreground);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 550;
 }
 
 .settings-post-field > .apple-input,
 .settings-post-field > .apple-select {
   display: block;
   width: min(100%, 860px);
+  max-width: 860px;
 }
 
 .settings-post-field > :deep(.attachment-field),
 .settings-post-field > :deep(.ip-field) {
   width: min(100%, 860px);
-}
-
-.settings-post-field > .apple-input,
-.settings-post-field > .apple-select {
-  max-width: 860px;
 }
 
 .settings-post-switch {
@@ -446,8 +542,8 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 
 .settings-post-switch-name {
   color: var(--color-foreground);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 550;
   line-height: 1.4;
 }
 
@@ -462,7 +558,7 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 
 .settings-post-mapping-block {
   max-width: 860px;
-  margin: 0 0 28px;
+  margin: 0 0 24px;
 }
 
 .settings-post-mapping-block:last-child {
@@ -480,7 +576,7 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 .settings-post-mapping-head h3 {
   margin: 0;
   color: var(--color-foreground);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
@@ -594,6 +690,153 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
   color: var(--color-primary);
 }
 
+/* ================= 方案 1: 胶囊指示条 + 内嵌面板 (Panel) ================= */
+.settings-style-panel .settings-post-section {
+  margin: 0;
+  padding: 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-style-panel .settings-post-section-heading {
+  max-width: 860px;
+  margin-bottom: 18px;
+}
+
+.settings-style-panel .settings-post-section-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.settings-style-panel .settings-post-section-heading h2::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.settings-style-panel .settings-section-body {
+  max-width: 860px;
+  padding: 22px 24px;
+  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.settings-style-panel .settings-post-field,
+.settings-style-panel .settings-post-switch {
+  margin: 0 0 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.settings-style-panel .settings-section-body > :last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* ================= 方案 2: 独立次级卡片 (Card) ================= */
+.settings-style-card .settings-post-section {
+  max-width: 860px;
+  margin: 24px 28px 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-style-card .settings-post-section:last-of-type {
+  margin-bottom: 28px;
+}
+
+.settings-style-card .settings-post-section-heading {
+  margin-bottom: 0;
+  padding: 16px 24px;
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-style-card .settings-post-section-heading h2 {
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.settings-style-card .settings-section-body {
+  padding: 24px;
+}
+
+.settings-style-card .settings-post-field,
+.settings-style-card .settings-post-switch {
+  margin: 0 0 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-style-card .settings-section-body > :last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* ================= 方案 3: 标题色带 + 层级引导线 (Tree) ================= */
+.settings-style-tree .settings-post-section {
+  margin: 0;
+  padding: 26px 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-style-tree .settings-post-section-heading {
+  max-width: 860px;
+  margin-bottom: 20px;
+  padding: 12px 18px;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  border-left: 3.5px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.settings-style-tree .settings-post-section-heading h2 {
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.settings-style-tree .settings-section-body {
+  max-width: 860px;
+  margin-left: 12px;
+  padding-left: 24px;
+  border-left: 2px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
+}
+
+.settings-style-tree .settings-post-field,
+.settings-style-tree .settings-post-switch {
+  margin: 0 0 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-style-tree .settings-section-body > :last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* ================= 操作底栏 ================= */
 .settings-post-actions {
   position: sticky;
   bottom: 0;
@@ -612,22 +855,28 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 }
 
 @media (max-width: 640px) {
-  .settings-post-section {
+  .settings-style-preview-toolbar {
+    margin: 16px 16px 8px;
+    padding: 14px 16px;
+  }
+
+  .settings-style-panel .settings-post-section,
+  .settings-style-tree .settings-post-section {
     padding: 24px 16px;
   }
 
-  .settings-post-section-first {
-    padding-top: 26px;
+  .settings-style-card .settings-post-section {
+    margin: 16px 16px 0;
   }
 
-  .settings-post-section-heading {
-    margin-bottom: 24px;
+  .settings-style-panel .settings-section-body,
+  .settings-style-card .settings-section-body {
+    padding: 18px 16px;
   }
 
-  .settings-post-field,
-  .settings-post-switch {
-    margin-bottom: 22px;
-    padding-bottom: 22px;
+  .settings-style-tree .settings-section-body {
+    margin-left: 6px;
+    padding-left: 16px;
   }
 
   .settings-post-switch {
