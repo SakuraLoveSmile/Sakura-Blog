@@ -44,7 +44,7 @@ const uploadBusy = ref(false);
 const uploadError = ref("");
 const thumbError = ref(false);
 
-const previewSrc = computed(() => (props.modelValue || "").trim() || props.fallbackSrc);
+const previewSrc = computed(() => (props.modelValue || "").trim());
 const hasPreview = computed(() => !!previewSrc.value && !thumbError.value);
 
 // 值变化后重置缩略图错误标记，重新尝试加载。
@@ -248,11 +248,13 @@ onBeforeUnmount(() => {
         <Icon icon="ri:link" />
         <span>输入链接</span>
       </button>
-      <div class="attachment-menu-divider" role="separator"></div>
-      <button type="button" class="attachment-menu-item attachment-menu-item-danger" role="menuitem" @click="removeValue">
-        <Icon icon="ri:delete-bin-line" />
-        <span>移除</span>
-      </button>
+      <template v-if="hasPreview || (!showThumb && (modelValue || '').trim())">
+        <div class="attachment-menu-divider" role="separator"></div>
+        <button type="button" class="attachment-menu-item attachment-menu-item-danger" role="menuitem" @click="removeValue">
+          <Icon icon="ri:delete-bin-line" />
+          <span>移除</span>
+        </button>
+      </template>
     </div>
 
     <div

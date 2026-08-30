@@ -108,8 +108,8 @@ function handleSubmit() {
               v-model="data.site.favicon_url"
               placeholder="留空使用默认 /favicon.ico"
               show-thumb
-              fallback-src="/favicon.ico"
             />
+            <p class="settings-basic-help">留空时前台将自动使用默认的 /favicon.ico 图标。</p>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ function handleSubmit() {
               v-model="data.site.apple_touch_icon"
               placeholder="留空使用默认 /apple-touch-icon.png"
               show-thumb
-              fallback-src="/apple-touch-icon.png"
             />
+            <p class="settings-basic-help">留空时前台将自动使用默认的 /apple-touch-icon.png 图标。</p>
           </div>
         </div>
       </div>
