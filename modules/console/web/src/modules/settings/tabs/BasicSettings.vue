@@ -20,14 +20,28 @@ function handleSubmit() {
 
 <template>
   <form class="settings-basic-form" @submit.prevent="handleSubmit">
-    <section class="settings-basic-field settings-basic-field-first">
-      <label for="settings-site-title">站点标题 <span class="settings-required" aria-hidden="true">*</span></label>
-      <input id="settings-site-title" v-model="data.site.title" :class="[inputCls, 'settings-basic-input']" required />
-    </section>
+    <section class="settings-basic-section settings-basic-section-first">
+      <div class="settings-basic-section-heading">
+        <h2>站点身份</h2>
+        <p>设置站点的核心名称与副标题，显示在前台首页、导航栏与浏览器标签中。</p>
+      </div>
 
-    <section class="settings-basic-field">
-      <label for="settings-site-subtitle">站点副标题</label>
-      <input id="settings-site-subtitle" v-model="data.site.subtitle" :class="[inputCls, 'settings-basic-input']" />
+      <div class="settings-section-body">
+        <div class="settings-basic-field">
+          <label for="settings-site-title">站点标题 <span class="settings-required" aria-hidden="true">*</span></label>
+          <input id="settings-site-title" v-model="data.site.title" :class="[inputCls, 'settings-basic-input']" required />
+        </div>
+
+        <div class="settings-basic-field">
+          <label for="settings-site-subtitle">站点副标题</label>
+          <input
+            id="settings-site-subtitle"
+            v-model="data.site.subtitle"
+            :class="[inputCls, 'settings-basic-input']"
+            placeholder="例如：热爱生活，保持微笑"
+          />
+        </div>
+      </div>
     </section>
 
     <section class="settings-basic-section">
@@ -151,13 +165,16 @@ function handleSubmit() {
 }
 
 .settings-basic-field {
-  margin: 0;
-  padding: 24px 28px;
-  border-bottom: 1px solid var(--color-border);
+  max-width: 860px;
+  margin: 0 0 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
 }
 
-.settings-basic-field-first {
-  padding-top: 24px;
+.settings-section-body > :last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .settings-basic-field label,

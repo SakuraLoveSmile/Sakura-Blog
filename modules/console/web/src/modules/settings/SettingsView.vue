@@ -363,14 +363,39 @@ onBeforeRouteLeave((to, from, next) => {
   width: 100%;
   overflow: visible;
 }
+.settings-basic-panel :deep(.card-wrapper) {
+  border-radius: var(--radius-xl);
+  overflow: visible;
+}
 .settings-basic-panel :deep(.card-header) {
   padding: 16px 20px;
   background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
   border-bottom: 1px solid var(--color-border);
+  border-top-left-radius: calc(var(--radius-xl) - 1px);
+  border-top-right-radius: calc(var(--radius-xl) - 1px);
 }
 .settings-basic-panel :deep(.card-body) {
   padding: 0;
   overflow: visible;
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+}
+.settings-basic-panel :deep(.settings-basic-form),
+.settings-basic-panel :deep(.settings-post-form),
+.settings-basic-panel :deep(.settings-comments-form),
+.settings-basic-panel :deep(.settings-seo-form),
+.settings-basic-panel :deep(.settings-search-form),
+.settings-basic-panel :deep(.settings-advanced-form) {
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+}
+.settings-basic-panel :deep(.settings-basic-actions),
+.settings-basic-panel :deep(.settings-post-actions),
+.settings-basic-panel :deep(.settings-comments-actions),
+.settings-basic-panel :deep(.settings-seo-actions),
+.settings-basic-panel :deep(.settings-search-actions) {
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
 }
 .settings-dirty-badge {
   display: inline-flex;
