@@ -44,6 +44,9 @@ test("AttachmentField 提供 Halo 风格的附件操作菜单", () => {
   assert.match(view, /<span>移除<\/span>/);
   assert.match(view, /attachmentApi\.upload/);
   assert.match(view, /input\.value = ""/);
+  assert.match(view, /attachment-menu-preview/);
+  assert.match(view, /attachment-menu-empty/);
+  assert.match(view, /attachment-menu-inline/);
   assert.match(view, /attachment-link-editor/);
   assert.match(view, /event\.key !== "Escape"/);
   assert.match(view, /document\.addEventListener\("pointerdown"/);
