@@ -36,10 +36,29 @@ test("basic settings follows Halo identity and branding order", () => {
   assert.match(seo, /emit\('save', 'site'\)/);
 });
 
+test("post settings follows Halo vertical form order and keeps the article save contract", () => {
+  const post = read("modules/settings/tabs/PostSettings.vue");
+  assert.match(post, /<form class="settings-post-form" @submit\.prevent="handleSubmit">/);
+  const markers = ["文章展示", "文章布局类型", "阅读体验", "分类与标签映射", "版权与分享", "打赏"];
+  let previous = -1;
+  for (const marker of markers) {
+    const index = post.indexOf(marker);
+    assert.ok(index > previous, `${marker} should follow the previous post form group`);
+    previous = index;
+  }
+  assert.match(post, /settings-post-actions/);
+  assert.match(post, /native-type="submit"/);
+  assert.match(post, /emit\(["']save["'], ["']article["']\)/);
+  assert.match(post, /category_color/);
+  assert.match(post, /AttachmentField/);
+  assert.match(post, /IconPicker/);
+  assert.doesNotMatch(post, /<VCard title="文章设置">/);
+});
+
 test("settings center keeps structured forms and section save contracts split by tab", () => {
   const components: Array<[string, RegExp]> = [
     ["BasicSettings.vue", /emit\('save', 'site'\)/],
-    ["PostSettings.vue", /emit\('save', 'article'\)/],
+    ["PostSettings.vue", /emit\(["']save["'], ["']article["']\)/],
     ["CommentSettings.vue", /settingsApi\.testNotify/],
     ["SeoSettings.vue", /emit\('save', 'seo'\)/],
     ["SearchSettings.vue", /emit\('save', 'search'\)/],
@@ -92,4 +111,3 @@ test("legacy settings tabs redirect to their new owners", () => {
   ])
     assert.match(view, new RegExp(marker));
 });
-
