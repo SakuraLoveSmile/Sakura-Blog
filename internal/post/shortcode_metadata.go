@@ -147,12 +147,17 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"timeline": {
 		Title:       "时间轴 Timeline",
 		Description: "垂直时间轴，用 <!-- node 标题 --> 分隔节点。",
-		Signature:   "{% timeline %} <!-- node 时间 --> 内容 {% endtimeline %}",
+		Signature:   "{% timeline [api:URL] [user:用户] [hide:字段] %} <!-- node 时间 --> 内容 {% endtimeline %}",
 		Example:     "{% timeline %}\n<!-- node 2024-01 -->\n项目启动。\n<!-- node 2024-06 -->\n首个版本发布。\n{% endtimeline %}",
 		PreviewSet:  true,
 		Height:      260,
 		Fallback:    "时间轴内容来自示例正文，无需外部数据。",
-		ParamDocs:   []ShortcodeParamDoc{},
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "api", Desc: "数据服务 URL；填写后由客户端渲染时间流（组件库预览暂无 Fixture）", Default: "正文节点"},
+			{Name: "user", Desc: "只显示这些用户，逗号分隔", Default: "—"},
+			{Name: "limit", Desc: "透传给客户端，数量由 api 的 per_page 控制", Default: "—"},
+			{Name: "hide", Desc: "隐藏字段：user / title / footer，逗号分隔", Default: "—"},
+		},
 	},
 	"gallery": {
 		Title:       "图片墙 Gallery",

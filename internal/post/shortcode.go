@@ -279,8 +279,9 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 3 {
 			return match
 		}
+		argsStr := parts[1]
 		body := strings.TrimSpace(parts[2])
-		return renderTimeline(body, renderMD, tagPlugins)
+		return renderTimeline(argsStr, body, renderMD, tagPlugins)
 	})
 
 	// 4. gallery（块级）

@@ -99,11 +99,35 @@ func renderTip(argsStr, body string, renderMD func(string) string) string {
 	return fmt.Sprintf(`<span class="tag-plugin tip" tabindex="0"><span class="tip-text">%s</span><span class="tip-bubble" role="tooltip">%s</span></span>`, inner, html.EscapeString(text))
 }
 
-func renderTimeline(body string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
+// renderTimeline 渲染 {% timeline [api:URL] [user:...] [limit:...] [hide:...] %} 节点 {% endtimeline %}。
+// 有 api 时进入客户端数据服务模式（对齐原版 timeline.js 的 ds-timeline 容器）：
+// 容器结构与本仓库 widgets/timeline.html 一致——class 追加 " data-service ds-timeline"，
+// 属性为 data-api + 可选的 user/limit/hide（三者由 services/timeline.js 读取）。
+// 原版还允许任意 key 进 data-*，本项目收窄为白名单，避免属性注入面。
+// type 参数不支持：本仓库只随包发布 services/timeline.js 一个客户端服务，
+// 放行其它值只会产出无人渲染的空容器。
+func renderTimeline(argsStr, body string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
 	pairs := splitByMarker(reNodeSplit, body)
 
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"api", "user", "limit", "hide"}, nil)
+	// 安全审计 2026-08-30：api 走 scheme 白名单，非法值丢弃（不进入数据服务模式）
+	api := safeURL(named["api"])
+
 	var sb strings.Builder
-	sb.WriteString(`<div class="tag-plugin timeline"`)
+	sb.WriteString(`<div class="tag-plugin timeline`)
+	if api != "" {
+		sb.WriteString(` data-service ds-timeline`)
+	}
+	sb.WriteString(`"`)
+	if api != "" {
+		fmt.Fprintf(&sb, ` data-api="%s"`, html.EscapeString(api))
+	}
+	// 安全审计 2026-08-30：透传属性一律转义后再拼入
+	for _, key := range []string{"user", "limit", "hide"} {
+		if v := named[key]; v != "" {
+			fmt.Fprintf(&sb, ` %s="%s"`, key, html.EscapeString(v))
+		}
+	}
 	// tag_plugins.timeline.max_height：限高滚动（空=不限高，现状）
 	// 安全审计 2026-08-16：max-height 进 style，走 CSS 数值白名单，非法值丢弃
 	if mh := safeCSSNum(tagPlugins.Timeline.MaxHeight); mh != "" {

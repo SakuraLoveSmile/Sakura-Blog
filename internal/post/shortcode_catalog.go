@@ -213,7 +213,13 @@ var shortcodeRegistry = []shortcodeRegistration{
 	shortcodeEntry("tabs", ShortcodeBlock, "布局容器", ShortcodeInteractive, reTabs,
 		named("active", "默认激活序号（从 1 起）", nil), namedSelect("align", "对齐方式", nil, "", "left", "center", "right"),
 		content("content", "Tabs 内容（<!-- tab 标题 --> 分隔）", nil)),
+	// api 进入客户端数据服务模式（容器变 ds-timeline）；user/limit/hide 由 services/timeline.js 读取，
+	// 属性口径与本仓库 widgets/timeline.html 保持一致。原版允许任意 key 进 data-*，本项目收窄为白名单。
 	shortcodeEntry("timeline", ShortcodeBlock, "布局容器", ShortcodeStatic, reTimeline,
+		named("api", "数据服务 URL（填了则由客户端渲染时间流）", nil),
+		named("user", "只显示这些用户（逗号分隔）", nil),
+		named("limit", "透传给客户端（数量经 api 的 per_page 控制）", nil),
+		named("hide", "隐藏字段：user/title/footer（逗号分隔）", nil),
 		content("content", "时间轴内容（<!-- node 时间 --> 分隔）", nil)),
 	shortcodeEntry("gallery", ShortcodeBlock, "布局容器", ShortcodeInteractive, reGallery,
 		namedSelect("layout", "布局", "grid", "grid", "flow"), named("size", "尺寸模式", "mix"),
