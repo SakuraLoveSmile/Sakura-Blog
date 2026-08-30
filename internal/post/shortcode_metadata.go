@@ -27,11 +27,13 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"quot": {
 		Title:       "小标题 Quot",
 		Description: "带前缀图标的强调小标题，可作为锚点标题。",
-		Signature:   "{% quot [el:h2] [icon:图标] text:文本 %}",
+		Signature:   "{% quot [el:h2] [icon:图标] [prefix:图标] [suffix:图标] text:文本 %}",
 		Example:     "{% quot el:h2 text:这是一个小标题 %}",
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "el", Desc: "标题标签：p/h2/h3/h4/h5/h6", Default: "p"},
 			{Name: "icon", Desc: "前缀图标 key（Iconify）", Default: "hashtag"},
+			{Name: "prefix", Desc: "前缀图标 key，优先级高于 icon", Default: "主题默认"},
+			{Name: "suffix", Desc: "后缀图标 key", Default: "主题默认"},
 			{Name: "text", Desc: "标题文本（也可用位置参数）", Default: "—"},
 		},
 	},
@@ -394,7 +396,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"image": {
 		Title:       "增强图片 Image",
 		Description: "带尺寸/背景/下载/比例的增强图片。",
-		Signature:   "{% image src [alt] [width:宽] [bg:背景] [download:true] [ratio:比例] %}",
+		Signature:   "{% image src [alt] [width:宽] [bg:背景] [download:true/下载URL] [ratio:比例] %}",
 		Example:     "{% image /assets/img/preview/image-demo.jpg 博客界面截图 width:80% download:true %}",
 		PreviewSet:  true,
 		Height:      300,
@@ -402,7 +404,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "width", Desc: "宽度（如 300px / 50%）", Default: "100%"},
 			{Name: "bg", Desc: "背景色", Default: "—"},
-			{Name: "download", Desc: "true 显示下载按钮", Default: "false"},
+			{Name: "download", Desc: "true 用图片本身作下载地址，也可填自定义下载 URL", Default: "不显示"},
 			{Name: "ratio", Desc: "宽高比（如 16/9）", Default: "—"},
 			{Name: "height", Desc: "高度（如 300px / 50%）", Default: "—"},
 			{Name: "padding", Desc: "内边距", Default: "—"},
@@ -628,6 +630,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 			{Name: "style", Desc: "样式：qq/wechat", Default: "qq"},
 			{Name: "scene", Desc: "场景：group（全员左对齐）/single（me 靠右）", Default: "group"},
 			{Name: "me", Desc: "single 模式下靠右显示的参与者 key", Default: "—"},
+			{Name: "labelColorStyle", Desc: "成员标签配色风格（透传给成员标签）", Default: "—"},
 		},
 	},
 	"ghcard": {

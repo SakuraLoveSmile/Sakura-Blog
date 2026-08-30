@@ -177,8 +177,11 @@ var shortcodeRegistry = []shortcodeRegistration{
 	// --- 提示标注 ---
 	shortcodeEntry("note", ShortcodeInline, "提示标注", ShortcodeStatic, reNote,
 		namedSelect("color", "配色", "blue", shortcodeColors...), positional("title", "标题（可选）", nil), content("content", "内容", nil)),
+	// prefix/suffix 为渲染器真实消费的参数（shortcode_okr.go renderQuot），缺声明会让属性编辑重建时丢失
 	shortcodeEntry("quot", ShortcodeInline, "提示标注", ShortcodeStatic, reQuot,
-		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"), named("text", "标题文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
+		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"),
+		named("prefix", "前缀图标 key（留空用主题默认）", nil), named("suffix", "后缀图标 key（留空用主题默认）", nil),
+		named("text", "标题文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
 	shortcodeEntry("mark", ShortcodeInline, "提示标注", ShortcodeStatic, reMark,
 		positional("text", "文本", "重点内容"), namedSelect("color", "颜色", "yellow", shortcodeColors...)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("button", ShortcodeInline, "提示标注", ShortcodeStatic, reButton,
@@ -275,7 +278,9 @@ var shortcodeRegistry = []shortcodeRegistration{
 	shortcodeEntry("image", ShortcodeInline, "媒体播放", ShortcodeStatic, reImage,
 		positional("src", "图片地址", "/assets/img/preview/image-demo.jpg"), positional("alt", "替代文本", "风景图"),
 		named("width", "宽度", "80%"), named("height", "高度", nil), named("bg", "背景色", nil),
-		flag("download", "显示下载按钮", false), named("padding", "内边距", nil),
+		// download 对齐原版 image.js 的 [true/false/url]：渲染器已支持 URL 形态，
+		// 建模为 flag 会让 download:https://… 在属性面板直接报错（未知值不是布尔）
+		named("download", "下载按钮：true 用图片本身，或填下载 URL", nil), named("padding", "内边距", nil),
 		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"src"}}),
 	shortcodeEntry("link", ShortcodeInline, "媒体播放", ShortcodeStatic, reLink,
 		positional("url", "链接", "https://example.com"), positional("title", "标题", "示例站点"),
@@ -326,6 +331,8 @@ var shortcodeRegistry = []shortcodeRegistration{
 		positional("device", "设备", nil).withPlaceholder("iphone"),
 		namedSelect("style", "样式", "qq", "qq", "wechat"), named("title", "标题", nil),
 		namedSelect("scene", "场景", "group", "group", "single"), named("me", "靠右显示的参与者 key（single 模式）", nil),
+		// labelColorStyle 为渲染器真实消费的参数（shortcode_rich.go renderChat），缺声明会让属性编辑重建时丢失
+		named("labelColorStyle", "标签配色风格（渲染器透传给成员标签）", nil),
 		content("content", "参与者 YAML + 消息（<!-- chattip --> / <!-- chatcell -->）", nil)),
 
 	// --- GitHub ---
