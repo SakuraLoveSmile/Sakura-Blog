@@ -248,7 +248,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		argsStr := parts[1]
 		body := strings.TrimSpace(parts[2])
 
-		color, open, title := parseFoldingArgs(argsStr)
+		color, child, open, title := parseFoldingArgs(argsStr)
 		renderedBody := renderMD(body)
 
 		var sb strings.Builder
@@ -256,6 +256,10 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		// 安全审计 2026-08-16：color/title 用户可控，白名单/转义后再拼入
 		if c := safeColor(color); c != "" {
 			fmt.Fprintf(&sb, ` color="%s"`, html.EscapeString(c))
+		}
+		// 安全审计 2026-08-30：child 只放行 codeblock/iframe（main.css 仅定义这两类子元素排版）
+		if ch := safeFoldingChild(child); ch != "" {
+			fmt.Fprintf(&sb, ` child="%s"`, html.EscapeString(ch))
 		}
 		if open {
 			sb.WriteString(` open`)

@@ -202,7 +202,10 @@ var shortcodeRegistry = []shortcodeRegistration{
 
 	// --- 布局容器 ---
 	shortcodeEntry("folding", ShortcodeBlock, "布局容器", ShortcodeInteractive, reFolding,
-		namedSelect("color", "配色", nil, shortcodeColors...), flag("open", "默认展开", true),
+		namedSelect("color", "配色", nil, shortcodeColors...),
+		// child 对齐原版 folding.js 的 ['color','child','open']；只放行 main.css 定义的两类子元素排版
+		namedSelect("child", "子元素排版", nil, "", "codeblock", "iframe"),
+		flag("open", "默认展开", true),
 		positional("title", "标题", "点击查看详情"), content("content", "正文", "这里是折叠内容，支持 **Markdown**。")),
 	shortcodeEntry("tabs", ShortcodeBlock, "布局容器", ShortcodeInteractive, reTabs,
 		named("active", "默认激活序号（从 1 起）", nil), namedSelect("align", "对齐方式", nil, "", "left", "center", "right"),

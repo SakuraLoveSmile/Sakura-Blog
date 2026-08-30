@@ -28,6 +28,12 @@ func TestShortcodeXSSMitigation(t *testing.T) {
 			`<div class="title">&lt;b&gt;标题&lt;/b&gt;</div>`, `<div class="title"><b>`},
 		{"folding title 转义", `{% folding open:true <img src=x> %}内容{% endfolding %}`,
 			`<summary>&lt;img src=x&gt;</summary>`, `<summary><img`},
+		// D1 回归：child 未识别时曾被当成标题文本（渲染出「child:blue 标题」），
+		// 识别后非法值由白名单丢弃，既不输出 child 属性也不污染标题
+		{"folding child 非法值丢弃且不污染标题", `{% folding child:blue 标题 %}内容{% endfolding %}`,
+			`<summary>标题</summary>`, `child=`},
+		{"folding child 注入值丢弃", `{% folding child:codeblock<script> 标题 %}内容{% endfolding %}`,
+			`<summary>标题</summary>`, `<script>`},
 		{"[[text]] 快捷语法转义", `[[<script>alert(1)</script>]]`,
 			`<u class="p tag-plugin">&lt;script&gt;`, `<u class="p tag-plugin"><script>`},
 		{"{color|text} text 转义", `{red|<b>红</b>}`,
@@ -125,6 +131,33 @@ func TestRadioCheckedPositional(t *testing.T) {
 	out := runShortcodes("{% radio checked 已选中 %}")
 	if !strings.Contains(out, `<input type="radio" checked="true"/><span>已选中</span>`) {
 		t.Errorf("radio checked not rendered: %s", out)
+	}
+}
+
+// TestFoldingChildParam D1 回归：folding 的 child 必须被识别为命名参数（对齐原版 folding.js
+// 的 ['color','child','open']），而此前它会被拼进标题文本。
+func TestFoldingChildParam(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"codeblock 保留", "{% folding child:codeblock 代码示例 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" child="codeblock">`},
+		{"iframe 保留", "{% folding child:iframe 视频 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" child="iframe">`},
+		{"与 color/open 共存", "{% folding color:cyan child:codeblock open:true 标题 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" color="cyan" child="codeblock" open>`},
+		{"标题不再被 child 污染", "{% folding child:codeblock 代码示例 %}内容{% endfolding %}",
+			`<summary>代码示例</summary>`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := runShortcodes(tc.in)
+			if !strings.Contains(out, tc.want) {
+				t.Errorf("expected %q missing in: %s", tc.want, out)
+			}
+		})
 	}
 }
 

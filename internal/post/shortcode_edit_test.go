@@ -233,7 +233,13 @@ func TestParseShortcodeForEditSimpleTags(t *testing.T) {
 		{
 			name: "folding block",
 			raw:  "{% folding color:cyan open:true 点击查看详情 %}\n折叠正文\n{% endfolding %}",
-			want: map[string]any{"color": "cyan", "open": true, "title": "点击查看详情", "content": "折叠正文"},
+			want: map[string]any{"color": "cyan", "child": "", "open": true, "title": "点击查看详情", "content": "折叠正文"},
+		},
+		{
+			// child 必须被识别为命名参数而不是标题文本（原版 folding.js 的 ['color','child','open']）
+			name: "folding child 不污染标题",
+			raw:  "{% folding child:codeblock 代码示例 %}\n折叠正文\n{% endfolding %}",
+			want: map[string]any{"color": "", "child": "codeblock", "open": false, "title": "代码示例", "content": "折叠正文"},
 		},
 		{
 			name: "box block",

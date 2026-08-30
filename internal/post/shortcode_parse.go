@@ -65,14 +65,18 @@ func parseNamedPositionalArgs(args string, namedKeys, positionalKeys []string) (
 	return result, positional
 }
 
-// parseFoldingArgs 解析 folding 开标签参数：[color:xxx] [open:true/false] title
-func parseFoldingArgs(args string) (color string, open bool, title string) {
+// parseFoldingArgs 解析 folding 开标签参数：[color:xxx] [child:codeblock/iframe] [open:true/false] title
+// child 必须在此识别（对齐原版 folding.js 的 ['color','child','open']）：
+// 此前未识别的 child:xxx 会落进 remaining 被当成标题文本，渲染出「child:blue 标题」这类污染标题。
+func parseFoldingArgs(args string) (color, child string, open bool, title string) {
 	args = strings.TrimSpace(args)
 	var remaining []string
 
 	for _, tok := range splitArgs(args) {
 		if strings.HasPrefix(tok, "color:") {
 			color = strings.TrimPrefix(tok, "color:")
+		} else if strings.HasPrefix(tok, "child:") {
+			child = strings.TrimPrefix(tok, "child:")
 		} else if strings.HasPrefix(tok, "open:") {
 			open = strings.TrimPrefix(tok, "open:") == "true"
 		} else {

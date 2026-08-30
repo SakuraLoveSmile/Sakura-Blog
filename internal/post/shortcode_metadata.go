@@ -116,7 +116,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"folding": {
 		Title:       "折叠块 Folding",
 		Description: "可展开/收起的折叠区块，正文支持 Markdown。",
-		Signature:   "{% folding [color:颜色] [open:true] 标题 %} 正文 {% endfolding %}",
+		Signature:   "{% folding [color:颜色] [child:codeblock/iframe] [open:true] 标题 %} 正文 {% endfolding %}",
 		Example:     "{% folding color:cyan open:true 点击查看详情 %}\n这里是折叠内容，支持 **Markdown**。\n{% endfolding %}",
 		PreviewSet:  true,
 		MainJS:      true,
@@ -124,6 +124,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fallback:    "折叠块为原生 details 结构，无需脚本即可展开/收起。",
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色", Default: "—"},
+			{Name: "child", Desc: "子元素排版：codeblock（代码块）/iframe；其它值丢弃", Default: "—"},
 			{Name: "open", Desc: "true 时默认展开", Default: "false"},
 		},
 	},
