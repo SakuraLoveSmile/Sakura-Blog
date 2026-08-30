@@ -463,31 +463,26 @@ onBeforeUnmount(() => {
   transform: rotate(45deg);
 }
 
-/* 缩略图已有图片：气泡锚定在右上角 22px 按钮正下方，箭头对齐按钮中心 */
-.attachment-menu-preview {
-  top: 34px;
-  right: 0;
-  left: auto;
-}
-
-.attachment-menu-preview::before {
-  right: 11px;
-  left: auto;
-}
-
-/* 缩略图空状态：气泡在 112px 卡片正下方 */
+/* 缩略图模式（已有图片 / 空状态）：气泡均显示在缩略图右侧，彻底避免左侧边栏遮挡，且不遮挡图片预览 */
+.attachment-menu-preview,
 .attachment-menu-empty {
-  top: calc(100% + 8px);
+  top: 0;
   right: auto;
-  left: 0;
+  left: calc(100% + 12px);
 }
 
+.attachment-menu-preview::before,
 .attachment-menu-empty::before {
+  top: 12px;
   right: auto;
-  left: 24px;
+  left: -6px;
+  border-top: 0;
+  border-right: 0;
+  border-left: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-/* 单行输入框模式：气泡在右侧操作按钮下方 */
+/* 单行输入框模式：气泡在右侧操作按钮正下方 */
 .attachment-menu-inline {
   top: calc(100% + 6px);
   right: 0;
@@ -495,8 +490,33 @@ onBeforeUnmount(() => {
 }
 
 .attachment-menu-inline::before {
+  top: -6px;
   right: 12px;
   left: auto;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .attachment-menu-preview,
+  .attachment-menu-empty {
+    top: calc(100% + 8px);
+    right: auto;
+    left: 0;
+  }
+
+  .attachment-menu-preview::before,
+  .attachment-menu-empty::before {
+    top: -6px;
+    right: auto;
+    left: 20px;
+    border-top: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
+    border-right: 0;
+    border-bottom: 0;
+  }
 }
 
 .attachment-menu-item {
