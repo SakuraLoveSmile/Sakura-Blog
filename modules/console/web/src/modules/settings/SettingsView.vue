@@ -17,14 +17,23 @@ import "./settings-form.css";
 // Shared defaults retain the existing frontend enhancement safety boundary: card_hover.enable = false; card_hover.max_tilt = 3.
 
 const tabs = [
-  { key: "basic", label: "基本", description: "站点身份、标题与品牌资源" },
-  { key: "post", label: "文章", description: "文章排版、卡片、版权、分享与打赏" },
-  { key: "comments", label: "评论", description: "评论开关、审核与邮件通知" },
-  { key: "seo", label: "SEO", description: "站点来源、社交卡片与搜索引擎设置" },
-  { key: "search", label: "搜索", description: "本地索引范围与排除路径" },
-  { key: "advanced", label: "高级", description: "代码注入、缓存与原始 JSON 兜底" },
+  { key: "basic", label: "基本", icon: "ri:global-line", description: "站点身份、标题与品牌资源" },
+  { key: "post", label: "文章", icon: "ri:article-line", description: "文章排版、卡片、版权、分享与打赏" },
+  { key: "comments", label: "评论", icon: "ri:chat-3-line", description: "评论开关、审核与邮件通知" },
+  { key: "seo", label: "SEO", icon: "ri:search-eye-line", description: "站点来源、社交卡片与搜索引擎设置" },
+  { key: "search", label: "搜索", icon: "ri:search-line", description: "本地索引范围与排除路径" },
+  { key: "advanced", label: "高级", icon: "ri:code-line", description: "代码注入、缓存与原始 JSON 兜底" },
 ] as const;
-const tabItems = tabs.map((tab) => ({ id: tab.key, label: tab.label }));
+
+const tabSectionsMap: Record<string, string[]> = {
+  basic: ["site"],
+  post: ["article"],
+  comments: ["comments", "site_tree"],
+  seo: ["seo", "site"],
+  search: ["search"],
+  advanced: ["inject", "data_cache"],
+};
+
 const tabKeys = new Set<string>(tabs.map((tab) => tab.key));
 const legacyTabMap: Record<string, { path: string; tab?: string }> = {
   site: { path: "/settings", tab: "basic" },
@@ -61,10 +70,35 @@ const loadError = ref("");
 const savingKey = ref("");
 const savedSnapshot = ref<string>("");
 
-const isDirty = computed(() => {
-  if (loading.value || !savedSnapshot.value) return false;
-  return JSON.stringify(data.value) !== savedSnapshot.value;
+const dirtySections = computed<Set<string>>(() => {
+  if (loading.value || !savedSnapshot.value) return new Set();
+  const set = new Set<string>();
+  try {
+    const original = JSON.parse(savedSnapshot.value);
+    for (const key of ALL_SETTINGS_SECTIONS) {
+      if (JSON.stringify(data.value[key]) !== JSON.stringify(original[key])) {
+        set.add(key);
+      }
+    }
+  } catch {}
+  return set;
 });
+
+const isTabDirty = (tabKey: string) => {
+  const sections = tabSectionsMap[tabKey] || [];
+  return sections.some((s) => dirtySections.value.has(s));
+};
+
+const isDirty = computed(() => dirtySections.value.size > 0);
+
+const tabItems = computed(() =>
+  tabs.map((tab) => ({
+    id: tab.key,
+    label: tab.label,
+    icon: tab.icon,
+    dirty: isTabDirty(tab.key),
+  }))
+);
 
 function takeSnapshot() {
   savedSnapshot.value = JSON.stringify(data.value);
@@ -220,7 +254,7 @@ onBeforeRouteLeave((to, from, next) => {
               <VTabbar
                 v-model:active-id="active"
                 :items="tabItems"
-                type="default"
+                type="segmented"
                 class="settings-card-tabbar"
                 @change="navigateToTab"
               />
@@ -330,7 +364,9 @@ onBeforeRouteLeave((to, from, next) => {
   overflow: visible;
 }
 .settings-basic-panel :deep(.card-header) {
-  padding: 0;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
 }
 .settings-basic-panel :deep(.card-body) {
   padding: 0;
@@ -364,39 +400,13 @@ onBeforeRouteLeave((to, from, next) => {
   min-width: 0;
   overflow: hidden;
 }
-.settings-basic-panel :deep(.tabbar-default) {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding: 4px 6px;
-  border-bottom: 0;
-  scrollbar-color: var(--color-border) transparent;
-  scrollbar-width: thin;
-}
-.settings-basic-panel :deep(.tabbar-default .tabbar-item) {
-  flex: 0 0 auto;
-  min-height: 48px;
-  padding: 0 20px;
-  border-bottom: 0;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-}
-.settings-basic-panel :deep(.tabbar-default .tabbar-item:hover) {
-  background: var(--color-secondary);
-}
-.settings-basic-panel :deep(.tabbar-default .tabbar-item.active) {
-  background: var(--color-accent);
-  box-shadow: var(--shadow-sm);
-}
-.settings-basic-panel :deep(.tabbar-default .tabbar-item:focus-visible) {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
 .settings-tabs {
   align-self: stretch;
   display: flex;
   overflow-x: auto;
   flex-wrap: nowrap;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .settings-tabs::-webkit-scrollbar {
   display: none;

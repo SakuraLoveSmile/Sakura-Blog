@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { Icon } from "@iconify/vue";
 
 // Halo VTabbar 复刻（packages/components/src/components/tabbar/Tabbar.vue）
-// 支持 default / outline 两种风格，用于设置页、备份页等分标签场景。
+// 支持 default / outline / segmented 风格，用于设置页、备份页等分标签场景。
 export interface TabbarItem {
   id: string;
   label: string;
+  icon?: string;
+  dirty?: boolean;
 }
 
 const props = withDefaults(
@@ -14,8 +17,8 @@ const props = withDefaults(
     items: TabbarItem[];
     /** 当前激活的标签 id（v-model:active-id） */
     activeId?: string;
-    /** 风格：default 底部高亮条 / outline 胶囊填充 */
-    type?: "default" | "outline";
+    /** 风格：default 底部高亮条 / outline 胶囊填充 / segmented 悬浮分段胶囊 */
+    type?: "default" | "outline" | "segmented";
   }>(),
   {
     activeId: undefined,
@@ -38,15 +41,21 @@ function select(id: string) {
 </script>
 
 <template>
-  <div :class="['tabbar', `tabbar-${type}`]">
+  <div :class="['tabbar', `tabbar-${type}`]" role="tablist">
     <button
       v-for="item in items"
       :key="item.id"
-      :class="['tabbar-item', { active: item.id === current }]"
+      :class="['tabbar-item', { active: item.id === current, 'is-dirty': item.dirty }]"
       type="button"
+      role="tab"
+      :aria-selected="item.id === current"
       @click="select(item.id)"
     >
-      {{ item.label }}
+      <slot name="item" :item="item" :active="item.id === current">
+        <Icon v-if="item.icon" :icon="item.icon" class="tabbar-item-icon" />
+        <span class="tabbar-item-label">{{ item.label }}</span>
+        <span v-if="item.dirty" class="tabbar-item-dot" title="有未保存修改" aria-label="有未保存修改" />
+      </slot>
     </button>
   </div>
 </template>
@@ -65,6 +74,9 @@ function select(id: string) {
 
 .tabbar-default .tabbar-item {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -83,6 +95,9 @@ function select(id: string) {
   color: var(--color-foreground);
   border-bottom-color: var(--color-primary);
 }
+.tabbar-default .tabbar-item.active .tabbar-item-icon {
+  color: var(--color-primary);
+}
 
 /* outline 风格：Apple 胶囊分段控件 */
 .tabbar-outline {
@@ -93,6 +108,9 @@ function select(id: string) {
 }
 
 .tabbar-outline .tabbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -110,5 +128,68 @@ function select(id: string) {
   color: var(--color-foreground);
   background: var(--color-accent);
   box-shadow: var(--shadow-sm);
+}
+
+/* segmented 风格：Apple Segmented 悬浮分段胶囊（方案 A） */
+.tabbar-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  background: color-mix(in srgb, var(--color-background) 55%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 14px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tabbar-segmented .tabbar-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-xl, 14px) - 3px);
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.tabbar-segmented .tabbar-item:hover {
+  color: var(--color-foreground);
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+}
+
+.tabbar-segmented .tabbar-item.active {
+  color: var(--color-foreground);
+  background: var(--color-card);
+  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.tabbar-item-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.tabbar-segmented .tabbar-item.active .tabbar-item-icon {
+  color: var(--color-primary);
+  transform: scale(1.06);
+}
+
+.tabbar-item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-state-warning, #ff9f0a);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-state-warning) 80%, transparent);
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 </style>
