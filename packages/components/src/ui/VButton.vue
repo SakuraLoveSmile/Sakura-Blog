@@ -7,6 +7,7 @@ import type { RouteLocationRaw } from "vue-router";
 const props = withDefaults(
   defineProps<{
     type?: "default" | "primary" | "secondary" | "danger" | "ghost";
+    nativeType?: "button" | "submit" | "reset";
     size?: "lg" | "md" | "sm" | "xs";
     circle?: boolean;
     pill?: boolean;
@@ -17,6 +18,7 @@ const props = withDefaults(
   }>(),
   {
     type: "default",
+    nativeType: "button",
     size: "md",
     circle: false,
     pill: false,
@@ -50,7 +52,7 @@ function handleClick(e: MouseEvent) {
 </script>
 
 <template>
-  <button :class="classes" :disabled="disabled || loading" class="btn" type="button" @click="handleClick">
+  <button :class="classes" :disabled="disabled || loading" class="btn" :type="nativeType" @click="handleClick">
     <span v-if="$slots.icon || loading" class="btn-icon">
       <svg v-if="loading" class="animate-spin btn-spinner" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { getApiErrorMessage, settingsApi } from "@/api";
 import { Toast, VButton, VCard, VPageHeader, VTabbar } from "@/components/ui";
@@ -59,7 +59,17 @@ const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
 const loadError = ref("");
 const savingKey = ref("");
-const currentTab = computed(() => tabs.find((tab) => tab.key === active.value) || tabs[0]);
+const savedSnapshot = ref<string>("");
+
+const isDirty = computed(() => {
+  if (loading.value || !savedSnapshot.value) return false;
+  return JSON.stringify(data.value) !== savedSnapshot.value;
+});
+
+function takeSnapshot() {
+  savedSnapshot.value = JSON.stringify(data.value);
+}
+
 const { previewOpen, previewViewport, previewHtml, previewLoading, previewFocus, refreshPreview } = useSettingsPreview(
   data,
   active,
@@ -94,6 +104,7 @@ async function load() {
     data.value.wiki = sortWikiProjects(data.value.wiki);
     for (const section of ALL_SETTINGS_SECTIONS)
       rawText.value[section] = JSON.stringify(response[section] ?? null, null, 2);
+    takeSnapshot();
   } catch {
     loadError.value = "加载设置失败";
   } finally {
@@ -107,6 +118,7 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
     const body = payload !== undefined ? payload : data.value[section];
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
+    takeSnapshot();
     Toast.success("设置已保存，前台已生效");
     return true;
   } catch (error) {
@@ -129,6 +141,7 @@ async function saveJson(section: string) {
     await settingsApi.updateSection(section, payload);
     data.value[section] = payload;
     ensureSettingsDefaults(data.value);
+    takeSnapshot();
     Toast.success("设置已保存，前台已生效");
   } catch (error) {
     Toast.error(getApiErrorMessage(error, "JSON 解析或保存失败"));
@@ -149,9 +162,38 @@ watch(
   () => void applyRouteQuery(),
 );
 
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+}
+
 onMounted(() => {
   void applyRouteQuery();
   void load();
+  window.addEventListener("beforeunload", handleBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+});
+
+onBeforeRouteLeave((to, from, next) => {
+  if (to.path === from.path) {
+    next();
+    return;
+  }
+  if (isDirty.value) {
+    const confirmed = window.confirm("您有未保存的设置更改，离开后修改将丢失，是否确认离开？");
+    if (confirmed) {
+      next();
+    } else {
+      next(false);
+    }
+    return;
+  }
+  next();
 });
 </script>
 
@@ -159,7 +201,10 @@ onMounted(() => {
   <div class="settings-view" :class="{ 'preview-docked': previewOpen }">
     <VPageHeader title="系统设置">
       <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
-      <template #subtitle>基本、文章、评论、SEO、搜索与高级系统配置</template>
+      <template #subtitle>
+        <span>基本、文章、评论、SEO、搜索与高级系统配置</span>
+        <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
+      </template>
       <template #actions>
         <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" @click="previewOpen = !previewOpen">
           <template #icon><Icon icon="ri:eye-line" /></template><span>前端预览</span>
@@ -169,47 +214,18 @@ onMounted(() => {
 
     <div class="settings-container">
       <main class="settings-content">
-        <template v-if="active === 'basic'">
-          <VCard class="settings-basic-panel">
-            <template #header>
-              <div class="settings-card-tabs">
-                <VTabbar
-                  v-model:active-id="active"
-                  :items="tabItems"
-                  type="default"
-                  class="settings-card-tabbar"
-                  @change="navigateToTab"
-                />
-              </div>
-            </template>
-
-            <div v-if="loading" class="settings-state">
-              <Icon icon="ri:loader-4-line" class="settings-spin" width="22" height="22" /><span>加载中...</span>
+        <VCard class="settings-basic-panel">
+          <template #header>
+            <div class="settings-card-tabs settings-tabs">
+              <VTabbar
+                v-model:active-id="active"
+                :items="tabItems"
+                type="default"
+                class="settings-card-tabbar"
+                @change="navigateToTab"
+              />
             </div>
-            <div v-else-if="loadError" class="settings-state settings-state-error">
-              <Icon icon="ri:error-warning-line" width="22" height="22" /><span>设置加载失败：{{ loadError }}</span
-              ><VButton type="secondary" size="sm" @click="load">重试</VButton>
-            </div>
-            <BasicSettings v-else :data="data" :saving="savingKey" @save="save" />
-          </VCard>
-        </template>
-
-        <template v-else>
-          <div class="settings-heading">
-            <div class="settings-section-title">{{ currentTab.label }}</div>
-            <div class="settings-section-desc">{{ currentTab.description }}</div>
-          </div>
-          <nav class="settings-tabs apple-segmented rect" aria-label="系统设置分类">
-            <button
-              v-for="tab in tabs"
-              :key="tab.key"
-              type="button"
-              :class="{ active: active === tab.key }"
-              @click="navigateToTab(tab.key)"
-            >
-              {{ tab.label }}
-            </button>
-          </nav>
+          </template>
 
           <div v-if="loading" class="settings-state">
             <Icon icon="ri:loader-4-line" class="settings-spin" width="22" height="22" /><span>加载中...</span>
@@ -219,20 +235,23 @@ onMounted(() => {
             ><VButton type="secondary" size="sm" @click="load">重试</VButton>
           </div>
           <template v-else>
-            <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
-            <CommentSettings v-else-if="active === 'comments'" :data="data" :saving="savingKey" @save="saveComments" />
-            <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
-            <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
-            <AdvancedSettings
-              v-else
-              :data="data"
-              :raw-text="rawText"
-              :saving="savingKey"
-              @save="save"
-              @save-json="saveJson"
-            />
+            <BasicSettings v-if="active === 'basic'" :data="data" :saving="savingKey" @save="save" />
+            <div v-else class="settings-tab-content">
+              <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
+              <CommentSettings v-else-if="active === 'comments'" :data="data" :saving="savingKey" @save="saveComments" />
+              <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
+              <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
+              <AdvancedSettings
+                v-else-if="active === 'advanced'"
+                :data="data"
+                :raw-text="rawText"
+                :saving="savingKey"
+                @save="save"
+                @save-json="saveJson"
+              />
+            </div>
           </template>
-        </template>
+        </VCard>
       </main>
 
       <aside v-if="previewOpen" class="preview-panel">
@@ -317,6 +336,29 @@ onMounted(() => {
   padding: 0;
   overflow: visible;
 }
+.settings-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  color: var(--color-state-warning, #ff9f0a);
+  font-size: 12px;
+  font-weight: 500;
+}
+.settings-tab-content :deep(.card-wrapper) {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.settings-tab-content :deep(.card-wrapper::before) {
+  display: none;
+}
+.settings-tab-content :deep(.card-header) {
+  padding: 24px 28px 16px;
+}
+.settings-tab-content :deep(.card-body) {
+  padding: 0 28px 28px;
+}
 .settings-card-tabs {
   width: 100%;
   min-width: 0;
@@ -349,21 +391,6 @@ onMounted(() => {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
-.settings-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.settings-section-title {
-  color: var(--color-foreground);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-.settings-section-desc {
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-}
 .settings-tabs {
   align-self: stretch;
   display: flex;
@@ -373,10 +400,6 @@ onMounted(() => {
 }
 .settings-tabs::-webkit-scrollbar {
   display: none;
-}
-.settings-tabs button {
-  min-height: 44px;
-  white-space: nowrap;
 }
 .settings-state {
   display: flex;

@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
 import AttachmentField from "@/components/AttachmentField.vue";
-import { VButton } from "@/components/ui";
+import { Toast, VButton } from "@/components/ui";
 
-defineProps<{ data: Record<string, any>; saving: string }>();
+const props = defineProps<{ data: Record<string, any>; saving: string }>();
 const emit = defineEmits<{ save: [section: string] }>();
 const inputCls = "apple-input";
+
+function handleSubmit() {
+  const title = (props.data?.site?.title || "").trim();
+  if (!title) {
+    Toast.error("站点标题不能为空");
+    document.getElementById("settings-site-title")?.focus();
+    return;
+  }
+  emit('save', 'site');
+}
 </script>
 
 <template>
-  <div class="settings-basic-form">
+  <form class="settings-basic-form" @submit.prevent="handleSubmit">
     <section class="settings-basic-field settings-basic-field-first">
       <label for="settings-site-title">站点标题 <span class="settings-required" aria-hidden="true">*</span></label>
       <input id="settings-site-title" v-model="data.site.title" :class="[inputCls, 'settings-basic-input']" required />
@@ -121,12 +131,12 @@ const inputCls = "apple-input";
 
     <div class="settings-basic-actions">
       <div class="settings-basic-actions-inner">
-        <VButton type="primary" size="md" :loading="saving === 'site'" @click="emit('save', 'site')">
+        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'site'">
           <template #icon><Icon icon="ri:save-line" /></template>保存
         </VButton>
       </div>
     </div>
-  </div>
+  </form>
 </template>
 
 <style scoped>

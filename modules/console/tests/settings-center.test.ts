@@ -65,6 +65,22 @@ test("appearance, menu, author, assistant and friend settings routes are wired",
   assert.match(read("modules/friends/FriendSettings.vue"), /updateSection\("friends"/);
 });
 
+test("basic settings validates site title and supports native form submit", () => {
+  const basic = read("modules/settings/tabs/BasicSettings.vue");
+  assert.match(basic, /<form class="settings-basic-form" @submit\.prevent="handleSubmit">/);
+  assert.match(basic, /站点标题不能为空/);
+  assert.match(basic, /native-type="submit"/);
+});
+
+test("settings view tracks dirty state and guards unsaved changes on leave", () => {
+  const view = read("modules/settings/SettingsView.vue");
+  assert.match(view, /isDirty/);
+  assert.match(view, /onBeforeRouteLeave/);
+  assert.match(view, /beforeunload/);
+  assert.match(view, /settings-dirty-badge/);
+  assert.match(view, /settings-tab-content/);
+});
+
 test("legacy settings tabs redirect to their new owners", () => {
   const view = read("modules/settings/SettingsView.vue");
   for (const marker of [
@@ -76,3 +92,4 @@ test("legacy settings tabs redirect to their new owners", () => {
   ])
     assert.match(view, new RegExp(marker));
 });
+
