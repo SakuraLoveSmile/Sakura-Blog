@@ -250,7 +250,7 @@ base.html 必须严格复刻 `layout/layout.ejs` 的 `sitebg/siteblur > l_body >
 
 - `modules/console/web/embed.go` 用 `//go:embed all:dist` 嵌入 `dist/` 子树（embed 路径只能嵌包目录子树，故 embed.go 放在 console/ 内），随单二进制分发
 - 编译期要求 dist/ 已存在且非空：`go build` 前必须先在仓库根执行 `pnpm install --frozen-lockfile && pnpm --filter console run build`（Makefile 已固化该构建顺序）
-- `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 modules/console/web/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback
+- `setupConsoleRoutes` 托管 `/console/` 静态资源（`-dev` 开发模式从磁盘读 modules/console/web/dist），未匹配的 `/console/*` 由 NoRoute 返回 index.html 做 SPA fallback；**注意 Go 服务在启动时将 `index.html` 读入内存缓存（`consoleIndexData`），前端重新 build 生成新 chunk hash 后，必须重启 Go 服务才能刷新入口 index.html，纯前端重编不会热更新 Go 内存中的入口文件**
 - 数据统一走 `/api/v1` REST API（`modules/console/api/`），编辑器为 `src/components/MarkdownEditor.vue`，不再使用 EasyMDE 与 Go 模板渲染后台页
 
 ### /post/:slug DB 优先 + 文件回退的实现
