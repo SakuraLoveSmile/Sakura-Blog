@@ -27,10 +27,6 @@ const inputCls = "apple-input";
       </div>
 
       <div class="settings-basic-asset">
-        <div class="settings-basic-asset-preview" :class="{ empty: !data.site.avatar }">
-          <img v-if="data.site.avatar" :src="data.site.avatar" alt="Logo 主图预览" />
-          <Icon v-else icon="ri:image-line" width="28" height="28" aria-hidden="true" />
-        </div>
         <div class="settings-basic-asset-controls">
           <div class="settings-basic-label">Logo 主图</div>
           <AttachmentField v-model="data.site.avatar" placeholder="输入图片 URL" show-thumb />
@@ -39,13 +35,6 @@ const inputCls = "apple-input";
       </div>
 
       <div class="settings-basic-asset">
-        <div
-          class="settings-basic-asset-preview settings-basic-asset-preview-background"
-          :class="{ empty: !data.site.avatar_bg }"
-        >
-          <img v-if="data.site.avatar_bg" :src="data.site.avatar_bg" alt="Logo 悬停背景图预览" />
-          <Icon v-else icon="ri:gallery-line" width="28" height="28" aria-hidden="true" />
-        </div>
         <div class="settings-basic-asset-controls">
           <div class="settings-basic-label">Logo 悬停背景图（可选）</div>
           <AttachmentField v-model="data.site.avatar_bg" placeholder="输入图片 URL" show-thumb />
@@ -100,9 +89,6 @@ const inputCls = "apple-input";
         <p>浏览器标签页和收藏夹使用的站点图标。</p>
       </div>
       <div class="settings-basic-asset">
-        <div class="settings-basic-asset-preview settings-basic-asset-preview-icon">
-          <img :src="data.site.favicon_url || '/favicon.ico'" alt="Favicon 预览" />
-        </div>
         <div class="settings-basic-asset-controls">
           <div class="settings-basic-label">Favicon</div>
           <AttachmentField
@@ -121,9 +107,6 @@ const inputCls = "apple-input";
         <p>添加到 iOS/iPadOS 主屏幕时使用的图标。</p>
       </div>
       <div class="settings-basic-asset">
-        <div class="settings-basic-asset-preview settings-basic-asset-preview-icon">
-          <img :src="data.site.apple_touch_icon || '/apple-touch-icon.png'" alt="Apple Touch Icon 预览" />
-        </div>
         <div class="settings-basic-asset-controls">
           <div class="settings-basic-label">Apple Touch Icon</div>
           <AttachmentField
@@ -192,42 +175,12 @@ const inputCls = "apple-input";
   line-height: 1.5;
 }
 .settings-basic-asset {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 860px);
-  align-items: start;
-  gap: 24px;
+  display: block;
+  max-width: 860px;
   margin-top: 24px;
 }
 .settings-basic-section-heading + .settings-basic-asset {
   margin-top: 0;
-}
-.settings-basic-asset-preview {
-  display: flex;
-  width: 96px;
-  height: 96px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-secondary);
-  color: var(--color-text-quaternary);
-}
-.settings-basic-asset-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.settings-basic-asset-preview-background {
-  border-radius: 50%;
-}
-.settings-basic-asset-preview-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--radius-md);
-}
-.settings-basic-asset-preview.empty {
-  border-style: dashed;
 }
 .settings-basic-asset-controls {
   min-width: 0;
@@ -272,18 +225,6 @@ const inputCls = "apple-input";
   }
   .settings-basic-field-first {
     padding-top: 24px;
-  }
-  .settings-basic-asset {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .settings-basic-asset-preview {
-    width: 80px;
-    height: 80px;
-  }
-  .settings-basic-asset-preview-icon {
-    width: 64px;
-    height: 64px;
   }
   .settings-basic-actions {
     padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
