@@ -23,6 +23,7 @@ var shortcodeEditFixtures = map[string]string{
 	"folding":    "{% folding color:cyan open:true 点击查看详情 %}\n折叠正文\n{% endfolding %}",
 	"tabs":       "{% tabs active:1 %}\n<!-- tab 标签一 -->\n第一页内容。\n{% endtabs %}",
 	"timeline":   "{% timeline api:https://example.com/t.json hide:footer %}\n<!-- node 2024-01 -->\n项目启动。\n{% endtimeline %}",
+	"dropdown":   "{% dropdown direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
 	"gallery":    "{% gallery %}\n![首页界面](/assets/img/preview/gallery-1.jpg)\n{% endgallery %}",
 	"folders":    "{% folders color:blue %}\n<!-- folder 第一章 -->\n内容一。\n{% endfolders %}",
 	"grid":       "{% grid bg:card c:2 gap:12px %}\n<!-- cell -->\n### 博客技术\n{% endgrid %}",

@@ -36,6 +36,7 @@ export type PluginCapability = "static" | "interactive" | "service" | "external"
 export interface PluginPreviewInfo {
   capability: PluginCapability;
   services?: string[];
+  plugins?: string[];
   fixture?: string;
   mainJs?: boolean;
   height?: number;

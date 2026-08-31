@@ -4,6 +4,7 @@ import (
 	"blog/internal/settings"
 	"fmt"
 	"html"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -147,6 +148,100 @@ func renderTimeline(argsStr, body string, renderMD func(string) string, tagPlugi
 		sb.WriteString(`</div>`)
 	}
 	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// dropdownItem 是下拉项解析结果。
+type dropdownItem struct {
+	icon  string
+	title string
+	url   string
+}
+
+// reDropdownItem 对齐原版 dropdown.js:12 的单项正则：
+// 可选列表前缀（- / *）、可选前缀 icon:key、[title](url)、可选后缀 icon:key。
+var reDropdownItem = regexp.MustCompile(`^\s*(?:[-*]\s+)?(?:icon:([^\s]+)\s+)?\[([^\]]+)\]\(([^)\s]+)\)(?:\s+icon:([^\s]+))?\s*$`)
+
+func parseDropdownItems(body string) []dropdownItem {
+	var items []dropdownItem
+	for _, line := range strings.Split(body, "\n") {
+		m := reDropdownItem.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		icon := m[1]
+		if icon == "" {
+			icon = m[4]
+		}
+		items = append(items, dropdownItem{icon: icon, title: m[2], url: m[3]})
+	}
+	return items
+}
+
+// renderDropdown 渲染 {% dropdown [direction:up/down] [align:left/right] [open:true] title %}
+// - icon:key [title](url)
+// {% enddropdown %}
+// DOM 对齐原版 dropdown.js:39-62。icon 暂不渲染 SVG（依赖 ctx.utils.icon，本项目无对应
+// 解析器），仅保留 ui-collection__leading 容器并放 data-icon 占位，结构一致不破坏 CSS。
+func renderDropdown(argsStr, body string, renderMD func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"direction", "align", "open"}, []string{"title"})
+	title := named["title"]
+	if title == "" && len(positional) > 0 {
+		title = strings.Join(positional, " ")
+	}
+	if strings.TrimSpace(title) == "" {
+		return ""
+	}
+
+	items := parseDropdownItems(body)
+	if len(items) == 0 {
+		return ""
+	}
+
+	// 安全审计 2026-08-31：direction/align 走白名单，非法值回退 auto（与原版一致）
+	direction := "auto"
+	if named["direction"] == "up" || named["direction"] == "down" {
+		direction = named["direction"]
+	}
+	align := "auto"
+	if named["align"] == "left" || named["align"] == "right" {
+		align = named["align"]
+	}
+	open := named["open"] == "true"
+
+	var sb strings.Builder
+	// 安全审计 2026-08-31：direction/align 白名单后转义拼入
+	fmt.Fprintf(&sb, `<details class="tag-plugin dropdown" direction="%s" align="%s"`, html.EscapeString(direction), html.EscapeString(align))
+	if open {
+		sb.WriteString(` open`)
+	}
+	sb.WriteString(`>`)
+	// 安全审计 2026-08-31：title 用户可控，转义后再输出（summary 的 title/aria-label 与文本三处）
+	fmt.Fprintf(&sb, `<summary class="dropdown-trigger" title="%s" aria-label="%s"><span>%s</span>`, html.EscapeString(title), html.EscapeString(title), html.EscapeString(title))
+	sb.WriteString(`<svg class="dropdown-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`)
+	sb.WriteString(`</summary>`)
+	sb.WriteString(`<div class="dropdown-menu ui-collection" data-ui-surface="glass" data-layout="list" data-variant="nav" data-density="compact">`)
+	for _, it := range items {
+		// 安全审计 2026-08-31：url 用户可控，scheme 白名单（拒 javascript:/data: 等），非法项跳过
+		url := safeURL(it.url)
+		if url == "" {
+			continue
+		}
+		external := strings.Contains(url, "://")
+		fmt.Fprintf(&sb, `<a class="dropdown-item ui-collection__item card-hover card-hover--spotlight" href="%s"`, html.EscapeString(url))
+		if external {
+			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer">`)
+		} else {
+			sb.WriteString(` rel="noopener noreferrer">`)
+		}
+		if it.icon != "" {
+			// 安全审计 2026-08-31：icon 名仅作 data-icon 占位，转义后再输出
+			fmt.Fprintf(&sb, `<span class="ui-collection__leading"><i class="icon" data-icon="%s"></i></span>`, html.EscapeString(it.icon))
+		}
+		// 安全审计 2026-08-31：title 用户可控，转义后再输出
+		fmt.Fprintf(&sb, `<span class="ui-collection__content"><span class="ui-collection__title">%s</span></span></a>`, html.EscapeString(it.title))
+	}
+	sb.WriteString(`</div></details>`)
 	return sb.String()
 }
 

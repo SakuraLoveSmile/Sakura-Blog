@@ -30,6 +30,7 @@ export interface PluginCatalogItem {
   category: string;
   capability: "static" | "interactive" | "service" | "external";
   services?: string[];
+  plugins?: string[];
   fixture?: string;
   main_js?: boolean;
   height?: number;
@@ -114,6 +115,7 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
       preview: {
         capability: item.capability,
         services: item.services?.slice(),
+        plugins: item.plugins?.slice(),
         fixture: item.fixture,
         mainJs: item.main_js,
         height: item.height,

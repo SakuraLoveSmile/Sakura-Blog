@@ -21,6 +21,7 @@ var reTabs = regexp.MustCompile(`(?s){%\s*tabs\s*(.*?)\s*%}(.*?){%\s*endtabs\s*%
 
 // timeline 标签正则（块级）：{% timeline ... %} body {% endtimeline %}
 var reTimeline = regexp.MustCompile(`(?s){%\s*timeline\s*(.*?)\s*%}(.*?){%\s*endtimeline\s*%}`)
+var reDropdown = regexp.MustCompile(`(?s){%\s*dropdown\s*(.*?)\s*%}(.*?){%\s*enddropdown\s*%}`)
 
 // gallery 标签正则（块级）：{% gallery ... %} body {% endgallery %}
 var reGallery = regexp.MustCompile(`(?s){%\s*gallery\s*(.*?)\s*%}(.*?){%\s*endgallery\s*%}`)
@@ -282,6 +283,17 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		argsStr := parts[1]
 		body := strings.TrimSpace(parts[2])
 		return renderTimeline(argsStr, body, renderMD, tagPlugins)
+	})
+
+	// 3.1 dropdown（块级）
+	md = reDropdown.ReplaceAllStringFunc(md, func(match string) string {
+		parts := reDropdown.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+		argsStr := parts[1]
+		body := strings.TrimSpace(parts[2])
+		return renderDropdown(argsStr, body, renderMD)
 	})
 
 	// 4. gallery（块级）

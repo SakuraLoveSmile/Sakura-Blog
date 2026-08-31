@@ -91,6 +91,7 @@ type ShortcodeCatalogEntry struct {
 	Category    string                 `json:"category"`
 	Capability  ShortcodeCapability    `json:"capability"`
 	Services    []string               `json:"services,omitempty"`
+	Plugins     []string               `json:"plugins,omitempty"`
 	Fixture     string                 `json:"fixture,omitempty"`
 	MainJS      bool                   `json:"main_js,omitempty"`
 	Height      int                    `json:"height,omitempty"`
@@ -221,6 +222,14 @@ var shortcodeRegistry = []shortcodeRegistration{
 		named("limit", "透传给客户端（数量经 api 的 per_page 控制）", nil),
 		named("hide", "隐藏字段：user/title/footer（逗号分隔）", nil),
 		content("content", "时间轴内容（<!-- node 时间 --> 分隔）", nil)),
+	// 上游 dropdown.js 注册的 tag 级 icon 参数实际未被渲染使用，本项目不声明。
+	// 下拉项图标依赖 ctx.utils.icon（本项目无对应解析器），仅输出 data-icon 占位容器。
+	shortcodeEntry("dropdown", ShortcodeBlock, "布局容器", ShortcodeInteractive, reDropdown,
+		namedSelect("direction", "弹出方向", nil, "", "up", "down"),
+		namedSelect("align", "对齐", nil, "", "left", "right"),
+		flag("open", "默认展开", false),
+		positional("title", "触发按钮文字", "菜单"),
+		content("content", "下拉项（每行一个 - [标题](链接)，可前缀 icon:key）", "- [首页](/)\n- [关于](/about)")),
 	shortcodeEntry("gallery", ShortcodeBlock, "布局容器", ShortcodeInteractive, reGallery,
 		namedSelect("layout", "布局", "grid", "grid", "flow"), named("size", "尺寸模式", "mix"),
 		named("ratio", "宽高比", "origin"), content("content", "图片（每行一个 Markdown 图片）", nil)),
@@ -360,6 +369,7 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
 			if display.PreviewSet {
 				entry.Services = append([]string(nil), display.Services...)
+				entry.Plugins = append([]string(nil), display.Plugins...)
 				entry.Fixture = display.Fixture
 				entry.MainJS = display.MainJS
 				entry.Height = display.Height

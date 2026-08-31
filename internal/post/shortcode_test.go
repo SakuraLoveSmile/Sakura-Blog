@@ -114,6 +114,72 @@ func TestShortcodeXSSMitigation(t *testing.T) {
 	}
 }
 
+// TestDropdownTag 覆盖 dropdown 标签渲染：DOM 对齐原版 dropdown.js:39-62，
+// 含方向/对齐白名单、open、外部链接 target、图标占位，以及标题转义与 javascript: 链接丢弃。
+func TestDropdownTag(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want []string
+		bad  []string
+	}{
+		{"基础结构", `{% dropdown 菜单 %}
+- [首页](/)
+- [关于](/about)
+{% enddropdown %}`,
+			[]string{
+				`<details class="tag-plugin dropdown" direction="auto" align="auto">`,
+				`<summary class="dropdown-trigger" title="菜单" aria-label="菜单"><span>菜单</span>`,
+				`<svg class="dropdown-arrow"`,
+				`<div class="dropdown-menu ui-collection" data-ui-surface="glass" data-layout="list" data-variant="nav" data-density="compact">`,
+				`<a class="dropdown-item ui-collection__item card-hover card-hover--spotlight" href="/" rel="noopener noreferrer">`,
+				`<span class="ui-collection__title">首页</span>`,
+				`href="/about" rel="noopener noreferrer">`,
+			}, []string{}},
+		{"方向/对齐白名单：非法值回退 auto", `{% dropdown direction:sideways align:center 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`direction="auto" align="auto"`}, []string{`direction="sideways"`, `align="center"`}},
+		{"open 渲染 open 属性", `{% dropdown open:true 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`<details class="tag-plugin dropdown" direction="auto" align="auto" open>`}, []string{}},
+		{"外部链接加 target=_blank rel", `{% dropdown 菜单 %}
+- [外站](https://example.com)
+{% enddropdown %}`,
+			[]string{`href="https://example.com" target="_blank" rel="external nofollow noopener noreferrer">`}, []string{}},
+		{"图标占位 data-icon", `{% dropdown 菜单 %}
+icon:home [首页](/)
+{% enddropdown %}`,
+			[]string{`<span class="ui-collection__leading"><i class="icon" data-icon="home"></i></span>`}, []string{}},
+		{"标题转义", `{% dropdown <script>alert(1)</script> 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`title="&lt;script&gt;alert(1)&lt;/script&gt;"`, `aria-label="&lt;script&gt;alert(1)&lt;/script&gt;"`}, []string{`title="<script`}},
+		{"javascript: 链接被丢弃（危险项不渲染，安全项保留）", `{% dropdown 菜单 %}
+- [首页](/)
+- [陷阱](javascript:evil)
+{% enddropdown %}`,
+			[]string{`href="/" rel="noopener noreferrer">`, `<span class="ui-collection__title">首页</span>`}, []string{`javascript:`, `href="javascript`}},
+		{"空标题不渲染", `{% dropdown %}{% enddropdown %}`, []string{}, []string{`<details`}},
+		{"无下拉项不渲染", `{% dropdown 菜单 %}`, []string{}, []string{`<details`}},
+	}
+
+	for _, c := range cases {
+		out := runShortcodes(c.in)
+		for _, w := range c.want {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s 缺少期望片段 %q\n输出: %s", c.name, w, out)
+			}
+		}
+		for _, b := range c.bad {
+			if strings.Contains(out, b) {
+				t.Errorf("%s 出现禁止片段 %q\n输出: %s", c.name, b, out)
+			}
+		}
+	}
+}
+
 func TestRadioAndCheckboxCoexist(t *testing.T) {
 	out := runShortcodes("{% checkbox checked:true 选项A %}\n{% radio color:cyan 选项B %}")
 	if !strings.Contains(out, `<input type="checkbox" checked="true"/><span>选项A</span>`) {

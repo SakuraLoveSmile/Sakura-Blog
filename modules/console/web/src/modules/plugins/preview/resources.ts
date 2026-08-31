@@ -28,6 +28,14 @@ export const MARKED_CDN = "/assets/vendor/marked/marked.umd.min.js";
 /** 前台交互初始化脚本（tabs/folding/navbar 等）。 */
 export const MAIN_JS = "/assets/js/main.js";
 
+/**
+ * 前台独立插件脚本（IIFE，自行在 DOMContentLoaded 后绑定）：dropdown 等。
+ * 与 services/*.js 区分——service 是数据服务 + Fixture，plugin 是纯交互增强。
+ */
+export const PLUGIN_SCRIPTS: Record<string, string> = {
+  dropdown: "/assets/js/plugins/dropdown.js",
+};
+
 /** 预览 iframe 固定注入的样式（与前台 head.html 顺序一致）。 */
 export const PREVIEW_STYLES = [
   "/assets/fonts/lxgw/lxgwwenkaiscreen.css",
@@ -59,6 +67,11 @@ export function previewScriptsFor(info: PluginPreviewInfo): string[] {
   for (const name of info.services || []) {
     const url = SERVICE_SCRIPTS[name];
     if (url) out.push(url);
+  }
+  // 独立插件脚本（IIFE，自行绑定）：与 services 同序追加在末尾
+  for (const name of info.plugins || []) {
+    const url = PLUGIN_SCRIPTS[name];
+    if (url && !out.includes(url)) out.push(url);
   }
   return out;
 }

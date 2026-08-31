@@ -8,6 +8,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	Example     string
 	PreviewSet  bool
 	Services    []string
+	Plugins     []string
 	Fixture     string
 	MainJS      bool
 	Height      int
@@ -157,6 +158,23 @@ var shortcodeDisplayMetadata = map[string]struct {
 			{Name: "user", Desc: "只显示这些用户，逗号分隔", Default: "—"},
 			{Name: "limit", Desc: "透传给客户端，数量由 api 的 per_page 控制", Default: "—"},
 			{Name: "hide", Desc: "隐藏字段：user / title / footer，逗号分隔", Default: "—"},
+		},
+	},
+	"dropdown": {
+		Title:       "下拉菜单 Dropdown",
+		Description: "点击展开的菜单，下拉项每行一个 - [标题](链接)，可前缀 icon:key。",
+		Signature:   "{% dropdown [direction:up/down] [align:left/right] [open:true] 标题 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
+		Example:     "{% dropdown direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
+		PreviewSet:  true,
+		Height:      200,
+		// dropdown.js 是前台独立插件脚本（base.html 无条件注入），负责把菜单 portal 到 body 实现悬浮定位
+		Plugins:  []string{"dropdown"},
+		Fallback: "菜单为原生 details 结构，无需脚本即可展开/收起（悬浮定位由前台 dropdown.js 增强）。",
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "direction", Desc: "弹出方向 up / down，留空自动", Default: "auto"},
+			{Name: "align", Desc: "对齐 left / right，留空自动", Default: "auto"},
+			{Name: "open", Desc: "true 时默认展开", Default: "false"},
+			{Name: "title", Desc: "触发按钮文字（也可用位置参数）", Default: "菜单"},
 		},
 	},
 	"gallery": {
