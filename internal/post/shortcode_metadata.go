@@ -164,9 +164,9 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Title:       "下拉菜单 Dropdown",
 		Description: "点击展开的菜单，下拉项每行一个 - [标题](链接)，可前缀 icon:key。",
 		Signature:   "{% dropdown [direction:up/down] [align:left/right] [open:true] 标题 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
-		Example:     "{% dropdown direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
+		Example:     "{% dropdown open:true direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n- [归档](/archives)\n{% enddropdown %}",
 		PreviewSet:  true,
-		Height:      200,
+		Height:      260,
 		// dropdown.js 是前台独立插件脚本（base.html 无条件注入），负责把菜单 portal 到 body 实现悬浮定位
 		Plugins:  []string{"dropdown"},
 		Fallback: "菜单为原生 details 结构，无需脚本即可展开/收起（悬浮定位由前台 dropdown.js 增强）。",

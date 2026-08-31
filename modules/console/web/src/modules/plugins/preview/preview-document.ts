@@ -279,6 +279,7 @@ ${styleLinks}
 html,body{margin:0;padding:0}
 body{padding:24px;background:var(--background,#1c1c1e);font-family:"LXGW WenKai Screen",system-ui,"Microsoft Yahei","Helvetica Neue",Helvetica,Arial,sans-serif}
 .md-text{max-width:760px;margin:0 auto}
+.dropdown[open] > .dropdown-menu{visibility:visible;opacity:1}
 .preview-hint{margin:10px 0;padding:10px 12px;border:1px dashed var(--border,#666);border-radius:8px;color:var(--text-p3,#999);font-size:13px}
 </style>
 ${extraHead}

@@ -189,13 +189,12 @@ func renderDropdown(argsStr, body string, renderMD func(string) string) string {
 	if title == "" && len(positional) > 0 {
 		title = strings.Join(positional, " ")
 	}
-	if strings.TrimSpace(title) == "" {
-		return ""
-	}
-
 	items := parseDropdownItems(body)
 	if len(items) == 0 {
 		return ""
+	}
+	if strings.TrimSpace(title) == "" {
+		title = "菜单"
 	}
 
 	// 安全审计 2026-08-31：direction/align 走白名单，非法值回退 auto（与原版一致）
