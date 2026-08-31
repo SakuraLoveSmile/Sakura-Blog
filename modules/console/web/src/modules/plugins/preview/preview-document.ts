@@ -119,7 +119,36 @@ const utils = {
       else markBackground(el);
     });
   }
-  window.wrapLazyloadImages = eagerLoad;
+  // 前台 wrapLazyloadImages 会把裸 img 包进 .lazy-box（layout/_partial/scripts/lazyload.ejs），
+  // 卡片样式全部挂在 .lazy-box > img 上（如 .sites-wrap .site-card）。预览若只做 eagerLoad
+  // 而不包裹，站点卡片的封面裁切/圆角/阴影与 28px 头像全部落空，与前台渲染不一致。
+  function wrapBareImages(container) {
+    if (typeof container === 'string') container = document.querySelector(container);
+    if (!container || container.nodeType !== 1) return;
+    container.querySelectorAll('img').forEach(function (img) {
+      if (img.classList.contains('lazy')) return; // 幂等：已包裹的不重复处理
+      var src = img.getAttribute('src');
+      if (!src) return;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'lazy-box';
+      var next = img.cloneNode();
+      next.removeAttribute('src');
+      next.setAttribute('data-src', src);
+      next.classList.add('lazy');
+      var icon = document.createElement('div');
+      icon.className = 'lazy-icon';
+      wrapper.appendChild(next);
+      wrapper.appendChild(icon);
+      img.replaceWith(wrapper);
+    });
+  }
+  // 先包裹再 eagerLoad：包裹产生的 img.lazy 由 eagerLoad 把 data-src 解析回 src，
+  // 后续 MutationObserver 也会覆盖异步插入的节点。
+  function wrapLazyloadImages(container) {
+    wrapBareImages(container);
+    eagerLoad(container);
+  }
+  window.wrapLazyloadImages = wrapLazyloadImages;
   eagerLoad(document);
   if (window.MutationObserver && document.body) {
     new MutationObserver(function (mutations) {
