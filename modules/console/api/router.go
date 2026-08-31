@@ -260,6 +260,15 @@ func (h *Handler) register(r *gin.Engine) {
 	// RAG 前台问答：是否启用与 BYOK 策略在 handler 内判定。
 	v1.POST("/rag/ask/public", h.ragAskPublic)
 
+	// 组件库预览 Fixture 端点（Spec 63）：只服务 iframe 预览，不落库、不发外部请求，公开免鉴权以兼容 sandboxed srcdoc iframe
+	v1.GET("/preview/rating", h.previewRatingFixture)
+	v1.POST("/preview/rating", h.previewRatingFixtureSubmit)
+	v1.GET("/preview/vote/info", h.previewVoteFixtureInfo)
+	v1.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
+	v1.GET("/preview/friends", h.previewFriendsFixture)
+	v1.GET("/preview/sites", h.previewSitesFixture)
+	v1.GET("/preview/md", h.previewMDFixture)
+
 	// 需认证路由（账户级：资料/令牌/通知/改密，任何登录角色可用）
 	authed := v1.Group("", h.apiAuth())
 	{
@@ -357,15 +366,6 @@ func (h *Handler) register(r *gin.Engine) {
 		author.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
 		author.POST("/preview/post", h.createPostPreview)
-
-		// 组件库预览 Fixture 端点（Spec 63）：只服务预览，不落库、不发外部请求
-		author.GET("/preview/rating", h.previewRatingFixture)
-		author.POST("/preview/rating", h.previewRatingFixtureSubmit)
-		author.GET("/preview/vote/info", h.previewVoteFixtureInfo)
-		author.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
-		author.GET("/preview/friends", h.previewFriendsFixture)
-		author.GET("/preview/sites", h.previewSitesFixture)
-		author.GET("/preview/md", h.previewMDFixture)
 
 		// 附件
 		author.GET("/attachments", h.listAttachments)
