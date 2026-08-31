@@ -52,6 +52,8 @@ export const FIXTURE_ITEMS: FixtureItem[] = [
       null,
       2,
     ),
+    emptyData: JSON.stringify({ content: [] }, null, 2),
+    schemaHint: "{ content: Array<{ title: string, url: string, ... }> }",
   },
   {
     id: "sites",
@@ -120,6 +122,8 @@ export const FIXTURE_ITEMS: FixtureItem[] = [
       null,
       2,
     ),
+    emptyData: JSON.stringify({ content: [] }, null, 2),
+    schemaHint: "{ content: Array<{ title: string, url: string, ... }> }",
   },
   {
     id: "rating",
@@ -140,6 +144,8 @@ export const FIXTURE_ITEMS: FixtureItem[] = [
       null,
       2,
     ),
+    emptyData: JSON.stringify({ avg: 0, count: 0 }, null, 2),
+    schemaHint: "{ avg: number, count: number >= 0 }",
   },
   {
     id: "vote",
@@ -162,6 +168,8 @@ export const FIXTURE_ITEMS: FixtureItem[] = [
       null,
       2,
     ),
+    emptyData: JSON.stringify({ votes: { up: 0, down: 0 } }, null, 2),
+    schemaHint: "{ votes: { up: number >= 0, down: number >= 0 } }",
   },
   {
     id: "md",
@@ -174,6 +182,8 @@ export const FIXTURE_ITEMS: FixtureItem[] = [
     previewShortcode: "{% md src:/assets/md/preview/example.md %}",
     previewHeight: 300,
     sampleShortcodes: ["{% md src:/assets/md/preview/example.md %}"],
+    emptyData: "",
+    schemaHint: "Markdown text",
     defaultData: `# 外部 Markdown Fixture
 
 这是一段**确定性 Fixture** 内容，用于组件库预览：

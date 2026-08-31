@@ -16,6 +16,7 @@ export interface MockFixtureConfig {
   format: "json" | "markdown";
   state: "normal" | "empty" | "error";
   customData?: string;
+  emptyData?: string;
 }
 
 export interface PreviewDocOptions {
@@ -51,10 +52,15 @@ const deps = { marked: '/assets/vendor/marked/marked.umd.min.js', lazyload: '/as
     window.fetch = function (input, init) {
       var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
       var path = '';
-      try { path = new URL(url, window.location.href).pathname; } catch (e) { path = url; }
+      try {
+        path = new URL(url, window.location.href).pathname;
+      } catch (e) {
+        // about:srcdoc 不能作为相对 URL 的 base；仍需去掉 query/hash 后做 pathname 精确匹配。
+        path = String(url).replace(/^[a-z][a-z0-9+.-]*:\\/\\/[^/]+/i, '').split(/[?#]/)[0];
+      }
       for (var key in fixtures) {
         var f = fixtures[key];
-        if (f && f.endpoint && path.indexOf(f.endpoint) !== -1) {
+        if (f && f.endpoint && path === f.endpoint) {
           if (f.state === 'error') {
             return Promise.resolve(new Response(JSON.stringify({ status: 500, error: 'simulated fixture error' }), {
               status: 500,
@@ -63,7 +69,7 @@ const deps = { marked: '/assets/vendor/marked/marked.umd.min.js', lazyload: '/as
             }));
           }
           if (f.state === 'empty') {
-            var emptyText = f.format === 'markdown' ? '' : (key === 'vote' ? '{"votes":{"up":0,"down":0}}' : (key === 'rating' ? '{"avg":0,"count":0}' : '{"content":[]}'));
+            var emptyText = f.emptyData != null ? f.emptyData : '';
             return Promise.resolve(new Response(emptyText, {
               status: 200,
               headers: { 'Content-Type': f.format === 'markdown' ? 'text/markdown; charset=utf-8' : 'application/json; charset=utf-8' }

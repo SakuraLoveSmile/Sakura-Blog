@@ -1,15 +1,11 @@
 import { ref, computed } from "vue";
 import type { FixtureItem, FixtureOverrideConfig, FixtureState } from "./fixture-types";
 import { FIXTURE_ITEMS } from "./fixture-definitions";
+import { parseFixtureImport, type PersistedFixtureState } from "./fixture-import";
 
 const STORAGE_KEY = "blog:console:mock_fixtures_v1";
 
-interface PersistedState {
-  customData: Record<string, string>;
-  states: Record<string, FixtureState>;
-}
-
-function loadPersistedState(): PersistedState {
+function loadPersistedState(): PersistedFixtureState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { customData: {}, states: {} };
@@ -23,7 +19,7 @@ function loadPersistedState(): PersistedState {
   }
 }
 
-function savePersistedState(state: PersistedState) {
+function savePersistedState(state: PersistedFixtureState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
@@ -57,12 +53,14 @@ export function useFixtureStore() {
     return custom !== undefined && custom !== def;
   };
 
+  const isModified = (id: string): boolean => {
+    return isCustom(id) || (states.value[id] !== undefined && states.value[id] !== "normal");
+  };
+
   const customCount = computed<number>(() => {
     let count = 0;
     for (const item of FIXTURE_ITEMS) {
-      if (isCustom(item.id) || (states.value[item.id] && states.value[item.id] !== "normal")) {
-        count++;
-      }
+      if (isModified(item.id)) count++;
     }
     return count;
   });
@@ -75,6 +73,7 @@ export function useFixtureStore() {
         format: item.format,
         state: states.value[item.id] || "normal",
         customData: customData.value[item.id] !== undefined ? customData.value[item.id] : item.defaultData,
+        emptyData: item.emptyData,
       };
     }
     return map;
@@ -124,19 +123,13 @@ export function useFixtureStore() {
   }
 
   function importJson(raw: string): { success: boolean; error?: string } {
-    try {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed !== "object" || parsed === null) {
-        return { success: false, error: "导入文件格式错误，必须为 JSON 对象。" };
-      }
-      customData.value = typeof parsed.customData === "object" && parsed.customData ? parsed.customData : {};
-      states.value = typeof parsed.states === "object" && parsed.states ? parsed.states : {};
-      savePersistedState({ customData: customData.value, states: states.value });
-      return { success: true };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "JSON 解析失败";
-      return { success: false, error: msg };
-    }
+    const result = parseFixtureImport(raw, FIXTURE_ITEMS);
+    if (!result.success) return result;
+
+    customData.value = result.state.customData;
+    states.value = result.state.states;
+    savePersistedState(result.state);
+    return { success: true };
   }
 
   return {
@@ -148,6 +141,7 @@ export function useFixtureStore() {
     customCount,
     overrideMap,
     isCustom,
+    isModified,
     selectFixture,
     updateData,
     updateState,

@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { Icon } from "@iconify/vue";
 import { useFixtureStore } from "./useFixtureStore";
 import type { FixtureItem, FixtureState } from "./fixture-types";
+import { validateFixtureData } from "./fixture-validation";
 import { usePluginPreview } from "../preview/usePluginPreview";
 import type { PluginPreviewInfo } from "../plugin-types";
 
@@ -10,7 +11,7 @@ const store = useFixtureStore();
 
 const search = ref("");
 const localEditorData = ref("");
-const syntaxError = ref("");
+const validationErrors = ref<string[]>([]);
 const copySuccessKey = ref("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
@@ -59,7 +60,7 @@ watch(
   () => store.selectedId.value,
   () => {
     localEditorData.value = store.currentData.value;
-    validateSyntax();
+    validateEditorData();
     preview.resetHeight();
     preview.scheduleRender(currentFixture.value.previewShortcode, true);
   },
@@ -70,25 +71,16 @@ function onSelect(item: FixtureItem) {
   store.selectFixture(item.id);
 }
 
-function validateSyntax() {
-  if (currentFixture.value.format === "json") {
-    try {
-      JSON.parse(localEditorData.value);
-      syntaxError.value = "";
-    } catch (err: unknown) {
-      syntaxError.value = err instanceof Error ? err.message : "JSON 格式非法";
-    }
-  } else {
-    syntaxError.value = "";
-  }
+function validateEditorData(): boolean {
+  const result = validateFixtureData(currentFixture.value, localEditorData.value);
+  validationErrors.value = result.errors;
+  return result.valid;
 }
 
 function onEditorInput() {
-  validateSyntax();
-  if (!syntaxError.value) {
-    store.updateData(currentFixture.value.id, localEditorData.value);
-    preview.scheduleRender(currentFixture.value.previewShortcode, false);
-  }
+  if (!validateEditorData()) return;
+  store.updateData(currentFixture.value.id, localEditorData.value);
+  preview.scheduleRender(currentFixture.value.previewShortcode, false);
 }
 
 function onChangeState(state: FixtureState) {
@@ -101,18 +93,19 @@ function onPrettify() {
   try {
     const parsed = JSON.parse(localEditorData.value);
     localEditorData.value = JSON.stringify(parsed, null, 2);
-    syntaxError.value = "";
+    if (!validateEditorData()) return;
     store.updateData(currentFixture.value.id, localEditorData.value);
     preview.scheduleRender(currentFixture.value.previewShortcode, true);
   } catch (err: unknown) {
-    syntaxError.value = err instanceof Error ? err.message : "JSON 格式非法，无法格式化";
+    const message = err instanceof Error ? err.message : "无法解析 JSON";
+    validationErrors.value = [`JSON syntax error: ${message}`];
   }
 }
 
 function onResetCurrent() {
   store.resetFixture(currentFixture.value.id);
   localEditorData.value = currentFixture.value.defaultData;
-  syntaxError.value = "";
+  validateEditorData();
   preview.scheduleRender(currentFixture.value.previewShortcode, true);
 }
 
@@ -120,7 +113,7 @@ function onResetAll() {
   if (confirm("确定要将所有 Mock Fixtures 恢复为系统默认预设吗？")) {
     store.resetAll();
     localEditorData.value = currentFixture.value.defaultData;
-    syntaxError.value = "";
+    validateEditorData();
     preview.scheduleRender(currentFixture.value.previewShortcode, true);
   }
 }
@@ -152,7 +145,7 @@ function handleFileImport(event: Event) {
       const res = store.importJson(content);
       if (res.success) {
         localEditorData.value = store.currentData.value;
-        validateSyntax();
+        validateEditorData();
         preview.scheduleRender(currentFixture.value.previewShortcode, true);
         alert("Mock Fixture 配置导入成功！");
       } else {
@@ -214,7 +207,7 @@ onBeforeUnmount(() => {
         <div class="studio-sidebar-summary">
           <span>共 {{ store.fixtures.length }} 个确定性数据源</span>
           <span v-if="store.customCount.value > 0" class="studio-summary-badge">
-            已自定义 {{ store.customCount.value }}
+            已修改 {{ store.customCount.value }}
           </span>
         </div>
       </div>
@@ -231,7 +224,7 @@ onBeforeUnmount(() => {
           <div class="studio-item-content">
             <div class="studio-item-title-row">
               <span class="studio-item-title">{{ item.title }}</span>
-              <span v-if="store.isCustom(item.id)" class="studio-dirty-dot" title="已自定义修改" />
+              <span v-if="store.isModified(item.id)" class="studio-dirty-dot" title="已修改" />
             </div>
             <span class="studio-item-name">{{ item.endpoint }}</span>
           </div>
@@ -341,6 +334,9 @@ onBeforeUnmount(() => {
         <div class="studio-section-heading">
           <h2>数据内容编辑</h2>
           <p>实时编辑该 Fixture 的 JSON / Markdown 数据，修改即时同步至下方渲染画布。</p>
+          <p v-if="currentFixture.schemaHint" class="studio-schema-hint">
+            数据结构：<code>{{ currentFixture.schemaHint }}</code>
+          </p>
         </div>
         <div class="studio-panel">
           <div class="studio-box-header">
@@ -351,7 +347,7 @@ onBeforeUnmount(() => {
               <span class="studio-window-filename">
                 {{ currentFixture.id }}.fixture.{{ currentFixture.format === 'json' ? 'json' : 'md' }}
               </span>
-              <span v-if="store.isCustom(currentFixture.id)" class="studio-dirty-dot" title="包含未保存到后端的自定义修改" />
+              <span v-if="store.isModified(currentFixture.id)" class="studio-dirty-dot" title="已修改" />
             </div>
             <div class="studio-editor-actions">
               <button
@@ -374,7 +370,7 @@ onBeforeUnmount(() => {
                 <span>{{ copySuccessKey === 'editor' ? '已复制' : '复制' }}</span>
               </button>
               <button
-                v-if="store.isCustom(currentFixture.id)"
+                v-if="store.isModified(currentFixture.id)"
                 type="button"
                 class="studio-copy-action studio-copy-action--reset"
                 title="恢复此项为系统预设"
@@ -397,13 +393,20 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="studio-editor-footer">
-            <div v-if="syntaxError" class="studio-syntax-status is-error">
+            <div v-if="validationErrors.length > 0" class="studio-syntax-status is-error">
               <Icon icon="ri:error-warning-line" />
-              <span>{{ syntaxError }}</span>
+              <div>
+                <div v-for="error in validationErrors" :key="error">✕ {{ error }}</div>
+                <div>当前修改尚未应用到预览</div>
+              </div>
             </div>
             <div v-else class="studio-syntax-status is-valid">
               <Icon icon="ri:checkbox-circle-line" />
-              <span>{{ currentFixture.format === 'json' ? '✓ JSON 语法有效' : '✓ Markdown 内容有效' }}</span>
+              <div>
+                <div>{{ currentFixture.format === 'json' ? '✓ JSON 格式正确' : '✓ Markdown 内容有效' }}</div>
+                <div v-if="currentFixture.format === 'json'">✓ Fixture 数据结构正确</div>
+                <div>✓ 修改已自动保存到当前浏览器</div>
+              </div>
             </div>
             <div class="studio-editor-length">{{ localEditorData.length }} 字符</div>
           </div>
@@ -867,6 +870,11 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--color-text-tertiary);
   padding-left: 11.5px;
+}
+
+.studio-schema-hint code {
+  color: var(--color-primary);
+  font-family: var(--font-mono, monospace);
 }
 
 .studio-panel {

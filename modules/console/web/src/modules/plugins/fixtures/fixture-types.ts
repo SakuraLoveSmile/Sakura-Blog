@@ -13,6 +13,8 @@ export interface FixtureItem {
   previewShortcode: string;
   previewHeight: number;
   defaultData: string;
+  emptyData: string;
+  schemaHint?: string;
   sampleShortcodes: string[];
 }
 
@@ -21,4 +23,5 @@ export interface FixtureOverrideConfig {
   format: FixtureFormat;
   state: FixtureState;
   customData?: string;
+  emptyData: string;
 }
