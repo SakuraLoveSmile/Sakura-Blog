@@ -11,6 +11,13 @@
 
 import { PREVIEW_STYLES } from "./resources.ts";
 
+export interface MockFixtureConfig {
+  endpoint: string;
+  format: "json" | "markdown";
+  state: "normal" | "empty" | "error";
+  customData?: string;
+}
+
 export interface PreviewDocOptions {
   /** 渲染后的正文/片段 HTML（标签插件为 goldmark 产物；侧栏组件为提取的 aside 片段） */
   bodyHtml: string;
@@ -28,13 +35,52 @@ export interface PreviewDocOptions {
   autoHeight?: boolean;
   /** 额外内联脚本（原样注入，位于内置 shim 之后；侧栏组件预览复用页面 services scan 用） */
   inlineScripts?: string[];
+  /** 自定义 Mock Fixtures 数据与状态覆盖表 */
+  mockFixtures?: Record<string, MockFixtureConfig>;
 }
 
 /** 前台运行时等价最小 shim（对齐 base.html 的 ctx/def/deps/utils，data_cache 关闭）。 */
 const PREVIEW_SHIM = `<script>
 const ctx = { date_suffix: { just: '刚刚', min: '分钟前', hour: '小时前', day: '天前' }, root: '/', tag_plugins: { chat: {} }, search: { service: 'local_search', path: '/search.json' }, data_cache: { enable: false, default_ttl: 0 }, copycode: {}, fancybox: {} };
-const def = { avatar: '', cover: '', loading: '' };
+const def = { avatar: "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='96'%3E%3Crect%20width='96'%20height='96'%20rx='48'%20fill='%234a6cf7'/%3E%3Ctext%20x='48'%20y='62'%20font-size='40'%20text-anchor='middle'%20fill='white'%3EA%3C/text%3E%3C/svg%3E", cover: '', loading: '' };
 const deps = { marked: '/assets/vendor/marked/marked.umd.min.js', lazyload: '/assets/js/vendor/lazyload.min.js' };
+(function () {
+  var fixtures = window.__MOCK_FIXTURES__ || {};
+  if (Object.keys(fixtures).length > 0) {
+    var rawFetch = window.fetch;
+    window.fetch = function (input, init) {
+      var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      var path = '';
+      try { path = new URL(url, window.location.href).pathname; } catch (e) { path = url; }
+      for (var key in fixtures) {
+        var f = fixtures[key];
+        if (f && f.endpoint && path.indexOf(f.endpoint) !== -1) {
+          if (f.state === 'error') {
+            return Promise.resolve(new Response(JSON.stringify({ status: 500, error: 'simulated fixture error' }), {
+              status: 500,
+              statusText: 'Internal Server Error',
+              headers: { 'Content-Type': 'application/json' }
+            }));
+          }
+          if (f.state === 'empty') {
+            var emptyText = f.format === 'markdown' ? '' : (key === 'vote' ? '{"votes":{"up":0,"down":0}}' : (key === 'rating' ? '{"avg":0,"count":0}' : '{"content":[]}'));
+            return Promise.resolve(new Response(emptyText, {
+              status: 200,
+              headers: { 'Content-Type': f.format === 'markdown' ? 'text/markdown; charset=utf-8' : 'application/json; charset=utf-8' }
+            }));
+          }
+          if (f.customData != null && f.customData !== '') {
+            return Promise.resolve(new Response(f.customData, {
+              status: 200,
+              headers: { 'Content-Type': f.format === 'markdown' ? 'text/markdown; charset=utf-8' : 'application/json; charset=utf-8' }
+            }));
+          }
+        }
+      }
+      return rawFetch.apply(this, arguments);
+    };
+  }
+})();
 const utils = {
   _loadedStyles: new Set(), _loadedScripts: new Set(), _loadedElements: new WeakSet(), _inflight: new Map(),
   css: function (href) { if (utils._loadedStyles.has(href)) return null; var ss = document.createElement('link'); ss.rel = 'stylesheet'; ss.href = href; utils._loadedStyles.add(href); document.head.appendChild(ss); return ss; },
@@ -269,6 +315,11 @@ export function buildPreviewDoc(opts: PreviewDocOptions): string {
   const inlineTags = inlineScripts.join("\n");
   const body = wrapContent ? `<article class="md-text content">${safeHtml(bodyHtml)}</article>` : safeHtml(bodyHtml);
 
+  const fixtureScript =
+    opts.mockFixtures && Object.keys(opts.mockFixtures).length > 0
+      ? `<script>window.__MOCK_FIXTURES__ = ${JSON.stringify(opts.mockFixtures).replace(/<\/script/gi, "<\\/script")};</script>`
+      : "";
+
   return `<!doctype html>
 <html lang="zh-CN" data-theme="dark">
 <head>
@@ -286,6 +337,7 @@ ${extraHead}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ""}>
 ${body}
+${fixtureScript}
 ${PREVIEW_SHIM}
 ${scriptTags}
 ${inlineTags}

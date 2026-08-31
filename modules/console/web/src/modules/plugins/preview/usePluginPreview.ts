@@ -6,11 +6,14 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import { previewApi } from "@/api";
 import type { PluginPreviewInfo } from "../plugin-types.ts";
-import { buildPreviewDoc, resolvePreviewHeight, clampPreviewHeight } from "./preview-document.ts";
+import { buildPreviewDoc, resolvePreviewHeight, clampPreviewHeight, type MockFixtureConfig } from "./preview-document.ts";
 import { previewScriptsFor } from "./resources.ts";
 import { RenderGate } from "./render-gate.ts";
 
-export function usePluginPreview(getInfo: () => PluginPreviewInfo) {
+export function usePluginPreview(
+  getInfo: () => PluginPreviewInfo,
+  getOverrides?: () => Record<string, MockFixtureConfig> | undefined,
+) {
   const previewHtml = ref("");
   const rendering = ref(false);
   const previewError = ref("");
@@ -25,6 +28,7 @@ export function usePluginPreview(getInfo: () => PluginPreviewInfo) {
     return buildPreviewDoc({
       bodyHtml: previewHtml.value,
       scripts: previewScriptsFor(info),
+      mockFixtures: getOverrides ? getOverrides() : undefined,
     });
   });
 

@@ -14,20 +14,23 @@ import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";
 import AssetGallery from "./AssetGallery.vue";
 import WidgetLibraryView from "./WidgetLibraryView.vue";
+import FixtureStudioView from "./fixtures/FixtureStudioView.vue";
 import { loadPluginCatalog, runtimePlugins } from "./usePluginCatalog";
 import { WIDGET_META } from "../settings/widget-meta";
 
 // Console 插件库（Spec 23 + Spec 63 + Spec 64）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
-// 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）。
+// 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）；
+// 「Mock 数据」视图扩展：编辑管理本地确定性 Fixture 数据源与模拟状态。
 // 预览复用后端 POST /api/v1/preview/markdown（component-library Fixture 模式）渲染管线，
 // 共享预览运行时（preview/）构建 iframe：注入前台样式与按能力脚本、固定暗色主题、
 // 防抖 + 请求序列号、推荐高度 + 内容高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
 
-const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
+const viewMode = ref<"plugins" | "assets" | "widgets" | "fixtures">("plugins");
 const viewTabs = computed(() => [
   { id: "plugins", label: `标签插件 (${runtimePlugins.value.length})`, icon: "ri:puzzle-line" },
   { id: "assets", label: "素材速查", icon: "ri:image-line" },
   { id: "widgets", label: `侧边栏组件 (${WIDGET_META.length})`, icon: "ri:layout-column-line" },
+  { id: "fixtures", label: "Mock 数据", icon: "ri:database-2-line" },
 ]);
 
 const search = ref("");
@@ -161,13 +164,15 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
               ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
               : viewMode === "assets"
                 ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
-                : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
+                : viewMode === "widgets"
+                  ? `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
+                  : "Mock Fixture 确定性数据源 · 编辑自定义数据与模拟状态，实时联动调试组件交互"
           }}
         </span>
       </template>
     </VPageHeader>
 
-    <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
+    <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 / Mock 数据 -->
     <div class="plugin-tabs-bar">
       <div class="plugin-tabs-container">
         <VTabbar
@@ -189,6 +194,11 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
       <div v-else-if="viewMode === 'widgets'" class="plugin-widgets-wrapper">
         <WidgetLibraryView />
+      </div>
+
+      <!-- Mock Fixture 数据编辑视图 -->
+      <div v-else-if="viewMode === 'fixtures'" class="plugin-fixtures-wrapper">
+        <FixtureStudioView />
       </div>
 
       <!-- 标签插件视图（Studio Workbench） -->
