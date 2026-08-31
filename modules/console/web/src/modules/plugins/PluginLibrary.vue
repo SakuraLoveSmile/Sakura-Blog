@@ -516,6 +516,12 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
   overflow: hidden;
 }
 
+.plugin-fixtures-wrapper {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ================= 标签插件 Studio 布局 ================= */
 .plugin-studio-layout {
   display: flex;

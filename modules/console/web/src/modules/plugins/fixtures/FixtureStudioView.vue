@@ -189,174 +189,194 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="fixture-studio">
-    <!-- Top Hero Overview -->
-    <div class="studio-hero-card">
-      <div class="studio-hero-content">
-        <div class="studio-hero-icon">
-          <Icon icon="ri:database-2-line" />
-        </div>
-        <div class="studio-hero-info">
-          <div class="studio-hero-title-row">
-            <h1>Mock Fixture 数据工作台</h1>
-            <span class="studio-hero-badge">Spec 63 / 64 确定性隔离</span>
-            <span v-if="store.customCount.value > 0" class="studio-hero-badge studio-hero-badge--active">
-              已自定义 {{ store.customCount.value }} 项
-            </span>
-          </div>
-          <p class="studio-hero-desc">
-            为标签插件与侧边栏组件提供本地确定性数据源，完全与生产数据库及外部网络隔离。支持直接修改 JSON / Markdown
-            数据并实时联动预览画布，快速验证不同数据量与异常降级表现。
-          </p>
-        </div>
-      </div>
-      <div class="studio-hero-actions">
-        <input ref="fileInputRef" type="file" accept=".json" class="hidden-file-input" @change="handleFileImport" />
-        <button class="studio-action-btn" title="导入配置 JSON" @click="triggerImport">
-          <Icon icon="ri:upload-2-line" />
-          <span>导入</span>
-        </button>
-        <button class="studio-action-btn" title="导出当前配置" @click="exportConfig">
-          <Icon icon="ri:download-2-line" />
-          <span>导出</span>
-        </button>
-        <button
-          v-if="store.customCount.value > 0"
-          class="studio-action-btn studio-action-btn--reset"
-          title="全部恢复默认"
-          @click="onResetAll"
-        >
-          <Icon icon="ri:refresh-line" />
-          <span>全部重置</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Two-Column Workbench Split View -->
-    <div class="studio-workbench">
-      <!-- Left Sidebar: Fixture List -->
-      <aside class="studio-sidebar">
-        <div class="studio-sidebar-header">
-          <div class="studio-search-bar">
-            <Icon icon="ri:search-line" class="studio-search-icon" />
-            <input v-model="search" type="text" placeholder="搜索 Mock 数据或端点..." />
-            <button v-if="search" class="studio-search-clear" @click="search = ''">
-              <Icon icon="ri:close-circle-fill" />
-            </button>
-          </div>
-        </div>
-
-        <div class="studio-fixture-list">
+  <div class="fixture-studio-layout">
+    <!-- 左侧边栏：搜索 + Fixture 列表 -->
+    <aside class="studio-sidebar">
+      <div class="studio-sidebar-header">
+        <div class="studio-search-wrapper">
+          <Icon icon="ri:search-line" class="studio-search-icon" />
+          <input
+            v-model="search"
+            placeholder="搜索 Mock 数据或端点..."
+            class="studio-search-input"
+          />
           <button
-            v-for="item in filteredFixtures"
-            :key="item.id"
-            class="studio-fixture-card"
-            :class="{ 'is-active': store.selectedId.value === item.id }"
-            @click="onSelect(item)"
+            v-if="search"
+            type="button"
+            class="studio-search-clear"
+            title="清空搜索"
+            @click="search = ''"
           >
-            <div class="studio-fixture-card-icon">
-              <Icon :icon="item.icon" />
-            </div>
-            <div class="studio-fixture-card-body">
-              <div class="studio-fixture-card-title-row">
-                <span class="studio-fixture-card-title">{{ item.title }}</span>
-                <span class="studio-fixture-card-format">{{ item.format.toUpperCase() }}</span>
-              </div>
-              <div class="studio-fixture-card-endpoint">{{ item.endpoint }}</div>
-            </div>
-            <div v-if="store.isCustom(item.id)" class="studio-fixture-custom-dot" title="已自定义修改" />
+            <Icon icon="ri:close-circle-fill" />
           </button>
         </div>
-      </aside>
 
-      <!-- Right Main: Editor & Live Preview -->
-      <main class="studio-main">
-        <!-- Fixture Detail Header & Controls -->
-        <div class="studio-panel studio-fixture-header-panel">
-          <div class="studio-fixture-meta">
-            <div class="studio-fixture-title-line">
-              <h2>{{ currentFixture.title }}</h2>
-              <span class="studio-tag studio-tag--category">{{ currentFixture.category }}</span>
-              <button
-                class="studio-tag studio-tag--endpoint"
-                title="点击复制端点路径"
-                @click="copyText(currentFixture.endpoint, 'endpoint')"
-              >
-                <code>GET {{ currentFixture.endpoint }}</code>
-                <Icon :icon="copySuccessKey === 'endpoint' ? 'ri:check-line' : 'ri:file-copy-line'" />
-              </button>
+        <div class="studio-sidebar-summary">
+          <span>共 {{ store.fixtures.length }} 个确定性数据源</span>
+          <span v-if="store.customCount.value > 0" class="studio-summary-badge">
+            已自定义 {{ store.customCount.value }}
+          </span>
+        </div>
+      </div>
+
+      <div class="studio-sidebar-list">
+        <button
+          v-for="item in filteredFixtures"
+          :key="item.id"
+          type="button"
+          :class="['studio-list-item', { active: store.selectedId.value === item.id }]"
+          @click="onSelect(item)"
+        >
+          <span class="studio-type-badge badge-inline">{{ item.format.toUpperCase() }}</span>
+          <div class="studio-item-content">
+            <div class="studio-item-title-row">
+              <span class="studio-item-title">{{ item.title }}</span>
+              <span v-if="store.isCustom(item.id)" class="studio-dirty-dot" title="已自定义修改" />
             </div>
-            <p class="studio-fixture-desc">{{ currentFixture.description }}</p>
-            <div class="studio-fixture-shortcodes">
-              <span class="studio-shortcodes-label">消费短代码:</span>
-              <span v-for="sc in currentFixture.sampleShortcodes" :key="sc" class="studio-shortcode-pill">
-                {{ sc }}
-              </span>
+            <span class="studio-item-name">{{ item.endpoint }}</span>
+          </div>
+        </button>
+
+        <div v-if="filteredFixtures.length === 0" class="studio-empty-list">
+          <Icon icon="ri:search-eye-line" width="28" height="28" />
+          <p>无匹配 Mock 数据源</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 右侧工作台：详情 + 状态模拟 + 编辑器 + 实时预览 -->
+    <main class="studio-workbench">
+      <!-- 1. 顶部 Header 概览卡片 -->
+      <div class="studio-hero-card">
+        <div class="studio-hero-main">
+          <div class="studio-hero-title-row">
+            <h3 class="studio-hero-title">{{ currentFixture.title }}</h3>
+            <span class="studio-pill-badge badge-category">{{ currentFixture.category }}</span>
+            <button
+              type="button"
+              class="studio-hero-shortcode-tag"
+              title="点击复制端点路径"
+              @click="copyText(currentFixture.endpoint, 'endpoint')"
+            >
+              <code>GET {{ currentFixture.endpoint }}</code>
+              <Icon :icon="copySuccessKey === 'endpoint' ? 'ri:check-line' : 'ri:file-copy-line'" class="tag-copy-icon" />
+            </button>
+            <div class="studio-hero-actions">
+              <input ref="fileInputRef" type="file" accept=".json" class="hidden-file-input" @change="handleFileImport" />
+              <button type="button" class="studio-header-btn" title="导入配置 JSON" @click="triggerImport">
+                <Icon icon="ri:upload-2-line" />
+                <span>导入</span>
+              </button>
+              <button type="button" class="studio-header-btn" title="导出当前配置" @click="exportConfig">
+                <Icon icon="ri:download-2-line" />
+                <span>导出</span>
+              </button>
+              <button
+                v-if="store.customCount.value > 0"
+                type="button"
+                class="studio-header-btn studio-header-btn--reset"
+                title="全部恢复默认"
+                @click="onResetAll"
+              >
+                <Icon icon="ri:refresh-line" />
+                <span>全部重置</span>
+              </button>
             </div>
           </div>
+          <p class="studio-hero-desc">{{ currentFixture.description }}</p>
+          <div class="studio-hero-shortcodes">
+            <span class="studio-shortcodes-label">消费短代码:</span>
+            <span v-for="sc in currentFixture.sampleShortcodes" :key="sc" class="studio-shortcode-pill">
+              {{ sc }}
+            </span>
+          </div>
+        </div>
+      </div>
 
-          <!-- Status Simulator -->
-          <div class="studio-state-controller">
-            <span class="studio-state-label">模拟状态:</span>
+      <!-- 2. 模拟响应状态 -->
+      <section class="studio-section">
+        <div class="studio-section-heading">
+          <h2>响应状态模拟</h2>
+          <p>切换正常返回、空数据或 500 异常，实时检验前端数据交互与降级提示。</p>
+        </div>
+        <div class="studio-panel studio-state-panel">
+          <div class="studio-state-inner">
             <div class="studio-segmented">
               <button
-                class="studio-segmented-btn"
-                :class="{ 'is-active': currentState === 'normal' }"
+                type="button"
+                :class="['studio-segmented-btn', { active: currentState === 'normal' }]"
                 @click="onChangeState('normal')"
               >
-                <span class="state-indicator state-indicator--normal" />
-                <span>正常 (Normal)</span>
+                <span class="state-dot state-dot--normal" />
+                <span>正常响应 (Normal)</span>
               </button>
               <button
-                class="studio-segmented-btn"
-                :class="{ 'is-active': currentState === 'empty' }"
+                type="button"
+                :class="['studio-segmented-btn', { active: currentState === 'empty' }]"
                 @click="onChangeState('empty')"
               >
-                <span class="state-indicator state-indicator--empty" />
+                <span class="state-dot state-dot--empty" />
                 <span>空数据 (Empty)</span>
               </button>
               <button
-                class="studio-segmented-btn"
-                :class="{ 'is-active': currentState === 'error' }"
+                type="button"
+                :class="['studio-segmented-btn', { active: currentState === 'error' }]"
                 @click="onChangeState('error')"
               >
-                <span class="state-indicator state-indicator--error" />
+                <span class="state-dot state-dot--error" />
                 <span>500 异常 (Error)</span>
               </button>
             </div>
+            <div class="studio-state-hint">
+              <span v-if="currentState === 'normal'">🟢 当前模式：正常返回 Mock 数据，供前台脚本渲染真实结构</span>
+              <span v-else-if="currentState === 'empty'">🟡 当前模式：模拟返回空数据（如空列表或 0 评分），触发空态提示</span>
+              <span v-else>🔴 当前模式：模拟接口返回 500 异常，检验前台优雅降级机制</span>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Data Editor Panel -->
-        <div class="studio-panel studio-editor-panel">
-          <div class="studio-panel-topbar">
+      <!-- 3. 数据内容编辑 -->
+      <section class="studio-section">
+        <div class="studio-section-heading">
+          <h2>数据内容编辑</h2>
+          <p>实时编辑该 Fixture 的 JSON / Markdown 数据，修改即时同步至下方渲染画布。</p>
+        </div>
+        <div class="studio-panel">
+          <div class="studio-box-header">
             <div class="studio-window-dots">
               <span class="dot dot-red" />
               <span class="dot dot-yellow" />
               <span class="dot dot-green" />
-            </div>
-            <div class="studio-window-title">
-              <Icon :icon="currentFixture.format === 'json' ? 'ri:code-box-line' : 'ri:markdown-line'" />
-              <span>{{ currentFixture.id }}.fixture.{{ currentFixture.format === 'json' ? 'json' : 'md' }}</span>
+              <span class="studio-window-filename">
+                {{ currentFixture.id }}.fixture.{{ currentFixture.format === 'json' ? 'json' : 'md' }}
+              </span>
               <span v-if="store.isCustom(currentFixture.id)" class="studio-dirty-dot" title="包含未保存到后端的自定义修改" />
             </div>
             <div class="studio-editor-actions">
               <button
                 v-if="currentFixture.format === 'json'"
-                class="studio-tool-btn"
+                type="button"
+                class="studio-copy-action"
                 title="格式化 JSON"
                 @click="onPrettify"
               >
                 <Icon icon="ri:sparkling-line" />
                 <span>格式化</span>
               </button>
-              <button class="studio-tool-btn" title="复制内容" @click="copyText(localEditorData, 'editor')">
+              <button
+                type="button"
+                class="studio-copy-action"
+                title="复制内容"
+                @click="copyText(localEditorData, 'editor')"
+              >
                 <Icon :icon="copySuccessKey === 'editor' ? 'ri:check-line' : 'ri:file-copy-line'" />
                 <span>{{ copySuccessKey === 'editor' ? '已复制' : '复制' }}</span>
               </button>
               <button
                 v-if="store.isCustom(currentFixture.id)"
-                class="studio-tool-btn studio-tool-btn--reset"
+                type="button"
+                class="studio-copy-action studio-copy-action--reset"
                 title="恢复此项为系统预设"
                 @click="onResetCurrent"
               >
@@ -369,7 +389,7 @@ onBeforeUnmount(() => {
           <div class="studio-editor-body">
             <textarea
               v-model="localEditorData"
-              class="studio-code-textarea"
+              class="studio-syntax-code studio-code-textarea"
               spellcheck="false"
               placeholder="在此输入自定义 Mock 数据..."
               @input="onEditorInput"
@@ -388,22 +408,28 @@ onBeforeUnmount(() => {
             <div class="studio-editor-length">{{ localEditorData.length }} 字符</div>
           </div>
         </div>
+      </section>
 
-        <!-- Live Preview Canvas -->
-        <div class="studio-panel studio-canvas-panel">
-          <div class="studio-panel-topbar">
+      <!-- 4. 实时效果预览 -->
+      <section class="studio-section">
+        <div class="studio-section-heading">
+          <h2>实时效果预览</h2>
+          <p>消费当前 Mock 数据的 Shortcode 真实渲染画布，支持交互测试。</p>
+        </div>
+        <div class="studio-panel studio-preview-panel">
+          <div class="studio-box-header">
             <div class="studio-window-dots">
               <span class="dot dot-red" />
               <span class="dot dot-yellow" />
               <span class="dot dot-green" />
+              <span class="studio-window-filename">
+                <code>{{ currentFixture.previewShortcode }}</code>
+              </span>
             </div>
-            <div class="studio-window-title">
-              <Icon icon="ri:play-circle-line" />
-              <span>实时效果预览 · <code>{{ currentFixture.previewShortcode }}</code></span>
-            </div>
-            <div class="studio-canvas-actions">
+            <div class="studio-editor-actions">
               <button
-                class="studio-tool-btn"
+                type="button"
+                class="studio-copy-action"
                 title="刷新预览"
                 :disabled="preview.rendering.value"
                 @click="preview.scheduleRender(currentFixture.previewShortcode, true)"
@@ -412,7 +438,8 @@ onBeforeUnmount(() => {
                 <span>{{ preview.rendering.value ? '渲染中...' : '重新渲染' }}</span>
               </button>
               <button
-                class="studio-tool-btn"
+                type="button"
+                class="studio-copy-action"
                 title="复制短代码"
                 @click="copyText(currentFixture.previewShortcode, 'shortcode')"
               >
@@ -422,9 +449,9 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="studio-canvas-body">
-            <div v-if="preview.previewError.value" class="studio-canvas-error">
-              <Icon icon="ri:error-warning-line" />
+          <div class="studio-preview-canvas">
+            <div v-if="preview.previewError.value" class="canvas-state canvas-error">
+              <Icon icon="ri:error-warning-line" width="28" height="28" />
               <p>{{ preview.previewError.value }}</p>
             </div>
             <iframe
@@ -432,64 +459,245 @@ onBeforeUnmount(() => {
               class="studio-preview-iframe"
               :srcdoc="preview.srcdoc.value"
               sandbox="allow-same-origin allow-scripts"
-              :style="{ height: `${preview.frameHeight.value}px` }"
+              :style="{ height: preview.frameHeight.value + 'px' }"
               title="Fixture Live Preview"
             />
           </div>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <style scoped>
-.fixture-studio {
+.fixture-studio-layout {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .hidden-file-input {
   display: none;
 }
 
-/* Hero Card */
-.studio-hero-card {
+/* 左侧边栏 */
+.studio-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+}
+
+.studio-sidebar-header {
+  padding: 14px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.studio-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-quaternary);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.studio-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 28px 7px 32px;
+  font-size: 13px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.studio-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.studio-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-quaternary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.studio-search-clear:hover {
+  color: var(--color-foreground);
+}
+
+.studio-sidebar-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 24px 28px;
-  background: var(--card, #1e1e20);
-  border: 1px solid var(--block-border, rgba(255, 255, 255, 0.08));
-  border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+  padding: 0 2px;
 }
 
-.studio-hero-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
+.studio-summary-badge {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
-.studio-hero-icon {
+.studio-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.studio-list-item {
+  width: calc(100% - 12px);
+  margin: 2px 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  background: transparent;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(74, 108, 247, 0.22), rgba(168, 85, 247, 0.22));
-  color: var(--accent-primary, #4a6cf7);
-  font-size: 26px;
-  flex-shrink: 0;
-  border: 1px solid rgba(74, 108, 247, 0.3);
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
-.studio-hero-info {
+.studio-list-item:hover {
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+}
+
+.studio-list-item.active {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-card));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.studio-item-content {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.studio-item-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
+}
+
+.studio-item-title {
+  font-size: 13px;
+  color: var(--color-foreground);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-list-item.active .studio-item-title {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.studio-item-name {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-type-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.badge-inline {
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--color-primary);
+}
+
+.badge-category {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.studio-dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #30d158;
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.6);
+  flex-shrink: 0;
+}
+
+.studio-empty-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--color-text-quaternary);
+  font-size: 13px;
+}
+
+/* 右侧工作台 */
+.studio-workbench {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* 顶部 Hero 概览卡片 */
+.studio-hero-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 40%, var(--color-card)), var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 14px);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.studio-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .studio-hero-title-row {
@@ -499,367 +707,196 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
-.studio-hero-title-row h1 {
+.studio-hero-title {
+  margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: var(--text-p1, #fff);
-  margin: 0;
+  color: var(--color-foreground);
   letter-spacing: -0.01em;
-}
-
-.studio-hero-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-p3, #8e8e93);
-  font-family: var(--font-mono, monospace);
-}
-
-.studio-hero-badge--active {
-  background: rgba(74, 108, 247, 0.15);
-  color: var(--accent-primary, #4a6cf7);
-  border: 1px solid rgba(74, 108, 247, 0.3);
-}
-
-.studio-hero-desc {
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-p2, #aeaeb2);
-  margin: 0;
-  max-width: 820px;
-}
-
-.studio-hero-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
-.studio-action-btn {
+.studio-hero-title::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.studio-hero-shortcode-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--block-border, rgba(255, 255, 255, 0.08));
-  color: var(--text-p1, #fff);
-  font-size: 13px;
-  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.studio-action-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.16);
+.studio-hero-shortcode-tag:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card));
 }
 
-.studio-action-btn--reset {
+.tag-copy-icon {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.studio-pill-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.studio-hero-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studio-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-background) 40%, var(--color-card));
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-header-btn:hover {
+  background: color-mix(in srgb, var(--color-foreground) 8%, var(--color-card));
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+}
+
+.studio-header-btn--reset {
   color: #ff453a;
   border-color: rgba(255, 69, 58, 0.25);
   background: rgba(255, 69, 58, 0.08);
 }
 
-.studio-action-btn--reset:hover {
-  background: rgba(255, 69, 58, 0.18);
-  border-color: rgba(255, 69, 58, 0.4);
+.studio-header-btn--reset:hover {
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff453a;
 }
 
-/* Workbench Split View */
-.studio-workbench {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 20px;
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .studio-workbench {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Left Sidebar */
-.studio-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.studio-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card, #1e1e20);
-  border: 1px solid var(--block-border, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  padding: 0 12px;
-  height: 40px;
-}
-
-.studio-search-icon {
-  font-size: 16px;
-  color: var(--text-p3, #8e8e93);
-}
-
-.studio-search-bar input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-p1, #fff);
-  font-size: 13px;
-  outline: none;
-}
-
-.studio-search-bar input::placeholder {
-  color: var(--text-p3, #8e8e93);
-}
-
-.studio-search-clear {
-  background: transparent;
-  border: none;
-  color: var(--text-p3, #8e8e93);
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-}
-
-.studio-fixture-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.studio-fixture-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--card, #1e1e20);
-  border: 1px solid var(--block-border, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s ease;
-}
-
-.studio-fixture-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
-}
-
-.studio-fixture-card.is-active {
-  background: rgba(74, 108, 247, 0.1);
-  border-color: var(--accent-primary, #4a6cf7);
-  box-shadow: 0 0 0 1px var(--accent-primary, #4a6cf7);
-}
-
-.studio-fixture-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--accent-primary, #4a6cf7);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.studio-fixture-card.is-active .studio-fixture-card-icon {
-  background: var(--accent-primary, #4a6cf7);
-  color: #fff;
-}
-
-.studio-fixture-card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.studio-fixture-card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.studio-fixture-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-p1, #fff);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.studio-fixture-card-format {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-p2, #aeaeb2);
-  font-family: var(--font-mono, monospace);
-}
-
-.studio-fixture-card-endpoint {
-  font-size: 11px;
-  color: var(--text-p3, #8e8e93);
-  font-family: var(--font-mono, monospace);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.studio-fixture-custom-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #30d158;
-  box-shadow: 0 0 6px rgba(48, 209, 88, 0.6);
-  flex-shrink: 0;
-}
-
-/* Right Main Studio */
-.studio-main {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.studio-panel {
-  background: var(--card, #1e1e20);
-  border: 1px solid var(--block-border, rgba(255, 255, 255, 0.08));
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* Fixture Header Panel */
-.studio-fixture-header-panel {
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.studio-fixture-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.studio-fixture-title-line {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.studio-fixture-title-line h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-p1, #fff);
+.studio-hero-desc {
   margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
 }
 
-.studio-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-
-.studio-tag--category {
-  background: rgba(74, 108, 247, 0.15);
-  color: var(--accent-primary, #4a6cf7);
-  font-weight: 600;
-}
-
-.studio-tag--endpoint {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-p2, #aeaeb2);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.studio-tag--endpoint:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.studio-tag--endpoint code {
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-}
-
-.studio-fixture-desc {
-  font-size: 13px;
-  color: var(--text-p2, #aeaeb2);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.studio-fixture-shortcodes {
+.studio-hero-shortcodes {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
+  margin-top: 4px;
 }
 
 .studio-shortcodes-label {
-  color: var(--text-p3, #8e8e93);
+  color: var(--color-text-tertiary);
   font-weight: 500;
 }
 
 .studio-shortcode-pill {
   font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  padding: 2px 7px;
+  font-size: 11.5px;
+  padding: 2px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--accent-primary, #4a6cf7);
+  background: color-mix(in srgb, var(--color-background) 40%, var(--color-card));
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
 }
 
-/* State Controller */
-.studio-state-controller {
+/* 区域分块（Option 1 Inset Group Panel） */
+.studio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.studio-section-heading h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--color-foreground);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 8px;
 }
 
-.studio-state-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-p2, #aeaeb2);
+.studio-section-heading h2::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.studio-section-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding-left: 11.5px;
+}
+
+.studio-panel {
+  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 14px);
+  overflow: hidden;
+}
+
+/* 状态模拟面板 */
+.studio-state-panel {
+  padding: 16px 20px;
+  background: var(--color-card);
+}
+
+.studio-state-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .studio-segmented {
   display: inline-flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--color-background) 60%, var(--color-card));
   padding: 3px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
 }
 
 .studio-segmented-btn {
@@ -868,53 +905,58 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 30px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   border: none;
-  color: var(--text-p2, #aeaeb2);
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .studio-segmented-btn:hover {
-  color: var(--text-p1, #fff);
+  color: var(--color-foreground);
 }
 
-.studio-segmented-btn.is-active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+.studio-segmented-btn.active {
+  background: var(--color-card);
+  color: var(--color-foreground);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
 }
 
-.state-indicator {
+.state-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
 }
 
-.state-indicator--normal {
+.state-dot--normal {
   background: #30d158;
 }
 
-.state-indicator--empty {
+.state-dot--empty {
   background: #ffd60a;
 }
 
-.state-indicator--error {
+.state-dot--error {
   background: #ff453a;
 }
 
-/* Panel Topbar */
-.studio-panel-topbar {
+.studio-state-hint {
+  font-size: 12.5px;
+  color: var(--color-text-tertiary);
+}
+
+/* macOS 风格 Window Bar */
+.studio-box-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.25);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .studio-window-dots {
@@ -941,77 +983,72 @@ onBeforeUnmount(() => {
   background: #27c93f;
 }
 
-.studio-window-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.studio-window-filename {
+  margin-left: 8px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-p2, #aeaeb2);
+  font-weight: 600;
+  color: var(--color-text-secondary);
   font-family: var(--font-mono, monospace);
 }
 
-.studio-dirty-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #4a6cf7;
-}
-
-.studio-editor-actions,
-.studio-canvas-actions {
+.studio-editor-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.studio-tool-btn {
+.studio-copy-action {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 10px;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-p1, #fff);
-  font-size: 11px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.studio-tool-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.16);
+.studio-copy-action:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 
-.studio-tool-btn--reset {
+.studio-copy-action--reset {
   color: #ff453a;
 }
 
-/* Editor Body */
+.studio-copy-action--reset:hover {
+  background: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.25);
+}
+
+/* 编辑器区域 */
 .studio-editor-body {
-  position: relative;
-  min-height: 240px;
-  max-height: 380px;
-  display: flex;
+  background: var(--color-card);
+}
+
+.studio-syntax-code {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--color-foreground);
+  line-height: 1.6;
+  tab-size: 2;
 }
 
 .studio-code-textarea {
   width: 100%;
+  box-sizing: border-box;
   min-height: 240px;
   max-height: 380px;
-  padding: 16px;
   background: transparent;
   border: none;
   outline: none;
   resize: vertical;
-  color: var(--text-p1, #fff);
-  font-family: "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
-  font-size: 12.5px;
-  line-height: 1.6;
-  tab-size: 2;
-  white-space: pre;
 }
 
 .studio-editor-footer {
@@ -1019,15 +1056,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 11px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-top: 1px solid var(--color-border);
+  font-size: 11.5px;
 }
 
 .studio-syntax-status {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .studio-syntax-status.is-valid {
@@ -1040,32 +1077,42 @@ onBeforeUnmount(() => {
 }
 
 .studio-editor-length {
-  color: var(--text-p3, #8e8e93);
+  color: var(--color-text-quaternary);
   font-family: var(--font-mono, monospace);
 }
 
-/* Preview Canvas Body */
-.studio-canvas-body {
-  position: relative;
-  background: var(--background, #141416);
-  min-height: 160px;
+/* 实时预览区域 */
+.studio-preview-panel {
+  background: var(--color-card);
 }
 
-.studio-canvas-error {
+.studio-preview-canvas {
+  background: #1c1c1e;
+  min-height: 120px;
+  position: relative;
+}
+
+.canvas-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 16px;
-  background: rgba(255, 69, 58, 0.1);
-  border-bottom: 1px solid rgba(255, 69, 58, 0.2);
-  color: #ff453a;
+  padding: 40px 20px;
+  text-align: center;
   font-size: 13px;
+}
+
+.canvas-error {
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.08);
 }
 
 .studio-preview-iframe {
   display: block;
   width: 100%;
   border: none;
+  background: transparent;
   transition: height 0.2s ease;
 }
 </style>
