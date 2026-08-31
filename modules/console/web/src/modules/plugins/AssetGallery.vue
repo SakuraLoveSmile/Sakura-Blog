@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { assetsApi, type AssetIconItem } from "@/api";
-import { Toast, VLoading } from "@/components/ui";
+import { Toast, VLoading, VTabbar } from "@/components/ui";
 import { emojiSources } from "./assets-data";
 
 // 素材速查（插件库扩展）：
@@ -11,6 +11,10 @@ import { emojiSources } from "./assets-data";
 // - 表情画廊：按来源浏览可用表情名，点击复制 {% emoji [来源] 名称 %}。
 
 const subTab = ref<"icons" | "emoji">("icons");
+const subTabs = [
+  { id: "icons", label: "图标画廊 (icons.yml)", icon: "ri:remixicon-line" },
+  { id: "emoji", label: "表情画廊 (Emoji)", icon: "ri:emotion-happy-line" },
+];
 
 // ---------- 图标 ----------
 
@@ -102,124 +106,412 @@ onMounted(loadIcons);
 </script>
 
 <template>
-  <div>
+  <div class="asset-gallery-view">
     <!-- 子分类切换 -->
-    <div class="apple-segmented mb-5" style="max-width: 320px">
-      <button
-        type="button"
-        :class="{ active: subTab === 'icons' }"
-        @click="
-          subTab = 'icons';
-          loadIcons();
-        "
-      >
-        图标（icons.yml）
-      </button>
-      <button type="button" :class="{ active: subTab === 'emoji' }" @click="subTab = 'emoji'">表情（Emoji）</button>
+    <div class="asset-subtabs-wrapper">
+      <VTabbar
+        v-model:active-id="subTab"
+        :items="subTabs"
+        type="segmented"
+        @change="(id) => { if (id === 'icons') loadIcons(); }"
+      />
     </div>
 
     <!-- ============ 图标画廊 ============ -->
-    <section v-if="subTab === 'icons'">
-      <div class="mb-4 flex items-center gap-3">
-        <div class="apple-search" style="width: 260px">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="iconFilter" placeholder="搜索图标 key..." />
+    <section v-if="subTab === 'icons'" class="asset-main-section">
+      <!-- 搜索与辅助栏 -->
+      <div class="asset-search-bar">
+        <div class="asset-search-input-wrap">
+          <Icon icon="ri:search-line" class="asset-search-icon" />
+          <input
+            v-model="iconFilter"
+            placeholder="搜索图标 key（如 github、mail、link）..."
+            class="asset-search-input"
+          />
+          <button
+            v-if="iconFilter"
+            type="button"
+            class="asset-search-clear"
+            title="清空"
+            @click="iconFilter = ''"
+          >
+            <Icon icon="ri:close-circle-fill" />
+          </button>
         </div>
-        <p class="text-xs text-text-quaternary">
-          点击复制 <code class="rounded bg-accent px-1 py-0.5 font-mono">{% icon key %}</code>；key
-          也可直接填入「分类与标签」页的图标配置。
+        <p class="asset-search-hint">
+          点击图标卡片可直接复制 <code class="hint-code">&#123;% icon key %&#125;</code>，key 亦可直接用于分类与标签图标配置。
         </p>
       </div>
 
       <VLoading v-if="iconsLoading" />
-      <div v-else class="space-y-6">
-        <div v-for="g in iconGroups" :key="g.prefix">
-          <h3 class="mb-2 text-[13px] font-semibold tracking-tight text-text-secondary">
-            {{ g.prefix }}:*
-            <span class="ml-1 font-normal text-text-quaternary">{{ g.items.length }} 个</span>
-          </h3>
-          <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+      <div v-else class="asset-groups-list">
+        <div v-for="g in iconGroups" :key="g.prefix" class="asset-group-card">
+          <div class="asset-group-header">
+            <h3 class="asset-group-title">
+              <code>{{ g.prefix }}:*</code>
+            </h3>
+            <span class="asset-group-count">{{ g.items.length }} 个图标</span>
+          </div>
+          <div class="asset-grid asset-grid-icons">
             <button
               v-for="item in g.items"
               :key="item.key"
               type="button"
               :title="`点击复制 {% icon ${item.key} %}`"
-              class="asset-cell group flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card px-2 py-3 transition-all duration-150 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
+              :class="['asset-cell', { 'is-copied': copiedKey === `{% icon ${item.key} %}` }]"
               @click="copyIcon(item.key)"
             >
-              <span class="asset-svg flex h-8 w-8 items-center justify-center text-foreground">
-                <img v-if="isUrl(item.value)" :src="item.value" class="h-7 w-7 object-contain" alt="" />
-                <span v-else v-html="item.value"></span>
+              <span class="asset-icon-display">
+                <img v-if="isUrl(item.value)" :src="item.value" class="asset-img" alt="" />
+                <span v-else class="asset-svg" v-html="item.value"></span>
               </span>
-              <span
-                class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground"
-              >
+              <span class="asset-key-label">
                 {{ copiedKey === `{% icon ${item.key} %}` ? "已复制 ✓" : item.key }}
               </span>
             </button>
           </div>
         </div>
-        <p v-if="iconGroups.length === 0" class="text-sm text-text-quaternary">没有匹配的图标。</p>
+        <div v-if="iconGroups.length === 0" class="asset-empty-state">
+          <Icon icon="ri:search-eye-line" width="32" height="32" />
+          <p>没有找到匹配的图标</p>
+        </div>
       </div>
     </section>
 
     <!-- ============ 表情画廊 ============ -->
-    <section v-else>
-      <div class="mb-4 flex flex-wrap items-center gap-2">
+    <section v-else class="asset-main-section">
+      <!-- 来源选择胶囊 -->
+      <div class="emoji-sources-rail">
         <button
           v-for="s in emojiSources"
           :key="s.id"
           type="button"
-          :class="[
-            'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-            activeEmojiSource === s.id
-              ? 'border-primary bg-primary text-foreground'
-              : 'border-border bg-card text-text-tertiary hover:border-primary hover:text-foreground',
-          ]"
+          :class="['emoji-source-pill', { active: activeEmojiSource === s.id }]"
           @click="activeEmojiSource = s.id"
         >
-          {{ s.label }}（{{ s.names.length }}）
+          <span>{{ s.label }}</span>
+          <span class="source-count">{{ s.names.length }}</span>
         </button>
       </div>
-      <div class="mb-4 flex items-center gap-3">
-        <div class="apple-search" style="width: 260px">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="emojiFilter" placeholder="搜索表情名称..." />
-        </div>
-        <p class="text-xs text-text-quaternary">
-          点击复制
-          <code class="rounded bg-accent px-1 py-0.5 font-mono"
-            >{% emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} %}</code
+
+      <!-- 搜索与提示 -->
+      <div class="asset-search-bar">
+        <div class="asset-search-input-wrap">
+          <Icon icon="ri:search-line" class="asset-search-icon" />
+          <input
+            v-model="emojiFilter"
+            placeholder="搜索表情名称..."
+            class="asset-search-input"
+          />
+          <button
+            v-if="emojiFilter"
+            type="button"
+            class="asset-search-clear"
+            title="清空"
+            @click="emojiFilter = ''"
           >
+            <Icon icon="ri:close-circle-fill" />
+          </button>
+        </div>
+        <p class="asset-search-hint">
+          点击表情卡片可直接复制
+          <code class="hint-code">&#123;% emoji {{ currentEmojiSource.id === "default" ? "名称" : currentEmojiSource.id + " 名称" }} %&#125;</code>
         </p>
       </div>
 
-      <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-        <button
-          v-for="name in filteredEmojiNames"
-          :key="name"
-          type="button"
-          class="asset-cell group flex flex-col items-center gap-1 rounded-xl border border-border bg-card px-1 py-2.5 transition-all duration-150 hover:-translate-y-px hover:border-primary hover:shadow-[var(--shadow-md)]"
-          @click="copyEmoji(name)"
-        >
-          <img :src="emojiUrl(name)" class="h-8 w-8 object-contain" loading="lazy" :alt="name" />
-          <span
-            class="w-full truncate text-center font-mono text-[10px] text-text-tertiary group-hover:text-foreground"
+      <div class="asset-group-card">
+        <div class="asset-grid asset-grid-emojis">
+          <button
+            v-for="name in filteredEmojiNames"
+            :key="name"
+            type="button"
+            :title="`点击复制 {% emoji ${currentEmojiSource.id === 'default' ? name : currentEmojiSource.id + ' ' + name} %}`"
+            :class="['asset-cell', 'asset-cell-emoji', { 'is-copied': copiedKey.includes(name) }]"
+            @click="copyEmoji(name)"
           >
-            {{ name }}
-          </span>
-        </button>
+            <img :src="emojiUrl(name)" class="emoji-img" loading="lazy" :alt="name" />
+            <span class="asset-key-label">
+              {{ copiedKey.includes(name) ? "已复制 ✓" : name }}
+            </span>
+          </button>
+        </div>
+        <div v-if="filteredEmojiNames.length === 0" class="asset-empty-state">
+          <Icon icon="ri:search-eye-line" width="32" height="32" />
+          <p>没有找到匹配的表情</p>
+        </div>
       </div>
-      <p v-if="filteredEmojiNames.length === 0" class="text-sm text-text-quaternary">没有匹配的表情。</p>
     </section>
   </div>
 </template>
 
 <style scoped>
-/* icons.yml 内联 SVG 自带 width/height 属性（32px），统一收敛到 24px 并继承前景色 */
+.asset-gallery-view {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.asset-subtabs-wrapper {
+  max-width: 360px;
+}
+
+.asset-main-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.asset-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.asset-search-input-wrap {
+  position: relative;
+  width: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.asset-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-quaternary);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.asset-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 28px 8px 32px;
+  font-size: 13px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.asset-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.asset-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-quaternary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.asset-search-clear:hover {
+  color: var(--color-foreground);
+}
+
+.asset-search-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-tertiary);
+}
+
+.hint-code {
+  font-family: var(--font-mono, monospace);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-foreground) 8%, transparent);
+  color: var(--color-foreground);
+  font-size: 12px;
+}
+
+.asset-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.asset-group-card {
+  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 16px 20px;
+}
+
+.asset-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+}
+
+.asset-group-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--color-foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asset-group-title::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.asset-group-count {
+  font-size: 11.5px;
+  color: var(--color-text-quaternary);
+}
+
+.asset-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.asset-grid-icons {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+
+.asset-grid-emojis {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+}
+
+.asset-cell {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.asset-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+}
+
+.asset-cell.is-copied {
+  border-color: #30d158;
+  background: rgba(48, 209, 88, 0.12);
+}
+
+.asset-icon-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-foreground);
+}
+
+.asset-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
 .asset-svg :deep(svg) {
   width: 24px;
   height: 24px;
   color: inherit;
+}
+
+.emoji-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.asset-key-label {
+  width: 100%;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.asset-cell:hover .asset-key-label {
+  color: var(--color-foreground);
+}
+
+.asset-cell.is-copied .asset-key-label {
+  color: #30d158;
+  font-weight: 600;
+}
+
+/* 表情来源药丸栏 */
+.emoji-sources-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.emoji-source-pill {
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.emoji-source-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+.emoji-source-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 550;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.source-count {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.asset-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--color-text-quaternary);
+  font-size: 13px;
 }
 </style>

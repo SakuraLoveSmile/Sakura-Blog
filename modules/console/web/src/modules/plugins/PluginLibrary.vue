@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader } from "@/components/ui";
+import { VPageHeader, VTabbar } from "@/components/ui";
 import {
   PLUGIN_CATEGORIES,
   previewInfoFor,
@@ -24,6 +24,12 @@ import { WIDGET_META } from "../settings/widget-meta";
 // 防抖 + 请求序列号、推荐高度 + 内容高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
 
 const viewMode = ref<"plugins" | "assets" | "widgets">("plugins");
+const viewTabs = computed(() => [
+  { id: "plugins", label: `标签插件 (${runtimePlugins.value.length})`, icon: "ri:puzzle-line" },
+  { id: "assets", label: "素材速查", icon: "ri:image-line" },
+  { id: "widgets", label: `侧边栏组件 (${WIDGET_META.length})`, icon: "ri:layout-column-line" },
+]);
+
 const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
 const loadingPlugin: PluginMeta = {
@@ -119,10 +125,10 @@ onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 
 // ---------- 复制 ----------
 
-const copied = ref<"syntax" | "example" | "">("");
+const copied = ref<"syntax" | "example" | "name" | "">("");
 let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
-async function copyText(kind: "syntax" | "example", text: string) {
+async function copyText(kind: "syntax" | "example" | "name", text: string) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
@@ -142,268 +148,1022 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="plugin-library-view">
     <!-- 页头 -->
     <VPageHeader title="插件库">
       <template #icon>
-        <Icon icon="ri:puzzle-line" class="mr-2 self-center text-xl" />
+        <Icon icon="ri:puzzle-line" class="text-primary" />
       </template>
       <template #subtitle>
-        {{
-          viewMode === "plugins"
-            ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
-            : viewMode === "assets"
-              ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
-              : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
-        }}
+        <span>
+          {{
+            viewMode === "plugins"
+              ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
+              : viewMode === "assets"
+                ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
+                : `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
+          }}
+        </span>
       </template>
     </VPageHeader>
 
     <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 -->
-    <div class="px-5 pt-4 pb-4 md:px-6 md:pb-5">
-      <div class="apple-segmented" style="max-width: 420px">
-        <button type="button" :class="{ active: viewMode === 'plugins' }" @click="viewMode = 'plugins'">
-          标签插件
-        </button>
-        <button type="button" :class="{ active: viewMode === 'assets' }" @click="viewMode = 'assets'">素材速查</button>
-        <button type="button" :class="{ active: viewMode === 'widgets' }" @click="viewMode = 'widgets'">
-          侧边栏组件
-        </button>
+    <div class="plugin-tabs-bar">
+      <div class="plugin-tabs-container">
+        <VTabbar
+          v-model:active-id="viewMode"
+          :items="viewTabs"
+          type="segmented"
+          class="plugin-view-tabbar"
+        />
       </div>
     </div>
 
-    <!-- 素材速查视图 -->
-    <div v-if="viewMode === 'assets'" class="flex-1 overflow-y-auto p-5 md:p-6">
-      <AssetGallery />
-    </div>
+    <!-- 主体内容区 -->
+    <div class="plugin-content-area">
+      <!-- 素材速查视图 -->
+      <div v-if="viewMode === 'assets'" class="plugin-gallery-wrapper">
+        <AssetGallery />
+      </div>
 
-    <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
-    <div v-else-if="viewMode === 'widgets'" class="flex-1 overflow-hidden">
-      <WidgetLibraryView />
-    </div>
+      <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
+      <div v-else-if="viewMode === 'widgets'" class="plugin-widgets-wrapper">
+        <WidgetLibraryView />
+      </div>
 
-    <div v-else-if="viewMode === 'plugins'" class="flex-1 flex flex-col overflow-hidden md:flex-row">
-      <!-- 左侧：分类 + 搜索 + 列表 -->
-      <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
-        <div class="p-3 space-y-2 border-b border-border">
-          <div class="relative">
-            <Icon icon="ri:search-line" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-quaternary" />
-            <input
-              v-model="search"
-              placeholder="搜索插件..."
-              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-          <div class="flex flex-wrap gap-1">
-            <button
-              @click="activeCategory = '全部'"
-              :class="[
-                'px-2 py-0.5 text-xs rounded-full transition-colors',
-                activeCategory === '全部'
-                  ? 'bg-secondary text-foreground'
-                  : 'bg-secondary text-text-tertiary hover:bg-accent ',
-              ]"
-            >
-              全部 {{ categoryCount["全部"] }}
-            </button>
-            <button
-              v-for="c in PLUGIN_CATEGORIES"
-              :key="c"
-              @click="activeCategory = c"
-              :class="[
-                'px-2 py-0.5 text-xs rounded-full transition-colors',
-                activeCategory === c
-                  ? 'bg-secondary text-foreground'
-                  : 'bg-secondary text-text-tertiary hover:bg-accent ',
-              ]"
-            >
-              {{ c }} {{ categoryCount[c] }}
-            </button>
-          </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto py-1 max-h-48 md:max-h-none">
-          <button
-            v-for="p in filtered"
-            :key="p.name"
-            @click="selectPlugin(p)"
-            :class="[
-              'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              selected.name === p.name ? 'bg-primary/10' : 'hover:bg-accent',
-            ]"
-          >
-            <span
-              :class="[
-                'text-[10px] px-1 py-px rounded font-mono shrink-0',
-                p.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
-              ]"
-              >{{ typeBadge(p.type) }}</span
-            >
-            <span
-              :class="[
-                'text-sm truncate',
-                selected.name === p.name ? 'font-medium text-primary' : 'text-text-secondary ',
-              ]"
-              >{{ p.title }}</span
-            >
-            <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ p.name }}</span>
-          </button>
-          <p v-if="filtered.length === 0" class="px-4 py-6 text-center text-sm text-text-quaternary">无匹配插件</p>
-        </div>
-      </aside>
-
-      <!-- 右侧：详情 + 预览 -->
-      <section class="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
-        <!-- 标题区 -->
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="text-xl font-semibold text-foreground">{{ selected.title }}</h3>
-            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono"
-              >{% {{ selected.name }} %}</code
-            >
-            <span class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{{
-              selected.category
-            }}</span>
-            <span
-              :class="[
-                'text-[11px] px-1.5 py-0.5 rounded-full',
-                selected.type === 'block' ? 'bg-state-warning/15 text-state-warning' : 'bg-primary/15 text-primary',
-              ]"
-              >{{ selected.type === "block" ? "块级" : selected.type === "hybrid" ? "块级/行内" : "行内" }}</span
-            >
-          </div>
-          <p class="text-sm text-text-tertiary mt-1">{{ selected.desc }}</p>
-        </div>
-
-        <!-- 语法 -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">语法</span>
-            <button
-              @click="copyText('syntax', selected.signature)"
-              class="flex items-center gap-1 text-xs text-primary"
-            >
-              <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
-              {{ copied === "syntax" ? "已复制" : "复制语法" }}
-            </button>
-          </div>
-          <pre class="px-4 py-3 text-sm font-mono text-text-secondary overflow-x-auto">{{ selected.signature }}</pre>
-        </div>
-
-        <!-- 参数表 -->
-        <div v-if="selected.params.length" class="rounded-xl border border-border overflow-hidden">
-          <div class="px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">参数</span>
-          </div>
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-xs text-text-quaternary border-b border-border">
-                <th class="px-4 py-2 font-medium w-32">参数</th>
-                <th class="px-4 py-2 font-medium">说明</th>
-                <th class="px-4 py-2 font-medium w-28">默认值</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="param in selected.params" :key="param.name" class="border-b border-border last:border-0 /50">
-                <td class="px-4 py-2">
-                  <code class="text-xs font-mono text-text-secondary">{{ param.name }}</code>
-                </td>
-                <td class="px-4 py-2 text-text-tertiary">{{ param.desc }}</td>
-                <td class="px-4 py-2 text-text-quaternary font-mono text-xs">{{ param.default }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 结构化参数表单（Spec 29，有 form schema 的插件） -->
-        <div v-if="selected.form" class="rounded-xl border border-border overflow-hidden">
-          <div class="px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">参数设置（自动拼装 shortcode）</span>
-          </div>
-          <div class="p-4">
-            <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
-          </div>
-        </div>
-
-        <!-- 示例编辑 + 复制 -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">示例（可编辑，实时预览）</span>
-            <button @click="copyText('example', example)" class="flex items-center gap-1 text-xs text-primary">
-              <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
-              {{ copied === "example" ? "已复制" : "复制示例" }}
-            </button>
-          </div>
-          <textarea
-            v-model="example"
-            spellcheck="false"
-            class="w-full px-4 py-3 text-sm font-mono leading-relaxed bg-transparent focus:outline-none resize-y min-h-[120px] text-text-secondary"
-          ></textarea>
-        </div>
-
-        <!-- 预览（Spec 63 + Spec 64：共享运行时 + 固定暗色 + Fixture 标识 + 降级态） -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary flex items-center gap-1.5">
-              渲染预览
-              <span v-if="preview.rendering.value" class="text-[11px] text-text-quaternary">渲染中...</span>
-            </span>
-            <div class="flex items-center gap-1.5">
-              <span
-                v-if="fixtureLabel"
-                class="text-[10px] px-1.5 py-0.5 rounded-full bg-state-success/15 text-state-success inline-flex items-center gap-1"
-                :title="fixtureLabel"
+      <!-- 标签插件视图（Studio Workbench） -->
+      <div v-else-if="viewMode === 'plugins'" class="plugin-studio-layout">
+        <!-- 左侧：分类 + 搜索 + 列表 -->
+        <aside class="studio-sidebar">
+          <div class="studio-sidebar-header">
+            <div class="studio-search-wrapper">
+              <Icon icon="ri:search-line" class="studio-search-icon" />
+              <input
+                v-model="search"
+                placeholder="搜索插件..."
+                class="studio-search-input"
+              />
+              <button
+                v-if="search"
+                type="button"
+                class="studio-search-clear"
+                title="清空搜索"
+                @click="search = ''"
               >
-                <Icon icon="ri:database-2-line" />数据为预览 Fixture
-              </span>
+                <Icon icon="ri:close-circle-fill" />
+              </button>
+            </div>
+            <div class="studio-category-rail">
               <button
                 type="button"
-                title="重新渲染"
-                class="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-accent"
-                @click="preview.scheduleRender(example, true)"
+                @click="activeCategory = '全部'"
+                :class="['studio-cat-pill', { active: activeCategory === '全部' }]"
               >
-                <Icon icon="ri:refresh-line" />
-                重新渲染
+                全部 <span class="cat-count">{{ categoryCount["全部"] }}</span>
+              </button>
+              <button
+                v-for="c in PLUGIN_CATEGORIES"
+                :key="c"
+                type="button"
+                @click="activeCategory = c"
+                :class="['studio-cat-pill', { active: activeCategory === c }]"
+              >
+                {{ c }} <span class="cat-count">{{ categoryCount[c] }}</span>
               </button>
             </div>
           </div>
-          <!-- 依赖状态（能力 + 所需前台资源） -->
-          <div class="flex items-center gap-2 px-4 py-1.5 border-b border-border bg-card/40 flex-wrap">
-            <span class="text-[11px] text-text-quaternary">
-              依赖：<span class="text-text-tertiary">{{ capabilityLabel }}</span>
-              <template v-if="selectedPreview.services?.length">
-                <span class="mx-1 text-text-quaternary">·</span>
-                <code class="font-mono text-[10px] text-text-tertiary">{{ selectedPreview.services.join(" / ") }}</code>
-              </template>
-            </span>
-            <span v-if="fixtureLabel" class="text-[10px] text-text-quaternary hidden md:inline">{{
-              fixtureLabel
-            }}</span>
+
+          <div class="studio-sidebar-list">
+            <button
+              v-for="p in filtered"
+              :key="p.name"
+              type="button"
+              @click="selectPlugin(p)"
+              :class="['studio-list-item', { active: selected.name === p.name }]"
+            >
+              <span
+                :class="[
+                  'studio-type-badge',
+                  p.type === 'block' ? 'badge-block' : p.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
+                ]"
+              >
+                {{ typeBadge(p.type) }}
+              </span>
+              <span class="studio-item-title">{{ p.title }}</span>
+              <span class="studio-item-name">{{ p.name }}</span>
+            </button>
+            <div v-if="filtered.length === 0" class="studio-empty-list">
+              <Icon icon="ri:search-eye-line" width="28" height="28" />
+              <p>无匹配插件</p>
+            </div>
           </div>
-          <div class="relative bg-secondary">
-            <p v-if="preview.previewError.value" class="px-4 py-6 text-center text-sm text-state-error">
-              {{ preview.previewError.value }}
-            </p>
-            <p v-else-if="!preview.previewHtml.value" class="px-4 py-6 text-center text-sm text-text-quaternary">
-              预览为空：该插件示例未产生可见输出，请检查参数是否齐全。
-            </p>
-            <iframe
-              v-else
-              ref="previewFrame"
-              :srcdoc="preview.srcdoc.value"
-              class="w-full border-0"
-              :style="{ height: preview.frameHeight.value + 'px' }"
-              sandbox="allow-same-origin allow-scripts"
-            ></iframe>
+        </aside>
+
+        <!-- 右侧：详情 + 预览 -->
+        <main class="studio-workbench">
+          <!-- 1. 顶部 Header 概览卡片 -->
+          <div class="studio-hero-card">
+            <div class="studio-hero-main">
+              <div class="studio-hero-title-row">
+                <h3 class="studio-hero-title">{{ selected.title }}</h3>
+                <button
+                  type="button"
+                  class="studio-hero-shortcode-tag"
+                  :title="`点击复制 {% ${selected.name} %}`"
+                  @click="copyText('name', `{% ${selected.name} %}`)"
+                >
+                  <code>&#123;% {{ selected.name }} %&#125;</code>
+                  <Icon :icon="copied === 'name' ? 'ri:check-line' : 'ri:file-copy-line'" class="tag-copy-icon" />
+                </button>
+                <span class="studio-pill-badge badge-category">{{ selected.category }}</span>
+                <span
+                  :class="[
+                    'studio-pill-badge',
+                    selected.type === 'block' ? 'badge-block' : selected.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
+                  ]"
+                >
+                  {{ selected.type === "block" ? "块级标签" : selected.type === "hybrid" ? "块级 / 行内" : "行内标签" }}
+                </span>
+              </div>
+              <p class="studio-hero-desc">{{ selected.desc }}</p>
+            </div>
           </div>
-          <p
-            v-if="selectedPreview.fallback && !preview.previewError.value"
-            class="px-4 py-2 text-[11px] text-text-quaternary border-t border-border"
-          >
-            {{ selectedPreview.fallback }}
-          </p>
-        </div>
-      </section>
+
+          <!-- 2. 语法与参数规格 -->
+          <section class="studio-section">
+            <div class="studio-section-heading">
+              <h2>语法与参数规格</h2>
+              <p>查看 Shortcode 签名格式与支持的属性参数。</p>
+            </div>
+            <div class="studio-panel">
+              <!-- 语法卡片 -->
+              <div class="studio-syntax-box">
+                <div class="studio-box-header">
+                  <span class="box-header-title">Shortcode 签名</span>
+                  <button
+                    type="button"
+                    class="studio-copy-action"
+                    @click="copyText('syntax', selected.signature)"
+                  >
+                    <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
+                    <span>{{ copied === "syntax" ? "已复制" : "复制语法" }}</span>
+                  </button>
+                </div>
+                <pre class="studio-syntax-code"><code>{{ selected.signature }}</code></pre>
+              </div>
+
+              <!-- 参数表 -->
+              <div v-if="selected.params.length" class="studio-params-table-wrapper">
+                <div class="studio-params-header">
+                  <span>参数列表</span>
+                  <span class="params-count">{{ selected.params.length }} 个参数</span>
+                </div>
+                <div class="studio-table-container">
+                  <table class="studio-table">
+                    <thead>
+                      <tr>
+                        <th class="th-name">参数</th>
+                        <th class="th-desc">说明</th>
+                        <th class="th-default">默认值</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="param in selected.params" :key="param.name">
+                        <td class="td-name">
+                          <code class="param-code">{{ param.name }}</code>
+                        </td>
+                        <td class="td-desc">{{ param.desc }}</td>
+                        <td class="td-default">
+                          <code class="default-code">{{ param.default || "—" }}</code>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. 结构化参数表单（Spec 29，有 form schema 的插件） -->
+          <section v-if="selected.form" class="studio-section">
+            <div class="studio-section-heading">
+              <h2>可视化配置</h2>
+              <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
+            </div>
+            <div class="studio-panel studio-form-panel">
+              <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+            </div>
+          </section>
+
+          <!-- 4. 示例编辑 + 复制 -->
+          <section class="studio-section">
+            <div class="studio-section-heading">
+              <h2>Shortcode 示例</h2>
+              <p>支持直接手动编辑示例代码，修改后下方预览将实时重新渲染。</p>
+            </div>
+            <div class="studio-panel studio-editor-panel">
+              <div class="studio-editor-header">
+                <span class="editor-header-label">
+                  <Icon icon="ri:code-s-slash-line" />
+                  <span>Shortcode 代码</span>
+                </span>
+                <button
+                  type="button"
+                  class="studio-copy-action"
+                  @click="copyText('example', example)"
+                >
+                  <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
+                  <span>{{ copied === "example" ? "已复制" : "复制示例" }}</span>
+                </button>
+              </div>
+              <textarea
+                v-model="example"
+                spellcheck="false"
+                class="studio-code-editor"
+                placeholder="输入 Shortcode 代码..."
+              ></textarea>
+            </div>
+          </section>
+
+          <!-- 5. 实时渲染画布 -->
+          <section class="studio-section">
+            <div class="studio-section-heading">
+              <h2>实时渲染预览</h2>
+              <p>基于真实前台组件渲染管线（包含样式表与按需注入的交互服务）。</p>
+            </div>
+            <div class="studio-panel studio-canvas-panel">
+              <!-- macOS Window Header -->
+              <div class="studio-canvas-header">
+                <div class="canvas-window-dots" aria-hidden="true">
+                  <span class="dot dot-red"></span>
+                  <span class="dot dot-yellow"></span>
+                  <span class="dot dot-green"></span>
+                </div>
+                <div class="canvas-header-meta">
+                  <span class="canvas-cap-badge">
+                    <Icon icon="ri:cpu-line" />
+                    <span>依赖：{{ capabilityLabel }}</span>
+                  </span>
+                  <template v-if="selectedPreview.services?.length">
+                    <span class="meta-dot">·</span>
+                    <span class="canvas-services-tag">{{ selectedPreview.services.join(" / ") }}</span>
+                  </template>
+                  <span
+                    v-if="fixtureLabel"
+                    class="canvas-fixture-badge"
+                    :title="fixtureLabel"
+                  >
+                    <Icon icon="ri:database-2-line" />
+                    <span>预览 Fixture</span>
+                  </span>
+                </div>
+                <div class="canvas-header-actions">
+                  <button
+                    type="button"
+                    title="重新渲染"
+                    class="canvas-refresh-btn"
+                    @click="preview.scheduleRender(example, true)"
+                  >
+                    <Icon
+                      icon="ri:refresh-line"
+                      :class="{ 'animate-spin': preview.rendering.value }"
+                    />
+                    <span>{{ preview.rendering.value ? "渲染中..." : "重新渲染" }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Iframe Canvas Body -->
+              <div class="studio-canvas-body">
+                <div v-if="preview.previewError.value" class="canvas-state canvas-error">
+                  <Icon icon="ri:error-warning-line" width="28" height="28" />
+                  <p>{{ preview.previewError.value }}</p>
+                </div>
+                <div v-else-if="!preview.previewHtml.value" class="canvas-state canvas-empty">
+                  <Icon icon="ri:inbox-line" width="28" height="28" />
+                  <p>预览为空：该插件示例未产生可见输出，请检查参数是否齐全。</p>
+                </div>
+                <iframe
+                  v-else
+                  ref="previewFrame"
+                  :srcdoc="preview.srcdoc.value"
+                  class="studio-preview-iframe"
+                  :style="{ height: preview.frameHeight.value + 'px' }"
+                  sandbox="allow-same-origin allow-scripts"
+                ></iframe>
+              </div>
+
+              <!-- Fallback hint footer -->
+              <div
+                v-if="selectedPreview.fallback && !preview.previewError.value"
+                class="studio-canvas-footer"
+              >
+                <Icon icon="ri:information-line" />
+                <span>{{ selectedPreview.fallback }}</span>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.plugin-library-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-background);
+}
+
+.plugin-tabs-bar {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 60%, var(--color-card));
+}
+
+.plugin-tabs-container {
+  max-width: 520px;
+}
+
+.plugin-content-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.plugin-gallery-wrapper {
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.plugin-widgets-wrapper {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ================= 标签插件 Studio 布局 ================= */
+.plugin-studio-layout {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 左侧边栏 */
+.studio-sidebar {
+  width: 290px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+}
+
+.studio-sidebar-header {
+  padding: 14px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.studio-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-quaternary);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.studio-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 28px 7px 32px;
+  font-size: 13px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.studio-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.studio-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-quaternary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.studio-search-clear:hover {
+  color: var(--color-foreground);
+}
+
+.studio-category-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.studio-cat-pill {
+  padding: 3px 8px;
+  font-size: 11.5px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.studio-cat-pill:hover {
+  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  color: var(--color-foreground);
+}
+
+.studio-cat-pill.active {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 550;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.studio-cat-pill .cat-count {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.studio-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.studio-list-item {
+  width: calc(100% - 12px);
+  margin: 2px 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-list-item:hover {
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+}
+
+.studio-list-item.active {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-card));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.studio-type-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.badge-block {
+  background: rgba(255, 159, 10, 0.15);
+  color: #ff9f0a;
+}
+
+.badge-inline {
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--color-primary);
+}
+
+.badge-hybrid {
+  background: rgba(191, 90, 242, 0.15);
+  color: #bf5af2;
+}
+
+.badge-category {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.studio-item-title {
+  font-size: 13px;
+  color: var(--color-foreground);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-list-item.active .studio-item-title {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.studio-item-name {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  flex-shrink: 0;
+}
+
+.studio-empty-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--color-text-quaternary);
+  font-size: 13px;
+}
+
+/* ================= 右侧工作台 ================= */
+.studio-workbench {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* 顶部 Hero 概览卡片 */
+.studio-hero-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 40%, var(--color-card)), var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.studio-hero-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.studio-hero-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studio-hero-title::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.studio-hero-shortcode-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-hero-shortcode-tag:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card));
+}
+
+.tag-copy-icon {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.studio-pill-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.studio-hero-desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* 区域分块（Option 1 Inset Group Panel） */
+.studio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studio-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.studio-section-heading h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--color-foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.studio-section-heading h2::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.studio-section-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding-left: 11.5px;
+}
+
+.studio-panel {
+  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* 语法卡片 */
+.studio-syntax-box {
+  background: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.studio-panel > .studio-syntax-box:last-child {
+  border-bottom: none;
+}
+
+.studio-box-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.box-header-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.studio-copy-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-copy-action:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.studio-syntax-code {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+/* 参数表 */
+.studio-params-table-wrapper {
+  background: var(--color-card);
+}
+
+.studio-params-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.params-count {
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  font-weight: normal;
+}
+
+.studio-table-container {
+  overflow-x: auto;
+}
+
+.studio-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.studio-table th {
+  padding: 10px 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 15%, var(--color-card));
+}
+
+.studio-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  vertical-align: top;
+}
+
+.studio-table tr:last-child td {
+  border-bottom: none;
+}
+
+.param-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  color: var(--color-foreground);
+  font-weight: 550;
+}
+
+.default-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+}
+
+.td-desc {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* 参数表单面板 */
+.studio-form-panel {
+  padding: 20px 22px;
+}
+
+/* 示例编辑器面板 */
+.studio-editor-panel {
+  background: var(--color-card);
+}
+
+.studio-editor-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-header-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.studio-code-editor {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  background: transparent;
+  color: var(--color-foreground);
+  border: none;
+  resize: vertical;
+  min-height: 110px;
+}
+
+.studio-code-editor:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--color-background) 20%, var(--color-card));
+}
+
+/* 画布预览面板（macOS Studio Style） */
+.studio-canvas-panel {
+  background: var(--color-card);
+}
+
+.studio-canvas-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 35%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.canvas-window-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-window-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot-red { background: #ff5f56; }
+.dot-yellow { background: #ffbd2e; }
+.dot-green { background: #27c93f; }
+
+.canvas-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.canvas-cap-badge {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-dot {
+  color: var(--color-text-quaternary);
+}
+
+.canvas-services-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--color-text-tertiary);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+}
+
+.canvas-fixture-badge {
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(48, 209, 88, 0.15);
+  color: #30d158;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.canvas-refresh-btn:hover {
+  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  color: var(--color-foreground);
+  border-color: var(--color-primary);
+}
+
+.studio-canvas-body {
+  position: relative;
+  background: #121316;
+  min-height: 120px;
+}
+
+.studio-preview-iframe {
+  display: block;
+  width: 100%;
+  border: none;
+  transition: height 0.2s ease;
+}
+
+.canvas-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 16px;
+  font-size: 13px;
+}
+
+.canvas-error {
+  color: var(--color-state-error);
+}
+
+.canvas-empty {
+  color: var(--color-text-quaternary);
+}
+
+.studio-canvas-footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 25%, var(--color-card));
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .plugin-studio-layout {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .studio-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    max-height: 300px;
+  }
+  .studio-workbench {
+    padding: 16px;
+    gap: 16px;
+  }
+}
+</style>
