@@ -27,6 +27,39 @@ func TestCoreManifestContainsAssistantNav(t *testing.T) {
 	t.Fatal("core manifest is missing the AI assistant nav item")
 }
 
+func TestPluginsNavHasFiveChildren(t *testing.T) {
+	want := []string{
+		"/plugins/shortcodes",
+		"/plugins/assets",
+		"/plugins/widgets",
+		"/plugins/fixtures",
+		"/plugins/runtime",
+	}
+	meta := (&core.Module{}).Meta()
+	for _, item := range meta.Nav {
+		if item.Path != "/plugins" {
+			continue
+		}
+		if len(item.Children) != len(want) {
+			t.Fatalf("plugins nav children = %d, want %d", len(item.Children), len(want))
+		}
+		got := make([]string, 0, len(item.Children))
+		for _, child := range item.Children {
+			if len(child.Permissions) == 0 {
+				t.Fatalf("plugins child %s has no explicit permission; DefaultLayout evaluates child permission independently and does not inherit from the parent", child.Path)
+			}
+			got = append(got, child.Path)
+		}
+		for i, w := range want {
+			if got[i] != w {
+				t.Fatalf("plugins child[%d] = %q, want %q", i, got[i], w)
+			}
+		}
+		return
+	}
+	t.Fatal("core manifest is missing the plugins nav item")
+}
+
 func TestMomentsRouteFollowsManifestGate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
