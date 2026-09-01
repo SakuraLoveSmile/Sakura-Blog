@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureSettingsDefaults } from "../web/src/modules/settings/settings-state.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../web/src");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
@@ -136,4 +137,18 @@ test("Stellar runtime settings are exposed by structured forms", () => {
   ])
     assert.match(enhancements, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(read("modules/settings/settings-state.ts"), /"services"/);
+});
+
+test("ensureSettingsDefaults safely initializes article ai_label and edit_this_page", () => {
+  const defaulted = ensureSettingsDefaults({ article: null });
+  assert.ok(defaulted.article, "article must be an object");
+  assert.ok(defaulted.article.ai_label, "article.ai_label must be an object");
+  assert.strictEqual(defaulted.article.ai_label.default, "");
+  for (const tier of ["manual", "reviewed", "polished", "generated"] as const) {
+    assert.ok(defaulted.article.ai_label[tier], `article.ai_label.${tier} must exist`);
+    assert.strictEqual(defaulted.article.ai_label[tier].color, "");
+    assert.strictEqual(defaulted.article.ai_label[tier].icon, "");
+  }
+  assert.ok(defaulted.article.edit_this_page, "article.edit_this_page must be an object");
+  assert.deepStrictEqual(defaulted.article.edit_this_page, {});
 });

@@ -15,6 +15,9 @@ function handleSubmit() {
 }
 
 function togglePlatform(platform: string) {
+  props.data.article = props.data.article || {};
+  props.data.article.share = props.data.article.share || {};
+  props.data.article.share.platforms = props.data.article.share.platforms || [];
   const platforms = props.data.article.share.platforms as string[];
   const index = platforms.indexOf(platform);
   if (index >= 0) platforms.splice(index, 1);
@@ -231,7 +234,7 @@ const aiLabelTiers = [
           </div>
 
           <div class="settings-post-mapping-list">
-            <div v-for="key in Object.keys(data.article[target])" :key="key" class="settings-post-mapping-row">
+            <div v-for="key in Object.keys(data.article?.[target] || {})" :key="key" class="settings-post-mapping-row">
               <input
                 :value="key"
                 :class="inputCls"
@@ -263,7 +266,7 @@ const aiLabelTiers = [
                 <Icon icon="ri:delete-bin-line" />
               </button>
             </div>
-            <p v-if="Object.keys(data.article[target]).length === 0" class="settings-post-empty">
+            <p v-if="Object.keys(data.article?.[target] || {}).length === 0" class="settings-post-empty">
               暂无映射，可点击右上角添加。
             </p>
           </div>
@@ -337,7 +340,7 @@ const aiLabelTiers = [
           </div>
 
           <div class="settings-post-mapping-list">
-            <div v-for="key in Object.keys(data.article.edit_this_page)" :key="key" class="settings-post-mapping-row">
+            <div v-for="key in Object.keys(data.article?.edit_this_page || {})" :key="key" class="settings-post-mapping-row">
               <input
                 :value="key"
                 :class="inputCls"
@@ -361,7 +364,7 @@ const aiLabelTiers = [
                 <Icon icon="ri:delete-bin-line" />
               </button>
             </div>
-            <p v-if="Object.keys(data.article.edit_this_page).length === 0" class="settings-post-empty">
+            <p v-if="Object.keys(data.article?.edit_this_page || {}).length === 0" class="settings-post-empty">
               暂无映射，可点击右上角添加。
             </p>
           </div>
@@ -419,11 +422,11 @@ const aiLabelTiers = [
               v-for="platform in platformOptions"
               :key="platform"
               class="settings-post-platform"
-              :class="{ active: data.article.share.platforms.includes(platform) }"
+              :class="{ active: data.article?.share?.platforms?.includes(platform) }"
             >
               <input
                 type="checkbox"
-                :checked="data.article.share.platforms.includes(platform)"
+                :checked="data.article?.share?.platforms?.includes(platform)"
                 @change="togglePlatform(platform)"
               />
               <span>{{ platform }}</span>

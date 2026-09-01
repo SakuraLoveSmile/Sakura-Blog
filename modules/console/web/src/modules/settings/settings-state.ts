@@ -66,6 +66,14 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   d.article.category_color = d.article.category_color || {};
   d.article.category_icon = d.article.category_icon || {};
   d.article.tag_icon = d.article.tag_icon || {};
+  d.article.ai_label = d.article.ai_label || {};
+  d.article.ai_label.default = d.article.ai_label.default || "";
+  for (const tier of ["manual", "reviewed", "polished", "generated"] as const) {
+    d.article.ai_label[tier] = d.article.ai_label[tier] || {};
+    d.article.ai_label[tier].color = d.article.ai_label[tier].color || "";
+    d.article.ai_label[tier].icon = d.article.ai_label[tier].icon || "";
+  }
+  d.article.edit_this_page = d.article.edit_this_page || {};
   d.friends = d.friends || {};
   d.friends.refresh_interval = d.friends.refresh_interval ?? 60;
   d.friends.posts_per_link = d.friends.posts_per_link ?? 20;
