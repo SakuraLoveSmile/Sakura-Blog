@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
 import { assetsApi, type AssetIconItem } from "@/api";
-import { Toast, VLoading, VTabbar } from "@/components/ui";
+import { Toast, VLoading, VTabbar, VPageHeader } from "@/components/ui";
 import { emojiSources } from "./assets-data";
 
 // 素材速查（插件库扩展）：
@@ -106,7 +106,13 @@ onMounted(loadIcons);
 </script>
 
 <template>
-  <div class="asset-gallery-view">
+  <div>
+    <VPageHeader
+      title="素材速查"
+      subtitle="图标与表情速查：点击即复制 shortcode，key 可直接用于分类 / 标签图标配置。"
+    />
+    <div class="mx-auto max-w-[1100px] px-4 py-5 sm:px-6 md:px-8">
+      <div class="asset-gallery-view">
     <!-- 子分类切换 -->
     <div class="asset-subtabs-wrapper">
       <VTabbar
@@ -241,13 +247,13 @@ onMounted(loadIcons);
         </div>
       </div>
     </section>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .asset-gallery-view {
-  max-width: 1100px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 18px;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VTabbar } from "@/components/ui";
+import { VPageHeader, VCard, VEmpty, VLoading } from "@/components/ui";
 import {
   PLUGIN_CATEGORIES,
   previewInfoFor,
@@ -12,47 +12,24 @@ import {
 import { CAPABILITY_LABELS, FIXTURE_LABELS } from "./preview/resources";
 import { usePluginPreview } from "./preview/usePluginPreview";
 import PluginParamForm from "./PluginParamForm.vue";
-import AssetGallery from "./AssetGallery.vue";
-import WidgetLibraryView from "./WidgetLibraryView.vue";
-import FixtureStudioView from "./fixtures/FixtureStudioView.vue";
-import { loadPluginCatalog, runtimePlugins } from "./usePluginCatalog";
-import { WIDGET_META } from "../settings/widget-meta";
+import { catalogError, catalogStatus, loadPluginCatalog, retryLoadCatalog, runtimePlugins } from "./usePluginCatalog";
 
-// Console 插件库（Spec 23 + Spec 63 + Spec 64）：标签插件的分类速查 + 实时渲染预览 + 一键复制；
-// 「素材速查」视图扩展：图标画廊（icons.yml 全量 key）与表情画廊（可用表情名清单）；
-// 「Mock 数据」视图扩展：编辑管理本地确定性 Fixture 数据源与模拟状态。
-// 预览复用后端 POST /api/v1/preview/markdown（component-library Fixture 模式）渲染管线，
-// 共享预览运行时（preview/）构建 iframe：注入前台样式与按能力脚本、固定暗色主题、
-// 防抖 + 请求序列号、推荐高度 + 内容高度回传、降级提示。本组件只负责选择插件、编辑示例与传入预览能力。
+// 标签插件 Studio 工作台（从 PluginLibrary.vue 的「插件」Tab 拆分出来）：
+// 分类速查 + 实时渲染预览 + 一键复制。预览复用后端 POST /api/v1/preview/markdown
+// （component-library Fixture 模式）渲染管线，共享预览运行时（preview/）构建 iframe。
 
-const viewMode = ref<"plugins" | "assets" | "widgets" | "fixtures">("plugins");
-const viewTabs = computed(() => [
-  { id: "plugins", label: `标签插件 (${runtimePlugins.value.length})`, icon: "ri:puzzle-line" },
-  { id: "assets", label: "素材速查", icon: "ri:image-line" },
-  { id: "widgets", label: `侧边栏组件 (${WIDGET_META.length})`, icon: "ri:layout-column-line" },
-  { id: "fixtures", label: "Mock 数据", icon: "ri:database-2-line" },
-]);
+const emptyPreview: PluginPreviewInfo = { capability: "static", services: [], fixture: undefined, fallback: "" };
 
 const search = ref("");
 const activeCategory = ref<PluginCategory | "全部">("全部");
-const loadingPlugin: PluginMeta = {
-  name: "__loading__",
-  title: "插件目录",
-  category: "布局容器",
-  type: "inline",
-  desc: "正在加载后端 shortcode catalog。",
-  signature: "",
-  params: [],
-  example: "",
-};
-const selected = ref<PluginMeta>(loadingPlugin);
+const selected = ref<PluginMeta | null>(null);
 const example = ref("");
 
 watch(runtimePlugins, (next) => {
-  const refreshed = next.find((plugin) => plugin.name === selected.value.name);
+  const refreshed = next.find((plugin) => selected.value && plugin.name === selected.value.name);
   if (refreshed) {
     selected.value = refreshed;
-  } else if (next[0] && selected.value.name === loadingPlugin.name) {
+  } else if (next[0] && !selected.value) {
     selected.value = next[0];
     example.value = next[0].example;
   }
@@ -98,10 +75,14 @@ function onFormCode(code: string) {
 // 让后端进入本地 Fixture 模式（GitHub/友链确定性数据、rating/vote 隔离 ID 不写库）。
 
 const previewFrame = ref<HTMLIFrameElement | null>(null);
-const preview = usePluginPreview(() => previewInfoFor(selected.value));
+const preview = usePluginPreview(() => (selected.value ? previewInfoFor(selected.value) : emptyPreview));
 
-const selectedPreview = computed<PluginPreviewInfo>(() => previewInfoFor(selected.value));
-const capabilityLabel = computed(() => CAPABILITY_LABELS[selectedPreview.value.capability]);
+const selectedPreview = computed<PluginPreviewInfo>(() =>
+  selected.value ? previewInfoFor(selected.value) : emptyPreview,
+);
+const capabilityLabel = computed(() =>
+  selectedPreview.value.capability ? CAPABILITY_LABELS[selectedPreview.value.capability] : "",
+);
 const fixtureLabel = computed(() =>
   selectedPreview.value.fixture ? FIXTURE_LABELS[selectedPreview.value.fixture] : "",
 );
@@ -116,7 +97,7 @@ function onPreviewMessage(event: MessageEvent) {
 onMounted(() => {
   window.addEventListener("message", onPreviewMessage);
   void loadPluginCatalog().then((next) => {
-    if (next[0] && selected.value.name === loadingPlugin.name) {
+    if (next[0] && !selected.value) {
       selected.value = next[0];
       example.value = next[0].example;
       preview.resetHeight();
@@ -124,7 +105,9 @@ onMounted(() => {
     }
   });
 });
-onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
+onBeforeUnmount(() => {
+  window.removeEventListener("message", onPreviewMessage);
+});
 
 // ---------- 复制 ----------
 
@@ -151,389 +134,317 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 </script>
 
 <template>
-  <div class="plugin-library-view">
-    <!-- 页头 -->
-    <VPageHeader title="插件库">
-      <template #icon>
-        <Icon icon="ri:puzzle-line" class="text-primary" />
-      </template>
-      <template #subtitle>
-        <span>
-          {{
-            viewMode === "plugins"
-              ? `${runtimePlugins.length} 个标签插件 · 语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）`
-              : viewMode === "assets"
-                ? "图标与表情素材速查 · 点击复制 shortcode，图标 key 可用于分类/标签图标配置"
-                : viewMode === "widgets"
-                  ? `${WIDGET_META.length} 种侧边栏组件 · 编辑参数保存为方案，可在设置 → 组件编排中直接选用`
-                  : "Mock Fixture 确定性数据源 · 编辑自定义数据与模拟状态，实时联动调试组件交互"
-          }}
-        </span>
-      </template>
-    </VPageHeader>
+  <div>
+    <VPageHeader title="标签插件" subtitle="语法速查 + 实时渲染预览（本地 Fixture 数据，不依赖公网）" />
 
-    <!-- 视图切换：插件 / 素材速查 / 侧边栏组件 / Mock 数据 -->
-    <div class="plugin-tabs-bar">
-      <div class="plugin-tabs-container">
-        <VTabbar
-          v-model:active-id="viewMode"
-          :items="viewTabs"
-          type="segmented"
-          class="plugin-view-tabbar"
-        />
-      </div>
-    </div>
-
-    <!-- 主体内容区 -->
-    <div class="plugin-content-area">
-      <!-- 素材速查视图 -->
-      <div v-if="viewMode === 'assets'" class="plugin-gallery-wrapper">
-        <AssetGallery />
-      </div>
-
-      <!-- 侧边栏组件视图（Spec 58：方案保存与套用） -->
-      <div v-else-if="viewMode === 'widgets'" class="plugin-widgets-wrapper">
-        <WidgetLibraryView />
-      </div>
-
-      <!-- Mock Fixture 数据编辑视图 -->
-      <div v-else-if="viewMode === 'fixtures'" class="plugin-fixtures-wrapper">
-        <FixtureStudioView />
-      </div>
-
-      <!-- 标签插件视图（Studio Workbench） -->
-      <div v-else-if="viewMode === 'plugins'" class="plugin-studio-layout">
-        <!-- 左侧：分类 + 搜索 + 列表 -->
-        <aside class="studio-sidebar">
-          <div class="studio-sidebar-header">
-            <div class="studio-search-wrapper">
-              <Icon icon="ri:search-line" class="studio-search-icon" />
-              <input
-                v-model="search"
-                placeholder="搜索插件..."
-                class="studio-search-input"
-              />
-              <button
-                v-if="search"
-                type="button"
-                class="studio-search-clear"
-                title="清空搜索"
-                @click="search = ''"
-              >
-                <Icon icon="ri:close-circle-fill" />
-              </button>
-            </div>
-            <div class="studio-category-rail">
-              <button
-                type="button"
-                @click="activeCategory = '全部'"
-                :class="['studio-cat-pill', { active: activeCategory === '全部' }]"
-              >
-                全部 <span class="cat-count">{{ categoryCount["全部"] }}</span>
-              </button>
-              <button
-                v-for="c in PLUGIN_CATEGORIES"
-                :key="c"
-                type="button"
-                @click="activeCategory = c"
-                :class="['studio-cat-pill', { active: activeCategory === c }]"
-              >
-                {{ c }} <span class="cat-count">{{ categoryCount[c] }}</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="studio-sidebar-list">
-            <button
-              v-for="p in filtered"
-              :key="p.name"
-              type="button"
-              @click="selectPlugin(p)"
-              :class="['studio-list-item', { active: selected.name === p.name }]"
-            >
-              <span
-                :class="[
-                  'studio-type-badge',
-                  p.type === 'block' ? 'badge-block' : p.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
-                ]"
-              >
-                {{ typeBadge(p.type) }}
-              </span>
-              <span class="studio-item-title">{{ p.title }}</span>
-              <span class="studio-item-name">{{ p.name }}</span>
-            </button>
-            <div v-if="filtered.length === 0" class="studio-empty-list">
-              <Icon icon="ri:search-eye-line" width="28" height="28" />
-              <p>无匹配插件</p>
-            </div>
-          </div>
-        </aside>
-
-        <!-- 右侧：详情 + 预览 -->
-        <main class="studio-workbench">
-          <!-- 1. 顶部 Header 概览卡片 -->
-          <div class="studio-hero-card">
-            <div class="studio-hero-main">
-              <div class="studio-hero-title-row">
-                <h3 class="studio-hero-title">{{ selected.title }}</h3>
+    <div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 md:px-8">
+      <VLoading v-if="catalogStatus === 'loading'" />
+      <VEmpty v-else-if="catalogStatus === 'error'" title="无法加载标签插件" :message="catalogError">
+        <template #actions>
+          <button type="button" class="retry-button" @click="retryLoadCatalog">
+            <Icon icon="ri:refresh-line" />
+            重试
+          </button>
+        </template>
+      </VEmpty>
+      <VEmpty
+        v-else-if="catalogStatus === 'success' && runtimePlugins.length === 0"
+        title="暂无标签插件"
+        message="服务端 catalog 尚未提供可用的标签插件。"
+      />
+      <VCard v-else class="rounded-2xl">
+        <div class="grid grid-cols-1 lg:grid-cols-[290px_minmax(0,1fr)]">
+          <!-- 左侧：分类 + 搜索 + 列表 -->
+          <aside
+            class="studio-sidebar lg:sticky lg:top-5 lg:max-h-[calc(100vh-2.5rem)] lg:overflow-y-auto lg:border-r border-border"
+          >
+            <div class="studio-sidebar-header">
+              <div class="studio-search-wrapper">
+                <Icon icon="ri:search-line" class="studio-search-icon" />
+                <input
+                  v-model="search"
+                  placeholder="搜索插件..."
+                  class="studio-search-input"
+                />
+                <button
+                  v-if="search"
+                  type="button"
+                  class="studio-search-clear"
+                  title="清空搜索"
+                  @click="search = ''"
+                >
+                  <Icon icon="ri:close-circle-fill" />
+                </button>
+              </div>
+              <div class="studio-category-rail">
                 <button
                   type="button"
-                  class="studio-hero-shortcode-tag"
-                  :title="`点击复制 {% ${selected.name} %}`"
-                  @click="copyText('name', `{% ${selected.name} %}`)"
+                  @click="activeCategory = '全部'"
+                  :class="['studio-cat-pill', { active: activeCategory === '全部' }]"
                 >
-                  <code>&#123;% {{ selected.name }} %&#125;</code>
-                  <Icon :icon="copied === 'name' ? 'ri:check-line' : 'ri:file-copy-line'" class="tag-copy-icon" />
+                  全部 <span class="cat-count">{{ categoryCount["全部"] }}</span>
                 </button>
-                <span class="studio-pill-badge badge-category">{{ selected.category }}</span>
+                <button
+                  v-for="c in PLUGIN_CATEGORIES"
+                  :key="c"
+                  type="button"
+                  @click="activeCategory = c"
+                  :class="['studio-cat-pill', { active: activeCategory === c }]"
+                >
+                  {{ c }} <span class="cat-count">{{ categoryCount[c] }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="studio-sidebar-list">
+              <button
+                v-for="p in filtered"
+                :key="p.name"
+                type="button"
+                @click="selectPlugin(p)"
+                :class="['studio-list-item', { active: selected?.name === p.name }]"
+              >
                 <span
                   :class="[
-                    'studio-pill-badge',
-                    selected.type === 'block' ? 'badge-block' : selected.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
+                    'studio-type-badge',
+                    p.type === 'block' ? 'badge-block' : p.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
                   ]"
                 >
-                  {{ selected.type === "block" ? "块级标签" : selected.type === "hybrid" ? "块级 / 行内" : "行内标签" }}
+                  {{ typeBadge(p.type) }}
                 </span>
+                <span class="studio-item-title">{{ p.title }}</span>
+                <span class="studio-item-name">{{ p.name }}</span>
+              </button>
+              <div v-if="filtered.length === 0" class="studio-empty-list">
+                <Icon icon="ri:search-eye-line" width="28" height="28" />
+                <p>无匹配插件</p>
               </div>
-              <p class="studio-hero-desc">{{ selected.desc }}</p>
             </div>
-          </div>
+          </aside>
 
-          <!-- 2. 语法与参数规格 -->
-          <section class="studio-section">
-            <div class="studio-section-heading">
-              <h2>语法与参数规格</h2>
-              <p>查看 Shortcode 签名格式与支持的属性参数。</p>
-            </div>
-            <div class="studio-panel">
-              <!-- 语法卡片 -->
-              <div class="studio-syntax-box">
-                <div class="studio-box-header">
-                  <span class="box-header-title">Shortcode 签名</span>
-                  <button
-                    type="button"
-                    class="studio-copy-action"
-                    @click="copyText('syntax', selected.signature)"
+          <!-- 右侧：详情 + 预览 -->
+          <main class="studio-workbench">
+            <template v-if="selected">
+              <!-- 1. 顶部 Header 概览卡片 -->
+              <div class="studio-hero-card">
+                <div class="studio-hero-main">
+                  <div class="studio-hero-title-row">
+                    <h3 class="studio-hero-title">{{ selected.title }}</h3>
+                    <button
+                      type="button"
+                      class="studio-hero-shortcode-tag"
+                      :title="`点击复制 {% ${selected.name} %}`"
+                      @click="copyText('name', `{% ${selected.name} %}`)"
+                    >
+                      <code>&#123;% {{ selected.name }} %&#125;</code>
+                      <Icon :icon="copied === 'name' ? 'ri:check-line' : 'ri:file-copy-line'" class="tag-copy-icon" />
+                    </button>
+                    <span class="studio-pill-badge badge-category">{{ selected.category }}</span>
+                    <span
+                      :class="[
+                        'studio-pill-badge',
+                        selected.type === 'block' ? 'badge-block' : selected.type === 'hybrid' ? 'badge-hybrid' : 'badge-inline',
+                      ]"
+                    >
+                      {{ selected.type === "block" ? "块级标签" : selected.type === "hybrid" ? "块级 / 行内" : "行内标签" }}
+                    </span>
+                  </div>
+                  <p class="studio-hero-desc">{{ selected.desc }}</p>
+                </div>
+              </div>
+
+              <!-- 2. 语法与参数规格 -->
+              <section class="studio-section">
+                <div class="studio-section-heading">
+                  <h2>语法与参数规格</h2>
+                  <p>查看 Shortcode 签名格式与支持的属性参数。</p>
+                </div>
+                <div class="studio-panel">
+                  <!-- 语法卡片 -->
+                  <div class="studio-syntax-box">
+                    <div class="studio-box-header">
+                      <span class="box-header-title">Shortcode 签名</span>
+                      <button
+                        type="button"
+                        class="studio-copy-action"
+                        @click="copyText('syntax', selected.signature)"
+                      >
+                        <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
+                        <span>{{ copied === "syntax" ? "已复制" : "复制语法" }}</span>
+                      </button>
+                    </div>
+                    <pre class="studio-syntax-code"><code>{{ selected.signature }}</code></pre>
+                  </div>
+
+                  <!-- 参数表 -->
+                  <div v-if="selected.params.length" class="studio-params-table-wrapper">
+                    <div class="studio-params-header">
+                      <span>参数列表</span>
+                      <span class="params-count">{{ selected.params.length }} 个参数</span>
+                    </div>
+                    <div class="studio-table-container">
+                      <table class="studio-table">
+                        <thead>
+                          <tr>
+                            <th class="th-name">参数</th>
+                            <th class="th-desc">说明</th>
+                            <th class="th-default">默认值</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="param in selected.params" :key="param.name">
+                            <td class="td-name">
+                              <code class="param-code">{{ param.name }}</code>
+                            </td>
+                            <td class="td-desc">{{ param.desc }}</td>
+                            <td class="td-default">
+                              <code class="default-code">{{ param.default || "—" }}</code>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 3. 结构化参数表单（Spec 29，有 form schema 的插件） -->
+              <section v-if="selected.form" class="studio-section">
+                <div class="studio-section-heading">
+                  <h2>可视化配置</h2>
+                  <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
+                </div>
+                <div class="studio-panel studio-form-panel">
+                  <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
+                </div>
+              </section>
+
+              <!-- 4. 示例编辑 + 复制 -->
+              <section class="studio-section">
+                <div class="studio-section-heading">
+                  <h2>Shortcode 示例</h2>
+                  <p>支持直接手动编辑示例代码，修改后下方预览将实时重新渲染。</p>
+                </div>
+                <div class="studio-panel studio-editor-panel">
+                  <div class="studio-editor-header">
+                    <span class="editor-header-label">
+                      <Icon icon="ri:code-s-slash-line" />
+                      <span>Shortcode 代码</span>
+                    </span>
+                    <button
+                      type="button"
+                      class="studio-copy-action"
+                      @click="copyText('example', example)"
+                    >
+                      <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
+                      <span>{{ copied === "example" ? "已复制" : "复制示例" }}</span>
+                    </button>
+                  </div>
+                  <textarea
+                    v-model="example"
+                    spellcheck="false"
+                    class="studio-code-editor"
+                    placeholder="输入 Shortcode 代码..."
+                  ></textarea>
+                </div>
+              </section>
+
+              <!-- 5. 实时渲染画布 -->
+              <section class="studio-section">
+                <div class="studio-section-heading">
+                  <h2>实时渲染预览</h2>
+                  <p>基于真实前台组件渲染管线（包含样式表与按需注入的交互服务）。</p>
+                </div>
+                <div class="studio-canvas-panel">
+                  <!-- macOS Window Header -->
+                  <div class="studio-canvas-header">
+                    <div class="canvas-window-dots" aria-hidden="true">
+                      <span class="dot dot-red"></span>
+                      <span class="dot dot-yellow"></span>
+                      <span class="dot dot-green"></span>
+                    </div>
+                    <div class="canvas-header-meta">
+                      <span class="canvas-cap-badge">
+                        <Icon icon="ri:cpu-line" />
+                        <span>依赖：{{ capabilityLabel }}</span>
+                      </span>
+                      <template v-if="selectedPreview.services?.length">
+                        <span class="meta-dot">·</span>
+                        <span class="canvas-services-tag">{{ selectedPreview.services.join(" / ") }}</span>
+                      </template>
+                      <span
+                        v-if="fixtureLabel"
+                        class="canvas-fixture-badge"
+                        :title="fixtureLabel"
+                      >
+                        <Icon icon="ri:database-2-line" />
+                        <span>预览 Fixture</span>
+                      </span>
+                    </div>
+                    <div class="canvas-header-actions">
+                      <button
+                        type="button"
+                        title="重新渲染"
+                        class="canvas-refresh-btn"
+                        @click="preview.scheduleRender(example, true)"
+                      >
+                        <Icon
+                          icon="ri:refresh-line"
+                          :class="{ 'animate-spin': preview.rendering.value }"
+                        />
+                        <span>{{ preview.rendering.value ? "渲染中..." : "重新渲染" }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Iframe Canvas Body -->
+                  <div class="studio-canvas-body">
+                    <div v-if="preview.previewError.value" class="canvas-state canvas-error">
+                      <Icon icon="ri:error-warning-line" width="28" height="28" />
+                      <p>{{ preview.previewError.value }}</p>
+                    </div>
+                    <div v-else-if="!preview.previewHtml.value" class="canvas-state canvas-empty">
+                      <Icon icon="ri:inbox-line" width="28" height="28" />
+                      <p>预览为空：该插件示例未产生可见输出，请检查参数是否齐全。</p>
+                    </div>
+                    <iframe
+                      v-else
+                      ref="previewFrame"
+                      :srcdoc="preview.srcdoc.value"
+                      class="studio-preview-iframe"
+                      :style="{ height: preview.frameHeight.value + 'px' }"
+                      sandbox="allow-same-origin allow-scripts"
+                    ></iframe>
+                  </div>
+
+                  <!-- Fallback hint footer -->
+                  <div
+                    v-if="selectedPreview.fallback && !preview.previewError.value"
+                    class="studio-canvas-footer"
                   >
-                    <Icon :icon="copied === 'syntax' ? 'ri:check-line' : 'ri:file-copy-line'" />
-                    <span>{{ copied === "syntax" ? "已复制" : "复制语法" }}</span>
-                  </button>
+                    <Icon icon="ri:information-line" />
+                    <span>{{ selectedPreview.fallback }}</span>
+                  </div>
                 </div>
-                <pre class="studio-syntax-code"><code>{{ selected.signature }}</code></pre>
-              </div>
+              </section>
+            </template>
 
-              <!-- 参数表 -->
-              <div v-if="selected.params.length" class="studio-params-table-wrapper">
-                <div class="studio-params-header">
-                  <span>参数列表</span>
-                  <span class="params-count">{{ selected.params.length }} 个参数</span>
-                </div>
-                <div class="studio-table-container">
-                  <table class="studio-table">
-                    <thead>
-                      <tr>
-                        <th class="th-name">参数</th>
-                        <th class="th-desc">说明</th>
-                        <th class="th-default">默认值</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="param in selected.params" :key="param.name">
-                        <td class="td-name">
-                          <code class="param-code">{{ param.name }}</code>
-                        </td>
-                        <td class="td-desc">{{ param.desc }}</td>
-                        <td class="td-default">
-                          <code class="default-code">{{ param.default || "—" }}</code>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 3. 结构化参数表单（Spec 29，有 form schema 的插件） -->
-          <section v-if="selected.form" class="studio-section">
-            <div class="studio-section-heading">
-              <h2>可视化配置</h2>
-              <p>调整参数将自动同步拼装 Shortcode 示例与下方渲染效果。</p>
-            </div>
-            <div class="studio-panel studio-form-panel">
-              <PluginParamForm :plugin="selected" :model-value="example" @update:model-value="onFormCode" />
-            </div>
-          </section>
-
-          <!-- 4. 示例编辑 + 复制 -->
-          <section class="studio-section">
-            <div class="studio-section-heading">
-              <h2>Shortcode 示例</h2>
-              <p>支持直接手动编辑示例代码，修改后下方预览将实时重新渲染。</p>
-            </div>
-            <div class="studio-panel studio-editor-panel">
-              <div class="studio-editor-header">
-                <span class="editor-header-label">
-                  <Icon icon="ri:code-s-slash-line" />
-                  <span>Shortcode 代码</span>
-                </span>
-                <button
-                  type="button"
-                  class="studio-copy-action"
-                  @click="copyText('example', example)"
-                >
-                  <Icon :icon="copied === 'example' ? 'ri:check-line' : 'ri:file-copy-line'" />
-                  <span>{{ copied === "example" ? "已复制" : "复制示例" }}</span>
-                </button>
-              </div>
-              <textarea
-                v-model="example"
-                spellcheck="false"
-                class="studio-code-editor"
-                placeholder="输入 Shortcode 代码..."
-              ></textarea>
-            </div>
-          </section>
-
-          <!-- 5. 实时渲染画布 -->
-          <section class="studio-section">
-            <div class="studio-section-heading">
-              <h2>实时渲染预览</h2>
-              <p>基于真实前台组件渲染管线（包含样式表与按需注入的交互服务）。</p>
-            </div>
-            <div class="studio-panel studio-canvas-panel">
-              <!-- macOS Window Header -->
-              <div class="studio-canvas-header">
-                <div class="canvas-window-dots" aria-hidden="true">
-                  <span class="dot dot-red"></span>
-                  <span class="dot dot-yellow"></span>
-                  <span class="dot dot-green"></span>
-                </div>
-                <div class="canvas-header-meta">
-                  <span class="canvas-cap-badge">
-                    <Icon icon="ri:cpu-line" />
-                    <span>依赖：{{ capabilityLabel }}</span>
-                  </span>
-                  <template v-if="selectedPreview.services?.length">
-                    <span class="meta-dot">·</span>
-                    <span class="canvas-services-tag">{{ selectedPreview.services.join(" / ") }}</span>
-                  </template>
-                  <span
-                    v-if="fixtureLabel"
-                    class="canvas-fixture-badge"
-                    :title="fixtureLabel"
-                  >
-                    <Icon icon="ri:database-2-line" />
-                    <span>预览 Fixture</span>
-                  </span>
-                </div>
-                <div class="canvas-header-actions">
-                  <button
-                    type="button"
-                    title="重新渲染"
-                    class="canvas-refresh-btn"
-                    @click="preview.scheduleRender(example, true)"
-                  >
-                    <Icon
-                      icon="ri:refresh-line"
-                      :class="{ 'animate-spin': preview.rendering.value }"
-                    />
-                    <span>{{ preview.rendering.value ? "渲染中..." : "重新渲染" }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Iframe Canvas Body -->
-              <div class="studio-canvas-body">
-                <div v-if="preview.previewError.value" class="canvas-state canvas-error">
-                  <Icon icon="ri:error-warning-line" width="28" height="28" />
-                  <p>{{ preview.previewError.value }}</p>
-                </div>
-                <div v-else-if="!preview.previewHtml.value" class="canvas-state canvas-empty">
-                  <Icon icon="ri:inbox-line" width="28" height="28" />
-                  <p>预览为空：该插件示例未产生可见输出，请检查参数是否齐全。</p>
-                </div>
-                <iframe
-                  v-else
-                  ref="previewFrame"
-                  :srcdoc="preview.srcdoc.value"
-                  class="studio-preview-iframe"
-                  :style="{ height: preview.frameHeight.value + 'px' }"
-                  sandbox="allow-same-origin allow-scripts"
-                ></iframe>
-              </div>
-
-              <!-- Fallback hint footer -->
-              <div
-                v-if="selectedPreview.fallback && !preview.previewError.value"
-                class="studio-canvas-footer"
-              >
-                <Icon icon="ri:information-line" />
-                <span>{{ selectedPreview.fallback }}</span>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
+            <VEmpty
+              v-else
+              title="从左侧选择一个标签插件"
+              message="目录加载完成后可在此查看语法、参数与实时渲染预览。"
+            />
+          </main>
+        </div>
+      </VCard>
     </div>
   </div>
 </template>
 
 <style scoped>
-.plugin-library-view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--color-background);
-}
-
-.plugin-tabs-bar {
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-background) 60%, var(--color-card));
-}
-
-.plugin-tabs-container {
-  max-width: 520px;
-}
-
-.plugin-content-area {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.plugin-gallery-wrapper {
-  height: 100%;
-  overflow-y: auto;
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.plugin-widgets-wrapper {
-  height: 100%;
-  overflow: hidden;
-}
-
-.plugin-fixtures-wrapper {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
 /* ================= 标签插件 Studio 布局 ================= */
-.plugin-studio-layout {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
 /* 左侧边栏 */
 .studio-sidebar {
-  width: 290px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--color-card);
@@ -633,8 +544,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 }
 
 .studio-sidebar-list {
-  flex: 1;
-  overflow-y: auto;
   padding: 6px 0;
 }
 
@@ -725,14 +634,29 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 /* ================= 右侧工作台 ================= */
 .studio-workbench {
-  flex: 1;
   min-width: 0;
-  overflow-y: auto;
   padding: 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   box-sizing: border-box;
+}
+
+.retry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  color: var(--color-foreground);
+  background: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.retry-button:hover {
+  opacity: 0.9;
 }
 
 /* 顶部 Hero 概览卡片 */
@@ -1036,6 +960,9 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 /* 画布预览面板（macOS Studio Style） */
 .studio-canvas-panel {
   background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
 .studio-canvas-header {
@@ -1167,16 +1094,6 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 }
 
 @media (max-width: 768px) {
-  .plugin-studio-layout {
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  .studio-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    max-height: 300px;
-  }
   .studio-workbench {
     padding: 16px;
     gap: 16px;

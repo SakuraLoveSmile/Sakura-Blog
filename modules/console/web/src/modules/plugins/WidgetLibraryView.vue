@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { settingsApi, previewApi } from "@/api";
-import { Toast, Dialog, VLoading } from "@/components/ui";
+import { Toast, Dialog, VLoading, VPageHeader } from "@/components/ui";
 import {
   WIDGET_META,
   BUILTIN_WIDGET_NAMES,
@@ -343,8 +343,13 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
 </script>
 
 <template>
-  <div class="widget-studio-layout">
-    <VLoading v-if="loading" />
+  <div>
+    <VPageHeader
+      title="侧边栏组件"
+      subtitle="浏览 16 种内置侧边栏组件、编辑参数并保存为命名方案（零后端改动）。"
+    />
+    <div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 md:px-8">
+      <VLoading v-if="loading" />
     <div v-else-if="loadError" class="p-6 text-sm text-state-error">{{ loadError }}</div>
 
     <div v-else class="widget-studio-container">
@@ -688,22 +693,14 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
         </section>
       </main>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.widget-studio-layout {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 .widget-studio-container {
   display: flex;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+  align-items: flex-start;
 }
 
 /* 左侧边栏 */
@@ -714,6 +711,10 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
   flex-direction: column;
   background: var(--color-card);
   border-right: 1px solid var(--color-border);
+  position: sticky;
+  top: 1.25rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 2.5rem);
 }
 
 .widget-sidebar-header {
@@ -1242,6 +1243,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
     border-right: none;
     border-bottom: 1px solid var(--color-border);
     max-height: 300px;
+    position: static;
   }
   .widget-workbench {
     padding: 16px;
