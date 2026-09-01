@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VButton, Dialog, Toast } from "@/components/ui";
+import { VButton, VSwitch, Dialog, Toast } from "@/components/ui";
 import AttachmentField from "@/components/AttachmentField.vue";
 
 const props = defineProps<{
@@ -23,7 +23,8 @@ function defaultStyle(): Record<string, any> {
     // blur_px 为 px 字符串（后端 string 字段，直接注入 CSS）；留空 = 回退主题内置值
     leftbar: { ui_style: "card", background_color_dark: "", background_image: "", blur_px: "", background_opacity: "" },
     site: { background_image: "", blur_px: "", blur_sat: "", blur_bg: "" },
-    codeblock: { scrollbar: "" },
+    codeblock: { scrollbar: "", highlightjs_theme: "" },
+    page_transition: { enable: true },
     header_prefix: { h2: "", h3: "", h4: "", h5: "" },
     text_align: "",
     border_radius: {
@@ -71,6 +72,11 @@ styleRef.loading = styleRef.loading || {};
 styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
 styleRef.leftbar = styleRef.leftbar || {};
 styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
+// 容错：存量 style 可能缺 codeblock/page_transition 键，补齐保证 v-model 绑定路径安全
+styleRef.codeblock = styleRef.codeblock || {};
+if (styleRef.codeblock.highlightjs_theme === undefined) styleRef.codeblock.highlightjs_theme = "";
+styleRef.page_transition = styleRef.page_transition || {};
+if (styleRef.page_transition.enable === undefined) styleRef.page_transition.enable = true;
 
 /** 恢复默认初始值（内存重置，需点保存才生效） */
 function resetStyle() {
@@ -305,8 +311,17 @@ function rangeFill(val: number, min: number, max: number): string {
     <div class="subsection">
       <p class="subsection-title">代码块</p>
       <div class="field">
-        <label>高亮主题 URL (scrollbar)</label>
-        <input v-model="data.style.codeblock.scrollbar" :class="inputCls" placeholder="代码块高亮主题 CSS URL" />
+        <label>滚动条宽度 (scrollbar)</label>
+        <input v-model="data.style.codeblock.scrollbar" :class="inputCls" placeholder="如 4px，留空回退主题内置值" />
+      </div>
+      <div class="field">
+        <label>高亮主题 URL (highlightjs_theme)</label>
+        <input
+          v-model="data.style.codeblock.highlightjs_theme"
+          :class="inputCls"
+          placeholder="highlight.js 主题 CSS URL"
+        />
+        <p class="hint">配置对齐上游 style.codeblock.highlightjs_theme，由 head 注入 link 生效。</p>
       </div>
     </div>
 
@@ -344,6 +359,11 @@ function rangeFill(val: number, min: number, max: number): string {
             <option value="left">left</option>
             <option value="justify">justify（两端对齐）</option>
           </select>
+        </div>
+        <div class="field">
+          <label>整页过渡动画 (page_transition)</label>
+          <p class="hint">同源导航使用原生 View Transition（Stellar 1.43 默认开启）。</p>
+          <VSwitch v-model="data.style.page_transition.enable" aria-label="整页过渡动画" />
         </div>
       </div>
     </div>

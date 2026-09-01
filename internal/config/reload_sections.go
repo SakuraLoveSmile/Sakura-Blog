@@ -54,7 +54,7 @@ func KnownSections() []string {
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
 		SectionTagPlugins, SectionDefault,
-		SectionPages, SectionDataCache,
+		SectionPages, SectionDataCache, SectionServices,
 	}
 }
 
@@ -127,6 +127,8 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		dst = &tmpl.PagesConfig{}
 	case SectionDataCache:
 		dst = &tmpl.DataCacheConfig{}
+	case SectionServices:
+		dst = &tmpl.ServicesConfig{}
 	default:
 		return fmt.Errorf("unknown section: %s", section)
 	}
@@ -135,6 +137,29 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 	}
 	if cc, ok := dst.(*tmpl.CommentsConfig); ok {
 		applyCommentDefaults(cc) // 评论段补运行时默认（镜像/徽章/标题不为空）
+	}
+	if search, ok := dst.(*tmpl.SearchConfig); ok {
+		if search.LocalSearch.CacheTTL != nil && *search.LocalSearch.CacheTTL < 0 {
+			return fmt.Errorf("search.local_search.cache_ttl must be >= 0")
+		}
+		search.FillDefaults()
+	}
+	if cache, ok := dst.(*tmpl.DataCacheConfig); ok {
+		if cache.DefaultTTL != nil && *cache.DefaultTTL < 0 {
+			return fmt.Errorf("data_cache.default_ttl must be >= 0")
+		}
+		if cache.MaxEntries != nil && *cache.MaxEntries < 1 {
+			return fmt.Errorf("data_cache.max_entries must be >= 1")
+		}
+		for name, ttl := range cache.TTL {
+			if ttl < 0 {
+				return fmt.Errorf("data_cache.ttl.%s must be >= 0", name)
+			}
+		}
+		cache.FillDefaults()
+	}
+	if tagPlugins, ok := dst.(*tmpl.TagPluginsConfig); ok {
+		tagPlugins.FillDefaults()
 	}
 	// menubar 服务端兖底校验：items 内 title/url 不得为空
 	if mb, ok := dst.(*tmpl.Menubar); ok {
@@ -148,10 +173,25 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 	if err != nil {
 		return err
 	}
+	if isRuntimeDefaultsSection(section) {
+		norm, err = mergeRuntimeDefaults(raw, norm, section)
+		if err != nil {
+			return fmt.Errorf("normalize %s payload: %w", section, err)
+		}
+	}
 	if err := st.PutSetting(section, string(norm)); err != nil {
 		return err
 	}
 	return RebuildSite(st, site)
+}
+
+func isRuntimeDefaultsSection(section string) bool {
+	switch section {
+	case SectionSearch, SectionDataCache, SectionTagPlugins, SectionServices:
+		return true
+	default:
+		return false
+	}
 }
 
 // applyCommentDefaults 评论配置的运行时默认值（与 main.go 启动兑底一致）。

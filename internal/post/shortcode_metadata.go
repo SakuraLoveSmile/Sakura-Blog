@@ -92,7 +92,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	},
 	"emoji": {
 		Title:       "表情 Emoji",
-		Description: "行内表情图，支持 QQ/贴吧/阿鲁/猫咪/twemoji 五种来源（完整清单见「素材速查」）。",
+		Description: "行内表情图，支持 default/qq/贴吧/阿鲁/猫咪/twemoji 六种来源（完整清单见「素材速查」）。",
 		Signature:   "{% emoji [来源] 名称 [height:高度] %}",
 		Example:     "开心 {% emoji aini %} 点赞 {% emoji twemoji 1f44d %} 滑稽 {% emoji tieba huaji %}",
 		PreviewSet:  true,

@@ -278,4 +278,4 @@ func TestTimelineArgs(t *testing.T) {
 	}
 }
 
-// TestEmojiSources 对齐原版 _config.yml tag_plugins.emoji 的五种来源：
+// TestEmojiSources 对齐原版 _config.yml tag_plugins.emoji 的六种来源（含独立 qq）：

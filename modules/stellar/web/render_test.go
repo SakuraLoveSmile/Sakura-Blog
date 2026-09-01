@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"blog/internal/settings"
 )
 
 func boolPtr(v bool) *bool { return &v }
@@ -118,6 +120,41 @@ func TestHeadAndBaseRespectSEOAndPluginSettings(t *testing.T) {
 	}
 	if !strings.Contains(enabled, `https://origin.example/post/seo-test`) {
 		t.Error("canonical URL missing from rendered head")
+	}
+}
+
+func TestBaseInjectsRuntimeConfigAndTagPluginOverrides(t *testing.T) {
+	searchLazy := false
+	searchTTL := 0
+	cacheEnabled := false
+	cacheTTL := 0
+	cacheMax := 7
+	site := &Site{
+		Title:     "运行时配置",
+		Search:    settings.SearchConfig{LocalSearch: settings.LocalSearchConfig{LazyLoad: &searchLazy, CacheTTL: &searchTTL}},
+		DataCache: settings.DataCacheConfig{Enable: &cacheEnabled, DefaultTTL: &cacheTTL, MaxEntries: &cacheMax, TTL: map[string]int{"sites": 0}},
+		Services:  settings.ServicesConfig{SiteInfo: settings.SiteInfoConfig{API: `https://api.example.test?url={href}&x="quoted"`}},
+		TagPlugins: settings.TagPluginsConfig{
+			Note:     settings.TagPluginNote{Border: boolPtr(false)},
+			Checkbox: settings.TagPluginCheckbox{Interactive: false},
+			OKR:      settings.TagPluginOKR{Border: boolPtr(false)},
+		},
+	}
+	html := renderPostDocument(t, site)
+	for _, want := range []string{
+		`lazy_load: false`,
+		`cache_ttl:  0`,
+		`default_ttl:  0`,
+		`"sites":0`,
+		`max_entries:  7`,
+		`api: "https://api.example.test?url={href}\u0026x=\"quoted\""`,
+		`.md-text .tag-plugin.note{border:0}`,
+		`.md-text .tag-plugin.okr{border:0}`,
+		`.md-text .tag-plugin.checkbox input{pointer-events:none}`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered base missing %q", want)
+		}
 	}
 }
 

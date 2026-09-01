@@ -51,6 +51,7 @@ const legacyTabMap: Record<string, { path: string; tab?: string }> = {
   widgets: { path: "/appearance", tab: "layout" },
   plugins: { path: "/appearance", tab: "enhancements" },
   tag_plugins: { path: "/appearance", tab: "enhancements" },
+  services: { path: "/appearance", tab: "enhancements" },
   default: { path: "/appearance", tab: "assets" },
   menubar: { path: "/menus" },
   rightbar: { path: "/appearance", tab: "layout" },
@@ -97,7 +98,7 @@ const tabItems = computed(() =>
     label: tab.label,
     icon: tab.icon,
     dirty: isTabDirty(tab.key),
-  }))
+  })),
 );
 
 function takeSnapshot() {
@@ -272,7 +273,12 @@ onBeforeRouteLeave((to, from, next) => {
             <BasicSettings v-if="active === 'basic'" :data="data" :saving="savingKey" @save="save" />
             <div v-else class="settings-tab-content">
               <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
-              <CommentSettings v-else-if="active === 'comments'" :data="data" :saving="savingKey" @save="saveComments" />
+              <CommentSettings
+                v-else-if="active === 'comments'"
+                :data="data"
+                :saving="savingKey"
+                @save="saveComments"
+              />
               <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
               <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
               <AdvancedSettings

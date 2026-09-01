@@ -82,6 +82,10 @@ const inputCls = "apple-input";
           <label class="text-xs text-text-tertiary mb-1 block">间隔（ms）</label>
           <input v-model.number="data.scrollreveal.interval" type="number" :class="inputCls" placeholder="100" />
         </div>
+        <div>
+          <label class="text-xs text-text-tertiary mb-1 block">初始缩放（0.1–1，0=默认）</label>
+          <input v-model.number="data.scrollreveal.scale" type="number" min="0" max="1" step="0.05" :class="inputCls" placeholder="1" />
+        </div>
       </div>
     </div>
 
@@ -102,6 +106,14 @@ const inputCls = "apple-input";
       <div>
         <label class="text-xs text-text-tertiary mb-1 block">选择器（空用默认 div.lazy-box&gt;img.lazy）</label>
         <input v-model="data.fancybox.selector" :class="inputCls" placeholder="div.lazy-box>img.lazy" />
+      </div>
+      <div>
+        <label class="text-xs text-text-tertiary mb-1 block">加载模式（mode）</label>
+        <select v-model="data.fancybox.mode" :class="inputCls">
+          <option value="">auto（默认：有可弹窗图片才加载）</option>
+          <option value="auto">auto</option>
+          <option value="global">global（所有页面加载）</option>
+        </select>
       </div>
     </div>
 

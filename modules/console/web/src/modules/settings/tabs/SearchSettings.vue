@@ -15,7 +15,7 @@ function updateSkipSearch(event: Event) {
 }
 
 function handleSubmit() {
-  emit('save', 'search');
+  emit("save", "search");
 }
 </script>
 
@@ -31,9 +31,21 @@ function handleSubmit() {
         <div class="settings-switch">
           <div class="settings-switch-copy">
             <div class="settings-switch-name">搜索正文内容</div>
-            <p class="settings-help">开启后将文章完整正文写入索引；关闭后仅索引标题，减小 search.json 体积并提升检索响应速度。</p>
+            <p class="settings-help">
+              开启后将文章完整正文写入索引；关闭后仅索引标题，减小 search.json 体积并提升检索响应速度。
+            </p>
           </div>
           <VSwitch v-model="data.search.local_search.content" aria-label="搜索正文内容" />
+        </div>
+
+        <div class="settings-switch">
+          <div class="settings-switch-copy">
+            <div class="settings-switch-name">首次聚焦再加载</div>
+            <p class="settings-help">
+              开启后仅在用户第一次聚焦搜索框时加载索引，减少页面初始请求；关闭后页面加载时立即读取索引。
+            </p>
+          </div>
+          <VSwitch v-model="data.search.local_search.lazy_load" aria-label="首次聚焦再加载" />
         </div>
 
         <div class="settings-form-grid settings-form-grid-2">
@@ -57,7 +69,25 @@ function handleSubmit() {
 
         <div class="settings-field">
           <label for="settings-search-path">索引文件生成路径</label>
-          <input id="settings-search-path" v-model="data.search.local_search.path" :class="inputCls" placeholder="/search.json" />
+          <input
+            id="settings-search-path"
+            v-model="data.search.local_search.path"
+            :class="inputCls"
+            placeholder="/search.json"
+          />
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-search-cache-ttl">搜索缓存时长（秒）</label>
+          <input
+            id="settings-search-cache-ttl"
+            v-model.number="data.search.local_search.cache_ttl"
+            type="number"
+            min="0"
+            :class="inputCls"
+            placeholder="86400（0=不缓存）"
+          />
+          <p class="settings-help">浏览器本地搜索索引的缓存时长；设为 0 可关闭搜索缓存。</p>
         </div>
       </div>
     </section>

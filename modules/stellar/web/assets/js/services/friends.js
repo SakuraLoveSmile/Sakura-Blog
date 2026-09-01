@@ -59,6 +59,6 @@
           utils.dom(el).append(section);
         }
         window.wrapLazyloadImages(el);
-      });
+      }, undefined, { service: 'friends' });
     }
 })();

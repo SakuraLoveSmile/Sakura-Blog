@@ -172,7 +172,8 @@ func TestBootstrapImportsEditableSections(t *testing.T) {
 	site.Load().Authors = map[string]tmpl.AuthorDef{"sakura": {Name: "Sakura", Description: "作者"}}
 	site.Load().Plugins = tmpl.PluginsConfig{Heti: &tmpl.HetiConfig{Enable: true}}
 	en := false
-	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: 600}
+	defaultTTL := 600
+	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: &defaultTTL}
 
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("bootstrap: %v", err)
@@ -223,7 +224,7 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		{SectionSiteTree, `{"home":{"comments":true}}`, func() bool { return site.Load().SiteTree.Home.Comments }},
 		{SectionDataCache, `{"enable":false,"default_ttl":120,"ttl":{"friends":86400}}`, func() bool {
 			cfg := site.Load().DataCache
-			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400
+			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL != nil && *cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400
 		}},
 		{SectionSEO, `{"canonical":{"originalHost":"origin.example","officialHosts":["mirror.example"]},"open_graph":{"enable":false,"twitter_id":"blog"},"preconnect":["https://cdn.example"],"structured_data":{"links":["https://example.com"]}}`, func() bool {
 			cfg := site.Load().SEO

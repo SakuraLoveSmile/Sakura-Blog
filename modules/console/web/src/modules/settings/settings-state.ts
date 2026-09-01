@@ -23,6 +23,7 @@ export const ALL_SETTINGS_SECTIONS = [
   "default",
   "pages",
   "data_cache",
+  "services",
 ] as const;
 
 export type SettingsData = Record<string, any>;
@@ -86,11 +87,31 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   d.search.local_search.path = d.search.local_search.path || "/search.json";
   d.search.local_search.content = d.search.local_search.content ?? true;
   d.search.local_search.skip_search = d.search.local_search.skip_search || [];
+  d.search.local_search.lazy_load = d.search.local_search.lazy_load ?? true;
+  d.search.local_search.cache_ttl = d.search.local_search.cache_ttl ?? 86400;
   d.inject = d.inject || {};
   d.data_cache = d.data_cache || {};
   d.data_cache.enable = d.data_cache.enable ?? true;
   d.data_cache.default_ttl = d.data_cache.default_ttl ?? 3600;
   d.data_cache.ttl = d.data_cache.ttl || {};
+  d.data_cache.max_entries = d.data_cache.max_entries ?? 200;
+  const dataCacheTTLs: Record<string, number> = {
+    giscus: 600,
+    waline: 600,
+    artalk: 600,
+    memos: 600,
+    "memos-user": 86400,
+    sites: 86400,
+    friends: 86400,
+    friends_and_posts: 86400,
+    siteinfo: 86400,
+  };
+  for (const [name, ttl] of Object.entries(dataCacheTTLs)) {
+    d.data_cache.ttl[name] = d.data_cache.ttl[name] ?? ttl;
+  }
+  d.services = d.services || {};
+  d.services.siteinfo = d.services.siteinfo || {};
+  d.services.siteinfo.api = d.services.siteinfo.api ?? "";
   d.ai = d.ai || {};
   d.ai.embedding_model = d.ai.embedding_model || "";
   d.ai.summary_enabled = d.ai.summary_enabled ?? true;
@@ -146,8 +167,72 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   d.plugins.mermaid.enable = d.plugins.mermaid.enable ?? true;
   d.plugins.copycode.enable = d.plugins.copycode.enable ?? true;
   const tagPlugins = (d.tag_plugins = d.tag_plugins || {});
-  for (const key of ["note", "quot", "emoji", "icon", "button", "mark", "hashtag", "gallery", "timeline", "copy"]) {
+  for (const key of [
+    "note",
+    "checkbox",
+    "quot",
+    "emoji",
+    "icon",
+    "button",
+    "mark",
+    "hashtag",
+    "gallery",
+    "timeline",
+    "copy",
+    "okr",
+  ]) {
     tagPlugins[key] = tagPlugins[key] || {};
+  }
+  tagPlugins.note.default_color = tagPlugins.note.default_color ?? "";
+  tagPlugins.note.border = tagPlugins.note.border ?? true;
+  tagPlugins.checkbox.interactive = tagPlugins.checkbox.interactive ?? false;
+  const legacyQuot = tagPlugins.quot;
+  if (
+    !legacyQuot.default &&
+    (Object.prototype.hasOwnProperty.call(legacyQuot, "prefix") ||
+      Object.prototype.hasOwnProperty.call(legacyQuot, "suffix"))
+  ) {
+    legacyQuot.default = { prefix: legacyQuot.prefix ?? "", suffix: legacyQuot.suffix ?? "" };
+  }
+  legacyQuot.default = {
+    prefix: legacyQuot.default?.prefix ?? "quot:quote-left",
+    suffix: legacyQuot.default?.suffix ?? "quot:quote-right",
+  };
+  legacyQuot.hashtag = {
+    prefix: legacyQuot.hashtag?.prefix ?? "quot:hashtag",
+    suffix: legacyQuot.hashtag?.suffix ?? "",
+  };
+  legacyQuot.question = {
+    prefix: legacyQuot.question?.prefix ?? "quot:question",
+    suffix: legacyQuot.question?.suffix ?? "",
+  };
+  tagPlugins.emoji = tagPlugins.emoji || {};
+  const emojiSources: Record<string, string> = {
+    default: "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif",
+    twemoji: "https://gcore.jsdelivr.net/gh/twitter/twemoji/assets/svg/{name}.svg",
+    qq: "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif",
+    aru: "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/aru/{name}.gif",
+    tieba: "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/tieba/{name}.png",
+    blobcat: "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/{name}.gif",
+  };
+  for (const [name, source] of Object.entries(emojiSources)) {
+    tagPlugins.emoji[name] = tagPlugins.emoji[name] ?? source;
+  }
+  tagPlugins.okr = tagPlugins.okr || {};
+  tagPlugins.okr.border = tagPlugins.okr.border ?? true;
+  tagPlugins.okr.status = tagPlugins.okr.status || {};
+  const okrStatuses: Record<string, { color: string; label: string }> = {
+    in_track: { color: "blue", label: "正常" },
+    at_risk: { color: "yellow", label: "风险" },
+    off_track: { color: "orange", label: "延期" },
+    finished: { color: "green", label: "已完成" },
+    unfinished: { color: "red", label: "未完成" },
+  };
+  for (const [name, status] of Object.entries(okrStatuses)) {
+    tagPlugins.okr.status[name] = {
+      color: tagPlugins.okr.status[name]?.color ?? status.color,
+      label: tagPlugins.okr.status[name]?.label ?? status.label,
+    };
   }
   d.default = d.default || {};
   d.default.image_onerror = d.default.image_onerror || "";

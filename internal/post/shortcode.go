@@ -324,7 +324,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		if len(parts) < 3 {
 			return match
 		}
-		return renderOKR(parts[1], parts[2], renderMD)
+		return renderOKR(parts[1], parts[2], renderMD, tagPlugins)
 	})
 
 	// 5.6 folders（块级，<!-- folder title --> 分隔）

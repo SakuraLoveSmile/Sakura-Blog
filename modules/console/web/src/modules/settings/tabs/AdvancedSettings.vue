@@ -8,6 +8,17 @@ defineProps<{ data: Record<string, any>; rawText: Record<string, string>; saving
 const emit = defineEmits<{ save: [section: string]; saveJson: [section: string] }>();
 const codeAreaCls = "apple-textarea code-style";
 const rawSection = ref<string>("site");
+const cacheServices = [
+  ["giscus", "Giscus 最新评论"],
+  ["waline", "Waline 最新评论"],
+  ["artalk", "Artalk 最新评论"],
+  ["memos", "Memos"],
+  ["memos-user", "Memos 用户"],
+  ["sites", "站点卡片"],
+  ["friends", "友链"],
+  ["friends_and_posts", "友链文章"],
+  ["siteinfo", "站点信息"],
+] as const;
 </script>
 
 <template>
@@ -21,7 +32,9 @@ const rawSection = ref<string>("site");
       <div class="settings-section-body">
         <div class="settings-warning">
           <Icon icon="ri:error-warning-line" class="settings-warning-icon" />
-          <span>注入内容将不经转义原样输出到前台所有页面，可执行任意脚本。请只粘贴你完全信任的代码，错误或恶意代码可能导致页面故障与安全风险。</span>
+          <span
+            >注入内容将不经转义原样输出到前台所有页面，可执行任意脚本。请只粘贴你完全信任的代码，错误或恶意代码可能导致页面故障与安全风险。</span
+          >
         </div>
 
         <div class="settings-field">
@@ -31,7 +44,7 @@ const rawSection = ref<string>("site");
             v-model="data.inject.inject_head"
             rows="5"
             :class="codeAreaCls"
-            placeholder="<script>...</script> 或 <link rel=&quot;stylesheet&quot; href=&quot;...&quot;>"
+            placeholder='<script>...</script> 或 <link rel="stylesheet" href="...">'
           ></textarea>
         </div>
 
@@ -58,7 +71,7 @@ const rawSection = ref<string>("site");
     <section class="settings-section">
       <div class="settings-section-heading">
         <h2>数据缓存</h2>
-        <p>友链、时间线、GitHub 信息等动态数据的浏览器本地缓存策略（覆盖各服务的独立 TTL 请通过下方原始 JSON 配置）。</p>
+        <p>友链、站点卡片和其他动态数据的浏览器本地缓存策略；TTL 设为 0 表示对应服务不缓存。</p>
       </div>
 
       <div class="settings-section-body">
@@ -80,6 +93,38 @@ const rawSection = ref<string>("site");
             class="apple-input"
             placeholder="3600"
           />
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-cache-max-entries">缓存条目上限</label>
+          <input
+            id="settings-cache-max-entries"
+            v-model.number="data.data_cache.max_entries"
+            type="number"
+            min="1"
+            step="1"
+            class="apple-input"
+            placeholder="200"
+          />
+          <p class="settings-help">仅淘汰以 <code>dc:</code> 开头的动态数据缓存，按写入时间移除最旧条目。</p>
+        </div>
+
+        <div class="settings-subsection">
+          <p class="settings-subsection-title">服务级缓存时长（秒）</p>
+          <div class="settings-form-grid settings-form-grid-3">
+            <div v-for="[name, label] in cacheServices" :key="name" class="settings-field">
+              <label :for="`settings-cache-${name}`">{{ label }}（{{ name }}）</label>
+              <input
+                :id="`settings-cache-${name}`"
+                v-model.number="data.data_cache.ttl[name]"
+                type="number"
+                min="0"
+                step="1"
+                class="apple-input"
+                placeholder="沿用默认"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="settings-section-inline-action">

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -20,8 +21,60 @@ func LoadSite(path string) (*tmpl.Site, error) {
 	if err := yaml.Unmarshal(b, s); err != nil {
 		return nil, fmt.Errorf("parse site config %s: %w", path, err)
 	}
+	if err := normalizeYAMLRuntimeSections(b, s); err != nil {
+		return nil, fmt.Errorf("normalize runtime settings %s: %w", path, err)
+	}
 	normalizeThemeDefaults(s)
 	return s, nil
+}
+
+// normalizeYAMLRuntimeSections applies the same presence-aware default merge
+// used for settings rows. YAML decoding into ordinary Go strings loses whether
+// a nested value was omitted or explicitly set to "", so normalize the raw
+// runtime sections before the final in-memory defaults are published.
+func normalizeYAMLRuntimeSections(data []byte, site *tmpl.Site) error {
+	var generic map[string]any
+	if err := yaml.Unmarshal(data, &generic); err != nil || generic == nil {
+		return err
+	}
+	encoded, err := json.Marshal(generic)
+	if err != nil {
+		return err
+	}
+	var sections map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &sections); err != nil {
+		return err
+	}
+
+	for _, section := range []string{SectionSearch, SectionDataCache, SectionTagPlugins, SectionServices} {
+		raw, ok := sections[section]
+		if !ok || string(raw) == "null" {
+			continue
+		}
+		normalized, err := mergeRuntimeDefaults(raw, raw, section)
+		if err != nil {
+			return err
+		}
+		switch section {
+		case SectionSearch:
+			if err := json.Unmarshal(normalized, &site.Search); err != nil {
+				return err
+			}
+		case SectionDataCache:
+			if err := json.Unmarshal(normalized, &site.DataCache); err != nil {
+				return err
+			}
+		case SectionTagPlugins:
+			if err := json.Unmarshal(normalized, &site.TagPlugins); err != nil {
+				return err
+			}
+		case SectionServices:
+			if err := json.Unmarshal(normalized, &site.Services); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // normalizeThemeDefaults keeps site.yml and legacy settings compatible with the
@@ -41,6 +94,10 @@ func normalizeThemeDefaults(s *tmpl.Site) {
 	}
 	// 1.41 ai_label：site.yml 未配 ai_label 段时补主题内置四档（DefaultSite 已显式含）
 	s.Article.AILabel.FillDefaults()
+	// Stellar 运行时配置默认值：settings 与 site.yml 共用同一份补齐逻辑。
+	s.Search.FillDefaults()
+	s.DataCache.FillDefaults()
+	s.TagPlugins.FillDefaults()
 }
 
 // DefaultSite 构造 Demo 2 用的站点配置。

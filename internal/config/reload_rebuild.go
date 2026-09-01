@@ -63,6 +63,7 @@ type parsedSections struct {
 	defaultAssets tmpl.DefaultAssets
 	pages         tmpl.PagesConfig
 	dataCache     tmpl.DataCacheConfig
+	services      tmpl.ServicesConfig
 }
 
 func parseSections(settings map[string]string) parsedSections {
@@ -113,28 +114,19 @@ func parseSections(settings map[string]string) parsedSections {
 	if parsed.article.PinStyle == "" {
 		parsed.article.PinStyle = "carousel"
 	}
-	if parsed.search.Service == "" {
-		parsed.search.Service = "local_search"
-	}
-	if parsed.search.LocalSearch.Field == "" {
-		parsed.search.LocalSearch.Field = "all"
-	}
-	if parsed.search.LocalSearch.Path == "" {
-		parsed.search.LocalSearch.Path = "/search.json"
-	}
-	if parsed.search.LocalSearch.Content == nil {
-		v := true
-		parsed.search.LocalSearch.Content = &v
-	}
+	parsed.search.FillDefaults()
 	unmarshal(SectionWidgets, &parsed.widgets)
 	unmarshal(SectionCover, &parsed.cover)
 	unmarshal(SectionNavTabs, &parsed.navTabs)
 	unmarshal(SectionAuthors, &parsed.authors)
 	unmarshal(SectionPlugins, &parsed.plugins)
 	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
+	parsed.tagPlugins.FillDefaults()
 	unmarshal(SectionDefault, &parsed.defaultAssets)
 	unmarshal(SectionPages, &parsed.pages)
 	unmarshal(SectionDataCache, &parsed.dataCache)
+	parsed.dataCache.FillDefaults()
+	unmarshal(SectionServices, &parsed.services)
 	return parsed
 }
 
@@ -184,6 +176,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
 	assign(SectionPages, func() { site.Pages = parsed.pages })
 	assign(SectionDataCache, func() { site.DataCache = parsed.dataCache })
+	assign(SectionServices, func() { site.Services = parsed.services })
 }
 
 // rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。

@@ -21,15 +21,18 @@ function togglePlatform(platform: string) {
   else platforms.push(platform);
 }
 
-function addMapEntry(target: "category_color" | "category_icon" | "tag_icon") {
+type MapTarget = "category_color" | "category_icon" | "tag_icon" | "edit_this_page";
+
+function addMapEntry(target: MapTarget) {
   props.data.article[target] = props.data.article[target] || {};
-  let key = "新名称";
+  const defaultKey = target === "edit_this_page" ? "路径前缀" : "新名称";
+  let key = defaultKey;
   let index = 2;
-  while (Object.prototype.hasOwnProperty.call(props.data.article[target], key)) key = `新名称${index++}`;
+  while (Object.prototype.hasOwnProperty.call(props.data.article[target], key)) key = `${defaultKey}${index++}`;
   props.data.article[target][key] = "";
 }
 
-function renameMapEntry(target: "category_color" | "category_icon" | "tag_icon", oldKey: string, event: Event) {
+function renameMapEntry(target: MapTarget, oldKey: string, event: Event) {
   const nextKey = (event.target as HTMLInputElement).value;
   if (nextKey === oldKey) return;
   const map = props.data.article[target] || {};
@@ -38,9 +41,17 @@ function renameMapEntry(target: "category_color" | "category_icon" | "tag_icon",
   map[nextKey || oldKey] = value;
 }
 
-function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon", key: string) {
+function removeMapEntry(target: MapTarget, key: string) {
   delete props.data.article[target]?.[key];
 }
+
+const aiLabelTiers = [
+  { key: "manual", label: "人工创作" },
+  { key: "reviewed", label: "AI 生成·已审核" },
+  { key: "polished", label: "人工写作·AI 润色" },
+  { key: "generated", label: "AI 生成" },
+] as const;
+
 </script>
 
 <template>
@@ -253,6 +264,104 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
               </button>
             </div>
             <p v-if="Object.keys(data.article[target]).length === 0" class="settings-post-empty">
+              暂无映射，可点击右上角添加。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-post-section">
+      <div class="settings-post-section-heading">
+        <h2>AI 成分标签</h2>
+        <p>文章 front-matter 写 ai_label 后，在文章页顶部显示 AI 成分标记；各档可配置文字颜色与图标。</p>
+      </div>
+
+      <div class="settings-section-body">
+        <div class="settings-post-field">
+          <label for="settings-post-ai-default">未标注文章的默认档</label>
+          <select id="settings-post-ai-default" v-model="data.article.ai_label.default" :class="selectCls">
+            <option value="">不显示（历史文章零变化）</option>
+            <option value="manual">人工创作</option>
+            <option value="reviewed">AI 生成·已审核</option>
+            <option value="polished">人工写作·AI 润色</option>
+            <option value="generated">AI 生成</option>
+          </select>
+          <p class="settings-post-help">仅对未写 ai_label 的文章生效；填写后所有未标注文章都会显示该档标签。</p>
+        </div>
+
+        <div
+          v-for="tier in aiLabelTiers"
+          :key="tier.key"
+          class="settings-post-field"
+        >
+          <span class="settings-post-field-label">{{ tier.label }}（{{ tier.key }}）</span>
+          <div class="settings-post-ai-tier">
+            <input
+              v-model="data.article.ai_label[tier.key].color"
+              :class="inputCls"
+              placeholder="留空=内置默认色"
+              aria-label="标签文字颜色"
+            />
+            <IconPicker
+              v-model="data.article.ai_label[tier.key].icon"
+              compact
+              placeholder="图标 key（可选）"
+              class="settings-post-icon-picker"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-post-section">
+      <div class="settings-post-section-heading">
+        <h2>编辑本文</h2>
+        <p>源路径前缀 → 仓库编辑页 URL 前缀映射，命中时文章页显示「编辑本文」按钮与贡献者列表。</p>
+      </div>
+
+      <div class="settings-section-body">
+        <div class="settings-post-mapping-block">
+          <div class="settings-post-mapping-head">
+            <div>
+              <h3>路径映射</h3>
+              <p class="settings-post-help">
+                键为文章源路径前缀（如 posts/），值为仓库 blob URL 前缀（如
+                https://github.com/user/repo/blob/main/content/posts/）。
+              </p>
+            </div>
+            <button type="button" class="settings-post-add-btn" @click="addMapEntry('edit_this_page')">
+              <Icon icon="ri:add-line" />
+              <span>添加</span>
+            </button>
+          </div>
+
+          <div class="settings-post-mapping-list">
+            <div v-for="key in Object.keys(data.article.edit_this_page)" :key="key" class="settings-post-mapping-row">
+              <input
+                :value="key"
+                :class="inputCls"
+                placeholder="源路径前缀"
+                aria-label="源路径前缀"
+                @change="renameMapEntry('edit_this_page', key, $event)"
+              />
+              <input
+                v-model="data.article.edit_this_page[key]"
+                :class="inputCls"
+                placeholder="https://github.com/user/repo/blob/main/"
+                aria-label="仓库编辑页 URL 前缀"
+              />
+              <button
+                type="button"
+                class="settings-post-row-btn settings-post-row-btn-danger"
+                title="删除"
+                aria-label="删除映射"
+                @click="removeMapEntry('edit_this_page', key)"
+              >
+                <Icon icon="ri:delete-bin-line" />
+              </button>
+            </div>
+            <p v-if="Object.keys(data.article.edit_this_page).length === 0" class="settings-post-empty">
               暂无映射，可点击右上角添加。
             </p>
           </div>
@@ -556,6 +665,19 @@ function removeMapEntry(target: "category_color" | "category_icon" | "tag_icon",
 
 .settings-post-icon-picker {
   min-width: 0;
+}
+
+.settings-post-ai-tier {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.5fr) minmax(240px, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .settings-post-ai-tier {
+    grid-template-columns: 1fr;
+  }
 }
 
 .settings-post-row-btn {

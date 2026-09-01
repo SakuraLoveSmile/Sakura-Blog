@@ -61,7 +61,7 @@ test("settings center keeps structured forms and section save contracts split by
     ["PostSettings.vue", /emit\(["']save["'], ["']article["']\)/],
     ["CommentSettings.vue", /settingsApi\.testNotify/],
     ["SeoSettings.vue", /emit\('save', 'seo'\)/],
-    ["SearchSettings.vue", /emit\('save', 'search'\)/],
+    ["SearchSettings.vue", /emit\(["']save["'], ["']search["']\)/],
     ["AdvancedSettings.vue", /saveJson/],
   ] as const;
   for (const [name, marker] of components) {
@@ -110,4 +110,30 @@ test("legacy settings tabs redirect to their new owners", () => {
     'authors: { path: "/authors" }',
   ])
     assert.match(view, new RegExp(marker));
+});
+
+test("Stellar runtime settings are exposed by structured forms", () => {
+  const search = read("modules/settings/tabs/SearchSettings.vue");
+  assert.match(search, /首次聚焦再加载/);
+  assert.match(search, /data\.search\.local_search\.lazy_load/);
+  assert.match(search, /settings-search-cache-ttl/);
+  assert.match(search, /data\.search\.local_search\.cache_ttl/);
+
+  const advanced = read("modules/settings/tabs/AdvancedSettings.vue");
+  assert.match(advanced, /settings-cache-max-entries/);
+  for (const service of ["giscus", "waline", "artalk", "memos-user", "sites", "friends_and_posts", "siteinfo"])
+    assert.match(advanced, new RegExp(service));
+
+  const enhancements = read("modules/appearance/EnhancementsSettings.vue");
+  for (const marker of [
+    "settings-siteinfo-api",
+    "note.border",
+    "checkbox.interactive",
+    "okr.border",
+    "emojiSources",
+    "qq",
+    "addStatus",
+  ])
+    assert.match(enhancements, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(read("modules/settings/settings-state.ts"), /"services"/);
 });

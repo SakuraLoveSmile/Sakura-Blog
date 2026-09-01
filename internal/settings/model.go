@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"encoding/json"
 	"html/template"
 	"strings"
 	"time"
@@ -603,6 +604,7 @@ type CopycodeConfig struct {
 type SearchConfig struct {
 	Service     string            `yaml:"service" json:"service"`
 	LocalSearch LocalSearchConfig `yaml:"local_search" json:"local_search"`
+	serviceSet  bool
 }
 
 type LocalSearchConfig struct {
@@ -616,6 +618,68 @@ type LocalSearchConfig struct {
 	// CacheTTL 搜索数据 localStorage 缓存时长秒（1.41）：nil=默认 86400（1 天），
 	// 显式 0=不缓存。指针型同上。
 	CacheTTL *int `yaml:"cache_ttl" json:"cache_ttl"`
+	fieldSet bool
+	pathSet  bool
+}
+
+// UnmarshalJSON records string-key presence so migration can distinguish an
+// omitted value from an explicitly configured empty string.
+func (c *SearchConfig) UnmarshalJSON(data []byte) error {
+	type searchAlias SearchConfig
+	var decoded searchAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*c = SearchConfig(decoded)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	_, c.serviceSet = raw["service"]
+	return nil
+}
+
+// UnmarshalJSON records local_search string-key presence for presence-aware
+// defaulting while retaining the public string fields used by callers.
+func (c *LocalSearchConfig) UnmarshalJSON(data []byte) error {
+	type localSearchAlias LocalSearchConfig
+	var decoded localSearchAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*c = LocalSearchConfig(decoded)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	_, c.fieldSet = raw["field"]
+	_, c.pathSet = raw["path"]
+	return nil
+}
+
+// FillDefaults 补齐 Stellar v1.41 搜索默认值，保留显式 false/0。
+func (c *SearchConfig) FillDefaults() {
+	if c.Service == "" && !c.serviceSet {
+		c.Service = "local_search"
+	}
+	if c.LocalSearch.Field == "" && !c.LocalSearch.fieldSet {
+		c.LocalSearch.Field = "all"
+	}
+	if c.LocalSearch.Path == "" && !c.LocalSearch.pathSet {
+		c.LocalSearch.Path = "/search.json"
+	}
+	if c.LocalSearch.Content == nil {
+		v := true
+		c.LocalSearch.Content = &v
+	}
+	if c.LocalSearch.LazyLoad == nil {
+		v := true
+		c.LocalSearch.LazyLoad = &v
+	}
+	if c.LocalSearch.CacheTTL == nil {
+		v := 86400
+		c.LocalSearch.CacheTTL = &v
+	}
 }
 
 // EffectiveLazyLoad 懒加载开关：未配置按 1.41 默认开启。
@@ -634,11 +698,76 @@ func (c LocalSearchConfig) EffectiveCacheTTL() int {
 	return *c.CacheTTL
 }
 
-// DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
+// DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTTL/MaxEntries
+// 使用指针区分“未配置”与显式 0，避免保存设置时误把 0 改回默认值。
 type DataCacheConfig struct {
 	Enable     *bool          `yaml:"enable,omitempty" json:"enable,omitempty"`
-	DefaultTTL int            `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
+	DefaultTTL *int           `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
 	TTL        map[string]int `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	MaxEntries *int           `yaml:"max_entries,omitempty" json:"max_entries,omitempty"`
+}
+
+const (
+	DefaultDataCacheTTL        = 3600
+	DefaultDataCacheMaxEntries = 200
+)
+
+// DefaultDataCacheTTLs 返回 Stellar v1.44 的服务级 TTL 默认值副本。
+func DefaultDataCacheTTLs() map[string]int {
+	return map[string]int{
+		"giscus":            600,
+		"waline":            600,
+		"artalk":            600,
+		"memos":             600,
+		"memos-user":        86400,
+		"sites":             86400,
+		"friends":           86400,
+		"friends_and_posts": 86400,
+		"siteinfo":          86400,
+	}
+}
+
+// EffectiveDefaultTTL 返回全局默认 TTL；显式 0 表示不缓存。
+func (c DataCacheConfig) EffectiveDefaultTTL() int {
+	if c.DefaultTTL == nil {
+		return DefaultDataCacheTTL
+	}
+	if *c.DefaultTTL < 0 {
+		return 0
+	}
+	return *c.DefaultTTL
+}
+
+// EffectiveMaxEntries 返回本地缓存条目上限。容量必须为正数，非法值回退默认值。
+func (c DataCacheConfig) EffectiveMaxEntries() int {
+	if c.MaxEntries == nil || *c.MaxEntries < 1 {
+		return DefaultDataCacheMaxEntries
+	}
+	return *c.MaxEntries
+}
+
+// FillDefaults 补齐 Stellar v1.44 data_cache 默认值，保留现有开关、TTL 和容量。
+func (c *DataCacheConfig) FillDefaults() {
+	if c.Enable == nil {
+		v := true
+		c.Enable = &v
+	}
+	if c.DefaultTTL == nil {
+		v := DefaultDataCacheTTL
+		c.DefaultTTL = &v
+	}
+	if c.MaxEntries == nil {
+		v := DefaultDataCacheMaxEntries
+		c.MaxEntries = &v
+	}
+	if c.TTL == nil {
+		c.TTL = map[string]int{}
+	}
+	for key, value := range DefaultDataCacheTTLs() {
+		if _, ok := c.TTL[key]; !ok {
+			c.TTL[key] = value
+		}
+	}
 }
 
 // SiteTreeConfig 页面树配置（1.38）。Home.Comments 首页可配置评论区（默认关）。

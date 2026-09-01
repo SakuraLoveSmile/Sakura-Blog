@@ -33,14 +33,19 @@
     sr = ScrollReveal();
 
     var cfg = (typeof ctx !== 'undefined' && ctx.plugins && ctx.plugins.scrollreveal) || {};
-    sr.reveal('.post-card, .slide-up', {
+    var revealCfg = {
       distance: cfg.distance || '60px',
       duration: cfg.duration || 600,
       interval: cfg.interval || 100,
       origin: 'bottom',
       easing: 'cubic-bezier(0.6, 0.2, 0.1, 1)',
       reset: false
-    });
+    };
+    // scale（1.44 scrollreveal.scale，0.1~1）：仅显式配置（>0）时传递，缺省走 ScrollReveal 内置默认 1
+    if (cfg.scale > 0 && cfg.scale <= 1) {
+      revealCfg.scale = cfg.scale;
+    }
+    sr.reveal('.post-card, .slide-up', revealCfg);
   }
 
   document.addEventListener('DOMContentLoaded', init);
