@@ -240,7 +240,7 @@ function rangeFill(val: number, min: number, max: number): string {
           <option value="glass">光晕模式（背景图毛玻璃）</option>
         </select>
         <p v-if="data.style.leftbar.ui_style === 'glass' && !data.style.leftbar.background_image" class="hint">
-          光晕模式需配置下方「背景图片 URL」才有效果，未配置时前台仍呈现纯色卡片。
+          未配置背景图片时使用主题内置默认背景图；配置后将替换为自定义图片。
         </p>
       </div>
       <div class="field">
