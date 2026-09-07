@@ -120,6 +120,42 @@ func TestCanonicalBaseURLUsesOriginalHost(t *testing.T) {
 	}
 }
 
+func TestFillSEOCanonicalURLNoDoubleSlash(t *testing.T) {
+	site := &tmpl.Site{
+		URL: "https://origin.example/",
+	}
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
+	c := gin.CreateTestContextOnly(httptest.NewRecorder(), gin.New())
+	c.Request = httptest.NewRequest(http.MethodGet, "/wiki", nil)
+
+	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{}}
+	ws.fillSEO(data, c)
+
+	if got, want := data.Page.CanonicalURL, "https://origin.example/wiki"; got != want {
+		t.Fatalf("fillSEO CanonicalURL = %q, want %q", got, want)
+	}
+}
+
+func TestBaseURLRespectsXForwardedProto(t *testing.T) {
+	site := &tmpl.Site{URL: ""}
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
+
+	c := gin.CreateTestContextOnly(httptest.NewRecorder(), gin.New())
+	c.Request = httptest.NewRequest(http.MethodGet, "http://proxy.example/wiki", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "https")
+	c.Request.Host = "proxy.example"
+
+	if got, want := ws.baseURL(c), "https://proxy.example"; got != want {
+		t.Fatalf("baseURL = %q, want %q", got, want)
+	}
+
+	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{}}
+	ws.fillSEO(data, c)
+	if got, want := data.Page.CanonicalURL, "https://proxy.example/wiki"; got != want {
+		t.Fatalf("fillSEO CanonicalURL = %q, want %q", got, want)
+	}
+}
+
 func TestPinSliderActiveOnlyOnHomeFirstPage(t *testing.T) {
 	cases := []struct {
 		name string

@@ -287,7 +287,12 @@ func (h *Handler) listPosts(c *gin.Context) {
 
 	// Spec 62：筛选、搜索与分页下推 SQL（ListFiltered 单次 COUNT + 单次分页查询，
 	// 使用轻量 postListCols 投影，替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式）。
-	posts, total, err := h.store.ListFiltered(status, category, tag, search, page, size)
+	var authorID *int64
+	if !contextHasPermission(c, store.PermissionContentManageAny) {
+		uid := c.GetInt64("userID")
+		authorID = &uid
+	}
+	posts, total, err := h.store.ListFilteredByAuthor(authorID, status, category, tag, search, page, size)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -304,6 +309,9 @@ func (h *Handler) listPosts(c *gin.Context) {
 // getPost GET /api/v1/posts/:slug：文章详情。
 func (h *Handler) getPost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	p, err := h.store.GetBySlug(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())

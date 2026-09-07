@@ -22,6 +22,7 @@ type userJSON struct {
 	Role        string   `json:"role"`
 	Roles       []string `json:"roles"`
 	Permissions []string `json:"permissions"`
+	Status      string   `json:"status"`
 	CreatedAt   string   `json:"created_at"`
 }
 
@@ -34,7 +35,8 @@ func toUserJSON(u *store.User) *userJSON {
 		Avatar:      u.Avatar,
 		Role:        u.Role,
 		Roles:       append([]string(nil), u.Roles...), Permissions: append([]string(nil), u.Permissions...),
-		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
+		Status:      u.Status,
+		CreatedAt:   u.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -145,6 +147,7 @@ func (h *Handler) updateUser(c *gin.Context) {
 		Avatar      string   `json:"avatar"`
 		Role        string   `json:"role"`
 		Roles       []string `json:"roles"`
+		Status      string   `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
@@ -154,6 +157,29 @@ func (h *Handler) updateUser(c *gin.Context) {
 	if err != nil || user == nil {
 		Fail(c, http.StatusNotFound, "用户不存在")
 		return
+	}
+	req.Status = strings.TrimSpace(req.Status)
+	if req.Status != "" && req.Status != user.Status {
+		if !store.ValidUserStatus(req.Status) {
+			Fail(c, http.StatusBadRequest, "用户状态不合法")
+			return
+		}
+		if req.Status == store.UserStatusBanned && userHasRole(user, store.RoleAdmin) {
+			n, err := h.store.CountUsersByRole(store.RoleAdmin)
+			if err != nil {
+				Fail(c, http.StatusInternalServerError, err.Error())
+				return
+			}
+			if n <= 1 {
+				Fail(c, http.StatusBadRequest, "不能封禁最后一个管理员")
+				return
+			}
+		}
+		if err := h.store.UpdateUserStatus(user.ID, req.Status); err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		user.Status = req.Status
 	}
 	roles := requestedRoles(req.Roles, req.Role)
 	roleChanged := len(roles) > 0 && !sameRoles(user.Roles, roles)

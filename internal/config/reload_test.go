@@ -312,3 +312,26 @@ func TestBootstrapMergesFavicon(t *testing.T) {
 		t.Fatalf("rebuild cleared favicon: %q", site.Load().FaviconURL)
 	}
 }
+
+func TestSaveSectionSiteURLValidationAndNormalization(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users table: %v", err)
+	}
+	site := newSitePtr()
+
+	// 1. Invalid URL rejected
+	badPayload := []byte(`{"title":"Site","url":"invalid-url"}`)
+	if err := SaveSection(s, site, SectionSite, badPayload); err == nil {
+		t.Fatal("expected error for invalid URL, got nil")
+	}
+
+	// 2. Trailing slash normalized
+	goodPayload := []byte(`{"title":"Site","url":"https://example.com/blog/"}`)
+	if err := SaveSection(s, site, SectionSite, goodPayload); err != nil {
+		t.Fatalf("unexpected error saving valid URL: %v", err)
+	}
+	if got, want := site.Load().URL, "https://example.com/blog"; got != want {
+		t.Fatalf("site.URL = %q, want %q", got, want)
+	}
+}

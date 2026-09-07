@@ -134,7 +134,7 @@ func (s *webServer) cookieSecureFor(c *gin.Context) bool {
 // fillSEO 填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
 func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
 	baseURL := s.canonicalBaseURL(data, c)
-	data.Page.CanonicalURL = baseURL + c.Request.URL.Path
+	data.Page.CanonicalURL = tmpl.JoinSiteURL(baseURL, c.Request.URL.Path)
 	if data.Page.Description == "" {
 		data.Page.Description = s.siteOf(data).Description
 	}
@@ -191,12 +191,17 @@ func (s *webServer) siteOf(data *tmpl.ViewData) *tmpl.Site {
 	return s.site.Load()
 }
 
-// baseURL 站点根地址：site.URL 优先，未配置时回退请求 Host（http）。
+// baseURL 站点根地址：site.URL 优先，未配置时回退请求 Host（支持 TLS 与反代协议）。
 func (s *webServer) baseURL(c *gin.Context) string {
-	if s.site.Load().URL != "" {
-		return s.site.Load().URL
+	site := s.site.Load()
+	if site != nil && site.URL != "" {
+		return tmpl.NormalizeSiteURL(site.URL)
 	}
-	return "http://" + c.Request.Host
+	scheme := "http"
+	if c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
+		scheme = "https"
+	}
+	return scheme + "://" + c.Request.Host
 }
 
 // invalidateSidebarCache 侧边栏快照立即失效（整站恢复后用，Spec 41）；平时靠 45s TTL 自然过期。

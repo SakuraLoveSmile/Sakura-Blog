@@ -65,6 +65,21 @@ func (h *Handler) requireShareOwnership(c *gin.Context, shareID int64) bool {
 	return true
 }
 
+// requireAttachmentOwnership enforces attachment ownership.
+// Admins with PermissionContentManageAny can manage any attachment (including historical owner_id=0).
+// Authors can only manage attachments where owner_id == userID.
+func (h *Handler) requireAttachmentOwnership(c *gin.Context, att *store.Attachment) bool {
+	if contextHasPermission(c, store.PermissionContentManageAny) {
+		return true
+	}
+	userID := c.GetInt64("userID")
+	if att == nil || att.OwnerID <= 0 || att.OwnerID != userID {
+		AbortFail(c, http.StatusForbidden, "无权限：只能管理自己的附件")
+		return false
+	}
+	return true
+}
+
 // forceCurrentAuthor makes ownership of a newly created or updated article a
 // server decision. The client may not replace an author session's owner with
 // an arbitrary users.id. Admin requests retain their explicit author list.

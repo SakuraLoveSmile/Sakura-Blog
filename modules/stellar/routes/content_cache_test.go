@@ -165,3 +165,28 @@ func TestContentCacheConcurrentInvalidate(t *testing.T) {
 		t.Fatal("final read should return rebuilt index")
 	}
 }
+
+func TestSitemapNormalizesTrailingSlashBaseURL(t *testing.T) {
+	st, err := store.New(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	sitePtr := sitePtr(&tmpl.Site{})
+	c := newContentCache(st, sitePtr)
+
+	withSlash, err := c.sitemapXML("https://slash.example/")
+	if err != nil {
+		t.Fatalf("sitemap with slash: %v", err)
+	}
+	withoutSlash, err := c.sitemapXML("https://slash.example")
+	if err != nil {
+		t.Fatalf("sitemap without slash: %v", err)
+	}
+	if string(withSlash) != string(withoutSlash) {
+		t.Fatalf("sitemaps should be identical regardless of trailing slash")
+	}
+	if strings.Contains(string(withSlash), "https://slash.example//") {
+		t.Fatalf("sitemap contains double slash: %s", string(withSlash))
+	}
+}

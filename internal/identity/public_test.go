@@ -152,3 +152,95 @@ func TestPublicRegistrationRateLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestBannedReaderAuthIsolation(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	hash, err := store.HashPassword("reader-pass")
+	if err != nil {
+		t.Fatalf("hash: %v", err)
+	}
+	u := &store.User{
+		Username:     "banned-reader",
+		PasswordHash: hash,
+		DisplayName:  "Banned Reader",
+		Email:        "banned@example.com",
+		Role:         store.RoleReader,
+		AuthSecret:   store.GenerateAuthSecret(),
+		Status:       store.UserStatusActive,
+	}
+	if err := st.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	// 1. Active user can log in successfully
+	login := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{
+		"username": "banned-reader",
+		"password": "reader-pass",
+	}, nil)
+	if login.Code != http.StatusOK {
+		t.Fatalf("active login failed: %d, body=%s", login.Code, login.Body.String())
+	}
+	cookies := login.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Fatal("no cookie set")
+	}
+	activeCookie := cookies[0]
+
+	// 2. Verified me endpoint succeeds
+	me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, activeCookie)
+	if me.Code != http.StatusOK {
+		t.Fatalf("me status = %d", me.Code)
+	}
+	var meData map[string]any
+	_ = json.Unmarshal(me.Body.Bytes(), &meData)
+	if meData["verified"] != true {
+		t.Fatalf("expected verified = true, got %v", meData["verified"])
+	}
+
+	// 3. Ban the user
+	if err := st.UpdateUserStatus(u.ID, store.UserStatusBanned); err != nil {
+		t.Fatalf("ban user: %v", err)
+	}
+
+	// 4. Existing cookie is immediately invalidated
+	meAfterBan := publicRequest(r, http.MethodGet, "/api/auth/me", nil, activeCookie)
+	var meAfterBanData map[string]any
+	_ = json.Unmarshal(meAfterBan.Body.Bytes(), &meAfterBanData)
+	if meAfterBanData["verified"] == true {
+		t.Fatalf("banned user should not be verified with old cookie")
+	}
+
+	// 5. Login returns 401 "用户名或密码错误" without leaking account ban or existence
+	bannedLogin := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{
+		"username": "banned-reader",
+		"password": "reader-pass",
+	}, nil)
+	if bannedLogin.Code != http.StatusUnauthorized {
+		t.Fatalf("banned login status = %d (want 401), body=%s", bannedLogin.Code, bannedLogin.Body.String())
+	}
+	if !bytes.Contains(bannedLogin.Body.Bytes(), []byte("用户名或密码错误")) {
+		t.Fatalf("banned login should return generic error, got: %s", bannedLogin.Body.String())
+	}
+
+	// 6. Unban user
+	if err := st.UpdateUserStatus(u.ID, store.UserStatusActive); err != nil {
+		t.Fatalf("unban user: %v", err)
+	}
+
+	// 7. Old cookie remains invalid (cannot be reused after unban)
+	meAfterUnban := publicRequest(r, http.MethodGet, "/api/auth/me", nil, activeCookie)
+	var meAfterUnbanData map[string]any
+	_ = json.Unmarshal(meAfterUnban.Body.Bytes(), &meAfterUnbanData)
+	if meAfterUnbanData["verified"] == true {
+		t.Fatalf("banned user's pre-ban cookie must not be resurrected after unban")
+	}
+
+	// 8. Re-login works and issues fresh cookie
+	relogin := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{
+		"username": "banned-reader",
+		"password": "reader-pass",
+	}, nil)
+	if relogin.Code != http.StatusOK {
+		t.Fatalf("re-login status = %d, body=%s", relogin.Code, relogin.Body.String())
+	}
+}

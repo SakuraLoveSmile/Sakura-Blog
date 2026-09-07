@@ -43,10 +43,15 @@ func (h *FeedHandler) Register(r *gin.Engine) {
 }
 
 func (h *FeedHandler) baseURL(c *gin.Context) string {
-	if h.site.Load().URL != "" {
-		return strings.TrimRight(h.site.Load().URL, "/")
+	site := h.site.Load()
+	if site != nil && site.URL != "" {
+		return tmpl.NormalizeSiteURL(site.URL)
 	}
-	return "http://" + c.Request.Host
+	scheme := "http"
+	if c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
+		scheme = "https"
+	}
+	return scheme + "://" + c.Request.Host
 }
 
 func (h *FeedHandler) setFeedCache(c *gin.Context) {
@@ -54,7 +59,7 @@ func (h *FeedHandler) setFeedCache(c *gin.Context) {
 }
 
 func (h *FeedHandler) postURL(base, slug string) string {
-	return base + "/post/" + slug
+	return tmpl.JoinSiteURL(base, "/post/"+slug)
 }
 
 func feedBody(p *store.Post) string {
@@ -265,7 +270,7 @@ func (h *FeedHandler) robots(c *gin.Context) {
 		"User-agent: *",
 		"Allow: /",
 		"Disallow: /console",
-		"Sitemap: " + base + "/sitemap.xml",
+		"Sitemap: " + tmpl.JoinSiteURL(base, "/sitemap.xml"),
 	}
 	// Spec 42：站点级 SEO 配置的 robots 附加规则，多行原样追加（热更新：h.site.Load() 指针字段即最新值）
 	if extra := strings.TrimSpace(h.site.Load().SEO.RobotsExtra); extra != "" {

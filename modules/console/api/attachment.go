@@ -71,12 +71,26 @@ func (h *Handler) listAttachments(c *gin.Context) {
 		size = 24
 	}
 
-	total, err := h.store.CountAttachments(keyword, kind, groupID)
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
+	var total int
+	var attachments []*store.Attachment
+	var err error
+
+	if contextHasPermission(c, store.PermissionContentManageAny) {
+		total, err = h.store.CountAttachments(keyword, kind, groupID)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		attachments, err = h.store.ListAttachments(page, size, keyword, kind, groupID)
+	} else {
+		ownerID := c.GetInt64("userID")
+		total, err = h.store.CountAttachmentsByOwner(ownerID, keyword, kind, groupID)
+		if err != nil {
+			Fail(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		attachments, err = h.store.ListAttachmentsByOwner(ownerID, page, size, keyword, kind, groupID)
 	}
-	attachments, err := h.store.ListAttachments(page, size, keyword, kind, groupID)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -233,6 +247,9 @@ func (h *Handler) deleteAttachment(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "附件不存在")
 		return
 	}
+	if !h.requireAttachmentOwnership(c, att) {
+		return
+	}
 
 	// 删除磁盘文件（失败不阻塞 DB 删除）
 	if att.Path != "" {
@@ -271,6 +288,9 @@ func (h *Handler) attachmentRefs(c *gin.Context) {
 	}
 	if att == nil {
 		Fail(c, http.StatusNotFound, "附件不存在")
+		return
+	}
+	if !h.requireAttachmentOwnership(c, att) {
 		return
 	}
 
@@ -497,6 +517,22 @@ func (h *Handler) moveAttachments(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "目标分组不存在")
 		return
 	}
+
+	if !contextHasPermission(c, store.PermissionContentManageAny) {
+		userID := c.GetInt64("userID")
+		for _, id := range body.IDs {
+			att, err := h.store.GetAttachment(id)
+			if err != nil {
+				Fail(c, http.StatusInternalServerError, err.Error())
+				return
+			}
+			if att == nil || att.OwnerID <= 0 || att.OwnerID != userID {
+				AbortFail(c, http.StatusForbidden, "无权限：包含非本人附件")
+				return
+			}
+		}
+	}
+
 	moved, err := h.store.MoveAttachments(body.IDs, body.GroupID)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())

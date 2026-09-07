@@ -130,6 +130,12 @@ func (h *Handler) login(c *gin.Context) {
 		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
+	if user.Status == store.UserStatusBanned {
+		h.recordLoginFail(ip)
+		h.logLogin(c, user.ID, username, ip, "fail", "password")
+		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
 
 	// 安全审计 2026-08-16：console 登录端点拒绝 reader 角色——读者凭据不应换取
 	// blog_admin 会话（否则开放注册账号即可进入全部 authed 组内容写端点）。
@@ -198,7 +204,7 @@ func (h *Handler) handle2FA(c *gin.Context) {
 	}
 
 	user, err := h.store.GetUserByID(userID)
-	if err != nil || user == nil || !ValidateTOTP(user.TOTPSecret, req.Code) {
+	if err != nil || user == nil || user.Status == store.UserStatusBanned || !ValidateTOTP(user.TOTPSecret, req.Code) {
 		h.logLogin(c, userID, "", c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusUnauthorized, "验证码错误")
 		return

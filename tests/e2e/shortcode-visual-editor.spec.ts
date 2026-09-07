@@ -255,11 +255,23 @@ test("编辑已有组件不会注入 catalog default（folding 未写的 open �
   await expectPreviewContains(page, "新折叠标题");
 });
 
-test("flag 统一输出 key:true（image download 勾选后回写）", async ({ page }) => {
+test("image download 支持 true 或 URL 回写", async ({ page }) => {
   await setMarkdown(page, "{% image /assets/img/preview/image-demo.jpg 示例图 %}");
   const dialog = await openPropertyPanel(page);
 
-  await expect(dialog.locator("#schema-field-download")).not.toBeChecked();
-  await dialog.locator("#schema-field-download").check();
+  await expect(dialog.locator("#schema-field-download")).toHaveValue("");
+  await dialog.locator("#schema-field-download").fill("true");
   await expectMarkdownContains(page, "download:true");
+
+  await dialog.locator("#schema-field-download").fill("https://example.com/full.png");
+  await expectMarkdownContains(page, "download:https://example.com/full.png");
+});
+
+test("flag 统一输出 key:true（video autoplay 勾选后回写）", async ({ page }) => {
+  await setMarkdown(page, "{% video /assets/media/preview/sample-video.mp4 %}");
+  const dialog = await openPropertyPanel(page);
+
+  await expect(dialog.locator("#schema-field-autoplay")).not.toBeChecked();
+  await dialog.locator("#schema-field-autoplay").check();
+  await expectMarkdownContains(page, "autoplay:true");
 });

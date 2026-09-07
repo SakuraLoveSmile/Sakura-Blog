@@ -476,3 +476,56 @@ func TestEnsureUsersTableMigratesRoleColumn(t *testing.T) {
 		t.Errorf("role changed after second migrate: %q", u2.Role)
 	}
 }
+
+func TestUpdateUserStatusBannedRevocation(t *testing.T) {
+	s := newTestStore(t)
+	u := newTestUser("victim", "secret123")
+	u.APITokenHash = HashAPIToken("my-pat-token")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	created, err := s.GetUserByUsername("victim")
+	if err != nil || created == nil {
+		t.Fatalf("get created user: %v", err)
+	}
+	origSecret := created.AuthSecret
+	if origSecret == "" || created.APITokenHash == "" {
+		t.Fatalf("expected non-empty secret and token: %+v", created)
+	}
+
+	// Ban the user
+	if err := s.UpdateUserStatus(created.ID, UserStatusBanned); err != nil {
+		t.Fatalf("ban user: %v", err)
+	}
+	banned, err := s.GetUserByID(created.ID)
+	if err != nil || banned == nil {
+		t.Fatalf("get banned user: %v", err)
+	}
+	if banned.Status != UserStatusBanned {
+		t.Errorf("status = %q, want banned", banned.Status)
+	}
+	if banned.AuthSecret == "" || banned.AuthSecret == origSecret {
+		t.Errorf("auth_secret should be rotated to new value, got %q (orig: %q)", banned.AuthSecret, origSecret)
+	}
+	if banned.APITokenHash != "" {
+		t.Errorf("api_token_hash should be cleared on ban, got %q", banned.APITokenHash)
+	}
+
+	// Unban user
+	if err := s.UpdateUserStatus(created.ID, UserStatusActive); err != nil {
+		t.Fatalf("unban user: %v", err)
+	}
+	unbanned, err := s.GetUserByID(created.ID)
+	if err != nil || unbanned == nil {
+		t.Fatalf("get unbanned user: %v", err)
+	}
+	if unbanned.Status != UserStatusActive {
+		t.Errorf("status = %q, want active", unbanned.Status)
+	}
+	if unbanned.AuthSecret != banned.AuthSecret {
+		t.Errorf("unban should keep rotated auth_secret, got %q, want %q", unbanned.AuthSecret, banned.AuthSecret)
+	}
+	if unbanned.APITokenHash != "" {
+		t.Errorf("api_token_hash should remain empty after unban, got %q", unbanned.APITokenHash)
+	}
+}

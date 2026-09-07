@@ -275,7 +275,8 @@ func (h *PublicHandler) login(c *gin.Context) {
 		return
 	}
 	if u.Status == store.UserStatusBanned {
-		jsonError(c, http.StatusForbidden, "该账号已被封禁")
+		h.recordLoginFail(ip)
+		jsonError(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
 	h.clearLoginFail(ip)

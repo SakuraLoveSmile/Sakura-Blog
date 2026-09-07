@@ -98,6 +98,7 @@ func normalizeThemeDefaults(s *tmpl.Site) {
 	s.Search.FillDefaults()
 	s.DataCache.FillDefaults()
 	s.TagPlugins.FillDefaults()
+	s.URL = tmpl.NormalizeSiteURL(s.URL)
 }
 
 // DefaultSite 构造 Demo 2 用的站点配置。

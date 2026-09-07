@@ -146,7 +146,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 		site.Title = parsed.basic.Title
 		site.Subtitle = parsed.basic.Subtitle
 		site.Description = parsed.basic.Description
-		site.URL = parsed.basic.URL
+		site.URL = tmpl.NormalizeSiteURL(parsed.basic.URL)
 		site.Avatar = parsed.basic.Avatar
 		site.AvatarBG = parsed.basic.AvatarBG
 		site.LogoTitle = parsed.basic.LogoTitle

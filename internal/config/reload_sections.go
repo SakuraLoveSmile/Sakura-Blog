@@ -135,6 +135,13 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 	if err := json.Unmarshal(raw, dst); err != nil {
 		return fmt.Errorf("invalid %s payload: %w", section, err)
 	}
+	if sb, ok := dst.(*siteBasic); ok {
+		sb.URL = strings.TrimSpace(sb.URL)
+		if err := tmpl.ValidateSiteURL(sb.URL); err != nil {
+			return err
+		}
+		sb.URL = tmpl.NormalizeSiteURL(sb.URL)
+	}
 	if cc, ok := dst.(*tmpl.CommentsConfig); ok {
 		applyCommentDefaults(cc) // 评论段补运行时默认（镜像/徽章/标题不为空）
 	}

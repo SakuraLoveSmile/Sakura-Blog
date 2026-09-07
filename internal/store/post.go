@@ -503,16 +503,26 @@ func (s *Store) List() ([]*Post, error) {
 // ListFiltered 按 status/category/tag/search 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
 // 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式），返回分页结果与筛选后总数。
 // 过滤条件、搜索与分页均下推 SQL；tag 用逗号包裹 LIKE 防子串误匹配（与 ListByTag 口径一致）。
-// 查询使用 postListCols，避免列表加载正文、预渲染 HTML、口令和草稿 JSON。
+// ListFiltered 按 status/category/tag/search 筛选并分页返回文章（兼容老接口，管理员全量）。
 func (s *Store) ListFiltered(status, category, tag, search string, page, size int) ([]*Post, int64, error) {
+	return s.ListFilteredByAuthor(nil, status, category, tag, search, page, size)
+}
+
+// ListFilteredByAuthor 按 status/category/tag/search 及可选 authorID 筛选并分页返回文章。
+// authorID 为 nil 时（管理员）不限作者；authorID 非 nil 时仅返回该作者署名（含共同署名）的文章。
+func (s *Store) ListFilteredByAuthor(authorID *int64, status, category, tag, search string, page, size int) ([]*Post, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if size < 1 {
 		size = 20
 	}
-	conds := make([]string, 0, 5)
+	conds := make([]string, 0, 6)
 	args := []any{}
+	if authorID != nil && *authorID > 0 {
+		conds = append(conds, "EXISTS (SELECT 1 FROM post_authors pa WHERE pa.post_id = posts.id AND pa.author_id = ?)")
+		args = append(args, *authorID)
+	}
 	if status == "trashed" {
 		conds = append(conds, "deleted_at != ''")
 	} else {
@@ -580,7 +590,19 @@ type PostSearchCard struct {
 
 // ListPostSearchCards 轻量列返回全部文章搜索卡片（含回收站，按创建时间倒序）。
 func (s *Store) ListPostSearchCards() ([]*PostSearchCard, error) {
-	rows, err := s.db.Query("SELECT id, slug, title, status, deleted_at, content_html FROM posts ORDER BY substr(created_at, 1, 19) DESC")
+	return s.ListPostSearchCardsByAuthor(nil)
+}
+
+// ListPostSearchCardsByAuthor 轻量列返回指定作者的文章搜索卡片（含回收站，按创建时间倒序）。authorID 为 nil 时返回全部。
+func (s *Store) ListPostSearchCardsByAuthor(authorID *int64) ([]*PostSearchCard, error) {
+	q := "SELECT id, slug, title, status, deleted_at, content_html FROM posts"
+	var args []any
+	if authorID != nil && *authorID > 0 {
+		q += " WHERE EXISTS (SELECT 1 FROM post_authors pa WHERE pa.post_id = posts.id AND pa.author_id = ?)"
+		args = append(args, *authorID)
+	}
+	q += " ORDER BY substr(created_at, 1, 19) DESC"
+	rows, err := s.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list post search cards: %w", err)
 	}

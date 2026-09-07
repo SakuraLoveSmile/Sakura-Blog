@@ -576,7 +576,7 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 		if auth := c.GetHeader("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 			token := strings.TrimPrefix(auth, "Bearer ")
 			user, err := h.store.GetUserByAPITokenHash(store.HashAPIToken(token))
-			if err != nil || user == nil {
+			if err != nil || user == nil || user.Status == store.UserStatusBanned {
 				AbortFail(c, http.StatusUnauthorized, "API Token 无效或已撤销")
 				return
 			}
@@ -673,7 +673,7 @@ func (h *Handler) validAuthCookie(value, aud string) (int64, string, int64, stri
 		return 0, "", 0, "", false
 	}
 	user, _ := h.store.GetUserByID(userID)
-	if user == nil {
+	if user == nil || user.Status == store.UserStatusBanned {
 		return 0, "", 0, "", false
 	}
 	if _, _, ok := identity.VerifyCookie(value, identity.Audience(aud), user.AuthSecret, time.Now()); ok {
