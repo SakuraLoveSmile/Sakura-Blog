@@ -20,5 +20,10 @@
     "prettier": "3.9.6",
     "typescript-eslint": "8.67.0",
     "vue-eslint-parser": "10.4.1"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@tiptap/core@2.27.2": "patches/@tiptap__core@2.27.2.patch"
+    }
   }
 }

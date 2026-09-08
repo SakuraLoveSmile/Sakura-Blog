@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@tiptap/core@2.27.2':
+    hash: ldfcfocppjcrgyb7c3jjqsts6y
+    path: patches/@tiptap__core@2.27.2.patch
+
 importers:
 
   .:
@@ -64,7 +69,7 @@ importers:
         version: 5.102.2(vue@3.5.41)
       '@tiptap/core':
         specifier: ^2.27.2
-        version: 2.27.2(@tiptap/pm@2.27.2)
+        version: 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/extension-code-block':
         specifier: ^2.27.2
         version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
@@ -200,7 +205,7 @@ importers:
         version: 5.0.1(vue@3.5.41)
       '@tiptap/core':
         specifier: ^2.27.2
-        version: 2.27.2(@tiptap/pm@2.27.2)
+        version: 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/extension-code-block':
         specifier: ^2.27.2
         version: 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
@@ -1055,20 +1060,21 @@ packages:
       vue-demi: 0.14.10(vue@3.5.41)
     dev: false
 
-  /@tiptap/core@2.27.2(@tiptap/pm@2.27.2):
+  /@tiptap/core@2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2):
     resolution: {integrity: sha512-ABL1N6eoxzDzC1bYvkMbvyexHacszsKdVPYqhl5GwHLOvpZcv9VE9QaKwDILTyz5voCA0lGcAAXZp+qnXOk5lQ==}
     peerDependencies:
       '@tiptap/pm': ^2.7.0
     dependencies:
       '@tiptap/pm': 2.27.2
     dev: false
+    patched: true
 
   /@tiptap/extension-blockquote@2.27.2(@tiptap/core@2.27.2):
     resolution: {integrity: sha512-oIGZgiAeA4tG3YxbTDfrmENL4/CIwGuP3THtHsNhwRqwsl9SfMk58Ucopi2GXTQSdYXpRJ0ahE6nPqB5D6j/Zw==}
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-bold@2.27.2(@tiptap/core@2.27.2):
@@ -1076,7 +1082,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-bubble-menu@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1085,7 +1091,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
       tippy.js: 6.3.7
     dev: false
@@ -1095,7 +1101,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-code-block@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1104,7 +1110,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1113,7 +1119,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-document@2.27.2(@tiptap/core@2.27.2):
@@ -1121,7 +1127,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-dropcursor@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1130,7 +1136,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1140,7 +1146,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
       tippy.js: 6.3.7
     dev: false
@@ -1151,7 +1157,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1160,7 +1166,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-heading@2.27.2(@tiptap/core@2.27.2):
@@ -1168,7 +1174,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-history@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1177,7 +1183,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1187,7 +1193,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1196,7 +1202,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-italic@2.27.2(@tiptap/core@2.27.2):
@@ -1204,7 +1210,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-link@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1213,7 +1219,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
       linkifyjs: 4.3.3
     dev: false
@@ -1223,7 +1229,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-ordered-list@2.27.2(@tiptap/core@2.27.2):
@@ -1231,7 +1237,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-paragraph@2.27.2(@tiptap/core@2.27.2):
@@ -1239,7 +1245,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-placeholder@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1248,7 +1254,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1257,7 +1263,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-table-cell@2.27.2(@tiptap/core@2.27.2):
@@ -1265,7 +1271,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-table-header@2.27.2(@tiptap/core@2.27.2):
@@ -1273,7 +1279,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-table-row@2.27.2(@tiptap/core@2.27.2):
@@ -1281,7 +1287,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-table@2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2):
@@ -1290,7 +1296,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1300,7 +1306,7 @@ packages:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
     dev: false
 
@@ -1309,7 +1315,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-text-style@2.27.2(@tiptap/core@2.27.2):
@@ -1317,7 +1323,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/extension-text@2.27.2(@tiptap/core@2.27.2):
@@ -1325,7 +1331,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
     dev: false
 
   /@tiptap/pm@2.27.2:
@@ -1354,7 +1360,7 @@ packages:
   /@tiptap/starter-kit@2.27.2:
     resolution: {integrity: sha512-bb0gJvPoDuyRUQ/iuN52j1//EtWWttw+RXAv1uJxfR0uKf8X7uAqzaOOgwjknoCIDC97+1YHwpGdnRjpDkOBxw==}
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/extension-blockquote': 2.27.2(@tiptap/core@2.27.2)
       '@tiptap/extension-bold': 2.27.2(@tiptap/core@2.27.2)
       '@tiptap/extension-bullet-list': 2.27.2(@tiptap/core@2.27.2)
@@ -1384,7 +1390,7 @@ packages:
       '@tiptap/pm': ^2.7.0
       vue: ^3.0.0
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@tiptap/extension-bubble-menu': 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
       '@tiptap/extension-floating-menu': 2.27.2(@tiptap/core@2.27.2)(@tiptap/pm@2.27.2)
       '@tiptap/pm': 2.27.2
@@ -3212,7 +3218,7 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.0.3
     dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/core': 2.27.2(patch_hash=ldfcfocppjcrgyb7c3jjqsts6y)(@tiptap/pm@2.27.2)
       '@types/markdown-it': 13.0.9
       markdown-it: 14.3.0
       markdown-it-task-lists: 2.1.1

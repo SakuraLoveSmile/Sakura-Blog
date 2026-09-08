@@ -1,0 +1,57 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 6a7edc70205b79298aede196940be73562ee25f2..5cd091e37ec2c5d89a261fcc1e7de00c380edd59 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -316,6 +316,9 @@ function mergeAttributes(...objects) {
+         .reduce((items, item) => {
+         const mergedAttributes = { ...items };
+         Object.entries(item).forEach(([key, value]) => {
++            if (key === '__proto__') {
++                return;
++            }
+             const exists = mergedAttributes[key];
+             if (!exists) {
+                 mergedAttributes[key] = value;
+diff --git a/dist/index.js b/dist/index.js
+index 8efbf7f4d2a2fe1693b148e7b1ccc6ca228496f2..e28fc580bc95f4f58fa0b3eb045dabb3deb5edd2 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -314,6 +314,9 @@ function mergeAttributes(...objects) {
+         .reduce((items, item) => {
+         const mergedAttributes = { ...items };
+         Object.entries(item).forEach(([key, value]) => {
++            if (key === '__proto__') {
++                return;
++            }
+             const exists = mergedAttributes[key];
+             if (!exists) {
+                 mergedAttributes[key] = value;
+diff --git a/dist/index.umd.js b/dist/index.umd.js
+index 404ccfcd0e75f2b786d6de3c968f104e31f602bb..e3719da9a25ca4fb02c6b8147a183380a743a8ce 100644
+--- a/dist/index.umd.js
++++ b/dist/index.umd.js
+@@ -312,6 +312,9 @@
+           .reduce((items, item) => {
+           const mergedAttributes = { ...items };
+           Object.entries(item).forEach(([key, value]) => {
++              if (key === '__proto__') {
++                  return;
++              }
+               const exists = mergedAttributes[key];
+               if (!exists) {
+                   mergedAttributes[key] = value;
+diff --git a/src/utilities/mergeAttributes.ts b/src/utilities/mergeAttributes.ts
+index b98dc510391199e8c06c25ae945f2b350913e41a..650b3436a62820f2d31b192ff45676dad680e473 100644
+--- a/src/utilities/mergeAttributes.ts
++++ b/src/utilities/mergeAttributes.ts
+@@ -5,6 +5,10 @@ export function mergeAttributes(...objects: Record<string, any>[]): Record<strin
+       const mergedAttributes = { ...items }
+ 
+       Object.entries(item).forEach(([key, value]) => {
++        if (key === '__proto__') {
++          return
++        }
++
+         const exists = mergedAttributes[key]
+ 
+         if (!exists) {
