@@ -19,3 +19,4 @@ packages:
       - "editor_import.go"
       - "page.go"
       - "update.go"
+      - "settings.go"

@@ -302,3 +302,56 @@
     justify-content: flex-start;
   }
 }
+
+.settings-color-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.settings-color-badge-inherit {
+  background: color-mix(in srgb, var(--color-secondary) 80%, transparent);
+  color: var(--color-text-tertiary);
+}
+
+.settings-color-badge-override {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+}
+
+.settings-color-reset-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  text-decoration: underline;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.settings-color-reset-btn:hover {
+  color: var(--color-state-error);
+}
+
+.settings-tab-dirty-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--color-state-warning);
+  margin-left: 4px;
+}
+
+.settings-dirty-badge {
+  color: var(--color-state-warning);
+  font-size: 12px;
+  font-weight: normal;
+}
+

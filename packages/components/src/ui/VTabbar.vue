@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Icon } from "@iconify/vue";
 
 // Halo VTabbar 复刻（packages/components/src/components/tabbar/Tabbar.vue）
@@ -31,6 +31,8 @@ const emit = defineEmits<{
   (event: "change", id: string): void;
 }>();
 
+const buttonRefs = ref<HTMLButtonElement[]>([]);
+
 const current = computed(() => props.activeId ?? props.items[0]?.id);
 
 function select(id: string) {
@@ -38,18 +40,46 @@ function select(id: string) {
   emit("update:activeId", id);
   emit("change", id);
 }
+
+function onKeydown(e: KeyboardEvent, index: number) {
+  let targetIndex = -1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    e.preventDefault();
+    targetIndex = (index + 1) % props.items.length;
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    e.preventDefault();
+    targetIndex = (index - 1 + props.items.length) % props.items.length;
+  } else if (e.key === "Home") {
+    e.preventDefault();
+    targetIndex = 0;
+  } else if (e.key === "End") {
+    e.preventDefault();
+    targetIndex = props.items.length - 1;
+  }
+
+  if (targetIndex >= 0 && targetIndex < props.items.length) {
+    const nextItem = props.items[targetIndex];
+    select(nextItem.id);
+    buttonRefs.value[targetIndex]?.focus();
+  }
+}
 </script>
 
 <template>
   <div :class="['tabbar', `tabbar-${type}`]" role="tablist">
     <button
-      v-for="item in items"
+      v-for="(item, index) in items"
+      :id="`tab-${item.id}`"
       :key="item.id"
+      :ref="(el) => { if (el) buttonRefs[index] = el as HTMLButtonElement; }"
       :class="['tabbar-item', { active: item.id === current, 'is-dirty': item.dirty }]"
       type="button"
       role="tab"
       :aria-selected="item.id === current"
+      :aria-controls="`tabpanel-${item.id}`"
+      :tabindex="item.id === current ? 0 : -1"
       @click="select(item.id)"
+      @keydown="onKeydown($event, index)"
     >
       <slot name="item" :item="item" :active="item.id === current">
         <Icon v-if="item.icon" :icon="item.icon" class="tabbar-item-icon" />
@@ -191,5 +221,9 @@ function select(id: string) {
   box-shadow: 0 0 6px color-mix(in srgb, var(--color-state-warning) 80%, transparent);
   flex-shrink: 0;
   margin-left: 2px;
+}
+.tabbar-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

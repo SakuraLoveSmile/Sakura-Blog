@@ -459,6 +459,29 @@ function onChartLeave() {
         <strong class="tabular-nums">{{ insights.uvShare }}</strong>
       </div>
     </div>
+
+    <!-- 读屏器与无障碍数据表格摘要 -->
+    <div class="sr-only">
+      <h4>访问趋势数据明细</h4>
+      <p>时间范围：近 {{ days }} 天。总浏览量：{{ totals.pv }}，独立访客：{{ totals.uv }}，日均访问：{{ totals.avgPv }}。</p>
+      <table>
+        <caption>每日访问数据</caption>
+        <thead>
+          <tr>
+            <th scope="col">日期</th>
+            <th scope="col">浏览量 (PV)</th>
+            <th scope="col">独立访客 (UV)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in data" :key="row.date">
+            <td>{{ row.date }}</td>
+            <td>{{ row.pv }}</td>
+            <td>{{ row.uv }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 

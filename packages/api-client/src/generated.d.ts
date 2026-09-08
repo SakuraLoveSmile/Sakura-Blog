@@ -198,6 +198,22 @@ export interface RAGAskResponse {
 }
 
 //////////
+// source: settings.go
+
+/**
+ * StyleYAMLResponse GET /api/v1/settings/style/yaml 响应结构。
+ */
+export interface StyleYAMLResponse {
+  yaml: string;
+}
+/**
+ * StyleYAMLUpdateResponse PUT /api/v1/settings/style/yaml 响应结构。
+ */
+export interface StyleYAMLUpdateResponse {
+  ok: boolean;
+}
+
+//////////
 // source: shortcode_catalog.go
 
 /**

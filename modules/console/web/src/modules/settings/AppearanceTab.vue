@@ -116,24 +116,60 @@ function rangeFill(val: number, min: number, max: number): string {
       <p class="subsection-title">主题色</p>
       <div class="form-grid form-grid-3">
         <div class="field">
-          <label>主题色 (theme)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">主题色 (theme)</label>
+            <span v-if="data.style.color?.theme" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.theme = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.theme" class="apple-color" />
-            <input v-model="data.style.color.theme" :class="inputCls" placeholder="#2E8DFF" />
+            <input
+              type="color"
+              :value="data.style.color?.theme || '#2E8DFF'"
+              class="apple-color"
+              @input="data.style.color.theme = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.theme" :class="inputCls" placeholder="#2E8DFF (默认)" />
           </div>
         </div>
         <div class="field">
-          <label>强调色 (accent)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">强调色 (accent)</label>
+            <span v-if="data.style.color?.accent" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.accent = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.accent" class="apple-color" />
-            <input v-model="data.style.color.accent" :class="inputCls" placeholder="#ff9800" />
+            <input
+              type="color"
+              :value="data.style.color?.accent || '#ff9800'"
+              class="apple-color"
+              @input="data.style.color.accent = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.accent" :class="inputCls" placeholder="#ff9800 (默认)" />
           </div>
         </div>
         <div class="field">
-          <label>链接色 (link)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">链接色 (link)</label>
+            <span v-if="data.style.color?.link" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.link = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.link" class="apple-color" />
-            <input v-model="data.style.color.link" :class="inputCls" placeholder="#2196f3" />
+            <input
+              type="color"
+              :value="data.style.color?.link || '#2196f3'"
+              class="apple-color"
+              @input="data.style.color.link = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.link" :class="inputCls" placeholder="#2196f3 (默认)" />
           </div>
         </div>
       </div>
@@ -250,10 +286,26 @@ function rangeFill(val: number, min: number, max: number): string {
         </p>
       </div>
       <div class="field">
-        <label>背景色</label>
+        <div class="flex items-center justify-between mb-1">
+          <label class="mb-0">背景色</label>
+          <span v-if="data.style.leftbar?.background_color_dark" class="settings-color-badge settings-color-badge-override">
+            已覆盖
+            <button type="button" class="settings-color-reset-btn" @click="data.style.leftbar.background_color_dark = ''">恢复默认</button>
+          </span>
+          <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+        </div>
         <div class="field-inline">
-          <input type="color" v-model="data.style.leftbar.background_color_dark" class="apple-color" />
-          <input v-model="data.style.leftbar.background_color_dark" :class="inputCls" />
+          <input
+            type="color"
+            :value="data.style.leftbar?.background_color_dark || '#1c1c1e'"
+            class="apple-color"
+            @input="data.style.leftbar.background_color_dark = ($event.target as HTMLInputElement).value"
+          />
+          <input
+            v-model="data.style.leftbar.background_color_dark"
+            :class="inputCls"
+            placeholder="#1c1c1e (默认)"
+          />
         </div>
       </div>
       <div class="field">

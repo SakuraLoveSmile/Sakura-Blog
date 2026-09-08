@@ -22,7 +22,7 @@ const inputCls = "apple-input";
           <div class="text-sm font-medium text-text-secondary">封面文字自适应颜色</div>
           <p class="mt-1 text-xs text-text-quaternary">根据封面平均色调整 Hero、横幅和置顶内容的文字对比度</p>
         </div>
-        <VSwitch v-model="data.adaptive_text.enable" />
+        <VSwitch v-model="data.adaptive_text.enable" aria-label="封面文字自适应颜色" />
       </div>
     </div>
 
@@ -33,7 +33,7 @@ const inputCls = "apple-input";
           <div class="text-sm font-medium text-text-secondary">卡片 Hover 光斑与倾斜</div>
           <p class="mt-1 text-xs text-text-quaternary">为文章、文库、link/grid 卡片启用 Spotlight 与 3D Tilt（桌面精细指针）</p>
         </div>
-        <VSwitch v-model="data.card_hover.enable" />
+        <VSwitch v-model="data.card_hover.enable" aria-label="卡片 Hover 光斑与倾斜" />
       </div>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>

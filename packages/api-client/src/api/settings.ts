@@ -1,5 +1,6 @@
 import { http } from "../transport";
 import type { JsonValue } from "./contracts";
+import type { StyleYAMLResponse, StyleYAMLUpdateResponse } from "../generated";
 
 // --- 备份与导出 ---
 // 下载接口走 cookie 认证，直接 <a href> 触发浏览器下载，不走 axios。
@@ -32,8 +33,8 @@ export const settingsApi = {
   all: () => http.get("/settings"),
   updateSection: (section: string, data: JsonValue | undefined) => http.put(`/settings/${section}`, data),
   testNotify: () => http.post("/settings/notify/test"),
-  // Spec 60 主题 YAML 编辑器：style 段 YAML 读写 + 热更新
-  getStyleYAML: () => http.get<{ yaml: string }>("/settings/style/yaml"),
+  // 样式 YAML 编辑器：style 段 YAML 读写 + 热更新
+  getStyleYAML: () => http.get<StyleYAMLResponse>("/settings/style/yaml"),
   updateStyleYAML: (yamlText: string) =>
-    http.put("/settings/style/yaml", yamlText, { headers: { "Content-Type": "text/yaml" } }),
+    http.put<StyleYAMLUpdateResponse>("/settings/style/yaml", yamlText, { headers: { "Content-Type": "text/yaml" } }),
 };

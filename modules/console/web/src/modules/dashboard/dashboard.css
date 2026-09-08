@@ -1173,6 +1173,42 @@
   background: var(--color-primary);
 }
 
+.apple-edit-btn-move {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-foreground) 15%, transparent);
+  color: var(--color-foreground);
+  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.apple-edit-btn-move:hover:not(:disabled) {
+  transform: scale(1.1);
+  background: color-mix(in srgb, var(--color-foreground) 25%, transparent);
+}
+
+.apple-edit-btn-move:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.apple-edit-btn-move:focus-visible,
+.apple-remove-btn:focus-visible,
+.apple-edit-size-btn:focus-visible,
+.apple-drag-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .apple-drag-handle {
   width: 28px;
   height: 28px;

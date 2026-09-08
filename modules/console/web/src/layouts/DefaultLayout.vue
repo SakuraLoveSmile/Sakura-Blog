@@ -149,9 +149,81 @@ function confirmActive() {
   }
 }
 
+const moreButtonRef = ref<HTMLButtonElement | null>(null);
+const drawerCloseButtonRef = ref<HTMLButtonElement | null>(null);
+const moreDrawerRef = ref<HTMLElement | null>(null);
+let previousActiveElementBeforeDrawer: HTMLElement | null = null;
+let previousActiveElementBeforeSearch: HTMLElement | null = null;
+
+function openSearch() {
+  previousActiveElementBeforeSearch = document.activeElement as HTMLElement;
+  searchOpen.value = true;
+  searchQuery.value = "";
+  activeIndex.value = 0;
+  contentResults.value = [];
+  contentSearching.value = false;
+  contentSearchFailed.value = false;
+}
+
+function closeSearch() {
+  searchOpen.value = false;
+  nextTick(() => {
+    if (previousActiveElementBeforeSearch && typeof previousActiveElementBeforeSearch.focus === "function") {
+      previousActiveElementBeforeSearch.focus();
+    }
+  });
+}
+
+function openMoreMenu() {
+  previousActiveElementBeforeDrawer = document.activeElement as HTMLElement;
+  moreMenuVisible.value = true;
+  nextTick(() => {
+    drawerCloseButtonRef.value?.focus();
+  });
+}
+
+function closeMoreMenu() {
+  moreMenuVisible.value = false;
+  nextTick(() => {
+    if (previousActiveElementBeforeDrawer && typeof previousActiveElementBeforeDrawer.focus === "function") {
+      previousActiveElementBeforeDrawer.focus();
+    } else {
+      moreButtonRef.value?.focus();
+    }
+  });
+}
+
+function onMoreDrawerKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeMoreMenu();
+    return;
+  }
+  if (e.key === "Tab") {
+    if (!moreDrawerRef.value) return;
+    const focusable = moreDrawerRef.value.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+}
+
 // 内容结果跳转：文章/页面 → Console 编辑器；回收站项 → 对应列表页带筛选参数
 function openContentResult(item: SearchResultItem) {
-  searchOpen.value = false;
+  closeSearch();
   if (item.status === "trashed") {
     router.push({ path: item.type === "post" ? "/posts" : "/pages", query: { status: "trashed" } });
     return;
@@ -164,18 +236,13 @@ const statusBadges: Record<string, { label: string; cls: string }> = {
   trashed: { label: "回收站", cls: "bg-state-error/15 text-state-error" },
 };
 
-function openSearch() {
-  searchOpen.value = true;
-  searchQuery.value = "";
-  activeIndex.value = 0;
-  contentResults.value = [];
-  contentSearching.value = false;
-  contentSearchFailed.value = false;
-}
-
 function navigateTo(path: string) {
-  searchOpen.value = false;
-  moreMenuVisible.value = false;
+  if (searchOpen.value) {
+    closeSearch();
+  }
+  if (moreMenuVisible.value) {
+    closeMoreMenu();
+  }
   profileDropdownOpen.value = false;
   router.push(path);
 }
@@ -190,9 +257,9 @@ function onKeydown(e: KeyboardEvent) {
   const { key, ctrlKey, metaKey } = e;
   if (key === "k" && ((ctrlKey && !isMac) || metaKey)) {
     e.preventDefault();
-    searchOpen.value ? (searchOpen.value = false) : openSearch();
+    searchOpen.value ? closeSearch() : openSearch();
   }
-  if (key === "Escape") searchOpen.value = false;
+  if (key === "Escape" && searchOpen.value) closeSearch();
   // 搜索弹窗内：↑↓ 在菜单区与内容结果区间统一导航，回车打开选中项
   if (searchOpen.value) {
     if (key === "ArrowDown") {
@@ -255,18 +322,20 @@ function closeProfileDropdown() {
       <div class="flex-1 overflow-y-auto">
         <!-- 搜索框（对齐 Halo：bg-secondary rounded p-2；收起时仅图标） -->
         <div class="px-3">
-          <div
-            class="flex cursor-pointer items-center rounded-base bg-secondary p-2 text-text-quaternary transition-all hover:text-foreground hover:bg-accent"
+          <button
+            type="button"
+            class="flex w-full cursor-pointer items-center rounded-base bg-secondary p-2 text-text-quaternary transition-all hover:text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             :class="{ 'justify-center': sidebarCollapsed }"
             :title="sidebarCollapsed ? '搜索 (⌘+K)' : ''"
+            aria-label="搜索"
             @click="openSearch"
           >
             <span :class="{ 'mr-3': !sidebarCollapsed }"><Icon icon="ri:search-line" /></span>
             <template v-if="!sidebarCollapsed">
-              <span class="flex-1 select-none text-base font-normal">搜索</span>
+              <span class="flex-1 select-none text-left text-base font-normal">搜索</span>
               <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
             </template>
-          </div>
+          </button>
         </div>
 
         <!-- 分组菜单（对齐 VMenu/VMenuItem/VMenuLabel；收起时分组标题改分割线） -->
@@ -279,7 +348,8 @@ function closeProfileDropdown() {
               :key="item.path"
               class="menu-item group/item relative"
             >
-              <div
+              <router-link
+                :to="item.path"
                 :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
                 class="menu-item-title"
                 :title="sidebarCollapsed ? item.label : ''"
@@ -298,7 +368,7 @@ function closeProfileDropdown() {
                     <Icon icon="ri:arrow-down-s-line" />
                   </span>
                 </template>
-              </div>
+              </router-link>
               <!-- 收起模式下的 Hover Floating Tooltip -->
               <div
                 v-if="sidebarCollapsed"
@@ -308,7 +378,8 @@ function closeProfileDropdown() {
               </div>
               <ul v-if="!sidebarCollapsed && item.children?.length && isNavActive(item)" class="mt-1 space-y-1">
                 <li v-for="child in item.children" :key="child.path" class="menu-item">
-                  <div
+                  <router-link
+                    :to="child.path"
                     :class="{ active: route.path.startsWith(child.path) }"
                     class="menu-subitem"
                     @click="navigateTo(child.path)"
@@ -317,7 +388,7 @@ function closeProfileDropdown() {
                       <Icon :icon="child.icon" width="18" height="18" />
                     </span>
                     <span class="menu-title flex-1 self-center">{{ child.label }}</span>
-                  </div>
+                  </router-link>
                 </li>
               </ul>
             </li>
@@ -345,8 +416,10 @@ function closeProfileDropdown() {
         <div class="current-profile" :class="sidebarCollapsed ? 'w-16 justify-center gap-0 !p-0' : 'w-64'">
           <!-- 铃铛通知按钮（Wave 3b）：收起时隐藏，避免 w-16 宽度放不下两个图标 -->
           <div v-if="!sidebarCollapsed" class="relative self-center">
-            <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-accent"
+            <button
+              type="button"
+              aria-label="未读通知"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click="router.push('/notifications')"
             >
               <Icon icon="ri:notification-3-line" class="text-text-tertiary" />
@@ -355,7 +428,7 @@ function closeProfileDropdown() {
                 class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-state-error px-1 text-[10px] font-bold text-foreground"
                 >{{ unreadCount > 99 ? "99+" : unreadCount }}</span
               >
-            </div>
+            </button>
           </div>
           <div class="profile-avatar">
             <img
@@ -387,12 +460,16 @@ function closeProfileDropdown() {
             </div>
           </div>
           <div v-if="!sidebarCollapsed" class="relative self-center">
-            <div
-              class="cursor-pointer rounded p-1 transition-all hover:bg-accent"
+            <button
+              type="button"
+              aria-label="更多操作"
+              aria-haspopup="menu"
+              :aria-expanded="profileDropdownOpen"
+              class="cursor-pointer rounded p-1 transition-all hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               @click.stop="profileDropdownOpen = !profileDropdownOpen"
             >
               <Icon icon="ri:more-fill" class="text-text-tertiary" />
-            </div>
+            </button>
             <Transition name="dropdown">
               <div
                 v-if="profileDropdownOpen"
@@ -422,7 +499,7 @@ function closeProfileDropdown() {
 
     <!-- Main content -->
     <main
-      class="content w-full min-w-0 overflow-y-auto pb-16 md:pb-0"
+      class="content w-full min-w-0 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'"
     >
       <router-view />
@@ -438,16 +515,22 @@ function closeProfileDropdown() {
       </footer>
     </main>
 
-    <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary） -->
-    <div
-      class="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-7 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+    <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary，按菜单项数动态布局） -->
+    <nav
+      aria-label="移动端底部导航"
+      class="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+      :style="{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${minimenus.length + 1}, minmax(0, 1fr))`,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }"
     >
-      <div
+      <router-link
         v-for="menu in minimenus"
         :key="menu.path"
+        :to="menu.path"
         :class="{ 'bg-black': route.path.startsWith(menu.path) }"
         class="nav-item min-w-0"
-        @click="router.push(menu.path)"
       >
         <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
           <div class="flex h-10 w-10 flex-col items-center justify-center">
@@ -455,61 +538,101 @@ function closeProfileDropdown() {
             <div class="mt-0.5 text-xs">{{ menu.label }}</div>
           </div>
         </div>
-      </div>
-      <div class="nav-item min-w-0" @click="moreMenuVisible = true">
+      </router-link>
+      <button
+        ref="moreButtonRef"
+        type="button"
+        aria-label="更多导航"
+        aria-haspopup="dialog"
+        :aria-expanded="moreMenuVisible"
+        class="nav-item min-w-0 bg-transparent border-0 text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        @click="openMoreMenu"
+      >
         <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
           <div class="flex h-10 w-10 flex-col items-center justify-center">
             <div class="text-base"><Icon icon="ri:more-fill" /></div>
             <div class="mt-0.5 text-xs">更多</div>
           </div>
         </div>
-      </div>
-    </div>
+      </button>
+    </nav>
 
     <!-- 移动端"更多"底部抽屉（对齐 Halo drawer） -->
     <Teleport to="body">
-      <div v-if="moreMenuVisible" class="fixed inset-0 z-[99999] flex flex-row items-end justify-center">
+      <div
+        v-if="moreMenuVisible"
+        class="fixed inset-0 z-[99999] flex flex-row items-end justify-center"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-more-drawer-title"
+        @keydown="onMoreDrawerKeydown"
+      >
         <Transition name="fade" appear>
-          <div class="absolute inset-0 bg-background/60 transition-opacity" @click="moreMenuVisible = false"></div>
+          <div class="absolute inset-0 bg-background/60 transition-opacity" @click="closeMoreMenu"></div>
         </Transition>
         <Transition name="slide-up" appear>
           <div
-            class="relative flex h-3/4 w-screen flex-col items-stretch overflow-y-auto rounded-t-md bg-card shadow-xl"
+            ref="moreDrawerRef"
+            tabindex="-1"
+            class="relative flex h-3/4 max-h-[85vh] w-screen flex-col items-stretch overflow-hidden rounded-t-2xl border-t border-border bg-card shadow-2xl"
+            :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
           >
-            <ul class="menu-list space-y-1 p-3">
-              <template v-for="group in navGroups" :key="group">
-                <li v-if="group" class="menu-label">{{ group }}</li>
-                <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
-                  <div :class="{ active: isNavActive(item) }" class="menu-item-title" @click="navigateTo(item.path)">
-                    <span class="menu-icon mr-3 self-center">
-                      <Icon :icon="item.icon" width="20" height="20" />
-                    </span>
-                    <span class="menu-title flex-1 self-center">{{ item.label }}</span>
-                    <span
-                      v-if="item.children?.length"
-                      class="self-center text-text-quaternary transition-transform text-text-tertiary"
-                      :class="{ '-rotate-90': !isNavActive(item) }"
+            <!-- 抽屉头部：标题与显式关闭按钮 -->
+            <div class="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
+              <h2 id="mobile-more-drawer-title" class="text-base font-semibold text-foreground">全部菜单</h2>
+              <button
+                ref="drawerCloseButtonRef"
+                type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label="关闭抽屉"
+                @click="closeMoreMenu"
+              >
+                <Icon icon="ri:close-line" class="text-xl" />
+              </button>
+            </div>
+            <!-- 抽屉内容列表 -->
+            <div class="flex-1 overflow-y-auto p-3">
+              <ul class="menu-list space-y-1">
+                <template v-for="group in navGroups" :key="group">
+                  <li v-if="group" class="menu-label">{{ group }}</li>
+                  <li v-for="item in allNavItems.filter((i) => i.group === group)" :key="item.path" class="menu-item">
+                    <router-link
+                      :to="item.path"
+                      :class="{ active: isNavActive(item) }"
+                      class="menu-item-title"
+                      @click="closeMoreMenu"
                     >
-                      <Icon icon="ri:arrow-down-s-line" />
-                    </span>
-                  </div>
-                  <ul v-if="item.children?.length && isNavActive(item)" class="mt-1 space-y-1">
-                    <li v-for="child in item.children" :key="child.path" class="menu-item">
-                      <div
-                        :class="{ active: route.path.startsWith(child.path) }"
-                        class="menu-subitem"
-                        @click="navigateTo(child.path)"
+                      <span class="menu-icon mr-3 self-center">
+                        <Icon :icon="item.icon" width="20" height="20" />
+                      </span>
+                      <span class="menu-title flex-1 self-center">{{ item.label }}</span>
+                      <span
+                        v-if="item.children?.length"
+                        class="self-center text-text-quaternary transition-transform text-text-tertiary"
+                        :class="{ '-rotate-90': !isNavActive(item) }"
                       >
-                        <span class="menu-icon mr-3 self-center">
-                          <Icon :icon="child.icon" width="18" height="18" />
-                        </span>
-                        <span class="menu-title flex-1 self-center">{{ child.label }}</span>
-                      </div>
-                    </li>
-                  </ul>
-                </li>
-              </template>
-            </ul>
+                        <Icon icon="ri:arrow-down-s-line" />
+                      </span>
+                    </router-link>
+                    <ul v-if="item.children?.length && isNavActive(item)" class="mt-1 space-y-1">
+                      <li v-for="child in item.children" :key="child.path" class="menu-item">
+                        <router-link
+                          :to="child.path"
+                          :class="{ active: route.path.startsWith(child.path) }"
+                          class="menu-subitem"
+                          @click="closeMoreMenu"
+                        >
+                          <span class="menu-icon mr-3 self-center">
+                            <Icon :icon="child.icon" width="18" height="18" />
+                          </span>
+                          <span class="menu-title flex-1 self-center">{{ child.label }}</span>
+                        </router-link>
+                      </li>
+                    </ul>
+                  </li>
+                </template>
+              </ul>
+            </div>
           </div>
         </Transition>
       </div>
@@ -520,12 +643,15 @@ function closeProfileDropdown() {
       <div
         v-if="searchOpen"
         class="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] p-4"
-        @click.self="searchOpen = false"
+        role="dialog"
+        aria-modal="true"
+        aria-label="全局搜索"
+        @click.self="closeSearch"
       >
         <div
           class="absolute inset-0 backdrop-blur-md"
           style="background: color-mix(in srgb, #000 65%, transparent)"
-          @click="searchOpen = false"
+          @click="closeSearch"
         />
         <div
           class="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl transition-all"
@@ -718,6 +844,7 @@ function closeProfileDropdown() {
   font-weight: 400;
   border-radius: 8px;
   color: var(--color-text-secondary);
+  text-decoration: none;
 }
 
 .menu-item-title:hover,
@@ -725,6 +852,12 @@ function closeProfileDropdown() {
   background: color-mix(in srgb, var(--color-accent) 60%, transparent);
   color: var(--color-foreground);
   font-weight: 500;
+}
+
+.menu-item-title:focus-visible,
+.menu-subitem:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* 激活项左侧竖条（Apple 蓝） */
@@ -760,6 +893,7 @@ function closeProfileDropdown() {
   font-weight: 400;
   border-radius: 8px;
   color: var(--color-text-tertiary);
+  text-decoration: none;
 }
 .menu-subitem:hover,
 .menu-subitem.active {

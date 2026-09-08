@@ -147,13 +147,22 @@ async function load() {
   }
 }
 
+function updateSectionSnapshot(section: string, savedData: any) {
+  try {
+    const snap = savedSnapshot.value ? JSON.parse(savedSnapshot.value) : {};
+    snap[section] = JSON.parse(JSON.stringify(savedData));
+    savedSnapshot.value = JSON.stringify(snap);
+  } catch {}
+}
+
 async function save(section: string, payload?: unknown): Promise<boolean> {
+  if (savingKey.value) return false;
   savingKey.value = section;
   try {
     const body = payload !== undefined ? payload : data.value[section];
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
-    takeSnapshot();
+    updateSectionSnapshot(section, body);
     Toast.success("设置已保存，前台已生效");
     return true;
   } catch (error) {
@@ -165,18 +174,20 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
 }
 
 async function saveComments() {
+  if (savingKey.value) return;
   const commentsSaved = await save("comments");
   if (commentsSaved) await save("site_tree");
 }
 
 async function saveJson(section: string) {
+  if (savingKey.value) return;
   savingKey.value = "json:" + section;
   try {
     const payload = JSON.parse(rawText.value[section]);
     await settingsApi.updateSection(section, payload);
     data.value[section] = payload;
     ensureSettingsDefaults(data.value);
-    takeSnapshot();
+    updateSectionSnapshot(section, payload);
     Toast.success("设置已保存，前台已生效");
   } catch (error) {
     Toast.error(getApiErrorMessage(error, "JSON 解析或保存失败"));

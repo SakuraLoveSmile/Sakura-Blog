@@ -139,18 +139,28 @@ func (h *Handler) preserveAIKey(raw []byte) []byte {
 	return raw
 }
 
-// getStyleYAML GET /api/v1/settings/style/yaml：返回当前 style 段的 YAML 文本（主题 YAML 编辑器用）。
+// StyleYAMLResponse GET /api/v1/settings/style/yaml 响应结构。
+type StyleYAMLResponse struct {
+	YAML string `json:"yaml"`
+}
+
+// StyleYAMLUpdateResponse PUT /api/v1/settings/style/yaml 响应结构。
+type StyleYAMLUpdateResponse struct {
+	OK bool `json:"ok"`
+}
+
+// getStyleYAML GET /api/v1/settings/style/yaml：返回当前 style 段的 YAML 文本（主题样式 YAML 编辑器用）。
 func (h *Handler) getStyleYAML(c *gin.Context) {
 	b, err := yaml.Marshal(h.site.Load().Style)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"yaml": string(b)})
+	c.JSON(http.StatusOK, StyleYAMLResponse{YAML: string(b)})
 }
 
 // updateStyleYAML PUT /api/v1/settings/style/yaml：接收 YAML 文本，解析校验后存 style 段并热更新。
-// 解析失败返回 400 + 错误明细（含行号），不写库。
+// 解析失败返回 400 + 错误明细（含行号），不写库。保留未知字段通道。
 func (h *Handler) updateStyleYAML(c *gin.Context) {
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -162,7 +172,12 @@ func (h *Handler) updateStyleYAML(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "YAML 解析失败: "+err.Error())
 		return
 	}
-	jb, err := json.Marshal(sc)
+	var rawMap map[string]any
+	if err := yaml.Unmarshal(raw, &rawMap); err != nil {
+		Fail(c, http.StatusBadRequest, "YAML 解析失败: "+err.Error())
+		return
+	}
+	jb, err := json.Marshal(rawMap)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -171,7 +186,7 @@ func (h *Handler) updateStyleYAML(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"ok": true})
+	c.JSON(http.StatusOK, StyleYAMLUpdateResponse{OK: true})
 }
 
 // testNotify POST /api/v1/settings/notify/test：向 admin_email 发送测试邮件，验证 SMTP 配置。

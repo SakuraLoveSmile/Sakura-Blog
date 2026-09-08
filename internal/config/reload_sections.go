@@ -185,11 +185,33 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 		if err != nil {
 			return fmt.Errorf("normalize %s payload: %w", section, err)
 		}
+	} else if section == SectionStyle {
+		norm, err = mergeUnknownFields(raw, norm)
+		if err != nil {
+			return fmt.Errorf("normalize %s payload: %w", section, err)
+		}
 	}
 	if err := st.PutSetting(section, string(norm)); err != nil {
 		return err
 	}
 	return RebuildSite(st, site)
+}
+
+func mergeUnknownFields(raw, normalized []byte) ([]byte, error) {
+	var current map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &current); err != nil || current == nil {
+		return normalized, nil
+	}
+	var normMap map[string]json.RawMessage
+	if err := json.Unmarshal(normalized, &normMap); err != nil || normMap == nil {
+		return normalized, nil
+	}
+	for k, v := range current {
+		if _, exists := normMap[k]; !exists {
+			normMap[k] = v
+		}
+	}
+	return json.Marshal(normMap)
 }
 
 func isRuntimeDefaultsSection(section string) bool {
