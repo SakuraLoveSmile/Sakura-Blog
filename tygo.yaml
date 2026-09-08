@@ -18,3 +18,4 @@ packages:
       - "rag.go"
       - "editor_import.go"
       - "page.go"
+      - "update.go"

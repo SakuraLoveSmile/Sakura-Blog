@@ -42,8 +42,16 @@ jobs:
 
       - name: Build Linux binary
         run: |
+          BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          STELLAR_COMMIT=$(git -C resource/hexo-theme-stellar rev-parse --short HEAD 2>/dev/null || echo "unknown")
+          FRONTEND_HASH=$(scripts/console-input-hash.sh 2>/dev/null || echo "unknown")
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath \
-            -ldflags="-s -w -X blog/internal/app.Version=${GITHUB_REF_NAME}" \
+            -ldflags="-s -w \
+              -X blog/internal/app.Version=${GITHUB_REF_NAME} \
+              -X blog/internal/app.GitCommit=${GITHUB_SHA} \
+              -X blog/internal/app.BuildTime=${BUILD_TIME} \
+              -X blog/internal/app.StellarCommit=${STELLAR_COMMIT} \
+              -X blog/internal/app.FrontendFingerprint=${FRONTEND_HASH}" \
             -o blog-linux-amd64 ./cmd/blog
           sha256sum blog-linux-amd64 > blog-linux-amd64.sha256
 

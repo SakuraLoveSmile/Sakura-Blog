@@ -141,7 +141,7 @@ func New(cfg Config) *Handler {
 	}
 
 	// 构造生产 execRunner（Supported() 在非 systemd 环境自动返回 false）
-	runner := updr.New(installDir)
+	runner := updr.New(installDir, cfg.UpdateService)
 
 	storageBackend := cfg.Storage
 	if cfg.StorageManager != nil {
@@ -540,7 +540,8 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.POST("/rag/ask", h.ragAsk)
 		sys.POST("/rag/rebuild", h.ragRebuild)
 
-		// 系统更新（检查更新 / 一键更新 / 状态查询）
+		// 系统版本与更新（版本识别 / 检查更新 / 一键更新 / 状态查询）
+		sys.GET("/system/version", h.systemVersion)
 		sys.GET("/system/update/check", h.systemUpdateCheck)
 		sys.POST("/system/update/apply", h.systemUpdateApply)
 		sys.GET("/system/update/status", h.systemUpdateStatus)
