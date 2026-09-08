@@ -222,8 +222,7 @@ var shortcodeRegistry = []shortcodeRegistration{
 		named("limit", "透传给客户端（数量经 api 的 per_page 控制）", nil),
 		named("hide", "隐藏字段：user/title/footer（逗号分隔）", nil),
 		content("content", "时间轴内容（<!-- node 时间 --> 分隔）", nil)),
-	// 上游 dropdown.js 注册的 tag 级 icon 参数实际未被渲染使用，本项目不声明。
-	// 下拉项图标依赖 ctx.utils.icon（本项目无对应解析器），仅输出 data-icon 占位容器。
+	// 下拉项图标复用已注入的图标注册表（iconFunc），支持安全 SVG 内联与安全回退。
 	shortcodeEntry("dropdown", ShortcodeBlock, "布局容器", ShortcodeInteractive, reDropdown,
 		namedSelect("direction", "弹出方向", nil, "", "up", "down"),
 		namedSelect("align", "对齐", nil, "", "left", "right"),
@@ -312,9 +311,11 @@ var shortcodeRegistry = []shortcodeRegistration{
 		namedSelect("effect", "切换效果", "slide", "slide", "fade", "coverflow", "cards"),
 		content("content", "轮播图片（每行一张 Markdown 图片）", nil)),
 	shortcodeEntry("albums", ShortcodeInline, "媒体播放", ShortcodeService, reAlbumsTag,
+		positional("group", "友链分组名称", nil),
 		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
 		namedSelect("size", "卡片尺寸", "s", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("posters", ShortcodeInline, "媒体播放", ShortcodeService, rePostersTag,
+		positional("group", "友链分组名称", nil),
 		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
 		namedSelect("size", "卡片尺寸", "xs", "xs", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("copy", ShortcodeInline, "媒体播放", ShortcodeStatic, reCopy,

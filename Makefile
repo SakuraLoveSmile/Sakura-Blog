@@ -80,7 +80,7 @@ css:
 		echo "css: Stellar web 依赖缺失，执行 pnpm install（workspace 锁 stylus 0.62.0）"; \
 		pnpm install --frozen-lockfile; \
 	fi
-	cd modules/stellar/web && pnpm exec node build/stylus/compile.js
+	cd modules/stellar/web && pnpm exec node build/stylus/compile.js --clean
 
 ## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；

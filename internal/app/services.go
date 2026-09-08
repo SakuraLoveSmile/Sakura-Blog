@@ -155,6 +155,65 @@ func Bootstrap(options Options) (*Services, error) {
 		live := sitePtr.Load()
 		return live.Links, live.Default.Link
 	})
+	posts.SetAlbumsLinksFunc(func() ([]settings.LinkGroup, string) {
+		live := sitePtr.Load()
+		return live.Links, live.Default.Cover
+	})
+	posts.SetWikiTreeProvider(func(projectID string) (bool, []settings.WikiTreeNode) {
+		exists := false
+		if projects, err := st.ListWikiProjects(); err == nil {
+			for _, p := range projects {
+				if p.ID == projectID && p.Visible {
+					exists = true
+					break
+				}
+			}
+		}
+		if !exists {
+			live := sitePtr.Load()
+			for _, p := range live.Wiki {
+				if p.ID == projectID {
+					exists = true
+					break
+				}
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+		docs, err := st.ListWikidocs(projectID)
+		if err != nil {
+			return true, nil
+		}
+		var published []*store.WikiDoc
+		for _, d := range docs {
+			if d.Status == store.StatusPublished {
+				published = append(published, d)
+			}
+		}
+		if len(published) == 0 {
+			return true, nil
+		}
+		treeNodes := store.BuildDocTreeFromDocs(published)
+		var toWikiTreeNodes func([]store.TreeNode) []settings.WikiTreeNode
+		toWikiTreeNodes = func(nodes []store.TreeNode) []settings.WikiTreeNode {
+			out := make([]settings.WikiTreeNode, 0, len(nodes))
+			for _, n := range nodes {
+				if n.Doc == nil || n.Doc.Status != store.StatusPublished {
+					continue
+				}
+				out = append(out, settings.WikiTreeNode{
+					Doc: &settings.WikiDocView{
+						Slug:  n.Doc.Slug,
+						Title: n.Doc.Title,
+					},
+					Children: toWikiTreeNodes(n.Children),
+				})
+			}
+			return out
+		}
+		return true, toWikiTreeNodes(treeNodes)
+	})
 	posts.SetMomentsFunc(func(limit int) []*settings.MomentItem {
 		if limit < 1 {
 			limit = 5

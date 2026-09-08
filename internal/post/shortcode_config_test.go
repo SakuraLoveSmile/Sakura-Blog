@@ -9,7 +9,7 @@ import (
 
 func runShortcodesWithTagPlugins(md string, tagPlugins settings.TagPluginsConfig) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, tagPlugins)
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, nil, nil, tagPlugins)
 }
 
 func TestQuotPresetAndExplicitIconPriority(t *testing.T) {

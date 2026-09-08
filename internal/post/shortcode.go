@@ -229,7 +229,18 @@ func (s *Service) renderInlineMD(md string) string {
 
 // processShortcodes 在 goldmark 渲染前预处理 Stellar 标签插件，返回替换后的 Markdown。
 // 块级 body 内的 Markdown 由调用者传入 renderMD 函数单独渲染。
-func processShortcodes(md string, renderMD func(string) string, renderInlineMD func(string) string, iconFunc func(string) string, ghClient GHClient, linksRender func() string, momentsRender func(string) string, tagPlugins settings.TagPluginsConfig) string {
+func processShortcodes(
+	md string,
+	renderMD func(string) string,
+	renderInlineMD func(string) string,
+	iconFunc func(string) string,
+	ghClient GHClient,
+	linksRender func() string,
+	momentsRender func(string) string,
+	albumsRender func(kind, argsStr string) string,
+	tocRender func(argsStr string) string,
+	tagPlugins settings.TagPluginsConfig,
+) string {
 	// 1. mermaid（块级，body 为原文，不渲染 Markdown）
 	md = reMermaid.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reMermaid.FindStringSubmatch(match)
@@ -293,7 +304,7 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		}
 		argsStr := parts[1]
 		body := strings.TrimSpace(parts[2])
-		return renderDropdown(argsStr, body, renderMD)
+		return renderDropdown(argsStr, body, iconFunc)
 	})
 
 	// 4. gallery（块级）
@@ -773,11 +784,14 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		return el
 	})
 
-	// 35. albums / posters（单行，数据走 ds-friends 服务填充 gallery）
+	// 35. albums / posters（单行，数据走 ds-friends 服务或 group 友链卡片直出）
 	md = reAlbumsTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reAlbumsTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
+		}
+		if albumsRender != nil {
+			return albumsRender("albums", parts[1])
 		}
 		return renderAlbumsPosters("albums", parts[1])
 	})
@@ -785,6 +799,9 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		parts := rePostersTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
+		}
+		if albumsRender != nil {
+			return albumsRender("posters", parts[1])
 		}
 		return renderAlbumsPosters("posters", parts[1])
 	})
@@ -835,14 +852,18 @@ func processShortcodes(md string, renderMD func(string) string, renderInlineMD f
 		return fmt.Sprintf(`<div class="data-service ds-mdrender" src="%s"%s data-heading="true" id="md_%d"></div>`, html.EscapeString(src), attr, id)
 	})
 
-	// 39. toc（单行，wiki 文档树目录壳；本项目 wiki 树待 Spec 35，wiki 参数命中时对齐原版 proj 缺失行为输出空）
+	// 39. toc（单行，文章目录外壳或 wiki 文档树目录；对齐原版 toc.js）
 	md = reTOCTag.ReplaceAllStringFunc(md, func(match string) string {
 		parts := reTOCTag.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
 		}
-		return renderTOCTag(parts[1])
+		if tocRender != nil {
+			return tocRender(parts[1])
+		}
+		return renderTOCTag(parts[1], nil, false)
 	})
+
 
 	return md
 }

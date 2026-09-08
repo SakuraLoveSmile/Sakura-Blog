@@ -10,7 +10,7 @@ import (
 // runShortcodes 便捷调用：identity renderMD + 简单 icon 桩，不依赖 goldmark/GitHub。
 func runShortcodes(md string) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, settings.TagPluginsConfig{})
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, nil, nil, settings.TagPluginsConfig{})
 }
 
 // TestShortcodeXSSMitigation 安全审计 2026-08-16 回归：用户可控的 shortcode 参数
@@ -148,10 +148,14 @@ func TestDropdownTag(t *testing.T) {
 - [外站](https://example.com)
 {% enddropdown %}`,
 			[]string{`href="https://example.com" target="_blank" rel="external nofollow noopener noreferrer">`}, []string{}},
-		{"图标占位 data-icon", `{% dropdown 菜单 %}
+		{"已知图标渲染 SVG", `{% dropdown 菜单 %}
 icon:home [首页](/)
 {% enddropdown %}`,
-			[]string{`<span class="ui-collection__leading"><i class="icon" data-icon="home"></i></span>`}, []string{}},
+			[]string{`<span class="ui-collection__leading"><svg data-icon="home"></svg></span>`}, []string{}},
+		{"非法图标 key 白名单安全回退", `{% dropdown 菜单 %}
+icon:<bad> [首页](/)
+{% enddropdown %}`,
+			[]string{`<span class="ui-collection__leading"></span>`}, []string{`<bad>`}},
 		{"标题转义", `{% dropdown <script>alert(1)</script> 菜单 %}
 - [首页](/)
 {% enddropdown %}`,

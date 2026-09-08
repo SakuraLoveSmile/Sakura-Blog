@@ -181,9 +181,8 @@ func parseDropdownItems(body string) []dropdownItem {
 // renderDropdown 渲染 {% dropdown [direction:up/down] [align:left/right] [open:true] title %}
 // - icon:key [title](url)
 // {% enddropdown %}
-// DOM 对齐原版 dropdown.js:39-62。icon 暂不渲染 SVG（依赖 ctx.utils.icon，本项目无对应
-// 解析器），仅保留 ui-collection__leading 容器并放 data-icon 占位，结构一致不破坏 CSS。
-func renderDropdown(argsStr, body string, renderMD func(string) string) string {
+// DOM 对齐原版 dropdown.js:39-62。icon 复用已注入的图标注册表；已知键渲染对应 SVG，未知键安全回退。
+func renderDropdown(argsStr, body string, iconFunc func(string) string) string {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"direction", "align", "open"}, []string{"title"})
 	title := named["title"]
 	if title == "" && len(positional) > 0 {
@@ -234,8 +233,15 @@ func renderDropdown(argsStr, body string, renderMD func(string) string) string {
 			sb.WriteString(` rel="noopener noreferrer">`)
 		}
 		if it.icon != "" {
-			// 安全审计 2026-08-31：icon 名仅作 data-icon 占位，转义后再输出
-			fmt.Fprintf(&sb, `<span class="ui-collection__leading"><i class="icon" data-icon="%s"></i></span>`, html.EscapeString(it.icon))
+			// 安全审计 2026-08-31 / 阶段 E：icon key 白名单校验，已知键渲染对应 SVG，未知键安全回退
+			sb.WriteString(`<span class="ui-collection__leading">`)
+			k := safeIconKey(it.icon)
+			if k != "" && iconFunc != nil {
+				sb.WriteString(iconFunc(k))
+			} else if k != "" {
+				fmt.Fprintf(&sb, `<span class="icon-missing" data-icon="%s"></span>`, html.EscapeString(k))
+			}
+			sb.WriteString(`</span>`)
 		}
 		// 安全审计 2026-08-31：title 用户可控，转义后再输出
 		fmt.Fprintf(&sb, `<span class="ui-collection__content"><span class="ui-collection__title">%s</span></span></a>`, html.EscapeString(it.title))
@@ -243,6 +249,7 @@ func renderDropdown(argsStr, body string, renderMD func(string) string) string {
 	sb.WriteString(`</div></details>`)
 	return sb.String()
 }
+
 
 func renderGallery(argsStr, body string, tagPlugins settings.TagPluginsConfig) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"layout", "size", "ratio"}, nil)
