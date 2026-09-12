@@ -60,3 +60,9 @@ A ownership/url 以及 B background/console/restore/revisions/settings 为分工
 首次 E2E 因 Chromium v1234 未安装而无法启动，安装匹配版本后重跑通过；不把首次失败统计成产品失败或通过。systemd 调整过程的失败原因和最终验证如上，不删除失败记录。
 
 T3 的合入后结果与 T4 清理结果在完成后补记；归档内 `final-receipt.json` 保存最后的 HEAD、worktree 列表和 .gitignore 校验。
+
+### 合入前补齐测试隔离
+
+现有 E2E 仅隔离 DB，根 worktree 的 app.yml/附件路径可能仍被测试使用，因此将测试运行 root 整体设为 `.tmp/e2e-server.*`，仅链接模块资源与内部只读资源；config、data、content 全部使用测试目录。首次隔离启动发现 icons/font 资源定位依赖 root，补齐内部资源链接后全量 E2E **29/29 PASS，48.2s**（`blog-consolidation-e2e-isolated-final.log`）。
+新增 `BLOG_E2E_SCREENSHOT_DIR` 仅控制测试截图位置，供合入后复验使用，避免修改已提交基线。
+合入前重新核对 14 个旧目录：HEAD、分支、补丁、逐文件 manifest 与归档一致，未发现 lsof 文件引用。

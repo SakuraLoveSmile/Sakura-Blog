@@ -63,7 +63,8 @@ test("恢复任务维护期间禁用重复提交、刷新续查并按终态解�
       const box = await label.boundingBox();
       expect(box?.height).toBeLessThanOrEqual(40);
     }
-    await page.screenshot({ path: `docs/baselines/worktree-consolidation/active-${width}.png`, fullPage: true });
+    const screenshotDir = process.env.BLOG_E2E_SCREENSHOT_DIR || "docs/baselines/worktree-consolidation";
+    await page.screenshot({ path: `${screenshotDir}/active-${width}.png`, fullPage: true });
   }
   await page.reload();
   await expect(page.getByRole("button", { name: "上传备份并恢复", exact: true })).toBeDisabled();
