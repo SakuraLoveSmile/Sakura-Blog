@@ -101,6 +101,9 @@ func New(d Dependencies) (*Server, error) {
 		eventSub = d.Events.Subscribe(func(event content.Event) {
 			switch event.Kind {
 			case content.PostChanged:
+				if event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
+					postHook("delete", event.PreviousSlug)
+				}
 				postHook(event.Op, event.Slug)
 			case content.PageChanged:
 				pageHook(event.Op, event.Slug)

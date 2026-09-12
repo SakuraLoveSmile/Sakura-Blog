@@ -139,6 +139,29 @@ func TestUserUpdateRoleResetPasswordDelete(t *testing.T) {
 	}
 }
 
+// TestUserUpdateDoesNotManageStatus 保证封禁范围只由 comment-users 读者入口控制。
+func TestUserUpdateDoesNotManageStatus(t *testing.T) {
+	r, st, admin, _ := newFullEnv(t)
+	adminCookie := authCookie(admin)
+	u := createUserViaAPI(t, r, adminCookie, "status-scope")
+	if err := st.SetUserRoles(u.ID, []string{store.RoleAdmin}); err != nil {
+		t.Fatalf("promote status-scope user: %v", err)
+	}
+
+	w := do2FA(r, http.MethodPut, fmt.Sprintf("/api/v1/users/%d", u.ID),
+		`{"display_name":"Status Scope","status":"banned"}`, adminCookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("user update with status field: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	got, err := st.GetUserByID(u.ID)
+	if err != nil || got == nil {
+		t.Fatalf("get updated user: %v", err)
+	}
+	if got.Status != store.UserStatusActive {
+		t.Fatalf("users endpoint must not change status, got %q", got.Status)
+	}
+}
+
 // TestUserManagementGuardrails 创建冲突/删除保护/降级保护。
 func TestUserManagementGuardrails(t *testing.T) {
 	r, _, admin, _ := newFullEnv(t)

@@ -172,23 +172,7 @@ if consume_oldest_request; then
   fail "consume_oldest_request should reject oversized file"
 fi
 
-# --- 测试 acquire_lock 排他锁 ---
-export LOCK_FILE="$test_root/update.lock"
-acquire_lock || fail "first acquire_lock should succeed"
-
-# 在子进程中再次尝试获取同一把锁，必须失败
-if bash -c '
-source "'"$PWD"'/deploy/update.sh"
-export LOCK_FILE="'"$LOCK_FILE"'"
-if acquire_lock; then
-  exit 0
-else
-  exit 1
-fi
-'; then
-  fail "concurrent acquire_lock in subshell should have failed"
-fi
-
-release_lock
+# 实际共享锁执行路径：等待时请求不丢失，解除阻塞后继续。
+python3 "$(dirname "$0")/tests/update-lock.py"
 
 printf '%s\n' "update-test: all deployment and security cases passed"

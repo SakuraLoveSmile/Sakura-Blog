@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"blog/internal/backup"
 )
 
 // maxImportSize Markdown 导入上限（zip 含多篇文章，比单附件上限放宽到 50MB）。
@@ -28,7 +30,7 @@ func (h *Handler) restoreBackup(c *gin.Context) {
 	}
 	defer file.Close()
 	if header.Size > maxRestoreSize {
-		Fail(c, http.StatusBadRequest, "备份包超过 500MB 上限")
+		Fail(c, http.StatusRequestEntityTooLarge, "备份包超过 500MB 上限")
 		return
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maxRestoreSize+1))
@@ -37,15 +39,15 @@ func (h *Handler) restoreBackup(c *gin.Context) {
 		return
 	}
 	if len(data) > maxRestoreSize {
-		Fail(c, http.StatusBadRequest, "备份包超过 500MB 上限")
+		Fail(c, http.StatusRequestEntityTooLarge, "备份包超过 500MB 上限")
 		return
 	}
 	strict := c.PostForm("strict") == "true"
-	if err := h.backups.Restore(data, strict); err != nil {
+	if err := h.waitLegacyRestore(c, backup.RestoreInput{Data: data, Strict: strict}); err != nil {
 		Fail(c, http.StatusBadRequest, "恢复失败: "+err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"restored": true})
+	c.JSON(http.StatusOK, RestoreCompletedResponse{Restored: true})
 }
 
 // restoreSnapshot POST /api/v1/backup/restore-snapshot：从服务器 backups 目录内的备份恢复。
@@ -58,11 +60,11 @@ func (h *Handler) restoreSnapshot(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "缺少备份文件名（name）")
 		return
 	}
-	if err := h.backups.RestoreSnapshot(req.Name); err != nil {
+	if err := h.waitLegacyRestore(c, backup.RestoreInput{Snapshot: req.Name}); err != nil {
 		Fail(c, http.StatusBadRequest, "恢复失败: "+err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"restored": true})
+	c.JSON(http.StatusOK, RestoreCompletedResponse{Restored: true})
 }
 
 // exportBackup GET /api/v1/backup/export：全量备份 zip 流式下载（DB 快照 + uploads + site.yml）。

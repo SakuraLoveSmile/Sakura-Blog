@@ -16,9 +16,10 @@ import (
 
 // bucketKey 分钟桶键：分钟起点 + 方法 + 路由模板（c.FullPath()，避免参数高基数）。
 type bucketKey struct {
-	minute time.Time
-	method string
-	route  string
+	minute     time.Time
+	method     string
+	route      string
+	generation uint64
 }
 
 // aggregator 分钟级请求耗时聚合（内存 map，flushLoop 定期落库）。
@@ -31,10 +32,10 @@ func newAggregator() *aggregator {
 	return &aggregator{buckets: map[bucketKey]*store.PerfRequestBucket{}}
 }
 
-// record 累计一次请求到所属分钟桶。
-func (a *aggregator) record(method, route string, status int, d time.Duration) {
+// recordAt 按维护世代累计请求，旧数据不能跨恢复窗口落库。
+func (a *aggregator) recordAt(method, route string, status int, d time.Duration, generation uint64) {
 	ms := float64(d.Microseconds()) / 1000
-	key := bucketKey{minute: time.Now().Truncate(time.Minute), method: method, route: route}
+	key := bucketKey{minute: time.Now().Truncate(time.Minute), method: method, route: route, generation: generation}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	b, ok := a.buckets[key]
@@ -53,11 +54,15 @@ func (a *aggregator) record(method, route string, status int, d time.Duration) {
 }
 
 // takeOlder 取走并移除 minute 早于 cutoff 的桶（当前分钟桶继续累积）。
-func (a *aggregator) takeOlder(cutoff time.Time) []store.PerfRequestBucket {
+func (a *aggregator) takeOlder(cutoff time.Time, generation uint64) []store.PerfRequestBucket {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	var out []store.PerfRequestBucket
 	for k, b := range a.buckets {
+		if k.generation != generation {
+			delete(a.buckets, k)
+			continue
+		}
 		if k.minute.Before(cutoff) {
 			out = append(out, *b)
 			delete(a.buckets, k)
@@ -67,12 +72,14 @@ func (a *aggregator) takeOlder(cutoff time.Time) []store.PerfRequestBucket {
 }
 
 // takeAll 取走并移除全部桶（含当前未完成分钟，停用时避免数据丢失）。
-func (a *aggregator) takeAll() []store.PerfRequestBucket {
+func (a *aggregator) takeAll(generation uint64) []store.PerfRequestBucket {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	out := make([]store.PerfRequestBucket, 0, len(a.buckets))
 	for k, b := range a.buckets {
-		out = append(out, *b)
+		if k.generation == generation {
+			out = append(out, *b)
+		}
 		delete(a.buckets, k)
 	}
 	return out
@@ -106,7 +113,11 @@ func (m *Module) timingMiddleware(deps module.Deps) gin.HandlerFunc {
 		if route == "" {
 			return
 		}
-		m.agg.record(c.Request.Method, route, c.Writer.Status(), time.Since(start))
+		generation := uint64(0)
+		if deps.Store != nil {
+			generation = deps.Store.Maintenance().Generation()
+		}
+		m.agg.recordAt(c.Request.Method, route, c.Writer.Status(), time.Since(start), generation)
 	}
 }
 
@@ -160,7 +171,10 @@ func (m *Module) sampleLoop(ctx context.Context, deps module.Deps) {
 		}
 		metrics := captureRuntimeMetrics()
 		if deps.Store != nil {
-			_ = deps.Store.InsertPerfSamples(time.Now(), metrics)
+			if release, err := deps.Store.Maintenance().Acquire(); err == nil {
+				_ = deps.Store.InsertPerfSamples(time.Now(), metrics)
+				release()
+			}
 		}
 	}
 }
@@ -192,7 +206,10 @@ func (m *Module) flushLoop(ctx context.Context, deps module.Deps) {
 		m.flush(deps, time.Now())
 		ticks++
 		if ticks%pruneEvery == 0 && deps.Store != nil {
-			_ = deps.Store.PrunePerfData(retentionDays)
+			if release, err := deps.Store.Maintenance().Acquire(); err == nil {
+				_ = deps.Store.PrunePerfData(retentionDays)
+				release()
+			}
 		}
 	}
 }
@@ -202,7 +219,12 @@ func (m *Module) flush(deps module.Deps, now time.Time) {
 	if deps.Store == nil {
 		return
 	}
-	buckets := m.agg.takeOlder(now.Truncate(time.Minute))
+	release, err := deps.Store.Maintenance().Acquire()
+	if err != nil {
+		return
+	}
+	defer release()
+	buckets := m.agg.takeOlder(now.Truncate(time.Minute), deps.Store.Maintenance().Generation())
 	if len(buckets) == 0 {
 		return
 	}
@@ -214,7 +236,12 @@ func (m *Module) flushAll(deps module.Deps) {
 	if deps.Store == nil {
 		return
 	}
-	buckets := m.agg.takeAll()
+	release, err := deps.Store.Maintenance().Acquire()
+	if err != nil {
+		return
+	}
+	defer release()
+	buckets := m.agg.takeAll(deps.Store.Maintenance().Generation())
 	if len(buckets) == 0 {
 		return
 	}

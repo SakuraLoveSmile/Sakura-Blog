@@ -278,4 +278,40 @@ func TestMountConfigRoutes(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("PUT other section status = %d, want 400", w.Code)
 	}
+	// Oversized module config is rejected before the module receives the body.
+	w = httptest.NewRecorder()
+	large := bytes.Repeat([]byte("x"), (1<<20)+1)
+	req = httptest.NewRequest(http.MethodPut, "/api/v1/settings/seo", bytes.NewReader(large))
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized module config status = %d, want 413", w.Code)
+	}
+}
+
+func TestRestoreLifecycleDoesNotReverseUntouchedModules(t *testing.T) {
+	first := &fakeModule{id: "first", failEnable: true}
+	second := &fakeModule{id: "second"}
+	manager, st := newTestManager(t, first, second)
+	for _, id := range []string{"first", "second"} {
+		if err := st.SetModuleState(id, true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := manager.ReloadRestoredState(Deps{Store: st, Modules: manager}); err == nil {
+		t.Fatal("expected lifecycle failure")
+	}
+	if manager.Enabled("second") || len(second.enables) != 0 || len(second.disables) != 0 {
+		t.Fatal("untouched module was changed")
+	}
+	for _, id := range []string{"first", "second"} {
+		if err := st.SetModuleState(id, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := manager.ReloadRestoredState(Deps{Store: st, Modules: manager}); err != nil {
+		t.Fatal(err)
+	}
+	if len(second.enables) != 0 || len(second.disables) != 0 {
+		t.Fatal("compensation reversed an untouched module")
+	}
 }

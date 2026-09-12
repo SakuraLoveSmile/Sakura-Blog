@@ -20,3 +20,4 @@ packages:
       - "page.go"
       - "update.go"
       - "settings.go"
+      - "backup_restores.go"

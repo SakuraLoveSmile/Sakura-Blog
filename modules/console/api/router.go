@@ -58,8 +58,8 @@ type Handler struct {
 
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh *ghpkg.Client
-	// generate2FA is injectable only for testing secure-random failure handling.
-	generate2FA    func(int64) (string, error)
+	// generate2FA 仅用于注入安全随机数失败测试。
+	generate2FA    func(int64, string) (string, error)
 	stellarVersion string
 	stellarOwner   string
 	stellarRepo    string
@@ -522,6 +522,9 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.GET("/backup/status", h.backupStatus)
 		sys.POST("/backup/restore", h.restoreBackup)
 		sys.POST("/backup/restore-snapshot", h.restoreSnapshot)
+		sys.POST("/backup/restores", h.startRestore)
+		sys.GET("/backup/restores", h.listRestoreTasks)
+		sys.GET("/backup/restores/:id", h.getRestoreTask)
 
 		// 友链（安全审计 2026-08-16 收进 sys）：links 表 URL 会驱动服务端出站探测/抓取
 		// （linkwatch/friends），探测结果回显构成 SSRF oracle，收敛到 admin 管理。

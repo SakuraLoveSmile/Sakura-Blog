@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -101,6 +102,21 @@ func TestSettingsSections(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("invalid settings json: status = %d, want 400", w.Code)
 	}
+	// JSON settings over the request limit return 413, while bounded malformed
+	// JSON remains a 400 validation error.
+	large := strings.Repeat("x", (1<<20)+1)
+	w = do2FA(r, http.MethodPut, "/api/v1/settings/ai", large, cookie)
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("oversized JSON settings: status = %d, want 413", w.Code)
+	}
+	w = do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", strings.Repeat("x", (1<<20)+1), cookie)
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("oversized YAML settings: status = %d, want 413", w.Code)
+	}
+	w = do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "[", cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("malformed YAML settings: status = %d, want 400", w.Code)
+	}
 }
 
 // TestSettingsNotifyTest 测试邮件：未配置 SMTP 时业务失败仍 200 + ok=false（Console 依赖）。
@@ -166,5 +182,33 @@ func TestSettingsAuthorsInject(t *testing.T) {
 	var authors map[string]map[string]string
 	if err := json.Unmarshal(authorsRaw, &authors); err != nil || len(authors) != 1 || authors["admin"]["name"] != "管理员" {
 		t.Errorf("authors inject mismatch: %s (err %v)", authorsRaw, err)
+	}
+}
+
+// 合并 B 的原子设置保存与 D 的 YAML 未知字段契约，不能因规范化而丢字段。
+func TestStyleYAMLPreservesUnknownFieldsAfterAtomicSave(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	w := do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "future_widget:\n  enabled: false\n  count: 0\n  title: \"\"\n", authCookie(user))
+	if w.Code != http.StatusOK {
+		t.Fatalf("save YAML: %d %s", w.Code, w.Body.String())
+	}
+	var response StyleYAMLUpdateResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || !response.OK {
+		t.Fatalf("typed response: %v", err)
+	}
+	raw, err := st.GetSetting("style")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &saved); err != nil {
+		t.Fatal(err)
+	}
+	var extra map[string]any
+	if err := json.Unmarshal(saved["future_widget"], &extra); err != nil {
+		t.Fatal(err)
+	}
+	if extra["enabled"] != false || extra["count"] != float64(0) || extra["title"] != "" {
+		t.Fatalf("unknown YAML fields lost: %v", extra)
 	}
 }

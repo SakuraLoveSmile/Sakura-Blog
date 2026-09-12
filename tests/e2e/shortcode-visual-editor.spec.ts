@@ -255,23 +255,58 @@ test("编辑已有组件不会注入 catalog default（folding 未写的 open �
   await expectPreviewContains(page, "新折叠标题");
 });
 
-test("image download 支持 true 或 URL 回写", async ({ page }) => {
-  await setMarkdown(page, "{% image /assets/img/preview/image-demo.jpg 示例图 %}");
+test("image download：空值、true、false 和 URL 保持回写与预览语义", async ({ page }) => {
+  const source = "/assets/img/preview/image-demo.jpg";
+  await setMarkdown(page, `{% image ${source} 示例图 %}`);
   const dialog = await openPropertyPanel(page);
+  const download = dialog.locator("#schema-field-download");
+  const preview = page.locator(".stellar-tag-node iframe").first();
+  const previewDownload = () =>
+    preview.getAttribute("srcdoc").then((html) =>
+      page.evaluate((markup) => {
+        const document = new DOMParser().parseFromString(markup ?? "", "text/html");
+        return document.querySelector("a.image-download")?.getAttribute("href") ?? null;
+      }, html),
+    );
 
-  await expect(dialog.locator("#schema-field-download")).toHaveValue("");
-  await dialog.locator("#schema-field-download").fill("true");
+  await expect(download).toHaveValue("");
+  await expectPreviewContains(page, "image-caption");
+  await expect.poll(previewDownload).toBeNull();
+
+  await download.fill("true");
   await expectMarkdownContains(page, "download:true");
+  await expect.poll(previewDownload).toBe(source);
 
-  await dialog.locator("#schema-field-download").fill("https://example.com/full.png");
+  await download.fill("false");
+  await expectMarkdownContains(page, "download:false");
+  await expect.poll(previewDownload).toBeNull();
+
+  await download.fill("https://example.com/full.png");
   await expectMarkdownContains(page, "download:https://example.com/full.png");
+  await expect.poll(previewDownload).toBe("https://example.com/full.png");
+
+  await download.fill("");
+  await expect.poll(() => getMarkdown(page)).not.toContain("download:");
+  await expect.poll(previewDownload).toBeNull();
 });
 
-test("flag 统一输出 key:true（video autoplay 勾选后回写）", async ({ page }) => {
-  await setMarkdown(page, "{% video /assets/media/preview/sample-video.mp4 %}");
+test("布尔参数：缺失值不落盘，开关回写与预览同步", async ({ page }) => {
+  await setMarkdown(page, "{% video bilibili:BV1test %}");
   const dialog = await openPropertyPanel(page);
+  const autoplay = dialog.locator("#schema-field-autoplay");
 
-  await expect(dialog.locator("#schema-field-autoplay")).not.toBeChecked();
-  await dialog.locator("#schema-field-autoplay").check();
+  await expect(autoplay).not.toBeChecked();
+  await dialog.locator("#schema-field-width").fill("80%");
+  await expectMarkdownContains(page, "width:80%");
+  expect(await getMarkdown(page)).not.toContain("autoplay:");
+  await expectPreviewContains(page, "autoplay=false");
+
+  await autoplay.check();
   await expectMarkdownContains(page, "autoplay:true");
+  await expectPreviewContains(page, "autoplay=true");
+
+  await autoplay.uncheck();
+  // flag 关闭时省略参数，渲染器按 false 处理。
+  await expect.poll(() => getMarkdown(page)).not.toContain("autoplay:");
+  await expectPreviewContains(page, "autoplay=false");
 });

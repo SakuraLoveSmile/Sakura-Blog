@@ -4,6 +4,7 @@ package routes
 import (
 	"encoding/xml"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -43,15 +44,7 @@ func (h *FeedHandler) Register(r *gin.Engine) {
 }
 
 func (h *FeedHandler) baseURL(c *gin.Context) string {
-	site := h.site.Load()
-	if site != nil && site.URL != "" {
-		return tmpl.NormalizeSiteURL(site.URL)
-	}
-	scheme := "http"
-	if c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
-		scheme = "https"
-	}
-	return scheme + "://" + c.Request.Host
+	return canonicalBaseURL(h.site.Load(), c)
 }
 
 func (h *FeedHandler) setFeedCache(c *gin.Context) {
@@ -59,7 +52,7 @@ func (h *FeedHandler) setFeedCache(c *gin.Context) {
 }
 
 func (h *FeedHandler) postURL(base, slug string) string {
-	return tmpl.JoinSiteURL(base, "/post/"+slug)
+	return tmpl.JoinSiteURL(base, "/post/"+url.PathEscape(slug))
 }
 
 func feedBody(p *store.Post) string {
@@ -95,7 +88,7 @@ func (h *FeedHandler) atom(c *gin.Context) {
 	}
 
 	base := h.baseURL(c)
-	feedURL := base + "/atom.xml"
+	feedURL := tmpl.JoinSiteURL(base, "/atom.xml")
 	updated := time.Now().UTC().Format(time.RFC3339)
 	if len(posts) > 0 {
 		t := posts[0].UpdatedAt
@@ -129,10 +122,10 @@ func (h *FeedHandler) atom(c *gin.Context) {
 		XMLNS: "http://www.w3.org/2005/Atom",
 		Title: h.site.Load().Title,
 		Link: []atomLink{
-			{Href: base + "/"},
+			{Href: tmpl.JoinSiteURL(base, "/")},
 			{Href: feedURL, Rel: "self"},
 		},
-		ID:      base + "/",
+		ID:      tmpl.JoinSiteURL(base, "/"),
 		Updated: updated,
 		Entries: entries,
 	}
@@ -171,8 +164,8 @@ func (h *FeedHandler) jsonFeed(c *gin.Context) {
 	feed := jsonFeed{
 		Version:     "https://jsonfeed.org/version/1.1",
 		Title:       h.site.Load().Title,
-		HomePageURL: base + "/",
-		FeedURL:     base + "/feed.json",
+		HomePageURL: tmpl.JoinSiteURL(base, "/"),
+		FeedURL:     tmpl.JoinSiteURL(base, "/feed.json"),
 		Description: h.site.Load().Description,
 		Items:       items,
 	}

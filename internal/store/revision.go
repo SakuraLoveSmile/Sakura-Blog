@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 	"unicode"
@@ -79,6 +80,34 @@ func (s *Store) CreateRevision(r *Revision) (int64, error) {
 	}
 	s.pruneRevisions(r.PostSlug)
 	return id, nil
+}
+
+// createRevisionTx 写入一条版本快照，供文章保存事务复用。
+func createRevisionTx(tx *sql.Tx, r *Revision) (int64, error) {
+	if r.CreatedAt.IsZero() {
+		r.CreatedAt = time.Now()
+	}
+	r.WordCount = CountWords(r.ContentMD)
+	res, err := tx.Exec(`INSERT INTO revisions (post_slug, title, excerpt, content_md, tags, category, status, word_count, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, r.PostSlug, r.Title, r.Excerpt, r.ContentMD, r.Tags, r.Category, r.Status, r.WordCount, r.CreatedAt)
+	if err != nil {
+		return 0, fmt.Errorf("create revision: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("create revision: last insert id: %w", err)
+	}
+	r.ID = id
+	return id, nil
+}
+
+func pruneRevisionsTx(tx *sql.Tx, slug string) error {
+	if _, err := tx.Exec(`DELETE FROM revisions WHERE post_slug = ? AND id NOT IN (
+		SELECT id FROM revisions WHERE post_slug = ? ORDER BY substr(created_at, 1, 19) DESC, id DESC LIMIT ?
+	)`, slug, slug, maxRevisionsPerPost); err != nil {
+		return fmt.Errorf("prune revisions for %s: %w", slug, err)
+	}
+	return nil
 }
 
 // ListRevisions 按时间倒序列出某文章的版本元数据（不含 content_md）。

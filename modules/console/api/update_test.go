@@ -504,3 +504,19 @@ func TestNoopRunner(t *testing.T) {
 type assertError string
 
 func (e assertError) Error() string { return string(e) }
+
+// B 的维护预约必须在 C 的更新请求入队前阻止冲突，不调用更新器。
+func TestSystemUpdateApplyRestoreReservationBlocksQueue(t *testing.T) {
+	r, h, cookie, _ := newUpdateEnvWithCookie(t, nil)
+	runner := &fakeRunner{supported: true}
+	h.upd = runner
+	release, err := h.store.Maintenance().Reserve("restore")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	w := doUpdate(r, http.MethodPost, "/api/v1/system/update/apply", cookie)
+	if w.Code != http.StatusConflict || atomic.LoadInt32(&runner.started) != 0 {
+		t.Fatalf("restore reservation must block enqueue: status=%d starts=%d", w.Code, runner.started)
+	}
+}

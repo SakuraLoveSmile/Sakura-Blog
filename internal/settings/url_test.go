@@ -16,6 +16,8 @@ func TestNormalizeSiteURL(t *testing.T) {
 		{"https://example.com///", "https://example.com"},
 		{"https://example.com/blog", "https://example.com/blog"},
 		{"https://example.com/blog/", "https://example.com/blog"},
+		{"https://example.com/blog/?redirect=/", "https://example.com/blog?redirect=/"},
+		{"https://example.com/blog?redirect=/", "https://example.com/blog?redirect=/"},
 		{"http://localhost:8080/", "http://localhost:8080"},
 	}
 
@@ -49,6 +51,9 @@ func TestValidateSiteURL(t *testing.T) {
 		"://bad",
 		"http://",
 		"https://",
+		"https://user:pass@example.com",
+		"https://example.com/?query=1",
+		"https://example.com/#fragment",
 	}
 	for _, raw := range invalid {
 		if err := ValidateSiteURL(raw); err == nil {
@@ -70,6 +75,11 @@ func TestJoinSiteURL(t *testing.T) {
 		{"https://example.com/", "/", "https://example.com/"},
 		{"https://example.com", "", "https://example.com/"},
 		{"https://example.com", "/search?q=foo%20bar&page=1", "https://example.com/search?q=foo%20bar&page=1"},
+		{"https://example.com", "/中文/%E2%9C%93?q=foo%2Fbar/", "https://example.com/中文/%E2%9C%93?q=foo%2Fbar/"},
+		{"https://example.com/base?old=1#old", "/中文/%E2%9C%93?new=2#new", "https://example.com/base/中文/%E2%9C%93?new=2#new"},
+		{"https://example.com/base?old=1#old", "/post", "https://example.com/base/post?old=1#old"},
+		{"https://example.com/base?old=1#old", "/post?new=2", "https://example.com/base/post?new=2#old"},
+		{"https://example.com/base?old=1#old", "/post#new", "https://example.com/base/post?old=1#new"},
 		{"https://example.com/sub", "/wiki/doc-1", "https://example.com/sub/wiki/doc-1"},
 		{"", "/wiki", "/wiki"},
 		{"", "wiki", "/wiki"},

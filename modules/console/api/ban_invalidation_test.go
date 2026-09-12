@@ -92,6 +92,10 @@ func TestBannedUserImmediateInvalidation(t *testing.T) {
 	if err := st.UpdateUserStatus(author.ID, store.UserStatusBanned); err != nil {
 		t.Fatalf("ban author: %v", err)
 	}
+	// 封禁后提权也不能让已失效凭据复活或变成管理员会话。
+	if err := st.SetUserRoles(author.ID, []string{store.RoleAdmin}); err != nil {
+		t.Fatalf("promote banned author: %v", err)
+	}
 
 	// 5. 封禁后 cookie1 立即返回 401
 	wBannedCookie := do2FA(r, http.MethodGet, "/api/v1/profile", "", cookie1)
@@ -190,10 +194,44 @@ func TestBannedUser2FAIsolation(t *testing.T) {
 	}
 
 	// 假定有残留 2FA token，直接打 /api/v1/auth/2fa 也必须 401
-	token, _ := generate2FAToken(user.ID)
+	token, _ := generate2FAToken(user.ID, user.AuthSecret)
 	code := totpCodeFor(t, totpSecret)
 	w2FA := do2FA(r, http.MethodPost, "/api/v1/auth/2fa", fmt.Sprintf(`{"token":%q,"code":%q}`, token, code), "")
 	if w2FA.Code != http.StatusUnauthorized {
 		t.Fatalf("banned user direct 2fa status = %d (want 401)", w2FA.Code)
+	}
+
+	// 封禁前签发的有效挑战在解封后也不能继续使用。
+	activeHash, _ := store.HashPassword("active-totp-pass")
+	active := &store.User{
+		Username:     "active_totp_user",
+		PasswordHash: activeHash,
+		AuthSecret:   store.GenerateAuthSecret(),
+		Role:         store.RoleAuthor,
+		Status:       store.UserStatusActive,
+		TOTPSecret:   GenerateSecret(),
+	}
+	if err := st.CreateUser(active); err != nil {
+		t.Fatalf("create active totp user: %v", err)
+	}
+	step1 := do2FA(r, http.MethodPost, "/api/v1/auth/login", `{"username":"active_totp_user","password":"active-totp-pass"}`, "")
+	if step1.Code != http.StatusOK {
+		t.Fatalf("active 2fa login: status = %d", step1.Code)
+	}
+	var challenge struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(step1.Body.Bytes(), &challenge); err != nil || challenge.Token == "" {
+		t.Fatalf("decode active 2fa challenge: %v", err)
+	}
+	if err := st.UpdateUserStatus(active.ID, store.UserStatusBanned); err != nil {
+		t.Fatalf("ban active 2fa user: %v", err)
+	}
+	if err := st.UpdateUserStatus(active.ID, store.UserStatusActive); err != nil {
+		t.Fatalf("unban active 2fa user: %v", err)
+	}
+	w2FA = do2FA(r, http.MethodPost, "/api/v1/auth/2fa", fmt.Sprintf(`{"token":%q,"code":%q}`, challenge.Token, totpCodeFor(t, active.TOTPSecret)), "")
+	if w2FA.Code != http.StatusUnauthorized {
+		t.Fatalf("pre-ban 2fa challenge after unban status = %d (want 401)", w2FA.Code)
 	}
 }

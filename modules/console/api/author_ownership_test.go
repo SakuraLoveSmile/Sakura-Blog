@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,7 +89,7 @@ func TestAuthorPostOwnershipIsolation(t *testing.T) {
 	postA := &store.Post{
 		Slug:      "post-a",
 		Title:     "Post A Title",
-		ContentMD: "Author A Content",
+		ContentMD: "![a](/uploads/2026/09/a.png)",
 		Status:    store.StatusPublished,
 		Author:    authorA.Username,
 		Authors:   []string{authorA.Username},
@@ -103,7 +104,7 @@ func TestAuthorPostOwnershipIsolation(t *testing.T) {
 	postB := &store.Post{
 		Slug:      "post-b",
 		Title:     "Post B Title",
-		ContentMD: "Author B Content",
+		ContentMD: "![a](/uploads/2026/09/a.png)",
 		Status:    store.StatusPublished,
 		Author:    authorB.Username,
 		Authors:   []string{authorB.Username},
@@ -174,6 +175,17 @@ func TestAuthorPostOwnershipIsolation(t *testing.T) {
 	r.ServeHTTP(wDetailAB, reqDetailAB)
 	if wDetailAB.Code != http.StatusOK {
 		t.Fatalf("authorA accessing post-ab status = %d, want 200", wDetailAB.Code)
+	}
+	// Omitting authors during a co-authored edit retains the existing ownership list.
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Set("userID", authorA.ID)
+	ctx.Set("userPermissions", []string{store.PermissionContentWrite})
+	request := &postRequest{}
+	if err := (&Handler{store: st}).normalizePostAuthorsRequest(ctx, request, &store.Post{AuthorIDs: []int64{authorA.ID, authorB.ID}}); err != nil {
+		t.Fatalf("normalize co-authored owners: %v", err)
+	}
+	if len(request.authorRefs) != 2 || request.authorRefs[0] != fmt.Sprint(authorA.ID) || request.authorRefs[1] != fmt.Sprint(authorB.ID) {
+		t.Fatalf("co-authored owners changed after omitted-author edit: %v", request.authorRefs)
 	}
 
 	// Admin reading Author B's post should get 200
@@ -292,6 +304,17 @@ func TestAuthorAttachmentOwnershipIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create att0: %v", err)
 	}
+	for _, post := range []*store.Post{
+		{Slug: "post-a", Title: "Post A Title", ContentMD: "placeholder", Status: store.StatusPublished, AuthorIDs: []int64{authorA.ID}},
+		{Slug: "post-b", Title: "Post B Title", ContentMD: "placeholder", Status: store.StatusDraft, AuthorIDs: []int64{authorB.ID}},
+	} {
+		if _, err := st.Create(post); err != nil {
+			t.Fatalf("create ref post: %v", err)
+		}
+	}
+	if _, err := st.DB().Exec(`UPDATE posts SET content_md = ? WHERE slug IN (?, ?)`, "![a](/uploads/2026/09/a.png)", "post-a", "post-b"); err != nil {
+		t.Fatalf("add attachment refs: %v", err)
+	}
 
 	// 1. List attachments
 	reqListA := httptest.NewRequest(http.MethodGet, "/api/v1/attachments", nil)
@@ -359,6 +382,13 @@ func TestAuthorAttachmentOwnershipIsolation(t *testing.T) {
 	r.ServeHTTP(wRefsB, reqRefsB)
 	if wRefsB.Code != http.StatusForbidden {
 		t.Fatalf("authorA refs for idB got %d, want 403", wRefsB.Code)
+	}
+	reqRefsA := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/attachments/%d/refs", idA), nil)
+	reqRefsA.AddCookie(&http.Cookie{Name: authCookieName, Value: authorCookie(authorA)})
+	wRefsA := httptest.NewRecorder()
+	r.ServeHTTP(wRefsA, reqRefsA)
+	if wRefsA.Code != http.StatusOK || strings.Contains(wRefsA.Body.String(), "Post B Title") || !strings.Contains(wRefsA.Body.String(), "Post A Title") {
+		t.Fatalf("authorA refs leaked or missed own post: status=%d body=%s", wRefsA.Code, wRefsA.Body.String())
 	}
 
 	// 4. Batch move

@@ -65,3 +65,29 @@ func TestStorageModuleSatisfiesConfigModule(t *testing.T) {
 	var _ module.Module = (*Module)(nil)
 	var _ module.ConfigModule = (*Module)(nil)
 }
+
+func TestStorageModuleDBFailureDoesNotPublishRuntimeBackend(t *testing.T) {
+	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	if err := st.EnsureSettingsTable(); err != nil {
+		t.Fatalf("ensure settings: %v", err)
+	}
+	mgr, err := NewManager(st, t.TempDir())
+	if err != nil {
+		t.Fatalf("new manager: %v", err)
+	}
+	if _, err := st.DB().Exec(`CREATE TRIGGER reject_storage BEFORE INSERT ON settings BEGIN SELECT RAISE(ABORT, 'forced settings failure'); END`); err != nil {
+		t.Fatalf("create trigger: %v", err)
+	}
+	mod := &Module{}
+	err = mod.PutConfig(module.Deps{Store: st, Storage: mgr}, []byte(`{"provider":"local","prefix":"new"}`))
+	if err == nil {
+		t.Fatal("trigger should reject storage settings")
+	}
+	if got := mgr.Config().Prefix; got != "" {
+		t.Fatalf("runtime backend published despite DB failure, prefix=%q", got)
+	}
+}

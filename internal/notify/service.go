@@ -70,11 +70,27 @@ type webhookConfig struct {
 // Notify 处理一条通知事件：写入站内通知（users 表全部用户）+ 推送可选 Webhook。
 // 内部异步执行（goroutine），失败仅记日志，不影响评论提交/审核主流程。
 func (s *Service) Notify(ev Event) {
-	go s.notify(ev)
+	release, err := s.st.Maintenance().Acquire()
+	if err != nil {
+		return
+	}
+	go func() {
+		defer release()
+		s.notifyUnlocked(ev)
+	}()
 }
 
 // notify 同步实现（单测可直接调用断言）。
 func (s *Service) notify(ev Event) {
+	release, err := s.st.Maintenance().Acquire()
+	if err != nil {
+		return
+	}
+	defer release()
+	s.notifyUnlocked(ev)
+}
+
+func (s *Service) notifyUnlocked(ev Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("notify panic: %v", r)

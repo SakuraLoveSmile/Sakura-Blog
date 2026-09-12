@@ -45,46 +45,51 @@ func main() {
 
 	router := gin.New()
 	httpapi.RegisterHealthRoutes(router, services.Store)
-	stellarServer, err := stellar.Mount(router, stellar.Dependencies{
-		App: services.App, Site: services.Site, Store: services.Store, Posts: services.Post,
-		OGGen: services.OG, Search: services.Search, DevMode: devMode, Root: services.App.Root,
-		UploadDir: services.App.UploadDir, NotesPath: filepath.Join(services.App.Root, "content", "notes.md"),
-		Comments: services.Comment, Friends: services.Friends, GH: services.GitHub, Modules: services.Modules, Icons: services.Icons, Events: services.Events,
-	})
-	if err != nil {
-		_ = services.Close(context.Background())
-		log.Fatalf("mount stellar: %v", err)
-	}
+	closeStellar := func() {}
+	if !services.Maintenance.Active() {
+		stellarServer, err := stellar.Mount(router, stellar.Dependencies{
+			App: services.App, Site: services.Site, Store: services.Store, Posts: services.Post,
+			OGGen: services.OG, Search: services.Search, DevMode: devMode, Root: services.App.Root,
+			UploadDir: services.App.UploadDir, NotesPath: filepath.Join(services.App.Root, "content", "notes.md"),
+			Comments: services.Comment, Friends: services.Friends, GH: services.GitHub, Modules: services.Modules, Icons: services.Icons, Events: services.Events,
+		})
+		if err != nil {
+			_ = services.Close(context.Background())
+			log.Fatalf("mount stellar: %v", err)
+		}
 
-	consoleHandler, err := console.Mount(router, console.MountDeps{
-		API: console.APIConfig{
-			Store: services.Store, Posts: services.Post, Site: services.Site, Comments: services.Comment,
-			Backups: services.Backup, Modules: services.Modules, Notify: services.Notify, Icons: services.Icons,
-			StellarVersion: stellar.StellarVersion,
-			StellarOwner:   stellar.RepositoryOwner, StellarRepo: stellar.RepositoryName,
-			RenderSitePreview: stellarServer.RenderSitePreview,
-			Events:            services.Events,
-			UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
-			StorageManager: services.Storage,
-			Plugins:        services.Plugins,
-			RAG:            services.RAG,
-			Root:           services.App.Root,
-			AppVersion:     app.Version,
-			UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
-		},
-		GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
-	})
-	if err != nil {
-		stellarServer.Close()
-		_ = services.Close(context.Background())
-		log.Fatalf("mount console: %v", err)
+		consoleHandler, err := console.Mount(router, console.MountDeps{
+			API: console.APIConfig{
+				Store: services.Store, Posts: services.Post, Site: services.Site, Comments: services.Comment,
+				Backups: services.Backup, Modules: services.Modules, Notify: services.Notify, Icons: services.Icons,
+				StellarVersion: stellar.StellarVersion,
+				StellarOwner:   stellar.RepositoryOwner, StellarRepo: stellar.RepositoryName,
+				RenderSitePreview: stellarServer.RenderSitePreview,
+				Events:            services.Events,
+				UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
+				StorageManager: services.Storage,
+				Plugins:        services.Plugins,
+				RAG:            services.RAG,
+				Root:           services.App.Root,
+				AppVersion:     app.Version,
+				UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
+			},
+			GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
+		})
+		if err != nil {
+			stellarServer.Close()
+			_ = services.Close(context.Background())
+			log.Fatalf("mount console: %v", err)
+		}
+		consoleHandler.SetOnLinksChanged(services.Friends.Refresh)
+		services.StartBackground()
+		closeStellar = stellarServer.Close
+
 	}
-	consoleHandler.SetOnLinksChanged(services.Friends.Refresh)
-	services.StartBackground()
 
 	server := &http.Server{
 		Addr:              services.App.ListenAddr,
-		Handler:           httpapi.HeadToGet(router),
+		Handler:           services.Maintenance.Wrap(httpapi.HeadToGet(router)),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       90 * time.Second,
 		MaxHeaderBytes:    1 << 20,
@@ -104,7 +109,7 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("graceful shutdown failed: %v", err)
 	}
-	stellarServer.Close()
+	closeStellar()
 	if err := services.Close(shutdownCtx); err != nil {
 		log.Printf("close app services failed: %v", err)
 	}

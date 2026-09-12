@@ -188,6 +188,32 @@ func TestUserUpdateTOTPSecret(t *testing.T) {
 	}
 }
 
+func TestUpdateUserStatusRollbackOnDatabaseFailure(t *testing.T) {
+	s := newUserStore(t)
+	u := newTestUser("status-rollback", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	oldSecret := u.AuthSecret
+	oldToken := HashAPIToken("token-before-ban")
+	if err := s.SetAPITokenHash(u.ID, oldToken); err != nil {
+		t.Fatalf("set token: %v", err)
+	}
+	if _, err := s.DB().Exec(`CREATE TRIGGER block_ban BEFORE UPDATE OF status ON users WHEN NEW.status = 'banned' BEGIN SELECT RAISE(ABORT, 'blocked'); END`); err != nil {
+		t.Fatalf("create failure trigger: %v", err)
+	}
+	if err := s.UpdateUserStatus(u.ID, UserStatusBanned); err == nil {
+		t.Fatal("ban should fail when database trigger rejects the update")
+	}
+	got, err := s.GetUserByID(u.ID)
+	if err != nil || got == nil {
+		t.Fatalf("get after rejected ban: %v", err)
+	}
+	if got.Status != UserStatusActive || got.AuthSecret != oldSecret || got.APITokenHash != oldToken {
+		t.Fatalf("rejected ban changed credentials or status: status=%q secret_changed=%t token_changed=%t", got.Status, got.AuthSecret != oldSecret, got.APITokenHash != oldToken)
+	}
+}
+
 func TestDeleteUserClearsPostAuthorsAndKeepsByline(t *testing.T) {
 	s := newUserStore(t)
 	if err := s.EnsurePostAuthorsTable(); err != nil {

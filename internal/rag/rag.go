@@ -115,9 +115,10 @@ type meta struct {
 }
 
 type job struct {
-	kind    string
-	docType string
-	slug    string
+	kind       string
+	docType    string
+	slug       string
+	generation uint64
 }
 
 // Service owns all RAG SQLite writes and the immutable-in-use memory index.
@@ -394,11 +395,14 @@ func (s *Service) QueueRebuild() bool {
 	if !s.EmbeddingConfigured() {
 		return false
 	}
+	if s.store.Maintenance().Active() {
+		return false
+	}
 	if s.building.Load() || !s.pendingFull.CompareAndSwap(false, true) {
 		return false
 	}
 	select {
-	case s.jobs <- job{kind: "full"}:
+	case s.jobs <- job{kind: "full", generation: s.store.Maintenance().Generation()}:
 		return true
 	default:
 		s.pendingFull.Store(false)
@@ -420,6 +424,35 @@ func (s *Service) EmbeddingConfigured() bool {
 // RebuildNow performs a full rebuild synchronously, primarily for tests and
 // controlled maintenance callers.
 func (s *Service) RebuildNow(ctx context.Context) error { return s.build(ctx) }
+
+// InvalidateForRestore clears the derived index before restored content becomes visible.
+// The caller already owns the maintenance window; acquiring another lease would reject it.
+func (s *Service) InvalidateForRestore() error {
+	if s == nil || s.db == nil {
+		return ErrNotConfigured
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM rag_chunks`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM rag_chunks_fts`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE rag_meta SET status=?, total=0, done=0, last_error=?, last_built_at='' WHERE id=1`, StatusError, "index invalidated for restore"); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.chunks = nil
+	s.mu.Unlock()
+	return nil
+}
 
 // Status returns durable metadata plus current document/chunk counts.
 func (s *Service) Status() (Status, error) {
@@ -510,6 +543,13 @@ func (s *Service) worker() {
 			if !ok {
 				return
 			}
+			// 维护窗口切换数据世代后，丢弃窗口前排队的旧任务。
+			if item.generation != s.store.Maintenance().Generation() {
+				if item.kind == "full" {
+					s.pendingFull.Store(false)
+				}
+				continue
+			}
 			if item.kind == "full" {
 				// Mark building before clearing pending so a concurrent rebuild
 				// request cannot slip into the small handoff window.
@@ -534,6 +574,10 @@ func (s *Service) onEvent(event content.Event) {
 	}
 	switch event.Kind {
 	case content.PostChanged:
+		if event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
+			// slug 改名时先清理旧键，避免旧 URL 的向量继续参与检索。
+			s.enqueue(job{kind: "doc", docType: TypePost, slug: event.PreviousSlug})
+		}
 		s.enqueue(job{kind: "doc", docType: TypePost, slug: event.Slug})
 	case content.PageChanged:
 		s.enqueue(job{kind: "doc", docType: TypePage, slug: event.Slug})
@@ -543,6 +587,10 @@ func (s *Service) onEvent(event content.Event) {
 }
 
 func (s *Service) enqueue(item job) {
+	if s.store.Maintenance().Active() {
+		return
+	}
+	item.generation = s.store.Maintenance().Generation()
 	select {
 	case s.jobs <- item:
 	default:
@@ -567,6 +615,11 @@ func (s *Service) needsRebuild() bool {
 }
 
 func (s *Service) build(ctx context.Context) error {
+	release, err := s.store.Maintenance().Acquire()
+	if err != nil {
+		return err
+	}
+	defer release()
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -629,6 +682,11 @@ func (s *Service) build(ctx context.Context) error {
 }
 
 func (s *Service) updateDocument(ctx context.Context, docType, slug string) error {
+	release, err := s.store.Maintenance().Acquire()
+	if err != nil {
+		return err
+	}
+	defer release()
 	cfg, err := config.LoadAI(s.store)
 	if err != nil || strings.TrimSpace(cfg.EmbeddingModel) == "" {
 		return err

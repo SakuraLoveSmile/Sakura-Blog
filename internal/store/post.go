@@ -16,6 +16,7 @@ import (
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
 
 	"blog/internal/content"
+	"blog/internal/maintenance"
 )
 
 // Status 文章状态。
@@ -228,7 +229,9 @@ func (p *Post) IsPasswordProtected() bool {
 
 // Store 文章数据访问对象，持 *sql.DB 连接。
 type Store struct {
-	db *sql.DB
+	maintenanceOnce sync.Once
+	maintenance     *maintenance.Coordinator
+	db              *sql.DB
 	// path .db 文件路径（性能监控展示库文件体积用）。
 	path string
 	// postWriteHook 文章写路径回调（Spec 25 FTS 同步用），op 取 create/update/delete/restore/purge。
@@ -809,9 +812,22 @@ func (s *Store) Update(slug string, p *Post) error {
 	return s.UpdateSlug(slug, slug, p)
 }
 
+type postUpdateOptions struct {
+	recordRevision bool
+}
+
 // UpdateSlug 在原文章记录上原子更新 slug 和文章内容，保留文章 ID、创建时间、阅读量，
 // 并在同一事务内替换作者/分类关联、迁移 revision slug。提交前任何一步失败都会回滚。
 func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
+	return s.updateSlugWithOptions(oldSlug, newSlug, p, postUpdateOptions{})
+}
+
+// UpdateSlugWithRevision 更新文章并把保存前的正文快照写入同一事务。
+func (s *Store) UpdateSlugWithRevision(oldSlug, newSlug string, p *Post) error {
+	return s.updateSlugWithOptions(oldSlug, newSlug, p, postUpdateOptions{recordRevision: true})
+}
+
+func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options postUpdateOptions) error {
 	if err := s.preparePostAuthors(p); err != nil {
 		return fmt.Errorf("prepare post authors: %w", err)
 	}
@@ -826,9 +842,13 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 		createdAt                  time.Time
 		poster, references, banner string
 		aiSummary, aiLabel         string
+		oldRevision                Revision
 	)
-	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label FROM posts WHERE slug = ?`, oldSlug).
-		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel); err != nil {
+	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label,
+		title, excerpt, content_md, tags, category, status
+		FROM posts WHERE slug = ?`, oldSlug).
+		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel,
+			&oldRevision.Title, &oldRevision.Excerpt, &oldRevision.ContentMD, &oldRevision.Tags, &oldRevision.Category, &oldRevision.Status); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("update post %s: no rows affected", oldSlug)
 		}
@@ -901,12 +921,33 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 			return fmt.Errorf("update revision slug %s->%s: %w", oldSlug, newSlug, err)
 		}
 	}
+	if options.recordRevision && (oldRevision.ContentMD != p.ContentMD || oldRevision.Title != p.Title) {
+		oldRevision.PostSlug = newSlug
+		if _, err := createRevisionTx(tx, &oldRevision); err != nil {
+			return err
+		}
+		if err := pruneRevisionsTx(tx, newSlug); err != nil {
+			return err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit update post %s: %w", oldSlug, err)
 	}
 
 	p.ID = postID
 	p.CreatedAt = createdAt
+	if options.recordRevision {
+		if s.contentEvents != nil {
+			s.contentEvents.Publish(content.Event{Kind: content.PostChanged, Op: "update", Slug: newSlug, PreviousSlug: oldSlug})
+		}
+		if s.postWriteHook != nil {
+			if oldSlug != newSlug {
+				s.postWriteHook("delete", oldSlug)
+			}
+			s.postWriteHook("update", newSlug)
+		}
+		return nil
+	}
 	if oldSlug != newSlug {
 		s.firePostWrite("delete", oldSlug)
 		s.firePostWrite("update", newSlug)

@@ -3,6 +3,8 @@ package config
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -21,6 +23,9 @@ func newTestStore(t *testing.T) *store.Store {
 	}
 	if err := s.EnsureLinksTable(); err != nil {
 		t.Fatalf("ensure links: %v", err)
+	}
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users: %v", err)
 	}
 	t.Cleanup(func() { s.Close() })
 	return s
@@ -333,5 +338,83 @@ func TestSaveSectionSiteURLValidationAndNormalization(t *testing.T) {
 	}
 	if got, want := site.Load().URL, "https://example.com/blog"; got != want {
 		t.Fatalf("site.URL = %q, want %q", got, want)
+	}
+}
+
+func TestSaveSectionPreservesMaskedSecretsAndDoesNotWriteOnSnapshotFailure(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.PutSetting(SectionAI, `{"api_key":"stored-key","base_url":"https://example.test"}`); err != nil {
+		t.Fatalf("seed ai setting: %v", err)
+	}
+	if err := SaveSection(s, newSitePtr(), SectionAI, []byte(`{"api_key":"****","base_url":"https://changed.test"}`)); err != nil {
+		t.Fatalf("save masked ai setting: %v", err)
+	}
+	stored, err := s.GetSetting(SectionAI)
+	if err != nil || !strings.Contains(stored, `"api_key":"stored-key"`) {
+		t.Fatalf("masked key should be preserved, stored=%q err=%v", stored, err)
+	}
+
+	if err := s.PutSetting(SectionSite, `{"title":"before"}`); err != nil {
+		t.Fatalf("seed site setting: %v", err)
+	}
+	if err := SaveSection(s, &atomic.Pointer[tmpl.Site]{}, SectionSite, []byte(`{"title":"after"}`)); err == nil {
+		t.Fatal("nil snapshot should reject before writing")
+	}
+	stored, err = s.GetSetting(SectionSite)
+	if err != nil || !strings.Contains(stored, `"title":"before"`) {
+		t.Fatalf("failed candidate must not write setting, stored=%q err=%v", stored, err)
+	}
+}
+
+func TestSaveSectionRejectsMalformedUnrelatedStoredSection(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.PutSetting(SectionStyle, `{malformed`); err != nil {
+		t.Fatalf("seed malformed setting: %v", err)
+	}
+	if err := s.PutSetting(SectionSite, `{"title":"before"}`); err != nil {
+		t.Fatalf("seed site setting: %v", err)
+	}
+	if err := SaveSection(s, newSitePtr(), SectionSite, []byte(`{"title":"after"}`)); err == nil {
+		t.Fatal("malformed unrelated section should reject the candidate")
+	}
+	stored, err := s.GetSetting(SectionSite)
+	if err != nil || !strings.Contains(stored, `"title":"before"`) {
+		t.Fatalf("rejected candidate must not write site setting, stored=%q err=%v", stored, err)
+	}
+}
+
+func TestSaveSectionConcurrentDifferentSectionsPublishesDatabaseState(t *testing.T) {
+	s := newTestStore(t)
+	site := newSitePtr()
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+	for _, item := range []struct {
+		section string
+		raw     string
+	}{
+		{SectionSite, `{"title":"concurrent-title"}`},
+		{SectionComments, `{"enabled":false}`},
+	} {
+		item := item
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs <- SaveSection(s, site, item.section, []byte(item.raw))
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent save: %v", err)
+		}
+	}
+	settings, err := s.AllSettings()
+	if err != nil {
+		t.Fatalf("read settings: %v", err)
+	}
+	current := site.Load()
+	if current == nil || current.Title != "concurrent-title" || current.Comments.Enabled {
+		t.Fatalf("published site does not match DB writes: %+v settings=%v", current, settings)
 	}
 }

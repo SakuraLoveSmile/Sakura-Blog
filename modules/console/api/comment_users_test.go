@@ -188,6 +188,13 @@ func TestCommentUserBanFlow(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("ban non-reader: %d, want 400", w.Code)
 	}
+	author := createUserViaAPI(t, r, adminCookie, "comment-scope-author")
+	authorCookie := loginAs(t, r, "comment-scope-author", "secret6")
+	w = do2FA(r, http.MethodGet, "/api/v1/comment-users", "", authorCookie)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("author comment-users access: %d, want 403", w.Code)
+	}
+	_ = author
 }
 
 // TestCommentUserBulkAndDelete user_id 评论过滤 + 用户级批量处置 + 删除用户。

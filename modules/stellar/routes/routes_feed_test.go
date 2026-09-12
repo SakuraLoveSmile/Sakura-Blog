@@ -1,8 +1,11 @@
 package routes
 
 import (
+	tmpl "blog/modules/stellar/viewmodel"
+	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -52,6 +55,29 @@ func TestRSSItemsFromPosts(t *testing.T) {
 	}
 }
 
+func TestFeedsUseCanonicalOriginalHost(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	site := ws.site.Load()
+	site.URL = "https://mirror.example/"
+	site.SEO.Canonical.OriginalHost = "origin.example"
+	if _, err := st.Create(&store.Post{Slug: "hello", Title: "Hello", Status: store.StatusPublished, CreatedAt: time.Now(), ContentHTML: "<p>body</p>"}); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	r := gin.New()
+	ws.registerFeedRoutes(r)
+	for _, path := range []string{"/rss.xml", "/sitemap.xml"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s status = %d", path, w.Code)
+		}
+		if strings.Contains(w.Body.String(), "mirror.example") || !strings.Contains(w.Body.String(), "https://origin.example") {
+			t.Fatalf("%s did not consistently use canonical host: %s", path, w.Body.String())
+		}
+	}
+}
+
 // TestSitemapIncludesWikidocs sitemap 收录 wiki 已发布文档（Spec 35a）：
 // 完整 URL（含 site URL 前缀）+ lastmod/changefreq/priority，draft 不收录。
 func TestSitemapIncludesWikidocs(t *testing.T) {
@@ -89,4 +115,58 @@ func TestSitemapIncludesWikidocs(t *testing.T) {
 	if strings.Contains(body, "/wiki/stellar/secret") {
 		t.Errorf("sitemap must not include draft docs")
 	}
+}
+
+// 数据库 slug 是未编码文本，必须逐段编码，避免被解释成查询、片段或转义序列。
+func TestCanonicalAndFeedsEscapeStoredSlugs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws, st := newWikiVerifyServer(t)
+	ws.site.Load().URL = "https://example.com/"
+	router := gin.New()
+	ws.registerFeedRoutes(router)
+	for _, slug := range []string{"中文", "a#b", "a?b", "a%b"} {
+		if _, err := st.Create(&store.Post{Slug: slug, Title: slug, Status: store.StatusPublished, ContentHTML: "<p>body</p>", CreatedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, slug := range []string{"中文", "a#b", "a?b", "a%b"} {
+		path := "/post/" + url.PathEscape(slug)
+		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		ctx.Request = httptest.NewRequest(http.MethodGet, "https://example.com"+path, nil)
+		data := &tmpl.ViewData{Site: ws.site.Load(), Page: &tmpl.Page{}}
+		ws.fillSEO(data, ctx)
+		want := "https://example.com" + path
+		if data.Page.CanonicalURL != want {
+			t.Fatalf("canonical = %q, want %q", data.Page.CanonicalURL, want)
+		}
+		for _, endpoint := range []string{"/rss.xml", "/atom.xml", "/feed.json", "/sitemap.xml"} {
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, endpoint, nil))
+			if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), want) {
+				t.Errorf("%s missing encoded URL %q (status %d)", endpoint, want, response.Code)
+			}
+		}
+	}
+	// Wiki 项目和文档分别编码，不把分隔字符带入另一个路径段。
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "stellar", Slug: "文档#1", Title: "文档", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	ws.contentCache.invalidate()
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil))
+	var sitemap struct {
+		URLs []struct {
+			Loc string `xml:"loc"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal(response.Body.Bytes(), &sitemap); err != nil {
+		t.Fatal(err)
+	}
+	want := "https://example.com/wiki/stellar/" + url.PathEscape("文档#1")
+	for _, entry := range sitemap.URLs {
+		if entry.Loc == want {
+			return
+		}
+	}
+	t.Fatalf("sitemap missing wiki URL %q", want)
 }

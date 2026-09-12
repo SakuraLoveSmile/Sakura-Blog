@@ -136,6 +136,19 @@ func TestFillSEOCanonicalURLNoDoubleSlash(t *testing.T) {
 	}
 }
 
+func TestFillSEOCanonicalURLEscapesEncodedPath(t *testing.T) {
+	site := &tmpl.Site{URL: "https://origin.example"}
+	ws := newWebServer(webDeps{Site: sitePtr(site)})
+	c := gin.CreateTestContextOnly(httptest.NewRecorder(), gin.New())
+	c.Request = httptest.NewRequest(http.MethodGet, "https://mirror.example/post/%E4%B8%AD%2F%E6%96%87?view=full", nil)
+
+	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{}}
+	ws.fillSEO(data, c)
+	if got, want := data.Page.CanonicalURL, "https://origin.example/post/%E4%B8%AD%2F%E6%96%87"; got != want {
+		t.Fatalf("canonical URL = %q, want %q", got, want)
+	}
+}
+
 func TestBaseURLRespectsXForwardedProto(t *testing.T) {
 	site := &tmpl.Site{URL: ""}
 	ws := newWebServer(webDeps{Site: sitePtr(site)})
@@ -144,6 +157,7 @@ func TestBaseURLRespectsXForwardedProto(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "http://proxy.example/wiki", nil)
 	c.Request.Header.Set("X-Forwarded-Proto", "https")
 	c.Request.Host = "proxy.example"
+	c.Set(requestSchemeKey, "https")
 
 	if got, want := ws.baseURL(c), "https://proxy.example"; got != want {
 		t.Fatalf("baseURL = %q, want %q", got, want)

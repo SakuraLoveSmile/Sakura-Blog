@@ -294,56 +294,89 @@ func (h *Handler) attachmentRefs(c *gin.Context) {
 		return
 	}
 
-	refs := h.scanAttachmentRefs(att.URL)
+	refs, err := h.scanAttachmentRefs(c, att.URL)
+	if err != nil {
+		Fail(c, http.StatusInternalServerError, "扫描附件引用失败")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"refs": refs, "count": len(refs)})
 }
 
-// scanAttachmentRefs 在 posts + pages 的 content 中扫描 URL 引用。
-func (h *Handler) scanAttachmentRefs(url string) []attachmentRef {
+// scanAttachmentRefs 扫描正文和瞬间图片中的附件引用，文章结果按当前用户归属过滤。
+func (h *Handler) scanAttachmentRefs(c *gin.Context, url string) ([]attachmentRef, error) {
 	var refs []attachmentRef
 	pattern := "%" + url + "%"
 
-	// 扫描文章
-	rows, err := h.store.DB().Query(`SELECT slug, title FROM posts WHERE content LIKE ? AND deleted_at = ''`, pattern)
-	if err == nil {
-		defer rows.Close()
-		for rows.Next() {
-			var slug, title string
-			if rows.Scan(&slug, &title) == nil {
-				refs = append(refs, attachmentRef{Type: "post", Slug: slug, Title: title})
-			}
+	// 文章引用必须沿用文章归属边界，否则作者可通过附件 refs 看到他人草稿标题。
+	postQuery := `SELECT p.slug, p.title FROM posts p WHERE p.content_md LIKE ? AND p.deleted_at = ''`
+	postArgs := []any{pattern}
+	if !contextHasPermission(c, store.PermissionContentManageAny) {
+		postQuery += ` AND EXISTS (SELECT 1 FROM post_authors pa WHERE pa.post_id = p.id AND pa.author_id = ?)`
+		postArgs = append(postArgs, c.GetInt64("userID"))
+	}
+	rows, err := h.store.DB().Query(postQuery, postArgs...)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var slug, title string
+		if err := rows.Scan(&slug, &title); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan post attachment reference: %w", err)
 		}
+		refs = append(refs, attachmentRef{Type: "post", Slug: slug, Title: title})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("read post attachment references: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 
 	// 扫描页面
-	rows2, err2 := h.store.DB().Query(`SELECT slug, title FROM pages WHERE content LIKE ? AND deleted_at = ''`, pattern)
-	if err2 == nil {
-		defer rows2.Close()
-		for rows2.Next() {
-			var slug, title string
-			if rows2.Scan(&slug, &title) == nil {
-				refs = append(refs, attachmentRef{Type: "page", Slug: slug, Title: title})
-			}
+	rows2, err2 := h.store.DB().Query(`SELECT slug, title FROM pages WHERE content_md LIKE ? AND deleted_at = ''`, pattern)
+	if err2 != nil {
+		return nil, err2
+	}
+	for rows2.Next() {
+		var slug, title string
+		if err := rows2.Scan(&slug, &title); err != nil {
+			rows2.Close()
+			return nil, fmt.Errorf("scan page attachment reference: %w", err)
 		}
+		refs = append(refs, attachmentRef{Type: "page", Slug: slug, Title: title})
+	}
+	if err := rows2.Err(); err != nil {
+		rows2.Close()
+		return nil, fmt.Errorf("read page attachment references: %w", err)
+	}
+	if err := rows2.Close(); err != nil {
+		return nil, err
 	}
 
 	// 扫描瞬间（Spec 43：images 列存 uploads 相对路径 JSON 数组，直接 LIKE 匹配 URL）
 	rows3, err3 := h.store.DB().Query(`SELECT id, content_md FROM moments WHERE images LIKE ?`, pattern)
-	if err3 == nil {
-		defer rows3.Close()
-		for rows3.Next() {
-			var id int64
-			var contentMD string
-			if rows3.Scan(&id, &contentMD) == nil {
-				refs = append(refs, attachmentRef{Type: "moment", Slug: strconv.FormatInt(id, 10), Title: momentRefTitle(id, contentMD)})
-			}
+	if err3 != nil {
+		return nil, err3
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var id int64
+		var contentMD string
+		if err := rows3.Scan(&id, &contentMD); err != nil {
+			return nil, fmt.Errorf("scan moment attachment reference: %w", err)
 		}
+		refs = append(refs, attachmentRef{Type: "moment", Slug: strconv.FormatInt(id, 10), Title: momentRefTitle(id, contentMD)})
+	}
+	if err := rows3.Err(); err != nil {
+		return nil, fmt.Errorf("read moment attachment references: %w", err)
 	}
 
 	if refs == nil {
 		refs = []attachmentRef{}
 	}
-	return refs
+	return refs, nil
 }
 
 // momentRefTitle 为瞬间引用生成可读标题：取正文首行缩略，空则回落 “瞬间 #id”。
@@ -508,34 +541,18 @@ func (h *Handler) moveAttachments(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "无效的目标分组")
 		return
 	}
-	ok, err := h.store.AttachmentGroupExists(body.GroupID)
+	moved, err := h.store.MoveAttachmentsAuthorized(body.IDs, body.GroupID, c.GetInt64("userID"), contextHasPermission(c, store.PermissionContentManageAny))
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if !ok {
-		Fail(c, http.StatusBadRequest, "目标分组不存在")
-		return
-	}
-
-	if !contextHasPermission(c, store.PermissionContentManageAny) {
-		userID := c.GetInt64("userID")
-		for _, id := range body.IDs {
-			att, err := h.store.GetAttachment(id)
-			if err != nil {
-				Fail(c, http.StatusInternalServerError, err.Error())
-				return
-			}
-			if att == nil || att.OwnerID <= 0 || att.OwnerID != userID {
-				AbortFail(c, http.StatusForbidden, "无权限：包含非本人附件")
-				return
-			}
+		switch {
+		case errors.Is(err, store.ErrAttachmentGroupNotFound):
+			Fail(c, http.StatusBadRequest, "目标分组不存在")
+		case errors.Is(err, store.ErrAttachmentNotFound):
+			Fail(c, http.StatusNotFound, "附件不存在")
+		case errors.Is(err, store.ErrAttachmentForbidden):
+			AbortFail(c, http.StatusForbidden, "无权限：包含非本人附件")
+		default:
+			Fail(c, http.StatusInternalServerError, err.Error())
 		}
-	}
-
-	moved, err := h.store.MoveAttachments(body.IDs, body.GroupID)
-	if err != nil {
-		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"moved": moved})

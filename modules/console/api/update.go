@@ -201,6 +201,13 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 		return
 	}
 
+	releaseOperation, err := h.store.Maintenance().Reserve("update")
+	if err != nil {
+		Fail(c, 409, "已有恢复或更新正在进行中")
+		return
+	}
+	defer releaseOperation()
+
 	// CAS 防并发：同一时刻只允许一个 apply
 	if !h.updateApplying.CompareAndSwap(false, true) {
 		Fail(c, 409, "已有更新正在进行中")

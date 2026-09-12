@@ -91,7 +91,8 @@ func (m *Module) PutConfig(deps module.Deps, raw []byte) error {
 	if err := json.Unmarshal(raw, &incoming); err != nil {
 		return fmt.Errorf("配置格式错误: %w", err)
 	}
-	existing := deps.Storage.Config()
+	draft := deps.Storage.BeginReconfigure()
+	existing := draft.Current()
 	if incoming.SecretKey == "" || incoming.SecretKey == attachmentstorage.MaskValue {
 		incoming.SecretKey = existing.SecretKey
 	}
@@ -104,20 +105,21 @@ func (m *Module) PutConfig(deps module.Deps, raw []byte) error {
 	if incoming.Provider == attachmentstorage.ProviderS3 && incoming.AccessKey == "" {
 		incoming.AccessKey = existing.AccessKey
 	}
-	if err := deps.Storage.Reconfigure(incoming); err != nil {
+	if err := draft.Prepare(incoming); err != nil {
+		draft.Abort()
 		return err
 	}
-	stored := deps.Storage.Config()
+	stored := draft.Config()
 	encoded, err := json.Marshal(stored)
 	if err != nil {
-		_ = deps.Storage.Reconfigure(existing)
+		draft.Abort()
 		return fmt.Errorf("encode storage config: %w", err)
 	}
 	if err := deps.Store.PutSetting(settingKey, string(encoded)); err != nil {
-		_ = deps.Storage.Reconfigure(existing)
+		draft.Abort()
 		return fmt.Errorf("persist storage config: %w", err)
 	}
-	return nil
+	return draft.Commit()
 }
 
 var _ module.Module = (*Module)(nil)

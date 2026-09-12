@@ -128,13 +128,13 @@ func (s *webServer) cookieSecureFor(c *gin.Context) bool {
 	if !strings.HasPrefix(s.site.Load().URL, "https://") {
 		return false
 	}
-	return c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+	return requestScheme(c) == "https"
 }
 
 // fillSEO 填充 CanonicalURL 和 Description，所有前台页面渲染前调用。
 func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
 	baseURL := s.canonicalBaseURL(data, c)
-	data.Page.CanonicalURL = tmpl.JoinSiteURL(baseURL, c.Request.URL.Path)
+	data.Page.CanonicalURL = tmpl.JoinSiteURL(baseURL, c.Request.URL.EscapedPath())
 	if data.Page.Description == "" {
 		data.Page.Description = s.siteOf(data).Description
 	}
@@ -144,10 +144,19 @@ func (s *webServer) fillSEO(data *tmpl.ViewData, c *gin.Context) {
 // recognised by the client-side warning, but canonical URLs always point at
 // the configured source host.
 func (s *webServer) canonicalBaseURL(data *tmpl.ViewData, c *gin.Context) string {
-	site := s.siteOf(data)
-	original := canonicalHost(site.SEO.Canonical.OriginalHost)
+	return canonicalBaseURL(s.siteOf(data), c)
+}
+
+func canonicalBaseURL(site *tmpl.Site, c *gin.Context) string {
+	original := ""
+	if site != nil {
+		original = canonicalHost(site.SEO.Canonical.OriginalHost)
+	}
 	if original == "" {
-		return s.baseURL(c)
+		if site != nil && site.URL != "" {
+			return tmpl.NormalizeSiteURL(site.URL)
+		}
+		return requestScheme(c) + "://" + c.Request.Host
 	}
 	return "https://" + original
 }
@@ -197,10 +206,7 @@ func (s *webServer) baseURL(c *gin.Context) string {
 	if site != nil && site.URL != "" {
 		return tmpl.NormalizeSiteURL(site.URL)
 	}
-	scheme := "http"
-	if c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
-		scheme = "https"
-	}
+	scheme := requestScheme(c)
 	return scheme + "://" + c.Request.Host
 }
 

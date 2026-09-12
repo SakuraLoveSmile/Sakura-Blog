@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -11,6 +12,8 @@ import (
 	"blog/internal/config"
 	tmpl "blog/internal/settings"
 )
+
+const maxSettingsBodyBytes = 1 << 20
 
 // getSettings GET /api/v1/settings：返回全部可编辑分段的原始 JSON。
 // 敏感字段脱敏：comments.notify.password / ai.api_key 非空时返回 "****"。
@@ -53,18 +56,16 @@ func (h *Handler) getSettings(c *gin.Context) {
 // comments 段特殊处理：password 为空或 "****" 时保留原值（避免脱敏回写清除密码）。
 func (h *Handler) updateSection(c *gin.Context) {
 	section := c.Param("section")
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSettingsBodyBytes)
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			Fail(c, http.StatusRequestEntityTooLarge, "设置请求体超过 1 MiB")
+			return
+		}
 		Fail(c, http.StatusBadRequest, "读取请求体失败")
 		return
-	}
-	// comments 段 password 保留逻辑
-	if section == "comments" {
-		raw = h.preservePassword(raw)
-	}
-	// ai 段 api_key 保留逻辑（脱敏回写不覆盖原 Key）
-	if section == "ai" {
-		raw = h.preserveAIKey(raw)
 	}
 	if err := config.SaveSection(h.store, h.site, section, raw); err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
@@ -78,67 +79,6 @@ func (h *Handler) updateSection(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// preservePassword 若提交的 password 为空或 "****"，从已存配置中恢复原密码。
-func (h *Handler) preservePassword(raw []byte) []byte {
-	var incoming map[string]any
-	if json.Unmarshal(raw, &incoming) != nil {
-		return raw
-	}
-	notify, _ := incoming["notify"].(map[string]any)
-	if notify == nil {
-		return raw
-	}
-	pw, _ := notify["password"].(string)
-	if pw != "" && pw != "****" {
-		return raw // 用户填了新密码，直接用
-	}
-	// 从已存配置取原密码
-	existing, err := h.store.GetSetting("comments")
-	if err != nil || existing == "" {
-		return raw
-	}
-	var stored map[string]any
-	if json.Unmarshal([]byte(existing), &stored) != nil {
-		return raw
-	}
-	storedNotify, _ := stored["notify"].(map[string]any)
-	if storedNotify == nil {
-		return raw
-	}
-	notify["password"] = storedNotify["password"]
-	if b, err := json.Marshal(incoming); err == nil {
-		return b
-	}
-	return raw
-}
-
-// preserveAIKey 若提交的 ai.api_key 为空或 "****"，从已存配置中恢复原 Key。
-func (h *Handler) preserveAIKey(raw []byte) []byte {
-	var incoming map[string]any
-	if json.Unmarshal(raw, &incoming) != nil {
-		return raw
-	}
-	key, _ := incoming["api_key"].(string)
-	if key != "" && key != "****" {
-		return raw // 用户填了新 Key，直接用
-	}
-	existing, err := h.store.GetSetting("ai")
-	if err != nil || existing == "" {
-		return raw
-	}
-	var stored map[string]any
-	if json.Unmarshal([]byte(existing), &stored) != nil {
-		return raw
-	}
-	if key == "****" || key == "" {
-		incoming["api_key"] = stored["api_key"]
-	}
-	if b, err := json.Marshal(incoming); err == nil {
-		return b
-	}
-	return raw
-}
-
 // StyleYAMLResponse GET /api/v1/settings/style/yaml 响应结构。
 type StyleYAMLResponse struct {
 	YAML string `json:"yaml"`
@@ -150,6 +90,7 @@ type StyleYAMLUpdateResponse struct {
 }
 
 // getStyleYAML GET /api/v1/settings/style/yaml：返回当前 style 段的 YAML 文本（主题样式 YAML 编辑器用）。
+
 func (h *Handler) getStyleYAML(c *gin.Context) {
 	b, err := yaml.Marshal(h.site.Load().Style)
 	if err != nil {
@@ -162,8 +103,14 @@ func (h *Handler) getStyleYAML(c *gin.Context) {
 // updateStyleYAML PUT /api/v1/settings/style/yaml：接收 YAML 文本，解析校验后存 style 段并热更新。
 // 解析失败返回 400 + 错误明细（含行号），不写库。保留未知字段通道。
 func (h *Handler) updateStyleYAML(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSettingsBodyBytes)
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			Fail(c, http.StatusRequestEntityTooLarge, "设置请求体超过 1 MiB")
+			return
+		}
 		Fail(c, http.StatusBadRequest, "读取请求体失败")
 		return
 	}

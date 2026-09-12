@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"sync/atomic"
 
@@ -185,7 +186,7 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 	if err == nil {
 		for _, p := range posts {
 			sm.URLs = append(sm.URLs, SitemapURL{
-				Loc:     tmpl.JoinSiteURL(baseURL, "/post/"+p.Slug),
+				Loc:     tmpl.JoinSiteURL(baseURL, "/post/"+url.PathEscape(p.Slug)),
 				LastMod: p.UpdatedAt.Format("2006-01-02"),
 			})
 		}
@@ -211,7 +212,7 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 				continue
 			}
 			sm.URLs = append(sm.URLs, SitemapURL{
-				Loc:        tmpl.JoinSiteURL(baseURL, "/wiki/"+project.ID+"/"+doc.Slug),
+				Loc:        tmpl.JoinSiteURL(baseURL, "/wiki/"+url.PathEscape(project.ID)+"/"+url.PathEscape(doc.Slug)),
 				LastMod:    doc.UpdatedAt.Format("2006-01-02"),
 				ChangeFreq: "weekly",
 				Priority:   "0.6",

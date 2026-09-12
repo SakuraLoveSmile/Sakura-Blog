@@ -2,9 +2,16 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
+)
+
+var (
+	ErrAttachmentGroupNotFound = errors.New("attachment group not found")
+	ErrAttachmentNotFound      = errors.New("attachment not found")
+	ErrAttachmentForbidden     = errors.New("attachment ownership denied")
 )
 
 // Attachment 附件持久化记录，对齐 attachments 表字段。
@@ -327,6 +334,84 @@ func (s *Store) MoveAttachments(ids []int64, groupID int64) (int, error) {
 	res, err := s.db.Exec(q, args...)
 	if err != nil {
 		return 0, fmt.Errorf("move attachments: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+// MoveAttachmentsAuthorized validates the complete batch and target group in
+// one transaction before changing any attachment.
+func (s *Store) MoveAttachmentsAuthorized(ids []int64, groupID, ownerID int64, manageAny bool) (int, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	unique := make([]int64, 0, len(ids))
+	seen := make(map[int64]struct{}, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			return 0, ErrAttachmentNotFound
+		}
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			unique = append(unique, id)
+		}
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("begin move attachments: %w", err)
+	}
+	defer tx.Rollback()
+	if groupID != UngroupedGroupID {
+		var exists int
+		if err := tx.QueryRow(`SELECT 1 FROM attachment_groups WHERE id = ?`, groupID).Scan(&exists); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return 0, ErrAttachmentGroupNotFound
+			}
+			return 0, fmt.Errorf("check attachment group %d: %w", groupID, err)
+		}
+	}
+	placeholders := make([]string, len(unique))
+	args := make([]any, len(unique))
+	for i, id := range unique {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	query := `SELECT id, owner_id FROM attachments WHERE id IN (` + strings.Join(placeholders, ",") + `)`
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("check attachments: %w", err)
+	}
+	found := make(map[int64]int64, len(unique))
+	for rows.Next() {
+		var id, attachmentOwner int64
+		if err := rows.Scan(&id, &attachmentOwner); err != nil {
+			rows.Close()
+			return 0, fmt.Errorf("scan attachment: %w", err)
+		}
+		found[id] = attachmentOwner
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, fmt.Errorf("iterate attachments: %w", err)
+	}
+	rows.Close()
+	if len(found) != len(unique) {
+		return 0, ErrAttachmentNotFound
+	}
+	if !manageAny {
+		for _, id := range unique {
+			if found[id] != ownerID || found[id] <= 0 {
+				return 0, ErrAttachmentForbidden
+			}
+		}
+	}
+	updateQuery := `UPDATE attachments SET group_id = ? WHERE id IN (` + strings.Join(placeholders, ",") + `)`
+	res, err := tx.Exec(updateQuery, append([]any{groupID}, args...)...)
+	if err != nil {
+		return 0, fmt.Errorf("move attachments: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit moved attachments: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil

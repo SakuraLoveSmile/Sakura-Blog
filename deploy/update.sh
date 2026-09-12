@@ -107,74 +107,8 @@ die() {
 
 # ---------- 核心函数 ----------
 
-# 全局排他锁：保证同一时刻只有一个 update.sh 执行（无论是 path 触发、timer 还是手工运行）
-acquire_lock() {
-  mkdir -p "$(dirname "$LOCK_FILE")"
-  local fifo="$LOCK_FILE.pipe.$$"
-  rm -f "$fifo"
-  mkfifo "$fifo" 2>/dev/null || true
-
-  python3 -c "
-import sys, fcntl, os, time
-
-lock_path = sys.argv[1]
-fifo_path = sys.argv[2]
-
-try:
-    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT)
-    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except Exception:
-    if os.path.exists(fifo_path):
-        try:
-            with open(fifo_path, 'w') as f:
-                f.write('FAIL\n')
-        except Exception:
-            pass
-    sys.exit(1)
-
-if os.path.exists(fifo_path):
-    try:
-        with open(fifo_path, 'w') as f:
-            f.write('OK\n')
-    except Exception:
-        pass
-
-try:
-    while True:
-        time.sleep(3600)
-except Exception:
-    pass
-" "$LOCK_FILE" "$fifo" &
-  local pid=$!
-  disown "$pid" 2>/dev/null || true
-
-  local status=""
-  if [[ -p "$fifo" ]]; then
-    read -r status < "$fifo" 2>/dev/null || true
-    rm -f "$fifo"
-  fi
-
-  if [[ "$status" != "OK" ]]; then
-    log "已有更新任务正在执行中，获取全局锁失败，退出"
-    kill "$pid" 2>/dev/null || true
-    return 1
-  fi
-
-  LOCK_PID="$pid"
-  return 0
-}
-
-# 释放全局排他锁
-release_lock() {
-  if [[ -n "${LOCK_PID:-}" ]]; then
-    kill "$LOCK_PID" 2>/dev/null || true
-    unset LOCK_PID
-  fi
-}
-
 # 进程退出统一清理
 cleanup() {
-  release_lock
   rm -f "${TMP_BIN:-}" "${TMP_SHA:-}"
 }
 
@@ -618,14 +552,80 @@ download_file() {
   numfmt --to=iec-i --suffix=B "$file_size" 2>/dev/null || echo "${file_size}B"
 }
 
+# 与恢复任务共享进程级锁；锁跨博客重启保留在更新器进程中。
+# Python 已是更新脚本依赖，O_NOFOLLOW 防止以 root 身份跟随可写数据目录内的链接。
+run_with_maintenance_lock() {
+  python3 - "$0" "$@" <<'PYLOCK'
+import fcntl
+import glob
+import json
+import os
+import subprocess
+import sys
+import pwd
+import stat
+import time
+
+install = os.environ.get("INSTALL_DIR", "/opt/blog")
+db_path = os.environ.get("BLOG_DB", os.path.join(install, "data", "blog.db"))
+lock_path = os.environ.get("BLOG_MAINTENANCE_LOCK", os.path.join(os.path.dirname(db_path), "maintenance.lock"))
+control = os.environ.get("BLOG_CONTROL_DIR", os.path.join(install, "update"))
+update_lock_path = os.environ.get("BLOG_LOCK_FILE", os.path.join(control, "update.lock"))
+
+def open_lock(path, service_owner=False):
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        if service_owner and os.geteuid() == 0:
+            owner = pwd.getpwnam("blog")
+            os.fchown(fd, owner.pw_uid, owner.pw_gid)
+    except FileExistsError:
+        fd = os.open(path, os.O_RDWR | os.O_NOFOLLOW)
+    info = os.fstat(fd)
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size != 0:
+        os.close(fd)
+        raise OSError("invalid operation lock")
+    return fd
+
+def wait_lock(fd):
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("等待恢复或更新锁，更新请求尚未消费", file=sys.stderr, flush=True)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+
+try:
+    fd = open_lock(lock_path, service_owner=True)
+    update_fd = open_lock(update_lock_path)
+    if os.fstat(fd).st_ino == os.fstat(update_fd).st_ino and os.fstat(fd).st_dev == os.fstat(update_fd).st_dev:
+        raise OSError("maintenance and update locks must be distinct")
+    # 固定顺序：维护锁 -> 更新锁 -> 检查恢复日志 -> 消费请求。
+    wait_lock(fd)
+    wait_lock(update_fd)
+    for name in glob.glob(os.path.join(os.path.dirname(db_path), "backups", ".restore-*.json")):
+        source = os.open(name, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(source, "rb") as handle:
+            raw = handle.read(1048577)
+        if len(raw) > 1048576:
+            raise ValueError("oversized restore journal")
+        task = json.loads(raw)
+        if not isinstance(task, dict) or task.get("version") != 1 or task.get("status") not in ("succeeded", "rolled_back"):
+            raise ValueError("unfinished or unsupported restore task")
+except (OSError, ValueError, TypeError, KeyError):
+    print("更新被阻止：锁文件无效或存在未完成/不支持的恢复日志；请求保留", file=sys.stderr, flush=True)
+    sys.exit(75)
+environment = dict(os.environ)
+environment["BLOG_MAINTENANCE_LOCK_HELD"] = "1"
+result = subprocess.run(["bash", sys.argv[1], *sys.argv[2:]], env=environment, pass_fds=(fd, update_fd))
+sys.exit(result.returncode)
+PYLOCK
+}
+
 # ---------- 主流程 ----------
 main() {
   mkdir -p "$(dirname "$LOG_FILE")"
   mkdir -p "$CONTROL_DIR"
 
-  if ! acquire_lock; then
-    exit 0
-  fi
   trap cleanup EXIT INT TERM
 
   log "=== 开始检查更新 ==="
@@ -773,5 +773,9 @@ main() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  if [[ "${BLOG_MAINTENANCE_LOCK_HELD:-}" != "1" ]]; then
+    run_with_maintenance_lock "$@"
+    exit $?
+  fi
   main "$@"
 fi

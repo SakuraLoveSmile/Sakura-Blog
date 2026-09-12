@@ -121,6 +121,13 @@ func TestBearerTokenAuth(t *testing.T) {
 	if err := json.Unmarshal(gen.Body.Bytes(), &genBody); err != nil || genBody.Token == "" {
 		t.Fatalf("generate api token should return plaintext token once: %v / %q", err, gen.Body.String())
 	}
+	badPrefix := httptest.NewRequest(http.MethodGet, "/api/v1/profile", nil)
+	badPrefix.Header.Set("Authorization", "Token "+genBody.Token)
+	badPrefixW := httptest.NewRecorder()
+	r.ServeHTTP(badPrefixW, badPrefix)
+	if badPrefixW.Code != http.StatusUnauthorized {
+		t.Fatalf("token authorization prefix status = %d, want 401", badPrefixW.Code)
+	}
 
 	// 有效 token：Bearer 认证通过
 	w3 := doBearer(r, genBody.Token)
