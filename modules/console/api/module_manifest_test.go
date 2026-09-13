@@ -12,6 +12,7 @@ import (
 	core "blog/internal/module/core"
 	_ "blog/internal/module/moments"
 	tmpl "blog/internal/settings"
+	"blog/internal/store"
 )
 
 func TestCoreManifestContainsAssistantNav(t *testing.T) {
@@ -25,6 +26,22 @@ func TestCoreManifestContainsAssistantNav(t *testing.T) {
 		}
 	}
 	t.Fatal("core manifest is missing the AI assistant nav item")
+}
+
+func TestCoreManifestContainsAppearanceNav(t *testing.T) {
+	meta := (&core.Module{}).Meta()
+	for _, item := range meta.Nav {
+		if item.Path == "/appearance" {
+			if item.Label != "主题设置" || item.Group != "外观" || item.Icon != "ri:palette-line" {
+				t.Fatalf("appearance nav = %+v, want label/group/icon 主题设置/外观/ri:palette-line", item)
+			}
+			if len(item.Permissions) != 1 || item.Permissions[0] != store.PermissionSystemManage {
+				t.Fatalf("appearance nav permissions = %+v, want [%s]", item.Permissions, store.PermissionSystemManage)
+			}
+			return
+		}
+	}
+	t.Fatal("core manifest is missing the appearance nav item")
 }
 
 func TestPluginsNavHasFiveChildren(t *testing.T) {

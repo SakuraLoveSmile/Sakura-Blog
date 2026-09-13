@@ -326,23 +326,27 @@ function handleTitleLeave(e: MouseEvent) {
       </template>
       <template #subtitle>撰写与管理博客博文，支持分类标签筛选、版本追踪与临时分享链接</template>
       <template #actions>
-        <div class="apple-search min-w-[200px] max-w-[280px]">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="keyword" placeholder="搜索文章标题或 Slug..." />
-          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
-            <Icon icon="ri:close-line" />
-          </button>
+        <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
+          <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
+            <Icon icon="ri:search-line" class="text-text-quaternary" />
+            <input v-model="keyword" placeholder="搜索文章标题或 Slug..." />
+            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+              <Icon icon="ri:close-line" />
+            </button>
+          </div>
+
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto sm:gap-2.5">
+            <VButton :route="{ path: '/posts/shares' }">
+              <template #icon><Icon icon="ri:share-forward-line" /></template>
+              分享链接
+            </VButton>
+
+            <VButton type="primary" :route="{ path: '/posts/new' }">
+              <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
+              撰写文章
+            </VButton>
+          </div>
         </div>
-
-        <VButton :route="{ path: '/posts/shares' }">
-          <template #icon><Icon icon="ri:share-forward-line" /></template>
-          分享链接
-        </VButton>
-
-        <VButton type="primary" :route="{ path: '/posts/new' }">
-          <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
-          撰写文章
-        </VButton>
       </template>
     </VPageHeader>
 

@@ -518,9 +518,8 @@ function closeProfileDropdown() {
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary，按菜单项数动态布局） -->
     <nav
       aria-label="移动端底部导航"
-      class="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+      class="fixed bottom-0 left-0 right-0 z-40 grid border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
       :style="{
-        display: 'grid',
         gridTemplateColumns: `repeat(${minimenus.length + 1}, minmax(0, 1fr))`,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }"

@@ -33,6 +33,7 @@ func (m *Module) Meta() module.Meta {
 			{Path: "/friends", Label: "友链", Icon: "ri:links-line", Group: "互动"},
 			{Path: "/subscriptions", Label: "订阅", Icon: "ri:rss-line", Group: "互动"},
 			{Path: "/attachments", Label: "附件", Icon: "ri:folder-2-line", Group: "媒体", Mobile: true},
+			{Path: "/appearance", Label: "主题设置", Icon: "ri:palette-line", Group: "外观", Permissions: admin},
 			{Path: "/taxonomy", Label: "分类标签", Icon: "ri:price-tag-3-line", Group: "系统"},
 			{Path: "/users", Label: "用户", Icon: "ri:user-star-line", Group: "系统", Permissions: admin},
 			{Path: "/login-logs", Label: "登录日志", Icon: "ri:shield-user-line", Group: "系统", Permissions: admin},

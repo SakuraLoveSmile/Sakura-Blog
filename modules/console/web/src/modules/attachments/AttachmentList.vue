@@ -422,29 +422,33 @@ function formatMimeBadge(mime: string): string {
       </template>
       <template #subtitle>管理博客全部图片、音视频与文档附件，支持分组合辑与快速直链</template>
       <template #actions>
-        <div class="apple-search min-w-[200px] max-w-[280px]">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="keyword" placeholder="搜索文件名或 URL..." />
-          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
-            <Icon icon="ri:close-line" />
-          </button>
+        <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
+          <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
+            <Icon icon="ri:search-line" class="text-text-quaternary" />
+            <input v-model="keyword" placeholder="搜索文件名或 URL..." />
+            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+              <Icon icon="ri:close-line" />
+            </button>
+          </div>
+
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto sm:gap-2.5">
+            <VButton @click="openCreateGroup">
+              <template #icon><Icon icon="ri:folder-add-line" /></template>
+              新建分组
+            </VButton>
+
+            <input ref="fileInput" type="file" multiple class="hidden" @change="onFileChange" />
+
+            <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
+              <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
+              上传附件
+            </VButton>
+            <VButton :disabled="uploading || importingURL" @click="importURLVisible = true">
+              <template #icon><Icon icon="ri:link-m" /></template>
+              从 URL 导入
+            </VButton>
+          </div>
         </div>
-
-        <VButton @click="openCreateGroup">
-          <template #icon><Icon icon="ri:folder-add-line" /></template>
-          新建分组
-        </VButton>
-
-        <input ref="fileInput" type="file" multiple class="hidden" @change="onFileChange" />
-
-        <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
-          <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
-          上传附件
-        </VButton>
-        <VButton :disabled="uploading || importingURL" @click="importURLVisible = true">
-          <template #icon><Icon icon="ri:link-m" /></template>
-          从 URL 导入
-        </VButton>
       </template>
     </VPageHeader>
 
@@ -569,7 +573,7 @@ function formatMimeBadge(mime: string): string {
           <!-- 工具栏：类型分段 + 视图模式 -->
           <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
             <!-- 类型筛选 -->
-            <div class="apple-segmented">
+            <div class="apple-segmented max-w-full flex-wrap">
               <button
                 v-for="tf in typeFilters"
                 :key="tf.key"
