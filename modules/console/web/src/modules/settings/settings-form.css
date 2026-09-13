@@ -355,3 +355,89 @@
   font-weight: normal;
 }
 
+/* 设置中心与外观设置统一卡片面板 */
+.settings-basic-panel {
+  width: 100%;
+  overflow: visible;
+}
+.settings-basic-panel .card-wrapper {
+  border-radius: var(--radius-xl);
+  overflow: visible;
+}
+.settings-basic-panel .card-header {
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--color-background) 30%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  border-top-left-radius: calc(var(--radius-xl) - 1px);
+  border-top-right-radius: calc(var(--radius-xl) - 1px);
+}
+.settings-basic-panel .card-body {
+  padding: 0;
+  overflow: visible;
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+}
+
+.settings-card-tabs {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.settings-tabs {
+  align-self: stretch;
+  display: flex;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.settings-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* 分区区块统一规范（消除多层嵌套卡片） */
+.settings-basic-section {
+  margin: 0;
+  padding: 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+.settings-basic-section:last-child {
+  border-bottom: none;
+}
+.settings-basic-section-heading {
+  max-width: 860px;
+  margin-bottom: 18px;
+}
+.settings-basic-section-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.settings-basic-section-heading h2::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+.settings-basic-section-heading p,
+.settings-basic-help {
+  margin: 6px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .settings-basic-section {
+    padding: 16px;
+  }
+}
+
+

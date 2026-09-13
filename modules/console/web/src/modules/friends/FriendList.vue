@@ -726,9 +726,10 @@ async function batchMoveGroup() {
                   <th class="w-12 px-4 py-3 text-center">
                     <input
                       type="checkbox"
-                      :checked="selectedIds.size > 0 && selectedIds.size === filteredLinks.length"
-                      class="h-4 w-4 rounded border-border text-primary"
-                      @change="selectedIds.size === filteredLinks.length ? clearSelection() : selectAll()"
+                      :checked="filteredLinks.length > 0 && selectedIds.size === filteredLinks.length"
+                      :disabled="filteredLinks.length === 0"
+                      class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                      @change="filteredLinks.length > 0 && selectedIds.size === filteredLinks.length ? clearSelection() : selectAll()"
                     />
                   </th>
                   <th class="px-4 py-3">网站 / 链接</th>

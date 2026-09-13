@@ -13,8 +13,8 @@
 | 任务 | 目标与可见结果 | 对应分支 / 工作树 | 状态 |
 |---|---|---|---|
 | **T1** | 桌面底栏重复消除，手机主要操作完整可见且可点击，主题设置可从侧栏与更多抽屉进入 | `../Blog-t1-nav` (`codex/console-t1-nav`) | 已验收 |
-| **T2** | 基础按钮统一尺寸与胶囊形状、主按钮黑字高对比、Tab 焦点环清晰、主题设置黄点误报消除 | `../Blog-t2-controls` (`codex/console-t2-controls`) | 待体验 |
-| **T3** | 列表概览卡片统一样式与高度、系统设置与主题设置统一分段 Tabs 并优化多层卡片、修正空列表全选文案 | `../Blog-t3-views` (`codex/console-t3-views`) | 未开始 |
+| **T2** | 基础按钮统一尺寸与胶囊形状、主按钮黑字高对比、Tab 焦点环清晰、主题设置黄点误报消除 | `../Blog-t2-controls` (`codex/console-t2-controls`) | 已验收 |
+| **T3** | 列表概览卡片统一样式与高度、系统设置与主题设置统一分段 Tabs 并优化多层卡片、修正空列表全选文案 | `../Blog-t3-views` (`codex/console-t3-views`) | 待体验 |
 
 *状态流转规范：未开始 → 实现中 → 待体验 → 已验收（必要验证未结束仍为实现中，仅在用户确认后标记已验收）。*
 
@@ -45,7 +45,7 @@
   - [x] 执行代码质量与构建门禁（`make console-test` / `make test` / `make build`）。
   - [x] 通过 `make merge-check` 顺次将分支 `codex/console-t1-nav` 合入主 `dev` 分支，组合态复验全绿。用户验收确认通过，标记为 **已验收**。
 
-### T2：公共控件统一，修改状态真实（待体验）
+### T2：公共控件统一，修改状态真实（已验收）
 - **负责人**：主 agent (T2 worker)
 - **改动文件**：
   - `packages/components/src/ui/VButton.vue`
@@ -65,4 +65,29 @@
   - [x] 增加 `settings-normalize.test.ts` 纯函数单测（覆盖 null/primitive、未知键保留、显式 false 保留、blur_px 规范化与幂等性）。
   - [x] 扩充 `tests/e2e/console-ui-consistency.spec.ts` 自动化覆盖 T2 所有完成条件（按钮黑字高对比、胶囊圆角、无外发光、Tab 焦点环声明与可访问性、主题设置初始无脏变、真实修改出黄点且保存恢复）。
   - [x] 运行本地全套门禁（`make console-test`、`make test`、`make build`、Playwright 9 用例全部全绿）。
-  - [x] 执行 `make merge-check` 将 `codex/console-t2-controls` 稳妥合入 `dev` 分支。当前状态标记为 **待体验**。
+  - [x] 执行 `make merge-check` 将 `codex/console-t2-controls` 稳妥合入 `dev` 分支。用户体验后确认通过，标记为 **已验收**。
+
+### T3：视图统一与多层卡片优化（待体验）
+- **负责人**：主 agent (T3 worker)
+- **改动文件**：
+  - `modules/console/web/src/styles/apple-base.css`
+  - `packages/components/src/ui/VTabbar.vue`
+  - `modules/console/web/src/modules/settings/settings-form.css`
+  - `modules/console/web/src/modules/appearance/AppearanceView.vue`
+  - `modules/console/web/src/modules/appearance/LayoutSettings.vue`
+  - `modules/console/web/src/modules/appearance/EnhancementsSettings.vue`
+  - `modules/console/web/src/modules/appearance/AssetsSettings.vue`
+  - `modules/console/web/src/modules/posts/PostList.vue`
+  - `modules/console/web/src/modules/pages/PageList.vue`
+  - `modules/console/web/src/modules/comments/CommentList.vue`
+  - `modules/console/web/src/modules/attachments/AttachmentList.vue`
+  - `modules/console/web/src/modules/friends/FriendList.vue`
+  - `tests/e2e/console-ui-consistency.spec.ts`
+- **执行过程**：
+  - [x] 创建工作树 `../Blog-t3-views`，挂载 Git hook，符号链接共享 `resource/`。
+  - [x] 统一列表概览卡片 `.stats-card`：规范桌面最小高度 80px、手机最小高度 88px、标准 padding 与边框底色，解决高度跳动。
+  - [x] 系统设置与主题设置统一分段 Tabs：`AppearanceView.vue` 接入 `VTabbar(type="segmented")`，单卡片包裹，移除多层嵌套卡片与重复标题。
+  - [x] 优化 `LayoutSettings.vue`、`EnhancementsSettings.vue`、`AssetsSettings.vue` 内层卡片结构，消除内外卡片重叠。
+  - [x] 修正空列表（文章/页面/评论/附件/友链）全选按钮文案显示“取消全选”的边界缺陷，改为禁用并稳定显示“全选本页”。
+  - [x] 补充/更新 E2E 测试并运行全套门禁（`make console-test`、`make test`、`make build`、Playwright 12 项测试全部通过）。
+  - [x] 通过 `make merge-check` 合入 `dev`。当前状态标记为 **待体验**。

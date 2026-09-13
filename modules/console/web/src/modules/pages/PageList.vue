@@ -323,10 +323,11 @@ function statusBadge(status: string) {
 
           <button
             type="button"
-            class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
-            @click="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
+            class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="pages.length === 0"
+            @click="pages.length > 0 && selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
           >
-            {{ selectedSlugs.size === pages.length ? "取消全选" : "全选本页" }}
+            {{ pages.length > 0 && selectedSlugs.size === pages.length ? "取消全选" : "全选本页" }}
           </button>
 
           <div class="apple-segmented">
@@ -471,9 +472,10 @@ function statusBadge(status: string) {
                 <th class="w-12 px-4 py-3 text-center">
                   <input
                     type="checkbox"
-                    :checked="selectedSlugs.size > 0 && selectedSlugs.size === pages.length"
-                    class="h-4 w-4 rounded border-border text-primary"
-                    @change="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
+                    :checked="pages.length > 0 && selectedSlugs.size === pages.length"
+                    :disabled="pages.length === 0"
+                    class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    @change="pages.length > 0 && selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
                   />
                 </th>
                 <th class="px-4 py-3">页面标题</th>
@@ -611,6 +613,8 @@ function statusBadge(status: string) {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
+  min-height: 80px;
+  box-sizing: border-box;
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -681,6 +685,7 @@ function statusBadge(status: string) {
 
 @media (max-width: 640px) {
   .stats-card {
+    min-height: 88px;
     padding: 10px 12px;
     gap: 8px;
   }

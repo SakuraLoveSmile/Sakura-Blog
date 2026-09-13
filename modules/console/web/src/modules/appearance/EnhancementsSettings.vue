@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import { VButton, VCard, VSwitch } from "@/components/ui";
+import { VButton, VSwitch } from "@/components/ui";
 import PluginsTab from "@/modules/settings/PluginsTab.vue";
 import IconPicker from "@/components/IconPicker.vue";
 
@@ -53,15 +53,23 @@ function removeStatus(name: string) {
 </script>
 
 <template>
-  <VCard title="前端增强">
-    <PluginsTab :data="data.plugins" :saving="saving" @save="emit('save', 'plugins')" />
-  </VCard>
+  <div>
+    <section class="settings-basic-section settings-basic-section-first">
+      <div class="settings-basic-section-heading">
+        <h2>前端增强</h2>
+        <p class="settings-hint">配置代码高亮、公式渲染等前端主题插件。</p>
+      </div>
+      <PluginsTab :data="data.plugins" :saving="saving" @save="emit('save', 'plugins')" />
+    </section>
 
-  <VCard title="内容组件默认参数">
-    <p class="settings-hint">
-      对齐 Stellar <code>tag_plugins</code> 段：未在具体标签中指定的参数使用这里的默认值。复杂或未覆盖的 shortcode
-      仍可通过原始内容无损保留。
-    </p>
+    <section class="settings-basic-section">
+      <div class="settings-basic-section-heading">
+        <h2>内容组件默认参数</h2>
+        <p class="settings-hint">
+          对齐 Stellar <code>tag_plugins</code> 段：未在具体标签中指定的参数使用这里的默认值。复杂或未覆盖的 shortcode
+          仍可通过原始内容无损保留。
+        </p>
+      </div>
 
     <div class="settings-subsection settings-subsection-first">
       <p class="settings-subsection-title">默认配色</p>
@@ -232,12 +240,15 @@ function removeStatus(name: string) {
         <template #icon><Icon icon="ri:save-line" /></template>保存内容组件设置
       </VButton>
     </div>
-  </VCard>
+  </section>
 
-  <VCard title="SiteInfo 服务">
-    <p class="settings-hint">
-      为缺少 icon/avatar 的站点卡片请求图标兜底。URL 中使用 <code>{href}</code> 占位符，留空表示关闭。
-    </p>
+  <section class="settings-basic-section">
+    <div class="settings-basic-section-heading">
+      <h2>SiteInfo 服务</h2>
+      <p class="settings-hint">
+        为缺少 icon/avatar 的站点卡片请求图标兜底。URL 中使用 <code>{href}</code> 占位符，留空表示关闭。
+      </p>
+    </div>
     <div class="settings-field">
       <label for="settings-siteinfo-api">SiteInfo API 模板</label>
       <input
@@ -252,5 +263,6 @@ function removeStatus(name: string) {
         <template #icon><Icon icon="ri:save-line" /></template>保存 SiteInfo 设置
       </VButton>
     </div>
-  </VCard>
+  </section>
+  </div>
 </template>

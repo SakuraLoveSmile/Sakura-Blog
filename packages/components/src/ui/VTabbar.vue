@@ -84,7 +84,7 @@ function onKeydown(e: KeyboardEvent, index: number) {
       <slot name="item" :item="item" :active="item.id === current">
         <Icon v-if="item.icon" :icon="item.icon" class="tabbar-item-icon" />
         <span class="tabbar-item-label">{{ item.label }}</span>
-        <span v-if="item.dirty" class="tabbar-item-dot" title="有未保存修改" aria-label="有未保存修改" />
+        <span v-if="item.dirty" class="tabbar-item-dot settings-tab-dirty-dot" title="有未保存修改" aria-label="有未保存修改" />
       </slot>
     </button>
   </div>

@@ -452,10 +452,11 @@ onUnmounted(() => {
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
-            @click="selectedIds.size === comments.length ? clearSelection() : selectAll()"
+            class="rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="comments.length === 0"
+            @click="comments.length > 0 && selectedIds.size === comments.length ? clearSelection() : selectAll()"
           >
-            {{ selectedIds.size === comments.length ? "取消全选" : "全选本页" }}
+            {{ comments.length > 0 && selectedIds.size === comments.length ? "取消全选" : "全选本页" }}
           </button>
         </div>
       </div>
@@ -722,6 +723,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
+  min-height: 80px;
+  box-sizing: border-box;
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -812,6 +815,7 @@ onUnmounted(() => {
 
 @media (max-width: 640px) {
   .stats-card {
+    min-height: 88px;
     padding: 10px 12px;
     gap: 8px;
   }

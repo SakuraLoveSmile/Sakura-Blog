@@ -593,10 +593,11 @@ function formatMimeBadge(mime: string): string {
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
-                @click="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
+                class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                :disabled="attachments.length === 0"
+                @click="attachments.length > 0 && selectedIds.size === attachments.length ? clearSelection() : selectAll()"
               >
-                {{ selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
+                {{ attachments.length > 0 && selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
               </button>
 
               <div class="apple-segmented">
@@ -732,9 +733,10 @@ function formatMimeBadge(mime: string): string {
                     <th class="w-12 px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        :checked="selectedIds.size > 0 && selectedIds.size === attachments.length"
-                        class="h-4 w-4 rounded border-border text-primary"
-                        @change="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
+                        :checked="attachments.length > 0 && selectedIds.size === attachments.length"
+                        :disabled="attachments.length === 0"
+                        class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                        @change="attachments.length > 0 && selectedIds.size === attachments.length ? clearSelection() : selectAll()"
                       />
                     </th>
                     <th class="px-4 py-3">文件名称</th>
@@ -1030,6 +1032,8 @@ function formatMimeBadge(mime: string): string {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
+  min-height: 80px;
+  box-sizing: border-box;
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -1135,6 +1139,7 @@ function formatMimeBadge(mime: string): string {
 /* 移动端适配 */
 @media (max-width: 640px) {
   .stats-card {
+    min-height: 88px;
     padding: 10px 12px;
     gap: 8px;
   }

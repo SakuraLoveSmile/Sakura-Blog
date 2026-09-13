@@ -259,4 +259,92 @@ test.describe("Console UI 一致性测试", () => {
     await expect(dirtyDots).toHaveCount(0);
     await expect(dirtyBadge).toHaveCount(0);
   });
+
+  test("列表概览卡片统一样式且符合最小高度规范（桌面 80px / 手机 88px）", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    const statsCards = page.locator(".stats-card");
+    await expect(statsCards.first()).toBeVisible();
+    const count = await statsCards.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let i = 0; i < count; i++) {
+      const card = statsCards.nth(i);
+      const minHeight = await card.evaluate((el) => window.getComputedStyle(el).minHeight);
+      expect(minHeight).toBe("80px");
+      const box = await card.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(80);
+    }
+
+    // 切换至手机视口 (390px)
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (let i = 0; i < count; i++) {
+      const card = statsCards.nth(i);
+      const minHeight = await card.evaluate((el) => window.getComputedStyle(el).minHeight);
+      expect(minHeight).toBe("88px");
+      const box = await card.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(88);
+    }
+  });
+
+  test("空列表时全选按钮保持显示全选本页且被禁用，杜绝显示取消全选", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    // 搜索不存在的关键字使列表为空
+    const searchInput = page.getByPlaceholder("搜索文章标题或 Slug...");
+    await searchInput.fill("nonexistent_keyword_to_empty_the_list_12345");
+    // 等待空状态提示出现
+    await expect(page.getByText("未找到匹配的文章")).toBeVisible();
+
+    // 此时全选按钮必须显示“全选本页”且处于 disabled 状态
+    const selectAllBtn = page.getByRole("button", { name: "全选本页" });
+    await expect(selectAllBtn).toBeVisible();
+    await expect(selectAllBtn).toBeDisabled();
+
+    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-posts-empty.png" });
+
+    // 绝对不能出现“取消全选”
+    const unselectBtn = page.getByRole("button", { name: "取消全选" });
+    await expect(unselectBtn).toHaveCount(0);
+  });
+
+  test("主题设置与系统设置统一分段 Tabs 结构，单层卡片包裹并消除多层嵌套卡片", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/appearance");
+    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await expect(page.locator(".appearance-state")).toHaveCount(0);
+
+    // 检查分段 Tabbar 结构与 ARIA 规范
+    const tablist = page.locator('.appearance-tabs [role="tablist"]');
+    await expect(tablist).toBeVisible();
+    const tabs = tablist.locator('[role="tab"]');
+    await expect(tabs).toHaveCount(7);
+
+    // 单一卡片边界：外层为 .settings-basic-panel
+    const mainPanel = page.locator(".settings-basic-panel");
+    await expect(mainPanel).toBeVisible();
+
+    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-appearance-desktop.png" });
+
+    // 切换到“布局”Tab
+    const layoutTab = tabs.filter({ hasText: "布局" });
+    await expect(layoutTab).toBeVisible();
+    await layoutTab.click();
+    await expect(page).toHaveURL(/tab=layout/);
+
+    // 验证“布局”中的小节采用 flat 的 section 结构，不再有内层嵌套卡片 .card-wrapper
+    await expect(page.getByRole("heading", { name: "右栏与页脚" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "组件编排" })).toBeVisible();
+    const innerNestedCards = page.locator(".appearance-tab-content .card-wrapper");
+    await expect(innerNestedCards).toHaveCount(0);
+  });
 });
