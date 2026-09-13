@@ -18,7 +18,6 @@ export { default as FilterDropdown } from "./FilterDropdown.vue";
 export { default as FilterTag } from "./FilterTag.vue";
 export { default as VFloatingDock } from "./VFloatingDock.vue";
 export { default as VSkeleton } from "./VSkeleton.vue";
-export { default as ConsoleStatsCard } from "./ConsoleStatsCard.vue";
 export { Dialog } from "./dialog";
 export type { DialogOptions } from "./dialog";
 export { Toast } from "./toast";

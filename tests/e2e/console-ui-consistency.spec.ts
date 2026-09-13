@@ -368,12 +368,14 @@ test.describe("Console UI 一致性测试", () => {
     expect(segBox).not.toBeNull();
     expect(segBox!.height).toBeGreaterThanOrEqual(44);
 
-    // 全选/工具栏筛选按钮高度 >= 44px
+    // 全选/工具栏筛选按钮高度 >= 44px（若列表非空存在筛选按钮时）
     const filterBtn = page.locator(".apple-filter-btn").first();
-    await expect(filterBtn).toBeVisible();
-    const filterBox = await filterBtn.boundingBox();
-    expect(filterBox).not.toBeNull();
-    expect(filterBox!.height).toBeGreaterThanOrEqual(44);
+    if (await filterBtn.count() > 0) {
+      await expect(filterBtn).toBeVisible();
+      const filterBox = await filterBtn.boundingBox();
+      expect(filterBox).not.toBeNull();
+      expect(filterBox!.height).toBeGreaterThanOrEqual(44);
+    }
 
     // 卡片独立操作图标按钮 >= 44x44px
     const postAction = page.locator(".post-card-action").first();
@@ -488,7 +490,7 @@ test.describe("Console UI 一致性测试", () => {
     }
   });
 
-  test("空列表时全选按钮保持显示全选本页且被禁用，杜绝显示取消全选", async ({ page }) => {
+  test("空列表时隐藏选择入口（不渲染全选按钮、全选复选框与批量入口）", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/posts");
@@ -500,16 +502,17 @@ test.describe("Console UI 一致性测试", () => {
     // 等待空状态提示出现
     await expect(page.getByText("未找到匹配的文章")).toBeVisible();
 
-    // 此时全选按钮必须显示“全选本页”且处于 disabled 状态
+    // 此时全选按钮与取消全选入口均不渲染
     const selectAllBtn = page.getByRole("button", { name: "全选本页" });
-    await expect(selectAllBtn).toBeVisible();
-    await expect(selectAllBtn).toBeDisabled();
-
-    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-posts-empty.png" });
-
-    // 绝对不能出现“取消全选”
+    await expect(selectAllBtn).toHaveCount(0);
     const unselectBtn = page.getByRole("button", { name: "取消全选" });
     await expect(unselectBtn).toHaveCount(0);
+
+    // 批量浮层不可见
+    const floatingDock = page.locator(".v-floating-dock");
+    await expect(floatingDock).toHaveCount(0);
+
+    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-posts-empty.png" });
   });
 
   test("主题设置与系统设置统一分段 Tabs 结构，单层卡片包裹并消除多层嵌套卡片", async ({ page }) => {
@@ -567,24 +570,28 @@ test.describe("Console UI 一致性测试", () => {
     expect(backupFirstBox!.height).toBeGreaterThanOrEqual(80);
   });
 
-  test("设置页具有合法 tabpanel 容器与 aria-labelledby 联动", async ({ page }) => {
+  test("设置页具有合法 tabpanel 容器与 aria-labelledby 联动，非活动 panel 保持 hidden", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/settings?tab=basic");
     await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
 
-    const panel = page.locator('#tabpanel-basic[role="tabpanel"]');
-    await expect(panel).toBeVisible();
-    const labelledby = await panel.getAttribute("aria-labelledby");
+    const basicPanel = page.locator('#tabpanel-basic[role="tabpanel"]');
+    await expect(basicPanel).toBeVisible();
+    const labelledby = await basicPanel.getAttribute("aria-labelledby");
     expect(labelledby).toBe("tab-basic");
 
     const tab = page.locator("#tab-basic");
     await expect(tab).toBeVisible();
     const controls = await tab.getAttribute("aria-controls");
     expect(controls).toBe("tabpanel-basic");
+
+    // 验证其他未激活的 tabpanel 也存在且带有 hidden 属性
+    const postPanel = page.locator("#tabpanel-post");
+    await expect(postPanel).toHaveAttribute("hidden", "");
   });
 
-  test("SEO 二级导航高度统一为 38px 且选中样式与主题对齐", async ({ page }) => {
+  test("SEO 二级导航高度（桌面 36px / 手机 44px）、字号 13px 与深灰选中样式对齐", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/seo/overview");
@@ -594,11 +601,29 @@ test.describe("Console UI 一致性测试", () => {
     await expect(activeBtn).toBeVisible();
     const activeBox = await activeBtn.boundingBox();
     expect(activeBox).not.toBeNull();
-    expect(Math.round(activeBox!.height)).toBe(38);
+    // 桌面视口高度 36px
+    expect(Math.round(activeBox!.height)).toBe(36);
 
-    const activeColor = await activeBtn.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-    // 选中项使用 primary 色背景
-    expect(activeColor).toBe("rgb(46, 141, 255)");
+    // 字号 13px
+    const fontSize = await activeBtn.evaluate((el) => window.getComputedStyle(el).fontSize);
+    expect(fontSize).toBe("13px");
+
+    // 具有 aria-current="page"
+    const ariaCurrent = await activeBtn.getAttribute("aria-current");
+    expect(ariaCurrent).toBe("page");
+
+    // 选中项使用深灰背景 (#2c2c2e -> rgb(44, 44, 46))
+    const activeBg = await activeBtn.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+    expect(activeBg).toBe("rgb(44, 44, 46)");
+
+    // 手机视口 (390px) 高度 44px
+    await page.setViewportSize({ width: 390, height: 844 });
+    // 等待视口调整后样式重新计算
+    await page.waitForTimeout(200);
+    const mobileBox = await activeBtn.boundingBox();
+    expect(mobileBox).not.toBeNull();
+    const mobileHeight = await activeBtn.evaluate((el) => window.getComputedStyle(el).height);
+    expect(Math.round(parseFloat(mobileHeight))).toBe(44);
   });
 
   test("系统设置保存时支持持续编辑且保留新内容与未保存提示", async ({ page }) => {

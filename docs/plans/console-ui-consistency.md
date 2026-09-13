@@ -244,7 +244,7 @@
   - [x] 通过 `make merge-check` 合入 `dev`。
   - [x] 标记为 **待体验**。
 
-### T3：修正 Tabs、空状态与设计偏差（未开始）
+### T3：修正 Tabs、空状态与设计偏差（待体验）
 - **负责人**：T3 执行者
 - **计划目标**：
   - 修改公共 `VTabbar`：`autoReveal?: boolean` 默认改为 `false`，仅系统设置和主题设置显式开启。
@@ -278,12 +278,12 @@
   - `modules/console/web/src/modules/dashboard/`
   - `tests/e2e/console-ui-consistency.spec.ts`
 - **执行过程**：
-  - [ ] 创建工作树并挂载 hook。
-  - [ ] 实施 VTabbar 自身内部计算平滑滚动与 focus preventScroll。
-  - [ ] 实施 SettingsView / AppearanceView 条件挂载 tabpanel 外壳。
-  - [ ] 实施五页空列表选择入口隐藏。
-  - [ ] 实施 ConsoleStatsCard 本地迁移、SEO 规范与设计参数复原。
-  - [ ] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
+  - [x] 创建工作树并挂载 hook。
+  - [x] 实施 VTabbar 自身内部计算平滑滚动与 focus preventScroll。
+  - [x] 实施 SettingsView / AppearanceView 条件挂载 tabpanel 外壳。
+  - [x] 实施五页空列表选择入口隐藏。
+  - [x] 实施 ConsoleStatsCard 本地迁移、SEO 规范与设计参数复原。
+  - [x] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
 
 ### T1：保留已完成布局，补齐能证明无遮挡的验收（未开始）
 - **负责人**：T1 执行者

@@ -32,7 +32,7 @@ export default definePlugin({
     { path: "/notifications", label: "通知中心", icon: "ri:notification-3-line", group: "互动" },
     { path: "/friends", label: "友链", icon: "ri:links-line", group: "互动" },
     { path: "/subscriptions", label: "订阅", icon: "ri:rss-line", group: "互动" },
-    { path: "/attachments", label: "附件", icon: "ri:folder-2-line", group: "媒体", mobile: true },
+    { path: "/attachments", label: "媒体库", icon: "ri:folder-2-line", group: "媒体", mobile: true },
     { path: "/authors", label: "作者", icon: "ri:user-star-line", group: "内容", permissions: admin },
     { path: "/appearance", label: "主题设置", icon: "ri:palette-line", group: "外观", permissions: admin },
     { path: "/menus", label: "菜单", icon: "ri:menu-line", group: "外观", permissions: admin },

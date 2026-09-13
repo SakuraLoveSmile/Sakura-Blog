@@ -195,6 +195,7 @@ onBeforeRouteLeave((to, from, next) => {
                 v-model:active-id="active"
                 :items="tabItems"
                 type="segmented"
+                :auto-reveal="true"
                 class="settings-card-tabbar"
                 @change="navigateToTab"
               />
@@ -207,48 +208,54 @@ onBeforeRouteLeave((to, from, next) => {
             <Icon icon="ri:error-warning-line" width="22" height="22" /><span>{{ loadError }}</span>
             <VButton size="sm" type="secondary" @click="load">重试</VButton>
           </div>
-          <div
-            v-else
-            :id="`tabpanel-${active}`"
-            role="tabpanel"
-            :aria-labelledby="`tab-${active}`"
-            tabindex="0"
-            class="appearance-tab-content settings-tab-content outline-none"
-          >
-            <div v-if="active === 'appearance'" class="settings-basic-section settings-basic-section-first border-b-0">
-              <AppearanceTab :data="data" :saving="savingKey" @save="save" />
+          <template v-else>
+            <div
+              v-for="tab in tabs"
+              :id="`tabpanel-${tab.key}`"
+              :key="tab.key"
+              role="tabpanel"
+              :aria-labelledby="`tab-${tab.key}`"
+              tabindex="0"
+              class="appearance-tab-content settings-tab-content outline-none"
+              :hidden="active !== tab.key"
+            >
+              <template v-if="active === tab.key">
+                <div v-if="tab.key === 'appearance'" class="settings-basic-section settings-basic-section-first border-b-0">
+                  <AppearanceTab :data="data" :saving="savingKey" @save="save" />
+                </div>
+                <div v-else-if="tab.key === 'home'" class="settings-basic-section settings-basic-section-first border-b-0">
+                  <div class="settings-basic-section-heading">
+                    <h2>首页 Hero</h2>
+                    <p class="settings-hint">
+                      首页 Hero 区：title 非空时首页第一页渲染（对齐 Stellar wiki_cover），留空则不渲染。
+                    </p>
+                  </div>
+                  <CoverTab :data="data.cover" :saving="savingKey" @save="save('cover')" />
+                </div>
+                <LayoutSettings v-else-if="tab.key === 'layout'" :data="data" :saving="savingKey" @save="save" />
+                <div v-else-if="tab.key === 'navigation'" class="settings-basic-section settings-basic-section-first border-b-0">
+                  <div class="settings-basic-section-heading">
+                    <h2>导航标签</h2>
+                    <p class="settings-hint">
+                      主题特有导航栏标签（site.yml nav_tabs 段）：完全由下方列表驱动或作为固定 tab 追加。
+                    </p>
+                  </div>
+                  <NavTabsTab :data="data.nav_tabs" :saving="savingKey" @save="save('nav_tabs')" />
+                </div>
+                <EnhancementsSettings v-else-if="tab.key === 'enhancements'" :data="data" :saving="savingKey" @save="save" />
+                <AssetsSettings v-else-if="tab.key === 'assets'" :data="data" :saving="savingKey" @save="save" />
+                <div v-else-if="tab.key === 'advanced'" title="样式 YAML" class="settings-basic-section settings-basic-section-first border-b-0">
+                  <div class="settings-basic-section-heading">
+                    <h2>样式 YAML</h2>
+                    <p class="settings-hint">
+                      直接编辑 Stellar 主题 style 段 YAML，保存即热更新前台样式。
+                    </p>
+                  </div>
+                  <ThemeYamlTab />
+                </div>
+              </template>
             </div>
-            <div v-else-if="active === 'home'" class="settings-basic-section settings-basic-section-first border-b-0">
-              <div class="settings-basic-section-heading">
-                <h2>首页 Hero</h2>
-                <p class="settings-hint">
-                  首页 Hero 区：title 非空时首页第一页渲染（对齐 Stellar wiki_cover），留空则不渲染。
-                </p>
-              </div>
-              <CoverTab :data="data.cover" :saving="savingKey" @save="save('cover')" />
-            </div>
-            <LayoutSettings v-else-if="active === 'layout'" :data="data" :saving="savingKey" @save="save" />
-            <div v-else-if="active === 'navigation'" class="settings-basic-section settings-basic-section-first border-b-0">
-              <div class="settings-basic-section-heading">
-                <h2>导航标签</h2>
-                <p class="settings-hint">
-                  主题特有导航栏标签（site.yml nav_tabs 段）：完全由下方列表驱动或作为固定 tab 追加。
-                </p>
-              </div>
-              <NavTabsTab :data="data.nav_tabs" :saving="savingKey" @save="save('nav_tabs')" />
-            </div>
-            <EnhancementsSettings v-else-if="active === 'enhancements'" :data="data" :saving="savingKey" @save="save" />
-            <AssetsSettings v-else-if="active === 'assets'" :data="data" :saving="savingKey" @save="save" />
-            <div v-else title="样式 YAML" class="settings-basic-section settings-basic-section-first border-b-0">
-              <div class="settings-basic-section-heading">
-                <h2>样式 YAML</h2>
-                <p class="settings-hint">
-                  直接编辑 Stellar 主题 style 段 YAML，保存即热更新前台样式。
-                </p>
-              </div>
-              <ThemeYamlTab />
-            </div>
-          </div>
+          </template>
         </VCard>
       </main>
     </div>

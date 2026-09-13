@@ -71,7 +71,7 @@ test("VTabbar 具备 tablist 语义、roving tabindex 和方向键焦点轮转",
   assert.match(vTabbar, /:tabindex="item\.id === current \? 0 : -1"/);
   assert.match(vTabbar, /e\.key === "ArrowRight"/);
   assert.match(vTabbar, /e\.key === "ArrowLeft"/);
-  assert.match(vTabbar, /buttonRefs\.value\[targetIndex\]\?\.focus\(\)/);
+  assert.match(vTabbar, /buttonRefs\.value\[targetIndex\]\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(vTabbar, /\.tabbar-item:focus-visible/);
 });
 

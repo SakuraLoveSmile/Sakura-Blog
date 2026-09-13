@@ -725,11 +725,11 @@ async function batchMoveGroup() {
                 <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                   <th class="w-12 px-4 py-3 text-center">
                     <input
+                      v-if="filteredLinks.length > 0"
                       type="checkbox"
-                      :checked="filteredLinks.length > 0 && selectedIds.size === filteredLinks.length"
-                      :disabled="filteredLinks.length === 0"
+                      :checked="selectedIds.size === filteredLinks.length"
                       class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                      @change="filteredLinks.length > 0 && selectedIds.size === filteredLinks.length ? clearSelection() : selectAll()"
+                      @change="selectedIds.size === filteredLinks.length ? clearSelection() : selectAll()"
                     />
                   </th>
                   <th class="px-4 py-3">网站 / 链接</th>
@@ -1048,60 +1048,6 @@ async function batchMoveGroup() {
 .friends-tabs::-webkit-scrollbar { display: none; }
 .friends-tabs button { min-height: 44px; white-space: nowrap; }
 
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
 /* 操作小按钮 */
 .action-icon-btn {
   display: inline-flex;
@@ -1144,17 +1090,5 @@ async function batchMoveGroup() {
 
 /* 移动端适配 */
 @media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
 }
 </style>

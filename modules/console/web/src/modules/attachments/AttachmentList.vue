@@ -14,10 +14,10 @@ import {
   VPagination,
   VModal,
   VFloatingDock,
-  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 
 interface AttachmentItem {
   id: number;
@@ -581,12 +581,12 @@ function formatMimeBadge(mime: string): string {
             <!-- 视图与全选 -->
             <div class="flex items-center gap-2">
               <button
+                v-if="attachments.length > 0"
                 type="button"
                 class="apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="attachments.length === 0"
-                @click="attachments.length > 0 && selectedIds.size === attachments.length ? clearSelection() : selectAll()"
+                @click="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
               >
-                {{ attachments.length > 0 && selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
+                {{ selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
               </button>
 
               <div class="apple-segmented">
@@ -1015,62 +1015,6 @@ function formatMimeBadge(mime: string): string {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  min-height: 80px;
-  box-sizing: border-box;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
 /* 分组项按钮 */
 .group-item-btn {
   display: flex;
@@ -1127,18 +1071,5 @@ function formatMimeBadge(mime: string): string {
 
 /* 移动端适配 */
 @media (max-width: 640px) {
-  .stats-card {
-    min-height: 88px;
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
 }
 </style>

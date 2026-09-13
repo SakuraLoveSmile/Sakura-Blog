@@ -25,7 +25,7 @@ const props = withDefaults(
   {
     activeId: undefined,
     type: "default",
-    autoReveal: true,
+    autoReveal: false,
   },
 );
 
@@ -34,21 +34,36 @@ const emit = defineEmits<{
   (event: "change", id: string): void;
 }>();
 
+const containerRef = ref<HTMLElement | null>(null);
 const buttonRefs = ref<HTMLButtonElement[]>([]);
 
 const current = computed(() => props.activeId ?? props.items[0]?.id);
 
 function scrollActiveIntoView() {
-  if (!props.autoReveal) return;
+  if (!props.autoReveal || !containerRef.value) return;
+  const container = containerRef.value;
   const idx = props.items.findIndex((item) => item.id === current.value);
   const target = buttonRefs.value[idx];
   if (target) {
     try {
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+
+      // 仅当标签未在容器内完整横向可见时才进行水平位移，完整可见时不滚动
+      const isFullyVisible =
+        targetRect.left >= containerRect.left &&
+        targetRect.right <= containerRect.right;
+
+      if (!isFullyVisible) {
+        const targetCenter = target.offsetLeft + target.offsetWidth / 2;
+        const desiredScrollLeft = targetCenter - container.clientWidth / 2;
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+        const finalScrollLeft = Math.max(0, Math.min(desiredScrollLeft, maxScrollLeft));
+        container.scrollTo({
+          left: finalScrollLeft,
+          behavior: "smooth",
+        });
+      }
     } catch {}
   }
 }
@@ -86,13 +101,13 @@ function onKeydown(e: KeyboardEvent, index: number) {
   if (targetIndex >= 0 && targetIndex < props.items.length) {
     const nextItem = props.items[targetIndex];
     select(nextItem.id);
-    buttonRefs.value[targetIndex]?.focus();
+    buttonRefs.value[targetIndex]?.focus({ preventScroll: true });
   }
 }
 </script>
 
 <template>
-  <div :class="['tabbar', `tabbar-${type}`]" role="tablist">
+  <div ref="containerRef" :class="['tabbar', `tabbar-${type}`]" role="tablist">
     <button
       v-for="(item, index) in items"
       :id="`tab-${item.id}`"

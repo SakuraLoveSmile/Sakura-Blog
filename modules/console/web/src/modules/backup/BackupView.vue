@@ -10,10 +10,10 @@ import {
   VLoading,
   VEmpty,
   VModal,
-  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 import { useAuthStore } from "@/stores/auth";
 import { queryClient } from "@/api/query-client";
 import router from "@/router";
@@ -636,72 +636,4 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>

@@ -333,6 +333,7 @@ onBeforeRouteLeave((to, from, next) => {
                 v-model:active-id="active"
                 :items="tabItems"
                 type="segmented"
+                :auto-reveal="true"
                 class="settings-card-tabbar"
                 @change="navigateToTab"
               />
@@ -348,32 +349,37 @@ onBeforeRouteLeave((to, from, next) => {
           </div>
           <template v-else>
             <div
-              :id="`tabpanel-${active}`"
+              v-for="tab in tabs"
+              :id="`tabpanel-${tab.key}`"
+              :key="tab.key"
               role="tabpanel"
-              :aria-labelledby="`tab-${active}`"
+              :aria-labelledby="`tab-${tab.key}`"
               tabindex="0"
               class="settings-tab-panel outline-none"
+              :hidden="active !== tab.key"
             >
-              <BasicSettings v-if="active === 'basic'" :data="data" :saving="savingKey" @save="save" />
-              <div v-else class="settings-tab-content">
-                <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
-                <CommentSettings
-                  v-else-if="active === 'comments'"
-                  :data="data"
-                  :saving="savingKey"
-                  @save="saveComments"
-                />
-                <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
-                <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
-                <AdvancedSettings
-                  v-else-if="active === 'advanced'"
-                  :data="data"
-                  :raw-text="rawText"
-                  :saving="savingKey"
-                  @save="save"
-                  @save-json="saveJson"
-                />
-              </div>
+              <template v-if="active === tab.key">
+                <BasicSettings v-if="tab.key === 'basic'" :data="data" :saving="savingKey" @save="save" />
+                <div v-else class="settings-tab-content">
+                  <PostSettings v-if="tab.key === 'post'" :data="data" :saving="savingKey" @save="save" />
+                  <CommentSettings
+                    v-else-if="tab.key === 'comments'"
+                    :data="data"
+                    :saving="savingKey"
+                    @save="saveComments"
+                  />
+                  <SeoSettings v-else-if="tab.key === 'seo'" :data="data" :saving="savingKey" @save="save" />
+                  <SearchSettings v-else-if="tab.key === 'search'" :data="data" :saving="savingKey" @save="save" />
+                  <AdvancedSettings
+                    v-else-if="tab.key === 'advanced'"
+                    :data="data"
+                    :raw-text="rawText"
+                    :saving="savingKey"
+                    @save="save"
+                    @save-json="saveJson"
+                  />
+                </div>
+              </template>
             </div>
           </template>
         </VCard>

@@ -83,7 +83,7 @@ function handleClick(e: MouseEvent) {
   text-align: center;
   text-decoration: none;
   font-weight: 550;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   height: 36px;
   padding: 0 16px;
   font-size: 13.5px;

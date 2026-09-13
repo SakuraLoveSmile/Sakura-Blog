@@ -14,10 +14,10 @@ import {
   VPagination,
   VStatusDot,
   VModal,
-  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 
 const queryClient = useQueryClient();
 
@@ -383,12 +383,12 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                         :style="
                           roleTone(u.role) === 'admin'
                             ? {
-                                backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)',
-                                color: 'var(--color-state-error)',
+                                backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
+                                color: 'var(--color-primary)',
                               }
                             : {
-                                backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)',
-                                color: 'var(--color-chart-5)',
+                                backgroundColor: 'color-mix(in srgb, var(--color-secondary) 80%, transparent)',
+                                color: 'var(--color-text-secondary)',
                               }
                         "
                       >
@@ -482,12 +482,12 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
                       :style="
                         roleTone(u.role) === 'admin'
                           ? {
-                              backgroundColor: 'color-mix(in srgb, var(--color-state-error) 15%, transparent)',
-                              color: 'var(--color-state-error)',
+                              backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
+                              color: 'var(--color-primary)',
                             }
                           : {
-                              backgroundColor: 'color-mix(in srgb, var(--color-chart-5) 15%, transparent)',
-                              color: 'var(--color-chart-5)',
+                              backgroundColor: 'color-mix(in srgb, var(--color-secondary) 80%, transparent)',
+                              color: 'var(--color-text-secondary)',
                             }
                       "
                     >
