@@ -285,7 +285,7 @@
   - [x] 实施 ConsoleStatsCard 本地迁移、SEO 规范与设计参数复原。
   - [x] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
 
-### T1：保留已完成布局，补齐能证明无遮挡的验收（未开始）
+### T1：保留已完成布局，补齐能证明无遮挡的验收（待体验）
 - **负责人**：T1 执行者
 - **计划目标**：
   - 不重做已落实的三行结构，继续仅在文章、页面、媒体库使用 `actionsLayout="stack-below-lg"`，保留默认布局与滚动隐藏时的 `inert/aria-hidden`。
@@ -298,8 +298,8 @@
   - `modules/console/web/src/layouts/DefaultLayout.vue`
   - `tests/e2e/console-ui-consistency.spec.ts`
 - **执行过程**：
-  - [ ] 创建工作树并挂载 hook。
-  - [ ] 编写 E2E 真实数据滚动至底部、定位最后一项真实可操作元素并在底栏上方触发真实点击的严密用例。
-  - [ ] 验证四种视口布局与抽屉导航。
-  - [ ] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
+  - [x] 创建工作树并挂载 hook。
+  - [x] 编写 E2E 真实数据滚动至底部、定位最后一项真实可操作元素并在底栏上方触发真实点击的严密用例。
+  - [x] 验证四种视口布局与抽屉导航。
+  - [x] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
 

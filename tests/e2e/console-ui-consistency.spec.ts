@@ -8,6 +8,19 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
 }
 
+async function ensurePosts(page: Page, count = 5) {
+  for (let i = 1; i <= count; i++) {
+    await page.request.post("/api/v1/posts", {
+      data: {
+        slug: `mobile-e2e-post-${i}`,
+        title: `移动端无遮挡验证博文 ${i}`,
+        content_md: `这是第 ${i} 篇用于验证移动端滚动不被遮挡的测试文章内容。`,
+        status: "published",
+      },
+    });
+  }
+}
+
 test.describe("Console UI 一致性测试", () => {
   test("768px、1280px、1440px 下桌面底栏 computed display 为 none，侧边栏可见", async ({ page }) => {
     await login(page);
@@ -41,6 +54,7 @@ test.describe("Console UI 一致性测试", () => {
 
   test("390px 视口下底栏正常显示且内容底部不被遮挡", async ({ page }) => {
     await login(page);
+    await ensurePosts(page, 5);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/posts");
     await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
@@ -54,21 +68,45 @@ test.describe("Console UI 一致性测试", () => {
     expect(navBox).not.toBeNull();
     expect(navBox!.y + navBox!.height).toBeGreaterThanOrEqual(840);
 
-    // 滚动主容器到底部，验证内容不被底栏遮挡
-    await page.evaluate(() => {
+    // 滚动主容器到底部，验证内容与最后一项操作不被底栏遮挡
+    const scrollInfo = await page.evaluate(() => {
       const main = document.querySelector("main.content");
       if (main) main.scrollTop = main.scrollHeight;
+      return {
+        scrollTop: main?.scrollTop ?? 0,
+        scrollHeight: main?.scrollHeight ?? 0,
+        clientHeight: main?.clientHeight ?? 0,
+      };
     });
+    // 断言真实产生滚动（内容高度超出视口高度）
+    expect(scrollInfo.scrollHeight).toBeGreaterThan(scrollInfo.clientHeight);
+    expect(scrollInfo.scrollTop).toBeGreaterThan(0);
     await page.waitForTimeout(300);
 
-    const lastVisibleElement = page.locator("main.content .stats-card, main.content .post-card, main.content .apple-card, main.content footer").last();
-    const lastBox = await lastVisibleElement.boundingBox();
-    if (lastBox) {
-      expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(navBox!.y + 1);
+    // 找到最后一项真实可操作元素（最后一篇博文的编辑按钮）
+    const lastCard = page.locator(".post-card").last();
+    await expect(lastCard).toBeVisible();
+    const lastEditBtn = lastCard.locator('button[title="编辑博文"]');
+    await expect(lastEditBtn).toBeVisible();
+
+    // 取得完整矩形并断言其位于底栏上方
+    const editBtnBox = await lastEditBtn.boundingBox();
+    expect(editBtnBox).not.toBeNull();
+    expect(editBtnBox!.y + editBtnBox!.height).toBeLessThanOrEqual(navBox!.y);
+
+    // 同样验证页脚也在底栏上方或完全在安全距离内
+    const footerEl = page.locator("main.content footer");
+    const footerBox = await footerEl.boundingBox();
+    if (footerBox) {
+      expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(navBox!.y);
     }
+
+    // 实际点击最后一项操作，确认事件到达并产生预期界面变化（跳转至编辑页），防止被透明层或底栏遮挡
+    await lastEditBtn.click();
+    await expect(page).toHaveURL(/\/console\/posts\/edit\/mobile-e2e-post-5/, { timeout: 15_000 });
   });
 
-  test("390px 手机视口下文章管理标题、搜索框与按钮组按三行排列且点击进入编辑页", async ({ page }) => {
+  test("390px 与 768px 视口下文章管理标题、搜索框与按钮组按三行排列且点击进入编辑页", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/posts");
@@ -106,7 +144,25 @@ test.describe("Console UI 一致性测试", () => {
 
     await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-mobile-posts.png" });
 
-    // 真实点击触发跳转到文章编辑页
+    // 验证 768px (平板竖屏) 视口下同样按三行排列
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    const header768 = page.locator("header.page-header-stack-below-lg");
+    const title768 = header768.locator("h1");
+    const search768 = header768.locator(".apple-search");
+    const writeBtn768 = page.getByRole("button", { name: "撰写文章" });
+
+    const titleBox768 = await title768.boundingBox();
+    const searchBox768 = await search768.boundingBox();
+    const btnBox768 = await writeBtn768.boundingBox();
+
+    expect(titleBox768!.y + titleBox768!.height).toBeLessThanOrEqual(searchBox768!.y);
+    expect(searchBox768!.y + searchBox768!.height).toBeLessThanOrEqual(btnBox768!.y);
+
+    // 切回 390px 真实点击触发跳转到文章编辑页
+    await page.setViewportSize({ width: 390, height: 844 });
     await writeBtn.click();
     await expect(page).toHaveURL(/\/console\/posts\/new/, { timeout: 15_000 });
   });
@@ -195,39 +251,41 @@ test.describe("Console UI 一致性测试", () => {
     expect(segBox!.x + segBox!.width).toBeLessThanOrEqual(390);
   });
 
-  test("1280px 桌面视口下标题与搜索按钮横向单行排列且底栏隐藏", async ({ page }) => {
+  test("1280px 与 1440px 桌面视口下标题与搜索按钮横向单行排列且底栏隐藏", async ({ page }) => {
     await login(page);
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/console/posts");
-    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+    for (const width of [1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/console/posts");
+      await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
 
-    const header = page.locator("header.page-header-stack-below-lg");
-    await expect(header).toBeVisible();
+      const header = page.locator("header.page-header-stack-below-lg");
+      await expect(header).toBeVisible();
 
-    const titleEl = header.locator("h1");
-    const searchEl = header.locator(".apple-search");
-    const writeBtn = page.getByRole("button", { name: "撰写文章" });
+      const titleEl = header.locator("h1");
+      const searchEl = header.locator(".apple-search");
+      const writeBtn = page.getByRole("button", { name: "撰写文章" });
 
-    const titleBox = await titleEl.boundingBox();
-    const searchBox = await searchEl.boundingBox();
-    const btnBox = await writeBtn.boundingBox();
+      const titleBox = await titleEl.boundingBox();
+      const searchBox = await searchEl.boundingBox();
+      const btnBox = await writeBtn.boundingBox();
 
-    expect(titleBox).not.toBeNull();
-    expect(searchBox).not.toBeNull();
-    expect(btnBox).not.toBeNull();
+      expect(titleBox).not.toBeNull();
+      expect(searchBox).not.toBeNull();
+      expect(btnBox).not.toBeNull();
 
-    // 桌面端横向单行布局：标题与搜索垂直对齐相差较小
-    expect(Math.abs(titleBox!.y - searchBox!.y)).toBeLessThanOrEqual(25);
-    expect(Math.abs(searchBox!.y - btnBox!.y)).toBeLessThanOrEqual(5);
-    // 标题在左侧，搜索在右侧
-    expect(titleBox!.x + titleBox!.width).toBeLessThan(searchBox!.x);
-    // 底栏隐藏
-    const bottomNav = page.locator('nav[aria-label="移动端底部导航"]');
-    const display = await bottomNav.evaluate((el) => window.getComputedStyle(el).display);
-    expect(display).toBe("none");
+      // 桌面端横向单行布局：标题与搜索垂直对齐相差较小
+      expect(Math.abs(titleBox!.y - searchBox!.y)).toBeLessThanOrEqual(25);
+      expect(Math.abs(searchBox!.y - btnBox!.y)).toBeLessThanOrEqual(5);
+      // 标题在左侧，搜索在右侧
+      expect(titleBox!.x + titleBox!.width).toBeLessThan(searchBox!.x);
+      // 底栏隐藏
+      const bottomNav = page.locator('nav[aria-label="移动端底部导航"]');
+      const display = await bottomNav.evaluate((el) => window.getComputedStyle(el).display);
+      expect(display).toBe("none");
+    }
   });
 
-  test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入", async ({ page }) => {
+  test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入，且支持无障碍焦点管理与关闭返回", async ({ page }) => {
     await login(page);
 
     // 桌面端验证侧栏进入主题设置
@@ -240,7 +298,7 @@ test.describe("Console UI 一致性测试", () => {
     await expect(page).toHaveURL(/\/console\/appearance/);
     await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
 
-    // 手机端验证通过“更多”抽屉进入主题设置
+    // 手机端验证通过“更多”抽屉进入主题设置与焦点管理
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/dashboard");
 
@@ -248,6 +306,21 @@ test.describe("Console UI 一致性测试", () => {
     await expect(moreBtn).toBeVisible();
     await moreBtn.click();
 
+    // 验证抽屉出现且关闭按钮自动聚焦
+    const drawerDialog = page.locator('div[role="dialog"]');
+    await expect(drawerDialog).toBeVisible();
+    const closeBtn = page.locator('button[aria-label="关闭抽屉"]');
+    await expect(closeBtn).toBeVisible();
+    await expect(closeBtn).toBeFocused();
+
+    // 验证按下 Escape 关闭抽屉，焦点返回到“更多导航”按钮
+    await page.keyboard.press("Escape");
+    await expect(drawerDialog).toHaveCount(0);
+    await expect(moreBtn).toBeFocused();
+
+    // 再次打开抽屉并点击主题设置
+    await moreBtn.click();
+    await expect(drawerDialog).toBeVisible();
     const drawerAppearanceLink = page.locator('div[role="dialog"] a[href="/console/appearance"]');
     await expect(drawerAppearanceLink).toBeVisible();
     await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-mobile-drawer.png" });
