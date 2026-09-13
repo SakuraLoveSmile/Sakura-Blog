@@ -158,9 +158,35 @@
   - [x] 运行本地全套门禁（`make console-test`、`make test`、`make build`、E2E 测试全部全绿通过）。
   - [x] 标记为 **待体验**，准备通过 `make merge-check` 合入 `dev`。
 
-### T3：补齐页面统一与设置联动（未开始）
+### T3：补齐页面统一与设置联动（待体验）
 - **负责人**：页面 worker
 - **计划目标**：
   - 新增展示型 `ConsoleStatsCard` 并复用到文章、页面、媒体库、用户管理、备份；
   - 设置 `VTabbar(type="segmented")` 增加 `tabpanel-*` 容器、`aria-labelledby` 与 `autoReveal` 横向滚入支持；
   - SEO 统一高度与选中样式；仪表盘消除装饰光晕；空列表隐藏批量选择入口。
+- **涉及文件**：
+  - `packages/components/src/ui/ConsoleStatsCard.vue`
+  - `packages/components/src/ui/index.ts`
+  - `packages/components/src/ui/VTabbar.vue`
+  - `modules/console/web/src/modules/posts/PostList.vue`
+  - `modules/console/web/src/modules/pages/PageList.vue`
+  - `modules/console/web/src/modules/attachments/AttachmentList.vue`
+  - `modules/console/web/src/modules/users/UserListView.vue`
+  - `modules/console/web/src/modules/backup/BackupView.vue`
+  - `modules/console/web/src/modules/settings/SettingsView.vue`
+  - `modules/console/web/src/modules/appearance/AppearanceView.vue`
+  - `modules/console/web/src/modules/seo/SeoLayout.vue`
+  - `modules/console/web/src/modules/dashboard/dashboard.css`
+  - `tests/e2e/console-ui-consistency.spec.ts`
+- **执行过程**：
+  - [x] 创建工作树 `../Blog-r2-t3-views` (`codex/console-r2-t3-views`)，挂载 Git hook，建立共享 `resource/` 链接。
+  - [x] 新建 `packages/components/src/ui/ConsoleStatsCard.vue` 统一展示型指标卡组件并在 `packages/components/src/ui/index.ts` 导出。
+  - [x] 将文章列表 (`PostList.vue`)、独立页面 (`PageList.vue`)、附件媒体库 (`AttachmentList.vue`)、用户管理 (`UserListView.vue`) 与备份管理 (`BackupView.vue`) 的指标概览卡片统一重构成 `ConsoleStatsCard`。
+  - [x] `VTabbar.vue` 实现 `autoReveal` 平滑滚入居中（支持横向溢出视口下的标签平滑聚焦）。
+  - [x] `SettingsView.vue` 与 `AppearanceView.vue` 增加规范的 `tabpanel-*` 容器包裹与 `aria-labelledby="tab-*"` / `tabindex="0"` 联动。
+  - [x] SEO 二级导航 (`SeoLayout.vue`) 高度统一为 38px 且选中态对齐主题 Primary 蓝底黑字。
+  - [x] 仪表盘 (`dashboard.css`) 消除过度装饰光晕（去除径向渐变背景光晕、去除卡片过度投影发光与原件呼吸光晕）。
+  - [x] 空列表保持全选禁用（文章、独立页面等列表在空态下保持全选按钮禁用，杜绝出现“取消全选”）。
+  - [x] 扩充 E2E 测试套件，19 项端到端用例全部通过；全量单测 `make test` 与 `make build` 编译均通过。
+  - [x] 运行 `make merge-check` 完成特征分支验证，成功合入 `dev` 分支。
+  - [x] 标记为 **待体验**。
