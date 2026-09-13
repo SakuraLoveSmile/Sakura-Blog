@@ -138,17 +138,7 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   });
   d.pages = d.pages || {};
   d.pages.friends = d.pages.friends || {};
-  d.style = d.style || {};
-  d.style.color = d.style.color || {};
-  d.style.font_size = d.style.font_size || {};
-  d.style.font_family = d.style.font_family || {};
-  d.style.leftbar = d.style.leftbar || {};
-  d.style.site = d.style.site || {};
-  d.style.codeblock = d.style.codeblock || {};
-  const headerPrefix = d.style.header_prefix;
-  if (!headerPrefix || typeof headerPrefix !== "object" || Array.isArray(headerPrefix)) {
-    d.style.header_prefix = {};
-  }
+  d.style = normalizeStyleSettings(d.style);
   d.widgets = d.widgets || {};
   d.widgets.library = d.widgets.library || {};
   d.widgets.pages = d.widgets.pages || {};
@@ -244,15 +234,105 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   }
   d.default = d.default || {};
   d.default.image_onerror = d.default.image_onerror || "";
-  d.style.loading = d.style.loading || {};
-  d.style.error_page = d.style.error_page || "";
-  d.style.animated_avatar = d.style.animated_avatar || {};
   d.cover = d.cover || {};
   d.cover.features = d.cover.features || [];
   d.nav_tabs = d.nav_tabs || {};
   d.nav_tabs.items = d.nav_tabs.items || [];
   d.authors = d.authors || {};
   return d;
+}
+
+/**
+ * 样式设置规范化函数。
+ * 纯函数/就地规范化：输入任意原始 style（包括 null/undefined/非对象/缺键/脏数据），
+ * 输出结构完整、类型安全的规范化对象。
+ * 幂等性保证：normalizeStyleSettings(normalizeStyleSettings(x)) 结果完全一致。
+ * 规范化规则：
+ * 1. 保留所有未知自定义键（不误删扩展属性）。
+ * 2. header_prefix 必须为对象，若原值为空/数组/primitive 则重置为 {}；确保 h2..h5 为 string（缺省为 ""）。
+ * 3. leftbar 必须为对象，ui_style 缺省为 "card"；blur_px 若为数字则转为 px 串（n>0 ? `${n}px` : ""），缺省为 ""。
+ * 4. page_transition 必须为对象，enable 为布尔值（保留显式 false，缺省为 true）。
+ * 5. codeblock 必须为对象，highlightjs_theme 缺省为 ""。
+ * 6. border_radius, gradient, animated_avatar, loading, color, font_size, font_family, site 保证为对象。
+ * 7. corner_shape 缺省为 "superellipse(1.25)"。
+ * 8. error_page 缺省为 ""。
+ */
+export function normalizeStyleSettings(rawStyle: any): Record<string, any> {
+  const style = !rawStyle || typeof rawStyle !== "object" || Array.isArray(rawStyle) ? {} : rawStyle;
+
+  if (!style.color || typeof style.color !== "object" || Array.isArray(style.color)) {
+    style.color = {};
+  }
+
+  if (!style.font_size || typeof style.font_size !== "object" || Array.isArray(style.font_size)) {
+    style.font_size = {};
+  }
+
+  if (!style.font_family || typeof style.font_family !== "object" || Array.isArray(style.font_family)) {
+    style.font_family = {};
+  }
+
+  if (!style.leftbar || typeof style.leftbar !== "object" || Array.isArray(style.leftbar)) {
+    style.leftbar = {};
+  }
+  style.leftbar.ui_style = style.leftbar.ui_style || "card";
+  if (typeof style.leftbar.blur_px === "number") {
+    const n = style.leftbar.blur_px;
+    style.leftbar.blur_px = n > 0 ? `${n}px` : "";
+  } else if (style.leftbar.blur_px === undefined || style.leftbar.blur_px === null) {
+    style.leftbar.blur_px = "";
+  }
+
+  if (!style.site || typeof style.site !== "object" || Array.isArray(style.site)) {
+    style.site = {};
+  }
+
+  if (!style.codeblock || typeof style.codeblock !== "object" || Array.isArray(style.codeblock)) {
+    style.codeblock = {};
+  }
+  if (style.codeblock.highlightjs_theme === undefined || style.codeblock.highlightjs_theme === null) {
+    style.codeblock.highlightjs_theme = "";
+  }
+
+  if (!style.header_prefix || typeof style.header_prefix !== "object" || Array.isArray(style.header_prefix)) {
+    style.header_prefix = {};
+  }
+  for (const k of ["h2", "h3", "h4", "h5"] as const) {
+    if (style.header_prefix[k] === undefined || style.header_prefix[k] === null) {
+      style.header_prefix[k] = "";
+    }
+  }
+
+  if (!style.page_transition || typeof style.page_transition !== "object" || Array.isArray(style.page_transition)) {
+    style.page_transition = {};
+  }
+  if (style.page_transition.enable === undefined || style.page_transition.enable === null) {
+    style.page_transition.enable = true;
+  }
+
+  if (!style.border_radius || typeof style.border_radius !== "object" || Array.isArray(style.border_radius)) {
+    style.border_radius = {};
+  }
+
+  if (!style.gradient || typeof style.gradient !== "object" || Array.isArray(style.gradient)) {
+    style.gradient = {};
+  }
+
+  style.corner_shape = style.corner_shape || "superellipse(1.25)";
+
+  if (!style.animated_avatar || typeof style.animated_avatar !== "object" || Array.isArray(style.animated_avatar)) {
+    style.animated_avatar = {};
+  }
+
+  if (!style.loading || typeof style.loading !== "object" || Array.isArray(style.loading)) {
+    style.loading = {};
+  }
+
+  if (style.error_page === undefined || style.error_page === null) {
+    style.error_page = "";
+  }
+
+  return style;
 }
 
 export function sortWikiProjects(list: any[]): any[] {

@@ -685,7 +685,7 @@ const smallInputCls =
             </template>
             预览
           </VButton>
-          <VButton type="secondary" :loading="saving" @click="handleSave">保存</VButton>
+          <VButton type="primary" :loading="saving" @click="handleSave">保存</VButton>
         </div>
       </template>
     </VPageHeader>

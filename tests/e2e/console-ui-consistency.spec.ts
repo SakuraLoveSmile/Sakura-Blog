@@ -151,4 +151,112 @@ test.describe("Console UI 一致性测试", () => {
     await expect(page).toHaveURL(/\/console\/appearance/);
     await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
   });
+
+  test("主按钮采用胶囊圆角、黑字高对比、无外发光", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    const writeBtn = page.getByRole("button", { name: "撰写文章" });
+    await expect(writeBtn).toBeVisible();
+
+    const styles = await writeBtn.evaluate((el) => {
+      const cs = window.getComputedStyle(el);
+      return {
+        color: cs.color,
+        backgroundColor: cs.backgroundColor,
+        boxShadow: cs.boxShadow,
+        borderRadius: cs.borderRadius,
+        height: cs.height,
+      };
+    });
+
+    // 文字颜色为黑色（rgb(0, 0, 0)）
+    expect(styles.color).toBe("rgb(0, 0, 0)");
+    // 无外发光
+    expect(styles.boxShadow).toBe("none");
+    // 高度为标准 36px
+    expect(styles.height).toBe("36px");
+    // 胶囊圆角（大于等于 18px）
+    const radiusNum = parseFloat(styles.borderRadius);
+    expect(radiusNum).toBeGreaterThanOrEqual(18);
+  });
+
+  test("分段 Tabs 与按钮支持键盘聚焦并具有清晰焦点环", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/appearance");
+    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+
+    // 检查 CSS 样式表中已声明的 focus-visible 规范
+    const focusRules = await page.evaluate(() => {
+      const results: { selector: string; cssText: string; offset: string }[] = [];
+      for (const sheet of document.styleSheets) {
+        try {
+          for (const rule of sheet.cssRules) {
+            const r = rule as CSSStyleRule;
+            if (
+              r.selectorText &&
+              ((r.selectorText.includes(".apple-segmented button") && r.selectorText.includes(":focus-visible")) ||
+                (r.selectorText.includes(".btn") && r.selectorText.includes(":focus-visible")) ||
+                (r.selectorText.includes(".appearance-tabs button") && r.selectorText.includes(":focus-visible")))
+            ) {
+              results.push({
+                selector: r.selectorText,
+                cssText: r.cssText,
+                offset: r.style.outlineOffset,
+              });
+            }
+          }
+        } catch {}
+      }
+      return results;
+    });
+
+    expect(focusRules.length).toBeGreaterThan(0);
+    const segRule = focusRules.find((r) => r.selector.includes(".apple-segmented button") && r.selector.includes(":focus-visible"));
+    expect(segRule).toBeDefined();
+    expect(segRule!.offset).toBe("2px");
+    expect(segRule!.cssText).toContain("2px solid");
+
+    const appTabRule = focusRules.find((r) => r.selector.includes(".appearance-tabs button") && r.selector.includes(":focus-visible"));
+    expect(appTabRule).toBeDefined();
+    expect(appTabRule!.offset).toBe("2px");
+    expect(appTabRule!.cssText).toContain("2px solid");
+  });
+
+  test("主题设置初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/appearance");
+    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+
+    // 等待数据加载完成
+    await expect(page.locator(".appearance-state")).toHaveCount(0);
+
+    // 初始状态：无黄点、无未保存告警徽章
+    const dirtyDots = page.locator(".settings-tab-dirty-dot");
+    await expect(dirtyDots).toHaveCount(0);
+    const dirtyBadge = page.locator(".settings-dirty-badge");
+    await expect(dirtyBadge).toHaveCount(0);
+
+    // 模拟用户修改主题色输入框
+    const themeInput = page.locator('input[placeholder*="#2E8DFF"]').first();
+    await expect(themeInput).toBeVisible();
+    await themeInput.fill("#3b82f6");
+
+    // 此时出现黄点与脏标记
+    await expect(dirtyDots).toHaveCount(1);
+    await expect(dirtyBadge).toBeVisible();
+
+    // 点击保存按钮
+    const saveBtn = page.getByRole("button", { name: "保存外观设置" });
+    await expect(saveBtn).toBeVisible();
+    await saveBtn.click();
+
+    // 保存成功提示后，黄点消失
+    await expect(dirtyDots).toHaveCount(0);
+    await expect(dirtyBadge).toHaveCount(0);
+  });
 });

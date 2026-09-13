@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { VButton, VSwitch, Dialog, Toast } from "@/components/ui";
 import AttachmentField from "@/components/AttachmentField.vue";
+import { normalizeStyleSettings } from "./settings-state";
 
 const props = defineProps<{
   data: Record<string, any>;
@@ -46,38 +47,6 @@ function defaultStyle(): Record<string, any> {
   };
 }
 
-// 容错：加载数据缺键时补齐，保证 header_prefix 的 v-model 绑定路径安全；非 h2-h5 存量键保留不动。
-// 类型守卫：存量数据经「高级 JSON」保存后 header_prefix 可能为非对象 primitive（如字符串），
-// 对 primitive 赋属性会抛 TypeError 导致设置页白屏 → 非对象（含数组）整体重置为 {}
-const hpRaw = props.data.style.header_prefix;
-if (!hpRaw || typeof hpRaw !== "object" || Array.isArray(hpRaw)) {
-  props.data.style.header_prefix = {};
-}
-const hpSafe = props.data.style.header_prefix as Record<string, any>;
-for (const k of ["h2", "h3", "h4", "h5"] as const) {
-  if (hpSafe[k] === undefined) hpSafe[k] = "";
-}
-// 容错：存量 blur_px 可能为历史遗留数值（后端字段为 string，数字无法保存），统一规范化为 px 字符串
-if (typeof props.data.style.leftbar?.blur_px === "number") {
-  const n = props.data.style.leftbar.blur_px as number;
-  props.data.style.leftbar.blur_px = n > 0 ? numPx(n) : "";
-}
-
-// 容错：存量 style 可能缺 border_radius/gradient/paginator 键，补齐保证 v-model 绑定路径安全
-const styleRef = props.data.style as Record<string, any>;
-styleRef.border_radius = styleRef.border_radius || {};
-styleRef.gradient = styleRef.gradient || {};
-styleRef.animated_avatar = styleRef.animated_avatar || {};
-styleRef.loading = styleRef.loading || {};
-styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
-styleRef.leftbar = styleRef.leftbar || {};
-styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
-// 容错：存量 style 可能缺 codeblock/page_transition 键，补齐保证 v-model 绑定路径安全
-styleRef.codeblock = styleRef.codeblock || {};
-if (styleRef.codeblock.highlightjs_theme === undefined) styleRef.codeblock.highlightjs_theme = "";
-styleRef.page_transition = styleRef.page_transition || {};
-if (styleRef.page_transition.enable === undefined) styleRef.page_transition.enable = true;
-
 /** 恢复默认初始值（内存重置，需点保存才生效） */
 function resetStyle() {
   Dialog.warning({
@@ -85,7 +54,7 @@ function resetStyle() {
     description: "将清空所有外观自定义（主题色/字号/字体/背景等），回退到主题内置值。需点击保存后生效。",
     confirmType: "danger",
     onConfirm: () => {
-      props.data.style = defaultStyle();
+      props.data.style = normalizeStyleSettings(defaultStyle());
       Toast.success("已恢复默认，点击保存后生效");
     },
   });

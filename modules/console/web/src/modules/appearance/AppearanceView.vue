@@ -217,7 +217,11 @@ onBeforeRouteLeave((to, from, next) => {
 .appearance-desc { color: var(--color-text-tertiary); font-size: 13px; }
 .appearance-tabs { display: flex; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
 .appearance-tabs::-webkit-scrollbar { display: none; }
-.appearance-tabs button { min-height: 44px; white-space: nowrap; }
+.appearance-tabs button { min-height: 44px; white-space: nowrap; outline: none; }
+.appearance-tabs button:focus-visible {
+  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline-offset: 2px;
+}
 .appearance-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 0; color: var(--color-text-tertiary); font-size: 13px; }
 .appearance-error { color: var(--color-state-error); }
 .appearance-spin { animation: appearance-spin 1s linear infinite; }

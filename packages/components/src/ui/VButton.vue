@@ -84,15 +84,15 @@ function handleClick(e: MouseEvent) {
   text-decoration: none;
   font-weight: 550;
   letter-spacing: -0.01em;
-  height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13.5px;
   line-height: 1;
   border: 1px solid transparent;
   outline: 0;
   appearance: none;
   vertical-align: middle;
-  border-radius: 9px;
+  border-radius: 9999px;
   transition: all var(--duration-fast, 150ms) var(--ease-standard);
   background: transparent;
   white-space: nowrap;
@@ -112,6 +112,11 @@ function handleClick(e: MouseEvent) {
   cursor: not-allowed;
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline-offset: 2px;
+}
+
 /* 默认按钮：Apple 深色卡片微描边风格 */
 .btn-default {
   border-color: color-mix(in srgb, #fff 12%, transparent);
@@ -127,20 +132,16 @@ function handleClick(e: MouseEvent) {
   background: color-mix(in srgb, var(--color-muted-foreground, #8e8e93) 22%, var(--color-card, #1c1c1e));
 }
 
-/* 主按钮：品牌蓝底 + 顶层微光 + 高对比白字 */
+/* 主按钮：品牌蓝底 + 黑色高对比前景色 + 无外发光 */
 .btn-primary {
-  color: #ffffff !important;
+  color: var(--color-primary-foreground, #000000);
   background: var(--color-primary, #2e8dff);
-  border-color: color-mix(in srgb, var(--color-primary-hover, #66abff) 30%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 2px 6px color-mix(in srgb, var(--color-primary, #2e8dff) 30%, transparent);
+  border-color: transparent;
+  box-shadow: none;
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #4fa3ff);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 3px 10px color-mix(in srgb, var(--color-primary, #2e8dff) 45%, transparent);
+  background: var(--color-primary-hover, #66abff);
+  box-shadow: none;
 }
 .btn-primary:active:not(:disabled) {
   background: var(--color-primary-active, #007aff);
@@ -172,24 +173,24 @@ function handleClick(e: MouseEvent) {
   background: color-mix(in srgb, #fff 8%, transparent);
 }
 
-/* 危险按钮：Apple 红色 */
+/* 危险按钮：Apple 红色 + 无外发光 */
 .btn-danger {
-  color: #ffffff !important;
+  color: #ffffff;
   background: var(--color-state-error, #ff453a);
-  border-color: color-mix(in srgb, #fff 15%, transparent);
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-state-error, #ff453a) 30%, transparent);
+  border-color: transparent;
+  box-shadow: none;
 }
 .btn-danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-state-error, #ff453a) 88%, #fff);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-state-error, #ff453a) 45%, transparent);
+  box-shadow: none;
+}
+.btn-danger:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-state-error, #ff453a) 85%, #000);
+  transform: scale(0.97);
 }
 
 .btn-block {
   width: 100%;
-}
-
-.btn-pill {
-  border-radius: 9999px;
 }
 
 .btn-icon {
@@ -218,23 +219,31 @@ function handleClick(e: MouseEvent) {
   cursor: not-allowed;
 }
 
-/* 尺寸阶梯 */
+/* 尺寸阶梯：xs 24 / sm 28 / md 36 / lg 40px */
 .btn-lg {
   height: 40px;
   padding: 0 18px;
   font-size: 14.5px;
-  border-radius: 11px;
 }
 .btn-lg .btn-spinner {
   width: 16px;
   height: 16px;
 }
 
+.btn-md {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13.5px;
+}
+.btn-md .btn-spinner {
+  width: 14px;
+  height: 14px;
+}
+
 .btn-sm {
   height: 28px;
   padding: 0 11px;
   font-size: 12px;
-  border-radius: 7px;
   gap: 4px;
 }
 .btn-sm .btn-spinner {
@@ -246,7 +255,6 @@ function handleClick(e: MouseEvent) {
   height: 24px;
   padding: 0 8px;
   font-size: 11.5px;
-  border-radius: 6px;
   gap: 4px;
 }
 .btn-xs .btn-spinner {
@@ -254,10 +262,16 @@ function handleClick(e: MouseEvent) {
   height: 11px;
 }
 
-/* 圆形按钮 */
+/* 圆角规则放在尺寸规则之后，避免 sm/lg 覆盖胶囊形状 */
+.btn,
+.btn-pill {
+  border-radius: 9999px;
+}
+
+/* 圆形按钮：保持正圆 */
 .btn-circle {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: 9999px;
 }
@@ -272,5 +286,16 @@ function handleClick(e: MouseEvent) {
 .btn-xs.btn-circle {
   width: 24px;
   height: 24px;
+}
+
+/* 移动端触控尺寸保证：手机宽度 <768px 时点击区域至少 44px */
+@media (max-width: 767px) {
+  .btn {
+    min-height: 44px;
+  }
+  .btn.btn-circle {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 </style>

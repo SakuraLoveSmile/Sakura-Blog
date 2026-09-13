@@ -97,6 +97,7 @@ select {
   border-radius: var(--radius-full);
   transition: all var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
+  outline: none;
 }
 .apple-segmented button:hover {
   color: var(--color-foreground);
@@ -105,6 +106,10 @@ select {
   background: var(--color-accent);
   color: var(--color-foreground);
   box-shadow: var(--shadow-sm);
+}
+.apple-segmented button:focus-visible {
+  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline-offset: 2px;
 }
 
 /* 矩形分段变体（设置页等紧凑场景） */

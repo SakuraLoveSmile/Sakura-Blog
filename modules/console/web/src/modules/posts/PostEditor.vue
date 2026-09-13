@@ -13,7 +13,7 @@ import EditorSidebar from "./EditorSidebar.vue";
 import AiGenerateModal from "./AiGenerateModal.vue";
 import RevisionPanel from "./RevisionPanel.vue";
 import { Icon } from "@iconify/vue";
-import { Toast, Dialog } from "@/components/ui";
+import { Toast, Dialog, VButton } from "@/components/ui";
 
 const queryClient = useQueryClient();
 
@@ -706,36 +706,44 @@ function handleDiscardDraft() {
           />
         </div>
         <!-- 预览（移动端仅图标） -->
-        <button
-          type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-secondary hover:text-foreground sm:h-[34px] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[13px] sm:font-semibold"
+        <VButton
+          type="ghost"
+          size="md"
           :disabled="previewing"
           @click="handlePreview"
         >
-          <Icon icon="ri:eye-line" class="text-base sm:text-[15px]" />
+          <template #icon>
+            <Icon icon="ri:eye-line" class="text-base sm:text-[15px]" />
+          </template>
           <span class="hidden sm:inline">预览</span>
-        </button>
+        </VButton>
         <!-- 保存草稿（移动端仅图标） -->
-        <button
-          type="button"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:bg-accent disabled:opacity-50 sm:h-[34px] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[13px] sm:font-semibold"
+        <VButton
+          type="secondary"
+          size="md"
           :disabled="saving"
+          :loading="saving"
           @click="handleSave"
           :title="saving ? '保存中…' : '保存草稿'"
         >
-          <Icon icon="ri:save-line" class="text-base sm:text-[15px]" />
+          <template #icon>
+            <Icon icon="ri:save-line" class="text-base sm:text-[15px]" />
+          </template>
           <span class="hidden sm:inline">{{ saving ? "保存中…" : "保存草稿" }}</span>
-        </button>
+        </VButton>
         <!-- 发布（primary，移动端保持文字但更紧凑） -->
-        <button
-          type="button"
-          class="inline-flex h-8 items-center gap-1 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50 sm:h-[34px] sm:gap-1.5 sm:px-4 sm:text-[13px]"
+        <VButton
+          type="primary"
+          size="md"
           :disabled="publishing"
+          :loading="publishing"
           @click="handlePublish"
         >
-          <Icon icon="ri:send-plane-fill" class="text-sm sm:text-[15px]" />
+          <template #icon>
+            <Icon icon="ri:send-plane-fill" class="text-sm sm:text-[15px]" />
+          </template>
           <span>{{ publishing ? "发布中…" : "发布" }}</span>
-        </button>
+        </VButton>
       </div>
     </header>
 
