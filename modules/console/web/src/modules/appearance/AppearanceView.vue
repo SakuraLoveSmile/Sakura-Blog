@@ -11,7 +11,7 @@ import ThemeYamlTab from "@/modules/settings/ThemeYamlTab.vue";
 import LayoutSettings from "./LayoutSettings.vue";
 import EnhancementsSettings from "./EnhancementsSettings.vue";
 import AssetsSettings from "./AssetsSettings.vue";
-import { ensureSettingsDefaults } from "@/modules/settings/settings-state";
+import { ensureSettingsDefaults, deepCloneJsonSafe } from "@/modules/settings/settings-state";
 import "@/modules/settings/settings-form.css";
 
 const tabs = [
@@ -116,13 +116,14 @@ async function load() {
   }
 }
 
-async function save(section: string) {
+async function save(section: string, payload?: unknown) {
   if (savingKey.value) return;
   savingKey.value = section;
-  const currentPayload = data.value[section];
+  const raw = payload !== undefined ? payload : data.value[section];
+  const payloadToSubmit = deepCloneJsonSafe(raw ?? {});
   try {
-    await settingsApi.updateSection(section, currentPayload);
-    updateSectionSnapshot(section, currentPayload);
+    await settingsApi.updateSection(section, payloadToSubmit);
+    updateSectionSnapshot(section, payloadToSubmit);
     Toast.success("设置已保存，前台已生效");
   } catch (error) {
     Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));

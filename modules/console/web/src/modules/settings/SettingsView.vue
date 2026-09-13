@@ -10,7 +10,7 @@ import CommentSettings from "./tabs/CommentSettings.vue";
 import SeoSettings from "./tabs/SeoSettings.vue";
 import SearchSettings from "./tabs/SearchSettings.vue";
 import AdvancedSettings from "./tabs/AdvancedSettings.vue";
-import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects } from "./settings-state";
+import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
 import { useSettingsPreview } from "./useSettingsPreview";
 import "./settings-form.css";
 
@@ -70,6 +70,7 @@ const loading = ref(true);
 const loadError = ref("");
 const savingKey = ref("");
 const savedSnapshot = ref<string>("");
+const savedJsonBaseline = ref<Record<string, string>>({});
 
 const dirtySections = computed<Set<string>>(() => {
   if (loading.value || !savedSnapshot.value) return new Set();
@@ -77,7 +78,9 @@ const dirtySections = computed<Set<string>>(() => {
   try {
     const original = JSON.parse(savedSnapshot.value);
     for (const key of ALL_SETTINGS_SECTIONS) {
-      if (JSON.stringify(data.value[key]) !== JSON.stringify(original[key])) {
+      const isFormDirty = JSON.stringify(data.value[key]) !== JSON.stringify(original[key]);
+      const isJsonDirty = (rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "");
+      if (isFormDirty || isJsonDirty) {
         set.add(key);
       }
     }
@@ -86,11 +89,28 @@ const dirtySections = computed<Set<string>>(() => {
 });
 
 const isTabDirty = (tabKey: string) => {
+  if (tabKey === "advanced") {
+    if (dirtySections.value.has("inject") || dirtySections.value.has("data_cache")) return true;
+    for (const key of ALL_SETTINGS_SECTIONS) {
+      if ((rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "")) {
+        return true;
+      }
+    }
+    return false;
+  }
   const sections = tabSectionsMap[tabKey] || [];
   return sections.some((s) => dirtySections.value.has(s));
 };
 
-const isDirty = computed(() => dirtySections.value.size > 0);
+const isDirty = computed(() => {
+  if (dirtySections.value.size > 0) return true;
+  for (const key of ALL_SETTINGS_SECTIONS) {
+    if ((rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "")) {
+      return true;
+    }
+  }
+  return false;
+});
 
 const tabItems = computed(() =>
   tabs.map((tab) => ({
@@ -137,8 +157,13 @@ async function load() {
     const { data: response } = await settingsApi.all();
     data.value = ensureSettingsDefaults({ ...response });
     data.value.wiki = sortWikiProjects(data.value.wiki);
-    for (const section of ALL_SETTINGS_SECTIONS)
-      rawText.value[section] = JSON.stringify(response[section] ?? null, null, 2);
+    const initialBaselines: Record<string, string> = {};
+    for (const section of ALL_SETTINGS_SECTIONS) {
+      const jsonStr = JSON.stringify(response[section] ?? null, null, 2);
+      rawText.value[section] = jsonStr;
+      initialBaselines[section] = jsonStr;
+    }
+    savedJsonBaseline.value = initialBaselines;
     takeSnapshot();
   } catch {
     loadError.value = "加载设置失败";
@@ -160,9 +185,21 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
   savingKey.value = section;
   try {
     const rawToSave = payload !== undefined ? payload : data.value[section];
-    const body = JSON.parse(JSON.stringify(rawToSave));
+    const body = deepCloneJsonSafe(rawToSave ?? {});
+    const jsonAtStart = rawText.value[section];
+    const hadNoIndependentDraft = jsonAtStart === savedJsonBaseline.value[section];
+
     await settingsApi.updateSection(section, body);
-    rawText.value[section] = JSON.stringify(body, null, 2);
+
+    const formatted = JSON.stringify(body, null, 2);
+    // 普通保存前记录该分区 JSON 文本。成功后，只有文本仍等于请求开始时文本，且开始时没有独立 JSON 草稿，才自动同步为提交内容；否则保留用户草稿。
+    if (rawText.value[section] === jsonAtStart && hadNoIndependentDraft) {
+      rawText.value[section] = formatted;
+      savedJsonBaseline.value[section] = formatted;
+    } else {
+      savedJsonBaseline.value[section] = formatted;
+    }
+
     updateSectionSnapshot(section, body);
     Toast.success("设置已保存，前台已生效");
     return true;
@@ -182,21 +219,44 @@ async function saveComments() {
 
 async function saveJson(section: string) {
   if (savingKey.value) return;
-  savingKey.value = "json:" + section;
+  const rawAtStart = rawText.value[section] ?? "";
+  let payload: any;
   try {
-    const rawAtStart = rawText.value[section];
-    const payload = JSON.parse(rawAtStart);
-    await settingsApi.updateSection(section, payload);
-    const normalizedTarget = ensureSettingsDefaults({ [section]: JSON.parse(JSON.stringify(payload)) });
+    payload = JSON.parse(rawAtStart);
+  } catch (error) {
+    Toast.error("JSON 格式错误，请检查语法后再保存");
+    return;
+  }
+
+  savingKey.value = "json:" + section;
+  const formAtStart = JSON.stringify(data.value[section]);
+  try {
+    const payloadToSubmit = deepCloneJsonSafe(payload);
+    await settingsApi.updateSection(section, payloadToSubmit);
+
+    const normalizedTarget = ensureSettingsDefaults({ [section]: deepCloneJsonSafe(payloadToSubmit) });
     const savedNormalized = normalizedTarget[section];
-    if (rawText.value[section] === rawAtStart) {
-      data.value[section] = savedNormalized;
-      rawText.value[section] = JSON.stringify(savedNormalized, null, 2);
-    }
+
+    // 更新成功快照（使用本次提交内容规范化后的副本）
     updateSectionSnapshot(section, savedNormalized);
+
+    const formatted = JSON.stringify(savedNormalized, null, 2);
+    // 比较文本：若自请求开始未被再次修改，回填规范化文本并更新基线；否则保留新草稿，仅更新基线
+    if (rawText.value[section] === rawAtStart) {
+      rawText.value[section] = formatted;
+      savedJsonBaseline.value[section] = formatted;
+    } else {
+      savedJsonBaseline.value[section] = formatted;
+    }
+
+    // 比较表单：若保存期间结构化表单未发生变化，回填新的规范化表单数据；若发生变化，绝对不覆盖新的表单数据！
+    if (JSON.stringify(data.value[section]) === formAtStart) {
+      data.value[section] = deepCloneJsonSafe(savedNormalized);
+    }
+
     Toast.success("设置已保存，前台已生效");
   } catch (error) {
-    Toast.error(getApiErrorMessage(error, "JSON 解析或保存失败"));
+    Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
   } finally {
     savingKey.value = "";
   }

@@ -242,7 +242,7 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   return d;
 }
 
-function deepCloneJsonSafe<T>(val: T): T {
+export function deepCloneJsonSafe<T>(val: T): T {
   if (val === null || typeof val !== "object") return val;
   if (Array.isArray(val)) {
     return val.map((item) => deepCloneJsonSafe(item)) as unknown as T;

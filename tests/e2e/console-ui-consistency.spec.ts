@@ -600,4 +600,62 @@ test.describe("Console UI 一致性测试", () => {
     // 选中项使用 primary 色背景
     expect(activeColor).toBe("rgb(46, 141, 255)");
   });
+
+  test("系统设置保存时支持持续编辑且保留新内容与未保存提示", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+
+    const titleInput = page.locator("#settings-site-title");
+    await expect(titleInput).toBeVisible();
+
+    // 初始清空脏标记
+    const dirtyDots = page.locator(".settings-tab-dirty-dot");
+    const dirtyBadge = page.locator(".settings-dirty-badge");
+
+    // 修改标题（由于 basic 与 seo 标签均涉及 site 分区，两者均会出现黄点提示）
+    await titleInput.fill("E2E Test Site");
+    await expect(dirtyDots).toHaveCount(2);
+    await expect(dirtyBadge).toBeVisible();
+
+    // 保存基本设置
+    const saveBtn = page.locator(".settings-basic-actions button[type='submit']");
+    await saveBtn.click();
+    await expect(page.locator(".apple-toast-item")).toBeVisible();
+
+    // 保存后脏标记消除
+    await expect(dirtyDots).toHaveCount(0);
+    await expect(dirtyBadge).toHaveCount(0);
+
+    // 再次修改，黄点立即出现
+    await titleInput.fill("E2E Test Site In-Flight");
+    await expect(dirtyDots).toHaveCount(2);
+    await expect(dirtyBadge).toBeVisible();
+  });
+
+  test("系统设置高级原始 JSON 语法错误时前置拦截并保持未保存状态", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/settings?tab=advanced");
+    await expect(page.getByRole("heading", { name: "原始 JSON 配置（高级兜底）" })).toBeVisible();
+
+    const sectionSelect = page.locator("#settings-raw-section");
+    await sectionSelect.selectOption("site");
+
+    const rawTextarea = page.locator("#settings-raw-content");
+    await rawTextarea.fill("{\ninvalid_json: true,\n}");
+
+    // 未保存黄点与标记出现
+    const dirtyBadge = page.locator(".settings-dirty-badge");
+    await expect(dirtyBadge).toBeVisible();
+
+    const saveJsonBtn = page.getByRole("button", { name: /保存 site JSON/ });
+    await saveJsonBtn.click();
+
+    // 弹出错误 Toast
+    await expect(page.locator(".apple-toast-item")).toContainText("JSON 格式错误");
+    // 依然保持脏状态
+    await expect(dirtyBadge).toBeVisible();
+  });
 });

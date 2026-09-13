@@ -199,7 +199,7 @@
 
 | 任务 | 目标与可见结果 | 对应分支 / 工作树 | 状态 |
 |---|---|---|---|
-| **T2** | 保存过程中继续编辑，输入与未保存提示保持准确（深复制快照、JSON 草稿未保存判定与文本基线、避免丢失与漏报） | `../Blog-r3-t2-save` (`codex/console-r3-t2-save`) | 实现中 |
+| **T2** | 保存过程中继续编辑，输入与未保存提示保持准确（深复制快照、JSON 草稿未保存判定与文本基线、避免丢失与漏报） | `../Blog-r3-t2-save` (`codex/console-r3-t2-save`) | 待体验 |
 | **T3** | 修正 Tabs 自身滚动（禁止 scrollIntoView、focus preventScroll）、补齐条件挂载 tabpanel 外壳、空列表隐藏选择入口、ConsoleStatsCard 迁入 Console 本地组件、SEO 与设计参数复原 | `../Blog-r3-t3-views` (`codex/console-r3-t3-views`) | 未开始 |
 | **T1** | 保留已完成布局，补齐真实数据滚动到底部末项可操作可点击且无遮挡的端到端验收 | `../Blog-r3-t1-nav` (`codex/console-r3-t1-nav`) | 未开始 |
 
@@ -209,7 +209,7 @@
 
 ## 6. 剩余修复施工与验证日志 (Round 3)
 
-### T2：保存过程中继续编辑，输入与未保存提示保持准确（实现中）
+### T2：保存过程中继续编辑，输入与未保存提示保持准确（待体验）
 - **负责人**：T2 执行者
 - **计划目标**：
   - 请求发出前，深复制本次提交内容；成功后只用提交副本更新分区快照，禁止读取请求结束时的可变表单对象。
@@ -232,15 +232,17 @@
   - `modules/console/web/src/modules/settings/SettingsView.vue`
   - `modules/console/web/src/modules/settings/settings-state.ts`
   - `modules/console/tests/settings-normalize.test.ts`
+  - `modules/console/tests/settings-save-race.test.ts`
   - `tests/e2e/console-ui-consistency.spec.ts`
 - **执行过程**：
-  - [ ] 创建工作树 `../Blog-r3-t2-save` (`codex/console-r3-t2-save`)，挂载 Git hook，建立共享 `resource/` 链接。
-  - [ ] 改造 `AppearanceView.save` 为深拷贝提交与深拷贝快照。
-  - [ ] 改造 `SettingsView` 维护各分区 JSON 文本基线，未保存计算纳入 JSON 文本草稿比较与无效 JSON 校验。
-  - [ ] 修复 `SettingsView.save` 与 `saveJson` 保存前后基线对比与条件同步逻辑。
-  - [ ] 补充保存竞态与未保存漏报单元测试与 E2E 自动化测试。
-  - [ ] 运行门禁 `make console-test`、`make test`、`make build` 与 E2E 测试。
-  - [ ] 通过 `make merge-check` 合入 `dev`。
+  - [x] 创建工作树 `../Blog-r3-t2-save` (`codex/console-r3-t2-save`)，挂载 Git hook，建立共享 `resource/` 链接。
+  - [x] 改造 `AppearanceView.save` 为深拷贝提交与深拷贝快照。
+  - [x] 改造 `SettingsView` 维护各分区 JSON 文本基线，未保存计算纳入 JSON 文本草稿比较与无效 JSON 校验。
+  - [x] 修复 `SettingsView.save` 与 `saveJson` 保存前后基线对比与条件同步逻辑。
+  - [x] 补充保存竞态与未保存漏报单元测试与 E2E 自动化测试。
+  - [x] 运行门禁 `make console-test`、`make test`、`make build` 与 21 项 E2E 测试全数通过。
+  - [x] 通过 `make merge-check` 合入 `dev`。
+  - [x] 标记为 **待体验**。
 
 ### T3：修正 Tabs、空状态与设计偏差（未开始）
 - **负责人**：T3 执行者
