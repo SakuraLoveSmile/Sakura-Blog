@@ -14,6 +14,7 @@ import {
   VPagination,
   VModal,
   VFloatingDock,
+  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
@@ -455,47 +456,35 @@ function formatMimeBadge(mime: string): string {
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:attachment-line" />
-          </div>
-          <div>
-            <div class="stats-label">全部附件</div>
-            <div class="stats-value">{{ stats.total }} <span class="stats-sub">个实体文件</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:hard-drive-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">当前列表占用</div>
-            <div class="stats-value text-[#30D158]">
-              {{ stats.totalBytes }} <span class="stats-sub">磁盘已用空间</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
-            <Icon icon="ri:image-line" />
-          </div>
-          <div>
-            <div class="stats-label">图片素材</div>
-            <div class="stats-value">{{ stats.imgCount }} <span class="stats-sub">张配图/封面</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:folder-zip-line" />
-          </div>
-          <div>
-            <div class="stats-label">分组合辑</div>
-            <div class="stats-value">{{ groups.length }} <span class="stats-sub">个自定义分组</span></div>
-          </div>
-        </div>
+        <ConsoleStatsCard
+          label="全部附件"
+          :value="stats.total"
+          sub="个实体文件"
+          icon="ri:attachment-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="当前列表占用"
+          :value="stats.totalBytes"
+          sub="磁盘已用空间"
+          icon="ri:hard-drive-2-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="图片素材"
+          :value="stats.imgCount"
+          sub="张配图/封面"
+          icon="ri:image-line"
+          color="cyan"
+        />
+        <ConsoleStatsCard
+          label="分组合辑"
+          :value="groups.length"
+          sub="个自定义分组"
+          icon="ri:folder-zip-line"
+          color="purple"
+        />
       </div>
 
       <!-- 主工作区：左侧分组侧栏 + 右侧瀑布流/表格 -->

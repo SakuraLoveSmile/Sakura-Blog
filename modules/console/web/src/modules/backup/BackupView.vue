@@ -3,7 +3,17 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { backupApi, backupExportUrl, backupExportMarkdownUrl, RestoreTaskHttpError, type RestoreTask } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VCard, VButton, VLoading, VEmpty, VModal, Dialog, Toast } from "@/components/ui";
+import {
+  VPageHeader,
+  VCard,
+  VButton,
+  VLoading,
+  VEmpty,
+  VModal,
+  ConsoleStatsCard,
+  Dialog,
+  Toast,
+} from "@/components/ui";
 import { useAuthStore } from "@/stores/auth";
 import { queryClient } from "@/api/query-client";
 import router from "@/router";
@@ -334,47 +344,35 @@ onBeforeUnmount(() => {
     <div class="mx-auto max-w-[1200px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
       <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:database-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">本地快照备份</div>
-            <div class="stats-value">{{ stats.totalSnapshots }} <span class="stats-sub">份快照文件</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:hard-drive-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">快照占用空间</div>
-            <div class="stats-value text-[#30D158]">{{ stats.totalBytes }} <span class="stats-sub">磁盘已用</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
-            <Icon icon="ri:timer-line" />
-          </div>
-          <div>
-            <div class="stats-label">定时自动备份</div>
-            <div class="stats-value text-[#30B0C7]">
-              {{ stats.autoBackup }} <span class="stats-sub">每 24 小时执行</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:history-line" />
-          </div>
-          <div>
-            <div class="stats-label">快照轮转策略</div>
-            <div class="stats-value">{{ stats.backupKeep }} <span class="stats-sub">自动清理旧版本</span></div>
-          </div>
-        </div>
+        <ConsoleStatsCard
+          label="本地快照备份"
+          :value="stats.totalSnapshots"
+          sub="份快照文件"
+          icon="ri:database-2-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="快照占用空间"
+          :value="stats.totalBytes"
+          sub="磁盘已用"
+          icon="ri:hard-drive-2-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="定时自动备份"
+          :value="stats.autoBackup"
+          sub="每 24 小时执行"
+          icon="ri:timer-line"
+          color="cyan"
+        />
+        <ConsoleStatsCard
+          label="快照轮转策略"
+          :value="stats.backupKeep"
+          sub="自动清理旧版本"
+          icon="ri:history-line"
+          color="purple"
+        />
       </div>
 
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">

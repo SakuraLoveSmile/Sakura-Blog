@@ -31,9 +31,11 @@ const active = computed(() => route.path);
         <ul class="flex gap-1 overflow-x-auto md:block md:space-y-1 md:gap-0">
           <li v-for="s in sub" :key="s.path">
             <button
-              class="flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-base px-3 py-2 text-sm transition-colors"
+              class="flex h-[38px] w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] px-3 text-[13.5px] transition-all"
               :class="
-                active === s.path ? 'bg-primary/10 font-medium text-primary' : 'text-text-tertiary hover:bg-accent'
+                active === s.path
+                  ? 'bg-primary font-semibold text-primary-foreground shadow-sm'
+                  : 'text-text-secondary hover:bg-secondary hover:text-foreground'
               "
               @click="router.push(s.path)"
             >

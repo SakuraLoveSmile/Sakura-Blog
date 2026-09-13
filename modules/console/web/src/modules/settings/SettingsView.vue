@@ -287,25 +287,33 @@ onBeforeRouteLeave((to, from, next) => {
             ><VButton type="secondary" size="sm" @click="load">重试</VButton>
           </div>
           <template v-else>
-            <BasicSettings v-if="active === 'basic'" :data="data" :saving="savingKey" @save="save" />
-            <div v-else class="settings-tab-content">
-              <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
-              <CommentSettings
-                v-else-if="active === 'comments'"
-                :data="data"
-                :saving="savingKey"
-                @save="saveComments"
-              />
-              <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
-              <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
-              <AdvancedSettings
-                v-else-if="active === 'advanced'"
-                :data="data"
-                :raw-text="rawText"
-                :saving="savingKey"
-                @save="save"
-                @save-json="saveJson"
-              />
+            <div
+              :id="`tabpanel-${active}`"
+              role="tabpanel"
+              :aria-labelledby="`tab-${active}`"
+              tabindex="0"
+              class="settings-tab-panel outline-none"
+            >
+              <BasicSettings v-if="active === 'basic'" :data="data" :saving="savingKey" @save="save" />
+              <div v-else class="settings-tab-content">
+                <PostSettings v-if="active === 'post'" :data="data" :saving="savingKey" @save="save" />
+                <CommentSettings
+                  v-else-if="active === 'comments'"
+                  :data="data"
+                  :saving="savingKey"
+                  @save="saveComments"
+                />
+                <SeoSettings v-else-if="active === 'seo'" :data="data" :saving="savingKey" @save="save" />
+                <SearchSettings v-else-if="active === 'search'" :data="data" :saving="savingKey" @save="save" />
+                <AdvancedSettings
+                  v-else-if="active === 'advanced'"
+                  :data="data"
+                  :raw-text="rawText"
+                  :saving="savingKey"
+                  @save="save"
+                  @save-json="saveJson"
+                />
+              </div>
             </div>
           </template>
         </VCard>

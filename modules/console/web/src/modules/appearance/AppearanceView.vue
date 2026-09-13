@@ -206,7 +206,14 @@ onBeforeRouteLeave((to, from, next) => {
             <Icon icon="ri:error-warning-line" width="22" height="22" /><span>{{ loadError }}</span>
             <VButton size="sm" type="secondary" @click="load">重试</VButton>
           </div>
-          <div v-else class="appearance-tab-content settings-tab-content">
+          <div
+            v-else
+            :id="`tabpanel-${active}`"
+            role="tabpanel"
+            :aria-labelledby="`tab-${active}`"
+            tabindex="0"
+            class="appearance-tab-content settings-tab-content outline-none"
+          >
             <div v-if="active === 'appearance'" class="settings-basic-section settings-basic-section-first border-b-0">
               <AppearanceTab :data="data" :saving="savingKey" @save="save" />
             </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 
 // Halo VTabbar 复刻（packages/components/src/components/tabbar/Tabbar.vue）
@@ -19,10 +19,13 @@ const props = withDefaults(
     activeId?: string;
     /** 风格：default 底部高亮条 / outline 胶囊填充 / segmented 悬浮分段胶囊 */
     type?: "default" | "outline" | "segmented";
+    /** 激活标签时是否自动平滑滚入居中（适合移动端/窄屏横向滚动场景） */
+    autoReveal?: boolean;
   }>(),
   {
     activeId: undefined,
     type: "default",
+    autoReveal: true,
   },
 );
 
@@ -34,6 +37,29 @@ const emit = defineEmits<{
 const buttonRefs = ref<HTMLButtonElement[]>([]);
 
 const current = computed(() => props.activeId ?? props.items[0]?.id);
+
+function scrollActiveIntoView() {
+  if (!props.autoReveal) return;
+  const idx = props.items.findIndex((item) => item.id === current.value);
+  const target = buttonRefs.value[idx];
+  if (target) {
+    try {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    } catch {}
+  }
+}
+
+watch(current, () => {
+  void nextTick(scrollActiveIntoView);
+});
+
+onMounted(() => {
+  void nextTick(scrollActiveIntoView);
+});
 
 function select(id: string) {
   if (id === current.value) return;

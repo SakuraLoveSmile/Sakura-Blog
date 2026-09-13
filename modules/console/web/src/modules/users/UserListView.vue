@@ -14,6 +14,7 @@ import {
   VPagination,
   VStatusDot,
   VModal,
+  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
@@ -227,156 +228,37 @@ const labelCls = "block text-xs text-text-tertiary mb-1";
 
     <div class="px-4 pb-8 sm:px-5 md:px-8">
       <!-- ===== Stat Cards ===== -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <!-- 总用户数 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">总用户数</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-primary"
-              style="background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12"
-              ></span>
-              <Icon icon="ri:team-line" class="relative z-[1] text-[19px]" />
-            </div>
-          </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums"
-          >
-            {{ stats.total }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span
-              class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="
-                background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);
-                color: var(--color-state-success);
-              "
-            >
-              <Icon icon="ri:arrow-up-line" class="text-[11px]" />
-              全部
-            </span>
-            <span class="text-[12px] text-text-tertiary">注册账户</span>
-          </div>
-        </div>
-
-        <!-- 管理员 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">管理员</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-error"
-              style="background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent)"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12"
-              ></span>
-              <Icon icon="ri:shield-user-line" class="relative z-[1] text-[19px]" />
-            </div>
-          </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums"
-          >
-            {{ stats.adminCount }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span
-              class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="
-                background-color: color-mix(in srgb, var(--color-state-error) 10%, transparent);
-                color: var(--color-state-error);
-              "
-            >
-              <Icon icon="ri:star-line" class="text-[11px]" />
-              最高权限
-            </span>
-          </div>
-        </div>
-
-        <!-- 作者 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">作者</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-chart-5"
-              style="background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent)"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12"
-              ></span>
-              <Icon icon="ri:quill-pen-line" class="relative z-[1] text-[19px]" />
-            </div>
-          </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums"
-          >
-            {{ stats.authorCount }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span
-              class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="
-                background-color: color-mix(in srgb, var(--color-chart-5) 10%, transparent);
-                color: var(--color-chart-5);
-              "
-            >
-              <Icon icon="ri:edit-2-line" class="text-[11px]" />
-              内容编辑
-            </span>
-          </div>
-        </div>
-
-        <!-- 活跃用户 -->
-        <div
-          class="apple-card-highlight rounded-[14px] border border-border bg-card p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]"
-        >
-          <div class="flex items-start justify-between">
-            <span class="text-[13px] font-medium text-text-secondary">当前页用户</span>
-            <div
-              class="relative flex h-10 w-10 items-center justify-center rounded-[12px] text-state-success"
-              style="background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent)"
-            >
-              <span
-                class="pointer-events-none absolute inset-0 rounded-[13px]"
-                style="background: currentColor; opacity: 0.12"
-              ></span>
-              <Icon icon="ri:user-star-line" class="relative z-[1] text-[19px]" />
-            </div>
-          </div>
-          <div
-            class="mt-3 text-[32px] font-bold leading-none tracking-tight text-foreground"
-            style="font-variant-numeric: tabular-nums"
-          >
-            {{ users.length }}
-          </div>
-          <div class="mt-2.5 flex items-center gap-1.5">
-            <span
-              class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold"
-              style="
-                background-color: color-mix(in srgb, var(--color-state-success) 10%, transparent);
-                color: var(--color-state-success);
-              "
-            >
-              <Icon icon="ri:eye-line" class="text-[11px]" />
-              本页展示
-            </span>
-            <span class="text-[12px] text-text-tertiary">共 {{ total }} 条</span>
-          </div>
-        </div>
+      <!-- 概览数据指标卡 -->
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <ConsoleStatsCard
+          label="总用户数"
+          :value="stats.total"
+          sub="注册账户"
+          icon="ri:team-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="系统管理员"
+          :value="stats.adminCount"
+          sub="管理权限"
+          icon="ri:shield-user-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="专栏作者"
+          :value="stats.authorCount"
+          sub="内容编辑"
+          icon="ri:quill-pen-line"
+          color="purple"
+        />
+        <ConsoleStatsCard
+          label="当前页用户"
+          :value="users.length"
+          :sub="'共 ' + total + ' 条'"
+          icon="ri:user-star-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
       </div>
 
       <!-- ===== User Table Card ===== -->

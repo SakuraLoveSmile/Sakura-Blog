@@ -15,6 +15,7 @@ import {
   VFloatingDock,
   VPagination,
   VModal,
+  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
@@ -353,45 +354,36 @@ function handleTitleLeave(e: MouseEvent) {
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:article-line" />
-          </div>
-          <div>
-            <div class="stats-label">全部文章</div>
-            <div class="stats-value">{{ stats.total }} <span class="stats-sub">篇博文</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:checkbox-circle-line" />
-          </div>
-          <div>
-            <div class="stats-label">已公开发布</div>
-            <div class="stats-value text-[#30D158]">{{ stats.pubCount }} <span class="stats-sub">篇在线查阅</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-            <Icon icon="ri:draft-line" />
-          </div>
-          <div>
-            <div class="stats-label">草稿箱</div>
-            <div class="stats-value text-[#FF9500]">{{ stats.draftCount }} <span class="stats-sub">篇未发布</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:pushpin-line" />
-          </div>
-          <div>
-            <div class="stats-label">置顶推荐</div>
-            <div class="stats-value">{{ stats.pinCount }} <span class="stats-sub">篇精选置顶</span></div>
-          </div>
-        </div>
+        <ConsoleStatsCard
+          label="全部文章"
+          :value="stats.total"
+          sub="篇博文"
+          icon="ri:article-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="已公开发布"
+          :value="stats.pubCount"
+          sub="篇在线查阅"
+          icon="ri:checkbox-circle-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="草稿箱"
+          :value="stats.draftCount"
+          sub="篇未发布"
+          icon="ri:draft-line"
+          color="warning"
+          value-class="text-[#FF9500]"
+        />
+        <ConsoleStatsCard
+          label="置顶推荐"
+          :value="stats.pinCount"
+          sub="篇精选置顶"
+          icon="ri:pushpin-line"
+          color="purple"
+        />
       </div>
 
       <!-- 工具栏：状态分段 + 筛选 + 视图模式 -->

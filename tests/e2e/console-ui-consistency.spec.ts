@@ -543,4 +543,61 @@ test.describe("Console UI 一致性测试", () => {
     const innerNestedCards = page.locator(".appearance-tab-content .card-wrapper");
     await expect(innerNestedCards).toHaveCount(0);
   });
+
+  test("ConsoleStatsCard 在用户管理与备份管理均采用统一规范", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // 用户管理
+    await page.goto("/console/users");
+    await expect(page.getByRole("heading", { name: "用户管理" })).toBeVisible();
+    const userCards = page.locator(".stats-card");
+    await expect(userCards).toHaveCount(4);
+    const userFirstBox = await userCards.first().boundingBox();
+    expect(userFirstBox).not.toBeNull();
+    expect(userFirstBox!.height).toBeGreaterThanOrEqual(80);
+
+    // 备份管理
+    await page.goto("/console/backup");
+    await expect(page.getByRole("heading", { name: "备份与导出" })).toBeVisible();
+    const backupCards = page.locator(".stats-card");
+    await expect(backupCards).toHaveCount(4);
+    const backupFirstBox = await backupCards.first().boundingBox();
+    expect(backupFirstBox).not.toBeNull();
+    expect(backupFirstBox!.height).toBeGreaterThanOrEqual(80);
+  });
+
+  test("设置页具有合法 tabpanel 容器与 aria-labelledby 联动", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+
+    const panel = page.locator('#tabpanel-basic[role="tabpanel"]');
+    await expect(panel).toBeVisible();
+    const labelledby = await panel.getAttribute("aria-labelledby");
+    expect(labelledby).toBe("tab-basic");
+
+    const tab = page.locator("#tab-basic");
+    await expect(tab).toBeVisible();
+    const controls = await tab.getAttribute("aria-controls");
+    expect(controls).toBe("tabpanel-basic");
+  });
+
+  test("SEO 二级导航高度统一为 38px 且选中样式与主题对齐", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/seo/overview");
+    await expect(page.getByRole("heading", { name: "SEO 工具集" })).toBeVisible();
+
+    const activeBtn = page.getByRole("button", { name: "概览" });
+    await expect(activeBtn).toBeVisible();
+    const activeBox = await activeBtn.boundingBox();
+    expect(activeBox).not.toBeNull();
+    expect(Math.round(activeBox!.height)).toBe(38);
+
+    const activeColor = await activeBtn.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+    // 选中项使用 primary 色背景
+    expect(activeColor).toBe("rgb(46, 141, 255)");
+  });
 });

@@ -13,6 +13,7 @@ import {
   VLoading,
   VPagination,
   VFloatingDock,
+  ConsoleStatsCard,
   Dialog,
   Toast,
 } from "@/components/ui";
@@ -249,49 +250,36 @@ function statusBadge(status: string) {
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:pages-line" />
-          </div>
-          <div>
-            <div class="stats-label">独立页面</div>
-            <div class="stats-value">{{ stats.total }} <span class="stats-sub">个页面</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:checkbox-circle-line" />
-          </div>
-          <div>
-            <div class="stats-label">已公开发布</div>
-            <div class="stats-value text-[#30D158]">
-              {{ stats.publishedCount }} <span class="stats-sub">个正常展示</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-            <Icon icon="ri:draft-line" />
-          </div>
-          <div>
-            <div class="stats-label">草稿状态</div>
-            <div class="stats-value text-[#FF9500]">
-              {{ stats.draftCount }} <span class="stats-sub">个未发布草稿</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:cpu-line" />
-          </div>
-          <div>
-            <div class="stats-label">系统内置页</div>
-            <div class="stats-value">{{ stats.systemCount }} <span class="stats-sub">个系统保留路由</span></div>
-          </div>
-        </div>
+        <ConsoleStatsCard
+          label="独立页面"
+          :value="stats.total"
+          sub="个页面"
+          icon="ri:pages-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="已公开发布"
+          :value="stats.publishedCount"
+          sub="个正常展示"
+          icon="ri:checkbox-circle-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="草稿状态"
+          :value="stats.draftCount"
+          sub="个未发布草稿"
+          icon="ri:draft-line"
+          color="warning"
+          value-class="text-[#FF9500]"
+        />
+        <ConsoleStatsCard
+          label="系统内置页"
+          :value="stats.systemCount"
+          sub="个系统保留路由"
+          icon="ri:cpu-line"
+          color="purple"
+        />
       </div>
 
       <!-- 工具栏：状态分段 + 排序 + 视图模式 -->
