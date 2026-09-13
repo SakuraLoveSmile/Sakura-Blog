@@ -466,3 +466,40 @@ select {
 .apple-btn-icon.pill {
   border-radius: var(--radius-full);
 }
+
+/* 筛选按钮基础与移动端触控尺寸保证 */
+.apple-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 移动端触控尺寸保证（<768px 视口下输入、搜索、选择器、筛选按钮高度至少 44px，独立图标按钮至少 44×44px） */
+@media (max-width: 767px) {
+  [data-app="console"] .apple-input,
+  [data-app="console"] .apple-select,
+  [data-app="console"] .apple-search,
+  [data-app="console"] .apple-color {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-btn-icon,
+  [data-app="console"] .icon-btn,
+  [data-app="console"] .post-card-action,
+  [data-app="console"] .pagination-btn {
+    min-width: 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-segmented button {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-filter-btn {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+}

@@ -330,6 +330,98 @@ test.describe("Console UI 一致性测试", () => {
     expect(appTabRule!.cssText).toContain("2px solid");
   });
 
+  test("data-app 标识在 Console 和 UC 独立区分且样式隔离", async ({ page }) => {
+    await login(page);
+    await page.goto("/console/dashboard");
+    const consoleAppAttr = await page.evaluate(() => document.documentElement.getAttribute("data-app"));
+    expect(consoleAppAttr).toBe("console");
+
+    await page.goto("/uc/login");
+    const ucAppAttr = await page.evaluate(() => document.documentElement.getAttribute("data-app"));
+    expect(ucAppAttr).toBe("uc");
+  });
+
+  test("390px 手机视口下表单输入、搜索、选择器、筛选按钮高度至少 44px，图标按钮至少 44x44px", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    // 搜索框高度 >= 44px
+    const searchEl = page.locator(".apple-search").first();
+    await expect(searchEl).toBeVisible();
+    const searchBox = await searchEl.boundingBox();
+    expect(searchBox).not.toBeNull();
+    expect(searchBox!.height).toBeGreaterThanOrEqual(44);
+
+    // 下拉选择器高度 >= 44px
+    const selectEl = page.locator(".apple-select").first();
+    await expect(selectEl).toBeVisible();
+    const selectBox = await selectEl.boundingBox();
+    expect(selectBox).not.toBeNull();
+    expect(selectBox!.height).toBeGreaterThanOrEqual(44);
+
+    // 分段筛选按钮高度 >= 44px
+    const segBtn = page.locator(".apple-segmented button").first();
+    await expect(segBtn).toBeVisible();
+    const segBox = await segBtn.boundingBox();
+    expect(segBox).not.toBeNull();
+    expect(segBox!.height).toBeGreaterThanOrEqual(44);
+
+    // 全选/工具栏筛选按钮高度 >= 44px
+    const filterBtn = page.locator(".apple-filter-btn").first();
+    await expect(filterBtn).toBeVisible();
+    const filterBox = await filterBtn.boundingBox();
+    expect(filterBox).not.toBeNull();
+    expect(filterBox!.height).toBeGreaterThanOrEqual(44);
+
+    // 卡片独立操作图标按钮 >= 44x44px
+    const postAction = page.locator(".post-card-action").first();
+    if (await postAction.count() > 0) {
+      const actionBox = await postAction.boundingBox();
+      expect(actionBox).not.toBeNull();
+      expect(actionBox!.width).toBeGreaterThanOrEqual(44);
+      expect(actionBox!.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("系统设置保存当前分区 JSON 后同步规范化快照，消除未保存假脏态", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/settings?tab=advanced");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "原始 JSON 配置（高级兜底）" })).toBeVisible();
+
+    // 初始状态：无黄点与脏标记
+    const dirtyDots = page.locator(".settings-tab-dirty-dot");
+    await expect(dirtyDots).toHaveCount(0);
+    const dirtyBadge = page.locator(".settings-dirty-badge");
+    await expect(dirtyBadge).toHaveCount(0);
+
+    // 选择 site 分区
+    const sectionSelect = page.locator("#settings-raw-section");
+    await sectionSelect.selectOption("site");
+
+    // 获取当前 raw JSON 内容并做轻微合规修改
+    const rawTextarea = page.locator("#settings-raw-content");
+    const currentVal = await rawTextarea.inputValue();
+    const parsed = JSON.parse(currentVal || "{}");
+    parsed.subtitle = parsed.subtitle === "E2E Tested" ? "E2E Updated" : "E2E Tested";
+    await rawTextarea.fill(JSON.stringify(parsed, null, 2));
+
+    // 此时表单在本地发生变更，出现未保存标记
+    const saveJsonBtn = page.getByRole("button", { name: /保存 site JSON/ });
+    await expect(saveJsonBtn).toBeVisible();
+    await saveJsonBtn.click();
+
+    // 等待保存完成
+    await expect(page.locator(".apple-toast-item")).toBeVisible();
+
+    // 保存后快照已同步更新，不产生未保存假脏态
+    await expect(dirtyDots).toHaveCount(0);
+    await expect(dirtyBadge).toHaveCount(0);
+  });
+
   test("主题设置初始加载无未保存黄点误报，真实修改后出现黄点并可保存恢复", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });

@@ -101,7 +101,7 @@
 | 任务 | 目标与可见结果 | 对应分支 / 工作树 | 状态 |
 |---|---|---|---|
 | **T1** | 手机标题、搜索、按钮按三行排列，主要操作与底部内容完整可用无遮挡 | `../Blog-r2-t1-layout` (`codex/console-r2-t1-layout`) | 待体验 |
-| **T2** | 手机控件易点击（44px）；设置空值严格保留，保存与修改提示准确无假脏态 | `../Blog-r2-t2-controls` (`codex/console-r2-t2-controls`) | 未开始 |
+| **T2** | 手机控件易点击（44px）；设置空值严格保留，保存与修改提示准确无假脏态 | `../Blog-r2-t2-controls` (`codex/console-r2-t2-controls`) | 待体验 |
 | **T3** | 用户、备份等页面采用统一设计，设置 tabs 与面板联动，空状态符合约定 | `../Blog-r2-t3-views` (`codex/console-r2-t3-views`) | 未开始 |
 
 *状态流转规范：未开始 → 实现中 → 待体验 → 已验收（必须严格按 T1 → T2 → T3 依次交付，仅在用户确认后标记已验收）。*
@@ -130,13 +130,33 @@
   - [x] 运行门禁 `make console-test`、E2E 隔离测试、`make test`、`make build`（全绿通过）。
   - [x] 标记为 **待体验**，准备通过 `make merge-check` 合入 `dev`。
 
-### T2：补齐触控尺寸与设置数据边界（未开始）
+### T2：补齐触控尺寸与设置数据边界（待体验）
 - **负责人**：设置 worker / 控件 worker
-- **计划目标**：
-  - `data-app="console"` 与 `data-app="uc"` 样式隔离；
-  - 手机端 `<768px` 输入、搜索、选择器、筛选按钮高度至少 44px，独立图标按钮至少 44×44px；
-  - `normalizeStyleSettings` 深拷贝纯函数化（不修改原入参对象，支持深冻结，保留 `"" / 0 / false` 和未知键）；
-  - 修复 `SettingsView.saveJson` 与保存快照同步逻辑（成功只更新该分区快照，请求中再编辑保留脏态）。
+- **改动范围**：
+  - `modules/console/tests/settings-normalize.test.ts`
+  - `modules/console/web/index.html`
+  - `modules/console/web/uc.html`
+  - `modules/console/web/src/main.ts`
+  - `modules/console/web/src/uc/main.ts`
+  - `modules/console/web/src/modules/settings/settings-state.ts`
+  - `modules/console/web/src/modules/settings/SettingsView.vue`
+  - `modules/console/web/src/styles/apple-base.css`
+  - `packages/components/src/ui/FilterDropdown.vue`
+  - `packages/components/src/ui/VPagination.vue`
+  - `modules/console/web/src/modules/posts/PostList.vue`
+  - `modules/console/web/src/modules/pages/PageList.vue`
+  - `modules/console/web/src/modules/attachments/AttachmentList.vue`
+  - `modules/console/web/src/modules/comments/CommentList.vue`
+  - `tests/e2e/console-ui-consistency.spec.ts`
+- **执行过程**：
+  - [x] 创建工作树 `../Blog-r2-t2-controls` (`codex/console-r2-t2-controls`)，挂载 Git hook，建立共享 `resource/` 链接。
+  - [x] 在 `index.html`、`uc.html`、`main.ts`、`uc/main.ts` 中设定 `data-app="console"` 与 `data-app="uc"`，样式隔离保证互相不污染。
+  - [x] 手机端 `<768px` 确保输入框、选择器、搜索框、筛选按钮高度至少 44px；独立图标按钮与卡片操作按钮至少 44×44px。
+  - [x] `normalizeStyleSettings` 纯函数深拷贝重构（使用 `deepCloneJsonSafe`，支持深冻结对象，严格保留 `"" / 0 / false` 和未知自定义扩展键，正确转换 `blur_px`）。
+  - [x] 修复 `SettingsView.saveJson` 与保存快照同步逻辑（成功仅更新该分区快照，保存后重置原始 JSON，杜绝未保存假脏态；请求中再次编辑保留脏态）。
+  - [x] 补充并更新自动化测试：单测 8/8 全绿，E2E 16 项自动化用例全部通过。
+  - [x] 运行本地全套门禁（`make console-test`、`make test`、`make build`、E2E 测试全部全绿通过）。
+  - [x] 标记为 **待体验**，准备通过 `make merge-check` 合入 `dev`。
 
 ### T3：补齐页面统一与设置联动（未开始）
 - **负责人**：页面 worker

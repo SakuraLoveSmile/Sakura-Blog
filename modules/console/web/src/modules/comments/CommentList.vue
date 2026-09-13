@@ -452,7 +452,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            class="apple-filter-btn rounded-lg border border-border px-3 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             :disabled="comments.length === 0"
             @click="comments.length > 0 && selectedIds.size === comments.length ? clearSelection() : selectAll()"
           >

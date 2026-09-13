@@ -18,6 +18,8 @@ import "@fontsource/dm-sans/latin-600.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "../styles/main.css";
 
+document.documentElement.setAttribute("data-app", "uc");
+
 configureApiTransport({
   onUnauthorized: () => {
     useUCAuthStore().clearSession();

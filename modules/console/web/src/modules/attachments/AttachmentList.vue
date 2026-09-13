@@ -593,7 +593,7 @@ function formatMimeBadge(mime: string): string {
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                class="apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                 :disabled="attachments.length === 0"
                 @click="attachments.length > 0 && selectedIds.size === attachments.length ? clearSelection() : selectAll()"
               >

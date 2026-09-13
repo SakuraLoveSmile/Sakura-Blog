@@ -159,7 +159,8 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
   if (savingKey.value) return false;
   savingKey.value = section;
   try {
-    const body = payload !== undefined ? payload : data.value[section];
+    const rawToSave = payload !== undefined ? payload : data.value[section];
+    const body = JSON.parse(JSON.stringify(rawToSave));
     await settingsApi.updateSection(section, body);
     rawText.value[section] = JSON.stringify(body, null, 2);
     updateSectionSnapshot(section, body);
@@ -183,11 +184,16 @@ async function saveJson(section: string) {
   if (savingKey.value) return;
   savingKey.value = "json:" + section;
   try {
-    const payload = JSON.parse(rawText.value[section]);
+    const rawAtStart = rawText.value[section];
+    const payload = JSON.parse(rawAtStart);
     await settingsApi.updateSection(section, payload);
-    data.value[section] = payload;
-    ensureSettingsDefaults(data.value);
-    updateSectionSnapshot(section, payload);
+    const normalizedTarget = ensureSettingsDefaults({ [section]: JSON.parse(JSON.stringify(payload)) });
+    const savedNormalized = normalizedTarget[section];
+    if (rawText.value[section] === rawAtStart) {
+      data.value[section] = savedNormalized;
+      rawText.value[section] = JSON.stringify(savedNormalized, null, 2);
+    }
+    updateSectionSnapshot(section, savedNormalized);
     Toast.success("设置已保存，前台已生效");
   } catch (error) {
     Toast.error(getApiErrorMessage(error, "JSON 解析或保存失败"));

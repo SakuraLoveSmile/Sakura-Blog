@@ -242,13 +242,25 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   return d;
 }
 
+function deepCloneJsonSafe<T>(val: T): T {
+  if (val === null || typeof val !== "object") return val;
+  if (Array.isArray(val)) {
+    return val.map((item) => deepCloneJsonSafe(item)) as unknown as T;
+  }
+  const copy: any = {};
+  for (const key of Object.keys(val)) {
+    copy[key] = deepCloneJsonSafe((val as any)[key]);
+  }
+  return copy;
+}
+
 /**
  * 样式设置规范化函数。
- * 纯函数/就地规范化：输入任意原始 style（包括 null/undefined/非对象/缺键/脏数据），
- * 输出结构完整、类型安全的规范化对象。
+ * 纯函数：输入任意原始 style（包括 null/undefined/非对象/缺键/脏数据/深冻结对象），
+ * 不修改原入参对象，输出结构完整、类型安全的规范化新对象。
  * 幂等性保证：normalizeStyleSettings(normalizeStyleSettings(x)) 结果完全一致。
  * 规范化规则：
- * 1. 保留所有未知自定义键（不误删扩展属性）。
+ * 1. 保留所有未知自定义键与空值（""、0、false 严格保留，不被默认值替换）。
  * 2. header_prefix 必须为对象，若原值为空/数组/primitive 则重置为 {}；确保 h2..h5 为 string（缺省为 ""）。
  * 3. leftbar 必须为对象，ui_style 缺省为 "card"；blur_px 若为数字则转为 px 串（n>0 ? `${n}px` : ""），缺省为 ""。
  * 4. page_transition 必须为对象，enable 为布尔值（保留显式 false，缺省为 true）。
@@ -258,7 +270,8 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
  * 8. error_page 缺省为 ""。
  */
 export function normalizeStyleSettings(rawStyle: any): Record<string, any> {
-  const style = !rawStyle || typeof rawStyle !== "object" || Array.isArray(rawStyle) ? {} : rawStyle;
+  const style =
+    !rawStyle || typeof rawStyle !== "object" || Array.isArray(rawStyle) ? {} : deepCloneJsonSafe(rawStyle);
 
   if (!style.color || typeof style.color !== "object" || Array.isArray(style.color)) {
     style.color = {};
@@ -275,7 +288,9 @@ export function normalizeStyleSettings(rawStyle: any): Record<string, any> {
   if (!style.leftbar || typeof style.leftbar !== "object" || Array.isArray(style.leftbar)) {
     style.leftbar = {};
   }
-  style.leftbar.ui_style = style.leftbar.ui_style || "card";
+  if (style.leftbar.ui_style === undefined || style.leftbar.ui_style === null) {
+    style.leftbar.ui_style = "card";
+  }
   if (typeof style.leftbar.blur_px === "number") {
     const n = style.leftbar.blur_px;
     style.leftbar.blur_px = n > 0 ? `${n}px` : "";
@@ -318,7 +333,9 @@ export function normalizeStyleSettings(rawStyle: any): Record<string, any> {
     style.gradient = {};
   }
 
-  style.corner_shape = style.corner_shape || "superellipse(1.25)";
+  if (style.corner_shape === undefined || style.corner_shape === null) {
+    style.corner_shape = "superellipse(1.25)";
+  }
 
   if (!style.animated_avatar || typeof style.animated_avatar !== "object" || Array.isArray(style.animated_avatar)) {
     style.animated_avatar = {};

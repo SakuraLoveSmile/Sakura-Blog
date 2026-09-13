@@ -114,7 +114,7 @@ const isSelected = (item: FilterItem) => props.modelValue === item.value;
     <button
       ref="triggerBtn"
       type="button"
-      class="flex cursor-pointer select-none items-center text-sm text-text-secondary transition-colors hover:text-foreground bg-transparent border-0 p-0 outline-none"
+      class="apple-filter-btn flex cursor-pointer select-none items-center text-sm text-text-secondary transition-colors hover:text-foreground bg-transparent border-0 p-0 outline-none"
       aria-haspopup="listbox"
       :aria-expanded="open"
       :aria-controls="listboxId"

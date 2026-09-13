@@ -135,3 +135,66 @@ test("ensureSettingsDefaults: 包含完整的 style 规范化且保证无副作�
   const snap2 = JSON.stringify(out.style);
   assert.equal(snap1, snap2);
 });
+
+test("normalizeStyleSettings: 纯函数深度冻结测试（深冻结对象不抛错且原对象不被修改）", () => {
+  function deepFreeze<T>(obj: T): T {
+    if (!obj || typeof obj !== "object") return obj;
+    Object.freeze(obj);
+    for (const key of Object.keys(obj)) {
+      deepFreeze((obj as any)[key]);
+    }
+    return obj;
+  }
+
+  const frozenInput = deepFreeze({
+    color: { theme: "#2E8DFF" },
+    leftbar: { blur_px: 20 },
+    codeblock: { highlightjs_theme: "atom-one-dark" },
+    page_transition: { enable: false },
+    extra_field: { inner: "immutable" },
+  });
+
+  // 不抛出错误（即未对只读冻结对象进行就地属性赋值）
+  assert.doesNotThrow(() => {
+    const res = normalizeStyleSettings(frozenInput);
+    assert.equal(res.leftbar.blur_px, "20px");
+    assert.equal(res.leftbar.ui_style, "card");
+    assert.equal(res.page_transition.enable, false);
+    assert.deepEqual(res.extra_field, { inner: "immutable" });
+  });
+
+  // 原冻结对象内容严格不变且依然处于冻结态
+  assert.ok(Object.isFrozen(frozenInput));
+  assert.ok(Object.isFrozen(frozenInput.leftbar));
+  assert.equal((frozenInput.leftbar as any).ui_style, undefined);
+});
+
+test("normalizeStyleSettings: 严格保留各种空值与假值（\"\"、0、false、未知键）", () => {
+  const input = {
+    leftbar: { ui_style: "", blur_px: 0 },
+    corner_shape: "",
+    error_page: "",
+    codeblock: { highlightjs_theme: "" },
+    page_transition: { enable: false },
+    custom_zero: 0,
+    custom_empty: "",
+    custom_false: false,
+    header_prefix: {
+      h2: "",
+      custom_tag: "",
+    },
+  };
+
+  const res = normalizeStyleSettings(input);
+  assert.equal(res.leftbar.ui_style, "");
+  assert.equal(res.leftbar.blur_px, "");
+  assert.equal(res.corner_shape, "");
+  assert.equal(res.error_page, "");
+  assert.equal(res.codeblock.highlightjs_theme, "");
+  assert.equal(res.page_transition.enable, false);
+  assert.equal(res.custom_zero, 0);
+  assert.equal(res.custom_empty, "");
+  assert.equal(res.custom_false, false);
+  assert.equal(res.header_prefix.h2, "");
+  assert.equal(res.header_prefix.custom_tag, "");
+});

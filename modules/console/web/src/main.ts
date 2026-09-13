@@ -19,6 +19,8 @@ import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/main.css";
 
+document.documentElement.setAttribute("data-app", "console");
+
 let unauthorizedDialogOpen = false;
 
 function handleUnauthorized() {

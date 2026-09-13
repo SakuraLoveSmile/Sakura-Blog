@@ -463,7 +463,7 @@ function handleTitleLeave(e: MouseEvent) {
 
           <button
             type="button"
-            class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            class="apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             :disabled="posts.length === 0"
             @click="posts.length > 0 && selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
           >
