@@ -7,9 +7,11 @@ const props = withDefaults(
     title?: string;
     subtitle?: string;
     hideOnScroll?: boolean;
+    actionsLayout?: "default" | "stack-below-lg";
   }>(),
   {
     hideOnScroll: true,
+    actionsLayout: "default",
   },
 );
 
@@ -67,7 +69,11 @@ onUnmounted(() => {
   <header
     ref="headerEl"
     class="sticky top-0 z-20 flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 backdrop-blur-2xl transition-all sm:px-6 sm:py-4 md:px-8"
-    :class="{ 'page-header-scroll-aware': hideOnScroll, 'page-header-scroll-hidden': hideOnScroll && hidden }"
+    :class="{
+      'page-header-scroll-aware': hideOnScroll,
+      'page-header-scroll-hidden': hideOnScroll && hidden,
+      'page-header-stack-below-lg': actionsLayout === 'stack-below-lg',
+    }"
     :aria-hidden="hideOnScroll && hidden ? 'true' : undefined"
     :inert="hideOnScroll && hidden"
     style="
@@ -76,10 +82,13 @@ onUnmounted(() => {
       box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.35);
     "
   >
-    <div class="min-w-0 flex-1 self-center">
+    <div
+      class="min-w-0 self-center"
+      :class="actionsLayout === 'stack-below-lg' ? 'w-full lg:w-auto lg:flex-1' : 'flex-1'"
+    >
       <div class="flex items-center gap-2.5">
         <slot name="icon" />
-        <h1 class="truncate text-xl font-bold tracking-tight text-foreground sm:text-[22px] md:text-[24px]">
+        <h1 class="truncate text-xl font-semibold tracking-tight text-foreground sm:text-[22px] md:text-[24px]">
           <slot name="title">{{ title }}</slot>
         </h1>
         <slot name="badge" />
@@ -88,7 +97,11 @@ onUnmounted(() => {
         <slot name="subtitle">{{ subtitle }}</slot>
       </p>
     </div>
-    <div v-if="$slots.actions" class="page-header-actions flex min-w-0 max-w-full flex-wrap items-center gap-2 self-center sm:gap-2.5">
+    <div
+      v-if="$slots.actions"
+      class="page-header-actions flex min-w-0 max-w-full flex-wrap items-center gap-2 self-center sm:gap-2.5"
+      :class="actionsLayout === 'stack-below-lg' ? 'w-full lg:w-auto lg:flex-shrink-0' : ''"
+    >
       <slot name="actions" />
     </div>
   </header>

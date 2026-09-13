@@ -320,7 +320,7 @@ function handleTitleLeave(e: MouseEvent) {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="文章管理" :hide-on-scroll="true">
+    <VPageHeader title="文章管理" :hide-on-scroll="true" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:article-line" class="text-primary" />
       </template>
@@ -335,7 +335,7 @@ function handleTitleLeave(e: MouseEvent) {
             </button>
           </div>
 
-          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto sm:gap-2.5">
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap sm:gap-2.5">
             <VButton :route="{ path: '/posts/shares' }">
               <template #icon><Icon icon="ri:share-forward-line" /></template>
               分享链接

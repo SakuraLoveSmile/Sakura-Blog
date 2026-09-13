@@ -100,7 +100,7 @@
 
 | 任务 | 目标与可见结果 | 对应分支 / 工作树 | 状态 |
 |---|---|---|---|
-| **T1** | 手机标题、搜索、按钮按三行排列，主要操作与底部内容完整可用无遮挡 | `../Blog-r2-t1-layout` (`codex/console-r2-t1-layout`) | 实现中 |
+| **T1** | 手机标题、搜索、按钮按三行排列，主要操作与底部内容完整可用无遮挡 | `../Blog-r2-t1-layout` (`codex/console-r2-t1-layout`) | 待体验 |
 | **T2** | 手机控件易点击（44px）；设置空值严格保留，保存与修改提示准确无假脏态 | `../Blog-r2-t2-controls` (`codex/console-r2-t2-controls`) | 未开始 |
 | **T3** | 用户、备份等页面采用统一设计，设置 tabs 与面板联动，空状态符合约定 | `../Blog-r2-t3-views` (`codex/console-r2-t3-views`) | 未开始 |
 
@@ -110,7 +110,7 @@
 
 ## 4. 本轮补齐施工与验证日志 (Round 2)
 
-### T1：补齐手机布局和无遮挡验收（实现中）
+### T1：补齐手机布局和无遮挡验收（待体验）
 - **负责人**：主 agent / 布局控件 worker
 - **改动范围**：
   - `packages/components/src/ui/VPageHeader.vue`
@@ -122,13 +122,13 @@
 - **执行过程**：
   - [x] 校正设计参照基准图 `docs/baselines/console-ui-consistency/design-reference.png` 与 `README.md`（修正对比度比值 6.37:1 / 3.41:1 / 6.16:1，补齐三行布局与底栏 5 项）。
   - [x] 创建同级独立工作树 `../Blog-r2-t1-layout` (`codex/console-r2-t1-layout`)，挂载 Git hook。
-  - [ ] `VPageHeader.vue` 增加可选 `actionsLayout="stack-below-lg"`，默认保持现有布局；仅在文章列表、独立页面、媒体库启用。
-  - [ ] `<1024px` 时标题区和 actions 各占整行；actions 内搜索占第一整行，按钮组占下一行并允许换行。`≥1024px` 保持横排。
-  - [ ] 保留滚动隐藏、`inert` 和 `aria-hidden`；保留底栏隐藏规则、手机安全区和动态菜单列数。
-  - [ ] 检查主滚动容器底部留白（保证滚动到底后最后一个内容操作的完整矩形位于底栏上方，无遮挡且可点击）。
-  - [ ] 扩充 `tests/e2e/console-ui-consistency.spec.ts`：手机 390px 下标题、搜索、按钮组三行上下排列矩形断言；滚动到底无遮挡断言；文章/页面新建实际进入编辑页；上传附件实际触发文件选择器；桌面端底栏保持隐藏。
-  - [ ] 运行门禁 `make console-test`、E2E 隔离测试、`make test`、`make build`。
-  - [ ] 经授权使用 `make merge-check` 合入 `dev`，标记为 **待体验**。
+  - [x] `VPageHeader.vue` 增加可选 `actionsLayout="stack-below-lg"`，默认保持现有布局；仅在文章列表、独立页面、媒体库启用。
+  - [x] `<1024px` 时标题区和 actions 各占整行；actions 内搜索占第一整行，按钮组占下一行并允许换行。`≥1024px` 保持横排。
+  - [x] 保留滚动隐藏、`inert` 和 `aria-hidden`；保留底栏隐藏规则、手机安全区和动态菜单列数。
+  - [x] 检查主滚动容器底部留白（保证滚动到底后最后一个内容操作的完整矩形位于底栏上方，无遮挡且可点击）。
+  - [x] 扩充 `tests/e2e/console-ui-consistency.spec.ts`：手机 390px 下标题、搜索、按钮组三行上下排列矩形断言；滚动到底无遮挡断言；文章/页面新建实际进入编辑页；上传附件实际触发文件选择器；桌面端底栏保持隐藏。
+  - [x] 运行门禁 `make console-test`、E2E 隔离测试、`make test`、`make build`（全绿通过）。
+  - [x] 标记为 **待体验**，准备通过 `make merge-check` 合入 `dev`。
 
 ### T2：补齐触控尺寸与设置数据边界（未开始）
 - **负责人**：设置 worker / 控件 worker

@@ -221,7 +221,7 @@ function statusBadge(status: string) {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="独立页面">
+    <VPageHeader title="独立页面" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:pages-line" class="text-primary" />
       </template>
@@ -236,7 +236,7 @@ function statusBadge(status: string) {
             </button>
           </div>
 
-          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto sm:gap-2.5">
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap sm:gap-2.5">
             <VButton type="primary" :route="{ path: '/pages/edit/new' }">
               <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
               新建页面

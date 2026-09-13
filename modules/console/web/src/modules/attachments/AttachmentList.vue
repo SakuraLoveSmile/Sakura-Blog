@@ -416,7 +416,7 @@ function formatMimeBadge(mime: string): string {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="媒体库">
+    <VPageHeader title="媒体库" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:image-line" class="text-primary" />
       </template>
@@ -431,7 +431,7 @@ function formatMimeBadge(mime: string): string {
             </button>
           </div>
 
-          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto sm:gap-2.5">
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap sm:gap-2.5">
             <VButton @click="openCreateGroup">
               <template #icon><Icon icon="ri:folder-add-line" /></template>
               新建分组

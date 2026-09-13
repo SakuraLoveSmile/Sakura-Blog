@@ -53,61 +53,133 @@ test.describe("Console UI 一致性测试", () => {
     const navBox = await bottomNav.boundingBox();
     expect(navBox).not.toBeNull();
     expect(navBox!.y + navBox!.height).toBeGreaterThanOrEqual(840);
+
+    // 滚动主容器到底部，验证内容不被底栏遮挡
+    await page.evaluate(() => {
+      const main = document.querySelector("main.content");
+      if (main) main.scrollTop = main.scrollHeight;
+    });
+    await page.waitForTimeout(300);
+
+    const lastVisibleElement = page.locator("main.content .stats-card, main.content .post-card, main.content .apple-card, main.content footer").last();
+    const lastBox = await lastVisibleElement.boundingBox();
+    if (lastBox) {
+      expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(navBox!.y + 1);
+    }
   });
 
-  test("390px 手机视口下文章管理主要操作完整可见且点击进入编辑页", async ({ page }) => {
+  test("390px 手机视口下文章管理标题、搜索框与按钮组按三行排列且点击进入编辑页", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/posts");
     await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
 
+    const header = page.locator("header.page-header-stack-below-lg");
+    await expect(header).toBeVisible();
+
+    const titleEl = header.locator("h1");
+    const searchEl = header.locator(".apple-search");
     const writeBtn = page.getByRole("button", { name: "撰写文章" });
+
+    await expect(titleEl).toBeVisible();
+    await expect(searchEl).toBeVisible();
     await expect(writeBtn).toBeVisible();
 
-    const box = await writeBtn.boundingBox();
-    expect(box).not.toBeNull();
-    // 确保主按钮完全在视口宽度内，不被裁切或顶出屏幕
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    const titleBox = await titleEl.boundingBox();
+    const searchBox = await searchEl.boundingBox();
+    const btnBox = await writeBtn.boundingBox();
+
+    expect(titleBox).not.toBeNull();
+    expect(searchBox).not.toBeNull();
+    expect(btnBox).not.toBeNull();
+
+    // 验证手机 390px 视口下严格三行从上到下排列
+    expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(searchBox!.y);
+    expect(searchBox!.y + searchBox!.height).toBeLessThanOrEqual(btnBox!.y);
+
+    // 搜索框在手机端整行展示
+    expect(searchBox!.width).toBeGreaterThanOrEqual(330);
+
+    // 主操作按钮在视口安全宽度内
+    expect(btnBox!.x).toBeGreaterThanOrEqual(0);
+    expect(btnBox!.x + btnBox!.width).toBeLessThanOrEqual(390);
 
     await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-mobile-posts.png" });
 
-    // 真实点击触发跳转
+    // 真实点击触发跳转到文章编辑页
     await writeBtn.click();
     await expect(page).toHaveURL(/\/console\/posts\/new/, { timeout: 15_000 });
   });
 
-  test("390px 手机视口下独立页面主要操作完整可见且点击进入新建页", async ({ page }) => {
+  test("390px 手机视口下独立页面标题、搜索与新建按钮三行排列且点击进入新建页", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/pages");
     await expect(page.getByRole("heading", { name: "独立页面" })).toBeVisible();
 
+    const header = page.locator("header.page-header-stack-below-lg");
+    await expect(header).toBeVisible();
+
+    const titleEl = header.locator("h1");
+    const searchEl = header.locator(".apple-search");
     const createBtn = page.getByRole("button", { name: "新建页面" });
+
+    await expect(titleEl).toBeVisible();
+    await expect(searchEl).toBeVisible();
     await expect(createBtn).toBeVisible();
 
-    const box = await createBtn.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    const titleBox = await titleEl.boundingBox();
+    const searchBox = await searchEl.boundingBox();
+    const btnBox = await createBtn.boundingBox();
+
+    expect(titleBox).not.toBeNull();
+    expect(searchBox).not.toBeNull();
+    expect(btnBox).not.toBeNull();
+
+    // 验证严格三行上下排列
+    expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(searchBox!.y);
+    expect(searchBox!.y + searchBox!.height).toBeLessThanOrEqual(btnBox!.y);
+    expect(searchBox!.width).toBeGreaterThanOrEqual(330);
+
+    expect(btnBox!.x).toBeGreaterThanOrEqual(0);
+    expect(btnBox!.x + btnBox!.width).toBeLessThanOrEqual(390);
 
     await createBtn.click();
     await expect(page).toHaveURL(/\/console\/pages\/edit\/new/, { timeout: 15_000 });
   });
 
-  test("390px 手机视口下媒体库主要操作完整可见、文件选择器可触发、筛选可换行", async ({ page }) => {
+  test("390px 手机视口下媒体库标题、搜索与按钮三行排列、文件选择器可触发、筛选可换行", async ({ page }) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/attachments");
     await expect(page.getByRole("heading", { name: "媒体库" })).toBeVisible();
 
+    const header = page.locator("header.page-header-stack-below-lg");
+    await expect(header).toBeVisible();
+
+    const titleEl = header.locator("h1");
+    const searchEl = header.locator(".apple-search");
     const uploadBtn = page.getByRole("button", { name: "上传附件" });
+
+    await expect(titleEl).toBeVisible();
+    await expect(searchEl).toBeVisible();
     await expect(uploadBtn).toBeVisible();
 
-    const box = await uploadBtn.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    const titleBox = await titleEl.boundingBox();
+    const searchBox = await searchEl.boundingBox();
+    const btnBox = await uploadBtn.boundingBox();
+
+    expect(titleBox).not.toBeNull();
+    expect(searchBox).not.toBeNull();
+    expect(btnBox).not.toBeNull();
+
+    // 验证严格三行上下排列
+    expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(searchBox!.y);
+    expect(searchBox!.y + searchBox!.height).toBeLessThanOrEqual(btnBox!.y);
+    expect(searchBox!.width).toBeGreaterThanOrEqual(330);
+
+    expect(btnBox!.x).toBeGreaterThanOrEqual(0);
+    expect(btnBox!.x + btnBox!.width).toBeLessThanOrEqual(390);
 
     // 点击上传附件能够触发文件选择器
     const fileChooserPromise = page.waitForEvent("filechooser");
@@ -121,6 +193,38 @@ test.describe("Console UI 一致性测试", () => {
     const segBox = await typeSegment.boundingBox();
     expect(segBox).not.toBeNull();
     expect(segBox!.x + segBox!.width).toBeLessThanOrEqual(390);
+  });
+
+  test("1280px 桌面视口下标题与搜索按钮横向单行排列且底栏隐藏", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    const header = page.locator("header.page-header-stack-below-lg");
+    await expect(header).toBeVisible();
+
+    const titleEl = header.locator("h1");
+    const searchEl = header.locator(".apple-search");
+    const writeBtn = page.getByRole("button", { name: "撰写文章" });
+
+    const titleBox = await titleEl.boundingBox();
+    const searchBox = await searchEl.boundingBox();
+    const btnBox = await writeBtn.boundingBox();
+
+    expect(titleBox).not.toBeNull();
+    expect(searchBox).not.toBeNull();
+    expect(btnBox).not.toBeNull();
+
+    // 桌面端横向单行布局：标题与搜索垂直对齐相差较小
+    expect(Math.abs(titleBox!.y - searchBox!.y)).toBeLessThanOrEqual(25);
+    expect(Math.abs(searchBox!.y - btnBox!.y)).toBeLessThanOrEqual(5);
+    // 标题在左侧，搜索在右侧
+    expect(titleBox!.x + titleBox!.width).toBeLessThan(searchBox!.x);
+    // 底栏隐藏
+    const bottomNav = page.locator('nav[aria-label="移动端底部导航"]');
+    const display = await bottomNav.evaluate((el) => window.getComputedStyle(el).display);
+    expect(display).toBe("none");
   });
 
   test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入", async ({ page }) => {

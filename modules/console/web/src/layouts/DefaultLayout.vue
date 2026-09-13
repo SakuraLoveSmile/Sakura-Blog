@@ -499,7 +499,7 @@ function closeProfileDropdown() {
 
     <!-- Main content -->
     <main
-      class="content w-full min-w-0 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+      class="content w-full min-w-0 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'"
     >
       <router-view />
