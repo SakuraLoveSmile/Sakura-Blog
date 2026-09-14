@@ -303,3 +303,135 @@
   - [x] 验证四种视口布局与抽屉导航。
   - [x] 运行门禁与 E2E 验证并通过 `make merge-check` 合入 `dev`。
 
+---
+
+## 7. 本轮缺口补齐任务进度汇总 (Round 4)
+
+起点：`dev / 663fa0e`。沿用 T1–T3 编号，只补当前源码尚未满足的要求；执行顺序 **T2 → T3 → T1**。根目录未暂存的 `.gitignore`（新增 `.workbuddy/`）全程保留，未提交、未还原。
+
+| 任务 | 目标与可见结果 | 对应分支 / 工作树 | 合并提交 | 状态 |
+|---|---|---|---|---|
+| **T2** | 保存期间所有保存按钮反馈明确（全局禁用），并用真实页面拦截式竞态测试约束输入/草稿/快照边界 | `../Blog-r4-t2-save` (`codex/console-r4-t2-save`) | `d4c479b` | 待体验 |
+| **T3** | Tabs 横向滚动由组件自身承担、空列表不再渲染选择入口、筛选后清理失效选择 | `../Blog-r4-t3-tabs` (`codex/console-r4-t3-tabs`) | `9316d06` | 待体验 |
+| **T1** | 三页四视口矩阵、滚动到底末项真实可操作、真实键盘/对比度/触控/概览与 UC 隔离账号验收；自动截图不再写入受跟踪基线 | `../Blog-r4-t1-a11y` (`codex/console-r4-t1-a11y`) | `d60b3ae` | 待体验 |
+
+*状态流转规范：未开始 → 实现中 → 待体验 → 已验收（必要验证未结束仍为实现中，仅在用户确认后标记已验收）。*
+
+### 本轮开工前锁定的四项裁决（用户确认「没问题」= 采纳推荐默认值）
+
+1. 危险按钮前景改黑字（`var(--color-primary-foreground)`），与主按钮「蓝底黑字」策略一致。
+2. 概览栅格维持现状断裂点（文章/页面/附件 ≥640px 四列，用户/备份 ≥1024px 四列），只做验收断言。
+3. 竞态验收全部使用 Playwright 真实页面拦截，不新增 DOM 测试依赖；`node:test` 只保留结构检查。
+4. UC 验收使用 `scripts/e2e/prepare.go` 追加的非管理员夹具账号 `e2e-author / e2e-password`（角色 `author`）；空态表头按「保留 `<th>`、仅移除复选框」处理。
+
+---
+
+## 8. 本轮缺口补齐施工与验证日志 (Round 4)
+
+### T2：保存期间反馈明确并验证真实竞态（待体验）
+
+- **改动原因**：计划要求「所有保存按钮增加全局保存禁用条件 `Boolean(saving)`」；核实发现 21 个保存按钮中 0 个带该条件，且 `MenuView.vue`、`ThemeYamlTab.vue` 各自持有本地 `saving`，完全不接收页面级 `savingKey`。竞态验收此前只有源码正则与「复制一套保存函数」的模拟，缺少真实行为证据。
+- **改动内容**：
+  - 20 个保存按钮统一加 `:disabled="Boolean(saving)"`（`settings/tabs/*`、`AuthorsTab`、`WidgetsTab`、`CoverTab`、`NavTabsTab`、`PluginsTab`、`AppearanceTab`、`appearance/AssetsSettings|LayoutSettings|EnhancementsSettings`）；`MenubarEditor` 改为 `:disabled="hasErrors || Boolean(saving)"`。
+  - `ThemeYamlTab` 新增 `saving?: string` 页面级键并接线（`AppearanceView` 传 `savingKey`），本地保存状态更名 `localSaving`；请求期间**不再禁用 YAML 文本域**（允许继续编辑）。
+  - `loading` 仍只对应正在保存的分区；评论组合保存保留 `comments || site_tree` 共同 loading；未禁用任何表单/fieldset；`SettingsView.save/saveJson`、`AppearanceView.save` 的全局防重入判断原样保留；未改动共享 `VButton` 的全局禁用语义；普通/JSON 保存快照逻辑本轮**未修改**（拦截式测试未复现偏差）。
+- **涉及文件**：`modules/console/web/src/modules/settings/{tabs/*,ThemeYamlTab,MenubarEditor,…}.vue`、`modules/console/web/src/modules/appearance/{AppearanceView,AssetsSettings,LayoutSettings,EnhancementsSettings}.vue`、`modules/console/tests/settings-save-race.test.ts`、`modules/console/tests/settings-workflow.test.ts`、`tests/e2e/console-settings-save-race.spec.ts`（新建）。
+- **受控模拟场景（拦截 `PUT /api/v1/settings/{section}`，测试显式释放响应）** —— 12 项拦截用例，全部通过：
+  1. 系统设置普通保存期间改表单：请求体为 A、页面保留 B、未保存提示保留、按钮恢复、再存 B 后提示清除。
+  2. 主题设置（cover 分区）普通保存期间改表单：同上。
+  3. 普通保存期间编辑 JSON：新草稿不被回写覆盖。
+  4. JSON 保存期间再次编辑 JSON：新文本保留且继续提示未保存。
+  5. JSON 保存期间切换到表单编辑：新表单输入不被响应覆盖。
+  6. 保存 A 分区时 B 分区已有修改：B 的输入与黄点不变（基本/SEO 黄点消失、文章黄点保留）。
+  7. 保存失败（HTTP 500）后重试：输入不丢、失败不更新快照、按钮可重试。
+  8. 无效 JSON 提交：Toast「JSON 格式错误」且保存请求数为 0。
+  9. 评论组合保存第一步失败：第二步请求数为 0。
+  10. 评论组合保存第二步失败：`comments` 成功（基线更新为本次提交值）、`site_tree` 失败仍提示未保存。
+  11. 保存中切换分区：其他分区保存按钮禁用、输入仍可编辑、结束后恢复。
+  12. 请求未完成时按 Enter 提交：全局防重入，保存请求数仍为 1。
+- **真实服务场景（不拦截响应，隔离 e2e 服务）**：
+  - 用例 13：实际点击保存 → `GET /api/v1/settings` 回读 `site.title` 等于提交值 → 浏览器刷新后输入框值仍为该值且无未保存提示。
+- **实际命令与结果（本轮实测）**：
+  - `make console-test` → 通过（类型检查 + 209 项 `node:test`）。
+  - `make test` → 通过；`make build` → 通过。
+  - `pnpm exec playwright test tests/e2e/console-settings-save-race.spec.ts tests/e2e/console-ui-consistency.spec.ts` → 34 passed。
+  - 提交时 pre-commit hook（等同 `make test`）全绿；`make merge-check` 合并前后组合态复验通过。
+- **偏差与处理**：`modules/console/tests/settings-workflow.test.ts` 原先断言 `ThemeYamlTab` 内的 `saving.value`，随更名一并更新为 `localSaving` 与新增的页面级键断言（结构检查，不是行为证据）。
+- **结构性证据边界**：`settings-save-race.test.ts` 删除第三条「自建 isDirty 模拟」，仅保留源码结构检查与 `ensureSettingsDefaults` 纯函数断言，并在文件头注明不构成行为验收。
+- **明确不在本轮范围**：独立单保存页面（`AiSettings`、`FriendSettings`、`TopicsView`、`WikiProjects/Docs`、`FriendList` 设置弹层、编辑器保存等）各自只有一个保存入口，`:loading` 已禁用自身按钮，未纳入「接收 saving 的子表单」的全局禁用改造。
+
+### T3：Tabs 滚动归属与空列表选择入口（待体验）
+
+- **改动原因**：`VTabbar` 开启 `autoReveal` 时自身并不是滚动容器（横向滚动在两层外层的 `.settings-tabs` 上），位移计算混用相对偏移属性，无 resize 重查、无 reduced-motion；三个表格列表的表头遗留在空列表下禁用态的选择复选框；搜索/筛选/分页导致列表失效时不会清理旧选择。
+- **改动内容**：
+  - `VTabbar.vue`：新增 `tabbar-autoreveal` 专用修饰类（`width:100%`、`min-width:0`、`overflow-x:auto`、不换行、标签 `flex:0 0 auto`、文字不截断），根元素成为唯一横向滚动区域；位移统一使用容器与标签 `getBoundingClientRect()` + 当前 `scrollLeft`，完整可见不移动、超出按差值移动并 clamp 到 `0..scrollWidth-clientWidth`；新增 `ResizeObserver`（`onBeforeUnmount` 断开）与 `prefers-reduced-motion` → 立即滚动；`preventScroll:true` 保留，全程不调用 `scrollIntoView`、不使用元素相对偏移属性。
+  - 外层容器让出滚动：`settings-form.css` 的 `.settings-tabs` 只保留宽度与裁切，删除 `SettingsView.vue` 内重复定义的那一份。
+  - 空列表：`PostList`、`PageList`、`AttachmentList` 表头复选框改为 `v-if="…length > 0"`（`<th>` 占位保留）；五类列表在数据落定后剔除不在当前列表中的选择（加载中沿用上一批数据，不伪造空态）。
+  - 为让「批量浮条存在性」可被真实断言，给 `VFloatingDock` 根元素补了稳定的 `v-floating-dock` 类名（原测试的 `.v-floating-dock` 断言此前是**空断言**，该选择器并不存在）。
+- **涉及文件**：`packages/components/src/ui/VTabbar.vue`、`packages/components/src/ui/VFloatingDock.vue`、`modules/console/web/src/modules/settings/settings-form.css`、`modules/console/web/src/modules/settings/SettingsView.vue`、五类列表组件、`modules/console/tests/components-a11y.test.ts`、`tests/e2e/console-ui-consistency.spec.ts`。
+- **受控模拟场景（390px 真实溢出页面）** —— 8 项用例，全部通过：
+  1. 系统设置 Tabs：外层 `overflow-x` 为 `hidden` 且自身不产生滚动，内部根元素 `overflow-x:auto` 且 `scrollWidth > clientWidth`；切到尾标签后活动标签矩形完整落在滚动区域内且 `scrollLeft > 0`；切回首标签后回到 `scrollLeft = 0`；全过程 `window.scrollY` 与 `main.content.scrollTop` 与基准完全一致。
+  2. 主题设置 Tabs：同上。
+  3. query 直接命中末尾标签：初始加载即完成显露；Home/End 切换后选中项、`aria-selected`、关联 `tabpanel` 可见性与焦点位置一致。
+  4. 五类列表默认视图空列表：空态提示出现，表头复选框 / 全选 / 取消全选 / 批量浮条计数均为 0。
+  5. 四个可切表格视图的列表（文章/页面/附件/友链）空列表：同样无任何选择入口。
+  6. 卡片模式「先选择再筛选为空」：浮条消失，恢复列表后旧选择不复活。
+  7. 表格模式「先选择再筛选为空」（文章）：表头选择入口与浮条一并消失。
+  8. 媒体库表格模式「先选择再筛选为空」（真实上传接口夹具）：同上。
+- **结构性证据（源码检查，不是行为证据）**：`components-a11y.test.ts` 新增 VTabbar 修饰类/rect+scrollLeft/clamp/ResizeObserver/reduced-motion/禁用 `scrollIntoView` 与相对偏移属性的断言、外层容器不再承担滚动的断言、五类列表「清理失效选择 + 空列表不渲染禁用态入口」的断言。
+- **诚实边界**：文章/页面/附件在列表为空时渲染的是 `VEmpty` 分支（整张表格不渲染），因此表头复选框的 `v-if` 改造属于**防御性清理**，其可观察价值在于「源码不再保留空列表禁用态入口」，行为验收由上述空态用例与失效选择清理用例承担。
+- **实际命令与结果（本轮实测）**：`make console-test`（211 项）→ 通过；`make test` → 通过；`make build` → 通过；`pnpm exec playwright test tests/e2e/console-ui-consistency.spec.ts tests/e2e/console-settings-save-race.spec.ts` → 42 passed；pre-commit hook 与 `make merge-check` 通过。
+- **视觉变更需人工确认**：`autoReveal` 模式固定 `width:100%`，分段 Tabs 胶囊在桌面端现在铺满卡片宽度（标签仍左对齐、可横向滚动）。候选截图入口：`.tmp/r4-t3-screens/tabs-appearance-1280.png`、`.tmp/r4-t3-screens/tabs-settings-390.png`（由用例「候选验收截图」以 `testInfo.outputPath` 生成后人工复制到该目录；`.tmp/` 为忽略目录）。受跟踪基线 `docs/baselines/console-ui-consistency/t3-appearance-desktop.png` 仍是**改造前**的画面，需人工核对后再决定是否替换为新的验收图。
+
+### T1：手机操作矩阵与真实可访问性（待体验）
+
+- **改动原因**：390px 末项验收此前用固定 `waitForTimeout(300)` 充当完成证据、靠 `.last()` + 硬编码 `mobile-e2e-post-5` 猜测排序；页面/附件没有对应用例；键盘只扫描 CSS 声明；无 hover/active 计算对比度；UC 只检查登录页 `data-app`；5 处自动截图直接写入受跟踪基线目录。
+- **改动内容（实现）**：
+  - 危险按钮前景由白字改为 `var(--color-primary-foreground)`（黑字）：默认 6.16:1、active 约 4.6:1，满足普通文字 ≥4.5:1。
+  - `apple-base.css` 移动端触控规则补入 `.action-icon-btn`（页面列表的独立图标按钮原为 28px，实测低于 44×44 门槛）。
+  - `AttachmentPickerModal.vue`（共享弹层）补焦点管理：打开时记住触发元素并把焦点移入弹层、挂窗口级 Esc 监听，关闭时移除监听并把焦点还给触发元素（此前 `@keydown.esc` 挂在弹层元素上，焦点未进入时 Esc 无效）。
+  - `scripts/e2e/prepare.go` 追加非管理员夹具账号 `e2e-author`（角色 `author`）。
+- **改动内容（验收）**：
+  - 新建 `tests/e2e/console-mobile-a11y.spec.ts`（8 项）：三页四视口矩阵；页面与媒体库的 390px 末项真实点击；真实 Tab/焦点环/方向键/Home/End 联动面板；主操作与危险操作三态计算对比度；六页触控目标；五页概览栅格与最小高度；UC 隔离账号资料保存与通知页、共享弹层焦点往返。
+  - `console-ui-consistency.spec.ts`：5 处截图改为 `testInfo.outputPath(...)`；390px 末项用例重写为「夹具 token 过滤 + DOM 末项 + 标题映射 slug + 轮询等待滚动到底 + 硬断言矩形」，删除固定 sleep 与硬编码 slug。
+  - 新验收文件已写入实际运行命令（见下），不以运行旧文件代替。
+- **真实服务场景（隔离 e2e 服务）**：全部用例在 `scripts/e2e/run-server.sh` 的隔离根目录（数据库/配置/内容/附件/运行时数据）上运行，服务每次重新构建 Console 后重启。
+- **关键实测结果**：
+  - 四视口矩阵：390/768 三行且底栏显示（768 底栏隐藏、桌面侧栏显示）、1280/1440 页头横排且 `scrollWidth - clientWidth ≤ 1`。
+  - 390px 末项：真实滚动到底（轮询 `scrollTop ≥ scrollHeight - clientHeight - 1`），末项操作矩形非空、`y ≥ 0`、底边不越过底栏顶边，真实点击后进入对应夹具 slug 的编辑页 / 打开对应附件详情。
+  - 对比度：主操作与危险操作的默认/hover/active 三态实际计算色对比度全部 ≥4.5:1（在页面内用 canvas 解析 `color-mix`/`oklab` 为 sRGB 后计算）。
+  - 触控：文章/页面/媒体库/评论/友链/系统设置六页的必选控件均 ≥44px，独立图标目标 ≥44×44（元素缺失即失败，不做条件跳过）。
+  - 概览：文章/页面/媒体库/用户/备份五页手机 2 列（≥88px）、桌面 4 列（≥80px）。
+  - UC：`e2e-author` 登录 → 资料页改名保存 → 刷新回读一致；通知页分类 tablist、刷新操作、共享按钮胶囊圆角；共享弹层打开后焦点进入弹层、Esc 关闭且焦点返回触发元素。
+- **实际命令与结果（本轮实测）**：
+  - `make hooks-install`、`make console-test`、`make test`、`make build` 全部通过。
+  - `pnpm exec playwright test tests/e2e/console-mobile-a11y.spec.ts tests/e2e/console-ui-consistency.spec.ts tests/e2e/console-settings-save-race.spec.ts` → 51 passed。
+  - 运行前后 `git status --short docs/baselines/` 输出为空（受跟踪基线零变化）。
+  - pre-commit hook 与 `make merge-check` 通过。
+
+---
+
+## 9. Round 4 证据分类、截图入口与未验证项
+
+### 证据分类
+
+- **源码检查（结构断言，不是行为证据）**：`modules/console/tests/components-a11y.test.ts`（VTabbar 滚动契约、外层容器归属、五类列表失效选择与空态入口）、`modules/console/tests/settings-save-race.test.ts`（保存结构）、`modules/console/tests/settings-workflow.test.ts`（ThemeYamlTab 接线与本地保存状态）。
+- **历史测试（沿用，未作为本轮验收证据）**：`console-ui-consistency.spec.ts` 中 Round 2/3 的布局、按钮、Tabs、空态、SEO、ConsoleStatsCard 用例。
+- **本轮实测（受控模拟）**：`console-settings-save-race.spec.ts` 12 项拦截式用例；`console-mobile-a11y.spec.ts` 与 `console-ui-consistency.spec.ts` 中依赖夹具与视口的用例。
+- **本轮实测（真实服务）**：竞态用例 13（不拦截响应、刷新回读）；UC 隔离账号资料保存与通知页；媒体库真实上传接口夹具；全部 E2E 的隔离根目录服务。
+
+### 截图入口
+
+- 候选验收图（忽略目录，未入库）：`.tmp/r4-t3-screens/tabs-settings-390.png`、`.tmp/r4-t3-screens/tabs-appearance-1280.png`。
+- 自动截图统一改由 `testInfo.outputPath(...)` 产出，落在 `.tmp/playwright-test-results/`；**测试执行前后受跟踪基线目录零变化**。
+- 仍需人工决定：`docs/baselines/console-ui-consistency/t3-appearance-desktop.png` 是否需要替换为分段 Tabs 满宽后的新画面。
+
+### 未验证项
+
+- 未在真实移动设备/真机浏览器上验证，仅在 Chromium 视口模拟下测量 390/768/1280/1440。
+- 未验证 Safari/Firefox 上的滚动与 `color-mix`/`oklab` 解析差异；对比度计算依赖 Chromium 的 canvas 色彩解析。
+- 未验证弱网/慢请求下的保存按钮与加载态表现（拦截式测试是即时释放，不代表真实网络时延分布）。
+- 未验证深色以外的显示环境（产品只交付深色模式）。
+- 概览栅格在 640–1023px 区间的列数差异（文章/页面/附件为四列、用户/备份为两列）按用户裁决保持现状，未做统一。
+- 本轮未推送、未发布、未部署、未清理任何 worktree/分支。
+
