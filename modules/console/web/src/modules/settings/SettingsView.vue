@@ -522,17 +522,6 @@ onBeforeRouteLeave((to, from, next) => {
   min-width: 0;
   overflow: hidden;
 }
-.settings-tabs {
-  align-self: stretch;
-  display: flex;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.settings-tabs::-webkit-scrollbar {
-  display: none;
-}
 .settings-state {
   display: flex;
   flex-direction: column;

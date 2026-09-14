@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 async function login(page: Page) {
   await page.goto("/console/login");
@@ -755,5 +755,320 @@ test.describe("Console UI 一致性测试", () => {
     await expect(page.locator(".apple-toast-item")).toContainText("JSON 格式错误");
     // 依然保持脏状态
     await expect(dirtyBadge).toBeVisible();
+  });
+});
+
+/** 活动标签是否完整落在 tabbar 横向滚动区域内。 */
+async function activeTabVisibility(tabbar: Locator): Promise<string> {
+  return tabbar.evaluate((el) => {
+    const active = el.querySelector("[role='tab'][aria-selected='true']") as HTMLElement | null;
+    if (!active) return "no-active-tab";
+    const container = el.getBoundingClientRect();
+    const target = active.getBoundingClientRect();
+    if (target.right - container.right > 1) return `overflow-right:${Math.round(target.right - container.right)}`;
+    if (container.left - target.left > 1) return `overflow-left:${Math.round(container.left - target.left)}`;
+    return "visible";
+  });
+}
+
+/** 断言 autoReveal 的 Tabs 由组件自身滚动，且显露不改变纵向滚动位置。 */
+async function assertTabRevealContract(page: Page, containerSelector: string, firstLabel: string, lastLabel: string) {
+  const outer = page.locator(containerSelector);
+  const tabbar = outer.locator("[role='tablist']");
+  await expect(tabbar).toBeVisible();
+
+  // 外层容器只负责宽度与裁切，不再承担横向滚动
+  expect(await outer.evaluate((el) => window.getComputedStyle(el).overflowX)).toBe("hidden");
+  expect(await outer.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
+
+  // 内部根元素是唯一横向滚动区域，且在当前视口下真实溢出
+  const inner = await tabbar.evaluate((el) => ({
+    overflowX: window.getComputedStyle(el).overflowX,
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+    autoreveal: el.classList.contains("tabbar-autoreveal"),
+  }));
+  expect(inner.autoreveal, "autoReveal 必须落在专用修饰类上").toBe(true);
+  expect(inner.overflowX).toBe("auto");
+  expect(inner.scrollWidth, "390px 下必须真实溢出").toBeGreaterThan(inner.clientWidth);
+
+  // 纵向基准归零后再比较，避免内容高度变化被浏览器夹紧造成假阳性
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    const main = document.querySelector("main.content") as HTMLElement | null;
+    if (main) main.scrollTop = 0;
+  });
+  const verticalBefore = await page.evaluate(() => ({
+    windowY: window.scrollY,
+    mainScrollTop: (document.querySelector("main.content") as HTMLElement | null)?.scrollTop ?? 0,
+  }));
+
+  // 末尾标签：完整可见，且容器确实发生横向位移
+  await tabbar.locator("[role='tab']").filter({ hasText: lastLabel }).click();
+  await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+  await expect.poll(() => tabbar.evaluate((el) => el.scrollLeft), { timeout: 8_000 }).toBeGreaterThan(0);
+
+  // 首标签：完整可见，容器回到起点
+  await tabbar.locator("[role='tab']").filter({ hasText: firstLabel }).click();
+  await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+  await expect.poll(() => tabbar.evaluate((el) => el.scrollLeft), { timeout: 8_000 }).toBe(0);
+
+  const verticalAfter = await page.evaluate(() => ({
+    windowY: window.scrollY,
+    mainScrollTop: (document.querySelector("main.content") as HTMLElement | null)?.scrollTop ?? 0,
+  }));
+  expect(verticalAfter).toEqual(verticalBefore);
+}
+
+const LIST_EMPTY_CASES: Array<{
+  path: string;
+  heading: string;
+  search: string;
+  emptyTitle: string;
+  /** 该列表的「表格视图」切换按钮 title；无表格模式的列表为 null */
+  tableToggle: string | null;
+}> = [
+  {
+    path: "/console/posts",
+    heading: "文章管理",
+    search: "搜索文章标题或 Slug...",
+    emptyTitle: "未找到匹配的文章",
+    tableToggle: "表格视图",
+  },
+  {
+    path: "/console/pages",
+    heading: "独立页面",
+    search: "搜索页面标题或 Slug...",
+    emptyTitle: "未找到匹配的页面",
+    tableToggle: "表格视图",
+  },
+  {
+    path: "/console/attachments",
+    heading: "媒体库",
+    search: "搜索文件名或 URL...",
+    emptyTitle: "未找到匹配的附件",
+    tableToggle: "表格视图",
+  },
+  {
+    path: "/console/comments",
+    heading: "评论管理",
+    search: "搜索昵称、邮箱或正文...",
+    emptyTitle: "未找到匹配的评论",
+    tableToggle: null,
+  },
+  {
+    path: "/console/friends",
+    heading: "友链",
+    search: "搜索友链名称/URL/分组...",
+    emptyTitle: "未找到匹配的友链",
+    tableToggle: "表格列表视图",
+  },
+];
+
+test.describe("Console Tabs 滚动归属与空列表选择入口", () => {
+  test("候选验收截图：设置与主题设置 Tabs（390 溢出 / 1280 桌面）", async ({ page }, testInfo) => {
+    await login(page);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/settings?tab=advanced");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await expect.poll(() => activeTabVisibility(page.locator(".settings-tabs [role='tablist']"))).toBe("visible");
+    await page.screenshot({ path: testInfo.outputPath("tabs-settings-390.png") });
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/appearance?tab=appearance");
+    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("tabs-appearance-1280.png") });
+  });
+
+  test("390px 真实溢出下系统设置 Tabs 由组件自身滚动，首尾标签完整可见且纵向位置不变", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/settings?tab=basic");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await assertTabRevealContract(page, ".settings-tabs", "基本", "高级");
+  });
+
+  test("390px 真实溢出下主题设置 Tabs 由组件自身滚动，首尾标签完整可见且纵向位置不变", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/appearance?tab=appearance");
+    await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
+    await assertTabRevealContract(page, ".appearance-tabs", "外观", "高级");
+  });
+
+  test("query 直接命中末尾标签时初始加载即完成显露，Home/End 切换保持显露与焦点", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/settings?tab=advanced");
+    const tabbar = page.locator(".settings-tabs [role='tablist']");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+
+    // 初始加载（query 驱动）即显露活动标签
+    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+    await expect(tabbar.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
+
+    // Home/End 切换同样触发显露，且焦点停留在被激活的标签上
+    await tabbar.locator("#tab-advanced").focus();
+    await page.keyboard.press("Home");
+    await expect(tabbar.locator("#tab-basic")).toHaveAttribute("aria-selected", "true");
+    await expect(tabbar.locator("#tab-basic")).toBeFocused();
+    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+
+    await page.keyboard.press("End");
+    await expect(tabbar.locator("#tab-advanced")).toHaveAttribute("aria-selected", "true");
+    await expect(tabbar.locator("#tab-advanced")).toBeFocused();
+    await expect.poll(() => activeTabVisibility(tabbar), { timeout: 8_000 }).toBe("visible");
+  });
+
+  test("空列表不渲染任何选择入口：五类列表默认视图", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    const emptyKeyword = "e2e_empty_list_keyword_9f3a";
+    for (const listCase of LIST_EMPTY_CASES) {
+      await page.goto(listCase.path);
+      await expect(page.getByRole("heading", { name: listCase.heading, exact: true })).toBeVisible();
+
+      const search = page.getByPlaceholder(listCase.search);
+      await search.fill(emptyKeyword);
+      await expect(page.getByText(listCase.emptyTitle)).toBeVisible();
+
+      // 选择入口与批量浮条一律不存在
+      await expect(page.locator('thead input[type="checkbox"]')).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "全选本页" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "取消全选" })).toHaveCount(0);
+      await expect(
+        page.locator(".v-floating-dock"),
+        `${listCase.path}：空列表不得残留批量浮条`,
+      ).toHaveCount(0);
+
+      await search.fill("");
+      await expect(page.getByText(listCase.emptyTitle)).toHaveCount(0);
+    }
+  });
+
+  test("表格视图空列表同样不渲染表头选择入口：文章 / 页面 / 附件 / 友链", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    for (const listCase of LIST_EMPTY_CASES.filter((item) => item.tableToggle)) {
+      await page.goto(listCase.path);
+      await expect(page.getByRole("heading", { name: listCase.heading, exact: true })).toBeVisible();
+
+      // 视图切换入口与数据无关，始终可切换
+      await page.locator(`button[title="${listCase.tableToggle}"]`).click();
+
+      const search = page.getByPlaceholder(listCase.search);
+      await search.fill("e2e_empty_table_keyword_9f3a");
+      await expect(page.getByText(listCase.emptyTitle)).toBeVisible();
+
+      await expect(page.locator('thead input[type="checkbox"]')).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "全选本页" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "取消全选" })).toHaveCount(0);
+      await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+
+      await search.fill("");
+    }
+  });
+
+  test("卡片模式先选择再筛选为空：旧选择被清除，批量浮条消失", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // 夹具：以返回的 slug 确认目标，不依赖排序猜测「第几条是最后一条」
+    const slug = `e2e-empty-selection-${Date.now()}`;
+    const title = "空态选择路径夹具";
+    const created = await page.request.post("/api/v1/posts", {
+      data: { slug, title, content_md: "夹具正文", status: "published" },
+    });
+    expect(created.ok(), "夹具文章必须创建成功").toBe(true);
+
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+
+    const card = page.locator(".post-card").filter({ hasText: title }).first();
+    await expect(card).toBeVisible();
+    await card.locator('label[aria-label^="选择文章"]').click();
+    await expect(page.locator(".v-floating-dock")).toBeVisible();
+
+    // 筛选为空 → 浮条必须消失
+    const search = page.getByPlaceholder("搜索文章标题或 Slug...");
+    await search.fill("e2e_empty_after_select_9f3a");
+    await expect(page.getByText("未找到匹配的文章")).toBeVisible();
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+
+    // 恢复列表后旧选择不得复活
+    await search.fill("");
+    await expect(page.locator(".post-card").filter({ hasText: title }).first()).toBeVisible();
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "全选本页" })).toBeVisible();
+  });
+
+  test("表格模式先选择再筛选为空：表头选择入口与批量浮条一并消失", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    const slug = `e2e-table-empty-selection-${Date.now()}`;
+    const title = "表格空态选择路径夹具";
+    const created = await page.request.post("/api/v1/posts", {
+      data: { slug, title, content_md: "夹具正文", status: "published" },
+    });
+    expect(created.ok(), "夹具文章必须创建成功").toBe(true);
+
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+    await page.locator('button[title="表格视图"]').click();
+
+    const row = page.locator("tbody tr").filter({ hasText: title }).first();
+    await expect(row).toBeVisible();
+    await row.locator('input[type="checkbox"]').click();
+    await expect(page.locator(".v-floating-dock")).toBeVisible();
+
+    const search = page.getByPlaceholder("搜索文章标题或 Slug...");
+    await search.fill("e2e_table_empty_after_select_9f3a");
+    await expect(page.getByText("未找到匹配的文章")).toBeVisible();
+    await expect(page.locator('thead input[type="checkbox"]')).toHaveCount(0);
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+
+    await search.fill("");
+    await expect(page.locator("tbody tr").filter({ hasText: title }).first()).toBeVisible();
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+  });
+
+  test("媒体库表格模式先选择再筛选为空：夹具附件上传后旧选择被清除", async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // 通过真实上传接口准备隔离夹具（服务端只接受图片类型，文件名由服务端随机生成）
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    const uploaded = await page.request.post("/api/v1/attachments/upload", {
+      multipart: { file: { name: `e2e-empty-path-${Date.now()}.png`, mimeType: "image/png", buffer: png } },
+    });
+    expect(uploaded.ok(), `夹具附件必须上传成功（HTTP ${uploaded.status()}）`).toBe(true);
+    const attachment = (await uploaded.json()) as { id: number; filename: string };
+    expect(attachment.filename, "上传响应必须返回服务端文件名").toBeTruthy();
+
+    await page.goto("/console/attachments");
+    await expect(page.getByRole("heading", { name: "媒体库", exact: true })).toBeVisible();
+    await page.locator('button[title="表格视图"]').click();
+
+    const row = page.locator("tbody tr").filter({ hasText: attachment.filename }).first();
+    await expect(row).toBeVisible({ timeout: 20_000 });
+    await row.locator('input[type="checkbox"]').click();
+    await expect(page.locator(".v-floating-dock")).toBeVisible();
+
+    const search = page.getByPlaceholder("搜索文件名或 URL...");
+    await search.fill("e2e_empty_after_select_9f3a");
+    await expect(page.getByText("未找到匹配的附件")).toBeVisible();
+    await expect(page.locator('thead input[type="checkbox"]')).toHaveCount(0);
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
+
+    await search.fill("");
+    await expect(page.locator("tbody tr").filter({ hasText: attachment.filename }).first()).toBeVisible();
+    await expect(page.locator(".v-floating-dock")).toHaveCount(0);
   });
 });

@@ -75,6 +75,63 @@ test("VTabbar 具备 tablist 语义、roving tabindex 和方向键焦点轮转",
   assert.match(vTabbar, /\.tabbar-item:focus-visible/);
 });
 
+test("VTabbar autoReveal 由组件自身承担横向滚动：修饰类、rect+scrollLeft、resize 观察与 reduced-motion", () => {
+  const vTabbar = read("packages/components/src/ui/VTabbar.vue");
+  // 专用修饰类只由 autoReveal 打开，默认关闭不影响其他消费者
+  assert.match(vTabbar, /autoReveal: false/);
+  assert.match(vTabbar, /'tabbar-autoreveal': autoReveal/);
+  assert.match(vTabbar, /\.tabbar-autoreveal \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;[\s\S]*?overflow-x: auto/);
+  assert.match(vTabbar, /\.tabbar-autoreveal \.tabbar-item \{\s*flex: 0 0 auto;/);
+  // 位移统一使用容器与标签矩形 + 当前 scrollLeft，不使用元素相对偏移属性
+  assert.match(vTabbar, /const containerRect = container\.getBoundingClientRect\(\)/);
+  assert.match(vTabbar, /const targetRect = target\.getBoundingClientRect\(\)/);
+  assert.match(vTabbar, /let next = container\.scrollLeft/);
+  assert.match(vTabbar, /next = Math\.max\(0, Math\.min\(next, maxScrollLeft\)\)/);
+  assert.match(vTabbar, /targetRect\.right > containerRect\.right/);
+  assert.match(vTabbar, /targetRect\.left < containerRect\.left/);
+  // 尺寸变化重新检查并在卸载时释放观察器
+  assert.match(vTabbar, /new ResizeObserver\(scheduleReveal\)/);
+  assert.match(vTabbar, /onBeforeUnmount/);
+  assert.match(vTabbar, /resizeObserver\?\.disconnect\(\)/);
+  // 减少动态效果时立即滚动
+  assert.match(vTabbar, /prefers-reduced-motion: reduce/);
+  assert.match(vTabbar, /behavior: prefersReducedMotion\(\) \? "auto" : "smooth"/);
+  // 严禁 scrollIntoView 与 offsetLeft
+  assert.doesNotMatch(vTabbar, /scrollIntoView/);
+  assert.doesNotMatch(vTabbar, /offsetLeft/);
+});
+
+test("设置页外层容器只负责宽度与裁切，横向滚动归属 VTabbar 内部根元素", () => {
+  const css = read("modules/console/web/src/modules/settings/settings-form.css");
+  assert.match(css, /\.settings-tabs \{[\s\S]*?width: 100%;[\s\S]*?min-width: 0;[\s\S]*?overflow: hidden;/);
+  assert.doesNotMatch(css, /\.settings-tabs \{[\s\S]{0,200}?overflow-x: auto/);
+
+  // 同一份 .settings-tabs 只保留一处定义，避免两个视图各自维护滚动行为
+  const view = read("modules/console/web/src/modules/settings/SettingsView.vue");
+  assert.doesNotMatch(view, /^\.settings-tabs \{/m);
+});
+
+test("五类列表清理失效选择，且空列表不渲染禁用态选择入口", () => {
+  const lists = [
+    "modules/console/web/src/modules/posts/PostList.vue",
+    "modules/console/web/src/modules/pages/PageList.vue",
+    "modules/console/web/src/modules/attachments/AttachmentList.vue",
+    "modules/console/web/src/modules/comments/CommentList.vue",
+    "modules/console/web/src/modules/friends/FriendList.vue",
+  ];
+  for (const file of lists) {
+    const code = read(file);
+    // 加载中沿用上一批数据（不伪造空态），数据落定后剔除不在当前列表中的选择
+    assert.match(code, /isLoading\.value \? null :/, `${file}: 必须在数据落定后清理失效选择`);
+    assert.match(code, /if \(!visible\.has\(/, `${file}: 必须剔除不在当前列表中的选择`);
+    assert.doesNotMatch(code, /:disabled="[a-zA-Z]+\.length === 0"/, `${file}: 不得以禁用态保留空列表选择入口`);
+  }
+  // 文章/页面/附件三个表格表头复选框改为条件渲染
+  for (const file of lists.slice(0, 3)) {
+    assert.match(read(file), /v-if="[a-zA-Z]+\.length > 0"\s*\n\s*type="checkbox"/, `${file}: 表头复选框必须条件渲染`);
+  }
+});
+
 test("DefaultLayout 导航使用原生 router-link/button、动态移动列数与带关闭和焦点管理的抽屉", () => {
   const layout = read("modules/console/web/src/layouts/DefaultLayout.vue");
   // 原生链接与按钮

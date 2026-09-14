@@ -126,6 +126,18 @@ function clearSelection() {
   selectedSlugs.value.clear();
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : pages.value.map((p) => p.slug)),
+  (slugs) => {
+    if (!slugs) return;
+    const visible = new Set(slugs);
+    for (const slug of Array.from(selectedSlugs.value)) {
+      if (!visible.has(slug)) selectedSlugs.value.delete(slug);
+    }
+  },
+);
+
 // Actions
 function handleDelete(item: PageItem) {
   Dialog.warning({
@@ -458,12 +470,13 @@ function statusBadge(status: string) {
             <thead>
               <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                 <th class="w-12 px-4 py-3 text-center">
+                  <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                   <input
+                    v-if="pages.length > 0"
                     type="checkbox"
-                    :checked="pages.length > 0 && selectedSlugs.size === pages.length"
-                    :disabled="pages.length === 0"
-                    class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                    @change="pages.length > 0 && selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
+                    :checked="selectedSlugs.size === pages.length"
+                    class="h-4 w-4 rounded border-border text-primary"
+                    @change="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
                   />
                 </th>
                 <th class="px-4 py-3">页面标题</th>

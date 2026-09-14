@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 
 // Halo VTabbar 复刻（packages/components/src/components/tabbar/Tabbar.vue）
@@ -19,7 +19,11 @@ const props = withDefaults(
     activeId?: string;
     /** 风格：default 底部高亮条 / outline 胶囊填充 / segmented 悬浮分段胶囊 */
     type?: "default" | "outline" | "segmented";
-    /** 激活标签时是否自动平滑滚入居中（适合移动端/窄屏横向滚动场景） */
+    /**
+     * 激活标签时自动水平显露（适合移动端/窄屏横向滚动场景）。
+     * 开启后根元素自身成为唯一横向滚动区域：width:100%、min-width:0、overflow-x:auto、不换行；
+     * 外层容器只负责宽度与裁切，不再承担横向滚动。
+     */
     autoReveal?: boolean;
   }>(),
   {
@@ -36,44 +40,79 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLElement | null>(null);
 const buttonRefs = ref<HTMLButtonElement[]>([]);
+let resizeObserver: ResizeObserver | null = null;
 
 const current = computed(() => props.activeId ?? props.items[0]?.id);
 
-function scrollActiveIntoView() {
-  if (!props.autoReveal || !containerRef.value) return;
-  const container = containerRef.value;
-  const idx = props.items.findIndex((item) => item.id === current.value);
-  const target = buttonRefs.value[idx];
-  if (target) {
-    try {
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-
-      // 仅当标签未在容器内完整横向可见时才进行水平位移，完整可见时不滚动
-      const isFullyVisible =
-        targetRect.left >= containerRect.left &&
-        targetRect.right <= containerRect.right;
-
-      if (!isFullyVisible) {
-        const targetCenter = target.offsetLeft + target.offsetWidth / 2;
-        const desiredScrollLeft = targetCenter - container.clientWidth / 2;
-        const maxScrollLeft = container.scrollWidth - container.clientWidth;
-        const finalScrollLeft = Math.max(0, Math.min(desiredScrollLeft, maxScrollLeft));
-        container.scrollTo({
-          left: finalScrollLeft,
-          behavior: "smooth",
-        });
-      }
-    } catch {}
-  }
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
-watch(current, () => {
+/**
+ * 计算活动标签所需的最小水平位移。
+ * 统一使用容器与标签的 getBoundingClientRect() 结合当前 scrollLeft，不使用元素相对偏移属性；
+ * 标签已完整可见时不移动；结果限制在 0..scrollWidth-clientWidth。
+ */
+function scrollActiveIntoView() {
+  if (!props.autoReveal) return;
+  const container = containerRef.value;
+  if (!container) return;
+
+  const index = props.items.findIndex((item) => item.id === current.value);
+  const target = buttonRefs.value[index];
+  if (!target) return;
+
+  const maxScrollLeft = container.scrollWidth - container.clientWidth;
+  if (maxScrollLeft <= 0) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+
+  let next = container.scrollLeft;
+  if (targetRect.right > containerRect.right) {
+    // 右侧超出：向右移动超出量
+    next += targetRect.right - containerRect.right;
+  } else if (targetRect.left < containerRect.left) {
+    // 左侧超出：向左移动超出量
+    next -= containerRect.left - targetRect.left;
+  } else {
+    // 完整可见：不移动
+    return;
+  }
+
+  next = Math.max(0, Math.min(next, maxScrollLeft));
+  if (Math.abs(next - container.scrollLeft) < 1) return;
+  container.scrollTo({ left: next, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+}
+
+function scheduleReveal() {
   void nextTick(scrollActiveIntoView);
-});
+}
+
+// 点击、方向键/Home/End 切换与 query 驱动的 activeId 变化统一走 current
+watch(current, scheduleReveal);
+// 标签集合变化（query 切换导致标签增减）后也需要重新检查
+watch(
+  () => props.items.map((item) => item.id).join("|"),
+  scheduleReveal,
+);
 
 onMounted(() => {
-  void nextTick(scrollActiveIntoView);
+  scheduleReveal();
+  // 容器尺寸变化时重新检查活动标签
+  if (props.autoReveal && containerRef.value && typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(scheduleReveal);
+    resizeObserver.observe(containerRef.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
 });
 
 function select(id: string) {
@@ -107,7 +146,11 @@ function onKeydown(e: KeyboardEvent, index: number) {
 </script>
 
 <template>
-  <div ref="containerRef" :class="['tabbar', `tabbar-${type}`]" role="tablist">
+  <div
+    ref="containerRef"
+    :class="['tabbar', `tabbar-${type}`, { 'tabbar-autoreveal': autoReveal }]"
+    role="tablist"
+  >
     <button
       v-for="(item, index) in items"
       :id="`tab-${item.id}`"
@@ -135,6 +178,29 @@ function onKeydown(e: KeyboardEvent, index: number) {
 .tabbar {
   display: flex;
   gap: 0;
+}
+
+/* autoReveal：根元素自身是唯一横向滚动区域，外层只负责宽度与裁切 */
+.tabbar-autoreveal {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tabbar-autoreveal::-webkit-scrollbar {
+  display: none;
+}
+.tabbar-autoreveal .tabbar-item {
+  flex: 0 0 auto;
+}
+.tabbar-autoreveal .tabbar-item-label {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 /* default 风格：底部主色高亮条（Apple Dark） */

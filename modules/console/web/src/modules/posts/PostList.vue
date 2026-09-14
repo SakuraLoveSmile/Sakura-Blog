@@ -160,6 +160,18 @@ function clearSelection() {
   selectedSlugs.value.clear();
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : posts.value.map((p) => p.slug)),
+  (slugs) => {
+    if (!slugs) return;
+    const visible = new Set(slugs);
+    for (const slug of Array.from(selectedSlugs.value)) {
+      if (!visible.has(slug)) selectedSlugs.value.delete(slug);
+    }
+  },
+);
+
 // ---------- 操作流 ----------
 function handleDelete(p: PostItem) {
   Dialog.warning({
@@ -695,12 +707,13 @@ function handleTitleLeave(e: MouseEvent) {
             <thead>
               <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                 <th class="w-12 px-4 py-3 text-center">
+                  <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                   <input
+                    v-if="posts.length > 0"
                     type="checkbox"
-                    :checked="posts.length > 0 && selectedSlugs.size === posts.length"
-                    :disabled="posts.length === 0"
-                    class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                    @change="posts.length > 0 && selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
+                    :checked="selectedSlugs.size === posts.length"
+                    class="h-4 w-4 rounded border-border text-primary"
+                    @change="selectedSlugs.size === posts.length ? clearSelection() : selectAll()"
                   />
                 </th>
                 <th class="px-4 py-3">文章标题</th>

@@ -355,6 +355,19 @@ function clearSelection() {
   batchTargetGroup.value = "";
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : filteredLinks.value.map((l) => l.id)),
+  (ids) => {
+    if (!ids) return;
+    const visible = new Set(ids);
+    for (const id of Array.from(selectedIds.value)) {
+      if (!visible.has(id)) selectedIds.value.delete(id);
+    }
+    if (selectedIds.value.size === 0) batchTargetGroup.value = "";
+  },
+);
+
 async function batchDelete() {
   const ids = Array.from(selectedIds.value);
   if (ids.length === 0) return;

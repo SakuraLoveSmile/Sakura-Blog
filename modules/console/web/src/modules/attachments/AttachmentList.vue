@@ -298,6 +298,19 @@ function clearSelection() {
   batchTargetGroup.value = "";
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : attachments.value.map((a) => a.id)),
+  (ids) => {
+    if (!ids) return;
+    const visible = new Set(ids);
+    for (const id of Array.from(selectedIds.value)) {
+      if (!visible.has(id)) selectedIds.value.delete(id);
+    }
+    if (selectedIds.value.size === 0) batchTargetGroup.value = "";
+  },
+);
+
 async function batchDelete() {
   const ids = Array.from(selectedIds.value);
   if (ids.length === 0) return;
@@ -720,12 +733,13 @@ function formatMimeBadge(mime: string): string {
                 <thead>
                   <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                     <th class="w-12 px-4 py-3 text-center">
+                      <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                       <input
+                        v-if="attachments.length > 0"
                         type="checkbox"
-                        :checked="attachments.length > 0 && selectedIds.size === attachments.length"
-                        :disabled="attachments.length === 0"
-                        class="h-4 w-4 rounded border-border text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                        @change="attachments.length > 0 && selectedIds.size === attachments.length ? clearSelection() : selectAll()"
+                        :checked="selectedIds.size === attachments.length"
+                        class="h-4 w-4 rounded border-border text-primary"
+                        @change="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
                       />
                     </th>
                     <th class="px-4 py-3">文件名称</th>

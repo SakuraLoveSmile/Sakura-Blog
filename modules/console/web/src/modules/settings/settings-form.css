@@ -383,16 +383,11 @@
   min-width: 0;
   overflow: hidden;
 }
+/* 外层容器只负责宽度与裁切；横向滚动由 VTabbar(autoReveal) 的内部根元素承担 */
 .settings-tabs {
-  align-self: stretch;
-  display: flex;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.settings-tabs::-webkit-scrollbar {
-  display: none;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* 分区区块统一规范（消除多层嵌套卡片） */
