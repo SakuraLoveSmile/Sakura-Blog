@@ -365,7 +365,7 @@ function handleTitleLeave(e: MouseEvent) {
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <ConsoleStatsCard
           label="全部文章"
           :value="stats.total"

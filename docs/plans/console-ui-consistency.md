@@ -441,6 +441,45 @@
 - 未验证 Safari/Firefox 上的滚动与 `color-mix`/`oklab` 解析差异；对比度计算依赖 Chromium 的 canvas 色彩解析。
 - 未验证弱网/慢请求下的保存按钮与加载态表现（拦截式测试是即时释放，不代表真实网络时延分布）。
 - 未验证深色以外的显示环境（产品只交付深色模式）。
-- 概览栅格在 640–1023px 区间的列数差异（文章/页面/附件为四列、用户/备份为两列）按用户裁决保持现状，未做统一。
 - 本轮未推送、未发布、未部署、未清理任何 worktree/分支。
+
+---
+
+## 10. 收尾任务实施与验证记录 (Final Cleanup)
+
+基于 `dev / cc63474` 执行收尾修复，统一概览列数、消除设置页内层嵌套卡片并更新基线截图归档。
+
+### 1. 改动要点与执行结果
+
+1. **T3 概览栅格列数统一**：
+   - 将文章（`PostList.vue`）、页面（`PageList.vue`）、媒体库（`AttachmentList.vue`）的概览卡片栅格由 `sm:grid-cols-4` 改为 `sm:gap-4 lg:grid-cols-4`，与用户管理、备份导出完全一致。
+   - 严格固定规则：宽度 `<1024px` 为两列，`≥1024px` 为四列；业务列表卡片与附件缩略图栅格原样保留。
+2. **T3 设置页表单单卡片层级**：
+   - 消除系统设置中 `BasicSettings`、`PostSettings`、`CommentSettings`、`SeoSettings`、`SearchSettings`、`AdvancedSettings` 六个子表单中 `.settings-section-body` 重复包裹的卡片背景、1px 边框、圆角及内边距。
+   - `.settings-section-body` 统一调整为 `background: transparent; border: none; border-radius: 0; box-shadow: none; padding: 0;`。
+   - 手机端水平 16px 边距统一由外层 `.settings-section` / `.settings-basic-section` 提供，消除了内外双重内边距叠加。
+   - 保留代码编辑器、警告条、输入框以及图片预览控件的必要边界与间距。
+3. **T1 扩展针对性验收用例**：
+   - 在 `tests/e2e/console-mobile-a11y.spec.ts` 中增强概览列数断言：守住 `390px`、`639px`、`640px`、`768px`、`1023px`（两列）与 `1024px`、`1280px`（四列）断点。
+   - 增加设置页单卡片层级断言：验证在 `390px`、`768px`、`1280px` 下 `.settings-section-body` 无多余背景、无可见边框、无阴影、无圆角且无横向溢出。
+   - 运行完整 E2E 测试集（`console-ui-consistency.spec.ts`、`console-settings-save-race.spec.ts`、`console-mobile-a11y.spec.ts`）共 52 项用例，全部通过。
+4. **基线截图更新与归档**：
+   - 桌面主题设置验收图使用当前最新代码重新生成，更新归档至 `docs/baselines/console-ui-consistency/t3-appearance-desktop.png`（反映满宽分段 Tabs 真实画面）。
+   - 新增手机端高级设置截图归档：`docs/baselines/console-ui-consistency/t1-settings-advanced-390.png`（验证警告框与代码输入框清晰可辨，无多层卡片包裹）。
+   - 新增 768px 平板文章概览截图归档：`docs/baselines/console-ui-consistency/t1-posts-overview-768.png`（验证平板视口下两列概览布局）。
+   - 唯一设计参照 `design-reference.png` 保持原样不被替换。
+
+### 2. 实际验证命令与结果（本轮实测）
+
+- `make console-test`：211 项测试通过。
+- `make test`：包含 vet、staticcheck、资源检查与单元测试全部通过。
+- `make build`：Console (含 `/console/` 与 `/uc/`) 前端构建成功，Go 二进制编译成功。
+- Playwright E2E（3 套 spec）：
+  ```bash
+  pnpm exec playwright test tests/e2e/console-ui-consistency.spec.ts tests/e2e/console-settings-save-race.spec.ts tests/e2e/console-mobile-a11y.spec.ts
+  ```
+  结果：**52 passed**（耗时约 1.2m）。
+- 产物加载与服务状态：
+  - 临时测试服务器以 `-dev` 启动，加载当前重新构建的 SPA 产物（资源 hash 与文档引用严格对齐）。
+  - 测试完成后生成的目标截图由人工复核后从 `.tmp/playwright-test-results/` 复制归档到 `docs/baselines/console-ui-consistency/`。
 

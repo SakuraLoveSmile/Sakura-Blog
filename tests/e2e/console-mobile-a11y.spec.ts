@@ -488,7 +488,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     }
   });
 
-  test("概览卡片：五个统一页面手机两列、桌面四列并保持既定最小高度", async ({ page }) => {
+  test("概览卡片：五个统一页面在断点前后守住两列与四列（390/639/640/768/1023 两列，1024/1280 四列）", async ({ page }) => {
     await login(page);
     const token = `t1-stats-${Date.now()}`;
     await createPost(page, token, 1);
@@ -509,11 +509,21 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         return window.getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
       });
 
+    const twoColViewports = [390, 639, 640, 768, 1023];
+    const fourColViewports = [1024, 1280];
+
     for (const item of pages) {
+      // 验证断点前两列 (宽度 < 1024px)
+      for (const w of twoColViewports) {
+        await page.setViewportSize({ width: w, height: 800 });
+        await page.goto(item.path);
+        await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
+        expect(await columnsOf(page), `${item.path} 在 ${w}px 必须为两列`).toBe(2);
+      }
+
+      // 验证 390px 最小高度 88px
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(item.path);
-      await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
-      expect(await columnsOf(page), `${item.path} 手机必须两列`).toBe(2);
       const mobileHeights = await page.locator(".stats-card").evaluateAll((els) =>
         els.map((el) => el.getBoundingClientRect().height),
       );
@@ -522,10 +532,15 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         expect(height, `${item.path} 手机概览卡片最小高度 88px`).toBeGreaterThanOrEqual(88);
       }
 
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.goto(item.path);
-      await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
-      expect(await columnsOf(page), `${item.path} 桌面必须四列`).toBe(4);
+      // 验证断点后四列 (宽度 >= 1024px)
+      for (const w of fourColViewports) {
+        await page.setViewportSize({ width: w, height: 800 });
+        await page.goto(item.path);
+        await expect(page.getByRole("heading", { name: item.heading, exact: true })).toBeVisible();
+        expect(await columnsOf(page), `${item.path} 在 ${w}px 必须为四列`).toBe(4);
+      }
+
+      // 验证 1280px 最小高度 80px
       const desktopHeights = await page.locator(".stats-card").evaluateAll((els) =>
         els.map((el) => el.getBoundingClientRect().height),
       );
@@ -533,6 +548,79 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         expect(height, `${item.path} 桌面概览卡片最小高度 80px`).toBeGreaterThanOrEqual(80);
       }
     }
+  });
+
+  test("设置页单卡片层级：390、768、1280px 下无多余嵌套卡片，内层容器透明且无水平溢出", async ({ page }, testInfo) => {
+    await login(page);
+
+    const checkViewports = [
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+      { width: 1280, height: 800 },
+    ];
+
+    const settingTabs = [
+      { url: "/console/settings?tab=basic", title: "系统设置" },
+      { url: "/console/settings?tab=advanced", title: "系统设置" },
+      { url: "/console/appearance?tab=appearance", title: "主题设置" },
+      { url: "/console/appearance?tab=layout", title: "主题设置" },
+      { url: "/console/appearance?tab=advanced", title: "主题设置" },
+    ];
+
+    for (const tab of settingTabs) {
+      for (const vp of checkViewports) {
+        await page.setViewportSize(vp);
+        await page.goto(tab.url);
+        await expect(page.getByRole("heading", { name: tab.title, exact: true })).toBeVisible();
+
+        // 外层只有一个主卡片面板 .settings-basic-panel
+        const outerCard = page.locator(".settings-basic-panel");
+        await expect(outerCard).toBeVisible();
+
+        // 检查内层是否被消除卡片背景与边框：检查 .settings-section-body
+        const bodies = page.locator(".settings-section-body");
+        const bodyCount = await bodies.count();
+        if (bodyCount > 0) {
+          const bodyStyles = await bodies.first().evaluate((el) => {
+            const cs = window.getComputedStyle(el);
+            return {
+              bg: cs.backgroundColor,
+              borderWidth: cs.borderWidth,
+              borderStyle: cs.borderStyle,
+              borderRadius: cs.borderRadius,
+              boxShadow: cs.boxShadow,
+            };
+          });
+          // 背景透明或与卡片完全融合
+          expect(bodyStyles.borderStyle, `${tab.url} ${vp.width}px .settings-section-body 不得有可见边框`).toBe("none");
+          expect(bodyStyles.boxShadow, `${tab.url} ${vp.width}px .settings-section-body 不得有阴影`).toBe("none");
+          expect(parseFloat(bodyStyles.borderRadius), `${tab.url} ${vp.width}px .settings-section-body 不得有额外圆角`).toBe(0);
+        }
+
+        // 不出现无意横向溢出
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `${tab.url} 在 ${vp.width}px 不得有水平溢出`).toBeLessThanOrEqual(1);
+      }
+    }
+
+    // 重点截取「系统设置 - 高级」和「主题设置 - 桌面」，验证警告框、代码输入框清晰可辨
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/console/settings?tab=advanced");
+    await expect(page.locator(".settings-warning")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("t1-settings-advanced-390.png") });
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/console/appearance?tab=appearance");
+    await expect(page.locator(".appearance-tabs")).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("t3-appearance-desktop-1280.png") });
+
+    // 768px 概览截图（文章管理）
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto("/console/posts");
+    await expect(page.getByRole("heading", { name: "文章管理", exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("t1-posts-overview-768.png") });
   });
 
   test("User Center：隔离非管理员账号的资料保存、通知页与共享弹层", async ({ page }) => {

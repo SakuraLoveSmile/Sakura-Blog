@@ -250,13 +250,14 @@ function handleSubmit() {
   line-height: 1.5;
 }
 
-/* 方案 1：内嵌分组面板 */
+/* 内嵌分组面板：消除多余嵌套卡片背景、边框、圆角与阴影，由外层 VCard 统一提供卡片边界 */
 .settings-section-body {
   max-width: 860px;
-  padding: 22px 24px;
-  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .settings-field,
@@ -365,10 +366,6 @@ function handleSubmit() {
 @media (max-width: 640px) {
   .settings-section {
     padding: 24px 16px;
-  }
-
-  .settings-section-body {
-    padding: 18px 16px;
   }
 
   .settings-form-grid-2,
