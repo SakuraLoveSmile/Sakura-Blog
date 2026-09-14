@@ -314,7 +314,7 @@
 | **T2** | 保存期间所有保存按钮反馈明确（全局禁用），并用真实页面拦截式竞态测试约束输入/草稿/快照边界 | `../Blog-r4-t2-save` (`codex/console-r4-t2-save`) | `d4c479b` | 待体验 |
 | **T3** | Tabs 横向滚动由组件自身承担、空列表不再渲染选择入口、筛选后清理失效选择 | `../Blog-r4-t3-tabs` (`codex/console-r4-t3-tabs`) | `9316d06` | 待体验 |
 | **T1** | 三页四视口矩阵、滚动到底末项真实可操作、真实键盘/对比度/触控/概览与 UC 隔离账号验收；自动截图不再写入受跟踪基线 | `../Blog-r4-t1-a11y` (`codex/console-r4-t1-a11y`) | `d60b3ae` | 待体验 |
-| **最终补齐** | 统一手机设置页边距（<768px 统一 16px）、补强 640/641/767/768px 断点与全量容器断言、闭环待决定截图与交付记录 | `../Blog-r4-final` (`codex/console-r4-final`) | 待合并 | 待体验 |
+| **最终补齐** | 统一手机设置页边距（<768px 统一 16px）、补强 640/641/767/768px 断点与全量容器断言、闭环待决定截图与交付记录 | `../Blog-r4-final` (`codex/console-r4-final`) | `906fd22` | 待体验 |
 
 *状态流转规范：未开始 → 实现中 → 待体验 → 已验收（必要验证未结束仍为实现中，仅在用户确认后标记已验收）。*
 
@@ -549,4 +549,44 @@
 - `make build`：Console 与 User Center 双前端构建成功，Go 二进制编译成功。
 - **当前交付状态**：**待体验**（必要验证全部通过，等待用户体验确认后方可标记为“已验收”）。
 
+---
+
+## 12. 验收收尾：四设置标签覆盖与计划记录同步 (Round 4 Closeout)
+
+起点：`dev / 906fd22`。本轮**只补测试覆盖与同步文档，无任何产品代码改动**，不扩大 UI 修复范围、不改 API、不新增功能。工作树 `../Blog-ui-closeout`（`codex/console-ui-closeout`，基于 `906fd22`）；根目录未暂存的 `.gitignore`（新增 `.workbuddy/`）原样保留，未提交、未还原。
+
+### 1. 改动要点
+
+1. **T1：补齐系统设置四个标签的矩阵覆盖**（`tests/e2e/console-mobile-a11y.spec.ts`）：
+   - 设置页矩阵由 5 项扩为 9 项，新增 `/console/settings?tab=post`、`?tab=comments`、`?tab=seo`、`?tab=search`，四项均 `hasBodies: true`。
+   - 复用既有断言、未降低标准：`390/640/641/767/768/1280px` 六视口；表单分区容器**逐个遍历**（零匹配直接失败，不允许静默跳过）；`<768px` 左右内边距严格 16px、`≥768px` 严格 28px；`.settings-section-body` 背景透明、无可见边框、无阴影、无额外圆角且左右内边距 0；页面水平溢出 ≤1px；警告框与输入框的必要边界保留。
+   - 新增一条前置守卫：对 `/console/settings?tab=<key>` 断言 `#tabpanel-<key>` 可见。原矩阵只验证「页面能打开 + 分区样式正确」，若 `tab` query 失效退回 `basic` 仍会全绿；该守卫使四个新标签的覆盖真正落在各自表单上，而不是空转。
+2. **T1／T3：同步唯一计划记录**：
+   - 第 7 节 Round 4「最终补齐」的合并提交由「待合并」更正为实际提交 `906fd22`。
+   - 追加本节，记录本次新增覆盖、实际命令与结果、负向对照，以及哪些检查本次重新运行、哪些沿用历史证据。
+   - 第 1–11 节的历史证据全部保留、未改写；状态维持 **待体验**，不代用户标记「已验收」。
+
+### 2. 实际命令与结果（本轮实测）
+
+- 针对性用例（隔离服务：Playwright webServer 先 `VITE_E2E=1 pnpm --filter console run build` 重建 Console，再以 `-dev` 启动独立根目录的 Go 服务）：
+  ```bash
+  pnpm exec playwright test tests/e2e/console-mobile-a11y.spec.ts --grep "设置页单卡片层级与边距"
+  ```
+  结果：**1 passed**（8.7s），覆盖 9 个设置标签 × 6 个视口（54 组页面断言），四个新增标签全部通过。
+- **负向对照（证明新增覆盖不是空转）**：将 `?tab=search` 临时改为不存在的 `?tab=searches` 后重跑同一命令，断言在 `#tabpanel-searches` 处 **1 failed**；随后已还原为 `?tab=search`，失败产物目录 `.tmp/playwright-test-results/` 已清理。
+- 本轮真实验证的隔离服务产物加载（不以 HTTP 200 代替）：
+  - 服务启动时间：`2026/09/15 00:32:14`
+  - 启动日志：`console SPA loaded from .../Blog-ui-closeout/.tmp/e2e-server.Q94VLy/modules/console/web/dist (dev)`、`user center SPA loaded from .../dist-uc (dev)`
+  - 每次 E2E 运行都会重建 Console 并重启 Go 服务，因此断言针对当前构建产物，而非缓存或旧产物。
+
+### 3. 本轮重新运行 / 未重新运行的检查
+
+- **本次重新运行**：针对性 Playwright 用例（含上述负向对照）；交付门禁 `make merge-check`（先 `make test`：`console-test` 类型检查与 `node:test`、`assets-test`、`deploy-test`、`release-source-test`、`module-check`、`go vet`、`staticcheck`、`go test ./...`，通过后合入根目录 `dev`，并在合并后的 `dev` 复跑一次 `make test`）。
+- **本次未重新运行**（本轮无产品/样式代码改动，仅测试与文档变更）：完整三套 E2E spec 的 52 项用例、`make build`。第 10／11 节记录的这两项结果作为历史证据保留，未被本轮结果取代或改写。
+- **边界**：仍仅在 Chromium 视口模拟下验证，未在真机/多浏览器验证；本轮未推送、未发布、未部署、未清理任何 worktree 或分支。
+
+### 4. 交付状态
+
+- 完成标准：四个新增标签通过全部视口断言、文档与 Git 状态一致 —— 已满足。
+- 状态：**待体验**（等待用户体验确认后方可标记「已验收」；无论断标准未降低）。
 

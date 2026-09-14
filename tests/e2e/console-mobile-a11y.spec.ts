@@ -564,6 +564,10 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
     const settingTabs = [
       { url: "/console/settings?tab=basic", title: "系统设置", hasBodies: true },
+      { url: "/console/settings?tab=post", title: "系统设置", hasBodies: true },
+      { url: "/console/settings?tab=comments", title: "系统设置", hasBodies: true },
+      { url: "/console/settings?tab=seo", title: "系统设置", hasBodies: true },
+      { url: "/console/settings?tab=search", title: "系统设置", hasBodies: true },
       { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
       { url: "/console/appearance?tab=appearance", title: "主题设置", hasBodies: false },
       { url: "/console/appearance?tab=layout", title: "主题设置", hasBodies: false },
@@ -575,6 +579,15 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         await page.setViewportSize(vp);
         await page.goto(tab.url);
         await expect(page.getByRole("heading", { name: tab.title, exact: true })).toBeVisible();
+
+        // 系统设置：必须确认请求的 tab 真的被激活，否则 query 失效退回 basic 会让后续断言空覆盖
+        const settingsTab = new URLSearchParams(tab.url.split("?")[1] ?? "").get("tab");
+        if (tab.url.startsWith("/console/settings") && settingsTab) {
+          await expect(
+            page.locator(`#tabpanel-${settingsTab}`),
+            `${tab.url} 在 ${vp.width}px 必须激活 #tabpanel-${settingsTab}`,
+          ).toBeVisible();
+        }
 
         // 外层只有一个主卡片面板 .settings-basic-panel
         const outerCard = page.locator(".settings-basic-panel");
