@@ -429,10 +429,20 @@
   font-size: 12px;
   line-height: 1.5;
 }
+@media (max-width: 767px) {
+  .settings-basic-section,
+  .settings-post-section,
+  .settings-section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
 @media (max-width: 640px) {
   .settings-basic-section,
+  .settings-post-section,
   .settings-section {
-    padding: 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 }
 

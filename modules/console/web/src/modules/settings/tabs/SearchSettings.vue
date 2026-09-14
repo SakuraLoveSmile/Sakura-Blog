@@ -277,9 +277,17 @@ function handleSubmit() {
   justify-content: flex-start;
 }
 
+@media (max-width: 767px) {
+  .settings-section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 @media (max-width: 640px) {
   .settings-section {
-    padding: 24px 16px;
+    padding-top: 24px;
+    padding-bottom: 24px;
   }
 
   .settings-form-grid-2 {

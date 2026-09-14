@@ -766,9 +766,17 @@ const aiLabelTiers = [
   justify-content: flex-start;
 }
 
+@media (max-width: 767px) {
+  .settings-post-section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 @media (max-width: 640px) {
   .settings-post-section {
-    padding: 24px 16px;
+    padding-top: 24px;
+    padding-bottom: 24px;
   }
 
   .settings-post-switch {

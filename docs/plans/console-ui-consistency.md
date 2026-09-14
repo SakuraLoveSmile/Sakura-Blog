@@ -314,13 +314,14 @@
 | **T2** | 保存期间所有保存按钮反馈明确（全局禁用），并用真实页面拦截式竞态测试约束输入/草稿/快照边界 | `../Blog-r4-t2-save` (`codex/console-r4-t2-save`) | `d4c479b` | 待体验 |
 | **T3** | Tabs 横向滚动由组件自身承担、空列表不再渲染选择入口、筛选后清理失效选择 | `../Blog-r4-t3-tabs` (`codex/console-r4-t3-tabs`) | `9316d06` | 待体验 |
 | **T1** | 三页四视口矩阵、滚动到底末项真实可操作、真实键盘/对比度/触控/概览与 UC 隔离账号验收；自动截图不再写入受跟踪基线 | `../Blog-r4-t1-a11y` (`codex/console-r4-t1-a11y`) | `d60b3ae` | 待体验 |
+| **最终补齐** | 统一手机设置页边距（<768px 统一 16px）、补强 640/641/767/768px 断点与全量容器断言、闭环待决定截图与交付记录 | `../Blog-r4-final` (`codex/console-r4-final`) | 待合并 | 待体验 |
 
 *状态流转规范：未开始 → 实现中 → 待体验 → 已验收（必要验证未结束仍为实现中，仅在用户确认后标记已验收）。*
 
 ### 本轮开工前锁定的四项裁决（用户确认「没问题」= 采纳推荐默认值）
 
 1. 危险按钮前景改黑字（`var(--color-primary-foreground)`），与主按钮「蓝底黑字」策略一致。
-2. 概览栅格维持现状断裂点（文章/页面/附件 ≥640px 四列，用户/备份 ≥1024px 四列），只做验收断言。
+2. 概览栅格维持现状断裂点（文章/页面/附件 ≥640px 四列，用户/备份 ≥1024px 四列），只做验收断言。*(注：历史规划记录；在收尾阶段已按统一规范修正为：全量五个页面统一在 <1024px 为两列，≥1024px 为四列)*
 3. 竞态验收全部使用 Playwright 真实页面拦截，不新增 DOM 测试依赖；`node:test` 只保留结构检查。
 4. UC 验收使用 `scripts/e2e/prepare.go` 追加的非管理员夹具账号 `e2e-author / e2e-password`（角色 `author`）；空态表头按「保留 `<th>`、仅移除复选框」处理。
 
@@ -424,7 +425,7 @@
 
 - 候选验收图（忽略目录，未入库）：`.tmp/r4-t3-screens/tabs-settings-390.png`、`.tmp/r4-t3-screens/tabs-appearance-1280.png`。
 - 自动截图统一改由 `testInfo.outputPath(...)` 产出，落在 `.tmp/playwright-test-results/`；**测试执行前后受跟踪基线目录零变化**。
-- 仍需人工决定：`docs/baselines/console-ui-consistency/t3-appearance-desktop.png` 是否需要替换为分段 Tabs 满宽后的新画面。
+- **已被最新归档取代（已闭环）**：`docs/baselines/console-ui-consistency/t3-appearance-desktop.png` 已在收尾阶段以满宽分段 Tabs 重新生成并归档入库，基线已对齐最新设计规范，不再有待决定项。
 
 ### 产物加载证据（不以 HTTP 200 代替）
 
@@ -482,4 +483,70 @@
 - 产物加载与服务状态：
   - 临时测试服务器以 `-dev` 启动，加载当前重新构建的 SPA 产物（资源 hash 与文档引用严格对齐）。
   - 测试完成后生成的目标截图由人工复核后从 `.tmp/playwright-test-results/` 复制归档到 `docs/baselines/console-ui-consistency/`。
+
+---
+
+## 11. 最终补齐实施与验收交付记录 (Final Polish)
+
+在独立 worktree `../Blog-r4-final`（分支 `codex/console-r4-final`，基于 `ed20839`）完成剩余三项补齐，保留已完成的设计、保存和 Tabs 逻辑，不改动 API、不新增功能、不推送或部署。
+
+### 1. 改动要点与执行结果
+
+1. **T3：补齐手机设置页边距**：
+   - 将表单分区左右 16px 的适用范围统一规范为 `<768px`（采用 `@media (max-width: 767px)`），彻底修复 641–767px 回退到 28px 的缺陷。
+   - 严格落实“只调整水平边距，不改变其他布局和控件”：各设置 tab 的垂直边距（`padding-top/bottom`）、网格布局（`.settings-form-grid-*`）、开关控件（`.settings-switch`）以及底部操作栏的样式保持原样不被移动。
+   - 涉及文件：
+     - `modules/console/web/src/modules/settings/settings-form.css`
+     - `modules/console/web/src/modules/settings/tabs/BasicSettings.vue`
+     - `modules/console/web/src/modules/settings/tabs/PostSettings.vue`
+     - `modules/console/web/src/modules/settings/tabs/CommentSettings.vue`
+     - `modules/console/web/src/modules/settings/tabs/AdvancedSettings.vue`
+     - `modules/console/web/src/modules/settings/tabs/SearchSettings.vue`
+     - `modules/console/web/src/modules/settings/tabs/SeoSettings.vue`
+2. **T1：补强对应测试**：
+   - 在 `tests/e2e/console-mobile-a11y.spec.ts` 中增加 `640px`、`641px`、`767px`、`768px` 关键断点矩阵检查（覆盖 `390/640/641/767/768/1280`）。
+   - 遍历实际表单容器（`.settings-basic-section`、`.settings-section`、`.settings-post-section`），断言 `<768px` 视口下水平 padding 严格为 `16px`，`≥768px` 下为 `28px`。
+   - 针对内层表单容器 `.settings-section-body`，遍历每一个匹配容器明确断言：背景透明（`transparent` / `rgba(0, 0, 0, 0)`）、无重复边框（`none` / `0px`）、无阴影、无额外圆角且左右内边距为 `0px`。
+   - 应存在的容器缺失必须直接抛错失败，杜绝仅断言首项或 `if (count > 0)` 静默跳过零匹配。
+   - 明确断言保留警告框（`.settings-warning`）和输入框（`.apple-input` / `.code-editor-wrapper`）的必要边框边界与间距，防止误伤。
+   - 修正测试头部关于概览旧断点的注释，消除与统一规范（`<1024px` 两列，`≥1024px` 四列）的冲突。
+3. **T1／T3：整理交付记录**：
+   - 修正旧断点注释（包含测试用例与历史规划日志），明确历史记录已被统一规范取代。
+   - 将文档中“截图待决定”标注为已被最新归档取代（`t3-appearance-desktop.png` 已闭环归档入库）。
+   - 详尽记录本次真实服务启动时间、具体资源 hash 以及截图对应的代码版本。
+
+### 2. 真实产物加载与服务启动证据（不以 HTTP 200 代替）
+
+在独立测试工作树 `../Blog-r4-final` 中，使用隔离服务（`-dev` 模式）与 Playwright 测量真实浏览器加载行为：
+
+- **服务启动时间**：`2026/09/14 23:25:42`
+- **服务启动日志**：
+  ```
+  console SPA loaded from /Users/sakurasep/Documents/Code/Project/Personal Project/Blog-r4-final/.tmp/e2e-server.JQD2wY/modules/console/web/dist (dev)
+  user center SPA loaded from /Users/sakurasep/Documents/Code/Project/Personal Project/Blog-r4-final/.tmp/e2e-server.JQD2wY/modules/console/web/dist-uc (dev)
+  ```
+- **文档实际引用（服务返回的入口 HTML `dist/index.html`）**：
+  - 入口脚本：`/console/assets/index-xoZIK908.js`（`make build` 产物为 `/console/assets/index-Mr6rN0V7.js`）
+  - 入口样式：`/console/assets/index-D0XV7o7C.css`
+  - 表单样式分块：`/console/assets/settings-form-C8cWjgsO.css`
+  - 预加载分块：
+    - `/console/assets/api-ZU2VHYOh.js`
+    - `/console/assets/runtime-core.esm-bundler-DFn6PQEW.js`
+    - `/console/assets/pinia-BDaR9qFm.js`
+    - `/console/assets/preload-helper-l0U7FUPx.js`
+- **User Center 入口（`dist-uc/uc.html`）**：
+  - 入口脚本：`/uc/assets/index-CA90lmEM.js`
+  - 入口样式：`/uc/assets/index-CFdsD7Up.css`
+- **截图对应代码版本**：
+  - Git 分支与版本：`codex/console-r4-final` (基于最新 `dev / ed20839`)
+  - 自动截图落在 `.tmp/playwright-test-results/`，受跟踪基线目录 `docs/baselines/console-ui-consistency/` 在测试运行前后严格零变化。
+
+### 3. 门禁验证与交付状态
+
+- `make console-test`：**212 passed**（耗时 1.7s，通过率 100%）。
+- Playwright E2E（3 套 spec，共 52 项用例）：**52 passed**（耗时 1.1m）。
+- `make test`：全套门禁（Staticcheck、vet、部署检查、Go 单元测试）全部通过。
+- `make build`：Console 与 User Center 双前端构建成功，Go 二进制编译成功。
+- **当前交付状态**：**待体验**（必要验证全部通过，等待用户体验确认后方可标记为“已验收”）。
+
 

@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
  * 边界声明：
  * - 自动截图一律使用 testInfo.outputPath(...)，执行前后 docs/baselines/ 受跟踪基线不得变化。
  * - 所有断言基于真实视口、真实滚动与真实按键/点击；元素缺失或矩形为空直接失败，不做条件跳过。
- * - 概览栅格按既定实现断言（文章/页面/附件在 ≥640px 四列，用户/备份在 ≥1024px 四列），不改变断裂点。
+ * - 概览栅格统一断言：五个页面均在 <1024px 为两列，≥1024px 为四列，并在断点前后（390/639/640/641/767/768/1023/1024/1280）守住规范。
  */
 
 const BOTTOM_NAV = 'nav[aria-label="移动端底部导航"]';
@@ -509,7 +509,7 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         return window.getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
       });
 
-    const twoColViewports = [390, 639, 640, 768, 1023];
+    const twoColViewports = [390, 639, 640, 641, 767, 768, 1023];
     const fourColViewports = [1024, 1280];
 
     for (const item of pages) {
@@ -550,21 +550,24 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
     }
   });
 
-  test("设置页单卡片层级：390、768、1280px 下无多余嵌套卡片，内层容器透明且无水平溢出", async ({ page }, testInfo) => {
+  test("设置页单卡片层级与边距：390/640/641/767/768/1280px 下无多余嵌套卡片，内层容器透明且无水平溢出，全量断言表单容器与边界保留", async ({ page }, testInfo) => {
     await login(page);
 
     const checkViewports = [
       { width: 390, height: 844 },
+      { width: 640, height: 900 },
+      { width: 641, height: 900 },
+      { width: 767, height: 900 },
       { width: 768, height: 1024 },
       { width: 1280, height: 800 },
     ];
 
     const settingTabs = [
-      { url: "/console/settings?tab=basic", title: "系统设置" },
-      { url: "/console/settings?tab=advanced", title: "系统设置" },
-      { url: "/console/appearance?tab=appearance", title: "主题设置" },
-      { url: "/console/appearance?tab=layout", title: "主题设置" },
-      { url: "/console/appearance?tab=advanced", title: "主题设置" },
+      { url: "/console/settings?tab=basic", title: "系统设置", hasBodies: true },
+      { url: "/console/settings?tab=advanced", title: "系统设置", hasBodies: true },
+      { url: "/console/appearance?tab=appearance", title: "主题设置", hasBodies: false },
+      { url: "/console/appearance?tab=layout", title: "主题设置", hasBodies: false },
+      { url: "/console/appearance?tab=advanced", title: "主题设置", hasBodies: false },
     ];
 
     for (const tab of settingTabs) {
@@ -577,24 +580,73 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
         const outerCard = page.locator(".settings-basic-panel");
         await expect(outerCard).toBeVisible();
 
-        // 检查内层是否被消除卡片背景与边框：检查 .settings-section-body
-        const bodies = page.locator(".settings-section-body");
-        const bodyCount = await bodies.count();
-        if (bodyCount > 0) {
-          const bodyStyles = await bodies.first().evaluate((el) => {
+        // 验证表单分区容器存在，且必须遍历所有匹配项，不可为 0
+        const sections = page.locator(".settings-basic-section, .settings-section, .settings-post-section");
+        const sectionCount = await sections.count();
+        expect(sectionCount, `${tab.url} 在 ${vp.width}px 必须存在表单分区容器`).toBeGreaterThan(0);
+
+        for (let s = 0; s < sectionCount; s++) {
+          const sectionStyles = await sections.nth(s).evaluate((el) => {
             const cs = window.getComputedStyle(el);
             return {
-              bg: cs.backgroundColor,
-              borderWidth: cs.borderWidth,
-              borderStyle: cs.borderStyle,
-              borderRadius: cs.borderRadius,
-              boxShadow: cs.boxShadow,
+              paddingLeft: cs.paddingLeft,
+              paddingRight: cs.paddingRight,
             };
           });
-          // 背景透明或与卡片完全融合
-          expect(bodyStyles.borderStyle, `${tab.url} ${vp.width}px .settings-section-body 不得有可见边框`).toBe("none");
-          expect(bodyStyles.boxShadow, `${tab.url} ${vp.width}px .settings-section-body 不得有阴影`).toBe("none");
-          expect(parseFloat(bodyStyles.borderRadius), `${tab.url} ${vp.width}px .settings-section-body 不得有额外圆角`).toBe(0);
+          if (vp.width < 768) {
+            expect(
+              parseFloat(sectionStyles.paddingLeft),
+              `${tab.url} ${vp.width}px 表单分区[${s}] 左边距在手机端必须为16px（实测 ${sectionStyles.paddingLeft}）`,
+            ).toBe(16);
+            expect(
+              parseFloat(sectionStyles.paddingRight),
+              `${tab.url} ${vp.width}px 表单分区[${s}] 右边距在手机端必须为16px（实测 ${sectionStyles.paddingRight}）`,
+            ).toBe(16);
+          } else {
+            expect(
+              parseFloat(sectionStyles.paddingLeft),
+              `${tab.url} ${vp.width}px 表单分区[${s}] 左边距在平板/桌面必须为28px（实测 ${sectionStyles.paddingLeft}）`,
+            ).toBe(28);
+            expect(
+              parseFloat(sectionStyles.paddingRight),
+              `${tab.url} ${vp.width}px 表单分区[${s}] 右边距在平板/桌面必须为28px（实测 ${sectionStyles.paddingRight}）`,
+            ).toBe(28);
+          }
+        }
+
+        // 针对包含 .settings-section-body 的表单页，明确遍历断言背景透明、无重复边框、内边距为0
+        const bodies = page.locator(".settings-section-body");
+        const bodyCount = await bodies.count();
+        if (tab.hasBodies) {
+          expect(bodyCount, `${tab.url} 在 ${vp.width}px 预期存在 .settings-section-body 容器，缺失必须失败`).toBeGreaterThan(0);
+          for (let i = 0; i < bodyCount; i++) {
+            const bodyStyles = await bodies.nth(i).evaluate((el) => {
+              const cs = window.getComputedStyle(el);
+              return {
+                bg: cs.backgroundColor,
+                borderWidth: cs.borderWidth,
+                borderStyle: cs.borderStyle,
+                borderRadius: cs.borderRadius,
+                boxShadow: cs.boxShadow,
+                paddingLeft: cs.paddingLeft,
+                paddingRight: cs.paddingRight,
+                paddingTop: cs.paddingTop,
+                paddingBottom: cs.paddingBottom,
+              };
+            });
+            expect(
+              bodyStyles.bg === "transparent" || bodyStyles.bg === "rgba(0, 0, 0, 0)",
+              `${tab.url} ${vp.width}px .settings-section-body[${i}] 背景必须透明（实际为 ${bodyStyles.bg}）`,
+            ).toBe(true);
+            expect(
+              bodyStyles.borderStyle === "none" || bodyStyles.borderWidth === "0px",
+              `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有可见边框`,
+            ).toBe(true);
+            expect(bodyStyles.boxShadow, `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有阴影`).toBe("none");
+            expect(parseFloat(bodyStyles.borderRadius), `${tab.url} ${vp.width}px .settings-section-body[${i}] 不得有额外圆角`).toBe(0);
+            expect(parseFloat(bodyStyles.paddingLeft), `${tab.url} ${vp.width}px .settings-section-body[${i}] 左内边距必须为0`).toBe(0);
+            expect(parseFloat(bodyStyles.paddingRight), `${tab.url} ${vp.width}px .settings-section-body[${i}] 右内边距必须为0`).toBe(0);
+          }
         }
 
         // 不出现无意横向溢出
@@ -605,10 +657,38 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
       }
     }
 
-    // 重点截取「系统设置 - 高级」和「主题设置 - 桌面」，验证警告框、代码输入框清晰可辨
+    // 重点验证控件保留必要边界：警告框、输入框
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/settings?tab=advanced");
-    await expect(page.locator(".settings-warning")).toBeVisible();
+    const warning = page.locator(".settings-warning");
+    await expect(warning).toBeVisible();
+    const warningStyles = await warning.evaluate((el) => {
+      const cs = window.getComputedStyle(el);
+      return {
+        borderWidth: cs.borderWidth,
+        borderStyle: cs.borderStyle,
+        borderRadius: cs.borderRadius,
+        paddingLeft: cs.paddingLeft,
+      };
+    });
+    expect(parseFloat(warningStyles.borderWidth), "警告框必须保留边框边界").toBeGreaterThan(0);
+    expect(warningStyles.borderStyle, "警告框边框样式不可为 none").not.toBe("none");
+    expect(parseFloat(warningStyles.paddingLeft), "警告框必须保留内部边距").toBeGreaterThan(0);
+    expect(parseFloat(warningStyles.borderRadius), "警告框必须保留圆角").toBeGreaterThan(0);
+
+    // 输入框保留必要边界
+    const input = page.locator(".apple-input, .code-editor-wrapper").first();
+    await expect(input).toBeVisible();
+    const inputStyles = await input.evaluate((el) => {
+      const cs = window.getComputedStyle(el);
+      return {
+        borderWidth: cs.borderWidth,
+        borderStyle: cs.borderStyle,
+      };
+    });
+    expect(parseFloat(inputStyles.borderWidth), "输入框必须保留边框边界").toBeGreaterThan(0);
+    expect(inputStyles.borderStyle, "输入框边框样式不可为 none").not.toBe("none");
+
     await page.screenshot({ path: testInfo.outputPath("t1-settings-advanced-390.png") });
 
     await page.setViewportSize({ width: 1280, height: 800 });
