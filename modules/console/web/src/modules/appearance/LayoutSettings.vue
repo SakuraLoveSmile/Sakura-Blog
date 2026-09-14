@@ -95,7 +95,7 @@ function addSitemapItem(group: any) {
           <Icon icon="ri:add-line" />添加链接
         </button>
         <div class="settings-card-actions">
-          <VButton type="primary" size="sm" :loading="saving === 'rightbar'" @click="emit('save', 'rightbar')">
+          <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'rightbar'" @click="emit('save', 'rightbar')">
             保存右栏
           </VButton>
         </div>
@@ -210,7 +210,7 @@ function addSitemapItem(group: any) {
           <textarea v-model="data.footer.content" rows="3" class="apple-textarea"></textarea>
         </div>
         <div class="settings-card-actions">
-          <VButton type="primary" size="sm" :loading="saving === 'footer'" @click="emit('save', 'footer')">
+          <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'footer'" @click="emit('save', 'footer')">
             保存页脚
           </VButton>
         </div>

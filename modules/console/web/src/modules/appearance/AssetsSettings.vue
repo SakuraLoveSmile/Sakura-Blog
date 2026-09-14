@@ -23,6 +23,6 @@ const emit = defineEmits<{ save: [section: string] }>();
       <div class="settings-field"><label>专栏</label><AttachmentField v-model="data.default.topic" /></div>
       <div class="settings-field"><label>加载图标</label><AttachmentField v-model="data.default.loading" /></div>
     </div>
-    <div class="settings-card-actions"><VButton type="primary" size="sm" :loading="saving === 'default'" @click="emit('save', 'default')">保存素材</VButton></div>
+    <div class="settings-card-actions"><VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'default'" @click="emit('save', 'default')">保存素材</VButton></div>
   </div>
 </template>

@@ -38,7 +38,7 @@ function handleSubmit() {
         </div>
 
         <div class="settings-section-inline-action">
-          <VButton type="secondary" size="sm" :loading="saving === 'site'" @click="emit('save', 'site')">
+          <VButton type="secondary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'site'" @click="emit('save', 'site')">
             <template #icon><Icon icon="ri:save-line" /></template>
             保存站点元信息
           </VButton>
@@ -192,7 +192,7 @@ function handleSubmit() {
 
     <div class="settings-seo-actions">
       <div class="settings-seo-actions-inner">
-        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'seo'">
+        <VButton type="primary" size="md" native-type="submit" :disabled="Boolean(saving)" :loading="saving === 'seo'">
           <template #icon><Icon icon="ri:save-line" /></template>
           保存 SEO 设置
         </VButton>

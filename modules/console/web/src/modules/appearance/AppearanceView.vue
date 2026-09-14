@@ -251,7 +251,7 @@ onBeforeRouteLeave((to, from, next) => {
                       直接编辑 Stellar 主题 style 段 YAML，保存即热更新前台样式。
                     </p>
                   </div>
-                  <ThemeYamlTab />
+                  <ThemeYamlTab :saving="savingKey" />
                 </div>
               </template>
             </div>

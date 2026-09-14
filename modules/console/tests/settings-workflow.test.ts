@@ -45,9 +45,12 @@ test("ThemeYamlTab correctly exposes loading/saving states, error feedback, and 
   // 不吞掉错误，使用 Toast.error 展示明确明细
   assert.match(code, /Toast\.error\(getApiErrorMessage/);
   assert.doesNotMatch(code, /catch\s*\{\s*\}/);
-  // 防重复提交与保存中状态
-  assert.match(code, /if\s*\(saving\.value\)\s*return;/);
-  assert.match(code, /saving\.value\s*=\s*true/);
+  // 防重复提交与保存中状态（本地保存状态更名为 localSaving，避免与页面级 saving 键混淆）
+  assert.match(code, /if\s*\(localSaving\.value\)\s*return;/);
+  assert.match(code, /localSaving\.value\s*=\s*true/);
+  // 必须接线页面级 saving 键，才能参与全局保存禁用
+  assert.match(code, /defineProps<\{ saving\?: string \}>/);
+  assert.match(code, /:disabled="loading \|\| localSaving \|\| Boolean\(props\.saving\)"/);
   // 脏检查与离开守卫
   assert.match(code, /isDirty\s*=\s*computed/);
   assert.match(code, /onBeforeRouteLeave/);

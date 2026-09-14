@@ -151,7 +151,7 @@ function handleSubmit() {
 
     <div class="settings-basic-actions">
       <div class="settings-basic-actions-inner">
-        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'site'">
+        <VButton type="primary" size="md" native-type="submit" :disabled="Boolean(saving)" :loading="saving === 'site'">
           <template #icon><Icon icon="ri:save-line" /></template>保存
         </VButton>
       </div>

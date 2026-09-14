@@ -6,10 +6,13 @@ import { settingsApi, getApiErrorMessage } from "@/api";
 
 // 样式 YAML 编辑器：直接编辑 site.yml style 段（对齐 Stellar _config.yml style 面），
 // 保存经后端 yaml 解析校验 + SaveSection(style) + RebuildSite 热更新前台。
+// 页面级保存键：由主题设置页注入，用于在其它分区保存期间一并禁用本按钮。
+const props = defineProps<{ saving?: string }>();
+
 const yamlText = ref("");
 const savedYaml = ref("");
 const loading = ref(true);
-const saving = ref(false);
+const localSaving = ref(false);
 const loadError = ref("");
 
 const isDirty = computed(() => !loading.value && yamlText.value !== savedYaml.value);
@@ -29,8 +32,8 @@ async function load() {
 }
 
 async function save() {
-  if (saving.value) return;
-  saving.value = true;
+  if (localSaving.value) return;
+  localSaving.value = true;
   const currentPayload = yamlText.value;
   try {
     await settingsApi.updateStyleYAML(currentPayload);
@@ -43,7 +46,7 @@ async function save() {
     // 失败保留用户输入，提供明确错误明细
     Toast.error(getApiErrorMessage(error, "保存样式 YAML 失败，请检查语法或网络"));
   } finally {
-    saving.value = false;
+    localSaving.value = false;
   }
 }
 
@@ -99,15 +102,14 @@ onBeforeRouteLeave((to, from, next) => {
     <textarea
       v-else
       v-model="yamlText"
-      :disabled="loading || saving"
       spellcheck="false"
       class="apple-textarea code-style w-full font-mono text-xs"
       style="min-height: 420px"
       placeholder="prefers_theme: auto&#10;color:&#10;  theme: 'hsl(192 98% 55%)'"
     ></textarea>
     <div>
-      <VButton type="primary" :disabled="loading || saving" @click="save">
-        {{ saving ? "保存中..." : "保存样式 YAML" }}
+      <VButton type="primary" :disabled="loading || localSaving || Boolean(props.saving)" @click="save">
+        {{ localSaving ? "保存中..." : "保存样式 YAML" }}
       </VButton>
     </div>
   </div>

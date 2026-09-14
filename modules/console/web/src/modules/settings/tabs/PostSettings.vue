@@ -470,7 +470,7 @@ const aiLabelTiers = [
 
     <div class="settings-post-actions">
       <div class="settings-post-actions-inner">
-        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'article'">
+        <VButton type="primary" size="md" native-type="submit" :disabled="Boolean(saving)" :loading="saving === 'article'">
           <template #icon><Icon icon="ri:save-line" /></template>
           保存文章设置
         </VButton>

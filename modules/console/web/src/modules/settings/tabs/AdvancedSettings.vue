@@ -60,7 +60,7 @@ const cacheServices = [
         </div>
 
         <div class="settings-section-inline-action">
-          <VButton type="secondary" size="sm" :loading="saving === 'inject'" @click="emit('save', 'inject')">
+          <VButton type="secondary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'inject'" @click="emit('save', 'inject')">
             <template #icon><Icon icon="ri:save-line" /></template>
             保存代码注入
           </VButton>
@@ -128,7 +128,7 @@ const cacheServices = [
         </div>
 
         <div class="settings-section-inline-action">
-          <VButton type="secondary" size="sm" :loading="saving === 'data_cache'" @click="emit('save', 'data_cache')">
+          <VButton type="secondary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'data_cache'" @click="emit('save', 'data_cache')">
             <template #icon><Icon icon="ri:save-line" /></template>
             保存数据缓存设置
           </VButton>
@@ -159,7 +159,7 @@ const cacheServices = [
           <VButton
             type="secondary"
             size="sm"
-            :loading="saving === 'json:' + rawSection"
+            :disabled="Boolean(saving)" :loading="saving === 'json:' + rawSection"
             @click="emit('saveJson', rawSection)"
           >
             <template #icon><Icon icon="ri:save-line" /></template>

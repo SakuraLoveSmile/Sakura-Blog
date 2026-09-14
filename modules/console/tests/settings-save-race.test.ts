@@ -3,11 +3,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  ensureSettingsDefaults,
-  deepCloneJsonSafe,
-  ALL_SETTINGS_SECTIONS,
-} from "../web/src/modules/settings/settings-state.ts";
+import { ensureSettingsDefaults, ALL_SETTINGS_SECTIONS } from "../web/src/modules/settings/settings-state.ts";
+
+/**
+ * 设置保存的「结构检查」。
+ *
+ * 边界声明：
+ * - 本文件只做源码结构断言（正则）与纯函数断言，**不构成保存竞态的行为验收**。
+ * - 行为验收在 `tests/e2e/console-settings-save-race.spec.ts`：拦截 `PUT /api/v1/settings/{section}`、
+ *   由测试显式释放响应，断言真实组件在「请求未完成期间继续编辑」时的输入、草稿与快照边界。
+ * - 禁止在本文件里复制一套保存函数（自建 isDirty / 自建 saveJson 流程）来「证明」生产代码正确。
+ */
 
 const testsRoot = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(testsRoot, "../../..");
@@ -16,7 +22,26 @@ function read(relativePath: string): string {
   return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
-test("AppearanceView.save: 深复制提交内容与快照更新，杜绝在请求中继续编辑时的快照污染", () => {
+/** 承接 `saving` 并渲染保存按钮的设置/主题设置子表单。 */
+const SAVE_BUTTON_FILES = [
+  "modules/console/web/src/modules/settings/tabs/BasicSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/PostSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/CommentSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/SeoSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/SearchSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/AdvancedSettings.vue",
+  "modules/console/web/src/modules/settings/AuthorsTab.vue",
+  "modules/console/web/src/modules/settings/WidgetsTab.vue",
+  "modules/console/web/src/modules/settings/CoverTab.vue",
+  "modules/console/web/src/modules/settings/NavTabsTab.vue",
+  "modules/console/web/src/modules/settings/PluginsTab.vue",
+  "modules/console/web/src/modules/settings/AppearanceTab.vue",
+  "modules/console/web/src/modules/appearance/AssetsSettings.vue",
+  "modules/console/web/src/modules/appearance/LayoutSettings.vue",
+  "modules/console/web/src/modules/appearance/EnhancementsSettings.vue",
+];
+
+test("AppearanceView.save: 深复制提交内容与快照更新，杜绝请求中继续编辑造成的快照污染（结构检查）", () => {
   const code = read("modules/console/web/src/modules/appearance/AppearanceView.vue");
 
   // 请求前深拷贝提交内容
@@ -27,7 +52,7 @@ test("AppearanceView.save: 深复制提交内容与快照更新，杜绝在请�
   assert.match(code, /updateSectionSnapshot\(section,\s*payloadToSubmit\)/);
 });
 
-test("SettingsView.save & saveJson: 维护各分区 JSON 文本基线与表单/草稿双重脏态判定", () => {
+test("SettingsView.save & saveJson: 维护各分区 JSON 文本基线与表单/草稿双重脏态判定（结构检查）", () => {
   const code = read("modules/console/web/src/modules/settings/SettingsView.vue");
 
   // 必须维护 savedJsonBaseline 响应式基线
@@ -49,113 +74,35 @@ test("SettingsView.save & saveJson: 维护各分区 JSON 文本基线与表单/�
   assert.match(code, /if\s*\(JSON\.stringify\(data\.value\[section\]\)\s*===\s*formAtStart\)\s*\{\s*data\.value\[section\]\s*=/);
 });
 
-test("保存竞态模拟：提交 A 且响应前表单改为 B，响应后快照为 A、表单保持 B，脏状态依然保持", async () => {
-  // 模拟初始状态
-  const data: Record<string, any> = {
-    site: { title: "Title A", subtitle: "Initial" },
-  };
-  let savedSnapshot = JSON.stringify(data);
-
-  function isDirty() {
-    const original = JSON.parse(savedSnapshot);
-    return JSON.stringify(data.site) !== JSON.stringify(original.site);
+test("所有设置与主题设置保存按钮都带全局保存禁用条件（结构检查）", () => {
+  let loadingButtons = 0;
+  let globallyDisabled = 0;
+  for (const file of SAVE_BUTTON_FILES) {
+    const code = read(file);
+    loadingButtons += (code.match(/:loading="saving[^"]*"/g) ?? []).length;
+    globallyDisabled += (code.match(/:disabled="Boolean\(saving\)"/g) ?? []).length;
   }
+  assert.equal(loadingButtons, 20, "保存按钮数量应与受管子表单一致");
+  assert.equal(globallyDisabled, loadingButtons, "每个保存按钮都必须带 Boolean(saving) 全局禁用条件");
 
-  assert.equal(isDirty(), false);
+  // 独立持有本地保存状态的子表单必须接线页面级 saving，否则不会参与全局禁用
+  const themeYaml = read("modules/console/web/src/modules/settings/ThemeYamlTab.vue");
+  assert.match(themeYaml, /defineProps<\{ saving\?: string \}>/);
+  assert.match(themeYaml, /:disabled="loading \|\| localSaving \|\| Boolean\(props\.saving\)"/);
+  // 请求期间仍允许继续编辑 YAML 文本（不得因保存禁用输入）
+  assert.doesNotMatch(themeYaml, /:disabled="loading \|\| localSaving"/);
+  assert.match(
+    read("modules/console/web/src/modules/appearance/AppearanceView.vue"),
+    /<ThemeYamlTab :saving="savingKey" \/>/,
+  );
+  assert.match(
+    read("modules/console/web/src/modules/settings/MenubarEditor.vue"),
+    /:disabled="hasErrors \|\| Boolean\(saving\)"/,
+  );
 
-  // 用户点击保存，捕获提交时的快照副本
-  const payloadToSubmit = deepCloneJsonSafe(data.site);
-
-  // 模拟异步请求延迟中，用户将界面表单修改为 Title B
-  data.site.title = "Title B";
-
-  // 模拟 API 保存完成，只更新 payloadToSubmit 的快照
-  const snap = JSON.parse(savedSnapshot);
-  snap.site = deepCloneJsonSafe(payloadToSubmit);
-  savedSnapshot = JSON.stringify(snap);
-
-  // 验证：当前表单内容保留了用户在请求中编辑的 Title B，并没有被回滚为 Title A
-  assert.equal(data.site.title, "Title B");
-  // 验证：因为快照更新为 Title A，而表单是 Title B，脏状态保持为 true（未保存黄点不丢失）
-  assert.equal(isDirty(), true);
-
-  // 用户再次保存 B 成功
-  const secondSubmit = deepCloneJsonSafe(data.site);
-  const snap2 = JSON.parse(savedSnapshot);
-  snap2.site = deepCloneJsonSafe(secondSubmit);
-  savedSnapshot = JSON.stringify(snap2);
-
-  // 此时未保存状态才消除
-  assert.equal(isDirty(), false);
-});
-
-test("JSON 草稿未保存判定：文本格式修改、无效 JSON、以及独立草稿均能正确触发脏状态", () => {
-  const baseline = JSON.stringify({ enable: true }, null, 2);
-  let rawText = baseline;
-
-  function isJsonDirty() {
-    return rawText !== baseline;
-  }
-
-  assert.equal(isJsonDirty(), false);
-
-  // 格式修改（哪怕语义相同，也是未保存文本修改）
-  rawText = '{\n  "enable":  true\n}';
-  assert.equal(isJsonDirty(), true);
-
-  // 无效 JSON（语法错误）同样保持未保存脏状态
-  rawText = '{\n  "enable": true,,\n}';
-  assert.equal(isJsonDirty(), true);
-
-  // 恢复一致
-  rawText = baseline;
-  assert.equal(isJsonDirty(), false);
-});
-
-test("JSON 保存期间表单发生变化的保护：不覆盖用户新修改的表单内容", () => {
-  const section = "site";
-  const form = { title: "Title 1", description: "Desc 1" };
-  let savedSnapshot = JSON.stringify({ [section]: deepCloneJsonSafe(form) });
-
-  let rawText = JSON.stringify(form, null, 2);
-  let savedBaseline = rawText;
-
-  // 用户在 JSON 编辑器里把 title 修改为 Title JSON
-  rawText = JSON.stringify({ title: "Title JSON", description: "Desc 1" }, null, 2);
-
-  // 用户点击保存 JSON：记录开始时表单状态
-  const rawAtStart = rawText;
-  const formAtStart = JSON.stringify(form);
-  const payloadToSubmit = deepCloneJsonSafe(JSON.parse(rawAtStart));
-
-  // 请求进行中，用户在结构化表单修改了 description 为 "Desc Form Edited"
-  form.description = "Desc Form Edited";
-
-  // 请求完成，根据规范更新：
-  // 1. 快照更新为本次提交规范化副本
-  const normalized = deepCloneJsonSafe(payloadToSubmit);
-  const snap = JSON.parse(savedSnapshot);
-  snap[section] = normalized;
-  savedSnapshot = JSON.stringify(snap);
-
-  // 2. 文本若未二次编辑，同步基线
-  if (rawText === rawAtStart) {
-    savedBaseline = rawText;
-  }
-
-  // 3. 表单检查：若与 formAtStart 不一致，绝对不覆盖！
-  if (JSON.stringify(form) === formAtStart) {
-    Object.assign(form, normalized);
-  }
-
-  // 断言：用户的表单编辑 "Desc Form Edited" 完好保留！没有被覆盖
-  assert.equal(form.description, "Desc Form Edited");
-
-  // 断言：由于表单是 { title: "Title 1", description: "Desc Form Edited" }，
-  // 快照是 { title: "Title JSON", description: "Desc 1" }，脏状态准确为 true！
-  const currentSnap = JSON.parse(savedSnapshot);
-  const isFormDirty = JSON.stringify(form) !== JSON.stringify(currentSnap[section]);
-  assert.equal(isFormDirty, true);
+  // 不改共享 VButton 的全局禁用语义：只在消费者侧传 disabled
+  const vButton = read("packages/components/src/ui/VButton.vue");
+  assert.match(vButton, /:disabled="disabled \|\| loading"/);
 });
 
 test("稀疏及旧配置加载后经过 ensureSettingsDefaults 与快照初始化后无假脏态", () => {

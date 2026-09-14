@@ -115,7 +115,7 @@ function handleSubmit() {
 
     <div class="settings-search-actions">
       <div class="settings-search-actions-inner">
-        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'search'">
+        <VButton type="primary" size="md" native-type="submit" :disabled="Boolean(saving)" :loading="saving === 'search'">
           <template #icon><Icon icon="ri:save-line" /></template>
           保存搜索设置
         </VButton>

@@ -236,7 +236,7 @@ function removeStatus(name: string) {
     </div>
 
     <div class="settings-card-actions">
-      <VButton type="primary" size="sm" :loading="saving === 'tag_plugins'" @click="saveTagPlugins">
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'tag_plugins'" @click="saveTagPlugins">
         <template #icon><Icon icon="ri:save-line" /></template>保存内容组件设置
       </VButton>
     </div>
@@ -259,7 +259,7 @@ function removeStatus(name: string) {
       />
     </div>
     <div class="settings-card-actions">
-      <VButton type="primary" size="sm" :loading="saving === 'services'" @click="saveServices">
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'services'" @click="saveServices">
         <template #icon><Icon icon="ri:save-line" /></template>保存 SiteInfo 设置
       </VButton>
     </div>

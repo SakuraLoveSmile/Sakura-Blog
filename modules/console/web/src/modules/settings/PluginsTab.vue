@@ -202,6 +202,6 @@ const inputCls = "apple-input";
   </div>
 
   <div class="mt-4">
-    <VButton type="primary" size="sm" :loading="saving === 'plugins'" @click="emit('save')">保存前端增强</VButton>
+    <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'plugins'" @click="emit('save')">保存前端增强</VButton>
   </div>
 </template>

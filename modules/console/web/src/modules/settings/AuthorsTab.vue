@@ -135,7 +135,7 @@ function doSave() {
       添加作者
     </VButton>
     <div>
-      <VButton type="primary" size="sm" :loading="saving === 'authors'" @click="doSave">保存作者</VButton>
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'authors'" @click="doSave">保存作者</VButton>
     </div>
   </div>
 </template>

@@ -495,7 +495,7 @@ function rangeFill(val: number, min: number, max: number): string {
 
     <!-- 保存 / 恢复默认 -->
     <div class="card-actions">
-      <VButton type="primary" size="sm" :loading="saving === 'style'" @click="emit('save', 'style')">
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'style'" @click="emit('save', 'style')">
         保存外观设置
       </VButton>
       <VButton size="sm" @click="resetStyle">恢复默认</VButton>

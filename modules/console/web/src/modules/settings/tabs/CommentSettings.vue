@@ -152,7 +152,7 @@ function handleSubmit() {
 
     <div class="settings-comment-actions">
       <div class="settings-comment-actions-inner">
-        <VButton type="primary" size="md" native-type="submit" :loading="saving === 'comments' || saving === 'site_tree'">
+        <VButton type="primary" size="md" native-type="submit" :disabled="Boolean(saving)" :loading="saving === 'comments' || saving === 'site_tree'">
           <template #icon><Icon icon="ri:save-line" /></template>
           保存评论设置
         </VButton>
