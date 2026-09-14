@@ -426,6 +426,15 @@
 - 自动截图统一改由 `testInfo.outputPath(...)` 产出，落在 `.tmp/playwright-test-results/`；**测试执行前后受跟踪基线目录零变化**。
 - 仍需人工决定：`docs/baselines/console-ui-consistency/t3-appearance-desktop.png` 是否需要替换为分段 Tabs 满宽后的新画面。
 
+### 产物加载证据（不以 HTTP 200 代替）
+
+在 T1 工作树（HEAD `d60b3ae`）用一次性 Playwright 用例记录隔离服务实际投放并被浏览器真实加载的产物：
+
+- 服务启动时间：`2026/09/14 14:32:01`；启动日志明确输出 `console SPA loaded from .tmp/e2e-server.zcLHeg/modules/console/web/dist (dev)`（每次 E2E 运行都会先重建 Console 再重启 Go 服务）。
+- 文档实际引用（服务返回的入口 HTML）：`/console/assets/index-DV1GiYzV.js`、`/console/assets/index-D0XV7o7C.css`。
+- 浏览器真实加载：上述入口文件 + 懒加载分块 `runtime-core.esm-bundler-DFn6PQEW.js`、`api-ZU2VHYOh.js`、`pinia-BDaR9qFm.js`、`preload-helper-l0U7FUPx.js`、`Login-CsFiuZau.js`、`Login-psTCZFVP.css`。
+- 结论：入口 HTML 引用的 hash 与浏览器实际拉取的资源一致，证明验收针对的是当前构建产物，而不是缓存或旧产物。
+
 ### 未验证项
 
 - 未在真实移动设备/真机浏览器上验证，仅在 Chromium 视口模拟下测量 390/768/1280/1440。
