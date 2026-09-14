@@ -486,6 +486,7 @@ select {
 
   [data-app="console"] .apple-btn-icon,
   [data-app="console"] .icon-btn,
+  [data-app="console"] .action-icon-btn,
   [data-app="console"] .post-card-action,
   [data-app="console"] .pagination-btn {
     min-width: 44px;

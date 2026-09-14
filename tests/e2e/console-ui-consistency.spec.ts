@@ -8,21 +8,33 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
 }
 
-async function ensurePosts(page: Page, count = 5) {
+interface PostFixture {
+  slug: string;
+  title: string;
+}
+
+/** 创建带唯一 token 的隔离文章夹具，返回 slug 与标题的对应关系。 */
+async function ensurePosts(page: Page, count = 5, token = "mobile-e2e-post"): Promise<PostFixture[]> {
+  const fixtures: PostFixture[] = [];
   for (let i = 1; i <= count; i++) {
-    await page.request.post("/api/v1/posts", {
+    const slug = `${token}-${i}`;
+    const title = `移动端无遮挡验证博文 ${token}-${i}`;
+    const response = await page.request.post("/api/v1/posts", {
       data: {
-        slug: `mobile-e2e-post-${i}`,
-        title: `移动端无遮挡验证博文 ${i}`,
+        slug,
+        title,
         content_md: `这是第 ${i} 篇用于验证移动端滚动不被遮挡的测试文章内容。`,
         status: "published",
       },
     });
+    expect(response.ok(), `夹具文章 ${slug} 必须创建成功（HTTP ${response.status()}）`).toBe(true);
+    fixtures.push({ slug, title });
   }
+  return fixtures;
 }
 
 test.describe("Console UI 一致性测试", () => {
-  test("768px、1280px、1440px 下桌面底栏 computed display 为 none，侧边栏可见", async ({ page }) => {
+  test("768px、1280px、1440px 下桌面底栏 computed display 为 none，侧边栏可见", async ({ page }, testInfo) => {
     await login(page);
 
     const viewports = [
@@ -47,66 +59,74 @@ test.describe("Console UI 一致性测试", () => {
       expect(sidebarDisplay, `侧边栏在 ${vp.width}px 下必须可见`).not.toBe("none");
 
       if (vp.width === 1440) {
-        await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-desktop-posts.png" });
+        await page.screenshot({ path: testInfo.outputPath("t1-desktop-posts.png") });
       }
     }
   });
 
-  test("390px 视口下底栏正常显示且内容底部不被遮挡", async ({ page }) => {
+  test("390px 视口下底栏正常显示，滚动到底后最后一项操作无遮挡且能触发", async ({ page }) => {
     await login(page);
-    await ensurePosts(page, 5);
+    const token = `mobile-e2e-post-${Date.now()}`;
+    const fixtures = await ensurePosts(page, 8, token);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/posts");
     await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
 
+    // 用夹具 token 过滤，保证页面上的卡片全部来自本轮夹具，末项归属不再依赖全局排序
+    await page.getByPlaceholder("搜索文章标题或 Slug...").fill(token);
+    await expect(page.locator(".post-card")).toHaveCount(fixtures.length);
+
     const bottomNav = page.locator('nav[aria-label="移动端底部导航"]');
     await expect(bottomNav).toBeVisible();
-    const display = await bottomNav.evaluate((el) => window.getComputedStyle(el).display);
-    expect(display).toBe("grid");
-
+    expect(await bottomNav.evaluate((el) => window.getComputedStyle(el).display)).toBe("grid");
     const navBox = await bottomNav.boundingBox();
-    expect(navBox).not.toBeNull();
-    expect(navBox!.y + navBox!.height).toBeGreaterThanOrEqual(840);
+    expect(navBox, "底栏必须有完整矩形").not.toBeNull();
 
-    // 滚动主容器到底部，验证内容与最后一项操作不被底栏遮挡
-    const scrollInfo = await page.evaluate(() => {
-      const main = document.querySelector("main.content");
+    // 滚动真实主容器到底，并等待滚动位置达到预期（不用固定 sleep 作为完成证据）
+    const geometry = await page.evaluate(() => {
+      const main = document.querySelector("main.content") as HTMLElement | null;
       if (main) main.scrollTop = main.scrollHeight;
-      return {
-        scrollTop: main?.scrollTop ?? 0,
-        scrollHeight: main?.scrollHeight ?? 0,
-        clientHeight: main?.clientHeight ?? 0,
-      };
+      return { scrollHeight: main?.scrollHeight ?? 0, clientHeight: main?.clientHeight ?? 0 };
     });
-    // 断言真实产生滚动（内容高度超出视口高度）
-    expect(scrollInfo.scrollHeight).toBeGreaterThan(scrollInfo.clientHeight);
-    expect(scrollInfo.scrollTop).toBeGreaterThan(0);
-    await page.waitForTimeout(300);
+    expect(geometry.scrollHeight, "隔离数据必须产生真实纵向滚动").toBeGreaterThan(geometry.clientHeight);
+    const expectedBottom = geometry.scrollHeight - geometry.clientHeight;
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const main = document.querySelector("main.content") as HTMLElement | null;
+            return main ? main.scrollTop : -1;
+          }),
+        { timeout: 8_000, message: "主容器必须真正滚动到底部" },
+      )
+      .toBeGreaterThanOrEqual(expectedBottom - 1);
 
-    // 找到最后一项真实可操作元素（最后一篇博文的编辑按钮）
+    // 末项 = DOM 中最后一张真实卡片；由卡片呈现的标题映射回夹具 slug，不做序号猜测
     const lastCard = page.locator(".post-card").last();
     await expect(lastCard).toBeVisible();
+    const label = await lastCard.locator('label[aria-label^="选择文章"]').getAttribute("aria-label");
+    const mapped = fixtures.find((item) => (label ?? "").includes(item.title));
+    expect(mapped, `末项必须对应本轮夹具，实际 aria-label=${label}`).toBeTruthy();
+
     const lastEditBtn = lastCard.locator('button[title="编辑博文"]');
     await expect(lastEditBtn).toBeVisible();
-
-    // 取得完整矩形并断言其位于底栏上方
     const editBtnBox = await lastEditBtn.boundingBox();
-    expect(editBtnBox).not.toBeNull();
+    expect(editBtnBox, "最后一项操作必须有完整矩形，不允许条件跳过").not.toBeNull();
+    expect(editBtnBox!.width).toBeGreaterThan(0);
+    expect(editBtnBox!.height).toBeGreaterThan(0);
+    expect(editBtnBox!.y).toBeGreaterThanOrEqual(0);
     expect(editBtnBox!.y + editBtnBox!.height).toBeLessThanOrEqual(navBox!.y);
 
-    // 同样验证页脚也在底栏上方或完全在安全距离内
-    const footerEl = page.locator("main.content footer");
-    const footerBox = await footerEl.boundingBox();
-    if (footerBox) {
-      expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(navBox!.y);
-    }
+    const footerBox = await page.locator("main.content footer").boundingBox();
+    expect(footerBox, "页脚必须存在完整矩形").not.toBeNull();
+    expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(navBox!.y);
 
-    // 实际点击最后一项操作，确认事件到达并产生预期界面变化（跳转至编辑页），防止被透明层或底栏遮挡
+    // 实际点击最后一项操作：事件必须到达并进入该夹具对应的编辑页
     await lastEditBtn.click();
-    await expect(page).toHaveURL(/\/console\/posts\/edit\/mobile-e2e-post-5/, { timeout: 15_000 });
+    await expect(page).toHaveURL(new RegExp(`/console/posts/edit/${mapped!.slug}`), { timeout: 15_000 });
   });
 
-  test("390px 与 768px 视口下文章管理标题、搜索框与按钮组按三行排列且点击进入编辑页", async ({ page }) => {
+  test("390px 与 768px 视口下文章管理标题、搜索框与按钮组按三行排列且点击进入编辑页", async ({ page }, testInfo) => {
     await login(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/posts");
@@ -142,7 +162,7 @@ test.describe("Console UI 一致性测试", () => {
     expect(btnBox!.x).toBeGreaterThanOrEqual(0);
     expect(btnBox!.x + btnBox!.width).toBeLessThanOrEqual(390);
 
-    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-mobile-posts.png" });
+    await page.screenshot({ path: testInfo.outputPath("t1-mobile-posts.png") });
 
     // 验证 768px (平板竖屏) 视口下同样按三行排列
     await page.setViewportSize({ width: 768, height: 1024 });
@@ -285,7 +305,7 @@ test.describe("Console UI 一致性测试", () => {
     }
   });
 
-  test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入，且支持无障碍焦点管理与关闭返回", async ({ page }) => {
+  test("管理员可通过侧栏菜单进入主题设置，手机端可通过更多抽屉进入，且支持无障碍焦点管理与关闭返回", async ({ page }, testInfo) => {
     await login(page);
 
     // 桌面端验证侧栏进入主题设置
@@ -323,7 +343,7 @@ test.describe("Console UI 一致性测试", () => {
     await expect(drawerDialog).toBeVisible();
     const drawerAppearanceLink = page.locator('div[role="dialog"] a[href="/console/appearance"]');
     await expect(drawerAppearanceLink).toBeVisible();
-    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t1-mobile-drawer.png" });
+    await page.screenshot({ path: testInfo.outputPath("t1-mobile-drawer.png") });
     await drawerAppearanceLink.click();
     await expect(page).toHaveURL(/\/console\/appearance/);
     await expect(page.getByRole("heading", { name: "主题设置" })).toBeVisible();
@@ -563,7 +583,7 @@ test.describe("Console UI 一致性测试", () => {
     }
   });
 
-  test("空列表时隐藏选择入口（不渲染全选按钮、全选复选框与批量入口）", async ({ page }) => {
+  test("空列表时隐藏选择入口（不渲染全选按钮、全选复选框与批量入口）", async ({ page }, testInfo) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/posts");
@@ -585,10 +605,10 @@ test.describe("Console UI 一致性测试", () => {
     const floatingDock = page.locator(".v-floating-dock");
     await expect(floatingDock).toHaveCount(0);
 
-    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-posts-empty.png" });
+    await page.screenshot({ path: testInfo.outputPath("t3-posts-empty.png") });
   });
 
-  test("主题设置与系统设置统一分段 Tabs 结构，单层卡片包裹并消除多层嵌套卡片", async ({ page }) => {
+  test("主题设置与系统设置统一分段 Tabs 结构，单层卡片包裹并消除多层嵌套卡片", async ({ page }, testInfo) => {
     await login(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/console/appearance");
@@ -605,7 +625,7 @@ test.describe("Console UI 一致性测试", () => {
     const mainPanel = page.locator(".settings-basic-panel");
     await expect(mainPanel).toBeVisible();
 
-    await page.screenshot({ path: "docs/baselines/console-ui-consistency/t3-appearance-desktop.png" });
+    await page.screenshot({ path: testInfo.outputPath("t3-appearance-desktop.png") });
 
     // 切换到“布局”Tab
     const layoutTab = tabs.filter({ hasText: "布局" });

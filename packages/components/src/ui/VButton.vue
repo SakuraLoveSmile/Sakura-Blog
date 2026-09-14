@@ -173,9 +173,9 @@ function handleClick(e: MouseEvent) {
   background: color-mix(in srgb, #fff 8%, transparent);
 }
 
-/* 危险按钮：Apple 红色 + 无外发光 */
+/* 危险按钮：Apple 红色 + 黑色高对比前景色（与主按钮「蓝底黑字」策略一致）+ 无外发光 */
 .btn-danger {
-  color: #ffffff;
+  color: var(--color-primary-foreground, #000000);
   background: var(--color-state-error, #ff453a);
   border-color: transparent;
   box-shadow: none;

@@ -37,4 +37,14 @@ func main() {
 	if err := st.CreateUser(user); err != nil {
 		panic(fmt.Errorf("create e2e admin: %w", err))
 	}
+
+	// 非管理员隔离账号：User Center（/uc/）资料页、通知页与共享按钮/弹层验收使用，
+	// 避免用管理员账号代替普通用户路径。
+	author := &store.User{
+		Username: "e2e-author", PasswordHash: hash, DisplayName: "E2E Author",
+		AuthSecret: store.GenerateAuthSecret(), Role: store.RoleAuthor,
+	}
+	if err := st.CreateUser(author); err != nil {
+		panic(fmt.Errorf("create e2e author: %w", err))
+	}
 }
