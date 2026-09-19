@@ -29,6 +29,7 @@ const SAVE_BUTTON_FILES = [
   "modules/console/web/src/modules/settings/tabs/CommentSettings.vue",
   "modules/console/web/src/modules/settings/tabs/SeoSettings.vue",
   "modules/console/web/src/modules/settings/tabs/SearchSettings.vue",
+  "modules/console/web/src/modules/settings/tabs/FeedbackSettings.vue",
   "modules/console/web/src/modules/settings/tabs/AdvancedSettings.vue",
   "modules/console/web/src/modules/settings/AuthorsTab.vue",
   "modules/console/web/src/modules/settings/WidgetsTab.vue",

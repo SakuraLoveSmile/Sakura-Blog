@@ -233,6 +233,26 @@ export interface StyleYAMLResponse {
 export interface StyleYAMLUpdateResponse {
   ok: boolean;
 }
+/**
+ * FeedbackCheckRequest POST /api/v1/settings/feedback/check 请求体：
+ * api_base 取当前表单草稿，让管理员「先测再存」。
+ */
+export interface FeedbackCheckRequest {
+  api_base: string;
+}
+/**
+ * FeedbackCheckResponse POST /api/v1/settings/feedback/check 响应结构。
+ * 只回传状态码与延迟，不回传响应体：端点虽仅 admin 可达，仍避免形成内容回显。
+ * api_base 允许指向内网/回环（同机部署是标准形态），因此不做 safefetch 的
+ * IP 段限制——与 feedback 段自身校验（仅要求 http/https scheme）保持一致。
+ */
+export interface FeedbackCheckResponse {
+  ok: boolean; // /healthz 返回 200 视为可达且健康
+  status: number /* int */; // 实际 HTTP 状态码（0 = 未能建立连接）
+  latency_ms: number /* int64 */;
+  error?: string;
+  endpoint: string; // 实际探测的完整 URL（api_base + /healthz）
+}
 
 //////////
 // source: shortcode_catalog.go

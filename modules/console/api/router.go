@@ -511,6 +511,8 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.GET("/settings", h.getSettings)
 		sys.PUT("/settings/:section", h.updateSection)
 		sys.POST("/settings/notify/test", h.testNotify)
+		// Feedback 服务连通性自测：探测草稿 api_base 的 /healthz（仅 admin，不回传响应体）
+		sys.POST("/settings/feedback/check", h.checkFeedback)
 		// 主题 YAML 编辑器（Spec 60）：style 段 YAML 读写 + 热更新
 		sys.GET("/settings/style/yaml", h.getStyleYAML)
 		sys.PUT("/settings/style/yaml", h.updateStyleYAML)

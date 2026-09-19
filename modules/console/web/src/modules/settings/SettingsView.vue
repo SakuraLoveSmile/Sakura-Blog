@@ -9,6 +9,7 @@ import PostSettings from "./tabs/PostSettings.vue";
 import CommentSettings from "./tabs/CommentSettings.vue";
 import SeoSettings from "./tabs/SeoSettings.vue";
 import SearchSettings from "./tabs/SearchSettings.vue";
+import FeedbackSettings from "./tabs/FeedbackSettings.vue";
 import AdvancedSettings from "./tabs/AdvancedSettings.vue";
 import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
 import { useSettingsPreview } from "./useSettingsPreview";
@@ -22,6 +23,7 @@ const tabs = [
   { key: "comments", label: "评论", icon: "ri:chat-3-line", description: "评论开关、审核与邮件通知" },
   { key: "seo", label: "SEO", icon: "ri:search-eye-line", description: "站点来源、社交卡片与搜索引擎设置" },
   { key: "search", label: "搜索", icon: "ri:search-line", description: "本地索引范围与排除路径" },
+  { key: "feedback", label: "反馈", icon: "ri:feedback-line", description: "Feedback 反馈组件接入与入口外观" },
   { key: "advanced", label: "高级", icon: "ri:code-line", description: "代码注入、缓存与原始 JSON 兜底" },
 ] as const;
 
@@ -31,6 +33,7 @@ const tabSectionsMap: Record<string, string[]> = {
   comments: ["comments", "site_tree"],
   seo: ["seo", "site"],
   search: ["search"],
+  feedback: ["feedback"],
   advanced: ["inject", "data_cache"],
 };
 
@@ -52,7 +55,7 @@ const legacyTabMap: Record<string, { path: string; tab?: string }> = {
   plugins: { path: "/appearance", tab: "enhancements" },
   tag_plugins: { path: "/appearance", tab: "enhancements" },
   services: { path: "/appearance", tab: "enhancements" },
-  feedback: { path: "/appearance", tab: "enhancements" },
+  feedback: { path: "/settings", tab: "feedback" },
   default: { path: "/appearance", tab: "assets" },
   menubar: { path: "/menus" },
   rightbar: { path: "/appearance", tab: "layout" },
@@ -315,7 +318,7 @@ onBeforeRouteLeave((to, from, next) => {
     <VPageHeader title="系统设置">
       <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
       <template #subtitle>
-        <span>基本、文章、评论、SEO、搜索与高级系统配置</span>
+        <span>基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
         <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
       </template>
       <template #actions>
@@ -371,6 +374,12 @@ onBeforeRouteLeave((to, from, next) => {
                   />
                   <SeoSettings v-else-if="tab.key === 'seo'" :data="data" :saving="savingKey" @save="save" />
                   <SearchSettings v-else-if="tab.key === 'search'" :data="data" :saving="savingKey" @save="save" />
+                  <FeedbackSettings
+                    v-else-if="tab.key === 'feedback'"
+                    :data="data"
+                    :saving="savingKey"
+                    @save="save"
+                  />
                   <AdvancedSettings
                     v-else-if="tab.key === 'advanced'"
                     :data="data"
