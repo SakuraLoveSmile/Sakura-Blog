@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -127,5 +128,127 @@ func TestStartAndStatusLifecycle(t *testing.T) {
 	// 6. 验证查询不会删除 status.json
 	if _, err := os.Stat(statusPath); err != nil {
 		t.Fatalf("status.json was deleted by status query: %v", err)
+	}
+}
+
+// docker 驱动：Root 下出现 update-docker.sh 即 auto 判定为 docker 部署。
+func TestDockerDriverDetection(t *testing.T) {
+	tmp := t.TempDir()
+	newRunner := func() *ExecRunner {
+		return &ExecRunner{
+			InstallDir:    filepath.Join(tmp, "install"),
+			ControlDir:    filepath.Join(tmp, "install", "update"),
+			UpdateService: defaultUnit,
+			Root:          tmp,
+		}
+	}
+
+	// auto 无标记 → systemd 契约
+	if r := newRunner(); r.driver() != DriverSystemd {
+		t.Fatalf("auto without marker: driver() = %s, want systemd", r.driver())
+	}
+
+	// auto 有标记 → docker
+	r := newRunner()
+	if err := os.WriteFile(filepath.Join(tmp, dockerScriptName), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatalf("write marker: %v", err)
+	}
+	if r.driver() != DriverDocker {
+		t.Fatalf("auto with marker: driver() = %s, want docker", r.driver())
+	}
+
+	// 显式 systemd 覆盖标记
+	r.Driver = DriverSystemd
+	if r.driver() != DriverSystemd {
+		t.Fatalf("explicit systemd: driver() = %s", r.driver())
+	}
+}
+
+// docker 驱动缺执行器标记时给出可操作的提示（与平台无关）。
+func TestDockerDriverMissingExecutor(t *testing.T) {
+	r := &ExecRunner{
+		InstallDir:    "/opt/blog",
+		ControlDir:    "/opt/blog/update",
+		UpdateService: defaultUnit,
+		Driver:        DriverDocker,
+		Root:          t.TempDir(),
+	}
+	if r.Supported() {
+		t.Fatal("expected Supported() = false without update-docker.sh marker")
+	}
+	if reason := r.UnsupportedReason(); !strings.Contains(reason, dockerScriptName) {
+		t.Fatalf("UnsupportedReason() = %q, want mention %s", reason, dockerScriptName)
+	}
+}
+
+// docker 驱动下控制目录固定为 <Root>/update，与 InstallDir 无关。
+func TestDockerControlDirUnderRoot(t *testing.T) {
+	root := t.TempDir()
+	install := t.TempDir()
+	r := &ExecRunner{
+		InstallDir:    install,
+		ControlDir:    filepath.Join(install, "update"),
+		UpdateService: defaultUnit,
+		Driver:        DriverDocker,
+		Root:          root,
+	}
+	if got := r.controlDir(); got != filepath.Join(root, "update") {
+		t.Fatalf("controlDir() = %s, want %s", got, filepath.Join(root, "update"))
+	}
+
+	// 请求文件落在 <Root>/update/requests 才被消费（bind mount 到宿主）。
+	reqDir := filepath.Join(root, "update", "requests")
+	if err := os.MkdirAll(reqDir, 0o770); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	req := UpdateRequest{Version: 1, TaskID: "task-docker-1", TargetTag: "v9.9.9", CreatedAt: "2026-09-20T00:00:00Z"}
+	b, _ := json.Marshal(req)
+	if err := os.WriteFile(filepath.Join(reqDir, "task-docker-1.json"), b, 0o660); err != nil {
+		t.Fatalf("write req: %v", err)
+	}
+	st, err := r.Status(context.Background(), "v1.0.0")
+	if err != nil {
+		t.Fatalf("status: %v", err)
+	}
+	if st.State != "running" || st.TargetVersion != "v9.9.9" {
+		t.Fatalf("docker driver did not read request under Root, got %+v", st)
+	}
+	if !r.Active(context.Background()) {
+		t.Fatal("docker Active() should be true while a request is pending")
+	}
+}
+
+// docker 驱动的 Active 依据 status.json 文件态，而非 systemctl。
+func TestDockerActiveFromStatusFile(t *testing.T) {
+	root := t.TempDir()
+	r := &ExecRunner{
+		InstallDir:    t.TempDir(),
+		UpdateService: defaultUnit,
+		Driver:        DriverDocker,
+		Root:          root,
+	}
+	r.ControlDir = filepath.Join(r.InstallDir, "update")
+
+	if r.Active(context.Background()) {
+		t.Fatal("Active() should be false with no status file")
+	}
+
+	controlDir := filepath.Join(root, "update")
+	if err := os.MkdirAll(controlDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	write := func(state string) {
+		b, _ := json.Marshal(StatusInfo{State: state})
+		if err := os.WriteFile(filepath.Join(controlDir, "status.json"), b, 0o644); err != nil {
+			t.Fatalf("write status: %v", err)
+		}
+	}
+	write("running")
+	if !r.Active(context.Background()) {
+		t.Fatal("Active() should be true while status.json is running")
+	}
+	write("succeeded")
+	if r.Active(context.Background()) {
+		t.Fatal("Active() should be false after succeeded")
 	}
 }
