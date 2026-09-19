@@ -47,8 +47,8 @@ async function createPage(page: Page, token: string, index: number) {
   return { slug, title };
 }
 
-/** 通过真实上传接口创建图片夹具，返回服务端文件名。 */
-async function createAttachments(page: Page, count: number) {
+/** 通过真实上传接口创建图片夹具，返回服务端文件名。token 隔离套件内其他 spec 的遗留附件。 */
+async function createAttachments(page: Page, count: number, token = `t1-fixture-${Date.now()}`) {
   const png = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
     "base64",
@@ -56,7 +56,7 @@ async function createAttachments(page: Page, count: number) {
   const names: string[] = [];
   for (let i = 0; i < count; i++) {
     const response = await page.request.post("/api/v1/attachments/upload", {
-      multipart: { file: { name: `t1-fixture-${Date.now()}-${i}.png`, mimeType: "image/png", buffer: png } },
+      multipart: { file: { name: `${token}-${i}.png`, mimeType: "image/png", buffer: png } },
     });
     expect(response.ok(), `夹具附件必须上传成功（HTTP ${response.status()}）`).toBe(true);
     const payload = (await response.json()) as { filename: string };
@@ -291,12 +291,17 @@ test.describe("T1 手机操作矩阵与可访问性验收", () => {
 
   test("媒体库 390px：滚动到底后最后一项可打开对应附件详情", async ({ page }) => {
     await login(page);
-    const names = await createAttachments(page, 12);
+    const token = `t1-att-${Date.now()}`;
+    const names = await createAttachments(page, 12, token);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/console/attachments");
     await expect(page.getByRole("heading", { name: "媒体库", exact: true })).toBeVisible();
     await expect(page.locator(".attachment-card").first()).toBeVisible();
+
+    // 用夹具 token 过滤：套件内其他 spec 的遗留附件不参与末项断言（列表按创建时间倒序）
+    await page.getByPlaceholder("搜索文件名或 URL...").fill(token);
+    await expect(page.locator(".attachment-card")).toHaveCount(names.length);
 
     const nav = await bottomNavBox(page);
     await scrollMainToBottom(page);
