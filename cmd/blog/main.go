@@ -72,7 +72,7 @@ func main() {
 				RAG:            services.RAG,
 				Root:           services.App.Root,
 				AppVersion:     app.Version,
-				UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService,
+				UpdateRepo:     services.App.UpdateRepo, UpdateInstallDir: services.App.UpdateInstallDir, UpdateService: services.App.UpdateService, UpdateDriver: services.App.UpdateDriver,
 			},
 			GH: services.GitHub, DevMode: devMode, Root: services.App.Root, Fallback: stellarServer.NoRoute(nil),
 		})

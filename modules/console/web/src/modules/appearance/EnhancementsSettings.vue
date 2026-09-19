@@ -19,10 +19,6 @@ function saveServices() {
   emit("save", "services");
 }
 
-function saveFeedback() {
-  emit("save", "feedback");
-}
-
 function statusNames() {
   return Object.keys(props.data.tag_plugins.okr.status || {});
 }
@@ -269,107 +265,6 @@ function removeStatus(name: string) {
     </div>
   </section>
 
-  <section class="settings-basic-section">
-    <div class="settings-basic-section-heading">
-      <h2>反馈组件</h2>
-      <p class="settings-hint">
-        接入自建 Feedback 服务的 <code>&lt;feedback-widget&gt;</code>：前台页面悬浮入口，支持截图与文字反馈。
-        启用后需同时填写服务地址与软件标识才会在页面渲染组件；提交成功仅表示服务已接收，
-        归档进度由 Feedback 管理页处理。
-      </p>
-    </div>
-
-    <div class="settings-subsection settings-subsection-first">
-      <div class="settings-switch-row">
-        <div>
-          <div class="settings-switch-name">启用反馈组件</div>
-          <div class="settings-switch-desc">在前台页面显示反馈入口（默认右侧灵感球）。</div>
-        </div>
-        <VSwitch v-model="data.feedback.enabled" aria-label="启用反馈组件" />
-      </div>
-    </div>
-
-    <div class="settings-form-grid settings-form-grid-2">
-      <div class="settings-field">
-        <label for="settings-feedback-api-base">服务地址（api_base）</label>
-        <input
-          id="settings-feedback-api-base"
-          v-model="data.feedback.api_base"
-          :class="inputCls"
-          placeholder="http://127.0.0.1:8787"
-        />
-      </div>
-      <div class="settings-field">
-        <label for="settings-feedback-app-id">软件标识（app_id）</label>
-        <input
-          id="settings-feedback-app-id"
-          v-model="data.feedback.app_id"
-          :class="inputCls"
-          placeholder="com.example.blog"
-        />
-      </div>
-      <div class="settings-field">
-        <label for="settings-feedback-app-name">显示名（可选）</label>
-        <input
-          id="settings-feedback-app-name"
-          v-model="data.feedback.app_name"
-          :class="inputCls"
-          placeholder="后台未配置时使用的名称"
-        />
-      </div>
-      <div class="settings-field">
-        <label for="settings-feedback-app-version">版本号（可选）</label>
-        <input
-          id="settings-feedback-app-version"
-          v-model="data.feedback.app_version"
-          :class="inputCls"
-          placeholder="随提交上报，如 1.0.0"
-        />
-      </div>
-    </div>
-
-    <div class="settings-subsection">
-      <p class="settings-subsection-title">入口与截图</p>
-      <div class="settings-form-grid settings-form-grid-3">
-        <div class="settings-field">
-          <label for="settings-feedback-launcher-mode">入口形态</label>
-          <select id="settings-feedback-launcher-mode" v-model="data.feedback.launcher_mode" class="apple-select">
-            <option value="orb">灵感球（可拖拽指出问题位置）</option>
-            <option value="tab">贴边标签</option>
-          </select>
-        </div>
-        <div class="settings-field">
-          <label for="settings-feedback-capture-mode">呼出时截图</label>
-          <select id="settings-feedback-capture-mode" v-model="data.feedback.capture_mode" class="apple-select">
-            <option value="viewport">截取当前视口</option>
-            <option value="off">不自动截图</option>
-          </select>
-        </div>
-        <div class="settings-field">
-          <label for="settings-feedback-side">停靠侧</label>
-          <select id="settings-feedback-side" v-model="data.feedback.side" class="apple-select">
-            <option value="right">右侧</option>
-            <option value="left">左侧</option>
-          </select>
-        </div>
-        <div class="settings-field">
-          <label for="settings-feedback-launcher-bottom">距底部位置</label>
-          <input
-            id="settings-feedback-launcher-bottom"
-            v-model="data.feedback.launcher_bottom"
-            :class="inputCls"
-            placeholder="25%"
-          />
-        </div>
-      </div>
-      <p class="settings-hint">面板主题固定深色，与站点一致；截图遮挡区域可在模板中以 <code>data-feedback-capture-mask</code> 标注。</p>
-    </div>
-
-    <div class="settings-card-actions">
-      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'feedback'" @click="saveFeedback">
-        <template #icon><Icon icon="ri:save-line" /></template>保存反馈组件设置
-      </VButton>
-    </div>
-  </section>
+    <p class="settings-hint">反馈组件设置已迁移至「系统设置 → 反馈」。</p>
   </div>
 </template>

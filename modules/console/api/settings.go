@@ -5,6 +5,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	yaml "github.com/goccy/go-yaml"
@@ -148,4 +151,61 @@ func (h *Handler) testNotify(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// FeedbackCheckRequest POST /api/v1/settings/feedback/check 请求体：
+// api_base 取当前表单草稿，让管理员「先测再存」。
+type FeedbackCheckRequest struct {
+	APIBase string `json:"api_base"`
+}
+
+// FeedbackCheckResponse POST /api/v1/settings/feedback/check 响应结构。
+// 只回传状态码与延迟，不回传响应体：端点虽仅 admin 可达，仍避免形成内容回显。
+// api_base 允许指向内网/回环（同机部署是标准形态），因此不做 safefetch 的
+// IP 段限制——与 feedback 段自身校验（仅要求 http/https scheme）保持一致。
+type FeedbackCheckResponse struct {
+	OK       bool   `json:"ok"`     // /healthz 返回 200 视为可达且健康
+	Status   int    `json:"status"` // 实际 HTTP 状态码（0 = 未能建立连接）
+	Latency  int64  `json:"latency_ms"`
+	Error    string `json:"error,omitempty"`
+	Endpoint string `json:"endpoint"` // 实际探测的完整 URL（api_base + /healthz）
+}
+
+// checkFeedback POST /api/v1/settings/feedback/check：探测 Feedback 服务 /healthz。
+// 4s 超时、不跟随重定向；仅校验 scheme/host，允许回环与内网地址（管理员自配置项）。
+func (h *Handler) checkFeedback(c *gin.Context) {
+	var req FeedbackCheckRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Fail(c, http.StatusBadRequest, "参数错误")
+		return
+	}
+	base := strings.TrimSpace(req.APIBase)
+	u, err := url.ParseRequestURI(base)
+	if err != nil || u == nil || u.Host == "" || u.User != nil ||
+		(u.Scheme != "http" && u.Scheme != "https") {
+		Fail(c, http.StatusBadRequest, "api_base 必须是合法的 http(s) 地址")
+		return
+	}
+	endpoint := strings.TrimSuffix(base, "/") + "/healthz"
+	client := &http.Client{
+		Timeout: 4 * time.Second,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	start := time.Now()
+	resp, err := client.Get(endpoint)
+	latency := time.Since(start).Milliseconds()
+	if err != nil {
+		c.JSON(http.StatusOK, FeedbackCheckResponse{OK: false, Endpoint: endpoint, Latency: latency, Error: err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+	c.JSON(http.StatusOK, FeedbackCheckResponse{
+		OK:       resp.StatusCode == http.StatusOK,
+		Status:   resp.StatusCode,
+		Latency:  latency,
+		Endpoint: endpoint,
+	})
 }

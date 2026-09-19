@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -132,6 +134,79 @@ func TestSettingsNotifyTest(t *testing.T) {
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || resp.Ok {
 		t.Errorf("test notify without smtp should return ok=false, got %s", w.Body.String())
+	}
+}
+
+// TestSettingsFeedbackCheck feedback/check：探测草稿 api_base 的 /healthz。
+// 覆盖 200 可达、非 200 可达、连接失败、非法 scheme、空地址与缺鉴权。
+func TestSettingsFeedbackCheck(t *testing.T) {
+	r, _, user, _ := newFullEnv(t)
+	cookie := authCookie(user)
+
+	// 200 → ok
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/healthz" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer up.Close()
+	w := do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check",
+		`{"api_base":"`+up.URL+`"}`, cookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("check 200: status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var resp FeedbackCheckResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode check resp: %v", err)
+	}
+	if !resp.OK || resp.Status != 200 || resp.Endpoint != up.URL+"/healthz" {
+		t.Errorf("check should be ok with status 200, got %+v", resp)
+	}
+
+	// /healthz 500 → ok=false 但带回状态码
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer down.Close()
+	w = do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check",
+		`{"api_base":"`+down.URL+`/"}`, cookie) // 尾斜杠应被归一
+	if w.Code != http.StatusOK {
+		t.Fatalf("check 500: status = %d", w.Code)
+	}
+	resp = FeedbackCheckResponse{}
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.OK || resp.Status != 500 || resp.Endpoint != down.URL+"/healthz" {
+		t.Errorf("500 healthz should return ok=false status=500, got %+v", resp)
+	}
+
+	// 不可达 → ok=false + error（本地起即关的端口）
+	lis, _ := net.Listen("tcp", "127.0.0.1:0")
+	dead := "http://" + lis.Addr().String()
+	_ = lis.Close()
+	w = do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check",
+		`{"api_base":"`+dead+`"}`, cookie)
+	resp = FeedbackCheckResponse{}
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.OK || resp.Error == "" {
+		t.Errorf("unreachable base should be ok=false with error, got %+v", resp)
+	}
+
+	// 非法 scheme / 空地址 → 400
+	w = do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check", `{"api_base":"ftp://x"}`, cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("ftp scheme: status = %d, want 400", w.Code)
+	}
+	w = do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check", `{"api_base":"  "}`, cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("blank base: status = %d, want 400", w.Code)
+	}
+
+	// 未登录 → 401/403（sys 组鉴权）
+	w = do2FA(r, http.MethodPost, "/api/v1/settings/feedback/check", `{"api_base":"http://x"}`, "")
+	if w.Code == http.StatusOK {
+		t.Errorf("unauthenticated check should not be 200, got %d", w.Code)
 	}
 }
 

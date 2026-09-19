@@ -5,6 +5,7 @@ import type {
   StyleYAMLUpdateResponse,
   RestoreTaskResponse,
   RestoreTasksResponse,
+  FeedbackCheckResponse,
 } from "../generated";
 
 // --- 备份与导出 ---
@@ -78,6 +79,9 @@ export const settingsApi = {
   all: () => http.get("/settings"),
   updateSection: (section: string, data: JsonValue | undefined) => http.put(`/settings/${section}`, data),
   testNotify: () => http.post("/settings/notify/test"),
+  // Feedback 服务连通性自测：提交当前草稿 api_base，后端探测其 /healthz
+  checkFeedback: (apiBase: string) =>
+    http.post<FeedbackCheckResponse>("/settings/feedback/check", { api_base: apiBase }),
   // 样式 YAML 编辑器：style 段 YAML 读写 + 热更新
   getStyleYAML: () => http.get<StyleYAMLResponse>("/settings/style/yaml"),
   updateStyleYAML: (yamlText: string) =>

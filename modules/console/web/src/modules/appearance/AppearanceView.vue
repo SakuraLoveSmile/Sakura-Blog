@@ -29,7 +29,7 @@ const tabSectionsMap: Record<string, string[]> = {
   home: ["cover"],
   layout: ["rightbar", "footer", "widgets"],
   navigation: ["nav_tabs"],
-  enhancements: ["plugins", "tag_plugins", "services", "feedback"],
+  enhancements: ["plugins", "tag_plugins", "services"],
   assets: ["default"],
   advanced: [],
 };
@@ -44,7 +44,6 @@ const ALL_APPEARANCE_SECTIONS = [
   "plugins",
   "tag_plugins",
   "services",
-  "feedback",
   "default",
 ];
 
@@ -142,6 +141,11 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 
 function applyRouteTab() {
   const queryTab = route.query.tab;
+  // 反馈组件设置已迁移至 /settings?tab=feedback：旧链接与书签改道
+  if (queryTab === "feedback") {
+    void router.replace({ path: "/settings", query: { tab: "feedback" } });
+    return;
+  }
   active.value = typeof queryTab === "string" && tabKeys.has(queryTab) ? queryTab : "appearance";
 }
 

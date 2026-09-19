@@ -1,6 +1,6 @@
 # 部署指南
 
-单二进制部署：systemd 服务 + nginx 反代 + 定时自动更新（`update.sh` 从 GitHub Release 拉取，并校验 SHA256）。
+单二进制部署：systemd 服务 + nginx 反代 + 定时自动更新（`update.sh` 从 GitHub Release 拉取，并校验 SHA256）。容器化部署见文末「Docker 容器部署」。
 
 `update.sh` 依赖 `curl`、`sha256sum`、`systemctl` 和 `python3`。它适用于公开或私有 GitHub 仓库；私有仓库通过 `/opt/blog/.token` 使用仅 `contents:read` 的 PAT 读取 Release 资产。
 
@@ -160,6 +160,41 @@ release 构建通过 ldflags 注入完整构建元数据：
 - 手动更新：`sudo /opt/blog/update.sh`（仅升级已有安装；timer 每 6 小时自动跑）
 - 回滚：update.sh 健康检查失败自动回滚 `blog.bak`；手工回滚即 `cp blog.bak blog && systemctl restart blog`
 - 备份：每日自动全量备份 `data/backups/`（DB + 附件 + site.yml），留存 7 份；建议另行异地同步
+
+## Docker 容器部署（update-docker.sh）
+
+适用于「容器跑二进制、宿主无应用级 systemd 服务」的部署（如 1Panel / compose 管理的 `golang` 镜像容器）。容器内没有 systemctl，Console 一键更新会报「需 systemd 部署环境」——本驱动用同一套请求/状态文件契约，把执行器移到宿主侧。
+
+**前提**：安装目录以目录方式 bind mount 进容器（如宿主 `/opt/blog` → 容器 `/app`），容器启动命令执行 `<root>/blog` 二进制。不要以单文件方式挂载二进制（`mv` 替换对单文件 mount 不可见）。
+
+**机制**：Console 把请求 JSON 写入容器内 `<root>/update/requests/`——经 bind mount 即宿主 `<安装目录>/update/requests/`；宿主的 `blog-update-docker.path` 侦测目录非空后拉起 `blog-update-docker.service` 执行 `update-docker.sh`：下载资产 → SHA256 校验 → 备份 → 替换二进制 → `docker restart` → 宿主映射端口探测 `/readyz` → 失败自动回滚，全程写 `status.json`/`update.log` 供 Console 轮询。stage 词表与 status.json 字段和 `update.sh` 完全一致。
+
+**应用侧**：`update_driver` 默认 `auto`——宿主把 `update-docker.sh` 放进安装目录后，容器内 `<root>/update-docker.sh` 可见即自动启用 docker 驱动，无需改 `app.yml`；也可显式 `update_driver: docker` 锁定。docker 驱动下 `update_install_dir`/`update_service` 不使用，控制目录固定为 `<root>/update/`。
+
+**宿主安装**（宿主需要 systemd 或 cron 任一触发器 + docker CLI + curl + sha256sum + python3）：
+
+```bash
+install -m 755 update-docker.sh /opt/blog/update-docker.sh   # 同步为容器内可见标记
+install -m 644 blog-update-docker.service blog-update-docker.path /etc/systemd/system/
+# 按需写 /opt/blog/update-docker.env：
+#   BLOG_CONTAINER=blog        容器名（默认 blog）
+#   BLOG_HEALTH_PORT=8081      宿主映射端口（如 8081->8080 则填 8081）
+#   BLOG_PROXY=http://127.0.0.1:7890   GitHub 直连不可达时的代理
+#   TOKEN_FILE=/opt/blog/.token        私有仓库 PAT（默认即此路径）
+systemctl daemon-reload && systemctl enable --now blog-update-docker.path
+```
+
+无 systemd 的宿主可用 cron 兜底（仅请求目录非空时触发）：
+
+```cron
+* * * * * root [ -n "$(ls -A /opt/blog/update/requests 2>/dev/null)" ] && /opt/blog/update-docker.sh >> /opt/blog/data/update.log 2>&1
+```
+
+手动执行（等价于 systemd 版的 `sudo /opt/blog/update.sh`）：
+
+```bash
+sudo /opt/blog/update-docker.sh
+```
 
 ### 整站恢复与维护窗口
 

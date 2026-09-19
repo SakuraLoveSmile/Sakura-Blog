@@ -134,12 +134,17 @@ test("Stellar runtime settings are exposed by structured forms", () => {
     "emojiSources",
     "qq",
     "addStatus",
+  ])
+    assert.match(enhancements, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  // feedback 段专属设置 tab（v1.7.1 自主题设置迁出）
+  const feedback = read("modules/settings/tabs/FeedbackSettings.vue");
+  for (const marker of [
     "settings-feedback-api-base",
     "settings-feedback-app-id",
     "settings-feedback-launcher-mode",
     "data.feedback.enabled",
   ])
-    assert.match(enhancements, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(feedback, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const state = read("modules/settings/settings-state.ts");
   assert.match(state, /"services"/);
   assert.match(state, /"feedback"/);

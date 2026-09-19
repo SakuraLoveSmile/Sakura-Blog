@@ -18,6 +18,18 @@ import (
 // defaultUnit 是 systemd oneshot unit 名，硬编码常量。
 const defaultUnit = "blog-update"
 
+// 更新执行驱动：DriverAuto 先探测 docker 执行器标记再回退 systemd 契约；
+// DriverSystemd / DriverDocker 为显式指定。
+const (
+	DriverAuto    = "auto"
+	DriverSystemd = "systemd"
+	DriverDocker  = "docker"
+)
+
+// dockerScriptName 是 docker 部署的执行器标记文件：宿主把 deploy/update-docker.sh
+// 放入安装目录后，经 bind mount 在应用根目录（-root）下可见。
+const dockerScriptName = "update-docker.sh"
+
 // updateLogTailBytes 读取 update.log 尾部的近似字节数。
 const updateLogTailBytes = 8 * 1024
 
@@ -66,11 +78,17 @@ type Runner interface {
 	Active(ctx context.Context) bool
 }
 
-// ExecRunner 生产环境实现：基于专用请求目录与 systemd.path。
+// ExecRunner 生产环境实现：基于专用请求目录与宿主侧执行器（systemd.path 或 docker watcher）。
 type ExecRunner struct {
 	InstallDir    string
 	ControlDir    string
 	UpdateService string
+	// Driver 更新执行驱动：auto（默认）先探测 docker 执行器标记再走 systemd 契约；
+	// systemd / docker 为显式指定。
+	Driver string
+	// Root 应用根目录（-root 解析结果）。docker 驱动下控制目录固定为 <Root>/update，
+	// 经 bind mount 与宿主安装目录下的 update/ 是同一目录。
+	Root string
 }
 
 // New 构造 ExecRunner。
@@ -86,11 +104,54 @@ func New(installDir string, updateService ...string) *ExecRunner {
 	}
 }
 
+// driver 解析生效驱动。auto 模式下宿主放入 update-docker.sh（容器内经 bind mount
+// 在 Root 下可见）即视为 docker 部署，无需改配置。
+func (r *ExecRunner) driver() string {
+	switch strings.ToLower(strings.TrimSpace(r.Driver)) {
+	case DriverSystemd:
+		return DriverSystemd
+	case DriverDocker:
+		return DriverDocker
+	}
+	if r.dockerScriptVisible() {
+		return DriverDocker
+	}
+	return DriverSystemd
+}
+
+// dockerScriptVisible docker 执行器标记：宿主安装目录里的 update-docker.sh
+// 经 bind mount 后在应用根目录可见。
+func (r *ExecRunner) dockerScriptVisible() bool {
+	if r.Root == "" {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(r.Root, dockerScriptName))
+	return err == nil && !info.IsDir()
+}
+
+// controlDir 更新控制目录：docker 驱动固定为 <Root>/update（与宿主安装目录的
+// update/ 是同一 bind mount 目录），systemd 驱动为 <InstallDir>/update。
+func (r *ExecRunner) controlDir() string {
+	if r.driver() == DriverDocker && r.Root != "" {
+		return filepath.Join(r.Root, "update")
+	}
+	return r.ControlDir
+}
+
 func (r *ExecRunner) Supported() bool {
 	return r.UnsupportedReason() == ""
 }
 
 func (r *ExecRunner) UnsupportedReason() string {
+	if r.driver() == DriverDocker {
+		if !r.dockerScriptVisible() {
+			return "docker 驱动需要在宿主安装执行器：将 deploy/update-docker.sh 放入安装目录并配置 watcher（见 deploy/README.md）"
+		}
+		if runtime.GOOS != "linux" {
+			return "当前系统非 Linux，不支持一键更新"
+		}
+		return ""
+	}
 	if r.UpdateService != defaultUnit {
 		return fmt.Sprintf("不支持自定义 update_service（仅支持默认 %s）", defaultUnit)
 	}
@@ -98,7 +159,7 @@ func (r *ExecRunner) UnsupportedReason() string {
 		return "当前系统非 Linux，不支持一键更新"
 	}
 	if _, err := os.Stat("/usr/bin/systemctl"); err != nil {
-		return "未找到 systemctl，需 systemd 部署环境"
+		return "未找到 systemctl，需 systemd 部署环境（docker 部署可在 app.yml 设 update_driver: docker 并按 deploy/README.md 安装执行器）"
 	}
 	if _, err := os.Stat(filepath.Join(r.InstallDir, "update.sh")); err != nil {
 		return "未找到 update.sh，需部署在 " + r.InstallDir
@@ -118,13 +179,13 @@ func (r *ExecRunner) Start(ctx context.Context, targetTag string) (*TaskInfo, er
 		return nil, errors.New("目标版本号为空")
 	}
 
-	requestsDir := filepath.Join(r.ControlDir, "requests")
+	requestsDir := filepath.Join(r.controlDir(), "requests")
 	if err := os.MkdirAll(requestsDir, 0o770); err != nil {
 		return nil, fmt.Errorf("创建请求目录失败: %w", err)
 	}
 
 	// 检查现有 status.json 是否处于 running 状态
-	statusPath := filepath.Join(r.ControlDir, "status.json")
+	statusPath := filepath.Join(r.controlDir(), "status.json")
 	if b, err := os.ReadFile(statusPath); err == nil {
 		var st StatusInfo
 		if json.Unmarshal(b, &st) == nil {
@@ -219,7 +280,7 @@ func (r *ExecRunner) Start(ctx context.Context, targetTag string) (*TaskInfo, er
 
 // Status 读取当前更新状态；成功状态持久化保留，不随单次查询删除。
 func (r *ExecRunner) Status(ctx context.Context, currentVersion string) (*StatusInfo, error) {
-	statusPath := filepath.Join(r.ControlDir, "status.json")
+	statusPath := filepath.Join(r.controlDir(), "status.json")
 	var status StatusInfo
 
 	if b, err := os.ReadFile(statusPath); err == nil {
@@ -231,7 +292,7 @@ func (r *ExecRunner) Status(ctx context.Context, currentVersion string) (*Status
 	}
 
 	// 检查是否有排队中的请求
-	requestsDir := filepath.Join(r.ControlDir, "requests")
+	requestsDir := filepath.Join(r.controlDir(), "requests")
 	if entries, err := os.ReadDir(requestsDir); err == nil {
 		for _, entry := range entries {
 			if entry.IsDir() || strings.HasPrefix(entry.Name(), ".") || !strings.HasSuffix(entry.Name(), ".json") {
@@ -264,8 +325,14 @@ func (r *ExecRunner) Status(ctx context.Context, currentVersion string) (*Status
 	}, nil
 }
 
-// Active 无需 sudo，直接调用 systemctl is-active --quiet 查询 oneshot unit 状态。
+// Active 报告是否有更新正在执行。systemd 驱动调用 systemctl is-active 查询
+// oneshot unit；docker 驱动容器内无 systemctl，改判控制目录文件态
+// （status.json=running 或存在待消费请求）。
 func (r *ExecRunner) Active(ctx context.Context) bool {
+	if r.driver() == DriverDocker {
+		st, err := r.Status(ctx, "")
+		return err == nil && st.State == "running"
+	}
 	if runtime.GOOS != "linux" {
 		return false
 	}
@@ -274,8 +341,11 @@ func (r *ExecRunner) Active(ctx context.Context) bool {
 
 func (r *ExecRunner) readLogTail() string {
 	paths := []string{
-		filepath.Join(r.ControlDir, "update.log"),
+		filepath.Join(r.controlDir(), "update.log"),
 		filepath.Join(r.InstallDir, "data", "update.log"),
+	}
+	if r.driver() == DriverDocker && r.Root != "" {
+		paths[1] = filepath.Join(r.Root, "data", "update.log")
 	}
 	for _, p := range paths {
 		b, err := os.ReadFile(p)
