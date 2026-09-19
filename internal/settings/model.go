@@ -440,13 +440,13 @@ type SiteInfoConfig struct {
 // enabled + api_base + app_id 三者齐备才在 base.html 渲染组件；主题固定 dark（产品仅深色）。
 type FeedbackConfig struct {
 	Enabled        bool   `yaml:"enabled" json:"enabled"`
-	APIBase        string `yaml:"api_base" json:"api_base"`             // Feedback 服务地址，如 http://127.0.0.1:8787
-	AppID          string `yaml:"app_id" json:"app_id"`                 // 宿主软件标识（服务端首次提交自动发现，无需预登记）
-	AppName        string `yaml:"app_name" json:"app_name"`             // 软件显示名（后台未配置时的建议名）
-	AppVersion     string `yaml:"app_version" json:"app_version"`       // 可选版本号，随提交 context 上报
-	Side           string `yaml:"side" json:"side"`                     // 入口停靠侧：left|right，默认 right
-	LauncherMode   string `yaml:"launcher_mode" json:"launcher_mode"`   // 入口形态：tab|orb，默认 orb（灵感球）
-	CaptureMode    string `yaml:"capture_mode" json:"capture_mode"`     // 呼出自动截图：off|viewport，默认 viewport
+	APIBase        string `yaml:"api_base" json:"api_base"`               // Feedback 服务地址，如 http://127.0.0.1:8787
+	AppID          string `yaml:"app_id" json:"app_id"`                   // 宿主软件标识（服务端首次提交自动发现，无需预登记）
+	AppName        string `yaml:"app_name" json:"app_name"`               // 软件显示名（后台未配置时的建议名）
+	AppVersion     string `yaml:"app_version" json:"app_version"`         // 可选版本号，随提交 context 上报
+	Side           string `yaml:"side" json:"side"`                       // 入口停靠侧：left|right，默认 right
+	LauncherMode   string `yaml:"launcher_mode" json:"launcher_mode"`     // 入口形态：tab|orb，默认 orb（灵感球）
+	CaptureMode    string `yaml:"capture_mode" json:"capture_mode"`       // 呼出自动截图：off|viewport，默认 viewport
 	LauncherBottom string `yaml:"launcher_bottom" json:"launcher_bottom"` // 入口距底部位置（CSS 长度），默认 25%
 }
 

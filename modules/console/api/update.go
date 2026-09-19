@@ -392,7 +392,6 @@ func (h *Handler) readUpdateState() (updateState, bool) {
 	return s, true
 }
 
-
 // readUpdateLogTail 读取 <install_dir>/data/update.log 尾部约 8KB。
 func (h *Handler) readUpdateLogTail() string {
 	path := filepath.Join(h.updateInstallDir, updateLogFile)

@@ -317,8 +317,10 @@ func runChildWithoutOutput(bin string, argv []string) error {
 // NoopRunner 非 systemd 环境的占位 runner。
 type NoopRunner struct{}
 
-func (NoopRunner) Supported() bool             { return false }
-func (NoopRunner) UnsupportedReason() string   { return "当前环境不支持一键更新（非 systemd 部署）" }
+func (NoopRunner) Supported() bool { return false }
+func (NoopRunner) UnsupportedReason() string {
+	return "当前环境不支持一键更新（非 systemd 部署）"
+}
 func (NoopRunner) Start(context.Context, string) (*TaskInfo, error) {
 	return nil, errors.New("不支持")
 }

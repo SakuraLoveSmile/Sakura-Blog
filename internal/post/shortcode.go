@@ -864,7 +864,6 @@ func processShortcodes(
 		return renderTOCTag(parts[1], nil, false)
 	})
 
-
 	return md
 }
 

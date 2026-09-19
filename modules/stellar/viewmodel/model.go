@@ -98,6 +98,6 @@ func CategoryColorStyle(category string, colors map[string]string) template.CSS 
 func CategoryIconKey(category string, icons map[string]string) string {
 	return settings.CategoryIconKey(category, icons)
 }
-func NormalizeSiteURL(raw string) string         { return settings.NormalizeSiteURL(raw) }
-func ValidateSiteURL(raw string) error           { return settings.ValidateSiteURL(raw) }
+func NormalizeSiteURL(raw string) string          { return settings.NormalizeSiteURL(raw) }
+func ValidateSiteURL(raw string) error            { return settings.ValidateSiteURL(raw) }
 func JoinSiteURL(base, requestPath string) string { return settings.JoinSiteURL(base, requestPath) }

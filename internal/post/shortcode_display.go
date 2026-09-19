@@ -371,7 +371,6 @@ func renderAlbumsPostersHTML(kind, argsStr string, groups []tmpl.LinkGroup, defa
 	return sb.String()
 }
 
-
 // renderFrame 对齐 frame.js：video 优先，img 次之；(img|video) 与 device 缺一原样输出。
 func renderFrame(argsStr string) (string, bool) {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"focus", "img", "video"}, nil)
@@ -454,9 +453,9 @@ func renderFrameBlock(argsStr, body string, renderMD func(string) string) (strin
 // renderTOCTag 对齐 toc.js：
 // 1. 无 wiki 参数时渲染 details 目录外壳（由前端/布局填充正文 TOC 结构）。
 // 2. 指定 wiki 参数时：
-//    - 通过 wikiTreeProvider 查询指定项目的已发布公开文档树；
-//    - 项目不存在或无公开文档：生产模式输出空字符串（对齐原版 proj==undefined 行为）；预览模式输出安全诊断；
-//    - 项目存在且有公开文档：严格按树序（深度优先前序遍历）渲染上游 toc.js DOM 结构。
+//   - 通过 wikiTreeProvider 查询指定项目的已发布公开文档树；
+//   - 项目不存在或无公开文档：生产模式输出空字符串（对齐原版 proj==undefined 行为）；预览模式输出安全诊断；
+//   - 项目存在且有公开文档：严格按树序（深度优先前序遍历）渲染上游 toc.js DOM 结构。
 func renderTOCTag(argsStr string, wikiTreeProvider func(string) (bool, []tmpl.WikiTreeNode), isPreview bool) string {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"wiki", "open", "display"}, nil)
 	title := strings.Join(positional, " ")
@@ -589,4 +588,3 @@ func renderTOCDiagnostic(title, msg, display, open string) string {
 	sb.WriteString(`</details></div>`)
 	return sb.String()
 }
-

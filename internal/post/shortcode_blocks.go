@@ -250,7 +250,6 @@ func renderDropdown(argsStr, body string, iconFunc func(string) string) string {
 	return sb.String()
 }
 
-
 func renderGallery(argsStr, body string, tagPlugins settings.TagPluginsConfig) string {
 	named, _ := parseNamedPositionalArgs(argsStr, []string{"layout", "size", "ratio"}, nil)
 	// tag_plugins.gallery：默认布局参数（空=内置默认 grid/mix/origin）
