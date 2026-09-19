@@ -123,6 +123,7 @@ function updateConfig(id: string, value: SchemaValues) {
                 <VSwitch
                   :model-value="m.enabled"
                   :disabled="m.locked"
+                  :aria-label="`${m.title || m.id} 开关`"
                   class="mt-1"
                   @change="(v: boolean) => onToggle(m, v)"
                 />

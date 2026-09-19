@@ -42,6 +42,9 @@ func toRevisionJSON(r *store.Revision) *revisionJSON {
 // listRevisions GET /api/v1/posts/:slug/revisions：版本列表（不含正文）。
 func (h *Handler) listRevisions(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	metas, err := h.store.ListRevisions(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -58,6 +61,9 @@ func (h *Handler) getRevision(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "无效的版本 id")
+		return
+	}
+	if !h.requireRevisionOwnership(c, id) {
 		return
 	}
 	rev, err := h.store.GetRevision(id)

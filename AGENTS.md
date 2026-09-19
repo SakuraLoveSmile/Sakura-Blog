@@ -1,183 +1,98 @@
-# Multi-Agent 并行开发规范
+# Blog Agent 协作与交付规范
 
-本项目的 Blog 根目录就是 `dev` 日常工作树；需要并行开发时，用 Blog 根目录外的短生命周期 git worktree 隔离任务。
+`AGENTS.md` 是本仓库自动加载的执行规则：规定怎样开始、验证、集成和交付。技术实现事实、模块边界与已验证的坑点放在 [CLAUDE.md](CLAUDE.md)，按需查阅即可。
 
-## 核心原则
+两份文件**不合并**，也不新建不被通用 agent 约定识别的 `agent.md`：把工程参考全文塞进 `AGENTS.md` 会让每次任务都加载大量与当前改动无关的历史细节；保留「短执行规则 + 按需工程参考」可以降低误用与上下文噪声。
 
-**一个 agent = 一个 feature 分支 = 一个 worktree，所有分支从 dev 拉出，做完合回根目录的 dev。**
+运行时与构建行为的最终真值始终是代码、`Makefile`、`config/app.example.yml` 和 CI 工作流；本文只记录协作约束。
 
-绝不让两个 agent 写同一个分支，也绝不让 agent 在独立分支上完整重写项目。
+## 1. 开工前的边界
 
-## 分支模型
+- Blog 根目录是日常 `dev` 工作树。先看 `git status --short --branch`，已有改动、未跟踪文件和其他 worktree 都属于用户上下文；不得覆盖、清理或顺带格式化无关内容。
+- 默认一个实现任务对应一个临时分支和一个同级 worktree。多个 agent 必须按模块拆分，不能共享分支或写同一批文件。
+- 仅做审计、定位或答疑时保持只读；实现前先读与改动范围对应的 [CLAUDE.md](CLAUDE.md) 章节。
+- 不得自行 `git push`、创建发布、部署生产、删除分支/worktree 或重置共享的 `resource/`。这些操作须有用户的明确授权。
 
-```
-dev（主线，唯一集成目标）
-├── feature/comment-system    ← agent A
-├── feature/lxgw-font         ← agent B
-└── feature/tag-plugins       ← agent C
-```
+## 2. 分支与 worktree
 
-本地长期保留分支只有 `dev`；`main` / `release` 只通过 `origin/main` / `origin/release` 使用。
-所有 feature 分支和 worktree 都是短生命周期，合完即删。
-
-## 操作流程
-
-### 1. 开分支 + worktree
-
-以下命令在 Blog 根目录（当前 `dev` worktree）执行。feature worktree 统一落位到 Blog 的同级目录，避免被根目录 Git 视为未跟踪内容；`make merge-check` 会自动解析根目录的 `dev` worktree，也可显式传 `DEV_WORKTREE=<dev worktree 路径>` 覆盖。
+从根目录的最新 `dev` 建立同级 worktree；默认分支前缀为 `codex/`，用户指定名称时以用户要求为准。
 
 ```bash
-# 在 Blog 根目录执行；feature worktree 落位到 Blog 同级目录
-git worktree add ../Blog-feat-comment -b feature/comment
-
-# 同理，给 agent B 开 feature 分支
-git worktree add ../Blog-feat-font -b feature/font
+# 在 Blog 根目录执行
+git worktree add ../Blog-<topic> -b codex/<topic>
+git -C ../Blog-<topic> status --short --branch
+make -C ../Blog-<topic> hooks-install
 ```
 
-### 2. 任务拆解：模块级隔离
+- 临时 worktree 必须位于 Blog 同级目录，不能落在根目录内成为未跟踪文件。
+- `main` 与 `release` 是远端稳定/发布分支；本地长期集成目标只有根目录的 `dev`。
+- 如果其他任务已经合入 `dev`，在自己的 feature worktree 中先 `git rebase dev`，解决自己改动的冲突后再继续。
+- 需要 `resource/` 的前台/CSS/UI 任务，可让 sibling worktree 链接根目录现有的 `resource/`；不要另外克隆、切换或重置这个跨 worktree 共用的目录。
 
-分配任务时确保各 agent 改动的文件/模块尽量不交叉。示例：
+## 3. 验证、集成与清理
 
-| Agent | 任务 | 主要改动范围 |
-|-------|------|-------------|
-| A | 评论系统 | `internal/comments/`、`modules/console/web/src/modules/comments/` |
-| B | 前端样式 | `modules/stellar/web/assets/css/`、`modules/stellar/web/templates/partial/` |
-| C | 后台管理 | `modules/console/web/src/`、`modules/console/tests/` |
+每个新 worktree 先执行一次 `make hooks-install`。它只写入当前 worktree 的本地 Git 配置，将 tracked 的 `.githooks/pre-commit` 挂到 `core.hooksPath`。
 
-#### UI 类任务开工约定（验收边界）
+### Feature 分支
 
-UI/样式类任务（控制台界面、前台样式、编辑器视觉等）开工前必须先固定**单一验收边界**，未固定前不动手改代码：
-
-- **参照图唯一**：开工前确定唯一参照（设计稿 / 原版 Stellar 截图 / 基线截图），路径或来源写进任务描述；后续所有反馈只与该参照对比，中途不得更换参照或以口述追加新方向。
-- **载体位置**：参照图与验收基线截图统一存入 `docs/baselines/<任务名>/`（该目录入库；勿放 `.qoder/`、`.tmp/` 等被 gitignore 的目录）；任务描述中「参照图路径」字段必须是指向入库文件的仓库相对路径。
-- **可逐项核对的验收清单**：把目标拆成清单，每项是一个可观察的完成判据（例："导航栏滚动时保持固定且无背景模糊"），完成时逐项对照勾选，而不是靠多轮截图来回纠偏。
-- **大范围整改必须拆分**：涉及多个页面/组件的 UI 整改，必须拆分为逐项可验收的子任务，每个子任务对应一个明确的完成判据；禁止在单个任务里承载多个验收目标（如"重构编辑框 + 修批注 + 全局样式意见"混在一起）。
-- **中途新增按新子任务处理**：清单固定后新出现的诉求另开子任务，不追加进进行中的任务。
-
-### 3. 合并前检查（必做）
-
-feature 分支合回 dev 前，**由负责该 feature 分支的 agent** 在自己的 feature worktree 内执行机械化合并封装：
+完成后在 feature worktree 根目录执行：
 
 ```bash
-# 在 feature worktree 根目录执行（默认自动定位 Blog 根目录的 dev，可用 DEV_WORKTREE 覆盖）
 make merge-check
 ```
 
-- `merge-check` 强制先执行 `make test`（console 测试 + `go vet` + `go test`），任一环节失败即以非零码退出并中止，**不会产生合并**；禁止绕过该目标手动合并。
-- `make test` 全绿后，`merge-check` 才把当前 feature 分支合入 `DEV_WORKTREE` 指向的 dev worktree，门槛由 Make 退出码机械保证，无需自报留痕。
-- **合并后组合态复验**：合入成功后 `merge-check` 会在 dev worktree 再执行一次 `make test`（防 dev 领先、feature 落后时两者改动组合态破坏门禁）；复验失败时输出回退指引（`git -C <DEV_WORKTREE> reset --hard ORIG_HEAD`，dev 回到合并前状态）并以非零码退出——先回退、再在 feature 分支 rebase 最新 dev 修复兼容后重试。
-- 本步骤只是本地前置门槛，**不改变现有 CI 触发配置**，CI 仍按 `.github/workflows/` 现状运行。
-- **dev 上直接工作的提交门禁**：agent 若未经 feature 合并、直接在 `dev` 等受保护分支上改动（如紧急修复、用户授权的直接提交），提交前必须在当前 worktree 根目录执行：
+该目标会先确认 hook 已挂载，再运行 `make test`；通过后才合入根目录的 `dev`，并在合并后的 `dev` 上再跑一次 `make test`。若组合态失败，输出的 `ORIG_HEAD` 回退命令仅供人工确认后使用；不要替用户擅自回退或清理。
 
-  ```bash
-  make pre-commit-check
-  ```
+`make test` 当前包含：Console 类型检查与行为测试、Stellar 资源行为测试、部署/发布来源/模块边界检查，以及 `go vet`、Staticcheck、`go test ./...`。它会用占位 `dist` 满足 `go:embed`，**不等于**完成真实 Console 构建；涉及前端产物时还应按风险运行 `make build` 和相关浏览器/E2E 验收。
 
-  - `pre-commit-check` 与 `merge-check` 共用同一 `make test` 门槛：任一环节失败即以非零码退出，**必须中止提交**；禁止绕过该目标手动 `git commit`。
-  - 该条款使控制面覆盖 feature 合并之外的直接提交路径，两条路径的准入标准一致（全绿才放行）。
-  - **机械挂载**：仓库提供 tracked 的 pre-commit hook 脚本 `.githooks/pre-commit`（调用同一 `make test` 门槛并以退出码阻断）。每个新 worktree 开工时执行一次安装命令：
+### 直接在 `dev` 工作
 
-    ```bash
-    make hooks-install
-    ```
-
-    安装后直接 `git commit` 会被 hook 以同一门槛机械阻断（`core.hooksPath` 指向 `.githooks`，仅写入当前 worktree 的本地 config）；紧急绕过须显式 `git commit --no-verify`。不改变 CI 配置。
-  - **探测回指**：`make merge-check` / `make pre-commit-check` 开头会探测 `core.hooksPath`（探测逻辑在 Makefile 的 `merge-check` / `pre-commit-check` 目标开头），未指向 `.githooks` 时直接失败并提示先执行本命令——未挂载 hook 的 worktree 即使手动运行这两个目标也无法放行，杜绝"手动全绿但机械门禁缺失"的假象。
-- **CSS 产物漂移本地核对**：存在 `resource/` 源（gitignore 本地主题源，CI 无源 不可编译）的 worktree 内，改源后先 `make css` 重编 `modules/stellar/web/assets/css/main.css`，再执行 `make css-drift-check` 以 `git diff --exit-code` 校验产物无漂移（工作区手改 `main.css` 时同样非零退出）；该目标仅本地/agent 核对用，不接入 `make test` 门禁、不强制接入 CI。
-
-### 4. 先完成先合
+除非是用户明确授权的紧急改动，否则不要直接在 `dev` 实现。若确需在 `dev` 提交，提交前必须执行：
 
 ```bash
-# agent A 完成后，在 feature worktree 里执行机械化合并封装（test 通过才会合入 dev）
-make merge-check
-
-# 删掉用完的分支
-git branch -d feature/comment
+make pre-commit-check
 ```
 
-> 合并只发生在本地 worktree；**推送 dev 分支属外部写操作，必须由用户单独授权后再执行**，agent 不得自行 `git push`。
+这与 hook 共用同一测试门槛；禁止用普通手工合并或跳过验证来绕开它。获得用户授权后，才可在确认合并已完成且 worktree 不再需要时执行清理；正确顺序是先 `git worktree remove <path>`，再 `git branch -d <branch>`。
 
-### 5. 后续 agent 开工前 rebase
+### CSS 产物
 
-如果 agent B 开工时 A 已合入 dev，B 必须先 rebase 到最新 dev：
+涉及 `resource/hexo-theme-stellar` 或 `modules/stellar/web/assets/css/main.css` 时：
 
 ```bash
-# 在 Blog 根目录执行，../Blog-feat-font 指向同级 feature worktree
-git -C ../Blog-feat-font rebase dev
-# 如有冲突由 agent B 自行解决（B 了解自己在改什么）
+make css
+make css-drift-check
 ```
 
-### 6. 清理 worktree
+先检查共享主题源的版本和脏状态。`main.css` 是生成物，不能手改；`css-drift-check` 会重编并比较产物，可能暴露主题源与工作树的漂移。它是本地核对，不进入 CI/`make test`。
 
-```bash
-# 与开分支同级：在 Blog 根目录执行
-git worktree remove ../Blog-feat-comment
-```
+## 4. UI 任务的验收边界
 
-## 反模式（禁止）
+UI/样式任务在写代码前必须固定一份可复核的验收说明：
 
-| 反模式 | 后果 |
-|--------|------|
-| 多个 agent 各自从同一祖先独立重写整套代码 | 无法 merge，只能人工策展式整合 |
-| 两个 agent 写同一个分支 | 提交冲突、互相覆盖 |
-| feature 分支长期不合并 | 与 dev 分叉越来越大，合并越来越难 |
-| 未通过 `make merge-check` 就把 feature 合回 dev | 破坏 dev 主线，阻塞其他 agent 的 rebase |
-| 在 dev/main 上直接改动却未跑 `make pre-commit-check` 就提交 | 未验证变更混入主线，绕过既有控制面 |
-| agent 基于过时的 dev 快照开分支 | 合并时大量冲突 |
-| UI 任务无参照图/验收清单就开工 | 多轮截图纠偏返工，方向偏差只能事后发现 |
-| 不查坑点知识就修改对应模块 | 重踩已验证过的坑（编译链路、模板结构、SQLite 等），浪费排查轮次 |
+- 选定唯一参照图（设计稿、上游 Stellar 截图或基线截图），并在任务说明写明其仓库相对路径或来源。
+- 参照图和验收截图存入 `docs/baselines/<task>/`，不可放入 `.tmp/`、`.qoder/` 等忽略目录。
+- 将目标拆成可观察、逐项可勾选的验收项；范围很大时拆成独立子任务。中途新增方向另开任务，不能悄悄扩写当前清单。
+- 本项目产品只交付深色模式。不得新增浅色模式开关、浅色 token、浅色专用样式或浅色验收基线；上游保留的亮色兼容代码不代表产品能力。
+- 修改 Console 或前台 UI 前，先按 `resource/apple-design/library-consumption.json` 的 `recommendedReadOrder` 阅读本地设计库。复用其语义 token 和既有组件结构，不临时造裸色值或平行组件体系。
+- 浏览器验收必须确认服务实际加载当前 SPA 产物；Console 重建后要重启 Go 服务，不能把一个 HTTP 200 当作当前界面的证据。
 
-## 工程坑点知识路由
+## 5. 模块路由与 API 约束
 
-> 与提供方无关的工程坑点知识（已验证的编译链路、模板结构、图标机制、SQLite、资源版本化等坑点）的 canonical 来源是 [CLAUDE.md](CLAUDE.md)，本节只做路由、不复制内容，与「端口约定」「提交规范」的 canonical+回指治理模式一致。该知识适用于所有 agent（Qoder / Claude / Trae 等），不限于 Claude。
+| 改动范围 | 先读的工程参考 |
+| --- | --- |
+| 仓库结构、依赖方向、构建/运行 | `CLAUDE.md`「当前架构与模块边界」「构建、运行与验证」 |
+| Console、User Center、API Client | `CLAUDE.md`「Console、User Center 与 API 契约」 |
+| SQLite、配置、内容导入 | `CLAUDE.md`「数据、配置与内容生命周期」 |
+| Stellar CSS、模板、图标、前台脚本 | `CLAUDE.md`「Stellar 前台实现约束」 |
+| Markdown/shortcode 可视化编辑 | `CLAUDE.md`「编辑器与 shortcode」 |
 
-任一 agent 动手修改对应模块前，必须先查阅 `CLAUDE.md` 相应章节：
+- 新 API 响应使用具名 Go struct，不新增 `gin.H` 作为响应 schema；既有遗留 `gin.H` 不是新接口的范例。
+- 修改纳入 `tygo.yaml` 的 Console API 类型后，在根目录运行 `go generate ./modules/console/api`，提交生成的 `packages/api-client/src/generated.d.ts`；新增可暴露类型时同时更新 `tygo.yaml`。
+- 保持模块边界：`internal/` 不依赖 Console/Stellar 业务模块；Console 与 Stellar 不互相导入；公开 URL 路由归 Stellar 挂载。修改后让 `make test` 的 `module-check` 验证。
 
-| 改动范围 | `CLAUDE.md` 必读章节 |
-|---------|-------------------|
-| bare 仓库 / worktree 操作 | 「仓库工作流」（worktree 操作注意、cwd 不保留坑） |
-| CSS / Stylus 编译、图标与深色模式 | 「Stellar CSS 剥离规范」（shim 注入、返回值类型、siteblur 遮罩、图标颜色） |
-| 前台 HTML / Go 模板结构 | 「Stellar HTML 结构规范（关键）」（class 名与嵌套必须对齐 Stellar EJS） |
-| Go 服务端渲染 | 「Demo 2 新增坑点」（-root 参数、template.HTML、icons.yml 解析） |
-| 管理后台 / SQLite | 「Demo 3 新增坑点」（driver name、模板路径化命名、Vue Console 迁移现状） |
-| DB 迁移 / 配置文件 | 「Step 1 新增坑点」（ALTER 迁移、yaml 引号） |
-| 归档 / 标签 / 缓存头 / JS shim | 「Step 2 新增坑点」「Step 2 收尾修复」（tags 匹配一致性、no-cache、移动端 sidebar） |
-| TOC / 搜索 / 404（PJAX 已移除，现状见「Spec 59」） | 「Step 3 新增坑点」（AutoHeadingID、搜索双端点、对照原版先行） |
-| 工具链版本 | 「工具链」（Go / Node / stylus / SQLite 驱动版本与启动方式） |
+## 6. 端口、提交与外部操作
 
-## UI 设计规范
-
-> 本节为 UI 设计规范的 canonical 路由；真值以 `resource/apple-design/` 内文件为准（Pinguo Apple，`metadata.json` id `dl_builtin_apple`）。该目录与主题源 `resource/` 一样是 gitignore 的本地资源；新开的 sibling feature worktree 应链接到 Blog 根目录的 `resource/`。
-
-### 主题模式约定
-
-本项目只做深色模式，**永久不实现浅色模式**。新增或修改 UI、CSS、主题配置、组件状态和验收截图时，必须以深色模式为唯一目标，不得新增浅色模式切换、浅色主题 token、浅色专用样式或浅色验收基线；现有第三方主题中的亮色分支仅作为兼容代码保留，不得扩展或作为本项目产品能力使用。
-
-任一 agent 新增/修改管理后台或前台 UI 前，必须先读 `resource/apple-design/`，阅读顺序见其 `library-consumption.json` 的 `recommendedReadOrder`（SKILL.md → README.md → css.json → components/index.json → components/{slug}.json → preview/component-{slug}.html → components.css → ui_kits/website/index.html），并遵守：
-
-- 只消费语义 token（`:root` 亮 / `.dark` 暗两层映射，`--primary`/`--background`/`--muted-foreground`/`--border`/`--radius`/`--shadow-*` 及 `--apple-*` 前缀别名），不新造裸色值。
-- 组件模式限 button / card / input / navigation / product-grid / comparison-table 六类，类名与结构对齐 `components.css`。
-- 品牌蓝 `#007AFF`（dark 用 `brand-400`）、单页主色 ≤ 2；DM Sans + JetBrains Mono；圆角 `1.2rem`、按钮 pill；间距基 `0.24rem`、留白优先于分隔线；1px 边框优先、阴影从轻（深阴影仅 hover/overlay）；动效 `cubic-bezier(0.32,0.72,0,1)` 150/250/350ms；移动端触达 ≥ 44×44pt；文案简短克制、无 emoji。
-
-## 端口约定
-
-> 本节为端口约定的 canonical 来源，运行时真值以 `config/app.yml` 的 `listen_addr`（当前 `:8080`）为准；`.claude/launch.json` 的 go-server 配置与之保持一致。其他文档（如 CLAUDE.md）仅引用本节，不另行定义。
-
-多个 worktree 同时起服务时用不同端口避免冲突：
-
-- dev: `8080`
-- qoder 分支: `8081`
-- 其他 feature 分支: `8082` / `8083` / ...
-
-## 提交规范
-
-> 本节为提交规范的 canonical 来源，其他文档（如 CLAUDE.md）仅引用本节，不另行定义。
-
-- 中文提交信息，格式：`类型: 简短描述`
-- 类型：`feat` / `fix` / `refactor` / `docs` / `chore`
-- 代码内容、错误信息、文件路径保持英文；注释用中文
-
-## API 类型生成规矩
-
-- 新增 API 响应必须使用 Go struct，不得新增 `gin.H` 作为响应 schema。
-- 修改 Console API 响应结构后，在仓库根执行 `go generate ./modules/console/api`，提交生成的 `packages/api-client/src/generated.d.ts`。
+- `config/app.yml` 的 `listen_addr` 是根工作树的运行时真值（当前为 `:8080`）。并行启动时用 `BLOG_LISTEN` 为各 worktree 分配不同端口，避免按 agent 品牌硬编码端口。
+- 用户授权提交时，使用中文信息：`feat:`、`fix:`、`refactor:`、`docs:` 或 `chore:` + 简短描述。代码、路径与报错保持英文；注释使用中文。
+- 推送、创建 tag/release、远程 CI 等待和生产部署是独立外部操作，必须得到相应的明确授权；本地通过门禁不代表远端 CI 或生产已验证。

@@ -1,4 +1,4 @@
-import { createApp, h, ref } from "vue";
+import { createApp, h, ref, onMounted } from "vue";
 
 // Halo Dialog 复刻：命令式确认弹窗（Dialog.warning / Dialog.info / Dialog.error）
 export interface DialogOptions {
@@ -33,14 +33,72 @@ function confirmTextColor(type?: "primary" | "danger" | "secondary"): string {
 }
 
 function showDialog(type: DialogType, options: DialogOptions) {
+  const previousActiveElement = document.activeElement as HTMLElement | null;
+  const dialogId = `dialog-${Math.random().toString(36).slice(2, 9)}`;
+  const titleId = `${dialogId}-title`;
+  const descId = `${dialogId}-desc`;
+
   const container = document.createElement("div");
   document.body.appendChild(container);
 
   const visible = ref(true);
   const loading = ref(false);
 
+  function handleCancel() {
+    options.onCancel?.();
+    close();
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      handleCancel();
+      return;
+    }
+    if (e.key === "Tab") {
+      const dialogCard = container.querySelector<HTMLElement>("[role='alertdialog'], [role='dialog']");
+      if (!dialogCard) return;
+      const focusables = Array.from(
+        dialogCard.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex]:not([tabindex='-1'])"),
+      );
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  window.addEventListener("keydown", handleKeydown, true);
+
+  function close() {
+    window.removeEventListener("keydown", handleKeydown, true);
+    visible.value = false;
+    setTimeout(() => {
+      app.unmount();
+      container.remove();
+      previousActiveElement?.focus?.();
+    }, 200);
+  }
+
   const app = createApp({
     setup() {
+      onMounted(() => {
+        // 自动将焦点移入确认按钮
+        const confirmBtn = container.querySelector<HTMLElement>("[data-dialog-action='confirm']");
+        if (confirmBtn) {
+          confirmBtn.focus();
+        }
+      });
+
       async function handleConfirm() {
         if (options.onConfirm) {
           loading.value = true;
@@ -55,19 +113,6 @@ function showDialog(type: DialogType, options: DialogOptions) {
           loading.value = false;
         }
         close();
-      }
-
-      function handleCancel() {
-        options.onCancel?.();
-        close();
-      }
-
-      function close() {
-        visible.value = false;
-        setTimeout(() => {
-          app.unmount();
-          container.remove();
-        }, 200);
       }
 
       return () =>
@@ -87,10 +132,16 @@ function showDialog(type: DialogType, options: DialogOptions) {
             h(
               "div",
               {
+                role: type === "warning" || type === "error" ? "alertdialog" : "dialog",
+                "aria-modal": "true",
+                "aria-labelledby": titleId,
+                "aria-describedby": options.description ? descId : undefined,
+                tabindex: -1,
                 // Dialog 通过 createApp 动态挂载，组件包里的 Tailwind max-w-sm
                 // 不一定会被宿主 SPA 扫描到，因此宽度约束必须由内联样式兜底。
                 class: "relative w-full overflow-hidden p-5",
                 style: {
+                  outline: "none",
                   maxWidth: "24rem",
                   background: "var(--color-card)",
                   border: "1px solid var(--color-border)",
@@ -133,6 +184,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                     h(
                       "h3",
                       {
+                        id: titleId,
                         class: "text-sm font-semibold",
                         style: { color: "var(--color-foreground)" },
                       },
@@ -142,6 +194,7 @@ function showDialog(type: DialogType, options: DialogOptions) {
                       ? h(
                           "p",
                           {
+                            id: descId,
                             class: "mt-1.5 text-xs leading-relaxed",
                             style: { color: "var(--color-text-tertiary)" },
                           },
@@ -155,6 +208,8 @@ function showDialog(type: DialogType, options: DialogOptions) {
                   h(
                     "button",
                     {
+                      type: "button",
+                      "data-dialog-action": "cancel",
                       class: "h-8 px-4 text-xs transition-all hover:bg-secondary",
                       style: {
                         color: "var(--color-foreground)",
@@ -170,6 +225,8 @@ function showDialog(type: DialogType, options: DialogOptions) {
                   h(
                     "button",
                     {
+                      type: "button",
+                      "data-dialog-action": "confirm",
                       class: "h-8 px-4 text-xs transition-all hover:opacity-90",
                       style: {
                         color: confirmTextColor(options.confirmType),

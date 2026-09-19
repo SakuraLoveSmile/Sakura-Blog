@@ -14,6 +14,8 @@
 | `/opt/blog/blog.bak` | 上一版本备份（健康检查失败自动回滚用） |
 | `/opt/blog/data/` | 运行时数据：`blog.db`、`uploads/`、`backups/`、`ogcache/`、`ghcache/` |
 | `/opt/blog/config/` | `app.yml` / `site.yml`（含密钥，chmod 600） |
+| `/opt/blog/update/requests/` | 一键更新请求目录（chmod 770，属主 blog:blog，systemd.path 监听） |
+| `/opt/blog/update/status.json` | 更新状态文件（chmod 644，记录任务阶段与回滚结果） |
 | `/opt/blog/.token` | Release 下载 PAT（chmod 600，仅 repo 读权限） |
 | `/opt/blog/version` | 当前版本号（update.sh 维护） |
 
@@ -23,8 +25,9 @@
 
    ```bash
    useradd -r -s /usr/sbin/nologin blog
-   mkdir -p /opt/blog/{config,data,content/posts}
+   mkdir -p /opt/blog/{config,data,content/posts,update/requests}
    chown -R blog:blog /opt/blog
+   chmod 770 /opt/blog/update/requests
    ```
 
 2. **配置文件**：从仓库 `config/` 复制 example 模板并填值
@@ -57,13 +60,14 @@
 5. **systemd**：
 
    ```bash
-   cp blog.service blog-update.service blog-update.timer /etc/systemd/system/
+   cp blog.service blog-update.service blog-update.path blog-update.timer /etc/systemd/system/
    install -d -m 755 /etc/blog
    install -d -m 755 /etc/systemd/system/blog.service.d
    install -m 600 -o root -g root /dev/null /etc/blog/blog.env
    cp blog.service.d/10-secrets.conf.example /etc/systemd/system/blog.service.d/10-secrets.conf
    systemctl daemon-reload
    systemctl enable --now blog
+   systemctl enable --now blog-update.path
    systemctl enable --now blog-update.timer
    ```
 
@@ -91,19 +95,14 @@
 
 ## Console 一键更新
 
-Console 后台「系统更新」页面（/console/system-update）可检查 GitHub 最新版本并一键触发更新。一键更新通过 `sudo systemctl start blog-update.service` 触发 oneshot unit，需配置 sudoers 免密规则。
+Console 后台「系统更新」页面（/console/system-update）可检查 GitHub 最新版本并一键触发更新。本项目采用无 sudo 的 `systemd.path` 触发机制：Console 接口不调用 `sudo`，而是将校验后的请求文件写入 `/opt/blog/update/requests/<task_id>.json`，由 root 的 `blog-update.path` 监听到目录非空后触发 `blog-update.service` 执行更新。
 
-### sudoers 配置
+### 权限与安全机制
 
-blog 运行用户需免密执行 systemctl start/is-active：
-
-```bash
-# /etc/sudoers.d/blog-update（权限 0440，owner root:root）
-blog ALL=(root) NOPASSWD: /usr/bin/systemctl start blog-update.service
-blog ALL=(root) NOPASSWD: /usr/bin/systemctl is-active blog-update.service
-```
-
-> 仅允许 `start` 和 `is-active`，不开放 `stop`/`restart`/`edit` 等危险操作。
+- **无 sudo 依赖**：服务进程 `blog` 仅需写入 `/opt/blog/update/requests/`（目录权限 0770，属主 `blog:blog`）。完全免除 `/etc/sudoers.d/` 配置。
+- **请求安全消费**：`update.sh` 以 root 权限运行，使用 Python3 通过 `O_NOFOLLOW`、`fstat` 严格检查常规文件、文件大小限制（<=64KB）与格式校验（防目录穿越与符号链接劫持），消费后即刻删除请求文件。
+- **全局排他锁**：依次取得 `<DB 所在目录>/maintenance.lock` 和 `/opt/blog/update/update.lock`，等待期间不消费请求，以同一服务进程等待解除阻塞，避免定时任务、后台手动执行与 Console 请求并发冲突。
+- **状态持久化与回滚**：更新进度原子落盘至 `/opt/blog/update/status.json`（权限 0644），记录 stage（queued/downloading/verifying/replacing/health_checking/rolling_back/succeeded/failed）与回滚信息，供 Console 轮询，成功状态不被清除。
 
 ### GitHub PAT
 
@@ -115,19 +114,28 @@ blog ALL=(root) NOPASSWD: /usr/bin/systemctl is-active blog-update.service
 # 系统更新配置（缺省值见下方，多数部署无需修改）
 update_repo: "SakuraLoveSmile/Sakura-Blog"  # GitHub 仓库（owner/repo）
 update_install_dir: "/opt/blog"               # 安装目录（update.sh 所在）
-update_service: "blog-update"                 # systemd oneshot unit 名
+update_service: "blog-update"                 # systemd oneshot unit 名（仅支持默认值）
 ```
 
 ### 工作流程
 
 1. **检查更新**：Console 调用 GitHub API 获取最新 release，与当前版本（ldflags 注入的 tag 名）做 semver 比较
-2. **一键更新**：点击后 `sudo systemctl start blog-update.service` 触发 update.sh，后者拉取新版本二进制、健康检查、自动回滚
-3. **状态轮询**：前端每 3 秒轮询 `/api/v1/system/update/status`，对比当前版本与目标版本判断 succeeded/failed
-4. **强制刷新**：`refresh=1` 参数绕过 6h 缓存直连 GitHub（用于刚发布新版本后立即检查）
+2. **一键更新**：点击后向 `/opt/blog/update/requests/` 写入原子请求 JSON，响应 HTTP 202（返回 task_id、target_version 与 stage）
+3. **服务触发**：`blog-update.path` 侦测到请求目录非空，拉起 root 的 `blog-update.service` 执行 `update.sh`
+4. **下载与校验**：下载新版本资产与 SHA256；校验失败时不替换二进制；替换后启动服务并做本地 HTTP 探测，若失败自动回滚
+5. **状态轮询**：前端轮询 `/api/v1/system/update/status` 查看进度与日志；成功状态持久保留，不随单次查询清除
+6. **强制刷新**：`refresh=1` 参数绕过 6h 缓存直连 GitHub（用于刚发布新版本后立即检查）
 
 ### 版本内嵌
 
-release 构建通过 ldflags 注入 tag 名（`-X blog/internal/app.Version=${GITHUB_REF_NAME}`），当前版本可直接从二进制读取。本地开发版本固定为 `dev`，Console 页面会回退读取 `<Root>/version` 文件或显示 `unknown`。
+release 构建通过 ldflags 注入完整构建元数据：
+- tag 名（`-X blog/internal/app.Version=${GITHUB_REF_NAME}`）
+- Git commit sha（`-X blog/internal/app.GitCommit=${GITHUB_SHA}`）
+- 构建时间戳（`-X blog/internal/app.BuildTime=...`）
+- Stellar 来源 commit（`-X blog/internal/app.StellarCommit=...`）
+- 前端构建指纹（`-X blog/internal/app.FrontendFingerprint=...`）
+
+管理员可通过 `GET /api/v1/system/version` 或「系统更新」页面查阅。本地开发版本固定为 `dev`，Console 页面会回退读取 `<Root>/version` 文件或显示 `unknown`。
 
 ## 上线验证清单
 
@@ -143,8 +151,8 @@ release 构建通过 ldflags 注入 tag 名（`-X blog/internal/app.Version=${GI
 - [ ] 生产 `site.yml` 存在且包含有效 admin 密码；缺失配置时服务应拒绝启动
 - [ ] 页脚备案号渲染（若配置）
 - [ ] `data/backups/` 24h 内生成首份自动备份
-- [ ] `systemctl status blog blog-update.timer` 均 active
-- [ ] Console「系统更新」页能检查到版本信息；sudoers 配置后一键更新可触发 blog-update.service
+- [ ] `systemctl status blog blog-update.path blog-update.timer` 均 active
+- [ ] Console「系统更新」页能检查到版本信息；`blog-update.path` 启用后一键更新可触发更新流程，无需 sudoers。
 
 ## 日常运维
 
@@ -152,3 +160,31 @@ release 构建通过 ldflags 注入 tag 名（`-X blog/internal/app.Version=${GI
 - 手动更新：`sudo /opt/blog/update.sh`（仅升级已有安装；timer 每 6 小时自动跑）
 - 回滚：update.sh 健康检查失败自动回滚 `blog.bak`；手工回滚即 `cp blog.bak blog && systemctl restart blog`
 - 备份：每日自动全量备份 `data/backups/`（DB + 附件 + site.yml），留存 7 份；建议另行异地同步
+
+### 整站恢复与维护窗口
+
+阶段 B 的恢复需要保留 `NoNewPrivileges=true` 和 `ProtectSystem=strict`，并采用仓库 unit 中的精确授权：
+
+```ini
+ReadWritePaths=/opt/blog/data /opt/blog/update/requests /opt/blog/config/site.yml
+```
+
+安装时必须创建既有 `site.yml` 文件并设置权限；不要把整个配置目录加到 `ReadWritePaths`：
+
+```bash
+install -o blog -g blog -m 0600 site.example.yml /opt/blog/config/site.yml
+```
+
+恢复通过受日志保护的原地写入与同步修改该文件，不依赖在只读配置目录中创建临时文件或 rename 覆盖 bind mount。已安装服务器的 unit 更新和重启仍需独立部署授权。
+
+恢复任务记录位于 `<DB 所在目录>/backups/.restore-restore-<ID>.json`，版本字段为 `1`。完整数据库、附件和配置前像位于 `backups/restore-tasks/<任务 ID>/preimage/`。只自动清理最近 3 份成功任务之前的前像；未完成和补偿失败任务不会自动清理。旧 `.pre-restore-*.db` 仍可作为本地快照恢复，不会在升级时自动删除。
+
+启动首先检查并补偿非终态任务，之后才读取站点 YAML、执行迁移并开放业务接口。补偿失败时 `/livez` 可用，`/readyz` 与业务接口不可用；`/api/maintenance` 只公开维护状态和重试提示。修复磁盘空间、权限或完整前像可读性后重启应用继续补偿；不要删除未完成日志、消费唯一前像，或替换仍在运行的 SQLite 文件。
+
+更新脚本与恢复共用 `<DB 所在目录>/maintenance.lock` 的文件锁。自定义数据库路径时，更新 unit 应设置相同的 `BLOG_DB`；也可在博客和更新器中同时设置 `BLOG_MAINTENANCE_LOCK`。恢复未结束或日志版本不受支持时，更新脚本拒绝切换程序版本。因此，存在未完成恢复日志时不可人工降级到不识别该日志的旧程序。只有任务已完成或完整补偿后，才可按正常部署流程回退程序。
+
+本地隔离验证命令：`bash deploy/tests/restore-systemd.sh`。脚本只在新建的 Docker 容器内启动 systemd，验证加固权限、Linux 恢复中断和跨文件系统恢复；结束时清理它自己创建的容器和临时文件。
+
+锁忙时 `blog-update.service` 保持等待（`TimeoutStartSec=infinity`），可由管理员停止服务取消等待；未消费请求保留。无效锁或未完成/不支持的恢复日志使执行器以 75 退出，服务仅对此退出码按 `RestartSec=30s` 重试（`RestartForceExitStatus=75`）；已消费请求后普通失败或回滚不自动重试，避免 path 热循环。更新部署时须同步安装新的 update unit。
+
+更新服务使用 `Type=exec` 跟踪脚本进程（进程退出即结束），以支持仅对 75 重试；systemd 不允许 oneshot 使用 `RestartForceExitStatus`。

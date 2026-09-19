@@ -26,6 +26,7 @@ type CollectionItem = settings.CollectionItem
 type CommentsConfig = settings.CommentsConfig
 type DefaultAssets = settings.DefaultAssets
 type EditPageLink = settings.EditPageLink
+type FeedbackConfig = settings.FeedbackConfig
 type Footer = settings.Footer
 
 type HeroAction = settings.HeroAction
@@ -97,3 +98,6 @@ func CategoryColorStyle(category string, colors map[string]string) template.CSS 
 func CategoryIconKey(category string, icons map[string]string) string {
 	return settings.CategoryIconKey(category, icons)
 }
+func NormalizeSiteURL(raw string) string          { return settings.NormalizeSiteURL(raw) }
+func ValidateSiteURL(raw string) error            { return settings.ValidateSiteURL(raw) }
+func JoinSiteURL(base, requestPath string) string { return settings.JoinSiteURL(base, requestPath) }

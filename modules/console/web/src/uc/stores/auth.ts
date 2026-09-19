@@ -24,6 +24,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   const data = (await response.json().catch(() => ({}))) as T & { error?: string };
+  if (response.status === 401) useUCAuthStore().clearSession();
   if (!response.ok) throw new Error(data.error || "请求失败");
   return data;
 }
@@ -82,10 +83,14 @@ export const useUCAuthStore = defineStore("uc-auth", () => {
     return result.user;
   }
 
+  function clearSession() {
+    user.value = null;
+  }
+
   async function logout() {
     await request("/api/auth/logout", { method: "POST", body: "{}" });
     user.value = null;
   }
 
-  return { user, initialized, fetchMe, login, challenge, register, upgrade, logout };
+  return { user, initialized, fetchMe, login, challenge, register, upgrade, logout, clearSession };
 });

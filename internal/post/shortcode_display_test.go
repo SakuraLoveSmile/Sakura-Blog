@@ -222,4 +222,60 @@ func TestGalleryImgAttrs(t *testing.T) {
 	}
 }
 
-// TestEmojiSources 对齐原版 _config.yml tag_plugins.emoji 的五种来源：
+// TestTimelineArgs 对齐原版 timeline.js：有 api 时容器进入 ds-timeline 数据服务模式，
+// 无 api 时仍是静态时间轴。属性口径与本仓库 widgets/timeline.html 一致。
+func TestTimelineArgs(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want []string
+		bad  []string
+	}{
+		{
+			name: "有 api 进入数据服务模式",
+			in:   "{% timeline api:https://example.com/t.json user:octocat hide:footer %}\n<!-- node 2024-01 -->\n启动\n{% endtimeline %}",
+			want: []string{
+				`class="tag-plugin timeline data-service ds-timeline"`,
+				`data-api="https://example.com/t.json"`,
+				`user="octocat"`,
+				`hide="footer"`,
+			},
+		},
+		{
+			name: "无 api 保持静态时间轴",
+			in:   "{% timeline %}\n<!-- node 2024-01 -->\n启动\n{% endtimeline %}",
+			want: []string{`<div class="tag-plugin timeline">`, `<span>2024-01</span>`},
+			bad:  []string{`data-service`, `data-api`},
+		},
+		{
+			name: "api scheme 非法时不进入数据服务模式",
+			in:   "{% timeline api:javascript:alert(1) %}\n{% endtimeline %}",
+			want: []string{`<div class="tag-plugin timeline">`},
+			bad:  []string{`data-api`, `javascript:`},
+		},
+		{
+			// splitArgs 会把裸引号当定界符剥离，故注入值剩余 footer><script，转义后安全
+			name: "透传属性转义",
+			in:   "{% timeline api:https://example.com/t.json hide:footer\"><script> %}\n{% endtimeline %}",
+			want: []string{`hide="footer&gt;&lt;script&gt;"`},
+			bad:  []string{`<script>`},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := runShortcodes(tc.in)
+			for _, want := range tc.want {
+				if !strings.Contains(out, want) {
+					t.Errorf("expected %q missing in: %s", want, out)
+				}
+			}
+			for _, bad := range tc.bad {
+				if strings.Contains(out, bad) {
+					t.Errorf("unexpected %q in: %s", bad, out)
+				}
+			}
+		})
+	}
+}
+
+// TestEmojiSources 对齐原版 _config.yml tag_plugins.emoji 的六种来源（含独立 qq）：

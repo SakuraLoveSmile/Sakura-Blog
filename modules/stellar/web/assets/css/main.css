@@ -1696,9 +1696,6 @@ code {
   -moz-osx-font-smoothing: auto;
   font-family: "LXGW WenKai Screen", Menlo, Monaco, Consolas, system-ui, "Courier New", monospace, sans-serif;
 }
-pre > code {
-  font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;
-}
 p>code:not([class]),
 li>code:not([class]) {
   font-size: 85%;
@@ -8442,7 +8439,7 @@ details.toc[open] >div.body section .header+.doc_tree {
   appearance: none;
   width: 100%;
   box-sizing: border-box;
-  font-family: inherit;
+  font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: calc(var(--fs-content-base) - 2px);
   padding: 12px 0;
   color: var(--text);

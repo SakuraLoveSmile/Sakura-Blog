@@ -2,6 +2,7 @@ package seo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"blog/internal/module"
 	"blog/internal/store"
 )
+
+const maxSettingsBodyBytes = 1 << 20
 
 // settingKey SEO 工具集配置在 settings 表中的键。
 // 注意：必须与站点级 SEO 段（config.SectionSEO = "seo"）分离——历史上两者共用 "seo" 行，
@@ -96,8 +99,14 @@ func (m *Module) getSettings(c *gin.Context) {
 
 // putSettings PUT /api/v1/seo/settings：保存配置。
 func (m *Module) putSettings(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSettingsBodyBytes)
 	raw, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "配置请求体超过 1 MiB"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
 		return
 	}

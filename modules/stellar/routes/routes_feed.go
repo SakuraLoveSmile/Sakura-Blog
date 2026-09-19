@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"blog/internal/og"
 	"blog/internal/store"
 	"blog/internal/textutil"
+	tmpl "blog/modules/stellar/viewmodel"
 )
 
 // RSS 2.0 结构体（encoding/xml 标准库）
@@ -85,7 +87,7 @@ func rssItemsFromPosts(posts []*store.Post, siteURL string, resolveAuthor func(s
 				desc = desc[:200]
 			}
 		}
-		link := siteURL + "/post/" + p.Slug
+		link := tmpl.JoinSiteURL(siteURL, "/post/"+url.PathEscape(p.Slug))
 		items = append(items, Item{
 			Title:       p.Title,
 			Link:        link,
@@ -111,12 +113,12 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 			s.render500(c)
 			return
 		}
-		siteURL := "http://" + c.Request.Host
+		siteURL := s.canonicalBaseURL(&tmpl.ViewData{Site: s.site.Load()}, c)
 		rss := RSS{
 			Version: "2.0",
 			Channel: Channel{
 				Title:       s.site.Load().Title,
-				Link:        siteURL,
+				Link:        tmpl.JoinSiteURL(siteURL, "/"),
 				Description: s.site.Load().Description,
 				Items:       rssItemsFromPosts(posts, siteURL, s.resolveAuthor),
 			},
@@ -133,7 +135,7 @@ func (s *webServer) registerFeedRoutes(r *gin.Engine) {
 	// Sitemap 输出：/sitemap.xml，包含首页、所有已发布文章、wiki 已发布文档、静态索引页。
 	// Spec 61 阶段 5：生成期缓存（按 baseURL 分 key，写路径置脏后重建）。
 	r.GET("/sitemap.xml", func(c *gin.Context) {
-		output, err := s.contentCache.sitemapXML(s.baseURL(c))
+		output, err := s.contentCache.sitemapXML(s.canonicalBaseURL(&tmpl.ViewData{Site: s.site.Load()}, c))
 		if err != nil {
 			log.Printf("sitemap: %v", err)
 			s.render500(c)

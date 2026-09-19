@@ -31,6 +31,32 @@ test("Console plugins: router permissions/modules and manifest-driven navigation
   assert.match(store, /syncPluginWidgets/);
 });
 
+test("Console plugins: plugin library exposes five admin child routes and legacy redirect", () => {
+  const moduleSource = read("modules/core/module.ts");
+  for (const route of ["shortcodes", "assets", "widgets", "fixtures", "runtime"]) {
+    assert.match(moduleSource, new RegExp(`path: "/plugins/${route}"`));
+    assert.match(moduleSource, new RegExp(`path: "plugins/${route}"`));
+    assert.match(moduleSource, /permissions: admin/);
+  }
+  assert.match(moduleSource, /path: "plugins", redirect: "\/plugins\/shortcodes"/);
+  assert.match(moduleSource, /ShortcodeStudioView\.vue/);
+  assert.match(moduleSource, /fixtures\/FixtureStudioView\.vue/);
+  assert.match(moduleSource, /ScriptPluginListView\.vue/);
+});
+
+test("Console plugins: catalog and runtime pages expose recoverable loading states", () => {
+  const catalog = read("modules/plugins/usePluginCatalog.ts");
+  const shortcode = read("modules/plugins/ShortcodeStudioView.vue");
+  const runtime = read("modules/plugins/ScriptPluginListView.vue");
+  assert.match(catalog, /catalogStatus/);
+  assert.match(catalog, /retryLoadCatalog/);
+  assert.match(shortcode, /无法加载标签插件/);
+  assert.match(shortcode, /暂无标签插件/);
+  assert.match(runtime, /pluginApi\.runtime\(\)/);
+  assert.match(runtime, /network_allowlist/);
+  assert.match(runtime, /重试/);
+});
+
 test("moments disable path: dashboard keeps UnknownWidget fallback", () => {
   const grid = read("modules/dashboard/DashboardGrid.vue");
   const widgets = read("modules/dashboard/widgets/UnknownWidget.vue");

@@ -1,3 +1,6 @@
 packages:
   - "modules/*/web"
   - "packages/*"
+
+patchedDependencies:
+  "@tiptap/core@2.27.2": "patches/@tiptap__core@2.27.2.patch"

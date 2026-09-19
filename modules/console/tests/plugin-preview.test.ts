@@ -150,7 +150,7 @@ test(`${SURFACE} · 预览 shim 会 eager 加载图片与背景图并处理异�
     bodyHtml: '<img class="lazy" data-src="/assets/img/preview/image-demo.jpg"><div class="lazy img" data-bg="/assets/img/preview/banner-bg.jpg"></div>',
   });
   for (const want of [
-    "window.wrapLazyloadImages = eagerLoad",
+    "window.wrapLazyloadImages = wrapLazyloadImages",
     "data-preview-lazy-bound",
     "data-src",
     "data-bg",
@@ -159,6 +159,29 @@ test(`${SURFACE} · 预览 shim 会 eager 加载图片与背景图并处理异�
   ]) {
     assert.ok(doc.includes(want), `预览 shim 缺少 ${want}`);
   }
+});
+
+// 站点卡片（sites）等卡片的样式全部挂在 .lazy-box > img 上（main.css），
+// 前台由 wrapLazyloadImages 补这层包裹；预览 shim 必须同语义，否则预览与前台渲染不一致。
+test(`${SURFACE} · wrapLazyloadImages 会为裸 img 补 .lazy-box 包裹`, () => {
+  const doc = buildPreviewDoc({ bodyHtml: "" });
+  for (const want of [
+    "function wrapBareImages(container)",
+    "wrapper.className = 'lazy-box'",
+    "next.setAttribute('data-src', src)",
+    "next.classList.add('lazy')",
+    "icon.className = 'lazy-icon'",
+    "img.replaceWith(wrapper)",
+    // 幂等：已是 .lazy 的不再重复包裹
+    "if (img.classList.contains('lazy')) return",
+    // 包裹后仍要把 data-src 解析回 src
+    "wrapBareImages(container);\n    eagerLoad(container);",
+  ]) {
+    assert.ok(doc.includes(want), `预览 shim 缺少包裹逻辑：${want}`);
+  }
+  // 整文档不做自动包裹，避免改写与卡片无关的正文图片结构
+  assert.ok(doc.includes("eagerLoad(document);"), "预览 shim 应保留初始 eagerLoad(document)");
+  assert.ok(!/wrapBareImages\(document\)/.test(doc), "预览 shim 不应对整文档自动包裹");
 });
 
 test(`${SURFACE} · 预览文档无 CDN 脚本地址（Spec 64 依赖本地化）`, () => {

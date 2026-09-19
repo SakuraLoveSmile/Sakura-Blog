@@ -32,12 +32,24 @@ type Service struct {
 	keep      int    // 自动备份留存份数
 	auto      bool   // 自动备份是否开启（status API 展示用）
 	// restoreHook 恢复完成回调（Spec 41）：main.go 装配 FTS 重建/配置热更新/缓存清理。
-	restoreHook func()
-	startOnce   sync.Once
-	closeOnce   sync.Once
-	stop        chan struct{}
-	done        chan struct{}
+	restoreHook         func()
+	restoreRebuild      func() error
+	operationLock       func() (func(), error)
+	backupLock          func() (func(), error)
+	restoreMu           sync.Mutex
+	restoreStep         func(string) error
+	uncertainTask       string
+	restoreJournalWrite func(string, []byte) error
+	activeRestore       string
+	startOnce           sync.Once
+	closeOnce           sync.Once
+	stop                chan struct{}
+	done                chan struct{}
 }
+
+// SetBackupLock lets application composition wire automatic backups to the
+// same maintenance coordinator used by restores and updates.
+func (s *Service) SetBackupLock(fn func() (func(), error)) { s.backupLock = fn }
 
 // Config 备份服务初始化参数。
 type Config struct {
@@ -449,19 +461,43 @@ func (s *Service) Close(ctx context.Context) error {
 		ctx = context.Background()
 	}
 	s.closeOnce.Do(func() { close(s.stop) })
-	if s.done == nil {
-		return nil
+	if s.done != nil {
+		select {
+		case <-s.done:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
-	select {
-	case <-s.done:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		s.restoreMu.Lock()
+		running := s.activeRestore != ""
+		s.restoreMu.Unlock()
+		if !running {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+		}
 	}
 }
 
 // runAutoBackup 生成一份全量备份到 backupDir 并按 keep 清理旧份。失败只记日志不中断服务。
 func (s *Service) runAutoBackup() {
+	if s.backupLock == nil && s.store != nil {
+		s.backupLock = s.store.Maintenance().Acquire
+	}
+	if s.backupLock != nil {
+		release, err := s.backupLock()
+		if err != nil {
+			log.Printf("auto backup: maintenance busy: %v", err)
+			return
+		}
+		defer release()
+	}
 	if err := os.MkdirAll(s.backupDir, 0o755); err != nil {
 		log.Printf("auto backup: mkdir %s: %v", s.backupDir, err)
 		return

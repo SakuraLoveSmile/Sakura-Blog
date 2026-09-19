@@ -3,13 +3,17 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"blog/internal/app"
 	ghpkg "blog/internal/github"
+	updr "blog/internal/updaterunner"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,28 +47,54 @@ type updateState struct {
 	StartedAt string `json:"started_at"`
 }
 
-// updateCheckResponse GET /api/v1/system/update/check
-type updateCheckResponse struct {
-	CurrentVersion  string `json:"current_version"`
-	LatestVersion   string `json:"latest_version"`
-	UpdateAvailable bool   `json:"update_available"`
-	ReleaseURL      string `json:"release_url"`
-	ReleaseNotes    string `json:"release_notes"`
-	PublishedAt     string `json:"published_at"`
-	ApplySupported  bool   `json:"apply_supported"`
-	CheckedAt       string `json:"checked_at"`
-	ApplyNote       string `json:"apply_note,omitempty"`
-	Error           string `json:"error,omitempty"`
+// SystemVersionResponse GET /api/v1/system/version
+type SystemVersionResponse struct {
+	Version             string `json:"version"`
+	GitCommit           string `json:"git_commit"`
+	BuildTime           string `json:"build_time"`
+	StellarCommit       string `json:"stellar_commit"`
+	FrontendFingerprint string `json:"frontend_fingerprint"`
+	IsDev               bool   `json:"is_dev"`
 }
 
-// updateStatusResponse GET /api/v1/system/update/status
-type updateStatusResponse struct {
+// UpdateCheckResponse GET /api/v1/system/update/check
+type UpdateCheckResponse struct {
+	CurrentVersion      string `json:"current_version"`
+	LatestVersion       string `json:"latest_version"`
+	UpdateAvailable     bool   `json:"update_available"`
+	ReleaseURL          string `json:"release_url"`
+	ReleaseNotes        string `json:"release_notes"`
+	PublishedAt         string `json:"published_at"`
+	ApplySupported      bool   `json:"apply_supported"`
+	CheckedAt           string `json:"checked_at"`
+	ApplyNote           string `json:"apply_note,omitempty"`
+	Error               string `json:"error,omitempty"`
+	GitCommit           string `json:"git_commit,omitempty"`
+	BuildTime           string `json:"build_time,omitempty"`
+	StellarCommit       string `json:"stellar_commit,omitempty"`
+	FrontendFingerprint string `json:"frontend_fingerprint,omitempty"`
+	IsDev               bool   `json:"is_dev,omitempty"`
+}
+
+// UpdateApplyResponse POST /api/v1/system/update/apply
+type UpdateApplyResponse struct {
+	Started       bool   `json:"started"`
+	TaskID        string `json:"task_id"`
+	TargetVersion string `json:"target_version"`
+	Stage         string `json:"stage,omitempty"`
+}
+
+// UpdateStatusResponse GET /api/v1/system/update/status
+type UpdateStatusResponse struct {
 	State          string `json:"state"` // idle|running|succeeded|failed
+	Stage          string `json:"stage,omitempty"`
+	TaskID         string `json:"task_id,omitempty"`
 	CurrentVersion string `json:"current_version"`
-	TargetVersion  string `json:"target_version"`
-	StartedAt      string `json:"started_at"`
-	LogTail        string `json:"log_tail"`
+	TargetVersion  string `json:"target_version,omitempty"`
+	StartedAt      string `json:"started_at,omitempty"`
+	LogTail        string `json:"log_tail,omitempty"`
 	Message        string `json:"message,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 // githubClientFor 解析本次请求的 GitHub 客户端：
@@ -82,13 +112,32 @@ func (h *Handler) githubClientFor(c *gin.Context) *ghpkg.Client {
 	return h.gh
 }
 
+// systemVersion GET /api/v1/system/version
+func (h *Handler) systemVersion(c *gin.Context) {
+	current := h.resolveCurrentVersion()
+	resp := SystemVersionResponse{
+		Version:             current,
+		GitCommit:           app.GitCommit,
+		BuildTime:           app.BuildTime,
+		StellarCommit:       app.StellarCommit,
+		FrontendFingerprint: app.FrontendFingerprint,
+		IsDev:               app.IsDev(),
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
 // systemUpdateCheck GET /api/v1/system/update/check?refresh=1
 func (h *Handler) systemUpdateCheck(c *gin.Context) {
 	current := h.resolveCurrentVersion()
-	resp := updateCheckResponse{
-		CurrentVersion: current,
-		CheckedAt:      time.Now().UTC().Format(time.RFC3339),
-		ApplySupported: h.upd.Supported(),
+	resp := UpdateCheckResponse{
+		CurrentVersion:      current,
+		CheckedAt:           time.Now().UTC().Format(time.RFC3339),
+		ApplySupported:      h.upd.Supported(),
+		GitCommit:           app.GitCommit,
+		BuildTime:           app.BuildTime,
+		StellarCommit:       app.StellarCommit,
+		FrontendFingerprint: app.FrontendFingerprint,
+		IsDev:               app.IsDev(),
 	}
 
 	if !h.upd.Supported() {
@@ -152,6 +201,13 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 		return
 	}
 
+	releaseOperation, err := h.store.Maintenance().Reserve("update")
+	if err != nil {
+		Fail(c, 409, "已有恢复或更新正在进行中")
+		return
+	}
+	defer releaseOperation()
+
 	// CAS 防并发：同一时刻只允许一个 apply
 	if !h.updateApplying.CompareAndSwap(false, true) {
 		Fail(c, 409, "已有更新正在进行中")
@@ -162,7 +218,12 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 	current := h.resolveCurrentVersion()
 
 	// 先查 latest 版本以确定 target（携带请求级 Token 以支持私有仓库）
-	payload, err := h.githubClientFor(c).GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
+	gh := h.githubClientFor(c)
+	if gh == nil {
+		Fail(c, 500, "GitHub 客户端未启用")
+		return
+	}
+	payload, err := gh.GetLatestReleaseRaw(splitOwnerRepo(h.updateRepo))
 	if err != nil {
 		// 私有仓库无 Token 时 GitHub 返回 404，给出可操作提示
 		if strings.Contains(err.Error(), "404") {
@@ -187,8 +248,14 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), applyTimeout)
 	defer cancel()
-	if err := h.upd.Start(ctx); err != nil {
-		Fail(c, 500, "触发更新服务失败: "+err.Error()+"（请检查 sudoers 配置）")
+
+	task, err := h.upd.Start(ctx, target)
+	if err != nil {
+		if errors.Is(err, updr.ErrBusy) {
+			Fail(c, 409, "已有更新任务正在进行中")
+			return
+		}
+		Fail(c, 500, "触发更新服务失败: "+err.Error())
 		return
 	}
 
@@ -196,55 +263,71 @@ func (h *Handler) systemUpdateApply(c *gin.Context) {
 	state := updateState{
 		From:      current,
 		To:        target,
-		StartedAt: time.Now().UTC().Format(time.RFC3339),
+		StartedAt: task.StartedAt,
 	}
 	h.writeUpdateState(state)
 
-	c.JSON(202, gin.H{
-		"started":        true,
-		"target_version": target,
+	c.JSON(202, UpdateApplyResponse{
+		Started:       true,
+		TaskID:        task.TaskID,
+		TargetVersion: task.TargetVersion,
+		Stage:         task.Stage,
 	})
 }
 
 // systemUpdateStatus GET /api/v1/system/update/status
 func (h *Handler) systemUpdateStatus(c *gin.Context) {
 	current := h.resolveCurrentVersion()
-	resp := updateStatusResponse{
-		CurrentVersion: current,
-	}
-
-	state, hasState := h.readUpdateState()
-	if !hasState {
-		resp.State = "idle"
-		c.JSON(200, resp)
-		return
-	}
-
-	resp.TargetVersion = state.To
-	resp.StartedAt = state.StartedAt
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	if h.upd.Active(ctx) {
-		resp.State = "running"
-		resp.Message = "更新正在进行中，服务即将重启"
-		c.JSON(200, resp)
+	statusInfo, err := h.upd.Status(ctx, current)
+	if err != nil {
+		Fail(c, 500, "查询更新状态失败: "+err.Error())
 		return
 	}
 
-	// unit 已结束：对比当前版本与 target
-	if current == state.To {
-		resp.State = "succeeded"
-		resp.Message = "更新成功"
-		// 成功后清理状态文件
-		h.clearUpdateState()
-	} else {
-		resp.State = "failed"
-		resp.Message = "更新失败或已回滚，请查看日志"
+	resp := UpdateStatusResponse{
+		State:          statusInfo.State,
+		Stage:          statusInfo.Stage,
+		TaskID:         statusInfo.TaskID,
+		CurrentVersion: current,
+		TargetVersion:  statusInfo.TargetVersion,
+		StartedAt:      statusInfo.StartedAt,
+		LogTail:        statusInfo.LogTail,
+		Message:        statusInfo.Message,
+		Error:          statusInfo.Error,
 	}
 
-	resp.LogTail = h.readUpdateLogTail()
+	// 如果 runner 处于 idle，但本地有向后兼容的 update-state.json
+	if resp.State == "idle" {
+		if state, hasState := h.readUpdateState(); hasState {
+			resp.TargetVersion = state.To
+			resp.StartedAt = state.StartedAt
+			if h.upd.Active(ctx) {
+				resp.State = "running"
+				resp.Stage = "replacing"
+				resp.Message = "更新正在进行中，服务即将重启"
+			} else if current == state.To {
+				resp.State = "succeeded"
+				resp.Stage = "succeeded"
+				resp.Message = "更新成功"
+			} else {
+				resp.State = "failed"
+				resp.Stage = "failed"
+				resp.Message = "更新失败或已回滚，请查看日志"
+			}
+			if resp.LogTail == "" {
+				resp.LogTail = h.readUpdateLogTail()
+			}
+		}
+	}
+
+	if resp.LogTail == "" {
+		resp.LogTail = h.readUpdateLogTail()
+	}
+
 	c.JSON(200, resp)
 }
 
@@ -307,14 +390,6 @@ func (h *Handler) readUpdateState() (updateState, bool) {
 		return updateState{}, false
 	}
 	return s, true
-}
-
-// clearUpdateState 删除状态文件（更新成功后调用）。
-func (h *Handler) clearUpdateState() {
-	if h.root == "" {
-		return
-	}
-	_ = os.Remove(filepath.Join(h.root, updateStateFile))
 }
 
 // readUpdateLogTail 读取 <install_dir>/data/update.log 尾部约 8KB。

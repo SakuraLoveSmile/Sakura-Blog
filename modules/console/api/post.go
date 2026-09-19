@@ -287,7 +287,12 @@ func (h *Handler) listPosts(c *gin.Context) {
 
 	// Spec 62：筛选、搜索与分页下推 SQL（ListFiltered 单次 COUNT + 单次分页查询，
 	// 使用轻量 postListCols 投影，替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式）。
-	posts, total, err := h.store.ListFiltered(status, category, tag, search, page, size)
+	var authorID *int64
+	if !contextHasPermission(c, store.PermissionContentManageAny) {
+		uid := c.GetInt64("userID")
+		authorID = &uid
+	}
+	posts, total, err := h.store.ListFilteredByAuthor(authorID, status, category, tag, search, page, size)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
@@ -304,6 +309,9 @@ func (h *Handler) listPosts(c *gin.Context) {
 // getPost GET /api/v1/posts/:slug：文章详情。
 func (h *Handler) getPost(c *gin.Context) {
 	slug := c.Param("slug")
+	if !h.requirePostOwnership(c, slug) {
+		return
+	}
 	p, err := h.store.GetBySlug(slug)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, err.Error())
@@ -407,7 +415,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -493,7 +501,7 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
-	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -535,7 +543,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		failPostTopic(c, err)
 		return
 	}
-	if err := h.normalizePostAuthorsRequest(c, &req, existing.Authors); err != nil {
+	if err := h.normalizePostAuthorsRequest(c, &req, existing); err != nil {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
@@ -609,34 +617,11 @@ func (h *Handler) discardPostDraft(c *gin.Context) {
 // existing 为保存前查出的旧记录；p 为新内容（p.Slug 已设）；newSlug 为目标 slug。
 // 内容无变化（content_md + title 均相同）时不产生空版本。
 func (h *Handler) savePostWithSnapshot(existing, p *store.Post, newSlug string) error {
-	// 直接更新原记录：保持文章 ID、创建时间、阅读量及关联数据，并把
-	// revision slug 一并放进同一事务。索引/OG 失效回调只在提交成功后触发。
+	// 存储层在事务内重新读取旧正文并完成文章更新、revision 写入和 slug 迁移。
+	// existing 仍用于保持当前 API 的调用和响应语义，但不作为快照数据源。
 	p.ID = existing.ID
 	p.CreatedAt = existing.CreatedAt
-	if err := h.store.UpdateSlug(existing.Slug, newSlug, p); err != nil {
-		return err
-	}
-	h.snapshotRevision(existing, p)
-	return nil
-}
-
-// snapshotRevision 把保存前的旧版本写入 revisions；内容无变化则跳过。
-// 版本快照失败记日志（告警级：历史版本丢失不可自动恢复）。
-func (h *Handler) snapshotRevision(old, neu *store.Post) {
-	if old.ContentMD == neu.ContentMD && old.Title == neu.Title {
-		return
-	}
-	if _, err := h.store.CreateRevision(&store.Revision{
-		PostSlug:  neu.Slug,
-		Title:     old.Title,
-		Excerpt:   old.Excerpt,
-		ContentMD: old.ContentMD,
-		Tags:      old.Tags,
-		Category:  old.Category,
-		Status:    old.Status,
-	}); err != nil {
-		log.Printf("create revision for %s: %v", neu.Slug, err)
-	}
+	return h.store.UpdateSlugWithRevision(existing.Slug, newSlug, p)
 }
 
 // deletePost DELETE /api/v1/posts/:slug：软删除文章（移入回收站）。
@@ -867,10 +852,28 @@ func normalizeAuthorIDs(ids []string) []string {
 	return out
 }
 
-// normalizePostAuthorsRequest 区分旧请求与新请求：authors 缺省时，单个 author 仍可替换作者；
-// 两者都缺省时保留已有关联。明确传 [] 则清空作者。author 角色随后由服务端强制
-// 绑定当前用户，不能信任请求体里的作者引用。
-func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, fallback []string) error {
+// normalizePostAuthorsRequest 对管理员兼容 authors/author 请求；普通作者新建时绑定自己，
+// 更新时保留已授权文章的完整署名关系，忽略客户端提供的作者替换。
+func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, existing *store.Post) error {
+	if !contextHasPermission(c, store.PermissionContentManageAny) {
+		if existing == nil {
+			return forceCurrentAuthor(c, req)
+		}
+		// 归属已由入口校验。保留数据库 ID，不能把数字用户名重新解释为另一个用户 ID。
+		if !contextHasPermission(c, store.PermissionContentWrite) || len(existing.AuthorIDs) == 0 {
+			return fmt.Errorf("cannot preserve authorized post authors")
+		}
+		req.authorIDs = append([]int64(nil), existing.AuthorIDs...)
+		req.authorRefs = make([]string, 0, len(req.authorIDs))
+		for _, id := range req.authorIDs {
+			req.authorRefs = append(req.authorRefs, strconv.FormatInt(id, 10))
+		}
+		req.Author = req.authorRefs[0]
+		data, err := json.Marshal(req.authorRefs)
+		req.Authors = data
+		return err
+	}
+
 	raw := bytes.TrimSpace(req.Authors)
 	var ids []string
 	provided := len(raw) > 0
@@ -884,8 +887,11 @@ func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, 
 	if !provided {
 		if legacy := strings.TrimSpace(req.Author); legacy != "" {
 			ids = []string{legacy}
-		} else {
-			ids = append([]string(nil), fallback...)
+		} else if existing != nil {
+			// 未请求修改署名时，管理员也保留稳定 ID，避免数字用户名歧义。
+			for _, id := range existing.AuthorIDs {
+				ids = append(ids, strconv.FormatInt(id, 10))
+			}
 		}
 	}
 	ids = normalizeAuthorIDs(ids)
@@ -900,7 +906,7 @@ func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, 
 		return err
 	}
 	req.Authors = b
-	return forceCurrentAuthor(c, req)
+	return nil
 }
 
 func normalizeTags(raw string) string {

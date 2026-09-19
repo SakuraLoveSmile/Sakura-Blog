@@ -8,6 +8,7 @@ import { configureApiTransport } from "@blog/api-client";
 import { permissionDirective } from "@/directives/permission";
 import { i18n } from "@/i18n";
 import { Dialog, Toast } from "@/components/ui";
+import { useAuthStore } from "@/stores/auth";
 import App from "./App.vue";
 import router from "./router";
 import "@fontsource/dm-sans/latin-400.css";
@@ -18,9 +19,13 @@ import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/main.css";
 
+document.documentElement.setAttribute("data-app", "console");
+
 let unauthorizedDialogOpen = false;
 
 function handleUnauthorized() {
+  useAuthStore().clearSession();
+  queryClient.clear();
   // A burst of parallel queries can all receive 401 at once. Keep one dialog
   // and let the user choose when to leave the current page.
   if (router.currentRoute.value.path === "/login" || unauthorizedDialogOpen) return;

@@ -4,8 +4,12 @@ import (
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"sync/atomic"
 )
+
+var siteUpdateMu sync.Mutex
 
 // RebuildSite 从 DB 重新加载 settings/links，构建全新 *tmpl.Site 后经 atomic.Pointer
 // 复制-交换发布，消除前台渲染（无锁读）与热更新写入之间的数据竞争。
@@ -13,16 +17,50 @@ import (
 // Admin.AuthEnabled 从 users 表 admin 用户派生（Spec 61 阶段 4 起密码唯一真值在 users 表）。
 // 设置/友链保存后调用以实现热更新。
 func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
+	siteUpdateMu.Lock()
+	defer siteUpdateMu.Unlock()
 	settings, err := st.AllSettings()
 	if err != nil {
 		return err
 	}
-	links, err := st.ListLinks()
+	next, err := buildSite(st, site.Load(), settings)
 	if err != nil {
 		return err
 	}
+	site.Store(next)
+	InvalidateLoadAI()
+	return nil
+}
 
-	next := *site.Load() // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
+// RebuildSiteFromBase 使用恢复后的文件配置作基底，在同一锁内构造并发布完整快照。
+func RebuildSiteFromBase(st *store.Store, site *atomic.Pointer[tmpl.Site], base *tmpl.Site) error {
+	siteUpdateMu.Lock()
+	defer siteUpdateMu.Unlock()
+	settings, err := st.AllSettings()
+	if err != nil {
+		return err
+	}
+	next, err := buildSite(st, base, settings)
+	if err != nil {
+		return err
+	}
+	site.Store(next)
+	InvalidateLoadAI()
+	return nil
+}
+
+func buildSite(st *store.Store, current *tmpl.Site, settings map[string]string) (*tmpl.Site, error) {
+	if err := validateSettingsSnapshot(settings); err != nil {
+		return nil, err
+	}
+	links, err := st.ListLinks()
+	if err != nil {
+		return nil, err
+	}
+	if current == nil {
+		return nil, fmt.Errorf("site snapshot is nil")
+	}
+	next := *current // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
 	next.Links = groups
@@ -30,12 +68,10 @@ func RebuildSite(st *store.Store, site *atomic.Pointer[tmpl.Site]) error {
 	// 无密码站点（哈希为空/无 admin 用户）保持全放行语义。
 	adminUser, err := st.GetUserByUsername("admin")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	next.Admin.AuthEnabled = adminUser != nil && adminUser.PasswordHash != ""
-	site.Store(&next)
-	InvalidateLoadAI() // Spec 61 阶段 5：设置保存后 AI 配置缓存失效，下次读取重载
-	return nil
+	return &next, nil
 }
 
 // parsedSections 是 settings 分段的解析结果。解析与赋值分离，保证 RebuildSite 的全量替换
@@ -63,6 +99,8 @@ type parsedSections struct {
 	defaultAssets tmpl.DefaultAssets
 	pages         tmpl.PagesConfig
 	dataCache     tmpl.DataCacheConfig
+	services      tmpl.ServicesConfig
+	feedback      tmpl.FeedbackConfig
 }
 
 func parseSections(settings map[string]string) parsedSections {
@@ -113,28 +151,20 @@ func parseSections(settings map[string]string) parsedSections {
 	if parsed.article.PinStyle == "" {
 		parsed.article.PinStyle = "carousel"
 	}
-	if parsed.search.Service == "" {
-		parsed.search.Service = "local_search"
-	}
-	if parsed.search.LocalSearch.Field == "" {
-		parsed.search.LocalSearch.Field = "all"
-	}
-	if parsed.search.LocalSearch.Path == "" {
-		parsed.search.LocalSearch.Path = "/search.json"
-	}
-	if parsed.search.LocalSearch.Content == nil {
-		v := true
-		parsed.search.LocalSearch.Content = &v
-	}
+	parsed.search.FillDefaults()
 	unmarshal(SectionWidgets, &parsed.widgets)
 	unmarshal(SectionCover, &parsed.cover)
 	unmarshal(SectionNavTabs, &parsed.navTabs)
 	unmarshal(SectionAuthors, &parsed.authors)
 	unmarshal(SectionPlugins, &parsed.plugins)
 	unmarshal(SectionTagPlugins, &parsed.tagPlugins)
+	parsed.tagPlugins.FillDefaults()
 	unmarshal(SectionDefault, &parsed.defaultAssets)
 	unmarshal(SectionPages, &parsed.pages)
 	unmarshal(SectionDataCache, &parsed.dataCache)
+	parsed.dataCache.FillDefaults()
+	unmarshal(SectionServices, &parsed.services)
+	unmarshal(SectionFeedback, &parsed.feedback)
 	return parsed
 }
 
@@ -154,7 +184,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 		site.Title = parsed.basic.Title
 		site.Subtitle = parsed.basic.Subtitle
 		site.Description = parsed.basic.Description
-		site.URL = parsed.basic.URL
+		site.URL = tmpl.NormalizeSiteURL(parsed.basic.URL)
 		site.Avatar = parsed.basic.Avatar
 		site.AvatarBG = parsed.basic.AvatarBG
 		site.LogoTitle = parsed.basic.LogoTitle
@@ -184,6 +214,8 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionDefault, func() { site.Default = parsed.defaultAssets })
 	assign(SectionPages, func() { site.Pages = parsed.pages })
 	assign(SectionDataCache, func() { site.DataCache = parsed.dataCache })
+	assign(SectionServices, func() { site.Services = parsed.services })
+	assign(SectionFeedback, func() { site.Feedback = parsed.feedback })
 }
 
 // rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。

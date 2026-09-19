@@ -101,6 +101,6 @@
           utils.dom(el).append(section);
         }
         window.wrapLazyloadImages(el);
-      });
+      }, undefined, { service: 'friends_and_posts' });
     }
 })();

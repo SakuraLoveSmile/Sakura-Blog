@@ -210,7 +210,6 @@ func (h *Handler) mergeUCPostBody(c *gin.Context) bool {
 	if !existing.PublishAt.IsZero() {
 		publishAt = existing.PublishAt.Format("2006-01-02T15:04")
 	}
-	authors, _ := json.Marshal(existing.Authors)
 	full := postRequest{
 		Slug: existing.Slug, Title: input.Title, Excerpt: input.Excerpt,
 		Cover: existing.Cover, Banner: existing.Banner, Category: existing.Category,
@@ -218,7 +217,7 @@ func (h *Handler) mergeUCPostBody(c *gin.Context) bool {
 		TopicID: json.RawMessage(strconv.FormatInt(existing.TopicID, 10)), Tags: input.Tags,
 		ContentMD: input.ContentMD, Status: input.Status, Pinned: existing.Pinned,
 		Password: existing.Password, PublishAt: publishAt, MetaDescription: existing.MetaDescription,
-		MetaKeywords: existing.MetaKeywords, Authors: authors, Author: existing.Author, AILabel: existing.AILabel,
+		MetaKeywords: existing.MetaKeywords, AILabel: existing.AILabel,
 	}
 	encoded, err := json.Marshal(full)
 	if err != nil {
@@ -295,8 +294,7 @@ func (h *Handler) deleteUCAttachment(c *gin.Context) {
 		Fail(c, http.StatusNotFound, "附件不存在")
 		return
 	}
-	if attachment.OwnerID != c.GetInt64("userID") {
-		AbortFail(c, http.StatusForbidden, "无权限：只能管理自己的附件")
+	if !h.requireAttachmentOwnership(c, attachment) {
 		return
 	}
 	if attachment.Path != "" {

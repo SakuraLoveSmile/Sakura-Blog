@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -58,5 +59,31 @@ func TestPageViewBufferBatchThreshold(t *testing.T) {
 			t.Fatalf("batch threshold not flushed in time, count = %d", n)
 		}
 		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestPageViewBufferDropsBatchDuringMaintenance(t *testing.T) {
+	st, err := store.New(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	if err := st.EnsurePageViewsTable(); err != nil {
+		t.Fatalf("ensure table: %v", err)
+	}
+	window, err := st.Maintenance().Begin(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("begin maintenance: %v", err)
+	}
+	b := newPageViewBuffer(st)
+	b.push(store.PageView{Path: "/maintenance", UAHash: "h"})
+	b.close()
+	window.Close()
+	count, err := st.CountPageViews()
+	if err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("maintenance batch wrote %d views after maintenance closed", count)
 	}
 }

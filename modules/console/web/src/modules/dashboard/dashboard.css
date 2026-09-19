@@ -26,9 +26,7 @@
 }
 .dashboard-viewport.is-preview {
   padding: 16px 0 40px;
-  background:
-    radial-gradient(ellipse at top, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 60%),
-    var(--color-background);
+  background: var(--color-background);
 }
 .dashboard-canvas {
   margin: 0 auto;
@@ -71,7 +69,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  box-shadow: 0 0 22px -8px var(--color-primary);
+  box-shadow: none;
 }
 
 .apple-edit-hint {
@@ -492,9 +490,7 @@
 
 /* ===== Card base ===== */
 .apple-card {
-  background:
-    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--color-primary) 3.5%, transparent) 0%, transparent 60%),
-    color-mix(in srgb, var(--color-card) 78%, transparent);
+  background: color-mix(in srgb, var(--color-card) 78%, transparent);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 20px;
@@ -522,7 +518,7 @@
 
 .apple-card:hover {
   border-color: color-mix(in srgb, #fff 16%, transparent);
-  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5);
   transform: translateY(-2px);
 }
 
@@ -584,7 +580,7 @@
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--stat-color, var(--color-primary));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stat-color, var(--color-primary)) 12%, transparent), 0 0 10px var(--stat-color, var(--color-primary));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--stat-color, var(--color-primary)) 16%, transparent);
   animation: dashboard-pulse 2.2s ease-in-out infinite;
 }
 
@@ -689,7 +685,7 @@
   border: 1px solid color-mix(in srgb, var(--stat-color, var(--color-primary)) 28%, transparent);
   border-radius: 50%;
   background: color-mix(in srgb, var(--stat-color, var(--color-primary)) 10%, transparent);
-  box-shadow: 0 0 22px -8px var(--stat-color, var(--color-primary));
+  box-shadow: none;
   animation: dashboard-pulse 2.4s ease-in-out infinite;
 }
 
@@ -882,9 +878,7 @@
 
 .version-card.is-attention {
   border-color: color-mix(in srgb, var(--color-state-warning) 28%, transparent);
-  background:
-    radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--color-state-warning) 12%, transparent), transparent 58%),
-    color-mix(in srgb, var(--color-card) 78%, transparent);
+  background: color-mix(in srgb, var(--color-card) 78%, transparent);
 }
 
 .version-card-header,
@@ -1171,6 +1165,42 @@
 .apple-edit-size-btn:hover {
   transform: scale(1.1);
   background: var(--color-primary);
+}
+
+.apple-edit-btn-move {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-foreground) 15%, transparent);
+  color: var(--color-foreground);
+  border: 1px solid color-mix(in srgb, #fff 15%, transparent);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-standard);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.apple-edit-btn-move:hover:not(:disabled) {
+  transform: scale(1.1);
+  background: color-mix(in srgb, var(--color-foreground) 25%, transparent);
+}
+
+.apple-edit-btn-move:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.apple-edit-btn-move:focus-visible,
+.apple-remove-btn:focus-visible,
+.apple-edit-size-btn:focus-visible,
+.apple-drag-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .apple-drag-handle {

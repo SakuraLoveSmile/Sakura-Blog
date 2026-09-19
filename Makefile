@@ -80,7 +80,7 @@ css:
 		echo "css: Stellar web 依赖缺失，执行 pnpm install（workspace 锁 stylus 0.62.0）"; \
 		pnpm install --frozen-lockfile; \
 	fi
-	cd modules/stellar/web && pnpm exec node build/stylus/compile.js
+	cd modules/stellar/web && pnpm exec node build/stylus/compile.js --clean
 
 ## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
@@ -147,11 +147,11 @@ merge-check:
 		dev|main|release|"") echo "merge-check: 当前分支 '$$branch' 不是 feature 分支，中止" >&2; exit 1;; \
 	esac; \
 	$(MAKE) test || { echo "merge-check: make test 失败，中止合并（dev 未被改动）" >&2; exit 1; }; \
-	git -C $(DEV_WORKTREE) merge "$$branch" || { echo "merge-check: 合入 dev 失败（多为冲突），dev 未被改动，请先 rebase 最新 dev 解决冲突后重试" >&2; exit 1; }; \
-	echo "merge-check: 已合入 dev（$(DEV_WORKTREE)），复验合并后组合态"; \
-	$(MAKE) -C $(DEV_WORKTREE) test || { \
+	git -C "$$dev_worktree" merge "$$branch" || { echo "merge-check: 合入 dev 失败（多为冲突），dev 未被改动，请先 rebase 最新 dev 解决冲突后重试" >&2; exit 1; }; \
+	echo "merge-check: 已合入 dev（$$dev_worktree），复验合并后组合态"; \
+	$(MAKE) -C "$$dev_worktree" test || { \
 		echo "merge-check: 合并后组合态 make test 失败，dev 已含本次合并但未通过门禁" >&2; \
-		echo "merge-check: 回退指引：git -C $(DEV_WORKTREE) reset --hard ORIG_HEAD（dev 回到合并前状态）" >&2; \
+		echo "merge-check: 回退指引：git -C \"$$dev_worktree\" reset --hard ORIG_HEAD（dev 回到合并前状态）" >&2; \
 		echo "merge-check: 回退后请在本分支 rebase 最新 dev，修复兼容问题后重试 merge-check" >&2; \
 		exit 1; \
 	}; \

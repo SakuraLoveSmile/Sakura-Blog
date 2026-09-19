@@ -692,7 +692,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
               <div class="text-[13px] font-medium text-foreground">置顶</div>
               <div class="mt-0.5 text-[11px] text-text-tertiary">在文章列表顶部显示</div>
             </div>
-            <VSwitch v-model="form.pinned" />
+            <VSwitch v-model="form.pinned" aria-label="置顶" />
           </div>
           <div>
             <label :class="labelCls">定时发布</label>

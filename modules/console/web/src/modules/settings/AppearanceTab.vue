@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { VButton, Dialog, Toast } from "@/components/ui";
+import { VButton, VSwitch, Dialog, Toast } from "@/components/ui";
 import AttachmentField from "@/components/AttachmentField.vue";
+import { normalizeStyleSettings } from "./settings-state";
 
 const props = defineProps<{
   data: Record<string, any>;
@@ -23,7 +24,8 @@ function defaultStyle(): Record<string, any> {
     // blur_px 为 px 字符串（后端 string 字段，直接注入 CSS）；留空 = 回退主题内置值
     leftbar: { ui_style: "card", background_color_dark: "", background_image: "", blur_px: "", background_opacity: "" },
     site: { background_image: "", blur_px: "", blur_sat: "", blur_bg: "" },
-    codeblock: { scrollbar: "" },
+    codeblock: { scrollbar: "", highlightjs_theme: "" },
+    page_transition: { enable: true },
     header_prefix: { h2: "", h3: "", h4: "", h5: "" },
     text_align: "",
     border_radius: {
@@ -45,33 +47,6 @@ function defaultStyle(): Record<string, any> {
   };
 }
 
-// 容错：加载数据缺键时补齐，保证 header_prefix 的 v-model 绑定路径安全；非 h2-h5 存量键保留不动。
-// 类型守卫：存量数据经「高级 JSON」保存后 header_prefix 可能为非对象 primitive（如字符串），
-// 对 primitive 赋属性会抛 TypeError 导致设置页白屏 → 非对象（含数组）整体重置为 {}
-const hpRaw = props.data.style.header_prefix;
-if (!hpRaw || typeof hpRaw !== "object" || Array.isArray(hpRaw)) {
-  props.data.style.header_prefix = {};
-}
-const hpSafe = props.data.style.header_prefix as Record<string, any>;
-for (const k of ["h2", "h3", "h4", "h5"] as const) {
-  if (hpSafe[k] === undefined) hpSafe[k] = "";
-}
-// 容错：存量 blur_px 可能为历史遗留数值（后端字段为 string，数字无法保存），统一规范化为 px 字符串
-if (typeof props.data.style.leftbar?.blur_px === "number") {
-  const n = props.data.style.leftbar.blur_px as number;
-  props.data.style.leftbar.blur_px = n > 0 ? numPx(n) : "";
-}
-
-// 容错：存量 style 可能缺 border_radius/gradient/paginator 键，补齐保证 v-model 绑定路径安全
-const styleRef = props.data.style as Record<string, any>;
-styleRef.border_radius = styleRef.border_radius || {};
-styleRef.gradient = styleRef.gradient || {};
-styleRef.animated_avatar = styleRef.animated_avatar || {};
-styleRef.loading = styleRef.loading || {};
-styleRef.corner_shape = styleRef.corner_shape || "superellipse(1.25)";
-styleRef.leftbar = styleRef.leftbar || {};
-styleRef.leftbar.ui_style = styleRef.leftbar.ui_style || "card";
-
 /** 恢复默认初始值（内存重置，需点保存才生效） */
 function resetStyle() {
   Dialog.warning({
@@ -79,7 +54,7 @@ function resetStyle() {
     description: "将清空所有外观自定义（主题色/字号/字体/背景等），回退到主题内置值。需点击保存后生效。",
     confirmType: "danger",
     onConfirm: () => {
-      props.data.style = defaultStyle();
+      props.data.style = normalizeStyleSettings(defaultStyle());
       Toast.success("已恢复默认，点击保存后生效");
     },
   });
@@ -110,24 +85,60 @@ function rangeFill(val: number, min: number, max: number): string {
       <p class="subsection-title">主题色</p>
       <div class="form-grid form-grid-3">
         <div class="field">
-          <label>主题色 (theme)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">主题色 (theme)</label>
+            <span v-if="data.style.color?.theme" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.theme = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.theme" class="apple-color" />
-            <input v-model="data.style.color.theme" :class="inputCls" placeholder="#2E8DFF" />
+            <input
+              type="color"
+              :value="data.style.color?.theme || '#2E8DFF'"
+              class="apple-color"
+              @input="data.style.color.theme = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.theme" :class="inputCls" placeholder="#2E8DFF (默认)" />
           </div>
         </div>
         <div class="field">
-          <label>强调色 (accent)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">强调色 (accent)</label>
+            <span v-if="data.style.color?.accent" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.accent = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.accent" class="apple-color" />
-            <input v-model="data.style.color.accent" :class="inputCls" placeholder="#ff9800" />
+            <input
+              type="color"
+              :value="data.style.color?.accent || '#ff9800'"
+              class="apple-color"
+              @input="data.style.color.accent = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.accent" :class="inputCls" placeholder="#ff9800 (默认)" />
           </div>
         </div>
         <div class="field">
-          <label>链接色 (link)</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="mb-0">链接色 (link)</label>
+            <span v-if="data.style.color?.link" class="settings-color-badge settings-color-badge-override">
+              已覆盖
+              <button type="button" class="settings-color-reset-btn" @click="data.style.color.link = ''">恢复默认</button>
+            </span>
+            <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+          </div>
           <div class="field-inline">
-            <input type="color" v-model="data.style.color.link" class="apple-color" />
-            <input v-model="data.style.color.link" :class="inputCls" placeholder="#2196f3" />
+            <input
+              type="color"
+              :value="data.style.color?.link || '#2196f3'"
+              class="apple-color"
+              @input="data.style.color.link = ($event.target as HTMLInputElement).value"
+            />
+            <input v-model="data.style.color.link" :class="inputCls" placeholder="#2196f3 (默认)" />
           </div>
         </div>
       </div>
@@ -240,14 +251,30 @@ function rangeFill(val: number, min: number, max: number): string {
           <option value="glass">光晕模式（背景图毛玻璃）</option>
         </select>
         <p v-if="data.style.leftbar.ui_style === 'glass' && !data.style.leftbar.background_image" class="hint">
-          光晕模式需配置下方「背景图片 URL」才有效果，未配置时前台仍呈现纯色卡片。
+          未配置背景图片时使用主题内置默认背景图；配置后将替换为自定义图片。
         </p>
       </div>
       <div class="field">
-        <label>背景色</label>
+        <div class="flex items-center justify-between mb-1">
+          <label class="mb-0">背景色</label>
+          <span v-if="data.style.leftbar?.background_color_dark" class="settings-color-badge settings-color-badge-override">
+            已覆盖
+            <button type="button" class="settings-color-reset-btn" @click="data.style.leftbar.background_color_dark = ''">恢复默认</button>
+          </span>
+          <span v-else class="settings-color-badge settings-color-badge-inherit">继承默认值</span>
+        </div>
         <div class="field-inline">
-          <input type="color" v-model="data.style.leftbar.background_color_dark" class="apple-color" />
-          <input v-model="data.style.leftbar.background_color_dark" :class="inputCls" />
+          <input
+            type="color"
+            :value="data.style.leftbar?.background_color_dark || '#1c1c1e'"
+            class="apple-color"
+            @input="data.style.leftbar.background_color_dark = ($event.target as HTMLInputElement).value"
+          />
+          <input
+            v-model="data.style.leftbar.background_color_dark"
+            :class="inputCls"
+            placeholder="#1c1c1e (默认)"
+          />
         </div>
       </div>
       <div class="field">
@@ -305,8 +332,17 @@ function rangeFill(val: number, min: number, max: number): string {
     <div class="subsection">
       <p class="subsection-title">代码块</p>
       <div class="field">
-        <label>高亮主题 URL (scrollbar)</label>
-        <input v-model="data.style.codeblock.scrollbar" :class="inputCls" placeholder="代码块高亮主题 CSS URL" />
+        <label>滚动条宽度 (scrollbar)</label>
+        <input v-model="data.style.codeblock.scrollbar" :class="inputCls" placeholder="如 4px，留空回退主题内置值" />
+      </div>
+      <div class="field">
+        <label>高亮主题 URL (highlightjs_theme)</label>
+        <input
+          v-model="data.style.codeblock.highlightjs_theme"
+          :class="inputCls"
+          placeholder="highlight.js 主题 CSS URL"
+        />
+        <p class="hint">配置对齐上游 style.codeblock.highlightjs_theme，由 head 注入 link 生效。</p>
       </div>
     </div>
 
@@ -344,6 +380,11 @@ function rangeFill(val: number, min: number, max: number): string {
             <option value="left">left</option>
             <option value="justify">justify（两端对齐）</option>
           </select>
+        </div>
+        <div class="field">
+          <label>整页过渡动画 (page_transition)</label>
+          <p class="hint">同源导航使用原生 View Transition（Stellar 1.43 默认开启）。</p>
+          <VSwitch v-model="data.style.page_transition.enable" aria-label="整页过渡动画" />
         </div>
       </div>
     </div>
@@ -454,7 +495,7 @@ function rangeFill(val: number, min: number, max: number): string {
 
     <!-- 保存 / 恢复默认 -->
     <div class="card-actions">
-      <VButton type="primary" size="sm" :loading="saving === 'style'" @click="emit('save', 'style')">
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'style'" @click="emit('save', 'style')">
         保存外观设置
       </VButton>
       <VButton size="sm" @click="resetStyle">恢复默认</VButton>

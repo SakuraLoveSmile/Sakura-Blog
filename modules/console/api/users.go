@@ -22,6 +22,7 @@ type userJSON struct {
 	Role        string   `json:"role"`
 	Roles       []string `json:"roles"`
 	Permissions []string `json:"permissions"`
+	Status      string   `json:"status"`
 	CreatedAt   string   `json:"created_at"`
 }
 
@@ -34,6 +35,7 @@ func toUserJSON(u *store.User) *userJSON {
 		Avatar:      u.Avatar,
 		Role:        u.Role,
 		Roles:       append([]string(nil), u.Roles...), Permissions: append([]string(nil), u.Permissions...),
+		Status:    u.Status,
 		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

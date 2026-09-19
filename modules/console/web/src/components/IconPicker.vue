@@ -14,6 +14,7 @@ import AttachmentPickerModal from "./AttachmentPickerModal.vue";
 // - 数据模块级缓存：多实例（菜单/右栏/页脚等多行）共享一次请求。
 const props = defineProps<{
   modelValue: string;
+  id?: string;
   placeholder?: string;
   compact?: boolean;
   hint?: string;
@@ -164,6 +165,7 @@ const groups = computed(() => {
         <Icon icon="ri:alert-line" />
       </span>
       <input
+        :id="id"
         :value="modelValue"
         class="apple-input ip-input"
         :placeholder="placeholder"

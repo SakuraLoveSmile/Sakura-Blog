@@ -54,15 +54,15 @@ async function save() {
           <span class="text-sm text-text-quaternary dark:text-foreground"
             >站点推送（文章发布时自动推送到搜索引擎）</span
           >
-          <VSwitch v-model="cfg.push.enabled" />
+          <VSwitch v-model="cfg.push.enabled" aria-label="站点推送" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-text-quaternary dark:text-foreground">爬虫记录（记录搜索引擎爬虫访问）</span>
-          <VSwitch v-model="cfg.crawler.enabled" />
+          <VSwitch v-model="cfg.crawler.enabled" aria-label="爬虫记录" />
         </label>
         <label class="flex items-center justify-between">
           <span class="text-sm text-text-quaternary dark:text-foreground">搜索流量（统计搜索引擎来源访问）</span>
-          <VSwitch v-model="cfg.traffic.enabled" />
+          <VSwitch v-model="cfg.traffic.enabled" aria-label="搜索流量" />
         </label>
       </div>
     </VCard>

@@ -23,7 +23,17 @@
     });
   }
 
-  window.addEventListener('stellar:sites-ready', function () {
+  function refreshSiteCardIcons() {
     setSiteCardIcon();
-  });
+  }
+
+  // sites.js and siteinfo.js are loaded independently by the service scanner.
+  // Handle both load orders so the custom API is not missed when sites.js
+  // finishes before this listener is registered.
+  window.addEventListener('stellar:sites-ready', refreshSiteCardIcons);
+  if (document.readyState !== 'loading') {
+    refreshSiteCardIcons();
+  } else {
+    document.addEventListener('DOMContentLoaded', refreshSiteCardIcons);
+  }
 })();

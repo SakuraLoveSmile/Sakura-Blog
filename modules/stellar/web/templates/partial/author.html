@@ -94,18 +94,24 @@
 {{- /* 4. paginator：分页器（对齐 index.html 的分页结构，链接指回 /author/:id/） */}}
 {{if .Paginator}}
 {{if gt .Paginator.Total 1}}
-<div class="paginator-wrap dis-select">
-  <nav class="paginator">
-    {{if gt .Paginator.Current 1}}
-    <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/author/{{.Page.Author}}/{{else}}/author/{{.Page.Author}}/?page={{sub .Paginator.Current 1}}{{end}}">{{icon "default:arrow-left"}}</a>
-    {{end}}
-    {{range .Paginator.Pages}}
-    <a class="page-number{{if eq . $.Paginator.Current}} current{{end}}" href="{{if eq . 1}}/author/{{$.Page.Author}}/{{else}}/author/{{$.Page.Author}}/?page={{.}}{{end}}">{{.}}</a>
-    {{end}}
-    {{if lt .Paginator.Current .Paginator.Total}}
-    <a class="extend next" rel="next" href="/author/{{.Page.Author}}/?page={{add .Paginator.Current 1}}">{{icon "default:arrow-right"}}</a>
-    {{end}}
-  </nav>
+<div class="paginator-wrap dis-select{{if and .Site.Plugins.ScrollReveal .Site.Plugins.ScrollReveal.Enable}} slide-up{{end}}">
+  {{if gt .Paginator.Current 1}}
+  <a class="extend prev" rel="prev" href="{{if eq .Paginator.Current 2}}/author/{{.Page.Author}}/{{else}}/author/{{.Page.Author}}/?page={{sub .Paginator.Current 1}}{{end}}">{{icon "default:arrow-left"}}</a>
+  {{else}}
+  <span class="extend prev" rel="prev">{{icon "default:arrow-left"}}</span>
+  {{end}}
+  {{range .Paginator.Pages}}
+  {{if eq . $.Paginator.Current}}
+  <span class="page-number current">{{.}}</span>
+  {{else}}
+  <a class="page-number" href="{{if eq . 1}}/author/{{$.Page.Author}}/{{else}}/author/{{$.Page.Author}}/?page={{.}}{{end}}">{{.}}</a>
+  {{end}}
+  {{end}}
+  {{if lt .Paginator.Current .Paginator.Total}}
+  <a class="extend next" rel="next" href="/author/{{.Page.Author}}/?page={{add .Paginator.Current 1}}">{{icon "default:arrow-right"}}</a>
+  {{else}}
+  <span class="extend next" rel="next">{{icon "default:arrow-right"}}</span>
+  {{end}}
 </div>
 {{end}}
 {{end}}

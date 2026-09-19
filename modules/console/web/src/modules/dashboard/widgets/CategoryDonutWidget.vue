@@ -320,6 +320,29 @@ function openCategory(name: string) {
         </div>
       </div>
     </div>
+
+    <!-- 读屏器与无障碍数据表格摘要 -->
+    <div class="sr-only">
+      <h4>文章分类分布明细</h4>
+      <p>共 {{ data.length }} 个分类，总计 {{ total }} 篇文章。</p>
+      <table>
+        <caption>分类分布数据</caption>
+        <thead>
+          <tr>
+            <th scope="col">分类名称</th>
+            <th scope="col">文章数</th>
+            <th scope="col">占比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in displayData" :key="item.name">
+            <td>{{ item.name }}</td>
+            <td>{{ item.count }} 篇</td>
+            <td>{{ total > 0 ? Math.round((item.count / total) * 100) : 0 }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -367,6 +390,10 @@ function openCategory(name: string) {
   transition: background var(--duration-fast) var(--ease-standard);
 }
 .donut-legend-item.hovered { background: color-mix(in srgb, #fff 5%, transparent); }
+.donut-legend-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
 .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .donut-name { color: var(--color-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .donut-count { color: var(--color-muted-foreground); flex-shrink: 0; }

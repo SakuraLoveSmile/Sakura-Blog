@@ -22,7 +22,7 @@ const inputCls = "apple-input";
           <div class="text-sm font-medium text-text-secondary">封面文字自适应颜色</div>
           <p class="mt-1 text-xs text-text-quaternary">根据封面平均色调整 Hero、横幅和置顶内容的文字对比度</p>
         </div>
-        <VSwitch v-model="data.adaptive_text.enable" />
+        <VSwitch v-model="data.adaptive_text.enable" aria-label="封面文字自适应颜色" />
       </div>
     </div>
 
@@ -33,7 +33,7 @@ const inputCls = "apple-input";
           <div class="text-sm font-medium text-text-secondary">卡片 Hover 光斑与倾斜</div>
           <p class="mt-1 text-xs text-text-quaternary">为文章、文库、link/grid 卡片启用 Spotlight 与 3D Tilt（桌面精细指针）</p>
         </div>
-        <VSwitch v-model="data.card_hover.enable" />
+        <VSwitch v-model="data.card_hover.enable" aria-label="卡片 Hover 光斑与倾斜" />
       </div>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -82,6 +82,10 @@ const inputCls = "apple-input";
           <label class="text-xs text-text-tertiary mb-1 block">间隔（ms）</label>
           <input v-model.number="data.scrollreveal.interval" type="number" :class="inputCls" placeholder="100" />
         </div>
+        <div>
+          <label class="text-xs text-text-tertiary mb-1 block">初始缩放（0.1–1，0=默认）</label>
+          <input v-model.number="data.scrollreveal.scale" type="number" min="0" max="1" step="0.05" :class="inputCls" placeholder="1" />
+        </div>
       </div>
     </div>
 
@@ -102,6 +106,14 @@ const inputCls = "apple-input";
       <div>
         <label class="text-xs text-text-tertiary mb-1 block">选择器（空用默认 div.lazy-box&gt;img.lazy）</label>
         <input v-model="data.fancybox.selector" :class="inputCls" placeholder="div.lazy-box>img.lazy" />
+      </div>
+      <div>
+        <label class="text-xs text-text-tertiary mb-1 block">加载模式（mode）</label>
+        <select v-model="data.fancybox.mode" :class="inputCls">
+          <option value="">auto（默认：有可弹窗图片才加载）</option>
+          <option value="auto">auto</option>
+          <option value="global">global（所有页面加载）</option>
+        </select>
       </div>
     </div>
 
@@ -190,6 +202,6 @@ const inputCls = "apple-input";
   </div>
 
   <div class="mt-4">
-    <VButton type="primary" size="sm" :loading="saving === 'plugins'" @click="emit('save')">保存插件设置</VButton>
+    <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'plugins'" @click="emit('save')">保存前端增强</VButton>
   </div>
 </template>

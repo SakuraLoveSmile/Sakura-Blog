@@ -10,7 +10,7 @@ import (
 // runShortcodes 便捷调用：identity renderMD + 简单 icon 桩，不依赖 goldmark/GitHub。
 func runShortcodes(md string) string {
 	iconFunc := func(key string) string { return `<svg data-icon="` + key + `"></svg>` }
-	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, settings.TagPluginsConfig{})
+	return processShortcodes(md, func(s string) string { return s }, func(s string) string { return s }, iconFunc, nil, nil, nil, nil, nil, settings.TagPluginsConfig{})
 }
 
 // TestShortcodeXSSMitigation 安全审计 2026-08-16 回归：用户可控的 shortcode 参数
@@ -28,6 +28,12 @@ func TestShortcodeXSSMitigation(t *testing.T) {
 			`<div class="title">&lt;b&gt;标题&lt;/b&gt;</div>`, `<div class="title"><b>`},
 		{"folding title 转义", `{% folding open:true <img src=x> %}内容{% endfolding %}`,
 			`<summary>&lt;img src=x&gt;</summary>`, `<summary><img`},
+		// D1 回归：child 未识别时曾被当成标题文本（渲染出「child:blue 标题」），
+		// 识别后非法值由白名单丢弃，既不输出 child 属性也不污染标题
+		{"folding child 非法值丢弃且不污染标题", `{% folding child:blue 标题 %}内容{% endfolding %}`,
+			`<summary>标题</summary>`, `child=`},
+		{"folding child 注入值丢弃", `{% folding child:codeblock<script> 标题 %}内容{% endfolding %}`,
+			`<summary>标题</summary>`, `<script>`},
 		{"[[text]] 快捷语法转义", `[[<script>alert(1)</script>]]`,
 			`<u class="p tag-plugin">&lt;script&gt;`, `<u class="p tag-plugin"><script>`},
 		{"{color|text} text 转义", `{red|<b>红</b>}`,
@@ -108,6 +114,76 @@ func TestShortcodeXSSMitigation(t *testing.T) {
 	}
 }
 
+// TestDropdownTag 覆盖 dropdown 标签渲染：DOM 对齐原版 dropdown.js:39-62，
+// 含方向/对齐白名单、open、外部链接 target、图标占位，以及标题转义与 javascript: 链接丢弃。
+func TestDropdownTag(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want []string
+		bad  []string
+	}{
+		{"基础结构", `{% dropdown 菜单 %}
+- [首页](/)
+- [关于](/about)
+{% enddropdown %}`,
+			[]string{
+				`<details class="tag-plugin dropdown" direction="auto" align="auto">`,
+				`<summary class="dropdown-trigger" title="菜单" aria-label="菜单"><span>菜单</span>`,
+				`<svg class="dropdown-arrow"`,
+				`<div class="dropdown-menu ui-collection" data-ui-surface="glass" data-layout="list" data-variant="nav" data-density="compact">`,
+				`<a class="dropdown-item ui-collection__item card-hover card-hover--spotlight" href="/" rel="noopener noreferrer">`,
+				`<span class="ui-collection__title">首页</span>`,
+				`href="/about" rel="noopener noreferrer">`,
+			}, []string{}},
+		{"方向/对齐白名单：非法值回退 auto", `{% dropdown direction:sideways align:center 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`direction="auto" align="auto"`}, []string{`direction="sideways"`, `align="center"`}},
+		{"open 渲染 open 属性", `{% dropdown open:true 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`<details class="tag-plugin dropdown" direction="auto" align="auto" open>`}, []string{}},
+		{"外部链接加 target=_blank rel", `{% dropdown 菜单 %}
+- [外站](https://example.com)
+{% enddropdown %}`,
+			[]string{`href="https://example.com" target="_blank" rel="external nofollow noopener noreferrer">`}, []string{}},
+		{"已知图标渲染 SVG", `{% dropdown 菜单 %}
+icon:home [首页](/)
+{% enddropdown %}`,
+			[]string{`<span class="ui-collection__leading"><svg data-icon="home"></svg></span>`}, []string{}},
+		{"非法图标 key 白名单安全回退", `{% dropdown 菜单 %}
+icon:<bad> [首页](/)
+{% enddropdown %}`,
+			[]string{`<span class="ui-collection__leading"></span>`}, []string{`<bad>`}},
+		{"标题转义", `{% dropdown <script>alert(1)</script> 菜单 %}
+- [首页](/)
+{% enddropdown %}`,
+			[]string{`title="&lt;script&gt;alert(1)&lt;/script&gt;"`, `aria-label="&lt;script&gt;alert(1)&lt;/script&gt;"`}, []string{`title="<script`}},
+		{"javascript: 链接被丢弃（危险项不渲染，安全项保留）", `{% dropdown 菜单 %}
+- [首页](/)
+- [陷阱](javascript:evil)
+{% enddropdown %}`,
+			[]string{`href="/" rel="noopener noreferrer">`, `<span class="ui-collection__title">首页</span>`}, []string{`javascript:`, `href="javascript`}},
+		{"空标题不渲染", `{% dropdown %}{% enddropdown %}`, []string{}, []string{`<details`}},
+		{"无下拉项不渲染", `{% dropdown 菜单 %}`, []string{}, []string{`<details`}},
+	}
+
+	for _, c := range cases {
+		out := runShortcodes(c.in)
+		for _, w := range c.want {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s 缺少期望片段 %q\n输出: %s", c.name, w, out)
+			}
+		}
+		for _, b := range c.bad {
+			if strings.Contains(out, b) {
+				t.Errorf("%s 出现禁止片段 %q\n输出: %s", c.name, b, out)
+			}
+		}
+	}
+}
+
 func TestRadioAndCheckboxCoexist(t *testing.T) {
 	out := runShortcodes("{% checkbox checked:true 选项A %}\n{% radio color:cyan 选项B %}")
 	if !strings.Contains(out, `<input type="checkbox" checked="true"/><span>选项A</span>`) {
@@ -125,6 +201,33 @@ func TestRadioCheckedPositional(t *testing.T) {
 	out := runShortcodes("{% radio checked 已选中 %}")
 	if !strings.Contains(out, `<input type="radio" checked="true"/><span>已选中</span>`) {
 		t.Errorf("radio checked not rendered: %s", out)
+	}
+}
+
+// TestFoldingChildParam D1 回归：folding 的 child 必须被识别为命名参数（对齐原版 folding.js
+// 的 ['color','child','open']），而此前它会被拼进标题文本。
+func TestFoldingChildParam(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"codeblock 保留", "{% folding child:codeblock 代码示例 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" child="codeblock">`},
+		{"iframe 保留", "{% folding child:iframe 视频 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" child="iframe">`},
+		{"与 color/open 共存", "{% folding color:cyan child:codeblock open:true 标题 %}内容{% endfolding %}",
+			`<details class="tag-plugin colorful folding" color="cyan" child="codeblock" open>`},
+		{"标题不再被 child 污染", "{% folding child:codeblock 代码示例 %}内容{% endfolding %}",
+			`<summary>代码示例</summary>`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := runShortcodes(tc.in)
+			if !strings.Contains(out, tc.want) {
+				t.Errorf("expected %q missing in: %s", tc.want, out)
+			}
+		})
 	}
 }
 

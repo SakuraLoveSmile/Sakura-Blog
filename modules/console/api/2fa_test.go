@@ -29,7 +29,7 @@ func TestGenerate2FATokenRandomFailure(t *testing.T) {
 	before := len(pending2FA.tokens)
 	pending2FA.Unlock()
 
-	token, err := generate2FATokenFrom(failingRandomReader{}, 42)
+	token, err := generate2FATokenFrom(failingRandomReader{}, 42, "test-secret")
 	if err == nil {
 		t.Fatal("random reader failure should be returned")
 	}
@@ -51,8 +51,8 @@ func TestLogin2FATokenGenerationFailure(t *testing.T) {
 	if err := st.UpdateTOTPSecret(user.ID, GenerateSecret(), GenerateRecoveryCodes(8)); err != nil {
 		t.Fatalf("enable 2fa: %v", err)
 	}
-	h.generate2FA = func(userID int64) (string, error) {
-		return generate2FATokenFrom(failingRandomReader{}, userID)
+	h.generate2FA = func(userID int64, authSecret string) (string, error) {
+		return generate2FATokenFrom(failingRandomReader{}, userID, authSecret)
 	}
 
 	pending2FA.Lock()

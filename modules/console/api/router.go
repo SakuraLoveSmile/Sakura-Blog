@@ -58,8 +58,8 @@ type Handler struct {
 
 	// gh GitHub 代理缓存客户端（Spec 54 友链导入用），可空。
 	gh *ghpkg.Client
-	// generate2FA is injectable only for testing secure-random failure handling.
-	generate2FA    func(int64) (string, error)
+	// generate2FA 仅用于注入安全随机数失败测试。
+	generate2FA    func(int64, string) (string, error)
 	stellarVersion string
 	stellarOwner   string
 	stellarRepo    string
@@ -141,7 +141,7 @@ func New(cfg Config) *Handler {
 	}
 
 	// 构造生产 execRunner（Supported() 在非 systemd 环境自动返回 false）
-	runner := updr.New(installDir)
+	runner := updr.New(installDir, cfg.UpdateService)
 
 	storageBackend := cfg.Storage
 	if cfg.StorageManager != nil {
@@ -260,6 +260,15 @@ func (h *Handler) register(r *gin.Engine) {
 	// RAG 前台问答：是否启用与 BYOK 策略在 handler 内判定。
 	v1.POST("/rag/ask/public", h.ragAskPublic)
 
+	// 组件库预览 Fixture 端点（Spec 63）：只服务 iframe 预览，不落库、不发外部请求，公开免鉴权以兼容 sandboxed srcdoc iframe
+	v1.GET("/preview/rating", h.previewRatingFixture)
+	v1.POST("/preview/rating", h.previewRatingFixtureSubmit)
+	v1.GET("/preview/vote/info", h.previewVoteFixtureInfo)
+	v1.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
+	v1.GET("/preview/friends", h.previewFriendsFixture)
+	v1.GET("/preview/sites", h.previewSitesFixture)
+	v1.GET("/preview/md", h.previewMDFixture)
+
 	// 需认证路由（账户级：资料/令牌/通知/改密，任何登录角色可用）
 	authed := v1.Group("", h.apiAuth())
 	{
@@ -357,15 +366,6 @@ func (h *Handler) register(r *gin.Engine) {
 		author.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
 		author.POST("/preview/post", h.createPostPreview)
-
-		// 组件库预览 Fixture 端点（Spec 63）：只服务预览，不落库、不发外部请求
-		author.GET("/preview/rating", h.previewRatingFixture)
-		author.POST("/preview/rating", h.previewRatingFixtureSubmit)
-		author.GET("/preview/vote/info", h.previewVoteFixtureInfo)
-		author.POST("/preview/vote/update", h.previewVoteFixtureUpdate)
-		author.GET("/preview/friends", h.previewFriendsFixture)
-		author.GET("/preview/sites", h.previewSitesFixture)
-		author.GET("/preview/md", h.previewMDFixture)
 
 		// 附件
 		author.GET("/attachments", h.listAttachments)
@@ -522,6 +522,9 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.GET("/backup/status", h.backupStatus)
 		sys.POST("/backup/restore", h.restoreBackup)
 		sys.POST("/backup/restore-snapshot", h.restoreSnapshot)
+		sys.POST("/backup/restores", h.startRestore)
+		sys.GET("/backup/restores", h.listRestoreTasks)
+		sys.GET("/backup/restores/:id", h.getRestoreTask)
 
 		// 友链（安全审计 2026-08-16 收进 sys）：links 表 URL 会驱动服务端出站探测/抓取
 		// （linkwatch/friends），探测结果回显构成 SSRF oracle，收敛到 admin 管理。
@@ -540,7 +543,8 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.POST("/rag/ask", h.ragAsk)
 		sys.POST("/rag/rebuild", h.ragRebuild)
 
-		// 系统更新（检查更新 / 一键更新 / 状态查询）
+		// 系统版本与更新（版本识别 / 检查更新 / 一键更新 / 状态查询）
+		sys.GET("/system/version", h.systemVersion)
 		sys.GET("/system/update/check", h.systemUpdateCheck)
 		sys.POST("/system/update/apply", h.systemUpdateApply)
 		sys.GET("/system/update/status", h.systemUpdateStatus)
@@ -576,7 +580,7 @@ func (h *Handler) apiAuth() gin.HandlerFunc {
 		if auth := c.GetHeader("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 			token := strings.TrimPrefix(auth, "Bearer ")
 			user, err := h.store.GetUserByAPITokenHash(store.HashAPIToken(token))
-			if err != nil || user == nil {
+			if err != nil || user == nil || user.Status == store.UserStatusBanned {
 				AbortFail(c, http.StatusUnauthorized, "API Token 无效或已撤销")
 				return
 			}
@@ -673,7 +677,7 @@ func (h *Handler) validAuthCookie(value, aud string) (int64, string, int64, stri
 		return 0, "", 0, "", false
 	}
 	user, _ := h.store.GetUserByID(userID)
-	if user == nil {
+	if user == nil || user.Status == store.UserStatusBanned {
 		return 0, "", 0, "", false
 	}
 	if _, _, ok := identity.VerifyCookie(value, identity.Audience(aud), user.AuthSecret, time.Now()); ok {

@@ -8,6 +8,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	Example     string
 	PreviewSet  bool
 	Services    []string
+	Plugins     []string
 	Fixture     string
 	MainJS      bool
 	Height      int
@@ -27,11 +28,13 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"quot": {
 		Title:       "小标题 Quot",
 		Description: "带前缀图标的强调小标题，可作为锚点标题。",
-		Signature:   "{% quot [el:h2] [icon:图标] text:文本 %}",
+		Signature:   "{% quot [el:h2] [icon:图标] [prefix:图标] [suffix:图标] text:文本 %}",
 		Example:     "{% quot el:h2 text:这是一个小标题 %}",
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "el", Desc: "标题标签：p/h2/h3/h4/h5/h6", Default: "p"},
 			{Name: "icon", Desc: "前缀图标 key（Iconify）", Default: "hashtag"},
+			{Name: "prefix", Desc: "前缀图标 key，优先级高于 icon", Default: "主题默认"},
+			{Name: "suffix", Desc: "后缀图标 key", Default: "主题默认"},
 			{Name: "text", Desc: "标题文本（也可用位置参数）", Default: "—"},
 		},
 	},
@@ -89,7 +92,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	},
 	"emoji": {
 		Title:       "表情 Emoji",
-		Description: "行内表情图，支持 QQ/贴吧/阿鲁/猫咪/twemoji 五种来源（完整清单见「素材速查」）。",
+		Description: "行内表情图，支持 default/qq/贴吧/阿鲁/猫咪/twemoji 六种来源（完整清单见「素材速查」）。",
 		Signature:   "{% emoji [来源] 名称 [height:高度] %}",
 		Example:     "开心 {% emoji aini %} 点赞 {% emoji twemoji 1f44d %} 滑稽 {% emoji tieba huaji %}",
 		PreviewSet:  true,
@@ -116,7 +119,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"folding": {
 		Title:       "折叠块 Folding",
 		Description: "可展开/收起的折叠区块，正文支持 Markdown。",
-		Signature:   "{% folding [color:颜色] [open:true] 标题 %} 正文 {% endfolding %}",
+		Signature:   "{% folding [color:颜色] [child:codeblock/iframe] [open:true] 标题 %} 正文 {% endfolding %}",
 		Example:     "{% folding color:cyan open:true 点击查看详情 %}\n这里是折叠内容，支持 **Markdown**。\n{% endfolding %}",
 		PreviewSet:  true,
 		MainJS:      true,
@@ -124,6 +127,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 		Fallback:    "折叠块为原生 details 结构，无需脚本即可展开/收起。",
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "color", Desc: "配色", Default: "—"},
+			{Name: "child", Desc: "子元素排版：codeblock（代码块）/iframe；其它值丢弃", Default: "—"},
 			{Name: "open", Desc: "true 时默认展开", Default: "false"},
 		},
 	},
@@ -144,12 +148,34 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"timeline": {
 		Title:       "时间轴 Timeline",
 		Description: "垂直时间轴，用 <!-- node 标题 --> 分隔节点。",
-		Signature:   "{% timeline %} <!-- node 时间 --> 内容 {% endtimeline %}",
+		Signature:   "{% timeline [api:URL] [user:用户] [hide:字段] %} <!-- node 时间 --> 内容 {% endtimeline %}",
 		Example:     "{% timeline %}\n<!-- node 2024-01 -->\n项目启动。\n<!-- node 2024-06 -->\n首个版本发布。\n{% endtimeline %}",
 		PreviewSet:  true,
 		Height:      260,
 		Fallback:    "时间轴内容来自示例正文，无需外部数据。",
-		ParamDocs:   []ShortcodeParamDoc{},
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "api", Desc: "数据服务 URL；填写后由客户端渲染时间流（组件库预览暂无 Fixture）", Default: "正文节点"},
+			{Name: "user", Desc: "只显示这些用户，逗号分隔", Default: "—"},
+			{Name: "limit", Desc: "透传给客户端，数量由 api 的 per_page 控制", Default: "—"},
+			{Name: "hide", Desc: "隐藏字段：user / title / footer，逗号分隔", Default: "—"},
+		},
+	},
+	"dropdown": {
+		Title:       "下拉菜单 Dropdown",
+		Description: "点击展开的菜单，下拉项每行一个 - [标题](链接)，可前缀 icon:key。",
+		Signature:   "{% dropdown [direction:up/down] [align:left/right] [open:true] 标题 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
+		Example:     "{% dropdown open:true direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n- [归档](/archives)\n{% enddropdown %}",
+		PreviewSet:  true,
+		Height:      260,
+		// dropdown.js 是前台独立插件脚本（base.html 无条件注入），负责把菜单 portal 到 body 实现悬浮定位
+		Plugins:  []string{"dropdown"},
+		Fallback: "菜单为原生 details 结构，无需脚本即可展开/收起（悬浮定位由前台 dropdown.js 增强）。",
+		ParamDocs: []ShortcodeParamDoc{
+			{Name: "direction", Desc: "弹出方向 up / down，留空自动", Default: "auto"},
+			{Name: "align", Desc: "对齐 left / right，留空自动", Default: "auto"},
+			{Name: "open", Desc: "true 时默认展开", Default: "false"},
+			{Name: "title", Desc: "触发按钮文字（也可用位置参数）", Default: "菜单"},
+		},
 	},
 	"gallery": {
 		Title:       "图片墙 Gallery",
@@ -393,7 +419,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 	"image": {
 		Title:       "增强图片 Image",
 		Description: "带尺寸/背景/下载/比例的增强图片。",
-		Signature:   "{% image src [alt] [width:宽] [bg:背景] [download:true] [ratio:比例] %}",
+		Signature:   "{% image src [alt] [width:宽] [bg:背景] [download:true/下载URL] [ratio:比例] %}",
 		Example:     "{% image /assets/img/preview/image-demo.jpg 博客界面截图 width:80% download:true %}",
 		PreviewSet:  true,
 		Height:      300,
@@ -401,7 +427,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 		ParamDocs: []ShortcodeParamDoc{
 			{Name: "width", Desc: "宽度（如 300px / 50%）", Default: "100%"},
 			{Name: "bg", Desc: "背景色", Default: "—"},
-			{Name: "download", Desc: "true 显示下载按钮", Default: "false"},
+			{Name: "download", Desc: "true 用图片本身作下载地址，也可填自定义下载 URL", Default: "不显示"},
 			{Name: "ratio", Desc: "宽高比（如 16/9）", Default: "—"},
 			{Name: "height", Desc: "高度（如 300px / 50%）", Default: "—"},
 			{Name: "padding", Desc: "内边距", Default: "—"},
@@ -465,15 +491,16 @@ var shortcodeDisplayMetadata = map[string]struct {
 	},
 	"albums": {
 		Title:       "专辑卡片 Albums",
-		Description: "方形网格专辑卡片，支持 repo/api 数据服务与 size 尺寸档位。",
-		Signature:   "{% albums [repo:owner/repo] [api:数据URL] [size:s/m/l/xl/mix] %}",
-		Example:     "{% albums api:https://example.com/data.json size:m %}",
+		Description: "方形网格专辑卡片，支持友链分组直出、repo/api 数据服务与 size 尺寸档位。",
+		Signature:   "{% albums [group] [repo:owner/repo] [api:数据URL] [size:s/m/l/xl/mix] %}",
+		Example:     "{% albums 朋友 size:m %}\n{% albums api:https://example.com/data.json size:m %}",
 		PreviewSet:  true,
 		Services:    []string{"friends"},
 		Fixture:     "friends",
 		Height:      300,
 		Fallback:    "专辑数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
 		ParamDocs: []ShortcodeParamDoc{
+			{Name: "group", Desc: "友链分组标题（按 site.yml links 服务端直出卡片流）", Default: "—"},
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "—"},
 			{Name: "size", Desc: "卡片尺寸：s/m/l/xl/mix", Default: "s"},
@@ -481,15 +508,16 @@ var shortcodeDisplayMetadata = map[string]struct {
 	},
 	"posters": {
 		Title:       "海报卡片 Posters",
-		Description: "竖版海报网格卡片，支持 repo/api 数据服务与 size 尺寸档位。",
-		Signature:   "{% posters [repo:owner/repo] [api:数据URL] [size:xs/s/m/l/xl/mix] %}",
-		Example:     "{% posters api:https://example.com/posters.json size:s %}",
+		Description: "竖版海报网格卡片，支持友链分组直出、repo/api 数据服务与 size 尺寸档位。",
+		Signature:   "{% posters [group] [repo:owner/repo] [api:数据URL] [size:xs/s/m/l/xl/mix] %}",
+		Example:     "{% posters 朋友 size:s %}\n{% posters api:https://example.com/posters.json size:s %}",
 		PreviewSet:  true,
 		Services:    []string{"friends"},
 		Fixture:     "friends",
 		Height:      300,
 		Fallback:    "海报数据依赖 ds-friends 服务与本地 Fixture，加载失败时显示空态。",
 		ParamDocs: []ShortcodeParamDoc{
+			{Name: "group", Desc: "友链分组标题（按 site.yml links 服务端直出卡片流）", Default: "—"},
 			{Name: "repo", Desc: "GitHub 仓库，自动拼 raw data.json 地址", Default: "—"},
 			{Name: "api", Desc: "数据服务 URL（friends 兼容格式）", Default: "—"},
 			{Name: "size", Desc: "卡片尺寸：xs/s/m/l/xl/mix", Default: "xs"},
@@ -627,6 +655,7 @@ var shortcodeDisplayMetadata = map[string]struct {
 			{Name: "style", Desc: "样式：qq/wechat", Default: "qq"},
 			{Name: "scene", Desc: "场景：group（全员左对齐）/single（me 靠右）", Default: "group"},
 			{Name: "me", Desc: "single 模式下靠右显示的参与者 key", Default: "—"},
+			{Name: "labelColorStyle", Desc: "成员标签配色风格（透传给成员标签）", Default: "—"},
 		},
 	},
 	"ghcard": {

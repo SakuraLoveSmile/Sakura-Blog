@@ -126,11 +126,11 @@ func TestCommentUserBanFlow(t *testing.T) {
 		t.Fatalf("status after ban = %+v", got)
 	}
 
-	// 封禁后登录被拒
+	// 封禁后登录被拒（模糊凭据，不泄露封禁状态与账户存在性）
 	w := do2FA(r, http.MethodPost, "/api/auth/login",
 		`{"username":"reader-ban","password":"reader66"}`, "")
-	if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "封禁") {
-		t.Errorf("banned login: status = %d body = %s, want 403 + 封禁提示", w.Code, w.Body.String())
+	if w.Code != http.StatusUnauthorized || !strings.Contains(w.Body.String(), "用户名或密码错误") {
+		t.Errorf("banned login: status = %d body = %s, want 401 + 用户名或密码错误", w.Code, w.Body.String())
 	}
 
 	// 既有会话（合法 cookie）按匿名处理
@@ -147,19 +147,36 @@ func TestCommentUserBanFlow(t *testing.T) {
 		t.Errorf("banned user session should be anonymous, got %+v", me)
 	}
 
-	// 解封后登录恢复
+	// 解封
 	if w := ban(store.UserStatusActive); w.Code != http.StatusOK {
 		t.Fatalf("unban: status = %d", w.Code)
 	}
+	// 解封后历史 cookie 依然不可复用（因为 auth_secret 已轮换）
+	w = doUserReq(r, http.MethodGet, "/api/auth/me", "", cookie)
+	_ = json.Unmarshal(w.Body.Bytes(), &me)
+	if me.ID != 0 || me.Verified {
+		t.Errorf("old session after unban must not be resurrected, got %+v", me)
+	}
+
+	// 重新登录签发新会话，登录恢复
 	w = do2FA(r, http.MethodPost, "/api/auth/login",
 		`{"username":"reader-ban","password":"reader66"}`, "")
 	if w.Code != http.StatusOK {
 		t.Errorf("login after unban: status = %d, want 200", w.Code)
 	}
-	w = doUserReq(r, http.MethodGet, "/api/auth/me", "", cookie)
-	_ = json.Unmarshal(w.Body.Bytes(), &me)
-	if me.ID != reader.ID || !me.Verified {
-		t.Errorf("session after unban should be verified, got %+v", me)
+	var newCookie *http.Cookie
+	for _, ck := range w.Result().Cookies() {
+		if ck.Name == identity.UserCookieName && ck.Value != "" {
+			newCookie = ck
+			break
+		}
+	}
+	if newCookie != nil {
+		w = doUserReq(r, http.MethodGet, "/api/auth/me", "", newCookie.Value)
+		_ = json.Unmarshal(w.Body.Bytes(), &me)
+		if me.ID != reader.ID || !me.Verified {
+			t.Errorf("session with new cookie should be verified, got %+v", me)
+		}
 	}
 
 	// 非法 status / 非 reader 保护
@@ -171,6 +188,13 @@ func TestCommentUserBanFlow(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("ban non-reader: %d, want 400", w.Code)
 	}
+	author := createUserViaAPI(t, r, adminCookie, "comment-scope-author")
+	authorCookie := loginAs(t, r, "comment-scope-author", "secret6")
+	w = do2FA(r, http.MethodGet, "/api/v1/comment-users", "", authorCookie)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("author comment-users access: %d, want 403", w.Code)
+	}
+	_ = author
 }
 
 // TestCommentUserBulkAndDelete user_id 评论过滤 + 用户级批量处置 + 删除用户。

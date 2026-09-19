@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"encoding/json"
 	"html/template"
 	"strings"
 	"time"
@@ -415,6 +416,8 @@ type Site struct {
 	Pages PagesConfig `yaml:"pages,omitempty" json:"pages,omitempty"`
 	// Services 外部数据服务配置（site.yml services 段）。
 	Services ServicesConfig `yaml:"services,omitempty" json:"services,omitempty"`
+	// Feedback 反馈组件配置（site.yml feedback 段）：接入自建 Feedback 服务的 <feedback-widget>。
+	Feedback FeedbackConfig `yaml:"feedback,omitempty" json:"feedback,omitempty"`
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
@@ -429,6 +432,59 @@ type ServicesConfig struct {
 // 用此 API 补图标。API 为空时功能关闭（与上游一致）。URL 模板中 {href} 会被替换为站点 URL。
 type SiteInfoConfig struct {
 	API string `yaml:"api" json:"api"`
+}
+
+// FeedbackConfig 反馈组件配置（site.yml feedback 段）。
+// 组件是 Feedback 仓库 packages/web 构建的 <feedback-widget> Custom Element，
+// 静态产物 vendor 在 modules/stellar/web/assets/vendor/feedback/（ESM 入口 + 懒加载截图分块）。
+// enabled + api_base + app_id 三者齐备才在 base.html 渲染组件；主题固定 dark（产品仅深色）。
+type FeedbackConfig struct {
+	Enabled        bool   `yaml:"enabled" json:"enabled"`
+	APIBase        string `yaml:"api_base" json:"api_base"`               // Feedback 服务地址，如 http://127.0.0.1:8787
+	AppID          string `yaml:"app_id" json:"app_id"`                   // 宿主软件标识（服务端首次提交自动发现，无需预登记）
+	AppName        string `yaml:"app_name" json:"app_name"`               // 软件显示名（后台未配置时的建议名）
+	AppVersion     string `yaml:"app_version" json:"app_version"`         // 可选版本号，随提交 context 上报
+	Side           string `yaml:"side" json:"side"`                       // 入口停靠侧：left|right，默认 right
+	LauncherMode   string `yaml:"launcher_mode" json:"launcher_mode"`     // 入口形态：tab|orb，默认 orb（灵感球）
+	CaptureMode    string `yaml:"capture_mode" json:"capture_mode"`       // 呼出自动截图：off|viewport，默认 viewport
+	LauncherBottom string `yaml:"launcher_bottom" json:"launcher_bottom"` // 入口距底部位置（CSS 长度），默认 25%
+}
+
+// Active 反馈组件是否渲染：开关打开且服务地址、软件标识均已配置。
+func (c FeedbackConfig) Active() bool {
+	return c.Enabled && c.APIBase != "" && c.AppID != ""
+}
+
+// EffectiveSide 非法取值回落 right（与组件属性缺省一致）。
+func (c FeedbackConfig) EffectiveSide() string {
+	if c.Side == "left" {
+		return "left"
+	}
+	return "right"
+}
+
+// EffectiveLauncherMode 非法取值回落 orb（博客推荐灵感球入口）。
+func (c FeedbackConfig) EffectiveLauncherMode() string {
+	if c.LauncherMode == "tab" {
+		return "tab"
+	}
+	return "orb"
+}
+
+// EffectiveCaptureMode 非法取值回落 viewport（呼出即截取当前视口）。
+func (c FeedbackConfig) EffectiveCaptureMode() string {
+	if c.CaptureMode == "off" {
+		return "off"
+	}
+	return "viewport"
+}
+
+// EffectiveLauncherBottom 空值回落 25%（组件属性缺省一致）。
+func (c FeedbackConfig) EffectiveLauncherBottom() string {
+	if strings.TrimSpace(c.LauncherBottom) == "" {
+		return "25%"
+	}
+	return c.LauncherBottom
 }
 
 // DefaultAssets 对齐原版 _config.yml default 段：各场景占位素材 URL，空则回退内置硬编码值。
@@ -603,6 +659,7 @@ type CopycodeConfig struct {
 type SearchConfig struct {
 	Service     string            `yaml:"service" json:"service"`
 	LocalSearch LocalSearchConfig `yaml:"local_search" json:"local_search"`
+	serviceSet  bool
 }
 
 type LocalSearchConfig struct {
@@ -616,6 +673,68 @@ type LocalSearchConfig struct {
 	// CacheTTL 搜索数据 localStorage 缓存时长秒（1.41）：nil=默认 86400（1 天），
 	// 显式 0=不缓存。指针型同上。
 	CacheTTL *int `yaml:"cache_ttl" json:"cache_ttl"`
+	fieldSet bool
+	pathSet  bool
+}
+
+// UnmarshalJSON records string-key presence so migration can distinguish an
+// omitted value from an explicitly configured empty string.
+func (c *SearchConfig) UnmarshalJSON(data []byte) error {
+	type searchAlias SearchConfig
+	var decoded searchAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*c = SearchConfig(decoded)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	_, c.serviceSet = raw["service"]
+	return nil
+}
+
+// UnmarshalJSON records local_search string-key presence for presence-aware
+// defaulting while retaining the public string fields used by callers.
+func (c *LocalSearchConfig) UnmarshalJSON(data []byte) error {
+	type localSearchAlias LocalSearchConfig
+	var decoded localSearchAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*c = LocalSearchConfig(decoded)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	_, c.fieldSet = raw["field"]
+	_, c.pathSet = raw["path"]
+	return nil
+}
+
+// FillDefaults 补齐 Stellar v1.41 搜索默认值，保留显式 false/0。
+func (c *SearchConfig) FillDefaults() {
+	if c.Service == "" && !c.serviceSet {
+		c.Service = "local_search"
+	}
+	if c.LocalSearch.Field == "" && !c.LocalSearch.fieldSet {
+		c.LocalSearch.Field = "all"
+	}
+	if c.LocalSearch.Path == "" && !c.LocalSearch.pathSet {
+		c.LocalSearch.Path = "/search.json"
+	}
+	if c.LocalSearch.Content == nil {
+		v := true
+		c.LocalSearch.Content = &v
+	}
+	if c.LocalSearch.LazyLoad == nil {
+		v := true
+		c.LocalSearch.LazyLoad = &v
+	}
+	if c.LocalSearch.CacheTTL == nil {
+		v := 86400
+		c.LocalSearch.CacheTTL = &v
+	}
 }
 
 // EffectiveLazyLoad 懒加载开关：未配置按 1.41 默认开启。
@@ -634,11 +753,76 @@ func (c LocalSearchConfig) EffectiveCacheTTL() int {
 	return *c.CacheTTL
 }
 
-// DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTtl 秒。
+// DataCacheConfig 动态数据客户端缓存（1.36 data_cache）。Enable 缺省 true；DefaultTTL/MaxEntries
+// 使用指针区分“未配置”与显式 0，避免保存设置时误把 0 改回默认值。
 type DataCacheConfig struct {
 	Enable     *bool          `yaml:"enable,omitempty" json:"enable,omitempty"`
-	DefaultTTL int            `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
+	DefaultTTL *int           `yaml:"default_ttl,omitempty" json:"default_ttl,omitempty"`
 	TTL        map[string]int `yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	MaxEntries *int           `yaml:"max_entries,omitempty" json:"max_entries,omitempty"`
+}
+
+const (
+	DefaultDataCacheTTL        = 3600
+	DefaultDataCacheMaxEntries = 200
+)
+
+// DefaultDataCacheTTLs 返回 Stellar v1.44 的服务级 TTL 默认值副本。
+func DefaultDataCacheTTLs() map[string]int {
+	return map[string]int{
+		"giscus":            600,
+		"waline":            600,
+		"artalk":            600,
+		"memos":             600,
+		"memos-user":        86400,
+		"sites":             86400,
+		"friends":           86400,
+		"friends_and_posts": 86400,
+		"siteinfo":          86400,
+	}
+}
+
+// EffectiveDefaultTTL 返回全局默认 TTL；显式 0 表示不缓存。
+func (c DataCacheConfig) EffectiveDefaultTTL() int {
+	if c.DefaultTTL == nil {
+		return DefaultDataCacheTTL
+	}
+	if *c.DefaultTTL < 0 {
+		return 0
+	}
+	return *c.DefaultTTL
+}
+
+// EffectiveMaxEntries 返回本地缓存条目上限。容量必须为正数，非法值回退默认值。
+func (c DataCacheConfig) EffectiveMaxEntries() int {
+	if c.MaxEntries == nil || *c.MaxEntries < 1 {
+		return DefaultDataCacheMaxEntries
+	}
+	return *c.MaxEntries
+}
+
+// FillDefaults 补齐 Stellar v1.44 data_cache 默认值，保留现有开关、TTL 和容量。
+func (c *DataCacheConfig) FillDefaults() {
+	if c.Enable == nil {
+		v := true
+		c.Enable = &v
+	}
+	if c.DefaultTTL == nil {
+		v := DefaultDataCacheTTL
+		c.DefaultTTL = &v
+	}
+	if c.MaxEntries == nil {
+		v := DefaultDataCacheMaxEntries
+		c.MaxEntries = &v
+	}
+	if c.TTL == nil {
+		c.TTL = map[string]int{}
+	}
+	for key, value := range DefaultDataCacheTTLs() {
+		if _, ok := c.TTL[key]; !ok {
+			c.TTL[key] = value
+		}
+	}
 }
 
 // SiteTreeConfig 页面树配置（1.38）。Home.Comments 首页可配置评论区（默认关）。

@@ -16,6 +16,7 @@ import {
   Dialog,
   Toast,
 } from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 import { formatRelative } from "@/lib/format";
 
 interface PageItem {
@@ -125,6 +126,18 @@ function clearSelection() {
   selectedSlugs.value.clear();
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : pages.value.map((p) => p.slug)),
+  (slugs) => {
+    if (!slugs) return;
+    const visible = new Set(slugs);
+    for (const slug of Array.from(selectedSlugs.value)) {
+      if (!visible.has(slug)) selectedSlugs.value.delete(slug);
+    }
+  },
+);
+
 // Actions
 function handleDelete(item: PageItem) {
   Dialog.warning({
@@ -221,73 +234,64 @@ function statusBadge(status: string) {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="独立页面">
+    <VPageHeader title="独立页面" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:pages-line" class="text-primary" />
       </template>
       <template #subtitle>管理博客独立单页与自定义内容，支持草稿保存与前台直达预览</template>
       <template #actions>
-        <div class="apple-search min-w-[200px] max-w-[280px]">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="keyword" placeholder="搜索页面标题或 Slug..." />
-          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
-            <Icon icon="ri:close-line" />
-          </button>
-        </div>
+        <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
+          <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
+            <Icon icon="ri:search-line" class="text-text-quaternary" />
+            <input v-model="keyword" placeholder="搜索页面标题或 Slug..." />
+            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+              <Icon icon="ri:close-line" />
+            </button>
+          </div>
 
-        <VButton type="primary" :route="{ path: '/pages/edit/new' }">
-          <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
-          新建页面
-        </VButton>
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap sm:gap-2.5">
+            <VButton type="primary" :route="{ path: '/pages/edit/new' }">
+              <template #icon><Icon icon="ri:add-line" class="h-full w-full" /></template>
+              新建页面
+            </VButton>
+          </div>
+        </div>
       </template>
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:pages-line" />
-          </div>
-          <div>
-            <div class="stats-label">独立页面</div>
-            <div class="stats-value">{{ stats.total }} <span class="stats-sub">个页面</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:checkbox-circle-line" />
-          </div>
-          <div>
-            <div class="stats-label">已公开发布</div>
-            <div class="stats-value text-[#30D158]">
-              {{ stats.publishedCount }} <span class="stats-sub">个正常展示</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#FF9500] bg-[#FF9500]/10">
-            <Icon icon="ri:draft-line" />
-          </div>
-          <div>
-            <div class="stats-label">草稿状态</div>
-            <div class="stats-value text-[#FF9500]">
-              {{ stats.draftCount }} <span class="stats-sub">个未发布草稿</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:cpu-line" />
-          </div>
-          <div>
-            <div class="stats-label">系统内置页</div>
-            <div class="stats-value">{{ stats.systemCount }} <span class="stats-sub">个系统保留路由</span></div>
-          </div>
-        </div>
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <ConsoleStatsCard
+          label="独立页面"
+          :value="stats.total"
+          sub="个页面"
+          icon="ri:pages-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="已公开发布"
+          :value="stats.publishedCount"
+          sub="个正常展示"
+          icon="ri:checkbox-circle-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="草稿状态"
+          :value="stats.draftCount"
+          sub="个未发布草稿"
+          icon="ri:draft-line"
+          color="warning"
+          value-class="text-[#FF9500]"
+        />
+        <ConsoleStatsCard
+          label="系统内置页"
+          :value="stats.systemCount"
+          sub="个系统保留路由"
+          icon="ri:cpu-line"
+          color="purple"
+        />
       </div>
 
       <!-- 工具栏：状态分段 + 排序 + 视图模式 -->
@@ -318,8 +322,9 @@ function statusBadge(status: string) {
           </select>
 
           <button
+            v-if="pages.length > 0"
             type="button"
-            class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
+            class="apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             @click="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
           >
             {{ selectedSlugs.size === pages.length ? "取消全选" : "全选本页" }}
@@ -465,9 +470,11 @@ function statusBadge(status: string) {
             <thead>
               <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                 <th class="w-12 px-4 py-3 text-center">
+                  <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                   <input
+                    v-if="pages.length > 0"
                     type="checkbox"
-                    :checked="selectedSlugs.size > 0 && selectedSlugs.size === pages.length"
+                    :checked="selectedSlugs.size === pages.length"
                     class="h-4 w-4 rounded border-border text-primary"
                     @change="selectedSlugs.size === pages.length ? clearSelection() : selectAll()"
                   />
@@ -601,60 +608,6 @@ function statusBadge(status: string) {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
 /* 操作小按钮 */
 .action-icon-btn {
   display: inline-flex;
@@ -673,20 +626,5 @@ function statusBadge(status: string) {
   background: var(--color-secondary);
   color: var(--color-foreground);
   border-color: var(--color-border);
-}
-
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
 }
 </style>

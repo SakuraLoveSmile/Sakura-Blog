@@ -18,10 +18,11 @@ const (
 
 // Event is emitted once after a successful content write or full restore.
 type Event struct {
-	Kind EventKind
-	Op   string
-	Slug string
-	At   time.Time
+	Kind         EventKind
+	Op           string
+	Slug         string
+	PreviousSlug string
+	At           time.Time
 }
 
 // Subscriber receives content events synchronously in publication order.

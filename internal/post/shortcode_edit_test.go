@@ -9,8 +9,10 @@ import (
 // TestShortcodeEditFixturesCoverCatalog 机械校验「catalog 全覆盖」：
 // 以后新增第 59 个标签而忘记编辑器支持时，测试直接失败。
 var shortcodeEditFixtures = map[string]string{
-	"note":       `{% note color:green 提示 这是一条提示 %}`,
-	"quot":       `{% quot el:h2 text:这是一个小标题 %}`,
+	"note": `{% note color:green 提示 这是一条提示 %}`,
+	// fixture 带上渲染器真实消费、但此前 catalog 未声明的参数，
+	// 让 TestShortcodeEditRoundTripKeepsRender 成为「属性编辑丢参数」的护栏
+	"quot":       `{% quot el:h2 prefix:star suffix:link text:这是一个小标题 %}`,
 	"mark":       `{% mark 重点内容 color:cyan %}`,
 	"button":     `{% button 访问主页 https://example.com color:purple %}`,
 	"checkbox":   `{% checkbox checked 已完成的任务 color:green %}`,
@@ -20,7 +22,8 @@ var shortcodeEditFixtures = map[string]string{
 	"icon":       `{% icon example:planet color:blue %}`,
 	"folding":    "{% folding color:cyan open:true 点击查看详情 %}\n折叠正文\n{% endfolding %}",
 	"tabs":       "{% tabs active:1 %}\n<!-- tab 标签一 -->\n第一页内容。\n{% endtabs %}",
-	"timeline":   "{% timeline %}\n<!-- node 2024-01 -->\n项目启动。\n{% endtimeline %}",
+	"timeline":   "{% timeline api:https://example.com/t.json hide:footer %}\n<!-- node 2024-01 -->\n项目启动。\n{% endtimeline %}",
+	"dropdown":   "{% dropdown direction:down align:right 更多 %}\n- [首页](/)\n- [关于](/about)\n{% enddropdown %}",
 	"gallery":    "{% gallery %}\n![首页界面](/assets/img/preview/gallery-1.jpg)\n{% endgallery %}",
 	"folders":    "{% folders color:blue %}\n<!-- folder 第一章 -->\n内容一。\n{% endfolders %}",
 	"grid":       "{% grid bg:card c:2 gap:12px %}\n<!-- cell -->\n### 博客技术\n{% endgrid %}",
@@ -46,7 +49,7 @@ var shortcodeEditFixtures = map[string]string{
 	"u":          `{% u 下划线 %}`,
 	"del":        `{% del 999 元 %}`,
 	"kbd":        `{% kbd Ctrl %}`,
-	"image":      `{% image /assets/img/preview/image-demo.jpg 示例图 width:80% download:true %}`,
+	"image":      `{% image /assets/img/preview/image-demo.jpg 示例图 width:80% download:https://example.com/full.png %}`,
 	"link":       `{% link https://example.com 示例站点 desc:一个示例链接卡片 %}`,
 	"video":      `{% video /assets/media/preview/sample-video.mp4 %}`,
 	"audio":      `{% audio /assets/media/preview/sample-audio.mp3 %}`,
@@ -63,7 +66,7 @@ var shortcodeEditFixtures = map[string]string{
 	"md":         `{% md /assets/md/preview/example.md %}`,
 	"mermaid":    "{% mermaid %}\ngraph TB\n A[开始] --> B{判断}\n{% endmermaid %}",
 	"okr":        "{% okr o1 percent:60 status:in_track %}\n提升博客阅读体验\n<!-- okr kr1 percent:80 -->\n完成标签插件三期\n{% endokr %}",
-	"chat":       "{% chat iphone style:qq title:技术交流群 me:b %}\nalice:\n  name: 小明\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n{% endchat %}",
+	"chat":       "{% chat iphone style:qq title:技术交流群 me:b labelColorStyle:soft %}\nalice:\n  name: 小明\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:大家好！ -->\n{% endchat %}",
 	"ghcard":     `{% ghcard anuraghazra/github-readme-stats %}`,
 	"ghrepo":     `{% ghrepo vuejs/vue %}`,
 	"ghuser":     `{% ghuser octocat %}`,
@@ -233,7 +236,13 @@ func TestParseShortcodeForEditSimpleTags(t *testing.T) {
 		{
 			name: "folding block",
 			raw:  "{% folding color:cyan open:true 点击查看详情 %}\n折叠正文\n{% endfolding %}",
-			want: map[string]any{"color": "cyan", "open": true, "title": "点击查看详情", "content": "折叠正文"},
+			want: map[string]any{"color": "cyan", "child": "", "open": true, "title": "点击查看详情", "content": "折叠正文"},
+		},
+		{
+			// child 必须被识别为命名参数而不是标题文本（原版 folding.js 的 ['color','child','open']）
+			name: "folding child 不污染标题",
+			raw:  "{% folding child:codeblock 代码示例 %}\n折叠正文\n{% endfolding %}",
+			want: map[string]any{"color": "", "child": "codeblock", "open": false, "title": "代码示例", "content": "折叠正文"},
 		},
 		{
 			name: "box block",
@@ -244,9 +253,25 @@ func TestParseShortcodeForEditSimpleTags(t *testing.T) {
 			name: "media",
 			raw:  `{% image /assets/example.jpg 示例图 width:80% download:true %}`,
 			want: map[string]any{
-				"src": "/assets/example.jpg", "alt": "示例图", "width": "80%", "download": true,
+				// download 为 text 参数（可填 URL），解析结果是字符串而非布尔
+				"src": "/assets/example.jpg", "alt": "示例图", "width": "80%", "download": "true",
 				"height": "", "bg": "", "padding": "", "fancybox": "", "ratio": "",
 			},
+		},
+		{
+			// download 支持 URL 形态（原版 image.js 的 [true/false/url]，渲染器已实现）
+			name: "image download URL",
+			raw:  `{% image /assets/example.jpg 示例图 download:https://example.com/full.png %}`,
+			want: map[string]any{
+				"src": "/assets/example.jpg", "alt": "示例图", "width": "", "download": "https://example.com/full.png",
+				"height": "", "bg": "", "padding": "", "fancybox": "", "ratio": "",
+			},
+		},
+		{
+			// prefix/suffix 为渲染器真实参数，缺声明时属性编辑重建会丢
+			name: "quot prefix/suffix",
+			raw:  `{% quot el:h2 prefix:star suffix:link text:小标题 %}`,
+			want: map[string]any{"el": "h2", "icon": "", "prefix": "star", "suffix": "link", "text": "小标题"},
 		},
 		{
 			name: "copy prefix",
@@ -340,7 +365,18 @@ func TestParseShortcodeForEditSemantics(t *testing.T) {
 			raw:  "{% chat iphone style:wechat title:群聊 scene:single me:bob %}\nalice:\n  name: 小明\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:你好 -->\n{% endchat %}",
 			want: map[string]any{
 				"device": "iphone", "style": "wechat", "title": "群聊", "scene": "single", "me": "bob",
-				"content": "alice:\n  name: 小明\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:你好 -->",
+				"labelColorStyle": "",
+				"content":         "alice:\n  name: 小明\n<!-- chattip 上午 10:00 -->\n<!-- chatcell user:alice md:你好 -->",
+			},
+		},
+		{
+			// labelColorStyle 为渲染器真实参数，缺声明时属性编辑重建会丢
+			name: "chat labelColorStyle",
+			raw:  "{% chat iphone style:qq labelColorStyle:soft %}\n<!-- chatcell user:alice md:你好 -->\n{% endchat %}",
+			want: map[string]any{
+				"device": "iphone", "style": "qq", "title": "", "scene": "", "me": "",
+				"labelColorStyle": "soft",
+				"content":         "<!-- chatcell user:alice md:你好 -->",
 			},
 		},
 		{

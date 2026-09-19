@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@/stores/auth";
 import { useModulesStore } from "@/stores/modules";
 import { consolePlugins, getConsolePlugin } from "@/plugin-registry";
+import { resolveSafeRedirect } from "@/utils/redirect";
 
 function attachModuleMeta(route: RouteRecordRaw, moduleId: string, defaultPermissions: string[] = []): RouteRecordRaw {
   const { children, ...rest } = route;
@@ -55,7 +56,7 @@ router.beforeEach(async (to) => {
   if (!auth.initialized) await auth.checkAuth();
 
   if (to.meta.requiresAuth && !auth.authenticated) {
-    return { path: "/login", query: { from: to.fullPath } };
+    return { path: "/login", query: { redirect: to.fullPath } };
   }
   if (auth.authenticated) {
     if (!auth.hasPermission("console:access")) {
@@ -75,7 +76,9 @@ router.beforeEach(async (to) => {
       return { path: "/dashboard" };
     }
   }
-  if (to.path === "/login" && auth.authenticated) return { path: "/dashboard" };
+  if (to.path === "/login" && auth.authenticated) {
+    return { path: resolveSafeRedirect(to.query.redirect, to.query.from, "/dashboard") };
+  }
 });
 
 export default router;

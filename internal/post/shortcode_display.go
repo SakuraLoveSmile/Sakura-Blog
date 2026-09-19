@@ -5,6 +5,8 @@ import (
 	"html"
 	"regexp"
 	"strings"
+
+	tmpl "blog/internal/settings"
 )
 
 // --- Spec 31 渲染函数（输出结构逐字对齐原版 scripts/tags/lib/*.js）---
@@ -245,34 +247,126 @@ func renderBanner(argsStr, body string, renderMD func(string) string) string {
 	return sb.String()
 }
 
-// renderAlbumsPosters 对齐 albums.js / posters.js：api/repo 驱动 ds-friends 服务填充 gallery。
-// group 模式依赖站点 links 配置（shortcode 层不可得），输出空 grid 容器（与原版 group 缺失行为一致）。
+var validGallerySizes = map[string]bool{
+	"xs": true, "s": true, "m": true, "l": true, "xl": true, "mix": true,
+}
+
+func safeGHRepo(repo string) string {
+	repo = strings.TrimSpace(repo)
+	repo = strings.TrimPrefix(repo, "https://github.com/")
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return ""
+	}
+	for _, part := range parts {
+		for _, r := range part {
+			if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' || r == '.') {
+				return ""
+			}
+		}
+	}
+	return parts[0] + "/" + parts[1]
+}
+
+// renderAlbumsPosters 兼容缺省调用的包装函数。
 func renderAlbumsPosters(kind, argsStr string) string {
-	named, _ := parseNamedPositionalArgs(argsStr, []string{"repo", "api", "size"}, nil)
+	return renderAlbumsPostersHTML(kind, argsStr, nil, "")
+}
+
+// renderAlbumsPostersHTML 对齐 albums.js / posters.js：
+// 优先级保持 api > repo > group。
+// 1. api: 直接挂载 ds-friends 数据服务容器（ratio 强制 square，对齐上游）
+// 2. repo: 转换为 raw.githubusercontent.com 数据服务 URL
+// 3. group: 匹配友链分组标题直出卡片流；同名组按既有顺序合并；名称映射标题、快照映射封面、回退头像与默认封面
+// 4. 无匹配或空组：输出空 gallery grid-box 容器（对齐原版）
+func renderAlbumsPostersHTML(kind, argsStr string, groups []tmpl.LinkGroup, defaultCover string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"repo", "api", "size"}, []string{"group"})
+	group := named["group"]
+	if group == "" && len(positional) > 0 {
+		group = strings.Join(positional, " ")
+	}
+
 	size := named["size"]
-	if size == "" {
+	if !validGallerySizes[size] {
 		if kind == "albums" {
 			size = "s"
 		} else {
 			size = "xs" // posters 缺省 xs（对齐原版）
 		}
 	}
+
 	api := named["api"]
 	if api == "" && named["repo"] != "" {
-		api = "https://raw.githubusercontent.com/" + named["repo"] + "/output/v2/data.json"
+		repo := safeGHRepo(named["repo"])
+		if repo != "" {
+			api = "https://raw.githubusercontent.com/" + repo + "/output/v2/data.json"
+		}
 	}
+
 	ratio := "square"
+	cardClass := "album-card"
 	if kind == "posters" {
 		ratio = "portrait"
+		cardClass = "poster-card"
 	}
+
 	var sb strings.Builder
 	fmt.Fprintf(&sb, `<div class="tag-plugin %s-wrap">`, kind)
+
 	if api != "" {
+		// api / repo 分支：对齐上游 albums.js / posters.js，强制 ratio="square"
 		fmt.Fprintf(&sb, `<div class="data-service ds-friends" data-api="%s"><div class="tag-plugin gallery grid-box" layout="grid" ratio="square" size="%s"></div></div>`,
 			html.EscapeString(api), html.EscapeString(size))
+	} else if group != "" {
+		// group 分支：同名组按既有顺序合并
+		var matchedItems []tmpl.LinkItem
+		for _, g := range groups {
+			if g.Title == group {
+				matchedItems = append(matchedItems, g.Items...)
+			}
+		}
+
+		fmt.Fprintf(&sb, `<div class="tag-plugin gallery grid-box" layout="grid" ratio="%s" size="%s">`, ratio, html.EscapeString(size))
+		for _, item := range matchedItems {
+			url := safeURL(item.URL)
+			if url == "" {
+				continue
+			}
+			cover := item.Snapshot
+			if cover == "" {
+				cover = item.Avatar
+			}
+			if cover == "" {
+				cover = defaultCover
+			}
+			coverURL := safeURL(cover)
+			fallbackCover := safeURL(defaultCover)
+			if fallbackCover == "" {
+				fallbackCover = coverURL
+			}
+
+			external := strings.Contains(url, "://")
+			fmt.Fprintf(&sb, `<div class="grid-cell %s">`, cardClass)
+			if external {
+				fmt.Fprintf(&sb, `<a class="card-link lazy-box" target="_blank" rel="external nofollow noopener noreferrer" href="%s">`, html.EscapeString(url))
+			} else {
+				fmt.Fprintf(&sb, `<a class="card-link lazy-box" rel="noopener noreferrer" href="%s">`, html.EscapeString(url))
+			}
+			fmt.Fprintf(&sb, `<img class="lazy" data-src="%s" onerror="javascript:this.removeAttribute(&quot;data-src&quot;);this.src=&quot;%s&quot;;"/>`,
+				html.EscapeString(coverURL), html.EscapeString(fallbackCover))
+			sb.WriteString(`<div class="lazy-icon"></div>`)
+			sb.WriteString(`<div class="image-meta">`)
+			if item.Name != "" {
+				fmt.Fprintf(&sb, `<span class="image-caption">%s</span>`, html.EscapeString(item.Name))
+			}
+			sb.WriteString(`</div></a></div>`)
+		}
+		sb.WriteString(`</div>`)
 	} else {
+		// 缺省空容器
 		fmt.Fprintf(&sb, `<div class="tag-plugin gallery grid-box" layout="grid" ratio="%s" size="%s"></div>`, ratio, html.EscapeString(size))
 	}
+
 	sb.WriteString(`</div>`)
 	return sb.String()
 }
@@ -356,17 +450,109 @@ func renderFrameBlock(argsStr, body string, renderMD func(string) string) (strin
 	return sb.String(), true
 }
 
-// renderTOCTag 对齐 toc.js：details 外壳；wiki 参数命中但本项目无 wiki 文档树（Spec 35）时，
-// 对齐原版 proj==undefined 分支返回空字符串。
-func renderTOCTag(argsStr string) string {
+// renderTOCTag 对齐 toc.js：
+// 1. 无 wiki 参数时渲染 details 目录外壳（由前端/布局填充正文 TOC 结构）。
+// 2. 指定 wiki 参数时：
+//   - 通过 wikiTreeProvider 查询指定项目的已发布公开文档树；
+//   - 项目不存在或无公开文档：生产模式输出空字符串（对齐原版 proj==undefined 行为）；预览模式输出安全诊断；
+//   - 项目存在且有公开文档：严格按树序（深度优先前序遍历）渲染上游 toc.js DOM 结构。
+func renderTOCTag(argsStr string, wikiTreeProvider func(string) (bool, []tmpl.WikiTreeNode), isPreview bool) string {
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"wiki", "open", "display"}, nil)
-	if named["wiki"] != "" {
-		return "" // wiki 树数据未建（Spec 35），对齐原版项目缺失行为
-	}
 	title := strings.Join(positional, " ")
 	if title == "" {
 		title = "TOC"
 	}
+
+	wikiProject := named["wiki"]
+	if wikiProject != "" {
+		var exists bool
+		var nodes []tmpl.WikiTreeNode
+		if wikiTreeProvider != nil {
+			exists, nodes = wikiTreeProvider(wikiProject)
+		}
+		if !exists {
+			if isPreview {
+				return renderTOCDiagnostic(title, fmt.Sprintf("Wiki 项目 %q 不存在", wikiProject), named["display"], named["open"])
+			}
+			return "" // 对齐原版 proj == undefined 行为：输出空
+		}
+		if len(nodes) == 0 {
+			if isPreview {
+				return renderTOCDiagnostic(title, fmt.Sprintf("Wiki 项目 %q 暂无公开文档", wikiProject), named["display"], named["open"])
+			}
+			return "" // 无已发布公开文档输出空
+		}
+
+		var sb strings.Builder
+		sb.WriteString(`<div class="tag-plugin toc"`)
+		if d := named["display"]; d != "" {
+			fmt.Fprintf(&sb, ` display="%s"`, html.EscapeString(d))
+			if d == "mobile" {
+				sb.WriteString(` style="display:none"`)
+			}
+		}
+		sb.WriteString(`>`)
+		sb.WriteString(`<details class="toc"`)
+		if named["open"] != "false" {
+			sb.WriteString(` open`)
+		}
+		sb.WriteString(`>`)
+		fmt.Fprintf(&sb, `<summary>%s</summary>`, html.EscapeString(title))
+
+		hasSections := false
+		for _, n := range nodes {
+			if len(n.Children) > 0 {
+				hasSections = true
+				break
+			}
+		}
+
+		if hasSections {
+			sb.WriteString(`<div class="body fs14 multi">`)
+			for _, sec := range nodes {
+				secTitle := ""
+				if sec.Doc != nil {
+					secTitle = sec.Doc.Title
+				}
+				sb.WriteString(`<section>`)
+				fmt.Fprintf(&sb, `<div class="header">%s</div>`, html.EscapeString(secTitle))
+				sb.WriteString(`<ul class="toc">`)
+				if sec.Doc != nil && sec.Doc.Slug != "" {
+					fmt.Fprintf(&sb, `<li><a class="list-link" href="/wiki/%s/%s"><span>%s</span></a></li>`,
+						html.EscapeString(wikiProject), html.EscapeString(sec.Doc.Slug), html.EscapeString(sec.Doc.Title))
+				}
+				var renderChildren func([]tmpl.WikiTreeNode)
+				renderChildren = func(children []tmpl.WikiTreeNode) {
+					for _, c := range children {
+						if c.Doc == nil || c.Doc.Slug == "" {
+							continue
+						}
+						fmt.Fprintf(&sb, `<li><a class="list-link" href="/wiki/%s/%s"><span>%s</span></a></li>`,
+							html.EscapeString(wikiProject), html.EscapeString(c.Doc.Slug), html.EscapeString(c.Doc.Title))
+						renderChildren(c.Children)
+					}
+				}
+				renderChildren(sec.Children)
+				sb.WriteString(`</ul></section>`)
+			}
+			sb.WriteString(`</div>`)
+		} else {
+			sb.WriteString(`<div class="body fs14"><div class="body"><ul class="toc">`)
+			for _, n := range nodes {
+				if n.Doc == nil || n.Doc.Slug == "" {
+					continue
+				}
+				fmt.Fprintf(&sb, `<li><a class="list-link" href="/wiki/%s/%s"><span>%s</span></a></li>`,
+					html.EscapeString(wikiProject), html.EscapeString(n.Doc.Slug), html.EscapeString(n.Doc.Title))
+			}
+			sb.WriteString(`</ul></div></div>`)
+		}
+
+		sb.WriteString(`</details></div>`)
+		return sb.String()
+	}
+
+	// 无 wiki 参数：普通文章目录外壳
 	var sb strings.Builder
 	sb.WriteString(`<div class="tag-plugin toc"`)
 	if d := named["display"]; d != "" {
@@ -381,8 +567,24 @@ func renderTOCTag(argsStr string) string {
 		sb.WriteString(` open`)
 	}
 	sb.WriteString(`>`)
-	// 安全审计 2026-08-16：title 用户可控，转义后再输出
 	fmt.Fprintf(&sb, `<summary>%s</summary>`, html.EscapeString(title))
+	sb.WriteString(`</details></div>`)
+	return sb.String()
+}
+
+func renderTOCDiagnostic(title, msg, display, open string) string {
+	var sb strings.Builder
+	sb.WriteString(`<div class="tag-plugin toc"`)
+	if display != "" {
+		fmt.Fprintf(&sb, ` display="%s"`, html.EscapeString(display))
+	}
+	sb.WriteString(`><details class="toc"`)
+	if open != "false" {
+		sb.WriteString(` open`)
+	}
+	sb.WriteString(`>`)
+	fmt.Fprintf(&sb, `<summary>%s</summary>`, html.EscapeString(title))
+	fmt.Fprintf(&sb, `<div class="body fs14" style="color:var(--text-p3,#98989d);padding:0.5rem 1rem">%s</div>`, html.EscapeString(msg))
 	sb.WriteString(`</details></div>`)
 	return sb.String()
 }

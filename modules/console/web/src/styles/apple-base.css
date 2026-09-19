@@ -35,6 +35,78 @@ select {
   outline-offset: 2px;
 }
 
+/* 概览统计卡片规范（对齐设计基准：桌面 min-height 80px，手机 min-height 88px） */
+.stats-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 80px;
+  box-sizing: border-box;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  pointer-events: none;
+}
+.stats-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stats-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.stats-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1.2;
+}
+.stats-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .stats-card {
+    min-height: 88px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .stats-value {
+    font-size: 14px;
+  }
+}
+
 /* 卡片顶部高光（Apple 风常用 1px 顶部亮线） */
 .apple-card-highlight {
   position: relative;
@@ -97,6 +169,7 @@ select {
   border-radius: var(--radius-full);
   transition: all var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
+  outline: none;
 }
 .apple-segmented button:hover {
   color: var(--color-foreground);
@@ -105,6 +178,11 @@ select {
   background: var(--color-accent);
   color: var(--color-foreground);
   box-shadow: var(--shadow-sm);
+}
+.apple-segmented button:focus-visible,
+.appearance-tabs button:focus-visible {
+  outline: 2px solid var(--color-ring, var(--color-primary, #2e8dff));
+  outline-offset: 2px;
 }
 
 /* 矩形分段变体（设置页等紧凑场景） */
@@ -387,4 +465,42 @@ select {
 }
 .apple-btn-icon.pill {
   border-radius: var(--radius-full);
+}
+
+/* 筛选按钮基础与移动端触控尺寸保证 */
+.apple-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 移动端触控尺寸保证（<768px 视口下输入、搜索、选择器、筛选按钮高度至少 44px，独立图标按钮至少 44×44px） */
+@media (max-width: 767px) {
+  [data-app="console"] .apple-input,
+  [data-app="console"] .apple-select,
+  [data-app="console"] .apple-search,
+  [data-app="console"] .apple-color {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-btn-icon,
+  [data-app="console"] .icon-btn,
+  [data-app="console"] .action-icon-btn,
+  [data-app="console"] .post-card-action,
+  [data-app="console"] .pagination-btn {
+    min-width: 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-segmented button {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  [data-app="console"] .apple-filter-btn {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
 }

@@ -113,6 +113,27 @@ if deploy_binary "$new_bin" "v2" "old-version"; then
 fi
 assert_file_content "$INSTALL_DIR/blog" "old-binary"
 assert_file_content "$INSTALL_DIR/version" "old-version"
+python3 -c "
+import json, sys
+data = json.load(open('$STATUS_FILE'))
+if data.get('state') != 'failed':
+    sys.exit('state should be failed')
+if not data.get('rolled_back'):
+    sys.exit('rolled_back should be true')
+" || fail "status.json failed to record rollback state"
+
+reset_install
+deploy_binary "$new_bin" "v2" "old-version" || fail "successful deployment returned failure"
+python3 -c "
+import json, sys
+data = json.load(open('$STATUS_FILE'))
+if data.get('state') != 'succeeded':
+    sys.exit('state should be succeeded')
+if data.get('stage') != 'succeeded':
+    sys.exit('stage should be succeeded')
+if not data.get('completed_at'):
+    sys.exit('completed_at should be present')
+" || fail "status.json failed to record succeeded state"
 
 rm -f "$INSTALL_DIR/blog"
 : > "$TEST_SYSTEMCTL_LOG"
@@ -123,4 +144,35 @@ if grep -q '^stop' "$TEST_SYSTEMCTL_LOG"; then
   fail "first install stopped the service"
 fi
 
-printf '%s\n' "update-test: all deployment cases passed"
+# --- 测试 consume_oldest_request ---
+export REQUESTS_DIR="$test_root/requests"
+mkdir -p "$REQUESTS_DIR"
+
+# 1. 正常请求消费
+printf '{"version":1,"task_id":"task-test-42","target_tag":"v1.5.0","created_at":"2026-08-15T10:00:00Z"}\n' > "$REQUESTS_DIR/task-test-42.json"
+consume_oldest_request || fail "consume_oldest_request failed on valid request"
+[[ "${TASK_ID:-}" == "task-test-42" ]] || fail "TASK_ID = ${TASK_ID:-}, want task-test-42"
+[[ "${TARGET_TAG:-}" == "v1.5.0" ]] || fail "TARGET_TAG = ${TARGET_TAG:-}, want v1.5.0"
+[[ ! -f "$REQUESTS_DIR/task-test-42.json" ]] || fail "request file was not removed after consumption"
+
+# 2. 符号链接请求应被拒绝并清理，绝不被消费
+secret_target="$test_root/secret.txt"
+printf 'sensitive_data\n' > "$secret_target"
+ln -s "$secret_target" "$REQUESTS_DIR/symlink.json"
+unset TASK_ID TARGET_TAG
+if consume_oldest_request; then
+  fail "consume_oldest_request should reject symlink"
+fi
+[[ ! -L "$REQUESTS_DIR/symlink.json" ]] || fail "symlink should be unlinked"
+assert_file_content "$secret_target" "sensitive_data"
+
+# 3. 超大文件 (>64KB) 应被拒绝
+python3 -c "print('x' * 70000)" > "$REQUESTS_DIR/oversized.json"
+if consume_oldest_request; then
+  fail "consume_oldest_request should reject oversized file"
+fi
+
+# 实际共享锁执行路径：等待时请求不丢失，解除阻塞后继续。
+python3 "$(dirname "$0")/tests/update-lock.py"
+
+printf '%s\n' "update-test: all deployment and security cases passed"

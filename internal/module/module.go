@@ -7,6 +7,7 @@
 package module
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"sync/atomic"
@@ -18,6 +19,8 @@ import (
 	"blog/internal/storage"
 	"blog/internal/store"
 )
+
+const maxConfigBodyBytes = 1 << 20
 
 // Nav 模块贡献的 Console 侧栏菜单项。
 type Nav struct {
@@ -141,8 +144,14 @@ func MountConfigRoutes(g *gin.RouterGroup, deps Deps, m Module) bool {
 		c.JSON(http.StatusOK, v)
 	})
 	g.PUT(path, func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxConfigBodyBytes)
 		raw, err := io.ReadAll(c.Request.Body)
 		if err != nil {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "配置请求体超过 1 MiB"})
+				return
+			}
 			c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
 			return
 		}

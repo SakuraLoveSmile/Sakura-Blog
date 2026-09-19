@@ -11,7 +11,9 @@ Every new Release must include `blog-linux-amd64`, `blog-linux-amd64.sha256`, an
 Create the runtime configuration outside Git:
 
 ```bash
-mkdir -p /opt/blog/config /opt/blog/data /opt/blog/content/posts
+mkdir -p /opt/blog/{config,data,content/posts,update/requests}
+chown -R blog:blog /opt/blog
+chmod 770 /opt/blog/update/requests
 cp config/app.example.yml /opt/blog/config/app.yml
 cp config/site.example.yml /opt/blog/config/site.yml
 chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml
@@ -23,10 +25,10 @@ Prefer environment injection for tokens and passwords. Do not commit `config/app
 
 The files in this directory are examples:
 
-- `blog.service` runs the binary as the unprivileged `blog` user.
+- `blog.service` runs the binary as the unprivileged `blog` user (`ReadWritePaths` includes `/opt/blog/data` and `/opt/blog/update/requests`).
 - `blog.service.d/10-secrets.conf.example` shows how to load secrets from a root-owned environment file.
 - `nginx.conf.example` terminates TLS and forwards requests to the local service.
-- `blog-update.timer` and `update.sh` provide an optional release update flow with rollback.
+- `blog-update.path`, `blog-update.service`, and `blog-update.timer` provide release updates via `update.sh` without requiring `sudo` privileges.
 
 Copy and review each file for the target host before enabling it. Set `BLOG_TRUSTED_PROXY` or the matching YAML setting only to the actual reverse-proxy address range.
 
@@ -40,4 +42,4 @@ make build
 ./blog -root /opt/blog
 ```
 
-Run `bash deploy/update_test.sh` to exercise update and rollback logic without contacting GitHub or systemd.
+Run `bash deploy/update_test.sh` to exercise update, request consumption, and rollback logic without contacting GitHub or systemd.

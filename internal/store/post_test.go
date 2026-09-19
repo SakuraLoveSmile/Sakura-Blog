@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"blog/internal/content"
 )
 
 // 便捷构造一篇已发布文章。
@@ -194,6 +196,98 @@ func TestPostUpdateSlugConflictAndAssociationFailureRollback(t *testing.T) {
 	if renamed, _ := s.GetBySlug("renamed"); renamed != nil {
 		t.Fatal("failed slug update created a new record")
 	}
+}
+
+func TestPostUpdateSlugWithRevisionIsAtomicAndPrunes(t *testing.T) {
+	s := newTestStore(t)
+	p := pubPost("revision-old", "旧标题")
+	p.Authors = []string{"alice"}
+	p.Categories = []string{"旧分类"}
+	if _, err := s.Create(p); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	for i := 0; i < maxRevisionsPerPost; i++ {
+		if _, err := s.CreateRevision(&Revision{PostSlug: p.Slug, Title: "历史", ContentMD: "历史正文"}); err != nil {
+			t.Fatalf("create revision %d: %v", i, err)
+		}
+	}
+
+	events := content.NewEvents()
+	var eventCount int
+	events.Subscribe(func(content.Event) { eventCount++ })
+	s.SetContentEvents(events)
+	if _, err := s.DB().Exec(`CREATE TRIGGER fail_revision_insert BEFORE INSERT ON revisions BEGIN SELECT RAISE(ABORT, 'forced revision failure'); END`); err != nil {
+		t.Fatalf("create revision trigger: %v", err)
+	}
+	failed := pubPost("revision-new", "不应提交")
+	failed.Authors = []string{"bob"}
+	failed.Categories = []string{"新分类"}
+	if err := s.UpdateSlugWithRevision(p.Slug, failed.Slug, failed); err == nil {
+		t.Fatal("revision failure should fail the transaction")
+	}
+	if eventCount != 0 {
+		t.Fatalf("failed save emitted %d events, want 0", eventCount)
+	}
+	got, err := s.GetBySlug(p.Slug)
+	if err != nil || got == nil || got.Title != "旧标题" || got.ContentMD != p.ContentMD || strings.Join(got.Authors, ",") != "alice" || strings.Join(got.Categories, ",") != "旧分类" {
+		t.Fatalf("failed save changed post: post=%+v err=%v", got, err)
+	}
+	if revisions, _ := s.ListRevisions(p.Slug); len(revisions) != maxRevisionsPerPost {
+		t.Fatalf("failed save changed revisions: got %d", len(revisions))
+	}
+	if renamed, _ := s.GetBySlug(failed.Slug); renamed != nil {
+		t.Fatal("failed save created renamed post")
+	}
+	if _, err := s.DB().Exec(`DROP TRIGGER fail_revision_insert`); err != nil {
+		t.Fatalf("drop revision trigger: %v", err)
+	}
+
+	updated := pubPost(failed.Slug, "新标题")
+	updated.ContentMD = "新正文"
+	updated.Authors = []string{"bob"}
+	updated.Categories = []string{"新分类"}
+	if err := s.UpdateSlugWithRevision(p.Slug, updated.Slug, updated); err != nil {
+		t.Fatalf("successful save: %v", err)
+	}
+	if eventCount != 1 {
+		t.Fatalf("successful save emitted %d events, want 1", eventCount)
+	}
+	if revisions, _ := s.ListRevisions(updated.Slug); len(revisions) != maxRevisionsPerPost {
+		t.Fatalf("revision limit = %d, want %d", len(revisions), maxRevisionsPerPost)
+	}
+	latest, _ := s.GetRevision(revisionIDForSlug(t, s, updated.Slug))
+	if latest == nil || latest.ContentMD != p.ContentMD {
+		t.Fatal("expected a retained revision after successful save")
+	}
+
+	metadataOnly := pubPost(updated.Slug, updated.Title)
+	metadataOnly.ContentMD = updated.ContentMD
+	metadataOnly.Tags = "new-tag"
+	metadataOnly.Authors = []string{"bob"}
+	metadataOnly.Categories = []string{"新分类"}
+	if err := s.UpdateSlugWithRevision(updated.Slug, updated.Slug, metadataOnly); err != nil {
+		t.Fatalf("metadata-only save: %v", err)
+	}
+	if revisions, _ := s.ListRevisions(updated.Slug); len(revisions) != maxRevisionsPerPost {
+		t.Fatalf("metadata-only save created revision: got %d", len(revisions))
+	}
+	if eventCount != 2 {
+		t.Fatalf("metadata-only save emitted %d events, want 2", eventCount)
+	}
+}
+
+func revisionIDForSlug(t *testing.T, s *Store, slug string) int64 {
+	t.Helper()
+	rows, err := s.DB().Query(`SELECT id FROM revisions WHERE post_slug = ? ORDER BY id DESC LIMIT 1`, slug)
+	if err != nil {
+		t.Fatalf("query revision id: %v", err)
+	}
+	defer rows.Close()
+	var id int64
+	if !rows.Next() || rows.Scan(&id) != nil {
+		t.Fatal("missing revision id")
+	}
+	return id
 }
 
 func TestPostDraftHead(t *testing.T) {

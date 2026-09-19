@@ -13,15 +13,6 @@ type okrStatus struct {
 	label string
 }
 
-// okrStatusMap 内置状态映射，对齐 Stellar tag_plugins.okr.status 默认值。
-var okrStatusMap = map[string]okrStatus{
-	"in_track":   {"blue", "正常"},
-	"at_risk":    {"yellow", "风险"},
-	"off_track":  {"red", "滞后"},
-	"finished":   {"green", "完成"},
-	"unfinished": {"gray", "未完成"},
-}
-
 // parseOKRMeta 解析 "o1 percent:50 status:in_track color:blue"：首 token 为 index，其余为命名参数。
 func parseOKRMeta(s string) (index string, percent int, hasPercent bool, status, color string) {
 	for i, tok := range splitArgs(s) {
@@ -59,14 +50,16 @@ func okrSplitTitleNote(s string) (title, note string) {
 }
 
 // okrResolveStatus 给定 status/percent 解析出配色与文案；status 缺省时按 percent 推断。
-func okrResolveStatus(status string, percent int) okrStatus {
-	if st, ok := okrStatusMap[status]; ok {
-		return st
+func okrResolveStatus(status string, percent int, tagPlugins settings.TagPluginsConfig) okrStatus {
+	if configured, ok := tagPlugins.OKR.Status[status]; ok {
+		return okrStatus{color: configured.Color, label: configured.Label}
 	}
 	if percent >= 100 {
-		return okrStatusMap["finished"]
+		configured := tagPlugins.OKR.Status["finished"]
+		return okrStatus{color: configured.Color, label: configured.Label}
 	}
-	return okrStatusMap["in_track"]
+	configured := tagPlugins.OKR.Status["in_track"]
+	return okrStatus{color: configured.Color, label: configured.Label}
 }
 
 // okrLayoutItem 生成单个 okr-item（o 或 kr），对齐 Stellar okr.js 的 layoutItem。
@@ -77,13 +70,15 @@ func okrLayoutItem(typ, index, title, note string, st okrStatus, percent int, re
 	fmt.Fprintf(&sb, `<div class="okr-item %s" id="okr-%s">`, typ, html.EscapeString(strings.ToLower(index)))
 	fmt.Fprintf(&sb, `<div class="okr-left"><span class="title">%s</span></div>`, html.EscapeString(strings.ToUpper(index)))
 	fmt.Fprintf(&sb, `<div class="okr-center"><span class="title">%s</span><div class="note">%s</div></div>`, html.EscapeString(title), noteHTML)
-	fmt.Fprintf(&sb, `<div class="okr-right colorful" color="%s"><div class="labels"><span class="status label">%s</span><span class="status percent">%d%%</span></div><div class="progress"><div class="fill" style="width:%d%%;"></div></div></div>`, st.color, st.label, percent, percent)
+	color := safeColor(st.color)
+	fmt.Fprintf(&sb, `<div class="okr-right colorful" color="%s"><div class="labels"><span class="status label">%s</span><span class="status percent">%d%%</span></div><div class="progress"><div class="fill" style="width:%d%%;"></div></div></div>`, html.EscapeString(color), html.EscapeString(st.label), percent, percent)
 	sb.WriteString(`</div>`)
 	return sb.String()
 }
 
 // renderOKR 渲染 {% okr %}...{% endokr %} 为 .tag-plugin.colorful.okr。
-func renderOKR(oArgs, content string, renderMD func(string) string) string {
+func renderOKR(oArgs, content string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
+	tagPlugins.FillDefaults()
 	oIndex, oPercent, oHasPercent, oStatus, oColor := parseOKRMeta(oArgs)
 
 	type krItem struct{ meta, body string }
@@ -109,7 +104,7 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 		kt, kn := okrSplitTitleNote(kr.body)
 		sum += kp
 		cnt++
-		krHTML.WriteString(okrLayoutItem("kr", ki, kt, kn, okrResolveStatus(ks, kp), kp, renderMD))
+		krHTML.WriteString(okrLayoutItem("kr", ki, kt, kn, okrResolveStatus(ks, kp, tagPlugins), kp, renderMD))
 	}
 	if !oHasPercent && cnt > 0 {
 		oPercent = sum / cnt
@@ -125,7 +120,7 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 		}
 	}
 	sb.WriteString(`>`)
-	sb.WriteString(okrLayoutItem("o", oIndex, oTitle, oNote, okrResolveStatus(oStatus, oPercent), oPercent, renderMD))
+	sb.WriteString(okrLayoutItem("o", oIndex, oTitle, oNote, okrResolveStatus(oStatus, oPercent, tagPlugins), oPercent, renderMD))
 	sb.WriteString(krHTML.String())
 	sb.WriteString(`</div>`)
 	return sb.String()
@@ -133,6 +128,7 @@ func renderOKR(oArgs, content string, renderMD func(string) string) string {
 
 // renderQuot 渲染 {% quot el:h2 icon:hashtag text:... %} 为 .tag-plugin.quot 小标题。
 func renderQuot(argsStr string, iconFunc func(string) string, tagPlugins settings.TagPluginsConfig) string {
+	tagPlugins.FillDefaults()
 	named, positional := parseNamedPositionalArgs(argsStr, []string{"el", "icon", "prefix", "suffix", "text"}, nil)
 	// 安全审计 2026-08-16：el 标签名白名单（h1-h6/p/div/blockquote），非法回退 p，禁止任意标签名注入
 	el := safeQuotEl(named["el"])
@@ -140,22 +136,11 @@ func renderQuot(argsStr string, iconFunc func(string) string, tagPlugins setting
 	if text == "" {
 		text = strings.Join(positional, " ")
 	}
-	// 前缀图标：prefix > icon 预设 > tag_plugins.quot.prefix > 默认 hashtag
-	tp := tagPlugins
-	prefixKey := named["prefix"]
-	if prefixKey == "" {
-		if ic := named["icon"]; ic == "" || ic == "default" || ic == "hashtag" {
-			prefixKey = tp.Quot.Prefix
-			if prefixKey == "" {
-				prefixKey = "quot:hashtag"
-			}
-		} else {
-			prefixKey = ic
-		}
-	}
-	suffixKey := named["suffix"]
-	if suffixKey == "" {
-		suffixKey = tp.Quot.Suffix
+	// 上游语义：prefix 或 suffix 任一显式传入时，二者共同覆盖预设；否则由 icon 选择预设。
+	preset := tagPlugins.QuotPreset(named["icon"])
+	prefixKey, suffixKey := preset.Prefix, preset.Suffix
+	if named["prefix"] != "" || named["suffix"] != "" {
+		prefixKey, suffixKey = named["prefix"], named["suffix"]
 	}
 
 	iconHTML := func(key string) string {

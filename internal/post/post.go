@@ -75,6 +75,10 @@ type Service struct {
 	ghClient GHClient            // GitHub 数据客户端（供 ghrepo/ghuser shortcode 用），nil 则降级纯链接
 	// linksFunc 返回站点友链分组与缺省头像（default.link），供 {% links %} 服务端直出；nil 时渲染空态。
 	linksFunc func() ([]tmpl.LinkGroup, string)
+	// albumsLinksFunc 返回站点友链分组与缺省封面（default.cover），供 albums/posters group 直出；nil 时回退 linksFunc 或空态。
+	albumsLinksFunc func() ([]tmpl.LinkGroup, string)
+	// wikiTreeProvider 查询指定项目的已发布公开文档树，供 {% toc wiki:xxx %} 渲染；nil 时对齐原版输出空。
+	wikiTreeProvider func(projectID string) (bool, []tmpl.WikiTreeNode)
 	// momentsFunc 返回最新公开瞬间，供 {% moments %} shortcode 服务端直出；nil 时渲染空态。
 	momentsFunc func(limit int) []*tmpl.MomentItem
 	plugins     *plugin.Runtime
@@ -120,6 +124,31 @@ func (s *Service) SetIconFunc(f func(string) string) {
 // SetLinksFunc 注入站点友链分组提供器（供 {% links %} shortcode 服务端直出）。
 func (s *Service) SetLinksFunc(f func() ([]tmpl.LinkGroup, string)) {
 	s.linksFunc = f
+}
+
+// SetAlbumsLinksFunc 注入友链分组与默认封面提供器（供 {% albums %} / {% posters %} shortcode 服务端直出）。
+func (s *Service) SetAlbumsLinksFunc(f func() ([]tmpl.LinkGroup, string)) {
+	s.albumsLinksFunc = f
+}
+
+// SetWikiTreeProvider 注入 Wiki 文档树提供器（供 {% toc wiki:xxx %} shortcode 服务端直出）。
+func (s *Service) SetWikiTreeProvider(f func(projectID string) (bool, []tmpl.WikiTreeNode)) {
+	s.wikiTreeProvider = f
+}
+
+func (s *Service) renderAlbumsPosters(kind, argsStr string) string {
+	var groups []tmpl.LinkGroup
+	defaultCover := ""
+	if s.albumsLinksFunc != nil {
+		groups, defaultCover = s.albumsLinksFunc()
+	} else if s.linksFunc != nil {
+		groups, _ = s.linksFunc()
+	}
+	return renderAlbumsPostersHTML(kind, argsStr, groups, defaultCover)
+}
+
+func (s *Service) renderTOC(argsStr string) string {
+	return renderTOCTag(argsStr, s.wikiTreeProvider, false)
 }
 
 // SetMomentsFunc 注入最新公开瞬间提供器（供 {% moments %} shortcode 服务端直出）。
@@ -198,7 +227,7 @@ func (s *Service) Render(body string) (string, error) {
 	if s.settings != nil && s.settings.Current() != nil {
 		tagPlugins = s.settings.Current().TagPlugins
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks, s.renderMoments, tagPlugins)
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, s.ghClient, s.renderLinks, s.renderMoments, s.renderAlbumsPosters, s.renderTOC, tagPlugins)
 
 	// 2. goldmark 渲染整篇（HTML 块会被保留）
 	var sb strings.Builder

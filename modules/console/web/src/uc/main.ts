@@ -8,6 +8,8 @@ import { permissionDirective } from "@/directives/permission";
 import { i18n } from "@/i18n";
 import { Toast } from "@/components/ui";
 import { queryClient } from "@/api/query-client";
+import { useUCAuthStore } from "./stores/auth";
+import { useAuthStore } from "@/stores/auth";
 import App from "./App.vue";
 import router from "./router";
 import "@fontsource/dm-sans/latin-400.css";
@@ -16,8 +18,17 @@ import "@fontsource/dm-sans/latin-600.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "../styles/main.css";
 
+document.documentElement.setAttribute("data-app", "uc");
+
 configureApiTransport({
-  onUnauthorized: () => router.replace("/login"),
+  onUnauthorized: () => {
+    useUCAuthStore().clearSession();
+    useAuthStore().clearSession();
+    queryClient.clear();
+    if (router.currentRoute.value.path === "/login") return;
+    Toast.warning("登录已过期，请重新登录。");
+    void router.replace("/login");
+  },
   onError: (_error, message) => Toast.error(message),
 });
 

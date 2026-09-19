@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { attachmentApi, attachmentGroupApi } from "@/api";
 
@@ -82,13 +82,43 @@ watch(
   },
 );
 watch(page, load);
+
+// 焦点与 Esc：打开时把焦点移入弹层、监听窗口 Esc，关闭后把焦点还给触发元素。
+// 仅靠弹层元素上的 @keydown.esc 无法在焦点仍在触发按钮时关闭弹层。
+const dialogRef = ref<HTMLElement | null>(null);
+let previouslyFocusedElement: HTMLElement | null = null;
+
+function handleWindowEscape(e: KeyboardEvent) {
+  if (e.key === "Escape") emit("close");
+}
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) {
+      previouslyFocusedElement = (document.activeElement as HTMLElement | null) ?? null;
+      window.addEventListener("keydown", handleWindowEscape);
+      void nextTick(() => dialogRef.value?.focus());
+      return;
+    }
+    window.removeEventListener("keydown", handleWindowEscape);
+    previouslyFocusedElement?.focus();
+    previouslyFocusedElement = null;
+  },
+);
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleWindowEscape);
+});
 </script>
 
 <template>
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4"
+      ref="dialogRef"
+      tabindex="-1"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-background/40 p-4 outline-none"
       role="dialog"
       aria-modal="true"
       aria-label="从附件库选择图片"

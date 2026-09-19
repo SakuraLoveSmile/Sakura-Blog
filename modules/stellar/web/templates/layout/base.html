@@ -59,7 +59,7 @@
       root: '/',
       tag_plugins: { chat: {} },
       search: { service: '{{or .Site.Search.Service "local_search"}}', path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}', local_search: { path: '{{or .Site.Search.LocalSearch.Path "/search.json"}}', lazy_load: {{if .Site.Search.LocalSearch.EffectiveLazyLoad}}true{{else}}false{{end}}, cache_ttl: {{.Site.Search.LocalSearch.EffectiveCacheTTL}} } },
-      data_cache: { enable: {{ ptrBool .Site.DataCache.Enable true }}, default_ttl: {{ or .Site.DataCache.DefaultTTL 3600 }} },
+      data_cache: { enable: {{ ptrBool .Site.DataCache.Enable true }}, default_ttl: {{ .Site.DataCache.EffectiveDefaultTTL }}, ttl: {{ jsonify .Site.DataCache.TTL }}, max_entries: {{ .Site.DataCache.EffectiveMaxEntries }} },
       plugins: {},
       copycode: { enable: {{if .Site.Plugins.CopycodeEnabled}}true{{else}}false{{end}}, default_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.DefaultText}}{{.Site.Plugins.Copycode.DefaultText}}{{else}}{{lang "js.copy"}}{{end}}', success_text: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.SuccessText}}{{.Site.Plugins.Copycode.SuccessText}}{{else}}{{lang "js.copy_success"}}{{end}}', toast: '{{if and .Site.Plugins.Copycode .Site.Plugins.Copycode.Toast}}{{.Site.Plugins.Copycode.Toast}}{{else}}{{lang "js.copied"}}{{end}}' },
       {{- /* fancybox 配置：对齐 _config.yml plugins.fancybox。selector 说明：
@@ -70,7 +70,7 @@
         css: '/assets/vendor/fancybox/fancybox.css',
         js: '/assets/vendor/fancybox/fancybox.umd.js'
       },
-      services: { siteinfo: { api: '{{.Site.Services.SiteInfo.API}}' } }
+      services: { siteinfo: { api: {{ jsonify .Site.Services.SiteInfo.API }} } }
     };
     {{- /* def 占位素材（site.yml default 段）：空值注入空串，下方 JS 已有空值守卫 */}}
     const def = { avatar: '{{.Site.Default.Avatar}}', cover: '{{.Site.Default.Cover}}', loading: '{{.Site.Default.Loading}}', image_onerror: '{{.Site.Default.ImageOnError}}' };
@@ -134,24 +134,62 @@
       _loadedElements: new WeakSet(),
       // 1.36 data_cache：同 URL 在途去重 + localStorage TTL 缓存
       _inflight: new Map(),
-      _dcTtl: () => {
+      _dcTtl: (service) => {
         const dc = (typeof ctx !== 'undefined' && ctx.data_cache) || {};
         if (dc.enable === false) return 0;
-        return (dc.default_ttl || 3600);
+        const ttl = dc.ttl || {};
+        if (service && Object.prototype.hasOwnProperty.call(ttl, service)) {
+          const serviceTtl = Number(ttl[service]);
+          return Number.isFinite(serviceTtl) && serviceTtl >= 0 ? serviceTtl : 0;
+        }
+        const defaultTtl = Number(dc.default_ttl);
+        return Number.isFinite(defaultTtl) && defaultTtl >= 0 ? defaultTtl : 0;
       },
-      _cacheRead: (url) => {
+      _cacheRead: (url, service) => {
+        const ttl = utils._dcTtl(service);
+        if (!ttl) return null;
         try {
           const raw = localStorage.getItem('dc:' + url);
           if (!raw) return null;
           const o = JSON.parse(raw);
-          const ttl = utils._dcTtl();
-          if (!ttl) return null;
+          if (!o || !Number.isFinite(o.t)) return null;
           if ((Date.now() - o.t) / 1000 > ttl) return null;
           return o.data;
         } catch (e) { return null; }
       },
-      _cacheWrite: (url, data) => {
-        try { localStorage.setItem('dc:' + url, JSON.stringify({ t: Date.now(), data })); } catch (e) {}
+      _trimCache: () => {
+        const dc = (typeof ctx !== 'undefined' && ctx.data_cache) || {};
+        const maxEntries = Number(dc.max_entries);
+        if (!Number.isFinite(maxEntries) || maxEntries < 1) return;
+        try {
+          const entries = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || !key.startsWith('dc:')) continue;
+            try {
+              const value = JSON.parse(localStorage.getItem(key));
+              if (!value || !Number.isFinite(value.t)) {
+                localStorage.removeItem(key);
+                continue;
+              }
+              entries.push({ key, t: value.t });
+            } catch (e) {
+              localStorage.removeItem(key);
+            }
+          }
+          entries.sort((a, b) => a.t - b.t);
+          while (entries.length > maxEntries) {
+            const oldest = entries.shift();
+            if (oldest) localStorage.removeItem(oldest.key);
+          }
+        } catch (e) {}
+      },
+      _cacheWrite: (url, data, service) => {
+        if (!utils._dcTtl(service)) return;
+        try {
+          localStorage.setItem('dc:' + url, JSON.stringify({ t: Date.now(), data }));
+          utils._trimCache();
+        } catch (e) {}
       },
       onLoading: (el) => {
         if (el) {
@@ -179,12 +217,13 @@
           }
         }
       },
-      request: (el, url, callback, onFailure) => {
+      request: (el, url, callback, onFailure, options) => {
+        const service = options && options.service;
         if (el && utils._loadedElements.has(el)) {
           return;
         }
         // 1.36 data_cache：TTL 内缓存优先（不再重复请求外部 API）；同 URL 在途请求去重
-        const cached = utils._cacheRead(url);
+        const cached = utils._cacheRead(url, service);
         if (cached != null) {
           if (el) utils._loadedElements.add(el);
           utils.onLoadSuccess?.(el);
@@ -217,7 +256,7 @@
             }).then(async data => {
               if (timedOut) return;
               if (el) utils._loadedElements.add(el);
-              try { utils._cacheWrite(url, await data.clone().json()); } catch (e) {}
+              try { utils._cacheWrite(url, await data.clone().json(), service); } catch (e) {}
               utils.onLoadSuccess?.(el);
               callback(data);
               resolve(data);
@@ -534,6 +573,25 @@
   <script defer src="{{url_for "/assets/vendor/heti-addon.min.js"}}"></script>
   <script defer src="{{url_for "/assets/js/plugins/heti-init.js"}}?v={{asset_ver "/assets/js/plugins/heti-init.js"}}"></script>
   {{- end -}}
+  {{- /* Feedback 反馈组件（site.yml feedback 段）：Feedback 服务 packages/web 产出的
+     <feedback-widget> Custom Element，enabled + api_base + app_id 齐备才渲染。
+     ESM 入口带 ?v= 资源版本戳（SW 对 /assets/ 是 cache-first）；截图懒加载分块
+     html2canvas-pro.esm-*.js 与入口同目录部署，文件名自带内容哈希无需 ?v=。
+     theme 固定 dark（产品仅深色模式）；page-label 上报当前页面 canonical path。 */}}
+  {{if .Site.Feedback.Active}}
+  <feedback-widget
+    api-base="{{.Site.Feedback.APIBase}}"
+    app-id="{{.Site.Feedback.AppID}}"
+    {{- if .Site.Feedback.AppName}} app-name="{{.Site.Feedback.AppName}}"{{end}}
+    {{- if .Site.Feedback.AppVersion}} app-version="{{.Site.Feedback.AppVersion}}"{{end}}
+    {{- if .Page.Path}} page-label="{{.Page.Path}}"{{end}}
+    side="{{.Site.Feedback.EffectiveSide}}"
+    theme="dark"
+    launcher-mode="{{.Site.Feedback.EffectiveLauncherMode}}"
+    capture-mode="{{.Site.Feedback.EffectiveCaptureMode}}"
+    launcher-bottom="{{.Site.Feedback.EffectiveLauncherBottom}}"></feedback-widget>
+  <script type="module" src="{{url_for "/assets/vendor/feedback/feedback-web.js"}}?v={{asset_ver "/assets/vendor/feedback/feedback-web.js"}}"></script>
+  {{end}}
   {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
   {{.Site.Inject.Footer}}
 </body>

@@ -301,6 +301,18 @@ article:
   # edit_this_page:
   #   posts/: https://github.com/your-name/your-repo/blob/main/content/posts/
 
+# 本地搜索配置（对齐 Stellar search.local_search）。
+# 首次聚焦再加载可减少首页初始请求；cache_ttl=0 表示不缓存搜索索引。
+search:
+  service: local_search
+  local_search:
+    field: all
+    path: /search.json
+    content: true
+    lazy_load: true
+    cache_ttl: 86400
+    skip_search: []
+
 # 管理后台
 admin:
   password: ''            # 【密钥】/admin 访问密码；留空则不做密码 gate（本地开发用）。生产环境务必设置
@@ -381,12 +393,50 @@ admin:
 #  home:
 #    comments: false
 
+# Stellar 标签插件默认参数（可在后台「主题设置 → 内容增强」中编辑）。
+# 仅列出 Go/Stellar 当前实际消费的运行时字段；未覆盖的上游字段可通过设置页原始 JSON 兜底。
+#tag_plugins:
+#  note:
+#    default_color: ''
+#    border: true
+#  checkbox:
+#    interactive: false
+#  quot:
+#    default: { prefix: 'quot:quote-left', suffix: 'quot:quote-right' }
+#    hashtag: { prefix: 'quot:hashtag', suffix: '' }
+#    question: { prefix: 'quot:question', suffix: '' }
+#  emoji:
+#    default: https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif
+#    twemoji: https://gcore.jsdelivr.net/gh/twitter/twemoji/assets/svg/{name}.svg
+#    qq: https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif
+#    aru: https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/aru/{name}.gif
+#    tieba: https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/tieba/{name}.png
+#    blobcat: https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/{name}.gif
+#  okr:
+#    border: true
+#    status:
+#      in_track: { color: blue, label: 正常 }
+#      at_risk: { color: yellow, label: 风险 }
+#      off_track: { color: orange, label: 延期 }
+#      finished: { color: green, label: 已完成 }
+#      unfinished: { color: red, label: 未完成 }
+
 # 动态数据客户端缓存（1.36 data_cache）：友链/时间线/GitHub 信息等动态数据 stale-while-revalidate，
 # TTL 内不重复请求外部 API，过期后先显缓存再后台刷新。与服务端 /api/gh 缓存共存。
 #data_cache:
 #  enable: true
 #  default_ttl: 3600
-#  ttl: { giscus: 600, waline: 600, artalk: 600 }
+#  ttl:
+#    giscus: 600
+#    waline: 600
+#    artalk: 600
+#    memos: 600
+#    memos-user: 86400
+#    sites: 86400
+#    friends: 86400
+#    friends_and_posts: 86400
+#    siteinfo: 86400
+#  max_entries: 200
 
 # SEO 设置（Spec 42）：站点级默认 meta 与收录控制；文章级可在编辑器 SEO 区覆盖。
 # 首次启动导入 settings 表后以后台「SEO」Tab 为准（热更新）；代码注入（inject）仅入库不入本文件。
@@ -462,3 +512,22 @@ plugins:
 services:
   siteinfo:
     api: ''                # 例：https://api.example.com/siteinfo?url={href}
+
+# -------------------------------------------------------------
+# 反馈组件（feedback）
+# -------------------------------------------------------------
+# 接入自建 Feedback 服务的 <feedback-widget>（前台悬浮入口 + 截图反馈）。
+# enabled + api_base + app_id 三者齐备才在页面渲染组件；面板主题固定深色。
+# app_id 是本站稳定标识（服务端首次提交自动发现，无需预先登记）；
+# app_name/app_version 为可选上报元数据。页面 canonical path 自动作为 page-label。
+# 截图敏感区遮挡：在模板中给元素加 data-feedback-capture-mask 即可。
+feedback:
+  enabled: false           # 总开关
+  api_base: ''             # Feedback 服务地址，如 http://127.0.0.1:8787
+  app_id: ''               # 软件标识，如 com.example.blog
+  app_name: ''             # 可选：后台未配置时的显示名
+  app_version: ''          # 可选：随提交上报的版本号
+  side: right              # 入口停靠侧：right | left
+  launcher_mode: orb       # 入口形态：orb（灵感球，可拖拽指位置）| tab（贴边标签）
+  capture_mode: viewport   # 呼出时自动截图：viewport | off（off 仍可在面板内手动截图）
+  launcher_bottom: '25%'   # 入口距底部位置（CSS 长度，百分比或像素）

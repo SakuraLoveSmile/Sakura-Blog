@@ -87,6 +87,39 @@ func fixtureLinksHTML() string {
 	return renderLinkGroupsHTML(groups, defaultLink)
 }
 
+// fixtureAlbumsPostersHTML 渲染组件库中的确定性 albums/posters Fixture。
+func fixtureAlbumsPostersHTML(kind, argsStr string) string {
+	groups, _ := fixtureLinksRender()
+	return renderAlbumsPostersHTML(kind, argsStr, groups, "/assets/img/preview/avatar-blog.svg")
+}
+
+// fixtureWikiTreeProvider 提供组件库中确定性的 Wiki 文档树 Fixture。
+func fixtureWikiTreeProvider(projectID string) (bool, []tmpl.WikiTreeNode) {
+	if projectID == "nonexistent" {
+		return false, nil
+	}
+	return true, []tmpl.WikiTreeNode{
+		{
+			Doc: &tmpl.WikiDocView{Slug: "intro", Title: "快速入门"},
+			Children: []tmpl.WikiTreeNode{
+				{Doc: &tmpl.WikiDocView{Slug: "install", Title: "安装部署"}},
+				{Doc: &tmpl.WikiDocView{Slug: "config", Title: "配置说明"}},
+			},
+		},
+		{
+			Doc: &tmpl.WikiDocView{Slug: "advanced", Title: "进阶指南"},
+			Children: []tmpl.WikiTreeNode{
+				{Doc: &tmpl.WikiDocView{Slug: "shortcodes", Title: "短代码指南"}},
+			},
+		},
+	}
+}
+
+// fixtureTOCHTML 渲染组件库中的确定性 TOC Fixture。
+func fixtureTOCHTML(argsStr string) string {
+	return renderTOCTag(argsStr, fixtureWikiTreeProvider, true)
+}
+
 // fixtureMomentsHTML 渲染组件库中的确定性瞬间 Fixture，不读取真实 moments 数据。
 func fixtureMomentsHTML(argsStr string) string {
 	items := []*tmpl.MomentItem{
@@ -195,7 +228,7 @@ func (s *Service) RenderComponentPreview(body string) (string, error) {
 		}
 		return sb.String()
 	}
-	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, fixtureMomentsHTML, tmpl.TagPluginsConfig{})
+	processed := processShortcodes(protectMathDelimiters(body), renderMD, s.renderInlineMD, s.iconFunc, fixtureGHClient{}, fixtureLinksHTML, fixtureMomentsHTML, fixtureAlbumsPostersHTML, fixtureTOCHTML, tmpl.TagPluginsConfig{})
 	var sb strings.Builder
 	if err := s.md.Convert([]byte(processed), &sb); err != nil {
 		return "", err
