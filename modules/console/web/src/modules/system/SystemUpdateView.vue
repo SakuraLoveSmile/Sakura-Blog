@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
         <div class="flex-1">
           <div class="font-semibold text-state-warning">一键在线更新不可用</div>
           <p class="mt-1 text-xs leading-relaxed text-text-secondary">
-            {{ checkData.apply_note || "当前环境不支持一键更新（非 systemd 部署）" }}
+            {{ checkData.apply_note || "当前环境不支持一键更新（未检测到 systemd 或 docker 更新执行器）" }}
           </p>
         </div>
       </div>
@@ -421,8 +421,8 @@ onBeforeUnmount(() => {
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="max-w-xl space-y-2">
             <p class="text-xs leading-relaxed text-text-secondary">
-              点击后将向后台更新服务（systemd）发送升级指令，自动从 GitHub Release 下载最新的二进制文件并平滑重启 Blog
-              服务。
+              点击后将向后台更新执行器（systemd 或 docker watcher）发送升级指令，自动从 GitHub
+              Release 下载最新的二进制文件并平滑重启 Blog 服务。
             </p>
             <div class="flex flex-wrap gap-2 text-[11px] text-text-tertiary">
               <span class="flex items-center gap-1 rounded bg-secondary px-2 py-0.5">

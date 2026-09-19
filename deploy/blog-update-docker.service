@@ -1,0 +1,14 @@
+[Unit]
+Description=Blog one-click update executor (docker driver)
+# 消费 /opt/blog/update/requests/ 下的更新请求并执行 update-docker.sh。
+# 由 blog-update-docker.path 触发；与 update.sh 不同在于通过 docker 重启服务。
+
+[Service]
+Type=oneshot
+ExecStart=/opt/blog/update-docker.sh
+# 部署差异参数集中在这里覆盖：容器名 / 健康检查端口 / GitHub 代理等。
+# 例：BLOG_CONTAINER=blog  BLOG_HEALTH_PORT=8081  BLOG_PROXY=http://127.0.0.1:7890
+EnvironmentFile=-/opt/blog/update-docker.env
+
+[Install]
+WantedBy=multi-user.target

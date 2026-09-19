@@ -121,6 +121,7 @@ type Config struct {
 	UpdateRepo       string
 	UpdateInstallDir string
 	UpdateService    string
+	UpdateDriver     string
 }
 
 // New 创建 API handler。
@@ -140,8 +141,10 @@ func New(cfg Config) *Handler {
 		installDir = updateInstallDirDefault
 	}
 
-	// 构造生产 execRunner（Supported() 在非 systemd 环境自动返回 false）
+	// 构造生产 execRunner（Supported() 按 update_driver 探测执行环境）
 	runner := updr.New(installDir, cfg.UpdateService)
+	runner.Driver = cfg.UpdateDriver
+	runner.Root = cfg.Root
 
 	storageBackend := cfg.Storage
 	if cfg.StorageManager != nil {
