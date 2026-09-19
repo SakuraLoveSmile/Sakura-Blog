@@ -573,6 +573,25 @@
   <script defer src="{{url_for "/assets/vendor/heti-addon.min.js"}}"></script>
   <script defer src="{{url_for "/assets/js/plugins/heti-init.js"}}?v={{asset_ver "/assets/js/plugins/heti-init.js"}}"></script>
   {{- end -}}
+  {{- /* Feedback 反馈组件（site.yml feedback 段）：Feedback 服务 packages/web 产出的
+     <feedback-widget> Custom Element，enabled + api_base + app_id 齐备才渲染。
+     ESM 入口带 ?v= 资源版本戳（SW 对 /assets/ 是 cache-first）；截图懒加载分块
+     html2canvas-pro.esm-*.js 与入口同目录部署，文件名自带内容哈希无需 ?v=。
+     theme 固定 dark（产品仅深色模式）；page-label 上报当前页面 canonical path。 */}}
+  {{if .Site.Feedback.Active}}
+  <feedback-widget
+    api-base="{{.Site.Feedback.APIBase}}"
+    app-id="{{.Site.Feedback.AppID}}"
+    {{- if .Site.Feedback.AppName}} app-name="{{.Site.Feedback.AppName}}"{{end}}
+    {{- if .Site.Feedback.AppVersion}} app-version="{{.Site.Feedback.AppVersion}}"{{end}}
+    {{- if .Page.Path}} page-label="{{.Page.Path}}"{{end}}
+    side="{{.Site.Feedback.EffectiveSide}}"
+    theme="dark"
+    launcher-mode="{{.Site.Feedback.EffectiveLauncherMode}}"
+    capture-mode="{{.Site.Feedback.EffectiveCaptureMode}}"
+    launcher-bottom="{{.Site.Feedback.EffectiveLauncherBottom}}"></feedback-widget>
+  <script type="module" src="{{url_for "/assets/vendor/feedback/feedback-web.js"}}?v={{asset_ver "/assets/vendor/feedback/feedback-web.js"}}"></script>
+  {{end}}
   {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
   {{.Site.Inject.Footer}}
 </body>

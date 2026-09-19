@@ -134,9 +134,15 @@ test("Stellar runtime settings are exposed by structured forms", () => {
     "emojiSources",
     "qq",
     "addStatus",
+    "settings-feedback-api-base",
+    "settings-feedback-app-id",
+    "settings-feedback-launcher-mode",
+    "data.feedback.enabled",
   ])
     assert.match(enhancements, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.match(read("modules/settings/settings-state.ts"), /"services"/);
+  const state = read("modules/settings/settings-state.ts");
+  assert.match(state, /"services"/);
+  assert.match(state, /"feedback"/);
 });
 
 test("ensureSettingsDefaults safely initializes article ai_label and edit_this_page", () => {

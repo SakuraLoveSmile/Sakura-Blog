@@ -29,7 +29,7 @@ const tabSectionsMap: Record<string, string[]> = {
   home: ["cover"],
   layout: ["rightbar", "footer", "widgets"],
   navigation: ["nav_tabs"],
-  enhancements: ["plugins", "tag_plugins", "services"],
+  enhancements: ["plugins", "tag_plugins", "services", "feedback"],
   assets: ["default"],
   advanced: [],
 };
@@ -44,6 +44,7 @@ const ALL_APPEARANCE_SECTIONS = [
   "plugins",
   "tag_plugins",
   "services",
+  "feedback",
   "default",
 ];
 

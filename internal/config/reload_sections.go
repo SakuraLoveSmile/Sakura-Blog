@@ -54,7 +54,7 @@ func KnownSections() []string {
 		SectionStyle, SectionWidgets, SectionAI,
 		SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins,
 		SectionTagPlugins, SectionDefault,
-		SectionPages, SectionDataCache, SectionServices,
+		SectionPages, SectionDataCache, SectionServices, SectionFeedback,
 	}
 }
 
@@ -123,6 +123,13 @@ func SaveSection(st *store.Store, site *atomic.Pointer[tmpl.Site], section strin
 	}
 	if tagPlugins, ok := dst.(*tmpl.TagPluginsConfig); ok {
 		tagPlugins.FillDefaults()
+	}
+	if fb, ok := dst.(*tmpl.FeedbackConfig); ok {
+		fb.APIBase = strings.TrimSpace(fb.APIBase)
+		fb.AppID = strings.TrimSpace(fb.AppID)
+		if fb.APIBase != "" && !strings.HasPrefix(fb.APIBase, "http://") && !strings.HasPrefix(fb.APIBase, "https://") {
+			return fmt.Errorf("feedback.api_base 必须是 http(s) 地址")
+		}
 	}
 	// menubar 服务端兖底校验：items 内 title/url 不得为空
 	if mb, ok := dst.(*tmpl.Menubar); ok {
@@ -215,6 +222,8 @@ func sectionTarget(section string) (any, error) {
 		return &tmpl.DataCacheConfig{}, nil
 	case SectionServices:
 		return &tmpl.ServicesConfig{}, nil
+	case SectionFeedback:
+		return &tmpl.FeedbackConfig{}, nil
 	default:
 		return nil, fmt.Errorf("unknown section: %s", section)
 	}

@@ -27,6 +27,7 @@ func renderPostDocument(t *testing.T, site *Site) string {
 			Slug:         "seo-test",
 			Layout:       "post",
 			CanonicalURL: "https://origin.example/post/seo-test",
+			Path:         "/post/seo-test",
 			Description:  "测试\\描述",
 			Date:         "2026-08-15",
 			Author:       "作者",
@@ -158,6 +159,53 @@ func TestBaseInjectsRuntimeConfigAndTagPluginOverrides(t *testing.T) {
 	}
 }
 
+// TestBaseRendersFeedbackWidget feedback 段：enabled+api_base+app_id 齐备才渲染
+// <feedback-widget> 与 ESM 入口脚本；主题固定 dark；page-label 取页面 canonical path。
+func TestBaseRendersFeedbackWidget(t *testing.T) {
+	off := renderPostDocument(t, &Site{Title: "关"})
+	if strings.Contains(off, "feedback-widget") {
+		t.Error("feedback disabled should not render widget")
+	}
+	incomplete := renderPostDocument(t, &Site{
+		Title:    "缺配置",
+		Feedback: settings.FeedbackConfig{Enabled: true, APIBase: "https://feedback.example.com"},
+	})
+	if strings.Contains(incomplete, "feedback-widget") {
+		t.Error("missing app_id should not render widget")
+	}
+
+	on := renderPostDocument(t, &Site{
+		Title: "开",
+		Feedback: settings.FeedbackConfig{
+			Enabled: true, APIBase: "https://feedback.example.com", AppID: "com.example.blog",
+			AppName: "测试博客", Side: "left", LauncherMode: "tab", CaptureMode: "off", LauncherBottom: "80px",
+		},
+	})
+	for _, want := range []string{
+		`<feedback-widget`,
+		`api-base="https://feedback.example.com"`,
+		`app-id="com.example.blog"`,
+		`app-name="测试博客"`,
+		`page-label="/post/seo-test"`,
+		`side="left"`,
+		`theme="dark"`,
+		`launcher-mode="tab"`,
+		`capture-mode="off"`,
+		`launcher-bottom="80px"`,
+		`/assets/vendor/feedback/feedback-web.js?v=`,
+		`type="module"`,
+		// html2canvas-pro 兼容覆盖：头像 border-radius calc 乘法降级为字面值
+		`.logo-wrap a.avatar img.avatar { border-radius: 50%; }`,
+	} {
+		if !strings.Contains(on, want) {
+			t.Errorf("enabled document missing %q", want)
+		}
+	}
+	if strings.Contains(off, "border-radius: 50%") {
+		t.Error("capture-compat override should be omitted when feedback disabled")
+	}
+}
+
 func TestDiskAndEmbedEnginesRenderIdentically(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -207,6 +255,7 @@ func TestEmbeddedStellarAssetsExist(t *testing.T) {
 		"assets/manifest.webmanifest",
 		"assets/fonts/lxgw/lxgwwenkaiscreen.css",
 		"assets/img/favicon.ico",
+		"assets/vendor/feedback/feedback-web.js",
 	} {
 		if _, err := FS.ReadFile(path); err != nil {
 			t.Errorf("embedded Stellar asset missing %q: %v", path, err)

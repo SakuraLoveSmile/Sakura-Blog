@@ -512,3 +512,22 @@ plugins:
 services:
   siteinfo:
     api: ''                # 例：https://api.example.com/siteinfo?url={href}
+
+# -------------------------------------------------------------
+# 反馈组件（feedback）
+# -------------------------------------------------------------
+# 接入自建 Feedback 服务的 <feedback-widget>（前台悬浮入口 + 截图反馈）。
+# enabled + api_base + app_id 三者齐备才在页面渲染组件；面板主题固定深色。
+# app_id 是本站稳定标识（服务端首次提交自动发现，无需预先登记）；
+# app_name/app_version 为可选上报元数据。页面 canonical path 自动作为 page-label。
+# 截图敏感区遮挡：在模板中给元素加 data-feedback-capture-mask 即可。
+feedback:
+  enabled: false           # 总开关
+  api_base: ''             # Feedback 服务地址，如 http://127.0.0.1:8787
+  app_id: ''               # 软件标识，如 com.example.blog
+  app_name: ''             # 可选：后台未配置时的显示名
+  app_version: ''          # 可选：随提交上报的版本号
+  side: right              # 入口停靠侧：right | left
+  launcher_mode: orb       # 入口形态：orb（灵感球，可拖拽指位置）| tab（贴边标签）
+  capture_mode: viewport   # 呼出时自动截图：viewport | off（off 仍可在面板内手动截图）
+  launcher_bottom: '25%'   # 入口距底部位置（CSS 长度，百分比或像素）

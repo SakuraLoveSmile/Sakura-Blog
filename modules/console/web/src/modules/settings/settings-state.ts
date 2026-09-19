@@ -24,6 +24,7 @@ export const ALL_SETTINGS_SECTIONS = [
   "pages",
   "data_cache",
   "services",
+  "feedback",
 ] as const;
 
 export type SettingsData = Record<string, any>;
@@ -120,6 +121,16 @@ export function ensureSettingsDefaults(d: SettingsData): SettingsData {
   d.services = d.services || {};
   d.services.siteinfo = d.services.siteinfo || {};
   d.services.siteinfo.api = d.services.siteinfo.api ?? "";
+  d.feedback = d.feedback || {};
+  d.feedback.enabled = d.feedback.enabled ?? false;
+  d.feedback.api_base = d.feedback.api_base || "";
+  d.feedback.app_id = d.feedback.app_id || "";
+  d.feedback.app_name = d.feedback.app_name || "";
+  d.feedback.app_version = d.feedback.app_version || "";
+  d.feedback.side = d.feedback.side || "right";
+  d.feedback.launcher_mode = d.feedback.launcher_mode || "orb";
+  d.feedback.capture_mode = d.feedback.capture_mode || "viewport";
+  d.feedback.launcher_bottom = d.feedback.launcher_bottom || "25%";
   d.ai = d.ai || {};
   d.ai.embedding_model = d.ai.embedding_model || "";
   d.ai.summary_enabled = d.ai.summary_enabled ?? true;

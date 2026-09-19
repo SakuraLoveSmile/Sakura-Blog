@@ -37,6 +37,7 @@ const (
 	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
 	SectionDataCache  = "data_cache"  // 动态数据客户端缓存（base.html 注入 ctx.data_cache 消费）
 	SectionServices   = "services"    // 外部数据服务配置（当前接入 siteinfo）
+	SectionFeedback   = "feedback"    // 反馈组件（Feedback 服务 <feedback-widget> 接入配置）
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
 	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
@@ -183,6 +184,11 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 	if _, ok := settings[SectionPlugins]; !ok {
 		b, _ := json.Marshal(site.Plugins)
 		st.PutSetting(SectionPlugins, string(b))
+	}
+	// feedback 段兼容导入：旧库升级时 settings 非空但缺段，从 site.yml 初值补导一次。
+	if _, ok := settings[SectionFeedback]; !ok {
+		b, _ := json.Marshal(site.Feedback)
+		st.PutSetting(SectionFeedback, string(b))
 	}
 	// site 段 favicon 兼容导入：旧库 site 段缺 favicon_url/apple_touch_icon 键时，
 	// 从 site.yml 初值合并补写，避免 RebuildSite 把已加载值清零（site.yml 留空则不补）。
@@ -394,6 +400,9 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 		return err
 	}
 	if err := put(SectionServices, site.Services); err != nil {
+		return err
+	}
+	if err := put(SectionFeedback, site.Feedback); err != nil {
 		return err
 	}
 	// lang 段不写初始值：settings 无 lang 行 = 无文案覆盖（全用内置 zhCN）。

@@ -52,6 +52,7 @@ const legacyTabMap: Record<string, { path: string; tab?: string }> = {
   plugins: { path: "/appearance", tab: "enhancements" },
   tag_plugins: { path: "/appearance", tab: "enhancements" },
   services: { path: "/appearance", tab: "enhancements" },
+  feedback: { path: "/appearance", tab: "enhancements" },
   default: { path: "/appearance", tab: "assets" },
   menubar: { path: "/menus" },
   rightbar: { path: "/appearance", tab: "layout" },

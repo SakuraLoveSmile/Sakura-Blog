@@ -100,6 +100,7 @@ type parsedSections struct {
 	pages         tmpl.PagesConfig
 	dataCache     tmpl.DataCacheConfig
 	services      tmpl.ServicesConfig
+	feedback      tmpl.FeedbackConfig
 }
 
 func parseSections(settings map[string]string) parsedSections {
@@ -163,6 +164,7 @@ func parseSections(settings map[string]string) parsedSections {
 	unmarshal(SectionDataCache, &parsed.dataCache)
 	parsed.dataCache.FillDefaults()
 	unmarshal(SectionServices, &parsed.services)
+	unmarshal(SectionFeedback, &parsed.feedback)
 	return parsed
 }
 
@@ -213,6 +215,7 @@ func applyParsedSections(site *tmpl.Site, parsed parsedSections, settings map[st
 	assign(SectionPages, func() { site.Pages = parsed.pages })
 	assign(SectionDataCache, func() { site.DataCache = parsed.dataCache })
 	assign(SectionServices, func() { site.Services = parsed.services })
+	assign(SectionFeedback, func() { site.Feedback = parsed.feedback })
 }
 
 // rebuildFromValues 解析各分段 JSON 并写入 site 字段（不含 links/admin/lang 覆盖，调用方自理）。

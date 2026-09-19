@@ -176,6 +176,7 @@ func TestBootstrapImportsEditableSections(t *testing.T) {
 	site.Load().NavTabs = tmpl.NavTabsConfig{EnableCustom: true, Items: []tmpl.NavTabItem{{Title: "友链", URL: "/friends/"}}}
 	site.Load().Authors = map[string]tmpl.AuthorDef{"sakura": {Name: "Sakura", Description: "作者"}}
 	site.Load().Plugins = tmpl.PluginsConfig{Heti: &tmpl.HetiConfig{Enable: true}}
+	site.Load().Feedback = tmpl.FeedbackConfig{Enabled: true, APIBase: "http://127.0.0.1:8787", AppID: "com.test.blog"}
 	en := false
 	defaultTTL := 600
 	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: &defaultTTL}
@@ -183,7 +184,7 @@ func TestBootstrapImportsEditableSections(t *testing.T) {
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("bootstrap: %v", err)
 	}
-	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionDataCache} {
+	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionDataCache, SectionFeedback} {
 		v, err := s.GetSetting(sec)
 		if err != nil || v == "" {
 			t.Fatalf("section %s not imported: %q, %v", sec, v, err)
@@ -235,6 +236,10 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 			cfg := site.Load().SEO
 			return cfg.Canonical.OriginalHost == "origin.example" && len(cfg.Canonical.OfficialHosts) == 1 && cfg.OpenGraph.Enable != nil && !*cfg.OpenGraph.Enable && len(cfg.Preconnect) == 1 && len(cfg.StructuredData.Links) == 1
 		}},
+		{SectionFeedback, `{"enabled":true,"api_base":"https://feedback.example.com","app_id":"com.example.blog","launcher_mode":"tab","capture_mode":"off","side":"left"}`, func() bool {
+			cfg := site.Load().Feedback
+			return cfg.Active() && cfg.EffectiveLauncherMode() == "tab" && cfg.EffectiveCaptureMode() == "off" && cfg.EffectiveSide() == "left"
+		}},
 	}
 	for _, tc := range cases {
 		if err := SaveSection(s, site, tc.section, []byte(tc.payload)); err != nil {
@@ -243,6 +248,29 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		if !tc.check() {
 			t.Fatalf("section %s hot update failed", tc.section)
 		}
+	}
+}
+
+// TestSaveSectionFeedbackValidation feedback 段 api_base 必须为 http(s)，缺省值按组件语义回落。
+func TestSaveSectionFeedbackValidation(t *testing.T) {
+	s := newTestStore(t)
+	site := newSitePtr()
+	if err := Bootstrap(s, site.Load()); err != nil {
+		t.Fatalf("bootstrap: %v", err)
+	}
+	if err := SaveSection(s, site, SectionFeedback, []byte(`{"enabled":true,"api_base":"ftp://x","app_id":"a"}`)); err == nil {
+		t.Fatal("non-http(s) api_base should be rejected")
+	}
+	if site.Load().Feedback.Enabled {
+		t.Fatal("rejected payload must not mutate site")
+	}
+	// 未填 launcher/side/capture 字段时按组件缺省回落（orb / viewport / right / 25%）。
+	if err := SaveSection(s, site, SectionFeedback, []byte(`{"enabled":true,"api_base":"http://127.0.0.1:8787","app_id":"com.example.blog"}`)); err != nil {
+		t.Fatalf("save feedback: %v", err)
+	}
+	cfg := site.Load().Feedback
+	if !cfg.Active() || cfg.EffectiveLauncherMode() != "orb" || cfg.EffectiveCaptureMode() != "viewport" || cfg.EffectiveSide() != "right" || cfg.EffectiveLauncherBottom() != "25%" {
+		t.Fatalf("feedback defaults mismatch: %+v", cfg)
 	}
 }
 

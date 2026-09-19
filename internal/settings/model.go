@@ -416,6 +416,8 @@ type Site struct {
 	Pages PagesConfig `yaml:"pages,omitempty" json:"pages,omitempty"`
 	// Services 外部数据服务配置（site.yml services 段）。
 	Services ServicesConfig `yaml:"services,omitempty" json:"services,omitempty"`
+	// Feedback 反馈组件配置（site.yml feedback 段）：接入自建 Feedback 服务的 <feedback-widget>。
+	Feedback FeedbackConfig `yaml:"feedback,omitempty" json:"feedback,omitempty"`
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
@@ -430,6 +432,59 @@ type ServicesConfig struct {
 // 用此 API 补图标。API 为空时功能关闭（与上游一致）。URL 模板中 {href} 会被替换为站点 URL。
 type SiteInfoConfig struct {
 	API string `yaml:"api" json:"api"`
+}
+
+// FeedbackConfig 反馈组件配置（site.yml feedback 段）。
+// 组件是 Feedback 仓库 packages/web 构建的 <feedback-widget> Custom Element，
+// 静态产物 vendor 在 modules/stellar/web/assets/vendor/feedback/（ESM 入口 + 懒加载截图分块）。
+// enabled + api_base + app_id 三者齐备才在 base.html 渲染组件；主题固定 dark（产品仅深色）。
+type FeedbackConfig struct {
+	Enabled        bool   `yaml:"enabled" json:"enabled"`
+	APIBase        string `yaml:"api_base" json:"api_base"`             // Feedback 服务地址，如 http://127.0.0.1:8787
+	AppID          string `yaml:"app_id" json:"app_id"`                 // 宿主软件标识（服务端首次提交自动发现，无需预登记）
+	AppName        string `yaml:"app_name" json:"app_name"`             // 软件显示名（后台未配置时的建议名）
+	AppVersion     string `yaml:"app_version" json:"app_version"`       // 可选版本号，随提交 context 上报
+	Side           string `yaml:"side" json:"side"`                     // 入口停靠侧：left|right，默认 right
+	LauncherMode   string `yaml:"launcher_mode" json:"launcher_mode"`   // 入口形态：tab|orb，默认 orb（灵感球）
+	CaptureMode    string `yaml:"capture_mode" json:"capture_mode"`     // 呼出自动截图：off|viewport，默认 viewport
+	LauncherBottom string `yaml:"launcher_bottom" json:"launcher_bottom"` // 入口距底部位置（CSS 长度），默认 25%
+}
+
+// Active 反馈组件是否渲染：开关打开且服务地址、软件标识均已配置。
+func (c FeedbackConfig) Active() bool {
+	return c.Enabled && c.APIBase != "" && c.AppID != ""
+}
+
+// EffectiveSide 非法取值回落 right（与组件属性缺省一致）。
+func (c FeedbackConfig) EffectiveSide() string {
+	if c.Side == "left" {
+		return "left"
+	}
+	return "right"
+}
+
+// EffectiveLauncherMode 非法取值回落 orb（博客推荐灵感球入口）。
+func (c FeedbackConfig) EffectiveLauncherMode() string {
+	if c.LauncherMode == "tab" {
+		return "tab"
+	}
+	return "orb"
+}
+
+// EffectiveCaptureMode 非法取值回落 viewport（呼出即截取当前视口）。
+func (c FeedbackConfig) EffectiveCaptureMode() string {
+	if c.CaptureMode == "off" {
+		return "off"
+	}
+	return "viewport"
+}
+
+// EffectiveLauncherBottom 空值回落 25%（组件属性缺省一致）。
+func (c FeedbackConfig) EffectiveLauncherBottom() string {
+	if strings.TrimSpace(c.LauncherBottom) == "" {
+		return "25%"
+	}
+	return c.LauncherBottom
 }
 
 // DefaultAssets 对齐原版 _config.yml default 段：各场景占位素材 URL，空则回退内置硬编码值。

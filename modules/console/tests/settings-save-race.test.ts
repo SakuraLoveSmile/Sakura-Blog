@@ -82,7 +82,7 @@ test("所有设置与主题设置保存按钮都带全局保存禁用条件（�
     loadingButtons += (code.match(/:loading="saving[^"]*"/g) ?? []).length;
     globallyDisabled += (code.match(/:disabled="Boolean\(saving\)"/g) ?? []).length;
   }
-  assert.equal(loadingButtons, 20, "保存按钮数量应与受管子表单一致");
+  assert.equal(loadingButtons, 21, "保存按钮数量应与受管子表单一致");
   assert.equal(globallyDisabled, loadingButtons, "每个保存按钮都必须带 Boolean(saving) 全局禁用条件");
 
   // 独立持有本地保存状态的子表单必须接线页面级 saving，否则不会参与全局禁用

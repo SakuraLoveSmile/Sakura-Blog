@@ -26,6 +26,7 @@ type CollectionItem = settings.CollectionItem
 type CommentsConfig = settings.CommentsConfig
 type DefaultAssets = settings.DefaultAssets
 type EditPageLink = settings.EditPageLink
+type FeedbackConfig = settings.FeedbackConfig
 type Footer = settings.Footer
 
 type HeroAction = settings.HeroAction
