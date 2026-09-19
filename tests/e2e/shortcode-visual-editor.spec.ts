@@ -73,10 +73,9 @@ async function expectMarkdownContains(page: Page, needle: string) {
 
 async function expectPreviewContains(page: Page, needle: string) {
   await expect
-    .poll(
-      async () => (await page.locator(".stellar-tag-node iframe").first().getAttribute("srcdoc")) ?? "",
-      { timeout: 20_000 },
-    )
+    .poll(async () => (await page.locator(".stellar-tag-node iframe").first().getAttribute("srcdoc")) ?? "", {
+      timeout: 20_000,
+    })
     .toContain(needle);
 }
 
@@ -194,6 +193,42 @@ test("emoji（特殊 inline）：source/name 模式字段回填与改值", async
   await expectMarkdownContains(page, "{% emoji twemoji 1f44d height:32px %}");
 });
 
+test("emoji URL 模式：修改其他字段后保留外链与 alt", async ({ page }) => {
+  await setMarkdown(page, "{% emoji url:https://example.com/e.png name:原表情 height:20px %}");
+  const dialog = await openPropertyPanel(page);
+
+  await expect(dialog.locator("#schema-field-url")).toHaveValue("https://example.com/e.png");
+  await expect(dialog.locator("#schema-field-name")).toHaveValue("原表情");
+  await dialog.locator("#schema-field-height").fill("32px");
+  await expectMarkdownContains(page, "{% emoji url:https://example.com/e.png name:原表情 height:32px %}");
+  const markdown = await getMarkdown(page);
+  expect(markdown).not.toContain("emoji twemoji");
+});
+
+test("结构化编辑校验：清空必填字段时禁用应用且不提交无效 raw", async ({ page }) => {
+  await setMarkdown(page, "{% button 访问主页 https://example.com %}");
+  const dialog = await openPropertyPanel(page);
+  const original = await getMarkdown(page);
+
+  await dialog.locator("#schema-field-url").fill("");
+  await expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
+  await expect(dialog.getByText(/必填参数/)).toBeVisible();
+  await dialog.getByRole("button", { name: "取消" }).click();
+  expect(await getMarkdown(page)).toBe(original);
+});
+
+test("结构化编辑回退：含单双引号的参数不提交并提示源码编辑", async ({ page }) => {
+  await setMarkdown(page, "{% button 访问主页 https://example.com %}");
+  const dialog = await openPropertyPanel(page);
+  const original = await getMarkdown(page);
+
+  await dialog.locator("#schema-field-text").fill("含 \"双引号\" 与 '单引号'");
+  await expect(dialog.getByRole("button", { name: "应用" })).toBeDisabled();
+  await expect(dialog.getByText(/单双引号/)).toBeVisible();
+  await dialog.getByRole("button", { name: "应用" }).click({ force: true });
+  expect(await getMarkdown(page)).toBe(original);
+});
+
 test("links（零参数）：面板提示无属性但保留源码编辑", async ({ page }) => {
   await setMarkdown(page, "{% links %}");
   const dialog = await openPropertyPanel(page);
@@ -220,11 +255,58 @@ test("编辑已有组件不会注入 catalog default（folding 未写的 open �
   await expectPreviewContains(page, "新折叠标题");
 });
 
-test("flag 统一输出 key:true（image download 勾选后回写）", async ({ page }) => {
-  await setMarkdown(page, "{% image /assets/img/preview/image-demo.jpg 示例图 %}");
+test("image download：空值、true、false 和 URL 保持回写与预览语义", async ({ page }) => {
+  const source = "/assets/img/preview/image-demo.jpg";
+  await setMarkdown(page, `{% image ${source} 示例图 %}`);
   const dialog = await openPropertyPanel(page);
+  const download = dialog.locator("#schema-field-download");
+  const preview = page.locator(".stellar-tag-node iframe").first();
+  const previewDownload = () =>
+    preview.getAttribute("srcdoc").then((html) =>
+      page.evaluate((markup) => {
+        const document = new DOMParser().parseFromString(markup ?? "", "text/html");
+        return document.querySelector("a.image-download")?.getAttribute("href") ?? null;
+      }, html),
+    );
 
-  await expect(dialog.locator("#schema-field-download")).not.toBeChecked();
-  await dialog.locator("#schema-field-download").check();
+  await expect(download).toHaveValue("");
+  await expectPreviewContains(page, "image-caption");
+  await expect.poll(previewDownload).toBeNull();
+
+  await download.fill("true");
   await expectMarkdownContains(page, "download:true");
+  await expect.poll(previewDownload).toBe(source);
+
+  await download.fill("false");
+  await expectMarkdownContains(page, "download:false");
+  await expect.poll(previewDownload).toBeNull();
+
+  await download.fill("https://example.com/full.png");
+  await expectMarkdownContains(page, "download:https://example.com/full.png");
+  await expect.poll(previewDownload).toBe("https://example.com/full.png");
+
+  await download.fill("");
+  await expect.poll(() => getMarkdown(page)).not.toContain("download:");
+  await expect.poll(previewDownload).toBeNull();
+});
+
+test("布尔参数：缺失值不落盘，开关回写与预览同步", async ({ page }) => {
+  await setMarkdown(page, "{% video bilibili:BV1test %}");
+  const dialog = await openPropertyPanel(page);
+  const autoplay = dialog.locator("#schema-field-autoplay");
+
+  await expect(autoplay).not.toBeChecked();
+  await dialog.locator("#schema-field-width").fill("80%");
+  await expectMarkdownContains(page, "width:80%");
+  expect(await getMarkdown(page)).not.toContain("autoplay:");
+  await expectPreviewContains(page, "autoplay=false");
+
+  await autoplay.check();
+  await expectMarkdownContains(page, "autoplay:true");
+  await expectPreviewContains(page, "autoplay=true");
+
+  await autoplay.uncheck();
+  // flag 关闭时省略参数，渲染器按 false 处理。
+  await expect.poll(() => getMarkdown(page)).not.toContain("autoplay:");
+  await expectPreviewContains(page, "autoplay=false");
 });

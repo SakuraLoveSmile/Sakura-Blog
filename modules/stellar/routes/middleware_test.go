@@ -12,7 +12,33 @@ import (
 
 	"blog/internal/config"
 	"blog/internal/httpapi"
+	tmpl "blog/modules/stellar/viewmodel"
 )
+
+func TestForwardedProtoRequiresTrustedProxy(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ws := newWebServer(webDeps{Site: sitePtr(&tmpl.Site{})})
+	for _, tc := range []struct {
+		name, remote, want string
+	}{
+		{"untrusted", "10.0.0.2:1234", "http://proxy.example"},
+		{"trusted", "10.0.0.1:1234", "https://proxy.example"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := gin.New()
+			ws.installMiddleware(r, &config.App{TrustedProxy: "10.0.0.1/32"}, newPageViewBuffer(nil))
+			r.GET("/", func(c *gin.Context) { c.String(http.StatusOK, ws.baseURL(c)) })
+			req := httptest.NewRequest(http.MethodGet, "http://proxy.example/", nil)
+			req.RemoteAddr = tc.remote
+			req.Header.Set("X-Forwarded-Proto", "https")
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			if got := strings.TrimSpace(w.Body.String()); got != tc.want {
+				t.Fatalf("base URL = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestHeadRoutesMatchGetBeforeGin(t *testing.T) {
 	gin.SetMode(gin.TestMode)

@@ -94,7 +94,7 @@ function moveItem(i: number, dir: -1 | 1) {
     </div>
 
     <div>
-      <VButton type="primary" size="sm" :loading="saving === 'nav_tabs'" @click="emit('save')">保存导航标签</VButton>
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'nav_tabs'" @click="emit('save')">保存导航标签</VButton>
     </div>
   </div>
 </template>

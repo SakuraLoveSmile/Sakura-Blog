@@ -4,6 +4,7 @@ import (
 	"blog/internal/settings"
 	"fmt"
 	"html"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -99,11 +100,35 @@ func renderTip(argsStr, body string, renderMD func(string) string) string {
 	return fmt.Sprintf(`<span class="tag-plugin tip" tabindex="0"><span class="tip-text">%s</span><span class="tip-bubble" role="tooltip">%s</span></span>`, inner, html.EscapeString(text))
 }
 
-func renderTimeline(body string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
+// renderTimeline 渲染 {% timeline [api:URL] [user:...] [limit:...] [hide:...] %} 节点 {% endtimeline %}。
+// 有 api 时进入客户端数据服务模式（对齐原版 timeline.js 的 ds-timeline 容器）：
+// 容器结构与本仓库 widgets/timeline.html 一致——class 追加 " data-service ds-timeline"，
+// 属性为 data-api + 可选的 user/limit/hide（三者由 services/timeline.js 读取）。
+// 原版还允许任意 key 进 data-*，本项目收窄为白名单，避免属性注入面。
+// type 参数不支持：本仓库只随包发布 services/timeline.js 一个客户端服务，
+// 放行其它值只会产出无人渲染的空容器。
+func renderTimeline(argsStr, body string, renderMD func(string) string, tagPlugins settings.TagPluginsConfig) string {
 	pairs := splitByMarker(reNodeSplit, body)
 
+	named, _ := parseNamedPositionalArgs(argsStr, []string{"api", "user", "limit", "hide"}, nil)
+	// 安全审计 2026-08-30：api 走 scheme 白名单，非法值丢弃（不进入数据服务模式）
+	api := safeURL(named["api"])
+
 	var sb strings.Builder
-	sb.WriteString(`<div class="tag-plugin timeline"`)
+	sb.WriteString(`<div class="tag-plugin timeline`)
+	if api != "" {
+		sb.WriteString(` data-service ds-timeline`)
+	}
+	sb.WriteString(`"`)
+	if api != "" {
+		fmt.Fprintf(&sb, ` data-api="%s"`, html.EscapeString(api))
+	}
+	// 安全审计 2026-08-30：透传属性一律转义后再拼入
+	for _, key := range []string{"user", "limit", "hide"} {
+		if v := named[key]; v != "" {
+			fmt.Fprintf(&sb, ` %s="%s"`, key, html.EscapeString(v))
+		}
+	}
 	// tag_plugins.timeline.max_height：限高滚动（空=不限高，现状）
 	// 安全审计 2026-08-16：max-height 进 style，走 CSS 数值白名单，非法值丢弃
 	if mh := safeCSSNum(tagPlugins.Timeline.MaxHeight); mh != "" {
@@ -123,6 +148,105 @@ func renderTimeline(body string, renderMD func(string) string, tagPlugins settin
 		sb.WriteString(`</div>`)
 	}
 	sb.WriteString(`</div>`)
+	return sb.String()
+}
+
+// dropdownItem 是下拉项解析结果。
+type dropdownItem struct {
+	icon  string
+	title string
+	url   string
+}
+
+// reDropdownItem 对齐原版 dropdown.js:12 的单项正则：
+// 可选列表前缀（- / *）、可选前缀 icon:key、[title](url)、可选后缀 icon:key。
+var reDropdownItem = regexp.MustCompile(`^\s*(?:[-*]\s+)?(?:icon:([^\s]+)\s+)?\[([^\]]+)\]\(([^)\s]+)\)(?:\s+icon:([^\s]+))?\s*$`)
+
+func parseDropdownItems(body string) []dropdownItem {
+	var items []dropdownItem
+	for _, line := range strings.Split(body, "\n") {
+		m := reDropdownItem.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		icon := m[1]
+		if icon == "" {
+			icon = m[4]
+		}
+		items = append(items, dropdownItem{icon: icon, title: m[2], url: m[3]})
+	}
+	return items
+}
+
+// renderDropdown 渲染 {% dropdown [direction:up/down] [align:left/right] [open:true] title %}
+// - icon:key [title](url)
+// {% enddropdown %}
+// DOM 对齐原版 dropdown.js:39-62。icon 复用已注入的图标注册表；已知键渲染对应 SVG，未知键安全回退。
+func renderDropdown(argsStr, body string, iconFunc func(string) string) string {
+	named, positional := parseNamedPositionalArgs(argsStr, []string{"direction", "align", "open"}, []string{"title"})
+	title := named["title"]
+	if title == "" && len(positional) > 0 {
+		title = strings.Join(positional, " ")
+	}
+	items := parseDropdownItems(body)
+	if len(items) == 0 {
+		return ""
+	}
+	if strings.TrimSpace(title) == "" {
+		title = "菜单"
+	}
+
+	// 安全审计 2026-08-31：direction/align 走白名单，非法值回退 auto（与原版一致）
+	direction := "auto"
+	if named["direction"] == "up" || named["direction"] == "down" {
+		direction = named["direction"]
+	}
+	align := "auto"
+	if named["align"] == "left" || named["align"] == "right" {
+		align = named["align"]
+	}
+	open := named["open"] == "true"
+
+	var sb strings.Builder
+	// 安全审计 2026-08-31：direction/align 白名单后转义拼入
+	fmt.Fprintf(&sb, `<details class="tag-plugin dropdown" direction="%s" align="%s"`, html.EscapeString(direction), html.EscapeString(align))
+	if open {
+		sb.WriteString(` open`)
+	}
+	sb.WriteString(`>`)
+	// 安全审计 2026-08-31：title 用户可控，转义后再输出（summary 的 title/aria-label 与文本三处）
+	fmt.Fprintf(&sb, `<summary class="dropdown-trigger" title="%s" aria-label="%s"><span>%s</span>`, html.EscapeString(title), html.EscapeString(title), html.EscapeString(title))
+	sb.WriteString(`<svg class="dropdown-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`)
+	sb.WriteString(`</summary>`)
+	sb.WriteString(`<div class="dropdown-menu ui-collection" data-ui-surface="glass" data-layout="list" data-variant="nav" data-density="compact">`)
+	for _, it := range items {
+		// 安全审计 2026-08-31：url 用户可控，scheme 白名单（拒 javascript:/data: 等），非法项跳过
+		url := safeURL(it.url)
+		if url == "" {
+			continue
+		}
+		external := strings.Contains(url, "://")
+		fmt.Fprintf(&sb, `<a class="dropdown-item ui-collection__item card-hover card-hover--spotlight" href="%s"`, html.EscapeString(url))
+		if external {
+			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer">`)
+		} else {
+			sb.WriteString(` rel="noopener noreferrer">`)
+		}
+		if it.icon != "" {
+			// 安全审计 2026-08-31 / 阶段 E：icon key 白名单校验，已知键渲染对应 SVG，未知键安全回退
+			sb.WriteString(`<span class="ui-collection__leading">`)
+			k := safeIconKey(it.icon)
+			if k != "" && iconFunc != nil {
+				sb.WriteString(iconFunc(k))
+			} else if k != "" {
+				fmt.Fprintf(&sb, `<span class="icon-missing" data-icon="%s"></span>`, html.EscapeString(k))
+			}
+			sb.WriteString(`</span>`)
+		}
+		// 安全审计 2026-08-31：title 用户可控，转义后再输出
+		fmt.Fprintf(&sb, `<span class="ui-collection__content"><span class="ui-collection__title">%s</span></span></a>`, html.EscapeString(it.title))
+	}
+	sb.WriteString(`</div></details>`)
 	return sb.String()
 }
 

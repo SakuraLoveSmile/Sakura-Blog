@@ -36,6 +36,8 @@ const (
 	SectionDefault    = "default"     // 占位素材组（对齐原版 _config.yml default）
 	SectionPages      = "pages"       // 页面级设置（friends 页等特色设置，按页面键管理）
 	SectionDataCache  = "data_cache"  // 动态数据客户端缓存（base.html 注入 ctx.data_cache 消费）
+	SectionServices   = "services"    // 外部数据服务配置（当前接入 siteinfo）
+	SectionFeedback   = "feedback"    // 反馈组件（Feedback 服务 <feedback-widget> 接入配置）
 
 	// SectionAdmin 管理密码段（迁移用，Spec 61 阶段 4）：明文仅存于迁移窗口期——
 	// Bootstrap 检测非空时迁移到 users 表（bcrypt）并清空，此后不再写入。
@@ -72,6 +74,7 @@ type dashboardConfig struct {
 // Bootstrap 首次启动导入：settings/links 表为空时，把 site（DefaultSite 合并 site.yml）写入 DB。
 // 幂等——非空表跳过，二次启动不重复导入。
 func Bootstrap(st *store.Store, site *tmpl.Site) error {
+	normalizeThemeDefaults(site)
 	if err := st.EnsureSettingsTable(); err != nil {
 		return err
 	}
@@ -91,6 +94,9 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 
 	settings, err := st.AllSettings()
 	if err != nil {
+		return err
+	}
+	if err := backfillRuntimeSettings(st, settings, site); err != nil {
 		return err
 	}
 	// Wiki 项目从 site.yml/settings.wiki 一次性迁移到独立表；之后运行时不再
@@ -132,15 +138,6 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 			return err
 		}
 		if err := st.PutSetting(SectionSEO, string(b)); err != nil {
-			return err
-		}
-	}
-	if _, ok := settings[SectionSearch]; !ok {
-		b, err := json.Marshal(site.Search)
-		if err != nil {
-			return err
-		}
-		if err := st.PutSetting(SectionSearch, string(b)); err != nil {
 			return err
 		}
 	}
@@ -188,13 +185,11 @@ func Bootstrap(st *store.Store, site *tmpl.Site) error {
 		b, _ := json.Marshal(site.Plugins)
 		st.PutSetting(SectionPlugins, string(b))
 	}
-	// data_cache 段兼容导入：旧库升级时 settings 非空但缺段，从 site.yml 初值补导一次
-	//（与 seo/style/widgets 同语义），之后以 DB 为准。
-	if _, ok := settings[SectionDataCache]; !ok {
-		b, _ := json.Marshal(site.DataCache)
-		st.PutSetting(SectionDataCache, string(b))
+	// feedback 段兼容导入：旧库升级时 settings 非空但缺段，从 site.yml 初值补导一次。
+	if _, ok := settings[SectionFeedback]; !ok {
+		b, _ := json.Marshal(site.Feedback)
+		st.PutSetting(SectionFeedback, string(b))
 	}
-
 	// site 段 favicon 兼容导入：旧库 site 段缺 favicon_url/apple_touch_icon 键时，
 	// 从 site.yml 初值合并补写，避免 RebuildSite 把已加载值清零（site.yml 留空则不补）。
 	if raw, ok := settings[SectionSite]; ok && raw != "" {
@@ -305,6 +300,9 @@ func storeWikiProject(project *tmpl.WikiProject) *store.WikiProject {
 			Background: project.Hero.Background, Title: project.Hero.Title,
 			Description: project.Hero.Description, Start: project.Hero.Start,
 		}
+		if project.Hero.Animation != nil {
+			h.Animation = &store.WikiHeroAnimation{Type: project.Hero.Animation.Type, Params: project.Hero.Animation.Params}
+		}
 		if project.Hero.Preview != nil {
 			h.Preview = &store.WikiHeroPreview{Type: project.Hero.Preview.Type, Image: project.Hero.Preview.Image}
 			for _, cmd := range project.Hero.Preview.Commands {
@@ -389,10 +387,22 @@ func writeSiteSections(st *store.Store, site *tmpl.Site) error {
 	if err := put(SectionPlugins, site.Plugins); err != nil {
 		return err
 	}
+	if err := put(SectionTagPlugins, site.TagPlugins); err != nil {
+		return err
+	}
+	if err := put(SectionDefault, site.Default); err != nil {
+		return err
+	}
 	if err := put(SectionPages, site.Pages); err != nil {
 		return err
 	}
 	if err := put(SectionDataCache, site.DataCache); err != nil {
+		return err
+	}
+	if err := put(SectionServices, site.Services); err != nil {
+		return err
+	}
+	if err := put(SectionFeedback, site.Feedback); err != nil {
 		return err
 	}
 	// lang 段不写初始值：settings 无 lang 行 = 无文案覆盖（全用内置 zhCN）。

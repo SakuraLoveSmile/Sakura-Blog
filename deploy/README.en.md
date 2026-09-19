@@ -1,15 +1,19 @@
 # Deployment guide
 
-The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies both SHA256 integrity and GitHub Artifact Attestation provenance.
+The production artifact is a single Go binary. The Console and User Center assets are built by Vite and embedded into that binary. `update.sh` verifies the downloaded binary with SHA256 before deployment.
 
-`update.sh` requires `curl`, `sha256sum`, `systemctl`, `python3`, and a GitHub CLI that supports `gh attestation verify`. Provenance verification is strict by default; temporarily set `BLOG_VERIFY_PROVENANCE=0` only while migrating releases created before attestations were enabled.
+`update.sh` requires `curl`, `sha256sum`, `systemctl`, and `python3`. It supports public and private GitHub repositories; a private repository uses a `contents:read` PAT in `/opt/blog/.token` to read Release assets.
+
+Every new Release must include `blog-linux-amd64`, `blog-linux-amd64.sha256`, and `blog-linux-amd64.spdx.json`. The updater downloads the binary and checksum, verifies the checksum, and only then performs the replacement, health check, and automatic rollback flow. The SBOM remains available for release review and dependency analysis.
 
 ## Configuration
 
 Create the runtime configuration outside Git:
 
 ```bash
-mkdir -p /opt/blog/config /opt/blog/data /opt/blog/content/posts
+mkdir -p /opt/blog/{config,data,content/posts,update/requests}
+chown -R blog:blog /opt/blog
+chmod 770 /opt/blog/update/requests
 cp config/app.example.yml /opt/blog/config/app.yml
 cp config/site.example.yml /opt/blog/config/site.yml
 chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml
@@ -21,10 +25,10 @@ Prefer environment injection for tokens and passwords. Do not commit `config/app
 
 The files in this directory are examples:
 
-- `blog.service` runs the binary as the unprivileged `blog` user.
+- `blog.service` runs the binary as the unprivileged `blog` user (`ReadWritePaths` includes `/opt/blog/data` and `/opt/blog/update/requests`).
 - `blog.service.d/10-secrets.conf.example` shows how to load secrets from a root-owned environment file.
 - `nginx.conf.example` terminates TLS and forwards requests to the local service.
-- `blog-update.timer` and `update.sh` provide an optional release update flow with rollback.
+- `blog-update.path`, `blog-update.service`, and `blog-update.timer` provide release updates via `update.sh` without requiring `sudo` privileges.
 
 Copy and review each file for the target host before enabling it. Set `BLOG_TRUSTED_PROXY` or the matching YAML setting only to the actual reverse-proxy address range.
 
@@ -38,4 +42,4 @@ make build
 ./blog -root /opt/blog
 ```
 
-Run `bash deploy/update_test.sh` to exercise update and rollback logic without contacting GitHub or systemd.
+Run `bash deploy/update_test.sh` to exercise update, request consumption, and rollback logic without contacting GitHub or systemd.

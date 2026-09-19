@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"blog/internal/store"
@@ -87,5 +88,17 @@ func TestUserCenterUsesPublicAuthorSessionAndOwnership(t *testing.T) {
 	w = doUserReq(r, http.MethodDelete, "/api/v1/uc/attachments/"+itoa(otherAttachment), "", readerCookie)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("UC cross-owner attachment delete = %d body=%s, want 403", w.Code, w.Body.String())
+	}
+	admin, err := st.GetUserByUsername("admin")
+	if err != nil || admin == nil {
+		t.Fatalf("get admin: %v", err)
+	}
+	adminRequest := httptest.NewRequest(http.MethodDelete, "/api/v1/uc/attachments/"+itoa(otherAttachment), nil)
+	adminRequest.AddCookie(&http.Cookie{Name: authCookieName, Value: authCookie(admin)})
+	adminResponse := httptest.NewRecorder()
+	r.ServeHTTP(adminResponse, adminRequest)
+	w = adminResponse
+	if w.Code != http.StatusOK {
+		t.Fatalf("UC admin attachment delete = %d body=%s, want 200", w.Code, w.Body.String())
 	}
 }

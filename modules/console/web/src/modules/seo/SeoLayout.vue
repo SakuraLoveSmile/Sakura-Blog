@@ -31,13 +31,17 @@ const active = computed(() => route.path);
         <ul class="flex gap-1 overflow-x-auto md:block md:space-y-1 md:gap-0">
           <li v-for="s in sub" :key="s.path">
             <button
-              class="flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-base px-3 py-2 text-sm transition-colors"
+              type="button"
+              class="seo-nav-btn flex w-full shrink-0 items-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] px-3 transition-all"
               :class="
-                active === s.path ? 'bg-primary/10 font-medium text-primary' : 'text-text-tertiary hover:bg-accent'
+                active === s.path
+                  ? 'bg-[#2c2c2e] font-semibold text-foreground shadow-sm'
+                  : 'text-text-secondary hover:bg-secondary hover:text-foreground'
               "
+              :aria-current="active === s.path ? 'page' : undefined"
               @click="router.push(s.path)"
             >
-              <Icon :icon="s.icon" class="text-base" />
+              <Icon :icon="s.icon" class="text-base" :class="active === s.path ? 'text-primary' : 'text-text-tertiary'" />
               {{ s.label }}
             </button>
           </li>
@@ -51,3 +55,15 @@ const active = computed(() => route.path);
     </div>
   </div>
 </template>
+
+<style scoped>
+.seo-nav-btn {
+  height: 44px;
+  font-size: 13px;
+}
+@media (min-width: 768px) {
+  .seo-nav-btn {
+    height: 36px;
+  }
+}
+</style>

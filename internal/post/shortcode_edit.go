@@ -95,7 +95,7 @@ func shortcodeEditSplitArgs(name, args string, params []ShortcodeParamSchema) (m
 		if hasColon {
 			for _, param := range params {
 				switch param.Role {
-				case ShortcodeParamNamed:
+				case ShortcodeParamNamed, ShortcodeParamPositional:
 					if param.Key == key {
 						named[param.Key] = value
 						matched = true

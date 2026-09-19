@@ -20,15 +20,20 @@ const (
 
 // pageViewBuffer PV 埋点缓冲器。
 type pageViewBuffer struct {
-	ch   chan store.PageView
+	ch   chan queuedPageView
 	st   *store.Store
 	done chan struct{}
 	wg   sync.WaitGroup
 }
 
+type queuedPageView struct {
+	view       store.PageView
+	generation uint64
+}
+
 func newPageViewBuffer(st *store.Store) *pageViewBuffer {
 	b := &pageViewBuffer{
-		ch:   make(chan store.PageView, pvBufferSize),
+		ch:   make(chan queuedPageView, pvBufferSize),
 		st:   st,
 		done: make(chan struct{}),
 	}
@@ -39,8 +44,12 @@ func newPageViewBuffer(st *store.Store) *pageViewBuffer {
 
 // push 非阻塞入队；缓冲满时静默丢弃（埋点失败不影响页面响应）。
 func (b *pageViewBuffer) push(v store.PageView) {
+	generation := uint64(0)
+	if b.st != nil {
+		generation = b.st.Maintenance().Generation()
+	}
 	select {
-	case b.ch <- v:
+	case b.ch <- queuedPageView{view: v, generation: generation}:
 	default:
 	}
 }
@@ -50,7 +59,7 @@ func (b *pageViewBuffer) flushLoop() {
 	defer b.wg.Done()
 	ticker := time.NewTicker(pvFlushInterval)
 	defer ticker.Stop()
-	var buf []store.PageView
+	var buf []queuedPageView
 	for {
 		select {
 		case v, ok := <-b.ch:
@@ -82,11 +91,26 @@ func (b *pageViewBuffer) flushLoop() {
 	}
 }
 
-func (b *pageViewBuffer) flush(records []store.PageView) {
+func (b *pageViewBuffer) flush(records []queuedPageView) {
 	if len(records) == 0 || b.st == nil {
 		return // nil store（测试空 webDeps 场景）：静默跳过
 	}
-	if err := b.st.BatchRecordViews(records); err != nil {
+	release, err := b.st.Maintenance().Acquire()
+	if err != nil {
+		return
+	}
+	defer release()
+	generation := b.st.Maintenance().Generation()
+	views := make([]store.PageView, 0, len(records))
+	for _, record := range records {
+		if record.generation == generation {
+			views = append(views, record.view)
+		}
+	}
+	if len(views) == 0 {
+		return
+	}
+	if err := b.st.BatchRecordViews(views); err != nil {
 		log.Printf("pageview flush: %v", err)
 	}
 }

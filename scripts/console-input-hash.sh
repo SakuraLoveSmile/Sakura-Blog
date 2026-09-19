@@ -49,8 +49,22 @@ if [[ -d "$root_dir/modules/console/web/src" ]]; then
   done < <(find "$root_dir/modules/console/web/src" -type f -print)
 fi
 
-for path in "$root_dir/modules/console/web"/*.ts "$root_dir/modules/console/web"/*.json; do
+for path in \
+  "$root_dir/modules/console/web"/*.html \
+  "$root_dir/modules/console/web"/*.ts \
+  "$root_dir/modules/console/web"/*.json \
+  "$root_dir/modules/console/web"/*.mjs \
+  "$root_dir/modules/console/web"/*.yaml \
+  "$root_dir/modules/console/web"/*.yml; do
   add_file "$path"
+done
+
+for directory in public scripts; do
+  if [[ -d "$root_dir/modules/console/web/$directory" ]]; then
+    while IFS= read -r path; do
+      add_file "$path"
+    done < <(find "$root_dir/modules/console/web/$directory" -type f -print)
+  fi
 done
 
 add_file "$root_dir/package.json"

@@ -3,6 +3,8 @@ package config
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -21,6 +23,9 @@ func newTestStore(t *testing.T) *store.Store {
 	}
 	if err := s.EnsureLinksTable(); err != nil {
 		t.Fatalf("ensure links: %v", err)
+	}
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users: %v", err)
 	}
 	t.Cleanup(func() { s.Close() })
 	return s
@@ -171,13 +176,15 @@ func TestBootstrapImportsEditableSections(t *testing.T) {
 	site.Load().NavTabs = tmpl.NavTabsConfig{EnableCustom: true, Items: []tmpl.NavTabItem{{Title: "友链", URL: "/friends/"}}}
 	site.Load().Authors = map[string]tmpl.AuthorDef{"sakura": {Name: "Sakura", Description: "作者"}}
 	site.Load().Plugins = tmpl.PluginsConfig{Heti: &tmpl.HetiConfig{Enable: true}}
+	site.Load().Feedback = tmpl.FeedbackConfig{Enabled: true, APIBase: "http://127.0.0.1:8787", AppID: "com.test.blog"}
 	en := false
-	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: 600}
+	defaultTTL := 600
+	site.Load().DataCache = tmpl.DataCacheConfig{Enable: &en, DefaultTTL: &defaultTTL}
 
 	if err := Bootstrap(s, site.Load()); err != nil {
 		t.Fatalf("bootstrap: %v", err)
 	}
-	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionDataCache} {
+	for _, sec := range []string{SectionCover, SectionNavTabs, SectionAuthors, SectionPlugins, SectionDataCache, SectionFeedback} {
 		v, err := s.GetSetting(sec)
 		if err != nil || v == "" {
 			t.Fatalf("section %s not imported: %q, %v", sec, v, err)
@@ -223,11 +230,15 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		{SectionSiteTree, `{"home":{"comments":true}}`, func() bool { return site.Load().SiteTree.Home.Comments }},
 		{SectionDataCache, `{"enable":false,"default_ttl":120,"ttl":{"friends":86400}}`, func() bool {
 			cfg := site.Load().DataCache
-			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400
+			return cfg.Enable != nil && !*cfg.Enable && cfg.DefaultTTL != nil && *cfg.DefaultTTL == 120 && cfg.TTL["friends"] == 86400
 		}},
 		{SectionSEO, `{"canonical":{"originalHost":"origin.example","officialHosts":["mirror.example"]},"open_graph":{"enable":false,"twitter_id":"blog"},"preconnect":["https://cdn.example"],"structured_data":{"links":["https://example.com"]}}`, func() bool {
 			cfg := site.Load().SEO
 			return cfg.Canonical.OriginalHost == "origin.example" && len(cfg.Canonical.OfficialHosts) == 1 && cfg.OpenGraph.Enable != nil && !*cfg.OpenGraph.Enable && len(cfg.Preconnect) == 1 && len(cfg.StructuredData.Links) == 1
+		}},
+		{SectionFeedback, `{"enabled":true,"api_base":"https://feedback.example.com","app_id":"com.example.blog","launcher_mode":"tab","capture_mode":"off","side":"left"}`, func() bool {
+			cfg := site.Load().Feedback
+			return cfg.Active() && cfg.EffectiveLauncherMode() == "tab" && cfg.EffectiveCaptureMode() == "off" && cfg.EffectiveSide() == "left"
 		}},
 	}
 	for _, tc := range cases {
@@ -237,6 +248,29 @@ func TestSaveSectionNewSectionsRoundtrip(t *testing.T) {
 		if !tc.check() {
 			t.Fatalf("section %s hot update failed", tc.section)
 		}
+	}
+}
+
+// TestSaveSectionFeedbackValidation feedback 段 api_base 必须为 http(s)，缺省值按组件语义回落。
+func TestSaveSectionFeedbackValidation(t *testing.T) {
+	s := newTestStore(t)
+	site := newSitePtr()
+	if err := Bootstrap(s, site.Load()); err != nil {
+		t.Fatalf("bootstrap: %v", err)
+	}
+	if err := SaveSection(s, site, SectionFeedback, []byte(`{"enabled":true,"api_base":"ftp://x","app_id":"a"}`)); err == nil {
+		t.Fatal("non-http(s) api_base should be rejected")
+	}
+	if site.Load().Feedback.Enabled {
+		t.Fatal("rejected payload must not mutate site")
+	}
+	// 未填 launcher/side/capture 字段时按组件缺省回落（orb / viewport / right / 25%）。
+	if err := SaveSection(s, site, SectionFeedback, []byte(`{"enabled":true,"api_base":"http://127.0.0.1:8787","app_id":"com.example.blog"}`)); err != nil {
+		t.Fatalf("save feedback: %v", err)
+	}
+	cfg := site.Load().Feedback
+	if !cfg.Active() || cfg.EffectiveLauncherMode() != "orb" || cfg.EffectiveCaptureMode() != "viewport" || cfg.EffectiveSide() != "right" || cfg.EffectiveLauncherBottom() != "25%" {
+		t.Fatalf("feedback defaults mismatch: %+v", cfg)
 	}
 }
 
@@ -309,5 +343,106 @@ func TestBootstrapMergesFavicon(t *testing.T) {
 	}
 	if site.Load().FaviconURL != "https://example.com/favicon.svg" {
 		t.Fatalf("rebuild cleared favicon: %q", site.Load().FaviconURL)
+	}
+}
+
+func TestSaveSectionSiteURLValidationAndNormalization(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.EnsureUsersTable(); err != nil {
+		t.Fatalf("ensure users table: %v", err)
+	}
+	site := newSitePtr()
+
+	// 1. Invalid URL rejected
+	badPayload := []byte(`{"title":"Site","url":"invalid-url"}`)
+	if err := SaveSection(s, site, SectionSite, badPayload); err == nil {
+		t.Fatal("expected error for invalid URL, got nil")
+	}
+
+	// 2. Trailing slash normalized
+	goodPayload := []byte(`{"title":"Site","url":"https://example.com/blog/"}`)
+	if err := SaveSection(s, site, SectionSite, goodPayload); err != nil {
+		t.Fatalf("unexpected error saving valid URL: %v", err)
+	}
+	if got, want := site.Load().URL, "https://example.com/blog"; got != want {
+		t.Fatalf("site.URL = %q, want %q", got, want)
+	}
+}
+
+func TestSaveSectionPreservesMaskedSecretsAndDoesNotWriteOnSnapshotFailure(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.PutSetting(SectionAI, `{"api_key":"stored-key","base_url":"https://example.test"}`); err != nil {
+		t.Fatalf("seed ai setting: %v", err)
+	}
+	if err := SaveSection(s, newSitePtr(), SectionAI, []byte(`{"api_key":"****","base_url":"https://changed.test"}`)); err != nil {
+		t.Fatalf("save masked ai setting: %v", err)
+	}
+	stored, err := s.GetSetting(SectionAI)
+	if err != nil || !strings.Contains(stored, `"api_key":"stored-key"`) {
+		t.Fatalf("masked key should be preserved, stored=%q err=%v", stored, err)
+	}
+
+	if err := s.PutSetting(SectionSite, `{"title":"before"}`); err != nil {
+		t.Fatalf("seed site setting: %v", err)
+	}
+	if err := SaveSection(s, &atomic.Pointer[tmpl.Site]{}, SectionSite, []byte(`{"title":"after"}`)); err == nil {
+		t.Fatal("nil snapshot should reject before writing")
+	}
+	stored, err = s.GetSetting(SectionSite)
+	if err != nil || !strings.Contains(stored, `"title":"before"`) {
+		t.Fatalf("failed candidate must not write setting, stored=%q err=%v", stored, err)
+	}
+}
+
+func TestSaveSectionRejectsMalformedUnrelatedStoredSection(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.PutSetting(SectionStyle, `{malformed`); err != nil {
+		t.Fatalf("seed malformed setting: %v", err)
+	}
+	if err := s.PutSetting(SectionSite, `{"title":"before"}`); err != nil {
+		t.Fatalf("seed site setting: %v", err)
+	}
+	if err := SaveSection(s, newSitePtr(), SectionSite, []byte(`{"title":"after"}`)); err == nil {
+		t.Fatal("malformed unrelated section should reject the candidate")
+	}
+	stored, err := s.GetSetting(SectionSite)
+	if err != nil || !strings.Contains(stored, `"title":"before"`) {
+		t.Fatalf("rejected candidate must not write site setting, stored=%q err=%v", stored, err)
+	}
+}
+
+func TestSaveSectionConcurrentDifferentSectionsPublishesDatabaseState(t *testing.T) {
+	s := newTestStore(t)
+	site := newSitePtr()
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+	for _, item := range []struct {
+		section string
+		raw     string
+	}{
+		{SectionSite, `{"title":"concurrent-title"}`},
+		{SectionComments, `{"enabled":false}`},
+	} {
+		item := item
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs <- SaveSection(s, site, item.section, []byte(item.raw))
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent save: %v", err)
+		}
+	}
+	settings, err := s.AllSettings()
+	if err != nil {
+		t.Fatalf("read settings: %v", err)
+	}
+	current := site.Load()
+	if current == nil || current.Title != "concurrent-title" || current.Comments.Enabled {
+		t.Fatalf("published site does not match DB writes: %+v settings=%v", current, settings)
 	}
 }

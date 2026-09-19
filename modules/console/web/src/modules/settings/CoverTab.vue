@@ -88,7 +88,7 @@ function moveItem(i: number, dir: -1 | 1) {
     </div>
 
     <div>
-      <VButton type="primary" size="sm" :loading="saving === 'cover'" @click="emit('save')">保存 Hero</VButton>
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'cover'" @click="emit('save')">保存 Hero</VButton>
     </div>
   </div>
 </template>

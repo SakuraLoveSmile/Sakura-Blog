@@ -143,6 +143,11 @@ func (w *Watcher) Close(ctx context.Context) error {
 // RunOnce performs one complete check/snapshot cycle. It is exported for
 // deterministic tests and for callers that need an immediate refresh.
 func (w *Watcher) RunOnce() error {
+	release, err := w.store.Maintenance().Acquire()
+	if err != nil {
+		return err
+	}
+	defer release()
 	if w.site.Load().Friends.CheckInterval <= 0 {
 		return nil
 	}
@@ -206,6 +211,11 @@ func (w *Watcher) RunOnce() error {
 // Snapshot immediately captures one link, regardless of the periodic
 // snapshot interval, and returns its refreshed DB record.
 func (w *Watcher) Snapshot(id int64) (*store.Link, error) {
+	release, err := w.store.Maintenance().Acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	link, err := w.store.GetLink(id)
 	if err != nil {
 		return nil, err

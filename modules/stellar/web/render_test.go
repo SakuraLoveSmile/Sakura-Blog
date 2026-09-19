@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"blog/internal/settings"
 )
 
 func boolPtr(v bool) *bool { return &v }
@@ -25,6 +27,7 @@ func renderPostDocument(t *testing.T, site *Site) string {
 			Slug:         "seo-test",
 			Layout:       "post",
 			CanonicalURL: "https://origin.example/post/seo-test",
+			Path:         "/post/seo-test",
 			Description:  "测试\\描述",
 			Date:         "2026-08-15",
 			Author:       "作者",
@@ -121,6 +124,88 @@ func TestHeadAndBaseRespectSEOAndPluginSettings(t *testing.T) {
 	}
 }
 
+func TestBaseInjectsRuntimeConfigAndTagPluginOverrides(t *testing.T) {
+	searchLazy := false
+	searchTTL := 0
+	cacheEnabled := false
+	cacheTTL := 0
+	cacheMax := 7
+	site := &Site{
+		Title:     "运行时配置",
+		Search:    settings.SearchConfig{LocalSearch: settings.LocalSearchConfig{LazyLoad: &searchLazy, CacheTTL: &searchTTL}},
+		DataCache: settings.DataCacheConfig{Enable: &cacheEnabled, DefaultTTL: &cacheTTL, MaxEntries: &cacheMax, TTL: map[string]int{"sites": 0}},
+		Services:  settings.ServicesConfig{SiteInfo: settings.SiteInfoConfig{API: `https://api.example.test?url={href}&x="quoted"`}},
+		TagPlugins: settings.TagPluginsConfig{
+			Note:     settings.TagPluginNote{Border: boolPtr(false)},
+			Checkbox: settings.TagPluginCheckbox{Interactive: false},
+			OKR:      settings.TagPluginOKR{Border: boolPtr(false)},
+		},
+	}
+	html := renderPostDocument(t, site)
+	for _, want := range []string{
+		`lazy_load: false`,
+		`cache_ttl:  0`,
+		`default_ttl:  0`,
+		`"sites":0`,
+		`max_entries:  7`,
+		`api: "https://api.example.test?url={href}\u0026x=\"quoted\""`,
+		`.md-text .tag-plugin.note{border:0}`,
+		`.md-text .tag-plugin.okr{border:0}`,
+		`.md-text .tag-plugin.checkbox input{pointer-events:none}`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered base missing %q", want)
+		}
+	}
+}
+
+// TestBaseRendersFeedbackWidget feedback 段：enabled+api_base+app_id 齐备才渲染
+// <feedback-widget> 与 ESM 入口脚本；主题固定 dark；page-label 取页面 canonical path。
+func TestBaseRendersFeedbackWidget(t *testing.T) {
+	off := renderPostDocument(t, &Site{Title: "关"})
+	if strings.Contains(off, "feedback-widget") {
+		t.Error("feedback disabled should not render widget")
+	}
+	incomplete := renderPostDocument(t, &Site{
+		Title:    "缺配置",
+		Feedback: settings.FeedbackConfig{Enabled: true, APIBase: "https://feedback.example.com"},
+	})
+	if strings.Contains(incomplete, "feedback-widget") {
+		t.Error("missing app_id should not render widget")
+	}
+
+	on := renderPostDocument(t, &Site{
+		Title: "开",
+		Feedback: settings.FeedbackConfig{
+			Enabled: true, APIBase: "https://feedback.example.com", AppID: "com.example.blog",
+			AppName: "测试博客", Side: "left", LauncherMode: "tab", CaptureMode: "off", LauncherBottom: "80px",
+		},
+	})
+	for _, want := range []string{
+		`<feedback-widget`,
+		`api-base="https://feedback.example.com"`,
+		`app-id="com.example.blog"`,
+		`app-name="测试博客"`,
+		`page-label="/post/seo-test"`,
+		`side="left"`,
+		`theme="dark"`,
+		`launcher-mode="tab"`,
+		`capture-mode="off"`,
+		`launcher-bottom="80px"`,
+		`/assets/vendor/feedback/feedback-web.js?v=`,
+		`type="module"`,
+		// html2canvas-pro 兼容覆盖：头像 border-radius calc 乘法降级为字面值
+		`.logo-wrap a.avatar img.avatar { border-radius: 50%; }`,
+	} {
+		if !strings.Contains(on, want) {
+			t.Errorf("enabled document missing %q", want)
+		}
+	}
+	if strings.Contains(off, "border-radius: 50%") {
+		t.Error("capture-compat override should be omitted when feedback disabled")
+	}
+}
+
 func TestDiskAndEmbedEnginesRenderIdentically(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -170,6 +255,7 @@ func TestEmbeddedStellarAssetsExist(t *testing.T) {
 		"assets/manifest.webmanifest",
 		"assets/fonts/lxgw/lxgwwenkaiscreen.css",
 		"assets/img/favicon.ico",
+		"assets/vendor/feedback/feedback-web.js",
 	} {
 		if _, err := FS.ReadFile(path); err != nil {
 			t.Errorf("embedded Stellar asset missing %q: %v", path, err)

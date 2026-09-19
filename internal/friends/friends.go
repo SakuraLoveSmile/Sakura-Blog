@@ -17,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/maintenance"
 	"blog/internal/safefetch"
 	tmpl "blog/internal/settings"
 )
@@ -68,16 +69,20 @@ type Aggregator struct {
 	// onArticles 每个友链抓取到文章后的回调（供落库持久化，由 main.go 装配），可空。
 	onArticles func(friendTitle, friendURL string, posts []Post)
 
-	mu        sync.RWMutex
-	cache     []Friend
-	startOnce sync.Once
-	closeOnce sync.Once
-	workMu    sync.Mutex
-	closed    bool
-	stop      chan struct{}
-	done      chan struct{}
-	work      sync.WaitGroup
+	mu          sync.RWMutex
+	cache       []Friend
+	startOnce   sync.Once
+	closeOnce   sync.Once
+	workMu      sync.Mutex
+	closed      bool
+	stop        chan struct{}
+	done        chan struct{}
+	work        sync.WaitGroup
+	maintenance *maintenance.Coordinator
 }
+
+// SetMaintenance attaches the process-wide maintenance gate to background refreshes.
+func (a *Aggregator) SetMaintenance(c *maintenance.Coordinator) { a.maintenance = c }
 
 // New 从站点配置构建聚合器，并用配置初始化缓存（此时 posts 为空，RSS 抓取后填充）。
 // 安全审计 2026-08-16：抓取客户端改用 safefetch（SSRF 加固）——rss URL 来自 links
@@ -235,6 +240,13 @@ const checkLinksConcurrency = 10
 
 // refresh 并发抓取所有带 rss 的友链，聚合后按最新文章时间倒序写回缓存。
 func (a *Aggregator) refresh() {
+	if a.maintenance != nil {
+		release, err := a.maintenance.Acquire()
+		if err != nil {
+			return
+		}
+		defer release()
+	}
 	base := a.buildBase()
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, checkLinksConcurrency)
@@ -501,4 +513,12 @@ func minf(a, b, c float64) float64 {
 		m = c
 	}
 	return m
+}
+
+// ResetRestoredCache 在维护窗口内清除旧站点的聚合结果，网络刷新在恢复结束后重新调度。
+func (a *Aggregator) ResetRestoredCache() {
+	next := a.buildBase()
+	a.mu.Lock()
+	a.cache = next
+	a.mu.Unlock()
 }

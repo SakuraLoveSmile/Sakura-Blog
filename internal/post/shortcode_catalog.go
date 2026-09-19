@@ -91,6 +91,7 @@ type ShortcodeCatalogEntry struct {
 	Category    string                 `json:"category"`
 	Capability  ShortcodeCapability    `json:"capability"`
 	Services    []string               `json:"services,omitempty"`
+	Plugins     []string               `json:"plugins,omitempty"`
 	Fixture     string                 `json:"fixture,omitempty"`
 	MainJS      bool                   `json:"main_js,omitempty"`
 	Height      int                    `json:"height,omitempty"`
@@ -177,8 +178,11 @@ var shortcodeRegistry = []shortcodeRegistration{
 	// --- 提示标注 ---
 	shortcodeEntry("note", ShortcodeInline, "提示标注", ShortcodeStatic, reNote,
 		namedSelect("color", "配色", "blue", shortcodeColors...), positional("title", "标题（可选）", nil), content("content", "内容", nil)),
+	// prefix/suffix 为渲染器真实消费的参数（shortcode_okr.go renderQuot），缺声明会让属性编辑重建时丢失
 	shortcodeEntry("quot", ShortcodeInline, "提示标注", ShortcodeStatic, reQuot,
-		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"), named("text", "标题文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
+		namedSelect("el", "标签", "p", "p", "h2", "h3", "h4", "h5", "h6"), named("icon", "图标 key", "hashtag"),
+		named("prefix", "前缀图标 key（留空用主题默认）", nil), named("suffix", "后缀图标 key（留空用主题默认）", nil),
+		named("text", "标题文本", nil)).withEdit(ShortcodeEditSchema{Enabled: true, LegacyArgs: []string{"text"}}),
 	shortcodeEntry("mark", ShortcodeInline, "提示标注", ShortcodeStatic, reMark,
 		positional("text", "文本", "重点内容"), namedSelect("color", "颜色", "yellow", shortcodeColors...)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"text"}}),
 	shortcodeEntry("button", ShortcodeInline, "提示标注", ShortcodeStatic, reButton,
@@ -202,13 +206,29 @@ var shortcodeRegistry = []shortcodeRegistration{
 
 	// --- 布局容器 ---
 	shortcodeEntry("folding", ShortcodeBlock, "布局容器", ShortcodeInteractive, reFolding,
-		namedSelect("color", "配色", nil, shortcodeColors...), flag("open", "默认展开", true),
+		namedSelect("color", "配色", nil, shortcodeColors...),
+		// child 对齐原版 folding.js 的 ['color','child','open']；只放行 main.css 定义的两类子元素排版
+		namedSelect("child", "子元素排版", nil, "", "codeblock", "iframe"),
+		flag("open", "默认展开", true),
 		positional("title", "标题", "点击查看详情"), content("content", "正文", "这里是折叠内容，支持 **Markdown**。")),
 	shortcodeEntry("tabs", ShortcodeBlock, "布局容器", ShortcodeInteractive, reTabs,
 		named("active", "默认激活序号（从 1 起）", nil), namedSelect("align", "对齐方式", nil, "", "left", "center", "right"),
 		content("content", "Tabs 内容（<!-- tab 标题 --> 分隔）", nil)),
+	// api 进入客户端数据服务模式（容器变 ds-timeline）；user/limit/hide 由 services/timeline.js 读取，
+	// 属性口径与本仓库 widgets/timeline.html 保持一致。原版允许任意 key 进 data-*，本项目收窄为白名单。
 	shortcodeEntry("timeline", ShortcodeBlock, "布局容器", ShortcodeStatic, reTimeline,
+		named("api", "数据服务 URL（填了则由客户端渲染时间流）", nil),
+		named("user", "只显示这些用户（逗号分隔）", nil),
+		named("limit", "透传给客户端（数量经 api 的 per_page 控制）", nil),
+		named("hide", "隐藏字段：user/title/footer（逗号分隔）", nil),
 		content("content", "时间轴内容（<!-- node 时间 --> 分隔）", nil)),
+	// 下拉项图标复用已注入的图标注册表（iconFunc），支持安全 SVG 内联与安全回退。
+	shortcodeEntry("dropdown", ShortcodeBlock, "布局容器", ShortcodeInteractive, reDropdown,
+		namedSelect("direction", "弹出方向", nil, "", "up", "down"),
+		namedSelect("align", "对齐", nil, "", "left", "right"),
+		flag("open", "默认展开", false),
+		positional("title", "触发按钮文字", "菜单"),
+		content("content", "下拉项（每行一个 - [标题](链接)，可前缀 icon:key）", "- [首页](/)\n- [关于](/about)")),
 	shortcodeEntry("gallery", ShortcodeBlock, "布局容器", ShortcodeInteractive, reGallery,
 		namedSelect("layout", "布局", "grid", "grid", "flow"), named("size", "尺寸模式", "mix"),
 		named("ratio", "宽高比", "origin"), content("content", "图片（每行一个 Markdown 图片）", nil)),
@@ -272,7 +292,9 @@ var shortcodeRegistry = []shortcodeRegistration{
 	shortcodeEntry("image", ShortcodeInline, "媒体播放", ShortcodeStatic, reImage,
 		positional("src", "图片地址", "/assets/img/preview/image-demo.jpg"), positional("alt", "替代文本", "风景图"),
 		named("width", "宽度", "80%"), named("height", "高度", nil), named("bg", "背景色", nil),
-		flag("download", "显示下载按钮", false), named("padding", "内边距", nil),
+		// download 对齐原版 image.js 的 [true/false/url]：渲染器已支持 URL 形态，
+		// 建模为 flag 会让 download:https://… 在属性面板直接报错（未知值不是布尔）
+		named("download", "下载按钮：true 用图片本身，或填下载 URL", nil), named("padding", "内边距", nil),
 		named("fancybox", "灯箱分组", nil), named("ratio", "宽高比（如 16/9）", nil)).withEdit(ShortcodeEditSchema{Enabled: true, Required: []string{"src"}}),
 	shortcodeEntry("link", ShortcodeInline, "媒体播放", ShortcodeStatic, reLink,
 		positional("url", "链接", "https://example.com"), positional("title", "标题", "示例站点"),
@@ -289,9 +311,11 @@ var shortcodeRegistry = []shortcodeRegistration{
 		namedSelect("effect", "切换效果", "slide", "slide", "fade", "coverflow", "cards"),
 		content("content", "轮播图片（每行一张 Markdown 图片）", nil)),
 	shortcodeEntry("albums", ShortcodeInline, "媒体播放", ShortcodeService, reAlbumsTag,
+		positional("group", "友链分组名称", nil),
 		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
 		namedSelect("size", "卡片尺寸", "s", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("posters", ShortcodeInline, "媒体播放", ShortcodeService, rePostersTag,
+		positional("group", "友链分组名称", nil),
 		named("repo", "GitHub 仓库（owner/repo）", nil), named("api", "数据服务 URL", nil),
 		namedSelect("size", "卡片尺寸", "xs", "xs", "s", "m", "l", "xl", "mix")),
 	shortcodeEntry("copy", ShortcodeInline, "媒体播放", ShortcodeStatic, reCopy,
@@ -323,6 +347,8 @@ var shortcodeRegistry = []shortcodeRegistration{
 		positional("device", "设备", nil).withPlaceholder("iphone"),
 		namedSelect("style", "样式", "qq", "qq", "wechat"), named("title", "标题", nil),
 		namedSelect("scene", "场景", "group", "group", "single"), named("me", "靠右显示的参与者 key（single 模式）", nil),
+		// labelColorStyle 为渲染器真实消费的参数（shortcode_rich.go renderChat），缺声明会让属性编辑重建时丢失
+		named("labelColorStyle", "标签配色风格（渲染器透传给成员标签）", nil),
 		content("content", "参与者 YAML + 消息（<!-- chattip --> / <!-- chatcell -->）", nil)),
 
 	// --- GitHub ---
@@ -344,6 +370,7 @@ func ShortcodeCatalog() []ShortcodeCatalogEntry {
 		if display, ok := shortcodeDisplayMetadata[entry.Name]; ok {
 			if display.PreviewSet {
 				entry.Services = append([]string(nil), display.Services...)
+				entry.Plugins = append([]string(nil), display.Plugins...)
 				entry.Fixture = display.Fixture
 				entry.MainJS = display.MainJS
 				entry.Height = display.Height

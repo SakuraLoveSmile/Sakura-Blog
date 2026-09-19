@@ -95,6 +95,20 @@ func safeIconKey(v string) string {
 	return ""
 }
 
+// 安全审计 2026-08-30：folding child 白名单——仅放行 main.css 实际定义的两类子元素排版
+// （details.folding[child=codeblock] / [child=iframe]）。child 不是颜色，不能复用 safeColor；
+// 也不能像 box 那样只做转义（任意值都会被拼进属性），非法值一律丢弃。
+var foldingChildSet = map[string]bool{"codeblock": true, "iframe": true}
+
+// safeFoldingChild 校验 folding 的 child 参数，非法值返回空串（调用方不输出该属性）。
+func safeFoldingChild(v string) string {
+	v = strings.TrimSpace(v)
+	if foldingChildSet[v] {
+		return v
+	}
+	return ""
+}
+
 // 安全审计 2026-08-16：quot el 标签白名单——禁止任意标签名注入，非法回退 p。
 var quotElSet = map[string]bool{"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true, "p": true, "div": true, "blockquote": true}
 

@@ -2,6 +2,12 @@
    且 .search-keyword 红色报错式高亮在深色下观感差，此处覆盖为主题色高亮）。
    DOM 由 assets/js/search/local-search.js 动态渲染。 */
 
+/* 从主题源 search.styl 剥离的项目受控字体适配：搜索输入框继承字体 */
+.search-wrapper #search-input,
+.search-wrapper input {
+  font-family: inherit;
+}
+
 /* ---------- 类型 tab 栏：分段式圆角控件（全部/文章/页面/瞬间） ---------- */
 .search-wrapper #search-result .search-result-tabs {
   display: flex;

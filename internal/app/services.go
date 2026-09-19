@@ -20,6 +20,7 @@ import (
 	ghpkg "blog/internal/github"
 	"blog/internal/identity"
 	"blog/internal/linkwatch"
+	"blog/internal/maintenance"
 	"blog/internal/module"
 	_ "blog/internal/module/core"
 	_ "blog/internal/module/moments"
@@ -52,29 +53,31 @@ type Options struct {
 // Services is the process-wide owner of shared business services. HTTP module
 // packages receive these instances but do not construct or close them.
 type Services struct {
-	App        *config.App
-	Store      *store.Store
-	Settings   *settings.Manager
-	Site       *atomic.Pointer[settings.Site] // migration bridge; use Settings in new code
-	Post       *post.Service
-	Comment    *comments.Handler
-	Identity   *identity.Service
-	Search     *search.Index
-	RAG        *rag.Service
-	Backup     *backup.Service
-	Notify     *notify.Service
-	Friends    *friends.Aggregator
-	LinkWatch  *linkwatch.Watcher
-	GitHub     *ghpkg.Client
-	OG         *og.Generator
-	Modules    *module.Manager
-	Storage    *attachmentstorage.Manager
-	Plugins    *plugin.Runtime
-	Events     content.Events
-	Icons      *settings.IconRegistry
-	SitePath   string
-	closed     atomic.Bool
-	background sync.Once
+	Maintenance *maintenance.Coordinator
+	devMode     bool
+	App         *config.App
+	Store       *store.Store
+	Settings    *settings.Manager
+	Site        *atomic.Pointer[settings.Site] // migration bridge; use Settings in new code
+	Post        *post.Service
+	Comment     *comments.Handler
+	Identity    *identity.Service
+	Search      *search.Index
+	RAG         *rag.Service
+	Backup      *backup.Service
+	Notify      *notify.Service
+	Friends     *friends.Aggregator
+	LinkWatch   *linkwatch.Watcher
+	GitHub      *ghpkg.Client
+	OG          *og.Generator
+	Modules     *module.Manager
+	Storage     *attachmentstorage.Manager
+	Plugins     *plugin.Runtime
+	Events      content.Events
+	Icons       *settings.IconRegistry
+	SitePath    string
+	closed      atomic.Bool
+	background  sync.Once
 }
 
 // Bootstrap loads configuration and constructs all shared services.
@@ -101,6 +104,12 @@ func Bootstrap(options Options) (*Services, error) {
 	appConfig = config.ResolveApp(appConfig)
 
 	sitePath := filepath.Join(appConfig.Root, "config", "site.yml")
+	if err := recoverBeforeBootstrap(appConfig, sitePath); err != nil {
+		log.Printf("startup recovery incomplete: %v", err)
+		gate := maintenance.New()
+		gate.Block()
+		return &Services{App: appConfig, Maintenance: gate, SitePath: sitePath}, nil
+	}
 	site, err := config.LoadSite(sitePath)
 	if err != nil {
 		if !options.DevMode {
@@ -154,6 +163,65 @@ func Bootstrap(options Options) (*Services, error) {
 	posts.SetLinksFunc(func() ([]settings.LinkGroup, string) {
 		live := sitePtr.Load()
 		return live.Links, live.Default.Link
+	})
+	posts.SetAlbumsLinksFunc(func() ([]settings.LinkGroup, string) {
+		live := sitePtr.Load()
+		return live.Links, live.Default.Cover
+	})
+	posts.SetWikiTreeProvider(func(projectID string) (bool, []settings.WikiTreeNode) {
+		exists := false
+		if projects, err := st.ListWikiProjects(); err == nil {
+			for _, p := range projects {
+				if p.ID == projectID && p.Visible {
+					exists = true
+					break
+				}
+			}
+		}
+		if !exists {
+			live := sitePtr.Load()
+			for _, p := range live.Wiki {
+				if p.ID == projectID {
+					exists = true
+					break
+				}
+			}
+		}
+		if !exists {
+			return false, nil
+		}
+		docs, err := st.ListWikidocs(projectID)
+		if err != nil {
+			return true, nil
+		}
+		var published []*store.WikiDoc
+		for _, d := range docs {
+			if d.Status == store.StatusPublished {
+				published = append(published, d)
+			}
+		}
+		if len(published) == 0 {
+			return true, nil
+		}
+		treeNodes := store.BuildDocTreeFromDocs(published)
+		var toWikiTreeNodes func([]store.TreeNode) []settings.WikiTreeNode
+		toWikiTreeNodes = func(nodes []store.TreeNode) []settings.WikiTreeNode {
+			out := make([]settings.WikiTreeNode, 0, len(nodes))
+			for _, n := range nodes {
+				if n.Doc == nil || n.Doc.Status != store.StatusPublished {
+					continue
+				}
+				out = append(out, settings.WikiTreeNode{
+					Doc: &settings.WikiDocView{
+						Slug:  n.Doc.Slug,
+						Title: n.Doc.Title,
+					},
+					Children: toWikiTreeNodes(n.Children),
+				})
+			}
+			return out
+		}
+		return true, toWikiTreeNodes(treeNodes)
 	})
 	posts.SetMomentsFunc(func(limit int) []*settings.MomentItem {
 		if limit < 1 {
@@ -291,6 +359,7 @@ func Bootstrap(options Options) (*Services, error) {
 	}
 
 	friendsAgg := friends.New(sitePtr)
+	friendsAgg.SetMaintenance(st.Maintenance())
 	linkWatch := linkwatch.New(st, sitePtr, appConfig.UploadDir)
 	linkWatch.SetOnChanged(friendsAgg.Refresh)
 	backupSvc := backup.New(backup.Config{
@@ -314,16 +383,19 @@ func Bootstrap(options Options) (*Services, error) {
 		}
 	})
 	services := &Services{
-		App: appConfig, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
+		App: appConfig, Maintenance: st.Maintenance(), devMode: options.DevMode, Store: st, Settings: settingsMgr, Site: sitePtr, Post: posts,
 		Comment: commentHandler, Identity: identity.NewService(st), Search: searchIdx, RAG: ragSvc,
 		Backup: backupSvc, Notify: notifySvc, Friends: friendsAgg, LinkWatch: linkWatch,
 		GitHub: ghClient, OG: ogGen, Modules: moduleMgr, Storage: attachmentStorage, Plugins: pluginRuntime, Events: events, Icons: icons, SitePath: sitePath,
 	}
+	backupSvc.SetOperationLock(func() (func(), error) { return maintenance.LockOperation(operationLockPath(appConfig)) })
+	backupSvc.SetBackupLock(st.Maintenance().Acquire)
+	backupSvc.SetRestoreRebuild(services.rebuildRestoredState)
 	backupSvc.SetRestoreHook(func() {
-		if err := config.RebuildSite(st, sitePtr); err != nil {
-			log.Printf("restore: rebuild site config: %v", err)
+		if ragSvc != nil {
+			ragSvc.QueueRebuild()
 		}
-		events.Publish(content.Event{Kind: content.Restored})
+		friendsAgg.Refresh()
 	})
 
 	return services, nil
@@ -333,7 +405,7 @@ func Bootstrap(options Options) (*Services, error) {
 // In particular, Stellar creates system pages during Mount; automatic backup
 // must not race that initialization and capture a partial first snapshot.
 func (s *Services) StartBackground() {
-	if s == nil || s.closed.Load() {
+	if s == nil || s.closed.Load() || (s.Maintenance != nil && s.Maintenance.Active()) {
 		return
 	}
 	s.background.Do(func() {

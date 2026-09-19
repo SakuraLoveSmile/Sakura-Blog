@@ -90,39 +90,27 @@ export const notificationApi = {
   markAllRead: () => http.put("/notifications/read-all"),
 };
 
-// --- 系统更新（检查更新 / 一键更新 / 状态查询） ---
-export interface UpdateCheckResponse {
-  current_version: string;
-  latest_version: string;
-  update_available: boolean;
-  release_url: string;
-  release_notes: string;
-  published_at: string;
-  apply_supported: boolean;
-  checked_at: string;
-  apply_note?: string;
-  error?: string;
-}
-
-export interface UpdateStatusResponse {
-  state: "idle" | "running" | "succeeded" | "failed";
-  current_version: string;
-  target_version: string;
-  started_at: string;
-  log_tail: string;
-  message?: string;
-}
+// --- 系统更新（检查更新 / 一键更新 / 状态查询 / 版本识别） ---
+// UpdateCheckResponse 字段参考：apply_note?: string
+import type {
+  SystemVersionResponse,
+  UpdateCheckResponse,
+  UpdateApplyResponse,
+  UpdateStatusResponse,
+} from "../generated";
 
 export const systemApi = {
+  /** 系统构建版本信息（管理员专属） */
+  version: () => http.get<SystemVersionResponse>("/system/version"),
   /** 检查更新（refresh=1 绕过缓存直连 GitHub；token 为可选 GitHub Token，经 X-GitHub-Token 头携带以鉴权私有仓库） */
   check: (refresh?: boolean, token?: string) =>
     http.get<UpdateCheckResponse>("/system/update/check", {
       params: refresh ? { refresh: "1" } : {},
       ...(token ? { headers: { "X-GitHub-Token": token } } : {}),
     }),
-  /** 一键更新（触发 systemd oneshot unit；token 同 check） */
+  /** 一键更新（触发后台更新请求；token 同 check） */
   apply: (token?: string) =>
-    http.post<{ started: boolean; target_version: string }>(
+    http.post<UpdateApplyResponse>(
       "/system/update/apply",
       {},
       token ? { headers: { "X-GitHub-Token": token } } : {},

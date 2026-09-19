@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { settingsApi, previewApi } from "@/api";
-import { Toast, Dialog, VLoading } from "@/components/ui";
+import { Toast, Dialog, VLoading, VPageHeader } from "@/components/ui";
 import {
   WIDGET_META,
   BUILTIN_WIDGET_NAMES,
@@ -242,8 +242,7 @@ function setField(f: { key: string }, value: unknown) {
   jsonText.value = JSON.stringify(draft.value, null, 2);
 }
 
-const inputCls =
-  "w-full rounded-lg border border-border px-3 py-1.5 text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-primary";
+const inputCls = "apple-input";
 
 // ---------- 渲染预览（复用设置页草稿预览管线 POST /preview/site） ----------
 // 把当前草稿以保留名 __preview__ 注入草稿 widgets（不落库），leftbar 仅挂该组件，
@@ -300,12 +299,6 @@ function schedulePreview(immediate = false) {
   previewTimer = setTimeout(refreshPreview, immediate ? 0 : 500);
 }
 
-// 从整页 HTML 提取预览组件：保留侧栏视觉骨架（.l_left > .sidebg 玻璃质感 +
-// .leftbar-container > .widgets 作用域样式：组件文本色/间距均绑定这些祖先选择器），
-// 去掉 logo/菜单 header、footer 社交区与搜索框，只留预览组件本身。
-// iframe 文档构建复用共享预览运行时（preview/preview-document.ts，Spec 63）：
-// 内置 ctx/def/deps/utils shim（data_cache 关闭），body 仅保留页面 services scan 块
-// （其 utils.js 调用由内置 shim 承接），head 脚本全量剥离、保留 stylesheet/style/meta。
 function buildWidgetDoc(fullHtml: string, layout = ""): string {
   const doc = new DOMParser().parseFromString(fullHtml, "text/html");
   const aside = doc.querySelector("aside.l_left");
@@ -325,19 +318,15 @@ function buildWidgetDoc(fullHtml: string, layout = ""): string {
     bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">预览渲染失败：未找到侧栏结构</p>`;
   }
   const bodyClass = doc.body.className || "";
-  // 数据服务懒加载 scan 块（base.html 注入，URL 已服务端渲染）：复用页面清单，
-  // 内置 shim 提供 utils/ctx/def/deps，不再需要页面自身的 utils 内联块。
   const scanScr = Array.from(doc.body.querySelectorAll("script")).find(
     (s) => !s.src && (s.textContent || "").includes("var services = ["),
   );
-  // iframe 内布局修正：侧栏宽度/定位不依赖整页 grid；容器高度自适应；去掉 .widgets 滚动与底部渐隐 mask
   const fx = `<style>
 body{padding:12px !important}
 aside.l_left{position:relative;width:300px;max-width:90%;margin:0 auto;max-height:none}
 .l_left .leftbar-container{height:auto}
 .l_left .leftbar-container >.widgets{overflow:visible;mask:none;-webkit-mask:none;flex-grow:0}
 </style>`;
-  // Spec 64：预览统一固定暗色（buildPreviewDoc 不接收主题参数）
   return buildPreviewDoc({
     bodyHtml: bodyInner,
     scripts: ["/assets/js/main.js", "/assets/js/tagcloud.js"],
@@ -354,119 +343,122 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
-    <VLoading v-if="loading" />
+  <div>
+    <VPageHeader
+      title="侧边栏组件"
+      subtitle="浏览 16 种内置侧边栏组件、编辑参数并保存为命名方案（零后端改动）。"
+    />
+    <div class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 md:px-8">
+      <VLoading v-if="loading" />
     <div v-else-if="loadError" class="p-6 text-sm text-state-error">{{ loadError }}</div>
 
-    <div v-else class="flex-1 flex flex-col overflow-hidden md:flex-row">
+    <div v-else class="widget-studio-container">
       <!-- 左侧：搜索 + 内置组件 + 已保存方案 -->
-      <aside class="w-full shrink-0 border-b border-border flex flex-col bg-card md:w-64 md:border-r md:border-b-0">
-        <div class="p-3 border-b border-border">
-          <div class="relative">
-            <Icon icon="ri:search-line" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-quaternary" />
+      <aside class="widget-sidebar">
+        <div class="widget-sidebar-header">
+          <div class="widget-search-wrap">
+            <Icon icon="ri:search-line" class="widget-search-icon" />
             <input
               v-model="search"
               placeholder="搜索组件 / 方案..."
-              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+              class="widget-search-input"
             />
+            <button
+              v-if="search"
+              type="button"
+              class="widget-search-clear"
+              title="清空"
+              @click="search = ''"
+            >
+              <Icon icon="ri:close-circle-fill" />
+            </button>
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto py-2 max-h-64 md:max-h-none">
+        <div class="widget-sidebar-list">
           <!-- 内置组件组 -->
-          <p class="px-4 py-1 text-[11px] font-medium text-text-quaternary">内置组件 {{ filteredMeta.length }}</p>
+          <div class="widget-group-label">
+            <span>内置组件</span>
+            <span class="group-count">{{ filteredMeta.length }}</span>
+          </div>
           <button
             v-for="m in filteredMeta"
             :key="m.name"
+            type="button"
             @click="select('builtin', m.name)"
-            :class="[
-              'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              isSelected('builtin', m.name) ? 'bg-primary/10' : 'hover:bg-accent',
-            ]"
+            :class="['widget-list-item', { active: isSelected('builtin', m.name) }]"
           >
-            <span
-              :class="[
-                'text-sm truncate',
-                isSelected('builtin', m.name) ? 'font-medium text-primary' : 'text-text-secondary',
-              ]"
-              >{{ m.label }}</span
-            >
-            <span class="ml-auto text-[11px] text-text-quaternary font-mono shrink-0">{{ m.name }}</span>
+            <span class="widget-item-title">{{ m.label }}</span>
+            <span class="widget-item-layout">{{ m.name }}</span>
           </button>
 
           <!-- 已保存方案组 -->
-          <p class="mt-2 px-4 py-1 text-[11px] font-medium text-text-quaternary">
-            已保存方案 {{ filteredSchemes.length }}
-          </p>
+          <div class="widget-group-label widget-group-label-scheme">
+            <span>已保存方案</span>
+            <span class="group-count">{{ filteredSchemes.length }}</span>
+          </div>
           <button
             v-for="n in filteredSchemes"
             :key="n"
+            type="button"
             @click="select('scheme', n)"
-            :class="[
-              'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-              isSelected('scheme', n) ? 'bg-primary/10' : 'hover:bg-accent',
-            ]"
+            :class="['widget-list-item', 'scheme-item', { active: isSelected('scheme', n) }]"
           >
-            <Icon icon="ri:bookmark-line" class="text-primary text-sm shrink-0" />
-            <span
-              :class="[
-                'text-sm truncate',
-                isSelected('scheme', n) ? 'font-medium text-primary' : 'text-text-secondary',
-              ]"
-              >{{ n }}</span
-            >
-            <span class="ml-auto text-[10px] px-1 py-px rounded bg-primary/10 text-primary font-mono shrink-0">{{
-              schemeLayout(n)
-            }}</span>
+            <Icon icon="ri:bookmark-3-line" class="scheme-icon" />
+            <span class="widget-item-title">{{ n }}</span>
+            <span class="scheme-layout-tag">{{ schemeLayout(n) }}</span>
           </button>
-          <p v-if="!filteredSchemes.length" class="px-4 py-2 text-xs text-text-quaternary">
+          <p v-if="!filteredSchemes.length" class="widget-empty-schemes">
             暂无方案 — 选择内置组件编辑参数后「保存为方案」
           </p>
         </div>
       </aside>
 
-      <!-- 右侧：详情 + 参数表单 + 保存操作 -->
-      <section class="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
-        <!-- 标题区 -->
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="text-xl font-semibold text-foreground">
+      <!-- 右侧：详情 + 参数表单 + 预览 + 保存操作 -->
+      <main class="widget-workbench">
+        <!-- 1. 顶部 Header 概览卡片 -->
+        <div class="widget-hero-card">
+          <div class="widget-hero-title-row">
+            <h3 class="widget-hero-title">
               {{ selKind === "builtin" ? selMeta?.label || selName : selName }}
             </h3>
-            <code class="text-xs px-1.5 py-0.5 rounded bg-secondary text-text-tertiary font-mono">{{
-              draftLayout
-            }}</code>
-            <span
-              v-if="selKind === 'scheme'"
-              class="text-[11px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"
-            >
-              <Icon icon="ri:bookmark-line" />方案
+            <span class="widget-layout-pill">
+              <code>{{ draftLayout }}</code>
+            </span>
+            <span v-if="selKind === 'scheme'" class="widget-scheme-pill">
+              <Icon icon="ri:bookmark-3-line" />
+              <span>自定义方案</span>
             </span>
           </div>
-          <p class="text-sm text-text-tertiary mt-1">
-            {{ selKind === "builtin" ? selMeta?.desc : `基于 ${draftLayout} 布局的自定义方案` }}
+          <p class="widget-hero-desc">
+            {{ selKind === "builtin" ? selMeta?.desc : `基于 ${draftLayout} 布局的自定义方案，可直接插入左/右侧边栏` }}
           </p>
         </div>
 
-        <!-- 参数表单 -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">参数设置</span>
+        <!-- 2. 参数表单 -->
+        <section class="widget-section">
+          <div class="widget-section-heading">
+            <h2>参数设置</h2>
+            <p>调整该侧边栏组件的展示配置与选项。</p>
           </div>
-          <div class="p-4">
+          <div class="widget-panel widget-form-panel">
             <template v-if="draftFields && draftFields.length">
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div v-for="f in draftFields" :key="f.key" :class="f.type === 'textarea' ? 'md:col-span-2' : ''">
-                  <label class="mb-1 flex items-baseline gap-1.5 text-xs text-text-tertiary">
-                    {{ f.label || f.key }}
-                    <code class="font-mono text-[10px] text-text-quaternary">{{ f.key }}</code>
+              <div class="widget-fields-grid">
+                <div
+                  v-for="f in draftFields"
+                  :key="f.key"
+                  :class="['widget-field-wrap', f.type === 'textarea' ? 'field-full' : '']"
+                >
+                  <label class="widget-field-label">
+                    <span>{{ f.label || f.key }}</span>
+                    <code class="field-key-tag">{{ f.key }}</code>
                   </label>
                   <input
                     v-if="f.type === 'checkbox'"
                     type="checkbox"
                     :checked="!!draft[f.key]"
                     @change="setField(f, ($event.target as HTMLInputElement).checked)"
-                    class="mt-1.5 h-4 w-4 cursor-pointer rounded border-border accent-primary"
+                    class="widget-checkbox"
                   />
                   <select
                     v-else-if="f.type === 'select'"
@@ -482,20 +474,20 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                     :value="draft[f.key]"
                     @input="setField(f, ($event.target as HTMLTextAreaElement).value)"
                     :placeholder="f.hint || ''"
-                    :class="inputCls + ' font-mono resize-y'"
+                    :class="[inputCls, 'widget-textarea']"
                   ></textarea>
-                  <div v-else-if="f.type === 'color'" class="flex items-center gap-2">
+                  <div v-else-if="f.type === 'color'" class="widget-color-wrap">
                     <input
                       type="color"
                       :value="draft[f.key] || '#000000'"
                       @input="setField(f, ($event.target as HTMLInputElement).value)"
-                      class="h-8 w-10 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                      class="widget-color-picker"
                     />
                     <input
                       type="text"
                       :value="draft[f.key]"
                       @input="setField(f, ($event.target as HTMLInputElement).value)"
-                      :class="inputCls + ' font-mono'"
+                      :class="[inputCls, 'widget-color-text']"
                     />
                   </div>
                   <input
@@ -511,152 +503,751 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
                       )
                     "
                     :placeholder="f.hint || ''"
-                    :class="inputCls + (f.type === 'number' ? '' : ' font-mono')"
+                    :class="[inputCls, f.type === 'number' ? '' : 'font-mono']"
                   />
-                  <p
-                    v-if="f.hint && f.type !== 'textarea' && f.type !== 'text'"
-                    class="mt-1 text-[11px] text-text-quaternary"
-                  >
+                  <p v-if="f.hint && f.type !== 'textarea' && f.type !== 'text'" class="widget-field-hint">
                     {{ f.hint }}
                   </p>
                 </div>
               </div>
             </template>
 
-            <p v-else-if="noExtra" class="text-xs text-text-quaternary">该组件无额外可配置参数。</p>
+            <p v-else-if="noExtra" class="widget-no-extra">该组件无额外可配置参数。</p>
 
             <!-- 未知 layout：JSON 兜底 -->
-            <div v-else>
-              <label class="mb-1 block text-xs text-text-tertiary">参数 (JSON)</label>
+            <div v-else class="widget-json-fallback">
+              <label class="widget-field-label">参数 (JSON 对象)</label>
               <textarea
                 :value="jsonText"
                 @input="onJsonInput(($event.target as HTMLTextAreaElement).value)"
                 rows="6"
                 spellcheck="false"
-                :class="inputCls + ' font-mono text-xs'"
+                :class="[inputCls, 'widget-json-editor']"
               ></textarea>
-              <p v-if="jsonError" class="mt-1 text-[11px] text-state-error">{{ jsonError }}</p>
+              <p v-if="jsonError" class="widget-json-error">{{ jsonError }}</p>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 渲染预览（草稿参数，走前台真实渲染管线） -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary flex items-center gap-1.5">
-              渲染预览
-              <span class="text-[11px] text-text-quaternary">草稿参数 · {{ previewPageFor(draftLayout) }} 页载体</span>
-              <span v-if="previewLoading" class="text-[11px] text-text-quaternary">渲染中...</span>
-            </span>
-            <button
-              @click="schedulePreview(true)"
-              class="flex items-center gap-1 text-xs text-primary transition-opacity hover:opacity-80"
-            >
-              <Icon icon="ri:refresh-line" />
-              刷新
-            </button>
+        <!-- 3. 渲染预览（草稿参数，走前台真实渲染管线） -->
+        <section class="widget-section">
+          <div class="widget-section-heading">
+            <h2>渲染预览</h2>
+            <p>使用前台真实渲染管线与侧栏玻璃质感样式进行模拟。</p>
           </div>
-          <div class="relative bg-secondary">
-            <p v-if="previewError" class="px-4 py-6 text-center text-sm text-state-error">{{ previewError }}</p>
-            <iframe
-              v-else
-              :srcdoc="previewHtml"
-              class="w-full border-0"
-              style="min-height: 260px; max-height: 480px; resize: vertical; overflow: auto"
-              sandbox="allow-same-origin allow-scripts"
-            ></iframe>
+          <div class="widget-panel widget-canvas-panel">
+            <!-- macOS Window Header -->
+            <div class="widget-canvas-header">
+              <div class="canvas-window-dots" aria-hidden="true">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+              </div>
+              <div class="canvas-header-meta">
+                <span class="canvas-page-tag">
+                  <Icon icon="ri:file-list-line" />
+                  <span>载体：{{ previewPageFor(draftLayout) }} 页</span>
+                </span>
+                <span v-if="previewLoading" class="canvas-loading-tag">
+                  <Icon icon="ri:loader-4-line" class="animate-spin" />
+                  <span>渲染中...</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                class="canvas-refresh-btn"
+                title="重新渲染预览"
+                @click="schedulePreview(true)"
+              >
+                <Icon icon="ri:refresh-line" :class="{ 'animate-spin': previewLoading }" />
+                <span>刷新预览</span>
+              </button>
+            </div>
+            <div class="widget-canvas-body">
+              <div v-if="previewError" class="canvas-state canvas-error">
+                <Icon icon="ri:error-warning-line" width="28" height="28" />
+                <p>{{ previewError }}</p>
+              </div>
+              <iframe
+                v-else
+                :srcdoc="previewHtml"
+                class="widget-preview-iframe"
+                sandbox="allow-same-origin allow-scripts"
+              ></iframe>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 操作区 -->
-        <div class="rounded-xl border border-border overflow-hidden">
-          <div class="px-4 py-2 bg-secondary border-b border-border">
-            <span class="text-xs font-medium text-text-tertiary">
-              {{ selKind === "builtin" ? "保存为方案（可在设置 → 组件编排中选用）" : "方案操作" }}
-            </span>
+        <!-- 4. 操作区 -->
+        <section class="widget-section">
+          <div class="widget-section-heading">
+            <h2>{{ selKind === "builtin" ? "保存为方案" : "方案操作" }}</h2>
+            <p>{{ selKind === "builtin" ? "以当前参数创建命名方案，可在设置 → 组件编排中选用。" : "管理已保存方案的更新与页面引用。" }}</p>
           </div>
-          <div class="p-4 space-y-3">
+          <div class="widget-panel widget-actions-panel">
             <!-- 内置组件：保存为方案 -->
             <template v-if="selKind === 'builtin'">
-              <div class="flex items-center gap-2">
-                <input
-                  v-if="nameInputVisible"
-                  v-model="nameInputValue"
-                  placeholder="输入方案名，如「彩色标签云」"
-                  class="max-w-xs"
-                  :class="inputCls"
-                  @keyup.enter="confirmNameInput"
-                />
-                <button
-                  v-if="nameInputVisible"
-                  @click="confirmNameInput"
-                  :disabled="saving || !nameInputValue.trim()"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  保存为方案
-                </button>
+              <div class="widget-action-row">
+                <div v-if="nameInputVisible" class="widget-name-input-group">
+                  <input
+                    v-model="nameInputValue"
+                    placeholder="输入方案名，如「彩色标签云」"
+                    :class="inputCls"
+                    class="scheme-name-input"
+                    @keyup.enter="confirmNameInput"
+                  />
+                  <button
+                    type="button"
+                    :disabled="saving || !nameInputValue.trim()"
+                    class="apple-btn apple-btn-primary"
+                    @click="confirmNameInput"
+                  >
+                    <Icon :icon="saving ? 'ri:loader-4-line' : 'ri:check-line'" :class="{ 'animate-spin': saving }" />
+                    <span>确定保存</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="apple-btn apple-btn-secondary"
+                    @click="nameInputVisible = false"
+                  >
+                    取消
+                  </button>
+                </div>
                 <button
                   v-else
+                  type="button"
+                  class="apple-btn apple-btn-primary"
                   @click="openNameInput"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90"
                 >
                   <Icon icon="ri:bookmark-3-line" />
-                  保存为方案
+                  <span>保存为新方案</span>
                 </button>
-                <span class="text-xs text-text-quaternary"> 以当前参数创建命名方案，不改动内置组件缺省 </span>
               </div>
-              <p v-if="widgets.library[selName]" class="text-[11px] text-text-quaternary">
-                当前 library 已存在同名覆盖配置（来自组件编排的参数编辑），上方表单已包含该覆盖。
+              <p v-if="widgets.library[selName]" class="widget-override-hint">
+                <Icon icon="ri:information-line" />
+                <span>当前 library 已存在同名覆盖配置（来自组件编排的参数编辑），上方表单已包含该覆盖。</span>
               </p>
             </template>
 
             <!-- 已保存方案：保存 / 另存为 / 删除 -->
             <template v-else>
-              <div class="flex items-center gap-2 flex-wrap">
+              <div class="widget-action-row flex-wrap">
                 <button
-                  @click="saveScheme"
+                  type="button"
                   :disabled="saving"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                  class="apple-btn apple-btn-primary"
+                  @click="saveScheme"
                 >
-                  保存
+                  <Icon :icon="saving ? 'ri:loader-4-line' : 'ri:save-line'" :class="{ 'animate-spin': saving }" />
+                  <span>保存修改</span>
                 </button>
                 <button
+                  type="button"
+                  class="apple-btn apple-btn-secondary"
                   @click="openNameInput"
-                  class="inline-flex items-center gap-1 rounded-full border border-border px-4 py-1.5 text-sm text-text-secondary transition-colors hover:bg-accent"
                 >
-                  另存为
+                  <Icon icon="ri:file-copy-line" />
+                  <span>另存为新方案</span>
                 </button>
                 <button
+                  type="button"
+                  class="apple-btn apple-btn-danger"
                   @click="removeScheme"
-                  class="inline-flex items-center gap-1 rounded-full border border-border px-4 py-1.5 text-sm text-state-error transition-colors hover:bg-state-error/10"
                 >
                   <Icon icon="ri:delete-bin-line" />
-                  删除
+                  <span>删除方案</span>
                 </button>
-                <span v-if="referencedPages(selName).length" class="text-xs text-text-quaternary">
-                  被页面类型「{{ referencedPages(selName).join("、") }}」引用中
+                <span v-if="referencedPages(selName).length" class="widget-ref-badge">
+                  <Icon icon="ri:links-line" />
+                  <span>被页面类型「{{ referencedPages(selName).join("、") }}」引用中</span>
                 </span>
               </div>
-              <div v-if="nameInputVisible" class="flex items-center gap-2">
+
+              <div v-if="nameInputVisible" class="widget-name-input-group mt-3">
                 <input
                   v-model="nameInputValue"
                   placeholder="输入新方案名"
-                  class="max-w-xs"
                   :class="inputCls"
+                  class="scheme-name-input"
                   @keyup.enter="confirmNameInput"
                 />
                 <button
-                  @click="confirmNameInput"
+                  type="button"
                   :disabled="saving || !nameInputValue.trim()"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                  class="apple-btn apple-btn-primary"
+                  @click="confirmNameInput"
                 >
-                  保存为新方案
+                  <Icon :icon="saving ? 'ri:loader-4-line' : 'ri:check-line'" :class="{ 'animate-spin': saving }" />
+                  <span>保存为新方案</span>
+                </button>
+                <button
+                  type="button"
+                  class="apple-btn apple-btn-secondary"
+                  @click="nameInputVisible = false"
+                >
+                  取消
                 </button>
               </div>
             </template>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
+    </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.widget-studio-container {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* 左侧边栏 */
+.widget-sidebar {
+  width: 290px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+  position: sticky;
+  top: 1.25rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 2.5rem);
+}
+
+.widget-sidebar-header {
+  padding: 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.widget-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.widget-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-quaternary);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.widget-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 28px 7px 32px;
+  font-size: 13px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.widget-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.widget-search-clear {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-quaternary);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.widget-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.widget-group-label {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-quaternary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.widget-group-label-scheme {
+  margin-top: 14px;
+}
+
+.group-count {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.widget-list-item {
+  width: calc(100% - 12px);
+  margin: 2px 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.widget-list-item:hover {
+  background: color-mix(in srgb, var(--color-foreground) 4%, transparent);
+}
+
+.widget-list-item.active {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-card));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.widget-item-title {
+  font-size: 13px;
+  color: var(--color-foreground);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-list-item.active .widget-item-title {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.widget-item-layout {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  flex-shrink: 0;
+}
+
+.scheme-icon {
+  color: var(--color-primary);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.scheme-layout-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.widget-empty-schemes {
+  margin: 8px 14px;
+  font-size: 11.5px;
+  color: var(--color-text-quaternary);
+  line-height: 1.5;
+}
+
+/* ================= 右侧工作台 ================= */
+.widget-workbench {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* Hero 概览卡片 */
+.widget-hero-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 40%, var(--color-card)), var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.widget-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.widget-hero-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-hero-title::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.widget-layout-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
+  color: var(--color-text-secondary);
+}
+
+.widget-scheme-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 550;
+}
+
+.widget-hero-desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* 区域分块（Option 1 Inset Group Panel） */
+.widget-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.widget-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.widget-section-heading h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--color-foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-section-heading h2::before {
+  content: "";
+  display: inline-block;
+  width: 3.5px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.widget-section-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding-left: 11.5px;
+}
+
+.widget-panel {
+  background: color-mix(in srgb, var(--color-background) 38%, var(--color-card));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* 参数表单面板 */
+.widget-form-panel {
+  padding: 20px 24px;
+}
+
+.widget-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .widget-fields-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.field-full {
+  grid-column: 1 / -1;
+}
+
+.widget-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.widget-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--color-foreground);
+}
+
+.field-key-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  font-weight: normal;
+}
+
+.widget-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.widget-textarea {
+  font-family: var(--font-mono, monospace);
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.widget-color-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-color-picker {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+}
+
+.widget-color-text {
+  font-family: var(--font-mono, monospace);
+}
+
+.widget-field-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-text-quaternary);
+  line-height: 1.4;
+}
+
+.widget-no-extra {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-quaternary);
+}
+
+.widget-json-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.widget-json-editor {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.widget-json-error {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-state-error);
+}
+
+/* 画布预览面板 */
+.widget-canvas-panel {
+  background: var(--color-card);
+}
+
+.widget-canvas-header {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--color-background) 35%, var(--color-card));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.canvas-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.canvas-page-tag {
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.canvas-loading-tag {
+  font-size: 11px;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.widget-canvas-body {
+  position: relative;
+  background: #121316;
+  min-height: 260px;
+}
+
+.widget-preview-iframe {
+  display: block;
+  width: 100%;
+  border: none;
+  min-height: 260px;
+  max-height: 520px;
+  resize: vertical;
+  overflow: auto;
+}
+
+/* 操作面板 */
+.widget-actions-panel {
+  padding: 18px 22px;
+  background: var(--color-card);
+}
+
+.widget-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.widget-name-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.scheme-name-input {
+  width: 240px;
+}
+
+.apple-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.apple-btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: 1px solid var(--color-primary);
+}
+.apple-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.apple-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apple-btn-secondary {
+  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+.apple-btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  color: var(--color-foreground);
+}
+
+.apple-btn-danger {
+  background: rgba(255, 69, 58, 0.12);
+  color: #ff453a;
+  border: 1px solid rgba(255, 69, 58, 0.3);
+}
+.apple-btn-danger:hover {
+  background: rgba(255, 69, 58, 0.2);
+}
+
+.widget-ref-badge {
+  font-size: 11.5px;
+  color: var(--color-text-quaternary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.widget-override-hint {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--color-text-quaternary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (max-width: 768px) {
+  .widget-studio-container {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .widget-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    max-height: 300px;
+    position: static;
+  }
+  .widget-workbench {
+    padding: 16px;
+    gap: 16px;
+  }
+}
+</style>

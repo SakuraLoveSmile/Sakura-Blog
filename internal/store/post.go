@@ -16,6 +16,7 @@ import (
 	_ "modernc.org/sqlite" // side-effect import，注册 "sqlite" driver 到 database/sql
 
 	"blog/internal/content"
+	"blog/internal/maintenance"
 )
 
 // Status 文章状态。
@@ -228,7 +229,9 @@ func (p *Post) IsPasswordProtected() bool {
 
 // Store 文章数据访问对象，持 *sql.DB 连接。
 type Store struct {
-	db *sql.DB
+	maintenanceOnce sync.Once
+	maintenance     *maintenance.Coordinator
+	db              *sql.DB
 	// path .db 文件路径（性能监控展示库文件体积用）。
 	path string
 	// postWriteHook 文章写路径回调（Spec 25 FTS 同步用），op 取 create/update/delete/restore/purge。
@@ -503,16 +506,26 @@ func (s *Store) List() ([]*Post, error) {
 // ListFiltered 按 status/category/tag/search 筛选并分页返回文章（Spec 62：console 列表 SQL 下推，
 // 替代原「List() 全表 + 内存过滤 + 逐篇 GetViews」的 N+1 模式），返回分页结果与筛选后总数。
 // 过滤条件、搜索与分页均下推 SQL；tag 用逗号包裹 LIKE 防子串误匹配（与 ListByTag 口径一致）。
-// 查询使用 postListCols，避免列表加载正文、预渲染 HTML、口令和草稿 JSON。
+// ListFiltered 按 status/category/tag/search 筛选并分页返回文章（兼容老接口，管理员全量）。
 func (s *Store) ListFiltered(status, category, tag, search string, page, size int) ([]*Post, int64, error) {
+	return s.ListFilteredByAuthor(nil, status, category, tag, search, page, size)
+}
+
+// ListFilteredByAuthor 按 status/category/tag/search 及可选 authorID 筛选并分页返回文章。
+// authorID 为 nil 时（管理员）不限作者；authorID 非 nil 时仅返回该作者署名（含共同署名）的文章。
+func (s *Store) ListFilteredByAuthor(authorID *int64, status, category, tag, search string, page, size int) ([]*Post, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if size < 1 {
 		size = 20
 	}
-	conds := make([]string, 0, 5)
+	conds := make([]string, 0, 6)
 	args := []any{}
+	if authorID != nil && *authorID > 0 {
+		conds = append(conds, "EXISTS (SELECT 1 FROM post_authors pa WHERE pa.post_id = posts.id AND pa.author_id = ?)")
+		args = append(args, *authorID)
+	}
 	if status == "trashed" {
 		conds = append(conds, "deleted_at != ''")
 	} else {
@@ -580,7 +593,19 @@ type PostSearchCard struct {
 
 // ListPostSearchCards 轻量列返回全部文章搜索卡片（含回收站，按创建时间倒序）。
 func (s *Store) ListPostSearchCards() ([]*PostSearchCard, error) {
-	rows, err := s.db.Query("SELECT id, slug, title, status, deleted_at, content_html FROM posts ORDER BY substr(created_at, 1, 19) DESC")
+	return s.ListPostSearchCardsByAuthor(nil)
+}
+
+// ListPostSearchCardsByAuthor 轻量列返回指定作者的文章搜索卡片（含回收站，按创建时间倒序）。authorID 为 nil 时返回全部。
+func (s *Store) ListPostSearchCardsByAuthor(authorID *int64) ([]*PostSearchCard, error) {
+	q := "SELECT id, slug, title, status, deleted_at, content_html FROM posts"
+	var args []any
+	if authorID != nil && *authorID > 0 {
+		q += " WHERE EXISTS (SELECT 1 FROM post_authors pa WHERE pa.post_id = posts.id AND pa.author_id = ?)"
+		args = append(args, *authorID)
+	}
+	q += " ORDER BY substr(created_at, 1, 19) DESC"
+	rows, err := s.db.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list post search cards: %w", err)
 	}
@@ -787,9 +812,22 @@ func (s *Store) Update(slug string, p *Post) error {
 	return s.UpdateSlug(slug, slug, p)
 }
 
+type postUpdateOptions struct {
+	recordRevision bool
+}
+
 // UpdateSlug 在原文章记录上原子更新 slug 和文章内容，保留文章 ID、创建时间、阅读量，
 // 并在同一事务内替换作者/分类关联、迁移 revision slug。提交前任何一步失败都会回滚。
 func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
+	return s.updateSlugWithOptions(oldSlug, newSlug, p, postUpdateOptions{})
+}
+
+// UpdateSlugWithRevision 更新文章并把保存前的正文快照写入同一事务。
+func (s *Store) UpdateSlugWithRevision(oldSlug, newSlug string, p *Post) error {
+	return s.updateSlugWithOptions(oldSlug, newSlug, p, postUpdateOptions{recordRevision: true})
+}
+
+func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options postUpdateOptions) error {
 	if err := s.preparePostAuthors(p); err != nil {
 		return fmt.Errorf("prepare post authors: %w", err)
 	}
@@ -804,9 +842,13 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 		createdAt                  time.Time
 		poster, references, banner string
 		aiSummary, aiLabel         string
+		oldRevision                Revision
 	)
-	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label FROM posts WHERE slug = ?`, oldSlug).
-		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel); err != nil {
+	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label,
+		title, excerpt, content_md, tags, category, status
+		FROM posts WHERE slug = ?`, oldSlug).
+		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel,
+			&oldRevision.Title, &oldRevision.Excerpt, &oldRevision.ContentMD, &oldRevision.Tags, &oldRevision.Category, &oldRevision.Status); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("update post %s: no rows affected", oldSlug)
 		}
@@ -879,12 +921,33 @@ func (s *Store) UpdateSlug(oldSlug, newSlug string, p *Post) error {
 			return fmt.Errorf("update revision slug %s->%s: %w", oldSlug, newSlug, err)
 		}
 	}
+	if options.recordRevision && (oldRevision.ContentMD != p.ContentMD || oldRevision.Title != p.Title) {
+		oldRevision.PostSlug = newSlug
+		if _, err := createRevisionTx(tx, &oldRevision); err != nil {
+			return err
+		}
+		if err := pruneRevisionsTx(tx, newSlug); err != nil {
+			return err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit update post %s: %w", oldSlug, err)
 	}
 
 	p.ID = postID
 	p.CreatedAt = createdAt
+	if options.recordRevision {
+		if s.contentEvents != nil {
+			s.contentEvents.Publish(content.Event{Kind: content.PostChanged, Op: "update", Slug: newSlug, PreviousSlug: oldSlug})
+		}
+		if s.postWriteHook != nil {
+			if oldSlug != newSlug {
+				s.postWriteHook("delete", oldSlug)
+			}
+			s.postWriteHook("update", newSlug)
+		}
+		return nil
+	}
 	if oldSlug != newSlug {
 		s.firePostWrite("delete", oldSlug)
 		s.firePostWrite("update", newSlug)

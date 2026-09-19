@@ -17,6 +17,7 @@ import {
   Dialog,
   Toast,
 } from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 
 interface AttachmentItem {
   id: number;
@@ -297,6 +298,19 @@ function clearSelection() {
   batchTargetGroup.value = "";
 }
 
+// 搜索、筛选或分页使旧选择失效时清除失效选择；加载中沿用上一批数据，不伪造空态
+watch(
+  () => (isLoading.value ? null : attachments.value.map((a) => a.id)),
+  (ids) => {
+    if (!ids) return;
+    const visible = new Set(ids);
+    for (const id of Array.from(selectedIds.value)) {
+      if (!visible.has(id)) selectedIds.value.delete(id);
+    }
+    if (selectedIds.value.size === 0) batchTargetGroup.value = "";
+  },
+);
+
 async function batchDelete() {
   const ids = Array.from(selectedIds.value);
   if (ids.length === 0) return;
@@ -416,82 +430,74 @@ function formatMimeBadge(mime: string): string {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="媒体库">
+    <VPageHeader title="媒体库" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:image-line" class="text-primary" />
       </template>
       <template #subtitle>管理博客全部图片、音视频与文档附件，支持分组合辑与快速直链</template>
       <template #actions>
-        <div class="apple-search min-w-[200px] max-w-[280px]">
-          <Icon icon="ri:search-line" class="text-text-quaternary" />
-          <input v-model="keyword" placeholder="搜索文件名或 URL..." />
-          <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
-            <Icon icon="ri:close-line" />
-          </button>
+        <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
+          <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
+            <Icon icon="ri:search-line" class="text-text-quaternary" />
+            <input v-model="keyword" placeholder="搜索文件名或 URL..." />
+            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+              <Icon icon="ri:close-line" />
+            </button>
+          </div>
+
+          <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap sm:gap-2.5">
+            <VButton @click="openCreateGroup">
+              <template #icon><Icon icon="ri:folder-add-line" /></template>
+              新建分组
+            </VButton>
+
+            <input ref="fileInput" type="file" multiple class="hidden" @change="onFileChange" />
+
+            <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
+              <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
+              上传附件
+            </VButton>
+            <VButton :disabled="uploading || importingURL" @click="importURLVisible = true">
+              <template #icon><Icon icon="ri:link-m" /></template>
+              从 URL 导入
+            </VButton>
+          </div>
         </div>
-
-        <VButton @click="openCreateGroup">
-          <template #icon><Icon icon="ri:folder-add-line" /></template>
-          新建分组
-        </VButton>
-
-        <input ref="fileInput" type="file" multiple class="hidden" @change="onFileChange" />
-
-        <VButton type="primary" :loading="uploading" @click="fileInput?.click()">
-          <template #icon><Icon icon="ri:upload-cloud-2-line" class="h-full w-full" /></template>
-          上传附件
-        </VButton>
-        <VButton :disabled="uploading || importingURL" @click="importURLVisible = true">
-          <template #icon><Icon icon="ri:link-m" /></template>
-          从 URL 导入
-        </VButton>
       </template>
     </VPageHeader>
 
     <div class="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:attachment-line" />
-          </div>
-          <div>
-            <div class="stats-label">全部附件</div>
-            <div class="stats-value">{{ stats.total }} <span class="stats-sub">个实体文件</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:hard-drive-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">当前列表占用</div>
-            <div class="stats-value text-[#30D158]">
-              {{ stats.totalBytes }} <span class="stats-sub">磁盘已用空间</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
-            <Icon icon="ri:image-line" />
-          </div>
-          <div>
-            <div class="stats-label">图片素材</div>
-            <div class="stats-value">{{ stats.imgCount }} <span class="stats-sub">张配图/封面</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:folder-zip-line" />
-          </div>
-          <div>
-            <div class="stats-label">分组合辑</div>
-            <div class="stats-value">{{ groups.length }} <span class="stats-sub">个自定义分组</span></div>
-          </div>
-        </div>
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <ConsoleStatsCard
+          label="全部附件"
+          :value="stats.total"
+          sub="个实体文件"
+          icon="ri:attachment-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="当前列表占用"
+          :value="stats.totalBytes"
+          sub="磁盘已用空间"
+          icon="ri:hard-drive-2-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="图片素材"
+          :value="stats.imgCount"
+          sub="张配图/封面"
+          icon="ri:image-line"
+          color="cyan"
+        />
+        <ConsoleStatsCard
+          label="分组合辑"
+          :value="groups.length"
+          sub="个自定义分组"
+          icon="ri:folder-zip-line"
+          color="purple"
+        />
       </div>
 
       <!-- 主工作区：左侧分组侧栏 + 右侧瀑布流/表格 -->
@@ -569,7 +575,7 @@ function formatMimeBadge(mime: string): string {
           <!-- 工具栏：类型分段 + 视图模式 -->
           <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
             <!-- 类型筛选 -->
-            <div class="apple-segmented">
+            <div class="apple-segmented max-w-full flex-wrap">
               <button
                 v-for="tf in typeFilters"
                 :key="tf.key"
@@ -588,8 +594,9 @@ function formatMimeBadge(mime: string): string {
             <!-- 视图与全选 -->
             <div class="flex items-center gap-2">
               <button
+                v-if="attachments.length > 0"
                 type="button"
-                class="rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground"
+                class="apple-filter-btn rounded-lg border border-border px-2.5 py-1 text-xs text-text-tertiary hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                 @click="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
               >
                 {{ selectedIds.size === attachments.length ? "取消全选" : "全选本页" }}
@@ -726,9 +733,11 @@ function formatMimeBadge(mime: string): string {
                 <thead>
                   <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
                     <th class="w-12 px-4 py-3 text-center">
+                      <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                       <input
+                        v-if="attachments.length > 0"
                         type="checkbox"
-                        :checked="selectedIds.size > 0 && selectedIds.size === attachments.length"
+                        :checked="selectedIds.size === attachments.length"
                         class="h-4 w-4 rounded border-border text-primary"
                         @change="selectedIds.size === attachments.length ? clearSelection() : selectAll()"
                       />
@@ -1020,60 +1029,6 @@ function formatMimeBadge(mime: string): string {
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
 /* 分组项按钮 */
 .group-item-btn {
   display: flex;
@@ -1130,17 +1085,5 @@ function formatMimeBadge(mime: string): string {
 
 /* 移动端适配 */
 @media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
 }
 </style>

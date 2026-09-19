@@ -318,12 +318,35 @@ func (s *Store) UpdateUserRole(userID int64, role string) error {
 
 // DeleteUser 删除用户（用户存在且删除成功返回 nil；不存在返回错误）。
 func (s *Store) DeleteUser(userID int64) error {
-	res, err := s.db.Exec(`DELETE FROM users WHERE id = ?`, userID)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin delete user %d: %w", userID, err)
+	}
+	defer tx.Rollback()
+
+	// post_authors deliberately uses ON DELETE RESTRICT so article ownership
+	// cannot disappear accidentally. User deletion is the explicit ownership
+	// removal path: clear only the association and keep posts.author unchanged
+	// so existing article bylines remain visible.
+	var authorsTable int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_authors'`).Scan(&authorsTable); err != nil {
+		return fmt.Errorf("check post_authors before deleting user %d: %w", userID, err)
+	}
+	if authorsTable > 0 {
+		if _, err := tx.Exec(`DELETE FROM post_authors WHERE author_id = ?`, userID); err != nil {
+			return fmt.Errorf("delete post authors for user %d: %w", userID, err)
+		}
+	}
+
+	res, err := tx.Exec(`DELETE FROM users WHERE id = ?`, userID)
 	if err != nil {
 		return fmt.Errorf("delete user %d: %w", userID, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("delete user %d: no rows affected", userID)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete user %d: %w", userID, err)
 	}
 	return nil
 }
@@ -379,11 +402,20 @@ func (s *Store) GetUserByAPITokenHash(hash string) (*User, error) {
 }
 
 // UpdateUserStatus 更新用户状态（active/banned）并返回受影响行数（0=用户不存在）。
+// 当状态更新为 banned 时，事务内同步轮换 auth_secret 并清空 api_token_hash，
+// 使既有会话 cookie 与 Bearer 令牌即时失效；解封后历史凭据不可复用。
 func (s *Store) UpdateUserStatus(userID int64, status string) error {
 	if !ValidUserStatus(status) {
 		return fmt.Errorf("invalid user status %q", status)
 	}
-	res, err := s.db.Exec(`UPDATE users SET status = ? WHERE id = ?`, status, userID)
+	var res sql.Result
+	var err error
+	if status == UserStatusBanned {
+		newSecret := GenerateAuthSecret()
+		res, err = s.db.Exec(`UPDATE users SET status = ?, auth_secret = ?, api_token_hash = '' WHERE id = ?`, status, newSecret, userID)
+	} else {
+		res, err = s.db.Exec(`UPDATE users SET status = ? WHERE id = ?`, status, userID)
+	}
 	if err != nil {
 		return fmt.Errorf("update user %d status: %w", userID, err)
 	}

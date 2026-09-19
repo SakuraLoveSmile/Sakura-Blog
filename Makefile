@@ -20,7 +20,7 @@ go-build:
 
 ## test: 静态检查 + 全部测试（Go vet + staticcheck + test + 前端 vue-tsc 类型检查 + assets/js 与 console 行为面机械校验）
 ## Go 命令统一从根 module 执行。
-test: dist-bootstrap console-test assets-test deploy-test module-check
+test: dist-bootstrap console-test assets-test deploy-test release-source-test module-check
 	go vet ./...
 	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 	go test ./...
@@ -40,6 +40,10 @@ generate:
 ## deploy-test: update.sh 的本地部署/回滚测试，不访问网络或真实 systemd。
 deploy-test:
 	bash deploy/update_test.sh
+
+## release-source-test: release 晋级来源策略的本地回归测试。
+release-source-test:
+	bash scripts/check-release-source_test.sh
 
 ## dist-bootstrap: 对齐 CI（.github/workflows/ci.yml go job 的 stub 策略）——
 ## modules/console/web/embed.go 的 //go:embed all:dist 编译期要求 dist 非空；
@@ -76,7 +80,7 @@ css:
 		echo "css: Stellar web 依赖缺失，执行 pnpm install（workspace 锁 stylus 0.62.0）"; \
 		pnpm install --frozen-lockfile; \
 	fi
-	cd modules/stellar/web && pnpm exec node build/stylus/compile.js
+	cd modules/stellar/web && pnpm exec node build/stylus/compile.js --clean
 
 ## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
 ## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
@@ -143,11 +147,11 @@ merge-check:
 		dev|main|release|"") echo "merge-check: 当前分支 '$$branch' 不是 feature 分支，中止" >&2; exit 1;; \
 	esac; \
 	$(MAKE) test || { echo "merge-check: make test 失败，中止合并（dev 未被改动）" >&2; exit 1; }; \
-	git -C $(DEV_WORKTREE) merge "$$branch" || { echo "merge-check: 合入 dev 失败（多为冲突），dev 未被改动，请先 rebase 最新 dev 解决冲突后重试" >&2; exit 1; }; \
-	echo "merge-check: 已合入 dev（$(DEV_WORKTREE)），复验合并后组合态"; \
-	$(MAKE) -C $(DEV_WORKTREE) test || { \
+	git -C "$$dev_worktree" merge "$$branch" || { echo "merge-check: 合入 dev 失败（多为冲突），dev 未被改动，请先 rebase 最新 dev 解决冲突后重试" >&2; exit 1; }; \
+	echo "merge-check: 已合入 dev（$$dev_worktree），复验合并后组合态"; \
+	$(MAKE) -C "$$dev_worktree" test || { \
 		echo "merge-check: 合并后组合态 make test 失败，dev 已含本次合并但未通过门禁" >&2; \
-		echo "merge-check: 回退指引：git -C $(DEV_WORKTREE) reset --hard ORIG_HEAD（dev 回到合并前状态）" >&2; \
+		echo "merge-check: 回退指引：git -C \"$$dev_worktree\" reset --hard ORIG_HEAD（dev 回到合并前状态）" >&2; \
 		echo "merge-check: 回退后请在本分支 rebase 最新 dev，修复兼容问题后重试 merge-check" >&2; \
 		exit 1; \
 	}; \

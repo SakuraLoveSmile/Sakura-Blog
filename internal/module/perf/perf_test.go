@@ -1,6 +1,7 @@
 package perf
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -62,6 +63,20 @@ func TestPerfDefaultOff(t *testing.T) {
 	_, mgr, _, _ := newPerfTestEnv(t)
 	if mgr.Enabled("perf") {
 		t.Fatal("perf should default off")
+	}
+}
+
+func TestPerfDropsBucketsFromBeforeMaintenance(t *testing.T) {
+	m, _, deps, st := newPerfTestEnv(t)
+	m.agg.recordAt("GET", "/old", http.StatusOK, time.Millisecond, st.Maintenance().Generation())
+	window, err := st.Maintenance().Begin(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("begin maintenance: %v", err)
+	}
+	window.Close()
+	m.flushAll(deps)
+	if count := routeCount(t, st); count != 0 {
+		t.Fatalf("pre-maintenance buckets wrote %d rows after recovery", count)
 	}
 }
 
@@ -237,5 +252,18 @@ func TestPerfSamplesAndPrune(t *testing.T) {
 	}
 	if len(points) != 4 {
 		t.Fatalf("old sample should be pruned, got %d points", len(points))
+	}
+}
+
+func TestRestoreGenerationDropsOldPeriodicBuckets(t *testing.T) {
+	aggregate := newAggregator()
+	aggregate.recordAt("GET", "/old", 200, time.Millisecond, 0)
+	aggregate.recordAt("GET", "/new", 200, time.Millisecond, 1)
+	buckets := aggregate.takeOlder(time.Now().Add(time.Hour), 1)
+	if len(buckets) != 1 || buckets[0].Route != "/new" {
+		t.Fatalf("old generation escaped periodic flush: %+v", buckets)
+	}
+	if len(aggregate.takeAll(1)) != 0 {
+		t.Fatal("old generation retained in memory")
 	}
 }

@@ -1,6 +1,6 @@
 {{- /* pin_slider.html: 1.42 置顶轮播，数据由 webServer.fillPinSlider 装配。 */ -}}
 {{if or .PinnedPosts .PinnedWiki}}
-<div class="pin-slider" id="pin-slider" data-interval="5000">
+<div class="pin-slider card-hover card-hover--spotlight card-hover--tilt" id="pin-slider" data-interval="5000">
   <div class="pin-slider-track">
     {{range .PinnedPosts}}
     <a class="pin-slide post-slide{{if not .Cover}} no-cover{{end}}" href="/post/{{.Slug}}"{{if .Cover}} style="--pin-cover-url:url('{{.Cover}}')"{{end}}>

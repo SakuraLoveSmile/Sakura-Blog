@@ -27,6 +27,8 @@ interface ProjectForm {
     title: string;
     description: string;
     start: string;
+    animationType: "" | "galaxy";
+    animationParamsText: string;
     previewType: "" | "terminal" | "image";
     previewImage: string;
     commandsText: string;
@@ -61,6 +63,8 @@ function emptyForm(id = ""): ProjectForm {
       title: "",
       description: "",
       start: "",
+      animationType: "",
+      animationParamsText: "",
       previewType: "",
       previewImage: "",
       commandsText: "",
@@ -71,6 +75,7 @@ function emptyForm(id = ""): ProjectForm {
 
 function formFromProject(p: WikiProject): ProjectForm {
   const hero = p.hero || {};
+  const animation = hero.animation || {};
   const preview = hero.preview || {};
   const commands = (preview.commands || []).flatMap((c) => c.codes || []);
   return {
@@ -95,6 +100,8 @@ function formFromProject(p: WikiProject): ProjectForm {
       title: hero.title || "",
       description: hero.description || "",
       start: hero.start || "",
+      animationType: animation.type === "galaxy" || hero.background === "galaxy" ? "galaxy" : "",
+      animationParamsText: animation.params ? JSON.stringify(animation.params, null, 2) : "",
       previewType: preview.type === "terminal" || preview.type === "image" ? preview.type : "",
       previewImage: preview.image || "",
       commandsText: commands.join("\n"),
@@ -197,11 +204,30 @@ function buildHero() {
         ...(commands.length ? { commands: commands.map((code) => ({ codes: [code] })) } : {}),
       }
     : undefined;
+  let animation: { type: "galaxy"; params?: Record<string, unknown> } | undefined;
+  if (h.animationType === "galaxy") {
+    const raw = h.animationParamsText.trim();
+    if (raw) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        throw new Error("Galaxy 参数必须是合法 JSON");
+      }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Galaxy 参数必须是 JSON 对象");
+      }
+      animation = { type: "galaxy", params: parsed as Record<string, unknown> };
+    } else {
+      animation = { type: "galaxy" };
+    }
+  }
   const hero = {
-    background: h.background.trim(),
+    background: h.background.trim() === "galaxy" ? "" : h.background.trim(),
     title: h.title.trim(),
     description: h.description.trim(),
     start: h.start.trim(),
+    ...(animation ? { animation } : {}),
     ...(preview ? { preview } : {}),
     ...(actions.length ? { actions } : {}),
   };
@@ -246,10 +272,17 @@ async function saveProject() {
     Toast.error("项目 ID 只能包含字母、数字、下划线和短横线");
     return;
   }
+  let body;
+  try {
+    body = payload();
+  } catch (err) {
+    Toast.error(err instanceof Error ? err.message : "Hero 参数格式错误");
+    return;
+  }
   saving.value = true;
   try {
-    if (isEditing.value) await wikiApi.updateProject(selectedId.value, payload());
-    else await wikiApi.createProject(payload() as any);
+    if (isEditing.value) await wikiApi.updateProject(selectedId.value, body);
+    else await wikiApi.createProject(body as any);
     Toast.success(isEditing.value ? "Wiki 项目已保存" : "Wiki 项目已创建");
     await loadProjects(id);
   } catch {
@@ -500,14 +533,21 @@ onMounted(() => loadProjects());
           <!-- Hero 配置卡 -->
           <VCard title="项目 Hero 横幅（可选）">
             <p class="mb-4 text-xs text-text-tertiary leading-relaxed">
-              详情页配置 Hero 时将以全宽横幅呈现；背景填 <code>galaxy</code> 可启用星空动态粒子背景。
+              详情页配置 Hero 时将以全宽横幅呈现；背景图片与 Galaxy 动画可独立或叠加。
             </p>
 
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">背景设置</label>
-                  <AttachmentField v-model="form.hero.background" placeholder="galaxy / 图片 URL" />
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">背景图片</label>
+                  <AttachmentField v-model="form.hero.background" placeholder="图片 URL（可留空）" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">背景动画</label>
+                  <select v-model="form.hero.animationType" :class="selectCls">
+                    <option value="">无动画</option>
+                    <option value="galaxy">Galaxy 星空</option>
+                  </select>
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">Hero 标题</label>
@@ -521,6 +561,18 @@ onMounted(() => loadProjects());
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">开始阅读按钮文案</label>
                   <input v-model="form.hero.start" :class="inputCls" placeholder="开始阅读" />
                 </div>
+              </div>
+
+              <div v-if="form.hero.animationType === 'galaxy'">
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">Galaxy 参数（可选 JSON）</label>
+                <textarea
+                  v-model="form.hero.animationParamsText"
+                  rows="5"
+                  :class="textareaCls"
+                  spellcheck="false"
+                  placeholder='{"density": 2, "speed": 0.5, "transparent": true}'
+                ></textarea>
+                <small class="mt-1 block text-[11px] text-text-quaternary">支持 focal、density、speed、hueShift 等上游参数；非法值会回退默认值。</small>
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

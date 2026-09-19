@@ -32,7 +32,7 @@ func renderLink(argsStr string) (string, bool) {
 	sb.WriteString(`<div class="tag-plugin link dis-select">`)
 	if desc != "" && desc != "false" {
 		// rich 模式（上下结构）
-		sb.WriteString(`<a class="link-card rich" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		sb.WriteString(`<a class="link-card rich card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
 		if strings.Contains(url, "://") {
 			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
 		}
@@ -47,7 +47,7 @@ func renderLink(argsStr string) (string, bool) {
 		sb.WriteString(`</div>`)
 	} else {
 		// plain 模式（左右结构）
-		sb.WriteString(`<a class="link-card plain" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
+		sb.WriteString(`<a class="link-card plain card-hover card-hover--spotlight card-hover--tilt" title="` + html.EscapeString(title) + `" href="` + html.EscapeString(url) + `"`)
 		if strings.Contains(url, "://") {
 			sb.WriteString(` target="_blank" rel="external nofollow noopener noreferrer"`)
 		}
@@ -110,15 +110,43 @@ func renderImage(argsStr string) (string, bool) {
 		sb.WriteString(` style="` + bgStyle + `"`)
 	}
 	sb.WriteString(`>`)
+	// fancybox（对齐上游 image.js，1.44 修复参数未生效）：false=关；true=img 加 data-fancybox；
+	// URL=包一层 <a data-fancybox href>（safeURL 校验）。参数缺省=关（保持历史零差异；
+	// 上游 image.js 缺省开启，此处差异记入审计报告）。
+	var fancyboxHref string
+	fancyboxOn := false
+	switch fb := named["fancybox"]; fb {
+	case "", "false":
+	case "true":
+		fancyboxOn = true
+	default:
+		if safeURL(fb) != "" {
+			fancyboxOn = true
+			fancyboxHref = fb
+		}
+	}
+	if fancyboxHref != "" {
+		sb.WriteString(`<a data-fancybox href="` + html.EscapeString(fancyboxHref) + `"`)
+		if alt != "" {
+			sb.WriteString(` data-caption="` + html.EscapeString(alt) + `"`)
+		}
+		sb.WriteString(`>`)
+	}
 	// img
 	sb.WriteString(`<img class="lazy" src="` + html.EscapeString(src) + `" data-src="` + html.EscapeString(src) + `"`)
 	if alt != "" {
 		sb.WriteString(` alt="` + html.EscapeString(alt) + `"`)
 	}
+	if fancyboxOn && fancyboxHref == "" {
+		sb.WriteString(` data-fancybox="true"`)
+	}
 	if named["ratio"] == "" && style.Len() > 0 {
 		sb.WriteString(` style="` + style.String() + `"`)
 	}
 	sb.WriteString(`/>`)
+	if fancyboxHref != "" {
+		sb.WriteString(`</a>`)
+	}
 	// download
 	if dl := named["download"]; dl != "" && dl != "false" {
 		href := dl
@@ -199,7 +227,11 @@ func renderGrid(argsStr, body string, renderMD func(string) string) string {
 		if cell == "" {
 			continue
 		}
-		sb.WriteString(`<div class="cell"`)
+		cellClass := `cell`
+		if named["bg"] == "card" {
+			cellClass = `cell card-hover card-hover--spotlight card-hover--tilt`
+		}
+		sb.WriteString(`<div class="` + cellClass + `"`)
 		if br := safeCSSNum(named["br"]); br != "" {
 			fmt.Fprintf(&sb, ` style="border-radius:%s;"`, br)
 		}

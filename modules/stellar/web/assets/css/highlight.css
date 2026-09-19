@@ -18,6 +18,11 @@ pre.chroma code {
   padding: 0;
 }
 
+/* 从主题源 highlight.styl 剥离的项目受控字体适配：代码块 pre > code 统一使用等宽代码字体 */
+pre > code {
+  font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;
+}
+
 /* ---------- Spec 48: Chroma table 行号模式 ---------- */
 /* 外层 div.chroma 容器（table 模式） */
 div.chroma {

@@ -426,7 +426,7 @@ function setJsonText(name: string, val: string) {
 
     <!-- 保存按钮 -->
     <div>
-      <VButton type="primary" size="sm" :loading="saving === 'widgets'" @click="emit('save', 'widgets')">
+      <VButton type="primary" size="sm" :disabled="Boolean(saving)" :loading="saving === 'widgets'" @click="emit('save', 'widgets')">
         保存组件设置
       </VButton>
     </div>

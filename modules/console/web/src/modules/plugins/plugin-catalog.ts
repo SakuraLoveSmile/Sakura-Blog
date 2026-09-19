@@ -2,6 +2,7 @@ import {
   PLUGIN_CATEGORIES,
   type PluginCategory,
   type PluginFormField,
+  type PluginEditSchema,
   type PluginMeta,
   type PluginType,
 } from "./plugin-types";
@@ -29,18 +30,14 @@ export interface PluginCatalogItem {
   category: string;
   capability: "static" | "interactive" | "service" | "external";
   services?: string[];
+  plugins?: string[];
   fixture?: string;
   main_js?: boolean;
   height?: number;
   fallback?: string;
   params: PluginCatalogParam[];
   param_docs: Array<{ name: string; desc: string; default?: string }>;
-  edit?: {
-    enabled: boolean;
-    required?: string[];
-    required_any?: string[][];
-    legacy_args?: string[];
-  };
+  edit?: PluginEditSchema;
 }
 
 function categoryOf(value: string): PluginCategory {
@@ -107,9 +104,18 @@ export function mergePluginCatalog(base: PluginMeta[], catalog: PluginCatalogIte
         [],
       example: item.example || existing?.example || fallbackExample(item),
       form: mergeForm(existing, item.params),
+      edit: item.edit
+        ? {
+            enabled: item.edit.enabled,
+            required: item.edit.required?.slice(),
+            required_any: item.edit.required_any?.map((group) => group.slice()),
+            legacy_args: item.edit.legacy_args?.slice(),
+          }
+        : existing?.edit,
       preview: {
         capability: item.capability,
         services: item.services?.slice(),
+        plugins: item.plugins?.slice(),
         fixture: item.fixture,
         mainJs: item.main_js,
         height: item.height,

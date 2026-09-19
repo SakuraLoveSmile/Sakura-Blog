@@ -45,7 +45,9 @@ test("shortcode visual editor supports hybrid variants (navbar / frame)", () => 
   assert.match(viewSource, /formForVariant\(editingPlugin\.value, editingVariant\.value\)/);
   assert.match(viewSource, /:variant="editingVariant"/);
   assert.match(popoverSource, /:variant="variant"/);
-  assert.match(formSource, /buildShortcode\(props\.plugin, shortcodeValues, props\.variant\)/);
+  assert.match(formSource, /buildShortcodeResult\(props\.plugin, shortcodeValues\(next\), props\.variant\)/);
+  assert.match(formSource, /"validation"/);
+  assert.match(popoverSource, /structuredValid/);
   // variant 经 API 透传
   assert.match(apiSource, /variant\?: "inline" \| "block"/);
 });

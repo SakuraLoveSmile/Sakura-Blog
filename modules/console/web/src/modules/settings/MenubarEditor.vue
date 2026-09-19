@@ -203,7 +203,7 @@ const hasErrors = computed(() => Object.keys(errors.value).length > 0);
     </VButton>
 
     <div class="flex items-center gap-3">
-      <VButton type="primary" size="sm" :disabled="hasErrors" :loading="saving === 'menubar'" @click="emit('save')">
+      <VButton type="primary" size="sm" :disabled="hasErrors || Boolean(saving)" :loading="saving === 'menubar'" @click="emit('save')">
         保存菜单
       </VButton>
       <span v-if="hasErrors" class="text-xs text-state-error text-state-error">请修正上方标红项后保存</span>

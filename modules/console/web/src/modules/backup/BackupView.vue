@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { backupApi, backupExportUrl, backupExportMarkdownUrl } from "@/api";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { backupApi, backupExportUrl, backupExportMarkdownUrl, RestoreTaskHttpError, type RestoreTask } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VCard, VButton, VLoading, VEmpty, VModal, Dialog, Toast } from "@/components/ui";
+import {
+  VPageHeader,
+  VCard,
+  VButton,
+  VLoading,
+  VEmpty,
+  VModal,
+  Dialog,
+  Toast,
+} from "@/components/ui";
+import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
+import { useAuthStore } from "@/stores/auth";
+import { queryClient } from "@/api/query-client";
+import router from "@/router";
 
 interface BackupInfo {
   name: string;
@@ -28,12 +41,129 @@ const importResult = ref<{
 const restoring = ref(false);
 const restoreFileInput = ref<HTMLInputElement | null>(null);
 const restoreConfirmText = ref("");
-const pendingRestore = ref<{ kind: "upload" | "snapshot"; file?: File; name?: string } | null>(null);
+const pendingRestore = ref<{
+  kind: "upload" | "snapshot";
+  file?: File;
+  name?: string;
+  idempotencyKey: string;
+} | null>(null);
 const restoreStrict = ref(false);
+const restoreTask = ref<RestoreTask | null>(null);
+const restoreTasks = ref<RestoreTask[]>([]);
+const restorePollTimer = ref<ReturnType<typeof window.setTimeout> | null>(null);
+const restoreTaskStorageKey = "console.restore.task_id";
+const restorePollError = ref("");
+const componentUnmounted = ref(false);
+const auth = useAuthStore();
+
+function restoreTaskMessage(task: RestoreTask): string {
+  const labels: Record<string, string> = {
+    preparing: "准备中",
+    waiting: "等待维护窗口",
+    applying: "恢复数据中",
+    rebuilding: "重建索引中",
+    succeeded: "已完成",
+    rolled_back: "已回滚",
+    recovery_required: "需要人工恢复",
+  };
+  return labels[task.status] || task.status;
+}
+
+function isRestoreTerminal(status: string): boolean {
+  return ["succeeded", "rolled_back", "recovery_required"].includes(status);
+}
+
+const restoreBusy = computed(
+  () => restoring.value || (!!restoreTask.value && !isRestoreTerminal(restoreTask.value.status)),
+);
+
+function stopRestorePolling() {
+  if (restorePollTimer.value !== null) {
+    window.clearTimeout(restorePollTimer.value);
+    restorePollTimer.value = null;
+  }
+}
+
+function scheduleRestorePoll() {
+  if (componentUnmounted.value || !localStorage.getItem(restoreTaskStorageKey)) return;
+  stopRestorePolling();
+  restorePollTimer.value = window.setTimeout(pollRestoreTask, 2000);
+}
+
+async function readMaintenanceState(): Promise<boolean> {
+  const response = await fetch("/api/maintenance", { credentials: "same-origin" });
+  if (!response.ok) throw new Error(`维护状态请求失败（${response.status}）`);
+  const body = (await response.json()) as { maintenance?: unknown };
+  if (typeof body.maintenance !== "boolean") throw new Error("维护状态响应格式错误");
+  return body.maintenance;
+}
+
+function handleRestoreTaskUnauthorized() {
+  auth.clearSession();
+  queryClient.clear();
+  stopRestorePolling();
+  Dialog.warning({
+    title: "恢复任务需要重新登录",
+    description: "请使用备份账号重新登录后继续查询恢复结果。任务仍会在后台运行。",
+    confirmText: "去备份账号登录",
+    cancelText: "稍后处理",
+    onConfirm: async () => {
+      await router.replace({ path: "/login", query: { redirect: router.currentRoute.value.fullPath } });
+    },
+  });
+}
+
+async function pollRestoreTask() {
+  if (componentUnmounted.value) return;
+  const taskID = localStorage.getItem(restoreTaskStorageKey);
+  if (!taskID) return;
+  try {
+    restorePollError.value = "";
+    const maintenance = await readMaintenanceState();
+    if (componentUnmounted.value) return;
+    if (!maintenance) {
+      const task = await backupApi.getRestoreTask(taskID);
+      if (componentUnmounted.value) return;
+      restoreTask.value = task;
+      if (isRestoreTerminal(task.status)) {
+        localStorage.removeItem(restoreTaskStorageKey);
+        stopRestorePolling();
+        if (task.status === "succeeded") Toast.success("恢复完成，前台与搜索索引已重新同步");
+        else Toast.error(task.error || `恢复${restoreTaskMessage(task)}`);
+        if (!componentUnmounted.value) await loadRestoreTasks();
+        return;
+      }
+    }
+  } catch (error) {
+    if (error instanceof RestoreTaskHttpError && error.status === 401) {
+      handleRestoreTaskUnauthorized();
+      return;
+    }
+    restorePollError.value = error instanceof Error ? error.message : "恢复状态暂时无法查询，将自动重试";
+  }
+  scheduleRestorePoll();
+}
+
+function beginRestorePolling(task: RestoreTask) {
+  restoreTask.value = task;
+  localStorage.setItem(restoreTaskStorageKey, task.id);
+  restorePollError.value = "";
+  stopRestorePolling();
+  restorePollTimer.value = window.setTimeout(pollRestoreTask, 500);
+}
+
+async function loadRestoreTasks() {
+  try {
+    const { data } = await backupApi.listRestoreTasks();
+    restoreTasks.value = data.tasks || [];
+  } catch {
+    restoreTasks.value = [];
+  }
+}
 
 function openRestorePicker() {
   const input = restoreFileInput.value;
-  if (!input || restoring.value) return;
+  if (!input || restoreBusy.value) return;
   input.value = "";
   input.click();
 }
@@ -41,30 +171,35 @@ function openRestorePicker() {
 function pickRestoreFile(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
-  pendingRestore.value = { kind: "upload", file: input.files[0] };
+  pendingRestore.value = { kind: "upload", file: input.files[0], idempotencyKey: crypto.randomUUID() };
   restoreConfirmText.value = "";
   input.value = "";
 }
 
 function pickRestoreSnapshot(name: string) {
-  pendingRestore.value = { kind: "snapshot", name };
+  if (restoreBusy.value) return;
+  pendingRestore.value = { kind: "snapshot", name, idempotencyKey: crypto.randomUUID() };
   restoreConfirmText.value = "";
 }
 
 async function executeRestore() {
   const p = pendingRestore.value;
-  if (!p || restoreConfirmText.value !== "RESTORE") return;
+  if (!p || restoreBusy.value || restoreConfirmText.value !== "RESTORE") return;
   restoring.value = true;
   try {
+    let response;
     if (p.kind === "upload" && p.file) {
-      await backupApi.restore(p.file, restoreStrict.value);
+      response = await backupApi.startRestore(p.file, restoreStrict.value, p.idempotencyKey);
     } else if (p.kind === "snapshot" && p.name) {
-      await backupApi.restoreSnapshot(p.name);
+      response = await backupApi.startSnapshotRestore(p.name, restoreStrict.value, p.idempotencyKey);
+    } else {
+      return;
     }
-    Toast.success("恢复完成，前台与搜索索引已重新同步");
+    beginRestorePolling(response.data);
+    Toast.success("恢复任务已提交，系统将在维护完成后更新结果");
     pendingRestore.value = null;
-    loadStatus();
-  } catch {
+  } catch (error) {
+    Toast.error(error instanceof Error ? error.message : "恢复任务提交失败，请重试");
   } finally {
     restoring.value = false;
   }
@@ -77,6 +212,7 @@ async function loadStatus() {
     autoBackup.value = data.auto_backup;
     backupKeep.value = data.backup_keep;
     backups.value = data.backups || [];
+    await loadRestoreTasks();
   } catch {
   } finally {
     loading.value = false;
@@ -130,7 +266,49 @@ const stats = computed(() => {
   };
 });
 
-onMounted(loadStatus);
+async function resumeRestoreTask(taskID: string): Promise<boolean> {
+  restoreTask.value = { id: taskID, status: "waiting", created_at: "", updated_at: "", has_preimage: false };
+  try {
+    const maintenance = await readMaintenanceState();
+    if (componentUnmounted.value) return true;
+    if (maintenance) {
+      scheduleRestorePoll();
+      return true;
+    }
+    const task = await backupApi.getRestoreTask(taskID);
+    if (componentUnmounted.value) return true;
+    restoreTask.value = task;
+    if (isRestoreTerminal(task.status)) {
+      localStorage.removeItem(restoreTaskStorageKey);
+      restoreTask.value = null;
+      return false;
+    }
+    beginRestorePolling(task);
+    return true;
+  } catch (error) {
+    if (error instanceof RestoreTaskHttpError && error.status === 401) {
+      handleRestoreTaskUnauthorized();
+      return true;
+    }
+    restorePollError.value = error instanceof Error ? error.message : "恢复状态暂时无法查询，将自动重试";
+    scheduleRestorePoll();
+    return true;
+  }
+}
+
+onMounted(async () => {
+  componentUnmounted.value = false;
+  const taskID = localStorage.getItem(restoreTaskStorageKey);
+  if (taskID) {
+    const active = await resumeRestoreTask(taskID);
+    if (active || componentUnmounted.value) return;
+  }
+  await loadStatus();
+});
+onBeforeUnmount(() => {
+  componentUnmounted.value = true;
+  stopRestorePolling();
+});
 </script>
 
 <template>
@@ -149,50 +327,52 @@ onMounted(loadStatus);
       </template>
     </VPageHeader>
 
+    <div
+      v-if="restoreTask && !isRestoreTerminal(restoreTask.status)"
+      class="mx-auto max-w-[1200px] px-4 pt-5 sm:px-6 md:px-8"
+    >
+      <div class="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+        <div class="flex items-center gap-2 font-semibold">
+          <Icon icon="ri:loader-4-line" class="animate-spin text-primary" />
+          整站恢复：{{ restoreTaskMessage(restoreTask) }}
+        </div>
+        <div class="mt-1 text-xs text-text-tertiary">恢复期间请保持页面打开，维护窗口结束后会自动查询最终结果。</div>
+        <div v-if="restorePollError" class="mt-2 text-xs text-state-error">{{ restorePollError }}，正在重试。</div>
+      </div>
+    </div>
+
     <div class="mx-auto max-w-[1200px] space-y-5 px-4 py-5 sm:px-6 md:px-8">
       <!-- 概览数据指标卡 -->
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div class="stats-card">
-          <div class="stats-icon text-primary bg-primary/10">
-            <Icon icon="ri:database-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">本地快照备份</div>
-            <div class="stats-value">{{ stats.totalSnapshots }} <span class="stats-sub">份快照文件</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30D158] bg-[#30D158]/10">
-            <Icon icon="ri:hard-drive-2-line" />
-          </div>
-          <div>
-            <div class="stats-label">快照占用空间</div>
-            <div class="stats-value text-[#30D158]">{{ stats.totalBytes }} <span class="stats-sub">磁盘已用</span></div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
-            <Icon icon="ri:timer-line" />
-          </div>
-          <div>
-            <div class="stats-label">定时自动备份</div>
-            <div class="stats-value text-[#30B0C7]">
-              {{ stats.autoBackup }} <span class="stats-sub">每 24 小时执行</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-card">
-          <div class="stats-icon text-[#AF52DE] bg-[#AF52DE]/10">
-            <Icon icon="ri:history-line" />
-          </div>
-          <div>
-            <div class="stats-label">快照轮转策略</div>
-            <div class="stats-value">{{ stats.backupKeep }} <span class="stats-sub">自动清理旧版本</span></div>
-          </div>
-        </div>
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <ConsoleStatsCard
+          label="本地快照备份"
+          :value="stats.totalSnapshots"
+          sub="份快照文件"
+          icon="ri:database-2-line"
+          color="primary"
+        />
+        <ConsoleStatsCard
+          label="快照占用空间"
+          :value="stats.totalBytes"
+          sub="磁盘已用"
+          icon="ri:hard-drive-2-line"
+          color="success"
+          value-class="text-[#30D158]"
+        />
+        <ConsoleStatsCard
+          label="定时自动备份"
+          :value="stats.autoBackup"
+          sub="每 24 小时执行"
+          icon="ri:timer-line"
+          color="cyan"
+        />
+        <ConsoleStatsCard
+          label="快照轮转策略"
+          :value="stats.backupKeep"
+          sub="自动清理旧版本"
+          icon="ri:history-line"
+          color="purple"
+        />
       </div>
 
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
@@ -267,12 +447,38 @@ onMounted(loadStatus);
                       <button
                         type="button"
                         class="rounded-lg px-2.5 py-1 text-xs font-medium text-[#FF453A] hover:bg-[#FF453A]/10 transition-colors"
-                        :disabled="restoring"
+                        :disabled="restoreBusy"
                         @click="pickRestoreSnapshot(b.name)"
                       >
                         还原快照
                       </button>
                     </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </VCard>
+
+          <VCard title="恢复任务记录">
+            <VEmpty v-if="!restoreTasks.length" title="暂无恢复任务" message="提交整站恢复后，任务状态会显示在这里" />
+            <div v-else class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-border text-text-quaternary font-medium">
+                    <th class="py-2.5 px-3">任务</th>
+                    <th class="py-2.5 px-3">状态</th>
+                    <th class="py-2.5 px-3">时间</th>
+                    <th class="py-2.5 px-3">恢复前快照</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60">
+                  <tr v-for="task in restoreTasks" :key="task.id">
+                    <td class="py-2.5 px-3 font-mono text-text-tertiary">{{ task.id.slice(0, 12) }}</td>
+                    <td class="py-2.5 px-3 font-medium">{{ restoreTaskMessage(task) }}</td>
+                    <td class="py-2.5 px-3 text-text-quaternary">
+                      {{ task.updated_at ? formatRelative(task.updated_at) : "-" }}
+                    </td>
+                    <td class="py-2.5 px-3">{{ task.has_preimage ? "已生成" : "-" }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -360,10 +566,10 @@ onMounted(loadStatus);
                 type="file"
                 accept=".zip"
                 class="hidden"
-                :disabled="restoring"
+                :disabled="restoreBusy"
                 @change="pickRestoreFile"
               />
-              <VButton size="sm" type="danger" :disabled="restoring" @click="openRestorePicker">
+              <VButton size="sm" type="danger" :disabled="restoreBusy" @click="openRestorePicker">
                 <template #icon><Icon icon="ri:restart-line" /></template>
                 上传备份并恢复
               </VButton>
@@ -385,7 +591,7 @@ onMounted(loadStatus);
           <div class="font-bold text-state-error text-sm flex items-center gap-1.5 mb-1">
             <Icon icon="ri:error-warning-fill" /> 高风险操作警告
           </div>
-          当前数据库中的所有文章、评论、瞬间和配置都将被备份中的数据<strong>全量覆盖</strong>，且此操作不可逆！
+          当前数据库中的所有文章、评论、瞬间和配置都将被备份中的数据<strong>全量覆盖</strong>，恢复期间站点将暂停访问。系统会保存恢复前快照；失败时自动补偿，补偿未完成时继续保持维护。
         </div>
 
         <div class="rounded-xl border border-border bg-card p-3 font-mono">
@@ -405,6 +611,11 @@ onMounted(loadStatus);
           </label>
           <input v-model="restoreConfirmText" class="apple-input font-mono text-sm" placeholder="RESTORE" autofocus />
         </div>
+
+        <label class="flex items-center gap-2 text-text-tertiary">
+          <input v-model="restoreStrict" type="checkbox" class="accent-primary" />
+          严格恢复：仅保留备份中的附件，移除备份之外的附件
+        </label>
       </div>
 
       <template #footer>
@@ -413,7 +624,7 @@ onMounted(loadStatus);
           <VButton
             type="danger"
             :loading="restoring"
-            :disabled="restoreConfirmText !== 'RESTORE'"
+            :disabled="restoreBusy || restoreConfirmText !== 'RESTORE'"
             @click="executeRestore"
           >
             确认覆盖并恢复
@@ -425,72 +636,4 @@ onMounted(loadStatus);
 </template>
 
 <style scoped>
-/* 统计卡片 */
-.stats-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
-.stats-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.stats-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-quaternary);
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-}
-.stats-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1.2;
-}
-.stats-sub {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
-}
-
-@media (max-width: 640px) {
-  .stats-card {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .stats-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-  .stats-value {
-    font-size: 14px;
-  }
-}
 </style>

@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"sync/atomic"
 
@@ -141,6 +142,7 @@ func (c *sitemapCache) invalidate() {
 
 // get 返回指定 baseURL 的 sitemap XML；置脏或首次时重建。
 func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
+	baseURL = tmpl.NormalizeSiteURL(baseURL)
 	cache := &c.sitemap
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -164,6 +166,7 @@ func (c *contentCache) sitemapXML(baseURL string) ([]byte, error) {
 // buildSitemap 全量重建 sitemap（与旧 GET /sitemap.xml 同逻辑）：
 // 首页 + 已发布文章 + wiki 已发布文档 + 静态索引页。
 func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
+	baseURL = tmpl.NormalizeSiteURL(baseURL)
 	type SitemapURL struct {
 		Loc        string `xml:"loc"`
 		LastMod    string `xml:"lastmod,omitempty"`
@@ -177,13 +180,13 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 	}
 
 	sm := Sitemap{XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
-	sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + "/", Priority: "1.0"})
+	sm.URLs = append(sm.URLs, SitemapURL{Loc: tmpl.JoinSiteURL(baseURL, "/"), Priority: "1.0"})
 
 	posts, err := c.st.ListPublished()
 	if err == nil {
 		for _, p := range posts {
 			sm.URLs = append(sm.URLs, SitemapURL{
-				Loc:     baseURL + "/post/" + p.Slug,
+				Loc:     tmpl.JoinSiteURL(baseURL, "/post/"+url.PathEscape(p.Slug)),
 				LastMod: p.UpdatedAt.Format("2006-01-02"),
 			})
 		}
@@ -209,7 +212,7 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 				continue
 			}
 			sm.URLs = append(sm.URLs, SitemapURL{
-				Loc:        baseURL + "/wiki/" + project.ID + "/" + doc.Slug,
+				Loc:        tmpl.JoinSiteURL(baseURL, "/wiki/"+url.PathEscape(project.ID)+"/"+url.PathEscape(doc.Slug)),
 				LastMod:    doc.UpdatedAt.Format("2006-01-02"),
 				ChangeFreq: "weekly",
 				Priority:   "0.6",
@@ -218,7 +221,7 @@ func (c *contentCache) buildSitemap(baseURL string) ([]byte, error) {
 	}
 
 	for _, p := range []string{"/archives", "/categories", "/tags", "/links", "/moments"} {
-		sm.URLs = append(sm.URLs, SitemapURL{Loc: baseURL + p})
+		sm.URLs = append(sm.URLs, SitemapURL{Loc: tmpl.JoinSiteURL(baseURL, p)})
 	}
 
 	output, err := xml.MarshalIndent(sm, "", "  ")

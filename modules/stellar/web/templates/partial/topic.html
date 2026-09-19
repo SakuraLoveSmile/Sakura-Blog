@@ -8,7 +8,7 @@
 <div class="post-list post">
   {{range .Posts}}
   <div class="post-card-wrap">
-    <a class="post-card post" href="/post/{{.Slug}}">
+    <a class="post-card post card-hover card-hover--spotlight card-hover--tilt" href="/post/{{.Slug}}">
       <article class="md-text">
         {{if .Cover}}
         <div class="post-cover"><img src="{{.Cover}}" alt="{{.Title}}" loading="lazy"/></div>

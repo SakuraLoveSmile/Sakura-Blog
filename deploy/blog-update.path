@@ -1,0 +1,14 @@
+# 监听更新请求目录；有新请求时触发 blog-update.service
+# 安装：cp blog-update.path /etc/systemd/system/
+#       systemctl daemon-reload && systemctl enable --now blog-update.path
+
+[Unit]
+Description=Stellar Blog update request watcher
+ConditionPathExists=/opt/blog/update/requests
+
+[Path]
+DirectoryNotEmpty=/opt/blog/update/requests
+Unit=blog-update.service
+
+[Install]
+WantedBy=multi-user.target

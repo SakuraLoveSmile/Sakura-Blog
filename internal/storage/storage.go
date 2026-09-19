@@ -110,10 +110,68 @@ func ValidateConfig(cfg Config) (Config, error) {
 // Manager is a stable AttachmentStorage pointer whose backend can be swapped
 // after a ConfigModule update. Existing handlers keep using the same manager.
 type Manager struct {
-	mu        sync.RWMutex
-	localRoot string
-	config    Config
-	backend   AttachmentStorage
+	mu            sync.RWMutex
+	reconfigureMu sync.Mutex
+	localRoot     string
+	config        Config
+	backend       AttachmentStorage
+}
+
+// ReconfigureDraft reserves the manager while a caller validates and persists
+// a new configuration. The backend is published only by Commit.
+type ReconfigureDraft struct {
+	manager *Manager
+	current Config
+	config  Config
+	backend AttachmentStorage
+	closed  bool
+}
+
+func (m *Manager) BeginReconfigure() *ReconfigureDraft {
+	m.reconfigureMu.Lock()
+	return &ReconfigureDraft{manager: m, current: m.Config()}
+}
+
+func (d *ReconfigureDraft) Current() Config { return d.current }
+
+func (d *ReconfigureDraft) Prepare(cfg Config) error {
+	if d.closed {
+		return errors.New("storage reconfigure draft is closed")
+	}
+	normalized, err := ValidateConfig(cfg)
+	if err != nil {
+		return err
+	}
+	backend, err := newBackend(d.manager.localRoot, normalized)
+	if err != nil {
+		return err
+	}
+	d.config = normalized
+	d.backend = backend
+	return nil
+}
+
+func (d *ReconfigureDraft) Config() Config { return d.config }
+
+func (d *ReconfigureDraft) Commit() error {
+	if d.closed || d.backend == nil {
+		return errors.New("storage reconfigure draft is not prepared")
+	}
+	d.manager.mu.Lock()
+	d.manager.config = d.config
+	d.manager.backend = d.backend
+	d.manager.mu.Unlock()
+	d.closed = true
+	d.manager.reconfigureMu.Unlock()
+	return nil
+}
+
+func (d *ReconfigureDraft) Abort() {
+	if d.closed {
+		return
+	}
+	d.closed = true
+	d.manager.reconfigureMu.Unlock()
 }
 
 func NewManager(localRoot string, cfg Config) (*Manager, error) {
@@ -140,19 +198,12 @@ func (m *Manager) Config() Config {
 // Reconfigure constructs the new backend before swapping it into service, so
 // a malformed S3 endpoint cannot interrupt the current backend.
 func (m *Manager) Reconfigure(cfg Config) error {
-	normalized, err := ValidateConfig(cfg)
-	if err != nil {
+	draft := m.BeginReconfigure()
+	if err := draft.Prepare(cfg); err != nil {
+		draft.Abort()
 		return err
 	}
-	backend, err := newBackend(m.localRoot, normalized)
-	if err != nil {
-		return err
-	}
-	m.mu.Lock()
-	m.config = normalized
-	m.backend = backend
-	m.mu.Unlock()
-	return nil
+	return draft.Commit()
 }
 
 func (m *Manager) current() AttachmentStorage {

@@ -234,6 +234,27 @@ onUnmounted(() => {
         <small>有新的访问后，这里会显示高峰时段</small>
       </div>
     </div>
+
+    <!-- 读屏器与无障碍数据表格摘要 -->
+    <div class="sr-only">
+      <h4>24 小时访问时段分布明细</h4>
+      <p>时间范围：近 {{ trendDays }} 天。高峰时段：{{ statsSummary.peakStr }}，总访问：{{ statsSummary.total }}，日间占比：{{ statsSummary.dayPct }}%，夜间占比：{{ 100 - statsSummary.dayPct }}%。</p>
+      <table>
+        <caption>各时段访问数据</caption>
+        <thead>
+          <tr>
+            <th scope="col">时段</th>
+            <th scope="col">访问量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(count, hour) in hourlyDist" :key="hour">
+            <td>{{ hour.toString().padStart(2, '0') }}:00 - {{ (hour + 1).toString().padStart(2, '0') }}:00</td>
+            <td>{{ count }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 

@@ -55,6 +55,30 @@ function setEditing(enabled: boolean) {
   grid?.enableMove(enabled);
 }
 
+function moveWidget(index: number, direction: -1 | 1) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= props.widgets.length) return;
+  const currentWidgets = readGridWidgets();
+  if (index >= currentWidgets.length || targetIndex >= currentWidgets.length) return;
+
+  const itemA = { ...currentWidgets[index] };
+  const itemB = { ...currentWidgets[targetIndex] };
+
+  const tempX = itemA.x;
+  const tempY = itemA.y;
+  itemA.x = itemB.x;
+  itemA.y = itemB.y;
+  itemB.x = tempX;
+  itemB.y = tempY;
+
+  const nextWidgets = [...currentWidgets];
+  nextWidgets[index] = itemB;
+  nextWidgets[targetIndex] = itemA;
+
+  emit("change", nextWidgets);
+  void rebuildGrid();
+}
+
 function mountGrid() {
   if (!gridEl.value || grid) return;
   const instance = GridStack.init(
@@ -113,7 +137,7 @@ onBeforeUnmount(destroyGrid);
     :style="{ '--gs-column-width': `${100 / getGridColumns(breakpoint)}%` }"
   >
     <div
-      v-for="item in widgets"
+      v-for="(item, index) in widgets"
       :key="item.i"
       class="grid-stack-item"
       :gs-id="item.i"
@@ -141,6 +165,16 @@ onBeforeUnmount(destroyGrid);
         </WidgetSizeProvider>
         <UnknownWidget v-else :widget-id="item.id" />
         <div v-if="editing" class="apple-edit-overlay">
+          <button
+            class="apple-edit-btn-move"
+            type="button"
+            :disabled="index === 0"
+            title="向前移动"
+            aria-label="向前移动组件"
+            @click.stop="moveWidget(index, -1)"
+          >
+            <Icon icon="ri:arrow-left-s-line" class="w-4 h-4" />
+          </button>
           <span
             class="apple-drag-handle"
             role="button"
@@ -150,6 +184,16 @@ onBeforeUnmount(destroyGrid);
           >
             <Icon icon="ri:drag-move-2-line" class="w-4 h-4" />
           </span>
+          <button
+            class="apple-edit-btn-move"
+            type="button"
+            :disabled="index === widgets.length - 1"
+            title="向后移动"
+            aria-label="向后移动组件"
+            @click.stop="moveWidget(index, 1)"
+          >
+            <Icon icon="ri:arrow-right-s-line" class="w-4 h-4" />
+          </button>
           <button
             class="apple-edit-size-btn"
             type="button"

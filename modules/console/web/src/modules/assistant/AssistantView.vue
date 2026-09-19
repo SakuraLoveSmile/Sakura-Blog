@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import {
   getApiErrorMessage,
@@ -8,6 +9,7 @@ import {
   type RAGStatusResponse,
 } from "@/api";
 import { Toast, VButton, VPageHeader, VStatusDot } from "@/components/ui";
+import AiSettings from "./AiSettings.vue";
 
 interface ChatMessage {
   id: string;
@@ -27,6 +29,20 @@ const statusLoading = ref(true);
 const copiedId = ref<string | null>(null);
 const chatContainerRef = ref<HTMLElement | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+const route = useRoute();
+const router = useRouter();
+type AssistantTab = "assistant" | "knowledge" | "settings";
+const activeTab = ref<AssistantTab>(route.query.tab === "settings" ? "settings" : route.query.tab === "knowledge" ? "knowledge" : "assistant");
+
+watch(activeTab, (tab) => {
+  const query = { ...route.query };
+  if (tab === "assistant") delete query.tab;
+  else query.tab = tab;
+  if (route.query.tab !== query.tab) void router.push({ query });
+});
+watch(() => route.query.tab, (tab) => {
+  activeTab.value = tab === "settings" ? "settings" : tab === "knowledge" ? "knowledge" : "assistant";
+});
 
 const suggestedPrompts = [
   {
@@ -376,7 +392,7 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <template #actions>
-        <div class="flex items-center gap-2">
+        <div v-if="activeTab !== 'settings'" class="flex items-center gap-2">
           <VButton
             v-if="messages.length > 0"
             type="secondary"
@@ -400,7 +416,13 @@ onBeforeUnmount(() => {
       </template>
     </VPageHeader>
 
-    <div class="assistant-layout">
+    <nav class="assistant-tabs apple-segmented rect" aria-label="AI 助手分类">
+      <button type="button" :class="{ active: activeTab === 'assistant' }" @click="activeTab = 'assistant'">助手</button>
+      <button type="button" :class="{ active: activeTab === 'knowledge' }" @click="activeTab = 'knowledge'">知识库</button>
+      <button type="button" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">设置</button>
+    </nav>
+
+    <div v-if="activeTab !== 'settings'" class="assistant-layout">
       <!-- 左侧：AI 对话工作区 -->
       <div class="chat-workspace">
         <!-- 聊天区域容器 -->
@@ -687,6 +709,7 @@ onBeforeUnmount(() => {
         </div>
       </aside>
     </div>
+    <AiSettings v-else />
   </div>
 </template>
 
@@ -706,6 +729,16 @@ onBeforeUnmount(() => {
   border-radius: 9px;
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
+
+.assistant-tabs {
+  display: flex;
+  margin: 0 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.assistant-tabs::-webkit-scrollbar { display: none; }
+.assistant-tabs button { min-height: 44px; white-space: nowrap; }
 
 .assistant-layout {
   display: grid;

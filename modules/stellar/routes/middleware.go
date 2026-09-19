@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 
@@ -14,6 +15,62 @@ import (
 	"blog/internal/httpapi"
 	"blog/internal/store"
 )
+
+const requestSchemeKey = "blog.request_scheme"
+
+func trustedProxyNetworks(raw string) []*net.IPNet {
+	var networks []*net.IPNet
+	for _, value := range strings.Split(raw, ",") {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if ip := net.ParseIP(value); ip != nil {
+			bits := 128
+			if ip.To4() != nil {
+				ip = ip.To4()
+				bits = 32
+			}
+			networks = append(networks, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+			continue
+		}
+		if _, network, err := net.ParseCIDR(value); err == nil {
+			networks = append(networks, network)
+		}
+	}
+	return networks
+}
+
+func remoteIP(r *http.Request) net.IP {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		return net.ParseIP(host)
+	}
+	return net.ParseIP(r.RemoteAddr)
+}
+
+func isTrustedProxy(r *http.Request, networks []*net.IPNet) bool {
+	ip := remoteIP(r)
+	if ip == nil {
+		return false
+	}
+	for _, network := range networks {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func requestScheme(c *gin.Context) string {
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	if c.GetString(requestSchemeKey) == "https" {
+		return "https"
+	}
+	return "http"
+}
 
 // securityHeaders P2-14 安全响应头：nosniff 防 MIME 嗅探、SAMEORIGIN 防点击劫持、Referrer-Policy 控制来源泄漏。
 // 不加全局 CSP：前台存在内联脚本/样式（原版 Stellar 结构），严格 CSP 会破坏渲染；/uploads 的 SVG 已单独 CSP 防护（P1-11）。
@@ -66,13 +123,18 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 	}))
 
 	// 反向代理头：设了 trusted_proxy 才信任 X-Forwarded-For，还原客户端真实 IP。
-	if app.TrustedProxy != "" {
+	trustedNetworks := []*net.IPNet(nil)
+	if app != nil {
+		trustedNetworks = trustedProxyNetworks(app.TrustedProxy)
+	}
+	if app != nil && app.TrustedProxy != "" {
 		proxies := strings.Split(app.TrustedProxy, ",")
 		for i := range proxies {
 			proxies[i] = strings.TrimSpace(proxies[i])
 		}
 		if err := r.SetTrustedProxies(proxies); err != nil {
 			log.Printf("set trusted proxies: %v", err)
+			trustedNetworks = nil
 		}
 		r.ForwardedByClientIP = true
 	} else {
@@ -83,6 +145,17 @@ func (s *webServer) installMiddleware(r *gin.Engine, app *config.App, pv *pageVi
 			log.Printf("clear trusted proxies: %v", err)
 		}
 	}
+	// 仅信任配置内直接代理的协议头；直连请求以 TLS 状态为准。
+	r.Use(func(c *gin.Context) {
+		if c.Request.TLS != nil {
+			c.Set(requestSchemeKey, "https")
+		} else if isTrustedProxy(c.Request, trustedNetworks) && strings.EqualFold(strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Proto"), ",")[0]), "https") {
+			c.Set(requestSchemeKey, "https")
+		} else {
+			c.Set(requestSchemeKey, "http")
+		}
+		c.Next()
+	})
 
 	// P2-18：multipart 内存上限——跟随 max_upload_mb，防止超大表单解析撑爆内存（超出部分落临时文件）。
 	r.MaxMultipartMemory = int64(app.MaxUploadMB+1) << 20

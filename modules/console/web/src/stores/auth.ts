@@ -74,10 +74,16 @@ export const useAuthStore = defineStore("auth", () => {
     return data;
   }
 
+  function clearSession() {
+    authenticated.value = false;
+    passwordRequired.value = true;
+    role.value = "";
+    user.value = emptyUser();
+  }
+
   async function logout() {
     await authApi.logout();
-    authenticated.value = false;
-    user.value = emptyUser();
+    clearSession();
   }
 
   return {
@@ -93,5 +99,6 @@ export const useAuthStore = defineStore("auth", () => {
     verify2FA,
     fetchUser,
     logout,
+    clearSession,
   };
 });

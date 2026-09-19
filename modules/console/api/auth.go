@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -34,15 +35,16 @@ var pending2FA = struct {
 }{tokens: make(map[string]pendingToken)}
 
 type pendingToken struct {
-	userID    int64
-	expiresAt time.Time
+	userID     int64
+	authSecret string
+	expiresAt  time.Time
 }
 
-func generate2FAToken(userID int64) (string, error) {
-	return generate2FATokenFrom(rand.Reader, userID)
+func generate2FAToken(userID int64, authSecret string) (string, error) {
+	return generate2FATokenFrom(rand.Reader, userID, authSecret)
 }
 
-func generate2FATokenFrom(reader io.Reader, userID int64) (string, error) {
+func generate2FATokenFrom(reader io.Reader, userID int64, authSecret string) (string, error) {
 	b := make([]byte, 32)
 	if _, err := io.ReadFull(reader, b); err != nil {
 		return "", fmt.Errorf("read secure random bytes: %w", err)
@@ -58,25 +60,26 @@ func generate2FATokenFrom(reader io.Reader, userID int64) (string, error) {
 		}
 	}
 	pending2FA.tokens[token] = pendingToken{
-		userID:    userID,
-		expiresAt: now.Add(10 * time.Minute),
+		userID:     userID,
+		authSecret: authSecret,
+		expiresAt:  now.Add(10 * time.Minute),
 	}
 	pending2FA.Unlock()
 
 	return token, nil
 }
 
-func consume2FAToken(token string) (int64, bool) {
+func consume2FAToken(token string) (pendingToken, bool) {
 	pending2FA.Lock()
 	defer pending2FA.Unlock()
 
 	p, ok := pending2FA.tokens[token]
 	if !ok || time.Now().After(p.expiresAt) {
 		delete(pending2FA.tokens, token) // 清理过期
-		return 0, false
+		return pendingToken{}, false
 	}
 	delete(pending2FA.tokens, token) // 一次性使用
-	return p.userID, true
+	return p, true
 }
 
 // 登录限流参数（P0-4）。
@@ -130,6 +133,12 @@ func (h *Handler) login(c *gin.Context) {
 		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
+	if user.Status == store.UserStatusBanned {
+		h.recordLoginFail(ip)
+		h.logLogin(c, user.ID, username, ip, "fail", "password")
+		Fail(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
 
 	// 安全审计 2026-08-16：console 登录端点拒绝 reader 角色——读者凭据不应换取
 	// blog_admin 会话（否则开放注册账号即可进入全部 authed 组内容写端点）。
@@ -150,7 +159,7 @@ func (h *Handler) login(c *gin.Context) {
 		if generateToken == nil {
 			generateToken = generate2FAToken
 		}
-		token, err := generateToken(user.ID)
+		token, err := generateToken(user.ID, user.AuthSecret)
 		if err != nil {
 			Fail(c, http.StatusInternalServerError, "生成 2FA token 失败")
 			return
@@ -190,16 +199,16 @@ func (h *Handler) handle2FA(c *gin.Context) {
 		return
 	}
 
-	userID, ok := consume2FAToken(req.Token)
+	pending, ok := consume2FAToken(req.Token)
 	if !ok {
 		h.logLogin(c, 0, "", c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusUnauthorized, "token 无效或已过期")
 		return
 	}
 
-	user, err := h.store.GetUserByID(userID)
-	if err != nil || user == nil || !ValidateTOTP(user.TOTPSecret, req.Code) {
-		h.logLogin(c, userID, "", c.ClientIP(), "fail", "2fa")
+	user, err := h.store.GetUserByID(pending.userID)
+	if err != nil || user == nil || user.Status == store.UserStatusBanned || subtle.ConstantTimeCompare([]byte(user.AuthSecret), []byte(pending.authSecret)) != 1 || !ValidateTOTP(user.TOTPSecret, req.Code) {
+		h.logLogin(c, pending.userID, "", c.ClientIP(), "fail", "2fa")
 		Fail(c, http.StatusUnauthorized, "验证码错误")
 		return
 	}

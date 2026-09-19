@@ -63,7 +63,12 @@ func (h *Handler) adminSearch(c *gin.Context) {
 
 	if docType == "" || docType == "post" {
 		// Spec 62：轻量列单查询（含回收站），替代 List()+ListTrashed() 双全表
-		posts, err := h.store.ListPostSearchCards()
+		var authorID *int64
+		if !contextHasPermission(c, store.PermissionContentManageAny) {
+			uid := c.GetInt64("userID")
+			authorID = &uid
+		}
+		posts, err := h.store.ListPostSearchCardsByAuthor(authorID)
 		if err != nil {
 			Fail(c, http.StatusInternalServerError, err.Error())
 			return

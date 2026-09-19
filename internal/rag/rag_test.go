@@ -143,6 +143,78 @@ func TestPublicToDraftRemovesIncrementalIndex(t *testing.T) {
 	_ = service.Close(context.Background())
 }
 
+func TestRenameRemovesPreviousSlugFromIndex(t *testing.T) {
+	st := newRAGStore(t)
+	if err := st.EnsureRevisionsTable(); err != nil {
+		t.Fatal(err)
+	}
+	putAIConfig(t, st, `{"base_url":"https://rag.example/v1","model":"chat","embedding_model":"embed"}`)
+	mustCreatePost(t, st, &store.Post{Slug: "old-slug", Title: "改名文章", Status: store.StatusPublished, ContentHTML: "<p>正文</p>"})
+	events := content.NewEvents()
+	service, err := NewWithClient(st, events, llm.New(&http.Client{Transport: &ragTransport{}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close(context.Background())
+	if err := service.RebuildNow(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.UpdateSlug("old-slug", "new-slug", &store.Post{Slug: "new-slug", Title: "改名文章", Status: store.StatusPublished, ContentHTML: "<p>正文</p>"}); err != nil {
+		t.Fatal(err)
+	}
+	service.Start()
+	service.onEvent(content.Event{Kind: content.PostChanged, Slug: "new-slug", PreviousSlug: "old-slug"})
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		var oldCount, newCount int
+		_ = st.DB().QueryRow(`SELECT COUNT(*) FROM rag_chunks WHERE slug = 'old-slug'`).Scan(&oldCount)
+		_ = st.DB().QueryRow(`SELECT COUNT(*) FROM rag_chunks WHERE slug = 'new-slug'`).Scan(&newCount)
+		if oldCount == 0 && newCount > 0 {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("rename index state did not converge")
+}
+
+func TestInvalidateForRestorePreventsOldIndexLeak(t *testing.T) {
+	st := newRAGStore(t)
+	putAIConfig(t, st, `{"base_url":"https://rag.example/v1","model":"chat","embedding_model":"embed"}`)
+	mustCreatePost(t, st, &store.Post{Slug: "restore", Title: "旧公开内容", Status: store.StatusPublished, ContentHTML: "<p>旧正文</p>"})
+	transport := &ragTransport{}
+	service, err := NewWithClient(st, nil, llm.New(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close(context.Background())
+	if err := service.RebuildNow(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Update("restore", &store.Post{Slug: "restore", Title: "恢复内容", Status: store.StatusPublished, ContentHTML: "<p>恢复后正文</p>"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.InvalidateForRestore(); err != nil {
+		t.Fatalf("invalidate: %v", err)
+	}
+	transport.failEmbeddings.Store(true)
+	if err := service.RebuildNow(context.Background()); err == nil {
+		t.Fatal("failed restore rebuild should not succeed")
+	}
+	if chunks, err := service.retrieve("旧正文", []float32{1}); err != nil || len(chunks) != 0 {
+		t.Fatalf("invalidated index returned old content: chunks=%d err=%v", len(chunks), err)
+	}
+	if err := st.Update("restore", &store.Post{Slug: "restore", Title: "私有内容", Status: store.StatusDraft, ContentHTML: "<p>新私有正文</p>"}); err != nil {
+		t.Fatal(err)
+	}
+	transport.failEmbeddings.Store(false)
+	if err := service.RebuildNow(context.Background()); err != nil {
+		t.Fatalf("valid rebuild: %v", err)
+	}
+	if chunks, err := service.retrieve("旧正文", []float32{1}); err != nil || len(chunks) != 0 {
+		t.Fatalf("private restored content became indexed: chunks=%d err=%v", len(chunks), err)
+	}
+}
+
 func newRAGStore(t *testing.T) *store.Store {
 	t.Helper()
 	st, err := store.New(filepath.Join(t.TempDir(), "rag.db"))

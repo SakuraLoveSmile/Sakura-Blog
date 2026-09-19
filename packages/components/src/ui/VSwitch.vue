@@ -1,17 +1,27 @@
 <script setup lang="ts">
-// Halo VSwitch 复刻（iOS 风格开关）
+import { useAttrs } from "vue";
+
+// Halo VSwitch 复刻（iOS 风格开关与 WAI-ARIA Switch 语义支持）
+defineOptions({
+  inheritAttrs: false,
+});
+
 const props = withDefaults(
   defineProps<{
     modelValue?: boolean;
     disabled?: boolean;
+    label?: string;
+    ariaLabel?: string;
   }>(),
-  { modelValue: false, disabled: false },
+  { modelValue: false, disabled: false, label: undefined, ariaLabel: undefined },
 );
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: boolean): void;
   (event: "change", value: boolean): void;
 }>();
+
+const attrs = useAttrs();
 
 function toggle() {
   if (props.disabled) return;
@@ -23,6 +33,7 @@ function toggle() {
 
 <template>
   <button
+    v-bind="attrs"
     :class="[
       'relative inline-flex h-[31px] w-[51px] flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-standard focus:outline-none',
       modelValue ? 'bg-state-success' : 'bg-accent',
@@ -30,6 +41,9 @@ function toggle() {
     ]"
     role="switch"
     :aria-checked="modelValue"
+    :disabled="disabled"
+    :aria-disabled="disabled"
+    :aria-label="ariaLabel || label || (attrs['aria-label'] as string) || '开关'"
     type="button"
     @click="toggle"
   >

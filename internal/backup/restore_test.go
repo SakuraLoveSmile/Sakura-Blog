@@ -4,6 +4,7 @@ package backup
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,17 +91,18 @@ func TestRestoreRoundTrip(t *testing.T) {
 	if data, _ := os.ReadFile(filepath.Join(svc.uploadDir, "a.png")); string(data) != "v1" {
 		t.Fatalf("upload content = %q, want v1", data)
 	}
-	// 兜底快照存在
-	entries, _ := os.ReadDir(svc.backupDir)
-	found := false
-	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), ".pre-restore-") {
-			found = true
-		}
+	// 新完整前像单独保留，包含数据库和附件，不再只创建一个旧式 DB 快照。
+	tasks, err := svc.ListRestoreTasks()
+	if err != nil || len(tasks) != 1 || !tasks[0].HasPreimage {
+		t.Fatalf("complete preimage missing: %v", err)
 	}
-	if !found {
-		t.Fatalf("pre-restore snapshot missing")
+	if _, err := os.Stat(svc.beforePath(tasks[0].ID, "blog.db")); err != nil {
+		t.Fatal(err)
 	}
+	if data, err := os.ReadFile(filepath.Join(svc.beforePath(tasks[0].ID, "uploads"), "a.png")); err != nil || string(data) != "v2" {
+		t.Fatalf("preimage upload=%q, err=%v", data, err)
+	}
+
 }
 
 // TestRestoreRejectsZipSlip 路径穿越条目直接拒绝，且不产生任何恢复副作用。
@@ -159,6 +161,74 @@ func TestRestoreRejectsNonBackupZip(t *testing.T) {
 	zw.Close()
 	if err := svc.Restore(buf.Bytes(), false); err == nil || !strings.Contains(err.Error(), "blog.db missing") {
 		t.Fatalf("expect blog.db missing rejection, got %v", err)
+	}
+}
+
+func TestRestorePreflightRejectsInvalidYAMLWithoutMutation(t *testing.T) {
+	svc, st, dir := newTestService(t)
+	if err := st.Upsert(&store.Post{Slug: "stable", Title: "before", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(svc.uploadDir, "stable.png"), []byte("before"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	snap := filepath.Join(dir, "src.db")
+	if err := st.BackupTo(snap); err != nil {
+		t.Fatal(err)
+	}
+	dbBytes, err := os.ReadFile(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, _ := zw.Create("blog.db")
+	_, _ = w.Write(dbBytes)
+	w, _ = zw.Create("site.yml")
+	_, _ = w.Write([]byte("site: [broken"))
+	_ = zw.Close()
+	if err := svc.Restore(buf.Bytes(), false); err == nil {
+		t.Fatal("invalid YAML should be rejected")
+	}
+	p, err := st.GetBySlug("stable")
+	if err != nil || p == nil || p.Title != "before" {
+		t.Fatalf("database mutated: %+v, %v", p, err)
+	}
+	b, err := os.ReadFile(filepath.Join(svc.uploadDir, "stable.png"))
+	if err != nil || string(b) != "before" {
+		t.Fatalf("uploads mutated: %q, %v", b, err)
+	}
+}
+
+func TestRestoreRebuildFailureCompensatesAllTargets(t *testing.T) {
+	svc, st, _ := newTestService(t)
+	if err := st.Upsert(&store.Post{Slug: "stable", Title: "before", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(svc.uploadDir, "stable.png"), []byte("before"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := svc.WriteZip(&buf); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Upsert(&store.Post{Slug: "stable", Title: "after", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(svc.uploadDir, "stable.png"), []byte("after"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	svc.SetRestoreRebuild(func() error { return fmt.Errorf("injected rebuild failure") })
+	if err := svc.Restore(buf.Bytes(), false); err == nil {
+		t.Fatal("rebuild failure should fail restore")
+	}
+	p, err := st.GetBySlug("stable")
+	if err != nil || p == nil || p.Title != "after" {
+		t.Fatalf("database not compensated: %+v, %v", p, err)
+	}
+	b, err := os.ReadFile(filepath.Join(svc.uploadDir, "stable.png"))
+	if err != nil || string(b) != "after" {
+		t.Fatalf("uploads not compensated: %q, %v", b, err)
 	}
 }
 

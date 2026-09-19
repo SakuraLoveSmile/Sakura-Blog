@@ -26,6 +26,8 @@ const emit = defineEmits<{
 const popoverRef = ref<HTMLElement | null>(null);
 const sourceMode = ref(!props.plugin);
 const draft = ref(props.raw);
+const structuredValid = ref(true);
+const structuredError = ref("");
 const originalRaw = props.raw;
 let updateTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -33,6 +35,8 @@ watch(
   () => props.plugin,
   (plugin) => {
     sourceMode.value = !plugin;
+    structuredValid.value = !plugin;
+    structuredError.value = "";
   },
   { immediate: true },
 );
@@ -64,6 +68,12 @@ function scheduleStructuredUpdate(value: string) {
   }, 200);
 }
 
+function onStructuredValidation(state: { valid: boolean; error?: string }) {
+  structuredValid.value = state.valid;
+  structuredError.value = state.error || "";
+  if (!state.valid) clearUpdateTimer();
+}
+
 function enterSourceMode() {
   clearUpdateTimer();
   emitDraft();
@@ -73,7 +83,7 @@ function enterSourceMode() {
 
 function save() {
   clearUpdateTimer();
-  emitDraft();
+  if (sourceMode.value || structuredValid.value) emitDraft();
   emit("close");
 }
 
@@ -86,7 +96,7 @@ function cancel() {
 function closeOnPointerDown(event: PointerEvent) {
   if (popoverRef.value && !popoverRef.value.contains(event.target as Node)) {
     clearUpdateTimer();
-    emitDraft();
+    if (sourceMode.value || structuredValid.value) emitDraft();
     emit("close");
   }
 }
@@ -95,7 +105,7 @@ function closeOnKeydown(event: KeyboardEvent) {
   if (event.key === "Escape") {
     event.preventDefault();
     clearUpdateTimer();
-    emitDraft();
+    if (sourceMode.value || structuredValid.value) emitDraft();
     emit("close");
   }
 }
@@ -129,7 +139,7 @@ onBeforeUnmount(() => {
           {{ plugin && !sourceMode ? `${plugin.title} 属性` : "源码编辑" }}
         </h3>
         <p class="mt-0.5 text-xs leading-relaxed text-text-tertiary">
-          {{ loading ? "正在解析当前 shortcode…" : error || "修改后实时更新当前组件预览。" }}
+          {{ loading ? "正在解析当前 shortcode…" : structuredError || error || "修改后实时更新当前组件预览。" }}
         </p>
       </div>
       <button
@@ -161,6 +171,7 @@ onBeforeUnmount(() => {
         :initial-values="initialValues"
         :variant="variant"
         @update:model-value="scheduleStructuredUpdate"
+        @validation="onStructuredValidation"
       />
       <div v-else class="space-y-2">
         <label class="block text-xs text-text-tertiary" for="stellar-shortcode-source">Shortcode 源码</label>
@@ -172,7 +183,9 @@ onBeforeUnmount(() => {
           class="apple-input w-full resize-y font-mono text-xs leading-relaxed"
           @keydown.stop
         ></textarea>
-        <p class="text-[11px] leading-relaxed text-text-quaternary">当前组件保留原始 Markdown shortcode；保存后不会改变正文数据模型。</p>
+        <p class="text-[11px] leading-relaxed text-text-quaternary">
+          当前组件保留原始 Markdown shortcode；保存后不会改变正文数据模型。
+        </p>
       </div>
     </div>
 
@@ -196,7 +209,8 @@ onBeforeUnmount(() => {
         </button>
         <button
           type="button"
-          class="min-h-9 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          :disabled="!!plugin && !sourceMode && !structuredValid"
+          class="min-h-9 rounded-full bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           @click="save"
         >
           应用

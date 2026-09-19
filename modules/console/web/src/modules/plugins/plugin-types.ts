@@ -36,10 +36,18 @@ export type PluginCapability = "static" | "interactive" | "service" | "external"
 export interface PluginPreviewInfo {
   capability: PluginCapability;
   services?: string[];
+  plugins?: string[];
   fixture?: string;
   mainJs?: boolean;
   height?: number;
   fallback?: string;
+}
+
+export interface PluginEditSchema {
+  enabled: boolean;
+  required?: string[];
+  required_any?: string[][];
+  legacy_args?: string[];
 }
 
 export interface PluginMeta {
@@ -52,6 +60,7 @@ export interface PluginMeta {
   params: PluginParam[];
   example: string;
   form?: PluginFormField[];
+  edit?: PluginEditSchema;
   preview?: PluginPreviewInfo;
 }
 

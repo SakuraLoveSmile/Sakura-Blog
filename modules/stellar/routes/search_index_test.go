@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"blog/internal/content"
 	"blog/internal/og"
 	"blog/internal/search"
 	"blog/internal/store"
@@ -37,6 +38,51 @@ func TestNewPostWriteHookNilSearchIndex(t *testing.T) {
 	// searchIdx 降级为 nil 时钩子不 panic（只做 OG 失效）
 	hook("update", "some-slug")
 	hook("delete", "some-slug")
+}
+
+func TestPostRenameEventRemovesPreviousSearchKey(t *testing.T) {
+	st := newTestStore(t)
+	if err := st.EnsureRevisionsTable(); err != nil {
+		t.Fatalf("ensure revisions: %v", err)
+	}
+	if _, err := st.Create(&store.Post{Slug: "old-key", Title: "旧标题", ContentMD: "旧正文", ContentHTML: "<p>旧正文</p>", Status: store.StatusPublished}); err != nil {
+		t.Fatal(err)
+	}
+	idx := search.New(st.DB())
+	if err := idx.Ensure(); err != nil {
+		t.Fatalf("ensure fts: %v", err)
+	}
+	if err := idx.IndexDoc(search.TypePost, "old-key", "旧标题", "旧正文"); err != nil {
+		t.Fatalf("index old post: %v", err)
+	}
+	hook := newPostWriteHook(st, idx, og.New("", t.TempDir()))
+	events := content.NewEvents()
+	var eventCount int
+	events.Subscribe(func(event content.Event) {
+		if event.Kind != content.PostChanged {
+			return
+		}
+		eventCount++
+		if event.PreviousSlug != "" {
+			hook("delete", event.PreviousSlug)
+		}
+		hook(event.Op, event.Slug)
+	})
+	st.SetContentEvents(events)
+
+	updated := &store.Post{Slug: "new-key", Title: "新标题", ContentMD: "新正文", ContentHTML: "<p>新正文</p>", Status: store.StatusPublished}
+	if err := st.UpdateSlugWithRevision("old-key", "new-key", updated); err != nil {
+		t.Fatalf("rename post: %v", err)
+	}
+	if eventCount != 1 {
+		t.Fatalf("rename emitted %d post events, want 1", eventCount)
+	}
+	if got, _ := idx.Search("旧正文", search.TypePost, 20); len(got) != 0 {
+		t.Fatalf("old search key remains after rename: %+v", got)
+	}
+	if got, _ := idx.Search("新正文", search.TypePost, 20); len(got) != 1 || got[0].Slug != "new-key" {
+		t.Fatalf("new search key missing after rename: %+v", got)
+	}
 }
 
 // TestPageMomentWriteHooks 页面/瞬间写路径回调：发布入索引，下线/私密/删除/回收站移除。

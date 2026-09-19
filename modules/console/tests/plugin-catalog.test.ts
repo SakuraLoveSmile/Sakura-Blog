@@ -38,6 +38,7 @@ const catalog: PluginCatalogItem[] = [
       { key: "enabled", type: "switch", role: "flag", default: true },
       { key: "limit", type: "number", role: "named", default: 3, options: ["1", "3"] },
     ],
+    edit: { enabled: true, required: ["enabled"], required_any: [["limit", "fallback"]], legacy_args: ["text"] },
   },
   {
     name: "table",
@@ -55,7 +56,10 @@ const catalog: PluginCatalogItem[] = [
 
 test("catalog merge uses backend order and preserves display metadata", () => {
   const merged = mergePluginCatalog([basePlugin], catalog);
-  assert.deepEqual(merged.map((plugin) => plugin.name), ["note", "table"]);
+  assert.deepEqual(
+    merged.map((plugin) => plugin.name),
+    ["note", "table"],
+  );
   assert.equal(merged[0].title, "后端 Note");
   assert.equal(merged[0].desc, "后端描述");
   assert.equal(merged[0].signature, "{% note ... %}");
@@ -66,6 +70,12 @@ test("catalog merge uses backend order and preserves display metadata", () => {
   assert.equal(merged[0].form?.[0].default, "true");
   assert.equal(merged[0].form?.[1].type, "number");
   assert.deepEqual(merged[0].form?.[1].options, ["1", "3"]);
+  assert.deepEqual(merged[0].edit, {
+    enabled: true,
+    required: ["enabled"],
+    required_any: [["limit", "fallback"]],
+    legacy_args: ["text"],
+  });
   assert.equal(merged[1].type, "block");
   assert.equal(merged[1].title, "表格");
 });

@@ -188,6 +188,108 @@ func TestUserUpdateTOTPSecret(t *testing.T) {
 	}
 }
 
+func TestUpdateUserStatusRollbackOnDatabaseFailure(t *testing.T) {
+	s := newUserStore(t)
+	u := newTestUser("status-rollback", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	oldSecret := u.AuthSecret
+	oldToken := HashAPIToken("token-before-ban")
+	if err := s.SetAPITokenHash(u.ID, oldToken); err != nil {
+		t.Fatalf("set token: %v", err)
+	}
+	if _, err := s.DB().Exec(`CREATE TRIGGER block_ban BEFORE UPDATE OF status ON users WHEN NEW.status = 'banned' BEGIN SELECT RAISE(ABORT, 'blocked'); END`); err != nil {
+		t.Fatalf("create failure trigger: %v", err)
+	}
+	if err := s.UpdateUserStatus(u.ID, UserStatusBanned); err == nil {
+		t.Fatal("ban should fail when database trigger rejects the update")
+	}
+	got, err := s.GetUserByID(u.ID)
+	if err != nil || got == nil {
+		t.Fatalf("get after rejected ban: %v", err)
+	}
+	if got.Status != UserStatusActive || got.AuthSecret != oldSecret || got.APITokenHash != oldToken {
+		t.Fatalf("rejected ban changed credentials or status: status=%q secret_changed=%t token_changed=%t", got.Status, got.AuthSecret != oldSecret, got.APITokenHash != oldToken)
+	}
+}
+
+func TestDeleteUserClearsPostAuthorsAndKeepsByline(t *testing.T) {
+	s := newUserStore(t)
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
+	u := newTestUser("author", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO posts(slug, title, author) VALUES('delete-user-post', '文章标题', 'author')`); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	var postID int64
+	if err := s.DB().QueryRow(`SELECT id FROM posts WHERE slug = 'delete-user-post'`).Scan(&postID); err != nil {
+		t.Fatalf("read post id: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO post_authors(post_id, author_id, sort_order) VALUES(?, ?, 0)`, postID, u.ID); err != nil {
+		t.Fatalf("create ownership: %v", err)
+	}
+	if err := s.DeleteUser(u.ID); err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+	var associationCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM post_authors WHERE author_id = ?`, u.ID).Scan(&associationCount); err != nil {
+		t.Fatalf("count ownership: %v", err)
+	}
+	if associationCount != 0 {
+		t.Fatalf("post author associations = %d, want 0", associationCount)
+	}
+	var byline string
+	if err := s.DB().QueryRow(`SELECT author FROM posts WHERE id = ?`, postID).Scan(&byline); err != nil {
+		t.Fatalf("read byline: %v", err)
+	}
+	if byline != "author" {
+		t.Fatalf("post author = %q, want author", byline)
+	}
+}
+
+func TestDeleteUserRollsBackAssociationOnUserDeleteFailure(t *testing.T) {
+	s := newUserStore(t)
+	if err := s.EnsurePostAuthorsTable(); err != nil {
+		t.Fatalf("ensure post authors table: %v", err)
+	}
+	u := newTestUser("blocked-author", "secret123")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	var postID int64
+	if err := s.DB().QueryRow(`INSERT INTO posts(slug, title, author) VALUES('rollback-post', '文章', 'blocked-author') RETURNING id`).Scan(&postID); err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := s.DB().Exec(`INSERT INTO post_authors(post_id, author_id, sort_order) VALUES(?, ?, 0)`, postID, u.ID); err != nil {
+		t.Fatalf("create ownership: %v", err)
+	}
+	if _, err := s.DB().Exec(`CREATE TRIGGER block_user_delete BEFORE DELETE ON users BEGIN SELECT RAISE(ABORT, 'delete blocked'); END`); err != nil {
+		t.Fatalf("create trigger: %v", err)
+	}
+	if err := s.DeleteUser(u.ID); err == nil {
+		t.Fatal("delete should fail when users trigger aborts")
+	}
+	var associationCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM post_authors WHERE author_id = ?`, u.ID).Scan(&associationCount); err != nil {
+		t.Fatalf("count ownership after rollback: %v", err)
+	}
+	if associationCount != 1 {
+		t.Fatalf("post author associations after rollback = %d, want 1", associationCount)
+	}
+	var usersCount int
+	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM users WHERE id = ?`, u.ID).Scan(&usersCount); err != nil {
+		t.Fatalf("count user after rollback: %v", err)
+	}
+	if usersCount != 1 {
+		t.Fatalf("users after rollback = %d, want 1", usersCount)
+	}
+}
+
 // TestListUsers 列表仅返回非敏感列，按 id 升序。
 func TestListUsers(t *testing.T) {
 	s := newUserStore(t)
@@ -398,5 +500,58 @@ func TestEnsureUsersTableMigratesRoleColumn(t *testing.T) {
 	u2, _ := s.GetUserByUsername("admin")
 	if u2.Role != RoleAdmin {
 		t.Errorf("role changed after second migrate: %q", u2.Role)
+	}
+}
+
+func TestUpdateUserStatusBannedRevocation(t *testing.T) {
+	s := newTestStore(t)
+	u := newTestUser("victim", "secret123")
+	u.APITokenHash = HashAPIToken("my-pat-token")
+	if err := s.CreateUser(u); err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	created, err := s.GetUserByUsername("victim")
+	if err != nil || created == nil {
+		t.Fatalf("get created user: %v", err)
+	}
+	origSecret := created.AuthSecret
+	if origSecret == "" || created.APITokenHash == "" {
+		t.Fatalf("expected non-empty secret and token: %+v", created)
+	}
+
+	// Ban the user
+	if err := s.UpdateUserStatus(created.ID, UserStatusBanned); err != nil {
+		t.Fatalf("ban user: %v", err)
+	}
+	banned, err := s.GetUserByID(created.ID)
+	if err != nil || banned == nil {
+		t.Fatalf("get banned user: %v", err)
+	}
+	if banned.Status != UserStatusBanned {
+		t.Errorf("status = %q, want banned", banned.Status)
+	}
+	if banned.AuthSecret == "" || banned.AuthSecret == origSecret {
+		t.Errorf("auth_secret should be rotated to new value, got %q (orig: %q)", banned.AuthSecret, origSecret)
+	}
+	if banned.APITokenHash != "" {
+		t.Errorf("api_token_hash should be cleared on ban, got %q", banned.APITokenHash)
+	}
+
+	// Unban user
+	if err := s.UpdateUserStatus(created.ID, UserStatusActive); err != nil {
+		t.Fatalf("unban user: %v", err)
+	}
+	unbanned, err := s.GetUserByID(created.ID)
+	if err != nil || unbanned == nil {
+		t.Fatalf("get unbanned user: %v", err)
+	}
+	if unbanned.Status != UserStatusActive {
+		t.Errorf("status = %q, want active", unbanned.Status)
+	}
+	if unbanned.AuthSecret != banned.AuthSecret {
+		t.Errorf("unban should keep rotated auth_secret, got %q, want %q", unbanned.AuthSecret, banned.AuthSecret)
+	}
+	if unbanned.APITokenHash != "" {
+		t.Errorf("api_token_hash should remain empty after unban, got %q", unbanned.APITokenHash)
 	}
 }

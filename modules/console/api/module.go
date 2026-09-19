@@ -2,12 +2,13 @@ package api
 
 import (
 	"net/http"
-	"strings"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/module"
 	"blog/internal/module/seo"
+	settings "blog/internal/settings"
 )
 
 type ModuleListResponse struct {
@@ -59,6 +60,6 @@ func (h *Handler) notifySEOPublished(slug string) {
 	if h.modules == nil || h.site.Load() == nil || h.site.Load().URL == "" {
 		return
 	}
-	url := strings.TrimRight(h.site.Load().URL, "/") + "/post/" + slug
+	url := settings.JoinSiteURL(h.site.Load().URL, "/post/"+url.PathEscape(slug))
 	seo.NotifyPublished(module.Deps{Store: h.store, Storage: h.storageManager, Site: h.site, Modules: h.modules}, url)
 }

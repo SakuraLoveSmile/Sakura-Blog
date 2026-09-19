@@ -94,7 +94,7 @@ const extendedActions: QuickAction[] = [
   },
   {
     key: "upload_attachment",
-    label: "媒体附件",
+    label: "媒体库",
     desc: "文件与图片",
     icon: "ri:attachment-2",
     color: colors.chart2,

@@ -69,6 +69,15 @@ func (m *Module) clearPushLogsHandler(c *gin.Context) {
 
 // pushURLs 把 urls 推送到 cfg.Push.Engines 里的每个引擎，逐条落库，返回成功/失败计数。
 func pushURLs(st *store.Store, host string, cfg Config, urls []string) (int, int) {
+	release, err := st.Maintenance().Acquire()
+	if err != nil {
+		return 0, 0
+	}
+	defer release()
+	return pushURLsUnlocked(st, host, cfg, urls)
+}
+
+func pushURLsUnlocked(st *store.Store, host string, cfg Config, urls []string) (int, int) {
 	var ok, fail int
 	for _, engine := range cfg.Push.Engines {
 		for _, u := range urls {
@@ -184,9 +193,18 @@ func NotifyPublished(deps module.Deps, postURL string) {
 	if deps.Modules == nil || !deps.Modules.Enabled("seo") || deps.Store == nil {
 		return
 	}
-	cfg := loadConfig(deps.Store)
-	if !cfg.Push.Enabled || len(cfg.Push.Engines) == 0 || postURL == "" {
+	release, err := deps.Store.Maintenance().Acquire()
+	if err != nil {
 		return
 	}
-	go pushURLs(deps.Store, siteHostURL(deps.Site.Load()), cfg, []string{postURL})
+	cfg := loadConfig(deps.Store)
+	if !cfg.Push.Enabled || len(cfg.Push.Engines) == 0 || postURL == "" {
+		release()
+		return
+	}
+	host := siteHostURL(deps.Site.Load())
+	go func() {
+		defer release()
+		pushURLsUnlocked(deps.Store, host, cfg, []string{postURL})
+	}()
 }

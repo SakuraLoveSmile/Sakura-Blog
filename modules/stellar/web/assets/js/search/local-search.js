@@ -140,6 +140,25 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
     });
   }
 
+  function getCardHoverApi() {
+    if (typeof stellar === 'undefined' || !stellar.cardHover) return null;
+    return stellar.cardHover;
+  }
+
+  function unmountResultCards(root) {
+    var cardHover = getCardHoverApi();
+    if (cardHover && typeof cardHover.unmountAll === 'function') {
+      cardHover.unmountAll(root);
+    }
+  }
+
+  function mountResultCards(root) {
+    var cardHover = getCardHoverApi();
+    if (cardHover && typeof cardHover.mountAll === 'function') {
+      cardHover.mountAll(root);
+    }
+  }
+
   function initSearch() {
     if (!$input) return;
     if ($input._searchInitialized === true) return; // 防止重复绑定
@@ -163,7 +182,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       li.appendChild(titleSpan);
 
       const a = document.createElement('a');
-      a.className = 'ui-collection__item';
+      a.className = 'ui-collection__item card-hover card-hover--spotlight';
       a.href = item.path + (kw ? '?kw=' + encodeURIComponent(kw) : '') + (item.anchor_id ? '#' + encodeURIComponent(item.anchor_id) : '');
 
       if (item.anchor_text) {
@@ -274,6 +293,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       var resultList = [];
       var pairs = buildKeywordPairs(value);
       var firstKw = pairs.length ? pairs[pairs.length - 1].original : '';
+      unmountResultCards($resultContent);
       $resultContent.innerHTML = "";
 
       (searchCache || []).forEach(function(data) {
@@ -371,6 +391,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         });
         $resultContent.innerHTML = '';
         $resultContent.appendChild(ul);
+        mountResultCards(ul);
       }
     }
 

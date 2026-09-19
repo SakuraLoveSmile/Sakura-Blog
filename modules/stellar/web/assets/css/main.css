@@ -1696,9 +1696,6 @@ code {
   -moz-osx-font-smoothing: auto;
   font-family: "LXGW WenKai Screen", Menlo, Monaco, Consolas, system-ui, "Courier New", monospace, sans-serif;
 }
-pre > code {
-  font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif;
-}
 p>code:not([class]),
 li>code:not([class]) {
   font-size: 85%;
@@ -3241,16 +3238,19 @@ div.toast.show {
 }
 .l_cover.wiki-hero .wiki-cover-background.image .wiki-cover-background-overlay {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   inset: 0;
   pointer-events: none;
   background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--background) 100%);
 }
-.l_cover.wiki-hero .wiki-cover-background.galaxy {
+.l_cover.wiki-hero .wiki-cover-background.galaxy:not(.image) {
   background: #000;
 }
 .l_cover.wiki-hero .wiki-cover-background.galaxy canvas {
   display: block;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -3391,8 +3391,8 @@ div.toast.show {
   color: var(--text-banner, var(--text));
   background: var(--text-banner, var(--text));
 }
-.l_cover.wiki-hero .wiki-cover-actions a.button.wiki-cover-source svg,
-.l_cover.wiki-hero .wiki-cover-actions a.button.wiki-cover-source span {
+.l_cover.wiki-hero .wiki-cover-actions a.button.wiki-cover-source > svg,
+.l_cover.wiki-hero .wiki-cover-actions a.button.wiki-cover-source > span:not(.card-hover__spotlight) {
   filter: invert(1);
 }
 .l_cover.wiki-hero .wiki-cover-actions a.button.wiki-cover-source:hover {
@@ -8110,8 +8110,9 @@ details.toc[open] >div.body section .header+.doc_tree {
 }
 .social-wrap .social img {
   flex: initial;
-  width: auto;
-  height: auto;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
   border-radius: 2px;
 }
 .social-wrap .social svg {
@@ -8434,12 +8435,18 @@ details.toc[open] >div.body section .header+.doc_tree {
   opacity: 1;
 }
 .search-wrapper .search-input {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   box-sizing: border-box;
-  font-family: inherit;
+  font-family: "LXGW WenKai Screen", system-ui, "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: calc(var(--fs-content-base) - 2px);
   padding: 12px 0;
   color: var(--text);
+}
+.search-wrapper .search-input::-webkit-search-cancel-button,
+.search-wrapper .search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
 }
 .search-wrapper .search-input::placeholder {
   color: var(--text-p3);
@@ -8460,6 +8467,7 @@ details.toc[open] >div.body section .header+.doc_tree {
   flex-shrink: 0;
   width: 1.5rem;
   height: 1.5rem;
+  cursor: pointer;
 }
 .search-wrapper .search-button svg {
   height: 1rem;
@@ -8519,18 +8527,11 @@ details.toc[open] >div.body section .header+.doc_tree {
 }
 .search-wrapper #search-result li a {
   display: block;
-  background: var(--ui-summary-item-bg);
+  background: var(--ui-adapter-bg-hover);
+  box-shadow: var(--ui-adapter-shadow-hover);
   line-height: 1.2;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  transition: background 0.2s ease-out;
-  -moz-transition: background 0.2s ease-out;
-  -webkit-transition: background 0.2s ease-out;
-  -o-transition: background 0.2s ease-out;
-}
-.search-wrapper #search-result li a:hover {
-  background: var(--ui-adapter-bg-hover);
-  box-shadow: var(--ui-adapter-shadow-hover);
 }
 .search-wrapper #search-result li a:focus-visible {
   outline: 2px solid var(--theme);
@@ -10056,38 +10057,6 @@ details.toc[open] >div.body section .header+.doc_tree {
   .md-text.error-page {
     margin-top: 4rem;
   }
-}
-.md-text .tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  padding: 0;
-  margin-top: 2rem;
-}
-.md-text .tag-list a.tag {
-  display: inline-flex;
-  align-items: center;
-  position: relative;
-  color: var(--text-p2);
-  margin: 4px;
-  padding: 0.5em 0.75rem;
-  border-radius: 4px;
-  background: var(--block);
-  font-size: calc(var(--fs-content-base) - 3px);
-  font-weight: 500;
-}
-.md-text .tag-list a.tag:before {
-  content: "#";
-  margin-left: -2px;
-  margin-right: 2px;
-  opacity: 0.4;
-}
-.md-text .tag-list a.tag:hover {
-  color: var(--text);
-  background: var(--block-border);
-}
-.md-text .tag-list a.tag:hover:before {
-  color: var(--theme);
-  opacity: 1;
 }
 .post-list .post-card .meta.cap .tag:before {
   content: "#";
@@ -11741,6 +11710,68 @@ html.sr-fallback .slide-up {
   z-index: 1;
   margin-right: 1rem;
   border-radius: 12px;
+}
+.card-hover.is-card-hover-ready {
+  position: relative;
+  --card-hover-mouse-x: 50%;
+  --card-hover-mouse-y: 50%;
+  --card-hover-rotate-x: 0deg;
+  --card-hover-rotate-y: 0deg;
+}
+.card-hover.is-card-hover-ready.card-hover--tilt {
+  transform: perspective(900px) translate3d(0, 0, 0) rotateX(var(--card-hover-rotate-x)) rotateY(var(--card-hover-rotate-y));
+  transform-origin: center;
+  transition: transform 0.25s ease-out, box-shadow 0.2s ease-out;
+}
+.card-hover.is-card-hover-ready.card-hover--tilt.is-card-hover-active {
+  transform: perspective(900px) translate3d(0, -2px, 0) rotateX(var(--card-hover-rotate-x)) rotateY(var(--card-hover-rotate-y));
+  transition-duration: 0.08s, 0.2s;
+  will-change: transform;
+}
+.card-hover__spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: radial-gradient(circle at var(--card-hover-mouse-x) var(--card-hover-mouse-y), var(--card-hover-spotlight-color, rgba(255,255,255,0.25)), transparent 80%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+.card-hover.is-card-hover-ready.card-hover--spotlight.is-card-hover-active > .card-hover__spotlight,
+.card-hover.is-card-hover-ready.card-hover--spotlight:focus-within > .card-hover__spotlight {
+  opacity: 0.6;
+}
+.post-list:not(.topic) .post-card-wrap {
+  box-shadow: none;
+}
+.post-list:not(.topic) .post-card.card-hover,
+.post-list.wiki .wiki-card.card-hover {
+  box-shadow: 0 1px 2px 0px rgba(0,0,0,0.1);
+}
+.post-list.wiki .post-card-wrap {
+  box-shadow: none;
+}
+.md-text .link-card.card-hover.card-hover--tilt.is-card-hover-ready,
+.tag-plugin.grid[bg='card'] > .cell.card-hover.card-hover--tilt.is-card-hover-ready {
+  transform: perspective(900px) translate3d(0, 0, 0) rotateX(var(--card-hover-rotate-x)) rotateY(var(--card-hover-rotate-y));
+}
+.md-text .link-card.card-hover.card-hover--tilt.is-card-hover-ready.is-card-hover-active,
+.tag-plugin.grid[bg='card'] > .cell.card-hover.card-hover--tilt.is-card-hover-ready.is-card-hover-active {
+  transform: perspective(900px) translate3d(0, -2px, 0) rotateX(var(--card-hover-rotate-x)) rotateY(var(--card-hover-rotate-y));
+}
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .card-hover.is-card-hover-ready.card-hover--tilt,
+  .card-hover.is-card-hover-ready.card-hover--tilt.is-card-hover-active,
+  .md-text .link-card.card-hover.card-hover--tilt.is-card-hover-ready,
+  .tag-plugin.grid[bg='card'] > .cell.card-hover.card-hover--tilt.is-card-hover-ready {
+    transform: none;
+    transition: none;
+  }
+  .card-hover.is-card-hover-ready.card-hover--spotlight > .card-hover__spotlight {
+    opacity: 0;
+  }
 }
 
 :root {
