@@ -3,7 +3,7 @@ name: Release Build
 # release 分支推送 / 打 tag / 手动触发均可构建。
 # 产物：Linux amd64 单二进制（go:embed 全部资源），Release 发布到公开仓库
 # SakuraLoveSmile/Sakura-Blog-Release（跨仓库需要 RELEASE_REPO_PAT secret）。
-# 服务器通过 deploy/update.sh / update-docker.sh 定时检查 Release 并自动下载更新。
+# 服务器通过 deploy/update.sh / update-docker.sh 手动下载更新（v1.7.3 起无 Console 一键更新）。
 on:
   push:
     branches: [release]

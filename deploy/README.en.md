@@ -11,9 +11,8 @@ Every new Release must include `blog-linux-amd64`, `blog-linux-amd64.sha256`, an
 Create the runtime configuration outside Git:
 
 ```bash
-mkdir -p /opt/blog/{config,data,content/posts,update/requests}
+mkdir -p /opt/blog/{config,data,content/posts,update}
 chown -R blog:blog /opt/blog
-chmod 770 /opt/blog/update/requests
 cp config/app.example.yml /opt/blog/config/app.yml
 cp config/site.example.yml /opt/blog/config/site.yml
 chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml
@@ -25,10 +24,10 @@ Prefer environment injection for tokens and passwords. Do not commit `config/app
 
 The files in this directory are examples:
 
-- `blog.service` runs the binary as the unprivileged `blog` user (`ReadWritePaths` includes `/opt/blog/data` and `/opt/blog/update/requests`).
+- `blog.service` runs the binary as the unprivileged `blog` user (`ReadWritePaths` includes `/opt/blog/data`).
 - `blog.service.d/10-secrets.conf.example` shows how to load secrets from a root-owned environment file.
 - `nginx.conf.example` terminates TLS and forwards requests to the local service.
-- `blog-update.path`, `blog-update.service`, and `blog-update.timer` provide release updates via `update.sh` without requiring `sudo` privileges.
+- `blog-update.service` is a manual update entry point (`sudo systemctl start blog-update`, equivalent to `sudo update.sh`). Console update triggers were removed in v1.7.3; the Console only checks for new versions.
 
 Copy and review each file for the target host before enabling it. Set `BLOG_TRUSTED_PROXY` or the matching YAML setting only to the actual reverse-proxy address range.
 

@@ -23,7 +23,6 @@ const data = ref<UpdateCheckResponse | null>(null);
 const loading = ref(true);
 
 const hasUpdate = computed(() => data.value?.update_available ?? false);
-const applySupported = computed(() => data.value?.apply_supported ?? false);
 // 三态：current 为 unknown 或 latest 缺失时无法确定是否有更新，归「未知」，不再误判为「最新版本」。
 const canCompare = computed(() => {
   const cv = data.value?.current_version;
@@ -130,8 +129,8 @@ function goToUpdate() {
           <strong class="font-mono">{{ data?.latest_version || "未获取" }}</strong>
         </div>
         <div v-if="sizePreset === 'large'">
-          <span class="version-card-label">自动应用</span>
-          <strong class="text-xs text-muted-foreground font-normal mt-1 font-mono">{{ applySupported ? "支持一键更新" : "手动更新" }}</strong>
+          <span class="version-card-label">升级方式</span>
+          <strong class="text-xs text-muted-foreground font-normal mt-1 font-mono">手动更新</strong>
         </div>
       </div>
 
@@ -145,7 +144,7 @@ function goToUpdate() {
           {{ data?.error || (hasUpdate ? "点击进入系统更新页面" : (canCompare ? "当前版本已是最新" : "版本未知，无法比较")) }}
         </span>
         <Icon
-          v-if="applySupported && hasUpdate"
+          v-if="hasUpdate"
           icon="ri:arrow-right-line"
           class="w-4 h-4 text-primary"
           aria-hidden="true"

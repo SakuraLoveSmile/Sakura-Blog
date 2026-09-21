@@ -1,7 +1,7 @@
 [Unit]
-Description=Blog one-click update executor (docker driver)
-# 消费 /opt/blog/update/requests/ 下的更新请求并执行 update-docker.sh。
-# 由 blog-update-docker.path 触发；与 update.sh 不同在于通过 docker 重启服务。
+Description=Blog manual update executor (docker driver)
+# 手动触发：sudo systemctl start blog-update-docker（等价 sudo update-docker.sh）。
+# 与 update.sh 不同在于通过 docker restart 重启服务。
 
 [Service]
 Type=oneshot

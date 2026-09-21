@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 博客自动更新脚本（Docker 容器部署版）：检查 GitHub Release 最新版本，下载并替换二进制，重启容器。
+# 博客手动更新脚本（Docker 容器部署版）：检查 GitHub Release 最新版本，下载并替换二进制，重启容器。
 # 与 update.sh 同一契约：消费 update/requests 请求、写 status.json / update.log、失败自动回滚。
 # 覆盖安装前备份上一版本二进制；健康检查（本地端口 HTTP 探测）失败时自动回滚并重启。
-# 用法：
+# 用法（v1.7.3 起仅保留手动执行，Console 不再触发）：
 #   手动执行：sudo /opt/blog/update-docker.sh
-#   自动执行：配合 blog-update-docker.path / cron 监听 update/requests/
+#   或经 systemd：sudo systemctl start blog-update-docker.service
 #
 # 依赖：curl, sha256sum, docker, python3
 # 前提：安装目录以「目录 bind mount」挂入容器（如 /opt/blog -> /app），

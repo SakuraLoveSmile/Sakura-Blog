@@ -28,7 +28,6 @@ import (
 	tmpl "blog/internal/settings"
 	attachmentstorage "blog/internal/storage"
 	"blog/internal/store"
-	updr "blog/internal/updaterunner"
 )
 
 const (
@@ -64,13 +63,10 @@ type Handler struct {
 	stellarOwner   string
 	stellarRepo    string
 
-	// 系统更新（Console 检查更新 / 一键更新）
-	upd              updr.Runner
-	appVersion       string
-	root             string
-	updateRepo       string
-	updateInstallDir string
-	updateApplying   atomic.Bool
+	// 系统更新（Console 检查更新；v1.7.3 起移除一键更新执行链）
+	appVersion string
+	root       string
+	updateRepo string
 
 	// icons 图标注册表（icons.yml），素材速查端点用，可空。
 	icons *tmpl.IconRegistry
@@ -116,12 +112,9 @@ type Config struct {
 	StellarOwner   string
 	StellarRepo    string
 	// 系统更新配置
-	Root             string
-	AppVersion       string
-	UpdateRepo       string
-	UpdateInstallDir string
-	UpdateService    string
-	UpdateDriver     string
+	Root       string
+	AppVersion string
+	UpdateRepo string
 }
 
 // New 创建 API handler。
@@ -136,15 +129,6 @@ func New(cfg Config) *Handler {
 	if repo == "" {
 		repo = updateRepoDefault
 	}
-	installDir := cfg.UpdateInstallDir
-	if installDir == "" {
-		installDir = updateInstallDirDefault
-	}
-
-	// 构造生产 execRunner（Supported() 按 update_driver 探测执行环境）
-	runner := updr.New(installDir, cfg.UpdateService)
-	runner.Driver = cfg.UpdateDriver
-	runner.Root = cfg.Root
 
 	storageBackend := cfg.Storage
 	if cfg.StorageManager != nil {
@@ -170,11 +154,9 @@ func New(cfg Config) *Handler {
 		stellarVersion:    cfg.StellarVersion,
 		stellarOwner:      cfg.StellarOwner,
 		stellarRepo:       cfg.StellarRepo,
-		upd:               runner,
 		appVersion:        cfg.AppVersion,
 		root:              cfg.Root,
 		updateRepo:        repo,
-		updateInstallDir:  installDir,
 		generate2FA:       generate2FAToken,
 		loginFails: make(map[string]struct {
 			n int
@@ -548,11 +530,9 @@ func (h *Handler) register(r *gin.Engine) {
 		sys.POST("/rag/ask", h.ragAsk)
 		sys.POST("/rag/rebuild", h.ragRebuild)
 
-		// 系统版本与更新（版本识别 / 检查更新 / 一键更新 / 状态查询）
+		// 系统版本与更新（版本识别 / 检查更新）
 		sys.GET("/system/version", h.systemVersion)
 		sys.GET("/system/update/check", h.systemUpdateCheck)
-		sys.POST("/system/update/apply", h.systemUpdateApply)
-		sys.GET("/system/update/status", h.systemUpdateStatus)
 		sys.GET("/plugins/runtime", h.listScriptPlugins)
 		sys.POST("/plugins/runtime/hook", h.runScriptPluginHook)
 

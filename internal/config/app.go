@@ -24,9 +24,6 @@ type App struct {
 	BackupKeep       int    `yaml:"backup_keep"`        // 自动备份留存份数，默认 7
 	GitHubToken      string `yaml:"github_token"`       // GitHub PAT（可选），空则匿名 60 req/h
 	UpdateRepo       string `yaml:"update_repo"`        // 检查更新的 GitHub 仓库（owner/repo），默认 SakuraLoveSmile/Sakura-Blog-Release
-	UpdateInstallDir string `yaml:"update_install_dir"` // update.sh 所在安装目录，默认 /opt/blog（docker 驱动下不使用）
-	UpdateService    string `yaml:"update_service"`     // systemd oneshot unit 名，默认 blog-update
-	UpdateDriver     string `yaml:"update_driver"`      // 更新执行驱动：auto（默认，自动探测）/ systemd / docker
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
@@ -39,9 +36,6 @@ func DefaultApp() *App {
 		AutoBackup:       true,
 		BackupKeep:       7,
 		UpdateRepo:       "SakuraLoveSmile/Sakura-Blog-Release",
-		UpdateInstallDir: "/opt/blog",
-		UpdateService:    "blog-update",
-		UpdateDriver:     "auto",
 	}
 }
 
@@ -100,15 +94,6 @@ func ResolveApp(app *App) *App {
 	// 更新配置默认值兜底（yaml 未配置时走默认）
 	if app.UpdateRepo == "" {
 		app.UpdateRepo = "SakuraLoveSmile/Sakura-Blog-Release"
-	}
-	if app.UpdateInstallDir == "" {
-		app.UpdateInstallDir = "/opt/blog"
-	}
-	if app.UpdateService == "" {
-		app.UpdateService = "blog-update"
-	}
-	if app.UpdateDriver == "" {
-		app.UpdateDriver = "auto"
 	}
 
 	// root 绝对化：空则用 cwd

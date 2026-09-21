@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 博客自动更新脚本：检查 GitHub Release 最新版本，下载并替换二进制，重启服务。
+# 博客手动更新脚本：检查 GitHub Release 最新版本，下载并替换二进制，重启服务。
 # 覆盖安装前备份上一版本二进制；健康检查（本地端口 HTTP 探测）失败时自动回滚并重启。
-# 用法：
+# 用法（v1.7.3 起仅保留手动执行，Console 不再触发）：
 #   手动执行：sudo /opt/blog/update.sh
-#   自动执行：配合 blog-update.timer 定时运行
+#   或经 systemd：sudo systemctl start blog-update.service
 #
 # 依赖：curl, sha256sum, systemctl, python3
 

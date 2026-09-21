@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VCard, VButton, VTag, VStatusDot, Dialog, Toast } from "@/components/ui";
-import { systemApi, type UpdateCheckResponse, type UpdateStatusResponse } from "@/api";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { VPageHeader, VCard, VButton, VTag, Toast } from "@/components/ui";
+import { systemApi, type UpdateCheckResponse } from "@/api";
+import { formatDate } from "@/lib/format";
 
 const checkData = ref<UpdateCheckResponse | null>(null);
-const statusData = ref<UpdateStatusResponse | null>(null);
 const checking = ref(false);
-const applying = ref(false);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 // GitHub Token（可选）：用于私有仓库鉴权或提升速率上限。
 // 仅保存在本浏览器 localStorage，随请求以 X-GitHub-Token 头发送，不存储到服务端。
@@ -37,60 +34,6 @@ function tokenParam(): string | undefined {
 const hasUpdate = computed(() => checkData.value?.update_available ?? false);
 // 三态：current 为 unknown 或 latest 缺失时，无法确定是否有更新（如本地 dev 构建恒为 unknown）。
 const canCompare = computed(() => checkData.value?.current_version !== "unknown" && !!checkData.value?.latest_version);
-const applySupported = computed(() => checkData.value?.apply_supported ?? false);
-const currentState = computed(() => statusData.value?.state ?? "idle");
-
-const stateLabel = computed(() => {
-  switch (currentState.value) {
-    case "running":
-      return "更新中";
-    case "succeeded":
-      return "更新成功";
-    case "failed":
-      return "更新失败";
-    default:
-      return "空闲";
-  }
-});
-
-const stateColor = computed(() => {
-  switch (currentState.value) {
-    case "running":
-      return "text-state-warning";
-    case "succeeded":
-      return "text-state-success";
-    case "failed":
-      return "text-state-error";
-    default:
-      return "text-text-quaternary";
-  }
-});
-
-const stateDotType = computed<"default" | "success" | "warning" | "error">(() => {
-  switch (currentState.value) {
-    case "running":
-      return "warning";
-    case "succeeded":
-      return "success";
-    case "failed":
-      return "error";
-    default:
-      return "default";
-  }
-});
-
-const stateIcon = computed(() => {
-  switch (currentState.value) {
-    case "running":
-      return "ri:loader-4-line";
-    case "succeeded":
-      return "ri:checkbox-circle-line";
-    case "failed":
-      return "ri:close-circle-line";
-    default:
-      return "ri:check-double-line";
-  }
-});
 
 const versionStatusText = computed(() => {
   if (hasUpdate.value) return "发现新版本";
@@ -118,55 +61,6 @@ async function checkUpdate(refresh = false) {
   }
 }
 
-async function applyUpdate() {
-  Dialog.warning({
-    title: "一键更新系统",
-    description: "将触发后台更新服务，拉取新版本二进制并重启服务。更新期间博客会短暂重启（约数秒）。确认继续？",
-    confirmType: "danger",
-    onConfirm: async () => {
-      applying.value = true;
-      try {
-        const { data } = await systemApi.apply(tokenParam());
-        Toast.success(`更新已触发，目标版本 ${data.target_version}`);
-        startPolling();
-      } catch {
-      } finally {
-        applying.value = false;
-      }
-    },
-  });
-}
-
-async function fetchStatus() {
-  try {
-    const { data } = await systemApi.status();
-    statusData.value = data;
-    if (data.state === "succeeded") {
-      stopPolling();
-      Toast.success("更新成功！当前版本已更新");
-      checkUpdate(true);
-    } else if (data.state === "failed") {
-      stopPolling();
-      Toast.error("更新失败，请查看日志");
-    }
-  } catch {
-    // 静默失败，轮询继续
-  }
-}
-
-function startPolling() {
-  stopPolling();
-  fetchStatus();
-  pollTimer = setInterval(() => fetchStatus(), 3000);
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
-}
-
 async function copyText(text: string, label = "内容") {
   try {
     await navigator.clipboard.writeText(text);
@@ -178,11 +72,6 @@ async function copyText(text: string, label = "内容") {
 
 onMounted(() => {
   checkUpdate();
-  fetchStatus();
-});
-
-onBeforeUnmount(() => {
-  stopPolling();
 });
 </script>
 
@@ -193,7 +82,7 @@ onBeforeUnmount(() => {
       <template #icon>
         <Icon icon="ri:rocket-2-line" class="text-primary" />
       </template>
-      <template #subtitle> 检查 Blog 新版本、查看更新日志并执行一键在线升级 </template>
+      <template #subtitle> 检查 Blog 新版本并查看更新日志 </template>
       <template #actions>
         <VButton size="sm" type="default" :loading="checking" @click="checkUpdate(false)">
           <template #icon>
@@ -234,7 +123,7 @@ onBeforeUnmount(() => {
           </div>
         </template>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <!-- 当前版本 -->
           <div
             class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong"
@@ -287,31 +176,6 @@ onBeforeUnmount(() => {
               </p>
             </div>
           </div>
-
-          <!-- 更新服务状态 -->
-          <div
-            class="flex flex-col justify-between rounded-base border border-border bg-card/60 p-4 transition-colors hover:border-border-strong sm:col-span-2 lg:col-span-1"
-          >
-            <div class="flex items-center justify-between text-xs text-text-tertiary">
-              <span class="flex items-center gap-1.5">
-                <Icon icon="ri:pulse-line" class="text-primary" />
-                更新服务状态
-              </span>
-              <VStatusDot :state="stateDotType" :animate="currentState === 'running'" :text="stateLabel" />
-            </div>
-            <div class="mt-3">
-              <div class="text-sm font-medium text-foreground">
-                <span v-if="currentState === 'running'" class="text-state-warning">正在执行后台升级</span>
-                <span v-else-if="hasUpdate" class="text-primary">可一键平滑升级</span>
-                <span v-else-if="canCompare" class="text-state-success">已为最新，运行正常</span>
-                <span v-else class="text-text-tertiary">版本无法比对</span>
-              </div>
-              <p class="mt-1 text-xs text-text-quaternary">
-                <span v-if="checkData?.checked_at">最后检查：{{ formatDateTime(checkData.checked_at) }}</span>
-                <span v-else>等待检查</span>
-              </p>
-            </div>
-          </div>
         </div>
       </VCard>
 
@@ -336,21 +200,7 @@ onBeforeUnmount(() => {
         </VButton>
       </div>
 
-      <!-- 3. 环境不支持一键更新提示（若有） -->
-      <div
-        v-if="checkData && !applySupported"
-        class="flex items-start gap-3 rounded-base border border-state-warning/30 bg-state-warning/10 p-4 text-sm text-state-warning"
-      >
-        <Icon icon="ri:information-line" class="mt-0.5 shrink-0 text-xl text-state-warning" />
-        <div class="flex-1">
-          <div class="font-semibold text-state-warning">一键在线更新不可用</div>
-          <p class="mt-1 text-xs leading-relaxed text-text-secondary">
-            {{ checkData.apply_note || "当前环境不支持一键更新（未检测到 systemd 或 docker 更新执行器）" }}
-          </p>
-        </div>
-      </div>
-
-      <!-- 4. 更新日志卡片（有新版本或已获取 Release Notes 时展示） -->
+      <!-- 3. 更新日志卡片（有新版本或已获取 Release Notes 时展示） -->
       <VCard v-if="checkData?.release_notes || hasUpdate">
         <template #header>
           <div class="flex items-center gap-2 text-base font-semibold text-foreground">
@@ -391,7 +241,8 @@ onBeforeUnmount(() => {
             <Icon icon="ri:arrow-up-circle-fill" class="text-base text-primary" />
             <span
               >发现新版本 <strong>{{ checkData?.latest_version }}</strong
-              >，建议及时升级体验最新功能与稳定性改进。</span
+              >，按部署方式手动升级：Docker 镜像部署执行 <code>docker compose pull && up -d</code>；二进制部署执行
+              <code>deploy/update.sh</code> 或替换 Release 中的新二进制。</span
             >
           </div>
           <span v-if="checkData?.published_at" class="text-text-tertiary">
@@ -409,122 +260,7 @@ onBeforeUnmount(() => {
         <div v-else class="py-4 text-center text-xs text-text-quaternary">暂无详细更新日志</div>
       </VCard>
 
-      <!-- 5. 一键在线升级操作卡片 -->
-      <VCard>
-        <template #header>
-          <div class="flex items-center gap-2 text-base font-semibold text-foreground">
-            <Icon icon="ri:download-cloud-2-line" class="text-lg text-primary" />
-            <span>一键在线升级</span>
-          </div>
-        </template>
-
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="max-w-xl space-y-2">
-            <p class="text-xs leading-relaxed text-text-secondary">
-              点击后将向后台更新执行器（systemd 或 docker watcher）发送升级指令，自动从 GitHub
-              Release 下载最新的二进制文件并平滑重启 Blog 服务。
-            </p>
-            <div class="flex flex-wrap gap-2 text-[11px] text-text-tertiary">
-              <span class="flex items-center gap-1 rounded bg-secondary px-2 py-0.5">
-                <Icon icon="ri:check-line" class="text-state-success" />
-                自动留存版本备份
-              </span>
-              <span class="flex items-center gap-1 rounded bg-secondary px-2 py-0.5">
-                <Icon icon="ri:check-line" class="text-state-success" />
-                秒级平滑重启
-              </span>
-              <span class="flex items-center gap-1 rounded bg-secondary px-2 py-0.5">
-                <Icon icon="ri:check-line" class="text-state-success" />
-                失败自动恢复
-              </span>
-            </div>
-          </div>
-          <div class="shrink-0">
-            <VButton
-              type="primary"
-              size="lg"
-              :disabled="!applySupported || !hasUpdate || applying || currentState === 'running'"
-              :loading="applying || currentState === 'running'"
-              @click="applyUpdate"
-            >
-              <template #icon>
-                <Icon
-                  :icon="currentState === 'running' ? 'ri:loader-4-line' : 'ri:arrow-up-circle-line'"
-                  class="text-lg"
-                />
-              </template>
-              {{ currentState === "running" ? "正在升级中…" : hasUpdate ? "立即一键升级" : "已是最新版本" }}
-            </VButton>
-          </div>
-        </div>
-      </VCard>
-
-      <!-- 6. 更新执行状态与终端日志（非空闲状态展示） -->
-      <VCard v-if="statusData && currentState !== 'idle'">
-        <template #header>
-          <div class="flex items-center gap-2 text-base font-semibold text-foreground">
-            <Icon icon="ri:code-box-line" class="text-lg text-primary" />
-            <span>更新执行详情</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="flex items-center gap-1.5 text-xs font-medium" :class="stateColor">
-              <Icon :icon="stateIcon" :class="{ 'animate-spin': currentState === 'running' }" />
-              {{ stateLabel }}
-            </span>
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-4 rounded-base border border-border bg-card/60 p-3.5 sm:grid-cols-3">
-            <div>
-              <span class="text-xs text-text-tertiary">目标升级版本</span>
-              <p class="mt-0.5 font-mono text-sm font-semibold text-foreground">
-                {{ statusData.target_version || "—" }}
-              </p>
-            </div>
-            <div>
-              <span class="text-xs text-text-tertiary">触发时间</span>
-              <p class="mt-0.5 text-xs text-foreground">
-                {{ statusData.started_at ? formatDateTime(statusData.started_at) : "—" }}
-              </p>
-            </div>
-            <div class="col-span-2 sm:col-span-1">
-              <span class="text-xs text-text-tertiary">当前阶段状态</span>
-              <p class="mt-0.5 truncate text-xs font-medium" :class="stateColor">
-                {{ statusData.message || stateLabel }}
-              </p>
-            </div>
-          </div>
-
-          <!-- macOS Terminal 终端日志窗口 -->
-          <div
-            v-if="statusData.log_tail"
-            class="overflow-hidden rounded-base border border-[#2a2a2c] bg-[#0c0c0e] shadow-xl"
-          >
-            <div class="flex items-center justify-between border-b border-[#2a2a2c] bg-[#161618] px-3.5 py-2">
-              <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5">
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#FF5F56] opacity-80" />
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#FFBD2E] opacity-80" />
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#27C93F] opacity-80" />
-                </div>
-                <span class="ml-2 font-mono text-[11px] text-text-tertiary"> system-update.service — output </span>
-              </div>
-              <VButton size="xs" type="default" @click="copyText(statusData.log_tail, '终端日志')">
-                <template #icon>
-                  <Icon icon="ri:file-copy-line" />
-                </template>
-                复制日志
-              </VButton>
-            </div>
-            <pre
-              class="custom-scrollbar max-h-56 overflow-y-auto p-3.5 font-mono text-[11px] leading-relaxed text-text-secondary whitespace-pre-wrap selection:bg-primary/30"
-              >{{ statusData.log_tail }}</pre>
-          </div>
-        </div>
-      </VCard>
-
-      <!-- 7. GitHub Token 配置卡片 -->
+      <!-- 4. GitHub Token 配置卡片 -->
       <VCard>
         <template #header>
           <div class="flex items-center gap-2 text-base font-semibold text-foreground">
@@ -569,7 +305,7 @@ onBeforeUnmount(() => {
           <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
             <p v-if="githubToken" class="flex items-center gap-1 text-state-success">
               <Icon icon="ri:checkbox-circle-line" />
-              已填入，下次「检查更新」与「一键更新」将携带该 Token
+              已填入，「检查更新」将携带该 Token
             </p>
             <p v-else class="text-text-quaternary">未配置 Token，当前采用匿名请求</p>
             <a
