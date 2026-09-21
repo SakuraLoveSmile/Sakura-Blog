@@ -9,17 +9,10 @@ const API_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../package
 const VIEW = readFileSync(join(ROOT, "modules/system/SystemUpdateView.vue"), "utf8");
 const API = readFileSync(join(API_ROOT, "api/monitoring.ts"), "utf8");
 
-test("SystemUpdateView: poll timer lifecycle is owned (no leaked/const interval)", () => {
-  // 防止回退为 const null / 丢弃 setInterval 返回值——那会导致 Toast 每 3 秒无限弹、离开页面后仍请求泄漏。
-  assert.match(VIEW, /let pollTimer/);
-  assert.match(VIEW, /pollTimer = setInterval/);
-  assert.match(VIEW, /clearInterval\(pollTimer\)/);
-  assert.match(VIEW, /pollTimer = null/);
-});
-
-test("SystemUpdateView: error 语义分离后消费 apply_note", () => {
-  // 不支持一键更新的原因只走 apply_note，不再污染 error。
-  assert.match(VIEW, /checkData\.apply_note/);
+test("SystemUpdateView: 一键更新链路已移除（无轮询 / apply / status 调用）", () => {
+  // v1.7.3 起页面只负责检查更新，不再触发或跟踪执行。
+  assert.doesNotMatch(VIEW, /pollTimer|setInterval|applyUpdate|systemApi\.apply|systemApi\.status/);
+  assert.doesNotMatch(VIEW, /UpdateStatusResponse/);
 });
 
 test("SystemUpdateView: 版本三态文案存在（含「无法确定」）", () => {
@@ -29,6 +22,13 @@ test("SystemUpdateView: 版本三态文案存在（含「无法确定」）", ()
   }
 });
 
-test("api/index.ts: UpdateCheckResponse 含 apply_note 字段", () => {
-  assert.match(API, /apply_note\?:\s*string/);
+test("SystemUpdateView: 新版本横幅给出手动升级指引", () => {
+  // 替代原「立即一键升级」按钮：告知 docker pull / update.sh 两种手动路径。
+  assert.match(VIEW, /docker compose pull/);
+  assert.match(VIEW, /update\.sh/);
+});
+
+test("api/monitoring.ts: systemApi 仅保留 version 与 check", () => {
+  assert.match(API, /systemApi/);
+  assert.doesNotMatch(API, /apply:\s*\(|status:\s*\(\)|UpdateApplyResponse|UpdateStatusResponse/);
 });

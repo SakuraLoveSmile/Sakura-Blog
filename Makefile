@@ -37,7 +37,7 @@ release-secret-history-check:
 generate:
 	go generate ./modules/console/api
 
-## deploy-test: update.sh / update-docker.sh 的本地部署/回滚测试，不访问网络或真实 systemd/docker。
+## deploy-test: update.sh / update-docker.sh 手动更新脚本的本地部署/回滚测试，不访问网络或真实 systemd/docker。
 deploy-test:
 	bash deploy/update_test.sh
 	bash deploy/update-docker_test.sh

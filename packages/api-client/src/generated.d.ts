@@ -361,36 +361,11 @@ export interface UpdateCheckResponse {
   release_url: string;
   release_notes: string;
   published_at: string;
-  apply_supported: boolean;
   checked_at: string;
-  apply_note?: string;
   error?: string;
   git_commit?: string;
   build_time?: string;
   stellar_commit?: string;
   frontend_fingerprint?: string;
   is_dev?: boolean;
-}
-/**
- * UpdateApplyResponse POST /api/v1/system/update/apply
- */
-export interface UpdateApplyResponse {
-  started: boolean;
-  task_id: string;
-  target_version: string;
-  stage?: string;
-}
-/**
- * UpdateStatusResponse GET /api/v1/system/update/status
- */
-export interface UpdateStatusResponse {
-  state: string; // idle|running|succeeded|failed
-  stage?: string;
-  task_id?: string;
-  current_version: string;
-  target_version?: string;
-  started_at?: string;
-  log_tail?: string;
-  message?: string;
-  error?: string;
 }

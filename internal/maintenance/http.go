@@ -36,7 +36,7 @@ func (c *Coordinator) Wrap(next http.Handler) http.Handler {
 			status := http.StatusServiceUnavailable
 			if r.Method == http.MethodPost {
 				switch r.URL.Path {
-				case "/api/v1/backup/restores", "/api/v1/backup/restore", "/api/v1/backup/restore-snapshot", "/api/v1/system/update/apply":
+				case "/api/v1/backup/restores", "/api/v1/backup/restore", "/api/v1/backup/restore-snapshot":
 					status = http.StatusConflict
 				}
 			}

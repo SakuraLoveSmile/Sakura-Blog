@@ -33,7 +33,8 @@ Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageM
 ### 发布流水线
 
 - `.github/workflows/release.yml`：tag 推送时构建 `blog-linux-amd64`，Release 发布到公开仓库 `SakuraLoveSmile/Sakura-Blog-Release`（跨仓库需 `RELEASE_REPO_PAT` secret）；`update.sh`/`update-docker.sh` 与该仓库的 `BLOG_REPO`/`update_repo` 默认值保持同一目标。
-- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态，镜像形态下 Console 一键更新不可用。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态。
+- v1.7.3 起 Console 只保留「检查更新」（`GET /system/update/check`），一键更新执行链（`internal/updaterunner`、apply/status 端点、systemd path/timer watcher）已移除；升级一律在宿主手动执行 `update.sh`/`update-docker.sh` 或 `docker compose pull`。
 
 ### `go:embed` 与前端重建
 

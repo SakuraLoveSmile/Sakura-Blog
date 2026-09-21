@@ -17,7 +17,7 @@ for package in maintenance backup store app; do
 done
 cp deploy/blog.service "$test_root/blog.service"
 cp deploy/update.sh "$test_root/update.sh"
-cp deploy/blog-update.service deploy/blog-update.path deploy/tests/update-systemd.py "$test_root/"
+cp deploy/blog-update.service "$test_root/"
 printf 'exit 0\n' > "$test_root/lock-noop.sh"
 chmod 755 "$test_root"
 cp deploy/tests/restore-permissions.py "$test_root/permissions.py"
@@ -27,12 +27,10 @@ for attempt in $(seq 1 30); do
   if docker exec "$container_name" systemctl list-units >/dev/null 2>&1; then break; fi
   sleep 1
 done
-docker exec "$container_name" bash -c 'useradd -r blog; mkdir -p /opt/blog/config /opt/blog/data /opt/blog/update/requests; cp /bin/true /opt/blog/blog; touch /opt/blog/config/app.yml /opt/blog/config/site.yml; chown blog:blog /opt/blog/config/app.yml /opt/blog/config/site.yml /opt/blog/data; chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml; systemd-analyze verify /checks/blog.service'
+docker exec "$container_name" bash -c 'useradd -r blog; mkdir -p /opt/blog/config /opt/blog/data /opt/blog/update; cp /bin/true /opt/blog/blog; touch /opt/blog/config/app.yml /opt/blog/config/site.yml; chown blog:blog /opt/blog/config/app.yml /opt/blog/config/site.yml /opt/blog/data; chmod 600 /opt/blog/config/app.yml /opt/blog/config/site.yml; systemd-analyze verify /checks/blog.service'
 docker exec "$container_name" bash -c 'source /checks/update.sh; run_with_maintenance_lock' /checks/lock-noop.sh
 docker exec "$container_name" systemd-run --wait --collect --pipe --unit blog-existing-lock -p User=blog -p NoNewPrivileges=true -p ProtectSystem=strict -p ReadWritePaths=/opt/blog/data -p Environment=BLOG_TEST_OPERATION_LOCK=/opt/blog/data/maintenance.lock /checks/maintenance.test -test.run TestServiceUserCanTakeExistingOperationLock -test.v
 docker exec "$container_name" systemd-run --wait --collect --pipe --unit blog-restore-permissions -p User=blog -p NoNewPrivileges=true -p ProtectSystem=strict -p 'ReadWritePaths=/opt/blog/data /opt/blog/config/site.yml' /usr/bin/python3 /checks/permissions.py
 for package in maintenance backup store app; do
   docker exec "$container_name" "/checks/$package.test" -test.v
  done
-
-docker exec "$container_name" python3 /checks/update-systemd.py
