@@ -20,7 +20,7 @@ import (
 // updateRepoDefault / updateInstallDirDefault 为 api 层兜底常量，
 // 与 config.DefaultApp 对齐；Config 缺省时由 New() 填入。
 const (
-	updateRepoDefault       = "SakuraLoveSmile/Sakura-Blog"
+	updateRepoDefault       = "SakuraLoveSmile/Sakura-Blog-Release"
 	updateInstallDirDefault = "/opt/blog"
 )
 

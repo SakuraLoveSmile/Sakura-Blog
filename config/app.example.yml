@@ -44,7 +44,7 @@ github_token:
 # Console 检查更新 / 一键更新（POST /api/v1/system/update/apply 触发宿主更新执行器）
 # 以下四项留空走代码默认值，仅生产部署需要关注。
 # 检查更新的 GitHub 仓库（owner/repo），对齐 update.sh 的 BLOG_REPO 默认值。
-# update_repo: SakuraLoveSmile/Sakura-Blog
+# update_repo: SakuraLoveSmile/Sakura-Blog-Release
 # update.sh 所在安装目录（systemd 驱动使用；docker 驱动下控制目录固定为 <root>/update）。
 # update_install_dir: /opt/blog
 # systemd oneshot unit 名（不含 .service 后缀）。

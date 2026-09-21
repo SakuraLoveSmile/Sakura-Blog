@@ -106,13 +106,13 @@ Console 后台「系统更新」页面（/console/system-update）可检查 GitH
 
 ### GitHub PAT
 
-检查更新需要读取仓库 release 信息。私有仓库需配置 PAT（`github_token`），公开仓库可匿名访问（60 req/h 限流）。PAT 权限只需该仓库的 `contents:read`，复用部署时已有的 `.token` 文件即可。
+检查更新需要读取仓库 release 信息。默认仓库 `Sakura-Blog-Release` 为公开仓库，可匿名访问（60 req/h 限流），无需配置 Token；改用私有仓库时需配置 PAT（`github_token`），权限只需 `contents:read`，复用部署时已有的 `.token` 文件即可。
 
 ### app.yml 配置
 
 ```yaml
 # 系统更新配置（缺省值见下方，多数部署无需修改）
-update_repo: "SakuraLoveSmile/Sakura-Blog"  # GitHub 仓库（owner/repo）
+update_repo: "SakuraLoveSmile/Sakura-Blog-Release"  # 公开二进制发布仓库（owner/repo）
 update_install_dir: "/opt/blog"               # 安装目录（update.sh 所在）
 update_service: "blog-update"                 # systemd oneshot unit 名（仅支持默认值）
 ```
@@ -195,6 +195,19 @@ systemctl daemon-reload && systemctl enable --now blog-update-docker.path
 ```bash
 sudo /opt/blog/update-docker.sh
 ```
+
+### 镜像部署（GHCR，可选形态）
+
+`.github/workflows/docker-release.yml` 在 tag 推送时构建并推送 `ghcr.io/sakuralovesmile/sakura-blog:<version>`（含 `latest`）。镜像为自包含多阶段构建（node → go → debian-slim），二进制位于镜像内 `/usr/local/bin/blog`，入口 `blog -root /app`。
+
+```bash
+docker compose -f deploy/docker-compose.image.yml up -d
+```
+
+与本节挂载部署的关键区别：
+
+- **Console 一键更新不可用**：镜像内二进制无法被 `update-docker.sh` 替换，升级走 `docker compose pull && docker compose up -d`（可配 Watchtower 自动升级）。「检查更新」仍可用。
+- **只挂运行态子目录**：`config/`、`data/`、`content/`；不要把整个安装目录挂到 `/app`（会遮住镜像内二进制），也不要把 `update-docker.sh` 放进容器可见的根目录——那只会让 Console 误报支持一键更新。
 
 ### 整站恢复与维护窗口
 
