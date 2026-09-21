@@ -30,6 +30,11 @@
 
 Go 版本由根 `go.mod` 决定，pnpm 版本由根 `package.json` 的 `packageManager` 决定，Node CI 版本以 `.github/workflows/ci.yml` 为准；不要把本机版本当作项目契约。
 
+### 发布流水线
+
+- `.github/workflows/release.yml`：tag 推送时构建 `blog-linux-amd64`，Release 发布到公开仓库 `SakuraLoveSmile/Sakura-Blog-Release`（跨仓库需 `RELEASE_REPO_PAT` secret）；`update.sh`/`update-docker.sh` 与该仓库的 `BLOG_REPO`/`update_repo` 默认值保持同一目标。
+- `.github/workflows/docker-release.yml`：tag 推送时按根 `Dockerfile` 自包含构建并推送 `ghcr.io/sakuralovesmile/sakura-blog`。镜像内置二进制，与「宿主挂载二进制 + `update-docker.sh` 替换」是互斥的部署形态，镜像形态下 Console 一键更新不可用。
+
 ### `go:embed` 与前端重建
 
 `modules/console/web/embed.go` 要求 `dist/` 和非空的 `dist-uc/` 在 Go 编译时存在。`make test` 只为前者补最小占位，`dist-uc/.gitkeep` 只满足编译约束；两者都不验证真实 SPA。始终优先使用 `make build` 生成 Console 与 User Center 的真实产物，不要手动颠倒「前端构建 → Go 编译」顺序。

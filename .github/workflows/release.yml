@@ -1,8 +1,9 @@
 name: Release Build
 
 # release 分支推送 / 打 tag / 手动触发均可构建。
-# 产物：Linux amd64 单二进制（go:embed 全部资源）+ GitHub Release。
-# 服务器通过 deploy/update.sh 定时检查 Release 并自动下载更新。
+# 产物：Linux amd64 单二进制（go:embed 全部资源），Release 发布到公开仓库
+# SakuraLoveSmile/Sakura-Blog-Release（跨仓库需要 RELEASE_REPO_PAT secret）。
+# 服务器通过 deploy/update.sh / update-docker.sh 定时检查 Release 并自动下载更新。
 on:
   push:
     branches: [release]
@@ -75,14 +76,20 @@ jobs:
             blog-linux-amd64.spdx.json
           retention-days: 30
 
-      # GitHub Release（打 tag 时，服务器 update.sh 从此下载）
+      # GitHub Release 发布到公开仓库 Sakura-Blog-Release（源码仓库私有，
+      # update.sh / update-docker.sh 匿名下载资产依赖公开仓库可达）。
+      # 跨仓库创建 Release 需要 RELEASE_REPO_PAT（repo 权限 PAT）作为 token。
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
+          repository: SakuraLoveSmile/Sakura-Blog-Release
+          token: ${{ secrets.RELEASE_REPO_PAT }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            二进制发布仓库（公开）。对应源码仓库：https://github.com/SakuraLoveSmile/Sakura-Blog
           files: |
             blog-linux-amd64
             blog-linux-amd64.sha256
             blog-linux-amd64.spdx.json
-          generate_release_notes: true
           fail_on_unmatched_files: true  # 如果没有二进制文件则失败
