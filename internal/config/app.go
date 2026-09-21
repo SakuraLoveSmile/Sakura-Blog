@@ -13,29 +13,29 @@ import (
 // 全部字段支持环境变量覆盖：BLOG_LISTEN / BLOG_DB / BLOG_ROOT / BLOG_SEED。
 // 优先级：环境变量 > app.yml > 字段默认值。
 type App struct {
-	ListenAddr       string `yaml:"listen_addr"`        // HTTP 监听地址，默认 :8080
-	DBPath           string `yaml:"db_path"`            // SQLite 文件路径，默认 data/blog.db（相对 root）
-	Root             string `yaml:"root"`               // 工作根目录，定位 site.yml 与 DB；空则用 cwd
-	SeedOnStart      bool   `yaml:"seed_on_start"`      // 启动时把 content/posts/*.md 导入 DB（-seed flag 等价）
-	TrustedProxy     string `yaml:"trusted_proxy"`      // 反向代理可信 IP/CIDR，空则不设（仅本机）
-	UploadDir        string `yaml:"upload_dir"`         // 附件上传根目录，默认 data/uploads（相对 root）
-	MaxUploadMB      int    `yaml:"max_upload_mb"`      // 单文件上传上限（MB），默认 5
-	AutoBackup       bool   `yaml:"auto_backup"`        // 每 24h 自动全量备份到 data/backups/，默认开启
-	BackupKeep       int    `yaml:"backup_keep"`        // 自动备份留存份数，默认 7
-	GitHubToken      string `yaml:"github_token"`       // GitHub PAT（可选），空则匿名 60 req/h
-	UpdateRepo       string `yaml:"update_repo"`        // 检查更新的 GitHub 仓库（owner/repo），默认 SakuraLoveSmile/Sakura-Blog-Release
+	ListenAddr   string `yaml:"listen_addr"`   // HTTP 监听地址，默认 :8080
+	DBPath       string `yaml:"db_path"`       // SQLite 文件路径，默认 data/blog.db（相对 root）
+	Root         string `yaml:"root"`          // 工作根目录，定位 site.yml 与 DB；空则用 cwd
+	SeedOnStart  bool   `yaml:"seed_on_start"` // 启动时把 content/posts/*.md 导入 DB（-seed flag 等价）
+	TrustedProxy string `yaml:"trusted_proxy"` // 反向代理可信 IP/CIDR，空则不设（仅本机）
+	UploadDir    string `yaml:"upload_dir"`    // 附件上传根目录，默认 data/uploads（相对 root）
+	MaxUploadMB  int    `yaml:"max_upload_mb"` // 单文件上传上限（MB），默认 5
+	AutoBackup   bool   `yaml:"auto_backup"`   // 每 24h 自动全量备份到 data/backups/，默认开启
+	BackupKeep   int    `yaml:"backup_keep"`   // 自动备份留存份数，默认 7
+	GitHubToken  string `yaml:"github_token"`  // GitHub PAT（可选），空则匿名 60 req/h
+	UpdateRepo   string `yaml:"update_repo"`   // 检查更新的 GitHub 仓库（owner/repo），默认 SakuraLoveSmile/Sakura-Blog-Release
 }
 
 // DefaultApp 构造默认应用配置。Root 留空由 main.go 用 cwd 兜底。
 func DefaultApp() *App {
 	return &App{
-		ListenAddr:       ":8080",
-		DBPath:           "data/blog.db",
-		UploadDir:        "data/uploads",
-		MaxUploadMB:      5,
-		AutoBackup:       true,
-		BackupKeep:       7,
-		UpdateRepo:       "SakuraLoveSmile/Sakura-Blog-Release",
+		ListenAddr:  ":8080",
+		DBPath:      "data/blog.db",
+		UploadDir:   "data/uploads",
+		MaxUploadMB: 5,
+		AutoBackup:  true,
+		BackupKeep:  7,
+		UpdateRepo:  "SakuraLoveSmile/Sakura-Blog-Release",
 	}
 }
 
