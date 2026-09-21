@@ -1,0 +1,31 @@
+# 构建上下文瘦身：镜像内重建前端与二进制，本地产物全部排除。
+# 注意 patches/、internal/settings/data/icons.yml、modules/stellar/web/assets
+# 是构建/嵌入必需项，不得加入本文件。
+
+.git
+.gitignore
+.gitattributes
+.dockerignore
+Dockerfile
+
+# 依赖与本地产物（镜像内重新安装/构建）
+node_modules
+**/node_modules
+modules/console/web/dist
+modules/console/web/dist-uc
+
+# 运行时数据与内容（部署时以卷挂载）
+data
+content
+config/app.yml
+config/site.yml
+
+# 主题源码在容器内不需要（main.css 为已跟踪产物）
+resource
+
+# 本地工具与文档
+.tmp
+.playwright-mcp
+docs
+*.md
+!README.md

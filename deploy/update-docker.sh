@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # ---------- 配置 ----------
-REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog}"
+REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog-Release}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/blog}"
 BINARY_NAME="${BINARY_NAME:-blog}"
 # 容器名（docker ps 的 Names 列）

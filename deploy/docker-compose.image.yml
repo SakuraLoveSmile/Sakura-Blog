@@ -1,0 +1,17 @@
+# 镜像部署示例：二进制内置在镜像中，只挂载运行态子目录。
+# 与 update-docker.sh 挂载部署互斥——本形态升级走 `docker compose pull && up -d`，
+# Console 一键更新不适用（详见 deploy/README.md「镜像部署」）。
+services:
+  blog:
+    image: ghcr.io/sakuralovesmile/sakura-blog:latest
+    container_name: blog
+    restart: unless-stopped
+    ports:
+      - "8081:8080"          # 宿主端口:容器端口，按需调整
+    volumes:
+      # 只挂运行态子目录；不要整目录挂到 /app（会遮住镜像内二进制）
+      - /opt/blog/config:/app/config
+      - /opt/blog/data:/app/data
+      - /opt/blog/content:/app/content
+    # environment:            # BLOG_* 环境变量覆盖 config/app.yml，按需启用
+    #   BLOG_LISTEN: ":8080"

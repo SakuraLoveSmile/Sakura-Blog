@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # ---------- 配置 ----------
-REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog}"
+REPO="${BLOG_REPO:-SakuraLoveSmile/Sakura-Blog-Release}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/blog}"
 BINARY_NAME="${BINARY_NAME:-blog}"
 SERVICE_NAME="${SERVICE_NAME:-blog}"
