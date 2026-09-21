@@ -1,4 +1,4 @@
-# timer 或 path 触发时执行更新脚本
+# 手动触发更新：sudo systemctl start blog-update
 [Unit]
 Description=Stellar Blog update runner
 After=network-online.target
@@ -6,7 +6,7 @@ After=network-online.target
 [Service]
 Type=exec
 ExecStart=/opt/blog/update.sh
-# 锁忙时同一进程等待；恢复日志阻塞等失败以固定间隔重试，避免 path 热循环。
+# 锁忙时同一进程等待；恢复日志阻塞等失败以固定间隔重试。
 TimeoutStartSec=infinity
 Restart=no
 RestartForceExitStatus=75

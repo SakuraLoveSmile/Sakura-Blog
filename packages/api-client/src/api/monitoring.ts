@@ -90,14 +90,8 @@ export const notificationApi = {
   markAllRead: () => http.put("/notifications/read-all"),
 };
 
-// --- 系统更新（检查更新 / 一键更新 / 状态查询 / 版本识别） ---
-// UpdateCheckResponse 字段参考：apply_note?: string
-import type {
-  SystemVersionResponse,
-  UpdateCheckResponse,
-  UpdateApplyResponse,
-  UpdateStatusResponse,
-} from "../generated";
+// --- 系统更新（检查更新 / 版本识别；v1.7.3 起移除一键更新执行链） ---
+import type { SystemVersionResponse, UpdateCheckResponse } from "../generated";
 
 export const systemApi = {
   /** 系统构建版本信息（管理员专属） */
@@ -108,13 +102,4 @@ export const systemApi = {
       params: refresh ? { refresh: "1" } : {},
       ...(token ? { headers: { "X-GitHub-Token": token } } : {}),
     }),
-  /** 一键更新（触发后台更新请求；token 同 check） */
-  apply: (token?: string) =>
-    http.post<UpdateApplyResponse>(
-      "/system/update/apply",
-      {},
-      token ? { headers: { "X-GitHub-Token": token } } : {},
-    ),
-  /** 查询更新状态（idle/running/succeeded/failed） */
-  status: () => http.get<UpdateStatusResponse>("/system/update/status", { mute: true }),
 };
