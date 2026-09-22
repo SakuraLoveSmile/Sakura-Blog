@@ -448,11 +448,34 @@ type FeedbackConfig struct {
 	LauncherMode   string `yaml:"launcher_mode" json:"launcher_mode"`     // 入口形态：tab|orb，默认 orb（灵感球）
 	CaptureMode    string `yaml:"capture_mode" json:"capture_mode"`       // 呼出自动截图：off|viewport，默认 viewport
 	LauncherBottom string `yaml:"launcher_bottom" json:"launcher_bottom"` // 入口距底部位置（CSS 长度），默认 25%
+	Display        string `yaml:"display" json:"display"`                 // 显示范围：front|console|both，默认 front（v1.7.4 新增）
 }
 
 // Active 反馈组件是否渲染：开关打开且服务地址、软件标识均已配置。
 func (c FeedbackConfig) Active() bool {
 	return c.Enabled && c.APIBase != "" && c.AppID != ""
+}
+
+// EffectiveDisplay 非法取值回落 front（保持旧版本行为：默认只挂前台）。
+func (c FeedbackConfig) EffectiveDisplay() string {
+	switch c.Display {
+	case "console", "both":
+		return c.Display
+	default:
+		return "front"
+	}
+}
+
+// ShowOnFront 前台页面（Stellar SSR）是否渲染反馈组件。
+func (c FeedbackConfig) ShowOnFront() bool {
+	d := c.EffectiveDisplay()
+	return c.Active() && (d == "front" || d == "both")
+}
+
+// ShowOnConsole Console 后台（Vue SPA）是否挂载反馈组件。
+func (c FeedbackConfig) ShowOnConsole() bool {
+	d := c.EffectiveDisplay()
+	return c.Active() && (d == "console" || d == "both")
 }
 
 // EffectiveSide 非法取值回落 right（与组件属性缺省一致）。

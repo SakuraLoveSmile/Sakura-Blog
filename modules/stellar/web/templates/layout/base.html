@@ -578,7 +578,7 @@
      ESM 入口带 ?v= 资源版本戳（SW 对 /assets/ 是 cache-first）；截图懒加载分块
      html2canvas-pro.esm-*.js 与入口同目录部署，文件名自带内容哈希无需 ?v=。
      theme 固定 dark（产品仅深色模式）；page-label 上报当前页面 canonical path。 */}}
-  {{if .Site.Feedback.Active}}
+  {{if .Site.Feedback.ShowOnFront}}
   <feedback-widget
     api-base="{{.Site.Feedback.APIBase}}"
     app-id="{{.Site.Feedback.AppID}}"

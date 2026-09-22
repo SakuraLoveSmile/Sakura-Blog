@@ -204,6 +204,33 @@ func TestBaseRendersFeedbackWidget(t *testing.T) {
 	if strings.Contains(off, "border-radius: 50%") {
 		t.Error("capture-compat override should be omitted when feedback disabled")
 	}
+
+	// display: console —— 前台不渲染（入口只挂 Console 后台）
+	consoleOnly := renderPostDocument(t, &Site{
+		Title: "仅后台",
+		Feedback: settings.FeedbackConfig{
+			Enabled: true, APIBase: "https://feedback.example.com", AppID: "com.example.blog",
+			Display: "console",
+		},
+	})
+	if strings.Contains(consoleOnly, "feedback-widget") {
+		t.Error("display=console should not render widget on frontend")
+	}
+	if strings.Contains(consoleOnly, "border-radius: 50%") {
+		t.Error("capture-compat override should be omitted when display=console")
+	}
+
+	// display: both —— 前台照常渲染
+	both := renderPostDocument(t, &Site{
+		Title: "双端",
+		Feedback: settings.FeedbackConfig{
+			Enabled: true, APIBase: "https://feedback.example.com", AppID: "com.example.blog",
+			Display: "both",
+		},
+	})
+	if !strings.Contains(both, "<feedback-widget") {
+		t.Error("display=both should render widget on frontend")
+	}
 }
 
 func TestDiskAndEmbedEnginesRenderIdentically(t *testing.T) {
