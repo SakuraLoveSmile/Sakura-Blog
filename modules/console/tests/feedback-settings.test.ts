@@ -42,6 +42,12 @@ test("FeedbackSettings tab owns the full feedback form, health check and launche
   ]) {
     assert.match(code, new RegExp(`id="${id}"`), `missing field ${id}`);
   }
+  // 显示范围：front|console|both 三选一（v1.7.4 新增 display 字段）
+  assert.match(code, /id="settings-feedback-display"/);
+  assert.match(code, /v-model="data\.feedback\.display"/);
+  assert.match(code, /value="front"/);
+  assert.match(code, /value="console"/);
+  assert.match(code, /value="both"/);
   // 启用开关与保存走既有 section 保存契约
   assert.match(code, /v-model="data\.feedback\.enabled"/);
   assert.match(code, /emit\("save",\s*"feedback"\)/);
@@ -92,4 +98,40 @@ test("backend check endpoint is admin-scoped, validates scheme and never reflect
   const router = read("modules/console/api/router.go");
   // 挂在 sys（admin）组
   assert.match(router, /sys\.POST\("\/settings\/feedback\/check", h\.checkFeedback\)/);
+});
+
+// v1.7.4：feedback.display 决定组件挂载位置；Console 侧由 FeedbackLauncher
+// 在登录后布局挂载同一 <feedback-widget>（ESM 运行时注册，不经构建）。
+test("console mounts <feedback-widget> in DefaultLayout when display targets console", () => {
+  const launcher = read("modules/console/web/src/components/FeedbackLauncher.vue");
+  // 挂载条件镜像 settings.FeedbackConfig.ShowOnConsole：enabled+api_base+app_id+display
+  assert.match(launcher, /settingsApi\.all\(\)/);
+  assert.match(launcher, /!f\.enabled \|\| !f\.api_base \|\| !f\.app_id/);
+  assert.match(launcher, /d === "console" \|\| d === "both"/);
+  // 与前台 base.html 一致的属性集（side/theme/launcher-mode/capture-mode/launcher-bottom）
+  assert.match(launcher, /api-base=/);
+  assert.match(launcher, /app-id=/);
+  assert.match(launcher, /theme="dark"/);
+  assert.match(launcher, /launcher-mode/);
+  // ESM 入口与前台同一路径（构建期不打包，运行时注入 script）
+  assert.match(launcher, /\/assets\/vendor\/feedback\/feedback-web\.js/);
+  assert.match(launcher, /document\.createElement\("script"\)/);
+
+  const layout = read("modules/console/web/src/layouts/DefaultLayout.vue");
+  assert.match(layout, /import FeedbackLauncher from "@\/components\/FeedbackLauncher\.vue"/);
+  assert.match(layout, /<FeedbackLauncher \/>/);
+
+  const vite = read("modules/console/web/vite.config.ts");
+  // <feedback-widget> 为 Custom Element，避免 Vue 当作未注册组件告警
+  assert.match(vite, /isCustomElement.*feedback-widget/s);
+});
+
+test("feedback display field round-trips through settings-state defaults", () => {
+  const state = read("modules/console/web/src/modules/settings/settings-state.ts");
+  assert.match(state, /d\.feedback\.display = d\.feedback\.display \|\| "front"/);
+
+  const model = read("internal/settings/model.go");
+  assert.match(model, /Display\s+string\s+`yaml:"display" json:"display"`/);
+  assert.match(model, /func \(c FeedbackConfig\) ShowOnFront\(\) bool/);
+  assert.match(model, /func \(c FeedbackConfig\) ShowOnConsole\(\) bool/);
 });

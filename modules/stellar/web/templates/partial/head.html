@@ -170,7 +170,7 @@
      border-radius: calc(100% - 2 * 2px)（calc 乘法），html2canvas-pro 解析该声明会抛
      undefined token 导致整页截图失败。方形头像上 calc(100%-4px) 与 50% 渲染等效
      （半径超 50% 自动收敛为圆形），此处覆盖为可解析的字面值。 */}}
-  {{- if .Site.Feedback.Active}}
+  {{- if .Site.Feedback.ShowOnFront}}
   <style>
     .logo-wrap a.avatar img.avatar { border-radius: 50%; }
   </style>
