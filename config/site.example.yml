@@ -531,3 +531,4 @@ feedback:
   launcher_mode: orb       # 入口形态：orb（灵感球，可拖拽指位置）| tab（贴边标签）
   capture_mode: viewport   # 呼出时自动截图：viewport | off（off 仍可在面板内手动截图）
   launcher_bottom: '25%'   # 入口距底部位置（CSS 长度，百分比或像素）
+  display: front           # 显示范围：front（仅博客前台）| console（仅 Console 后台）| both

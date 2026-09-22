@@ -6,7 +6,15 @@ import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   base: "/console/",
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          // <feedback-widget> 是 Feedback 服务的 Custom Element（运行时 ESM 注册），
+          // 不是 Vue 组件——告诉模板编译器直接透传该标签。
+          isCustomElement: (tag) => tag === "feedback-widget",
+        },
+      },
+    }),
     tailwindcss(),
     // Mock 数据：dev 模式下拦截备份/认证接口，无需启动后端服务
     {

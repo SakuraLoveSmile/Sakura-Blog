@@ -148,6 +148,15 @@ function handleSubmit() {
         <div class="feedback-launcher-layout">
           <div class="settings-form-grid settings-form-grid-2 feedback-launcher-fields">
             <div class="settings-field">
+              <label for="settings-feedback-display">显示范围</label>
+              <select id="settings-feedback-display" v-model="data.feedback.display" class="apple-select">
+                <option value="front">仅博客前台</option>
+                <option value="console">仅 Console 后台</option>
+                <option value="both">前台 + Console 都显示</option>
+              </select>
+              <p class="settings-help">前台挂在页面右侧悬浮；选 Console 时入口显示在后台右下角。</p>
+            </div>
+            <div class="settings-field">
               <label for="settings-feedback-launcher-mode">入口形态</label>
               <select id="settings-feedback-launcher-mode" v-model="data.feedback.launcher_mode" class="apple-select">
                 <option value="orb">灵感球（可拖拽指出问题位置）</option>

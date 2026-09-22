@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useModulesStore, type ModuleNav } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
 import { VTag, Dialog } from "@/components/ui";
+import FeedbackLauncher from "@/components/FeedbackLauncher.vue";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
 
@@ -503,6 +504,8 @@ function closeProfileDropdown() {
       :class="sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'"
     >
       <router-view />
+      <!-- Feedback 反馈入口（feedback.display: console|both 时挂载 <feedback-widget>） -->
+      <FeedbackLauncher />
       <!-- 页脚（对齐 Halo：Powered by ...） -->
       <footer
         v-if="showFooter"
