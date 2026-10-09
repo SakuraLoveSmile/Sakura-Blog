@@ -43,6 +43,7 @@ interface CategoryNode {
 }
 
 const props = defineProps<{
+  initialTab?: "outline" | "detail";
   form: PostForm;
   categories: string[];
   categoryTree: CategoryNode[];
@@ -58,7 +59,7 @@ const emit = defineEmits<{
   (e: "update:aiSummary", value: string): void;
 }>();
 
-const activeTab = ref<"outline" | "detail">("outline");
+const activeTab = ref<"outline" | "detail">(props.initialTab || "outline");
 
 // ---------- 作者可选项（Spec 38 Wave 5）：authors 为空 map 时不渲染控件 ----------
 interface AuthorOption {
@@ -539,6 +540,7 @@ const chipActiveCls = "bg-primary/15 text-primary";
             ]"
             :key="tab.key"
             type="button"
+            :aria-pressed="activeTab === tab.key"
             :class="[
               'rounded-md py-1.5 text-[13px] transition-colors',
               activeTab === tab.key
@@ -556,7 +558,9 @@ const chipActiveCls = "bg-primary/15 text-primary";
     <!-- 大纲 -->
     <div v-if="activeTab === 'outline'" :class="cardCls">
       <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-        <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">暂无大纲</p>
+        <p v-if="outline.length === 0" class="py-10 text-center text-sm text-text-quaternary">
+          添加正文标题后，可在这里跳转到对应段落
+        </p>
         <ul v-else class="space-y-0.5">
           <li v-for="(item, i) in outline" :key="i">
             <button

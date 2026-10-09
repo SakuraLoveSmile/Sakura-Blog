@@ -18,8 +18,8 @@ export default definePlugin({
       mobile: true,
       children: [{ path: "/posts/shares", label: "分享链接", icon: "ri:share-forward-line", group: "内容" }],
     },
-    { path: "/topics", label: "专栏", icon: "ri:book-shelf-line", group: "内容", mobile: true },
-    { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容", mobile: true },
+    { path: "/topics", label: "专栏", icon: "ri:book-shelf-line", group: "内容" },
+    { path: "/pages", label: "页面", icon: "ri:pages-line", group: "内容" },
     {
       path: "/wiki",
       label: "文库",

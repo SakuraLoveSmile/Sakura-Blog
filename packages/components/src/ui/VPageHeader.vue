@@ -10,7 +10,7 @@ const props = withDefaults(
     actionsLayout?: "default" | "stack-below-lg";
   }>(),
   {
-    hideOnScroll: true,
+    hideOnScroll: false,
     actionsLayout: "default",
   },
 );

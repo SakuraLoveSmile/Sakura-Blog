@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { useAuthStore } from "@/stores/auth";
 import { useModulesStore, type ModuleNav } from "@/stores/modules";
 import { Icon } from "@iconify/vue";
-import { VTag, Dialog } from "@/components/ui";
+import { VTag, VButton, Dialog } from "@/components/ui";
 import FeedbackLauncher from "@/components/FeedbackLauncher.vue";
 import { searchApi, notificationApi, type SearchResultItem } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -62,6 +62,9 @@ const allNavItems = computed<NavItem[]>(() =>
     .filter((item): item is NavItem => item !== null),
 );
 const navGroups = computed(() => ["", ...new Set(allNavItems.value.map((item) => item.group).filter(Boolean))]);
+const canWritePost = computed(
+  () => auth.hasPermission("content:write") && allNavItems.value.some((item) => item.path === "/posts"),
+);
 const minimenus = computed(() => allNavItems.value.filter((item) => item.mobile));
 
 // 搜索用扁平列表（展开子菜单，保证 ⌘K 仍能搜到分享链接）
@@ -308,7 +311,7 @@ function closeProfileDropdown() {
       style="background: var(--color-sidebar); backdrop-filter: saturate(180%) blur(24px)"
     >
       <!-- Logo -->
-      <div class="flex justify-center pb-7 pt-5">
+      <div class="flex justify-center pb-5 pt-5">
         <a
           href="/"
           target="_blank"
@@ -318,6 +321,19 @@ function closeProfileDropdown() {
           <img src="/favicon.svg" alt="Logo" class="h-8 w-8 cursor-pointer select-none" />
           <span v-if="!sidebarCollapsed" class="text-lg font-bold text-foreground">Console</span>
         </a>
+      </div>
+
+      <div v-if="canWritePost" class="shrink-0 px-3 pb-3">
+        <VButton
+          type="primary"
+          :route="{ path: '/posts/new' }"
+          class="min-h-11 w-full justify-center"
+          :aria-label="sidebarCollapsed ? '开始写作' : undefined"
+          :title="sidebarCollapsed ? '开始写作' : undefined"
+        >
+          <template #icon><Icon icon="ri:quill-pen-line" /></template>
+          <span v-if="!sidebarCollapsed">开始写作</span>
+        </VButton>
       </div>
 
       <div class="flex-1 overflow-y-auto">
@@ -333,7 +349,7 @@ function closeProfileDropdown() {
           >
             <span :class="{ 'mr-3': !sidebarCollapsed }"><Icon icon="ri:search-line" /></span>
             <template v-if="!sidebarCollapsed">
-              <span class="flex-1 select-none text-left text-base font-normal">搜索</span>
+              <span class="flex-1 select-none text-left text-sm font-normal">搜索内容与菜单</span>
               <div class="text-sm">{{ isMac ? "⌘" : "Ctrl" }}+K</div>
             </template>
           </button>
@@ -354,7 +370,6 @@ function closeProfileDropdown() {
                 :class="{ active: isNavActive(item), 'justify-center': sidebarCollapsed }"
                 class="menu-item-title"
                 :title="sidebarCollapsed ? item.label : ''"
-                @click="navigateTo(item.path)"
               >
                 <span class="menu-icon self-center" :class="{ 'mr-3': !sidebarCollapsed }">
                   <Icon :icon="item.icon" width="20" height="20" />
@@ -383,7 +398,6 @@ function closeProfileDropdown() {
                     :to="child.path"
                     :class="{ active: route.path.startsWith(child.path) }"
                     class="menu-subitem"
-                    @click="navigateTo(child.path)"
                   >
                     <span class="menu-icon mr-3 self-center">
                       <Icon :icon="child.icon" width="18" height="18" />
@@ -521,7 +535,7 @@ function closeProfileDropdown() {
     <!-- 移动端底部导航条（对齐 Halo bottom-nav-bar：bg-secondary，按菜单项数动态布局） -->
     <nav
       aria-label="移动端底部导航"
-      class="fixed bottom-0 left-0 right-0 z-40 grid border-t-2 border-black bg-secondary drop-shadow-2xl md:hidden"
+      class="fixed bottom-0 left-0 right-0 z-40 grid border-t border-border bg-card md:hidden"
       :style="{
         gridTemplateColumns: `repeat(${minimenus.length + 1}, minmax(0, 1fr))`,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -531,11 +545,12 @@ function closeProfileDropdown() {
         v-for="menu in minimenus"
         :key="menu.path"
         :to="menu.path"
-        :class="{ 'bg-black': route.path.startsWith(menu.path) }"
+        :class="{ 'bg-primary/10 text-primary': isNavActive(menu) }"
+        :aria-current="isNavActive(menu) ? 'page' : undefined"
         class="nav-item min-w-0"
       >
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
-          <div class="flex h-10 w-10 flex-col items-center justify-center">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-inherit">
+          <div class="flex min-h-12 w-full min-w-0 flex-col items-center justify-center">
             <div class="text-base"><Icon :icon="menu.icon" /></div>
             <div class="mt-0.5 text-xs">{{ menu.label }}</div>
           </div>
@@ -550,8 +565,8 @@ function closeProfileDropdown() {
         class="nav-item min-w-0 bg-transparent border-0 text-inherit focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         @click="openMoreMenu"
       >
-        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-foreground">
-          <div class="flex h-10 w-10 flex-col items-center justify-center">
+        <div class="flex w-full cursor-pointer items-center justify-center p-1 text-inherit">
+          <div class="flex min-h-12 w-full min-w-0 flex-col items-center justify-center">
             <div class="text-base"><Icon icon="ri:more-fill" /></div>
             <div class="mt-0.5 text-xs">更多</div>
           </div>

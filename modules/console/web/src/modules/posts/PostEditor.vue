@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage } from "@/api";
 import { queryKeys } from "@/api/query-client";
@@ -23,8 +23,10 @@ const queryClient = useQueryClient();
 const route = useRoute();
 const router = useRouter();
 
-const isEdit = computed(() => !!route.params.slug);
-const slug = computed(() => route.params.slug as string);
+const persistedSlug = ref((route.params.slug as string) || "");
+const isEdit = computed(() => !!persistedSlug.value);
+const slug = computed(() => persistedSlug.value);
+const draftStorageKey = ref("post:" + (persistedSlug.value || "new"));
 
 const form = ref({
   slug: "",
@@ -49,7 +51,10 @@ const form = ref({
   author: "",
 });
 
+const emptyForm = JSON.stringify(form.value);
 const loading = ref(false);
+let editorSession = 0;
+const editorInstanceKey = ref(0);
 const saving = ref(false);
 const publishing = ref(false);
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
@@ -62,6 +67,7 @@ interface RichEditorExpose {
   openImageUpload: () => void;
   openImagePicker: () => void;
   clearDraft: () => void;
+  flushPendingChanges: () => Promise<void>;
 }
 
 interface CategoryNode {
@@ -109,7 +115,9 @@ function toggleEditorKindMenu() {
   }
 }
 
-function onEditorKindSelect(value: EditorKind) {
+async function onEditorKindSelect(value: EditorKind) {
+  await flushPendingChanges();
+  preserveBodyDraft();
   editorKind.value = value;
   localStorage.setItem(KIND_KEY, value);
   editorKindOpen.value = false;
@@ -160,6 +168,10 @@ function onEditorKindPointerDown(e: PointerEvent) {
 }
 
 function onEditorKindDocumentKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && mobileSidebarOpen.value) {
+    e.preventDefault();
+    closeMobileSidebar();
+  }
   if (e.key === "Escape" && editorKindOpen.value) {
     editorKindOpen.value = false;
     nextTick(() => editorKindTrigger.value?.focus());
@@ -169,6 +181,82 @@ function onEditorKindDocumentKeydown(e: KeyboardEvent) {
 // 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
 const originalStatus = ref("draft");
 const hasDraft = ref(false);
+// 服务器保存基线覆盖完整表单，AI 摘要继续使用独立保存契约。
+type PostForm = typeof form.value;
+const savedSnapshot = ref(JSON.stringify(form.value));
+const baselineReady = ref(!isEdit.value);
+const richPending = ref(false);
+const saveFailed = ref<false | "save" | "publish">(false);
+const savedAt = ref("");
+const busy = computed(() => saving.value || publishing.value);
+const isDirty = computed(
+  () => baselineReady.value && (richPending.value || JSON.stringify(form.value) !== savedSnapshot.value),
+);
+const saveStatus = computed(() => {
+  if (loading.value) return "正在加载文章…";
+  if (!baselineReady.value) return "文章加载失败，请刷新重试";
+  if (publishing.value) return "正在发布…";
+  if (saving.value) return "正在保存…";
+  if (saveFailed.value) return saveFailed.value === "publish" ? "发布失败，修改尚未保存" : "保存失败，修改尚未保存";
+  if (isDirty.value) return "有未保存的修改";
+  if (savedAt.value) return `已保存 ${savedAt.value}${hasDraft.value ? " · 尚未发布" : ""}`;
+  return isEdit.value ? (hasDraft.value ? "草稿已保存 · 尚未发布" : "所有修改已保存") : "新文章尚未保存";
+});
+function snapshotForm(): PostForm {
+  return JSON.parse(JSON.stringify(form.value));
+}
+async function flushPendingChanges() {
+  await richRef.value?.flushPendingChanges();
+  await nextTick();
+}
+// 离开/刷新时同步落正文备份，不依赖编辑器的 2s 防抖。
+function preserveBodyDraft() {
+  if (!isDirty.value) return;
+  try {
+    localStorage.setItem(`draft:${draftStorageKey.value}`, form.value.content_md);
+  } catch {
+    // 存储不可用时仍保留离开确认，不能把本地备份失败当作服务器保存失败。
+  }
+}
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  richRef.value?.flushPendingChanges();
+  if (!isDirty.value && !busy.value) return;
+  preserveBodyDraft();
+  event.preventDefault();
+  event.returnValue = "";
+}
+let leaveConfirmation: Promise<boolean> | null = null;
+async function confirmLeave() {
+  await flushPendingChanges();
+  if (!isDirty.value && !busy.value) return true;
+  preserveBodyDraft();
+  if (leaveConfirmation) return leaveConfirmation;
+  leaveConfirmation = new Promise<boolean>((resolve) => {
+    Dialog.warning({
+      title: busy.value ? "操作尚未完成，确定离开？" : "有未保存的修改，确定离开？",
+      description: "离开后未保存的标题和设置会丢失。请先保存，或继续编辑。",
+      confirmText: "离开页面",
+      cancelText: "继续编辑",
+      confirmType: "danger",
+      onConfirm: () => {
+        resolve(true);
+      },
+      onCancel: () => {
+        resolve(false);
+      },
+    });
+  });
+  try {
+    return await leaveConfirmation;
+  } finally {
+    leaveConfirmation = null;
+  }
+}
+onBeforeRouteLeave(confirmLeave);
+onBeforeRouteUpdate(async (to, from) => {
+  if (to.params.slug === from.params.slug || to.params.slug === persistedSlug.value) return true;
+  return confirmLeave();
+});
 // AI 文章摘要（Spec 53）：独立于主表单保存链路，EditorSidebar 面板与 AiGenerateModal 共用此状态
 const aiSummary = ref("");
 const isPublishedPost = computed(() => isEdit.value && originalStatus.value === "published");
@@ -185,7 +273,8 @@ function onEditorModeSelect(e: Event) {
   const v = (e.target as HTMLSelectElement).value as EditorMode;
   setEditorMode(v);
 }
-function setEditorMode(m: EditorMode) {
+async function setEditorMode(m: EditorMode) {
+  await flushPendingChanges();
   editorMode.value = m;
   editorRef.value?.setMode(m);
 }
@@ -201,7 +290,8 @@ async function handlePreview() {
   if (previewing.value) return;
   previewing.value = true;
   try {
-    const { data } = await previewApi.createPostPreview({ ...form.value });
+    await flushPendingChanges();
+    const { data } = await previewApi.createPostPreview(snapshotForm());
     window.open(`/preview/draft/${data.token}`, "_blank");
   } catch {
   } finally {
@@ -218,9 +308,44 @@ function toggleFullscreen() {
 // 右侧面板开关（批注：设置参数合并成大组件、可从右侧收起），状态持久化
 const SIDEBAR_KEY = "post-editor:sidebar-open";
 const sidebarOpen = ref(localStorage.getItem(SIDEBAR_KEY) !== "0");
+const mobileSidebarOpen = ref(false);
+const isMobile = ref(window.matchMedia("(max-width: 639px)").matches);
+const mobileSidebarRef = ref<HTMLElement | null>(null);
+const mobileSidebarTrigger = ref<HTMLButtonElement | null>(null);
+const mobileSidebarClose = ref<HTMLButtonElement | null>(null);
+const sidebarVisible = computed(() => (isMobile.value ? mobileSidebarOpen.value : sidebarOpen.value));
+function syncMobileViewport() {
+  isMobile.value = window.matchMedia("(max-width: 639px)").matches;
+  if (!isMobile.value) mobileSidebarOpen.value = false;
+}
 function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value;
-  localStorage.setItem(SIDEBAR_KEY, sidebarOpen.value ? "1" : "0");
+  if (isMobile.value) {
+    mobileSidebarOpen.value = !mobileSidebarOpen.value;
+    if (mobileSidebarOpen.value) nextTick(() => mobileSidebarClose.value?.focus());
+  } else {
+    sidebarOpen.value = !sidebarOpen.value;
+    localStorage.setItem(SIDEBAR_KEY, sidebarOpen.value ? "1" : "0");
+  }
+}
+function closeMobileSidebar() {
+  mobileSidebarOpen.value = false;
+  nextTick(() => mobileSidebarTrigger.value?.focus());
+}
+function onMobileSidebarKeydown(event: KeyboardEvent) {
+  if (event.key !== "Tab") return;
+  const elements = mobileSidebarRef.value?.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]',
+  );
+  if (!elements?.length) return;
+  const first = elements[0];
+  const last = elements[elements.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 // Slug 自动生成：新建文章时标题变化自动推导 slug，用户手动编辑后停止覆盖（Spec Task 6）
@@ -466,7 +591,10 @@ async function applyAi(values: Record<string, string>) {
 
 // ---------- 加载 / 保存 / 发布 ----------
 async function loadPost() {
-  const { data } = await postApi.get(slug.value);
+  const session = editorSession;
+  const requestedSlug = slug.value;
+  const { data } = await postApi.get(requestedSlug);
+  if (session !== editorSession || requestedSlug !== slug.value) return false;
   originalStatus.value = data.status;
   hasDraft.value = !!data.has_draft;
   // 有草稿头时优先载入草稿内容（线上内容不受影响）
@@ -501,25 +629,69 @@ async function loadPost() {
         : [],
     author: src.author || (Array.isArray(src.authors) && src.authors[0] ? src.authors[0] : ""),
   };
+  savedSnapshot.value = JSON.stringify(form.value);
+  baselineReady.value = true;
+  saveFailed.value = false;
+  savedAt.value = "";
   aiSummary.value = data.ai_summary || ""; // Spec 53：AI 摘要随文章详情载入
+  return true;
 }
 
+// 同组件路由切换时重新加载目标文章；创建后的地址同步保留当前编辑实例。
+watch(
+  () => route.params.slug,
+  async (value) => {
+    const target = typeof value === "string" ? value : "";
+    if (target === persistedSlug.value) return;
+    editorSession++;
+    editorInstanceKey.value++;
+    const session = editorSession;
+    persistedSlug.value = target;
+    draftStorageKey.value = "post:" + (target || "new");
+    form.value = JSON.parse(emptyForm);
+    slugManuallyEdited.value = false;
+    richPending.value = false;
+    originalStatus.value = "draft";
+    hasDraft.value = false;
+    savedAt.value = "";
+    saveFailed.value = false;
+    aiSummary.value = "";
+    savedSnapshot.value = JSON.stringify(form.value);
+    baselineReady.value = !target;
+    loading.value = false;
+    if (!target) return;
+    loading.value = true;
+    try {
+      await loadPost();
+    } catch {
+    } finally {
+      if (session === editorSession) loading.value = false;
+    }
+  },
+);
+
 onMounted(async () => {
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  window.addEventListener("resize", syncMobileViewport);
   document.addEventListener("pointerdown", onEditorKindPointerDown);
   document.addEventListener("keydown", onEditorKindDocumentKeydown);
   loadTaxonomy();
   editorMode.value = (editorRef.value?.getMode?.() as EditorMode) || "split";
   if (!isEdit.value) return;
+  const session = editorSession;
   loading.value = true;
   try {
     await loadPost();
   } catch {
   } finally {
-    loading.value = false;
+    if (session === editorSession) loading.value = false;
   }
 });
 
 onBeforeUnmount(() => {
+  editorSession++;
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  window.removeEventListener("resize", syncMobileViewport);
   document.removeEventListener("pointerdown", onEditorKindPointerDown);
   document.removeEventListener("keydown", onEditorKindDocumentKeydown);
 });
@@ -527,55 +699,122 @@ onBeforeUnmount(() => {
 // 回滚成功后重新拉取文章内容到编辑器。
 async function handleRestored() {
   try {
-    await loadPost();
-    clearActiveDraft();
+    if (await loadPost()) clearActiveDraft();
   } catch {}
 }
 
-/** 保存：已发布文章 → 存草稿头（线上不变，列表出小绿点）；草稿/新建 → 直接保存为草稿 */
+/** 只把本次提交的快照记为已保存；请求期间的新输入继续保持未保存。 */
+async function acceptSaved(submitted: PostForm, status: string, session: number) {
+  await flushPendingChanges();
+  if (session !== editorSession) return;
+  if (form.value.status === submitted.status) form.value.status = status;
+  savedSnapshot.value = JSON.stringify({ ...submitted, status });
+  savedAt.value = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+  saveFailed.value = false;
+  if (!isDirty.value) {
+    try {
+      clearActiveDraft();
+    } catch {
+      // 本地存储不可用不能把服务器已经成功的保存误报为失败。
+    }
+  } else preserveBodyDraft();
+}
+
+/** 保存：已发布文章存草稿头，线上内容保持不变。 */
+function adoptCreatedSlug(createdSlug: string, submitted: PostForm) {
+  const previousKey = draftStorageKey.value;
+  persistedSlug.value = createdSlug;
+  if (form.value.slug === submitted.slug) form.value.slug = createdSlug;
+  submitted.slug = createdSlug;
+  draftStorageKey.value = `post:${createdSlug}`;
+  try {
+    localStorage.removeItem(`draft:${previousKey}`);
+  } catch {}
+}
+
+function saveSessionIsCurrent(session: number) {
+  // 用户已确认离开时，旧响应不得覆盖新页面输入、清新备份或把用户带回编辑页。
+  if (session === editorSession) return true;
+  queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+  return false;
+}
+
 async function handleSave() {
+  if (busy.value || !baselineReady.value) return;
+  const session = editorSession;
   saving.value = true;
   try {
+    await flushPendingChanges();
+    if (!saveSessionIsCurrent(session)) return;
+    const submitted = snapshotForm();
     if (isPublishedPost.value) {
-      await postApi.saveDraft(slug.value, { ...form.value, status: "published" });
+      await postApi.saveDraft(slug.value, { ...submitted, status: "published" });
+      if (!saveSessionIsCurrent(session)) return;
       hasDraft.value = true;
-      clearActiveDraft();
+      await acceptSaved(submitted, "published", session);
       Toast.success("内容已保存，但还未发布");
-    } else if (isEdit.value) {
-      await postApi.update(slug.value, { ...form.value, status: "draft" });
-      clearActiveDraft();
-      Toast.success("保存成功");
     } else {
-      const { data } = await postApi.create({ ...form.value, status: "draft" });
-      clearActiveDraft();
+      if (isEdit.value) {
+        await postApi.update(slug.value, { ...submitted, status: "draft" });
+        if (!saveSessionIsCurrent(session)) return;
+      } else {
+        const { data } = await postApi.create({ ...submitted, status: "draft" });
+        if (!saveSessionIsCurrent(session)) return;
+        await flushPendingChanges();
+        if (!saveSessionIsCurrent(session)) return;
+        adoptCreatedSlug(data.slug, submitted);
+        originalStatus.value = "draft";
+      }
+      await acceptSaved(submitted, "draft", session);
       Toast.success("保存成功");
-      // 转入编辑模式，后续保存走更新
-      router.replace(`/posts/edit/${data.slug}`);
-      originalStatus.value = "draft";
     }
-    // Spec 62：保存后失效文章列表缓存（返回列表时草稿小绿点/标题即时反映，不等 staleTime）
     queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
+    // 创建期间若继续写作，留在原编辑实例；下一次保存后再同步地址。
+    if (!isDirty.value && !route.params.slug) {
+      saving.value = false;
+      await router.replace(`/posts/edit/${slug.value}`);
+    }
   } catch {
+    if (!saveSessionIsCurrent(session)) return;
+    saveFailed.value = "save";
+    preserveBodyDraft();
   } finally {
     saving.value = false;
   }
 }
 
-/** 发布：应用草稿头并上线（新建/草稿文章直接以发布状态保存） */
+/** 发布本次快照；请求期间继续编辑时保留编辑页和新修改。 */
 async function handlePublish() {
+  if (busy.value || !baselineReady.value) return;
+  const session = editorSession;
   publishing.value = true;
   try {
+    await flushPendingChanges();
+    if (!saveSessionIsCurrent(session)) return;
+    const submitted = snapshotForm();
     if (isEdit.value) {
-      await postApi.publish(slug.value, form.value);
+      await postApi.publish(slug.value, submitted);
+      if (!saveSessionIsCurrent(session)) return;
     } else {
-      await postApi.create({ ...form.value, status: "published" });
+      const { data } = await postApi.create({ ...submitted, status: "published" });
+      if (!saveSessionIsCurrent(session)) return;
+      await flushPendingChanges();
+      if (!saveSessionIsCurrent(session)) return;
+      adoptCreatedSlug(data.slug, submitted);
     }
-    clearActiveDraft();
-    Toast.success("发布成功");
-    // Spec 62：发布后失效文章列表缓存，列表页立即显示新状态
+    originalStatus.value = "published";
+    hasDraft.value = false;
+    await acceptSaved(submitted, "published", session);
+    Toast.success(isDirty.value ? "本次内容已发布，后续修改尚未保存" : "发布成功");
     queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
-    router.push("/posts");
+    if (!isDirty.value) {
+      publishing.value = false;
+      await router.push("/posts");
+    }
   } catch {
+    if (!saveSessionIsCurrent(session)) return;
+    saveFailed.value = "publish";
+    preserveBodyDraft();
   } finally {
     publishing.value = false;
   }
@@ -583,18 +822,27 @@ async function handlePublish() {
 
 /** 放弃草稿头，回到线上内容 */
 function handleDiscardDraft() {
+  if (busy.value) return;
   Dialog.warning({
     title: "确定要放弃未发布的草稿吗？",
     description: "将丢弃已保存的草稿内容，恢复为线上发布版本",
     confirmType: "danger",
     onConfirm: async () => {
+      if (busy.value) return;
+      saving.value = true;
+      const session = editorSession;
       try {
         await postApi.discardDraft(slug.value);
+        if (!saveSessionIsCurrent(session)) return;
         hasDraft.value = false;
-        await loadPost();
-        clearActiveDraft();
-        Toast.success("已放弃草稿");
-      } catch {}
+        if (await loadPost()) {
+          clearActiveDraft();
+          Toast.success("已放弃草稿");
+        }
+      } catch {
+      } finally {
+        saving.value = false;
+      }
     },
   });
 }
@@ -615,7 +863,8 @@ function handleDiscardDraft() {
       <button
         type="button"
         title="返回"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
+        aria-label="返回文章列表"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-secondary hover:text-foreground"
         @click="router.push('/posts')"
       >
         <Icon icon="ri:arrow-left-s-line" class="text-2xl" />
@@ -625,8 +874,82 @@ function handleDiscardDraft() {
       </h1>
       <div class="flex-1"></div>
       <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <!-- Markdown 模式下的视图三态切换（与工具栏同步，桌面端显示） -->
+        <div
+          v-if="editorKind === 'markdown'"
+          class="editor-select-control relative hidden min-w-[132px] items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary sm:flex"
+        >
+          <select
+            :value="editorMode"
+            @change="onEditorModeSelect"
+            class="editor-select cursor-pointer select-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
+            title="切换视图模式"
+          >
+            <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
+          </select>
+          <Icon
+            icon="ri:arrow-down-s-line"
+            class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
+          />
+        </div>
+        <!-- 预览（移动端仅图标） -->
+        <VButton
+          type="ghost"
+          size="md"
+          :disabled="previewing || !baselineReady"
+          aria-label="预览文章"
+          @click="handlePreview"
+        >
+          <template #icon>
+            <Icon icon="ri:eye-line" class="text-base sm:text-[15px]" />
+          </template>
+          <span class="hidden sm:inline">预览</span>
+        </VButton>
+        <!-- 保存草稿（移动端仅图标） -->
+        <VButton
+          type="secondary"
+          size="md"
+          :disabled="busy || !baselineReady"
+          :loading="saving"
+          @click="handleSave"
+          aria-label="保存草稿"
+          :title="saving ? '保存中…' : '保存草稿'"
+        >
+          <template #icon>
+            <Icon icon="ri:save-line" class="text-base sm:text-[15px]" />
+          </template>
+          <span class="hidden sm:inline">{{ saving ? "保存中…" : "保存草稿" }}</span>
+        </VButton>
+        <!-- 发布（primary，移动端保持文字但更紧凑） -->
+        <VButton
+          type="primary"
+          size="md"
+          :disabled="busy || !baselineReady"
+          :loading="publishing"
+          @click="handlePublish"
+        >
+          <template #icon>
+            <Icon icon="ri:send-plane-fill" class="text-sm sm:text-[15px]" />
+          </template>
+          <span>{{ publishing ? "发布中…" : "发布" }}</span>
+        </VButton>
+      </div>
+    </header>
+
+    <div
+      class="editor-status-bar flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 sm:px-7"
+    >
+      <p
+        role="status"
+        aria-live="polite"
+        class="text-xs text-text-secondary"
+        :class="{ 'text-state-warning': isDirty || saveFailed }"
+      >
+        {{ saveStatus }}
+      </p>
+      <div class="flex items-center gap-2">
         <!-- 编辑器选择（富文本/Markdown） -->
-        <div class="editor-kind-picker relative hidden sm:block">
+        <div class="editor-kind-picker relative">
           <button
             ref="editorKindTrigger"
             type="button"
@@ -687,65 +1010,18 @@ function handleDiscardDraft() {
             </div>
           </Transition>
         </div>
-        <!-- Markdown 模式下的视图三态切换（与工具栏同步，桌面端显示） -->
-        <div
-          v-if="editorKind === 'markdown'"
-          class="editor-select-control relative hidden min-w-[132px] items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm text-text-secondary sm:flex"
+        <button
+          ref="mobileSidebarTrigger"
+          type="button"
+          class="flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-text-secondary hover:bg-secondary sm:hidden"
+          :aria-expanded="mobileSidebarOpen"
+          aria-controls="post-settings-drawer"
+          @click="toggleSidebar"
         >
-          <select
-            :value="editorMode"
-            @change="onEditorModeSelect"
-            class="editor-select cursor-pointer select-none whitespace-nowrap border-0 bg-transparent pr-4 outline-none"
-            title="切换视图模式"
-          >
-            <option v-for="m in editorModeItems" :key="m.value" :value="m.value">{{ m.label }}</option>
-          </select>
-          <Icon
-            icon="ri:arrow-down-s-line"
-            class="pointer-events-none absolute right-1.5 text-base text-text-quaternary"
-          />
-        </div>
-        <!-- 预览（移动端仅图标） -->
-        <VButton
-          type="ghost"
-          size="md"
-          :disabled="previewing"
-          @click="handlePreview"
-        >
-          <template #icon>
-            <Icon icon="ri:eye-line" class="text-base sm:text-[15px]" />
-          </template>
-          <span class="hidden sm:inline">预览</span>
-        </VButton>
-        <!-- 保存草稿（移动端仅图标） -->
-        <VButton
-          type="secondary"
-          size="md"
-          :disabled="saving"
-          :loading="saving"
-          @click="handleSave"
-          :title="saving ? '保存中…' : '保存草稿'"
-        >
-          <template #icon>
-            <Icon icon="ri:save-line" class="text-base sm:text-[15px]" />
-          </template>
-          <span class="hidden sm:inline">{{ saving ? "保存中…" : "保存草稿" }}</span>
-        </VButton>
-        <!-- 发布（primary，移动端保持文字但更紧凑） -->
-        <VButton
-          type="primary"
-          size="md"
-          :disabled="publishing"
-          :loading="publishing"
-          @click="handlePublish"
-        >
-          <template #icon>
-            <Icon icon="ri:send-plane-fill" class="text-sm sm:text-[15px]" />
-          </template>
-          <span>{{ publishing ? "发布中…" : "发布" }}</span>
-        </VButton>
+          <Icon icon="ri:settings-3-line" />文章设置
+        </button>
       </div>
-    </header>
+    </div>
 
     <!-- 草稿头条幅：令牌化绿色提示条 -->
     <div
@@ -766,6 +1042,7 @@ function handleDiscardDraft() {
       </span>
       <button
         class="shrink-0 text-xs underline opacity-80 transition-opacity hover:opacity-100"
+        :disabled="busy"
         @click="handleDiscardDraft"
       >
         放弃草稿
@@ -780,8 +1057,11 @@ function handleDiscardDraft() {
         <div
           class="rounded-t-xl border border-b-0 border-border bg-card px-5 pb-4 pt-5 sm:rounded-t-[14px] sm:px-9 sm:pb-5 sm:pt-7"
         >
+          <label for="post-title" class="sr-only">文章标题</label>
           <input
+            id="post-title"
             v-model="form.title"
+            :disabled="!baselineReady"
             placeholder="文章标题"
             class="w-full border-0 bg-transparent text-2xl font-bold leading-tight tracking-tight text-foreground outline-none placeholder:text-text-quaternary placeholder:font-semibold sm:text-[28px]"
           />
@@ -792,7 +1072,7 @@ function handleDiscardDraft() {
           <EditorToolbar
             :kind="editorKind"
             :mode="editorMode"
-            :sidebar-open="sidebarOpen"
+            :sidebar-open="sidebarVisible"
             :is-edit="isEdit"
             :fullscreen="fullscreen"
             :active-states="toolbarActive"
@@ -814,18 +1094,23 @@ function handleDiscardDraft() {
         <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
           <RichTextEditor
             v-if="editorKind === 'rich'"
+            :key="'rich:' + editorInstanceKey"
             ref="richRef"
             v-model="form.content_md"
-            :storage-key="'post:' + (slug || 'new')"
+            :storage-key="draftStorageKey"
+            :follow-storage-key="true"
             class="!border-0"
             @save="handleSave"
+            @pending-change="richPending = $event"
           />
           <MarkdownEditor
             v-else
+            :key="'markdown:' + editorInstanceKey"
             ref="editorRef"
             v-model="form.content_md"
             :toolbar="false"
-            :storage-key="'post:' + (slug || 'new')"
+            :storage-key="draftStorageKey"
+            :follow-storage-key="true"
             class="!border-0"
             @save="handleSave"
             @mode-change="(m: any) => (editorMode = m)"
@@ -857,10 +1142,17 @@ function handleDiscardDraft() {
     <!-- 移动端：底部抽屉式侧边栏 -->
     <Transition name="drawer">
       <div
-        v-if="sidebarOpen"
-        class="sidebar-mobile fixed inset-x-0 bottom-0 z-[80] sm:hidden"
+        v-if="mobileSidebarOpen"
+        id="post-settings-drawer"
+        ref="mobileSidebarRef"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="post-settings-title"
+        @keydown="onMobileSidebarKeydown"
+        class="sidebar-mobile fixed inset-x-0 z-[80] sm:hidden"
         style="
-          max-height: 85vh;
+          bottom: calc(64px + env(safe-area-inset-bottom));
+          max-height: calc(85dvh - 64px - env(safe-area-inset-bottom));
           background: var(--color-card);
           border-top: 1px solid var(--color-border);
           border-top-left-radius: var(--radius-lg);
@@ -868,11 +1160,21 @@ function handleDiscardDraft() {
           box-shadow: var(--shadow-xl);
         "
       >
-        <div class="flex justify-center pt-2 pb-1">
-          <div class="h-1 w-10 rounded-full bg-border"></div>
+        <div class="flex items-center justify-between border-b border-border px-4 py-2">
+          <h2 id="post-settings-title" class="text-sm font-semibold text-foreground">文章设置</h2>
+          <button
+            ref="mobileSidebarClose"
+            type="button"
+            aria-label="关闭文章设置"
+            class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary hover:bg-secondary"
+            @click="closeMobileSidebar"
+          >
+            <Icon icon="ri:close-line" class="text-xl" />
+          </button>
         </div>
-        <div class="overflow-y-auto" style="max-height: calc(85vh - 24px)">
+        <div class="overflow-y-auto" style="max-height: calc(85dvh - 128px - env(safe-area-inset-bottom))">
           <EditorSidebar
+            initial-tab="detail"
             :form="form"
             :categories="categories"
             :category-tree="categoryTree"
@@ -889,7 +1191,11 @@ function handleDiscardDraft() {
     </Transition>
     <!-- 移动端抽屉遮罩 -->
     <Transition name="fade">
-      <div v-if="sidebarOpen" class="fixed inset-0 z-[70] bg-background/40 sm:hidden" @click="toggleSidebar"></div>
+      <div
+        v-if="mobileSidebarOpen"
+        class="fixed inset-0 z-[70] bg-background/40 sm:hidden"
+        @click="closeMobileSidebar"
+      ></div>
     </Transition>
 
     <AttachmentPickerModal
@@ -932,7 +1238,7 @@ function handleDiscardDraft() {
 .editor-kind-trigger {
   display: inline-flex;
   min-width: 176px;
-  min-height: 36px;
+  min-height: 44px;
   align-items: center;
   gap: 7px;
   padding: 4px 8px;
@@ -1147,6 +1453,23 @@ function handleDiscardDraft() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 手机保存/预览操作保持足够触控区域，状态与模式选择独立于操作栏。 */
+@media (max-width: 639px) {
+  .editor-header :deep(.btn) {
+    min-height: 44px;
+    min-width: 44px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .editor-status-bar > p {
+    flex: 1 0 100%;
+  }
+  .editor-status-bar > div {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 /* ===== 移动端 Markdown 编辑器上下分屏 ===== */

@@ -55,7 +55,9 @@ const selectedStatus = ref<string | undefined>(statusFromQuery());
 const selectedSort = ref<string>("newest");
 const selectedCategory = ref<string | undefined>(categoryFromQuery());
 const selectedTag = ref<string | undefined>(undefined);
-const viewMode = ref<"grid" | "table">("grid");
+const VIEW_KEY = "console:posts-view";
+const viewMode = ref<"grid" | "table">(localStorage.getItem(VIEW_KEY) === "table" ? "table" : "grid");
+watch(viewMode, (value) => localStorage.setItem(VIEW_KEY, value));
 
 const {
   page,
@@ -64,6 +66,7 @@ const {
   items: rawItems,
   total,
   isLoading,
+  isError,
   refetch,
 } = usePagedList<PostItem>({
   apiFn: (params: Record<string, unknown>) => postApi.list(params),
@@ -82,7 +85,7 @@ watch(
   () => route.query.status,
   () => {
     const s = statusFromQuery();
-    if (s && s !== selectedStatus.value) {
+    if (s !== selectedStatus.value) {
       selectedStatus.value = s;
       page.value = 1;
     }
@@ -99,6 +102,25 @@ watch(
     }
   },
 );
+
+// URL 是状态筛选的真值，返回文章列表和浏览器前进后退保持一致。
+function selectStatus(status: string | undefined) {
+  router.push({ query: { ...route.query, status } });
+}
+const hasFilters = computed(
+  () => !!(keyword.value || selectedStatus.value || selectedCategory.value || selectedTag.value),
+);
+function clearFilters() {
+  keyword.value = "";
+  selectedTag.value = undefined;
+  selectedCategory.value = undefined;
+  selectedStatus.value = undefined;
+  page.value = 1;
+  router.replace({ query: { ...route.query, status: undefined, category: undefined } });
+}
+watch([selectedCategory, selectedTag], () => {
+  page.value = 1;
+});
 
 // 分类与标签选项
 const categories = ref<string[]>([]);
@@ -333,7 +355,7 @@ function handleTitleLeave(e: MouseEvent) {
 <template>
   <div class="min-h-full">
     <!-- 统一 Page Header -->
-    <VPageHeader title="文章管理" :hide-on-scroll="true" actions-layout="stack-below-lg">
+    <VPageHeader title="文章管理" :hide-on-scroll="false" actions-layout="stack-below-lg">
       <template #icon>
         <Icon icon="ri:article-line" class="text-primary" />
       </template>
@@ -342,8 +364,14 @@ function handleTitleLeave(e: MouseEvent) {
         <div class="flex w-full flex-col gap-2.5 lg:w-auto lg:flex-row lg:items-center">
           <div class="apple-search w-full lg:min-w-[200px] lg:max-w-[280px]">
             <Icon icon="ri:search-line" class="text-text-quaternary" />
-            <input v-model="keyword" placeholder="搜索文章标题或 Slug..." />
-            <button v-if="keyword" type="button" class="text-text-quaternary hover:text-foreground" @click="keyword = ''">
+            <input v-model="keyword" aria-label="搜索文章" placeholder="搜索文章标题或 Slug..." />
+            <button
+              v-if="keyword"
+              type="button"
+              aria-label="清除搜索"
+              class="text-text-quaternary hover:text-foreground"
+              @click="keyword = ''"
+            >
               <Icon icon="ri:close-line" />
             </button>
           </div>
@@ -367,30 +395,30 @@ function handleTitleLeave(e: MouseEvent) {
       <!-- 概览数据指标卡 -->
       <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <ConsoleStatsCard
-          label="全部文章"
+          label="匹配文章"
           :value="stats.total"
-          sub="篇博文"
+          sub="当前筛选下的总数"
           icon="ri:article-line"
           color="primary"
         />
         <ConsoleStatsCard
-          label="已公开发布"
+          label="本页已发布"
           :value="stats.pubCount"
           sub="篇在线查阅"
           icon="ri:checkbox-circle-line"
           color="success"
-          value-class="text-[#30D158]"
+          value-class="text-state-success"
         />
         <ConsoleStatsCard
-          label="草稿箱"
+          label="本页草稿"
           :value="stats.draftCount"
           sub="篇未发布"
           icon="ri:draft-line"
           color="warning"
-          value-class="text-[#FF9500]"
+          value-class="text-state-warning"
         />
         <ConsoleStatsCard
-          label="置顶推荐"
+          label="本页置顶"
           :value="stats.pinCount"
           sub="篇精选置顶"
           icon="ri:pushpin-line"
@@ -401,44 +429,36 @@ function handleTitleLeave(e: MouseEvent) {
       <!-- 工具栏：状态分段 + 筛选 + 视图模式 -->
       <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3">
         <!-- 状态分段 -->
-        <div class="apple-segmented">
+        <div class="apple-segmented" role="group" aria-label="文章状态">
           <button
             type="button"
             :class="{ active: selectedStatus === undefined }"
-            @click="
-              selectedStatus = undefined;
-              page = 1;
-            "
+            @click="selectStatus(undefined)"
+            :aria-pressed="selectedStatus === undefined"
           >
             全部
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'published' }"
-            @click="
-              selectedStatus = 'published';
-              page = 1;
-            "
+            @click="selectStatus('published')"
+            :aria-pressed="selectedStatus === 'published'"
           >
             已发布
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'draft' }"
-            @click="
-              selectedStatus = 'draft';
-              page = 1;
-            "
+            @click="selectStatus('draft')"
+            :aria-pressed="selectedStatus === 'draft'"
           >
             草稿
           </button>
           <button
             type="button"
             :class="{ active: selectedStatus === 'trashed' }"
-            @click="
-              selectedStatus = 'trashed';
-              page = 1;
-            "
+            @click="selectStatus('trashed')"
+            :aria-pressed="selectedStatus === 'trashed'"
           >
             回收站
           </button>
@@ -447,22 +467,22 @@ function handleTitleLeave(e: MouseEvent) {
         <!-- 筛选器与视图 -->
         <div class="flex flex-wrap items-center gap-2">
           <!-- 分类下拉 -->
-          <select v-model="selectedCategory" class="apple-select text-xs h-8">
+          <select v-model="selectedCategory" aria-label="分类筛选" class="apple-select text-xs h-8">
             <option :value="undefined">全部分类</option>
             <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
           </select>
 
           <!-- 标签下拉 -->
-          <select v-model="selectedTag" class="apple-select text-xs h-8">
+          <select v-model="selectedTag" aria-label="标签筛选" class="apple-select text-xs h-8">
             <option :value="undefined">全部标签</option>
             <option v-for="t in tags" :key="t" :value="t">{{ t }}</option>
           </select>
 
           <!-- 排序 -->
-          <select v-model="selectedSort" class="apple-select text-xs h-8">
-            <option value="newest">最近创建</option>
-            <option value="updated">最近更新</option>
-            <option value="oldest">最早创建</option>
+          <select v-model="selectedSort" aria-label="本页排序" class="apple-select text-xs h-8">
+            <option value="newest">本页 · 最近创建</option>
+            <option value="updated">本页 · 最近更新</option>
+            <option value="oldest">本页 · 最早创建</option>
           </select>
 
           <button
@@ -479,6 +499,8 @@ function handleTitleLeave(e: MouseEvent) {
               type="button"
               :class="{ active: viewMode === 'grid' }"
               title="海报卡片视图"
+              aria-label="海报卡片视图"
+              :aria-pressed="viewMode === 'grid'"
               @click="viewMode = 'grid'"
             >
               <Icon icon="ri:layout-grid-line" />
@@ -487,6 +509,8 @@ function handleTitleLeave(e: MouseEvent) {
               type="button"
               :class="{ active: viewMode === 'table' }"
               title="表格视图"
+              aria-label="表格视图"
+              :aria-pressed="viewMode === 'table'"
               @click="viewMode = 'table'"
             >
               <Icon icon="ri:table-line" />
@@ -495,13 +519,30 @@ function handleTitleLeave(e: MouseEvent) {
         </div>
       </div>
 
+      <div
+        v-if="hasFilters"
+        class="flex flex-wrap items-center justify-between gap-2 text-sm text-text-tertiary"
+        aria-live="polite"
+      >
+        <span>已筛选 · {{ total }} 篇文章</span>
+        <VButton size="sm" @click="clearFilters">清除筛选</VButton>
+      </div>
+
       <VLoading v-if="isLoading" />
+      <VEmpty v-else-if="isError" title="文章加载失败" message="请稍后重试，已有文章不会受影响。">
+        <template #actions><VButton @click="refetch()">重新加载</VButton></template>
+      </VEmpty>
 
       <VEmpty
         v-else-if="posts.length === 0"
-        :title="keyword ? '未找到匹配的文章' : '暂无对应文章'"
-        :message="keyword ? '换个搜索关键词试试' : '点击右上角「撰写文章」创作你的第一篇博文'"
-      />
+        :title="hasFilters ? '未找到匹配的文章' : '开始你的第一篇文章'"
+        :message="hasFilters ? '可以调整筛选条件，或清除筛选查看全部文章。' : '记录一个想法，从草稿开始慢慢写。'"
+      >
+        <template #actions>
+          <VButton v-if="hasFilters" @click="clearFilters">清除筛选</VButton>
+          <VButton v-else type="primary" :route="{ path: '/posts/new' }">创建第一篇文章</VButton>
+        </template>
+      </VEmpty>
 
       <!-- ============ 模式 1：海报卡片网格 ============ -->
       <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -524,7 +565,10 @@ function handleTitleLeave(e: MouseEvent) {
               decoding="async"
               class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             />
-            <div v-else class="post-card-placeholder flex h-full w-full items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105">
+            <div
+              v-else
+              class="post-card-placeholder flex h-full w-full items-center justify-center transition-transform duration-500 ease-out group-hover:scale-105"
+            >
               <Icon icon="ri:article-line" />
             </div>
 
@@ -546,7 +590,9 @@ function handleTitleLeave(e: MouseEvent) {
                     v-if="!selectedSlugs.has(p.slug)"
                     class="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/60 shadow-sm transition-colors duration-200 group-hover/cb:border-white/70 group-hover/cb:bg-black/80"
                   >
-                    <div class="h-1.5 w-1.5 rounded-full bg-white/0 transition-colors duration-200 group-hover/cb:bg-white/50"></div>
+                    <div
+                      class="h-1.5 w-1.5 rounded-full bg-white/0 transition-colors duration-200 group-hover/cb:bg-white/50"
+                    ></div>
                   </div>
                   <!-- 已选中：Apple 蓝实心底板 + 锐利白色勾选 -->
                   <div
@@ -567,7 +613,10 @@ function handleTitleLeave(e: MouseEvent) {
               <span
                 class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 px-2.5 py-0.5 text-[11px] font-medium text-white/90 shadow-sm"
               >
-                <span class="h-1.5 w-1.5 rounded-full shadow-[0_0_6px_currentColor]" :class="statusBadge(p.status).dotCls"></span>
+                <span
+                  class="h-1.5 w-1.5 rounded-full shadow-[0_0_6px_currentColor]"
+                  :class="statusBadge(p.status).dotCls"
+                ></span>
                 {{ statusBadge(p.status).label }}
               </span>
             </div>
@@ -582,7 +631,10 @@ function handleTitleLeave(e: MouseEvent) {
                   v-if="p.category"
                   class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-white/5 bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:bg-white/[0.12] hover:text-foreground active:scale-95"
                   :title="`按分类「${p.category}」筛选`"
-                  @click.stop="selectedCategory = p.category; page = 1"
+                  @click.stop="
+                    selectedCategory = p.category;
+                    page = 1;
+                  "
                 >
                   <Icon icon="ri:folder-3-line" class="text-xs text-text-tertiary" />
                   {{ p.category }}
@@ -592,7 +644,10 @@ function handleTitleLeave(e: MouseEvent) {
                   :key="t"
                   class="inline-flex cursor-pointer items-center rounded-md border border-white/5 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-text-tertiary transition-colors hover:border-primary/40 hover:bg-white/[0.1] hover:text-foreground active:scale-95"
                   :title="`按标签「#${t}」筛选`"
-                  @click.stop="selectedTag = t; page = 1"
+                  @click.stop="
+                    selectedTag = t;
+                    page = 1;
+                  "
                 >
                   #{{ t }}
                 </span>
@@ -613,7 +668,9 @@ function handleTitleLeave(e: MouseEvent) {
                 @click="router.push(`/posts/edit/${p.slug}`)"
               >
                 <div class="post-title-scroll">
-                  <h3 class="post-title-inner text-[15px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+                  <h3
+                    class="post-title-inner text-[15px] font-semibold leading-snug text-foreground transition-colors group-hover:text-primary"
+                  >
                     {{ p.title }}
                   </h3>
                 </div>
@@ -919,7 +976,9 @@ function handleTitleLeave(e: MouseEvent) {
 
 .post-card.is-selected {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary), 0 0 24px rgba(46, 141, 255, 0.18);
+  box-shadow:
+    0 0 0 1px var(--color-primary),
+    0 0 24px rgba(46, 141, 255, 0.18);
   background: color-mix(in srgb, var(--color-primary) 4%, var(--color-card));
 }
 
@@ -1018,10 +1077,10 @@ function handleTitleLeave(e: MouseEvent) {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-	transition:
-		background-color var(--duration-fast) var(--ease-standard),
-		border-color var(--duration-fast) var(--ease-standard),
-		color var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {

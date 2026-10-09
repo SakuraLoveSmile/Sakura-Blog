@@ -1,0 +1,35 @@
+{
+  "service": "http://127.0.0.1:8097",
+  "assets": [
+    {
+      "url": "/console/assets/index-CbJ2zDOq.js",
+      "sha256": "a69b0faf246a144784201863b66d60d5c7d792ab1e2e3e29b94a0d02f6925b0b",
+      "matches_dist": true
+    },
+    {
+      "url": "/console/assets/api-CSob9UHt.js",
+      "sha256": "7d22280785407e325a86ef0eda2833203dd4e27d32fc8fbbb7c3df4e741f118a",
+      "matches_dist": true
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+      "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+      "matches_dist": true
+    },
+    {
+      "url": "/console/assets/pinia-BDaR9qFm.js",
+      "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+      "matches_dist": true
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "matches_dist": true
+    },
+    {
+      "url": "/console/assets/index-D15xOH8t.css",
+      "sha256": "2f061bc87aab1e4920711f0be5d03aace3e3f8ad475afd2aa9d09a2de812f0cc",
+      "matches_dist": true
+    }
+  ]
+}

@@ -13,6 +13,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: string;
     storageKey?: string;
+    followStorageKey?: boolean;
     toolbar?: boolean;
   }>(),
   { storageKey: undefined, toolbar: true },
@@ -40,7 +41,7 @@ const uploadError = ref("");
 
 // 本地草稿保护（与 RichTextEditor 共用同一 storageKey 草稿）
 const { draftBanner, scheduleDraft, clearDraft, restoreDraft, discardDraft, checkDraft } = useLocalDraft({
-  storageKey: props.storageKey,
+  storageKey: props.followStorageKey ? () => props.storageKey : props.storageKey,
   getValue: () => props.modelValue,
   setValue: (v) => emit("update:modelValue", v),
 });

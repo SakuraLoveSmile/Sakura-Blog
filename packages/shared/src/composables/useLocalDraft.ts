@@ -5,7 +5,7 @@ import { ref, onBeforeUnmount, getCurrentInstance } from "vue";
 // 草稿检测由调用方通过 checkDraft() 主动触发（而非内部 onMounted），
 // 以便富文本编辑器在 onCreate 固化 round-trip 基线后再检测，避免幻影草稿误弹条幅。
 export function useLocalDraft(options: {
-  storageKey?: string;
+  storageKey?: string | (() => string | undefined);
   getValue: () => string;
   setValue: (v: string) => void;
   /** 编辑器规范化基线：草稿等于基线视为无意义（如富文本 round-trip 重排产生的幻影草稿），不弹条幅 */
@@ -14,7 +14,10 @@ export function useLocalDraft(options: {
   const draftBanner = ref(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  const draftKey = () => (options.storageKey ? `draft:${options.storageKey}` : "");
+  const draftKey = () => {
+    const key = typeof options.storageKey === "function" ? options.storageKey() : options.storageKey;
+    return key ? `draft:${key}` : "";
+  };
 
   /** 防抖 2s 落 localStorage */
   function scheduleDraft() {
@@ -22,11 +25,13 @@ export function useLocalDraft(options: {
     if (!key) return;
     clearTimeout(timer);
     timer = setTimeout(() => {
-      localStorage.setItem(key, options.getValue());
+      const currentKey = draftKey();
+      if (currentKey) localStorage.setItem(currentKey, options.getValue());
     }, 2000);
   }
 
   function clearDraft() {
+    draftBanner.value = false;
     clearTimeout(timer);
     const key = draftKey();
     if (key) localStorage.removeItem(key);
