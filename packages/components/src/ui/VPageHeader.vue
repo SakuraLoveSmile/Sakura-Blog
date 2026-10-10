@@ -68,7 +68,7 @@ onUnmounted(() => {
 <template>
   <header
     ref="headerEl"
-    class="sticky top-0 z-20 flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 backdrop-blur-2xl transition-all sm:px-6 sm:py-4 md:px-8"
+    class="sticky top-0 z-20 flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 transition-transform duration-200 sm:px-6 sm:py-4 md:px-8"
     :class="{
       'page-header-scroll-aware': hideOnScroll,
       'page-header-scroll-hidden': hideOnScroll && hidden,
@@ -77,9 +77,9 @@ onUnmounted(() => {
     :aria-hidden="hideOnScroll && hidden ? 'true' : undefined"
     :inert="hideOnScroll && hidden"
     style="
-      background: color-mix(in srgb, #000 82%, transparent);
+      background: var(--color-background);
       border-bottom: 1px solid var(--color-border);
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.35);
+      
     "
   >
     <div

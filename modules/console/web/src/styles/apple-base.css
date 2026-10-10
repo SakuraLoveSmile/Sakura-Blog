@@ -51,16 +51,7 @@ select {
   box-shadow: var(--shadow-xs);
   transition: border-color var(--duration-fast) var(--ease-standard);
 }
-.stats-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
-  pointer-events: none;
-}
+/* stats-card highlight removed */
 .stats-icon {
   display: flex;
   align-items: center;
@@ -75,7 +66,7 @@ select {
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
+  
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -111,46 +102,37 @@ select {
 .apple-card-highlight {
   position: relative;
 }
-.apple-card-highlight::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-  pointer-events: none;
-}
+/* apple-card-highlight removed */
 
 /* 渐变头像（brand 蓝族单色系——设计库「单页主色 ≤ 2、冷暖不混」约束） */
 .avatar-gradient-1 {
-  background: linear-gradient(135deg, #66abff, #2e8dff);
+  background: #2e8dff;
 }
 .avatar-gradient-2 {
-  background: linear-gradient(135deg, #2e8dff, #007aff);
+  background: #007aff;
 }
 .avatar-gradient-3 {
-  background: linear-gradient(135deg, #9fcbff, #2e8dff);
+  background: #66abff;
 }
 .avatar-gradient-4 {
-  background: linear-gradient(135deg, #007aff, #0064d6);
+  background: #0064d6;
 }
 .avatar-gradient-5 {
-  background: linear-gradient(135deg, #66abff, #007aff);
+  background: #004fad;
 }
 .avatar-gradient-6 {
-  background: linear-gradient(135deg, #2e8dff, #004fad);
+  background: #2e8dff;
 }
 .avatar-gradient-7 {
-  background: linear-gradient(135deg, #9fcbff, #66abff);
+  background: #66abff;
 }
 .avatar-gradient-8 {
-  background: linear-gradient(135deg, #007aff, #004fad);
+  background: #007aff;
 }
 
 /* 封面预览渐变（brand 蓝族单色系） */
 .cover-preview-blue {
-  background: linear-gradient(135deg, #66abff, #007aff);
+  background: #007aff;
 }
 
 /* 胶囊分段控件（设计稿通用 segmented control） */
@@ -167,7 +149,7 @@ select {
   font-weight: 500;
   color: var(--color-text-tertiary);
   border-radius: var(--radius-full);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
   outline: none;
 }
@@ -213,7 +195,6 @@ select {
 }
 .apple-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 15%, transparent);
 }
 .apple-textarea {
   width: 100%;
@@ -233,7 +214,6 @@ select {
 }
 .apple-textarea:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 15%, transparent);
 }
 .apple-textarea.code-style {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
@@ -241,7 +221,7 @@ select {
   line-height: 1.6;
   background: #0f0f10;
   border-color: var(--color-border-strong, var(--color-border));
-  color: #e5e5e7;
+  color: #e5e5ea;
 }
 .apple-textarea.code-style::placeholder {
   color: rgba(142, 142, 147, 0.6);
@@ -276,7 +256,6 @@ select {
 }
 .apple-search:focus-within {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 15%, transparent);
 }
 .apple-search input {
   flex: 1;
@@ -367,7 +346,6 @@ select {
 }
 .apple-color:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 15%, transparent);
 }
 .apple-color::-webkit-color-swatch-wrapper {
   padding: 0;
@@ -446,7 +424,7 @@ select {
   border: 1px solid var(--color-border);
   background: var(--color-card);
   color: var(--color-text-secondary);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
   flex-shrink: 0;
 }

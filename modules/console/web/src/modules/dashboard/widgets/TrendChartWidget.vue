@@ -534,7 +534,6 @@ function onChartLeave() {
   bottom: 24%;
   height: 1px;
   background: color-mix(in srgb, var(--color-primary) 25%, transparent);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 /* tooltip 覆盖层 */
@@ -625,8 +624,6 @@ function onChartLeave() {
   padding: 8px 12px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-card) 85%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid color-mix(in srgb, #fff 14%, transparent);
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.6);
 }

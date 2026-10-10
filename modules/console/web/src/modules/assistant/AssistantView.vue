@@ -110,7 +110,7 @@ function escapeHtml(str: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&apos;");
 }
 
 function renderInline(text: string): string {
@@ -338,7 +338,7 @@ async function handleSend(text?: string) {
     messages.value.push({
       id: `ai-err-${Date.now()}`,
       role: "assistant",
-      content: `⚠️ ${errMsg}`,
+      content: errMsg,
       timestamp: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
       error: true,
     });
@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
     <VPageHeader title="AI 助手">
       <template #icon>
         <div class="header-icon-box">
-          <Icon icon="ri:sparkling-2-fill" class="w-5 h-5 text-primary animate-pulse" />
+          <Icon icon="ri:sparkling-2-fill" class="w-5 h-5 text-primary" />
         </div>
       </template>
       <template #actions>
@@ -777,8 +777,7 @@ onBeforeUnmount(() => {
   padding: 0;
   overflow: hidden;
   background:
-    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--color-primary) 4%, transparent) 0%, transparent 60%),
-    color-mix(in srgb, var(--color-card) 85%, transparent);
+    var(--color-card);
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   border-radius: 20px;
   box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.4);
@@ -856,7 +855,7 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   background: color-mix(in srgb, var(--color-card) 60%, transparent);
-  transition: all var(--duration-fast, 150ms) var(--ease-standard);
+  transition: background-color var(--duration-fast, 150ms) var(--ease-standard), border-color var(--duration-fast, 150ms) var(--ease-standard), color var(--duration-fast, 150ms) var(--ease-standard);
   cursor: pointer;
 }
 
@@ -1171,7 +1170,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--color-foreground);
   text-decoration: none;
-  transition: all var(--duration-fast, 150ms) ease;
+  transition: background-color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
 }
 
 .citation-card:hover {
@@ -1221,7 +1220,7 @@ onBeforeUnmount(() => {
   color: var(--color-muted-foreground);
   font-size: 11px;
   cursor: pointer;
-  transition: all var(--duration-fast, 150ms) ease;
+  transition: background-color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
 }
 
 .msg-action-btn:hover {
@@ -1272,7 +1271,6 @@ onBeforeUnmount(() => {
   padding: 14px 18px 16px;
   border-top: 1px solid color-mix(in srgb, #fff 8%, transparent);
   background: color-mix(in srgb, var(--color-card) 95%, transparent);
-  backdrop-filter: blur(20px);
 }
 
 .input-box-container {
@@ -1286,7 +1284,6 @@ onBeforeUnmount(() => {
 
 .input-box-container:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .chat-textarea {
@@ -1408,7 +1405,7 @@ onBeforeUnmount(() => {
 .progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+  background: var(--color-primary);
   transition: width 300ms ease;
 }
 

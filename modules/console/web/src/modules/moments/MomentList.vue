@@ -499,7 +499,7 @@ function formatTime(s: string): string {
               v-else
               class="avatar-gradient-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
             >
-              ✍️
+              <Icon icon="ri:quill-pen-line" class="text-base" />
             </div>
 
             <div class="min-w-0 flex-1">
@@ -665,7 +665,7 @@ function formatTime(s: string): string {
           <div v-for="g in groupedMoments" :key="g.key" class="space-y-3">
             <!-- 分组标题 -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary">
+              <span class="text-xs font-bold text-text-tertiary">
                 {{ g.label }}
               </span>
               <div class="h-px flex-1 bg-border/60"></div>
@@ -676,7 +676,7 @@ function formatTime(s: string): string {
               <div
                 v-for="m in g.items"
                 :key="m.id"
-                class="rounded-2xl border border-border bg-card p-4 transition-all hover:border-border-strong sm:p-5"
+                class="rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong sm:p-5"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-2.5">
@@ -688,10 +688,7 @@ function formatTime(s: string): string {
                     />
                     <div
                       v-else
-                      :class="[
-                        avatarClass(m.id),
-                        'flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white',
-                      ]"
+                      :class="[ avatarClass(m.id), 'flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white', ]"
                     >
                       {{ m.author_name ? m.author_name.charAt(0) : "A" }}
                     </div>
@@ -703,11 +700,7 @@ function formatTime(s: string): string {
                         </span>
                         <span
                           class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                          :class="
-                            m.visibility === 'private'
-                              ? 'bg-[#FF9500]/10 text-[#FF9500]'
-                              : 'bg-[#30D158]/10 text-[#30D158]'
-                          "
+                          :class="m.visibility === 'private' ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#30D158]/10 text-[#30D158]'"
                         >
                           {{ m.visibility === "private" ? "私密" : "公开" }}
                         </span>
@@ -756,13 +749,7 @@ function formatTime(s: string): string {
                 <div
                   v-if="Array.isArray(m.images) && m.images.length > 0"
                   class="mt-3.5 grid gap-2"
-                  :class="[
-                    m.images.length === 1
-                      ? 'grid-cols-1 max-w-[320px]'
-                      : m.images.length === 2 || m.images.length === 4
-                        ? 'grid-cols-2 max-w-[440px]'
-                        : 'grid-cols-3 max-w-[540px]',
-                  ]"
+                  :class="[ m.images.length === 1 ? 'grid-cols-1 max-w-[320px]' : m.images.length === 2 || m.images.length === 4 ? 'grid-cols-2 max-w-[440px]' : 'grid-cols-3 max-w-[540px]', ]"
                 >
                   <div
                     v-for="img in m.images"
@@ -965,7 +952,7 @@ function formatTime(s: string): string {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -982,7 +969,6 @@ function formatTime(s: string): string {
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -1009,7 +995,7 @@ function formatTime(s: string): string {
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   background: transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-tool-btn:hover,
@@ -1029,7 +1015,7 @@ function formatTime(s: string): string {
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover {

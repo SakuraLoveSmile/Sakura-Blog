@@ -68,22 +68,12 @@ withDefaults(
 
 <style scoped>
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--color-card) 90%, transparent) 25%,
-    color-mix(in srgb, var(--color-accent) 60%, transparent) 50%,
-    color-mix(in srgb, var(--color-card) 90%, transparent) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s infinite ease-in-out;
+  background: var(--color-card);
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

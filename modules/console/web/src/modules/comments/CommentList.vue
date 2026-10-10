@@ -366,7 +366,7 @@ onUnmounted(() => {
       <!-- 概览数据指标卡（点击直接作为过滤器） -->
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <div
-          class="stats-card cursor-pointer transition-all hover:border-primary"
+          class="stats-card cursor-pointer transition-colors duration-150 hover:border-primary"
           :class="{ 'border-primary ring-1 ring-primary': selectedStatus === 'all' }"
           @click="
             selectedStatus = 'all';
@@ -383,7 +383,7 @@ onUnmounted(() => {
         </div>
 
         <div
-          class="stats-card cursor-pointer transition-all hover:border-[#FF9500]"
+          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#FF9500]"
           :class="{ 'border-[#FF9500] ring-1 ring-[#FF9500]': selectedStatus === 'pending' }"
           @click="
             selectedStatus = 'pending';
@@ -402,7 +402,7 @@ onUnmounted(() => {
         </div>
 
         <div
-          class="stats-card cursor-pointer transition-all hover:border-[#30D158]"
+          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#30D158]"
           :class="{ 'border-[#30D158] ring-1 ring-[#30D158]': selectedStatus === 'approved' }"
           @click="
             selectedStatus = 'approved';
@@ -421,7 +421,7 @@ onUnmounted(() => {
         </div>
 
         <div
-          class="stats-card cursor-pointer transition-all hover:border-[#FF453A]"
+          class="stats-card cursor-pointer transition-colors duration-150 hover:border-[#FF453A]"
           :class="{ 'border-[#FF453A] ring-1 ring-[#FF453A]': selectedStatus === 'spam' }"
           @click="
             selectedStatus = 'spam';
@@ -486,7 +486,7 @@ onUnmounted(() => {
         <div
           v-for="(c, idx) in comments"
           :key="c.id"
-          class="group relative rounded-2xl border border-border bg-card p-4 transition-all hover:border-border-strong sm:p-5"
+          class="group relative rounded-2xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong sm:p-5"
           :class="[
             selectedIds.has(c.id) ? 'border-primary ring-1 ring-primary bg-primary/5' : '',
             focusedIndex === idx ? 'ring-2 ring-primary/60 border-primary' : '',
@@ -739,7 +739,7 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 500;
   background: transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 

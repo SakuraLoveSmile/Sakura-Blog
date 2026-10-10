@@ -35,7 +35,7 @@ async function submit() {
         >
           <Icon icon="ri:user-3-line" class="h-7 w-7" />
         </div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">User Center</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">用户中心</p>
         <h1 class="text-3xl font-semibold tracking-tight">欢迎回来</h1>
         <p class="mt-2 text-sm text-text-tertiary">登录后管理你的文章与附件。</p>
       </div>
@@ -86,7 +86,6 @@ async function submit() {
 }
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-primary-button {
   min-height: 44px;

@@ -228,7 +228,7 @@ onMounted(load);
           </div>
 
           <div class="stats-card">
-            <div class="stats-icon text-[#30B0C7] bg-[#30B0C7]/10">
+            <div class="stats-icon text-primary bg-primary/10">
               <Icon icon="ri:image-line" />
             </div>
             <div>
@@ -307,7 +307,7 @@ onMounted(load);
           <div
             v-for="topic in filteredTopics"
             :key="topic.id"
-            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-1 hover:border-border-strong hover:shadow-lg"
+            class="topic-hero-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-150  hover:border-border-strong hover:shadow-lg"
           >
             <!-- 卡片海报封面区 -->
             <div class="relative aspect-video w-full overflow-hidden bg-secondary">
@@ -326,12 +326,12 @@ onMounted(load);
 
               <!-- 顶部浮层：文章数 Badge + 排序值 -->
               <div class="absolute inset-x-3 top-3 flex items-center justify-between">
-                <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
+                <span class="rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white">
                   {{ topic.post_count }} 篇收录
                 </span>
                 <span
                   v-if="topic.sort"
-                  class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80 backdrop-blur-md"
+                  class="rounded bg-black/50 px-2 py-0.5 font-mono text-[10px] text-white/80"
                 >
                   权重 {{ topic.sort }}
                 </span>
@@ -385,7 +385,7 @@ onMounted(load);
           <div class="overflow-x-auto">
             <table class="w-full min-w-[800px] text-left">
               <thead>
-                <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+                <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                   <th class="w-20 px-4 py-3">封面</th>
                   <th class="px-4 py-3">专栏名称</th>
                   <th class="px-4 py-3">Slug 路径</th>
@@ -524,7 +524,7 @@ onMounted(load);
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -541,7 +541,6 @@ onMounted(load);
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
@@ -571,7 +570,7 @@ onMounted(load);
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .apple-sort-btn:hover {
@@ -590,7 +589,7 @@ onMounted(load);
   color: var(--color-text-tertiary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
   cursor: pointer;
 }
 .action-icon-btn:hover:not(:disabled) {

@@ -762,7 +762,7 @@ function handleTitleLeave(e: MouseEvent) {
         <div class="overflow-x-auto">
           <table class="w-full min-w-[800px] text-left">
             <thead>
-              <tr class="border-b border-border text-xs font-medium uppercase tracking-wide text-text-quaternary">
+              <tr class="border-b border-border text-xs font-medium text-text-quaternary">
                 <th class="w-12 px-4 py-3 text-center">
                   <!-- 空数据时不渲染选择入口；占位单元格保留以避免列布局跳动 -->
                   <input
@@ -988,11 +988,9 @@ function handleTitleLeave(e: MouseEvent) {
   overflow: hidden;
   white-space: nowrap;
   cursor: pointer;
-  mask-image: linear-gradient(90deg, #000 calc(100% - 1.2rem), transparent 100%);
 }
 
 .post-title-wrapper.is-overflowing {
-  mask-image: none;
 }
 
 .post-title-scroll {
@@ -1023,7 +1021,7 @@ function handleTitleLeave(e: MouseEvent) {
 
 /* 海报卡片媒体占位：克制的暗色渐变承托图标，不抢标题层级 */
 .post-card-placeholder {
-  background: linear-gradient(135deg, var(--color-secondary), var(--color-background));
+  background: var(--color-secondary);
   color: color-mix(in srgb, var(--color-foreground) 22%, transparent);
   font-size: 1.5rem;
 }

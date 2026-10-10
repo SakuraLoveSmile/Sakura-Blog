@@ -256,7 +256,7 @@ function onKeydown(e: KeyboardEvent, index: number) {
   border: none;
   cursor: pointer;
   border-radius: var(--radius-full);
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
 }
 .tabbar-outline .tabbar-item:hover {
   color: var(--color-foreground);
@@ -294,7 +294,7 @@ function onKeydown(e: KeyboardEvent, index: number) {
   border-radius: calc(var(--radius-xl, 14px) - 3px);
   cursor: pointer;
   user-select: none;
-  transition: all var(--duration-fast) var(--ease-standard);
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
 }
 
 .tabbar-segmented .tabbar-item:hover {
@@ -325,7 +325,6 @@ function onKeydown(e: KeyboardEvent, index: number) {
   height: 6px;
   border-radius: 50%;
   background: var(--color-state-warning, #ff9f0a);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--color-state-warning) 80%, transparent);
   flex-shrink: 0;
   margin-left: 2px;
 }

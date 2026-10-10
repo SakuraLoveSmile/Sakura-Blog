@@ -582,7 +582,7 @@ onBeforeUnmount(() => {
     <!-- ============ 危险操作：整站恢复双重确认弹窗 ============ -->
     <VModal
       :visible="!!pendingRestore"
-      title="⚠️ 确认从备份恢复整站数据"
+      title="确认从备份恢复整站数据"
       :width="480"
       @update:visible="pendingRestore = null"
     >

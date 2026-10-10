@@ -541,12 +541,8 @@ onMounted(loadProjects);
                 <!-- 叶子节点 -->
                 <div
                   v-else
-                  class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium transition-all cursor-pointer"
-                  :class="[
-                    selectedSlug === node.doc.slug
-                      ? 'bg-primary text-white font-semibold'
-                      : 'text-text-secondary hover:bg-secondary hover:text-foreground',
-                  ]"
+                  class="group flex items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium transition-colors duration-150 cursor-pointer"
+                  :class="[ selectedSlug === node.doc.slug ? 'bg-primary text-white font-semibold' : 'text-text-secondary hover:bg-secondary hover:text-foreground', ]"
                   :style="{ paddingLeft: `${18 + node.depth * 14}px` }"
                   @click="selectDoc(node.doc.slug)"
                 >
@@ -721,7 +717,7 @@ onMounted(loadProjects);
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -738,7 +734,6 @@ onMounted(loadProjects);
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {

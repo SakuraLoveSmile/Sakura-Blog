@@ -23,9 +23,9 @@ defineEmits<{
     <Transition name="dock-slide">
       <div
         v-if="visible && count > 0"
-        class="v-floating-dock fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border px-4 py-2.5 shadow-2xl backdrop-blur-2xl transition-all md:bottom-6"
+        class="v-floating-dock fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border px-4 py-2.5 shadow-2xl  md:bottom-6"
         style="
-          background: color-mix(in srgb, var(--color-card) 85%, transparent);
+          background: var(--color-card);
           box-shadow:
             0 16px 36px -8px rgba(0, 0, 0, 0.65),
             0 0 0 1px rgba(255, 255, 255, 0.08);

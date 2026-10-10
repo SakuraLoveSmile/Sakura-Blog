@@ -164,7 +164,6 @@ function close() {
 }
 
 .size-preset-option.is-selected {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 30%, transparent), 0 10px 24px -16px var(--color-primary);
   transform: translateY(-1px);
 }
 
@@ -181,8 +180,7 @@ function close() {
   justify-content: center;
   border-radius: 14px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent),
-    color-mix(in srgb, var(--color-card) 88%, transparent);
+    var(--color-card);
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
 }
 

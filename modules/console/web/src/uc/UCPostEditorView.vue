@@ -62,7 +62,7 @@ onMounted(load);
           <Icon icon="ri:arrow-left-line" />
         </button>
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.18em] text-primary">My writing</p>
+          <p class="text-xs font-medium text-text-tertiary">文章编辑</p>
           <h1 class="truncate text-2xl font-semibold tracking-tight">{{ isEdit ? "编辑文章" : "新建文章" }}</h1>
         </div>
       </div>
@@ -182,7 +182,6 @@ onMounted(load);
 .uc-excerpt-input:focus,
 .uc-input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-label {
   display: block;

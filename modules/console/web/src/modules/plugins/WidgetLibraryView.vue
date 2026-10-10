@@ -310,12 +310,12 @@ function buildWidgetDoc(fullHtml: string, layout = ""): string {
     const widget = aside.querySelector(".widgets > widget:last-child");
     if (!widget) {
       const hint = NO_OUTPUT_HINTS[layout] || "该组件在当前参数与页面类型下无输出（如 GitHub 系需配置 repo/username）";
-      bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">${hint}</p>`;
+      bodyInner = `<p style="color:var(--text-p3,#8e8e93);font-size:13px;padding:12px">${hint}</p>`;
       aside.querySelector(".widgets")?.remove();
     }
     bodyInner = bodyInner || aside.outerHTML;
   } else {
-    bodyInner = `<p style="color:var(--text-p3,#999);font-size:13px;padding:12px">预览渲染失败：未找到侧栏结构</p>`;
+    bodyInner = `<p style="color:var(--text-p3,#8e8e93);font-size:13px;padding:12px">预览渲染失败：未找到侧栏结构</p>`;
   }
   const bodyClass = doc.body.className || "";
   const scanScr = Array.from(doc.body.querySelectorAll("script")).find(
@@ -745,13 +745,12 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-background) 50%, var(--color-card));
   color: var(--color-foreground);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .widget-search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .widget-search-clear {
@@ -780,7 +779,6 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
@@ -805,7 +803,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
   gap: 8px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .widget-list-item:hover {
@@ -875,7 +873,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
 
 /* Hero 概览卡片 */
 .widget-hero-card {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 40%, var(--color-card)), var(--color-card));
+  background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 20px 24px;
@@ -1134,7 +1132,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
 
 .widget-canvas-body {
   position: relative;
-  background: #121316;
+  background: #101012;
   min-height: 260px;
 }
 
@@ -1180,7 +1178,7 @@ onBeforeUnmount(() => clearTimeout(previewTimer));
   font-size: 13px;
   font-weight: 550;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .apple-btn-primary {

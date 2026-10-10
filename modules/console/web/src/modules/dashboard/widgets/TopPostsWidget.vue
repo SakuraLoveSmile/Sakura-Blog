@@ -110,7 +110,7 @@ onUnmounted(() => window.removeEventListener(DASHBOARD_REFRESH_EVENT, handleRefr
 .top-post-copy { display: flex; flex: 1; flex-direction: column; gap: 6px; min-width: 0; }
 .top-post-title { overflow: hidden; color: var(--color-foreground); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .top-post-track { display: block; width: 100%; height: 4px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--color-muted-foreground) 12%, transparent); }
-.top-post-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--color-primary), var(--color-chart-1)); transition: width 350ms var(--ease-standard); }
+.top-post-track i { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); transition: width 350ms var(--ease-standard); }
 .top-post-metrics { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--color-foreground); font-size: 12px; }
 .top-post-metrics small { color: var(--color-muted-foreground); font-size: 9px; }
 .top-post-arrow { flex: 0 0 auto; color: var(--color-muted-foreground); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }

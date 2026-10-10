@@ -267,7 +267,7 @@ function sourceLabel(type: string): string {
               <article
                 v-for="n in group.items"
                 :key="n.id"
-                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-all duration-150 last:mb-0 hover:-translate-y-px hover:border-border-strong"
+                class="notif-card group relative mb-2 flex cursor-pointer items-start gap-3.5 rounded-[14px] border border-border bg-card p-4 transition-colors duration-150 duration-150 last:mb-0  hover:border-border-strong"
                 :class="{
                   'notif-card--unread': !n.read,
                   'notif-card--read': n.read,
@@ -305,7 +305,7 @@ function sourceLabel(type: string): string {
                   <span
                     v-if="!n.read"
                     class="h-2 w-2 rounded-full bg-primary"
-                    style="box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 60%, transparent)"
+                    
                   />
                   <span v-else class="h-2 w-2 rounded-full bg-transparent" />
                 </div>

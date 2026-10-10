@@ -48,7 +48,7 @@ onMounted(load);
   <div>
     <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">My writing</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">我的文章</p>
         <h1 class="text-3xl font-semibold tracking-tight">我的文章</h1>
         <p class="mt-2 text-sm text-text-tertiary">只管理署名属于你的文章。</p>
       </div>

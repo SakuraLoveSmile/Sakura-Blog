@@ -43,7 +43,7 @@ onMounted(loadChallenge);
   <div class="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
     <div class="w-full max-w-md">
       <div class="mb-7 text-center">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Join the blog</p>
+        <p class="mb-2 text-xs font-medium text-text-tertiary">注册账户</p>
         <h1 class="text-3xl font-semibold tracking-tight">创建读者账号</h1>
         <p class="mt-2 text-sm text-text-tertiary">注册后可升级为作者，开始管理自己的文章。</p>
       </div>
@@ -107,7 +107,6 @@ onMounted(loadChallenge);
 }
 .uc-field input:focus {
   border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 18%, transparent);
 }
 .uc-primary-button,
 .uc-secondary-button {

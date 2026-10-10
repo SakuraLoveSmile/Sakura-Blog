@@ -388,7 +388,7 @@ onMounted(() => loadProjects());
         <!-- 左侧项目列表 -->
         <div class="space-y-3 lg:col-span-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-text-tertiary"
+            <span class="text-xs font-bold text-text-tertiary"
               >项目列表 ({{ projects.length }})</span
             >
             <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">+ 新增</button>
@@ -400,7 +400,7 @@ onMounted(() => loadProjects());
             <div
               v-for="project in projects"
               :key="project.id"
-              class="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-all hover:border-border-strong"
+              class="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors duration-150 hover:border-border-strong"
               :class="{ 'border-primary ring-1 ring-primary bg-primary/5': selectedId === project.id }"
               @click="selectProject(project)"
             >
@@ -673,7 +673,7 @@ onMounted(() => loadProjects());
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 8%, transparent), transparent);
+  /* highlight removed */
   pointer-events: none;
 }
 .stats-icon {
@@ -690,7 +690,6 @@ onMounted(() => loadProjects());
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-quaternary);
-  text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .stats-value {
