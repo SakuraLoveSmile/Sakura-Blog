@@ -169,6 +169,16 @@ func (s *webServer) stellarSnapshot(include *store.Post) (*stellarSnapshot, erro
 	return s.stellarSnapshotAt(context.Background(), s.site.Load(), include, false)
 }
 func (s *webServer) stellarSnapshotAt(ctx context.Context, site *tmpl.Site, include *store.Post, offline bool) (*stellarSnapshot, error) {
+	return s.stellarBuildSnapshot(ctx, site, include, offline, true)
+}
+
+// 编辑保存与预览只需要公开元数据及集合树，不能让待修正文阻断有效候选。
+// 严格 schema、授权过滤和模型构建仍与正式前台相同。
+func (s *webServer) stellarPublicContextAt(ctx context.Context, site *tmpl.Site) (*stellarSnapshot, error) {
+	return s.stellarBuildSnapshot(ctx, site, nil, true, false)
+}
+
+func (s *webServer) stellarBuildSnapshot(ctx context.Context, site *tmpl.Site, include *store.Post, offline, renderBodies bool) (*stellarSnapshot, error) {
 	in, err := stellarSiteInput(site)
 	if err != nil {
 		return nil, err
@@ -346,9 +356,12 @@ func (s *webServer) stellarSnapshotAt(ctx context.Context, site *tmpl.Site, incl
 	snap.input.RuntimeData = s.stellarBodyData(snap)
 	in.RuntimeData = snap.input.RuntimeData
 	for _, rec := range snap.records {
-		body, err := s.stellarBody(snap, rec)
-		if err != nil {
-			return nil, err
+		body := ""
+		if renderBodies {
+			body, err = s.stellarBody(snap, rec)
+			if err != nil {
+				return nil, err
+			}
 		}
 		rec.page["content"] = body
 		rec.page = stellarmodels.PageModelInput(rec.page, rec.config)

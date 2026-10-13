@@ -23,7 +23,7 @@ func (s *webServer) renderStellarMarkdown(input content.StellarBodyInput) (strin
 	if err != nil {
 		return "", err
 	}
-	snap, err := s.stellarSnapshotAt(context.Background(), s.site.Load(), nil, true)
+	snap, err := s.stellarPublicContextAt(context.Background(), s.site.Load())
 	if err != nil {
 		return "", err
 	}

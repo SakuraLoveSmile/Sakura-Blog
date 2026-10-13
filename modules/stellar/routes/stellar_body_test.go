@@ -8,6 +8,7 @@ import (
 
 	"blog/internal/content"
 	"blog/internal/post"
+	"blog/internal/settings"
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
@@ -141,5 +142,69 @@ func TestStellarOpaquePreviewKeepsBodyAndDocumentInOneSnapshot(t *testing.T) {
 	}
 	if !strings.Contains(output.Document, "OLD_FOOTER") || !strings.Contains(output.Document, `lang="en"`) {
 		t.Fatal("document ignored its captured theme/language")
+	}
+}
+
+func TestStellarEditorBodyCanRepairPublishedInvalidMarkdown(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	broken := createStellarPost(t, st, "broken", "")
+	broken.ContentMD = "{% tabs %}"
+	if err := st.Update(broken.Slug, broken); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.stellarSnapshotAt(context.Background(), ws.site.Load(), nil, true); err == nil || !strings.Contains(err.Error(), "missing endtabs") {
+		t.Fatalf("broken public body was accepted: %v", err)
+	}
+	replacement := "## Repaired\n\nValid content"
+	rendered, err := ws.renderStellarMarkdown(content.StellarBodyInput{Markdown: replacement, Page: map[string]any{}})
+	if err != nil {
+		t.Fatalf("valid repair blocked by prior body: %v", err)
+	}
+	broken.ContentMD = replacement
+	broken.ContentHTML = rendered
+	if err := st.Update(broken.Slug, broken); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.stellarSnapshotAt(context.Background(), ws.site.Load(), nil, true); err != nil {
+		t.Fatalf("repaired published content remains broken: %v", err)
+	}
+	other := createStellarPost(t, st, "other", "")
+	other.ContentMD = "{% tabs %}"
+	if err := st.Update(other.Slug, other); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.renderStellarMarkdown(content.StellarBodyInput{Markdown: "Updated again", Page: map[string]any{}}); err != nil {
+		t.Fatalf("unrelated invalid body blocked update: %v", err)
+	}
+	registry, err := settings.LoadIconsEmbed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws.icons = registry
+	engine, err := stellarweb.NewEngineFromEmbed(registry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine.SetStellarMarkdownRender(ws.posts.RenderStellarV2WithContext)
+	ws.engine = engine
+	markdown := "Preview valid candidate"
+	output, err := ws.renderContentPreviewSnapshot(content.StellarPreviewInput{StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, Markdown: &markdown, Title: "Repair", Layout: "post", Path: "/post/broken", RequestURL: "http://127.0.0.1:8109/api/v1/preview/markdown", PreviewToken: "repair-preview"})
+	if err != nil || !strings.Contains(output.HTML, markdown) || !strings.Contains(output.Document, markdown) {
+		t.Fatalf("unrelated invalid body blocked opaque preview: %v", err)
+	}
+	if _, err := ws.stellarSnapshotAt(context.Background(), ws.site.Load(), nil, true); err == nil || !strings.Contains(err.Error(), "missing endtabs") {
+		t.Fatalf("front end silently hid unrelated broken body: %v", err)
+	}
+}
+
+func TestStellarPublicContextStillValidatesPublishedSchema(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	row := createStellarPost(t, st, "schema", "")
+	// 隔离库直接注入损坏元数据；正常 Store.Update 本身已拒绝这种 schema。
+	if _, err := st.DB().Exec(`UPDATE posts SET stellar_config=? WHERE slug=?`, `{"style":{}}`, row.Slug); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.renderStellarMarkdown(content.StellarBodyInput{Markdown: "Valid candidate", Page: map[string]any{}}); err == nil {
+		t.Fatal("body-free context bypassed published metadata schema")
 	}
 }

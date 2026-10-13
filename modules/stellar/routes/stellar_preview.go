@@ -104,7 +104,7 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
-	snap, err := s.stellarSnapshotAt(context.Background(), site, nil, true)
+	snap, err := s.stellarPublicContextAt(context.Background(), site)
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
