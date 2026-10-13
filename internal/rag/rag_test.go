@@ -235,7 +235,11 @@ func newRAGStore(t *testing.T) *store.Store {
 
 func putAIConfig(t *testing.T, st *store.Store, raw string) {
 	t.Helper()
-	if err := st.PutSetting(config.SectionAI, raw); err != nil {
+	var ai map[string]any
+	if err := json.Unmarshal([]byte(raw), &ai); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{"ai": ai}); err != nil {
 		t.Fatal(err)
 	}
 	config.InvalidateLoadAI()

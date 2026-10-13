@@ -72,6 +72,11 @@ func buildSite(st *store.Store, current *tmpl.Site, settings map[string]string) 
 	}
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
+	if next.StellarV2 != nil {
+		if err := ApplyStellarBlogRuntime(&next); err != nil {
+			return nil, err
+		}
+	}
 	next.Links = groups
 	// AuthEnabled 派生（Spec 61 阶段 4）：users 表 admin 用户存在且密码哈希非空 ⇒ 需要密码登录；
 	// 无密码站点（哈希为空/无 admin 用户）保持全放行语义。

@@ -59,6 +59,9 @@ func ValidateStellarV2(theme, blog map[string]any) (*settings.StellarV2Config, e
 	if err != nil {
 		return nil, err
 	}
+	if _, err := ParseStellarBlogRuntime(extensions); err != nil {
+		return nil, err
+	}
 	return &settings.StellarV2Config{RawTheme: raw, Theme: parsed.Value, Blog: extensions}, nil
 }
 

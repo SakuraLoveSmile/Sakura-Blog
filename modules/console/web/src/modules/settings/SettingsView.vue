@@ -5,13 +5,10 @@ import { Icon } from "@iconify/vue";
 import { getApiErrorMessage, settingsApi } from "@/api";
 import { Toast, VButton, VCard, VPageHeader, VTabbar } from "@/components/ui";
 import BasicSettings from "./tabs/BasicSettings.vue";
-import PostSettings from "./tabs/PostSettings.vue";
-import CommentSettings from "./tabs/CommentSettings.vue";
 import SeoSettings from "./tabs/SeoSettings.vue";
-import SearchSettings from "./tabs/SearchSettings.vue";
 import FeedbackSettings from "./tabs/FeedbackSettings.vue";
-import AdvancedSettings from "./tabs/AdvancedSettings.vue";
 import Stellar2Tab from "./Stellar2Tab.vue";
+import CanonicalSettingsNotice from "./CanonicalSettingsNotice.vue";
 import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
 import { useSettingsPreview } from "./useSettingsPreview";
 import "./settings-form.css";
@@ -190,6 +187,10 @@ function updateSectionSnapshot(section: string, savedData: any) {
 }
 
 async function save(section: string, payload?: unknown): Promise<boolean> {
+  if (section !== "site" && section !== "feedback") {
+    Toast.error("旧主题分段停止保存，请打开 Stellar 2 配置");
+    return false;
+  }
   if (savingKey.value) return false;
   savingKey.value = section;
   try {
@@ -215,57 +216,6 @@ async function save(section: string, payload?: unknown): Promise<boolean> {
   } catch (error) {
     Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
     return false;
-  } finally {
-    savingKey.value = "";
-  }
-}
-
-async function saveComments() {
-  if (savingKey.value) return;
-  const commentsSaved = await save("comments");
-  if (commentsSaved) await save("site_tree");
-}
-
-async function saveJson(section: string) {
-  if (savingKey.value) return;
-  const rawAtStart = rawText.value[section] ?? "";
-  let payload: any;
-  try {
-    payload = JSON.parse(rawAtStart);
-  } catch (error) {
-    Toast.error("JSON 格式错误，请检查语法后再保存");
-    return;
-  }
-
-  savingKey.value = "json:" + section;
-  const formAtStart = JSON.stringify(data.value[section]);
-  try {
-    const payloadToSubmit = deepCloneJsonSafe(payload);
-    await settingsApi.updateSection(section, payloadToSubmit);
-
-    const normalizedTarget = ensureSettingsDefaults({ [section]: deepCloneJsonSafe(payloadToSubmit) });
-    const savedNormalized = normalizedTarget[section];
-
-    // 更新成功快照（使用本次提交内容规范化后的副本）
-    updateSectionSnapshot(section, savedNormalized);
-
-    const formatted = JSON.stringify(savedNormalized, null, 2);
-    // 比较文本：若自请求开始未被再次修改，回填规范化文本并更新基线；否则保留新草稿，仅更新基线
-    if (rawText.value[section] === rawAtStart) {
-      rawText.value[section] = formatted;
-      savedJsonBaseline.value[section] = formatted;
-    } else {
-      savedJsonBaseline.value[section] = formatted;
-    }
-
-    // 比较表单：若保存期间结构化表单未发生变化，回填新的规范化表单数据；若发生变化，绝对不覆盖新的表单数据！
-    if (JSON.stringify(data.value[section]) === formAtStart) {
-      data.value[section] = deepCloneJsonSafe(savedNormalized);
-    }
-
-    Toast.success("设置已保存，前台已生效");
-  } catch (error) {
-    Toast.error(getApiErrorMessage(error, "保存失败，请检查参数或网络后重试"));
   } finally {
     savingKey.value = "";
   }
@@ -382,30 +332,13 @@ onBeforeRouteLeave((to, from, next) => {
               />
               <template v-if="active === tab.key && tab.key !== 'stellar2'">
                 <BasicSettings v-if="tab.key === 'basic'" :data="data" :saving="savingKey" @save="save" />
+                <div v-else-if="tab.key === 'seo'" class="settings-tab-content">
+                  <SeoSettings :data="data" :saving="savingKey" host-only @save="save" />
+                  <CanonicalSettingsNotice fields="上游 SEO：theme.seo。站点 URL 和描述仍由宿主基本信息管理。" />
+                </div>
+                <CanonicalSettingsNotice v-else-if="tab.key !== 'feedback'" class="settings-tab-content" fields="评论：blog_extensions.native_comments；文章扩展：blog_extensions.content；上游配置：theme" />
                 <div v-else class="settings-tab-content">
-                  <PostSettings v-if="tab.key === 'post'" :data="data" :saving="savingKey" @save="save" />
-                  <CommentSettings
-                    v-else-if="tab.key === 'comments'"
-                    :data="data"
-                    :saving="savingKey"
-                    @save="saveComments"
-                  />
-                  <SeoSettings v-else-if="tab.key === 'seo'" :data="data" :saving="savingKey" @save="save" />
-                  <SearchSettings v-else-if="tab.key === 'search'" :data="data" :saving="savingKey" @save="save" />
-                  <FeedbackSettings
-                    v-else-if="tab.key === 'feedback'"
-                    :data="data"
-                    :saving="savingKey"
-                    @save="save"
-                  />
-                  <AdvancedSettings
-                    v-else-if="tab.key === 'advanced'"
-                    :data="data"
-                    :raw-text="rawText"
-                    :saving="savingKey"
-                    @save="save"
-                    @save-json="saveJson"
-                  />
+                  <FeedbackSettings :data="data" :saving="savingKey" @save="save" />
                 </div>
               </template>
             </div>

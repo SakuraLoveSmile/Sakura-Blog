@@ -75,6 +75,9 @@ func (h *Handler) updateStellarSettings(c *gin.Context) {
 		return
 	}
 	h.publishContentChanged()
+	if h.onLinksChanged != nil {
+		h.onLinksChanged()
+	}
 	stellarSettingsDocument(c, saved)
 }
 

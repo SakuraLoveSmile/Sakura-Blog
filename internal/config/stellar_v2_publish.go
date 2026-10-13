@@ -40,7 +40,7 @@ func MaskStellarV2Blog(blog map[string]any) (map[string]any, error) {
 
 // SaveAndPublishStellarV2 把候选保存和指针发布放在共享的 siteUpdateMu 内。
 // 与旧 SaveSection 串行，避免保存成功的两个请求乱序发布旧候选。
-// 只替换 Site.StellarV2，其他站点状态仍使用原有生命周期。
+// 同时发布本地服务的 typed bridge，候选失败不修改数据库或指针。
 func SaveAndPublishStellarV2(st *store.Store, site *atomic.Pointer[settings.Site], theme, blog map[string]any) (*settings.StellarV2Config, error) {
 	candidate, err := ValidateStellarV2(theme, blog)
 	if err != nil {
@@ -71,11 +71,15 @@ func SaveAndPublishStellarV2(st *store.Store, site *atomic.Pointer[settings.Site
 		}
 		parent[key] = value
 	}
+	next := *site.Load()
+	next.StellarV2 = candidate
+	if err := ApplyStellarBlogRuntime(&next); err != nil {
+		return nil, err
+	}
 	saved, err := SaveStellarV2(st, candidate.RawTheme, candidate.Blog)
 	if err != nil {
 		return nil, err
 	}
-	next := *site.Load()
 	next.StellarV2 = saved
 	site.Store(&next)
 	return saved, nil

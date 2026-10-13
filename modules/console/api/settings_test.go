@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -22,102 +23,41 @@ import (
 func TestSettingsSections(t *testing.T) {
 	r, st, user, _ := newFullEnv(t)
 	cookie := authCookie(user)
-
-	// 初始为空对象
-	w := do2FA(r, http.MethodGet, "/api/v1/settings", "", cookie)
-	if w.Code != http.StatusOK {
-		t.Fatalf("get settings: status = %d", w.Code)
+	before, _ := st.ReadSettingsSnapshot()
+	for _, section := range []string{"ai", "comments", "style", "widgets", "menubar", "data_cache", "friends", "authors"} {
+		w := do2FA(r, http.MethodPut, "/api/v1/settings/"+section, `{}`, cookie)
+		if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "stellar_migration_required") {
+			t.Fatalf("legacy %s gate: %d %s", section, w.Code, w.Body.String())
+		}
 	}
-	var secs map[string]json.RawMessage
-	if err := json.Unmarshal(w.Body.Bytes(), &secs); err != nil {
-		t.Fatalf("decode settings: %v", err)
+	after, _ := st.ReadSettingsSnapshot()
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("legacy API gate modified settings")
 	}
-	if raw, ok := secs["comments"]; ok && string(raw) != "null" {
-		t.Errorf("empty settings should not contain comments section: %s", w.Body.String())
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		t.Fatal(err)
 	}
-
-	// 保存 ai 段（含 api_key）
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/ai",
-		`{"api_key":"sk-secret-123","model":"gpt-4o"}`, cookie)
-	if w.Code != http.StatusOK {
-		t.Fatalf("save ai section: status = %d, body = %s", w.Code, w.Body.String())
+	before, _ = st.ReadSettingsSnapshot()
+	for _, section := range []string{"ai", "comments", "style", "widgets", "menubar", "data_cache", "friends", "authors"} {
+		w := do2FA(r, http.MethodPut, "/api/v1/settings/"+section, `{}`, cookie)
+		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "removed_field") {
+			t.Fatalf("migrated %s gate: %d %s", section, w.Code, w.Body.String())
+		}
 	}
-
-	// 保存 comments 段（含 notify.password）
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/comments",
-		`{"notify":{"password":"smtp-pass","enabled":true},"moderation":true}`, cookie)
-	if w.Code != http.StatusOK {
-		t.Fatalf("save comments section: status = %d, body = %s", w.Code, w.Body.String())
+	after, _ = st.ReadSettingsSnapshot()
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("removed section API modified settings")
 	}
-
-	// 回读：api_key / password 脱敏为 ****
-	w = do2FA(r, http.MethodGet, "/api/v1/settings", "", cookie)
-	_ = json.Unmarshal(w.Body.Bytes(), &secs)
-	var ai map[string]any
-	if err := json.Unmarshal(secs["ai"], &ai); err != nil || ai["api_key"] != "****" {
-		t.Errorf("ai section should mask api_key, got %v (err %v)", ai["api_key"], err)
+	for _, section := range []string{"site", "feedback", "dashboard"} {
+		if w := do2FA(r, http.MethodPut, "/api/v1/settings/"+section, `{}`, cookie); w.Code != http.StatusOK {
+			t.Fatalf("independent %s: %d %s", section, w.Code, w.Body.String())
+		}
 	}
-	var cm map[string]any
-	if err := json.Unmarshal(secs["comments"], &cm); err != nil {
-		t.Fatalf("decode comments section: %v", err)
-	}
-	notify, _ := cm["notify"].(map[string]any)
-	if notify == nil || notify["password"] != "****" {
-		t.Errorf("comments.notify.password should be masked, got %v", notify)
-	}
-
-	// 回写 "****" → 原值保留（脱敏不回写）
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/ai",
-		`{"api_key":"****","model":"gpt-4o-mini"}`, cookie)
-	if w.Code != http.StatusOK {
-		t.Fatalf("resave ai with masked key: status = %d", w.Code)
-	}
-	stored, err := st.GetSetting("ai")
-	if err != nil || stored == "" {
-		t.Fatalf("get stored ai: %v", err)
-	}
-	var storedAI map[string]any
-	_ = json.Unmarshal([]byte(stored), &storedAI)
-	if storedAI["api_key"] != "sk-secret-123" {
-		t.Errorf("masked key should preserve original, got %v", storedAI["api_key"])
-	}
-	if storedAI["model"] != "gpt-4o-mini" {
-		t.Errorf("model should update, got %v", storedAI["model"])
-	}
-
-	// 回写空 password → 原值保留
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/comments",
-		`{"notify":{"password":"","enabled":false}}`, cookie)
-	if w.Code != http.StatusOK {
-		t.Fatalf("resave comments empty pw: status = %d", w.Code)
-	}
-	stored, _ = st.GetSetting("comments")
-	var storedCM map[string]any
-	_ = json.Unmarshal([]byte(stored), &storedCM)
-	storedNotify, _ := storedCM["notify"].(map[string]any)
-	if storedNotify == nil || storedNotify["password"] != "smtp-pass" {
-		t.Errorf("empty password should preserve original, got %v", storedNotify)
-	}
-
-	// 非法 JSON → 400
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/ai", `{bad`, cookie)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("invalid settings json: status = %d, want 400", w.Code)
-	}
-	// JSON settings over the request limit return 413, while bounded malformed
-	// JSON remains a 400 validation error.
 	large := strings.Repeat("x", (1<<20)+1)
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/ai", large, cookie)
-	if w.Code != http.StatusRequestEntityTooLarge {
-		t.Errorf("oversized JSON settings: status = %d, want 413", w.Code)
-	}
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", strings.Repeat("x", (1<<20)+1), cookie)
-	if w.Code != http.StatusRequestEntityTooLarge {
-		t.Errorf("oversized YAML settings: status = %d, want 413", w.Code)
-	}
-	w = do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "[", cookie)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("malformed YAML settings: status = %d, want 400", w.Code)
+	for _, path := range []string{"/api/v1/settings/ai", "/api/v1/settings/style/yaml"} {
+		if w := do2FA(r, http.MethodPut, path, large, cookie); w.Code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("body limit: %d", w.Code)
+		}
 	}
 }
 
@@ -260,30 +200,31 @@ func TestSettingsAuthorsInject(t *testing.T) {
 	}
 }
 
-// 合并 B 的原子设置保存与 D 的 YAML 未知字段契约，不能因规范化而丢字段。
-func TestStyleYAMLPreservesUnknownFieldsAfterAtomicSave(t *testing.T) {
+// 历史 YAML 仍可读取作迁移预览；任何保存均不得修改历史记录。
+func TestStyleYAMLWriteGatePreservesLegacyData(t *testing.T) {
 	r, st, user, _ := newFullEnv(t)
-	w := do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "future_widget:\n  enabled: false\n  count: 0\n  title: \"\"\n", authCookie(user))
-	if w.Code != http.StatusOK {
-		t.Fatalf("save YAML: %d %s", w.Code, w.Body.String())
-	}
-	var response StyleYAMLUpdateResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || !response.OK {
-		t.Fatalf("typed response: %v", err)
-	}
-	raw, err := st.GetSetting("style")
-	if err != nil {
+	if err := st.PutSetting("style", `{"future_widget":{"enabled":false,"count":0,"title":""}}`); err != nil {
 		t.Fatal(err)
 	}
-	var saved map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(raw), &saved); err != nil {
+	before, _ := st.ReadSettingsSnapshot()
+	w := do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "future_widget:\n  enabled: true\n", authCookie(user))
+	if w.Code != http.StatusConflict {
+		t.Fatalf("legacy YAML gate: %d %s", w.Code, w.Body.String())
+	}
+	after, _ := st.ReadSettingsSnapshot()
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("YAML gate modified historical data")
+	}
+	if err := st.PutSettingsSnapshot(map[string]string{config.SectionStellarV2: `{"version":2,"theme":{}}`, config.SectionBlogExtensions: `{}`}); err != nil {
 		t.Fatal(err)
 	}
-	var extra map[string]any
-	if err := json.Unmarshal(saved["future_widget"], &extra); err != nil {
-		t.Fatal(err)
+	before, _ = st.ReadSettingsSnapshot()
+	w = do2FA(r, http.MethodPut, "/api/v1/settings/style/yaml", "future_widget:\n  enabled: true\n", authCookie(user))
+	if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "removed_field") {
+		t.Fatalf("migrated YAML gate: %d %s", w.Code, w.Body.String())
 	}
-	if extra["enabled"] != false || extra["count"] != float64(0) || extra["title"] != "" {
-		t.Fatalf("unknown YAML fields lost: %v", extra)
+	after, _ = st.ReadSettingsSnapshot()
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("YAML gate modified canonical or historical data")
 	}
 }

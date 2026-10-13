@@ -2,13 +2,14 @@
 import { Icon } from "@iconify/vue";
 import { VButton, VSwitch } from "@/components/ui";
 
-defineProps<{ data: Record<string, any>; saving: string }>();
+const props = defineProps<{ data: Record<string, any>; saving: string; hostOnly?: boolean }>();
 const emit = defineEmits<{ save: [section: string] }>();
 const inputCls = "apple-input";
 const textareaCls = "apple-textarea";
 
 function handleSubmit() {
-  emit('save', 'seo');
+  if (props.hostOnly) emit('save', 'site');
+  else emit('save', 'seo');
 }
 </script>
 
@@ -46,6 +47,7 @@ function handleSubmit() {
       </div>
     </section>
 
+    <template v-if="!hostOnly">
     <section class="settings-section">
       <div class="settings-section-heading">
         <h2>社交卡片与标准域名</h2>
@@ -198,6 +200,7 @@ function handleSubmit() {
         </VButton>
       </div>
     </div>
+    </template>
   </form>
 </template>
 

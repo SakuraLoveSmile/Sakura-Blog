@@ -70,6 +70,10 @@ func (h *Handler) updateSection(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "读取请求体失败")
 		return
 	}
+	if err := config.CheckLegacySectionWrite(h.store, section); err != nil {
+		stellarSettingsError(c, err, http.StatusBadRequest)
+		return
+	}
 	if err := config.SaveSection(h.store, h.site, section, raw); err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -115,6 +119,10 @@ func (h *Handler) updateStyleYAML(c *gin.Context) {
 			return
 		}
 		Fail(c, http.StatusBadRequest, "读取请求体失败")
+		return
+	}
+	if err := config.CheckLegacySectionWrite(h.store, config.SectionStyle); err != nil {
+		stellarSettingsError(c, err, http.StatusBadRequest)
 		return
 	}
 	var sc tmpl.StyleConfig
