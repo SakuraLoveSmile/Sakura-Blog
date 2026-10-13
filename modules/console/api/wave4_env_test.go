@@ -12,6 +12,7 @@ import (
 	backuppkg "blog/internal/backup"
 	"blog/internal/comments"
 	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -78,7 +79,10 @@ func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Stor
 	r := gin.New()
 	mountPublicIdentityForTest(r, st, site)
 	h, err := MountConsole(r, MountDeps{Config: Config{
-		Store:    st,
+		Store: st,
+		RenderStellarContentPreview: func(input content.StellarPreviewInput) (string, error) {
+			return "<!doctype html><html><body>" + input.HTML + "</body></html>", nil
+		},
 		Posts:    posts,
 		Site:     sitePtr(site),
 		Comments: commentH,

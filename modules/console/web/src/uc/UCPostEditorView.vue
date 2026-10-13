@@ -26,6 +26,9 @@ provide(
     stellar_version: form.value.stellar_version,
     stellar_config: form.value.stellar_config,
     blog_extensions: form.value.blog_extensions,
+    title: form.value.title,
+    layout: "post",
+    path: "/post/" + String(route.params.slug || ""),
   })),
 );
 const loading = ref(false);

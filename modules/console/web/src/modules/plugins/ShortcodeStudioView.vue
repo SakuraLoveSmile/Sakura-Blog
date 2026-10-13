@@ -413,7 +413,7 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
                       :srcdoc="preview.srcdoc.value"
                       class="studio-preview-iframe"
                       :style="{ height: preview.frameHeight.value + 'px' }"
-                      sandbox="allow-same-origin allow-scripts"
+                      sandbox="allow-scripts"
                     ></iframe>
                   </div>
 

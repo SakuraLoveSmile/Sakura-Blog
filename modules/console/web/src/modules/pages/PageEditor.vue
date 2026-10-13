@@ -65,6 +65,9 @@ provide(
     stellar_version: form.value.stellar_version,
     stellar_config: form.value.stellar_config,
     blog_extensions: form.value.blog_extensions,
+    title: form.value.title,
+    layout: "page",
+    path: "/" + form.value.slug,
   })),
 );
 

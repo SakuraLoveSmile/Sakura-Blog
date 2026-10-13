@@ -72,7 +72,8 @@ type Handler struct {
 	icons *tmpl.IconRegistry
 
 	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
-	renderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	renderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	renderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// events is the shared content-change publisher. Console does not know
 	// which module owns the derived caches that consume these events.
 	events content.Events
@@ -96,7 +97,8 @@ type Config struct {
 	Notify   *notify.Service    // 站内通知服务（Wave 3b），可空
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
-	RenderSitePreview func(sections map[string]json.RawMessage, page string) (string, error)
+	RenderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	RenderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// Events publishes generic changes such as wiki/settings writes.
 	Events         content.Events
 	UploadDir      string
@@ -135,29 +137,30 @@ func New(cfg Config) *Handler {
 		storageBackend = cfg.StorageManager
 	}
 	return &Handler{
-		store:             cfg.Store,
-		posts:             cfg.Posts,
-		site:              cfg.Site,
-		comments:          cfg.Comments,
-		backups:           cfg.Backups,
-		modules:           cfg.Modules,
-		notify:            cfg.Notify,
-		icons:             cfg.Icons,
-		renderSitePreview: cfg.RenderSitePreview,
-		events:            cfg.Events,
-		storage:           attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
-		storageManager:    cfg.StorageManager,
-		plugins:           cfg.Plugins,
-		rag:               cfg.RAG,
-		maxUpload:         int64(maxMB) << 20,
-		linkWatch:         cfg.LinkWatch,
-		stellarVersion:    cfg.StellarVersion,
-		stellarOwner:      cfg.StellarOwner,
-		stellarRepo:       cfg.StellarRepo,
-		appVersion:        cfg.AppVersion,
-		root:              cfg.Root,
-		updateRepo:        repo,
-		generate2FA:       generate2FAToken,
+		store:                       cfg.Store,
+		posts:                       cfg.Posts,
+		site:                        cfg.Site,
+		comments:                    cfg.Comments,
+		backups:                     cfg.Backups,
+		modules:                     cfg.Modules,
+		notify:                      cfg.Notify,
+		icons:                       cfg.Icons,
+		renderSitePreview:           cfg.RenderSitePreview,
+		renderStellarContentPreview: cfg.RenderStellarContentPreview,
+		events:                      cfg.Events,
+		storage:                     attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
+		storageManager:              cfg.StorageManager,
+		plugins:                     cfg.Plugins,
+		rag:                         cfg.RAG,
+		maxUpload:                   int64(maxMB) << 20,
+		linkWatch:                   cfg.LinkWatch,
+		stellarVersion:              cfg.StellarVersion,
+		stellarOwner:                cfg.StellarOwner,
+		stellarRepo:                 cfg.StellarRepo,
+		appVersion:                  cfg.AppVersion,
+		root:                        cfg.Root,
+		updateRepo:                  repo,
+		generate2FA:                 generate2FAToken,
 		loginFails: make(map[string]struct {
 			n int
 			t time.Time

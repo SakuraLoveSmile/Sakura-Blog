@@ -5,14 +5,21 @@ import type { MarkdownImportResponse } from "../generated";
 // --- Markdown 预览 ---
 export const previewApi = {
   /** 渲染 Markdown。previewProfile=component-library（Spec 63）时后端进入本地 Fixture 模式 */
-  render: (markdown: string, previewProfile?: string, metadata?: StellarContentMetadata) =>
-    http.post("/preview/markdown", {
+  render: (
+    markdown: string,
+    previewProfile?: string,
+    metadata?: StellarContentMetadata & { title?: string; layout?: string; path?: string; language?: string },
+  ) =>
+    http.post<{ html: string; document: string; preview_token: string }>("/preview/markdown", {
       markdown,
       preview_profile: previewProfile,
       stellar_version: 2,
       stellar_config: "{}",
       blog_extensions: "{}",
       ...metadata,
+      preview_token: Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join(""),
     }),
   /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
   createPostPreview: (form: PostPayload) => http.post("/preview/post", form),
