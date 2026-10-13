@@ -387,9 +387,12 @@ function finishSearchClose(dialog) {
   searchDialogRestoreFocus = true;
 }
 
-function closeSearch() {
+function closeSearch(options = {}) {
   const dialog = searchDialogElement();
-  if (!dialog?.open || searchCloseTimer !== null) return;
+  if (!dialog?.open) return;
+  // 关闭方式决定键盘焦点恢复；鼠标打开后按 Escape 也必须回到触发控件。
+  if (options.restoreFocus === true) searchDialogRestoreFocus = true;
+  if (searchCloseTimer !== null) return;
   if (!searchMotionEnabled()) {
     finishSearchClose(dialog);
     return;
@@ -461,7 +464,7 @@ document.addEventListener('keydown', function (event) {
   shellInputModality = 'keyboard';
   trapDrawerTab(event);
   if (event.key === 'Escape') {
-    if (searchDialogElement()?.open) closeSearch();
+    if (searchDialogElement()?.open) { event.preventDefault(); closeSearch({ restoreFocus: true }); }
     else if (siteShell?.dataset.drawer) { event.preventDefault(); dismissDrawer(); }
   }
 });
@@ -486,7 +489,7 @@ window.addEventListener('pageshow', function (event) {
 const searchDialog = searchDialogElement();
 searchDialog?.addEventListener('cancel', function (event) {
   event.preventDefault();
-  closeSearch();
+  closeSearch({ restoreFocus: true });
 });
 searchDialog?.addEventListener('click', function (event) {
   if (event.target === searchDialog) closeSearch();

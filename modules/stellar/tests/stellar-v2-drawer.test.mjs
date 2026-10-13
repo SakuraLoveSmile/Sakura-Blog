@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import vm from 'node:vm';
-const source = process.env.BLOG_DRAWER_BASELINE === '1'
- ? execFileSync('git',['show','e576465:modules/stellar/web/assets/js/main.js'],{encoding:'utf8'})
+const baselineRef = process.env.BLOG_DRAWER_SOURCE_REF || (process.env.BLOG_DRAWER_BASELINE === '1' ? 'e576465' : '');
+const source = baselineRef
+ ? execFileSync('git',['show',baselineRef+':modules/stellar/web/assets/js/main.js'],{encoding:'utf8'})
  : readFileSync(new URL('../web/assets/js/main.js',import.meta.url),'utf8');
 const layout = readFileSync(new URL('../web/templates/layout/stellar.html',import.meta.url),'utf8');
 class Element extends EventTarget {
@@ -20,9 +21,9 @@ class Element extends EventTarget {
  get classList(){return {add:value=>this.classes.add(value),remove:value=>this.classes.delete(value),contains:value=>this.classes.has(value),toggle:(value,on)=>{if(on??!this.classes.has(value)){this.classes.add(value);return true;}this.classes.delete(value);return false;}};}
  getClientRects(){return this.visible&&!this.closest('[hidden]')?[{}]:[];}
  focus(){if(this.closest('[inert]'))return;this.document.activeElement=this;const event=new Event('focusin');Object.defineProperty(event,'target',{value:this});this.document.dispatchEvent(event);}
- blur(){if(this.document.activeElement===this)this.document.activeElement=null;}
+ blur(){if(this.document.activeElement===this)this.document.activeElement=this.document.body;}
  replaceChildren(){this.children=[];}
- showModal(){this.open=true;}close(){this.open=false;}
+ showModal(){this.returnFocus=this.document.activeElement;this.open=true;}close(){this.open=false;this.returnFocus?.focus();}
 }
 function fixture({desktopLeft=false,desktopRight=false,reducedMotion=true}={}){
  const document=new EventTarget();const node=(id,tag)=>{const element=new Element(id,document);element.tag=tag;return element;};
@@ -35,7 +36,7 @@ function fixture({desktopLeft=false,desktopRight=false,reducedMotion=true}={}){
  const window=new EventTarget(),leftMedia=new EventTarget(),rightMedia=new EventTarget(),reduced=new EventTarget();leftMedia.matches=!desktopLeft;rightMedia.matches=!desktopRight;reduced.matches=reducedMotion;window.matchMedia=query=>query.includes('prefers-reduced')?reduced:query.includes('768')?leftMedia:rightMedia;window.innerWidth=390;window.localStorage={getItem(){return null;},setItem(){}};window.canonical={};window.stellar={};document.defaultView=window;
  const timers=new Map();let timerId=0;
  const sandbox={document,window,stellar:window.stellar,localStorage:window.localStorage,console,Event,Map,WeakMap,AbortController,setTimeout:(callback,delay)=>{timers.set(++timerId,{callback,delay});return timerId;},clearTimeout:id=>timers.delete(id),utils:{dom(){return {click(){}};},qsa(){return [];}}};vm.createContext(sandbox);vm.runInContext(source,sandbox);
- function click(target){const event=new Event('click',{cancelable:true});Object.defineProperty(event,'target',{value:target});document.dispatchEvent(event);return event;}
+ function click(target){if(target.tag==='button'||target.tag==='a')target.focus();const event=new Event('click',{cancelable:true});Object.defineProperty(event,'target',{value:target});document.dispatchEvent(event);return event;}
  function key(key,shiftKey=false){const event=new Event('keydown',{cancelable:true});Object.defineProperties(event,{key:{value:key},shiftKey:{value:shiftKey}});document.dispatchEvent(event);return event;}
  return{timers,document,window,root,main,cover,topbar,left,right,dock,scrim,dialog,leftFirst,leftLast,rightFirst,leftTrigger,rightTrigger,searchTrigger,searchInput,mainLink,leftMedia,rightMedia,click,key};
 }
@@ -67,4 +68,21 @@ test('普通motion嵌套搜索Escape开始退场，animationend只关闭search�
 test('search退场动画不触发时260ms兜底闭合；重新打开会取消旧关闭请求',()=>{
  const f=fixture({reducedMotion:false});f.click(f.leftTrigger);f.key('Enter');f.click(f.searchTrigger);f.key('Escape');const first=[...f.timers.values()][0];f.click(f.searchTrigger);assert.equal(f.timers.size,0);assert.equal(f.dialog.open,true);assert.equal(f.dialog.classList.contains('is-closing'),false);
  f.key('Escape');const pending=[...f.timers.entries()][0];assert.notEqual(pending[1],first);f.timers.delete(pending[0]);pending[1].callback();assert.equal(f.dialog.open,false);assert.equal(f.root.hasAttribute('data-search-open'),false);assert.equal(f.main.inert,true);assert.equal(f.document.activeElement?.id,f.searchTrigger.id);f.key('Escape');assert.equal(f.main.inert,false);
+});
+test('pointer打开再Escape关闭必须恢复触发焦点：desktop/mobile、正常motion/减少motion都覆盖',()=>{
+ for(const desktop of [false,true])for(const reducedMotion of [false,true]){
+  const f=fixture({desktopLeft:desktop,desktopRight:desktop,reducedMotion});if(!desktop)f.click(f.leftTrigger);
+  f.document.dispatchEvent(new Event('pointerdown'));f.click(f.searchTrigger);assert.equal(f.dialog.open,true);f.key('Escape');
+  if(!reducedMotion){const [id,pending]=[...f.timers.entries()][0];f.timers.delete(id);pending.callback();}
+  assert.equal(f.dialog.open,false);assert.equal(f.document.activeElement?.id,f.searchTrigger.id,`desktop=${desktop} reducedMotion=${reducedMotion}`);assert.equal(f.main.inert,!desktop);
+  if(!desktop){f.key('Escape');assert.equal(f.main.inert,false);assert.equal(f.document.activeElement?.id,f.leftTrigger.id);}
+ }
+});
+test('pointer打开后的原生cancel恢复触发焦点，退场中Escape会提升原pointer关闭的恢复策略',()=>{
+ for(const viaCancel of [false,true]){
+  const f=fixture({reducedMotion:false});f.click(f.leftTrigger);f.document.dispatchEvent(new Event('pointerdown'));f.click(f.searchTrigger);
+  if(viaCancel){const event=new Event('cancel',{cancelable:true});f.dialog.dispatchEvent(event);assert.equal(event.defaultPrevented,true);}
+  else{const pointerClose=new Event('click');Object.defineProperty(pointerClose,'target',{value:f.dialog});f.dialog.dispatchEvent(pointerClose);assert.equal(f.dialog.classList.contains('is-closing'),true);f.key('Escape');}
+  const [id,pending]=[...f.timers.entries()][0];f.timers.delete(id);pending.callback();assert.equal(f.dialog.open,false);assert.equal(f.document.activeElement?.id,f.searchTrigger.id);assert.equal(f.main.inert,true);
+ }
 });
