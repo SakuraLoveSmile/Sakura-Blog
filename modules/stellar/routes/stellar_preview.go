@@ -222,13 +222,17 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
-	in.Page["content"] = body
+	pageBody := body
+	if input.Mode == content.StellarPreviewModeContent {
+		pageBody = `<div data-stellar-preview-body="` + template.HTMLEscapeString(input.PreviewToken) + `">` + body + `</div>`
+	}
+	in.Page["content"] = pageBody
 	in.Page = stellarmodels.PageModelInput(in.Page, config)
 	if _, err := stellarmodels.BuildPage(in); err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
 	layout := map[string]string{"post": "post", "page": "page", "topic": "post", "wiki": "wiki-doc", "notebook": "note"}[profile]
-	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{Title: input.Title, Path: path, Layout: layout, Lang: language}, Content: template.HTML(body), Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: in, RequestURL: input.RequestURL, NavigationMembers: map[string]string{}}}
+	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{Title: input.Title, Path: path, Layout: layout, Lang: language}, Content: template.HTML(pageBody), Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: in, RequestURL: input.RequestURL, NavigationMembers: map[string]string{}}}
 	data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
 	data.Stellar.Input.RuntimeData["nativeComments"] = stellarmodels.Object{"enabled": false}
 	data.Stellar.Input.RuntimeData["preview"] = true
@@ -320,11 +324,16 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 		return "", fmt.Errorf("preview document missing body")
 	}
 	if mode == content.StellarPreviewModeWidget || mode == content.StellarPreviewModeContent {
-		var instance, article, scripts *html.Node
+		var instance, main, article, articleBody, scripts *html.Node
 		var find func(*html.Node)
 		find = func(n *html.Node) {
-			if mode == content.StellarPreviewModeContent && n.Type == html.ElementNode && n.Data == "article" && hasHTMLClass(n, "md-text") {
-				article = n
+			if mode == content.StellarPreviewModeContent && n.Type == html.ElementNode && n.Data == "main" {
+				for _, attr := range n.Attr {
+					if attr.Key == "id" && attr.Val == "main" {
+						main = n
+						break
+					}
+				}
 			}
 			for _, attr := range n.Attr {
 				if attr.Key == "data-widget-id" && strings.Contains(attr.Val, "__preview__") {
@@ -339,8 +348,35 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 			}
 		}
 		find(body)
-		if mode == content.StellarPreviewModeContent && article == nil {
-			return "", fmt.Errorf("preview document missing article.md-text")
+		if mode == content.StellarPreviewModeContent {
+			if main != nil {
+				for child := main.FirstChild; child != nil; child = child.NextSibling {
+					if child.Type == html.ElementNode && child.Data == "article" && hasHTMLClass(child, "md-text") && hasHTMLClass(child, "content") {
+						article = child
+						break
+					}
+				}
+			}
+			if article == nil {
+				return "", fmt.Errorf("preview document missing main#main > article.md-text.content")
+			}
+			for child := article.FirstChild; child != nil; child = child.NextSibling {
+				if child.Type != html.ElementNode || child.Data != "div" {
+					continue
+				}
+				for _, attr := range child.Attr {
+					if attr.Key == "data-stellar-preview-body" && attr.Val == token {
+						articleBody = child
+						break
+					}
+				}
+				if articleBody != nil {
+					break
+				}
+			}
+			if articleBody == nil {
+				return "", fmt.Errorf("preview document missing marked content body")
+			}
 		}
 		if mode == content.StellarPreviewModeWidget && instance != nil && instance.Parent != nil {
 			instance.Parent.RemoveChild(instance)
@@ -349,6 +385,21 @@ func stellarPreviewDocument(document, siteURL, token string, mode content.Stella
 			scripts.Parent.RemoveChild(scripts)
 		}
 		if mode == content.StellarPreviewModeContent && article != nil && article.Parent != nil {
+			var bodyNodes []*html.Node
+			for child := articleBody.FirstChild; child != nil; {
+				next := child.NextSibling
+				articleBody.RemoveChild(child)
+				bodyNodes = append(bodyNodes, child)
+				child = next
+			}
+			for child := article.FirstChild; child != nil; {
+				next := child.NextSibling
+				article.RemoveChild(child)
+				child = next
+			}
+			for _, child := range bodyNodes {
+				article.AppendChild(child)
+			}
 			article.Parent.RemoveChild(article)
 		}
 		for c := body.FirstChild; c != nil; {

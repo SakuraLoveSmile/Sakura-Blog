@@ -226,6 +226,24 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	if strings.Contains(document, "stellar-navigation-config") {
 		t.Fatal("preview includes navigation config")
 	}
+	input.Mode = content.StellarPreviewModeContent
+	contentPreview, err := ws.renderContentPreviewSnapshot(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Current content", `class="md-text content`, `data-stellar-preview-content`} {
+		if !strings.Contains(contentPreview.Document, want) {
+			t.Errorf("content preview missing %q", want)
+		}
+	}
+	for _, omit := range []string{"data-stellar-preview-body", "article-tags", "data-blog-expired", "ai-summary"} {
+		if strings.Contains(contentPreview.Document, omit) {
+			t.Errorf("content preview leaked host content %q", omit)
+		}
+	}
+	if contentPreview.HTML != input.HTML {
+		t.Fatalf("content response body changed: %q", contentPreview.HTML)
+	}
 	if network.calls != 0 {
 		t.Fatal("preview made server network callback")
 	}
@@ -245,14 +263,14 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 }
 
 func TestStellarPreviewDocumentModes(t *testing.T) {
-	document := `<!doctype html><html><head><link rel="stylesheet" href="/assets/css/main.css"><link rel="manifest" href="/manifest.json"></head><body><div class="site-shell"><header>SHELL_ONLY</header><article class="md-text"><div class="content">BODY_ONLY</div></article><section class="banner">BANNER_ONLY</section><footer>FOOTER_ONLY</footer><div id="comments">COMMENTS_ONLY</div><div class="site-scripts"><script src="/assets/js/runtime.js"></script></div></div></body></html>`
+	document := `<!doctype html><html><head><link rel="stylesheet" href="/assets/css/main.css"><link rel="manifest" href="/manifest.json"></head><body><div class="site-shell"><header>SHELL_ONLY</header><main id="main"><article class="md-text content"><div>HOST_SUMMARY_ONLY</div><div data-stellar-preview-body="preview-token">BODY_ONLY<article class="md-text content">NESTED_ARTICLE_ONLY</article></div><div>ARTICLE_TAGS_ONLY</div></article><footer>FOOTER_ONLY<article class="md-text content">FOOTER_ARTICLE_ONLY</article></footer></main><aside id="rightbar-region"><article class="md-text content">RIGHTBAR_ARTICLE_ONLY</article></aside><section class="banner">BANNER_ONLY</section><div id="comments">COMMENTS_ONLY</div></div><div class="site-scripts"><script src="/assets/js/runtime.js"></script></div></body></html>`
 	for _, tc := range []struct {
 		mode content.StellarPreviewMode
 		want []string
 		omit []string
 	}{
-		{mode: content.StellarPreviewModeDocument, want: []string{"SHELL_ONLY", "BODY_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "COMMENTS_ONLY"}},
-		{mode: content.StellarPreviewModeContent, want: []string{"BODY_ONLY", "main.css", "manifest.json", "runtime.js", "blog-preview.js", "data-stellar-preview-content"}, omit: []string{"SHELL_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "COMMENTS_ONLY"}},
+		{mode: content.StellarPreviewModeDocument, want: []string{"SHELL_ONLY", "BODY_ONLY", "NESTED_ARTICLE_ONLY", "HOST_SUMMARY_ONLY", "ARTICLE_TAGS_ONLY", "FOOTER_ARTICLE_ONLY", "RIGHTBAR_ARTICLE_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "COMMENTS_ONLY"}},
+		{mode: content.StellarPreviewModeContent, want: []string{"BODY_ONLY", "NESTED_ARTICLE_ONLY", "main.css", "manifest.json", "runtime.js", "blog-preview.js", "data-stellar-preview-content"}, omit: []string{"HOST_SUMMARY_ONLY", "ARTICLE_TAGS_ONLY", "SHELL_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "FOOTER_ARTICLE_ONLY", "RIGHTBAR_ARTICLE_ONLY", "COMMENTS_ONLY", "data-stellar-preview-body"}},
 	} {
 		out, err := stellarPreviewDocument(document, "https://example.test", "preview-token", tc.mode)
 		if err != nil {
