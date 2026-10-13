@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"blog/internal/content"
 	"blog/internal/post"
 	"blog/internal/search"
 	"blog/internal/store"
@@ -21,7 +22,7 @@ func RenderToolSearchItems(ctx context.Context, d Dependencies) ([]search.Item, 
 }
 
 func (ws *webServer) stellarCanonicalSearchItems(ctx context.Context) ([]search.Item, error) {
-	snap, err := ws.stellarSnapshotAt(ctx, ws.site.Load(), nil, true)
+	snap, err := ws.stellarPublicContextAt(ctx, ws.site.Load())
 	if err != nil {
 		return nil, err
 	}
@@ -29,6 +30,10 @@ func (ws *webServer) stellarCanonicalSearchItems(ctx context.Context) ([]search.
 	for _, r := range snap.records {
 		if err = ctx.Err(); err != nil {
 			return nil, err
+		}
+		body, err := ws.stellarBody(snap, r)
+		if err != nil {
+			return nil, &content.StellarBodyRenderError{Source: r.source, Err: err}
 		}
 		if stellarGet(r.model.Item, "visibility.searchable") == false {
 			continue
@@ -44,7 +49,7 @@ func (ws *webServer) stellarCanonicalSearchItems(ctx context.Context) ([]search.
 		if kind == "" {
 			continue
 		}
-		items = append(items, search.Item{Type: kind, Slug: slug, Title: stellarString(r.model.Item["title"]), Content: textutil.StripHTML(stellarString(r.model.Item["content"]))})
+		items = append(items, search.Item{Type: kind, Slug: slug, Title: stellarString(r.model.Item["title"]), Content: textutil.StripHTML(body)})
 	}
 	for _, m := range snap.inventory.moments {
 		if err = ctx.Err(); err != nil {
@@ -52,7 +57,7 @@ func (ws *webServer) stellarCanonicalSearchItems(ctx context.Context) ([]search.
 		}
 		body, e := ws.posts.RenderStellarV2WithContext(m.ContentMD, post.StellarRenderContext{Theme: snap.input.Theme, Data: snap.input.RuntimeData, Language: stellarLanguage(snap.input, nil), BlogExtensions: true, Offline: true})
 		if e != nil {
-			return nil, e
+			return nil, &content.StellarBodyRenderError{Source: "moments/" + store.MomentSlugKey(m.ID), Err: e}
 		}
 		content := textutil.StripHTML(body)
 		items = append(items, search.Item{Type: search.TypeMoment, Slug: store.MomentSlugKey(m.ID), Title: textutil.Truncate(content, 40), Content: content})

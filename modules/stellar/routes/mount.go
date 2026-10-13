@@ -3,7 +3,9 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sync"
 
 	"log"
 	"net/http"
@@ -23,6 +25,8 @@ import (
 	"blog/internal/og"
 	"blog/internal/post"
 	"blog/internal/search"
+	"blog/internal/stellarmodels"
+	"blog/internal/stellarv2"
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
@@ -64,13 +68,23 @@ type Server struct {
 
 // New creates the SSR server and installs content-index write hooks.
 func New(d Dependencies) (*Server, error) {
+	strictSearch := func() bool { return d.Site != nil && d.Site.Load() != nil && d.Site.Load().StellarV2 != nil }
 	searchIdx := d.Search
-	if searchIdx == nil {
+	if searchIdx == nil && strictSearch() {
+		searchIdx = search.New(d.Store.DB())
+		if err := searchIdx.Ensure(); err != nil {
+			return nil, fmt.Errorf("ensure strict stellar search: %w", err)
+		}
+	} else if searchIdx == nil {
 		searchIdx = setupSearchIndex(d.Store)
 	} else if err := searchIdx.Ensure(); err != nil {
+		searchIdx.SetUnavailable()
+		if strictSearch() {
+			return nil, fmt.Errorf("ensure strict stellar search: %w", err)
+		}
 		log.Printf("search: ensure shared fts failed (%v), server search disabled", err)
 		searchIdx = nil
-	} else if count, err := searchIdx.Count(); err == nil && count == 0 {
+	} else if count, err := searchIdx.Count(); err == nil && count == 0 && !strictSearch() {
 		items := search.ItemsFromStore(d.Store)
 		if err := searchIdx.Rebuild(items); err != nil {
 			log.Printf("search: rebuild shared fts failed (%v), server search disabled", err)
@@ -98,26 +112,41 @@ func New(d Dependencies) (*Server, error) {
 		UploadDir: d.UploadDir,
 		NotesPath: d.NotesPath,
 	})
-	strictSearch := func() bool { return d.Site != nil && d.Site.Load() != nil && d.Site.Load().StellarV2 != nil }
+	var strictSearchMu sync.Mutex
 	rebuildStrictSearch := func() error {
+		strictSearchMu.Lock()
+		defer strictSearchMu.Unlock()
 		if searchIdx == nil {
 			return nil
 		}
+		searchIdx.SetUnavailable()
 		items, err := web.stellarCanonicalSearchItems(context.Background())
+		if err == nil {
+			err = searchIdx.Rebuild(items)
+		}
 		if err != nil {
+			if clearErr := searchIdx.Rebuild(nil); clearErr != nil {
+				return fmt.Errorf("clear failed strict search after %v: %w", err, clearErr)
+			}
 			return err
 		}
-		return searchIdx.Rebuild(items)
+		return nil
 	}
 	if strictSearch() {
 		if err := rebuildStrictSearch(); err != nil {
-			return nil, fmt.Errorf("rebuild strict stellar search: %w", err)
+			var body *content.StellarBodyRenderError
+			var schema *stellarv2.SchemaError
+			var model *stellarmodels.ConfigError
+			if !errors.As(err, &body) || errors.As(err, &schema) || errors.As(err, &model) || errors.Is(err, store.ErrStellarMigrationRequired) {
+				return nil, fmt.Errorf("rebuild strict stellar search: %w", err)
+			}
+			log.Printf("search: strict body render failed; stale FTS cleared; Console repair remains available: %v", err)
 		}
 	}
 	legacyPostHook, legacyPageHook, legacyMomentHook := postHook, pageHook, momentHook
 	rebuildChangedSearch := func() {
 		if err := rebuildStrictSearch(); err != nil {
-			log.Printf("search: strict snapshot rebuild failed: %v", err)
+			log.Printf("search: strict snapshot rebuild failed; stale results cleared or index unavailable: %v", err)
 		}
 	}
 	postHook = func(op, slug string) {

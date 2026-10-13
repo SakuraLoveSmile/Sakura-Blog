@@ -46,6 +46,10 @@ func TestConsoleRepairsPublishedBodyThroughStellarPublicContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	row := &store.Post{Slug: "repair", Title: "Repair", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ContentMD: "{% tabs %}"}
+	if _, err := st.Create(row); err != nil {
+		t.Fatal(err)
+	}
 	r := gin.New()
 	server, err := stellar.Mount(r, stellar.Dependencies{App: &config.App{Root: root, DBPath: filepath.Join(root, "data", "blog.db")}, Store: st, Site: site, Posts: posts, Icons: icons, Root: root, UploadDir: filepath.Join(root, "data", "uploads")})
 	if err != nil {
@@ -54,10 +58,6 @@ func TestConsoleRepairsPublishedBodyThroughStellarPublicContext(t *testing.T) {
 	defer server.Close()
 	_, err = console.Mount(r, console.MountDeps{API: console.APIConfig{Store: st, Site: site, Posts: posts, RenderStellarMarkdown: server.RenderStellarMarkdown, RenderStellarContentPreview: server.RenderContentPreview}, DevMode: true, Root: root, Fallback: server.NoRoute(nil)})
 	if err != nil {
-		t.Fatal(err)
-	}
-	row := &store.Post{Slug: "repair", Title: "Repair", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`, ContentMD: "{% tabs %}"}
-	if _, err := st.Create(row); err != nil {
 		t.Fatal(err)
 	}
 	request := func(method, path string, payload any) *httptest.ResponseRecorder {
