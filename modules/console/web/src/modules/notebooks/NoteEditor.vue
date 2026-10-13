@@ -23,11 +23,13 @@ const loading = ref(false),
   error = ref(""),
   migration = ref(false),
   baseline = ref("");
-const editorRef = ref<InstanceType<typeof ContentEditor> | null>(null);
+// 与共享 ContentEditor 的 expose 契约一致，必须先提交富文本的待发送修改。
+const editorRef = ref<{ clearDraft: () => void; flushPendingChanges: () => Promise<void> } | null>(null);
+const editorPending = ref(false);
 const busy = computed(() => saving.value || deleting.value);
-const dirty = computed(() => ready.value && JSON.stringify(form.value) !== baseline.value);
+const dirty = computed(() => ready.value && (editorPending.value || JSON.stringify(form.value) !== baseline.value));
 async function flushEditor() {
-  await (editorRef.value as { flushPendingChanges?: () => Promise<void> } | null)?.flushPendingChanges?.();
+  await editorRef.value?.flushPendingChanges();
   await nextTick();
 }
 useNotebookDraft(dirty, busy, flushEditor);
@@ -52,6 +54,7 @@ function accept(note: NotebookNoteResponse) {
 async function load() {
   const current = ++request;
   ready.value = false;
+  editorPending.value = false;
   loading.value = true;
   error.value = "";
   migration.value = false;
@@ -208,6 +211,7 @@ watch(() => [route.params.notebook, route.params.id], load, { immediate: true })
               :storage-key="`notebook:${notebook}:note:${id || 'new'}`"
               placeholder="开始写作…"
               @save="save()"
+              @pending-change="editorPending = $event"
             />
           </div>
         </fieldset>
