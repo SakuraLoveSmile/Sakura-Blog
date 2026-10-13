@@ -11,8 +11,11 @@ import (
 
 // ViewData 贯穿所有模板的渲染上下文，对齐 Stellar layout.ejs 的 page/theme/config 三层。
 type ViewData struct {
-	Site           *Site
-	Page           *Page
+	Site *Site
+	Page *Page
+	// Stellar 保存严格 2.0 内容模型输入；普通聚合页可为空，内容详情必须
+	// 由路由在通过记录迁移版本和归属校验后填充，不能从旧字段猜测配置。
+	Stellar        *StellarRenderContext
 	Content        template.HTML // 文章正文 HTML（goldmark 渲染后）
 	TOC            template.HTML // 文章目录（ExtractTOC 从 Content 提取，空则不渲染右栏 widget）
 	QAEnabled      bool          // AI 公开问答入口开关，由前台 fillSidebar 读取 settings.ai
