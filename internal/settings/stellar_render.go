@@ -9,4 +9,8 @@ type StellarRenderContext struct {
 	Profile           string
 	Input             stellarmodels.Input
 	NavigationMembers map[string]string
+	ListItems         []stellarmodels.PageModel
+	PinnedItems       []stellarmodels.PageModel
+	Collections       []stellarmodels.Object
+	Index             stellarmodels.Object
 }

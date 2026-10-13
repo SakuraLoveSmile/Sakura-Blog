@@ -12,6 +12,7 @@ import (
 type StellarRenderData struct {
 	*settings.ViewData
 	Stellar *StellarPresentation
+	Region  string
 }
 
 // StellarPresentation 是模板的装配结果，不持久化或再次定义上游 schema。
@@ -27,6 +28,7 @@ type StellarPresentation struct {
 	Indent, SearchEnabled, MobileBrand      bool
 	MobileBrandModel                        map[string]any
 	Widgets                                 map[string][]StellarWidget
+	RegionBodies                            map[string]template.HTML
 	ListItems, Collections                  []map[string]any
 	HeadInject, BodyBegin, BodyEnd          template.HTML
 	BlogNativeComments, BlogContent         bool
