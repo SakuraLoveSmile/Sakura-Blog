@@ -52,7 +52,7 @@ test('lazy正常资源仍调用官方实例；取消加载期间不安装迟到f
  await Promise.resolve();f.controller.abort();reject(new Error('late'));await assert.rejects(pending);assert.equal(image.getAttribute('src'),null);assert.equal(f.errors.length,0);assert.equal(f.view.wrapLazyloadImages,undefined);
 });
 test('Gist只接受本frame/current-token/null-origin尺寸，卸载取消子文档且重挂拒绝旧消息',t=>{
- const f=fixture(t),frame=new Element('IFRAME');frame.contentWindow={};frame.ownerDocument=f.root;frame.setAttribute('src','/stellar/embed/gist?gist=test%2Fab');f.root.map['iframe[data-stellar-gist]']=[frame];
+ const f=fixture(t),frame=new Element('IFRAME');frame.contentWindow={postMessage(){}};frame.ownerDocument=f.root;frame.setAttribute('src','/stellar/embed/gist?gist=test%2Fab');f.root.map['iframe[data-stellar-gist]']=[frame];
  const cleanup=gistMount(f.root,f.context);const token=new URL(frame.getAttribute('src')).hash.slice(1).split('=')[1];
  const message=(overrides={})=>dispatch(f.view,'message',{origin:'null',source:frame.contentWindow,data:{type:'stellar:gist:resize',height:320,token},...overrides});
  message({origin:'https://fixture.test'});message({source:{}});message({data:{type:'stellar:gist:resize',height:320,token:'old'}});assert.equal(frame.style.height,undefined);

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"blog/internal/stellarv2"
+	"blog/modules/stellar/web"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +30,10 @@ type gistDocumentData struct {
 	Nonce  string
 	Source string
 	Bridge string
+}
+
+func gistBridgeURL(requestPath, version string) string {
+	return strings.TrimSuffix(requestPath, "/stellar/embed/gist") + "/assets/js/blog-gist.js?" + url.Values{"v": {version}}.Encode()
 }
 
 // gistEmbedHandler 只接受上游 owner/id 和 file，资源根地址来自可信主题配置。
@@ -69,7 +74,7 @@ func gistEmbedHandler(baseURL func() string) gin.HandlerFunc {
 		nonce := base64.RawStdEncoding.EncodeToString(random[:])
 		origin := base.Scheme + "://" + base.Host
 		var document bytes.Buffer
-		if err := gistDocument.Execute(&document, gistDocumentData{Nonce: nonce, Source: base.String(), Bridge: strings.TrimSuffix(c.Request.URL.Path, "/stellar/embed/gist") + "/assets/js/blog-gist.js"}); err != nil {
+		if err := gistDocument.Execute(&document, gistDocumentData{Nonce: nonce, Source: base.String(), Bridge: gistBridgeURL(c.Request.URL.Path, web.AssetVersion("/assets/js/blog-gist.js"))}); err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}

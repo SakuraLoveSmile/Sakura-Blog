@@ -9,6 +9,7 @@ import (
 
 	"blog/internal/config"
 	tmpl "blog/modules/stellar/viewmodel"
+	"blog/modules/stellar/web"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
@@ -65,11 +66,30 @@ func TestGistEmbedIsolationAndEncoding(t *testing.T) {
 			nonce = attr.Val
 		}
 	}
-	if resizeSource != "/assets/js/blog-gist.js" || nonce == "" || !strings.Contains(csp, "'nonce-"+nonce+"'") || scripts[1].FirstChild != nil {
+	if resizeSource != gistBridgeURL("/stellar/embed/gist", web.AssetVersion("/assets/js/blog-gist.js")) || nonce == "" || !strings.Contains(csp, "'nonce-"+nonce+"'") || scripts[1].FirstChild != nil {
 		t.Fatalf("invalid lifecycle script: src=%q nonce=%q csp=%q", resizeSource, nonce, csp)
 	}
 	if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Referrer-Policy") != "no-referrer" {
 		t.Fatal("missing document boundaries")
+	}
+}
+
+func TestGistBridgeVersionAndSubdirectory(t *testing.T) {
+	for _, prefix := range []string{"", "/sub"} {
+		for _, version := range []string{"", "a11ce123", "hash+value&extra=blocked"} {
+			u, err := url.Parse(gistBridgeURL(prefix+"/stellar/embed/gist", version))
+			if err != nil || u.Path != prefix+"/assets/js/blog-gist.js" || u.Query().Get("v") != version || len(u.Query()) != 1 {
+				t.Fatalf("invalid versioned bridge: %v (%v)", u, err)
+			}
+		}
+	}
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/sub/stellar/embed/gist", gistEmbedHandler(func() string { return "https://gist.github.com" }))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/sub/stellar/embed/gist?gist=octocat%2Fabcd", nil))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `src="/sub/assets/js/blog-gist.js?v=`) || strings.Contains(w.Body.String(), "/sub/sub/") {
+		t.Fatalf("subdirectory bridge: status=%d body=%s", w.Code, w.Body.String())
 	}
 }
 
