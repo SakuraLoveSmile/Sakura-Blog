@@ -18,7 +18,7 @@ import (
 	whatwg "github.com/nlnwa/whatwg-url/url"
 )
 
-type PageSnapshot struct{ Path, HTML string }
+type PageSnapshot struct{ Path, HTML, BaseURL string }
 type PrepareOptions struct {
 	Page, Refresh string
 	DryRun        bool
@@ -66,6 +66,21 @@ func (p Processor) base(route string) (string, error) {
 	u, err := whatwg.ParseRef(base, route)
 	if err != nil || u == nil || (u.Scheme() != "http" && u.Scheme() != "https") {
 		return "", errors.New("invalid site URL")
+	}
+	return u.Href(false), nil
+}
+
+func (p Processor) snapshotBase(page PageSnapshot) (string, error) {
+	if page.BaseURL == "" {
+		return p.base(page.Path)
+	}
+	parsed, err := url.Parse(page.BaseURL)
+	if err != nil || !parsed.IsAbs() || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return "", errors.New("page base URL must be absolute HTTP(S)")
+	}
+	u, err := whatwg.Parse(page.BaseURL)
+	if err != nil || u == nil {
+		return "", errors.New("invalid page base URL")
 	}
 	return u.Href(false), nil
 }
@@ -139,6 +154,23 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 	if p.StorePath == "" {
 		return report, errors.New("image metadata path is required")
 	}
+	requested := strings.TrimPrefix(opts.Page, "/")
+	if strings.HasSuffix(requested, "/") {
+		requested += "index.html"
+	}
+	pageBases := make([]string, len(pages))
+	if opts.Refresh == "" {
+		for i, page := range pages {
+			if opts.Page != "" && page.Path != requested {
+				continue
+			}
+			var err error
+			pageBases[i], err = p.snapshotBase(page)
+			if err != nil {
+				return report, err
+			}
+		}
+	}
 	if !opts.DryRun {
 		if err := os.MkdirAll(filepath.Dir(p.StorePath), 0755); err != nil {
 			return report, err
@@ -170,21 +202,13 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 		}
 		urls = append(urls, u)
 	} else {
-		requested := strings.TrimPrefix(opts.Page, "/")
-		if strings.HasSuffix(requested, "/") {
-			requested += "index.html"
-		}
 		matched := opts.Page == ""
-		for _, page := range pages {
+		for i, page := range pages {
 			if opts.Page != "" && page.Path != requested {
 				continue
 			}
 			matched = true
-			pageBase, e := p.base(page.Path)
-			if e != nil {
-				return report, e
-			}
-			images, e := Collect(page.HTML, pageBase)
+			images, e := Collect(page.HTML, pageBases[i])
 			if e != nil {
 				return report, e
 			}

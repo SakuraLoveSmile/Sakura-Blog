@@ -113,6 +113,39 @@ func TestEmptyDryRunReportJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestSnapshotBaseUsesRenderedURL(t *testing.T) {
+	p := Processor{StorePath: filepath.Join(t.TempDir(), "images.json"), SiteURL: "https://site.test/blog/"}
+	for _, tc := range []struct{ base, image string }{
+		{"", "https://site.test/blog/post/foo/image.png"},
+		{"https://site.test/blog/post/foo", "https://site.test/blog/post/image.png"},
+	} {
+		pages := []PageSnapshot{{Path: "post/foo/index.html", BaseURL: tc.base, HTML: `<article class="md-text content"><img src="image.png"></article>`}}
+		report, err := p.Prepare(context.Background(), pages, PrepareOptions{Page: "/post/foo/", DryRun: true})
+		if err != nil || !reflect.DeepEqual(report.Missing, []string{tc.image}) {
+			t.Fatalf("base=%q: %+v %v", tc.base, report, err)
+		}
+	}
+}
+
+func TestInvalidSnapshotBaseDoesNotWrite(t *testing.T) {
+	for _, base := range []string{"/post/foo", "https://", "https:site.test/post/foo", "ftp://site.test/post/foo"} {
+		t.Run(base, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "new")
+			p := Processor{StorePath: filepath.Join(dir, "images.json"), SiteURL: "https://site.test/", LocalAsset: func(context.Context, string) (io.ReadCloser, error) {
+				t.Fatal("invalid base fetched an image")
+				return nil, nil
+			}}
+			_, err := p.Prepare(context.Background(), []PageSnapshot{{Path: "post/foo/index.html", BaseURL: base}}, PrepareOptions{})
+			if err == nil {
+				t.Fatal("invalid base accepted")
+			}
+			if _, err = os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("invalid base wrote directory: %v", err)
+			}
+		})
+	}
+}
 func TestFailureRetainsOldResultsAndBackoff(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "images.json")
 	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
