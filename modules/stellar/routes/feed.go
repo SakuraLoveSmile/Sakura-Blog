@@ -4,14 +4,14 @@ package routes
 import (
 	"encoding/xml"
 	"net/http"
-	"net/url"
+
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -47,213 +47,18 @@ func (h *FeedHandler) baseURL(c *gin.Context) string {
 	return canonicalBaseURL(h.site.Load(), c)
 }
 
-func (h *FeedHandler) setFeedCache(c *gin.Context) {
-	c.Header("Cache-Control", "max-age="+strconv.Itoa(feedCacheAge))
-}
-
-func (h *FeedHandler) postURL(base, slug string) string {
-	return tmpl.JoinSiteURL(base, "/post/"+url.PathEscape(slug))
-}
-
-func feedBody(p *store.Post) string {
-	if p.IsPasswordProtected() {
-		return "<p>本文受密码保护</p>"
-	}
-	return p.ContentHTML
-}
-
-// resolveAuthor 查找作者名：post.Author 在 site.Authors 中存在则返回对应名，否则回退站点标题。
-func (h *FeedHandler) resolveAuthor(postAuthor string) string {
-	if postAuthor != "" {
-		if a, ok := h.site.Load().Authors[postAuthor]; ok && a.Name != "" {
-			return a.Name
-		}
-	}
-	if h.site.Load().Title != "" {
-		return h.site.Load().Title
-	}
-	return ""
-}
-
-func (h *FeedHandler) resolvePostAuthors(p *store.Post) string {
-	return resolvePostAuthors(p, h.resolveAuthor)
-}
-
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
-func (h *FeedHandler) atom(c *gin.Context) {
-	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts: %v", err)
-		return
-	}
-
-	base := h.baseURL(c)
-	feedURL := tmpl.JoinSiteURL(base, "/atom.xml")
-	updated := time.Now().UTC().Format(time.RFC3339)
-	if len(posts) > 0 {
-		t := posts[0].UpdatedAt
-		if t.IsZero() {
-			t = posts[0].CreatedAt
-		}
-		updated = t.UTC().Format(time.RFC3339)
-	}
-
-	entries := make([]atomEntry, 0, len(posts))
-	for _, p := range posts {
-		link := h.postURL(base, p.Slug)
-		pub := p.CreatedAt.UTC().Format(time.RFC3339)
-		upd := p.UpdatedAt.UTC().Format(time.RFC3339)
-		if p.UpdatedAt.IsZero() {
-			upd = pub
-		}
-		authorName := h.resolvePostAuthors(p)
-		entries = append(entries, atomEntry{
-			Title:     p.Title,
-			Link:      atomLink{Href: link},
-			ID:        link,
-			Updated:   upd,
-			Published: pub,
-			Content:   atomContent{Type: "html", Body: feedBody(p)},
-			Author:    &atomAuthor{Name: authorName},
-		})
-	}
-
-	feed := atomFeed{
-		XMLNS: "http://www.w3.org/2005/Atom",
-		Title: h.site.Load().Title,
-		Link: []atomLink{
-			{Href: tmpl.JoinSiteURL(base, "/")},
-			{Href: feedURL, Rel: "self"},
-		},
-		ID:      tmpl.JoinSiteURL(base, "/"),
-		Updated: updated,
-		Entries: entries,
-	}
-
-	output, err := xml.MarshalIndent(feed, "", "  ")
-	if err != nil {
-		c.String(http.StatusInternalServerError, "marshal atom: %v", err)
-		return
-	}
-	h.setFeedCache(c)
-	c.Data(http.StatusOK, "application/atom+xml; charset=utf-8", append([]byte(xml.Header), output...))
-}
-
-// jsonFeed GET /feed.json — JSON Feed 1.1 全站订阅。
-func (h *FeedHandler) jsonFeed(c *gin.Context) {
-	posts, err := h.store.ListPublishedPaged(1, feedPageSize)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts: %v", err)
-		return
-	}
-
-	base := h.baseURL(c)
-	items := make([]jsonFeedItem, 0, len(posts))
-	for _, p := range posts {
-		link := h.postURL(base, p.Slug)
-		items = append(items, jsonFeedItem{
-			ID:            link,
-			URL:           link,
-			Title:         p.Title,
-			DatePublished: p.CreatedAt.UTC().Format(time.RFC3339),
-			ContentHTML:   feedBody(p),
-			Author:        h.resolvePostAuthors(p),
-		})
-	}
-
-	feed := jsonFeed{
-		Version:     "https://jsonfeed.org/version/1.1",
-		Title:       h.site.Load().Title,
-		HomePageURL: tmpl.JoinSiteURL(base, "/"),
-		FeedURL:     tmpl.JoinSiteURL(base, "/feed.json"),
-		Description: h.site.Load().Description,
-		Items:       items,
-	}
-
-	h.setFeedCache(c)
-	c.JSON(http.StatusOK, feed)
-}
-
-// categoryRSS GET /categories/:name/rss.xml — 分类维度 RSS 2.0。
-func (h *FeedHandler) categoryRSS(c *gin.Context) {
-	name := c.Param("name")
-	h.categoryRSSPath(c, name)
-}
-
+func (h *FeedHandler) atom(c *gin.Context)        { h.stellarWeb().serveStellarFeed(c, "atom", "", "") }
+func (h *FeedHandler) jsonFeed(c *gin.Context)    { h.stellarWeb().serveStellarFeed(c, "json", "", "") }
+func (h *FeedHandler) categoryRSS(c *gin.Context) { h.categoryRSSPath(c, c.Param("name")) }
 func (h *FeedHandler) categoryRSSPath(c *gin.Context, name string) {
-	posts, err := h.listCategoryPosts(name)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts: %v", err)
-		return
-	}
-	base := h.baseURL(c)
-	h.writeRSS(c, h.site.Load().Title+" — 分类："+name, base+"/categories/"+name, posts)
+	h.stellarWeb().serveStellarFeed(c, "rss", "categories", name)
 }
-
-// tagRSS GET /tags/:name/rss.xml — 标签维度 RSS 2.0。
 func (h *FeedHandler) tagRSS(c *gin.Context) {
-	name := c.Param("name")
-	posts, err := h.listTagPosts(name)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "list posts: %v", err)
-		return
-	}
-	base := h.baseURL(c)
-	h.writeRSS(c, h.site.Load().Title+" — 标签："+name, base+"/tags/"+name, posts)
+	h.stellarWeb().serveStellarFeed(c, "rss", "tags", c.Param("name"))
 }
-
-func (h *FeedHandler) listCategoryPosts(name string) ([]*store.Post, error) {
-	counts, err := h.store.CountByCategory()
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := counts[name]; !ok {
-		return nil, nil
-	}
-	return h.store.ListByCategory(name)
-}
-
-func (h *FeedHandler) listTagPosts(name string) ([]*store.Post, error) {
-	counts, err := h.store.CountByTag()
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := counts[name]; !ok {
-		return nil, nil
-	}
-	return h.store.ListByTag(name)
-}
-
-func (h *FeedHandler) writeRSS(c *gin.Context, title, channelLink string, posts []*store.Post) {
-	base := h.baseURL(c)
-	items := make([]rssItem, 0, len(posts))
-	for _, p := range posts {
-		link := h.postURL(base, p.Slug)
-		items = append(items, rssItem{
-			Title:       p.Title,
-			Link:        link,
-			Description: feedBody(p),
-			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
-			Guid:        link,
-			Author:      h.resolvePostAuthors(p),
-		})
-	}
-	rss := rssFeed{
-		Version: "2.0",
-		Channel: rssChannel{
-			Title:       title,
-			Link:        channelLink,
-			Description: h.site.Load().Description,
-			Items:       items,
-		},
-	}
-	output, err := xml.MarshalIndent(rss, "", "  ")
-	if err != nil {
-		c.String(http.StatusInternalServerError, "marshal rss: %v", err)
-		return
-	}
-	h.setFeedCache(c)
-	c.Data(http.StatusOK, "application/rss+xml; charset=utf-8", append([]byte(xml.Header), output...))
+func (h *FeedHandler) stellarWeb() *webServer {
+	return newWebServer(webDeps{Site: h.site, Store: h.store, Posts: post.NewService("")})
 }
 
 // robots GET /robots.txt

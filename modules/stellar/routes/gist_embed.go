@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"blog/internal/stellarv2"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,28 +23,12 @@ var gistDocument = template.Must(template.New("gist-embed").Parse(`<!doctype htm
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style nonce="{{.Nonce}}">html,body{margin:0;padding:0;background:transparent}body{overflow:hidden}.gist{margin:0!important}</style>
 </head><body><script src="{{.Source}}"></script>
-<script nonce="{{.Nonce}}">
-(function () {
-  'use strict';
-  let frame = 0, previous = 0;
-  function measure() {
-    frame = 0;
-    const height = Math.ceil(document.body.getBoundingClientRect().height);
-    if (height > 0 && height !== previous) {
-      previous = height;
-      parent.postMessage({type:'stellar:gist:resize',height:height}, '*');
-    }
-  }
-  function schedule() { if (!frame) frame = requestAnimationFrame(measure); }
-  new ResizeObserver(schedule).observe(document.body);
-  window.addEventListener('load', schedule);
-  schedule();
-})();
-</script></body></html>`))
+<script nonce="{{.Nonce}}" src="{{.Bridge}}"></script></body></html>`))
 
 type gistDocumentData struct {
 	Nonce  string
 	Source string
+	Bridge string
 }
 
 // gistEmbedHandler 只接受上游 owner/id 和 file，资源根地址来自可信主题配置。
@@ -84,7 +69,7 @@ func gistEmbedHandler(baseURL func() string) gin.HandlerFunc {
 		nonce := base64.RawStdEncoding.EncodeToString(random[:])
 		origin := base.Scheme + "://" + base.Host
 		var document bytes.Buffer
-		if err := gistDocument.Execute(&document, gistDocumentData{Nonce: nonce, Source: base.String()}); err != nil {
+		if err := gistDocument.Execute(&document, gistDocumentData{Nonce: nonce, Source: base.String(), Bridge: strings.TrimSuffix(c.Request.URL.Path, "/stellar/embed/gist") + "/assets/js/blog-gist.js"}); err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
@@ -97,14 +82,15 @@ func gistEmbedHandler(baseURL func() string) gin.HandlerFunc {
 }
 
 func (s *webServer) registerEmbedRoutes(r *gin.Engine) {
-	r.GET("/stellar/embed/gist", func(c *gin.Context) {
-		site := s.site.Load()
-		if site == nil || site.StellarV2 == nil {
-			c.String(http.StatusConflict, "Stellar v2 migration required")
-			return
-		}
-		value, _ := stellarv2.Get(site.StellarV2.Theme, "services.github.gistUrl")
-		base, _ := value.(string)
-		gistEmbedHandler(func() string { return base })(c)
-	})
+	r.GET("/stellar/embed/gist", s.serveGistEmbed)
+}
+func (s *webServer) serveGistEmbed(c *gin.Context) {
+	site := s.site.Load()
+	if site == nil || site.StellarV2 == nil {
+		c.String(http.StatusConflict, "Stellar v2 migration required")
+		return
+	}
+	value, _ := stellarv2.Get(site.StellarV2.Theme, "services.github.gistUrl")
+	base, _ := value.(string)
+	gistEmbedHandler(func() string { return base })(c)
 }

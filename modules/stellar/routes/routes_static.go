@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -60,24 +61,26 @@ func (s *webServer) registerStaticRoutes(r *gin.Engine) error {
 	// P1-11：SVG 防护——对 .svg 响应加 CSP sandbox，禁止内嵌脚本执行。
 	// 安全审计 2026-08-16：拒绝目录请求——c.File 命中目录时 http.ServeFile 会渲染
 	// stdlib 目录列表，/uploads/ 与 /uploads/2026/ 可枚举全部上传文件。
-	r.GET("/uploads/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		clean := filepath.Clean(fp)
-		if clean == "/" || strings.HasSuffix(clean, "/") {
-			c.String(http.StatusNotFound, "404 page not found")
-			return
-		}
-		target := filepath.Join(s.uploadDir, clean)
-		if info, err := os.Stat(target); err != nil || info.IsDir() {
-			c.String(http.StatusNotFound, "404 page not found")
-			return
-		}
-		if strings.HasSuffix(strings.ToLower(fp), ".svg") {
-			c.Header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
-		}
-		c.File(target)
-	})
+	r.GET("/uploads/*filepath", func(c *gin.Context) { s.serveUpload(c, c.Param("filepath")) })
+
 	return nil
+}
+
+func (s *webServer) serveUpload(c *gin.Context, raw string) {
+	relative := strings.TrimPrefix(raw, "/")
+	if !fs.ValidPath(relative) || path.Clean(relative) != relative {
+		c.String(http.StatusNotFound, "404 page not found")
+		return
+	}
+	target := filepath.Join(s.uploadDir, filepath.FromSlash(relative))
+	if info, err := os.Stat(target); err != nil || info.IsDir() {
+		c.String(http.StatusNotFound, "404 page not found")
+		return
+	}
+	if strings.HasSuffix(strings.ToLower(relative), ".svg") {
+		c.Header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+	}
+	c.File(target)
 }
 
 // serveSW 提供 Service Worker：缓存版本号由 settings site 段 sw_cache_version 注入（缺省 blog-v3），

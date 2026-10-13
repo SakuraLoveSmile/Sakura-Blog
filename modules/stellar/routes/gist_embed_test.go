@@ -9,6 +9,7 @@ import (
 
 	"blog/internal/config"
 	tmpl "blog/modules/stellar/viewmodel"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/html"
 )
@@ -54,6 +55,18 @@ func TestGistEmbedIsolationAndEncoding(t *testing.T) {
 	u, err := url.Parse(source)
 	if err != nil || u.Host != "gist.github.com" || u.Path != "/octocat/abcd1234.js" || u.Query().Get("file") != file {
 		t.Fatalf("wrong official script: %q (%v)", source, err)
+	}
+	var resizeSource, nonce string
+	for _, attr := range scripts[1].Attr {
+		if attr.Key == "src" {
+			resizeSource = attr.Val
+		}
+		if attr.Key == "nonce" {
+			nonce = attr.Val
+		}
+	}
+	if resizeSource != "/assets/js/blog-gist.js" || nonce == "" || !strings.Contains(csp, "'nonce-"+nonce+"'") || scripts[1].FirstChild != nil {
+		t.Fatalf("invalid lifecycle script: src=%q nonce=%q csp=%q", resizeSource, nonce, csp)
 	}
 	if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Referrer-Policy") != "no-referrer" {
 		t.Fatal("missing document boundaries")

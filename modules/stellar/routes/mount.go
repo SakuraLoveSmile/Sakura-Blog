@@ -2,7 +2,7 @@ package routes
 
 import (
 	"encoding/json"
-	"html/template"
+
 	"log"
 	"net/http"
 	"net/url"
@@ -84,6 +84,7 @@ func New(d Dependencies) (*Server, error) {
 
 	web := newWebServer(webDeps{
 		Site:      d.Site,
+		Icons:     d.Icons,
 		Store:     d.Store,
 		Posts:     d.Posts,
 		Engine:    d.Engine,
@@ -140,6 +141,7 @@ func (s *Server) Mount(r *gin.Engine) error {
 	}
 	s.pvBuffer = newPageViewBuffer(s.deps.Store)
 	s.web.installMiddleware(r, s.deps.App, s.pvBuffer)
+	r.Use(s.web.stellarDynamicRoutes)
 	if err := s.web.registerStaticRoutes(r); err != nil {
 		return err
 	}
@@ -156,15 +158,6 @@ func (s *Server) Mount(r *gin.Engine) error {
 		s.web.fillSEO(data, c)
 	})
 	pageHandler.Register(r)
-	if err := pageHandler.EnsureSystemFriendsPage(); err != nil {
-		log.Printf("[warn] seed friends page: %v", err)
-	}
-	if err := pageHandler.EnsureSystemNotesPage(s.web.notesMDPath); err != nil {
-		log.Printf("[warn] seed notes page: %v", err)
-	}
-	if err := pageHandler.EnsureSystemLinksPage(); err != nil {
-		log.Printf("[warn] seed links page: %v", err)
-	}
 
 	momentHandler, err := NewMomentHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site, s.web.fillSidebar, s.web.fillSEO)
 	if err != nil {
@@ -191,35 +184,36 @@ func (s *Server) renderDraftPreview(c *gin.Context) {
 		s.web.render404(c)
 		return
 	}
-	contentHTML, err := s.deps.Posts.Render(pv.ContentMD)
+	requestURL := requestScheme(c) + "://" + c.Request.Host + c.Request.URL.EscapedPath()
+	site, err := stellarPreviewSite(s.deps.Site.Load(), requestURL)
 	if err != nil {
-		log.Printf("render draft preview: %v", err)
-		s.web.render500(c)
+		stellarError(c, err)
 		return
 	}
-	title := strings.TrimSpace(pv.Title)
-	if title == "" {
-		title = "预览"
+	slug := strings.Trim(pv.Slug, "/")
+	if slug == "" {
+		slug = "__preview__"
 	}
-	notice := template.HTML(`<div style="background:var(--card);border:1px solid var(--theme);color:var(--text-p1);padding:12px 16px;border-radius:8px;margin:0 0 20px;text-align:center;font-size:14px;">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
-	data := &tmpl.ViewData{
-		Site: s.deps.Site.Load(),
-		Page: &tmpl.Page{
-			Title: title, Slug: pv.Slug, Layout: "post", Type: "tech", Lang: "zh-CN",
-			MenuID: "post", Date: pv.CreatedAt.Format("2006-01-02"), Excerpt: pv.Excerpt, Topic: pv.Topic,
-		},
-		Content: notice + template.HTML(contentHTML),
-	}
-	data.TOC = stellarweb.ExtractTOC(contentHTML)
-	s.web.fillSidebar(data)
-	s.web.fillSEO(data, c)
-	html, err := s.deps.Engine.Render("layout/base", data)
+	row := &store.Post{Slug: slug, Title: pv.Title, ContentMD: pv.ContentMD, Excerpt: pv.Excerpt, CreatedAt: pv.CreatedAt, UpdatedAt: pv.CreatedAt, Status: store.StatusDraft, StellarVersion: pv.StellarVersion, StellarConfig: pv.StellarConfig, BlogExtensions: pv.BlogExtensions}
+	snap, err := s.web.stellarSnapshotAt(c.Request.Context(), site, row, true)
 	if err != nil {
-		log.Printf("render draft preview: %v", err)
-		s.web.render500(c)
+		stellarError(c, err)
 		return
 	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
+	for _, r := range snap.records {
+		if r.post == row {
+			data := s.web.stellarView(snap, r)
+			data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
+			data.Stellar.Input.RuntimeData["preview"] = true
+			data.Stellar.Input.RuntimeData["nativeComments"] = map[string]any{"enabled": false}
+			data.Comments = nil
+			data.CommentCount = 0
+			stellarNotice(data, `<div class="blog-preview-notice">预览模式：这是未发布的草稿，仅供发布前查看</div>`)
+			s.web.outputStellar(c, data, http.StatusOK)
+			return
+		}
+	}
+	s.web.render404(c)
 }
 
 // NoRoute returns the final fallback after Console has supplied its SPA index.
@@ -237,7 +231,7 @@ func (s *Server) NoRoute(consoleIndex []byte) gin.HandlerFunc {
 			if err == nil && decoded != "" {
 				if strings.HasSuffix(decoded, "/rss.xml") {
 					name := strings.TrimSuffix(decoded, "/rss.xml")
-					NewFeedHandler(s.deps.Store, s.deps.Site).categoryRSSPath(c, name)
+					s.web.serveStellarFeed(c, "rss", "categories", name)
 					return
 				}
 				s.web.handleCategoryPath(c, decoded)
