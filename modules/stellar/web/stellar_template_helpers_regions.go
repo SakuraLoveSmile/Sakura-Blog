@@ -175,7 +175,14 @@ func (r stellarTemplateRenderer) brand(d *StellarRenderData, placement string, b
 	}
 	if src := stellarText(stellarGet(brand, "image.src")); src != "" {
 		variant := stellarText(stellarFirst(stellarGet(brand, "image.variant"), "icon"))
-		fmt.Fprintf(&b, `<%s class="brand-image brand-image--%s"%s><img no-lazy src="%s" alt=""></%s>`, tag, stellarEscape(variant), attrs, stellarEscape(stellarURL(d.Stellar.Root, src)), tag)
+		extra, background := "", ""
+		if variant == "avatar" && brand["source"] != "collection" {
+			if image := stellarBlogContentURL(d.Stellar.Root, stellarBlogGlobal(d, "avatar_background")); image != "" {
+				extra = " brand-image--animated"
+				background = `<div class="bg" aria-hidden="true" style="background-image:url('` + stellarEscape(stellarCSSURL(image)) + `')"></div>`
+			}
+		}
+		fmt.Fprintf(&b, `<%s class="brand-image brand-image--%s%s"%s>%s<img no-lazy src="%s" alt=""></%s>`, tag, stellarEscape(variant), extra, attrs, background, stellarEscape(stellarURL(d.Stellar.Root, src)), tag)
 	}
 	if stellarTruth(brand["name"]) {
 		fmt.Fprintf(&b, `<%s class="brand-title"%s><div class="brand-name">%s</div>`, tag, attrs, stellarEscape(brand["name"]))
@@ -456,17 +463,7 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 	case "actions":
 		return r.actions(d, stellarList(item["actions"]))
 	case "markdown":
-		var b strings.Builder
-		if stellarTruth(item["content"]) {
-			b.WriteString(string(stellarMarkdown(d, item["content"])))
-		}
-		if stellarTruth(item["src"]) {
-			b.WriteString(string(stellarRemoteMarkdown(d, stellarText(item["src"]))))
-		}
-		if stellarTruth(item["linklist"]) {
-			b.WriteString(string(r.linklist(d, stellarMap(item["linklist"]))))
-		}
-		return r.frame(d, "markdown", stellarText(item["title"]), template.HTML(b.String()), "", "", nil, true)
+		return r.blogWelcome(d, item, host)
 	case "linklist":
 		return r.frame(d, "link-list-widget", stellarText(item["title"]), r.linklist(d, item), "", "", nil, false)
 	case "toc":

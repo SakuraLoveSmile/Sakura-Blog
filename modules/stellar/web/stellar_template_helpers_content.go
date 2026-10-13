@@ -3,9 +3,11 @@ package web
 import (
 	"fmt"
 	"html/template"
+	"math"
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -115,7 +117,7 @@ func (r stellarTemplateRenderer) article(d *StellarRenderData) template.HTML {
 	}
 	var b strings.Builder
 	b.WriteString(string(r.banner(d)))
-	fmt.Fprintf(&b, `<article class="%s">%s%s`, class, r.blogSummary(d), content)
+	fmt.Fprintf(&b, `<article class="%s">%s%s%s`, class, r.blogSummary(d), r.blogExpired(d), content)
 	if profile == "notebook" {
 		b.WriteString(string(r.articleTags(d, article["tags"])))
 	}
@@ -124,10 +126,14 @@ func (r stellarTemplateRenderer) article(d *StellarRenderData) template.HTML {
 		b.WriteString(string(r.articleTags(d, article["tags"])))
 	}
 	footer := stellarMap(article["footer"])
-	b.WriteString(string(r.share(d, stellarMap(footer["share"]))))
+	if profile != "notebook" || stellarBlogNotebookShareAllowed(d) {
+		b.WriteString(string(r.share(d, stellarMap(footer["share"]))))
+	}
 	b.WriteString(string(r.articleFooter(d, footer)))
 	if profile != "notebook" {
-		b.WriteString(string(r.readNext(d, article["previous"], article["next"], profile == "wiki")))
+		if profile == "wiki" || stellarBlogGlobal(d, "read_next") != false {
+			b.WriteString(string(r.readNext(d, article["previous"], article["next"], profile == "wiki")))
+		}
 		if profile != "wiki" {
 			b.WriteString(string(r.relatedPosts(d, stellarMap(article["related"]))))
 		}
@@ -170,10 +176,7 @@ func (r stellarTemplateRenderer) banner(d *StellarRenderData) template.HTML {
 			fmt.Fprintf(&right, `<span class="cap reading">%s · %s</span>`, stellarEscape(stellarTranslate(d, "meta.word_count", d.WordCount)), stellarEscape(stellarTranslate(d, "meta.reading_time", d.ReadingMinutes)))
 		}
 		labelValue := stellarText(stellarFirst(stellarItemGet(d, "presentation.article.aiLabel"), stellarGet(d.Stellar.Data, "page.article.aiLabel")))
-		label := stellarmodels.ResolveAILabel(labelValue)
-		if len(label) > 0 {
-			right.WriteString(stellarmodels.BuildAILabelHTML(labelValue, stellarTranslate(d, "meta.ai_label."+labelValue), "cap", string(r.icon(label["icon"])), image != ""))
-		}
+		right.WriteString(string(r.blogAILabel(d, labelValue, image != "")))
 		if right.Len() > 0 {
 			fmt.Fprintf(&top, `<div class="right">%s</div>`, right.String())
 		}
@@ -203,7 +206,12 @@ func (r stellarTemplateRenderer) banner(d *StellarRenderData) template.HTML {
 	var b strings.Builder
 	fmt.Fprintf(&b, `<div class="article-banner-wrap%s"><div class="article banner top"`, r.reveal(d))
 	if image != "" {
-		fmt.Fprintf(&b, ` style="--bg-url:url('%s')"`, stellarEscape(stellarCSSURL(image)))
+		ratio := stellarText(stellarBlogGlobal(d, "banner_ratio"))
+		ratioStyle := ""
+		if n, err := strconv.ParseFloat(ratio, 64); err == nil && n > 0 && !math.IsInf(n, 0) && !math.IsNaN(n) {
+			ratioStyle = ";--banner-ratio:" + strconv.FormatFloat(n, 'g', -1, 64)
+		}
+		fmt.Fprintf(&b, ` style="--bg-url:url('%s')%s"`, stellarEscape(stellarCSSURL(image)), ratioStyle)
 	}
 	b.WriteString(`>`)
 	if image != "" {
@@ -319,7 +327,7 @@ func (r stellarTemplateRenderer) articleTags(d *StellarRenderData, tags any) tem
 	var b strings.Builder
 	for _, raw := range stellarList(tags) {
 		v := stellarMap(raw)
-		fmt.Fprintf(&b, `<a class="tag" href="%s">%s%s</a>`, stellarEscape(stellarURL(d.Stellar.Root, v["path"])), r.icon("default:hashtag"), stellarEscape(v["name"]))
+		fmt.Fprintf(&b, `<a class="tag" href="%s">%s%s</a>`, stellarEscape(stellarURL(d.Stellar.Root, v["path"])), r.blogTaxonomyIcon(d, "tag", stellarText(v["name"]), "default:hashtag"), stellarEscape(v["name"]))
 	}
 	if b.Len() == 0 {
 		return ""
@@ -340,6 +348,9 @@ func (r stellarTemplateRenderer) articleFooter(d *StellarRenderData, footer map[
 	}
 	if c := stellarMap(footer["contributor"]); len(c) > 0 {
 		fmt.Fprintf(&b, `<section id="contributors"><div class="header"><span>%s</span><span class="spacer"></span><a class="edit" href="%s">%s<span>%s</span></a></div><div class="body"><div class="ds-contributors users-wrap" api-type="commits" data-api="%s"><div class="grid-box"></div></div></div></section>`, stellarEscape(stellarTranslate(d, "meta.contributors")), stellarEscape(stellarURL(d.Stellar.Root, c["editUrl"])), r.icon("default:edit"), stellarEscape(stellarTranslate(d, "btn.edit")), stellarEscape(c["commitsUrl"]))
+	}
+	if len(stellarMap(footer["contributor"])) == 0 {
+		b.WriteString(string(r.blogEditFooter(d)))
 	}
 	if b.Len() == 0 {
 		return ""
@@ -464,7 +475,10 @@ func (r stellarTemplateRenderer) listingNav(d *StellarRenderData, wiki bool) tem
 		}
 		fmt.Fprintf(&b, `<a%s href="%s">%s</a>`, class, stellarEscape(stellarURL(d.Stellar.Root, href)), stellarEscape(title))
 	}
-	if wiki {
+	custom := !wiki && stellarBlogGlobal(d, "nav_tabs.enable_custom") == true
+	if custom {
+		b.WriteString(string(r.blogNavTabs(d)))
+	} else if wiki {
 		link(stellarText(stellarGet(d.Stellar.Theme, "profiles.wikiIndex.path")), stellarTranslate(d, "btn.all_wiki"), !stellarTruth(d.Stellar.Data["wikiFilter"]))
 		for _, raw := range stellarList(d.Stellar.Data["wikiTags"]) {
 			v := stellarMap(raw)
@@ -485,10 +499,15 @@ func (r stellarTemplateRenderer) listingNav(d *StellarRenderData, wiki bool) tem
 			link(stellarText(stellarFirst(d.Stellar.Data["archivesPath"], "/archives/")), stellarTranslate(d, "btn.archives"), d.Stellar.Layout == "archive" || d.Stellar.Layout == "archives")
 		}
 	}
-	for _, raw := range stellarList(config["tabs"]) {
-		v := stellarMap(raw)
-		href := stellarText(v["url"])
-		link(href, stellarText(v["title"]), strings.HasPrefix(stellarURL(d.Stellar.Root, stellarPagePath(d)), stellarURL(d.Stellar.Root, href)))
+	if !custom {
+		for _, raw := range stellarList(config["tabs"]) {
+			v := stellarMap(raw)
+			href := stellarText(v["url"])
+			link(href, stellarText(v["title"]), strings.HasPrefix(stellarURL(d.Stellar.Root, stellarPagePath(d)), stellarURL(d.Stellar.Root, href)))
+		}
+		if !wiki {
+			b.WriteString(string(r.blogNavTabs(d)))
+		}
 	}
 	return template.HTML(`<div class="listing-nav"><div class="listing-nav__surface"><div class="listing-nav__viewport"><nav class="` + kind + `">` + b.String() + `</nav></div></div></div>`)
 }
@@ -594,7 +613,7 @@ func (r stellarTemplateRenderer) postCard(d *StellarRenderData, v map[string]any
 		if stellarTruth(v["categoryStyle"]) {
 			style = ` style="` + stellarEscape(v["categoryStyle"]) + `"`
 		}
-		fmt.Fprintf(&b, `<span class="cap breadcrumb"%s>%s<span>%s</span></span>`, style, r.icon("default:category"), stellarEscape(strings.Join(names, " / ")))
+		fmt.Fprintf(&b, `<span class="cap breadcrumb"%s>%s<span>%s</span></span>`, style, r.blogTaxonomyIcon(d, "category", names[len(names)-1], "default:category"), stellarEscape(strings.Join(names, " / ")))
 	}
 	tags := stellarList(v["tags"])
 	if len(tags) > 0 {
@@ -605,7 +624,7 @@ func (r stellarTemplateRenderer) postCard(d *StellarRenderData, v map[string]any
 			if notebook {
 				fmt.Fprintf(&b, `<span class="cap breadcrumb"><span class="tag">%s</span></span>`, stellarEscape(tag))
 			} else {
-				fmt.Fprintf(&b, `<span class="cap tag-chip">%s%s</span>`, r.icon("default:hashtag"), stellarEscape(tag))
+				fmt.Fprintf(&b, `<span class="cap tag-chip">%s%s</span>`, r.blogTaxonomyIcon(d, "tag", stellarText(tag), "default:hashtag"), stellarEscape(tag))
 			}
 		}
 		if !notebook {
@@ -826,7 +845,7 @@ func (r stellarTemplateRenderer) categories(d *StellarRenderData) template.HTML 
 				if len(children) > 0 {
 					icon = "default:category-open"
 				}
-				fmt.Fprintf(&b, `<div class="cat-item"><a class="%s" href="%s"><span class="name">%s%s</span><span class="badge">(%d)</span></a>`, class, stellarEscape(stellarURL(d.Stellar.Root, node["path"])), r.icon(icon), stellarEscape(node["name"]), stellarInt(node["count"], 0))
+				fmt.Fprintf(&b, `<div class="cat-item"><a class="%s" href="%s"><span class="name">%s%s</span><span class="badge">(%d)</span></a>`, class, stellarEscape(stellarURL(d.Stellar.Root, node["path"])), r.blogTaxonomyIcon(d, "category", stellarText(node["name"]), icon), stellarEscape(node["name"]), stellarInt(node["count"], 0))
 				if len(children) > 0 {
 					fmt.Fprintf(&b, `<div class="cat-children">%s</div>`, visit(children))
 				}
@@ -851,7 +870,7 @@ func (r stellarTemplateRenderer) categories(d *StellarRenderData) template.HTML 
 			if len(node.Children) > 0 {
 				icon = "default:category-open"
 			}
-			fmt.Fprintf(&b, `<div class="cat-item"><a class="%s" href="%s"><span class="name">%s%s</span><span class="badge">(%d)</span></a>`, class, stellarEscape(stellarURL(d.Stellar.Root, node.Path)), r.icon(icon), stellarEscape(node.Name), node.Count)
+			fmt.Fprintf(&b, `<div class="cat-item"><a class="%s" href="%s"><span class="name">%s%s</span><span class="badge">(%d)</span></a>`, class, stellarEscape(stellarURL(d.Stellar.Root, node.Path)), r.blogTaxonomyIcon(d, "category", node.Name, icon), stellarEscape(node.Name), node.Count)
 			if len(node.Children) > 0 {
 				fmt.Fprintf(&b, `<div class="cat-children">%s</div>`, visit(node.Children))
 			}
@@ -869,7 +888,7 @@ func (r stellarTemplateRenderer) tags(d *StellarRenderData) template.HTML {
 		var b strings.Builder
 		for _, raw := range terms {
 			tag := stellarMap(raw)
-			fmt.Fprintf(&b, `<a class="tag" href="%s">%s<span class="name">%s</span></a>`, stellarEscape(stellarURL(d.Stellar.Root, tag["path"])), r.icon("default:hashtag"), stellarEscape(tag["name"]))
+			fmt.Fprintf(&b, `<a class="tag" href="%s">%s<span class="name">%s</span></a>`, stellarEscape(stellarURL(d.Stellar.Root, tag["path"])), r.blogTaxonomyIcon(d, "tag", stellarText(tag["name"]), "default:hashtag"), stellarEscape(tag["name"]))
 		}
 		return template.HTML(string(r.listingNav(d, false)) + `<div class="post-list"><article class="` + strings.TrimSpace(r.reveal(d)) + `" id="tags">` + b.String() + `</article></div>`)
 	}
@@ -880,7 +899,7 @@ func (r stellarTemplateRenderer) tags(d *StellarRenderData) template.HTML {
 	items := append([]*settings.TagItem(nil), d.TagItems...)
 	sort.SliceStable(items, func(i, j int) bool { return items[i].Count > items[j].Count })
 	for _, tag := range items {
-		fmt.Fprintf(&b, `<a class="tag" href="%s">%s<span class="name">%s</span></a>`, stellarEscape(stellarURL(d.Stellar.Root, "/tags/"+url.PathEscape(tag.Name)+"/")), r.icon("default:hashtag"), stellarEscape(tag.Name))
+		fmt.Fprintf(&b, `<a class="tag" href="%s">%s<span class="name">%s</span></a>`, stellarEscape(stellarURL(d.Stellar.Root, "/tags/"+url.PathEscape(tag.Name)+"/")), r.blogTaxonomyIcon(d, "tag", tag.Name, "default:hashtag"), stellarEscape(tag.Name))
 	}
 	return template.HTML(string(r.listingNav(d, false)) + `<div class="post-list"><article class="` + strings.TrimSpace(r.reveal(d)) + `" id="tags">` + b.String() + `</article></div>`)
 }

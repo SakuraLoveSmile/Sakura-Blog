@@ -58,10 +58,24 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 			fmt.Fprintf(&b, `<meta data-stellar-page-meta %s="%s" content="%s">`, kind, stellarEscape(name), stellarEscape(value))
 		}
 	}
-	description := stellarFirst(seo["description"], d.Site.Description)
+	description := stellarFirst(stellarGet(d.Stellar.Data, "page.description"), d.Site.SEO.DefaultDescription, seo["description"], d.Site.Description)
+	metadataOverride := stellarTruth(stellarGet(d.Stellar.Data, "page.description")) || d.Site.SEO.DefaultDescription != ""
 	meta("name", "description", description)
 	keywords := []string{}
-	for _, v := range stellarList(seo["keywords"]) {
+	keywordSource := seo["keywords"]
+	if explicit := stellarGet(d.Stellar.Data, "page.keywords"); stellarTruth(explicit) {
+		keywordSource = explicit
+	} else if d.Site.SEO.DefaultKeywords != "" {
+		keywordSource = d.Site.SEO.DefaultKeywords
+	}
+	if text, ok := keywordSource.(string); ok {
+		for _, keyword := range strings.Split(text, ",") {
+			if keyword = strings.TrimSpace(keyword); keyword != "" {
+				keywords = append(keywords, keyword)
+			}
+		}
+	}
+	for _, v := range stellarList(keywordSource) {
 		keywords = append(keywords, stellarText(v))
 	}
 	if len(keywords) > 0 {
@@ -78,7 +92,26 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 			robots = "noindex,nofollow"
 		}
 	}
+	if d.Site.SEO.NoIndex {
+		parts := []string{"noindex"}
+		for _, directive := range strings.Split(stellarText(robots), ",") {
+			directive = strings.TrimSpace(directive)
+			switch strings.ToLower(directive) {
+			case "", "index", "noindex":
+				continue
+			case "none":
+				directive = "nofollow"
+			case "all":
+				directive = "follow"
+			}
+			parts = append(parts, directive)
+		}
+		robots = strings.Join(parts, ",")
+	}
 	meta("name", "robots", robots)
+	meta("name", "google-site-verification", d.Site.SEO.GoogleVerification)
+	meta("name", "msvalidate.01", d.Site.SEO.BingVerification)
+	meta("name", "baidu-site-verification", d.Site.SEO.BaiduVerification)
 	canonical := stellarText(stellarFirst(d.Page.CanonicalURL, seo["canonical"]))
 	if d.Stellar.Profile == "error" || d.Stellar.Layout == "404" {
 		canonical = ""
@@ -98,7 +131,10 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 		og = map[string]any{"title": title, "siteName": d.Site.Title, "twitterTitle": title, "args": map[string]any{"type": "website", "description": description, "url": stellarPublicPageURL(d), "language": d.Stellar.Language, "image": d.Site.Avatar}}
 	}
 	if len(og) > 0 {
-		args := stellarMap(og["args"])
+		args := prepCloneMap(stellarMap(og["args"]))
+		if metadataOverride {
+			args["description"] = description
+		}
 		meta("property", "og:type", args["type"])
 		meta("property", "og:title", og["title"])
 		meta("property", "og:site_name", og["siteName"])
@@ -128,7 +164,7 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 	ld := seo["jsonLd"]
 	if ld == nil {
 		pageURL := stellarPublicPageURL(d)
-		name, desc := d.Site.Title, d.Site.Description
+		name, desc := d.Site.Title, stellarText(description)
 		if d.Stellar.Layout == "page" {
 			name = stellarText(stellarFirst(d.Page.Title, name))
 			desc = regexp.MustCompile(`<[^>]*>`).ReplaceAllString(stellarText(stellarFirst(stellarGet(d.Stellar.Data, "page.description"), d.Content)), "")
@@ -142,6 +178,11 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 			author["image"] = image
 		}
 		ld = map[string]any{"@context": "https://schema.org", "@type": "Website", "@id": pageURL, "author": author, "name": name, "description": desc, "url": pageURL}
+	}
+	if metadataOverride && len(stellarMap(ld)) > 0 {
+		model := prepCloneMap(stellarMap(ld))
+		model["description"] = description
+		ld = model
 	}
 	if model, ok := ld.(map[string]any); ok && d.Page.CanonicalURL != "" {
 		model = copyStellarMap(model)
