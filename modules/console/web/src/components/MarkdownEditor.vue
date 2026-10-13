@@ -155,7 +155,6 @@ onBeforeUnmount(() => window.removeEventListener("message", onPreviewMessage));
 
 watch([() => props.modelValue, () => stellarContext?.value], () => {
   schedulePreview();
-  scheduleDraft();
 });
 
 // ---------- 本地草稿保护（逻辑已抽到 useLocalDraft composable） ----------
@@ -167,8 +166,19 @@ onBeforeUnmount(() => {
 
 // ---------- 工具栏动作（基于选区包裹/插入，操作后恢复焦点与选区） ----------
 
-function updateValue(next: string, selStart: number, selEnd: number) {
+function editValue(next: string) {
+  if (next === props.modelValue) return;
   emit("update:modelValue", next);
+  // API 水合和预览上下文更新不是编辑；未决旧草稿必须先恢复或丢弃，不能被新输入覆盖。
+  if (!draftBanner.value) scheduleDraft();
+}
+
+function onInput(event: Event) {
+  editValue((event.target as HTMLTextAreaElement).value);
+}
+
+function updateValue(next: string, selStart: number, selEnd: number) {
+  editValue(next);
   nextTick(() => {
     const ta = textareaRef.value;
     if (!ta) return;
@@ -286,9 +296,9 @@ async function uploadAndInsert(file: File) {
     const { data } = await attachmentApi.upload(file);
     const md = `![${file.name}](${data.url})`;
     const replaced = props.modelValue.replace(placeholder, md);
-    emit("update:modelValue", replaced);
+    editValue(replaced);
   } catch {
-    emit("update:modelValue", props.modelValue.replace(placeholder, ""));
+    editValue(props.modelValue.replace(placeholder, ""));
     uploadError.value = `图片 ${file.name} 上传失败`;
   }
 }
@@ -444,7 +454,7 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
         v-show="mode !== 'preview'"
         ref="textareaRef"
         :value="modelValue"
-        @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+        @input="onInput"
         @keydown="onKeydown"
         @paste="onPaste"
         @drop="onDrop"
