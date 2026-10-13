@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
+	"time"
 
-	"blog/internal/comments"
 	"blog/internal/store"
+	stellari18n "blog/modules/stellar/i18n"
 	tmpl "blog/modules/stellar/viewmodel"
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +22,9 @@ func (s *webServer) stellarMomentsView(snap *stellarSnapshot, page int) (*tmpl.V
 	if page < 1 || page > total {
 		return nil, errStellarNotFound
 	}
-	data := s.stellarAggregate(snap, "page", "瞬间", "/moments", "moments")
+	language := stellarLanguage(snap.input, nil)
+	data := s.stellarAggregate(snap, "page", stellarMomentsTitle(language), "/moments", "moments")
+	now := time.Now()
 	start := (page - 1) * pageSize
 	end := start + pageSize
 	if end > len(snap.inventory.moments) {
@@ -31,7 +35,7 @@ func (s *webServer) stellarMomentsView(snap *stellarSnapshot, page int) (*tmpl.V
 		if err != nil {
 			return nil, fmt.Errorf("render public moment %d: %w", m.ID, err)
 		}
-		data.Moments = append(data.Moments, &tmpl.MomentItem{ID: m.ID, ContentHTML: template.HTML(body), Images: store.DecodeMomentImages(m.Images), TimeAgo: comments.TimeAgo(m.CreatedAt), Date: m.CreatedAt.Format("2006-01-02 15:04")})
+		data.Moments = append(data.Moments, &tmpl.MomentItem{ID: m.ID, ContentHTML: template.HTML(body), Images: store.DecodeMomentImages(m.Images), TimeAgo: stellarMomentTimeAgo(m.CreatedAt, now, language), Date: m.CreatedAt.Format("2006-01-02 15:04")})
 	}
 	numbers := make([]int, total)
 	for i := range numbers {
@@ -59,4 +63,39 @@ func (s *webServer) serveStellarMoments(c *gin.Context, page int) {
 		return
 	}
 	s.outputStellar(c, data, http.StatusOK)
+}
+
+// 瞬间标题属于独立 Blog 文案，语言选择与请求快照和官方目录保持一致。
+func stellarMomentsTitle(language string) string {
+	locale := strings.ToLower(strings.ReplaceAll(language, "_", "-"))
+	if strings.HasPrefix(locale, "en") {
+		return "Moments"
+	}
+	switch locale {
+	case "zh-tw", "zh-hk", "zh-hant":
+		return "瞬間"
+	}
+	return "瞬间"
+}
+
+// 保留既有瞬间的时间边界，后缀使用锁定上游语言目录；同一请求只取一次 now。
+func stellarMomentTimeAgo(created, now time.Time, language string) string {
+	age := now.Sub(created)
+	key, count := "just", 0
+	switch {
+	case age < time.Minute:
+	case age < time.Hour:
+		key, count = "min", int(age.Minutes())
+	case age < 24*time.Hour:
+		key, count = "hour", int(age.Hours())
+	case age < 30*24*time.Hour:
+		key, count = "day", int(age.Hours()/24)
+	default:
+		return created.Format("2006-01-02")
+	}
+	label := stellari18n.Text(language, "meta.date_suffix."+key)
+	if key == "just" {
+		return label
+	}
+	return fmt.Sprintf("%d %s", count, label)
 }
