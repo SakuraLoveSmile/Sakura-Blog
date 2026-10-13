@@ -233,8 +233,11 @@ func PreviewNotebookStructure(s Snapshot, decisions NotebookStructureDecisions) 
 				}
 			}
 			for _, column := range []string{"created_at", "updated_at"} {
-				if value, exists := target[column]; exists && !validNotebookDate(stringValue(value)) {
-					issue(source, column, "notebook_date_invalid", "日期不能被当前 DATETIME 消费，不生成当前时间")
+				if value, exists := target[column]; exists {
+					date, text := value.(string)
+					if !text || !validNotebookDate(date) {
+						issue(source, column, "notebook_date_invalid", "日期不能被当前 DATETIME 消费，不生成当前时间")
+					}
 				}
 			}
 			p.Rows[table] = append(p.Rows[table], target)
@@ -263,7 +266,9 @@ func validNotebookSlug(slug string) bool {
 	return true
 }
 func validNotebookDate(value string) bool {
-	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05", "2006-01-02 15:04:05.999999999", "2006-01-02"} {
+	// modernc.org/sqlite v1.54.0 conn.parseTimeString 已消费此Go time.String形状。
+	// 保真快照不再把原TEXT预先转换成time.Time，校验须接受同一正式格式。
+	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05", "2006-01-02 15:04:05.999999999", "2006-01-02", "2006-01-02 15:04:05.999999999 -0700 MST"} {
 		if _, err := time.Parse(layout, value); err == nil {
 			return true
 		}

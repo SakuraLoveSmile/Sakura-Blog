@@ -1,91 +1,94 @@
 # Stellar 2.0.0 存量迁移审查
 
-状态：实现中。T1 真实源的只读候选已重新生成；真实迁移未执行、未获授权，尚无真实源 Apply 入口；结构工具仅能新建私密隔离库。本文替换第一轮预检，保留完整脱敏映射和逐记录清单。不能以候选通过生成、消费者单测或历史界面证据代替迁移后的实测。
+状态：实现中。T1 完整迁移预览已按本次实测消费者重新生成，仍等待真实数据选择与审查批准。真实迁移未执行，尚无真实源 Apply 入口；隔离执行证明只接受新建系统临时 root。用户已批准严格 V2 编辑器统一一个“集合显示名（name）”，不等于批准旧记录 name/title 的取值。
 
-## 本次证据与私密边界
+## 本次只读证据与私密边界
 
-2026-10-13 从根工作树 `Blog` / `dev` / `02ee112` 读取 `data/blog.db`；`ReadSnapshot` 使用 SQLite `mode=ro`、`query_only=1` 和只读事务，未使用 immutable、未 seed、未建表、未修改真实配置/内容/上传目录，也未删除侧车。根 `.pi/` 与 `docs/plans/maintenance/` 保留。
+捕获时间：`2026-10-13T14:26:47Z`。真实来源为根工作树 `Blog` / `dev` / `02ee112` 的 `data/blog.db` 及两份 tracked 文章。`ReadSnapshot` 使用 SQLite `mode=ro`、`query_only=1` 和只读事务；未 bootstrap、未 seed、未改 schema、未改真实配置/正文/上传目录，未删除侧车，未使用 immutable 绕过活跃 WAL。根 `.pi/` 与 `docs/plans/maintenance/` 保留。
 
-- SourceDigest：`6c7983b1b42d43b0456e786c3c98ca61fc16a84c2acabe76893e1febf39e8293`，与 review-6 历史源摘要一致。
-- 主 DB SHA256：`40cd42cb5c704b457be8b6761d226c53ee14896211584dd25f0f9287d2454f0a`，读取前后及 review-6 一致。
-- 本次 DB、WAL、SHM、journal 前后指纹相同；这是本次观察结果。`mode=ro` 并不保证整个目录零写，活跃 WAL 的锁侧车仍可能产生或变化，不应用 immutable 绕过活跃 WAL。
-- 两份 tracked 文章逐字摘要前后相同。另一个 tracked Markdown `content/notes.md` 是系统 `/notes` 初次启动的正文来源，无 Front Matter；不伪造为第三条文章候选，已单独记录前后 hash，并保留文件。当前 `/notes` 内容以 DB pages 候选审查。
-- 完整候选保留源设置、全文、身份及密钥，只存在私密输出；公开报告不含原值、正文、邮箱、密钥、密码哈希或私密 alternatives。
+- 本次 SourceDigest：`d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`；快照格式为 **3**，显式覆盖 typed BLOB、隐藏 rowid/无 rowid 形状和逐值 SQLite storage class。
+- 历史 SourceDigest：`6c7983b1b42d43b0456e786c3c98ca61fc16a84c2acabe76893e1febf39e8293`。算法与快照内容编码已升级，两个摘要不能直接比较，也不能据差异声称真实源变化。
+- 主 DB SHA256：`40cd42cb5c704b457be8b6761d226c53ee14896211584dd25f0f9287d2454f0a`，本次读取前后及历史 review-6/authors-1 一致；WAL SHA、全部源表计数和两份 tracked 文件 hash 也与历史一致，独立证明本次持久化源未变化。
+- 本轮 DB/WAL/SHM/journal 前后指纹相同，这是本次观察事实；`mode=ro` 不保证整个目录零写，SQLite 锁侧车仍可能产生或变化。未删除侧车，也不使用 immutable。
+- `content/notes.md` 是系统 `/notes` 首次启动正文来源，没有文章 Front Matter；其 hash 前后相同、文件保留，不伪造为第三条文章。当前 `/notes` 内容以 DB pages 候选审查。
 
-完整输出位于迁移 worktree 的 `.tmp/stellar-migration-review-20261013-authors-1/`：目录 `0700`，`candidate.private.json`、`report.public.json`、`source-check.json`、`notebook-structure.private.json`、`notebook-structure.public.json` 均为 `0600`。不得提交、外发或复制私密候选。本文由公开报告生成，无私密源内容。
+初次格式 3 捕获位于 `.tmp/stellar-migration-review-20261013-final-format3/`；日期消费校验修复后，从**同一个已校验快照**重新生成于 `.tmp/stellar-migration-review-20261013-final-format3-validated/`，没有再次读取或转换真实源。两目录均 `0700`，五份 candidate/report/source-check/notebook-structure 文件均 `0600`，旧候选未覆盖。完整候选含密钥、全文和私密 alternatives，禁止提交、外发或输出；本文仅列路径、hash、脱敏行为和决策标签。
 
-本次仍采用默认空 capabilities：32 条候选（30 DB + 2 tracked）、171 项配置映射、766 项逐记录映射、48 条阻断。分组为 consumer 34、policy 7、structure 4、schema 3；后续实际闭合消费者可由主 agent 显式声明重新生成，政策、结构、schema 不可用 capabilities 自动解除。
+本次：**32 条候选（30 DB + 2 tracked）、172 项配置映射、766 项逐记录映射、12 条阻断**。分组：consumer 0、policy 5、structure 4、schema 3。原 171 项配置映射全部保留；第 172 项是未启用首页 cover 的源归档说明，不能删减以凑旧数量。
 
-相较 review-6 的 34 阻断，本次解除仅完整匹配固定上游默认的 OKR 假阳性，并补回 15 条原先仅存储、漏报验证门槛的全局消费者诊断，因此默认总数为 48；这表示审查覆盖被校正，不能解释为真实数据已发生损失。
+## 集中确认的真实数据选择
 
-## 集中审查的真实数据决定
+以下是实际未决数据选择；尚未将任何选择写入候选。消费者已实现的能力不再要求用户重复决定。全部政策/schema/结构诊断仍保留，capabilities 不能解除。
 
-以下决定按具体来源处理；选择尚未写入候选，也没有真实执行授权。已批准“严格 V2 编辑器仅一个集合显示名 name，内部标识为现有 ID”，不等于批准旧记录 name/title 取哪一个值。值及完整两种候选仅在私密 candidate 中，本页仅列来源与行为，防止泄露原设置或正文。
-
-| 审查项 | 涉及来源 | 保留和变化 / 可选处理 | 推荐与执行前条件 |
+| 组 | 涉及来源与诊断 | 候选与实际变化 | 建议 / 需明确的批准 |
 | --- | --- | --- | --- |
-| PJAX 策略 | settings.plugins.pjax | 旧 selectors/timeout 没有上游字段。采用官方 manifest/shell-signature/同集合导航，旧设置仍留源快照；或另行决定保留为独立扩展，不能伪造 strict 字段。 | 建议接受官方策略；需要主 agent 提供新导航实测，用户确认差异后才能解除。 |
-| data_cache | settings.data_cache | 旧独立自定义缓存策略不进入 theme；选择采用官方 runtime policy，或明确要求独立 Blog 扩展承担原策略。 | 建议采用官方 runtime policy；完整旧值可在本地私密候选审查，不静默丢弃。 |
-| 主页 cover | settings.cover | 旧独立主页 cover 不在上游 theme。可迁为官方首页内容/Hero 等效入口，或独立 Blog 扩展保留原显示。 | 重要体验选择须附对应效果后集中确认；当前候选不删除旧设置。 |
-| Wiki shelf 名称来源 | settings.wiki[0].name → wiki_projects/go-blog | 官方 shelf 只保存项目 ID。冗余 shelf 名称与项目表不同：保留项目表定义，或审核 shelf 覆盖集合 name；不能保留双真值。 | 与下一项一起选择；ID与成员关联保持。 |
-| Wiki name/title | wiki_projects/go-blog.name/title | 一个官方 name，可选保留旧 name，或取旧 title 为显示 name；内部标识保持现有 ID，不重命名路由。 | 编辑器单 name 已批准；这条真实记录的取值尚未批准。 |
-| Wiki 集合首页 | wiki_projects/go-blog.route.path/navigation.tree | 旧入口跳第一篇已发布文档。可采用官方 Collection 首页，或独立 Blog 扩展保留旧重定向；两候选均保留成员、顺序和本地 canonical。 | 建议采用官方 Collection 首页；保留重定向选项尚须消费实测，不能先解除。 |
-| banner/cover 图源 | posts/10.banner/cover | 可保留旧 cover 用于列表，独立 blog.content.banner_image 仅覆盖详情；或明确选旧 banner 作官方 cover（同时改变列表图）。 | 建议独立 banner 保留双图源；消费已由实施者安排验证，真实记录仍须批准。 |
-| Footer 三个占位链接 | settings.footer.social → leftbar.footer.actions[1..3].url | 三条 url="#" 被严格 safe navigable URL 校验拒绝。可移除这三条占位按钮，或分别提供有效外链/站内根相对路径；不能自动改成其它目的地。 | 建议移除仅占位项；必须用户确认或提供三个有效目标。 |
-| 旧 Note 路由 / 状态 / owner | notes/2（父 notebook 原 ID保持） | 旧表无 slug、status、owner，当前未建立逐 Note公开路由。不能按时间或全部用户猜作者；须确认新 slug、draft/published 和拥有者身份，或先保留不公开且待补元数据。 | 建议保留原 ID/正文/标签/父本且不自动发布；正式实现不能把未定义 owner 当已解决。 |
-| Notebook/Note 表结构 | schema.notebooks/notes | Notebook ID与Note父本 → TEXT；Note ID保持原 INTEGER。nb_order→sort、content→content_md、tags→tags_json；保持ID/关系/日期/正文。 | 隔离旧/新库及当前Store读取/strict重快照证明已通过；仍须批准notebooks/2.owner和updated_at来源（可明确沿用created_at）。真实结构改变后重新快照批准，不能沿用旧digest。 |
-| Tracked 发布状态 | 两份 content/posts/stellar-14{3,4}-acceptance.md.status | 候选已修为 blog.status（不进入上游 schema，也不落旧 blog.host.status）。保留原发布状态；draft/published 序列化定向测试通过。 | 这是已确认宿主契约的接线项，不新增用户选择；仍保持 file_host_fields 阻断，直到真实导入/重开证明，不能隐式发布。 |
+| 1. 官方导航策略 | settings.plugins.pjax · pjax_policy_removed | 接受官方 manifest/shell-signature/同集合 partial navigation；旧 selectors/timeout 只留私密源归档。02ee112 的 typed PluginsConfig、脚本注册和旧 base/loader 不消费 PJAX 存储参数，不能描述成正在失去旧超时体验。 | 推荐接受官方策略（use_official）。新导航已按本次隔离浏览器证据闭合；本项仍需具名批准，不能全局豁免其它来源。 |
+| 2. 一个 Wiki 显示名 | settings.wiki[0].name · wiki_shelf_definition_conflict；wiki_projects/go-blog · wiki_name_title | 最终 name 在项目旧 name、项目旧 title、旧 shelf 显示名三种来源中确定一个。内部 ID、成员、本地文档路由保持。两条诊断必须给出一致决定，不能在同一字段写互相冲突的值。 | 建议采用旧卡片主标题 title 为唯一显示 name，并使 shelf 仅保留项目 ID；具体旧值只在本地私密候选审查。编辑器单 name 决定已确认，不重复询问。 |
+| 3. Wiki 集合入口 | wiki_projects/go-blog · wiki_homepage | 采用官方 Collection 首页；或保留独立 Blog 旧入口跳第一篇已发布文档。两候选保留成员和顺序，本地 canonical/doc route 不被外链覆盖。 | 推荐采用官方 Collection 首页。旧重定向候选只供完整差异审查，若选择保留须完成对应独立消费验证，不先假称完成。 |
+| 4. banner/cover 双图源 | posts/10 · banner_cover | 候选 A：旧 cover 继续用于列表，blog.content.banner_image 仅覆盖详情。候选 B：旧 banner 成为官方 cover，同时改变列表图。 | 推荐候选 A“保留独立 Blog banner 图源”。该独立消费者已有本次实测，真实记录的取值仍需具名批准。 |
+| 5. 三个 Footer 占位目标 | leftbar.footer.actions[1..3].url · invalid_value | 只移除这三条 url="#" 按钮；或分别提供三个 safe navigable 外链/站内根相对路径。其它按钮、顺序和配置保持，不自动改目标。 | 推荐仅移除三条占位按钮；如需保留，请提供逐项有效目标。 |
+| 6. Notebook/Note 结构与五个元数据 | schema.notebooks/notes · legacy_notebook_schema；notes/2 · note_missing_slug_status | 批准 ID/父本转 TEXT、nb_order→sort、content→content_md、tags→tags_json；Note INTEGER ID、所有关系、原日期/正文/标签保留。缺字段为 notebooks/2.author_id、updated_at，以及 notes/2.slug、status、author_id。 | 推荐 Note slug 为 note-2（可自定）、先 draft；明确 Notebook/Note 的现有拥有者 ID，Notebook updated_at 可明确沿用其原 created_at。不按时间或全部用户猜 owner，不自动发布。 |
 
-已解决的等效项：真实旧 OKR 完整对象精确匹配固定 9d11978 的 border=true、五色及 zh-CN 文案；原值留私密源快照，候选继承官方与请求 locale。该项不再要求用户接受视觉损失；自定义、缺键、额外字段仍阻断。
+结构预览有 21 项确定映射、5 个未批准元数据；原三条 Go time.String 形式的 TEXT 日期现已按正式 modernc.org/sqlite 既有格式通过严格消费校验，原字符串保留，不需要用户选择新日期。无效日期、非字符串及未知值仍阻断。
 
-Notebook/Note 实时结构预览列 21 项已确定映射、5 个未批准字段：notebooks/2.author_id、notebooks/2.updated_at、notes/2.slug/status/author_id。结构工具只有全新系统临时库入口；证明成功不标 version 2，也不解除真实原候选诊断。
+两份 tracked 文章各有一条 `file_host_fields` 结构门禁：源 status 已映射到独立 `blog.status`，不进入上游 schema、不隐式发布。这是已确认宿主契约的执行验证/逐记录 `preserve_status` 批准项，**不新增数据取值选择**。正式导入、重开与状态检查及完整批准摘要须在执行前闭合；原诊断保留，不用 consumer 能力参数掩盖。
 
-## 消费者与执行接线门槛
+### 私密候选的可审查分支
 
-consumer 不是要求用户决定是否保留功能：独立 Blog 扩展已获批准，实施者应完成全部消费者。当前默认报告不假称闭合：
+下列标签及摘要说明对应私密候选中的完整转换结果；不公开原值或正文。没有自动应用任何分支。
 
-| 能力 | 本源阻断条数 | 当前边界 |
+| 来源 | Code | 分支标签 | 作用来源 | strict 候选 | Blog 候选 | 正文候选 |
+| --- | --- | --- | --- | --- | --- | --- |
+| settings | wiki_shelf_definition_conflict | 保留当前项目表集合定义 | wiki_projects/go-blog | 是 | 是 | 否 |
+| settings | wiki_shelf_definition_conflict | 审核旧 shelf 字段覆盖（无等效字段需单独适配） | wiki_projects/go-blog | 是 | 是 | 否 |
+| wiki_projects/go-blog | wiki_name_title | 保留旧 name 为 name | wiki_projects/go-blog | 是 | 否 | 否 |
+| wiki_projects/go-blog | wiki_name_title | 保留旧 title 为显示 name | wiki_projects/go-blog | 是 | 否 | 否 |
+| wiki_projects/go-blog | wiki_homepage | 独立 Blog 扩展保留旧重定向 | wiki_projects/go-blog | 是 | 是 | 否 |
+| wiki_projects/go-blog | wiki_homepage | 采用官方 Collection 首页 | wiki_projects/go-blog | 是 | 是 | 否 |
+| posts/10 | banner_cover | 保留独立 Blog banner 图源 | posts/10 | 是 | 是 | 否 |
+| posts/10 | banner_cover | 用旧 banner 作为官方 cover | posts/10 | 是 | 是 | 否 |
+| notes/2 | note_missing_slug_status | 保留旧 ID 与当前未公开状态 | notes/2 | 是 | 是 | 否 |
+| notes/2 | note_missing_slug_status | 另行确认 slug/状态/ownership 迁移 | notes/2 | 是 | 是 | 否 |
+
+## 本次消费者声明与证据
+
+主 agent 已明确声明全部 20 个 catalog 能力实现且本次实测，因此本预览将相应 34 条原 consumer 诊断保留为 info/nonblocking，consumer 阻断为 0。没有删除诊断。证据清单及文件 hash 见 [stellar-200-migration-capabilities.json](stellar-200-migration-capabilities.json)。这些是隔离 fixture 的本次实际浏览器/HTTP 证据，不代表真实迁移或用户整体体验确认。
+
+| 能力 | 本源 info 诊断数 | 本次证据 |
 | --- | --- | --- |
-| poster | 11（3 DB记录 + 两份文件各4字段） | 完整 headline/topic/caption/color已保留；主 agent 核对 route/embed及真实界面后，才可显式声明poster。 |
-| collection_order | 7（topics/1–7） | 原排序保留；需主 agent 核对真正集合列表顺序与分页，才可声明collection_order。 |
-| authors | 0 | catalog支持；本源没有触发该阻断，不可据此宣称所有多作者流程已验收。 |
-| wiki_external_url | 0 | catalog支持；不改变local canonical/document route，本源没有触发该阻断。 |
-| author_widget | 1（settings.widgets.library.author） | 完整定义保留于 Blog.data.widgets；尚无闭合证据，不声明、不问用户重复决定。 |
-| avatar_background | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| rightbar_intro | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| welcome_linklist | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| nav_tabs | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| ai_label | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| category_icons | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| tag_icons | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| read_next | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| expire_days | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| banner_ratio | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| edit_this_page | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| notebook_license | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| notebook_share | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| pages | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
-| seo | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| ai_label | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| author_widget | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json<br>docs/baselines/stellar-200-full/after-resume-author-widget.png |
+| authors | 0 | docs/baselines/stellar-200-full/resume-post-authors.json<br>docs/baselines/stellar-200-full/resume-page-author.json |
+| avatar_background | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| banner_ratio | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| category_icons | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| collection_order | 7 | docs/baselines/stellar-200-full/resume-pages-seo-wiki.json |
+| edit_this_page | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| expire_days | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| nav_tabs | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| notebook_license | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| notebook_share | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| pages | 1 | docs/baselines/stellar-200-full/resume-pages-seo-wiki.json |
+| poster | 11 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| read_next | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| rightbar_intro | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| seo | 1 | docs/baselines/stellar-200-full/resume-pages-seo-wiki.json<br>docs/baselines/stellar-200-full/after-resume-page-explicit-seo.png |
+| tag_icons | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| welcome_linklist | 1 | docs/baselines/stellar-200-full/resume-global-consumers.json |
+| wiki_external_url | 0 | docs/baselines/stellar-200-full/resume-pages-seo-wiki.json |
 
-迁移树 `.tmp/migration-review-helper/main.go` 是只读生成工具：默认 `{}`；`-capabilities` 必须由主 agent 提供显式 JSON，未知 capability 被拒绝。为不同能力报告选择一个新的输出目录，工具以 O_EXCL 写 0600 文件，不能覆盖现有私密候选。声明能力只把对应诊断保留为 info/nonblocking，不执行迁移，不解除其它政策。
+SEO 最后闭合提交为 aa1fa93：显式 about description 优先、og:image 使用 cover；上游强制 og:title 保留 page.title。robots_extra 以实际 HTTP CLI 检查通过，浏览器客户端阻止 robots.txt，不能称浏览器请求已通过。公开作者是 catalog ID 的字符串数组；公开显示作者不授予编辑权限。
 
-Notebook footer 保留独立 blog.content.notebook.license/share；严格 profile 不允许 profiles.note.footer，不能伪造字段。Pages仅friends已冻结属性的消费者可声明；未消费Hero animation/start/preview/actions等保真并保留schema阻断。
+## 已确认无需新增选择的等效项
 
-SEO已冻结六项官方目标：preconnect→preconnect，canonical.originalHost→canonical.host，canonical.officialHosts→canonical.allowed_hosts，open_graph.enable→open_graph.enabled，open_graph.twitter_id→open_graph.twitter_id，structured_data.links→structured_data.same_as。空host转null、旧nil slice转[]、旧nil enable按旧Enabled为true；false/空数组保持。坏类型/未知字段不丢弃，同一目标来源冲突继续阻断。
-
-SEO余七项default_description/default_keywords/robots_extra/no_index/google_verification/bing_verification/baidu_verification保留typed Blog.seo，不覆盖独立Blog.site；canonical已映射值不再重复塞入该袋。它们的head/robots及默认优先级消费者需另行实测声明。
-
-实施者交付证据（尚待主组合和浏览器核验）：13项content消费者提交f45ad24/c7ab767已有真实embedded SSR定向测试、race及正常hook；pages/SEO typed桥提交9ad6a6e已有embedded SSR/preview、保存重建与清除、服务开关及robots回归。SEO residual head另有独立模板测试。这里仅记录源码与隔离测试交付，不将上述20项能力标成前台已验收，默认capabilities仍为空。
-
-公开多作者候选已校正为blog.content.authors的字符串ID数组，绝不写post_authors关联对象。只使用已有且name有效的公开catalog ID：旧TEXT引用精确匹配ID；INTEGER权限引用必须由唯一users.id解析username且username已在catalog。显示名、用户ID不创建公开作者，公开作者也不授予用户权限；无法确定映射或未映射legacy权限引用时保留完整私密来源并报public_author_unmapped政策阻断，不截断成部分列表。
-
-本次真实源只读关系核验：公开catalog共2项，其中1项具有有效name；users共3行，username匹配既有catalog ID为0；posts/pages/wikidocs/notes中的旧author引用为0，post_authors与post_authors_legacy均0行。因此本源没有作者新映射或新增阻断，不据此宣称多作者用户流程已验收。完整catalog和用户身份仍只在私密源快照，不列原值。
-
-pages.friends.show_posts:null保持原文，继承启用行为；false明确关闭，true启用。该nullable指针语义已在迁移定向测试核对，不将null丢弃或猜成false；未知Hero字段与pages消费者门槛仍保留。
+- 旧 OKR 完整默认对象与固定官方 border/五色/zh-CN 文案相同；保留原值，继承官方与请求 locale。
+- data_cache 完整对象与固定官方 runtime policy 全树一致（enable/default_ttl/max_entries 和九项 TTL）；保留原值，无策略差异，自定义/null/缺键/未知值继续阻断。
+- 首页 cover 仅已知 title/description 且 title 为空，旧首页模板不显示它；description 只留源归档，不造 Hero。非空 title、额外字段或坏类型不豁免。
+- Wiki 编辑器统一 name 已由用户确认；旧值取哪个来源仍按第 2 组审查。
 
 ## 完整源表计数
 
-所有表都被只读快照摘要覆盖，评论、用户、权限、草稿及非迁移业务表的变化也使候选过期。以下行数包含所有状态，不等于公开数量。
+覆盖所有状态及非迁移业务表，不等于公开内容数量。主 DB/WAL/全部行数与历史一致；快照格式 3 还使仅 rowid 或 storage class 改动也导致批准过期。
 
 | 表 / 文件集合 | 行数 |
 | --- | --- |
@@ -147,9 +150,9 @@ pages.friends.show_posts:null保持原文，继承启用行为；false明确关�
 | wiki_projects | 3 |
 | wikidocs | 2 |
 
-## 完整配置映射（171 项）
+## 完整配置映射（172 项）
 
-仅列路径和转换说明，源值保留于私密候选；含宿主设置、密钥的目标路径不代表密钥进入公开 theme。
+完整保留旧 171 项并增加 cover 无显示差异说明。仅列路径和转换行为；宿主、密钥对应目标不表示原值进入公开 theme。
 
 | 编号 | 来源 | 目标 | 行为 |
 | --- | --- | --- | --- |
@@ -279,7 +282,7 @@ pages.friends.show_posts:null保持原文，继承启用行为；false明确关�
 | 124 | settings.plugins.scrollreveal.distance | theme.features.reveal.distance | 旧 px 长度转官方数字 px |
 | 125 | settings.plugins.preload.service | theme.features.link_prefetch | flying_pages 使用官方实现 |
 | 126 | settings.plugins.pjax | theme.features.partial_navigation.enabled | 开关保留；官方 manifest 导航替代旧 PJAX |
-| 127 | settings.data_cache | source.snapshot | 旧缓存策略完整保留在源快照 |
+| 127 | settings.data_cache | source.snapshot | 完整旧默认对象与固定 Stellar 2.0.0 runtime 缓存策略完全一致；原值留源快照，候选继承官方等效策略 |
 | 128 | settings.widgets.library | blog.data.widgets | 原值保留（包含 false/null/空列表） |
 | 129 | settings.widgets.pages | theme.profiles | 旧空覆盖；继承官方默认区域 |
 | 130 | settings.site_tree | theme.profiles | 逐 profile 映射；空列表明确清空，缺省继承 |
@@ -298,57 +301,56 @@ pages.friends.show_posts:null保持原文，继承启用行为；false明确关�
 | 143 | settings.tag_plugins.okr | source.snapshot | 旧 OKR 对象与固定 Stellar 2.0.0 边框、五状态颜色和 zh-CN 文案完全一致；原值留源快照，候选继承官方等效及请求 locale 文案 |
 | 144 | settings.tag_plugins.timeline | source.snapshot | 旧参数在源快照完整保留 |
 | 145 | settings.tag_plugins.gallery.layout | source.snapshot | 旧参数在源快照完整保留 |
-| 146 | settings.wiki[0].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 147 | settings.wiki[0].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 148 | settings.wiki[0].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 149 | settings.wiki[0].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 150 | settings.wiki[0].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
-| 151 | settings.wiki[0].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 152 | settings.wiki[0].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 153 | settings.wiki[1].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 154 | settings.wiki[1].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 155 | settings.wiki[1].name | host.wiki_projects.name | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 156 | settings.wiki[1].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 157 | settings.wiki[1].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 158 | settings.wiki[1].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
-| 159 | settings.wiki[1].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 160 | settings.wiki[1].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 161 | settings.wiki[2].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 162 | settings.wiki[2].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 163 | settings.wiki[2].name | host.wiki_projects.name | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 164 | settings.wiki[2].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 165 | settings.wiki[2].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 166 | settings.wiki[2].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
-| 167 | settings.wiki[2].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 168 | settings.wiki[2].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
-| 169 | settings.wiki | blog.data.wiki | 旧 shelf 顺序转官方项目 ID 字符串数组；冗余定义逐字段核对，冲突不能静默丢弃 |
-| 170 | settings.article.share.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
-| 171 | settings.article.reward.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
+| 146 | settings.cover | source.snapshot | 旧首页模板以非空 title 为显示门槛；已知 title/description 对象的 title 为空，无显示差异，原值留源快照且不转 Hero |
+| 147 | settings.wiki[0].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 148 | settings.wiki[0].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 149 | settings.wiki[0].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 150 | settings.wiki[0].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 151 | settings.wiki[0].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
+| 152 | settings.wiki[0].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 153 | settings.wiki[0].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 154 | settings.wiki[1].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 155 | settings.wiki[1].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 156 | settings.wiki[1].name | host.wiki_projects.name | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 157 | settings.wiki[1].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 158 | settings.wiki[1].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 159 | settings.wiki[1].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
+| 160 | settings.wiki[1].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 161 | settings.wiki[1].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 162 | settings.wiki[2].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 163 | settings.wiki[2].icon | host.wiki_projects.icon | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 164 | settings.wiki[2].name | host.wiki_projects.name | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 165 | settings.wiki[2].repo | host.wiki_projects.repo | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 166 | settings.wiki[2].sort | host.wiki_projects.sort | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 167 | settings.wiki[2].tags | host.wiki_project_tags | 已存在项目标签一致；原关联与 shelf 顺序不变 |
+| 168 | settings.wiki[2].title | host.wiki_projects.title | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 169 | settings.wiki[2].url | host.wiki_projects.url | 旧 shelf 与现有集合列一致，值保留在集合候选 |
+| 170 | settings.wiki | blog.data.wiki | 旧 shelf 顺序转官方项目 ID 字符串数组；冗余定义逐字段核对，冲突不能静默丢弃 |
+| 171 | settings.article.share.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
+| 172 | settings.article.reward.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
 
 ## 全局与配置诊断
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
 | structure / error | legacy_notebook_schema | schema · notebooks/notes | 是 | 旧 INTEGER ID、nb_order、content/tags 表与新 TEXT ID、slug/status/content_md/tags_json 不兼容；必须单独审核 schema 转换，不能先假设 EnsureTable 会升级 |
-| consumer / error | global_avatar_background_consumer | settings · site.avatar_bg | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_rightbar_intro_consumer | settings · rightbar.intro | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_welcome_linklist_consumer | settings · rightbar.welcome_linklist | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_pages_consumer | settings · pages | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_nav_tabs_consumer | settings · nav_tabs | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_ai_label_consumer | settings · article.ai_label | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_category_icons_consumer | settings · article.category_icon | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_tag_icons_consumer | settings · article.tag_icon | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_read_next_consumer | settings · article.read_next | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_expire_days_consumer | settings · article.expire_days | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_banner_ratio_consumer | settings · article.banner_ratio | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_edit_this_page_consumer | settings · article.edit_this_page | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_notebook_license_consumer | settings · notebook.license | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_notebook_share_consumer | settings · notebook.share | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
-| consumer / error | global_seo_consumer | settings · seo | 是 | 已批准的宿主 SEO 扩展仅存储不代表已消费；须实测 typed 默认文案、head 与 robots 后显式声明能力 |
-| policy / error | pjax_policy_removed | settings · plugins.pjax | 是 | 旧 selectors/timeout 与官方 manifest 导航没有直接等效字段；审核后明确接受官方策略 |
-| policy / error | data_cache_removed | settings · data_cache | 是 | 2.0 runtime policy 没有公开同等配置；禁止伪造 features.data_cache，需确认具体策略处理 |
-| consumer / error | widget_author_removed | settings · widgets.library.author | 是 | author widget 没有同等上游布局，完整定义保留在 Blog.data.widgets；需决定独立扩展消费 |
-| policy / error | home_cover_removed | settings · cover | 是 | 旧主页 cover 独立配置不在上游主题结构；需确认独立 Blog 展示或首页内容迁移 |
+| consumer / info | global_avatar_background_consumer | settings · site.avatar_bg | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_rightbar_intro_consumer | settings · rightbar.intro | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_welcome_linklist_consumer | settings · rightbar.welcome_linklist | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_pages_consumer | settings · pages | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_nav_tabs_consumer | settings · nav_tabs | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_ai_label_consumer | settings · article.ai_label | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_category_icons_consumer | settings · article.category_icon | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_tag_icons_consumer | settings · article.tag_icon | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_read_next_consumer | settings · article.read_next | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_expire_days_consumer | settings · article.expire_days | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_banner_ratio_consumer | settings · article.banner_ratio | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_edit_this_page_consumer | settings · article.edit_this_page | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_notebook_license_consumer | settings · notebook.license | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_notebook_share_consumer | settings · notebook.share | 否 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / info | global_seo_consumer | settings · seo | 否 | 已批准的宿主 SEO 扩展仅存储不代表已消费；须实测 typed 默认文案、head 与 robots 后显式声明能力 |
+| policy / error | pjax_policy_removed | settings · plugins.pjax | 是 | 旧存储 selectors/timeout 与官方 manifest 导航没有直接等效字段；不据存储值推断旧 runtime 正在消费，审核后明确接受官方策略 |
+| consumer / info | widget_author_removed | settings · widgets.library.author | 否 | author widget 没有同等上游布局，完整定义保留在 Blog.data.widgets；需决定独立扩展消费 |
 | policy / error | wiki_shelf_definition_conflict | settings · wiki[0].name | 是 | 旧 shelf 冗余定义与当前项目表不同或无目标；官方 shelf 仅 ID 数组，需明确集合值来源 |
 | schema / error | invalid_value | migration.theme · leftbar.footer.actions[1].url | 是 | safe navigable URL or root-relative path |
 | schema / error | invalid_value | migration.theme · leftbar.footer.actions[2].url | 是 | safe navigable URL or root-relative path |
@@ -356,86 +358,13 @@ pages.friends.show_posts:null保持原文，继承启用行为；false明确关�
 
 ## 全部逐记录候选（32 条）
 
-下列每条均列全部来源/目标映射、hash和诊断；不省略无冲突记录。宿主原列映射为 host.* 表示保持既有列，不把这些值塞入上游 Front Matter。Markdown变化表示候选中的显式标签/缺省语义转换，不表示真实文件或DB已改。
+逐条列全部映射/hash/诊断，不省略无冲突记录。host.* 表示既有宿主列，不塞入上游 Front Matter。候选 Markdown 变化仅是拟议转换，真实文件/DB未改；任何正文变化仍须逐记录 BodyDigest 精确批准。
 
-### 1. `wiki_projects/frontend`
+### 1. `wiki_projects/go-blog`
 
-Profile：`wiki`；候选路径：`/wiki/frontend`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`wiki`；候选路径：`/wiki/go-blog`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`3f3b94915d70b106b6faf3599a334a4e5dd9fb7de0e96031fee306440aac28c3`；候选 strict 配置摘要：`508373429a440d4f72041209d4006d7fb2ddd8a48bd09fbdccf422837929de74`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| wiki_projects/frontend.title | front_matter.title | 公开展示字段原值保留 |
-| wiki_projects/frontend.available | host.wiki_projects.available | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.branch | host.wiki_projects.branch | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.cover | host.wiki_projects.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.created_at | host.wiki_projects.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.description | host.wiki_projects.description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.headline | host.wiki_projects.headline | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.hero_json | host.wiki_projects.hero_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.icon | host.wiki_projects.icon | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.id | host.wiki_projects.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.name | host.wiki_projects.name | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.pin | host.wiki_projects.pin | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.repo | host.wiki_projects.repo | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.sort | host.wiki_projects.sort | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.subtitle | host.wiki_projects.subtitle | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.title | host.wiki_projects.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.updated_at | host.wiki_projects.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.url | host.wiki_projects.url | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.visible | host.wiki_projects.visible | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/frontend.description | front_matter.description | 公开展示字段原值保留 |
-| wiki_projects/frontend.icon | front_matter.icon | 公开展示字段原值保留 |
-| wiki_projects/frontend.id/slug | front_matter.route.path | 保持旧公开集合路径 |
-| wiki_projects/frontend.sort | front_matter.listing.order | 公开展示字段原值保留 |
-| wiki_projects/frontend.title | front_matter.name | 旧 name 空，显示标题保留为官方 name |
-| wiki_projects/frontend.wikidocs.project_id/doc_order/slug | front_matter.navigation.tree | 完整成员与顺序保留，权限仍由宿主状态控制 |
-
-无诊断。
-
-### 2. `wiki_projects/stellar`
-
-Profile：`wiki`；候选路径：`/wiki/stellar`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`882802a3d790ad066ac0f99710c80ae8ee8ccb7ff571f4c283fa208f38f50108`；候选 strict 配置摘要：`ab7c9efe8c1fc99630b16d38cb3927709c3f9490c29ceb9a5518ebedb6e8de2a`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| wiki_projects/stellar.title | front_matter.title | 公开展示字段原值保留 |
-| wiki_projects/stellar.available | host.wiki_projects.available | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.branch | host.wiki_projects.branch | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.cover | host.wiki_projects.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.created_at | host.wiki_projects.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.description | host.wiki_projects.description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.headline | host.wiki_projects.headline | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.hero_json | host.wiki_projects.hero_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.icon | host.wiki_projects.icon | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.id | host.wiki_projects.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.name | host.wiki_projects.name | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.pin | host.wiki_projects.pin | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.repo | host.wiki_projects.repo | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.sort | host.wiki_projects.sort | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.subtitle | host.wiki_projects.subtitle | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.title | host.wiki_projects.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.updated_at | host.wiki_projects.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.url | host.wiki_projects.url | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.visible | host.wiki_projects.visible | 源列保持；候选只新增严格元数据与明确正文转换 |
-| wiki_projects/stellar.description | front_matter.description | 公开展示字段原值保留 |
-| wiki_projects/stellar.icon | front_matter.icon | 公开展示字段原值保留 |
-| wiki_projects/stellar.repo | front_matter.source.repository | 公开展示字段原值保留 |
-| wiki_projects/stellar.id/slug | front_matter.route.path | 保持旧公开集合路径 |
-| wiki_projects/stellar.sort | front_matter.listing.order | 公开展示字段原值保留 |
-| wiki_projects/stellar.title | front_matter.name | 旧 name 空，显示标题保留为官方 name |
-| wiki_projects/stellar.wikidocs.project_id/doc_order/slug | front_matter.navigation.tree | 完整成员与顺序保留，权限仍由宿主状态控制 |
-
-无诊断。
-
-### 3. `wiki_projects/go-blog`
-
-Profile：`wiki`；候选路径：`/wiki/go-blog`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`829dfd63a2f9d534c5d0a2e995acd0e983a1e1b87b207f03cb53ac69d9322ae1`；候选 strict 配置摘要：`d5c4c8ef6a58e527e52653cb63eb66154ec1dd0557501ca9fa99839f6cd93afe`。
+源记录摘要：`a3cdbb49ca83da647e435de8aa2a628b49c194f9ce971785905c15dbcf37f944`；候选 strict 配置摘要：`d5c4c8ef6a58e527e52653cb63eb66154ec1dd0557501ca9fa99839f6cd93afe`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -471,11 +400,84 @@ Profile：`wiki`；候选路径：`/wiki/go-blog`；已version 2原文保留：�
 | policy / error | wiki_name_title | wiki_projects/go-blog · name/title | 是 | 旧 name 与 title 同时存在且不同；官方 Collection 只有 name/headline，须审核显示标题与技术名的归属 |
 | policy / error | wiki_homepage | wiki_projects/go-blog · route.path/navigation.tree | 是 | 旧项目入口重定向至第一篇已发布文档；上游会生成首页/Collection 模型。两个候选都保留成员身份，需审核入口行为 |
 
+### 2. `wiki_projects/stellar`
+
+Profile：`wiki`；候选路径：`/wiki/stellar`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`a08a0e67fec3cbfdc5a9471e0f46e75858669a04f754ce564a9250139d58c7b1`；候选 strict 配置摘要：`ab7c9efe8c1fc99630b16d38cb3927709c3f9490c29ceb9a5518ebedb6e8de2a`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| wiki_projects/stellar.title | front_matter.title | 公开展示字段原值保留 |
+| wiki_projects/stellar.available | host.wiki_projects.available | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.branch | host.wiki_projects.branch | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.cover | host.wiki_projects.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.created_at | host.wiki_projects.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.description | host.wiki_projects.description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.headline | host.wiki_projects.headline | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.hero_json | host.wiki_projects.hero_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.icon | host.wiki_projects.icon | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.id | host.wiki_projects.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.name | host.wiki_projects.name | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.pin | host.wiki_projects.pin | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.repo | host.wiki_projects.repo | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.sort | host.wiki_projects.sort | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.subtitle | host.wiki_projects.subtitle | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.title | host.wiki_projects.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.updated_at | host.wiki_projects.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.url | host.wiki_projects.url | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.visible | host.wiki_projects.visible | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/stellar.description | front_matter.description | 公开展示字段原值保留 |
+| wiki_projects/stellar.icon | front_matter.icon | 公开展示字段原值保留 |
+| wiki_projects/stellar.repo | front_matter.source.repository | 公开展示字段原值保留 |
+| wiki_projects/stellar.id/slug | front_matter.route.path | 保持旧公开集合路径 |
+| wiki_projects/stellar.sort | front_matter.listing.order | 公开展示字段原值保留 |
+| wiki_projects/stellar.title | front_matter.name | 旧 name 空，显示标题保留为官方 name |
+| wiki_projects/stellar.wikidocs.project_id/doc_order/slug | front_matter.navigation.tree | 完整成员与顺序保留，权限仍由宿主状态控制 |
+
+无诊断。
+
+### 3. `wiki_projects/frontend`
+
+Profile：`wiki`；候选路径：`/wiki/frontend`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`aac47a76d4994e3bdd0be0e9fa7faa87b3636e320504840bde14cee56640a6db`；候选 strict 配置摘要：`508373429a440d4f72041209d4006d7fb2ddd8a48bd09fbdccf422837929de74`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| wiki_projects/frontend.title | front_matter.title | 公开展示字段原值保留 |
+| wiki_projects/frontend.available | host.wiki_projects.available | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.branch | host.wiki_projects.branch | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.cover | host.wiki_projects.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.created_at | host.wiki_projects.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.description | host.wiki_projects.description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.headline | host.wiki_projects.headline | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.hero_json | host.wiki_projects.hero_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.icon | host.wiki_projects.icon | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.id | host.wiki_projects.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.name | host.wiki_projects.name | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.pin | host.wiki_projects.pin | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.repo | host.wiki_projects.repo | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.sort | host.wiki_projects.sort | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.subtitle | host.wiki_projects.subtitle | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.title | host.wiki_projects.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.updated_at | host.wiki_projects.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.url | host.wiki_projects.url | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.visible | host.wiki_projects.visible | 源列保持；候选只新增严格元数据与明确正文转换 |
+| wiki_projects/frontend.description | front_matter.description | 公开展示字段原值保留 |
+| wiki_projects/frontend.icon | front_matter.icon | 公开展示字段原值保留 |
+| wiki_projects/frontend.id/slug | front_matter.route.path | 保持旧公开集合路径 |
+| wiki_projects/frontend.sort | front_matter.listing.order | 公开展示字段原值保留 |
+| wiki_projects/frontend.title | front_matter.name | 旧 name 空，显示标题保留为官方 name |
+| wiki_projects/frontend.wikidocs.project_id/doc_order/slug | front_matter.navigation.tree | 完整成员与顺序保留，权限仍由宿主状态控制 |
+
+无诊断。
+
 ### 4. `topics/1`
 
-Profile：`topic`；候选路径：`/topic/stellar-1400`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/stellar-1400`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`e9d773ea4cae7e1f62fb9f678243f7fdc35f4e24a25dbe8ba790031f0e8ec22c`；候选 strict 配置摘要：`ae0c7074a8c8c13ac8e9502c0b9adef2bdcb2fc3a10266d34e67deefdcca0de0`。
+源记录摘要：`8ccbd27011967c5e22bd775130314b3ff116cbcd68a618d8e6524cf0bdc95103`；候选 strict 配置摘要：`ae0c7074a8c8c13ac8e9502c0b9adef2bdcb2fc3a10266d34e67deefdcca0de0`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -495,13 +497,13 @@ Profile：`topic`；候选路径：`/topic/stellar-1400`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/1 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/1 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 5. `topics/2`
 
-Profile：`topic`；候选路径：`/topic/发布流程`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/发布流程`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`3a01998de9a2511b2e4125e70e079d37a88395729dc0e13557dfe5af1d2425b8`；候选 strict 配置摘要：`76d9583839a20608819036297f5e61e48e46fe0164c840f3e4052021346c1ab5`。
+源记录摘要：`9321d5379961980ce8699f33eb25dee141224045f6de8326be1141b80ee74165`；候选 strict 配置摘要：`76d9583839a20608819036297f5e61e48e46fe0164c840f3e4052021346c1ab5`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -521,13 +523,13 @@ Profile：`topic`；候选路径：`/topic/发布流程`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/2 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/2 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 6. `topics/3`
 
-Profile：`topic`；候选路径：`/topic/标签插件`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/标签插件`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`5960e54ba61f2f76270a452f9178acf1ad016f0baf8f6c6c4406ac903d2dbdab`；候选 strict 配置摘要：`7ac33ba4bd870f0bfed1e122922004c48fd2cc3912b4d572f4831858d97fbe3b`。
+源记录摘要：`656b1e91b54e7896cd75f763837e3517ffc472e06f0aadcce356a736ad5375ec`；候选 strict 配置摘要：`7ac33ba4bd870f0bfed1e122922004c48fd2cc3912b4d572f4831858d97fbe3b`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -547,13 +549,13 @@ Profile：`topic`；候选路径：`/topic/标签插件`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/3 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/3 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 7. `topics/4`
 
-Profile：`topic`；候选路径：`/topic/内容组织`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/内容组织`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`768b207f5d69868ba8173031c1efa414fa9aaea9a3baf6d34c1e028098445a4d`；候选 strict 配置摘要：`ae9b7bfd39e053d7be3145aa0266f11855efd39814f54555b382e04bfbaca642`。
+源记录摘要：`e05e264709b62fbbd58f8f70fd1eebf08486c63411df074a45ff6a615bc30996`；候选 strict 配置摘要：`ae9b7bfd39e053d7be3145aa0266f11855efd39814f54555b382e04bfbaca642`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -573,13 +575,13 @@ Profile：`topic`；候选路径：`/topic/内容组织`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/4 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/4 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 8. `topics/5`
 
-Profile：`topic`；候选路径：`/topic/stellar-1410`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/stellar-1410`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`53562a7308e1a1b08c0237d88080fe2cd06728d36dbaaa0b38ad06b82d603386`；候选 strict 配置摘要：`84d968ed10a81e0bd99060c276f26956501d2ece94c9d03c7e69463d196abe3c`。
+源记录摘要：`e1103eca9ea17dcb5e388c6f0f700aecbfd7203d381161f233fa1c99139ad39c`；候选 strict 配置摘要：`84d968ed10a81e0bd99060c276f26956501d2ece94c9d03c7e69463d196abe3c`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -599,13 +601,13 @@ Profile：`topic`；候选路径：`/topic/stellar-1410`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/5 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/5 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 9. `topics/6`
 
-Profile：`topic`；候选路径：`/topic/stellar-1421`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/stellar-1421`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`463df498df9f1726f36078ae5a7fc9be440e3a82907d9dc723fef63bf2261ddf`；候选 strict 配置摘要：`e35367e0476d22dd1c4e98003fc1782c39cbdd2c9ebfbb29a1cca549f86266b3`。
+源记录摘要：`e06a06e6602efb301d93b6d2b5047e09e4ec077241096fc7aac20d59e1f9e212`；候选 strict 配置摘要：`e35367e0476d22dd1c4e98003fc1782c39cbdd2c9ebfbb29a1cca549f86266b3`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -625,13 +627,13 @@ Profile：`topic`；候选路径：`/topic/stellar-1421`；已version 2原文保
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/6 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/6 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 10. `topics/7`
 
-Profile：`topic`；候选路径：`/topic/stellar-验收`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/topic/stellar-验收`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`537b086d280953cfce9fc8c9efb6669380f17ceb461cdedd657c5275834ec38d`；候选 strict 配置摘要：`4e6d97c60808b355b2c9dfeda4214771a8516d462708028019b4fb2a8abbfa92`。
+源记录摘要：`4cd8f1bebe904eda6c961851d281f2588f1609a5f4784aa9fd57da72004eec68`；候选 strict 配置摘要：`4e6d97c60808b355b2c9dfeda4214771a8516d462708028019b4fb2a8abbfa92`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -652,13 +654,13 @@ Profile：`topic`；候选路径：`/topic/stellar-验收`；已version 2原文�
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | topic_order_consumer | topics/7 · sort | 是 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
+| consumer / info | topic_order_consumer | topics/7 · sort | 否 | 旧专栏集合排序保留于 Blog 扩展；宿主集合列表必须消费后才能执行迁移 |
 
 ### 11. `notebooks/2`
 
-Profile：`notebook`；候选路径：`/notebooks/2`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`notebook`；候选路径：`/notebooks/2`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`3afc535feebe5bc495db3646e48e0698faa60742a0a46c920f1b0245685099f7`；候选 strict 配置摘要：`32242a0d27c53df98096e1cf82414ec96e5f5516238cea01440f2ef85817877e`。
+源记录摘要：`cce0e8e4828887887e68de7e15776017a50dc19f2b863ff7b60662678f3290ba`；候选 strict 配置摘要：`32242a0d27c53df98096e1cf82414ec96e5f5516238cea01440f2ef85817877e`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -675,201 +677,11 @@ Profile：`notebook`；候选路径：`/notebooks/2`；已version 2原文保留�
 
 无诊断。
 
-### 12. `posts/12`
+### 12. `posts/1`
 
-Profile：`post`；候选路径：`/post/shortcode-可视化编辑测试`；已version 2原文保留：否；候选Markdown变化：是。
+Profile：`topic`；候选路径：`/post/140-card-tags`；已 version 2 原文保留：否；候选 Markdown 变化：是。
 
-源摘要：`07436bd974c0c8738cd47d2fd629c007da006e597163f555d07fcd4a9290f967`；候选 strict 配置摘要：`9049e4ace40acd83d525d0c22624f762e32f2601402ec6c116ba8caadc23c670`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/12.title | front_matter.title | 公开展示字段原值保留 |
-| posts/12.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/12.cover | front_matter.cover | 公开展示字段原值保留 |
-| posts/12.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/12.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/12.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/12.markdown.byte[674] | image.fancybox:false | 显式保留旧 image 默认禁用放大；避免官方 true 改变点击行为 |
-
-无诊断。
-
-### 13. `posts/11`
-
-Profile：`topic`；候选路径：`/post/stellar-143-acceptance`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`3846826e6630ca1a04a1eaba5b31585f451328b8f8857495165aab6f466f38cb`；候选 strict 配置摘要：`8174493524c2769704c890d3a3a663a94864b310115a08402c236db18f87372c`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/11.title | front_matter.title | 公开展示字段原值保留 |
-| posts/11.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/11.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
-| posts/11.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/11.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/11.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/11.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
-| posts/11.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
-
-| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
-| --- | --- | --- | --- | --- |
-| consumer / error | poster_consumer | posts/11 · poster | 是 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
-
-### 14. `posts/13`
-
-Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`99e5f54182d54ee55f68d1e6f752daee0c113e15623cede0608cf3e69a06ca93`；候选 strict 配置摘要：`ed70a4c15a90f0f3caa10818c105a52a662d6b07dcd44f80723bd6552ed68a56`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/13.title | front_matter.title | 公开展示字段原值保留 |
-| posts/13.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/13.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
-| posts/13.cover | front_matter.cover | 公开展示字段原值保留 |
-| posts/13.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/13.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/13.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/13.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
-| posts/13.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
-
-| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
-| --- | --- | --- | --- | --- |
-| consumer / error | poster_consumer | posts/13 · poster | 是 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
-
-### 15. `posts/5`
-
-Profile：`topic`；候选路径：`/post/140-reading-time`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`9456c67185bb93442afa04daa48ade508dcaeefdfcfb6896471c57695ae8a37b`；候选 strict 配置摘要：`511da41eb06a15f3aa4c9c0e9982d645edbc5f44e5f12165f4c2252e55ca3652`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/5.title | front_matter.title | 公开展示字段原值保留 |
-| posts/5.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/5.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
-| posts/5.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/5.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/5.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/5.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
-| posts/5.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
-
-| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
-| --- | --- | --- | --- | --- |
-| consumer / error | poster_consumer | posts/5 · poster | 是 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
-
-### 16. `posts/1`
-
-Profile：`topic`；候选路径：`/post/140-card-tags`；已version 2原文保留：否；候选Markdown变化：是。
-
-源摘要：`7103d1978aa1e1481a765e9b5a838fbf7a83c0060f398577ce726b52b15063aa`；候选 strict 配置摘要：`8fc9a3958c5b1a1debeca7ebfe6262c274c6533d9b0c0e6b77499d24fabb1072`。
+源记录摘要：`90b6a7c2fd467de88595ae0cc1f1840d2c0e9d7d2d0372cd81c049a8eb6e814e`；候选 strict 配置摘要：`c60c89373b6d76f1dbd1a79a96221382967928b44699d2840a4768c58f6d689a`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -914,107 +726,11 @@ Profile：`topic`；候选路径：`/post/140-card-tags`；已version 2原文保
 
 无诊断。
 
-### 17. `posts/4`
+### 13. `posts/2`
 
-Profile：`topic`；候选路径：`/post/140-navigation`；已version 2原文保留：否；候选Markdown变化：是。
+Profile：`topic`；候选路径：`/post/140-draft`；已 version 2 原文保留：否；候选 Markdown 变化：是。
 
-源摘要：`cf59a4f84c6b33736ad1d2648925a93bfa17beac3a6071755847e64af3f88740`；候选 strict 配置摘要：`2cc99d0e7472230d85a31875c6066c749879a535ea577cffcdb98dbe63e069a8`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/4.title | front_matter.title | 公开展示字段原值保留 |
-| posts/4.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/4.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
-| posts/4.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/4.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/4.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/4.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
-| posts/4.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
-| posts/4.markdown.byte[470] | blog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
-| posts/4.markdown.byte[611] | endblog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
-
-无诊断。
-
-### 18. `posts/6`
-
-Profile：`topic`；候选路径：`/post/140-table-styles`；已version 2原文保留：否；候选Markdown变化：是。
-
-源摘要：`f6d7e490d56c805caf9d77e4205bfb9228a2c75f93c3bdb9ee7626e625e98310`；候选 strict 配置摘要：`6c92fdf4704276a7cf45c4fb3eef36c2945c7383a20d7c0f3bdc446950badcf6`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| posts/6.title | front_matter.title | 公开展示字段原值保留 |
-| posts/6.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| posts/6.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
-| posts/6.created_at | front_matter.date | 公开展示字段原值保留 |
-| posts/6.updated_at | front_matter.updated | 公开展示字段原值保留 |
-| posts/6.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
-| posts/6.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
-| posts/6.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
-| posts/6.markdown.byte[651] | blog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
-| posts/6.markdown.byte[803] | endblog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
-
-无诊断。
-
-### 19. `posts/2`
-
-Profile：`topic`；候选路径：`/post/140-draft`；已version 2原文保留：否；候选Markdown变化：是。
-
-源摘要：`bff622d34294bc7f52c68e6012b1bafcede06c341374b1da0260b04b5571a544`；候选 strict 配置摘要：`c08bbf6c891d4663ad78decdc631a7402e0f13f8a8230ce0ba3680affb59e9b6`。
+源记录摘要：`3c19496c457f3b8c2e5f9c27043b0917b9dab35f9496016012d5f6879cfa63f3`；候选 strict 配置摘要：`b96f5a83d3df89b60c9cd69f682a50d13eb5fb5428d542e0f3c0928880658f4b`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1058,11 +774,11 @@ Profile：`topic`；候选路径：`/post/140-draft`；已version 2原文保留�
 
 无诊断。
 
-### 20. `posts/3`
+### 14. `posts/3`
 
-Profile：`topic`；候选路径：`/post/140-md-wrapper`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/140-md-wrapper`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`675b73062193859773f7072597f3b551e1985e2622cb87bbb2b5e7deae2a3249`；候选 strict 配置摘要：`58c672db3e9865988e2a53dd716cb2880057a654b14723f3fdf88e52ab796bfe`。
+源记录摘要：`38df19f4ad5847caade6d1bb75c9b66bdd7c2708854b33b8844264a21b142873`；候选 strict 配置摘要：`1f077e9a613de2c2d20c3eadae3fd215045fc50ea580c8a1ec7fa48cd6c9f8f1`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1104,11 +820,155 @@ Profile：`topic`；候选路径：`/post/140-md-wrapper`；已version 2原文�
 
 无诊断。
 
-### 21. `posts/8`
+### 15. `posts/4`
 
-Profile：`topic`；候选路径：`/post/141-stellar-141`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/140-navigation`；已 version 2 原文保留：否；候选 Markdown 变化：是。
 
-源摘要：`fc5658c8474405482178b860d0b314d6032b25df7cb952e7bcc0a373c8ae3c03`；候选 strict 配置摘要：`e4c42c0e37d73a9f93268cbe1c684ce38866a243f27641877408498766f9bf3d`。
+源记录摘要：`456c0c58b3837d6a64081820025a7662d94f5d5240034809775a512090285052`；候选 strict 配置摘要：`f70e9b6d6f2fd8fdb7b6b34b91aa168a4fa47b4d3bbab216ab82ee98d1cb29cc`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/4.title | front_matter.title | 公开展示字段原值保留 |
+| posts/4.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/4.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
+| posts/4.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/4.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/4.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/4.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
+| posts/4.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
+| posts/4.markdown.byte[470] | blog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
+| posts/4.markdown.byte[611] | endblog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
+
+无诊断。
+
+### 16. `posts/5`
+
+Profile：`topic`；候选路径：`/post/140-reading-time`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`55e2eabc1e1c146f8c765bc8da6971a6342378c9483f73fbd98cb00f946f3ca7`；候选 strict 配置摘要：`bfdc8a412a16c0f737d0d251b4ecf7e1d5b254e3f973279b57fecd6c51af743a`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/5.title | front_matter.title | 公开展示字段原值保留 |
+| posts/5.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/5.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
+| posts/5.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/5.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/5.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/5.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
+| posts/5.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
+
+| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
+| --- | --- | --- | --- | --- |
+| consumer / info | poster_consumer | posts/5 · poster | 否 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
+
+### 17. `posts/6`
+
+Profile：`topic`；候选路径：`/post/140-table-styles`；已 version 2 原文保留：否；候选 Markdown 变化：是。
+
+源记录摘要：`dcfd518707ad5ab6f2545804ace77dffe31ea7d0659e79e917515c0093afabf9`；候选 strict 配置摘要：`f7231acaf21197c8d85a95473e6efd77c5c1133543781ff1df59469900e3e7d4`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/6.title | front_matter.title | 公开展示字段原值保留 |
+| posts/6.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/6.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
+| posts/6.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/6.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/6.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/6.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
+| posts/6.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
+| posts/6.markdown.byte[651] | blog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
+| posts/6.markdown.byte[803] | endblog_tip | 只改批准的 Blog 扩展名字；参数、正文及空白逐字保留 |
+
+无诊断。
+
+### 18. `posts/8`
+
+Profile：`topic`；候选路径：`/post/141-stellar-141`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`1f7d80c8c929fae82c3eaee03d69deeffc96af559abbeec72ddaac7eb1930380`；候选 strict 配置摘要：`0e041de5e510aaf5ccbe6a6938a8b8907f7b94beef76707d8f5c12eca12fdd72`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1152,11 +1012,11 @@ Profile：`topic`；候选路径：`/post/141-stellar-141`；已version 2原文�
 
 无诊断。
 
-### 22. `posts/9`
+### 19. `posts/9`
 
-Profile：`topic`；候选路径：`/post/141-feature-playground`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/141-feature-playground`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`5aa082ea46766b9874b169052c2e73b4aa1c66899fc626ec6547f79348836f49`；候选 strict 配置摘要：`ed2c25f77ad00be88f42a74df1df35845ceb9834d2d2649f328f41ddd8b25519`。
+源记录摘要：`b0947af3cf5e0145ed75c808cde5255c899442b59b358ddec6cf17ca4e030599`；候选 strict 配置摘要：`1e7831d305432c98962911d68ea91d72c7aae247ba65a66b39f1d8d010b46299`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1200,11 +1060,11 @@ Profile：`topic`；候选路径：`/post/141-feature-playground`；已version 2
 
 无诊断。
 
-### 23. `posts/10`
+### 20. `posts/10`
 
-Profile：`topic`；候选路径：`/post/142-stellar-142`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/142-stellar-142`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`9ed8c5427f4ce2cb8de7308ff7b740d86cef18c277c45da65f8e5ff036ce972c`；候选 strict 配置摘要：`b775867d352d86bbf3ec9f31ab097e735035828cc1e47c4249d1776e0cbc9686`。
+源记录摘要：`eb1f33d8273f7a253fe3421daaa053ae7b449c5e71f3e9026639d8c8e8db5aed`；候选 strict 配置摘要：`8f945339e5157df469513d9a8e3f3a99a2bfc7c43c6e9c2eea4eaab428b89137`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1250,11 +1110,185 @@ Profile：`topic`；候选路径：`/post/142-stellar-142`；已version 2原文�
 | --- | --- | --- | --- | --- |
 | policy / error | banner_cover | posts/10 · banner/cover | 是 | 旧 banner 与 cover 是独立图源，官方 banner.background 是布尔且图源来自 cover；禁止覆盖旧 cover |
 
-### 24. `pages/2`
+### 21. `posts/11`
 
-Profile：`page`；候选路径：`/notes`；已version 2原文保留：否；候选Markdown变化：是。
+Profile：`topic`；候选路径：`/post/stellar-143-acceptance`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`b8d76bcea96500010975a170aff16399462be495d49621dc9f0ec736330cb081`；候选 strict 配置摘要：`429fb28747cf6131eb8aea474d77a6a097ed2679947d0ab96b6b4e9cb33867eb`。
+源记录摘要：`4933a09519053b23774f54124adf4d000829f1291134741449f7bfa062f68bc0`；候选 strict 配置摘要：`e314d57a3109ab94a873347f7a2894e2f166e585207091adbebe6214bc19e14a`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/11.title | front_matter.title | 公开展示字段原值保留 |
+| posts/11.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/11.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
+| posts/11.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/11.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/11.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/11.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
+| posts/11.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
+
+| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
+| --- | --- | --- | --- | --- |
+| consumer / info | poster_consumer | posts/11 · poster | 否 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
+
+### 22. `posts/12`
+
+Profile：`post`；候选路径：`/post/shortcode-可视化编辑测试`；已 version 2 原文保留：否；候选 Markdown 变化：是。
+
+源记录摘要：`4cef8d87e43bb746ff300a932696b629a2416514fa0ef1b553d3c205e8518567`；候选 strict 配置摘要：`39812c816018856aae5ece44baaeaf2934fc9334a1edacad00d58e21a15b1194`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/12.title | front_matter.title | 公开展示字段原值保留 |
+| posts/12.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/12.cover | front_matter.cover | 公开展示字段原值保留 |
+| posts/12.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/12.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/12.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/12.markdown.byte[674] | image.fancybox:false | 显式保留旧 image 默认禁用放大；避免官方 true 改变点击行为 |
+
+无诊断。
+
+### 23. `posts/13`
+
+Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`54008206c1ca620fa4bb4236bcbbd5d99267a1a8ec289d590c430eb21f127186`；候选 strict 配置摘要：`4301d0e974df2993bdd0af3a4d2512b247d918088a702a9f6e86e2184f698b51`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| posts/13.title | front_matter.title | 公开展示字段原值保留 |
+| posts/13.ai_label | host.posts.ai_label | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.ai_summary | host.posts.ai_summary | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.author | host.posts.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.banner | host.posts.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.category | host.posts.category | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.content_html | host.posts.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.content_md | host.posts.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.cover | host.posts.cover | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.created_at | host.posts.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.deleted_at | host.posts.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.draft_json | host.posts.draft_json | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.excerpt | host.posts.excerpt | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.id | host.posts.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.meta_description | host.posts.meta_description | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.meta_keywords | host.posts.meta_keywords | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.password | host.posts.password | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.pinned | host.posts.pinned | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.poster | host.posts.poster | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.publish_at | host.posts.publish_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.references | host.posts.references | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.slug | host.posts.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.status | host.posts.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.tags | host.posts.tags | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.title | host.posts.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.topic | host.posts.topic | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.topic_id | host.posts.topic_id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.updated_at | host.posts.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.views | host.posts.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| posts/13.excerpt | front_matter.excerpt | 公开展示字段原值保留 |
+| posts/13.cover | front_matter.cover | 公开展示字段原值保留 |
+| posts/13.created_at | front_matter.date | 公开展示字段原值保留 |
+| posts/13.updated_at | front_matter.updated | 公开展示字段原值保留 |
+| posts/13.pinned | front_matter.listing.priority | 旧布尔 false/true 转 0/1 |
+| posts/13.topic_id/topic | front_matter.collection | 迁移预览使用确切旧归属；strict runtime 不猜旧列 |
+| posts/13.post_categories/categories | front_matter.categories | 所有完整层级路径与关联 position 顺序保留 |
+
+| 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
+| --- | --- | --- | --- | --- |
+| consumer / info | poster_consumer | posts/13 · poster | 否 | 旧 poster headline/topic/caption/color 完整保留为 Blog 扩展；尚需接通模板消费，不假称视觉保留 |
+
+### 24. `pages/1`
+
+Profile：`page`；候选路径：`/friends`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`cf3e11c6b5415be6dcf70848d54dad35c2456de6fcc1d1db821bf143313b65de`；候选 strict 配置摘要：`6b2bfb78e22e80d5ff2cb63fa716dcf4ac5f8b5880782ba8885c613509be63ae`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| pages/1.title | front_matter.title | 公开展示字段原值保留 |
+| pages/1.author | host.pages.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.banner | host.pages.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.banner_info | host.pages.banner_info | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.breadcrumb | host.pages.breadcrumb | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.content_html | host.pages.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.content_md | host.pages.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.created_at | host.pages.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.deleted_at | host.pages.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.id | host.pages.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.is_system | host.pages.is_system | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.leftbar_widgets | host.pages.leftbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.published_at | host.pages.published_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.rightbar_widgets | host.pages.rightbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.slug | host.pages.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.status | host.pages.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.title | host.pages.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.updated_at | host.pages.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.views | host.pages.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/1.created_at | front_matter.date | 公开展示字段原值保留 |
+| pages/1.updated_at | front_matter.updated | 公开展示字段原值保留 |
+
+无诊断。
+
+### 25. `pages/2`
+
+Profile：`page`；候选路径：`/notes`；已 version 2 原文保留：否；候选 Markdown 变化：是。
+
+源记录摘要：`66a242dad1a96182b4edb0833717762288ea6a54dd978fde84c26318a5eb3f8c`；候选 strict 配置摘要：`7a50b5ba15a09a0d4cdfc1fe5b46beebb6e054209f03555852e786be245cbf04`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1283,75 +1317,11 @@ Profile：`page`；候选路径：`/notes`；已version 2原文保留：否；�
 
 无诊断。
 
-### 25. `pages/5`
+### 26. `pages/3`
 
-Profile：`page`；候选路径：`/140-test-page`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`page`；候选路径：`/links`；已 version 2 原文保留：否；候选 Markdown 变化：是。
 
-源摘要：`ca23d17f67c616b88644a5a2947c681037efbd345f5da4844f3332c970efb784`；候选 strict 配置摘要：`dc0202b7dfdbd22581162a02754966e11866896fa6d15d1f87e92b8d390709db`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| pages/5.title | front_matter.title | 公开展示字段原值保留 |
-| pages/5.author | host.pages.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.banner | host.pages.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.banner_info | host.pages.banner_info | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.breadcrumb | host.pages.breadcrumb | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.content_html | host.pages.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.content_md | host.pages.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.created_at | host.pages.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.deleted_at | host.pages.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.id | host.pages.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.is_system | host.pages.is_system | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.leftbar_widgets | host.pages.leftbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.published_at | host.pages.published_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.rightbar_widgets | host.pages.rightbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.slug | host.pages.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.status | host.pages.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.title | host.pages.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.updated_at | host.pages.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.views | host.pages.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/5.created_at | front_matter.date | 公开展示字段原值保留 |
-| pages/5.updated_at | front_matter.updated | 公开展示字段原值保留 |
-
-无诊断。
-
-### 26. `pages/1`
-
-Profile：`page`；候选路径：`/friends`；已version 2原文保留：否；候选Markdown变化：否。
-
-源摘要：`84e6fd38275ad32cb7425e4cf42fef2bd281a70a5b0928070b7dbb8e56c23d49`；候选 strict 配置摘要：`c4e40dd2d88ac4782d4f13fc7b4d89cfe6c6a2139a2250d5b6fa02df4f9ac9bd`。
-
-| 来源字段 | 候选目标 | 行为 |
-| --- | --- | --- |
-| pages/1.title | front_matter.title | 公开展示字段原值保留 |
-| pages/1.author | host.pages.author | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.banner | host.pages.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.banner_info | host.pages.banner_info | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.breadcrumb | host.pages.breadcrumb | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.content_html | host.pages.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.content_md | host.pages.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.created_at | host.pages.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.deleted_at | host.pages.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.id | host.pages.id | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.is_system | host.pages.is_system | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.leftbar_widgets | host.pages.leftbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.published_at | host.pages.published_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.rightbar_widgets | host.pages.rightbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.slug | host.pages.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.status | host.pages.status | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.title | host.pages.title | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.updated_at | host.pages.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.views | host.pages.views | 源列保持；候选只新增严格元数据与明确正文转换 |
-| pages/1.created_at | front_matter.date | 公开展示字段原值保留 |
-| pages/1.updated_at | front_matter.updated | 公开展示字段原值保留 |
-
-无诊断。
-
-### 27. `pages/3`
-
-Profile：`page`；候选路径：`/links`；已version 2原文保留：否；候选Markdown变化：是。
-
-源摘要：`7b3d84970bf1e903300e62935e09cc61514c48a662ec6f5877782f24c1db51e0`；候选 strict 配置摘要：`c0f5273d725dec311c2feed15cdcff52ed0b8f5b86cf1c3fce8afd1edc6b7682`。
+源记录摘要：`abbeb8c0d60235c4b58cfdc8f437b31f286b85f996cbbc11bcc686647bb2dcdc`；候选 strict 配置摘要：`21db8249023fa7cbc9be3836a6453ac7bf0404c263715795fbc752724f720753`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1380,11 +1350,43 @@ Profile：`page`；候选路径：`/links`；已version 2原文保留：否；�
 
 无诊断。
 
+### 27. `pages/5`
+
+Profile：`page`；候选路径：`/140-test-page`；已 version 2 原文保留：否；候选 Markdown 变化：否。
+
+源记录摘要：`d3244b1bb2f26b6466d39810328f3b0f9f5ace50034728945d8ee62c4fe03ead`；候选 strict 配置摘要：`280624f3b71a535f7946b712929ba1537b007bc2265da3f483fc5e3594bcf517`。
+
+| 来源字段 | 候选目标 | 行为 |
+| --- | --- | --- |
+| pages/5.title | front_matter.title | 公开展示字段原值保留 |
+| pages/5.author | host.pages.author | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.banner | host.pages.banner | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.banner_info | host.pages.banner_info | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.breadcrumb | host.pages.breadcrumb | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.content_html | host.pages.content_html | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.content_md | host.pages.content_md | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.created_at | host.pages.created_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.deleted_at | host.pages.deleted_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.id | host.pages.id | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.is_system | host.pages.is_system | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.leftbar_widgets | host.pages.leftbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.published_at | host.pages.published_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.rightbar_widgets | host.pages.rightbar_widgets | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.slug | host.pages.slug | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.status | host.pages.status | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.title | host.pages.title | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.updated_at | host.pages.updated_at | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.views | host.pages.views | 源列保持；候选只新增严格元数据与明确正文转换 |
+| pages/5.created_at | front_matter.date | 公开展示字段原值保留 |
+| pages/5.updated_at | front_matter.updated | 公开展示字段原值保留 |
+
+无诊断。
+
 ### 28. `wikidocs/1`
 
-Profile：`wiki`；候选路径：`/wiki/go-blog/acceptance`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`wiki`；候选路径：`/wiki/go-blog/acceptance`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`d9dcf26cbbf147f9a74a4a59b3fa649e49ea82480bc7fea40a732aac122b8247`；候选 strict 配置摘要：`05f8fb0d1b88870f6af8b4042ff2c8d92ae72da56081b9bd21c9c84ddb9e4063`。
+源记录摘要：`2dc12423cce6e5de05eacd3e3a4856d173ba8e02c33f1e9da94c3870e871c72e`；候选 strict 配置摘要：`207ac2497fa4334750a98ffa62674d9dc8455355c17e51e0ab9e980a7e3ebd1c`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1408,9 +1410,9 @@ Profile：`wiki`；候选路径：`/wiki/go-blog/acceptance`；已version 2原�
 
 ### 29. `wikidocs/2`
 
-Profile：`wiki`；候选路径：`/wiki/go-blog/responsive`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`wiki`；候选路径：`/wiki/go-blog/responsive`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`b6470a61d45a43097befc00fead3f647b1eabbad7f96b5ec017bd6ac80008467`；候选 strict 配置摘要：`cc8eced065a52897f33032b1c035ad1a4b0ca75454f0434112aaba9a4fa7e427`。
+源记录摘要：`1a1050d6ff4c32f4564521e54720f90fba83dd219b1a91658e823875904b97fe`；候选 strict 配置摘要：`723ec7499379141d7222366b880131d9fede81a029741876fea9383e2b73a188`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1434,9 +1436,9 @@ Profile：`wiki`；候选路径：`/wiki/go-blog/responsive`；已version 2原�
 
 ### 30. `notes/2`
 
-Profile：`notebook`；候选路径：``；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`notebook`；候选路径：``；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`20361ee253d7549202371e122a113dbc8056d450828a45a31830765a86c0e472`；候选 strict 配置摘要：`da0f493ad6b27cb38bbad1188ee113851a0805aa2c038c422392cbea561771d2`。
+源记录摘要：`d32335f452e5e90f81860e4531f5a8999c14f751e62a85fde11729e7e896e1a8`；候选 strict 配置摘要：`c117ac8b9208b9d81b66aaec953250dd233a1efdd6c59ee46219c551bc36f795`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1459,9 +1461,9 @@ Profile：`notebook`；候选路径：``；已version 2原文保留：否；候�
 
 ### 31. `content/posts/stellar-143-acceptance.md`
 
-Profile：`topic`；候选路径：`/post/stellar-143-acceptance`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/stellar-143-acceptance`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`260ee4414f652b8e10656c3968ad8a58895d34252d4486d4a55dd9a454dd255d`；候选 strict 配置摘要：`dee29cceffdd2f2456b8182ef91eb434c03ee9e0e663fbb19b8ca53acc2edbf7`。
+源记录摘要：`260ee4414f652b8e10656c3968ad8a58895d34252d4486d4a55dd9a454dd255d`；候选 strict 配置摘要：`dee29cceffdd2f2456b8182ef91eb434c03ee9e0e663fbb19b8ca53acc2edbf7`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1480,17 +1482,17 @@ Profile：`topic`；候选路径：`/post/stellar-143-acceptance`；已version 2
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | poster_consumer | content/posts/stellar-143-acceptance.md · poster_caption | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-143-acceptance.md · poster_color | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-143-acceptance.md · poster_headline | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-143-acceptance.md · poster_topic | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-143-acceptance.md · poster_caption | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-143-acceptance.md · poster_color | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-143-acceptance.md · poster_headline | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-143-acceptance.md · poster_topic | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
 | structure / error | file_host_fields | content/posts/stellar-143-acceptance.md · status | 是 | 发布状态保留于 blog.status；须验证宿主导入保存该状态，不得把草稿隐式发布 |
 
 ### 32. `content/posts/stellar-144-acceptance.md`
 
-Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已version 2原文保留：否；候选Markdown变化：否。
+Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已 version 2 原文保留：否；候选 Markdown 变化：否。
 
-源摘要：`dc2a829ac7483466d6f0165c6be42339765bdb6f73f697ab5c05b79127b4205d`；候选 strict 配置摘要：`9be36cce609b6e378471e1b8075e30c3069696cc42c25520ed7674574e992f78`。
+源记录摘要：`dc2a829ac7483466d6f0165c6be42339765bdb6f73f697ab5c05b79127b4205d`；候选 strict 配置摘要：`9be36cce609b6e378471e1b8075e30c3069696cc42c25520ed7674574e992f78`。
 
 | 来源字段 | 候选目标 | 行为 |
 | --- | --- | --- |
@@ -1509,25 +1511,17 @@ Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已version 2
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
-| consumer / error | poster_consumer | content/posts/stellar-144-acceptance.md · poster_caption | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-144-acceptance.md · poster_color | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-144-acceptance.md · poster_headline | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
-| consumer / error | poster_consumer | content/posts/stellar-144-acceptance.md · poster_topic | 是 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-144-acceptance.md · poster_caption | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-144-acceptance.md · poster_color | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-144-acceptance.md · poster_headline | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
+| consumer / info | poster_consumer | content/posts/stellar-144-acceptance.md · poster_topic | 否 | 旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费 |
 | structure / error | file_host_fields | content/posts/stellar-144-acceptance.md · status | 是 | 发布状态保留于 blog.status；须验证宿主导入保存该状态，不得把草稿隐式发布 |
 
-## 本次验证与尚未执行
+## 本次验证与执行边界
 
-- `go test ./internal/stellarmigration -run TestTrackedStatusUsesHostImportContract -count=1` 通过：draft/published 映射到 blog.status、序列化保持状态、上游 schema不含status，并保留执行阻断。
-- `go test -race ./internal/stellarmigration -count=1` 通过：隔离夹具、只读源、strict校验、完整候选、评论变化源失效、正文/Markdown保护、私密权限、显式capability门槛。常规测试未访问真实数据。
-- 本次另用显式只读helper读取真实源，生成新五份artifact并核对权限/完整性/历史一致性；没有运行真实迁移。
-- OKR精确默认/自定义反例、15个消费者门槛、false/null/empty保真、SEO六项canonical与独立默认文案、未知schema/政策不能由capability解除均通过全包race测试；隔离Notebook/Note转换、rollback和取消证明已通过。
-- 多作者候选通过正式Store.ValidateStellarPostPublicAuthors消费验证：公开ID数组及排序/去重正确、关联对象/权限不泄露、不赋予ownership；未知/缺catalog/显示名/部分未解析/legacy关联均不可capability解除。show_posts的null/false/true原文保持。
-- 未执行：Apply、schema写入、真实数据回填、真实迁移后的Console编辑重开/前台/搜索/评论验收。实现者的消费者测试与主 agent的新浏览器验收仍须单列，不使用历史证据充当本次通过。
-
-## 执行前不可绕过的检查
-
-1. 实施者闭合所有已承诺消费者与导入/schema接线；主 agent 明确实测 capabilities，重新生成全部报告，不能手改报告诊断。
-2. 将上表真正剩余选择与本地受保护的逐记录候选一并交用户审查；没有选择的行继续阻断。确认编辑器单name不等于确认真实取值或迁移。
-3. 真实执行前重新比较源Snapshot digest、DB/活跃WAL及tracked/system源；任何变化重新生成并审核，不能只比较DB主文件hash。
-4. 单独设计并验证备份、schema顺序、完整候选应用、幂等/失败原子性/回退；隔离旧库与新库证明ID/关系/正文/草稿/评论和权限不丢失，才能要求真实迁移授权。
-5. 用户明确批准真实迁移后才写真实源；执行完成再核真实用户路径，不能以本只读报告称“已迁移”或“已验收”。
+- 格式 3 迁移包 race、真实 SQLite 稀疏 rowid/external-content FTS MATCH、同数值 INTEGER/REAL、BLOB/大整数、完整批准、防篡改、事务 rollback/取消及正常提交 hook 已通过；日期小修另以正式驱动读取 time.Time 和非法类型/日期反例验证。常规测试全部使用隔离夹具。
+- 显式只读 helper 本次捕获真实源；DB/WAL/SHM/journal 与 tracked 文件前后指纹相同，DB/WAL/hash/源表计数与历史匹配。日期校验修复后只从同一私密 snapshot 重新生成，不再读取真实源。
+- 公开报告完整性核对 32 records、172 settings mappings、766 record mappings；20 capabilities true，34 consumer 诊断均仍存在且 nonblocking；政策/schema/结构未消失。
+- BuildMigrationFixture 没有真实目标参数；未对本次真实候选执行 BuildFixture，也没有真实 Apply、push、发布或生产部署。用户确认前不能转换真实数据。
+- 隔离执行证明的 coverage 排除原索引/视图/触发器、上传字节/附件、原配置文件、运行缓存/untracked；完整运行位置隔离不能冒充完整资源复制或真实前台验收。
+- 真实迁移执行前仍必须重新确认源一致性，并绑定 SourceDigest、完整 CandidateDigest、每项具名 decision 和逐记录正文批准；源变化会使批准过期。

@@ -1,0 +1,167 @@
+{
+  "upstream_commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "declared_by": "主 agent 显式声明，2026-10-13；最后 SEO 闭合 aa1fa93",
+  "snapshot_format_version": 3,
+  "source_digest": "d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9",
+  "consumer_capabilities": {
+    "ai_label": true,
+    "author_widget": true,
+    "authors": true,
+    "avatar_background": true,
+    "banner_ratio": true,
+    "category_icons": true,
+    "collection_order": true,
+    "edit_this_page": true,
+    "expire_days": true,
+    "nav_tabs": true,
+    "notebook_license": true,
+    "notebook_share": true,
+    "pages": true,
+    "poster": true,
+    "read_next": true,
+    "rightbar_intro": true,
+    "seo": true,
+    "tag_icons": true,
+    "welcome_linklist": true,
+    "wiki_external_url": true
+  },
+  "evidence": {
+    "ai_label": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "author_widget": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json",
+        "docs/baselines/stellar-200-full/after-resume-author-widget.png"
+      ]
+    },
+    "authors": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-post-authors.json",
+        "docs/baselines/stellar-200-full/resume-page-author.json"
+      ]
+    },
+    "avatar_background": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "banner_ratio": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "category_icons": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "collection_order": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-pages-seo-wiki.json"
+      ]
+    },
+    "edit_this_page": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "expire_days": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "nav_tabs": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "notebook_license": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "notebook_share": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "pages": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-pages-seo-wiki.json"
+      ]
+    },
+    "poster": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "read_next": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "rightbar_intro": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "seo": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-pages-seo-wiki.json",
+        "docs/baselines/stellar-200-full/after-resume-page-explicit-seo.png"
+      ]
+    },
+    "tag_icons": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "welcome_linklist": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-global-consumers.json"
+      ]
+    },
+    "wiki_external_url": {
+      "verified": true,
+      "artifacts": [
+        "docs/baselines/stellar-200-full/resume-pages-seo-wiki.json"
+      ]
+    }
+  },
+  "artifact_sha256": {
+    "docs/baselines/stellar-200-full/after-resume-author-widget.png": "75d184bb6b143b45cbe3886f3d10d88f9bd610684fcd45a23b252de87b633095",
+    "docs/baselines/stellar-200-full/after-resume-page-explicit-seo.png": "7e4e2f819e70860edbc050a5b327a7391b44331ff558af002a15e57ffbbbcc33",
+    "docs/baselines/stellar-200-full/resume-global-consumers.json": "de6b1104c5cc4f708683d9c3060ace14591d94162195be5e591c346ee60245af",
+    "docs/baselines/stellar-200-full/resume-page-author.json": "727a30b4493715ee982d6cd76adff46a0b8848b430544bcd54cba0780ca7ac37",
+    "docs/baselines/stellar-200-full/resume-pages-seo-wiki.json": "e18265b0b1c36c8c64139d34cddc48edffa328a5f752f7d8b4d32c10d77e0ae6",
+    "docs/baselines/stellar-200-full/resume-post-authors.json": "f6cc0804cf48a66a4f0cc30c9784b91d0ac16e79f6aa202f0721ed45f4b6f3f0"
+  },
+  "limits": [
+    "证据来自完整隔离 root 的本次浏览器/实际 HTTP 验证；没有迁移真实数据。",
+    "robots_extra 使用实际 HTTP CLI；浏览器客户端阻止 robots.txt，不能称浏览器请求已通过。",
+    "声明只降对应 consumer 诊断为 info/nonblocking；政策、结构、schema 和原诊断保留。",
+    "外部服务账号与生产效果不由隔离 fixture 证据证明；用户尚未确认整体体验。"
+  ]
+}
