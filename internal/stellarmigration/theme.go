@@ -50,6 +50,9 @@ func (b *themeBuilder) move(src, dst string) {
 	}
 	set(m, dst, v)
 	b.mark(src, target, "原值保留（包含 false/null/空列表）")
+	if capability, needsEvidence := globalConsumerTargets[target]; needsEvidence {
+		b.conflict(globalConsumerCode(capability), src, "已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力")
+	}
 }
 func (b *themeBuilder) nonempty(src, dst string) {
 	v, ok := get(b.raw, src)
@@ -110,7 +113,7 @@ func buildTheme(s Snapshot) ThemeCandidate {
 		{"site.logo_title", "leftbar.brand.name"}, {"site.logo_sub", "leftbar.brand.tagline"}, {"site.avatar", "leftbar.brand.image.src"},
 		{"site.avatar_bg", "blog.content.avatar_background"}, {"site.favicon_url", "blog.site.favicon_url"}, {"site.apple_touch_icon", "blog.site.apple_touch_icon"}, {"site.sw_cache_version", "blog.site.sw_cache_version"},
 		{"menubar.columns", "leftbar.menu_columns"}, {"rightbar.intro", "blog.content.rightbar_intro"}, {"rightbar.welcome_linklist", "blog.content.welcome_linklist"},
-		{"comments", "blog.native_comments"}, {"authors", "blog.data.authors"}, {"links", "blog.data.links"}, {"friends", "blog.friends"}, {"pages", "blog.pages"}, {"seo", "blog.seo"}, {"nav_tabs", "blog.content.nav_tabs"},
+		{"comments", "blog.native_comments"}, {"authors", "blog.data.authors"}, {"links", "blog.data.links"}, {"friends", "blog.friends"}, {"pages", "blog.pages"}, {"nav_tabs", "blog.content.nav_tabs"},
 		{"article.reward", "blog.content.reward"}, {"article.ai_label", "blog.content.ai_label"}, {"article.category_icon", "blog.content.category_icons"}, {"article.tag_icon", "blog.content.tag_icons"},
 		{"article.read_next", "blog.content.read_next"}, {"article.expire_days", "blog.content.expire_days"}, {"article.banner_ratio", "blog.content.banner_ratio"}, {"article.edit_this_page", "blog.content.edit_this_page"},
 		{"article.reading_time", "article.show_reading_time"}, {"article.card_tags", "article.listing.show_tags"}, {"article.related_posts", "article.related_posts_limit"}, {"article.category_color", "article.category_colors"},
@@ -143,6 +146,8 @@ func buildTheme(s Snapshot) ThemeCandidate {
 	} {
 		b.nonempty(p[0], p[1])
 	}
+	b.migrateSEO()
+	b.validatePages()
 	b.specials()
 	b.wikiShelf(s)
 	for _, path := range []string{"article.share.enabled", "article.reward.enabled"} {
@@ -561,6 +566,10 @@ func (b *themeBuilder) specials() {
 	}
 	for _, src := range []string{"tag_plugins.copy", "tag_plugins.okr", "tag_plugins.timeline", "tag_plugins.gallery.layout"} {
 		if v, ok := get(b.raw, src); ok {
+			if src == "tag_plugins.okr" && isOfficialLegacyOKR(v) {
+				b.mark(src, "source.snapshot", "旧 OKR 对象与固定 Stellar 2.0.0 边框、五状态颜色和 zh-CN 文案完全一致；原值留源快照，候选继承官方等效及请求 locale 文案")
+				continue
+			}
 			b.used[src] = true
 			b.mark(src, "source.snapshot", "旧参数在源快照完整保留")
 			if !emptyLegacy(v) {

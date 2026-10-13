@@ -1,6 +1,6 @@
 # Stellar 2.0.0 存量迁移审查
 
-状态：实现中。T1 真实源的只读候选已重新生成；真实迁移未执行、未获授权，尚无 Apply/writable DB 入口。本文替换第一轮预检，保留完整脱敏映射和逐记录清单。不能以候选通过生成、消费者单测或历史界面证据代替迁移后的实测。
+状态：实现中。T1 真实源的只读候选已重新生成；真实迁移未执行、未获授权，尚无真实源 Apply 入口；结构工具仅能新建私密隔离库。本文替换第一轮预检，保留完整脱敏映射和逐记录清单。不能以候选通过生成、消费者单测或历史界面证据代替迁移后的实测。
 
 ## 本次证据与私密边界
 
@@ -12,9 +12,11 @@
 - 两份 tracked 文章逐字摘要前后相同。另一个 tracked Markdown `content/notes.md` 是系统 `/notes` 初次启动的正文来源，无 Front Matter；不伪造为第三条文章候选，已单独记录前后 hash，并保留文件。当前 `/notes` 内容以 DB pages 候选审查。
 - 完整候选保留源设置、全文、身份及密钥，只存在私密输出；公开报告不含原值、正文、邮箱、密钥、密码哈希或私密 alternatives。
 
-完整输出位于迁移 worktree 的 `.tmp/stellar-migration-review-20261013-resume-1/`：目录 `0700`，`candidate.private.json`、`report.public.json`、`source-check.json` 均为 `0600`。不得提交、外发或复制私密候选。本文由 `report.public.json` 生成，无私密源内容。
+完整输出位于迁移 worktree 的 `.tmp/stellar-migration-review-20261013-consumer-1/`：目录 `0700`，`candidate.private.json`、`report.public.json`、`source-check.json`、`notebook-structure.private.json`、`notebook-structure.public.json` 均为 `0600`。不得提交、外发或复制私密候选。本文由公开报告生成，无私密源内容。
 
-本次仍采用默认空 capabilities：32 条候选（30 DB + 2 tracked）、171 项配置映射、766 项逐记录映射、34 条诊断且全部阻断。分组为 consumer 19、policy 8、structure 4、schema 3；后续实际闭合消费者可由主 agent 显式声明重新生成，政策、结构、schema 不可用 capabilities 自动解除。
+本次仍采用默认空 capabilities：32 条候选（30 DB + 2 tracked）、171 项配置映射、766 项逐记录映射、48 条阻断。分组为 consumer 34、policy 7、structure 4、schema 3；后续实际闭合消费者可由主 agent 显式声明重新生成，政策、结构、schema 不可用 capabilities 自动解除。
+
+相较 review-6 的 34 阻断，本次解除仅完整匹配固定上游默认的 OKR 假阳性，并补回 15 条原先仅存储、漏报验证门槛的全局消费者诊断，因此默认总数为 48；这表示审查覆盖被校正，不能解释为真实数据已发生损失。
 
 ## 集中审查的真实数据决定
 
@@ -24,7 +26,6 @@
 | --- | --- | --- | --- |
 | PJAX 策略 | settings.plugins.pjax | 旧 selectors/timeout 没有上游字段。采用官方 manifest/shell-signature/同集合导航，旧设置仍留源快照；或另行决定保留为独立扩展，不能伪造 strict 字段。 | 建议接受官方策略；需要主 agent 提供新导航实测，用户确认差异后才能解除。 |
 | data_cache | settings.data_cache | 旧独立自定义缓存策略不进入 theme；选择采用官方 runtime policy，或明确要求独立 Blog 扩展承担原策略。 | 建议采用官方 runtime policy；完整旧值可在本地私密候选审查，不静默丢弃。 |
-| 旧 OKR 配置 | settings.tag_plugins.okr | 上游 tags schema 不接受该旧参数袋。先由实施者核清旧参数消费与官方 OKR差异，再确认采用官方参数，或以独立扩展保留确有影响的语义。 | 尚须实施者证明消费者，不能把待实现能力转嫁为用户冲突；本项保持 policy 阻断。 |
 | 主页 cover | settings.cover | 旧独立主页 cover 不在上游 theme。可迁为官方首页内容/Hero 等效入口，或独立 Blog 扩展保留原显示。 | 重要体验选择须附对应效果后集中确认；当前候选不删除旧设置。 |
 | Wiki shelf 名称来源 | settings.wiki[0].name → wiki_projects/go-blog | 官方 shelf 只保存项目 ID。冗余 shelf 名称与项目表不同：保留项目表定义，或审核 shelf 覆盖集合 name；不能保留双真值。 | 与下一项一起选择；ID与成员关联保持。 |
 | Wiki name/title | wiki_projects/go-blog.name/title | 一个官方 name，可选保留旧 name，或取旧 title 为显示 name；内部标识保持现有 ID，不重命名路由。 | 编辑器单 name 已批准；这条真实记录的取值尚未批准。 |
@@ -32,8 +33,12 @@
 | banner/cover 图源 | posts/10.banner/cover | 可保留旧 cover 用于列表，独立 blog.content.banner_image 仅覆盖详情；或明确选旧 banner 作官方 cover（同时改变列表图）。 | 建议独立 banner 保留双图源；消费已由实施者安排验证，真实记录仍须批准。 |
 | Footer 三个占位链接 | settings.footer.social → leftbar.footer.actions[1..3].url | 三条 url="#" 被严格 safe navigable URL 校验拒绝。可移除这三条占位按钮，或分别提供有效外链/站内根相对路径；不能自动改成其它目的地。 | 建议移除仅占位项；必须用户确认或提供三个有效目标。 |
 | 旧 Note 路由 / 状态 / owner | notes/2（父 notebook 原 ID保持） | 旧表无 slug、status、owner，当前未建立逐 Note公开路由。不能按时间或全部用户猜作者；须确认新 slug、draft/published 和拥有者身份，或先保留不公开且待补元数据。 | 建议保留原 ID/正文/标签/父本且不自动发布；正式实现不能把未定义 owner 当已解决。 |
-| Notebook/Note 表结构 | schema.notebooks/notes | INTEGER ID → TEXT ID、nb_order →排序、content→content_md、tags→tags_json；保持原 ID 文本、父子关系、日期、标题、正文和标签。 | 需独立 schema 转换预览及隔离旧/新库证明，不能靠 EnsureTable；结构改变后必须重新快照及批准，不能沿用旧digest。 |
+| Notebook/Note 表结构 | schema.notebooks/notes | Notebook ID与Note父本 → TEXT；Note ID保持原 INTEGER。nb_order→sort、content→content_md、tags→tags_json；保持ID/关系/日期/正文。 | 隔离旧/新库及当前Store读取/strict重快照证明已通过；仍须批准notebooks/2.owner和updated_at来源（可明确沿用created_at）。真实结构改变后重新快照批准，不能沿用旧digest。 |
 | Tracked 发布状态 | 两份 content/posts/stellar-14{3,4}-acceptance.md.status | 候选已修为 blog.status（不进入上游 schema，也不落旧 blog.host.status）。保留原发布状态；draft/published 序列化定向测试通过。 | 这是已确认宿主契约的接线项，不新增用户选择；仍保持 file_host_fields 阻断，直到真实导入/重开证明，不能隐式发布。 |
+
+已解决的等效项：真实旧 OKR 完整对象精确匹配固定 9d11978 的 border=true、五色及 zh-CN 文案；原值留私密源快照，候选继承官方与请求 locale。该项不再要求用户接受视觉损失；自定义、缺键、额外字段仍阻断。
+
+Notebook/Note 实时结构预览列 21 项已确定映射、5 个未批准字段：notebooks/2.author_id、notebooks/2.updated_at、notes/2.slug/status/author_id。结构工具只有全新系统临时库入口；证明成功不标 version 2，也不解除真实原候选诊断。
 
 ## 消费者与执行接线门槛
 
@@ -46,8 +51,31 @@ consumer 不是要求用户决定是否保留功能：独立 Blog 扩展已获�
 | authors | 0 | catalog支持；本源没有触发该阻断，不可据此宣称所有多作者流程已验收。 |
 | wiki_external_url | 0 | catalog支持；不改变local canonical/document route，本源没有触发该阻断。 |
 | author_widget | 1（settings.widgets.library.author） | 完整定义保留于 Blog.data.widgets；尚无闭合证据，不声明、不问用户重复决定。 |
+| avatar_background | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| rightbar_intro | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| welcome_linklist | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| nav_tabs | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| ai_label | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| category_icons | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| tag_icons | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| read_next | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| expire_days | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| banner_ratio | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| edit_this_page | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| notebook_license | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| notebook_share | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| pages | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
+| seo | 1 | 独立全局扩展原值保留；仅存储或仅代码接通不等于已实测，不自动声明消费者。 |
 
 迁移树 `.tmp/migration-review-helper/main.go` 是只读生成工具：默认 `{}`；`-capabilities` 必须由主 agent 提供显式 JSON，未知 capability 被拒绝。为不同能力报告选择一个新的输出目录，工具以 O_EXCL 写 0600 文件，不能覆盖现有私密候选。声明能力只把对应诊断保留为 info/nonblocking，不执行迁移，不解除其它政策。
+
+Notebook footer 保留独立 blog.content.notebook.license/share；严格 profile 不允许 profiles.note.footer，不能伪造字段。Pages仅friends已冻结属性的消费者可声明；未消费Hero animation/start/preview/actions等保真并保留schema阻断。
+
+SEO已冻结六项官方目标：preconnect→preconnect，canonical.originalHost→canonical.host，canonical.officialHosts→canonical.allowed_hosts，open_graph.enable→open_graph.enabled，open_graph.twitter_id→open_graph.twitter_id，structured_data.links→structured_data.same_as。空host转null、旧nil slice转[]、旧nil enable按旧Enabled为true；false/空数组保持。坏类型/未知字段不丢弃，同一目标来源冲突继续阻断。
+
+SEO余七项default_description/default_keywords/robots_extra/no_index/google_verification/bing_verification/baidu_verification保留typed Blog.seo，不覆盖独立Blog.site；canonical已映射值不再重复塞入该袋。它们的head/robots及默认优先级消费者需另行实测声明。
+
+实施者交付证据（尚待主组合和浏览器核验）：13项content消费者提交f45ad24/c7ab767已有真实embedded SSR定向测试、race及正常hook；pages/SEO typed桥提交9ad6a6e已有embedded SSR/preview、保存重建与清除、服务开关及robots回归。SEO residual head另有独立模板测试。这里仅记录源码与隔离测试交付，不将上述20项能力标成前台已验收，默认capabilities仍为空。
 
 ## 完整源表计数
 
@@ -142,80 +170,80 @@ consumer 不是要求用户决定是否保留功能：独立 Blog 扩展已获�
 | 21 | settings.authors | blog.data.authors | 原值保留（包含 false/null/空列表） |
 | 22 | settings.friends | blog.friends | 原值保留（包含 false/null/空列表） |
 | 23 | settings.pages | blog.pages | 原值保留（包含 false/null/空列表） |
-| 24 | settings.seo | blog.seo | 原值保留（包含 false/null/空列表） |
-| 25 | settings.nav_tabs | blog.content.nav_tabs | 原值保留（包含 false/null/空列表） |
-| 26 | settings.article.reward | blog.content.reward | 原值保留（包含 false/null/空列表） |
-| 27 | settings.article.ai_label | blog.content.ai_label | 原值保留（包含 false/null/空列表） |
-| 28 | settings.article.category_icon | blog.content.category_icons | 原值保留（包含 false/null/空列表） |
-| 29 | settings.article.tag_icon | blog.content.tag_icons | 原值保留（包含 false/null/空列表） |
-| 30 | settings.article.read_next | blog.content.read_next | 原值保留（包含 false/null/空列表） |
-| 31 | settings.article.expire_days | blog.content.expire_days | 原值保留（包含 false/null/空列表） |
-| 32 | settings.article.banner_ratio | blog.content.banner_ratio | 原值保留（包含 false/null/空列表） |
-| 33 | settings.article.edit_this_page | blog.content.edit_this_page | 原值保留（包含 false/null/空列表） |
-| 34 | settings.article.reading_time | theme.article.show_reading_time | 原值保留（包含 false/null/空列表） |
-| 35 | settings.article.card_tags | theme.article.listing.show_tags | 原值保留（包含 false/null/空列表） |
-| 36 | settings.article.related_posts | theme.article.related_posts_limit | 原值保留（包含 false/null/空列表） |
-| 37 | settings.article.category_color | theme.article.category_colors | 原值保留（包含 false/null/空列表） |
-| 38 | settings.plugins.preload.enable | theme.features.link_prefetch.enabled | 原值保留（包含 false/null/空列表） |
-| 39 | settings.plugins.heti.enable | theme.features.heti.enabled | 原值保留（包含 false/null/空列表） |
-| 40 | settings.plugins.fancybox.selector | theme.features.lightbox.selector | 原值保留（包含 false/null/空列表） |
-| 41 | settings.plugins.scrollreveal.enable | theme.features.reveal.enabled | 原值保留（包含 false/null/空列表） |
-| 42 | settings.plugins.scrollreveal.duration | theme.features.reveal.duration | 原值保留（包含 false/null/空列表） |
-| 43 | settings.plugins.scrollreveal.interval | theme.features.reveal.interval | 原值保留（包含 false/null/空列表） |
-| 44 | settings.inject.inject_head | theme.inject.head_end | 原值保留（包含 false/null/空列表） |
-| 45 | settings.inject.inject_footer | theme.inject.body_end | 原值保留（包含 false/null/空列表） |
-| 46 | settings.ai.base_url | blog.ai.base_url | 原值保留（包含 false/null/空列表） |
-| 47 | settings.ai.api_key | blog.ai.api_key | 原值保留（包含 false/null/空列表） |
-| 48 | settings.ai.model | blog.ai.model | 原值保留（包含 false/null/空列表） |
-| 49 | settings.ai.embedding_model | blog.ai.embedding_model | 原值保留（包含 false/null/空列表） |
-| 50 | settings.ai.summary_enabled | blog.ai.summary.enabled | 原值保留（包含 false/null/空列表） |
-| 51 | settings.ai.allow_user_api | blog.ai.summary.allow_user_api | 原值保留（包含 false/null/空列表） |
-| 52 | settings.ai.qa_enabled | blog.ai.ask.enabled | 原值保留（包含 false/null/空列表） |
-| 53 | settings.ai.qa_allow_user_llm | blog.ai.ask.allow_user_llm | 原值保留（包含 false/null/空列表） |
-| 54 | settings.notebook.auto_excerpt | theme.profiles.notebook.listing.excerpt_length | 原值保留（包含 false/null/空列表） |
-| 55 | settings.notebook.license | blog.content.notebook.license | 原值保留（包含 false/null/空列表） |
-| 56 | settings.notebook.share | blog.content.notebook.share | 原值保留（包含 false/null/空列表） |
-| 57 | settings.article.type | theme.article.style | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 58 | settings.article.pin_style | theme.article.listing.pinned_layout | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 59 | settings.style.prefers_theme | theme.appearance.color_scheme | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 60 | settings.style.text_align | theme.appearance.typography.content_align | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 61 | settings.style.color.theme | theme.appearance.colors.primary | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 62 | settings.style.color.accent | theme.appearance.colors.accent | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 63 | settings.style.color.link | theme.appearance.colors.link | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 64 | settings.style.font_size.root | theme.appearance.typography.font_size.root | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 65 | settings.style.font_size.code | theme.appearance.typography.font_size.inline_code | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 66 | settings.style.font_size.codeblock | theme.appearance.typography.font_size.code_block | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 67 | settings.style.font_family.body | theme.appearance.typography.font_family.body | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 68 | settings.style.font_family.code | theme.appearance.typography.font_family.code | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 69 | settings.style.border_radius.card-l | theme.appearance.shape.radius.card_large | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 70 | settings.style.border_radius.card | theme.appearance.shape.radius.card | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 71 | settings.style.border_radius.card-s | theme.appearance.shape.radius.card_small | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 72 | settings.style.border_radius.bar | theme.appearance.shape.radius.bar | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 73 | settings.style.border_radius.image-l | theme.appearance.shape.radius.image_large | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 74 | settings.style.border_radius.image | theme.appearance.shape.radius.image | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 75 | settings.style.border_radius.image-s | theme.appearance.shape.radius.image_small | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 76 | settings.style.gradient.start | theme.appearance.gradients.primary_action | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 77 | settings.style.gradient.searchbar | theme.appearance.gradients.search_bar | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 78 | settings.style.leftbar.background_image | theme.appearance.backgrounds.leftbar.image | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 79 | settings.style.leftbar.blur_px | theme.appearance.backgrounds.leftbar.backdrop.radius | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 80 | settings.style.site.background_image | theme.appearance.backgrounds.page.image | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 81 | settings.style.site.blur_px | theme.appearance.backgrounds.page.backdrop.radius | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 82 | settings.style.site.blur_sat | theme.appearance.backgrounds.page.backdrop.saturation | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 83 | settings.style.site.blur_bg | theme.appearance.backgrounds.page.backdrop.overlay | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 84 | settings.style.codeblock.scrollbar | theme.appearance.code_block.scrollbar_width | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 85 | settings.style.codeblock.highlightjs_theme | theme.appearance.code_block.highlight_stylesheet | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 86 | settings.tag_plugins.button.default_color | theme.tags.button.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 87 | settings.tag_plugins.checkbox.interactive | theme.tags.checkbox.interactive | 原值保留（包含 false/null/空列表） |
-| 88 | settings.tag_plugins.note.border | theme.tags.note.border | 原值保留（包含 false/null/空列表） |
-| 89 | settings.tag_plugins.note.default_color | theme.tags.note.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 90 | settings.tag_plugins.icon.default_color | theme.tags.icon.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 91 | settings.tag_plugins.mark.default_color | theme.tags.mark.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 92 | settings.tag_plugins.hashtag.default_color | theme.tags.hashtag.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 93 | settings.tag_plugins.gallery.size | theme.tags.gallery.size | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 94 | settings.tag_plugins.gallery.ratio | theme.tags.gallery.aspect_ratio | 旧缺省占位保留在源快照；候选继承上游默认 |
-| 95 | settings.tag_plugins.quot.default | theme.tags.quot.default | 原值保留（包含 false/null/空列表） |
-| 96 | settings.tag_plugins.quot.hashtag.prefix | theme.tags.quot.hashtag.prefix | 原值保留（包含 false/null/空列表） |
-| 97 | settings.tag_plugins.quot.question.prefix | theme.tags.quot.question.prefix | 原值保留（包含 false/null/空列表） |
+| 24 | settings.nav_tabs | blog.content.nav_tabs | 原值保留（包含 false/null/空列表） |
+| 25 | settings.article.reward | blog.content.reward | 原值保留（包含 false/null/空列表） |
+| 26 | settings.article.ai_label | blog.content.ai_label | 原值保留（包含 false/null/空列表） |
+| 27 | settings.article.category_icon | blog.content.category_icons | 原值保留（包含 false/null/空列表） |
+| 28 | settings.article.tag_icon | blog.content.tag_icons | 原值保留（包含 false/null/空列表） |
+| 29 | settings.article.read_next | blog.content.read_next | 原值保留（包含 false/null/空列表） |
+| 30 | settings.article.expire_days | blog.content.expire_days | 原值保留（包含 false/null/空列表） |
+| 31 | settings.article.banner_ratio | blog.content.banner_ratio | 原值保留（包含 false/null/空列表） |
+| 32 | settings.article.edit_this_page | blog.content.edit_this_page | 原值保留（包含 false/null/空列表） |
+| 33 | settings.article.reading_time | theme.article.show_reading_time | 原值保留（包含 false/null/空列表） |
+| 34 | settings.article.card_tags | theme.article.listing.show_tags | 原值保留（包含 false/null/空列表） |
+| 35 | settings.article.related_posts | theme.article.related_posts_limit | 原值保留（包含 false/null/空列表） |
+| 36 | settings.article.category_color | theme.article.category_colors | 原值保留（包含 false/null/空列表） |
+| 37 | settings.plugins.preload.enable | theme.features.link_prefetch.enabled | 原值保留（包含 false/null/空列表） |
+| 38 | settings.plugins.heti.enable | theme.features.heti.enabled | 原值保留（包含 false/null/空列表） |
+| 39 | settings.plugins.fancybox.selector | theme.features.lightbox.selector | 原值保留（包含 false/null/空列表） |
+| 40 | settings.plugins.scrollreveal.enable | theme.features.reveal.enabled | 原值保留（包含 false/null/空列表） |
+| 41 | settings.plugins.scrollreveal.duration | theme.features.reveal.duration | 原值保留（包含 false/null/空列表） |
+| 42 | settings.plugins.scrollreveal.interval | theme.features.reveal.interval | 原值保留（包含 false/null/空列表） |
+| 43 | settings.inject.inject_head | theme.inject.head_end | 原值保留（包含 false/null/空列表） |
+| 44 | settings.inject.inject_footer | theme.inject.body_end | 原值保留（包含 false/null/空列表） |
+| 45 | settings.ai.base_url | blog.ai.base_url | 原值保留（包含 false/null/空列表） |
+| 46 | settings.ai.api_key | blog.ai.api_key | 原值保留（包含 false/null/空列表） |
+| 47 | settings.ai.model | blog.ai.model | 原值保留（包含 false/null/空列表） |
+| 48 | settings.ai.embedding_model | blog.ai.embedding_model | 原值保留（包含 false/null/空列表） |
+| 49 | settings.ai.summary_enabled | blog.ai.summary.enabled | 原值保留（包含 false/null/空列表） |
+| 50 | settings.ai.allow_user_api | blog.ai.summary.allow_user_api | 原值保留（包含 false/null/空列表） |
+| 51 | settings.ai.qa_enabled | blog.ai.ask.enabled | 原值保留（包含 false/null/空列表） |
+| 52 | settings.ai.qa_allow_user_llm | blog.ai.ask.allow_user_llm | 原值保留（包含 false/null/空列表） |
+| 53 | settings.notebook.auto_excerpt | theme.profiles.notebook.listing.excerpt_length | 原值保留（包含 false/null/空列表） |
+| 54 | settings.notebook.license | blog.content.notebook.license | 原值保留（包含 false/null/空列表） |
+| 55 | settings.notebook.share | blog.content.notebook.share | 原值保留（包含 false/null/空列表） |
+| 56 | settings.article.type | theme.article.style | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 57 | settings.article.pin_style | theme.article.listing.pinned_layout | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 58 | settings.style.prefers_theme | theme.appearance.color_scheme | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 59 | settings.style.text_align | theme.appearance.typography.content_align | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 60 | settings.style.color.theme | theme.appearance.colors.primary | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 61 | settings.style.color.accent | theme.appearance.colors.accent | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 62 | settings.style.color.link | theme.appearance.colors.link | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 63 | settings.style.font_size.root | theme.appearance.typography.font_size.root | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 64 | settings.style.font_size.code | theme.appearance.typography.font_size.inline_code | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 65 | settings.style.font_size.codeblock | theme.appearance.typography.font_size.code_block | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 66 | settings.style.font_family.body | theme.appearance.typography.font_family.body | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 67 | settings.style.font_family.code | theme.appearance.typography.font_family.code | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 68 | settings.style.border_radius.card-l | theme.appearance.shape.radius.card_large | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 69 | settings.style.border_radius.card | theme.appearance.shape.radius.card | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 70 | settings.style.border_radius.card-s | theme.appearance.shape.radius.card_small | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 71 | settings.style.border_radius.bar | theme.appearance.shape.radius.bar | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 72 | settings.style.border_radius.image-l | theme.appearance.shape.radius.image_large | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 73 | settings.style.border_radius.image | theme.appearance.shape.radius.image | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 74 | settings.style.border_radius.image-s | theme.appearance.shape.radius.image_small | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 75 | settings.style.gradient.start | theme.appearance.gradients.primary_action | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 76 | settings.style.gradient.searchbar | theme.appearance.gradients.search_bar | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 77 | settings.style.leftbar.background_image | theme.appearance.backgrounds.leftbar.image | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 78 | settings.style.leftbar.blur_px | theme.appearance.backgrounds.leftbar.backdrop.radius | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 79 | settings.style.site.background_image | theme.appearance.backgrounds.page.image | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 80 | settings.style.site.blur_px | theme.appearance.backgrounds.page.backdrop.radius | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 81 | settings.style.site.blur_sat | theme.appearance.backgrounds.page.backdrop.saturation | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 82 | settings.style.site.blur_bg | theme.appearance.backgrounds.page.backdrop.overlay | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 83 | settings.style.codeblock.scrollbar | theme.appearance.code_block.scrollbar_width | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 84 | settings.style.codeblock.highlightjs_theme | theme.appearance.code_block.highlight_stylesheet | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 85 | settings.tag_plugins.button.default_color | theme.tags.button.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 86 | settings.tag_plugins.checkbox.interactive | theme.tags.checkbox.interactive | 原值保留（包含 false/null/空列表） |
+| 87 | settings.tag_plugins.note.border | theme.tags.note.border | 原值保留（包含 false/null/空列表） |
+| 88 | settings.tag_plugins.note.default_color | theme.tags.note.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 89 | settings.tag_plugins.icon.default_color | theme.tags.icon.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 90 | settings.tag_plugins.mark.default_color | theme.tags.mark.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 91 | settings.tag_plugins.hashtag.default_color | theme.tags.hashtag.default_color | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 92 | settings.tag_plugins.gallery.size | theme.tags.gallery.size | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 93 | settings.tag_plugins.gallery.ratio | theme.tags.gallery.aspect_ratio | 旧缺省占位保留在源快照；候选继承上游默认 |
+| 94 | settings.tag_plugins.quot.default | theme.tags.quot.default | 原值保留（包含 false/null/空列表） |
+| 95 | settings.tag_plugins.quot.hashtag.prefix | theme.tags.quot.hashtag.prefix | 原值保留（包含 false/null/空列表） |
+| 96 | settings.tag_plugins.quot.question.prefix | theme.tags.quot.question.prefix | 原值保留（包含 false/null/空列表） |
+| 97 | settings.seo | blog.seo | 仅保留宿主 SEO 默认文案/robots/验证及未映射原字段；不覆盖 site，未知字段继续阻断 |
 | 98 | settings.services.siteinfo.api | theme.services.site_info.site_info_api.endpoint | 旧缺省占位保留在源快照；候选继承上游默认 |
 | 99 | settings.menubar.items[0].theme | theme.leftbar.menu[0].accent | 旧菜单 CSS 颜色改名；严格 CSS color 校验 |
 | 100 | settings.menubar.items[1].theme | theme.leftbar.menu[1].accent | 旧菜单 CSS 颜色改名；严格 CSS color 校验 |
@@ -261,7 +289,7 @@ consumer 不是要求用户决定是否保留功能：独立 Blog 扩展已获�
 | 140 | settings.tag_plugins.quot.hashtag.suffix | theme.tags.quot.hashtag.suffix | 空后缀转官方 null |
 | 141 | settings.tag_plugins.quot.question.suffix | theme.tags.quot.question.suffix | 空后缀转官方 null |
 | 142 | settings.tag_plugins.copy | source.snapshot | 旧参数在源快照完整保留 |
-| 143 | settings.tag_plugins.okr | source.snapshot | 旧参数在源快照完整保留 |
+| 143 | settings.tag_plugins.okr | source.snapshot | 旧 OKR 对象与固定 Stellar 2.0.0 边框、五状态颜色和 zh-CN 文案完全一致；原值留源快照，候选继承官方等效及请求 locale 文案 |
 | 144 | settings.tag_plugins.timeline | source.snapshot | 旧参数在源快照完整保留 |
 | 145 | settings.tag_plugins.gallery.layout | source.snapshot | 旧参数在源快照完整保留 |
 | 146 | settings.wiki[0].description | host.wiki_projects.description | 旧 shelf 与现有集合列一致，值保留在集合候选 |
@@ -296,10 +324,24 @@ consumer 不是要求用户决定是否保留功能：独立 Blog 扩展已获�
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
 | structure / error | legacy_notebook_schema | schema · notebooks/notes | 是 | 旧 INTEGER ID、nb_order、content/tags 表与新 TEXT ID、slug/status/content_md/tags_json 不兼容；必须单独审核 schema 转换，不能先假设 EnsureTable 会升级 |
+| consumer / error | global_avatar_background_consumer | settings · site.avatar_bg | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_rightbar_intro_consumer | settings · rightbar.intro | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_welcome_linklist_consumer | settings · rightbar.welcome_linklist | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_pages_consumer | settings · pages | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_nav_tabs_consumer | settings · nav_tabs | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_ai_label_consumer | settings · article.ai_label | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_category_icons_consumer | settings · article.category_icon | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_tag_icons_consumer | settings · article.tag_icon | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_read_next_consumer | settings · article.read_next | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_expire_days_consumer | settings · article.expire_days | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_banner_ratio_consumer | settings · article.banner_ratio | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_edit_this_page_consumer | settings · article.edit_this_page | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_notebook_license_consumer | settings · notebook.license | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_notebook_share_consumer | settings · notebook.share | 是 | 已批准的本地能力保留在独立 Blog 扩展；仅存储不代表已消费，须主执行者实测后显式声明消费者能力 |
+| consumer / error | global_seo_consumer | settings · seo | 是 | 已批准的宿主 SEO 扩展仅存储不代表已消费；须实测 typed 默认文案、head 与 robots 后显式声明能力 |
 | policy / error | pjax_policy_removed | settings · plugins.pjax | 是 | 旧 selectors/timeout 与官方 manifest 导航没有直接等效字段；审核后明确接受官方策略 |
 | policy / error | data_cache_removed | settings · data_cache | 是 | 2.0 runtime policy 没有公开同等配置；禁止伪造 features.data_cache，需确认具体策略处理 |
 | consumer / error | widget_author_removed | settings · widgets.library.author | 是 | author widget 没有同等上游布局，完整定义保留在 Blog.data.widgets；需决定独立扩展消费 |
-| policy / error | tag_config_removed | settings · tag_plugins.okr | 是 | 2.0 tags schema 不接收旧参数；需明确消费路径，不能静默丢弃 |
 | policy / error | home_cover_removed | settings · cover | 是 | 旧主页 cover 独立配置不在上游主题结构；需确认独立 Blog 展示或首页内容迁移 |
 | policy / error | wiki_shelf_definition_conflict | settings · wiki[0].name | 是 | 旧 shelf 冗余定义与当前项目表不同或无目标；官方 shelf 仅 ID 数组，需明确集合值来源 |
 | schema / error | invalid_value | migration.theme · leftbar.footer.actions[1].url | 是 | safe navigable URL or root-relative path |
@@ -1471,8 +1513,8 @@ Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已version 2
 
 - `go test ./internal/stellarmigration -run TestTrackedStatusUsesHostImportContract -count=1` 通过：draft/published 映射到 blog.status、序列化保持状态、上游 schema不含status，并保留执行阻断。
 - `go test -race ./internal/stellarmigration -count=1` 通过：隔离夹具、只读源、strict校验、完整候选、评论变化源失效、正文/Markdown保护、私密权限、显式capability门槛。常规测试未访问真实数据。
-- 本次另用显式只读helper读取真实源，生成新三份artifact并核对权限/完整性/历史一致性；没有运行真实迁移。
-- 本分支正常 pre-commit hook 已运行完整 `make test` 并通过；未执行子树 merge-check、合 dev、push 或真实部署。
+- 本次另用显式只读helper读取真实源，生成新五份artifact并核对权限/完整性/历史一致性；没有运行真实迁移。
+- OKR精确默认/自定义反例、15个消费者门槛、false/null/empty保真、SEO六项canonical与独立默认文案、未知schema/政策不能由capability解除均通过全包race测试；隔离Notebook/Note转换、rollback和取消证明已通过。
 - 未执行：Apply、schema写入、真实数据回填、真实迁移后的Console编辑重开/前台/搜索/评论验收。实现者的消费者测试与主 agent的新浏览器验收仍须单列，不使用历史证据充当本次通过。
 
 ## 执行前不可绕过的检查

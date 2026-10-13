@@ -6,7 +6,7 @@
 
 - `ReadSnapshot(ctx, dbPath, files)`：SQLite `mode=ro`、`query_only=1`、单事务读取实际 `sqlite_master` 与动态列，另用同样只读的 `Store.DetectLegacyNotebookSchema` 共用结构契约并比对捕获列。旧表缺少新版列不会触发建表／补列。`files` 是调用者明确提供的受跟踪 Markdown 原文。
 - `Preview(snapshot)`：先构建全部集合，再建立上游 Registry，逐条校验成员。返回主题 document JSON、独立 Blog JSON，以及每条 Post／Page／WikiProject／WikiDoc／Topic／Notebook／Note／文件的原文摘要、version 2、Front Matter JSON、Blog JSON、Markdown 和映射／冲突。已 version 2 的 theme／内容 JSON 与 Markdown 逐字保持；无任何存储副作用。
-- `PreviewWithCapabilities(snapshot, ConsumerCapabilities{ConsumerPoster: true})`：仅调用者显式声明已经实测闭合的消费者才降为提示。catalog 固定为 `poster`、`collection_order`、`authors`、`author_widget`、`wiki_external_url`，未知 capability 报错；默认没有闭合能力。诊断全部保留，以 `kind=consumer`、`consumer=<能力>`、`severity=info`、`blocking=false` 标明调用者的声明，并不替代真实体验证明。政策／结构／strict schema 冲突不受该参数影响。
+- `PreviewWithCapabilities(snapshot, ConsumerCapabilities{ConsumerPoster: true})`：仅调用者显式声明已经实测闭合的消费者才降为提示。catalog 保留 `poster`、`collection_order`、`authors`、`author_widget`、`wiki_external_url`，并按字段独立登记以下全局能力；未知 capability 报错，默认没有闭合能力。诊断全部保留，以 `kind=consumer`、`consumer=<能力>`、`severity=info`、`blocking=false` 标明调用者的声明，并不替代真实体验证明。政策／结构／strict schema 冲突不受该参数影响。
 - `Candidate.PublicReport()`：只输出行数、公开源身份／路径、hash、源字段→目标字段、行为说明和无原值诊断。原始设置、正文、通知密钥、用户 email、密码哈希、AI key 和冲突值均不在报告中。
 - `WritePrivate(path, candidate)`：以 `O_EXCL` 创建新的 `0600` 文件，不覆盖已有文件或跟随 symlink。候选含完整源数据，不能提交 Git、发给外部服务或复制进 public 目录。调用者应使用 `0700` 隔离输出目录。
 - `ValidateCandidate(candidate, currentSnapshot)`：源 digest 必须一致，候选集合必须完整、没有未决冲突，且再次通过 theme／content／profile／membership strict 校验。源 digest 覆盖所有表及其 schema、所有关联、用户／权限、评论／草稿和明确输入文件；评论等不迁移记录的变化也使候选过期。此方法不写数据，不构成迁移授权。
@@ -26,6 +26,18 @@ Wiki 旧外链统一保留于 `Blog.content.wiki_external_url`，由独立模板
 Markdown 仅把明确的旧本地 `about/links/moments/ghrepo/ghuser/tip` 标签改为 `blog_*`；批准的旧 tooltip 语义保留，不替换为不同的上游 inline tip。参数、正文和空白不重建。旧 image 未明确 fancybox 时添加 `fancybox:false` 保留默认点击行为。Goldmark 代码段（包括引用／列表内代码）不改；未知、跨行或引号不完整的标签原文保留并阻断。此包不假称已全面验证每个标签参数，也不净化作者 HTML。
 
 tracked Markdown 的旧 `status` 候选映射为 `blog.status`，与宿主备份／目录导入契约一致，不进入上游 schema，也不放入 `blog.host.status`。候选保留原发布状态；`file_host_fields` 诊断仍阻断，直到宿主导入及重新打开证明不会误发布。其余权限／生命周期字段仍须单独接线，不因发布状态映射修正自动解除。
+
+### 全局消费者及已证明等效的字段
+
+原先 `Blog.content` 仅存储却未报未消费的 13 项，现在分别要求能力证据：`avatar_background/rightbar_intro/welcome_linklist/nav_tabs/ai_label/category_icons/tag_icons/read_next/expire_days/banner_ratio/edit_this_page/notebook_license/notebook_share`。`Blog.pages` 与剩余 typed `Blog.seo` 分别要求 `pages/seo`；false、null 和显式空覆盖同样保留并报消费者门槛，不当作无源值。未声明时全部阻断，声明后诊断保留为 info，候选值与映射不改。
+
+Notebook 页脚仍为独立 `blog.content.notebook.license/share`，不捏造 strict theme 不允许的 `profiles.note.footer`。Pages 的已冻结消费边界为 friends `title/hero/title-description-background/show_posts/refresh_interval/posts_per_link`；其它分组或 Hero animation/start/preview/actions 保留并报 `unmapped_setting`，不能用 pages 能力解除。
+
+旧 `tag_plugins.okr` 只有完整对象精确等于固定 `9d11978` 的 1px 边框、五状态颜色和 zh-CN 文案时，标记“原值留 source.snapshot、继承官方等效”；不生成被上游删除的 `tags.okr` 参数袋。任何自定义、缺键或额外字段继续 `tag_config_removed` 阻断，不能把这一条默认对象的豁免扩散到其它 removed 字段。
+
+旧 SEO 六项按冻结契约映射官方：`preconnect→preconnect`、`canonical.originalHost→canonical.host`、`canonical.officialHosts→canonical.allowed_hosts`、`open_graph.enable→open_graph.enabled`、`open_graph.twitter_id→open_graph.twitter_id`、`structured_data.links→structured_data.same_as`。旧 nil slice 转显式空数组，空 host 转 null，旧 nil enable 按旧 `Enabled()` 为 true；false/空数组保持。坏类型或未知字段不丢弃，继续 schema 阻断；同一 canonical 目标已有不同来源时不覆盖并报 policy 冲突。
+
+`default_description/default_keywords/robots_extra/no_index/google_verification/bing_verification/baidu_verification` 保留 typed `Blog.seo`；前两项不覆盖原 `Blog.site`。来源保真和 runtime 优先级分别核验，消费者由宿主负责。官方已映射部分不重复塞入 raw Blog SEO 袋；全部原值仍保留于私密 source snapshot。
 
 ## 验证
 
