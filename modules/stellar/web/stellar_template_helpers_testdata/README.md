@@ -31,4 +31,6 @@ Notebook license/share 作为仅 Note 的扩展默认值补入当前渲染副本
 NODE_PATH=/absolute/path/to/oracle/node_modules node modules/stellar/web/stellar_template_helpers_testdata/generate-opengraph.cjs /absolute/path/to/resource/hexo-theme-stellar
 ```
 
-`opengraph.json` 包含四种 profile 的 96 个参数组合：76 个正常组合分别验证真实 embed HTTP SSR、离线快照和 opaque Markdown preview（228 个输出），另 20 个非法 URL／基址／图片／Twitter 图片／账号类型组合记录官方 TypeError（60 个错误边界），并验证 Go 的三个入口明确失败。它覆盖作者、Facebook、Twitter、图片别名与数组、相对路径解析、语言、日期、查询参数、HTML／实体描述与标题、null／空值回退。验证的是实际元信息 DOM 值；错误通过模板 helper 正式传播，不静默丢弃图片。
+`opengraph.json` 包含四种 profile 的 168 个参数组合：128 个正常组合分别验证真实 embed HTTP SSR、离线快照和 opaque Markdown preview（384 个输出），另 40 个非法 URL／基址／图片／Twitter 图片／账号类型组合记录官方 TypeError（120 个错误边界），并验证 Go 的三个入口明确失败。它覆盖作者、Facebook、Twitter、图片别名与数组、相对路径解析、语言、日期、查询参数、HTML／实体描述与标题、null／空值回退。验证的是实际元信息 DOM 值；错误通过模板 helper 正式传播，不静默丢弃图片。
+
+URL 消费复用仓库已有 WHATWG 库，image／twitter_image 按 `new URL(...).toString()` 输出 punycode 域名，`og:url` 按 Hexo `encodeURL` 的 `node:url.format(..., {unicode:true})` 还原 Unicode 域名。对照同时覆盖 HTTP 反斜杠、host 大小写、默认端口、ASCII 空白、非法百分号与查询 UTF-8、file／blob、opaque mailto 的绝对地址／fragment 成功和相对路径失败。生产没有新增 Node 依赖。

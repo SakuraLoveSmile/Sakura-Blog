@@ -4,12 +4,16 @@ import (
 	"crypto/md5"
 	"fmt"
 	"html/template"
-	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf16"
+
+	whatwg "github.com/nlnwa/whatwg-url/url"
+	"golang.org/x/net/idna"
+	unicodeencoding "golang.org/x/text/encoding/unicode"
 )
 
 // stellarOpenGraph 对齐固定 head.ejs 与 Hexo 8 open_graph helper。
@@ -237,22 +241,13 @@ func stellarOGDate(value any) any {
 	return nil
 }
 func stellarOGResolve(image, base string) (string, error) {
-	b, err := url.Parse(base)
-	if err != nil || !b.IsAbs() {
-		return "", fmt.Errorf("invalid base URL")
-	}
-	if (b.Scheme == "http" || b.Scheme == "https" || b.Scheme == "ftp") && b.Host == "" {
-		return "", fmt.Errorf("invalid base URL")
-	}
-	u, err := url.Parse(image)
+	// 与 new URL(image, base) 使用同一 WHATWG 规则；包括特殊 scheme、
+	// IDNA、反斜杠、默认端口，以及 opaque base 仅允许绝对地址／fragment。
+	u, err := whatwg.ParseRef(base, image)
 	if err != nil {
-		return "", fmt.Errorf("invalid image URL: %w", err)
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
-	u = b.ResolveReference(u)
-	if (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "ftp") && u.Host == "" {
-		return "", fmt.Errorf("invalid image URL")
-	}
-	return u.String(), nil
+	return u.Href(false), nil
 }
 func stellarOGPrettyURL(value string, options map[string]any) string {
 	if options["trailing_index"] == false {
@@ -263,31 +258,69 @@ func stellarOGPrettyURL(value string, options map[string]any) string {
 	}
 	return value
 }
+
+var stellarOGProtocol = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+
 func stellarOGEncodeURL(value string) (string, error) {
-	u, err := url.Parse(value)
+	// Hexo encodeURL 用 legacy url.parse 识别 protocol；有 protocol 时，
+	// 正式归一化由 WHATWG URL 处理，并只对有 origin 的 URL 重新编码。
+	if !stellarOGProtocol.MatchString(strings.TrimSpace(value)) {
+		return stellarOGEncodeURI(stellarOGQueryUnescape(value)), nil
+	}
+	u, err := whatwg.Parse(value)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
-	if u.IsAbs() {
-		if (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "ftp") && u.Host == "" {
-			return "", fmt.Errorf("invalid URL")
-		}
-		if u.Opaque != "" || u.Scheme == "file" {
-			return value, nil
-		}
-		query, err := url.PathUnescape(u.RawQuery)
-		if err == nil {
-			u.RawQuery = stellarOGEncodeURI(query)
-		}
-		return u.String(), nil
+	if !stellarOGHasOrigin(u) {
+		return value, nil
 	}
-	decoded, err := url.PathUnescape(value)
-	if err == nil {
-		value = decoded
+	u.SetSearch(stellarOGEncodeURI(stellarOGQueryUnescape(u.Search())))
+	href := u.Href(false)
+	// node:url.format(..., {unicode:true}) 与 image 的 toString 不同：
+	// og:url 还原 Unicode hostname，image／twitter_image 保留 punycode。
+	if hostname := u.Hostname(); hostname != "" {
+		unicodeHostname, err := idna.Lookup.ToUnicode(hostname)
+		if err == nil && unicodeHostname != hostname {
+			start := len(u.Protocol()) + 2
+			if u.Username() != "" || u.Password() != "" {
+				start += len(u.Username()) + 1
+				if u.Password() != "" {
+					start += len(u.Password()) + 1
+				}
+			}
+			href = href[:start] + unicodeHostname + href[start+len(hostname):]
+		}
 	}
-	return stellarOGEncodeURI(value), nil
+	return href, nil
 }
 
+func stellarOGHasOrigin(u *whatwg.Url) bool {
+	switch u.Scheme() {
+	case "http", "https", "ws", "wss", "ftp":
+		return true
+	case "blob":
+		inner, err := whatwg.Parse(u.Pathname())
+		return err == nil && (inner.Scheme() == "http" || inner.Scheme() == "https")
+	}
+	return false
+}
+
+func stellarOGQueryUnescape(value string) string {
+	// node:querystring.unescape 容忍不完整 percent，且不把 + 变成空格。
+	var b strings.Builder
+	for i := 0; i < len(value); i++ {
+		if value[i] == '%' && i+2 < len(value) {
+			if decoded, err := strconv.ParseUint(value[i+1:i+3], 16, 8); err == nil {
+				b.WriteByte(byte(decoded))
+				i += 2
+				continue
+			}
+		}
+		b.WriteByte(value[i])
+	}
+	decoded, _ := unicodeencoding.UTF8.NewDecoder().String(b.String())
+	return decoded
+}
 func stellarOGEncodeURI(value string) string {
 	var b strings.Builder
 	for i := 0; i < len(value); i++ {

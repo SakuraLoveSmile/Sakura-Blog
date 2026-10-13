@@ -36,6 +36,131 @@ try {
   {name:'invalid-image-url',options:{image:'https://['}},
   {name:'invalid-twitter-image-url',options:{twitter_image:'https://['}},
  ];
+ cases.push(...[
+  {
+    "name": "image-unicode-host",
+    "options": {
+      "image": "https://例え.テスト/画像.png"
+    }
+  },
+  {
+    "name": "twitter-url-unicode-host",
+    "options": {
+      "twitter_image": "https://例え.テスト/画像.png"
+    }
+  },
+  {
+    "name": "url-unicode-host",
+    "options": {
+      "url": "https://例え.テスト/文書?検索=テスト",
+      "image": "画像.png",
+      "twitter_image": "twitter.png"
+    }
+  },
+  {
+    "name": "url-special-backslash",
+    "options": {
+      "url": "https://example.test/dir\\article?x=1",
+      "image": "..\\image.png",
+      "twitter_image": ".\\twitter.png"
+    }
+  },
+  {
+    "name": "url-host-normalization",
+    "options": {
+      "url": " https://EXAMPLE.test:443/path?x=1 ",
+      "image": "image.png"
+    }
+  },
+  {
+    "name": "image-host-normalization",
+    "options": {
+      "image": " https://EXAMPLE.test:443/image.png ",
+      "twitter_image": "HTTPS://EXAMPLE.test:443/social.png"
+    }
+  },
+  {
+    "name": "url-literal-percent",
+    "options": {
+      "url": "https://example.test/%oops?bad=%oops&valid=%20",
+      "image": "relative%oops.png",
+      "twitter_image": "twitter%oops.png"
+    }
+  },
+  {
+    "name": "opaque-mailto-relative",
+    "options": {
+      "url": "mailto:a@example.test",
+      "image": "relative.png"
+    }
+  },
+  {
+    "name": "opaque-mailto-twitter-relative",
+    "options": {
+      "url": "mailto:a@example.test",
+      "image": "https://example.test/image.png",
+      "twitter_image": "relative.png"
+    }
+  },
+  {
+    "name": "opaque-mailto-absolute",
+    "options": {
+      "url": "mailto:a@example.test",
+      "image": "https://example.test/image.png",
+      "twitter_image": "https://example.test/twitter.png"
+    }
+  },
+  {
+    "name": "opaque-mailto-fragment",
+    "options": {
+      "url": "mailto:a@example.test",
+      "image": "#part",
+      "twitter_image": "#social"
+    }
+  },
+  {
+    "name": "opaque-data-relative",
+    "options": {
+      "url": "data:text/plain,data",
+      "image": "image.png"
+    }
+  },
+  {
+    "name": "url-file-base",
+    "options": {
+      "url": "file:///tmp/dir/page",
+      "image": "../image.png",
+      "twitter_image": "twitter.png"
+    }
+  },
+  {
+    "name": "url-blob-absolute",
+    "options": {
+      "url": "blob:https://example.test/id",
+      "image": "https://example.test/image.png",
+      "twitter_image": "https://example.test/twitter.png"
+    }
+  },
+  {
+    "name": "image-invalid-port",
+    "options": {
+      "image": "https://example.test:99999/image.png"
+    }
+  },
+  {
+    "name": "url-invalid-port",
+    "options": {
+      "url": "https://example.test:99999/page"
+    }
+  },
+  {
+    "name": "url-empty-query",
+    "options": {
+      "url": "https://example.test/path?"
+    }
+  }
+]);
+ cases.push({name:'url-query-invalid-utf8',options:{url:'https://example.test/path?bad=%FF%FF&partial=%0p&incomplete=%E2%82'}});
  const entries=[];
  for(const profile of ['post','page','wiki','notebook'])for(const test of cases){
   const raw={title:test.title||'OG Title',date:'2024-02-03T04:05:06Z',updated:'2024-03-04T05:06:07Z',tags:['z-tag','a-tag'],seo:{open_graph:test.options}};
