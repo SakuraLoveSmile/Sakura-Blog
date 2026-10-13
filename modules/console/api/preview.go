@@ -27,6 +27,7 @@ type StellarMarkdownPreviewRequest struct {
 	Language       string `json:"language"`
 	Path           string `json:"path"`
 	PreviewToken   string `json:"preview_token"`
+	Mode           string `json:"mode"`
 }
 type StellarMarkdownPreviewResponse struct {
 	HTML         string `json:"html"`
@@ -59,6 +60,15 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 	}
 	if req.Layout == "" {
 		req.Layout = "page"
+	}
+	if req.Mode == "" {
+		req.Mode = string(content.StellarPreviewModeDocument)
+	}
+	switch req.Mode {
+	case string(content.StellarPreviewModeDocument), string(content.StellarPreviewModeContent):
+	default:
+		Fail(c, http.StatusBadRequest, "不支持的预览模式")
+		return
 	}
 	switch req.Layout {
 	case "page", "post", "wiki", "note":
@@ -96,7 +106,7 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions, HTML: html, Markdown: markdown, Title: req.Title, Layout: req.Layout, Language: req.Language, Path: req.Path, RequestURL: requestURL, PreviewToken: req.PreviewToken})
+	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{Mode: content.StellarPreviewMode(req.Mode), StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions, HTML: html, Markdown: markdown, Title: req.Title, Layout: req.Layout, Language: req.Language, Path: req.Path, RequestURL: requestURL, PreviewToken: req.PreviewToken})
 	if err != nil {
 		failEditorStellar(c, err)
 		return

@@ -280,6 +280,7 @@ export interface StellarMarkdownPreviewRequest {
   language: string;
   path: string;
   preview_token: string;
+  mode: string;
 }
 export interface StellarMarkdownPreviewResponse {
   html: string;

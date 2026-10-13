@@ -32,7 +32,7 @@ export function usePluginPreview(
       rendering.value = true;
       previewError.value = "";
       try {
-        const { data } = await previewApi.render(markdown, "component-library");
+        const { data } = await previewApi.render(markdown, "component-library", { mode: "content" });
         if (!gate.isCurrent(seq)) return; // 旧请求结果丢弃
         previewHtml.value = data.html;
         document.value = data.document;

@@ -111,7 +111,7 @@ func (h *Handler) previewStellarWidget(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: request.StellarVersion, StellarConfig: request.StellarConfig, BlogExtensions: request.BlogExtensions, WidgetConfig: request.WidgetConfig, Layout: request.Layout, Path: request.Path, Language: request.Language, RequestURL: requestURL, PreviewToken: request.PreviewToken})
+	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{Mode: content.StellarPreviewModeWidget, StellarVersion: request.StellarVersion, StellarConfig: request.StellarConfig, BlogExtensions: request.BlogExtensions, WidgetConfig: request.WidgetConfig, Layout: request.Layout, Path: request.Path, Language: request.Language, RequestURL: requestURL, PreviewToken: request.PreviewToken})
 	if err != nil {
 		failEditorStellar(c, err)
 		return

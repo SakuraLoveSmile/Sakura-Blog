@@ -8,11 +8,12 @@ export const previewApi = {
   render: (
     markdown: string,
     previewProfile?: string,
-    metadata?: StellarContentMetadata & { title?: string; layout?: string; path?: string; language?: string },
+    metadata?: Partial<StellarContentMetadata> & { title?: string; layout?: string; path?: string; language?: string; mode?: "document" | "content" },
   ) =>
     http.post<{ html: string; document: string; preview_token: string }>("/preview/markdown", {
       markdown,
       preview_profile: previewProfile,
+      mode: metadata?.mode,
       stellar_version: 2,
       stellar_config: "{}",
       blog_extensions: "{}",

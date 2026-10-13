@@ -47,7 +47,7 @@ async function renderPreview() {
   loading.value = true;
   failed.value = false;
   try {
-    const { data } = await previewApi.render(key, undefined, stellarContext?.value);
+    const { data } = await previewApi.render(key, undefined, { ...stellarContext?.value, mode: "content" });
     if (generation !== previewGeneration) return;
     html.value = data.document;
     previewToken.value = data.preview_token;

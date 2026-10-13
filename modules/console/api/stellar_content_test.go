@@ -181,12 +181,15 @@ func TestStellarEditorPreviewCallbackReceivesCompleteCandidate(t *testing.T) {
 		captured = input
 		return content.StellarPreviewOutput{HTML: "callback body", Document: "<!doctype html><html data-test=\"callback\"></html>"}, nil
 	}
-	body := editorPayload(t, map[string]any{"markdown": "{% frame iphone img:https://example.com/a.png %}", "preview_token": "current-preview-token", "title": "宿主标题", "layout": "post", "path": "/post/canonical"})
+	body := editorPayload(t, map[string]any{"markdown": "{% frame iphone img:https://example.com/a.png %}", "preview_token": "current-preview-token", "title": "宿主标题", "layout": "post", "path": "/post/canonical", "mode": "content"})
 	w := do2FA(r, http.MethodPost, "/api/v1/preview/markdown", body, authCookie(user))
 	var response StellarMarkdownPreviewResponse
 	_ = json.Unmarshal(w.Body.Bytes(), &response)
-	if w.Code != 200 || captured.StellarVersion != 2 || captured.StellarConfig != editorRawPage || captured.BlogExtensions != editorRawBlog || captured.Path != "/post/canonical" || captured.Layout != "post" || captured.PreviewToken != "current-preview-token" || captured.Markdown == nil || !strings.Contains(*captured.Markdown, "{% frame iphone") || captured.HTML != "" || !strings.HasSuffix(captured.RequestURL, "/api/v1/preview/markdown") || response.PreviewToken != captured.PreviewToken || !strings.Contains(response.Document, "data-test") {
+	if w.Code != 200 || captured.Mode != content.StellarPreviewModeContent || captured.StellarVersion != 2 || captured.StellarConfig != editorRawPage || captured.BlogExtensions != editorRawBlog || captured.Path != "/post/canonical" || captured.Layout != "post" || captured.PreviewToken != "current-preview-token" || captured.Markdown == nil || !strings.Contains(*captured.Markdown, "{% frame iphone") || captured.HTML != "" || !strings.HasSuffix(captured.RequestURL, "/api/v1/preview/markdown") || response.PreviewToken != captured.PreviewToken || !strings.Contains(response.Document, "data-test") {
 		t.Fatalf("callback candidate mismatch: %d %+v %s", w.Code, captured, w.Body.String())
+	}
+	if w = do2FA(r, http.MethodPost, "/api/v1/preview/markdown", editorPayload(t, map[string]any{"markdown": "body", "preview_token": "current-preview-token", "mode": "invalid"}), authCookie(user)); w.Code != http.StatusBadRequest {
+		t.Fatalf("unsupported preview mode status = %d body=%s", w.Code, w.Body.String())
 	}
 	h.renderStellarContentPreview = nil
 	w = do2FA(r, http.MethodPost, "/api/v1/preview/markdown", body, authCookie(user))

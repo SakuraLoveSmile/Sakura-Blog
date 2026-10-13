@@ -100,6 +100,12 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 }
 
 func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+	if input.Mode == "" {
+		input.Mode = content.StellarPreviewModeDocument
+	}
+	if input.Mode != content.StellarPreviewModeDocument && input.Mode != content.StellarPreviewModeContent && input.Mode != content.StellarPreviewModeWidget {
+		return content.StellarPreviewOutput{}, fmt.Errorf("unsupported Stellar preview mode %q", input.Mode)
+	}
 	site, err := stellarPreviewSite(s.site.Load(), input.RequestURL)
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
@@ -227,7 +233,7 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	data.Stellar.Input.RuntimeData["nativeComments"] = stellarmodels.Object{"enabled": false}
 	data.Stellar.Input.RuntimeData["preview"] = true
 	data.Stellar.Input.RuntimeData["recordBlog"] = blog
-	if input.WidgetConfig != "" {
+	if input.Mode == content.StellarPreviewModeWidget {
 		page := stellarCopyObject(data.Stellar.Input.Page)
 		page["content"] = ""
 		data.Stellar.Input.Page = page
@@ -253,7 +259,7 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
-	document, err = stellarPreviewDocument(document, site.URL, input.PreviewToken, input.WidgetConfig != "")
+	document, err = stellarPreviewDocument(document, site.URL, input.PreviewToken, input.Mode)
 	if err != nil {
 		return content.StellarPreviewOutput{}, err
 	}
@@ -266,7 +272,10 @@ func mustStellarURL(raw string) *url.URL {
 	}
 	return u
 }
-func stellarPreviewDocument(document, siteURL, token string, widget bool) (string, error) {
+func stellarPreviewDocument(document, siteURL, token string, mode content.StellarPreviewMode) (string, error) {
+	if mode == "" {
+		mode = content.StellarPreviewModeDocument
+	}
 	doc, err := html.Parse(strings.NewReader(document))
 	if err != nil {
 		return "", err
@@ -310,10 +319,13 @@ func stellarPreviewDocument(document, siteURL, token string, widget bool) (strin
 	if body == nil {
 		return "", fmt.Errorf("preview document missing body")
 	}
-	if widget {
-		var instance, scripts *html.Node
+	if mode == content.StellarPreviewModeWidget || mode == content.StellarPreviewModeContent {
+		var instance, article, scripts *html.Node
 		var find func(*html.Node)
 		find = func(n *html.Node) {
+			if mode == content.StellarPreviewModeContent && n.Type == html.ElementNode && n.Data == "article" && hasHTMLClass(n, "md-text") {
+				article = n
+			}
 			for _, attr := range n.Attr {
 				if attr.Key == "data-widget-id" && strings.Contains(attr.Val, "__preview__") {
 					instance = n
@@ -327,11 +339,17 @@ func stellarPreviewDocument(document, siteURL, token string, widget bool) (strin
 			}
 		}
 		find(body)
-		if instance != nil && instance.Parent != nil {
+		if mode == content.StellarPreviewModeContent && article == nil {
+			return "", fmt.Errorf("preview document missing article.md-text")
+		}
+		if mode == content.StellarPreviewModeWidget && instance != nil && instance.Parent != nil {
 			instance.Parent.RemoveChild(instance)
 		}
 		if scripts != nil && scripts.Parent != nil {
 			scripts.Parent.RemoveChild(scripts)
+		}
+		if mode == content.StellarPreviewModeContent && article != nil && article.Parent != nil {
+			article.Parent.RemoveChild(article)
 		}
 		for c := body.FirstChild; c != nil; {
 			next := c.NextSibling
@@ -339,8 +357,10 @@ func stellarPreviewDocument(document, siteURL, token string, widget bool) (strin
 			c = next
 		}
 		container := &html.Node{Type: html.ElementNode, Data: "main", Attr: []html.Attribute{{Key: "data-stellar-preview-content", Val: ""}, {Key: "class", Val: "ui-surface"}}}
-		if instance != nil {
+		if mode == content.StellarPreviewModeWidget && instance != nil {
 			container.AppendChild(instance)
+		} else if mode == content.StellarPreviewModeContent && article != nil {
+			container.AppendChild(article)
 		}
 		body.AppendChild(container)
 		if scripts != nil {
@@ -351,4 +371,18 @@ func stellarPreviewDocument(document, siteURL, token string, widget bool) (strin
 	var out bytes.Buffer
 	err = html.Render(&out, doc)
 	return out.String(), err
+}
+
+func hasHTMLClass(n *html.Node, class string) bool {
+	for _, attr := range n.Attr {
+		if attr.Key != "class" {
+			continue
+		}
+		for _, value := range strings.Fields(attr.Val) {
+			if value == class {
+				return true
+			}
+		}
+	}
+	return false
 }

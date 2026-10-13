@@ -1,8 +1,18 @@
 package content
 
+// StellarPreviewMode selects the document scope returned by the Stellar preview renderer.
+type StellarPreviewMode string
+
+const (
+	StellarPreviewModeDocument StellarPreviewMode = "document"
+	StellarPreviewModeContent  StellarPreviewMode = "content"
+	StellarPreviewModeWidget   StellarPreviewMode = "widget"
+)
+
 // StellarPreviewInput 是宿主到前台的隔离预览候选；正文与文档由同一快照渲染。
 // 原始配置保持文本，生产与预览共用前台装配逻辑，Console 不依赖 Stellar 模块。
 type StellarPreviewInput struct {
+	Mode           StellarPreviewMode
 	StellarVersion int
 	StellarConfig  string
 	BlogExtensions string

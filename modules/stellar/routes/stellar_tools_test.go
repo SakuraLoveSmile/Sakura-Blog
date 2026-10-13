@@ -244,6 +244,37 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	}
 }
 
+func TestStellarPreviewDocumentModes(t *testing.T) {
+	document := `<!doctype html><html><head><link rel="stylesheet" href="/assets/css/main.css"><link rel="manifest" href="/manifest.json"></head><body><div class="site-shell"><header>SHELL_ONLY</header><article class="md-text"><div class="content">BODY_ONLY</div></article><section class="banner">BANNER_ONLY</section><footer>FOOTER_ONLY</footer><div id="comments">COMMENTS_ONLY</div><div class="site-scripts"><script src="/assets/js/runtime.js"></script></div></div></body></html>`
+	for _, tc := range []struct {
+		mode content.StellarPreviewMode
+		want []string
+		omit []string
+	}{
+		{mode: content.StellarPreviewModeDocument, want: []string{"SHELL_ONLY", "BODY_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "COMMENTS_ONLY"}},
+		{mode: content.StellarPreviewModeContent, want: []string{"BODY_ONLY", "main.css", "manifest.json", "runtime.js", "blog-preview.js", "data-stellar-preview-content"}, omit: []string{"SHELL_ONLY", "BANNER_ONLY", "FOOTER_ONLY", "COMMENTS_ONLY"}},
+	} {
+		out, err := stellarPreviewDocument(document, "https://example.test", "preview-token", tc.mode)
+		if err != nil {
+			t.Fatalf("mode %s: %v", tc.mode, err)
+		}
+		for _, want := range tc.want {
+			if !strings.Contains(out, want) {
+				t.Errorf("mode %s missing %q: %s", tc.mode, want, out)
+			}
+		}
+		for _, omit := range tc.omit {
+			if strings.Contains(out, omit) {
+				t.Errorf("mode %s leaked %q: %s", tc.mode, omit, out)
+			}
+		}
+	}
+	defaultDocument, err := stellarPreviewDocument(document, "https://example.test", "preview-token", "")
+	if err != nil || !strings.Contains(defaultDocument, "SHELL_ONLY") || !strings.Contains(defaultDocument, "BODY_ONLY") {
+		t.Fatalf("empty mode must retain complete document preview: err=%v document=%s", err, defaultDocument)
+	}
+}
+
 func TestStellarWidgetPreviewUsesCatalogWithoutPersistence(t *testing.T) {
 	stellarweb.SetMarkdownRender(func(raw string) template.HTML {
 		body, err := post.NewService("").RenderStellarV2WithContext(raw, post.StellarRenderContext{Offline: true})
@@ -260,7 +291,7 @@ func TestStellarWidgetPreviewUsesCatalogWithoutPersistence(t *testing.T) {
 	}
 	ws.engine = engine
 	before, _ := json.Marshal(ws.site.Load().StellarV2)
-	input := content.StellarPreviewInput{StellarVersion: 2, StellarConfig: `{}`, Layout: "post", Title: "Widget context", Path: "/post/__preview__", RequestURL: "http://127.0.0.1:8110/console/settings", PreviewToken: "widget-generation", HTML: "<p>BODY_SHOULD_NOT_RENDER</p>", WidgetConfig: `{"layout":"markdown","title":"Preview widget","content":"**Actual widget body**"}`}
+	input := content.StellarPreviewInput{StellarVersion: 2, StellarConfig: `{}`, Layout: "post", Title: "Widget context", Path: "/post/__preview__", RequestURL: "http://127.0.0.1:8110/console/settings", PreviewToken: "widget-generation", HTML: "<p>BODY_SHOULD_NOT_RENDER</p>", Mode: content.StellarPreviewModeWidget, WidgetConfig: `{"layout":"markdown","title":"Preview widget","content":"**Actual widget body**"}`}
 	document, err := ws.renderContentPreview(input)
 	if err != nil {
 		t.Fatal(err)
