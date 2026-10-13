@@ -78,8 +78,14 @@
     if (!inputArea || !resultArea) return;
     var ownerDocument = inputArea.ownerDocument || document;
     var generation = 0;
+    function pageKey() {
+      var location = (ownerDocument.defaultView || window).location;
+      return location.origin + location.pathname + location.search;
+    }
+    var onNavigationComplete = function() { ++generation; };
     var onInput = function() {
       var inputGeneration = ++generation;
+      var inputPage = pageKey();
       var query = inputArea.value.trim();
       var filterPath = inputArea.getAttribute('data-algolia-filter-path');
 
@@ -100,7 +106,8 @@
         highlightPostTag: '</span>',
         restrictSearchableAttributes: ['content']
       }).then(function(responses) {
-        if (active && inputGeneration === generation && query === inputArea.value.trim()) {
+        // 地址检查覆盖 pushState 到挂载完成事件之间的窗口；轮次检查覆盖离页后返回同一地址。
+        if (active && inputGeneration === generation && inputPage === pageKey() && query === inputArea.value.trim()) {
           displayResults(ownerDocument, searchWrapper, resultArea, filterResults(responses.hits, filterPath));
         }
       });
@@ -111,6 +118,7 @@
     };
     inputArea.addEventListener("input", onInput);
     inputArea.addEventListener("keydown", onKeydown);
+    ownerDocument.addEventListener('stellar:navigation-complete', onNavigationComplete);
 
     var observer = new MutationObserver(function(mutationsList) {
       if (mutationsList.length === 1) {
@@ -125,6 +133,7 @@
     cleanups.push(function() {
       inputArea.removeEventListener("input", onInput);
       inputArea.removeEventListener("keydown", onKeydown);
+      ownerDocument.removeEventListener('stellar:navigation-complete', onNavigationComplete);
       observer.disconnect();
       unmountResultCards(resultArea);
     });

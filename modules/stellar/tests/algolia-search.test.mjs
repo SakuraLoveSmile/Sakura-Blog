@@ -27,7 +27,19 @@ class Element extends EventTarget {
 
 function fixture(count = 1) {
   const requests = [], mounted = [], unmounted = [];
-  const document = { createElement: () => new Element() };
+  const document = new EventTarget();
+  document.createElement = () => new Element();
+  const navigationListeners = new Set();
+  const addEventListener = document.addEventListener.bind(document);
+  const removeEventListener = document.removeEventListener.bind(document);
+  document.addEventListener = (type, listener, ...options) => {
+    if (type === 'stellar:navigation-complete') navigationListeners.add(listener);
+    addEventListener(type, listener, ...options);
+  };
+  document.removeEventListener = (type, listener, ...options) => {
+    if (type === 'stellar:navigation-complete') navigationListeners.delete(listener);
+    removeEventListener(type, listener, ...options);
+  };
   const wrappers = Array.from({ length: count }, () => {
     const wrapper = new Element(), input = new Element(), result = new Element();
     input.value = '';
@@ -36,7 +48,11 @@ function fixture(count = 1) {
     return { wrapper, input, result };
   });
   document.querySelectorAll = () => wrappers.map(item => item.wrapper);
-  const window = { searchConfig: { appId: 'fixture', apiKey: 'public-key', indexName: 'fixture', hitsPerPage: 10 } };
+  const window = {
+    location: new URL('https://fixture.test/first/'),
+    searchConfig: { appId: 'fixture', apiKey: 'public-key', indexName: 'fixture', hitsPerPage: 10 },
+  };
+  document.defaultView = window;
   vm.runInNewContext(source, {
     window, document,
     ctx: { ui: { classes: { interactiveSpotlight: 'interactive-spotlight' } } },
@@ -58,7 +74,16 @@ function fixture(count = 1) {
     await flush();
   }
   function title(index = 0) { return wrappers[index].result.children[0]?.children[0]?.children[0]?.children[0]?.textContent; }
-  return { requests, wrappers, mounted, unmounted, cleanup, input, reply, title };
+  function navigate(url, complete = true) {
+    window.location = new URL(url, window.location);
+    if (complete) {
+      const event = new Event('stellar:navigation-complete');
+      event.detail = { url: window.location.href };
+      document.dispatchEvent(event);
+    }
+  }
+  return { requests, wrappers, mounted, unmounted, cleanup, input, reply, title, navigate, navigationListeners,
+    mount: () => window.stellarAlgoliaSearch.mount(document) };
 }
 
 test('Algolia 新查询先返回后，旧查询迟到不会覆盖结果或重新挂载卡片', async () => {
@@ -112,4 +137,68 @@ test('Algolia 响应抵达时再次检查当前输入值', async () => {
   f.wrappers[0].input.value = '';
   await f.reply(0, 'first');
   assert.equal(f.wrappers[0].result.children.length, 0);
+});
+
+test('Algolia 正式 partial 完成事件使离页请求失效，保留实例与已有结果', async () => {
+  const f = fixture();
+  f.input('shown');
+  await f.reply(0, 'shown');
+  f.input('pending');
+  f.navigate('/second/');
+  await f.reply(1, 'late');
+  assert.equal(f.title(), 'shown');
+  assert.equal(f.mounted.length, 1);
+  f.input('new page');
+  await f.reply(2, 'new page');
+  assert.equal(f.title(), 'new page');
+  assert.equal(f.mounted.length, 2);
+});
+
+test('Algolia pushState 已离页但 partial 挂载未完成时，迟到响应也不写 DOM', async () => {
+  for (const url of ['/second/', '/first/?page=2', 'https://other.test/first/']) {
+    const f = fixture();
+    f.input('pending');
+    f.navigate(url, false);
+    await f.reply(0, 'late');
+    assert.equal(f.wrappers[0].result.children.length, 0, url);
+    assert.equal(f.mounted.length, 0, url);
+  }
+});
+
+test('Algolia partial A→B→A 后不能接受离页前同 URL 的旧响应', async () => {
+  const f = fixture();
+  f.input('pending');
+  f.navigate('/second/');
+  f.navigate('/first/');
+  await f.reply(0, 'late');
+  assert.equal(f.wrappers[0].result.children.length, 0);
+  assert.equal(f.mounted.length, 0);
+});
+
+test('Algolia 仅 hash 滚动或未提交的导航尝试保留当前查询', async () => {
+  const f = fixture();
+  f.input('pending');
+  f.navigate('#section', false);
+  await f.reply(0, 'current page');
+  assert.equal(f.title(), 'current page');
+});
+
+test('Algolia cleanup 移除正式导航监听，重新挂载不会累积监听', async () => {
+  const f = fixture(2);
+  assert.equal(f.navigationListeners.size, 2);
+  assert.equal(f.mount(), f.cleanup);
+  assert.equal(f.navigationListeners.size, 2);
+  f.input('pending');
+  f.cleanup();
+  assert.equal(f.navigationListeners.size, 0);
+  f.navigate('/second/');
+  await f.reply(0, 'late');
+  assert.equal(f.mounted.length, 0);
+  const dispose = f.mount();
+  assert.equal(f.navigationListeners.size, 2);
+  f.input('remounted');
+  await f.reply(1, 'remounted');
+  assert.equal(f.title(), 'remounted');
+  dispose();
+  assert.equal(f.navigationListeners.size, 0);
 });
