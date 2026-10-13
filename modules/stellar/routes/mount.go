@@ -143,6 +143,7 @@ func (s *Server) Mount(r *gin.Engine) error {
 	if err := s.web.registerStaticRoutes(r); err != nil {
 		return err
 	}
+	s.web.registerEmbedRoutes(r)
 
 	pageHandler, err := NewPageHandler(s.deps.Store, s.deps.Posts, s.deps.Engine, s.deps.Site)
 	if err != nil {

@@ -12,6 +12,8 @@
 - 四种外观预设属于站点配置；上游访客设置页包含评论身份、缓存与关于信息，没有访客选择预设功能。配色切换是独立扩展。
 - 用户已确认保留 Go SSR／Console／SQLite，完整实现所有上游等效能力，包括创作命令、Doctor、图片处理和生成路由。
 - 用户已确认原生评论、旧 poster、瞬间/links 标签、复制链接等本地能力作为独立 Blog 扩展保留；完整增加上游能力，不将扩展字段混入严格的上游配置结构。本地用户身份不自动替换第三方身份。
+- 用户已确认生产仍交付 Go 单二进制，不增加 Node/Sharp 运行依赖；完整图片解码、色彩管理和缩放采用可嵌入实现，开发时可使用锁定 Sharp 0.34.5 作差分依据。格式与算法尚待实际证明，不以简化解码代替完整能力。
+- 用户已确认 Gist 在隔离 iframe 内加载官方脚本，保留动态嵌入；iframe 只允许脚本执行，不取得父站同源权限，不开放作者 HTML 的脚本权限。
 - 真实 banner/cover 图源冲突等逐记录事项仍在最终候选预览时确认；当前不改真实数据。
 
 ## 起点、参考与数据边界
@@ -114,6 +116,8 @@
 5. T6：工具专家在架构、数据与网络规则冻结后独占命令/图片元信息模块和隔离测试。真数据迁移依赖可审查的完整预览，获确认后才执行。
 6. T7：各独立分支先定向验证并由主 agent 核对后集成；主 agent 执行全门禁、组合态与实际浏览器，审查专家只读检查迁移/安全/生命周期风险。
 
+当前实际写入分工：clientconfig 专家独占 `modules/stellar/clientconfig/`；内容专家独占 shortcode renderer/catalog；图片专家独占 `internal/stellarimages/`；配置专家独占新增 `stellar_v2` 配置文件及原子 settings 保存方法（Site 仅新增配置字段）；外观专家独占 Stylus、生成 CSS 和 CSS 门禁。各自独立分支中的 Go 依赖由主 agent 集成去重。主 agent 串行接入路由、模板、Markdown 后处理和 Console，执行真实迁移前仍须提供逐记录候选。
+
 普通编码细节自主处理。新的数据损失、重要兼容性或体验冲突交用户确认；仅暂停依赖部分。未授权 push、发布、部署、远程消息、删除 worktree/分支与真实付费调用。
 
 ## 本次记录
@@ -131,3 +135,10 @@
 - 主 agent 用真实新构建服务、独立样例 DB/config/content/uploads 验证 `http://127.0.0.1:8102/wiki/stellar-test/intro`。1280×720 下 Hero 1272px 宽、720px 高，工作区 y=720，Galaxy 挂载；文档按钮跳至 #start（工作区 top=44）。截图与 DOM 记录在 `docs/baselines/stellar-200-full/after-wiki-cover-desktop.png`、`hero-layout-check.json`。
 - 390×844 下 DOM 显示 Hero 与 body 同宽且无横向溢出；浏览器截图表面与模拟 CSS 像素不一致，因此没有把该截图认作窄屏视觉验收。相关完整响应式验收仍未完成。
 - 本次 `make build` 完成 Console/UC 与新 Go 二进制。这里只验证独立 cover slot；新 Hero 模型、指定首页、视频/四种动效/terminal 的完整行为仍须后续接入与验收。
+
+### T1/T2/T5 接口与资源接通（阶段证据）
+
+- 严格主题保存独立 `stellar_v2`（version 2、原始 snake_case theme）和 `blog_extensions`；未迁移库返回 `MigrationRequiredError`，无隐式初始化或迁移。原子事务验证无效候选不写入、第二段失败整体回滚、并发快照和重新打开；对应分支定向 race 与完整 hook 通过。生产启动和 Console 接入尚待完成。
+- CSS 已生成全部 20 份产物，包括官方 5 种评论独立 CSS 与 Fancybox/Swiper；修正字重变量带引号的无效声明。漂移检查在临时目录重编全部产物，失败不覆盖工作区。浏览器加载仍待接通新模板后验证。
+- 新 `ParseStellarDocument` 使用严格上游 Page schema，分离 `blog` 扩展，保留原始正文、false/null/数值与原始字段名，支持 YAML/JSON front matter。导出采用 Hexo JSON front matter，保留开放参数袋大整数。当前定向导入/导出/归属检查通过；现有编辑和备份消费者尚未改用新入口。
+- Gist 端点已挂载，按当前严格主题 `services.github.gist_url` 生成官方脚本 URL；脚本只能在无同源权限的 sandbox 文档内执行。请求校验、file 编码、防脚本注入与主题热替换检查通过；region 尺寸监听检查通过。真实浏览器动态加载、manifest 和内容标签接通仍待完成。
