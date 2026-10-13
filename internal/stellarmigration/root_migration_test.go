@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func completeRootSource(t *testing.T) (RootCapture, Candidate, RootMigrationAppr
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec(`CREATE INDEX fixture_post_index ON posts(slug);CREATE VIEW fixture_posts AS SELECT id,slug,status FROM posts;CREATE TABLE fixture_audit(n INTEGER);INSERT INTO fixture_audit VALUES(0);CREATE TRIGGER fixture_post_trigger AFTER UPDATE OF status ON posts BEGIN UPDATE fixture_audit SET n=n+1;END;PRAGMA user_version=17;PRAGMA application_id=23;`)
+	_, err = db.Exec(`CREATE INDEX fixture_post_index ON posts(slug);CREATE INDEX fixture_partial_index ON posts(status DESC,slug COLLATE NOCASE) WHERE status='published';CREATE VIEW fixture_posts AS SELECT id,slug,status FROM posts;CREATE TABLE fixture_audit(n INTEGER);INSERT INTO fixture_audit VALUES(0);CREATE TRIGGER fixture_post_trigger AFTER UPDATE OF status ON posts BEGIN UPDATE fixture_audit SET n=n+1;END;PRAGMA user_version=17;PRAGMA application_id=23;`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +51,10 @@ func completeRootSource(t *testing.T) (RootCapture, Candidate, RootMigrationAppr
 	c := candidate(t, r.Source)
 	a := RootMigrationApproval{MigrationApproval: approveFixture(c), RootDigest: r.Digest}
 	a.Resolutions = []MigrationResolution{{Source: "content/posts/tracked.md", Code: "file_host_fields", Path: "status", Action: "preserve_status"}}
+	a.ReviewDigest, err = RootReviewDigest(r, c, a.Resolutions, NotebookStructureDecisions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	return r, c, a
 }
 func TestFullRootRehearsalPreservesResourcesAndDatabaseObjects(t *testing.T) {
@@ -73,6 +78,15 @@ func TestFullRootRehearsalPreservesResourcesAndDatabaseObjects(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	index, err := readDatabaseIndex(context.Background(), tx, "fixture_partial_index", "posts")
+	tx.Rollback()
+	if err != nil || !index.Partial || len(index.Columns) != 3 || index.Columns[0].Name == nil || *index.Columns[0].Name != "status" || !index.Columns[0].Descending || index.Columns[1].Name == nil || *index.Columns[1].Name != "slug" || index.Columns[1].Collation == nil || *index.Columns[1].Collation != "NOCASE" {
+		t.Fatalf("composite partial index shape changed: %#v, %v", index, err)
+	}
 	for query, want := range map[string]int{"PRAGMA user_version": 17, "PRAGMA application_id": 23, "SELECT n FROM fixture_audit": 0, "SELECT count(*) FROM fixture_posts": 1} {
 		var n int
 		if err = db.QueryRow(query).Scan(&n); err != nil || n != want {
@@ -107,9 +121,13 @@ func (r *rootRuntime) ValidateStaged(context.Context, RootRehearsal) error {
 	r.events = append(r.events, "validate")
 	return r.validateErr
 }
-func (r *rootRuntime) Resume(context.Context) error {
-	r.events = append(r.events, "resume")
+func (r *rootRuntime) StartHeld(context.Context) error {
+	r.events = append(r.events, "start-held")
 	return r.resumeErr
+}
+func (r *rootRuntime) Release(context.Context) error {
+	r.events = append(r.events, "release")
+	return nil
 }
 func (r *rootRuntime) HoldRecovery(error) { r.events = append(r.events, "hold"); r.held = true }
 func TestRootApplyAndRollbackUseCompleteApprovalAndKeepArchive(t *testing.T) {
@@ -337,6 +355,10 @@ func TestRootCaptureExternalResourcesAndPrivateModes(t *testing.T) {
 	c := candidate(t, captured.Source)
 	a := RootMigrationApproval{MigrationApproval: approveFixture(c), RootDigest: captured.Digest}
 	a.Resolutions = []MigrationResolution{{Source: "content/posts/tracked.md", Code: "file_host_fields", Path: "status", Action: "preserve_status"}}
+	a.ReviewDigest, err = RootReviewDigest(captured, c, a.Resolutions, NotebookStructureDecisions{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	f, err := BuildRootRehearsal(context.Background(), captured, c, a, NotebookStructureDecisions{})
 	if err != nil {
 		t.Fatal(err)
@@ -355,5 +377,297 @@ func TestRootCaptureExternalResourcesAndPrivateModes(t *testing.T) {
 		if err != nil || info.Mode().Perm()&0077 != 0 {
 			t.Fatal("private archive exposed")
 		}
+	}
+}
+
+// 正式真实DB写入证明：journal不确定时不得重新开放runtime，避免随后恢复吞掉新写。
+type writingRootRuntime struct {
+	rootRuntime
+	dbPath         string
+	acceptedWrites int
+}
+
+func (r *writingRootRuntime) Release(ctx context.Context) error {
+	r.events = append(r.events, "release")
+	db, err := sql.Open("sqlite", r.dbPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if _, err = db.Exec("UPDATE fixture_audit SET n=n+1"); err != nil {
+		return err
+	}
+	r.acceptedWrites++
+	return nil
+}
+func TestJournalRenameFailureNeverAcceptsRuntimeWrites(t *testing.T) {
+	r, c, a := completeRootSource(t)
+	runtime := &writingRootRuntime{dbPath: r.Layout.DBPath}
+	fault := errors.New("injected directory fsync failure after journal rename")
+	_, err := applyReviewedRootMigration(context.Background(), r, c, a, NotebookStructureDecisions{}, runtime, func(stage string) error {
+		if stage == "installing-journal-after-rename" {
+			return fault
+		}
+		return nil
+	})
+	if !errors.Is(err, fault) {
+		t.Fatal(err)
+	}
+	if !runtime.held || runtime.acceptedWrites != 0 {
+		t.Fatalf("uncertain journal resumed runtime: held=%v accepted writes=%d", runtime.held, runtime.acceptedWrites)
+	}
+	if _, err = os.Stat(rootJournalPath(r.Layout)); err != nil {
+		t.Fatal("uncertain durable journal discarded")
+	}
+	if _, err = RecoverRootMigration(context.Background(), r.Layout); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestCompleteJournalFailureNeverLosesAcceptedNewWrites(t *testing.T) {
+	r, c, a := completeRootSource(t)
+	runtime := &writingRootRuntime{dbPath: r.Layout.DBPath}
+	fault := errors.New("injected complete journal write failure")
+	_, err := applyReviewedRootMigration(context.Background(), r, c, a, NotebookStructureDecisions{}, runtime, func(stage string) error {
+		if stage == "complete-journal-before-write" {
+			return fault
+		}
+		return nil
+	})
+	if !errors.Is(err, fault) {
+		t.Fatal(err)
+	}
+	if runtime.acceptedWrites != 0 {
+		t.Fatalf("runtime accepted %d writes before durable commit; rollback lost accepted data", runtime.acceptedWrites)
+	}
+}
+
+func TestCompleteRenameSyncFailureDoesNotStartPartialCompensation(t *testing.T) {
+	r, c, a := completeRootSource(t)
+	runtime := &writingRootRuntime{dbPath: r.Layout.DBPath}
+	fault := errors.New("complete rename succeeded but directory fsync failed")
+	restores := 0
+	_, err := applyReviewedRootMigration(context.Background(), r, c, a, NotebookStructureDecisions{}, runtime, func(stage string) error {
+		if strings.HasPrefix(stage, "restore:") {
+			restores++
+			if restores == 2 {
+				return errors.New("second restore target failure")
+			}
+		}
+		if stage == "complete-journal-after-rename" {
+			return fault
+		}
+		return nil
+	})
+	if !errors.Is(err, fault) || !runtime.held || runtime.acceptedWrites != 0 || restores != 0 {
+		t.Fatalf("uncertain complete state partially restored: %v, restores %d, writes %d", err, restores, runtime.acceptedWrites)
+	}
+	var j rootJournal
+	if err = readPrivateRegular(rootJournalPath(r.Layout), &j); err != nil || j.State != "complete" {
+		t.Fatal("uncertain complete journal not preserved")
+	}
+	tracked := filepath.Join(r.Layout.Root, r.TrackedSources[0])
+	before, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = RecoverRootMigration(context.Background(), r.Layout); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(tracked)
+	if err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatal("complete recovery changed new document generation")
+	}
+	db, err := sql.Open("sqlite", r.Layout.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var v int
+	if err = db.QueryRow("SELECT stellar_version FROM posts").Scan(&v); err != nil || v != 2 {
+		t.Fatal("complete recovery reverted new DB generation")
+	}
+}
+func TestRollbackIntentSurvivesPartialRestoreFailure(t *testing.T) {
+	r, c, a := completeRootSource(t)
+	runtime := &rootRuntime{}
+	restores := 0
+	_, err := applyReviewedRootMigration(context.Background(), r, c, a, NotebookStructureDecisions{}, runtime, func(stage string) error {
+		if stage == filepath.Join(r.Layout.Root, r.TrackedSources[0]) {
+			return errors.New("install failure")
+		}
+		if strings.HasPrefix(stage, "restore:") {
+			restores++
+			if restores == 2 {
+				return errors.New("second restore failure")
+			}
+		}
+		return nil
+	})
+	if err == nil || !runtime.held {
+		t.Fatal("partial compensation did not hold runtime")
+	}
+	var j rootJournal
+	if err = readPrivateRegular(rootJournalPath(r.Layout), &j); err != nil || j.State != "rollback_required" {
+		t.Fatal("partial compensation lost durable rollback intent")
+	}
+	if _, err = RecoverRootMigration(context.Background(), r.Layout); err != nil {
+		t.Fatal(err)
+	}
+	after, err := captureMigrationRoot(context.Background(), r.Layout, r.TrackedSources, j.BackupDirectory)
+	if err != nil || after.Digest != r.Digest {
+		t.Fatal("startup recovery did not finish failed compensation")
+	}
+}
+func TestCommittedReleaseWritesSurviveSubsequentRecovery(t *testing.T) {
+	r, c, a := completeRootSource(t)
+	runtime := &writingRootRuntime{dbPath: r.Layout.DBPath}
+	if _, err := ApplyReviewedRootMigration(context.Background(), r, c, a, NotebookStructureDecisions{}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	if runtime.acceptedWrites != 1 {
+		t.Fatal("release did not accept real new DB write")
+	}
+	if len(runtime.events) < 4 || runtime.events[len(runtime.events)-2] != "start-held" || runtime.events[len(runtime.events)-1] != "release" {
+		t.Fatal(runtime.events)
+	}
+	if recovered, err := RecoverRootMigration(context.Background(), r.Layout); err != nil || recovered.Recovered {
+		t.Fatal("completed operation retained rollback journal")
+	}
+	db, err := sql.Open("sqlite", r.Layout.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var n int
+	if err = db.QueryRow("SELECT n FROM fixture_audit").Scan(&n); err != nil || n != 1 {
+		t.Fatal("accepted committed write lost after recovery")
+	}
+}
+
+func TestCompleteReviewDigestRejectsChangedOwnerStatusAndUpdatedAt(t *testing.T) {
+	r, _, _ := completeRootSource(t)
+	legacy := fixture(t, `CREATE TABLE users(id INTEGER PRIMARY KEY);INSERT INTO users VALUES(7),(8);
+ CREATE TABLE notebooks(id INTEGER PRIMARY KEY,name TEXT NOT NULL UNIQUE,description TEXT NOT NULL,cover TEXT NOT NULL,nb_order INTEGER NOT NULL,created_at DATETIME NOT NULL);INSERT INTO notebooks VALUES(2,'Notebook','Description','',0,'2020-01-02 03:04:05');
+ CREATE TABLE notes(id INTEGER PRIMARY KEY,notebook_id INTEGER NOT NULL,title TEXT NOT NULL,content TEXT NOT NULL,content_html TEXT NOT NULL,tags TEXT NOT NULL,created_at DATETIME NOT NULL,updated_at DATETIME NOT NULL);INSERT INTO notes VALUES(9007199254740993,2,'Note','Body','<p>Old cache</p>','','2020-01-02 03:04:05','2021-02-03 04:05:06');`)
+	data, err := os.ReadFile(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = writeRootAtomic(r.Layout.DBPath, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, suffix := range []string{"-wal", "-shm", "-journal"} {
+		if err = removeRootTarget(r.Layout.DBPath + suffix); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r, err = CaptureMigrationRoot(context.Background(), r.Layout, r.TrackedSources)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := candidate(t, r.Source)
+	decisions := structureApprovals(r.Source)
+	a := RootMigrationApproval{MigrationApproval: approveFixture(c), RootDigest: r.Digest}
+	a.Resolutions = []MigrationResolution{{Source: "schema", Code: "legacy_notebook_schema", Path: "notebooks/notes", Action: "use_notebook_decisions"}, {Source: "notes/9007199254740993", Code: "note_missing_slug_status", Path: "slug/status", Action: "use_notebook_decisions"}, {Source: "content/posts/tracked.md", Code: "file_host_fields", Path: "status", Action: "preserve_status"}}
+	a.ReviewDigest, err = RootReviewDigest(r, c, a.Resolutions, decisions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := BuildRootRehearsal(context.Background(), r, c, a, decisions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(f.Directory) })
+	db, err := sql.Open("sqlite", f.Layout.DBPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	index, err := readDatabaseIndex(context.Background(), tx, "sqlite_autoindex_notebooks_1", "notebooks")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx.Rollback()
+	if !index.Unique || index.Origin != "u" || index.Columns[0].Name == nil || *index.Columns[0].Name != "name" {
+		t.Fatal("source name UNIQUE was replaced by new id PK")
+	}
+	if _, err = db.Exec("INSERT INTO notebooks(id,name) VALUES('duplicate','Notebook')"); err == nil {
+		t.Fatal("source name uniqueness constraint lost")
+	}
+
+	for name, mutate := range map[string]func(*NotebookStructureDecisions){"owner": func(d *NotebookStructureDecisions) {
+		m := d.Records["notes/9007199254740993"]
+		owner := int64(8)
+		m.OwnerID = &owner
+		d.Records["notes/9007199254740993"] = m
+	}, "status": func(d *NotebookStructureDecisions) {
+		m := d.Records["notes/9007199254740993"]
+		status := "published"
+		m.Status = &status
+		d.Records["notes/9007199254740993"] = m
+	}, "updated_at": func(d *NotebookStructureDecisions) {
+		m := d.Records["notebooks/2"]
+		date := "2024-01-01 00:00:00"
+		m.UpdatedAt = &date
+		d.Records["notebooks/2"] = m
+	}} {
+		t.Run(name, func(t *testing.T) {
+			changed := clone(decisions)
+			mutate(&changed)
+			runtime := &rootRuntime{}
+			if _, err := ApplyReviewedRootMigration(context.Background(), r, c, a, changed, runtime); err == nil || len(runtime.events) != 0 {
+				t.Fatal("changed reviewed metadata accepted or stopped runtime")
+			}
+			if _, err := BuildRootRehearsal(context.Background(), r, c, a, changed); err == nil {
+				t.Fatal("changed reviewed metadata emitted rehearsal")
+			}
+		})
+	}
+	noReview := a
+	noReview.ReviewDigest = ""
+	if _, err = ApplyReviewedRootMigration(context.Background(), r, c, noReview, decisions, &rootRuntime{}); err == nil {
+		t.Fatal("missing full review approval accepted")
+	}
+}
+
+func TestRootRehearsalRejectsUnsupportedImplicitNotebookConstraints(t *testing.T) {
+	for name, constraint := range map[string]string{"nocase": "UNIQUE(name COLLATE NOCASE)", "descending": "UNIQUE(name DESC)"} {
+		t.Run(name, func(t *testing.T) {
+			r, _, _ := completeRootSource(t)
+			legacy := fixture(t, `CREATE TABLE users(id INTEGER PRIMARY KEY);INSERT INTO users VALUES(7),(8);
+CREATE TABLE notebooks(id INTEGER PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,cover TEXT NOT NULL,nb_order INTEGER NOT NULL,created_at DATETIME NOT NULL,`+constraint+`);INSERT INTO notebooks VALUES(2,'Notebook','Description','',0,'2020-01-02 03:04:05');
+CREATE TABLE notes(id INTEGER PRIMARY KEY,notebook_id INTEGER NOT NULL,title TEXT NOT NULL,content TEXT NOT NULL,content_html TEXT NOT NULL,tags TEXT NOT NULL,created_at DATETIME NOT NULL,updated_at DATETIME NOT NULL);INSERT INTO notes VALUES(9007199254740993,2,'Note','Body','<p>Old cache</p>','','2020-01-02 03:04:05','2021-02-03 04:05:06');`)
+			data, err := os.ReadFile(legacy)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = writeRootAtomic(r.Layout.DBPath, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			for _, suffix := range []string{"-wal", "-shm", "-journal"} {
+				if err = removeRootTarget(r.Layout.DBPath + suffix); err != nil {
+					t.Fatal(err)
+				}
+			}
+			r, err = CaptureMigrationRoot(context.Background(), r.Layout, r.TrackedSources)
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := candidate(t, r.Source)
+			decisions := structureApprovals(r.Source)
+			a := RootMigrationApproval{MigrationApproval: approveFixture(c), RootDigest: r.Digest}
+			a.Resolutions = []MigrationResolution{{Source: "schema", Code: "legacy_notebook_schema", Path: "notebooks/notes", Action: "use_notebook_decisions"}, {Source: "notes/9007199254740993", Code: "note_missing_slug_status", Path: "slug/status", Action: "use_notebook_decisions"}, {Source: "content/posts/tracked.md", Code: "file_host_fields", Path: "status", Action: "preserve_status"}}
+			a.ReviewDigest, err = RootReviewDigest(r, c, a.Resolutions, decisions)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if f, err := BuildRootRehearsal(context.Background(), r, c, a, decisions); err == nil || f.Directory != "" || !strings.Contains(err.Error(), "source implicit index constraint/columns cannot be preserved") {
+				t.Fatalf("unsupported source constraint silently changed: %v", err)
+			}
+		})
 	}
 }

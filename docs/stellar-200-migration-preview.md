@@ -1,6 +1,6 @@
 # Stellar 2.0.0 存量迁移审查
 
-状态：实现中。T1 完整迁移预览已按本次实测消费者重新生成，仍等待真实数据选择与审查批准。真实迁移未执行，尚无真实源 Apply 入口；隔离执行证明只接受新建系统临时 root。用户已批准严格 V2 编辑器统一一个“集合显示名（name）”，不等于批准旧记录 name/title 的取值。
+状态：实现中。用户已确认下列具名取值；纯预览已写入新的私密候选，真实迁移仍未执行。完整根目录绑定、隔离演练、可恢复执行与启动恢复核心已实现并通过合成完整 root 测试；正式单二进制接线及组合态验证仍由主任务完成。最后七条正文摘要、完整 RootDigest / ReviewDigest 与最终执行授权尚未批准。
 
 ## 本次只读证据与私密边界
 
@@ -14,41 +14,57 @@
 
 初次格式 3 捕获位于 `.tmp/stellar-migration-review-20261013-final-format3/`；日期消费校验修复后，从**同一个已校验快照**重新生成于 `.tmp/stellar-migration-review-20261013-final-format3-validated/`，没有再次读取或转换真实源。两目录均 `0700`，五份 candidate/report/source-check/notebook-structure 文件均 `0600`，旧候选未覆盖。完整候选含密钥、全文和私密 alternatives，禁止提交、外发或输出；本文仅列路径、hash、脱敏行为和决策标签。
 
-本次：**32 条候选（30 DB + 2 tracked）、172 项配置映射、766 项逐记录映射、12 条阻断**。分组：consumer 0、policy 5、structure 4、schema 3。原 171 项配置映射全部保留；第 172 项是未启用首页 cover 的源归档说明，不能删减以凑旧数量。
+原始未选值预览：**32 条候选（30 DB + 2 tracked）、172 项配置映射、766 项逐记录映射、12 条阻断**。分组：consumer 0、policy 5、structure 4、schema 3。原 171 项配置映射全部保留；第 172 项是未启用首页 cover 的源归档说明，不能删减以凑旧数量。
 
-## 集中确认的真实数据选择
+## 本次完整根绑定与用户已确认取值
 
-以下是实际未决数据选择；尚未将任何选择写入候选。消费者已实现的能力不再要求用户重复决定。全部政策/schema/结构诊断仍保留，capabilities 不能解除。
+最新只读捕获时间：`2026-10-13T16:15:21Z`。新目录为 `.tmp/stellar-migration-review-20261013-user-selections-full-root-v2/`，目录 `0700`，六份文件均 `0600`：原 candidate、已选值 selected-candidate、完整 root-capture、Notebook decisions、approval-pending 与脱敏 report。这是包含完整索引结构的版本 2 新只读捕获；原 full-root/review-bound 和更早预览均保留。私密 root-capture 包含原配置、上传、正文及 DB/WAL bytes，禁止输出、外发或提交。
 
-| 组 | 涉及来源与诊断 | 候选与实际变化 | 建议 / 需明确的批准 |
-| --- | --- | --- | --- |
-| 1. 官方导航策略 | settings.plugins.pjax · pjax_policy_removed | 接受官方 manifest/shell-signature/同集合 partial navigation；旧 selectors/timeout 只留私密源归档。02ee112 的 typed PluginsConfig、脚本注册和旧 base/loader 不消费 PJAX 存储参数，不能描述成正在失去旧超时体验。 | 推荐接受官方策略（use_official）。新导航已按本次隔离浏览器证据闭合；本项仍需具名批准，不能全局豁免其它来源。 |
-| 2. 一个 Wiki 显示名 | settings.wiki[0].name · wiki_shelf_definition_conflict；wiki_projects/go-blog · wiki_name_title | 最终 name 在项目旧 name、项目旧 title、旧 shelf 显示名三种来源中确定一个。内部 ID、成员、本地文档路由保持。两条诊断必须给出一致决定，不能在同一字段写互相冲突的值。 | 建议采用旧卡片主标题 title 为唯一显示 name，并使 shelf 仅保留项目 ID；具体旧值只在本地私密候选审查。编辑器单 name 决定已确认，不重复询问。 |
-| 3. Wiki 集合入口 | wiki_projects/go-blog · wiki_homepage | 采用官方 Collection 首页；或保留独立 Blog 旧入口跳第一篇已发布文档。两候选保留成员和顺序，本地 canonical/doc route 不被外链覆盖。 | 推荐采用官方 Collection 首页。旧重定向候选只供完整差异审查，若选择保留须完成对应独立消费验证，不先假称完成。 |
-| 4. banner/cover 双图源 | posts/10 · banner_cover | 候选 A：旧 cover 继续用于列表，blog.content.banner_image 仅覆盖详情。候选 B：旧 banner 成为官方 cover，同时改变列表图。 | 推荐候选 A“保留独立 Blog banner 图源”。该独立消费者已有本次实测，真实记录的取值仍需具名批准。 |
-| 5. 三个 Footer 占位目标 | leftbar.footer.actions[1..3].url · invalid_value | 只移除这三条 url="#" 按钮；或分别提供三个 safe navigable 外链/站内根相对路径。其它按钮、顺序和配置保持，不自动改目标。 | 推荐仅移除三条占位按钮；如需保留，请提供逐项有效目标。 |
-| 6. Notebook/Note 结构与五个元数据 | schema.notebooks/notes · legacy_notebook_schema；notes/2 · note_missing_slug_status | 批准 ID/父本转 TEXT、nb_order→sort、content→content_md、tags→tags_json；Note INTEGER ID、所有关系、原日期/正文/标签保留。缺字段为 notebooks/2.author_id、updated_at，以及 notes/2.slug、status、author_id。 | 推荐 Note slug 为 note-2（可自定）、先 draft；明确 Notebook/Note 的现有拥有者 ID，Notebook updated_at 可明确沿用其原 created_at。不按时间或全部用户猜 owner，不自动发布。 |
+- SourceDigest 保持 `d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`，与前次格式 3 全源快照相同；原 CandidateDigest 保持 `71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b`。
+- 已选值候选摘要为 `ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a`。此候选由 `PreviewReviewedSelections` 纯内存生成；没有创建真实候选的 DB、fixture 或 rehearsal root。
+- 完整 ReviewDigest 为 `b12070c516f266e5ce4e01ab5f15fd566a8017e6113866c165f2f27117d85d06`，绑定 RootDigest、原 CandidateDigest、全部具名取值、NotebookStructureDecisions 及已选值完整候选/目标宿主行/正文摘要。修改 owner、status 或 updated_at 会使批准失效，即使原 DB 与来源摘要没变。
+- 完整 RootDigest 为 `7fca4425173d6ba025c238b90c2248557bab1b1689549202f7514fc3e42f88cd`，版本 2，绑定布局、完整 SQLite 快照、原数据库主文件/WAL/journal、config/content/plugins/runtime/cache、DB 父目录持久资源、上传和附加运行资源。
+- 捕获 68 个资源：53 文件、12 目录、3 明确不存在的来源；文件共 79,967,649 bytes。另捕获 67 个 SQLite index/view/trigger 声明及数据库 encoding/user_version/application_id；全部索引还绑定 unique/origin/partial、按序 xinfo 名称/方向/collation/key 结构，不能只凭相同名字和表名判断保真。双次完整文件/mode/形状读取相同才接受；SHM、维护操作锁和恢复 journal 是明确列出的活跃边界，不能删锁或声称整个目录零写。
+- 公开报告仅列资源分组、摘要与大小，不列私密上传/缓存文件名；完整前像及精确路径只在私密 root-capture。
+- 原 12 条阻断与全部映射保留于 `original_report`；已选值 `selected_report` 具名处理后阻断 0。原诊断及对应决定另存 `resolutions`，不把“选值已确认”描述成“执行已批准”。
 
-结构预览有 21 项确定映射、5 个未批准元数据；原三条 Go time.String 形式的 TEXT 日期现已按正式 modernc.org/sqlite 既有格式通过严格消费校验，原字符串保留，不需要用户选择新日期。无效日期、非字符串及未知值仍阻断。
+| 已确认来源 | 具名取值 | 待执行行为 |
+| --- | --- | --- |
+| settings.plugins.pjax | use_official | 使用官方 manifest/shell-signature/同集合 partial navigation；旧 selectors/timeout 保留私密源归档。 |
+| settings.wiki[0].name / wiki_projects/go-blog name/title | 保留当前项目表集合定义 / 保留旧 title 为显示 name | 唯一集合显示名来自原卡片 title；shelf 只保留项目 ID，内部 ID、成员及本地路由保持。 |
+| wiki_projects/go-blog homepage | 采用官方 Collection 首页 | 不保留旧跳第一篇重定向。 |
+| posts/10 banner/cover | 保留独立 Blog banner 图源 | 列表继续用旧 cover，详情使用独立 banner_image。 |
+| Footer 三条 actions[1..3].url | remove_placeholder | 仅移除这三条 url="#" 按钮。 |
+| notebooks/notes 旧结构 | use_notebook_decisions | ID/父本转 TEXT、nb_order→sort、content→content_md、tags→tags_json；关系、原日期、正文、标签保持。 |
+| notebooks/2 缺元数据 | owner=sakurasep；updated_at=原 created_at | 在现有私密 SourceSnapshot users 中按 username 精确找到唯一用户后绑定 ID；未按时间或其它用户推断。ID 只保留私密候选。 |
+| notes/2 缺元数据 | owner=sakurasep；slug=note-2；status=draft | 同一精确唯一现有用户；明确先 draft，不自动发布。 |
+| 两份 tracked 文章 status | preserve_status | 上游 schema 不加入宿主 status，状态保留于独立 blog.status。 |
 
-两份 tracked 文章各有一条 `file_host_fields` 结构门禁：源 status 已映射到独立 `blog.status`，不进入上游 schema、不隐式发布。这是已确认宿主契约的执行验证/逐记录 `preserve_status` 批准项，**不新增数据取值选择**。正式导入、重开与状态检查及完整批准摘要须在执行前闭合；原诊断保留，不用 consumer 能力参数掩盖。
+结构候选 21 项映射全部保留；五个缺字段已按用户明确取值填写，结构预览不再阻断。原 Go time.String 形式的 TEXT 日期仍按正式 SQLite 驱动格式校验且原字符串保留。已确认字段无需再次询问。
 
-### 私密候选的可审查分支
+### 尚未批准的七条正文摘要与最终执行
 
-下列标签及摘要说明对应私密候选中的完整转换结果；不公开原值或正文。没有自动应用任何分支。
+这些是转换后正文的 SHA256，全文仅在本地私密 selected-candidate；七项既有逐记录转换映射与原文差异仍见本文记录清单。不能以选择了配置/结构值代替正文摘要批准。
 
-| 来源 | Code | 分支标签 | 作用来源 | strict 候选 | Blog 候选 | 正文候选 |
-| --- | --- | --- | --- | --- | --- | --- |
-| settings | wiki_shelf_definition_conflict | 保留当前项目表集合定义 | wiki_projects/go-blog | 是 | 是 | 否 |
-| settings | wiki_shelf_definition_conflict | 审核旧 shelf 字段覆盖（无等效字段需单独适配） | wiki_projects/go-blog | 是 | 是 | 否 |
-| wiki_projects/go-blog | wiki_name_title | 保留旧 name 为 name | wiki_projects/go-blog | 是 | 否 | 否 |
-| wiki_projects/go-blog | wiki_name_title | 保留旧 title 为显示 name | wiki_projects/go-blog | 是 | 否 | 否 |
-| wiki_projects/go-blog | wiki_homepage | 独立 Blog 扩展保留旧重定向 | wiki_projects/go-blog | 是 | 是 | 否 |
-| wiki_projects/go-blog | wiki_homepage | 采用官方 Collection 首页 | wiki_projects/go-blog | 是 | 是 | 否 |
-| posts/10 | banner_cover | 保留独立 Blog banner 图源 | posts/10 | 是 | 是 | 否 |
-| posts/10 | banner_cover | 用旧 banner 作为官方 cover | posts/10 | 是 | 是 | 否 |
-| notes/2 | note_missing_slug_status | 保留旧 ID 与当前未公开状态 | notes/2 | 是 | 是 | 否 |
-| notes/2 | note_missing_slug_status | 另行确认 slug/状态/ownership 迁移 | notes/2 | 是 | 是 | 否 |
+| 记录 | 待批准转换后正文 SHA256 |
+| --- | --- |
+| posts/1 | `16071c6f6656e7e68565ecd1d1cd3db3002f2c706907953b3ca009f9c4de485a` |
+| posts/2 | `e6a8d7437c8a39b466da05678ac7073df0a01ea5411dfa1ef1256b455974c861` |
+| posts/4 | `da21604e7665bbb0408f25c44b9bafdcc8f19a9933cd4726b63fcc203ed82cec` |
+| posts/6 | `e390589b21727ed59c441e46a2ade505ad598151a605e9b7ca883c89ec5a36bf` |
+| posts/12 | `2c6751340fbc5e968deae110c09263b8f434f12ff936701e7885a2475bd4a592` |
+| pages/2 | `5cbb018aa0f6e40c2056d2f3eb73cf705fd06f511e6c79c5b0c5b6e474c94143` |
+| pages/3 | `3412f73b4af8eb3a16b79f213b03f4f8f8254cb8714a63ce86a829cd206188a9` |
+
+`approval-pending.private.json` 的 **Approved=false，BodyDigests 未填**；完整 RootDigest 和 ReviewDigest 都只是待审查绑定，不是批准。真实 Apply、真实 BuildMigrationFixture/BuildRootRehearsal 均未运行。停服排空若发生 WAL checkpoint 或其它最后写入，RootDigest 必须重新捕获并审查；不能用逻辑相等绕过物理源变化。
+
+### 完整迁移执行边界与本次合成证明
+
+正式核心入口为 `CaptureMigrationRoot`、`BuildRootRehearsal`、`ApplyReviewedRootMigration` 和启动前 `RecoverRootMigration`。runtime 明确分成 `StartHeld` 和 `Release`：前者只在维护中启动，只有 complete journal 与其收尾都持久化后才放行请求；Release 失败不回滚已提交代。初次或 complete journal 重命名后目录同步失败属于不确定状态，保持停用，不恢复流量、不做半补偿。正常补偿前先持久化 rollback_required，启动恢复能继续同一代完整恢复。Apply 强制 composition-root runtime gate，维护操作锁、关闭全部请求/worker/Store、fresh 完整摘要校验、私密完整前像和 durable journal；只原子替换 DB/其 sidecars 与批准 tracked 文档，其它配置/上传/content/cache/plugins 保持。中途失败用未取消恢复上下文补偿；补偿失败保留 journal 并保持停用，启动前恢复同一代原数据。
+
+Rehearsal 新建私密 root、复制完整资源并保持权限；源 SQL index/view/trigger 重建且精确声明比对、view 绑定、触发器所有更新列编译、quick_check/foreign_key_check。源对象无法适配新 Notebook schema 会阻断，不静默删除。原触发器在 canonical 转换之后安装，避免迁移写触发业务审计。实际源 Notebook 的 sqlite_autoindex_notebooks_1 是 name UNIQUE，标准新表的同名索引则是 id PK；完整演练保留原 name UNIQUE，再声明新的 TEXT id PK，使原 autoindex_1 的结构与唯一约束保持，并逐项核验全部索引结构。其它无法保持的隐式约束明确阻断，不能把新同名索引当作原索引。正式 staged validator 必须只触隔离 root，完成已知派生索引重建、导入/渲染并关闭连接；非空 staged WAL 拒绝安装，防复制主 DB 丢事务。
+
+本次合成完整 root：资源/索引/视图/触发器/原业务状态、成功安装、逐文件故障补偿、启动中断恢复、锁冲突、取消、失效上传、符号链接、恢复失败停用、外部 app/uploads 路径与权限边界均通过。核心提交 `1229356` 的历史 race 25.539s 与正常 pre-commit 全 `make test` 门禁通过；这不能代替后续修复的验证。独立审查发现三项 journal/放行时序问题，本次以真实 SQLite 写入保存失败证据后修复；覆盖初次 journal rename 后 fsync 失败、complete 写入失败与 rename 后 fsync 失败、第二恢复目标失败，以及 durable commit 后新写入在启动恢复中保持。索引追加复审无实质缺陷；本次补充 NOCASE／DESC 旧隐式 name 约束明确阻断，以及显式复合 partial 索引的列顺序、排序方向和 collation 保留测试。最终 `go test -race ./internal/stellarmigration -count=1` 通过（49.186s）。新 v2 报告经 0700/0600、脱敏扫描、SourceDigest／RootDigest／CandidateDigest／ReviewDigest 正式重算及 pending 批准检查通过。该证据不代替正式单二进制 CLI/生命周期组合验证、前台验收或真实执行授权。
 
 ## 本次消费者声明与证据
 
@@ -84,7 +100,7 @@ SEO 最后闭合提交为 aa1fa93：显式 about description 优先、og:image �
 - 旧 OKR 完整默认对象与固定官方 border/五色/zh-CN 文案相同；保留原值，继承官方与请求 locale。
 - data_cache 完整对象与固定官方 runtime policy 全树一致（enable/default_ttl/max_entries 和九项 TTL）；保留原值，无策略差异，自定义/null/缺键/未知值继续阻断。
 - 首页 cover 仅已知 title/description 且 title 为空，旧首页模板不显示它；description 只留源归档，不造 Hero。非空 title、额外字段或坏类型不豁免。
-- Wiki 编辑器统一 name 已由用户确认；旧值取哪个来源仍按第 2 组审查。
+- Wiki 编辑器与旧值来源均已确认：统一 name，采用旧 title；没有最终真实执行授权。
 
 ## 完整源表计数
 
@@ -329,7 +345,7 @@ SEO 最后闭合提交为 aa1fa93：显式 about description 优先、og:image �
 | 171 | settings.article.share.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
 | 172 | settings.article.reward.enabled | blog.content.enabled | 旧本地分享或打赏显式启用，开启 Blog content 消费；不控制 blog_* 标签注册 |
 
-## 全局与配置诊断
+## 全局与配置诊断（原始候选保留）
 
 | 类型 / 严重度 | Code | 来源 / 路径 | 阻断 | 说明 |
 | --- | --- | --- | --- | --- |
@@ -356,7 +372,7 @@ SEO 最后闭合提交为 aa1fa93：显式 about description 优先、og:image �
 | schema / error | invalid_value | migration.theme · leftbar.footer.actions[2].url | 是 | safe navigable URL or root-relative path |
 | schema / error | invalid_value | migration.theme · leftbar.footer.actions[3].url | 是 | safe navigable URL or root-relative path |
 
-## 全部逐记录候选（32 条）
+## 全部逐记录候选（32 条，保留原始映射与诊断）
 
 逐条列全部映射/hash/诊断，不省略无冲突记录。host.* 表示既有宿主列，不塞入上游 Front Matter。候选 Markdown 变化仅是拟议转换，真实文件/DB未改；任何正文变化仍须逐记录 BodyDigest 精确批准。
 
@@ -1523,5 +1539,5 @@ Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已 version 
 - 显式只读 helper 本次捕获真实源；DB/WAL/SHM/journal 与 tracked 文件前后指纹相同，DB/WAL/hash/源表计数与历史匹配。日期校验修复后只从同一私密 snapshot 重新生成，不再读取真实源。
 - 公开报告完整性核对 32 records、172 settings mappings、766 record mappings；20 capabilities true，34 consumer 诊断均仍存在且 nonblocking；政策/schema/结构未消失。
 - BuildMigrationFixture 没有真实目标参数；未对本次真实候选执行 BuildFixture，也没有真实 Apply、push、发布或生产部署。用户确认前不能转换真实数据。
-- 隔离执行证明的 coverage 排除原索引/视图/触发器、上传字节/附件、原配置文件、运行缓存/untracked；完整运行位置隔离不能冒充完整资源复制或真实前台验收。
+- 历史 DB-only 隔离证明未覆盖原索引/视图/触发器、上传字节/附件、原配置文件、运行缓存/untracked；本次完整 root 合成证明补齐这些资源保留与对象约束边界。合成完整资源复制仍不能冒充真实候选演练或真实前台验收。
 - 真实迁移执行前仍必须重新确认源一致性，并绑定 SourceDigest、完整 CandidateDigest、每项具名 decision 和逐记录正文批准；源变化会使批准过期。

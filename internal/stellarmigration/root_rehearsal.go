@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sys/unix"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"blog/internal/config"
@@ -18,7 +19,41 @@ import (
 
 type RootMigrationApproval struct {
 	MigrationApproval
-	RootDigest string `json:"root_digest"`
+	RootDigest   string `json:"root_digest"`
+	ReviewDigest string `json:"review_digest"`
+}
+
+// RootReviewDigest绑定整份已选值候选、全部具名选择及独立Notebook宿主字段。
+// 原CandidateDigest只包含原来源，不能替代此摘要；计算摘要也不授予最终批准。
+func RootReviewDigest(r RootCapture, c Candidate, resolutions []MigrationResolution, decisions NotebookStructureDecisions) (string, error) {
+	if err := r.Verify(); err != nil {
+		return "", err
+	}
+	if r.Source.Digest != c.Source.Digest {
+		return "", fmt.Errorf("root review source changed")
+	}
+	p, err := PreviewReviewedSelections(c, resolutions, decisions)
+	if err != nil {
+		return "", err
+	}
+	return digest(struct {
+		RootDigest      string
+		CandidateDigest string
+		Resolutions     []MigrationResolution
+		Notebook        NotebookStructureDecisions
+		Preview         ReviewedMigrationPreview
+	}{r.Digest, CandidateDigest(c), resolutions, decisions, p}), nil
+}
+
+func validateRootReview(r RootCapture, c Candidate, a RootMigrationApproval, decisions NotebookStructureDecisions) error {
+	expected, err := RootReviewDigest(r, c, a.Resolutions, decisions)
+	if err != nil {
+		return err
+	}
+	if a.ReviewDigest == "" || a.ReviewDigest != expected {
+		return fmt.Errorf("complete reviewed selections/structure approval missing or changed")
+	}
+	return nil
 }
 
 type RootRehearsal struct {
@@ -67,7 +102,7 @@ func validateRootApproval(r RootCapture, c Candidate, a RootMigrationApproval) e
 func relocatedLayout(r RootCapture, dir string) (RootLayout, error) {
 	next := r.Layout
 	next.Root = filepath.Join(dir, "root")
-	targets := []*string{&next.DBPath, &next.UploadDir, &next.AppPath, &next.OperationLock}
+	targets := []*string{&next.DBPath, &next.UploadDir, &next.AppPath}
 	for _, target := range targets {
 		virtual, err := resourceVirtualPath(r.Layout, *target)
 		if err != nil {
@@ -75,6 +110,8 @@ func relocatedLayout(r RootCapture, dir string) (RootLayout, error) {
 		}
 		*target = filepath.Join(dir, filepath.FromSlash(virtual))
 	}
+	// 源操作锁可能在root外；它是活跃互斥边界，不复制到演练目录。
+	next.OperationLock = filepath.Join(filepath.Dir(next.DBPath), "maintenance.lock")
 	next.ExtraRuntimePaths = append([]string{}, r.Layout.ExtraRuntimePaths...)
 	for i, p := range next.ExtraRuntimePaths {
 		virtual, err := resourceVirtualPath(r.Layout, p)
@@ -93,6 +130,9 @@ func BuildRootRehearsal(ctx context.Context, r RootCapture, c Candidate, a RootM
 }
 func buildRootRehearsal(ctx context.Context, r RootCapture, c Candidate, a RootMigrationApproval, decisions NotebookStructureDecisions, parent string) (out RootRehearsal, err error) {
 	if err = validateRootApproval(r, c, a); err != nil {
+		return out, err
+	}
+	if err = validateRootReview(r, c, a, decisions); err != nil {
 		return out, err
 	}
 	resolved, _, _, err := resolveMigration(c, a.MigrationApproval, decisions)
@@ -155,7 +195,10 @@ func buildRootRehearsal(ctx context.Context, r RootCapture, c Candidate, a RootM
 				return fmt.Errorf("unsupported source database encoding")
 			}
 			_, err := tx.ExecContext(ctx, "PRAGMA encoding="+quoteIdentifier(r.DatabaseState.Encoding))
-			return err
+			if err != nil {
+				return err
+			}
+			return preserveSourceNotebookNameUnique(ctx, tx, r)
 		case "after-canonical":
 			if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", r.DatabaseState.UserVersion)); err != nil {
 				return err
@@ -249,6 +292,13 @@ func restoreDatabaseObjects(ctx context.Context, tx *sql.Tx, objects []DatabaseO
 			if err := tx.QueryRowContext(ctx, "SELECT tbl_name FROM sqlite_master WHERE type='index' AND name=? AND sql IS NULL", object.Name).Scan(&table); err != nil || table != object.Table {
 				return fmt.Errorf("source implicit index cannot be preserved by new schema")
 			}
+			if object.Index == nil {
+				return fmt.Errorf("source implicit index shape missing")
+			}
+			index, err := readDatabaseIndex(ctx, tx, object.Name, object.Table)
+			if err != nil || !reflect.DeepEqual(index, *object.Index) {
+				return fmt.Errorf("source implicit index constraint/columns cannot be preserved: %s", object.Name)
+			}
 			continue
 		}
 		if err := safeDatabaseObjectStatement(object); err != nil {
@@ -267,7 +317,17 @@ func restoreDatabaseObjects(ctx context.Context, tx *sql.Tx, objects []DatabaseO
 			return fmt.Errorf("captured schema object incompatible with migration: %s", object.Name)
 		}
 		var actual DatabaseObject
-		if err := tx.QueryRowContext(ctx, "SELECT type,name,tbl_name,coalesce(sql,'') FROM sqlite_master WHERE type=? AND name=?", object.Kind, object.Name).Scan(&actual.Kind, &actual.Name, &actual.Table, &actual.SQL); err != nil || actual != object {
+		if err := tx.QueryRowContext(ctx, "SELECT type,name,tbl_name,coalesce(sql,'') FROM sqlite_master WHERE type=? AND name=?", object.Kind, object.Name).Scan(&actual.Kind, &actual.Name, &actual.Table, &actual.SQL); err != nil {
+			return err
+		}
+		if actual.Kind == "index" {
+			index, err := readDatabaseIndex(ctx, tx, actual.Name, actual.Table)
+			if err != nil {
+				return err
+			}
+			actual.Index = &index
+		}
+		if !reflect.DeepEqual(actual, object) {
 			return fmt.Errorf("captured schema declaration changed during restore")
 		}
 	}
@@ -320,6 +380,58 @@ func restoreDatabaseObjects(ctx context.Context, tx *sql.Tx, objects []DatabaseO
 		return fmt.Errorf("migration candidate foreign key check failed")
 	}
 	return rows.Err()
+}
+
+// 旧Notebook name UNIQUE必须保持。先声明其UNIQUE，再声明新的TEXT id PK，
+// 使旧autoindex_1仍代表name约束；不把同名的新id索引误认作旧索引。
+func preserveSourceNotebookNameUnique(ctx context.Context, tx *sql.Tx, r RootCapture) error {
+	var source *DatabaseObject
+	for i := range r.Objects {
+		object := &r.Objects[i]
+		if object.Kind == "index" && object.Table == "notebooks" && object.SQL == "" && object.Index != nil && object.Index.Origin == "u" {
+			source = object
+			break
+		}
+	}
+	if source == nil {
+		return nil
+	}
+	if source.Name != "sqlite_autoindex_notebooks_1" || !source.Index.Unique || source.Index.Partial || len(source.Index.Columns) != 2 {
+		return nil
+	}
+	key, aux := source.Index.Columns[0], source.Index.Columns[1]
+	if key.Name == nil || *key.Name != "name" || !key.Key || key.Descending || key.Collation == nil || *key.Collation != "BINARY" || aux.Name != nil || aux.Key {
+		return nil
+	}
+	if err := store.CreateStellarMigrationNotebookTables(ctx, tx); err != nil {
+		return err
+	}
+	var ddl string
+	if err := tx.QueryRowContext(ctx, "SELECT sql FROM sqlite_master WHERE type='table' AND name='notebooks'").Scan(&ddl); err != nil {
+		return err
+	}
+	if strings.Count(ddl, "id TEXT PRIMARY KEY,") != 1 {
+		return fmt.Errorf("formal Notebook primary key declaration changed")
+	}
+	ddl = strings.Replace(ddl, "id TEXT PRIMARY KEY,", "id TEXT NOT NULL,", 1)
+	end := strings.LastIndex(ddl, ")")
+	if end < 0 {
+		return fmt.Errorf("formal Notebook declaration invalid")
+	}
+	ddl = ddl[:end] + ",\nUNIQUE(name),\nPRIMARY KEY(id)\n" + ddl[end:]
+	if err := safeTableStatement(ddl); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DROP TABLE notes"); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, "DROP TABLE notebooks"); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		return err
+	}
+	return store.CreateStellarMigrationNotebookTables(ctx, tx)
 }
 
 func writeRootFile(path string, data []byte, mode os.FileMode) error {

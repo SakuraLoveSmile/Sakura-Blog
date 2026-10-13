@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-const RootCaptureVersion = 1
+const RootCaptureVersion = 2
 
 // RootLayout 必须来自composition root的已解析配置，而不是请求指定的目标目录。
 // root外的DB/uploads/app文件按各自真实anchor捕获，路径也参与批准摘要。
@@ -35,10 +35,24 @@ type RootResource struct {
 }
 
 type DatabaseObject struct {
-	Kind  string `json:"kind"`
-	Name  string `json:"name"`
-	Table string `json:"table"`
-	SQL   string `json:"sql"`
+	Kind  string         `json:"kind"`
+	Name  string         `json:"name"`
+	Table string         `json:"table"`
+	SQL   string         `json:"sql"`
+	Index *DatabaseIndex `json:"index,omitempty"`
+}
+
+type DatabaseIndex struct {
+	Unique  bool                  `json:"unique"`
+	Origin  string                `json:"origin"`
+	Partial bool                  `json:"partial"`
+	Columns []DatabaseIndexColumn `json:"columns"`
+}
+type DatabaseIndexColumn struct {
+	Name       *string `json:"name"`
+	Descending bool    `json:"descending"`
+	Collation  *string `json:"collation"`
+	Key        bool    `json:"key"`
 }
 
 type DatabaseState struct {
@@ -395,14 +409,48 @@ func readDatabaseObjects(ctx context.Context, path string) ([]DatabaseObject, Da
 	if err != nil {
 		return nil, state, err
 	}
-	defer rows.Close()
 	objects := []DatabaseObject{}
 	for rows.Next() {
 		var object DatabaseObject
 		if err = rows.Scan(&object.Kind, &object.Name, &object.Table, &object.SQL); err != nil {
+			rows.Close()
 			return nil, state, err
 		}
 		objects = append(objects, object)
 	}
-	return objects, state, rows.Err()
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return nil, state, err
+	}
+	rows.Close()
+	for i := range objects {
+		if objects[i].Kind == "index" {
+			index, err := readDatabaseIndex(ctx, tx, objects[i].Name, objects[i].Table)
+			if err != nil {
+				return nil, state, err
+			}
+			objects[i].Index = &index
+		}
+	}
+	return objects, state, nil
+}
+
+func readDatabaseIndex(ctx context.Context, tx *sql.Tx, name, table string) (DatabaseIndex, error) {
+	var out DatabaseIndex
+	if err := tx.QueryRowContext(ctx, "SELECT \"unique\",origin,partial FROM pragma_index_list(?) WHERE name=?", table, name).Scan(&out.Unique, &out.Origin, &out.Partial); err != nil {
+		return out, err
+	}
+	rows, err := tx.QueryContext(ctx, "SELECT name,desc,coll,key FROM pragma_index_xinfo(?) ORDER BY seqno", name)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var column DatabaseIndexColumn
+		if err = rows.Scan(&column.Name, &column.Descending, &column.Collation, &column.Key); err != nil {
+			return out, err
+		}
+		out.Columns = append(out.Columns, column)
+	}
+	return out, rows.Err()
 }

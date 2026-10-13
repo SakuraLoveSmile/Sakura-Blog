@@ -17,11 +17,13 @@ import (
 
 // MigrationRuntime由composition root提供。Quiesce必须排空全部请求、worker并关闭全部DB连接；
 // ValidateStaged只可打开演练root，须完成正式导入/索引重建/渲染检查且返回前关闭全部连接。
-// Resume在维护窗口内启动，成功前不放行普通流量；HoldRecovery必须保持服务不可用。
+// StartHeld只在维护窗口内启动，始终不放行普通流量；Release只在完整journal已durable后放行。
+// HoldRecovery必须保持服务不可用；即使Release失败，已提交代也不得回滚。
 type MigrationRuntime interface {
 	Quiesce(context.Context) error
 	ValidateStaged(context.Context, RootRehearsal) error
-	Resume(context.Context) error
+	StartHeld(context.Context) error
+	Release(context.Context) error
 	HoldRecovery(error)
 }
 type RootApplyResult struct {
@@ -54,6 +56,9 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 	if err = validateRootApproval(r, c, a); err != nil {
 		return out, err
 	}
+	if err = validateRootReview(r, c, a, decisions); err != nil {
+		return out, err
+	}
 	if _, _, _, err = resolveMigration(c, a.MigrationApproval, decisions); err != nil {
 		return out, err
 	}
@@ -70,9 +75,15 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 		return out, err
 	}
 	held := false
+	resumeUnchanged := func() error {
+		if e := runtime.StartHeld(context.WithoutCancel(ctx)); e != nil {
+			return e
+		}
+		return runtime.Release(context.WithoutCancel(ctx))
+	}
 	defer func() {
 		if err != nil && !held {
-			if e := runtime.Resume(context.WithoutCancel(ctx)); e != nil {
+			if e := resumeUnchanged(); e != nil {
 				err = errors.Join(err, e)
 				runtime.HoldRecovery(err)
 			}
@@ -126,7 +137,10 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 		return out, fmt.Errorf("root resources changed during staging")
 	}
 	j := rootJournal{Version: 1, Layout: r.Layout, BackupDirectory: backup, RootDigest: r.Digest, Targets: targets, State: "installing"}
-	if err = writePrivateDurable(rootJournalPath(r.Layout), j); err != nil {
+	if err = writeJournalFault(rootJournalPath(r.Layout), j, hook); err != nil {
+		// rename后dir fsync失败时journal可能已存在；不得重新开放runtime。
+		held = true
+		runtime.HoldRecovery(err)
 		return out, err
 	}
 	installed := true
@@ -137,7 +151,14 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 			runtime.HoldRecovery(cause)
 			return cause
 		}
-		if e := restoreRootTargets(j, r); e != nil {
+		// 任一补偿前先持久化回滚意图；不能让complete状态与半恢复数据并存。
+		j.State = "rollback_required"
+		if e := writePrivateDurable(rootJournalPath(r.Layout), j); e != nil {
+			cause = errors.Join(cause, e)
+			runtime.HoldRecovery(cause)
+			return cause
+		}
+		if e := restoreRootTargetsFault(j, r, hook); e != nil {
 			cause = errors.Join(cause, e)
 			runtime.HoldRecovery(cause)
 			return cause
@@ -153,7 +174,7 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 			runtime.HoldRecovery(cause)
 			return cause
 		}
-		if e := runtime.Resume(context.WithoutCancel(ctx)); e != nil {
+		if e := resumeUnchanged(); e != nil {
 			cause = errors.Join(cause, e)
 			runtime.HoldRecovery(cause)
 			return cause
@@ -201,11 +222,15 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 	if err = removeRootTarget(r.Layout.DBPath + "-shm"); err != nil {
 		return out, err
 	}
-	if err = runtime.Resume(ctx); err != nil {
+	if err = runtime.StartHeld(ctx); err != nil {
 		return out, err
 	}
 	j.State = "complete"
-	if err = writePrivateDurable(rootJournalPath(r.Layout), j); err != nil {
+	if err = writeJournalFault(rootJournalPath(r.Layout), j, hook); err != nil {
+		// complete rename可能成功但durability不确定；保持整代原子，不开始部分补偿。
+		installed = false
+		held = true
+		runtime.HoldRecovery(err)
 		return out, err
 	}
 	installed = false
@@ -215,6 +240,11 @@ func applyReviewedRootMigration(ctx context.Context, r RootCapture, c Candidate,
 		return out, err
 	}
 	out = RootApplyResult{BackupDirectory: backup, RootDigest: r.Digest, ResolvedCandidateDigest: rehearsal.ResolvedCandidateDigest}
+	if err = runtime.Release(ctx); err != nil {
+		held = true
+		runtime.HoldRecovery(err)
+		return out, err
+	}
 	return out, nil
 }
 
@@ -268,7 +298,7 @@ func RecoverRootMigration(ctx context.Context, layout RootLayout) (RootRecoveryR
 	if !reflect.DeepEqual(r.Layout, layout) || r.Digest != j.RootDigest || !reflect.DeepEqual(j.Targets, expected) {
 		return RootRecoveryResult{}, fmt.Errorf("migration recovery targets changed")
 	}
-	if j.State != "complete" && j.State != "installing" && j.State != "rolled_back" {
+	if j.State != "complete" && j.State != "installing" && j.State != "rolled_back" && j.State != "rollback_required" {
 		return RootRecoveryResult{}, fmt.Errorf("unknown migration recovery state")
 	}
 	if j.State != "complete" {
@@ -282,11 +312,19 @@ func RecoverRootMigration(ctx context.Context, layout RootLayout) (RootRecoveryR
 	return RootRecoveryResult{Recovered: true, BackupDirectory: j.BackupDirectory}, nil
 }
 func restoreRootTargets(j rootJournal, r RootCapture) error {
+	return restoreRootTargetsFault(j, r, nil)
+}
+func restoreRootTargetsFault(j rootJournal, r RootCapture, hook func(string) error) error {
 	byPath := map[string]RootResource{}
 	for _, resource := range r.Resources {
 		byPath[resource.Path] = resource
 	}
 	for _, target := range j.Targets {
+		if hook != nil {
+			if err := hook("restore:" + target); err != nil {
+				return err
+			}
+		}
 		resource, ok := byPath[target]
 		if !ok || resource.Kind == "absent" {
 			if target != r.Layout.DBPath+"-wal" && target != r.Layout.DBPath+"-journal" {
@@ -334,6 +372,9 @@ func removeRootTarget(path string) error {
 }
 func removeRootJournal(layout RootLayout) error { return removeRootTarget(rootJournalPath(layout)) }
 func writeRootAtomic(path string, data []byte, mode os.FileMode) error {
+	return writeRootAtomicFault(path, data, mode, nil)
+}
+func writeRootAtomicFault(path string, data []byte, mode os.FileMode, afterRename func() error) error {
 	if err := noSymlinkPath(filepath.Dir(path)); err != nil {
 		return err
 	}
@@ -362,7 +403,29 @@ func writeRootAtomic(path string, data []byte, mode os.FileMode) error {
 	if err = os.Rename(name, path); err != nil {
 		return err
 	}
+	if afterRename != nil {
+		if err = afterRename(); err != nil {
+			return err
+		}
+	}
 	return syncRootDirectory(filepath.Dir(path))
+}
+func writeJournalFault(path string, j rootJournal, hook func(string) error) error {
+	if hook != nil {
+		if err := hook(j.State + "-journal-before-write"); err != nil {
+			return err
+		}
+	}
+	data, err := json.MarshalIndent(j, "", "  ")
+	if err != nil {
+		return err
+	}
+	return writeRootAtomicFault(path, append(data, '\n'), 0600, func() error {
+		if hook != nil {
+			return hook(j.State + "-journal-after-rename")
+		}
+		return nil
+	})
 }
 func writePrivateDurable(path string, v any) error {
 	data, err := json.MarshalIndent(v, "", "  ")
