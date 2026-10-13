@@ -471,6 +471,26 @@ export interface StellarSettingsValidationResponse {
 }
 
 //////////
+// source: stellar_widget_preview.go
+
+export interface StellarWidgetCatalogItem {
+  name: string;
+  layout: string;
+  config: string;
+}
+export interface StellarWidgetCatalogResponse {
+  items: StellarWidgetCatalogItem[];
+}
+export interface StellarWidgetPreviewRequest {
+  StellarContentMetadata: StellarContentMetadata;
+  widget_config: string;
+  layout: string;
+  path: string;
+  language: string;
+  preview_token: string;
+}
+
+//////////
 // source: uc.go
 
 /**

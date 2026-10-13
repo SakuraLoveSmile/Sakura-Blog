@@ -166,7 +166,7 @@ func (r stellarTemplateRenderer) banner(d *StellarRenderData) template.HTML {
 		if d.Stellar.Layout == "post" && stellarGet(d.Stellar.Theme, "article.showReadingTime") == true && d.WordCount > 0 {
 			fmt.Fprintf(&right, `<span class="cap reading">%s · %s</span>`, stellarEscape(stellarTranslate(d, "meta.word_count", d.WordCount)), stellarEscape(stellarTranslate(d, "meta.reading_time", d.ReadingMinutes)))
 		}
-		labelValue := stellarText(stellarItemGet(d, "presentation.article.aiLabel"))
+		labelValue := stellarText(stellarFirst(stellarItemGet(d, "presentation.article.aiLabel"), stellarGet(d.Stellar.Data, "page.article.aiLabel")))
 		label := stellarmodels.ResolveAILabel(labelValue)
 		if len(label) > 0 {
 			right.WriteString(stellarmodels.BuildAILabelHTML(labelValue, stellarTranslate(d, "meta.ai_label."+labelValue), "cap", string(r.icon(label["icon"])), image != ""))
@@ -223,8 +223,8 @@ func (r stellarTemplateRenderer) dateInfo(d *StellarRenderData) template.HTML {
 	var b strings.Builder
 	b.WriteString(`<div class="flex-row" id="post-meta">`)
 	profile := stellarText(stellarCollectionGet(d, "profile"))
-	created := stellarFirst(stellarItemGet(d, "date"), stellarGet(d.Page, "Date"))
-	updated := stellarFirst(stellarItemGet(d, "updated"), stellarGet(d.Page, "UpdatedAt"))
+	created := stellarFirst(stellarItemGet(d, "date"), stellarGet(d.Stellar.Data, "page.date"), stellarGet(d.Stellar.Data, "hostPage.date"), stellarGet(d.Page, "Date"))
+	updated := stellarFirst(stellarItemGet(d, "updated"), stellarGet(d.Stellar.Data, "page.updated"), stellarGet(d.Stellar.Data, "hostPage.updated"), stellarGet(d.Page, "Updated"))
 	if profile == "wiki" {
 		updated = stellarRenderGet(d, "article.updated")
 		if stellarTruth(updated) {
@@ -238,7 +238,7 @@ func (r stellarTemplateRenderer) dateInfo(d *StellarRenderData) template.HTML {
 			updated = stellarRenderGet(d, "article.created")
 		}
 		author := stellarMap(d.Stellar.Data["defaultAuthor"])
-		id := stellarText(stellarRenderGet(d, "listing.authorId"))
+		id := stellarText(stellarFirst(stellarRenderGet(d, "listing.authorId"), stellarGet(d.Stellar.Data, "page.article.author")))
 		if id != "" {
 			if a := stellarMap(stellarGet(d.Stellar.Data, "authors."+id)); len(a) > 0 {
 				author = a

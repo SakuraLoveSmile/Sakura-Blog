@@ -103,6 +103,7 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 	}
 	publicData["widgets"] = catalog
 	publicData["page"] = input.FrontMatter
+	publicData["hostPage"] = input.Page
 	publicData["dateFormat"] = input.SiteConfig["date_format"]
 	publicData["headEnd"] = prepInject(theme, input.FrontMatter, "headEnd")
 	if data.Stellar != nil {

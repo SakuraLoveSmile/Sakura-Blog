@@ -23,6 +23,7 @@ packages:
       - "settings.go"
       - "stellar_settings.go"
       - "stellar_content.go"
+      - "stellar_widget_preview.go"
       - "preview.go"
       - "notebook.go"
       - "notebook_note.go"

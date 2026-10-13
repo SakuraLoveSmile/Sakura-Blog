@@ -353,6 +353,7 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// Markdown 预览（编辑器实时预览，复用前台 goldmark 渲染管线）
 		author.POST("/preview/markdown", h.previewMarkdown)
+		author.POST("/preview/widget", h.previewStellarWidget)
 		// Markdown 导入（只解析内存，不落库；文章/页面编辑器共用）
 		author.POST("/editor/import/markdown", h.importMarkdown)
 		author.POST("/editor/import/stellar", h.importStellarMarkdown)
@@ -458,6 +459,7 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
 		author.GET("/plugins/catalog", h.shortcodeCatalog)
+		author.GET("/plugins/widgets/catalog", h.getStellarWidgetCatalog)
 		author.POST("/plugins/shortcode/parse", h.shortcodeEdit)
 		author.POST("/plugins/shortcode/serialize", h.shortcodeSerialize)
 
