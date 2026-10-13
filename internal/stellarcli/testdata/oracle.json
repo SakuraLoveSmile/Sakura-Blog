@@ -1,0 +1,490 @@
+{
+  "commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "noteCases": [
+    {
+      "title": "Hello",
+      "ok": true,
+      "normalizedTitle": "Hello",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": " Hello 世界 ",
+      "ok": true,
+      "normalizedTitle": "Hello 世界",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "",
+      "ok": false
+    },
+    {
+      "title": " ",
+      "ok": false
+    },
+    {
+      "title": ".",
+      "ok": false
+    },
+    {
+      "title": "..",
+      "ok": false
+    },
+    {
+      "title": "../escape",
+      "ok": false
+    },
+    {
+      "title": "/absolute",
+      "ok": false
+    },
+    {
+      "title": "a/b",
+      "ok": false
+    },
+    {
+      "title": "a\\b",
+      "ok": false
+    },
+    {
+      "title": "a:b",
+      "ok": false
+    },
+    {
+      "title": "a<b",
+      "ok": false
+    },
+    {
+      "title": "a>b",
+      "ok": false
+    },
+    {
+      "title": "a\"b",
+      "ok": false
+    },
+    {
+      "title": "a|b",
+      "ok": false
+    },
+    {
+      "title": "a?b",
+      "ok": false
+    },
+    {
+      "title": "a*b",
+      "ok": false
+    },
+    {
+      "title": "nul\u0000",
+      "ok": false
+    },
+    {
+      "title": "line\nbreak",
+      "ok": false
+    },
+    {
+      "title": "a\rb",
+      "ok": false
+    },
+    {
+      "title": "a\tb",
+      "ok": false
+    },
+    {
+      "title": "résumé",
+      "ok": true,
+      "normalizedTitle": "résumé",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "a % b",
+      "ok": true,
+      "normalizedTitle": "a % b",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "emoji 📝",
+      "ok": true,
+      "normalizedTitle": "emoji 📝",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "name.md",
+      "ok": true,
+      "normalizedTitle": "name.md",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "a.b",
+      "ok": true,
+      "normalizedTitle": "a.b",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "~home",
+      "ok": true,
+      "normalizedTitle": "~home",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "con",
+      "ok": true,
+      "normalizedTitle": "con",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "a#b",
+      "ok": true,
+      "normalizedTitle": "a#b",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "a@b",
+      "ok": true,
+      "normalizedTitle": "a@b",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    }
+  ],
+  "tagCases": [
+    {
+      "input": "",
+      "ok": true,
+      "tags": []
+    },
+    {
+      "input": "go, go,GO,a/b",
+      "ok": true,
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "input": ",,,",
+      "ok": true,
+      "tags": []
+    },
+    {
+      "input": " go ,, sql ",
+      "ok": true,
+      "tags": [
+        "go",
+        "sql"
+      ]
+    },
+    {
+      "input": "a\nb",
+      "ok": false
+    },
+    {
+      "input": "\na\n",
+      "ok": true,
+      "tags": [
+        "a"
+      ]
+    },
+    {
+      "input": "\u0000",
+      "ok": false
+    },
+    {
+      "input": "a\tb",
+      "ok": false
+    },
+    {
+      "input": "a\rb",
+      "ok": false
+    },
+    {
+      "input": "😀, 😀,表",
+      "ok": true,
+      "tags": [
+        "😀",
+        "表"
+      ]
+    },
+    {
+      "input": "a/b,a/b,c/d",
+      "ok": true,
+      "tags": [
+        "a/b",
+        "c/d"
+      ]
+    },
+    {
+      "input": "false,null,0",
+      "ok": true,
+      "tags": [
+        "false",
+        "null",
+        "0"
+      ]
+    }
+  ],
+  "doctorCases": [
+    {
+      "theme": {},
+      "warnings": []
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "warnings": [
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        }
+      ]
+    },
+    {
+      "theme": {
+        "leftbar": {
+          "widgets": [
+            "menu",
+            "settings",
+            "toc",
+            "recent"
+          ]
+        }
+      },
+      "warnings": []
+    },
+    {
+      "theme": {
+        "rightbar": {
+          "widgets": [
+            "spacer",
+            "unknown"
+          ]
+        }
+      },
+      "warnings": []
+    },
+    {
+      "theme": {
+        "profiles": {
+          "post": {
+            "topbar": {
+              "enabled": true,
+              "widgets": [
+                {
+                  "type": "tree",
+                  "name": "Custom"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "warnings": [
+        {
+          "code": "unknown_widget",
+          "widget": "<invalid>",
+          "layout": "<unknown>",
+          "region": "topbar",
+          "supported": []
+        }
+      ]
+    }
+  ]
+}
