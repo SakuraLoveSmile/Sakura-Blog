@@ -77,7 +77,9 @@
     var resultArea = searchWrapper.querySelector('.search-result');
     if (!inputArea || !resultArea) return;
     var ownerDocument = inputArea.ownerDocument || document;
+    var generation = 0;
     var onInput = function() {
+      var inputGeneration = ++generation;
       var query = inputArea.value.trim();
       var filterPath = inputArea.getAttribute('data-algolia-filter-path');
 
@@ -98,7 +100,9 @@
         highlightPostTag: '</span>',
         restrictSearchableAttributes: ['content']
       }).then(function(responses) {
-        if (active) displayResults(ownerDocument, searchWrapper, resultArea, filterResults(responses.hits, filterPath));
+        if (active && inputGeneration === generation && query === inputArea.value.trim()) {
+          displayResults(ownerDocument, searchWrapper, resultArea, filterResults(responses.hits, filterPath));
+        }
       });
     };
 
