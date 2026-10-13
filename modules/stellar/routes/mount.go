@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
 	"log"
 	"net/http"
@@ -96,6 +98,52 @@ func New(d Dependencies) (*Server, error) {
 		UploadDir: d.UploadDir,
 		NotesPath: d.NotesPath,
 	})
+	strictSearch := func() bool { return d.Site != nil && d.Site.Load() != nil && d.Site.Load().StellarV2 != nil }
+	rebuildStrictSearch := func() error {
+		if searchIdx == nil {
+			return nil
+		}
+		items, err := web.stellarCanonicalSearchItems(context.Background())
+		if err != nil {
+			return err
+		}
+		return searchIdx.Rebuild(items)
+	}
+	if strictSearch() {
+		if err := rebuildStrictSearch(); err != nil {
+			return nil, fmt.Errorf("rebuild strict stellar search: %w", err)
+		}
+	}
+	legacyPostHook, legacyPageHook, legacyMomentHook := postHook, pageHook, momentHook
+	rebuildChangedSearch := func() {
+		if err := rebuildStrictSearch(); err != nil {
+			log.Printf("search: strict snapshot rebuild failed: %v", err)
+		}
+	}
+	postHook = func(op, slug string) {
+		if strictSearch() {
+			if d.OGGen != nil {
+				d.OGGen.Invalidate(slug)
+			}
+			rebuildChangedSearch()
+			return
+		}
+		legacyPostHook(op, slug)
+	}
+	pageHook = func(op, slug string) {
+		if strictSearch() {
+			rebuildChangedSearch()
+			return
+		}
+		legacyPageHook(op, slug)
+	}
+	momentHook = func(op, slug string) {
+		if strictSearch() {
+			rebuildChangedSearch()
+			return
+		}
+		legacyMomentHook(op, slug)
+	}
 	// Content caches are initialized by newWebServer. With app.Services, one
 	// published event is the sole invalidation path for derived data.
 	var eventSub content.Subscription
@@ -103,7 +151,7 @@ func New(d Dependencies) (*Server, error) {
 		eventSub = d.Events.Subscribe(func(event content.Event) {
 			switch event.Kind {
 			case content.PostChanged:
-				if event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
+				if !strictSearch() && event.PreviousSlug != "" && event.PreviousSlug != event.Slug {
 					postHook("delete", event.PreviousSlug)
 				}
 				postHook(event.Op, event.Slug)
@@ -112,9 +160,17 @@ func New(d Dependencies) (*Server, error) {
 			case content.MomentChanged:
 				momentHook(event.Op, event.Slug)
 			case content.Restored:
-				rebuildSearchIndex(d.Store, searchIdx)
+				if strictSearch() {
+					rebuildChangedSearch()
+				} else {
+					rebuildSearchIndex(d.Store, searchIdx)
+				}
 				clearOGCache(ogCacheDir)
 				web.invalidateSidebarCache()
+			case content.ContentChanged:
+				if strictSearch() {
+					rebuildChangedSearch()
+				}
 			}
 			web.contentCache.invalidate()
 		})

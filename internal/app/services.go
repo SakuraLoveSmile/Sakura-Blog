@@ -49,6 +49,8 @@ type Options struct {
 	IconsPath  string
 	DevMode    bool
 	Seed       bool
+	// ResolvedApp使用已持有运行锁的路径快照，避免启动再次解析到另一个数据库。
+	ResolvedApp *config.App
 }
 
 // Services is the process-wide owner of shared business services. HTTP module
@@ -95,14 +97,21 @@ func Bootstrap(options Options) (*Services, error) {
 	if configPath == "" {
 		configPath = filepath.Join(root, "config", "app.yml")
 	}
-	appConfig, err := config.LoadApp(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("load app config: %w", err)
+	var appConfig *config.App
+	var err error
+	if options.ResolvedApp != nil {
+		snapshot := *options.ResolvedApp
+		appConfig = &snapshot
+	} else {
+		appConfig, err = config.LoadApp(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("load app config: %w", err)
+		}
+		if options.Root != "" {
+			appConfig.Root = options.Root
+		}
+		appConfig = config.ResolveApp(appConfig)
 	}
-	if options.Root != "" {
-		appConfig.Root = options.Root
-	}
-	appConfig = config.ResolveApp(appConfig)
 
 	sitePath := filepath.Join(appConfig.Root, "config", "site.yml")
 	if err := recoverBeforeBootstrap(appConfig, sitePath); err != nil {
