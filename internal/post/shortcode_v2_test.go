@@ -387,3 +387,36 @@ func TestStellarV2SerializedNumbersAndFalseAreNotOmitted(t *testing.T) {
 		}
 	}
 }
+
+func TestStellarV2CatalogDoesNotRestrictOfficialFreeStringArguments(t *testing.T) {
+	for name, key := range map[string]string{"button": "size", "swiper": "effect", "emoji": "source", "video": "autoplay", "folding": "child"} {
+		e, ok := shortcodeV2Entry(name)
+		if !ok {
+			t.Fatal(name)
+		}
+		found := false
+		for _, p := range e.Params {
+			if p.Key == key {
+				found = true
+				if p.Type != ShortcodeParamText || len(p.Options) > 0 {
+					t.Errorf("%s.%s cannot accept official/custom string values: %#v", name, key, p)
+				}
+			}
+		}
+		if !found {
+			t.Fatal(key)
+		}
+	}
+	parsed, e := ParseShortcodeForEditStellarV2(`{% emoji custom-source happy %}`)
+	if e != nil || !parsed.Editable || parsed.Values["source"] != "custom-source" {
+		t.Fatalf("custom configured source is not editable: %#v %v", parsed, e)
+	}
+	raw, e := SerializeShortcodeEditStellarV2("emoji", parsed.Values, parsed.Present)
+	if e != nil {
+		t.Fatal(e)
+	}
+	got, e := NewService("").RenderStellarV2(raw, map[string]any{"emoji": map[string]any{"sources": map[string]any{"custom-source": "https://example.test/{name}.png"}}})
+	if e != nil || !strings.Contains(got, `src="https://example.test/happy.png"`) {
+		t.Fatalf("%s %v", got, e)
+	}
+}

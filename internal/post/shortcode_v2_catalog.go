@@ -18,6 +18,10 @@ func init() {
 		e.Params = append([]ShortcodeParamSchema(nil), e.Params...)
 		for j := range e.Params {
 			e.Params[j].Default = nil
+			if e.Params[j].Type == ShortcodeParamSelect {
+				e.Params[j].Type = ShortcodeParamText
+				e.Params[j].Options = nil
+			}
 		}
 		e.Edit = ShortcodeEditSchema{Enabled: true}
 		// 未写出的参数无默认值；下面的默认值只用于插入新标签。
@@ -78,6 +82,10 @@ func init() {
 				e.Params[j].Role = ShortcodeParamNamed
 				e.Params[j].Type = ShortcodeParamSelect
 				e.Params[j].Options = []string{"", "true", "false"}
+				if e.Params[j].Key == "autoplay" {
+					e.Params[j].Type = ShortcodeParamText
+					e.Params[j].Options = nil
+				}
 				e.Params[j].Default = nil
 			}
 		}
