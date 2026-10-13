@@ -60,6 +60,11 @@ func newRecord(table string, row Row) *recordBuilder {
 	if v, exists := row["stellar_version"]; exists && v != nil && stringValue(v) != "0" && stringValue(v) != "" {
 		b.conflict("unsupported_content_version", "stellar_version", "源版本不是 0 或 2；不得隐式覆盖未知或更高版本")
 	}
+	for _, key := range []string{"stellar_config", "blog_extensions"} {
+		if value := strings.TrimSpace(stringValue(row[key])); value != "" {
+			b.conflict("unversioned_metadata", key, "未 version 2 的记录已有原始元数据；可能是未完成迁移，源文完整保留，不能根据旧列覆盖它")
+		}
+	}
 	b.move("title", "title")
 	// 宿主权限/身份/发布时间/草稿/HTML 缓存不搬进上游 schema，也不更新。
 	for _, k := range sortedKeys(row) {

@@ -329,6 +329,17 @@ func TestUnknownVersionIsNotSilentlyDowngraded(t *testing.T) {
 		t.Fatal("future content version overwritten")
 	}
 }
+func TestPartialMigrationMetadataIsPreservedAndBlocksOverwrite(t *testing.T) {
+	path := fixture(t, `CREATE TABLE posts(id INTEGER PRIMARY KEY,slug TEXT,title TEXT,content_md TEXT,stellar_version INTEGER,stellar_config TEXT,blog_extensions TEXT);INSERT INTO posts VALUES(1,'a','Title','body',0,'{"unknown":9007199254740993}','{"native_comments":{"enabled":false}}');`)
+	s := snapshot(t, path, nil)
+	c := candidate(t, s)
+	if !hasCode(c.Records[0].Diagnostics, "unversioned_metadata") || ValidateCandidate(c, s) == nil {
+		t.Fatal("partial migration metadata silently overwritten")
+	}
+	if s.Tables["posts"].Rows[0]["stellar_config"] != `{"unknown":9007199254740993}` {
+		t.Fatal("original partial metadata lost")
+	}
+}
 func TestMarkdownNestedCodeAndUnmatchedBacktick(t *testing.T) {
 	src := " > ```md\n > {% links %}\n > ```\n`unclosed {% moments %}\n{% image /a.png \"caption fancybox:true\" %}\n{% links \"unclosed %}\n"
 	out, ds, _ := migrateMarkdown(src, "test", nil, nil)
