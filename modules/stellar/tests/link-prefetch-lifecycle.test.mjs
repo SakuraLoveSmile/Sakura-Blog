@@ -23,7 +23,7 @@ function fixture({ native = true, connection } = {}) {
     addEventListener(type, callback) { const group = listeners.get(type) || new Set(); group.add(callback); listeners.set(type, group); },
     removeEventListener(type, callback) { listeners.get(type)?.delete(callback); }
   };
-  const context = vm.createContext({ document, navigator: { connection }, Promise, Set,
+  const context = vm.createContext({ document, navigator: { connection }, Promise, Set, URL,
     setTimeout(fn) { const id = next++; timers.set(id, fn); return id; },
     clearTimeout(id) { timers.delete(id); },
     setInterval(fn) { const id = next++; intervals.set(id, fn); return id; },
@@ -189,4 +189,26 @@ test('idle fallback、延迟观察、hover 离开及超时的回调不会离页�
   f.flush(f.timers);
   assert.deepEqual(f.count(), empty);
   nextCleanup();
+});
+
+test('真实 origin 边界拒绝主机前缀伪造、用户信息段、不同端口和无效 URL', async () => {
+  const f = fixture();
+  const cleanup = await f.mount();
+  for (const href of [
+    'https://example.test.evil.test/path/',
+    'https://example.test@evil.test/path/',
+    'https://example.test:8443/path/',
+    'http://example.test/path/',
+    'https://example.test:invalid/path/',
+    'not a URL'
+  ]) {
+    f.fire('touchstart', { href, closest() { return this; } });
+    assert.equal(f.links.length, 0, `必须拒绝 ${href}`);
+  }
+  for (const href of ['https://example.test/path/', 'https://example.test:443/other/?x=1']) {
+    f.fire('touchstart', { href, closest() { return this; } });
+  }
+  assert.equal(f.links.length, 2);
+  assert.equal(f.links[0].href, 'https://example.test/path/');
+  cleanup(); assert.deepEqual(f.count(), empty);
 });
