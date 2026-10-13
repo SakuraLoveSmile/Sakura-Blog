@@ -6,10 +6,20 @@ document.currentScript.stellarMount = function (root, context) {
   els.forEach(el => {
     const api = el.dataset.api;
     if (!api) return;
+    let origin;
+    try {
+      const url = new URL(api);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError('Unsupported protocol');
+      origin = url.origin;
+    } catch {
+      const error = new TypeError('Memos API must be an absolute HTTP(S) URL');
+      utils.onLoadFailure?.(el);
+      context.reportError(error);
+      return;
+    }
 
     const default_avatar = el.getAttribute('avatar') || def.avatar;
     const limit = el.getAttribute('limit');
-    const host = api.match(/https:\/\/(.*?)\/(.*)/i)[1];
 
     utils.request(el, api, async resp => {
       const data = await resp.json();
@@ -20,17 +30,20 @@ document.currentScript.stellarMount = function (root, context) {
       const hide = el.getAttribute('hide')?.split(",") || [];
 
       await Promise.all(memos.data.slice(0, limit || memos.data.length).map(item =>
-          createMemoCell(item, memos, users, hide, default_avatar, host).then(cell => utils.dom(el).append(cell))
+          createMemoCell(item, memos, users, hide, default_avatar, origin).then(cell => {
+            context.signal.throwIfAborted();
+            utils.dom(el).append(cell);
+          })
       ));
     });
 
-    async function createMemoCell(item, memos, users, hide, default_avatar, host) {
+    async function createMemoCell(item, memos, users, hide, default_avatar, origin) {
       const versionHandler = versionHandlers[memos.version] || versionHandlers["feature"];
       return `<div class="timenode">
                       <div class="header">${!users.length && !hide.includes('user') ? await versionHandler.buildUser(item, memos, default_avatar) : ''}
                       <span>${versionHandler.buildDate(item).toLocaleString()}</span></div>
                       <div class="body">${marked.parse(item.content || '')}
-                      <p>${versionHandler.buildImages(item, host).join('')}</p>
+                      <p>${versionHandler.buildImages(item, origin).join('')}</p>
                       </div></div>`;
     }
 
@@ -40,8 +53,8 @@ document.currentScript.stellarMount = function (root, context) {
         buildUser: async (item, memos, default_avatar) =>
             `<div class="user-info">${default_avatar ? `<img src="${default_avatar}">` : ''}<span>${item.creatorName}</span></div>`,
         buildDate: item => new Date(item.createdTs * 1000),
-        buildImages: (item, host) => (item.resourceList || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<p><img src="${res.externalLink || `https://${host}/o/r/${res.id}`}"></p>`
+        buildImages: (item, origin) => (item.resourceList || []).filter(res => res.type?.includes('image/')).map(res =>
+            `<p><img src="${res.externalLink || `${origin}/o/r/${res.id}`}"></p>`
         )
       },
       "22+": {
@@ -77,7 +90,7 @@ document.currentScript.stellarMount = function (root, context) {
         },
         buildDate: item => new Date(item.createTime),
         buildImages: (item) => (item.resources || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<p><img src="${res.externalLink || `https://${host}/o/r/${res.id}`}"></p>`
+            `<p><img src="${res.externalLink || `${origin}/o/r/${res.id}`}"></p>`
         )
       },
       "25+": {
@@ -113,7 +126,7 @@ document.currentScript.stellarMount = function (root, context) {
         },
         buildDate: item => new Date(item.createTime),
         buildImages: (item) => (item.attachments || []).filter(res => res.type?.includes('image/')).map(res =>
-            `<div class="image-bg"><img src="${res.externalLink || `https://${host}/file/${res.name}/${res.filename}`}"></div>`
+            `<div class="image-bg"><img src="${res.externalLink || `${origin}/file/${res.name}/${res.filename}`}"></div>`
         )
       },
       "v1": {
@@ -151,12 +164,12 @@ document.currentScript.stellarMount = function (root, context) {
           const d = new Date(item.createTime);
           return isNaN(d.getTime()) ? new Date() : d;
         },
-        buildImages: (item, host) => {
+        buildImages: (item, origin) => {
           const list = (item.attachments || item.resources || []).filter(res =>
             res && res.type && String(res.type).includes('image/')
           );
           return list.map(res =>
-            `<div class="image-bg"><img src="${res.externalLink || res.url || `https://${host}/file/${res.name}/${res.filename}`}"></div>`
+            `<div class="image-bg"><img src="${res.externalLink || res.url || `${origin}/file/${res.name}/${res.filename}`}"></div>`
           );
         }
       },
