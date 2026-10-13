@@ -2,6 +2,7 @@ package stellarimages
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -31,6 +32,19 @@ type Report struct {
 	File      string   `json:"file"`
 	Missing   []string `json:"missing,omitempty"`
 }
+
+func (r Report) MarshalJSON() ([]byte, error) {
+	type fields Report
+	var missing *[]string
+	if r.Missing != nil {
+		missing = &r.Missing
+	}
+	return json.Marshal(struct {
+		fields
+		Missing *[]string `json:"missing,omitempty"`
+	}{fields: fields(r), Missing: missing})
+}
+
 type Processor struct {
 	StorePath, SiteURL string
 	// LocalAsset 接收相对 SiteURL 路径的 escaped route。

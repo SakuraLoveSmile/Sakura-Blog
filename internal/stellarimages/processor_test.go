@@ -92,6 +92,27 @@ func TestDryRunCacheRefreshAndEnrich(t *testing.T) {
 		t.Fatal(out, e)
 	}
 }
+
+func TestEmptyDryRunReportJSON(t *testing.T) {
+	p := Processor{StorePath: filepath.Join(t.TempDir(), "nested", "images.json"), SiteURL: "https://site.test/"}
+	for _, dryRun := range []bool{true, false} {
+		r, err := p.Prepare(context.Background(), nil, PrepareOptions{DryRun: dryRun})
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := json.Marshal(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err = json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if missing, present := fields["missing"]; present != dryRun || dryRun && string(missing) != "[]" {
+			t.Fatalf("dry-run=%v: %s", dryRun, data)
+		}
+	}
+}
 func TestFailureRetainsOldResultsAndBackoff(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "images.json")
 	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
