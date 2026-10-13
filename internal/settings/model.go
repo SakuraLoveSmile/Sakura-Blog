@@ -421,6 +421,9 @@ type Site struct {
 	// SWCacheVersion Service Worker 缓存版本（settings site 段 sw_cache_version，仅入库不入 site.yml）：
 	// 非空时 /sw.js 以此注入 CACHE_VERSION，缓存策略变更后 bump 使旧 SW 失效。
 	SWCacheVersion string `yaml:"-" json:"-"`
+
+	// StellarV2 仅由显式迁移/严格 v2 配置入口装配。
+	StellarV2 *StellarV2Config `yaml:"-" json:"stellar_v2,omitempty"`
 }
 
 // ServicesConfig 外部数据服务配置（对齐上游 _config.yml services 段）。
