@@ -25,6 +25,8 @@ Wiki 旧外链统一保留于 `Blog.content.wiki_external_url`，由独立模板
 
 Markdown 仅把明确的旧本地 `about/links/moments/ghrepo/ghuser/tip` 标签改为 `blog_*`；批准的旧 tooltip 语义保留，不替换为不同的上游 inline tip。参数、正文和空白不重建。旧 image 未明确 fancybox 时添加 `fancybox:false` 保留默认点击行为。Goldmark 代码段（包括引用／列表内代码）不改；未知、跨行或引号不完整的标签原文保留并阻断。此包不假称已全面验证每个标签参数，也不净化作者 HTML。
 
+tracked Markdown 的旧 `status` 候选映射为 `blog.status`，与宿主备份／目录导入契约一致，不进入上游 schema，也不放入 `blog.host.status`。候选保留原发布状态；`file_host_fields` 诊断仍阻断，直到宿主导入及重新打开证明不会误发布。其余权限／生命周期字段仍须单独接线，不因发布状态映射修正自动解除。
+
 ## 验证
 
 `go test -race ./internal/stellarmigration` 覆盖独立旧／新 SQLite、只读／不存在源、version 2 原文、大整数／false／null、所有条目完整性、源评论变化失效、未知字段保留、集合归属、Wiki 两候选、旧笔记 schema、Markdown 代码保护及 private artifact 权限。预览／验证失败无 writable DB 入口，因此无半批版本标记。

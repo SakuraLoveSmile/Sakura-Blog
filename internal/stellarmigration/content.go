@@ -666,7 +666,12 @@ func buildFile(src, path string, s Snapshot) RecordCandidate {
 		case "poster_headline", "poster_topic", "poster_caption", "poster_color":
 			set(b.blog, "content.poster."+strings.TrimPrefix(key, "poster_"), v)
 			b.conflict("poster_consumer", key, "旧独立 poster 字段完整保留于 Blog 扩展，尚需接通消费")
-		case "status", "password", "authors", "publish_at", "draft_json":
+		case "status":
+			set(b.blog, "status", v)
+			b.conflict("file_host_fields", key, "发布状态保留于 blog.status；须验证宿主导入保存该状态，不得把草稿隐式发布")
+			b.mapped(key, "blog.status", "保留原发布状态，使用已定义的宿主 Markdown 导入契约；不进入上游 schema")
+			continue
+		case "password", "authors", "publish_at", "draft_json":
 			set(b.blog, "host."+key, v)
 			b.conflict("file_host_fields", key, "宿主权限/生命周期字段不能塞入上游；文件导入须另行接通显式宿主契约")
 		default:

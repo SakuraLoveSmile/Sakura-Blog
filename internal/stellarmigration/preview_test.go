@@ -358,6 +358,38 @@ func TestMultilevelPriorityAndAllCategoryPaths(t *testing.T) {
 	}
 }
 
+func TestTrackedStatusUsesHostImportContract(t *testing.T) {
+	path := fixture(t, `CREATE TABLE settings(section TEXT PRIMARY KEY,value TEXT);`)
+	for _, status := range []string{"draft", "published"} {
+		t.Run(status, func(t *testing.T) {
+			c := candidate(t, snapshot(t, path, map[string]string{
+				"content/posts/example.md": "---\ntitle: Example\nstatus: " + status + "\n---\nUnchanged body\n",
+			}))
+			p := c.Records[0]
+			v, err := decode(p.BlogJSON)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if object(v)["status"] != status {
+				t.Fatal("host import status was not preserved")
+			}
+			if _, exists := get(object(v), "host.status"); exists {
+				t.Fatal("status stored outside the host import contract")
+			}
+			front, err := decode(p.ConfigJSON)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, exists := object(front)["status"]; exists {
+				t.Fatal("host status entered the upstream schema")
+			}
+			if !strings.Contains(p.Document, `"status": "`+status+`"`) || !hasCode(p.Diagnostics, "file_host_fields") {
+				t.Fatal("serialized status or the execution gate was lost")
+			}
+		})
+	}
+}
+
 // Explicitly opted-in evidence pass; normal tests never access real data.
 func TestReadOnlySourcePreviewEvidence(t *testing.T) {
 	path := os.Getenv("STELLAR_MIGRATION_SOURCE")
