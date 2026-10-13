@@ -19,10 +19,10 @@ func TestStellarStandalonePageOpenGraphThroughActualEmbed(t *testing.T) {
 		want         map[string][]string
 	}{
 		{"explicit", `{"description":"Page SEO","seo":{"open_graph":{"title":"Ignored upstream title","site_name":"Ignored upstream site","image":["/explicit.png","/second.png"],"description":"Independent OG","type":"profile","language":"zh-TW","twitter_card":"summary_large_image","twitter_id":"@page-author","twitter_site":"@page-site"}}}`, map[string][]string{
-			"description": {"Page SEO"}, "og:description": {"Independent OG"}, "twitter:description": {"Independent OG"}, "og:image": {"/explicit.png", "/second.png"}, "og:type": {"profile"}, "og:locale": {"zh_TW"}, "twitter:card": {"summary_large_image"}, "twitter:creator": {"@page-author"}, "twitter:site": {"@page-site"},
+			"description": {"Independent OG"}, "og:description": {"Independent OG"}, "twitter:description": nil, "og:image": {"/explicit.png", "/second.png"}, "og:type": {"profile"}, "og:locale": {"zh_TW"}, "twitter:card": {"summary_large_image"}, "twitter:creator": {"@page-author"}, "twitter:site": {"@page-site"},
 		}},
-		{"null", `{"seo":{"open_graph":{"image":null,"description":null,"type":null,"language":null,"twitter_id":null,"twitter_site":null}}}`, map[string][]string{"og:image": nil, "twitter:image": nil, "og:description": nil, "og:type": nil, "og:locale": nil, "twitter:creator": nil, "twitter:site": nil}},
-		{"empty", `{"seo":{"open_graph":{"image":"","description":""}}}`, map[string][]string{"og:image": nil, "twitter:image": nil, "og:description": nil}},
+		{"null", `{"seo":{"open_graph":{"image":null,"description":null,"type":null,"language":null,"twitter_id":null,"twitter_site":null}}}`, map[string][]string{"og:image": {"/body.png"}, "twitter:image": {"/body.png"}, "og:description": nil, "og:type": {"website"}, "og:locale": {"zh_CN"}, "twitter:creator": nil, "twitter:site": nil}},
+		{"empty", `{"seo":{"open_graph":{"image":"","description":""}}}`, map[string][]string{"og:image": {"/body.png"}, "twitter:image": {"/body.png"}, "og:description": nil}},
 		{"cover", `{"cover":"/cover.png"}`, map[string][]string{"og:image": {"/cover.png"}}},
 		{"content", `{}`, map[string][]string{"og:image": {"/body.png"}}},
 	} {
@@ -69,6 +69,18 @@ func TestStellarStandalonePageOpenGraphThroughActualEmbed(t *testing.T) {
 			for flow, document := range documents {
 				metadata := stellarPageSEOMeta(t, document)
 				for key, want := range test.want {
+					want = append([]string(nil), want...)
+					if key == "og:image" || key == "twitter:image" {
+						origin := "https://fixture.example"
+						if flow == "preview" {
+							origin = "https://preview.test"
+						}
+						for i, image := range want {
+							if strings.HasPrefix(image, "/") {
+								want[i] = origin + image
+							}
+						}
+					}
 					if !reflect.DeepEqual(metadata[key], want) {
 						t.Errorf("%s %s = %q, want %q", flow, key, metadata[key], want)
 					}

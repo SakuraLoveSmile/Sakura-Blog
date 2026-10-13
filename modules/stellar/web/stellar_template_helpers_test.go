@@ -388,8 +388,12 @@ func TestStellarSubdirectoryAndPaginationSEOUseDisplayCanonical(t *testing.T) {
 	d.Page.Path = "/blog/page/2/"
 	d.Page.CanonicalURL = "https://canonical.test/blog/page/2/"
 	d.Paginator = &settings.Paginator{Current: 2, Total: 3}
-	source := string(stellarHeadMeta(d))
-	if !strings.Contains(source, `rel="canonical" href="https://canonical.test/blog/page/2/"`) || !strings.Contains(source, `property="og:url" content="https://canonical.test/blog/page/2/"`) || !strings.Contains(source, `"url":"https://canonical.test/blog/page/2/"`) || strings.Contains(source, "/blog/blog/") {
+	metadata, err := stellarHeadMeta(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(metadata)
+	if !strings.Contains(source, `rel="canonical" href="https://canonical.test/blog/page/2/"`) || !strings.Contains(source, `property="og:url" content="https:&#x2F;&#x2F;canonical.test&#x2F;blog&#x2F;page&#x2F;2&#x2F;"`) || !strings.Contains(source, `"url":"https://canonical.test/blog/page/2/"`) || strings.Contains(source, "/blog/blog/") {
 		t.Fatal(source)
 	}
 	d.Page.CanonicalURL = ""
@@ -405,7 +409,11 @@ func TestStellarSubdirectoryAndPaginationSEOUseDisplayCanonical(t *testing.T) {
 	d.Page.CanonicalURL = "https://canonical.test/blog/post/a/"
 	original := map[string]any{"@context": "https://schema.org", "@type": "BlogPosting", "url": "https://example.test/blog/blog/post/a/", "mainEntityOfPage": map[string]any{"@id": "https://example.test/blog/blog/post/a/"}}
 	d.Stellar.Model = &stellarmodels.PageModel{Render: map[string]any{"seo": map[string]any{"jsonLd": original}}, Item: map[string]any{"route": map[string]any{"path": "/blog/post/a/"}}}
-	source = string(stellarHeadMeta(d))
+	metadata, err = stellarHeadMeta(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source = string(metadata)
 	if strings.Contains(source, "/blog/blog/") {
 		t.Fatal(source)
 	}

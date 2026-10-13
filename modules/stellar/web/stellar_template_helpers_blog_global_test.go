@@ -254,14 +254,14 @@ func TestStellarStrictHeadHostSEOPriorityAndManagedMeta(t *testing.T) {
 	seo["robots"] = "index,nofollow"
 	before := prepCloneMap(seo)
 	out := renderGlobalBlogFixture(t, d)
-	for _, fragment := range []string{`name="robots" content="noindex,nofollow"`, `name="description" content="Site SEO"`, `name="keywords" content="go, ssr"`, `property="og:description" content="Site SEO"`, `name="twitter:description" content="Site SEO"`, `"description":"Site SEO"`, `data-stellar-page-meta name="google-site-verification" content="google&lt;&amp;"`, `name="msvalidate.01" content="bing"`, `name="baidu-site-verification" content="baidu"`} {
+	for _, fragment := range []string{`name="robots" content="noindex,nofollow"`, `name="description" content="Body"`, `name="keywords" content="go, ssr"`, `property="og:description" content="Body"`, `"description":"Site SEO"`, `data-stellar-page-meta name="google-site-verification" content="google&lt;&amp;"`, `name="msvalidate.01" content="bing"`, `name="baidu-site-verification" content="baidu"`} {
 		if !strings.Contains(out, fragment) {
 			t.Fatalf("missing %s", fragment)
 		}
 	}
 	d.Stellar.Data["page"] = map[string]any{"description": "Page SEO", "keywords": []any{"page"}}
 	out = renderGlobalBlogFixture(t, d)
-	if !strings.Contains(out, `name="description" content="Page SEO"`) || !strings.Contains(out, `name="keywords" content="page"`) || !strings.Contains(out, `"description":"Page SEO"`) {
+	if !strings.Contains(out, `name="description" content="Body"`) || !strings.Contains(out, `name="keywords" content="page"`) || !strings.Contains(out, `"description":"Page SEO"`) {
 		t.Fatal("page precedence inconsistent")
 	}
 	if !reflect.DeepEqual(before, seo) {
@@ -351,7 +351,7 @@ func TestStellarWelcomeExplicitEmptyContentSuppressesIntroThroughEmbed(t *testin
 	}
 }
 
-func TestStellarHeadExplicitOGDescriptionKeepsIndependentPriorityThroughEmbed(t *testing.T) {
+func TestStellarHeadExplicitOGDescriptionUsesOfficialFallbackThroughEmbed(t *testing.T) {
 	for _, layout := range []string{"post", "page"} {
 		for _, test := range []struct {
 			name    string
@@ -359,10 +359,10 @@ func TestStellarHeadExplicitOGDescriptionKeepsIndependentPriorityThroughEmbed(t 
 			value   any
 			wantOG  string
 		}{
-			{"inherited", false, nil, "Site SEO"},
+			{"inherited", false, nil, "Body"},
 			{"explicit", true, "Page OG", "Page OG"},
-			{"empty", true, "", ""},
-			{"null", true, nil, ""},
+			{"empty", true, "", "Body"},
+			{"null", true, nil, "Body"},
 		} {
 			t.Run(layout+"/"+test.name, func(t *testing.T) {
 				host := globalBlogFixture(t, layout, nil).ViewData
@@ -385,11 +385,11 @@ func TestStellarHeadExplicitOGDescriptionKeepsIndependentPriorityThroughEmbed(t 
 				if err != nil {
 					t.Fatal(err)
 				}
-				if !strings.Contains(out, `name="description" content="Site SEO"`) || !strings.Contains(out, `"description":"Site SEO"`) {
+				if !strings.Contains(out, `name="description" content="`+test.wantOG+`"`) || !strings.Contains(out, `"description":"Site SEO"`) {
 					t.Fatal("host metadata/default JSON-LD chain changed")
 				}
 				if test.wantOG != "" {
-					for _, fragment := range []string{`property="og:description" content="` + test.wantOG + `"`, `name="twitter:description" content="` + test.wantOG + `"`} {
+					for _, fragment := range []string{`property="og:description" content="` + test.wantOG + `"`} {
 						if !strings.Contains(out, fragment) {
 							t.Fatalf("explicit OG override lost: missing %s", fragment)
 						}

@@ -23,4 +23,12 @@ go test -race ./modules/stellar/web ./modules/stellar/i18n
 
 全局 Blog 扩展遵循独立规则：welcome intro/linklist 只作用于命名 welcome 组件，显式组件参数优先；nav_tabs 支持替换或追加，保留官方 listing-nav DOM。read_next=false 只控制文章/Topic，Wiki 导航保留。AI default/色彩/图标只覆盖四个官方标签，图片横幅仍使用自适应文字。banner_ratio 只覆盖详情横幅，category/tag 图标用于列表、索引与详情。expire_days 只用于文章/Topic，edit_this_page 只在官方 contributor 未命中时按最长来源前缀匹配。
 
-Notebook license/share 作为仅 Note 的扩展默认值补入当前渲染副本，不改变保存原文；显式 Page/Collection footer 优先，null 保留官方继承语义，false 关闭。分享显式关闭同时关闭独立 Blog 分享按钮。SEO 的独立 no_index/default_description/default_keywords/verification 字段由宿主 typed bridge 提供；页面显式元信息优先，站点缺省次之，meta/OG/Twitter/JSON-LD 同步，输出可由 partial navigation 替换。
+Notebook license/share 作为仅 Note 的扩展默认值补入当前渲染副本，不改变保存原文；显式 Page/Collection footer 优先，null 保留官方继承语义，false 关闭。分享显式关闭同时关闭独立 Blog 分享按钮。SEO 的独立 no_index/default_description/default_keywords/verification 字段由宿主 typed bridge 提供；页面显式元信息优先，站点缺省次之。启用 OG 时，普通 description 与分享元信息按官方 head.ejs 抑制及 Hexo helper 回退链输出；独立 default_description 继续消费于 JSON-LD。canonical 和 JSON-LD 保留宿主展示 URL，显式 OG URL 只影响社交元信息。输出可由 partial navigation 替换。
+
+`generate-opengraph.cjs` 通过 `git archive` 读取上述固定 commit 的 head.ejs 和模型，调用真正的 `hexo@8.0.0` open_graph helper。外层 strip_html 使用 `hexo-util@4.0.0`，Hexo helper 自身解析到的嵌套依赖为 `hexo-util@3.3.0`；产物记录两者版本及 head/helper SHA256。开发再生成：
+
+```sh
+NODE_PATH=/absolute/path/to/oracle/node_modules node modules/stellar/web/stellar_template_helpers_testdata/generate-opengraph.cjs /absolute/path/to/resource/hexo-theme-stellar
+```
+
+`opengraph.json` 包含四种 profile 的 96 个参数组合：76 个正常组合分别验证真实 embed HTTP SSR、离线快照和 opaque Markdown preview（228 个输出），另 20 个非法 URL／基址／图片／Twitter 图片／账号类型组合记录官方 TypeError（60 个错误边界），并验证 Go 的三个入口明确失败。它覆盖作者、Facebook、Twitter、图片别名与数组、相对路径解析、语言、日期、查询参数、HTML／实体描述与标题、null／空值回退。验证的是实际元信息 DOM 值；错误通过模板 helper 正式传播，不静默丢弃图片。

@@ -55,7 +55,7 @@ func stellarLoadingCSS(d *StellarRenderData) template.CSS {
 	return template.CSS(":root{--text-loading:" + quote(stellarTranslate(d, "message.loading")) + ";--text-loading-error:" + quote(stellarTranslate(d, "message.loading_failed")) + "}")
 }
 
-func stellarHeadMeta(d *StellarRenderData) template.HTML {
+func stellarHeadMeta(d *StellarRenderData) (template.HTML, error) {
 	seo := stellarMap(stellarRenderGet(d, "seo"))
 	var b strings.Builder
 	meta := func(kind, name string, value any) {
@@ -65,7 +65,9 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 	}
 	description := stellarFirst(stellarGet(d.Stellar.Data, "page.description"), d.Site.SEO.DefaultDescription, seo["description"], d.Site.Description)
 	metadataOverride := stellarTruth(stellarGet(d.Stellar.Data, "page.description")) || d.Site.SEO.DefaultDescription != ""
-	meta("name", "description", description)
+	if stellarGet(d.Stellar.Theme, "openGraph.enabled") != true && len(stellarMap(seo["openGraph"])) == 0 {
+		meta("name", "description", description)
+	}
 	keywords := []string{}
 	keywordSource := seo["keywords"]
 	if explicit := stellarGet(d.Stellar.Data, "page.keywords"); stellarTruth(explicit) {
@@ -131,62 +133,12 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 		fmt.Fprintf(&b, `<link data-stellar-page-meta rel="canonical" href="%s">`, stellarEscape(canonical))
 	}
 	og := stellarMap(seo["openGraph"])
-	if len(og) == 0 && stellarGet(d.Stellar.Theme, "openGraph.enabled") == true {
-		title := stellarFirst(stellarGet(d.Page, "Title"), d.Site.Title)
-		image := stellarText(stellarGet(d.Stellar.Data, "page.cover"))
-		if image == "" {
-			for _, pattern := range stellarContentImagePatterns {
-				if match := pattern.FindStringSubmatch(string(d.Content)); len(match) > 1 {
-					image = match[1]
-					break
-				}
-			}
+	if len(og) > 0 || stellarGet(d.Stellar.Theme, "openGraph.enabled") == true {
+		graph, err := stellarOpenGraph(d, og)
+		if err != nil {
+			return "", err
 		}
-		args := map[string]any{"type": "website", "description": description, "url": stellarPublicPageURL(d), "language": d.Stellar.Language, "image": stellarFirst(image, d.Site.Avatar)}
-		if id := stellarGet(d.Stellar.Theme, "openGraph.twitterId"); stellarTruth(id) {
-			args["twitter_id"] = id
-		}
-		// 普通 Page 没有 collection render model，仍须采用官方 og_args 的显式覆盖。
-		// title/site_name 随后按上游 head.ejs 重写，空 image 等参数则原样保留。
-		for key, value := range stellarMap(stellarGet(d.Stellar.Data, "page.seo.openGraph")) {
-			args[key] = prepClone(value)
-		}
-		og = map[string]any{"title": title, "siteName": d.Site.Title, "twitterTitle": title, "args": args}
-	}
-	if len(og) > 0 {
-		args := prepCloneMap(stellarMap(og["args"]))
-		// 页面显式 Open Graph 参数遵循官方 Object.assign，包括空值。
-		// 普通 meta 的宿主缺省链只同步到未覆盖的分享描述。
-		if explicit, exists := stellarMap(stellarGet(d.Stellar.Data, "page.seo.openGraph"))["description"]; exists {
-			args["description"] = prepClone(explicit)
-		} else if metadataOverride {
-			args["description"] = description
-		}
-		meta("property", "og:type", args["type"])
-		meta("property", "og:title", og["title"])
-		meta("property", "og:site_name", og["siteName"])
-		meta("property", "og:url", stellarFirst(d.Page.CanonicalURL, args["url"], stellarPublicPageURL(d)))
-		meta("property", "og:description", args["description"])
-		meta("property", "og:locale", strings.ReplaceAll(stellarText(args["language"]), "-", "_"))
-		for _, image := range stellarList(args["image"]) {
-			meta("property", "og:image", image)
-		}
-		if _, ok := args["image"].(string); ok {
-			meta("property", "og:image", args["image"])
-		}
-		meta("property", "article:published_time", og["publishedTime"])
-		meta("property", "article:modified_time", og["modifiedTime"])
-		for _, tag := range stellarList(og["tags"]) {
-			meta("property", "article:tag", tag)
-		}
-		meta("name", "twitter:card", stellarFirst(args["twitter_card"], "summary"))
-		meta("name", "twitter:title", og["twitterTitle"])
-		meta("name", "twitter:description", args["description"])
-		meta("name", "twitter:creator", args["twitter_id"])
-		meta("name", "twitter:site", args["twitter_site"])
-		if image, ok := args["image"].(string); ok {
-			meta("name", "twitter:image", image)
-		}
+		b.WriteString(string(graph))
 	}
 	ld := seo["jsonLd"]
 	if ld == nil {
@@ -229,7 +181,7 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 			fmt.Fprintf(&b, `<script data-stellar-page-meta type="application/ld+json">%s</script>`, raw)
 		}
 	}
-	return template.HTML(b.String())
+	return template.HTML(b.String()), nil
 }
 
 func (r stellarTemplateRenderer) hero(d *StellarRenderData) template.HTML {
