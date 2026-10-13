@@ -198,11 +198,13 @@ function createVoiceDom(audios) {
             }
         } else if (audio.classList.contains('wechat')) {
             if (isNaN(audio.duration) || audio.duration === Infinity) {
-                audio.addEventListener('durationchange', ()=>{
-                    createWechatVoiceDom(audio);
-                });
+                const handleDurationChange = ()=>{
+                    cleanups.push(createWechatVoiceDom(audio));
+                };
+                audio.addEventListener('durationchange', handleDurationChange, { once: true });
+                cleanups.push(() => audio.removeEventListener('durationchange', handleDurationChange));
             } else {
-                createWechatVoiceDom(audio);
+                cleanups.push(createWechatVoiceDom(audio));
             }
         }
     }
@@ -262,33 +264,44 @@ function createWaveDom(audio) {
         updateWaveColors();
 
         let playFlag = false;
+        let active = true;
+        const frames = new Set();
+        function scheduleDraw(callback) {
+            const frame = window.requestAnimationFrame(() => {
+                frames.delete(frame);
+                if (active) callback();
+            });
+            frames.add(frame);
+        }
 
         //绘制wave
         drawWave(context,audioCanvas.height,waveHeightArr,1,activeWaveColor);
 
-        audio.addEventListener('timeupdate', ()=>{
+        const handleTimeUpdate = ()=>{
             if (audio.currentTime > 0) {
                 updateWaveColors();
-                utils.requestAnimationFrame(()=>{
+                scheduleDraw(()=>{
                     context.clearRect(0, 0, audioCanvas.width, audioCanvas.height);
                     drawWaveWhenPlaying(context,audioCanvas.height,(audio.currentTime / audio.duration) * audioCanvas.width / dpr,waveHeightArr,1,activeWaveColor,inactiveWaveColor);
                     drawPlayLine(context,audioCanvas.height,(audio.currentTime / audio.duration / dpr) * audioCanvas.width,activeWaveColor);
                 });
             }
-        });
+        };
+        audio.addEventListener('timeupdate', handleTimeUpdate);
 
-        audio.addEventListener('ended', ()=>{
+        const handleEnded = ()=>{
             audio.pause();
             pauseBtn.style.display = "none";
             playBtn.style.display = "flex";
             audio.currentTime = 0;
-            utils.requestAnimationFrame(()=>{
+            scheduleDraw(()=>{
                 context.clearRect(0, 0, audioCanvas.width, audioCanvas.height);
                 drawWave(context,audioCanvas.height,waveHeightArr,1,activeWaveColor);
             });
             playFlag = false;
-        });
-        voiceDom.addEventListener('click', ()=>{
+        };
+        audio.addEventListener('ended', handleEnded);
+        const handleClick = ()=>{
             if (pauseBtn.style.display === 'flex') {
                 audio.pause();
                 pauseBtn.style.display = "none";
@@ -300,26 +313,38 @@ function createWaveDom(audio) {
                 playBtn.style.display = "none";
                 playFlag = true;
             }
-        });
+        };
+        voiceDom.addEventListener('click', handleClick);
 
         const cleanupColorScheme = listenColorScheme(document, mediaQuery, function () {
             if (!playFlag) {
                 updateWaveColors();
                 if (audio.currentTime > 0) {
-                    utils.requestAnimationFrame(()=>{
+                    scheduleDraw(()=>{
                         context.clearRect(0, 0, audioCanvas.width, audioCanvas.height);
                         drawWaveWhenPlaying(context,audioCanvas.height,(audio.currentTime / audio.duration) * audioCanvas.width / dpr,waveHeightArr,1,activeWaveColor,inactiveWaveColor);
                         drawPlayLine(context,audioCanvas.height,(audio.currentTime / audio.duration / dpr) * audioCanvas.width,activeWaveColor);
                     });
                 } else {
-                    utils.requestAnimationFrame(()=>{
+                    scheduleDraw(()=>{
                         context.clearRect(0, 0, audioCanvas.width, audioCanvas.height);
                         drawWave(context,audioCanvas.height,waveHeightArr,1,activeWaveColor);
                     });
                 }
             }
         });
-        return cleanupColorScheme;
+        return function cleanup() {
+            active = false;
+            cleanupColorScheme();
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+            audio.removeEventListener('ended', handleEnded);
+            voiceDom.removeEventListener('click', handleClick);
+            for (const frame of frames) window.cancelAnimationFrame(frame);
+            frames.clear();
+            pauseBtn.style.display = "none";
+            playBtn.style.display = "flex";
+            playFlag = false;
+        };
     } else {
         console.log("浏览器不支持canvas");
     }
@@ -421,13 +446,14 @@ function createWechatVoiceDom(audio) {
 
     let playFlag = false;
 
-    audio.addEventListener('ended', ()=>{
+    const handleEnded = ()=>{
         audio.pause();
         wechatVoice.classList.remove('play');
         audio.currentTime = 0;
         playFlag = false;
-    });
-    voiceDom.addEventListener('click', ()=>{
+    };
+    audio.addEventListener('ended', handleEnded);
+    const handleClick = ()=>{
         if (playFlag) {
             audio.pause();
             wechatVoice.classList.remove('play');
@@ -437,5 +463,12 @@ function createWechatVoiceDom(audio) {
             wechatVoice.classList.add('play');
             playFlag = true;
         }
-    });
+    };
+    voiceDom.addEventListener('click', handleClick);
+    return function cleanup() {
+        audio.removeEventListener('ended', handleEnded);
+        voiceDom.removeEventListener('click', handleClick);
+        wechatVoice.classList.remove('play');
+        playFlag = false;
+    };
 }
