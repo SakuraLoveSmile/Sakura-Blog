@@ -62,6 +62,8 @@ func (r stellarTemplateRenderer) content(d *StellarRenderData) (template.HTML, e
 		return r.categories(d), nil
 	case "tags":
 		return r.tags(d), nil
+	case "moments":
+		return r.blogMoments(d), nil
 	case "archive", "archives", "author":
 		return r.archives(d), nil
 	case "index_topic", "topic-index", "topics":
@@ -142,6 +144,7 @@ func (r stellarTemplateRenderer) banner(d *StellarRenderData) template.HTML {
 	tagline := banner["tagline"]
 	avatar := banner["avatar"]
 	image := stellarText(stellarFirst(stellarItemGet(d, "cover"), stellarGet(d.Stellar.Data, "page.cover")))
+	image = stellarBlogBannerImage(d, image)
 	if d.AuthorProfile != nil {
 		title = d.AuthorProfile.Name
 		avatar = d.AuthorProfile.Avatar
@@ -245,7 +248,11 @@ func (r stellarTemplateRenderer) dateInfo(d *StellarRenderData) template.HTML {
 			}
 		}
 		if len(author) > 0 && profile != "notebook" {
-			fmt.Fprintf(&b, `<a class="author" href="%s">%s</a><span class="sep"></span>`, stellarEscape(stellarURL(d.Stellar.Root, author["path"])), stellarEscape(author["name"]))
+			if names, extended := r.blogAuthors(d, author, id); extended {
+				b.WriteString(string(names))
+			} else {
+				fmt.Fprintf(&b, `<a class="author" href="%s">%s</a><span class="sep"></span>`, stellarEscape(stellarURL(d.Stellar.Root, author["path"])), stellarEscape(author["name"]))
+			}
 		}
 		prefix := ""
 		if len(author) == 0 || profile == "notebook" {
@@ -324,12 +331,12 @@ func (r stellarTemplateRenderer) articleFooter(d *StellarRenderData, footer map[
 	if refs := stellarList(footer["references"]); len(refs) > 0 {
 		fmt.Fprintf(&b, `<section id="references"><div class="header"><span>%s</span></div><div class="body"><ul>`, stellarEscape(stellarTranslate(d, "meta.references")))
 		for _, ref := range refs {
-			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, stellarMarkdown(ref))
+			fmt.Fprintf(&b, `<li class="post-title">%s</li>`, stellarMarkdown(d, ref))
 		}
 		b.WriteString(`</ul></div></section>`)
 	}
 	if stellarTruth(footer["license"]) {
-		fmt.Fprintf(&b, `<section id="license"><div class="header"><span>%s</span></div><div class="body">%s</div></section>`, stellarEscape(stellarTranslate(d, "meta.license")), stellarMarkdown(footer["license"]))
+		fmt.Fprintf(&b, `<section id="license"><div class="header"><span>%s</span></div><div class="body">%s</div></section>`, stellarEscape(stellarTranslate(d, "meta.license")), stellarMarkdown(d, footer["license"]))
 	}
 	if c := stellarMap(footer["contributor"]); len(c) > 0 {
 		fmt.Fprintf(&b, `<section id="contributors"><div class="header"><span>%s</span><span class="spacer"></span><a class="edit" href="%s">%s<span>%s</span></a></div><div class="body"><div class="ds-contributors users-wrap" api-type="commits" data-api="%s"><div class="grid-box"></div></div></div></section>`, stellarEscape(stellarTranslate(d, "meta.contributors")), stellarEscape(stellarURL(d.Stellar.Root, c["editUrl"])), r.icon("default:edit"), stellarEscape(stellarTranslate(d, "btn.edit")), stellarEscape(c["commitsUrl"]))
@@ -529,6 +536,10 @@ func (r stellarTemplateRenderer) postIndex(d *StellarRenderData, notebook bool) 
 		if firstHome && !flat && stellarInt(listing["priority"], 0) > 0 {
 			continue
 		}
+		if poster := r.blogPosterCard(d, raw, listing, notebook); poster != "" {
+			b.WriteString(string(poster))
+			continue
+		}
 		hero := listing["cardStyle"] == "hero" && stellarTruth(listing["cover"]) && !notebook
 		class := "post-card post"
 		style := ""
@@ -631,7 +642,7 @@ func (r stellarTemplateRenderer) wikiIndex(d *StellarRenderData, notebook bool) 
 		if stellarTruth(d.Stellar.Data["wikiFilter"]) {
 			wrap += " filter"
 		}
-		fmt.Fprintf(&b, `<div class="%s"><a class="%s"%s href="%s">%s</a></div>`, wrap, stellarEscape(r.ui(d, class, "hoverCard")), style, stellarEscape(stellarURL(d.Stellar.Root, v["href"])), r.wikiCard(d, v, notebook))
+		fmt.Fprintf(&b, `<div class="%s"><a class="%s"%s href="%s">%s</a></div>`, wrap, stellarEscape(r.ui(d, class, "hoverCard")), style, stellarEscape(stellarBlogWikiHref(d, v, notebook)), r.wikiCard(d, v, notebook))
 	}
 	b.WriteString(`</div>`)
 	return template.HTML(b.String())
@@ -952,7 +963,11 @@ func (r stellarTemplateRenderer) pinSlider(d *StellarRenderData, wiki bool) temp
 		if cover == "" {
 			class += " no-cover"
 		}
-		fmt.Fprintf(&b, `<a class="%s" href="%s"`, class, stellarEscape(stellarURL(d.Stellar.Root, item["href"])))
+		href := stellarURL(d.Stellar.Root, item["href"])
+		if wiki {
+			href = stellarBlogWikiHref(d, item, false)
+		}
+		fmt.Fprintf(&b, `<a class="%s" href="%s"`, class, stellarEscape(href))
 		if cover != "" {
 			fmt.Fprintf(&b, ` style="--pin-cover-url:url('%s')"`, stellarEscape(stellarCSSURL(cover)))
 		}

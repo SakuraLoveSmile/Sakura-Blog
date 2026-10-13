@@ -246,7 +246,7 @@ func prepDetailLayout(layout string) bool {
 	return layout == "post" || layout == "page" || layout == "wiki-doc" || layout == "note"
 }
 func prepContentLayout(layout string) bool {
-	return prepDetailLayout(layout) || layout == "settings" || layout == "wiki" || layout == "post-password"
+	return prepDetailLayout(layout) || layout == "settings" || layout == "wiki" || layout == "post-password" || layout == "moments"
 }
 func prepProfile(layout string) string {
 	switch layout {

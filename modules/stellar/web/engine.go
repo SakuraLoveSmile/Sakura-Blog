@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"blog/internal/post"
 	"blog/internal/settings"
 	"blog/internal/stellarhtml"
 	"blog/modules/stellar/clientconfig"
@@ -20,9 +21,16 @@ import (
 // 注意：必须用路径前缀命名——不同子目录允许同名文件（如前台与管理页评论区），
 // 若只用基名会互相覆盖（曾为 admin/comments 被 partial/comments 覆盖的 bug）。
 type Engine struct {
-	tpl           *template.Template
-	icons         *settings.IconRegistry
-	imageEnricher func(string, *StellarRenderData) (string, error)
+	tpl                   *template.Template
+	icons                 *settings.IconRegistry
+	imageEnricher         func(string, *StellarRenderData) (string, error)
+	stellarMarkdownRender func(string, post.StellarRenderContext) (string, error)
+}
+
+// SetStellarMarkdownRender 在服务启动前装配宿主严格渲染器；每次调用接收
+// 当前请求的主题、公开数据、页面与语言，不读取全局模板 Markdown 回调。
+func (e *Engine) SetStellarMarkdownRender(render func(string, post.StellarRenderContext) (string, error)) {
+	e.stellarMarkdownRender = render
 }
 
 // SetStellarImageEnricher 在装配时设置缓存回填；请求渲染不抓取图片。
@@ -115,7 +123,11 @@ func buildEngine(entries []tplEntry, reg *settings.IconRegistry) (*Engine, error
 			return nil, fmt.Errorf("parse %s: %w", e.name, err)
 		}
 	}
-	return &Engine{tpl: tpl, icons: reg}, nil
+	markdown := post.NewService("")
+	if reg != nil {
+		markdown.SetIconFunc(reg.Get)
+	}
+	return &Engine{tpl: tpl, icons: reg, stellarMarkdownRender: markdown.RenderStellarV2WithContext}, nil
 }
 
 // Render 渲染指定布局模板名（如 "layout/base"），返回 HTML 字符串。
@@ -184,6 +196,10 @@ func (e *Engine) RenderValue(name string, data any) (string, error) {
 }
 
 func (e *Engine) render(name string, data any) (string, error) {
+	if prepared, ok := data.(*StellarRenderData); ok {
+		prepared.markdownRender = e.stellarMarkdownRender
+		prepared.markdownError = nil
+	}
 	t := e.tpl.Lookup(name)
 	if t == nil {
 		return "", fmt.Errorf("template %q not found", name)
@@ -191,6 +207,9 @@ func (e *Engine) render(name string, data any) (string, error) {
 	var sb strings.Builder
 	if err := t.Execute(&sb, data); err != nil {
 		return "", fmt.Errorf("execute %s: %w", name, err)
+	}
+	if prepared, ok := data.(*StellarRenderData); ok && prepared.markdownError != nil {
+		return "", fmt.Errorf("render %s Markdown: %w", name, prepared.markdownError)
 	}
 	return sb.String(), nil
 }

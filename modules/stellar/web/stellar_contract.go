@@ -3,6 +3,7 @@ package web
 import (
 	"html/template"
 
+	"blog/internal/post"
 	"blog/internal/settings"
 	"blog/internal/stellarmodels"
 )
@@ -11,8 +12,10 @@ import (
 // 在新布局中，旧 Site.Style/Plugins 等不得替代规范化 Theme。
 type StellarRenderData struct {
 	*settings.ViewData
-	Stellar *StellarPresentation
-	Region  string
+	Stellar        *StellarPresentation
+	Region         string
+	markdownRender func(string, post.StellarRenderContext) (string, error)
+	markdownError  error
 }
 
 // StellarPresentation 是模板的装配结果，不持久化或再次定义上游 schema。

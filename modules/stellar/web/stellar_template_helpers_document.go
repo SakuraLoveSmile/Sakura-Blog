@@ -255,7 +255,7 @@ func (r stellarTemplateRenderer) hero(d *StellarRenderData) template.HTML {
 		fmt.Fprintf(&b, `<h1 class="cover-title" data-text-adaptive="contrast">%s</h1>`, stellarEscape(cover["title"]))
 	}
 	if stellarTruth(cover["description"]) {
-		fmt.Fprintf(&b, `<div class="description">%s</div>`, stellarMarkdown(cover["description"]))
+		fmt.Fprintf(&b, `<div class="description">%s</div>`, stellarMarkdown(d, cover["description"]))
 	}
 	b.WriteString(`<div class="wiki-cover-actions">`)
 	button := func(href, title string, icon any, external bool) {
@@ -352,7 +352,7 @@ func (r stellarTemplateRenderer) footer(d *StellarRenderData) template.HTML {
 	content := stellarText(foot["content"])
 	author := stellarFirst(d.Stellar.Data["authorName"], stellarGet(d.Site, "Author"), "Anonymity")
 	content = strings.NewReplacer("{author.name}", stellarText(author), "{theme.name}", "Stellar", "{theme.version}", "2.0.0", "{theme.tree}", "https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0").Replace(content)
-	fmt.Fprintf(&b, `<div class="text">%s</div></footer>`, stellarMarkdown(content))
+	fmt.Fprintf(&b, `<div class="text">%s</div></footer>`, stellarMarkdown(d, content))
 	return template.HTML(b.String())
 }
 func stellarMarkdownLink(s string) (string, string) {
@@ -379,7 +379,7 @@ func (r stellarTemplateRenderer) comments(d *StellarRenderData) template.HTML {
 	var b strings.Builder
 	fmt.Fprintf(&b, `<div class="related-wrap md-text%s" id="comments">`, r.reveal(d))
 	if stellarTruth(title) {
-		fmt.Fprintf(&b, `<section class="header cmt-title cap theme">%s</section>`, stellarMarkdown(title))
+		fmt.Fprintf(&b, `<section class="header cmt-title cap theme">%s</section>`, stellarMarkdown(d, title))
 	}
 	fmt.Fprintf(&b, `<section class="body cmt-body %s">`, service)
 	id := stellarText(stellarGet(model, "id"))

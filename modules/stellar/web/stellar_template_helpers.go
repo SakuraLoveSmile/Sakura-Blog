@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"blog/internal/post"
 	"blog/internal/settings"
 	stellari18n "blog/modules/stellar/i18n"
 )
@@ -226,12 +227,28 @@ func stellarMap(v any) map[string]any {
 	}
 	return m
 }
-func stellarMarkdown(v any) template.HTML {
+func stellarMarkdown(d *StellarRenderData, v any) template.HTML {
 	s := stellarText(v)
-	if markdownRender != nil {
-		return markdownRender(s)
+	if s == "" {
+		return ""
 	}
-	return template.HTML(stellarEscape(s))
+	if d.markdownError != nil {
+		return ""
+	}
+	if d.markdownRender == nil {
+		d.markdownError = fmt.Errorf("stellar v2: request Markdown renderer required")
+		return ""
+	}
+	body, err := d.markdownRender(s, post.StellarRenderContext{
+		Theme: d.Stellar.Theme, Data: d.Stellar.Data,
+		Page: stellarMap(d.Stellar.Data["page"]), Language: d.Stellar.Language,
+		BlogExtensions: d.Stellar.BlogContent, Offline: d.Stellar.Data["offline"] == true,
+	})
+	if err != nil {
+		d.markdownError = err
+		return ""
+	}
+	return template.HTML(body)
 }
 
 type stellarTemplateRenderer struct{ icons *settings.IconRegistry }

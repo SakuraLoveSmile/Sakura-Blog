@@ -458,7 +458,7 @@ func (r stellarTemplateRenderer) widget(d *StellarRenderData, region, layout str
 	case "markdown":
 		var b strings.Builder
 		if stellarTruth(item["content"]) {
-			b.WriteString(string(stellarMarkdown(item["content"])))
+			b.WriteString(string(stellarMarkdown(d, item["content"])))
 		}
 		if stellarTruth(item["src"]) {
 			b.WriteString(string(stellarRemoteMarkdown(d, stellarText(item["src"]))))
