@@ -31,6 +31,7 @@ func TestStellarPublicRouteOwnershipSnapshot(t *testing.T) {
 		got[route.Method+" "+route.Path] = true
 	}
 	want := []string{
+		"GET /api/stellar/remote-md",
 		"GET /api/auth/register/challenge",
 		"POST /api/auth/register",
 		"POST /api/auth/login",

@@ -75,17 +75,22 @@
     });
   }
 
-  function render(el, utils) {
+  function render(el, context) {
     const src = el.getAttribute('src');
     if (!src) {
       return;
     }
-    const url = src + '?t=' + new Date().getTime();
-    utils.request(el, url, async resp => {
-      const data = await resp.text();
+    const api = context.remoteMarkdownAPI || '/api/stellar/remote-md';
+    const url = api + '?url=' + encodeURIComponent(src);
+    return context.serviceUtils.request(el, url, async resp => {
+      if (!resp.ok) throw new Error('remote Markdown request failed: ' + resp.status);
+      const data = await resp.json();
+      if (typeof data.html !== 'string') throw new TypeError('remote Markdown response has no HTML');
+      context.signal.throwIfAborted();
       const tmp = document.createElement('div');
-      tmp.innerHTML = marked.parse(data);
-      const base = el.getAttribute('data-base');
+      // 只插入服务器 goldmark + UGC 净化结果；不开放作者 HTML 的脚本权限。
+      tmp.innerHTML = data.html;
+      const base = el.getAttribute('data-base') || data.source_url;
       if (base) {
         rewriteRelativeUrls(tmp, base);
       }
@@ -117,6 +122,6 @@
 
   document.currentScript.stellarMount = function (root, context) {
     const els = root.getElementsByClassName('ds-mdrender');
-    for (const el of Array.from(els)) render(el, context.serviceUtils);
+    return Promise.all(Array.from(els, el => render(el, context)));
   };
 })();

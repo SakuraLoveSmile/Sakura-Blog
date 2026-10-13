@@ -91,7 +91,8 @@ export async function mount(root, context) {
     return assets.script(js).then(script => {
       context.signal.throwIfAborted();
       if (typeof script.stellarMount !== 'function') throw new TypeError(`data-service asset has no regional mount: ${js}`);
-      return script.stellarMount(root, { ...context, serviceUtils });
+      const siteRoot = (context.legacy.ctx.root || '/').replace(/\/?$/, '/');
+      return script.stellarMount(root, { ...context, serviceUtils, remoteMarkdownAPI: siteRoot + 'api/stellar/remote-md' });
     });
   }
 
@@ -148,7 +149,7 @@ export async function mount(root, context) {
     } else {
       const els = root.getElementsByClassName(`ds-${id}`);
       if (els?.length > 0) {
-        if (id == 'timeline' || id == 'memos' || id == 'marked' || id == 'mdrender') {
+        if (id == 'timeline' || id == 'memos' || id == 'marked') {
           loads.push(assets.script(deps.marked).then(function () {
           context.signal?.throwIfAborted();
             return loadService(js);
