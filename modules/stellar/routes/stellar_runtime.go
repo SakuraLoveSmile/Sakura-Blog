@@ -784,7 +784,7 @@ func (s *webServer) stellarView(snap *stellarSnapshot, r *stellarRecord) *tmpl.V
 	if r.post != nil {
 		data.Page.Views = r.post.Views
 		data.Page.AuthorLinks = stellarRecordAuthors(snap, r)
-		data.Page.AISummary = stellarString(stellarGet(stellarRecordBlog(r), "content.ai_summary"))
+		data.Page.AISummary = stellarString(stellarBlogContent(stellarRecordBlogRaw(r))["ai_summary"])
 	}
 	return data
 }
@@ -921,7 +921,6 @@ func stellarPopulatePublicData(snap *stellarSnapshot) {
 	snap.input.RuntimeData = data
 	for _, r := range snap.records {
 		r.input.RuntimeData = stellarCopyObject(data)
-		r.input.RuntimeData["recordBlog"] = stellarRecordBlog(r)
 		if r.profile == "notebook" {
 			r.input.RuntimeData = stellarCopyObject(data)
 			c := snap.byCollection["notebook:"+r.collectionID]
@@ -943,6 +942,7 @@ func stellarPopulatePublicData(snap *stellarSnapshot) {
 			})
 			r.input.RuntimeData["recentItems"] = items
 		}
+		r.input.RuntimeData["recordBlog"] = stellarRecordBlog(r)
 	}
 }
 
@@ -954,16 +954,19 @@ func stellarEscapePath(raw string) string {
 	return strings.Join(parts, "/")
 }
 
-func stellarPublishedBlog(raw string) stellarmodels.Object {
+func stellarBlogContent(raw string) stellarmodels.Object {
 	var extension map[string]any
 	decoder := json.NewDecoder(strings.NewReader(raw))
 	decoder.UseNumber()
 	if err := decoder.Decode(&extension); err != nil {
 		return stellarmodels.Object{}
 	}
-	content := stellarObject(extension["content"])
+	return stellarObject(extension["content"])
+}
+func stellarPublishedBlog(raw string) stellarmodels.Object {
+	content := stellarBlogContent(raw)
 	pub := stellarmodels.Object{}
-	for _, key := range []string{"banner_image", "wiki_external_url", "ai_summary"} {
+	for _, key := range []string{"banner_image", "wiki_external_url"} {
 		if value, ok := content[key].(string); ok {
 			pub[key] = value
 		}
@@ -989,7 +992,7 @@ func stellarPublishedBlog(raw string) stellarmodels.Object {
 	}
 	return stellarmodels.Object{"content": pub}
 }
-func stellarRecordBlog(r *stellarRecord) stellarmodels.Object {
+func stellarRecordBlogRaw(r *stellarRecord) string {
 	raw := ""
 	switch {
 	case r.post != nil:
@@ -1001,7 +1004,10 @@ func stellarRecordBlog(r *stellarRecord) stellarmodels.Object {
 	case r.note != nil:
 		raw = r.note.BlogExtensions
 	}
-	return stellarPublishedBlog(raw)
+	return raw
+}
+func stellarRecordBlog(r *stellarRecord) stellarmodels.Object {
+	return stellarPublishedBlog(stellarRecordBlogRaw(r))
 }
 func stellarRecordAuthors(snap *stellarSnapshot, r *stellarRecord) []tmpl.AuthorLink {
 	ids := stellarTerms(stellarGet(stellarRecordBlog(r), "content.authors"))

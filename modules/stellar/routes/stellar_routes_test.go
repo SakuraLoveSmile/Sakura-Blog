@@ -263,6 +263,10 @@ func TestStellarActualEngineNavigationAndRequestURL(t *testing.T) {
 	if strings.Contains(w.Body.String(), "const utils") {
 		t.Fatal("legacy global shadows stock utils")
 	}
+	if !strings.Contains(w.Body.String(), `rel="canonical" href="https://fixture.example/sub/post/one"`) {
+		t.Fatal("detail canonical did not preserve actual subpath")
+	}
+
 	w = stellarRequest(r, "http://127.0.0.1:8109/sub/blog/page/2")
 	if w.Code != http.StatusOK {
 		t.Fatalf("page2=>%d %s", w.Code, w.Body.String())
@@ -286,6 +290,9 @@ func TestStellarActualEngineNavigationAndRequestURL(t *testing.T) {
 		}
 	}
 	walk(doc)
+	if !strings.Contains(w.Body.String(), `rel="canonical" href="https://fixture.example/sub/blog/page/2"`) {
+		t.Fatal("aggregate canonical did not preserve actual subpath")
+	}
 	config = strings.TrimPrefix(config, "window.stellarClientData=")
 	config = strings.TrimSuffix(config, ";")
 	var client map[string]any
@@ -352,8 +359,11 @@ func TestStellarBlogProjectionIsExplicitAndPublic(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	record := stellarObject(capture.last.Stellar.Input.RuntimeData["recordBlog"])
-	if stellarGet(record, "content.poster.headline") != "公开海报" || stellarGet(record, "content.ai_summary") != "当前摘要" {
+	if stellarGet(record, "content.poster.headline") != "公开海报" || capture.last.Page.AISummary != "当前摘要" {
 		t.Fatal("published extension projection missing")
+	}
+	if stellarGet(record, "content.ai_summary") != nil {
+		t.Fatal("recordBlog included a field outside the public extension contract")
 	}
 	for _, secret := range []string{"PRIVATE_POSTER_SECRET", "PRIVATE_CONTENT_SECRET", "PRIVATE_NOTIFY_SECRET", "PRIVATE_API_SECRET", "OLD_AI_DECOY", "OLD_POSTER_DECOY"} {
 		if strings.Contains(w.Body.String(), secret) {
@@ -369,5 +379,78 @@ func TestStellarBlogProjectionIsExplicitAndPublic(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), "itemBlogs") || !strings.Contains(w.Body.String(), "公开海报") {
 		t.Fatal("list extension projection missing")
+	}
+}
+
+func TestStellarCollectionDetailsKeepPublicRecordBlog(t *testing.T) {
+	_, st, capture, r := stellarRouteFixture(t)
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"文档","route":{"path":"/docs/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	extension := `{"content":{"poster":{"headline":"详情海报","topic":"专题","caption":"说明","color":"red","password":"PRIVATE_POSTER_SECRET"},"banner_image":"/detail.jpg","authors":["alice"],"collection_order":2,"wiki_external_url":"https://example.test/docs","password":"PRIVATE_CONTENT_SECRET"},"notify":{"password":"PRIVATE_NOTIFY_SECRET"}}`
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Status: store.StatusPublished, Title: "文档", StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`, BlogExtensions: extension}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateNotebook(&store.Notebook{ID: "journal", StellarVersion: 2, StellarConfig: `{"name":"笔记","route":{"path":"/journal/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateNote(&store.Note{NotebookID: "journal", Slug: "entry", Status: store.StatusPublished, Title: "笔记", StellarVersion: 2, StellarConfig: `{"collection":{"profile":"notebook","id":"journal"}}`, BlogExtensions: extension}); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/docs/intro", "/journal/entry"} {
+		w := stellarRequest(r, path)
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s => %d %s", path, w.Code, w.Body.String())
+		}
+		record := stellarObject(capture.last.Stellar.Input.RuntimeData["recordBlog"])
+		if stellarGet(record, "content.poster.headline") != "详情海报" || stellarGet(record, "content.banner_image") != "/detail.jpg" {
+			t.Fatalf("%s lost recordBlog: %#v", path, record)
+		}
+		for _, secret := range []string{"PRIVATE_POSTER_SECRET", "PRIVATE_CONTENT_SECRET", "PRIVATE_NOTIFY_SECRET"} {
+			if strings.Contains(w.Body.String(), secret) {
+				t.Fatalf("%s leaked %s", path, secret)
+			}
+		}
+	}
+}
+
+func TestStellarCollectionOrderAndAuthorConsumers(t *testing.T) {
+	ws, st, capture, r := stellarRouteFixture(t)
+	for _, item := range []struct{ id, order string }{{"docs", "2"}, {"first", "1"}} {
+		if err := st.CreateWikiProject(&store.WikiProject{ID: item.id, Visible: true, StellarVersion: 2, StellarConfig: `{"name":"` + item.id + `"}`, BlogExtensions: `{"content":{"collection_order":` + item.order + `,"wiki_external_url":"https://example.test/` + item.id + `","secret":"PRIVATE_COLLECTION_SECRET"}}`}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	row := createStellarPost(t, st, "coauthored", "")
+	row.BlogExtensions = `{"content":{"authors":["alice","alice"]}}`
+	if err := st.Update(row.Slug, row); err != nil {
+		t.Fatal(err)
+	}
+	site := *ws.site.Load()
+	version := *site.StellarV2
+	version.Blog = stellarCopyObject(version.Blog)
+	data := stellarCopyObject(stellarObject(version.Blog["data"]))
+	data["wiki"] = []any{"docs", "first"}
+	version.Blog["data"] = data
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	w := stellarRequest(r, "/wiki")
+	if w.Code != http.StatusOK {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if len(capture.last.Stellar.Collections) != 2 || capture.last.Stellar.Collections[0]["id"] != "first" {
+		t.Fatalf("collection_order not consumed: %#v", capture.last.Stellar.Collections)
+	}
+	blogs := stellarObject(capture.last.Stellar.Input.RuntimeData["collectionBlogs"])
+	if stellarGet(stellarObject(blogs["wiki/docs"]), "content.wiki_external_url") != "https://example.test/docs" || strings.Contains(w.Body.String(), "PRIVATE_COLLECTION_SECRET") {
+		t.Fatal("collectionBlogs contract or secret filtering failed")
+	}
+	w = stellarRequest(r, "/author/alice")
+	if w.Code != http.StatusOK || len(capture.last.Stellar.ListItems) != 1 || capture.last.Stellar.ListItems[0].Item["title"] != "coauthored" {
+		t.Fatalf("extension author aggregation failed: %d %s", w.Code, w.Body.String())
+	}
+	w = stellarRequest(r, "/post/coauthored")
+	if w.Code != http.StatusOK || len(capture.last.Page.AuthorLinks) != 1 {
+		t.Fatal("extension author links not deduplicated")
 	}
 }

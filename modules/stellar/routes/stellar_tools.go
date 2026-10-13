@@ -47,6 +47,8 @@ func (s *webServer) renderSnapshots(ctx context.Context) ([]stellarimages.PageSn
 		page["path"] = strings.TrimLeft(public.Path, "/")
 		page["permalink"] = absolute
 		data.Stellar.Input.Page = page
+		data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
+		data.Stellar.Input.RuntimeData["offline"] = true
 		data.Page.CanonicalURL = absolute
 		if data.Page.Description == "" {
 			data.Page.Description = snap.site.Description

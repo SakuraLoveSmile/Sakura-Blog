@@ -10,6 +10,7 @@ import (
 	"blog/internal/content"
 	"blog/internal/post"
 	"blog/internal/store"
+	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
 )
 
@@ -20,6 +21,39 @@ func (c *stellarNoNetwork) GetRepo(string, string) (*post.GHRepoInfo, error) {
 	return nil, nil
 }
 func (c *stellarNoNetwork) GetUser(string) (*post.GHUserInfo, error) { c.calls++; return nil, nil }
+
+type stellarOfflineSnapshotCapture struct {
+	t        *testing.T
+	renderer PageRenderer
+	count    int
+}
+
+func (c *stellarOfflineSnapshotCapture) Render(name string, data *tmpl.ViewData) (string, error) {
+	c.count++
+	if data.Stellar.Input.RuntimeData["offline"] != true {
+		c.t.Errorf("snapshot %s did not pass Offline to request-local Markdown consumers", data.Page.Path)
+	}
+	return c.renderer.Render(name, data)
+}
+
+func TestStellarToolSnapshotRenderContextsAreOffline(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	createStellarPost(t, st, "one", "")
+	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	capture := &stellarOfflineSnapshotCapture{t: t, renderer: engine}
+	ws.engine = capture
+	pages, err := ws.renderSnapshots(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pages) == 0 || len(pages) != capture.count {
+		t.Fatalf("snapshot render count=%d, pages=%d", capture.count, len(pages))
+	}
+}
+
 func TestStellarToolSnapshotsAreReadOnlyAndComplete(t *testing.T) {
 	ws, st, _, _ := stellarRouteFixture(t)
 	if err := st.EnsureUsersTable(); err != nil {

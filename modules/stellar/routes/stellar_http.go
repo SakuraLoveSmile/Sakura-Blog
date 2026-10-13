@@ -62,6 +62,7 @@ func (s *webServer) outputStellar(c *gin.Context, data *tmpl.ViewData, status in
 			base.RawQuery = ""
 			base.Fragment = ""
 			page["permalink"] = base.String()
+			data.Page.CanonicalURL = base.String()
 		}
 		data.Stellar.Input.Page = page
 	}
