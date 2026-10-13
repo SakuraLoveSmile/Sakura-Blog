@@ -1,9 +1,9 @@
 package api
 
 import (
+	"blog/internal/content"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"blog/internal/config"
 	"blog/internal/post"
@@ -91,10 +91,7 @@ func (h *Handler) renderEditorStellar(body string, meta StellarContentMetadata, 
 	if err != nil {
 		return "", err
 	}
-	language := "zh-CN"
-	if value, ok := loaded.Theme["language"].(string); ok && strings.TrimSpace(value) != "" {
-		language = value
-	}
+	language := content.ResolveStellarLanguage(parsed.Value, loaded.Blog)
 	data, _ := loaded.Blog["data"].(map[string]any)
 	return h.posts.RenderStellarV2WithContext(body, post.StellarRenderContext{Theme: loaded.Theme, Data: data, Page: parsed.Value, Language: language, BlogExtensions: true})
 }

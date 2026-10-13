@@ -12,5 +12,6 @@ type StellarPreviewInput struct {
 	Language       string
 	Path           string
 	RequestURL     string
+	WidgetConfig   string
 	PreviewToken   string
 }

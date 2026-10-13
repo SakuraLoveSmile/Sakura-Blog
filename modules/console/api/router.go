@@ -73,6 +73,7 @@ type Handler struct {
 
 	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
 	renderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	stellarWidgetCatalog        func() (map[string]any, error)
 	renderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// events is the shared content-change publisher. Console does not know
 	// which module owns the derived caches that consume these events.
@@ -98,6 +99,7 @@ type Config struct {
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	StellarWidgetCatalog        func() (map[string]any, error)
 	RenderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// Events publishes generic changes such as wiki/settings writes.
 	Events         content.Events
@@ -147,6 +149,7 @@ func New(cfg Config) *Handler {
 		icons:                       cfg.Icons,
 		renderSitePreview:           cfg.RenderSitePreview,
 		renderStellarContentPreview: cfg.RenderStellarContentPreview,
+		stellarWidgetCatalog:        cfg.StellarWidgetCatalog,
 		events:                      cfg.Events,
 		storage:                     attachmentStorageOrLocal(storageBackend, cfg.UploadDir),
 		storageManager:              cfg.StorageManager,

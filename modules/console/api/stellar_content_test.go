@@ -194,3 +194,43 @@ func TestStellarEditorPreviewCallbackReceivesCompleteCandidate(t *testing.T) {
 		t.Fatalf("missing document adapter must fail explicitly: %d", w.Code)
 	}
 }
+
+func TestStellarWidgetCatalogAndPreviewPreserveRawNumberWithoutWriting(t *testing.T) {
+	r, st, _, h := newFullStellarEnv(t)
+	r.GET("/widget-catalog-fixture", h.getStellarWidgetCatalog)
+	r.POST("/widget-preview-fixture", h.previewStellarWidget)
+	h.stellarWidgetCatalog = func() (map[string]any, error) {
+		return map[string]any{"custom": map[string]any{"layout": "markdown", "huge": json.Number("900719925474099312345"), "value": false, "none": nil}}, nil
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/widget-catalog-fixture", nil))
+	var catalog StellarWidgetCatalogResponse
+	_ = json.Unmarshal(w.Body.Bytes(), &catalog)
+	if w.Code != 200 || len(catalog.Items) != 1 || !strings.Contains(catalog.Items[0].Config, "900719925474099312345") || !strings.Contains(catalog.Items[0].Config, `"value": false`) || !strings.Contains(catalog.Items[0].Config, `"none": null`) {
+		t.Fatalf("catalog lost original number/bool/null: %d %s", w.Code, w.Body.String())
+	}
+	raw := ` {"layout":"markdown","content":"候选","huge":900719925474099312345,"value":false,"none":null} `
+	var captured content.StellarPreviewInput
+	h.renderStellarContentPreview = func(input content.StellarPreviewInput) (string, error) {
+		captured = input
+		return "<!doctype html><html></html>", nil
+	}
+	before, _ := st.ReadSettingsSnapshot()
+	payload, _ := json.Marshal(StellarWidgetPreviewRequest{StellarContentMetadata: StellarContentMetadata{2, "{}", "{}"}, WidgetConfig: raw, Layout: "page", PreviewToken: "current-widget-token"})
+	request := httptest.NewRequest(http.MethodPost, "/widget-preview-fixture", strings.NewReader(string(payload)))
+	request.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, request)
+	if w.Code != 200 || captured.WidgetConfig != raw || captured.PreviewToken != "current-widget-token" {
+		t.Fatalf("widget candidate changed: %d %+v", w.Code, captured)
+	}
+	after, _ := st.ReadSettingsSnapshot()
+	if len(before) != len(after) {
+		t.Fatal("Widget preview wrote settings")
+	}
+	for key, value := range before {
+		if after[key] != value {
+			t.Fatalf("preview mutated settings %s", key)
+		}
+	}
+}
