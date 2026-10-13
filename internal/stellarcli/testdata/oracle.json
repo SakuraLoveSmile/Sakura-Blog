@@ -186,6 +186,26 @@
         "GO",
         "a/b"
       ]
+    },
+    {
+      "title": "﻿Title﻿",
+      "ok": true,
+      "normalizedTitle": "Title",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
+    },
+    {
+      "title": "Title",
+      "ok": true,
+      "normalizedTitle": "Title",
+      "tags": [
+        "go",
+        "GO",
+        "a/b"
+      ]
     }
   ],
   "tagCases": [
@@ -262,6 +282,22 @@
         "false",
         "null",
         "0"
+      ]
+    },
+    {
+      "input": "﻿go﻿,sql",
+      "ok": true,
+      "tags": [
+        "go",
+        "sql"
+      ]
+    },
+    {
+      "input": "go,sql",
+      "ok": true,
+      "tags": [
+        "go",
+        "sql"
       ]
     }
   ],

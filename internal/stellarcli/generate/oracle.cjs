@@ -19,12 +19,12 @@ const source = path.join(root,"source");
 fs.mkdirSync(path.join(source,"_data/notebooks"),{recursive:true});
 fs.writeFileSync(path.join(source,"_data/notebooks/journal.yml"),'name: Journal\n');
 fs.writeFileSync(path.join(root,"_config.yml"),'theme: stellar\n');
-const titles = ["Hello", " Hello 世界 ", "", " ", ".", "..", "../escape", "/absolute", "a/b", "a\\b", "a:b", "a<b", "a>b", 'a"b', "a|b", "a?b", "a*b", "nul\0", "line\nbreak", "a\rb", "a\tb", "résumé", "a % b", "emoji 📝", "name.md", "a.b", "~home", "con", "a#b", "a@b"];
+const titles = ["Hello", " Hello 世界 ", "", " ", ".", "..", "../escape", "/absolute", "a/b", "a\\b", "a:b", "a<b", "a>b", 'a"b', "a|b", "a?b", "a*b", "nul\0", "line\nbreak", "a\rb", "a\tb", "résumé", "a % b", "emoji 📝", "name.md", "a.b", "~home", "con", "a#b", "a@b", "\ufeffTitle\ufeff", "\u0085Title\u0085"];
 const noteCases = titles.map(title => {
   try {const plan=notes.buildNewNotePlan({baseDir:root,sourceDir:source,notebook:"journal",title,tags:"go, go, GO,a/b",generatedAt:"2026-10-13T04:34:00.000Z"});return {title,ok:true,normalizedTitle:plan.title,tags:plan.tags};}
   catch(error){return {title,ok:false};}
 });
-const tagCases = ["", "go, go,GO,a/b", ",,,", " go ,, sql ", "a\nb", "\na\n", "\0", "a\tb", "a\rb", "😀, 😀,表", "a/b,a/b,c/d", "false,null,0"].map(input=>{try{return {input,ok:true,tags:notes.normalizeTags(input)}}catch(error){return {input,ok:false}}});
+const tagCases = ["", "go, go,GO,a/b", ",,,", " go ,, sql ", "a\nb", "\na\n", "\0", "a\tb", "a\rb", "😀, 😀,表", "a/b,a/b,c/d", "false,null,0", "\ufeffgo\ufeff,sql", "\u0085go\u0085,sql"].map(input=>{try{return {input,ok:true,tags:notes.normalizeTags(input)}}catch(error){return {input,ok:false}}});
 const themes = [{}, {topbar:{enabled:true,widgets:["ghrepo"]}}, {leftbar:{widgets:["menu","settings","toc","recent"]}}, {rightbar:{widgets:["spacer","unknown"]}}, {profiles:{post:{topbar:{enabled:true,widgets:[{type:"tree",name:"Custom"}]}}}}];
 const doctorCases = themes.map(theme=>{
   fs.writeFileSync(path.join(root,"_config.stellar.yml"),JSON.stringify(theme));

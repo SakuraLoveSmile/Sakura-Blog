@@ -32,7 +32,7 @@ type NotePlan struct {
 }
 
 func SafeSegment(value, label string) (string, error) {
-	v := strings.TrimSpace(value)
+	v := trimJS(value)
 	if v == "" {
 		return "", fmt.Errorf("%s 必须是非空字符串", label)
 	}
@@ -51,7 +51,7 @@ func NormalizeTags(value string) ([]string, error) {
 	tags := []string{}
 	seen := map[string]bool{}
 	for _, part := range strings.Split(value, ",") {
-		tag := strings.TrimSpace(part)
+		tag := trimJS(part)
 		if tag == "" || seen[tag] {
 			continue
 		}
@@ -205,4 +205,15 @@ func validateAuthorTx(tx *sql.Tx, id int64) error {
 		return fmt.Errorf("author no longer has active content-write permission")
 	}
 	return nil
+}
+
+// JavaScript trim 排除 NEL，同时包括 BOM；与上游 String.trim 边界保持一致。
+func trimJS(value string) string {
+	return strings.TrimFunc(value, func(r rune) bool {
+		switch r {
+		case '\t', '\n', '\v', '\f', '\r', ' ', 0x00a0, 0x1680, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000, 0xfeff:
+			return true
+		}
+		return r >= 0x2000 && r <= 0x200a
+	})
 }
