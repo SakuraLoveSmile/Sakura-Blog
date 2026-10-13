@@ -101,7 +101,12 @@ func (r *shortcodeV2Renderer) icon(key, more string) string {
 		return ""
 	}
 	if r.s.iconFunc != nil {
-		return r.s.iconFunc(key)
+		content := r.s.iconFunc(key)
+		// 注册项也可指向图片；与上游一致，仅图片分支消费附加属性。
+		if u := v2SafeURL(content); u != "" && (strings.HasPrefix(u, "/") || strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://")) {
+			return `<img` + more + v2Attr("src", u) + ` />`
+		}
+		return content
 	}
 	return `<svg class="icon" viewBox="0 0 1 1"` + v2Attr("data-icon", key) + ` aria-hidden="true"></svg>`
 }
