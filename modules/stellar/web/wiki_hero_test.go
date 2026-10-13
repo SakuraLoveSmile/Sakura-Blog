@@ -15,7 +15,7 @@ func TestWikiHeroAnimationMarkupAndEscaping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewEngineFromEmbed: %v", err)
 	}
-	htmlText, err := engine.RenderValue("partial/wiki_doc", &ViewData{
+	htmlText, err := engine.RenderValue("partial/wiki_cover", &ViewData{
 		Site:            &Site{Title: "测试站点"},
 		WikiProjectName: "Stellar",
 		WikiProjectID:   "stellar",

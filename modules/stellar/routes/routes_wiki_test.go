@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/html"
 
 	"blog/internal/post"
 	"blog/internal/store"
@@ -333,6 +334,39 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 			t.Errorf("wiki detail missing %q", want)
 		}
 	}
+	// Hero 必须占据工作区之前的 cover slot，不能被正文栏或侧栏挤窄。
+	document, err := html.Parse(strings.NewReader(detail.Body.String()))
+	if err != nil {
+		t.Fatalf("parse wiki document: %v", err)
+	}
+	var hero, cover, shell *html.Node
+	var visit func(*html.Node)
+	visit = func(node *html.Node) {
+		for _, attr := range node.Attr {
+			if attr.Key == "id" && attr.Val == "site-cover" {
+				cover = node
+			}
+			if attr.Key == "id" && attr.Val == "start" {
+				shell = node
+			}
+			if attr.Key == "class" && strings.Contains(" "+attr.Val+" ", " wiki-hero ") {
+				hero = node
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(document)
+	if hero == nil || cover == nil || shell == nil || hero.Parent != cover || cover.Parent != shell.Parent {
+		t.Fatal("Wiki Hero must be in the standalone cover slot outside the workspace")
+	}
+	for sibling := cover.NextSibling; sibling != nil; sibling = sibling.NextSibling {
+		if sibling == shell {
+			return
+		}
+	}
+	t.Fatal("Wiki cover must precede the shell")
 }
 
 func TestLegacyWikiHeroBackgroundGalaxyFallback(t *testing.T) {

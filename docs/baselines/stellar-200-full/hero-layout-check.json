@@ -1,0 +1,30 @@
+{
+  "desktop": {
+    "viewport": [
+      1280,
+      720
+    ],
+    "heroParent": "site-cover",
+    "heroWidth": 1272,
+    "heroHeight": 720,
+    "bodyWidth": 1272,
+    "shellY": 720,
+    "overflow": false,
+    "canvasMounted": true,
+    "docsAnchor": {
+      "scrollY": 676,
+      "shellTop": 44
+    }
+  },
+  "mobile": {
+    "bodyWidth": 390,
+    "heroParent": "site-cover",
+    "heroWidth": 390,
+    "overflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  "mobileScreenshot": "Not accepted: screenshot surface does not match emulated CSS pixel viewport; visual acceptance pending."
+}

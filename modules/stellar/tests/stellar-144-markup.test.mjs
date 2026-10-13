@@ -28,7 +28,7 @@ test("1.44 Card Hover 组合类覆盖卡片、collection、shortcode 和 Hero �
     "templates/partial/wiki.html",
     "templates/partial/topic.html",
     "templates/partial/components/collection-item.html",
-    "templates/partial/wiki_doc.html",
+    "templates/partial/wiki_cover.html",
   ];
   for (const file of files) assert.match(read(`web/${file}`), /card-hover/);
   const shortcode = read("../../internal/post/shortcode_media.go");
@@ -38,13 +38,13 @@ test("1.44 Card Hover 组合类覆盖卡片、collection、shortcode 和 Hero �
 });
 
 test("Wiki Hero 同时支持图片和 Galaxy 参数，并保留 reduced-motion 降级", () => {
-  const template = read("web/templates/partial/wiki_doc.html");
-  const main = read("web/assets/js/main.js");
+  const template = read("web/templates/partial/wiki_cover.html");
+  const heroEffect = read("web/assets/js/runtime/extensions/hero-effect.js");
   assert.match(template, /wiki-cover-background\{\{if \$galaxy\}\} galaxy/);
   assert.match(template, /data-galaxy-params=/);
   assert.match(template, /data-text-adaptive="split"/);
-  assert.match(main, /prefers-reduced-motion: reduce/);
-  assert.match(main, /galaxyCanvases\.length === 0/);
+  assert.match(heroEffect, /prefers-reduced-motion: reduce/);
+  assert.match(heroEffect, /canvas\[data-hero-effect\]/);
 });
 
 test("版本标识为 2.0.0，历史测试文章继续保留", () => {

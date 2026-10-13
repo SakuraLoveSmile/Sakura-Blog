@@ -123,3 +123,11 @@
 - 根 DB 通过 SQLite `mode=ro` 打开，未修改配置、内容、评论或用户；未启动/重启真实服务。
 - 已移入 42 个之前完全缺失的上游浏览器资源，保留 20 个存在差异的脚本等待适配；清单见 `docs/baselines/stellar-200-full/browser-resource-port.json`。此记录仅证明资源准备，不代表 manifest、生命周期或页面已经接通。
 - 旧“仅深色／保留完整 SSR／不移植 Hexo 工具”的工程约束须按本任务批准选择更新，不得继续作为缩减目标的理由。
+
+### T3 首屏布局修正（阶段证据）
+
+- Wiki Hero 从 `partial/wiki_doc` 移至独立 `partial/wiki_cover`，由 base 的 `site-cover` 渲染，位于 shell/workspace 之前。
+- DOM 回归用真实路由和隔离 SQLite：旧实现失败（Hero 不在独立 cover slot），修复后通过；Galaxy 参数的 HTML/JSON 转义测试保留。不是仅断言模板出现某个 class。
+- 主 agent 用真实新构建服务、独立样例 DB/config/content/uploads 验证 `http://127.0.0.1:8102/wiki/stellar-test/intro`。1280×720 下 Hero 1272px 宽、720px 高，工作区 y=720，Galaxy 挂载；文档按钮跳至 #start（工作区 top=44）。截图与 DOM 记录在 `docs/baselines/stellar-200-full/after-wiki-cover-desktop.png`、`hero-layout-check.json`。
+- 390×844 下 DOM 显示 Hero 与 body 同宽且无横向溢出；浏览器截图表面与模拟 CSS 像素不一致，因此没有把该截图认作窄屏视觉验收。相关完整响应式验收仍未完成。
+- 本次 `make build` 完成 Console/UC 与新 Go 二进制。这里只验证独立 cover slot；新 Hero 模型、指定首页、视频/四种动效/terminal 的完整行为仍须后续接入与验收。

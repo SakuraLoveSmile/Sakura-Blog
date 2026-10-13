@@ -8,7 +8,7 @@
 <body data-page-type="{{if or (eq .Page.Layout "post") (eq .Page.Layout "page") (eq .Page.Layout "wiki") (eq .Page.Layout "notes") (eq .Page.Layout "wiki-doc")}}content{{else}}index{{end}}" data-page-layout="{{.Page.Layout}}" data-article-style="{{.Page.Type}}"{{if .Site.Article.Indent}} data-text-indent{{end}}>
   <div id="reading-progress" aria-hidden="true" hidden></div>
   <div class="site-background"><div class="site-background__blur"></div></div>
-  <div data-stellar-runtime-region id="site-cover" class="site-cover">{{template "partial/cover" .}}</div>
+  <div data-stellar-runtime-region id="site-cover" class="site-cover">{{if eq .Page.Layout "wiki-doc"}}{{template "partial/wiki_cover" .}}{{else}}{{template "partial/cover" .}}{{end}}</div>
   <div class="site-shell" id="start" data-regions="leftbar rightbar">
     <div class="site-workspace">
       <aside data-stellar-runtime-region id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="{{lang "btn.menu"}}">
