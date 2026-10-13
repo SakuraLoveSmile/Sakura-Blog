@@ -132,7 +132,11 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 	}
 	if len(og) > 0 {
 		args := prepCloneMap(stellarMap(og["args"]))
-		if metadataOverride {
+		// 页面显式 Open Graph 参数遵循官方 Object.assign，包括空值。
+		// 普通 meta 的宿主缺省链只同步到未覆盖的分享描述。
+		if explicit, exists := stellarMap(stellarGet(d.Stellar.Data, "page.seo.openGraph"))["description"]; exists {
+			args["description"] = prepClone(explicit)
+		} else if metadataOverride {
 			args["description"] = description
 		}
 		meta("property", "og:type", args["type"])

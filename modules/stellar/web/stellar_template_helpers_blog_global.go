@@ -215,8 +215,12 @@ func (r stellarTemplateRenderer) blogEditFooter(d *StellarRenderData) template.H
 
 func (r stellarTemplateRenderer) blogWelcome(d *StellarRenderData, item map[string]any, host *settings.WidgetInstance) template.HTML {
 	var b strings.Builder
-	if stellarTruth(item["content"]) {
-		b.WriteString(string(stellarMarkdown(d, item["content"])))
+	// 官方 Widget 描述按 Object.assign 覆盖，字段级 null 不会被丢弃。
+	// 显式空值清除正文；只有省略 content 才采用独立 Blog 欢迎语默认值。
+	if content, exists := item["content"]; exists {
+		if stellarTruth(content) {
+			b.WriteString(string(stellarMarkdown(d, content)))
+		}
 	} else if host != nil && host.Name == "welcome" {
 		if text, ok := stellarBlogGlobal(d, "rightbar_intro").(string); ok && text != "" {
 			fmt.Fprintf(&b, `<div data-blog-intro style="white-space:pre-wrap">%s</div>`, stellarEscape(text))

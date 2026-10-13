@@ -10,6 +10,7 @@ import (
 
 	"blog/internal/settings"
 	"blog/internal/stellarmodels"
+	"blog/modules/stellar/clientconfig"
 )
 
 func globalBlogFixture(t *testing.T, layout string, config map[string]any) *StellarRenderData {
@@ -289,5 +290,157 @@ func TestStellarBlogNavPreservesSafeLinkKinds(t *testing.T) {
 				t.Fatalf("ordinary label changed: %s", value)
 			}
 		}
+	}
+}
+
+func TestStellarWelcomeExplicitEmptyContentSuppressesIntroThroughEmbed(t *testing.T) {
+	for _, origin := range []string{"catalog", "inline"} {
+		for _, test := range []struct {
+			name            string
+			present         bool
+			content         any
+			intro, markdown bool
+		}{
+			{"omitted", false, nil, true, false},
+			{"empty", true, "", false, false},
+			{"false", true, false, false, false},
+			{"null", true, nil, false, false},
+			{"markdown", true, "Widget **content**", false, true},
+		} {
+			t.Run(origin+"/"+test.name, func(t *testing.T) {
+				host := prepareFixture(t, "index")
+				welcome := map[string]any{"layout": "markdown", "title": "Welcome"}
+				specification := any("welcome")
+				if origin == "catalog" {
+					if test.present {
+						welcome["content"] = test.content
+					}
+				} else {
+					override := map[string]any{"override": "welcome"}
+					if test.present {
+						override["content"] = test.content
+					}
+					specification = override
+				}
+				host.Site.StellarV2.Blog = map[string]any{"content": map[string]any{"rightbar_intro": "Global intro"}, "data": map[string]any{"widgets": map[string]any{"welcome": welcome}}}
+				prepMap(prepGet(host.Site.StellarV2.Theme, "profiles.home"))["rightbar"] = map[string]any{"enabled": true, "widgets": []any{specification}}
+				host.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "home", Input: stellarmodels.Input{Page: map[string]any{"layout": "index"}}}
+				before := prepCloneMap(host.Site.StellarV2.Blog)
+				engine, err := NewEngineFromEmbed(nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				out, err := engine.Render("layout/base", host)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strings.Contains(out, "data-blog-intro") != test.intro || strings.Contains(out, "Global intro") != test.intro {
+					t.Fatalf("explicit content resurrected intro: present=%v value=%#v", test.present, test.content)
+				}
+				if strings.Contains(out, "Widget <strong>content</strong>") != test.markdown {
+					t.Fatal("explicit Markdown content not preserved")
+				}
+				if !test.intro && !test.markdown && strings.Contains(out, `data-widget-id="rightbar:0:welcome"`) {
+					t.Fatal("empty title-only widget was rendered")
+				}
+				if !reflect.DeepEqual(before, host.Site.StellarV2.Blog) {
+					t.Fatal("widget source mutated")
+				}
+			})
+		}
+	}
+}
+
+func TestStellarHeadExplicitOGDescriptionKeepsIndependentPriorityThroughEmbed(t *testing.T) {
+	for _, layout := range []string{"post", "page"} {
+		for _, test := range []struct {
+			name    string
+			present bool
+			value   any
+			wantOG  string
+		}{
+			{"inherited", false, nil, "Site SEO"},
+			{"explicit", true, "Page OG", "Page OG"},
+			{"empty", true, "", ""},
+			{"null", true, nil, ""},
+		} {
+			t.Run(layout+"/"+test.name, func(t *testing.T) {
+				host := globalBlogFixture(t, layout, nil).ViewData
+				host.Site.SEO.DefaultDescription = "Site SEO"
+				og := map[string]any{}
+				if test.present {
+					og["description"] = test.value
+				}
+				host.Stellar.Input.FrontMatter["seo"] = map[string]any{"openGraph": og}
+				before := prepCloneMap(host.Stellar.Input.FrontMatter)
+				registry, err := settings.LoadIconsEmbed()
+				if err != nil {
+					t.Fatal(err)
+				}
+				engine, err := NewEngineFromEmbed(registry)
+				if err != nil {
+					t.Fatal(err)
+				}
+				out, err := engine.Render("layout/base", host)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !strings.Contains(out, `name="description" content="Site SEO"`) || !strings.Contains(out, `"description":"Site SEO"`) {
+					t.Fatal("host metadata/default JSON-LD chain changed")
+				}
+				if test.wantOG != "" {
+					for _, fragment := range []string{`property="og:description" content="` + test.wantOG + `"`, `name="twitter:description" content="` + test.wantOG + `"`} {
+						if !strings.Contains(out, fragment) {
+							t.Fatalf("explicit OG override lost: missing %s", fragment)
+						}
+					}
+				} else if strings.Contains(out, `property="og:description"`) || strings.Contains(out, `name="twitter:description"`) {
+					t.Fatal("empty explicit social description resurrected")
+				}
+				if !reflect.DeepEqual(before, host.Stellar.Input.FrontMatter) {
+					t.Fatal("SEO source mutated")
+				}
+			})
+		}
+	}
+}
+
+func TestStellarPublicReadingAndCheckboxOnlyExposeConsumerSwitches(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(map[bool]string{false: "disabled", true: "enabled"}[enabled], func(t *testing.T) {
+			host := prepareFixture(t, "index")
+			host.Site.StellarV2.Blog = map[string]any{"reading": map[string]any{"enabled": enabled, "password": "reading-private", "options": map[string]any{"api_key": "reading-private"}}, "checkbox": map[string]any{"enabled": enabled, "interactive": true, "api_key": "checkbox-private"}, "native_comments": map[string]any{"notify": map[string]any{"password": "comment-private"}}}
+			before := prepCloneMap(host.Site.StellarV2.Blog)
+			prepared, err := PrepareStellar(host)
+			if err != nil {
+				t.Fatal(err)
+			}
+			public := stellarMap(prepared.Stellar.Data["blog"])
+			for _, key := range []string{"reading", "checkbox"} {
+				if !reflect.DeepEqual(stellarMap(public[key]), map[string]any{"enabled": enabled}) {
+					t.Fatalf("%s copied unknown fields", key)
+				}
+			}
+			data, err := json.Marshal(prepared.Stellar.Data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, secret := range []string{"reading-private", "checkbox-private", "comment-private"} {
+				if strings.Contains(string(data), secret) {
+					t.Fatal("private host field propagated to public Data")
+				}
+			}
+			bundle := prepared.Stellar.Client.(clientconfig.Bundle)
+			active := map[string]bool{}
+			for _, extension := range bundle.Manifest.Extensions {
+				active[extension.ID] = true
+			}
+			if active["blog-reading"] != enabled || active["blog-checkbox"] != enabled {
+				t.Fatal("consumer switches no longer control actual runtime manifest")
+			}
+			if !reflect.DeepEqual(before, host.Site.StellarV2.Blog) {
+				t.Fatal("private source config changed")
+			}
+		})
 	}
 }

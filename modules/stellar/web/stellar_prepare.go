@@ -203,7 +203,7 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 	}
 	p.BlogContent = prepGet(blog, "content.enabled") == true
 	publicData["blogReading"] = prepGet(blog, "reading.enabled") == true
-	publicData["blog"] = map[string]any{"content": prepBlogContentProjection(blog["content"]), "reading": prepClone(blog["reading"]), "checkbox": prepClone(blog["checkbox"]), "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true, "allow_user_api": prepGet(blog, "ai.summary.allow_user_api") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true, "allow_user_llm": prepGet(blog, "ai.ask.allow_user_llm") == true}}}
+	publicData["blog"] = map[string]any{"content": prepBlogContentProjection(blog["content"]), "reading": map[string]any{"enabled": prepGet(blog, "reading.enabled") == true}, "checkbox": map[string]any{"enabled": prepGet(blog, "checkbox.enabled") == true}, "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true, "allow_user_api": prepGet(blog, "ai.summary.allow_user_api") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true, "allow_user_llm": prepGet(blog, "ai.ask.allow_user_llm") == true}}}
 	for key, value := range map[string]any{"title": prepGet(blog, "native_comments.title"), "admin_badge": prepGet(blog, "native_comments.admin_badge")} {
 		if _, exists := nativeComments[key]; !exists {
 			nativeComments[key] = value
