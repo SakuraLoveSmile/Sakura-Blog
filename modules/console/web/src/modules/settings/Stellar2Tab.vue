@@ -80,7 +80,7 @@ onMounted(() => void load());
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="stellar2-form space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-2">
       <div class="space-y-1">
         <h2 class="text-base font-semibold text-text-primary">Stellar 2 完整配置</h2>
@@ -137,3 +137,16 @@ onMounted(() => void load());
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 与现有 BasicSettings 的 section 对齐，外层 VCard body 本身没有 padding。 */
+.stellar2-form {
+  padding: 24px 28px 28px;
+}
+@media (max-width: 767px) {
+  .stellar2-form {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+</style>

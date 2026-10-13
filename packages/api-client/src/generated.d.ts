@@ -275,6 +275,32 @@ export interface ShortcodeEditRequest {
 }
 
 //////////
+// source: stellar_import.go
+
+export interface StellarMarkdownImportRequest {
+  filename: string;
+  content: string;
+  kind: string;
+}
+/**
+ * 配置文本独立返回，JS 编辑器无需经过 Number 后再 stringify，开放袋大整数不丢失。
+ */
+export interface StellarMarkdownImportResponse {
+  front_matter: string;
+  blog_extensions: string;
+  content_md: string;
+  stellar_tags: string[];
+}
+export interface StellarMarkdownExportRequest {
+  front_matter: string;
+  blog_extensions: string;
+  content_md: string;
+}
+export interface StellarMarkdownExportResponse {
+  content: string;
+}
+
+//////////
 // source: stellar_settings.go
 
 /**

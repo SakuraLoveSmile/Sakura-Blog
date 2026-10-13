@@ -120,6 +120,8 @@
 
 后续已启动的独占模块：页面模型专家负责 `internal/stellarmodels/` 的完整 Collection/Page/Hero 模型；外观专家负责 `modules/stellar/appearance/` 的全部运行时 CSS 注入；配置专家负责严格主题 Console tab/API 与原子热发布。模型模块与图片模块均不自行访问真实数据库或启动服务，宿主装配、真实逐记录迁移候选及最终浏览器验收仍由主 agent 承担。
 
+内容存储专家已在独立 sibling `Blog-stellar-v2-contentstore` 启动：独占 store 内容/集合 CRUD、相关 schema 及 Notebook/Note 新存储。新增版本列默认 0，不改既有正文、作者或评论身份；版本 2 元数据与原内容同次原子保存，真实迁移仍依赖候选预览批准。
+
 普通编码细节自主处理。新的数据损失、重要兼容性或体验冲突交用户确认；仅暂停依赖部分。未授权 push、发布、部署、远程消息、删除 worktree/分支与真实付费调用。
 
 ## 本次记录
@@ -151,3 +153,12 @@
 
 - HTML 专家误执行了会自动合并的 `make merge-check`，根 `dev` 从 `49fe104` 快进到既有基础模块祖先 `02ee112`，不含该专家新增 HTML 包。已停止第二阶段检查，未 reset、回退或清理用户文件；`.pi/` 保留，真实服务未重启。第一阶段检查通过，第二阶段中断，不能称根组合态验收通过。
 - 主实现仍在 `codex/stellar-200` 继续接通；最终完整检查与正式本地合入门禁必须继续执行，不能把这次误提前快进当作任务完成。
+
+### T1/T5 Console 与 Gist 本次实测
+
+- 新增后台 `Stellar 2` 标签页与完整 JSON GET/PUT/只读校验；未迁移库 409，严格主题校验不接受旧 style，已迁移库支持独立 Blog 扩展。共享锁内保存与 Site 指针发布；明确路径的密钥脱敏及 `****` 保留原值。
+- 主 agent 真实 `make build` 后启动独立 `127.0.0.1:8103` 夹具（DB/config/content/uploads 全隔离，虚构管理员和虚构密钥），比对当前 Console HTML 及 6 份入口资源逐字和 hash 匹配本次产物。真实根数据库未迁移；根 8080 当前未运行。
+- 浏览器完成配置读取→校验→保存→重新读取：`9007199254740993`、false、null 保真，原生评论通知密码与 AI key 只显示 `****` 且 DB 原值保留；旧 style 校验显示定位诊断；跨标签草稿保留，无 Console error。新页缺少内边距的实际偏差已修正为现有设置页的 28px/窄屏 16px，重新构建与重启后桌面实测 28px、编辑区无溢出。窄屏视觉尚未实测。
+- 当前截图与检查：[Console](baselines/stellar-200-full/after-console-stellar2.png)、`console-settings-check.json`。本次证明后台存储和配置快照更新，前台新模板/颜色/布局消费尚待接通，不能称所有配置实际显示已通过。
+- 官方公开 Gist `octocat/9257657` 在独立测试 HTML 的 sandbox iframe 中动态加载，实际使用新增端点和 `blog-gist.js`，尺寸自动更新为 850px。CDP 的真实执行环境确认父页 `contentDocument === null`、读取子窗 location 抛 SecurityError，sandbox 只有 allow-scripts，无浏览器错误日志。[Gist](baselines/stellar-200-full/after-gist-isolated.png)、`gist-isolation-check.json` 保存证据。该测试 HTML 只存在隔离 uploads；文章标签和完整 manifest 接入仍待完成。
+- 严格内容导入/导出新增只读 author API，返回独立配置文本，避免 JS Number 转换损失；旧字段错误、无副作用往返和认证边界定向通过。编辑器表单、备份和内容保存版本门禁仍需接入。

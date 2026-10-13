@@ -17,6 +17,7 @@ packages:
       - "plugin_runtime.go"
       - "rag.go"
       - "editor_import.go"
+      - "stellar_import.go"
       - "page.go"
       - "update.go"
       - "settings.go"

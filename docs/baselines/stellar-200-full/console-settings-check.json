@@ -1,0 +1,48 @@
+{
+  "source": "isolated current build on 127.0.0.1:8103",
+  "checks": {
+    "themeSaved": true,
+    "bigIntegerExact": true,
+    "falsePreserved": true,
+    "nullPreserved": true,
+    "notifySecretPreserved": true,
+    "aiSecretPreserved": true
+  },
+  "frontendRender": "NOT RUN - new SSR integration pending",
+  "realMigration": "NOT RUN",
+  "servedEntryResources": [
+    {
+      "url": "/console/assets/index-DXLrafHb.js",
+      "sha256": "d8bb14f441f8c2e5d86044f9f5e9856e60c43b05d5ca9cf4c8b0745cfdd40869"
+    },
+    {
+      "url": "/console/assets/api-eJ3dp20k.js",
+      "sha256": "2d6861bf13eb44aa1e92da85565c253d96095c3f4ab4194afffc240e1c709d11"
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+      "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb"
+    },
+    {
+      "url": "/console/assets/pinia-BDaR9qFm.js",
+      "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9"
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b"
+    },
+    {
+      "url": "/console/assets/index-B1bJQ_45.css",
+      "sha256": "be96c1be58b39efb3f37aa6c22386ab9e47ed911ef891be936a5914226c2e5f2"
+    }
+  ],
+  "browser": {
+    "viewportWidth": 1280,
+    "paddingLeft": "28px",
+    "paddingRight": "28px",
+    "textareaInside": true,
+    "draftAcrossTabs": true,
+    "legacyStyleRejected": true,
+    "errorLogs": []
+  }
+}
