@@ -32,7 +32,13 @@ func newWikiTestEnv(t *testing.T) (*gin.Engine, *store.Store) {
 	}
 	r := gin.New()
 	posts := post.NewService(filepath.Join(t.TempDir(), "posts"))
-	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: posts, Site: sitePtr(&tmpl.Site{})}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: posts, RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+		loaded, err := config.LoadStellarV2(st)
+		if err != nil {
+			return "", err
+		}
+		return posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: loaded.Theme, Page: input.Page, Language: content.ResolveStellarLanguage(input.Page, loaded.Blog), BlogExtensions: true})
+	}, Site: sitePtr(&tmpl.Site{})}}); err != nil {
 		t.Fatalf("mount: %v", err)
 	}
 	return r, st
@@ -130,7 +136,13 @@ func TestWikidocWritesPublishContentEventOnlyAfterSuccess(t *testing.T) {
 	})
 	defer sub.Close()
 	r := gin.New()
-	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: post.NewService(""), Site: sitePtr(&tmpl.Site{}), Events: events}}); err != nil {
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: post.NewService(""), RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+		loaded, err := config.LoadStellarV2(st)
+		if err != nil {
+			return "", err
+		}
+		return post.NewService("").RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: loaded.Theme, Page: input.Page, Language: content.ResolveStellarLanguage(input.Page, loaded.Blog), BlogExtensions: true})
+	}, Site: sitePtr(&tmpl.Site{}), Events: events}}); err != nil {
 		t.Fatal(err)
 	}
 	mkWikiParent(t, st, "stellar", "parent", 0)

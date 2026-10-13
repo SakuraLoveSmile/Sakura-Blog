@@ -76,15 +76,32 @@ func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Stor
 		BackupDir: t.TempDir(),
 	})
 
+	snapshot := sitePtr(site)
 	r := gin.New()
 	mountPublicIdentityForTest(r, st, site)
 	h, err := MountConsole(r, MountDeps{Config: Config{
 		Store: st,
+		RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
+			configuration := snapshot.Load().StellarV2
+			if configuration == nil {
+				var err error
+				configuration, err = config.LoadStellarV2(st)
+				if err != nil {
+					return "", err
+				}
+			}
+			language := input.Language
+			if language == "" {
+				language = content.ResolveStellarLanguage(input.Page, configuration.Blog)
+			}
+			data, _ := configuration.Blog["data"].(map[string]any)
+			return posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: configuration.Theme, Data: data, Page: input.Page, Language: language, BlogExtensions: true})
+		},
 		RenderStellarContentPreview: func(input content.StellarPreviewInput) (string, error) {
 			return "<!doctype html><html><body>" + input.HTML + "</body></html>", nil
 		},
 		Posts:    posts,
-		Site:     sitePtr(site),
+		Site:     snapshot,
 		Comments: commentH,
 		Backups:  backups,
 	}})

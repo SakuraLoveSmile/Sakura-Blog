@@ -343,6 +343,8 @@ func (s *webServer) stellarSnapshotAt(ctx context.Context, site *tmpl.Site, incl
 	for _, rec := range snap.records {
 		rec.page = stellarHostPage(snap, rec)
 	}
+	snap.input.RuntimeData = s.stellarBodyData(snap)
+	in.RuntimeData = snap.input.RuntimeData
 	for _, rec := range snap.records {
 		body, err := s.stellarBody(snap, rec)
 		if err != nil {
@@ -507,14 +509,12 @@ func stellarHostPage(snap *stellarSnapshot, r *stellarRecord) stellarmodels.Obje
 	}
 	return p
 }
-func (s *webServer) stellarBody(snap *stellarSnapshot, r *stellarRecord) (string, error) {
-	if s.posts == nil {
-		return "", fmt.Errorf("stellar renderer unavailable")
-	}
-	data := stellarmodels.Object{"siteURL": tmpl.NormalizeSiteURL(snap.site.URL), "links": stellarObject(snap.site.StellarV2.Blog["data"])["links"]}
-	if r.pageRow != nil && r.pageRow.Slug == FriendsSlug && r.profile == "page" {
-		data["friendsShowPosts"] = snap.site.Pages.Friends.ShowPostsOn()
-	}
+
+// 正文、组件及页脚共用同一公开 inventory 快照；不能传整个 Blog 配置袋。
+func (s *webServer) stellarBodyData(snap *stellarSnapshot) stellarmodels.Object {
+	data := stellarCopyObject(snap.input.RuntimeData)
+	data["siteURL"] = tmpl.NormalizeSiteURL(snap.site.URL)
+	data["links"] = stellarObject(snap.site.StellarV2.Blog["data"])["links"]
 	icons := map[string]any{}
 	if s.icons != nil {
 		for _, key := range s.icons.Keys() {
@@ -535,6 +535,16 @@ func (s *webServer) stellarBody(snap *stellarSnapshot, r *stellarRecord) (string
 		}
 	}
 	data["wiki"] = stellarmodels.Object{"tree": tree}
+	return data
+}
+func (s *webServer) stellarBody(snap *stellarSnapshot, r *stellarRecord) (string, error) {
+	if s.posts == nil {
+		return "", fmt.Errorf("stellar renderer unavailable")
+	}
+	data := stellarCopyObject(snap.input.RuntimeData)
+	if r.pageRow != nil && r.pageRow.Slug == FriendsSlug && r.profile == "page" {
+		data["friendsShowPosts"] = snap.site.Pages.Friends.ShowPostsOn()
+	}
 	body, err := s.posts.RenderStellarV2WithContext(r.markdown, post.StellarRenderContext{Theme: snap.input.Theme, Data: data, Page: r.config, Language: stellarLanguage(snap.input, r.config), BlogExtensions: true, Offline: snap.offline})
 	if err != nil {
 		return "", err

@@ -94,10 +94,18 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 		}
 	}
 	prepBlogNotebookFooter(&input, p.Profile, p.Layout, data.Site.StellarV2.Blog)
-	publicData := prepCloneMap(prepMap(data.Site.StellarV2.Blog["data"]))
+	publicData := map[string]any{}
+	// 仅明确公开的组件描述可用于宿主页；路由提供的请求快照始终优先。
+	configured := prepMap(data.Site.StellarV2.Blog["data"])
+	for _, key := range []string{"widgets", "defaultAuthor", "links"} {
+		if value, exists := configured[key]; exists {
+			publicData[key] = prepClone(value)
+		}
+	}
 	for key, value := range input.RuntimeData {
 		publicData[key] = prepClone(value)
 	}
+	publicData["siteURL"] = rootURL.String()
 	catalog := MergeStellarWidgetCatalog(prepMap(publicData["widgets"]))
 	if runtimeCatalog, exists := input.RuntimeData["widgets"]; exists {
 		catalog = prepCloneMap(prepMap(runtimeCatalog))

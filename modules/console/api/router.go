@@ -72,6 +72,7 @@ type Handler struct {
 	icons *tmpl.IconRegistry
 
 	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
+	renderStellarMarkdown       func(content.StellarBodyInput) (string, error)
 	renderStellarContentPreview func(content.StellarPreviewInput) (string, error)
 	stellarWidgetCatalog        func() (map[string]any, error)
 	renderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
@@ -98,6 +99,7 @@ type Config struct {
 	Notify   *notify.Service    // 站内通知服务（Wave 3b），可空
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
+	RenderStellarMarkdown       func(content.StellarBodyInput) (string, error)
 	RenderStellarContentPreview func(content.StellarPreviewInput) (string, error)
 	StellarWidgetCatalog        func() (map[string]any, error)
 	RenderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
@@ -149,6 +151,7 @@ func New(cfg Config) *Handler {
 		icons:                       cfg.Icons,
 		renderSitePreview:           cfg.RenderSitePreview,
 		renderStellarContentPreview: cfg.RenderStellarContentPreview,
+		renderStellarMarkdown:       cfg.RenderStellarMarkdown,
 		stellarWidgetCatalog:        cfg.StellarWidgetCatalog,
 		events:                      cfg.Events,
 		storage:                     attachmentStorageOrLocal(storageBackend, cfg.UploadDir),

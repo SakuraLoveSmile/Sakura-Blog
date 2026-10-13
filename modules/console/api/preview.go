@@ -79,7 +79,7 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 			html, err = h.posts.RenderComponentPreviewStellarV2(req.Markdown, post.StellarRenderContext{Page: parsed.Value, Language: req.Language})
 		}
 	} else {
-		html, err = h.renderEditorStellar(req.Markdown, req.StellarContentMetadata, req.Layout)
+		html, err = h.renderEditorStellarWithLanguage(req.Markdown, req.StellarContentMetadata, req.Layout, req.Language)
 	}
 	if err != nil {
 		failEditorStellar(c, err)

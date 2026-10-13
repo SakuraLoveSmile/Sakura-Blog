@@ -21,3 +21,8 @@ func (s *Server) StellarWidgetCatalog() (map[string]any, error) {
 func (s *Server) RenderSnapshots(ctx context.Context) ([]stellarimages.PageSnapshot, error) {
 	return s.Server.RenderSnapshots(ctx)
 }
+
+// RenderStellarMarkdown 供宿主保存与预览复用前台公开正文上下文。
+func (s *Server) RenderStellarMarkdown(input content.StellarBodyInput) (string, error) {
+	return s.Server.RenderStellarMarkdown(input)
+}

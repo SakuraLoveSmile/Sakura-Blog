@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"blog/internal/config"
+	"blog/internal/content"
+	"blog/internal/post"
 	"blog/internal/settings"
 	"blog/internal/store"
 
@@ -28,6 +30,15 @@ func newNotebookAPI(t *testing.T) (*gin.Engine, *store.Store, *Handler, *store.U
 	next := *h.site.Load()
 	next.StellarV2 = v2
 	h.site.Store(&next)
+	h.renderStellarMarkdown = func(input content.StellarBodyInput) (string, error) {
+		current := h.site.Load()
+		if current == nil || current.StellarV2 == nil {
+			return "", fmt.Errorf("%w: settings.stellar_v2", store.ErrStellarMigrationRequired)
+		}
+		configuration := current.StellarV2
+		data, _ := configuration.Blog["data"].(map[string]any)
+		return h.posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: configuration.Theme, Data: data, Page: input.Page, Language: content.ResolveStellarLanguage(input.Page, configuration.Blog), BlogExtensions: true})
+	}
 	alice, _ := st.GetUserByUsername("alice")
 	bob, _ := st.GetUserByUsername("bob")
 	return r, st, h, admin, alice, bob

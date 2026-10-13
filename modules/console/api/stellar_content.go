@@ -1,13 +1,13 @@
 package api
 
 import (
-	"blog/internal/content"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"blog/internal/config"
-	"blog/internal/post"
+	"blog/internal/content"
 	"blog/internal/stellarv2"
+	"blog/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
@@ -83,21 +83,33 @@ func (h *Handler) validateStellarContent(c *gin.Context) {
 
 // 所有保存和预览使用同一严格正文渲染器，仅传公开 data 袋。
 func (h *Handler) renderEditorStellar(body string, meta StellarContentMetadata, profile string) (string, error) {
+	return h.renderEditorStellarWithLanguage(body, meta, profile, "")
+}
+
+func (h *Handler) renderEditorStellarWithLanguage(body string, meta StellarContentMetadata, profile, language string) (string, error) {
 	parsed, err := validateEditorMetadata(meta, profile, false)
 	if err != nil {
 		return "", err
 	}
-	loaded, err := config.LoadStellarV2(h.store)
-	if err != nil {
-		return "", err
+	return h.renderStellarBody(content.StellarBodyInput{Markdown: body, Page: parsed.Value, Language: language})
+}
+
+func (h *Handler) renderStellarBody(input content.StellarBodyInput) (string, error) {
+	if h.renderStellarMarkdown == nil {
+		return "", content.ErrStellarRendererUnavailable
 	}
-	language := content.ResolveStellarLanguage(parsed.Value, loaded.Blog)
-	data, _ := loaded.Blog["data"].(map[string]any)
-	return h.posts.RenderStellarV2WithContext(body, post.StellarRenderContext{Theme: loaded.Theme, Data: data, Page: parsed.Value, Language: language, BlogExtensions: true})
+	return h.renderStellarMarkdown(input)
 }
 
 func failEditorStellar(c *gin.Context, err error) {
-	stellarSettingsError(c, err, http.StatusBadRequest)
+	status := http.StatusBadRequest
+	if errors.Is(err, store.ErrStellarMigrationRequired) {
+		status = http.StatusConflict
+	}
+	if errors.Is(err, content.ErrStellarRendererUnavailable) {
+		status = http.StatusServiceUnavailable
+	}
+	stellarSettingsError(c, err, status)
 }
 
 // 归属必须存在且已显式迁移，不能借旧宿主字段猜出新配置。

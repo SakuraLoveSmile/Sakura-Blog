@@ -33,7 +33,8 @@ func TestPrepareStellarRequiresMigrationWithoutLegacyGuessing(t *testing.T) {
 func TestPrepareStellarDoesNotMutatePublishedSnapshot(t *testing.T) {
 	data := prepareFixture(t, "index")
 	data.Site.StellarV2.Blog = map[string]any{"data": map[string]any{"widgets": map[string]any{"custom": map[string]any{"layout": "markdown", "content": "fixture"}}, "custom": map[string]any{"number": json.Number("9007199254740993"), "false": false, "null": nil}}}
-	data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "home", Input: stellarmodels.Input{RuntimeData: map[string]any{"title": "public title"}}}
+	data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "home", Input: stellarmodels.Input{RuntimeData: map[string]any{"title": "public title", "custom": prepCloneMap(prepMap(data.Site.StellarV2.Blog["data"]))["custom"], "widgets": MergeStellarWidgetCatalog(prepMap(prepGet(data.Site.StellarV2.Blog, "data.widgets")))}}}
+	data.Site.StellarV2.Blog["data"].(map[string]any)["privateSecret"] = "DO_NOT_PROPAGATE"
 	beforeTheme := prepCloneMap(data.Site.StellarV2.Theme)
 	beforeBlog := prepCloneMap(data.Site.StellarV2.Blog)
 	a, err := PrepareStellar(data)
@@ -46,6 +47,9 @@ func TestPrepareStellarDoesNotMutatePublishedSnapshot(t *testing.T) {
 	}
 	if !reflect.DeepEqual(beforeTheme, data.Site.StellarV2.Theme) || !reflect.DeepEqual(beforeBlog, data.Site.StellarV2.Blog) {
 		t.Fatal("published configuration mutated")
+	}
+	if a.Stellar.Data["privateSecret"] != nil {
+		t.Fatal("raw configuration escaped public snapshot")
 	}
 	if prepGet(a.Stellar.Data, "custom.number") != json.Number("9007199254740993") {
 		t.Fatal("lossy public data copy")
