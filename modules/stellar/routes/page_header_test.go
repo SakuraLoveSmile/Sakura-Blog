@@ -24,15 +24,13 @@ func TestStandalonePageBannerSSR(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
-	if err := st.EnsurePagesTable(); err != nil {
-		t.Fatalf("ensure pages table: %v", err)
-	}
+	ensureRouteSchema(t, st)
 	posts := post.NewService(filepath.Join(root, "posts"))
 	engine, err := stellarweb.NewEngineFromEmbed(&tmpl.IconRegistry{})
 	if err != nil {
 		t.Fatalf("create template engine: %v", err)
 	}
-	site := &tmpl.Site{Title: "测试站", Authors: map[string]tmpl.AuthorDef{"alice": {Name: "Alice"}}}
+	site := canonicalRouteSite(t, "测试站", nil, map[string]any{"data": map[string]any{"authors": map[string]any{"alice": map[string]any{"name": "Alice", "path": "/author/alice/"}}}})
 	sitePtr := &atomic.Pointer[settings.Site]{}
 	sitePtr.Store(site)
 	h, err := NewPageHandler(st, posts, engine, sitePtr)
@@ -41,15 +39,17 @@ func TestStandalonePageBannerSSR(t *testing.T) {
 	}
 
 	if _, err := st.CreatePage(&store.Page{
-		Slug: "about", Title: "关于本站", ContentHTML: "<p>页面正文</p>", Status: store.StatusPublished,
-		Banner: "https://example.test/about.jpg", BannerInfo: store.PageBannerInfo{Title: "关于横幅", Subtitle: "这是副标题", Avatar: "/avatar.png"},
-		Breadcrumb: true, Author: "alice", PublishedAt: "2026-08-01",
+		StellarVersion: 2, StellarConfig: `{"cover":"https://example.test/about.jpg","banner":{"background":true,"headline":"关于横幅","tagline":"这是副标题","avatar":"/avatar.png"},"article":{"author":"alice"},"date":"2026-08-01"}`, BlogExtensions: `{}`,
+		Slug: "about", Title: "关于本站", ContentMD: "<p>页面正文</p>", Status: store.StatusPublished,
+		Banner: "/legacy-decoy.jpg", BannerInfo: store.PageBannerInfo{Title: "旧横幅诱饵", Subtitle: "旧副标题", Avatar: "/legacy-avatar.png"},
+		Breadcrumb: true, Author: "legacy-author", PublishedAt: "2025-01-01",
 	}); err != nil {
 		t.Fatalf("create page: %v", err)
 	}
 	if _, err := st.CreatePage(&store.Page{
-		Slug: "compact", Title: "紧凑页面", ContentHTML: "<p>紧凑正文</p>", Status: store.StatusPublished,
-		BannerInfo: store.PageBannerInfo{Title: "紧凑横幅"}, Breadcrumb: false,
+		StellarVersion: 2, StellarConfig: `{"banner":{"headline":"紧凑横幅"},"breadcrumb":false}`, BlogExtensions: `{}`,
+		Slug: "compact", Title: "紧凑页面", ContentMD: "<p>紧凑正文</p>", Status: store.StatusPublished,
+		BannerInfo: store.PageBannerInfo{Title: "旧紧凑横幅"}, Breadcrumb: true,
 	}); err != nil {
 		t.Fatalf("create compact page: %v", err)
 	}
@@ -68,17 +68,17 @@ func TestStandalonePageBannerSSR(t *testing.T) {
 
 	html := request("/pages/about")
 	for _, want := range []string{
-		`class="article-banner-wrap"`,
+		`class="article-banner-wrap slide-up"`,
 		`data-page-layout="page"`,
-		`class="site-shell" id="start" data-regions="leftbar rightbar"`,
+		`class="site-shell" id="start" data-regions="leftbar"`,
 		`--bg-url:url('https://example.test/about.jpg')`,
-		`<img class="lazy bg" data-src="https://example.test/about.jpg" alt="">`,
+		`class="lazy bg" data-src="https://example.test/about.jpg"`,
 		`<h1 class="text title"><span>关于横幅</span></h1>`,
 		`<div class="text subtitle">这是副标题</div>`,
 		`data-src="/avatar.png"`,
 		`href="/about"`,
 		`href="/author/alice/">Alice</a>`,
-		`<time datetime="2026-08-01">2026-08-01</time>`,
+		`<time datetime="2026-08-01T00:00:00Z">2026-08-01</time>`,
 		`<p>页面正文</p>`,
 	} {
 		if !strings.Contains(html, want) {
@@ -86,13 +86,26 @@ func TestStandalonePageBannerSSR(t *testing.T) {
 		}
 	}
 
+	if strings.Contains(html, "legacy-decoy") || strings.Contains(html, "旧横幅诱饵") || strings.Contains(html, "legacy-author") {
+		t.Fatal("page renderer consumed legacy fields")
+	}
 	compact := request("/pages/compact")
-	if strings.Contains(compact, `class="bread-nav footnote"`) {
+	if strings.Contains(compact, `class="top bread-nav footnote"`) {
 		t.Fatal("breadcrumb=false should omit the banner breadcrumb/meta row")
 	}
 	if !strings.Contains(compact, `<p>紧凑正文</p>`) {
 		t.Fatal("compact page body missing")
 	}
+	for _, slug := range []string{"about", "compact"} {
+		page, err := st.GetPageBySlug(slug)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if page.Views != 1 {
+			t.Errorf("page %s views=%d, want exactly one successful view", slug, page.Views)
+		}
+	}
+
 }
 
 func TestFriendsLegacyHeroMigratesOnceToPage(t *testing.T) {

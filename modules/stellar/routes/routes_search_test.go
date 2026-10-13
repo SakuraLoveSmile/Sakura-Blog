@@ -94,7 +94,29 @@ func TestAPISearchTypeFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ws := &webServer{st: st, searchIdx: idx}
+	ensureRouteSchema(t, st)
+	if _, err := st.Create(&store.Post{Slug: "p1", Title: "文章标题", ContentMD: "文章正文含独特词甲", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreatePage(&store.Page{Slug: "about", Title: "页面标题", ContentMD: "页面正文含独特词乙", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{}`, BlogExtensions: `{}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateMoment(&store.Moment{ContentMD: "瞬间正文含独特词丙", ContentHTML: "瞬间正文含独特词丙", Visibility: store.MomentVisibilityPublic}); err != nil {
+		t.Fatal(err)
+	}
+
+	// 索引并不等于公开授权：过期行及私密瞬间即使命中也必须过滤。
+	if _, err := st.CreateMoment(&store.Moment{ContentMD: "私密瞬间含独特词", ContentHTML: "私密瞬间含独特词", Visibility: store.MomentVisibilityPrivate}); err != nil {
+		t.Fatal(err)
+	}
+	for _, candidate := range []struct{ kind, slug string }{{search.TypePost, "stale"}, {search.TypeMoment, "moment-2"}} {
+		if err := idx.IndexDoc(candidate.kind, candidate.slug, "隐藏标题", "隐藏正文含独特词"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ws, _ := newWikiVerifyServer(t)
+	ws.st, ws.searchIdx = st, idx
+	ws.site.Store(canonicalRouteSite(t, "搜索测试", nil, map[string]any{"search": map[string]any{"provider": "go"}}))
 	r := gin.New()
 	ws.registerSearchRoutes(r)
 
@@ -123,7 +145,7 @@ func TestAPISearchTypeFilter(t *testing.T) {
 	if items := doSearch("独特词", "post"); len(items) != 1 || items[0]["type"] != "post" || items[0]["path"] != "/post/p1" {
 		t.Errorf("post filter mismatch: %v", items)
 	}
-	if items := doSearch("独特词", "page"); len(items) != 1 || items[0]["type"] != "page" || items[0]["path"] != "/pages/about" {
+	if items := doSearch("独特词", "page"); len(items) != 1 || items[0]["type"] != "page" || items[0]["path"] != "/about" {
 		t.Errorf("page filter mismatch: %v", items)
 	}
 	if items := doSearch("独特词", "moment"); len(items) != 1 || items[0]["type"] != "moment" || items[0]["path"] != "/moments" {
