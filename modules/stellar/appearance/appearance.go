@@ -83,7 +83,7 @@ func BuildWithOptions(theme map[string]any, options Options) (template.CSS, erro
 		root["--note-border"] = "1px solid var(--theme-border)"
 	}
 	highlight := resolvedResource(r.resource("appearance.codeBlock.highlightStylesheet"), rootURL)
-	if highlight != "" {
+	if highlight != "" && !options.SkipHighlightStylesheet {
 		b.WriteString("@import ")
 		b.WriteString(cssURL(highlight))
 		b.WriteByte(';')

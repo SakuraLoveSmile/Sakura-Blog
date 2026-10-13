@@ -400,3 +400,30 @@ func TestUnsafeResourceBasesAreRejected(t *testing.T) {
 		}
 	}
 }
+
+func TestSkipHighlightStylesheetPreservesIndependentDefaultAndOtherFields(t *testing.T) {
+	theme := defaults(t)
+	set(theme, "appearance.codeBlock.highlightStylesheet", "styles/highlight.css")
+	normal, e := Build(theme)
+	if e != nil {
+		t.Fatal(e)
+	}
+	prefix := "@import " + cssURL("/styles/highlight.css") + ";"
+	if !strings.HasPrefix(string(normal), prefix) {
+		t.Fatal("standalone Build must load highlight stylesheet")
+	}
+	skipped, e := BuildWithOptions(theme, Options{SkipHighlightStylesheet: true})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if string(skipped) != strings.TrimPrefix(string(normal), prefix) {
+		t.Fatal("skip must only remove the duplicate import")
+	}
+	if strings.Contains(string(skipped), "@import") {
+		t.Fatal("duplicated highlight stylesheet import")
+	}
+	set(theme, "appearance.codeBlock.highlightStylesheet", "https://example.test/bad\")}</style>")
+	if css, e := BuildWithOptions(theme, Options{SkipHighlightStylesheet: true}); e == nil || css != "" {
+		t.Fatal("skip must not bypass resource validation")
+	}
+}

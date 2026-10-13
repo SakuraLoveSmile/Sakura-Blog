@@ -13,6 +13,9 @@ import (
 type Options struct {
 	RootURL string
 	CSSURL  string
+	// 调用方已通过官方 head 样式列表加载高亮样式时，避免再次 @import。
+	// 仍校验该配置资源；此选项不代表忽略 highlightStylesheet 字段。
+	SkipHighlightStylesheet bool
 }
 
 func resourceBases(options Options) (*url.URL, *url.URL, error) {
