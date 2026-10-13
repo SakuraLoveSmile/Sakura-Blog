@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -35,6 +36,16 @@ func main() {
 	flag.StringVar(&iconsPath, "icons", "", "icons.yml 路径（仅 -dev 模式生效，默认 <root>/internal/settings/data/icons.yml）")
 	flag.StringVar(&configPath, "config", "", "app.yml 路径（默认 <root>/config/app.yml）")
 	flag.Parse()
+	if flag.NArg() > 0 {
+		if flag.Arg(0) != "stellar" {
+			fmt.Fprintln(os.Stderr, "unknown command:", flag.Arg(0))
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		code := stellar.RunToolCLI(ctx, flag.Args()[1:], root, configPath, os.Stdout, os.Stderr)
+		stop()
+		os.Exit(code)
+	}
 
 	services, err := app.Bootstrap(app.Options{
 		Root: root, ConfigPath: configPath, IconsPath: iconsPath, DevMode: devMode, Seed: seed,
@@ -64,9 +75,11 @@ func main() {
 				Backups: services.Backup, Modules: services.Modules, Notify: services.Notify, Icons: services.Icons,
 				StellarVersion: stellar.StellarVersion,
 				StellarOwner:   stellar.RepositoryOwner, StellarRepo: stellar.RepositoryName,
-				RenderSitePreview: stellarServer.RenderSitePreview,
-				Events:            services.Events,
-				UploadDir:         services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
+				RenderSitePreview:           stellarServer.RenderSitePreview,
+				RenderStellarContentPreview: stellarServer.RenderContentPreview,
+				StellarWidgetCatalog:        stellarServer.StellarWidgetCatalog,
+				Events:                      services.Events,
+				UploadDir:                   services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
 				StorageManager: services.Storage,
 				Plugins:        services.Plugins,
 				RAG:            services.RAG,

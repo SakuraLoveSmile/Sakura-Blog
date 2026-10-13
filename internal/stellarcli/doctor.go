@@ -63,6 +63,16 @@ func Doctor(ctx context.Context, st *store.Store, env Environment) DoctorResult 
 		r.Issues = append(r.Issues, diagnostic("missing_database", "database", "root", "unavailable", "existing SQLite database", "start/install"))
 		return r
 	}
+	legacy, err := st.DetectLegacyNotebookSchema()
+	if err != nil {
+		r.addError("notebook schema", err)
+	} else {
+		for _, table := range legacy.Tables {
+			for _, issue := range table.Issues {
+				r.Issues = append(r.Issues, diagnostic("migration_required", "sqlite:"+table.Table, "schema", "legacy SQLite schema", issue, "content-schema/migration"))
+			}
+		}
+	}
 	tx, err := st.DB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		r.addError("database", err)
@@ -100,27 +110,7 @@ func Doctor(ctx context.Context, st *store.Store, env Environment) DoctorResult 
 		theme = canonical.Theme
 		if data, ok := canonical.Blog["data"].(map[string]any); ok {
 			if overrides, ok := data["widgets"].(map[string]any); ok {
-				for id, override := range overrides {
-					if override == nil {
-						delete(catalog, id)
-						continue
-					}
-					if list, ok := override.([]any); ok && len(list) == 0 {
-						delete(catalog, id)
-						continue
-					}
-					base, _ := catalog[id].(map[string]any)
-					merged := map[string]any{}
-					for k, v := range base {
-						merged[k] = v
-					}
-					if obj, ok := override.(map[string]any); ok {
-						for k, v := range obj {
-							merged[k] = v
-						}
-					}
-					catalog[id] = merged
-				}
+				catalog = stellarv2.MergeWidgetCatalog(catalog, overrides)
 			}
 		}
 		profiles, _ := theme["profiles"].(map[string]any)
@@ -405,12 +395,22 @@ func FormatDoctorText(r DoctorResult) string {
 		status = "PASS"
 	}
 	lines := []string{"Stellar doctor: " + status, "Adapter: Go SSR / SQLite (Node.js and Hexo are not runtime dependencies)", "Go: " + r.Environment.Go + " (required " + r.Environment.RequiredGo + ")", "Stellar: " + r.Environment.Theme + " @ " + r.Environment.Commit, "Resources SHA-256: " + r.Environment.ResourceSHA256, fmt.Sprintf("Checked: themeConfig=%t, %d collections, %d content records", r.Checked.ThemeConfig, r.Checked.Collections, r.Checked.Pages)}
+	if len(r.Issues) > 0 {
+		lines = append(lines, fmt.Sprintf("Issues (%d):", len(r.Issues)))
+	}
 	for _, i := range r.Issues {
 		lines = append(lines, fmt.Sprintf("- %s: %s (%s); actual=%s; expected=%s; migration=%v", i.Source, i.Path, i.Code, i.ActualType, i.Expected, i.Migration))
 	}
+	if len(r.Warnings) > 0 {
+		lines = append(lines, fmt.Sprintf("Warnings (%d):", len(r.Warnings)))
+	}
 	for _, i := range r.Warnings {
 		if i.Widget != "" {
-			lines = append(lines, fmt.Sprintf("- Warning %s: Widget %s (layout=%s) does not support %s; supported=%s; skipped", i.Source, i.Widget, i.Layout, i.Region, strings.Join(i.Supported, ",")))
+			supported := strings.Join(i.Supported, ",")
+			if supported == "" {
+				supported = "none"
+			}
+			lines = append(lines, fmt.Sprintf("- Warning %s: Widget %s (layout=%s) does not support %s; supported=%s; skipped", i.Source, i.Widget, i.Layout, i.Region, supported))
 		} else {
 			lines = append(lines, fmt.Sprintf("- Warning %s: %s (%s); %s", i.Source, i.Path, i.Code, i.Action))
 		}

@@ -304,6 +304,7 @@
   "doctorCases": [
     {
       "theme": {},
+      "widgets": {},
       "warnings": []
     },
     {
@@ -315,6 +316,7 @@
           ]
         }
       },
+      "widgets": {},
       "warnings": [
         {
           "code": "unsupported_widget_presentation",
@@ -483,6 +485,7 @@
           ]
         }
       },
+      "widgets": {},
       "warnings": []
     },
     {
@@ -494,6 +497,7 @@
           ]
         }
       },
+      "widgets": {},
       "warnings": []
     },
     {
@@ -512,6 +516,7 @@
           }
         }
       },
+      "widgets": {},
       "warnings": [
         {
           "code": "unknown_widget",
@@ -519,6 +524,1056 @@
           "layout": "<unknown>",
           "region": "topbar",
           "supported": []
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": {
+          "title": "Custom"
+        }
+      },
+      "warnings": [
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": null
+      },
+      "warnings": [
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": []
+      },
+      "warnings": [
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": ""
+      },
+      "warnings": [
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": {
+          "length": 0
+        }
+      },
+      "warnings": [
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "rightbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        },
+        {
+          "code": "unknown_widget",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": []
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": "abc"
+      },
+      "warnings": [
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        }
+      ]
+    },
+    {
+      "theme": {
+        "topbar": {
+          "enabled": true,
+          "widgets": [
+            "ghrepo"
+          ]
+        }
+      },
+      "widgets": {
+        "ghrepo": [
+          "x",
+          "y"
+        ]
+      },
+      "warnings": [
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
+        },
+        {
+          "code": "unsupported_widget_presentation",
+          "widget": "ghrepo",
+          "layout": "ghrepo",
+          "region": "topbar",
+          "supported": [
+            "leftbar",
+            "rightbar",
+            "drawer"
+          ]
         }
       ]
     }

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"runtime"
 
+	"blog/internal/settings"
 	"blog/internal/stellarcli"
 	"blog/modules/stellar/web"
 )
@@ -41,6 +42,16 @@ func ToolEnvironment() (stellarcli.Environment, error) {
 		return err
 	}); err != nil {
 		return stellarcli.Environment{}, err
+	}
+	icons, err := settings.LoadIconsEmbed()
+	if err != nil {
+		return stellarcli.Environment{}, err
+	}
+	for _, key := range icons.Keys() {
+		value := icons.Get(key)
+		if _, err := fmt.Fprintf(hash, "icons/%s\x00%d\x00%s", key, len(value), value); err != nil {
+			return stellarcli.Environment{}, err
+		}
 	}
 	return stellarcli.Environment{Adapter: "go-ssr-sqlite", Go: runtime.Version(), RequiredGo: "go1.26.6", Theme: upstream.Tag, Commit: upstream.Commit, ResourceSHA256: hex.EncodeToString(hash.Sum(nil))}, nil
 }

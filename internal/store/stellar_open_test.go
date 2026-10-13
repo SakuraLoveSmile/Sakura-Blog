@@ -58,3 +58,30 @@ func TestOpenExistingNeverCreatesOrMigrates(t *testing.T) {
 		t.Fatalf("journal mode changed: %s %v", mode, err)
 	}
 }
+
+func TestOpenExistingReadsLatestActiveWAL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "wal.sqlite")
+	writer, err := New(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.Close()
+	if _, err := writer.DB().Exec(`PRAGMA wal_autocheckpoint=0; INSERT INTO posts(slug,title) VALUES('wal','latest uncheckpointed content')`); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := OpenExisting(path, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	var title string
+	if err := reader.DB().QueryRow(`SELECT title FROM posts WHERE slug='wal'`).Scan(&title); err != nil || title != "latest uncheckpointed content" {
+		t.Fatalf("lost active WAL content: %q %v", title, err)
+	}
+	if _, err := reader.DB().Exec(`UPDATE posts SET title='forbidden'`); err == nil {
+		t.Fatal("read-only WAL connection allowed DML")
+	}
+	if err := writer.DB().QueryRow(`SELECT title FROM posts WHERE slug='wal'`).Scan(&title); err != nil || title != "latest uncheckpointed content" {
+		t.Fatalf("changed content: %q %v", title, err)
+	}
+}

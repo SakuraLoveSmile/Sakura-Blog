@@ -24,6 +24,9 @@ func testEnvironment() Environment {
 }
 func fixture(t *testing.T) (*store.Store, string, int64) {
 	t.Helper()
+	for _, name := range []string{"BLOG_ROOT", "BLOG_DB", "BLOG_SEED"} {
+		t.Setenv(name, "")
+	}
 	root := t.TempDir()
 	st, err := store.New(filepath.Join(root, "data", "blog.db"))
 	if err != nil {
@@ -258,5 +261,30 @@ func TestImagesUsesSnapshotProviderAndDoesNotBootstrap(t *testing.T) {
 	}
 	if _, err := st.GetSetting("forbidden"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDoctorReportsLegacyNotebookSchemaWithoutConversion(t *testing.T) {
+	st, _, _ := fixture(t)
+	if _, err := st.DB().Exec(`DROP TABLE notes; DROP TABLE notebooks; CREATE TABLE notebooks(id INTEGER PRIMARY KEY,label TEXT); INSERT INTO notebooks VALUES(7,'old notebook'); CREATE TABLE notes(id INTEGER PRIMARY KEY,notebook_id INTEGER,body TEXT); INSERT INTO notes VALUES(8,7,'old body')`); err != nil {
+		t.Fatal(err)
+	}
+	report := Doctor(context.Background(), st, testEnvironment())
+	found := false
+	for _, issue := range report.Issues {
+		if issue.Code == "migration_required" && issue.Source == "sqlite:notebooks" && issue.Path == "schema" {
+			found = true
+		}
+	}
+	if report.OK || !found {
+		t.Fatalf("legacy schema was not diagnosed: %#v", report.Issues)
+	}
+	var body string
+	if err := st.DB().QueryRow(`SELECT body FROM notes WHERE id=8`).Scan(&body); err != nil || body != "old body" {
+		t.Fatalf("legacy body changed: %q %v", body, err)
+	}
+	var count int
+	if err := st.DB().QueryRow(`SELECT COUNT(*) FROM pragma_table_info('notebooks') WHERE name IN ('author_id','stellar_version','stellar_config')`).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("doctor added migration columns: %d %v", count, err)
 	}
 }

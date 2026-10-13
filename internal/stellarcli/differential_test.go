@@ -27,6 +27,7 @@ func TestOfficialCommandRules(t *testing.T) {
 		} `json:"tagCases"`
 		DoctorCases []struct {
 			Theme    map[string]any     `json:"theme"`
+			Widgets  map[string]any     `json:"widgets"`
 			Warnings []widgetProjection `json:"warnings"`
 		} `json:"doctorCases"`
 	}
@@ -59,7 +60,7 @@ func TestOfficialCommandRules(t *testing.T) {
 		}
 	}
 	for i, c := range oracle.DoctorCases {
-		if _, err := config.SaveStellarV2(st, c.Theme, map[string]any{}); err != nil {
+		if _, err := config.SaveStellarV2(st, c.Theme, map[string]any{"data": map[string]any{"widgets": c.Widgets}}); err != nil {
 			t.Fatal(err)
 		}
 		report := Doctor(context.Background(), st, testEnvironment())

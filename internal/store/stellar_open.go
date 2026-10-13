@@ -10,6 +10,7 @@ import (
 )
 
 // OpenExisting 用于诊断和显式工具操作；不创建库、建表、迁移或修改日志模式。
+// SQLite 的只读 WAL 协议仍可能维护 wal/shm 锁文件，不等于内容写入。
 func OpenExisting(path string, readOnly bool) (*Store, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {

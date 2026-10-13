@@ -26,10 +26,13 @@ const noteCases = titles.map(title => {
 });
 const tagCases = ["", "go, go,GO,a/b", ",,,", " go ,, sql ", "a\nb", "\na\n", "\0", "a\tb", "a\rb", "😀, 😀,表", "a/b,a/b,c/d", "false,null,0", "\ufeffgo\ufeff,sql", "\u0085go\u0085,sql"].map(input=>{try{return {input,ok:true,tags:notes.normalizeTags(input)}}catch(error){return {input,ok:false}}});
 const themes = [{}, {topbar:{enabled:true,widgets:["ghrepo"]}}, {leftbar:{widgets:["menu","settings","toc","recent"]}}, {rightbar:{widgets:["spacer","unknown"]}}, {profiles:{post:{topbar:{enabled:true,widgets:[{type:"tree",name:"Custom"}]}}}}];
-const doctorCases = themes.map(theme=>{
+const candidates = themes.map(theme => ({theme,widgets:{}}));
+for (const override of [{title:"Custom"},null,[],"",{length:0},"abc",["x","y"]]) candidates.push({theme:{topbar:{enabled:true,widgets:["ghrepo"]}},widgets:{ghrepo:override}});
+const doctorCases = candidates.map(({theme,widgets})=>{
+  fs.writeFileSync(path.join(source,"_data/widgets.yml"),JSON.stringify(widgets));
   fs.writeFileSync(path.join(root,"_config.stellar.yml"),JSON.stringify(theme));
   const result=doctor.runDoctor({baseDir:root,nodeVersion:"22.0.0",hexoVersion:"8.0.0"});
-  return {theme, warnings:result.warnings.filter(w=>w.widget).map(({code,widget,layout,region,supported})=>({code,widget,layout,region,supported}))};
+  return {theme, widgets, warnings:result.warnings.filter(w=>w.widget).map(({code,widget,layout,region,supported})=>({code,widget,layout,region,supported}))};
 });
 fs.rmSync(root,{recursive:true});
 fs.writeFileSync(process.argv[3],JSON.stringify({commit:"9d11978a24fe6610e3a7dbab741cf62634539d05",noteCases,tagCases,doctorCases},null,2)+"\n");
