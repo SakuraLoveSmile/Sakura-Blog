@@ -1,4 +1,24 @@
 // 只重写被编辑的 JSON 节点，未触碰的数字、参数袋和显式空值保留原文。
+const sourceToken = Symbol("stellar-json-source");
+interface SourceToken {
+  raw: string;
+  fingerprint: string;
+}
+export function fingerprint(value: any): string {
+  if (!value || typeof value !== "object") return JSON.stringify(value);
+  const children = Array.isArray(value)
+    ? value.map(fingerprint)
+    : Object.keys(value).map((key) => [key, fingerprint(value[key])]);
+  return JSON.stringify([(value as any)[sourceToken]?.raw, children]);
+}
+function markSource(value: any, node: JSONNode, raw: string) {
+  if (!value || typeof value !== "object") return;
+  for (const entry of node.entries ?? []) markSource(value[entry.key], entry.node, raw);
+  node.items?.forEach((item, index) => markSource(value[index], item, raw));
+  const token: SourceToken = { raw: raw.slice(node.start, node.end), fingerprint: "" };
+  Object.defineProperty(value, sourceToken, { value: token, enumerable: true, configurable: true });
+  token.fingerprint = fingerprint(value);
+}
 interface JSONNode {
   start: number;
   end: number;
@@ -69,6 +89,7 @@ export function readJSONField(raw: string, path: string): unknown {
         ?.slice()
         .reverse()
         .find((entry) => entry.key === key)?.node ?? current?.items?.[Number(key)];
+  if (current) markSource(current.value, current, raw);
   return current?.value;
 }
 export function readJSONFieldRaw(raw: string, path: string): string | undefined {
@@ -85,8 +106,17 @@ function replace(raw: string, start: number, end: number, value: string): string
   return raw.slice(0, start) + value + raw.slice(end);
 }
 // 新值来自控件；相同子值保持旧 token（包括 JS Number 无法精确表达的参数）。
-function editedNode(raw: string, old: JSONNode, value: unknown): string {
-  if (JSON.stringify(old.value) === JSON.stringify(value)) return raw.slice(old.start, old.end);
+function editedNode(raw: string, old: JSONNode, value: unknown, useSource = true): string {
+  const source =
+    value && typeof value === "object" ? ((value as any)[sourceToken] as SourceToken | undefined) : undefined;
+  if (useSource && source) {
+    if (source.fingerprint === fingerprint(value)) return source.raw;
+    // Vue proxy和对象spread保留Symbol来源；修改后的项从自己的原文重建，不用Number相等猜身份。
+    const wrapped = '{"value":' + source.raw + "}";
+    return editedNode(wrapped, document(wrapped).entries![0].node, value, false);
+  }
+  if ((value === null || typeof value !== "object") && JSON.stringify(old.value) === JSON.stringify(value))
+    return raw.slice(old.start, old.end);
   if (old.entries && value !== null && typeof value === "object" && !Array.isArray(value)) {
     const object = value as Record<string, unknown>;
     const keys = new Set(old.entries.map((entry) => entry.key));
@@ -97,22 +127,23 @@ function editedNode(raw: string, old: JSONNode, value: unknown): string {
       if (!keys.has(key)) entries.push(JSON.stringify(key) + ":" + JSON.stringify(object[key]));
     return "{" + entries.join(",") + "}";
   }
-  if (old.items && Array.isArray(value))
+  if (old.items && Array.isArray(value)) {
     return (
       "[" +
       value
-        .map((item, index) =>
-          (old.items!.find((node) => JSON.stringify(node.value) === JSON.stringify(item)) ?? old.items![index])
-            ? editedNode(
-                raw,
-                old.items!.find((node) => JSON.stringify(node.value) === JSON.stringify(item)) ?? old.items![index],
-                item,
-              )
-            : JSON.stringify(item),
-        )
+        .map((item, index) => {
+          if (item && typeof item === "object" && (item as any)[sourceToken])
+            return editedNode(raw, old.items![index] ?? old, item);
+          const matches = old.items!.filter((node) => JSON.stringify(node.value) === JSON.stringify(item));
+          const tokens = new Set(matches.map((node) => raw.slice(node.start, node.end)));
+          if (tokens.size > 1) throw new Error("数组项数值存在精度歧义，请使用保留来源的控件或编辑完整 JSON 原文");
+          const previous = matches[0] ?? old.items![index];
+          return previous ? editedNode(raw, previous, item) : JSON.stringify(item);
+        })
         .join(",") +
       "]"
     );
+  }
   return JSON.stringify(value);
 }
 export function patchJSONField(raw: string, path: string, value: unknown, rawValue?: string): string {

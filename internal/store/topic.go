@@ -237,6 +237,20 @@ func (s *Store) UpdateTopic(t *Topic) error {
 	}
 	defer tx.Rollback()
 
+	var oldSlug string
+	if err := tx.QueryRow(`SELECT slug FROM topics WHERE id=?`, t.ID).Scan(&oldSlug); err != nil {
+		return err
+	}
+	if oldSlug != t.Slug {
+		n, err := topicMembershipCount(tx, t.ID, oldSlug)
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			return ErrTopicInUse
+		}
+	}
+
 	result, err := tx.Exec(`UPDATE topics SET name=?, slug=?, description=?, icon=?, cover=?, sort=?, updated_at=?, stellar_version=?, stellar_config=?, blog_extensions=? WHERE id=? AND (stellar_version = 0 OR stellar_version = ?)`,
 		t.Name, t.Slug, t.Description, t.Icon, t.Cover, t.Sort, t.UpdatedAt, t.StellarVersion, t.StellarConfig, t.BlogExtensions, t.ID, t.StellarVersion)
 	if err != nil {
@@ -257,17 +271,29 @@ func (s *Store) UpdateTopic(t *Topic) error {
 // DeleteTopic 删除专栏。专栏下仍有文章时返回 ErrTopicInUse（删除保护，调用方映射 403）。
 // 专栏不存在不报错。
 func (s *Store) DeleteTopic(id int64) error {
-	n, err := s.CountAllByTopicID(id)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var slug string
+	if err := tx.QueryRow(`SELECT slug FROM topics WHERE id=?`, id).Scan(&slug); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+	n, err := topicMembershipCount(tx, id, slug)
 	if err != nil {
 		return err
 	}
 	if n > 0 {
 		return ErrTopicInUse
 	}
-	if _, err := s.db.Exec(`DELETE FROM topics WHERE id = ?`, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM topics WHERE id=?`, id); err != nil {
 		return fmt.Errorf("delete topic %d: %w", id, err)
 	}
-	return nil
+	return tx.Commit()
 }
 
 // CountByTopic 统计各专栏（posts.topic 文本字段）的已发布文章数（空专栏除外），
@@ -300,10 +326,27 @@ func (s *Store) CountByTopicID(topicID int64) (int, error) {
 }
 
 // CountAllByTopicID 统计专栏下全部文章数（含草稿/回收站，Console 列表角标用）。
-func (s *Store) CountAllByTopicID(topicID int64) (int, error) {
+// topicMembershipCount 在同一事务快照中检查存储关联、严格原文及未发布草稿；坏旧 JSON 不参与 JSON 解码。
+func topicMembershipCount(q rowScannerQuery, id int64, slug string) (int, error) {
 	var n int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM posts WHERE topic_id = ?`, topicID).Scan(&n); err != nil {
-		return 0, fmt.Errorf("count all posts of topic %d: %w", topicID, err)
+	err := q.QueryRow(`WITH source AS (
+	 SELECT topic_id, stellar_version, CASE WHEN json_valid(stellar_config) THEN stellar_config ELSE '{}' END AS live,
+	 CASE WHEN json_valid(draft_json) THEN draft_json ELSE '{}' END AS draft FROM posts
+	), parsed AS (
+	 SELECT *, CASE WHEN json_valid(json_extract(draft,'$.stellar_config')) THEN json_extract(draft,'$.stellar_config') ELSE '{}' END AS pending FROM source
+	) SELECT COUNT(*) FROM parsed WHERE topic_id=?
+	 OR (stellar_version=2 AND json_extract(live,'$.collection.profile')='topic' AND json_extract(live,'$.collection.id')=?)
+	 OR (json_extract(draft,'$.stellar_version')=2 AND json_extract(pending,'$.collection.profile')='topic' AND json_extract(pending,'$.collection.id')=?)`, id, slug, slug).Scan(&n)
+	return n, err
+}
+
+func (s *Store) CountAllByTopicID(topicID int64) (int, error) {
+	var slug string
+	if err := s.db.QueryRow(`SELECT slug FROM topics WHERE id=?`, topicID).Scan(&slug); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
 	}
-	return n, nil
+	return topicMembershipCount(s.db, topicID, slug)
 }

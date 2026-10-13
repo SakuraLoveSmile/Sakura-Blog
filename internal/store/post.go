@@ -777,6 +777,64 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 }
 
 // Create 新建文章，返回新记录 id。slug 冲突时返回错误。
+// 严格原文的集合归属在文章写事务内查验，避免 API 检查与集合删除之间留下失效引用。
+var ErrPostTopicNotFound = errors.New("strict topic collection not found or not migrated")
+
+func projectPostTopicTx(tx *sql.Tx, p *Post) error {
+	if p.StellarVersion != 2 {
+		return nil
+	}
+	var raw struct {
+		Collection *struct {
+			Profile string `json:"profile"`
+			ID      string `json:"id"`
+		} `json:"collection"`
+	}
+	if err := json.Unmarshal([]byte(p.StellarConfig), &raw); err != nil {
+		return err
+	}
+	p.TopicID, p.Topic = 0, ""
+	if raw.Collection == nil || raw.Collection.Profile != "topic" {
+		return nil
+	}
+	var version int
+	var config, blog string
+	err := tx.QueryRow(`SELECT id,name,stellar_version,stellar_config,blog_extensions FROM topics WHERE slug=?`, raw.Collection.ID).Scan(&p.TopicID, &p.Topic, &version, &config, &blog)
+	if err == sql.ErrNoRows {
+		return ErrPostTopicNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if version != 2 {
+		return ErrPostTopicNotFound
+	}
+	if err := validateStellarWrite(version, config, blog, "topic/"+raw.Collection.ID, "topic", true); err != nil {
+		return err
+	}
+	return nil
+}
+func validateDraftTopicTx(tx *sql.Tx, raw string) error {
+	if raw == "" {
+		return nil
+	}
+	var envelope struct {
+		Version int `json:"stellar_version"`
+	}
+	// 历史草稿头格式保持原样；严格草稿头不能通过字段类型错误绕过归属校验。
+	if err := json.Unmarshal([]byte(raw), &envelope); err != nil || envelope.Version != 2 {
+		return nil
+	}
+	var p Post
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		return err
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "draft", "post", false); err != nil {
+		return err
+	}
+	return projectPostTopicTx(tx, &p)
+}
+
 func (s *Store) Create(p *Post) (int64, error) {
 	if p == nil {
 		return 0, fmt.Errorf("nil content")
@@ -801,6 +859,12 @@ func (s *Store) Create(p *Post) (int64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
+	if err := projectPostTopicTx(tx, p); err != nil {
+		return 0, err
+	}
+	if err := validateDraftTopicTx(tx, p.DraftJSON); err != nil {
+		return 0, err
+	}
 	id, err := createStellarEntityTx(tx, p)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
@@ -860,6 +924,9 @@ func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options 
 		return fmt.Errorf("begin update post %s: %w", oldSlug, err)
 	}
 	defer tx.Rollback()
+	if err := projectPostTopicTx(tx, p); err != nil {
+		return err
+	}
 
 	var (
 		postID                     int64
@@ -987,14 +1054,22 @@ func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options 
 
 // SaveDraft 写入草稿头 JSON（不碰线上内容/updated_at）。文章不存在返回错误。
 func (s *Store) SaveDraft(slug, draftJSON string) error {
-	res, err := s.db.Exec(`UPDATE posts SET draft_json = ? WHERE slug = ? AND deleted_at = ''`, draftJSON, slug)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := validateDraftTopicTx(tx, draftJSON); err != nil {
+		return err
+	}
+	res, err := tx.Exec(`UPDATE posts SET draft_json = ? WHERE slug = ? AND deleted_at = ''`, draftJSON, slug)
 	if err != nil {
 		return fmt.Errorf("save draft for %s: %w", slug, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("save draft for %s: no rows affected", slug)
 	}
-	return nil
+	return tx.Commit()
 }
 
 // ClearDraft 清空草稿头（发布应用或放弃草稿后调用）。文章不存在静默。

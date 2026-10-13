@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ref, effectScope } from "../web/node_modules/vue/index.js";
-import { patchJSONField, readJSONFieldRaw } from "../web/src/components/editor/stellar-form-json.ts";
+import { patchJSONField, readJSONFieldRaw, readJSONField } from "../web/src/components/editor/stellar-form-json.ts";
 import { useStellarForm } from "../web/src/components/editor/useStellarForm.ts";
 import {
   postFields,
@@ -97,6 +97,8 @@ test("post and page controls patch strict snake_case, raw edits refill, replacem
     page.value.leftbar_widgets[0].params.option.zero = 5;
     const p = JSON.parse(page.value.stellar_config);
     assert.equal(p.banner.headline, "横幅标题");
+    page.value.banner_info.title = "";
+    assert.equal(JSON.parse(page.value.stellar_config).banner.headline, undefined);
     assert.equal(p.article.author, "alice");
     assert.deepEqual(p.rightbar.widgets, []);
     assert.equal(p.leftbar.brand.name, "品牌");
@@ -117,11 +119,11 @@ test("collection and Hero controls preserve options, command labels, route, visi
     assert.equal(form.value.hero.animationParamsText, bag);
     assert.equal(form.value.visible, true); // listed=false不把整个集合变成私密，也不反向设公开
     form.value.name = "新集合";
-    form.value.hero.commandsText = "npm install";
+    form.value.hero.commands[0].codes = "npm install\nnpm run build";
     form.value.hero.start = "开始阅读";
     const saved = JSON.parse(form.value.stellar_config);
     assert.equal(saved.name, "新集合");
-    assert.deepEqual(saved.hero.preview.commands, [{ label: "安装", codes: "npm install" }]);
+    assert.deepEqual(saved.hero.preview.commands, [{ label: "安装", codes: "npm install\nnpm run build" }]);
     assert.deepEqual(saved.hero.actions, [{ title: "开始阅读", url: "#start" }]);
     assert.deepEqual(saved.visibility, { listed: false, searchable: false });
     assert.equal(saved.route.homepage, "intro");
@@ -136,4 +138,66 @@ test("collection and Hero controls preserve options, command labels, route, visi
     useStellarForm(() => note.value, noteFields, "config", "blog");
     note.value.tags = "工作/新\n随笔";
     assert.deepEqual(JSON.parse(note.value.config).tags, ["工作/新", "随笔"]);
+  }));
+
+test("array removal and reordering preserve distinct large integer tokens through Vue field mapping", () =>
+  inScope(() => {
+    const raw =
+      '{"leftbar":{"widgets":[{"override":"custom","n":9007199254740992},{"override":"custom","n":9007199254740993}]}}';
+    const widgets = readJSONField(raw, "leftbar.widgets") as any[];
+    assert.ok(patchJSONField(raw, "leftbar.widgets", widgets.slice(1)).includes("9007199254740993"));
+    assert.equal(
+      readJSONFieldRaw(patchJSONField(raw, "leftbar.widgets", widgets.slice().reverse()), "leftbar.widgets"),
+      '[{"override":"custom","n":9007199254740993},{"override":"custom","n":9007199254740992}]',
+    );
+    assert.throws(() => patchJSONField(raw, "leftbar.widgets", JSON.parse(raw).leftbar.widgets.slice(1)), /精度歧义/);
+    const form = ref<any>({ stellar_version: 2, stellar_config: raw, blog_extensions: "{}", banner_info: {} });
+    useStellarForm(() => form.value, pageFields);
+    form.value.leftbar_widgets = form.value.leftbar_widgets.slice().reverse();
+    assert.ok(
+      readJSONFieldRaw(form.value.stellar_config, "leftbar.widgets")!.startsWith(
+        '[{"override":"custom","n":9007199254740993}',
+      ),
+    );
+    form.value.leftbar_widgets = form.value.leftbar_widgets.slice(1);
+    assert.ok(form.value.stellar_config.includes("9007199254740992"));
+  }));
+
+test("Hero option drafts remain editable and block save until valid without rolling back", () =>
+  inScope(() => {
+    const form = ref<any>({
+      stellar_version: 2,
+      stellar_config: '{"hero":{"background":{"effect":{"type":"strands","options":{"seed":false}}}}}',
+      blog_extensions: "{}",
+      hero: {},
+    });
+    const error = useStellarForm(() => form.value, wikiFields);
+    form.value.hero.animationParamsText = "{";
+    assert.equal(form.value.hero.animationParamsText, "{");
+    assert.ok(error.value);
+    assert.equal(readJSONFieldRaw(form.value.stellar_config, "hero.background.effect.options"), '{"seed":false}');
+    form.value.name = "改名";
+    assert.equal(form.value.hero.animationParamsText, "{");
+    assert.ok(error.value);
+    form.value.hero.animationParamsText = '{"seed":null}';
+    assert.equal(error.value, "");
+    assert.equal(readJSONFieldRaw(form.value.stellar_config, "hero.background.effect.options"), '{"seed":null}');
+  }));
+
+test("terminal tab edits keep each multiline code and label separate", () =>
+  inScope(() => {
+    const raw =
+      '{"hero":{"preview":{"type":"terminal","commands":[{"label":"macOS","codes":"brew install\\nblog init"},{"label":"Linux","codes":"apt install\\nblog init"}]}}}';
+    const form = ref<any>({ stellar_version: 2, stellar_config: raw, blog_extensions: "{}", hero: {} });
+    useStellarForm(() => form.value, wikiFields);
+    form.value.name = "新集合";
+    assert.deepEqual(
+      JSON.parse(form.value.stellar_config).hero.preview.commands,
+      JSON.parse(raw).hero.preview.commands,
+    );
+    form.value.hero.commands[1].codes = "apt update\nsudo apt install";
+    form.value.hero.commands.splice(0, 1);
+    assert.deepEqual(JSON.parse(form.value.stellar_config).hero.preview.commands, [
+      { label: "Linux", codes: "apt update\nsudo apt install" },
+    ]);
   }));

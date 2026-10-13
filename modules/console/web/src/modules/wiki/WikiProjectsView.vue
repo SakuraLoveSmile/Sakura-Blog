@@ -38,7 +38,7 @@ interface ProjectForm {
     animationParamsText: string;
     previewType: "" | "terminal" | "image";
     previewImage: string;
-    commandsText: string;
+    commands: { label?: string | null; codes?: string | null }[];
     actions: WikiHeroAction[];
   };
 }
@@ -78,7 +78,7 @@ function emptyForm(id = ""): ProjectForm {
       animationParamsText: "",
       previewType: "",
       previewImage: "",
-      commandsText: "",
+      commands: [],
       actions: [],
     },
   };
@@ -88,7 +88,6 @@ function formFromProject(p: WikiProject): ProjectForm {
   const hero = p.hero || {};
   const animation = hero.animation || {};
   const preview = hero.preview || {};
-  const commands = (preview.commands || []).flatMap((c) => c.codes || []);
   return {
     stellar_version: p.stellar_version ?? 0,
     stellar_config: p.stellar_config || "{}",
@@ -119,7 +118,7 @@ function formFromProject(p: WikiProject): ProjectForm {
       animationParamsText: animation.params ? JSON.stringify(animation.params, null, 2) : "",
       previewType: preview.type === "terminal" || preview.type === "image" ? preview.type : "",
       previewImage: preview.image || "",
-      commandsText: commands.join("\n"),
+      commands: [],
       actions: (hero.actions || []).map((a) => ({
         title: a.title || "",
         url: a.url || "",
@@ -229,6 +228,10 @@ function payload() {
 }
 
 async function saveProject() {
+  if (stellarFormError.value) {
+    Toast.error(stellarFormError.value);
+    return;
+  }
   const id = form.value.id.trim();
   if (!id) {
     Toast.error("请输入项目 ID");
@@ -567,14 +570,35 @@ onMounted(() => loadProjects());
                 </div>
               </div>
 
-              <div v-if="form.hero.previewType === 'terminal'">
-                <label class="mb-1 block text-xs font-medium text-text-tertiary">终端命令（每行一条）</label>
-                <textarea
-                  v-model="form.hero.commandsText"
-                  rows="3"
-                  :class="textareaCls"
-                  placeholder="npm install stellar\nmake dev"
-                ></textarea>
+              <div v-if="form.hero.previewType === 'terminal'" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-text-tertiary">终端命令标签页</span>
+                  <button
+                    type="button"
+                    class="text-xs text-primary hover:underline"
+                    @click="form.hero.commands.push({ label: '', codes: '' })"
+                  >
+                    + 添加标签页
+                  </button>
+                </div>
+                <div v-for="(command, index) in form.hero.commands" :key="index" class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <input v-model="command.label" :class="inputCls" placeholder="标签页名称（可留空）" />
+                    <button
+                      type="button"
+                      class="text-xs text-primary hover:underline"
+                      @click="form.hero.commands.splice(index, 1)"
+                    >
+                      删除标签页
+                    </button>
+                  </div>
+                  <textarea
+                    v-model="command.codes"
+                    rows="3"
+                    :class="textareaCls"
+                    placeholder="一个标签页内可以输入多行命令"
+                  ></textarea>
+                </div>
               </div>
 
               <!-- 快捷行动按钮组 -->

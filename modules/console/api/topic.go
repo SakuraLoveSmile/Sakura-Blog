@@ -201,6 +201,10 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	if err := h.store.UpdateTopic(t); err != nil {
+		if err == store.ErrTopicInUse {
+			Fail(c, http.StatusConflict, "专栏已有文章或未发布草稿，不能修改 ID（slug）；请先解除所有归属")
+			return
+		}
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: topics.") {
 			Fail(c, http.StatusConflict, "name 或 slug 已被占用")
 			return

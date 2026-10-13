@@ -97,10 +97,10 @@ async function exportDocument() {
         />
       </label>
       <div class="flex flex-wrap gap-2">
-        <VButton :loading="busy" @click="validate">只校验</VButton>
+        <VButton :loading="busy" :disabled="!!syncError" @click="validate">只校验</VButton>
         <VButton
           v-if="!collection && (profile === 'post' || profile === 'page')"
-          :disabled="busy || version !== 2"
+          :disabled="busy || version !== 2 || !!syncError"
           @click="exportDocument"
           >导出 Markdown</VButton
         >

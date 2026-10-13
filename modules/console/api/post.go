@@ -229,13 +229,45 @@ func decodeTopicID(raw json.RawMessage) (provided bool, id int64, err error) {
 	return true, id, nil
 }
 
-// normalizePostTopic resolves the formal topic_id field and mirrors the
-// selected topic name into posts.topic. An omitted field remains compatible
-// with older clients that only sent topic text.
+// 严格文章以 collection 原文为唯一归属真值；旧版本保留既有宿主关系语义。
 func (h *Handler) normalizePostTopic(req *postRequest, fallbackID int64) error {
 	provided, id, err := decodeTopicID(req.TopicID)
 	if err != nil {
 		return err
+	}
+	if req.StellarVersion == 2 {
+		var raw struct {
+			Collection *struct {
+				Profile string `json:"profile"`
+				ID      string `json:"id"`
+			} `json:"collection"`
+		}
+		if err := json.Unmarshal([]byte(req.StellarConfig), &raw); err != nil {
+			return errTopicMembershipConfig
+		}
+		canonicalID := int64(0)
+		if raw.Collection != nil && raw.Collection.Profile == "topic" {
+			topic, err := h.store.GetTopicBySlug(raw.Collection.ID)
+			if err != nil {
+				return err
+			}
+			if topic == nil {
+				return errTopicMembershipMissing
+			}
+			canonicalID = topic.ID
+		}
+		if provided && id != canonicalID {
+			if id > 0 {
+				if topic, err := h.store.GetTopicByID(id); err != nil {
+					return err
+				} else if topic == nil {
+					return errTopicNotFound
+				}
+			}
+			return errTopicMembershipConflict
+		}
+		id = canonicalID
+		provided = true
 	}
 	if !provided {
 		id = fallbackID
@@ -262,8 +294,20 @@ func (h *Handler) normalizePostTopic(req *postRequest, fallbackID int64) error {
 	return nil
 }
 
+var errTopicMembershipMissing = errors.New("strict topic collection missing")
+
+var errTopicMembershipConfig = errors.New("invalid strict collection config")
+
+var errTopicMembershipConflict = errors.New("topic_id conflicts with strict collection")
+
 func failPostTopic(c *gin.Context, err error) bool {
 	switch {
+	case errors.Is(err, errTopicMembershipMissing):
+		Fail(c, http.StatusBadRequest, "collection_not_found: 严格配置所属专栏不存在")
+	case errors.Is(err, errTopicMembershipConfig):
+		Fail(c, http.StatusBadRequest, "严格配置 JSON 原文无效")
+	case errors.Is(err, errTopicMembershipConflict):
+		Fail(c, http.StatusBadRequest, "topic_id 与严格配置 collection 归属冲突，请以原文为准")
 	case errors.Is(err, errTopicIDInvalid):
 		Fail(c, http.StatusBadRequest, "无效的 topic_id")
 	case errors.Is(err, errTopicNotFound):
@@ -385,6 +429,10 @@ func (h *Handler) createPost(c *gin.Context) {
 		p.Cover = defaultCover(req.Slug)
 	}
 	if _, err := h.store.Create(p); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
@@ -466,6 +514,10 @@ func (h *Handler) updatePost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		if errors.Is(err, store.ErrPostSlugConflict) {
 			Fail(c, http.StatusConflict, "slug 已被占用: "+newSlug)
 			return
@@ -536,6 +588,10 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		return
 	}
 	if err := h.store.SaveDraft(slug, string(b)); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "保存草稿失败: "+err.Error())
 		return
 	}
@@ -608,6 +664,10 @@ func (h *Handler) publishPost(c *gin.Context) {
 	}
 
 	if err := h.savePostWithSnapshot(existing, p, newSlug); err != nil {
+		if errors.Is(err, store.ErrPostTopicNotFound) {
+			failPostTopic(c, errTopicNotFound)
+			return
+		}
 		Fail(c, http.StatusInternalServerError, "发布失败: "+err.Error())
 		return
 	}

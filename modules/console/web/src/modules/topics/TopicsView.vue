@@ -476,6 +476,7 @@ onMounted(load);
           <div>
             <label class="mb-1.5 block text-xs font-medium text-text-tertiary">Slug 路径（可选）</label>
             <input v-model="form.slug" class="apple-input font-mono text-xs" placeholder="留空按名称自动生成" />
+            <p class="apple-form-hint">已有文章或未发布草稿归属时不能修改 ID；请先解除所有归属。</p>
           </div>
 
           <div>

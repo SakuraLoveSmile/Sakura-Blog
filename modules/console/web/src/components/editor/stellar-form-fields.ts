@@ -45,7 +45,7 @@ const widgetFields = (region: string): StellarFormField => ({
 export const pageFields: StellarFormField[] = [
   { form: "title", path: "title", host: true },
   { form: "banner", path: "content.banner_image", blog: true },
-  { form: "banner_info.title", path: "banner.headline" },
+  { form: "banner_info.title", path: "banner.headline", write: (value) => value || undefined },
   { form: "banner_info.subtitle", path: "banner.tagline" },
   { form: "banner_info.avatar", path: "banner.avatar" },
   { form: "banner_info.icon", path: "leftbar.brand.image.src" },
@@ -91,13 +91,7 @@ export const wikiFields: StellarFormField[] = [
   { form: "hero.animationParamsText", path: "hero.background.effect.options", raw: true },
   { form: "hero.previewType", path: "hero.preview.type", write: (value) => value || null },
   { form: "hero.previewImage", path: "hero.preview.src" },
-  {
-    form: "hero.commandsText",
-    path: "hero.preview.commands",
-    read: (value) => (Array.isArray(value) ? value.map((item) => item.codes ?? "").join("\n") : ""),
-    write: (value, current) =>
-      value.split(/\r?\n/).map((codes: string, index: number) => ({ ...(current?.[index] ?? {}), codes })),
-  },
+  { form: "hero.commands", path: "hero.preview.commands", fallback: [] },
   { form: "hero.actions", path: "hero.actions", fallback: [] },
 ];
 export const wikiDocFields: StellarFormField[] = [

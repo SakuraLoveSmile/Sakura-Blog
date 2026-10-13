@@ -1,5 +1,5 @@
 import { watch, ref } from "vue";
-import { patchJSONField, readJSONField, readJSONFieldRaw } from "./stellar-form-json";
+import { patchJSONField, readJSONField, readJSONFieldRaw, fingerprint } from "./stellar-form-json";
 
 export interface StellarFormField {
   form: string;
@@ -19,6 +19,12 @@ function set(object: any, path: string, value: unknown) {
   for (const key of keys.slice(0, -1)) object = object[key];
   object[keys[keys.length - 1]] = value;
 }
+function snapshot(value: any): any {
+  if (!value || typeof value !== "object") return value;
+  const result: any = Array.isArray(value) ? [] : {};
+  for (const key of Reflect.ownKeys(value)) if (key !== "length") result[key] = snapshot(value[key]);
+  return result;
+}
 // 原文/新记录优先回填；之后每次基本控件修改只 patch 对应字段。
 // flush:sync 保证点击保存前已完成同步，guard 避免回填触发反向写入。
 export function useStellarForm(
@@ -33,10 +39,12 @@ export function useStellarForm(
     previousConfig = "",
     previousBlog = "";
   let baseline: string[] = [];
+  let baselineValues: any[] = [];
+  const rawDraftErrors = new Map<string, string>();
   watch(
     () => {
       const form = getForm();
-      return [form, form[configKey], form[blogKey], ...fields.map((field) => JSON.stringify(get(form, field.form)))];
+      return [form, form[configKey], form[blogKey], ...fields.map((field) => fingerprint(get(form, field.form)))];
     },
     () => {
       if (syncing) return;
@@ -54,23 +62,34 @@ export function useStellarForm(
         fields.forEach((field, index) => {
           const rawKey = field.blog ? blogKey : configKey;
           if (field.blog ? blogChanged : configChanged) {
+            rawDraftErrors.delete(field.form);
             const value = field.raw
               ? readJSONFieldRaw(form[rawKey], field.path)
               : readJSONField(form[rawKey], field.path);
             if (value === undefined && field.host) return;
             set(form, field.form, field.read ? field.read(value) : (value ?? field.fallback ?? ""));
-          } else if (baseline[index] !== JSON.stringify(get(form, field.form))) {
+          } else if (baseline[index] !== fingerprint(get(form, field.form))) {
             const value = get(form, field.form);
-            form[rawKey] = patchJSONField(
-              form[rawKey],
-              field.path,
-              field.write ? field.write(value, readJSONField(form[rawKey], field.path)) : value,
-              field.raw ? value || "{}" : undefined,
-            );
+            try {
+              form[rawKey] = patchJSONField(
+                form[rawKey],
+                field.path,
+                field.write ? field.write(value, readJSONField(form[rawKey], field.path)) : value,
+                field.raw ? value || "{}" : undefined,
+              );
+              rawDraftErrors.delete(field.form);
+            } catch (problem) {
+              if (!field.raw) throw problem;
+              rawDraftErrors.set(
+                field.form,
+                "参数 JSON 尚未完成：" + (problem instanceof Error ? problem.message : "无效原文"),
+              );
+            }
           }
         });
         // 多个旧控件消费同一个上游字段时同步回显（例如 Hero 与集合 headline）。
         fields.forEach((field) => {
+          if (rawDraftErrors.has(field.form)) return;
           const rawKey = field.blog ? blogKey : configKey;
           const value = field.raw
             ? readJSONFieldRaw(form[rawKey], field.path)
@@ -78,17 +97,19 @@ export function useStellarForm(
           if (value === undefined && field.host) return;
           set(form, field.form, field.read ? field.read(value) : (value ?? field.fallback ?? ""));
         });
+        error.value = [...rawDraftErrors.values()].join("\n");
       } catch (problem) {
         error.value = "请先修正配置 JSON，再修改基本字段：" + (problem instanceof Error ? problem.message : "原文无效");
         if (previous === form)
           fields.forEach((field, index) => {
-            if (baseline[index] !== undefined) set(form, field.form, JSON.parse(baseline[index]));
+            if (baseline[index] !== undefined && !field.raw) set(form, field.form, snapshot(baselineValues[index]));
           });
       } finally {
         previous = form;
         previousConfig = form[configKey];
         previousBlog = form[blogKey];
-        baseline = fields.map((field) => JSON.stringify(get(form, field.form)));
+        baseline = fields.map((field) => fingerprint(get(form, field.form)));
+        baselineValues = fields.map((field) => snapshot(get(form, field.form)));
         syncing = false;
       }
     },
