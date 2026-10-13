@@ -1,0 +1,32 @@
+{
+  "kind": "loopback synthetic official service contracts; no GitHub account validation",
+  "contributors": [
+    {
+      "api": "http://127.0.0.1:8110/contributors",
+      "links": [
+        {
+          "href": "http://127.0.0.1:8103/about/",
+          "text": "t5-fixture-user"
+        }
+      ],
+      "text": "t5-fixture-user"
+    },
+    {
+      "api": "http://127.0.0.1:8110/contributors-error",
+      "links": [],
+      "text": ""
+    }
+  ],
+  "gh": [
+    {
+      "api": "http://127.0.0.1:8110/ghinfo",
+      "text": "t5-fixture/example\nT5_GHINFO_SUCCESS_MARKER\nStars: 42"
+    },
+    {
+      "api": "http://127.0.0.1:8110/ghinfo-error",
+      "text": "GHINFO_503_PENDING_MARKER\n失败时不能出现成功数据"
+    }
+  ],
+  "overflow": false,
+  "url": "http://127.0.0.1:8103/t5-services-final/"
+}

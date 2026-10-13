@@ -126,7 +126,47 @@
 
 ## 本次记录
 
-- 当前仅完成源码调研、根 DB 只读结构/计数预检和上游主页基线保存；没有宣称实现完成。
+### 2026-10-13 接续实施与真实验收
+
+本任务整体保持**实现中**，下面仅记录已经实际执行的范围。T1–T7 原清单不缩减；用户尚未确认完整体验，也未批准转换真实存量数据。
+
+- T1：迁移快照格式 3 明确绑定 SQLite rowid、WITHOUT ROWID、逐值 storage class 和无损 BLOB。独立审查发现的隐式 rowid 与 INTEGER/REAL 混淆已修复；稀疏身份、external-content FTS MATCH、Notebook 结构恢复与摘要变化测试通过。执行证明只创建新系统临时 root，不是生产 Apply；该阶段尚未覆盖上传字节、原索引/视图/触发器与旧运行目录；后续完整根目录实现见下文。
+- T2/T7：真实完成四 appearance × 三配色，全部 14 个 profiles（包括独立 Moments 扩展）× 三语言 × 1280/800/390 断点，以及八组 region 开关组合。证据分别为 `resume-appearance-matrix.json`、`resume-profile-locale-matrix.json`、`resume-region-matrix.json`。这些记录不能替代所有 appearance 字段与交互参数的验收；保留原截图中的失败现场。
+- T3/T7：Post、Page、Topic、Wiki、Notebook/Note 的阶段保存重开与前台/搜索证据已增加到基线目录。Wiki 编辑器经用户确认统一为“集合显示名（name）”，真实保存后项目列表与前台卡片均消费 name；旧真实数据取值仍须逐记录审查。Moments 头像经图片缓存增强曾被写成 512px 宽，已固定 16×16 并在桌面和 390px 真实复验。
+- T3：独立 Page 的显式 Open Graph 图片等参数此前未完整消费，已修复正式 SSR、Offline 与 opaque preview 路径；浏览器确认显式描述和图片生效。上游仍强制 OG 标题使用 Page title，不把该正式行为改成新的宿主语义。Friends 默认标题/横幅与 false/null RSS 开关、无关页面不受污染、Wiki 集合排序/卡片外链及本地 canonical 已实际操作；robots 附加规则使用真实 HTTP 验证，浏览器客户端阻止 robots.txt 导航，证据如实区分。
+- T4：同集合 Post 局部导航真实更新标题、canonical、内容，浏览器 timeOrigin 保持不变；历史返回精确恢复实际点击时的 709.5px 滚动位置，前进恢复目标页。定位器操作前的滚动值可能因浏览器自动将链接滚入视口而变化，证据额外记录了一次性点击时测量，不能将操作前值误作恢复目标。当时连续取消、失败回退、BFCache 等尚需补验；后续结果见下文。预取已经增加完整卸载与真实 URL.origin 边界回归。
+- T5：新增有效的隔离 WAV/MP4、两图 Gallery/Swiper 和本地动态服务。浏览器实际完成 Tabs、折叠、目录、灯箱下一张/Escape、轮播、下拉 Escape、复制、音视频播放暂停；官方评分/投票完成 GET→POST→重载防重和 503 失败回滚。Friends/sites/timeline/RSS/weibo 合成服务实际显示成功。checkbox/radio 默认由固定上游样式设为只读，不把默认点击无效改成自创行为。54 标签展示页全部载体无 tag-error，但外部 Markdown、Gist 正式集成、聊天媒体、其它动态服务与参数全集尚未全部验证，原示例中的图片占位不算音频成功路径。
+- Console/T7：修复异步专栏目录水合制造文章假脏态，派生 topic_id/topic 不再参与 strict 保存或脏态比较。另修复正文水合/预览 context 覆盖未恢复本地草稿，真实浏览器等待后草稿正文保持原样且状态仍为“所有修改已保存”；仅用户真实编辑安排备份。没有自动发布或改写真实数据日期。
+- T6/T7：本次真实 `make css` 和 `make css-drift-check` 通过，20 份产物与锁定对象一致；编译时共享 resource 的 unborn HEAD 与未跟踪源文件原样保留。实际主实现树主题输入仍是 unborn HEAD/未跟踪源文件，锁定 commit object 可用；根日常树另一个既有输入为 detached `1f4cb4bc0a44e829b6d0929ce4102aea9cd9a2a8`、仅未跟踪 `.mimosa/`。两者本任务均未切换或重置，编译仍 archive 锁定对象。`aa1fa93` 组合的真实 `make build`、完整 `make test` 通过；`resume-runtime-aa1.json` 核对运行二进制、嵌入 WASM、Console HTML、六入口资源及 main.js 与当前产物一致。最终 `make merge-check` 与 dev 组合验收尚未执行，本轮没有合 dev。
+
+- T4/T5：正式 Gist 标签已修复父子首次尺寸握手，并给 immutable bridge URL 加入内容版本；真实父页自动得到 850px，CDP 证明 opaque origin、`contentDocument === null`、仅 `allow-scripts`。同集合 partial 离页后旧 Gist 变成 `about:blank` 并脱离 DOM，四段聊天媒体暂停且脱离，返回时使用新 token 和新实例。证据为 `resume-gist-handshake-fixed.json`、`resume-t5-partial-lifecycle.json`。
+- T4：真实完成连续导航取消、15 秒超时回退、网络失败回退，以及注入非 HTML XHR 后整页回退；标题、canonical、最终内容一致，loading 清除。证据为 `resume-partial-rapid-cancel.json`、`resume-partial-timeout-fallback.json`、`resume-partial-fetch-failure-fallback.json`、`resume-partial-non-html-fallback.json`。早期重定向注入因工具持续报告 paused document response 未通过，失败现场保留；随后用真实 Gin 301（无 Fetch 注入）已验证整页回退，见 resume-partial-real-redirect-fallback.json。BFCache 原生分支仍未触发，见 resume-bfcache-reasons.json，不能用合成 persisted 事件代替。临时网络延迟已复原，注入后 Fetch patterns 已清空，页面已重新加载。
+- T5：四类最新评论与 albums/posters 在 loopback 合成服务真实显示；QQ quote 定位、QQ/WeChat 语音播放暂停、聊天视频全屏与播放暂停实际操作。正式官方 chat-file API 成功下载上游公开 README，5060B、hash 与返回字节一致。畸形 `file.data` 原误造 0B 文件已修复并测试，保留失败现场。证据为 `resume-t5-services-extra.json`、`resume-t5-chat-media.json`、`resume-t5-chat-public-file.json`。外部 Markdown 成功路径受本机 fake-IP 解析到 198.18/保留地址阻断，safefetch 正确拒绝；没有更改网络保护，不记成功。
+- T4/T6：Algolia 连续换词/清空/同词往返的旧响应覆盖已修复；图片 Prepare→AnalyzeContext→WASM 执行取消已贯通。实际 SVG 取消从仍等待 14.905 秒的红测改为及时结束且 runtime 可重用、缓存/锁不污染。PNG/GIF 和 AVIF 库内部缺 context API，仅阶段边界检查，不能宣称所有格式即时抢占取消。`c2cee18` 主组合真实 `make build`、完整 `make test` 通过（Console 256、Stellar 174、0 skip）；`resume-runtime-c2c.json` 确认当前服务产物 hash。
+- T1：用户已确认官方导航、Wiki 旧 title 作唯一 name/shelf 仅 ID、官方集合首页、posts/10 的列表 cover/详情独立 banner、移除三条占位按钮；Notebook/Note owner 为精确匹配的现有 sakurasep，结构映射及日期/slug/draft 候选均已确认。仅更新未最终批准候选，不转换真实源。完整 root Capture/Rehearsal/Apply/Recover 已接入主树 `b3a9c5c`，合成测试覆盖上传/运行资源及 SQL 对象；独立审查发现的提交日志、放行与不确定 fsync 恢复缺陷已修复并复审通过；正式 CLI preview/rehearse/apply/recover、启动恢复与 canonical lifetime guard 已接通，实际二进制合成 E2E 通过。最终正文摘要批准、完整 fresh root 审查与真实 Apply 均未执行。
+
+### 2026-10-14 接续闭合（仍实现中）
+
+- T1/T6：正式 c161 单二进制对真实来源两次只读 preview 退出 0；32 条候选、172 配置映射，原 766 逐记录映射保留，选值后 777，Notebook 结构 26 项。七条正文及最终完整 RootDigest/ReviewDigest 未批准，没有真实演练或 Apply。DB/WAL/tracked 与全部内容 hash 不变，仅 SHM mtime 变化，不能声称整个目录零写。完整脱敏报告见 `stellar-200-migration-preview.md`。
+- T3/T7：Console 正文保存、Note、footer 与 Markdown widget 共用同次公开 inventory/locale/站点链接/Wiki 树；opaque 正文及整页由单 callback 同代快照生成。新回归先复现旧坏正文阻断有效修复，再验证实际 Console HTTP 修复成功、无关坏正文不阻断、坏候选拒绝不写入。启动遇正文错误可进入 Console 修复，FTS 失败先清空，清空失败禁用共享查询；schema/structure/version 仍拒启。独立并发与隐私复审通过。
+- T4：六评论提供方在正式前台配合独立 8111 合成 SDK 完成成功、局部导航清理、延迟资源和 404；Artalk/Waline/Twikoo destroy 与三个 embed 的 DOM 移除分别记录。Twikoo 迟到 init 的旧实例及时销毁，新页只一实例。三身份真实保存→重载→退出已操作。证据 `resume-six-comment-lifecycle.json`、`resume-three-visitor-identities.json`；这些不是第三方账号实测。
+- T2/T7：完整自定义颜色、字体/九权重/字号/对齐、半径/形状、两个渐变、代码滚动条、背景图/模糊/饱和/覆盖色已实际保存重开并读取浏览器 computed style，代码字体及正文 justify 实际生效。另核验浅/深背景渐变、none、null 图片回退及自定义高亮 stylesheet 真实加载。早期受访客 auto 覆盖和加载时机影响的采样保留，最终证据为 `resume-appearance-custom-complete.json`、`resume-appearance-background-variants-final.json`；临时访客覆盖和配置已恢复。
+- T4/T7：设置页动态头像被 LazyLoad 的旧 data-src 覆盖已在正式浏览器复现；SSR 动态头像使用已有 no-lazy 约定，真实本地有效 avatar 的 src/currentSrc 保持正确。`resume-dynamic-avatar-red.json` 与 `resume-dynamic-avatar-green.json` 保留红绿证据，普通正文图仍 lazy。
+- T5：代码高亮补齐官方 highlight/code/gutter 载体，真实剪贴板复制精确原文（无行号）及延迟完成离页无 toast 污染已验证，剪贴板已恢复。MathJax 两公式、Mermaid 图、deferred SVG 和 HeTi 8 个 spacing 实际加载；局部离页清除 MathJax registry，资源 404 时保留源内容并报告错误。参见 `resume-code-copy-clipboard.json`、`resume-code-copy-late-cleanup.json`、`resume-plugins-live-lifecycle.json`、`resume-heti-enabled.json` 与 `resume-plugins-resource-failure.json`。
+- T5：官方标签 oracle 补齐全部 54 标签 catalog 参数门禁：288 参数输入中 270 严格 DOM、1 decoded URL query 等效、17 确切空 CSS 等效；39 主题默认/三 locale 严格 DOM，Gist 3 官方脚本请求语义。另 19 个安全转义/上游单 KR 缺陷输入单列有意差异，不计严格 DOM 通过。真实多 Swiper 参数检查发现第二实例未挂载，已修复全载体挂载与各自控件；新浏览器确认两实例独立切页，同集合 Note 局部离页时 timeOrigin 不变且两实例均 destroyed、脱离 DOM。红绿证据 `resume-multiple-swiper-red.json`、`resume-multiple-swiper-green.json` 保留。
+- T6：新增正式图片 fetch 路径隔离测试，Content-Length 超 32MiB 零读取、未知长度恰读 32MiB+1 拒绝、等值成功、默认 15 秒真实超时及 body 取消通过；原图/旧缓存/无关记录保留。fixture RoundTripper 不访问外网，真实 SVG/WASM 解码证据仍独立。
+- T7：审计确认 sitemap 为 Blog 保留扩展（上游无此生成器），已补回首页 priority=1.0、taxonomy 实际配置路径及 links/moments 静态索引，子目录 Root 一次及去重回归通过。最后组合 build/test/merge-check 与新产物 hash 在全部修复合入后执行，不能用此前子树绿色代替。
+
+- T3/T7：正文 TOC 原相对路径在嵌套正文与 Console srcdoc 中错误解析，已单独投影公开根相对 Wiki 树，不改正式模型。真实 Note 和 opaque 预览都有两个正确 `/wiki/galaxy/...` 链接；iframe 保持仅 allow-scripts、contentDocument 为 null。footer 与 Markdown widget 实际保存重开后，同请求消费公开 Wiki 树、本地绝对链接和三 locale；MBTI 标题分别显示架构师、架構師、Architect。证据 `resume-context-preview-toc-route-green.json`，临时配置及 Note 原文已恢复。
+- T3/T7：Notebook date/updated/title × asc/desc 六种排序完成真实配置保存、重新打开、前台列表检查；使用 beta 的不同 date/updated 候选，避免把相同日期的稳定顺序当证明。per_page=0 同页显示两项，恢复 per_page=1 后真实点击第二页显示另一项。临时日期候选和集合配置均已恢复；见 `resume-notebook-sorting.json`。
+- T6/T7：最终生产源码组合 `7ca5a989` 的真实 make build 已通过，新 8103 隔离进程加载当前二进制；`resume-runtime-combination.json` 逐字/hash 核对 Console 入口、六资源、main.js、Swiper extension 和嵌入 WASM。真实 `/sitemap.xml` 为 52 个去重 URL，首页 priority=1.0，保留 links/moments，见 `resume-sitemap-http.json`。此前 runtime JSON 只绑定各自历史构建。
+- 证据边界：本轮公开 JSON 和截图经独立只读敏感内容审计，未发现真实凭据或私密迁移全文；20 capability 声明及六个绑定文件 hash 一致。部分工具截图虽然命名 .png，实际输出 JPEG，且部分图片为 1272×716；它们证明可见布局与交互，不作为无压缩的 1280×720 逐像素对比。保留原始字节，避免使既有 hash 绑定失效。
+
+本轮基线截图和 JSON 都位于 `docs/baselines/stellar-200-full/`。隔离服务为 8103，DB/config/content/uploads/cache/runtime 均来自独立根；动态 fixture 为仅监听 loopback 的 8110。真实外部服务与 fixture 证据分别记录。所有私密迁移候选保留在忽略目录，不能提交或输出正文、凭据。
+
+### 历史起始阶段（不表示当前实现状态）
+
+- 起始时仅完成源码调研、根 DB 只读结构/计数预检和上游主页基线保存；当时没有宣称实现完成。
 - 将独立上游导出的全部 628 个普通文件与锁定 commit 的 `git archive` 逐文件 SHA-256 比较，0 个缺失或不一致；完整源指纹见 `docs/baselines/stellar-200-full/upstream-inventory.json`。这只证明输入源码完整、准确，不证明移植完成。
 - 根 DB 通过 SQLite `mode=ro` 打开，未修改配置、内容、评论或用户；未启动/重启真实服务。
 - 已移入 42 个之前完全缺失的上游浏览器资源，保留 20 个存在差异的脚本等待适配；清单见 `docs/baselines/stellar-200-full/browser-resource-port.json`。此记录仅证明资源准备，不代表 manifest、生命周期或页面已经接通。

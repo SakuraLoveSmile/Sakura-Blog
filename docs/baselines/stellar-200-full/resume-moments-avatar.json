@@ -1,0 +1,22 @@
+{
+  "built_head": "fcb4591",
+  "desktop": [
+    {
+      "header": "Stellar 2.0 验收站13 小时前",
+      "height": 16,
+      "noLazy": false,
+      "src": "/uploads/avatar.png",
+      "width": 16
+    }
+  ],
+  "narrow": {
+    "avatars": [
+      {
+        "height": 16,
+        "width": 16
+      }
+    ],
+    "header": "Stellar 2.0 验收站13 小时前",
+    "overflow": false
+  }
+}

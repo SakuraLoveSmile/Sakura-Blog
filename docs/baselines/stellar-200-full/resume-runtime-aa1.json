@@ -1,0 +1,42 @@
+{
+  "built_head": "aa1fa93",
+  "binary_sha256": "887a53a1a2717be2537b8c5a5f8745238060bea4385cee1f733db5f208456d20",
+  "wasm_sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+  "wasm_embedded": true,
+  "console_html_matches_build": true,
+  "assets": [
+    {
+      "url": "/console/assets/index-A6jAdKvo.js",
+      "sha256": "c0677344db8d06a7dce70c682185bf78a717bff93ee1d746b71b7510ec9b960e",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/api-DN7od766.js",
+      "sha256": "bda659ba17fbe397410229ca0027dd5888b3b5a15e3e594bcfea479a7ccf8991",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+      "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/pinia-BDaR9qFm.js",
+      "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/preload-helper-l0U7FUPx.js",
+      "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+      "matches_build": true
+    },
+    {
+      "url": "/console/assets/index-DhwoxVyW.css",
+      "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+      "matches_build": true
+    }
+  ],
+  "main_js_matches_build": true,
+  "root": "Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452",
+  "port": 8103
+}

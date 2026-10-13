@@ -1,0 +1,86 @@
+[
+  {
+    "variant": {
+      "name": "glass-gradient",
+      "scheme": "light"
+    },
+    "proof": {
+      "decorations": [
+        {
+          "filter": "blur(84px) opacity(0.625)",
+          "image": "radial-gradient(at 28% 24%, rgb(102, 102, 102) 0%, rgb(102, 102, 102) 65%, rgba(0, 0, 0, 0) 100%), radial-gradient(at 60% 50%, rgb(119, 119, 119) 0%, rgb(119, 119, 119) 60%, rgba(0, 0, 0, 0) 100%), conic-gradient(from 210deg at 32% 72%, rgb(136, 136, 136) 0deg, rgb(136, 136, 136) 110deg, rgba(0, 0, 0, 0) 190deg, rgb(102, 102, 102) 270deg, rgba(0, 0, 0, 0) 360deg)"
+        }
+      ],
+      "highlight": [
+        {
+          "href": "http://127.0.0.1:8103/assets/css/main-katex.css?fixture=highlight&v=0",
+          "loaded": false
+        }
+      ],
+      "scheme": null
+    }
+  },
+  {
+    "variant": {
+      "name": "glass-gradient",
+      "scheme": "dark"
+    },
+    "proof": {
+      "decorations": [
+        {
+          "filter": "blur(84px) opacity(0.625)",
+          "image": "radial-gradient(at 28% 24%, rgb(102, 102, 102) 0%, rgb(102, 102, 102) 65%, rgba(0, 0, 0, 0) 100%), radial-gradient(at 60% 50%, rgb(119, 119, 119) 0%, rgb(119, 119, 119) 60%, rgba(0, 0, 0, 0) 100%), conic-gradient(from 210deg at 32% 72%, rgb(136, 136, 136) 0deg, rgb(136, 136, 136) 110deg, rgba(0, 0, 0, 0) 190deg, rgb(102, 102, 102) 270deg, rgba(0, 0, 0, 0) 360deg)"
+        }
+      ],
+      "highlight": [
+        {
+          "href": "http://127.0.0.1:8103/assets/css/main-katex.css?fixture=highlight&v=0",
+          "loaded": false
+        }
+      ],
+      "scheme": null
+    }
+  },
+  {
+    "variant": {
+      "name": "glass-none",
+      "scheme": "light"
+    },
+    "proof": {
+      "decorations": [
+        {
+          "filter": "blur(100px) opacity(1)",
+          "image": "radial-gradient(at 28% 24%, rgb(105, 144, 150) 0%, rgb(105, 144, 150) 65%, rgba(0, 0, 0, 0) 100%), radial-gradient(at 60% 50%, rgb(139, 88, 75) 0%, rgb(139, 88, 75) 60%, rgba(0, 0, 0, 0) 100%), conic-gradient(from 210deg at 32% 72%, rgb(170, 132, 80) 0deg, rgb(170, 132, 80) 110deg, rgba(0, 0, 0, 0) 190deg, rgb(105, 144, 150) 270deg, rgba(0, 0, 0, 0) 360deg)"
+        }
+      ],
+      "highlight": [
+        {
+          "href": "http://127.0.0.1:8103/assets/css/main-katex.css?fixture=highlight&v=0",
+          "loaded": false
+        }
+      ],
+      "scheme": null
+    }
+  },
+  {
+    "variant": {
+      "name": "glass-null-image-fallback",
+      "scheme": "dark"
+    },
+    "proof": {
+      "decorations": [
+        {
+          "filter": "blur(100px) opacity(1)",
+          "image": "radial-gradient(at 28% 24%, rgb(105, 144, 150) 0%, rgb(105, 144, 150) 65%, rgba(0, 0, 0, 0) 100%), radial-gradient(at 60% 50%, rgb(139, 88, 75) 0%, rgb(139, 88, 75) 60%, rgba(0, 0, 0, 0) 100%), conic-gradient(from 210deg at 32% 72%, rgb(170, 132, 80) 0deg, rgb(170, 132, 80) 110deg, rgba(0, 0, 0, 0) 190deg, rgb(105, 144, 150) 270deg, rgba(0, 0, 0, 0) 360deg)"
+        }
+      ],
+      "highlight": [
+        {
+          "href": "http://127.0.0.1:8103/assets/css/main-katex.css?fixture=highlight&v=0",
+          "loaded": false
+        }
+      ],
+      "scheme": null
+    }
+  }
+]

@@ -1,0 +1,171 @@
+{
+  "savedConfig": {
+    "preset": "glass",
+    "typography": {
+      "font_smoothing": "none",
+      "font_family": {
+        "body": "Georgia, serif",
+        "code": "Consolas, monospace"
+      },
+      "font_size": {
+        "root": "18px",
+        "inline_code": "92%",
+        "code_block": "0.9rem"
+      },
+      "font_weight": {
+        "100": 120,
+        "200": 240,
+        "300": 350,
+        "400": 450,
+        "500": 650,
+        "600": 670,
+        "700": 820,
+        "800": 850,
+        "900": 970
+      },
+      "content_align": "justify"
+    },
+    "shape": {
+      "corner": "bevel",
+      "radius": {
+        "card_large": "30px",
+        "card": "22px",
+        "card_small": "14px",
+        "bar": "9px",
+        "image_large": "32px",
+        "image": "18px",
+        "image_small": "6px"
+      }
+    },
+    "gradients": {
+      "primary_action": "linear-gradient(to right, red, blue)",
+      "search_bar": "linear-gradient(to right, lime, gold)"
+    },
+    "code_block": {
+      "scrollbar_width": "7px",
+      "highlight_stylesheet": null
+    },
+    "colors": {
+      "primary": "#369",
+      "accent": "rebeccapurple",
+      "link": "rgba(30,80,120,.4)"
+    },
+    "backgrounds": {
+      "leftbar": {
+        "type": "image",
+        "image": "/uploads/avatar.png",
+        "opacity": 0.8,
+        "backdrop": {
+          "radius": "42px"
+        }
+      },
+      "page": {
+        "image": "/uploads/cover.png",
+        "backdrop": {
+          "radius": "32px",
+          "saturation": "175%",
+          "overlay": "rgba(20, 30, 40, .6)"
+        }
+      }
+    }
+  },
+  "proof": {
+    "articleAlign": "start",
+    "backgrounds": [
+      {
+        "backdrop": "none",
+        "class": "site-background",
+        "image": "url(\"http://127.0.0.1:8103/uploads/cover.png\")",
+        "opacity": "1",
+        "style": null
+      },
+      {
+        "backdrop": "saturate(1.75) blur(32px)",
+        "class": "site-background__blur",
+        "image": "none",
+        "opacity": "1",
+        "style": null
+      },
+      {
+        "backdrop": "none",
+        "class": "site-region__decoration",
+        "image": "url(\"http://127.0.0.1:8103/uploads/avatar.png\")",
+        "opacity": "1",
+        "style": null
+      }
+    ],
+    "body": {
+      "font": "Georgia, serif",
+      "rootFont": "18px"
+    },
+    "code": {
+      "font": "Consolas, monospace",
+      "size": "16.2px"
+    },
+    "highlightStylesheets": [
+      "http://127.0.0.1:8103/assets/css/main-glass.css?v=36102bda",
+      "http://127.0.0.1:8103/assets/css/comments.css?v=397c6802",
+      "http://127.0.0.1:8103/assets/css/main-appearance-glass.css?v=316b61b2"
+    ],
+    "tokens": {
+      "--accent": "#663399",
+      "--alpha": "1",
+      "--code-scrollbar-width": "7px",
+      "--content-align": "justify",
+      "--corner-shape": "bevel",
+      "--font-family-body": "Georgia, serif",
+      "--font-family-code": "Consolas, monospace",
+      "--font-size-code-block": "0.9rem",
+      "--font-size-inline-code": "92%",
+      "--font-size-root": "18px",
+      "--font-smoothing": "none",
+      "--font-weight-100": "120",
+      "--font-weight-200": "240",
+      "--font-weight-300": "350",
+      "--font-weight-400": "450",
+      "--font-weight-500": "650",
+      "--font-weight-600": "670",
+      "--font-weight-700": "820",
+      "--font-weight-800": "850",
+      "--font-weight-900": "970",
+      "--gradient-searchbar": "linear-gradient(to right, lime, gold)",
+      "--gradient-start": "linear-gradient(to right, red, blue)",
+      "--hue": "210deg",
+      "--light": "40%",
+      "--link": "hsla(206.66666666666663deg 60% 29.411764705882355% / 1)",
+      "--radius-bar": "9px",
+      "--radius-card": "22px",
+      "--radius-card-l": "30px",
+      "--radius-card-s": "14px",
+      "--radius-image": "18px",
+      "--radius-image-l": "32px",
+      "--radius-image-s": "6px",
+      "--sat": "49.99999999999999%"
+    },
+    "url": "http://127.0.0.1:8103/post/t5-code-copy-c",
+    "extra": {
+      "blurBackground": "rgba(20, 30, 40, 0.6)",
+      "decoration": [
+        {
+          "before": {
+            "backdrop": "none",
+            "background": "rgba(0, 0, 0, 0)",
+            "opacity": "1"
+          },
+          "filter": "saturate(3.5) blur(42px) opacity(0.6)"
+        }
+      ],
+      "paragraphs": [
+        {
+          "align": "justify",
+          "text": "前往同专栏 D"
+        },
+        {
+          "align": "justify",
+          "text": "再次前往同专栏 D"
+        }
+      ]
+    }
+  },
+  "scope": "custom typography/shape/colors/gradients/code/background-image; gradient/none/null variants checked separately"
+}

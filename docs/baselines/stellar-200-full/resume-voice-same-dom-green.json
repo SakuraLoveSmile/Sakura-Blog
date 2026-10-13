@@ -1,0 +1,21 @@
+{
+  "builtHead": "b0d9b93",
+  "kind": "real production browser DOM with synthetic persisted lifecycle events and transparent play observer; not native BFCache",
+  "calls": [
+    "wechat",
+    "qq"
+  ],
+  "gistHeight": 200,
+  "media": [
+    {
+      "class": "qq",
+      "paused": false,
+      "time": 0.494083
+    },
+    {
+      "class": "wechat",
+      "paused": false,
+      "time": 1.028156
+    }
+  ]
+}

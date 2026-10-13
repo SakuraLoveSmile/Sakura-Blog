@@ -1,0 +1,57 @@
+{
+  "builtHead": "172ce92",
+  "visitor": [
+    {
+      "label": "切换浅色",
+      "beforeReload": {
+        "theme": "light",
+        "stored": "light",
+        "background": "rgb(250, 247, 240)",
+        "timeOrigin": 1791896458888.1
+      },
+      "afterReload": {
+        "theme": "light",
+        "stored": "light",
+        "background": "rgb(250, 247, 240)"
+      }
+    },
+    {
+      "label": "切换深色",
+      "beforeReload": {
+        "theme": "dark",
+        "stored": "dark",
+        "background": "rgb(34, 32, 27)",
+        "timeOrigin": 1791896491811.4
+      },
+      "afterReload": {
+        "theme": "dark",
+        "stored": "dark",
+        "background": "rgb(34, 32, 27)"
+      }
+    },
+    {
+      "label": "跟随系统",
+      "beforeReload": {
+        "theme": null,
+        "stored": "auto",
+        "background": "rgb(34, 32, 27)",
+        "timeOrigin": 1791896492353.1
+      },
+      "afterReload": {
+        "theme": null,
+        "stored": "auto",
+        "background": "rgb(34, 32, 27)"
+      }
+    }
+  ],
+  "systemLight": {
+    "theme": null,
+    "background": "rgb(250, 247, 240)",
+    "timeOrigin": 1791896493135.9
+  },
+  "systemDark": {
+    "theme": null,
+    "background": "rgb(34, 32, 27)",
+    "timeOrigin": 1791896493135.9
+  }
+}

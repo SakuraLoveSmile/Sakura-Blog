@@ -1,0 +1,18 @@
+{
+  "url": "http://127.0.0.1:8103/context-validation",
+  "swipers": [
+    {
+      "effect": "fade",
+      "initialized": true,
+      "params": {
+        "effect": "fade",
+        "slides": 2
+      }
+    },
+    {
+      "effect": "coverflow",
+      "initialized": false,
+      "params": null
+    }
+  ]
+}

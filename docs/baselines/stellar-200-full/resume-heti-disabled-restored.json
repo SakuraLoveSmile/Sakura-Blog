@@ -1,0 +1,13 @@
+{
+  "method": "restore original fixture config through Console and native reload",
+  "proof": {
+    "result": {
+      "type": "object",
+      "value": {
+        "extension": false,
+        "heti": 0,
+        "spacing": 0
+      }
+    }
+  }
+}
