@@ -1,0 +1,27 @@
+[
+  {
+    "file": "color.wasm",
+    "sha256": "662735449691eb4b5b29ba6f944f9cf16be528dcb97e886a7ed669c60063ec3e",
+    "bytes": 593292
+  },
+  {
+    "file": "jpeg.wasm",
+    "sha256": "a4f3eec46371641c1ee519f8bdf30d8e1cee75c3157d9078522e18fc1e1796cc",
+    "bytes": 495594
+  },
+  {
+    "file": "svg.wasm",
+    "sha256": "db8ff6cb30673f4f060b97015e3f16ad7a75fba95aa252e2044827f02b606235",
+    "bytes": 22389611
+  },
+  {
+    "file": "tiff.wasm",
+    "sha256": "d3fc96ad22821f4eaee4ff1c4469e6503086bb9a9c43533c4e6d866895068b87",
+    "bytes": 2074470
+  },
+  {
+    "file": "webp.wasm",
+    "sha256": "e0ec9ce098b7702c3283581e312fe148b00ed996064c8d4f78e3e3cdb864638d",
+    "bytes": 255603
+  }
+]

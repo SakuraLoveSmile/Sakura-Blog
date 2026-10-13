@@ -1,0 +1,12 @@
+[package]
+name = "stellar-svg"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+resvg = { version = "=0.48.1", default-features = false, features = ["text", "raster-images"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
