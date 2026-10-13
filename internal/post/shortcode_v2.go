@@ -5,12 +5,14 @@ import (
 	"blog/internal/stellarv2"
 	"context"
 	"fmt"
+	"github.com/dop251/goja"
 	"html"
 	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const shortcodeV2MaxBody = 32 << 20
@@ -30,6 +32,11 @@ type shortcodeV2Renderer struct {
 	depth          int
 	err            error
 	blogExtensions bool
+	offline        bool
+	katexVM        *goja.Runtime
+	katexRender    goja.Callable
+	katexOptions   *goja.Object
+	katexDeadline  time.Time
 }
 
 func v2Object(v any) map[string]any {
@@ -76,10 +83,15 @@ func (r *shortcodeV2Renderer) markdown(body string) string {
 		return ""
 	}
 	var b strings.Builder
-	if err := r.s.md.Convert([]byte(protectMathDelimiters(r.expand(body))), &b); err != nil {
+	prepared, mathReplacements := r.prepareMath(r.expand(body))
+	if err := r.s.md.Convert([]byte(prepared), &b); err != nil {
 		return html.EscapeString(body)
 	}
-	return b.String()
+	result := b.String()
+	for marker, rendered := range mathReplacements {
+		result = strings.ReplaceAll(result, marker, rendered)
+	}
+	return result
 }
 func (r *shortcodeV2Renderer) icon(key, more string) string {
 	if u := v2SafeURL(key); u != "" && (strings.HasPrefix(u, "/") || strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://")) {
@@ -101,6 +113,7 @@ type StellarRenderContext struct {
 	Page           map[string]any
 	Language       string
 	BlogExtensions bool
+	Offline        bool
 }
 
 func (s *Service) RenderStellarV2(body string, tags map[string]any) (string, error) {
@@ -128,7 +141,7 @@ func (s *Service) RenderStellarV2WithContext(body string, renderContext StellarR
 	if language == "" {
 		language = "zh-CN"
 	}
-	r := &shortcodeV2Renderer{s: s, tags: v2Object(theme["tags"]), services: v2Object(theme["services"]), fallbacks: v2Object(theme["fallbacks"]), theme: theme, data: renderContext.Data, page: renderContext.Page, index: map[string]int{}, language: language, blogExtensions: renderContext.BlogExtensions}
+	r := &shortcodeV2Renderer{s: s, tags: v2Object(theme["tags"]), services: v2Object(theme["services"]), fallbacks: v2Object(theme["fallbacks"]), theme: theme, data: renderContext.Data, page: renderContext.Page, index: map[string]int{}, language: language, blogExtensions: renderContext.BlogExtensions, offline: renderContext.Offline}
 	result := wrapTables(r.markdown(body))
 	if r.err != nil {
 		return "", r.err
@@ -599,9 +612,17 @@ func (r *shortcodeV2Renderer) renderBlog(name, args, body string) string {
 	case "blog_moments":
 		rendered = r.s.renderMoments(args)
 	case "blog_ghrepo":
-		rendered = renderGHRepo(args, r.s.ghClient)
+		if r.offline {
+			rendered = r.offlineGitHub("repo", args)
+		} else {
+			rendered = renderGHRepo(args, r.s.ghClient)
+		}
 	case "blog_ghuser":
-		rendered = renderGHUser(args, r.s.ghClient)
+		if r.offline {
+			rendered = r.offlineGitHub("user", args)
+		} else {
+			rendered = renderGHUser(args, r.s.ghClient)
+		}
 	}
 	return `<div` + v2Attr("data-blog-service", strings.TrimPrefix(name, "blog_")) + `>` + rendered + `</div>`
 }
@@ -662,4 +683,23 @@ func (r *shortcodeV2Renderer) matchBlocks(body string, locations [][]int, code [
 		r.fail(name, 1+strings.Count(body[:l[0]], "\n"), "missing end"+name)
 	}
 	return closings
+}
+
+func (r *shortcodeV2Renderer) offlineGitHub(kind, args string) string {
+	path := strings.TrimSpace(args)
+	path = strings.TrimPrefix(path, "https://github.com/")
+	if kind == "user" {
+		path = strings.TrimPrefix(path, "@")
+	}
+	if (kind == "repo" && safeGHRepo(path) == "") || (kind == "user" && !regexp.MustCompile(`^[A-Za-z0-9_.-]+$`).MatchString(path)) {
+		return `<span class="stellar-tag-error">Invalid GitHub identifier</span>`
+	}
+	base := strings.TrimRight(v2SafeURL(v2String(v2Object(r.services["github"])["apiUrl"])), "/")
+	endpoint := base + "/users/" + url.PathEscape(path)
+	field := "login"
+	if kind == "repo" {
+		endpoint = base + "/repos/" + path
+		field = "full_name"
+	}
+	return `<div class="tag-plugin ghcard data-service ds-ghinfo ds-gh` + kind + `"` + v2Attr("data-api", endpoint) + `><a class="ghcard" type="link" id="html_url"` + v2Attr("href", "https://github.com/"+path) + ` target="_blank" rel="external nofollow noopener noreferrer"><span type="text"` + v2Attr("id", field) + `>` + html.EscapeString(path) + `</span><span type="text" id="description"></span></a></div>`
 }

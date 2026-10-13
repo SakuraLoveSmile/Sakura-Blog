@@ -340,7 +340,7 @@ func TestStellarV2OfficialFixtureFingerprint(t *testing.T) {
 			t.Errorf("fixture %s hash changed: %s", file, got)
 		}
 	}
-	if len(fingerprints) != 52 {
+	if len(fingerprints) != 54 {
 		t.Fatalf("unexpected fixtures=%d", len(fingerprints))
 	}
 }
