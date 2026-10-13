@@ -1,66 +1,40 @@
 # 官方 SVG WASI 移植现场
 
-仍为实现中，未产生可运行的 librsvg SVG 解码器。不得将栅格门禁或标量 FFI 测试写成 SVG 等效完成。
+当前正式解码路径已接通 librsvg 2.61.2 WASI，生产保持 Go 单二进制。
+这份记录只覆盖 `internal/stellarimages`；自动 SSR 生命周期、CLI 及整个前台验收由主实现树独立验证。
 
-## 已交付基础
+## 当前交付
 
-`58ecec7` 为 Go 图片生命周期及嵌入栅格解码器；正常 pre-commit 完整 make test 通过。`testdata/sharp.json` 与全量 oracle 保留复杂 SVG 失败，当前 21 个夹具 20 个精确一致。Linux CGO0 单静态 ELF 编译和无 PATH/DYLD_LIBRARY_PATH/NODE_PATH 的 host 测试执行通过。
+- `decodeSVG` 嵌入 `librsvg.wasm`，每图独立 WASI 实例；内存 512 MiB、实例时限 15 秒、输入 32 MiB、原尺寸 40 MP、取样最长边 64。
+- 完整原版 GLib/GObject/GIO 内存流、Cairo、Pango、Fontconfig、Harfbuzz、FreeType、librsvg 链。没有 Node、Sharp、宿主图片库、宿主字体或宿主网络运行依赖。
+- 字体已接入嵌入的 Noto Sans／Noto Sans SC；默认 sans-serif 会走中文 fallback。Fontconfig 仅读取虚拟只读字体与配置，不写磁盘缓存。
+- Pango 的字体初始化、匹配与排序同步运行同一官方函数，WASI 不创建线程。修复 `pango_attribute_copy` 单参函数转双参 GCopyFunc、单参析构转双参 g_slist_foreach 导致的真实 signature trap；未放宽 WASM 类型或 oracle 容差。
+- 自然尺寸按 libvips：CSS 像素 → viewBox/单边比例 → 可见几何，支持 SVGZ 的官方 GIO 解压。尺寸／损坏输入有拒绝测试。
+- GFile 使用官方 GDummyFile URI 身份；外部资源读取明确拒绝。实际测试证明 SVG 无法读取宿主文件或请求宿主网络。
+- PageSnapshot 可选 BaseURL，非空只接受 absolute HTTP(S)，按真实无尾斜杠页面地址解析相对图；空值仍按 Path 的官方规则。Path 继续作为 --page 的输出 key。
+- 取消批次不会改已有 metadata、记图片失败或产生 24h backoff。HEAD 红基线曾计 Processed=1/Failed=1；修复后的定向测试断言字节不变、立即下一批可处理、已取消批次不创建目录。
 
-## 平台 ABI 桥
+## 来源和重建
 
-官方 libffi 3.5.2 的 WASM 目标直接包含 `emscripten/emscripten.h`，`ffi_prep_cif_machdep` 只接受 `FFI_WASM32_EMSCRIPTEN`；原始 `FFI_WASM32` ABI 未实现。无空格目录下官方 configure 成功，但 WASI SDK29 编译在该头文件失败。
+完整来源指纹、Rust 锁、平台补丁、原生及 crate 许可证在 [librsvg/README.md](librsvg/README.md)。
+`librsvg/build.py` 从锁定原始归档重建全部图形链，使用 `--locked` 的 Rust；`--check` 逐字比较产物。
+开发工具链为 WASI SDK29 / Clang21.1.4、Rust1.98.0、Meson1.12.1、Ninja1.13.2、CMake4.4.3。
 
-GLib `gobject/gclosure.c` 只使用 `ffi_prep_cif`、`ffi_call`，不使用 libffi 动态 closure。新增 `ffi-wasi.c` 保留官方通用 CIF/type 源，标量调用导入 Go `wasmffi`；后者给固定函数表增加导出别名，按 WASM 真实参数／返回签名调用，不变更函数指令／签名／数据。已通过真实 WASI 的 signed8/16/32、uint64/int64、float/double、pointer、void 回调及 race；非 export 段逐字保留。未接入图片运行态。
+第一个修复现场 cache 曾在缺少静态 png/zlib 依赖时缓存 Cairo 的负链接探测结果。
+其后 reconfigure 没清除那些结果，独立 cache 比较发现实际 WASM 漂移；没有将它写成可复现通过。
+当前嵌入产物由冻结完整 recipe 在两个独立原始源码 cache 重建后逐字一致。
+另修复 Fontconfig/GLib/libxml2 的编译期目录字符串和 __FILE__ 造成的路径漂移：
+从配置头和编译宏层固定虚拟目录，没有后处理 WASM。Cargo 不会追踪外部 C archives，
+构建脚本因此强制重链小型 renderer，保留依赖 crate cache，避免旧链接假通过。
+最终 SHA256：`d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000`。
 
-开发现场路径（均为隔离开发缓存，不是生产依赖）：
+## 本次证据
 
-- 项目 `.tmp/image-native-build/official-svg/`：已获取 GLib2.86.1、librsvg2.61.2、Pango1.57.0、Cairo1.18.4、pixman0.46.4、libffi3.5.2、Expat2.7.3、PCRE2 10.44 源；部分后续字体库也已下载。
-- 项目 `.tmp/image-native-build/svg-venv/`：Meson1.12.1、Ninja1.13.2。
-- `/tmp/stellar-svg-wasi-58ecec7/`：无空格开发别名，`src` 链接上述源，`sdk` 链接 WASI SDK29。
-- `ffi-wasi/libffi.a`：官方 prep_cif.c/types.c＋新桥；`libffi-build/include/ffi.h`／ffitarget.h 为官方 configure 生成头。
-- `prefix/`：已安装 PCRE2 10.44，复制 zlib1.3.1 和标量 libffi。
-- `wasi-meson.ini`／`clang-meson`：交叉配置；wrapper 去掉 Meson 误加的 GNU `--start-group/--end-group`，WASM ld 自动处理 archive 依赖；配置真实成功，未强行伪造函数探测结果。
+- 21/21 Sharp 黄金逐字段精确比较，SVG 已纳入普通 `TestSharpOracle`，不再只跑栅格。
+- 正式字体、invalid/viewBox、宿主文件／网络拒绝和取消回归已通过。
+- `go test -race ./internal/stellarimages/...` 完整纯净 Cairo 产物通过；目录规范化后全部包普通检查和精确 oracle 再次通过。
+- 清空 PATH 等宿主环境的独立 test binary 跑 Sharp/SVG 通过。
+- CGO0 Linux/amd64 images test 构建产生包含完整 librsvg WASM 的静态 ELF。此旧分支 cmd/blog 还没有 CLI/自动生命周期引用，链接器会删去 decoder；不能将其 Blog 构建当主应用图片验收。
+- BaseURL 提交 `4cf310e`、正式 decoder/取消提交 `7f8739a` 都通过正常完整 pre-commit make test；规范化最终产物随后按同一完整门禁提交。
 
-FFI 夹具重建：
-
-```sh
-SDK=/tmp/stellar-svg-wasi-58ecec7/sdk
-FFI=/tmp/stellar-svg-wasi-58ecec7/libffi-build
-SRC=/tmp/stellar-svg-wasi-58ecec7/src/libffi-3.5.2
-OUT=/tmp/stellar-svg-wasi-58ecec7/ffi-wasi
-# clang -O2 -DHAVE_CONFIG_H -I$FFI -I$FFI/include -I$SRC/include
-# 分别编译 $SRC/src/prep_cif.c、types.c 与 native/ffi-wasi.c，再 llvm-ar rcs libffi.a。
-$SDK/bin/clang -O2 -I$FFI/include internal/stellarimages/native/ffi-fixture.c \
-  $OUT/libffi.a -Wl,--export-table -o internal/stellarimages/wasmffi/testdata/scalar.wasm
-go test -race ./internal/stellarimages/wasmffi
-```
-
-## GLib/GObject/GIO 实际运行
-
-原版 GLib2.86.1、GObject 与 GIO 的同步内存流／转换器现已构建为 WASI，真实 Wazero 测试通过，不访问宿主文件系统。`wasi/build-glib.py` 从 SHA256 锁定的 GLib／PCRE2／libffi 原源码重建；`wasi/glib-wasi.patch` 保存平台差异。全新 `/tmp/stellar-glib-rebuild` 构建与 `--check` 字节比较通过。
-
-实际断言覆盖正则、GObject 对象创建／信号 libffi 双精度回调、gzip 转换内存流／UTF-8 读取、虚拟账号、UTC 时区、进程／网络拒绝、无法创建线程和取消状态。WASI 的单实例非共享内存使用官方 GLib 互斥版原子操作及 SDK 单线程 pthread 语义；不能创建 worker，`g_thread_try_new` 返回真实错误。
-
-GLib 原生 C 类型初始化允许单参数函数忽略第二个数据参数，WASM 则严格检查签名。类型初始化新增独立桥，仅接受一个／两个 i32 参数且无返回值的固定模块函数，通用 libffi CIF 检查仍严格。链表 `free_full` 使用原始单参数析构器而不强转成双参数遍历函数。非法返回签名有拒绝测试。
-
-`wasi/platform.c` 对 fork／exec／pipe／wait／socket／DNS 返回 ENOSYS；不存在宿主账户或进程，固定虚拟账号为 stellar／1000，时区固定 UTC。pthread_exit 终止错误调用的实例。Expat 使用 WASI getentropy 获取 XML hash 熵源；原生 codec 致命错误终止隔离实例，不能把 longjmp 变成成功继续。
-
-GIO 目前仅构建已验证的同步内存流、转换器、属性和任务基础。未编入 Unix 桌面、DBus、网络及可写磁盘 backend；**还没有完成 librsvg 所需 GFile／资源接入或 GMainContext 的受限唤醒实现**。不能宣称完整 GIO 等效。
-
-重建命令：
-
-```sh
-python3 internal/stellarimages/native/wasi/build-glib.py \
-  --cache /tmp/stellar-glib-rebuild \
-  --wasi-sdk .tmp/image-native-build/wasi-sdk-29.0-arm64-macos \
-  --archives .tmp/image-native-build/official-svg \
-  --raster-cache .tmp/image-native-build \
-  --meson .tmp/image-native-build/svg-venv/bin/meson [--check]
-go test -race ./internal/stellarimages/wasmffi
-```
-
-## 图形链仍在实现
-
-开发现场 `/tmp/stellar-svg-wasi-58ecec7` 已构建 pixman0.46.4、FriBidi1.0.16、FreeType2.14.1、libpng1.6.50、Expat2.7.3、Fontconfig2.17.1 静态 archives；这仅是编译证据，还未作为最终渲染链运行。Cairo1.18.4 与 Harfbuzz12.1.0 在编译中，Pango1.57.0／librsvg2.61.2 尚未完成。后续真实符号、文件／字体和回调问题必须继续实现和验证。
-
-SVG 生产仍为过渡 resvg，complex.svg Sharp 黄金精确对照保持失败；本阶段没有替换运行态，也未更改数值容差、黄金夹具或冻结 Go 接口。原版渲染路线已获父任务确认；不新增 Sharp/NAPI/Node 生产依赖。
+这些结果不是整个 T6 自动生命周期或 T7 浏览器验收完成的证明。

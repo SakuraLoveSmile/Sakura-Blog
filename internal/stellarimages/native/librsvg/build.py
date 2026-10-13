@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -79,6 +80,20 @@ run('python3', WASI / 'build-glib.py', '--cache', cache,
     '--wasi-sdk', sdk, '--archives', archives,
     '--raster-cache', args.raster_cache.resolve(), '--meson', meson,
     '--output', cache / 'glib-fixture.wasm')
+
+# Build-directory paths are not runtime resources. Normalize compiled defaults
+# and __FILE__ without modifying upstream algorithms or generated WASM bytes.
+maps = ['-ffile-prefix-map=' + str(cache) + '=/stellar-build',
+        '-ffile-prefix-map=' + str(cache.resolve()) + '=/stellar-build',
+        '-ffile-prefix-map=' + str(NATIVE) + '=/stellar-native']
+cc_wrapper = cache / 'clang-meson'
+text = cc_wrapper.read_text()
+text = text.replace('os.execv(',
+    'args=[a.replace(' + repr(str(prefix)) + ',"/stellar") if a.startswith("-D") else a for a in args]\n' +
+    'args += ' + repr(maps) + '\nos.execv(')
+cc_wrapper.write_text(text)
+glib_config = cache / 'glib-build/config.h'
+glib_config.write_text(glib_config.read_text().replace(str(prefix), '/stellar'))
 source = cache / 'src'
 sources = {}
 for row in json.loads((HERE / 'build-sources.json').read_text()):
@@ -88,7 +103,8 @@ for row in json.loads((HERE / 'build-sources.json').read_text()):
 # Install only built GLib libraries, public headers and their pkg-config files.
 # Desktop programs and girepository are intentionally not renderer dependencies.
 glibbuild = cache / 'glib-build'
-run('ninja', '-C', glibbuild, 'gmodule/libgmodule-2.0.a', 'gthread/libgthread-2.0.a')
+run('ninja', '-C', glibbuild, 'glib/libglib-2.0.a', 'gobject/libgobject-2.0.a',
+    'gio/libgio-2.0.a', 'gmodule/libgmodule-2.0.a', 'gthread/libgthread-2.0.a')
 installed = json.loads((glibbuild / 'meson-info/intro-installed.json').read_text())
 pc_names = {'glib-2.0.pc', 'gobject-2.0.pc', 'gthread-2.0.pc',
             'gmodule-2.0.pc', 'gmodule-export-2.0.pc',
@@ -110,7 +126,7 @@ wrapper = cache / 'clangpp-meson'
 wrapper.write_text('#!/usr/bin/env python3\nimport os,sys\n' +
     'args=[a for a in sys.argv[1:] if a not in ["-Wl,--start-group","-Wl,--end-group","-pthread"]]\n' +
     'args += ' + repr(['-D_WASI_EMULATED_MMAN', '-D_WASI_EMULATED_SIGNAL',
-                       '-I' + str(WASI / 'include')]) + '\n' +
+                       '-I' + str(WASI / 'include'), *maps]) + '\n' +
     'if "-c" not in args and "-E" not in args: args += ' +
     repr(['-L' + str(prefix / 'lib'), '-lstellar-wasi']) + '\n' +
     'os.execv(' + repr(str(sdk / 'bin/clang++')) + ',["clang++"]+args)\n')
@@ -126,7 +142,10 @@ def cmake(name, options, target=None):
     run('cmake', '-S', sources[name], '-B', build,
         '-DCMAKE_TOOLCHAIN_FILE=' + str(sdk / 'share/cmake/wasi-sdk.cmake'),
         '-DCMAKE_INSTALL_PREFIX=' + str(prefix),
-        '-DCMAKE_C_FLAGS=-I"' + str(WASI / 'include') + '"', *options)
+        '-DCMAKE_C_FLAGS=-I"' + str(WASI / 'include') + '" ' + shlex.join(maps), *options)
+    for config in [build / 'config.h']:
+        if config.exists():
+            config.write_text(config.read_text().replace(str(prefix), '/stellar'))
     command = ['cmake', '--build', build, '--parallel', '8']
     if target:
         command.extend(['--target', target])
@@ -139,6 +158,9 @@ def meson_build(name, options, targets=None, buildtype='debugoptimized'):
     run(meson, 'setup', *(['--reconfigure'] if (build / 'build.ninja').exists() else []),
         build, sources[name], '--prefix', prefix, '--cross-file', cross,
         '--default-library', 'static', '-Dprefer_static=true', '--buildtype', buildtype, *options)
+    for config in [build / 'meson-config.h', build / 'fonts.conf']:
+        if config.exists():
+            config.write_text(config.read_text().replace(str(prefix), '/stellar'))
     run('ninja', '-C', build, *(targets or []))
     run(meson, 'install', '-C', build, '--no-rebuild')
 
@@ -157,7 +179,7 @@ shutil.copyfile(prefix / 'lib/liblibpng16_static.a', prefix / 'lib/libpng16.a')
 # Expat's XML hash seed uses the real WASI entropy function from platform.c.
 cmake('expat', ['-DEXPAT_SHARED_LIBS=OFF', '-DEXPAT_BUILD_TOOLS=OFF',
                '-DEXPAT_BUILD_EXAMPLES=OFF', '-DEXPAT_BUILD_TESTS=OFF',
-               '-DCMAKE_C_FLAGS=-DHAVE_ARC4RANDOM_BUF -I"' + str(WASI / 'include') + '"'])
+               '-DCMAKE_C_FLAGS=-DHAVE_ARC4RANDOM_BUF -I"' + str(WASI / 'include') + '" ' + shlex.join(maps)])
 patch(sources['fontconfig'], HERE / 'fontconfig-wasi.patch')
 meson_build('fontconfig', ['-Ddoc=disabled', '-Dnls=disabled', '-Dtests=disabled',
                           '-Dtools=disabled', '-Dcache-build=disabled',
@@ -221,6 +243,9 @@ env['CARGO_ENCODED_RUSTFLAGS'] = '\x1f'.join([
           for name in ['signal', 'mman', 'process-clocks', 'getpid']], []),
     '-C', 'link-arg=--export-table', '-C', 'link-arg=--max-memory=536870912',
     '--remap-path-prefix=' + str(cache) + '=/stellar-build'])
+# Cargo does not track archives rebuilt by CMake/Meson. Always relink the small
+# renderer binary; keep dependency crates cached and never reuse a stale link.
+run('cargo', 'clean', '--release', '--target', 'wasm32-wasip1', '-p', 'stellar-librsvg', cwd=rust)
 run('cargo', 'build', '--release', '--target', 'wasm32-wasip1', '--locked', cwd=rust)
 output = cache / 'librsvg.wasm'
 shutil.copyfile(rust / 'target/wasm32-wasip1/release/stellar-librsvg.wasm', output)

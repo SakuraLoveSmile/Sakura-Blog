@@ -58,7 +58,10 @@ python3 internal/stellarimages/native/librsvg/build.py \
 加 `--check` 会重新构建并逐字比较已提交 `librsvg.wasm`，不覆盖它。
 使用新 cache 可以从所有锁定上游原始归档验证完整图形链。
 开发期缺失归档才下载；每个归档在解包前验证 SHA256，Rust 使用 `--locked`。
-构建不会覆盖已有 GLib 测试夹具。无需在生产启动时构建或下载。
+构建不会覆盖已有 GLib 测试夹具。编译期默认目录与文件前缀固定为虚拟路径；
+外部 C archives 不在 Cargo 的依赖追踪里，因此每次强制重链 renderer 小包，
+保留其余 crate cache。两套独立源码 cache 的产物已经逐字核对一致。
+无需在生产启动时构建或下载。
 
 ```sh
 cargo fetch --locked --manifest-path internal/stellarimages/native/librsvg/Cargo.toml
