@@ -6,6 +6,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"testing"
+
+	"blog/internal/config"
 )
 
 // Wave 4 测试覆盖补强：备份导出/状态/导入/恢复。
@@ -60,7 +62,7 @@ func TestBackupExportStatus(t *testing.T) {
 
 // TestBackupRestoreValidation 恢复/导入参数校验：缺文件、缺 name、空 body。
 func TestBackupRestoreValidation(t *testing.T) {
-	r, _, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullEnv(t)
 	cookie := authCookie(user)
 
 	// 缺上传文件 → 400
@@ -94,11 +96,27 @@ func TestBackupRestoreValidation(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("import without file: status = %d, want 400", w.Code)
 	}
-	// 上传 .md（二进制内容也被当作正文导入，slug 取文件名 x）→ 200 + imported
+	// 未迁移配置拒绝导入，不能通过上传绕过迁移预览。
 	body.Reset()
 	mw = multipart.NewWriter(&body)
 	fw, _ = mw.CreateFormFile("file", "x.md")
-	fw.Write([]byte{0xff, 0xfe})
+	fw.Write([]byte("---\ntitle: Strict\n---\n正文"))
+	mw.Close()
+	w = do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, mw.FormDataContentType(), cookie)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("legacy configuration import: status=%d", w.Code)
+	}
+	if value, _ := st.GetBySlug("x"); value != nil {
+		t.Fatal("unmigrated import wrote data")
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	// 新格式上传成功；实际经过完整候选和恢复任务，不用旧轻量 parser。
+	body.Reset()
+	mw = multipart.NewWriter(&body)
+	fw, _ = mw.CreateFormFile("file", "x.md")
+	fw.Write([]byte(";;;\n{\"title\":\"Strict\",\"blog\":{\"status\":\"draft\"}}\n;;;\n正文"))
 	mw.Close()
 	w = do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, mw.FormDataContentType(), cookie)
 	if w.Code != http.StatusOK {
@@ -109,5 +127,9 @@ func TestBackupRestoreValidation(t *testing.T) {
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &imp); err != nil || imp.Imported != 1 {
 		t.Errorf("import result: %s (err %v), want imported=1", w.Body.String(), err)
+	}
+	value, err := st.GetBySlug("x")
+	if err != nil || value == nil || value.StellarVersion != 2 || value.Status != "draft" {
+		t.Fatal("strict upload did not persist canonical/draft metadata")
 	}
 }

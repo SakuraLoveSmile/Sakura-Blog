@@ -40,7 +40,19 @@ func (s *Service) prepareRestore(ctx context.Context, j *restoreJournal, data []
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if j.DatabaseOnly {
+	if j.ContentImport {
+		if _, _, err := ReadStellarContentZip(data); err != nil {
+			return err
+		}
+		if err := writeFileSync(s.inputPath(j.ID, "content.zip"), data, 0600); err != nil {
+			return err
+		}
+		// 预检只构建隔离副本。进入维护窗口后基于最新 DB 再构建一次，
+		// 不能将预检期间的并发写入覆盖为旧快照。
+		if err := s.buildStellarImportCandidate(j); err != nil {
+			return err
+		}
+	} else if j.DatabaseOnly {
 		if err := writeFileSync(s.inputPath(j.ID, "blog.db"), data, 0600); err != nil {
 			return err
 		}

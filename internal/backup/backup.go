@@ -4,16 +4,13 @@ package backup
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -188,83 +185,11 @@ func (s *Service) addFile(zw *zip.Writer, srcPath, zipName string) error {
 	return nil
 }
 
-// WritePostsZip 把全部文章（含草稿）导出为 Markdown zip，每篇 <slug>.md。
-// frontmatter 字段与 post.ParseBytes 解析格式对齐，可被导入接口 / seed 重新解析。
+// WritePostsZip 导出完整 Stellar v2 内容包（兼容已有下载入口名称）。
+// 旧记录必须先经过迁移预览，不能再导出一份自动转换的旧 front matter。
 func (s *Service) WritePostsZip(w io.Writer) error {
-	posts, err := s.store.List()
-	if err != nil {
-		return err
-	}
-	zw := zip.NewWriter(w)
-	for _, p := range posts {
-		hdr := &zip.FileHeader{Name: p.Slug + ".md", Method: zip.Deflate, Modified: p.UpdatedAt}
-		fw, err := zw.CreateHeader(hdr)
-		if err != nil {
-			zw.Close()
-			return fmt.Errorf("zip create %s.md: %w", p.Slug, err)
-		}
-		if _, err := fw.Write([]byte(marshalPost(p))); err != nil {
-			zw.Close()
-			return fmt.Errorf("zip write %s.md: %w", p.Slug, err)
-		}
-	}
-	return zw.Close()
+	return s.WriteStellarContentZip(w)
 }
-
-// marshalPost 生成「frontmatter + 正文」的 Markdown 文本。只写非空字段，键名对齐轻量 parser。
-func marshalPost(p *store.Post) string {
-	var b strings.Builder
-	b.WriteString("---\n")
-	writeKV := func(key, val string) {
-		if strings.TrimSpace(val) == "" {
-			return
-		}
-		// 轻量 parser 按首个冒号切分并 trim 引号，值统一加引号防首尾空白丢失
-		b.WriteString(key + ": \"" + strings.ReplaceAll(val, "\"", "'") + "\"\n")
-	}
-	writeList := func(key string, items []string) {
-		if len(items) == 0 {
-			return
-		}
-		b.WriteString(key + ": [" + strings.Join(items, ", ") + "]\n")
-	}
-	writeKV("title", p.Title)
-	b.WriteString("date: " + p.CreatedAt.Format("2006-01-02 15:04:05") + "\n")
-	writeKV("excerpt", p.Excerpt)
-	writeKV("cover", p.Cover)
-	writeKV("banner", p.Banner)
-	writeKV("ai_label", p.AILabel)
-	if len(p.Categories) > 0 {
-		writeList("categories", p.Categories)
-	} else {
-		writeKV("category", p.Category)
-	}
-	writeKV("topic", p.Topic)
-	if p.Tags != "" {
-		writeList("tags", strings.Split(p.Tags, ","))
-	}
-	if poster := store.DecodePoster(p.Poster); poster != nil {
-		writeKV("poster_headline", poster.Headline)
-		writeKV("poster_topic", poster.Topic)
-		writeKV("poster_caption", poster.Caption)
-		writeKV("poster_color", poster.Color)
-	}
-	writeList("references", store.DecodeReferences(p.References))
-	writeKV("author", p.Author)
-	if len(p.Authors) > 1 {
-		writeList("authors", p.Authors)
-	}
-	b.WriteString("status: " + p.Status + "\n")
-	if p.Pinned {
-		b.WriteString("pinned: true\n")
-	}
-	b.WriteString("---\n\n")
-	b.WriteString(p.ContentMD)
-	return b.String()
-}
-
-// slugPattern 导入文件名合法性：字母数字连字符下划线（防路径穿越与奇异 slug 入库）。
-var slugPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 // zip 导入防 zip-bomb（Spec 61 阶段 3）：条目数上限 + 单条解压后大小上限。
 // 超出即整体拒绝，避免解压放大导致内存/磁盘耗尽。
@@ -279,113 +204,17 @@ type ImportResult struct {
 	Skipped  []string `json:"skipped"`  // 跳过原因（"名称: 原因"）
 }
 
-// Import 导入 Markdown：filename 以 .zip 结尾按 zip 解包（取根层 *.md），否则视为单个 .md。
-// 每篇按 slug（文件名去扩展名）UPSERT，幂等；frontmatter status: draft 按草稿导入，否则 published。
+// Import 严格导入单篇 Markdown、文章 ZIP 或完整 manifest 内容包。
+// 整批预检、隔离构建，再复用恢复维护窗口原子应用；发布状态用 blog.status。
 func (s *Service) Import(filename string, data []byte) (*ImportResult, error) {
-	res := &ImportResult{Imported: []string{}, Skipped: []string{}}
-	lower := strings.ToLower(filename)
-	switch {
-	case strings.HasSuffix(lower, ".zip"):
-		zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-		if err != nil {
-			return nil, fmt.Errorf("解析 zip 失败: %w", err)
-		}
-		if len(zr.File) > maxZipEntries {
-			return nil, fmt.Errorf("zip 条目数 %d 超过上限 %d（疑似 zip-bomb，已拒绝）", len(zr.File), maxZipEntries)
-		}
-		for _, zf := range zr.File {
-			name := zf.Name
-			base := filepath.Base(name)
-			if zf.FileInfo().IsDir() || !strings.HasSuffix(strings.ToLower(base), ".md") || strings.HasPrefix(base, ".") {
-				continue
-			}
-			rc, err := zf.Open()
-			if err != nil {
-				res.Skipped = append(res.Skipped, base+": 读取失败")
-				continue
-			}
-			content, err := io.ReadAll(io.LimitReader(rc, maxZipEntrySize+1))
-			rc.Close()
-			if err != nil {
-				res.Skipped = append(res.Skipped, base+": 读取失败")
-				continue
-			}
-			if len(content) > maxZipEntrySize {
-				res.Skipped = append(res.Skipped, base+": 解压后超过 "+strconv.Itoa(maxZipEntrySize>>20)+"MB 上限（疑似 zip-bomb）")
-				continue
-			}
-			s.importOne(base, content, res)
-		}
-	case strings.HasSuffix(lower, ".md"):
-		s.importOne(filepath.Base(filename), data, res)
-	default:
-		return nil, fmt.Errorf("不支持的文件类型: %s（仅 .md / .zip）", filename)
-	}
-	return res, nil
+	return s.ImportContext(context.Background(), filename, data)
 }
 
-// importOne 导入单篇：解析 frontmatter → 渲染 → Upsert。失败记入 skipped。
-func (s *Service) importOne(base string, data []byte, res *ImportResult) {
-	slug := strings.TrimSuffix(base, filepath.Ext(base))
-	if !slugPattern.MatchString(slug) {
-		res.Skipped = append(res.Skipped, base+": 文件名不是合法 slug")
-		return
+func (s *Service) ImportContext(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
+	if strings.HasSuffix(strings.ToLower(filename), ".zip") && hasStellarContentManifest(data) {
+		return s.importStellarContent(ctx, data)
 	}
-	meta, body := s.posts.ParseBytes(data)
-	html, err := s.posts.Render(body)
-	if err != nil {
-		res.Skipped = append(res.Skipped, base+": 渲染失败")
-		return
-	}
-	title := meta.Title
-	if title == "" {
-		title = slug
-	}
-	status := store.StatusPublished
-	if meta.Status == store.StatusDraft {
-		status = store.StatusDraft
-	}
-	p := &store.Post{
-		Slug:        slug,
-		Title:       title,
-		Excerpt:     meta.Excerpt,
-		Cover:       meta.Cover,
-		Banner:      meta.Banner,
-		AILabel:     meta.AILabel,
-		Category:    meta.Category,
-		Categories:  append([]string(nil), meta.Categories...),
-		Topic:       meta.Topic,
-		Tags:        strings.Join(meta.Tags, ","),
-		ContentMD:   body,
-		ContentHTML: html,
-		Status:      status,
-		Pinned:      meta.Pinned,
-		CreatedAt:   parseDate(meta.Date),
-		Poster: store.EncodePoster(store.PosterData{
-			Headline: meta.PosterHeadline,
-			Topic:    meta.PosterTopic,
-			Caption:  meta.PosterCaption,
-			Color:    meta.PosterColor,
-		}),
-		References: store.EncodeReferences(meta.References),
-		Authors:    append([]string(nil), meta.Authors...),
-		Author:     meta.Author,
-	}
-	if err := s.store.Upsert(p); err != nil {
-		res.Skipped = append(res.Skipped, base+": 写入失败")
-		return
-	}
-	res.Imported = append(res.Imported, slug)
-}
-
-// parseDate 解析 frontmatter date（与 seed 同一组 layout），失败用当前时间。
-func parseDate(v string) time.Time {
-	for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02", time.RFC3339} {
-		if t, err := time.Parse(layout, v); err == nil {
-			return t
-		}
-	}
-	return time.Now()
+	return s.importStellarPosts(ctx, filename, data)
 }
 
 // Info 备份文件信息（status API 展示用）。

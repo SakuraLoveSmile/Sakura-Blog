@@ -114,7 +114,7 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "文件超过 50MB 上限")
 		return
 	}
-	res, err := h.backups.Import(header.Filename, data)
+	res, err := h.backups.ImportContext(c.Request.Context(), header.Filename, data)
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return

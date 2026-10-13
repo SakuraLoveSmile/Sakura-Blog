@@ -38,6 +38,12 @@ func (s *Service) executeRestore(j restoreJournal) {
 		return
 	}
 	defer window.Close()
+	if j.ContentImport {
+		if err := s.buildStellarImportCandidate(&j); err != nil {
+			s.rejectBeforeCommit(&j, err)
+			return
+		}
+	}
 	if err := s.checkRestoreTargets(&j); err != nil {
 		s.rejectBeforeCommit(&j, err)
 		return

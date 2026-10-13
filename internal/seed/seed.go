@@ -21,6 +21,7 @@ func Count(posts *post.Service) (int, error) {
 }
 
 // Import 扫描 content/posts/*.md，按 slug UPSERT 到 store（幂等）。
+// Deprecated: 仅保留历史单测；生产调用 ImportStellar，不可作为迁移回退。
 func Import(st *store.Store, posts *post.Service) error {
 	slugs, err := posts.ListSlugs()
 	if err != nil {

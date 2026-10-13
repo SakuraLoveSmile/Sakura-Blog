@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -141,6 +142,12 @@ func Bootstrap(options Options) (*Services, error) {
 	fail := func(err error) (*Services, error) {
 		st.Close()
 		return nil, err
+	}
+	if options.Seed || appConfig.SeedOnStart {
+		// 显式 seed 先检查门禁，不能通过后面的旧 Bootstrap 补配置来迁移。
+		if _, err := config.LoadStellarV2(st); err != nil {
+			return fail(fmt.Errorf("%w: seed requires reviewed Stellar v2 migration: %w", store.ErrStellarMigrationRequired, err))
+		}
 	}
 	if err := st.EnsureTopicsTable(); err != nil {
 		return fail(fmt.Errorf("ensure topics table: %w", err))
@@ -292,29 +299,27 @@ func Bootstrap(options Options) (*Services, error) {
 
 	seedOnStart := options.Seed || appConfig.SeedOnStart
 	if seedOnStart {
-		n, _ := seedpkg.Count(posts)
-		if err := seedpkg.Import(st, posts); err != nil {
+		n, err := seedpkg.ImportStellar(st, posts, filepath.Join(appConfig.Root, "content"), false)
+		if err != nil {
 			return fail(fmt.Errorf("seed: %w", err))
 		}
-		if err := st.MigrateTopicBackfill(); err != nil {
-			return fail(fmt.Errorf("migrate topic backfill after seed: %w", err))
-		}
-		log.Printf("seed: imported %d posts from content/posts", n)
+		log.Printf("seed: imported %d canonical content records", n)
 	}
 
 	// 增量自动发现：未做全量 seed 时，把 content/posts 里 DB 缺失的新文件补录进来
 	// （只增不改，Console 编辑过的记录不被文件覆盖），新文章无需手动 -seed 即可上列表。
 	discovered := 0
 	if !seedOnStart {
-		n, err := seedpkg.ImportMissing(st, posts)
+		n, err := seedpkg.ImportStellar(st, posts, filepath.Join(appConfig.Root, "content"), true)
 		if err != nil {
-			return fail(fmt.Errorf("discover new posts: %w", err))
+			if !errors.Is(err, store.ErrStellarMigrationRequired) {
+				return fail(fmt.Errorf("discover new posts: %w", err))
+			}
+			// Console 的迁移预览仍可打开；普通启动不得自动迁移/降级 seed。
+			log.Printf("seed: automatic discovery requires reviewed Stellar v2 migration")
 		}
 		discovered = n
 		if n > 0 {
-			if err := st.MigrateTopicBackfill(); err != nil {
-				return fail(fmt.Errorf("migrate topic backfill after discover: %w", err))
-			}
 			log.Printf("seed: discovered %d new posts from content/posts", n)
 		}
 	}
