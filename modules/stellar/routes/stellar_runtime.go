@@ -536,12 +536,27 @@ func (s *webServer) stellarBodyData(snap *stellarSnapshot) stellarmodels.Object 
 	}
 	data["icons"] = icons
 	tree := stellarmodels.Object{}
+	root := strings.TrimRight(mustStellarURL(snap.site.URL).EscapedPath(), "/")
+	publicPath := func(path string) string {
+		if path == "" {
+			return ""
+		}
+		return root + "/" + strings.TrimLeft(path, "/")
+	}
 	for _, c := range snap.collections {
 		if c.profile == "wiki" {
+			// 单独投影新建的公开树，正式 Wiki 模型仍使用不含站点 Root 的路径。
+			// TOC 原样消费 path；根相对链接也能在嵌套页面和无 base 的 srcdoc 中解析。
 			state := stellarWikiState(c)
+			homepage := stellarObject(state["homepage"])
+			homepage["path"] = publicPath(stellarString(homepage["path"]))
 			pages := []any{}
 			for _, section := range stellarArray(state["sections"]) {
-				pages = append(pages, stellarArray(stellarObject(section)["pages"])...)
+				for _, page := range stellarArray(stellarObject(section)["pages"]) {
+					node := stellarObject(page)
+					node["path"] = publicPath(stellarString(node["path"]))
+					pages = append(pages, node)
+				}
 			}
 			state["pages"] = pages
 			tree[c.id] = state

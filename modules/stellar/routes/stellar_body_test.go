@@ -3,6 +3,8 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -12,6 +14,7 @@ import (
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
+	"golang.org/x/net/html"
 )
 
 func TestStellarBodyCallbackSharesPublicWikiAndAbsoluteLinkContext(t *testing.T) {
@@ -48,7 +51,7 @@ func TestStellarBodyCallbackSharesPublicWikiAndAbsoluteLinkContext(t *testing.T)
 		t.Fatal(err)
 	}
 	canonical, err := ws.posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: snap.input.Theme, Data: snap.input.RuntimeData, Page: input.Page, Language: stellarLanguage(snap.input, input.Page), BlogExtensions: true})
-	if err != nil || body != canonical || !strings.Contains(body, "Public introduction") || !strings.Contains(body, "https://fixture.example/destination") {
+	if err != nil || body != canonical || !strings.Contains(body, "Public introduction") || !strings.Contains(body, `href="/docs/intro"`) || !strings.Contains(body, "https://fixture.example/destination") {
 		t.Fatalf("context mismatch: %v %s", err, body)
 	}
 	raw, _ := json.Marshal(snap.input.RuntimeData)
@@ -206,5 +209,171 @@ func TestStellarPublicContextStillValidatesPublishedSchema(t *testing.T) {
 	}
 	if _, err := ws.renderStellarMarkdown(content.StellarBodyInput{Markdown: "Valid candidate", Page: map[string]any{}}); err == nil {
 		t.Fatal("body-free context bypassed published metadata schema")
+	}
+}
+
+func TestStellarBodyWikiTOCPathsUseSiteRootInNestedAndOpaqueContexts(t *testing.T) {
+	for _, siteURL := range []string{"https://fixture.example/sub", "https://fixture.example/sub/", "https://fixture.example"} {
+		t.Run(siteURL, func(t *testing.T) {
+			ws, st, _, router := stellarRouteFixture(t)
+			for _, project := range []*store.WikiProject{
+				{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"Manual","route":{"path":"/wiki/galaxy/"},"navigation":{"tree":{"First":["intro"],"Second":["advanced"]}}}`},
+				{ID: "private", Visible: false, StellarVersion: 2, StellarConfig: `{"name":"HIDDEN_PROJECT"}`},
+			} {
+				if err := st.CreateWikiProject(project); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, doc := range []*store.WikiDoc{
+				{ProjectID: "docs", Slug: "intro", Title: "Introduction", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`},
+				{ProjectID: "docs", Slug: "advanced", Title: "Advanced", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`},
+				{ProjectID: "docs", Slug: "draft", Title: "HIDDEN_DRAFT", Status: store.StatusDraft},
+				{ProjectID: "private", Slug: "secret", Title: "HIDDEN_PRIVATE", Status: store.StatusPublished},
+			} {
+				if err := st.CreateWikidoc(doc); err != nil {
+					t.Fatal(err)
+				}
+			}
+			markdown := "Body {% toc wiki:docs %}"
+			row := createStellarPost(t, st, "nested/entry", "")
+			row.ContentMD = markdown
+			if err := st.Update(row.Slug, row); err != nil {
+				t.Fatal(err)
+			}
+			if err := st.CreateNotebook(&store.Notebook{ID: "journal", StellarVersion: 2, StellarConfig: `{"name":"Journal","route":{"path":"/notebooks/journal/"}}`}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := st.CreateNote(&store.Note{NotebookID: "journal", Slug: "entry", Title: "Entry", Status: store.StatusPublished, ContentMD: markdown, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"notebook","id":"journal"},"rightbar":{"enabled":true,"widgets":["context"]}}`}); err != nil {
+				t.Fatal(err)
+			}
+			site := *ws.site.Load()
+			site.URL = siteURL
+			version := *site.StellarV2
+			version.Theme = stellarCopyObject(version.Theme)
+			version.Theme["footer"] = map[string]any{"content": "Footer {% toc wiki:docs %}"}
+			profiles := stellarCopyObject(stellarObject(version.Theme["profiles"]))
+			for _, profile := range []string{"post", "notebook"} {
+				cfg := stellarCopyObject(stellarObject(profiles[profile]))
+				cfg["rightbar"] = map[string]any{"enabled": true, "widgets": []any{"context"}}
+				profiles[profile] = cfg
+			}
+			version.Theme["profiles"] = profiles
+			version.Blog = stellarCopyObject(version.Blog)
+			data := stellarCopyObject(stellarObject(version.Blog["data"]))
+			data["widgets"] = map[string]any{"context": map[string]any{"layout": "markdown", "content": "Widget {% toc wiki:docs %}"}}
+			version.Blog["data"] = data
+			site.StellarV2 = &version
+			ws.site.Store(&site)
+			root := strings.TrimRight(mustStellarURL(siteURL).EscapedPath(), "/")
+			want := []string{root + "/wiki/galaxy/intro", root + "/wiki/galaxy/advanced"}
+			checkTOC := func(fragment, base string, wantCount int) {
+				t.Helper()
+				doc, err := html.Parse(strings.NewReader(fragment))
+				if err != nil {
+					t.Fatal(err)
+				}
+				count := 0
+				var walk func(*html.Node)
+				walk = func(n *html.Node) {
+					if n.Type == html.ElementNode && n.Data == "a" {
+						class, href := "", ""
+						for _, attr := range n.Attr {
+							if attr.Key == "class" {
+								class = attr.Val
+							}
+							if attr.Key == "href" {
+								href = attr.Val
+							}
+						}
+						if class == "list-link" {
+							expected := want[count%len(want)]
+							if href != expected {
+								t.Errorf("TOC href=%q want=%q at %s", href, expected, base)
+							}
+							origin, _ := url.Parse(base)
+							ref, err := url.Parse(href)
+							if err != nil || origin.ResolveReference(ref).EscapedPath() != expected {
+								t.Errorf("TOC does not resolve to public path at %s: %q", base, href)
+							}
+							count++
+						}
+					}
+					for c := n.FirstChild; c != nil; c = c.NextSibling {
+						walk(c)
+					}
+				}
+				walk(doc)
+				if count != wantCount*len(want) {
+					t.Errorf("TOC links=%d want=%d at %s", count, wantCount*len(want), base)
+				}
+				if strings.Contains(fragment, "HIDDEN_") {
+					t.Fatal("TOC leaked filtered Wiki content")
+				}
+			}
+			engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+			if err != nil {
+				t.Fatal(err)
+			}
+			footerCalls, widgetCalls := 0, 0
+			engine.SetStellarMarkdownRender(func(body string, ctx post.StellarRenderContext) (string, error) {
+				rendered, err := ws.posts.RenderStellarV2WithContext(body, ctx)
+				if strings.Contains(body, "toc wiki:docs") {
+					checkTOC(rendered, "http://127.0.0.1:8109"+root+"/console/pages/edit", 1)
+				}
+				if strings.HasPrefix(body, "Footer ") {
+					footerCalls++
+				}
+				if strings.HasPrefix(body, "Widget ") {
+					widgetCalls++
+				}
+				return rendered, err
+			})
+			ws.engine = engine
+			snap, err := ws.stellarSnapshotAt(context.Background(), &site, nil, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			project := stellarObject(stellarGet(snap.input.RuntimeData, "wiki.tree.docs"))
+			if stellarString(stellarGet(project, "homepage.path")) != want[0] {
+				t.Errorf("runtime homepage=%v want=%s", stellarGet(project, "homepage.path"), want[0])
+			}
+			flat := stellarArray(project["pages"])
+			if len(flat) != len(want) {
+				t.Fatalf("flattened public pages=%d want=%d", len(flat), len(want))
+			}
+			for i, page := range flat {
+				if stellarString(stellarObject(page)["path"]) != want[i] {
+					t.Errorf("flat page path=%v want=%s", stellarObject(page)["path"], want[i])
+				}
+			}
+			raw, _ := json.Marshal(snap.input.RuntimeData)
+			if strings.Contains(string(raw), "HIDDEN_") {
+				t.Fatal("body tree retained private/draft metadata")
+			}
+			formal := snap.byCollection["wiki:docs"].state
+			if stellarString(stellarGet(formal, "homepage.path")) != "wiki/galaxy/intro" {
+				t.Fatal("body projection changed formal Wiki state")
+			}
+			for _, path := range []string{"/post/nested/entry", "/notebooks/journal/entry"} {
+				response := stellarRequest(router, root+path)
+				if response.Code != http.StatusOK {
+					t.Fatalf("%s => %d %s", path, response.Code, response.Body.String())
+				}
+				checkTOC(response.Body.String(), siteURL+path, 3)
+				config, layout := `{}`, "post"
+				if strings.HasPrefix(path, "/notebooks/") {
+					config, layout = `{"collection":{"profile":"notebook","id":"journal"},"rightbar":{"enabled":true,"widgets":["context"]}}`, "page"
+				}
+				output, err := ws.renderContentPreviewSnapshot(content.StellarPreviewInput{StellarVersion: 2, StellarConfig: config, BlogExtensions: `{}`, Markdown: &markdown, Title: "Preview", Layout: layout, Path: root + path, RequestURL: "http://127.0.0.1:8109" + root + "/api/v1/preview/markdown", PreviewToken: "root-path-preview"})
+				if err != nil {
+					t.Fatal(err)
+				}
+				checkTOC(output.HTML, "http://127.0.0.1:8109"+root+"/console/pages/edit", 1)
+				checkTOC(output.Document, "http://127.0.0.1:8109"+root+"/console/pages/edit", 3)
+			}
+			if footerCalls < 4 || widgetCalls < 4 {
+				t.Errorf("footer/widget contexts not exercised: %d/%d", footerCalls, widgetCalls)
+			}
+		})
 	}
 }
