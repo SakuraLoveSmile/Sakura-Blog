@@ -154,32 +154,29 @@ func buildMigrationFixture(ctx context.Context, c Candidate, approval MigrationA
 	return out, nil
 }
 
-func snapshotSQLValue(value any, declared string) (any, error) {
-	if value == nil {
-		return nil, nil
-	}
-	if b, ok, err := blobBytes(value); ok || err != nil {
-		return b, err
-	}
-	if strings.Contains(strings.ToUpper(declared), "BLOB") {
-		return nil, fmt.Errorf("legacy string BLOB cannot be restored without lossless typed provenance")
-	}
-	switch v := value.(type) {
-	case json.Number:
-		if i, err := v.Int64(); err == nil {
-			return i, nil
+func snapshotSQLValue(value any, class string) (any, error) {
+	switch class {
+	case "null":
+		if value == nil {
+			return nil, nil
 		}
-		return v.Float64()
-	case string:
-		if !utf8.ValidString(v) {
-			return nil, fmt.Errorf("snapshot TEXT contains invalid UTF8")
+	case "blob":
+		if b, ok, err := blobBytes(value); ok || err != nil {
+			return b, err
 		}
-		return v, nil
-	case int64, int, float64, bool:
-		return v, nil
-	default:
-		return nil, fmt.Errorf("unsupported snapshot SQL value type")
+	case "integer", "real":
+		if v, ok := value.(json.Number); ok {
+			if class == "integer" {
+				return v.Int64()
+			}
+			return v.Float64()
+		}
+	case "text":
+		if v, ok := value.(string); ok && utf8.ValidString(v) {
+			return v, nil
+		}
 	}
+	return nil, fmt.Errorf("snapshot value does not match explicit SQLite storage class")
 }
 
 func tableKinds(ctx context.Context, tx *sql.Tx) (map[string]string, error) {
@@ -200,6 +197,11 @@ func tableKinds(ctx context.Context, tx *sql.Tx) (map[string]string, error) {
 }
 
 func restoreSnapshotTables(ctx context.Context, tx *sql.Tx, s Snapshot, nb NotebookStructurePreview) error {
+	for _, table := range s.Tables {
+		if err := validateTableStorage(table); err != nil {
+			return err
+		}
+	}
 	// 先建立virtual roots，由SQLite生成shadow；绝不把shadow当普通表顺序CREATE。
 	for _, name := range sortedKeys(s.Tables) {
 		table := s.Tables[name]
@@ -261,17 +263,96 @@ func restoreSnapshotTables(ctx context.Context, tx *sql.Tx, s Snapshot, nb Noteb
 		if _, err := tx.ExecContext(ctx, "DELETE FROM "+quoteIdentifier(name)); err != nil {
 			return err
 		}
-		if err := insertSnapshotRows(ctx, tx, name, table.Columns, table.Rows); err != nil {
+		if err := insertSnapshotRows(ctx, tx, name, table); err != nil {
 			return err
 		}
 	}
-	if err := insertNotebookStructure(ctx, tx, nb); err != nil {
+	if err := insertNotebookStructureWithIdentity(ctx, tx, nb, s); err != nil {
 		return err
 	}
 	return nil
 }
 
-func insertSnapshotRows(ctx context.Context, tx *sql.Tx, name string, columns []string, rows []Row) error {
+// 已批准的Notebook schema转换也不能顺带重编号隐藏rowid。
+// 若新INTEGER PRIMARY KEY与捕获身份不可能同时成立，则阻断整个隔离执行。
+func insertNotebookStructureWithIdentity(ctx context.Context, tx *sql.Tx, p NotebookStructurePreview, source Snapshot) error {
+	for _, name := range []string{"notebooks", "notes"} {
+		table := source.Tables[name]
+		identities := map[string]int64{}
+		if !table.WithoutRowID {
+			for i, row := range table.Rows {
+				id, _ := table.RowIDs[i].Int64()
+				identities[stringValue(row["id"])] = id
+			}
+		}
+		columns := notebookStructureColumns[name]
+		for _, row := range p.Rows[name] {
+			quoted := append([]string{}, columns...)
+			values := []any{}
+			rowID, preserve := identities[stringValue(row["id"])]
+			if preserve {
+				quoted = append([]string{"rowid"}, quoted...)
+				values = append(values, rowID)
+			}
+			for _, column := range columns {
+				values = append(values, row[column])
+			}
+			query := "INSERT INTO " + name + " (" + strings.Join(quoted, ",") + ") VALUES (" + strings.TrimSuffix(strings.Repeat("?,", len(quoted)), ",") + ")"
+			if _, err := tx.ExecContext(ctx, query, values...); err != nil {
+				return fmt.Errorf("restore Notebook row identity: %w", err)
+			}
+			if preserve {
+				var restored int64
+				if err := tx.QueryRowContext(ctx, "SELECT rowid FROM "+name+" WHERE id=?", row["id"]).Scan(&restored); err != nil || restored != rowID {
+					return fmt.Errorf("notebook rowid cannot be preserved with approved primary key structure")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func validateTableStorage(table Table) error {
+	if len(table.StorageClasses) != len(table.Rows) || (table.WithoutRowID && len(table.RowIDs) != 0) || (!table.WithoutRowID && len(table.RowIDs) != len(table.Rows)) {
+		return fmt.Errorf("snapshot row identity or storage classes incomplete")
+	}
+	seen := map[int64]bool{}
+	for i, row := range table.Rows {
+		if len(row) != len(table.Columns) || len(table.StorageClasses[i]) != len(table.Columns) {
+			return fmt.Errorf("snapshot row columns or storage classes incomplete")
+		}
+		if !table.WithoutRowID {
+			id, err := table.RowIDs[i].Int64()
+			if err != nil || seen[id] {
+				return fmt.Errorf("snapshot rowid invalid or duplicated")
+			}
+			seen[id] = true
+		}
+		for _, column := range table.Columns {
+			value, exists := row[column]
+			if !exists {
+				return fmt.Errorf("snapshot row column missing")
+			}
+			if _, err := snapshotSQLValue(value, table.StorageClasses[i][column]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func insertSnapshotRows(ctx context.Context, tx *sql.Tx, name string, table Table) error {
+	columns, rows := table.Columns, table.Rows
+	if err := validateTableStorage(table); err != nil {
+		return err
+	}
+	var withoutRowID bool
+	if err := tx.QueryRowContext(ctx, "SELECT wr FROM pragma_table_list WHERE schema='main' AND name=?", name).Scan(&withoutRowID); err != nil {
+		return err
+	}
+	if withoutRowID != table.WithoutRowID {
+		return fmt.Errorf("snapshot rowid schema identity mismatch")
+	}
 	info, err := tx.QueryContext(ctx, "PRAGMA table_info("+quoteIdentifier(name)+")")
 	if err != nil {
 		return err
@@ -302,14 +383,25 @@ func insertSnapshotRows(ctx context.Context, tx *sql.Tx, name string, columns []
 	if len(columns) != len(types) {
 		return fmt.Errorf("snapshot source columns incomplete")
 	}
-	query := "INSERT INTO " + quoteIdentifier(name) + " (" + strings.Join(quoted, ",") + ") VALUES (" + strings.TrimSuffix(strings.Repeat("?,", len(columns)), ",") + ")"
-	for _, row := range rows {
+	if !withoutRowID {
+		alias, err := accessibleRowID(columns)
+		if err != nil {
+			return err
+		}
+		quoted = append([]string{quoteIdentifier(alias)}, quoted...)
+	}
+	query := "INSERT INTO " + quoteIdentifier(name) + " (" + strings.Join(quoted, ",") + ") VALUES (" + strings.TrimSuffix(strings.Repeat("?,", len(quoted)), ",") + ")"
+	for i, row := range rows {
 		if len(row) != len(columns) {
 			return fmt.Errorf("snapshot row columns incomplete")
 		}
 		values := []any{}
+		if !withoutRowID {
+			id, _ := table.RowIDs[i].Int64()
+			values = append(values, id)
+		}
 		for _, column := range columns {
-			v, e := snapshotSQLValue(row[column], types[column])
+			v, e := snapshotSQLValue(row[column], table.StorageClasses[i][column])
 			if e != nil {
 				return fmt.Errorf("table %s column %s: %w", name, column, e)
 			}
@@ -391,7 +483,7 @@ func restoreSequence(ctx context.Context, tx *sql.Tx, s Snapshot) error {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM sqlite_sequence"); err != nil {
 			return err
 		}
-		return insertSnapshotRows(ctx, tx, "sqlite_sequence", table.Columns, table.Rows)
+		return insertSnapshotRows(ctx, tx, "sqlite_sequence", table)
 	}
 	return nil
 }

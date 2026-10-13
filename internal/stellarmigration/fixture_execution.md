@@ -16,8 +16,8 @@
 
 SQLite 全表恢复、Notebook 结构转换、canonical 配置与内容写入共享一个事务，外键延迟到提交时检查。不调用分散的 Update/SaveStellarV2 方法，不改状态、用户、评论、权限关系或已有日期。完整原行与 Notebook 未知列保留在 0600 私密源归档。tracked 文档只写新 root。新 root 包含隔离的 DB/config/content/uploads/cache/runtime 位置，目录 0700、文件 0600，seed 和自动备份关闭。
 
-快照格式 2 区分 table/virtual/shadow 对象，BLOB 使用明确 base64 编码；JSON 往返及 SQL 绑定保持字节和大整数。历史格式、旧 string BLOB、孤立 shadow 与附加 SQL 语句拒绝执行。FTS5 roots 先由 SQLite 建立，校验 shadow 类型后恢复其捕获行，从 shadow 保留 rowid 与搜索索引；未支持 virtual module 失败。
+快照格式 3 区分 table/virtual/shadow 对象，BLOB 使用明确 base64 编码；每个值另外捕获 SQLite storage class，避免同数值 INTEGER/REAL 相混。普通 rowid 表捕获可访问的隐藏 rowid 并显式恢复；WITHOUT ROWID 表使用原主键。所有 rowid 别名均被列遮蔽时拒绝捕获，不能猜测；缺 rowid/类型元数据及历史格式拒绝执行，不隐式兼容。JSON 往返及 SQL 绑定保持字节、大整数与原存储类型。旧 string BLOB、孤立 shadow 与附加 SQL 语句拒绝执行。FTS5 roots 先由 SQLite 建立，校验 shadow 类型后恢复其捕获行，从 shadow 保留 rowid 与搜索索引；external-content 的普通内容表同时保留隐藏 rowid，使关联不变。未支持 virtual module 失败。
 
 `SnapshotCoverage` / `ExcludedResources` 明确说明：当前快照没有索引、视图、触发器、上传文件字节、原 app/site 文件、运行时缓存或未跟踪内容。只创建必要的新 Notebook 索引；不得把完整运行位置隔离说成复制了全部资源，也不得用隔离 Store/embedded SSR 通过宣称真实前台、媒体或外部服务已验收。
 
-本模块测试全用系统临时夹具，覆盖批准缺失/摘要变化/诊断篡改/缺记录、未知政策与 strict URL 拒绝、Notebook 逐记录字段、正文批准、事务中途失败与取消、BLOB/大整数、FTS MATCH 与正式 Store 读取。真实源仍须重新只读捕获和完整用户审查；编码升级会改变 SourceDigest，不能把旧摘要沿用为新批准。DB 原文件哈希是独立事实，应分别核验。
+本模块测试全用系统临时夹具，覆盖批准缺失/摘要变化/诊断篡改/缺记录、未知政策与 strict URL 拒绝、Notebook 逐记录字段、正文批准、事务中途失败与取消、BLOB/大整数、稀疏 rowid、external-content FTS MATCH、同数值双 storage class、BOOLEAN/TIMESTAMP 原值与正式 Store 读取。真实源仍须重新只读捕获和完整用户审查；编码升级会改变 SourceDigest，不能把旧摘要沿用为新批准。DB 原文件哈希是独立事实，应分别核验。

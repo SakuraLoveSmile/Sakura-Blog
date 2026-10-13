@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const SnapshotFormatVersion = 2
+const SnapshotFormatVersion = 3
 
 // BlobValue 区分SQLite BLOB与TEXT，JSON往返不将非法UTF8替换或猜回二进制。
 type BlobValue struct {
