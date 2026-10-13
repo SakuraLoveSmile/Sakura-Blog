@@ -4,7 +4,9 @@ package appearance
 
 import (
 	"html/template"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -91,6 +93,11 @@ func BuildWithOptions(theme map[string]any, options Options) (template.CSS, erro
 	rule(&b, ":root", root)
 	palette(&b, primary, accent)
 	directConsumers(&b)
+	// 上游 list.styl / pin-slider.styl 的编译期配置，动态主题在主样式之后覆盖。
+	coverRatio := strconv.FormatFloat(r.number("article.listing.coverRatio", math.SmallestNonzeroFloat64, math.MaxFloat64), 'f', -1, 64)
+	for _, selector := range []string{".post-list .post-card .post-cover img", ".post-list .post-card.post.photo .cover img", ".pin-slide.post-slide"} {
+		rule(&b, selector, declarations{"aspect-ratio": coverRatio})
+	}
 	// story-title() 原来直接使用编译期强调色，需要覆盖到配置变量。
 	rule(&b, "body[data-article-style='story'] .md-text.content h2:not([class]):before,body[data-article-style='story'] .md-text.content h2:not([class]):after,.post-list.topic .post-card.topic article .topic-title:before,.post-list.topic .post-card.topic article .topic-title:after", declarations{"background": "var(--accent)"})
 	pageImage := resolvedResource(r.resource("appearance.backgrounds.page.image"), cssURLBase)

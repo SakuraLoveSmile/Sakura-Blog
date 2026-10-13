@@ -221,6 +221,512 @@
           "--blur-bg": "var(--bg-a75)",
           "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
           "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
+        }
+      }
+    },
+    {
+      "name": "listing-cover-ratio-hero",
+      "input": {
+        "article": {
+          "listing": {
+            "cover_ratio": 2.4
+          }
+        }
+      },
+      "tokens": {
+        ":root": {
+          "--fs-root": "calc(16px + 1px)",
+          "--fs-content-base": "var(--fs-root)",
+          "--fs-content": "var(--fs-content-base)",
+          "--width-main-article": "800px",
+          "--width-main-wiki-list": "1000px",
+          "--width-main": "var(--width-main-article)",
+          "--fsh2": "calc(var(--fs-content) + 11px)",
+          "--fsh3": "calc(var(--fs-content) + 7px)",
+          "--fsh4": "calc(var(--fs-content) + 4px)",
+          "--side-content-width": "224px",
+          "--gap-base": "16px",
+          "--gap-page": "16px",
+          "--rightbar-width-extra": "calc(var(--gap-base) * 2)",
+          "--gap-p": "calc(var(--fs-content-base) + 4px)",
+          "--gap-p-compact": "calc(var(--fs-content-base) * 0.75)",
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--accent": "#ff5724",
+          "--link": "hsla(207deg 90% 54% / 1)",
+          "--link-a20": "hsla(207deg 90% 54% / 0.2)",
+          "--item-theme": "var(--theme)",
+          "--background": "hsla(210deg 20% 98% / 1)",
+          "--card": "#fff",
+          "--bg-a20": "hsla(210deg 0% 100% / 0.2)",
+          "--bg-a50": "hsla(210deg 0% 100% / 0.5)",
+          "--bg-a60": "hsla(210deg 0% 100% / 0.6)",
+          "--bg-a75": "hsla(210deg 0% 100% / 0.75)",
+          "--bg-a100": "hsla(210deg 0% 100% / 1)",
+          "--text-p0": "hsla(210deg 0% 0% / 1)",
+          "--text": "var(--text-p0)",
+          "--text-reverse": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--text-p3": "hsla(210deg 0% 0% / 0.5)",
+          "--text-p4": "hsla(210deg 0% 0% / 0.4)",
+          "--text-meta": "hsla(210deg 0% 0% / 0.2)",
+          "--text-code": "hsla(210deg 0% 0% / 0.9)",
+          "--text-a10": "hsla(210deg 0% 0% / 0.1)",
+          "--text-a20": "hsla(210deg 0% 0% / 0.2)",
+          "--block": "hsla(210deg 50% 12% / 0.04)",
+          "--block-border": "hsla(210deg 50% 12% / 0.06)",
+          "--blur-px": "12px",
+          "--blur-bg": "var(--bg-a50)",
+          "--blur-sat": "300%"
+        },
+        ".colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 95% 32% / 1)",
+          "--link-a20": "hsla(192deg 95% 32% / 0.2)",
+          "--theme-border": "hsla(192deg 50% 80% / var(--alpha))",
+          "--theme-block": "hsla(192deg 90% 92% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 95% 80% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 50% 95% / var(--alpha))",
+          "--text": "hsla(192deg 55% 16% / 1)",
+          "--text-p1": "hsla(192deg 90% 20% / 1)",
+          "--text-p2": "hsla(192deg 90% 20% / 0.8)",
+          "--text-p3": "hsla(192deg 90% 20% / 0.6)",
+          "--text-p4": "hsla(192deg 90% 20% / 0.4)"
+        },
+        ".colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 95% 32% / 1)",
+          "--link-a20": "hsla(14deg 95% 32% / 0.2)",
+          "--theme-border": "hsla(14deg 50% 80% / var(--alpha))",
+          "--theme-block": "hsla(14deg 90% 92% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 95% 80% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 50% 95% / var(--alpha))",
+          "--text": "hsla(14deg 55% 16% / 1)",
+          "--text-p1": "hsla(14deg 90% 20% / 1)",
+          "--text-p2": "hsla(14deg 90% 20% / 0.8)",
+          "--text-p3": "hsla(14deg 90% 20% / 0.6)",
+          "--text-p4": "hsla(14deg 90% 20% / 0.4)"
+        },
+        ":root[data-theme='dark'] .colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        ":root[data-theme='dark'] .colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 80% 60% / 1)",
+          "--link-a20": "hsla(14deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(14deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(14deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 12% 24% / var(--alpha))",
+          "--text": "hsla(14deg 50% 75% / 1)",
+          "--text-p1": "hsla(14deg 80% 80% / 1)",
+          "--text-p2": "hsla(14deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(14deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(14deg 80% 80% / 0.4)"
+        },
+        ":root:not([data-theme]) .colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        ":root:not([data-theme]) .colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 80% 60% / 1)",
+          "--link-a20": "hsla(14deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(14deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(14deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 12% 24% / var(--alpha))",
+          "--text": "hsla(14deg 50% 75% / 1)",
+          "--text-p1": "hsla(14deg 80% 80% / 1)",
+          "--text-p2": "hsla(14deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(14deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(14deg 80% 80% / 0.4)"
+        },
+        ":root[data-theme='dark'] .tag-plugin.tag": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        "body > .site-background": {
+          "position": "fixed",
+          "top": "0",
+          "left": "0",
+          "right": "0",
+          "bottom": "0",
+          "background-size": "cover"
+        },
+        "body > .site-background .site-background__blur": {
+          "width": "100%",
+          "height": "100%",
+          "--blur-px": "100px",
+          "--blur-sat": "300%",
+          "background-color": "var(--blur-bg) !important",
+          "--blur-bg": "var(--bg-a75)",
+          "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
+          "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2.4"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2.4"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2.4"
+        }
+      }
+    },
+    {
+      "name": "listing-cover-ratio-classic",
+      "input": {
+        "article": {
+          "listing": {
+            "cover_ratio": 1.25
+          }
+        }
+      },
+      "tokens": {
+        ":root": {
+          "--fs-root": "calc(16px + 1px)",
+          "--fs-content-base": "var(--fs-root)",
+          "--fs-content": "var(--fs-content-base)",
+          "--width-main-article": "800px",
+          "--width-main-wiki-list": "1000px",
+          "--width-main": "var(--width-main-article)",
+          "--fsh2": "calc(var(--fs-content) + 11px)",
+          "--fsh3": "calc(var(--fs-content) + 7px)",
+          "--fsh4": "calc(var(--fs-content) + 4px)",
+          "--side-content-width": "224px",
+          "--gap-base": "16px",
+          "--gap-page": "16px",
+          "--rightbar-width-extra": "calc(var(--gap-base) * 2)",
+          "--gap-p": "calc(var(--fs-content-base) + 4px)",
+          "--gap-p-compact": "calc(var(--fs-content-base) * 0.75)",
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--accent": "#ff5724",
+          "--link": "hsla(207deg 90% 54% / 1)",
+          "--link-a20": "hsla(207deg 90% 54% / 0.2)",
+          "--item-theme": "var(--theme)",
+          "--background": "hsla(210deg 20% 98% / 1)",
+          "--card": "#fff",
+          "--bg-a20": "hsla(210deg 0% 100% / 0.2)",
+          "--bg-a50": "hsla(210deg 0% 100% / 0.5)",
+          "--bg-a60": "hsla(210deg 0% 100% / 0.6)",
+          "--bg-a75": "hsla(210deg 0% 100% / 0.75)",
+          "--bg-a100": "hsla(210deg 0% 100% / 1)",
+          "--text-p0": "hsla(210deg 0% 0% / 1)",
+          "--text": "var(--text-p0)",
+          "--text-reverse": "hsla(210deg 0% 100% / 1)",
+          "--text-p1": "hsla(210deg 0% 0% / 0.8)",
+          "--text-p2": "hsla(210deg 0% 0% / 0.7)",
+          "--text-p3": "hsla(210deg 0% 0% / 0.5)",
+          "--text-p4": "hsla(210deg 0% 0% / 0.4)",
+          "--text-meta": "hsla(210deg 0% 0% / 0.2)",
+          "--text-code": "hsla(210deg 0% 0% / 0.9)",
+          "--text-a10": "hsla(210deg 0% 0% / 0.1)",
+          "--text-a20": "hsla(210deg 0% 0% / 0.2)",
+          "--block": "hsla(210deg 50% 12% / 0.04)",
+          "--block-border": "hsla(210deg 50% 12% / 0.06)",
+          "--blur-px": "12px",
+          "--blur-bg": "var(--bg-a50)",
+          "--blur-sat": "300%"
+        },
+        ".colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 95% 32% / 1)",
+          "--link-a20": "hsla(192deg 95% 32% / 0.2)",
+          "--theme-border": "hsla(192deg 50% 80% / var(--alpha))",
+          "--theme-block": "hsla(192deg 90% 92% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 95% 80% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 50% 95% / var(--alpha))",
+          "--text": "hsla(192deg 55% 16% / 1)",
+          "--text-p1": "hsla(192deg 90% 20% / 1)",
+          "--text-p2": "hsla(192deg 90% 20% / 0.8)",
+          "--text-p3": "hsla(192deg 90% 20% / 0.6)",
+          "--text-p4": "hsla(192deg 90% 20% / 0.4)"
+        },
+        ".colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 95% 32% / 1)",
+          "--link-a20": "hsla(14deg 95% 32% / 0.2)",
+          "--theme-border": "hsla(14deg 50% 80% / var(--alpha))",
+          "--theme-block": "hsla(14deg 90% 92% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 95% 80% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 50% 95% / var(--alpha))",
+          "--text": "hsla(14deg 55% 16% / 1)",
+          "--text-p1": "hsla(14deg 90% 20% / 1)",
+          "--text-p2": "hsla(14deg 90% 20% / 0.8)",
+          "--text-p3": "hsla(14deg 90% 20% / 0.6)",
+          "--text-p4": "hsla(14deg 90% 20% / 0.4)"
+        },
+        ":root[data-theme='dark'] .colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        ":root[data-theme='dark'] .colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 80% 60% / 1)",
+          "--link-a20": "hsla(14deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(14deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(14deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 12% 24% / var(--alpha))",
+          "--text": "hsla(14deg 50% 75% / 1)",
+          "--text-p1": "hsla(14deg 80% 80% / 1)",
+          "--text-p2": "hsla(14deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(14deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(14deg 80% 80% / 0.4)"
+        },
+        ":root:not([data-theme]) .colorful[color='theme']": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        ":root:not([data-theme]) .colorful[color='accent']": {
+          "--hue": "14deg",
+          "--sat": "100%",
+          "--light": "57%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(14deg 80% 60% / 1)",
+          "--link-a20": "hsla(14deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(14deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(14deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(14deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(14deg 12% 24% / var(--alpha))",
+          "--text": "hsla(14deg 50% 75% / 1)",
+          "--text-p1": "hsla(14deg 80% 80% / 1)",
+          "--text-p2": "hsla(14deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(14deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(14deg 80% 80% / 0.4)"
+        },
+        ":root[data-theme='dark'] .tag-plugin.tag": {
+          "--hue": "192deg",
+          "--sat": "98%",
+          "--light": "55%",
+          "--alpha": "1",
+          "--theme": "hsla(var(--hue) var(--sat) var(--light) / 1)",
+          "--theme-a10": "hsla(var(--hue) var(--sat) var(--light) / 0.1)",
+          "--theme-a20": "hsla(var(--hue) var(--sat) var(--light) / 0.2)",
+          "--theme-a30": "hsla(var(--hue) var(--sat) var(--light) / 0.3)",
+          "--link": "hsla(192deg 80% 60% / 1)",
+          "--link-a20": "hsla(192deg 80% 60% / 0.2)",
+          "--theme-border": "hsla(192deg 40% 24% / var(--alpha))",
+          "--theme-block": "hsla(192deg 24% 24% / var(--alpha))",
+          "--theme-mark": "hsla(192deg 50% 32% / var(--alpha))",
+          "--theme-codeblock": "hsla(192deg 12% 24% / var(--alpha))",
+          "--text": "hsla(192deg 50% 75% / 1)",
+          "--text-p1": "hsla(192deg 80% 80% / 1)",
+          "--text-p2": "hsla(192deg 80% 80% / 0.8)",
+          "--text-p3": "hsla(192deg 80% 80% / 0.6)",
+          "--text-p4": "hsla(192deg 80% 80% / 0.4)"
+        },
+        "body > .site-background": {
+          "position": "fixed",
+          "top": "0",
+          "left": "0",
+          "right": "0",
+          "bottom": "0",
+          "background-size": "cover"
+        },
+        "body > .site-background .site-background__blur": {
+          "width": "100%",
+          "height": "100%",
+          "--blur-px": "100px",
+          "--blur-sat": "300%",
+          "background-color": "var(--blur-bg) !important",
+          "--blur-bg": "var(--bg-a75)",
+          "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
+          "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "1.25"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "1.25"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "1.25"
         }
       }
     },
@@ -512,6 +1018,22 @@
         "html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .site-region__decoration": {
           "--inset": "0px",
           "--blur-px": "42px"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -800,6 +1322,22 @@
         "html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .site-region__decoration": {
           "--inset": "0px",
           "--blur-px": "21px"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -1035,6 +1573,22 @@
         },
         ".site-region--leftbar .site-region__decoration": {
           "display": "none"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -1310,6 +1864,22 @@
         "html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .site-region__decoration": {
           "--inset": "0px",
           "--blur-px": "50px"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -1542,6 +2112,22 @@
           "--blur-bg": "var(--bg-a75)",
           "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
           "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -1774,6 +2360,22 @@
           "--blur-bg": "var(--bg-a75)",
           "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
           "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -2005,6 +2607,22 @@
           "--blur-bg": "var(--bg-a75)",
           "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
           "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -2236,6 +2854,22 @@
           "--blur-bg": "var(--bg-a75)",
           "backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))",
           "-webkit-backdrop-filter": "saturate(var(--blur-sat)) blur(var(--blur-px))"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     },
@@ -2557,6 +3191,22 @@
         "html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .site-region__decoration": {
           "--inset": "0px",
           "--blur-px": "50px"
+        },
+        ".post-list .post-card .post-cover img": {
+          "object-fit": "cover",
+          "width": "100%",
+          "height": "auto",
+          "border-radius": "0",
+          "aspect-ratio": "2"
+        },
+        ".post-list .post-card.post.photo .cover img": {
+          "height": "auto",
+          "aspect-ratio": "2"
+        },
+        ".pin-slide.post-slide": {
+          "display": "block",
+          "height": "auto",
+          "aspect-ratio": "2"
         }
       }
     }

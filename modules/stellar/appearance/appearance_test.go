@@ -145,6 +145,9 @@ func TestOfficialStylusOracle(t *testing.T) {
 					if selector == "body > .site-background .site-background__blur" {
 						compare = strings.HasPrefix(property, "--blur-")
 					}
+					if selector == ".post-list .post-card .post-cover img" || selector == ".post-list .post-card.post.photo .cover img" || selector == ".pin-slide.post-slide" {
+						compare = property == "aspect-ratio"
+					}
 					if !compare {
 						continue
 					}
@@ -155,6 +158,17 @@ func TestOfficialStylusOracle(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListingCoverRatioRejectsInvalidNormalizedValue(t *testing.T) {
+	for _, value := range []any{0, -1, math.NaN(), math.Inf(1), json.Number("1e999"), "2;display:none"} {
+		theme := defaults(t)
+		set(theme, "article.listing.coverRatio", value)
+		css, err := Build(theme)
+		if err == nil || css != "" || !strings.Contains(err.Error(), "article.listing.coverRatio") {
+			t.Errorf("invalid ratio %v became trusted CSS: %v", value, err)
+		}
 	}
 }
 func TestCompleteParameters(t *testing.T) {
