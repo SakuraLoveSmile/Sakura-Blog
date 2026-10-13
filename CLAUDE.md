@@ -75,17 +75,17 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 
 ### CSS 与共享主题源
 
-`modules/stellar/web/assets/css/main.css` 是从本地、被 gitignore 的 `resource/hexo-theme-stellar` 编译得到的生成物。它不应手改；调整 Stylus 配置、上游同步或主题源后使用 `make css`，再用 `make css-drift-check` 验证。
+`modules/stellar/web/assets/css/main*.css`、`comments/*.css` 和 `plugins/*.css` 是从 `upstream.json` 锁定的 Stellar 2.0.0 commit 编译得到的生成物，不应手改。`resource/hexo-theme-stellar` 是被 gitignore 的本地输入仓库；编译通过 `git archive` 读取锁定对象，不消费共享工作树改动。使用 `make css` 重建，再用 `make css-drift-check` 在临时目录重新编译全部生成 CSS 并逐份比较；漂移检查失败不会覆盖真实产物。
 
 `resource/` 跨 sibling worktree 共用，可能处于 detached HEAD 或带本地补丁。每次编译前先执行 `git -C resource/hexo-theme-stellar status --short --branch`，确认正在消费的版本与变更；不要把某个历史 tag、commit 或旧的产物大小写成永久真值，更不能擅自 reset、checkout 或清理共享资源。
 
-项目自己的辅助样式应保留在其受跟踪源文件中；只有 `main.css` 受「必须由 `make css` 生成」约束。
+项目自己的辅助样式应保留在其受跟踪源文件中；上述主外观、选配和动态 CSS 均须由 `make css` 生成，其他辅助 CSS 不纳入主题重编或漂移比较。
 
 ### Stylus 编译 shim
 
 Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `modules/stellar/web/build/stylus/` 以 `config.json`、`shim.js` 和 `compile.js` 注入该函数，不改上游 `.styl`：字符串、布尔、数字、数组和缺失值必须分别保持对应的 Stylus 类型，尤其不能把布尔值写成字符串 `"false"`。
 
-`compile.js` 按锁定 Stellar 2.0.0 的 `plugins/swiper.styl`、`plugins/fancybox.styl` 与 `comments/artalk.styl` 路径追加样式，并编译受跟踪的 `local.styl` 字体与旧内容兼容层，保持单一 `main.css`。上游移动样式入口或新增需要保留的段时，先核对当前源，再同步 `EXTRA_STYLES` 与测试；不要直接向产物追加 CSS。
+`compile.js` 生成 `main-{card,glass,minimal,flat}.css` 和兼容入口 `main.css`（与 card 逐字一致），保留 swiper/fancybox/Artalk 与 `local.styl` 的旧内容兼容层。独立选配包括 `main-card-hover-{spotlight,tilt}.css`、`main-katex.css`、`main-lazyload-blur.css`；启用选配后最后加载 `main-appearance-{preset}.css`，保持上游最终视觉层的顺序。动态入口 `comments/{beaudar,utterances,twikoo,waline,artalk}.css` 和 `plugins/{fancybox,swiper}.css` 分别编译对应上游文件，供原生运行时按需加载。新增入口时同步编译清单与 CSS 专属测试，不直接追加产物。
 
 ### 模板、资源与图标
 

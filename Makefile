@@ -73,9 +73,8 @@ console-deps:
 		echo "console-deps: workspace 依赖已安装，跳过 pnpm install"; \
 	fi
 
-## css: 本地/agent 维护入口——从 resource/hexo-theme-stellar 的 styl 源重编 modules/stellar/web/assets/css/main.css。
-## 依赖 resource/ 主题源（gitignore，CI 无源不可编译）与 modules/stellar/web/node_modules（stylus 0.62.0），
-## 不进 test 门禁；产物 main.css 是 git 跟踪文件，重编后 diff 应无漂移。
+## css: 从锁定 Stellar 源重建四外观、最终层、选配及动态评论/插件 CSS。
+## 依赖 gitignore 的 resource/ 主题源与 workspace Stylus 依赖，不进入 test 必需门禁。
 css:
 	@if [ ! -d modules/stellar/web/node_modules ]; then \
 		echo "css: Stellar web 依赖缺失，执行 pnpm install（workspace 锁 stylus 0.62.0）"; \
@@ -83,27 +82,16 @@ css:
 	fi
 	cd modules/stellar/web && pnpm exec node build/stylus/compile.js --clean
 
-## css-drift-check: 本地核对入口——重编主题源并校验当前 main.css 与重编结果一致（无漂移）。
-## 定位：仅本地/agent 核对用，不接入 make test 门禁、不强制接入 CI；
-## resource/ 为 gitignore 本地主题源，CI 无源不可编译，无源环境跳过核对、不视为失败。
-## 用法：在存在 resource/ 源的环境运行本目标；
-## 工作区手改 main.css 或产物与源编译结果漂移时，cmp 非零退出。
+## css-drift-check: 临时目录重编全部生成 CSS，再逐份比较；失败也不覆盖真实产物。
+## 本地核对，不强制接入 CI；gitignore 的主题源缺失时明确跳过。
 css-drift-check:
 	@if [ ! -d resource/hexo-theme-stellar ]; then \
 		echo "css-drift-check: resource/ 主题源缺失（gitignore，CI 无源），跳过本地核对"; \
 	else \
-		css_snapshot=$$(mktemp); \
-		trap 'rm -f "$$css_snapshot"' EXIT INT TERM; \
-		cp modules/stellar/web/assets/css/main.css "$$css_snapshot" || exit 1; \
-		$(MAKE) css >/dev/null || { \
-			echo "css-drift-check: 主题源重编失败" >&2; \
-			exit 1; \
-		}; \
-		cmp -s "$$css_snapshot" modules/stellar/web/assets/css/main.css || { \
-			echo "css-drift-check: modules/stellar/web/assets/css/main.css 与主题源重编结果不一致（存在手改或漂移）" >&2; \
-			exit 1; \
-		}; \
-		echo "css-drift-check: modules/stellar/web/assets/css/main.css 与主题源重编结果一致，无漂移"; \
+		if [ ! -d modules/stellar/web/node_modules ]; then \
+			pnpm install --frozen-lockfile || exit 1; \
+		fi; \
+		cd modules/stellar/web && pnpm exec node build/stylus/compile.js --clean --check; \
 	fi
 
 ## console-test: 前端最小机械验证（vue-tsc 类型检查 + node:test 行为测试，依赖由 console-deps 自举）

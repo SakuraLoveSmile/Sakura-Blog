@@ -67,6 +67,7 @@ test('构建默认值包含完整上游玻璃背景及系统字体，热更新�
       assert.ok(css[preset].includes(`var(--font-weight-${weight}, ${weight})`));
     }
     assert.doesNotMatch(css[preset], /LXGW WenKai Screen/);
+    assert.doesNotMatch(css[preset], /font-weight:\s*['"]var\(/);
     assert.match(css[preset], /input\[type='radio'\]:not\(\.ui-radio\)/);
     assert.match(css[preset], /input\.ui-radio\s*\{[^}]*--radio-ring: var\(--text-p3\)/);
   }
@@ -134,7 +135,7 @@ test('全套 CSS 再编译逐字一致，包含所有独立选配和最终层', 
       env: { ...process.env, GIT_DIR: join(outputDir, 'foreign-git-dir'), GIT_INDEX_FILE: join(outputDir, 'foreign-index') },
     });
     const outputs = await compile({ repositoryDir, outputDir });
-    assert.equal(Object.keys(outputs).length, 13);
+    assert.equal(Object.keys(outputs).length, 20);
     for (const [name, rebuilt] of Object.entries(outputs)) {
       assert.ok(rebuilt === read(name), `${name} 与锁定源重新编译不同`);
     }

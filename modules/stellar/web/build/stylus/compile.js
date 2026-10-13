@@ -1,5 +1,6 @@
 // 从 upstream.json 锁定的干净 Stellar 源生成全部整站外观。
-// 用法：node build/stylus/compile.js [--clean]；保留旧参数，所有构建都锁定源。
+// 用法：node build/stylus/compile.js [--clean] [--check]；所有构建都锁定源。
+// --check 在临时目录编译全部产物并比较，不覆盖真实产物。
 // main.css 是 card 的兼容入口；整站选择外观时只加载对应 main-<preset>.css。
 // 上游源与共享 resource 工作树不被修改。
 
@@ -14,6 +15,11 @@ const REPO_DIR = path.resolve(__dirname, '../../../../../resource/hexo-theme-ste
 const OUT_DIR = path.resolve(__dirname, '../../assets/css')
 const PRESETS = ['card', 'glass', 'minimal', 'flat']
 const EXTRA_STYLES = ['plugins/swiper.styl', 'plugins/fancybox.styl', 'comments/artalk.styl']
+// 对应上游 internal-constants.js 的全部动态 localCss 入口。
+const DYNAMIC_STYLES = [
+  'comments/beaudar.styl', 'comments/utterances.styl', 'comments/twikoo.styl',
+  'comments/waline.styl', 'comments/artalk.styl', 'plugins/fancybox.styl', 'plugins/swiper.styl',
+]
 // 可选样式保留上游顺序：加载选配后，再加载 main-appearance-<preset>.css。
 // 尤其 tilt 的列表阴影须由 Minimal/Flat 的最终 Appearance 再次收口。
 const DEFINES = [
@@ -80,12 +86,36 @@ async function compile({ repositoryDir = REPO_DIR, outputDir = OUT_DIR, config =
       outputs[name] = afterBoundary(css)
     }
     outputs['main.css'] = outputs['main-card.css']
+    for (const source of DYNAMIC_STYLES) {
+      outputs[source.replace(/\.styl$/, '.css')] = await render(path.join(cssDir, source), cssDir, config)
+    }
     // 所有外观编译成功后才写产物，避免某个预设失败留下半套新文件。
     fs.mkdirSync(outputDir, { recursive: true })
     for (const [name, css] of Object.entries(outputs)) {
+      fs.mkdirSync(path.dirname(path.join(outputDir, name)), { recursive: true })
       fs.writeFileSync(path.join(outputDir, name), css)
     }
     return outputs
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  }
+}
+
+async function check({ repositoryDir = REPO_DIR, outputDir = OUT_DIR, config = setup.config } = {}) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stellar-css-check-'))
+  try {
+    const outputs = await compile({ repositoryDir, outputDir: tmpDir, config })
+    const issues = []
+    for (const name of Object.keys(outputs)) {
+      const current = path.join(outputDir, name)
+      if (!fs.existsSync(current)) {
+        issues.push(`${name}: 缺少产物`)
+      } else if (!fs.readFileSync(current).equals(fs.readFileSync(path.join(tmpDir, name)))) {
+        issues.push(`${name}: 与锁定源重编结果不同`)
+      }
+    }
+    if (issues.length) throw new Error(`CSS 产物存在漂移，未修改真实产物：\n${issues.join('\n')}`)
+    return Object.keys(outputs).length
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true })
   }
@@ -99,7 +129,12 @@ function afterBoundary(css) {
 }
 
 if (require.main === module) {
-  compile().then((outputs) => {
+  const isCheck = process.argv.includes('--check')
+  ;(isCheck ? check() : compile()).then((outputs) => {
+    if (isCheck) {
+      console.log(`css-drift-check: ${outputs} 份生成 CSS 与锁定源重编结果一致，未修改真实产物`)
+      return
+    }
     const upstream = require('./upstream.json')
     console.log(`使用锁定干净上游版本编译 (commit: ${upstream.commit.slice(0, 8)}, tag: ${upstream.tag})`)
     for (const [name, css] of Object.entries(outputs)) {
@@ -112,4 +147,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { compile, renderSource, PRESETS }
+module.exports = { compile, check, renderSource, PRESETS, DYNAMIC_STYLES }

@@ -89,6 +89,9 @@ function hexoConfig(param, source = config) {
   let jsVal = getByPath(source, keyPath)
   if ((typeof jsVal === 'string' || typeof jsVal === 'number') && runtimeVariables[keyPath]) {
     jsVal = runtimeVariables[keyPath].reduceRight((value, variable) => `var(${variable}, ${value})`, jsVal)
+    // 字重在上游直接作为 CSS 值使用，没有 convert() 去除 String 的引号。
+    // 运行时变量本身是 CSS 表达式，不是需要引号包裹的配置文案。
+    return new (require('stylus').nodes.Literal)(jsVal)
   }
   return toStylusValue(jsVal)
 }
