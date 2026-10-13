@@ -13,4 +13,6 @@ type StellarRenderContext struct {
 	PinnedItems       []stellarmodels.PageModel
 	Collections       []stellarmodels.Object
 	Index             stellarmodels.Object
+	// RequestURL 保留实际请求地址；canonical展示地址由宿主SEO单独计算。
+	RequestURL string
 }

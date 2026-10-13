@@ -33,6 +33,35 @@ var widgetPresentations = map[string][]any{
 	"markdown": {"leftbar", "rightbar", "drawer"},
 }
 
+// MergeWidgetCatalog 对应官方 Doctor 的 theme/site 组件描述合并。
+// null 和长度为零的值删除组件，其他描述按 Object.assign 浅覆盖。
+func MergeWidgetCatalog(base, overrides map[string]any) map[string]any {
+	result := assignWidget(base)
+	for key, value := range overrides {
+		empty := value == nil
+		switch x := value.(type) {
+		case []any:
+			empty = len(x) == 0
+		case string:
+			empty = len(x) == 0
+		case map[string]any:
+			if n, ok := number(x["length"]); ok && n == 0 {
+				empty = true
+			}
+		}
+		if empty {
+			delete(result, key)
+			continue
+		}
+		merged := assignWidget(result[key])
+		for field, value := range assignWidget(value) {
+			merged[field] = value
+		}
+		result[key] = merged
+	}
+	return result
+}
+
 func jsTruthy(value any) bool {
 	if value == nil {
 		return false

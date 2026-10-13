@@ -115,7 +115,7 @@ func buildEngine(entries []tplEntry, reg *settings.IconRegistry) (*Engine, error
 // Render 渲染指定布局模板名（如 "layout/base"），返回 HTML 字符串。
 func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 	if name == "layout/base" && data != nil && data.Site != nil && data.Site.StellarV2 != nil {
-		prepared, err := PrepareStellar(data)
+		prepared, err := PrepareStellar(data, e.icons)
 		if err != nil {
 			return "", err
 		}
@@ -148,6 +148,9 @@ func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 		if data.Stellar != nil && prepared.Stellar.Model != nil {
 			collection := prepared.Stellar.Model.Collection
 			pageURL := prepString(data.Stellar.Input.Page["permalink"])
+			if data.Stellar.RequestURL != "" {
+				pageURL = data.Stellar.RequestURL
+			}
 			if pageURL == "" {
 				pageURL = data.Page.CanonicalURL
 			}

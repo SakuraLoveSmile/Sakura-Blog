@@ -28,18 +28,14 @@ var stellarDefaultWidgets = func() map[string]any {
 }()
 
 // MergeStellarWidgetCatalog 供路由构建列表与详情模型前使用同一官方组件库。
-// 每次返回独立副本；显式null/false仍替换对应默认组件。
+// 每次返回独立副本；null/空数组删除，部分参数浅合并官方描述。
 func MergeStellarWidgetCatalog(overrides map[string]any) map[string]any {
-	catalog := prepCloneMap(stellarDefaultWidgets)
-	for key, value := range overrides {
-		catalog[key] = prepClone(value)
-	}
-	return catalog
+	return stellarv2.MergeWidgetCatalog(stellarDefaultWidgets, overrides)
 }
 
 // PrepareStellar 只装配严格主题快照；内容归属与授权已在公开路由处理。
 // 每次请求复制输入，不能修改 Manager 发布的主题、模型或原始保存值。
-func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
+func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegistry) (*StellarRenderData, error) {
 	if data == nil || data.Site == nil || data.Site.StellarV2 == nil {
 		return nil, fmt.Errorf("stellar v2 migration required: site")
 	}
@@ -92,22 +88,22 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 	if p.Language == "" {
 		p.Language = "zh-CN"
 	}
-	if input.SiteConfig["language"] == nil {
-		input.SiteConfig["language"] = p.Language
-	}
-	if input.SiteConfig["url"] == nil {
-		input.SiteConfig["url"] = rootURL.String()
-	}
-	if input.SiteConfig["title"] == nil {
-		input.SiteConfig["title"] = data.Site.Title
+	for key, value := range map[string]any{"language": p.Language, "url": rootURL.String(), "title": data.Site.Title, "subtitle": data.Site.Subtitle, "avatar": data.Site.Avatar} {
+		if _, exists := input.SiteConfig[key]; !exists {
+			input.SiteConfig[key] = value
+		}
 	}
 	publicData := prepCloneMap(prepMap(data.Site.StellarV2.Blog["data"]))
 	for key, value := range input.RuntimeData {
 		publicData[key] = prepClone(value)
 	}
 	catalog := MergeStellarWidgetCatalog(prepMap(publicData["widgets"]))
+	if runtimeCatalog, exists := input.RuntimeData["widgets"]; exists {
+		catalog = prepCloneMap(prepMap(runtimeCatalog))
+	}
 	publicData["widgets"] = catalog
 	publicData["page"] = input.FrontMatter
+	publicData["dateFormat"] = input.SiteConfig["date_format"]
 	publicData["headEnd"] = prepInject(theme, input.FrontMatter, "headEnd")
 	if data.Stellar != nil {
 		pinned := []any{}
@@ -179,6 +175,9 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 	p.SearchEnabled = prepGet(p.Regions, "leftbar.enabled") != false && brand["search"] == true && (prepString(brand["name"]) != "" || prepString(prepGet(brand, "image.src")) != "") && prepString(prepGet(theme, "search.provider")) != ""
 	prepPrepareWidgets(data, p)
 	pageURL := prepString(input.Page["permalink"])
+	if data.Stellar != nil && data.Stellar.RequestURL != "" {
+		pageURL = data.Stellar.RequestURL
+	}
 	if pageURL == "" {
 		pageURL = data.Page.CanonicalURL
 	}
@@ -190,16 +189,29 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 	clientData["isHomeFirstPage"] = p.Profile == "home" && (data.Paginator == nil || data.Paginator.Current == 1) && prepString(input.Page["path"]) == ""
 	blog := data.Site.StellarV2.Blog
 	p.BlogNativeComments = prepGet(blog, "native_comments.enabled") == true
+	if p.Layout == "404" || p.Layout == "error" || p.Layout == "500" || p.Layout == "post-password" {
+		p.BlogNativeComments = false
+	}
+	if p.PageType == "index" {
+		p.BlogNativeComments = p.BlogNativeComments && p.Profile == "home" && clientData["isHomeFirstPage"] == true && prepGet(blog, "native_comments.home.enabled") == true
+	}
 	p.BlogContent = prepGet(blog, "content.enabled") == true
 	publicData["blogReading"] = prepGet(blog, "reading.enabled") == true
-	publicData["blog"] = map[string]any{"content": prepClone(blog["content"]), "reading": prepClone(blog["reading"]), "checkbox": prepClone(blog["checkbox"]), "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true}}}
+	publicData["blog"] = map[string]any{"content": prepClone(blog["content"]), "reading": prepClone(blog["reading"]), "checkbox": prepClone(blog["checkbox"]), "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true, "allow_user_api": prepGet(blog, "ai.summary.allow_user_api") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true, "allow_user_llm": prepGet(blog, "ai.ask.allow_user_llm") == true}}}
+	publicData["nativeComments"] = map[string]any{"title": prepGet(blog, "native_comments.title"), "admin_badge": prepGet(blog, "native_comments.admin_badge")}
+	icons := map[string]string{}
+	if len(iconRegistry) > 0 && iconRegistry[0] != nil {
+		for _, key := range []string{"default:link", "default:to-comment", "default:profile", "default:warning", "default:settings", "copy:copy", "weibo:repeat", "weibo:like"} {
+			icons[key] = iconRegistry[0].Get(key)
+		}
+	}
 	if prepGet(blog, "search.provider") == "go" && prepGet(p.Regions, "leftbar.enabled") != false && brand["search"] == true && (prepString(brand["name"]) != "" || prepString(prepGet(brand, "image.src")) != "") {
 		p.SearchEnabled = true
 	}
 	bundle, err := clientconfig.Build(clientconfig.Input{
 		Root: root, PageURL: pageURL, SiteURL: rootURL.String(), SiteTitle: data.Site.Title, Language: p.Language,
 		Profile: p.Profile, CollectionID: prepString(collection["id"]), Theme: theme, Page: input.FrontMatter,
-		Collection: input.CollectionConfig, Regions: p.Regions, Data: clientData,
+		Collection: input.CollectionConfig, Regions: p.Regions, Data: clientData, Icons: icons,
 		Blog: clientconfig.BlogConfig{GoSearch: prepGet(blog, "search.provider") == "go", NativeComments: p.BlogNativeComments,
 			AISummary: prepGet(blog, "ai.summary.enabled") == true, AIAsk: prepGet(blog, "ai.ask.enabled") == true,
 			Reading: prepGet(blog, "reading.enabled") == true, Tagcloud: prepGet(blog, "tagcloud.enabled") == true,
@@ -242,6 +254,8 @@ func prepProfile(layout string) string {
 		return "blogIndex"
 	case "settings":
 		return "settings"
+	case "404", "500", "error":
+		return "error"
 	default:
 		return "page"
 	}
