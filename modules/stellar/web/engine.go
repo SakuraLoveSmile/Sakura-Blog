@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"blog/internal/settings"
+	"blog/internal/stellarhtml"
+	"blog/modules/stellar/clientconfig"
 )
 
 // Engine 模板渲染引擎。把各子目录下所有 .html 解析进同一个
@@ -18,7 +20,8 @@ import (
 // 注意：必须用路径前缀命名——不同子目录允许同名文件（如前台与管理页评论区），
 // 若只用基名会互相覆盖（曾为 admin/comments 被 partial/comments 覆盖的 bug）。
 type Engine struct {
-	tpl *template.Template
+	tpl   *template.Template
+	icons *settings.IconRegistry
 }
 
 // templateFS 嵌入 layout/partial 两目录的 .html 模板，部署时无需外部文件。
@@ -106,11 +109,55 @@ func buildEngine(entries []tplEntry, reg *settings.IconRegistry) (*Engine, error
 			return nil, fmt.Errorf("parse %s: %w", e.name, err)
 		}
 	}
-	return &Engine{tpl: tpl}, nil
+	return &Engine{tpl: tpl, icons: reg}, nil
 }
 
 // Render 渲染指定布局模板名（如 "layout/base"），返回 HTML 字符串。
 func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
+	if name == "layout/base" && data != nil && data.Site != nil && data.Site.StellarV2 != nil {
+		prepared, err := PrepareStellar(data)
+		if err != nil {
+			return "", err
+		}
+		regions := []string{}
+		for _, region := range []string{"topbar", "leftbar", "rightbar"} {
+			if prepGet(prepared.Stellar.Regions, region+".enabled") == false {
+				continue
+			}
+			prepared.Region = region
+			body, err := e.render("partial/stellar/region_body", prepared)
+			if err != nil {
+				return "", err
+			}
+			if strings.TrimSpace(body) != "" {
+				prepared.Stellar.RegionBodies[region] = template.HTML(body)
+				regions = append(regions, region)
+			}
+		}
+		prepared.Region = ""
+		prepared.Stellar.RegionNames = strings.Join(regions, " ")
+		prepared.Stellar.MobileBrand = prepared.Stellar.MobileBrand && prepared.Stellar.RegionBodies["topbar"] == ""
+		output, err := e.render("layout/stellar", prepared)
+		if err != nil {
+			return "", err
+		}
+		output, err = stellarhtml.ProcessSite(output, stellarhtml.Context{Theme: prepared.Stellar.Theme, SiteURL: data.Site.URL, IconData: e.icons.Get})
+		if err != nil {
+			return "", err
+		}
+		if data.Stellar != nil && prepared.Stellar.Model != nil {
+			collection := prepared.Stellar.Model.Collection
+			pageURL := prepString(data.Stellar.Input.Page["permalink"])
+			if pageURL == "" {
+				pageURL = data.Page.CanonicalURL
+			}
+			return clientconfig.PrepareNavigation(output, clientconfig.NavigationOptions{
+				CollectionProfile: prepString(collection["profile"]), CollectionID: prepString(collection["id"]),
+				PageURL: pageURL, Root: prepared.Stellar.Root, Members: data.Stellar.NavigationMembers,
+			})
+		}
+		return output, nil
+	}
 	return e.render(name, data)
 }
 

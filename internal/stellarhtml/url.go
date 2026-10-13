@@ -15,6 +15,12 @@ var schemePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 var numericHost = regexp.MustCompile(`(?i)^(?:[0-9]+|0x[0-9a-f]*)$`)
 var urlIDNA = idna.New(idna.MapForLookup(), idna.Transitional(false), idna.StrictDomainName(false), idna.CheckHyphens(false), idna.CheckJoiners(true), idna.BidiRule(), idna.VerifyDNSLength(false))
 
+// ResolveHTTPResource 按浏览器 URL 规则规范化配置副本中的资源。
+// 这只负责 URL 语义，不授予网络抓取权限；抓取仍必须经过 safefetch。
+func ResolveHTTPResource(href, base string) (string, error) {
+	return resolveHTTPURL(href, base)
+}
+
 type httpURL struct {
 	scheme, authority, path, query, fragment string
 	hasQuery, hasFragment                    bool
