@@ -289,11 +289,22 @@ func (s *webServer) serveStellarSitemap(c *gin.Context) {
 	add := func(path, last string) {
 		loc := tmpl.JoinSiteURL(base, path)
 		if !seen[loc] {
-			doc.URLs = append(doc.URLs, sitemapURL{Loc: loc, LastMod: last, ChangeFreq: "weekly", Priority: "0.6"})
+			priority := "0.6"
+			if path == "/" {
+				priority = "1.0"
+			}
+			doc.URLs = append(doc.URLs, sitemapURL{Loc: loc, LastMod: last, ChangeFreq: "weekly", Priority: priority})
 			seen[loc] = true
 		}
 	}
 	add("/", "")
+	// 保留 Blog 的公开静态索引，分类路径沿用严格主题的实际配置。
+	for _, kind := range []string{"archives", "categories", "tags"} {
+		add(stellarTaxonomyPath(snap.input.Theme, kind), "")
+	}
+	for _, path := range []string{"/links", "/moments"} {
+		add(path, "")
+	}
 	for _, profile := range []string{"blogIndex", "wikiIndex", "topic", "notebooks"} {
 		add(stellarProfilePath(snap.input.Theme, profile), "")
 	}
