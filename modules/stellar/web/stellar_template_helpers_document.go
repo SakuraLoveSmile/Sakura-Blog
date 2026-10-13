@@ -13,6 +13,11 @@ import (
 //go:embed stellar_template_helpers_hero.json
 var stellarHeroResourcesJSON []byte
 
+var stellarContentImagePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)<img[^>]*data-src=["']([^"']+)["']`),
+	regexp.MustCompile(`(?i)<img[^>]*src=["']([^"']+)["']`),
+}
+
 var stellarHeroResources = func() map[string]any {
 	var value map[string]any
 	if err := json.Unmarshal(stellarHeroResourcesJSON, &value); err != nil {
@@ -128,7 +133,25 @@ func stellarHeadMeta(d *StellarRenderData) template.HTML {
 	og := stellarMap(seo["openGraph"])
 	if len(og) == 0 && stellarGet(d.Stellar.Theme, "openGraph.enabled") == true {
 		title := stellarFirst(stellarGet(d.Page, "Title"), d.Site.Title)
-		og = map[string]any{"title": title, "siteName": d.Site.Title, "twitterTitle": title, "args": map[string]any{"type": "website", "description": description, "url": stellarPublicPageURL(d), "language": d.Stellar.Language, "image": d.Site.Avatar}}
+		image := stellarText(stellarGet(d.Stellar.Data, "page.cover"))
+		if image == "" {
+			for _, pattern := range stellarContentImagePatterns {
+				if match := pattern.FindStringSubmatch(string(d.Content)); len(match) > 1 {
+					image = match[1]
+					break
+				}
+			}
+		}
+		args := map[string]any{"type": "website", "description": description, "url": stellarPublicPageURL(d), "language": d.Stellar.Language, "image": stellarFirst(image, d.Site.Avatar)}
+		if id := stellarGet(d.Stellar.Theme, "openGraph.twitterId"); stellarTruth(id) {
+			args["twitter_id"] = id
+		}
+		// 普通 Page 没有 collection render model，仍须采用官方 og_args 的显式覆盖。
+		// title/site_name 随后按上游 head.ejs 重写，空 image 等参数则原样保留。
+		for key, value := range stellarMap(stellarGet(d.Stellar.Data, "page.seo.openGraph")) {
+			args[key] = prepClone(value)
+		}
+		og = map[string]any{"title": title, "siteName": d.Site.Title, "twitterTitle": title, "args": args}
 	}
 	if len(og) > 0 {
 		args := prepCloneMap(stellarMap(og["args"]))
