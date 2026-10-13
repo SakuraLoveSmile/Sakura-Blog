@@ -210,3 +210,56 @@ func TestBlogServiceBoundaryAndConcurrentBuild(t *testing.T) {
 		t.Fatal("concurrent Build mutated shared config")
 	}
 }
+
+func TestMetadataSearchProviderSelection(t *testing.T) {
+	for _, provider := range []any{"local", "algolia", nil} {
+		for _, include := range []bool{true, false} {
+			for _, goSearch := range []bool{true, false} {
+				parsed, err := stellarv2.ParseTheme(map[string]any{"search": map[string]any{"provider": provider, "local": map[string]any{"include_content": include}}}, stellarv2.Options{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				bundle, err := Build(Input{Theme: parsed.Value, Blog: BlogConfig{GoSearch: goSearch}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				var stock, blog *Extension
+				for i := range bundle.Manifest.Extensions {
+					entry := &bundle.Manifest.Extensions[i]
+					if entry.ID == "search" {
+						stock = entry
+					}
+					if entry.ID == "blog-search" {
+						blog = entry
+					}
+				}
+				if goSearch {
+					if blog == nil || stock != nil {
+						t.Fatal("Go provider not exclusive")
+					}
+					continue
+				}
+				if provider == nil {
+					if stock != nil || blog != nil {
+						t.Fatal("null provider enabled")
+					}
+					continue
+				}
+				if stock == nil {
+					t.Fatal("missing provider")
+				}
+				expected := "/assets/js/runtime/extensions/search.js"
+				asset := at(stock.Config, "assets.provider")
+				if provider == "local" && !include {
+					expected = "/assets/js/runtime/extensions/blog-title-search.js"
+					if asset != "/assets/js/blog/search/title-search.js" {
+						t.Fatal("metadata provider asset missing")
+					}
+				}
+				if stock.Module != expected {
+					t.Fatal(provider, include, stock.Module)
+				}
+			}
+		}
+	}
+}

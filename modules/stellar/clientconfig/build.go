@@ -108,6 +108,11 @@ func Build(input Input) (Bundle, error) {
 				client = rewrite(res["js"])
 			}
 			add("search", "document", ".search-input", object{"provider": provider, "options": options, "assets": object{"client": client, "provider": rewrite(at(assets, "search.providers."+provider)), "shortcut": rewrite(at(assets, "search.shortcut"))}})
+			if provider == "local" && at(search, "local.includeContent") == false {
+				entry := &bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1]
+				entry.Module = "/assets/js/runtime/extensions/blog-title-search.js"
+				entry.Config["assets"].(object)["provider"] = "/assets/js/blog/search/title-search.js"
+			}
 		}
 	}
 	add("hero-parallax", "region", ".wiki-hero", object{})

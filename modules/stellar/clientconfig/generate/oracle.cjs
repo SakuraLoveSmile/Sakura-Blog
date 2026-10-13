@@ -30,9 +30,11 @@ function add(name,raw={},page={},collection={},profile='post'){
  const clientData=JSON.parse(clientAssets(hexo).js.data.match(/^window.stellarClientData=(.*);\nwindow.stellarIcons=/s)[1]);
  clientData.ctx.date_suffix=messages.dateSuffix;if(clientData.ctx.search)Object.assign(clientData.ctx.search,messages.search);clientData.canonical.param={permalink:input.PageURL,checklink:rewrite(clientData.ctx.services.video.js)};
  const expectedManifest=rewrite(manifest);for(const [id,module]of [['services','blog-upstream-services'],['page-controls','blog-page-controls'],['lazy-loading','blog-lazy-loading']])expectedManifest.extensions.find(e=>e.id===id).module='/assets/js/runtime/extensions/'+module+'.js';
+ if(theme.search.provider==='local'&&theme.search.local.includeContent===false){const entry=expectedManifest.extensions.find(e=>e.id==='search');entry.module='/assets/js/runtime/extensions/blog-title-search.js';entry.config.assets.provider='/assets/js/blog/search/title-search.js';}
  fixtures.push({name,input,manifest:expectedManifest,clientData:rewrite(clientData),comments:rewrite(comments)});
 }
 add('default');
+add('local-search-without-content',{search:{provider:'local',local:{include_content:false,cache_ttl_seconds:123}}});
 for(const scheme of ['auto','light','dark'])for(const preset of ['card','glass','minimal','flat'])add('appearance-'+scheme+'-'+preset,{appearance:{color_scheme:scheme,preset}});
 for(const flag of ['partial_navigation','color_scheme_switch','lightbox','link_prefetch','reveal','heti'])for(const enabled of [true,false])add('feature-'+flag+'-'+enabled,{features:{[flag]:{enabled}}});
 add('all-custom-assets',{search:{provider:'algolia',algolia:{js:'js/custom-algolia.js',appId:'app',apiKey:'key',indexName:'index',custom:{nested:42}}},features:{swiper:{js:'./js/swiper.js',css:'css/swiper.css'},lazy_loading:{js:null,transition:'blur'},lightbox:{enabled:true,js:'js/lightbox.js',css:'css/lightbox.css',selector:'aside:has(a[href])'},link_prefetch:{js:'js/prefetch.js'},heti:{enabled:true,js:'js/heti.js',css:'css/heti.css'},math:{provider:'mathjax',mathjax:{js:'js/math.js',tex:{macros:{x:'X'}}}},diagrams:{provider:'mermaid',mermaid:{js:'js/diagram.js',theme:'forest'}},card_hover:{spotlight:true,tilt:true}},services:{markdown:{js:'js/marked.js'},site_info:{site_info_api:{endpoint:'https://info.test?url={href}'}}}});
