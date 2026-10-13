@@ -374,7 +374,7 @@ func (s *webServer) serveStellarCollectionIndex(c *gin.Context, profile, tag str
 func (s *webServer) stellarCollectionIndexView(snap *stellarSnapshot, profile, tag string) (*tmpl.ViewData, error) {
 	routeProfile := map[string]string{"wiki": "wikiIndex", "topic": "topic", "notebook": "notebooks"}[profile]
 	title := map[string]string{"wiki": "文库", "topic": "专栏", "notebook": "笔记本"}[profile]
-	data := s.stellarAggregate(snap, routeProfile, title, stellarProfilePath(snap.input.Theme, routeProfile), map[string]string{"wiki": "wiki", "topic": "index_topic", "notebook": "notebooks"}[profile])
+	data := s.stellarAggregate(snap, routeProfile, title, stellarProfilePath(snap.input.Theme, routeProfile), map[string]string{"wiki": "index_wiki", "topic": "index_topic", "notebook": "notebooks"}[profile])
 	all := []stellarmodels.Object{}
 	for _, collection := range snap.collections {
 		if collection.profile != profile || collection.index["listed"] == false {

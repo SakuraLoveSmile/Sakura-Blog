@@ -120,11 +120,11 @@ func TestWikiDocFrontendChain(t *testing.T) {
 	if strings.Contains(body, `widget-wrapper post-card`) || strings.Contains(body, `class="item wiki"`) {
 		t.Errorf("wiki-related widget must not depend on legacy post-card/item markup: %s", body)
 	}
-	// 3) 路由安全：/wiki/tags/主题 仍走标签过滤页（handleWiki，Layout=wiki）
+	// 3) 路由安全：/wiki/tags/主题 仍走上游 index_wiki 标签过滤索引。
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/wiki/tags/%E4%B8%BB%E9%A2%98", nil))
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `data-page-layout="wiki"`) {
-		t.Fatalf("/wiki/tags/主题 = %d, want 200 wiki list", w.Code)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `data-page-layout="index_wiki"`) || !strings.Contains(w.Body.String(), `data-page-type="index"`) {
+		t.Fatalf("/wiki/tags/主题 = %d, want 200 index_wiki list", w.Code)
 	}
 	// 4) project=tags 文档路由防御 → 404
 	w = httptest.NewRecorder()
