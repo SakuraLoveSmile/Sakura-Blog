@@ -6,6 +6,7 @@ import (
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -39,6 +40,45 @@ func TestOfficialLibFFIScalarRoundTrip(t *testing.T) {
 	}
 	if stdout.String() != "ffi scalar round-trip ok\n" {
 		t.Fatal(stdout.String())
+	}
+}
+
+func TestOfficialGLibPlatformAndGObject(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	r := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfig().WithCloseOnContextDone(true))
+	defer r.Close(ctx)
+	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	if err := Install(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile("testdata/glib.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = ExportScalarFunctions(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var output bytes.Buffer
+	module, err := r.InstantiateWithConfig(ctx, data, wazero.NewModuleConfig().WithStdout(&output).WithStderr(&output))
+	if module != nil {
+		defer module.Close(ctx)
+	}
+	if err != nil {
+		t.Fatalf("%v\n%s", err, output.String())
+	}
+	if output.String() != "glib platform gobject ffi and gio streams ok\n" {
+		t.Fatal(output.String())
+	}
+	invalid := module.ExportedFunction("test_invalid_type_init")
+	if invalid == nil {
+		t.Fatal("missing invalid callback fixture")
+	}
+	if _, err = invalid.Call(ctx); err == nil || !strings.Contains(err.Error(), "type initializer must return void") {
+		t.Fatalf("invalid initializer accepted: %v", err)
 	}
 }
 

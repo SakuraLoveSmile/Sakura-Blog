@@ -12,8 +12,27 @@ const functionPrefix = "__stellar_ffi_"
 
 // Install 注册显式宿主导入；只可调用模块自身的固定导出，不访问宿主指针。
 func Install(ctx context.Context, r wazero.Runtime) error {
-	_, err := r.NewHostModuleBuilder("stellar_ffi").NewFunctionBuilder().WithGoModuleFunction(api.GoModuleFunc(call), []api.ValueType{api.ValueTypeI32, api.ValueTypeI32, api.ValueTypeI32, api.ValueTypeI32}, nil).Export("call").Instantiate(ctx)
+	_, err := r.NewHostModuleBuilder("stellar_ffi").
+		NewFunctionBuilder().WithGoModuleFunction(api.GoModuleFunc(call), []api.ValueType{api.ValueTypeI32, api.ValueTypeI32, api.ValueTypeI32, api.ValueTypeI32}, nil).Export("call").
+		NewFunctionBuilder().WithGoModuleFunction(api.GoModuleFunc(typeInit), []api.ValueType{api.ValueTypeI32, api.ValueTypeI32, api.ValueTypeI32}, nil).Export("type_init").Instantiate(ctx)
 	return err
+}
+
+// typeInit 保留 GLib 类型初始化的原生 C 约定：初始化函数可忽略第二个数据参数。
+// 仅接受一个或两个 i32 参数且无返回值的模块内固定函数，不改通用 CIF 校验。
+func typeInit(ctx context.Context, module api.Module, stack []uint64) {
+	fn := module.ExportedFunction(fmt.Sprintf("%s%d", functionPrefix, uint32(stack[0])))
+	require(fn != nil, "type initializer is not a fixed module function")
+	definition := fn.Definition()
+	params := definition.ParamTypes()
+	require(len(params) == 1 || len(params) == 2, "type initializer argument count mismatch")
+	require(len(definition.ResultTypes()) == 0, "type initializer must return void")
+	for _, param := range params {
+		require(param == api.ValueTypeI32, "type initializer requires pointer arguments")
+	}
+	if _, err := fn.Call(ctx, stack[1:1+len(params)]...); err != nil {
+		panic(fmt.Sprintf("stellar ffi: type initializer failed: %v", err))
+	}
 }
 func require(ok bool, message string) {
 	if !ok {

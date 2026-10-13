@@ -35,12 +35,32 @@ $SDK/bin/clang -O2 -I$FFI/include internal/stellarimages/native/ffi-fixture.c \
 go test -race ./internal/stellarimages/wasmffi
 ```
 
-## GLib 当前实际阻塞
+## GLib/GObject/GIO 实际运行
 
-原生 WASI 不提供 GIO 所需 `resolv.h/res_query/socket`。隔离原型提供 **拒绝网络、返回 ENOSYS** 的声明／实现，没有把网络调用伪装成成功；SVG 解码器的网络本就应封闭，顶层抓取由 Go safefetch 完成。该适配只在开发缓存，尚未提交为生产端口。
+原版 GLib2.86.1、GObject 与 GIO 的同步内存流／转换器现已构建为 WASI，真实 Wazero 测试通过，不访问宿主文件系统。`wasi/build-glib.py` 从 SHA256 锁定的 GLib／PCRE2／libffi 原源码重建；`wasi/glib-wasi.patch` 保存平台差异。全新 `/tmp/stellar-glib-rebuild` 构建与 `--check` 字节比较通过。
 
-`glib-build-network-denied` 的 Meson 配置已真实通过。`ninja -k 0` 已完成可编译对象，但不能生成三个完整库；完整失败日志：`/tmp/stellar-svg-wasi-58ecec7/glib-platform-errors.log`。
+实际断言覆盖正则、GObject 对象创建／信号 libffi 双精度回调、gzip 转换内存流／UTF-8 读取、虚拟账号、UTC 时区、进程／网络拒绝、无法创建线程和取消状态。WASI 的单实例非共享内存使用官方 GLib 互斥版原子操作及 SDK 单线程 pthread 语义；不能创建 worker，`g_thread_try_new` 返回真实错误。
 
-仍缺的平台边界包括：`sys/wait.h`、`pwd.h`、`netdb.h`；pipe/fork/exec/wait、getuid/getppid、tzset、pthread_exit、CPU affinity 宏。涉及 gbacktrace/gspawn、gutils/gdate/gthread、GIO 网络及 Unix 私有头。不能只加空成功 stub 让配置变绿。下一步应对每个边界实现有明确能力约束的 WASI 端口：无宿主进程／账户／网络访问；只有渲染所需的内存流、虚拟字体文件系统、单实例线程语义可接入；随后验证官方 GLib/GObject/GIO 实际程序，继续 Cairo/Pango/librsvg 和严格 SVG oracle。
+GLib 原生 C 类型初始化允许单参数函数忽略第二个数据参数，WASM 则严格检查签名。类型初始化新增独立桥，仅接受一个／两个 i32 参数且无返回值的固定模块函数，通用 libffi CIF 检查仍严格。链表 `free_full` 使用原始单参数析构器而不强转成双参数遍历函数。非法返回签名有拒绝测试。
 
-原版渲染路线已获父任务确认；不新增 Sharp/NAPI/Node 生产依赖、不改数值容差、不修改冻结 Go 接口。
+`wasi/platform.c` 对 fork／exec／pipe／wait／socket／DNS 返回 ENOSYS；不存在宿主账户或进程，固定虚拟账号为 stellar／1000，时区固定 UTC。pthread_exit 终止错误调用的实例。Expat 使用 WASI getentropy 获取 XML hash 熵源；原生 codec 致命错误终止隔离实例，不能把 longjmp 变成成功继续。
+
+GIO 目前仅构建已验证的同步内存流、转换器、属性和任务基础。未编入 Unix 桌面、DBus、网络及可写磁盘 backend；**还没有完成 librsvg 所需 GFile／资源接入或 GMainContext 的受限唤醒实现**。不能宣称完整 GIO 等效。
+
+重建命令：
+
+```sh
+python3 internal/stellarimages/native/wasi/build-glib.py \
+  --cache /tmp/stellar-glib-rebuild \
+  --wasi-sdk .tmp/image-native-build/wasi-sdk-29.0-arm64-macos \
+  --archives .tmp/image-native-build/official-svg \
+  --raster-cache .tmp/image-native-build \
+  --meson .tmp/image-native-build/svg-venv/bin/meson [--check]
+go test -race ./internal/stellarimages/wasmffi
+```
+
+## 图形链仍在实现
+
+开发现场 `/tmp/stellar-svg-wasi-58ecec7` 已构建 pixman0.46.4、FriBidi1.0.16、FreeType2.14.1、libpng1.6.50、Expat2.7.3、Fontconfig2.17.1 静态 archives；这仅是编译证据，还未作为最终渲染链运行。Cairo1.18.4 与 Harfbuzz12.1.0 在编译中，Pango1.57.0／librsvg2.61.2 尚未完成。后续真实符号、文件／字体和回调问题必须继续实现和验证。
+
+SVG 生产仍为过渡 resvg，complex.svg Sharp 黄金精确对照保持失败；本阶段没有替换运行态，也未更改数值容差、黄金夹具或冻结 Go 接口。原版渲染路线已获父任务确认；不新增 Sharp/NAPI/Node 生产依赖。
