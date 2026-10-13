@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"blog/internal/settings"
+	"blog/internal/stellarhtml"
+	"blog/internal/stellarimages"
 	"blog/internal/stellarmodels"
 )
 
@@ -123,5 +125,43 @@ func TestStellarBlogMomentsLocalesGalleryAndNewPaginator(t *testing.T) {
 	}
 	if prepared.Stellar.PageType != "content" {
 		t.Fatal("moments must be content")
+	}
+}
+
+func TestStellarBlogMomentAvatarKeepsCompactDimensionsAfterImageEnrichment(t *testing.T) {
+	for _, dimensions := range []stellarimages.Dimensions{
+		{Status: "ready", Width: 512, Height: 512},
+		{Status: "ready", Width: 1024, Height: 256},
+	} {
+		d := stellarTemplateFixture(t)
+		d.Stellar.Layout = "moments"
+		d.Site.Avatar = "/avatar.png"
+		d.Site.Title, d.Site.LogoTitle = "Stellar 2.0 验收站", ""
+		d.Moments = []*settings.MomentItem{{ID: 7, ContentHTML: template.HTML("<p>Public moment</p>"), Date: "2026-10-13", TimeAgo: "12小时前"}}
+		out, err := stellarhtml.ProcessSite(renderBlogFixture(t, d), stellarhtml.Context{
+			SiteURL: "https://site.test/", IconData: func(string) string { return "/fallback.svg" },
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err = stellarimages.Enrich(out, "https://site.test/moments/", stellarimages.Store{Version: 1, Images: map[string]stellarimages.Entry{
+			"https://site.test/avatar.png": {Dimensions: &dimensions},
+		}}, stellarimages.EnrichOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		start := strings.Index(out, `<div class="user-info">`)
+		if start < 0 {
+			t.Fatal("missing moment author header")
+		}
+		header := strings.SplitN(out[start:], `</div>`, 2)[0]
+		for _, fragment := range []string{`width="16"`, `height="16"`, `src="/avatar.png"`, `no-lazy`, `Stellar 2.0 验收站`} {
+			if !strings.Contains(header, fragment) {
+				t.Fatalf("avatar must remain compact after %dx%d metadata: missing %s in %s", dimensions.Width, dimensions.Height, fragment, header)
+			}
+		}
+		if strings.Contains(header, "data-src") || strings.Contains(header, "data-stellar-image-dimensions") {
+			t.Fatalf("moment avatar unexpectedly became a lazy or intrinsic-size image: %s", header)
+		}
 	}
 }

@@ -218,7 +218,8 @@ func (r stellarTemplateRenderer) blogMoments(d *StellarRenderData) template.HTML
 		if moment == nil {
 			continue
 		}
-		fmt.Fprintf(&b, `<div class="timenode"><div class="header"><div class="user-info"><img src="%s" alt=""><span>%s</span></div><span title="%s">%s</span></div><div class="body">%s`, stellarEscape(stellarURL(d.Stellar.Root, d.Site.Avatar)), stellarEscape(stellarFirst(d.Site.LogoTitle, d.Site.Title)), stellarEscape(moment.Date), stellarEscape(moment.TimeAgo), moment.ContentHTML)
+		// 与品牌头像一致即时加载；显式尺寸避免缓存元数据将原图宽度写入紧凑 header。
+		fmt.Fprintf(&b, `<div class="timenode"><div class="header"><div class="user-info"><img no-lazy width="16" height="16" src="%s" alt=""><span>%s</span></div><span title="%s">%s</span></div><div class="body">%s`, stellarEscape(stellarURL(d.Stellar.Root, d.Site.Avatar)), stellarEscape(stellarFirst(d.Site.LogoTitle, d.Site.Title)), stellarEscape(moment.Date), stellarEscape(moment.TimeAgo), moment.ContentHTML)
 		if len(moment.Images) > 0 {
 			fmt.Fprintf(&b, `<div class="tag-plugin gallery grid-box" size="%s" ratio="%s">`, moment.GridSize(), moment.GridRatio())
 			for _, image := range moment.Images {
