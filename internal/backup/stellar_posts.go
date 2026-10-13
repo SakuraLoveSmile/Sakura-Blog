@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/maintenance"
 	"blog/internal/post"
 	"blog/internal/stellarv2"
@@ -110,7 +111,7 @@ func BuildStellarPost(st *store.Store, renderer *post.Service, slug string, sour
 		renderer = post.NewService("")
 	}
 	publicData, _ := configuration.Blog["data"].(map[string]any)
-	p.ContentHTML, err = renderer.RenderStellarV2WithContext(document.Body, post.StellarRenderContext{Theme: configuration.Theme, Data: publicData, Page: document.Page, Language: "zh-CN", BlogExtensions: true})
+	p.ContentHTML, err = renderer.RenderStellarV2WithContext(document.Body, post.StellarRenderContext{Theme: configuration.Theme, Data: publicData, Page: document.Page, Language: content.ResolveStellarLanguage(document.Page, configuration.Blog), BlogExtensions: true})
 	return p, err
 }
 

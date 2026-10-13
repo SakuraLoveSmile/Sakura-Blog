@@ -8,9 +8,59 @@ import (
 	"strings"
 	"testing"
 
+	"blog/internal/config"
 	"blog/internal/stellarv2"
 	"blog/internal/store"
 )
+
+func TestStellarMarkdownAndZipImportsUseCanonicalLanguage(t *testing.T) {
+	svc, st, _ := newStellarContentFixture(t)
+	if err := st.CreateUser(&store.User{Username: "admin", Role: store.RoleAdmin, PasswordHash: "x", AuthSecret: "test"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.SaveStellarV2(st, map[string]any{}, map[string]any{"site": map[string]any{"language": []any{"", "en"}}}); err != nil {
+		t.Fatal(err)
+	}
+	body := "{% mbti INTJ-T 93-72-78-83-51 %}"
+	hostSource := []byte("---\ntitle: Host\n---\n" + body)
+	pageSource := []byte(";;;\n{\"title\":\"Page\",\"lang\":[\"\",\"zh-TW\"]}\n;;;\n" + body)
+	for _, test := range []struct {
+		slug, want string
+		source     []byte
+	}{
+		{"builder-host", "Architect", hostSource},
+		{"builder-page", "架構師", pageSource},
+	} {
+		p, err := BuildStellarPost(st, svc.posts, test.slug, test.source)
+		if err != nil || !strings.Contains(p.ContentHTML, test.want) {
+			t.Fatalf("builder %s language lost: %v", test.slug, err)
+		}
+	}
+	if _, err := svc.Import("page.md", pageSource); err != nil {
+		t.Fatal(err)
+	}
+	var packed bytes.Buffer
+	zw := zip.NewWriter(&packed)
+	member, err := zw.Create("host.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := member.Write(hostSource); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Import("posts.zip", packed.Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	for slug, want := range map[string]string{"page": "架構師", "host": "Architect"} {
+		p, err := st.GetBySlug(slug)
+		if err != nil || p == nil || !strings.Contains(p.ContentHTML, want) {
+			t.Fatalf("import %s language lost: %v", slug, err)
+		}
+	}
+}
 
 func TestStellarPlainMarkdownImportStrictAtomicAndDraftMirror(t *testing.T) {
 	svc, st, _ := newStellarContentFixture(t)
