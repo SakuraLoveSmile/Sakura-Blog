@@ -1,8 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 
@@ -116,5 +118,62 @@ func TestMomentsRouteFollowsManifestGate(t *testing.T) {
 	}
 	if got := request().Code; got != http.StatusForbidden {
 		t.Fatalf("disabled moments status = %d, want 403", got)
+	}
+}
+
+func TestRuntimeCoreManifestExposesExistingContentAndAppearanceEntries(t *testing.T) {
+	r, st, admin, h := newFullStellarEnv(t)
+	if err := st.EnsureModuleStatesTable(); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := module.NewManager(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.modules = manager
+	alice, _ := st.GetUserByUsername("alice")
+	for _, user := range []*store.User{admin, alice} {
+		w := do2FA(r, http.MethodGet, "/api/v1/modules", "", authCookie(user))
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s manifest: %d %s", user.Username, w.Code, w.Body.String())
+		}
+		var response ModuleListResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		var core *module.ManifestItem
+		for i := range response.Items {
+			if response.Items[i].ID == "core" {
+				core = &response.Items[i]
+				break
+			}
+		}
+		if core == nil || !core.Enabled || !core.Locked {
+			t.Fatal("runtime core must remain enabled and locked")
+		}
+		paths := make([]string, 0, len(core.Nav))
+		byPath := map[string]module.Nav{}
+		for _, item := range core.Nav {
+			paths = append(paths, item.Path)
+			byPath[item.Path] = item
+		}
+		for _, expected := range []module.Nav{
+			{Path: "/notebooks", Label: "笔记本", Icon: "ri:book-2-line", Group: "内容"},
+			{Path: "/authors", Label: "作者", Icon: "ri:user-star-line", Group: "内容", Permissions: []string{store.PermissionSystemManage}},
+			{Path: "/menus", Label: "菜单", Icon: "ri:menu-line", Group: "外观", Permissions: []string{store.PermissionSystemManage}},
+		} {
+			got, ok := byPath[expected.Path]
+			if !ok {
+				t.Fatalf("runtime manifest is missing %s", expected.Path)
+			}
+			if got.Label != expected.Label || got.Icon != expected.Icon || got.Group != expected.Group || !slices.Equal(got.Permissions, expected.Permissions) {
+				t.Fatalf("%s differs from existing frontend contract: %+v", expected.Path, got)
+			}
+		}
+		for _, order := range [][3]string{{"/topics", "/notebooks", "/pages"}, {"/attachments", "/authors", "/appearance"}, {"/appearance", "/menus", "/taxonomy"}} {
+			if slices.Index(paths, order[1]) != slices.Index(paths, order[0])+1 || slices.Index(paths, order[2]) != slices.Index(paths, order[1])+1 {
+				t.Fatalf("menu order changed: %v", paths)
+			}
+		}
 	}
 }
