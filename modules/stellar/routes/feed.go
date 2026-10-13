@@ -43,10 +43,6 @@ func (h *FeedHandler) Register(r *gin.Engine) {
 	r.GET("/robots.txt", h.robots)
 }
 
-func (h *FeedHandler) baseURL(c *gin.Context) string {
-	return canonicalBaseURL(h.site.Load(), c)
-}
-
 // atom GET /atom.xml — Atom 1.0 全站订阅，最新 20 篇 published 全文。
 func (h *FeedHandler) atom(c *gin.Context)        { h.stellarWeb().serveStellarFeed(c, "atom", "", "") }
 func (h *FeedHandler) jsonFeed(c *gin.Context)    { h.stellarWeb().serveStellarFeed(c, "json", "", "") }
@@ -63,7 +59,8 @@ func (h *FeedHandler) stellarWeb() *webServer {
 
 // robots GET /robots.txt
 func (h *FeedHandler) robots(c *gin.Context) {
-	base := h.baseURL(c)
+	site := h.site.Load()
+	base := canonicalBaseURL(site, c)
 	lines := []string{
 		"User-agent: *",
 		"Allow: /",
@@ -71,7 +68,7 @@ func (h *FeedHandler) robots(c *gin.Context) {
 		"Sitemap: " + tmpl.JoinSiteURL(base, "/sitemap.xml"),
 	}
 	// Spec 42：站点级 SEO 配置的 robots 附加规则，多行原样追加（热更新：h.site.Load() 指针字段即最新值）
-	if extra := strings.TrimSpace(h.site.Load().SEO.RobotsExtra); extra != "" {
+	if extra := strings.TrimSpace(site.SEO.RobotsExtra); extra != "" {
 		lines = append(lines, "", extra)
 	}
 	lines = append(lines, "")

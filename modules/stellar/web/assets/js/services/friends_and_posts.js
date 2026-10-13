@@ -9,6 +9,8 @@ document.currentScript.stellarMount = function (root, context) {
         continue;
       }
       const default_avatar = def.avatar;
+      // 宿主友链页开关由本请求的 SSR 快照提供；省略时沿用官方展示。
+      const showPosts = el.dataset.showPosts !== 'false';
       // layout
       utils.request(el, api, async resp => {
         const data = await resp.json();
@@ -43,6 +45,7 @@ document.currentScript.stellarMount = function (root, context) {
             cell += `<div class="desc">#${item.issue_number}</div>`;
           }
           cell += `<div class="posts">`;
+          if (showPosts) {
           if (item.posts?.length > 0) {
             for (let post of item.posts) {
               cell += `<a class="post-link" target="_blank" rel="external nofollow noopener noreferrer" href="${post.link}">`;
@@ -52,6 +55,7 @@ document.currentScript.stellarMount = function (root, context) {
             }
           } else {
             cell += `<span class="no-post">${item.feed?.length > 0 ? 'RSS 解析失败' : '未设置 RSS 链接'}</span>`;
+          }
           }
           cell += `</div>`;
           cell += `</div>`;

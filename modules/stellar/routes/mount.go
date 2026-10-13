@@ -29,23 +29,24 @@ import (
 // Dependencies contains the shared services required by the Stellar SSR module.
 // It deliberately contains no Console implementation details.
 type Dependencies struct {
-	App       *config.App
-	Site      *atomic.Pointer[tmpl.Site]
-	Store     *store.Store
-	Posts     *post.Service
-	Engine    *stellarweb.Engine
-	Icons     *tmpl.IconRegistry
-	OGGen     *og.Generator
-	Search    *search.Index
-	DevMode   bool
-	Root      string
-	UploadDir string
-	NotesPath string
-	Comments  *comments.Handler
-	Friends   *friends.Aggregator
-	GH        *ghpkg.Client
-	Modules   *module.Manager
-	Events    content.Events
+	AppVersion string
+	App        *config.App
+	Site       *atomic.Pointer[tmpl.Site]
+	Store      *store.Store
+	Posts      *post.Service
+	Engine     *stellarweb.Engine
+	Icons      *tmpl.IconRegistry
+	OGGen      *og.Generator
+	Search     *search.Index
+	DevMode    bool
+	Root       string
+	UploadDir  string
+	NotesPath  string
+	Comments   *comments.Handler
+	Friends    *friends.Aggregator
+	GH         *ghpkg.Client
+	Modules    *module.Manager
+	Events     content.Events
 }
 
 // Server owns the Stellar route state and its derived caches.

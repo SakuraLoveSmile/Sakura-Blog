@@ -28,6 +28,7 @@ type stellarRecord struct {
 	page                                                stellarmodels.Object
 	input                                               stellarmodels.Input
 	model                                               stellarmodels.PageModel
+	blogDefaults                                        stellarmodels.Object
 	post                                                *store.Post
 	pageRow                                             *store.Page
 	doc                                                 *store.WikiDoc
@@ -239,6 +240,9 @@ func (s *webServer) stellarSnapshotAt(ctx context.Context, site *tmpl.Site, incl
 			}
 		}
 		rec.config = stellarv2.ValidatePageProfile(resolved.Config, rec.source, rec.profile).Value
+		if rec.pageRow != nil && rec.pageRow.Slug == FriendsSlug && rec.profile == "page" {
+			rec.config, rec.blogDefaults = stellarFriendsDefaults(site, rec.config, stellarRecordBlog(rec))
+		}
 		if rec.profile != "post" && rec.profile != "page" {
 			collection := snap.byCollection[rec.profile+":"+rec.collectionID]
 			if collection == nil {
@@ -508,6 +512,9 @@ func (s *webServer) stellarBody(snap *stellarSnapshot, r *stellarRecord) (string
 		return "", fmt.Errorf("stellar renderer unavailable")
 	}
 	data := stellarmodels.Object{"siteURL": tmpl.NormalizeSiteURL(snap.site.URL), "links": stellarObject(snap.site.StellarV2.Blog["data"])["links"]}
+	if r.pageRow != nil && r.pageRow.Slug == FriendsSlug && r.profile == "page" {
+		data["friendsShowPosts"] = snap.site.Pages.Friends.ShowPostsOn()
+	}
 	icons := map[string]any{}
 	if s.icons != nil {
 		for _, key := range s.icons.Keys() {
@@ -1007,7 +1014,14 @@ func stellarRecordBlogRaw(r *stellarRecord) string {
 	return raw
 }
 func stellarRecordBlog(r *stellarRecord) stellarmodels.Object {
-	return stellarPublishedBlog(stellarRecordBlogRaw(r))
+	blog := stellarPublishedBlog(stellarRecordBlogRaw(r))
+	content := stellarObject(blog["content"])
+	for key, value := range r.blogDefaults {
+		if _, exists := content[key]; !exists {
+			content[key] = value
+		}
+	}
+	return blog
 }
 func stellarRecordAuthors(snap *stellarSnapshot, r *stellarRecord) []tmpl.AuthorLink {
 	ids := stellarTerms(stellarGet(stellarRecordBlog(r), "content.authors"))

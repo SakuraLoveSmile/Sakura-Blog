@@ -132,6 +132,18 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 		profile = declared
 	}
 	config = stellarv2.ValidatePageProfile(config, source, profile).Value
+	blog := stellarPublishedBlog(input.BlogExtensions)
+	if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
+		var defaults stellarmodels.Object
+		config, defaults = stellarFriendsDefaults(site, config, blog)
+		for key, value := range defaults {
+			stellarObject(blog["content"])[key] = value
+		}
+		input.HTML, err = stellarFriendsPreviewHTML(input.HTML, site.Pages.Friends.ShowPostsOn())
+		if err != nil {
+			return "", err
+		}
+	}
 	in := snap.input
 	in.Source = source
 	in.FrontMatter = config
@@ -183,7 +195,7 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 	data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
 	data.Stellar.Input.RuntimeData["nativeComments"] = stellarmodels.Object{"enabled": false}
 	data.Stellar.Input.RuntimeData["preview"] = true
-	data.Stellar.Input.RuntimeData["recordBlog"] = stellarPublishedBlog(input.BlogExtensions)
+	data.Stellar.Input.RuntimeData["recordBlog"] = blog
 	if input.WidgetConfig != "" {
 		page := stellarCopyObject(data.Stellar.Input.Page)
 		page["content"] = ""

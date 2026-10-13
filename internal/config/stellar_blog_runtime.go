@@ -15,8 +15,22 @@ import (
 type StellarBlogRuntime struct {
 	Comments settings.CommentsConfig
 	Friends  settings.FriendsConfig
+	Pages    settings.PagesConfig
+	SEO      settings.SEOConfig
 	Authors  map[string]settings.AuthorDef
 	AI       AIConfig
+}
+
+// 上游已有的 canonical、Open Graph 与 preconnect 留在严格主题字段中。
+// 此处只接宿主专属的元信息默认值、站长验证和 robots.txt 规则。
+type stellarBlogSEO struct {
+	DefaultDescription string `json:"default_description"`
+	DefaultKeywords    string `json:"default_keywords"`
+	RobotsExtra        string `json:"robots_extra"`
+	NoIndex            bool   `json:"no_index"`
+	GoogleVerification string `json:"google_verification"`
+	BingVerification   string `json:"bing_verification"`
+	BaiduVerification  string `json:"baidu_verification"`
 }
 
 type stellarBlogAI struct {
@@ -72,6 +86,20 @@ func ParseStellarBlogRuntime(blog map[string]any) (StellarBlogRuntime, error) {
 			return runtime, err
 		}
 	}
+	if value, exists := blog["pages"]; exists {
+		if err := decode(value, "pages", &runtime.Pages); err != nil {
+			return runtime, err
+		}
+	}
+	var seo stellarBlogSEO
+	if value, exists := blog["seo"]; exists {
+		if err := decode(value, "seo", &seo); err != nil {
+			return runtime, err
+		}
+	}
+	runtime.SEO = settings.SEOConfig{DefaultDescription: seo.DefaultDescription, DefaultKeywords: seo.DefaultKeywords,
+		RobotsExtra: seo.RobotsExtra, NoIndex: seo.NoIndex, GoogleVerification: seo.GoogleVerification,
+		BingVerification: seo.BingVerification, BaiduVerification: seo.BaiduVerification}
 	if value, exists := blog["data"]; exists {
 		data, ok := value.(map[string]any)
 		if !ok {
@@ -156,6 +184,7 @@ func ApplyStellarBlogRuntime(site *settings.Site) error {
 		return err
 	}
 	site.Comments, site.Friends, site.Authors = runtime.Comments, runtime.Friends, runtime.Authors
+	site.Pages, site.SEO = runtime.Pages, runtime.SEO
 	return nil
 }
 

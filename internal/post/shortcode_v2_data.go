@@ -70,7 +70,13 @@ func (r *shortcodeV2Renderer) collection(name string, a map[string]string) strin
 		grid = `<div class="tag-plugin gallery grid-box" layout="grid" aspect_ratio="` + ratio + `"` + v2Attr("size", size) + `>`
 	}
 	if api != "" {
-		b.WriteString(`<div class="data-service ds-` + service + `"` + v2Attr("data-api", api) + `>` + grid + `</div></div>`)
+		hostAttrs := ""
+		if service == "friends_and_posts" {
+			if show, exists := r.data["friendsShowPosts"].(bool); exists {
+				hostAttrs = v2Attr("data-show-posts", fmt.Sprint(show))
+			}
+		}
+		b.WriteString(`<div class="data-service ds-` + service + `"` + v2Attr("data-api", api) + hostAttrs + `>` + grid + `</div></div>`)
 	} else if a["group"] != "" {
 		b.WriteString(grid)
 		links := v2Object(r.data["links"])
