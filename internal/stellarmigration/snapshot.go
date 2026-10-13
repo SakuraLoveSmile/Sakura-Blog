@@ -16,12 +16,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
 
 type Row map[string]any
 type Table struct {
+	Kind    string   `json:"object_type"`
 	Schema  string   `json:"schema"`
 	Columns []string `json:"columns"`
 	Rows    []Row    `json:"rows"`
@@ -31,6 +33,7 @@ type Table struct {
 // concurrent changes to ownership, drafts, comments and otherwise untouched data.
 // Snapshot and Candidate are private artifacts: they can contain credentials.
 type Snapshot struct {
+	FormatVersion  int                        `json:"snapshot_format_version"`
 	Tables         map[string]Table           `json:"tables"`
 	Files          map[string]string          `json:"files"`
 	Digest         string                     `json:"digest"`
@@ -64,18 +67,18 @@ func ReadSnapshot(ctx context.Context, path string, files map[string]string) (Sn
 	if err = tx.QueryRowContext(ctx, "PRAGMA query_only").Scan(&queryOnly); err != nil || queryOnly != 1 {
 		return Snapshot{}, fmt.Errorf("snapshot requires SQLite query_only=1")
 	}
-	names, err := tx.QueryContext(ctx, "SELECT name,coalesce(sql,'') FROM sqlite_master WHERE type='table' ORDER BY name")
+	names, err := tx.QueryContext(ctx, "SELECT name,coalesce(sql,''),coalesce((SELECT type FROM pragma_table_list WHERE schema='main' AND name=m.name),'') FROM sqlite_master m WHERE m.type='table' ORDER BY m.name")
 	if err != nil {
 		return Snapshot{}, err
 	}
-	s := Snapshot{Tables: map[string]Table{}, Files: map[string]string{}}
+	s := Snapshot{FormatVersion: SnapshotFormatVersion, Tables: map[string]Table{}, Files: map[string]string{}}
 	for names.Next() {
-		var name, ddl string
-		if err = names.Scan(&name, &ddl); err != nil {
+		var name, ddl, kind string
+		if err = names.Scan(&name, &ddl, &kind); err != nil {
 			names.Close()
 			return Snapshot{}, err
 		}
-		s.Tables[name] = Table{Schema: ddl}
+		s.Tables[name] = Table{Schema: ddl, Kind: kind}
 	}
 	if err = names.Err(); err != nil {
 		names.Close()
@@ -107,12 +110,17 @@ func ReadSnapshot(ctx context.Context, path string, files map[string]string) (Sn
 			r := Row{}
 			for i, v := range values {
 				switch x := v.(type) {
+				case string:
+					if !utf8.ValidString(x) {
+						rows.Close()
+						return Snapshot{}, fmt.Errorf("source SQLite TEXT cannot be represented losslessly")
+					}
 				case int64:
 					v = json.Number(fmt.Sprint(x))
 				case float64:
 					v = json.Number(fmt.Sprint(x))
 				case []byte:
-					v = string(x)
+					v = newBlobValue(x)
 				}
 				r[t.Columns[i]] = v
 			}
@@ -127,6 +135,9 @@ func ReadSnapshot(ctx context.Context, path string, files map[string]string) (Sn
 		s.Tables[name] = t
 	}
 	for path, content := range files {
+		if !utf8.ValidString(content) {
+			return Snapshot{}, fmt.Errorf("source tracked document cannot be represented losslessly")
+		}
 		s.Files[path] = content
 	}
 	st, err := store.OpenExisting(abs, true)
@@ -158,10 +169,11 @@ func ReadSnapshot(ctx context.Context, path string, files map[string]string) (Sn
 func quoteIdentifier(s string) string { return `"` + strings.ReplaceAll(s, `"`, `""`) + `"` }
 func (s Snapshot) SourceDigest() string {
 	return digest(struct {
+		FormatVersion  int
 		Tables         map[string]Table
 		Files          map[string]string
 		NotebookSchema store.LegacyNotebookSchema
-	}{s.Tables, s.Files, s.NotebookSchema})
+	}{s.FormatVersion, s.Tables, s.Files, s.NotebookSchema})
 }
 func (s Snapshot) Verify() error {
 	if s.Digest == "" || s.Digest != s.SourceDigest() {
