@@ -25,7 +25,7 @@
 
 ## 验证与再生成
 
-`testdata/official-oracle.json.gz` 的预期值由锁定官方 Node 函数生成，包含源文件 SHA-256，Go 测试不执行 Node。当前 780 条完整 JSON 差分覆盖四 profile、配色、默认与覆盖、null/false/空列表、日期、SEO、Hero/terminal、评论、分享、AI、发现/快照/分页、英文/中文/重音/标点层级标签及异常归属/品牌配置。额外并发测试验证独立输入输出和 race。`comments-defaults.json/model-fields.json` 由同一生成器提取官方默认值/字段，避免手写第二套白名单。
+`testdata/official-oracle.json.gz` 的预期值由锁定官方 Node 函数生成，包含源文件 SHA-256，Go 测试不执行 Node。当前 780 条完整 JSON 差分覆盖四 profile、配色、默认与覆盖、null/false/空列表、日期、SEO、Hero/terminal、评论、分享、AI、发现/快照/分页、英文/中文/重音/标点层级标签及异常归属/品牌配置。同一组样例分别通过默认 float64 解码与真实 Settings/Front Matter 链使用的 UseNumber 解码，共 1,560 次对照。隔离 SQLite 保存、关闭重开、加载配置及 ParseStellarDocument 导入的交叉测试证明自定义摘要/相关文章数量、日期、优先级和开放参数袋大整数的链路；只在运算/字符串强制转换时使用 JS double，原始配置仍保留 json.Number。额外并发测试验证独立输入输出和 race。`comments-defaults.json/model-fields.json` 由同一生成器提取官方默认值/字段，避免手写第二套白名单。
 
 开发再生成只在临时开发依赖目录需要 Node 22+、hexo-util 4、js-yaml 4、cheerio 1.1；不要改生产依赖或 tracked JS 锁文件：
 

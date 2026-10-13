@@ -1,6 +1,9 @@
 package stellarmodels
 
-import "sort"
+import (
+	"encoding/json"
+	"sort"
+)
 
 // PageModelInput 对应官方集合流水线的快照边界。Page 只能包含公开宿主数据；
 // config 必须先经过严格 Schema、profile 校验与归属解析。保留日期供模型归一化，
@@ -56,7 +59,7 @@ func plainDate(v any) any {
 		return nil
 	}
 	switch v.(type) {
-	case string, float64, int, int64:
+	case string, float64, int, int64, json.Number:
 		return v
 	}
 	return normalizeDate(v)

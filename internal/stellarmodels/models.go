@@ -3,11 +3,13 @@ package stellarmodels
 
 import (
 	"blog/internal/stellarv2"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/text/cases"
 	textlanguage "golang.org/x/text/language"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -77,6 +79,9 @@ func truth(v any) bool {
 		return t != 0
 	case float64:
 		return t != 0 && !math.IsNaN(t)
+	case json.Number:
+		n, _ := numericValue(t)
+		return n != 0 && !math.IsNaN(n)
 	}
 	return true
 }
@@ -86,6 +91,9 @@ func text(v any) string {
 	}
 	if s, ok := v.(string); ok {
 		return s
+	}
+	if n, ok := v.(json.Number); ok {
+		return jsNumberString(number(n))
 	}
 	return fmt.Sprint(v)
 }
@@ -105,16 +113,46 @@ func coalesce(v ...any) any {
 	}
 	return nil
 }
-func number(v any) float64 {
+
+// 仅计算时转为 JS number 对应的 double；clone/merge 保留原始 json.Number。
+func numericValue(v any) (float64, bool) {
 	switch x := v.(type) {
 	case float64:
-		return x
+		return x, true
 	case int:
-		return float64(x)
+		return float64(x), true
 	case int64:
-		return float64(x)
+		return float64(x), true
+	case json.Number:
+		n, err := x.Float64()
+		if err != nil && !math.IsInf(n, 0) {
+			return math.NaN(), true
+		}
+		return n, true
 	}
-	return 0
+	return 0, false
+}
+func number(v any) float64 { n, _ := numericValue(v); return n }
+func jsNumberString(n float64) string {
+	if n == 0 {
+		return "0"
+	}
+	if math.IsNaN(n) {
+		return "NaN"
+	}
+	if math.IsInf(n, 1) {
+		return "Infinity"
+	}
+	if math.IsInf(n, -1) {
+		return "-Infinity"
+	}
+	if math.Abs(n) >= 1e-6 && math.Abs(n) < 1e21 {
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	}
+	s := strconv.FormatFloat(n, 'e', -1, 64)
+	pos := strings.IndexByte(s, 'e')
+	exponent, _ := strconv.Atoi(s[pos+1:])
+	return s[:pos] + fmt.Sprintf("e%+d", exponent)
 }
 func array(v any) []any {
 	if v == nil {
@@ -220,10 +258,12 @@ func normalizeDate(v any) any {
 	switch x := v.(type) {
 	case time.Time:
 		t = x
-	case float64:
-		t = time.UnixMilli(int64(x))
-	case int:
-		t = time.UnixMilli(int64(x))
+	case float64, int, int64, json.Number:
+		n, _ := numericValue(x)
+		if math.IsNaN(n) || math.IsInf(n, 0) || math.Abs(n) > 8.64e15 {
+			return nil
+		}
+		t = time.UnixMilli(int64(n))
 	case string:
 		for _, layout := range []string{time.RFC3339Nano, "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02", "2006-01", "2006"} {
 			t, err = time.Parse(layout, x)
@@ -237,7 +277,11 @@ func normalizeDate(v any) any {
 	default:
 		return nil
 	}
-	return t.UTC().Format("2006-01-02T15:04:05.000Z")
+	t = t.UTC()
+	if year := t.Year(); year < 0 || year > 9999 {
+		return fmt.Sprintf("%+07d", year) + t.Format("-01-02T15:04:05.000Z")
+	}
+	return t.Format("2006-01-02T15:04:05.000Z")
 }
 func terms(v any) []any {
 	r := []any{}
@@ -439,6 +483,8 @@ func jsString(v any) string {
 	switch x := v.(type) {
 	case string:
 		return x
+	case json.Number:
+		return jsNumberString(number(x))
 	case map[string]any:
 		return "[object Object]"
 	}

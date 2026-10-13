@@ -1,6 +1,7 @@
 package stellarmodels
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"os"
@@ -43,13 +44,20 @@ func oracle(t *testing.T) []fixture {
 	}
 	return data.Entries
 }
-func run(f fixture) (any, error) {
+func runDecoded(f fixture, useNumber bool) (any, error) {
+	decode := func(target any) error {
+		d := json.NewDecoder(bytes.NewReader(f.Input))
+		if useNumber {
+			d.UseNumber()
+		}
+		return d.Decode(target)
+	}
 	var in Input
-	if err := json.Unmarshal(f.Input, &in); err != nil {
+	if err := decode(&in); err != nil {
 		return nil, err
 	}
 	var raw Object
-	if err := json.Unmarshal(f.Input, &raw); err != nil {
+	if err := decode(&raw); err != nil {
 		return nil, err
 	}
 	switch f.Op {
@@ -57,7 +65,7 @@ func run(f fixture) (any, error) {
 		return PageModelInput(obj(raw["page"]), obj(raw["config"])), nil
 	case "discovery":
 		var input struct{ Posts, Pages []Member }
-		if err := json.Unmarshal(f.Input, &input); err != nil {
+		if err := decode(&input); err != nil {
 			return nil, err
 		}
 		return DiscoverContent(input.Posts, input.Pages), nil
@@ -152,27 +160,34 @@ func diff(a, b any, path string) string {
 }
 func TestOfficialOracle(t *testing.T) {
 	fixtures := oracle(t)
-	if len(fixtures) < 500 {
+	if len(fixtures) < 780 {
 		t.Fatalf("incomplete oracle: %d", len(fixtures))
 	}
-	for _, f := range fixtures {
-		t.Run(f.Name, func(t *testing.T) {
-			actual, err := run(f)
-			if f.Expected.Error != "" {
-				if err == nil {
-					t.Fatalf("expected official %s error", f.Expected.Error)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			var expected any
-			if err = json.Unmarshal(f.Expected.Value, &expected); err != nil {
-				t.Fatal(err)
-			}
-			if d := diff(jsonValue(actual), expected, "model"); d != "" {
-				t.Fatal(d)
+	for _, mode := range []struct {
+		name      string
+		useNumber bool
+	}{{"defaultFloat64", false}, {"useNumber", true}} {
+		t.Run(mode.name, func(t *testing.T) {
+			for _, f := range fixtures {
+				t.Run(f.Name, func(t *testing.T) {
+					actual, err := runDecoded(f, mode.useNumber)
+					if f.Expected.Error != "" {
+						if err == nil {
+							t.Fatalf("expected official %s error", f.Expected.Error)
+						}
+						return
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					var expected any
+					if err = json.Unmarshal(f.Expected.Value, &expected); err != nil {
+						t.Fatal(err)
+					}
+					if d := diff(jsonValue(actual), expected, "model"); d != "" {
+						t.Fatal(d)
+					}
+				})
 			}
 		})
 	}

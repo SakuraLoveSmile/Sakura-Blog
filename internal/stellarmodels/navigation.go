@@ -3,6 +3,7 @@ package stellarmodels
 import (
 	"golang.org/x/text/collate"
 	textlanguage "golang.org/x/text/language"
+	"math"
 	"sort"
 	"strings"
 )
@@ -15,11 +16,8 @@ func wikiTree(v any) []any {
 		for _, p := range array(section["pages"]) {
 			page := obj(p)
 			var n any
-			if _, ok := page["page_number"].(float64); ok {
+			if value, ok := numericValue(page["page_number"]); ok && !math.IsNaN(value) && !math.IsInf(value, 0) {
 				n = page["page_number"]
-			}
-			if x, ok := page["page_number"].(int); ok {
-				n = x
 			}
 			pages = append(pages, Object{"id": text(first(page["_id"], page["id"], page["path"])), "title": text(first(page["title"])), "path": normalizePath(page["path"]), "pageNumber": n, "isHomepage": page["is_homepage"] == true})
 		}
