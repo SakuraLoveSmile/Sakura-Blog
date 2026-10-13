@@ -422,7 +422,7 @@ func (b *themeBuilder) specials() {
 		m := object(v)
 		set(b.theme, "features.partial_navigation.enabled", m["enable"])
 		b.mark("plugins.pjax", "theme.features.partial_navigation.enabled", "开关保留；官方 manifest 导航替代旧 PJAX")
-		b.conflict("pjax_policy_removed", "plugins.pjax", "旧 selectors/timeout 与官方 manifest 导航没有直接等效字段；审核后明确接受官方策略")
+		b.conflict("pjax_policy_removed", "plugins.pjax", "旧存储 selectors/timeout 与官方 manifest 导航没有直接等效字段；不据存储值推断旧 runtime 正在消费，审核后明确接受官方策略")
 	}
 	for _, name := range []string{"katex", "mathjax", "mermaid"} {
 		src := "plugins." + name + ".enable"
@@ -440,9 +440,12 @@ func (b *themeBuilder) specials() {
 	}
 	if v, ok := get(b.raw, "data_cache"); ok {
 		b.used["data_cache"] = true
-		b.mark("data_cache", "source.snapshot", "旧缓存策略完整保留在源快照")
-		b.conflict("data_cache_removed", "data_cache", "2.0 runtime policy 没有公开同等配置；禁止伪造 features.data_cache，需确认具体策略处理")
-		_ = v
+		if isOfficialLegacyDataCache(v) {
+			b.mark("data_cache", "source.snapshot", "完整旧默认对象与固定 Stellar 2.0.0 runtime 缓存策略完全一致；原值留源快照，候选继承官方等效策略")
+		} else {
+			b.mark("data_cache", "source.snapshot", "旧缓存策略完整保留在源快照")
+			b.conflict("data_cache_removed", "data_cache", "2.0 runtime policy 没有公开同等配置；禁止伪造 features.data_cache，需确认具体策略处理")
+		}
 	}
 	if v, ok := get(b.raw, "widgets.library"); ok {
 		b.move("widgets.library", "blog.data.widgets")
@@ -579,10 +582,10 @@ func (b *themeBuilder) specials() {
 	}
 	if v, ok := get(b.raw, "cover"); ok {
 		b.used["cover"] = true
-		if !emptyLegacy(v) {
+		if !isInactiveLegacyHomeCover(v) {
 			b.conflict("home_cover_removed", "cover", "旧主页 cover 独立配置不在上游主题结构；需确认独立 Blog 展示或首页内容迁移")
 		} else {
-			b.mark("cover", "source.snapshot", "旧空配置无表现覆盖")
+			b.mark("cover", "source.snapshot", "旧首页模板以非空 title 为显示门槛；已知 title/description 对象的 title 为空，无显示差异，原值留源快照且不转 Hero")
 		}
 	}
 	// 已声明的 Blog 公开 data 外，不把 raw settings 作为模板运行时输入。
@@ -591,6 +594,40 @@ func (b *themeBuilder) specials() {
 			b.conflict("site_url", "site.url", "站点 URL 必须可解析，源值不在公开报告中显示")
 		}
 	}
+}
+
+// 固定 9d11978a 的 scripts/lib/internal-constants.js runtime.cache；
+// 旧 02ee112 DataCacheConfig 使用下划线键，其完整默认树与这组常量一致。
+// 缺键、null、未知键或自定义值必须继续作为政策选择，不能猜缺省。
+func isOfficialLegacyDataCache(value any) bool {
+	expected := map[string]any{
+		"enable": true, "default_ttl": 3600, "max_entries": 200,
+		"ttl": map[string]any{
+			"giscus": 600, "waline": 600, "artalk": 600, "memos": 600,
+			"memos-user": 86400, "sites": 86400, "friends": 86400,
+			"friends_and_posts": 86400, "siteinfo": 86400,
+		},
+	}
+	return encode(value) == encode(expected)
+}
+
+// 旧 02ee112 partial/cover.html 只在 title 非空时输出首页 cover。
+// 仅解除已知字符串字段的未启用对象；额外字段与坏类型不能因此丢弃。
+func isInactiveLegacyHomeCover(value any) bool {
+	m, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	for key, child := range m {
+		if key != "title" && key != "description" {
+			return false
+		}
+		s, valid := child.(string)
+		if !valid || (key == "title" && s != "") {
+			return false
+		}
+	}
+	return true
 }
 func (b *themeBuilder) checkKeys(v any, path string, keys ...string) {
 	m, ok := v.(map[string]any)
