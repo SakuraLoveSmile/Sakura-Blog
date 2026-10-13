@@ -14,6 +14,5 @@ export async function mount(root, context) {
   await context.assets.script(config.assets.js);
   context.signal?.throwIfAborted();
   const elements = queryAll(root, '.code');
-  window.createCopyButtons?.(elements);
-  return () => elements.forEach(element => element.querySelector('.copy-btn')?.remove());
+  return window.createCopyButtons?.(elements, context.signal);
 }
