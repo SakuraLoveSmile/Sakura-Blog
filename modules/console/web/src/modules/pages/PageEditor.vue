@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useStellarForm } from "@/components/editor/useStellarForm";
 import { pageFields } from "@/components/editor/stellar-form-fields";
-import { provide, ref, onMounted, computed } from "vue";
+import { provide, ref, onMounted, computed, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
@@ -348,8 +348,13 @@ function loadKind(): EditorKind {
   return localStorage.getItem(KIND_KEY) === "markdown" ? "markdown" : "rich";
 }
 const editorKind = ref<EditorKind>(loadKind());
-function onEditorKindSelect(e: Event) {
+async function flushPendingChanges() {
+  await richRef.value?.flushPendingChanges();
+  await nextTick();
+}
+async function onEditorKindSelect(e: Event) {
   const v = (e.target as HTMLSelectElement).value as EditorKind;
+  await flushPendingChanges();
   editorKind.value = v;
   localStorage.setItem(KIND_KEY, v);
 }
@@ -527,6 +532,7 @@ onMounted(async () => {
 async function handleSave() {
   saving.value = true;
   try {
+    await flushPendingChanges();
     // 提交时：null = 不覆盖（沿用现有/空）；非 null = 覆盖（含空数组显式清空）
     const payload: any = { ...form.value };
     if (isNew.value) {
@@ -587,6 +593,7 @@ async function handlePreview() {
   }
   previewing.value = true;
   try {
+    await flushPendingChanges();
     const payload: any = { ...form.value };
     if (isNew.value) {
       await pageApi.create(payload);

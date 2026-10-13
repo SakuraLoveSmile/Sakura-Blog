@@ -51,8 +51,10 @@ function loadKind(): EditorKind {
   return localStorage.getItem(KIND_KEY) === "markdown" ? "markdown" : "rich";
 }
 const editorKind = ref<EditorKind>(loadKind());
-function onKindChange(e: Event) {
+async function onKindChange(e: Event) {
   const v = (e.target as HTMLSelectElement).value as EditorKind;
+  // 富文本的序列化有防抖，卸载前先把最后输入或属性修改送回父模型。
+  await flushPendingChanges();
   editorKind.value = v;
   localStorage.setItem(KIND_KEY, v);
 }
