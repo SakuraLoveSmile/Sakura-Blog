@@ -45,11 +45,16 @@ func (s *webServer) renderSnapshots(ctx context.Context) ([]stellarimages.PageSn
 		page := stellarCopyObject(data.Stellar.Input.Page)
 		public, _ := url.Parse(absolute)
 		page["path"] = strings.TrimLeft(public.Path, "/")
-		page["permalink"] = absolute
+		canonical := *public
+		if host := canonicalHost(stellarString(stellarGet(snap.input.Theme, "canonical.host"))); host != "" {
+			canonical.Scheme = "https"
+			canonical.Host = host
+		}
+		page["permalink"] = canonical.String()
 		data.Stellar.Input.Page = page
 		data.Stellar.Input.RuntimeData = stellarCopyObject(data.Stellar.Input.RuntimeData)
 		data.Stellar.Input.RuntimeData["offline"] = true
-		data.Page.CanonicalURL = absolute
+		data.Page.CanonicalURL = canonical.String()
 		if data.Page.Description == "" {
 			data.Page.Description = snap.site.Description
 		}
@@ -63,7 +68,7 @@ func (s *webServer) renderSnapshots(ctx context.Context) ([]stellarimages.PageSn
 		} else if !strings.HasSuffix(key, ".html") {
 			key += "/index.html"
 		}
-		output = append(output, stellarimages.PageSnapshot{Path: key, HTML: html})
+		output = append(output, stellarimages.PageSnapshot{Path: key, HTML: html, BaseURL: absolute})
 		return nil
 	}
 	appendPages := func(path string, build func(int) (*tmpl.ViewData, error)) error {

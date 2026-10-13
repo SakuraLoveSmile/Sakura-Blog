@@ -64,7 +64,7 @@ func stellarSearchItems(snap *stellarSnapshot) []stellarSearchItem {
 		if body == "" {
 			continue
 		}
-		item := stellarSearchItem{Title: strings.TrimSpace(stellarString(r.model.Item["title"])), Path: r.path + "/", Tags: stellarTerms(r.model.Item["tags"]), Categories: stellarTerms(r.model.Item["categories"])}
+		item := stellarSearchItem{Title: strings.TrimSpace(stellarString(r.model.Item["title"])), Path: stellarPublicPath(snap.site, r.path) + "/", Tags: stellarTerms(r.model.Item["tags"]), Categories: stellarTerms(r.model.Item["categories"])}
 		if include {
 			content, anchors := textutil.StripHTMLWithAnchors(body)
 			item.Content = &content
@@ -179,7 +179,7 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 		if identity != "" && !authorized[recordKind+":"+identity] {
 			continue
 		}
-		item := stellarSearchAPIItem{Type: recordKind, Title: title, Path: r.path, Snippet: html.EscapeString(textutil.Truncate(content, 200))}
+		item := stellarSearchAPIItem{Type: recordKind, Title: title, Path: stellarPublicPath(snap.site, r.path), Snippet: html.EscapeString(textutil.Truncate(content, 200))}
 		first := -1
 		for _, term := range terms {
 			if i := strings.Index(strings.ToLower(content), term); i >= 0 && (first < 0 || i < first) {
@@ -221,7 +221,7 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 			if !matched {
 				continue
 			}
-			response.Items = append(response.Items, stellarSearchAPIItem{Type: "moment", Title: textutil.Truncate(content, 40), Path: "/moments", Snippet: html.EscapeString(textutil.Truncate(content, 200))})
+			response.Items = append(response.Items, stellarSearchAPIItem{Type: "moment", Title: textutil.Truncate(content, 40), Path: stellarPublicPath(snap.site, "/moments"), Snippet: html.EscapeString(textutil.Truncate(content, 200))})
 			if len(response.Items) >= limit {
 				break
 			}

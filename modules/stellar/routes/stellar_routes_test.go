@@ -454,3 +454,38 @@ func TestStellarCollectionOrderAndAuthorConsumers(t *testing.T) {
 		t.Fatal("extension author links not deduplicated")
 	}
 }
+
+func TestStellarActualEngineMomentsAreContentWithPublicTimeline(t *testing.T) {
+	ws, st, _, r := stellarRouteFixture(t)
+	site := *ws.site.Load()
+	site.URL = "https://fixture.example/sub"
+	ws.site.Store(&site)
+	for i := 0; i <= pageSize; i++ {
+		if _, err := st.CreateMoment(&store.Moment{ContentMD: "公开瞬间", Images: `["/image.jpg"]`, Visibility: store.MomentVisibilityPublic}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := st.CreateMoment(&store.Moment{ContentMD: "PRIVATE_MOMENT_BODY", Visibility: store.MomentVisibilityPrivate}); err != nil {
+		t.Fatal(err)
+	}
+	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine.SetStellarMarkdownRender(ws.posts.RenderStellarV2WithContext)
+	ws.engine = engine
+	for _, path := range []string{"/sub/moments", "/sub/moments/page/2"} {
+		w := stellarRequest(r, path)
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s => %d %s", path, w.Code, w.Body.String())
+		}
+		for _, want := range []string{`data-page-type="content"`, `data-page-layout="moments"`, `tag-plugin timeline`, `class="timenode"`, `data-fancybox="moment-`, `data-src="/sub/image.jpg"`, "公开瞬间", `rel="canonical" href="https://fixture.example` + path + `"`} {
+			if !strings.Contains(w.Body.String(), want) {
+				t.Errorf("%s missing %s", path, want)
+			}
+		}
+		if strings.Contains(w.Body.String(), "PRIVATE_MOMENT_BODY") {
+			t.Fatal("private moment leaked into embedded timeline")
+		}
+	}
+}

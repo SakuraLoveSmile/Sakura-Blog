@@ -39,10 +39,38 @@ func (c *stellarOfflineSnapshotCapture) Render(name string, data *tmpl.ViewData)
 func TestStellarToolSnapshotRenderContextsAreOffline(t *testing.T) {
 	ws, st, _, _ := stellarRouteFixture(t)
 	createStellarPost(t, st, "one", "")
+	site := *ws.site.Load()
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	version.Theme["footer"] = map[string]any{"content": "Footer {% blog_ghrepo xaoxuu/hexo-theme-stellar %}"}
+	version.Theme["rightbar"] = map[string]any{"enabled": true, "widgets": []any{"offline-widget"}}
+	profiles := stellarCopyObject(stellarObject(version.Theme["profiles"]))
+	profile := stellarCopyObject(stellarObject(profiles["post"]))
+	profile["rightbar"] = map[string]any{"enabled": true, "widgets": []any{"offline-widget"}}
+	profiles["post"] = profile
+	version.Theme["profiles"] = profiles
+	version.Blog = stellarCopyObject(version.Blog)
+	version.Blog["content"] = map[string]any{"enabled": true}
+	data := stellarCopyObject(stellarObject(version.Blog["data"]))
+	data["widgets"] = map[string]any{"offline-widget": map[string]any{"layout": "markdown", "content": "Widget {% blog_ghuser xaoxuu %}"}}
+	version.Blog["data"] = data
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	network := &stellarNoNetwork{}
+	ws.posts.SetGHClient(network)
 	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
 	if err != nil {
 		t.Fatal(err)
 	}
+	footer, widget := false, false
+	engine.SetStellarMarkdownRender(func(body string, ctx post.StellarRenderContext) (string, error) {
+		if !ctx.Offline {
+			t.Error("template Markdown was not Offline")
+		}
+		footer = footer || strings.HasPrefix(body, "Footer ")
+		widget = widget || strings.HasPrefix(body, "Widget ")
+		return ws.posts.RenderStellarV2WithContext(body, ctx)
+	})
 	capture := &stellarOfflineSnapshotCapture{t: t, renderer: engine}
 	ws.engine = capture
 	pages, err := ws.renderSnapshots(context.Background())
@@ -51,6 +79,9 @@ func TestStellarToolSnapshotRenderContextsAreOffline(t *testing.T) {
 	}
 	if len(pages) == 0 || len(pages) != capture.count {
 		t.Fatalf("snapshot render count=%d, pages=%d", capture.count, len(pages))
+	}
+	if !footer || !widget || network.calls != 0 {
+		t.Fatalf("offline footer=%v widget=%v network callbacks=%d", footer, widget, network.calls)
 	}
 }
 
@@ -112,11 +143,60 @@ func TestStellarToolSnapshotsAreReadOnlyAndComplete(t *testing.T) {
 		t.Fatal("locked snapshot exposed")
 	}
 }
+
+func TestStellarToolSnapshotsUseActualPageBaseURL(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	for _, slug := range []string{"one", "two", "three"} {
+		createStellarPost(t, st, slug, "")
+	}
+	site := *ws.site.Load()
+	site.URL = "https://images.example/sub"
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	version.Theme["canonical"] = map[string]any{"host": "mirror.example"}
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages, err := RenderToolSnapshots(context.Background(), Dependencies{Site: ws.site, Store: st, Posts: ws.posts, Engine: engine, Icons: ws.icons})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bases := map[string]string{}
+	documents := map[string]string{}
+	for _, page := range pages {
+		bases[page.Path] = page.BaseURL
+		documents[page.Path] = page.HTML
+		if strings.Contains(page.BaseURL, "mirror.example") || strings.Contains(page.BaseURL, "/sub/sub/") {
+			t.Fatalf("snapshot base uses a mirror or duplicated root: %s", page.BaseURL)
+		}
+	}
+	for path, want := range map[string]string{
+		"index.html":             "https://images.example/sub/",
+		"post/one/index.html":    "https://images.example/sub/post/one",
+		"blog/page/2/index.html": "https://images.example/sub/blog/page/2",
+	} {
+		if bases[path] != want {
+			t.Errorf("%s BaseURL=%q, want %q", path, bases[path], want)
+		}
+		canonical := strings.Replace(want, "https://images.example", "https://mirror.example", 1)
+		if !strings.Contains(documents[path], `rel="canonical" href="`+canonical+`"`) {
+			t.Errorf("snapshot %s canonical did not honor canonical.host: %s", path, canonical)
+		}
+	}
+}
+
 func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) {
 	ws, st, _, _ := stellarRouteFixture(t)
 	createStellarPost(t, st, "one", "")
 	site := *ws.site.Load()
 	site.URL = "https://canonical.example/sub"
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	version.Theme["canonical"] = map[string]any{"host": "different.example"}
+	site.StellarV2 = &version
 	ws.site.Store(&site)
 	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
 	if err != nil {
@@ -135,7 +215,7 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`data-stellar-preview-token="test-generation"`, `http://127.0.0.1:8109/sub/assets/js/blog-preview.js`, `data-stellar-script="defines"`, `data-page-layout="post"`, "Current content"} {
+	for _, want := range []string{`data-stellar-preview-token="test-generation"`, `http://127.0.0.1:8109/sub/assets/js/blog-preview.js`, `data-stellar-script="defines"`, `data-page-layout="post"`, `rel="canonical" href="http://127.0.0.1:8109/sub/post/one"`, "Current content"} {
 		if !strings.Contains(document, want) {
 			t.Errorf("preview missing %q", want)
 		}

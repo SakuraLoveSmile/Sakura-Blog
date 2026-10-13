@@ -192,6 +192,87 @@ func TestSearchItemsAnchors(t *testing.T) {
 	}
 }
 
+func TestStellarSearchPathsStayWithinSubpath(t *testing.T) {
+	ws, st, _, r := stellarRouteFixture(t)
+	site := *ws.site.Load()
+	site.URL = "https://fixture.example/sub"
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	searchConfig := stellarCopyObject(stellarObject(version.Theme["search"]))
+	local := stellarCopyObject(stellarObject(searchConfig["local"]))
+	local["scope"] = "all"
+	searchConfig["local"] = local
+	version.Theme["search"] = searchConfig
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	row := createStellarPost(t, st, "marker", "")
+	if err := ws.searchIdx.IndexDoc(search.TypePost, row.Slug, row.Title, row.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"文档","route":{"path":"/docs/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Title: "文档", ContentMD: "marker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateNotebook(&store.Notebook{ID: "journal", StellarVersion: 2, StellarConfig: `{"name":"笔记","route":{"path":"/journal/"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.CreateNote(&store.Note{NotebookID: "journal", Slug: "entry", Title: "笔记", ContentMD: "marker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"notebook","id":"journal"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	moment := &store.Moment{ContentMD: "marker", Visibility: store.MomentVisibilityPublic}
+	if _, err := st.CreateMoment(moment); err != nil {
+		t.Fatal(err)
+	}
+	if err := ws.searchIdx.IndexDoc(search.TypeMoment, store.MomentSlugKey(moment.ID), "marker", moment.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	w := stellarRequest(r, "/sub/search.json")
+	if w.Code != http.StatusOK {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var localItems []stellarSearchItem
+	if err := json.Unmarshal(w.Body.Bytes(), &localItems); err != nil {
+		t.Fatal(err)
+	}
+	localPaths := map[string]bool{}
+	for _, item := range localItems {
+		localPaths[item.Path] = true
+		if target := stellarRequest(r, item.Path); target.Code != http.StatusOK {
+			t.Errorf("local search target %s => %d", item.Path, target.Code)
+		}
+	}
+	for _, want := range []string{"/sub/post/marker/", "/sub/docs/intro/", "/sub/journal/entry/"} {
+		if !localPaths[want] {
+			t.Errorf("local search missing subpath %s: %#v", want, localPaths)
+		}
+	}
+	w = stellarRequest(r, "/api/search?q=marker")
+	if w.Code != http.StatusOK {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var response stellarSearchAPIResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	apiPaths := map[string]bool{}
+	for _, item := range response.Items {
+		apiPaths[item.Path] = true
+		if target := stellarRequest(r, item.Path); target.Code != http.StatusOK {
+			t.Errorf("search target %s => %d", item.Path, target.Code)
+		}
+		if strings.Contains(item.Path, "/sub/sub/") {
+			t.Errorf("search target repeated root: %s", item.Path)
+		}
+	}
+	for _, want := range []string{"/sub/post/marker", "/sub/docs/intro", "/sub/journal/entry", "/sub/moments"} {
+		if !apiPaths[want] {
+			t.Errorf("server search missing subpath %s: %#v", want, apiPaths)
+		}
+	}
+}
+
 // TestResultAnchorMapsHitSection 服务端搜索结果锚点映射：命中词落在第二章节时返回该章节锚点。
 func TestResultAnchorMapsHitSection(t *testing.T) {
 	gin.SetMode(gin.TestMode)
