@@ -6,6 +6,13 @@ import (
 )
 
 func migrateNotebookOwnershipTx(tx *sql.Tx) error {
+	report, err := detectLegacyNotebookSchema(tx, false)
+	if err != nil {
+		return err
+	}
+	if report.Required() {
+		return errSchemaMigrationDeferred
+	}
 	for _, table := range []string{"notebooks", "notes"} {
 		if err := ensureNotebookOwnershipTx(tx, table); err != nil {
 			return err
@@ -50,6 +57,13 @@ func ensureNotebookOwnershipTx(tx *sql.Tx, table string) error {
 }
 
 func (s *Store) ensureNotebookOwnership(table string) error {
+	report, err := s.DetectLegacyNotebookSchema()
+	if err != nil {
+		return err
+	}
+	if report.Required() {
+		return nil
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

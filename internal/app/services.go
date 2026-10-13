@@ -158,6 +158,12 @@ func Bootstrap(options Options) (*Services, error) {
 	if err := st.EnsureNotesTable(); err != nil {
 		return fail(fmt.Errorf("ensure notes table: %w", err))
 	}
+	if legacy, err := st.DetectLegacyNotebookSchema(); err != nil {
+		return fail(err)
+	} else if legacy.Required() {
+		// 保留 Console 迁移预览入口，旧集合访问由 store 返回明确门禁。
+		log.Printf("notebook migration pending: %v", legacy.Error())
+	}
 	pluginRuntime := plugin.NewRuntime()
 	if err := pluginRuntime.LoadDir(filepath.Join(appConfig.Root, "plugins")); err != nil {
 		return fail(fmt.Errorf("load script plugins: %w", err))

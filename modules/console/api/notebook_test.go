@@ -44,6 +44,41 @@ func marshalNotebookRequest(value any) string {
 	return string(encoded)
 }
 
+func TestNotebookAPILegacyLayoutReturnsLocatedMigrationGate(t *testing.T) {
+	r, st, _, admin, _, _ := newNotebookAPI(t)
+	// newFullEnv 使用隔离库；只在此夹具换回真实旧表结构。
+	if _, err := st.DB().Exec(`DROP TABLE notes; DROP TABLE notebooks;
+	CREATE TABLE notebooks(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL DEFAULT '', cover TEXT NOT NULL DEFAULT '', nb_order INTEGER NOT NULL DEFAULT 0, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
+	CREATE TABLE notes(id INTEGER PRIMARY KEY AUTOINCREMENT, notebook_id INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', content_html TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(notebook_id) REFERENCES notebooks(id));
+	INSERT INTO notebooks(id,name) VALUES(2,'private notebook');
+	INSERT INTO notes(id,notebook_id,content) VALUES(2,2,'private note body');`); err != nil {
+		t.Fatal(err)
+	}
+	for _, request := range []struct{ method, path, body string }{
+		{http.MethodGet, "/api/v1/notebooks", ""},
+		{http.MethodGet, "/api/v1/notebooks/2", ""},
+		{http.MethodPost, "/api/v1/notebooks", notebookPayload("new", `{}`)},
+		{http.MethodPut, "/api/v1/notebooks/2", notebookPayload("2", `{}`)},
+		{http.MethodDelete, "/api/v1/notebooks/2", ""},
+		{http.MethodGet, "/api/v1/notebooks/2/notes", ""},
+		{http.MethodGet, "/api/v1/notebooks/2/notes/2", ""},
+		{http.MethodDelete, "/api/v1/notebooks/2/notes/2", ""},
+		{http.MethodPost, "/api/v1/notebooks/2/notes/2/publish", ""},
+	} {
+		w := do2FA(r, request.method, request.path, request.body, authCookie(admin))
+		if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "migration required") || !strings.Contains(w.Body.String(), "notebooks schema:") || !strings.Contains(w.Body.String(), "notes schema:") {
+			t.Errorf("%s %s failed to locate migration: %d %s", request.method, request.path, w.Code, w.Body.String())
+		}
+		if strings.Contains(w.Body.String(), "private") || strings.Contains(w.Body.String(), "SQL logic error") {
+			t.Error("migration response exposed content or raw SQL")
+		}
+	}
+	var body string
+	if err := st.DB().QueryRow(`SELECT content FROM notes WHERE id=2 AND notebook_id=2`).Scan(&body); err != nil || body != "private note body" {
+		t.Fatal("rejected API call changed legacy identity/body")
+	}
+}
+
 func TestNotebookAPIOwnershipAndStrictMetadata(t *testing.T) {
 	r, st, _, admin, alice, bob := newNotebookAPI(t)
 	raw := ` {"name":"工作","description":"笔记本","leftbar":{"widgets":[{"custom":{"large":900719925474099312345,"flag":false}}]}} `

@@ -2,9 +2,13 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
+
+// 审核迁移尚未执行时，延后该迁移及其 ledger，不阻断普通启动。
+var errSchemaMigrationDeferred = errors.New("schema migration deferred pending reviewed content migration")
 
 // Migration describes one schema change after the legacy schema baseline.
 // Each Up function runs in its own transaction; the ledger row is committed
@@ -448,6 +452,9 @@ func (s *Store) applyMigrations(migrations []Migration) error {
 		if migration.Up != nil {
 			if err := migration.Up(tx); err != nil {
 				tx.Rollback()
+				if errors.Is(err, errSchemaMigrationDeferred) {
+					continue
+				}
 				return fmt.Errorf("apply schema migration %d %s: %w", migration.Version, migration.Name, err)
 			}
 		}
@@ -465,6 +472,16 @@ func (s *Store) applyMigrations(migrations []Migration) error {
 
 // ensureTable 执行单表 DDL（含建表与索引，幂等）。
 func (s *Store) ensureTable(table string) error {
+	if table == "notebooks" || table == "notes" {
+		report, err := s.DetectLegacyNotebookSchema()
+		if err != nil {
+			return err
+		}
+		if report.Required() {
+			// 不能在旧同名表上执行新索引、补 owner 或半创建另一张表。
+			return nil
+		}
+	}
 	ddl, ok := tableDDL[table]
 	if !ok {
 		return fmt.Errorf("ensure table %s: not registered", table)

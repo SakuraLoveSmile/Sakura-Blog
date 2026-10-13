@@ -130,6 +130,9 @@ func validateNoteSource(p *Note) error {
 }
 
 func (s *Store) CreateNote(p *Note) (int64, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return 0, err
+	}
 	if err := validateNoteSource(p); err != nil {
 		return 0, err
 	}
@@ -164,6 +167,9 @@ func (s *Store) CreateNote(p *Note) (int64, error) {
 }
 
 func (s *Store) UpdateNote(p *Note) error {
+	if err := s.requireNotebookSchema(); err != nil {
+		return err
+	}
 	if err := validateNoteSource(p); err != nil {
 		return err
 	}
@@ -198,17 +204,34 @@ func (s *Store) UpdateNote(p *Note) error {
 	return tx.Commit()
 }
 
-func (s *Store) GetNoteByID(id int64) (*Note, error) { return repo(s, &Note{}).GetByID(id) }
+func (s *Store) GetNoteByID(id int64) (*Note, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
+	return repo(s, &Note{}).GetByID(id)
+}
 func (s *Store) GetNoteBySlug(notebookID, slug string) (*Note, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	return repo(s, &Note{}).GetOne("notebook_id=? AND slug=?", notebookID, slug)
 }
 func (s *Store) GetPublishedNote(notebookID, slug string) (*Note, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	return repo(s, &Note{}).GetOne("notebook_id=? AND slug=? AND status=?", notebookID, slug, StatusPublished)
 }
 func (s *Store) ListNotes(notebookID string) ([]*Note, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	return repo(s, &Note{}).List(Where("notebook_id=?", notebookID), OrderBy("substr(updated_at,1,19) DESC,id DESC"))
 }
 func (s *Store) ListPublishedNotes(notebookID string) ([]*Note, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	return repo(s, &Note{}).List(Where("notebook_id=? AND status=?", notebookID, StatusPublished), OrderBy("substr(updated_at,1,19) DESC,id DESC"))
 }
 func (s *Store) ListNotesByTag(notebookID, tag string, publishedOnly bool) ([]*Note, error) {
@@ -238,7 +261,12 @@ func (s *Store) ListNotesByTag(notebookID, tag string, publishedOnly bool) ([]*N
 	}
 	return out, nil
 }
-func (s *Store) DeleteNote(id int64) error { return repo(s, &Note{}).Delete(id) }
+func (s *Store) DeleteNote(id int64) error {
+	if err := s.requireNotebookSchema(); err != nil {
+		return err
+	}
+	return repo(s, &Note{}).Delete(id)
+}
 
 func validateNoteNotebookTx(tx *sql.Tx, id string) error {
 	nb, err := scanNotebook(tx.QueryRow(`SELECT `+notebookColumns+` FROM notebooks WHERE id=?`, id))

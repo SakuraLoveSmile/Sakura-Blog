@@ -83,6 +83,9 @@ func scanNotebook(row rowScanner) (*Notebook, error) {
 }
 
 func (s *Store) GetNotebook(id string) (*Notebook, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	p, err := scanNotebook(s.db.QueryRow(`SELECT `+notebookColumns+` FROM notebooks WHERE id=?`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -94,6 +97,9 @@ func (s *Store) GetNotebook(id string) (*Notebook, error) {
 }
 
 func (s *Store) ListNotebooks() ([]*Notebook, error) {
+	if err := s.requireNotebookSchema(); err != nil {
+		return nil, err
+	}
 	rows, err := s.db.Query(`SELECT ` + notebookColumns + ` FROM notebooks ORDER BY sort,id`)
 	if err != nil {
 		return nil, err
@@ -111,6 +117,9 @@ func (s *Store) ListNotebooks() ([]*Notebook, error) {
 }
 
 func (s *Store) CreateNotebook(p *Notebook) error {
+	if err := s.requireNotebookSchema(); err != nil {
+		return err
+	}
 	if p == nil || p.AuthorID < 0 {
 		return ErrNotebookInvalid
 	}
@@ -138,6 +147,9 @@ func (s *Store) CreateNotebook(p *Notebook) error {
 }
 
 func (s *Store) UpdateNotebook(id string, p *Notebook) error {
+	if err := s.requireNotebookSchema(); err != nil {
+		return err
+	}
 	if p == nil || p.AuthorID < 0 || (p.ID != "" && p.ID != id) {
 		return ErrNotebookInvalid
 	}
@@ -162,6 +174,9 @@ func (s *Store) UpdateNotebook(id string, p *Notebook) error {
 
 // DeleteNotebook 不级联删除笔记，避免删除集合时隐式丢失正文。
 func (s *Store) DeleteNotebook(id string) error {
+	if err := s.requireNotebookSchema(); err != nil {
+		return err
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
