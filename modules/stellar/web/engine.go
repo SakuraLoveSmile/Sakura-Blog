@@ -25,7 +25,11 @@ type Engine struct {
 	icons                 *settings.IconRegistry
 	imageEnricher         func(string, *StellarRenderData) (string, error)
 	stellarMarkdownRender func(string, post.StellarRenderContext) (string, error)
+	host                  StellarHost
 }
+
+// SetStellarHost 在启动时注入二进制版本；不从文章或主题参数推导身份。
+func (e *Engine) SetStellarHost(host StellarHost) { e.host = host }
 
 // SetStellarMarkdownRender 在服务启动前装配宿主严格渲染器；每次调用接收
 // 当前请求的主题、公开数据、页面与语言，不读取全局模板 Markdown 回调。
@@ -127,7 +131,7 @@ func buildEngine(entries []tplEntry, reg *settings.IconRegistry) (*Engine, error
 	if reg != nil {
 		markdown.SetIconFunc(reg.Get)
 	}
-	return &Engine{tpl: tpl, icons: reg, stellarMarkdownRender: markdown.RenderStellarV2WithContext}, nil
+	return &Engine{tpl: tpl, icons: reg, stellarMarkdownRender: markdown.RenderStellarV2WithContext, host: StellarHost{Name: "Blog", Version: "dev", Homepage: "https://github.com/SakuraLoveSmile/Sakura-Blog"}}, nil
 }
 
 // Render 渲染指定布局模板名（如 "layout/base"），返回 HTML 字符串。
@@ -137,6 +141,7 @@ func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		prepared.Host = e.host
 		regions := []string{}
 		for _, region := range []string{"topbar", "leftbar", "rightbar"} {
 			if prepGet(prepared.Stellar.Regions, region+".enabled") == false {

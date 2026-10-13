@@ -57,6 +57,11 @@ func Mount(router *gin.Engine, deps Dependencies) (*Server, error) {
 		return nil, fmt.Errorf("load stellar templates: %w", err)
 	}
 	web.SetAssetVersioner(NewAssetVersioner(deps.DevMode, deps.Root))
+	version := deps.AppVersion
+	if version == "" {
+		version = "dev"
+	}
+	engine.SetStellarHost(web.StellarHost{Name: "Blog", Version: version, Homepage: "https://github.com/SakuraLoveSmile/Sakura-Blog"})
 	if deps.Posts != nil {
 		engine.SetStellarMarkdownRender(deps.Posts.RenderStellarV2WithContext)
 	}

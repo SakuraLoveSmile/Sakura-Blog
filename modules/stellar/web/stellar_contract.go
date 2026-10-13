@@ -14,8 +14,14 @@ type StellarRenderData struct {
 	*settings.ViewData
 	Stellar        *StellarPresentation
 	Region         string
+	Host           StellarHost
 	markdownRender func(string, post.StellarRenderContext) (string, error)
 	markdownError  error
+}
+
+// StellarHost 是实际运行宿主身份，不属于上游主题的持久配置。
+type StellarHost struct {
+	Name, Version, Homepage string
 }
 
 // StellarPresentation 是模板的装配结果，不持久化或再次定义上游 schema。

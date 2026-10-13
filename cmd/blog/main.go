@@ -60,7 +60,8 @@ func main() {
 	if !services.Maintenance.Active() {
 		stellarServer, err := stellar.Mount(router, stellar.Dependencies{
 			App: services.App, Site: services.Site, Store: services.Store, Posts: services.Post,
-			OGGen: services.OG, Search: services.Search, DevMode: devMode, Root: services.App.Root,
+			AppVersion: app.Version,
+			OGGen:      services.OG, Search: services.Search, DevMode: devMode, Root: services.App.Root,
 			UploadDir: services.App.UploadDir, NotesPath: filepath.Join(services.App.Root, "content", "notes.md"),
 			Comments: services.Comment, Friends: services.Friends, GH: services.GitHub, Modules: services.Modules, Icons: services.Icons, Events: services.Events,
 		})

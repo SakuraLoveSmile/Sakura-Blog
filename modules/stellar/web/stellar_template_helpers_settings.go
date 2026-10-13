@@ -41,6 +41,11 @@ func (r stellarTemplateRenderer) settingsPage(d *StellarRenderData) template.HTM
 			item := stellarMap(raw)
 			value := stellarSettingsValue(d, item["value"])
 			target := stellarSettingsValue(d, item["url"])
+			// 只适配上游精确默认框架行，自定义文案与链接仍按原文展开。
+			if stellarText(item["value"]) == "Hexo {hexo.version}" && stellarText(item["url"]) == "https://hexo.io/" {
+				value = strings.TrimSpace(d.Host.Name + " " + d.Host.Version)
+				target = d.Host.Homepage
+			}
 			fmt.Fprintf(&b, `<div class="settings-kv__row"><dt>%s</dt><dd><span class="settings-kv__value">%s</span>`, stellarEscape(item["key"]), stellarEscape(value))
 			if target != "" {
 				attrs := ` rel="noopener noreferrer"`
@@ -58,5 +63,5 @@ func (r stellarTemplateRenderer) settingsPage(d *StellarRenderData) template.HTM
 }
 func stellarSettingsValue(d *StellarRenderData, value any) string {
 	s := stellarText(value)
-	return strings.NewReplacer("{hexo.name}", "Blog", "{hexo.version}", stellarText(d.Stellar.Data["blogVersion"]), "{hexo.homepage}", "https://hexo.io/", "{theme.name}", "Stellar", "{theme.version}", "2.0.0", "{theme.tree}", "https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0").Replace(s)
+	return strings.NewReplacer("{hexo.name}", d.Host.Name, "{hexo.version}", d.Host.Version, "{hexo.homepage}", d.Host.Homepage, "{theme.name}", "Stellar", "{theme.version}", "2.0.0", "{theme.tree}", "https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0").Replace(s)
 }
