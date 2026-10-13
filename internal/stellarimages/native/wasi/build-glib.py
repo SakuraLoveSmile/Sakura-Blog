@@ -22,6 +22,7 @@ parser.add_argument('--archives', type=Path, required=True)
 parser.add_argument('--raster-cache', type=Path, required=True)
 parser.add_argument('--meson', type=Path, required=True)
 parser.add_argument('--check', action='store_true')
+parser.add_argument('--output', type=Path)
 args = parser.parse_args()
 cache = args.cache.absolute()
 if any(c.isspace() for c in str(cache)):
@@ -150,7 +151,7 @@ flags=['-D_WASI_EMULATED_'+x for x in ['SIGNAL','MMAN','PROCESS_CLOCKS','GETPID'
 includes=[source/'glib-2.86.1',source/'glib-2.86.1/glib',source/'glib-2.86.1/gmodule',build,build/'glib']
 libraries=[build/'gio/libgio-2.0.a',build/'gobject/libgobject-2.0.a',build/'glib/libglib-2.0.a',build/'subprojects/proxy-libintl/libintl.a',prefix/'lib/libffi.a',prefix/'lib/libpcre2-8.a',prefix/'lib/libz.a']
 run(wrapper,'-O2','-Wl,--export-table','-Wl,--strip-debug',*flags,*['-I'+str(x) for x in includes],HERE/'glib-fixture.c',*libraries,*['-lwasi-emulated-'+x for x in ['signal','mman','process-clocks','getpid']],'-o',output)
-target=NATIVE.parent/'wasmffi/testdata/glib.wasm'
+target=args.output or NATIVE.parent/'wasmffi/testdata/glib.wasm'
 if args.check:
     if output.read_bytes()!=target.read_bytes():
         raise SystemExit('GLib fixture drift')

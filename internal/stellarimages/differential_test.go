@@ -5,11 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 )
 
-func TestSharpRasterOracle(t *testing.T) {
+func TestSharpOracle(t *testing.T) {
 	b, e := os.ReadFile("testdata/sharp.json")
 	if e != nil {
 		t.Fatal(e)
@@ -19,9 +18,6 @@ func TestSharpRasterOracle(t *testing.T) {
 		t.Fatal(e)
 	}
 	for name, want := range expected {
-		if strings.HasSuffix(name, ".svg") {
-			continue
-		} // SVG is validated by the explicit full-fidelity oracle command.
 		t.Run(name, func(t *testing.T) {
 			data, e := os.ReadFile(filepath.Join("testdata", name))
 			if e != nil {

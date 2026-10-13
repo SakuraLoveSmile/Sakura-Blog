@@ -42,7 +42,7 @@ func Analyze(data []byte) (analysis Analysis, failure error) {
 	highPrecision := len(data) > 25 && bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")) && data[24] == 16
 	isTIFF := bytes.HasPrefix(data, []byte("II*\x00")) || bytes.HasPrefix(data, []byte("MM\x00*")) || bytes.HasPrefix(data, []byte("II+\x00")) || bytes.HasPrefix(data, []byte("MM\x00+"))
 	trim := bytes.TrimSpace(data)
-	isSVG := bytes.HasPrefix(trim, []byte("<svg")) || bytes.HasPrefix(trim, []byte("<?xml")) || bytes.Contains(trim[:min(len(trim), 1024)], []byte("<svg"))
+	isSVG := bytes.HasPrefix(data, []byte{0x1f, 0x8b}) || bytes.HasPrefix(trim, []byte("<svg")) || bytes.HasPrefix(trim, []byte("<?xml")) || bytes.Contains(trim[:min(len(trim), 1024)], []byte("<svg"))
 	if isSVG {
 		img, originalDimensions, err = decodeSVG(data)
 	} else if isTIFF {

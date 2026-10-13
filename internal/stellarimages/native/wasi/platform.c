@@ -59,7 +59,7 @@ int socket(int domain,int type,int protocol) { (void)domain; (void)type; (void)p
 int res_query(const char *name,int dnsclass,int type,unsigned char *answer,int length) { (void)name; (void)dnsclass; (void)type; (void)answer; (void)length; errno=ENOSYS; return -1; }
 
 /* XML hash hardening uses WASI random_get through libc getentropy. */
-void arc4random_buf(void *buffer, size_t length) {
+__attribute__((weak)) void arc4random_buf(void *buffer, size_t length) {
   unsigned char *cursor=buffer;
   while (length) {
     size_t chunk=length>256?256:length;

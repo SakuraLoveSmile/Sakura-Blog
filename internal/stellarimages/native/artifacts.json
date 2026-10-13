@@ -23,5 +23,10 @@
     "file": "webp.wasm",
     "sha256": "e0ec9ce098b7702c3283581e312fe148b00ed996064c8d4f78e3e3cdb864638d",
     "bytes": 255603
+  },
+  {
+    "file": "librsvg.wasm",
+    "sha256": "7be9e7e08824fc01c72397b26fec357bfc02505fff2d650790ee13493e816f25",
+    "bytes": 9677015
   }
 ]

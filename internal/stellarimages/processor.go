@@ -151,6 +151,9 @@ func (p Processor) fetch(ctx context.Context, raw string) ([]byte, error) {
 // DryRun 不创建目录、锁，也不发起请求。
 func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts PrepareOptions) (Report, error) {
 	report := Report{File: p.StorePath}
+	if err := ctx.Err(); err != nil {
+		return report, err
+	}
 	if p.StorePath == "" {
 		return report, errors.New("image metadata path is required")
 	}
@@ -244,6 +247,7 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 	var mu sync.Mutex
 	cursor := 0
 	var persistErr error
+	var cancelErr error
 	var wg sync.WaitGroup
 	for i := 0; i < min(3, len(queue)); i++ {
 		wg.Add(1)
@@ -251,7 +255,7 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 			defer wg.Done()
 			for {
 				mu.Lock()
-				if cursor >= len(queue) || persistErr != nil || ctx.Err() != nil {
+				if cursor >= len(queue) || persistErr != nil || cancelErr != nil || ctx.Err() != nil {
 					mu.Unlock()
 					return
 				}
@@ -260,10 +264,19 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 				mu.Unlock()
 				data, fetchErr := p.fetch(ctx, u)
 				var analysis Analysis
-				if fetchErr == nil {
+				if fetchErr == nil && ctx.Err() == nil {
 					analysis, fetchErr = Analyze(data)
 				}
 				mu.Lock()
+				// 批次被新内容替换/关闭时不污染缓存，也不产生 24h 图片失败延迟。
+				if ctx.Err() != nil || errors.Is(fetchErr, context.Canceled) {
+					cancelErr = ctx.Err()
+					if cancelErr == nil {
+						cancelErr = fetchErr
+					}
+					mu.Unlock()
+					return
+				}
 				entry := store.Images[u]
 				entry.UpdatedAt = p.now().UTC().Format("2006-01-02T15:04:05.000Z")
 				if analysis.Dimensions != nil {
@@ -294,6 +307,9 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 	}
 	if ctx.Err() != nil {
 		return report, ctx.Err()
+	}
+	if cancelErr != nil {
+		return report, cancelErr
 	}
 	return report, nil
 }

@@ -2,11 +2,15 @@ package stellarimages
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -93,11 +97,84 @@ func TestSVGTextUsesEmbeddedLatinAndChineseFonts(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	text, e := Analyze([]byte(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64"><rect width="128" height="64" fill="white"/><text x="0" y="35" font-family="Noto Sans SC" font-size="24" fill="black">Stellar 你好</text></svg>`))
-	if e != nil {
-		t.Fatal(e)
+	for _, sample := range []struct{ family, text string }{{"Noto Sans", "Stellar"}, {"Noto Sans SC", "你好"}, {"sans-serif", "你好"}} {
+		t.Run(sample.family+sample.text, func(t *testing.T) {
+			text, err := Analyze([]byte(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64"><rect width="128" height="64" fill="white"/><text x="0" y="35" font-family="` + sample.family + `" font-size="24" fill="black">` + sample.text + `</text></svg>`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if text.Color.HSLA[2] >= blank.Color.HSLA[2]-2 {
+				t.Fatalf("text was not rendered: %v versus %v", text.Color.HSLA, blank.Color.HSLA)
+			}
+		})
 	}
-	if text.Color.HSLA[2] >= blank.Color.HSLA[2]-2 {
-		t.Fatalf("text was not rendered: %v versus %v", text.Color.HSLA, blank.Color.HSLA)
+}
+
+func TestSVGDimensionsAndMalformedInput(t *testing.T) {
+	for _, input := range []string{
+		`<svg xmlns="http://www.w3.org/2000/svg" width="10000" height="4001"/>`,
+		`<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"/>`,
+		`<svg xmlns="http://www.w3.org/2000/svg"><broken>`,
+	} {
+		if _, err := Analyze([]byte(input)); err == nil {
+			t.Fatalf("invalid SVG accepted: %s", input)
+		}
+	}
+	for _, input := range []string{
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 10"><rect width="20" height="10" fill="red"/></svg>`,
+		`<svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 20 10"><rect width="20" height="10" fill="red"/></svg>`,
+		`<svg xmlns="http://www.w3.org/2000/svg" height="10" viewBox="0 0 20 10"><rect width="20" height="10" fill="red"/></svg>`,
+	} {
+		got, err := Analyze([]byte(input))
+		if err != nil || got.Dimensions.Width != 20 || got.Dimensions.Height != 10 {
+			t.Fatalf("SVG natural size: %+v %v", got, err)
+		}
+	}
+}
+
+func TestSVGCannotReadHostOrNetworkResources(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write(fixture(t))
+	}))
+	defer server.Close()
+	path := filepath.Join(t.TempDir(), "host.png")
+	if err := os.WriteFile(path, fixture(t), 0600); err != nil {
+		t.Fatal(err)
+	}
+	blank := `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="white"/>`
+	want, err := Analyze([]byte(blank + `</svg>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range []string{server.URL + "/host.png", "file://" + path} {
+		got, err := Analyze([]byte(blank + `<image href="` + source + `" width="20" height="10"/></svg>`))
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("external SVG resource: %+v %v", got, err)
+		}
+	}
+	if requests.Load() != 0 {
+		t.Fatal("SVG renderer accessed host network")
+	}
+}
+
+func TestSVGZUsesOfficialGIODecompression(t *testing.T) {
+	input := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="#123456"/></svg>`)
+	want, err := Analyze(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var compressed bytes.Buffer
+	w := gzip.NewWriter(&compressed)
+	if _, err = w.Write(input); err != nil {
+		t.Fatal(err)
+	}
+	if err = w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Analyze(compressed.Bytes())
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("SVGZ rendering: %+v %v", got, err)
 	}
 }

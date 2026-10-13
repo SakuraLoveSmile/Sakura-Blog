@@ -1,0 +1,26 @@
+[
+  {
+    "name": "gio-sys",
+    "version": "0.21.5",
+    "archive": "gio-sys-0.21.5.crate",
+    "sha256": "0071fe88dba8e40086c8ff9bbb62622999f49628344b1d1bf490a48a29d80f22",
+    "url": "https://static.crates.io/crates/gio-sys/gio-sys-0.21.5.crate",
+    "patch": "gio-sys-wasi.patch"
+  },
+  {
+    "name": "glib",
+    "version": "0.21.5",
+    "archive": "glib-0.21.5.crate",
+    "sha256": "16de123c2e6c90ce3b573b7330de19be649080ec612033d397d72da265f1bd8b",
+    "url": "https://static.crates.io/crates/glib/glib-0.21.5.crate",
+    "patch": "glib-rust-wasi.patch"
+  },
+  {
+    "name": "cairo-rs",
+    "version": "0.21.5",
+    "archive": "cairo-rs-0.21.5.crate",
+    "sha256": "b01fe135c0bd16afe262b6dea349bd5ea30e6de50708cec639aae7c5c14cc7e4",
+    "url": "https://static.crates.io/crates/cairo-rs/cairo-rs-0.21.5.crate",
+    "patch": "cairo-rust-wasi.patch"
+  }
+]

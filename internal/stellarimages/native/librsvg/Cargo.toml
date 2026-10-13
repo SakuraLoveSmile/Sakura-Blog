@@ -1,0 +1,21 @@
+[package]
+name = "stellar-librsvg"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+librsvg = { path = "_source/rsvg" }
+cairo-rs = "0.21"
+gio = "0.21"
+glib = "0.21"
+
+[profile.release]
+lto = true
+opt-level = 2
+codegen-units = 1
+panic = "abort"
+
+[patch.crates-io]
+gio-sys = { path = "_rust/gio-sys" }
+glib = { path = "_rust/glib" }
+cairo-rs = { path = "_rust/cairo-rs" }

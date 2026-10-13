@@ -146,6 +146,73 @@ func TestInvalidSnapshotBaseDoesNotWrite(t *testing.T) {
 		})
 	}
 }
+
+func TestCanceledBatchRetainsCacheAndCanImmediatelyRetry(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "images.json")
+	u := "https://site.test/a"
+	old := Store{Version: 1, Images: map[string]Entry{u: {
+		Dimensions: &Dimensions{Status: "ready", Width: 2, Height: 3},
+		UpdatedAt:  "old", Error: "previous failure", RetryAfter: 1,
+	}}}
+	if err := writeStore(path, old); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	p := Processor{StorePath: path, SiteURL: "https://site.test/", LocalAsset: func(ctx context.Context, _ string) (io.ReadCloser, error) {
+		close(started)
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}}
+	pages := []PageSnapshot{{Path: "index.html", HTML: `<article class="md-text content"><img src="/a"></article>`}}
+	type result struct {
+		report Report
+		err    error
+	}
+	done := make(chan result, 1)
+	go func() {
+		r, err := p.Prepare(ctx, pages, PrepareOptions{})
+		done <- result{r, err}
+	}()
+	<-started
+	cancel()
+	r := <-done
+	if !errors.Is(r.err, context.Canceled) || r.report.Failed != 0 || r.report.Processed != 0 {
+		t.Fatalf("canceled batch: %+v %v", r.report, r.err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("canceled batch modified cache: %v", err)
+	}
+	p.LocalAsset = func(context.Context, string) (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(fixture(t))), nil
+	}
+	retried, err := p.Prepare(context.Background(), pages, PrepareOptions{})
+	if err != nil || retried.Processed != 1 || retried.Deferred != 0 || retried.Failed != 0 {
+		t.Fatalf("immediate retry: %+v %v", retried, err)
+	}
+	store, err := ReadStore(path)
+	if err != nil || store.Images[u].Error != "" || store.Images[u].RetryAfter != 0 || !complete(store.Images[u]) {
+		t.Fatalf("retry cache: %+v %v", store.Images[u], err)
+	}
+}
+
+func TestAlreadyCanceledBatchDoesNotCreateStoreDirectory(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "new")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	p := Processor{StorePath: filepath.Join(dir, "images.json"), SiteURL: "https://site.test/"}
+	if _, err := p.Prepare(ctx, nil, PrepareOptions{}); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("canceled batch created directory: %v", err)
+	}
+}
 func TestFailureRetainsOldResultsAndBackoff(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "images.json")
 	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)

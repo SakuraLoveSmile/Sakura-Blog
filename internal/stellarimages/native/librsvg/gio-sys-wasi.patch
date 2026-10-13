@@ -1,0 +1,38 @@
+--- a/src/manual.rs
++++ b/src/manual.rs
+@@ -1,6 +1,6 @@
+ // Take a look at the license at the top of the repository in the LICENSE file.
+ 
+-#[cfg(not(target_family = "windows"))]
++#[cfg(all(not(target_family = "windows"), not(target_os = "wasi")))]
+ pub use self::libc_constants::*;
+ #[cfg(target_family = "windows")]
+ pub use self::windows_constants::*;
+@@ -28,7 +28,7 @@
+         windows_sys::Win32::Networking::WinSock::MSG_DONTROUTE;
+ }
+ 
+-#[cfg(not(target_family = "windows"))]
++#[cfg(all(not(target_family = "windows"), not(target_os = "wasi")))]
+ mod libc_constants {
+     pub const G_SOCKET_FAMILY_INVALID: super::GSocketFamily = libc::AF_UNSPEC;
+     pub const G_SOCKET_FAMILY_UNIX: super::GSocketFamily = libc::AF_UNIX;
+@@ -287,3 +287,18 @@
+ #[cfg(not(feature = "v2_84"))]
+ #[cfg(target_family = "unix")]
+ pub use unix_mount_compat::*;
++
++// These constants match GLib's WASI glibconfig.h; no socket backend is enabled.
++#[cfg(target_os = "wasi")]
++pub use self::wasi_constants::*;
++#[cfg(target_os = "wasi")]
++mod wasi_constants {
++    pub const G_SOCKET_FAMILY_INVALID: super::GSocketFamily = 0;
++    pub const G_SOCKET_FAMILY_UNIX: super::GSocketFamily = 3;
++    pub const G_SOCKET_FAMILY_IPV4: super::GSocketFamily = 1;
++    pub const G_SOCKET_FAMILY_IPV6: super::GSocketFamily = 2;
++    pub const G_SOCKET_MSG_NONE: super::GSocketMsgFlags = 0;
++    pub const G_SOCKET_MSG_OOB: super::GSocketMsgFlags = -1;
++    pub const G_SOCKET_MSG_PEEK: super::GSocketMsgFlags = 1;
++    pub const G_SOCKET_MSG_DONTROUTE: super::GSocketMsgFlags = -1;
++}

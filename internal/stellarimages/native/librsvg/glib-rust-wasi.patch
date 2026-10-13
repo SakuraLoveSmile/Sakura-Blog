@@ -1,0 +1,26 @@
+--- a/src/functions.rs
++++ b/src/functions.rs
+@@ -9,7 +9,10 @@
+ #[cfg(feature = "v2_58")]
+ use std::os::unix::io::{AsFd, AsRawFd};
+ #[cfg(not(windows))]
++#[cfg(not(target_os = "wasi"))]
+ use std::os::unix::io::{FromRawFd, OwnedFd, RawFd};
++#[cfg(target_os = "wasi")]
++use std::os::fd::{FromRawFd, OwnedFd, RawFd};
+ use std::ptr;
+ 
+ // #[cfg(windows)]
+--- a/src/translate.rs
++++ b/src/translate.rs
+@@ -131,7 +131,10 @@
+ //! ```
+ 
+ #[cfg(not(windows))]
++#[cfg(not(target_os = "wasi"))]
+ use std::os::unix::prelude::*;
++#[cfg(target_os = "wasi")]
++use std::os::wasi::ffi::{OsStrExt, OsStringExt};
+ use std::{
+     borrow::Cow,
+     char,
