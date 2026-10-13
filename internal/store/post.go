@@ -60,10 +60,10 @@ type Post struct {
 	MetaKeywords    string // 自定义 meta keywords，逗号分隔，空=用站点默认
 	AILabel         string // AI 成分标签档位（1.41：manual/reviewed/polished/generated，空=不渲染）
 
-	// 多作者体系：Authors 按文章中的显示顺序保存；Author 保留第一位作者，兼容旧数据与旧调用方。
-	Authors   []string
-	AuthorIDs []int64 // 关联 users.id；Authors 仅作用户名显示与旧主题兼容。
-	Author    string
+	// 严格版本的公开署名来自原文；编辑权限仍使用稳定的 users.id 关联。旧版本保留用户名约定。
+	Authors   []string // 2.0: Blog.content.authors；旧版本: 署名用户名。
+	AuthorIDs []int64  // post_authors 编辑权限关联，与公开作者目录 ID 独立。
+	Author    string   // 2.0: article.author；旧版本: 第一位署名用户。
 
 	// AI 文章摘要（Spec 53）：后台预生成的导读摘要，空=无摘要；前台文章顶部展示。
 	AISummary string
@@ -854,6 +854,9 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if err := s.preparePostAuthors(p); err != nil {
 		return 0, fmt.Errorf("prepare post authors: %w", err)
 	}
+	if err := s.validateStellarDraftPublicAuthors(p.DraftJSON); err != nil {
+		return 0, err
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return 0, err
@@ -1054,6 +1057,9 @@ func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options 
 
 // SaveDraft 写入草稿头 JSON（不碰线上内容/updated_at）。文章不存在返回错误。
 func (s *Store) SaveDraft(slug, draftJSON string) error {
+	if err := s.validateStellarDraftPublicAuthors(draftJSON); err != nil {
+		return err
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -1313,6 +1319,12 @@ func (s *Store) hydratePostAuthors(posts []*Post) error {
 		}
 	}
 	for _, p := range posts {
+		if p.StellarVersion == 2 {
+			if err := projectStellarPostPublicAuthors(p); err != nil {
+				return err
+			}
+			continue
+		}
 		if len(p.Authors) == 0 && strings.TrimSpace(p.Author) != "" {
 			p.Authors = []string{strings.TrimSpace(p.Author)}
 		}

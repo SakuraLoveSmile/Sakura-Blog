@@ -66,12 +66,8 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 						if err := json.Unmarshal([]byte(saved.DraftJSON), &draft); err != nil {
 							t.Fatal(err)
 						}
-						want := make([]string, len(testCase.owners))
-						for i, id := range testCase.owners {
-							want[i] = fmt.Sprint(id)
-						}
-						if !slices.Equal(draft.Authors, want) {
-							t.Fatalf("draft authors changed: %v", draft.Authors)
+						if len(draft.Authors) != 0 {
+							t.Fatalf("ownership IDs leaked into strict public draft authors: %v", draft.Authors)
 						}
 					}
 				}

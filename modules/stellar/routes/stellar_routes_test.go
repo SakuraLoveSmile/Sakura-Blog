@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"blog/internal/config"
 	"blog/internal/post"
 	"blog/internal/settings"
 	"blog/internal/stellarv2"
@@ -42,6 +43,10 @@ func stellarRouteFixture(t *testing.T) (*webServer, *store.Store, *stellarCaptur
 		t.Fatal(err)
 	}
 	site := &tmpl.Site{Title: "严格站点", URL: "https://fixture.example", Authors: map[string]tmpl.AuthorDef{"alice": {Name: "Alice"}}, StellarV2: &settings.StellarV2Config{Theme: stellarv2.DefaultTheme(), Blog: map[string]any{"site": map[string]any{"per_page": 2}, "search": map[string]any{"provider": "go"}, "data": map[string]any{"wiki": []any{"docs"}, "authors": map[string]any{"alice": map[string]any{"name": "Alice", "password": "HIDDEN_AUTH_SECRET"}}}, "native_comments": map[string]any{"enabled": true, "title": "本地评论", "notify": map[string]any{"password": "HIDDEN_MAIL_SECRET"}}}}}
+	_, err := config.InitializeStellarV2(st, map[string]any{}, site.StellarV2.Blog)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ptr := &atomic.Pointer[tmpl.Site]{}
 	ptr.Store(site)
 	renderer := &stellarCapture{}

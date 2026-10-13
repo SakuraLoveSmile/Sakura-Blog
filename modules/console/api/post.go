@@ -948,9 +948,29 @@ func normalizeAuthorIDs(ids []string) []string {
 	return out
 }
 
-// normalizePostAuthorsRequest 对管理员兼容 authors/author 请求；普通作者新建时绑定自己，
-// 更新时保留已授权文章的完整署名关系，忽略客户端提供的作者替换。
+// 严格署名只读原文，并与编辑权限关联分开；旧版本保留既有请求约定。
 func (h *Handler) normalizePostAuthorsRequest(c *gin.Context, req *postRequest, existing *store.Post) error {
+	if req.StellarVersion == 2 {
+		public := &store.Post{StellarVersion: 2, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions}
+		if err := h.store.ValidateStellarPostPublicAuthors(public); err != nil {
+			return err
+		}
+		// 公开作者不是登录账号；已有文章保留权限关联，新文章归属当前创建者。
+		if existing != nil {
+			req.authorIDs = append([]int64(nil), existing.AuthorIDs...)
+		} else {
+			id := c.GetInt64("userID")
+			if id <= 0 {
+				return fmt.Errorf("invalid author user id")
+			}
+			req.authorIDs = []int64{id}
+		}
+		req.Author, req.authorRefs = public.Author, public.Authors
+		raw, err := json.Marshal(public.Authors)
+		req.Authors = raw
+		return err
+	}
+
 	if !contextHasPermission(c, store.PermissionContentManageAny) {
 		if existing == nil {
 			return forceCurrentAuthor(c, req)

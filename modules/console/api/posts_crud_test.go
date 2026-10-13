@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/config"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
@@ -184,11 +185,14 @@ func TestPostCRUDFlow(t *testing.T) {
 	}
 }
 
-func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
-	r, _, user, _ := newFullStellarEnv(t)
+func TestPostAuthorsAPIRoundTripAndStrictRequest(t *testing.T) {
+	r, st, user, _ := newFullStellarEnv(t)
+	if err := st.PutSetting(config.SectionBlogExtensions, `{"data":{"authors":{"alice":{"name":"Alice"},"bob":{"name":"Bob"}}}}`); err != nil {
+		t.Fatal(err)
+	}
 	cookie := authCookie(user)
 
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"api-multi-author","title":"多作者 API","authors":["alice","bob"],"status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-multi-author","title":"多作者 API","authors":["alice","bob"],"status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create multi-author post: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -200,8 +204,8 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 		t.Fatalf("create authors=%#v primary=%q", created.Authors, created.Author)
 	}
 
-	// 旧客户端不发送 authors 时，更新正文不能误删已有多作者关联。
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"旧客户端更新","status":"published"}`, cookie)
+	// 不发送宿主 authors 时，严格原文的公开署名与编辑权限关系保持不变。
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","title":"正文更新","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("legacy update: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -213,7 +217,7 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 		t.Fatalf("legacy update authors=%#v", updated.Authors)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","authors":["bob"],"status":"published"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-multi-author", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"bob\"}}","blog_extensions":"{\"content\":{\"authors\":[\"bob\"]}}","authors":["bob"],"status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("replace authors: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -224,9 +228,12 @@ func TestPostAuthorsAPIRoundTripAndLegacyRequest(t *testing.T) {
 
 func TestPostSlugUpdatePreservesIdentityAndAssociations(t *testing.T) {
 	r, st, user, _ := newFullStellarEnv(t)
+	if err := st.PutSetting(config.SectionBlogExtensions, `{"data":{"authors":{"alice":{"name":"Alice"},"bob":{"name":"Bob"}}}}`); err != nil {
+		t.Fatal(err)
+	}
 	cookie := authCookie(user)
 
-	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"api-slug-old","title":"旧文章","content_md":"旧正文","authors":["alice","bob"],"categories":["技术/Go"],"status":"published"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-slug-old","title":"旧文章","content_md":"旧正文","authors":["alice","bob"],"categories":["技术/Go"],"status":"published"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create post: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -235,7 +242,7 @@ func TestPostSlugUpdatePreservesIdentityAndAssociations(t *testing.T) {
 		t.Fatalf("get created post: %v nil=%v", err, before == nil)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-slug-old", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"api-slug-new","title":"新文章","content_md":"新正文","status":"published"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/api-slug-old", `{"stellar_version":2,"stellar_config":"{\"article\":{\"author\":\"alice\"}}","blog_extensions":"{\"content\":{\"authors\":[\"alice\",\"bob\"]}}","slug":"api-slug-new","title":"新文章","content_md":"新正文","status":"published"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("rename post: status=%d body=%s", w.Code, w.Body.String())
 	}
