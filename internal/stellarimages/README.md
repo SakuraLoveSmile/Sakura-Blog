@@ -15,11 +15,13 @@
 
 写入以 `O_EXCL` 获取整个批次的 `.lock`，不得删别人的锁。每图结束后用独占临时文件、fsync、rename 原子保存，JSON key 排序，无 fingerprint。dry-run 不创建目录／锁、不抓取、不写入。无内容、原图、数据库副作用。
 
-## 已实现与仍在实现
+## 已实现与验证边界
 
 JPEG／PNG／WebP／AVIF／GIF／TIFF 的栅格管线已具有严格 Sharp 0.34.5 黄金夹具断言，覆盖 EXIF、alpha、8/16位、P3 ICC、CMYK、Lab／scRGB 浮点、JPEG/WebP 解码期缩小、box gap＋固定点 Lanczos3、LZW／Deflate／JPEG／WebP 压缩及 tiled TIFF。AVIF 使用 gav1d 0.2.5；其余嵌入 LittleCMS 2.17、mozjpeg 0826579、libjpeg-turbo 3.1.2、libwebp 1.6.0、libtiff 4.7.1。无系统库回退。
 
-**SVG 完整等效仍在实现中。** 当前过渡嵌入 resvg 0.48.1，含 Noto Sans／Noto Sans SC、72DPI，无宿主文件／网络权限。复杂 SVG 的 tiny-skia 抗锯齿／blur 与上游 librsvg/cairo 有数值差异，完整 oracle 会失败。父任务已要求继续嵌入官方 librsvg/cairo/Pango/GLib，不能用容差替代。此提交只提供可审查的栅格与 Go 生命周期基础，不证明 T6 全部完成。
+SVG 正式解码已接入嵌入的 librsvg 2.61.2／Cairo／Pango／GLib，Fontconfig 仅消费嵌入的 Noto Sans／Noto Sans SC；不读取宿主字体、文件或网络。生产不再使用过渡 resvg。`complex.svg` 与完整严格 Sharp 黄金夹具已经通过，不能放宽容差代替等效验证。来源、许可证、字体链、可复现重建和平台差异见 [librsvg 说明](native/librsvg/README.md)。
+
+取消从 Processor 贯通 AnalyzeContext 和 WASM 实例；SVG 执行可中断并复用 runtime。PNG/GIF 和 AVIF 库内部没有 context API，仅能在阶段边界检查取消，不宣称所有格式都可即时抢占。实际站点 worker、缓存回填、原图保持和生命周期证据由 composition root 验证。
 
 ## 验证与重建
 
@@ -31,4 +33,4 @@ python3 internal/stellarimages/native/build.py --cache .tmp/stellarimages-build 
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c ./internal/stellarimages -o .tmp/stellarimages-linux-amd64.test
 ```
 
-完整 oracle 保留 `complex.svg` 的严格四位黄金结果，失败真实公开；栅格单测只断言已闭合的栅格范围。黄金数据来自锁定 Stellar `9d11978` 的 `scripts/lib/image-metadata.js` 和 Sharp 0.34.5。开发期 oracle／重建需要外部工具，生产不需要。重建依赖归档 URL/SHA256 见 `native/build-sources.json`，Rust依赖由 `Cargo.lock` 锁定；许可证及字体授权随嵌入物保留。
+完整 oracle 保留 `complex.svg` 的严格四位黄金结果，并覆盖正式 librsvg 字体链与栅格范围。黄金数据来自锁定 Stellar `9d11978` 的 `scripts/lib/image-metadata.js` 和 Sharp 0.34.5。开发期 oracle／重建需要外部工具，生产不需要。重建依赖归档 URL/SHA256 见 `native/build-sources.json`，librsvg 图形链重建按其专用说明执行，Rust 依赖由各自 `Cargo.lock` 锁定；许可证及字体授权随嵌入物保留。

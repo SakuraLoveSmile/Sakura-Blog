@@ -1,0 +1,58 @@
+{
+  "fixture_only": true,
+  "source_commit": "5815e94f",
+  "runtime": "resume-runtime-581.json",
+  "newHeight": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:SHELL echo-original %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% height:60px fancybox:false /uploads/cover.png Original %}\n\n{% box color:green OriginalBox %}\nBOX original\n{% endbox %}",
+  "modified": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:\"\" 'printf \"hello world\"' %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% height:60px fancybox:false /uploads/cover.png Original %}\n\n{% box color:purple \"Changed Box\" %}\nBOX changed first\n\n**BOX second line**\n{% endbox %}",
+  "reopened": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:\"\" 'printf \"hello world\"' %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% height:60px fancybox:false /uploads/cover.png Original %}\n\n{% box color:purple \"Changed Box\" %}\nBOX changed first\n\n**BOX second line**\n{% endbox %}",
+  "front": {
+    "copy": [
+      "printf \"hello world\""
+    ],
+    "images": [
+      {
+        "alt": "",
+        "fancybox": null,
+        "height": "346.5px",
+        "loaded": true,
+        "style": null
+      },
+      {
+        "alt": "",
+        "fancybox": null,
+        "height": "346.5px",
+        "loaded": true,
+        "style": null
+      },
+      {
+        "alt": "Original",
+        "fancybox": null,
+        "height": "60px",
+        "loaded": true,
+        "style": ";"
+      }
+    ],
+    "text": "T5 parameter categories\nopen 原折叠\nFOLDING original \n\n\nOriginal\nChanged Box\nBOX changed firstBOX second line技术/Go/SSR生活/阅读"
+  },
+  "mediaModified": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:\"\" 'printf \"hello world\"' %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% height:60px fancybox:false /uploads/cover.png Original %}\n\n{% box color:purple \"Changed Box\" %}\nBOX changed first\n\n**BOX second line**\n{% endbox %}\n\n{% emoji name:\"Changed Emoji\" url:/uploads/avatar.png height:32px %}\n\n{% frame img:/uploads/cover.png focus:bottom ipad \"Changed Frame\" %}",
+  "mediaReopened": "# T5 parameter categories\n\n{% folding color:blue open 原折叠 %}\nFOLDING original\n{% endfolding %}\n\n{% copy prefix:\"\" 'printf \"hello world\"' %}\n\n{% swiper effect:fade %}\n![](/uploads/cover.png)\n![](/uploads/avatar.png)\n{% endswiper %}\n\n{% image width:80% height:60px fancybox:false /uploads/cover.png Original %}\n\n{% box color:purple \"Changed Box\" %}\nBOX changed first\n\n**BOX second line**\n{% endbox %}\n\n{% emoji name:\"Changed Emoji\" url:/uploads/avatar.png height:32px %}\n\n{% frame img:/uploads/cover.png focus:bottom ipad \"Changed Frame\" %}",
+  "mediaFront": {
+    "emoji": [
+      {
+        "alt": "Changed Emoji",
+        "height": "32px",
+        "src": "/uploads/avatar.png"
+      }
+    ],
+    "frames": [],
+    "frame": {
+      "carrier": "frame-wrap",
+      "focus": "bottom",
+      "id": "ipad",
+      "loaded": true,
+      "src": "/uploads/cover.png"
+    },
+    "frameSelectorCorrection": "Earlier .tag-plugin.frame returned none; actual .frame-wrap[id=ipad] focus=bottom contains Changed Frame image."
+  },
+  "restored": true
+}

@@ -35,6 +35,24 @@
 
 这些是正式单二进制读取真实源和纯选值预览的本次证据，不是真实候选演练、最终批准或真实迁移执行证据。
 
+## 2026-10-14 最新只读来源复核
+
+本次以主实现树 `605d1186` 的真实单二进制固定副本执行两次正式只读 preview，二进制 SHA256 为 `65b2cc57e031505d726d1aa90cff8a594497b3118f9a8b887dcab1dbf816a557`，两次均退出0。真实来源仍是日常 `Blog`；本次根 Git 为 `55e06f15`，不是初次报告的 `02ee112`。Git 变化不等同业务数据变化，下面以完整来源摘要与逐文件指纹确认。
+
+新私密目录为迁移工作树 `.tmp/stellar-cli-real-fresh-20261014-605d1186/`，其 `input/review/selected` 都保留为0700/0600；私密候选、root capture、pending approval与固定二进制均未提交、未输出。独立可公开摘要 SHA256 为 `c01d06a476e58b07d8139f5d5bf224e1cb928e37631248e6f3e887431f5d816f`。
+
+- 原报告32条候选、172配置映射、766逐记录映射、12阻断；已确认选值后32/172/777、Notebook26映射、阻断0。34 consumer info/nonblocking诊断仍保留，不删除原报告。
+- 独立重算Source、Root、原/选值Candidate和Review摘要均通过，与上一轮完全一致；下表七条正文摘要也全不变。
+- SourceDigest：`d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`。
+- RootDigest：`7fca4425173d6ba025c238b90c2248557bab1b1689549202f7514fc3e42f88cd`。
+- Selected CandidateDigest：`ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a`。
+- ReviewDigest：`b12070c516f266e5ce4e01ab5f15fd566a8017e6113866c165f2f27117d85d06`。
+- 72项独立前后指纹及完整inventory一致；唯一变化为`data/blog.db-shm`的mtime_ns，SHM/DB/WAL/tracked内容hash均不变。没有删侧车或用immutable，不能称目录零写。
+- 完整capture仍是68资源（53文件/12目录/3不存在项）、79,967,649bytes、67 SQL对象、2 tracked文章。
+- Approved仍为false、BodyDigests空、offline全部false；owner仍只在私密用户快照唯一匹配。没有真实演练、Apply、Recover、停服或生产操作。
+
+此前已确认取值不重复询问。最终待审查仅是下面七条正文的具名转换、完整来源/候选绑定和真实迁移操作。取得确认后仍须在执行前fresh校验；若停服/checkpoint导致RootDigest变化，应提供新的绑定审查，不能拿旧物理摘要放行。
+
 ## 本次完整根绑定与用户已确认取值
 
 上一轮只读 helper 捕获时间：`2026-10-13T16:15:21Z`。保留目录为 `.tmp/stellar-migration-review-20261013-user-selections-full-root-v2/`，目录 `0700`，六份文件均 `0600`：原 candidate、已选值 selected-candidate、完整 root-capture、Notebook decisions、approval-pending 与脱敏 report。这是包含完整索引结构的版本 2 新只读捕获；原 full-root/review-bound 和更早预览均保留。私密 root-capture 包含原配置、上传、正文及 DB/WAL bytes，禁止输出、外发或提交。

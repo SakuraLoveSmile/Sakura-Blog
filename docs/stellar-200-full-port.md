@@ -164,6 +164,31 @@
 
 本轮基线截图和 JSON 都位于 `docs/baselines/stellar-200-full/`。隔离服务为 8103，DB/config/content/uploads/cache/runtime 均来自独立根；动态 fixture 为仅监听 loopback 的 8110。真实外部服务与 fixture 证据分别记录。所有私密迁移候选保留在忽略目录，不能提交或输出正文、凭据。
 
+### 2026-10-14 最后组合续接（仍实现中）
+
+已确认的集合显示名、Wiki/导航、banner/cover、Footer 和 Notebook owner/结构选择继续有效；本轮没有再次询问，也没有执行真实迁移。
+
+- T2/T7：Leftbar 原十二组级联与 Topbar menu/widgets、Rightbar widgets 十二组 omit/empty/replace 组合完成真实保存→重开→前台；Topbar 使用官方允许的 menu/spacer，初次不支持的 Markdown fixture 保留失败记录。global replace 正式补采 `topbar:0:menu`；Card 手机原生 `main.inert=true`、Escape 后 false 且焦点回 Open leftbar，关闭的 Rightbar 仍 inert。证据为 `resume-t2-cascade-browser.json`、`resume-t2-upper-regions-cascade.json`、`resume-card-mobile-inert-current.json`。
+- T3/T7：正式横幅 disabled/no-bg/empty-headline、references/license、六分享 SVG、QR 点击加载和 avatar currentSrc 已复验；taxonomy 分类/标签菜单及 Wiki `index_wiki/index` 真实显示。早期 `.post-card` 误采零张卡片，已保留并用 `main a.wiki-card` 补采五张；390×844 分类无横溢，Wiki 稳定 PNG 保留。见 `resume-t3-banner-footer-corrected.json`、`resume-share-icons-avatar-browser.json`、`resume-taxonomy-wiki-index-browser.json`。
+- T3/T7：OG 使用固定上游完整 head 与 Hexo helper oracle：168 inputs、384 正常输出及120错误边界，覆盖SSR/offline/opaque preview。WHATWG URL 修复后 Unicode OG URL、punycode 图片、data 图片过滤、description、Twitter/FB/author 参数在 Console 保存→重开→正式SSR/iframe 实测；canonical 仍本地。scope-only 的隔离误采与原生 CDP 结果分开记录，见 `resume-og-console-browser.json`。
+- T5/T7：属性面板新增字段曾在 Apply 后丢失，已修复精确 present 累积；真实新增 image height、Box 多行/空格 title、Copy 引号与空 prefix、Emoji URL mode、inline Frame 在 Apply→Markdown→保存→重开→前台通过。正文最后恢复。54/288 oracle 是参数契约证据，不等同所有字段逐个 UI 操作，见 `resume-editor-new-parameter-red.json`、`resume-editor-new-parameter-green.json`。
+- T3/T7：5815e94 产物真实四种 Hero canvas 绘制，实际链接整页离开时各取消一帧、释放GL program/buffer；兼容 partial 保留同一 cover 是预期行为。终端标签切换后实际多行剪贴板为 `go test ./...\ngo vet ./...`，剪贴板已恢复。视频已加载并播放；此采样不声称显式暂停或原生 BFCache，见 `resume-hero-current-lifecycle.json`。
+- T4/T7：605d1186 浏览器发现旧动态 Algolia provider 缓存：HTTP 新代码但已执行 mount 无 queryPageKey，runtime query 未变。已扩展入口指纹到本地动态 JS/CSS；新浏览器实际 queryPageKey=true。精确等待目标 URL/heading 更新、timeOrigin 不变后再释放旧请求，结果为空；新页查询显示合法结果。临时配置/Fetch 拦截已恢复，见 `resume-algolia-partial-current.json`。早期名字带 green 的记录保留为 INVALID EARLY SAMPLE；官方 SDK 配合合成 API 不是真实 Algolia 账号。
+- T6/T7：605d1186 单二进制同PID内容事件捕获新公开本地图，metadata 与正式SSR回填960×540/平均色；首个GET尚无元信息的采样保留。禁用自动仍复用cache；新图和原cover hash不变。Note正文及设置保存重开恢复，见 `resume-images-event-current.json`。
+- T4/T6：独立审查又发现图标JSON由真实IconRegistry生成，不属于静态assets。5b92b246已把稳定排序的公开生成资源正文纳入runtime指纹，HTTP和两个离线CLI使用同一registry，真实Mount/icons.yml红绿、dev/embed一致性及独立复审通过；最终浏览器query为deae89e4且实际执行queryPageKey=true。四隔离服务Console入口/六资源、main.js、provider/index.js及当前WASM嵌入字节匹配，见`resume-runtime-final-source.json`与`resume-provider-final-binding.json`。
+- T1：最新605d1186正式单二进制fresh两次只读preview成功；Source/Root/selectedCandidate/Review及七正文摘要全不变。72项前后指纹仅SHM mtime变化；Approved=false/BodyDigests空/offline全false，未演练或Apply。完整公开报告已追加最新来源复核。
+- T7：本轮 make css 与 css-drift-check 成功，20份生成物一致；共享主题仍 unborn HEAD/未跟踪源文件，固定 commit object 可用，未切换/重置。新增证据通过独立只读敏感内容审查；历史扩展名 .png 实际JPEG的字节保留，见 `resume-evidence-review.json`。
+
+| 编号 | 正式链路与可核验证据 | 仍需保留的边界 |
+| --- | --- | --- |
+| T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；迁移报告绑定全部来源 | 七条正文、完整Root/ReviewDigest及真实迁移操作仍未批准；不因选值确认自动Apply |
+| T2 | 四预设/三配色/14 profiles/三locale/断点矩阵；appearance字段及四级区域级联真实消费者 | 逐项证据不替代用户整体体验确认；最初失败采样保留 |
+| T3 | 全内容系统保存重开/导航搜索；模型、Wiki/Notebook排序、OG、分享及Hero真实链路 | 视频离页显式pause和原生BFCache没有新增成功证据；不推导全参数UI逐项验收 |
+| T4 | partial成功/取消/超时/失败回退、真实SDK合成Algolia、六评论合成SDK及访客身份 | 真实Algolia/六评论账号、原生BFCache未实测；pin分页整页导航不当partial卸载证明 |
+| T5 | 54标签288参数oracle；可视化新增语法往返；动态服务、媒体、Gist隔离生命周期 | 外部Markdown受fake-IP/保留地址保护拒绝，成功路径仍未实测；不降低网络保护 |
+| T6 | 实际单二进制CLI与嵌入librsvg/字体；fetch边界、缓存/事件/取消与原图保留 | PNG/GIF/AVIF库内部仅阶段边界取消，不声称即时抢占；真实迁移需批准 |
+| T7 | 组合源码、真实CSS/build、服务资产hash及前台证据各自绑定 | 最终feature/dev门禁与新产物绑定结果在实际完成后追加；用户确认前不标已验收 |
+
 ### 历史起始阶段（不表示当前实现状态）
 
 - 起始时仅完成源码调研、根 DB 只读结构/计数预检和上游主页基线保存；当时没有宣称实现完成。

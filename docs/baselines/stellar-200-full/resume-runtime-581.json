@@ -1,0 +1,209 @@
+{
+  "source_commit": "5815e94f4c630fb70bcab6d6f8a6084609caac77",
+  "binary_sha256": "0a75618cafb3c62e2d9b55ea7de300263e1f8f0985f49ddada74ff00e77adf02",
+  "services": [
+    {
+      "port": 8103,
+      "pid": 96332,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-v2-tools/.tmp/stellar-200-browser-root-2808603452",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "main_js_sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+      "main_matches_source": true,
+      "assets": [
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "size": 250474,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "size": 59970,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "size": 66006,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "size": 5939,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "size": 1204,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "size": 106194,
+          "matches_dist": true
+        }
+      ]
+    },
+    {
+      "port": 8112,
+      "pid": 96333,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-brand-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "main_js_sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+      "main_matches_source": true,
+      "assets": [
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "size": 250474,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "size": 59970,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "size": 66006,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "size": 5939,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "size": 1204,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "size": 106194,
+          "matches_dist": true
+        }
+      ]
+    },
+    {
+      "port": 8113,
+      "pid": 96334,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-content-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "main_js_sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+      "main_matches_source": true,
+      "assets": [
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "size": 250474,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "size": 59970,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "size": 66006,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "size": 5939,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "size": 1204,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "size": 106194,
+          "matches_dist": true
+        }
+      ]
+    },
+    {
+      "port": 8114,
+      "pid": 96335,
+      "root": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/.tmp/stellar-final-plugins-root",
+      "binary": "/Users/sakurasep/Documents/Code/Project/Personal Project/Blog-stellar-200/blog",
+      "console_sha256": "9ce727d5f0a7fd20324f940f9da1ed7dfa11e105fdf9663b0f06002980ab06c1",
+      "console_matches_dist": true,
+      "main_js_sha256": "89248d3a9733449771eb783cdc27cc44b565c4d34bb717b8a444e1501009e0ad",
+      "main_matches_source": true,
+      "assets": [
+        {
+          "path": "/console/assets/index-B-1y-akC.js",
+          "sha256": "09c77f22243ff52c458e4fa77ccc2845d0a6b2d98c5e72b86c157a78b538671e",
+          "size": 250474,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/api-CMeGK4tt.js",
+          "sha256": "1511fb1738217ad4219ce4c74e654e7324797d7fd8f757861fc4a837f19d8bea",
+          "size": 59970,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/runtime-core.esm-bundler-DFn6PQEW.js",
+          "sha256": "1c7551652e99edb0dcc1249b0a308bb38fd097e9fe29b49ea53b874f5d5f11fb",
+          "size": 66006,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/pinia-BDaR9qFm.js",
+          "sha256": "79383b730f69ddf7e3a2b4e4eb1ead6770ab50b6c6ba8ae228bc248743c5fbd9",
+          "size": 5939,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/preload-helper-l0U7FUPx.js",
+          "sha256": "dbd40ae429a13a3e06cef0e34ae0e55b1ab159efade265370bbf44c955327a1b",
+          "size": 1204,
+          "matches_dist": true
+        },
+        {
+          "path": "/console/assets/index-DhwoxVyW.css",
+          "sha256": "407021fd9baf53d0e4b20c02e48f84d8603a37fa3c456eda6c75a5599ae9e8be",
+          "size": 106194,
+          "matches_dist": true
+        }
+      ]
+    }
+  ],
+  "wasm": {
+    "sha256": "d254aaa66ab23393a76492428b2baa967d6f298ee73e597c8b25585ccd065000",
+    "matches_git": true,
+    "http_route": false
+  },
+  "isolation": {
+    "verified_by": "independent read-only tester via ps/lsof/canonical paths",
+    "business_paths": "DB/config/content/uploads/cache/runtime under each explicit fixture root",
+    "guard": "fixed global registry holds four canonical-path-derived locks per instance; all16 distinct and match fixture resources; no production-root lock",
+    "production_db_accessed": false
+  }
+}

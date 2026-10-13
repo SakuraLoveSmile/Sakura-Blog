@@ -1,0 +1,129 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-581.json",
+  "cases": [
+    {
+      "name": "nested-category",
+      "url": "http://127.0.0.1:8113/blog/categories/%E6%8A%80%E6%9C%AF/Go",
+      "front": {
+        "layout": "category",
+        "nav": [
+          {
+            "class": "",
+            "href": "/blog/",
+            "text": "近期发布"
+          },
+          {
+            "class": "active",
+            "href": "/blog/categories/",
+            "text": "分类：技术/Go"
+          },
+          {
+            "class": "",
+            "href": "/blog/tags/",
+            "text": "标签"
+          },
+          {
+            "class": "",
+            "href": "/topic/",
+            "text": "专栏"
+          },
+          {
+            "class": "",
+            "href": "/blog/archives/",
+            "text": "归档"
+          }
+        ],
+        "type": "index"
+      }
+    },
+    {
+      "name": "tag-Go",
+      "url": "http://127.0.0.1:8113/blog/tags/Go",
+      "front": {
+        "layout": "tag",
+        "nav": [
+          {
+            "class": "",
+            "href": "/blog/",
+            "text": "近期发布"
+          },
+          {
+            "class": "",
+            "href": "/blog/categories/",
+            "text": "分类"
+          },
+          {
+            "class": "active",
+            "href": "/blog/tags/",
+            "text": "标签：Go"
+          },
+          {
+            "class": "",
+            "href": "/topic/",
+            "text": "专栏"
+          },
+          {
+            "class": "",
+            "href": "/blog/archives/",
+            "text": "归档"
+          }
+        ],
+        "type": "index"
+      }
+    },
+    {
+      "name": "wiki-index",
+      "url": "http://127.0.0.1:8113/wiki/",
+      "front": {
+        "cardCount": 0,
+        "layout": "index_wiki",
+        "type": "index"
+      }
+    }
+  ],
+  "mobile": {
+    "docWidth": 390,
+    "height": 844,
+    "layout": "index_wiki",
+    "leftbarRect": {
+      "bottom": 780,
+      "height": 764,
+      "left": -288,
+      "right": 0,
+      "top": 16,
+      "width": 288,
+      "x": -288,
+      "y": 16
+    },
+    "type": "index",
+    "width": 390
+  },
+  "mobileCapture": {
+    "method": "CDP metrics390x844 + PNG clip",
+    "initialTransition": "after-resume-wiki-index-mobile-transition.png",
+    "stable": "after-resume-wiki-index-mobile.png"
+  },
+  "wikiSelectorCorrection": {
+    "selector": "main a.wiki-card",
+    "count": 5,
+    "url": "http://127.0.0.1:8112/wiki/",
+    "originalSelector": ".post-card",
+    "originalCountIsNotCardInventory": true
+  },
+  "categoryMobile": {
+    "active": [
+      {
+        "href": "/blog/categories/",
+        "text": "分类：技术/Go"
+      }
+    ],
+    "viewport": {
+      "docWidth": 390,
+      "height": 844,
+      "width": 390
+    }
+  },
+  "correctionBuiltHead": "5815e94",
+  "correctionRuntime": "Before first 605d1186 service restart; current service then ran 5815e94."
+}

@@ -1,0 +1,67 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-581.json",
+  "network": "official SDK3.33.0 with intercepted syntheticAPI; not real account",
+  "request": {
+    "hasPostData": true,
+    "headers": {
+      "Origin": "http://127.0.0.1:8112",
+      "Referer": "http://127.0.0.1:8112/",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accept": "application/json",
+      "content-type": "application/x-www-form-urlencoded",
+      "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"macOS\""
+    },
+    "initialPriority": "High",
+    "method": "POST",
+    "postData": "{\"params\":\"query=leave-green&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+    "postDataEntries": [
+      {
+        "bytes": "eyJwYXJhbXMiOiJxdWVyeT1sZWF2ZS1ncmVlbiZoaXRzUGVyUGFnZT0xMDAmYXR0cmlidXRlc1RvSGlnaGxpZ2h0PSU1QiUyMmNvbnRlbnQlMjIlNUQmYXR0cmlidXRlc1RvU25pcHBldD0lNUIlMjJjb250ZW50JTNBMzAlMjIlNUQmaGlnaGxpZ2h0UHJlVGFnPSUzQ3NwYW4lMjBjbGFzcyUzRCUyMnNlYXJjaC1rZXl3b3JkJTIyJTNFJmhpZ2hsaWdodFBvc3RUYWc9JTNDJTJGc3BhbiUzRSZyZXN0cmljdFNlYXJjaGFibGVBdHRyaWJ1dGVzPSU1QiUyMmNvbnRlbnQlMjIlNUQifQ=="
+      }
+    ],
+    "referrerPolicy": "strict-origin-when-cross-origin",
+    "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+  },
+  "afterLeave": {
+    "result": {
+      "type": "object",
+      "value": {
+        "current": "STALE MUST NOT WRITESTALE MUST NOT WRITE",
+        "oldConnected": true,
+        "oldResult": "STALE MUST NOT WRITESTALE MUST NOT WRITE",
+        "sameDocument": true
+      }
+    }
+  },
+  "newPageQuery": {
+    "request": {
+      "hasPostData": true,
+      "headers": {
+        "Origin": "http://127.0.0.1:8112",
+        "Referer": "http://127.0.0.1:8112/",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+        "accept": "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        "sec-ch-ua": "\"Google Chrome\";v=\"155\", \"Chromium\";v=\"155\", \"Not(A:Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"macOS\""
+      },
+      "initialPriority": "High",
+      "method": "POST",
+      "postData": "{\"params\":\"query=newpage-valid&hitsPerPage=100&attributesToHighlight=%5B%22content%22%5D&attributesToSnippet=%5B%22content%3A30%22%5D&highlightPreTag=%3Cspan%20class%3D%22search-keyword%22%3E&highlightPostTag=%3C%2Fspan%3E&restrictSearchableAttributes=%5B%22content%22%5D\"}",
+      "postDataEntries": [
+        {
+          "bytes": "eyJwYXJhbXMiOiJxdWVyeT1uZXdwYWdlLXZhbGlkJmhpdHNQZXJQYWdlPTEwMCZhdHRyaWJ1dGVzVG9IaWdobGlnaHQ9JTVCJTIyY29udGVudCUyMiU1RCZhdHRyaWJ1dGVzVG9TbmlwcGV0PSU1QiUyMmNvbnRlbnQlM0EzMCUyMiU1RCZoaWdobGlnaHRQcmVUYWc9JTNDc3BhbiUyMGNsYXNzJTNEJTIyc2VhcmNoLWtleXdvcmQlMjIlM0UmaGlnaGxpZ2h0UG9zdFRhZz0lM0MlMkZzcGFuJTNFJnJlc3RyaWN0U2VhcmNoYWJsZUF0dHJpYnV0ZXM9JTVCJTIyY29udGVudCUyMiU1RCJ9"
+        }
+      ],
+      "referrerPolicy": "strict-origin-when-cross-origin",
+      "url": "https://fixture-dsn.algolia.net/1/indexes/stellar-fixture/query?x-algolia-agent=Algolia%20for%20JavaScript%20(3.33.0)%3B%20Browser&x-algolia-application-id=fixture&x-algolia-api-key=fixture-public-key"
+    },
+    "visible": "×\n站内搜索\nVALID NEW PAGE\n\nVALID NEW PAGE"
+  },
+  "acceptance_status": "INVALID EARLY SAMPLE",
+  "acceptance_limit": "Released stale response before observing committed target URL and heading; browser still executed cached provider. Does not prove current fix passed or failed. Precise current verification: resume-algolia-partial-current.json."
+}

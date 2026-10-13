@@ -1,0 +1,137 @@
+{
+  "fixture_only": true,
+  "built_head": "5815e94",
+  "terminal": {
+    "clipboard": "go test ./...",
+    "real_clipboard": true,
+    "restored": true
+  },
+  "effects": [
+    {
+      "effect": "strands",
+      "setup": {
+        "effect": "strands",
+        "width": 2544,
+        "height": 2016,
+        "heroWidth": 1272,
+        "viewport": 1280,
+        "parent": "site-cover",
+        "options": "{}"
+      },
+      "frames": {
+        "effect": "strands",
+        "draws": 4,
+        "cancel": 0,
+        "deleteProgram": 0,
+        "deleteBuffer": 0
+      },
+      "pagehide": {
+        "effect": "strands",
+        "draws": 21,
+        "cancel": 1,
+        "deleteProgram": 1,
+        "deleteBuffer": 1
+      },
+      "leaveURL": "http://127.0.0.1:8103/journal/alpha",
+      "measurement": "native CDP, wrap existing WebGL draw/delete and cancelAnimationFrame after mount; real link navigation/pagehide; transient sessionStorage removed"
+    },
+    {
+      "effect": "galaxy",
+      "setup": {
+        "effect": "galaxy",
+        "width": 1272,
+        "height": 1008,
+        "heroWidth": 1272,
+        "viewport": 1280,
+        "parent": "site-cover",
+        "options": "{}"
+      },
+      "frames": {
+        "effect": "galaxy",
+        "draws": 3,
+        "cancel": 0,
+        "deleteProgram": 0,
+        "deleteBuffer": 0
+      },
+      "pagehide": {
+        "effect": "galaxy",
+        "draws": 19,
+        "cancel": 1,
+        "deleteProgram": 1,
+        "deleteBuffer": 1
+      },
+      "leaveURL": "http://127.0.0.1:8103/journal/alpha",
+      "measurement": "native CDP, wrap existing WebGL draw/delete and cancelAnimationFrame after mount; real link navigation/pagehide; transient sessionStorage removed"
+    },
+    {
+      "effect": "light-rays",
+      "setup": {
+        "effect": "light-rays",
+        "width": 2544,
+        "height": 2016,
+        "heroWidth": 1272,
+        "viewport": 1280,
+        "parent": "site-cover",
+        "options": "{}"
+      },
+      "frames": {
+        "effect": "light-rays",
+        "draws": 4,
+        "cancel": 0,
+        "deleteProgram": 0,
+        "deleteBuffer": 0
+      },
+      "pagehide": {
+        "effect": "light-rays",
+        "draws": 23,
+        "cancel": 1,
+        "deleteProgram": 1,
+        "deleteBuffer": 1
+      },
+      "leaveURL": "http://127.0.0.1:8103/journal/alpha",
+      "measurement": "native CDP, wrap existing WebGL draw/delete and cancelAnimationFrame after mount; real link navigation/pagehide; transient sessionStorage removed"
+    },
+    {
+      "effect": "ferrofluid",
+      "setup": {
+        "effect": "ferrofluid",
+        "width": 2544,
+        "height": 2016,
+        "heroWidth": 1272,
+        "viewport": 1280,
+        "parent": "site-cover",
+        "options": "{}"
+      },
+      "frames": {
+        "effect": "ferrofluid",
+        "draws": 3,
+        "cancel": 0,
+        "deleteProgram": 0,
+        "deleteBuffer": 0
+      },
+      "pagehide": {
+        "effect": "ferrofluid",
+        "draws": 19,
+        "cancel": 1,
+        "deleteProgram": 1,
+        "deleteBuffer": 1
+      },
+      "leaveURL": "http://127.0.0.1:8103/journal/alpha",
+      "measurement": "native CDP, wrap existing WebGL draw/delete and cancelAnimationFrame after mount; real link navigation/pagehide; transient sessionStorage removed"
+    }
+  ],
+  "multilineTerminal": {
+    "clipboard": "go test ./...\ngo vet ./...",
+    "expected": "go test ./...\ngo vet ./...",
+    "activeTab": "true"
+  },
+  "video": {
+    "src": "http://127.0.0.1:8103/uploads/sample-video.mp4",
+    "paused": false,
+    "currentTime": 0.588146,
+    "muted": true,
+    "loop": true,
+    "autoplay": true,
+    "readyState": 4
+  }
+}

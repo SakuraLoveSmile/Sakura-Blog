@@ -1,0 +1,70 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-cd3.json",
+  "selectorCorrection": "Earlier .article-banner matched none; formal carrier is .article.banner.top inside .article-banner-wrap",
+  "cases": [
+    {
+      "slug": "t3-banner-disabled",
+      "front": {
+        "banner": [],
+        "h1": [],
+        "license": null,
+        "references": null
+      }
+    },
+    {
+      "slug": "t3-banner-no-bg",
+      "front": {
+        "banner": [
+          {
+            "background": "none",
+            "class": "article banner top",
+            "maskCount": 0,
+            "style": null,
+            "title": "T3 无背景横幅"
+          }
+        ],
+        "h1": [
+          "T3 无背景横幅"
+        ],
+        "license": null,
+        "references": null
+      }
+    },
+    {
+      "slug": "t3-banner-empty-headline",
+      "front": {
+        "banner": [
+          {
+            "background": "url(\"http://127.0.0.1:8113/uploads/cover.png\")",
+            "class": "article banner top",
+            "maskCount": 2,
+            "style": "--bg-url:url('/uploads/cover.png')"
+          }
+        ],
+        "h1": [],
+        "license": null,
+        "references": null
+      }
+    },
+    {
+      "slug": "t3-ai-manual",
+      "front": {
+        "banner": [
+          {
+            "background": "url(\"http://127.0.0.1:8113/uploads/cover.png\")",
+            "class": "article banner top",
+            "maskCount": 2,
+            "style": "--bg-url:url('/uploads/cover.png')",
+            "title": "T3 横幅 manual"
+          }
+        ],
+        "h1": [
+          "T3 横幅 manual"
+        ],
+        "license": "许可协议T3 license by 验收管理员 ·\n",
+        "references": "参考资料Stellar 官方固定版本\nT3 Markdown 引用\n"
+      }
+    }
+  ]
+}

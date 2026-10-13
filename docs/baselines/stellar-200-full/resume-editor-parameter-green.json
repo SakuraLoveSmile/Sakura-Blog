@@ -1,0 +1,13 @@
+{
+  "fixture_only": true,
+  "built_head": "5f944882",
+  "immediate_switch": {
+    "source": "# Editor Parameter Fixture\n\n{% note color:purple UpdatedTitle UPDATED_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}",
+    "value": "# Editor Parameter Fixture\n\n{% note color:purple UpdatedTitle UPDATED_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}"
+  },
+  "reopened": "# Editor Parameter Fixture\n\n{% note color:purple UpdatedTitle UPDATED_BODY %}\n\n{% folding More %}\nFOLDING_BODY\n{% endfolding %}\n\n{% note color:green future:retained OPAQUE_BODY %}",
+  "page_immediate_save": "LATESTSAVEPage flush fixtureQuickSaveZ\n\nBEFORE_IMMEDIATE_EDIT",
+  "page_immediate_preview_front": "LATESTSAVEPage flush fixtureQuickSaveZQuickPreviewZFinalPreviewZ\n\nBEFORE_IMMEDIATE_EDIT",
+  "page_reopened_markdown": "## *LATEST*SAVEPage flush fixtureQuickSaveZQuickPreviewZFinalPreviewZ\n\nBEFORE_IMMEDIATE_EDIT",
+  "originals_restored": true
+}

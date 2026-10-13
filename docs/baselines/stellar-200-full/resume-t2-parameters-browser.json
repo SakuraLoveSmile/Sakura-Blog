@@ -1,0 +1,529 @@
+{
+  "fixture_only": true,
+  "built_head": "cd3d7e65",
+  "cases": [
+    {
+      "id": "brand-regular-avatar",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--regular brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "50%",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "96px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 regular avatarSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "avatar"
+        },
+        "name": "T2 regular avatar",
+        "search": true,
+        "style": "regular",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "brand-regular-icon",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--regular brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "0px",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "96px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 regular iconSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "icon"
+        },
+        "name": "T2 regular icon",
+        "search": true,
+        "style": "regular",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "brand-regular-plain",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--regular brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "0px",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "96px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 regular plainSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "plain"
+        },
+        "name": "T2 regular plain",
+        "search": true,
+        "style": "regular",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "brand-compact-avatar",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--compact brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "50%",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "48px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 compact avatarSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "avatar"
+        },
+        "name": "T2 compact avatar",
+        "search": true,
+        "style": "compact",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "brand-compact-icon",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--compact brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "0px",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "48px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 compact iconSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "icon"
+        },
+        "name": "T2 compact icon",
+        "search": true,
+        "style": "compact",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "brand-compact-plain",
+      "save_reopen_equal": true,
+      "dom": {
+        "brand": [
+          {
+            "cls": "brand-header brand-header--compact brand-header--site",
+            "imgs": [
+              {
+                "cls": "",
+                "loaded": true,
+                "radius": "0px",
+                "src": "http://127.0.0.1:8112/uploads/avatar.png",
+                "width": "48px"
+              }
+            ],
+            "links": [
+              "/about/",
+              "/about/"
+            ],
+            "text": "T2 compact plainSynthetic T2 parameter fixture搜索K"
+          }
+        ]
+      },
+      "initial_key_order_comparison": false,
+      "reopened_brand": {
+        "href": "/about/",
+        "image": {
+          "src": "/uploads/avatar.png",
+          "variant": "plain"
+        },
+        "name": "T2 compact plain",
+        "search": true,
+        "style": "compact",
+        "tagline": "Synthetic T2 parameter fixture"
+      }
+    },
+    {
+      "id": "menu-columns-1",
+      "save_reopen_equal": true,
+      "interaction": {
+        "action": "clicked",
+        "dropdownOpen": true,
+        "menus": [
+          {
+            "active": [
+              {
+                "current": "page",
+                "href": "/about/"
+              }
+            ],
+            "grid": "none"
+          }
+        ],
+        "nested": "clicked",
+        "nestedLink": "/wiki/"
+      },
+      "layout": {
+        "active": [
+          {
+            "current": "page",
+            "href": "/about/"
+          }
+        ],
+        "columns": "1",
+        "display": "grid",
+        "grid": "232px",
+        "layout": "list",
+        "variant": "nav"
+      }
+    },
+    {
+      "id": "menu-columns-2",
+      "save_reopen_equal": true,
+      "interaction": {
+        "action": "clicked",
+        "dropdownOpen": true,
+        "menus": [
+          {
+            "active": [
+              {
+                "current": "page",
+                "href": "/about/"
+              }
+            ],
+            "grid": "none"
+          }
+        ],
+        "nested": "clicked",
+        "nestedLink": "/wiki/"
+      },
+      "layout": {
+        "active": [
+          {
+            "current": "page",
+            "href": "/about/"
+          }
+        ],
+        "columns": "2",
+        "display": "grid",
+        "grid": "114px 114px",
+        "layout": "grid",
+        "variant": "nav"
+      }
+    },
+    {
+      "id": "menu-columns-3",
+      "save_reopen_equal": true,
+      "interaction": {
+        "action": "clicked",
+        "dropdownOpen": true,
+        "menus": [
+          {
+            "active": [
+              {
+                "current": "page",
+                "href": "/about/"
+              }
+            ],
+            "grid": "none"
+          }
+        ],
+        "nested": "clicked",
+        "nestedLink": "/wiki/"
+      },
+      "layout": {
+        "active": [
+          {
+            "current": "page",
+            "href": "/about/"
+          }
+        ],
+        "columns": "3",
+        "display": "grid",
+        "grid": "74.6641px 74.6641px 74.6641px",
+        "layout": "grid",
+        "variant": "icon"
+      }
+    },
+    {
+      "id": "menu-columns-4",
+      "save_reopen_equal": true,
+      "interaction": {
+        "action": "clicked",
+        "dropdownOpen": true,
+        "menus": [
+          {
+            "active": [
+              {
+                "current": "page",
+                "href": "/about/"
+              }
+            ],
+            "grid": "none"
+          }
+        ],
+        "nested": "clicked",
+        "nestedLink": "/wiki/"
+      },
+      "layout": {
+        "active": [
+          {
+            "current": "page",
+            "href": "/about/"
+          }
+        ],
+        "columns": "4",
+        "display": "grid",
+        "grid": "55px 55px 55px 55px",
+        "layout": "grid",
+        "variant": "icon"
+      }
+    },
+    {
+      "id": "menu-columns-5",
+      "save_reopen_equal": true,
+      "interaction": {
+        "action": "clicked",
+        "dropdownOpen": true,
+        "menus": [
+          {
+            "active": [
+              {
+                "current": "page",
+                "href": "/about/"
+              }
+            ],
+            "grid": "none"
+          }
+        ],
+        "nested": "clicked",
+        "nestedLink": "/wiki/"
+      },
+      "layout": {
+        "active": [
+          {
+            "current": "page",
+            "href": "/about/"
+          }
+        ],
+        "columns": "5",
+        "display": "grid",
+        "grid": "43.1953px 43.2031px 43.1953px 43.2031px 43.2031px",
+        "layout": "grid",
+        "variant": "icon"
+      }
+    },
+    {
+      "id": "widget-placement-warning-skip",
+      "save_reopen_equal": true,
+      "widgetIDs": [
+        "topbar:0:spacer",
+        "leftbar:fixed:brand",
+        "leftbar:fixed:menu",
+        "leftbar:1:markdown",
+        "leftbar:fixed:actions",
+        "leftbar:fixed:settings",
+        "rightbar:0:toc"
+      ],
+      "expected": {
+        "mustExist": [
+          "topbar:0:spacer",
+          "leftbar:1:markdown"
+        ],
+        "mustSkip": [
+          "topbar:1:markdown",
+          "topbar:2:t2-missing",
+          "topbar:3:brand",
+          "leftbar:0:spacer"
+        ],
+        "warningCodes": [
+          "unsupported_widget_presentation",
+          "unknown_widget",
+          "fixed_region_content"
+        ],
+        "note": "HTTP verifies skipped DOM only. Region warnings are model diagnostics; no runtime warning UI was found in source."
+      }
+    },
+    {
+      "id": "mobile-card",
+      "save_reopen_equal": true,
+      "initial": {
+        "docWidth": 390,
+        "styles": [
+          "/assets/css/main-card.css?v=aa6b222e",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-card.css?v=3c0edfe1"
+        ],
+        "width": 390
+      },
+      "open": {
+        "active": "<a class=\"brand-image brand-image--avatar\" href=\"/about/\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\"></a>",
+        "body": "",
+        "brand": "brand-header brand-header--regular brand-header--site"
+      },
+      "closed": {
+        "active": "Open leftbar"
+      },
+      "menu_destination": "http://127.0.0.1:8112/about/",
+      "visitor_settings": "http://127.0.0.1:8112/settings"
+    },
+    {
+      "id": "mobile-glass",
+      "save_reopen_equal": true,
+      "initial": {
+        "docWidth": 390,
+        "styles": [
+          "/assets/css/main-glass.css?v=36102bda",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-glass.css?v=316b61b2"
+        ],
+        "width": 390
+      },
+      "open": {
+        "active": "<a class=\"brand-image brand-image--avatar\" href=\"/about/\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\"></a>",
+        "body": "",
+        "brand": "brand-header brand-header--regular brand-header--site"
+      },
+      "closed": {
+        "active": "Open leftbar"
+      },
+      "menu_destination": "http://127.0.0.1:8112/about/",
+      "visitor_settings": "http://127.0.0.1:8112/settings"
+    },
+    {
+      "id": "mobile-minimal",
+      "save_reopen_equal": true,
+      "initial": {
+        "docWidth": 390,
+        "styles": [
+          "/assets/css/main-minimal.css?v=db804e0a",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-minimal.css?v=dfa57057"
+        ],
+        "width": 390
+      },
+      "open": {
+        "active": "<a class=\"brand-image brand-image--avatar\" href=\"/about/\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\"></a>",
+        "body": "",
+        "brand": "brand-header brand-header--regular brand-header--site"
+      },
+      "closed": {
+        "active": "Open leftbar"
+      },
+      "menu_destination": "http://127.0.0.1:8112/about/",
+      "visitor_settings": "http://127.0.0.1:8112/settings"
+    },
+    {
+      "id": "mobile-flat",
+      "save_reopen_equal": true,
+      "initial": {
+        "docWidth": 390,
+        "styles": [
+          "/assets/css/main-flat.css?v=5cc07d11",
+          "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css?v=0",
+          "/assets/css/main-appearance-flat.css?v=e23beb98"
+        ],
+        "width": 390
+      },
+      "open": {
+        "active": "<a class=\"brand-image brand-image--avatar\" href=\"/about/\"><img no-lazy=\"\" src=\"/uploads/avatar.png\" alt=\"\" onerror=\"this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;\"></a>",
+        "body": "",
+        "brand": "brand-header brand-header--regular brand-header--site"
+      },
+      "closed": {
+        "active": "Open leftbar"
+      },
+      "menu_destination": "http://127.0.0.1:8112/about/",
+      "visitor_settings": "http://127.0.0.1:8112/settings"
+    }
+  ],
+  "drawer_isolation": {
+    "aria-hidden": "true",
+    "inert_attribute": true,
+    "after_close": {
+      "aria-hidden": null,
+      "inert_attribute": false
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "fixture_only": true,
+  "runtime": "resume-runtime-581.json",
+  "front": {
+    "avatar": [
+      {
+        "currentSrc": "http://127.0.0.1:8113/assets/img/icon-512.png",
+        "loaded": true,
+        "src": "/assets/img/icon-512.png"
+      }
+    ],
+    "shares": [
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: QR Code"
+      },
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: Weibo"
+      },
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: X"
+      },
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: Telegram"
+      },
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: WhatsApp"
+      },
+      {
+        "missing": 0,
+        "svgs": 1,
+        "title": "分享文章: Email"
+      }
+    ],
+    "tagline": "T3 副标题 manual"
+  },
+  "qr": {
+    "class": "share-qrcode display",
+    "height": "128px",
+    "image": false,
+    "loaded": false,
+    "opacity": "1"
+  },
+  "qrAfterLoad": {
+    "class": "share-qrcode display",
+    "height": "128px",
+    "image": true,
+    "loaded": true,
+    "opacity": "1"
+  }
+}
