@@ -109,6 +109,7 @@ func main() {
 				StellarOwner:   stellar.RepositoryOwner, StellarRepo: stellar.RepositoryName,
 				RenderSitePreview:           stellarServer.RenderSitePreview,
 				RenderStellarContentPreview: stellarServer.RenderContentPreview,
+				RenderStellarMarkdown:       stellarServer.RenderStellarMarkdown,
 				StellarWidgetCatalog:        stellarServer.StellarWidgetCatalog,
 				Events:                      services.Events,
 				UploadDir:                   services.App.UploadDir, MaxUploadMB: services.App.MaxUploadMB, LinkWatch: services.LinkWatch,
