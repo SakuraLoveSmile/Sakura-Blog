@@ -293,11 +293,147 @@ user2:
 	for _, kind := range []string{"friends", "albums", "posters", "sites"} {
 		cases = append(cases, v2OracleCase{kind, "group", ""})
 	}
+	return append(cases, v2OfficialParameterCases()...)
+}
+
+// 参数矩阵覆盖省略值、显式分支和官方实际转义的位置；期望仍由固定提交的 JS 计算。
+func v2OfficialParameterCases() []v2OracleCase {
+	images := "![first](/one.png)\n![](/two.png)\nnot an image"
+	tabs := "<!-- tab One -->\nfirst\n<!-- tab Two -->\nsecond"
+	okr := "Objective\n<!-- okr kr1 percent:25 -->\nOne\n<!-- okr kr2 percent:100 -->\nTwo"
+	cases := []v2OracleCase{
+		{"ghcard", "alice/repo show_owner:true title_color:112233 text_color:445566 icon_color:778899 bg_color:0,ffffff,eeeeee cache_seconds:1800 hide_border:true locale:cn theme:transparent", ""},
+		{"ghcard", "alice title_color:abcdef text_color:fedcba icon_color:123456 bg_color:ffffff cache_seconds:0 show_owner:false hide_border:false", ""},
+		{"gallery", "layout:unknown size:xl aspect_ratio:landscape", images},
+		{"swiper", "", "no images"},
+		{"image", "/image.png", ""},
+		{"image", "/image.png 'Alt <tag> & \"quoted\"' fancybox:true height:200px", ""},
+		{"image", "/image.png width:200px ratio:1/1", ""},
+		{"image", "/image.png Alt download:/download.png", ""},
+		{"frame", "iphone11 img:/image.png 'Alt <tag> & \"quoted\"'", ""},
+		{"frame", "macbook video:/video.mp4", ""},
+		{"frame", "iphone11", ""},
+		{"frame", "img:/image.png", ""},
+		{"audio", "/audio.ogg", ""},
+		{"audio", "netease:123 autoplay:false", ""},
+		{"video", "bilibili:BV123", ""},
+		{"video", "youtube:video-id autoplay:false ratio:4/3 width:640px", ""},
+		{"video", "youtube:video-id autoplay:true", ""},
+		{"video", "youtube:video-id", ""},
+		{"link", "/post 'Title <tag> & \"quoted\"' desc:'Description <tag> & \"quoted\"'", ""},
+		{"link", "/post desc:true", ""},
+		{"link", "", ""},
+		{"copy", "git:https /alice/blog prefix:HTTPS", ""},
+		{"copy", "", ""},
+		{"emoji", "unknown smile", ""},
+		{"emoji", "url:https://example.test/emoji.png", ""},
+		{"emoji", "", ""},
+		{"icon", "copy:copy", ""},
+		{"button", "Label", ""},
+		{"button", "", ""},
+		{"radio", "checked:false symbol:minus Choice", ""},
+		{"checkbox", "Task", ""},
+		{"radio", "Choice", ""},
+		{"mark", "'Highlight' tip:'Explanation <tag> & \"quoted\"'", ""},
+		{"tip", "'**Word**' pop:'Explanation <tag> & \"quoted\"'", ""},
+		{"tip", "Word", ""},
+		{"note", "Title content without explicit color", ""},
+		{"quot", "Heading", ""},
+		{"quot", "el:h3 prefix:copy:copy Heading", ""},
+		{"quot", "suffix:copy:copy Quote", ""},
+		{"hashtag", "Label", ""},
+		{"folding", "Title", "body"},
+		{"folding", "child:codeblock open:false **Title**", "body"},
+		{"box", "Title", "body"},
+		{"box", "", "body"},
+		{"folders", "", "<!-- folder One -->\nbody"},
+		{"tabs", "", tabs},
+		{"tabs", "active:99 align:right", tabs},
+		{"tabs", "active:-1 align:left", tabs},
+		{"tabs", "active:not-a-number", tabs},
+		{"tabs", "", ""},
+		{"dropdown", "'Menu <tag> & \"quoted\"'", "- [Item <tag> & \"quoted\"](/target?x=1&y=2)"},
+		{"dropdown", "direction:invalid align:invalid open:false Menu", "- [One](/one)"},
+		{"dropdown", "direction:down align:left Menu", "- [One](/one)"},
+		{"dropdown", "", "- [One](/one)"},
+		{"dropdown", "Menu", "not a menu item"},
+		{"grid", "w:320px c:3 bg:plain", "<!-- cell -->\nbody"},
+		{"grid", "", ""},
+		{"banner", `bg:"/it's.png"`, `<div class="tag-plugin navbar">Navigation</div>`},
+		{"banner", "", ""},
+		{"navbar", "[One](/one) [Two](https://example.test)", ""},
+		{"navbar", "", ""},
+		{"blockquote", "indent:true", "body"},
+		{"blockquote", "", "body"},
+		{"table", "style:wrap", "| A |\n| - |\n| 1 |"},
+		{"table", "style:invalid", "| A |\n| - |\n| 1 |"},
+		{"table", "", "| A |\n| - |\n| 1 |"},
+		{"toc", "wiki:docs open:true display:desktop", ""},
+		{"timeline", "api:https://example.test/api user:alice,bob limit:10 hide:user,title", ""},
+		{"timeline", "type:memos", "<!-- node Today -->\nbody"},
+		{"timeline", "", ""},
+		{"md", "https://example.test/readme.md wrap:true", ""},
+		{"rating", "", ""},
+		{"vote", "", ""},
+		{"poetry", "", "body"},
+		{"poetry", "date:Today", "body"},
+		{"reel", "", "body"},
+		{"reel", "date:Today", "body"},
+		{"paper", "", "<!-- section -->\nbody\n<!-- line -->\nsignature"},
+		{"okr", "o1", okr},
+		{"okr", "o1", "Objective\n<!-- okr kr1 percent:100 -->\nOne\n<!-- okr kr2 percent:100 -->\nTwo"},
+		{"okr", "o1 percent:12.9 status:unknown", okr},
+		{"mbti", "entp-a 0-100-50-25-75 url:https://example.test/person", ""},
+		{"mbti", "INFJ 1-2-3-4-5", ""},
+		{"mbti", "", ""},
+	}
+	for _, effect := range []string{"slide", "fade", "coverflow", "cards"} {
+		for _, width := range []string{"min", "max"} {
+			cases = append(cases, v2OracleCase{"swiper", "width:" + width + " effect:" + effect, images})
+		}
+	}
+	for _, layout := range []string{"grid", "flow"} {
+		for _, size := range []string{"mix", "s", "m", "l", "xl"} {
+			for _, ratio := range []string{"original", "square", "portrait", "landscape"} {
+				cases = append(cases, v2OracleCase{"gallery", "layout:" + layout + " size:" + size + " aspect_ratio:" + ratio, images})
+			}
+		}
+	}
+	for _, kind := range []string{"albums", "posters", "friends", "sites"} {
+		for _, args := range []string{"", "missing", "api:https://example.test/api", "group repo:alice/blog api:https://example.test/override"} {
+			cases = append(cases, v2OracleCase{kind, args, ""})
+		}
+	}
+	for _, kind := range []string{"albums", "posters"} {
+		for _, size := range []string{"xs", "s", "m", "l", "xl", "mix"} {
+			cases = append(cases, v2OracleCase{kind, "group size:" + size, ""})
+		}
+	}
+	for _, status := range []string{"in_track", "at_risk", "off_track", "finished", "unfinished"} {
+		cases = append(cases, v2OracleCase{"okr", "o1 percent:100 status:" + status, "Objective\n<!-- okr kr1 percent:0 status:" + status + " -->\nOne\n<!-- okr kr2 percent:100 status:" + status + " -->\nTwo"})
+	}
+	for _, name := range []string{"u", "emp", "wavy", "del", "kbd", "psw", "blur", "sup", "sub"} {
+		cases = append(cases, v2OracleCase{name, "'text & entity'", ""})
+	}
+	chatBody := "alice:\n  name: Alice\n  avatar: /alice.png\n  label:\n    text: Admin\n    textColor: white\n    bgColor: '#2196f3'\n<!-- chattip Today -->\n<!-- chatcell user:alice md:Hello tag:first -->\n<!-- chatcell user:alice md:Reply quote:first -->\n<!-- chatcell user:alice emoji:smile -->"
+	for _, style := range []string{"qq", "wechat"} {
+		cases = append(cases, v2OracleCase{"chat", "style:" + style + " scene:person labelColorStyle:dynamic", chatBody})
+		cases = append(cases, v2OracleCase{"chat", "style:" + style, chatBody})
+	}
+	for _, ext := range []string{"docx", "pptx", "xlsx", "pdf", "md", "zip", "js", "mp4", "png", "mp3", "json", "sqlite", "obj", "sh", "lnk", "unknown", ""} {
+		filename := "/file"
+		if ext != "" {
+			filename += "." + ext
+		}
+		cases = append(cases, v2OracleCase{"chat", "iphone style:qq title:Files", "alice:\n  name: Alice\n  avatar: /alice.png\n<!-- chatcell user:alice file:" + filename + " -->"})
+	}
 	return cases
 }
+
 func TestStellarV2OfficialRendererOracle(t *testing.T) {
 	context := StellarRenderContext{Theme: map[string]any{"services": map[string]any{"siteInfo": map[string]any{"provider": "site_info_api", "site_info_api": map[string]any{"endpoint": "https://example.test/info?url={href}"}}}}, Data: map[string]any{"icons": map[string]any{}, "siteURL": "https://example.test/", "links": map[string]any{"group": []any{map[string]any{"url": "https://example.test/", "title": "Site", "description": "Desc"}}}, "wiki": map[string]any{"tree": map[string]any{"docs": map[string]any{"sections": []any{map[string]any{"title": "First", "pages": []any{map[string]any{"path": "/one", "title": "One"}}}, map[string]any{"title": "Second", "pages": []any{map[string]any{"path": "/two", "title": "Two"}}}}}, "single": map[string]any{"pages": []any{map[string]any{"path": "/one", "title": "One"}}}}}}}
 	seen := map[string]bool{}
+	var strictDOM, decodedQuery, emptyRules int
 	for i, c := range v2OfficialCases() {
 		t.Run(fmt.Sprintf("%03d_%s", i, c.name), func(t *testing.T) {
 			oracle := newV2Oracle(t, context)
@@ -305,12 +441,19 @@ func TestStellarV2OfficialRendererOracle(t *testing.T) {
 			tokens, _ := v2Args(c.args)
 			got := oracle.r.render(c.name, v2MapArgs(tokens, entry.Params), c.body, c.args)
 			want := oracle.render(t, c.name, c.args, c.body)
-			if a, b := v2Canonical(t, got), v2Canonical(t, want); a != b {
+			if a, b := v2OfficialComparable(t, c.name, got), v2OfficialComparable(t, c.name, want); a != b {
 				t.Errorf("got %s\nwant %s", a, b)
+			} else if v2Canonical(t, got) == v2Canonical(t, want) {
+				strictDOM++
+			} else if c.name == "ghcard" {
+				decodedQuery++
+			} else if c.name == "chat" {
+				emptyRules++
 			}
 		})
 		seen[c.name] = true
 	}
+	t.Logf("parameter oracle: total=%d strict DOM=%d decoded query equivalence=%d empty CSS equivalence=%d", len(v2OfficialCases()), strictDOM, decodedQuery, emptyRules)
 	for _, e := range ShortcodeCatalogStellarV2() {
 		if e.Name != "gist" && !seen[e.Name] {
 			t.Errorf("official tag %s has no renderer oracle", e.Name)
@@ -318,6 +461,274 @@ func TestStellarV2OfficialRendererOracle(t *testing.T) {
 	}
 	if len(ShortcodeCatalogStellarV2()) != 54 {
 		t.Errorf("official catalog count=%d", len(ShortcodeCatalogStellarV2()))
+	}
+}
+
+// 只归一有明确浏览器语义依据的差异，不放宽可见 DOM、参数或非空样式的比较。
+func v2OfficialComparable(t *testing.T, tag, source string) string {
+	t.Helper()
+	if tag != "ghcard" && tag != "chat" {
+		return v2Canonical(t, source)
+	}
+	doc, err := nethtml.Parse(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var visit func(*nethtml.Node)
+	visit = func(n *nethtml.Node) {
+		if tag == "ghcard" && n.Type == nethtml.ElementNode && n.Data == "img" {
+			for i, attr := range n.Attr {
+				if attr.Key != "src" {
+					continue
+				}
+				u, err := url.Parse(attr.Val)
+				if err != nil {
+					t.Fatal(err)
+				}
+				query, err := url.ParseQuery(u.RawQuery)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// 官方直接拼接 query；Go 编码逗号等字符，但服务收到的全部键/值必须相同。
+				u.RawQuery = query.Encode()
+				n.Attr[i].Val = u.String()
+			}
+		}
+		for child := n.FirstChild; child != nil; {
+			next := child.NextSibling
+			if tag == "chat" && child.Type == nethtml.ElementNode && child.Data == "style" {
+				var css strings.Builder
+				for text := child.FirstChild; text != nil; text = text.NextSibling {
+					css.WriteString(text.Data)
+				}
+				// 没有带颜色 label 时，上游仍输出三个空规则；Go 省略无声明的 style。
+				if strings.Join(strings.Fields(css.String()), "") == ":root{}@media(prefers-color-scheme:dark){:root:not([color-scheme]){}}[color-scheme='dark']{}" {
+					n.RemoveChild(child)
+					child = next
+					continue
+				}
+			}
+			visit(child)
+			child = next
+		}
+	}
+	visit(doc)
+	var output bytes.Buffer
+	if err := nethtml.Render(&output, doc); err != nil {
+		t.Fatal(err)
+	}
+	return v2Canonical(t, output.String())
+}
+
+func TestStellarV2OfficialDocumentedSafetyDifferences(t *testing.T) {
+	t.Run("image_download_quoted_alt", func(t *testing.T) {
+		// 官方 caption/alt 已转义，但 download 使用原始 alt，双引号破坏其 HTML 属性。
+		// 保留原始差分输入，明确验证 Go 安全偏差，不能称作严格 DOM 相同。
+		args := `/image.png 'Alt <tag> & "quoted"' fancybox:true height:200px download:/download.png`
+		oracle := newV2Oracle(t, StellarRenderContext{})
+		entry, _ := shortcodeV2Entry("image")
+		tokens, err := v2Args(args)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := oracle.r.render("image", v2MapArgs(tokens, entry.Params), "", args)
+		want := oracle.render(t, "image", args, "")
+		if v2Canonical(t, got) == v2Canonical(t, want) {
+			t.Fatal("documented upstream unescaped download difference disappeared; review the exception")
+		}
+		for _, key := range []string{"src", "data-src", "alt"} {
+			if a, b := v2OracleAttr(t, got, "img", key), v2OracleAttr(t, want, "img", key); a != b {
+				t.Errorf("image.%s got %q want %q", key, a, b)
+			}
+		}
+		if v2OracleAttr(t, got, "a", "href") != v2OracleAttr(t, want, "a", "href") {
+			t.Fatal("download URL differs")
+		}
+		if actual := v2OracleAttr(t, got, "a", "download"); actual != `Alt <tag> & "quoted"` {
+			t.Fatalf("unsafe download alt: %q", actual)
+		}
+		if official := v2OracleAttr(t, want, "a", "download"); official != "Alt <tag> & " {
+			t.Fatalf("upstream exception changed: %q", official)
+		}
+		t.Log("明确安全偏差：官方 download 双引号未转义，Go 保留完整安全属性；caption/alt 与下载 URL 等效")
+	})
+	for _, status := range []string{"", "in_track", "at_risk", "off_track", "finished", "unfinished"} {
+		t.Run("okr_single_kr_"+status, func(t *testing.T) {
+			// 上游先要求整体 >=3 段，shift Objective 后却再次要求 >=3，故合法单 KR 被丢弃。
+			// 加 trailing newline 不改变 filter(trim.length>0)，不会修复上游该分支。
+			args, body := "o1", "Objective\n<!-- okr kr1 percent:100 -->\nOne"
+			if status != "" {
+				args += " percent:100 status:" + status
+				body = "Objective\n<!-- okr kr1 percent:0 status:" + status + " -->\nOne"
+			}
+			for _, suffix := range []string{"", "\n", "\n\n"} {
+				oracle := newV2Oracle(t, StellarRenderContext{})
+				entry, _ := shortcodeV2Entry("okr")
+				tokens, err := v2Args(args)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := oracle.r.render("okr", v2MapArgs(tokens, entry.Params), body+suffix, args)
+				want := oracle.render(t, "okr", args, body+suffix)
+				if !strings.Contains(got, `id="okr-kr1"`) || strings.Contains(want, `id="okr-kr1"`) {
+					t.Fatalf("documented single KR behavior changed\ngot %s\nwant %s", got, want)
+				}
+				if status == "" && (!strings.Contains(want, "NaN%") || strings.Contains(got, "NaN%")) {
+					t.Fatal("documented upstream empty average changed")
+				}
+			}
+			t.Log("明确上游缺陷偏差：Go 渲染单 KR；官方丢弃单 KR，自动平均值为 NaN。正常双 KR 所有状态仍严格差分")
+		})
+	}
+}
+
+func v2OfficialGistCases() []v2OracleCase {
+	return []v2OracleCase{
+		{"gist", "octocat/abc123", ""},
+		{"gist", `octocat/abc123 file:"a b.go"`, ""},
+		{"gist", `octocat/abc123 file:"目录/a&b.go"`, ""},
+	}
+}
+
+func v2OracleAttr(t *testing.T, source, element, key string) string {
+	t.Helper()
+	doc, err := nethtml.Parse(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result string
+	var visit func(*nethtml.Node)
+	visit = func(n *nethtml.Node) {
+		if n.Type == nethtml.ElementNode && n.Data == element {
+			for _, attr := range n.Attr {
+				if attr.Key == key {
+					result = attr.Val
+					return
+				}
+			}
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(doc)
+	if result == "" {
+		t.Fatalf("%s.%s absent in %s", element, key, source)
+	}
+	return result
+}
+
+func TestStellarV2OfficialGistRequestOracle(t *testing.T) {
+	// 已确认的隔离 iframe 改变 DOM；owner/id 与 file 必须仍对应官方动态脚本请求。
+	for i, c := range v2OfficialGistCases() {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			oracle := newV2Oracle(t, StellarRenderContext{})
+			entry, _ := shortcodeV2Entry(c.name)
+			tokens, err := v2Args(c.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := oracle.r.render(c.name, v2MapArgs(tokens, entry.Params), "", c.args)
+			iframeURL, err := url.Parse(v2OracleAttr(t, got, "iframe", "src"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			query := iframeURL.Query()
+			base := strings.TrimRight(v2String(v2Object(oracle.r.services["github"])["gistUrl"]), "/")
+			reconstructed := base + "/" + query.Get("gist") + ".js"
+			if file := query.Get("file"); file != "" {
+				reconstructed += "?" + url.Values{"file": {file}}.Encode()
+			}
+			want := v2OracleAttr(t, oracle.render(t, c.name, c.args, ""), "script", "src")
+			actualURL, err := url.Parse(reconstructed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			officialURL, err := url.Parse(want)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if actualURL.Scheme != officialURL.Scheme || actualURL.Host != officialURL.Host || actualURL.Path != officialURL.Path || actualURL.Query().Encode() != officialURL.Query().Encode() {
+				t.Errorf("isolated request %s differs from official %s", reconstructed, want)
+			}
+			if iframeURL.Path != "/stellar/embed/gist" || v2OracleAttr(t, got, "iframe", "sandbox") != "allow-scripts" {
+				t.Fatalf("Gist isolation changed: %s", got)
+			}
+		})
+	}
+}
+
+func TestStellarV2OfficialOracleParameterCoverage(t *testing.T) {
+	// 这是测试矩阵的门禁，不是渲染断言；每个字段的结果仍由上述真实 JS oracle 对照。
+	covered := map[string]map[string]bool{}
+	for _, c := range append(v2OfficialCases(), v2OfficialGistCases()...) {
+		entry, ok := shortcodeV2Entry(c.name)
+		if !ok {
+			t.Fatalf("uncatalogued oracle tag %s", c.name)
+		}
+		tokens, err := v2Args(c.args)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		values := v2MapArgs(tokens, entry.Params)
+		if covered[c.name] == nil {
+			covered[c.name] = map[string]bool{}
+		}
+		for _, param := range entry.Params {
+			if param.Role == ShortcodeParamContent {
+				covered[c.name][param.Key] = covered[c.name][param.Key] || c.body != ""
+			} else if param.Role == ShortcodeParamNamed || param.Role == ShortcodeParamFlag {
+				for _, token := range tokens {
+					if strings.HasPrefix(token, param.Key+":") {
+						covered[c.name][param.Key] = true
+					}
+				}
+			} else {
+				covered[c.name][param.Key] = covered[c.name][param.Key] || values[param.Key] != ""
+			}
+		}
+	}
+	for _, entry := range ShortcodeCatalogStellarV2() {
+		for _, param := range entry.Params {
+			if !covered[entry.Name][param.Key] {
+				t.Errorf("official oracle has no explicit %s.%s (%s) parameter case", entry.Name, param.Key, param.Role)
+			}
+		}
+	}
+}
+
+func TestStellarV2OfficialThemeDefaultAndLocaleOracle(t *testing.T) {
+	cases := []v2OracleCase{
+		{"note", "Title body", ""}, {"box", "Title", "body"},
+		{"button", "Label /target", ""}, {"mark", "Text", ""},
+		{"icon", "copy:copy", ""}, {"hashtag", "Label /tag", ""},
+		{"gallery", "", "![Caption](/image.png)"}, {"quot", "Heading", ""},
+		{"copy", "Text", ""}, {"rating", "Title", ""}, {"vote", "Title", ""},
+		{"mbti", "INTJ-T 93-72-78-83-51", ""},
+		{"okr", "o1", "Objective\n<!-- okr kr1 percent:25 -->\nOne\n<!-- okr kr2 percent:100 -->\nTwo"},
+	}
+	theme := map[string]any{"tags": map[string]any{
+		"note": map[string]any{"defaultColor": "purple"}, "button": map[string]any{"defaultColor": "cyan"},
+		"mark": map[string]any{"defaultColor": "orange"}, "icon": map[string]any{"defaultColor": "green"},
+		"hashtag": map[string]any{"defaultColor": "blue"},
+		"gallery": map[string]any{"size": "xl", "aspectRatio": "landscape"},
+	}}
+	for _, language := range []string{"zh-CN", "zh-TW", "en"} {
+		for _, c := range cases {
+			t.Run(language+"/"+c.name, func(t *testing.T) {
+				oracle := newV2Oracle(t, StellarRenderContext{Language: language, Theme: theme})
+				entry, _ := shortcodeV2Entry(c.name)
+				tokens, err := v2Args(c.args)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := oracle.r.render(c.name, v2MapArgs(tokens, entry.Params), c.body, c.args)
+				want := oracle.render(t, c.name, c.args, c.body)
+				if a, b := v2Canonical(t, got), v2Canonical(t, want); a != b {
+					t.Errorf("got %s\nwant %s", a, b)
+				}
+			})
+		}
 	}
 }
 
