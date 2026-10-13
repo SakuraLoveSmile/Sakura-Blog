@@ -83,15 +83,11 @@ func (h *Handler) validateStellarContent(c *gin.Context) {
 
 // 所有保存和预览使用同一严格正文渲染器，仅传公开 data 袋。
 func (h *Handler) renderEditorStellar(body string, meta StellarContentMetadata, profile string) (string, error) {
-	return h.renderEditorStellarWithLanguage(body, meta, profile, "")
-}
-
-func (h *Handler) renderEditorStellarWithLanguage(body string, meta StellarContentMetadata, profile, language string) (string, error) {
 	parsed, err := validateEditorMetadata(meta, profile, false)
 	if err != nil {
 		return "", err
 	}
-	return h.renderStellarBody(content.StellarBodyInput{Markdown: body, Page: parsed.Value, Language: language})
+	return h.renderStellarBody(content.StellarBodyInput{Markdown: body, Page: parsed.Value})
 }
 
 func (h *Handler) renderStellarBody(input content.StellarBodyInput) (string, error) {

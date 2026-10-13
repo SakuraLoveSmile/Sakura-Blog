@@ -8,8 +8,8 @@ import (
 )
 
 // RenderContentPreview 暴露组合根需要的完整前台预览，Console 不导入 Stellar 内部路由。
-func (s *Server) RenderContentPreview(input content.StellarPreviewInput) (string, error) {
-	return s.Server.RenderContentPreview(input)
+func (s *Server) RenderContentPreview(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+	return s.Server.RenderContentPreviewSnapshot(input)
 }
 
 // StellarWidgetCatalog 供 Console 使用同一完整公开组件库。

@@ -40,19 +40,37 @@ func TestStellarEditorWikiTOCUsesPublicContentContext(t *testing.T) {
 	}
 }
 
-func TestStellarEditorMissingBodyRendererRejectsWriteAndPreview(t *testing.T) {
+func TestStellarEditorMissingBodyRendererRejectsWrite(t *testing.T) {
 	r, st, user, h := newFullStellarEnv(t)
 	h.renderStellarMarkdown = nil
-	cookie := authCookie(user)
-	for _, endpoint := range []string{"/api/v1/pages", "/api/v1/preview/markdown"} {
-		w := do2FA(r, http.MethodPost, endpoint, editorPayload(t, map[string]any{"slug": "no-renderer", "title": "Pending", "content_md": "Body", "markdown": "Body", "layout": "page", "preview_token": "preview_context_1234"}), cookie)
-		if w.Code != http.StatusServiceUnavailable {
-			t.Fatalf("%s: %d %s", endpoint, w.Code, w.Body.String())
-		}
+	w := do2FA(r, http.MethodPost, "/api/v1/pages", editorPayload(t, map[string]any{"slug": "no-renderer", "title": "Pending", "content_md": "Body"}), authCookie(user))
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
 	saved, err := st.GetPageBySlug("no-renderer")
 	if err != nil || saved != nil {
 		t.Fatalf("rejected write mutated store: %v %+v", err, saved)
+	}
+}
+
+func TestStellarPreviewUsesOneSnapshotCallback(t *testing.T) {
+	r, _, user, h := newFullStellarEnv(t)
+	h.renderStellarMarkdown = func(content.StellarBodyInput) (string, error) {
+		t.Fatal("opaque preview captured a separate body snapshot")
+		return "", nil
+	}
+	calls := 0
+	h.renderStellarContentPreview = func(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+		calls++
+		if input.Markdown == nil || *input.Markdown != "Canonical raw Markdown" || input.HTML != "" || input.Language != "en" {
+			t.Fatalf("snapshot candidate lost: %+v", input)
+		}
+		return content.StellarPreviewOutput{HTML: "<p>ONE_SNAPSHOT</p>", Document: "<html><body><p>ONE_SNAPSHOT</p></body></html>"}, nil
+	}
+	w := do2FA(r, http.MethodPost, "/api/v1/preview/markdown", editorPayload(t, map[string]any{"markdown": "Canonical raw Markdown", "layout": "page", "language": "en", "preview_token": "preview_context_1234"}), authCookie(user))
+	var response StellarMarkdownPreviewResponse
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &response) != nil || response.HTML != "<p>ONE_SNAPSHOT</p>" || !strings.Contains(response.Document, response.HTML) || calls != 1 {
+		t.Fatalf("split preview result: %d %s", w.Code, w.Body.String())
 	}
 }
 

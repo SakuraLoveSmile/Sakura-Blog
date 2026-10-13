@@ -73,7 +73,7 @@ type Handler struct {
 
 	// renderSitePreview 设置页「前端预览」渲染回调（由组合入口注入，nil 时端点 501）。
 	renderStellarMarkdown       func(content.StellarBodyInput) (string, error)
-	renderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	renderStellarContentPreview func(content.StellarPreviewInput) (content.StellarPreviewOutput, error)
 	stellarWidgetCatalog        func() (map[string]any, error)
 	renderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// events is the shared content-change publisher. Console does not know
@@ -100,7 +100,7 @@ type Config struct {
 	Icons    *tmpl.IconRegistry // 图标注册表（素材速查端点），可空
 	// RenderSitePreview 设置页「前端预览」渲染回调（草稿分段 → 前台整页 HTML），可空。
 	RenderStellarMarkdown       func(content.StellarBodyInput) (string, error)
-	RenderStellarContentPreview func(content.StellarPreviewInput) (string, error)
+	RenderStellarContentPreview func(content.StellarPreviewInput) (content.StellarPreviewOutput, error)
 	StellarWidgetCatalog        func() (map[string]any, error)
 	RenderSitePreview           func(sections map[string]json.RawMessage, page string) (string, error)
 	// Events publishes generic changes such as wiki/settings writes.

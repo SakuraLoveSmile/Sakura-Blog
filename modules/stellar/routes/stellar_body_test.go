@@ -9,6 +9,7 @@ import (
 	"blog/internal/content"
 	"blog/internal/post"
 	"blog/internal/store"
+	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
 )
 
@@ -87,5 +88,58 @@ func TestStellarBodyCallbackSharesPublicWikiAndAbsoluteLinkContext(t *testing.T)
 	snapshots, err := ws.renderSnapshots(context.Background())
 	if err != nil || len(snapshots) == 0 || calls < 2 {
 		t.Fatalf("template snapshots: %v calls=%d", err, calls)
+	}
+}
+
+type stellarPreviewMutationRenderer struct {
+	renderer PageRenderer
+	mutate   func()
+}
+
+func (r stellarPreviewMutationRenderer) Render(name string, data *tmpl.ViewData) (string, error) {
+	r.mutate()
+	return r.renderer.Render(name, data)
+}
+
+func TestStellarOpaquePreviewKeepsBodyAndDocumentInOneSnapshot(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"Manual","route":{"path":"/docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Title: "Public introduction", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"collection":{"profile":"wiki","id":"docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	site := *ws.site.Load()
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	version.Theme["footer"] = map[string]any{"content": "OLD_FOOTER {% toc wiki:docs %} {% link /destination title:Footer %}"}
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	engine, err := stellarweb.NewEngineFromEmbed(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine.SetStellarMarkdownRender(ws.posts.RenderStellarV2WithContext)
+	ws.engine = stellarPreviewMutationRenderer{renderer: engine, mutate: func() {
+		next := site
+		next.URL = "https://new-generation.test/"
+		newer := version
+		newer.Theme = stellarCopyObject(version.Theme)
+		newer.Theme["footer"] = map[string]any{"content": "NEW_FOOTER"}
+		next.StellarV2 = &newer
+		ws.site.Store(&next)
+	}}
+	markdown := "{% toc wiki:docs %}\n\n{% link /destination title:Body %}\n\n{% mbti INTJ-T 93-72-78-83-51 %}"
+	output, err := ws.renderContentPreviewSnapshot(content.StellarPreviewInput{StellarVersion: 2, StellarConfig: `{"lang":"zh-CN"}`, BlogExtensions: `{}`, Markdown: &markdown, Title: "Preview", Layout: "page", Language: "en", Path: "/preview", RequestURL: "http://127.0.0.1:8109/api/v1/preview/markdown", PreviewToken: "single-snapshot"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, part := range []string{output.HTML, output.Document} {
+		if !strings.Contains(part, "Public introduction") || !strings.Contains(part, "http://127.0.0.1:8109/destination") || !strings.Contains(part, "Architect") || strings.Contains(part, "new-generation") || strings.Contains(part, "NEW_FOOTER") {
+			t.Fatalf("preview crossed generations or locales: %s", part)
+		}
+	}
+	if !strings.Contains(output.Document, "OLD_FOOTER") || !strings.Contains(output.Document, `lang="en"`) {
+		t.Fatal("document ignored its captured theme/language")
 	}
 }

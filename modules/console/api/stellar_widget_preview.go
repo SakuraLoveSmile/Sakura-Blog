@@ -98,7 +98,7 @@ func (h *Handler) previewStellarWidget(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "widget_config有多余JSON数据")
 		return
 	}
-	if _, err := h.renderEditorStellar("", request.StellarContentMetadata, request.Layout); err != nil {
+	if _, err := validateEditorMetadata(request.StellarContentMetadata, request.Layout, false); err != nil {
 		failEditorStellar(c, err)
 		return
 	}
@@ -111,10 +111,10 @@ func (h *Handler) previewStellarWidget(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	document, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: request.StellarVersion, StellarConfig: request.StellarConfig, BlogExtensions: request.BlogExtensions, WidgetConfig: request.WidgetConfig, Layout: request.Layout, Path: request.Path, Language: request.Language, RequestURL: requestURL, PreviewToken: request.PreviewToken})
+	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: request.StellarVersion, StellarConfig: request.StellarConfig, BlogExtensions: request.BlogExtensions, WidgetConfig: request.WidgetConfig, Layout: request.Layout, Path: request.Path, Language: request.Language, RequestURL: requestURL, PreviewToken: request.PreviewToken})
 	if err != nil {
 		failEditorStellar(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, StellarMarkdownPreviewResponse{Document: document, PreviewToken: request.PreviewToken})
+	c.JSON(http.StatusOK, StellarMarkdownPreviewResponse{Document: output.Document, PreviewToken: request.PreviewToken})
 }

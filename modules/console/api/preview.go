@@ -71,6 +71,7 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 		return
 	}
 	var html string
+	var markdown *string
 	var err error
 	if req.PreviewProfile == "component-library" {
 		var parsed stellarv2.Result
@@ -79,7 +80,8 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 			html, err = h.posts.RenderComponentPreviewStellarV2(req.Markdown, post.StellarRenderContext{Page: parsed.Value, Language: req.Language})
 		}
 	} else {
-		html, err = h.renderEditorStellarWithLanguage(req.Markdown, req.StellarContentMetadata, req.Layout, req.Language)
+		_, err = validateEditorMetadata(req.StellarContentMetadata, req.Layout, false)
+		markdown = &req.Markdown
 	}
 	if err != nil {
 		failEditorStellar(c, err)
@@ -94,12 +96,12 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	document, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions, HTML: html, Title: req.Title, Layout: req.Layout, Language: req.Language, Path: req.Path, RequestURL: requestURL, PreviewToken: req.PreviewToken})
+	output, err := h.renderStellarContentPreview(content.StellarPreviewInput{StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions, HTML: html, Markdown: markdown, Title: req.Title, Layout: req.Layout, Language: req.Language, Path: req.Path, RequestURL: requestURL, PreviewToken: req.PreviewToken})
 	if err != nil {
 		failEditorStellar(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, StellarMarkdownPreviewResponse{HTML: html, Document: document, PreviewToken: req.PreviewToken})
+	c.JSON(http.StatusOK, StellarMarkdownPreviewResponse{HTML: output.HTML, Document: output.Document, PreviewToken: req.PreviewToken})
 }
 
 // previewSite POST /api/v1/preview/site：设置页「前端预览」所见即所得。

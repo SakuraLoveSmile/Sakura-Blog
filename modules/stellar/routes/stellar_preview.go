@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"blog/internal/content"
+	"blog/internal/post"
 	"blog/internal/settings"
 	"blog/internal/stellarhtml"
 	"blog/internal/stellarmodels"
@@ -86,14 +87,26 @@ func (s *Server) StellarWidgetCatalog() (map[string]any, error) {
 	}
 	return stellarweb.MergeStellarWidgetCatalog(stellarObject(stellarObject(site.StellarV2.Blog["data"])["widgets"])), nil
 }
+func (s *Server) RenderContentPreviewSnapshot(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+	if s.web == nil {
+		return content.StellarPreviewOutput{}, content.ErrStellarRendererUnavailable
+	}
+	return s.web.renderContentPreviewSnapshot(input)
+}
+
 func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (string, error) {
+	output, err := s.renderContentPreviewSnapshot(input)
+	return output.Document, err
+}
+
+func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
 	site, err := stellarPreviewSite(s.site.Load(), input.RequestURL)
 	if err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
 	snap, err := s.stellarSnapshotAt(context.Background(), site, nil, true)
 	if err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
 	kind, profile := "posts", "post"
 	if input.Layout != "" && input.Layout != "post" && input.Layout != "topic" {
@@ -112,36 +125,35 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 	if strings.HasPrefix(path, "/post/") {
 		row, e := s.st.GetBySlug(strings.TrimPrefix(path, "/post/"))
 		if e != nil {
-			return "", e
+			return content.StellarPreviewOutput{}, e
 		}
 		if row != nil && (row.IsPasswordProtected() || row.Status != store.StatusPublished || row.DeletedAt != "") {
-			return "", errStellarNotFound
+			return content.StellarPreviewOutput{}, errStellarNotFound
 		}
 	}
 	row := &store.Post{StellarVersion: input.StellarVersion, StellarConfig: input.StellarConfig, BlogExtensions: input.BlogExtensions, Slug: strings.Trim(path, "/")}
 	parsed, err := row.ValidateStellar()
 	if err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
 	membership := stellarv2.ResolveContentMembership(stellarv2.MembershipInput{Kind: kind, Source: source, PagePath: path, Config: parsed.Value, Registry: snap.registry})
 	if membership.Config == nil || len(membership.Issues) > 0 {
-		return "", &stellarv2.SchemaError{Issues: membership.Issues}
+		return content.StellarPreviewOutput{}, &stellarv2.SchemaError{Issues: membership.Issues}
 	}
 	config := membership.Config
 	if declared := stellarString(stellarGet(config, "collection.profile")); declared != "" {
 		profile = declared
 	}
 	config = stellarv2.ValidatePageProfile(config, source, profile).Value
+	if input.Language != "" {
+		config["lang"] = input.Language
+	}
 	blog := stellarPublishedBlog(input.BlogExtensions)
 	if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
 		var defaults stellarmodels.Object
 		config, defaults = stellarFriendsDefaults(site, config, blog)
 		for key, value := range defaults {
 			stellarObject(blog["content"])[key] = value
-		}
-		input.HTML, err = stellarFriendsPreviewHTML(input.HTML, site.Pages.Friends.ShowPostsOn())
-		if err != nil {
-			return "", err
 		}
 	}
 	in := snap.input
@@ -160,7 +172,7 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 		id := stellarString(stellarGet(config, "collection.id"))
 		collection := snap.byCollection[profile+":"+id]
 		if collection == nil {
-			return "", errStellarNotFound
+			return content.StellarPreviewOutput{}, errStellarNotFound
 		}
 		in.CollectionID = id
 		in.CollectionSource = collection.source
@@ -180,15 +192,34 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 			in.Members = append(in.Members, stellarmodels.Member{Page: r.page, FrontMatter: r.config})
 		}
 	}
-	language := stellarLanguage(in, config)
+	language := input.Language
+	if language == "" {
+		language = stellarLanguage(in, config)
+	}
+	if input.Markdown != nil {
+		publicData := stellarCopyObject(snap.input.RuntimeData)
+		if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
+			publicData["friendsShowPosts"] = site.Pages.Friends.ShowPostsOn()
+		}
+		input.HTML, err = s.posts.RenderStellarV2WithContext(*input.Markdown, post.StellarRenderContext{Theme: in.Theme, Data: publicData, Page: config, Language: language, BlogExtensions: true, Offline: snap.offline})
+		if err != nil {
+			return content.StellarPreviewOutput{}, err
+		}
+	}
+	if profile == "page" && stellarPathKey(path) == stellarPathKey("/"+FriendsSlug) {
+		input.HTML, err = stellarFriendsPreviewHTML(input.HTML, site.Pages.Friends.ShowPostsOn())
+		if err != nil {
+			return content.StellarPreviewOutput{}, err
+		}
+	}
 	body, err := stellarhtml.ProcessContent(input.HTML, stellarhtml.Context{Theme: in.Theme, SiteURL: tmpl.NormalizeSiteURL(site.URL), Icon: s.icons.Get, IconData: s.icons.Get, Language: language})
 	if err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
 	in.Page["content"] = body
 	in.Page = stellarmodels.PageModelInput(in.Page, config)
 	if _, err := stellarmodels.BuildPage(in); err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
 	layout := map[string]string{"post": "post", "page": "page", "topic": "post", "wiki": "wiki-doc", "notebook": "note"}[profile]
 	data := &tmpl.ViewData{Site: site, Page: &tmpl.Page{Title: input.Title, Path: path, Layout: layout, Lang: language}, Content: template.HTML(body), Stellar: &settings.StellarRenderContext{Version: 2, Profile: profile, Input: in, RequestURL: input.RequestURL, NavigationMembers: map[string]string{}}}
@@ -205,7 +236,7 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 		decoder := json.NewDecoder(strings.NewReader(input.WidgetConfig))
 		decoder.UseNumber()
 		if err := decoder.Decode(&widget); err != nil {
-			return "", err
+			return content.StellarPreviewOutput{}, err
 		}
 		catalog := stellarCopyObject(stellarObject(data.Stellar.Input.RuntimeData["widgets"]))
 		catalog["__preview__"] = widget
@@ -220,9 +251,13 @@ func (s *webServer) renderContentPreview(input content.StellarPreviewInput) (str
 	data.TOC = stellarweb.ExtractTOCWith(body, s.tocOptionsFrom(site))
 	document, err := s.engine.Render("layout/base", data)
 	if err != nil {
-		return "", err
+		return content.StellarPreviewOutput{}, err
 	}
-	return stellarPreviewDocument(document, site.URL, input.PreviewToken, input.WidgetConfig != "")
+	document, err = stellarPreviewDocument(document, site.URL, input.PreviewToken, input.WidgetConfig != "")
+	if err != nil {
+		return content.StellarPreviewOutput{}, err
+	}
+	return content.StellarPreviewOutput{HTML: body, Document: document}, nil
 }
 func mustStellarURL(raw string) *url.URL {
 	u, _ := url.Parse(raw)

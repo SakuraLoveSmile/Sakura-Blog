@@ -79,7 +79,9 @@ func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Stor
 	snapshot := sitePtr(site)
 	r := gin.New()
 	mountPublicIdentityForTest(r, st, site)
-	h, err := MountConsole(r, MountDeps{Config: Config{
+	var h *Handler
+	var mountErr error
+	h, mountErr = MountConsole(r, MountDeps{Config: Config{
 		Store: st,
 		RenderStellarMarkdown: func(input content.StellarBodyInput) (string, error) {
 			configuration := snapshot.Load().StellarV2
@@ -97,16 +99,27 @@ func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Stor
 			data, _ := configuration.Blog["data"].(map[string]any)
 			return posts.RenderStellarV2WithContext(input.Markdown, post.StellarRenderContext{Theme: configuration.Theme, Data: data, Page: input.Page, Language: language, BlogExtensions: true})
 		},
-		RenderStellarContentPreview: func(input content.StellarPreviewInput) (string, error) {
-			return "<!doctype html><html><body>" + input.HTML + "</body></html>", nil
+		RenderStellarContentPreview: func(input content.StellarPreviewInput) (content.StellarPreviewOutput, error) {
+			body := input.HTML
+			if input.Markdown != nil {
+				parsed, err := validateEditorMetadata(StellarContentMetadata{input.StellarVersion, input.StellarConfig, input.BlogExtensions}, input.Layout, false)
+				if err != nil {
+					return content.StellarPreviewOutput{}, err
+				}
+				body, err = h.renderStellarBody(content.StellarBodyInput{Markdown: *input.Markdown, Page: parsed.Value, Language: input.Language})
+				if err != nil {
+					return content.StellarPreviewOutput{}, err
+				}
+			}
+			return content.StellarPreviewOutput{HTML: body, Document: "<!doctype html><html><body>" + body + "</body></html>"}, nil
 		},
 		Posts:    posts,
 		Site:     snapshot,
 		Comments: commentH,
 		Backups:  backups,
 	}})
-	if err != nil {
-		t.Fatalf("mount: %v", err)
+	if mountErr != nil {
+		t.Fatalf("mount: %v", mountErr)
 	}
 	return r, st, user, h
 }
