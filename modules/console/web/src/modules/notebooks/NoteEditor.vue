@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { noteFields } from "@/components/editor/stellar-form-fields";
 import { ref, computed, watch, provide, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { notebookApi, getApiErrorMessage, type NotebookNoteResponse } from "@/api";
@@ -16,6 +18,7 @@ const id = ref(0),
   bookName = ref(""),
   status = ref("draft"),
   form = ref(newNoteForm(notebook.value));
+const stellarFormError = useStellarForm(() => form.value, noteFields, "config", "blog");
 const loading = ref(false),
   saving = ref(false),
   deleting = ref(false),
@@ -158,6 +161,7 @@ watch(() => [route.params.notebook, route.params.id], load, { immediate: true })
       </template>
     </VPageHeader>
     <div class="notebooks-body">
+      <p v-if="stellarFormError" role="alert" class="notebooks-error">{{ stellarFormError }}</p>
       <div v-if="error" class="notebooks-error" role="alert">
         <strong v-if="migration">需要迁移到 Stellar 2.0。先查看迁移预览。<br /></strong>{{ error
         }}<VButton v-if="!ready" class="mt-3" @click="load">重试</VButton>

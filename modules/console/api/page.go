@@ -275,6 +275,7 @@ func (h *Handler) createPage(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	projectPageForm(&req)
 	if strings.TrimSpace(req.Slug) == "" {
 		Fail(c, http.StatusBadRequest, "slug 不能为空")
 		return
@@ -324,6 +325,7 @@ func (h *Handler) createPage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, toPageJSON(p))
 }
 
@@ -345,6 +347,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	projectPageForm(&req)
 	if err := h.validatePageHeader(req.Banner, req.BannerInfo, req.Breadcrumb, req.Author, req.Date); err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -411,6 +414,7 @@ func (h *Handler) updatePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPageJSON(p))
 }
 
@@ -421,6 +425,7 @@ func (h *Handler) deletePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -431,6 +436,7 @@ func (h *Handler) restorePage(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

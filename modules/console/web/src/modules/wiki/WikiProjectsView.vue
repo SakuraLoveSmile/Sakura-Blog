@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { wikiFields } from "@/components/editor/stellar-form-fields";
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
@@ -27,11 +29,12 @@ interface ProjectForm {
   visible: boolean;
   tagsText: string;
   hero: {
+    enabled: boolean;
     background: string;
     title: string;
     description: string;
     start: string;
-    animationType: "" | "galaxy";
+    animationType: "" | "galaxy" | "strands" | "light-rays" | "ferrofluid";
     animationParamsText: string;
     previewType: "" | "terminal" | "image";
     previewImage: string;
@@ -66,6 +69,7 @@ function emptyForm(id = ""): ProjectForm {
     visible: true,
     tagsText: "",
     hero: {
+      enabled: false,
       background: "",
       title: "",
       description: "",
@@ -106,6 +110,7 @@ function formFromProject(p: WikiProject): ProjectForm {
     visible: p.visible !== false,
     tagsText: (p.tags || []).join(", "),
     hero: {
+      enabled: false,
       background: hero.background || "",
       title: hero.title || "",
       description: hero.description || "",
@@ -127,6 +132,7 @@ function formFromProject(p: WikiProject): ProjectForm {
 const projects = ref<WikiProject[]>([]);
 const selectedId = ref("");
 const form = ref<ProjectForm>(emptyForm());
+const stellarFormError = useStellarForm(() => form.value, wikiFields);
 const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
@@ -194,58 +200,6 @@ function removeAction(index: number) {
   form.value.hero.actions.splice(index, 1);
 }
 
-function buildHero() {
-  const h = form.value.hero;
-  const commands = h.commandsText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const actions = h.actions
-    .map((a) => ({
-      title: (a.title || "").trim(),
-      url: (a.url || "").trim(),
-      icon: (a.icon || "").trim(),
-    }))
-    .filter((a) => a.title || a.url);
-  const preview = h.previewType
-    ? {
-        type: h.previewType,
-        ...(h.previewImage.trim() ? { image: h.previewImage.trim() } : {}),
-        ...(commands.length ? { commands: commands.map((code) => ({ codes: [code] })) } : {}),
-      }
-    : undefined;
-  let animation: { type: "galaxy"; params?: Record<string, unknown> } | undefined;
-  if (h.animationType === "galaxy") {
-    const raw = h.animationParamsText.trim();
-    if (raw) {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        throw new Error("Galaxy 参数必须是合法 JSON");
-      }
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Galaxy 参数必须是 JSON 对象");
-      }
-      animation = { type: "galaxy", params: parsed as Record<string, unknown> };
-    } else {
-      animation = { type: "galaxy" };
-    }
-  }
-  const hero = {
-    background: h.background.trim() === "galaxy" ? "" : h.background.trim(),
-    title: h.title.trim(),
-    description: h.description.trim(),
-    start: h.start.trim(),
-    ...(animation ? { animation } : {}),
-    ...(preview ? { preview } : {}),
-    ...(actions.length ? { actions } : {}),
-  };
-  return Object.values(hero).some((value) => value && (typeof value !== "object" || Object.keys(value).length))
-    ? hero
-    : undefined;
-}
-
 function payload() {
   const f = form.value;
   return {
@@ -254,7 +208,7 @@ function payload() {
     blog_extensions: f.blog_extensions,
     id: f.id.trim(),
     name: f.name.trim(),
-    title: f.title.trim(),
+    title: f.name.trim(),
     headline: f.headline.trim(),
     subtitle: f.subtitle.trim(),
     description: f.description.trim(),
@@ -271,7 +225,6 @@ function payload() {
       .split(/[,，]/)
       .map((tag) => tag.trim())
       .filter(Boolean),
-    hero: buildHero(),
   };
 }
 
@@ -449,6 +402,7 @@ onMounted(() => loadProjects());
         <!-- 右侧项目表单与 Hero 设置 -->
         <div class="space-y-5 lg:col-span-8">
           <StellarContentConfig
+            :sync-error="stellarFormError"
             v-model:config="form.stellar_config"
             v-model:blog="form.blog_extensions"
             :version="form.stellar_version"
@@ -467,7 +421,7 @@ onMounted(() => loadProjects());
                   <small class="mt-1 block text-[11px] text-text-quaternary">用于 /wiki/:project，创建后不可更改</small>
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">内部名称</label>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">集合显示名（name）</label>
                   <input v-model="form.name" :class="inputCls" placeholder="Stellar Docs" />
                 </div>
                 <div>
@@ -477,10 +431,6 @@ onMounted(() => loadProjects());
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片主标题</label>
-                  <input v-model="form.title" :class="inputCls" placeholder="如：Stellar 使用指南" />
-                </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">卡片副标题</label>
                   <input v-model="form.subtitle" :class="inputCls" placeholder="如：全场景多功能知识库" />
@@ -556,6 +506,9 @@ onMounted(() => loadProjects());
             </p>
 
             <div class="space-y-4">
+              <label class="inline-flex items-center gap-2 text-xs font-medium">
+                <input v-model="form.hero.enabled" type="checkbox" />启用 Hero
+              </label>
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label class="mb-1 block text-xs font-medium text-text-tertiary">背景图片</label>
@@ -566,6 +519,9 @@ onMounted(() => loadProjects());
                   <select v-model="form.hero.animationType" :class="selectCls">
                     <option value="">无动画</option>
                     <option value="galaxy">Galaxy 星空</option>
+                    <option value="strands">Strands</option>
+                    <option value="light-rays">Light Rays</option>
+                    <option value="ferrofluid">Ferrofluid</option>
                   </select>
                 </div>
                 <div>
@@ -577,13 +533,13 @@ onMounted(() => loadProjects());
                   <input v-model="form.hero.description" :class="inputCls" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-text-tertiary">开始阅读按钮文案</label>
+                  <label class="mb-1 block text-xs font-medium text-text-tertiary">首个行动按钮文案</label>
                   <input v-model="form.hero.start" :class="inputCls" placeholder="开始阅读" />
                 </div>
               </div>
 
-              <div v-if="form.hero.animationType === 'galaxy'">
-                <label class="mb-1 block text-xs font-medium text-text-tertiary">Galaxy 参数（可选 JSON）</label>
+              <div v-if="form.hero.animationType">
+                <label class="mb-1 block text-xs font-medium text-text-tertiary">动效参数（JSON 原文）</label>
                 <textarea
                   v-model="form.hero.animationParamsText"
                   rows="5"
@@ -592,7 +548,7 @@ onMounted(() => loadProjects());
                   placeholder='{"density": 2, "speed": 0.5, "transparent": true}'
                 ></textarea>
                 <small class="mt-1 block text-[11px] text-text-quaternary"
-                  >支持 focal、density、speed、hueShift 等上游参数；非法值会回退默认值。</small
+                  >支持 focal、density、speed、hueShift 等上游参数；完整参数原文保留；服务端会返回无效参数诊断。</small
                 >
               </div>
 

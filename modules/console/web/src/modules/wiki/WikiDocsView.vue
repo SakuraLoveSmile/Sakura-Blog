@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { wikiDocFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, computed, onMounted, watch } from "vue";
 import { wikiApi, type WikiProject } from "@/api";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
@@ -176,6 +178,7 @@ const form = ref<{
   status: "draft",
   content_md: "",
 });
+const stellarFormError = useStellarForm(() => form.value, wikiDocFields);
 provide(
   stellarEditorContextKey,
   computed(() => ({
@@ -681,6 +684,7 @@ onMounted(loadProjects);
 
               <!-- Markdown 编辑器 -->
               <StellarContentConfig
+                :sync-error="stellarFormError"
                 v-model:config="form.stellar_config"
                 v-model:blog="form.blog_extensions"
                 :version="form.stellar_version"

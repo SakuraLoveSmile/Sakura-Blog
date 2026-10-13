@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { collectionFields } from "@/components/editor/stellar-form-fields";
+import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
 import { topicApi, type TopicItem } from "@/api";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
@@ -21,7 +23,7 @@ const viewMode = ref<"grid" | "table">("grid");
 const sortBy = ref<"sort" | "post_count">("sort");
 const sortOrder = ref<"desc" | "asc">("desc");
 
-const form = reactive({
+const form = ref({
   stellar_version: 2,
   stellar_config: "{}",
   blog_extensions: "{}",
@@ -33,6 +35,7 @@ const form = reactive({
   sort: 0,
 });
 
+const stellarFormError = useStellarForm(() => form.value, collectionFields);
 // ---------- 统计数据 ----------
 const stats = computed(() => {
   const all = topics.value;
@@ -83,15 +86,17 @@ function toggleSort(by: "sort" | "post_count") {
 
 function resetForm(topic?: TopicItem) {
   editingId.value = topic?.id ?? null;
-  form.stellar_version = topic?.stellar_version ?? 2;
-  form.stellar_config = topic?.stellar_config || "{}";
-  form.blog_extensions = topic?.blog_extensions || "{}";
-  form.name = topic?.name ?? "";
-  form.slug = topic?.slug ?? "";
-  form.description = topic?.description ?? "";
-  form.icon = topic?.icon ?? "";
-  form.cover = topic?.cover ?? "";
-  form.sort = topic?.sort ?? 0;
+  form.value = {
+    stellar_version: topic?.stellar_version ?? 2,
+    stellar_config: topic?.stellar_config || "{}",
+    blog_extensions: topic?.blog_extensions || "{}",
+    name: topic?.name ?? "",
+    slug: topic?.slug ?? "",
+    description: topic?.description ?? "",
+    icon: topic?.icon ?? "",
+    cover: topic?.cover ?? "",
+    sort: topic?.sort ?? 0,
+  };
 }
 
 function openCreate() {
@@ -118,22 +123,22 @@ async function load() {
 }
 
 async function save() {
-  const name = form.name.trim();
+  const name = form.value.name.trim();
   if (!name) {
     Toast.warning("请输入专栏名称");
     return;
   }
   saving.value = true;
   const payload = {
-    stellar_version: form.stellar_version,
-    stellar_config: form.stellar_config,
-    blog_extensions: form.blog_extensions,
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
     name,
-    slug: form.slug.trim(),
-    description: form.description.trim(),
-    icon: form.icon.trim(),
-    cover: form.cover.trim(),
-    sort: Number.isFinite(form.sort) ? form.sort : 0,
+    slug: form.value.slug.trim(),
+    description: form.value.description.trim(),
+    icon: form.value.icon.trim(),
+    cover: form.value.cover.trim(),
+    sort: Number.isFinite(form.value.sort) ? form.value.sort : 0,
   };
   try {
     if (editingId.value == null) {
@@ -499,6 +504,7 @@ onMounted(load);
           <AttachmentField v-model="form.cover" placeholder="输入图片 URL 或从附件库选择" show-thumb />
         </div>
         <StellarContentConfig
+          :sync-error="stellarFormError"
           v-model:config="form.stellar_config"
           v-model:blog="form.blog_extensions"
           :version="form.stellar_version"

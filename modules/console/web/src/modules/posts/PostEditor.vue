@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { postFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
@@ -55,6 +57,7 @@ const form = ref({
   authors: [] as string[],
   author: "",
 });
+const stellarFormError = useStellarForm(() => form.value, postFields);
 provide(
   stellarEditorContextKey,
   computed(() => ({
@@ -1038,6 +1041,7 @@ function handleDiscardDraft() {
         <!-- 编辑器内核 -->
         <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
           <StellarContentConfig
+            :sync-error="stellarFormError"
             v-model:config="form.stellar_config"
             v-model:blog="form.blog_extensions"
             :version="form.stellar_version"

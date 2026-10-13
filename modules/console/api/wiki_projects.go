@@ -42,6 +42,24 @@ func (h *Handler) wikiProjectFromRequest(req wikiProjectRequest, id string, curr
 	if id == "" {
 		id = strings.TrimSpace(req.ID)
 	}
+	if req.StellarVersion == 2 {
+		raw, blog := stellarFormObject(req.StellarConfig), stellarFormObject(req.BlogExtensions)
+		stellarFormString(raw, "name", &req.Name)
+		req.Title = req.Name
+		stellarFormString(raw, "headline", &req.Headline)
+		stellarFormString(raw, "tagline", &req.Subtitle)
+		stellarFormString(raw, "description", &req.Description)
+		stellarFormString(raw, "icon", &req.Icon)
+		stellarFormString(raw, "cover", &req.Cover)
+		stellarFormString(raw, "audience", &req.Available)
+		stellarFormString(raw, "source.repository", &req.Repo)
+		stellarFormString(raw, "source.branch", &req.Branch)
+		stellarFormString(blog, "content.wiki_external_url", &req.URL)
+		stellarFormInt(blog, "content.collection_order", &req.Sort)
+		if tags, exists := stellarFormStrings(raw, "tags"); exists {
+			req.Tags = tags
+		}
+	}
 	return &store.WikiProject{
 		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID: id, Name: strings.TrimSpace(req.Name), Title: strings.TrimSpace(req.Title),

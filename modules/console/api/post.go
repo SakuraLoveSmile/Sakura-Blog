@@ -340,6 +340,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, 0); err != nil {
 		failPostTopic(c, err)
 		return
@@ -387,6 +388,7 @@ func (h *Handler) createPost(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, toPostJSON(p, 0))
 }
 
@@ -411,6 +413,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -476,6 +479,7 @@ func (h *Handler) updatePost(c *gin.Context) {
 	if newSlug != existing.Slug {
 		views = 0
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
@@ -509,6 +513,7 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -559,6 +564,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误: "+err.Error())
 		return
 	}
+	projectPostForm(&req)
 	if err := h.normalizePostTopic(&req, existing.TopicID); err != nil {
 		failPostTopic(c, err)
 		return
@@ -621,6 +627,7 @@ func (h *Handler) publishPost(c *gin.Context) {
 		views = 0
 	}
 	h.notifySEOPublished(newSlug)
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, toPostJSON(p, views))
 }
 
@@ -658,6 +665,7 @@ func (h *Handler) deletePost(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -671,6 +679,7 @@ func (h *Handler) restorePost(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
@@ -715,6 +724,7 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true, "ai_summary": summary})
 }
 

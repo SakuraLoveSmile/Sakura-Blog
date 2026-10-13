@@ -7,6 +7,7 @@ import { getApiErrorMessage } from "@/api";
 
 const props = withDefaults(
   defineProps<{
+    syncError?: string;
     version: number;
     config: string;
     blog: string;
@@ -67,12 +68,13 @@ async function exportDocument() {
   <details class="rounded-[var(--radius)] border border-border bg-card p-4">
     <summary class="cursor-pointer text-sm font-medium">Stellar 2 原文配置</summary>
     <div class="mt-4 space-y-3">
+      <p v-if="syncError" role="alert" class="text-sm text-destructive">{{ syncError }}</p>
       <p v-if="version !== 2" class="text-sm text-destructive" role="status">
         这条旧内容尚未迁移，仅可预览。请先审查迁移候选；保存不会自动转换旧字段。
       </p>
       <p class="text-xs text-text-tertiary">
-        完整 JSON 按原文保存；Stellar 字段与 Blog 扩展分开。JSON
-        中明确声明的标题、横幅和表现设置优先于基本表单；未知字段和归属冲突会明确报错。
+        完整 JSON 按原文保存；Stellar 字段与 Blog 扩展分开。合法原文修改会同步基本控件，基本控件修改会同步对应 JSON
+        字段；仅编辑的字段被重写。未知字段和归属冲突会明确报错。
       </p>
       <label class="block text-xs text-text-tertiary"
         >Stellar {{ collection ? "集合" : "内容" }}配置

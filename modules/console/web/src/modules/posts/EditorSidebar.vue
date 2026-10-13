@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { patchJSONField, readJSONField } from "@/components/editor/stellar-form-json";
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Icon } from "@iconify/vue";
 import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } from "@/api";
@@ -11,6 +12,8 @@ import { loadPluginCatalog, runtimePlugins } from "@/modules/plugins/usePluginCa
 // 编辑器右侧辅助面板（对照 Halo）：大纲 / 详情 两个 Tab。
 // 大纲：解析 Markdown 标题可点击跳转；详情：合并原右栏全部设置字段与标签插件参数面板。
 interface PostForm {
+  stellar_version: number;
+  stellar_config: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -195,23 +198,15 @@ const filteredTopics = computed(() => {
   return topicOptions.value.filter((topic) => topic.name.toLowerCase().includes(query));
 });
 
-function syncTopicFromLegacy() {
-  if (!topicOptions.value.length) return;
-  const currentID = Number(props.form.topic_id || 0);
-  if (currentID > 0) {
-    const current = topicOptions.value.find((topic) => topic.id === currentID);
-    if (current && props.form.topic !== current.name) props.form.topic = current.name;
-    return;
-  }
-  const legacyName = props.form.topic.trim();
-  if (!legacyName) return;
-  const legacy = topicOptions.value.find((topic) => topic.name === legacyName);
-  if (legacy) {
-    props.form.topic_id = legacy.id;
-    props.form.topic = legacy.name;
-  } else {
-    props.form.topic_id = null;
-    props.form.topic = "";
+function syncTopicFromConfig() {
+  if (props.form.stellar_version !== 2) return;
+  try {
+    const id = readJSONField(props.form.stellar_config, "collection.id");
+    const topic = topicOptions.value.find((item) => item.slug === id);
+    props.form.topic_id = topic?.id ?? null;
+    props.form.topic = topic?.name ?? "";
+  } catch {
+    /* 保留未完成原文，由保存校验返回诊断。 */
   }
 }
 
@@ -219,7 +214,7 @@ async function loadTopics() {
   try {
     const { data } = await topicApi.list();
     topicOptions.value = data.items || [];
-    syncTopicFromLegacy();
+    syncTopicFromConfig();
   } catch {
     // 专栏是可选元数据，列表失败不阻塞正文编辑。
   }
@@ -231,12 +226,27 @@ function toggleTopicPicker() {
 }
 
 function selectTopic(topic: TopicItem) {
+  try {
+    props.form.stellar_config = patchJSONField(props.form.stellar_config, "collection", {
+      profile: "topic",
+      id: topic.slug,
+    });
+  } catch {
+    Toast.error("请先修正 Stellar 配置 JSON");
+    return;
+  }
   props.form.topic_id = topic.id;
   props.form.topic = topic.name;
   topicPickerOpen.value = false;
 }
 
 function clearTopic() {
+  try {
+    props.form.stellar_config = patchJSONField(props.form.stellar_config, "collection", undefined);
+  } catch {
+    Toast.error("请先修正 Stellar 配置 JSON");
+    return;
+  }
   props.form.topic_id = null;
   props.form.topic = "";
   topicPickerOpen.value = false;
@@ -248,7 +258,7 @@ function onTopicClickOutside(event: MouseEvent) {
   }
 }
 
-watch(() => [props.form.topic_id, props.form.topic, topicOptions.value.length], syncTopicFromLegacy);
+watch(() => [props.form.stellar_config, topicOptions.value.length], syncTopicFromConfig);
 onMounted(() => {
   loadTopics();
   document.addEventListener("mousedown", onTopicClickOutside);

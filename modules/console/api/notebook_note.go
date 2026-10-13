@@ -253,6 +253,9 @@ func (h *Handler) prepareNotebookNote(c *gin.Context, note *store.Note) bool {
 		return false
 	}
 	note.Title = notebookText(parsed.Value, "title", note.Slug)
+	if tags, exists := stellarFormStrings(stellarFormObject(note.StellarConfig), "tags"); exists {
+		note.Tags = tags
+	}
 	// 完整渲染由固定 v2 renderer 接入，不能退回旧标签 parser。
 	return h.renderNotebookNote(c, note, parsed.Value)
 }

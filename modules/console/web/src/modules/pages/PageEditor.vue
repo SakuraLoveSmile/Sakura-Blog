@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useStellarForm } from "@/components/editor/useStellarForm";
+import { pageFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
@@ -59,6 +61,7 @@ const form = ref<{
   leftbar_widgets: null,
   rightbar_widgets: null,
 });
+const stellarFormError = useStellarForm(() => form.value, pageFields);
 provide(
   stellarEditorContextKey,
   computed(() => ({
@@ -692,6 +695,7 @@ const smallInputCls =
           />
           <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
           <StellarContentConfig
+            :sync-error="stellarFormError"
             v-model:config="form.stellar_config"
             v-model:blog="form.blog_extensions"
             :version="form.stellar_version"
@@ -789,7 +793,7 @@ const smallInputCls =
                 <AttachmentField v-model="form.banner_info.avatar" placeholder="https://..." show-thumb />
               </div>
               <div>
-                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">图标</label>
+                <label class="mb-1 block text-xs text-text-quaternary dark:text-muted-foreground">侧栏品牌图片</label>
                 <AttachmentField v-model="form.banner_info.icon" placeholder="https://..." show-thumb />
               </div>
             </div>
@@ -815,7 +819,7 @@ const smallInputCls =
               </div>
             </div>
             <p class="text-xs text-muted-foreground">
-              头像优先于图标；不填写横幅标题时使用页面标题。清空发布日期后，前台不会显示发布日期。
+              横幅头像与侧栏品牌图片分别配置；横幅标题留空时继承页面标题。日期与侧栏设置直接同步上游原文配置。
             </p>
           </div>
         </CollapsibleSection>
