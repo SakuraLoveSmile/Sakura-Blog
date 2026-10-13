@@ -29,11 +29,8 @@ export interface PostPoster {
   color?: string;
 }
 
-export interface StellarContentMetadata {
-  stellar_version: number;
-  stellar_config: string;
-  blog_extensions: string;
-}
+export type { StellarContentMetadata } from "../generated";
+import type { StellarContentMetadata } from "../generated";
 
 export interface PostPayload extends Partial<StellarContentMetadata> {
   slug?: string;

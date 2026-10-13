@@ -22,6 +22,8 @@ packages:
       - "update.go"
       - "settings.go"
       - "stellar_settings.go"
+      - "stellar_content.go"
+      - "preview.go"
       - "notebook.go"
       - "notebook_note.go"
       - "backup_restores.go"

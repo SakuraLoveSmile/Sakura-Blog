@@ -189,6 +189,10 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 	clientData["isHomeFirstPage"] = p.Profile == "home" && (data.Paginator == nil || data.Paginator.Current == 1) && prepString(input.Page["path"]) == ""
 	blog := data.Site.StellarV2.Blog
 	p.BlogNativeComments = prepGet(blog, "native_comments.enabled") == true
+	nativeComments := prepCloneMap(prepMap(publicData["nativeComments"]))
+	if enabled, exists := nativeComments["enabled"].(bool); exists {
+		p.BlogNativeComments = enabled
+	}
 	if p.Layout == "404" || p.Layout == "error" || p.Layout == "500" || p.Layout == "post-password" {
 		p.BlogNativeComments = false
 	}
@@ -198,7 +202,12 @@ func PrepareStellar(data *settings.ViewData, iconRegistry ...*settings.IconRegis
 	p.BlogContent = prepGet(blog, "content.enabled") == true
 	publicData["blogReading"] = prepGet(blog, "reading.enabled") == true
 	publicData["blog"] = map[string]any{"content": prepClone(blog["content"]), "reading": prepClone(blog["reading"]), "checkbox": prepClone(blog["checkbox"]), "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true, "allow_user_api": prepGet(blog, "ai.summary.allow_user_api") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true, "allow_user_llm": prepGet(blog, "ai.ask.allow_user_llm") == true}}}
-	publicData["nativeComments"] = map[string]any{"title": prepGet(blog, "native_comments.title"), "admin_badge": prepGet(blog, "native_comments.admin_badge")}
+	for key, value := range map[string]any{"title": prepGet(blog, "native_comments.title"), "admin_badge": prepGet(blog, "native_comments.admin_badge")} {
+		if _, exists := nativeComments[key]; !exists {
+			nativeComments[key] = value
+		}
+	}
+	publicData["nativeComments"] = nativeComments
 	icons := map[string]string{}
 	if len(iconRegistry) > 0 && iconRegistry[0] != nil {
 		for _, key := range []string{"default:link", "default:to-comment", "default:profile", "default:warning", "default:settings", "copy:copy", "weibo:repeat", "weibo:like"} {

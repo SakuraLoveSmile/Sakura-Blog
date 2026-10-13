@@ -145,7 +145,7 @@ func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if data.Stellar != nil && prepared.Stellar.Model != nil {
+		if data.Stellar != nil && prepared.Stellar.Model != nil && prepGet(prepared.Stellar.Theme, "features.partialNavigation.enabled") == true && data.Stellar.Input.RuntimeData["preview"] != true {
 			collection := prepared.Stellar.Model.Collection
 			pageURL := prepString(data.Stellar.Input.Page["permalink"])
 			if data.Stellar.RequestURL != "" {

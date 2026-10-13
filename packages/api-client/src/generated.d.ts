@@ -192,6 +192,7 @@ export interface PageBannerInfoJSON {
  * null = 未配置（继承全局 page 级默认）；[] = 明确空侧栏；[{name, params}, ...] = 自定义序列。
  */
 export interface PageJSON {
+  StellarContentMetadata: StellarContentMetadata;
   slug: string;
   title: string;
   content_md?: string;
@@ -212,6 +213,7 @@ export interface PageJSON {
  * PageListJSON 页面列表响应模型，不包含正文与横幅大字段。
  */
 export interface PageListJSON {
+  StellarContentMetadata: StellarContentMetadata;
   slug: string;
   title: string;
   status: string;
@@ -240,6 +242,32 @@ export interface ScriptPluginHookRequest {
 }
 export interface ScriptPluginHookResponse {
   value: unknown;
+}
+
+//////////
+// source: preview.go
+
+/**
+ * previewMarkdown POST /api/v1/preview/markdown：把 Markdown 渲染成 HTML。
+ * 复用 post.Service 的 goldmark 管线（shortcode/KaTeX/Chroma 高亮），保证预览与前台渲染一致。
+ * preview_profile=component-library（Spec 63）时进入本地 Fixture 模式：
+ * GitHub/友链用确定性数据，rating/vote/friends/sites/md 端点改写为 /api/v1/preview/*，
+ * 不依赖公网、不写入真实数据；缺省保持原有渲染行为不变。
+ */
+export interface StellarMarkdownPreviewRequest {
+  StellarContentMetadata: StellarContentMetadata;
+  markdown: string;
+  preview_profile: string;
+  title: string;
+  layout: string;
+  language: string;
+  path: string;
+  preview_token: string;
+}
+export interface StellarMarkdownPreviewResponse {
+  html: string;
+  document: string;
+  preview_token: string;
 }
 
 //////////
@@ -341,6 +369,38 @@ export interface ShortcodeCatalogResponse {
  */
 export interface ShortcodeEditRequest {
   raw: string;
+}
+/**
+ * Present 的 nil 与 [] 分别表示新插入和既有标签无参数。
+ */
+export interface ShortcodeSerializeRequest {
+  name: string;
+  values: { [key: string]: unknown};
+  present?: string[];
+}
+export interface ShortcodeSerializeResponse {
+  raw: string;
+}
+
+//////////
+// source: stellar_content.go
+
+/**
+ * StellarContentMetadata 保留原始 JSON 文本，不经过 JavaScript Number。
+ */
+export interface StellarContentMetadata {
+  stellar_version: number /* int */;
+  stellar_config: string;
+  blog_extensions: string;
+}
+export interface StellarContentValidationRequest {
+  StellarContentMetadata: StellarContentMetadata;
+  profile: string;
+  collection: boolean;
+}
+export interface StellarContentValidationResponse {
+  valid: boolean;
+  issues: StellarSettingsIssue[];
 }
 
 //////////
@@ -445,6 +505,7 @@ export interface UCAttachmentListResponse {
  * limited fields handled by mergeUCPostBody.
  */
 export interface UCPostResponse {
+  StellarContentMetadata: StellarContentMetadata;
   slug: string;
   title: string;
   excerpt: string;

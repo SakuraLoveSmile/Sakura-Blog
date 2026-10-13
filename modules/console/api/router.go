@@ -354,6 +354,7 @@ func (h *Handler) register(r *gin.Engine) {
 		author.POST("/editor/import/markdown", h.importMarkdown)
 		author.POST("/editor/import/stellar", h.importStellarMarkdown)
 		author.POST("/editor/export/stellar", h.exportStellarMarkdown)
+		author.POST("/editor/stellar/validate", h.validateStellarContent)
 		// 站点配置预览（设置页所见即所得：草稿分段 → 前台整页 HTML）
 		author.POST("/preview/site", h.previewSite)
 		// 发布前预览：存当前表单快照，返回 token（前台 /preview/draft/:token 渲染）
@@ -455,6 +456,7 @@ func (h *Handler) register(r *gin.Engine) {
 		// 标签插件 catalog：以 Go parser 注册表为真值，供 Console SchemaForm/插件库消费。
 		author.GET("/plugins/catalog", h.shortcodeCatalog)
 		author.POST("/plugins/shortcode/parse", h.shortcodeEdit)
+		author.POST("/plugins/shortcode/serialize", h.shortcodeSerialize)
 
 		// 模块 manifest 对 author 角色可读；启停写操作仍在 sys 组。
 		author.GET("/modules", h.listModules)

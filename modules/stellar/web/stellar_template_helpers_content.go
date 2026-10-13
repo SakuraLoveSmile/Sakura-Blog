@@ -64,7 +64,7 @@ func (r stellarTemplateRenderer) content(d *StellarRenderData) (template.HTML, e
 		return r.tags(d), nil
 	case "archive", "archives", "author":
 		return r.archives(d), nil
-	case "index_topic", "topic-index":
+	case "index_topic", "topic-index", "topics":
 		return r.topicIndex(d), nil
 	case "topic":
 		if s.Model == nil {

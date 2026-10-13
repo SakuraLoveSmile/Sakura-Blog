@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"html/template"
 	"reflect"
 	"strings"
 	"testing"
@@ -128,5 +129,58 @@ func TestGeneratedStellarAssetsContainPublicFallbackAndNamespaces(t *testing.T) 
 	}
 	if !fallback || !namespace {
 		t.Fatalf("fallback=%v namespace=%v", fallback, namespace)
+	}
+}
+
+func TestEngineStellarCompositionUsesOfficialShellAndNavigation(t *testing.T) {
+	reg, err := settings.LoadIconsEmbed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine, err := NewEngineFromEmbed(reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := prepareFixture(t, "post")
+	data.Content = template.HTML(`<h2 id="section">Section</h2><p>body <a href="/blog/other">next</a></p>`)
+	data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "post", RequestURL: "https://blog.example.test/blog/fixture", NavigationMembers: map[string]string{"/blog/other": `["post","post"]`}, Input: stellarmodels.Input{Page: map[string]any{"title": "Fixture", "layout": "post", "content": string(data.Content), "path": "fixture", "permalink": data.Page.CanonicalURL}, FrontMatter: map[string]any{}}}
+	output, err := engine.Render("layout/base", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`id="stellar-runtime-config"`, `id="stellar-navigation-config"`, `data-stellar-navigation=""`, `window.stellarClientData=`, `/assets/js/utils.js`, `/assets/js/main.js`, `Section`} {
+		if !strings.Contains(output, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if strings.Contains(output, "const utils") || strings.Contains(output, "__stellarPlugins") {
+		t.Fatal("legacy runtime globals emitted")
+	}
+	utilsPos, mainPos := strings.Index(output, "/assets/js/utils.js"), strings.Index(output, "/assets/js/main.js")
+	if utilsPos < 0 || mainPos <= utilsPos {
+		t.Fatal("stock globals load out of order")
+	}
+	if strings.Contains(output, `id="topbar-region"`) {
+		t.Fatal("disabled topbar emitted")
+	}
+}
+
+func TestPreparePublicNativeOverridesAndWidgetDeletion(t *testing.T) {
+	data := prepareFixture(t, "page")
+	data.Site.StellarV2.Blog = map[string]any{"native_comments": map[string]any{"enabled": true, "title": "global"}, "data": map[string]any{"widgets": map[string]any{"toc": nil}}}
+	data.Stellar = &settings.StellarRenderContext{Version: 2, Profile: "page", Input: stellarmodels.Input{RuntimeData: map[string]any{"nativeComments": map[string]any{"enabled": false, "title": "record"}, "widgets": MergeStellarWidgetCatalog(map[string]any{"toc": nil})}, Page: map[string]any{}, FrontMatter: map[string]any{}}}
+	prepared, err := PrepareStellar(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if prepared.Stellar.BlogNativeComments || prepGet(prepared.Stellar.Data, "nativeComments.title") != "record" {
+		t.Fatal("native record override lost")
+	}
+	if _, exists := prepMap(prepared.Stellar.Data["widgets"])["toc"]; exists {
+		t.Fatal("deleted runtime widget restored")
+	}
+	partial := MergeStellarWidgetCatalog(map[string]any{"toc": map[string]any{"max_depth": 3}})
+	if prepGet(partial, "toc.layout") != "toc" || prepGet(partial, "toc.max_depth") != 3 {
+		t.Fatal("partial descriptor lost default layout")
 	}
 }
