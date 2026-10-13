@@ -121,17 +121,23 @@ function extToMimes(ext) {
   var file_contents = {};
   
   function cacheDatas(url, data) {
-    let content = data.file;
+    const bytes = data?.file?.data;
+    if (!Array.isArray(bytes)) throw new TypeError('Invalid file response: expected byte array');
+    for (const byte of bytes) {
+      if (!Number.isInteger(byte) || byte < 0 || byte > 255) {
+        throw new TypeError('Invalid file response: expected bytes from 0 to 255');
+      }
+    }
     let fileName = url.split("/").at(-1);
     let fileType = fileName.split(".")[1];
     let fileMimeType = extToMimes(fileType);
     // 拿到二进制字符串 content
     // 再利用 Buffer 转为对象
-    const length = content ? content.data.length : 0;
+    const length = bytes.length;
     let buf = new ArrayBuffer(length)
     let view = new Uint8Array(buf)
     for (let i = 0; i < length; ++i) {
-      view[i] = content.data[i]
+      view[i] = bytes[i]
     }
     // 再输入到 Blob 生成文件
     let blob = new Blob([buf], {type: fileMimeType});
