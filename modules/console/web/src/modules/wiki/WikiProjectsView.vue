@@ -7,6 +7,7 @@ import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Dialog, Toast } from "@/components/ui";
 import { wikiApi, type WikiHeroAction, type WikiProject } from "@/api";
+import { wikiProjectDisplayName } from "./wiki-project-name";
 
 interface ProjectForm {
   stellar_version: number;
@@ -14,7 +15,6 @@ interface ProjectForm {
   blog_extensions: string;
   id: string;
   name: string;
-  title: string;
   headline: string;
   subtitle: string;
   description: string;
@@ -54,7 +54,6 @@ function emptyForm(id = ""): ProjectForm {
     blog_extensions: "{}",
     id,
     name: "",
-    title: "",
     headline: "",
     subtitle: "",
     description: "",
@@ -93,8 +92,7 @@ function formFromProject(p: WikiProject): ProjectForm {
     stellar_config: p.stellar_config || "{}",
     blog_extensions: p.blog_extensions || "{}",
     id: p.id,
-    name: p.name || p.id,
-    title: p.title || "",
+    name: p.name || "",
     headline: p.headline || "",
     subtitle: p.subtitle || "",
     description: p.description || "",
@@ -265,7 +263,7 @@ function deleteProject() {
   if (!project || project.has_docs) return;
   Dialog.warning({
     title: "确定删除这个 Wiki 项目吗？",
-    description: `「${project.title || project.name || project.id}」删除后不可恢复。`,
+    description: `「${wikiProjectDisplayName(project)}」删除后不可恢复。`,
     confirmType: "danger",
     onConfirm: async () => {
       deleting.value = true;
@@ -383,7 +381,7 @@ onMounted(() => loadProjects());
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
                   <span class="truncate text-sm font-semibold text-foreground">
-                    {{ project.title || project.name || project.id }}
+                    {{ wikiProjectDisplayName(project) }}
                   </span>
                   <Icon v-if="project.pin" icon="ri:pushpin-fill" class="shrink-0 text-xs text-primary" />
                 </div>
@@ -413,7 +411,7 @@ onMounted(() => loadProjects());
             collection
             class="mb-4"
           />
-          <VCard :title="isEditing ? `编辑项目：${selectedProject?.title || form.id}` : '新建 Wiki 项目'">
+          <VCard :title="isEditing ? `编辑项目：${selectedProject ? wikiProjectDisplayName(selectedProject) : form.id}` : '新建 Wiki 项目'">
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
