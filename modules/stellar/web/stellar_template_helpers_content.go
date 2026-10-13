@@ -468,42 +468,62 @@ func (r stellarTemplateRenderer) listingNav(d *StellarRenderData, wiki bool) tem
 	if config["enabled"] != true {
 		return ""
 	}
-	link := func(href, title string, active bool) {
+	link := func(href, title string, active, pretty bool) {
+		href = stellarURL(d.Stellar.Root, href)
+		if parsed, err := url.Parse(href); pretty && err == nil && !parsed.IsAbs() && parsed.Host == "" {
+			// 官方内置导航使用 pretty_url；自定义 tabs 使用原始 url_for。
+			if strings.HasSuffix(href, "/index.html") {
+				href = strings.TrimSuffix(href, "index.html")
+			} else if strings.HasSuffix(href, "/index") {
+				href = strings.TrimSuffix(href, "index")
+			} else {
+				href = strings.TrimSuffix(href, ".html")
+			}
+			href = strings.TrimRight(href, "/") + "/"
+		}
 		class := ""
 		if active {
 			class = ` class="active"`
 		}
-		fmt.Fprintf(&b, `<a%s href="%s">%s</a>`, class, stellarEscape(stellarURL(d.Stellar.Root, href)), stellarEscape(title))
+		fmt.Fprintf(&b, `<a%s href="%s">%s</a>`, class, stellarEscape(href), stellarEscape(title))
 	}
 	custom := !wiki && stellarBlogGlobal(d, "nav_tabs.enable_custom") == true
 	if custom {
 		b.WriteString(string(r.blogNavTabs(d)))
 	} else if wiki {
-		link(stellarText(stellarGet(d.Stellar.Theme, "profiles.wikiIndex.path")), stellarTranslate(d, "btn.all_wiki"), !stellarTruth(d.Stellar.Data["wikiFilter"]))
+		link(stellarText(stellarGet(d.Stellar.Theme, "profiles.wikiIndex.path")), stellarTranslate(d, "btn.all_wiki"), !stellarTruth(d.Stellar.Data["wikiFilter"]), true)
 		for _, raw := range stellarList(d.Stellar.Data["wikiTags"]) {
 			v := stellarMap(raw)
-			link(stellarText(v["path"]), stellarText(v["name"]), v["name"] == d.Stellar.Data["wikiTagName"])
+			link(stellarText(v["path"]), stellarText(v["name"]), v["name"] == d.Stellar.Data["wikiTagName"], true)
 		}
 	} else {
-		link(stellarText(stellarFirst(d.Stellar.Data["blogPath"], "/")), stellarTranslate(d, "btn.recent_publish"), d.Stellar.Layout == "index" || d.Stellar.Layout == "home")
+		link(stellarText(stellarFirst(d.Stellar.Data["blogPath"], "/")), stellarTranslate(d, "btn.recent_publish"), d.Stellar.Layout == "index" || d.Stellar.Layout == "home", true)
 		if len(d.Cats) > 0 || stellarTruth(d.Stellar.Data["hasCategories"]) {
-			link(stellarText(stellarFirst(d.Stellar.Data["categoriesPath"], "/categories/")), stellarTranslate(d, "btn.categories"), d.Stellar.Layout == "categories")
+			title := stellarTranslate(d, "btn.categories")
+			if d.Page.Category != "" {
+				title = stellarTranslate(d, "btn.category") + stellarTranslate(d, "symbol.colon") + d.Page.Category
+			}
+			link(stellarText(stellarFirst(d.Stellar.Data["categoriesPath"], "/categories/")), title, d.Page.Category != "" || d.Stellar.Layout == "categories", true)
 		}
 		if len(d.TagItems) > 0 || len(d.TagCloud) > 0 || stellarTruth(d.Stellar.Data["hasTags"]) {
-			link(stellarText(stellarFirst(d.Stellar.Data["tagsPath"], "/tags/")), stellarTranslate(d, "btn.tags"), d.Stellar.Layout == "tags")
+			title := stellarTranslate(d, "btn.tags")
+			if d.Page.Tag != "" {
+				title = stellarTranslate(d, "btn.tag") + stellarTranslate(d, "symbol.colon") + d.Page.Tag
+			}
+			link(stellarText(stellarFirst(d.Stellar.Data["tagsPath"], "/tags/")), title, d.Page.Tag != "" || d.Stellar.Layout == "tags", true)
 		}
 		if d.HasTopics || stellarTruth(d.Stellar.Data["hasTopics"]) {
-			link(stellarText(stellarGet(d.Stellar.Theme, "profiles.topic.path")), stellarTranslate(d, "btn.topic"), (d.Stellar.Layout == "index_topic" || d.Stellar.Layout == "topic"))
+			link(stellarText(stellarGet(d.Stellar.Theme, "profiles.topic.path")), stellarTranslate(d, "btn.topic"), (d.Stellar.Layout == "index_topic" || d.Stellar.Layout == "topic"), true)
 		}
 		if len(d.Stellar.ListItems) > 0 || stellarTruth(d.Stellar.Data["hasPosts"]) {
-			link(stellarText(stellarFirst(d.Stellar.Data["archivesPath"], "/archives/")), stellarTranslate(d, "btn.archives"), d.Stellar.Layout == "archive" || d.Stellar.Layout == "archives")
+			link(stellarText(stellarFirst(d.Stellar.Data["archivesPath"], "/archives/")), stellarTranslate(d, "btn.archives"), d.Stellar.Layout == "archive" || d.Stellar.Layout == "archives", true)
 		}
 	}
 	if !custom {
 		for _, raw := range stellarList(config["tabs"]) {
 			v := stellarMap(raw)
 			href := stellarText(v["url"])
-			link(href, stellarText(v["title"]), strings.HasPrefix(stellarURL(d.Stellar.Root, stellarPagePath(d)), stellarURL(d.Stellar.Root, href)))
+			link(href, stellarText(v["title"]), strings.HasPrefix(stellarURL(d.Stellar.Root, stellarPagePath(d)), stellarURL(d.Stellar.Root, href)), false)
 		}
 		if !wiki {
 			b.WriteString(string(r.blogNavTabs(d)))

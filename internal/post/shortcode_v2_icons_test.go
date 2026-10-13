@@ -13,7 +13,7 @@ func TestStellarV2EmbeddedImageIcon(t *testing.T) {
 	}
 	s := NewService("")
 	s.SetIconFunc(icons.Get)
-	for _, key := range []string{"share:wechat", "share:weibo", "share:email", "share:link"} {
+	for _, key := range []string{"share:wechat", "share:link"} {
 		t.Run(key, func(t *testing.T) {
 			got, err := s.RenderStellarV2(`{% icon `+key+` style:"width:2em;background:url(javascript:bad)" %}`, nil)
 			if err != nil {
@@ -25,11 +25,15 @@ func TestStellarV2EmbeddedImageIcon(t *testing.T) {
 		})
 	}
 	// 上游 SVG 分支忽略图片专用属性，不能借图片修复改变此语义。
-	got, err := s.RenderStellarV2(`{% icon copy:copy style:width:2em %}`, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(got, "<svg") || strings.Contains(got, `style="width:2em"`) {
-		t.Fatalf("SVG icon changed official image-only attribute semantics: %s", got)
+	for _, key := range []string{"copy:copy", "share:qrcode", "share:weibo", "share:x", "share:telegram", "share:whatsapp", "share:email"} {
+		t.Run(key, func(t *testing.T) {
+			got, err := s.RenderStellarV2(`{% icon `+key+` style:"width:2em;background:url(javascript:bad)" %}`, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(got, "<svg") || !strings.Contains(got, icons.Get(key)) || strings.Contains(got, `style="width:2em"`) || strings.Contains(got, "javascript:") {
+				t.Fatalf("SVG icon changed official image-only attribute semantics: %s", got)
+			}
+		})
 	}
 }

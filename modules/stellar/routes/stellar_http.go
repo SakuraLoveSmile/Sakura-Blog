@@ -855,7 +855,21 @@ func (s *webServer) stellarTaxonomyView(snap *stellarSnapshot, kind, name string
 	}
 	path := stellarTaxonomyPath(snap.input.Theme, kind)
 	if name != "" {
-		return s.stellarListingView(snap, "blogIndex", name, path+"/"+name, records, page, nil, nil)
+		data, err := s.stellarListingView(snap, "blogIndex", name, path+"/"+name, records, page, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		field := "category"
+		if kind == "tags" {
+			field = "tag"
+			data.Page.Tag = name
+		} else {
+			data.Page.Category = name
+		}
+		data.Page.Layout = field
+		data.Stellar.Input.Page["layout"] = field
+		data.Stellar.Input.Page[field] = name
+		return data, nil
 	}
 	data := s.stellarAggregate(snap, "blogIndex", map[string]string{"archives": "归档", "categories": "分类", "tags": "标签"}[kind], path, kind)
 	for _, r := range records {
