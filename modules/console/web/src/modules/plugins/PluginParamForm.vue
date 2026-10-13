@@ -4,7 +4,7 @@ import { pluginApi, getApiErrorMessage } from "@/api";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
 import type { PluginMeta, PluginVariant } from "./plugin-types";
-import { initFormValues } from "./shortcode";
+import { editedFormPresence, initFormValues } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
 // 插入模式（initialValues 未传）用 catalog default 初始化；
@@ -23,6 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const values = ref<SchemaValues>({});
+const present = ref<string[] | undefined>();
 const validation = ref<{ valid: boolean; error?: string }>({ valid: true });
 
 const fields = computed<SchemaField[]>(() =>
@@ -42,6 +43,7 @@ const fields = computed<SchemaField[]>(() =>
 
 function initValues() {
   values.value = initFormValues(props.plugin.form || [], props.initialValues);
+  present.value = props.present === undefined ? undefined : [...props.present];
   updateValidation(values.value, false);
 }
 
@@ -61,7 +63,7 @@ async function updateValidation(next: SchemaValues, emitUpdate: boolean) {
   validation.value = { valid: false };
   emit("validation", validation.value);
   try {
-    const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), props.present);
+    const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), present.value);
     if (current !== generation) return;
     validation.value = { valid: true };
     emit("validation", validation.value);
@@ -77,6 +79,7 @@ onBeforeUnmount(() => {
 });
 
 function onSchemaUpdate(next: SchemaValues) {
+  present.value = editedFormPresence(props.plugin.form || [], present.value, values.value, next);
   values.value = next;
   updateValidation(next, true);
 }
