@@ -127,3 +127,30 @@ func TestNavigationURLRootAndReservedEscapes(t *testing.T) {
 		t.Fatal(marked)
 	}
 }
+
+func TestRefreshNavigationPreservesMembershipAndUpdatesShellSignature(t *testing.T) {
+	fixture := loadOracle(t).Navigation[0]
+	out, err := PrepareNavigation(fixture.HTML, fixture.Options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, links := navOutput(t, out)
+	// 模拟图片回填改变保留的 shell，而不是重新扫描/猜测集合成员。
+	out = strings.Replace(out, "</head>", `<meta name="image-metadata" content="ready"/></head>`, 1)
+	out, err = RefreshNavigationSignature(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, refreshedLinks := navOutput(t, out)
+	if before.Collection != after.Collection || before.URL != after.URL || before.Signature == after.Signature || !reflect.DeepEqual(links, refreshedLinks) {
+		t.Fatalf("navigation semantics lost: before=%+v after=%+v links=%v/%v", before, after, links, refreshedLinks)
+	}
+	again, err := RefreshNavigationSignature(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stable, _ := navOutput(t, again)
+	if stable.Signature != after.Signature {
+		t.Fatal("refresh is not stable")
+	}
+}

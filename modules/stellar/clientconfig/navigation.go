@@ -32,6 +32,42 @@ var dataScriptType = regexp.MustCompile(`^(application/(?:ld\+)?json|math/tex(?:
 // PrepareNavigation 为同集合链接标记，并按真正保留的shell和扩展计算兼容签名。
 // 非托管可执行脚本会禁用局部导航；非法manifest/selector等构造错误明确返回错误。
 func PrepareNavigation(source string, options NavigationOptions) (string, error) {
+	return prepareNavigation(source, options, false)
+}
+
+// RefreshNavigationSignature 回填同批 HTML 后更新签名，保留集合、URL 及已经授权的链接。
+func RefreshNavigationSignature(source string) (string, error) {
+	doc, err := html.Parse(strings.NewReader(source))
+	if err != nil {
+		return "", err
+	}
+	nodes := find(doc, "#stellar-navigation-config")
+	if len(nodes) == 0 {
+		return source, nil
+	}
+	if len(nodes) != 1 {
+		return "", fmt.Errorf("duplicate navigation config")
+	}
+	var nav navigationConfig
+	if err := json.Unmarshal([]byte(text(nodes[0])), &nav); err != nil {
+		return "", err
+	}
+	var collection []string
+	if err := json.Unmarshal([]byte(nav.Collection), &collection); err != nil || len(collection) != 2 {
+		return "", fmt.Errorf("invalid navigation collection")
+	}
+	runtime := find(doc, "#stellar-runtime-config")
+	if len(runtime) != 1 {
+		return "", fmt.Errorf("missing navigation runtime")
+	}
+	var manifest Manifest
+	if err := json.Unmarshal([]byte(text(runtime[0])), &manifest); err != nil {
+		return "", err
+	}
+	return prepareNavigation(source, NavigationOptions{CollectionProfile: collection[0], CollectionID: collection[1], PageURL: nav.URL, Root: manifest.Root}, true)
+}
+
+func prepareNavigation(source string, options NavigationOptions, preserveAnchors bool) (string, error) {
 	if options.CollectionProfile == "" || options.CollectionID == "" {
 		return source, nil
 	}
@@ -42,8 +78,10 @@ func PrepareNavigation(source string, options NavigationOptions) (string, error)
 	for _, node := range find(doc, "#stellar-navigation-config") {
 		remove(node)
 	}
-	for _, node := range find(doc, "a[data-stellar-navigation]") {
-		delAttr(node, "data-stellar-navigation")
+	if !preserveAnchors {
+		for _, node := range find(doc, "a[data-stellar-navigation]") {
+			delAttr(node, "data-stellar-navigation")
+		}
 	}
 	main := find(doc, "#main")
 	runtime := find(doc, "#stellar-runtime-config")
@@ -79,6 +117,9 @@ func PrepareNavigation(source string, options NavigationOptions) (string, error)
 	collectionBytes, _ := json.Marshal([]string{options.CollectionProfile, options.CollectionID})
 	collection := string(collectionBytes)
 	for _, link := range find(doc, "a[href]") {
+		if preserveAnchors {
+			continue
+		}
 		href, err := url.Parse(attr(link, "href"))
 		if err != nil {
 			continue

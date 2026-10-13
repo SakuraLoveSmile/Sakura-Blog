@@ -20,8 +20,14 @@ import (
 // 注意：必须用路径前缀命名——不同子目录允许同名文件（如前台与管理页评论区），
 // 若只用基名会互相覆盖（曾为 admin/comments 被 partial/comments 覆盖的 bug）。
 type Engine struct {
-	tpl   *template.Template
-	icons *settings.IconRegistry
+	tpl           *template.Template
+	icons         *settings.IconRegistry
+	imageEnricher func(string, *StellarRenderData) (string, error)
+}
+
+// SetStellarImageEnricher 在装配时设置缓存回填；请求渲染不抓取图片。
+func (e *Engine) SetStellarImageEnricher(f func(string, *StellarRenderData) (string, error)) {
+	e.imageEnricher = f
 }
 
 // templateFS 嵌入 layout/partial 两目录的 .html 模板，部署时无需外部文件。
@@ -144,6 +150,12 @@ func (e *Engine) Render(name string, data *settings.ViewData) (string, error) {
 		output, err = stellarhtml.ProcessSite(output, stellarhtml.Context{Theme: prepared.Stellar.Theme, SiteURL: data.Site.URL, IconData: e.icons.Get})
 		if err != nil {
 			return "", err
+		}
+		if e.imageEnricher != nil {
+			output, err = e.imageEnricher(output, prepared)
+			if err != nil {
+				return "", err
+			}
 		}
 		if data.Stellar != nil && prepared.Stellar.Model != nil && prepGet(prepared.Stellar.Theme, "features.partialNavigation.enabled") == true && data.Stellar.Input.RuntimeData["preview"] != true {
 			collection := prepared.Stellar.Model.Collection
