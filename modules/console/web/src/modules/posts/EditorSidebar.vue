@@ -2,7 +2,7 @@
 import { patchJSONField, readJSONField } from "@/components/editor/stellar-form-json";
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Icon } from "@iconify/vue";
-import { previewApi, settingsApi, postApi, aiApi, topicApi, type TopicItem } from "@/api";
+import { previewApi, settingsApi, getApiErrorMessage, postApi, aiApi, topicApi, type TopicItem } from "@/api";
 import PluginParamForm from "@/modules/plugins/PluginParamForm.vue";
 import { VButton, VSwitch, Toast } from "@/components/ui";
 import { type PluginMeta, type PluginCategory } from "@/modules/plugins/plugin-types";
@@ -64,7 +64,7 @@ const emit = defineEmits<{
 
 const activeTab = ref<"outline" | "detail">(props.initialTab || "outline");
 
-// ---------- 作者可选项（Spec 38 Wave 5）：authors 为空 map 时不渲染控件 ----------
+// ---------- 严格公开作者目录：为空时不渲染控件 ----------
 interface AuthorOption {
   name: string;
   avatar?: string;
@@ -101,11 +101,11 @@ function normalizeAuthors(raw: unknown): Record<string, AuthorOption> {
 
 async function loadAuthors() {
   try {
-    const { data } = await settingsApi.all();
-    authorOptions.value = normalizeAuthors(data?.authors);
-  } catch {
+    const { data } = await settingsApi.authorCatalog();
+    authorOptions.value = normalizeAuthors(data.authors);
+  } catch (error) {
     authorOptions.value = {};
-    /* 静默：作者列表缺失不阻塞编辑 */
+    Toast.error("加载公开作者目录失败：" + getApiErrorMessage(error));
   }
 }
 

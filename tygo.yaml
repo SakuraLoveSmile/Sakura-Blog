@@ -21,6 +21,7 @@ packages:
       - "page.go"
       - "update.go"
       - "settings.go"
+      - "author_catalog.go"
       - "stellar_settings.go"
       - "stellar_content.go"
       - "stellar_widget_preview.go"

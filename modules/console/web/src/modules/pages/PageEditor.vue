@@ -314,10 +314,11 @@ function normalizeAuthors(raw: unknown) {
 
 async function loadAuthors() {
   try {
-    const { data } = await settingsApi.all();
-    authorOptions.value = normalizeAuthors(data?.authors);
-  } catch {
+    const { data } = await settingsApi.authorCatalog();
+    authorOptions.value = normalizeAuthors(data.authors);
+  } catch (error) {
     authorOptions.value = {};
+    Toast.error("加载公开作者目录失败：" + getApiErrorMessage(error));
   }
 }
 

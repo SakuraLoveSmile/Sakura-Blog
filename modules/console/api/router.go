@@ -321,6 +321,9 @@ func (h *Handler) register(r *gin.Engine) {
 		author.GET("/stats/referrers", h.statsReferrers)
 		author.GET("/stats/hourly", h.statsHourly)
 
+		// 公开作者目录供内容编辑器使用，不授予设置管理权限。
+		author.GET("/authors/catalog", h.getStellarAuthorCatalog)
+
 		// 文章
 		author.GET("/posts", h.listPosts)
 		author.GET("/posts/:slug", h.getPost)
