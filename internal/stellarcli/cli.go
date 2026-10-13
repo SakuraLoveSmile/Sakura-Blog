@@ -28,12 +28,17 @@ type Environment struct {
 
 type Options struct {
 	Root, ConfigPath string
+	ResolvedApp      *config.App
 	Environment      Environment
 	Now              func() time.Time
 	Images           func(context.Context, *config.App, *store.Store, stellarimages.PrepareOptions) (stellarimages.Report, error)
 }
 
 func ResolveApp(options Options) (*config.App, error) {
+	if options.ResolvedApp != nil {
+		snapshot := *options.ResolvedApp
+		return &snapshot, nil
+	}
 	root := options.Root
 	if root == "" {
 		root = os.Getenv("BLOG_ROOT")

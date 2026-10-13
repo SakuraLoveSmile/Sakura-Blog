@@ -42,14 +42,45 @@ func main() {
 			os.Exit(2)
 		}
 		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-		code := stellar.RunToolCLI(ctx, flag.Args()[1:], root, configPath, os.Stdout, os.Stderr)
+		code := 0
+		if flag.NArg() > 1 && flag.Arg(1) == "migrate" {
+			code = stellar.RunMigrationCLI(ctx, flag.Args()[2:], root, configPath, os.Stdout, os.Stderr)
+		} else {
+			toolConfig, toolPath, err := app.StellarMigrationConfig(app.Options{Root: root, ConfigPath: configPath})
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "unable to resolve tool runtime root")
+				stop()
+				os.Exit(1)
+			}
+			toolGuard, err := app.AcquireStellarRootGuard(toolConfig, toolPath, false)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "tool runtime root is locked by a migration")
+				stop()
+				os.Exit(1)
+			}
+			if err = app.CheckStellarMigrationToolReady(toolGuard.AppSnapshot); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				_ = toolGuard.Close()
+				stop()
+				os.Exit(1)
+			}
+			code = stellar.RunResolvedToolCLI(ctx, flag.Args()[1:], toolGuard.AppSnapshot, os.Stdout, os.Stderr)
+			_ = toolGuard.Close()
+		}
 		stop()
 		os.Exit(code)
 	}
 
-	services, err := app.Bootstrap(app.Options{
+	options := app.Options{
 		Root: root, ConfigPath: configPath, IconsPath: iconsPath, DevMode: devMode, Seed: seed,
-	})
+	}
+	rootGuard, err := app.PrepareStellarMigrationStartup(context.Background(), options)
+	if err != nil {
+		log.Fatalf("prepare Stellar migration startup: %v", err)
+	}
+	defer rootGuard.Close()
+	options.ResolvedApp = rootGuard.AppSnapshot
+	services, err := app.Bootstrap(options)
 	if err != nil {
 		log.Fatalf("bootstrap app: %v", err)
 	}
@@ -120,12 +151,21 @@ func main() {
 	log.Println("shutting down gracefully (timeout 30s)...")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	shutdownFailed := false
 	if err := server.Shutdown(shutdownCtx); err != nil {
+		shutdownFailed = true
 		log.Printf("graceful shutdown failed: %v", err)
+		_ = server.Close()
 	}
 	closeStellar()
 	if err := services.Close(shutdownCtx); err != nil {
 		log.Printf("close app services failed: %v", err)
+		// 关闭失败时由进程退出终止剩余任务；lifetime guard只随进程结束释放。
+		os.Exit(1)
+	}
+	if shutdownFailed {
+		// Close不保证超时handler已结束；保持guard直到进程退出。
+		os.Exit(1)
 	}
 	log.Println("server stopped")
 }
