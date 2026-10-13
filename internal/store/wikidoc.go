@@ -8,17 +8,20 @@ import (
 
 // WikiDoc wiki 文档页。
 type WikiDoc struct {
-	ID          int64     `json:"id"`
-	ProjectID   string    `json:"project_id"` // 对应 WikiProject.ID
-	Slug        string    `json:"slug"`
-	Title       string    `json:"title"`
-	Order       int       `json:"order"`
-	Parent      int64     `json:"parent"` // 父文档 ID，0 = 顶级
-	ContentMD   string    `json:"content_md"`
-	ContentHTML string    `json:"content_html"`
-	Status      string    `json:"status"` // "published" / "draft"
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID             int64     `json:"id"`
+	ProjectID      string    `json:"project_id"` // 对应 WikiProject.ID
+	Slug           string    `json:"slug"`
+	Title          string    `json:"title"`
+	Order          int       `json:"order"`
+	Parent         int64     `json:"parent"` // 父文档 ID，0 = 顶级
+	ContentMD      string    `json:"content_md"`
+	ContentHTML    string    `json:"content_html"`
+	Status         string    `json:"status"` // "published" / "draft"
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	StellarVersion int       `json:"stellar_version"`
+	StellarConfig  string    `json:"stellar_config"`
+	BlogExtensions string    `json:"blog_extensions"`
 }
 
 // TableName Entity 接口：wikidocs 表。
@@ -26,12 +29,12 @@ func (d *WikiDoc) TableName() string { return "wikidocs" }
 
 // Columns Entity 接口：全列，首列为 id（列名用 doc_order 而非 order，SQL 保留字）。
 func (d *WikiDoc) Columns() []string {
-	return []string{"id", "project_id", "slug", "title", "doc_order", "parent", "content_md", "content_html", "status", "created_at", "updated_at"}
+	return []string{"id", "project_id", "slug", "title", "doc_order", "parent", "content_md", "content_html", "status", "created_at", "updated_at", "stellar_version", "stellar_config", "blog_extensions"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应）。
 func (d *WikiDoc) Values() []any {
-	return []any{d.ProjectID, d.Slug, d.Title, d.Order, d.Parent, d.ContentMD, d.ContentHTML, d.Status, d.CreatedAt, d.UpdatedAt}
+	return []any{d.ProjectID, d.Slug, d.Title, d.Order, d.Parent, d.ContentMD, d.ContentHTML, d.Status, d.CreatedAt, d.UpdatedAt, d.StellarVersion, d.StellarConfig, d.BlogExtensions}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -39,7 +42,7 @@ func (d *WikiDoc) SetID(id int64) { d.ID = id }
 
 // ScanRow Entity 接口：行扫描，顺序对齐 Columns()。
 func (d *WikiDoc) ScanRow(row rowScanner) error {
-	return row.Scan(&d.ID, &d.ProjectID, &d.Slug, &d.Title, &d.Order, &d.Parent, &d.ContentMD, &d.ContentHTML, &d.Status, &d.CreatedAt, &d.UpdatedAt)
+	return row.Scan(&d.ID, &d.ProjectID, &d.Slug, &d.Title, &d.Order, &d.Parent, &d.ContentMD, &d.ContentHTML, &d.Status, &d.CreatedAt, &d.UpdatedAt, &d.StellarVersion, &d.StellarConfig, &d.BlogExtensions)
 }
 
 // TreeNode 文档树节点（用于 BuildDocTree 返回）。
@@ -112,6 +115,12 @@ func (s *Store) CountPublishedWikidocsByProjects(ids []string) (map[string]int, 
 // CreateWikidoc 新建文档，LastInsertId 回填 ID，自动设置 created_at/updated_at。
 // (project_id, slug) 重复时返回 UNIQUE 约束错误。
 func (s *Store) CreateWikidoc(doc *WikiDoc) error {
+	if doc == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(doc.StellarVersion, doc.StellarConfig, doc.BlogExtensions, "wiki/"+doc.ProjectID+"/"+doc.Slug, "wiki", false); err != nil {
+		return err
+	}
 	if doc.Status == "" {
 		doc.Status = StatusPublished
 	}
@@ -128,11 +137,22 @@ func (s *Store) CreateWikidoc(doc *WikiDoc) error {
 
 // UpdateWikidoc 按 id 更新文档字段，自动刷新 updated_at。文档不存在返回错误。
 func (s *Store) UpdateWikidoc(doc *WikiDoc) error {
+	if doc == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(doc.StellarVersion, doc.StellarConfig, doc.BlogExtensions, "wiki/"+doc.ProjectID+"/"+doc.Slug, "wiki", false); err != nil {
+		return err
+	}
 	doc.UpdatedAt = time.Now().UTC()
-	if err := repo(s, &WikiDoc{}).Update(doc.ID, doc); err != nil {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := updateStellarEntityTx(tx, doc, doc.ID, doc.StellarVersion); err != nil {
 		return fmt.Errorf("update wikidoc %d: %w", doc.ID, err)
 	}
-	return nil
+	return tx.Commit()
 }
 
 // DeleteWikidoc 硬删除文档（wiki 文档无需软删除）。删除前把子文档 parent 批量置 0 升为顶级，

@@ -20,6 +20,7 @@ type Migration struct {
 // through the ledger. New migrations should be appended in increasing order.
 var schemaMigrations = []Migration{
 	{Version: 1, Name: "legacy-baseline"},
+	{Version: 2, Name: "stellar-v2-content-metadata", Up: migrateStellarContentTx},
 }
 
 const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -33,6 +34,8 @@ const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
 // post.go createTables 管理（含专用 ALTER 迁移），不在此注册。
 // 各表如需补列迁移（ALTER），保留在对应 Ensure*Table 方法内（见下表注释）。
 var tableDDL = map[string]string{
+	"notebooks": notebooksDDL,
+	"notes":     notesDDL,
 	"links": `CREATE TABLE IF NOT EXISTS links (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		group_title TEXT NOT NULL DEFAULT '',
@@ -468,5 +471,5 @@ func (s *Store) ensureTable(table string) error {
 	if _, err := s.db.Exec(ddl); err != nil {
 		return fmt.Errorf("create %s table: %w", table, err)
 	}
-	return nil
+	return s.ensureStellarContentColumns(table)
 }

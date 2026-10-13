@@ -70,6 +70,10 @@ type Post struct {
 
 	// Views 阅读量（Spec 62：只读投影，仅列表/详情查询经 listCols 填充，不参与 Columns()/Values() 写入）。
 	Views int64
+	// 原始严格 2.0 配置与 Blog 扩展独立存储，不从旧列自动推导。
+	StellarVersion int    `json:"stellar_version"`
+	StellarConfig  string `json:"stellar_config"`
+	BlogExtensions string `json:"blog_extensions"`
 }
 
 // PosterData 海报封面字段，对齐原版 post.poster（headline/topic/caption/color）。
@@ -136,7 +140,7 @@ func (p *Post) TableName() string { return "posts" }
 
 // Columns Entity 接口：全列，首列为 id（含 Spec 15 增强列 + Spec 17 回收站列 + 草稿头列 + Spec 38 作者列 + Spec 52 topic_id 列 + Spec 53 ai_summary 列）。
 func (p *Post) Columns() []string {
-	return []string{"id", "slug", "title", "excerpt", "cover", "category", "tags", "content_md", "content_html", "status", "created_at", "updated_at", "pinned", "password", "publish_at", "poster", "topic", "topic_id", "\"references\"", "banner", "deleted_at", "draft_json", "meta_description", "meta_keywords", "author", "ai_summary", "ai_label"}
+	return []string{"id", "slug", "title", "excerpt", "cover", "category", "tags", "content_md", "content_html", "status", "created_at", "updated_at", "pinned", "password", "publish_at", "poster", "topic", "topic_id", "\"references\"", "banner", "deleted_at", "draft_json", "meta_description", "meta_keywords", "author", "ai_summary", "ai_label", "stellar_version", "stellar_config", "blog_extensions"}
 }
 
 // Values Entity 接口：写入值（不含 id，与 Columns()[1:] 对应；pinned/publish_at 做存储格式转换）。
@@ -145,7 +149,7 @@ func (p *Post) Values() []any {
 	if p.Pinned {
 		pinned = 1
 	}
-	return []any{p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.DeletedAt, p.DraftJSON, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel}
+	return []any{p.Slug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.CreatedAt, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.DeletedAt, p.DraftJSON, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel, p.StellarVersion, p.StellarConfig, p.BlogExtensions}
 }
 
 // SetID Entity 接口：回填自增 id。
@@ -155,7 +159,7 @@ func (p *Post) SetID(id int64) { p.ID = id }
 func (p *Post) ScanRow(row rowScanner) error {
 	var pinned int
 	var password, publishAt, deletedAt string
-	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel)
+	err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions)
 	if err != nil {
 		return err
 	}
@@ -166,14 +170,13 @@ func (p *Post) ScanRow(row rowScanner) error {
 	return nil
 }
 
-// listCols 统一 SELECT 列清单（与 Post.Columns() 前 26 列同序，末位附加 views 只读投影；
-// 供自定义查询拼接用，扫描对应 scanOne 的 27 列顺序）。
-const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, ai_label, views"
+// listCols 与 Post.Columns() 同序，末位附加 views 只读投影。
+const listCols = "id, slug, title, excerpt, cover, category, tags, content_md, content_html, status, created_at, updated_at, pinned, password, publish_at, poster, topic, topic_id, \"references\", banner, deleted_at, draft_json, meta_description, meta_keywords, author, ai_summary, ai_label, stellar_version, stellar_config, blog_extensions, views"
 
 // postListCols 是 Console 文章列表的轻量投影：列表只需要文章元数据，不能把正文、
 // 预渲染 HTML、口令或草稿 JSON 一起读入内存。末尾的 draft marker 只保留是否有草稿
 // 这一布尔信息，views 继续作为只读投影返回。
-const postListCols = "id, slug, title, excerpt, cover, category, tags, status, created_at, updated_at, pinned, publish_at, poster, topic, topic_id, deleted_at, meta_description, meta_keywords, author, ai_summary, ai_label, CASE WHEN draft_json != '' THEN 1 ELSE 0 END, views"
+const postListCols = "id, slug, title, excerpt, cover, category, tags, status, created_at, updated_at, pinned, publish_at, poster, topic, topic_id, deleted_at, meta_description, meta_keywords, author, ai_summary, ai_label, stellar_version, stellar_config, blog_extensions, CASE WHEN draft_json != '' THEN 1 ELSE 0 END, views"
 
 // publishedWhere 已发布且定时已到且未删除。占位符绑定 StatusPublished。
 const publishedWhere = "status = ? AND deleted_at = '' AND (publish_at IS NULL OR publish_at = '' OR publish_at <= strftime('%Y-%m-%dT%H:%M:%SZ','now'))"
@@ -775,6 +778,12 @@ func (s *Store) getBySlug(slug string, publishedOnly bool) (*Post, error) {
 
 // Create 新建文章，返回新记录 id。slug 冲突时返回错误。
 func (s *Store) Create(p *Post) (int64, error) {
+	if p == nil {
+		return 0, fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "posts/"+p.Slug, "post", false); err != nil {
+		return 0, err
+	}
 	if p.Status == "" {
 		p.Status = StatusDraft
 	}
@@ -787,14 +796,19 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if err := s.preparePostAuthors(p); err != nil {
 		return 0, fmt.Errorf("prepare post authors: %w", err)
 	}
-	id, err := repo(s, &Post{}).Create(p)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	id, err := createStellarEntityTx(tx, p)
 	if err != nil {
 		return 0, fmt.Errorf("create post %s: %w", p.Slug, err)
 	}
-	if err := s.replacePostAuthors(id, p.AuthorIDs); err != nil {
+	if err := replacePostAuthorsTx(tx, id, p.AuthorIDs); err != nil {
 		return 0, fmt.Errorf("save authors for post %s: %w", p.Slug, err)
 	}
-	if err := s.ReplacePostCategories(id, p.Categories, p.Category); err != nil {
+	if err := replacePostCategoriesTx(tx, id, p.Categories, p.Category); err != nil {
 		return 0, fmt.Errorf("save categories for post %s: %w", p.Slug, err)
 	}
 	if len(p.Categories) == 0 && strings.TrimSpace(p.Category) != "" {
@@ -803,6 +817,10 @@ func (s *Store) Create(p *Post) (int64, error) {
 	if len(p.Categories) > 0 {
 		p.Category = p.Categories[0]
 	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	p.ID = id
 	s.firePostWrite("create", p.Slug)
 	return id, nil
 }
@@ -828,6 +846,12 @@ func (s *Store) UpdateSlugWithRevision(oldSlug, newSlug string, p *Post) error {
 }
 
 func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options postUpdateOptions) error {
+	if p == nil {
+		return fmt.Errorf("nil content")
+	}
+	if err := validateStellarWrite(p.StellarVersion, p.StellarConfig, p.BlogExtensions, "posts/"+newSlug, "post", false); err != nil {
+		return err
+	}
 	if err := s.preparePostAuthors(p); err != nil {
 		return fmt.Errorf("prepare post authors: %w", err)
 	}
@@ -839,22 +863,26 @@ func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options 
 
 	var (
 		postID                     int64
+		stellarVersion             int
 		createdAt                  time.Time
 		poster, references, banner string
 		aiSummary, aiLabel         string
 		oldRevision                Revision
 	)
 	if err := tx.QueryRow(`SELECT id, created_at, poster, "references", banner, ai_summary, ai_label,
-		title, excerpt, content_md, tags, category, status
+		title, excerpt, content_md, tags, category, status, stellar_version
 		FROM posts WHERE slug = ?`, oldSlug).
 		Scan(&postID, &createdAt, &poster, &references, &banner, &aiSummary, &aiLabel,
-			&oldRevision.Title, &oldRevision.Excerpt, &oldRevision.ContentMD, &oldRevision.Tags, &oldRevision.Category, &oldRevision.Status); err != nil {
+			&oldRevision.Title, &oldRevision.Excerpt, &oldRevision.ContentMD, &oldRevision.Tags, &oldRevision.Category, &oldRevision.Status, &stellarVersion); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("update post %s: no rows affected", oldSlug)
 		}
 		return fmt.Errorf("find post %s: %w", oldSlug, err)
 	}
 
+	if err := rejectStellarDowngrade(stellarVersion, p.StellarVersion); err != nil {
+		return err
+	}
 	if oldSlug != newSlug {
 		var conflictID int64
 		err := tx.QueryRow(`SELECT id FROM posts WHERE slug = ? AND id != ?`, newSlug, postID).Scan(&conflictID)
@@ -898,9 +926,9 @@ func (s *Store) updateSlugWithOptions(oldSlug, newSlug string, p *Post, options 
 		p.AILabel = aiLabel
 	}
 
-	res, err := tx.Exec(`UPDATE posts SET slug=?, title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=?, topic=?, topic_id=?, "references"=?, banner=?, meta_description=?, meta_keywords=?, author=?, ai_summary=?, ai_label=?
+	res, err := tx.Exec(`UPDATE posts SET slug=?, title=?, excerpt=?, cover=?, category=?, tags=?, content_md=?, content_html=?, status=?, updated_at=?, pinned=?, password=?, publish_at=?, poster=?, topic=?, topic_id=?, "references"=?, banner=?, meta_description=?, meta_keywords=?, author=?, ai_summary=?, ai_label=?, stellar_version=?, stellar_config=?, blog_extensions=?
 		WHERE id=?`,
-		newSlug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel, postID)
+		newSlug, p.Title, p.Excerpt, p.Cover, p.Category, p.Tags, p.ContentMD, p.ContentHTML, p.Status, p.UpdatedAt, pinned, p.Password, formatPublishAt(p.PublishAt), p.Poster, p.Topic, p.TopicID, p.References, p.Banner, p.MetaDescription, p.MetaKeywords, p.Author, p.AISummary, p.AILabel, p.StellarVersion, p.StellarConfig, p.BlogExtensions, postID)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return fmt.Errorf("%w: %s", ErrPostSlugConflict, newSlug)
@@ -1111,19 +1139,6 @@ func (s *Store) Upsert(p *Post) error {
 	return s.Update(p.Slug, p)
 }
 
-// replacePostAuthors 用事务替换一篇文章的完整作者顺序。
-func (s *Store) replacePostAuthors(postID int64, authorIDs []int64) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	if err := replacePostAuthorsTx(tx, postID, authorIDs); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
-
 func replacePostAuthorsTx(tx *sql.Tx, postID int64, authorIDs []int64) error {
 	var exists int
 	if err := tx.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'post_authors'`).Scan(&exists); err != nil {
@@ -1258,7 +1273,7 @@ func scanPostList(row rowScanner) (*Post, error) {
 		&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags,
 		&p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &publishAt, &p.Poster,
 		&p.Topic, &p.TopicID, &p.DeletedAt, &p.MetaDescription, &p.MetaKeywords,
-		&p.Author, &p.AISummary, &p.AILabel, &hasDraft, &views,
+		&p.Author, &p.AISummary, &p.AILabel, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions, &hasDraft, &views,
 	); err != nil {
 		return nil, err
 	}
@@ -1293,13 +1308,13 @@ func (s *Store) scanPostListRows(rows *sql.Rows) ([]*Post, error) {
 	return out, nil
 }
 
-// scanOne 行扫描（listCols 顺序：Post.Columns() 前 26 列 + views 末位，与 listCols 常量对齐）。
+// scanOne 行扫描（Post.Columns() + views 末位，与 listCols 对齐）。
 func scanOne(row rowScanner) (*Post, error) {
 	p := &Post{}
 	var pinned int
 	var password, publishAt, deletedAt string
 	var views int64
-	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel, &views); err != nil {
+	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Excerpt, &p.Cover, &p.Category, &p.Tags, &p.ContentMD, &p.ContentHTML, &p.Status, &p.CreatedAt, &p.UpdatedAt, &pinned, &password, &publishAt, &p.Poster, &p.Topic, &p.TopicID, &p.References, &p.Banner, &deletedAt, &p.DraftJSON, &p.MetaDescription, &p.MetaKeywords, &p.Author, &p.AISummary, &p.AILabel, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions, &views); err != nil {
 		return nil, err
 	}
 	p.Pinned = pinned != 0
