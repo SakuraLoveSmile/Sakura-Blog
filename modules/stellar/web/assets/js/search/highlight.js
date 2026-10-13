@@ -1,8 +1,10 @@
-// 搜索跳转高亮（1.41）：URL 带 ?kw= 时在正文中高亮匹配词。
-// 搜索结果链接（local-search.js）统一带 ?kw=首词（+#章节锚点），本脚本在目标页
-// 把命中词包成 mark 标签插件样式（tag-plugin colorful mark color=yellow），
-// 无锚点时滚动到第一个匹配词实现定位。整页刷新模型下随文档执行一次。
+// 搜索跳转高亮：URL 带 ?kw= 时在正文中高亮匹配词
 (function () {
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function highlightKeyword() {
   var params;
   try {
     params = new URLSearchParams(window.location.search);
@@ -12,13 +14,9 @@
   var keyword = (params.get('kw') || '').trim();
   if (!keyword) return;
 
-  function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
 
-  function highlightKeyword() {
     // 优先主栏正文（避免命中 wiki 封面等其它 md-text 容器）
-    var root = document.querySelector('.site-main .md-text') || document.querySelector('.l_main .md-text') || document.querySelector('.md-text');
+    var root = document.querySelector('.site-main .md-text') || document.querySelector('.md-text');
     if (!root) return;
 
     var re = new RegExp(escapeRegExp(keyword), 'gi');
@@ -77,9 +75,5 @@
     }
   }
 
-  if (document.readyState !== 'loading') {
-    highlightKeyword();
-  } else {
-    document.addEventListener('DOMContentLoaded', highlightKeyword);
-  }
+  window.stellar.highlightKeyword = highlightKeyword;
 })();

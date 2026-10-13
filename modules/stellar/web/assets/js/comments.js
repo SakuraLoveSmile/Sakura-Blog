@@ -5,9 +5,19 @@
  */
 (function () {
   'use strict';
+  if (window.stellar && window.stellar.comments && window.stellar.comments.mount) return;
+  var mounted = new WeakMap();
 
-  if (window.__cmtBuilt) return;
-  window.__cmtBuilt = true;
+  function createInstance(scope) {
+  var document = scope ? scope.document : window.document;
+  var fetch = scope ? scope.fetch : window.fetch.bind(window);
+  var setTimeout = scope ? scope.setTimeout : window.setTimeout.bind(window);
+  var requestAnimationFrame = scope ? scope.requestAnimationFrame : window.requestAnimationFrame;
+  var IntersectionObserver = scope ? function (fn, opts) { return scope.observer('IntersectionObserver', fn, opts); } : window.IntersectionObserver;
+  function listen(target, event, handler, options) {
+    if (scope) scope.listen(target, event, handler, options);
+    else target.addEventListener(event, handler, options);
+  }
 
   // ------- 常量 -------
   // artalk/ 目录下有各 pack 的 Artalk 格式清单（items: [{key, val}]），val 为图片直链
@@ -70,6 +80,7 @@
     var bg = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#111827');
     t.style.cssText = 'position:fixed;z-index:10001;left:50%;top:68px;transform:translateX(-50%);padding:.45rem 1rem;font-size:.82rem;color:#fff;background:' + bg + ';border-radius:999px;box-shadow:0 8px 24px rgba(17,24,39,.25);opacity:0;transition:opacity .18s;';
     document.body.appendChild(t);
+    if (scope) scope.onCleanup(function () { if (t.parentNode) t.parentNode.removeChild(t); });
     requestAnimationFrame(function () { t.style.opacity = '1'; });
     setTimeout(function () {
       t.style.opacity = '0';
@@ -960,7 +971,7 @@
         fileInput.accept = 'image/png,image/jpeg,image/gif,image/webp';
         fileInput.style.display = 'none';
         document.body.appendChild(fileInput);
-        fileInput.addEventListener('change', function () {
+        listen(fileInput, 'change', function () {
           if (fileInput.files && fileInput.files[0]) uploadCommentImage(fileInput.files[0]);
           fileInput.value = '';
         });
@@ -1115,12 +1126,30 @@
   // ------- 通用事件绑定（委托 + PJAX 兼容） -------
   function on(el, ev, fn) {
     if (!el) return;
-    el.addEventListener(ev, fn);
+    listen(el, ev, fn);
   }
 
   function bindDelegated() {
     // 回复按钮（委托到 document，因为评论列表是动态插入的）
-    document.addEventListener('click', function (e) {
+    listen(document, 'click', function (e) {
+      var like = e.target.closest && e.target.closest('.cmt-like-btn');
+      if (like) {
+        if (like.disabled || like.getAttribute('data-liked') === '1') return;
+        var likeID = like.getAttribute('data-id');
+        if (!likeID) return;
+        var count = like.querySelector('.cmt-like-count');
+        var previous = count ? parseInt(count.textContent, 10) || 0 : 0;
+        like.disabled = true;
+        if (count) count.textContent = String(previous + 1);
+        fetch('/api/comments/' + encodeURIComponent(likeID) + '/like', { method: 'POST', credentials: 'same-origin' })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data || !data.ok) { if (count) count.textContent = String(previous); like.disabled = false; return; }
+            if (count && typeof data.likes === 'number') count.textContent = String(data.likes);
+            like.setAttribute('data-liked', '1'); like.classList.add('is-liked');
+          }).catch(function () { if (count) count.textContent = String(previous); like.disabled = false; });
+        return;
+      }
       var replyBtn = e.target.closest && e.target.closest('.cmt-reply-btn');
       if (replyBtn) {
         var id = replyBtn.getAttribute('data-id');
@@ -1276,7 +1305,7 @@
       if (!e.target.closest || !e.target.closest('.cmt-boost-popover')) closeBoostPanel();
     });
 
-    document.addEventListener('input', function (e) {
+    listen(document, 'input', function (e) {
       var search = e.target.closest && e.target.closest('.cmt-boost-search');
       if (!search) return;
       var panel = search.closest('.cmt-boost-popover');
@@ -1284,18 +1313,18 @@
     });
 
     if (window.addEventListener) {
-      window.addEventListener('resize', function () {
+      listen(window, 'resize', function () {
         var panel = $('.cmt-boost-popover');
         if (panel) positionBoostPanel(panel, panel._boostAnchor);
       });
-      window.addEventListener('scroll', function () {
+      listen(window, 'scroll', function () {
         var panel = $('.cmt-boost-popover');
         if (panel) positionBoostPanel(panel, panel._boostAnchor);
       }, true);
     }
 
     // Boost 键盘操作，以及评论 Ctrl/Cmd + Enter 快捷提交。
-    document.addEventListener('keydown', function (e) {
+    listen(document, 'keydown', function (e) {
       var boostPanel = e.target && e.target.closest && e.target.closest('.cmt-boost-popover');
       if (boostPanel) {
         if (e.key === 'Escape') {
@@ -1327,9 +1356,9 @@
     // 匿名输入记忆
     ['input', 'change'].forEach(function (ev) {
       var n = $('#cmt-nick'), em = $('#cmt-email'), l = $('#cmt-link');
-      if (n) n.addEventListener(ev, rememberAnon);
-      if (em) em.addEventListener(ev, rememberAnon);
-      if (l) l.addEventListener(ev, rememberAnon);
+      if (n) listen(n, ev, rememberAnon);
+      if (em) listen(em, ev, rememberAnon);
+      if (l) listen(l, ev, rememberAnon);
     });
   }
 
@@ -1339,6 +1368,7 @@
     if (!body) return;  // 当前页面没有评论区
     if (body.getAttribute('data-cmt-init') === '1') return;
     body.setAttribute('data-cmt-init', '1');
+    if (scope) scope.onCleanup(function () { body.removeAttribute('data-cmt-init'); });
 
     bindDelegated();
     bindToolbar();
@@ -1354,7 +1384,7 @@
   // 与 pjax.js 的 window.stellar.pjax._internal 模式一致；真实浏览器不消费该对象。
   // _resetState 仅供测试重建运行时状态；_init 为 init 别名（测试按需显式初始化）。
   window.stellar = window.stellar || {};
-  window.stellar.comments = {
+  var instance = {
     _internal: {
       escapeHtml: escapeHtml,
       defaultAvatar: defaultAvatar,
@@ -1405,10 +1435,20 @@
     }
   };
 
-  // DOMContentLoaded 已过也没关系，立即跑（整页刷新模型，无需换页重初始化）
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  return { init: init, internal: instance._internal };
   }
+  var testing = createInstance(null);
+  window.stellar.comments = {
+    _internal: testing.internal,
+    mount: function (root, context) {
+      if (mounted.has(root)) return mounted.get(root);
+      var scope = window.blogRuntime.createScope(root, context);
+      var cleanup = function () { scope.cleanup(); mounted.delete(root); };
+      scope.onCleanup(function () { mounted.delete(root); });
+      var instance = createInstance(scope);
+      instance.init();
+      mounted.set(root, cleanup);
+      return cleanup;
+    }
+  };
 })();

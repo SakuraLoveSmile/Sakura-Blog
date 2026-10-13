@@ -1,38 +1,33 @@
-// copycode.js: 代码块复制按钮，配置由 ctx.copycode 提供。
-(function () {
-  "use strict";
+function createCopyButtons(codeElements) {
+  codeElements.forEach((codeElement) => {
+    if (codeElement.querySelector('.copy-btn')) return;
+    // 创建复制按钮
+    const codeCopyBtn = document.createElement('button');
+    const copyIcon = ctx.icons['copy:copy'] || '';
+    codeCopyBtn.className = 'copy-btn';
+    codeCopyBtn.type = 'button';
+    codeCopyBtn.innerHTML = copyIcon;
+    codeCopyBtn.setAttribute('aria-label', ctx.copycode.label);
+    codeCopyBtn.setAttribute('title', ctx.copycode.label);
+    codeElement.appendChild(codeCopyBtn);
 
-  function init() {
-    var cfg = (typeof ctx !== "undefined" && ctx.copycode) || {};
-    if (cfg.enable === false) return;
-    document.querySelectorAll(".highlight .code").forEach(function (codeElement) {
-      if (codeElement.querySelector(".copy-btn")) return;
-      var button = document.createElement("button");
-      button.type = "button";
-      button.className = "copy-btn";
-      button.textContent = cfg.default_text || "Copy";
-      button.addEventListener("click", async function () {
-        var code = codeElement.querySelector("pre");
-        var text = code ? code.innerText : "";
+    // 添加点击事件监听
+    codeCopyBtn.addEventListener('click', async () => {
+      const codeToCopy = codeElement.querySelector('pre')?.innerText || '';
+      if (navigator.clipboard) {
         try {
-          if (!navigator.clipboard) throw new Error("clipboard unavailable");
-          await navigator.clipboard.writeText(text);
-          button.textContent = cfg.success_text || "Copied";
-          button.classList.add("success");
-          if (typeof hud !== "undefined" && hud.toast) hud.toast(cfg.toast || "Copied", 2500);
-        } catch (_) {
-          button.textContent = "复制失败";
-          button.classList.add("warning");
+          await navigator.clipboard.writeText(codeToCopy);
+          hud.toast(ctx.copycode.copied, ctx.copycode.toast_ms);
+        } catch (error) {
+          hud.toast(ctx.copycode.denied, ctx.copycode.toast_ms);
         }
-        setTimeout(function () {
-          button.textContent = cfg.default_text || "Copy";
-          button.classList.remove("success", "warning");
-        }, 3000);
-      });
-      codeElement.appendChild(button);
+      } else {
+        hud.toast(ctx.copycode.unsupported, ctx.copycode.toast_ms);
+      }
     });
-  }
+  });
+}
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
-})();
+if (typeof window.codeElements !== 'undefined') {
+  createCopyButtons(window.codeElements);
+}

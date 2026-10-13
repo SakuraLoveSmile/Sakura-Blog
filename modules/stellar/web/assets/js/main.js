@@ -1,71 +1,3 @@
-// 平滑滚动动画（1.41）：短距离 300ms、长距离最多 600ms，easeOutCubic；
-// 显式 instant，避免与全局 scroll-behavior: smooth 叠加导致滚动变慢。
-let smoothScrollRAF = 0;
-function cancelSmoothScroll() {
-  if (smoothScrollRAF) {
-    cancelAnimationFrame(smoothScrollRAF);
-    smoothScrollRAF = 0;
-  }
-}
-function smoothScrollTo(targetY) {
-  cancelSmoothScroll();
-  targetY = Math.max(0, targetY);
-  const startY = window.scrollY;
-  const diff = targetY - startY;
-  if (Math.abs(diff) < 2) {
-    return;
-  }
-  const duration = Math.min(600, Math.max(300, Math.abs(diff) * 0.15));
-  const startTime = performance.now();
-  function step(now) {
-    const t = Math.min(1, (now - startTime) / duration);
-    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
-    window.scrollTo({ top: startY + diff * eased, behavior: 'instant' });
-    if (t < 1) {
-      smoothScrollRAF = requestAnimationFrame(step);
-    } else {
-      smoothScrollRAF = 0;
-    }
-  }
-  smoothScrollRAF = requestAnimationFrame(step);
-}
-
-// 通用页内锚点平滑滚动（1.41）：标题锚点、TOC 链接、navbar 页内导航、脚注回链等。
-// 已被其他处理器拦截的点击通过 defaultPrevented 跳过，避免重复滚动；
-// #start 锚点贴顶滚动，其余锚点与 TOC 点击保持一致（32px offset）。
-let anchorClickBound = false;
-function bindAnchorClick() {
-  if (anchorClickBound) return;
-  anchorClickBound = true;
-  document.addEventListener('click', function (e) {
-    const link = e.target.closest && e.target.closest('a[href^="#"]');
-    if (!link || e.defaultPrevented) {
-      return;
-    }
-    const href = link.getAttribute('href');
-    if (!href || href.indexOf('#') !== 0) {
-      return;
-    }
-    let id = href.slice(1);
-    try {
-      id = decodeURIComponent(id);
-    } catch (err) {
-      // 片段含非法编码时按原样查找
-    }
-    const target = id && document.getElementById(id);
-    if (!target) {
-      return;
-    }
-    e.preventDefault();
-    const offset = id === 'start' ? 0 : 32;
-    const targetY = target.getBoundingClientRect().top + window.scrollY - offset;
-    smoothScrollTo(targetY);
-    if (window.history && window.history.pushState) {
-      window.history.pushState(null, '', href);
-    }
-  });
-}
-
 // utils
 const util = {
 
@@ -105,10 +37,11 @@ const util = {
     const el = document.getElementById(id);
     if (el) {
       el.select();
-      document.execCommand("Copy");
-      if (msg && msg.length > 0) {
-        hud.toast(msg, 2500);
-      }
+      navigator.clipboard.writeText(el.value).then(() => {
+        if (msg && msg.length > 0) {
+          hud.toast(msg, 2500);
+        }
+      }).catch(() => {});
     }
   },
 
@@ -120,11 +53,14 @@ const util = {
   },
 
   scrollTop: () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    smoothScrollTo(0);
   },
 
   scrollComment: () => {
-    document.getElementById('comments').scrollIntoView({ behavior: "smooth" });
+    const el = document.getElementById('comments');
+    if (el) {
+      smoothScrollTo(el.getBoundingClientRect().top + window.scrollY - 32);
+    }
   },
 
   viewportLazyload: (target, func, enabled = true) => {
@@ -159,175 +95,620 @@ const hud = {
 
 // defines
 
-// Stellar 2.0 shell 扩展负责开关与生命周期；保留旧模板/服务的 sidebar 调用入口。
-const sidebar = {
-  leftbar: () => { window.blogShell?.toggleLeftbar(); },
-  rightbar: () => { window.blogShell?.toggleDrawer('rightbar'); },
-  dismiss: () => { window.blogShell?.dismiss(); },
-  toggleTOC: () => { const el = document.querySelector('#data-toc'); if (el) el.classList.toggle('collapse'); },
-};
-window.sidebar = sidebar;
+const siteShell = document.querySelector('.site-shell');
+const leftbarStateKey = 'stellar:v2:leftbar-state';
+const leftbarDrawerQuery = '(max-width: 768px)';
+const leftbarHiddenQuery = '(max-width: 768px)';
+const rightbarDrawerQuery = '(max-width: 1180px)';
+let shellDrawerTrigger = null;
+let searchDialogTrigger = null;
+let searchDialogRestoreFocus = true;
+// 退场动画的安全兜底时长，需大于 search.styl 中 search-dialog-out 的 0.18s
+const searchCloseFallbackDelay = 260;
+let searchCloseTimer = null;
+let searchCloseListener = null;
+let shellInputModality = 'pointer';
 
-// TOC scroll-spy 共享状态：segs/root 每次 init.toc 刷新，scroll 监听器只注册一次，
-// PJAX 导航后重复 init 不叠加绑定（Stellar 原版依赖 jQuery，本 demo 未加载，原生重写）。
-const tocState = { segs: [], root: null, bound: false };
+function regionElement(region) {
+  return document.getElementById(region + '-region');
+}
 
-function activeTOC() {
-  const root = tocState.root;
-  if (!root) return;
-  const scrollOffset = 32;
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  let topSeg = null;
-  let topSegTop = -Infinity;
-  for (const seg of tocState.segs) {
-    const docTop = seg.getBoundingClientRect().top + scrollTop;
-    if (docTop > scrollTop + scrollOffset) continue;
-    if (docTop >= topSegTop) { topSeg = seg; topSegTop = docTop; }
-  }
-  const links = root.querySelectorAll('a.toc-link');
-  links.forEach(l => l.classList.remove('active', 'is-active', 'ui-collection__item'));
-  if (!topSeg) return;
-  // 不用属性选择器拼 id（避免特殊字符转义问题），直接比对 getAttribute
-  for (const l of links) {
-    if (l.getAttribute('href') === '#' + topSeg.id) {
-      l.classList.add('active', 'is-active', 'ui-collection__item');
-      break;
-    }
+function regionUsesDrawer(region) {
+  if (typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(region === 'leftbar' ? leftbarDrawerQuery : rightbarDrawerQuery).matches;
+}
+
+function regionHiddenWhenClosed(region) {
+  if (typeof window.matchMedia !== 'function') return false;
+  if (region === 'leftbar') return window.matchMedia(leftbarHiddenQuery).matches;
+  return regionUsesDrawer(region);
+}
+
+function setRegionInteractive(region, interactive) {
+  const element = regionElement(region);
+  if (!element) return;
+  const hidden = regionHiddenWhenClosed(region);
+  element.inert = hidden && !interactive;
+  if (hidden && !interactive) {
+    element.setAttribute('aria-hidden', 'true');
+  } else {
+    element.removeAttribute('aria-hidden');
   }
 }
 
-function scrollTOC() {
-  const e0 = document.querySelector('#data-toc .toc');
-  const e1 = document.querySelector('#data-toc a.toc-link.active');
-  if (e0 == null || e1 == null) {
+function syncLeftbarControls() {
+  syncRightbarFocus();
+  const drawer = regionUsesDrawer('leftbar');
+  const expanded = drawer
+    ? siteShell?.dataset.drawer === 'leftbar'
+    : document.documentElement.dataset.leftbarState !== 'collapsed';
+  document.querySelectorAll('[data-shell-action="toggle-leftbar"]').forEach(function (button) {
+    button.setAttribute('aria-expanded', String(expanded));
+    button.setAttribute('aria-label', drawer
+      ? (expanded ? 'Close leftbar' : 'Open leftbar')
+      : (expanded ? 'Collapse leftbar' : 'Expand leftbar'));
+  });
+}
+
+function syncRightbarFocus() {
+  const rightbar = regionElement('rightbar');
+  if (!rightbar) return;
+  const compact = !regionUsesDrawer('rightbar') && regionElement('leftbar')
+    && document.documentElement.dataset.leftbarState === 'collapsed';
+  if (compact) rightbar.setAttribute('tabindex', '0');
+  else rightbar.removeAttribute('tabindex');
+}
+
+function syncDrawerControls() {
+  syncRightbarFocus();
+  const openRegion = siteShell?.dataset.drawer || '';
+  ['leftbar', 'rightbar'].forEach(function (region) {
+    const open = openRegion === region && regionUsesDrawer(region);
+    document.querySelectorAll('[data-shell-action="toggle-' + region + '-drawer"]').forEach(function (button) {
+      button.setAttribute('aria-expanded', String(open));
+      button.setAttribute('aria-label', (open ? 'Close ' : 'Open ') + region);
+    });
+    setRegionInteractive(region, open || !regionUsesDrawer(region));
+  });
+}
+
+function focusRegion(region) {
+  const element = regionElement(region);
+  element?.querySelector('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')?.focus();
+}
+
+function dismissDrawer(options) {
+  if (!siteShell) return;
+  const restoreFocus = options?.restoreFocus !== false;
+  const wasOpen = !!siteShell.dataset.drawer;
+  delete siteShell.dataset.drawer;
+  syncDrawerControls();
+  syncLeftbarControls();
+  if (wasOpen && restoreFocus && shellDrawerTrigger?.focus) shellDrawerTrigger.focus();
+  if (wasOpen) shellDrawerTrigger = null;
+}
+
+function toggleDrawer(region, trigger) {
+  if (!siteShell || !regionUsesDrawer(region) || !regionElement(region)) return;
+  const open = siteShell.dataset.drawer === region;
+  if (open) {
+    dismissDrawer();
     return;
   }
-  const offsetBottom = e1.getBoundingClientRect().bottom - e0.getBoundingClientRect().bottom + 100;
-  const offsetTop = e1.getBoundingClientRect().top - e0.getBoundingClientRect().top - 64;
-  if (offsetTop < 0) {
-    e0.scrollBy({ top: offsetTop, behavior: "smooth" });
-  } else if (offsetBottom > 0) {
-    e0.scrollBy({ top: offsetBottom, behavior: "smooth" });
+  shellDrawerTrigger = trigger || document.activeElement;
+  siteShell.dataset.drawer = region;
+  syncDrawerControls();
+  syncLeftbarControls();
+  focusRegion(region);
+}
+
+function toggleLeftbarState() {
+  const root = document.documentElement;
+  const state = root.dataset.leftbarState === 'collapsed' ? 'expanded' : 'collapsed';
+  root.dataset.leftbarState = state;
+  try { localStorage.setItem(leftbarStateKey, state); } catch (error) {}
+  syncLeftbarControls();
+}
+
+function toggleLeftbar(trigger) {
+  if (regionUsesDrawer('leftbar')) {
+    toggleDrawer('leftbar', trigger);
+    return;
+  }
+  toggleLeftbarState();
+}
+
+function searchDialogElement() {
+  return document.getElementById('site-search-dialog');
+}
+
+function searchScopeOption(dialog, value) {
+  return dialog?.querySelector('[data-search-scope-option="' + value + '"]');
+}
+
+function applySearchScope(dialog, value, refresh = true) {
+  const input = dialog?.querySelector('.search-input');
+  const group = dialog?.querySelector('.search-dialog__scope');
+  if (!input || !group) return;
+  const selected = ['all', 'blog', 'current'].includes(value) ? value : 'all';
+  const option = searchScopeOption(dialog, selected);
+  const radio = option?.querySelector('input[type="radio"]');
+  if (!option || option.hidden || !radio) return;
+
+  if (selected === 'current') {
+    input.dataset.domain = group.dataset.currentDomain || '';
+  } else if (selected === 'blog') {
+    input.dataset.domain = 'blog';
+  } else {
+    input.dataset.domain = '';
+  }
+  radio.checked = true;
+  if (refresh && input.value.trim().length > 0) {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
   }
 }
+
+function searchMotionEnabled() {
+  if (typeof window.matchMedia !== 'function') return true;
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function configureSearchScope(dialog, trigger) {
+  const group = dialog?.querySelector('.search-dialog__scope');
+  if (!group) return false;
+  const blogOption = searchScopeOption(dialog, 'blog');
+  const currentOption = searchScopeOption(dialog, 'current');
+  const currentLabel = currentOption?.querySelector('[data-search-scope-current-label]');
+  const currentDomain = trigger?.dataset?.searchDomain || '';
+  const hasBlog = trigger?.dataset?.searchDomainBlog === 'true';
+  const hasCurrent = currentDomain.length > 0 && currentDomain !== 'blog';
+
+  blogOption.hidden = !hasBlog;
+  currentOption.hidden = !hasCurrent;
+  if (currentLabel) currentLabel.textContent = trigger?.dataset?.searchDomainLabel || '';
+  group.dataset.currentDomain = currentDomain;
+  group.hidden = 1 + Number(hasBlog) + Number(hasCurrent) < 2;
+
+  const selected = hasCurrent ? 'current' : (hasBlog ? 'blog' : 'all');
+  applySearchScope(dialog, selected, false);
+  return true;
+}
+
+function clearSearchClosePending(dialog) {
+  if (searchCloseTimer !== null) {
+    clearTimeout(searchCloseTimer);
+    searchCloseTimer = null;
+  }
+  if (searchCloseListener) {
+    dialog.removeEventListener('animationend', searchCloseListener);
+    searchCloseListener = null;
+  }
+  dialog.classList.remove('is-closing');
+}
+
+// 锁定页面滚动会移除常驻滚动条，先把槽位宽度写进 CSS 变量供补位使用
+function syncSearchScrollbarGutter() {
+  const root = document.documentElement;
+  if (root.hasAttribute('data-search-open')) return;
+  const gutter = Math.max(0, window.innerWidth - root.clientWidth);
+  root.style.setProperty('--stellar-scrollbar-gutter', gutter + 'px');
+}
+
+// 关闭动画播放期间浮层仍处于打开状态，退出动画结束或兜底超时后才真正 close 并恢复焦点
+function finishSearchClose(dialog) {
+  clearSearchClosePending(dialog);
+  if (dialog.open) dialog.close();
+  document.documentElement.removeAttribute('data-search-open');
+  if (searchDialogRestoreFocus && searchDialogTrigger?.focus) searchDialogTrigger.focus();
+  else if (searchDialogTrigger?.blur) searchDialogTrigger.blur();
+  searchDialogTrigger = null;
+  searchDialogRestoreFocus = true;
+}
+
+function closeSearch() {
+  const dialog = searchDialogElement();
+  if (!dialog?.open || searchCloseTimer !== null) return;
+  if (!searchMotionEnabled()) {
+    finishSearchClose(dialog);
+    return;
+  }
+  searchCloseListener = function (event) {
+    if (event.animationName !== 'search-dialog-out') return;
+    finishSearchClose(dialog);
+  };
+  dialog.classList.add('is-closing');
+  dialog.addEventListener('animationend', searchCloseListener);
+  searchCloseTimer = setTimeout(function () { finishSearchClose(dialog); }, searchCloseFallbackDelay);
+}
+
+function openSearch(trigger, restoreFocus = true) {
+  const dialog = searchDialogElement();
+  const input = dialog?.querySelector('.search-input');
+  const wrapper = dialog?.querySelector('.search-wrapper');
+  const result = dialog?.querySelector('.search-result');
+  if (!dialog || !input) return;
+  clearSearchClosePending(dialog);
+  searchDialogTrigger = trigger || document.activeElement;
+  searchDialogRestoreFocus = restoreFocus;
+  input.value = '';
+  if (!configureSearchScope(dialog, trigger)) {
+    input.dataset.algoliaFilterPath = trigger?.dataset?.algoliaFilterPath || '';
+  }
+  if (wrapper) {
+    wrapper.setAttribute('searching', 'false');
+    wrapper.classList.remove('noresult');
+  }
+  result?.replaceChildren();
+  if (!dialog.open) dialog.showModal();
+  syncSearchScrollbarGutter();
+  document.documentElement.setAttribute('data-search-open', '');
+  input.focus();
+}
+
+function toggleToc(trigger) {
+  const widget = document.querySelector('#data-toc');
+  if (!widget) return;
+  const collapsed = widget.classList.toggle('collapse');
+  trigger?.classList.toggle('is-active', collapsed);
+  trigger?.setAttribute('aria-pressed', String(collapsed));
+}
+
+const shellActions = {
+  'toggle-leftbar-drawer': function (trigger) { toggleDrawer('leftbar', trigger); },
+  'toggle-rightbar-drawer': function (trigger) { toggleDrawer('rightbar', trigger); },
+  'dismiss-drawer': function () { dismissDrawer(); },
+  'toggle-leftbar': function (trigger) { toggleLeftbar(trigger); },
+  'open-search': function (trigger) { openSearch(trigger, shellInputModality !== 'pointer'); },
+  'close-search': function () { closeSearch(); },
+  'toggle-toc': function (trigger) { toggleToc(trigger); }
+};
+
+syncLeftbarControls();
+syncDrawerControls();
+document.addEventListener('pointerdown', function () {
+  shellInputModality = 'pointer';
+});
+document.addEventListener('click', function (event) {
+  const trigger = event.target?.closest?.('[data-shell-action]');
+  const action = trigger?.dataset?.shellAction;
+  if (!action || typeof shellActions[action] !== 'function') return;
+  event.preventDefault();
+  shellActions[action](trigger);
+});
+document.addEventListener('keydown', function (event) {
+  shellInputModality = 'keyboard';
+  if (event.key === 'Escape') {
+    if (searchDialogElement()?.open) closeSearch();
+    else dismissDrawer();
+  }
+});
+const searchDialog = searchDialogElement();
+searchDialog?.addEventListener('cancel', function (event) {
+  event.preventDefault();
+  closeSearch();
+});
+searchDialog?.addEventListener('click', function (event) {
+  if (event.target === searchDialog) closeSearch();
+});
+searchDialog?.addEventListener('change', function (event) {
+  if (event.target?.name !== 'site-search-scope') return;
+  applySearchScope(searchDialog, event.target.value);
+});
+if (typeof window.matchMedia === 'function') {
+  [leftbarDrawerQuery, leftbarHiddenQuery, rightbarDrawerQuery].filter(function (query, index, queries) {
+    return queries.indexOf(query) === index;
+  }).map(function (query) {
+    return window.matchMedia(query);
+  }).forEach(function (media) {
+    const handleChange = function () {
+      dismissDrawer({ restoreFocus: false });
+      syncDrawerControls();
+    };
+    if (typeof media.addEventListener === 'function') media.addEventListener('change', handleChange);
+    else if (typeof media.addListener === 'function') media.addListener(handleChange);
+  });
+}
+
+// 通用平滑滚动（自定义动画，TOC / 回到顶部 / 参与讨论共用）
+let scrollAnim = null;
+function cancelSmoothScroll() {
+  if (scrollAnim !== null) {
+    cancelAnimationFrame(scrollAnim);
+    scrollAnim = null;
+  }
+}
+function smoothScrollTo(targetY) {
+  cancelSmoothScroll();
+  targetY = Math.max(0, targetY);
+  const startY = window.scrollY;
+  const diff = targetY - startY;
+  if (Math.abs(diff) < 2) {
+    return;
+  }
+  // 短距离 300ms，长距离最多 600ms
+  const duration = Math.min(600, Math.max(300, Math.abs(diff) * 0.15));
+  const startTime = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    // 显式指定 instant，避免全局 scroll-behavior: smooth 与自定义动画叠加导致滚动变慢
+    window.scrollTo({ top: startY + diff * eased, behavior: 'instant' });
+    if (t < 1) {
+      scrollAnim = requestAnimationFrame(step);
+    } else {
+      scrollAnim = null;
+    }
+  }
+  scrollAnim = requestAnimationFrame(step);
+}
+window.addEventListener('wheel', cancelSmoothScroll, { passive: true });
+window.addEventListener('touchstart', cancelSmoothScroll, { passive: true });
+
+// 远程 md（mdrender 服务）渲染完成后重建右栏 TOC：结构与服务端 toc() 输出一致
+const tocClickBound = new WeakMap();
+function rebuildToc(scope) {
+  const widget = document.querySelector('#data-toc');
+  if (!widget) {
+    return;
+  }
+  const body = widget.querySelector('.widget-body');
+  if (!body) {
+    return;
+  }
+  const article = scope && scope.closest ? scope.closest('article.md-text') : null;
+  const root = article || document.querySelector('article.md-text');
+  if (!root) {
+    return;
+  }
+  const headings = root.querySelectorAll('h1,h2,h3,h4,h5,h6');
+  if (headings.length === 0) {
+    return;
+  }
+  const ol = document.createElement('ol');
+  ol.className = 'toc ui-collection-adapter';
+  const stack = [];
+  headings.forEach(function (h) {
+    const id = h.id;
+    if (!id) {
+      return;
+    }
+    const level = parseInt(h.tagName.substring(1), 10);
+    const li = document.createElement('li');
+    li.className = 'toc-item toc-level-' + level;
+    const a = document.createElement('a');
+    a.className = 'toc-link ' + ctx.ui.classes.interactive;
+    a.href = '#' + encodeURIComponent(id);
+    const span = document.createElement('span');
+    span.className = 'toc-text';
+    span.textContent = h.textContent.trim();
+    a.appendChild(span);
+    li.appendChild(a);
+    while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+      stack.pop();
+    }
+    if (stack.length === 0) {
+      ol.appendChild(li);
+    } else {
+      const parent = stack[stack.length - 1];
+      if (!parent.childOl) {
+        parent.childOl = document.createElement('ol');
+        parent.childOl.className = 'toc-child';
+        parent.li.appendChild(parent.childOl);
+      }
+      parent.childOl.appendChild(li);
+    }
+    stack.push({ level: level, li: li });
+  });
+  body.innerHTML = '';
+  body.appendChild(ol);
+  bindTocClick(widget);
+}
+
+// 指示条跟随目录自身坐标，目录滚动无需重复测量。
+function bindTocIndicator(widget) {
+  let frame = null;
+  const update = () => {
+    frame = null;
+    const toc = widget.querySelector('.toc');
+    if (!toc) return;
+    const active = toc.querySelector('a.toc-link.active');
+    if (!active || !active.getClientRects().length) {
+      toc.style.removeProperty('--toc-active-height');
+      toc.style.setProperty('--toc-active-opacity', '0');
+      return;
+    }
+    const bounds = active.getBoundingClientRect();
+    toc.style.setProperty('--toc-active-y', (bounds.top - toc.getBoundingClientRect().top) + 'px');
+    toc.style.setProperty('--toc-active-height', bounds.height + 'px');
+    toc.style.setProperty('--toc-active-opacity', '1');
+  };
+  const schedule = () => {
+    if (frame === null) frame = requestAnimationFrame(update);
+  };
+  const mutations = new MutationObserver(schedule);
+  mutations.observe(widget, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'collapse'] });
+  mutations.observe(document.documentElement, { attributes: true, attributeFilter: ['data-leftbar-state'] });
+  const resize = new ResizeObserver(schedule);
+  resize.observe(widget);
+  const events = ['mouseenter', 'mouseleave', 'focusin', 'focusout', 'transitionend'];
+  events.forEach(type => widget.addEventListener(type, schedule));
+  window.addEventListener('resize', schedule);
+  schedule();
+  return () => {
+    mutations.disconnect();
+    resize.disconnect();
+    events.forEach(type => widget.removeEventListener(type, schedule));
+    window.removeEventListener('resize', schedule);
+    if (frame !== null) cancelAnimationFrame(frame);
+  };
+}
+
+function bindTocClick(widget) {
+  if (tocClickBound.has(widget)) {
+    return tocClickBound.get(widget);
+  }
+  const handler = function (e) {
+    const link = e.target.closest('a.toc-link');
+    if (!link) {
+      return;
+    }
+    const href = link.getAttribute('href');
+    const id = href && href.indexOf('#') === 0 ? decodeURIComponent(href.slice(1)) : null;
+    const target = id && document.getElementById(id);
+    if (target) {
+      e.preventDefault();
+      const offset = 32;
+      const targetY = target.getBoundingClientRect().top + window.scrollY - offset;
+      smoothScrollTo(targetY);
+      dismissDrawer();
+      if (window.history && window.history.pushState) {
+        window.history.pushState(window.history.state, '', href);
+      }
+    }
+  };
+  widget.addEventListener('click', handler);
+  const cleanupIndicator = bindTocIndicator(widget);
+  const cleanup = () => {
+    cleanupIndicator();
+    widget.removeEventListener('click', handler);
+    tocClickBound.delete(widget);
+  };
+  tocClickBound.set(widget, cleanup);
+  return cleanup;
+}
+
+// 通用页内锚点平滑滚动（标题左侧 headerlink、{% navbar %} 页内导航、脚注回链等）
+// 已被其他处理器拦截的点击（TOC、tabs、wiki #start 等）通过 defaultPrevented 跳过，避免重复滚动
+function bindAnchorClick() {
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest('a[href^="#"]');
+    if (!link || e.defaultPrevented) {
+      return;
+    }
+    const href = link.getAttribute('href');
+    if (!href || href.indexOf('#') !== 0) {
+      return;
+    }
+    let id = href.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch (err) {
+      // 片段含非法编码时按原样查找
+    }
+    const target = id && document.getElementById(id);
+    if (!target) {
+      return;
+    }
+    e.preventDefault();
+    // #start 锚点贴顶滚动，不预留 offset；其余锚点与 TOC 点击滚动保持一致（32px）
+    const offset = id === 'start' ? 0 : 32;
+    const targetY = target.getBoundingClientRect().top + window.scrollY - offset;
+    smoothScrollTo(targetY);
+    if (window.history && window.history.pushState) {
+      window.history.pushState(window.history.state, '', href);
+    }
+  });
+}
+bindAnchorClick();
+
+// 远程 md 渲染完成后由页面层重建右栏 TOC
+document.addEventListener('stellar:mdrender', function (e) {
+  rebuildToc(e.detail && e.detail.target);
+});
+
 
 const init = {
   toc: () => {
-    // 每次 init 重新收集 h1-h6 标题与 TOC 根节点（PJAX 后 DOM 已替换）
-    tocState.segs = Array.from(document.querySelectorAll('article.md-text h1[id], article.md-text h2[id], article.md-text h3[id], article.md-text h4[id], article.md-text h5[id], article.md-text h6[id]'));
-    tocState.root = document.getElementById('data-toc');
-    if (!tocState.bound) {
-      tocState.bound = true;
-      let timeout = null;
-      window.addEventListener('scroll', function () {
-        activeTOC();
-        if (timeout !== null) clearTimeout(timeout);
-        timeout = setTimeout(scrollTOC, 50);
-      });
-    }
-    activeTOC(); // 初始高亮
-  },
-  navbarPin: () => {
-    // Stellar 2.0：列表导航按实际吸顶位置同步 is-pinned 状态。
-    // 吸顶判定直接测 navbar 实际视口位置而非 scrollY 推算：移动端浏览器顶栏伸缩会改变
-    // scrollY（展开顶栏时 scrollY 减小），即使 navbar 仍吸顶也可能跌破阈值导致玻璃误消失。
-    // 无轮播页（wiki）顶部即吸顶，需滚动达阈值才切玻璃。
-    const navbars = document.querySelectorAll('.listing-nav');
-    if (navbars.length === 0) {
-      return;
-    }
-    const TOLERANCE = 2; // 视口顶部允许偏差（px），吸收亚像素/取整误差
-    const SCROLL_THRESHOLD = 2; // 滚动阈值（px），未达阈值保持卡片样式
-    let states = [];
-    function update() {
-      const scrolled = window.scrollY >= SCROLL_THRESHOLD;
-      states.forEach((state) => {
-        const top = state.navbar.getBoundingClientRect().top;
-        state.bar.classList.toggle('is-pinned', scrolled && top <= state.stickyTop + TOLERANCE);
-      });
-    }
-    function measure() {
-      states = [];
-      navbars.forEach((navbar) => {
-        const bar = navbar.querySelector('.listing-nav__surface');
-        if (bar == null) {
-          return;
+    const scrollOffset = 32;
+    // 滚动位置取整后标题顶可能落在偏移线下方 1~2px，加容差避免高亮回跳到上一条
+    const scrollTolerance = 4;
+    function activeTOC() {
+      // 每次滚动动态查询：远程 md 内容渲染后标题才存在
+      var segs = utils.qsa("article.md-text h1, article.md-text h2, article.md-text h3, article.md-text h4, article.md-text h5, article.md-text h6");
+      var scrollTop = window.scrollY;
+      var topSeg = null;
+      for (var i = 0; i < segs.length; i++) {
+        var segTop = segs[i].getBoundingClientRect().top + window.scrollY;
+        if (segTop > scrollTop + scrollOffset + scrollTolerance) {
+          continue;
         }
-        // getComputedStyle().top 自动兼容桌面 var(--gap-page) 与移动端 8pt
-        const stickyTop = parseFloat(getComputedStyle(navbar).top) || 16;
-        states.push({ navbar: navbar, bar: bar, stickyTop: stickyTop });
-      });
-      update();
+        if (!topSeg || segTop >= topSeg.getBoundingClientRect().top + window.scrollY) {
+          topSeg = segs[i];
+        }
+      }
+      if (topSeg) {
+        utils.dom("#data-toc a.toc-link").removeClass("active");
+        var id = topSeg.getAttribute("id");
+        var link = id ? "#" + id : "#undefined";
+        if (link != '#undefined') {
+          const highlightItem = utils.dom('#data-toc a.toc-link[href="' + encodeURI(link) + '"]');
+          if (highlightItem.length > 0) {
+            highlightItem.addClass("active");
+          }
+        } else {
+          const first = utils.qs('#data-toc a.toc-link');
+          if (first) first.classList.add("active");
+        }
+      }
     }
-    let ticking = false;
-    window.addEventListener('scroll', () => {
-      if (ticking) {
+    function scrollTOC() {
+      const active = document.querySelector('#data-toc .toc a.toc-link.active');
+      if (!active || !active.getClientRects().length) return;
+      // 桌面 TOC 与抽屉的滚动容器不同，只滚动实际承载目录的容器。
+      for (let container = active.parentElement; container && container !== document.body; container = container.parentElement) {
+        if (!/^(auto|scroll)$/.test(getComputedStyle(container).overflowY)
+          || container.scrollHeight <= container.clientHeight) continue;
+        const bounds = container.getBoundingClientRect();
+        const top = Math.max(0, bounds.top + container.clientTop);
+        const bottom = Math.min(window.innerHeight, bounds.top + container.clientTop + container.clientHeight);
+        if (bottom <= top || bounds.right <= 0 || bounds.left >= window.innerWidth) return;
+        const item = active.getBoundingClientRect();
+        // 小视口按可用空间收窄缓冲，避免上下边界互相触发滚动。
+        const margin = Math.min(100, Math.max(0, (bottom - top - item.height) / 2));
+        const safeTop = top + margin;
+        const safeBottom = bottom - margin;
+        let offset = 0;
+        if (item.top < safeTop) offset = item.top - safeTop;
+        else if (item.bottom > safeBottom) offset = Math.min(item.bottom - safeBottom, item.top - safeTop);
+        if (offset) container.scrollBy({ top: offset, behavior: 'smooth' });
         return;
       }
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        update();
-        ticking = false;
-      });
-    }, { passive: true });
-    // 顶栏伸缩不一定触发 scroll，兜底监听 visualViewport 尺寸变化
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', update);
     }
-    window.addEventListener('resize', measure);
-    window.addEventListener('pageshow', measure);
-    measure();
-  },
-  sidebar: () => {
-    // 移动端点 TOC 链接收起左侧栏。事件委托绑一次即可（TOC 节点 PJAX 后会被替换，委托到 document 不受影响）
-    if (tocState.sidebarBound) return;
-    tocState.sidebarBound = true;
-    document.addEventListener('click', (e) => {
-      const link = e.target.closest && e.target.closest('#data-toc a.toc-link');
-      if (link) sidebar.dismiss();
+
+    var timeout = null;
+    window.addEventListener('scroll', function () {
+      activeTOC();
+      if (timeout !== null) clearTimeout(timeout);
+      timeout = setTimeout(function () {
+        scrollTOC();
+      }, 50);
     });
   },
-  wikiEmptyCard: () => {
-    // 文库空卡片（无本地文档且无外链，带 data-wiki-empty）：点击 toast 提示文案。
-    // document 级事件委托只绑一次，PJAX 换页后 DOM 替换不受影响。
-    if (init.wikiEmptyBound) return;
-    init.wikiEmptyBound = true;
-    document.addEventListener('click', (e) => {
-      const card = e.target.closest && e.target.closest('a[data-wiki-empty]');
-      if (!card) return;
-      e.preventDefault();
-      hud.toast(card.getAttribute('data-wiki-empty'), 2500);
-    });
+  tocLinks: (root) => {
+    const widget = root.id === 'data-toc' ? root : root.querySelector('#data-toc');
+    if (widget) return bindTocClick(widget);
   },
-  wikiHeroCopy: () => {
-    if (init.wikiHeroCopyBound) return;
-    init.wikiHeroCopyBound = true;
-    document.addEventListener('click', function (e) {
-      const button = e.target.closest && e.target.closest('.wiki-copy[data-copy-text]');
-      if (!button) return;
-      const text = button.getAttribute('data-copy-text') || '';
-      const done = () => hud.toast('已复制', 1800);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(function () {});
-        return;
+  wikiStart: () => {
+    utils.dom('#site-cover .cover-content.wiki .start-wrap a.button.start').click(function (e) {
+      const href = this.getAttribute("href");
+      const id = href && href.indexOf("#") === 0 ? decodeURIComponent(href.slice(1)) : null;
+      const target = id && document.getElementById(id);
+      if (target) {
+        e.preventDefault();
+        // #start 锚点贴顶滚动，不预留 offset
+        const offset = 0;
+        smoothScrollTo(target.getBoundingClientRect().top + window.scrollY - offset);
+        if (window.history && window.history.pushState) {
+          window.history.pushState(window.history.state, "", href);
+        }
       }
-      const area = document.createElement('textarea');
-      area.value = text;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.appendChild(area);
-      area.select();
-      try { document.execCommand('copy'); done(); } catch (err) {}
-      document.body.removeChild(area);
     });
   },
   wikiCover: () => {
-    // 上游 Wiki Hero：终端预览与 Galaxy WebGL 背景按页面需要初始化。
     document.querySelectorAll('.wiki-cover-terminal').forEach(function (terminal) {
       const code = terminal.querySelector('pre code');
       const tabs = terminal.querySelectorAll('[role="tab"]');
       function renderCodes(value) {
-        if (!code) return;
         const lines = value.split(/\r?\n/).filter(function (line) {
           return line.trim().length > 0;
         });
@@ -364,14 +745,119 @@ const init = {
       }
     });
 
-    const galaxyCanvases = document.querySelectorAll('.wiki-cover-background.galaxy canvas');
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion || galaxyCanvases.length === 0 || !window.utils || !utils.js) return;
-    utils.js('/assets/js/plugins/galaxy.js', { defer: true }).then(function () {
-      if (stellar.galaxy && typeof stellar.galaxy.mountAll === 'function') {
-        stellar.galaxy.mountAll(galaxyCanvases);
+  },
+  leftbarScroll: () => {
+    const container = document.querySelector('.site-region--leftbar .site-region__body');
+    if (container == null) {
+      return;
+    }
+    const PREFIX = 'Stellar.leftbarScroll.';
+    const encode = (s) => encodeURIComponent(String(s || ''));
+    function scope() {
+      const wikiEl = document.querySelector('.doc-tree-widget[data-wiki]');
+      if (wikiEl != null) {
+        return 'wiki:' + encode(wikiEl.getAttribute('data-wiki'));
       }
-    }).catch(function () {});
+      const notebookEl = document.querySelector('widget[data-notebook]');
+      if (notebookEl != null) {
+        return 'notebook:' + encode(notebookEl.getAttribute('data-notebook'));
+      }
+      const body = document.body;
+      return 'layout:' + encode((body && body.dataset.pageLayout) || 'default');
+    }
+    window.addEventListener('pagehide', function () {
+      try {
+        const s = scope();
+        sessionStorage.setItem(PREFIX + s, String(container.scrollTop));
+        sessionStorage.setItem(PREFIX + 'last', s);
+      } catch (e) {}
+    });
+    try {
+      const s = scope();
+      // 仅当上一页与当前页属于同一分区时才恢复，离开分区后再回来不跳回旧位置
+      if (sessionStorage.getItem(PREFIX + 'last') !== s) {
+        return;
+      }
+      const value = sessionStorage.getItem(PREFIX + s);
+      if (value == null) {
+        return;
+      }
+      container.scrollTop = parseInt(value, 10) || 0;
+      const link = container.querySelector('.ui-collection__item.is-active');
+      if (link == null) {
+        return;
+      }
+      const padding = 16;
+      const containerRect = container.getBoundingClientRect();
+      const linkRect = link.getBoundingClientRect();
+      const top = linkRect.top - containerRect.top;
+      const bottom = linkRect.bottom - containerRect.top;
+      if (top < 0) {
+        container.scrollTop += top - padding;
+      } else if (bottom > container.clientHeight) {
+        container.scrollTop += bottom - container.clientHeight + padding;
+      }
+    } catch (e) {}
+  },
+  listingNavPin: (root, signal) => {
+    // Listing Nav 在吸顶边界切换 .is-pinned 类，视觉由 CSS 控制。
+    // 页面有 Topbar 时，pinned Listing Nav 进入 Topbar 内并复用其表面；无 Topbar 时保持独立容器外观。
+    // 吸顶判定直接测 Listing Nav 的实际视口位置，而非用 scrollY 推算：
+    // 移动端浏览器顶栏伸缩会改变 scrollY（展开顶栏时 scrollY 减小），
+    // 即使 Listing Nav 仍吸顶也可能跌破阈值，导致玻璃效果误消失。
+    // 无轮播区页面（如 wiki）的 Listing Nav 在页面顶部即已吸顶，需额外要求页面实际滚动达到阈值，
+    // 否则默认保持卡片样式；回到顶部（滚动小于阈值）恢复卡片。
+    const listingNavs = root.querySelectorAll('.listing-nav');
+    if (listingNavs.length === 0) {
+      return;
+    }
+    // 视口顶部允许的偏差（px），吸收亚像素/取整误差
+    const TOLERANCE = 2;
+    // 页面滚动阈值（px）：未滚动时保持卡片样式，滚动达到该值后才切换玻璃效果
+    const SCROLL_THRESHOLD = 2;
+    let states = [];
+    function update() {
+      const scrolled = window.scrollY >= SCROLL_THRESHOLD;
+      states.forEach((state) => {
+        const top = state.listingNav.getBoundingClientRect().top;
+        state.surface.classList.toggle('is-pinned', scrolled && top <= state.stickyTop + TOLERANCE);
+      });
+    }
+    function measure() {
+      states = [];
+      listingNavs.forEach((listingNav) => {
+        const surface = listingNav.querySelector('.listing-nav__surface');
+        if (surface == null) {
+          return;
+        }
+        // getComputedStyle().top 自动兼容桌面 var(--gap-page) 与移动端 8pt
+        const stickyTop = parseFloat(getComputedStyle(listingNav).top) || 16;
+        states.push({
+          listingNav: listingNav,
+          surface: surface,
+          stickyTop: stickyTop
+        });
+      });
+      update();
+    }
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) {
+        return;
+      }
+      ticking = true;
+      utils.requestAnimationFrame(() => {
+        if (!signal.aborted) update();
+        ticking = false;
+      });
+    }, { passive: true, signal });
+    // 顶栏伸缩不一定触发 scroll，兜底监听 visualViewport 尺寸变化
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', update, { signal });
+    }
+    window.addEventListener('resize', measure, { signal });
+    window.addEventListener('pageshow', measure, { signal });
+    measure();
   },
   relativeDate: (selector) => {
     selector.forEach(item => {
@@ -386,9 +872,11 @@ const init = {
   /**
    * Tabs tag listener (without twitter bootstrap).
    */
-  registerTabsTag: function () {
+  registerTabsTag: function (root, signal) {
     // Binding `nav-tabs` & `tab-content` by real time permalink changing.
-    document.querySelectorAll('.tabs .nav-tabs .tab').forEach(element => {
+    const tabs = root.querySelectorAll('.tabs .nav-tabs .tab');
+    if (!tabs.length) return;
+    tabs.forEach(element => {
       element.addEventListener('click', event => {
         event.preventDefault();
         // Prevent selected tab to select again.
@@ -406,7 +894,7 @@ const init = {
         tActive.dispatchEvent(new Event('tabs:click', {
           bubbles: true
         }));
-      });
+      }, { signal });
     });
 
     window.dispatchEvent(new Event('tabs:register'));
@@ -414,15 +902,21 @@ const init = {
 
   canonicalCheck: () => {
     const canonical = window.canonical;
-    // 本 demo 未注入 canonical 配置，直接跳过（Stellar 原版由 defines.ejs 注入）
-    if (!canonical) return;
+    // 真实主站域名优先从 encoded（base64）反解，避免被「批量替换域名」的克隆站把提示指向自己
+    const getOriginalHost = () => {
+      try {
+        return atob(canonical.encoded || '') || canonical.host || '';
+      } catch (e) {
+        return canonical.host || '';
+      }
+    };
     function originStatusCheck() {
       return new Promise((resolve) => {
-        if (window.canonical.originalHost === window.location.hostname) {
+        if (getOriginalHost() === window.location.hostname) {
           resolve(true);
           return;
         }
-        const scriptUrl = `https://${window.canonical.originalHost}${window.canonical.param.checklink}`;
+        const scriptUrl = `https://${getOriginalHost()}${window.canonical.param.checklink}`;
         const script = document.createElement('script');
         script.src = scriptUrl;
         script.type = 'text/javascript';
@@ -437,18 +931,23 @@ const init = {
       meta.content = 'noindex, nofollow';
       document.head.appendChild(meta);
       const notice = document.createElement('div');
-      const originalURL = `https://${canonical.originalHost}`;
-      const currentURL = canonical.param.permalink.startsWith("http") ? canonical.param.permalink : originalURL;
+      const originalURL = `https://${getOriginalHost()}`;
+      let currentURL = originalURL;
+      if (canonical.param.permalink && canonical.param.permalink.startsWith("http")) {
+        try {
+          const permalinkURL = new URL(canonical.param.permalink);
+          currentURL = `${originalURL}${permalinkURL.pathname}${permalinkURL.search}`;
+        } catch (e) {
+          // permalink 异常时退回源站首页
+        }
+      }
       if (isOfficial) {
-        const closeEnable = window.localStorage.getItem('Stellar.canonical.closeEnable') === 'true'
-        const closedToday = window.localStorage.getItem('Stellar.canonical.closeTime') === new Date().toDateString()
-        if ((closeEnable && closedToday) || !(await originStatusCheck())) return;
+        if (!(await originStatusCheck())) return;
         notice.className = 'canonical-tip official';
         notice.innerHTML = `
           <a href="${currentURL}" target="_self" rel="noopener noreferrer">
           本站为官方备用站，仅供应急。点击移步主站<br>${originalURL}
           </a>
-          ${canonical.closeEnable ? '<button id="canonical-close">' + canonical.closeText || '关闭提示' + '</button>' : ''}
         `;
       } else {
         notice.className = 'canonical-tip unofficial';
@@ -461,16 +960,8 @@ const init = {
         `;
       }
       document.body.appendChild(notice);
-      const closeBtn = notice.querySelector('#canonical-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-          window.localStorage.setItem('Stellar.canonical.closeEnable', "true")
-          window.localStorage.setItem('Stellar.canonical.closeTime', new Date().toDateString())
-          notice.style.display = 'none';
-        });
-      }
     }
-    if (!canonical.originalHost) return;
+    if (!getOriginalHost()) return;
     const currentURL = new URL(window.location.href);
     const currentHost = currentURL.hostname.replace(/^www\./, '');
     if (currentHost == 'localhost') return;
@@ -481,7 +972,7 @@ const init = {
       if (isCurrentHostValid) {
         return;
       }
-      if (canonical.officialHosts?.includes(currentHost)) {
+      if (canonical.allowedHosts?.includes(currentHost)) {
         showTip(true);
         return;
       }
@@ -495,7 +986,7 @@ const init = {
     if (isCanonicalHostValid && isCurrentHostValid) {
       return;
     }
-    showTip(canonical.officialHosts?.includes(currentHost));
+    showTip(canonical.allowedHosts?.includes(currentHost));
   }
 
 }
@@ -503,39 +994,27 @@ const init = {
 
 // Stellar namespace
 window.stellar = window.stellar || {};
+stellar.toast = hud.toast;
 
 /**
  * Initialize page components
- * Called on initial load and after PJAX navigation
  */
-stellar.initPage = function () {
-  init.toc();
-  init.sidebar();
-  init.navbarPin();
-  bindAnchorClick();
-  init.wikiEmptyCard();
-  init.wikiHeroCopy();
-  init.wikiCover();
-  init.relativeDate(document.querySelectorAll('#post-meta time'));
-  init.registerTabsTag();
-
-  // wrapLazyloadImages：将 goldmark 输出的 img 转为 lazy-load 形式
-  if (typeof window.wrapLazyloadImages === 'function') {
-    document.querySelectorAll('.md-text.content').forEach(function (el) {
-      window.wrapLazyloadImages(el);
-    });
-  }
-  
-  // Reinitialize comments after PJAX navigation
-  if (stellar.initComments) {
-    for (const commentSystem in stellar.initComments) {
-      if (typeof stellar.initComments[commentSystem] === 'function') {
-        stellar.initComments[commentSystem]();
-      }
-    }
-  }
+stellar.initPage = function (root = document) {
+  const controller = new AbortController();
+  const cleanupToc = init.tocLinks(root);
+  init.listingNavPin(root, controller.signal);
+  init.relativeDate(root.querySelectorAll('#post-meta time'));
+  init.registerTabsTag(root, controller.signal);
+  return () => { controller.abort(); cleanupToc?.(); };
+};
+stellar.syncPageShell = function () {
+  dismissDrawer();
+  syncDrawerControls();
 };
 
-// Initial page load
-stellar.initPage();
+// Document-owned controls survive regional navigation.
+init.toc();
+init.wikiStart();
+init.wikiCover();
+init.leftbarScroll();
 init.canonicalCheck();

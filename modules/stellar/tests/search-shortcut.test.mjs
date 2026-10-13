@@ -7,16 +7,17 @@ const SOURCE = readFileSync(new URL('../web/assets/js/search/shortcut.js', impor
 function createRuntime({ hasInput = true } = {}) {
   const listeners = new Map();
   const input = hasInput ? {} : null;
+  const opened = [];
+  const trigger = hasInput ? { click() { opened.push(document.activeElement); } } : null;
   const document = {
     readyState: 'complete', activeElement: { id: 'opener' },
-    getElementById(id) { return id === 'search-input' ? input : {}; },
+    querySelector() { return trigger; },
     addEventListener(type, handler) { listeners.set(type, handler); },
     removeEventListener(type, handler) { if (listeners.get(type) === handler) listeners.delete(type); },
   };
   const window = {};
   vm.runInNewContext(SOURCE, { document, window });
-  const opened = [];
-  const cleanup = window.blogSearchShortcut.mount(trigger => { opened.push(trigger); return true; });
+  const cleanup = window.stellarSearchShortcut.mount(document);
   function dispatch(overrides = {}) {
     let prevented = false;
     const event = {
@@ -49,7 +50,7 @@ test('编辑区域、输入法组合和错误按键不接管快捷键', () => {
     assert.equal(rt.opened.length, 0);
   }
 });
-test('搜索输入框自身可使用快捷键；卸载后没有遗留监听', () => {
+test('卸载后没有遗留快捷键监听', () => {
   const rt = createRuntime();
   assert.equal(rt.dispatch({ ctrlKey: true, target: rt.input }), true);
   rt.cleanup();

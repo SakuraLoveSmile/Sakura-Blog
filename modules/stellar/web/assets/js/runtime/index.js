@@ -18,16 +18,17 @@ function dispatch(name, detail) {
 }
 
 async function start() {
-  const [assetModule, registryModule, requestModule] = await Promise.all([
+  const [assetModule, registryModule, adapterModule, requestModule] = await Promise.all([
     import(`./asset-loader.js${RUNTIME_QUERY}`),
     import(`./extension-registry.js${RUNTIME_QUERY}`),
+    import(`./legacy-request-adapter.js${RUNTIME_QUERY}`),
     import(`./request-cache.js${RUNTIME_QUERY}`)
   ]);
   validateDeclaration = registryModule.validateDeclaration;
   let manifest = readManifest(document);
   const assets = assetModule.createAssetLoader({ document, root: manifest.root, version: RUNTIME_QUERY });
   const request = requestModule.createRequestClient({ cache: manifest.policy.cache, policy: manifest.policy.request, dispatch });
-  // Go 定制数据服务保留经典 utils 的请求与缓存契约，不安装上游适配器。
+  adapterModule.installLegacyRequestAdapter(globalThis.utils, request, manifest.policy.request);
   const mounted = new Map();
   const teardowns = new WeakMap();
   let hidden = false;

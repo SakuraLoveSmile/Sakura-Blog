@@ -1,4 +1,3 @@
-// 快捷键由 Stellar 2.0 搜索扩展统一挂载，移动端同样可打开 dialog。
 (function() {
   function isSearchShortcut(event) {
     if (event.defaultPrevented || event.isComposing) return false;
@@ -6,31 +5,31 @@
     if (!event.metaKey && !event.ctrlKey) return false;
     return typeof event.key === 'string' && event.key.toLowerCase() === 'k';
   }
+
   function isEditableTarget(target) {
     if (!target || typeof target.closest !== 'function') return false;
     return target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') !== null;
   }
-  function mount(openSearch) {
-    function handleShortcut(event) {
+
+  var roots = new WeakMap();
+  function mount(root) {
+    root = root || document;
+    if (roots.has(root)) return roots.get(root);
+    var handleShortcut = function(event) {
       if (!isSearchShortcut(event)) return;
-      var input = document.getElementById('search-input');
-      if (!input || (event.target !== input && isEditableTarget(event.target))) return;
-      if (typeof openSearch === 'function') {
-        if (openSearch(document.activeElement) === false) return;
-      } else {
-        // 兼容旧页面；2.0 页面只能由搜索扩展打开原生 dialog。
-        if (document.getElementById('site-search-dialog')) return;
-        input.focus();
-      }
+      var trigger = root.querySelector('[data-shell-action="open-search"]');
+      if (!trigger) return;
+      if (isEditableTarget(event.target)) return;
       event.preventDefault();
-    }
-    document.addEventListener('keydown', handleShortcut);
-    return function() { document.removeEventListener('keydown', handleShortcut); };
+      trigger.click();
+    };
+    root.addEventListener('keydown', handleShortcut);
+    var cleanup = function() {
+      root.removeEventListener('keydown', handleShortcut);
+      roots.delete(root);
+    };
+    roots.set(root, cleanup);
+    return cleanup;
   }
-  window.blogSearchShortcut = { mount: mount };
-  function init() {
-    if (!document.getElementById('stellar-runtime-config')) mount();
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
-  else init();
+  window.stellarSearchShortcut = { mount: mount };
 })();

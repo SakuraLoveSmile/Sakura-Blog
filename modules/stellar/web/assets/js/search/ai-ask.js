@@ -2,6 +2,12 @@
 // The interaction follows ai-summary.js: delegated events, rune-safe text output,
 // a short typewriter effect, and no persistence of the user's API key.
 (function () {
+  function mount(rootRegion, context) {
+  var scope = window.blogRuntime.createScope(rootRegion, context);
+  var document = scope.document;
+  var fetch = scope.fetch;
+  var setTimeout = scope.setTimeout, setInterval = scope.setInterval, clearInterval = scope.clearInterval;
+
   "use strict";
 
   var activeTimer = null;
@@ -11,6 +17,7 @@
     target.replaceChildren();
     var body = document.createElement("p");
     target.appendChild(body);
+    scope.onCleanup(function () { body.textContent = text || ""; });
     var cursor = document.createElement("span");
     cursor.className = "ai-cursor";
     body.appendChild(cursor);
@@ -104,7 +111,7 @@
     });
   }
 
-  document.addEventListener("click", function (event) {
+  scope.listen(rootRegion, "click", function (event) {
     var open = event.target.closest && event.target.closest("[data-rag-ai-open]");
     if (open) {
       var root = open.closest("#rag-ai-ask");
@@ -126,8 +133,11 @@
     }
   });
 
-  document.addEventListener("submit", function (event) {
+  scope.listen(rootRegion, "submit", function (event) {
     var form = event.target.closest && event.target.closest("[data-rag-ai-form]");
     if (form) ask(form.closest("#rag-ai-ask"), event);
   });
+  return scope.cleanup;
+  }
+  window.blogAIAsk = { mount: mount };
 })();
