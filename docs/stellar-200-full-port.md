@@ -118,6 +118,8 @@
 
 当前实际写入分工：clientconfig 专家独占 `modules/stellar/clientconfig/`；内容专家独占 shortcode renderer/catalog；图片专家独占 `internal/stellarimages/`；配置专家独占新增 `stellar_v2` 配置文件及原子 settings 保存方法（Site 仅新增配置字段）；外观专家独占 Stylus、生成 CSS 和 CSS 门禁。各自独立分支中的 Go 依赖由主 agent 集成去重。主 agent 串行接入路由、模板、Markdown 后处理和 Console，执行真实迁移前仍须提供逐记录候选。
 
+后续已启动的独占模块：页面模型专家负责 `internal/stellarmodels/` 的完整 Collection/Page/Hero 模型；外观专家负责 `modules/stellar/appearance/` 的全部运行时 CSS 注入；配置专家负责严格主题 Console tab/API 与原子热发布。模型模块与图片模块均不自行访问真实数据库或启动服务，宿主装配、真实逐记录迁移候选及最终浏览器验收仍由主 agent 承担。
+
 普通编码细节自主处理。新的数据损失、重要兼容性或体验冲突交用户确认；仅暂停依赖部分。未授权 push、发布、部署、远程消息、删除 worktree/分支与真实付费调用。
 
 ## 本次记录
@@ -142,3 +144,10 @@
 - CSS 已生成全部 20 份产物，包括官方 5 种评论独立 CSS 与 Fancybox/Swiper；修正字重变量带引号的无效声明。漂移检查在临时目录重编全部产物，失败不覆盖工作区。浏览器加载仍待接通新模板后验证。
 - 新 `ParseStellarDocument` 使用严格上游 Page schema，分离 `blog` 扩展，保留原始正文、false/null/数值与原始字段名，支持 YAML/JSON front matter。导出采用 Hexo JSON front matter，保留开放参数袋大整数。当前定向导入/导出/归属检查通过；现有编辑和备份消费者尚未改用新入口。
 - Gist 端点已挂载，按当前严格主题 `services.github.gist_url` 生成官方脚本 URL；脚本只能在无同源权限的 sandbox 文档内执行。请求校验、file 编码、防脚本注入与主题热替换检查通过；region 尺寸监听检查通过。真实浏览器动态加载、manifest 和内容标签接通仍待完成。
+- 上述模块组合后的主实现分支已在 `08a5d39` 正常提交 hook 中执行完整 `make test`，全绿。这证明本次组合代码门禁，不代表尚未接入的完整前台可以使用。
+- HTML 后处理库已合入：662 个官方差分覆盖普通链接/表格、图片 lazyload/onerror、图标命名空间及失败图资产；新包需按 README 在真实渲染与资产发布链调用，当前不能仅凭包内检查称为接通。
+
+### 本地集成记录
+
+- HTML 专家误执行了会自动合并的 `make merge-check`，根 `dev` 从 `49fe104` 快进到既有基础模块祖先 `02ee112`，不含该专家新增 HTML 包。已停止第二阶段检查，未 reset、回退或清理用户文件；`.pi/` 保留，真实服务未重启。第一阶段检查通过，第二阶段中断，不能称根组合态验收通过。
+- 主实现仍在 `codex/stellar-200` 继续接通；最终完整检查与正式本地合入门禁必须继续执行，不能把这次误提前快进当作任务完成。

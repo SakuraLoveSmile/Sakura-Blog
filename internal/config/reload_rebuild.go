@@ -61,6 +61,15 @@ func buildSite(st *store.Store, current *tmpl.Site, settings map[string]string) 
 		return nil, fmt.Errorf("site snapshot is nil")
 	}
 	next := *current // 浅拷贝当前站点，settings 覆盖字段在 rebuildFromValues 中整体替换为全新值
+	// 显式版本文档一旦存在就必须通过 strict；恢复和其他本地设置热更新
+	// 不能丢弃新主题快照或因校验失败退回旧主题。
+	if _, exists := settings[SectionStellarV2]; exists {
+		configuration, err := LoadStellarV2Snapshot(settings)
+		if err != nil {
+			return nil, err
+		}
+		next.StellarV2 = configuration
+	}
 	groups := LinksToGroups(links)
 	rebuildFromValues(&next, settings)
 	next.Links = groups
