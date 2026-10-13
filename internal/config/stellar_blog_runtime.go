@@ -129,10 +129,11 @@ func blogRuntimeIssue(path, expected, actual string) error {
 }
 
 // 已知 typed 字段必须有正确类型，本地可空布尔按实际服务结构读为关闭。
+// 可空指针保留 nil，由消费者决定默认/继承语义，不强制转换成 false。
 // 只有两处明确秘密支持 null 清空；未知公开数据仍由各扩展消费。
 func validateBlogTypedValue(value any, kind reflect.Type, path string) error {
 	if value == nil {
-		if kind.Kind() == reflect.Bool || path == "ai.api_key" || path == "native_comments.notify.password" {
+		if kind.Kind() == reflect.Bool || kind.Kind() == reflect.Pointer || path == "ai.api_key" || path == "native_comments.notify.password" {
 			return nil
 		}
 		return blogRuntimeIssue(path, kind.String(), "null")
