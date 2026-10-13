@@ -9,13 +9,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (relative) => readFileSync(join(ROOT, relative), "utf8");
 const config = JSON.parse(read("web/build/stylus/config.json"));
 
-test("2.0 构建锁定发布提交并使用深色 card 外观", () => {
+test("2.0 构建锁定发布提交并采用上游 card / auto 默认外观", () => {
   const upstream = JSON.parse(read("web/build/stylus/upstream.json"));
   assert.equal(upstream.tag, "2.0.0");
   assert.equal(upstream.commit, "9d11978a24fe6610e3a7dbab741cf62634539d05");
   assert.match(read("version.go"), /StellarVersion = "2\.0\.0"/);
   assert.equal(config.appearance.preset, "card");
-  assert.equal(config.appearance.color_scheme, "dark");
+  assert.equal(config.appearance.color_scheme, "auto");
   assert.equal(config.features.color_scheme_switch.enabled, false);
   assert.equal(config.tags.checkbox.interactive, false);
   assert.equal(config.tags.note.border, true);
@@ -24,12 +24,13 @@ test("2.0 构建锁定发布提交并使用深色 card 外观", () => {
 
 test("2.0 产物含新布局与最终 card 视觉层，并保留中文和本地排版", () => {
   const css = read("web/assets/css/main.css");
-  for (const selector of [".site-shell", ".site-region--leftbar", ".site-main", ".ui-surface", ".card-hover__spotlight", ".swiper", "[data-fancybox]", ".cmt-body.artalk"]) {
+  for (const selector of [".site-shell", ".site-region--leftbar", ".site-main", ".ui-surface", ".swiper", "[data-fancybox]", ".cmt-body.artalk"]) {
     assert.ok(css.includes(selector), `缺少 ${selector}`);
   }
   assert.match(css, /\.ui-surface\s*\{[^}]*background: var\(--card\)/);
-  assert.match(css, /font-family: "LXGW WenKai Screen", system-ui/);
-  assert.match(css, /font-family: Menlo, Monaco, Consolas, system-ui, monospace, sans-serif/);
+  assert.match(css, /font-family: var\(--font-family-body, system-ui, "Microsoft Yahei", "Segoe UI", Arial, sans-serif\)/);
+  assert.doesNotMatch(css, /LXGW WenKai Screen/);
+  assert.match(css, /font-family: var\(--font-family-code, Menlo, Monaco, Consolas, system-ui, monospace, sans-serif\)/);
   assert.match(css, /--text-loading: ['"]正在加载['"]/);
   assert.match(css, /--text-loading-error: ['"]加载失败，请稍后重试。['"]/);
   assert.match(css, /--hue: 192/);
@@ -67,9 +68,9 @@ test("旧图库、About、下拉图标和 radio 内容保留实际 CSS 消费者
   assert.match(css, /\.tag-plugin\.about \.nav-back svg\s*\{\s*width: 1rem;\s*height: 1rem;/);
   assert.match(css, /\.dropdown-menu \.ui-collection__leading:not\(\.ui-icon\)\s*\{[^}]*width: 1\.5rem;\s*height: 1\.5rem;/);
   assert.match(css, /\.search-trigger \.ui-icon > svg:not\(\[fill\]\)\s*\{\s*fill: currentColor;/);
-  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\[type='radio'\]\s*\{[^}]*--radio-ring: var\(--theme\);\s*--radio-dot-size: 0;/);
-  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\[type='radio'\]:checked\s*\{\s*--radio-dot-size: 8px;/);
-  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\s*\{[^}]*pointer-events: none;/);
+  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\[type='radio'\]:not\(\.ui-radio\)\s*\{[^}]*--radio-ring: var\(--theme\);\s*--radio-dot-size: 0;/);
+  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\[type='radio'\]:not\(\.ui-radio\):checked\s*\{\s*--radio-dot-size: 8px;/);
+  assert.match(css, /\.md-text \.tag-plugin\.checkbox input\s*\{[^}]*pointer-events: var\(--checkbox-pointer-events, none\);/);
 });
 
 test("搜索渐变匹配新版 dialog 的实际表单位置", () => {

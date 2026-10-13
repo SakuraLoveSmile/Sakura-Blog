@@ -11,6 +11,15 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 // 将已有设置注入的变量接到 2.0 编译期配置，未设置时保留原默认值。
 // 新七档圆角优先，历史四档作为下一层 fallback；不改上游源或配置 schema。
 const runtimeVariables = {
+  'appearance.typography.font_family.body': ['--font-family-body'],
+  'appearance.typography.font_family.code': ['--font-family-code'],
+  'appearance.typography.font_size.root': ['--font-size-root'],
+  'appearance.typography.font_size.inline_code': ['--font-size-inline-code'],
+  'appearance.typography.font_size.code_block': ['--font-size-code-block'],
+  'appearance.typography.font_smoothing': ['--font-smoothing'],
+  'appearance.typography.content_align': ['--content-align'],
+  'appearance.shape.corner': ['--corner-shape'],
+  'appearance.code_block.scrollbar_width': ['--code-scrollbar-width'],
   'appearance.shape.radius.card_large': ['--radius-card-l', '--radius-card'],
   'appearance.shape.radius.card': ['--radius-card'],
   'appearance.shape.radius.card_small': ['--radius-card-s', '--radius-block'],
@@ -20,6 +29,9 @@ const runtimeVariables = {
   'appearance.shape.radius.image_small': ['--radius-image-s', '--radius-image'],
   'appearance.gradients.primary_action': ['--gradient-start'],
   'appearance.gradients.search_bar': ['--gradient-searchbar'],
+}
+for (let weight = 100; weight <= 900; weight += 100) {
+  runtimeVariables[`appearance.typography.font_weight.${weight}`] = [`--font-weight-${weight}`]
 }
 
 // 按点路径取值，缺失返回 undefined（复现 Hexo hexo-config 的 falsy 行为）
@@ -72,20 +84,21 @@ function toStylusValue(jsVal) {
 // hexo-config shim 函数
 // Stellar 中调用形式：hexo-config('appearance.typography.font_size.root')
 // 参数 param 是 stylus nodes.String，取其 val 属性得到 JS 字符串
-function hexoConfig(param) {
+function hexoConfig(param, source = config) {
   const keyPath = param && param.val ? param.val : String(param)
-  let jsVal = getByPath(config, keyPath)
-  if (typeof jsVal === 'string' && runtimeVariables[keyPath]) {
+  let jsVal = getByPath(source, keyPath)
+  if ((typeof jsVal === 'string' || typeof jsVal === 'number') && runtimeVariables[keyPath]) {
     jsVal = runtimeVariables[keyPath].reduceRight((value, variable) => `var(${variable}, ${value})`, jsVal)
   }
   return toStylusValue(jsVal)
 }
 
 // 注册到 stylus renderer
-function setup(renderer) {
-  renderer.define('hexo-config', hexoConfig)
+function setup(renderer, source = config) {
+  renderer.define('hexo-config', (param) => hexoConfig(param, source))
 }
 
 module.exports = setup
 module.exports.hexoConfig = hexoConfig
 module.exports.config = config
+module.exports.runtimeVariables = runtimeVariables

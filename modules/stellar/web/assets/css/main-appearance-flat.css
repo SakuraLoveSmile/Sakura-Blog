@@ -1,0 +1,156 @@
+.site-shell {
+  --leftbar-gap: 0px;
+}
+.ui-surface {
+  border: 1px solid var(--block-border);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: saturate(140%) blur(24px);
+  -webkit-backdrop-filter: saturate(140%) blur(24px);
+}
+.site-region--topbar.ui-surface,
+.site-region--leftbar .site-region__surface.ui-surface {
+  border-width: 0;
+}
+.site-region--topbar.ui-surface {
+  box-shadow: inset 0 -1px 0 var(--block-border);
+}
+.site-region--leftbar .site-region__surface.ui-surface {
+  box-shadow: inset -1px 0 0 var(--block-border);
+}
+.site-shell[data-drawer='leftbar'] .site-region--leftbar .site-region__surface.ui-surface {
+  border-radius: var(--radius-card-l, var(--radius-card, 24px));
+  corner-shape: var(--corner-shape, superellipse(1.25));
+  background: var(--bg-a20);
+}
+.post-list.post .post-card-wrap,
+.post-list.post .post-card.card-hover {
+  box-shadow: none;
+}
+.post-list.post .post-card {
+  background-color: var(--block);
+}
+.post-list.post .post-card:hover {
+  background-color: var(--block-border);
+}
+.site-region--leftbar .search-wrapper > .search-form:before {
+  background: #fff;
+}
+.site-region--leftbar .widgets .loading-wrap,
+.site-region--leftbar .widget-wrapper.markdown .widget-body,
+.site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+.site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+.site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+.site-region--leftbar .widget-wrapper.timeline .body {
+  background: rgba(255,255,255,0.5);
+}
+.site-region--leftbar .search-no-result {
+  background: rgba(255,255,255,0.2);
+}
+:root[data-theme='dark'] .site-region--leftbar .search-wrapper > .search-form:before {
+  background: rgba(0,0,0,0.2);
+}
+:root[data-theme='dark'] .site-region--leftbar .widgets .loading-wrap,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.markdown .widget-body,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+:root[data-theme='dark'] .site-region--leftbar .widget-wrapper.timeline .body {
+  background: rgba(0,0,0,0.5);
+}
+:root[data-theme='dark'] .site-region--leftbar .search-no-result {
+  background: rgba(0,0,0,0.2);
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .site-region--leftbar .search-wrapper > .search-form:before {
+    background: rgba(0,0,0,0.2);
+  }
+  :root:not([data-theme]) .site-region--leftbar .widgets .loading-wrap,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.markdown .widget-body,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.tagcloud .widget-body,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body .highlight,
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .tag-plugin.timeline .timenode .body pre:not([class]):has(> code),
+  :root:not([data-theme]) .site-region--leftbar .widget-wrapper.timeline .body {
+    background: rgba(0,0,0,0.5);
+  }
+  :root:not([data-theme]) .site-region--leftbar .search-no-result {
+    background: rgba(0,0,0,0.2);
+  }
+}
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial) {
+  background-color: var(--block);
+}
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial):hover,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial):active,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial).active,
+html[data-leftbar-state='collapsed'] .site-shell:not([data-drawer='leftbar']) .site-region--leftbar .widget-instance[data-leftbar-rail] .ui-collection > .ui-collection__item:has(> .ui-collection__initial).is-active {
+  background-color: var(--block-border);
+}
+.ui-interactive {
+  background: transparent;
+  box-shadow: none;
+}
+.ui-interactive:focus-visible {
+  outline: 2px solid var(--theme);
+  outline-offset: 2px;
+}
+.ui-interactive:hover,
+.ui-interactive:focus-visible {
+  background: var(--block);
+  box-shadow: none;
+}
+.ui-interactive.has-hover-surface,
+.ui-interactive:active,
+.ui-interactive.active,
+.ui-interactive.is-active,
+details[open] > .ui-interactive {
+  background: var(--block);
+  box-shadow: none;
+}
+.widget-wrapper.markdown .ui-interactive {
+  background: var(--block);
+}
+.site-region--leftbar .ui-interactive:hover,
+.site-region--leftbar .ui-interactive:active,
+.site-region--leftbar .ui-interactive.active,
+.site-region--leftbar .ui-interactive.is-active,
+.site-region--leftbar details[open] > .ui-interactive {
+  background: var(--block-border);
+}
+table:not([class]) th {
+  background: var(--block);
+  border-top: 1px solid var(--block-border);
+  border-bottom: 1px solid var(--block-border);
+}
+table:not([class]) tr {
+  border-bottom: 1px dashed var(--block-border);
+}
+table:not([class]) tr:hover {
+  background: var(--block);
+}
+blockquote:before {
+  background: var(--text-meta);
+}
+p > code:not([class]),
+li > code:not([class]),
+.md-text .highlight,
+pre:not([class]):has(> code),
+.md-text .highlight figcaption span,
+.md-text .gist .highlight,
+.md-text .gist .gist-meta {
+  background: var(--block);
+}
+.md-text .gist .gist-file {
+  border-color: var(--block-border);
+}
+.md-text .gist .gist-data {
+  --bgColor-default: var(--block);
+  border-bottom-color: var(--block-border);
+}
+.md-text .link-card {
+  background: var(--card);
+}
+.listing-nav__surface {
+  background: var(--card);
+  box-shadow: 0 1px 2px 0px rgba(0,0,0,0.1);
+}

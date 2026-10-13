@@ -4,7 +4,7 @@
   },
   "appearance": {
     "preset": "card",
-    "color_scheme": "dark",
+    "color_scheme": "auto",
     "colors": {
       "primary": "hsl(192 98% 55%)",
       "accent": "hsl(14 100% 57%)",
@@ -28,8 +28,8 @@
         "900": 900
       },
       "font_family": {
-        "body": "\"LXGW WenKai Screen\", system-ui, \"Microsoft Yahei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
-        "code": "\"LXGW WenKai Screen\", Menlo, Monaco, Consolas, system-ui, \"Courier New\", monospace, sans-serif"
+        "body": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+        "code": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
       },
       "font_size": {
         "root": "16px",
@@ -52,11 +52,33 @@
     },
     "backgrounds": {
       "page": {
-        "image": "",
+        "image": null,
         "backdrop": {
           "radius": "100px",
           "overlay": "var(--bg-a75)",
           "saturation": "300%"
+        }
+      },
+      "leftbar": {
+        "type": "gradient",
+        "image": null,
+        "gradient": {
+          "light": [
+            "hsl(210 32% 84%)",
+            "hsl(188 44% 84%)",
+            "hsl(12 64% 73%)",
+            "hsl(35 100% 82%)"
+          ],
+          "dark": [
+            "hsl(210 16% 48%)",
+            "hsl(188 18% 50%)",
+            "hsl(12 30% 42%)",
+            "hsl(35 36% 49%)"
+          ]
+        },
+        "opacity": 1,
+        "backdrop": {
+          "radius": "100px"
         }
       }
     },
@@ -89,18 +111,17 @@
       "enabled": false
     },
     "lazy_loading": {
-      "transition": "none"
+      "transition": "fade"
     },
     "card_hover": {
-      "spotlight": true,
-      "tilt": true
+      "spotlight": false,
+      "tilt": false
     },
     "math": {
       "provider": null
     }
   },
   "local": {
-    "code_block_font_family": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif",
     "loading": {
       "loading": "正在加载",
       "error": "加载失败，请稍后重试。"

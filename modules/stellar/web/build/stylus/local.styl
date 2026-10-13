@@ -1,13 +1,14 @@
-// 本地排版与文案兼容；上游 2.0 不再提供独立代码块字体或构建期加载文案。
+// 本地扩展文案兼容；字体完全使用上游 appearance.typography 配置。
 :root
   --text-loading: hexo-config('local.loading.loading')
   --text-loading-error: hexo-config('local.loading.error')
 
-pre,
-pre > code,
-.md-text .highlight,
-.md-text .gist .blob-code-inner
-  font-family: convert(hexo-config('local.code_block_font_family'))
+// Go SSR 的配置热更新无需重新编译：仅这两个上游布尔条件改用变量。
+// 默认值与上游相同，interactive=true 注入 auto，note.border=false 注入 none。
+.md-text .tag-plugin.checkbox input
+  pointer-events: var(--checkbox-pointer-events, none)
+.md-text .tag-plugin.note
+  border: var(--note-border, 1px solid var(--theme-border))
 
 // 已保存的图库和动态专辑仍使用 1.x ratio 属性；与 2.0 aspect_ratio 等效。
 .tag-plugin.gallery.grid-box
@@ -114,7 +115,7 @@ pre > code,
     opacity: 1
 
 // 已保存的 radio 内容没有 2.0 ui-radio 类；保留 16px 圆环、主题色与禁用交互。
-.md-text .tag-plugin.checkbox input[type='radio']
+.md-text .tag-plugin.checkbox input[type='radio']:not(.ui-radio)
   -webkit-appearance: none
   -moz-appearance: none
   appearance: none
