@@ -257,5 +257,5 @@ func (h *Handler) prepareNotebookNote(c *gin.Context, note *store.Note) bool {
 		note.Tags = tags
 	}
 	// 完整渲染由固定 v2 renderer 接入，不能退回旧标签 parser。
-	return h.renderNotebookNote(c, note, parsed.Value)
+	return h.renderNotebookNote(c, note)
 }

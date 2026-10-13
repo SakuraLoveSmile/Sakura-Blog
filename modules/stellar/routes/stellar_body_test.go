@@ -11,11 +11,73 @@ import (
 	"blog/internal/content"
 	"blog/internal/post"
 	"blog/internal/settings"
+	"blog/internal/stellarv2"
 	"blog/internal/store"
 	tmpl "blog/modules/stellar/viewmodel"
 	stellarweb "blog/modules/stellar/web"
 	"golang.org/x/net/html"
 )
+
+func TestStellarBodyAndDocumentAdaptersKeepStrictRawPageSchema(t *testing.T) {
+	ws, st, _, _ := stellarRouteFixture(t)
+	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine.SetStellarMarkdownRender(ws.posts.RenderStellarV2WithContext)
+	ws.engine = engine
+	server := &Server{web: ws}
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "raw", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"Raw wiki"}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateNotebook(&store.Notebook{ID: "raw", StellarVersion: 2, StellarConfig: `{"name":"Raw notebook"}`}); err != nil {
+		t.Fatal(err)
+	}
+	for _, profile := range []string{"post", "page", "wiki", "note"} {
+		t.Run(profile, func(t *testing.T) {
+			page := map[string]any{
+				"article": map[string]any{"ai_label": "manual", "paragraph_indent": "always"},
+				"footer":  map[string]any{"show_tags": true},
+				"inject":  map[string]any{"head_begin": "<!-- RAW_HEAD_BEGIN -->", "head_end": "<!-- RAW_HEAD_END -->", "body_begin": "<!-- RAW_BODY_BEGIN -->", "body_end": "<!-- RAW_BODY_END -->"},
+			}
+			if profile == "wiki" || profile == "note" {
+				collection := "wiki"
+				if profile == "note" {
+					collection = "notebook"
+				}
+				page["collection"] = map[string]any{"profile": collection, "id": "raw"}
+			}
+			markdown := "Raw adapter body"
+			body, err := server.RenderStellarMarkdown(content.StellarBodyInput{Markdown: markdown, Page: page})
+			if err != nil || !strings.Contains(body, markdown) {
+				t.Fatalf("raw body rejected: %v %s", err, body)
+			}
+			raw, _ := json.Marshal(page)
+			input := content.StellarPreviewInput{StellarVersion: 2, StellarConfig: string(raw), BlogExtensions: `{}`, Markdown: &markdown, Title: "Raw preview", Layout: profile, Path: "/raw-preview", RequestURL: "http://127.0.0.1:8109/api/v1/preview/markdown", PreviewToken: "raw-schema-preview"}
+			output, err := server.RenderContentPreviewSnapshot(input)
+			if err != nil || output.HTML != body {
+				t.Fatalf("raw document rejected: %v", err)
+			}
+			for _, marker := range []string{"RAW_HEAD_BEGIN", "RAW_HEAD_END", "RAW_BODY_BEGIN", "RAW_BODY_END", markdown} {
+				if !strings.Contains(output.Document, marker) {
+					t.Errorf("document omitted raw %s", marker)
+				}
+			}
+			parsed, err := stellarv2.ParsePage(page, stellarv2.Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := server.RenderStellarMarkdown(content.StellarBodyInput{Markdown: markdown, Page: parsed.Value}); err == nil {
+				t.Fatal("body adapter accepted normalized camelCase as raw schema")
+			}
+			invalid, _ := json.Marshal(parsed.Value)
+			input.StellarConfig = string(invalid)
+			if _, err := server.RenderContentPreviewSnapshot(input); err == nil {
+				t.Fatal("document adapter accepted normalized camelCase as raw schema")
+			}
+		})
+	}
+}
 
 func TestStellarBodyCallbackSharesPublicWikiAndAbsoluteLinkContext(t *testing.T) {
 	ws, st, _, _ := stellarRouteFixture(t)
