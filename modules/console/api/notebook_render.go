@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"blog/internal/content"
 	"blog/internal/post"
 	"blog/internal/store"
 
@@ -22,10 +23,7 @@ func (h *Handler) renderNotebookNote(c *gin.Context, note *store.Note, page map[
 	}
 	configuration := site.StellarV2
 	data, _ := configuration.Blog["data"].(map[string]any)
-	language, _ := configuration.Blog["language"].(string)
-	if language == "" {
-		language = "zh-CN"
-	}
+	language := content.ResolveStellarLanguage(page, configuration.Blog)
 	rendered, err := h.posts.RenderStellarV2WithContext(note.ContentMD, post.StellarRenderContext{Theme: configuration.Theme, Data: data, Page: page, Language: language, BlogExtensions: true})
 	if err != nil {
 		Fail(c, http.StatusBadRequest, "笔记 Markdown 渲染失败："+err.Error())

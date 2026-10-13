@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"reflect"
 	"strings"
@@ -66,6 +67,75 @@ func newStellarContentFixture(t *testing.T) (*Service, *store.Store, []byte) {
 		t.Fatal(err)
 	}
 	return svc, st, archive.Bytes()
+}
+
+func TestStellarContentPortableRejectsLegacyNotebookBeforeExportOrApply(t *testing.T) {
+	svc, st, archive := newStellarContentFixture(t)
+	manifest, _, err := ReadStellarContentZip(archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, _ := st.GetBySlug("post")
+	if _, err := st.DB().Exec(`DROP TABLE notes; DROP TABLE notebooks;
+	CREATE TABLE notebooks(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL DEFAULT '', cover TEXT NOT NULL DEFAULT '', nb_order INTEGER NOT NULL DEFAULT 0, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
+	CREATE TABLE notes(id INTEGER PRIMARY KEY AUTOINCREMENT, notebook_id INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', content TEXT NOT NULL DEFAULT '', content_html TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(notebook_id) REFERENCES notebooks(id));
+	INSERT INTO notebooks(id,name) VALUES(2,'old');
+	INSERT INTO notes(id,notebook_id,content) VALUES(2,2,'original body');`); err != nil {
+		t.Fatal(err)
+	}
+	for name, operation := range map[string]func() error{
+		"export snapshot":         func() error { return svc.WriteStellarContentZip(io.Discard) },
+		"online import preflight": func() error { _, err := svc.Import("content.zip", archive); return err },
+		"isolated candidate":      func() error { return ApplyStellarContentManifest(st, manifest, svc.posts) },
+		"seed candidate":          func() error { return SeedStellarContentManifest(st, manifest, svc.posts, true) },
+	} {
+		if err := operation(); !errors.Is(err, store.ErrStellarMigrationRequired) || !strings.Contains(err.Error(), "notebooks schema:") || !strings.Contains(err.Error(), "notes schema:") {
+			t.Errorf("%s failed to locate legacy schema: %v", name, err)
+		}
+	}
+	after, _ := st.GetBySlug("post")
+	var body string
+	if !reflect.DeepEqual(before, after) || st.Maintenance().Active() {
+		t.Fatal("failed preflight mutated unrelated content or entered maintenance")
+	}
+	if err := st.DB().QueryRow(`SELECT content FROM notes WHERE id=2 AND notebook_id=2`).Scan(&body); err != nil || body != "original body" {
+		t.Fatal("failed preflight changed legacy source identity/body")
+	}
+}
+
+func TestStellarContentPortableRerenderUsesPageAndHostLanguage(t *testing.T) {
+	svc, st, archive := newStellarContentFixture(t)
+	manifest, _, err := ReadStellarContentZip(archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.SaveStellarV2(st, map[string]any{}, map[string]any{"site": map[string]any{"language": []any{"", "en"}}}); err != nil {
+		t.Fatal(err)
+	}
+	for index := range manifest.Records {
+		record := &manifest.Records[index]
+		if !stellarDocumentTable(record.Table) {
+			continue
+		}
+		record.Values["content_md"], _ = json.Marshal("{% mbti INTJ-T 93-72-78-83-51 %}")
+		if record.Table == "notes" {
+			raw, err := stellarRecordObject(*record, "stellar_config")
+			if err != nil {
+				t.Fatal(err)
+			}
+			raw["lang"] = []any{"", "zh-TW"}
+			encoded, _ := json.Marshal(raw)
+			record.Values["stellar_config"], _ = json.Marshal(string(encoded))
+		}
+	}
+	if err := ApplyStellarContentManifest(st, manifest, svc.posts); err != nil {
+		t.Fatal(err)
+	}
+	note, _ := st.GetNoteBySlug("book", "note")
+	p, _ := st.GetBySlug("post")
+	if !strings.Contains(note.ContentHTML, "架構師") || !strings.Contains(p.ContentHTML, "Architect") {
+		t.Fatal("portable rerender ignored page/host language")
+	}
 }
 
 func TestStellarContentPortableRoundTripAllFamilies(t *testing.T) {

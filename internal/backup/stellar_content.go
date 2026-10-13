@@ -18,6 +18,7 @@ import (
 	"unicode/utf8"
 
 	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/maintenance"
 	"blog/internal/post"
 	"blog/internal/stellarv2"
@@ -84,6 +85,9 @@ func (s *Service) WriteStellarContentZip(w io.Writer) error {
 		return err
 	}
 	defer probe.Close()
+	if err := requirePortableNotebookSchema(probe); err != nil {
+		return err
+	}
 	manifest := StellarContentManifest{Version: 1, Records: []StellarContentRecord{}, Authors: []StellarAuthorIdentity{}}
 	for _, table := range stellarContentTables {
 		records, err := exportStellarTable(probe.DB(), table)
@@ -530,6 +534,9 @@ func (s *Service) importStellarContent(ctx context.Context, data []byte) (*Impor
 	if err != nil {
 		return nil, err
 	}
+	if err := requirePortableNotebookSchema(s.store); err != nil {
+		return nil, err
+	}
 	maintenance.ReleaseRequest(ctx)
 	task, err := s.StartRestore(ctx, RestoreInput{Data: data, ContentImport: true})
 	if err != nil {
@@ -585,6 +592,9 @@ func applyStellarContentManifest(probe *store.Store, manifest StellarContentMani
 	if _, err := stellarContentSources(manifest); err != nil {
 		return err
 	}
+	if err := requirePortableNotebookSchema(probe); err != nil {
+		return err
+	}
 	configuration, err := config.LoadStellarV2(probe)
 	if err != nil {
 		return err
@@ -622,7 +632,7 @@ func applyStellarContentManifest(probe *store.Store, manifest StellarContentMani
 		if err != nil {
 			return err
 		}
-		rendered, err := renderer.RenderStellarV2WithContext(stellarRecordText(*record, "content_md"), post.StellarRenderContext{Theme: configuration.Theme, Data: publicData, Page: parsed.Value, Language: "zh-CN", BlogExtensions: true})
+		rendered, err := renderer.RenderStellarV2WithContext(stellarRecordText(*record, "content_md"), post.StellarRenderContext{Theme: configuration.Theme, Data: publicData, Page: parsed.Value, Language: content.ResolveStellarLanguage(parsed.Value, configuration.Blog), BlogExtensions: true})
 		if err != nil {
 			return fmt.Errorf("%s: Markdown rendering failed: %w", record.Source, err)
 		}
@@ -695,6 +705,14 @@ func applyStellarContentManifest(probe *store.Store, manifest StellarContentMani
 		}
 	}
 	return tx.Commit()
+}
+
+func requirePortableNotebookSchema(st *store.Store) error {
+	report, err := st.DetectLegacyNotebookSchema()
+	if err != nil {
+		return err
+	}
+	return report.Error()
 }
 
 func applyStellarRecord(tx *sql.Tx, record StellarContentRecord, preserveExisting, skipWrite bool) error {

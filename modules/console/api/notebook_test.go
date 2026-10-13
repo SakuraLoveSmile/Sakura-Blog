@@ -79,6 +79,28 @@ func TestNotebookAPILegacyLayoutReturnsLocatedMigrationGate(t *testing.T) {
 	}
 }
 
+func TestNotebookNoteAPIRenderUsesCanonicalHostAndPageLanguage(t *testing.T) {
+	r, _, h, _, alice, _ := newNotebookAPI(t)
+	site := *h.site.Load()
+	site.StellarV2 = &settings.StellarV2Config{Theme: map[string]any{}, Blog: map[string]any{"site": map[string]any{"language": []any{"", "en"}}}}
+	h.site.Store(&site)
+	w := do2FA(r, http.MethodPost, "/api/v1/notebooks", notebookPayload("book", `{}`), authCookie(alice))
+	if w.Code != http.StatusCreated {
+		t.Fatal(w.Body.String())
+	}
+	for _, test := range []struct{ slug, raw, want string }{
+		{"host", `{}`, "Architect"},
+		{"page", `{"lang":["","zh-TW"]}`, "架構師"},
+	} {
+		request := NotebookNoteRequest{Slug: &test.slug, ContentMD: ptrNotebook("{% mbti INTJ-T 93-72-78-83-51 %}"), StellarVersion: ptrNotebook(2), StellarConfig: &test.raw}
+		w := do2FA(r, http.MethodPost, "/api/v1/notebooks/book/notes", marshalNotebookRequest(request), authCookie(alice))
+		var note NotebookNoteResponse
+		if w.Code != http.StatusCreated || json.Unmarshal(w.Body.Bytes(), &note) != nil || !strings.Contains(note.ContentHTML, test.want) {
+			t.Fatalf("%s language lost: %d %s", test.slug, w.Code, w.Body.String())
+		}
+	}
+}
+
 func TestNotebookAPIOwnershipAndStrictMetadata(t *testing.T) {
 	r, st, _, admin, alice, bob := newNotebookAPI(t)
 	raw := ` {"name":"工作","description":"笔记本","leftbar":{"widgets":[{"custom":{"large":900719925474099312345,"flag":false}}]}} `
