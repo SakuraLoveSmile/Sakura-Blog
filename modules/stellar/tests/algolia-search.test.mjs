@@ -165,6 +165,36 @@ test('Algolia pushState 已离页但 partial 挂载未完成时，迟到响应�
   }
 });
 
+test('Algolia 新页挂载期间发起的查询跨过 partial 完成事件仍可显示', async () => {
+  const f = fixture();
+  f.input('same');
+  f.navigate('/second/', false);
+  f.input('same');
+  f.navigate('/second/');
+  await f.reply(1, 'new page');
+  assert.equal(f.title(), 'new page');
+  await f.reply(0, 'old page');
+  assert.equal(f.title(), 'new page');
+  assert.equal(f.mounted.length, 1);
+});
+
+test('Algolia 新页挂载期间清空输入，完成事件后旧结果不能重填', async () => {
+  const f = fixture();
+  f.input('old page');
+  f.navigate('/second/', false);
+  f.input('pending new page');
+  f.input('   ');
+  f.navigate('/second/');
+  await f.reply(0, 'old page');
+  await f.reply(1, 'pending new page');
+  assert.equal(f.wrappers[0].result.children.length, 0);
+  assert.equal(f.wrappers[0].wrapper.getAttribute('searching'), 'false');
+  assert.equal(f.mounted.length, 0);
+  f.input('after clear');
+  await f.reply(2, 'after clear');
+  assert.equal(f.title(), 'after clear');
+});
+
 test('Algolia partial A→B→A 后不能接受离页前同 URL 的旧响应', async () => {
   const f = fixture();
   f.input('pending');

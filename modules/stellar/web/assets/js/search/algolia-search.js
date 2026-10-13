@@ -82,10 +82,15 @@
       var location = (ownerDocument.defaultView || window).location;
       return location.origin + location.pathname + location.search;
     }
-    var onNavigationComplete = function() { ++generation; };
+    var queryPageKey = pageKey();
+    var onNavigationComplete = function() {
+      // 新页挂载期间也允许输入；完成事件只失效旧页面的查询。
+      if (queryPageKey !== pageKey()) ++generation;
+    };
     var onInput = function() {
       var inputGeneration = ++generation;
-      var inputPage = pageKey();
+      queryPageKey = pageKey();
+      var inputPage = queryPageKey;
       var query = inputArea.value.trim();
       var filterPath = inputArea.getAttribute('data-algolia-filter-path');
 
