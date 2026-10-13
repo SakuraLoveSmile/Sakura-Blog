@@ -491,6 +491,9 @@ func (h *Handler) register(r *gin.Engine) {
 
 		// 站点设置（分段）
 		sys.GET("/settings", h.getSettings)
+		sys.GET("/settings/stellar", h.getStellarSettings)
+		sys.PUT("/settings/stellar", h.updateStellarSettings)
+		sys.POST("/settings/stellar/validate", h.validateStellarSettings)
 		sys.PUT("/settings/:section", h.updateSection)
 		sys.POST("/settings/notify/test", h.testNotify)
 		// Feedback 服务连通性自测：探测草稿 api_base 的 /healthz（仅 admin，不回传响应体）

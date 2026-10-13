@@ -11,6 +11,7 @@ import SeoSettings from "./tabs/SeoSettings.vue";
 import SearchSettings from "./tabs/SearchSettings.vue";
 import FeedbackSettings from "./tabs/FeedbackSettings.vue";
 import AdvancedSettings from "./tabs/AdvancedSettings.vue";
+import Stellar2Tab from "./Stellar2Tab.vue";
 import { ALL_SETTINGS_SECTIONS, ensureSettingsDefaults, sortWikiProjects, deepCloneJsonSafe } from "./settings-state";
 import { useSettingsPreview } from "./useSettingsPreview";
 import "./settings-form.css";
@@ -18,6 +19,7 @@ import "./settings-form.css";
 // Shared defaults retain the existing frontend enhancement safety boundary: card_hover.enable = false; card_hover.max_tilt = 3.
 
 const tabs = [
+  { key: "stellar2", label: "Stellar 2", icon: "ri:settings-3-line", description: "完整主题配置与独立 Blog 扩展" },
   { key: "basic", label: "基本", icon: "ri:global-line", description: "站点身份、标题与品牌资源" },
   { key: "post", label: "文章", icon: "ri:article-line", description: "文章排版、卡片、版权、分享与打赏" },
   { key: "comments", label: "评论", icon: "ri:chat-3-line", description: "评论开关、审核与邮件通知" },
@@ -73,6 +75,7 @@ const rawText = ref<Record<string, string>>({});
 const loading = ref(true);
 const loadError = ref("");
 const savingKey = ref("");
+const stellarDirty = ref(false);
 const savedSnapshot = ref<string>("");
 const savedJsonBaseline = ref<Record<string, string>>({});
 
@@ -93,6 +96,7 @@ const dirtySections = computed<Set<string>>(() => {
 });
 
 const isTabDirty = (tabKey: string) => {
+  if (tabKey === "stellar2") return stellarDirty.value;
   if (tabKey === "advanced") {
     if (dirtySections.value.has("inject") || dirtySections.value.has("data_cache")) return true;
     for (const key of ALL_SETTINGS_SECTIONS) {
@@ -107,6 +111,7 @@ const isTabDirty = (tabKey: string) => {
 };
 
 const isDirty = computed(() => {
+  if (stellarDirty.value) return true;
   if (dirtySections.value.size > 0) return true;
   for (const key of ALL_SETTINGS_SECTIONS) {
     if ((rawText.value[key] ?? "") !== (savedJsonBaseline.value[key] ?? "")) {
@@ -271,6 +276,7 @@ function navigateToTab(tab: string) {
 }
 
 watch(active, (tab) => {
+  if (tab === "stellar2") previewOpen.value = false;
   if (route.query.tab !== tab) void router.push({ query: routeQuery(tab) });
 });
 watch(
@@ -318,11 +324,16 @@ onBeforeRouteLeave((to, from, next) => {
     <VPageHeader title="系统设置">
       <template #icon><Icon icon="ri:settings-3-line" class="text-primary" /></template>
       <template #subtitle>
-        <span>基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
+        <span>Stellar 2、基本、文章、评论、SEO、搜索、反馈与高级系统配置</span>
         <span v-if="isDirty" class="settings-dirty-badge">（有未保存修改）</span>
       </template>
       <template #actions>
-        <VButton size="sm" :type="previewOpen ? 'primary' : 'secondary'" @click="previewOpen = !previewOpen">
+        <VButton
+          v-if="active !== 'stellar2'"
+          size="sm"
+          :type="previewOpen ? 'primary' : 'secondary'"
+          @click="previewOpen = !previewOpen"
+        >
           <template #icon><Icon icon="ri:eye-line" /></template><span>前端预览</span>
         </VButton>
       </template>
@@ -362,7 +373,14 @@ onBeforeRouteLeave((to, from, next) => {
               class="settings-tab-panel outline-none"
               :hidden="active !== tab.key"
             >
-              <template v-if="active === tab.key">
+              <Stellar2Tab
+                v-if="tab.key === 'stellar2'"
+                class="settings-tab-content"
+                :saving="savingKey"
+                @dirty="stellarDirty = $event"
+                @busy="savingKey = $event ? 'stellar2' : ''"
+              />
+              <template v-if="active === tab.key && tab.key !== 'stellar2'">
                 <BasicSettings v-if="tab.key === 'basic'" :data="data" :saving="savingKey" @save="save" />
                 <div v-else class="settings-tab-content">
                   <PostSettings v-if="tab.key === 'post'" :data="data" :saving="savingKey" @save="save" />

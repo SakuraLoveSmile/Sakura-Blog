@@ -16,6 +16,7 @@ export * from "./api/monitoring";
 export * from "./api/plugins";
 export * from "./api/rag";
 export * from "./api/settings";
+export * from "./api/stellar_settings";
 export * from "./api/wiki";
 export * from "./api/uc";
 

@@ -275,6 +275,47 @@ export interface ShortcodeEditRequest {
 }
 
 //////////
+// source: stellar_settings.go
+
+/**
+ * StellarSettingsDocument 是完整公开配置，主题使用上游 snake_case 键。
+ * 数值保持 JSON 原始精度，不经过 Console 的结构化表单转换。
+ */
+export interface StellarSettingsDocument {
+  version: number /* int */;
+  theme: { [key: string]: unknown};
+  blog_extensions: { [key: string]: unknown};
+}
+export interface StellarSettingsIssue {
+  code: string;
+  source: string;
+  path: string;
+  expected?: string;
+  actual_type?: string;
+  severity?: string;
+}
+export interface StellarSettingsMigration {
+  source: string;
+  path: string;
+  reason: string;
+  sections: string[];
+}
+export interface StellarSettingsProblem {
+  type: string;
+  title: string;
+  status: number /* int */;
+  detail: string;
+  error: string;
+  instance: string;
+  issues: StellarSettingsIssue[];
+  migration?: StellarSettingsMigration;
+}
+export interface StellarSettingsValidationResponse {
+  valid: boolean;
+  issues: StellarSettingsIssue[];
+}
+
+//////////
 // source: uc.go
 
 /**

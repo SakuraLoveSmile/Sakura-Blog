@@ -20,4 +20,5 @@ packages:
       - "page.go"
       - "update.go"
       - "settings.go"
+      - "stellar_settings.go"
       - "backup_restores.go"
