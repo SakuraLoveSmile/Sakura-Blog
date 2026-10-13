@@ -26,7 +26,6 @@ type imageLifecycle struct {
 	requests     chan struct{}
 	done         chan struct{}
 	sub          content.Subscription
-	closeAssets  func()
 	processor    stellarimages.Processor
 	snapshots    func(context.Context) ([]stellarimages.PageSnapshot, error)
 }
@@ -63,11 +62,6 @@ func (w *imageLifecycle) start() {
 	}
 	go func() {
 		defer close(w.done)
-		defer func() {
-			if w.closeAssets != nil {
-				w.closeAssets()
-			}
-		}()
 		for {
 			select {
 			case <-ctx.Done():
@@ -113,18 +107,19 @@ func (w *imageLifecycle) prepare(ctx context.Context) error {
 	if enabled, _ := stellarv2.Get(site.StellarV2.Theme, "features.imageOptimization.enabled"); enabled != true {
 		return nil
 	}
-	if w.processor.LocalAsset == nil {
+	processor := w.processor
+	if processor.LocalAsset == nil {
 		read, closeAssets, err := ToolLocalAssets(w.deps.UploadDir, w.deps.Icons)
 		if err != nil {
 			return err
 		}
-		w.processor.LocalAsset, w.closeAssets = read, closeAssets
+		defer closeAssets()
+		processor.LocalAsset = read
 	}
 	pages, err := w.snapshots(ctx)
 	if err != nil {
 		return err
 	}
-	processor := w.processor
 	processor.SiteURL = site.URL
 	report, err := processor.Prepare(ctx, pages, stellarimages.PrepareOptions{})
 	if err != nil {

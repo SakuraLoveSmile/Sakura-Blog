@@ -79,11 +79,6 @@ func TestImageLifecyclePreparesLocalAssetAndReusesCacheWhenDisabled(t *testing.T
 	pages := []stellarimages.PageSnapshot{{Path: "post/item/index.html", BaseURL: "https://fixture.test/sub/post/item", HTML: `<article class="md-text content"><img src="../uploads/a%20b.png"></article>`}}
 	calls := 0
 	w := imageWorkerFixture(t, func(context.Context) ([]stellarimages.PageSnapshot, error) { calls++; return pages, nil })
-	defer func() {
-		if w.closeAssets != nil {
-			w.closeAssets()
-		}
-	}()
 	path := filepath.Join(w.deps.UploadDir, "a b.png")
 	original := imageFixturePNG(t, path)
 	if err := w.prepare(context.Background()); err != nil {
@@ -124,11 +119,6 @@ func TestImageLifecyclePreparesLocalAssetAndReusesCacheWhenDisabled(t *testing.T
 func TestImageLifecycleKeepsOldCacheOnCorruptionAndLockFailure(t *testing.T) {
 	pages := []stellarimages.PageSnapshot{{Path: "index.html", BaseURL: "https://fixture.test/sub/", HTML: `<article class="md-text content"><img src="uploads/a.png"></article>`}}
 	w := imageWorkerFixture(t, func(context.Context) ([]stellarimages.PageSnapshot, error) { return pages, nil })
-	defer func() {
-		if w.closeAssets != nil {
-			w.closeAssets()
-		}
-	}()
 	cache := stellarimages.Store{Version: 1, Images: map[string]stellarimages.Entry{"old": {Dimensions: &stellarimages.Dimensions{Status: "ready", Width: 7, Height: 5}}}}
 	writeImageCache(t, w.processor.StorePath, cache)
 	if !w.reload() {
@@ -182,7 +172,7 @@ func TestImageLifecycleEventCancelsBatchAndCloseWaits(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("event did not cancel old batch")
 	}
-	// 取消的读取会留下失败backoff；新批次仍必须捕获更新后的完整公开快照。
+	// 新批次必须捕获更新后的完整公开快照，不复用旧批次。
 	deadline := time.NewTimer(5 * time.Second)
 	defer deadline.Stop()
 	tick := time.NewTicker(5 * time.Millisecond)
@@ -206,4 +196,47 @@ func TestImageLifecycleEventCancelsBatchAndCloseWaits(t *testing.T) {
 	if batches.Load() != before {
 		t.Fatal("closed worker retained event subscription")
 	}
+}
+
+func TestImageLifecycleRestoreReopensReplacedUploadsDirectory(t *testing.T) {
+	var filename atomic.Value
+	filename.Store("before.png")
+	w := imageWorkerFixture(t, func(context.Context) ([]stellarimages.PageSnapshot, error) {
+		return []stellarimages.PageSnapshot{{Path: "index.html", BaseURL: "https://fixture.test/sub/", HTML: `<article class="md-text content"><img src="uploads/` + filename.Load().(string) + `"></article>`}}, nil
+	})
+	imageFixturePNG(t, filepath.Join(w.deps.UploadDir, "before.png"))
+	w.start()
+	defer w.close()
+	waitReady := func(name string) {
+		t.Helper()
+		tick := time.NewTicker(5 * time.Millisecond)
+		defer tick.Stop()
+		deadline := time.NewTimer(5 * time.Second)
+		defer deadline.Stop()
+		for {
+			w.cacheMu.RLock()
+			e := w.cache.Images["https://fixture.test/sub/uploads/"+name]
+			ready := e.Dimensions != nil && e.Dimensions.Status == "ready"
+			w.cacheMu.RUnlock()
+			if ready {
+				return
+			}
+			select {
+			case <-tick.C:
+			case <-deadline.C:
+				t.Fatalf("restored image %s not ready", name)
+			}
+		}
+	}
+	waitReady("before.png")
+	if err := os.Rename(w.deps.UploadDir, w.deps.UploadDir+"-old"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(w.deps.UploadDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	imageFixturePNG(t, filepath.Join(w.deps.UploadDir, "after.png"))
+	filename.Store("after.png")
+	w.deps.Events.Publish(content.Event{Kind: content.Restored})
+	waitReady("after.png")
 }
