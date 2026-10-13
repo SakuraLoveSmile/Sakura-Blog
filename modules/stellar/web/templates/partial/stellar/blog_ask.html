@@ -1,0 +1,10 @@
+{{if sf_truth (sf_get .Stellar.Data "blog.ai.ask.enabled")}}
+<section class="search-ai-ask" id="rag-ai-ask" aria-label="AI 问答">
+  <button type="button" class="search-ai-ask-button" data-rag-ai-open>{{sf_icon "default:search"}}<span>问问 AI</span></button>
+  <form class="search-ai-ask-form" data-rag-ai-form hidden>
+    <textarea class="search-ai-ask-input" data-rag-ai-input rows="3" maxlength="1000" placeholder="询问站内公开内容"></textarea>
+    <div class="search-ai-ask-actions">{{if sf_truth (sf_get .Stellar.Data "blog.ai.ask.allow_user_llm")}}<button type="button" class="search-ai-ask-byok" data-rag-ai-byok>使用自己的 AI 模型</button>{{end}}<button type="submit" class="search-ai-ask-submit">发送</button></div>
+    {{if sf_truth (sf_get .Stellar.Data "blog.ai.ask.allow_user_llm")}}<div class="search-ai-ask-byok-form" data-rag-ai-byok-form hidden><input type="url" class="search-ai-ask-input" data-rag-ai-endpoint placeholder="模型接口地址（https://...）"><input type="text" class="search-ai-ask-input" data-rag-ai-model placeholder="模型名称"><input type="password" class="search-ai-ask-input" data-rag-ai-key placeholder="API Key（仅本次发送）"></div>{{end}}
+  </form><div class="search-ai-ask-result" data-rag-ai-result hidden></div>
+</section>
+{{end}}

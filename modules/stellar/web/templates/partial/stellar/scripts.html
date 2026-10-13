@@ -1,0 +1,5 @@
+<script data-stellar-script="defines">window.stellarClientData={{sf_json (sf_get .Stellar.Client "ClientData")}};window.canonical=window.stellarClientData.canonical;const ctx=window.stellarClientData.ctx;window.ctx=ctx;const def=window.stellarClientData.def;window.def=def;</script>
+{{range sf_list (sf_get .Stellar.Client "CoreScripts")}}<script data-stellar-script="core" src="{{sf_asset $.Stellar.Root (sf_text .)}}" defer></script>{{end}}
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{{sf_json (sf_get .Stellar.Client "Manifest")}}</script>
+<script data-stellar-script="core" type="module" src="{{sf_asset .Stellar.Root (sf_text (sf_get .Stellar.Client "Bootstrap"))}}"></script>
+{{.Stellar.BodyEnd}}
