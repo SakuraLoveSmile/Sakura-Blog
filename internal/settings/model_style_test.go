@@ -223,6 +223,67 @@ func TestStyleInjectCSSBackgrounds(t *testing.T) {
 	}
 }
 
+func TestStyleLeftbarModes(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		leftbar StyleLeftbar
+		want    []string
+		absent  []string
+	}{
+		{
+			name:    "card retains stored image but renders custom solid color",
+			leftbar: StyleLeftbar{UIStyle: "card", BackgroundImage: "/saved.jpg", BackgroundColorDark: "#222"},
+			want:    []string{".site-region__decoration{display:none;}", ".site-region__surface.ui-surface{background:#222;}"},
+			absent:  []string{"background-image:", "display:block", "filter:"},
+		},
+		{
+			name:    "card uses built-in solid color",
+			leftbar: StyleLeftbar{UIStyle: "card", BackgroundImage: "/saved.jpg"},
+			want:    []string{".site-region__decoration{display:none;}", ".site-region__surface.ui-surface{background:var(--card);}"},
+			absent:  []string{"background-image:"},
+		},
+		{
+			name:    "glass without image restores historical built-in image",
+			leftbar: StyleLeftbar{UIStyle: "glass", BlurPx: "60px", BackgroundOpacity: "0.6"},
+			want:    []string{"background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg);", "--blur-px:60px;--background-opacity:0.6;", ".site-region__surface.ui-surface{background:transparent;}", ".site-region__viewport{background:transparent;}"},
+		},
+		{
+			name:    "glass uses configured image and default filters",
+			leftbar: StyleLeftbar{UIStyle: "glass", BackgroundImage: "/custom.jpg", BackgroundColorDark: "#222"},
+			want:    []string{"background-image:url(/custom.jpg);", "--blur-px:100px;--background-opacity:0.8;"},
+			absent:  []string{"sidebar-bg1@small.jpg", "background:#222;"},
+		},
+		{
+			name:    "unconfigured mode preserves new default",
+			leftbar: StyleLeftbar{},
+			absent:  []string{"background-image:", "background:transparent;", "display:block"},
+		},
+		{
+			name:    "historical image without mode remains supported",
+			leftbar: StyleLeftbar{BackgroundImage: "/legacy.jpg"},
+			want:    []string{"background-image:url(/legacy.jpg);", ".site-region__surface.ui-surface{background:transparent;}"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := StyleConfig{Leftbar: tc.leftbar}
+			got := string(cfg.InjectCSS())
+			for _, want := range tc.want {
+				if !strings.Contains(got, want) {
+					t.Errorf("missing %q in %s", want, got)
+				}
+			}
+			for _, absent := range tc.absent {
+				if strings.Contains(got, absent) {
+					t.Errorf("unexpected %q in %s", absent, got)
+				}
+			}
+			if cfg.Leftbar != tc.leftbar {
+				t.Fatal("rendering must preserve the saved leftbar configuration")
+			}
+		})
+	}
+}
+
 // TestStyleInjectCSSRadiusGradient 圆角/渐变组注入（Spec 52）：仅显式配置时输出 :root 变量。
 func TestStyleInjectCSSRadiusGradient(t *testing.T) {
 	s := StyleConfig{

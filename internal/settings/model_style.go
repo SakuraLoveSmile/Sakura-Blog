@@ -387,11 +387,22 @@ func (s StyleConfig) InjectCSS() template.CSS {
 func (s StyleConfig) leftbarCSS() string {
 	l := s.Leftbar
 	var b strings.Builder
-	if l.BackgroundImage != "" {
+	// 显式纯色模式优先于已保存的背景图；仅改变渲染，不丢弃图片配置。
+	if l.UIStyle == "card" {
+		b.WriteString(".site-region--leftbar .site-region__decoration{display:none;}")
+		fmt.Fprintf(&b, ".site-region--leftbar .site-region__surface.ui-surface{background:%s;}", firstNonEmpty(l.BackgroundColorDark, "var(--card)"))
+		return b.String()
+	}
+	image := l.BackgroundImage
+	if l.UIStyle == "glass" && image == "" {
+		// 延续 1.44 的内置图片，匹配 Console 未填写图片时的玻璃模式语义。
+		image = "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.13/image/sidebar-bg1@small.jpg"
+	}
+	if image != "" {
 		blur := firstNonEmpty(l.BlurPx, "100px")
 		opacity := firstNonEmpty(l.BackgroundOpacity, "0.8")
 		// card 外观没有图片装饰的编译期规则，显式配置时补齐该层的定位与滤镜。
-		fmt.Fprintf(&b, ".site-region--leftbar .site-region__decoration{display:block;position:absolute;inset:0;pointer-events:none;border-radius:inherit;background-image:url(%s);background-position:center;background-size:cover;--blur-px:%s;--background-opacity:%s;filter:blur(var(--blur-px)) opacity(var(--background-opacity));}", l.BackgroundImage, blur, opacity)
+		fmt.Fprintf(&b, ".site-region--leftbar .site-region__decoration{display:block;position:absolute;inset:0;pointer-events:none;border-radius:inherit;background-image:url(%s);background-position:center;background-size:cover;--blur-px:%s;--background-opacity:%s;filter:blur(var(--blur-px)) opacity(var(--background-opacity));}", image, blur, opacity)
 		b.WriteString(".site-region--leftbar .site-region__surface.ui-surface{background:transparent;}")
 		b.WriteString(".site-region--leftbar .site-region__viewport{background:transparent;}")
 	} else if l.BackgroundColorDark != "" {

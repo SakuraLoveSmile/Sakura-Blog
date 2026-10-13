@@ -6,7 +6,7 @@
 
 冻结方向：采用 2.0 的 site-shell / site-region / brand / listing-nav 骨架和 card 外观；保留现有深色模式、中文字体、菜单、内容路由、配置编辑、搜索 API/静态索引、原生评论、短代码及 Go SSR。不上线、不迁移真实数据库、不改 Console 风格；Hexo doctor/schema/构建命令不套用于 Go 服务。
 
-- T1：锁定上游干净源和 appearance/tags/features 构建配置，main.css 可重复生成，版本显示 2.0.0。
+- T1：锁定上游干净源和 appearance/tags/features 构建配置，main.css 可重复生成，本地主题版本常量为 2.0.0。
 - T2：首页、文章、页面、分类/标签/归档、专栏、文库/文档、笔记、友链与瞬间采用新外壳；桌面和 390px 窄屏无横向溢出，导航、卡片、正文、侧栏可读。
 - T3：侧栏开合、遮罩、Escape、目录锚点、Ctrl/Command+K、搜索结果跳转、评论和现有短代码交互保留；脚本不重复初始化，不新增浅色切换。
 - T4：make css、css-drift-check、make build、make merge-check/组合态测试与真实浏览器核验。截图保存于本目录，记录实际服务资源 hash。
@@ -26,3 +26,9 @@
 独立源码审查发现的旧内容与搜索兼容缺口均已修正；外部分享平台的实际发送、真实用户登录与 AI 付费请求未执行。Hexo 构建管线及其它未移植能力见 `docs/stellar-compatibility-matrix.md` 2.1。未推送、发布或部署。
 
 体验入口：本次隔离预览 `http://127.0.0.1:8098/`。后续日常运行仍从根 dev 使用 `make dev`，其配置端口由本地 `config/app.yml` 决定。
+
+### 外观模式补充核验
+
+- 保留 Console 既有「纯色／光晕」语义：card 隐藏已保存背景图，glass 使用自定义图或 1.44 原有内置默认图；无显式模式维持新版默认，旧的仅图片配置继续兼容。
+- 新增 6 项 Go 配置模式测试先红后绿；实际浏览器检查 card+存量图片、glass+默认图片，以及登录隔离后台切到 glass 保存后前台生效、再切回 card。图片保存值未丢失，纯色模式 decoration=none，光晕 decoration=block 且 blur(60px)/opacity(0.6) 正常；见 `leftbar-modes.json` 与对应截图。
+- 本次隔离后台的实时 GitHub 版本监测受 `safefetch` 地址限制，显示暂不可用；上游最新正式版本已经通过官方 GitHub release API 另行核实为 2.0.0。该实时监测环境限制与本地主题版本、构建和前台适配证据分别记录。
