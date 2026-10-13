@@ -27,6 +27,16 @@ var stellarDefaultWidgets = func() map[string]any {
 	return catalog
 }()
 
+// MergeStellarWidgetCatalog 供路由构建列表与详情模型前使用同一官方组件库。
+// 每次返回独立副本；显式null/false仍替换对应默认组件。
+func MergeStellarWidgetCatalog(overrides map[string]any) map[string]any {
+	catalog := prepCloneMap(stellarDefaultWidgets)
+	for key, value := range overrides {
+		catalog[key] = prepClone(value)
+	}
+	return catalog
+}
+
 // PrepareStellar 只装配严格主题快照；内容归属与授权已在公开路由处理。
 // 每次请求复制输入，不能修改 Manager 发布的主题、模型或原始保存值。
 func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
@@ -95,10 +105,7 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 	for key, value := range input.RuntimeData {
 		publicData[key] = prepClone(value)
 	}
-	catalog := prepCloneMap(stellarDefaultWidgets)
-	for key, value := range prepMap(publicData["widgets"]) {
-		catalog[key] = prepClone(value)
-	}
+	catalog := MergeStellarWidgetCatalog(prepMap(publicData["widgets"]))
 	publicData["widgets"] = catalog
 	publicData["page"] = input.FrontMatter
 	publicData["headEnd"] = prepInject(theme, input.FrontMatter, "headEnd")
@@ -185,6 +192,10 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 	p.BlogNativeComments = prepGet(blog, "native_comments.enabled") == true
 	p.BlogContent = prepGet(blog, "content.enabled") == true
 	publicData["blogReading"] = prepGet(blog, "reading.enabled") == true
+	publicData["blog"] = map[string]any{"content": prepClone(blog["content"]), "reading": prepClone(blog["reading"]), "checkbox": prepClone(blog["checkbox"]), "ai": map[string]any{"summary": map[string]any{"enabled": prepGet(blog, "ai.summary.enabled") == true}, "ask": map[string]any{"enabled": prepGet(blog, "ai.ask.enabled") == true}}}
+	if prepGet(blog, "search.provider") == "go" && prepGet(p.Regions, "leftbar.enabled") != false && brand["search"] == true && (prepString(brand["name"]) != "" || prepString(prepGet(brand, "image.src")) != "") {
+		p.SearchEnabled = true
+	}
 	bundle, err := clientconfig.Build(clientconfig.Input{
 		Root: root, PageURL: pageURL, SiteURL: rootURL.String(), SiteTitle: data.Site.Title, Language: p.Language,
 		Profile: p.Profile, CollectionID: prepString(collection["id"]), Theme: theme, Page: input.FrontMatter,
@@ -192,7 +203,7 @@ func PrepareStellar(data *settings.ViewData) (*StellarRenderData, error) {
 		Blog: clientconfig.BlogConfig{GoSearch: prepGet(blog, "search.provider") == "go", NativeComments: p.BlogNativeComments,
 			AISummary: prepGet(blog, "ai.summary.enabled") == true, AIAsk: prepGet(blog, "ai.ask.enabled") == true,
 			Reading: prepGet(blog, "reading.enabled") == true, Tagcloud: prepGet(blog, "tagcloud.enabled") == true,
-			Checkbox: prepGet(theme, "tags.checkbox.interactive") == true, Content: p.BlogContent, Gist: true,
+			Checkbox: prepGet(blog, "checkbox.enabled") == true, Content: p.BlogContent, Gist: true,
 			SearchPath: root + "search.json", SearchTTL: 30},
 	})
 	if err != nil {

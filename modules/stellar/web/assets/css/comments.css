@@ -6,7 +6,7 @@
  * 颜色尽量走 Stellar 变量（--background/--border/--text-p*/--theme/--card-bg），深浅自适应。 */
 
 /* ----------------------- 外层：标题 + 容器 ----------------------- */
-#comments.related-wrap {
+#comments.related-wrap, #blog-comments.related-wrap {
   margin-top: 3rem;
   padding-top: 0.75rem;
 }
@@ -1076,7 +1076,7 @@
 
 /* ----------------------- 响应式：窄屏 ----------------------- */
 @media (max-width: 667px) {
-  #comments.related-wrap { margin-top: 1.75rem; }
+  #comments.related-wrap, #blog-comments.related-wrap { margin-top: 1.75rem; }
   .cmt-id-anon-row { grid-template-columns: 1fr; }
   .cmt-id-input { height: 40px; padding: 6px 1.25rem; }
   .cmt-id-switch { padding: 0 1.25rem 0.6rem; }
