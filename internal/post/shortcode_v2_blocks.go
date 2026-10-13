@@ -87,7 +87,7 @@ func (r *shortcodeV2Renderer) copy(a map[string]string) string {
 	if a["prefix"] != "" {
 		prefix = `<span>` + html.EscapeString(a["prefix"]) + `</span>`
 	}
-	return `<div class="tag-plugin copy">` + prefix + `<input class="copy-area"` + v2Attr("id", id) + v2Attr("value", text) + `><button class="copy-btn"` + v2Attr("onclick", `util.copy("`+id+`","`+r.localized("message.copied")+`")`) + `>` + r.icon("copy:copy", "") + `</button></div>`
+	return `<div class="tag-plugin copy">` + prefix + `<input class="copy-area"` + v2Attr("id", id) + ` value="` + html.EscapeString(text) + `"` + `><button class="copy-btn"` + v2Attr("onclick", `util.copy("`+id+`","`+r.localized("message.copied")+`")`) + `>` + r.icon("copy:copy", "") + `</button></div>`
 }
 func (r *shortcodeV2Renderer) quot(a map[string]string) string {
 	el := safeQuotEl(a["el"])

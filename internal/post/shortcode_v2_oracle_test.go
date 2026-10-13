@@ -227,6 +227,7 @@ type v2OracleCase struct{ name, args, body string }
 
 func v2OfficialCases() []v2OracleCase {
 	cases := []v2OracleCase{
+		{"copy", `""`, ""},
 		{"video", `/video.mp4 width:calc(100%-20px) autoplay:0`, ""},
 		{"video", `bilibili:BV123 autoplay:1`, ""},
 		{"image", `/image.png Alt width:calc(100%-20px) padding:"8px 16px" bg:linear-gradient(red,blue) fancybox:false`, ""},

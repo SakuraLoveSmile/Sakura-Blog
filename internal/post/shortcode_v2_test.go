@@ -277,7 +277,7 @@ func TestStellarV2ExplicitBlogExtensionNamespace(t *testing.T) {
 
 func TestStellarV2EditorExplicitEmptyOverridesDefault(t *testing.T) {
 	s := NewService("")
-	for _, raw := range []string{`{% button color:"" Label /target %}`, `{% emoji qq "" %}`, ` {% emoji url:/a.png qq Alt %} `, `{% mark color:"" Text %}`} {
+	for _, raw := range []string{`{% copy "" %}`, `{% button color:"" Label /target %}`, `{% emoji qq "" %}`, ` {% emoji url:/a.png qq Alt %} `, `{% mark color:"" Text %}`} {
 		p, e := ParseShortcodeForEditStellarV2(raw)
 		if e != nil || !p.Editable {
 			t.Fatalf("%s %v %#v", raw, e, p)
@@ -372,5 +372,18 @@ func TestStellarV2CatalogExamplesAndCopies(t *testing.T) {
 	second := ShortcodeCatalogStellarV2()
 	if second[0].Params[0].Key == "mutated" {
 		t.Fatal("registry schema mutated by consumer")
+	}
+}
+
+func TestStellarV2SerializedNumbersAndFalseAreNotOmitted(t *testing.T) {
+	for _, value := range []any{json.Number("0"), json.Number("9007199254740993"), false} {
+		raw, e := SerializeShortcodeEditStellarV2("copy", map[string]any{"text": value})
+		if e != nil {
+			t.Fatal(e)
+		}
+		p, e := ParseShortcodeForEditStellarV2(raw)
+		if e != nil || p.Values["text"] != fmt.Sprint(value) {
+			t.Fatalf("%s %#v %v", raw, p, e)
+		}
 	}
 }
