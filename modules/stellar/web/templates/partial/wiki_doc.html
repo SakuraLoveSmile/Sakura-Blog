@@ -1,8 +1,8 @@
 {{- /* wiki_doc.html: Wiki 文档页；Hero 结构对齐 Stellar wiki_cover.ejs。 */ -}}
 {{- with .WikiHero}}
 {{- $galaxy := and .Animation (eq .Animation.Type "galaxy") -}}
-<div class="l_cover wiki wiki-hero{{if not .Preview}} without-preview{{end}}">
-  <div class="wiki-cover-background{{if $galaxy}} galaxy{{end}}{{if .Background}} image{{end}}" aria-hidden="true">
+<div class="cover-content wiki wiki-hero{{if not .Preview}} without-preview{{end}}">
+  <div class="wiki-cover-background{{if $galaxy}} galaxy has-effect{{end}}{{if .Background}} image{{end}}" aria-hidden="true">
     {{if .Background}}<img class="wiki-cover-background-image" src="{{.Background}}" alt=""><img class="wiki-cover-background-blur" src="{{.Background}}" alt="">{{end}}
     {{if $galaxy}}<canvas data-galaxy-params="{{jsonAttr .Animation.Params}}"></canvas>{{end}}
     <div class="wiki-cover-background-overlay"></div>

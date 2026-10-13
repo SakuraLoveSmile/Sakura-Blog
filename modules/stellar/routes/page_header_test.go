@@ -69,7 +69,8 @@ func TestStandalonePageBannerSSR(t *testing.T) {
 	html := request("/pages/about")
 	for _, want := range []string{
 		`class="article-banner-wrap"`,
-		`<div class="l_body content" id="start" layout="page"`,
+		`data-page-layout="page"`,
+		`class="site-shell" id="start" data-regions="leftbar rightbar"`,
 		`--bg-url:url('https://example.test/about.jpg')`,
 		`<img class="lazy bg" data-src="https://example.test/about.jpg" alt="">`,
 		`<h1 class="text title"><span>关于横幅</span></h1>`,

@@ -85,13 +85,13 @@ Console 是 Vue SPA，所有后台数据经 `/api/v1` 访问；User Center 是�
 
 Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `modules/stellar/web/build/stylus/` 以 `config.json`、`shim.js` 和 `compile.js` 注入该函数，不改上游 `.styl`：字符串、布尔、数字、数组和缺失值必须分别保持对应的 Stylus 类型，尤其不能把布尔值写成字符串 `"false"`。
 
-`compile.js` 会在主入口之后追加上游移出的 swiper、fancybox 与 artalk 样式，保持单一 `main.css`。上游移动样式入口或新增需要保留的段时，先核对当前源，再同步 `EXTRA_STYLES` 与测试；不要直接向产物追加 CSS。
+`compile.js` 按锁定 Stellar 2.0.0 的 `plugins/swiper.styl`、`plugins/fancybox.styl` 与 `comments/artalk.styl` 路径追加样式，并编译受跟踪的 `local.styl` 字体与旧内容兼容层，保持单一 `main.css`。上游移动样式入口或新增需要保留的段时，先核对当前源，再同步 `EXTRA_STYLES` 与测试；不要直接向产物追加 CSS。
 
 ### 模板、资源与图标
 
 - Go `html/template` 的结构必须与当前上游 Stellar EJS 和已存在的项目模板对齐。新增/改动前先对照 class、属性和嵌套，不凭记忆复刻过时的 layout 片段。
 - `template.HTML` 已是可信渲染结果时直接输出；不要再次传给只接收 `string` 的 `safe` helper。任何作者可控原始 HTML 都应先走现有渲染/净化链。
-- 前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
+- 前台采用 Stellar 2.0 `site-shell/site-region/brand/listing-nav` 骨架，运行时外观注入必须输出对应的新选择器；旧 settings 字段保留。原生 ESM runtime 通过 `stellar-runtime-config` 加载本地 shell/search 扩展，入口 `asset_ver` 聚合整个 runtime 的 JS 内容。保留完整 SSR 导航，不启用未适配的 partial navigation。前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
 - 部署使用 `internal/settings/data/icons.yml` 的嵌入图标注册表；开发默认也读取这份受跟踪副本。图标为内联 SVG，未知 key 会安全地渲染占位。新配置使用当前语义化键；保留 `legacyIconAlias`，直到迁移数据确认不再需要旧 `solar:`/`ph:`/`bxs:` 键。
 - 产品只面向深色模式。上游 CSS 的亮色选择器可能为兼容保留，但不能据此新增产品切换入口或浅色验收范围。
 

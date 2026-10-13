@@ -5,49 +5,36 @@
 {{- /* 产品主题固定为深色；保留 prefers_theme 配置字段仅用于兼容旧 settings，不开放浅色切换能力。 */}}
 <html lang="{{if .Page.Lang}}{{.Page.Lang}}{{else}}zh-CN{{end}}" data-theme="dark">
 {{template "partial/head" .}}
-<body>
-  {{- /* 阅读进度条：仅文章页由 reading.js 显示并更新宽度 */}}
+<body data-page-type="{{if or (eq .Page.Layout "post") (eq .Page.Layout "page") (eq .Page.Layout "wiki") (eq .Page.Layout "notes") (eq .Page.Layout "wiki-doc")}}content{{else}}index{{end}}" data-page-layout="{{.Page.Layout}}" data-article-style="{{.Page.Type}}"{{if .Site.Article.Indent}} data-text-indent{{end}}>
   <div id="reading-progress" aria-hidden="true" hidden></div>
-
-  {{- /* sitebg：站点背景图层。无背景图时 siteblur 仍存在，CSS 已在 main.css 里处理 */}}
-  <div class="sitebg"><div class="siteblur"></div></div>
-
-  <div id="l_cover">{{template "partial/cover" .}}</div>
-
-  {{- /* l_body：主布局容器。class 第二个值对齐 layout.ejs 的 page_type（content/index）*/}}
-  <div class="l_body {{if or (eq .Page.Layout "post") (eq .Page.Layout "page") (eq .Page.Layout "wiki") (eq .Page.Layout "notes") (eq .Page.Layout "wiki-doc")}}content{{else}}index{{end}}" id="start" layout="{{.Page.Layout}}" type="{{.Page.Type}}">
-    {{- $leftSurface := "glass" -}}
-    {{- if eq .Site.Style.Leftbar.UIStyle "card" -}}{{- $leftSurface = "card" -}}{{- end -}}
-    <aside class="l_left{{if eq $leftSurface "card"}} leftbar-card{{end}}" data-ui-surface="{{$leftSurface}}">
-      <div class="sidebg"></div>
-      <div class="leftbar-container">
-        {{template "partial/sidebar" .}}
-      </div>
-    </aside>
-
-    <div class="l_main" id="main" data-ui-surface="content">
-      {{- /* 移动端 logo：对齐上游 layout.ejs:59 _partial/sidebar/logo（where=main），仅在 l_main 内渲染一次 */}}
-      <header class="header mobile-only">{{template "partial/widgets/logo" .}}</header>
-      {{- /* content 分派：按 Layout 选择内容模板，else 兜底 content（文章页 Layout=post）。
-         文章页 content 后追加自建评论区（comments.enabled 时），对齐原版 page.ejs 的 comments 位置 */}}
+  <div class="site-background"><div class="site-background__blur"></div></div>
+  <div data-stellar-runtime-region id="site-cover" class="site-cover">{{template "partial/cover" .}}</div>
+  <div class="site-shell" id="start" data-regions="leftbar rightbar">
+    <div class="site-workspace">
+      <aside data-stellar-runtime-region id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="{{lang "btn.menu"}}">
+        <div class="site-region__surface ui-surface">
+          <div class="site-region__decoration" aria-hidden="true"></div>
+          <div class="site-region__viewport">{{template "partial/sidebar" .}}</div>
+        </div>
+      </aside>
+      <main data-stellar-runtime-region class="site-main" id="main">
+        <header class="brand-header brand-header--compact brand-header--site mobile-only">{{template "partial/widgets/logo" .}}</header>
       {{if eq .Page.Layout "index"}}{{template "partial/index" .}}{{if and .Site.Comments.Enabled .Site.SiteTree.Home.Comments .CommentPageKey}}{{template "partial/comments" .}}{{end}}{{else if eq .Page.Layout "archive"}}{{template "partial/archive" .}}{{else if eq .Page.Layout "categories"}}{{template "partial/categories" .}}{{else if eq .Page.Layout "tags"}}{{template "partial/tags" .}}{{else if eq .Page.Layout "topics"}}{{template "partial/topics" .}}{{else if eq .Page.Layout "topic"}}{{template "partial/topic" .}}{{else if eq .Page.Layout "wiki"}}{{template "partial/wiki" .}}{{else if eq .Page.Layout "notes"}}{{template "partial/notes" .}}{{else if eq .Page.Layout "page"}}{{template "partial/page" .}}{{if and .Site.Comments.Enabled .CommentPageKey}}{{template "partial/comments" .}}{{end}}{{else if eq .Page.Layout "moments"}}{{template "partial/moments" .}}{{else if eq .Page.Layout "author"}}{{template "partial/author" .}}{{else if eq .Page.Layout "post-password"}}{{template "partial/post_password" .}}{{else if eq .Page.Layout "404"}}{{template "partial/error404" .}}{{else if eq .Page.Layout "500"}}{{template "partial/error500" .}}{{else if eq .Page.Layout "wiki-doc"}}{{template "partial/wiki_doc" .}}{{else}}{{template "partial/content" .}}{{if .Site.Comments.Enabled}}{{template "partial/comments" .}}{{end}}{{end}}
-      {{template "partial/footer" .}}
-      <div class="main-mask" onclick="sidebar.dismiss()"></div>
+        {{template "partial/footer" .}}
+      </main>
+      <aside data-stellar-runtime-region id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="{{lang "btn.toc"}}">
+        <div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport">{{template "partial/rightbar" .}}</div></div>
+      </aside>
     </div>
-
-    {{- /* l_right：author 卡片（所有页面）+ 文章页追加 TOC widget（rightbar.html）*/}}
-    <aside class="l_right" data-ui-surface="sidebar">{{template "partial/rightbar" .}}</aside>
-
-    {{- /* float-panel：对齐原版 _partial/menubtn.ejs（sticky 面板，仅含右栏/左栏 toggle 两个按钮，
-       小屏由 laptop-only/mobile-only + 内联 display:none 媒体查询接管）。
-       必须在 l_body 内：.l_body[leftbar]/.l_body[rightbar] .float-panel 的激活态样式依赖该嵌套。
-       主题切换已迁至左栏 footer 的 social 按钮（对齐原版机制），不再放此处。 */}}
-    <div class="float-panel">
-      <button type="button" style="display:none" class="laptop-only rightbar-toggle mobile" title="{{lang "btn.toc"}}" onclick="sidebar.rightbar()">{{icon "default:rightbar"}}</button>
-      <button type="button" style="display:none" class="mobile-only leftbar-toggle mobile" title="{{lang "btn.menu"}}" onclick="sidebar.leftbar()">{{icon "default:leftbar"}}</button>
+    <button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="关闭导航" tabindex="-1"></button>
+    <div data-stellar-runtime-region class="site-dock" role="group" aria-label="页面面板">
+      <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="{{lang "btn.toc"}}" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">{{icon "default:rightbar"}}</button>
+      <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="{{lang "btn.menu"}}" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">{{icon "default:leftbar"}}</button>
     </div>
+    {{template "partial/widgets/search" .}}
   </div>
 
+  <div class="site-scripts">
   {{- /* ctx 全局对象：对齐 Stellar defines.ejs 注入，main.js 依赖 */}}
   {{- $fbSelector := "div.lazy-box>img.lazy" -}}
   {{- if and .Site.Plugins.Fancybox .Site.Plugins.Fancybox.Selector -}}
@@ -503,6 +490,9 @@
   <script src="{{url_for "/assets/js/plugins/adaptive-text.js"}}?v={{asset_ver "/assets/js/plugins/adaptive-text.js"}}" defer></script>
   {{end}}
   <script src="{{url_for "/assets/js/main.js"}}?v={{asset_ver "/assets/js/main.js"}}" defer></script>
+  {{- /* 2.0 ESM 生命周期只接管外壳与搜索；保留本地 classic 插件及完整 SSR 导航。 */}}
+  <script id="stellar-runtime-config" type="application/json">{"version":1,"root":"/","extensions":[{"id":"blog-shell","module":"/assets/js/runtime/extensions/shell.js","scope":"document","when":{"always":true},"config":{}},{"id":"blog-search","module":"/assets/js/runtime/extensions/search.js","scope":"document","when":{"always":true},"config":{}}],"policy":{"cache":{"enabled":false,"defaultTtl":3600,"ttl":{},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800}}}</script>
+  <script type="module" src="{{url_for "/assets/js/runtime/index.js"}}?v={{asset_ver "/assets/js/runtime/index.js"}}"></script>
   {{- /* Stellar 1.44 Card Hover：配置开启时按需加载；主题样式已在构建产物中预编译。 */}}
   {{if .Site.Plugins.CardHoverEnabled}}
   <script>
@@ -594,5 +584,6 @@
   {{end}}
   {{- /* Spec 42：代码注入 footer 片段（template.HTML 原样输出，不经 bluemonday） */}}
   {{.Site.Inject.Footer}}
+  </div>
 </body>
 </html>

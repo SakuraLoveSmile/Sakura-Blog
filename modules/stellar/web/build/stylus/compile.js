@@ -1,9 +1,8 @@
 // 编译脚本：把 Stellar 的 main.styl 编译成 main.css
 // 用法: node build/stylus/compile.js [--clean]
 //
-// Stellar 1.41 将 swiper/fancybox 与评论样式（artalk 等）移出 main.styl 编译入口
-// （上游改为按需外置 `<link>` 加载），本项目不引入按需加载，继续单文件 main.css，
-// 故在主入口之后追加编译这些移出的样式段，产物等效 1.40 及之前的编译范围。
+// Stellar 2.0 的主入口使用 appearance/tags/features 配置；swiper/fancybox 与评论
+// 样式仍由上游按需外置加载。本项目继续单文件 main.css，追加这些样式与本地兼容层。
 //
 // --clean 选项：从 upstream.json 锁定的 git commit 提取干净 Stylus 源编译，
 // 避免工作树脏状态或本地改动污染产物。
@@ -18,7 +17,7 @@ const REPO_DIR = path.resolve(__dirname, '../../../../../resource/hexo-theme-ste
 const DEFAULT_STELLAR_CSS_DIR = path.join(REPO_DIR, 'source/css')
 const OUT_CSS = path.resolve(__dirname, '../../assets/css/main.css')
 
-// 追加编译的样式段（1.40 主入口曾包含、1.41 移出；顺序对齐 1.40 产物内的出现顺序）
+// 单文件中继续保留轮播、灯箱与 Artalk 的主题样式。
 const EXTRA_STYLES = [
   'plugins/swiper.styl',
   'plugins/fancybox.styl',
@@ -61,6 +60,7 @@ async function main() {
     for (const rel of EXTRA_STYLES) {
       chunks.push(await render(path.join(cssDir, rel), cssDir))
     }
+    chunks.push(await render(path.join(__dirname, 'local.styl'), cssDir))
     const css = chunks.join('\n')
     fs.mkdirSync(path.dirname(OUT_CSS), { recursive: true })
     fs.writeFileSync(OUT_CSS, css)

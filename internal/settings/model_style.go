@@ -13,18 +13,15 @@ import (
 
 // ---------- Spec 34/52: 外观样式可配置化 ----------
 //
-// 对齐原版 Stellar _config.yml 的 style 段。实现策略（依据 main.css 编译产物特征）：
-//   - 颜色（theme 经 --hue/--sat/--light 分量、accent、link+link-a20）与正文字号(--fsp)是 :root 变量 → 直接注入覆盖；
-//   - 字体族/根字号/leftbar 背景/全站背景/header_prefix/分页箭头/代码块滚动条是编译期字面量 → 选择器级 style 覆盖；
-//   - 圆角/渐变（Spec 52）：border_radius 四档 + gradient 两组注入 :root 变量（--radius-*/--gradient-*），
-//     消费点（main.css）一律 var(--radius-*, 原硬编码值) fallback 形式，未配置不注入 → 零配置零差异。
-// 全部字段缺省为空 → InjectCSS 输出空串 → 零配置时与现状逐像素一致（回归底线）。
+// 保留历史 style 配置，输出 Stellar 2.0 的运行时消费契约。
+// 颜色、根字号、圆角与渐变通过 CSS 变量覆盖；
+// 字体与背景等编译期配置通过新版选择器覆盖。未配置不改变主题默认外观。
 
 // StyleConfig site.yml style 段（键名对照原版 _config.yml style）。
 type StyleConfig struct {
-	PrefersTheme string `yaml:"prefers_theme" json:"prefers_theme"` // 默认主题：dark（缺省，现状）/light/auto（跟随系统）
+	PrefersTheme string `yaml:"prefers_theme" json:"prefers_theme"` // 保留历史 dark/light/auto 配置；产品固定深色，不据此切换
 	// PageTransition 使用指针保留“未配置”和“显式关闭”的区别。
-	// nil 按 Stellar 1.43.0 默认开启；false 由 InjectCSS 输出覆盖规则。
+	// nil 保留默认开启；false 由 InjectCSS 输出覆盖规则。
 	PageTransition StylePageTransition `yaml:"page_transition" json:"page_transition"`
 
 	TextAlign      string              `yaml:"text_align" json:"text_align"` // 正文段落对齐（left/justify 等，空=现状 left）
@@ -150,7 +147,7 @@ func (s *StyleConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Enabled reports the 1.43.0 default: enabled unless explicitly disabled.
+// Enabled preserves the default: enabled unless explicitly disabled.
 func (p StylePageTransition) Enabled() bool {
 	return p.Enable == nil || *p.Enable
 }
@@ -188,8 +185,8 @@ type StyleColor struct {
 
 // StyleFontSize 字号组。
 type StyleFontSize struct {
-	Root      string `yaml:"root" json:"root"`           // 根字号（html font-size，选择器覆盖）
-	Body      string `yaml:"body" json:"body"`           // 正文字号（注入 --fsp + --gap-p/--gap-p-compact）
+	Root      string `yaml:"root" json:"root"`           // 根字号（注入 --fs-root，驱动 html 与正文派生字号）
+	Body      string `yaml:"body" json:"body"`           // 历史兼容字段，1.43 起不再参与渲染
 	Code      string `yaml:"code" json:"code"`           // 行内代码字号（1.38，选择器覆盖）
 	Codeblock string `yaml:"codeblock" json:"codeblock"` // 代码块字号（1.38，选择器覆盖）
 }
@@ -258,7 +255,7 @@ type StylePaginator struct {
 }
 
 // InjectCSS 生成注入到 head 的样式覆盖（仅输出用户显式配置项，未配置不输出）。
-// 返回 template.CSS 跳过 html/template 的 <style> 上下文转义；零配置返回空串（模板据此不渲染 style 标签）。
+// 返回 template.CSS 跳过 html/template 的 <style> 上下文转义；零配置仅保留默认页面过渡。
 func (s StyleConfig) InjectCSS() template.CSS {
 	var b strings.Builder
 
@@ -266,12 +263,12 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	// still behaves correctly when the generated CSS is stale. An explicit false
 	// is a post-CSS override and disables both navigation and snapshots.
 	if s.PageTransition.Enabled() {
-		b.WriteString("@view-transition{navigation:auto}.l_left{view-transition-name:leftbar;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation-duration:0.2s;animation-timing-function:ease-out;}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none;}}")
+		b.WriteString("@view-transition{navigation:auto}.site-region--leftbar{view-transition-name:leftbar;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation-duration:0.2s;animation-timing-function:ease-out;}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none;}}")
 	} else {
-		b.WriteString("@view-transition{navigation:none}.l_left{view-transition-name:none!important;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation:none!important;}")
+		b.WriteString("@view-transition{navigation:none}.site-region--leftbar{view-transition-name:none!important;}::view-transition-group(root),::view-transition-old(root),::view-transition-new(root),::view-transition-group(leftbar),::view-transition-old(leftbar),::view-transition-new(leftbar){animation:none!important;}")
 	}
 
-	// --- :root 变量组（颜色 + 正文字号）---
+	// --- :root 变量组 ---
 	var root strings.Builder
 	if h, sat, l, ok := parseHSL(s.Color.Theme); ok {
 		fmt.Fprintf(&root, "--hue:%sdeg;--sat:%s%%;--light:%s%%;", trimNum(h), trimNum(sat), trimNum(l))
@@ -283,8 +280,10 @@ func (s StyleConfig) InjectCSS() template.CSS {
 		fmt.Fprintf(&root, "--link:hsla(%sdeg %s%% %s%% / 1);--link-a20:hsla(%sdeg %s%% %s%% / 0.2);",
 			trimNum(h), trimNum(sat), trimNum(l), trimNum(h), trimNum(sat), trimNum(l))
 	}
-	// font-size.body 是 1.42 及更早版本的兼容字段。1.43.0 的新 CSS 使用
-	// --fs-content，不再把该旧值注入渲染变量；保留字段本身以便旧配置正常解析。
+	// 根字号同时影响 rem 与上游的正文/小组件派生字号。
+	if s.FontSize.Root != "" {
+		fmt.Fprintf(&root, "--fs-root:%s;", s.FontSize.Root)
+	}
 	// 圆角四档（Spec 52）：仅显式配置时输出，未配置不定义变量（消费点 var(--radius-*, 原值) fallback）
 	if s.BorderRadius.Card != "" {
 		fmt.Fprintf(&root, "--radius-card:%s;", s.BorderRadius.Card)
@@ -324,27 +323,24 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	}
 
 	// --- 选择器级覆盖 ---
-	// 根字号
-	if s.FontSize.Root != "" {
-		fmt.Fprintf(&b, "html{font-size:%s;}", s.FontSize.Root)
-	}
+	// font-size.body 保留 1.43 起的历史兼容语义，不参与渲染。
 	// body 字体族（覆盖 head.html 既有 LXGW 块）
 	if s.FontFamily.Body != "" {
-		fmt.Fprintf(&b, "html{font-family:%s;}", s.FontFamily.Body)
+		fmt.Fprintf(&b, "html,body,button,input,textarea,select,.search-input,.search-result-more{font-family:%s;}", s.FontFamily.Body)
 	}
 	// 代码字体族（行内 code + 代码块 pre/figure）
 	if s.FontFamily.Code != "" {
-		fmt.Fprintf(&b, "code{font-family:%s;}", s.FontFamily.Code)
+		fmt.Fprintf(&b, ".md-text code{font-family:%s;}", s.FontFamily.Code)
 	}
 	if s.FontFamily.Codeblock != "" {
-		fmt.Fprintf(&b, "pre,.md-text .highlight{font-family:%s;}", s.FontFamily.Codeblock)
+		fmt.Fprintf(&b, ".md-text pre,.md-text pre code,.md-text .highlight,.md-text .gist .blob-code-inner{font-family:%s;}", s.FontFamily.Codeblock)
 	}
 	// 1.38 代码字号（行内 code + 代码块）
 	if s.FontSize.Code != "" {
 		fmt.Fprintf(&b, ".md-text code:not(pre code){font-size:%s;}", s.FontSize.Code)
 	}
 	if s.FontSize.Codeblock != "" {
-		fmt.Fprintf(&b, ".md-text .highlight{font-size:%s;}", s.FontSize.Codeblock)
+		fmt.Fprintf(&b, ".md-text pre,.md-text .highlight,.md-text .highlight .code{font-size:%s;}", s.FontSize.Codeblock)
 	}
 	// 正文段落对齐
 	if s.TextAlign != "" {
@@ -356,26 +352,26 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	}
 	// 分页箭头
 	if s.Paginator.Next != "" {
-		fmt.Fprintf(&b, ".paginator-wrap .extend.next{background-image:url(%s);}", s.Paginator.Next)
+		fmt.Fprintf(&b, ".paginator-wrap .extend.next{background-image:url(%s);background-size:1.5rem 1.5rem;background-position:center;background-repeat:no-repeat;}.paginator-wrap .extend.next svg{visibility:hidden;}", s.Paginator.Next)
 	}
 	if s.Paginator.Prev != "" {
-		fmt.Fprintf(&b, ".paginator-wrap .extend.prev{background-image:url(%s);}", s.Paginator.Prev)
+		fmt.Fprintf(&b, ".paginator-wrap .extend.prev{background-image:url(%s);background-size:1.5rem 1.5rem;background-position:center;background-repeat:no-repeat;}.paginator-wrap .extend.prev svg{visibility:hidden;}", s.Paginator.Prev)
 	}
 	if s.Gradient.Avatar != "" {
-		fmt.Fprintf(&b, ".logo-wrap a.avatar div.bg{background:%s;}", s.Gradient.Avatar)
+		fmt.Fprintf(&b, ".brand-wrap .brand-image--avatar div.bg{background:%s;}", s.Gradient.Avatar)
 	}
 	if !s.AnimatedAvatar.Enabled() {
-		b.WriteString(".logo-wrap a.avatar div.bg{display:none!important;}")
+		b.WriteString(".brand-wrap .brand-image--avatar div.bg{display:none!important;}")
 	} else if s.AnimatedAvatar.Always() {
-		b.WriteString(".logo-wrap a.avatar div.bg{opacity:1!important;animation:spin infinite 4s;animation-timing-function:linear;}")
+		b.WriteString(".brand-wrap .brand-image--avatar div.bg{opacity:1!important;animation:spin infinite 4s;animation-timing-function:linear;}@media (prefers-reduced-motion:reduce){.brand-wrap .brand-image--avatar div.bg{animation:none!important;}}")
 	}
 	// header_prefix：技术文章标题前缀。值为 URL 时注入图标 background-image，否则伪元素 content 符号。
 	for _, h := range []string{"h2", "h3", "h4", "h5"} {
 		if v, ok := s.HeaderPrefix[h]; ok && v != "" {
 			if isURLValue(v) {
-				fmt.Fprintf(&b, ".l_body[type='tech'] article.content %s >a:first-child:before{content:'';display:inline-block;width:1em;height:1em;background:url(%s) center/contain no-repeat;}", h, v)
+				fmt.Fprintf(&b, "body[data-article-style='tech'] article.content %s >a:first-child:before{content:'';display:inline-block;width:1em;height:1em;background:url(%s) center/contain no-repeat;}", h, v)
 			} else {
-				fmt.Fprintf(&b, ".l_body[type='tech'] article.content %s >a:first-child:before{content:'%s';}", h, cssContentEscape(v))
+				fmt.Fprintf(&b, "body[data-article-style='tech'] article.content %s >a:first-child:before{content:'%s';}", h, cssContentEscape(v))
 			}
 		}
 	}
@@ -387,40 +383,37 @@ func (s StyleConfig) InjectCSS() template.CSS {
 	return template.CSS(b.String())
 }
 
-// leftbarCSS 生成 leftbar 背景覆盖。配 background_image 时重新启用图片模糊侧栏（覆盖 head.html 纯色块）；
-// 仅配 background_color_dark 时改容器纯色（全站仅深色模式，无条件生效）。
+// leftbarCSS 生成新版侧栏装饰层覆盖；不改动侧栏内容与抽屉布局。
 func (s StyleConfig) leftbarCSS() string {
 	l := s.Leftbar
 	var b strings.Builder
 	if l.BackgroundImage != "" {
 		blur := firstNonEmpty(l.BlurPx, "100px")
 		opacity := firstNonEmpty(l.BackgroundOpacity, "0.8")
-		// 重新显示 sidebg 并设图片；恢复 head.html 纯色块（Spec Task 2）关掉的 mask 淡出与玻璃高光，
-		// 回到原版图片模糊模式（Spec 50 侧栏背景图验证修复）。
-		fmt.Fprintf(&b, ".l_left .sidebg{display:block;background-image:url(%s);--blur-px:%s;--background-opacity:%s;}", l.BackgroundImage, blur, opacity)
-		b.WriteString(".l_left .leftbar-container{background:transparent;}")
-		b.WriteString(".l_left .leftbar-container >.widgets{mask:linear-gradient(#fff,90%,transparent);-webkit-mask:linear-gradient(#fff,90%,transparent);}")
-		b.WriteString("@media screen and (min-width:667px){.l_left .leftbar-container:before{display:block;}}")
+		// card 外观没有图片装饰的编译期规则，显式配置时补齐该层的定位与滤镜。
+		fmt.Fprintf(&b, ".site-region--leftbar .site-region__decoration{display:block;position:absolute;inset:0;pointer-events:none;border-radius:inherit;background-image:url(%s);background-position:center;background-size:cover;--blur-px:%s;--background-opacity:%s;filter:blur(var(--blur-px)) opacity(var(--background-opacity));}", l.BackgroundImage, blur, opacity)
+		b.WriteString(".site-region--leftbar .site-region__surface.ui-surface{background:transparent;}")
+		b.WriteString(".site-region--leftbar .site-region__viewport{background:transparent;}")
 	} else if l.BackgroundColorDark != "" {
-		fmt.Fprintf(&b, ".l_left .leftbar-container{background:%s;}", l.BackgroundColorDark)
+		fmt.Fprintf(&b, ".site-region--leftbar .site-region__surface.ui-surface{background:%s;}", l.BackgroundColorDark)
 	}
 	return b.String()
 }
 
-// siteCSS 生成全站背景覆盖。仅在配 background_image 时启用（同时移除 head.html 的 siteblur 透明兜底）。
+// siteCSS 生成全站背景覆盖；未配置背景图时保留 head.html 的透明覆盖。
 func (s StyleConfig) siteCSS() string {
 	site := s.Site
 	if site.BackgroundImage == "" {
 		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "body>.sitebg{background-image:url(%s);}", site.BackgroundImage)
+	fmt.Fprintf(&b, "body>.site-background{background-image:url(%s);}", site.BackgroundImage)
 	blurPx := firstNonEmpty(site.BlurPx, "100px")
 	blurSat := firstNonEmpty(site.BlurSat, "300%")
 	blurBg := firstNonEmpty(site.BlurBg, "var(--bg-a75)")
-	// 覆盖 head.html 的 siteblur 透明块，恢复毛玻璃（!important 对齐 main.css @supports 块的优先级）
-	fmt.Fprintf(&b, "body>.sitebg .siteblur{background-color:%s !important;-webkit-backdrop-filter:saturate(%s) blur(%s) !important;backdrop-filter:saturate(%s) blur(%s) !important;}",
-		blurBg, blurSat, blurPx, blurSat, blurPx)
+	// !important 对齐上游 blur-effect 的背景优先级与 head.html 默认覆盖。
+	fmt.Fprintf(&b, "body>.site-background .site-background__blur{--blur-px:%s;--blur-sat:%s;--blur-bg:%s;background-color:var(--blur-bg)!important;-webkit-backdrop-filter:saturate(var(--blur-sat)) blur(var(--blur-px))!important;backdrop-filter:saturate(var(--blur-sat)) blur(var(--blur-px))!important;}",
+		blurPx, blurSat, blurBg)
 	return b.String()
 }
 

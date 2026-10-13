@@ -328,7 +328,7 @@ func TestWikiProjectCardAndHeroTemplate(t *testing.T) {
 	if detail.Code != http.StatusOK {
 		t.Fatalf("wiki detail = %d, want 200", detail.Code)
 	}
-	for _, want := range []string{`class="l_cover wiki wiki-hero"`, `class="wiki-cover-background galaxy"`, `data-text-adaptive="split"`, "项目 Hero", "wiki-cover-terminal", "make dev"} {
+	for _, want := range []string{`class="cover-content wiki wiki-hero"`, `class="wiki-cover-background galaxy has-effect"`, `data-text-adaptive="split"`, "项目 Hero", "wiki-cover-terminal", "make dev"} {
 		if !strings.Contains(detail.Body.String(), want) {
 			t.Errorf("wiki detail missing %q", want)
 		}

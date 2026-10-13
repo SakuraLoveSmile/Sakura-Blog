@@ -8,6 +8,20 @@ const path = require('path')
 const configPath = path.join(__dirname, 'config.json')
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
 
+// 将已有设置注入的变量接到 2.0 编译期配置，未设置时保留原默认值。
+// 新七档圆角优先，历史四档作为下一层 fallback；不改上游源或配置 schema。
+const runtimeVariables = {
+  'appearance.shape.radius.card_large': ['--radius-card-l', '--radius-card'],
+  'appearance.shape.radius.card': ['--radius-card'],
+  'appearance.shape.radius.card_small': ['--radius-card-s', '--radius-block'],
+  'appearance.shape.radius.bar': ['--radius-bar', '--radius-navbar'],
+  'appearance.shape.radius.image_large': ['--radius-image-l', '--radius-image'],
+  'appearance.shape.radius.image': ['--radius-image'],
+  'appearance.shape.radius.image_small': ['--radius-image-s', '--radius-image'],
+  'appearance.gradients.primary_action': ['--gradient-start'],
+  'appearance.gradients.search_bar': ['--gradient-searchbar'],
+}
+
 // 按点路径取值，缺失返回 undefined（复现 Hexo hexo-config 的 falsy 行为）
 function getByPath(obj, keyPath) {
   if (!keyPath || typeof keyPath !== 'string') return undefined
@@ -56,11 +70,14 @@ function toStylusValue(jsVal) {
 }
 
 // hexo-config shim 函数
-// Stellar 中调用形式：hexo-config('style.font-size.body')
+// Stellar 中调用形式：hexo-config('appearance.typography.font_size.root')
 // 参数 param 是 stylus nodes.String，取其 val 属性得到 JS 字符串
 function hexoConfig(param) {
   const keyPath = param && param.val ? param.val : String(param)
-  const jsVal = getByPath(config, keyPath)
+  let jsVal = getByPath(config, keyPath)
+  if (typeof jsVal === 'string' && runtimeVariables[keyPath]) {
+    jsVal = runtimeVariables[keyPath].reduceRight((value, variable) => `var(${variable}, ${value})`, jsVal)
+  }
   return toStylusValue(jsVal)
 }
 

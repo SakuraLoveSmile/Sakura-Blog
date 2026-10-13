@@ -7,7 +7,7 @@
     {{$rss := .Str "rss" "/rss.xml"}}
     {{if $rss}}
     <a class="cap-action" id="rss" title="Subscribe" href="{{$rss}}">
-      {{icon "default:rss"}}
+      <span class="ui-icon">{{icon "default:rss"}}</span>
     </a>
     {{end}}
   </div>

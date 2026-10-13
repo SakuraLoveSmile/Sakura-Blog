@@ -122,3 +122,11 @@
 .search-ai-ask-citations-title { margin-top: 8px; color: var(--text-p3); font-size: 0.75rem; }
 .search-ai-ask-citations { display: grid; gap: 4px; margin-top: 4px; }
 .search-ai-ask-citations a { color: var(--theme); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* AI 问答与搜索结果共享原生 dialog 的有限高度。 */
+.search-dialog .search-ai-ask {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.search-dialog .search-no-result { flex: 1 1 auto; }

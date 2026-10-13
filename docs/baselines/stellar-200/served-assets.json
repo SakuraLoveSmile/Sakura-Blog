@@ -1,0 +1,98 @@
+[
+  {
+    "mode": "dev",
+    "path": "css/main.css",
+    "status": 200,
+    "mime": "text/css; charset=utf-8",
+    "sha256": "532fd0b5e1ded357d43bb7d22e8dcc8b9cfaa7bd1b9ebc00ba3c30dab55ba64b",
+    "matches_source": true
+  },
+  {
+    "mode": "dev",
+    "path": "js/main.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "36ece5ce224f128f1ed0cf540c7a2173257cb1d84ce675fd165beaefb2bd90e4",
+    "matches_source": true
+  },
+  {
+    "mode": "dev",
+    "path": "js/search/local-search.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "169eb408a896d3879c810dfc249530d28e90665a9aba9fc001c59ebf599614c7",
+    "matches_source": true
+  },
+  {
+    "mode": "dev",
+    "path": "js/runtime/index.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "48c49f84d6422a6d39e2a5c0a65e4d598fcfbb5309fa30984634d3bd6f3aaaea",
+    "matches_source": true
+  },
+  {
+    "mode": "dev",
+    "path": "js/runtime/extensions/shell.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "b8b43b526a0a8a4cefe9febc16520fed1b51f72abb6001901c3c9c6e9fdcc5ec",
+    "matches_source": true
+  },
+  {
+    "mode": "dev",
+    "path": "js/runtime/extensions/search.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "c0be3bd970bc62697df01d8b7c71a70f46ab450312da7576d6f4c7c79333c697",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "css/main.css",
+    "status": 200,
+    "mime": "text/css; charset=utf-8",
+    "sha256": "532fd0b5e1ded357d43bb7d22e8dcc8b9cfaa7bd1b9ebc00ba3c30dab55ba64b",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "js/main.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "36ece5ce224f128f1ed0cf540c7a2173257cb1d84ce675fd165beaefb2bd90e4",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "js/search/local-search.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "169eb408a896d3879c810dfc249530d28e90665a9aba9fc001c59ebf599614c7",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "js/runtime/index.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "48c49f84d6422a6d39e2a5c0a65e4d598fcfbb5309fa30984634d3bd6f3aaaea",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "js/runtime/extensions/shell.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "b8b43b526a0a8a4cefe9febc16520fed1b51f72abb6001901c3c9c6e9fdcc5ec",
+    "matches_source": true
+  },
+  {
+    "mode": "embed",
+    "path": "js/runtime/extensions/search.js",
+    "status": 200,
+    "mime": "text/javascript; charset=utf-8",
+    "sha256": "c0be3bd970bc62697df01d8b7c71a70f46ab450312da7576d6f4c7c79333c697",
+    "matches_source": true
+  }
+]

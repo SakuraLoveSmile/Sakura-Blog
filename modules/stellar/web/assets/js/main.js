@@ -159,16 +159,14 @@ const hud = {
 
 // defines
 
-const l_body = document.querySelector('.l_body');
-
-// sidebar：侧栏开关（对齐 Stellar scripts/sidebar.ejs，四个方法全量实现）。
-// rightbar 用于移动端右栏（TOC）开关；toggleTOC 切换 #data-toc 的 collapse class（手风琴）。
+// Stellar 2.0 shell 扩展负责开关与生命周期；保留旧模板/服务的 sidebar 调用入口。
 const sidebar = {
-  leftbar: () => { if (l_body) { l_body.toggleAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
-  rightbar: () => { if (l_body) { l_body.toggleAttribute('rightbar'); l_body.removeAttribute('leftbar'); } },
-  dismiss: () => { if (l_body) { l_body.removeAttribute('leftbar'); l_body.removeAttribute('rightbar'); } },
+  leftbar: () => { window.blogShell?.toggleLeftbar(); },
+  rightbar: () => { window.blogShell?.toggleDrawer('rightbar'); },
+  dismiss: () => { window.blogShell?.dismiss(); },
   toggleTOC: () => { const el = document.querySelector('#data-toc'); if (el) el.classList.toggle('collapse'); },
-}
+};
+window.sidebar = sidebar;
 
 // TOC scroll-spy 共享状态：segs/root 每次 init.toc 刷新，scroll 监听器只注册一次，
 // PJAX 导航后重复 init 不叠加绑定（Stellar 原版依赖 jQuery，本 demo 未加载，原生重写）。
@@ -230,11 +228,11 @@ const init = {
     activeTOC(); // 初始高亮
   },
   navbarPin: () => {
-    // 1.41：列表页 navbar top 背景条未吸顶为卡片样式、吸顶恢复玻璃（.navbar-blur.pinned）。
+    // Stellar 2.0：列表导航按实际吸顶位置同步 is-pinned 状态。
     // 吸顶判定直接测 navbar 实际视口位置而非 scrollY 推算：移动端浏览器顶栏伸缩会改变
     // scrollY（展开顶栏时 scrollY 减小），即使 navbar 仍吸顶也可能跌破阈值导致玻璃误消失。
     // 无轮播页（wiki）顶部即吸顶，需滚动达阈值才切玻璃。
-    const navbars = document.querySelectorAll('.navbar.top');
+    const navbars = document.querySelectorAll('.listing-nav');
     if (navbars.length === 0) {
       return;
     }
@@ -245,13 +243,13 @@ const init = {
       const scrolled = window.scrollY >= SCROLL_THRESHOLD;
       states.forEach((state) => {
         const top = state.navbar.getBoundingClientRect().top;
-        state.bar.classList.toggle('pinned', scrolled && top <= state.stickyTop + TOLERANCE);
+        state.bar.classList.toggle('is-pinned', scrolled && top <= state.stickyTop + TOLERANCE);
       });
     }
     function measure() {
       states = [];
       navbars.forEach((navbar) => {
-        const bar = navbar.querySelector('.navbar-blur');
+        const bar = navbar.querySelector('.listing-nav__surface');
         if (bar == null) {
           return;
         }
@@ -286,7 +284,7 @@ const init = {
     tocState.sidebarBound = true;
     document.addEventListener('click', (e) => {
       const link = e.target.closest && e.target.closest('#data-toc a.toc-link');
-      if (link) window.sidebar.dismiss();
+      if (link) sidebar.dismiss();
     });
   },
   wikiEmptyCard: () => {

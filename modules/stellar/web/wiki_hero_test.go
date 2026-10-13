@@ -33,7 +33,7 @@ func TestWikiHeroAnimationMarkupAndEscaping(t *testing.T) {
 		t.Fatalf("render wiki hero: %v", err)
 	}
 	for _, want := range []string{
-		`class="wiki-cover-background galaxy image"`,
+		`class="wiki-cover-background galaxy has-effect image"`,
 		`data-text-adaptive="split"`,
 		`style="--cover-url:url('https://cdn.example/cover.jpg')"`,
 	} {

@@ -1,8 +1,8 @@
 // local-search.js: 站内搜索，自建架构（Spec 25 FTS5 服务端优先 + /search.json 本地降级）
-// 融合上游 1.41 搜索增强：懒加载与缓存 TTL（search.local_search.lazy_load/cache_ttl）、
+// 保留 Go 站内搜索增强：懒加载与缓存 TTL（search.local_search.lazy_load/cache_ttl）、
 // 结果按内容标题章节拆分、点击直达章节锚点（href 带 ?kw= 与 #anchor，目标页
 // highlight.js 按 kw 高亮关键词）。
-// 入口：focus 触发（懒加载模式下此时才拉索引）——整页刷新模型下搜索框随文档一次性绑定。
+// 入口：focus 触发；2.0 runtime 负责挂载/卸载，重新挂载不会叠加事件。
 // 绑定标记挂在 DOM 节点上（_searchInitialized/_localSearchBound/_searchObserved），重复 init 不叠加。
 
 var searchCache = null;          // 当前可用的搜索数据（数组）
@@ -107,10 +107,18 @@ function fetchSearchData(path) {
   return searchFetchPromise;
 }
 
+function bindLocalSearch(input, target, type, handler) {
+  target.addEventListener(type, handler);
+  input._searchCleanups = input._searchCleanups || [];
+  input._searchCleanups.push(function() { target.removeEventListener(type, handler); });
+}
+
 var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
   var $input = document.getElementById(searchId);
   if (!$input || $input._searchInitialized === true) return;
   if ($input._searchInitialized === 'pending') return; // 数据加载中，等待完成后初始化
+  var lifecycle = $input._searchLifecycle;
+  function isActive() { return $input._searchLifecycle === lifecycle; }
 
   function getAllCombinations(keywords) {
     const result = [];
@@ -160,13 +168,14 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
   }
 
   function initSearch() {
-    if (!$input) return;
+    if (!$input || !isActive()) return;
     if ($input._searchInitialized === true) return; // 防止重复绑定
     $input._searchInitialized = true;
 
     var $resultContent = document.getElementById(contentId);
     var $wrapper = document.getElementById(wrapperId);
     var searchSeq = 0; // 丢弃过时响应，避免乱序覆盖
+    $input._searchCleanups.push(function() { searchSeq += 1; });
     var activeType = ''; // 结果类型 tab：''=全部 / post / page / moment
     var lastItems = []; // 最近一次服务端响应条目，tab 切换时客户端过滤（无需重新请求）
 
@@ -203,10 +212,14 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
 
     // 服务端搜索结果渲染：类型 tab 栏 + 结果列表（snippet 已含 .search-keyword 高亮）。
     // 全部视图按类型分组（组标题 文章/页面/瞬间），单类型视图平铺；tab 点击走客户端过滤。
-    // 降级规则：FTS 结果非空但全部被 data-filter 滤掉（当前项目无命中）时，
-    // 回退本地搜索（/search.json 索引已含 wiki 文档，同样受 filter 限定）。
-    function renderServerResults(items, value, kw) {
+    // Go FTS 不包含 Wiki 文档。限定项目时，FTS 空或本项目无命中才转 JSON 索引；
+    // 普通搜索的空结果仍保持为空，类型 tab 的空结果也不扩大搜索范围。
+    function renderServerResults(items, value, kw, seq) {
       lastItems = items;
+      if (filter && !items.some(function(item) { return item.path.includes(filter); })) {
+        runLocalSearch(value, seq);
+        return;
+      }
       renderTabsAndList(items, value, kw);
     }
 
@@ -258,30 +271,43 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       }
       if (ul.children.length) {
         $resultContent.appendChild(ul);
-      } else if (filter) {
-        localSearch(value);
       }
     }
 
-    // 服务端搜索请求（失败一次后本会话降级本地）
+    // JSON 降级与后台刷新共享一个索引请求；等待完成后再检索，不能先用空缓存。
+    function runLocalSearch(value, seq) {
+      if (!isActive() || seq !== searchSeq) return;
+      if (searchCache && !searchFetchPromise) { localSearch(value); return; }
+      (searchFetchPromise || fetchSearchData(path)).then(function() {
+        if (isActive() && seq === searchSeq) localSearch(value);
+      }).catch(function() {
+        if (!isActive() || seq !== searchSeq) return;
+        // 后台刷新失败不丢弃已有可用索引；仍按当前词与项目过滤检索。
+        if (searchCache) localSearch(value);
+        else $wrapper.setAttribute('searching', 'false');
+      });
+    }
+
+    // 服务端搜索请求（失败一次后本会话降级本地，不增加重试）。
     function serverSearch(value) {
+      var seq = ++searchSeq;
       if (!serverSearchOK) {
-        localSearch(value);
+        runLocalSearch(value, seq);
         return;
       }
-      var seq = ++searchSeq;
       fetch('/api/search?q=' + encodeURIComponent(value) + '&limit=20')
         .then(function(res) {
           if (!res.ok) throw new Error('search api ' + res.status);
           return res.json();
         })
         .then(function(json) {
-          if (seq !== searchSeq) return; // 过时响应丢弃
-          renderServerResults(json.items || [], value, value.trim().split(/\s+/)[0] || '');
+          if (!isActive() || seq !== searchSeq) return; // 卸载/过时响应丢弃
+          renderServerResults(json.items || [], value, value.trim().split(/\s+/)[0] || '', seq);
         })
         .catch(function() {
+          if (!isActive() || seq !== searchSeq) return;
           serverSearchOK = false; // 降级后本会话内不再请求服务端
-          localSearch(value);
+          runLocalSearch(value, seq);
         });
     }
 
@@ -435,8 +461,10 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       return li;
     }
 
-    $input.addEventListener("input", function() {
+    bindLocalSearch($input, $input, "input", function() {
       var value = this.value.trim();
+      searchSeq += 1;
+      unmountResultCards($resultContent);
       $resultContent.innerHTML = "";
       if (value.length <= 0) {
         $wrapper.setAttribute('searching', 'false');
@@ -446,7 +474,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       serverSearch(value);
     });
 
-    $input.addEventListener("keydown", function(e) {
+    bindLocalSearch($input, $input, "keydown", function(e) {
       if (e.key == 'Enter') {
         e.preventDefault();
       }
@@ -480,11 +508,12 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
   $input._searchInitialized = 'pending';
   fetchSearchData(path)
     .then(function() {
-      if ($input._searchInitialized === 'pending' && searchCache) {
+      if (isActive() && $input._searchInitialized === 'pending' && searchCache) {
         initSearch();
       }
     })
     .catch(function() {
+      if (!isActive()) return;
       if ($input._searchInitialized === 'pending') {
         $input._searchInitialized = undefined; // 允许下次聚焦重试
       }
@@ -511,7 +540,9 @@ function initLocalSearch() {
 
   if (!inputArea._localSearchBound) {
     inputArea._localSearchBound = true;
-    inputArea.addEventListener('focus', function() {
+    inputArea._searchLifecycle = (inputArea._searchLifecycle || 0) + 1;
+    inputArea._searchCleanups = [];
+    bindLocalSearch(inputArea, inputArea, 'focus', function() {
       var path = getSearchPath();
       const filter = inputArea.getAttribute('data-filter') || '';
 
@@ -536,7 +567,7 @@ function initLocalSearch() {
         fetchSearchData(path).catch(function() {});
       }
     });
-    inputArea.addEventListener('keydown', function(e) {
+    bindLocalSearch(inputArea, inputArea, 'keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
       }
@@ -552,7 +583,27 @@ function initLocalSearch() {
       if (wrapper) wrapper.classList.toggle('noresult', !hasResults);
     });
     observer.observe(resultArea, { childList: true, subtree: true });
+    inputArea._searchCleanups.push(function() {
+      observer.disconnect();
+      resultArea._searchObserved = false;
+    });
   }
 }
 
-document.addEventListener('DOMContentLoaded', initLocalSearch);
+window.blogLocalSearch = {
+  mount: initLocalSearch,
+  unmount: function() {
+    var input = document.getElementById('search-input');
+    if (!input) return;
+    input._searchLifecycle = (input._searchLifecycle || 0) + 1;
+    (input._searchCleanups || []).reverse().forEach(function(cleanup) { cleanup(); });
+    input._searchCleanups = [];
+    input._localSearchBound = false;
+    input._searchInitialized = undefined;
+  }
+};
+function startLocalSearch() {
+  if (!document.getElementById('stellar-runtime-config')) initLocalSearch();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startLocalSearch, { once: true });
+else startLocalSearch();
