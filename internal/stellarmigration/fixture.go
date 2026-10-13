@@ -98,6 +98,11 @@ func buildMigrationFixture(ctx context.Context, c Candidate, approval MigrationA
 	if _, err = tx.ExecContext(ctx, "PRAGMA defer_foreign_keys=ON"); err != nil {
 		return out, err
 	}
+	if hook != nil {
+		if err = hook("before-source", dir, tx); err != nil {
+			return out, err
+		}
+	}
 	if err = restoreSnapshotTables(ctx, tx, c.Source, nb); err != nil {
 		return out, err
 	}

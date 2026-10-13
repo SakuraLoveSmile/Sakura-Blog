@@ -35,7 +35,47 @@ func CandidateDigest(c Candidate) string             { return digest(c) }
 func resolutionKey(source, code, path string) string { return source + "\x00" + code + "\x00" + path }
 
 func resolveMigration(c Candidate, approval MigrationApproval, decisions NotebookStructureDecisions) (Candidate, NotebookStructurePreview, []AppliedResolution, error) {
-	if !approval.Approved || approval.SourceDigest != c.Source.Digest || approval.CandidateDigest != CandidateDigest(c) {
+	return resolveReviewedMigration(c, approval, decisions, false)
+}
+
+type ReviewedMigrationPreview struct {
+	Candidate   Candidate                `json:"candidate"`
+	Notebook    NotebookStructurePreview `json:"notebook"`
+	Resolutions []AppliedResolution      `json:"resolutions"`
+	BodyDigests map[string]string        `json:"body_digests"`
+}
+
+// PreviewReviewedSelections仅生成私密待审查候选，不创建DB/root，不授予正文或最终执行批准。
+func PreviewReviewedSelections(c Candidate, resolutions []MigrationResolution, decisions NotebookStructureDecisions) (ReviewedMigrationPreview, error) {
+	a := MigrationApproval{SourceDigest: c.Source.Digest, CandidateDigest: CandidateDigest(c), Resolutions: resolutions}
+	resolved, nb, log, err := resolveReviewedMigration(c, a, decisions, true)
+	if err != nil {
+		return ReviewedMigrationPreview{}, err
+	}
+	bodies := map[string]string{}
+	for _, p := range resolved.Records {
+		original := ""
+		if p.Table == "" {
+			_, original, err = readLegacyDocument(c.Source.Files[p.Source])
+			if err != nil {
+				return ReviewedMigrationPreview{}, err
+			}
+		} else {
+			for _, row := range c.Source.Tables[p.Table].Rows {
+				if stringValue(row["id"]) == p.ID {
+					original = body(row)
+				}
+			}
+		}
+		if original != p.Markdown {
+			bodies[p.Source] = bytesDigest([]byte(p.Markdown))
+		}
+	}
+	return ReviewedMigrationPreview{Candidate: resolved, Notebook: nb, Resolutions: log, BodyDigests: bodies}, nil
+}
+
+func resolveReviewedMigration(c Candidate, approval MigrationApproval, decisions NotebookStructureDecisions, previewOnly bool) (Candidate, NotebookStructurePreview, []AppliedResolution, error) {
+	if (!previewOnly && !approval.Approved) || approval.SourceDigest != c.Source.Digest || approval.CandidateDigest != CandidateDigest(c) {
 		return Candidate{}, NotebookStructurePreview{}, nil, fmt.Errorf("migration candidate/source approval missing or changed")
 	}
 	if c.Source.FormatVersion != SnapshotFormatVersion {
@@ -87,7 +127,7 @@ func resolveMigration(c Candidate, approval MigrationApproval, decisions Noteboo
 		log = append(log, AppliedResolution{Original: clone(*d), Decision: r})
 		d.Blocking = false
 		d.Severity = "info"
-		d.Message += "；隔离执行证明已应用绑定候选的具名决议，原诊断保留于resolution记录"
+		d.Message += "；待执行候选已应用绑定来源的具名选择，原诊断保留于resolution记录；不代表最终执行批准"
 		used[key] = true
 		return nil
 	}
@@ -162,7 +202,7 @@ func resolveMigration(c Candidate, approval MigrationApproval, decisions Noteboo
 				}
 			}
 		}
-		if original != p.Markdown && approval.BodyDigests[p.Source] != bytesDigest([]byte(p.Markdown)) {
+		if !previewOnly && original != p.Markdown && approval.BodyDigests[p.Source] != bytesDigest([]byte(p.Markdown)) {
 			return Candidate{}, nb, nil, fmt.Errorf("changed body needs explicit digest approval: %s", p.Source)
 		}
 	}
