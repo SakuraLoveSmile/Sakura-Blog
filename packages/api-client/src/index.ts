@@ -8,6 +8,7 @@ export type * from "./generated";
 export * from "./api/auth";
 export * from "./api/contracts";
 export * from "./api/content";
+export * from "./api/notebooks";
 export * from "./api/dashboard";
 export * from "./api/editor";
 export * from "./api/links";

@@ -20,6 +20,7 @@ const notesDDL = `CREATE TABLE IF NOT EXISTS notes (
 	content_html TEXT NOT NULL DEFAULT '',
 	status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published')),
 	tags_json TEXT NOT NULL DEFAULT '[]',
+	author_id INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	stellar_version INTEGER NOT NULL DEFAULT 0,
@@ -40,6 +41,7 @@ type Note struct {
 	ContentHTML    string    `json:"content_html"`
 	Status         string    `json:"status"`
 	Tags           []string  `json:"tags"`
+	AuthorID       int64     `json:"author_id"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	StellarVersion int       `json:"stellar_version"`
@@ -68,7 +70,7 @@ func (p *Note) ValidateStellar() (stellarv2.Result, error) {
 
 func (p *Note) TableName() string { return "notes" }
 func (p *Note) Columns() []string {
-	return []string{"id", "notebook_id", "slug", "title", "content_md", "content_html", "status", "tags_json", "created_at", "updated_at", "stellar_version", "stellar_config", "blog_extensions"}
+	return []string{"id", "notebook_id", "slug", "title", "content_md", "content_html", "status", "tags_json", "author_id", "created_at", "updated_at", "stellar_version", "stellar_config", "blog_extensions"}
 }
 func (p *Note) Values() []any {
 	tags := p.Tags
@@ -76,12 +78,12 @@ func (p *Note) Values() []any {
 		tags = []string{}
 	}
 	raw, _ := json.Marshal(tags)
-	return []any{p.NotebookID, p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status, string(raw), p.CreatedAt, p.UpdatedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions}
+	return []any{p.NotebookID, p.Slug, p.Title, p.ContentMD, p.ContentHTML, p.Status, string(raw), p.AuthorID, p.CreatedAt, p.UpdatedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions}
 }
 func (p *Note) SetID(id int64) { p.ID = id }
 func (p *Note) ScanRow(row rowScanner) error {
 	var tags string
-	if err := row.Scan(&p.ID, &p.NotebookID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &tags, &p.CreatedAt, &p.UpdatedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions); err != nil {
+	if err := row.Scan(&p.ID, &p.NotebookID, &p.Slug, &p.Title, &p.ContentMD, &p.ContentHTML, &p.Status, &tags, &p.AuthorID, &p.CreatedAt, &p.UpdatedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions); err != nil {
 		return err
 	}
 	if err := json.Unmarshal([]byte(tags), &p.Tags); err != nil {
@@ -94,11 +96,14 @@ func (s *Store) EnsureNotesTable() error {
 	if err := s.EnsureNotebooksTable(); err != nil {
 		return err
 	}
-	return s.ensureTable("notes")
+	if err := s.ensureTable("notes"); err != nil {
+		return err
+	}
+	return s.ensureNotebookOwnership("notes")
 }
 
 func validateNoteSource(p *Note) error {
-	if p == nil {
+	if p == nil || p.AuthorID < 0 {
 		return ErrNoteInvalid
 	}
 	if id, err := normalizeNotebookID(p.NotebookID); err != nil || id != p.NotebookID {

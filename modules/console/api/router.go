@@ -193,8 +193,10 @@ func mount(r *gin.Engine, d MountDeps) (*Handler, error) {
 		name string
 		fn   func() error
 	}{
-		{"users", st.EnsureUsersTable},                      // 多用户/读者注册
-		{"post_authors", st.EnsurePostAuthorsTable},         // 文章 ownership（users.id）
+		{"users", st.EnsureUsersTable},              // 多用户/读者注册
+		{"post_authors", st.EnsurePostAuthorsTable}, // 文章 ownership（users.id）
+		{"notebooks", st.EnsureNotebooksTable},
+		{"notes", st.EnsureNotesTable},
 		{"ratings", st.EnsureRatingsTable},                  // 评分数据服务（Spec 20）
 		{"votes", st.EnsureVotesTable},                      // 投票数据服务（Spec 30）
 		{"revisions", st.EnsureRevisionsTable},              // 文章版本历史（Spec 22）
@@ -397,6 +399,18 @@ func (h *Handler) register(r *gin.Engine) {
 		author.POST("/topics", h.createTopic)
 		author.PUT("/topics/:id", h.updateTopic)
 		author.DELETE("/topics/:id", h.deleteTopic)
+		author.GET("/notebooks", h.listNotebooks)
+		author.POST("/notebooks", h.createNotebook)
+		author.GET("/notebooks/:notebook", h.getNotebook)
+		author.PUT("/notebooks/:notebook", h.updateNotebook)
+		author.DELETE("/notebooks/:notebook", h.deleteNotebook)
+		author.GET("/notebooks/:notebook/notes", h.listNotebookNotes)
+		author.POST("/notebooks/:notebook/notes", h.createNotebookNote)
+		author.GET("/notebooks/:notebook/notes/:id", h.getNotebookNote)
+		author.PUT("/notebooks/:notebook/notes/:id", h.updateNotebookNote)
+		author.DELETE("/notebooks/:notebook/notes/:id", h.deleteNotebookNote)
+		author.POST("/notebooks/:notebook/notes/:id/publish", h.publishNotebookNote)
+		author.PUT("/notebooks/:notebook/notes/:id/draft", h.draftNotebookNote)
 
 		// 瞬间模块 API：模块停用时由 manifest 对齐的 Gate 返回 403。
 		momentRoutes := author

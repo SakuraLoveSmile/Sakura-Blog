@@ -100,6 +100,75 @@ export interface ModuleToggleResponse {
 }
 
 //////////
+// source: notebook.go
+
+export interface NotebookRequest {
+  id?: string;
+  stellar_version?: number /* int */;
+  stellar_config?: string;
+  blog_extensions?: string;
+}
+export interface NotebookResponse {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  cover: string;
+  sort: number /* int */;
+  author_id: number /* int64 */;
+  created_at: string;
+  updated_at: string;
+  stellar_version: number /* int */;
+  stellar_config: string;
+  blog_extensions: string;
+}
+export interface NotebookListResponse {
+  items: NotebookResponse[];
+  total: number /* int */;
+  page: number /* int */;
+  size: number /* int */;
+}
+export interface NotebookWriteResponse {
+  ok: boolean;
+}
+
+//////////
+// source: notebook_note.go
+
+export interface NotebookNoteRequest {
+  notebook_id?: string;
+  slug?: string;
+  content_md?: string;
+  status?: string;
+  tags?: string[];
+  stellar_version?: number /* int */;
+  stellar_config?: string;
+  blog_extensions?: string;
+}
+export interface NotebookNoteResponse {
+  id: number /* int64 */;
+  notebook_id: string;
+  slug: string;
+  title: string;
+  content_md: string;
+  content_html: string;
+  status: string;
+  tags: string[];
+  author_id: number /* int64 */;
+  created_at: string;
+  updated_at: string;
+  stellar_version: number /* int */;
+  stellar_config: string;
+  blog_extensions: string;
+}
+export interface NotebookNoteListResponse {
+  items: NotebookNoteResponse[];
+  total: number /* int */;
+  page: number /* int */;
+  size: number /* int */;
+}
+
+//////////
 // source: page.go
 
 /**

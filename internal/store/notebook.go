@@ -17,6 +17,7 @@ const notebooksDDL = `CREATE TABLE IF NOT EXISTS notebooks (
 	icon TEXT NOT NULL DEFAULT '',
 	cover TEXT NOT NULL DEFAULT '',
 	sort INTEGER NOT NULL DEFAULT 0,
+	author_id INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	stellar_version INTEGER NOT NULL DEFAULT 0,
@@ -32,6 +33,7 @@ type Notebook struct {
 	Icon           string    `json:"icon"`
 	Cover          string    `json:"cover"`
 	Sort           int       `json:"sort"`
+	AuthorID       int64     `json:"author_id"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	StellarVersion int       `json:"stellar_version"`
@@ -63,13 +65,18 @@ func normalizeNotebookID(id string) (string, error) {
 	return id, nil
 }
 
-func (s *Store) EnsureNotebooksTable() error { return s.ensureTable("notebooks") }
+func (s *Store) EnsureNotebooksTable() error {
+	if err := s.ensureTable("notebooks"); err != nil {
+		return err
+	}
+	return s.ensureNotebookOwnership("notebooks")
+}
 
-const notebookColumns = `id,name,description,icon,cover,sort,created_at,updated_at,stellar_version,stellar_config,blog_extensions`
+const notebookColumns = `id,name,description,icon,cover,sort,author_id,created_at,updated_at,stellar_version,stellar_config,blog_extensions`
 
 func scanNotebook(row rowScanner) (*Notebook, error) {
 	p := &Notebook{}
-	if err := row.Scan(&p.ID, &p.Name, &p.Description, &p.Icon, &p.Cover, &p.Sort, &p.CreatedAt, &p.UpdatedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions); err != nil {
+	if err := row.Scan(&p.ID, &p.Name, &p.Description, &p.Icon, &p.Cover, &p.Sort, &p.AuthorID, &p.CreatedAt, &p.UpdatedAt, &p.StellarVersion, &p.StellarConfig, &p.BlogExtensions); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -104,7 +111,7 @@ func (s *Store) ListNotebooks() ([]*Notebook, error) {
 }
 
 func (s *Store) CreateNotebook(p *Notebook) error {
-	if p == nil {
+	if p == nil || p.AuthorID < 0 {
 		return ErrNotebookInvalid
 	}
 	id, err := normalizeNotebookID(p.ID)
@@ -120,7 +127,7 @@ func (s *Store) CreateNotebook(p *Notebook) error {
 		p.CreatedAt = now
 	}
 	p.UpdatedAt = now
-	_, err = s.db.Exec(`INSERT INTO notebooks (`+notebookColumns+`) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, p.ID, p.Name, p.Description, p.Icon, p.Cover, p.Sort, p.CreatedAt, p.UpdatedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions)
+	_, err = s.db.Exec(`INSERT INTO notebooks (`+notebookColumns+`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, p.ID, p.Name, p.Description, p.Icon, p.Cover, p.Sort, p.AuthorID, p.CreatedAt, p.UpdatedAt, p.StellarVersion, p.StellarConfig, p.BlogExtensions)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return ErrNotebookConflict
@@ -131,7 +138,7 @@ func (s *Store) CreateNotebook(p *Notebook) error {
 }
 
 func (s *Store) UpdateNotebook(id string, p *Notebook) error {
-	if p == nil || (p.ID != "" && p.ID != id) {
+	if p == nil || p.AuthorID < 0 || (p.ID != "" && p.ID != id) {
 		return ErrNotebookInvalid
 	}
 	if _, err := normalizeNotebookID(id); err != nil {
@@ -142,7 +149,7 @@ func (s *Store) UpdateNotebook(id string, p *Notebook) error {
 		return err
 	}
 	now := time.Now().UTC()
-	result, err := s.db.Exec(`UPDATE notebooks SET name=?,description=?,icon=?,cover=?,sort=?,updated_at=?,stellar_version=?,stellar_config=?,blog_extensions=? WHERE id=? AND (stellar_version=0 OR stellar_version=?)`, p.Name, p.Description, p.Icon, p.Cover, p.Sort, now, p.StellarVersion, p.StellarConfig, p.BlogExtensions, id, p.StellarVersion)
+	result, err := s.db.Exec(`UPDATE notebooks SET name=?,description=?,icon=?,cover=?,sort=?,author_id=?,updated_at=?,stellar_version=?,stellar_config=?,blog_extensions=? WHERE id=? AND (stellar_version=0 OR stellar_version=?)`, p.Name, p.Description, p.Icon, p.Cover, p.Sort, p.AuthorID, now, p.StellarVersion, p.StellarConfig, p.BlogExtensions, id, p.StellarVersion)
 	if err != nil {
 		return err
 	}

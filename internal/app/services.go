@@ -145,6 +145,12 @@ func Bootstrap(options Options) (*Services, error) {
 	if err := st.EnsureTopicsTable(); err != nil {
 		return fail(fmt.Errorf("ensure topics table: %w", err))
 	}
+	if err := st.EnsureNotebooksTable(); err != nil {
+		return fail(fmt.Errorf("ensure notebooks table: %w", err))
+	}
+	if err := st.EnsureNotesTable(); err != nil {
+		return fail(fmt.Errorf("ensure notes table: %w", err))
+	}
 	pluginRuntime := plugin.NewRuntime()
 	if err := pluginRuntime.LoadDir(filepath.Join(appConfig.Root, "plugins")); err != nil {
 		return fail(fmt.Errorf("load script plugins: %w", err))
