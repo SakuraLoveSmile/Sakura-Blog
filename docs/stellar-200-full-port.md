@@ -179,6 +179,9 @@
 - T1：最新605d1186正式单二进制fresh两次只读preview成功；Source/Root/selectedCandidate/Review及七正文摘要全不变。72项前后指纹仅SHM mtime变化；Approved=false/BodyDigests空/offline全false，未演练或Apply。完整公开报告已追加最新来源复核。
 - T7：本轮 make css 与 css-drift-check 成功，20份生成物一致；共享主题仍 unborn HEAD/未跟踪源文件，固定 commit object 可用，未切换/重置。新增证据通过独立只读敏感内容审查；历史扩展名 .png 实际JPEG的字节保留，见 `resume-evidence-review.json`。
 
+- T4/T7：5b92b246 的三张置顶轮播经真实 Leftbar 链接离开，pagehide persisted=false 时移除11个事件监听、abort颜色工作、暂停轮播并清空refresh回调；这是整页卸载证据，不冒充partial disposal。首次移动slide定位器点击未改变URL的采样保留，见`resume-pin-current-lifecycle.json`。
+- T7：74ef648 组合的普通hook与feature `make merge-check` 全部通过；该门禁实际合入根dev，再跑dev组合 `make test`，Console261/Stellar202、fail0/skip0，Go vet/Staticcheck/全部Go测试及模块/部署来源检查通过。根dev真实make build也已通过。四服务改用该dev二进制，但-root仍是原四fixture；Console入口/六资产、main/provider/runtime和当前嵌入WASM字节匹配。独立lsof检查四DB/WAL/SHM与16把distinct canonical guard锁，未打开真实根DB；当前dev浏览器实际Galaxy/cover/正文及runtime query71bc6f7a正确。见`resume-runtime-dev-combination.json`、`resume-dev-browser-current.json`；此记录绑定74ef648产物，后续纯文档提交不替代或篡改这次来源。
+
 | 编号 | 正式链路与可核验证据 | 仍需保留的边界 |
 | --- | --- | --- |
 | T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；迁移报告绑定全部来源 | 七条正文、完整Root/ReviewDigest及真实迁移操作仍未批准；不因选值确认自动Apply |
@@ -187,7 +190,7 @@
 | T4 | partial成功/取消/超时/失败回退、真实SDK合成Algolia、六评论合成SDK及访客身份 | 真实Algolia/六评论账号、原生BFCache未实测；pin分页整页导航不当partial卸载证明 |
 | T5 | 54标签288参数oracle；可视化新增语法往返；动态服务、媒体、Gist隔离生命周期 | 外部Markdown受fake-IP/保留地址保护拒绝，成功路径仍未实测；不降低网络保护 |
 | T6 | 实际单二进制CLI与嵌入librsvg/字体；fetch边界、缓存/事件/取消与原图保留 | PNG/GIF/AVIF库内部仅阶段边界取消，不声称即时抢占；真实迁移需批准 |
-| T7 | 组合源码、真实CSS/build、服务资产hash及前台证据各自绑定 | 最终feature/dev门禁与新产物绑定结果在实际完成后追加；用户确认前不标已验收 |
+| T7 | 组合源码、真实CSS/build、服务资产hash及前台证据各自绑定 | 74ef648 feature/dev门禁与真实build/hash已完成；外部账号、原生BFCache、真实迁移和用户完整体验仍未关闭 |
 
 ### 历史起始阶段（不表示当前实现状态）
 
