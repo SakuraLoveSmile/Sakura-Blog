@@ -108,6 +108,68 @@ const searchCloseFallbackDelay = 260;
 let searchCloseTimer = null;
 let searchCloseListener = null;
 let shellInputModality = 'pointer';
+// 抽屉暂时接管交互时记录原状态；关闭、断点切换及 pagehide 都必须完整归还。
+const shellOriginalStates = new Map();
+const drawerIsolationStates = new Map();
+let drawerFocusFallback = null;
+function shellElementState(element) {
+  return { inert: element.inert, hidden: element.getAttribute('aria-hidden'), tabindex: element.getAttribute('tabindex') };
+}
+function restoreShellElement(element, state) {
+  element.inert = state.inert;
+  for (const [attribute, value] of [['aria-hidden', state.hidden], ['tabindex', state.tabindex]]) {
+    if (value === null) element.removeAttribute(attribute);
+    else element.setAttribute(attribute, value);
+  }
+}
+function rememberShellElement(element) {
+  if (element && !shellOriginalStates.has(element)) shellOriginalStates.set(element, shellElementState(element));
+}
+function restoreDrawerIsolation() {
+  for (const [element, state] of drawerIsolationStates) restoreShellElement(element, state);
+  drawerIsolationStates.clear();
+}
+function restoreDrawerFocusFallback() {
+  if (!drawerFocusFallback) return;
+  const { element, tabindex } = drawerFocusFallback;
+  if (tabindex === null) element.removeAttribute('tabindex');
+  else element.setAttribute('tabindex', tabindex);
+  drawerFocusFallback = null;
+}
+function isolateDrawerBackground(region) {
+  const panel = regionElement(region);
+  if (!panel) return;
+  const targets = [document.getElementById('main'), regionElement('topbar'), document.getElementById('site-cover'),
+    regionElement(region === 'leftbar' ? 'rightbar' : 'leftbar'), siteShell.querySelector('.site-dock')];
+  for (const element of targets) {
+    if (!element || element === panel) continue;
+    drawerIsolationStates.set(element, shellElementState(element));
+    element.inert = true;
+    element.setAttribute('aria-hidden', 'true');
+  }
+  siteShell.querySelectorAll('.site-scrim[data-shell-action="dismiss-drawer"]').forEach(element => {
+    drawerIsolationStates.set(element, shellElementState(element));
+    element.setAttribute('tabindex', '0');
+  });
+}
+function drawerFocusableElements() {
+  const panel = regionElement(siteShell?.dataset.drawer);
+  if (!panel) return [];
+  return [...panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+    ...siteShell.querySelectorAll('.site-scrim[data-shell-action="dismiss-drawer"]')]
+    .filter(element => !element.closest('[hidden], [inert]') && element.getClientRects().length > 0 && element.getAttribute('tabindex') !== '-1');
+}
+function trapDrawerTab(event) {
+  if (event.key !== 'Tab' || !siteShell?.dataset.drawer || searchDialogElement()?.open) return;
+  const elements = drawerFocusableElements();
+  if (!elements.length) { event.preventDefault(); focusRegion(siteShell.dataset.drawer); return; }
+  const index = elements.indexOf(document.activeElement);
+  if ((event.shiftKey && index <= 0) || (!event.shiftKey && (index < 0 || index === elements.length - 1))) {
+    event.preventDefault();
+    elements[event.shiftKey ? elements.length - 1 : 0].focus();
+  }
+}
+
 
 function regionElement(region) {
   return document.getElementById(region + '-region');
@@ -127,6 +189,7 @@ function regionHiddenWhenClosed(region) {
 function setRegionInteractive(region, interactive) {
   const element = regionElement(region);
   if (!element) return;
+  rememberShellElement(element);
   const hidden = regionHiddenWhenClosed(region);
   element.inert = hidden && !interactive;
   if (hidden && !interactive) {
@@ -153,6 +216,7 @@ function syncLeftbarControls() {
 function syncRightbarFocus() {
   const rightbar = regionElement('rightbar');
   if (!rightbar) return;
+  rememberShellElement(rightbar);
   const compact = !regionUsesDrawer('rightbar') && regionElement('leftbar')
     && document.documentElement.dataset.leftbarState === 'collapsed';
   if (compact) rightbar.setAttribute('tabindex', '0');
@@ -160,6 +224,9 @@ function syncRightbarFocus() {
 }
 
 function syncDrawerControls() {
+  restoreDrawerIsolation();
+  // partial navigation 替换的旧区域不再需要持有初始状态。
+  for (const element of shellOriginalStates.keys()) if (!element.isConnected) shellOriginalStates.delete(element);
   syncRightbarFocus();
   const openRegion = siteShell?.dataset.drawer || '';
   ['leftbar', 'rightbar'].forEach(function (region) {
@@ -170,11 +237,21 @@ function syncDrawerControls() {
     });
     setRegionInteractive(region, open || !regionUsesDrawer(region));
   });
+  if (openRegion && regionUsesDrawer(openRegion)) isolateDrawerBackground(openRegion);
 }
 
 function focusRegion(region) {
   const element = regionElement(region);
-  element?.querySelector('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')?.focus();
+  if (!element) return;
+  const first = [...element.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .find(target => !target.closest('[hidden], [inert]') && target.getClientRects().length > 0);
+  if (first) first.focus();
+  else {
+    if (!drawerFocusFallback) drawerFocusFallback = { element, tabindex: element.getAttribute('tabindex') };
+    rememberShellElement(element);
+    element.setAttribute('tabindex', '-1');
+    element.focus();
+  }
 }
 
 function dismissDrawer(options) {
@@ -182,6 +259,7 @@ function dismissDrawer(options) {
   const restoreFocus = options?.restoreFocus !== false;
   const wasOpen = !!siteShell.dataset.drawer;
   delete siteShell.dataset.drawer;
+  restoreDrawerFocusFallback();
   syncDrawerControls();
   syncLeftbarControls();
   if (wasOpen && restoreFocus && shellDrawerTrigger?.focus) shellDrawerTrigger.focus();
@@ -195,11 +273,15 @@ function toggleDrawer(region, trigger) {
     dismissDrawer();
     return;
   }
+  restoreDrawerIsolation();
+  restoreDrawerFocusFallback();
   shellDrawerTrigger = trigger || document.activeElement;
   siteShell.dataset.drawer = region;
+  // 先把焦点移入已开放的面板，再隐藏原焦点所在背景，避免 aria-hidden 与焦点冲突。
+  setRegionInteractive(region, true);
+  focusRegion(region);
   syncDrawerControls();
   syncLeftbarControls();
-  focusRegion(region);
 }
 
 function toggleLeftbarState() {
@@ -377,10 +459,29 @@ document.addEventListener('click', function (event) {
 });
 document.addEventListener('keydown', function (event) {
   shellInputModality = 'keyboard';
+  trapDrawerTab(event);
   if (event.key === 'Escape') {
     if (searchDialogElement()?.open) closeSearch();
-    else dismissDrawer();
+    else if (siteShell?.dataset.drawer) { event.preventDefault(); dismissDrawer(); }
   }
+});
+document.addEventListener('focusin', function (event) {
+  const region = siteShell?.dataset.drawer;
+  if (!region || searchDialogElement()?.open) return;
+  const panel = regionElement(region);
+  if (panel?.contains(event.target) || event.target?.matches?.('.site-scrim[data-shell-action="dismiss-drawer"]')) return;
+  focusRegion(region);
+});
+window.addEventListener('pagehide', function () {
+  if (siteShell) delete siteShell.dataset.drawer;
+  shellDrawerTrigger = null;
+  restoreDrawerFocusFallback();
+  restoreDrawerIsolation();
+  for (const [element, state] of shellOriginalStates) restoreShellElement(element, state);
+  shellOriginalStates.clear();
+});
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted) { syncDrawerControls(); syncLeftbarControls(); }
 });
 const searchDialog = searchDialogElement();
 searchDialog?.addEventListener('cancel', function (event) {
