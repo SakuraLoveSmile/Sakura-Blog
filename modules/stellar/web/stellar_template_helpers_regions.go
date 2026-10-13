@@ -267,16 +267,44 @@ func (r stellarTemplateRenderer) menu(d *StellarRenderData, region string, state
 	if columns < 1 || columns > 5 {
 		columns = 1
 	}
-	active := stellarText(stellarItemGet(d, "navigation.menu"))
-	pagePath := stellarURL(d.Stellar.Root, stellarPagePath(d))
+	active := stellarText(stellarFirst(d.Stellar.Navigation["menu"], stellarItemGet(d, "navigation.menu")))
 	entries := []any{}
-	// Longest path match wins; the normalized model already respects activeMenu.
-	if d.Stellar.Model == nil {
+	// 明确导航优先；未指定时使用上游的最长本地路径匹配。
+	if active == "" {
+		localPath := func(value any) (string, bool) {
+			u, err := url.Parse(stellarText(value))
+			if err != nil || u.IsAbs() || u.Host != "" {
+				return "", false
+			}
+			path := u.Path
+			if path == "" {
+				path = d.Stellar.Root
+			} else {
+				// 模型 path 可省略前导斜杠，但仍可能已经含站点 Root。
+				path = "/" + strings.TrimLeft(path, "/")
+				if path != strings.TrimRight(d.Stellar.Root, "/") {
+					path = stellarURL(d.Stellar.Root, path)
+				}
+			}
+			if strings.HasSuffix(path, "/index.html") {
+				path = strings.TrimSuffix(path, "index.html")
+			} else if strings.HasSuffix(path, "/index") {
+				path = strings.TrimSuffix(path, "index")
+			} else {
+				path = strings.TrimSuffix(path, ".html")
+			}
+			return "/" + strings.Trim(path, "/"), true
+		}
+		pagePath, pageLocal := localPath(stellarPagePath(d))
+		rootPath, _ := localPath(d.Stellar.Root)
 		best := 0
 		for _, raw := range stellarList(state["menu"]) {
 			item := stellarMap(raw)
-			path := stellarURL(d.Stellar.Root, item["url"])
-			if (pagePath == path || path != "/" && strings.HasPrefix(pagePath, strings.TrimRight(path, "/")+"/")) && len(path) > best {
+			if item["id"] == nil || item["url"] == nil {
+				continue
+			}
+			path, local := localPath(item["url"])
+			if pageLocal && local && (pagePath == path || path != rootPath && strings.HasPrefix(pagePath, path+"/")) && len(path) > best {
 				best = len(path)
 				active = stellarText(item["id"])
 			}
