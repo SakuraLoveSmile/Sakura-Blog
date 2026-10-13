@@ -24,7 +24,7 @@ class Element extends EventTarget {
  replaceChildren(){this.children=[];}
  showModal(){this.open=true;}close(){this.open=false;}
 }
-function fixture({desktopLeft=false,desktopRight=false}={}){
+function fixture({desktopLeft=false,desktopRight=false,reducedMotion=true}={}){
  const document=new EventTarget();const node=(id,tag)=>{const element=new Element(id,document);element.tag=tag;return element;};
  const root=node('root'),body=node('body'),shell=node('shell'),workspace=node('workspace'),main=node('main'),cover=node('site-cover'),topbar=node('topbar-region'),left=node('leftbar-region'),right=node('rightbar-region'),dock=node('dock'),scrim=node('scrim','button'),dialog=node('site-search-dialog');
  assert.match(layout,/class="site-scrim"[^>]*data-shell-action="dismiss-drawer"[^>]*tabindex="-1"/);scrim.setAttribute('tabindex','-1');scrim.dataset.shellAction='dismiss-drawer';
@@ -32,11 +32,12 @@ function fixture({desktopLeft=false,desktopRight=false}={}){
  const leftFirst=node('left-first','a'),leftLast=node('left-last','button'),rightFirst=node('right-first','a'),leftTrigger=node('left-trigger','button'),rightTrigger=node('right-trigger','button'),searchTrigger=node('search-trigger','button'),mainLink=node('main-link','a');leftFirst.setAttribute('href','/wiki');rightFirst.setAttribute('href','/docs');mainLink.setAttribute('href','/post');left.append(leftFirst,searchTrigger,leftLast);right.append(rightFirst);main.append(mainLink);dock.append(leftTrigger,rightTrigger);leftTrigger.dataset.shellAction='toggle-leftbar-drawer';rightTrigger.dataset.shellAction='toggle-rightbar-drawer';searchTrigger.dataset.shellAction='open-search';
  const searchInput=node('search-input');searchInput.classes.add('search-input');dialog.append(searchInput);document.documentElement=root;document.body=body;document.activeElement=mainLink;
  document.querySelector=selector=>root.querySelector(selector);document.querySelectorAll=selector=>root.querySelectorAll(selector);document.getElementById=id=>id==='main'?main:root.querySelector('#'+id);
- const window=new EventTarget(),leftMedia=new EventTarget(),rightMedia=new EventTarget(),reduced=new EventTarget();leftMedia.matches=!desktopLeft;rightMedia.matches=!desktopRight;reduced.matches=true;window.matchMedia=query=>query.includes('prefers-reduced')?reduced:query.includes('768')?leftMedia:rightMedia;window.innerWidth=390;window.localStorage={getItem(){return null;},setItem(){}};window.canonical={};window.stellar={};document.defaultView=window;
- const sandbox={document,window,stellar:window.stellar,localStorage:window.localStorage,console,Event,Map,WeakMap,AbortController,setTimeout,clearTimeout,utils:{dom(){return {click(){}};},qsa(){return [];}}};vm.createContext(sandbox);vm.runInContext(source,sandbox);
+ const window=new EventTarget(),leftMedia=new EventTarget(),rightMedia=new EventTarget(),reduced=new EventTarget();leftMedia.matches=!desktopLeft;rightMedia.matches=!desktopRight;reduced.matches=reducedMotion;window.matchMedia=query=>query.includes('prefers-reduced')?reduced:query.includes('768')?leftMedia:rightMedia;window.innerWidth=390;window.localStorage={getItem(){return null;},setItem(){}};window.canonical={};window.stellar={};document.defaultView=window;
+ const timers=new Map();let timerId=0;
+ const sandbox={document,window,stellar:window.stellar,localStorage:window.localStorage,console,Event,Map,WeakMap,AbortController,setTimeout:(callback,delay)=>{timers.set(++timerId,{callback,delay});return timerId;},clearTimeout:id=>timers.delete(id),utils:{dom(){return {click(){}};},qsa(){return [];}}};vm.createContext(sandbox);vm.runInContext(source,sandbox);
  function click(target){const event=new Event('click',{cancelable:true});Object.defineProperty(event,'target',{value:target});document.dispatchEvent(event);return event;}
  function key(key,shiftKey=false){const event=new Event('keydown',{cancelable:true});Object.defineProperties(event,{key:{value:key},shiftKey:{value:shiftKey}});document.dispatchEvent(event);return event;}
- return{document,window,root,main,cover,topbar,left,right,dock,scrim,dialog,leftFirst,leftLast,rightFirst,leftTrigger,rightTrigger,searchTrigger,searchInput,mainLink,leftMedia,rightMedia,click,key};
+ return{timers,document,window,root,main,cover,topbar,left,right,dock,scrim,dialog,leftFirst,leftLast,rightFirst,leftTrigger,rightTrigger,searchTrigger,searchInput,mainLink,leftMedia,rightMedia,click,key};
 }
 test('实际main消费者打开drawer隔离全部背景与另一panel，Tab与Shift+Tab循环包含可用遮罩',()=>{
  const f=fixture();f.main.setAttribute('aria-hidden','false');f.leftTrigger.focus();f.click(f.leftTrigger);assert.equal(f.left.inert,false);assert.equal(f.document.activeElement?.id,f.leftFirst.id);
@@ -55,4 +56,15 @@ test('空panel可聚焦且临时tabindex在关闭后还原；pagehide完全恢�
  const f=fixture();f.left.children=[];f.click(f.leftTrigger);assert.equal(f.document.activeElement?.id,f.left.id);assert.equal(f.left.getAttribute('tabindex'),'-1');f.key('Escape');assert.equal(f.left.getAttribute('tabindex'),null);
  f.main.inert=true;f.main.setAttribute('aria-hidden','true');f.click(f.rightTrigger);f.window.dispatchEvent(new Event('pagehide'));assert.equal(f.main.inert,true);assert.equal(f.main.getAttribute('aria-hidden'),'true');assert.equal(f.left.inert,false);assert.equal(f.right.inert,false);assert.equal(f.scrim.getAttribute('tabindex'),'-1');
  const show=new Event('pageshow');Object.defineProperty(show,'persisted',{value:true});f.window.dispatchEvent(show);assert.equal(f.left.inert,true);assert.equal(f.right.inert,true);f.click(f.rightTrigger);assert.equal(f.right.inert,false);f.key('Escape');assert.equal(f.main.inert,true);
+});
+test('普通motion嵌套搜索Escape开始退场，animationend只关闭search并归还drawer焦点',()=>{
+ const f=fixture({reducedMotion:false});f.click(f.leftTrigger);f.key('Enter');f.click(f.searchTrigger);f.key('Escape');
+ assert.equal(f.dialog.open,true);assert.equal(f.dialog.classList.contains('is-closing'),true);assert.equal(f.timers.size,1);assert.equal([...f.timers.values()][0].delay,260);
+ const cancel=new Event('cancel',{cancelable:true});f.dialog.dispatchEvent(cancel);assert.equal(cancel.defaultPrevented,true);assert.equal(f.timers.size,1);assert.equal(f.main.inert,true);
+ const unrelated=new Event('animationend');Object.defineProperty(unrelated,'animationName',{value:'other-animation'});f.dialog.dispatchEvent(unrelated);assert.equal(f.dialog.open,true);
+ const end=new Event('animationend');Object.defineProperty(end,'animationName',{value:'search-dialog-out'});f.dialog.dispatchEvent(end);assert.equal(f.dialog.open,false);assert.equal(f.timers.size,0);assert.equal(f.dialog.classList.contains('is-closing'),false);assert.equal(f.document.activeElement?.id,f.searchTrigger.id);assert.equal(f.main.inert,true);f.key('Escape');assert.equal(f.main.inert,false);assert.equal(f.document.activeElement?.id,f.leftTrigger.id);
+});
+test('search退场动画不触发时260ms兜底闭合；重新打开会取消旧关闭请求',()=>{
+ const f=fixture({reducedMotion:false});f.click(f.leftTrigger);f.key('Enter');f.click(f.searchTrigger);f.key('Escape');const first=[...f.timers.values()][0];f.click(f.searchTrigger);assert.equal(f.timers.size,0);assert.equal(f.dialog.open,true);assert.equal(f.dialog.classList.contains('is-closing'),false);
+ f.key('Escape');const pending=[...f.timers.entries()][0];assert.notEqual(pending[1],first);f.timers.delete(pending[0]);pending[1].callback();assert.equal(f.dialog.open,false);assert.equal(f.root.hasAttribute('data-search-open'),false);assert.equal(f.main.inert,true);assert.equal(f.document.activeElement?.id,f.searchTrigger.id);f.key('Escape');assert.equal(f.main.inert,false);
 });
