@@ -12,7 +12,7 @@
 - 两份 tracked 文章逐字摘要前后相同。另一个 tracked Markdown `content/notes.md` 是系统 `/notes` 初次启动的正文来源，无 Front Matter；不伪造为第三条文章候选，已单独记录前后 hash，并保留文件。当前 `/notes` 内容以 DB pages 候选审查。
 - 完整候选保留源设置、全文、身份及密钥，只存在私密输出；公开报告不含原值、正文、邮箱、密钥、密码哈希或私密 alternatives。
 
-完整输出位于迁移 worktree 的 `.tmp/stellar-migration-review-20261013-consumer-1/`：目录 `0700`，`candidate.private.json`、`report.public.json`、`source-check.json`、`notebook-structure.private.json`、`notebook-structure.public.json` 均为 `0600`。不得提交、外发或复制私密候选。本文由公开报告生成，无私密源内容。
+完整输出位于迁移 worktree 的 `.tmp/stellar-migration-review-20261013-authors-1/`：目录 `0700`，`candidate.private.json`、`report.public.json`、`source-check.json`、`notebook-structure.private.json`、`notebook-structure.public.json` 均为 `0600`。不得提交、外发或复制私密候选。本文由公开报告生成，无私密源内容。
 
 本次仍采用默认空 capabilities：32 条候选（30 DB + 2 tracked）、171 项配置映射、766 项逐记录映射、48 条阻断。分组为 consumer 34、policy 7、structure 4、schema 3；后续实际闭合消费者可由主 agent 显式声明重新生成，政策、结构、schema 不可用 capabilities 自动解除。
 
@@ -76,6 +76,12 @@ SEO已冻结六项官方目标：preconnect→preconnect，canonical.originalHos
 SEO余七项default_description/default_keywords/robots_extra/no_index/google_verification/bing_verification/baidu_verification保留typed Blog.seo，不覆盖独立Blog.site；canonical已映射值不再重复塞入该袋。它们的head/robots及默认优先级消费者需另行实测声明。
 
 实施者交付证据（尚待主组合和浏览器核验）：13项content消费者提交f45ad24/c7ab767已有真实embedded SSR定向测试、race及正常hook；pages/SEO typed桥提交9ad6a6e已有embedded SSR/preview、保存重建与清除、服务开关及robots回归。SEO residual head另有独立模板测试。这里仅记录源码与隔离测试交付，不将上述20项能力标成前台已验收，默认capabilities仍为空。
+
+公开多作者候选已校正为blog.content.authors的字符串ID数组，绝不写post_authors关联对象。只使用已有且name有效的公开catalog ID：旧TEXT引用精确匹配ID；INTEGER权限引用必须由唯一users.id解析username且username已在catalog。显示名、用户ID不创建公开作者，公开作者也不授予用户权限；无法确定映射或未映射legacy权限引用时保留完整私密来源并报public_author_unmapped政策阻断，不截断成部分列表。
+
+本次真实源只读关系核验：公开catalog共2项，其中1项具有有效name；users共3行，username匹配既有catalog ID为0；posts/pages/wikidocs/notes中的旧author引用为0，post_authors与post_authors_legacy均0行。因此本源没有作者新映射或新增阻断，不据此宣称多作者用户流程已验收。完整catalog和用户身份仍只在私密源快照，不列原值。
+
+pages.friends.show_posts:null保持原文，继承启用行为；false明确关闭，true启用。该nullable指针语义已在迁移定向测试核对，不将null丢弃或猜成false；未知Hero字段与pages消费者门槛仍保留。
 
 ## 完整源表计数
 
@@ -1515,6 +1521,7 @@ Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已version 2
 - `go test -race ./internal/stellarmigration -count=1` 通过：隔离夹具、只读源、strict校验、完整候选、评论变化源失效、正文/Markdown保护、私密权限、显式capability门槛。常规测试未访问真实数据。
 - 本次另用显式只读helper读取真实源，生成新五份artifact并核对权限/完整性/历史一致性；没有运行真实迁移。
 - OKR精确默认/自定义反例、15个消费者门槛、false/null/empty保真、SEO六项canonical与独立默认文案、未知schema/政策不能由capability解除均通过全包race测试；隔离Notebook/Note转换、rollback和取消证明已通过。
+- 多作者候选通过正式Store.ValidateStellarPostPublicAuthors消费验证：公开ID数组及排序/去重正确、关联对象/权限不泄露、不赋予ownership；未知/缺catalog/显示名/部分未解析/legacy关联均不可capability解除。show_posts的null/false/true原文保持。
 - 未执行：Apply、schema写入、真实数据回填、真实迁移后的Console编辑重开/前台/搜索/评论验收。实现者的消费者测试与主 agent的新浏览器验收仍须单列，不使用历史证据充当本次通过。
 
 ## 执行前不可绕过的检查

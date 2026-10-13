@@ -15,7 +15,7 @@ func (b *themeBuilder) validatePages() {
 		if hero, exists := config["hero"]; exists {
 			b.checkKeys(hero, "pages.friends.hero", "title", "description", "background")
 		}
-		if enabled, exists := config["show_posts"]; exists {
+		if enabled, exists := config["show_posts"]; exists && enabled != nil {
 			b.requireBool(enabled, "pages.friends.show_posts")
 		}
 	}

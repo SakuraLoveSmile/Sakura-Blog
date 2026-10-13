@@ -324,8 +324,12 @@ func buildPage(s Snapshot, table string, row Row) *recordBuilder {
 		b.nonempty(p[0], p[1])
 	}
 	if author := stringValue(row["author"]); author != "" {
-		set(b.raw, "article.author", author)
-		b.mapped("author", "front_matter.article.author", "单作者 ID 保留；所有关联作者不修改")
+		if publicAuthorCatalog(s)[author] {
+			set(b.raw, "article.author", author)
+			b.mapped("author", "front_matter.article.author", "只保留已存在公开目录 ID；不根据显示名或用户身份创建作者")
+		} else {
+			b.conflict("public_author_unmapped", "author", "源署名未确定匹配有有效 name 的公开作者目录 ID；源值完整留私密快照，须逐记录确认")
+		}
 	}
 	if table == "posts" {
 		set(b.raw, "listing.priority", numberBool(row["pinned"]))
@@ -428,23 +432,7 @@ func buildPage(s Snapshot, table string, row Row) *recordBuilder {
 			b.raw["categories"] = paths
 			b.mapped("post_categories/categories", "front_matter.categories", "所有完整层级路径与关联 position 顺序保留")
 		}
-		authors := []Row{}
-		for _, a := range s.Tables["post_authors"].Rows {
-			if stringValue(a["post_id"]) == b.candidate.ID {
-				authors = append(authors, a)
-			}
-		}
-		if len(authors) > 0 {
-			sort.SliceStable(authors, func(i, j int) bool {
-				a, _ := strconvNumber(authors[i]["sort_order"])
-				z, _ := strconvNumber(authors[j]["sort_order"])
-				return a < z
-			})
-			set(b.blog, "content.authors", authors)
-			if len(authors) > 1 {
-				b.conflict("multiple_authors", "post_authors", "全部关联作者与顺序原样保留，官方 article.author 单字符串不能截断多作者；Blog 消费须接通")
-			}
-		}
+		b.migratePostPublicAuthors(s)
 		if summary := stringValue(row["ai_summary"]); summary != "" {
 			set(b.blog, "content.ai_summary", summary)
 		}

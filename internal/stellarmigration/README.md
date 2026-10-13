@@ -27,11 +27,15 @@ Markdown 仅把明确的旧本地 `about/links/moments/ghrepo/ghuser/tip` 标签
 
 tracked Markdown 的旧 `status` 候选映射为 `blog.status`，与宿主备份／目录导入契约一致，不进入上游 schema，也不放入 `blog.host.status`。候选保留原发布状态；`file_host_fields` 诊断仍阻断，直到宿主导入及重新打开证明不会误发布。其余权限／生命周期字段仍须单独接线，不因发布状态映射修正自动解除。
 
+公开署名与编辑权限独立：`blog.content.authors` 只含已有且 `name` 有效的公开 catalog ID 字符串数组，按旧关联顺序去重；完整 `post_authors/post_authors_legacy/users` 仍在私密源快照。TEXT 引用只精确匹配已有 ID；INTEGER 权限引用只在唯一 `users.id → username` 且 username 已是有效 catalog ID 时确定映射，不按显示名匹配、不创建作者或用户、不写权限。任何无法确定的关联（包括未映射 legacy 引用）使整段公开数组不生成，并保留不可用 capability 解除的 `public_author_unmapped` policy 阻断。单作者旧字段也只接受现有公开 ID。新候选通过正式 Store 的公开作者校验，而不是仅比较 JSON 形状。
+
 ### 全局消费者及已证明等效的字段
 
 原先 `Blog.content` 仅存储却未报未消费的 13 项，现在分别要求能力证据：`avatar_background/rightbar_intro/welcome_linklist/nav_tabs/ai_label/category_icons/tag_icons/read_next/expire_days/banner_ratio/edit_this_page/notebook_license/notebook_share`。`Blog.pages` 与剩余 typed `Blog.seo` 分别要求 `pages/seo`；false、null 和显式空覆盖同样保留并报消费者门槛，不当作无源值。未声明时全部阻断，声明后诊断保留为 info，候选值与映射不改。
 
 Notebook 页脚仍为独立 `blog.content.notebook.license/share`，不捏造 strict theme 不允许的 `profiles.note.footer`。Pages 的已冻结消费边界为 friends `title/hero/title-description-background/show_posts/refresh_interval/posts_per_link`；其它分组或 Hero animation/start/preview/actions 保留并报 `unmapped_setting`，不能用 pages 能力解除。
+
+Pages 的 `show_posts` 是 nullable 指针：显式 null 原文保留并继承启用，false 关闭，true 启用；不将 null 当错误、缺字段或 false。
 
 旧 `tag_plugins.okr` 只有完整对象精确等于固定 `9d11978` 的 1px 边框、五状态颜色和 zh-CN 文案时，标记“原值留 source.snapshot、继承官方等效”；不生成被上游删除的 `tags.okr` 参数袋。任何自定义、缺键或额外字段继续 `tag_config_removed` 阻断，不能把这一条默认对象的豁免扩散到其它 removed 字段。
 
