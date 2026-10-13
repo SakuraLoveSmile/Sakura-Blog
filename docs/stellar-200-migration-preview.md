@@ -1,6 +1,6 @@
 # Stellar 2.0.0 存量迁移审查
 
-状态：实现中。用户已确认下列具名取值；纯预览已写入新的私密候选，真实迁移仍未执行。完整根目录绑定、隔离演练、可恢复执行与启动恢复核心已实现并通过合成完整 root 测试；正式单二进制接线及组合态验证仍由主任务完成。最后七条正文摘要、完整 RootDigest / ReviewDigest 与最终执行授权尚未批准。
+状态：实现中。用户已确认下列具名取值；纯预览已写入新的私密候选，真实迁移仍未执行。完整根目录绑定、隔离演练、可恢复执行与启动恢复核心已实现并通过合成完整 root 测试；正式单二进制接线已由主任务完成；本次独立验证真实来源的只读 CLI 预览，整体组合与前台验收仍由主任务完成。最后七条正文摘要、完整 RootDigest / ReviewDigest 与最终执行授权尚未批准。
 
 ## 本次只读证据与私密边界
 
@@ -16,9 +16,28 @@
 
 原始未选值预览：**32 条候选（30 DB + 2 tracked）、172 项配置映射、766 项逐记录映射、12 条阻断**。分组：consumer 0、policy 5、structure 4、schema 3。原 171 项配置映射全部保留；第 172 项是未启用首页 cover 的源归档说明，不能删减以凑旧数量。
 
+## 本次正式单二进制只读 CLI 证据
+
+本地日期 `2026-10-14`，UTC 来源指纹捕获区间为 `2026-10-13T16:49:52.728918Z` 至 `2026-10-13T16:53:13.320308Z`。本次实际运行主实现树 `Blog-stellar-200/blog`，构建来源为 `c161a631229cdf52060b75cd32c0dd5782ca5395`，二进制 SHA256 为 `c66dc3c7a146c0a64c1b7abeb3938b5df5abe4ceb14876b50497c555bcb86a66`；两次 CLI stdout 返回的 `runtime_binary_sha256` 均与运行前实际文件 hash 一致。本段证据绑定这一产物，不能冒充后续重建产物的核验。
+
+先从已实测 [capabilities 声明](stellar-200-migration-capabilities.json) 的 `consumer_capabilities` 转换明确的 20 项布尔 map；逐项核对 `verified=true`、证据文件存在及声明 SHA256 一致，不从待实现能力推断。清除进程环境的 `BLOG_*` 覆盖，执行正式入口 `Blog-stellar-200/blog -root Blog stellar migrate preview --capabilities <private-map> --out <new-private-directory>`，默认 source inventory 实际捕获两条 tracked Markdown，不另造内容清单。退出码 **0**；原报告仍有 **12** 条未选值阻断，不能把命令读取成功描述成已批准。
+
+再以这次新 capture/template 为输入，复用用户已确认的 12 项具名 resolutions 及 Notebook decisions。owner 仅在本次 private SourceSnapshot users 中按 `username=sakurasep` 精确唯一匹配，私密 ID 未输出；Notebook updated_at 继续取原 created_at，Note slug/status 为 note-2/draft。输入明确保持 `Approved=false`、`BodyDigests={}`，offline attestation 的 approved/stopped_server_and_workers/legacy_instances_checked 全部 false。实际执行 `stellar migrate preview --review <new-review> --approval <pending-private-json> --out <another-new-private-directory>`，退出码 **0**；命令只重捕获来源、计算纯选值预览及完整 ReviewDigest，不创建 fixture/rehearsal，不执行 Apply/recover。
+
+- 初次正式 CLI 预览：`.tmp/stellar-cli-real-preview-20261014-1/`，四份输出。
+- 已选值正式 CLI 预览：`.tmp/stellar-cli-real-selected-preview-20261014-1/`，八份输出；原 candidate 和 `original-report.public.json` 保留，另有 selected candidate、reviewed selections、selected report、七条 body review 与新的 pending approval template。
+- 明确 capability map、pending 输入、两次 stdout/stderr 及前后来源指纹：`.tmp/stellar-cli-real-preview-input-20261014-1/`。
+- 三个目录均 `0700`，所有文件均 `0600`；private capture/candidate/approval 含全文、配置与原数据，均未提交、外发或输出。公开报告及本文再次通过密钥／完整正文／私密上传和缓存文件名泄漏扫描。
+- 原报告 **32 条记录、172 项配置映射、766 项逐记录映射**完整保留；34 条 consumer info/nonblocking 诊断仍在。selected report 仍为 32/172，逐记录映射为 **777**：Notebook canonical 重建替换旧列映射，并纳入已确认元数据；独立 Notebook 结构映射为 **26** 项（原 21 项加五个已确认缺字段），不能宣称 selected 也只有 766 项或仅追加 11 项。原阻断 12、选值后阻断 0，原诊断保留在原报告/resolutions。
+- 七条待审查正文 hash 与下表一致；新的 template 仍是 **Approved=false，BodyDigests 未填，offline 全 false**。正式核心独立重算 SourceDigest、RootDigest、CandidateDigest 和完整 ReviewDigest 全部通过。
+- 新正式 CLI 的 SourceDigest 为 `d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`；原 CandidateDigest 为 `71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b`；selected CandidateDigest 为 `ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a`；RootDigest 为 `7fca4425173d6ba025c238b90c2248557bab1b1689549202f7514fc3e42f88cd`；完整 ReviewDigest 为 `b12070c516f266e5ce4e01ab5f15fd566a8017e6113866c165f2f27117d85d06`。它们与上一轮版本 2 纯预览完全一致。
+- 本次对 config/content/data/plugins/runtime/cache 及 DB/WAL/SHM/journal 作 **68 个文件／目录／不存在项**的前、中、后指纹核对：DB/WAL/tracked 与其它文件内容 hash、权限、大小、形状和目录 inventory/mtime 均不变；唯一观察变化为 **data/blog.db-shm 的 mtime_ns**，SHM 内容 hash 也未变。未删除侧车或锁、未使用 immutable、未停止真实服务；不能声称整个来源目录零写。
+
+这些是正式单二进制读取真实源和纯选值预览的本次证据，不是真实候选演练、最终批准或真实迁移执行证据。
+
 ## 本次完整根绑定与用户已确认取值
 
-最新只读捕获时间：`2026-10-13T16:15:21Z`。新目录为 `.tmp/stellar-migration-review-20261013-user-selections-full-root-v2/`，目录 `0700`，六份文件均 `0600`：原 candidate、已选值 selected-candidate、完整 root-capture、Notebook decisions、approval-pending 与脱敏 report。这是包含完整索引结构的版本 2 新只读捕获；原 full-root/review-bound 和更早预览均保留。私密 root-capture 包含原配置、上传、正文及 DB/WAL bytes，禁止输出、外发或提交。
+上一轮只读 helper 捕获时间：`2026-10-13T16:15:21Z`。保留目录为 `.tmp/stellar-migration-review-20261013-user-selections-full-root-v2/`，目录 `0700`，六份文件均 `0600`：原 candidate、已选值 selected-candidate、完整 root-capture、Notebook decisions、approval-pending 与脱敏 report。这是包含完整索引结构的版本 2 新只读捕获；原 full-root/review-bound 和更早预览均保留。私密 root-capture 包含原配置、上传、正文及 DB/WAL bytes，禁止输出、外发或提交。
 
 - SourceDigest 保持 `d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`，与前次格式 3 全源快照相同；原 CandidateDigest 保持 `71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b`。
 - 已选值候选摘要为 `ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a`。此候选由 `PreviewReviewedSelections` 纯内存生成；没有创建真实候选的 DB、fixture 或 rehearsal root。
@@ -40,7 +59,7 @@
 | notes/2 缺元数据 | owner=sakurasep；slug=note-2；status=draft | 同一精确唯一现有用户；明确先 draft，不自动发布。 |
 | 两份 tracked 文章 status | preserve_status | 上游 schema 不加入宿主 status，状态保留于独立 blog.status。 |
 
-结构候选 21 项映射全部保留；五个缺字段已按用户明确取值填写，结构预览不再阻断。原 Go time.String 形式的 TEXT 日期仍按正式 SQLite 驱动格式校验且原字符串保留。已确认字段无需再次询问。
+原未选值结构候选 21 项映射全部保留于原报告；五个缺字段按用户明确取值填写后，完整结构映射为 26 项，结构预览不再阻断。原 Go time.String 形式的 TEXT 日期仍按正式 SQLite 驱动格式校验且原字符串保留。已确认字段无需再次询问。
 
 ### 尚未批准的七条正文摘要与最终执行
 
