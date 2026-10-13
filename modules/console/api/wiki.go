@@ -101,6 +101,7 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 	}
 
 	var req struct {
+		StellarContentMetadata
 		Slug      string `json:"slug"`
 		Title     string `json:"title"`
 		Order     int    `json:"order"`
@@ -136,9 +137,13 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "wiki", projectID); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "wiki")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -148,6 +153,7 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 	}
 
 	doc := &store.WikiDoc{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ProjectID:   projectID,
 		Slug:        slug,
 		Title:       strings.TrimSpace(req.Title),
@@ -186,6 +192,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 	}
 
 	var req struct {
+		StellarContentMetadata
 		Slug      string `json:"slug"`
 		Title     string `json:"title"`
 		Order     int    `json:"order"`
@@ -240,9 +247,13 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "wiki", projectID); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "wiki")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败")
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -252,6 +263,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 	}
 
 	doc := &store.WikiDoc{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID:          existing.ID,
 		ProjectID:   projectID,
 		Slug:        newSlug,

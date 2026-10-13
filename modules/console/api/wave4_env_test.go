@@ -11,6 +11,7 @@ import (
 
 	backuppkg "blog/internal/backup"
 	"blog/internal/comments"
+	"blog/internal/config"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -23,6 +24,12 @@ import (
 // newFullEnv 完整测试环境：密码站点 + users 表 + 文章/评论/备份服务。
 // 返回 engine、store、admin 用户与 handler。
 func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler) {
+	return newFullEnvWithStellar(t, false)
+}
+func newFullStellarEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler) {
+	return newFullEnvWithStellar(t, true)
+}
+func newFullEnvWithStellar(t *testing.T, stellar bool) (*gin.Engine, *store.Store, *store.User, *Handler) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	st := newTestStore(t)
@@ -49,6 +56,13 @@ func newFullEnv(t *testing.T) (*gin.Engine, *store.Store, *store.User, *Handler)
 		}
 	}
 	site := &tmpl.Site{}
+	if stellar {
+		strict, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{})
+		if err != nil {
+			t.Fatalf("initialize isolated Stellar fixture: %v", err)
+		}
+		site.StellarV2 = strict
+	}
 	enableAdmin(t, st, site, "secret")
 
 	posts := post.NewService(t.TempDir())

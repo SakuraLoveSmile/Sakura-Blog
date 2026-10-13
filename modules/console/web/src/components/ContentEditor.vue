@@ -27,6 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
   (e: "save"): void;
+  (e: "pending-change", pending: boolean): void;
 }>();
 
 const mdRef = ref<InstanceType<typeof MarkdownEditor> | null>(null);
@@ -39,6 +40,7 @@ interface RichEditorExpose {
   openImageUpload: () => void;
   openImagePicker: () => void;
   clearDraft: () => void;
+  flushPendingChanges: () => Promise<void>;
 }
 const richRef = ref<RichEditorExpose | null>(null);
 
@@ -122,7 +124,10 @@ function clearDraft() {
   (editorKind.value === "rich" ? richRef.value : mdRef.value)?.clearDraft();
 }
 
-defineExpose({ clearDraft, onInsert });
+async function flushPendingChanges() {
+  await richRef.value?.flushPendingChanges();
+}
+defineExpose({ clearDraft, onInsert, flushPendingChanges });
 
 // 工具栏格式化按钮
 const formatTools = [
@@ -208,6 +213,7 @@ const iconBtnCls =
       :storage-key="storageKey"
       @update:model-value="emit('update:modelValue', $event)"
       @save="emit('save')"
+      @pending-change="emit('pending-change', $event)"
     />
     <MarkdownEditor
       v-else

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"blog/internal/post"
+	"blog/internal/stellarv2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +16,7 @@ import (
 // 不依赖公网、不写入真实数据；缺省保持原有渲染行为不变。
 func (h *Handler) previewMarkdown(c *gin.Context) {
 	var req struct {
+		StellarContentMetadata
 		Markdown       string `json:"markdown"`
 		PreviewProfile string `json:"preview_profile"`
 	}
@@ -26,12 +29,16 @@ func (h *Handler) previewMarkdown(c *gin.Context) {
 		err  error
 	)
 	if req.PreviewProfile == "component-library" {
-		html, err = h.posts.RenderComponentPreview(req.Markdown)
+		var parsed stellarv2.Result
+		parsed, err = validateEditorMetadata(req.StellarContentMetadata, "page", false)
+		if err == nil {
+			html, err = h.posts.RenderComponentPreviewStellarV2(req.Markdown, post.StellarRenderContext{Page: parsed.Value})
+		}
 	} else {
-		html, err = h.posts.Render(req.Markdown)
+		html, err = h.renderEditorStellar(req.Markdown, req.StellarContentMetadata, "page")
 	}
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"html": html})

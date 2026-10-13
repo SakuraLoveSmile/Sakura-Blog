@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
+import { provide, ref, onMounted, onBeforeUnmount, computed, watch, defineAsyncComponent, nextTick } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
 import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage } from "@/api";
 import { queryKeys } from "@/api/query-client";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 // Spec 62：tiptap 190KB gzip chunk 按需挂载——仅富文本模式启用时才下载
 const RichTextEditor = defineAsyncComponent(() => import("@/components/RichTextEditor.vue"));
@@ -29,6 +31,9 @@ const slug = computed(() => persistedSlug.value);
 const draftStorageKey = ref("post:" + (persistedSlug.value || "new"));
 
 const form = ref({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
   slug: "",
   title: "",
   excerpt: "",
@@ -50,6 +55,14 @@ const form = ref({
   authors: [] as string[],
   author: "",
 });
+provide(
+  stellarEditorContextKey,
+  computed(() => ({
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
+  })),
+);
 
 const emptyForm = JSON.stringify(form.value);
 const loading = ref(false);
@@ -440,79 +453,16 @@ function onPick() {
 }
 
 const importing = ref(false);
-const importFieldLabels: Record<string, string> = {
-  slug: "Slug",
-  title: "标题",
-  excerpt: "摘要",
-  description: "描述（摘要）",
-  cover: "封面",
-  banner: "横幅",
-  category: "分类",
-  categories: "分类",
-  topic: "专栏",
-  tags: "标签",
-  ai_label: "AI 标签",
-  date: "日期",
-  status: "状态",
-  pinned: "置顶",
-  authors: "作者",
-  author: "作者",
-  meta_description: "Meta Description",
-  meta_keywords: "Meta Keywords",
-  poster_headline: "海报标题",
-  poster_topic: "海报专栏",
-  poster_caption: "海报副标题",
-  poster_color: "海报颜色",
-  references: "参考文献",
-};
-
-function hasImportField(fields: string[], ...names: string[]) {
-  return names.some((name) => fields.includes(name));
-}
-
-function applyImportedPost(data: Awaited<ReturnType<typeof editorImportApi.markdown>>["data"]) {
-  const m = data.metadata;
-  if (hasImportField(data.fields, "title")) form.value.title = m.title || "";
-  if (hasImportField(data.fields, "excerpt", "description")) form.value.excerpt = m.excerpt || "";
-  if (hasImportField(data.fields, "cover")) form.value.cover = m.cover || "";
-  if (hasImportField(data.fields, "banner")) form.value.banner = m.banner || "";
-  if (hasImportField(data.fields, "category", "categories")) {
-    const list = Array.isArray(m.categories) ? m.categories.filter(Boolean) : m.category ? [m.category] : [];
-    form.value.categories = list;
-    form.value.category = list[0] || "";
-  }
-  if (hasImportField(data.fields, "topic")) {
-    form.value.topic = m.topic || "";
-    form.value.topic_id = null;
-  }
-  if (hasImportField(data.fields, "tags")) form.value.tags = Array.isArray(m.tags) ? m.tags.join(",") : "";
-  const importedStatus = (m.status || "").toLowerCase();
-  if (hasImportField(data.fields, "status") && (importedStatus === "draft" || importedStatus === "published")) {
-    form.value.status = importedStatus;
-  }
-  if (hasImportField(data.fields, "pinned")) form.value.pinned = !!m.pinned;
-  if (hasImportField(data.fields, "authors", "author")) {
-    const authors = Array.isArray(m.authors) ? m.authors.filter(Boolean) : m.author ? [m.author] : [];
-    form.value.authors = authors;
-    form.value.author = authors[0] || "";
-  }
-  if (hasImportField(data.fields, "meta_description")) form.value.meta_description = m.meta_description || "";
-  if (hasImportField(data.fields, "meta_keywords")) form.value.meta_keywords = m.meta_keywords || "";
-  if (hasImportField(data.fields, "ai_label")) form.value.ai_label = m.ai_label || "";
-  // A route slug is immutable while editing an existing article; on create,
-  // use the explicit front matter slug or the filename-derived suggestion.
-  if (!isEdit.value && (hasImportField(data.fields, "slug") || hasImportField(data.fields, "title"))) {
-    const importedSlug = m.slug || data.slug_suggestion;
-    if (importedSlug) {
-      form.value.slug = importedSlug;
-      slugManuallyEdited.value = true;
-    }
-  }
+function applyImportedPost(data: Awaited<ReturnType<typeof editorImportApi.stellar>>["data"]) {
+  form.value.stellar_version = 2;
+  form.value.stellar_config = data.front_matter;
+  form.value.blog_extensions = data.blog_extensions;
   form.value.content_md = data.content_md;
+  // 这里只读取表单支持的字符串，完整配置始终使用原文，绝不 stringify。
+  const front = JSON.parse(data.front_matter);
+  if (typeof front.title === "string") form.value.title = front.title;
   clearActiveDraft();
-  const stellarTags = data.stellar_tags || [];
-  const tags = stellarTags.length ? `，已识别 ${stellarTags.length} 个 Stellar 标签` : "";
-  Toast.success(`Markdown 已导入，请检查后保存${tags}`);
+  Toast.success("导入已回填，请检查后保存；尚未发布");
 }
 
 async function onImport(file: File) {
@@ -523,22 +473,11 @@ async function onImport(file: File) {
   }
   importing.value = true;
   try {
-    const content = await file.text();
-    const { data } = await editorImportApi.markdown({ filename: file.name, content, kind: "post" });
-    const warnings = [...(data.unknown_fields || []), ...(data.unmapped_fields || [])].map(
-      (field) => importFieldLabels[field] || field,
-    );
-    const warningText = warnings.length
-      ? `\n以下字段不会写入当前文章表单：${Array.from(new Set(warnings)).join("、")}。原文件未被修改。`
-      : "";
-    const stellarTags = data.stellar_tags || [];
-    const stellarText = stellarTags.length ? `\n将识别 Stellar 标签：${stellarTags.join("、")}。` : "";
+    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "post" });
     Dialog.warning({
-      title: "确认导入 Markdown？",
-      description: `导入将替换当前编辑器正文，但不会自动保存或发布。${
-        data.metadata.title ? `标题：${data.metadata.title}。` : ""
-      }${stellarText}${warningText}`,
-      confirmText: "导入并替换",
+      title: "审查 Stellar 2 导入预览",
+      description: `将替换正文与完整原文配置，不会自动保存或发布。\nStellar：\n${data.front_matter}\nBlog 扩展：\n${data.blog_extensions}\n正文：\n${data.content_md}`,
+      confirmText: "确认回填",
       confirmType: "primary",
       onConfirm: () => applyImportedPost(data),
     });
@@ -600,6 +539,9 @@ async function loadPost() {
   // 有草稿头时优先载入草稿内容（线上内容不受影响）
   const src = data.has_draft && data.draft ? { ...data, ...data.draft } : data;
   form.value = {
+    stellar_version: src.stellar_version ?? 0,
+    stellar_config: src.stellar_config || "{}",
+    blog_extensions: src.blog_extensions || "{}",
     slug: src.slug || data.slug,
     title: src.title,
     excerpt: src.excerpt,
@@ -1092,6 +1034,14 @@ function handleDiscardDraft() {
 
         <!-- 编辑器内核 -->
         <div class="rounded-b-xl border border-border bg-card sm:rounded-b-[14px]">
+          <StellarContentConfig
+            v-model:config="form.stellar_config"
+            v-model:blog="form.blog_extensions"
+            :version="form.stellar_version"
+            profile="post"
+            :content="form.content_md"
+            class="mb-3"
+          />
           <RichTextEditor
             v-if="editorKind === 'rich'"
             :key="'rich:' + editorInstanceKey"

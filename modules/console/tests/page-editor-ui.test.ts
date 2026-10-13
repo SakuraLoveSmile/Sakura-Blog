@@ -38,10 +38,10 @@ test("文章与页面编辑器共享 Markdown 导入按钮和确认链路", () =
   assert.match(toolbar, /accept="\.md,\.markdown,text\/markdown,text\/plain"/);
   assert.match(toolbar, /emit\("import", file\)/);
   assert.match(postEditor, /kind: "post"/);
-  assert.match(pageEditor, /kind: "page"/);
-  assert.match(postEditor, /确认导入 Markdown/);
-  assert.match(pageEditor, /确认导入 Markdown/);
+  assert.match(pageEditor, /kind:\s*"page"/);
+  assert.match(postEditor, /审查 Stellar 2 导入预览/);
+  assert.match(pageEditor, /审查 Stellar 2 导入预览/);
   assert.match(postEditor, /不会自动保存或发布/);
   assert.match(pageEditor, /不会自动保存或发布/);
-  assert.match(api, /\/editor\/import\/markdown/);
+  assert.match(api, /\/editor\/import\/stellar/);
 });

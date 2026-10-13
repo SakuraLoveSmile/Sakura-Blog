@@ -10,7 +10,7 @@ import (
 )
 
 func TestUserCenterUsesPublicAuthorSessionAndOwnership(t *testing.T) {
-	r, st, _, _ := newFullEnv(t)
+	r, st, _, _ := newFullStellarEnv(t)
 	alice, err := st.GetUserByUsername("alice")
 	if err != nil || alice == nil {
 		t.Fatalf("get alice: %v", err)
@@ -64,7 +64,7 @@ func TestUserCenterUsesPublicAuthorSessionAndOwnership(t *testing.T) {
 		t.Fatalf("UC posts = %+v, err=%v", posts, err)
 	}
 
-	w = doUserReq(r, http.MethodPost, "/api/v1/uc/posts", `{"slug":"uc-new","title":"UC 新文","content_md":"正文","status":"published","authors":["bob"],"pinned":true,"category":"site-setting"}`, readerCookie)
+	w = doUserReq(r, http.MethodPost, "/api/v1/uc/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"uc-new","title":"UC 新文","content_md":"正文","status":"published","authors":["bob"],"pinned":true,"category":"site-setting"}`, readerCookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("UC create: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -73,7 +73,7 @@ func TestUserCenterUsesPublicAuthorSessionAndOwnership(t *testing.T) {
 		t.Fatalf("UC created ownership = %+v, err=%v", created, err)
 	}
 
-	w = doUserReq(r, http.MethodPut, "/api/v1/uc/posts/uc-bob", `{"title":"越权"}`, readerCookie)
+	w = doUserReq(r, http.MethodPut, "/api/v1/uc/posts/uc-bob", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"越权"}`, readerCookie)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("UC cross-owner update = %d body=%s, want 403", w.Code, w.Body.String())
 	}

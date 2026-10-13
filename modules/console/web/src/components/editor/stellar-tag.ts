@@ -13,6 +13,9 @@ import StellarTagView from "./StellarTagView.vue";
 // 顺序敏感：banner body 可嵌 navbar，须先处理 banner 再处理 navbar，
 // 否则 navbar 先被替换为占位 div 会破坏 banner 的 raw 内容
 const PAIRED_TAGS = [
+  "dropdown",
+  "blog_about",
+  "blog_tip",
   "banner",
   "navbar",
   "folding",
@@ -40,6 +43,12 @@ const PAIRED_TAGS = [
 // navbar/frame 同时有块级和单行两种形式，块级在 PAIRED_TAGS 先处理，
 // 未匹配块级的单行用法由此处 singleLineRe 兜底
 const SINGLE_TAGS = [
+  "gist",
+  "tip",
+  "blog_links",
+  "blog_moments",
+  "blog_ghrepo",
+  "blog_ghuser",
   "note",
   "button",
   "checkbox",
@@ -101,7 +110,7 @@ export function decodeRaw(b64: string): string {
 
 /** 从 raw 提取标签名（徽标显示用） */
 export function tagNameOf(raw: string): string {
-  return /\{%\s*([a-zA-Z]+)/.exec(raw)?.[1] || "tag";
+  return /\{%\s*([a-zA-Z][a-zA-Z0-9_-]*)/.exec(raw)?.[1] || "tag";
 }
 
 // 标签名 → 中文标题映射（来自插件库元数据），供气泡类型标签显示

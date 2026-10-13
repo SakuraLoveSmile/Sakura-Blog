@@ -29,7 +29,13 @@ export interface PostPoster {
   color?: string;
 }
 
-export interface PostPayload {
+export interface StellarContentMetadata {
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
+}
+
+export interface PostPayload extends Partial<StellarContentMetadata> {
   slug?: string;
   title?: string;
   excerpt?: string;
@@ -77,7 +83,7 @@ export interface PageBannerInfo {
   icon?: string;
 }
 
-export interface PagePayload {
+export interface PagePayload extends Partial<StellarContentMetadata> {
   slug?: string;
   title?: string;
   content_md?: string;
@@ -125,7 +131,7 @@ export interface LinkPayload {
   last_checked_at?: number;
 }
 
-export interface WikiDocPayload {
+export interface WikiDocPayload extends Partial<StellarContentMetadata> {
   slug?: string;
   title?: string;
   order?: number;

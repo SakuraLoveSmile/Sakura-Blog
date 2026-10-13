@@ -7,10 +7,10 @@ import (
 )
 
 func TestPostTopicIDFlow(t *testing.T) {
-	r, st, user, _ := newFullEnv(t)
+	r, st, user, _ := newFullStellarEnv(t)
 	cookie := authCookie(user)
 
-	w := do2FA(r, http.MethodPost, "/api/v1/topics", `{"name":"文章关联专栏","slug":"post-topic"}`, cookie)
+	w := do2FA(r, http.MethodPost, "/api/v1/topics", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","name":"文章关联专栏","slug":"post-topic"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create topic: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -21,7 +21,7 @@ func TestPostTopicIDFlow(t *testing.T) {
 		t.Fatalf("decode topic: %+v err=%v", topic, err)
 	}
 
-	w = do2FA(r, http.MethodPost, "/api/v1/posts", `{"slug":"topic-api-post","title":"关联文章","topic_id":`+itoa(topic.ID)+`,"topic":"旧名称","status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPost, "/api/v1/posts", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":`+itoa(topic.ID)+`,"topic":"旧名称","status":"draft"}`, cookie)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("create post: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -41,7 +41,7 @@ func TestPostTopicIDFlow(t *testing.T) {
 		t.Fatalf("stored topic fields = %+v err=%v", post, err)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"slug":"topic-api-post","title":"关联文章","topic_id":0,"status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":0,"status":"draft"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("clear topic: status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -50,22 +50,22 @@ func TestPostTopicIDFlow(t *testing.T) {
 		t.Fatalf("topic was not cleared: %+v", post)
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"slug":"topic-api-post","title":"关联文章","topic_id":null,"status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":null,"status":"draft"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("clear topic with null: status=%d body=%s", w.Code, w.Body.String())
 	}
 
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"slug":"topic-api-post","title":"关联文章","topic_id":99999,"status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":99999,"status":"draft"}`, cookie)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("invalid topic id: status=%d body=%s, want 404", w.Code, w.Body.String())
 	}
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"slug":"topic-api-post","title":"关联文章","topic_id":"bad","status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":"bad","status":"draft"}`, cookie)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("malformed topic id: status=%d body=%s, want 400", w.Code, w.Body.String())
 	}
 
 	// 草稿和回收站文章都参与删除保护。
-	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"slug":"topic-api-post","title":"关联文章","topic_id":`+itoa(topic.ID)+`,"status":"draft"}`, cookie)
+	w = do2FA(r, http.MethodPut, "/api/v1/posts/topic-api-post", `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"topic-api-post","title":"关联文章","topic_id":`+itoa(topic.ID)+`,"status":"draft"}`, cookie)
 	if w.Code != http.StatusOK {
 		t.Fatalf("link draft: status=%d body=%s", w.Code, w.Body.String())
 	}

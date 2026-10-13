@@ -71,6 +71,12 @@ func (h *Handler) importStellarMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	if document.Raw == nil {
+		document.Raw = map[string]any{}
+	}
+	if document.Blog == nil {
+		document.Blog = map[string]any{}
+	}
 	raw, err := json.MarshalIndent(document.Raw, "", "  ")
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "无法编码配置")

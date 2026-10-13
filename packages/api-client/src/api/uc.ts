@@ -1,7 +1,8 @@
+import type { StellarContentMetadata } from "./contracts";
 import { http } from "../transport";
 import type { UCMeResponse as GeneratedUCMeResponse } from "../generated";
 
-export interface UCPostItem {
+export interface UCPostItem extends StellarContentMetadata {
   slug: string;
   title: string;
   excerpt: string;
@@ -18,7 +19,7 @@ export interface UCPostItem {
   draft?: Partial<UCPostPayload>;
 }
 
-export interface UCPostPayload {
+export interface UCPostPayload extends StellarContentMetadata {
   slug?: string;
   title: string;
   excerpt?: string;

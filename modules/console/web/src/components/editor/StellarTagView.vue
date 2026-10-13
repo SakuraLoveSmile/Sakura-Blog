@@ -5,7 +5,8 @@ export default {};
 </script>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { inject, ref, computed, watch, onMounted } from "vue";
+import { stellarEditorContextKey } from "./stellar-context";
 import { NodeViewWrapper, nodeViewProps } from "@tiptap/vue-3";
 import { Icon } from "@iconify/vue";
 import { pluginApi, previewApi } from "@/api";
@@ -16,6 +17,7 @@ import { formForVariant } from "@/modules/plugins/shortcode";
 import { tagNameOf, typeLabelOf } from "./stellar-tag";
 
 // Stellar 标签节点的 NodeView：选中时浮出 Halo 同款操作气泡（类型标签 + 编辑/删除），iframe 渲染前台真实效果。
+const stellarContext = inject(stellarEditorContextKey, undefined);
 const props = defineProps(nodeViewProps);
 
 const raw = computed(() => (props.node.attrs.raw as string) || "");
@@ -40,16 +42,17 @@ function onHandleDragEnd() {
 
 async function renderPreview() {
   const key = raw.value;
+  const cacheKey = JSON.stringify([key, stellarContext?.value]);
   if (!key.trim()) {
     html.value = "";
     return;
   }
   // links/moments 读取当前站点数据，不能使用跨节点/跨页面的长期缓存；否则新增友链、
   // 编辑瞬间后重新打开编辑器仍会展示旧卡片。其它纯内容标签继续复用缓存，避免重复请求。
-  const dynamicTags = new Set(["links", "moments"]);
+  const dynamicTags = new Set(["links", "moments", "blog_links", "blog_moments"]);
   const cacheable = !dynamicTags.has(tagNameOf(key).toLowerCase());
   if (cacheable) {
-    const cached = previewCache.get(key);
+    const cached = previewCache.get(cacheKey);
     if (cached !== undefined) {
       html.value = cached;
       failed.value = false;
@@ -59,8 +62,8 @@ async function renderPreview() {
   loading.value = true;
   failed.value = false;
   try {
-    const { data } = await previewApi.render(key);
-    if (cacheable) previewCache.set(key, data.html);
+    const { data } = await previewApi.render(key, undefined, stellarContext?.value);
+    if (cacheable) previewCache.set(cacheKey, data.html);
     // 请求返回时 raw 可能已被编辑更新，只有仍一致才展示
     if (raw.value === key) html.value = data.html;
   } catch {
@@ -74,7 +77,7 @@ onMounted(renderPreview);
 onMounted(() => {
   void loadPluginCatalog();
 });
-watch(raw, renderPreview);
+watch([raw, () => stellarContext?.value], renderPreview);
 
 // iframe srcdoc：深色-only，固定 dark 主题
 // body 背景透明与编辑器融合（无缝渲染）；首尾 margin 归零减少卡片余白
@@ -155,6 +158,7 @@ const editingLoading = ref(false);
 const editingError = ref("");
 const editingPlugin = ref<PluginMeta | null>(null);
 const editingVariant = ref<PluginVariant | undefined>(undefined);
+const editingPresent = ref<string[] | undefined>(undefined);
 const editingValues = ref<Record<string, unknown> | undefined>(undefined);
 
 // hybrid 标签（frame 单行）需要按 variant 换一套属性字段；其余标签原样返回。
@@ -189,6 +193,7 @@ async function startEdit() {
     editingPlugin.value = plugin;
     editingVariant.value = data.variant;
     editingValues.value = data.values;
+    editingPresent.value = data.present || [];
   } catch {
     if (editing.value && raw.value === sourceRaw) editingError.value = "属性解析失败，可直接编辑源码。";
   } finally {
@@ -273,6 +278,7 @@ function closeEditor() {
       v-if="editing"
       :plugin="editingFormPlugin"
       :initial-values="editingValues"
+      :present="editingPresent"
       :variant="editingVariant"
       :raw="raw"
       :loading="editingLoading"

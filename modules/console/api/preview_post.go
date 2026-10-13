@@ -22,6 +22,10 @@ func (h *Handler) createPostPreview(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "参数错误")
 		return
 	}
+	if _, err := h.renderEditorStellar(p.ContentMD, StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions}, "post"); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	token, err := content.CreatePostPreview(p)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "生成预览失败")

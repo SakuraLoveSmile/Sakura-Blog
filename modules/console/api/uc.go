@@ -44,6 +44,7 @@ type UCAttachmentListResponse struct {
 // contains no site-setting mutation contract; the editor only sends the
 // limited fields handled by mergeUCPostBody.
 type UCPostResponse struct {
+	StellarContentMetadata
 	Slug      string          `json:"slug"`
 	Title     string          `json:"title"`
 	Excerpt   string          `json:"excerpt"`
@@ -78,7 +79,8 @@ func toUCPostResponse(p *postJSON) *UCPostResponse {
 		return nil
 	}
 	return &UCPostResponse{
-		Slug: p.Slug, Title: p.Title, Excerpt: p.Excerpt, ContentMD: p.ContentMD, Status: p.Status,
+		StellarContentMetadata: p.StellarContentMetadata,
+		Slug:                   p.Slug, Title: p.Title, Excerpt: p.Excerpt, ContentMD: p.ContentMD, Status: p.Status,
 		Cover: p.Cover, Tags: p.Tags, Authors: append([]string(nil), p.Authors...), Author: p.Author,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Views: p.Views, HasDraft: p.HasDraft, Draft: p.Draft,
 	}
@@ -152,6 +154,7 @@ func (h *Handler) getUCPost(c *gin.Context) {
 }
 
 type ucPostPayload struct {
+	StellarContentMetadata
 	Slug      string `json:"slug"`
 	Title     string `json:"title"`
 	Excerpt   string `json:"excerpt"`
@@ -172,7 +175,8 @@ func (h *Handler) createUCPost(c *gin.Context) {
 		return
 	}
 	encoded, err := json.Marshal(postRequest{
-		Slug: input.Slug, Title: input.Title, Excerpt: input.Excerpt,
+		StellarContentMetadata: input.StellarContentMetadata,
+		Slug:                   input.Slug, Title: input.Title, Excerpt: input.Excerpt,
 		ContentMD: input.ContentMD, Status: input.Status, Tags: input.Tags,
 	})
 	if err != nil {
@@ -211,7 +215,8 @@ func (h *Handler) mergeUCPostBody(c *gin.Context) bool {
 		publishAt = existing.PublishAt.Format("2006-01-02T15:04")
 	}
 	full := postRequest{
-		Slug: existing.Slug, Title: input.Title, Excerpt: input.Excerpt,
+		StellarContentMetadata: input.StellarContentMetadata,
+		Slug:                   existing.Slug, Title: input.Title, Excerpt: input.Excerpt,
 		Cover: existing.Cover, Banner: existing.Banner, Category: existing.Category,
 		Categories: append([]string(nil), existing.Categories...), Topic: existing.Topic,
 		TopicID: json.RawMessage(strconv.FormatInt(existing.TopicID, 10)), Tags: input.Tags,

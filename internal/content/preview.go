@@ -10,13 +10,16 @@ import (
 
 // PostPreview is the short-lived editor snapshot used by the public draft preview page.
 type PostPreview struct {
-	Title     string    `json:"title"`
-	ContentMD string    `json:"content_md"`
-	Excerpt   string    `json:"excerpt"`
-	Cover     string    `json:"cover"`
-	Topic     string    `json:"topic"`
-	Slug      string    `json:"slug"`
-	CreatedAt time.Time `json:"-"`
+	StellarVersion int       `json:"stellar_version"`
+	StellarConfig  string    `json:"stellar_config"`
+	BlogExtensions string    `json:"blog_extensions"`
+	Title          string    `json:"title"`
+	ContentMD      string    `json:"content_md"`
+	Excerpt        string    `json:"excerpt"`
+	Cover          string    `json:"cover"`
+	Topic          string    `json:"topic"`
+	Slug           string    `json:"slug"`
+	CreatedAt      time.Time `json:"-"`
 }
 
 type previewEntry struct {

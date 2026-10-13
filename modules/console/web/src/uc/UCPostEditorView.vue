@@ -1,14 +1,33 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { provide, computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { ucApi, type UCPostPayload } from "@blog/api-client";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 
 const route = useRoute();
 const router = useRouter();
 const isEdit = computed(() => typeof route.params.slug === "string");
-const form = ref<UCPostPayload>({ title: "", excerpt: "", content_md: "", status: "draft", tags: "" });
+const form = ref<UCPostPayload>({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
+  title: "",
+  excerpt: "",
+  content_md: "",
+  status: "draft",
+  tags: "",
+});
+provide(
+  stellarEditorContextKey,
+  computed(() => ({
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
+  })),
+);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
@@ -20,6 +39,9 @@ async function load() {
     const { data } = await ucApi.posts.get(String(route.params.slug));
     const draft = data.has_draft && data.draft ? data.draft : {};
     form.value = {
+      stellar_version: draft.stellar_version ?? data.stellar_version ?? 0,
+      stellar_config: draft.stellar_config ?? data.stellar_config ?? "{}",
+      blog_extensions: draft.blog_extensions ?? data.blog_extensions ?? "{}",
       title: draft.title ?? data.title,
       excerpt: draft.excerpt ?? data.excerpt,
       content_md: draft.content_md ?? data.content_md,
@@ -96,6 +118,14 @@ onMounted(load);
           rows="2"
           placeholder="摘要（可选）"
           maxlength="500"
+        />
+        <StellarContentConfig
+          v-model:config="form.stellar_config"
+          v-model:blog="form.blog_extensions"
+          :version="form.stellar_version"
+          profile="post"
+          :content="form.content_md"
+          class="mt-5"
         />
         <div class="mt-5 min-h-[26rem] overflow-hidden rounded-xl border border-border">
           <MarkdownEditor v-model="form.content_md" :storage-key="`uc-post:${route.params.slug || 'new'}`" />

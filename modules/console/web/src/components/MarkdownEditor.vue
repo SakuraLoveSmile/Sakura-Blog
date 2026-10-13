@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { inject, ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { stellarEditorContextKey } from "./editor/stellar-context";
 import { Icon } from "@iconify/vue";
 import { previewApi, attachmentApi } from "@/api";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
@@ -9,6 +10,7 @@ import { useLocalDraft } from "@/composables/useLocalDraft";
 // + 图片粘贴/拖拽直传 + 快捷键 + localStorage 草稿保护。
 // toolbar=false 时隐藏内置工具栏，由宿主页面通过 expose 的动作自建工具栏（如 PostEditor）。
 // 注意：Boolean prop 缺省会被 Vue 转为 false，必须用 withDefaults 默认 true 保证老调用方不受影响。
+const stellarContext = inject(stellarEditorContextKey, undefined);
 const props = withDefaults(
   defineProps<{
     modelValue: string;
@@ -133,7 +135,7 @@ async function refreshPreview() {
   const seq = ++previewSeq;
   rendering.value = true;
   try {
-    const { data } = await previewApi.render(props.modelValue);
+    const { data } = await previewApi.render(props.modelValue, undefined, stellarContext?.value);
     if (seq !== previewSeq) return; // 过期响应丢弃（已有更新的输入在途）
     applyPreview(data.html);
   } catch {
@@ -208,13 +210,10 @@ function bindPreviewScroll() {
   iframeRef.value?.contentWindow?.addEventListener("scroll", onPreviewScroll);
 }
 
-watch(
-  () => props.modelValue,
-  () => {
-    schedulePreview();
-    scheduleDraft();
-  },
-);
+watch([() => props.modelValue, () => stellarContext?.value], () => {
+  schedulePreview();
+  scheduleDraft();
+});
 
 // ---------- 本地草稿保护（逻辑已抽到 useLocalDraft composable） ----------
 

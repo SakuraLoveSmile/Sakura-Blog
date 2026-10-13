@@ -19,6 +19,7 @@ export interface PluginParam {
 }
 
 export interface PluginFormField {
+  named_alias?: boolean;
   key: string;
   label: string;
   label_key?: string;

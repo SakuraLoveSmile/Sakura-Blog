@@ -53,6 +53,7 @@ func (h *Handler) ensureUniqueSlug(slug string) string {
 
 // postJSON 文章 API 响应模型。
 type postJSON struct {
+	StellarContentMetadata
 	Slug        string   `json:"slug"`
 	Title       string   `json:"title"`
 	Excerpt     string   `json:"excerpt"`
@@ -96,30 +97,31 @@ type posterJ struct {
 
 func toPostJSON(p *store.Post, views int64) *postJSON {
 	pj := &postJSON{
-		Slug:            p.Slug,
-		Title:           p.Title,
-		Excerpt:         p.Excerpt,
-		Banner:          p.Banner,
-		Cover:           p.Cover,
-		Category:        p.Category,
-		Categories:      append([]string(nil), p.Categories...),
-		TopicID:         p.TopicID,
-		Topic:           p.Topic,
-		Tags:            p.Tags,
-		ContentMD:       p.ContentMD,
-		Status:          p.Status,
-		Pinned:          p.Pinned,
-		Password:        p.Password,
-		MetaDescription: p.MetaDescription,
-		MetaKeywords:    p.MetaKeywords,
-		AILabel:         p.AILabel,
-		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
-		Views:           views,
-		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
-		Authors:         normalizedPostAuthors(p),
-		Author:          p.Author,
-		AISummary:       p.AISummary,
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		Excerpt:                p.Excerpt,
+		Banner:                 p.Banner,
+		Cover:                  p.Cover,
+		Category:               p.Category,
+		Categories:             append([]string(nil), p.Categories...),
+		TopicID:                p.TopicID,
+		Topic:                  p.Topic,
+		Tags:                   p.Tags,
+		ContentMD:              p.ContentMD,
+		Status:                 p.Status,
+		Pinned:                 p.Pinned,
+		Password:               p.Password,
+		MetaDescription:        p.MetaDescription,
+		MetaKeywords:           p.MetaKeywords,
+		AILabel:                p.AILabel,
+		CreatedAt:              p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              p.UpdatedAt.Format(time.RFC3339),
+		Views:                  views,
+		HasDraft:               strings.TrimSpace(p.DraftJSON) != "",
+		Authors:                normalizedPostAuthors(p),
+		Author:                 p.Author,
+		AISummary:              p.AISummary,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -133,6 +135,7 @@ func toPostJSON(p *store.Post, views int64) *postJSON {
 // postListJSON 文章列表响应模型。列表页不需要正文、阅读口令或草稿内容，
 // 与详情用的 postJSON 分开，避免大字段随每次分页/搜索请求返回。
 type postListJSON struct {
+	StellarContentMetadata
 	Slug            string   `json:"slug"`
 	Title           string   `json:"title"`
 	Excerpt         string   `json:"excerpt"`
@@ -165,28 +168,29 @@ func toPostListJSON(p *store.Post) *postListJSON {
 		status = "trashed"
 	}
 	pj := &postListJSON{
-		Slug:            p.Slug,
-		Title:           p.Title,
-		Excerpt:         p.Excerpt,
-		Banner:          p.Banner,
-		Cover:           p.Cover,
-		Category:        p.Category,
-		Categories:      append([]string(nil), p.Categories...),
-		TopicID:         p.TopicID,
-		Topic:           p.Topic,
-		Tags:            p.Tags,
-		Status:          status,
-		Pinned:          p.Pinned,
-		MetaDescription: p.MetaDescription,
-		MetaKeywords:    p.MetaKeywords,
-		AILabel:         p.AILabel,
-		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
-		Views:           p.Views,
-		HasDraft:        strings.TrimSpace(p.DraftJSON) != "",
-		AISummary:       p.AISummary,
-		Authors:         normalizedPostAuthors(p),
-		Author:          p.Author,
+		StellarContentMetadata: StellarContentMetadata{p.StellarVersion, p.StellarConfig, p.BlogExtensions},
+		Slug:                   p.Slug,
+		Title:                  p.Title,
+		Excerpt:                p.Excerpt,
+		Banner:                 p.Banner,
+		Cover:                  p.Cover,
+		Category:               p.Category,
+		Categories:             append([]string(nil), p.Categories...),
+		TopicID:                p.TopicID,
+		Topic:                  p.Topic,
+		Tags:                   p.Tags,
+		Status:                 status,
+		Pinned:                 p.Pinned,
+		MetaDescription:        p.MetaDescription,
+		MetaKeywords:           p.MetaKeywords,
+		AILabel:                p.AILabel,
+		CreatedAt:              p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:              p.UpdatedAt.Format(time.RFC3339),
+		Views:                  p.Views,
+		HasDraft:               strings.TrimSpace(p.DraftJSON) != "",
+		AISummary:              p.AISummary,
+		Authors:                normalizedPostAuthors(p),
+		Author:                 p.Author,
 	}
 	if !p.PublishAt.IsZero() {
 		pj.PublishAt = p.PublishAt.UTC().Format("2006-01-02T15:04")
@@ -364,9 +368,13 @@ func (h *Handler) createPost(c *gin.Context) {
 		return
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -437,9 +445,13 @@ func (h *Handler) updatePost(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -505,6 +517,14 @@ func (h *Handler) savePostDraft(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "作者列表格式错误: "+err.Error())
 		return
 	}
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	if _, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post"); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	b, err := json.Marshal(req)
 	if err != nil {
 		Fail(c, http.StatusInternalServerError, "草稿序列化失败: "+err.Error())
@@ -565,9 +585,13 @@ func (h *Handler) publishPost(c *gin.Context) {
 		}
 	}
 
-	contentHTML, err := h.posts.Render(req.ContentMD)
+	if err := h.checkEditorCollection(req.StellarContentMetadata, "post", ""); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
+	contentHTML, err := h.renderEditorStellar(req.ContentMD, req.StellarContentMetadata, "post")
 	if err != nil {
-		Fail(c, http.StatusInternalServerError, "Markdown 渲染失败: "+err.Error())
+		failEditorStellar(c, err)
 		return
 	}
 
@@ -697,6 +721,7 @@ func (h *Handler) updateAISummary(c *gin.Context) {
 // --- 辅助 ---
 
 type postRequest struct {
+	StellarContentMetadata
 	Slug        string          `json:"slug"`
 	Title       string          `json:"title"`
 	Excerpt     string          `json:"excerpt"`
@@ -737,6 +762,7 @@ func reqToPost(req *postRequest, contentHTML string) *store.Post {
 		status = store.StatusDraft
 	}
 	p := &store.Post{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		Slug:        strings.TrimSpace(req.Slug),
 		Title:       strings.TrimSpace(req.Title),
 		Excerpt:     strings.TrimSpace(req.Excerpt),

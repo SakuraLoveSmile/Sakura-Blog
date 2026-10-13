@@ -11,7 +11,7 @@ import (
 )
 
 func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
-	r, st, admin, _ := newFullEnv(t)
+	r, st, admin, _ := newFullStellarEnv(t)
 	alice, err := st.GetUserByUsername("alice")
 	if err != nil {
 		t.Fatal(err)
@@ -41,9 +41,9 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 				if _, err := st.Create(&store.Post{Slug: slug, Title: "原文", ContentMD: "正文", Status: store.StatusPublished, AuthorIDs: testCase.owners}); err != nil {
 					t.Fatal(err)
 				}
-				body := `{"title":"更新正文","content_md":"新正文","authors":["bob"],"status":"published"}`
+				body := `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"更新正文","content_md":"新正文","authors":["bob"],"status":"published"}`
 				if testCase.actor.ID == admin.ID {
-					body = `{"title":"更新正文","content_md":"新正文","status":"published"}`
+					body = `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","title":"更新正文","content_md":"新正文","status":"published"}`
 				}
 				for _, operation := range []struct{ method, suffix string }{
 					{http.MethodPut, ""}, {http.MethodPut, "/draft"}, {http.MethodPost, "/publish"},

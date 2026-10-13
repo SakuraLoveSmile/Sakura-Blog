@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
+import { pluginApi, getApiErrorMessage } from "@/api";
 import SchemaForm from "@/components/forms/SchemaForm.vue";
 import type { SchemaField, SchemaValues } from "@/components/forms/schema";
 import type { PluginMeta, PluginVariant } from "./plugin-types";
-import { buildShortcodeResult, initFormValues } from "./shortcode";
+import { initFormValues } from "./shortcode";
 
 // 标签插件的领域适配器：通用字段渲染交给 SchemaForm，shortcode 语义仍由本模块负责。
 // 插入模式（initialValues 未传）用 catalog default 初始化；
@@ -13,6 +14,7 @@ const props = defineProps<{
   plugin: PluginMeta;
   modelValue: string;
   initialValues?: Record<string, unknown>;
+  present?: string[];
   variant?: PluginVariant;
 }>();
 const emit = defineEmits<{
@@ -28,7 +30,8 @@ const fields = computed<SchemaField[]>(() =>
     key: field.key,
     label: field.label,
     label_key: field.label_key,
-    type: field.type === "flag" ? "switch" : field.type,
+    // shortcode 数值也保持文本，避免 SchemaForm 的 Number() 截断原值。
+    type: field.type === "flag" ? "switch" : field.type === "number" ? "text" : field.type,
     default: field.type === "flag" ? field.default === "true" : field.default,
     options: field.options,
     placeholder: field.placeholder,
@@ -52,12 +55,26 @@ function shortcodeValues(next: SchemaValues): Record<string, string | boolean> {
   return shortcodeValues;
 }
 
-function updateValidation(next: SchemaValues, emitUpdate: boolean) {
-  const result = buildShortcodeResult(props.plugin, shortcodeValues(next), props.variant);
-  validation.value = result.valid ? { valid: true } : { valid: false, error: result.error };
+let generation = 0;
+async function updateValidation(next: SchemaValues, emitUpdate: boolean) {
+  const current = ++generation;
+  validation.value = { valid: false };
   emit("validation", validation.value);
-  if (emitUpdate && result.valid) emit("update:modelValue", result.raw);
+  try {
+    const { data } = await pluginApi.serializeShortcode(props.plugin.name, shortcodeValues(next), props.present);
+    if (current !== generation) return;
+    validation.value = { valid: true };
+    emit("validation", validation.value);
+    if (emitUpdate) emit("update:modelValue", data.raw);
+  } catch (error) {
+    if (current !== generation) return;
+    validation.value = { valid: false, error: getApiErrorMessage(error) };
+    emit("validation", validation.value);
+  }
 }
+onBeforeUnmount(() => {
+  generation++;
+});
 
 function onSchemaUpdate(next: SchemaValues) {
   values.value = next;
@@ -65,7 +82,7 @@ function onSchemaUpdate(next: SchemaValues) {
 }
 
 watch(
-  [() => props.plugin.name, () => props.initialValues, () => props.variant],
+  [() => props.plugin.name, () => props.initialValues, () => props.variant, () => props.present],
   () => {
     initValues();
   },

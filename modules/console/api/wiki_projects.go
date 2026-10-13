@@ -11,6 +11,7 @@ import (
 )
 
 type wikiProjectRequest struct {
+	StellarContentMetadata
 	ID          string          `json:"id"`
 	Name        string          `json:"name"`
 	Title       string          `json:"title"`
@@ -42,6 +43,7 @@ func (h *Handler) wikiProjectFromRequest(req wikiProjectRequest, id string, curr
 		id = strings.TrimSpace(req.ID)
 	}
 	return &store.WikiProject{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID: id, Name: strings.TrimSpace(req.Name), Title: strings.TrimSpace(req.Title),
 		Headline: strings.TrimSpace(req.Headline), Subtitle: strings.TrimSpace(req.Subtitle),
 		Description: strings.TrimSpace(req.Description), Icon: strings.TrimSpace(req.Icon),
@@ -86,6 +88,10 @@ func (h *Handler) createWikiProject(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "请求格式错误")
 		return
 	}
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "wiki", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	p := h.wikiProjectFromRequest(req, "", nil)
 	if err := h.store.CreateWikiProject(p); err != nil {
 		switch {
@@ -120,6 +126,10 @@ func (h *Handler) updateWikiProject(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.ID) != "" && strings.TrimSpace(req.ID) != id {
 		Fail(c, http.StatusBadRequest, "项目 ID 创建后不可修改")
+		return
+	}
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "wiki", true); err != nil {
+		failEditorStellar(c, err)
 		return
 	}
 	p := h.wikiProjectFromRequest(req, id, current)

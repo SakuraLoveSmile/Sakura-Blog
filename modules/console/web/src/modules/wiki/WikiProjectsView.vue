@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { Icon } from "@iconify/vue";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { VPageHeader, VButton, VCard, VEmpty, VLoading, Dialog, Toast } from "@/components/ui";
 import { wikiApi, type WikiHeroAction, type WikiProject } from "@/api";
 
 interface ProjectForm {
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
   id: string;
   name: string;
   title: string;
@@ -42,6 +46,9 @@ const selectCls = "apple-select";
 
 function emptyForm(id = ""): ProjectForm {
   return {
+    stellar_version: 2,
+    stellar_config: "{}",
+    blog_extensions: "{}",
     id,
     name: "",
     title: "",
@@ -79,6 +86,9 @@ function formFromProject(p: WikiProject): ProjectForm {
   const preview = hero.preview || {};
   const commands = (preview.commands || []).flatMap((c) => c.codes || []);
   return {
+    stellar_version: p.stellar_version ?? 0,
+    stellar_config: p.stellar_config || "{}",
+    blog_extensions: p.blog_extensions || "{}",
     id: p.id,
     name: p.name || p.id,
     title: p.title || "",
@@ -239,6 +249,9 @@ function buildHero() {
 function payload() {
   const f = form.value;
   return {
+    stellar_version: f.stellar_version,
+    stellar_config: f.stellar_config,
+    blog_extensions: f.blog_extensions,
     id: f.id.trim(),
     name: f.name.trim(),
     title: f.title.trim(),
@@ -388,9 +401,7 @@ onMounted(() => loadProjects());
         <!-- 左侧项目列表 -->
         <div class="space-y-3 lg:col-span-4">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-text-tertiary"
-              >项目列表 ({{ projects.length }})</span
-            >
+            <span class="text-xs font-bold text-text-tertiary">项目列表 ({{ projects.length }})</span>
             <button type="button" class="text-xs text-primary hover:underline" @click="startCreate">+ 新增</button>
           </div>
 
@@ -437,6 +448,14 @@ onMounted(() => loadProjects());
 
         <!-- 右侧项目表单与 Hero 设置 -->
         <div class="space-y-5 lg:col-span-8">
+          <StellarContentConfig
+            v-model:config="form.stellar_config"
+            v-model:blog="form.blog_extensions"
+            :version="form.stellar_version"
+            profile="wiki"
+            collection
+            class="mb-4"
+          />
           <VCard :title="isEditing ? `编辑项目：${selectedProject?.title || form.id}` : '新建 Wiki 项目'">
             <div class="space-y-4">
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -572,7 +591,9 @@ onMounted(() => loadProjects());
                   spellcheck="false"
                   placeholder='{"density": 2, "speed": 0.5, "transparent": true}'
                 ></textarea>
-                <small class="mt-1 block text-[11px] text-text-quaternary">支持 focal、density、speed、hueShift 等上游参数；非法值会回退默认值。</small>
+                <small class="mt-1 block text-[11px] text-text-quaternary"
+                  >支持 focal、density、speed、hueShift 等上游参数；非法值会回退默认值。</small
+                >
               </div>
 
               <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

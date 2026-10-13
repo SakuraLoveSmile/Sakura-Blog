@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { provide, ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
+import { stellarEditorContextKey } from "@/components/editor/stellar-context";
+import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import EditorToolbar from "../posts/EditorToolbar.vue";
@@ -27,6 +29,9 @@ type PageBannerInfo = { title: string; subtitle: string; avatar: string; icon: s
 // null = 未配置（继承全局 page 级默认）；[] = 显式空侧栏；[{name, params}, ...] = 自定义序列
 type SidebarMode = "inherit" | "custom";
 const form = ref<{
+  stellar_version: number;
+  stellar_config: string;
+  blog_extensions: string;
   slug: string;
   title: string;
   content_md: string;
@@ -39,6 +44,9 @@ const form = ref<{
   leftbar_widgets: SidebarWidget[] | null;
   rightbar_widgets: SidebarWidget[] | null;
 }>({
+  stellar_version: 2,
+  stellar_config: "{}",
+  blog_extensions: "{}",
   slug: "",
   title: "",
   content_md: "",
@@ -51,6 +59,14 @@ const form = ref<{
   leftbar_widgets: null,
   rightbar_widgets: null,
 });
+provide(
+  stellarEditorContextKey,
+  computed(() => ({
+    stellar_version: form.value.stellar_version,
+    stellar_config: form.value.stellar_config,
+    blog_extensions: form.value.blog_extensions,
+  })),
+);
 
 // 把后端返回的任意格式（旧 string[] / 新对象数组）归一化成 SidebarWidget[]
 function normalizeWidgetList(raw: any): SidebarWidget[] | null {
@@ -420,59 +436,16 @@ function clearActiveDraft() {
 }
 
 const importing = ref(false);
-const importFieldLabels: Record<string, string> = {
-  slug: "Slug",
-  title: "标题",
-  excerpt: "摘要",
-  description: "描述",
-  cover: "封面",
-  banner: "横幅",
-  category: "分类",
-  categories: "分类",
-  topic: "专栏",
-  tags: "标签",
-  ai_label: "AI 标签",
-  date: "日期",
-  status: "状态",
-  pinned: "置顶",
-  authors: "作者",
-  author: "作者",
-  meta_description: "Meta Description",
-  meta_keywords: "Meta Keywords",
-  poster_headline: "海报标题",
-  poster_topic: "海报专栏",
-  poster_caption: "海报副标题",
-  poster_color: "海报颜色",
-  references: "参考文献",
-};
-
-function hasImportField(fields: string[], ...names: string[]) {
-  return names.some((name) => fields.includes(name));
-}
-
-function applyImportedPage(data: Awaited<ReturnType<typeof editorImportApi.markdown>>["data"]) {
-  const m = data.metadata;
-  if (hasImportField(data.fields, "title")) form.value.title = m.title || "";
-  if (hasImportField(data.fields, "banner")) form.value.banner = m.banner || "";
-  if (hasImportField(data.fields, "date")) form.value.date = m.date || "";
-  if (hasImportField(data.fields, "author")) form.value.author = m.author || "";
-  if (hasImportField(data.fields, "authors") && !form.value.author) form.value.author = m.authors?.[0] || "";
-  // Keep an existing page URL stable; a new page may adopt the explicit
-  // front matter slug or the filename-derived suggestion.
-  if (isNew.value && (hasImportField(data.fields, "slug") || hasImportField(data.fields, "title"))) {
-    form.value.slug = m.slug || data.slug_suggestion || "";
-  }
-  const importedStatus = (m.status || "").toLowerCase();
-  if (hasImportField(data.fields, "status") && (importedStatus === "draft" || importedStatus === "published")) {
-    form.value.status = importedStatus as "draft" | "published";
-  }
+function applyImportedPage(data: Awaited<ReturnType<typeof editorImportApi.stellar>>["data"]) {
+  form.value.stellar_version = 2;
+  form.value.stellar_config = data.front_matter;
+  form.value.blog_extensions = data.blog_extensions;
   form.value.content_md = data.content_md;
+  const front = JSON.parse(data.front_matter);
+  if (typeof front.title === "string") form.value.title = front.title;
   clearActiveDraft();
-  const stellarTags = data.stellar_tags || [];
-  const tags = stellarTags.length ? `，已识别 ${stellarTags.length} 个 Stellar 标签` : "";
-  Toast.success(`Markdown 已导入，请检查后保存${tags}`);
+  Toast.success("导入已回填，请检查后保存；尚未发布");
 }
-
 async function onImport(file: File) {
   if (importing.value) return;
   if (!/\.(md|markdown)$/i.test(file.name)) {
@@ -481,22 +454,11 @@ async function onImport(file: File) {
   }
   importing.value = true;
   try {
-    const content = await file.text();
-    const { data } = await editorImportApi.markdown({ filename: file.name, content, kind: "page" });
-    const warnings = [...(data.unknown_fields || []), ...(data.unmapped_fields || [])].map(
-      (field) => importFieldLabels[field] || field,
-    );
-    const warningText = warnings.length
-      ? `\n以下字段不会写入当前页面表单：${Array.from(new Set(warnings)).join("、")}。原文件未被修改。`
-      : "";
-    const stellarTags = data.stellar_tags || [];
-    const stellarText = stellarTags.length ? `\n将识别 Stellar 标签：${stellarTags.join("、")}。` : "";
+    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "page" });
     Dialog.warning({
-      title: "确认导入 Markdown？",
-      description: `导入将替换当前编辑器正文，但不会自动保存或发布。${
-        data.metadata.title ? `标题：${data.metadata.title}。` : ""
-      }${stellarText}${warningText}`,
-      confirmText: "导入并替换",
+      title: "审查 Stellar 2 导入预览",
+      description: `将替换正文与完整原文配置，不会自动保存或发布。\nStellar：\n${data.front_matter}\nBlog 扩展：\n${data.blog_extensions}\n正文：\n${data.content_md}`,
+      confirmText: "确认回填",
       confirmType: "primary",
       onConfirm: () => applyImportedPage(data),
     });
@@ -528,6 +490,9 @@ onMounted(async () => {
     const { data } = await pageApi.get(slugParam.value);
     const info = (data as any).banner_info || {};
     form.value = {
+      stellar_version: (data as any).stellar_version ?? 0,
+      stellar_config: (data as any).stellar_config || "{}",
+      blog_extensions: (data as any).blog_extensions || "{}",
       slug: data.slug,
       title: data.title,
       content_md: data.content_md,
@@ -723,6 +688,14 @@ const smallInputCls =
             class="w-full px-4 py-3 text-lg font-medium border border-border rounded-xl focus:outline-none focus:border-primary transition-colors dark:bg-secondary dark:border-border-strong dark:text-foreground dark:placeholder-gray-500"
           />
           <!-- 富文本（默认）/ Markdown 分屏，绑定同一份 content_md，切换即同步 -->
+          <StellarContentConfig
+            v-model:config="form.stellar_config"
+            v-model:blog="form.blog_extensions"
+            :version="form.stellar_version"
+            profile="page"
+            :content="form.content_md"
+            class="mb-3"
+          />
           <RichTextEditor
             v-if="editorKind === 'rich'"
             ref="richRef"
@@ -818,7 +791,9 @@ const smallInputCls =
               </div>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <label class="flex min-h-10 items-center gap-2 rounded-base border border-border px-3 py-2 text-sm dark:border-border-strong">
+              <label
+                class="flex min-h-10 items-center gap-2 rounded-base border border-border px-3 py-2 text-sm dark:border-border-strong"
+              >
                 <input v-model="form.breadcrumb" type="checkbox" class="h-4 w-4 accent-primary" />
                 <span class="text-text-quaternary dark:text-foreground">显示面包屑和日期</span>
               </label>

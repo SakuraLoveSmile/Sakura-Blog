@@ -39,6 +39,7 @@ func (h *Handler) listTopics(c *gin.Context) {
 // name/slug 任一冲突返回 409（双唯一约束，删除保护之外的写冲突主入口）。
 func (h *Handler) createTopic(c *gin.Context) {
 	var req struct {
+		StellarContentMetadata
 		Name        string `json:"name"`
 		Slug        string `json:"slug"`
 		Description string `json:"description"`
@@ -68,7 +69,12 @@ func (h *Handler) createTopic(c *gin.Context) {
 		return
 	}
 
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "topic", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	t := &store.Topic{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		Name:        name,
 		Slug:        slug,
 		Description: req.Description,
@@ -105,6 +111,7 @@ func (h *Handler) updateTopic(c *gin.Context) {
 	}
 
 	var req struct {
+		StellarContentMetadata
 		Name        *string `json:"name"`
 		Slug        *string `json:"slug"`
 		Description *string `json:"description"`
@@ -117,7 +124,12 @@ func (h *Handler) updateTopic(c *gin.Context) {
 		return
 	}
 
+	if _, err := validateEditorMetadata(req.StellarContentMetadata, "topic", true); err != nil {
+		failEditorStellar(c, err)
+		return
+	}
 	t := &store.Topic{
+		StellarVersion: req.StellarVersion, StellarConfig: req.StellarConfig, BlogExtensions: req.BlogExtensions,
 		ID:          existing.ID,
 		Name:        existing.Name,
 		Slug:        existing.Slug,
