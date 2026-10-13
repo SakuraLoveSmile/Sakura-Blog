@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog/internal/config"
+	"blog/internal/content"
 	"blog/internal/post"
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
@@ -107,6 +108,41 @@ func TestWikidocCreateParentValidation(t *testing.T) {
 		`{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"e","title":"E","order":0,"parent":0,"content_md":"","status":"draft"}`)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("top-level create should succeed, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestWikidocWritesPublishContentEventOnlyAfterSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	st := newTestStore(t)
+	if err := st.EnsureSettingsTable(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, map[string]any{}); err != nil {
+		t.Fatal(err)
+	}
+	events := content.NewEvents()
+	count := 0
+	sub := events.Subscribe(func(e content.Event) {
+		if e.Kind != content.ContentChanged {
+			t.Fatalf("unexpected event %s", e.Kind)
+		}
+		count++
+	})
+	defer sub.Close()
+	r := gin.New()
+	if _, err := MountConsole(r, MountDeps{Config: Config{Store: st, Posts: post.NewService(""), Site: sitePtr(&tmpl.Site{}), Events: events}}); err != nil {
+		t.Fatal(err)
+	}
+	mkWikiParent(t, st, "stellar", "parent", 0)
+	body := `{"stellar_version":2,"stellar_config":"{}","blog_extensions":"{}","slug":"child","title":"Child","content_md":"![image](/uploads/a.png)","status":"published"}`
+	if w := wikiReq(r, http.MethodPost, "/api/v1/wiki/stellar/docs", body); w.Code != http.StatusCreated || count != 1 {
+		t.Fatalf("create status=%d count=%d %s", w.Code, count, w.Body.String())
+	}
+	if w := wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/child", body); w.Code != http.StatusOK || count != 2 {
+		t.Fatalf("update status=%d count=%d %s", w.Code, count, w.Body.String())
+	}
+	if w := wikiReq(r, http.MethodPut, "/api/v1/wiki/stellar/docs/child", `{"stellar_version":0}`); w.Code < 400 || count != 2 {
+		t.Fatalf("failed write published event: status=%d count=%d", w.Code, count)
 	}
 }
 

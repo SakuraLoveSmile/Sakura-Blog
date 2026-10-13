@@ -3,9 +3,8 @@ package stellar
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	"path/filepath"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 
@@ -31,6 +30,18 @@ const (
 // Server exposes lifecycle and callback hooks needed by the other module mount.
 type Server struct {
 	*routes.Server
+	images    *imageLifecycle
+	closeOnce sync.Once
+}
+
+// Close 等待图片 worker 完全退出后刷新路由派生状态；宿主随后关闭 Store。
+func (s *Server) Close() {
+	s.closeOnce.Do(func() {
+		if s.images != nil {
+			s.images.close()
+		}
+		s.Server.Close()
+	})
 }
 
 // Mount creates the Stellar SSR server and registers its routes on router.
@@ -47,14 +58,7 @@ func Mount(router *gin.Engine, deps Dependencies) (*Server, error) {
 	}
 	web.SetAssetVersioner(NewAssetVersioner(deps.DevMode, deps.Root))
 	if deps.Posts != nil {
-		web.SetMarkdownRender(func(source string) template.HTML {
-			html, renderErr := deps.Posts.Render(source)
-			if renderErr != nil {
-				log.Printf("render footer markdown: %v", renderErr)
-				return ""
-			}
-			return template.HTML(html)
-		})
+		engine.SetStellarMarkdownRender(deps.Posts.RenderStellarV2WithContext)
 	}
 	deps.Engine = engine
 	publicIdentity := identity.NewPublicHandler(deps.Store, deps.Site)
@@ -77,7 +81,10 @@ func Mount(router *gin.Engine, deps Dependencies) (*Server, error) {
 			mod.RegisterPublic(router, moduleDeps)
 		}
 	}
-	return &Server{Server: server}, nil
+	result := &Server{Server: server}
+	result.images = newImageLifecycle(deps, server.RenderSnapshots)
+	result.images.start()
+	return result, nil
 }
 
 // GitHubAdapter keeps the post renderer independent from the concrete proxy client.

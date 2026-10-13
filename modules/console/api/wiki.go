@@ -167,6 +167,7 @@ func (h *Handler) createWikidoc(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "创建失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusCreated, gin.H{"ok": true, "id": doc.ID})
 }
 
@@ -278,6 +279,7 @@ func (h *Handler) updateWikidoc(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "更新失败: "+err.Error())
 		return
 	}
+	h.publishContentChanged()
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
