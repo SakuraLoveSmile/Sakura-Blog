@@ -29,7 +29,7 @@ function add(name,raw={},page={},collection={},profile='post'){
  const hexo={stellar:{config:theme,data:{icons:input.Icons}},config:{root:input.Root}};resetClientAssets();
  const clientData=JSON.parse(clientAssets(hexo).js.data.match(/^window.stellarClientData=(.*);\nwindow.stellarIcons=/s)[1]);
  clientData.ctx.date_suffix=messages.dateSuffix;if(clientData.ctx.search)Object.assign(clientData.ctx.search,messages.search);clientData.canonical.param={permalink:input.PageURL,checklink:rewrite(clientData.ctx.services.video.js)};
- const expectedManifest=rewrite(manifest);expectedManifest.extensions.find(e=>e.id==='services').module='/assets/js/runtime/extensions/blog-upstream-services.js';
+ const expectedManifest=rewrite(manifest);for(const [id,module]of [['services','blog-upstream-services'],['page-controls','blog-page-controls'],['lazy-loading','blog-lazy-loading']])expectedManifest.extensions.find(e=>e.id===id).module='/assets/js/runtime/extensions/'+module+'.js';
  fixtures.push({name,input,manifest:expectedManifest,clientData:rewrite(clientData),comments:rewrite(comments)});
 }
 add('default');

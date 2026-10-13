@@ -89,6 +89,7 @@ func Build(input Input) (Bundle, error) {
 	}
 	add("pin-slider", "region", ".pin-slider", object{})
 	add("page-controls", "region", "", object{"highlight": rewrite(at(assets, "runtime.searchHighlight")), "tagtree": rewrite(at(assets, "runtime.tagtree"))})
+	bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1].Module = "/assets/js/runtime/extensions/blog-page-controls.js"
 	if at(features, "partialNavigation.enabled") == true {
 		add("partial-navigation", "document", "", object{})
 	}
@@ -113,6 +114,7 @@ func Build(input Input) (Bundle, error) {
 	add("hero-effect", "region", "canvas[data-hero-effect]", object{})
 	_, lazy := split(obj(features["lazyLoading"]), obj(at(defaults, "features.lazy_loading")), "js")
 	add("lazy-loading", "document", "", object{"asset": rewrite(lazy["js"])})
+	bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1].Module = "/assets/js/runtime/extensions/blog-lazy-loading.js"
 	add("deferred-icons", "region", "svg.icon[data-icon]", object{})
 	add("dropdown", "region", "details.dropdown", object{})
 	_, marked := split(obj(at(theme, "services.markdown")), obj(at(defaults, "services.markdown")), "js")

@@ -13,5 +13,10 @@ export async function mount(root, context) {
   await context.assets.script('/assets/js/blog/lifecycle.js');
   await context.assets.script(definition.asset);
   context.signal.throwIfAborted();
-  return definition.global().mount(root, context);
+  let target = root;
+  if (context.extension.id === 'blog-comments') {
+    target = root.matches?.('#blog-comments') ? root : root.querySelector('#blog-comments');
+    if (!target) return;
+  }
+  return definition.global().mount(target, context);
 }

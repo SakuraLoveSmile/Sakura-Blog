@@ -1,17 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
 import { mount } from '../web/assets/js/runtime/extensions/blog-gist.js';
 
 test('Gist尺寸只接受本region对应opaque frame；卸载及abort禁止迟到写回', () => {
   const listeners = new Set();
-  const view = { addEventListener(name, listener) { assert.equal(name, 'message'); listeners.add(listener); }, removeEventListener(_name, listener) { listeners.delete(listener); } };
-  const first = { contentWindow: {}, style: {}, isConnected: true };
-  const second = { contentWindow: {}, style: {}, isConnected: true };
-  const root = frame => ({ ownerDocument: { defaultView: view }, querySelectorAll: () => [frame] });
+  const view = { crypto: webcrypto, addEventListener(name, listener) { assert.equal(name, 'message'); listeners.add(listener); }, removeEventListener(_name, listener) { listeners.delete(listener); } };
+  const frame = () => ({ contentWindow: {}, style: {}, isConnected: true, src: '/stellar/embed/gist?gist=test%2Fab', getAttribute() { return this.src; }, setAttribute(_key, value) { this.src = value; } });
+  const first = frame();
+  const second = frame();
+  const root = frame => ({ ownerDocument: { defaultView: view, baseURI: 'https://fixture.test/' }, querySelectorAll: () => [frame] });
   const controller = new AbortController();
   const cleanup = mount(root(first), { signal: controller.signal });
   const emit = event => [...listeners].forEach(fn => fn(event));
-  const valid = { origin: 'null', source: first.contentWindow, data: { type: 'stellar:gist:resize', height: 300 } };
+  const valid = { origin: 'null', source: first.contentWindow, data: { type: 'stellar:gist:resize', height: 300, token: new URLSearchParams(new URL(first.src).hash.slice(1)).get('stellar-gist-token') } };
   for (const event of [ { ...valid, source: {} }, { ...valid, origin: 'https://evil.test' }, { ...valid, data: { ...valid.data, height: Infinity } }, { ...valid, data: { ...valid.data, height: '300' } }, { ...valid, data: { ...valid.data, height: -1 } } ]) emit(event);
   assert.equal(first.style.height, undefined);
   emit(valid); assert.equal(first.style.height, '300px');
@@ -22,6 +24,6 @@ test('Gist尺寸只接受本region对应opaque frame；卸载及abort禁止迟�
   cleanup();
   const next = mount(root(second), { signal: new AbortController().signal });
   emit(valid); assert.equal(second.style.height, undefined);
-  emit({ ...valid, source: second.contentWindow, data: { ...valid.data, height: 450 } });
+  emit({ ...valid, source: second.contentWindow, data: { ...valid.data, height: 450, token: new URLSearchParams(new URL(second.src).hash.slice(1)).get('stellar-gist-token') } });
   assert.equal(second.style.height, '450px'); next(); assert.equal(listeners.size, 0);
 });
