@@ -4,6 +4,7 @@ go 1.26.6
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
+	github.com/andybalholm/cascadia v1.3.3
 	github.com/dop251/goja v0.0.0-20260822123354-58e940e0d230
 	github.com/fogleman/gg v1.3.0
 	github.com/gin-contrib/gzip v1.2.6

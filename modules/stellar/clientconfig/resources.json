@@ -1,0 +1,935 @@
+{
+  "tag": "2.0.0",
+  "commit": "9d11978a24fe6610e3a7dbab741cf62634539d05",
+  "inputHashes": {
+    "_config.yml": "9c3ddbc344519ec07300cd063db1d73ecc8bd568f377717462e3e1b41982771c",
+    "scripts/lib/internal-constants.js": "ce3a7074894ff6ec4b5dcc684bdcffbaff0b6518cd94be4930ca490f85817ced",
+    "scripts/lib/browser-runtime.js": "e04314a5bae78b88c3f5a5578581903580bb629c19e3fa5bf182fab3c5a1fe07",
+    "scripts/lib/contribution-registry.js": "d63f80ab90fc8bd76c9b7853f07988e6daeb0720eaac71a47130144f71852ba9",
+    "scripts/lib/client-assets.js": "44a28a1a1cb588e90ab550d36e2e24dfaca7c96fc9f98015fcb4bf2a7e0874a0",
+    "scripts/lib/comments.js": "39dc034d07f08d34355109b15fc0908e0bb3f94fd6d02e56aa364acb8b762499",
+    "scripts/lib/partial-navigation.js": "526e82964cb3f87c8f71813625eb20d360505e6594c028cb8a217eab6d497389",
+    "scripts/lib/resource-assets.js": "9e5f1f5ee11c5c42ff1c54393622cff754b8949087bab7847dd229b07c5ecd3b",
+    "scripts/helpers/extension_assets.js": "688695b91be95eea1a218ca79fa40379e2b48b10c3ba8262b860edcff2e712e1",
+    "layout/_partial/scripts/runtime.ejs": "79d4d479dbd855d2fb214a00792990b051227d340127696fd93e1b5a060cd1f0",
+    "languages/zh-CN.yml": "e481119f28c11b9dc2111b4274d902de52b552b2e080094efbef2ac171c32be2",
+    "languages/zh-TW.yml": "edfcd46f9a16c4a86f1b11e981e51e8cf90dbba090f51278b6d739eb578dbae0",
+    "languages/en.yml": "294d784f0aaff5ab36dcf755dabef8cb9f0cda5a11d887026c16c1163575ad1b"
+  },
+  "constants": {
+    "providers": {
+      "linkPrefetch": "flying_pages",
+      "lightbox": "fancybox",
+      "diagrams": "mermaid"
+    },
+    "runtime": {
+      "cache": {
+        "enabled": true,
+        "defaultTtl": 3600,
+        "ttl": {
+          "giscus": 600,
+          "waline": 600,
+          "artalk": 600,
+          "memos": 600,
+          "memos-user": 86400,
+          "sites": 86400,
+          "friends": 86400,
+          "friends_and_posts": 86400,
+          "siteinfo": 86400
+        },
+        "maxEntries": 200
+      },
+      "request": {
+        "retries": 2,
+        "timeoutMs": 5000,
+        "idleTimeoutMs": 3000,
+        "maxCacheEntryBytes": 204800
+      },
+      "features": {
+        "codeCopyToastMs": 2500
+      }
+    },
+    "appearance": {
+      "gradientAngle": "210deg"
+    },
+    "assets": {
+      "runtime": {
+        "searchHighlight": "/js/search/highlight.js",
+        "tagtree": "/js/tagtree.js",
+        "bootstrap": "/js/runtime/index.js",
+        "colorSchemeSwitch": "/js/runtime/extensions/color-scheme-switch.js",
+        "deferredIcons": "/js/runtime/extensions/deferred-icons.js",
+        "dropdown": "/js/runtime/extensions/dropdown.js",
+        "heroEffect": "/js/runtime/extensions/hero-effect.js",
+        "reveal": "/js/runtime/extensions/reveal.js",
+        "settings": "/js/runtime/extensions/settings.js"
+      },
+      "heroEffects": {
+        "strands": "/js/runtime/hero-effects/strands.js",
+        "ferrofluid": "/js/runtime/hero-effects/ferrofluid.js",
+        "galaxy": "/js/runtime/hero-effects/galaxy.js",
+        "lightRays": "/js/runtime/hero-effects/light-rays.js"
+      },
+      "search": {
+        "providers": {
+          "algolia": "/js/search/algolia-search.js",
+          "local": "/js/search/local-search.js"
+        },
+        "shortcut": "/js/search/shortcut.js"
+      },
+      "comments": {
+        "beaudar": {
+          "localCss": "/css/comments/beaudar.css"
+        },
+        "utterances": {
+          "localCss": "/css/comments/utterances.css"
+        },
+        "twikoo": {
+          "localCss": "/css/comments/twikoo.css"
+        },
+        "waline": {
+          "localCss": "/css/comments/waline.css"
+        },
+        "artalk": {
+          "localCss": "/css/comments/artalk.css"
+        }
+      },
+      "features": {
+        "lightbox": {
+          "localCss": "/css/plugins/fancybox.css"
+        },
+        "swiper": {
+          "localCss": "/css/plugins/swiper.css"
+        },
+        "codeCopy": {
+          "js": "/js/plugins/copycode.js"
+        },
+        "adaptiveText": {
+          "colorJs": "/js/color.js",
+          "js": "/js/plugins/adaptive-text.js"
+        },
+        "cardHover": {
+          "js": "/js/plugins/card-hover.js"
+        }
+      },
+      "services": {
+        "chat": {
+          "endpoint": "https://siteinfo.listentothewind.cn/api/v1"
+        },
+        "mdrender": {
+          "js": "/js/services/mdrender.js"
+        },
+        "siteinfo": {
+          "js": "/js/services/siteinfo.js"
+        },
+        "ghinfo": {
+          "js": "/js/services/ghinfo.js"
+        },
+        "rating": {
+          "js": "/js/services/rating.js"
+        },
+        "vote": {
+          "js": "/js/services/vote.js"
+        },
+        "sites": {
+          "js": "/js/services/sites.js"
+        },
+        "friends": {
+          "js": "/js/services/friends.js"
+        },
+        "friends_and_posts": {
+          "js": "/js/services/friends_and_posts.js"
+        },
+        "timeline": {
+          "js": "/js/services/timeline.js"
+        },
+        "weibo": {
+          "js": "/js/services/weibo.js"
+        },
+        "memos": {
+          "js": "/js/services/memos.js"
+        },
+        "voice": {
+          "js": "/js/plugins/voice.js"
+        },
+        "video": {
+          "js": "/js/plugins/video.js"
+        },
+        "download-file": {
+          "js": "/js/plugins/download-file.js"
+        },
+        "twikoo": {
+          "js": "/js/services/twikoo_latest_comment.js"
+        },
+        "waline": {
+          "js": "/js/services/waline_latest_comment.js"
+        },
+        "artalk": {
+          "js": "/js/services/artalk_latest_comment.js"
+        },
+        "giscus": {
+          "js": "/js/services/giscus_latest_comment.js"
+        },
+        "contributors": {
+          "js": "/js/services/contributors.js"
+        },
+        "rss": {
+          "js": "/js/services/rss.js"
+        }
+      }
+    }
+  },
+  "defaults": {
+    "topbar": {
+      "enabled": false,
+      "brand": {
+        "image": {
+          "src": null,
+          "variant": "avatar"
+        },
+        "name": null,
+        "tagline": null,
+        "href": "/"
+      },
+      "menu": [],
+      "widgets": []
+    },
+    "leftbar": {
+      "enabled": true,
+      "default_state": "expanded",
+      "brand": {
+        "search": true,
+        "style": "regular",
+        "ghrepo": null,
+        "ghuser": null,
+        "image": {
+          "src": null,
+          "variant": "avatar"
+        },
+        "name": null,
+        "tagline": null,
+        "href": "/"
+      },
+      "menu_columns": 1,
+      "menu": [
+        {
+          "id": "post",
+          "title": "menu.blog",
+          "icon": "default:documents",
+          "url": "/"
+        },
+        {
+          "id": "categories",
+          "title": "menu.categories",
+          "icon": "default:category",
+          "url": "/blog/categories/"
+        },
+        {
+          "id": "tags",
+          "title": "menu.tags",
+          "icon": "default:hashtag",
+          "url": "/blog/tags/"
+        },
+        {
+          "id": "topic",
+          "title": "menu.topic",
+          "icon": "default:pin",
+          "url": "/topic/"
+        },
+        {
+          "id": "archives",
+          "title": "menu.archives",
+          "icon": "default:calendar",
+          "url": "/blog/archives/"
+        },
+        {
+          "id": "friends",
+          "title": "menu.friends",
+          "icon": "default:link",
+          "url": "/friends/"
+        },
+        {
+          "id": "about",
+          "title": "menu.about",
+          "icon": "default:profile",
+          "url": "/about/"
+        }
+      ],
+      "widgets": [],
+      "footer": {
+        "actions": []
+      }
+    },
+    "rightbar": {
+      "enabled": true,
+      "widgets": []
+    },
+    "footer": {
+      "sitemap": [],
+      "content": "本站由 [{author.name}](/) 使用 [{theme.name} {theme.version}]({theme.tree}) 主题创建。\n本博客所有文章除特别声明外，均采用 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议，转载请注明出处。\n"
+    },
+    "profiles": {
+      "home": {
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        },
+        "comments": {
+          "enabled": false,
+          "title": null,
+          "id": null,
+          "provider": null,
+          "options": {}
+        }
+      },
+      "blog_index": {
+        "path": "/blog/",
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        },
+        "listing_nav": {
+          "enabled": true,
+          "tabs": []
+        }
+      },
+      "post": {
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "related",
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": [
+            "ghrepo",
+            "toc"
+          ]
+        }
+      },
+      "topic": {
+        "path": "/topic/",
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "related",
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": [
+            "ghrepo",
+            "toc"
+          ]
+        }
+      },
+      "wiki_index": {
+        "path": "/wiki/",
+        "active_menu": null,
+        "leftbar": {
+          "widgets": [
+            "related",
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        },
+        "listing_nav": {
+          "enabled": true,
+          "tabs": []
+        }
+      },
+      "wiki": {
+        "active_menu": null,
+        "leftbar": {
+          "menu": [],
+          "widgets": [
+            "tree",
+            "related"
+          ],
+          "footer": {
+            "actions": []
+          }
+        },
+        "rightbar": {
+          "widgets": [
+            "ghrepo",
+            "toc"
+          ]
+        }
+      },
+      "notebook": {
+        "active_menu": null,
+        "leftbar": {
+          "widgets": [
+            "tagtree",
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        },
+        "listing": {
+          "per_page": null,
+          "sort": {
+            "field": "updated",
+            "direction": "desc"
+          },
+          "excerpt_length": 128
+        },
+        "tag_icons": {}
+      },
+      "notebooks": {
+        "path": "/notebooks/",
+        "active_menu": null,
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        }
+      },
+      "note": {
+        "active_menu": null,
+        "leftbar": {
+          "widgets": [
+            "tagtree",
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": [
+            "toc"
+          ]
+        }
+      },
+      "author": {
+        "path": "/author/",
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        }
+      },
+      "page": {
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": [
+            "toc"
+          ]
+        }
+      },
+      "settings": {
+        "path": "/settings/",
+        "about": {
+          "items": [
+            {
+              "key": "博客框架",
+              "value": "Hexo {hexo.version}",
+              "url": "https://hexo.io/"
+            },
+            {
+              "key": "主题版本",
+              "value": "Stellar {theme.version}",
+              "url": "{theme.tree}"
+            }
+          ]
+        },
+        "active_menu": null,
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        }
+      },
+      "error": {
+        "path": "/404.html",
+        "image": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/404/1c830bfcd517d.svg",
+        "comments": {
+          "enabled": false,
+          "title": null,
+          "id": null,
+          "provider": null,
+          "options": {}
+        },
+        "active_menu": "post",
+        "leftbar": {
+          "widgets": [
+            "recent"
+          ]
+        },
+        "rightbar": {
+          "widgets": []
+        }
+      }
+    },
+    "article": {
+      "style": "tech",
+      "paragraph_indent": "auto",
+      "banner": {
+        "background": true
+      },
+      "listing": {
+        "pinned_layout": "carousel",
+        "card_layout": "hero",
+        "cover_ratio": 2,
+        "excerpt_length": 128,
+        "show_tags": false
+      },
+      "category_colors": {
+        "探索号": "#f44336"
+      },
+      "show_reading_time": false,
+      "related_posts_limit": 0,
+      "footer": {
+        "license": "本文采用 [署名-非商业性使用-相同方式共享 4.0 国际](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议，转载请注明出处。",
+        "share": [
+          "qrcode",
+          "weibo",
+          "x",
+          "telegram",
+          "whatsapp",
+          "email"
+        ],
+        "show_tags": true
+      }
+    },
+    "appearance": {
+      "preset": "card",
+      "color_scheme": "auto",
+      "colors": {
+        "primary": "hsl(192 98% 55%)",
+        "accent": "hsl(14 100% 57%)",
+        "link": "hsl(207 90% 54%)"
+      },
+      "gradients": {
+        "primary_action": "linear-gradient(to right, hsl(215, 95%, 64%), hsl(195, 95%, 60%), hsl(165, 95%, 56%), hsl(165, 95%, 56%), hsl(195 95% 60%), hsl(215, 95%, 64%))",
+        "search_bar": "linear-gradient(to right, #04f3ff, #08ffc6, #ddf730, #ffbd19, #ff1fe0, #c418ff, #3b5bff, #04f3ff)"
+      },
+      "typography": {
+        "font_smoothing": "antialiased",
+        "font_weight": {
+          "100": 100,
+          "200": 200,
+          "300": 300,
+          "400": 400,
+          "500": 500,
+          "600": 600,
+          "700": 700,
+          "800": 800,
+          "900": 900
+        },
+        "font_family": {
+          "body": "system-ui, \"Microsoft Yahei\", \"Segoe UI\", Arial, sans-serif",
+          "code": "Menlo, Monaco, Consolas, system-ui, monospace, sans-serif"
+        },
+        "font_size": {
+          "root": "16px",
+          "inline_code": "85%",
+          "code_block": "0.8125rem"
+        },
+        "content_align": "left"
+      },
+      "shape": {
+        "corner": "superellipse(1.25)",
+        "radius": {
+          "card_large": "24px",
+          "card": "16px",
+          "card_small": "12px",
+          "bar": "12px",
+          "image_large": "24px",
+          "image": "16px",
+          "image_small": "8px"
+        }
+      },
+      "backgrounds": {
+        "leftbar": {
+          "type": "gradient",
+          "image": null,
+          "gradient": {
+            "light": [
+              "hsl(210 32% 84%)",
+              "hsl(188 44% 84%)",
+              "hsl(12 64% 73%)",
+              "hsl(35 100% 82%)"
+            ],
+            "dark": [
+              "hsl(210 16% 48%)",
+              "hsl(188 18% 50%)",
+              "hsl(12 30% 42%)",
+              "hsl(35 36% 49%)"
+            ]
+          },
+          "opacity": 1,
+          "backdrop": {
+            "radius": "100px"
+          }
+        },
+        "page": {
+          "image": null,
+          "backdrop": {
+            "radius": "100px",
+            "overlay": "var(--bg-a75)",
+            "saturation": "300%"
+          }
+        }
+      },
+      "code_block": {
+        "scrollbar_width": "4px",
+        "highlight_stylesheet": "https://gcore.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/atom-one-dark.min.css"
+      }
+    },
+    "search": {
+      "provider": "local",
+      "local": {
+        "scope": "all",
+        "include_content": true,
+        "cache_ttl_seconds": 86400
+      },
+      "algolia": {
+        "js": "https://gcore.jsdelivr.net/algoliasearch/3/algoliasearch.min.js",
+        "appId": null,
+        "apiKey": null,
+        "indexName": null
+      }
+    },
+    "comments": {
+      "provider": null,
+      "title": null,
+      "beaudar": {
+        "js": "https://beaudar.lipk.org/client.js",
+        "repo": "xxx/xxx",
+        "issue-term": "pathname",
+        "issue-number": null,
+        "theme": "preferred-color-scheme",
+        "label": null,
+        "input-position": "top",
+        "comment-order": "desc",
+        "keep-theme": null,
+        "loading": false,
+        "branch": "main"
+      },
+      "utterances": {
+        "js": "https://utteranc.es/client.js",
+        "repo": "xxx/xxx",
+        "issue-term": "pathname",
+        "issue-number": null,
+        "theme": "preferred-color-scheme",
+        "label": null
+      },
+      "giscus": {
+        "js": "https://giscus.app/client.js",
+        "data-repo": "xxx/xxx",
+        "data-repo-id": null,
+        "data-category": null,
+        "data-category-id": null,
+        "data-mapping": "pathname",
+        "data-strict": 0,
+        "data-reactions-enabled": 1,
+        "data-emit-metadata": 0,
+        "data-input-position": "top",
+        "data-theme": "preferred_color_scheme",
+        "data-lang": "zh-CN",
+        "data-loading": null,
+        "crossorigin": "anonymous"
+      },
+      "twikoo": {
+        "js": "https://gcore.jsdelivr.net/npm/twikoo@1.6/dist/twikoo.all.min.js",
+        "envId": "https://xxx"
+      },
+      "waline": {
+        "js": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline.js",
+        "css": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline.css",
+        "meta_css": "https://gcore.jsdelivr.net/npm/@waline/client@3.15.2/dist/waline-meta.css",
+        "serverURL": "https://waline.vercel.app",
+        "commentCount": true,
+        "pageview": false
+      },
+      "artalk": {
+        "js": null,
+        "css": null,
+        "server": null,
+        "site": "",
+        "darkMode": "auto",
+        "imageUploader": null
+      }
+    },
+    "tags": {
+      "note": {
+        "default_color": "",
+        "border": true
+      },
+      "checkbox": {
+        "interactive": false
+      },
+      "quot": {
+        "default": {
+          "prefix": "quot:quote-left",
+          "suffix": "quot:quote-right"
+        },
+        "hashtag": {
+          "prefix": "quot:hashtag",
+          "suffix": null
+        },
+        "question": {
+          "prefix": "quot:question",
+          "suffix": null
+        }
+      },
+      "emoji": {
+        "default_source": "blobcat",
+        "sources": {
+          "twemoji": "https://gcore.jsdelivr.net/gh/twitter/twemoji/assets/svg/{name}.svg",
+          "qq": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/qq/{name}.gif",
+          "aru": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/aru/{name}.gif",
+          "tieba": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/tieba/{name}.png",
+          "blobcat": "https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/{name}.gif"
+        }
+      },
+      "icon": {
+        "default_color": "accent"
+      },
+      "button": {
+        "default_color": "theme"
+      },
+      "mark": {
+        "default_color": "theme"
+      },
+      "hashtag": {
+        "default_color": null
+      },
+      "gallery": {
+        "size": "mix",
+        "aspect_ratio": "square"
+      }
+    },
+    "features": {
+      "partial_navigation": {
+        "enabled": true
+      },
+      "swiper": {
+        "js": "https://unpkg.com/swiper@10.3/swiper-bundle.min.js",
+        "css": "https://unpkg.com/swiper@10.3/swiper-bundle.min.css"
+      },
+      "color_scheme_switch": {
+        "enabled": false
+      },
+      "image_optimization": {
+        "enabled": true
+      },
+      "lazy_loading": {
+        "js": "https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js",
+        "transition": "fade",
+        "auto_aspect_ratio": true
+      },
+      "lightbox": {
+        "js": "https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js",
+        "css": "https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css",
+        "enabled": true,
+        "selector": ".timenode p>img"
+      },
+      "link_prefetch": {
+        "js": "https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js",
+        "enabled": true
+      },
+      "reveal": {
+        "enabled": true,
+        "duration": 800,
+        "interval": 200,
+        "distance": 8,
+        "blur": 4
+      },
+      "card_hover": {
+        "spotlight": false,
+        "tilt": false
+      },
+      "heti": {
+        "js": "https://unpkg.com/heti@0.9/umd/heti-addon.min.js",
+        "css": "https://unpkg.com/heti@0.9/umd/heti.min.css",
+        "enabled": false
+      },
+      "math": {
+        "provider": null,
+        "katex": {
+          "css": "https://cdn.jsdelivr.net/npm/katex@0.16.23/dist/katex.min.css",
+          "css_integrity": "sha384-//SZkxyB7axjCAopkAL1E1rve+ZSPKapD89Lo/lLhcsXR+zOYl5z6zJZEFXil+q0"
+        },
+        "mathjax": {
+          "js": "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"
+        }
+      },
+      "diagrams": {
+        "provider": null,
+        "mermaid": {
+          "js": "https://gcore.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js",
+          "theme": "neutral"
+        }
+      }
+    },
+    "services": {
+      "gravatar": {
+        "base_url": "https://gravatar.com/avatar/"
+      },
+      "markdown": {
+        "js": "https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"
+      },
+      "site_info": {
+        "provider": "site_info_api",
+        "site_info_api": {
+          "endpoint": null
+        }
+      },
+      "rating": {
+        "provider": "star_vote",
+        "star_vote": {
+          "endpoint": null
+        }
+      },
+      "vote": {
+        "provider": "star_vote",
+        "star_vote": {
+          "endpoint": null
+        }
+      },
+      "contributors": {
+        "provider": "github",
+        "github": {
+          "repositories": []
+        }
+      },
+      "github_card": {
+        "provider": "github_readme_stats",
+        "github_readme_stats": {
+          "endpoint": "https://github-stats-extended.vercel.app"
+        }
+      },
+      "github": {
+        "api_url": "https://api.github.com",
+        "raw_url": "https://raw.githubusercontent.com",
+        "gist_url": "https://gist.github.com"
+      }
+    },
+    "preconnect": [],
+    "fallbacks": {
+      "avatar": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg",
+      "link_card": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/link/8f277b4ee0ecd.svg",
+      "cover": "https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg"
+    },
+    "canonical": {
+      "host": null,
+      "allowed_hosts": [
+        "localhost"
+      ]
+    },
+    "open_graph": {
+      "enabled": true,
+      "twitter_id": null
+    },
+    "structured_data": {
+      "same_as": []
+    },
+    "inject": {
+      "head_begin": "",
+      "head_end": "",
+      "body_begin": "",
+      "body_end": ""
+    }
+  },
+  "languages": {
+    "zh-CN": {
+      "copy": {
+        "label": "复制",
+        "copied": "复制成功",
+        "denied": "未获得剪贴板权限",
+        "unsupported": "当前浏览器不支持剪贴板或页面不是 HTTPS"
+      },
+      "colorScheme": {
+        "light": "切换到浅色模式",
+        "dark": "切换到深色模式",
+        "auto": "切换到跟随系统配色"
+      },
+      "dateSuffix": {
+        "just": "刚刚",
+        "min": "分钟前",
+        "hour": "小时前",
+        "day": "天前"
+      },
+      "search": {
+        "more": "更多",
+        "no_more": "没有更多了"
+      }
+    },
+    "zh-TW": {
+      "copy": {
+        "label": "複製",
+        "copied": "複製成功",
+        "denied": "未取得剪貼簿權限",
+        "unsupported": "目前瀏覽器不支援剪貼簿或頁面不是 HTTPS"
+      },
+      "colorScheme": {
+        "light": "切換到淺色模式",
+        "dark": "切換到深色模式",
+        "auto": "切換到跟隨系統配色"
+      },
+      "dateSuffix": {
+        "just": "剛剛",
+        "min": "分鐘前",
+        "hour": "小時前",
+        "day": "天前"
+      },
+      "search": {
+        "more": "更多",
+        "no_more": "沒有更多了"
+      }
+    },
+    "en": {
+      "copy": {
+        "label": "Copy",
+        "copied": "Copied!",
+        "denied": "Clipboard permission was denied",
+        "unsupported": "Clipboard requires a supported browser and HTTPS"
+      },
+      "colorScheme": {
+        "light": "Switched to Light Mode",
+        "dark": "Switched to Dark Mode",
+        "auto": "Switched to Auto Mode"
+      },
+      "dateSuffix": {
+        "just": "Just",
+        "min": "minutes ago",
+        "hour": "hours ago",
+        "day": "days ago"
+      },
+      "search": {
+        "more": "More",
+        "no_more": "No more results"
+      }
+    }
+  }
+}
