@@ -95,12 +95,13 @@ func (s *webServer) serveStellarSearchJSON(c *gin.Context) {
 }
 
 type stellarSearchAPIItem struct {
-	Type       string `json:"type"`
-	Title      string `json:"title"`
-	Path       string `json:"path"`
-	Snippet    string `json:"snippet"`
-	AnchorID   string `json:"anchor_id,omitempty"`
-	AnchorText string `json:"anchor_text,omitempty"`
+	Type       string   `json:"type"`
+	Title      string   `json:"title"`
+	Path       string   `json:"path"`
+	Snippet    string   `json:"snippet"`
+	AnchorID   string   `json:"anchor_id,omitempty"`
+	AnchorText string   `json:"anchor_text,omitempty"`
+	Domains    []string `json:"domains,omitempty"`
 }
 type stellarSearchAPIResponse struct {
 	Items []stellarSearchAPIItem `json:"items"`
@@ -122,6 +123,14 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 	}
 	query := strings.TrimSpace(c.Query("q"))
 	kind := c.Query("type")
+	scope := c.DefaultQuery("scope", "all")
+	if scope != "all" && scope != "post" && scope != "page" {
+		c.JSON(http.StatusBadRequest, stellarHTTPError{Error: "invalid search scope", Code: "stellar_search_scope_invalid"})
+		return
+	}
+	configuredScope := stellarString(stellarGet(snap.input.Theme, "search.local.scope"))
+	includeContent := stellarGet(snap.input.Theme, "search.local.includeContent") != false && c.Query("include_content") != "false"
+	domain := c.Query("domain")
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if limit < 1 || limit > 100 {
 		limit = 20
@@ -163,11 +172,38 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 		if kind != "" && recordKind != kind {
 			continue
 		}
+		scopeKind := "page"
+		if r.post != nil {
+			scopeKind = "post"
+		}
+		if (scope != "all" && scope != scopeKind) || (configuredScope != "" && configuredScope != "all" && configuredScope != scopeKind) {
+			continue
+		}
+		domains := []string{}
+		if r.post != nil {
+			domains = append(domains, "blog")
+		}
+		if r.profile == "wiki" || r.profile == "topic" || r.profile == "notebook" {
+			domains = append(domains, r.profile+":"+r.collectionID)
+		}
+		if domain != "" && !hasTag(domains, domain) {
+			continue
+		}
 		title := stellarString(r.model.Item["title"])
 		content, anchors := textutil.StripHTMLWithAnchors(stellarString(r.model.Item["content"]))
-		text := strings.ToLower(title + " " + content)
+		metadata := strings.ToLower(title + " " + strings.Join(stellarTerms(r.model.Item["tags"]), " ") + " " + strings.Join(stellarTerms(r.model.Item["categories"]), " "))
+		text := metadata
+		if includeContent {
+			text += " " + strings.ToLower(content)
+		} else {
+			content, anchors = "", nil
+		}
 		match := true
+		metadataMatch := true
 		for _, term := range terms {
+			if !strings.Contains(metadata, term) {
+				metadataMatch = false
+			}
 			if !strings.Contains(text, term) {
 				match = false
 				break
@@ -176,10 +212,10 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 		if !match {
 			continue
 		}
-		if identity != "" && !authorized[recordKind+":"+identity] {
+		if includeContent && !metadataMatch && identity != "" && !authorized[recordKind+":"+identity] {
 			continue
 		}
-		item := stellarSearchAPIItem{Type: recordKind, Title: title, Path: stellarPublicPath(snap.site, r.path), Snippet: html.EscapeString(textutil.Truncate(content, 200))}
+		item := stellarSearchAPIItem{Type: recordKind, Title: title, Path: stellarPublicPath(snap.site, r.path), Snippet: html.EscapeString(textutil.Truncate(content, 200)), Domains: domains}
 		first := -1
 		for _, term := range terms {
 			if i := strings.Index(strings.ToLower(content), term); i >= 0 && (first < 0 || i < first) {
@@ -200,7 +236,7 @@ func (s *webServer) serveStellarSearchAPI(c *gin.Context) {
 			break
 		}
 	}
-	if (kind == "" || kind == "moment") && len(response.Items) < limit {
+	if (kind == "" || kind == "moment") && len(response.Items) < limit && scope == "all" && (configuredScope == "" || configuredScope == "all") && domain == "" && includeContent {
 		for _, moment := range snap.inventory.moments {
 			if !authorized["moment:"+store.MomentSlugKey(moment.ID)] {
 				continue

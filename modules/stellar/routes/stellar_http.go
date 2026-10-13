@@ -476,6 +476,9 @@ func (s *webServer) serveStellarPath(c *gin.Context) bool {
 			return true
 		}
 		switch path {
+		case "/api/search":
+			s.serveStellarSearchAPI(c)
+			return true
 		case "/search.json":
 			s.serveStellarSearchJSON(c)
 			return true

@@ -248,7 +248,7 @@ func TestStellarSearchPathsStayWithinSubpath(t *testing.T) {
 			t.Errorf("local search missing subpath %s: %#v", want, localPaths)
 		}
 	}
-	w = stellarRequest(r, "/api/search?q=marker")
+	w = stellarRequest(r, "/sub/api/search?q=marker")
 	if w.Code != http.StatusOK {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -270,6 +270,63 @@ func TestStellarSearchPathsStayWithinSubpath(t *testing.T) {
 		if !apiPaths[want] {
 			t.Errorf("server search missing subpath %s: %#v", want, apiPaths)
 		}
+	}
+}
+
+func TestStellarGoSearchScopeDomainAndContentPolicy(t *testing.T) {
+	ws, st, _, router := stellarRouteFixture(t)
+	row := createStellarPost(t, st, "headline", "")
+	if err := ws.searchIdx.IndexDoc(search.TypePost, row.Slug, row.Title, row.ContentMD); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikiProject(&store.WikiProject{ID: "docs", Visible: true, StellarVersion: 2, StellarConfig: `{"name":"文档"}`}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateWikidoc(&store.WikiDoc{ProjectID: "docs", Slug: "intro", Title: "文档标题", ContentMD: "bodymarker", Status: store.StatusPublished, StellarVersion: 2, StellarConfig: `{"title":"文档标题","collection":{"profile":"wiki","id":"docs"}}`}); err != nil {
+		t.Fatal(err)
+	}
+	read := func(query string) []stellarSearchAPIItem {
+		t.Helper()
+		response := stellarRequest(router, "/api/search?"+query)
+		if response.Code != http.StatusOK {
+			t.Fatal(response.Code, response.Body.String())
+		}
+		var result stellarSearchAPIResponse
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		return result.Items
+	}
+	for _, query := range []string{"q=bodymarker&scope=post", "q=bodymarker&domain=blog", "q=bodymarker&domain=wiki:other", "q=bodymarker&include_content=false"} {
+		if items := read(query); len(items) != 0 {
+			t.Fatalf("query %s escaped policy: %#v", query, items)
+		}
+	}
+	if items := read("q=bodymarker&scope=page&domain=wiki:docs"); len(items) != 1 || items[0].Type != "wiki" || len(items[0].Domains) != 1 || items[0].Domains[0] != "wiki:docs" {
+		t.Fatalf("collection search: %#v", items)
+	}
+	if items := read("q=Go&include_content=false&domain=blog"); len(items) != 1 || items[0].Snippet != "" || items[0].AnchorID != "" {
+		t.Fatalf("metadata-only search: %#v", items)
+	}
+	site := *ws.site.Load()
+	version := *site.StellarV2
+	version.Theme = stellarCopyObject(version.Theme)
+	searchConfig := stellarCopyObject(stellarObject(version.Theme["search"]))
+	local := stellarCopyObject(stellarObject(searchConfig["local"]))
+	local["includeContent"] = false
+	searchConfig["local"] = local
+	version.Theme["search"] = searchConfig
+	site.StellarV2 = &version
+	ws.site.Store(&site)
+	if items := read("q=bodymarker&include_content=true&scope=all"); len(items) != 0 {
+		t.Fatalf("request expanded disabled server content policy: %#v", items)
+	}
+	local["scope"] = "post"
+	if items := read("q=文档标题&scope=all"); len(items) != 0 {
+		t.Fatalf("request expanded server scope: %#v", items)
+	}
+	if response := stellarRequest(router, "/api/search?q=marker&scope=bad"); response.Code != http.StatusBadRequest {
+		t.Fatalf("invalid scope status: %d", response.Code)
 	}
 }
 
