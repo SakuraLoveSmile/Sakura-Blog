@@ -268,9 +268,16 @@ func (r stellarTemplateRenderer) menu(d *StellarRenderData, region string, state
 		columns = 1
 	}
 	active := stellarText(stellarFirst(d.Stellar.Navigation["menu"], stellarItemGet(d, "navigation.menu")))
+	var pageActive any
+	if d.ViewData != nil && d.ViewData.Stellar != nil {
+		pageActive = d.ViewData.Stellar.Input.FrontMatter["activeMenu"]
+	}
+	if pageActive != nil {
+		active = stellarText(pageActive)
+	}
 	entries := []any{}
-	// 明确导航优先；未指定时使用上游的最长本地路径匹配。
-	if active == "" {
+	// 页面明确导航优先；省略/null 时路径命中覆盖 profile 默认，未命中保留默认。
+	if pageActive == nil {
 		localPath := func(value any) (string, bool) {
 			u, err := url.Parse(stellarText(value))
 			if err != nil || u.IsAbs() || u.Host != "" {

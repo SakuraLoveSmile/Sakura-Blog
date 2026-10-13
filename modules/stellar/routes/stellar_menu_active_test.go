@@ -72,13 +72,40 @@ func TestStellarMenuActiveThroughActualEmbed(t *testing.T) {
 				assertMenu("/post/two", []string{root + "/custom/"})
 				assertMenu("/post/three", []string{root + "/post/"})
 				stellarObject(profiles["page"])["activeMenu"] = "custom"
-				assertMenu("/about/", []string{root + "/custom/"})
+				assertMenu("/about/", []string{root + "/about/?source=menu#top"})
+				assertMenu("/unrelated", []string{root + "/custom/"})
+				page, err := st.GetPageBySlug("about")
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, config := range []struct {
+					raw, want string
+				}{
+					{`{"active_menu":"custom"}`, root + "/custom/"},
+					{`{"active_menu":null}`, root + "/about/?source=menu#top"},
+					{`{}`, root + "/about/?source=menu#top"},
+				} {
+					page.StellarConfig = config.raw
+					if err := st.UpdatePage("about", page); err != nil {
+						t.Fatal(err)
+					}
+					assertMenu("/about/", []string{config.want})
+				}
 				stellarObject(profiles["page"])["activeMenu"] = "absolute"
+				assertMenu("/about", []string{root + "/about/?source=menu#top"})
+				page.StellarConfig = `{"active_menu":"absolute"}`
+				if err := st.UpdatePage("about", page); err != nil {
+					t.Fatal(err)
+				}
 				body := assertMenu("/about", []string{"https://external.test/about/"})
 				if !strings.Contains(body, `href="//external.test/about/"`) {
 					t.Fatal("protocol-relative menu URL changed")
 				}
 				stellarObject(profiles["page"])["activeMenu"] = nil
+				page.StellarConfig = `{}`
+				if err := st.UpdatePage("about", page); err != nil {
+					t.Fatal(err)
+				}
 				stellarObject(stellarArray(leftbar["menu"])[3])["url"] = "/different/"
 				assertMenu("/about", nil)
 			})
