@@ -2,6 +2,7 @@ package stellarimages
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -18,7 +19,15 @@ import (
 )
 
 // Analyze 返回转正后的尺寸及上游 hsla-mean-v1 取样平均色。
-func Analyze(data []byte) (analysis Analysis, failure error) {
+func Analyze(data []byte) (Analysis, error) {
+	return AnalyzeContext(context.Background(), data)
+}
+
+// AnalyzeContext 让批次取消贯通嵌入解码器；共享编译缓存不受单次取消影响。
+func AnalyzeContext(ctx context.Context, data []byte) (analysis Analysis, failure error) {
+	if err := ctx.Err(); err != nil {
+		return Analysis{}, err
+	}
 	var probe *Dimensions
 	if config, _, err := image.DecodeConfig(bytes.NewReader(data)); err == nil && config.Width > 0 && config.Height > 0 {
 		w, h := config.Width, config.Height
@@ -44,15 +53,15 @@ func Analyze(data []byte) (analysis Analysis, failure error) {
 	trim := bytes.TrimSpace(data)
 	isSVG := bytes.HasPrefix(data, []byte{0x1f, 0x8b}) || bytes.HasPrefix(trim, []byte("<svg")) || bytes.HasPrefix(trim, []byte("<?xml")) || bytes.Contains(trim[:min(len(trim), 1024)], []byte("<svg"))
 	if isSVG {
-		img, originalDimensions, err = decodeSVG(data)
+		img, originalDimensions, err = decodeSVG(ctx, data)
 	} else if isTIFF {
-		img, err = decodeTIFF(data)
+		img, err = decodeTIFF(ctx, data)
 		_, highPrecision = img.(*highDepth)
 	} else if bytes.HasPrefix(data, []byte{255, 216}) {
-		img, originalDimensions, err = decodeJPEG(data)
+		img, originalDimensions, err = decodeJPEG(ctx, data)
 		profile = embeddedICC(data)
 	} else if bytes.HasPrefix(data, []byte("RIFF")) && len(data) >= 12 && string(data[8:12]) == "WEBP" {
-		img, originalDimensions, err = decodeWebP(data)
+		img, originalDimensions, err = decodeWebP(ctx, data)
 		profile = embeddedICC(data)
 	} else {
 		config, format, e := image.DecodeConfig(bytes.NewReader(data))
@@ -85,6 +94,9 @@ func Analyze(data []byte) (analysis Analysis, failure error) {
 	if err != nil {
 		return Analysis{}, err
 	}
+	if err := ctx.Err(); err != nil {
+		return Analysis{}, err
+	}
 	bounds := img.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
 	if w <= 0 || h <= 0 || w > MaxPixels/h {
@@ -94,10 +106,13 @@ func Analyze(data []byte) (analysis Analysis, failure error) {
 		// 上游先缩放再旋转；提前旋转会交换两次固定点过滤的顺序，改变平均色。
 	}
 	if !isTIFF {
-		img, err = applyICC(img, profile, highPrecision)
+		img, err = applyICC(ctx, img, profile, highPrecision)
 		if err != nil {
 			return Analysis{Dimensions: &Dimensions{Status: "ready", Width: w, Height: h}}, err
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return Analysis{}, err
 	}
 	var sums [4]float64
 	if highPrecision {
@@ -108,6 +123,9 @@ func Analyze(data []byte) (analysis Analysis, failure error) {
 		sums = sampleHigh(img, hasAlpha)
 	} else {
 		sums = sampleMean(img)
+	}
+	if err := ctx.Err(); err != nil {
+		return Analysis{}, err
 	}
 	if originalDimensions != nil {
 		w, h = originalDimensions.Width, originalDimensions.Height

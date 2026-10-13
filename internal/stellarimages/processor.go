@@ -265,7 +265,7 @@ func (p Processor) Prepare(ctx context.Context, pages []PageSnapshot, opts Prepa
 				data, fetchErr := p.fetch(ctx, u)
 				var analysis Analysis
 				if fetchErr == nil && ctx.Err() == nil {
-					analysis, fetchErr = Analyze(data)
+					analysis, fetchErr = AnalyzeContext(ctx, data)
 				}
 				mu.Lock()
 				// 批次被新内容替换/关闭时不污染缓存，也不产生 24h 图片失败延迟。

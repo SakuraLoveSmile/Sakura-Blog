@@ -1,6 +1,7 @@
 package stellarimages
 
 import (
+	"context"
 	_ "embed"
 	"encoding/binary"
 	"errors"
@@ -11,8 +12,8 @@ import (
 var jpegWASM []byte
 var jpegRuntime wasmDecoder
 
-func decodeJPEG(data []byte) (image.Image, *Dimensions, error) {
-	b, e := jpegRuntime.run(jpegWASM, data, "JPEG decode")
+func decodeJPEG(ctx context.Context, data []byte) (image.Image, *Dimensions, error) {
+	b, e := jpegRuntime.run(ctx, jpegWASM, data, "JPEG decode")
 	if e != nil {
 		return nil, nil, e
 	}

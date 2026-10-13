@@ -1,6 +1,7 @@
 package stellarimages
 
 import (
+	"context"
 	_ "embed"
 	"encoding/binary"
 	"errors"
@@ -11,8 +12,8 @@ import (
 var webpWASM []byte
 var webpRuntime wasmDecoder
 
-func decodeWebP(data []byte) (image.Image, *Dimensions, error) {
-	b, e := webpRuntime.run(webpWASM, data, "WebP decode")
+func decodeWebP(ctx context.Context, data []byte) (image.Image, *Dimensions, error) {
+	b, e := webpRuntime.run(ctx, webpWASM, data, "WebP decode")
 	if e != nil {
 		return nil, nil, e
 	}

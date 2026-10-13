@@ -1,6 +1,7 @@
 package stellarimages
 
 import (
+	"context"
 	_ "embed"
 	"encoding/binary"
 	"errors"
@@ -14,8 +15,8 @@ import (
 var tiffWASM []byte
 var tiffRuntime wasmDecoder
 
-func decodeTIFF(data []byte) (image.Image, error) {
-	b, err := tiffRuntime.run(tiffWASM, data, "TIFF decode")
+func decodeTIFF(ctx context.Context, data []byte) (image.Image, error) {
+	b, err := tiffRuntime.run(ctx, tiffWASM, data, "TIFF decode")
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +133,7 @@ func decodeTIFF(data []byte) (image.Image, error) {
 		if bits == 16 && photo == 5 {
 			model |= 512
 		}
-		img, err = transformPixels(raw, profile, model, w, h, alpha)
+		img, err = transformPixels(ctx, raw, profile, model, w, h, alpha)
 	} else {
 		out := image.NewNRGBA64(image.Rect(0, 0, w, h))
 		for i := 0; i < w*h; i++ {

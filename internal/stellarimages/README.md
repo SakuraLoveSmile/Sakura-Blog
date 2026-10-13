@@ -5,6 +5,7 @@
 ## 接口
 
 - `Analyze([]byte) (Analysis, error)`：转正后的尺寸与 `hsla-mean-v1` 平均色，64px，不放大。
+- `AnalyzeContext(ctx, []byte) (Analysis, error)`：同一管线，嵌入解码执行受调用方取消及每次 15 秒上限约束；`Analyze` 保留背景上下文入口。
 - `Collect(html, baseURL) ([]string, error)`：按上游渲染作用域扫描，`data-src` 优先，WHATWG HTTP(S) URL 去重，保留首次出现顺序。
 - `Processor.Prepare(ctx, []PageSnapshot, PrepareOptions) (Report, error)`：单页选择、dry-run、显式 refresh；3 workers；32MiB、40M 像素、远程请求15秒；缓存完整先于 backoff；失败保留旧尺寸／平均色，24小时后重试。
 - `ReadStore(path) (Store, error)`：缺文件返回空 v1；损坏格式／未知版本报错，不能覆盖原文件。

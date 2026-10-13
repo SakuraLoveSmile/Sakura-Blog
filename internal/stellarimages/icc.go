@@ -3,6 +3,7 @@ package stellarimages
 import (
 	"bytes"
 	"compress/zlib"
+	"context"
 	_ "embed"
 	"encoding/binary"
 	"errors"
@@ -15,7 +16,7 @@ import (
 //go:embed native/cmyk.icm
 var defaultCMYK []byte
 
-func applyICC(img image.Image, profile []byte, highPrecision bool) (image.Image, error) {
+func applyICC(ctx context.Context, img image.Image, profile []byte, highPrecision bool) (image.Image, error) {
 	_, cmyk := img.(*image.CMYK)
 	if len(profile) == 0 && !cmyk {
 		return img, nil
@@ -49,6 +50,9 @@ func applyICC(img image.Image, profile []byte, highPrecision bool) (image.Image,
 	alphas := make([]uint16, count)
 	offset := 0
 	for y := b.Min.Y; y < b.Max.Y; y++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		for x := b.Min.X; x < b.Max.X; x++ {
 			i := (y-b.Min.Y)*b.Dx() + x - b.Min.X
 			if cmyk {
@@ -71,20 +75,20 @@ func applyICC(img image.Image, profile []byte, highPrecision bool) (image.Image,
 			}
 		}
 	}
-	converted, err := transformPixels(raw, profile, model, b.Dx(), b.Dy(), alphas)
+	converted, err := transformPixels(ctx, raw, profile, model, b.Dx(), b.Dy(), alphas)
 	if len(profile) > 0 && err != nil && (strings.Contains(err.Error(), "invalid color profile") || strings.Contains(err.Error(), "cannot create color transform")) {
 		return img, nil
 	}
 	return converted, err
 }
-func transformPixels(raw, profile []byte, model uint32, w, h int, alphas []uint16) (image.Image, error) {
+func transformPixels(ctx context.Context, raw, profile []byte, model uint32, w, h int, alphas []uint16) (image.Image, error) {
 	var input bytes.Buffer
 	for _, v := range []uint32{uint32(len(profile)), model, uint32(w * h)} {
 		_ = binary.Write(&input, binary.LittleEndian, v)
 	}
 	input.Write(profile)
 	input.Write(raw)
-	rgb, err := colorRuntime.run(colorWASM, input.Bytes(), "ICC transform")
+	rgb, err := colorRuntime.run(ctx, colorWASM, input.Bytes(), "ICC transform")
 	if err != nil {
 		return nil, err
 	}
