@@ -25,11 +25,11 @@ func TestStellarV2EmbeddedImageIcon(t *testing.T) {
 		})
 	}
 	// 上游 SVG 分支忽略图片专用属性，不能借图片修复改变此语义。
-	got, err := s.RenderStellarV2(`{% icon default:copy style:width:2em %}`, nil)
+	got, err := s.RenderStellarV2(`{% icon copy:copy style:width:2em %}`, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(got, `style="width:2em"`) {
+	if !strings.Contains(got, "<svg") || strings.Contains(got, `style="width:2em"`) {
 		t.Fatalf("SVG icon changed official image-only attribute semantics: %s", got)
 	}
 }

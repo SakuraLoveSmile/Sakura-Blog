@@ -70,6 +70,37 @@ func TestStellarV2AllMermaidFencesRetainSourceAndChromaCode(t *testing.T) {
 		}
 	}
 }
+
+func TestStellarFencedCodeExposesCopyTargetWithoutGutter(t *testing.T) {
+	s := NewService("")
+	for _, language := range []string{"go", "text", "unknown-language", ""} {
+		body := "```" + language + "\nfirst\n  second <tag>\n```"
+		out, err := s.RenderStellarV2(body, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc := parseStellarHTML(t, out)
+		targets := selectStellarClass(doc, "code")
+		var pre *nethtml.Node
+		if len(targets) == 1 {
+			for child := targets[0].FirstChild; child != nil; child = child.NextSibling {
+				if child.Type == nethtml.ElementNode && child.Data == "pre" {
+					pre = child
+					break
+				}
+			}
+		}
+		if pre == nil || stellarText(pre) != "first\n  second <tag>\n" {
+			t.Fatalf("%q copy target includes gutter or loses source: %s", language, out)
+		}
+		if len(selectStellarClass(doc, "highlight")) != 1 {
+			t.Fatalf("code lacks official highlight container: %s", out)
+		}
+		if strings.Contains(out, "md-table-scroll") {
+			t.Fatalf("code table was treated as Markdown table: %s", out)
+		}
+	}
+}
 func TestStellarV2MathJaxMarkupPreservesTeXAndCode(t *testing.T) {
 	s := NewService("")
 	body := `Inline $a_b*c$ and \(\alpha_{n}\), block:

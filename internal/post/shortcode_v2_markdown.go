@@ -1,6 +1,8 @@
 package post
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	nethtml "golang.org/x/net/html"
 	"html"
@@ -14,6 +16,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
+	"golang.org/x/net/html/atom"
 )
 
 // 官方 diagrams runtime 消费 .mermaid 原文；普通 fence 委托同一 Chroma 配置。
@@ -42,7 +45,24 @@ func (r *stellarCodeBlockRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRe
 func (r *stellarCodeBlockRenderer) render(writer util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	fenced := node.(*ast.FencedCodeBlock)
 	if !strings.EqualFold(string(fenced.Language(source)), "mermaid") {
-		return r.fallback(writer, source, node, entering)
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		var rendered bytes.Buffer
+		buffer := bufio.NewWriter(&rendered)
+		status, err := r.fallback(buffer, source, node, entering)
+		if err != nil {
+			return status, err
+		}
+		if err = buffer.Flush(); err != nil {
+			return status, err
+		}
+		markup, err := stellarCopyCodeMarkup(rendered.String(), string(fenced.Language(source)))
+		if err != nil {
+			return status, err
+		}
+		_, err = writer.WriteString(markup)
+		return status, err
 	}
 	if !entering {
 		return ast.WalkContinue, nil
@@ -54,6 +74,69 @@ func (r *stellarCodeBlockRenderer) render(writer util.BufWriter, source []byte, 
 	}
 	_, _ = writer.WriteString("</pre>\n")
 	return ast.WalkSkipChildren, nil
+}
+
+// Chroma 保留服务端高亮；补齐官方容器和仅含正文的复制目标，行号不能进入剪贴板。
+func stellarCopyCodeMarkup(markup, language string) (string, error) {
+	nodes, err := nethtml.ParseFragment(strings.NewReader(markup), &nethtml.Node{Type: nethtml.ElementNode, Data: "div", DataAtom: atom.Div})
+	if err != nil {
+		return "", err
+	}
+	addClass := func(n *nethtml.Node, class string) {
+		for i, a := range n.Attr {
+			if a.Key == "class" {
+				n.Attr[i].Val = a.Val + " " + class
+				return
+			}
+		}
+		n.Attr = append(n.Attr, nethtml.Attribute{Key: "class", Val: class})
+	}
+	var hasCode func(*nethtml.Node) bool
+	hasCode = func(n *nethtml.Node) bool {
+		if n.Type == nethtml.ElementNode && n.Data == "code" {
+			return true
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if hasCode(c) {
+				return true
+			}
+		}
+		return false
+	}
+	var walk func(*nethtml.Node)
+	walk = func(n *nethtml.Node) {
+		if n.Type == nethtml.ElementNode && n.Data == "td" {
+			if hasCode(n) {
+				addClass(n, "code")
+			} else {
+				addClass(n, "gutter")
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	var out bytes.Buffer
+	for _, n := range nodes {
+		if n.Type == nethtml.ElementNode {
+			container := n
+			if n.Data == "pre" {
+				container = &nethtml.Node{Type: nethtml.ElementNode, Data: "div", DataAtom: atom.Div}
+				code := &nethtml.Node{Type: nethtml.ElementNode, Data: "div", DataAtom: atom.Div, Attr: []nethtml.Attribute{{Key: "class", Val: "code"}}}
+				code.AppendChild(n)
+				container.AppendChild(code)
+			} else {
+				walk(n)
+			}
+			addClass(container, strings.TrimSpace("highlight "+language))
+			if err = nethtml.Render(&out, container); err != nil {
+				return "", err
+			}
+		} else if err = nethtml.Render(&out, n); err != nil {
+			return "", err
+		}
+	}
+	return out.String(), nil
 }
 
 // 代码和已渲染的数学节点不能再次解释定界符（包括嵌套 shortcode 的输出）。
