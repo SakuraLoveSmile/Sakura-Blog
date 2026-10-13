@@ -579,7 +579,11 @@ func validateMigrationRuntime(ctx context.Context, resolved *config.App, appPath
 	if services.Search == nil {
 		return fmt.Errorf("staged search unavailable")
 	}
-	web.SetAssetVersioner(NewAssetVersioner(false, services.App.Root))
+	assetVersioner, err := newIconAssetVersioner(false, services.App.Root, services.Icons)
+	if err != nil {
+		return err
+	}
+	web.SetAssetVersioner(assetVersioner)
 	engine, err := web.NewEngineFromEmbed(services.Icons)
 	if err != nil {
 		return err

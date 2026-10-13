@@ -56,7 +56,11 @@ func Mount(router *gin.Engine, deps Dependencies) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load stellar templates: %w", err)
 	}
-	web.SetAssetVersioner(NewAssetVersioner(deps.DevMode, deps.Root))
+	assetVersioner, err := newIconAssetVersioner(deps.DevMode, deps.Root, deps.Icons)
+	if err != nil {
+		return nil, err
+	}
+	web.SetAssetVersioner(assetVersioner)
 	version := deps.AppVersion
 	if version == "" {
 		version = "dev"

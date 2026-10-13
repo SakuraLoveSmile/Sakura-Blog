@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"blog/internal/settings"
+	"blog/modules/stellar/web"
 	"blog/modules/stellar/web/assets"
 )
 
@@ -102,11 +104,42 @@ func TestRuntimeVersionMatchesDiskAndEmbed(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	dev := NewAssetVersioner(true, root)
-	embedded := NewAssetVersioner(false, "")
-	for _, path := range []string{"/assets/js/runtime/index.js", "assets/js/runtime/index.js", "/assets/js/search/algolia-search.js", "/assets/css/main.css"} {
+	icons, err := settings.LoadIconsEmbed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := web.GeneratedStellarAssets(icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dev := NewAssetVersioner(true, root, generated...)
+	embedded := NewAssetVersioner(false, "", generated...)
+	for _, path := range []string{"/assets/js/runtime/index.js", "assets/js/runtime/index.js", "/assets/js/search/algolia-search.js", "/assets/css/main.css", "/assets/js/icons/default.json"} {
 		if got, want := dev(path), embedded(path); got == "0" || got != want {
 			t.Errorf("disk and embed must agree for %s: got %s, want %s", path, got, want)
 		}
+	}
+}
+
+func TestRuntimeGeneratedAssetOrderAndSnapshot(t *testing.T) {
+	icons, err := settings.LoadIconsEmbed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := web.GeneratedStellarAssets(icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := NewAssetVersioner(false, "", generated...)
+	for left, right := 0, len(generated)-1; left < right; left, right = left+1, right-1 {
+		generated[left], generated[right] = generated[right], generated[left]
+	}
+	reversed := NewAssetVersioner(false, "", generated...)
+	path := "assets/" + generated[0].Path
+	// 在首次查询前改调用者切片，版本器必须保留创建时的公开素材快照。
+	expected := reversed(path)
+	generated[0].Body[0] ^= 1
+	if first("/assets/js/runtime/index.js") != reversed("/assets/js/runtime/index.js") || first(path) != expected {
+		t.Fatal("generated asset order or caller mutation changed the captured fingerprint")
 	}
 }

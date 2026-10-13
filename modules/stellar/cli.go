@@ -45,7 +45,11 @@ func PrepareToolImages(ctx context.Context, app *config.App, st *store.Store, op
 	renderer := post.NewService(filepath.Join(app.Root, "content", "posts"))
 	renderer.SetIconFunc(icons.Get)
 	renderer.SetSettingsManager(settings.NewManagerFromPointer(site))
-	web.SetAssetVersioner(NewAssetVersioner(false, app.Root))
+	assetVersioner, err := newIconAssetVersioner(false, app.Root, icons)
+	if err != nil {
+		return stellarimages.Report{}, err
+	}
+	web.SetAssetVersioner(assetVersioner)
 	engine, err := web.NewEngineFromEmbed(icons)
 	if err != nil {
 		return stellarimages.Report{}, err
