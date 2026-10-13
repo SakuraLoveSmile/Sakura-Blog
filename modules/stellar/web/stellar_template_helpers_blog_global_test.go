@@ -267,3 +267,27 @@ func TestStellarStrictHeadHostSEOPriorityAndManagedMeta(t *testing.T) {
 		t.Fatal("head mutated SEO snapshot")
 	}
 }
+
+func TestStellarBlogNavPreservesSafeLinkKinds(t *testing.T) {
+	for value, want := range map[string]string{"#section": "#section", "?view=list": "?view=list", "mailto:reader@example.test": "mailto:reader@example.test", "tel:+1234": "tel:+1234", "/about/": "/blog/about/", "//external.test/docs": "//external.test/docs"} {
+		if got := stellarBlogNavURL("/blog/", value); got != want {
+			t.Fatalf("%s: %s", value, got)
+		}
+	}
+	for _, value := range []string{"javascript:alert(1)", "data:text/html,x", `/\external.test`, "https:///missing-host", "/a\nb"} {
+		if stellarBlogNavURL("/blog/", value) != "" {
+			t.Fatalf("accepted %q", value)
+		}
+	}
+	d := stellarTemplateFixture(t)
+	r := stellarTemplateRenderer{}
+	for _, value := range []string{"manual", "reviewed", "polished", "generated"} {
+		for _, image := range []bool{false, true} {
+			def := stellarmodels.ResolveAILabel(value)
+			want := stellarmodels.BuildAILabelHTML(value, stellarTranslate(d, "meta.ai_label."+value), "cap", string(r.icon(def["icon"])), image)
+			if got := string(r.blogAILabel(d, value, image)); got != want {
+				t.Fatalf("ordinary label changed: %s", value)
+			}
+		}
+	}
+}

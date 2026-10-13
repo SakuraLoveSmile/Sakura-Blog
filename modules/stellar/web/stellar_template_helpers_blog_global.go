@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -245,13 +246,40 @@ func (r stellarTemplateRenderer) blogWelcome(d *StellarRenderData, item map[stri
 	return r.frame(d, "markdown", stellarText(item["title"]), template.HTML(b.String()), "", "", nil, true)
 }
 
+// 导航允许官方链接中的片段、查询及 mailto/tel，仍拒绝执行协议和反斜杠。
+func stellarBlogNavURL(root string, value any) string {
+	text, ok := value.(string)
+	if !ok || strings.TrimSpace(text) == "" || strings.Contains(text, `\`) || strings.ContainsAny(text, "\x00\r\n\t") {
+		return ""
+	}
+	text = strings.TrimSpace(text)
+	parsed, err := url.Parse(text)
+	if err != nil {
+		return ""
+	}
+	parsed.Scheme = strings.ToLower(parsed.Scheme)
+	switch parsed.Scheme {
+	case "http", "https":
+		if parsed.Host == "" {
+			return ""
+		}
+	case "mailto", "tel", "":
+	default:
+		return ""
+	}
+	if strings.HasPrefix(text, "?") {
+		return text
+	}
+	return stellarURL(root, parsed.String())
+}
+
 func (r stellarTemplateRenderer) blogNavTabs(d *StellarRenderData) template.HTML {
 	var b strings.Builder
 	pageURL := stellarPublicPageURL(d)
 	pagePath := stellarURL(d.Stellar.Root, stellarPagePath(d))
 	for _, raw := range stellarList(stellarBlogGlobal(d, "nav_tabs.items")) {
 		tab := stellarMap(raw)
-		href := stellarBlogContentURL(d.Stellar.Root, tab["url"])
+		href := stellarBlogNavURL(d.Stellar.Root, tab["url"])
 		if href == "" {
 			continue
 		}
