@@ -200,16 +200,17 @@ function onEditorKindDocumentKeydown(e: KeyboardEvent) {
 // 草稿头状态：originalStatus 为服务器线上状态，hasDraft 表示存在已保存未发布的草稿
 const originalStatus = ref("draft");
 const hasDraft = ref(false);
-// 服务器保存基线覆盖完整表单，AI 摘要继续使用独立保存契约。
+// 保存基线与请求使用同一投影；严格专栏的 ID/名称由服务端按 collection 推导。
 type PostForm = typeof form.value;
-const savedSnapshot = ref(JSON.stringify(form.value));
+type PostSnapshot = Omit<PostForm, "topic_id" | "topic"> & Partial<Pick<PostForm, "topic_id" | "topic">>;
+const savedSnapshot = ref(JSON.stringify(snapshotForm()));
 const baselineReady = ref(!isEdit.value);
 const richPending = ref(false);
 const saveFailed = ref<false | "save" | "publish">(false);
 const savedAt = ref("");
 const busy = computed(() => saving.value || publishing.value);
 const isDirty = computed(
-  () => baselineReady.value && (richPending.value || JSON.stringify(form.value) !== savedSnapshot.value),
+  () => baselineReady.value && (richPending.value || JSON.stringify(snapshotForm()) !== savedSnapshot.value),
 );
 const saveStatus = computed(() => {
   if (loading.value) return "正在加载文章…";
@@ -221,8 +222,13 @@ const saveStatus = computed(() => {
   if (savedAt.value) return `已保存 ${savedAt.value}${hasDraft.value ? " · 尚未发布" : ""}`;
   return isEdit.value ? (hasDraft.value ? "草稿已保存 · 尚未发布" : "所有修改已保存") : "新文章尚未保存";
 });
-function snapshotForm(): PostForm {
-  return JSON.parse(JSON.stringify(form.value));
+function snapshotForm(source: PostSnapshot = form.value): PostSnapshot {
+  const snapshot = JSON.parse(JSON.stringify(source));
+  if (snapshot.stellar_version === 2) {
+    delete snapshot.topic_id;
+    delete snapshot.topic;
+  }
+  return snapshot;
 }
 async function flushPendingChanges() {
   await richRef.value?.flushPendingChanges();
@@ -577,7 +583,7 @@ async function loadPost() {
         : [],
     author: src.author || (Array.isArray(src.authors) && src.authors[0] ? src.authors[0] : ""),
   };
-  savedSnapshot.value = JSON.stringify(form.value);
+  savedSnapshot.value = JSON.stringify(snapshotForm());
   baselineReady.value = true;
   saveFailed.value = false;
   savedAt.value = "";
@@ -604,7 +610,7 @@ watch(
     savedAt.value = "";
     saveFailed.value = false;
     aiSummary.value = "";
-    savedSnapshot.value = JSON.stringify(form.value);
+    savedSnapshot.value = JSON.stringify(snapshotForm());
     baselineReady.value = !target;
     loading.value = false;
     if (!target) return;
@@ -652,11 +658,11 @@ async function handleRestored() {
 }
 
 /** 只把本次提交的快照记为已保存；请求期间的新输入继续保持未保存。 */
-async function acceptSaved(submitted: PostForm, status: string, session: number) {
+async function acceptSaved(submitted: PostSnapshot, status: string, session: number) {
   await flushPendingChanges();
   if (session !== editorSession) return;
   if (form.value.status === submitted.status) form.value.status = status;
-  savedSnapshot.value = JSON.stringify({ ...submitted, status });
+  savedSnapshot.value = JSON.stringify(snapshotForm({ ...submitted, status }));
   savedAt.value = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
   saveFailed.value = false;
   if (!isDirty.value) {
@@ -669,7 +675,7 @@ async function acceptSaved(submitted: PostForm, status: string, session: number)
 }
 
 /** 保存：已发布文章存草稿头，线上内容保持不变。 */
-function adoptCreatedSlug(createdSlug: string, submitted: PostForm) {
+function adoptCreatedSlug(createdSlug: string, submitted: PostSnapshot) {
   const previousKey = draftStorageKey.value;
   persistedSlug.value = createdSlug;
   if (form.value.slug === submitted.slug) form.value.slug = createdSlug;
