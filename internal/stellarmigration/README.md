@@ -6,6 +6,7 @@
 
 - `ReadSnapshot(ctx, dbPath, files)`：SQLite `mode=ro`、`query_only=1`、单事务读取实际 `sqlite_master` 与动态列，另用同样只读的 `Store.DetectLegacyNotebookSchema` 共用结构契约并比对捕获列。旧表缺少新版列不会触发建表／补列。`files` 是调用者明确提供的受跟踪 Markdown 原文。
 - `Preview(snapshot)`：先构建全部集合，再建立上游 Registry，逐条校验成员。返回主题 document JSON、独立 Blog JSON，以及每条 Post／Page／WikiProject／WikiDoc／Topic／Notebook／Note／文件的原文摘要、version 2、Front Matter JSON、Blog JSON、Markdown 和映射／冲突。已 version 2 的 theme／内容 JSON 与 Markdown 逐字保持；无任何存储副作用。
+- `PreviewWithCapabilities(snapshot, ConsumerCapabilities{ConsumerPoster: true})`：仅调用者显式声明已经实测闭合的消费者才降为提示。catalog 固定为 `poster`、`collection_order`、`authors`、`author_widget`、`wiki_external_url`，未知 capability 报错；默认没有闭合能力。诊断全部保留，以 `kind=consumer`、`consumer=<能力>`、`severity=info`、`blocking=false` 标明调用者的声明，并不替代真实体验证明。政策／结构／strict schema 冲突不受该参数影响。
 - `Candidate.PublicReport()`：只输出行数、公开源身份／路径、hash、源字段→目标字段、行为说明和无原值诊断。原始设置、正文、通知密钥、用户 email、密码哈希、AI key 和冲突值均不在报告中。
 - `WritePrivate(path, candidate)`：以 `O_EXCL` 创建新的 `0600` 文件，不覆盖已有文件或跟随 symlink。候选含完整源数据，不能提交 Git、发给外部服务或复制进 public 目录。调用者应使用 `0700` 隔离输出目录。
 - `ValidateCandidate(candidate, currentSnapshot)`：源 digest 必须一致，候选集合必须完整、没有未决冲突，且再次通过 theme／content／profile／membership strict 校验。源 digest 覆盖所有表及其 schema、所有关联、用户／权限、评论／草稿和明确输入文件；评论等不迁移记录的变化也使候选过期。此方法不写数据，不构成迁移授权。
@@ -20,7 +21,7 @@
 
 `Blog.content.share/reward/poster/banner_image/ai_summary/authors/collection_order` 等保留获批准的本地能力。旧分享／打赏启用时显式 `Blog.content.enabled=true`，用于本地 content/JS 消费；它不控制 `blog_*` 标签注册，后者由 renderer 显式 `BlogExtensions:true` 注册。**保留候选值不代表模板／宿主已消费。** poster、集合排序、旧 author widget 等接通前有阻断诊断；主执行者须完成消费与体验验证后审查解除这些项。
 
-Wiki 的 name／title、项目入口重定向／官方首页、外链入口／内部路径、Hero／cover 的独立来源，以及文章 banner／cover 有具体私密候选 alternatives，禁止默选其中一项。旧笔记无 slug/status/author，不自行分配作者、发布或生成已存在的公开路由。INTEGER ID／`nb_order`／`content/tags` 到新版表结构是独立步骤；schema 变化后需重新生成源快照并审核内容候选，不能拿旧 digest 写入新 schema。
+Wiki 旧外链统一保留于 `Blog.content.wiki_external_url`，由独立模板消费；canonical `route.path/homepage` 保持本地路径，绝不塞 HTTP URL。shelf／项目表外链不同仍是来源冲突，其私密 alternatives 同样使用该扩展键。Wiki 的 name／title、项目入口重定向／官方首页、Hero／cover 的独立来源，以及文章 banner／cover 有具体私密候选 alternatives，禁止默选其中一项。旧笔记无 slug/status/author，不自行分配作者、发布或生成已存在的公开路由。INTEGER ID／`nb_order`／`content/tags` 到新版表结构是独立步骤；schema 变化后需重新生成源快照并审核内容候选，不能拿旧 digest 写入新 schema。
 
 Markdown 仅把明确的旧本地 `about/links/moments/ghrepo/ghuser/tip` 标签改为 `blog_*`；批准的旧 tooltip 语义保留，不替换为不同的上游 inline tip。参数、正文和空白不重建。旧 image 未明确 fancybox 时添加 `fancybox:false` 保留默认点击行为。Goldmark 代码段（包括引用／列表内代码）不改；未知、跨行或引号不完整的标签原文保留并阻断。此包不假称已全面验证每个标签参数，也不净化作者 HTML。
 

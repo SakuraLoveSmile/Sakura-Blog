@@ -21,12 +21,15 @@ type Alternative struct {
 	Markdown     string `json:"markdown,omitempty"`
 }
 type Diagnostic struct {
-	Code         string        `json:"code"`
-	Source       string        `json:"source"`
-	Path         string        `json:"path"`
-	Message      string        `json:"message"`
-	Blocking     bool          `json:"blocking"`
-	Alternatives []Alternative `json:"alternatives,omitempty"`
+	Kind         string             `json:"kind"`
+	Severity     string             `json:"severity"`
+	Consumer     ConsumerCapability `json:"consumer,omitempty"`
+	Code         string             `json:"code"`
+	Source       string             `json:"source"`
+	Path         string             `json:"path"`
+	Message      string             `json:"message"`
+	Blocking     bool               `json:"blocking"`
+	Alternatives []Alternative      `json:"alternatives,omitempty"`
 }
 type ThemeCandidate struct {
 	Version      int          `json:"version"`
@@ -55,11 +58,12 @@ type RecordCandidate struct {
 	Diagnostics    []Diagnostic `json:"diagnostics"`
 }
 type Candidate struct {
-	Version     int               `json:"version"`
-	Source      Snapshot          `json:"source"`
-	Theme       ThemeCandidate    `json:"theme"`
-	Records     []RecordCandidate `json:"records"`
-	Diagnostics []Diagnostic      `json:"diagnostics"`
+	ConsumerCapabilities ConsumerCapabilities `json:"consumer_capabilities,omitempty"`
+	Version              int                  `json:"version"`
+	Source               Snapshot             `json:"source"`
+	Theme                ThemeCandidate       `json:"theme"`
+	Records              []RecordCandidate    `json:"records"`
+	Diagnostics          []Diagnostic         `json:"diagnostics"`
 }
 type RecordReport struct {
 	Source          string       `json:"source"`
@@ -73,13 +77,14 @@ type RecordReport struct {
 	Diagnostics     []Diagnostic `json:"diagnostics"`
 }
 type Report struct {
-	SourceDigest     string                     `json:"source_digest"`
-	Counts           map[string]int             `json:"counts"`
-	SettingsMappings []Mapping                  `json:"settings_mappings"`
-	Diagnostics      []Diagnostic               `json:"diagnostics"`
-	Records          []RecordReport             `json:"records"`
-	Blocking         int                        `json:"blocking"`
-	NotebookSchema   store.LegacyNotebookSchema `json:"notebook_schema"`
+	ConsumerCapabilities ConsumerCapabilities       `json:"consumer_capabilities,omitempty"`
+	SourceDigest         string                     `json:"source_digest"`
+	Counts               map[string]int             `json:"counts"`
+	SettingsMappings     []Mapping                  `json:"settings_mappings"`
+	Diagnostics          []Diagnostic               `json:"diagnostics"`
+	Records              []RecordReport             `json:"records"`
+	Blocking             int                        `json:"blocking"`
+	NotebookSchema       store.LegacyNotebookSchema `json:"notebook_schema"`
 }
 
 func publicDiagnostics(ds []Diagnostic) []Diagnostic {
@@ -92,6 +97,7 @@ func publicDiagnostics(ds []Diagnostic) []Diagnostic {
 func (c Candidate) PublicReport() Report {
 	r := Report{SourceDigest: c.Source.Digest, Counts: map[string]int{}, SettingsMappings: c.Theme.Mappings, Diagnostics: publicDiagnostics(append(append([]Diagnostic{}, c.Diagnostics...), c.Theme.Diagnostics...)), Records: []RecordReport{}}
 	r.NotebookSchema = c.Source.NotebookSchema
+	r.ConsumerCapabilities = clone(c.ConsumerCapabilities)
 	for n, t := range c.Source.Tables {
 		r.Counts[n] = len(t.Rows)
 	}
@@ -133,6 +139,9 @@ func (c Candidate) PublicReport() Report {
 // stale source, unresolved conflicts and invalid schema.
 // It never opens a writable DB. Schema migration must be a separate operation.
 func ValidateCandidate(c Candidate, current Snapshot) error {
+	if err := validateCapabilities(c.ConsumerCapabilities); err != nil {
+		return err
+	}
 	if err := current.Verify(); err != nil {
 		return err
 	}

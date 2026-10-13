@@ -229,7 +229,12 @@ func (b *themeBuilder) wikiShelf(s Snapshot) {
 			if target != "" && key != "url" {
 				set(usingShelf, target, value)
 			}
-			b.diagnostics = append(b.diagnostics, Diagnostic{Code: "wiki_shelf_definition_conflict", Source: "settings", Path: source, Message: "旧 shelf 冗余定义与当前项目表不同或无目标；官方 shelf 仅 ID 数组，需明确集合值来源", Blocking: true, Alternatives: []Alternative{{TargetSource: "wiki_projects/" + id, Name: "保留当前项目表集合定义", ConfigJSON: encode(base)}, {TargetSource: "wiki_projects/" + id, Name: "审核旧 shelf 字段覆盖（无等效字段需单独适配）", ConfigJSON: encode(usingShelf)}}})
+			currentBlog := buildCollection(s, "wiki_projects", project).blog
+			shelfBlog := clone(currentBlog)
+			if key == "url" {
+				set(shelfBlog, "content.wiki_external_url", value)
+			}
+			b.diagnostics = append(b.diagnostics, Diagnostic{Code: "wiki_shelf_definition_conflict", Source: "settings", Path: source, Message: "旧 shelf 冗余定义与当前项目表不同或无目标；官方 shelf 仅 ID 数组，需明确集合值来源", Blocking: true, Alternatives: []Alternative{{TargetSource: "wiki_projects/" + id, Name: "保留当前项目表集合定义", ConfigJSON: encode(base), BlogJSON: encode(currentBlog)}, {TargetSource: "wiki_projects/" + id, Name: "审核旧 shelf 字段覆盖（无等效字段需单独适配）", ConfigJSON: encode(usingShelf), BlogJSON: encode(shelfBlog)}}})
 		}
 	}
 	set(b.blog, "data.wiki", ids)

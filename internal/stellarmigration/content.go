@@ -76,10 +76,20 @@ func newRecord(table string, row Row) *recordBuilder {
 // Preview produces all content candidates before resolving membership. Unknown
 // fields stay in the private source snapshot and produce blocking diagnostics.
 func Preview(s Snapshot) (Candidate, error) {
+	return PreviewWithCapabilities(s, nil)
+}
+
+// PreviewWithCapabilities only accepts explicitly supplied, verified consumer
+// capabilities. It retains every diagnostic and never resolves policy choices.
+func PreviewWithCapabilities(s Snapshot, capabilities ConsumerCapabilities) (Candidate, error) {
 	if err := s.Verify(); err != nil {
 		return Candidate{}, err
 	}
+	if err := validateCapabilities(capabilities); err != nil {
+		return Candidate{}, err
+	}
 	c := Candidate{Version: 2, Source: clone(s), Theme: buildTheme(s), Records: []RecordCandidate{}, Diagnostics: []Diagnostic{}}
+	c.ConsumerCapabilities = clone(capabilities)
 	collections := map[string]map[string]any{}
 	for _, table := range []string{"wiki_projects", "topics", "notebooks"} {
 		for _, row := range s.Tables[table].Rows {
@@ -134,10 +144,10 @@ func Preview(s Snapshot) (Candidate, error) {
 	if s.NotebookSchema.Required() {
 		c.Diagnostics = append(c.Diagnostics, Diagnostic{Code: "legacy_notebook_schema", Source: "schema", Path: "notebooks/notes", Message: "旧 INTEGER ID、nb_order、content/tags 表与新 TEXT ID、slug/status/content_md/tags_json 不兼容；必须单独审核 schema 转换，不能先假设 EnsureTable 会升级", Blocking: true})
 	}
-	c.Diagnostics = uniqueDiagnostics(c.Diagnostics)
-	c.Theme.Diagnostics = uniqueDiagnostics(c.Theme.Diagnostics)
+	c.Diagnostics = classifyDiagnostics(uniqueDiagnostics(c.Diagnostics), capabilities)
+	c.Theme.Diagnostics = classifyDiagnostics(uniqueDiagnostics(c.Theme.Diagnostics), capabilities)
 	for i := range c.Records {
-		c.Records[i].Diagnostics = uniqueDiagnostics(c.Records[i].Diagnostics)
+		c.Records[i].Diagnostics = classifyDiagnostics(uniqueDiagnostics(c.Records[i].Diagnostics), capabilities)
 	}
 	return c, nil
 }
@@ -251,9 +261,9 @@ func buildCollection(s Snapshot, table string, row Row) *recordBuilder {
 			b.conflict("wiki_homepage", "route.path/navigation.tree", "旧项目入口重定向至第一篇已发布文档；上游会生成首页/Collection 模型。两个候选都保留成员身份，需审核入口行为", Alternative{Name: "独立 Blog 扩展保留旧重定向", ConfigJSON: encode(b.raw), BlogJSON: encode(legacy)}, Alternative{Name: "采用官方 Collection 首页", ConfigJSON: encode(b.raw), BlogJSON: encode(b.blog)})
 		}
 		if u := stringValue(row["url"]); u != "" {
-			external := clone(b.blog)
-			set(external, "content.wiki_external_url", u)
-			b.conflict("wiki_external_homepage", "url", "旧外链入口不能塞入 route.path；须保留为 Blog 入口或明确采用内部首页", Alternative{Name: "保留独立外链入口", ConfigJSON: encode(b.raw), BlogJSON: encode(external)}, Alternative{Name: "官方内部首页", ConfigJSON: encode(b.raw), BlogJSON: encode(b.blog)})
+			set(b.blog, "content.wiki_external_url", u)
+			b.mapped("url", "blog.content.wiki_external_url", "旧外链作为已授权 Blog 扩展完整保留；canonical route/path/homepage 仍为本地路径")
+			b.conflict("wiki_external_url_consumer", "url", "旧外链已保留为独立 Blog 入口；模板消费未显式验证前继续阻断，不能将 HTTP URL 写入 route.path")
 		}
 		if available := stringValue(row["available"]); available != "" {
 			set(b.blog, "content.available", available)
