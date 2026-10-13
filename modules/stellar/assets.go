@@ -37,18 +37,19 @@ func NewAssetVersioner(devMode bool, root string) func(string) string {
 		if err != nil {
 			return "0"
 		}
-		// ESM 相对导入沿用入口 query；任一依赖变化都必须更新整套模块的版本。
+		// ESM、动态脚本/样式和延迟图标沿用入口 query，必须聚合本地加载资源。
 		if rel(p) == "js/runtime/index.js" {
 			var source fs.FS = assets.FS
 			if devMode {
 				source = os.DirFS(filepath.Join(root, "modules", "stellar", "web", "assets"))
 			}
 			data = nil
-			err = fs.WalkDir(source, "js/runtime", func(name string, entry fs.DirEntry, walkErr error) error {
+			err = fs.WalkDir(source, ".", func(name string, entry fs.DirEntry, walkErr error) error {
 				if walkErr != nil {
 					return walkErr
 				}
-				if entry.IsDir() || !strings.HasSuffix(name, ".js") {
+				if entry.IsDir() || !(strings.HasSuffix(name, ".js") || strings.HasSuffix(name, ".css") ||
+					(strings.HasPrefix(name, "js/icons/") && strings.HasSuffix(name, ".json"))) {
 					return nil
 				}
 				content, readErr := fs.ReadFile(source, name)

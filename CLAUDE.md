@@ -91,7 +91,7 @@ Stellar 的 Stylus 源通过 `hexo-config()` 读取主题配置。本项目在 `
 
 - Go `html/template` 的结构必须与当前上游 Stellar EJS 和已存在的项目模板对齐。新增/改动前先对照 class、属性和嵌套，不凭记忆复刻过时的 layout 片段。
 - `template.HTML` 已是可信渲染结果时直接输出；不要再次传给只接收 `string` 的 `safe` helper。任何作者可控原始 HTML 都应先走现有渲染/净化链。
-- 前台采用 Stellar 2.0 `site-shell/site-region/brand/listing-nav` 骨架，运行时外观注入必须输出对应的新选择器；旧 settings 字段保留。原生 ESM runtime 通过 `stellar-runtime-config` 加载本地 shell/search 扩展，入口 `asset_ver` 聚合整个 runtime 的 JS 内容。完整移植要求保留 SSR 的同时接通上游 partial navigation；本地扩展须先具备区域挂载、取消与卸载，不能只注册模块而跳过自建服务初始化。前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
+- 前台采用 Stellar 2.0 `site-shell/site-region/brand/listing-nav` 骨架，运行时外观注入必须输出对应的新选择器；旧 settings 字段保留。原生 ESM runtime 通过 `stellar-runtime-config` 加载本地 shell/search 扩展，入口 `asset_ver` 聚合本地 assets 全部 JS/CSS（包括动态 search/services/plugins 和 vendor）及继承 runtime query 的 `js/icons/*.json`，文档和独立图片不参与；磁盘与 embed 使用同一规则。完整移植要求保留 SSR 的同时接通上游 partial navigation；本地扩展须先具备区域挂载、取消与卸载，不能只注册模块而跳过自建服务初始化。前台脚本依赖的 `ctx`、模板函数和 `asset_ver` 是服务端到浏览器的契约。新增依赖时在模板注入与消费端一起修改；静态资源引用使用 `asset_ver`，不手写 cache-busting 版本戳。
 - 部署使用 `internal/settings/data/icons.yml` 的嵌入图标注册表；开发默认也读取这份受跟踪副本。图标为内联 SVG，未知 key 会安全地渲染占位。新配置使用当前语义化键；保留 `legacyIconAlias`，直到迁移数据确认不再需要旧 `solar:`/`ph:`/`bxs:` 键。
 - 用户已批准完整移植中的浅色、深色与自动配色以及四种外观预设。当前是否接通以代码与浏览器证据为准，不能再用旧的仅深色约定缩减本任务。
 
