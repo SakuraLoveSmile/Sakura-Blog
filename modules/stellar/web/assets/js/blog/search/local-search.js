@@ -16,24 +16,32 @@ var serverSearchOK = true;       // /api/search 失败一次后本会话内不�
 // 懒加载与缓存 TTL（1.41）：ctx 注入，缺省 true / 86400；cache_ttl=0 表示不缓存
 var searchLazyLoad = true;
 var searchCacheTtl = 86400;
+var searchIncludeContent = true;
+var searchScope = 'all';
+var searchRoots = new WeakMap();
+var mountedInputs = new Set();
 try {
   var searchCfg = ctx.search && ctx.search.local_search;
   if (searchCfg) {
     searchLazyLoad = searchCfg.lazy_load !== false;
+    searchIncludeContent = searchCfg.content !== false;
+    searchScope = searchCfg.field || 'all';
     searchCacheTtl = typeof searchCfg.cache_ttl === 'number' ? Math.max(0, searchCfg.cache_ttl) : 86400;
   }
 } catch (e) {}
 
 // 搜索结果的类型展示名（对齐 /api/search 的 type 字段：post/page/moment）。
-var SEARCH_TYPE_LABELS = { post: '文章', page: '页面', moment: '瞬间' };
+var SEARCH_TYPE_LABELS = { post: '文章', page: '页面', wiki: '知识库', note: '笔记', moment: '瞬间' };
 
-function getSearchPath() {
-  var path = ctx.search.path;
-  if (path.startsWith('/')) {
-    path = path.substring(1);
-  }
-  return ctx.root + path;
+function sitePath(path) {
+  var root = '/' + (ctx.root || '/').replace(/^\/+|\/+$/g, '');
+  if (root !== '/') root += '/';
+  if (/^https?:\/\//.test(path)) return path;
+  if (path.startsWith(root)) return path;
+  return root + path.replace(/^\/+/, '');
 }
+
+function getSearchPath() { return sitePath(ctx.search.path); }
 
 function readSearchCache() {
   try {
@@ -41,6 +49,7 @@ function readSearchCache() {
     if (!raw) return null;
     var entry = JSON.parse(raw);
     if (!entry || typeof entry.ts !== 'number' || !Array.isArray(entry.data)) return null;
+    if (entry.scope !== searchScope || entry.content !== searchIncludeContent) return null;
     return entry;
   } catch (e) {
     console.warn('搜索缓存读取失败', e);
@@ -51,7 +60,7 @@ function readSearchCache() {
 function writeSearchCache(data) {
   if (searchCacheTtl <= 0) return;
   try {
-    var entry = { ts: Date.now(), ttl: searchCacheTtl, data: data };
+    var entry = { ts: Date.now(), ttl: searchCacheTtl, scope: searchScope, content: searchIncludeContent, data: data };
     localStorage.setItem(searchCacheKey, JSON.stringify(entry));
     searchCacheEntry = entry;
   } catch (e) {
@@ -60,7 +69,7 @@ function writeSearchCache(data) {
 }
 
 function isCacheFresh(entry) {
-  return !!(entry && typeof entry.ts === 'number' && entry.ttl > 0 && Date.now() - entry.ts < entry.ttl * 1000);
+  return !!(entry && typeof entry.ts === 'number' && entry.ttl > 0 && Date.now() - entry.ts < Math.min(entry.ttl, searchCacheTtl) * 1000);
 }
 
 // 从 localStorage 恢复缓存到内存（ttl=0 时不使用历史缓存）
@@ -103,7 +112,7 @@ function fetchSearchData(path) {
       return json;
     })
     .catch(function(err) {
-      console.warn('搜索数据加载失败', err);
+      if (!controller.signal.aborted) console.warn('搜索数据加载失败', err);
       throw err;
     })
     .finally(function() {
@@ -120,12 +129,11 @@ function bindLocalSearch(input, target, type, handler) {
   input._searchCleanups.push(function() { target.removeEventListener(type, handler); });
 }
 
-var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
-  var $input = document.getElementById(searchId);
+var searchFunc = function(path, filter, $wrapper, $input, $resultContent) {
   if (!$input || $input._searchInitialized === true) return;
   if ($input._searchInitialized === 'pending') return; // 数据加载中，等待完成后初始化
   var lifecycle = $input._searchLifecycle;
-  function isActive() { return $input._searchLifecycle === lifecycle; }
+  function isActive() { return $input._searchLifecycle === lifecycle && $input.isConnected !== false; }
 
   function getAllCombinations(keywords) {
     const result = [];
@@ -144,7 +152,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
 
   // 关键词组合（含原始大小写）：按组合长度降序，用于匹配与跳转高亮
   function buildKeywordPairs(value) {
-    const tokens = value.trim().split(" ");
+    const tokens = value.trim().split(/\s+/);
     const combos = getAllCombinations(tokens.map(function(t) { return t.toLowerCase(); }));
     const originalCombos = getAllCombinations(tokens);
     const pairs = combos.map(function(kw, i) {
@@ -179,8 +187,6 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
     if ($input._searchInitialized === true) return; // 防止重复绑定
     $input._searchInitialized = true;
 
-    var $resultContent = document.getElementById(contentId);
-    var $wrapper = document.getElementById(wrapperId);
     var serverController = null;
     var searchSeq = 0; // 丢弃过时响应，避免乱序覆盖
     $input._searchCleanups.push(function() { searchSeq += 1; serverController?.abort(); });
@@ -220,7 +226,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
 
     // 服务端搜索结果渲染：类型 tab 栏 + 结果列表（snippet 已含 .search-keyword 高亮）。
     // 全部视图按类型分组（组标题 文章/页面/瞬间），单类型视图平铺；tab 点击走客户端过滤。
-    // Go FTS 不包含 Wiki 文档。限定项目时，FTS 空或本项目无命中才转 JSON 索引；
+    // 保留旧扩展 data-filter 的路径筛选；strict domain/scope 由公开快照 API 精确筛选。
     // 普通搜索的空结果仍保持为空，类型 tab 的空结果也不扩大搜索范围。
     function renderServerResults(items, value, kw, seq) {
       lastItems = items;
@@ -238,7 +244,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       // 类型 tab：全部/文章/页面/瞬间，点击切换 activeType 后客户端过滤重渲染
       const tabs = document.createElement('div');
       tabs.className = 'search-result-tabs';
-      ['', 'post', 'page', 'moment'].forEach(function(type) {
+      [''].concat(Object.keys(SEARCH_TYPE_LABELS)).forEach(function(type) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = type === '' ? '全部' : (SEARCH_TYPE_LABELS[type] || type);
@@ -267,7 +273,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         visible.forEach(function(item) { ul.appendChild(resultItem(item, kw)); });
       } else {
         // 全部视图：按类型分组展示
-        ['post', 'page', 'moment'].forEach(function(type) {
+        Object.keys(SEARCH_TYPE_LABELS).forEach(function(type) {
           const group = visible.filter(function(item) { return item.type === type; });
           if (!group.length) return;
           const li = document.createElement('li');
@@ -285,7 +291,8 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
     // JSON 降级与后台刷新共享一个索引请求；等待完成后再检索，不能先用空缓存。
     function runLocalSearch(value, seq) {
       if (!isActive() || seq !== searchSeq) return;
-      if (searchCache && !searchFetchPromise) { localSearch(value); return; }
+      loadCacheIntoMemory();
+      if (searchCache && !searchFetchPromise && !needsFetch()) { localSearch(value); return; }
       (searchFetchPromise || fetchSearchData(path)).then(function() {
         if (isActive() && seq === searchSeq) localSearch(value);
       }).catch(function() {
@@ -305,7 +312,8 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       }
       serverController?.abort();
       serverController = new AbortController();
-      fetch('/api/search?q=' + encodeURIComponent(value) + '&limit=20', { signal: serverController.signal })
+      var parameters = new URLSearchParams({ q: value, limit: '20', scope: searchScope, include_content: String(searchIncludeContent), domain: $input.getAttribute('data-domain') || '' });
+      fetch(sitePath('api/search') + '?' + parameters, { signal: serverController.signal })
         .then(function(res) {
           if (!res.ok) throw new Error('search api ' + res.status);
           return res.json();
@@ -333,19 +341,21 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       $resultContent.innerHTML = "";
 
       (searchCache || []).forEach(function(data) {
-        if (!data.content?.trim().length) return;
+        if (!data || typeof data.path !== 'string') return;
         if (filter && !data.path.includes(filter)) return;
+        var domain = $input.getAttribute('data-domain') || '';
+        if (domain && !data.domains?.includes(domain)) return;
 
         var dataTitle = data.title?.trim() || 'Untitled';
         var dataTitleLowerCase = dataTitle.toLowerCase();
-        var dataContent = data.content;
+        var dataContent = searchIncludeContent && typeof data.content === 'string' ? data.content : '';
         var dataContentLowerCase = dataContent.toLowerCase();
         var dataUrl = data.path.startsWith('//') ? data.path.slice(1) : data.path;
         dataUrl = dataUrl.replace(/\/?index\.html$/, '/'); // index.html → /
         dataUrl = dataUrl.replace(/\.html$/, '/'); // xxx.html → xxx/
 
         // 章节划分：anchors 缺失/为空 → 整页一段（回退页面级行为）
-        var anchors = Array.isArray(data.anchors) ? data.anchors : [];
+        var anchors = dataContent && Array.isArray(data.anchors) ? data.anchors : [];
         var sections = [];
         if (anchors.length === 0) {
           sections.push({ anchor: null, offset: 0, end: dataContent.length });
@@ -363,7 +373,8 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         var titleMatches = 0;
         var titleBestKw = null;
         pairs.forEach(function(p) {
-          if (dataTitleLowerCase.indexOf(p.kw) >= 0) {
+          var metadata = [dataTitleLowerCase].concat(data.tags || [], data.categories || []);
+          if (metadata.some(function(term) { return typeof term === 'string' && term.toLowerCase().indexOf(p.kw) >= 0; })) {
             titleMatches += 1;
             if (titleBestKw == null) titleBestKw = p.original;
           }
@@ -454,7 +465,7 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
         var start = Math.max(0, secFirst - 20);
         var end = Math.min(secText.length, secFirst + 80);
         if (start === 0) end = 100;
-        var matchContent = secText.substring(start, end);
+        var matchContent = secText.substring(start, end).replace(/[&<>"']/g, function(character) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]; });
 
         var regS = new RegExp(pairs.map(function(p) { return escapeRegExp(p.kw); }).join("|"), "gi");
         matchContent = matchContent.replace(regS, function(keyword) {
@@ -528,100 +539,98 @@ var searchFunc = function(path, filter, wrapperId, searchId, contentId) {
       if ($input._searchInitialized === 'pending') {
         $input._searchInitialized = undefined; // 允许下次聚焦重试
       }
-      var $wrapper = document.getElementById(wrapperId);
       if ($wrapper) $wrapper.setAttribute('searching', 'false');
     });
 };
 
-// 页面加载预取：仅非懒加载模式（1.41；缓存新鲜时不重复请求）
-(function preloadSearchData() {
-  if (searchLazyLoad) return;
-  loadCacheIntoMemory();
-  if (needsFetch()) {
-    fetchSearchData(getSearchPath()).catch(function() {});
-  }
-})();
-
-// 绑定搜索框事件（focus 入口，对齐原版；懒加载模式下此时才拉取索引）。
-function initLocalSearch() {
-  var inputArea = document.querySelector('input#search-input');
-  if (!inputArea) return;
-  var resultArea = document.querySelector('div#search-result');
-  if (!resultArea) return;
-
-  if (!inputArea._localSearchBound) {
-    inputArea._localSearchBound = true;
-    inputArea._searchLifecycle = (inputArea._searchLifecycle || 0) + 1;
-    inputArea._searchCleanups = [];
-    bindLocalSearch(inputArea, inputArea, 'focus', function() {
+// 使用上游 class 契约：对话框和可选 sidebar widget 各自绑定自己的输入、结果与状态。
+function initLocalSearch(root) {
+  var inputs = [];
+  function bindWrapper(wrapper) {
+    var input = wrapper.querySelector('.search-input');
+    var result = wrapper.querySelector('.search-result');
+    if (!input || !result || inputs.includes(input)) return;
+    inputs.push(input);
+    mountedInputs.add(input);
+    input._searchLifecycle = (input._searchLifecycle || 0) + 1;
+    input._searchCleanups = [];
+    function initialize() {
       var path = getSearchPath();
-      const filter = inputArea.getAttribute('data-filter') || '';
-
-      // 已初始化：仅按需后台刷新（刷新失败下次聚焦自动重试）
-      if (inputArea._searchInitialized === true) {
-        if (needsFetch()) {
-          fetchSearchData(path).catch(function() {});
-        }
+      if (input._searchInitialized === true) {
+        if (needsFetch()) fetchSearchData(path).catch(function() {});
         return;
       }
-
-      // 懒加载：无可用数据时显示加载态（复用 searching 图标状态）
-      if (searchLazyLoad && !searchCache && !loadCacheIntoMemory()) {
-        var $wrapper = document.getElementById('search-wrapper');
-        if ($wrapper) $wrapper.setAttribute('searching', 'true');
-      }
-
-      searchFunc(path, filter, 'search-wrapper', 'search-input', 'search-result');
-
-      // 有数据但已过期（或 ttl=0）→ 后台刷新
-      if (searchCache && needsFetch()) {
-        fetchSearchData(path).catch(function() {});
-      }
+      searchFunc(path, input.getAttribute('data-filter') || '', wrapper, input, result);
+      if (searchCache && needsFetch()) fetchSearchData(path).catch(function() {});
+    }
+    bindLocalSearch(input, input, 'focus', initialize);
+    var observer = new MutationObserver(function() {
+      wrapper.classList.toggle('noresult', !result.querySelector('.search-result-list li'));
     });
-    bindLocalSearch(inputArea, inputArea, 'keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-      }
-    });
+    observer.observe(result, { childList: true, subtree: true });
+    input._searchCleanups.push(function() { observer.disconnect(); });
+    if (input === document.activeElement || input.value.trim()) initialize();
+    return initialize;
   }
+  root.querySelectorAll('.search-wrapper').forEach(bindWrapper);
+  // partial navigation 会替换 sidebar region；新 widget 通过同一 document 的 focusin 按需接入。
+  var onFocus = function(event) {
+    var input = event.target;
+    if (!input?.classList?.contains('search-input') || inputs.includes(input)) return;
+    var wrapper = input.closest('.search-wrapper');
+    if (wrapper) bindWrapper(wrapper)?.();
+  };
+  root.addEventListener('focusin', onFocus);
+  inputs.cleanupRoot = function() { root.removeEventListener('focusin', onFocus); };
+  return inputs;
+}
 
-  // 结果区增删 li 时切换 .noresult（控制"没有找到内容！"显隐）
-  if (!resultArea._searchObserved) {
-    resultArea._searchObserved = true;
-    const observer = new MutationObserver(function() {
-      const hasResults = resultArea.querySelector(".search-result-list li");
-      const wrapper = document.querySelector('.search-wrapper');
-      if (wrapper) wrapper.classList.toggle('noresult', !hasResults);
-    });
-    observer.observe(resultArea, { childList: true, subtree: true });
-    inputArea._searchCleanups.push(function() {
-      observer.disconnect();
-      resultArea._searchObserved = false;
-    });
-  }
+function disposeInputs(inputs) {
+  inputs.forEach(function(input) {
+    input._searchLifecycle = (input._searchLifecycle || 0) + 1;
+    (input._searchCleanups || []).reverse().forEach(function(cleanup) { cleanup(); });
+    input._searchCleanups = [];
+    input._searchInitialized = undefined;
+    mountedInputs.delete(input);
+  });
 }
 
 window.blogLocalSearch = {
-  mount: function(storage) {
-    if (storage && storage.key) searchCacheKey = storage.key(getSearchPath(), document.baseURI);
-    initLocalSearch();
+  mount: function(root, storage) {
+    // 保留原调用形态给已有宿主；runtime 明确传入本次 document。
+    if (!root?.querySelectorAll) { storage = root; root = document; }
+    if (searchRoots.has(root)) return searchRoots.get(root);
+    var previousPolicy = searchScope + ':' + searchIncludeContent;
+    var cfg = ctx.search.local_search || {};
+    searchIncludeContent = cfg.content !== false;
+    searchScope = cfg.field || 'all';
+    searchLazyLoad = cfg.lazy_load !== false;
+    searchCacheTtl = typeof cfg.cache_ttl === 'number' ? Math.max(0, cfg.cache_ttl) : 86400;
+    var key = storage?.key ? storage.key(getSearchPath(), document.baseURI) : searchCacheKey;
+    if (key !== searchCacheKey || previousPolicy !== searchScope + ':' + searchIncludeContent) {
+      this.clearMemory(); searchCacheKey = key; serverSearchOK = true;
+    }
+    if (!searchLazyLoad) {
+      loadCacheIntoMemory();
+      if (needsFetch()) fetchSearchData(getSearchPath()).catch(function() {});
+    }
+    var inputs = initLocalSearch(root);
+    var cleanup = function() {
+      if (searchRoots.get(root) !== cleanup) return;
+      inputs.cleanupRoot();
+      disposeInputs(inputs);
+      searchRoots.delete(root);
+      if (!mountedInputs.size) window.blogLocalSearch.clearMemory();
+    };
+    searchRoots.set(root, cleanup);
+    return cleanup;
   },
   clearMemory: function() {
     searchFetchController?.abort();
     searchFetchController = null; searchFetchPromise = null;
     searchCache = null; searchCacheEntry = null;
   },
-  unmount: function() {
-    searchFetchController?.abort();
-    searchFetchController = null; searchFetchPromise = null;
-    var input = document.getElementById('search-input');
-    if (!input) return;
-    input._searchLifecycle = (input._searchLifecycle || 0) + 1;
-    (input._searchCleanups || []).reverse().forEach(function(cleanup) { cleanup(); });
-    input._searchCleanups = [];
-    input._localSearchBound = false;
-    input._searchInitialized = undefined;
-  }
+  unmount: function(root) { searchRoots.get(root || document)?.(); }
 };
 
 })();

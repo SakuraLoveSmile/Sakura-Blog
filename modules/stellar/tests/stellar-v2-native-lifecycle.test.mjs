@@ -125,7 +125,9 @@ test('Blog friends旧正文解码取消不追加卡片，成功后再挂载不�
 test('Blog Go搜索快速换词与卸载取消服务端及索引请求，迟到响应不写结果', async () => {
   const f = fixture(); const input = new Element(), result = new Element(), wrapper = new Element();
   input.value = ''; result.innerHTML = '';
-  Object.assign(f.document.map, { 'input#search-input': input, 'div#search-result': result, '#search-input': input, '#search-result': result, '#search-wrapper': wrapper });
+  wrapper.map = { '.search-input': input, '.search-result': result };
+  Object.assign(f.document.map, { '.search-wrapper': wrapper });
+  f.sandbox.URLSearchParams = URLSearchParams;
   f.sandbox.ctx = { root: '/', search: { path: 'search.json', local_search: { lazy_load: true, cache_ttl: 0 } } };
   f.sandbox.MutationObserver = class { observe() {} disconnect() {} };
   f.load('blog/search/local-search.js'); f.window.blogLocalSearch.mount(); input.dispatchEvent(new Event('focus'));
