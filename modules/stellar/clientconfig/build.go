@@ -117,6 +117,7 @@ func Build(input Input) (Bundle, error) {
 	}
 	add("hero-parallax", "region", ".wiki-hero", object{})
 	add("hero-effect", "region", "canvas[data-hero-effect]", object{})
+	add("hero-video", "region", ".wiki-cover-background-video", object{})
 	_, lazy := split(obj(features["lazyLoading"]), obj(at(defaults, "features.lazy_loading")), "js")
 	add("lazy-loading", "document", "", object{"asset": rewrite(lazy["js"])})
 	bundle.Manifest.Extensions[len(bundle.Manifest.Extensions)-1].Module = "/assets/js/runtime/extensions/blog-lazy-loading.js"

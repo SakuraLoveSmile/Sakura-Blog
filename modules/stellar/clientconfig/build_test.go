@@ -74,7 +74,15 @@ func TestOfficialProjectionOracle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assertJSON(t, bundle.Manifest, fixture.Manifest)
+			// 本地补齐的媒体生命周期单独精确验证；其余声明保持官方差分。
+			official := bundle.Manifest
+			official.Extensions = make([]Extension, 0, len(bundle.Manifest.Extensions))
+			for _, entry := range bundle.Manifest.Extensions {
+				if entry.ID != "hero-video" {
+					official.Extensions = append(official.Extensions, entry)
+				}
+			}
+			assertJSON(t, official, fixture.Manifest)
 			assertJSON(t, bundle.ClientData, fixture.ClientData)
 			assertJSON(t, bundle.Comments, fixture.Comments)
 			after, _ := json.Marshal(fixture.Input)
@@ -83,6 +91,29 @@ func TestOfficialProjectionOracle(t *testing.T) {
 			}
 			if err := validateManifest(bundle.Manifest); err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+func TestHeroVideoRegionalManifest(t *testing.T) {
+	for _, fixture := range loadOracle(t).Fixtures {
+		t.Run(fixture.Name, func(t *testing.T) {
+			bundle, err := Build(fixture.Input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			count := 0
+			for _, entry := range bundle.Manifest.Extensions {
+				if entry.ID == "hero-video" {
+					count++
+					assertJSON(t, entry, Extension{ID: "hero-video", Module: "/assets/js/runtime/extensions/hero-video.js", Scope: "region", When: When{Selector: ".wiki-cover-background-video"}, Config: map[string]any{}})
+				}
+				if entry.ID == "services" && strings.Contains(entry.When.Selector, ".wiki-cover-background-video") {
+					t.Fatal("Hero video must not be claimed by official videoEvents services")
+				}
+			}
+			if count != 1 {
+				t.Fatalf("Hero video declaration count = %d; want 1", count)
 			}
 		})
 	}
