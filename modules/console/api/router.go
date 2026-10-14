@@ -508,6 +508,7 @@ func (h *Handler) register(r *gin.Engine) {
 		// 用户管理（多用户体系）：列表/创建/更新/重置密码/删除
 		sys.GET("/users", h.listUsers)
 		sys.POST("/users", h.createUser)
+		sys.POST("/users/invitations", h.createRegistrationInvite)
 		sys.PUT("/users/:id", h.updateUser)
 		sys.PUT("/users/:id/password", h.resetUserPassword)
 		sys.DELETE("/users/:id", h.deleteUser)
