@@ -2,6 +2,10 @@ package identity
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base32"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,6 +20,150 @@ import (
 	tmpl "blog/internal/settings"
 	"blog/internal/store"
 )
+
+const publicTestTOTPSecret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+
+func publicTestTOTPCode(counter int64) string {
+	key, _ := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(publicTestTOTPSecret)
+	var input [8]byte
+	binary.BigEndian.PutUint64(input[:], uint64(counter))
+	mac := hmac.New(sha1.New, key)
+	_, _ = mac.Write(input[:])
+	digest := mac.Sum(nil)
+	offset := digest[len(digest)-1] & 15
+	value := (binary.BigEndian.Uint32(digest[offset:offset+4]) & 0x7fffffff) % 1000000
+	return fmt.Sprintf("%06d", value)
+}
+
+func publicTestTOTPUser(t *testing.T, st *store.Store, role string) *store.User {
+	t.Helper()
+	hash, err := store.HashPassword("reader-pass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := &store.User{Username: "totp-reader", PasswordHash: hash, AuthSecret: store.GenerateAuthSecret(), Role: role, TOTPSecret: publicTestTOTPSecret}
+	if err := st.CreateUser(u); err != nil {
+		t.Fatal(err)
+	}
+	return u
+}
+
+func TestPublicLoginRequiresTOTP(t *testing.T) {
+	for _, role := range []string{store.RoleReader, store.RoleAuthor} {
+		t.Run(role, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			u := publicTestTOTPUser(t, st, role)
+			body := map[string]string{"username": u.Username, "password": "reader-pass"}
+			for _, code := range []string{"", "123", "abcdef", "1234567"} {
+				body["code"] = code
+				response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+				if response.Code != http.StatusUnauthorized || !bytes.Contains(response.Body.Bytes(), []byte("请输入有效的两步验证码")) || len(response.Result().Cookies()) != 0 {
+					t.Fatalf("TOTP required: status=%d body=%s cookies=%v", response.Code, response.Body.String(), response.Result().Cookies())
+				}
+			}
+			body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+			response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if response.Code != http.StatusOK || len(response.Result().Cookies()) != 1 {
+				t.Fatalf("correct TOTP: status=%d body=%s", response.Code, response.Body.String())
+			}
+			cookie := response.Result().Cookies()[0]
+			if _, _, ok := VerifyCookie(cookie.Value, ReaderAudience, u.AuthSecret, time.Now()); !ok || !cookie.HttpOnly || cookie.Path != "/" {
+				t.Fatal("invalid reader session cookie")
+			}
+			me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			var reader publicUserResponse
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != role {
+				t.Fatalf("authenticated me: %+v / %v", reader, err)
+			}
+			if err := st.UpdatePassword(u.ID, u.PasswordHash, store.GenerateAuthSecret()); err != nil {
+				t.Fatal(err)
+			}
+			me = publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || reader.Verified {
+				t.Fatalf("rotated auth secret accepted old session: %+v / %v", reader, err)
+			}
+		})
+	}
+}
+
+func TestPublicLoginTOTPFailureLimit(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	body := map[string]string{"username": u.Username, "password": "reader-pass"}
+	for range loginMaxFails {
+		response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+		if response.Code != http.StatusUnauthorized || len(response.Result().Cookies()) != 0 {
+			t.Fatalf("invalid TOTP attempt: %d cookies=%v", response.Code, response.Result().Cookies())
+		}
+	}
+	body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+	blocked := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if blocked.Code != http.StatusTooManyRequests || len(blocked.Result().Cookies()) != 0 {
+		t.Fatalf("TOTP failures did not enforce login limit: %d", blocked.Code)
+	}
+}
+
+func TestPublicLoginTOTPValidCodeClearsFailures(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	body := map[string]string{"username": u.Username, "password": "reader-pass"}
+	for range 2 {
+		for range loginMaxFails - 1 {
+			body["code"] = ""
+			if response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); response.Code != http.StatusUnauthorized {
+				t.Fatalf("failure attempts were not cleared: %d", response.Code)
+			}
+		}
+		body["code"] = publicTestTOTPCode(time.Now().Unix() / 30)
+		if response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); response.Code != http.StatusOK {
+			t.Fatalf("valid TOTP login = %d %s", response.Code, response.Body.String())
+		}
+	}
+}
+
+func TestPublicLoginTOTPAccountBoundaries(t *testing.T) {
+	for _, scenario := range []string{"wrong-six-digits", "malformed-secret", "banned", "admin", "wrong-password"} {
+		t.Run(scenario, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			role := store.RoleReader
+			if scenario == "admin" {
+				role = store.RoleAdmin
+			}
+			u := publicTestTOTPUser(t, st, role)
+			body := map[string]string{"username": u.Username, "password": "reader-pass", "code": publicTestTOTPCode(time.Now().Unix() / 30)}
+			want := http.StatusUnauthorized
+			message := "请输入有效的两步验证码"
+			switch scenario {
+			case "wrong-six-digits":
+				counter := time.Now().Unix() / 30
+				for candidate := 0; ; candidate++ {
+					code := fmt.Sprintf("%06d", candidate)
+					if code != publicTestTOTPCode(counter-1) && code != publicTestTOTPCode(counter) && code != publicTestTOTPCode(counter+1) {
+						body["code"] = code
+						break
+					}
+				}
+			case "malformed-secret":
+				if err := st.UpdateTOTPSecret(u.ID, "not a base32 secret!", nil); err != nil {
+					t.Fatal(err)
+				}
+			case "banned":
+				if err := st.UpdateUserStatus(u.ID, store.UserStatusBanned); err != nil {
+					t.Fatal(err)
+				}
+				message = "用户名或密码错误"
+			case "admin":
+				want, message = http.StatusForbidden, "管理员账号请从后台登录"
+			case "wrong-password":
+				body["password"], message = "wrong-password", "用户名或密码错误"
+			}
+			response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if response.Code != want || !bytes.Contains(response.Body.Bytes(), []byte(message)) || len(response.Result().Cookies()) != 0 {
+				t.Fatalf("account boundary: status=%d body=%s cookies=%v", response.Code, response.Body.String(), response.Result().Cookies())
+			}
+		})
+	}
+}
 
 func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	t.Helper()

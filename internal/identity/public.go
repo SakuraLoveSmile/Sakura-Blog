@@ -213,6 +213,7 @@ func (h *PublicHandler) login(c *gin.Context) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Code     string `json:"code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		jsonError(c, http.StatusBadRequest, "请求格式错误")
@@ -236,6 +237,11 @@ func (h *PublicHandler) login(c *gin.Context) {
 	if u.Status == store.UserStatusBanned {
 		h.recordLoginFail(ip)
 		jsonError(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
+	if u.TOTPSecret != "" && !ValidateTOTP(u.TOTPSecret, req.Code) {
+		h.recordLoginFail(ip)
+		jsonError(c, http.StatusUnauthorized, "请输入有效的两步验证码")
 		return
 	}
 	h.clearLoginFail(ip)
