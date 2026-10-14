@@ -1,0 +1,108 @@
+{
+  "source": "a80bdd15",
+  "binarySHA256": "4b76ed434f879f50e663e777ec1c9f9c138126cc4ee2e82fefec3a0fd58d19f5",
+  "normalLeaveAndBack": {
+    "url": "http://127.0.0.1:8103/wiki/video/intro",
+    "timeOrigin": 1791950639653.8,
+    "navigation": [
+      {
+        "type": "back_forward"
+      }
+    ],
+    "events": [
+      {
+        "kind": "pause-call",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791950486625.8,
+        "time": 48563,
+        "pausedBefore": false,
+        "currentTime": 0.183358
+      },
+      {
+        "kind": "pagehide",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791950486625.8,
+        "time": 48564.700000047684,
+        "persisted": false
+      },
+      {
+        "kind": "after-pagehide",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791950486625.8,
+        "time": 48564.700000047684,
+        "paused": true
+      }
+    ],
+    "video": [
+      {
+        "paused": false,
+        "currentTime": 1.99586,
+        "readyState": 4
+      }
+    ],
+    "scripts": [
+      "http://127.0.0.1:8103/assets/js/main.js?v=39fa2eb1",
+      "http://127.0.0.1:8103/assets/js/runtime/extensions/hero-video.js?v=bcfe8a6e"
+    ]
+  },
+  "pendingImport": {
+    "before": {
+      "url": "http://127.0.0.1:8103/wiki/video/intro",
+      "timeOrigin": 1791950840226.2,
+      "paused": false,
+      "readyState": 4,
+      "moduleCompleted": false
+    },
+    "after": {
+      "url": "http://127.0.0.1:8103/journal/alpha",
+      "timeOrigin": 1791950861540.8,
+      "events": [
+        {
+          "kind": "pause-call",
+          "url": "/wiki/video/intro",
+          "timeOrigin": 1791950840226.2,
+          "time": 21430.19999998808,
+          "pausedBefore": false,
+          "currentTime": 1.153599
+        },
+        {
+          "kind": "pagehide",
+          "url": "/wiki/video/intro",
+          "timeOrigin": 1791950840226.2,
+          "time": 21431,
+          "persisted": false
+        },
+        {
+          "kind": "after-pagehide",
+          "url": "/wiki/video/intro",
+          "timeOrigin": 1791950840226.2,
+          "time": 21431.099999964237,
+          "paused": true
+        }
+      ]
+    },
+    "intercept": {
+      "url": "http://127.0.0.1:8103/assets/js/runtime/extensions/hero-video.js?v=bcfe8a6e",
+      "resourceType": "Script"
+    }
+  },
+  "restored": {
+    "url": "http://127.0.0.1:8103/wiki/video/intro",
+    "probeCleared": true,
+    "video": [
+      {
+        "paused": false,
+        "readyState": 4
+      }
+    ],
+    "module": [
+      "http://127.0.0.1:8103/assets/js/runtime/extensions/hero-video.js?v=bcfe8a6e"
+    ]
+  },
+  "boundaries": [
+    "Normal video.second has no cover: full-document fallback, not compatible partial navigation.",
+    "Real back has new timeOrigin and navigation back_forward: not native BFCache.",
+    "Compatible cover partial preservation is unit/registry evidence only.",
+    "Fetch patterns cleared, network cache override disabled, probe storage cleared; user draft tab untouched."
+  ]
+}

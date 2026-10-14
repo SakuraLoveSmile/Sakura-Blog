@@ -185,11 +185,13 @@
 
 - T1/T6：新来源绑定已获批准；前两次正式演练失败分别暴露缺初始化文件的生产启动遗漏与空站点 URL。98162b2修复从同一持久快照启动，ec63ffad接入用户明确站点地址的具名候选／事务写入。当前组合真实build后，正式初次／选值preview及完整rehearse均退出0，Source/Root及七正文摘要保持；32候选／173映射、原13阻断具名处理为0。主agent只读核对41非迁移表、全部settings、30canonical和七正文一致，source72项仅SHM mtime变化。见迁移报告最新章节及`resume-migration-site-url-rehearsal.json`；真实迁移未授权，后续组合门禁继续执行。
 
+- T3/T7：a80bdd15 修复 Hero 视频 region 取消/清理与尚未导入时的同步 pagehide 暂停。真实浏览器正常离页、模块 Script 请求精确挂起后离页，均记录一次 pause-call、pagehide persisted=false、随后 paused=true；返回为新文档 back_forward，重新播放。Fetch 拦截、缓存覆盖与探针 storage 已恢复，用户 Console 草稿未操作。见 `resume-hero-video-browser-green.json`、`resume-hero-video-runtime-binding.json` 与 `resume-hero-video-current.png`。视频第二章无 cover，属于整页回退，不冒充兼容 partial；原生 BFCache 仍未实测。追加 Hero 后最终组合门禁继续执行。
+
 | 编号 | 正式链路与可核验证据 | 仍需保留的边界 |
 | --- | --- | --- |
 | T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；七条正文/候选及隔离演练已批准 | 新完整Root/Review绑定与指定URL已接入，完整隔离演练通过；真实迁移明确未授权 |
 | T2 | 四预设/三配色/14 profiles/三locale/断点矩阵；appearance字段及四级区域级联真实消费者 | 逐项证据不替代用户整体体验确认；最初失败采样保留 |
-| T3 | 全内容系统保存重开/导航搜索；模型、Wiki/Notebook排序、OG、分享及Hero真实链路 | 视频离页显式pause和原生BFCache没有新增成功证据；不推导全参数UI逐项验收 |
+| T3 | 全内容系统保存重开/导航搜索；模型、Wiki/Notebook排序、OG、分享及Hero真实链路 | 视频正常/迟导入离页显式pause已真实验证；原生BFCache仍未实测，不推导全参数UI逐项验收 |
 | T4 | partial成功/取消/超时/失败回退、真实SDK合成Algolia、六评论合成SDK及访客身份 | 真实Algolia/六评论账号、原生BFCache未实测；pin分页整页导航不当partial卸载证明 |
 | T5 | 54标签288参数oracle；可视化新增语法往返；动态服务、媒体、Gist隔离生命周期 | 外部Markdown受fake-IP/保留地址保护拒绝，成功路径仍未实测；不降低网络保护 |
 | T6 | 实际单二进制CLI与嵌入librsvg/字体；fetch边界、缓存/事件/取消与原图保留 | PNG/GIF/AVIF库内部仅阶段边界取消，不声称即时抢占；真实迁移需批准 |
