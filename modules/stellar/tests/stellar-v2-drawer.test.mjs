@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import vm from 'node:vm';
+const importSource = path => import('data:text/javascript;base64,' + Buffer.from(readFileSync(new URL(path, import.meta.url))).toString('base64'));
+const { createExtensionRegistry } = await importSource('../web/assets/js/runtime/extension-registry.js');
+const heroVideo = await importSource('../web/assets/js/runtime/extensions/hero-video.js');
 const baselineRef = process.env.BLOG_DRAWER_SOURCE_REF || (process.env.BLOG_DRAWER_BASELINE === '1' ? 'e576465' : '');
 const source = baselineRef
  ? execFileSync('git',['show',baselineRef+':modules/stellar/web/assets/js/main.js'],{encoding:'utf8'})
@@ -84,5 +87,74 @@ test('pointer打开后的原生cancel恢复触发焦点，退场中Escape会提�
   if(viaCancel){const event=new Event('cancel',{cancelable:true});f.dialog.dispatchEvent(event);assert.equal(event.defaultPrevented,true);}
   else{const pointerClose=new Event('click');Object.defineProperty(pointerClose,'target',{value:f.dialog});f.dialog.dispatchEvent(pointerClose);assert.equal(f.dialog.classList.contains('is-closing'),true);f.key('Escape');}
   const [id,pending]=[...f.timers.entries()][0];f.timers.delete(id);pending.callback();assert.equal(f.dialog.open,false);assert.equal(f.document.activeElement?.id,f.searchTrigger.id);assert.equal(f.main.inert,true);
+ }
+});
+
+function addHeroVideo(f, { hero = true, paused = false } = {}) {
+ const video = new Element('video', f.document);
+ video.classes.add(hero ? 'wiki-cover-background-video' : 'content-video');
+ Object.assign(video, { paused, autoplay: true, currentTime: 12, src: '/hero.mp4', loop: true, muted: true, playsInline: true, pauseCalls: 0, playCalls: 0 });
+ video.pause = function () { this.pauseCalls++; this.paused = true; };
+ video.play = function () { this.playCalls++; this.paused = false; return Promise.resolve(); };
+ (hero ? f.cover : f.main).append(video);
+ return video;
+}
+function heroRegistry(importer, errors) {
+ const registry = createExtensionRegistry({ importer, onError: detail => errors.push(detail) });
+ registry.register({ id: 'hero-video', module: '/assets/js/runtime/extensions/hero-video.js', scope: 'region', when: { selector: '.wiki-cover-background-video' }, config: {} });
+ return registry;
+}
+const settled = () => new Promise(resolve => setImmediate(resolve));
+
+test('实际main的pagehide同步暂停SSR Hero，即使动态import迟到成功或失败且registry已取消', async () => {
+ for (const outcome of ['resolve', 'reject']) {
+  const f = fixture(), video = addHeroVideo(f), ordinary = addHeroVideo(f, { hero: false }), alreadyPaused = addHeroVideo(f, { paused: true }), errors = [];
+  let resolveImport, rejectImport;
+  const registry = heroRegistry(() => new Promise((resolve, reject) => { resolveImport = resolve; rejectImport = reject; }), errors);
+  const mounting = registry.mount(f.cover);
+  await settled();
+  assert.equal(typeof resolveImport, 'function');
+  let teardown;
+  f.window.addEventListener('pagehide', () => { teardown = registry.unmount(f.cover); });
+  f.window.dispatchEvent(new Event('pagehide'));
+  assert.equal(video.paused, true, '必须在模块import完成前同步暂停SSR autoplay');
+  assert.equal(video.pauseCalls, 1);
+  assert.equal(ordinary.pauseCalls, 0);
+  assert.equal(alreadyPaused.pauseCalls, 0);
+  if (outcome === 'resolve') resolveImport(heroVideo); else rejectImport(new Error('import failed after pagehide'));
+  assert.equal((await mounting)[0].status, 'skipped');
+  await teardown;
+  f.window.dispatchEvent(new Event('pagehide'));
+  assert.equal(video.pauseCalls, 1);
+  assert.equal(video.playCalls, 0);
+  assert.deepEqual(errors, []);
+  assert.deepEqual([video.src, video.currentTime, video.loop, video.muted, video.playsInline], ['/hero.mp4', 12, true, true, true]);
+ }
+});
+
+test('实际main的pagehide也覆盖已失败import；已挂载Hero取消不重复pause且返回可重挂', async () => {
+ for (const failedImport of [false, true]) {
+  const f = fixture(), video = addHeroVideo(f), errors = [];
+  const registry = heroRegistry(async () => { if (failedImport) throw new Error('import failed'); return heroVideo; }, errors);
+  assert.equal((await registry.mount(f.cover))[0].status, failedImport ? 'failed' : 'mounted');
+  assert.equal(errors.length, failedImport ? 1 : 0);
+  let teardown;
+  f.window.addEventListener('pagehide', () => { teardown = registry.unmount(f.cover); });
+  f.window.dispatchEvent(new Event('pagehide'));
+  assert.equal(video.paused, true);
+  await teardown;
+  assert.equal(video.pauseCalls, 1, '同步guard与扩展cleanup只能暂停一次');
+  f.window.dispatchEvent(new Event('pagehide'));
+  assert.equal(video.pauseCalls, 1);
+  if (!failedImport) {
+   const show = new Event('pageshow'); Object.defineProperty(show, 'persisted', { value: true });
+   f.window.dispatchEvent(show);
+   await registry.mount(f.cover);
+   assert.equal(video.paused, false);
+   assert.equal(video.playCalls, 2);
+   f.window.dispatchEvent(new Event('pagehide'));
+   await teardown;
+   assert.equal(video.pauseCalls, 2);
+  }
  }
 });

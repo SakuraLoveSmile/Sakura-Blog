@@ -476,6 +476,10 @@ document.addEventListener('focusin', function (event) {
   focusRegion(region);
 });
 window.addEventListener('pagehide', function () {
+  // SSR autoplay可能早于异步Hero扩展挂载；离页保护必须同步执行。
+  for (const video of document.querySelectorAll('.wiki-cover-background-video')) {
+    if (!video.paused) video.pause();
+  }
   if (siteShell) delete siteShell.dataset.drawer;
   shellDrawerTrigger = null;
   restoreDrawerFocusFallback();

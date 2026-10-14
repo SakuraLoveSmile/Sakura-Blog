@@ -20,11 +20,11 @@ function video({ autoplay = true, pending = false, error, synchronous = false } 
       this.playCalls++;
       if (synchronous && error) throw error;
       if (error) return Promise.reject(error);
+      this.paused = false;
       if (pending) return new Promise((resolve, reject) => {
         this.resolvePlay = () => { this.paused = false; resolve(); };
         this.rejectPlay = reject;
       });
-      this.paused = false;
       return Promise.resolve();
     }
   };

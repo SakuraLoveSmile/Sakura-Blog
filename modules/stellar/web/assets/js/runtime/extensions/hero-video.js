@@ -15,7 +15,7 @@ export function mount(root, context = {}) {
     context.signal?.removeEventListener('abort', cleanup);
     for (const video of videos) {
       if (owners.get(video) !== owner) continue;
-      video.pause();
+      if (!video.paused) video.pause();
       owners.delete(video);
     }
   }
@@ -32,7 +32,7 @@ export function mount(root, context = {}) {
     try {
       Promise.resolve(video.play()).then(() => {
         // 已取消的play可能迟到成功；新挂载代正在播放时仍归新代所有。
-        if (disposed && !owners.has(video)) video.pause();
+        if (disposed && !owners.has(video) && !video.paused) video.pause();
       }, failed);
     } catch (error) {
       failed(error);
