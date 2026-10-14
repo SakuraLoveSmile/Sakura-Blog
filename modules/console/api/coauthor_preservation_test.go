@@ -36,6 +36,9 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 	} {
 		prefixes := []string{"/api/v1/posts/", "/api/v1/uc/posts/"}
 		for _, prefix := range prefixes {
+			if testCase.actor.ID == admin.ID && prefix == "/api/v1/uc/posts/" {
+				continue // 后台管理员身份不能替换 UC 的公共作者会话。
+			}
 			t.Run(testCase.name+prefix, func(t *testing.T) {
 				slug := fmt.Sprintf("owners-%s-%d", testCase.name, len(prefix))
 				if _, err := st.Create(&store.Post{Slug: slug, Title: "原文", ContentMD: "正文", Status: store.StatusPublished, AuthorIDs: testCase.owners}); err != nil {
@@ -48,7 +51,11 @@ func TestAuthorWritesPreserveNumericUsernameAndCoauthors(t *testing.T) {
 				for _, operation := range []struct{ method, suffix string }{
 					{http.MethodPut, ""}, {http.MethodPut, "/draft"}, {http.MethodPost, "/publish"},
 				} {
-					w := do2FA(r, operation.method, prefix+slug+operation.suffix, body, authorCookie(testCase.actor))
+					consoleCookie, publicCookie := authorCookie(testCase.actor), ""
+					if prefix == "/api/v1/uc/posts/" {
+						consoleCookie, publicCookie = "", signReaderCookie(testCase.actor)
+					}
+					w := doUCSessionReq(r, operation.method, prefix+slug+operation.suffix, body, consoleCookie, publicCookie, "")
 					if w.Code != http.StatusOK {
 						t.Fatalf("%s %s: status %d", operation.method, prefix+operation.suffix, w.Code)
 					}

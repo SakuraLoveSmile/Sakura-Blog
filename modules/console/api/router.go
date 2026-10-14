@@ -476,11 +476,25 @@ func (h *Handler) register(r *gin.Engine) {
 	// User Center: readers may inspect their account and upgrade; article and
 	// attachment surfaces require author. The write handlers reuse the Batch 4
 	// ownership checks and server-side author binding.
-	uc := v1.Group("/uc", h.apiAuth())
+	uc := v1.Group("/uc", h.ucAuth())
 	{
 		uc.GET("/me", h.ucMe)
+		uc.GET("/profile", h.handleGetProfile)
+		uc.PUT("/profile", h.handleUpdateProfile)
+		uc.PUT("/auth/password", h.changePassword)
+		uc.POST("/profile/2fa/setup", h.handle2FASetup)
+		uc.POST("/profile/2fa/confirm", h.handle2FAConfirm)
+		uc.POST("/profile/2fa/disable", h.handle2FADisable)
+		uc.GET("/profile/2fa/recovery-codes", h.handle2FARecoveryCodes)
+		uc.GET("/profile/api-token", h.apiTokenStatus)
+		uc.POST("/profile/api-token", h.generateAPIToken)
+		uc.DELETE("/profile/api-token", h.revokeAPIToken)
+		uc.GET("/notifications", h.listNotifications)
+		uc.GET("/notifications/unread-count", h.unreadNotifications)
+		uc.PUT("/notifications/:id/read", h.markNotificationRead)
+		uc.PUT("/notifications/read-all", h.markAllNotificationsRead)
 	}
-	ucAuthor := v1.Group("/uc", h.apiAuth(), h.requirePermission(store.PermissionContentWrite))
+	ucAuthor := uc.Group("", h.requirePermission(store.PermissionContentWrite))
 	{
 		ucAuthor.GET("/posts", h.listUCPosts)
 		ucAuthor.GET("/posts/:slug", h.getUCPost)

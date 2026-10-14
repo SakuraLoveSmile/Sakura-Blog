@@ -10,8 +10,34 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"blog/internal/identity"
 	"blog/internal/store"
 )
+
+// ucAuth 只使用经过公共身份中间件验证的 blog_user 会话。
+// 同一浏览器的后台 cookie 和 Bearer 凭证不得替换 User Center 的账号。
+func (h *Handler) ucAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		public := identity.CurrentUser(c)
+		if !public.Verified || public.ID <= 0 {
+			AbortFail(c, http.StatusUnauthorized, "未登录或登录已过期")
+			return
+		}
+		user, err := h.store.GetUserByID(public.ID)
+		if err != nil {
+			AbortFail(c, http.StatusInternalServerError, "读取用户身份失败")
+			return
+		}
+		if user == nil || user.Status != store.UserStatusActive || (user.Role != store.RoleReader && user.Role != store.RoleAuthor) {
+			AbortFail(c, http.StatusUnauthorized, "登录状态无效")
+			return
+		}
+		if !h.setAuthorizationContext(c, user.ID, user.Role) {
+			return
+		}
+		c.Next()
+	}
+}
 
 // UCMeResponse is the account summary consumed by the User Center shell.
 type UCMeResponse struct {
