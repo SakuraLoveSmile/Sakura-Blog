@@ -99,6 +99,18 @@ func TestUserCenterDualCookiesSelectPublicReaderAndPreserveAdmin(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("UC password update: status=%d", w.Code)
 	}
+	clearedPublic := false
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == authCookieName {
+			t.Fatal("UC password response cleared administrator cookie")
+		}
+		if cookie.Name == identity.UserCookieName && cookie.Value == "" && cookie.MaxAge < 0 {
+			clearedPublic = true
+		}
+	}
+	if !clearedPublic {
+		t.Fatal("UC password response must clear invalidated public cookie")
+	}
 	w = doUCSessionReq(r, http.MethodGet, "/api/v1/uc/me", "", authCookie(admin), publicCookie, "")
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("invalidated public cookie must not fall back to admin: status=%d", w.Code)
@@ -112,6 +124,33 @@ func TestUserCenterDualCookiesSelectPublicReaderAndPreserveAdmin(t *testing.T) {
 	w = do2FA(r, http.MethodGet, "/api/v1/profile", "", authCookie(admin))
 	if w.Code != http.StatusOK {
 		t.Fatalf("UC password/logout invalidated administrator session: status=%d", w.Code)
+	}
+}
+
+func TestConsolePasswordResponseKeepsConsoleCookiePolicy(t *testing.T) {
+	r, st, admin, _ := newFullEnv(t)
+	seedLoginUser(t, st, admin)
+	reader := seedReaderUser(t, st, "password-reader")
+	publicCookie := signReaderCookie(reader)
+	w := doUCSessionReq(r, http.MethodPut, "/api/v1/auth/password", `{"current":"secret","new":"console-new-password"}`, authCookie(admin), publicCookie, "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("Console password update: status=%d", w.Code)
+	}
+	clearedAdmin := false
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == identity.UserCookieName {
+			t.Fatal("Console password response changed public cookie policy")
+		}
+		if cookie.Name == authCookieName && cookie.Value == "" && cookie.MaxAge < 0 {
+			clearedAdmin = true
+		}
+	}
+	if !clearedAdmin {
+		t.Fatal("Console password response must clear invalidated administrator cookie")
+	}
+	w = doUserReq(r, http.MethodGet, "/api/v1/uc/me", "", publicCookie)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Console password update invalidated unrelated public user: status=%d", w.Code)
 	}
 }
 

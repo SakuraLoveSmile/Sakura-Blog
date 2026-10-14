@@ -476,9 +476,13 @@ func (h *Handler) changePassword(c *gin.Context) {
 		}
 	}
 
-	// 旧 cookie 已因签名 key 变化失效，顺手清掉客户端残留
+	// 旧 cookie 已因签名 key 变化失效，按认证入口清理对应会话。
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(authCookieName, "", -1, "/", "", h.cookieSecure(c), true)
+	cookieName := authCookieName
+	if c.GetString(authenticationSurfaceKey) == authenticationSurfaceUC {
+		cookieName = identity.UserCookieName
+	}
+	c.SetCookie(cookieName, "", -1, "/", "", h.cookieSecure(c), true)
 	c.JSON(http.StatusOK, gin.H{"ok": true, "passwordRequired": req.New != ""})
 }
 
