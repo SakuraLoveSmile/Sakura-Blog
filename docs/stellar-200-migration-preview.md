@@ -1626,3 +1626,11 @@ Profile：`topic`；候选路径：`/post/stellar-144-acceptance`；已 version 
 - BuildMigrationFixture 没有真实目标参数；未对本次真实候选执行 BuildFixture，也没有真实 Apply、push、发布或生产部署。用户确认前不能转换真实数据。
 - 历史 DB-only 隔离证明未覆盖原索引/视图/触发器、上传字节/附件、原配置文件、运行缓存/untracked；本次完整 root 合成证明补齐这些资源保留与对象约束边界。合成完整资源复制仍不能冒充真实候选演练或真实前台验收。
 - 真实迁移执行前仍必须重新确认源一致性，并绑定 SourceDigest、完整 CandidateDigest、每项具名 decision 和逐记录正文批准；源变化会使批准过期。
+
+### 最终 dev 组合复验（2026-10-14）
+
+a61d0cd5 含 Hero 视频补漏后，通过 feature 门禁、dev 组合测试和真实构建。正式 dev 单二进制 SHA256 为 `17de7e55d2acacd325294eb976900ad53d8b9ad50b3c897e66287cd0bc34cfc5`。再次执行初次 preview、选值 preview、完整隔离 rehearse，三者退出0；所有来源、候选、审查与七正文摘要与前一节指定站点地址的成功演练完全一致，无新增数据选择。
+
+新隔离 stage 的只读核验通过：41 非迁移表、全部 settings、30 canonical 记录、67 SQL 对象及索引形状、46 非派生 rowid 集合、2 tracked 完整文档、FTS 身份及原标题；quick_check 正常，外键违规0。真实源72项前后指纹仅SHM mtime变化。公开证据为 `baselines/stellar-200-full/resume-migration-site-url-final-rehearsal.json` 与 `resume-migration-site-url-stage-final-review.json`。
+
+真实数据仍未执行 Apply 或 Recover，未停止真实服务，未部署或推送。此次结果仅完成已授权隔离演练，不将其扩大为真实迁移授权。

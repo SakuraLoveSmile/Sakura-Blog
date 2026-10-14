@@ -1,0 +1,20 @@
+{
+  "source_commit": "a61d0cd5472fcf350aaa0964fe51729a49469a65",
+  "normal_hook_exit_code": 0,
+  "feature_merge_check_exit_code": 0,
+  "dev_combination_test_exit_code": 0,
+  "dev_real_build_exit_code": 0,
+  "console_tests": 261,
+  "stellar_tests": 211,
+  "failures": 0,
+  "skips": 0,
+  "go_vet": true,
+  "staticcheck": true,
+  "go_tests_all": true,
+  "runtime_binding": "resume-hero-video-dev-runtime-binding.json",
+  "browser_evidence": "resume-hero-video-dev-browser.json",
+  "final_rehearsal": "resume-migration-site-url-final-rehearsal.json",
+  "real_source_migrated": false,
+  "pushed": false,
+  "deployed": false
+}

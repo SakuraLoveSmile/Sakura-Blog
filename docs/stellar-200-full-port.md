@@ -187,6 +187,9 @@
 
 - T3/T7：a80bdd15 修复 Hero 视频 region 取消/清理与尚未导入时的同步 pagehide 暂停。真实浏览器正常离页、模块 Script 请求精确挂起后离页，均记录一次 pause-call、pagehide persisted=false、随后 paused=true；返回为新文档 back_forward，重新播放。Fetch 拦截、缓存覆盖与探针 storage 已恢复，用户 Console 草稿未操作。见 `resume-hero-video-browser-green.json`、`resume-hero-video-runtime-binding.json` 与 `resume-hero-video-current.png`。视频第二章无 cover，属于整页回退，不冒充兼容 partial；原生 BFCache 仍未实测。追加 Hero 后最终组合门禁继续执行。
 
+- T1/T3/T6/T7：a61d0cd5（含两项 Hero 修复）的正常 hook、feature `make merge-check` 与 dev 组合 `make test` 均通过：Console261/Stellar211、fail0/skip0，Go vet/Staticcheck/全部Go测试及模块/部署来源检查通过。dev 真实 `make build` 成功，四隔离服务改用 dev 二进制17de7e55…34cfc5，Console入口/各六资源、main/runtime/hero/provider及嵌入WASM匹配。最终dev浏览器真实播放→整页离开暂停一次→新文档返回播放，探针已清除。见 `resume-hero-final-combination-gates.json`、`resume-hero-video-dev-runtime-binding.json`、`resume-hero-video-dev-browser.json`。
+- T1/T6/T7：同一最终dev单二进制正式初次preview、选值preview和完整rehearse均退出0，Source/Root/原与选值Candidate/Review及七正文摘要与已批准指定URL演练完全相同。新隔离stage只读核对41非迁移表、全部settings、30canonical、67对象/索引、46rowid集合、两tracked完整文档及FTS身份/原标题；quick_check/FK正常。真实来源72项仅SHM mtime变化。见 `resume-migration-site-url-final-rehearsal.json`、`resume-migration-site-url-stage-final-review.json`；真实Apply/Recover/停真实服务仍未授权。
+
 | 编号 | 正式链路与可核验证据 | 仍需保留的边界 |
 | --- | --- | --- |
 | T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；七条正文/候选及隔离演练已批准 | 新完整Root/Review绑定与指定URL已接入，完整隔离演练通过；真实迁移明确未授权 |
@@ -195,7 +198,7 @@
 | T4 | partial成功/取消/超时/失败回退、真实SDK合成Algolia、六评论合成SDK及访客身份 | 真实Algolia/六评论账号、原生BFCache未实测；pin分页整页导航不当partial卸载证明 |
 | T5 | 54标签288参数oracle；可视化新增语法往返；动态服务、媒体、Gist隔离生命周期 | 外部Markdown受fake-IP/保留地址保护拒绝，成功路径仍未实测；不降低网络保护 |
 | T6 | 实际单二进制CLI与嵌入librsvg/字体；fetch边界、缓存/事件/取消与原图保留 | PNG/GIF/AVIF库内部仅阶段边界取消，不声称即时抢占；真实迁移需批准 |
-| T7 | 组合源码、真实CSS/build、服务资产hash及前台证据各自绑定 | 74ef648 feature/dev门禁与真实build/hash已完成；外部账号、原生BFCache、真实迁移和用户完整体验仍未关闭 |
+| T7 | 组合源码、真实CSS/build、服务资产hash及前台证据各自绑定 | a61d0cd5含Hero后的feature/dev门禁、真实build/hash与完整隔离演练已完成；外部账号、原生BFCache、真实迁移和用户完整体验仍未关闭 |
 
 ### 历史起始阶段（不表示当前实现状态）
 

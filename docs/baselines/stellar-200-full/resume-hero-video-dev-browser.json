@@ -1,0 +1,64 @@
+{
+  "source_commit": "a61d0cd5",
+  "binary_sha256": "17de7e55d2acacd325294eb976900ad53d8b9ad50b3c897e66287cd0bc34cfc5",
+  "before": {
+    "url": "http://127.0.0.1:8103/wiki/video/intro",
+    "timeOrigin": 1791951176049,
+    "video": [
+      {
+        "paused": false,
+        "readyState": 4,
+        "currentTime": 0.153427
+      }
+    ],
+    "module": [
+      "http://127.0.0.1:8103/assets/js/main.js?v=39fa2eb1",
+      "http://127.0.0.1:8103/assets/js/runtime/extensions/hero-video.js?v=cbb40d67"
+    ]
+  },
+  "after": {
+    "url": "http://127.0.0.1:8103/journal/alpha",
+    "timeOrigin": 1791951176467.3,
+    "events": [
+      {
+        "kind": "pause-call",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791951176049,
+        "time": 534.9000000357628,
+        "pausedBefore": false,
+        "currentTime": 0.329039
+      },
+      {
+        "kind": "pagehide",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791951176049,
+        "time": 536.1000000238419,
+        "persisted": false
+      },
+      {
+        "kind": "after-pagehide",
+        "url": "/wiki/video/intro",
+        "timeOrigin": 1791951176049,
+        "time": 536.1999999880791,
+        "paused": true
+      }
+    ]
+  },
+  "back": {
+    "url": "http://127.0.0.1:8103/wiki/video/intro",
+    "timeOrigin": 1791951190635.8,
+    "navigation": [
+      "back_forward"
+    ],
+    "probeCleared": true,
+    "video": [
+      {
+        "paused": false,
+        "readyState": 4,
+        "currentTime": 0.149297
+      }
+    ]
+  },
+  "native_bfcache_observed": false,
+  "user_draft_untouched": true
+}
