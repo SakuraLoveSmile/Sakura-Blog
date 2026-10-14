@@ -15,7 +15,7 @@ import (
 var ErrInvalidRegistrationInvite = errors.New("invalid registration invite")
 
 // CreateRegistrationInvite 仅返回一次明文，持久化其 SHA256 摘要和审计信息。
-// 有效期由管理员入口选择；建表只通过正常 EnsureSchema 完成。
+// 有效期由管理员入口选择；建表由 Store 的正常启动迁移完成。
 // 创建者和使用者 ID 是保留的审计记录，用户删除不会清除消费状态。
 func (s *Store) CreateRegistrationInvite(createdBy int64, expiresAt time.Time) (string, error) {
 	now := time.Now().UTC()

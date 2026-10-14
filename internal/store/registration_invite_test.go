@@ -247,6 +247,10 @@ func TestRegistrationInviteSchemaExistingDatabase(t *testing.T) {
 	if err := s.CreateUser(admin); err != nil {
 		t.Fatal(err)
 	}
+	// 模拟表被损坏移除，业务方法仍须报错，不在请求中临时迁移。
+	if _, err := s.db.Exec(`DROP TABLE registration_invites`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := s.CreateRegistrationInvite(admin.ID, time.Now().Add(time.Hour)); err == nil || !strings.Contains(err.Error(), "registration_invites") {
 		t.Fatalf("store unexpectedly migrated schema: %v", err)
 	}
@@ -325,5 +329,81 @@ func TestRegistrationInviteAuditSurvivesUserDeletion(t *testing.T) {
 	}
 	if err := s.CreateUserWithRegistrationInvite(inviteReader("cannot-reuse"), code); !errors.Is(err, ErrInvalidRegistrationInvite) {
 		t.Fatalf("deleted user revived invite: %v", err)
+	}
+}
+
+func TestRegistrationInviteProductionStartupWithoutEnsureSchema(t *testing.T) {
+	for _, legacy := range []bool{false, true} {
+		t.Run(fmt.Sprintf("legacy=%v", legacy), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "site.db")
+			if legacy {
+				// 固定前一版本已建用户及迁移 ledger 的库，不使用 New/EnsureSchema 自举。
+				old, err := sql.Open("sqlite", path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := old.Exec(tableDDL["users"]); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := old.Exec(`INSERT INTO users(username,password_hash,role) VALUES('existing-admin','keep-hash','admin')`); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := old.Exec(schemaMigrationsDDL); err != nil {
+					t.Fatal(err)
+				}
+				for _, migration := range schemaMigrations[:3] {
+					if _, err := old.Exec(`INSERT INTO schema_migrations(version,name,applied_at) VALUES(?,?,'2026-10-14')`, migration.Version, migration.Name); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := old.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			s, err := New(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = s.Close() })
+			// 先断言 Store.New 已建表，再按生产 Console mount 的逐表入口建 users。
+			var count int
+			if err := s.db.QueryRow(`SELECT count(*) FROM registration_invites`).Scan(&count); err != nil {
+				t.Fatalf("production startup did not create invites: %v", err)
+			}
+			if err := s.EnsureUsersTable(); err != nil {
+				t.Fatal(err)
+			}
+			admin, err := s.GetUserByUsername("existing-admin")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !legacy {
+				admin = &User{Username: "existing-admin", PasswordHash: "keep-hash", Role: RoleAdmin}
+				if err := s.CreateUser(admin); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if admin == nil || admin.PasswordHash != "keep-hash" || admin.Role != RoleAdmin {
+				t.Fatalf("existing administrator changed: %+v", admin)
+			}
+			code := testInvite(t, s, admin)
+			if err := s.CreateUserWithRegistrationInvite(inviteReader("startup-reader"), code); err != nil {
+				t.Fatalf("startup registration: %v", err)
+			}
+			pending := testInvite(t, s, admin)
+			if err := s.Close(); err != nil {
+				t.Fatal(err)
+			}
+			s, err = New(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := s.CreateUserWithRegistrationInvite(inviteReader("restart-reader"), pending); err != nil {
+				t.Fatalf("restart registration: %v", err)
+			}
+			if err := s.db.QueryRow(`SELECT count(*) FROM schema_migrations WHERE version = 4 AND name = 'registration-invites'`).Scan(&count); err != nil || count != 1 {
+				t.Fatalf("invite migration ledger rows: %d err=%v", count, err)
+			}
+		})
 	}
 }

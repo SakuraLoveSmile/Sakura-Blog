@@ -23,9 +23,6 @@ func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	if err := st.EnsureSchema(); err != nil {
-		t.Fatalf("ensure schema: %v", err)
-	}
 	if err := st.EnsureUsersTable(); err != nil {
 		t.Fatalf("ensure users: %v", err)
 	}

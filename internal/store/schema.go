@@ -26,6 +26,10 @@ var schemaMigrations = []Migration{
 	{Version: 1, Name: "legacy-baseline"},
 	{Version: 2, Name: "stellar-v2-content-metadata", Up: migrateStellarContentTx},
 	{Version: 3, Name: "notebook-note-ownership", Up: migrateNotebookOwnershipTx},
+	{Version: 4, Name: "registration-invites", Up: func(tx *sql.Tx) error {
+		_, err := tx.Exec(tableDDL["registration_invites"])
+		return err
+	}},
 }
 
 const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
