@@ -1,0 +1,35 @@
+{
+  "production_source_commit": "f14e454c06d6fe335fb1d10edf73ad8ed9f40f8a",
+  "ordinary_hook_passed": true,
+  "feature_and_merged_dev_make_test": {
+    "passes": [
+      273,
+      220,
+      273,
+      220
+    ],
+    "failures": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "skipped": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "dev_real_make_build_passed": true,
+  "dev_binary_sha256": "3e80e6ef5830e75418f07e2f47a68d75e7059b9efbe820a760c8bfe18f4576bb",
+  "fixture_only_restart_ports": [
+    8103,
+    8112,
+    8113,
+    8114
+  ],
+  "scope": "T4/T7 invitation registration and native comments; overall T1-T7 remains in progress",
+  "real_source_migrated": false,
+  "pushed_released_or_deployed": false
+}
