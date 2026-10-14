@@ -239,10 +239,16 @@ func (h *PublicHandler) login(c *gin.Context) {
 		jsonError(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
-	if u.TOTPSecret != "" && !ValidateTOTP(u.TOTPSecret, req.Code) {
-		h.recordLoginFail(ip)
-		jsonError(c, http.StatusUnauthorized, "请输入有效的两步验证码")
-		return
+	if u.TOTPSecret != "" {
+		valid := ValidateTOTP(u.TOTPSecret, req.Code)
+		if !valid {
+			valid, err = h.store.ConsumeReaderRecoveryCode(u, req.Code)
+		}
+		if !valid || err != nil {
+			h.recordLoginFail(ip)
+			jsonError(c, http.StatusUnauthorized, "请输入有效的两步验证码")
+			return
+		}
 	}
 	h.clearLoginFail(ip)
 	h.setUserCookie(c, u)

@@ -165,6 +165,129 @@ func TestPublicLoginTOTPAccountBoundaries(t *testing.T) {
 	}
 }
 
+func publicRecoveryCodes(t *testing.T, st *store.Store, id int64) []string {
+	t.Helper()
+	u, err := st.GetUserByID(id)
+	if err != nil || u == nil {
+		t.Fatalf("get recovery user: %v", err)
+	}
+	var codes []string
+	if err := json.Unmarshal([]byte(u.TOTPRecoveryCodes), &codes); err != nil {
+		t.Fatal(err)
+	}
+	return codes
+}
+
+func TestPublicLoginRecoveryCodeOneTime(t *testing.T) {
+	for _, role := range []string{store.RoleReader, store.RoleAuthor} {
+		t.Run(role, func(t *testing.T) {
+			r, st := newPublicTestRouter(t)
+			u := publicTestTOTPUser(t, st, role)
+			if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd", "98ef76ab"}); err != nil {
+				t.Fatal(err)
+			}
+			body := map[string]string{"username": u.Username, "password": "wrong-password", "code": "12ab34cd"}
+			wrongPassword := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if wrongPassword.Code != http.StatusUnauthorized || len(wrongPassword.Result().Cookies()) != 0 {
+				t.Fatalf("recovery bypassed password: %d", wrongPassword.Code)
+			}
+			body["password"], body["code"] = "reader-pass", "12AB34CD"
+			wrongCode := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if wrongCode.Code != http.StatusUnauthorized || len(wrongCode.Result().Cookies()) != 0 {
+				t.Fatalf("recovery did not match strictly: %d", wrongCode.Code)
+			}
+			if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 2 {
+				t.Fatalf("failed login consumed code: %v", codes)
+			}
+			body["code"] = "12ab34cd"
+			login := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if login.Code != http.StatusOK || len(login.Result().Cookies()) != 1 {
+				t.Fatalf("recovery login: %d %s", login.Code, login.Body.String())
+			}
+			cookie := login.Result().Cookies()[0]
+			me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, cookie)
+			var reader publicUserResponse
+			if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != role {
+				t.Fatalf("recovery session = %+v / %v", reader, err)
+			}
+			if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "98ef76ab" {
+				t.Fatalf("recovery not consumed: %v", codes)
+			}
+			reused := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+			if reused.Code != http.StatusUnauthorized || len(reused.Result().Cookies()) != 0 {
+				t.Fatalf("recovery reused: %d", reused.Code)
+			}
+			body["code"] = "98ef76ab"
+			if last := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); last.Code != http.StatusOK {
+				t.Fatalf("remaining recovery failed: %d %s", last.Code, last.Body.String())
+			}
+		})
+	}
+}
+
+func TestPublicRecoveryLoginLimitDoesNotConsume(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": "wrong123"}
+	for range loginMaxFails {
+		response := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+		if response.Code != http.StatusUnauthorized || len(response.Result().Cookies()) != 0 {
+			t.Fatalf("invalid recovery attempt = %d", response.Code)
+		}
+	}
+	body["code"] = "12ab34cd"
+	blocked := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if blocked.Code != http.StatusTooManyRequests || len(blocked.Result().Cookies()) != 0 {
+		t.Fatalf("recovery limit = %d", blocked.Code)
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("blocked recovery consumed: %v", codes)
+	}
+}
+
+func TestPublicTOTPLoginRetainsRecoveryCodes(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": publicTestTOTPCode(time.Now().Unix() / 30)}
+	if login := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); login.Code != http.StatusOK {
+		t.Fatalf("TOTP login = %d %s", login.Code, login.Body.String())
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("TOTP login consumed recovery: %v", codes)
+	}
+}
+
+func TestPublicRecoveryWriteFailureDoesNotConsume(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	u := publicTestTOTPUser(t, st, store.RoleReader)
+	if err := st.UpdateTOTPSecret(u.ID, u.TOTPSecret, []string{"12ab34cd"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.DB().Exec(`CREATE TRIGGER fail_recovery_login BEFORE UPDATE OF totp_recovery_codes ON users BEGIN SELECT RAISE(ABORT, 'injected write failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]string{"username": u.Username, "password": "reader-pass", "code": "12ab34cd"}
+	failed := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil)
+	if failed.Code != http.StatusUnauthorized || len(failed.Result().Cookies()) != 0 {
+		t.Fatalf("failed consume emitted session: %d", failed.Code)
+	}
+	if codes := publicRecoveryCodes(t, st, u.ID); len(codes) != 1 || codes[0] != "12ab34cd" {
+		t.Fatalf("failed consume lost code: %v", codes)
+	}
+	if _, err := st.DB().Exec(`DROP TRIGGER fail_recovery_login`); err != nil {
+		t.Fatal(err)
+	}
+	if retry := publicRequest(r, http.MethodPost, "/api/auth/login", body, nil); retry.Code != http.StatusOK {
+		t.Fatalf("recovery retry: %d %s", retry.Code, retry.Body.String())
+	}
+}
+
 func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	t.Helper()
 	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
