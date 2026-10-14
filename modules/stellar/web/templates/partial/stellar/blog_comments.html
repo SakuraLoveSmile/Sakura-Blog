@@ -132,9 +132,8 @@
       </div>
     </div>
   </section>
-</div>
 
-{{- /* 登录弹窗：首屏二选一（Email / 跳过验证，对齐参照截图 2），选 Email 才进登录/注册表单 */}}
+{{- /* 登录弹窗归属同一评论根，供区域运行时查询和解绑；首屏二选一，选 Email 才进登录/注册表单。 */}}
 <div class="cmt-modal" id="cmt-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="cmt-modal-title">
   <div class="cmt-modal-mask" id="cmt-modal-mask"></div>
   <div class="cmt-modal-dialog" role="document">
@@ -212,6 +211,7 @@
     </form>
     </div>
   </div>
+</div>
 </div>
 
 {{- /* 评论点赞：document 事件委托（PJAX 换页不丢），guard 防脚本重复执行导致多重绑定；

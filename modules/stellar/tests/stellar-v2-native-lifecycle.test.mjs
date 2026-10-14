@@ -118,6 +118,37 @@ test('原生评论身份请求未完成时，进入视口仍加载公开列表�
   await flush();
   assert.equal(body.getAttribute('data-cmt-init'), null);
 });
+test('原生评论区域登录按钮打开本组件弹窗，卸载解绑表单，重挂只发一次登录请求', async () => {
+  const f = fixture(); f.load('comments.js');
+  const body = new Element(), modal = new Element(), chooser = new Element(), auth = new Element();
+  const button = new Element(), email = new Element(), close = new Element(), form = new Element();
+  const username = new Element(), password = new Element(), submit = new Element();
+  username.value = 'fixture'; password.value = 'fixture-password'; modal.style.display = 'none';
+  button.closestMap = { '#cmt-submit': button };
+  const root = f.region({ '#cmt-body': body, '#cmt-modal': modal, '#cmt-modal-chooser': chooser,
+    '#cmt-modal-auth': auth, '#cmt-submit': button, '#cmt-choose-email': email, '#cmt-modal-close': close,
+    '#cmt-form-login': form, '#cmt-login-username': username, '#cmt-login-password': password, '#cmt-do-login': submit });
+  const cleanup = f.window.stellar.comments.mount(root, f.context());
+  f.requests[0].resolve({ json: async () => ({ id: null }) }); await flush(); await flush();
+  const click = new Event('click'); Object.defineProperty(click, 'target', { value: button }); root.dispatchEvent(click);
+  assert.equal(modal.style.display, 'flex');
+  email.dispatchEvent(new Event('click')); assert.equal(auth.style.display, 'flex'); assert.equal(chooser.style.display, 'none');
+  close.dispatchEvent(new Event('click')); assert.equal(modal.style.display, 'none');
+  root.dispatchEvent(click); const escape = new Event('keydown'); Object.defineProperty(escape, 'key', { value: 'Escape' });
+  root.dispatchEvent(escape); assert.equal(modal.style.display, 'none');
+  form.dispatchEvent(new Event('submit', { cancelable: true }));
+  assert.equal(f.requests.filter(request => request.url === '/api/auth/login').length, 1);
+  cleanup(); root.dispatchEvent(click); form.dispatchEvent(new Event('submit', { cancelable: true }));
+  assert.equal(modal.style.display, 'none');
+  assert.equal(f.requests.filter(request => request.url === '/api/auth/login').length, 1);
+  assert.equal(f.requests.find(request => request.url === '/api/auth/login').options.signal.aborted, true);
+  const cleanupNext = f.window.stellar.comments.mount(root, f.context());
+  f.requests.filter(request => request.url === '/api/auth/me').at(-1).resolve({ json: async () => ({ id: null }) }); await flush(); await flush();
+  root.dispatchEvent(click);
+  assert.equal(modal.style.display, 'flex'); form.dispatchEvent(new Event('submit', { cancelable: true }));
+  assert.equal(f.requests.filter(request => request.url === '/api/auth/login').length, 2, '重挂后不能重复提交');
+  cleanupNext();
+});
 test('RAG问答离页取消，不回写输出、按钮或密钥输入', async () => {
   const f = fixture(); f.load('search/ai-ask.js');
   const panel = new Element(), form = new Element(), input = new Element(), button = new Element(), key = new Element(), output = new Element();

@@ -460,4 +460,28 @@ func TestStellarNativeCommentTextUsesPublicExtensionProjection(t *testing.T) {
 	if strings.Contains(source, "Legacy title") || strings.Contains(source, "Legacy badge") || !strings.Contains(source, "Canonical title") || !strings.Contains(source, `data-admin-badge="Canonical badge"`) || !strings.Contains(source, `data-page-key="/custom/page/"`) {
 		t.Fatal("native comments leaked legacy configuration")
 	}
+	// 区域运行时只能查询组件根内的节点；登录弹窗及表单必须由同一根拥有。
+	doc, err := html.Parse(strings.NewReader(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+	owned := map[string]bool{}
+	var walk func(*html.Node, bool)
+	walk = func(n *html.Node, inside bool) {
+		for _, attr := range n.Attr {
+			if attr.Key == "id" {
+				inside = inside || attr.Val == "blog-comments"
+				owned[attr.Val] = inside
+			}
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			walk(child, inside)
+		}
+	}
+	walk(doc, false)
+	for _, id := range []string{"cmt-modal", "cmt-modal-close", "cmt-modal-mask", "cmt-choose-email", "cmt-choose-skip", "cmt-form-login", "cmt-form-register", "cmt-login-username", "cmt-login-password", "cmt-do-login", "cmt-do-register"} {
+		if !owned[id] {
+			t.Errorf("native comment control %s is outside its runtime root", id)
+		}
+	}
 }
