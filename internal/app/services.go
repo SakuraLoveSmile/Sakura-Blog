@@ -121,12 +121,21 @@ func Bootstrap(options Options) (*Services, error) {
 		return &Services{App: appConfig, Maintenance: gate, SitePath: sitePath}, nil
 	}
 	site, err := config.LoadSite(sitePath)
+	siteFromStore := false
 	if err != nil {
 		if !options.DevMode {
-			return nil, fmt.Errorf("load site config: %w", err)
+			if !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("load site config: %w", err)
+			}
+			site, err = loadStoredStellarSite(appConfig.DBPath)
+			if err != nil {
+				return nil, fmt.Errorf("load persisted site config: %w", err)
+			}
+			siteFromStore = true
+		} else {
+			log.Printf("load site config failed (%v), fallback to DefaultSite", err)
+			site = config.DefaultSite()
 		}
-		log.Printf("load site config failed (%v), fallback to DefaultSite", err)
-		site = config.DefaultSite()
 	} else {
 		log.Printf("loaded site config: %s", sitePath)
 	}
@@ -297,8 +306,10 @@ func Bootstrap(options Options) (*Services, error) {
 	}
 	ogGen := og.New(ogFontPath, ogCacheDir)
 
-	if err := config.Bootstrap(st, site); err != nil {
-		return fail(fmt.Errorf("bootstrap settings: %w", err))
+	if !siteFromStore {
+		if err := config.Bootstrap(st, site); err != nil {
+			return fail(fmt.Errorf("bootstrap settings: %w", err))
+		}
 	}
 	if err := config.RebuildSite(st, sitePtr); err != nil {
 		return fail(fmt.Errorf("rebuild site from db: %w", err))
@@ -425,6 +436,16 @@ func Bootstrap(options Options) (*Services, error) {
 	})
 
 	return services, nil
+}
+
+// 在任何可写Store初始化前只读验证，不能为缺文件的空库或旧库补配置。
+func loadStoredStellarSite(dbPath string) (*settings.Site, error) {
+	st, err := store.OpenExisting(dbPath, true)
+	if err != nil {
+		return nil, err
+	}
+	site, loadErr := config.LoadPersistedStellarSite(st)
+	return site, errors.Join(loadErr, st.Close())
 }
 
 // StartBackground starts process loops after both HTTP modules have mounted.
