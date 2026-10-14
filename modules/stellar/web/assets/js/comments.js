@@ -58,6 +58,9 @@
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
     loadingComments: false,
+    registerChallengeToken: '',
+    registerChallengeLoading: false,
+    registerSubmitting: false,
     sortMode: 'newest',   // 'newest' | 'hottest' | 'oldest' | 'author'
     boostEmojiItems: null,
     boostEmojiPromise: null
@@ -1031,6 +1034,45 @@
     var regF = $('#cmt-form-register');
     if (loginF) loginF.style.display = isLogin ? 'flex' : 'none';
     if (regF) regF.style.display = isLogin ? 'none' : 'flex';
+    if (!isLogin && !state.registerSubmitting) {
+      setRegisterError('');
+      loadRegisterChallenge();
+    }
+  }
+  function setRegisterError(message) {
+    var status = $('#cmt-reg-status');
+    if (status) status.textContent = message;
+  }
+  function updateRegisterControls() {
+    var unavailable = state.registerChallengeLoading || state.registerSubmitting || !state.registerChallengeToken;
+    var submit = $('#cmt-do-register'), answer = $('#cmt-reg-captcha'), refresh = $('#cmt-reg-refresh');
+    if (submit) submit.disabled = unavailable;
+    if (answer) answer.disabled = unavailable;
+    if (refresh) refresh.disabled = state.registerChallengeLoading || state.registerSubmitting;
+  }
+  function loadRegisterChallenge() {
+    // 一次只获取一题，防止切换页签或重复刷新让迟到响应覆盖当前题目。
+    if (state.registerChallengeLoading) return;
+    var question = $('#cmt-reg-question'), answer = $('#cmt-reg-captcha');
+    if (!question || !answer) return;
+    state.registerChallengeLoading = true;
+    state.registerChallengeToken = '';
+    answer.value = '';
+    question.textContent = question.getAttribute('data-loading') || '加载中…';
+    updateRegisterControls();
+    return fetch('/api/auth/register/challenge', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.token || !data.question) throw new Error(data.error || question.getAttribute('data-error'));
+          state.registerChallengeToken = data.token;
+          question.textContent = data.question;
+        });
+      })
+      .catch(function (err) {
+        question.textContent = question.getAttribute('data-error') || '验证码加载失败，请换一题重试';
+        setRegisterError(err.message || question.textContent);
+      })
+      .then(function () { state.registerChallengeLoading = false; updateRegisterControls(); });
   }
   function bindModal() {
     on($('#cmt-do-logout'), 'click', function () {
@@ -1055,6 +1097,11 @@
     });
     on($('#cmt-goto-register'), 'click', function () { switchModalMode('register'); });
     on($('#cmt-goto-login'), 'click', function () { switchModalMode('login'); });
+    on($('#cmt-reg-refresh'), 'click', function () {
+      if (state.registerSubmitting || state.registerChallengeLoading) return;
+      setRegisterError('');
+      loadRegisterChallenge();
+    });
     $$('.cmt-modal-tab').forEach(function (t) {
       on(t, 'click', function () { switchModalMode(t.getAttribute('data-mode') || 'login'); });
     });
@@ -1092,17 +1139,29 @@
     // 注册表单
     on($('#cmt-form-register'), 'submit', function (e) {
       e.preventDefault();
+      if (state.registerSubmitting || state.registerChallengeLoading) return;
       var u = $('#cmt-reg-username').value.trim();
       var p = $('#cmt-reg-password').value;
       var n = $('#cmt-reg-nick').value.trim();
       var em = $('#cmt-reg-email').value.trim();
       var av = $('#cmt-reg-avatar').value.trim();
       if (!u || !p || !em) { toast('请填写必填项', 'error'); return; }
-      var btn = $('#cmt-do-register'); if (btn) btn.disabled = true;
+      var captcha = $('#cmt-reg-captcha');
+      var answer = captcha ? captcha.value.trim() : '';
+      if (!state.registerChallengeToken || !answer) {
+        setRegisterError(captcha && captcha.getAttribute('data-required') || '请填写验证码');
+        if (captcha) captcha.focus();
+        return;
+      }
+      var token = state.registerChallengeToken;
+      state.registerChallengeToken = '';
+      state.registerSubmitting = true;
+      setRegisterError('');
+      updateRegisterControls();
       fetch('/api/auth/register', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av })
+        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av, captcha_token: token, captcha_answer: answer })
       }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
           if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '注册失败');
@@ -1110,8 +1169,12 @@
           closeModal();
           fetchMe();
         })
-        .catch(function (err) { toast(err.message || '注册失败', 'error'); })
-        .then(function () { if (btn) btn.disabled = false; });
+        .catch(function (err) {
+          setRegisterError(err.message || '注册失败');
+          // 后端每次验证都会消耗题目，业务校验失败也必须换题；保留账号资料与评论草稿。
+          return loadRegisterChallenge();
+        })
+        .then(function () { state.registerSubmitting = false; updateRegisterControls(); });
     });
   }
 

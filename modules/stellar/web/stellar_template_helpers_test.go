@@ -479,9 +479,12 @@ func TestStellarNativeCommentTextUsesPublicExtensionProjection(t *testing.T) {
 		}
 	}
 	walk(doc, false)
-	for _, id := range []string{"cmt-modal", "cmt-modal-close", "cmt-modal-mask", "cmt-choose-email", "cmt-choose-skip", "cmt-form-login", "cmt-form-register", "cmt-login-username", "cmt-login-password", "cmt-do-login", "cmt-do-register"} {
+	for _, id := range []string{"cmt-modal", "cmt-modal-close", "cmt-modal-mask", "cmt-choose-email", "cmt-choose-skip", "cmt-form-login", "cmt-form-register", "cmt-login-username", "cmt-login-password", "cmt-do-login", "cmt-do-register", "cmt-reg-question", "cmt-reg-captcha", "cmt-reg-refresh", "cmt-reg-status"} {
 		if !owned[id] {
 			t.Errorf("native comment control %s is outside its runtime root", id)
 		}
+	}
+	if !strings.Contains(source, `name="captcha_answer"`) || !strings.Contains(source, "验证码") || !strings.Contains(source, "换一题") {
+		t.Fatal("native registration omitted the captcha form")
 	}
 }

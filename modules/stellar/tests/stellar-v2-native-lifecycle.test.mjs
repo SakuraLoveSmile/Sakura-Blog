@@ -149,6 +149,25 @@ test('原生评论区域登录按钮打开本组件弹窗，卸载解绑表单�
   assert.equal(f.requests.filter(request => request.url === '/api/auth/login').length, 2, '重挂后不能重复提交');
   cleanupNext();
 });
+test('原生注册验证码离页取消，迟到题目不写旧区域，重新挂载获取新题', async () => {
+  const f = fixture(); f.load('comments.js');
+  const body = new Element(), register = new Element(), question = new Element(), answer = new Element(), submit = new Element();
+  const root = f.region({ '#cmt-body': body, '#cmt-goto-register': register, '#cmt-reg-question': question,
+    '#cmt-reg-captcha': answer, '#cmt-do-register': submit });
+  const cleanup = f.window.stellar.comments.mount(root, f.context());
+  register.dispatchEvent(new Event('click'));
+  const previous = f.requests.find(request => request.url === '/api/auth/register/challenge');
+  assert.ok(previous); assert.equal(submit.disabled, true); assert.equal(question.textContent, '加载中…');
+  cleanup(); assert.equal(previous.options.signal.aborted, true);
+  previous.resolve({ ok: true, json: async () => ({ token: 'old', question: '旧题' }) }); await flush(); await flush();
+  assert.equal(question.textContent, '加载中…'); assert.equal(submit.disabled, true);
+  register.dispatchEvent(new Event('click'));
+  assert.equal(f.requests.filter(request => request.url === '/api/auth/register/challenge').length, 1);
+  const cleanupNext = f.window.stellar.comments.mount(root, f.context()); register.dispatchEvent(new Event('click'));
+  const next = f.requests.filter(request => request.url === '/api/auth/register/challenge').at(-1);
+  next.resolve({ ok: true, json: async () => ({ token: 'new', question: '新题' }) }); await flush(); await flush();
+  assert.equal(question.textContent, '新题'); assert.equal(submit.disabled, false); cleanupNext();
+});
 test('RAG问答离页取消，不回写输出、按钮或密钥输入', async () => {
   const f = fixture(); f.load('search/ai-ask.js');
   const panel = new Element(), form = new Element(), input = new Element(), button = new Element(), key = new Element(), output = new Element();

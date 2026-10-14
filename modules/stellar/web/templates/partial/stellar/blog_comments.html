@@ -204,9 +204,17 @@
         <span class="cmt-modal-label">{{lang "auth.avatar_url"}}</span>
         <input type="url" name="avatar" class="cmt-modal-input" id="cmt-reg-avatar" maxlength="500" placeholder="https://...">
       </label>
+      <label class="cmt-modal-field">
+        <span class="cmt-modal-label">{{lang "auth.captcha"}} <span id="cmt-reg-question" data-loading="{{lang "auth.captcha_loading"}}" data-error="{{lang "auth.captcha_failed"}}" aria-live="polite"></span></span>
+        <input type="text" name="captcha_answer" class="cmt-modal-input" id="cmt-reg-captcha" inputmode="numeric" pattern="[0-9]+" maxlength="2" autocomplete="off" data-required="{{lang "auth.captcha_required"}}" required disabled>
+      </label>
+      <div class="cmt-modal-foot">
+        <span class="cmt-modal-hint" id="cmt-reg-status" role="alert"></span>
+        <button type="button" class="cmt-modal-goto" id="cmt-reg-refresh">{{lang "auth.captcha_refresh"}}</button>
+      </div>
       <div class="cmt-modal-foot">
         <button type="button" class="cmt-modal-goto" id="cmt-goto-login">{{lang "auth.goto_login"}}</button>
-        <button type="submit" class="cmt-modal-submit" id="cmt-do-register">{{lang "auth.submit_register"}}</button>
+        <button type="submit" class="cmt-modal-submit" id="cmt-do-register" disabled>{{lang "auth.submit_register"}}</button>
       </div>
     </form>
     </div>
