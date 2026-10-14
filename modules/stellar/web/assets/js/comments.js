@@ -58,8 +58,6 @@
     parentId: 0,
     comments: [],         // 已渲染的评论列表（供插入新评论后更新计数）
     loadingComments: false,
-    registerChallengeToken: '',
-    registerChallengeLoading: false,
     registerSubmitting: false,
     sortMode: 'newest',   // 'newest' | 'hottest' | 'oldest' | 'author'
     boostEmojiItems: null,
@@ -316,6 +314,7 @@
       maybeScrollToHashComment();
     } else {
       listHead.style.display = 'none';
+      listHead.querySelector('.cmt-list-title').textContent = '0 条评论';
       emptyEl.style.display = 'flex';
     }
 
@@ -375,6 +374,11 @@
         cmt.reply_ref = parent.getAttribute('data-nick') || '';
         frag.innerHTML = renderCommentItem(cmt);
         childrenBox.appendChild(frag.content.firstElementChild);
+        var parentModel = findComment(state.comments, cmt.parent_id);
+        if (parentModel) {
+          parentModel.children = parentModel.children || [];
+          parentModel.children.push(cmt);
+        }
         if (listHead && listHead.querySelector('.cmt-list-title')) {
           var m = listHead.querySelector('.cmt-list-title').textContent.match(/\d+/);
           total = parseInt((m && m[0]) || '0', 10) + 1;
@@ -384,16 +388,19 @@
     } else {
       emptyEl.style.display = 'none';
       listHead.style.display = 'flex';
-      listHead.querySelector('.cmt-list-title').textContent = '1 条评论';
+      var title = listHead.querySelector('.cmt-list-title');
+      var previous = title.textContent.match(/\d+/);
+      total = parseInt((previous && previous[0]) || '0', 10) + 1;
+      title.textContent = total + ' 条评论';
+      state.comments.unshift(cmt);
       listEl.insertAdjacentHTML('afterbegin', renderCommentItem(cmt));
-      total = 1;
     }
 
     // 更新顶部徽章
     if (countBadge) {
       var cur = countBadge.textContent.match(/\d+/);
       var curN = parseInt((cur && cur[0]) || '0', 10);
-      countBadge.textContent = '共 ' + Math.max(curN, total > 0 ? total : 0) + ' 条评论';
+      countBadge.textContent = '共 ' + Math.max(curN + (total > 0 ? 1 : 0), total) + ' 条评论';
     }
   }
 
@@ -1034,45 +1041,15 @@
     var regF = $('#cmt-form-register');
     if (loginF) loginF.style.display = isLogin ? 'flex' : 'none';
     if (regF) regF.style.display = isLogin ? 'none' : 'flex';
-    if (!isLogin && !state.registerSubmitting) {
-      setRegisterError('');
-      loadRegisterChallenge();
-    }
+    if (!isLogin) setRegisterError('');
   }
   function setRegisterError(message) {
     var status = $('#cmt-reg-status');
     if (status) status.textContent = message;
   }
   function updateRegisterControls() {
-    var unavailable = state.registerChallengeLoading || state.registerSubmitting || !state.registerChallengeToken;
-    var submit = $('#cmt-do-register'), answer = $('#cmt-reg-captcha'), refresh = $('#cmt-reg-refresh');
-    if (submit) submit.disabled = unavailable;
-    if (answer) answer.disabled = unavailable;
-    if (refresh) refresh.disabled = state.registerChallengeLoading || state.registerSubmitting;
-  }
-  function loadRegisterChallenge() {
-    // 一次只获取一题，防止切换页签或重复刷新让迟到响应覆盖当前题目。
-    if (state.registerChallengeLoading) return;
-    var question = $('#cmt-reg-question'), answer = $('#cmt-reg-captcha');
-    if (!question || !answer) return;
-    state.registerChallengeLoading = true;
-    state.registerChallengeToken = '';
-    answer.value = '';
-    question.textContent = question.getAttribute('data-loading') || '加载中…';
-    updateRegisterControls();
-    return fetch('/api/auth/register/challenge', { credentials: 'same-origin', cache: 'no-store' })
-      .then(function (response) {
-        return response.json().then(function (data) {
-          if (!response.ok || !data.token || !data.question) throw new Error(data.error || question.getAttribute('data-error'));
-          state.registerChallengeToken = data.token;
-          question.textContent = data.question;
-        });
-      })
-      .catch(function (err) {
-        question.textContent = question.getAttribute('data-error') || '验证码加载失败，请换一题重试';
-        setRegisterError(err.message || question.textContent);
-      })
-      .then(function () { state.registerChallengeLoading = false; updateRegisterControls(); });
+    var submit = $('#cmt-do-register');
+    if (submit) submit.disabled = state.registerSubmitting;
   }
   function bindModal() {
     on($('#cmt-do-logout'), 'click', function () {
@@ -1097,11 +1074,6 @@
     });
     on($('#cmt-goto-register'), 'click', function () { switchModalMode('register'); });
     on($('#cmt-goto-login'), 'click', function () { switchModalMode('login'); });
-    on($('#cmt-reg-refresh'), 'click', function () {
-      if (state.registerSubmitting || state.registerChallengeLoading) return;
-      setRegisterError('');
-      loadRegisterChallenge();
-    });
     $$('.cmt-modal-tab').forEach(function (t) {
       on(t, 'click', function () { switchModalMode(t.getAttribute('data-mode') || 'login'); });
     });
@@ -1121,10 +1093,13 @@
       var p = $('#cmt-login-password').value;
       if (!u || !p) { toast('请填写用户名和密码', 'error'); return; }
       var btn = $('#cmt-do-login'); if (btn) btn.disabled = true;
+      var codeInput = $('#cmt-login-code');
+      var payload = { username: u, password: p };
+      if (codeInput && codeInput.value.trim()) payload.code = codeInput.value.trim();
       fetch('/api/auth/login', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p })
+        body: JSON.stringify(payload)
       }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
           if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '登录失败');
@@ -1139,29 +1114,27 @@
     // 注册表单
     on($('#cmt-form-register'), 'submit', function (e) {
       e.preventDefault();
-      if (state.registerSubmitting || state.registerChallengeLoading) return;
+      if (state.registerSubmitting) return;
       var u = $('#cmt-reg-username').value.trim();
       var p = $('#cmt-reg-password').value;
       var n = $('#cmt-reg-nick').value.trim();
       var em = $('#cmt-reg-email').value.trim();
       var av = $('#cmt-reg-avatar').value.trim();
       if (!u || !p || !em) { toast('请填写必填项', 'error'); return; }
-      var captcha = $('#cmt-reg-captcha');
-      var answer = captcha ? captcha.value.trim() : '';
-      if (!state.registerChallengeToken || !answer) {
-        setRegisterError(captcha && captcha.getAttribute('data-required') || '请填写验证码');
-        if (captcha) captcha.focus();
+      var inviteInput = $('#cmt-reg-invitation');
+      var invitation = inviteInput ? inviteInput.value.trim() : '';
+      if (!invitation) {
+        setRegisterError(inviteInput && inviteInput.getAttribute('data-required') || '请填写管理员提供的邀请码');
+        if (inviteInput) inviteInput.focus();
         return;
       }
-      var token = state.registerChallengeToken;
-      state.registerChallengeToken = '';
       state.registerSubmitting = true;
       setRegisterError('');
       updateRegisterControls();
       fetch('/api/auth/register', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av, captcha_token: token, captcha_answer: answer })
+        body: JSON.stringify({ username: u, password: p, display_name: n, email: em, avatar: av, invitation_code: invitation })
       }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
           if (!res.ok || !res.data || !res.data.ok) throw new Error(res.data && res.data.error ? res.data.error : '注册失败');
@@ -1171,8 +1144,7 @@
         })
         .catch(function (err) {
           setRegisterError(err.message || '注册失败');
-          // 后端每次验证都会消耗题目，业务校验失败也必须换题；保留账号资料与评论草稿。
-          return loadRegisterChallenge();
+          // 注册失败保留邀请码、账号资料和评论草稿，便于修正后重试。
         })
         .then(function () { state.registerSubmitting = false; updateRegisterControls(); });
     });

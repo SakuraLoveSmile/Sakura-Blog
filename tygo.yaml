@@ -10,6 +10,7 @@ packages:
     preserve_comments: types
     include_files:
       - "errors.go"
+      - "registration_invites.go"
       - "module.go"
       - "shortcode_catalog.go"
       - "shortcode_edit.go"

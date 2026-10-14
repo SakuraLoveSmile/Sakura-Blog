@@ -2,7 +2,7 @@
 import { inject, ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { stellarEditorContextKey } from "./editor/stellar-context";
 import { Icon } from "@iconify/vue";
-import { previewApi, attachmentApi } from "@/api";
+import { previewApi, attachmentApi, ucApi } from "@/api";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { useLocalDraft } from "@/composables/useLocalDraft";
 
@@ -17,6 +17,7 @@ const props = withDefaults(
     storageKey?: string;
     followStorageKey?: boolean;
     toolbar?: boolean;
+    userCenter?: boolean;
   }>(),
   { storageKey: undefined, toolbar: true },
 );
@@ -287,19 +288,35 @@ const toolbarActions = [
 // ---------- 图片上传（工具栏按钮 / 粘贴 / 拖拽） ----------
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
+let uploadActive = true;
+const uploadControllers = new Set<AbortController>();
+onBeforeUnmount(() => {
+  uploadActive = false;
+  for (const controller of uploadControllers) controller.abort();
+  uploadControllers.clear();
+});
 
 async function uploadAndInsert(file: File) {
+  if (!uploadActive) return;
+  const controller = new AbortController();
+  uploadControllers.add(controller);
   uploadError.value = "";
   const placeholder = `![上传中 ${file.name}...]()`;
   insertBlock(placeholder);
   try {
-    const { data } = await attachmentApi.upload(file);
+    const { data } = props.userCenter
+      ? await ucApi.attachments.upload(file, controller.signal)
+      : await attachmentApi.upload(file);
+    if (!uploadActive || controller.signal.aborted) return;
     const md = `![${file.name}](${data.url})`;
     const replaced = props.modelValue.replace(placeholder, md);
     editValue(replaced);
   } catch {
+    if (!uploadActive || controller.signal.aborted) return;
     editValue(props.modelValue.replace(placeholder, ""));
     uploadError.value = `图片 ${file.name} 上传失败`;
+  } finally {
+    uploadControllers.delete(controller);
   }
 }
 
@@ -479,6 +496,11 @@ const modeButtons: { value: ViewMode; icon: string; title: string }[] = [
       </div>
     </div>
 
-    <AttachmentPickerModal :open="pickerOpen" @select="onPickerSelect" @close="pickerOpen = false" />
+    <AttachmentPickerModal
+      :user-center="userCenter"
+      :open="pickerOpen"
+      @select="onPickerSelect"
+      @close="pickerOpen = false"
+    />
   </div>
 </template>

@@ -126,15 +126,14 @@ function loadComments({ respond = () => null } = {}) {
     '#cmt-goto-register': makeEl({ tagName: 'BUTTON' }),
     '#cmt-goto-login': makeEl({ tagName: 'BUTTON' }),
     '#cmt-form-login': makeEl(),
+    '#cmt-login-code': makeEl(),
     '#cmt-form-register': makeEl(),
     '#cmt-reg-username': makeEl({ value: 'fixture-reader' }),
     '#cmt-reg-password': makeEl({ value: 'fixture-password' }),
     '#cmt-reg-nick': makeEl({ value: 'Fixture Reader' }),
     '#cmt-reg-email': makeEl({ value: 'reader@example.test' }),
     '#cmt-reg-avatar': makeEl(),
-    '#cmt-reg-captcha': makeEl(),
-    '#cmt-reg-question': makeEl(),
-    '#cmt-reg-refresh': makeEl({ tagName: 'BUTTON' }),
+    '#cmt-reg-invitation': makeEl(),
     '#cmt-reg-status': makeEl(),
     '#cmt-do-register': makeEl({ tagName: 'BUTTON' }),
     '#cmt-preview': makeEl({ style: { display: 'none' } }),
@@ -434,6 +433,15 @@ test(`${SURFACE} · insertNewComment：顶层评论前插列表并点亮标题/�
   assert.equal(listTitle.textContent, '1 条评论');
   assert.equal(els['#cmt-list-head'].style.display, 'flex');
   assert.equal(els['#cmt-count-badge'].textContent, '共 1 条评论');
+});
+
+test(`${SURFACE} · 已有评论后发布新顶层评论，计数累加且排序数据保留`, () => {
+  const { internal, els, listTitle } = loadComments();
+  internal.renderComments({ ok: true, total: 2, comments: [sampleCmt({ id: 1 }), sampleCmt({ id: 2 })] });
+  internal.insertNewComment(sampleCmt({ id: 9, parent_id: 0 }));
+  assert.equal(listTitle.textContent, '3 条评论');
+  assert.equal(els['#cmt-count-badge'].textContent, '共 3 条评论');
+  assert.deepEqual(Array.from(internal.getState().comments, c => c.id), [9, 1, 2]);
 });
 
 test(`${SURFACE} · insertNewComment：回复挂到父评论 children 容器，计数在现有基数上 +1`, () => {
@@ -781,58 +789,64 @@ test(`${SURFACE} · guest 态点「登录」开二选一弹窗；跳过验证 �
 });
 
 // ------- 交互：Markdown 预览（M↓） -------
-test(`${SURFACE} · 注册先获取验证码，提交携带答案/token，成功登录且保留评论草稿`, async () => {
+test(`${SURFACE} · 已启用两步验证的登录携带六位动态码`, async () => {
+  const { internal, els, fetchCalls } = loadComments({ respond: url => url === '/api/auth/login'
+    ? { body: { ok: true } } : { body: { id: 9, nickname: 'Fixture' } } });
+  els['#cmt-login-username'] = makeEl({ value: 'fixture-reader' });
+  els['#cmt-login-password'] = makeEl({ value: 'fixture-password' });
+  els['#cmt-login-code'].value = ' 123456 ';
+  internal.bindModal();
+  els['#cmt-form-login'].dispatch('submit', { preventDefault() {} }); await flush();
+  assert.equal(JSON.parse(fetchCalls.find(c => c.url === '/api/auth/login').opts.body).code, '123456');
+});
+
+test(`${SURFACE} · 邀请码注册成功登录且保留评论草稿，不请求验证码`, async () => {
   const { internal, els, fetchCalls } = loadComments({ respond: (url) => {
-    if (url === '/api/auth/register/challenge') return { body: { token: 'fixture-token', question: '3 + 4 = ?' } };
     if (url === '/api/auth/register') return { status: 201, body: { ok: true } };
     if (url === '/api/auth/me') return { body: { id: 9, nickname: 'Fixture Reader', verified: true } };
   } });
   internal.bindModal(); els['#cmt-content'].value = '原评论草稿';
   els['#cmt-goto-register'].dispatch('click', {});
-  assert.equal(els['#cmt-do-register'].disabled, true);
-  await flush();
-  assert.equal(els['#cmt-reg-question'].textContent, '3 + 4 = ?');
+  assert.equal(fetchCalls.length, 0);
   assert.equal(els['#cmt-do-register'].disabled, false);
-  els['#cmt-reg-captcha'].value = '7';
+  els['#cmt-reg-invitation'].value = ' fixture-invitation ';
   els['#cmt-form-register'].dispatch('submit', { preventDefault() {} }); await flush();
   const body = JSON.parse(fetchCalls.find(c => c.url === '/api/auth/register').opts.body);
-  assert.equal(body.captcha_token, 'fixture-token'); assert.equal(body.captcha_answer, '7');
+  assert.equal(body.invitation_code, 'fixture-invitation');
+  assert.equal('captcha_token' in body, false); assert.equal('captcha_answer' in body, false);
+  assert.equal(fetchCalls.some(c => c.url.includes('/challenge')), false);
   assert.equal(internal.getState().mode, 'logged-in');
   assert.equal(els['#cmt-modal'].style.display, 'none');
   assert.equal(els['#cmt-content'].value, '原评论草稿');
 });
-test(`${SURFACE} · 注册失败保留资料并刷新一次性验证码，禁止空答案和重复提交`, async () => {
-  let challenges = 0;
+test(`${SURFACE} · 禁止空邀请码和重复提交`, async () => {
   const { internal, els, fetchCalls } = loadComments({ respond: url => {
-    if (url === '/api/auth/register/challenge') return { body: { token: 'token-' + ++challenges, question: '1 + 2 = ?' } };
-    if (url === '/api/auth/register') return { ok: false, status: 400, body: { error: '验证码错误或已过期' } };
+    if (url === '/api/auth/register') return { ok: false, status: 400, body: { error: '邀请码无效或已使用' } };
   } });
-  internal.bindModal(); els['#cmt-goto-register'].dispatch('click', {}); await flush();
+  internal.bindModal(); els['#cmt-goto-register'].dispatch('click', {});
+  els['#cmt-reg-invitation'].value = '  ';
   els['#cmt-form-register'].dispatch('submit', { preventDefault() {} });
-  assert.equal(fetchCalls.filter(c => c.url === '/api/auth/register').length, 0);
-  els['#cmt-reg-captcha'].value = '0';
+  assert.equal(fetchCalls.length, 0);
+  assert.equal(els['#cmt-reg-status'].textContent, '请填写管理员提供的邀请码');
+  els['#cmt-reg-invitation'].value = 'fixture-invitation';
   els['#cmt-form-register'].dispatch('submit', { preventDefault() {} });
   els['#cmt-form-register'].dispatch('submit', { preventDefault() {} }); await flush();
   assert.equal(fetchCalls.filter(c => c.url === '/api/auth/register').length, 1);
-  assert.equal(challenges, 2); assert.equal(els['#cmt-reg-captcha'].value, '');
-  assert.equal(els['#cmt-reg-status'].textContent, '验证码错误或已过期');
+  assert.equal(els['#cmt-do-register'].disabled, false);
+});
+test(`${SURFACE} · 注册失败保留邀请码、资料和评论草稿并持久显示错误`, async () => {
+  const { internal, els, fetchCalls } = loadComments({ respond: url => url === '/api/auth/register'
+    ? { ok: false, status: 400, body: { error: '邀请码无效或已使用' } } : null });
+  internal.bindModal(); els['#cmt-goto-register'].dispatch('click', {});
+  els['#cmt-reg-invitation'].value = 'fixture-invitation'; els['#cmt-content'].value = '原评论草稿';
+  els['#cmt-form-register'].dispatch('submit', { preventDefault() {} }); await flush();
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(els['#cmt-reg-status'].textContent, '邀请码无效或已使用');
+  assert.equal(els['#cmt-reg-invitation'].value, 'fixture-invitation');
   assert.equal(els['#cmt-reg-username'].value, 'fixture-reader');
   assert.equal(els['#cmt-reg-password'].value, 'fixture-password');
   assert.equal(els['#cmt-reg-email'].value, 'reader@example.test');
-  assert.equal(els['#cmt-do-register'].disabled, false);
-});
-test(`${SURFACE} · 验证码加载失败禁止注册，换一题可恢复且不会重叠加载`, async () => {
-  let challenges = 0;
-  const { internal, els, fetchCalls } = loadComments({ respond: url => url === '/api/auth/register/challenge'
-    ? (++challenges === 1 ? { ok: false, status: 503, body: { error: 'fixture unavailable' } } : { body: { token: 'fresh', question: '2 + 3 = ?' } }) : null });
-  internal.bindModal(); els['#cmt-goto-register'].dispatch('click', {}); await flush();
-  assert.equal(els['#cmt-do-register'].disabled, true);
-  assert.equal(els['#cmt-reg-refresh'].disabled, false);
-  assert.equal(els['#cmt-reg-status'].textContent, 'fixture unavailable');
-  els['#cmt-reg-refresh'].dispatch('click', {}); els['#cmt-reg-refresh'].dispatch('click', {}); await flush();
-  assert.equal(fetchCalls.length, 2); assert.equal(els['#cmt-do-register'].disabled, false);
-  assert.equal(els['#cmt-reg-question'].textContent, '2 + 3 = ?');
-  assert.equal(els['#cmt-reg-status'].textContent, '');
+  assert.equal(els['#cmt-content'].value, '原评论草稿');
 });
 
 test(`${SURFACE} · 预览区分内联表情和普通上传图片`, () => {

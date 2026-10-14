@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { queryClient } from "@/api/query-client";
 
 export interface PublicUser {
   id: number;
@@ -12,11 +13,6 @@ export interface PublicUser {
   is_admin: boolean;
 }
 
-interface RegisterChallenge {
-  token: string;
-  question: string;
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     credentials: "include",
@@ -24,7 +20,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   const data = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (response.status === 401) useUCAuthStore().clearSession();
+  init?.signal?.throwIfAborted();
   if (!response.ok) throw new Error(data.error || "请求失败");
   return data;
 }
@@ -32,45 +28,57 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const useUCAuthStore = defineStore("uc-auth", () => {
   const user = ref<PublicUser | null>(null);
   const initialized = ref(false);
+  let sessionRevision = 0;
 
-  async function fetchMe() {
+  function setSession(next: PublicUser | null) {
+    if (user.value?.id !== next?.id || user.value?.role !== next?.role) {
+      sessionRevision++;
+      queryClient.clear();
+    }
+    user.value = next;
+  }
+
+  async function fetchMe(signal?: AbortSignal) {
+    const revision = sessionRevision;
     try {
-      const data = await request<PublicUser>("/api/auth/me");
-      user.value = data.verified ? data : null;
+      const data = await request<PublicUser>("/api/auth/me", { signal });
+      if (revision !== sessionRevision) return user.value;
+      setSession(data.verified ? data : null);
     } catch {
-      user.value = null;
+      if (signal?.aborted || revision !== sessionRevision) return user.value;
+      clearSession();
     } finally {
       initialized.value = true;
     }
     return user.value;
   }
 
-  async function login(username: string, password: string) {
+  async function login(username: string, password: string, code?: string) {
     const data = await request<{ user: PublicUser }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, code }),
     });
-    user.value = data.user;
+    setSession(data.user);
     return data.user;
   }
 
-  async function challenge() {
-    return request<RegisterChallenge>("/api/auth/register/challenge");
-  }
-
-  async function register(data: {
-    username: string;
-    password: string;
-    display_name: string;
-    email: string;
-    captcha_token: string;
-    captcha_answer: string;
-  }) {
+  async function register(
+    data: {
+      username: string;
+      password: string;
+      display_name: string;
+      email: string;
+      invitation_code: string;
+    },
+    signal?: AbortSignal,
+  ) {
     const result = await request<{ user: PublicUser }>("/api/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
+      signal,
     });
-    user.value = result.user;
+    signal?.throwIfAborted();
+    setSession(result.user);
     return result.user;
   }
 
@@ -79,18 +87,22 @@ export const useUCAuthStore = defineStore("uc-auth", () => {
       method: "POST",
       body: JSON.stringify({ password }),
     });
-    user.value = result.user;
+    setSession(result.user);
     return result.user;
   }
 
   function clearSession() {
+    sessionRevision++;
+    queryClient.clear();
     user.value = null;
   }
 
-  async function logout() {
-    await request("/api/auth/logout", { method: "POST", body: "{}" });
-    user.value = null;
+  async function logout(signal?: AbortSignal) {
+    const revision = sessionRevision;
+    await request("/api/auth/logout", { method: "POST", body: "{}", signal });
+    if (revision !== sessionRevision) return;
+    clearSession();
   }
 
-  return { user, initialized, fetchMe, login, challenge, register, upgrade, logout, clearSession };
+  return { user, initialized, fetchMe, login, register, upgrade, logout, clearSession };
 });

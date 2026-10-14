@@ -9,6 +9,7 @@ const route = useRoute();
 const auth = useUCAuthStore();
 const username = ref("");
 const password = ref("");
+const code = ref("");
 const error = ref("");
 const loading = ref(false);
 
@@ -16,7 +17,7 @@ async function submit() {
   error.value = "";
   loading.value = true;
   try {
-    const user = await auth.login(username.value, password.value);
+    const user = await auth.login(username.value, password.value, code.value.trim() || undefined);
     await router.replace(user.role === "reader" ? "/upgrade" : String(route.query.from || "/posts"));
   } catch (err) {
     error.value = err instanceof Error ? err.message : "登录失败";
@@ -50,6 +51,15 @@ async function submit() {
           type="password"
           autocomplete="current-password"
           required
+        />
+        <label class="uc-label mt-4" for="uc-login-code">两步验证码或恢复码（已开启时填写）</label>
+        <input
+          id="uc-login-code"
+          v-model="code"
+          class="uc-input"
+          pattern="[0-9]{6}|[A-Za-z0-9]{8}"
+          maxlength="8"
+          autocomplete="one-time-code"
         />
         <p
           v-if="error"

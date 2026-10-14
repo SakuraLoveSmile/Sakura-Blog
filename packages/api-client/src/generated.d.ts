@@ -334,6 +334,23 @@ export interface RAGAskResponse {
 }
 
 //////////
+// source: registration_invites.go
+
+/**
+ * RegistrationInviteRequest 由管理员选择邀请码有效期，省略时使用 7 天。
+ */
+export interface RegistrationInviteRequest {
+  expires_in_days: number /* int */;
+}
+/**
+ * RegistrationInviteResponse 邀请码仅在创建成功时返回，数据库只保存其摘要。
+ */
+export interface RegistrationInviteResponse {
+  code: string;
+  expires_at: string;
+}
+
+//////////
 // source: settings.go
 
 /**

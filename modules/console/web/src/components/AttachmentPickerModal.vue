@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Icon } from "@iconify/vue";
-import { attachmentApi, attachmentGroupApi } from "@/api";
+import { attachmentApi, attachmentGroupApi, ucApi } from "@/api";
 
 // 附件库选择弹窗：分页展示图片附件，点击回传 URL。
-const props = defineProps<{ open: boolean }>();
+const props = defineProps<{ open: boolean; userCenter?: boolean }>();
 const emit = defineEmits<{
   (e: "select", url: string): void;
   (e: "close"): void;
@@ -33,26 +33,52 @@ interface GroupItem {
 const groups = ref<GroupItem[]>([]);
 const activeGroup = ref<number | undefined>(undefined);
 
+let active = true;
+let requestID = 0;
+let listController: AbortController | undefined;
+let groupsController: AbortController | undefined;
+
+function cancelRequests() {
+  requestID++;
+  listController?.abort();
+  groupsController?.abort();
+}
+
 async function loadGroups() {
+  groupsController?.abort();
+  if (props.userCenter) {
+    groups.value = [];
+    return;
+  }
+  const controller = (groupsController = new AbortController());
   try {
     const { data } = await attachmentGroupApi.list();
-    groups.value = data.items || [];
+    if (active && props.open && !controller.signal.aborted) groups.value = data.items || [];
   } catch {}
 }
 
 async function load() {
+  if (!active || !props.open) return;
+  listController?.abort();
+  const controller = (listController = new AbortController());
+  const id = ++requestID;
+  const current = () => active && props.open && id === requestID && !controller.signal.aborted;
   loading.value = true;
   try {
     const params: Record<string, unknown> = { page: page.value, size };
     // 让后端按图片分页，避免混入文档后出现空页、页数不准。
     params.kind = "image";
     if (activeGroup.value !== undefined) params.group = activeGroup.value;
-    const { data } = await attachmentApi.list(params);
-    // 保留前端兜底过滤，兼容旧版或代理层忽略 kind 参数的情况。
+    const { data } = props.userCenter
+      ? await ucApi.attachments.list({ page: page.value, size, kind: "image" }, controller.signal)
+      : await attachmentApi.list(params);
+    if (!current()) return;
     items.value = (data.items || []).filter((a: AttachmentItem) => a.mime?.startsWith("image/"));
     total.value = data.total || 0;
+  } catch {
+    // 关闭/离页和过期请求不回写，当前请求的错误由 API 层展示。
   } finally {
-    loading.value = false;
+    if (current()) loading.value = false;
   }
 }
 
@@ -74,10 +100,14 @@ watch(
   () => props.open,
   (v) => {
     if (v) {
+      const reloadFirstPage = page.value === 1;
       page.value = 1;
       activeGroup.value = undefined;
       loadGroups();
-      load();
+      if (reloadFirstPage) load();
+    } else {
+      cancelRequests();
+      loading.value = false;
     }
   },
 );
@@ -108,6 +138,8 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  active = false;
+  cancelRequests();
   window.removeEventListener("keydown", handleWindowEscape);
 });
 </script>
@@ -130,6 +162,7 @@ onBeforeUnmount(() => {
           <h3 class="text-sm font-medium text-foreground">从附件库选择图片</h3>
           <div class="flex items-center gap-2">
             <select
+              v-if="!userCenter"
               :value="activeGroup === undefined ? '' : String(activeGroup)"
               class="apple-select px-2 py-1 text-xs"
               @change="

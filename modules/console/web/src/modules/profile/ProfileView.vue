@@ -1,14 +1,42 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
-import { authApi, profileApi } from "@/api";
+import { authApi, profileApi as consoleProfileApi, ucProfileApi, ucApi, type UserProfile } from "@/api";
+import { useUCAuthStore } from "@/uc/stores/auth";
 import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/vue";
 import AttachmentPickerModal from "@/components/AttachmentPickerModal.vue";
 import { VPageHeader, VCard, VModal, Toast } from "@/components/ui";
 
+const props = defineProps<{ userCenter?: boolean }>();
 const router = useRouter();
-const auth = useAuthStore();
+const ucAuth = props.userCenter ? useUCAuthStore() : null;
+const ucProfile = ref<UserProfile>({ username: "", display_name: "", email: "", avatar: "", has_2fa: false });
+const profileApi = props.userCenter ? ucProfileApi : consoleProfileApi;
+const lifecycle = new AbortController();
+let active = true;
+const initialUCUserID = ucAuth?.user?.id;
+function isActive() {
+  return active && !lifecycle.signal.aborted && (!props.userCenter || ucAuth?.user?.id === initialUCUserID);
+}
+onBeforeUnmount(() => {
+  active = false;
+  lifecycle.abort();
+});
+const auth = props.userCenter
+  ? {
+      get user() {
+        return ucProfile.value;
+      },
+      async fetchUser() {
+        const { data } = await ucProfileApi.get(lifecycle.signal);
+        if (!isActive()) return;
+        ucProfile.value = data;
+        await ucAuth!.fetchMe(lifecycle.signal);
+      },
+      logout: () => ucAuth!.logout(lifecycle.signal),
+    }
+  : useAuthStore();
 
 // --- 基本信息 ---
 const form = ref({ display_name: "", email: "", avatar: "" });
@@ -22,6 +50,7 @@ function handleAvatarSelect(url: string) {
 
 async function loadProfile() {
   await auth.fetchUser();
+  if (!isActive()) return;
   form.value = {
     display_name: auth.user.display_name,
     email: auth.user.email,
@@ -30,14 +59,17 @@ async function loadProfile() {
 }
 
 async function saveProfile() {
+  if (!isActive() || savingProfile.value) return;
   savingProfile.value = true;
   try {
-    await profileApi.update(form.value);
+    await profileApi.update(form.value, lifecycle.signal);
+    if (!isActive()) return;
     await auth.fetchUser();
+    if (!isActive()) return;
     Toast.success("资料已保存");
   } catch {
   } finally {
-    savingProfile.value = false;
+    if (isActive()) savingProfile.value = false;
   }
 }
 
@@ -46,6 +78,7 @@ const pwd = ref({ current: "", newPwd: "", confirm: "" });
 const savingPwd = ref(false);
 
 async function changePassword() {
+  if (!isActive() || savingPwd.value) return;
   if (!pwd.value.current) {
     Toast.error("请输入当前密码");
     return;
@@ -61,14 +94,25 @@ async function changePassword() {
   savingPwd.value = true;
   try {
     // 后端轮换 auth_secret，改密后所有已登录会话失效，需重新登录
-    await authApi.changePassword(pwd.value.current, pwd.value.newPwd);
+    await (props.userCenter ? ucApi.changePassword : authApi.changePassword)(
+      pwd.value.current,
+      pwd.value.newPwd,
+      lifecycle.signal,
+    );
+    if (!isActive()) return;
     pwd.value = { current: "", newPwd: "", confirm: "" };
     Toast.success("密码已修改，请使用新密码重新登录");
     await auth.logout();
+    // logout 清除当前公共身份后只检查页面是否仍存活。
+    if (
+      !active ||
+      lifecycle.signal.aborted ||
+      (props.userCenter && ucAuth?.user && ucAuth.user.id !== initialUCUserID)
+    ) return;
     router.push("/login");
   } catch {
   } finally {
-    savingPwd.value = false;
+    if (isActive()) savingPwd.value = false;
   }
 }
 
@@ -90,26 +134,32 @@ const disableCode = ref("");
 const disabling = ref(false);
 
 onMounted(async () => {
-  await loadProfile();
-  has2FA.value = auth.user.has_2fa;
-  loadTokenStatus();
+  try {
+    await loadProfile();
+    if (!isActive()) return;
+    has2FA.value = auth.user.has_2fa;
+    void loadTokenStatus();
+  } catch {}
 });
 
 /** 开启：获取密钥 + otpauth URL + 恢复码 */
 async function startSetup() {
+  if (!isActive() || setupLoading.value) return;
   setupLoading.value = true;
   try {
-    const { data } = await profileApi.setup2FA();
+    const { data } = await profileApi.setup2FA(lifecycle.signal);
+    if (!isActive()) return;
     setupData.value = data;
     setupCode.value = "";
   } catch {
   } finally {
-    setupLoading.value = false;
+    if (isActive()) setupLoading.value = false;
   }
 }
 
 /** 输入 TOTP 验证码确认开启 */
 async function confirmSetup() {
+  if (!isActive() || confirming.value) return;
   if (!setupData.value) return;
   if (!/^\d{6}$/.test(setupCode.value)) {
     Toast.error("请输入 6 位数字验证码");
@@ -118,11 +168,11 @@ async function confirmSetup() {
   confirming.value = true;
   try {
     const data = setupData.value;
-    await profileApi.confirm2FA({
-      secret: data.secret,
-      code: setupCode.value,
-      recovery_codes: data.recovery_codes,
-    });
+    await profileApi.confirm2FA(
+      { secret: data.secret, code: setupCode.value, recovery_codes: data.recovery_codes },
+      lifecycle.signal,
+    );
+    if (!isActive()) return;
     has2FA.value = true;
     // 展示本次生成的恢复码，提醒妥善保存
     recoveryCodes.value = data.recovery_codes;
@@ -133,20 +183,22 @@ async function confirmSetup() {
     auth.fetchUser().catch(() => {});
   } catch {
   } finally {
-    confirming.value = false;
+    if (isActive()) confirming.value = false;
   }
 }
 
 /** 查看恢复码列表 */
 async function loadRecoveryCodes() {
+  if (!isActive() || loadingRecovery.value) return;
   loadingRecovery.value = true;
   try {
-    const { data } = await profileApi.getRecoveryCodes();
+    const { data } = await profileApi.getRecoveryCodes(lifecycle.signal);
+    if (!isActive()) return;
     recoveryCodes.value = data.recovery_codes || [];
     showRecovery.value = true;
   } catch {
   } finally {
-    loadingRecovery.value = false;
+    if (isActive()) loadingRecovery.value = false;
   }
 }
 
@@ -157,13 +209,15 @@ function openDisableModal() {
 
 /** 输入 TOTP 验证码确认关闭 */
 async function confirmDisable() {
+  if (!isActive() || disabling.value) return;
   if (!/^\d{6}$/.test(disableCode.value)) {
     Toast.error("请输入 6 位数字验证码");
     return;
   }
   disabling.value = true;
   try {
-    await profileApi.disable2FA(disableCode.value);
+    await profileApi.disable2FA(disableCode.value, lifecycle.signal);
+    if (!isActive()) return;
     has2FA.value = false;
     showDisableModal.value = false;
     showRecovery.value = false;
@@ -173,15 +227,17 @@ async function confirmDisable() {
     auth.fetchUser().catch(() => {});
   } catch {
   } finally {
-    disabling.value = false;
+    if (isActive()) disabling.value = false;
   }
 }
 
 /** 复制文本（优先 Clipboard API，失败时降级 execCommand） */
 async function copyText(text: string) {
+  if (!isActive()) return;
   try {
     await navigator.clipboard.writeText(text);
   } catch {
+    if (!isActive()) return;
     const ta = document.createElement("textarea");
     ta.value = text;
     document.body.appendChild(ta);
@@ -189,7 +245,7 @@ async function copyText(text: string) {
     document.execCommand("copy");
     ta.remove();
   }
-  Toast.success("已复制");
+  if (isActive()) Toast.success("已复制");
 }
 
 // --- API Token（Wave 3a：Bearer 认证凭证，明文仅生成时展示一次） ---
@@ -202,8 +258,10 @@ const showRevokeModal = ref(false);
 
 /** 查询当前是否已启用 API Token */
 async function loadTokenStatus() {
+  if (!isActive()) return;
   try {
-    const { data } = await profileApi.apiTokenStatus();
+    const { data } = await profileApi.apiTokenStatus(lifecycle.signal);
+    if (!isActive()) return;
     hasToken.value = !!data.has_token;
   } catch {
     // 状态查询失败不阻塞页面，按钮操作时会再次校验
@@ -212,29 +270,33 @@ async function loadTokenStatus() {
 
 /** 生成新 API Token：明文仅本次弹窗展示一次，关闭后不可再查看 */
 async function generateToken() {
+  if (!isActive() || generating.value) return;
   generating.value = true;
   try {
-    const { data } = await profileApi.generateApiToken();
+    const { data } = await profileApi.generateApiToken(lifecycle.signal);
+    if (!isActive()) return;
     generatedToken.value = data.token;
     hasToken.value = true;
     showTokenModal.value = true;
   } catch {
   } finally {
-    generating.value = false;
+    if (isActive()) generating.value = false;
   }
 }
 
 /** 撤销 API Token：确认后置空哈希，所有使用该 Token 的调用立即 401 */
 async function confirmRevoke() {
+  if (!isActive() || revoking.value) return;
   revoking.value = true;
   try {
-    await profileApi.revokeApiToken();
+    await profileApi.revokeApiToken(lifecycle.signal);
+    if (!isActive()) return;
     hasToken.value = false;
     showRevokeModal.value = false;
     Toast.success("API Token 已撤销，Bearer 调用立即失效");
   } catch {
   } finally {
-    revoking.value = false;
+    if (isActive()) revoking.value = false;
   }
 }
 
@@ -280,6 +342,7 @@ const btnClsDanger =
               <div class="flex flex-col gap-2">
                 <button
                   class="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/20"
+                  v-if="!userCenter || ucAuth?.user?.role === 'author'"
                   @click="showAvatarPicker = true"
                 >
                   <Icon icon="ri:image-upload-line" class="mr-1" />从附件库选择
@@ -293,6 +356,10 @@ const btnClsDanger =
                 </button>
               </div>
             </div>
+          </div>
+          <div v-if="userCenter">
+            <label class="mb-1 block text-xs text-text-tertiary">头像 URL</label>
+            <input v-model="form.avatar" :class="inputCls" placeholder="https://…" />
           </div>
           <div>
             <button :disabled="savingProfile" :class="btnCls" @click="saveProfile">
@@ -568,7 +635,12 @@ const btnClsDanger =
       </VModal>
 
       <!-- 头像选择器 -->
-      <AttachmentPickerModal :open="showAvatarPicker" @select="handleAvatarSelect" @close="showAvatarPicker = false" />
+      <AttachmentPickerModal
+        :user-center="userCenter"
+        :open="showAvatarPicker"
+        @select="handleAvatarSelect"
+        @close="showAvatarPicker = false"
+      />
     </div>
   </div>
 </template>

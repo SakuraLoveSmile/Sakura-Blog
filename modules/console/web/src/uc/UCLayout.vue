@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useQueryClient } from "@tanstack/vue-query";
 import { useRouter } from "vue-router";
 import { Icon } from "@iconify/vue";
 import { useUCAuthStore } from "./stores/auth";
 
 const router = useRouter();
+const queryClient = useQueryClient();
 const auth = useUCAuthStore();
 const displayName = computed(() => auth.user?.nickname || auth.user?.username || "用户");
 
 async function logout() {
   await auth.logout();
+  queryClient.clear();
   await router.replace("/login");
 }
 </script>
