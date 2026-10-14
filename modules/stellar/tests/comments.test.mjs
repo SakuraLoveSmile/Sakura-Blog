@@ -768,6 +768,14 @@ test(`${SURFACE} · guest 态点「登录」开二选一弹窗；跳过验证 �
 
 // ------- 交互：Markdown 预览（M↓） -------
 
+test(`${SURFACE} · 预览区分内联表情和普通上传图片`, () => {
+  const { internal } = loadComments();
+  const html = internal.mdToHtml('hello![emoji](https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif)\n![photo](/uploads/photo.png)');
+  assert.match(html, /hello<img class="cmt-emoji-img"/);
+  assert.match(html, /<img src="\/uploads\/photo.png" alt="photo">/);
+  assert.equal((html.match(/cmt-emoji-img/g) || []).length, 1);
+});
+
 test(`${SURFACE} · mdToHtml：标题/粗体/引用/代码块渲染且 HTML 全转义`, () => {
   const { internal } = loadComments();
   const html = internal.mdToHtml('## hi1\n**b** <script>alert(1)</script>\n> q\n```\ncode <b>\n```');

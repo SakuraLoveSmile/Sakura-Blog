@@ -1,0 +1,149 @@
+{
+  "source_base": "56bac8cd",
+  "working_tree_fix": true,
+  "binary_sha256": "95be34279d042298c70ca9005e0a15fc0528e91c29c51410ae409200a4874cd4",
+  "spinner": {
+    "list": "加载评论中…",
+    "spinner": {
+      "position": "static",
+      "width": "13.1172px",
+      "height": "13.1172px",
+      "zIndex": "auto",
+      "margin": "0px",
+      "rect": {
+        "x": 330.5812683105469,
+        "y": 559.0734252929688,
+        "width": 14.34527587890625,
+        "height": 14.34527587890625,
+        "top": 559.0734252929688,
+        "right": 344.9265441894531,
+        "bottom": 573.418701171875,
+        "left": 330.5812683105469
+      }
+    },
+    "label": {
+      "x": 350.7109375,
+      "y": 555.7578125,
+      "width": 76.078125,
+      "height": 20.984375,
+      "top": 555.7578125,
+      "right": 426.7890625,
+      "bottom": 576.7421875,
+      "left": 350.7109375
+    },
+    "body": {
+      "x": 328,
+      "y": 225.171875,
+      "width": 616,
+      "height": 375.5703125,
+      "top": 225.171875,
+      "right": 944,
+      "bottom": 600.7421875,
+      "left": 328
+    }
+  },
+  "identity_pending_list_success": {
+    "list": "",
+    "emptyVisible": "flex",
+    "authCompleted": false,
+    "commentRequests": [
+      {
+        "url": "http://127.0.0.1:8103/api/comments?page_key=%2Fwiki%2Fvideo%2Fintro",
+        "duration": 16614.69999998808
+      }
+    ]
+  },
+  "preview": {
+    "preview": "<div class=\"cmt-preview-body\"><p><img class=\"cmt-emoji-img loaded\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif\" alt=\"emoji\"> hello<img class=\"cmt-emoji-img loaded\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif\" alt=\"emoji\"></p><p><img src=\"/uploads/cover.png\" alt=\"photo\" class=\"loaded\"></p></div>",
+    "images": [
+      {
+        "alt": "emoji",
+        "classes": "cmt-emoji-img loaded",
+        "display": "inline-block",
+        "margin": "0px 1px",
+        "width": "32px",
+        "height": "32px",
+        "naturalWidth": 64,
+        "rect": {
+          "x": 353,
+          "y": 357.0703125,
+          "width": 32,
+          "height": 32,
+          "top": 357.0703125,
+          "right": 385,
+          "bottom": 389.0703125,
+          "left": 353
+        }
+      },
+      {
+        "alt": "emoji",
+        "classes": "cmt-emoji-img loaded",
+        "display": "inline-block",
+        "margin": "0px 1px",
+        "width": "32px",
+        "height": "32px",
+        "naturalWidth": 64,
+        "rect": {
+          "x": 425.7265625,
+          "y": 357.0703125,
+          "width": 32,
+          "height": 32,
+          "top": 357.0703125,
+          "right": 457.7265625,
+          "bottom": 389.0703125,
+          "left": 425.7265625
+        }
+      },
+      {
+        "alt": "photo",
+        "classes": "loaded",
+        "display": "block",
+        "margin": "0px",
+        "width": "568px",
+        "height": "319.5px",
+        "naturalWidth": 960,
+        "rect": {
+          "x": 352,
+          "y": 395.46875,
+          "width": 568,
+          "height": 319.5,
+          "top": 395.46875,
+          "right": 920,
+          "bottom": 714.96875,
+          "left": 352
+        }
+      }
+    ],
+    "textRange": {
+      "x": 386,
+      "y": 361.78125,
+      "width": 38.7265625,
+      "height": 19,
+      "top": 361.78125,
+      "right": 424.7265625,
+      "bottom": 380.78125,
+      "left": 386
+    }
+  },
+  "injected_503": {
+    "list": "加载评论失败：fixture failure",
+    "loadingExists": false
+  },
+  "mobile": {
+    "viewport": 390,
+    "overflow": false,
+    "emptyVisible": "flex",
+    "preview": "<div class=\"cmt-preview-body\"><p>hello<img class=\"cmt-emoji-img loaded\" src=\"https://gcore.jsdelivr.net/gh/cdn-x/emoticons@3.1/blobcat/angel.gif\" alt=\"emoji\"></p></div>",
+    "image": {
+      "display": "inline-block",
+      "margin": "0px 1px",
+      "width": "32px",
+      "height": "32px"
+    }
+  },
+  "temporary_fetch_patterns_cleared": true,
+  "network_cache_override_disabled": true,
+  "viewport_restored": true,
+  "user_tabs_and_drafts_unchanged": true,
+  "no_comment_submitted": true
+}

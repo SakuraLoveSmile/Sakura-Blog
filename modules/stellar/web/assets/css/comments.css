@@ -286,7 +286,17 @@
   font-size: 0.75rem;
   color: var(--text-p3, #888);
 }
-.cmt-emoji-loading svg.loading { color: var(--theme, #0083ff); animation: spin 1s linear infinite; }
+.cmt-emoji-loading svg.loading,
+.cmt-lazy svg.loading {
+  position: static;
+  z-index: auto;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--theme, #0083ff);
+  animation: spin 1s linear infinite;
+}
 .cmt-emoji-error {
   padding: 0.6rem 0.1rem;
   font-size: 0.75rem;
@@ -391,7 +401,6 @@
   font-size: 0.82rem;
   color: var(--text-p3, #888);
 }
-.cmt-lazy svg.loading { color: var(--theme, #0083ff); animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* 空状态：居中 */
@@ -561,6 +570,7 @@
 .cmt-item-body p { margin: 0.35rem 0; }
 .cmt-item-body p:first-child { margin-top: 0; }
 .cmt-item-body p:last-child { margin-bottom: 0; }
+.cmt-preview-body img.cmt-emoji-img,
 .cmt-item-body img.cmt-emoji-img,
 .cmt-item-body img[src*="emoticons"],
 .cmt-item-body img[src*="emoji"] {

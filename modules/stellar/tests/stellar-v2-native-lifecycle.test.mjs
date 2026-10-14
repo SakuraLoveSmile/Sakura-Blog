@@ -87,6 +87,37 @@ test('原生评论旧身份请求取消，新页身份只更新自己的region�
   assert.equal(previous.nick.textContent, ''); assert.equal(next.nick.textContent, '新身份');
   cleanupNext(); assert.equal(next.body.getAttribute('data-cmt-init'), null);
 });
+test('原生评论身份请求未完成时，进入视口仍加载公开列表，卸载取消两个请求', async () => {
+  const f = fixture(), observers = [];
+  f.window.IntersectionObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe(element) { this.element = element; }
+    disconnect() { this.disconnected = true; }
+  };
+  f.load('comments.js');
+  const body = new Element(), list = new Element(), head = new Element(), empty = new Element();
+  body.setAttribute('data-page-key', '/post/native');
+  head.map['.cmt-list-title'] = new Element();
+  list.innerHTML = '加载评论中…';
+  const root = f.region({ '#cmt-body': body, '#cmt-list': list, '#cmt-list-head': head, '#cmt-empty': empty });
+  const cleanup = f.window.stellar.comments.mount(root, f.context());
+  assert.equal(f.requests[0].url, '/api/auth/me');
+  assert.equal(observers.length, 1, '列表观察不应等待身份响应');
+  assert.equal(f.requests.length, 1, '进入视口前保持懒加载');
+  observers[0].callback([{ isIntersecting: true }]);
+  assert.equal(f.requests[1].url, '/api/comments?page_key=%2Fpost%2Fnative');
+  f.requests[1].resolve({ ok: true, json: async () => ({ ok: true, total: 0, comments: [] }) });
+  await flush(); await flush();
+  assert.equal(list.innerHTML, '');
+  assert.equal(empty.style.display, 'flex');
+  cleanup();
+  assert.equal(f.requests[0].options.signal.aborted, true);
+  assert.equal(f.requests[1].options.signal.aborted, true);
+  assert.equal(observers[0].disconnected, true);
+  f.requests[0].resolve({ json: async () => ({ id: 1 }) });
+  await flush();
+  assert.equal(body.getAttribute('data-cmt-init'), null);
+});
 test('RAG问答离页取消，不回写输出、按钮或密钥输入', async () => {
   const f = fixture(); f.load('search/ai-ask.js');
   const panel = new Element(), form = new Element(), input = new Element(), button = new Element(), key = new Element(), output = new Element();

@@ -875,7 +875,9 @@
       return '\u0000C' + (codes.length - 1) + '\u0000';
     });
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, u) {
-      return safeUrl(u) ? '<img class="cmt-emoji-img" src="' + u + '" alt="' + alt + '">' : m;
+      // 与服务端评论渲染一致：表情使用内联尺寸，普通附件保留图片布局。
+      var emoji = /^https?:\/\/[^\"]*(?:emoticons|emoji)[^\"]*$/i.test(u);
+      return safeUrl(u) ? '<img' + (emoji ? ' class="cmt-emoji-img"' : '') + ' src="' + u + '" alt="' + alt + '">' : m;
     });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
       return safeUrl(u) ? '<a href="' + u + '" rel="nofollow noopener" target="_blank">' + t + '</a>' : m;
@@ -1374,10 +1376,9 @@
     bindToolbar();
     bindModal();
 
-    // 1. 拉身份  2. 观察懒加载
-    fetchMe(function () {
-      observeLazy();
-    });
+    // 公开列表无需等待身份响应，身份请求缓慢时仍能按视口懒加载。
+    fetchMe();
+    observeLazy();
   }
 
   // 测试面：机械校验入口（node --test modules/stellar/tests/comments.test.mjs 在 vm 沙箱断言）。
