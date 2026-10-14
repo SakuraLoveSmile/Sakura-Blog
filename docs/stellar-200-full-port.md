@@ -181,10 +181,13 @@
 
 - T4/T7：5b92b246 的三张置顶轮播经真实 Leftbar 链接离开，pagehide persisted=false 时移除11个事件监听、abort颜色工作、暂停轮播并清空refresh回调；这是整页卸载证据，不冒充partial disposal。首次移动slide定位器点击未改变URL的采样保留，见`resume-pin-current-lifecycle.json`。
 - T7：74ef648 组合的普通hook与feature `make merge-check` 全部通过；该门禁实际合入根dev，再跑dev组合 `make test`，Console261/Stellar202、fail0/skip0，Go vet/Staticcheck/全部Go测试及模块/部署来源检查通过。根dev真实make build也已通过。四服务改用该dev二进制，但-root仍是原四fixture；Console入口/六资产、main/provider/runtime和当前嵌入WASM字节匹配。独立lsof检查四DB/WAL/SHM与16把distinct canonical guard锁，未打开真实根DB；当前dev浏览器实际Galaxy/cover/正文及runtime query71bc6f7a正确。见`resume-runtime-dev-combination.json`、`resume-dev-browser-current.json`；此记录绑定74ef648产物，后续纯文档提交不替代或篡改这次来源。
+- T1/T6：用户已批准候选、七条正文及完整隔离演练，明确暂不修改真实源。演练前当前dev单二进制的正式reviewed preview退出1：此前集成的bdf10768改变tracked图标注册表，使旧完整Root/Review绑定过期。已独立逐资源定位，并以正式初次/选值preview两次退出0生成新审查；68资源inventory只该图标data改变，Source/原与选值Candidate/七正文均不变。新Root为8e2206a9…cc371、新Review为d2e8b831…51711，按用户已约定的“摘要变化重新审查”边界待确认；不重复问正文/name/owner。72项本次前后指纹只SHM mtime变化，template仍未批准，未演练、Apply或停服。见迁移报告“隔离演练批准后的来源绑定更新”及`resume-migration-rehearsal-rebinding.json`。
+
+- T1/T6：新来源绑定已获批准；前两次正式演练失败分别暴露缺初始化文件的生产启动遗漏与空站点 URL。98162b2修复从同一持久快照启动，ec63ffad接入用户明确站点地址的具名候选／事务写入。当前组合真实build后，正式初次／选值preview及完整rehearse均退出0，Source/Root及七正文摘要保持；32候选／173映射、原13阻断具名处理为0。主agent只读核对41非迁移表、全部settings、30canonical和七正文一致，source72项仅SHM mtime变化。见迁移报告最新章节及`resume-migration-site-url-rehearsal.json`；真实迁移未授权，后续组合门禁继续执行。
 
 | 编号 | 正式链路与可核验证据 | 仍需保留的边界 |
 | --- | --- | --- |
-| T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；迁移报告绑定全部来源 | 七条正文、完整Root/ReviewDigest及真实迁移操作仍未批准；不因选值确认自动Apply |
+| T1 | strict schema/模型/Doctor/公开inventory与32条候选完整映射；七条正文/候选及隔离演练已批准 | 新完整Root/Review绑定与指定URL已接入，完整隔离演练通过；真实迁移明确未授权 |
 | T2 | 四预设/三配色/14 profiles/三locale/断点矩阵；appearance字段及四级区域级联真实消费者 | 逐项证据不替代用户整体体验确认；最初失败采样保留 |
 | T3 | 全内容系统保存重开/导航搜索；模型、Wiki/Notebook排序、OG、分享及Hero真实链路 | 视频离页显式pause和原生BFCache没有新增成功证据；不推导全参数UI逐项验收 |
 | T4 | partial成功/取消/超时/失败回退、真实SDK合成Algolia、六评论合成SDK及访客身份 | 真实Algolia/六评论账号、原生BFCache未实测；pin分页整页导航不当partial卸载证明 |

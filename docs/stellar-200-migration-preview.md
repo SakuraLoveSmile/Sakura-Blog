@@ -1,6 +1,6 @@
 # Stellar 2.0.0 存量迁移审查
 
-状态：实现中。用户已确认下列具名取值；纯预览已写入新的私密候选，真实迁移仍未执行。完整根目录绑定、隔离演练、可恢复执行与启动恢复核心已实现并通过合成完整 root 测试；正式单二进制接线已由主任务完成；本次独立验证真实来源的只读 CLI 预览，整体组合与前台验收仍由主任务完成。最后七条正文摘要、完整 RootDigest / ReviewDigest 与最终执行授权尚未批准。
+状态：实现中。用户已确认下列具名取值，并批准七条正文摘要、新完整来源绑定及完整隔离演练，明确暂不修改真实源。正式演练的前两次失败暴露生产启动及空站点 URL 两项问题，现均已修复；新组合的第三次完整隔离演练已退出 0，生产 Bootstrap、搜索重建及全部公开 SSR 已通过。真实迁移执行未授权，整体与前台完整验收仍保持实现中；不能把资源重建、单项测试或只读预览通过当完整演练通过。
 
 ## 本次只读证据与私密边界
 
@@ -51,9 +51,57 @@
 - 完整capture仍是68资源（53文件/12目录/3不存在项）、79,967,649bytes、67 SQL对象、2 tracked文章。
 - Approved仍为false、BodyDigests空、offline全部false；owner仍只在私密用户快照唯一匹配。没有真实演练、Apply、Recover、停服或生产操作。
 
-此前已确认取值不重复询问。最终待审查仅是下面七条正文的具名转换、完整来源/候选绑定和真实迁移操作。取得确认后仍须在执行前fresh校验；若停服/checkpoint导致RootDigest变化，应提供新的绑定审查，不能拿旧物理摘要放行。
+此前已确认取值不重复询问。七条正文、完整来源绑定及隔离演练现已批准；真实迁移操作仍未授权。执行前仍须 fresh 校验；若停服/checkpoint 导致 RootDigest 变化，应提供新的绑定审查，不能拿旧物理摘要放行。
 
-## 本次完整根绑定与用户已确认取值
+## 2026-10-14 隔离演练批准后的来源绑定更新
+
+用户明确选择“批准候选及完整隔离演练，暂不修改真实源（推荐）”。该回复批准下表七条正文 SHA256 和原 `7fca4425…f88cd` / `b12070c5…85d06` 绑定，不授权 Apply、Recover 或停服操作；既有 name、owner、结构和候选选择不重复询问。
+
+演练前使用根 dev 的真实构建固定副本（二进制 SHA256 `c0ef7e6c5d88d95cb2db5e282ef5a1c158cce93933f133a9b7bf68c3287a891a`，构建源码 `74ef648a`，当前 HEAD `572788a` 仅后续文档变化）运行正式 reviewed preview，因完整资源变化退出 **1**，未创建演练或批准文件。独立逐资源核对发现只有受跟踪的 `internal/settings/data/icons.yml` 字节变化：旧 SHA256 `a0344bd2ddb7e15e0fa477aa0a072c9e2a4059407b1b8a6cdc940e27457b9170` / 144,650 bytes，新 SHA256 `766a001a7a9de6753ffd1f028649cbab7e497f60968ca73ab09299bbef7540a6` / 152,735 bytes。旧字节匹配捕获时的根 Git `55e06f15`；新字节来自已集成的 `bdf10768`（对齐分类导航与 Stellar 官方图标），匹配当前 Git 与磁盘。不能因这属于源码集成就绕过已经约定的完整物理绑定审查。
+
+随后正式初次 preview 和选值 preview 均退出 **0**，新的完整 capture 仍是 **68 资源、67 SQL 对象、2 tracked 文章**。与旧 capture 逐项比较，仅上述图标资源的 `data` 改变，未新增或丢失资源；SourceDigest、原/选值 CandidateDigest、全部取值及七条正文摘要完全相同。新待审查绑定为：
+
+- SourceDigest：`d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`（不变）。
+- 原 CandidateDigest：`71dcecb6e55518cf34fcbbabbd5a1247c24fba12efbd93a732468c44a2fb095b`（不变）。
+- 选值 CandidateDigest：`ff8904deccbb1e797887363bce1221b3955763438ecaf4d2bed89967f026524a`（不变）。
+- **新 RootDigest：`8e2206a91d8d331f988030b6f399257f6747d38682a1076e35b5e895da0cc371`。**
+- **新 ReviewDigest：`d2e8b831450349c0db48cc78f6fb6100d53e23a9cf8e065d75cbd4ed67451711`。**
+
+私密捕获及固定二进制保存在迁移工作树 `.tmp/stellar-approved-rehearsal-20261014-572788a/`，目录 0700、文件 0600、固定 binary 0700；旧资料与失败日志保留。新 template 仍是 `Approved=false`、BodyDigests 未填、offline 三个布尔值全 false，等待新绑定确认；七条正文的用户批准单独保留，不因此撤销或重复询问。72 项演练前后独立来源指纹中，仅 `data/blog.db-shm` 的 mtime 变化，内容 hash、DB/WAL/tracked 和其他持久资源均未变化；未删除侧车或使用 immutable，不能声称来源目录零写。
+
+公开证据见 [来源重新绑定摘要](baselines/stellar-200-full/resume-migration-rehearsal-rebinding.json)。此阶段只完成新的只读审查，**没有执行真实候选演练、Apply、Recover、真实启动或停服**。下一步仅确认新 RootDigest / ReviewDigest 后继续此前已授权的完整隔离演练，真实迁移仍保持未授权。
+
+## 2026-10-14 正式隔离演练实测与站点 URL 决策
+
+用户已确认上节的新 RootDigest / ReviewDigest，继续完整隔离演练，真实源不改。每次演练前的正式 reviewed preview 都退出 0 且来源绑定相同。新的私密演练批准文件显式 `Approved=true`、七项 BodyDigests 精确填写；offline 三个布尔值仍全部 false，不能用于真实 Apply。
+
+1. 原 dev 单二进制正式 `rehearse` 退出 1：完整资源／DB 重建完成，生产 Bootstrap 因 capture 明确缺少 `config/site.yml` 而失败。失败目录与诊断保留；没有补造文件或开启 DevMode。独立核验重建后 56/56 源表符合批准预期、仅新增两条 canonical settings；77,216 个原 rowid、67 SQL 对象／索引结构、30 canonical DB 记录、七条正文与两份 tracked 文档、63 项未转换资源均保持，外键及完整性检查正常。
+2. 已用红测复现并以 `98162b2` 修复生产启动：仅文件确实不存在、已有 strict canonical 主题及有效宿主站点对象时，从单一 settings 快照只读加载完整配置；在任何可写初始化前拒绝缺 DB、旧库、坏主题、缺宿主段／links／users 表。此分支跳过旧 Bootstrap，避免配置补导和旧管理员明文迁移，仍保留生产身份门禁；恢复重建复用同一路径。app/config 普通及 race 检查、边界检查、真实 make build、独立审查及正常完整提交 hook 已通过。这些检查不宣称运行目录零写。
+3. 修复产物再次正式 `rehearse` 退出 1：生产 Bootstrap 与搜索重建已实际执行，公开 SSR 在第一篇页面遇到“absolute HTTP(S) site URL required”。本地核对确认原 source 及 stage 的 `settings.site.url` 都为空字符串，没有因迁移丢值。此轮独立核验 50/56 源表符合批准后的完整 typed rows；其余六张仅为 FTS 主表／四张 shadow 表和新增两条已知 schema migration。搜索仍 18 项（11 Post、3 Page、4 Moment），身份＋slug＋原标题集合保持、重复 0；Posts12／Pages4 未增量新增。users／权限、全部原宿主 settings、关系、批准正文和 67 个 SQL 对象仍保持；主 agent 另独立核对 41 张非迁移表、完整 settings、30 条 canonical 记录及七条正文，均一致。
+
+两轮各自 72 项真实来源前后指纹中，仅 SHM mtime 变化；DB/WAL、tracked、配置、上传及其他持久资源的字节／模式／形状不变，未删侧车或使用 immutable。公开证据为 [正式演练尝试](baselines/stellar-200-full/resume-migration-rehearsal-attempts.json) 和 [主 agent 独立核对](baselines/stellar-200-full/resume-migration-rehearsal-stage-main-review.json)。失败目录包含真实私密副本，全文／密钥／用户 ID 不输出、不提交。
+
+用户已明确站点地址为 **`https://blog.xn--fhqths51enha.cn/`**，只用于本地私密候选和隔离演练。此新增具名选择需由正式预览／事务写入处理，只改 `settings.site.url` 并同步候选公开站点 URL；不从参考站、请求 Host 或循环请求猜地址，不事后修补演练夹具。完整来源物理绑定不因该选择改变，后续原／选值候选及 ReviewDigest 会将这个明确取值纳入审查记录；真实迁移仍未授权。
+
+结构措辞进一步明确：`notebooks.id` 和 `notes.notebook_id` 转为 TEXT，`notes.id` 保留正式宿主 schema 的 INTEGER。该精确类型与已审查的逐记录／结构候选及实际演练一致；不为报告措辞另改 Note schema。
+
+## 2026-10-14 指定站点地址后的完整隔离演练
+
+用户明确提供 `https://blog.xn--fhqths51enha.cn/` 后，以正式具名 `settings/site_url_required/site.url → replace_url` 选择纳入候选。原始诊断保留为 info，SourceSnapshot 不改；隔离库同一事务只修改宿主 `settings.site.url`，其他 site 字段语义保留，并同步 `blog_extensions.site.url`。未事后补演练夹具、未造初始化文件、未使用 DevMode。
+
+当前主组合源码 `ec63ffadc99ace2d6d0eaccd2529ffdf5d83c21e` 的真实 `make build` 成功；固定单二进制 SHA256 为 `00e24588ef87309b0e4b70676924bd5e1721747a53419e54682d44dc902443d6`。正常初次 preview、选值 preview 与正式 `rehearse` 均退出 **0**。选值报告仍覆盖全部 32 候选（30 DB、2 tracked），包含 173 配置映射；原 13 条阻断（包括新增 URL 诊断）具名处理后为 0，原诊断完整保留。完整脱敏结果见 [最新完整选值报告](baselines/stellar-200-full/resume-migration-site-url-selected-report.json)。
+
+- SourceDigest：`d8ae856807f1edde4ade0ac58554d045645fb27bc9ef5edef10ff2084badedb9`，不变。
+- RootDigest：`8e2206a91d8d331f988030b6f399257f6747d38682a1076e35b5e895da0cc371`，与已批准物理来源一致。
+- 原 CandidateDigest：`b13080b0dc1786c0dffe70c9a430e854f496b7dab429d92e475bbcaeddb2eb23`，正式新增 URL 阻断纳入绑定。
+- 选值 CandidateDigest：`a462ec394dda3c0e50af293aa57d78d40390ca620e7d15e4c44654935d4f8bc7`，指定地址纳入绑定。
+- ReviewDigest：`4f18ef0fae5ad027855a73162424a1d389a84d8e18199681c6dc20b3898e5dfd`，精确绑定已有取值及用户刚指定的 URL；七条已批准正文 SHA256 全部不变。
+
+正式完整隔离演练完成私密 root 资源及数据库重建、生产 Bootstrap、FTS 搜索重建和全部公开 Offline SSR，没有降低 staged validator。主 agent 独立只读核对 41 张非迁移表、全部预期 settings、30 条 canonical DB 记录和七条正文摘要，均一致；宿主与 Blog URL 同步，quick_check 和 foreign_key_check 正常。真实来源前后 72 项指纹仅 SHM mtime 变化，其字节／模式／形状与所有持久资源不变；未删除侧车，不声称整个目录零写。正式链路及独立核对见 [演练结果](baselines/stellar-200-full/resume-migration-site-url-rehearsal.json) 与 [主 agent 核对](baselines/stellar-200-full/resume-migration-site-url-stage-main-review.json)。独立完整核验另外确认 50/56 源表的完整 typed rows 精确符合批准变换，其余仅 FTS 五表和两条 schema migration 的预期派生差异；67/67 SQL 对象及索引结构、46/46 非派生 rowid 集合、2/2 tracked 完整配置／Blog／正文均一致。搜索 18 项、重复 0，本源三条非公开记录未泄露；真实源没有加密 Post，本次不声称覆盖该类。见 [独立完整核验](baselines/stellar-200-full/resume-migration-site-url-stage-independent-review.json)。
+
+此阶段的批准文件仅用于已授权的隔离演练，offline 三项全部 false。**真实 Apply、Recover、停服及生产部署仍未授权，也未执行。** 初次和选值 preview 自动生成的 template 继续保持未批准；历史候选／失败目录保留且不回写。下一步真实迁移若改变来源绑定，仍须重新提交审查，不用这次技术通过替代最终真实执行授权或完整体验验收。
+
+## 历史完整根绑定与用户已确认取值
 
 上一轮只读 helper 捕获时间：`2026-10-13T16:15:21Z`。保留目录为 `.tmp/stellar-migration-review-20261013-user-selections-full-root-v2/`，目录 `0700`，六份文件均 `0600`：原 candidate、已选值 selected-candidate、完整 root-capture、Notebook decisions、approval-pending 与脱敏 report。这是包含完整索引结构的版本 2 新只读捕获；原 full-root/review-bound 和更早预览均保留。私密 root-capture 包含原配置、上传、正文及 DB/WAL bytes，禁止输出、外发或提交。
 
@@ -72,18 +120,18 @@
 | wiki_projects/go-blog homepage | 采用官方 Collection 首页 | 不保留旧跳第一篇重定向。 |
 | posts/10 banner/cover | 保留独立 Blog banner 图源 | 列表继续用旧 cover，详情使用独立 banner_image。 |
 | Footer 三条 actions[1..3].url | remove_placeholder | 仅移除这三条 url="#" 按钮。 |
-| notebooks/notes 旧结构 | use_notebook_decisions | ID/父本转 TEXT、nb_order→sort、content→content_md、tags→tags_json；关系、原日期、正文、标签保持。 |
+| notebooks/notes 旧结构 | use_notebook_decisions | notebooks.id／notes.notebook_id 转 TEXT，notes.id 保持 INTEGER；nb_order→sort、content→content_md、tags→tags_json；关系、原日期、正文、标签保持。 |
 | notebooks/2 缺元数据 | owner=sakurasep；updated_at=原 created_at | 在现有私密 SourceSnapshot users 中按 username 精确找到唯一用户后绑定 ID；未按时间或其它用户推断。ID 只保留私密候选。 |
 | notes/2 缺元数据 | owner=sakurasep；slug=note-2；status=draft | 同一精确唯一现有用户；明确先 draft，不自动发布。 |
 | 两份 tracked 文章 status | preserve_status | 上游 schema 不加入宿主 status，状态保留于独立 blog.status。 |
 
 原未选值结构候选 21 项映射全部保留于原报告；五个缺字段按用户明确取值填写后，完整结构映射为 26 项，结构预览不再阻断。原 Go time.String 形式的 TEXT 日期仍按正式 SQLite 驱动格式校验且原字符串保留。已确认字段无需再次询问。
 
-### 尚未批准的七条正文摘要与最终执行
+### 七条正文摘要（已批准；保留原审查清单）与最终执行边界
 
-这些是转换后正文的 SHA256，全文仅在本地私密 selected-candidate；七项既有逐记录转换映射与原文差异仍见本文记录清单。不能以选择了配置/结构值代替正文摘要批准。
+这些是转换后正文的 SHA256，用户已在上述隔离演练回复中明确批准；新预览的七项摘要与此表完全相同。全文仅在本地私密 selected-candidate；七项既有逐记录转换映射与原文差异仍见本文记录清单。该批准限候选及隔离演练，不授权真实执行。
 
-| 记录 | 待批准转换后正文 SHA256 |
+| 记录 | 已批准转换后正文 SHA256 |
 | --- | --- |
 | posts/1 | `16071c6f6656e7e68565ecd1d1cd3db3002f2c706907953b3ca009f9c4de485a` |
 | posts/2 | `e6a8d7437c8a39b466da05678ac7073df0a01ea5411dfa1ef1256b455974c861` |
@@ -93,7 +141,7 @@
 | pages/2 | `5cbb018aa0f6e40c2056d2f3eb73cf705fd06f511e6c79c5b0c5b6e474c94143` |
 | pages/3 | `3412f73b4af8eb3a16b79f213b03f4f8f8254cb8714a63ce86a829cd206188a9` |
 
-`approval-pending.private.json` 的 **Approved=false，BodyDigests 未填**；完整 RootDigest 和 ReviewDigest 都只是待审查绑定，不是批准。真实 Apply、真实 BuildMigrationFixture/BuildRootRehearsal 均未运行。停服排空若发生 WAL checkpoint 或其它最后写入，RootDigest 必须重新捕获并审查；不能用逻辑相等绕过物理源变化。
+历史 `approval-pending.private.json` 的 **Approved=false，BodyDigests 未填** 原样保留，不回写旧资料。七条正文及旧绑定已批准；演练前核验拒绝过期绑定后，新 RootDigest / ReviewDigest 也已获得明确批准。正式隔离 BuildRootRehearsal 的实测见上节；真实 Apply、Recover 和停服均未运行。停服排空若发生 WAL checkpoint 或其它最后写入，RootDigest 必须重新捕获并审查；不能用逻辑相等绕过物理源变化。
 
 ### 完整迁移执行边界与本次合成证明
 
