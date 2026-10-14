@@ -90,6 +90,7 @@ func buildTheme(s Snapshot) ThemeCandidate {
 		for _, name := range sortedKeys(stored) {
 			t.Mappings = append(t.Mappings, Mapping{"settings." + name, "settings." + name, "已迁移设置与宿主设置原文保留"})
 		}
+		t.Diagnostics = append(t.Diagnostics, siteURLDiagnostics(s)...)
 		return t
 	}
 	b := themeBuilder{raw: map[string]any{}, theme: map[string]any{}, blog: map[string]any{}, used: map[string]bool{}}
@@ -171,7 +172,69 @@ func buildTheme(s Snapshot) ThemeCandidate {
 	if _, err := stellarv2.ParseTheme(b.theme, stellarv2.Options{Source: "migration.theme"}); err != nil {
 		b.diagnostics = append(b.diagnostics, schemaDiagnostics(err)...)
 	}
+	b.diagnostics = append(b.diagnostics, siteURLDiagnostics(s)...)
 	return ThemeCandidate{Version: 2, ThemeJSON: encode(b.theme), DocumentJSON: encode(map[string]any{"version": 2, "theme": b.theme}), BlogJSON: encode(b.blog), Mappings: b.mappings, Diagnostics: b.diagnostics}
+}
+
+// 宿主site原文保留于source archive；仅有效对象中的无效URL可作具名修复。
+func sourceSite(s Snapshot) (map[string]any, bool) {
+	for _, row := range s.Tables["settings"].Rows {
+		if stringValue(row["section"]) != "site" {
+			continue
+		}
+		v, err := decode(stringValue(row["value"]))
+		m, ok := v.(map[string]any)
+		return m, err == nil && ok && m != nil
+	}
+	return nil, false
+}
+
+func validSiteURL(value any) bool {
+	raw, ok := value.(string)
+	if !ok || raw == "" {
+		return false
+	}
+	u, err := url.Parse(raw)
+	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Hostname() != "" && u.User == nil && u.RawQuery == "" && !u.ForceQuery && !strings.Contains(raw, "#")
+}
+
+func siteURLDiagnostics(s Snapshot) []Diagnostic {
+	site, exists := sourceSite(s)
+	if !exists || validSiteURL(site["url"]) {
+		return nil
+	}
+	return []Diagnostic{{Kind: "policy", Severity: "error", Code: "site_url_required", Source: "settings", Path: "site.url", Message: "宿主站点地址必须是绝对HTTP(S)地址且不含身份、query或fragment；需明确提供地址，不可由参考站或请求origin推断", Blocking: true}}
+}
+
+func validateSiteURLCandidate(c Candidate) error {
+	required := len(siteURLDiagnostics(c.Source)) > 0
+	if !required {
+		if c.Theme.SiteURL != "" {
+			return fmt.Errorf("site URL replacement does not match an invalid source URL")
+		}
+		return nil
+	}
+	if !validSiteURL(c.Theme.SiteURL) {
+		return fmt.Errorf("site URL requires an explicit valid replacement")
+	}
+	resolved := false
+	for _, d := range c.Theme.Diagnostics {
+		if d.Source == "settings" && d.Path == "site.url" && d.Code == "site_url_required" && d.Kind == "policy" && !d.Blocking && d.Severity == "info" {
+			resolved = true
+		}
+	}
+	if !resolved {
+		return fmt.Errorf("site URL replacement lacks the retained named diagnostic")
+	}
+	blog, err := decode(c.Theme.BlogJSON)
+	if err != nil {
+		return err
+	}
+	value, exists := get(object(blog), "site.url")
+	if !exists || value != c.Theme.SiteURL {
+		return fmt.Errorf("host and Blog site URL replacement differ")
+	}
+	return nil
 }
 
 func (b *themeBuilder) wikiShelf(s Snapshot) {

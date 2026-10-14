@@ -420,8 +420,30 @@ func insertSnapshotRows(ctx context.Context, tx *sql.Tx, name string, table Tabl
 }
 
 func writeCanonicalMigration(ctx context.Context, tx *sql.Tx, c Candidate) error {
+	if err := validateSiteURLCandidate(c); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS settings(section TEXT PRIMARY KEY,value TEXT NOT NULL)"); err != nil {
 		return err
+	}
+	if c.Theme.SiteURL != "" {
+		var raw string
+		if err := tx.QueryRowContext(ctx, "SELECT value FROM settings WHERE section='site'").Scan(&raw); err != nil {
+			return err
+		}
+		value, err := decode(raw)
+		if err != nil {
+			return err
+		}
+		site, ok := value.(map[string]any)
+		source, exists := sourceSite(c.Source)
+		if !ok || site == nil || !exists || encode(site) != encode(source) {
+			return fmt.Errorf("site URL replacement source object changed")
+		}
+		site["url"] = c.Theme.SiteURL
+		if _, err = tx.ExecContext(ctx, "UPDATE settings SET value=? WHERE section='site'", encode(site)); err != nil {
+			return err
+		}
 	}
 	for _, v := range []struct{ name, value string }{{"stellar_v2", c.Theme.DocumentJSON}, {"blog_extensions", c.Theme.BlogJSON}} {
 		if _, err := tx.ExecContext(ctx, "INSERT INTO settings(section,value) VALUES(?,?) ON CONFLICT(section) DO UPDATE SET value=excluded.value", v.name, v.value); err != nil {

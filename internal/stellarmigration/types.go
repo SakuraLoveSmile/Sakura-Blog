@@ -32,13 +32,15 @@ type Diagnostic struct {
 	Alternatives []Alternative      `json:"alternatives,omitempty"`
 }
 type ThemeCandidate struct {
-	Version      int          `json:"version"`
-	ThemeJSON    string       `json:"theme_json"`
-	DocumentJSON string       `json:"document_json"`
-	BlogJSON     string       `json:"blog_json"`
-	Preserved    bool         `json:"preserved"`
-	Mappings     []Mapping    `json:"mappings"`
-	Diagnostics  []Diagnostic `json:"diagnostics"`
+	Version      int    `json:"version"`
+	ThemeJSON    string `json:"theme_json"`
+	DocumentJSON string `json:"document_json"`
+	BlogJSON     string `json:"blog_json"`
+	// SiteURL仅表达具名选择的宿主settings.site.url更新；未选择时省略。
+	SiteURL     string       `json:"site_url,omitempty"`
+	Preserved   bool         `json:"preserved"`
+	Mappings    []Mapping    `json:"mappings"`
+	Diagnostics []Diagnostic `json:"diagnostics"`
 }
 type RecordCandidate struct {
 	Source         string       `json:"source"`
@@ -153,6 +155,9 @@ func ValidateCandidate(c Candidate, current Snapshot) error {
 	}
 	if c.PublicReport().Blocking > 0 {
 		return fmt.Errorf("migration has unresolved conflicts")
+	}
+	if err := validateSiteURLCandidate(c); err != nil {
+		return err
 	}
 	return validateAll(c)
 }

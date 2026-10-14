@@ -7,7 +7,7 @@ import (
 
 func globalSourceFixture() map[string]any {
 	return map[string]any{
-		"site":     map[string]any{"avatar_bg": "/avatar-background.png"},
+		"site":     map[string]any{"url": "https://fixture.example/", "avatar_bg": "/avatar-background.png"},
 		"rightbar": map[string]any{"intro": "Fixture introduction", "welcome_linklist": []any{map[string]any{"title": "Fixture", "url": "/fixture/"}}},
 		"nav_tabs": map[string]any{"enable_custom": true, "items": []any{}},
 		"article":  map[string]any{"ai_label": map[string]any{"enabled": true}, "category_icon": map[string]any{"fixture": "default:folder"}, "tag_icon": map[string]any{}, "read_next": false, "expire_days": 30, "banner_ratio": 2, "edit_this_page": "https://edit.example/source/"},

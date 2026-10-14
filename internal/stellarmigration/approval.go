@@ -275,6 +275,23 @@ func applyResolution(c *Candidate, d Diagnostic, r MigrationResolution, nb Noteb
 		return nil
 	}
 	switch d.Code {
+	case "site_url_required":
+		if d.Source != "settings" || d.Path != "site.url" || r.Action != "replace_url" || !validSiteURL(r.ReplacementURL) || len(siteURLDiagnostics(c.Source)) != 1 {
+			return fmt.Errorf("site URL needs a valid named absolute HTTP(S) replacement")
+		}
+		blog, err := decode(c.Theme.BlogJSON)
+		if err != nil {
+			return err
+		}
+		m, ok := blog.(map[string]any)
+		if !ok || m == nil {
+			return fmt.Errorf("site URL replacement requires Blog config object")
+		}
+		set(m, "site.url", r.ReplacementURL)
+		c.Theme.SiteURL = r.ReplacementURL
+		c.Theme.BlogJSON = encode(m)
+		c.Theme.Mappings = append(c.Theme.Mappings, Mapping{"settings.site.url", "settings.site.url + blog.site.url", "按具名批准地址同步宿主与Blog；旧值完整保留在source archive，不改源快照"})
+		return nil
 	case "pjax_policy_removed", "data_cache_removed":
 		if r.Action != "use_official" {
 			return fmt.Errorf("unsupported runtime policy resolution")

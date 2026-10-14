@@ -14,7 +14,7 @@ func TestSEOMigratesOfficialFieldsAndKeepsTypedDefaultsSeparate(t *testing.T) {
 		"structured_data":     map[string]any{"links": []any{"https://social.example/profile"}},
 		"default_description": "SEO fallback", "default_keywords": "seo,fixture", "robots_extra": "Disallow: /hidden/", "no_index": true, "google_verification": "PRIVATE_VERIFY_FIXTURE", "bing_verification": "", "baidu_verification": "",
 	}
-	s := settingsSnapshot(t, map[string]any{"site": map[string]any{"description": "Explicit site text", "keywords": "site,fixture"}, "seo": source})
+	s := settingsSnapshot(t, map[string]any{"site": map[string]any{"url": "https://fixture.example/", "description": "Explicit site text", "keywords": "site,fixture"}, "seo": source})
 	c := candidate(t, s)
 	if c.PublicReport().Blocking != 1 || c.Theme.Diagnostics[0].Consumer != ConsumerSEO {
 		t.Fatal("official fields or pending typed SEO misclassified")
