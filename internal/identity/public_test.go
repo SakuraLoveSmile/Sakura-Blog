@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -22,6 +23,9 @@ func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
+	if err := st.EnsureSchema(); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
 	if err := st.EnsureUsersTable(); err != nil {
 		t.Fatalf("ensure users: %v", err)
 	}
@@ -32,7 +36,6 @@ func newPublicTestRouter(t *testing.T) (*gin.Engine, *store.Store) {
 	r.Use(h.Middleware())
 	routes := h.PublicRoutes()
 	auth := r.Group("/api/auth")
-	auth.GET("/register/challenge", routes.RegisterChallenge)
 	auth.POST("/register", routes.Register)
 	auth.POST("/login", routes.Login)
 	auth.GET("/me", routes.Me)
@@ -57,24 +60,31 @@ func publicRequest(r *gin.Engine, method, path string, body any, cookie *http.Co
 	return w
 }
 
-func TestPublicRegistrationCaptchaAndReaderUpgrade(t *testing.T) {
+func publicTestInvite(t *testing.T, st *store.Store) string {
+	t.Helper()
+	admin, err := st.GetUserByUsername("invite-admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if admin == nil {
+		admin = &store.User{Username: "invite-admin", PasswordHash: "unused", Role: store.RoleAdmin}
+		if err := st.CreateUser(admin); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, err := st.CreateRegistrationInvite(admin.ID, time.Now().Add(7*24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return code
+}
+
+func TestPublicRegistrationInviteAndReaderUpgrade(t *testing.T) {
 	r, st := newPublicTestRouter(t)
-	challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-	if challengeResponse.Code != http.StatusOK {
-		t.Fatalf("challenge status = %d", challengeResponse.Code)
-	}
-	var challenge registerChallengeResponse
-	if err := json.Unmarshal(challengeResponse.Body.Bytes(), &challenge); err != nil {
-		t.Fatalf("decode challenge: %v", err)
-	}
-	var first, second int
-	if _, err := fmt.Sscanf(challenge.Question, "%d + %d = ?", &first, &second); err != nil {
-		t.Fatalf("parse challenge %q: %v", challenge.Question, err)
-	}
+	code := publicTestInvite(t, st)
 	register := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{
 		"username": "reader-uc", "password": "reader-pass", "display_name": "UC Reader",
-		"email": "reader-uc@example.com", "captcha_token": challenge.Token,
-		"captcha_answer": fmt.Sprintf("%d", first+second),
+		"email": "reader-uc@example.com", "invitation_code": code,
 	}, nil)
 	if register.Code != http.StatusCreated {
 		t.Fatalf("register status = %d body=%s", register.Code, register.Body.String())
@@ -108,41 +118,75 @@ func TestPublicRegistrationCaptchaAndReaderUpgrade(t *testing.T) {
 	}
 }
 
-func TestPublicRegistrationCaptchaIsOneTime(t *testing.T) {
-	r, _ := newPublicTestRouter(t)
-	challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-	var challenge registerChallengeResponse
-	_ = json.Unmarshal(challengeResponse.Body.Bytes(), &challenge)
-	body := map[string]string{
-		"username": "reader-once", "password": "reader-pass", "display_name": "Reader", "email": "once@example.com",
-		"captcha_token": challenge.Token, "captcha_answer": "0",
-	}
+func TestPublicRegistrationInviteIsOneTime(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	code := publicTestInvite(t, st)
+	body := map[string]string{"username": "reader-once", "password": "reader-pass", "email": "once@example.com", "invitation_code": "wrong"}
 	first := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
 	if first.Code != http.StatusBadRequest {
-		t.Fatalf("wrong captcha status = %d", first.Code)
+		t.Fatalf("wrong invite status = %d", first.Code)
 	}
-	body["captcha_answer"] = "1"
-	second := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
-	if second.Code != http.StatusBadRequest {
-		t.Fatalf("reused captcha status = %d", second.Code)
+	body["invitation_code"] = code
+	created := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("register = %d body=%s", created.Code, created.Body.String())
+	}
+	body["username"] = "reader-reused"
+	reused := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if reused.Code != http.StatusBadRequest {
+		t.Fatalf("reused invite status = %d", reused.Code)
+	}
+	if user, err := st.GetUserByUsername("reader-reused"); err != nil || user != nil {
+		t.Fatalf("invalid invite created user: %v / %v", user, err)
+	}
+	me := publicRequest(r, http.MethodGet, "/api/auth/me", nil, created.Result().Cookies()[0])
+	var reader publicUserResponse
+	if err := json.Unmarshal(me.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != store.RoleReader || reader.IsAdmin {
+		t.Fatalf("me = %+v err=%v", reader, err)
+	}
+	login := publicRequest(r, http.MethodPost, "/api/auth/login", map[string]string{"username": "reader-once", "password": "reader-pass"}, nil)
+	if login.Code != http.StatusOK {
+		t.Fatalf("reader login = %d %s", login.Code, login.Body.String())
+	}
+	loggedIn := publicRequest(r, http.MethodGet, "/api/auth/me", nil, login.Result().Cookies()[0])
+	if err := json.Unmarshal(loggedIn.Body.Bytes(), &reader); err != nil || !reader.Verified || reader.Role != store.RoleReader {
+		t.Fatalf("logged-in me = %+v err=%v", reader, err)
+	}
+}
+
+func TestPublicRegistrationRequiresInviteNotCaptcha(t *testing.T) {
+	r, _ := newPublicTestRouter(t)
+	removed := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
+	if removed.Code != http.StatusNotFound {
+		t.Fatalf("removed challenge = %d", removed.Code)
+	}
+	response := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{"username": "old-captcha", "password": "reader-pass", "email": "captcha@example.com", "captcha_token": "token", "captcha_answer": "2"}, nil)
+	if response.Code != http.StatusBadRequest || !bytes.Contains(response.Body.Bytes(), []byte("邀请码")) {
+		t.Fatalf("captcha-only registration = %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestPublicRegistrationValidationDoesNotConsumeInvite(t *testing.T) {
+	r, st := newPublicTestRouter(t)
+	code := publicTestInvite(t, st)
+	body := map[string]string{"username": "reader-valid", "password": "bad", "email": "valid@example.com", "invitation_code": code}
+	invalid := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if invalid.Code != http.StatusBadRequest {
+		t.Fatalf("invalid password = %d", invalid.Code)
+	}
+	body["password"] = "reader-pass"
+	created := publicRequest(r, http.MethodPost, "/api/auth/register", body, nil)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("valid retry = %d %s", created.Code, created.Body.String())
 	}
 }
 
 func TestPublicRegistrationRateLimit(t *testing.T) {
-	r, _ := newPublicTestRouter(t)
+	r, st := newPublicTestRouter(t)
 	for i := 0; i < 6; i++ {
-		challengeResponse := publicRequest(r, http.MethodGet, "/api/auth/register/challenge", nil, nil)
-		var challenge registerChallengeResponse
-		if err := json.Unmarshal(challengeResponse.Body.Bytes(), &challenge); err != nil {
-			t.Fatalf("decode challenge %d: %v", i, err)
-		}
-		var first, second int
-		if _, err := fmt.Sscanf(challenge.Question, "%d + %d = ?", &first, &second); err != nil {
-			t.Fatalf("parse challenge %d: %v", i, err)
-		}
 		response := publicRequest(r, http.MethodPost, "/api/auth/register", map[string]string{
 			"username": fmt.Sprintf("rate-%d", i), "password": "reader-pass", "email": fmt.Sprintf("rate-%d@example.com", i),
-			"captcha_token": challenge.Token, "captcha_answer": fmt.Sprintf("%d", first+second),
+			"invitation_code": publicTestInvite(t, st),
 		}, nil)
 		if i < 5 && response.Code != http.StatusCreated {
 			t.Fatalf("registration %d status = %d body=%s", i, response.Code, response.Body.String())

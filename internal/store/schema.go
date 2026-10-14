@@ -39,6 +39,14 @@ const schemaMigrationsDDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
 // post.go createTables 管理（含专用 ALTER 迁移），不在此注册。
 // 各表如需补列迁移（ALTER），保留在对应 Ensure*Table 方法内（见下表注释）。
 var tableDDL = map[string]string{
+	"registration_invites": `CREATE TABLE IF NOT EXISTS registration_invites (
+		code_hash  TEXT PRIMARY KEY,
+		created_by INTEGER NOT NULL,
+		created_at INTEGER NOT NULL,
+		expires_at INTEGER NOT NULL,
+		used_at    INTEGER,
+		used_by    INTEGER
+	);`,
 	"notebooks": notebooksDDL,
 	"notes":     notesDDL,
 	"links": `CREATE TABLE IF NOT EXISTS links (
