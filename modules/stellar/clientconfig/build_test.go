@@ -146,6 +146,43 @@ func TestBlogExtensionsRemainSeparate(t *testing.T) {
 		t.Fatal("Blog polluted theme")
 	}
 }
+func TestSummaryStylesDoNotRequireReadingProgress(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		reading, summary bool
+	}{
+		{"disabled", false, false},
+		{"summary-only", false, true},
+		{"reading-only", true, false},
+		{"both", true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bundle, err := Build(Input{Blog: BlogConfig{Reading: tc.reading, AISummary: tc.summary}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			count := 0
+			for _, style := range bundle.Styles {
+				if style.Href == "/assets/css/reading.css" {
+					count++
+				}
+			}
+			want := 0
+			if tc.reading || tc.summary {
+				want = 1
+			}
+			if count != want {
+				t.Fatalf("reading/summary stylesheet count = %d; want %d", count, want)
+			}
+			for _, ext := range bundle.Manifest.Extensions {
+				if ext.ID == "blog-reading" && !tc.reading {
+					t.Fatal("summary must not enable reading progress")
+				}
+			}
+		})
+	}
+}
+
 func TestStylesAndUseNumber(t *testing.T) {
 	d := json.NewDecoder(strings.NewReader(`{"appearance":{"preset":"minimal","color_scheme":"light"},"features":{"card_hover":{"spotlight":true,"tilt":true},"lazy_loading":{"transition":"blur"},"math":{"provider":"katex","katex":{"css":"https://custom.test/katex.css","css_integrity":"sha384-custom"}},"reveal":{"duration":123}},"search":{"provider":"algolia","algolia":{"extra":9007199254740993}}}`))
 	d.UseNumber()

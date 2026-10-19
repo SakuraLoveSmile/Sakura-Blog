@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"blog/internal/post"
 	"blog/internal/stellarhtml"
@@ -511,6 +512,15 @@ func stellarHostPage(snap *stellarSnapshot, r *stellarRecord) stellarmodels.Obje
 	for _, key := range []string{"title", "date", "updated", "excerpt", "layout", "link", "lang", "language", "tags", "categories"} {
 		if value, exists := r.config[key]; exists {
 			p[key] = value
+		}
+	}
+	// 1.x SQLite 日期可能是 Go Time.String()，仅在公开投影中兼容，保留存储原值。
+	for _, key := range []string{"date", "updated"} {
+		if value, ok := p[key].(string); ok {
+			wallTime, _, _ := strings.Cut(value, " m=")
+			if parsed, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", wallTime); err == nil {
+				p[key] = parsed
+			}
 		}
 	}
 	for _, field := range []string{"tags", "categories"} {

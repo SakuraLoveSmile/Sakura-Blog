@@ -377,7 +377,7 @@ func buildStyles(theme, defaults object, blog BlogConfig, math, preset string, s
 	if blog.NativeComments {
 		add("/assets/css/comments.css", "", false)
 	}
-	if blog.Reading {
+	if blog.Reading || blog.AISummary {
 		add("/assets/css/reading.css", "", false)
 	}
 	if blog.Tagcloud {
