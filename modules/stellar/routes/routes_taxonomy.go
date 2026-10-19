@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -10,14 +11,7 @@ import (
 func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	r.GET("/links", s.handleLinksPage)
 	r.GET("/friends", s.handleFriendsPage)
-	r.GET("/notes", func(c *gin.Context) {
-		p, err := s.st.GetPublished(NotesSlug)
-		if err != nil {
-			stellarError(c, err)
-			return
-		}
-		s.serveStellarPage(c, p)
-	})
+	r.GET("/notes", s.serveStellarNotesEntry)
 	r.GET("/wiki", s.handleWiki)
 	r.GET("/wiki/", s.handleWiki)
 	r.GET("/wiki/tags/:tag", s.handleWiki)
@@ -35,6 +29,25 @@ func (s *webServer) registerTaxonomyRoutes(r *gin.Engine) {
 	r.GET("/notebooks", func(c *gin.Context) { s.serveStellarCollectionIndex(c, "notebook", "") })
 	r.GET("/notebooks/:notebook", func(c *gin.Context) { s.serveStellarCollection(c, "notebook", c.Param("notebook"), 1, nil) })
 	r.GET("/notebooks/:notebook/:slug", func(c *gin.Context) { s.serveStellarNote(c, c.Param("notebook"), c.Param("slug")) })
+}
+
+// 旧笔记入口没有公开页面时转到当前笔记本目录，不恢复草稿或已删除页面。
+func (s *webServer) serveStellarNotesEntry(c *gin.Context) {
+	p, err := s.st.GetPublished(NotesSlug)
+	if err != nil {
+		stellarError(c, err)
+		return
+	}
+	if p != nil {
+		s.serveStellarPage(c, p)
+		return
+	}
+	site := s.site.Load()
+	if site == nil || site.StellarV2 == nil {
+		stellarError(c, fmtMigration())
+		return
+	}
+	c.Redirect(http.StatusFound, stellarPublicPath(site, stellarProfilePath(site.StellarV2.Theme, "notebooks")))
 }
 
 // handleCategoryPath 是所有分类详情入口的统一路径解析逻辑。

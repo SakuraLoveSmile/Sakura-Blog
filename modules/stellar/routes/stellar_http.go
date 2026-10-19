@@ -726,6 +726,10 @@ func (s *webServer) serveStellarPath(c *gin.Context) bool {
 			return true
 		}
 	}
+	if path == "/notes" {
+		s.serveStellarNotesEntry(c)
+		return true
+	}
 	return false
 }
 func fmtMigration() error { return store.ErrStellarMigrationRequired }
