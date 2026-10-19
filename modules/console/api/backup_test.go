@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"blog/internal/config"
@@ -131,5 +132,37 @@ func TestBackupRestoreValidation(t *testing.T) {
 	value, err := st.GetBySlug("x")
 	if err != nil || value == nil || value.StellarVersion != 2 || value.Status != "draft" {
 		t.Fatal("strict upload did not persist canonical/draft metadata")
+	}
+}
+
+func TestLegacyMarkdownMultipartRequiresExplicitFlagAndMigration(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	upload := func(legacy, cookie string) *httptest.ResponseRecorder {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		_ = writer.WriteField("legacy", legacy)
+		entry, _ := writer.CreateFormFile("file", "original.md")
+		_, _ = entry.Write([]byte("---\nslug: imported\npin: true\n---\nbody"))
+		_ = writer.Close()
+		return do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), cookie)
+	}
+	if w := upload("true", ""); w.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous import=%d", w.Code)
+	}
+	if w := upload("true", authCookie(user)); w.Code != http.StatusBadRequest {
+		t.Fatalf("unmigrated import=%d", w.Code)
+	}
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if w := upload("false", authCookie(user)); w.Code != http.StatusBadRequest {
+		t.Fatalf("strict fell back=%d", w.Code)
+	}
+	if w := upload("true", authCookie(user)); w.Code != http.StatusOK {
+		t.Fatalf("legacy import=%d %s", w.Code, w.Body.String())
+	}
+	value, _ := st.GetBySlug("imported")
+	if value == nil || value.Status != "draft" || value.StellarVersion != 2 {
+		t.Fatal("legacy multipart did not safely import new draft")
 	}
 }

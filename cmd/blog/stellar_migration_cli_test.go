@@ -170,6 +170,24 @@ func TestStellarMigrationActualBinary(t *testing.T) {
 	if selectedApproval.Approval.Approved || selectedApproval.Offline.Approved || len(selectedApproval.Approval.BodyDigests) != 0 || selectedApproval.Approval.ReviewDigest != approved.Approval.ReviewDigest {
 		t.Fatal("selection preview granted body or execution approval")
 	}
+	// 用户无需手写最终批准JSON；真实approve命令重建完整审核，未声明离线时只能演练。
+	rehearsalApprovalDir := filepath.Join(t.TempDir(), "rehearsal-approval")
+	stdout, stderr, code = cliProcess(t, root, "migrate", "approve", "--review", selectedReview, "--out", rehearsalApprovalDir)
+	if code != 0 {
+		t.Fatalf("approve rehearsal %d %s %s", code, stdout, stderr)
+	}
+	rehearsalApprovalPath := filepath.Join(rehearsalApprovalDir, "approval.private.json")
+	_, _, code = cliProcess(t, root, "migrate", "apply", "--review", selectedReview, "--approval", rehearsalApprovalPath)
+	if code != 1 {
+		t.Fatal("rehearsal-only approval applied")
+	}
+	offlineApprovalDir := filepath.Join(t.TempDir(), "offline-approval")
+	stdout, stderr, code = cliProcess(t, root, "migrate", "approve", "--review", selectedReview, "--out", offlineApprovalDir, "--server-stopped", "--legacy-instances-checked")
+	if code != 0 {
+		t.Fatalf("approve offline %d %s %s", code, stdout, stderr)
+	}
+	approvalPath = filepath.Join(offlineApprovalDir, "approval.private.json")
+	preview = selectedReview
 	debugRehearsal, err := stellarmigration.BuildRootRehearsal(context.Background(), capture, candidate, approved.Approval, approved.Notebook)
 	if err != nil {
 		t.Fatalf("core rehearsal preflight: %v", err)
@@ -195,7 +213,7 @@ func TestStellarMigrationActualBinary(t *testing.T) {
 		t.Fatal("apply crossed active lifetime guard")
 	}
 	guard.Close()
-	stdout, stderr, code = cliProcess(t, root, "migrate", "rehearse", "--review", preview, "--approval", approvalPath)
+	stdout, stderr, code = cliProcess(t, root, "migrate", "rehearse", "--review", preview, "--approval", rehearsalApprovalPath)
 	if code != 0 {
 		t.Fatalf("rehearse %d %s %s", code, stdout, stderr)
 	}

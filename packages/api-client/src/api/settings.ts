@@ -36,9 +36,10 @@ async function readRestoreTaskResponse(response: Response): Promise<RestoreTaskR
 
 export const backupApi = {
   status: () => http.get("/backup/status"),
-  importMarkdown: (file: File) => {
+  importMarkdown: (file: File, legacy = false) => {
     const form = new FormData();
     form.append("file", file);
+    if (legacy) form.append("legacy", "true");
     return http.post("/backup/import/markdown", form, {
       headers: { "Content-Type": "multipart/form-data" },
     });

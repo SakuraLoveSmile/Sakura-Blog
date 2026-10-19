@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"blog/internal/post"
+	"blog/internal/stellarmigration"
+	"blog/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,14 +16,18 @@ type StellarMarkdownImportRequest struct {
 	Filename string `json:"filename"`
 	Content  string `json:"content"`
 	Kind     string `json:"kind"`
+	Legacy   bool   `json:"legacy,omitempty"`
 }
 
 // 配置文本独立返回，JS 编辑器无需经过 Number 后再 stringify，开放袋大整数不丢失。
 type StellarMarkdownImportResponse struct {
-	FrontMatter    string   `json:"front_matter"`
-	BlogExtensions string   `json:"blog_extensions"`
-	ContentMD      string   `json:"content_md"`
-	StellarTags    []string `json:"stellar_tags"`
+	FrontMatter     string   `json:"front_matter"`
+	BlogExtensions  string   `json:"blog_extensions"`
+	ContentMD       string   `json:"content_md"`
+	StellarTags     []string `json:"stellar_tags"`
+	LegacyConverted bool     `json:"legacy_converted"`
+	SlugSuggestion  string   `json:"slug_suggestion,omitempty"`
+	Warnings        []string `json:"warnings"`
 }
 
 type StellarMarkdownExportRequest struct {
@@ -66,7 +72,24 @@ func (h *Handler) importStellarMarkdown(c *gin.Context) {
 		Fail(c, http.StatusRequestEntityTooLarge, "Markdown 文件超过大小限制")
 		return
 	}
-	document, err := post.ParseStellarDocument([]byte(request.Content), post.StellarDocumentOptions{Source: request.Filename})
+	var document post.StellarDocument
+	var err error
+	converted := false
+	slugSuggestion := ""
+	warnings := []string{}
+	if request.Legacy {
+		var topics []*store.Topic
+		if h.store != nil {
+			topics, err = h.store.ListTopics()
+		}
+		if err == nil {
+			var result stellarmigration.MarkdownImport
+			result, err = stellarmigration.ConvertLegacyMarkdown([]byte(request.Content), request.Filename, request.Kind, topics)
+			document, converted, slugSuggestion, warnings = result.Document, result.LegacyConverted, result.SlugSuggestion, result.Warnings
+		}
+	} else {
+		document, err = post.ParseStellarDocument([]byte(request.Content), post.StellarDocumentOptions{Source: request.Filename})
+	}
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
@@ -87,7 +110,7 @@ func (h *Handler) importStellarMarkdown(c *gin.Context) {
 		Fail(c, http.StatusInternalServerError, "无法编码扩展配置")
 		return
 	}
-	c.JSON(http.StatusOK, StellarMarkdownImportResponse{FrontMatter: string(raw), BlogExtensions: string(blog), ContentMD: document.Body, StellarTags: nonNilStrings(stellarImportTags(document.Body))})
+	c.JSON(http.StatusOK, StellarMarkdownImportResponse{FrontMatter: string(raw), BlogExtensions: string(blog), ContentMD: document.Body, StellarTags: nonNilStrings(stellarImportTags(document.Body)), LegacyConverted: converted, SlugSuggestion: slugSuggestion, Warnings: warnings})
 }
 
 func (h *Handler) exportStellarMarkdown(c *gin.Context) {

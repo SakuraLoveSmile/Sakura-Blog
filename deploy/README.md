@@ -1,5 +1,7 @@
 # 部署指南
 
+从旧 1.x 升级到 Stellar 2.0 时，先按 [Docker / Compose 迁移与 Markdown 导入](upgrade-v1-to-v2.md) 完成旧库预览、隔离演练和停服迁移，再启动新版本；普通镜像更新和 `-seed` 不替代数据迁移。
+
 单二进制部署：systemd 服务 + nginx 反代 + 手动更新（`sudo update.sh` 从 GitHub Release 拉取，并校验 SHA256）。容器化部署见文末「Docker 容器部署」。v1.7.3 起 Console 只提供「检查更新」，不再从后台一键触发更新。
 
 `update.sh` 依赖 `curl`、`sha256sum`、`systemctl` 和 `python3`。它适用于公开或私有 GitHub 仓库；私有仓库通过 `/opt/blog/.token` 使用仅 `contents:read` 的 PAT 读取 Release 资产。

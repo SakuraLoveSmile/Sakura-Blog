@@ -1,6 +1,6 @@
 import { http } from "../transport";
 import type { JsonObject, PostPayload, StellarContentMetadata } from "./contracts";
-import type { MarkdownImportResponse } from "../generated";
+import type { MarkdownImportResponse, StellarMarkdownImportRequest, StellarMarkdownImportResponse } from "../generated";
 
 // --- Markdown 预览 ---
 export const previewApi = {
@@ -30,11 +30,8 @@ export const previewApi = {
 
 // --- Markdown 导入（仅解析，不落库） ---
 export const editorImportApi = {
-  stellar: (payload: { filename: string; content: string; kind: "post" | "page" }) =>
-    http.post<{ front_matter: string; blog_extensions: string; content_md: string; stellar_tags: string[] }>(
-      "/editor/import/stellar",
-      payload,
-    ),
+  stellar: (payload: StellarMarkdownImportRequest) =>
+    http.post<StellarMarkdownImportResponse>("/editor/import/stellar", payload),
   exportStellar: (payload: { front_matter: string; blog_extensions: string; content_md: string }) =>
     http.post<{ content: string }>("/editor/export/stellar", payload),
   markdown: (payload: { filename: string; content: string; kind: "post" | "page" }) =>

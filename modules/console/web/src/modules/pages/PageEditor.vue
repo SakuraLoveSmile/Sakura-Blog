@@ -4,6 +4,7 @@ import { pageFields } from "@/components/editor/stellar-form-fields";
 import { provide, ref, onMounted, computed, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { pageApi, editorImportApi, getApiErrorMessage, settingsApi } from "@/api";
+import MarkdownImportPreview from "@/components/editor/MarkdownImportPreview.vue";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
@@ -13,7 +14,7 @@ import PageEditorSidebar from "./PageEditorSidebar.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import AttachmentField from "@/components/AttachmentField.vue";
 import { Icon } from "@iconify/vue";
-import { VPageHeader, VButton, Toast, Dialog } from "@/components/ui";
+import { VPageHeader, VButton, Toast } from "@/components/ui";
 
 // 页面编辑器：Halo 式三栏布局——顶部全宽工具栏 + 左侧主编辑区 + 右侧大纲/详情面板。
 // 双编辑器模式：默认富文本所见即得（TipTap），可切 Markdown 分屏兑底；
@@ -448,32 +449,37 @@ function clearActiveDraft() {
 }
 
 const importing = ref(false);
+const pendingImport = ref<Awaited<ReturnType<typeof editorImportApi.stellar>>["data"] | null>(null);
+let importPage = "";
 function applyImportedPage(data: Awaited<ReturnType<typeof editorImportApi.stellar>>["data"]) {
   form.value.stellar_version = 2;
   form.value.stellar_config = data.front_matter;
   form.value.blog_extensions = data.blog_extensions;
   form.value.content_md = data.content_md;
   const front = JSON.parse(data.front_matter);
+  if (isNew.value && data.slug_suggestion) form.value.slug = data.slug_suggestion;
   if (typeof front.title === "string") form.value.title = front.title;
   clearActiveDraft();
-  Toast.success("导入已回填，请检查后保存；尚未发布");
+  Toast.success("导入已回填，请检查后保存");
 }
-async function onImport(file: File) {
+function confirmImport() {
+  if (pendingImport.value && importPage === slugParam.value) applyImportedPage(pendingImport.value);
+  pendingImport.value = null;
+}
+
+async function onImport(file: File, legacy = false) {
   if (importing.value) return;
   if (!/\.(md|markdown)$/i.test(file.name)) {
     Toast.error("请选择 .md 或 .markdown 文件");
     return;
   }
   importing.value = true;
+  const targetPage = slugParam.value;
   try {
-    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "page" });
-    Dialog.warning({
-      title: "审查 Stellar 2 导入预览",
-      description: `将替换正文与完整原文配置，不会自动保存或发布。\nStellar：\n${data.front_matter}\nBlog 扩展：\n${data.blog_extensions}\n正文：\n${data.content_md}`,
-      confirmText: "确认回填",
-      confirmType: "primary",
-      onConfirm: () => applyImportedPage(data),
-    });
+    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "page", legacy });
+    if (targetPage !== slugParam.value) return;
+    importPage = targetPage;
+    pendingImport.value = data;
   } catch (error) {
     Toast.error(`Markdown 导入失败：${getApiErrorMessage(error)}`);
   } finally {
@@ -1299,6 +1305,7 @@ const smallInputCls =
       </div>
     </div>
   </div>
+  <MarkdownImportPreview :data="pendingImport" @close="pendingImport = null" @confirm="confirmImport" />
 </template>
 
 <style scoped>

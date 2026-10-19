@@ -243,6 +243,10 @@ INSERT INTO notes VALUES(2,2,'Note','body','<p>old</p>','','2024-01-01 00:00:00'
 	if template.Approval.Approved || template.Offline.Approved || len(template.Approval.BodyDigests) != 0 {
 		t.Fatal("selection preview inferred execution/body approval")
 	}
+	approved, err := approveMigrationSelections(context.Background(), layout, secondReview.Directory, filepath.Join(t.TempDir(), "approved-notebook"), false, false)
+	if err != nil || !approved.OK {
+		t.Fatalf("complete Notebook selection was not approvable: %v", err)
+	}
 	if err = os.Mkdir(filepath.Join(root, "runtime"), 0700); err != nil {
 		t.Fatal(err)
 	}

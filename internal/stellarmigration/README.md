@@ -1,12 +1,12 @@
 # Stellar 2.0 迁移候选
 
-此包只读取真实输入、构建候选和做执行前校验，**没有修改既有数据库或真实迁移的入口**。结构证明可创建新的私密临时夹具库，不能把真实源路径传入写连接。它固定使用本仓库 Stellar 2.0.0 strict parser，不以 recovery、默认初始化或旧列推断作为运行时兼容。
+此包提供只读候选、逐项决策审核、完整资源演练，以及显式离线批准后的 `ApplyReviewedRootMigration` 和恢复入口。`preview`、`approve` 不迁移源数据；`rehearse` 在新的私密目录验证，只有用户另行执行 `apply` 才修改绑定的运行时资源。独立 Notebook 结构证明仍只能创建新的私密临时夹具库。全程使用本仓库 Stellar 2.0.0 strict parser，不以 recovery、默认初始化或旧列推断作为运行时兼容。
 
 ## 接口与私密边界
 
 - `ReadSnapshot(ctx, dbPath, files)`：SQLite `mode=ro`、`query_only=1`、单事务读取实际 `sqlite_master` 与动态列，另用同样只读的 `Store.DetectLegacyNotebookSchema` 共用结构契约并比对捕获列。旧表缺少新版列不会触发建表／补列。`files` 是调用者明确提供的受跟踪 Markdown 原文。
 - `Preview(snapshot)`：先构建全部集合，再建立上游 Registry，逐条校验成员。返回主题 document JSON、独立 Blog JSON，以及每条 Post／Page／WikiProject／WikiDoc／Topic／Notebook／Note／文件的原文摘要、version 2、Front Matter JSON、Blog JSON、Markdown 和映射／冲突。已 version 2 的 theme／内容 JSON 与 Markdown 逐字保持；无任何存储副作用。
-- `PreviewWithCapabilities(snapshot, ConsumerCapabilities{ConsumerPoster: true})`：仅调用者显式声明已经实测闭合的消费者才降为提示。catalog 保留 `poster`、`collection_order`、`authors`、`author_widget`、`wiki_external_url`，并按字段独立登记以下全局能力；未知 capability 报错，默认没有闭合能力。诊断全部保留，以 `kind=consumer`、`consumer=<能力>`、`severity=info`、`blocking=false` 标明调用者的声明，并不替代真实体验证明。政策／结构／strict schema 冲突不受该参数影响。
+- `PreviewWithCapabilities(snapshot, ConsumerCapabilities{ConsumerPoster: true})`：仅调用者显式声明已经实测闭合的消费者才降为提示。catalog 保留 `poster`、`collection_order`、`authors`、`author_widget`、`wiki_external_url`，并按字段独立登记以下全局能力；未知 capability 报错，独立包默认没有闭合能力。Blog CLI 宿主明确提供当前已实现的 20 项能力，保留所有消费者诊断为 info；显式 `--capabilities <private-json>` 完整替换宿主声明，`{}` / `null` 仍不启用任何能力。诊断全部保留，以 `kind=consumer`、`consumer=<能力>`、`severity=info`、`blocking=false` 标明调用者的声明，并不替代真实体验证明。政策／结构／strict schema 冲突不受该参数影响。
 - `Candidate.PublicReport()`：只输出行数、公开源身份／路径、hash、源字段→目标字段、行为说明和无原值诊断。原始设置、正文、通知密钥、用户 email、密码哈希、AI key 和冲突值均不在报告中。
 - `WritePrivate(path, candidate)`：以 `O_EXCL` 创建新的 `0600` 文件，不覆盖已有文件或跟随 symlink。候选含完整源数据，不能提交 Git、发给外部服务或复制进 public 目录。调用者应使用 `0700` 隔离输出目录。
 - `ValidateCandidate(candidate, currentSnapshot)`：源 digest 必须一致，候选集合必须完整、没有未决冲突，且再次通过 theme／content／profile／membership strict 校验。源 digest 覆盖所有表及其 schema、所有关联、用户／权限、评论／草稿和明确输入文件；评论等不迁移记录的变化也使候选过期。此方法不写数据，不构成迁移授权。
@@ -45,7 +45,7 @@ Pages 的 `show_posts` 是 nullable 指针：显式 null 原文保留并继承�
 
 ## 验证
 
-`go test -race ./internal/stellarmigration` 覆盖独立旧／新 SQLite、只读／不存在源、version 2 原文、大整数／false／null、所有条目完整性、源评论变化失效、未知字段保留、集合归属、Wiki 两候选、旧笔记 schema、Markdown 代码保护及 private artifact 权限。预览／验证失败无既有数据库写入口，因此无真实源半批版本标记。
+`go test -race ./internal/stellarmigration` 覆盖独立旧／新 SQLite、只读／不存在源、version 2 原文、大整数／false／null、所有条目完整性、源评论变化失效、未知字段保留、集合归属、Wiki 两候选、旧笔记 schema、Markdown 代码保护及 private artifact 权限。预览／批准／验证不修改源数据；离线 Apply 另有完整资源前像、摘要约束、运行时验证与 journal 恢复门禁，不得用只读测试代替 Apply 验证。
 
 `TestReadOnlySourcePreviewEvidence` 默认跳过。只有显式设置 `STELLAR_MIGRATION_SOURCE` 时才读指定源；`STELLAR_MIGRATION_CONTENT_ROOT` 可提供本任务两份 tracked 验收文章；`STELLAR_MIGRATION_OUTPUT` 选择新私密目录。它比较数据库与 `-wal/-shm/-journal` 的前后 SHA256，只生成 `candidate.private.json`、`report.public.json`、`source-check.json`，不执行真实转换。
 
@@ -56,6 +56,63 @@ Pages 的 `show_posts` 是 nullable 指针：显式 null 原文保留并继承�
 - 旧 Notebook 缺 `updated_at` 时，调用者可逐记录明确批准使用源 `created_at`，不能自动使用当前时间。现有日期逐值保留。slug 按当前宿主路径规则校验，状态只接受 draft/published，重复 slug、缺父本、无效 owner/整数/日期等阻断。
 - `BuildNotebookStructureFixture(ctx, snapshot, decisions)` 仅生成系统临时目录中的全新库，没有任意目标 DB 路径、Apply 或修改源表的参数。目录 `0700`，DB 与 `source.private.json` 为 `0600`；后者保留两张完整源表的 schema、原行、未知列、大整数/NULL及批准元数据，属于私密材料。夹具是 notebook 结构证明，并非包含 users/权限/评论的整站恢复；源 owner ID 校验不代表夹具已具备完整用户系统。调用者负责处理自己新建的临时夹具。
 - 当前 DDL 来自 Store 在空新库上的初始化，不复制 DDL、不对旧源调用 EnsureTable。全部集合与笔记插入同一事务，唯一约束等失败回滚；取消/失败不返回夹具并清理本次新建的私密目录。原 Markdown、HTML缓存、时间、ID和关联保持；只做结构转换，旧 `stellar_version=0` 保持 0，不提前标成 2。已有 version 2 的原 JSON 保持。
-- `go test ./internal/stellarmigration -run TestNotebookStructure -count=1` 验证当前 Store 真实读取、draft不公开、严格重新快照、未知字段归档、64位大ID、标签保真、拒绝未批准/过期元数据/冲突、事务回滚和取消。证明夹具不解除原 `Candidate` 中的 `legacy_notebook_schema`／`note_missing_slug_status`；真实记录批准及真实转换后仍须重新生成完整内容候选并校验新源 digest。
+- `go test ./internal/stellarmigration -run TestNotebookStructure -count=1` 验证当前 Store 真实读取、draft不公开、严格重新快照、未知字段归档、64位大ID、标签保真、拒绝未批准/过期元数据/冲突、事务回滚和取消。独立证明夹具不解除原 `Candidate` 中的 `legacy_notebook_schema`／`note_missing_slug_status`。完整 root 迁移必须在选值预览中具名选择 `use_notebook_decisions`，并以 `RootReviewDigest` 同时绑定全部 Notebook 元数据、候选与来源；来源变化必须重新预览。
 
 2026-10-13 另以只读根快照生成默认未批准结构预览，位于迁移树 `.tmp/stellar-notebook-structure-review-20261013-1/`（目录 `0700`，五文件均 `0600`）。完整内容候选仍 32 条／171 配置映射／34 阻断；两张结构源表共两条记录、21 项已确定列映射，保留 5 个缺失批准字段：Notebook `author_id/updated_at`，Note `slug/status/author_id`。没有给真实记录分配值或生成真实内容夹具，未执行转换。SourceDigest 和 DB SHA 与 review-6 一致，本次数据库及 WAL/SHM/journal 指纹前后相同；仍不承诺目录零写。
+
+
+## Blog CLI：从 1.x 审核到离线执行
+
+始终使用同一新版本 binary、相同 `-root` / `-config` / `BLOG_*` 资源配置。Docker 中也必须挂载真实 DB、配置、uploads、content 及审核输出，且每一步看到的资源路径应一致。审核目录不能位于捕获的 runtime（含 root、外置 DB 父目录、uploads、app 配置父目录）之内；输出目录必须尚不存在，父目录须已存在。文件为 `0600`、目录为 `0700`，不覆盖原文件；手工保存 decisions 的直接父目录也须是 `0700`（示例中的 `/private-review` 需预先按此权限建立）。即使名称含 `public`，CLI 也将报告保存在私密目录，勿公开整份审核目录。
+
+1. 用新 binary **预览旧来源**，不要先启动新版服务初始化旧库：
+
+   ```sh
+   blog -root /runtime stellar migrate preview --out /private-review/initial
+   ```
+
+   首次预览先使用 `mode=ro` 读取关闭的 WAL 旧库，稳定 SQLite 必要侧车，再执行双读完整资源捕获；不修改业务数据，但不承诺目录零写，不使用 immutable、不删侧车、不弱化摘要。默认发现 `content/posts/` 的 Markdown 和有效内容 manifest 的所有源文件；其它 `content/` 内已审查来源使用可重复的 `--tracked content/path.md`。预览不是文章导入或发布命令，不会替换已有内容。初次输出含完整 `root-capture.private.json`、`candidate.private.json`、脱敏 `report.public.json`、未批准的 `approval-template.private.json` 与 `decisions-guide.private.json`；stdout 给出摘要和下一步。
+
+2. 复制并填写私密 `approval-template.private.json`，保留 `approval.approved=false`。`decisions-guide.private.json` 为每条阻断列出 `source/code/path`、支持的 action 与 alternative 名称；未知冲突的 `allowed_actions=[]`，需要修正来源或实现后重新初次预览，不能删诊断或发明 action。模板内已列出支持的 resolution，`action` 仍为空，不默选策略。`choose_alternative` 必填精确 `alternative_name`，`replace_url` 必填 `replacement_url`；不要在其它 action 保留这些字段。
+
+   Notebook 以 `notebooks/<id>`、`notes/<id>` 具名列出待补记录。依据 guide 的 `notebook_required_fields`，仅添加实际缺失的 `owner_id`、`slug`、`status`、`created_at`、`updated_at`，逐记录设置 `approved=true`。不会自动选作者、发布状态、路由或日期。`owner_id=0` 也必须明确填写，正 ID 必须存在于源 users；日期可在审核后明确采用源日期，不能自动采用当前时间。不可覆盖已有宿主字段。
+
+3. 生成**选值预览**，即便没有冲突也需要此步：
+
+   ```sh
+   blog -root /runtime stellar migrate preview --review /private-review/initial --approval /private-review/choices.private.json --out /private-review/selected
+   ```
+
+   这一步重新校验完整来源与具名决策，必须零阻断才成功。输出 `selected-candidate.private.json`、`reviewed-selections.private.json`、`body-review.public.json` 和完整审核摘要；新的 `approval-template.private.json` 仍为 `approved=false`，正文摘要未获批准。检查选值结果与正文变化，不要直接编辑 selected 目录内任何产物。
+
+4. **显式批准已审查结果**：
+
+   ```sh
+   blog -root /runtime stellar migrate approve --review /private-review/selected --out /private-review/rehearsal-approval
+   ```
+
+   如 `body-review.public.json` 列出正文变化，必须先查看完整候选正文，再加 `--accept-body-changes`；该旗标仅批准重算出的精确正文摘要。approve 重捕获完整 Root/Source，重建 Candidate/Review 和每份选值审核产物，拒绝过期来源、被改过的候选／报告／正文摘要或未完成决策。只生成新 `approval.private.json`，不执行 Apply。不带两枚离线声明时 `offline_attestation.approved=false`，只能用于演练。
+
+5. **演练正式 Bootstrap、搜索与 SSR**：
+
+   ```sh
+   blog -root /runtime stellar migrate rehearse --review /private-review/selected --approval /private-review/rehearsal-approval/approval.private.json
+   ```
+
+   演练复制完整资源至新私密目录，正式 binary 子进程校验当前内核。失败时 stdout 保留演练位置，查看该 root 的 `.stellar-migration-validation.private.json`。不要把通过演练当作线上已迁移。
+
+6. 停止全部新旧服务器、workers 与其它写入者，检查旧实例；若源资源因此发生变化，需要重新执行预览与选值审核。明确准备执行后，生成**离线批准**：
+
+   ```sh
+   blog -root /runtime stellar migrate approve --review /private-review/selected --out /private-review/offline-approval --server-stopped --legacy-instances-checked
+   ```
+
+   有正文变化仍须加 `--accept-body-changes`。只有两枚离线旗标同时存在，才设置离线批准；单独一枚仍只授予演练批准。旗标是操作者声明，不是自动停机或远程进程探测。Apply 还会独立检查本机配置端口及共享 lifetime guard。新的离线批准不替代演练；确认审核与演练后，用户另行执行：
+
+   ```sh
+   blog -root /runtime stellar migrate apply --review /private-review/selected --approval /private-review/offline-approval/approval.private.json
+   ```
+
+   Apply 验证完整源资源和摘要，保存完整前像，校验 staged runtime 后离线替换。异常留下的 migration journal 会阻止普通启动／CLI，必须在保持离线与资源配置一致的条件下显式执行 `blog -root /runtime stellar migrate recover`；不要手动删除 journal、重建源库或覆盖备份。
+
+stderr 只输出静态脱敏阶段错误码和下一步：`ARTIFACT_INVALID`（权限／JSON／缺文件）、`REVIEW_CHANGED`（审核文件或决策不匹配）、`SOURCE_CHANGED`（重新预览当前资源）、`SELECTIONS_BLOCKED`（补齐具名决策）、`BODY_APPROVAL_REQUIRED`（审查正文后加确认旗标）、`OUTPUT_INVALID`（改用 runtime 外的新目录）、`RUNTIME_VALIDATION_FAILED`（查看私密演练诊断）。底层 YAML、SQL、密钥及正文原值不会回显到终端。

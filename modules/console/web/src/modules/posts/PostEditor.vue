@@ -8,6 +8,7 @@ import { postApi, taxonomyApi, previewApi, editorImportApi, getApiErrorMessage }
 import { queryKeys } from "@/api/query-client";
 import { stellarEditorContextKey } from "@/components/editor/stellar-context";
 import StellarContentConfig from "@/components/editor/StellarContentConfig.vue";
+import MarkdownImportPreview from "@/components/editor/MarkdownImportPreview.vue";
 import MarkdownEditor from "@/components/MarkdownEditor.vue";
 // Spec 62：tiptap 190KB gzip chunk 按需挂载——仅富文本模式启用时才下载
 const RichTextEditor = defineAsyncComponent(() => import("@/components/RichTextEditor.vue"));
@@ -465,6 +466,8 @@ function onPick() {
 }
 
 const importing = ref(false);
+const pendingImport = ref<Awaited<ReturnType<typeof editorImportApi.stellar>>["data"] | null>(null);
+let importSession = 0;
 function applyImportedPost(data: Awaited<ReturnType<typeof editorImportApi.stellar>>["data"]) {
   form.value.stellar_version = 2;
   form.value.stellar_config = data.front_matter;
@@ -472,27 +475,33 @@ function applyImportedPost(data: Awaited<ReturnType<typeof editorImportApi.stell
   form.value.content_md = data.content_md;
   // 这里只读取表单支持的字符串，完整配置始终使用原文，绝不 stringify。
   const front = JSON.parse(data.front_matter);
+  if (!isEdit.value && data.slug_suggestion) {
+    slugManuallyEdited.value = true;
+    form.value.slug = data.slug_suggestion;
+  }
   if (typeof front.title === "string") form.value.title = front.title;
   clearActiveDraft();
-  Toast.success("导入已回填，请检查后保存；尚未发布");
+  Toast.success("导入已回填，请检查后保存");
 }
 
-async function onImport(file: File) {
+function confirmImport() {
+  if (pendingImport.value && importSession === editorSession) applyImportedPost(pendingImport.value);
+  pendingImport.value = null;
+}
+
+async function onImport(file: File, legacy = false) {
   if (importing.value) return;
   if (!/\.(md|markdown)$/i.test(file.name)) {
     Toast.error("请选择 .md 或 .markdown 文件");
     return;
   }
   importing.value = true;
+  const session = editorSession;
   try {
-    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "post" });
-    Dialog.warning({
-      title: "审查 Stellar 2 导入预览",
-      description: `将替换正文与完整原文配置，不会自动保存或发布。\nStellar：\n${data.front_matter}\nBlog 扩展：\n${data.blog_extensions}\n正文：\n${data.content_md}`,
-      confirmText: "确认回填",
-      confirmType: "primary",
-      onConfirm: () => applyImportedPost(data),
-    });
+    const { data } = await editorImportApi.stellar({ filename: file.name, content: await file.text(), kind: "post", legacy });
+    if (session !== editorSession) return;
+    importSession = session;
+    pendingImport.value = data;
   } catch (error) {
     Toast.error(`Markdown 导入失败：${getApiErrorMessage(error)}`);
   } finally {
@@ -1190,6 +1199,7 @@ function handleDiscardDraft() {
       @restored="handleRestored"
     />
   </div>
+  <MarkdownImportPreview :data="pendingImport" @close="pendingImport = null" @confirm="confirmImport" />
 </template>
 
 <style scoped>

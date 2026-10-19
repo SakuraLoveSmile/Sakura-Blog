@@ -7,8 +7,60 @@ import (
 	"strings"
 	"testing"
 
+	"blog/internal/store"
+
 	"github.com/gin-gonic/gin"
 )
+
+func TestExplicitLegacyStellarPreviewIsReadOnlyAndAuthorized(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	if err := st.CreateTopic(&store.Topic{Slug: "series", Name: "Series"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"post", "page"} {
+		request := StellarMarkdownImportRequest{Legacy: true, Kind: kind, Filename: "old.md", Content: "---\nslug: original\nstatus: published\ncategory: Go\ntopic: Series\n---\n{% tip old %}\nbody\n{% endtip %}"}
+		body, _ := json.Marshal(request)
+		if w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", string(body), ""); w.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthenticated legacy import: %d", w.Code)
+		}
+		w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", string(body), authCookie(user))
+		if w.Code != http.StatusOK {
+			t.Fatalf("preview: %d %s", w.Code, w.Body.String())
+		}
+		var result StellarMarkdownImportResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if !result.LegacyConverted || result.SlugSuggestion != "original" || len(result.Warnings) == 0 || !strings.Contains(result.BlogExtensions, `"status": "published"`) || !strings.Contains(result.ContentMD, "blog_tip") {
+			t.Fatalf("missing converted preview: %+v", result)
+		}
+		request.Legacy = false
+		body, _ = json.Marshal(request)
+		if w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", string(body), authCookie(user)); w.Code != http.StatusBadRequest {
+			t.Fatal("strict path fell back to conversion")
+		}
+	}
+	if posts, err := st.List(); err != nil || len(posts) != 0 {
+		t.Fatal("legacy preview persisted or published a post")
+	}
+	if pages, err := st.ListPages(); err != nil || len(pages) != 0 {
+		t.Fatal("legacy preview persisted or published a page")
+	}
+}
+
+func TestLegacyMarkdownPreviewAllowsAuthorButBatchRemainsAdminOnly(t *testing.T) {
+	r, st, _, author, _ := newAuthorEnv(t)
+	if err := st.EnsureSchema(); err != nil {
+		t.Fatal(err)
+	}
+	body := `{"kind":"post","legacy":true,"content":"---\nstatus: draft\n---\nbody"}`
+	if w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", body, authorCookie(author)); w.Code != http.StatusOK {
+		t.Fatalf("author preview: %d %s", w.Code, w.Body.String())
+	}
+	if w := do2FA(r, http.MethodPost, "/api/v1/backup/import/markdown", "", authorCookie(author)); w.Code != http.StatusForbidden {
+		t.Fatalf("author batch import: %d %s", w.Code, w.Body.String())
+	}
+}
 
 func TestStrictStellarImportAndExportAreLosslessAndReadOnly(t *testing.T) {
 	gin.SetMode(gin.TestMode)

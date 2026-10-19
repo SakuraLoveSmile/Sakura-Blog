@@ -72,3 +72,29 @@ test("整站恢复按钮支持选择备份文件并进入确认流程", async ({
   await expect(page.getByText("本地上传文件：blog-backup-e2e.zip", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "取消", exact: true }).click();
 });
+
+test("备份页显式转换 1.x Markdown，未指定状态的新文章作为草稿导入", async ({ page }) => {
+  await login(page);
+  await page.goto("/console/backup");
+  await page.getByRole("checkbox", { name: /从 1.x 格式转换/ }).check();
+  const slug = `legacy-batch-${Date.now()}`;
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "选择文件导入", exact: true }).click();
+  await (await chooser).setFiles({
+    name: "different-filename.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(`---\ntitle: 旧站批量文章\nslug: ${slug}\ncategory: 升级验收\ndate: 2021-03-04\n---\n\n保留历史文章正文。\n`),
+  });
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("未指定状态的新文章保存为草稿");
+  const response = page.waitForResponse((r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST");
+  await dialog.getByRole("button", { name: "确定", exact: true }).click();
+  const result = await response;
+  expect(result.ok(), await result.text()).toBeTruthy();
+  await expect(page.locator("#app").getByText("成功导入 1 篇文章", { exact: true })).toBeVisible();
+  const saved = await (await page.request.get(`/api/v1/posts/${slug}`)).json();
+  expect(saved.status).toBe("draft");
+  expect(saved.created_at).toContain("2021-03-04");
+  expect(saved.content_md).toContain("保留历史文章正文。");
+  expect((await page.request.get(`/post/${slug}`)).status()).toBe(404);
+});

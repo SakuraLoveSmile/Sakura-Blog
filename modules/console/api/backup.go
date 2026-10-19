@@ -114,7 +114,12 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, "文件超过 50MB 上限")
 		return
 	}
-	res, err := h.backups.ImportContext(c.Request.Context(), header.Filename, data)
+	var res *backup.ImportResult
+	if c.PostForm("legacy") == "true" {
+		res, err = h.backups.ImportLegacyMarkdownContext(c.Request.Context(), header.Filename, data)
+	} else {
+		res, err = h.backups.ImportContext(c.Request.Context(), header.Filename, data)
+	}
 	if err != nil {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return

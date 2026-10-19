@@ -17,6 +17,7 @@ import (
 	"blog/internal/content"
 	"blog/internal/maintenance"
 	"blog/internal/post"
+	"blog/internal/stellarmigration"
 	"blog/internal/stellarv2"
 	"blog/internal/store"
 )
@@ -207,6 +208,15 @@ func StageStellarPosts(st *store.Store, renderer *post.Service, sources map[stri
 }
 
 func (s *Service) importStellarPosts(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, false)
+}
+
+// ImportLegacyMarkdownContext 仅在调用者明确选择 1.x 转换时执行；不接受 manifest 备份。
+func (s *Service) ImportLegacyMarkdownContext(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, true)
+}
+
+func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool) (*ImportResult, error) {
 	if _, err := config.LoadStellarV2(s.store); err != nil {
 		return nil, fmt.Errorf("%w: %w", store.ErrStellarMigrationRequired, err)
 	}
@@ -265,6 +275,38 @@ func (s *Service) importStellarPosts(ctx context.Context, filename string, data 
 		return nil, err
 	}
 	defer probe.Close()
+	if legacy {
+		topics, err := probe.ListTopics()
+		if err != nil {
+			return nil, err
+		}
+		converted := map[string][]byte{}
+		for fileSlug, source := range sources {
+			result, err := stellarmigration.ConvertLegacyMarkdown(source, fileSlug+".md", "post", topics)
+			if err != nil {
+				return nil, err
+			}
+			slug := fileSlug
+			if result.SlugSuggestion != "" {
+				slug = result.SlugSuggestion
+			}
+			if _, duplicate := converted[slug]; duplicate {
+				return nil, fmt.Errorf("duplicate Markdown slug: %s", slug)
+			}
+			existing, err := probe.GetBySlug(slug)
+			if err != nil {
+				return nil, err
+			}
+			if _, explicit := result.Document.Blog["status"]; !explicit && existing == nil {
+				result.Document.Blog["status"] = store.StatusDraft
+			}
+			converted[slug], err = post.SerializeStellarDocument(result.Document)
+			if err != nil {
+				return nil, err
+			}
+		}
+		sources = converted
+	}
 	imported, err := StageStellarPosts(probe, s.posts, sources, false)
 	if err != nil {
 		return nil, err

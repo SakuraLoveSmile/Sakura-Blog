@@ -445,6 +445,7 @@ export interface StellarMarkdownImportRequest {
   filename: string;
   content: string;
   kind: string;
+  legacy?: boolean;
 }
 /**
  * 配置文本独立返回，JS 编辑器无需经过 Number 后再 stringify，开放袋大整数不丢失。
@@ -454,6 +455,9 @@ export interface StellarMarkdownImportResponse {
   blog_extensions: string;
   content_md: string;
   stellar_tags: string[];
+  legacy_converted: boolean;
+  slug_suggestion?: string;
+  warnings: string[];
 }
 export interface StellarMarkdownExportRequest {
   front_matter: string;

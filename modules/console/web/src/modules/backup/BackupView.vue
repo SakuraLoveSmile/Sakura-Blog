@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { backupApi, backupExportUrl, backupExportMarkdownUrl, RestoreTaskHttpError, type RestoreTask } from "@/api";
+import { backupApi, backupExportUrl, backupExportMarkdownUrl, getApiErrorMessage, RestoreTaskHttpError, type RestoreTask } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
 import {
@@ -30,6 +30,7 @@ const backups = ref<BackupInfo[]>([]);
 const loading = ref(false);
 
 const importing = ref(false);
+const legacyImport = ref(false);
 const importFileInput = ref<HTMLInputElement | null>(null);
 const importResult = ref<{
   imported: number;
@@ -230,18 +231,22 @@ async function handleImport(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files?.length) return;
   const file = input.files[0];
+  const legacy = legacyImport.value;
   Dialog.warning({
     title: `确定导入「${file.name}」吗？`,
-    description: "同名 Slug 的文章将被导入的文件内容直接覆盖，请确认后再操作。",
+    description: legacy
+      ? "将按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。"
+      : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
     confirmType: "danger",
     onConfirm: async () => {
       importing.value = true;
       importResult.value = null;
       try {
-        const { data } = await backupApi.importMarkdown(file);
+        const { data } = await backupApi.importMarkdown(file, legacy);
         importResult.value = data;
         Toast.success(`成功导入 ${data.imported} 篇文章`);
-      } catch {
+      } catch (error) {
+        Toast.error(getApiErrorMessage(error, "Markdown 导入失败，请检查文件格式"));
       } finally {
         importing.value = false;
         input.value = "";
@@ -516,6 +521,11 @@ onBeforeUnmount(() => {
               支持上传单个 <code>.md</code> 文件或包含多篇 Markdown 文章的
               <code>.zip</code> 压缩包，系统将自动解析元数据并写入数据库。
             </p>
+
+            <label class="mb-3 flex items-start gap-2 text-sm text-text-secondary">
+              <input v-model="legacyImport" type="checkbox" :disabled="importing" class="mt-1 accent-primary" />
+              <span>从 1.x 格式转换<span class="mt-1 block text-xs text-text-tertiary">ZIP 内请直接放置 .md 文件；1.x 模式下，未指定状态的新文章保存为草稿。</span></span>
+            </label>
 
             <div class="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
               <span class="text-[11px] text-[#FF9500] flex items-center gap-1">

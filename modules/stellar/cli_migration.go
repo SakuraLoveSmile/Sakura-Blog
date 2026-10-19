@@ -40,18 +40,21 @@ type migrationCLIApproval struct {
 	Offline  migrationOfflineAttestation                 `json:"offline_attestation"`
 }
 type migrationCLISummary struct {
-	OK                      bool   `json:"ok"`
-	Operation               string `json:"operation"`
-	Directory               string `json:"directory,omitempty"`
-	RootDigest              string `json:"root_digest,omitempty"`
-	SourceDigest            string `json:"source_digest,omitempty"`
-	CandidateDigest         string `json:"candidate_digest,omitempty"`
-	ReviewDigest            string `json:"review_digest,omitempty"`
-	SelectedCandidateDigest string `json:"selected_candidate_digest,omitempty"`
-	Blocking                int    `json:"blocking,omitempty"`
-	Recovered               bool   `json:"recovered,omitempty"`
-	BackupDirectory         string `json:"backup_directory,omitempty"`
-	BinarySHA256            string `json:"runtime_binary_sha256"`
+	OK                      bool     `json:"ok"`
+	Operation               string   `json:"operation"`
+	Directory               string   `json:"directory,omitempty"`
+	RootDigest              string   `json:"root_digest,omitempty"`
+	SourceDigest            string   `json:"source_digest,omitempty"`
+	CandidateDigest         string   `json:"candidate_digest,omitempty"`
+	ReviewDigest            string   `json:"review_digest,omitempty"`
+	SelectedCandidateDigest string   `json:"selected_candidate_digest,omitempty"`
+	Blocking                int      `json:"blocking,omitempty"`
+	Recovered               bool     `json:"recovered,omitempty"`
+	BackupDirectory         string   `json:"backup_directory,omitempty"`
+	BinarySHA256            string   `json:"runtime_binary_sha256"`
+	ApprovalFile            string   `json:"approval_file,omitempty"`
+	OfflineApproved         bool     `json:"offline_approved"`
+	NextSteps               []string `json:"next_steps,omitempty"`
 }
 type migrationTrackedFlags []string
 
@@ -72,7 +75,7 @@ func (s *migrationTrackedFlags) Set(v string) error { *s = append(*s, v); return
 // stdout输出脱敏摘要。真实Apply仍须完整审查后明确执行，不等于批准候选取值。
 func RunMigrationCLI(ctx context.Context, args []string, root, configPath string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: stellar migrate preview|rehearse|apply|recover")
+		fmt.Fprintln(stderr, "usage: stellar migrate preview|approve|rehearse|apply|recover")
 		return 2
 	}
 	op := args[0]
@@ -80,41 +83,49 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 	flags.SetOutput(stderr)
 	var out, review, approval, capabilities string
 	var tracked migrationTrackedFlags
+	var acceptBody, serverStopped, legacyChecked bool
 	flags.StringVar(&out, "out", "", "new private preview directory outside runtime resources")
 	flags.StringVar(&review, "review", "", "private preview directory")
-	flags.StringVar(&approval, "approval", "", "explicit approval JSON (never generated as approved)")
+	flags.StringVar(&approval, "approval", "", "private decisions template or explicit approval JSON")
 	flags.StringVar(&capabilities, "capabilities", "", "explicit verified consumer capability map")
+	flags.BoolVar(&acceptBody, "accept-body-changes", false, "approve the reviewed Markdown changes by digest")
+	flags.BoolVar(&serverStopped, "server-stopped", false, "attest all servers and workers are stopped")
+	flags.BoolVar(&legacyChecked, "legacy-instances-checked", false, "attest legacy instances cannot write runtime resources")
 	flags.Var(&tracked, "tracked", "reviewed content source path relative to root; repeat for each source")
 	if flags.Parse(args[1:]) != nil || flags.NArg() != 0 {
 		return 2
 	}
-	if op != "preview" && op != "rehearse" && op != "apply" && op != "recover" && op != "validate-staged" {
+	if op != "preview" && op != "approve" && op != "rehearse" && op != "apply" && op != "recover" && op != "validate-staged" {
 		fmt.Fprintln(stderr, "unknown migration operation")
+		return 2
+	}
+	if op != "approve" && (acceptBody || serverStopped || legacyChecked) {
+		fmt.Fprintln(stderr, "approval flags are only valid with migrate approve")
 		return 2
 	}
 	a, appPath, err := app.StellarMigrationConfig(app.Options{Root: root, ConfigPath: configPath})
 	if err != nil {
-		return migrationCLIError(stderr)
+		return migrationCLIError(stderr, "CONFIG_INVALID")
 	}
 	binaryHash, err := migrationBinaryHash()
 	if err != nil {
-		return migrationCLIError(stderr)
+		return migrationCLIError(stderr, "BINARY_UNAVAILABLE")
 	}
 	if op == "validate-staged" {
 		g, e := app.AcquireStellarRootGuard(a, appPath, false)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "MIGRATION_REJECTED")
 		}
 		defer g.Close()
 		a, appPath = g.AppSnapshot, g.AppPath
 		if os.Getenv("BLOG_STELLAR_MIGRATION_VALIDATION") != "1" || !isPrivateMigrationRehearsal(a.Root, a.DBPath, a.UploadDir, appPath) {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "RUNTIME_VALIDATION_FAILED")
 		}
 		if err = validateMigrationRuntime(ctx, a, appPath); err != nil {
 			_ = writeMigrationPrivateJSON(filepath.Join(a.Root, ".stellar-migration-validation.private.json"), struct {
 				Error string `json:"error"`
 			}{err.Error()})
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "RUNTIME_VALIDATION_FAILED")
 		}
 		if json.NewEncoder(stdout).Encode(migrationCLISummary{OK: true, Operation: op, BinarySHA256: binaryHash}) != nil {
 			return 1
@@ -142,7 +153,7 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 			}
 			selected, e := previewMigrationSelections(ctx, layout, review, approval, out)
 			if e != nil {
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, migrationApprovalErrorCode(e))
 			}
 			selected.BinarySHA256 = binaryHash
 			if json.NewEncoder(stdout).Encode(selected) != nil {
@@ -150,39 +161,45 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 			}
 			return 0
 		}
-		var caps stellarmigration.ConsumerCapabilities
+		caps := migrationHostCapabilities()
 		if capabilities != "" {
+			caps = nil // 显式映射完整覆盖宿主默认值，包括空对象与null。
 			if err = readMigrationPrivateJSON(capabilities, &caps); err != nil {
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, "CAPABILITIES_INVALID")
 			}
 		}
 		sources, e := migrationSourceInventory(layout.Root, tracked)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "INVENTORY_INVALID")
+		}
+		// WAL旧库第一次只读连接可能创建侧车，先以mode=ro稳定SQLite读路径。
+		// 随后的完整资源捕获仍双读严格比较；不删除侧车、不允许业务数据写入。
+		if _, e = stellarmigration.ReadSnapshot(ctx, layout.DBPath, nil); e != nil {
+			return migrationCLIError(stderr, "CAPTURE_FAILED")
 		}
 		capture, e := stellarmigration.CaptureMigrationRoot(ctx, layout, sources)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "CAPTURE_FAILED")
 		}
 		after, e := migrationSourceInventory(layout.Root, tracked)
 		if e != nil || !reflect.DeepEqual(sources, after) {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "SOURCE_CHANGED")
 		}
 		candidate, e := stellarmigration.PreviewWithCapabilities(capture.Source, caps)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "PREVIEW_FAILED")
 		}
 		dir, e := createMigrationPreviewDirectory(out, layout)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "OUTPUT_INVALID")
 		}
-		unapproved := migrationCLIApproval{Approval: stellarmigration.RootMigrationApproval{MigrationApproval: stellarmigration.MigrationApproval{SourceDigest: capture.Source.Digest, CandidateDigest: stellarmigration.CandidateDigest(candidate)}, RootDigest: capture.Digest}, Offline: migrationOfflineAttestation{RootDigest: capture.Digest}}
+		unapproved, guide := migrationDecisionTemplate(capture, candidate)
 		for _, f := range []struct {
 			name  string
 			value any
-		}{{"root-capture.private.json", capture}, {"candidate.private.json", candidate}, {"report.public.json", candidate.PublicReport()}, {"approval-template.private.json", unapproved}} {
+		}{{"root-capture.private.json", capture}, {"candidate.private.json", candidate}, {"report.public.json", candidate.PublicReport()}, {"approval-template.private.json", unapproved}, {"decisions-guide.private.json", guide}} {
 			if e = writeMigrationPrivateJSON(filepath.Join(dir, f.name), f.value); e != nil {
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, "OUTPUT_INVALID")
 			}
 		}
 		summary.Directory = dir
@@ -190,6 +207,21 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 		summary.SourceDigest = capture.Source.Digest
 		summary.CandidateDigest = stellarmigration.CandidateDigest(candidate)
 		summary.Blocking = candidate.PublicReport().Blocking
+		summary.NextSteps = migrationSelectionNextSteps()
+	case "approve":
+		if review == "" || out == "" || approval != "" || capabilities != "" || len(tracked) != 0 {
+			fmt.Fprintln(stderr, "approve requires --review <selected-review> --out <new-private-directory>; run a selected preview first")
+			return 2
+		}
+		approved, e := approveMigrationSelections(ctx, layout, review, out, acceptBody, serverStopped && legacyChecked)
+		if e != nil {
+			return migrationCLIError(stderr, migrationApprovalErrorCode(e))
+		}
+		approved.BinarySHA256 = binaryHash
+		if json.NewEncoder(stdout).Encode(approved) != nil {
+			return 1
+		}
+		return 0
 	case "recover":
 		if err = app.CheckStellarOfflineListen(a.ListenAddr); err != nil {
 			fmt.Fprintln(stderr, "configured server port is occupied or cannot prove offline status")
@@ -197,7 +229,7 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 		}
 		result, e := stellarmigration.RecoverRootMigration(ctx, layout)
 		if e != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "RECOVERY_FAILED")
 		}
 		summary.Recovered = result.Recovered
 		summary.BackupDirectory = result.BackupDirectory
@@ -210,7 +242,7 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 		var candidate stellarmigration.Candidate
 		var approved migrationCLIApproval
 		if readMigrationPrivateJSON(filepath.Join(review, "root-capture.private.json"), &capture) != nil || readMigrationPrivateJSON(filepath.Join(review, "candidate.private.json"), &candidate) != nil || readMigrationPrivateJSON(approval, &approved) != nil {
-			return migrationCLIError(stderr)
+			return migrationCLIError(stderr, "ARTIFACT_INVALID")
 		}
 		// CLI当前配置不能替换artifact绑定的目标root或外置资源。
 		if !sameMigrationLayout(capture.Layout, layout) {
@@ -221,11 +253,11 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 		if op == "rehearse" {
 			result, e := stellarmigration.BuildRootRehearsal(ctx, capture, candidate, approved.Approval, approved.Notebook)
 			if e != nil {
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, "REHEARSAL_FAILED")
 			}
 			if e = validateMigrationSubprocess(ctx, result); e != nil {
 				_ = json.NewEncoder(stdout).Encode(migrationCLISummary{Operation: op, Directory: result.Directory, BinarySHA256: binaryHash})
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, "RUNTIME_VALIDATION_FAILED")
 			}
 			summary.Directory = result.Directory
 			summary.RootDigest = result.RootDigest
@@ -250,7 +282,7 @@ func RunMigrationCLI(ctx context.Context, args []string, root, configPath string
 				if lastStage != "" {
 					_ = json.NewEncoder(stdout).Encode(migrationCLISummary{Operation: op, Directory: lastStage, BinarySHA256: binaryHash})
 				}
-				return migrationCLIError(stderr)
+				return migrationCLIError(stderr, "APPLY_FAILED")
 			}
 			summary.RootDigest = result.RootDigest
 			summary.CandidateDigest = result.ResolvedCandidateDigest
@@ -268,35 +300,38 @@ func previewMigrationSelections(ctx context.Context, layout stellarmigration.Roo
 	var candidate stellarmigration.Candidate
 	var pending migrationCLIApproval
 	if err := readMigrationPrivateJSON(filepath.Join(review, "root-capture.private.json"), &capture); err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("ARTIFACT_INVALID", err)
 	}
 	if err := readMigrationPrivateJSON(filepath.Join(review, "candidate.private.json"), &candidate); err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("ARTIFACT_INVALID", err)
 	}
 	if err := readMigrationPrivateJSON(approval, &pending); err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("ARTIFACT_INVALID", err)
+	}
+	if err := capture.Verify(); err != nil {
+		return migrationCLISummary{}, migrationApprovalFailure("REVIEW_CHANGED", err)
 	}
 	if !sameMigrationLayout(capture.Layout, layout) || pending.Approval.RootDigest != capture.Digest || pending.Approval.SourceDigest != capture.Source.Digest || pending.Approval.CandidateDigest != stellarmigration.CandidateDigest(candidate) {
-		return migrationCLISummary{}, fmt.Errorf("pending selections are not bound to the original complete review")
+		return migrationCLISummary{}, migrationApprovalFailure("REVIEW_CHANGED", nil)
 	}
 	inventory, err := migrationSourceInventory(layout.Root, capture.TrackedSources)
 	if err != nil || !reflect.DeepEqual(inventory, capture.TrackedSources) {
-		return migrationCLISummary{}, fmt.Errorf("source inventory changed")
+		return migrationCLISummary{}, migrationApprovalFailure("SOURCE_CHANGED", err)
 	}
 	fresh, err := stellarmigration.CaptureMigrationRoot(ctx, capture.Layout, capture.TrackedSources)
 	if err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("CAPTURE_FAILED", err)
 	}
 	if fresh.Digest != capture.Digest {
-		return migrationCLISummary{}, fmt.Errorf("complete root resources changed")
+		return migrationCLISummary{}, migrationApprovalFailure("SOURCE_CHANGED", nil)
 	}
 	selected, err := stellarmigration.PreviewReviewedSelections(candidate, pending.Approval.Resolutions, pending.Notebook)
 	if err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("SELECTIONS_BLOCKED", err)
 	}
 	hash, err := stellarmigration.RootReviewDigest(capture, candidate, pending.Approval.Resolutions, pending.Notebook)
 	if err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("SELECTIONS_BLOCKED", err)
 	}
 	pending.Approval.Approved = false
 	pending.Approval.BodyDigests = nil
@@ -304,7 +339,7 @@ func previewMigrationSelections(ctx context.Context, layout stellarmigration.Roo
 	pending.Offline = migrationOfflineAttestation{RootDigest: capture.Digest}
 	dir, err := createMigrationPreviewDirectory(requested, capture.Layout)
 	if err != nil {
-		return migrationCLISummary{}, err
+		return migrationCLISummary{}, migrationApprovalFailure("OUTPUT_INVALID", err)
 	}
 	for _, artifact := range []struct {
 		name  string
@@ -313,10 +348,10 @@ func previewMigrationSelections(ctx context.Context, layout stellarmigration.Roo
 		{"root-capture.private.json", capture}, {"candidate.private.json", candidate}, {"selected-candidate.private.json", selected.Candidate}, {"reviewed-selections.private.json", selected}, {"original-report.public.json", candidate.PublicReport()}, {"report.public.json", selected.Candidate.PublicReport()}, {"body-review.public.json", selected.BodyDigests}, {"approval-template.private.json", pending},
 	} {
 		if err = writeMigrationPrivateJSON(filepath.Join(dir, artifact.name), artifact.value); err != nil {
-			return migrationCLISummary{}, err
+			return migrationCLISummary{}, migrationApprovalFailure("OUTPUT_INVALID", err)
 		}
 	}
-	return migrationCLISummary{OK: true, Operation: "preview", Directory: dir, RootDigest: capture.Digest, SourceDigest: capture.Source.Digest, CandidateDigest: stellarmigration.CandidateDigest(candidate), SelectedCandidateDigest: stellarmigration.CandidateDigest(selected.Candidate), ReviewDigest: hash, Blocking: selected.Candidate.PublicReport().Blocking}, nil
+	return migrationCLISummary{OK: true, Operation: "preview", Directory: dir, RootDigest: capture.Digest, SourceDigest: capture.Source.Digest, CandidateDigest: stellarmigration.CandidateDigest(candidate), SelectedCandidateDigest: stellarmigration.CandidateDigest(selected.Candidate), ReviewDigest: hash, Blocking: selected.Candidate.PublicReport().Blocking, NextSteps: []string{"Review selected-candidate.private.json and body-review.public.json; then run stellar migrate approve --review <this-directory> --out <new-approval-directory> [--accept-body-changes]."}}, nil
 }
 
 func sameMigrationLayout(captured, selected stellarmigration.RootLayout) bool {
@@ -426,9 +461,13 @@ func sameMigrationPath(captured, selected string) bool {
 	return false
 }
 
-func migrationCLIError(stderr io.Writer) int {
+func migrationCLIError(stderr io.Writer, stage ...string) int {
 	// 底层YAML/SQL错误可能含配置或正文值，不转发到公开终端。
-	fmt.Fprintln(stderr, "migration rejected: inspect the private review, source consistency, approval and runtime prerequisites")
+	code := "MIGRATION_REJECTED"
+	if len(stage) > 0 {
+		code = stage[0]
+	}
+	fmt.Fprintf(stderr, "migration rejected [%s]: %s\n", code, migrationErrorHint(code))
 	return 1
 }
 
