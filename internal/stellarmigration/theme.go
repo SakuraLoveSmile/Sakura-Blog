@@ -95,7 +95,7 @@ func buildTheme(s Snapshot) ThemeCandidate {
 	}
 	b := themeBuilder{raw: map[string]any{}, theme: map[string]any{}, blog: map[string]any{}, used: map[string]bool{}}
 	// 应用专用设置继续由原宿主读取，候选不复制其密钥进入上游主题。
-	host := map[string]bool{"admin": true, "dashboard": true, "seo_tools": true, "wiki_projects_migrated": true, "page_banner_friends_legacy_migrated": true}
+	host := map[string]bool{"admin": true, "dashboard": true, "feedback": true, "seo_tools": true, "wiki_projects_migrated": true, "page_banner_friends_legacy_migrated": true}
 	for _, name := range sortedKeys(stored) {
 		if host[name] {
 			b.mark(name, "settings."+name, "宿主设置原文保留，无主题转换")
@@ -120,7 +120,7 @@ func buildTheme(s Snapshot) ThemeCandidate {
 		{"article.reading_time", "article.show_reading_time"}, {"article.card_tags", "article.listing.show_tags"}, {"article.related_posts", "article.related_posts_limit"}, {"article.category_color", "article.category_colors"},
 		{"plugins.preload.enable", "features.link_prefetch.enabled"}, {"plugins.heti.enable", "features.heti.enabled"}, {"plugins.fancybox.enable", "features.lightbox.enabled"}, {"plugins.fancybox.selector", "features.lightbox.selector"},
 		{"plugins.scrollreveal.enable", "features.reveal.enabled"}, {"plugins.scrollreveal.duration", "features.reveal.duration"}, {"plugins.scrollreveal.interval", "features.reveal.interval"},
-		{"plugins.swiper", "features.swiper"}, {"plugins.katex.css", "features.math.katex.css"}, {"plugins.mathjax.js", "features.math.mathjax.js"}, {"plugins.mermaid.js", "features.diagrams.mermaid.js"},
+		{"plugins.swiper.js", "features.swiper.js"}, {"plugins.swiper.css", "features.swiper.css"}, {"plugins.katex.css", "features.math.katex.css"}, {"plugins.mathjax.js", "features.math.mathjax.js"}, {"plugins.mermaid.js", "features.diagrams.mermaid.js"},
 		{"inject.inject_head", "inject.head_end"}, {"inject.inject_footer", "inject.body_end"},
 		{"ai.base_url", "blog.ai.base_url"}, {"ai.api_key", "blog.ai.api_key"}, {"ai.model", "blog.ai.model"}, {"ai.embedding_model", "blog.ai.embedding_model"},
 		{"ai.summary_enabled", "blog.ai.summary.enabled"}, {"ai.allow_user_api", "blog.ai.summary.allow_user_api"}, {"ai.qa_enabled", "blog.ai.ask.enabled"}, {"ai.qa_allow_user_llm", "blog.ai.ask.allow_user_llm"},
@@ -150,6 +150,7 @@ func buildTheme(s Snapshot) ThemeCandidate {
 	b.migrateSEO()
 	b.validatePages()
 	b.specials()
+	b.migrateLegacyV174()
 	b.wikiShelf(s)
 	for _, path := range []string{"article.share.enabled", "article.reward.enabled"} {
 		if v, ok := get(b.raw, path); ok && v == true {
@@ -490,6 +491,7 @@ func (b *themeBuilder) specials() {
 	for _, name := range []string{"katex", "mathjax", "mermaid"} {
 		src := "plugins." + name + ".enable"
 		if v, ok := get(b.raw, src); ok {
+			b.requireBool(v, src)
 			target := "features.math.provider"
 			if name == "mermaid" {
 				target = "features.diagrams.provider"
@@ -519,9 +521,12 @@ func (b *themeBuilder) specials() {
 		}
 	}
 	if v, ok := get(b.raw, "widgets.pages"); ok {
-		b.requireObject(v, "widgets.pages")
 		b.used["widgets.pages"] = true
-		if len(object(v)) > 0 {
+		if v == nil {
+			b.mark("widgets.pages", "source.snapshot", "旧 null 表示没有页面覆盖；原文保留，候选继承官方页面区域")
+		} else if _, valid := v.(map[string]any); !valid {
+			b.requireObject(v, "widgets.pages")
+		} else if len(object(v)) > 0 {
 			for profile, item := range object(v) {
 				b.requireObject(item, "widgets.pages."+profile)
 				for side, cfg := range object(item) {

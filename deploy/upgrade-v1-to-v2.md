@@ -21,6 +21,8 @@ docker inspect blog --format '{{range .Mounts}}{{println .Source "->" .Destinati
 
 停止旧服务及所有共用数据的实例，再完整备份已确认的 config、data、content 和外置 uploads。停止之后复制 SQLite 所在目录，包含仍存在的 WAL/journal，不单独复制一个活跃的 `blog.db`。备份放在运行目录之外，保留原权限，验证可以读取；不要使用 `docker compose down -v`。
 
+先盘点 `data/backups` 等历史备份数量与容量。迁移会捕获运行目录资源，历史备份很多时可能超过小内存服务器的容量。完整备份验证后，可将历史备份完整归档到运行目录外，保存逐文件摘要和恢复位置，再生成新的来源预览；不要删除历史备份，也不要在来源预览后移动文件。可先在副本上使用 `--memory` 和 `GOMEMLIMIT` 验证内存上限，不能以退出 137 的失败预览继续批准。
+
 以下示例从原 Compose 所在目录执行。示例服务名是 `blog`，官方镜像运行根是 `/app`；按第一步的实际结果修改。原文件中将服务的 `image` 更新为已验证的固定新版本/摘要，并保留原数据挂载和环境配置。此时不要执行 `up`。
 
 ```bash
@@ -65,6 +67,8 @@ sudoedit "$UPGRADE_DIR/source/approval-template.private.json"
 后续候选正文和报告也按相同方式查看。不要为方便访问而把审查目录或文件改成公开可读。
 
 - 多来源取值、旧专栏、失效 URL、未知配置等不会自动选值。
+- 旧示例专栏不存在于项目库时，可逐项选择 `remove_missing_shelf`，或用 `choose_existing_project` 和 `replacement_id` 明确列出库中真实专栏。指南会列出现有项目 ID；删除全部示例不会自动把其它真实专栏加入列表，也不会删除项目正文。
+- `legacy_official_policy` 只允许已列出的具体行为采用新版策略，原值归档。旧页脚正文与备案号都非空时继续阻断，因为拼接后渲染可能吞掉备案链接；应审查来源并重新预览。
 - 不要删除诊断、修改 `candidate.private.json` 或随意把阻断标记改成 false。
 - 没有冲突时也继续执行选值预览，生成完整审查摘要。
 - 私密文件含配置、密钥和全文，只留在服务器权限受限目录中；不要发往外部服务。

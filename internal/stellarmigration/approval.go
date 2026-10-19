@@ -24,6 +24,7 @@ type MigrationResolution struct {
 	Action          string `json:"action"`
 	AlternativeName string `json:"alternative_name,omitempty"`
 	ReplacementURL  string `json:"replacement_url,omitempty"`
+	ReplacementID   string `json:"replacement_id,omitempty"`
 }
 
 type AppliedResolution struct {
@@ -100,7 +101,7 @@ func resolveReviewedMigration(c Candidate, approval MigrationApproval, decisions
 	}
 	resolutions := map[string]MigrationResolution{}
 	for _, r := range approval.Resolutions {
-		if (r.Action != "choose_alternative" && r.AlternativeName != "") || (r.Action != "replace_url" && r.ReplacementURL != "") {
+		if (r.Action != "choose_alternative" && r.AlternativeName != "") || (r.Action != "replace_url" && r.ReplacementURL != "") || (r.Action != "choose_existing_project" && r.ReplacementID != "") {
 			return Candidate{}, nb, nil, fmt.Errorf("resolution contains fields outside its action")
 		}
 		key := resolutionKey(r.Source, r.Code, r.Path)
@@ -297,6 +298,14 @@ func applyResolution(c *Candidate, d Diagnostic, r MigrationResolution, nb Noteb
 			return fmt.Errorf("unsupported runtime policy resolution")
 		}
 		return nil // 候选本身已为官方；明确批准替换旧策略，旧设置完整归档。
+	case "legacy_official_policy":
+		if d.Source != "settings" || r.Action != "use_official" || !legacyOfficialPolicyPath(d.Path) {
+			return fmt.Errorf("unsupported legacy official policy resolution")
+		}
+		c.Theme.Mappings = append(c.Theme.Mappings, Mapping{"settings." + d.Path, "source.snapshot", "具名批准采用 2.0 官方行为；旧值完整归档，不宣称等效映射"})
+		return nil
+	case "wiki_shelf_project_missing":
+		return removeMissingWikiShelf(c, d, r)
 	case "legacy_notebook_schema", "note_missing_slug_status":
 		if r.Action != "use_notebook_decisions" || nb.Blocking() {
 			return fmt.Errorf("notebook conversion needs complete named metadata decisions")
@@ -444,5 +453,97 @@ func finishResolvedTheme(c *Candidate) error {
 	doc := object(document)
 	doc["theme"] = m
 	c.Theme.DocumentJSON = encode(doc)
+	blog, err := decode(c.Theme.BlogJSON)
+	if err != nil {
+		return err
+	}
+	b := object(blog)
+	if value, exists := get(b, "data.wiki"); exists {
+		ids := []any{}
+		for _, id := range array(value) {
+			if id != nil {
+				ids = append(ids, id)
+			}
+		}
+		set(b, "data.wiki", ids)
+	}
+	c.Theme.BlogJSON = encode(b)
+	return nil
+}
+
+// 仅已核实的旧行为允许具名接受新版策略；未知配置没有通用忽略入口。
+func legacyOfficialPolicyPath(path string) bool {
+	switch path {
+	case "style.gradient.avatar", "style.loading.loading", "style.loading.error", "style.page_transition.enable",
+		"plugins.adaptive_text.enable", "plugins.copycode.enable", "plugins.copycode.default_text", "plugins.copycode.success_text", "plugins.copycode.toast", "plugins.swiper.enable",
+		"plugins.mermaid.style_optimization":
+		return true
+	}
+	return false
+}
+
+func removeMissingWikiShelf(c *Candidate, d Diagnostic, r MigrationResolution) error {
+	if d.Source != "settings" || (r.Action != "remove_missing_shelf" && r.Action != "choose_existing_project") || !strings.HasPrefix(d.Path, "wiki[") || !strings.HasSuffix(d.Path, "].id") {
+		return fmt.Errorf("unsupported missing wiki shelf resolution")
+	}
+	index, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(d.Path, "wiki["), "].id"))
+	if err != nil || index < 0 {
+		return fmt.Errorf("invalid wiki shelf index")
+	}
+	var original []any
+	for _, row := range c.Source.Tables["settings"].Rows {
+		if row["section"] == "wiki" {
+			value, err := decode(stringValue(row["value"]))
+			if err != nil {
+				return err
+			}
+			original = array(value)
+			break
+		}
+	}
+	if index >= len(original) {
+		return fmt.Errorf("wiki shelf source changed")
+	}
+	id, ok := object(original[index])["id"].(string)
+	if !ok || id == "" {
+		return fmt.Errorf("wiki shelf source identity missing")
+	}
+	for _, project := range c.Source.Tables["wiki_projects"].Rows {
+		if stringValue(project["id"]) == id {
+			return fmt.Errorf("existing wiki collection cannot be removed by missing shelf resolution")
+		}
+	}
+	value, err := decode(c.Theme.BlogJSON)
+	if err != nil {
+		return err
+	}
+	blog := object(value)
+	raw, _ := get(blog, "data.wiki")
+	ids := array(raw)
+	if index >= len(ids) || ids[index] != id {
+		return fmt.Errorf("wiki shelf candidate changed")
+	}
+	// 暂留空位，确保逐项决策的源索引不会因前一项移除而改变。
+	ids[index] = nil
+	if r.Action == "choose_existing_project" {
+		found := false
+		for _, project := range c.Source.Tables["wiki_projects"].Rows {
+			if r.ReplacementID != "" && stringValue(project["id"]) == r.ReplacementID {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("replacement wiki project does not exist")
+		}
+		for _, existing := range ids {
+			if existing == r.ReplacementID {
+				return fmt.Errorf("replacement wiki project is already listed")
+			}
+		}
+		ids[index] = r.ReplacementID
+	}
+	set(blog, "data.wiki", ids)
+	c.Theme.BlogJSON = encode(blog)
+	c.Theme.Mappings = append(c.Theme.Mappings, Mapping{"settings." + d.Path, "blog.data.wiki + source.snapshot", "具名移除缺失引用或替换为明确选择的现有项目；原卡片归档，不删除任何项目、正文或改变可见性"})
 	return nil
 }

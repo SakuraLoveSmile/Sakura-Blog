@@ -39,6 +39,7 @@ type migrationResolutionGuide struct {
 	Path         string   `json:"path"`
 	Actions      []string `json:"allowed_actions"`
 	Alternatives []string `json:"alternative_names,omitempty"`
+	ProjectIDs   []string `json:"existing_project_ids,omitempty"`
 }
 
 func migrationSelectionNextSteps() []string {
@@ -64,8 +65,18 @@ func migrationDecisionTemplate(capture stellarmigration.RootCapture, c stellarmi
 		switch d.Code {
 		case "site_url_required":
 			item.Actions = []string{"replace_url"}
-		case "pjax_policy_removed", "data_cache_removed":
+		case "pjax_policy_removed", "data_cache_removed", "legacy_official_policy":
 			item.Actions = []string{"use_official"}
+		case "wiki_shelf_project_missing":
+			item.Actions = []string{"remove_missing_shelf"}
+			for _, project := range c.Source.Tables["wiki_projects"].Rows {
+				if id, ok := project["id"].(string); ok && id != "" {
+					item.ProjectIDs = append(item.ProjectIDs, id)
+				}
+			}
+			if len(item.ProjectIDs) > 0 {
+				item.Actions = append(item.Actions, "choose_existing_project")
+			}
 		case "legacy_notebook_schema", "note_missing_slug_status":
 			item.Actions = []string{"use_notebook_decisions"}
 		case "file_host_fields":
