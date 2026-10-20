@@ -17,8 +17,18 @@ type MarkdownImport struct {
 	Warnings        []string
 }
 
+// MissingLegacyTopicError 供导入入口请求明确创建授权；只读转换本身不新建专栏。
+type MissingLegacyTopicError struct {
+	Source string
+	Topic  string
+}
+
+func (e *MissingLegacyTopicError) Error() string {
+	return fmt.Sprintf("%s: 未找到专栏 %q；请先在「专栏」中创建，或将 topic 改为已有专栏的名称或 Slug", e.Source, e.Topic)
+}
+
 // ConvertLegacyMarkdown 显式复用整站迁移的字段与 shortcode 规则，不作为 strict 解析的 fallback。
-// topics 来自当前数据库，只允许唯一 slug/name 匹配，不创建集合或修改任何记录。
+// 空 topic 表示未分配；非空值只允许唯一 slug/name 匹配，不创建集合或修改任何记录。
 func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store.Topic) (MarkdownImport, error) {
 	out := MarkdownImport{Warnings: []string{}}
 	if !utf8.Valid(source) || kind != "post" && kind != "page" {
@@ -43,6 +53,15 @@ func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 		out.SlugSuggestion = text
 		delete(raw, "slug")
 		out.LegacyConverted = true
+	}
+	// 旧模板常保留空 topic 占位；它没有指定归属，也不应与显式 collection 冲突。
+	if value, exists := raw["topic"]; exists {
+		name, text := value.(string)
+		if value == nil || text && strings.TrimSpace(name) == "" {
+			delete(raw, "topic")
+			out.LegacyConverted = true
+			out.Warnings = append(out.Warnings, "旧版 topic 为空，按未分配专栏处理。")
+		}
 	}
 	// 显式选择 1.x 时，通用配置仍可复用 strict 解析，但正文统一应用旧版映射。
 	// 例如仅含 image 的旧文档也必须保留旧 fancybox 默认值；2.0 文档应走 strict 入口。
@@ -88,16 +107,20 @@ func ConvertLegacyMarkdown(source []byte, filename, kind string, topics []*store
 	}
 	if v, exists := raw["topic"]; exists {
 		name, ok := v.(string)
+		if !ok {
+			return out, fmt.Errorf("%s: topic 必须是专栏名称或 Slug 字符串", filename)
+		}
 		matches := 0
-		if ok && name != "" {
-			for _, topic := range topics {
-				if topic.Name == name || topic.Slug == name {
-					matches++
-				}
+		for _, topic := range topics {
+			if topic.Name == name || topic.Slug == name {
+				matches++
 			}
 		}
-		if matches != 1 {
-			return out, fmt.Errorf("%s: topic must uniquely match an existing topic slug or name", filename)
+		if matches == 0 {
+			return out, &MissingLegacyTopicError{Source: filename, Topic: name}
+		}
+		if matches > 1 {
+			return out, fmt.Errorf("%s: topic %q 匹配到多个专栏；请改为可唯一匹配的专栏名称或 Slug", filename, name)
 		}
 	}
 	// 仅显式导入接受旧渲染开关；不从字符串、数字或对象猜测启用状态。

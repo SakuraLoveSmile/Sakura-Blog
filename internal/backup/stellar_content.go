@@ -874,6 +874,26 @@ func checkStellarExistingIdentity(tx *sql.Tx, record StellarContentRecord) error
 	} else if sourceExpression == "id" {
 		expectedSource = stellarRecordText(record, "id")
 	}
+	if record.Table == "topics" {
+		// name 同样是唯一键，必须检查所有命中，防止 UPSERT 按同名冲突覆盖另一个专栏。
+		rows, err := tx.Query(`SELECT CAST(id AS TEXT),slug,stellar_version FROM topics WHERE id=? OR slug=? OR name=?`, id, expectedSource, stellarRecordText(record, "name"))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			if err := rows.Scan(&existingID, &existingSource, &version); err != nil {
+				return err
+			}
+			if version != 2 {
+				return fmt.Errorf("%w: %s", store.ErrStellarMigrationRequired, record.Source)
+			}
+			if existingSource != expectedSource || fmt.Sprint(id) != existingID {
+				return fmt.Errorf("topic identity conflict; name, slug and ID must refer to the same topic")
+			}
+		}
+		return rows.Err()
+	}
 	err := tx.QueryRow(`SELECT CAST(id AS TEXT),`+sourceExpression+`,stellar_version FROM `+stellarQuote(record.Table)+` WHERE id=? OR `+sourceExpression+`=?`, id, expectedSource).Scan(&existingID, &existingSource, &version)
 	if err == sql.ErrNoRows {
 		return nil

@@ -6,11 +6,60 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
 	"blog/internal/config"
 )
+
+func TestLegacyMarkdownMissingTopicsMultipartConfirmation(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	if _, err := config.InitializeStellarV2(st, map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	source, err := os.ReadFile("../../../internal/stellarmigration/testdata/teamspeak-legacy.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	upload := func(legacy, topics string) *httptest.ResponseRecorder {
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		_ = writer.WriteField("legacy", legacy)
+		if topics != "" {
+			_ = writer.WriteField("create_topics", topics)
+		}
+		entry, _ := writer.CreateFormFile("file", "TeamSpeak使用指南.md")
+		_, _ = entry.Write(source)
+		_ = writer.Close()
+		return do2FARaw(r, http.MethodPost, "/api/v1/backup/import/markdown", &body, writer.FormDataContentType(), authCookie(user))
+	}
+	w := upload("true", "")
+	var missing MarkdownImportMissingTopicsProblem
+	if err := json.Unmarshal(w.Body.Bytes(), &missing); err != nil || w.Code != http.StatusBadRequest || missing.Type != "legacy_markdown_topics_required" || !reflect.DeepEqual(missing.MissingTopics, []string{"zero_tech"}) {
+		t.Fatalf("missing topic prompt: %d %s %v", w.Code, w.Body.String(), err)
+	}
+	if value, _ := st.GetBySlug("TeamSpeak使用指南"); value != nil {
+		t.Fatal("missing topic prompt wrote a post")
+	}
+	if topics, _ := st.ListTopics(); len(topics) != 0 {
+		t.Fatal("missing topic prompt created a topic")
+	}
+	for _, test := range [][2]string{{"false", `["zero_tech"]`}, {"true", `true`}, {"true", `{"zero_tech":true}`}} {
+		if w := upload(test[0], test[1]); w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid creation request accepted: %d %s", w.Code, w.Body.String())
+		}
+	}
+	if w := upload("true", `["zero_tech"]`); w.Code != http.StatusOK {
+		t.Fatalf("approved import failed: %d %s", w.Code, w.Body.String())
+	}
+	topic, _ := st.GetTopicBySlug("zero_tech")
+	value, _ := st.GetBySlug("TeamSpeak使用指南")
+	if topic == nil || value == nil || value.TopicID != topic.ID || value.Status != "draft" {
+		t.Fatal("approved import did not persist topic with draft")
+	}
+}
 
 // Wave 4 测试覆盖补强：备份导出/状态/导入/恢复。
 

@@ -7,6 +7,7 @@ import type {
   RestoreTaskResponse,
   RestoreTasksResponse,
   FeedbackCheckResponse,
+  PostsMarkdownImportResponse,
 } from "../generated";
 
 // --- 备份与导出 ---
@@ -36,11 +37,12 @@ async function readRestoreTaskResponse(response: Response): Promise<RestoreTaskR
 
 export const backupApi = {
   status: () => http.get("/backup/status"),
-  importMarkdown: (file: File, legacy = false) => {
+  importMarkdown: (file: File, legacy = false, createTopics: string[] = []) => {
     const form = new FormData();
     form.append("file", file);
     if (legacy) form.append("legacy", "true");
-    return http.post("/backup/import/markdown", form, {
+    if (createTopics.length) form.append("create_topics", JSON.stringify(createTopics));
+    return http.post<PostsMarkdownImportResponse>("/backup/import/markdown", form, {
       headers: { "Content-Type": "multipart/form-data" },
       mute: true,
     });

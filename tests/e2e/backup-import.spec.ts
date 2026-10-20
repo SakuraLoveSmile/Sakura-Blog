@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
+import fs from "node:fs";
 
 async function login(page: Page) {
   await page.goto("/console/login");
@@ -7,6 +8,74 @@ async function login(page: Page) {
   await page.getByPlaceholder("请输入密码").fill("e2e-password");
   await page.getByRole("button", { name: "登 录", exact: true }).click();
   await expect(page).toHaveURL(/\/console\/dashboard/, { timeout: 30_000 });
+}
+
+for (const width of [1280, 390]) {
+  test(`缺失专栏先确认，取消不写入，确认后与真实头部一起导入（${width}px）`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await login(page);
+    await page.goto("/console/backup");
+    await page.getByRole("checkbox", { name: /从 1.x 格式转换/ }).check();
+    const topicSlug = width === 1280 ? "zero_tech" : "zero_tech_mobile";
+    const slug = width === 1280 ? "TeamSpeak使用指南" : "TeamSpeak使用指南-手机";
+    const source = fs
+      .readFileSync(path.resolve("internal/stellarmigration/testdata/teamspeak-legacy.md"), "utf8")
+      .replace("topic: zero_tech", `topic: ${topicSlug}`);
+    const file = { name: `${slug}.md`, mimeType: "text/markdown", buffer: Buffer.from(source) };
+    const select = async () => {
+      await page.locator('input[type="file"][accept=".md,.zip"]').setInputFiles(file);
+      const result = page.waitForResponse(
+        (r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST",
+      );
+      await page.getByRole("alertdialog").getByRole("button", { name: "确定", exact: true }).click();
+      const response = await result;
+      expect(response.status()).toBe(400);
+      expect((await response.json()).missing_topics).toEqual([topicSlug]);
+    };
+    await select();
+    const confirmation = page.getByRole("alertdialog", { name: "创建缺失的专栏并导入？" });
+    await expect(confirmation).toContainText(topicSlug);
+    await expect(confirmation).toContainText("同时作为名称和 Slug");
+    await expect(confirmation).toContainText("任一文件失败时整批不写入");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: path.resolve(`docs/baselines/markdown-topic-import/confirm-${width}.png`) });
+    await confirmation.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(confirmation).toHaveCount(0);
+    expect((await page.request.get(`/api/v1/posts/${encodeURIComponent(slug)}`)).status()).toBe(404);
+    const before = await (await page.request.get("/api/v1/topics")).json();
+    expect(before.items.filter((topic: { slug: string }) => topic.slug === topicSlug)).toHaveLength(0);
+
+    await select();
+    const imported = page.waitForResponse(
+      (r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST",
+    );
+    await confirmation.getByRole("button", { name: "创建并导入", exact: true }).click();
+    const response = await imported;
+    expect(response.ok(), await response.text()).toBeTruthy();
+    await expect(page.locator("#app").getByText("成功导入 1 篇文章", { exact: true })).toBeVisible();
+    const saved = await (await page.request.get(`/api/v1/posts/${encodeURIComponent(slug)}`)).json();
+    expect(saved.status).toBe("draft");
+    expect(saved.content_md).toBe(source.split("---\n").slice(2).join("---\n"));
+    const raw = JSON.parse(saved.stellar_config);
+    expect(raw.collection).toEqual({ profile: "topic", id: topicSlug });
+    expect(raw.tags).toEqual(["零基础", "游戏"]);
+    expect(raw.categories).toEqual(["技术分享"]);
+    expect(raw.render).toEqual({ math: false, diagrams: false });
+    expect(raw.article.style).toBe("tech");
+    expect(raw.abbrlink).toBe("TeamSpeak");
+    expect(raw.updated).toBe("2023-12-23");
+    expect(raw.description).toContain("本篇文章是一篇简单的入门使用教程");
+    expect(raw.footer.references).toHaveLength(2);
+    expect(raw.cover).toBe("../../assets/cover/TeamSpeak使用指南.jpg");
+    expect(JSON.parse(saved.blog_extensions).content.banner_image).toBe(
+      "https://bu.dusays.com/2024/09/01/66d42682cd240.jpg",
+    );
+    expect(saved.created_at).toContain("2023-12-23");
+    expect((await page.request.get(`/post/${encodeURIComponent(slug)}`)).status()).toBe(404);
+    const after = await (await page.request.get("/api/v1/topics")).json();
+    expect(after.items.filter((topic: { slug: string }) => topic.slug === topicSlug)).toHaveLength(1);
+    await page.screenshot({ path: path.resolve(`docs/baselines/markdown-topic-import/imported-${width}.png`) });
+  });
 }
 
 test("文章导入支持选择、取消与重复选择同一文件", async ({ page }) => {
@@ -81,14 +150,20 @@ test("备份页显式转换 1.x Markdown，未指定状态的新文章作为草�
   const slug = `legacy-batch-${Date.now()}`;
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "选择文件导入", exact: true }).click();
-  await (await chooser).setFiles({
+  await (
+    await chooser
+  ).setFiles({
     name: "different-filename.md",
     mimeType: "text/markdown",
-    buffer: Buffer.from(`---\ntitle: 旧站批量文章\nslug: ${slug}\ncategory: 升级验收\ndate: 2021-03-04\n---\n\n保留历史文章正文。\n`),
+    buffer: Buffer.from(
+      `---\ntitle: 旧站批量文章\nslug: ${slug}\ncategory: 升级验收\ndate: 2021-03-04\n---\n\n保留历史文章正文。\n`,
+    ),
   });
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText("未指定状态的新文章保存为草稿");
-  const response = page.waitForResponse((r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST");
+  const response = page.waitForResponse(
+    (r) => r.url().includes("/backup/import/markdown") && r.request().method() === "POST",
+  );
   await dialog.getByRole("button", { name: "确定", exact: true }).click();
   const result = await response;
   expect(result.ok(), await result.text()).toBeTruthy();

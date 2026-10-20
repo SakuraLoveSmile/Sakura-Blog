@@ -30,3 +30,4 @@ packages:
       - "notebook.go"
       - "notebook_note.go"
       - "backup_restores.go"
+      - "backup.go"

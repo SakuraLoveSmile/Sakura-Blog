@@ -18,6 +18,24 @@ export interface StellarAuthorCatalogResponse {
 }
 
 //////////
+// source: backup.go
+
+export interface MarkdownImportMissingTopicsProblem {
+  type: string;
+  title: string;
+  status: number /* int */;
+  detail: string;
+  instance: string;
+  error: string;
+  missing_topics: string[];
+}
+export interface PostsMarkdownImportResponse {
+  imported: number /* int */;
+  slugs: string[];
+  skipped: string[];
+}
+
+//////////
 // source: backup_restores.go
 
 /**

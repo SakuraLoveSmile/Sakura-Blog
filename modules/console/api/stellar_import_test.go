@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,6 +12,43 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func TestLegacyEmptyTopicPreviewIsReadOnly(t *testing.T) {
+	r, st, user, _ := newFullEnv(t)
+	before, err := st.ListTopics()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"post", "page"} {
+		request := StellarMarkdownImportRequest{Legacy: true, Kind: kind, Filename: "TeamSpeak使用指南.md", Content: "---\ntitle: TeamSpeak使用指南\ntopic:\n---\n原始正文。\r\n"}
+		body, _ := json.Marshal(request)
+		w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", string(body), authCookie(user))
+		if w.Code != http.StatusOK {
+			t.Fatalf("empty topic preview: %d %s", w.Code, w.Body.String())
+		}
+		var result StellarMarkdownImportResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if !result.LegacyConverted || result.ContentMD != "原始正文。\r\n" || strings.Contains(result.FrontMatter, "collection") || !strings.Contains(strings.Join(result.Warnings, "\n"), "topic 为空") {
+			t.Fatalf("empty topic preview lost semantics: %+v", result)
+		}
+		request.Legacy = false
+		body, _ = json.Marshal(request)
+		if w := do2FA(r, http.MethodPost, "/api/v1/editor/import/stellar", string(body), authCookie(user)); w.Code != http.StatusBadRequest {
+			t.Fatal("strict import bypassed explicit conversion")
+		}
+	}
+	if posts, err := st.List(); err != nil || len(posts) != 0 {
+		t.Fatal("preview wrote a post")
+	}
+	if pages, err := st.ListPages(); err != nil || len(pages) != 0 {
+		t.Fatal("preview wrote a page")
+	}
+	if after, err := st.ListTopics(); err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatal("preview created or modified a topic")
+	}
+}
 
 func TestExplicitLegacyStellarPreviewIsReadOnlyAndAuthorized(t *testing.T) {
 	r, st, user, _ := newFullEnv(t)

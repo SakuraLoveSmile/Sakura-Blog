@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -208,15 +210,30 @@ func StageStellarPosts(st *store.Store, renderer *post.Service, sources map[stri
 }
 
 func (s *Service) importStellarPosts(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
-	return s.importMarkdownPosts(ctx, filename, data, false)
+	return s.importMarkdownPosts(ctx, filename, data, false, nil)
 }
 
 // ImportLegacyMarkdownContext 仅在调用者明确选择 1.x 转换时执行；不接受 manifest 备份。
 func (s *Service) ImportLegacyMarkdownContext(ctx context.Context, filename string, data []byte) (*ImportResult, error) {
-	return s.importMarkdownPosts(ctx, filename, data, true)
+	return s.ImportLegacyMarkdownWithTopicsContext(ctx, filename, data, nil)
 }
 
-func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool) (*ImportResult, error) {
+// MissingLegacyTopicsError 列出本批需确认创建的专栏，此时真实数据库尚未写入。
+type MissingLegacyTopicsError struct {
+	Topics []string
+}
+
+func (e *MissingLegacyTopicsError) Error() string {
+	return "导入需要创建以下专栏：" + strings.Join(e.Topics, "、")
+}
+
+// ImportLegacyMarkdownWithTopicsContext 仅在候选副本中创建已明确确认的同名/同 Slug 专栏。
+// 后续转换或校验失败不会把新专栏单独写入真实数据库。
+func (s *Service) ImportLegacyMarkdownWithTopicsContext(ctx context.Context, filename string, data []byte, createTopics []string) (*ImportResult, error) {
+	return s.importMarkdownPosts(ctx, filename, data, true, createTopics)
+}
+
+func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data []byte, legacy bool, createTopics []string) (*ImportResult, error) {
 	if _, err := config.LoadStellarV2(s.store); err != nil {
 		return nil, fmt.Errorf("%w: %w", store.ErrStellarMigrationRequired, err)
 	}
@@ -281,8 +298,33 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 			return nil, err
 		}
 		converted := map[string][]byte{}
+		approved := map[string]bool{}
+		for _, name := range createTopics {
+			approved[name] = true
+		}
+		missing := map[string]bool{}
 		for fileSlug, source := range sources {
 			result, err := stellarmigration.ConvertLegacyMarkdown(source, fileSlug+".md", "post", topics)
+			var unresolved *stellarmigration.MissingLegacyTopicError
+			if errors.As(err, &unresolved) {
+				if !approved[unresolved.Topic] {
+					missing[unresolved.Topic] = true
+					continue
+				}
+				if !validStellarSourceComponent(unresolved.Topic, false) || strings.TrimSpace(unresolved.Topic) != unresolved.Topic {
+					return nil, fmt.Errorf("专栏 %q 不能直接用作 Slug，请先在「专栏」中创建并填写有效 Slug", unresolved.Topic)
+				}
+				raw, encodeErr := json.Marshal(map[string]any{"name": unresolved.Topic})
+				if encodeErr != nil {
+					return nil, encodeErr
+				}
+				topic := &store.Topic{Name: unresolved.Topic, Slug: unresolved.Topic, StellarVersion: 2, StellarConfig: string(raw), BlogExtensions: "{}"}
+				if err := probe.CreateTopic(topic); err != nil {
+					return nil, err
+				}
+				topics = append(topics, topic)
+				result, err = stellarmigration.ConvertLegacyMarkdown(source, fileSlug+".md", "post", topics)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -304,6 +346,14 @@ func (s *Service) importMarkdownPosts(ctx context.Context, filename string, data
 			if err != nil {
 				return nil, err
 			}
+		}
+		if len(missing) > 0 {
+			names := make([]string, 0, len(missing))
+			for name := range missing {
+				names = append(names, name)
+			}
+			sort.Strings(names)
+			return nil, &MissingLegacyTopicsError{Topics: names}
 		}
 		sources = converted
 	}

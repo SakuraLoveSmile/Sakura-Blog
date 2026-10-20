@@ -2,6 +2,7 @@ package stellarmigration
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -63,6 +64,72 @@ func TestLegacyMarkdownTopicMustMatchExactlyOneExistingTopic(t *testing.T) {
 	for _, topics := range [][]*store.Topic{nil, {{Slug: "one", Name: "Shared"}, {Slug: "Shared", Name: "Two"}}} {
 		if _, err := ConvertLegacyMarkdown([]byte("---\ntopic: Shared\n---\nbody"), "old.md", "post", topics); err == nil {
 			t.Fatal("guessed missing or ambiguous topic")
+		}
+	}
+}
+
+func TestLegacyMarkdownEmptyTopicIsUnassigned(t *testing.T) {
+	for _, header := range []string{"topic:", "topic: null", "topic: ~", `topic: ""`, `topic: "   "`} {
+		for _, kind := range []string{"post", "page"} {
+			for _, topics := range [][]*store.Topic{nil, {{Slug: "series", Name: "Series"}}} {
+				t.Run(header+"/"+kind+fmt.Sprint(len(topics)), func(t *testing.T) {
+					body := "TeamSpeak 正文。\r\n\n```md\n{% tip 示例 %}\n```\n"
+					source := []byte("---\ntitle: TeamSpeak使用指南\n" + header + "\nmathjax: true\n---\n" + body)
+					result, err := ConvertLegacyMarkdown(source, "TeamSpeak使用指南.md", kind, topics)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if result.Document.Body != body || result.Document.Raw["title"] != "TeamSpeak使用指南" {
+						t.Fatal("empty topic changed article content")
+					}
+					if _, exists := result.Document.Raw["topic"]; exists {
+						t.Fatal("empty legacy topic was not removed")
+					}
+					if _, exists := result.Document.Raw["collection"]; exists {
+						t.Fatal("empty topic guessed a collection")
+					}
+					if !result.LegacyConverted || !strings.Contains(strings.Join(result.Warnings, "\n"), "topic 为空") {
+						t.Fatal("empty topic conversion was not disclosed")
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestLegacyMarkdownTopicErrorsExplainResolution(t *testing.T) {
+	for _, test := range []struct {
+		header, message string
+		topics          []*store.Topic
+	}{
+		{"topic: Missing", "未找到专栏", nil},
+		{"topic: Shared", "匹配到多个专栏", []*store.Topic{{Slug: "one", Name: "Shared"}, {Slug: "Shared", Name: "Two"}}},
+		{"topic: ' Series '", "未找到专栏", []*store.Topic{{Slug: "series", Name: "Series"}}},
+		{"topic: false", "topic 必须是专栏名称或 Slug 字符串", nil},
+		{"topic: 42", "topic 必须是专栏名称或 Slug 字符串", nil},
+		{"topic: []", "topic 必须是专栏名称或 Slug 字符串", nil},
+		{"topic: {}", "topic 必须是专栏名称或 Slug 字符串", nil},
+	} {
+		t.Run(test.header, func(t *testing.T) {
+			_, err := ConvertLegacyMarkdown([]byte("---\n"+test.header+"\n---\n正文"), "TeamSpeak使用指南.md", "post", test.topics)
+			if err == nil || !strings.Contains(err.Error(), test.message) || !strings.Contains(err.Error(), "TeamSpeak使用指南.md") {
+				t.Fatalf("expected actionable topic error %q, got %v", test.message, err)
+			}
+		})
+	}
+}
+
+func TestLegacyMarkdownEmptyTopicPreservesExplicitCollection(t *testing.T) {
+	for _, header := range []string{
+		"topic:\ncollection: {profile: topic, id: series}",
+		"topic: ''\nwiki: docs",
+	} {
+		result, err := ConvertLegacyMarkdown([]byte("---\n"+header+"\n---\n正文"), "empty-topic.md", "post", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, exists := result.Document.Raw["collection"]; !exists {
+			t.Fatal("empty topic removed an explicit collection")
 		}
 	}
 }

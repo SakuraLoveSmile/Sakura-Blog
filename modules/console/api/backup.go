@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -19,6 +20,22 @@ const maxImportSize = 50 << 20
 
 // maxRestoreSize 全量备份包上传上限（含 uploads，放宽到 500MB）。
 const maxRestoreSize = 500 << 20
+
+type MarkdownImportMissingTopicsProblem struct {
+	Type          string   `json:"type"`
+	Title         string   `json:"title"`
+	Status        int      `json:"status"`
+	Detail        string   `json:"detail"`
+	Instance      string   `json:"instance"`
+	Error         string   `json:"error"`
+	MissingTopics []string `json:"missing_topics"`
+}
+
+type PostsMarkdownImportResponse struct {
+	Imported int      `json:"imported"`
+	Slugs    []string `json:"slugs"`
+	Skipped  []string `json:"skipped"`
+}
 
 // restoreBackup POST /api/v1/backup/restore：上传全量备份 zip 一键还原（Spec 41）。
 // 表单字段 file=zip，strict=true 时先清空 uploads 再解包。
@@ -120,12 +137,29 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 	}
 	var res *backup.ImportResult
 	legacy := c.PostForm("legacy") == "true"
+	var createTopics []string
+	if value := c.PostForm("create_topics"); value != "" {
+		if !legacy || json.Unmarshal([]byte(value), &createTopics) != nil {
+			Fail(c, http.StatusBadRequest, "create_topics 必须是 1.x 导入中明确确认的专栏名称数组")
+			return
+		}
+	}
 	if legacy {
-		res, err = h.backups.ImportLegacyMarkdownContext(c.Request.Context(), header.Filename, data)
+		res, err = h.backups.ImportLegacyMarkdownWithTopicsContext(c.Request.Context(), header.Filename, data, createTopics)
 	} else {
 		res, err = h.backups.ImportContext(c.Request.Context(), header.Filename, data)
 	}
 	if err != nil {
+		var missing *backup.MissingLegacyTopicsError
+		if errors.As(err, &missing) {
+			message := missing.Error()
+			c.JSON(http.StatusBadRequest, MarkdownImportMissingTopicsProblem{
+				Type: "legacy_markdown_topics_required", Title: "需要确认创建专栏", Status: http.StatusBadRequest,
+				Detail: message, Error: message, Instance: c.Request.URL.Path,
+				MissingTopics: missing.Topics,
+			})
+			return
+		}
 		var schema *stellarv2.SchemaError
 		if !legacy && !errors.Is(err, store.ErrStellarMigrationRequired) && errors.As(err, &schema) {
 			for _, issue := range schema.Issues {
@@ -142,11 +176,7 @@ func (h *Handler) importPostsMarkdown(c *gin.Context) {
 		Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"imported": len(res.Imported),
-		"slugs":    res.Imported,
-		"skipped":  res.Skipped,
-	})
+	c.JSON(http.StatusOK, PostsMarkdownImportResponse{Imported: len(res.Imported), Slugs: res.Imported, Skipped: res.Skipped})
 }
 
 // backupStatus GET /api/v1/backup/status：自动备份配置 + 服务器留存备份列表。

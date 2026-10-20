@@ -8,19 +8,11 @@ import {
   getApiErrorMessage,
   RestoreTaskHttpError,
   type RestoreTask,
+  type MarkdownImportMissingTopicsProblem,
 } from "@/api";
 import { formatBytes, formatRelative } from "@/lib/format";
 import { Icon } from "@iconify/vue";
-import {
-  VPageHeader,
-  VCard,
-  VButton,
-  VLoading,
-  VEmpty,
-  VModal,
-  Dialog,
-  Toast,
-} from "@/components/ui";
+import { VPageHeader, VCard, VButton, VLoading, VEmpty, VModal, Dialog, Toast } from "@/components/ui";
 import ConsoleStatsCard from "@/components/ConsoleStatsCard.vue";
 import { useAuthStore } from "@/stores/auth";
 import { queryClient } from "@/api/query-client";
@@ -243,14 +235,26 @@ async function handleImport(e: Event) {
   await confirmMarkdownImport(file, legacyImport.value);
 }
 
-async function confirmMarkdownImport(file: File, legacy: boolean, detectedLegacy = false): Promise<void> {
+async function confirmMarkdownImport(
+  file: File,
+  legacy: boolean,
+  detectedLegacy = false,
+  createTopics: string[] = [],
+): Promise<void> {
+  const creatingTopics = createTopics.length > 0;
   const confirmed = await new Promise<boolean>((resolve) => {
     Dialog.warning({
-      title: detectedLegacy ? "检测到 1.x 格式文章" : `确定导入「${file.name}」吗？`,
-      description: legacy
-        ? `将「${file.name}」按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。`
-        : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
-      confirmText: detectedLegacy ? "转换并导入" : "确定",
+      title: creatingTopics
+        ? "创建缺失的专栏并导入？"
+        : detectedLegacy
+          ? "检测到 1.x 格式文章"
+          : `确定导入「${file.name}」吗？`,
+      description: creatingTopics
+        ? `「${file.name}」引用了尚不存在的专栏：${createTopics.join("、")}。将以这些值同时作为名称和 Slug 创建专栏，并与文章一起导入；任一文件失败时整批不写入。取消不会修改数据。未指定状态的新文章保存为草稿，明确 published 的文章会公开，同名 Slug 会覆盖现有文章。`
+        : legacy
+          ? `将「${file.name}」按 1.x 格式转换后导入；未指定状态的新文章保存为草稿，明确 published 的文章会公开。同名 Slug 会覆盖现有文章。任一文件无法转换时整批不写入。`
+          : "同名 Slug 的文章将被导入的文件内容直接覆盖。未指定状态的新文章默认发布，请确认后再操作。",
+      confirmText: creatingTopics ? "创建并导入" : detectedLegacy ? "转换并导入" : "确定",
       confirmType: "danger",
       onConfirm: () => resolve(true),
       onCancel: () => resolve(false),
@@ -261,8 +265,9 @@ async function confirmMarkdownImport(file: File, legacy: boolean, detectedLegacy
   importing.value = true;
   importResult.value = null;
   let conversionRequired = false;
+  let missingTopics: string[] = [];
   try {
-    const { data } = await backupApi.importMarkdown(file, legacy);
+    const { data } = await backupApi.importMarkdown(file, legacy, createTopics);
     if (componentUnmounted.value) return;
     importResult.value = data;
     Toast.success(`成功导入 ${data.imported} 篇文章`);
@@ -274,6 +279,14 @@ async function confirmMarkdownImport(file: File, legacy: boolean, detectedLegacy
       error.response?.data.type === "legacy_markdown_requires_conversion"
     ) {
       conversionRequired = true;
+    } else if (
+      legacy &&
+      !creatingTopics &&
+      isAxiosError<MarkdownImportMissingTopicsProblem>(error) &&
+      error.response?.data.type === "legacy_markdown_topics_required" &&
+      error.response.data.missing_topics.length
+    ) {
+      missingTopics = error.response.data.missing_topics;
     } else {
       Toast.error(getApiErrorMessage(error, "Markdown 导入失败，请检查文件格式"));
     }
@@ -281,6 +294,7 @@ async function confirmMarkdownImport(file: File, legacy: boolean, detectedLegacy
     importing.value = false;
   }
   if (conversionRequired) await confirmMarkdownImport(file, true, true);
+  if (missingTopics.length) await confirmMarkdownImport(file, true, false, missingTopics);
 }
 
 // ---------- 统计数据 ----------
@@ -549,7 +563,11 @@ onBeforeUnmount(() => {
 
             <label class="mb-3 flex items-start gap-2 text-sm text-text-secondary">
               <input v-model="legacyImport" type="checkbox" :disabled="importing" class="mt-1 accent-primary" />
-              <span>从 1.x 格式转换<span class="mt-1 block text-xs text-text-tertiary">ZIP 内请直接放置 .md 文件；1.x 模式下，未指定状态的新文章保存为草稿。</span></span>
+              <span
+                >从 1.x 格式转换<span class="mt-1 block text-xs text-text-tertiary"
+                  >ZIP 内请直接放置 .md 文件；1.x 模式下，未指定状态的新文章保存为草稿。</span
+                ></span
+              >
             </label>
 
             <div class="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
@@ -670,5 +688,4 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
