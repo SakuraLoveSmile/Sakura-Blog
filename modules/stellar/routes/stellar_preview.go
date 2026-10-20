@@ -127,16 +127,7 @@ func (s *webServer) renderContentPreviewSnapshot(input content.StellarPreviewInp
 	if kind == "posts" {
 		source = "_posts/" + strings.TrimPrefix(path, "/post/") + ".md"
 	}
-	// 任何已有受保护文章都不能借组件预览的上下文读取。
-	if strings.HasPrefix(path, "/post/") {
-		row, e := s.st.GetBySlug(strings.TrimPrefix(path, "/post/"))
-		if e != nil {
-			return content.StellarPreviewOutput{}, e
-		}
-		if row != nil && (row.IsPasswordProtected() || row.Status != store.StatusPublished || row.DeletedAt != "") {
-			return content.StellarPreviewOutput{}, errStellarNotFound
-		}
-	}
+	// 路径只提供候选渲染上下文；已有内容仅从公开快照继承，正文来自本次提交。
 	row := &store.Post{StellarVersion: input.StellarVersion, StellarConfig: input.StellarConfig, BlogExtensions: input.BlogExtensions, Slug: strings.Trim(path, "/")}
 	parsed, err := row.ValidateStellar()
 	if err != nil {

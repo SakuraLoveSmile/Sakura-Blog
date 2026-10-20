@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { CanceledError } from "../../../packages/api-client/node_modules/axios/index.js";
 import { QueryClient } from "../web/node_modules/@tanstack/vue-query/build/modern/index.js";
 import { ucNotificationApi } from "../../../packages/api-client/src/api/monitoring.ts";
+import { previewApi } from "../../../packages/api-client/src/api/editor.ts";
 import { configureApiTransport, getApiErrorMessage, http } from "../../../packages/api-client/src/transport.ts";
 
 function failingAdapter(status: number, data: unknown) {
@@ -51,6 +52,45 @@ test("transport: 401 is delegated to the host once per response", async () => {
   try {
     await assert.rejects(http.get("/posts"));
     assert.equal(calls, 1);
+  } finally {
+    http.defaults.adapter = originalAdapter;
+    configureApiTransport({ onError: undefined, onUnauthorized: undefined });
+  }
+});
+
+test("preview: failed inline tags reject locally without stacking global toasts", async () => {
+  const errors: string[] = [];
+  configureApiTransport({ onError: (_error, message) => errors.push(message) });
+  const originalAdapter = http.defaults.adapter;
+  http.defaults.adapter = failingAdapter(422, { error: "标签语法错误" }) as any;
+
+  try {
+    const results = await Promise.allSettled(
+      Array.from({ length: 24 }, () => previewApi.render("{% copy example %}", undefined, { mode: "content" })),
+    );
+    assert.ok(results.every((result) => result.status === "rejected"));
+    assert.deepEqual(errors, []);
+
+    await assert.rejects(previewApi.render("document", undefined, { mode: "document" }));
+    await assert.rejects(previewApi.render("default document"));
+    assert.deepEqual(errors, ["标签语法错误", "标签语法错误"]);
+  } finally {
+    http.defaults.adapter = originalAdapter;
+    configureApiTransport({ onError: undefined, onUnauthorized: undefined });
+  }
+});
+
+test("preview: inline errors still delegate expired authentication to the host", async () => {
+  let errors = 0,
+    expired = 0;
+  configureApiTransport({ onError: () => errors++, onUnauthorized: () => expired++ });
+  const originalAdapter = http.defaults.adapter;
+  http.defaults.adapter = failingAdapter(401, { error: "未登录" }) as any;
+
+  try {
+    await assert.rejects(previewApi.render("{% copy example %}", undefined, { mode: "content" }));
+    assert.equal(expired, 1);
+    assert.equal(errors, 0);
   } finally {
     http.defaults.adapter = originalAdapter;
     configureApiTransport({ onError: undefined, onUnauthorized: undefined });

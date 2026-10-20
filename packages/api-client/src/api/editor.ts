@@ -8,20 +8,30 @@ export const previewApi = {
   render: (
     markdown: string,
     previewProfile?: string,
-    metadata?: Partial<StellarContentMetadata> & { title?: string; layout?: string; path?: string; language?: string; mode?: "document" | "content" },
+    metadata?: Partial<StellarContentMetadata> & {
+      title?: string;
+      layout?: string;
+      path?: string;
+      language?: string;
+      mode?: "document" | "content";
+    },
   ) =>
-    http.post<{ html: string; document: string; preview_token: string }>("/preview/markdown", {
-      markdown,
-      preview_profile: previewProfile,
-      mode: metadata?.mode,
-      stellar_version: 2,
-      stellar_config: "{}",
-      blog_extensions: "{}",
-      ...metadata,
-      preview_token: Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-        byte.toString(16).padStart(2, "0"),
-      ).join(""),
-    }),
+    http.post<{ html: string; document: string; preview_token: string }>(
+      "/preview/markdown",
+      {
+        markdown,
+        preview_profile: previewProfile,
+        mode: metadata?.mode,
+        stellar_version: 2,
+        stellar_config: "{}",
+        blog_extensions: "{}",
+        ...metadata,
+        preview_token: Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join(""),
+      },
+      { mute: metadata?.mode === "content" },
+    ),
   /** 发布前预览：提交当前表单拿临时 token，新标签页打开 /preview/draft/:token */
   createPostPreview: (form: PostPayload) => http.post("/preview/post", form),
   /** 站点配置预览（设置页所见即所得）：草稿分段 → 前台整页 HTML */

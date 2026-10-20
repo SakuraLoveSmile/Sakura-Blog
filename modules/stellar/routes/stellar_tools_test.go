@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"html/template"
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"blog/internal/content"
 	"blog/internal/post"
@@ -259,6 +261,88 @@ func TestStellarContentPreviewUsesActualOriginAndStrictMembership(t *testing.T) 
 	input.StellarConfig = `{"collection":{"profile":"wiki","id":"missing"}}`
 	if _, err := ws.renderContentPreview(input); err == nil {
 		t.Fatal("unknown collection preview accepted")
+	}
+}
+
+func TestStellarContentPreviewRendersCandidateAtHiddenPostPaths(t *testing.T) {
+	ws, st, _, router := stellarRouteFixture(t)
+	for _, slug := range []string{"published", "draft", "locked", "deleted", "future"} {
+		row := createStellarPost(t, st, slug, "")
+		if slug != "published" {
+			row.Title = "PRIVATE_RECORD_" + slug
+			row.ContentMD = "PRIVATE_RECORD_BODY_" + slug
+			row.StellarConfig = `{"title":"PRIVATE_RECORD_` + slug + `","tags":["PRIVATE_RECORD_TAG_` + slug + `"]}`
+		}
+		switch slug {
+		case "draft":
+			row.Status = store.StatusDraft
+		case "locked":
+			row.Password = "secret"
+		case "future":
+			row.PublishAt = time.Date(2999, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}
+		if err := st.Update(slug, row); err != nil {
+			t.Fatal(err)
+		}
+		if slug == "deleted" {
+			if err := st.Delete(slug); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	site := *ws.site.Load()
+	site.URL = "https://canonical.example/sub"
+	ws.site.Store(&site)
+	engine, err := stellarweb.NewEngineFromEmbed(ws.icons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws.engine = engine
+	network := &stellarNoNetwork{}
+	ws.posts.SetGHClient(network)
+	st.DB().SetMaxOpenConns(1)
+	if _, err := st.DB().Exec("PRAGMA query_only=ON"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _, _ = st.DB().Exec("PRAGMA query_only=OFF") })
+	markdown := "## Candidate heading\n\n{% copy CANDIDATE_TAG_CONTENT %}"
+	for _, slug := range []string{"new", "published", "draft", "locked", "deleted", "future"} {
+		for _, mode := range []content.StellarPreviewMode{content.StellarPreviewModeContent, content.StellarPreviewModeDocument} {
+			t.Run(slug+"/"+string(mode), func(t *testing.T) {
+				input := content.StellarPreviewInput{
+					Mode: mode, StellarVersion: 2, StellarConfig: `{"title":"Candidate title"}`,
+					Markdown: &markdown, Title: "Candidate title", Layout: "post", Path: "/sub/post/" + slug,
+					RequestURL: "http://127.0.0.1:8109/sub/console/posts", PreviewToken: "candidate-preview",
+				}
+				out, err := ws.renderContentPreviewSnapshot(input)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, rendered := range []string{out.HTML, out.Document} {
+					if !strings.Contains(rendered, "CANDIDATE_TAG_CONTENT") || !strings.Contains(rendered, "Candidate heading") || strings.Contains(rendered, "{% copy") {
+						t.Fatal("preview did not render the submitted candidate Markdown")
+					}
+					for _, secret := range []string{"PRIVATE_RECORD_", "HIDDEN_AUTH_SECRET", "HIDDEN_MAIL_SECRET"} {
+						if strings.Contains(rendered, secret) {
+							t.Fatalf("preview leaked %s", secret)
+						}
+					}
+				}
+			})
+		}
+	}
+	for _, slug := range []string{"draft", "locked", "deleted", "future"} {
+		response := stellarRequest(router, "/post/"+slug)
+		want := http.StatusNotFound
+		if slug == "locked" {
+			want = http.StatusOK
+		}
+		if response.Code != want || strings.Contains(response.Body.String(), "PRIVATE_RECORD_") {
+			t.Errorf("public access to %s: status=%d, want=%d, hidden content must remain private", slug, response.Code, want)
+		}
+	}
+	if network.calls != 0 {
+		t.Fatalf("preview made %d network callbacks", network.calls)
 	}
 }
 
